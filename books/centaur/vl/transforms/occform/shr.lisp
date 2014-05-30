@@ -22,6 +22,7 @@
 (include-book "shl")
 (local (include-book "../../util/arithmetic"))
 (local (include-book "../../util/osets"))
+(local (std::add-default-post-define-hook :fix))
 (local (non-parallel-book))
 (local (in-theory (disable vl-maybe-module-p-when-vl-module-p)))
 
@@ -50,7 +51,7 @@
 ;   temp2 = temp1 >> (b[2] * 2^2)          "place 2"
 ;   ...
 
-(def-vl-modgen vl-make-n-bit-shr-place-p (n p)
+(def-vl-modgen vl-make-n-bit-shr-place-p ((n posp) (p posp))
   :short "Generate a module that conditionally shifts an @('N') bit number by
 @('2**(P-1)') bits to the right."
 
@@ -71,10 +72,10 @@ endmodule
 <p>These \"place shifters\" can be combined to form a full shifter that
 operates on O(log_2 n) muxes.</p>"
 
-  :guard (and (posp n) (posp p))
-
   :body
-  (b* ((shift-amount (expt 2 (- p 1)))
+  (b* ((n     (lposfix n))
+       (p     (lposfix p))
+       (shift-amount (expt 2 (- p 1)))
        (name  (hons-copy (cat "VL_" (natstr n) "_BIT_SHR_PLACE_" (natstr p))))
 
        ((mv out-expr out-port out-portdecl out-netdecl)             (vl-occform-mkport "out" :vl-output n))
@@ -117,8 +118,8 @@ operates on O(log_2 n) muxes.</p>"
 
 (define vl-make-n-bit-shr-place-ps ((n posp)
                                     (p natp))
-  :returns (mv (shift-mods vl-modulelist-p :hyp :fguard)
-               (support-mods vl-modulelist-p :hyp :fguard))
+  :returns (mv (shift-mods   vl-modulelist-p)
+               (support-mods vl-modulelist-p))
   :parents (occform)
   :short "Generate a list of place-shifters, counting down from P to 1."
 
@@ -151,7 +152,7 @@ operates on O(log_2 n) muxes.</p>"
                  :in-theory (disable l0)
                  :use ((:instance l0 (x (rev x))))))))
 
-(def-vl-modgen vl-make-n-bit-shr-by-m-bits (n m)
+(def-vl-modgen vl-make-n-bit-shr-by-m-bits ((n posp) (m posp))
   :short "Generate a module that shifts an @('N') bit number right by an @('M')
 bit number."
 
@@ -167,11 +168,10 @@ module VL_N_BIT_SHR_BY_M_BITS (out, a, b) ;
 endmodule
 })"
 
-  :guard (and (posp n)
-              (posp m))
-
   :body
-  (b* ((name (hons-copy (cat "VL_" (natstr n) "_BIT_SHR_BY_" (natstr m) "_BITS")))
+  (b* ((n    (lposfix n))
+       (m    (lposfix m))
+       (name (hons-copy (cat "VL_" (natstr n) "_BIT_SHR_BY_" (natstr m) "_BITS")))
 
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output n))
        ((mv a-expr a-port a-portdecl a-netdecl)         (vl-occform-mkport "a" :vl-input n))

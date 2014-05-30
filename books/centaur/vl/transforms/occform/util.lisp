@@ -26,22 +26,23 @@
 (include-book "../../mlib/namefactory")
 (local (include-book "../../util/arithmetic"))
 (local (include-book "../../util/osets"))
-
+(local (std::add-default-post-define-hook :fix))
 (local (xdoc::set-default-parents occform))
 
-(define vl-occform-mkwire ((name stringp)
-                           (width posp)
-                           &key
-                           ((loc vl-location-p) '*vl-fakeloc*))
-  :returns (mv (expr    vl-expr-p    :hyp :fguard
-                        "already sized, unsigned")
-               (netdecl vl-netdecl-p :hyp :fguard))
+(define vl-occform-mkwire
   :short "Helper function for creating ports in generated modules."
+  ((name stringp)
+   (width posp)
+   &key
+   ((loc vl-location-p) '*vl-fakeloc*))
+  :returns (mv (expr    vl-expr-p "already sized, unsigned")
+               (netdecl vl-netdecl-p))
+  :verbosep t
   :long "<p>Imagine that we are trying to programmatically generate a module,
 and we want to add a wire with the given name and width.  This function just
 generates the corresponding expression and net declaration.</p>"
-
-  (b* ((name     (hons-copy name))
+  (b* ((name     (hons-copy (string-fix name)))
+       (width    (lposfix width))
        (expr     (vl-idexpr name width :vl-unsigned))
        (range    (vl-make-n-bit-range width))
        (netdecl  (make-vl-netdecl :name name
@@ -50,22 +51,21 @@ generates the corresponding expression and net declaration.</p>"
                                   :loc loc)))
     (mv expr netdecl)))
 
-
 (define vl-occform-mkport ((name  stringp)
                            (dir   vl-direction-p)
                            (width posp))
-  :returns (mv (expr     vl-expr-p     :hyp :fguard
-                         "already sized, unsigned")
-               (port     vl-port-p     :hyp :fguard)
-               (portdecl vl-portdecl-p :hyp :fguard)
-               (netdecl  vl-netdecl-p  :hyp :fguard))
+  :returns (mv (expr     vl-expr-p)
+               (port     vl-port-p)
+               (portdecl vl-portdecl-p)
+               (netdecl  vl-netdecl-p))
   :short "Helper for creating ports in generated modules."
   :long "<p>Imagine that we are trying to programmatically generate a module,
 and we want to add a port with the given name, direction, and width.  This
 function just generates the corresponding expression, port, port declaration,
 and net declaration.</p>"
 
-  (b* ((name     (hons-copy name))
+  (b* ((name     (hons-copy (string-fix name)))
+       (width    (lposfix width))
        (expr     (vl-idexpr name width :vl-unsigned))
        (range    (vl-make-n-bit-range width))
        (port     (make-vl-port :name name :expr expr :loc *vl-fakeloc*))
@@ -80,7 +80,37 @@ and net declaration.</p>"
       (mv expr port portdecl netdecl)))
 
 
-(defmacro def-vl-modgen (name formals
+
+(defun def-vl-modgen-fn (name raw-formals
+                              parents short long
+                              body
+                              guard verify-guards guard-debug
+                              state)
+  (declare (xargs :mode :program :stobjs state))
+  (let* ((world (w state))
+         (mksym-package-symbol name)
+         (parsed-formals (std::parse-formals `(def-vl-modgen ,name) raw-formals '(:type) world))
+         (plain-formals  (std::formallist->names parsed-formals)))
+    `(define ,name
+       :parents ,parents
+       :short ,short
+       ,raw-formals
+       :guard ,guard
+       :guard-debug ,guard-debug
+       :verify-guards ,verify-guards
+       :returns (mods vl-modulelist-p
+                      "A non-empty module list.  The first module in the list
+                       is the desired module; the other modules are any
+                       necessary supporting modules.")
+       :long ,long
+       ,body
+       ///
+       (defthm ,(mksym 'type-of- name)
+         (and (true-listp (,name . ,plain-formals))
+              (consp (,name . ,plain-formals)))
+         :rule-classes :type-prescription))))
+
+(defmacro def-vl-modgen (name raw-formals
                               &key
                               (parents '(occform))
                               (short '"")
@@ -89,39 +119,22 @@ and net declaration.</p>"
                               (guard 't)
                               (verify-guards 't)
                               guard-debug)
-  (declare (xargs :guard (and (symbolp name)
-                              (symbol-listp formals))))
-  (let ((mksym-package-symbol name))
-    `(define ,name
-       :parents ,parents
-       :short ,short
-       ,formals
-       :guard ,guard
-       :guard-debug ,guard-debug
-       :verify-guards ,verify-guards
-       :returns (mods vl-modulelist-p :hyp :guard
-                      "A non-empty module list.  The first module in the list
-                       is the desired module; the other modules are any
-                       necessary supporting modules.")
-       :long ,long
-       ,body
-       ///
-       (defthm ,(mksym 'type-of- name)
-         (and (true-listp (,name . ,formals))
-              (consp (,name . ,formals)))
-         :rule-classes :type-prescription))))
-
+  `(make-event
+    (def-vl-modgen-fn ',name ',raw-formals
+      ',parents ',short ',long
+      ',body
+      ',guard ',verify-guards ',guard-debug
+      state)))
 
 (define vl-simple-instantiate-args-main
+  :short "Create plainargs binding some actuals to their ports, filling in the
+portnames and directions."
   ((actuals   vl-exprlist-p)
    (ports     vl-portlist-p)
    (portdecls vl-portdecllist-p "for figuring out directions"))
   :guard (same-lengthp actuals ports)
-  :returns (args vl-plainarglist-p :hyp :fguard)
+  :returns (args vl-plainarglist-p)
   :parents (vl-simple-instantiate)
-  :short "Create plainargs binding some actuals to their ports, filling in the
-portnames and directions."
-
   (b* (((when (atom actuals))
         nil)
        ((vl-port port) (car ports))
@@ -135,24 +148,23 @@ portnames and directions."
        ((unless decl)
         (raise "Port is not declared: ~x0.~%" port.name))
 
-       (dir (vl-portdecl->dir decl))
-       (arg (make-vl-plainarg :expr     (car actuals)
-                              :dir      dir
-                              :portname port.name)))
+       (actual (vl-expr-fix (car actuals)))
+       (dir    (vl-portdecl->dir decl))
+       (arg    (make-vl-plainarg :expr     actual
+                                 :dir      dir
+                                 :portname port.name)))
     (cons arg
           (vl-simple-instantiate-args-main (cdr actuals) (cdr ports)
                                            portdecls))))
 
 (define vl-simple-instantiate
-  ((x        "submodule to create an instance of" vl-module-p)
-   (instname "name for the new instance"          stringp)
-   (actuals  "expressions to bind to the module's ports in port order"
-             vl-exprlist-p)
+  ((x        vl-module-p   "submodule to create an instance of")
+   (instname stringp       "name for the new instance")
+   (actuals  vl-exprlist-p "expressions to bind to the module's ports in port order")
    &key
    ((loc vl-location-p) '*vl-fakeloc*))
-  :returns (inst vl-modinst-p :hyp :fguard)
+  :returns (inst vl-modinst-p)
   :short "Convenient way to generating module instances."
-
   :long "<p>If you are writing code to generate modules (as we often are in
 @(see occform)), it can be particularly onerous to generate module instances
 because you have to build @(see vl-plainarg-p) structures for all of the
@@ -171,9 +183,9 @@ arity checking.</p>"
             (vl-simple-instantiate-args-main actuals x.ports x.portdecls)
           (raise "Wrong number of arguments for ~x0.~%" x.name))))
     (make-vl-modinst :modname   x.name
-                     :instname  instname
-                     :paramargs (vl-arguments nil nil)
-                     :portargs  (vl-arguments nil plainargs)
+                     :instname  (string-fix instname)
+                     :paramargs (make-vl-arguments-plain :args nil)
+                     :portargs  (make-vl-arguments-plain :args plainargs)
                      :loc       loc)))
 
 
@@ -195,13 +207,13 @@ you don't have to put the actuals in a list."
    &key
    ((n natp "name index, counts up") '0)
    ((loc vl-location-p) '*vl-fakeloc*))
-  :returns (insts vl-modinstlist-p :hyp :fguard)
+  :returns (insts vl-modinstlist-p)
   :parents (vl-simple-instantiate)
   :short "Generate a bunch of module instances."
   (if (atom arglists)
       nil
     (cons (vl-simple-instantiate x (cat prefix (natstr n)) (car arglists) :loc loc)
-          (vl-simple-instantiate-list-fn x prefix (cdr arglists) (+ 1 n) loc))))
+          (vl-simple-instantiate-list-fn x prefix (cdr arglists) (+ 1 (lnfix n)) loc))))
 
 
 
@@ -232,8 +244,8 @@ you don't have to put the actuals in a list."
                             (width  posp "width of each wire")
                             ((loc vl-location-p) '*vl-fakeloc*))
   :guard   (<= i n)
-  :returns (mv (exprs vl-exprlist-p :hyp :fguard)
-               (decls vl-netdecllist-p :hyp :fguard))
+  :returns (mv (exprs vl-exprlist-p)
+               (decls vl-netdecllist-p))
   :short "Helper function for creating lists of net declarations."
   :long "<p>We generate a list of net declarations,</p>
 @({
@@ -250,6 +262,7 @@ sizes pre-computed.</p>"
   (b* (((when (mbe :logic (zp (- (lnfix n) (lnfix i)))
                    :exec (eql i n)))
         (mv nil nil))
+       (width (lposfix width))
        (name  (hons-copy (cat prefix (natstr i))))
        (expr  (vl-idexpr name width :vl-unsigned))
        (decl  (make-vl-netdecl :name  name
@@ -288,10 +301,10 @@ sizes pre-computed.</p>"
                             (width  posp           "width of each port")
                             ((loc vl-location-p)   '*vl-fakeloc*))
   :guard   (<= i n)
-  :returns (mv (exprs     vl-exprlist-p :hyp :fguard)
-               (ports     vl-portlist-p :hyp :fguard)
-               (portdecls vl-portdecllist-p :hyp :fguard)
-               (netdecls  vl-netdecllist-p :hyp :fguard))
+  :returns (mv (exprs     vl-exprlist-p)
+               (ports     vl-portlist-p)
+               (portdecls vl-portdecllist-p)
+               (netdecls  vl-netdecllist-p))
   :short "Helper function for creating lists of port declarations."
   :measure (nfix (- (nfix n) (nfix i)))
 

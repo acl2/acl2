@@ -508,7 +508,6 @@ are the same you still get one wire.</p>"
                                    (vl-emodwirelist->basenames acc))))
            :hints(("Goal" :do-not '(generalize fertilize)))))
 
-
   (local (defthm member-equal-of-indicies-of-simpler-aux-function
            (implies (and (stringp name)
                          (natp high)
@@ -519,7 +518,8 @@ are the same you still get one wire.</p>"
                          (or (and (natp idx)
                                   (<= low idx)
                                   (<= idx high))
-                             (member-equal idx (vl-emodwirelist->indices acc)))))))
+                             (member-equal idx (vl-emodwirelist->indices acc)))))
+           :hints(("Goal" :in-theory (disable (force))))))
 
   (local (defun nats-from (low high)
            (declare (xargs :measure (nfix (- (nfix high) (nfix low)))))
@@ -547,7 +547,8 @@ are the same you still get one wire.</p>"
                                                 (nats-from low high))))
                     (no-duplicatesp-equal
                      (vl-emodwirelist->indices
-                      (simpler-aux-function name high low acc))))))
+                      (simpler-aux-function name high low acc))))
+           :hints(("Goal" :in-theory (disable (force))))))
 
   (local (in-theory (enable vl-emodwires-from-high-to-low)))
 
@@ -991,7 +992,9 @@ theorem:</p>
       (defthm r0
         (implies (and (not (member-equal (vl-regdecl->name a)
                                          (vl-regdecllist->names x)))
-                      (force (vl-regdecl-p a)))
+                      ;(force (vl-regdecl-p a))
+                      (consp x)
+                      )
                  (not (equal (vl-regdecl->name a)
                              (vl-regdecl->name (first x)))))))
 
@@ -1050,7 +1053,9 @@ theorem:</p>
       (defthm n0
         (implies (and (not (member-equal (vl-netdecl->name a)
                                          (vl-netdecllist->names x)))
-                      (force (vl-netdecl-p a)))
+                      ;; (force (vl-netdecl-p a))
+                      (force (consp x))
+                      )
                  (not (equal (vl-netdecl->name a)
                              (vl-netdecl->name (first x)))))))
 
@@ -1232,7 +1237,8 @@ some width and value.  We return a <i>width</i>-long list of symbols
 
 
   (defund vl-msb-constint-bitlist (x warnings)
-    (declare (xargs :guard (and (vl-atom-p x)
+    (declare (xargs :guard (and (vl-expr-p x)
+                                (vl-atom-p x)
                                 (vl-constint-p (vl-atom->guts x))
                                 (vl-warninglist-p warnings))))
     (b* ((width (vl-atom->finalwidth x))
@@ -1340,7 +1346,8 @@ width and refers to a particular wire.  We return a wires associated with this
 name in MSB order.</p>"
 
   (defund vl-msb-wire-bitlist (x walist warnings)
-    (declare (xargs :guard (and (vl-atom-p x)
+    (declare (xargs :guard (and (vl-expr-p x)
+                                (vl-atom-p x)
                                 (vl-wirealist-p walist)
                                 (vl-id-p (vl-atom->guts x))
                                 (vl-warninglist-p warnings))))
@@ -1739,7 +1746,7 @@ the above forms into a list of <b>MSB order</b> bits.</p>"
                                  (vl-warninglist-p warnings))
                      :verify-guards nil
                      :hints(("Goal" :in-theory (disable (force))))
-                     :measure (two-nats-measure (acl2-count x) 1)))
+                     :measure (vl-expr-count x)))
 
      (if (vl-fast-atom-p x)
          (let ((guts (vl-atom->guts x)))
@@ -1813,7 +1820,7 @@ the above forms into a list of <b>MSB order</b> bits.</p>"
      (declare (xargs :guard (and (vl-exprlist-p x)
                                  (vl-wirealist-p walist)
                                  (vl-warninglist-p warnings))
-                     :measure (two-nats-measure (acl2-count x) 0)))
+                     :measure (vl-exprlist-count x)))
      (if (atom x)
          (mv t warnings nil)
        (b* (((mv car-successp warnings car-bits)

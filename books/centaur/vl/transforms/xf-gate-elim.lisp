@@ -157,11 +157,12 @@ happened and leave the gate unchanged.</p>"
             (list x) nil nil))
 
        (args (vl-add-portnames-to-plainargs x.args ports))
-       (modinst (make-vl-modinst :instname  x.name
-                                 :modname   (vl-module->name target)
-                                 :portargs  (vl-arguments nil args)
-                                 :paramargs (vl-arguments nil nil)
-                                 :loc       x.loc)))
+       (modinst (make-vl-modinst
+                 :instname  x.name
+                 :modname   (vl-module->name target)
+                 :portargs  (make-vl-arguments-plain :args args)
+                 :paramargs (make-vl-arguments-plain :args nil)
+                 :loc       x.loc)))
     (mv (ok) nil (list modinst) (list target)))
   ///
   (defmvtypes vl-gateinst-gate-elim (nil true-listp true-listp true-listp)))

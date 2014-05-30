@@ -56,6 +56,9 @@
                             (vl-netdecl->name x)
                             range))))
 
+(deffixequiv vl-netdecl-range-resolved-p :args ((x vl-netdecl-p))
+  :hints(("Goal" :in-theory (enable vl-netdecl-range-resolved-p))))
+
 (defthm vl-maybe-range-resolved-p-of-vl-netdecl->range
   (implies (vl-netdecl-range-resolved-p x)
            (vl-maybe-range-resolved-p (vl-netdecl->range x)))
@@ -82,6 +85,9 @@
                       (list (vl-regdecl->loc x)
                             (vl-regdecl->name x)
                             range))))
+
+(deffixequiv vl-regdecl-range-resolved-p :args ((x vl-regdecl-p))
+  :hints(("Goal" :in-theory (enable vl-regdecl-range-resolved-p))))
 
 (defthm vl-maybe-range-resolved-p-of-vl-regdecl->range
   (implies (vl-regdecl-range-resolved-p x)

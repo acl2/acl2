@@ -20,6 +20,7 @@
 
 (in-package "VL")
 (include-book "../parsetree")
+(include-book "../mlib/stmt-tools")
 (local (include-book "../util/arithmetic"))
 
 (defsection lint-warning-suppression
@@ -153,8 +154,8 @@ either upper or lower case, treating - and _ as equivalent, and with or without
            ;; Recognize certain constructs that have attributes
            (case (car x)
              (:vl-nonatom
-              (and (vl-nonatom-p x)
-                   (vl-expr-p x)
+              (and (vl-expr-p x)
+                   (eq (vl-expr-kind x) :vl-nonatom)
                    (vl-lint-atts-say-ignore (vl-nonatom->atts x) mwtype)))
              (:vl-netdecl      (and (vl-netdecl-p x)       (vl-lint-atts-say-ignore (vl-netdecl->atts x)       mwtype)))
              (:vl-assign       (and (vl-assign-p x)        (vl-lint-atts-say-ignore (vl-assign->atts x)        mwtype)))
@@ -172,15 +173,15 @@ either upper or lower case, treating - and _ as equivalent, and with or without
              (:vl-initial      (and (vl-initial-p x)       (vl-lint-atts-say-ignore (vl-initial->atts x)       mwtype)))
              (:vl-plainarg     (and (vl-plainarg-p x)      (vl-lint-atts-say-ignore (vl-plainarg->atts x)      mwtype)))
              (:vl-namedarg     (and (vl-namedarg-p x)      (vl-lint-atts-say-ignore (vl-namedarg->atts x)      mwtype)))
-             (:vl-assignstmt   (and (vl-assignstmt-p x)    (vl-lint-atts-say-ignore (vl-assignstmt->atts x)    mwtype)))
-             (:vl-compoundstmt (and (vl-compoundstmt-p x)  (vl-lint-atts-say-ignore (vl-compoundstmt->atts x)  mwtype)))
-             (:vl-deassignstmt (and (vl-deassignstmt-p x)  (vl-lint-atts-say-ignore (vl-deassignstmt->atts x)  mwtype)))
-             (:vl-enablestmt   (and (vl-enablestmt-p x)    (vl-lint-atts-say-ignore (vl-enablestmt->atts x)    mwtype)))
-             (:vl-enablestmt   (and (vl-enablestmt-p x)    (vl-lint-atts-say-ignore (vl-enablestmt->atts x)    mwtype)))
-             (:vl-nullstmt     (and (vl-nullstmt-p x)      (vl-lint-atts-say-ignore (vl-nullstmt->atts x)      mwtype)))
-             (:vl-eventtriggerstmt
-              (and (vl-eventtriggerstmt-p x)
-                   (vl-lint-atts-say-ignore (vl-eventtriggerstmt->atts x) mwtype)))
+
+
+             ((:vl-nullstmt :vl-assignstmt :vl-deassignstmt
+               :vl-enablestmt :vl-disablestmt :vl-eventtriggerstmt
+               :vl-casestmt :vl-ifstmt :vl-foreverstmt :vl-waitstmt
+               :vl-whilestmt :vl-forstmt :vl-blockstmt :vl-repeatstmt :vl-timingstmt)
+              (and (vl-stmt-p x)
+                   (vl-lint-atts-say-ignore (vl-stmt->atts x) mwtype)))
+
              (otherwise nil))
            ;; Just because we didn't find it in the atts of this whole object
            ;; doesn't mean we want to necessarily stop looking.  let's keep

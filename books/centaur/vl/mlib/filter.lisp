@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -21,6 +21,7 @@
 (in-package "VL")
 (include-book "../parsetree")
 (local (include-book "../util/arithmetic"))
+(local (std::add-default-post-define-hook :fix))
 
 (defxdoc filtering-by-name
   :parents (mlib)
@@ -59,7 +60,9 @@ Assuming that hashing operations are constant time, constructing this table is
                               )))
   (let* ((mksym-package-symbol 'vl::foo)
          (type->name   accessor)
+         (type-fix     (mksym 'vl- type '-fix))
          (list-p       (mksym 'vl- type 'list-p))
+         (list-fix     (mksym 'vl- type 'list-fix))
          (fast-fn      (mksym 'vl-fast-filter- suffix))
          (fn           (mksym 'vl-filter- suffix))
          (del-fn       (mksym 'vl-delete- suffix))
@@ -69,307 +72,251 @@ Assuming that hashing operations are constant time, constructing this table is
          (slow-keep-fn (mksym 'vl-slow-keep- suffix))
          (fast-keep-fn (mksym 'vl-fast-keep- suffix))
          )
-    `(defsection ,fn
+    `(encapsulate ()
 
-       (defxdoc ,keep-fn
-         :parents (filtering-by-name)
-         :short ,(cat "Keep @(see vl-" (symbol-name type) "-p)s by "
-short-name ".")
+       (define ,fast-keep-fn ((names string-listp)
+                              (fal   (equal fal (make-lookup-alist names)))
+                              (x     ,list-p)
+                              nrev)
+         :parents (,keep-fn)
+         :hooks nil
+         (if (atom x)
+             (nrev-fix nrev)
+           (let ((nrev (if (fast-memberp (,type->name (car x)) (string-list-fix names) fal)
+                           (nrev-push (,type-fix (car x)) nrev)
+                         nrev)))
+             (,fast-keep-fn names fal (cdr x) nrev))))
 
-         :long ,(cat "<p>We are given @('names'), a list of strings, and
-@('x'), a list of @(see vl-" (symbol-name type) "-p)s.  We return all of the
-members of @('x') whose " short-name "s are in @('names').</p>"
-
-keep-long
-
-"<h3>Definition</h3>
-
-<p>Note that we actually use @('nreverse') under the hood.</p>
-
-@(def " (symbol-name keep-fn) ")
-@(def " (symbol-name slow-keep-fn) ")
-@(def " (symbol-name fast-keep-fn) ")"))
-
-
-       (defxdoc ,del-fn
-         :parents (filtering-by-name)
-         :short ,(cat "Remove @(see VL-" (symbol-name type) "-P)s by "
-short-name ".")
-
-         :long ,(cat "<p>We are given @('names'), a list of strings, and
-@('x'), a list of @(see VL-" (symbol-name type) "-P)s.  We remove all of the
-members of @('x') whose " short-name "s are in @('names').</p>"
-
-del-long
-
-"<h3>Definition</h3>
-
-<p>Note that we actually use @('nreverse') under the hood.</p>
-
-@(def " (symbol-name del-fn) ")
-@(def " (symbol-name slow-del-fn) ")
-@(def " (symbol-name fast-del-fn) ")"))
-
-       (defxdoc ,fn
-         :parents (filtering-by-name)
-         :short ,(cat "Partition a list of @(see vl-" (symbol-name
-type) "-p)s by " short-name ".")
-
-         :long ,(cat "<p><b>Signature</b>: @(call " (symbol-name fn) ") returns
-@('(mv named unnamed)').</p>
-
-<p>The only reason to use this function is efficiency.  Logically, @('named')
-is equal to @(see " (symbol-name keep-fn) ") and @('unnamed') is equal to
-@(see " (symbol-name del-fn) ").  We leave this function enabled and would
-think it odd to ever prove a theorem about it.</p>"
-
-filter-long
-
-"<h3>Definition</h3>
-
-<p>Note that we actually use @('nreverse') under the hood.</p>
-
-@(def " (symbol-name fn) ")
-@(def " (symbol-name fast-fn) ")"))
-
-       (defund ,fast-keep-fn (names fal x acc)
-         (declare (xargs :guard (and (string-listp names)
-                                     (equal fal (make-lookup-alist names))
-                                     (,list-p x))))
-         (cond ((atom x)
-                acc)
-               ((fast-memberp (,type->name (car x)) names fal)
-                (,fast-keep-fn names fal (cdr x) (cons (car x) acc)))
-               (t
-                (,fast-keep-fn names fal (cdr x) acc))))
-
-       (defund ,slow-keep-fn (names x)
-         (declare (xargs :guard (and (string-listp names)
-                                     (,list-p x))))
+       (define ,slow-keep-fn ((names string-listp)
+                              (x     ,list-p))
+         :parents (,keep-fn)
+         :hooks nil
          (cond ((atom x)
                 nil)
-               ((member-equal (,type->name (car x)) names)
-                (cons (car x) (,slow-keep-fn names (cdr x))))
+               ((member-equal (,type->name (car x)) (string-list-fix names))
+                (cons (,type-fix (car x)) (,slow-keep-fn names (cdr x))))
                (t
                 (,slow-keep-fn names (cdr x)))))
 
-       (defund ,keep-fn (names x)
-         (declare (xargs :guard (and (string-listp names)
-                                     (,list-p x))
-                         :verify-guards nil))
+       (define ,keep-fn
+         :parents (filtering-by-name)
+         :short ,(cat "Keep @(see VL-" (symbol-name type) "-P)s by " short-name ".")
+         ((names string-listp ,(cat "Names of @(see VL-" (symbol-name type) "-P)s to keep."))
+          (x     ,list-p      "List to filter."))
+         :long ,keep-long
+         :returns (filtered-x ,list-p)
+         :verify-guards nil
          (mbe :logic
               (cond ((atom x)
                      nil)
-                    ((member-equal (,type->name (car x)) names)
-                     (cons (car x) (,keep-fn names (cdr x))))
+                    ((member-equal (,type->name (car x)) (string-list-fix names))
+                     (cons (,type-fix (car x)) (,keep-fn names (cdr x))))
                     (t
                      (,keep-fn names (cdr x))))
               :exec
-              (b* ((len (length names))
-                   ((when (< len 10)) (,slow-keep-fn names x))
+              (b* (((when (or (atom names)
+                              (atom x)))
+                    ;; Stupid optimization
+                    nil)
+                   ((unless (longer-than-p 10 names))
+                    (,slow-keep-fn names x))
                    (fal (make-lookup-alist names))
-                   (ans (,fast-keep-fn names fal x nil))
+                   (ans (with-local-nrev
+                          (,fast-keep-fn names fal x nrev)))
                    (- (fast-alist-free fal)))
-                  (reverse ans))))
+                ans))
+         ///
+         (defthm ,(mksym keep-fn '-when-atom)
+           (implies (atom x)
+                    (equal (,keep-fn names x)
+                           nil)))
 
-       (defttag vl-optimize)
-       (never-memoize ,fast-keep-fn)
-       (progn!
-        (set-raw-mode t)
-        (defun ,keep-fn (names x)
-          (b* ((len (length names))
-               ((when (< len 10)) (,slow-keep-fn names x))
-               (fal (make-lookup-alist names))
-               (ans (,fast-keep-fn names fal x nil))
-               (- (fast-alist-free fal)))
-            (nreverse ans))))
-       (defttag nil)
+         (defthm ,(mksym keep-fn '-of-cons)
+           (equal (,keep-fn names (cons a x))
+                  (if (member-equal (,type->name a) (string-list-fix names))
+                      (cons (,type-fix a) (,keep-fn names x))
+                    (,keep-fn names x))))
+
+         (defthm ,(mksym 'member-equal-of- keep-fn)
+           (iff (member-equal a (,keep-fn names x))
+                (and (member-equal a (,list-fix x))
+                     (member-equal (,type->name a) (string-list-fix names)))))
+
+         (defthm ,(mksym 'subsetp-equal-of- keep-fn)
+           (subsetp-equal (,keep-fn names x)
+                          (,list-fix x)))
+
+         (defthm ,(mksym keep-fn '-when-atom-of-names)
+           (implies (atom names)
+                    (equal (,keep-fn names x)
+                           nil)))
+
+         (defthm ,(mksym slow-keep-fn '-removal)
+           (equal (,slow-keep-fn names x)
+                  (,keep-fn names x))
+           :hints(("Goal" :in-theory (enable ,slow-keep-fn ,keep-fn))))
+
+         (defthm ,(mksym fast-keep-fn '-removal)
+           (equal (,fast-keep-fn names fal x nrev)
+                  (append nrev (,keep-fn names x)))
+           :hints(("Goal" :in-theory (enable ,fast-keep-fn ,keep-fn))))
+
+         (verify-guards ,keep-fn))
 
 
+       (define ,fast-del-fn ((names string-listp)
+                             (fal   (equal fal (make-lookup-alist names)))
+                             (x     ,list-p)
+                             nrev)
+         :parents (,del-fn)
+         :hooks nil
+         (if (atom x)
+             (nrev-fix nrev)
+           (let ((nrev (if (fast-memberp (,type->name (car x)) (string-list-fix names) fal)
+                           nrev
+                         (nrev-push (,type-fix (car x)) nrev))))
+             (,fast-del-fn names fal (cdr x) nrev))))
 
-       (defund ,fast-del-fn (names fal x acc)
-         (declare (xargs :guard (and (string-listp names)
-                                     (equal fal (make-lookup-alist names))
-                                     (,list-p x))))
-         (cond ((atom x)
-                acc)
-               ((fast-memberp (,type->name (car x)) names fal)
-                (,fast-del-fn names fal (cdr x) acc))
-               (t
-                (,fast-del-fn names fal (cdr x) (cons (car x) acc)))))
-
-       (defund ,slow-del-fn (names x)
-         (declare (xargs :guard (and (string-listp names)
-                                     (,list-p x))))
+       (define ,slow-del-fn ((names string-listp)
+                             (x     ,list-p))
+         :hooks nil
          (cond ((atom x)
                 nil)
-               ((member-equal (,type->name (car x)) names)
+               ((member-equal (,type->name (car x)) (string-list-fix names))
                 (,slow-del-fn names (cdr x)))
                (t
-                (cons (car x) (,slow-del-fn names (cdr x))))))
+                (cons (,type-fix (car x)) (,slow-del-fn names (cdr x))))))
 
-       (defund ,del-fn (names x)
-         (declare (xargs :guard (and (string-listp names)
-                                     (,list-p x))
-                         :verify-guards nil))
+       (define ,del-fn
+         :parents (filtering-by-name)
+         :short ,(cat "Delete @(see VL-" (symbol-name type) "-P)s by " short-name ".")
+         ((names string-listp ,(cat "Names of @(see VL-" (symbol-name type) "-P)s to remove."))
+          (x     ,list-p      "List to filter."))
+         :returns (filtered-x ,list-p)
+         :long ,del-long
+         :verify-guards nil
          (mbe :logic
               (cond ((atom x)
                      nil)
-                    ((member-equal (,type->name (car x)) names)
+                    ((member-equal (,type->name (car x)) (string-list-fix names))
                      (,del-fn names (cdr x)))
                     (t
-                     (cons (car x) (,del-fn names (cdr x)))))
+                     (cons (,type-fix (car x)) (,del-fn names (cdr x)))))
               :exec
-              (b* ((len (length names))
-                   ((when (< len 10)) (,slow-del-fn names x))
+              (b* (((when (atom names))
+                    ;; Stupid optimization
+                    (redundant-list-fix x))
+                   ((when (atom x))
+                    ;; Stupid optimization
+                    nil)
+                   ((unless (longer-than-p 10 names))
+                    (,slow-del-fn names x))
                    (fal (make-lookup-alist names))
-                   (ans (,fast-del-fn names fal x nil))
+                   (ans (with-local-nrev
+                          (,fast-del-fn names fal x nrev)))
                    (- (fast-alist-free fal)))
-                  (reverse ans))))
+                ans))
+         ///
+         (defthm ,(mksym del-fn '-when-atom)
+           (implies (atom x)
+                    (equal (,del-fn names x)
+                           nil)))
 
-       (defttag vl-optimize)
-       (never-memoize ,fast-del-fn)
-       (progn!
-        (set-raw-mode t)
-        (defun ,del-fn (names x)
-          (b* ((len (length names))
-               ((when (< len 10)) (,slow-del-fn names x))
-               (fal (make-lookup-alist names))
-               (ans (,fast-del-fn names fal x nil))
-               (- (fast-alist-free fal)))
-              (nreverse ans))))
-       (defttag nil)
+         (defthm ,(mksym del-fn '-of-cons)
+           (equal (,del-fn names (cons a x))
+                  (if (member-equal (,type->name a) (string-list-fix names))
+                      (,del-fn names x)
+                    (cons (,type-fix a) (,del-fn names x)))))
+
+         (defthm ,(mksym 'member-equal-of- del-fn)
+           (iff (member-equal a (,del-fn names x))
+                (and (member-equal a (,list-fix x))
+                     (not (member-equal (,type->name a) (string-list-fix names))))))
+
+         (defthm ,(mksym 'subsetp-equal-of- del-fn)
+           (subsetp-equal (,del-fn names x) (,list-fix x)))
+
+         (defthm ,(mksym del-fn '-when-atom-of-names)
+           (implies (atom names)
+                    (equal (,del-fn names x)
+                           (,list-fix (list-fix x)))))
+
+         (defthm ,(mksym slow-del-fn '-removal)
+           (equal (,slow-del-fn names x)
+                  (,del-fn names x))
+           :hints(("Goal" :in-theory (enable ,slow-del-fn ,del-fn))))
+
+         (defthm ,(mksym fast-del-fn '-removal)
+           (equal (,fast-del-fn names fal x nrev)
+                  (append nrev (,del-fn names x)))
+           :hints(("Goal" :in-theory (enable ,fast-del-fn ,del-fn))))
+
+         (verify-guards ,del-fn))
 
 
-
-       (defund ,fast-fn (names fal x yes no)
-         (declare (xargs :guard (and (string-listp names)
-                                     (equal fal (make-lookup-alist names))
-                                     (,list-p x))))
+       (define ,fast-fn ((names string-listp)
+                         (fal   (equal fal (make-lookup-alist names)))
+                         (x     ,list-p)
+                         (nrev  "Matches")
+                         (nrev2 "Non-Matches"))
+         :hooks nil
          (cond ((atom x)
-                (mv yes no))
-               ((fast-memberp (,type->name (car x)) names fal)
-                (,fast-fn names fal (cdr x) (cons (car x) yes) no))
+                (let* ((nrev (nrev-fix nrev))
+                       (nrev2 (nrev-fix nrev2)))
+                  (mv nrev nrev2)))
+               ((fast-memberp (,type->name (car x)) (string-list-fix names) fal)
+                (let ((nrev (nrev-push (,type-fix (car x)) nrev)))
+                  (,fast-fn names fal (cdr x) nrev nrev2)))
                (t
-                (,fast-fn names fal (cdr x) yes (cons (car x) no)))))
+                (let ((nrev2 (nrev-push (,type-fix (car x)) nrev2)))
+                  (,fast-fn names fal (cdr x) nrev nrev2)))))
 
-       (defun ,fn (names x)
-         "Returns (MV NAMED UNNAMED)"
-         (declare (xargs :guard (and (string-listp names)
-                                     (,list-p x))
-                         :verify-guards nil))
+       (define ,fn
+         :parents (filtering-by-name)
+         :short ,(cat "Partition a list of @(see VL-" (symbol-name type) "-P)s by " short-name ".")
+         ((names string-listp "Names to filter with.")
+          (x     ,list-p      "List to filter."))
+         :returns (mv named unnamed)
+         :long ,(cat "<p>The only reason to use this function is efficiency.
+Logically, @('named') is equal to @(see " (symbol-name keep-fn) ") and
+@('unnamed') is equal to @(see " (symbol-name del-fn) ").  We leave this
+function enabled and would think it odd to ever prove a theorem about it.</p>" filter-long)
+         :enabled t
+         :hooks nil
+         :verify-guards nil
          (mbe :logic
               (mv (,keep-fn names x)
                   (,del-fn names x))
               :exec
-              (b* ((fal (make-lookup-alist names))
-                   ((mv yes no)
-                    (,fast-fn names fal x nil nil))
-                   (-   (fast-alist-free fal)))
-                  (mv (reverse yes) (reverse no)))))
+              (b* (((when (atom names))
+                    ;; Stupid optimization
+                    (mv nil (redundant-list-fix x)))
+                   ((when (atom x))
+                    ;; Stupid optimization
+                    (mv nil nil))
+                   (fal (make-lookup-alist names))
+                   ((local-stobjs nrev nrev2)
+                    (mv yes no nrev nrev2))
+                   ((mv nrev nrev2)
+                    (,fast-fn names fal x nrev nrev2))
+                   (- (fast-alist-free fal))
+                   ((mv yes nrev) (nrev-finish nrev))
+                   ((mv no nrev2) (nrev-finish nrev2)))
+                (mv yes no nrev nrev2)))
+         ///
+         (defthm ,(mksym fast-fn '-removal-0)
+           (equal (mv-nth 0 (,fast-fn names fal x nrev nrev2))
+                  (append nrev (,keep-fn names x)))
+           :hints(("Goal" :in-theory (enable ,fast-fn ,keep-fn))))
 
-       (defttag vl-optimize)
-       (never-memoize ,fast-fn)
-       (progn!
-        (set-raw-mode t)
-        (defun ,fn (names x)
-          (b* ((fal (make-lookup-alist names))
-               ((mv yes no)
-                (,fast-fn names fal x nil nil))
-               (-   (fast-alist-free fal)))
-              (mv (nreverse yes) (nreverse no)))))
-       (defttag nil)
+         (defthm ,(mksym fast-fn '-removal-1)
+           (equal (mv-nth 1 (,fast-fn names fal x nrev nrev2))
+                  (append nrev2 (,del-fn names x)))
+           :hints(("Goal" :in-theory (enable ,fast-fn ,del-fn))))
 
+         (local (in-theory (enable ,keep-fn ,del-fn)))
 
-       (defthm ,(mksym slow-keep-fn '-removal)
-         (equal (,slow-keep-fn names x)
-                (,keep-fn names x))
-         :hints(("Goal" :in-theory (enable ,slow-keep-fn ,keep-fn))))
-
-       (defthm ,(mksym fast-keep-fn '-removal)
-         (implies (force (equal fal (make-lookup-alist names)))
-                  (equal (,fast-keep-fn names fal x acc)
-                         (revappend (,keep-fn names x) acc)))
-         :hints(("Goal" :in-theory (enable ,fast-keep-fn ,keep-fn))))
-
-
-       (defthm ,(mksym slow-del-fn '-removal)
-         (equal (,slow-del-fn names x)
-                (,del-fn names x))
-         :hints(("Goal" :in-theory (enable ,slow-del-fn ,del-fn))))
-
-       (defthm ,(mksym fast-del-fn '-removal)
-         (implies (force (equal fal (make-lookup-alist names)))
-                  (equal (,fast-del-fn names fal x acc)
-                         (revappend (,del-fn names x) acc)))
-         :hints(("Goal" :in-theory (enable ,fast-del-fn ,del-fn))))
-
-
-       (defthm ,(mksym fast-fn '-removal-0)
-         (implies (force (equal fal (make-lookup-alist names)))
-                  (equal (mv-nth 0 (,fast-fn names fal x yes no))
-                         (revappend (,keep-fn names x) yes)))
-         :hints(("Goal" :in-theory (enable ,fast-fn ,keep-fn))))
-
-       (defthm ,(mksym fast-fn '-removal-1)
-         (implies (force (equal fal (make-lookup-alist names)))
-                  (equal (mv-nth 1 (,fast-fn names fal x yes no))
-                         (revappend (,del-fn names x) no)))
-         :hints(("Goal" :in-theory (enable ,fast-fn ,del-fn))))
-
-       (local (in-theory (enable ,keep-fn ,del-fn)))
-
-       (verify-guards ,keep-fn)
-       (verify-guards ,del-fn)
-       (verify-guards ,fn)
-
-       (defthm ,(mksym keep-fn '-when-atom)
-         (implies (atom x)
-                  (equal (,keep-fn names x)
-                         nil)))
-
-       (defthm ,(mksym keep-fn '-of-cons)
-         (equal (,keep-fn names (cons a x))
-                (if (member-equal (,type->name a) names)
-                    (cons a (,keep-fn names x))
-                  (,keep-fn names x))))
-
-       (defthm ,(mksym list-p '-of- keep-fn)
-         (implies (force (,list-p x))
-                  (,list-p (,keep-fn names x))))
-
-       (defthm ,(mksym 'member-equal-of- keep-fn)
-         (iff (member-equal a (,keep-fn names x))
-              (and (member-equal a x)
-                   (member-equal (,type->name a) names))))
-
-       (defthm ,(mksym 'subsetp-equal-of- keep-fn)
-         (subsetp-equal (,keep-fn names x) x))
-
-
-
-       (defthm ,(mksym del-fn '-when-atom)
-         (implies (atom x)
-                  (equal (,del-fn names x)
-                         nil)))
-
-       (defthm ,(mksym del-fn '-of-cons)
-         (equal (,del-fn names (cons a x))
-                (if (member-equal (,type->name a) names)
-                    (,del-fn names x)
-                  (cons a (,del-fn names x)))))
-
-       (defthm ,(mksym list-p '-of- del-fn)
-         (implies (force (,list-p x))
-                  (,list-p (,del-fn names x))))
-
-       (defthm ,(mksym 'member-equal-of- del-fn)
-         (iff (member-equal a (,del-fn names x))
-              (and (member-equal a x)
-                   (not (member-equal (,type->name a) names)))))
-
-       (defthm ,(mksym 'subsetp-equal-of- del-fn)
-         (subsetp-equal (,del-fn names x) x))
+         (verify-guards ,fn))
 
        )))
 
@@ -387,6 +334,56 @@ filter-long
     (def-vl-filter-by-name-fn type keep-long del-long filter-long
       short-name accessor suffix)))
 
+(defthm vl-netdecllist-fix-of-list-fix
+  (equal (vl-netdecllist-fix (list-fix x))
+         (list-fix (vl-netdecllist-fix x)))
+  :hints(("Goal" :induct (len x))))
+
+(defthm vl-regdecllist-fix-of-list-fix
+  (equal (vl-regdecllist-fix (list-fix x))
+         (list-fix (vl-regdecllist-fix x)))
+  :hints(("Goal" :induct (len x))))
+
+(defthm vl-vardecllist-fix-of-list-fix
+  (equal (vl-vardecllist-fix (list-fix x))
+         (list-fix (vl-vardecllist-fix x)))
+  :hints(("Goal" :induct (len x))))
+
+(defthm vl-eventdecllist-fix-of-list-fix
+  (equal (vl-eventdecllist-fix (list-fix x))
+         (list-fix (vl-eventdecllist-fix x)))
+  :hints(("Goal" :induct (len x))))
+
+(defthm vl-portdecllist-fix-of-list-fix
+  (equal (vl-portdecllist-fix (list-fix x))
+         (list-fix (vl-portdecllist-fix x)))
+  :hints(("Goal" :induct (len x))))
+
+(defthm vl-paramdecllist-fix-of-list-fix
+  (equal (vl-paramdecllist-fix (list-fix x))
+         (list-fix (vl-paramdecllist-fix x)))
+  :hints(("Goal" :induct (len x))))
+
+(defthm vl-fundecllist-fix-of-list-fix
+  (equal (vl-fundecllist-fix (list-fix x))
+         (list-fix (vl-fundecllist-fix x)))
+  :hints(("Goal" :induct (len x))))
+
+(defthm vl-taskdecllist-fix-of-list-fix
+  (equal (vl-taskdecllist-fix (list-fix x))
+         (list-fix (vl-taskdecllist-fix x)))
+  :hints(("Goal" :induct (len x))))
+
+(defthm vl-modinstlist-fix-of-list-fix
+  (equal (vl-modinstlist-fix (list-fix x))
+         (list-fix (vl-modinstlist-fix x)))
+  :hints(("Goal" :induct (len x))))
+
+(defthm vl-modulelist-fix-of-list-fix
+  (equal (vl-modulelist-fix (list-fix x))
+         (list-fix (vl-modulelist-fix x)))
+  :hints(("Goal" :induct (len x))))
+
 
 (def-vl-filter-by-name netdecl)
 (def-vl-filter-by-name regdecl)
@@ -396,6 +393,7 @@ filter-long
 (def-vl-filter-by-name paramdecl)
 (def-vl-filter-by-name fundecl)
 (def-vl-filter-by-name taskdecl)
+
 
 
 (def-vl-filter-by-name module
@@ -411,12 +409,19 @@ vl-remove-unnecessary-modules), and @(see vl-design-propagate-errors).</p>"
 whereas @('vl-keep-modules') has to recur over the entire list of
 modules.</p>")
 
-(defthm no-duplicatesp-equal-of-vl-modulelist->names-of-vl-delete-modules
-  (implies (force (no-duplicatesp-equal (vl-modulelist->names mods)))
-           (no-duplicatesp-equal
-            (vl-modulelist->names
-             (vl-delete-modules names mods))))
-  :hints(("Goal" :in-theory (enable vl-delete-modules))))
+(encapsulate
+  ()
+  (local (defthm crock
+           (implies (not (member a (vl-modulelist->names mods)))
+                    (not (member a (vl-modulelist->names (vl-delete-modules names mods)))))
+           :hints(("Goal" :in-theory (enable vl-delete-modules)))))
+
+  (defthm no-duplicatesp-equal-of-vl-modulelist->names-of-vl-delete-modules
+    (implies (force (no-duplicatesp-equal (vl-modulelist->names mods)))
+             (no-duplicatesp-equal
+              (vl-modulelist->names
+               (vl-delete-modules names mods))))
+    :hints(("Goal" :in-theory (enable vl-delete-modules)))))
 
 (def-vl-filter-by-name modinst
   :accessor vl-modinst->modname
@@ -427,4 +432,25 @@ modules.</p>")
   :accessor vl-modinst->instname
   :short-name "instname"
   :suffix modinsts-by-instname)
+
+
+
+(define vl-filter-modinsts-by-modname+ ((names string-listp)
+                                        (x     vl-modinstlist-p)
+                                        (fal   (equal fal (make-lookup-alist names))))
+  :short "Same as @(see vl-filter-modinsts-by-modname+), but requires that the
+          fast alist of @('names') be provided instead of recomputing it."
+  :enabled t
+  (mbe :logic (vl-filter-modinsts-by-modname names x)
+       :exec (b* (((when (atom names))
+                   (mv nil (redundant-list-fix x)))
+                  ((when (atom x)) (mv nil nil))
+                  ((local-stobjs nrev nrev2)
+                   (mv yes no nrev nrev2))
+                  ((mv nrev nrev2)
+                   (vl-fast-filter-modinsts-by-modname names fal x nrev nrev2))
+                  (- (fast-alist-free fal))
+                  ((mv yes nrev) (nrev-finish nrev))
+                  ((mv no nrev2) (nrev-finish nrev2)))
+               (mv yes no nrev nrev2))))
 

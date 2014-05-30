@@ -110,11 +110,12 @@ so that later transforms just need to deal with compatible assignments.</p>")
 
 (local (xdoc::set-default-parents stmttemps))
 
-(define vl-assignstmt-stmttemps ((x     vl-assignstmt-p)
+(define vl-assignstmt-stmttemps ((x     vl-stmt-p)
                                  (delta vl-delta-p)
                                  (elem  vl-modelement-p))
-  :returns (mv (new-x vl-assignstmt-p :hyp :fguard)
-               (delta vl-delta-p      :hyp :fguard))
+  :guard (eq (vl-stmt-kind x) :vl-assignstmt)
+  :returns (mv (new-x vl-stmt-p  :hyp :fguard)
+               (delta vl-delta-p :hyp :fguard))
   :short "Introduce temp wires for right-hand sides."
 
   (b* (((vl-assignstmt x) x)
@@ -167,15 +168,14 @@ so that later transforms just need to deal with compatible assignments.</p>")
 (define vl-ifstmt-stmttemps
   ((x     "any statement, but we only rewrite it when it's an if statement;
            this makes writing @(see vl-stmt-stmttemps) very simple."
-          (and (vl-stmt-p x)
-               (vl-compoundstmt-p x)))
+          vl-stmt-p)
    (delta vl-delta-p)
    (elem  vl-modelement-p))
   :returns (mv (new-x vl-stmt-p :hyp :fguard)
                (delta vl-delta-p :hyp :fguard))
   :short "Introduce temp wires for if-statement conditions."
 
-  (b* (((unless (vl-ifstmt-p x))
+  (b* (((unless (eq (vl-stmt-kind x) :vl-ifstmt))
         ;; This makes the guards/basic-checks stuff for the caller very easy.
         (mv x delta))
 
@@ -228,10 +228,10 @@ so that later transforms just need to deal with compatible assignments.</p>")
     :returns (mv (new-x vl-stmt-p :hyp :fguard)
                  (delta vl-delta-p :hyp :fguard))
     :verify-guards nil
-    :measure (two-nats-measure (acl2-count x) 1)
+    :measure (vl-stmt-count x)
     :flag :stmt
-    (b* (((when (vl-fast-atomicstmt-p x))
-          (if (vl-fast-assignstmt-p x)
+    (b* (((when (vl-atomicstmt-p x))
+          (if (eq (vl-stmt-kind x) :vl-assignstmt)
               (vl-assignstmt-stmttemps x delta elem)
             (mv x delta)))
          (substmts            (vl-compoundstmt->stmts x))
@@ -248,7 +248,7 @@ so that later transforms just need to deal with compatible assignments.</p>")
                         :hyp :fguard)
                  (delta vl-delta-p :hyp :fguard))
     :verify-guards nil
-    :measure (two-nats-measure (acl2-count x) 0)
+    :measure (vl-stmtlist-count x)
     :flag :list
     (b* (((when (atom x))
           (mv nil delta))

@@ -21,9 +21,8 @@
 (in-package "STD")
 (include-book "support")
 (include-book "std/strings/cat" :dir :system)
-(set-state-ok t)
-
 (include-book "centaur/fty/fixtype" :dir :system)
+(set-state-ok t)
 
 (defxdoc defenum
   :parents (std/util)
@@ -215,9 +214,14 @@ fast alist or other schemes, based on the elements it is given.</p>")
                    (concatenate 'string (symbol-name name-without-p) "-EQUIV")
                    name))
 
-       (fix `(defund ,fixname (,x)
-               (declare (xargs :guard t))
-               (if (,name ,x) ,x ',(if defaultp default (car (last members))))))
+       (fix `(defund-inline ,fixname (,x)
+               (declare (xargs :guard (,name ,x)))
+               (mbe :logic
+                    (if (,name ,x)
+                        ,x
+                      ',(if defaultp default (car (last members))))
+                    :exec
+                    ,x)))
 
        (fix-type `(defthm ,(intern-in-package-of-symbol
                             (concatenate 'string "RETURN-TYPE-OF-" (symbol-name name) "-FIX")

@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -22,6 +22,7 @@
 (include-book "warnings")
 (include-book "fmt")
 (local (include-book "../util/arithmetic"))
+(local (std::add-default-post-define-hook :fix))
 
 (define vl-print-warning-text-mode ((x vl-warning-p) &key (ps 'ps))
   :parents (vl-print-warning)
@@ -156,7 +157,7 @@ warnings\".</p>"
         (if (atom x)
             ps
           (vl-ps-seq (vl-println "")
-                     (vl-print modname)
+                     (vl-print-str modname)
                      (vl-print " -- ")
                      (vl-println msg)
                      (vl-print-warnings-aux x)))

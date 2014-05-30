@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -26,7 +26,26 @@
 ; We find it useful to exploit the fact that the name of each module comes
 ; first in its record.  Because of this, and because of the lexicographic style
 ; of the total order, we are able to prove some useful properties below.  These
-; allow us to avoid sorting in certain cases, and so on.
+; allow us to avoid sorting in certain cases.
+
+;; Stupid speed hint
+(local (in-theory (disable VL-ATTS-P-OF-CDR-WHEN-VL-ATTS-P
+                           SUBSETP-EQUAL-WHEN-FIRST-TWO-SAME-YADA-YADA
+                           ACL2::CONSP-OF-CAR-WHEN-ALISTP
+                           ALISTP-WHEN-VL-ATTS-P-REWRITE
+                           VL-ATTS-P-WHEN-SUBSETP-EQUAL
+                           CONS-LISTP-OF-CDR-WHEN-CONS-LISTP
+                           CONSP-OF-CAR-WHEN-CONS-LISTP
+                           CONSP-OF-CAR-WHEN-VL-COMMENTMAP-P
+                           CONSP-WHEN-MEMBER-EQUAL-OF-VL-COMMENTMAP-P
+                           CONSP-WHEN-MEMBER-EQUAL-OF-VL-ATTS-P
+                           CONSP-WHEN-MEMBER-EQUAL-OF-CONS-LISTP
+                           ACL2::CONSP-UNDER-IFF-WHEN-TRUE-LISTP
+                           default-car
+                           default-cdr
+                           (:rules-of-class :type-prescription :here)
+                           (:e tau-system)
+                           )))
 
 (defthmd <<-of-cons
   (equal (<< (cons a b) x)
@@ -45,9 +64,9 @@
            (equal (<< x y)
                   (<< (vl-module->name x)
                       (vl-module->name y))))
-  :hints(("Goal" :in-theory (enable vl-module-p
-                                    vl-module->name
-                                    <<-of-cons))))
+  :hints(("Goal" :in-theory (e/d (vl-module-p
+                                  vl-module->name
+                                  <<-of-cons)))))
 
 (local (in-theory (enable <<-of-cons <<-of-modules)))
 

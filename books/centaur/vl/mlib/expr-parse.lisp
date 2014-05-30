@@ -104,7 +104,7 @@ won't be sized, may refer to invalid wires, etc.</p>"
           (b* ((expr (vl-parse-expr-from-str "foo[3]"))
                ((unless (and expr
                              (vl-expr-p expr)
-                             (vl-nonatom-p expr)
+                             (not (vl-atom-p expr))
                              (equal (vl-nonatom->op expr) :vl-index)))
                 (er hard? '|foo[3]| "Expected index into foo"))
                ((list from idx) (vl-nonatom->args expr)))
@@ -120,7 +120,7 @@ won't be sized, may refer to invalid wires, etc.</p>"
 // and whitespace"))
                ((unless (and expr
                              (vl-expr-p expr)
-                             (vl-nonatom-p expr)
+                             (not (vl-atom-p expr))
                              (equal (vl-nonatom->op expr) :vl-partselect-colon)))
                 (er hard? '|foo[3:0]| "Expected partselect"))
                ((list from msb lsb) (vl-nonatom->args expr)))

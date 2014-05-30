@@ -20,9 +20,10 @@
 
 (in-package "VL")
 (include-book "../parsetree")
+(include-book "expr-tools")
+(include-book "stmt-tools")
 (local (include-book "../util/arithmetic"))
-
-; BOZO move this whole file to mlib?
+(local (std::add-default-post-define-hook :fix))
 
 (defxdoc substitution
   :parents (mlib)
@@ -40,12 +41,17 @@ substitution to be more generally useful, and prefer to use fast alists.</p>")
 
 (local (xdoc::set-default-parents substitution))
 
+(fty::defalist vl-sigma
+  :key-type stringp
+  :val-type vl-expr-p)
+
 (defalist vl-sigma-p (x)
   :short "An alist mapping strings to expressions, used in @(see substitution)."
   :key (stringp x)
   :val (vl-expr-p x)
   :keyp-of-nil nil
-  :valp-of-nil nil)
+  :valp-of-nil nil
+  :already-definedp t)
 
 (defthm vl-exprlist-p-of-alist-vals-when-vl-sigma-p
   (implies (vl-sigma-p x)
@@ -58,8 +64,6 @@ substitution to be more generally useful, and prefer to use fast alists.</p>")
                 (force (vl-exprlist-p exprs)))
            (vl-sigma-p (pairlis$ strs exprs)))
   :hints(("Goal" :in-theory (enable (:induction pairlis$)))))
-
-
 
 (defines vl-expr-subst
   :short "Substitute into a @(see vl-expr-p)."
@@ -74,26 +78,26 @@ attributes is left up to the implementation.</p>"
 
   (define vl-expr-subst ((x     vl-expr-p)
                          (sigma vl-sigma-p))
-    :returns (new-x vl-expr-p :hyp :fguard)
+    :returns (new-x vl-expr-p)
     :verify-guards nil
-    :measure (two-nats-measure (acl2-count x) 1)
+    :measure (vl-expr-count x)
     :flag :expr
-    (if (vl-fast-atom-p x)
-        (let ((guts (vl-atom->guts x)))
-          (if (vl-fast-id-p guts)
-              (or (cdr (hons-get (vl-id->name guts) sigma))
-                  x)
-            x))
-      (let ((args-prime (vl-exprlist-subst (vl-nonatom->args x) sigma)))
-        (change-vl-nonatom x :args args-prime))))
+    (b* ((x     (vl-expr-fix x))
+         (sigma (vl-sigma-fix sigma))
+         ((when (vl-fast-atom-p x))
+          (let ((guts (vl-atom->guts x)))
+            (if (vl-fast-id-p guts)
+                (or (cdr (hons-get (vl-id->name guts) sigma))
+                    x)
+              x)))
+         (args-prime (vl-exprlist-subst (vl-nonatom->args x) sigma)))
+      (change-vl-nonatom x :args args-prime)))
 
   (define vl-exprlist-subst ((x     vl-exprlist-p)
                              (sigma vl-sigma-p))
-    :returns (new-x (and (implies (and (force (vl-exprlist-p x))
-                                       (force (vl-sigma-p sigma)))
-                                  (vl-exprlist-p new-x))
+    :returns (new-x (and (vl-exprlist-p new-x)
                          (equal (len new-x) (len x))))
-    :measure (two-nats-measure (acl2-count x) 0)
+    :measure (vl-exprlist-count x)
     :flag :list
     (if (consp x)
         (cons (vl-expr-subst (car x) sigma)
@@ -105,7 +109,8 @@ attributes is left up to the implementation.</p>"
       :already-definedp t
       :nil-preservingp nil))
   ///
-  (verify-guards vl-expr-subst))
+  (verify-guards vl-expr-subst)
+  (deffixequiv-mutual vl-expr-subst))
 
 
 ; Now we can extend our notion of expression substitution across an entire
@@ -113,26 +118,26 @@ attributes is left up to the implementation.</p>"
 ; expressions.  But it's painful and long because of the complication of our
 ; parse tree.
 
-(defmacro def-vl-subst (name &key type body)
+(defmacro def-vl-subst (name &key type body verbosep)
   `(define ,name
      :short ,(cat "Substitute into a @(see " (symbol-name type) ").")
      ((x     ,type)
       (sigma vl-sigma-p))
-     :returns (new-x ,type :hyp :fguard)
+     :returns (new-x ,type)
+     :verbosep ,verbosep
      (declare (ignorable x sigma))
      ,body))
 
 (defmacro def-vl-subst-list (name &key type element)
-  `(defprojection ,name (x sigma)
-     (,element x sigma)
-     :guard (and (,type x)
-                 (vl-sigma-p sigma))
-     :nil-preservingp nil
-     :result-type ,type))
+  `(defprojection ,name ((x ,type)
+                         (sigma vl-sigma-p))
+     :returns (new-x ,type)
+     (,element x sigma)))
 
 (def-vl-subst vl-maybe-expr-subst
   :type vl-maybe-expr-p
-  :body (and x (vl-expr-subst x sigma)))
+  :body (and x
+             (vl-expr-subst x sigma)))
 
 (def-vl-subst vl-range-subst
   :type vl-range-p
@@ -274,11 +279,10 @@ attributes is left up to the implementation.</p>"
 
 (def-vl-subst vl-arguments-subst
   :type vl-arguments-p
-  :body (vl-arguments
-         (vl-arguments->namedp x)
-         (if (vl-arguments->namedp x)
-             (vl-namedarglist-subst (vl-arguments->args x) sigma)
-           (vl-plainarglist-subst (vl-arguments->args x) sigma))))
+  :body
+  (vl-arguments-case x
+    :named (make-vl-arguments-named :args (vl-namedarglist-subst x.args sigma))
+    :plain (make-vl-arguments-plain :args (vl-plainarglist-subst x.args sigma))))
 
 (def-vl-subst vl-modinst-subst
   :type vl-modinst-p
@@ -330,70 +334,35 @@ attributes is left up to the implementation.</p>"
 
 (def-vl-subst vl-delayoreventcontrol-subst
   :type vl-delayoreventcontrol-p
-  :body (case (tag x)
-          (:vl-delaycontrol (vl-delaycontrol-subst x sigma))
-          (:vl-eventcontrol (vl-eventcontrol-subst x sigma))
-          (:vl-repeat-eventcontrol (vl-repeateventcontrol-subst x sigma))))
+  :body (b* ((x (vl-delayoreventcontrol-fix x)))
+          (case (tag x)
+            (:vl-delaycontrol (vl-delaycontrol-subst x sigma))
+            (:vl-eventcontrol (vl-eventcontrol-subst x sigma))
+            (otherwise        (vl-repeateventcontrol-subst x sigma)))))
 
 (def-vl-subst vl-maybe-delayoreventcontrol-subst
   :type vl-maybe-delayoreventcontrol-p
   :body (and x
              (vl-delayoreventcontrol-subst x sigma)))
 
-
-(def-vl-subst vl-nullstmt-subst
-  :type vl-nullstmt-p
-  :body x)
-
-(def-vl-subst vl-assignstmt-subst
-  :type vl-assignstmt-p
-  :body (change-vl-assignstmt x
-                              :lvalue (vl-expr-subst (vl-assignstmt->lvalue x) sigma)
-                              :expr (vl-expr-subst (vl-assignstmt->expr x) sigma)
-                              :ctrl (vl-maybe-delayoreventcontrol-subst (vl-assignstmt->ctrl x) sigma)))
-
-(def-vl-subst vl-deassignstmt-subst
-  :type vl-deassignstmt-p
-  :body (change-vl-deassignstmt x
-                                :lvalue (vl-expr-subst (vl-deassignstmt->lvalue x) sigma)))
-
-(def-vl-subst vl-enablestmt-subst
-  :type vl-enablestmt-p
-  :body (change-vl-enablestmt x
-                              :id (vl-expr-subst (vl-enablestmt->id x) sigma)
-                              :args (vl-exprlist-subst (vl-enablestmt->args x) sigma)))
-
-(def-vl-subst vl-disablestmt-subst
-  :type vl-disablestmt-p
-  :body (change-vl-disablestmt x
-                               :id (vl-expr-subst (vl-disablestmt->id x) sigma)))
-
-(def-vl-subst vl-eventtriggerstmt-subst
-  :type vl-eventtriggerstmt-p
-  :body (change-vl-eventtriggerstmt x
-                                    :id (vl-expr-subst (vl-eventtriggerstmt->id x) sigma)))
-
-(def-vl-subst vl-atomicstmt-subst
-  :type vl-atomicstmt-p
-  :body (case (tag x)
-          (:vl-nullstmt         (vl-nullstmt-subst x sigma))
-          (:vl-assignstmt       (vl-assignstmt-subst x sigma))
-          (:vl-deassignstmt     (vl-deassignstmt-subst x sigma))
-          (:vl-enablestmt       (vl-enablestmt-subst x sigma))
-          (:vl-disablestmt      (vl-disablestmt-subst x sigma))
-          (:vl-eventtriggerstmt (vl-eventtriggerstmt-subst x sigma))))
+(defthm vl-maybe-delayoreventcontrol-p-of-nil
+  (iff (vl-maybe-delayoreventcontrol-subst x sigma)
+       x)
+  :hints(("Goal" :in-theory (enable vl-maybe-delayoreventcontrol-subst))))
 
 (def-vl-subst vl-blockitem-subst
   :type vl-blockitem-p
-  :body (case (tag x)
-          (:vl-regdecl   (vl-regdecl-subst x sigma))
-          (:vl-vardecl   (vl-vardecl-subst x sigma))
-          (:vl-eventdecl (vl-eventdecl-subst x sigma))
-          (:vl-paramdecl (vl-paramdecl-subst x sigma))))
+  :body (b* ((x (vl-blockitem-fix x)))
+          (case (tag x)
+            (:vl-regdecl   (vl-regdecl-subst x sigma))
+            (:vl-vardecl   (vl-vardecl-subst x sigma))
+            (:vl-eventdecl (vl-eventdecl-subst x sigma))
+            (otherwise     (vl-paramdecl-subst x sigma)))))
 
 (def-vl-subst-list vl-blockitemlist-subst
   :type vl-blockitemlist-p
   :element vl-blockitem-subst)
+
 
 
 (defines vl-stmt-subst
@@ -401,71 +370,64 @@ attributes is left up to the implementation.</p>"
 
   (define vl-stmt-subst ((x     vl-stmt-p)
                          (sigma vl-sigma-p))
-    :returns (new-x vl-stmt-p :hyp :fguard)
+    :returns (new-x vl-stmt-p)
     :verify-guards nil
-    :measure (two-nats-measure (acl2-count x) 1)
+    :measure (vl-stmt-count x)
     :flag :stmt
-    (if (vl-fast-atomicstmt-p x)
-        (vl-atomicstmt-subst x sigma)
-      (change-vl-compoundstmt
-       x
-       :exprs (vl-exprlist-subst (vl-compoundstmt->exprs x) sigma)
-       :stmts (vl-stmtlist-subst (vl-compoundstmt->stmts x) sigma)
-       :decls (vl-blockitemlist-subst (vl-compoundstmt->decls x) sigma)
-       :ctrl (vl-maybe-delayoreventcontrol-subst (vl-compoundstmt->ctrl x) sigma))))
+    (b* ((x (vl-stmt-fix x)))
+      (if (vl-atomicstmt-p x)
+          (case (vl-stmt-kind x)
+            (:vl-nullstmt x)
+            (:vl-assignstmt
+             (b* (((vl-assignstmt x) x))
+               (change-vl-assignstmt x
+                                     :lvalue (vl-expr-subst x.lvalue sigma)
+                                     :expr (vl-expr-subst x.expr sigma)
+                                     :ctrl (vl-maybe-delayoreventcontrol-subst x.ctrl sigma))))
+            (:vl-deassignstmt
+             (b* (((vl-deassignstmt x) x))
+               (change-vl-deassignstmt x
+                                       :lvalue (vl-expr-subst x.lvalue sigma))))
+            (:vl-enablestmt
+             (b* (((vl-enablestmt x) x))
+               (change-vl-enablestmt x
+                                     :id (vl-expr-subst x.id sigma)
+                                     :args (vl-exprlist-subst x.args sigma))))
+            (:vl-disablestmt
+             (b* (((vl-disablestmt x) x))
+               (change-vl-disablestmt x
+                                      :id (vl-expr-subst x.id sigma))))
+            (otherwise
+             (b* (((vl-eventtriggerstmt x) x))
+               (change-vl-eventtriggerstmt x
+                                           :id (vl-expr-subst x.id sigma)))))
+        (change-vl-compoundstmt
+         x
+         :exprs (vl-exprlist-subst (vl-compoundstmt->exprs x) sigma)
+         :stmts (vl-stmtlist-subst (vl-compoundstmt->stmts x) sigma)
+         :decls (vl-blockitemlist-subst (vl-compoundstmt->decls x) sigma)
+         :ctrl (vl-maybe-delayoreventcontrol-subst (vl-compoundstmt->ctrl x) sigma)))))
 
   (define vl-stmtlist-subst ((x     vl-stmtlist-p)
                              (sigma vl-sigma-p))
-    :returns (new-x (and (implies (and (force (vl-stmtlist-p x))
-                                       (force (vl-sigma-p sigma)))
-                                  (vl-stmtlist-p new-x))
+    :returns (new-x (and (vl-stmtlist-p new-x)
                          (equal (len new-x) (len x))))
     :verify-guards nil
-    :measure (two-nats-measure (acl2-count x) 0)
+    :measure (vl-stmtlist-count x)
     :flag :list
     (if (consp x)
         (cons (vl-stmt-subst (car x) sigma)
               (vl-stmtlist-subst (cdr x) sigma))
       nil))
-
-  :prepwork
-  ((local (defthm lemma-1
-           (implies (and (force (vl-maybe-delayoreventcontrol-p x))
-                         (force (vl-sigma-p sigma)))
-                    (iff (vl-maybe-delayoreventcontrol-subst x sigma)
-                         x))
-           :hints(("Goal"
-                   :in-theory (e/d (vl-maybe-delayoreventcontrol-subst
-                                    vl-maybe-delayoreventcontrol-p)
-                                   (return-type-of-vl-delayoreventcontrol-subst))
-                   :use ((:instance return-type-of-vl-delayoreventcontrol-subst))))))
-
-   (local (defthm lemma-2
-            (implies (and (equal (len args) (len (vl-compoundstmt->stmts x)))
-                          (not (vl-atomicstmt-p x))
-                          (vl-stmtlist-p args)
-                          (vl-stmt-p x)
-                          (vl-sigma-p sigma))
-                     (vl-compoundstmt-basic-checksp
-                      (vl-compoundstmt->type x)
-                      (vl-exprlist-subst (vl-compoundstmt->exprs x) sigma)
-                      args
-                      (vl-compoundstmt->name x)
-                      (vl-blockitemlist-subst (vl-compoundstmt->decls x) sigma)
-                      (vl-maybe-delayoreventcontrol-subst (vl-compoundstmt->ctrl x) sigma)
-                      (vl-compoundstmt->sequentialp x)
-                      (vl-compoundstmt->casetype x)))
-            :hints(("goal"
-                    :in-theory (e/d (vl-compoundstmt-basic-checksp)
-                                    (vl-compoundstmt-basic-checksp-of-vl-compoundstmt))
-                    :use ((:instance vl-compoundstmt-basic-checksp-of-vl-compoundstmt)))))))
-
   ///
   (defprojection vl-stmtlist-subst (x sigma)
     (vl-stmt-subst x sigma)
     :already-definedp t)
 
-  (verify-guards vl-stmt-subst))
+  (verify-guards vl-stmt-subst)
+
+  (deffixequiv-mutual vl-stmt-subst))
+
 
 (def-vl-subst vl-always-subst
   :type vl-always-p

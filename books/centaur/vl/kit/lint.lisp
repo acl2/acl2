@@ -59,6 +59,7 @@
 (include-book "../transforms/xf-resolve-indexing")
 (include-book "../transforms/xf-resolve-ranges")
 (include-book "../transforms/xf-replicate-insts")
+(include-book "../transforms/xf-selresolve")
 (include-book "../transforms/xf-sizing")
 (include-book "../transforms/xf-unparameterize")
 (include-book "../transforms/xf-unused-reg")

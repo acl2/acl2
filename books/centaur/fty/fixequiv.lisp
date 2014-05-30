@@ -230,7 +230,6 @@ syntax of these parameters is extended, as shown in the following examples:</p>
 (defun fixequiv-type-from-guard (guard)
   (and (std::tuplep 2 guard)
        (car guard)))
-    
 
 (defun fixequiv-from-define-formal (fn formal hints state)
   (b* (((std::formal fm) formal)
@@ -293,6 +292,41 @@ syntax of these parameters is extended, as shown in the following examples:</p>
                 (fixequivs-from-explicit-args fn (cdr args) gutsformals formals hints state))
         (fixequivs-from-explicit-args fn (cdr args) gutsformals formals hints state)))))
 
+(defun deffixequiv-expand-hint-fn (fn stable-under-simplificationp id clause)
+  (b* (((unless (and stable-under-simplificationp
+                     ;; Checks whether we're at a top-level induction
+                     (equal (car id) '(0 1))))
+        nil)
+       (concl (car (last clause)))
+       (hint
+        (b* (((when (and (consp concl)
+                         (eq (car concl) 'not)
+                         (consp (second concl))
+                         (eq (car (second concl)) fn)))
+              (list :expand (list (second concl))))
+             ((unless (and (consp concl)
+                           (eq (car concl) 'equal)))
+              nil)
+             (lhs (second concl))
+             (rhs (third concl))
+             (lhs-hint (if (and (consp lhs)
+                                (eq (car lhs) fn))
+                           (list lhs)
+                         nil))
+             (rhs-hint (if (and (consp rhs)
+                                (eq (car rhs) fn))
+                           (list rhs)
+                         nil))
+             ((unless (or lhs-hint rhs-hint))
+              nil))
+          (list :expand (append lhs-hint rhs-hint))))
+       ((unless hint)
+        nil))
+    (observation-cw 'deffixequiv "Giving expand hint ~x0.~%" hint)
+    hint))
+
+(defmacro deffixequiv-expand-hint (fn)
+  `(deffixequiv-expand-hint-fn ',fn stable-under-simplificationp id clause))
 
 (defun deffixequiv-fn (fn kw-args state)
   (b* ((__function__ 'deffixequiv)
@@ -307,7 +341,10 @@ syntax of these parameters is extended, as shown in the following examples:</p>
        ;; need to be if the arg types are given explicitly.
        (gutsformals (and guts (std::defguts->formals guts)))
        (args (cdr (assoc :args kwd-alist)))
-       (hints (cdr (assoc :hints kwd-alist)))
+       (hints (if (assoc :hints kwd-alist)
+                  (cdr (assoc :hints kwd-alist))
+                ;; try new default hint
+                `((deffixequiv-expand-hint ,fn))))
        ((when (and (not args) (not guts)))
         (raise "Deffixequiv requires either explicit types for the arguments ~
                 to be considered, or for the function to have DEFINE info, ~

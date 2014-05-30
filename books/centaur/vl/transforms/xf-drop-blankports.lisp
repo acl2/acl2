@@ -77,7 +77,7 @@ ports because we expect @(see argresolve) to have done that.</p>")
                    :msg "~a0 refers to undefined module ~m1."
                    :args (list x x.modname))
             x))
-       ((when (vl-arguments->namedp x.portargs))
+       ((unless (eq (vl-arguments-kind x.portargs) :plain))
         (mv (fatal :type :vl-programming-error
                    :msg "~a0: expected all modules to be using plain ~
                          arguments, but found named arguments.  Did you ~
@@ -86,7 +86,7 @@ ports because we expect @(see argresolve) to have done that.</p>")
             x))
 
        (ports         (vl-module->ports target-mod))
-       (plainargs     (vl-arguments->args x.portargs))
+       (plainargs     (vl-arguments-plain->args x.portargs))
        ((unless (same-lengthp plainargs ports))
         (mv (fatal :type :vl-bad-instance
                    :msg "~a0: bad arity.  Expected ~x1 arguments but found ~
@@ -94,7 +94,7 @@ ports because we expect @(see argresolve) to have done that.</p>")
                    :args (list x (len ports) (len plainargs)))
             x))
        (new-plainargs (vl-plainarglist-drop-blankports plainargs ports))
-       (new-arguments (vl-arguments nil new-plainargs))
+       (new-arguments (make-vl-arguments-plain :args new-plainargs))
        (new-x         (change-vl-modinst x :portargs new-arguments)))
     (mv (ok) new-x)))
 

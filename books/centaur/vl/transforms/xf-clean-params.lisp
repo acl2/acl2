@@ -111,17 +111,17 @@ structure."
   ((useless   vl-useless-params-p)
    (arguments vl-arguments-p))
   :returns (new-arguments vl-arguments-p :hyp (force (vl-arguments-p arguments)))
-  (b* (((vl-arguments arguments) arguments)
-       ((vl-useless-params useless) useless))
-    (if arguments.namedp
-        (vl-arguments t
-                      (vl-namedarglist-elim-useless-params useless.names
-                                                           arguments.args))
-    (vl-arguments nil
-                  (vl-plainarglist-elim-useless-params 0
-                                                       useless.positions
-                                                       arguments.args)))))
-
+  (b* (((vl-useless-params useless) useless))
+    (vl-arguments-case arguments
+      :named
+      (change-vl-arguments-named arguments
+                                 :args (vl-namedarglist-elim-useless-params useless.names
+                                                                            arguments.args))
+      :plain
+      (change-vl-arguments-plain arguments.args
+                                 :args (vl-plainarglist-elim-useless-params 0
+                                                                            useless.positions
+                                                                            arguments.args)))))
 
 (define vl-modinst-elim-useless-params ((x   vl-modinst-p)
                                         (map vl-useless-params-map-p))

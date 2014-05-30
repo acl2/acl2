@@ -20,10 +20,27 @@
 
 (in-package "VL")
 (include-book "../mlib/expr-slice")
+(include-book "../mlib/port-tools")
 (include-book "../mlib/namefactory")
 (include-book "../mlib/find-module")
 (include-book "../mlib/context")
 (local (include-book "../util/arithmetic"))
+(local (in-theory (enable tag-reasoning)))
+(local (std::add-default-post-define-hook :fix))
+
+(local (defthm vl-exprlist-fix-of-take-in-bounds
+         (implies (<= n (len x))
+                  (equal (vl-exprlist-fix (take n x))
+                         (take n (vl-exprlist-fix x))))
+         :hints(("Goal" :in-theory (enable acl2::take-redefinition)))))
+
+(local (defthm vl-exprlist-fix-of-nthcdr
+         (equal (vl-exprlist-fix (nthcdr n x))
+                (nthcdr n (vl-exprlist-fix x)))
+         :hints(("Goal"
+                 :induct (nthcdr n x)
+                 :in-theory (enable nthcdr)))))
+
 
 ; BOZO now that we have VL primitive modules for other gates, it might make the
 ; most sense to try to just eliminate all gates in one fell swoop early in the
@@ -106,14 +123,12 @@ addressed in @(see argument-partitioning).</p>")
   ((n        natp)
    (basename stringp)
    (nf       vl-namefactory-p))
-  :returns (mv (names string-listp     :hyp :fguard)
-               (nf    vl-namefactory-p :hyp :fguard))
+  :returns (mv (names string-listp)
+               (nf    vl-namefactory-p))
   (b* (((when (zp n))
-        (mv nil nf))
-       ((mv name nf)
-        (vl-namefactory-indexed-name basename nf))
-       ((mv others nf)
-        (vl-bad-replicate-names (- n 1) basename nf)))
+        (mv nil (vl-namefactory-fix nf)))
+       ((mv name nf)   (vl-namefactory-indexed-name basename nf))
+       ((mv others nf) (vl-bad-replicate-names (- n 1) basename nf)))
     (mv (cons name others) nf))
   ///
   (defthm len-of-vl-bad-replicate-names
@@ -125,25 +140,17 @@ addressed in @(see argument-partitioning).</p>")
 (define vl-replicated-instnames
   :short "Generate the new names that we'll use for @(see replicate)d
           instances."
-  ((instname  maybe-stringp
-              "Name of the instance array we are replicating.")
-   (instrange (and (vl-range-p instrange)
-                   (vl-range-resolved-p instrange))
-              "Its associated range.")
+  ((instname  maybe-stringp     "Name of the instance array we are replicating.")
+   (instrange vl-range-p        "Its associated range.")
    (nf        vl-namefactory-p  "For generating fresh names.")
    (ctx       vl-modelement-p   "Context for warnings.")
    (warnings  vl-warninglist-p  "Ordinary @(see warnings) accumulator."))
+  :guard (vl-range-resolved-p instrange)
   :returns
   (mv (warnings vl-warninglist-p)
       (names    "The names to be used for the new instances."
-                string-listp
-                :hyp (and (force (maybe-stringp instname))
-                          (force (vl-namefactory-p nf))))
-      (nf       vl-namefactory-p
-                :hyp (and (force (maybe-stringp instname))
-                          (force (vl-range-p instrange))
-                          (force (vl-range-resolved-p instrange))
-                          (force (vl-namefactory-p nf)))))
+                string-listp)
+      (nf       vl-namefactory-p))
 
   :long "<p>This function is responsible for naming the new gate or module
 instances that are going to be created when we split up an instance array.  We
@@ -167,7 +174,9 @@ significant bits comes first.  If the range is like @('[N:0]'), then we return
 @('foo_N, ..., foo_0').  If the range goes the other way, i.e., @('[0:N]'),
 then we return @('foo_0, ..., foo_N').</p>"
 
-  (b* ((left     (vl-resolved->val (vl-range->msb instrange)))
+  (b* ((instname (maybe-string-fix instname))
+       (ctx      (vl-modelement-fix ctx))
+       (left     (vl-resolved->val (vl-range->msb instrange)))
        (right    (vl-resolved->val (vl-range->lsb instrange)))
        (low      (min left right))
        (high     (max left right))
@@ -205,7 +214,6 @@ then we return @('foo_0, ..., foo_N').</p>"
               (vl-range-size instrange)))
     :hints(("Goal" :in-theory (e/d (vl-range-size))))))
 
-
 (define vl-replicate-orig-instnames1
   :parents (vl-replicate-orig-instnames)
   ((low natp)
@@ -233,8 +241,8 @@ then we return @('foo_0, ..., foo_N').</p>"
   :short "Generate the Verilog-style names of the original instances (e.g.,
           names with square-bracketed indices)."
   ((instname maybe-stringp)
-   (instrange (and (vl-range-p instrange)
-                   (vl-range-resolved-p instrange))))
+   (instrange vl-range-p))
+  :guard (vl-range-resolved-p instrange)
   :returns (names string-listp "Verilog-style names in <i>highest-first order</i>,
                                 e.g., @('(\"foo[5]\" \"foo[4]\" \"foo[3]\")').")
   :long "<p>These names are just going to be attributes for the new instances,
@@ -260,7 +268,6 @@ then we return @('foo_0, ..., foo_N').</p>"
     (equal (len (vl-replicate-orig-instnames instname instrange))
            (vl-range-size instrange))
     :hints(("Goal" :in-theory (enable vl-range-size)))))
-
 
 (defxdoc argument-partitioning
   :short "How arguments to instance arrays are split up and given to the
@@ -361,12 +368,10 @@ are replicated.</p>")
   :short "Group up a list of bits into N-bit concatenations."
 
   ((n "A positive number that must evenly divide @('(len x)')." posp)
-   (x "A list of 1-bit unsigned expressions."
-      (and (vl-exprlist-p x)
-           (all-equalp 1 (vl-exprlist->finalwidths x)))))
-  :guard (eql (mod (len x) n) 0)
-  :returns (new-exprs vl-exprlist-p :hyp (force (vl-exprlist-p x))
-                      "Concatenations of @('n') successive bits of @('x').")
+   (x "A list of 1-bit unsigned expressions." vl-exprlist-p))
+  :guard (and (eql (mod (len x) n) 0)
+              (all-equalp 1 (vl-exprlist->finalwidths x)))
+  :returns (new-exprs vl-exprlist-p "Concatenations of @('n') successive bits of @('x').")
   :measure (len x)
 
   :long "<p>The basic way that we partition an expression into @('N')-bit
@@ -425,7 +430,7 @@ has some merit.</li>
 don't currently use it here, in case it has any bugs, but perhaps we should
 re-integrate it.</p>"
 
-  (b* ((n (lnfix n))
+  (b* ((n (lposfix n))
        ((when (eql n 0))
         nil)
        ((when (< (len x) n))
@@ -446,28 +451,28 @@ re-integrate it.</p>"
                      (equal (vl-exprlist->finalwidths (nthcdr n x))
                             (replicate (- (len x) n) 1)))
             :hints(("Goal" :in-theory (enable replicate nthcdr))))))
-
   ///
+  (local (in-theory (enable vl-partition-msb-bitslices)))
+
   (defthm len-of-vl-partition-msb-bitslices
-    (implies (force (posp n))
-             (equal (len (vl-partition-msb-bitslices n x))
-                    (floor (len x) n))))
+    (equal (len (vl-partition-msb-bitslices n x))
+           (floor (len x) (pos-fix n))))
 
   (defthm vl-exprlist->finalwidths-of-vl-partition-msb-bitslices
-    (implies (force (posp n))
-             (equal (vl-exprlist->finalwidths (vl-partition-msb-bitslices n x))
-                    (replicate (floor (len x) n) n)))
+    (equal (vl-exprlist->finalwidths (vl-partition-msb-bitslices n x))
+           (replicate (floor (len x) (pos-fix n))
+                      (pos-fix n)))
     :hints(("Goal" :in-theory (enable replicate))))
 
   (defthm vl-exprlist->finaltypes-of-vl-partition-msb-bitslices
-    (implies (force (posp n))
-             (equal (vl-exprlist->finaltypes (vl-partition-msb-bitslices n x))
-                    (replicate (floor (len x) n) :vl-unsigned)))
+    (equal (vl-exprlist->finaltypes (vl-partition-msb-bitslices n x))
+           (replicate (floor (len x) (pos-fix n)) :vl-unsigned))
     :hints(("Goal" :in-theory (enable replicate))))
 
   (local (defthm c0
            (implies (and (all-equalp 1 (vl-exprlist->finalwidths x))
-                         (<= (nfix n) (len x)))
+                         (natp n)
+                         (<= n (len x)))
                     (all-equalp 1 (vl-exprlist->finalwidths (take n x))))
            :hints(("goal"
                    :in-theory (e/d (acl2::take-redefinition)
@@ -482,8 +487,7 @@ re-integrate it.</p>"
                     (not (member-equal nil (vl-exprlist->finalwidths x))))))
 
   (defthm vl-exprlist-welltyped-p-of-vl-partition-msb-bitslices
-    (implies (and (force (vl-exprlist-p x))
-                  (force (vl-exprlist-welltyped-p x))
+    (implies (and (force (vl-exprlist-welltyped-p x))
                   (force (all-equalp 1 (vl-exprlist->finalwidths x))))
              (vl-exprlist-welltyped-p (vl-partition-msb-bitslices n x)))
     :hints(("Goal" :in-theory (e/d (vl-expr-welltyped-p)
@@ -503,15 +507,12 @@ re-integrate it.</p>"
    (elem       vl-modelement-p  "Context for warnings.")
    (warnings   vl-warninglist-p "Ordinary @(see warnings) accumulator."))
 
+  :verbosep t
+
   :returns
   (mv (okp       booleanp :rule-classes :type-prescription)
       (warnings  vl-warninglist-p)
-      (plainargs vl-plainarglist-p
-                 :hyp (and (force (vl-plainarg-p arg))
-                           (force (posp port-width))
-                           (force (posp insts))
-                           (force (vl-module-p mod))
-                           (force (equal ialist (vl-moditem-alist mod))))))
+      (plainargs vl-plainarglist-p))
 
   :long "<p>Our goal is to create a list of the @('insts')-many plainargs which
 this port is to be partitioned into.  On success, @('plainargs') will be a list
@@ -525,20 +526,28 @@ vl-expr-welltyped-p)'>well-typed</see>, and <see topic='@(url
 expr-slicing)'>sliceable</see>), and its width must be compatible with the
 width of the port, as described in @(see argument-partitioning).</p>"
 
-  (b* ((expr (vl-plainarg->expr arg))
-       ((unless expr)
+  (b* ((arg        (vl-plainarg-fix arg))
+       (port-width (lposfix port-width))
+       (insts      (lposfix insts))
+       (mod        (vl-module-fix mod))
+       (elem       (vl-modelement-fix elem))
+       (warnings   (vl-warninglist-fix warnings))
+
+       ((vl-plainarg arg) arg)
+
+       ((unless arg.expr)
         ;; Special case for blanks: If we have a blank in an array of
         ;; instances, we just want to send blank to each member of the
         ;; instance.
         (mv t (ok) (replicate insts arg)))
 
-       (expr-width (vl-expr->finalwidth expr))
+       (expr-width (vl-expr->finalwidth arg.expr))
        ((unless (posp expr-width))
         (mv nil
             (fatal :type :vl-bad-argument
                    :msg "~a0: expected argument widths to be computed, but ~
                          found argument ~a1 without any width assigned."
-                   :args (list elem expr))
+                   :args (list elem arg.expr))
             nil))
 
        ((when (eql expr-width port-width))
@@ -558,27 +567,27 @@ width of the port, as described in @(see argument-partitioning).</p>"
                          compatible with this array instance.  (Since the ~
                          port has width ~x3, the only acceptable widths are ~
                          ~x3 and ~x4.)"
-                   :args (list elem expr expr-width port-width
+                   :args (list elem arg.expr expr-width port-width
                                (* port-width insts)))
             nil))
 
-       ((unless (vl-expr-sliceable-p expr))
+       ((unless (vl-expr-sliceable-p arg.expr))
         (mv nil
             (fatal :type :vl-bad-argument
                    :msg "~a0: trying to slice an unsliceable argument, ~a1."
-                   :args (list elem expr))
+                   :args (list elem arg.expr))
             nil))
 
-       ((unless (vl-expr-welltyped-p expr))
+       ((unless (vl-expr-welltyped-p arg.expr))
         (mv nil
             (fatal :type :vl-bad-argument
                    :msg "~a0: trying to slice up ill-typed argument ~a1."
-                   :args (list elem expr))
+                   :args (list elem arg.expr))
             nil))
 
        ;; Everything is looking good, try to slice the expression into bits.
        ((mv successp warnings bits)
-        (vl-msb-bitslice-expr expr mod ialist warnings))
+        (vl-msb-bitslice-expr arg.expr mod ialist warnings))
 
        ((unless successp)
         ;; This shouldn't really occur in practice, but if it does occur we've
@@ -595,21 +604,16 @@ width of the port, as described in @(see argument-partitioning).</p>"
        ;; Now we just have to turn all these expressions into new plainargs,
        ;; instead of just expressions.
        (plainargs (vl-exprlist-to-plainarglist partitions
-                                               :dir (vl-plainarg->dir arg)
-                                               :atts (vl-plainarg->atts arg))))
+                                               :dir arg.dir
+                                               :atts arg.atts)))
 
     (mv t warnings plainargs))
   ///
   (defthm len-of-vl-partition-plainarg
     (let ((ret (vl-partition-plainarg arg port-width insts mod ialist elem warnings)))
-      (implies (and (mv-nth 0 ret)
-                    (force (vl-plainarg-p arg))
-                    (force (posp port-width))
-                    (force (posp insts))
-                    (force (vl-module-p mod))
-                    (force (equal ialist (vl-moditem-alist mod))))
+      (implies (mv-nth 0 ret)
                (equal (len (mv-nth 2 ret))
-                      insts))))
+                      (pos-fix insts)))))
 
   ;; hrmn, blank handling ruins nice theorms about width/type...
   ;; could write a nice predicate, but whatever.
@@ -631,13 +635,7 @@ width of the port, as described in @(see argument-partitioning).</p>"
   :returns
   (mv (successp booleanp :rule-classes :type-prescription)
       (warnings vl-warninglist-p)
-      (plainarglists vl-plainarglistlist-p
-                     :hyp (and (force (vl-plainarglist-p args))
-                               (force (pos-listp port-widths))
-                               (force (same-lengthp args port-widths))
-                               (force (posp insts))
-                               (force (vl-module-p mod))
-                               (force (equal ialist (vl-moditem-alist mod))))))
+      (plainarglists vl-plainarglistlist-p))
 
   :long "<p>Supposing that @('args') has length <i>N</i>, the @('result') we
 return on success is a list of <i>N</i> plainarglists (one for each argument),
@@ -663,13 +661,8 @@ of the @('result') is the partitioning of the corresponding argument.</p>"
   (defthm all-have-len-of-vl-partition-plainarglist
     (let ((ret (vl-partition-plainarglist args port-widths insts mod ialist elem warnings)))
       (implies (and (mv-nth 0 ret)
-                    (force (vl-plainarglist-p args))
-                    (force (pos-listp port-widths))
-                    (force (same-lengthp args port-widths))
-                    (force (posp insts))
-                    (force (vl-module-p mod))
-                    (force (equal ialist (vl-moditem-alist mod))))
-               (all-have-len (mv-nth 2 ret) insts)))))
+                    (equal len (pos-fix insts)))
+               (all-have-len (mv-nth 2 ret) len)))))
 
 
 (define vl-reorient-partitioned-args
@@ -710,8 +703,8 @@ of the slices, e.g., </p>
 by slice, rather than by argument.</p>"
   ///
   (defthm vl-plainarglistlist-p-of-vl-reorient-partitioned-args
-    (implies (and (vl-plainarglistlist-p lists)
-                  (all-have-len lists n))
+    (implies (and (force (vl-plainarglistlist-p lists))
+                  (force (all-have-len lists n)))
              (vl-plainarglistlist-p (vl-reorient-partitioned-args lists n))))
 
   (defthm all-have-len-of-vl-reorient-partitioned-args
@@ -755,7 +748,8 @@ by slice, rather than by argument.</p>"
    (atts vl-atts-p)
    (loc vl-location-p))
   :guard (same-lengthp names args)
-  :returns (gates vl-gateinstlist-p :hyp :fguard)
+  :returns (gates vl-gateinstlist-p)
+  :hooks nil
 
   (if (atom args)
       nil
@@ -785,14 +779,15 @@ by slice, rather than by argument.</p>"
    (warnings vl-warninglist-p  "Ordinary @(see warnings) accumulator."))
   :returns
   (mv (warnings      vl-warninglist-p)
-      (new-gateinsts vl-gateinstlist-p :hyp :fguard
-                     "New gates that will replace @('x').")
-      (nf            vl-namefactory-p :hyp :fguard))
+      (new-gateinsts vl-gateinstlist-p "New gates that will replace @('x').")
+      (nf            vl-namefactory-p))
   :long "<p>If @('x') has a range, i.e., it is an array of gate instances, then
 we try to split it into a list of @('nil')-ranged, simple gates.  The
 @('new-gateinsts') should replace @('x') in the module.</p>"
 
-  (b* (((vl-gateinst x) x)
+  (b* ((x  (vl-gateinst-fix x))
+       (nf (vl-namefactory-fix nf))
+       ((vl-gateinst x) x)
        ((unless x.range)
         ;; There is no range, so this is not an array of gates; we don't
         ;; need to do anything.
@@ -867,10 +862,10 @@ vl-gateinstlist-p)."
    (warnings vl-warninglist-p))
   :returns
   (mv (warnings      vl-warninglist-p)
-      (new-gateinsts vl-gateinstlist-p :hyp :fguard "Replacements for @('x').")
-      (nf            vl-namefactory-p :hyp :fguard))
+      (new-gateinsts vl-gateinstlist-p "Replacements for @('x').")
+      (nf            vl-namefactory-p))
   (b* (((when (atom x))
-        (mv (ok) nil nf))
+        (mv (ok) nil (vl-namefactory-fix nf)))
        ((mv warnings car-prime nf)
         (vl-replicate-gateinst (car x) nf mod ialist warnings))
        ((mv warnings cdr-prime nf)
@@ -886,9 +881,9 @@ vl-gateinstlist-p)."
   :short "Convert each plainarglist in a @(see vl-plainarglistlist-p) into an
 @(see vl-arguments-p)."
   ((x vl-plainarglistlist-p))
-  :returns (args vl-argumentlist-p :hyp :fguard)
+  :returns (args vl-argumentlist-p)
   (if (consp x)
-      (cons (vl-arguments nil (car x))
+      (cons (make-vl-arguments-plain :args (car x))
             (vl-plainarglists-to-arguments (cdr x)))
     nil)
   ///
@@ -908,20 +903,19 @@ vl-gateinstlist-p)."
    (ialist      (equal ialist (vl-moditem-alist mod)) "For fast lookups.")
    (elem        vl-modelement-p  "Context for warnings.")
    (warnings    vl-warninglist-p "Ordinary @(see warnings) accumulator."))
-
+  :hooks nil
   :returns
   (mv (successp booleanp :rule-classes :type-prescription)
       (warnings vl-warninglist-p)
       (arg-lists (and (vl-argumentlist-p arg-lists)
-                      (implies successp
-                               (equal (len arg-lists) insts)))
-                 :hyp :fguard
+                      (implies (and successp
+                                    (equal len (pos-fix insts)))
+                               (equal (len arg-lists)
+                                      len)))
                  "The new arguments to give to each (split up) module instance."))
 
-  (b* ((namedp  (vl-arguments->namedp args))
-       (actuals (vl-arguments->args args))
-
-       ((when namedp)
+  (b* ((insts (pos-fix insts))
+       ((when (eq (vl-arguments-kind args) :named))
         (mv nil
             (fatal :type :vl-bad-arguments
                    :msg "~a0: Expected only plain argument lists, but found ~
@@ -929,6 +923,7 @@ vl-gateinstlist-p)."
                    :args (list elem))
             nil))
 
+       (actuals (vl-arguments-plain->args args))
        ((unless (same-lengthp actuals port-widths))
         (mv nil
             (fatal :type :vl-bad-arguments
@@ -966,16 +961,21 @@ vl-gateinstlist-p)."
                                         (len ports))))))
   :long "<p>We fail and cause fatal errors if any port is blank or does not have
          a positive width.</p>"
-  (b* (((when (atom ports))
-        (mv t (ok) nil))
+  :measure (len ports)
+  (b* ((ports    (vl-portlist-fix ports))
+       (warnings (vl-warninglist-fix warnings))
+       (inst     (vl-modinst-fix inst))
 
-       (expr1  (vl-port->expr (car ports)))
+       ((when (atom ports))
+        (mv t warnings nil))
+       (port1  (car ports))
+       (expr1  (vl-port->expr port1))
        (width1 (and expr1 (vl-expr->finalwidth expr1)))
        ((unless (posp width1))
         (mv nil
             (fatal :type :vl-replicate-fail
                    :msg "~a0: width of ~a1 is ~x2; expected a positive number."
-                   :args (list inst (car ports)
+                   :args (list inst port1
                                (and expr1 (vl-expr->finalwidth expr1))))
             nil))
        ((mv successp warnings cdr-sizes)
@@ -998,7 +998,8 @@ vl-gateinstlist-p)."
    (atts      vl-atts-p)
    (loc       vl-location-p))
   :guard (same-lengthp names args)
-  :returns (modinsts vl-modinstlist-p :hyp :fguard)
+  :returns (modinsts vl-modinstlist-p)
+  :hooks nil
   (if (atom args)
       nil
     (cons (make-vl-modinst :instname (car names)
@@ -1109,6 +1110,7 @@ necessary."
    (mod      vl-module-p      "Superior module, for wire width lookups.")
    (ialist   (equal ialist (vl-moditem-alist mod)) "For fast lookups.")
    (warnings vl-warninglist-p "Ordinary @(see warnings) accumulator."))
+  :hooks nil
   :returns
   (mv (warnings     vl-warninglist-p)
       (new-modinsts vl-modinstlist-p :hyp :fguard "Replacements for @('x').")
@@ -1197,6 +1199,7 @@ then we try to split it into a list of @('nil')-ranged, simple instances.  If
    (mod      vl-module-p)
    (ialist   (equal ialist (vl-moditem-alist mod)))
    (warnings vl-warninglist-p))
+  :hooks nil
   :returns (mv (warnings vl-warninglist-p)
                (new-x    vl-modinstlist-p :hyp :fguard)
                (nf       vl-namefactory-p :hyp :fguard))
@@ -1230,11 +1233,14 @@ then we try to split it into a list of @('nil')-ranged, simple instances.  If
   ((x        vl-module-p                           "Module to simplify.")
    (mods     vl-modulelist-p                       "Global list of modules.")
    (modalist (equal modalist (vl-modalist mods))   "For fast lookups."))
-  :returns (new-x vl-module-p :hyp :fguard
+  :returns (new-x vl-module-p
                   "Rewritten version of X, where any gate or module instance
                    arrays have been replaced by an explicit list of
                    instances.")
-  (b* (((when (vl-module->hands-offp x))
+  (b* ((x    (vl-module-fix x))
+       (mods (vl-modulelist-fix mods))
+
+       ((when (vl-module->hands-offp x))
         x)
 
        ((vl-module x) x)
@@ -1265,17 +1271,16 @@ then we try to split it into a list of @('nil')-ranged, simple instances.  If
                                   :warnings warnings)))
     x-prime))
 
-(defprojection vl-modulelist-replicate-aux (x mods modalist)
-  (vl-module-replicate x mods modalist)
-  :guard (and (vl-modulelist-p x)
-              (vl-modulelist-p mods)
-              (equal modalist (vl-modalist mods)))
-  :result-type vl-modulelist-p)
+(defprojection vl-modulelist-replicate-aux ((x        vl-modulelist-p)
+                                            (mods     vl-modulelist-p)
+                                            (modalist (equal modalist (vl-modalist mods))))
+  :returns (new-x vl-modulelist-p)
+  (vl-module-replicate x mods modalist))
 
 (define vl-modulelist-replicate
   :short "Extend @(see vl-module-replicate) across the list of modules."
   ((x vl-modulelist-p))
-  :returns (new-x vl-modulelist-p :hyp :fguard)
+  :returns (new-x vl-modulelist-p)
   (b* ((modalist (vl-modalist x))
        (result   (vl-modulelist-replicate-aux x x modalist)))
     (fast-alist-free modalist)
@@ -1285,7 +1290,6 @@ then we try to split it into a list of @('nil')-ranged, simple instances.  If
   :short "Top-level @(see replicate) transform."
   ((x vl-design-p))
   :returns (new-x vl-design-p)
-  (b* ((x (vl-design-fix x))
-       ((vl-design x) x))
+  (b* (((vl-design x) x))
     (change-vl-design x :mods (vl-modulelist-replicate x.mods))))
 

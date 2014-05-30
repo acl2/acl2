@@ -30,7 +30,7 @@
    &optional
    ((n "current index, for name generation, counts up" natp) '0))
   :guard (same-lengthp q-wires d-wires)
-  :returns (insts vl-modinstlist-p :hyp :fguard)
+  :returns (insts vl-modinstlist-p)
   :parents (vl-make-n-bit-flop)
   :short "Build a list of @('VL_1_BIT_LATCH') instances."
   :long "<p>We produce a list of latch instances like:</p>
@@ -119,16 +119,11 @@ endmodule
 
 
 
-(local (defthm car-of-vl-modulelist
-         (implies (and (vl-modulelist-p x)
-                       (consp x))
-                  (car x))))
-
 (def-vl-modgen vl-make-n-bit-latch-vec (n del)
   :parents (latchcode)
   :short "Generate an N-bit latch module for vector-oriented synthesis."
 
-  :long "<p>We generate basically the following module:
+  :long "<p>We generate basically the following module:</p>
 
 @({
 module VL_n_BIT_d_TICK_LATCH (q, clk, d);
@@ -150,12 +145,16 @@ module VL_n_BIT_d_TICK_LATCH (q, clk, d);
 endmodule
 })"
 
-  :guard (and (posp n) (natp del))
+  :guard (and (posp n)
+              (natp del))
 
   :body
-  (b* ((name        (hons-copy (if (zp del)
-                                   (cat "VL_" (natstr n) "_BIT_LATCH")
-                                 (cat "VL_" (natstr n) "_BIT_" (natstr del) "_TICK_LATCH"))))
+  (b* ((n   (lposfix n))
+       (del (lnfix del))
+
+       (name (hons-copy (if (zp del)
+                            (cat "VL_" (natstr n) "_BIT_LATCH")
+                          (cat "VL_" (natstr n) "_BIT_" (natstr del) "_TICK_LATCH"))))
 
        ((mv q-expr q-port q-portdecl q-netdecl)         (vl-occform-mkport "q" :vl-output n))
        ((mv clk-expr clk-port clk-portdecl clk-netdecl) (vl-occform-mkport "clk" :vl-input 1))
@@ -171,7 +170,7 @@ endmodule
              (qreg-inst (vl-simple-inst delnd "qoutinst" q-expr qreg-expr)))
           (mv qreg-expr (list qreg-decl) (list qreg-inst) addmods)))
 
-       
+
        ;; non-propagating atts
        (triggers (make-vl-nonatom :op :vl-concat
                                   :args (list clk-expr d-expr)

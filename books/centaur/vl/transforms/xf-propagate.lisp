@@ -19,9 +19,10 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "xf-subst")
+(include-book "../mlib/subst")
 (include-book "../mlib/allexprs")
 (include-book "../mlib/modnamespace")
+(include-book "../mlib/port-tools")
 (local (include-book "../util/arithmetic"))
 
 (defxdoc propagate
@@ -150,11 +151,11 @@ correctly.</p>"
   ((x vl-modinst-p))
   :returns (driven-names string-listp :hyp :fguard)
   (b* ((args (vl-modinst->portargs x))
-       ((when (vl-arguments->namedp args))
-        ;; Could make this more general by just returning all exprs
-        ;; in this case...
+       ((unless (eq (vl-arguments-kind args) :plain))
+        ;; Could make this more general by just returning all exprs in this
+        ;; case...
         (raise "args still named???")))
-    (vl-maybe-driven-by-args (vl-arguments->args args))))
+    (vl-maybe-driven-by-args (vl-arguments-plain->args args))))
 
 (defmapappend vl-maybe-driven-by-modinsts (x)
   (vl-maybe-driven-by-modinst x)
@@ -398,8 +399,9 @@ places to be unsafe.</p>"
   :short "Repeatedly propagate assignments in a module."
   ((x      vl-module-p)
    (limits propagate-limits-p))
-  :returns (new-x vl-module-p :hyp (force (vl-module-p x)))
-  (b* (((vl-module x) x)
+  :returns (new-x vl-module-p)
+  (b* ((x (vl-module-fix x))
+       ((vl-module x) x)
        ((when (vl-module->hands-offp x))
         x)
        ;; We no longer prohibit this.  Instead we try to prevent it from
@@ -419,19 +421,14 @@ places to be unsafe.</p>"
     (vl-propagation-fixpoint x 1000 limits)))
 
 (defprojection vl-modulelist-propagate (x limits)
+  :returns (new-x vl-modulelist-p)
   (vl-module-propagate x limits)
   :guard (and (vl-modulelist-p x)
               (propagate-limits-p limits)))
 
-(defthm vl-modulelist-p-of-vl-modulelist-propagate
-  (implies (force (vl-modulelist-p x))
-           (vl-modulelist-p (vl-modulelist-propagate x limits)))
-  :hints(("Goal" :induct (len x))))
-
 (define vl-design-propagate ((x vl-design-p)
                              (limits propagate-limits-p))
   :returns (new-x vl-design-p)
-  (b* ((x (vl-design-fix x))
-       ((vl-design x) x))
+  (b* (((vl-design x) x))
     (change-vl-design x :mods (vl-modulelist-propagate x.mods limits))))
 

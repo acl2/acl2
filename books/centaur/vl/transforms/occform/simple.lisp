@@ -22,6 +22,7 @@
 (include-book "util")
 (local (include-book "../../util/arithmetic"))
 (local (include-book "../../util/osets"))
+(local (std::add-default-post-define-hook :fix))
 (local (non-parallel-book))
 
 ; This file has generators for:
@@ -35,8 +36,12 @@
 ;  - N-bit case equality modules (===)
 ;  - N-bit pure-X module
 
-(def-vl-modgen vl-make-n-bit-binary-op (type n)
+(def-vl-modgen vl-make-n-bit-binary-op
+  ((type (member type '(:vl-and :vl-or :vl-xor :vl-xnor)))
+   (n    posp))
+
   :short "Generate a wide, pointwise AND, OR, XOR, or XNOR module."
+
 
   :long "<p>The @('type') must be either @(':VL-AND'), @(':VL-OR'),
 @(':VL-XOR'), or @(':VL-XNOR').  Depending on the type, we generate a module
@@ -67,14 +72,14 @@ endmodule
   VL_1_BIT_OR bit0 (out[0], a[0], b[0]);
 })"
 
-  :guard (and (member type '(:vl-and :vl-or :vl-xor :vl-xnor))
-              (posp n))
   :body
-  (b* ((prim (case type
-               (:vl-and  *vl-1-bit-and*)
-               (:vl-or   *vl-1-bit-or*)
-               (:vl-xor  *vl-1-bit-xor*)
-               (:vl-xnor *vl-1-bit-xnor*)))
+  (b* ((n (lposfix n))
+       (prim (case type
+               (:vl-and   *vl-1-bit-and*)
+               (:vl-or    *vl-1-bit-or*)
+               (:vl-xor   *vl-1-bit-xor*)
+               (otherwise *vl-1-bit-xnor*)))
+
 
 ; [Jared and Sol]: It's tempting here to just return (list prim) in the special
 ; case that n = 1.  But after discussing this, we decided it seems nicer to put
@@ -119,7 +124,7 @@ endmodule
 
 
 
-(def-vl-modgen vl-make-n-bit-assign (n)
+(def-vl-modgen vl-make-n-bit-assign ((n posp))
   :short "Generate a wide assignment module."
 
   :long "<p>We generate a module that is semantically equal to:</p>
@@ -147,10 +152,9 @@ module VL_4_BIT_ASSIGN (out, in);
 endmodule
 })"
 
-  :guard (posp n)
-
   :body
-  (b* (((when (eql n 1))
+  (b* ((n (lposfix n))
+       ((when (eql n 1))
         (list *vl-1-bit-assign*))
 
        (name (hons-copy (cat "VL_" (natstr n) "_BIT_ASSIGN")))
@@ -179,11 +183,7 @@ endmodule
 ||#
 
 
-
-
-
-
-(def-vl-modgen vl-make-n-bit-not (n)
+(def-vl-modgen vl-make-n-bit-not ((n posp))
   :short "Generate a wide negation module."
 
   :long "<p>We generate a module that is written using gates and which is
@@ -207,9 +207,9 @@ above we would have:</p>
   VL_1_BIT_NOT bit3 (out[3], in[3]) ;
 })"
 
-  :guard (posp n)
   :body
-  (b* (((when (eql n 1))
+  (b* ((n (lposfix n))
+       ((when (eql n 1))
         (list *vl-1-bit-not*))
 
        (name (hons-copy (cat "VL_" (natstr n) "_BIT_NOT")))
@@ -238,7 +238,9 @@ above we would have:</p>
 
 
 
-(def-vl-modgen vl-make-n-bit-reduction-op (type n)
+(def-vl-modgen vl-make-n-bit-reduction-op
+  ((type (member type (list :vl-unary-bitand :vl-unary-bitor :vl-unary-xor)))
+   (n    posp))
   :short "Generate a wide reduction AND, OR, or XOR module."
 
   :long "<p>The @('type') must be either @(':VL-UNARY-BITAND'),
@@ -271,15 +273,13 @@ endmodule
   xor(out,   in4, temp2);
 })"
 
-  :guard (and (member type (list :vl-unary-bitand :vl-unary-bitor :vl-unary-xor))
-              (posp n))
-
   :body
-  (b* ((name (hons-copy (cat "VL_" (natstr n) "_BIT_REDUCTION_"
+  (b* ((n (lposfix n))
+       (name (hons-copy (cat "VL_" (natstr n) "_BIT_REDUCTION_"
                              (case type
                                (:vl-unary-bitand "AND")
-                               (:vl-unary-bitor "OR")
-                               (:vl-unary-xor "XOR")))))
+                               (:vl-unary-bitor  "OR")
+                               (otherwise        "XOR")))))
 
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output 1))
        ((mv in-expr in-port in-portdecl in-netdecl)     (vl-occform-mkport "in" :vl-input n))
@@ -288,7 +288,7 @@ endmodule
        (prim      (case type
                     (:vl-unary-bitand *vl-1-bit-and*)
                     (:vl-unary-bitor  *vl-1-bit-or*)
-                    (:vl-unary-xor    *vl-1-bit-xor*)))
+                    (otherwise        *vl-1-bit-xor*)))
 
        ((when (< n 3))
         ;; Special cases.  See test-redux.v.
@@ -341,7 +341,8 @@ endmodule
 ||#
 
 
-(def-vl-modgen vl-make-n-bit-mux (n approxp)
+(def-vl-modgen vl-make-n-bit-mux ((n       posp)
+                                  (approxp booleanp))
   :short "Generate a wide multiplexor module."
 
   :long "<p>We generate a module that is written using gates and which is a
@@ -400,11 +401,9 @@ behavior that is closest to Verilog.  But the more conservative version may
 generally produce smaller AIGs since the output doesn't depend upon the inputs
 when the select is X.  So, we generally set @('approxp') to T.</p>"
 
-  :guard (and (posp n)
-              (booleanp approxp))
-
   :body
-  (b* ((onebitmux (if approxp *vl-1-bit-approx-mux* *vl-1-bit-mux*))
+  (b* ((n         (lposfix n))
+       (onebitmux (if approxp *vl-1-bit-approx-mux* *vl-1-bit-mux*))
 
        ((when (eql n 1))
         (list onebitmux))
@@ -438,7 +437,7 @@ when the select is X.  So, we generally set @('approxp') to T.</p>"
 ||#
 
 
-(def-vl-modgen vl-make-n-bit-zmux (n)
+(def-vl-modgen vl-make-n-bit-zmux ((n posp))
   :short "Generate a wide tri-state buffer module."
 
   :long "<p>We generate a module using @(see *vl-1-bit-zmux*) primitives that
@@ -461,10 +460,9 @@ ternary) operators whose last argument is @('Z').  Note that in @(see
 oprewrite), we canonicalize @('sel ? Z : a') to @('~sel ? a : Z'), so this
 actually handles both cases.</p>"
 
-  :guard (posp n)
-
   :body
-  (b* (((when (eql n 1))
+  (b* ((n (lposfix n))
+       ((when (eql n 1))
         (list *vl-1-bit-zmux*))
 
        (name (hons-copy (cat "VL_" (natstr n) "_BIT_ZMUX")))
@@ -495,14 +493,7 @@ actually handles both cases.</p>"
 
 
 
-
-(local (defthm crock
-         ;; BOZO sholdn't need this, but DO NEED IT.  >=\
-         (first (vl-make-n-bit-reduction-op type n))
-         :hints(("Goal" :in-theory (enable vl-make-n-bit-reduction-op)))))
-
-
-(def-vl-modgen vl-make-n-bit-ceq (n)
+(def-vl-modgen vl-make-n-bit-ceq ((n posp))
   :short "Generate a wide case-equality module."
 
   :long "<p>We generate a module that is written using gates and which is
@@ -520,9 +511,9 @@ endmodule
 <p>We basically just instantiate @(see *vl-1-bit-ceq*) N times and then
 reduction-and the results.</p> "
 
-  :guard (posp n)
   :body
-  (b* (((when (eql n 1))
+  (b* ((n (lposfix n))
+       ((when (eql n 1))
         (list *vl-1-bit-ceq*))
 
        (name (hons-copy (cat "VL_" (natstr n) "_BIT_CEQ")))
@@ -559,7 +550,7 @@ reduction-and the results.</p> "
 ||#
 
 
-(def-vl-modgen vl-make-n-bit-x (n)
+(def-vl-modgen vl-make-n-bit-x ((n posp))
   :short "Generate a wide X module."
 
   :long "<p>We generate a module that is semantically equal to:</p>
@@ -591,10 +582,9 @@ module VL_4_BIT_X (out, in);
 endmodule
 })"
 
-  :guard (posp n)
-
   :body
-  (b* (((when (eql n 1))
+  (b* ((n (lposfix n))
+       ((when (eql n 1))
         (list *vl-1-bit-x*))
 
        (name (hons-copy (cat "VL_" (natstr n) "_BIT_X")))

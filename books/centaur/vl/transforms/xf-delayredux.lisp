@@ -165,8 +165,8 @@ ticks.</p>"
                    (make-vl-plainarg :expr (car ins)  :dir :vl-input  :portname "in"))))
     (cons (make-vl-modinst :instname  (cat basename (natstr n))
                            :modname   modname
-                           :paramargs (vl-arguments nil nil)
-                           :portargs  (vl-arguments nil args)
+                           :paramargs (make-vl-arguments-plain :args nil)
+                           :portargs  (make-vl-arguments-plain :args args)
                            :loc       *vl-fakeloc*)
           (vl-make-m-bit-delay-insts (+ n 1) basename modname (cdr outs) (cdr ins)))))
 

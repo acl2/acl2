@@ -29,30 +29,13 @@
 (local (include-book "../../util/arithmetic"))
 
 
-(local (defthm tag-of-vl-ifstmt
-         (equal (tag (make-vl-ifstmt :condition condition
-                                     :truebranch truebranch
-                                     :falsebranch falsebranch
-                                     :atts atts))
-                :vl-compoundstmt)
-         :hints(("Goal" :in-theory (enable vl-ifstmt)))))
-
 (local (defthm vl-atomicstmt-p-of-vl-ifstmt
          (equal (vl-atomicstmt-p (make-vl-ifstmt :condition condition
                                                  :truebranch truebranch
                                                  :falsebranch falsebranch
                                                  :atts atts))
                 nil)
-         :hints(("Goal" :in-theory (enable vl-ifstmt)))))
-
-(local (defthm tag-of-vl-blockstmt
-         (equal (tag (make-vl-blockstmt :sequentialp sequentialp
-                                        :name name
-                                        :decls decls
-                                        :stmts stmts
-                                        :atts atts))
-                :vl-compoundstmt)
-         :hints(("Goal" :in-theory (enable vl-blockstmt)))))
+         :hints(("Goal" :in-theory (enable vl-atomicstmt-p)))))
 
 (local (defthm vl-atomicstmt-p-of-vl-blockstmt
          (equal (vl-atomicstmt-p (make-vl-blockstmt :sequentialp sequentialp
@@ -61,21 +44,7 @@
                                                     :stmts stmts
                                                     :atts atts))
                 nil)
-         :hints(("Goal" :in-theory (enable vl-blockstmt)))))
-
-(local (defthm vl-expr-p-when-vl-idexpr-p
-         (implies (vl-idexpr-p x)
-                  (vl-expr-p x))
-         :hints(("Goal" :in-theory (enable vl-expr-p vl-idexpr-p)))))
-
-(local (defthm vl-exprlist-p-when-vl-idexprlist-p
-         (implies (vl-idexprlist-p x)
-                  (vl-exprlist-p x))
-         :hints(("Goal" :induct (len x)))))
-
-(local (defthm booleanp-of-vl-blockstmt->sequentialp-rw
-         (implies (force (vl-blockstmt-p x))
-                  (booleanp (vl-blockstmt->sequentialp x)))))
+         :hints(("Goal" :in-theory (enable vl-atomicstmt-p)))))
 
 (defxdoc edgesynth
   :parents (synthalways)
@@ -538,21 +507,26 @@ clock names.</p>")
 
 (deflist vl-assignstmtlist-p (x)
   (vl-assignstmt-p x)
+  :guard (vl-stmtlist-p x)
   :elementp-of-nil nil
   ///
   (defthm vl-atomicstmtlist-p-when-vl-assignstmtlist-p
     (implies (vl-assignstmtlist-p x)
              (vl-atomicstmtlist-p x))
-    :hints(("Goal" :induct (len x)))))
+    :hints(("Goal"
+            :induct (len x)
+            :in-theory (enable vl-atomicstmt-p)))))
 
 (defprojection vl-assignstmtlist->lhses (x)
   (vl-assignstmt->lvalue x)
-  :guard (vl-assignstmtlist-p x)
+  :guard (and (vl-stmtlist-p x)
+              (vl-assignstmtlist-p x))
   :result-type vl-exprlist-p)
 
 (defprojection vl-assignstmtlist->rhses (x)
   (vl-assignstmt->expr x)
-  :guard (vl-assignstmtlist-p x)
+  :guard (and (vl-stmtlist-p x)
+              (vl-assignstmtlist-p x))
   :result-type vl-exprlist-p)
 
 (deflist vl-assigncontrols-p (x)
@@ -562,7 +536,8 @@ clock names.</p>")
 
 (defprojection vl-assignstmtlist->controls (x)
   (vl-assignstmt->ctrl x)
-  :guard (vl-assignstmtlist-p x)
+  :guard (and (vl-stmtlist-p x)
+              (vl-assignstmtlist-p x))
   :result-type vl-assigncontrols-p)
 
 
@@ -576,18 +551,16 @@ clock names.</p>")
   :short "Supported statements: if statements, block statements, null
 statements, non-blocking assignments to whole identifiers."
 
-  :hints(("Goal" :in-theory (disable (force))))
-
   (define vl-edgesynth-stmt-p ((x vl-stmt-p))
-    :measure (two-nats-measure (acl2-count x) 1)
+    :measure (vl-stmt-count x)
     :flag :stmt
     (b* (((unless (mbt (vl-stmt-p x)))
           nil)
 
-         ((when (vl-fast-nullstmt-p x))
+         ((when (vl-nullstmt-p x))
           t)
 
-         ((when (vl-fast-assignstmt-p x))
+         ((when (vl-assignstmt-p x))
           (b* (((vl-assignstmt x) x))
             (and (eq x.type :vl-nonblocking)
                  (vl-idexpr-p x.lvalue)
@@ -610,17 +583,18 @@ statements, non-blocking assignments to whole identifiers."
       nil))
 
   (define vl-edgesynth-stmtlist-p ((x vl-stmtlist-p))
-    :measure (two-nats-measure (acl2-count x) 0)
+    :measure (vl-stmtlist-count x)
     :flag :list
     (if (atom x)
-        t
+        (not x)
       (and (vl-edgesynth-stmt-p (car x))
            (vl-edgesynth-stmtlist-p (cdr x)))))
 
   ///
   (deflist vl-edgesynth-stmtlist-p (x)
     (vl-edgesynth-stmt-p x)
-    :already-definedp t)
+    :already-definedp t
+    :true-listp t)
 
   (defthm vl-stmt-p-when-vl-edgesynth-stmt-p
     (implies (vl-edgesynth-stmt-p x)
@@ -720,9 +694,11 @@ statements, non-blocking assignments to whole identifiers."
   (defthm atomic-cases-for-vl-edgesynth-stmt-p
     (implies (and (vl-edgesynth-stmt-p x)
                   (vl-atomicstmt-p x))
-             (or (vl-assignstmt-p x)
-                 (vl-nullstmt-p x)))
-    :rule-classes :forward-chaining))
+             (or (eq (vl-stmt-kind x) :vl-assignstmt)
+                 (eq (vl-stmt-kind x) :vl-nullstmt)))
+    :rule-classes :forward-chaining
+    :hints(("Goal" :in-theory (enable vl-atomicstmt-p)))))
+
 
 (defines vl-edgesynth-stmt-assigns
   :short "Collect all assignsment statements from an edgesynth statement."
@@ -730,18 +706,19 @@ statements, non-blocking assignments to whole identifiers."
 
   (define vl-edgesynth-stmt-assigns ((x (and (vl-stmt-p x)
                                              (vl-edgesynth-stmt-p x))))
-    :returns (assigns (and (vl-assignstmtlist-p assigns)
+    :returns (assigns (and (vl-stmtlist-p assigns)
+                           (vl-assignstmtlist-p assigns)
                            (let ((lhses (vl-assignstmtlist->lhses assigns)))
                              (and (vl-idexprlist-p lhses)
                                   (pos-listp (vl-exprlist->finalwidths lhses))
                                   (not (member nil (vl-exprlist->finaltypes lhses))))))
                       :hyp :fguard)
-    :measure (two-nats-measure (acl2-count x) 1)
+    :measure (vl-stmt-count x)
     :flag :stmt
-    (b* (((when (vl-fast-nullstmt-p x))
+    (b* (((when (vl-nullstmt-p x))
           nil)
 
-         ((when (vl-fast-assignstmt-p x))
+         ((when (vl-assignstmt-p x))
           (list x))
 
          ((when (vl-ifstmt-p x))
@@ -757,13 +734,14 @@ statements, non-blocking assignments to whole identifiers."
 
   (define vl-edgesynth-stmtlist-assigns ((x (and (vl-stmtlist-p x)
                                                (vl-edgesynth-stmtlist-p x))))
-    :returns (assigns (and (vl-assignstmtlist-p assigns)
+    :returns (assigns (and (vl-stmtlist-p assigns)
+                           (vl-assignstmtlist-p assigns)
                            (let ((lhses (vl-assignstmtlist->lhses assigns)))
                              (and (vl-idexprlist-p lhses)
                                   (pos-listp (vl-exprlist->finalwidths lhses))
                                   (not (member nil (vl-exprlist->finaltypes lhses))))))
                       :hyp :fguard)
-    :measure (two-nats-measure (acl2-count x) 0)
+    :measure (vl-stmtlist-count x)
     :flag :list
     (if (atom x)
         nil
@@ -777,12 +755,12 @@ statements, non-blocking assignments to whole identifiers."
   (define vl-edgesynth-stmt-conditions ((x (and (vl-stmt-p x)
                                                 (vl-edgesynth-stmt-p x))))
     :returns (rhses vl-exprlist-p :hyp :fguard)
-    :measure (two-nats-measure (acl2-count x) 1)
+    :measure (vl-stmt-count x)
     :flag :stmt
-    (b* (((when (vl-fast-nullstmt-p x))
+    (b* (((when (vl-nullstmt-p x))
           nil)
 
-         ((when (vl-fast-assignstmt-p x))
+         ((when (vl-assignstmt-p x))
           nil)
 
          ((when (vl-ifstmt-p x))
@@ -800,7 +778,7 @@ statements, non-blocking assignments to whole identifiers."
   (define vl-edgesynth-stmtlist-conditions ((x (and (vl-stmtlist-p x)
                                                     (vl-edgesynth-stmtlist-p x))))
     :returns (conditions vl-exprlist-p :hyp :fguard)
-    :measure (two-nats-measure (acl2-count x) 0)
+    :measure (vl-stmtlist-count x)
     :flag :list
     (if (atom x)
         nil
@@ -912,12 +890,12 @@ rewrite:</p>
             the current begin/end block.  Could be a NULL statement if we haven't
             seen any other statements yet."))
     :returns (new-stmt vl-edgesynth-stmt-p :hyp :fguard)
-    :measure (two-nats-measure (acl2-count x) 1)
+    :measure (vl-stmt-count x)
     :flag :stmt
-    (b* (((when (vl-fast-nullstmt-p x))
+    (b* (((when (vl-nullstmt-p x))
           curr)
 
-         ((when (vl-fast-assignstmt-p x))
+         ((when (vl-assignstmt-p x))
           ;; Since we assume every assignment is writing to the same LHS, this
           ;; new assignment overwrites anything that was previously written and
           ;; just becomes the new statement.
@@ -943,8 +921,8 @@ rewrite:</p>
                 (vl-edgesynth-stmtlist-p x)))
      (curr (and (vl-stmt-p curr)
                 (vl-edgesynth-stmt-p curr))))
-    :returns (new-stmt vl-edgesynth-stmt-p :hyp :fguard)
-    :measure (two-nats-measure (acl2-count x) 0)
+    :returns (stmts vl-edgesynth-stmt-p :hyp :fguard)
+    :measure (vl-stmtlist-count x)
     :flag :list
     (b* (((when (atom x))
           curr)
@@ -992,6 +970,7 @@ rewrite:</p>
             "Canonical version of this clock to use, with negations stripped
              from negated clocks."
             :hyp :fguard))
+  :measure (vl-expr-count condition)
   (b* (((when (vl-fast-atom-p condition))
         (if (and (vl-idexpr-p condition)
                  (eql (vl-expr->finalwidth condition) 1)
@@ -1126,7 +1105,8 @@ rewrite:</p>
 ;
 ; -----------------------------------------------------------------------------
 
-(define vl-edgesynth-assignstmt-clklift ((x (and (vl-assignstmt-p x)
+(define vl-edgesynth-assignstmt-clklift ((x (and (vl-stmt-p x)
+                                                 (vl-assignstmt-p x)
                                                  (vl-edgesynth-stmt-p x)))
                                          (edgetable vl-edgetable-p))
   :returns (stmt vl-edgesynth-stmt-p :hyp :fguard)
@@ -1210,10 +1190,10 @@ are evaluated.</p>"
                                              (vl-edgesynth-stmt-p x)))
                                      (edgetable vl-edgetable-p))
     :returns (new-x vl-edgesynth-stmt-p :hyp :fguard)
-    :measure (two-nats-measure (acl2-count x) 1)
+    :measure (vl-stmt-count x)
     :flag :stmt
-    (b* (((when (vl-fast-atomicstmt-p x))
-          (cond ((vl-fast-assignstmt-p x)
+    (b* (((when (vl-atomicstmt-p x))
+          (cond ((vl-assignstmt-p x)
                  (vl-edgesynth-assignstmt-clklift x edgetable))
                 (t
                  x)))
@@ -1238,7 +1218,7 @@ are evaluated.</p>"
                                                  (vl-edgesynth-stmtlist-p x)))
                                          (edgetable vl-edgetable-p))
     :returns (new-x vl-edgesynth-stmtlist-p :hyp :fguard)
-    :measure (two-nats-measure (acl2-count x) 0)
+    :measure (vl-stmtlist-count x)
     :flag :list
     (if (atom x)
         nil
@@ -1260,10 +1240,12 @@ are evaluated.</p>"
           into  @('q <= condition ? d1 : d2')."
   ((condition    vl-expr-p
                  "Should be a data condition.")
-   (true-branch  (and (vl-atomicstmt-p true-branch)
+   (true-branch  (and (vl-stmt-p true-branch)
+                      (vl-atomicstmt-p true-branch)
                       (vl-edgesynth-stmt-p true-branch))
                  "Should be @('q <= d1') or a null statement.")
-   (false-branch (and (vl-atomicstmt-p false-branch)
+   (false-branch (and (vl-stmt-p false-branch)
+                      (vl-atomicstmt-p false-branch)
                       (vl-edgesynth-stmt-p false-branch))
                  "Should be @('q <= d2') or a null statement.")
    (nf           vl-namefactory-p)
@@ -1281,23 +1263,23 @@ are evaluated.</p>"
       (netdecls vl-netdecllist-p :hyp :fguard)
       (assigns  vl-assignlist-p :hyp :fguard))
   :long "<p>Assumption: any assignments are to the same register.</p>"
-  (b* (((when (and (vl-fast-nullstmt-p true-branch)
-                   (vl-fast-nullstmt-p false-branch)))
+  (b* (((when (and (vl-nullstmt-p true-branch)
+                   (vl-nullstmt-p false-branch)))
         ;; Probably silly: if (condition) null null --> null
         (mv true-branch nf netdecls assigns))
 
        ;; At least one of true-branch or false-branch is an assignment.  If
        ;; they aren't both assignments, the null statement can become Q <= Q.
-       (base-assign (if (vl-fast-assignstmt-p true-branch)
+       (base-assign (if (vl-assignstmt-p true-branch)
                         true-branch
                       false-branch))
        (target-reg  (vl-assignstmt->lvalue base-assign))
        (loc         (vl-assignstmt->loc base-assign))
        (width       (vl-expr->finalwidth target-reg))
-       (true-rhs    (if (vl-fast-assignstmt-p true-branch)
+       (true-rhs    (if (vl-assignstmt-p true-branch)
                         (vl-assignstmt->expr true-branch)
                       target-reg))
-       (false-rhs   (if (vl-fast-assignstmt-p false-branch)
+       (false-rhs   (if (vl-assignstmt-p false-branch)
                         (vl-assignstmt->expr false-branch)
                       target-reg))
 
@@ -1340,6 +1322,7 @@ are evaluated.</p>"
                           (force (vl-namefactory-p nf))))
       (netdecls)
       (assigns))
+  :measure (vl-stmt-count x)
   :hints(("Goal" :in-theory (disable (force))))
   :verify-guards nil
   :long "<p>This is a best-effort transform that leaves the statement alone
@@ -1361,7 +1344,7 @@ and do the work of introducing temporary wires as necessary.  The only lousy
 part of this is that we can't really extend the @(see vl-delta-p), since we're
 not sure everything's going to work out yet.</p>"
 
-  (b* (((when (vl-fast-atomicstmt-p x))
+  (b* (((when (vl-atomicstmt-p x))
         (mv x nf netdecls assigns))
        ((when (vl-ifstmt-p x))
         (b* (((vl-ifstmt x) x)
@@ -1374,8 +1357,8 @@ not sure everything's going to work out yet.</p>"
                                              nf netdecls assigns))
 
              ((unless (and (equal type :data)
-                           (vl-fast-atomicstmt-p true)
-                           (vl-fast-atomicstmt-p false)))
+                           (vl-atomicstmt-p true)
+                           (vl-atomicstmt-p false)))
               ;; Either (1) this IF is testing a clock or something too complex
               ;; that isn't supported, or (2) the rewritten branches are too
               ;; complex to merge anyway, so just install the rewritten
@@ -1423,7 +1406,8 @@ not sure everything's going to work out yet.</p>"
   :returns (new-stmt vl-edgesynth-stmt-p :hyp :fguard)
   :hints(("Goal" :in-theory (disable (force))))
   :verify-guards nil
-  (b* (((when (vl-fast-atomicstmt-p x))
+  :measure (vl-stmt-count x)
+  (b* (((when (vl-atomicstmt-p x))
         x)
        ((when (vl-ifstmt-p x))
         (b* (((vl-ifstmt x) x)
@@ -1495,7 +1479,7 @@ not sure everything's going to work out yet.</p>"
          (implies (and (vl-edgesynth-stmt-p x)
                        (vl-atomicstmt-p x)
                        (not (vl-nullstmt-p x)))
-                  (vl-assignstmt-p x))))
+                  (equal (vl-stmt-kind x) :vl-assignstmt))))
 
 (define vl-edgesynth-pattern-match
   :short "Recognize basic if statements for the core of a multi-edge block:
@@ -1529,6 +1513,7 @@ match @('x') against a basic template like:</p>
 <p>All if-tests that we match for clocks have the proper polarity for their
 corresponding edges.</p>"
 
+  :measure (vl-stmt-count x)
   :hints(("Goal" :in-theory (disable (force))))
 
   (b* (((when (vl-nullstmt-p x))
@@ -1554,14 +1539,14 @@ corresponding edges.</p>"
              ((unless posedgep)
               ;; Not ok -- can't handle "@(negedge clk) if (clk) ..."
               (mv nil nil nil target))
-             ((unless (vl-fast-atomicstmt-p x.truebranch))
+             ((unless (vl-atomicstmt-p x.truebranch))
               ;; Not ok -- can't handle "if (clk) if ..."
               (mv nil nil nil target))
              ((mv okp clks rhses finally)
               (vl-edgesynth-pattern-match target x.falsebranch edgetable))
              ((unless okp)
               (mv nil nil nil target))
-             (rhs (if (vl-fast-nullstmt-p x.truebranch)
+             (rhs (if (vl-nullstmt-p x.truebranch)
                       target
                     (vl-assignstmt->expr x.truebranch))))
           (mv t (cons clockname clks) (cons rhs rhses) finally)))
@@ -1573,14 +1558,14 @@ corresponding edges.</p>"
              ((when posedgep)
               ;; Not ok -- can't handle "@(posedge clk) if (!clk) ..."
               (mv nil nil nil target))
-             ((unless (vl-fast-atomicstmt-p x.truebranch))
+             ((unless (vl-atomicstmt-p x.truebranch))
               ;; Not ok -- can't handle "if (clk) if ..."
               (mv nil nil nil target))
              ((mv okp clks rhses finally)
               (vl-edgesynth-pattern-match target x.falsebranch edgetable))
              ((unless okp)
               (mv nil nil nil target))
-             (rhs (if (vl-fast-nullstmt-p x.truebranch)
+             (rhs (if (vl-nullstmt-p x.truebranch)
                       target
                     (vl-assignstmt->expr x.truebranch))))
           (mv t (cons clockname clks) (cons rhs rhses) finally))))

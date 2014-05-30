@@ -19,13 +19,13 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "../xf-sizing")
+(include-book "../../mlib/welltyped")
 (local (include-book "../../util/arithmetic"))
 
 (define vl-condition-fix
-  ((condition (and (vl-expr-p condition)
-                   (vl-expr->finaltype condition)
-                   (posp (vl-expr->finalwidth condition)))))
+  ((condition vl-expr-p))
+  :guard (and (vl-expr->finaltype condition)
+              (posp (vl-expr->finalwidth condition)))
   :returns (rhs :hyp :fguard
                 (and (vl-expr-p rhs)
                      (equal (vl-expr->finalwidth rhs) 1)
@@ -43,9 +43,10 @@ the same as @('if (|condition) ...').</p>
 <p>We build @('|condition') only if we have to.  That is, if @('condition') is
 only one bit wide to begin with, then we just return it unchanged.</p>"
 
-  (if (and (eql (vl-expr->finalwidth condition) 1)
-           (eq (vl-expr->finaltype condition) :vl-unsigned))
-      condition
+  (b* ((condition (vl-expr-fix condition))
+       ((when (and (eql (vl-expr->finalwidth condition) 1)
+                   (eq (vl-expr->finaltype condition) :vl-unsigned)))
+        condition))
     (make-vl-nonatom :op         :vl-unary-bitor
                      :args       (list condition)
                      :finalwidth 1
@@ -54,11 +55,18 @@ only one bit wide to begin with, then we just return it unchanged.</p>"
   (local (in-theory (enable vl-expr-welltyped-p)))
   (defthm vl-expr-welltyped-p-of-vl-condition-fix
     (implies (and (vl-expr-welltyped-p condition)
-                  (force (vl-expr-p condition))
+                  ;(force (vl-expr-p condition))
                   (force (vl-expr->finaltype condition))
                   (force (posp (vl-expr->finalwidth condition))))
-             (vl-expr-welltyped-p (vl-condition-fix condition)))))
-
+             (vl-expr-welltyped-p (vl-condition-fix condition)))
+    :hints(("Goal"
+            :expand ((:free (op args atts finalwidth finaltype)
+                      (vl-expr-welltyped-p
+                       (make-vl-nonatom :op op
+                                        :args args
+                                        :atts atts
+                                        :finalwidth finalwidth
+                                        :finaltype finaltype))))))))
 
 (define vl-condition-neg
   ((condition (and (vl-expr-p condition)

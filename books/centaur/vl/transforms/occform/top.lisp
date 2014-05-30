@@ -32,6 +32,7 @@
 (include-book "../../mlib/namefactory")
 (local (include-book "../../util/arithmetic"))
 (local (include-book "../../util/osets"))
+(local (std::add-default-post-define-hook :fix))
 (local (in-theory (disable vl-maybe-module-p-when-vl-module-p)))
 
 
@@ -157,7 +158,7 @@ module instance names.</li>
     vl-make-n-bit-unsigned-rem
     ))
 
-(defun memoize-list-fn (x)
+(define memoize-list-fn (x)
   (declare (xargs :guard t))
   (if (atom x)
       nil
@@ -175,8 +176,7 @@ module instance names.</li>
 
 (memoize-list *vl-occform-memoize*)
 
-(defun clear-these-memoize-tables (fns)
-  (declare (xargs :guard t))
+(define clear-these-memoize-tables (fns)
   (if (atom fns)
       nil
     (prog2$ (clear-memoize-table (car fns))
@@ -193,57 +193,29 @@ module instance names.</li>
                                guard-debug)
   (declare (xargs :guard (and (symbolp name)
                               (vl-oplist-p ops))))
-  (let ((mksym-package-symbol name))
-    `(defsection ,name
-       :parents ,parents
-       :short ,short
-       :long ,(cat "<p><b>Signature:</b> @(call " (symbol-name name) ")
-produces @('(mv new-warnings new-modules new-modinsts new-n)'), as described in
-@(see occform).</p>" long)
-
-       (defund ,name (x nf warnings)
-         "Returns (mv new-warnings new-modules new-modinsts new-gateinsts new-nf)"
-         (declare (xargs :guard (and (vl-assign-p x)
-                                     ,@(and ops
-                                            `((not (vl-atom-p (vl-assign->expr x)))
-                                              (member (vl-nonatom->op (vl-assign->expr x)) ',ops)))
-                                     ,guard
-                                     (vl-namefactory-p nf)
-                                     (vl-warninglist-p warnings))
-                         :guard-debug ,guard-debug))
-         ,body)
-
-       (local (in-theory (enable ,name)))
-
-       (defthm ,(mksym 'vl-warninglist-p-of- name)
-         (implies (force (vl-warninglist-p warnings))
-                  (vl-warninglist-p (mv-nth 0 (,name x nf warnings)))))
-
-       (defthm ,(mksym name '-basics)
-         (implies (and (force (vl-assign-p x))
-                       ,@(and ops
-                              `((force (not (vl-atom-p (vl-assign->expr x))))
-                                (force (member (vl-nonatom->op (vl-assign->expr x)) ',ops))))
-                       (force ,guard)
-                       (force (vl-namefactory-p nf)))
-                  (let ((ret (,name x nf warnings)))
-                    (and (vl-modulelist-p   (mv-nth 1 ret))
-                         (vl-modinstlist-p  (mv-nth 2 ret))
-                         (vl-assignlist-p   (mv-nth 3 ret))
-                         (vl-namefactory-p  (mv-nth 4 ret))))))
-
-       (defthm ,(mksym 'true-listp-of- name '|-1|)
-         (true-listp (mv-nth 1 (,name x nf warnings)))
-         :rule-classes :type-prescription)
-
-       (defthm ,(mksym 'true-listp-of- name '|-2|)
-         (true-listp (mv-nth 2 (,name x nf warnings)))
-         :rule-classes :type-prescription)
-
-       (defthm ,(mksym 'true-listp-of- name '|-3|)
-         (true-listp (mv-nth 3 (,name x nf warnings)))
-         :rule-classes :type-prescription))))
-
+  `(define ,name
+     :parents ,parents
+     :short ,short
+     :long ,long
+     ((x        vl-assign-p)
+      (nf       vl-namefactory-p)
+      (warnings vl-warninglist-p))
+     :guard (and ,@(and ops
+                        `((not (vl-atom-p (vl-assign->expr x)))
+                          (member (vl-nonatom->op (vl-assign->expr x)) ',ops)))
+                 ,guard)
+     :returns (mv (new-warnings  vl-warninglist-p)
+                  (new-modules   vl-modulelist-p)
+                  (new-modinsts  vl-modinstlist-p)
+                  (new-assigns   vl-assignlist-p)
+                  (new-nf        vl-namefactory-p))
+     :guard-debug ,guard-debug
+     (b* ((x        (vl-assign-fix x))
+          (warnings (vl-warninglist-fix warnings))
+          (nf       (vl-namefactory-fix nf)))
+       ,body)
+     ///
+     (defmvtypes ,name (nil true-listp true-listp true-listp nil))))
 
 (defmacro occform-return (&key (warnings 'warnings) (nf 'nf) mods modinsts assigns)
   `(mv ,warnings ,mods ,modinsts ,assigns ,nf))
@@ -283,13 +255,9 @@ occurrences."
                      (eq type (vl-expr->finaltype arg2))))
         (occform-return
          :assigns  (list x)
-         :warnings (cons (make-vl-warning
-                          :type :vl-programming-error
+         :warnings (fatal :type :vl-programming-error
                           :msg "~a0: bad widths/types in assignment of binary op."
-                          :args (list x)
-                          :fatalp t
-                          :fn 'vl-basic-binary-op-occform)
-                         warnings)))
+                          :args (list x))))
 
        (gtype    (case op
                    (:vl-binary-bitand :vl-and)
@@ -327,13 +295,9 @@ occurrences."
                      (eq type (vl-expr->finaltype arg1))))
         (occform-return
          :assigns  (list x)
-         :warnings (cons (make-vl-warning
-                          :type :vl-programming-error
+         :warnings (fatal :type :vl-programming-error
                           :msg "~a0: bad widths/types in assignment of unary bitwise not."
-                          :args (list x)
-                          :fatalp t
-                          :fn 'vl-unary-not-occform)
-                         warnings)))
+                          :args (list x))))
 
        ((mv instname nf) (vl-namefactory-indexed-name "vl_unot" nf))
        (mods (vl-make-n-bit-not width))
@@ -363,13 +327,9 @@ as a plain identifier, bit-select, part-select, or concatenation of wires.</p>"
                      (vl-expr->finaltype x.lvalue)))
         (occform-return
          :assigns  (list x)
-         :warnings (cons (make-vl-warning
-                          :type :vl-programming-error
+         :warnings (fatal :type :vl-programming-error
                           :msg "~a0: bad widths/types in assignment of plain expression."
-                          :args (list x)
-                          :fatalp t
-                          :fn 'vl-plain-occform)
-                         warnings)))
+                          :args (list x))))
 
        ;; BOZO delays -- if we ever care about delays, we'll need to probably
        ;; figure out how to do something a little smarter here.
@@ -407,13 +367,9 @@ module instance."
                      (vl-expr->finaltype arg)))
         (occform-return
          :assigns  (list x)
-         :warnings (cons (make-vl-warning
-                          :type :vl-programming-error
+         :warnings (fatal :type :vl-programming-error
                           :msg "~a0: bad widths/types for assignment of reduction op."
-                          :args (list x)
-                          :fatalp t
-                          :fn 'vl-unary-reduction-op-occform)
-                         warnings)))
+                          :args (list x))))
 
        (basename (case op
                    (:vl-unary-bitand "vl_uand")
@@ -457,13 +413,9 @@ module instance."
                      (eq type (vl-expr->finaltype arg2))))
         (occform-return
          :assigns  (list x)
-         :warnings (cons (make-vl-warning
-                          :type :vl-programming-error
+         :warnings (fatal :type :vl-programming-error
                           :msg "~a0: bad widths/types in assignment of addition/subtraction."
-                          :args (list x)
-                          :fatalp t
-                          :fn 'vl-plusminus-occform)
-                         warnings)))
+                          :args (list x))))
 
        (basename (case op
                    (:vl-binary-plus "vl_plus")
@@ -498,13 +450,9 @@ module instance."
                      (eq type (vl-expr->finaltype arg2))))
         (occform-return
          :assigns  (list x)
-         :warnings (cons (make-vl-warning
-                          :type :vl-programming-error
+         :warnings (fatal :type :vl-programming-error
                           :msg "~a0: bad widths/types in multiplication."
-                          :args (list x)
-                          :fatalp t
-                          :fn 'vl-mult-occform)
-                         warnings)))
+                          :args (list x))))
 
        (basename "vl_mult")
        ((mv instname nf) (vl-namefactory-indexed-name basename nf))
@@ -529,13 +477,9 @@ module instance."
        ((unless (eq type :vl-unsigned))
         (occform-return
          :assigns (list x)
-         :warnings (cons (make-vl-warning
-                          :type :vl-warn-signed-div
+         :warnings (fatal :type :vl-warn-signed-div
                           :msg "~a0: signed divide is not implemented yet"
-                          :args (list x)
-                          :fatalp t
-                          :fn 'vl-div-occform)
-                         warnings)))
+                          :args (list x))))
 
        ((unless (and (posp width)
                      (equal width (vl-expr->finalwidth x.lvalue))
@@ -547,13 +491,9 @@ module instance."
                      (eq type (vl-expr->finaltype arg2))))
         (occform-return
          :assigns  (list x)
-         :warnings (cons (make-vl-warning
-                          :type :vl-programming-error
+         :warnings (fatal :type :vl-programming-error
                           :msg "~a0: bad widths/types in divide."
-                          :args (list x)
-                          :fatalp t
-                          :fn 'vl-div-occform)
-                         warnings)))
+                          :args (list x))))
 
        (basename "vl_div")
        ((mv instname nf) (vl-namefactory-indexed-name basename nf))
@@ -577,13 +517,9 @@ module instance."
        ((unless (eq type :vl-unsigned))
         (occform-return
          :assigns (list x)
-         :warnings (cons (make-vl-warning
-                          :type :vl-warn-signed-rem
+         :warnings (fatal :type :vl-warn-signed-rem
                           :msg "~a0: signed remainder (i.e., modulus, %) is not implemented yet"
-                          :args (list x)
-                          :fatalp t
-                          :fn 'vl-rem-occform)
-                         warnings)))
+                          :args (list x))))
 
        ((unless (and (posp width)
                      (equal width (vl-expr->finalwidth x.lvalue))
@@ -595,13 +531,9 @@ module instance."
                      (eq type (vl-expr->finaltype arg2))))
         (occform-return
          :assigns  (list x)
-         :warnings (cons (make-vl-warning
-                          :type :vl-programming-error
+         :warnings (fatal :type :vl-programming-error
                           :msg "~a0: bad widths/types in remainder (i.e., modulus, %)."
-                          :args (list x)
-                          :fatalp t
-                          :fn 'vl-rem-occform)
-                         warnings)))
+                          :args (list x))))
 
        (basename "vl_rem")
        ((mv instname nf) (vl-namefactory-indexed-name basename nf))
@@ -611,7 +543,6 @@ module instance."
                                        :loc x.loc)))
     (occform-return :mods mods
                     :modinsts (list modinst))))
-
 
 
 (def-vl-occform vl-gte-occform
@@ -634,20 +565,15 @@ module instance."
                      (equal arg1width (vl-expr->finalwidth arg2))))
         (occform-return
          :assigns  (list x)
-         :warnings (cons (make-vl-warning
-                          :type :vl-programming-error
+         :warnings (fatal :type :vl-programming-error
                           :msg "~a0: bad widths/types in assignment of >= operation."
-                          :args (list x)
-                          :fatalp t
-                          :fn 'vl-gte-occform)
-                         warnings)))
+                          :args (list x))))
 
        (warnings
         (if (eq arg1type :vl-unsigned)
             warnings
-          (cons (make-vl-warning
-                 :type :vl-warn-signed-comparison
-                 :msg "~a0: found a signed comparison expression.  This is ~
+          (warn :type :vl-warn-signed-comparison
+                :msg "~a0: found a signed comparison expression.  This is ~
                        dangerous because whereas NCVerilog properly carries ~
                        out a comparison between 2's complement numbers, ~
                        Verilog-XL incorrectly uses an unsigned comparison.  ~
@@ -657,10 +583,7 @@ module instance."
                        comparisons.  Some typical causes of signedness are ~
                        plain decimal numbers like 17, and the use of integer ~
                        variables instead of regs."
-                 :args (list x)
-                 :fatalp nil
-                 :fn 'vl-gte-occform)
-                warnings)))
+                :args (list x))))
 
        ((mv instname nf) (vl-namefactory-indexed-name "vl_gte" nf))
        (mods (if (eq arg1type :vl-unsigned)
@@ -719,13 +642,9 @@ is @('X') or @('Z').</p>"
                      (eq type (vl-expr->finaltype b))))
         (occform-return
          :assigns (list x)
-         :warnings (cons (make-vl-warning
-                          :type :vl-programming-error
+         :warnings (fatal :type :vl-programming-error
                           :msg "~a0: bad widths on assignment of conditional expression."
-                          :args (list x)
-                          :fatalp t
-                          :fn 'vl-mux-occform)
-                         warnings)))
+                          :args (list x))))
 
        ((when (vl-zatom-p b))
         ;; Found "a ? b : z" -- make a zmux.
@@ -780,13 +699,9 @@ is @('X') or @('Z').</p>"
                      (vl-expr->finaltype arg2)))
         (occform-return
          :assigns (list x)
-         :warnings (cons (make-vl-warning
-                          :type :vl-programming-error
+         :warnings (fatal :type :vl-programming-error
                           :msg "~a0: bad widths in assignment of shift."
-                          :args (list x)
-                          :fatalp t
-                          :fn 'vl-shift-occform)
-                         warnings)))
+                          :args (list x))))
 
        ;; Make a module and instantiate it.
        (basename (case op
@@ -831,23 +746,15 @@ sliceable.</p>"
                      (vl-expr->finaltype idx)))
         (occform-return
          :assigns (list x)
-         :warnings (cons (make-vl-warning
-                          :type :vl-programming-error
+         :warnings (fatal :type :vl-programming-error
                           :msg "~a0: bad widths in assignment of bit-select."
-                          :args (list x)
-                          :fatalp t
-                          :fn 'vl-bitselect-occform)
-                         warnings)))
+                          :args (list x))))
 
        (warnings (if (vl-expr-resolved-p idx)
-                     (cons (make-vl-warning
-                            :type :vl-programming-error
+                     (fatal :type :vl-programming-error
                             :msg "~a0: how did this get called?  we're using a ~
                                   dynamic bitselect when a static one would do."
-                            :args (list x)
-                            :fatalp t
-                            :fn 'vl-bitselect-occform)
-                           warnings)
+                            :args (list x))
                    warnings))
 
        ((mv iname nf) (vl-namefactory-indexed-name "vl_bsel" nf))
@@ -884,13 +791,9 @@ sliceable.</p>"
                      (equal arg1width (vl-expr->finalwidth arg2))))
         (occform-return
          :assigns (list x)
-         :warnings (cons (make-vl-warning
-                          :type :vl-programming-error
+         :warnings (fatal :type :vl-programming-error
                           :msg "~a0: bad widths in assignment of ceq."
-                          :args (list x)
-                          :fatalp t
-                          :fn 'vl-ceq-occform)
-                         warnings)))
+                          :args (list x))))
 
        ;; Make a module and instantiate it.
        ((mv iname nf) (vl-namefactory-indexed-name "vl_ceq" nf))
@@ -921,13 +824,9 @@ below.</p>"
         ;; Any reasonable atom should be sliceable.
         (occform-return
          :assigns (list x)
-         :warnings (cons (make-vl-warning
-                          :type :vl-not-implemented
+         :warnings (fatal :type :vl-not-implemented
                           :msg "~a0: don't know how to occform ~x1 atom."
-                          :args (list x (tag (vl-atom->guts expr)))
-                          :fn 'vl-assign-occform
-                          :fatalp t)
-                         warnings)))
+                          :args (list x (tag (vl-atom->guts expr))))))
 
        (op (vl-nonatom->op expr)))
 
@@ -973,39 +872,30 @@ below.</p>"
       ((:vl-partselect-colon :vl-concat :vl-multiconcat)
        (occform-return
         :assigns (list x)
-        :warnings (cons (make-vl-warning
-                         :type :vl-programming-error
+        :warnings (fatal :type :vl-programming-error
                          :msg "~a0: expected ~x1 operator to be sliceable!"
-                         :args (list x op)
-                         :fn 'vl-assign-occform
-                         :fatalp t)
-                        warnings)))
+                         :args (list x op))))
 
       (otherwise
        (occform-return
         :assigns (list x)
-        :warnings (cons (make-vl-warning
-                         :type :vl-not-implemented
+        :warnings (fatal :type :vl-not-implemented
                          :msg "~a0: don't know how to occform ~x1 operator."
-                         :args (list x op)
-                         :fn 'vl-assign-occform
-                         :fatalp t)
-                        warnings))))))
+                         :args (list x op)))))))
 
 
 (define vl-assignlist-occform ((x vl-assignlist-p)
                                   (nf vl-namefactory-p)
                                   (warnings vl-warninglist-p))
-  :returns (mv (warnings vl-warninglist-p :hyp :fguard)
-               (mods     vl-modulelist-p  :hyp :fguard)
-               (insts    vl-modinstlist-p :hyp :fguard)
-               (assigns  vl-assignlist-p  :hyp :fguard)
-               (nf       vl-namefactory-p :hyp :fguard))
+  :returns (mv (warnings vl-warninglist-p)
+               (mods     vl-modulelist-p)
+               (insts    vl-modinstlist-p)
+               (assigns  vl-assignlist-p)
+               (nf       vl-namefactory-p))
   :parents (occform)
   :short "Project @(see vl-assign-occform) across a list of assignments."
-
   (b* (((when (atom x))
-        (mv warnings nil nil nil nf))
+        (mv (ok) nil nil nil (vl-namefactory-fix nf)))
        ((mv warnings mods1 modinsts1 assigns1 nf)
         (vl-assign-occform (car x) nf warnings))
        ((mv warnings mods2 modinsts2 assigns2 nf)
@@ -1014,17 +904,16 @@ below.</p>"
        (modinsts (append modinsts1 modinsts2))
        (assigns  (append assigns1 assigns2)))
     (mv warnings mods modinsts assigns nf))
-
   ///
   (defmvtypes vl-assignlist-occform (nil true-listp true-listp true-listp nil)))
 
 
 (define vl-module-occform ((x vl-module-p))
-  :returns (mv (addmods vl-modulelist-p :hyp :fguard)
-               (new-x   vl-module-p     :hyp :fguard))
+  :returns (mv (addmods vl-modulelist-p)
+               (new-x   vl-module-p))
   (b* (((vl-module x) x)
        ((when (vl-module->hands-offp x))
-        (mv nil x))
+        (mv nil (vl-module-fix x)))
        (nf (vl-starting-namefactory x))
        ((mv warnings addmods new-modinsts new-assigns nf)
         (vl-assignlist-occform x.assigns nf x.warnings))
@@ -1041,8 +930,8 @@ below.</p>"
 
 
 (define vl-modulelist-occform-aux ((x vl-modulelist-p))
-  :returns (mv (addmods vl-modulelist-p :hyp :fguard)
-               (new-x   vl-modulelist-p :hyp :fguard))
+  :returns (mv (addmods vl-modulelist-p)
+               (new-x   vl-modulelist-p))
   (b* (((when (atom x))
         (mv nil nil))
        ((mv addmods1 car) (vl-module-occform (car x)))
@@ -1055,7 +944,7 @@ below.</p>"
 
 
 (define vl-modulelist-occform ((x vl-modulelist-p))
-  :returns (new-x vl-modulelist-p :hyp :fguard)
+  :returns (new-x vl-modulelist-p)
   (b* (((mv new-mods x-prime)
         (vl-modulelist-occform-aux x))
        (- (clear-these-memoize-tables *vl-occform-memoize*))
@@ -1071,7 +960,6 @@ below.</p>"
 
 (define vl-design-occform ((x vl-design-p))
   :returns (new-x vl-design-p)
-  (b* ((x (vl-design-fix x))
-       ((vl-design x) x))
+  (b* (((vl-design x) x))
     (change-vl-design x :mods (vl-modulelist-occform x.mods))))
 

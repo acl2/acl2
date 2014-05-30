@@ -22,6 +22,8 @@
 (include-book "../mlib/expr-tools")
 (include-book "../mlib/fmt")
 (local (include-book "../util/arithmetic"))
+(local (std::add-default-post-define-hook :fix))
+(local (in-theory (enable tag-reasoning)))
 
 (defsection expr-simp
   :parents (transforms)
@@ -47,22 +49,21 @@ output using an equivalence checker.</p>")
 
 (local (defthm crock
          (implies (vl-expr-resolved-p x)
-                  (vl-atom-p x))
+                  (eq (vl-expr-kind x) :atom))
          :hints(("Goal" :in-theory (enable vl-expr-resolved-p)))))
-
 
 (define vl-expr-simp-unary-bitnot
   ((x    vl-expr-p     "Expression to rewrite, of the form ~FOO.")
    (args vl-exprlist-p "Its already-rewritten args."))
-  :guard (and (vl-nonatom-p x)
+  :guard (and (not (vl-atom-p x))
               (equal (vl-nonatom->op x) :vl-unary-bitnot)
               (equal (len args) 1))
-  :returns (new-x vl-expr-p :hyp :fguard)
+  :returns (new-x vl-expr-p)
 
   (b* ((arg (first args))
 
        ;; Reduce ~~A to A
-       ((when (and (vl-nonatom-p arg)
+       ((when (and (not (vl-atom-p arg))
                    (eq (vl-nonatom->op arg) :vl-unary-bitnot)))
         (first (vl-nonatom->args arg)))
 
@@ -81,7 +82,7 @@ output using an equivalence checker.</p>")
           ans))
 
        ;; Reduce ~(A ? B : C) to (A ? ~B : ~C)
-       ((when (and (vl-nonatom-p arg)
+       ((when (and (not (vl-atom-p arg))
                    (eq (vl-nonatom->op arg) :vl-qmark)))
         (b* (((list a b c) (vl-nonatom->args arg))
              (~b (make-vl-nonatom :op :vl-unary-bitnot
@@ -103,7 +104,7 @@ output using an equivalence checker.</p>")
        #||
        (thm (iff (not (and a b)) (or (not a) (not b))))
        ||#
-       ((when (and (vl-nonatom-p arg)
+       ((when (and (not (vl-atom-p arg))
                    (eq (vl-nonatom->op arg) :vl-binary-bitand)
                    ;; (let ((and-args (vl-nonatom->args arg)))
                    ;;   (or (and (vl-nonatom-p (first and-args))
@@ -131,7 +132,7 @@ output using an equivalence checker.</p>")
        #||
        (thm (iff (not (or a b)) (and (not a) (not b))))
        ||#
-       ((when (and (vl-nonatom-p arg)
+       ((when (and (not (vl-atom-p arg))
                    (eq (vl-nonatom->op arg) :vl-binary-bitor)
                    ;; (let ((and-args (vl-nonatom->args arg)))
                    ;;   (or (and (vl-nonatom-p (first and-args))
@@ -158,14 +159,13 @@ output using an equivalence checker.</p>")
     (change-vl-nonatom x :args args)))
 
 
-
 (define vl-expr-simp-binary-bitand
   ((x    vl-expr-p     "Expression to rewrite, of the form @('a & b').")
    (args vl-exprlist-p "Its already-rewritten args."))
-  :guard (and (vl-nonatom-p x)
+  :guard (and (not (vl-atom-p x))
               (equal (vl-nonatom->op x) :vl-binary-bitand)
               (equal (len args) 2))
-  :returns (new-x vl-expr-p :hyp :fguard)
+  :returns (new-x vl-expr-p)
   (b* (((list arg1 arg2) args)
 
        ;; Reduce (A & 0) to 0
@@ -193,7 +193,7 @@ output using an equivalence checker.</p>")
                    (equal (vl-expr->finaltype x) :vl-unsigned)
                    (equal (vl-expr->finalwidth arg1) 1)
                    (equal (vl-expr->finaltype arg1) :vl-unsigned)))
-        (b* ((ans arg1))
+        (b* ((ans (vl-expr-fix arg1)))
           (vl-cw-ps-seq (vl-cw "AND1a rewrite ~a0 to ~a1~%" x ans))
           ans))
 
@@ -204,7 +204,7 @@ output using an equivalence checker.</p>")
                    (equal (vl-expr->finaltype x) :vl-unsigned)
                    (equal (vl-expr->finalwidth arg2) 1)
                    (equal (vl-expr->finaltype arg2) :vl-unsigned)))
-        (b* ((ans arg2))
+        (b* ((ans (vl-expr-fix arg2)))
           (vl-cw-ps-seq (vl-cw "AND1b rewrite ~a0 to ~a1~%" x ans))
           ans)))
 
@@ -216,10 +216,10 @@ output using an equivalence checker.</p>")
 (define vl-expr-simp-binary-bitor
   ((x    vl-expr-p     "Expression to rewrite, of the form FOO | BAR.")
    (args vl-exprlist-p "Its already-rewritten args."))
-  :guard (and (vl-nonatom-p x)
+  :guard (and (not (vl-atom-p x))
               (equal (vl-nonatom->op x) :vl-binary-bitor)
               (equal (len args) 2))
-  :returns (new-x vl-expr-p :hyp :fguard)
+  :returns (new-x vl-expr-p)
   (b* (((list arg1 arg2) args)
 
        ;; Reduce (A | 0) to A, for A of any width.
@@ -227,7 +227,7 @@ output using an equivalence checker.</p>")
                    (eql (vl-resolved->val arg2) 0)
                    (equal (vl-expr->finalwidth x) (vl-expr->finalwidth arg1))
                    (equal (vl-expr->finaltype x) (vl-expr->finaltype arg1))))
-        (b* ((ans arg1))
+        (b* ((ans (vl-expr-fix arg1)))
           (vl-cw-ps-seq (vl-cw "ORa0 rewrite ~a0 to ~a1~%" x ans))
           ans))
 
@@ -236,7 +236,7 @@ output using an equivalence checker.</p>")
                    (eql (vl-resolved->val arg1) 0)
                    (equal (vl-expr->finalwidth x) (vl-expr->finalwidth arg2))
                    (equal (vl-expr->finaltype x) (vl-expr->finaltype arg2))))
-        (b* ((ans arg2))
+        (b* ((ans (vl-expr-fix arg2)))
           (vl-cw-ps-seq (vl-cw "OR0a rewrite ~a0 to ~a1~%" x ans))
           ans))
 
@@ -249,7 +249,7 @@ output using an equivalence checker.</p>")
                    (eq (vl-expr->finaltype x) :vl-unsigned)
                    (eq (vl-expr->finaltype arg1) :vl-unsigned)
                    (eq (vl-expr->finaltype arg2) :vl-unsigned)))
-        (b* ((ans arg2))
+        (b* ((ans (vl-expr-fix arg2)))
           (vl-cw-ps-seq (vl-cw "ORa1 rewrite ~a0 to ~a1~%" x ans))
           ans))
 
@@ -262,7 +262,7 @@ output using an equivalence checker.</p>")
                    (eq (vl-expr->finaltype x) :vl-unsigned)
                    (eq (vl-expr->finaltype arg1) :vl-unsigned)
                    (eq (vl-expr->finaltype arg2) :vl-unsigned)))
-        (b* ((ans arg1))
+        (b* ((ans (vl-expr-fix arg1)))
           (vl-cw-ps-seq (vl-cw "OR1a rewrite ~a0 to ~a1~%" x ans))
           ans)))
 
@@ -274,14 +274,14 @@ output using an equivalence checker.</p>")
 (define vl-expr-simp-qmark
   ((x    vl-expr-p     "Expression to rewrite, of the form FOO ? BAR : BAZ.")
    (args vl-exprlist-p "Its already-rewritten args."))
-  :guard (and (vl-nonatom-p x)
+  :guard (and (not (vl-atom-p x))
               (equal (vl-nonatom->op x) :vl-qmark)
               (equal (len args) 3))
-  :returns (new-x vl-expr-p :hyp :fguard)
+  :returns (new-x vl-expr-p)
   (b* (((list a b c) args)
 
        ;; Reduce ~A ? B : C to A ? C : B
-       ((when (and (vl-nonatom-p a)
+       ((when (and (not (vl-atom-p a))
                    (eq (vl-nonatom->op a) :vl-unary-bitnot)))
         (b* (((list ~a b c) args)
              (a   (first (vl-nonatom->args ~a)))
@@ -294,7 +294,7 @@ output using an equivalence checker.</p>")
                    (eql (vl-resolved->val a) 1)
                    (equal (vl-expr->finalwidth x) (vl-expr->finalwidth b))
                    (equal (vl-expr->finaltype x) (vl-expr->finaltype b))))
-        (b* ((ans b))
+        (b* ((ans (vl-expr-fix b)))
           (vl-cw-ps-seq (vl-cw "QM1 rewrite ~a0 to ~a1~%" x ans))
           ans))
 
@@ -303,7 +303,7 @@ output using an equivalence checker.</p>")
                    (eql (vl-resolved->val a) 0)
                    (equal (vl-expr->finalwidth x) (vl-expr->finalwidth c))
                    (equal (vl-expr->finaltype x) (vl-expr->finaltype c))))
-        (b* ((ans c))
+        (b* ((ans (vl-expr-fix c)))
           (vl-cw-ps-seq (vl-cw "QM0 rewrite ~a0 to ~a1~%" x ans))
           ans)))
 
@@ -314,11 +314,12 @@ output using an equivalence checker.</p>")
   :short "Core routine to simplify expressions."
   (define vl-expr-simp
     ((x vl-expr-p))
-    :returns (new-x vl-expr-p :hyp :fguard)
+    :returns (new-x vl-expr-p)
     :measure (vl-expr-count x)
     :verify-guards nil
     :flag :expr
-    (b* (((when (vl-idexpr-p x))
+    (b* ((x (vl-expr-fix x))
+         ((when (vl-idexpr-p x))
           (b* ((name (vl-idexpr->name x))
                ((when (and (or (equal name "vdd0")
                                (equal name "vdd3"))
@@ -346,8 +347,7 @@ output using an equivalence checker.</p>")
   (define vl-exprlist-simp
     ((x vl-exprlist-p))
     :returns (new-x (and (vl-exprlist-p new-x)
-                         (equal (len new-x) (len x)))
-                    :hyp :fguard)
+                         (equal (len new-x) (len x))))
     :measure (vl-exprlist-count x)
     :flag :list
     (if (atom x)
@@ -361,19 +361,18 @@ output using an equivalence checker.</p>")
 ; We could do these reductions in more places, but mainly we care about
 ; assignments and instance arguments.
 
-(define vl-assign-simp
-  ((x vl-assign-p))
-  :returns (new-x vl-assign-p :hyp :fguard)
+(define vl-assign-simp ((x vl-assign-p))
+  :returns (new-x vl-assign-p)
   (change-vl-assign x :expr (vl-expr-simp (vl-assign->expr x))))
 
-(defprojection vl-assignlist-simp (x)
-  (vl-assign-simp x)
-  :guard (vl-assignlist-p x)
-  :result-type vl-assignlist-p)
+(defprojection vl-assignlist-simp ((x vl-assignlist-p))
+  :returns (new-x vl-assignlist-p)
+  (vl-assign-simp x))
 
 (define vl-plainarg-simp ((x vl-plainarg-p))
-  :returns (new-x vl-plainarg-p :hyp :fguard)
-  (b* (((vl-plainarg x) x)
+  :returns (new-x vl-plainarg-p)
+  (b* ((x (vl-plainarg-fix x))
+       ((vl-plainarg x) x)
        ((unless (eq x.dir :vl-input))
         ;; Don't want to tamper with outputs/inouts, not that they should
         ;; have negations anyway...
@@ -382,48 +381,46 @@ output using an equivalence checker.</p>")
         x))
     (change-vl-plainarg x :expr (vl-expr-simp x.expr))))
 
-(defprojection vl-plainarglist-simp (x)
-  (vl-plainarg-simp x)
-  :guard (vl-plainarglist-p x)
-  :result-type vl-plainarglist-p)
+(defprojection vl-plainarglist-simp ((x vl-plainarglist-p))
+  :returns (new-x vl-plainarglist-p)
+  (vl-plainarg-simp x))
 
 (define vl-modinst-simp ((x vl-modinst-p))
-  :returns (new-x vl-modinst-p :hyp :fguard)
-  (b* (((vl-modinst x) x)
-       ((when (vl-arguments->namedp x.portargs))
-        ;; Not resolved, don't modify
-        x)
-       (args (vl-arguments->args x.portargs))
-       (args (vl-plainarglist-simp args)))
-    (change-vl-modinst x
-                       :portargs (vl-arguments nil args))))
+  :returns (new-x vl-modinst-p)
+  (b* ((x (vl-modinst-fix x))
+       ((vl-modinst x) x))
+    (vl-arguments-case x.portargs
+      :named
+      ;; Not resolved, don't modify
+      x
+      :plain
+      (b* ((plainargs (vl-plainarglist-simp x.portargs.args))
+           (args      (make-vl-arguments-plain :args plainargs)))
+        (change-vl-modinst x :portargs args)))))
 
-(defprojection vl-modinstlist-simp (x)
-  (vl-modinst-simp x)
-  :guard (vl-modinstlist-p x)
-  :result-type vl-modinstlist-p)
-
+(defprojection vl-modinstlist-simp ((x vl-modinstlist-p))
+  :returns (new-x vl-modinstlist-p)
+  (vl-modinst-simp x))
 
 (define vl-module-simp ((x vl-module-p))
-  :returns (new-x vl-module-p :hyp :fguard)
-  (b* (((vl-module x) x)
+  :returns (new-x vl-module-p)
+  (b* ((x (vl-module-fix x))
+       ((vl-module x) x)
        ((when (vl-module->hands-offp x))
         x))
     (change-vl-module x
                       :assigns (vl-assignlist-simp x.assigns)
                       :modinsts (vl-modinstlist-simp x.modinsts))))
 
-(defprojection vl-modulelist-simp (x)
-  (vl-module-simp x)
-  :guard (vl-modulelist-p x)
-  :result-type vl-modulelist-p)
+(defprojection vl-modulelist-simp ((x vl-modulelist-p))
+  :returns (new-x vl-modulelist-p)
+  (vl-module-simp x))
 
 (define vl-design-simp
   :short "Top-level @(see expr-simp) transform."
   ((x vl-design-p))
   :returns (new-x vl-design-p)
-  (b* ((x (vl-design-fix x))
-       ((vl-design x) x))
+  (b* (((vl-design x) x))
     (change-vl-design x :mods (vl-modulelist-simp x.mods))))
 
 

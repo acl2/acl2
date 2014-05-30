@@ -20,7 +20,7 @@
 
 (in-package "VL")
 (include-book "../mlib/ctxexprs")
-(include-book "../transforms/xf-sizing")
+(include-book "../transforms/xf-expr-size")
 (include-book "../mlib/fmt")
 (local (include-book "../util/arithmetic"))
 

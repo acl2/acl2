@@ -21,8 +21,10 @@
 (in-package "VL")
 (include-book "../mlib/expr-tools")
 (include-book "../mlib/stmt-tools")
-(include-book "../mlib/fix")
+(include-book "../mlib/strip")
 (local (include-book "../util/arithmetic"))
+(local (in-theory (enable tag-reasoning)))
+(local (std::add-default-post-define-hook :fix))
 
 (defxdoc oprewrite
   :parents (transforms)
@@ -104,10 +106,11 @@ it as a zatom and occform it correctly.</p>")
    (width posp "The bit-width of @('x').")
    (x     natp "The integer to replicate."))
   :returns (replicated natp :rule-classes :type-prescription)
-  (if (zp n)
-      0
-    (+ (ash (lnfix x) (* width (1- n)))
-       (vl-replicate-constint-value (- n 1) width x)))
+  (let ((width (lposfix width)))
+    (if (zp n)
+        0
+      (+ (ash (lnfix x) (* width (1- n)))
+         (vl-replicate-constint-value (- n 1) width x))))
   ///
   (local
    (progn
@@ -122,21 +125,22 @@ it as a zatom and occform it correctly.</p>")
   :short "Generate @('n') copies of a weird integer."
   ((n natp         "How many copies to generate.")
    (x vl-bitlist-p "The bits of the weirdint."))
-  :returns (new-bits vl-bitlist-p :hyp (vl-bitlist-p x))
+  :returns (new-bits vl-bitlist-p)
   (if (zp n)
       nil
-    (append-without-guard x (vl-replicate-weirdint-bits (- n 1) x)))
+    (append-without-guard (vl-bitlist-fix x)
+                          (vl-replicate-weirdint-bits (- n 1) x)))
   ///
   (defthm len-of-vl-replicate-weirdint-bits
     (equal (len (vl-replicate-weirdint-bits n x))
            (* (nfix n) (len x)))))
 
-(define vl-maybe-consolidate-multiconcat
-  ((x (and (vl-expr-p x)
-           (not (vl-atom-p x))
-           (equal (vl-nonatom->op x) :vl-multiconcat))))
-  :returns (expr vl-expr-p :hyp :fguard)
-  (b* (((list arg1 arg2) (vl-nonatom->args x))
+(define vl-maybe-consolidate-multiconcat ((x vl-expr-p))
+  :guard (and (not (vl-atom-p x))
+              (equal (vl-nonatom->op x) :vl-multiconcat))
+  :returns (expr vl-expr-p)
+  (b* ((x (vl-expr-fix x))
+       ((list arg1 arg2) (vl-nonatom->args x))
        ((unless (and
                  ;; The first argument must be a constant, positive integer.
                  (vl-fast-atom-p arg1)
@@ -181,7 +185,6 @@ it as a zatom and occform it correctly.</p>")
 
       x))
 
-
 (define vl-op-oprewrite
   :short "Main operator rewriting function."
   ((op       vl-op-p            "Some operator")
@@ -193,12 +196,12 @@ it as a zatom and occform it correctly.</p>")
       (equal (len args) (vl-op-arity op)))
   :returns
   (mv (warnings vl-warninglist-p)
-      (expr     vl-expr-p :hyp :fguard
-                "Possibly simplified, rewritten version of @('op(args)')."))
+      (expr     vl-expr-p "Possibly simplified, rewritten version of @('op(args)')."))
   :long "<p>Keeping this function separate from @(see vl-expr-oprewrite) helps
          to keep the mutual recursion as simple as possible.</p>"
   :guard-hints (("Goal" :in-theory (enable vl-op-p vl-op-arity)))
-  (case op
+  :verbosep t
+  (case (vl-op-fix op)
     (:vl-qmark
      (b* (((list a b c) args)
           (or-a (make-vl-nonatom :op :vl-unary-bitor
@@ -445,9 +448,9 @@ it as a zatom and occform it correctly.</p>")
   :short "Recognize @('a ? b : c') and return the components, or return
 @('nil')s for each when it's not a @('?:') expression."
   ((x vl-expr-p))
-  :returns (mv (a (equal (vl-expr-p a) (if a t nil)) :hyp :guard)
-               (b (equal (vl-expr-p b) (if a t nil)) :hyp :guard)
-               (c (equal (vl-expr-p c) (if a t nil)) :hyp :guard))
+  :returns (mv (a (equal (vl-expr-p a) (if a t nil)))
+               (b (equal (vl-expr-p b) (if a t nil)))
+               (c (equal (vl-expr-p c) (if a t nil))))
   (b* (((when (vl-fast-atom-p x))
         (mv nil nil nil))
        ((unless (and (eq (vl-nonatom->op x) :vl-qmark)
@@ -466,9 +469,9 @@ it as a zatom and occform it correctly.</p>")
     4. (i1 === i2) ? i2 : (s ? i2 : i1)
 })"
   ((x vl-expr-p))
-  :returns (mv (s   (equal (vl-expr-p s)  (if s t nil)) :hyp :guard)
-               (i1  (equal (vl-expr-p i1) (if s t nil)) :hyp :guard)
-               (i2  (equal (vl-expr-p i2) (if s t nil)) :hyp :guard))
+  :returns (mv (s   (equal (vl-expr-p s)  (if s t nil)))
+               (i1  (equal (vl-expr-p i1) (if s t nil)))
+               (i2  (equal (vl-expr-p i2) (if s t nil))))
   (b* (((mv equiv i1 mux)
         (vl-qmark-p x))
        ((unless equiv)
@@ -501,10 +504,10 @@ it as a zatom and occform it correctly.</p>")
 (define vl-goofymux-rewrite
   :short "Annotate weird muxes with less conservative X behavior."
   ((x vl-expr-p))
-  :returns (new-x vl-expr-p :hyp :fguard)
+  :returns (new-x vl-expr-p)
   (b* (((mv sel i1 i2) (vl-goofymux-p x))
-         ((unless sel)
-          x))
+       ((unless sel)
+        (vl-expr-fix x)))
       (make-vl-nonatom
        :op :vl-qmark
        :args (list sel i1 i2)
@@ -515,7 +518,7 @@ it as a zatom and occform it correctly.</p>")
   ((local (defthm crock
             (implies (and (mv-nth 0 (vl-goofymux-p x))
                           (vl-expr-p x))
-                     (vl-nonatom-p x))
+                     (equal (vl-expr-kind x) :nonatom))
             :hints(("Goal" :in-theory (enable vl-goofymux-p
                                               vl-qmark-p))))))
   ///
@@ -527,38 +530,63 @@ it as a zatom and occform it correctly.</p>")
 
   (local (defthm l1
            (implies (not (vl-atom-p x))
-                    (equal (vl-expr-count x)
-                           (+ 1 (vl-exprlist-count (vl-nonatom->args x)))))
-           :hints(("Goal" :in-theory (enable vl-expr-count)))))
+                    (equal (vl-expr-count-noatts x)
+                           (+ 1 (vl-exprlist-count-noatts (vl-nonatom->args x)))))
+           :hints(("Goal" :in-theory (enable vl-expr-count-noatts)))))
+
+  (local (defthm l2a
+           (implies (equal (vl-nonatom->op x) :vl-qmark)
+                    (not (consp (cdddr (vl-nonatom->args x)))))
+           :hints(("Goal"
+                   :in-theory (e/d (vl-arity-ok-p)
+                                   (vl-nonatom-requirements len-of-vl-nonatom->args))
+                   :use ((:instance vl-nonatom-requirements))))))
+
+  (local (defthm l2b
+           (implies (atom x)
+                    (equal (vl-exprlist-count-noatts x)
+                           1))
+           :hints(("Goal" :in-theory (enable vl-exprlist-count-noatts)))))
 
   (local (defthm l2
            (implies (mv-nth 0 (vl-qmark-p x))
-                    (equal (vl-expr-count x)
-                           (+ 2 (vl-expr-count (mv-nth 0 (vl-qmark-p x)))
-                              (vl-expr-count (mv-nth 1 (vl-qmark-p x)))
-                              (vl-expr-count (mv-nth 2 (vl-qmark-p x))))))
-           :hints(("Goal" :in-theory (e/d (vl-qmark-p)
-                                          ((force)))
-                   :expand ((vl-exprlist-count (vl-nonatom->args x))
-                            (vl-exprlist-count (cdr (vl-nonatom->args x)))
-                            (vl-exprlist-count (cddr (vl-nonatom->args x))))))))
+                    (equal (vl-expr-count-noatts x)
+                           (+ 5 (vl-expr-count-noatts (mv-nth 0 (vl-qmark-p x)))
+                              (vl-expr-count-noatts (mv-nth 1 (vl-qmark-p x)))
+                              (vl-expr-count-noatts (mv-nth 2 (vl-qmark-p x))))))
+           :hints(("Goal"
+                   :in-theory (e/d (vl-qmark-p)
+                                   ((force)))
+                   :expand ((vl-expr-count-noatts x)
+                            (vl-exprlist-count-noatts (vl-nonatom->args x))
+                            (vl-exprlist-count-noatts (cdr (vl-nonatom->args x)))
+                            (vl-exprlist-count-noatts (cddr (vl-nonatom->args x))))))))
 
-  (defthm vl-expr-count-of-vl-goofymux-rewrite
-    (<= (vl-expr-count (vl-goofymux-rewrite x))
-        (vl-expr-count x))
+  (defthm vl-goofymux-rewrite-count-weak
+    (<= (vl-expr-count-noatts (vl-goofymux-rewrite x))
+        (vl-expr-count-noatts x))
     :rule-classes ((:rewrite) (:linear))
-    :hints(("Goal" :in-theory (enable vl-goofymux-p))))
+    :hints(("Goal"
+            :in-theory (enable vl-goofymux-p))))
 
-  (defthm vl-nonatom-p-of-vl-goofymux-rewrite
-    (implies (vl-expr-p x)
-             (equal (vl-nonatom-p (vl-goofymux-rewrite x))
-                    (vl-nonatom-p x))))
+  (defthm vl-goofymux-rewrite-count-strong
+    (implies (not (equal (vl-expr-kind x) :atom))
+             (< (vl-exprlist-count-noatts (vl-nonatom->args (vl-goofymux-rewrite x)))
+                (vl-expr-count-noatts x)))
+    :hints(("Goal"
+            :in-theory (enable vl-goofymux-p
+                               vl-qmark-p)
+            :expand ((vl-expr-count-noatts x)
+                     (vl-exprlist-count-noatts (vl-nonatom->args x))
+                     (vl-exprlist-count-noatts (cdr (vl-nonatom->args x)))
+                     (vl-exprlist-count-noatts (cddr (vl-nonatom->args x)))))))
 
-  (defthm vl-not-atom-p-of-vl-goofymux-rewrite
-    (equal (vl-atom-p (vl-goofymux-rewrite x))
-           (vl-atom-p x))
-    :hints(("Goal" :in-theory (e/d (vl-goofymux-p vl-qmark-p)
-                                   ((force)))))))
+  (defthm vl-expr-kind-of-vl-goofymux-rewrite
+    (equal (vl-expr-kind (vl-goofymux-rewrite x))
+           (vl-expr-kind x))
+    :hints(("Goal" :in-theory (enable vl-goofymux-p
+                                      vl-qmark-p)))))
+
 
 
 
@@ -570,10 +598,11 @@ vl-expr-p) @('x') and returns @('(mv warnings-prime x-prime)')."
      ((x vl-expr-p)
       (warnings vl-warninglist-p))
      :returns (mv (warnings vl-warninglist-p)
-                  (new-x    vl-expr-p :hyp (force (vl-expr-p x))))
+                  (new-x    vl-expr-p))
      :verify-guards nil
-     :measure (vl-expr-count x)
-     (b* (((when (vl-fast-atom-p x))
+     :measure (vl-expr-count-noatts x)
+     (b* ((x (vl-expr-fix x))
+          ((when (vl-fast-atom-p x))
            (mv (ok) x))
 
           ;; Outside-in rewriting of any goofy mux expressions.  We might
@@ -590,51 +619,60 @@ vl-expr-p) @('x') and returns @('(mv warnings-prime x-prime)')."
      ((x vl-exprlist-p)
       (warnings vl-warninglist-p))
      :returns (mv (warnings vl-warninglist-p)
-                  (new-x (and (implies (force (vl-exprlist-p x))
-                                       (vl-exprlist-p new-x))
+                  (new-x (and (vl-exprlist-p new-x)
                               (equal (len new-x) (len x)))))
-     :measure (vl-exprlist-count x)
+     :measure (vl-exprlist-count-noatts x)
      (b* (((when (atom x))
            (mv (ok) nil))
           ((mv warnings car-prime) (vl-expr-oprewrite (car x) warnings))
           ((mv warnings cdr-prime) (vl-exprlist-oprewrite (cdr x) warnings)))
        (mv warnings (cons car-prime cdr-prime))))
    ///
-   (verify-guards vl-expr-oprewrite))
+   (verify-guards vl-expr-oprewrite)
+   (deffixequiv-mutual vl-expr-oprewrite))
 
 
-(defmacro def-vl-oprewrite (name &key type body)
-  `(define ,name
-     :short ,(cat "Rewrite operators throughout a @(see " (symbol-name name) ")")
+(defmacro def-vl-oprewrite (name &key body verbosep prepwork)
+  (b* ((mksym-package-symbol (pkg-witness "VL"))
+       (type (mksym name '-p))
+       (fix  (mksym name '-fix))
+       (fn   (mksym name '-oprewrite)))
+  `(define ,fn
+     :short ,(cat "Rewrite operators throughout a @(see " (symbol-name type) ")")
      ((x ,type)
       (warnings vl-warninglist-p))
      :returns (mv (warnings vl-warninglist-p)
-                  (new-x    ,type :hyp (force (,type x))))
-     ,body))
+                  (new-x    ,type))
+     :verbosep ,verbosep
+     :prepwork ,prepwork
+     (b* ((x (,fix x)))
+       ,body))))
 
-(defmacro def-vl-oprewrite-list (name &key type element)
-  `(define ,name
-     :short ,(cat "Rewrite operators throughout a @(see " (symbol-name name) ")")
-     ((x ,type)
-      (warnings vl-warninglist-p))
-     :returns (mv (warnings vl-warninglist-p)
-                  (new-x    ,type :hyp (force (,type x))))
-     (b* (((when (atom x))
-           (mv (ok) nil))
-          ((mv warnings car-prime) (,element (car x) warnings))
-          ((mv warnings cdr-prime) (,name (cdr x) warnings)))
-       (mv warnings (cons car-prime cdr-prime)))
-     ///
-     (defmvtypes ,name (nil true-listp))))
+(defmacro def-vl-oprewrite-list (name &key element)
+  (b* ((mksym-package-symbol (pkg-witness "VL"))
+       (type    (mksym name '-p))
+       (fn      (mksym name '-oprewrite))
+       (elem-fn (mksym element '-oprewrite)))
+    `(define ,fn
+       :short ,(cat "Rewrite operators throughout a @(see " (symbol-name type) ")")
+       ((x ,type)
+        (warnings vl-warninglist-p))
+       :returns (mv (warnings vl-warninglist-p)
+                    (new-x    ,type))
+       (b* (((when (atom x))
+             (mv (ok) nil))
+            ((mv warnings car-prime) (,elem-fn (car x) warnings))
+            ((mv warnings cdr-prime) (,fn (cdr x) warnings)))
+         (mv warnings (cons car-prime cdr-prime)))
+       ///
+       (defmvtypes ,fn (nil true-listp)))))
 
-(def-vl-oprewrite vl-maybe-expr-oprewrite
-  :type vl-maybe-expr-p
+(def-vl-oprewrite vl-maybe-expr
   :body (if (not x)
             (mv (ok) nil)
           (vl-expr-oprewrite x warnings)))
 
-(def-vl-oprewrite vl-assign-oprewrite
-  :type vl-assign-p
+(def-vl-oprewrite vl-assign
   :body (b* (((vl-assign x) x)
              ((mv warnings lvalue-prime)
               (vl-expr-oprewrite x.lvalue warnings))
@@ -645,13 +683,9 @@ vl-expr-p) @('x') and returns @('(mv warnings-prime x-prime)')."
                                   :lvalue lvalue-prime
                                   :expr expr-prime))))
 
-(def-vl-oprewrite-list vl-assignlist-oprewrite
-  :type vl-assignlist-p
-  :element vl-assign-oprewrite)
+(def-vl-oprewrite-list vl-assignlist :element vl-assign)
 
-
-(def-vl-oprewrite vl-plainarg-oprewrite
-  :type vl-plainarg-p
+(def-vl-oprewrite vl-plainarg
   :body (b* (((vl-plainarg x) x)
              ((unless x.expr)
               (mv (ok) x))
@@ -659,13 +693,10 @@ vl-expr-p) @('x') and returns @('(mv warnings-prime x-prime)')."
               (vl-expr-oprewrite x.expr warnings)))
             (mv warnings (change-vl-plainarg x :expr expr-prime))))
 
-(def-vl-oprewrite-list vl-plainarglist-oprewrite
-  :type vl-plainarglist-p
-  :element vl-plainarg-oprewrite)
+(def-vl-oprewrite-list vl-plainarglist :element vl-plainarg)
 
 
-(def-vl-oprewrite vl-namedarg-oprewrite
-  :type vl-namedarg-p
+(def-vl-oprewrite vl-namedarg
   :body (b* (((vl-namedarg x) x)
              ((unless x.expr)
               (mv (ok) x))
@@ -673,68 +704,54 @@ vl-expr-p) @('x') and returns @('(mv warnings-prime x-prime)')."
               (vl-expr-oprewrite x.expr warnings)))
             (mv warnings (change-vl-namedarg x :expr expr-prime))))
 
-(def-vl-oprewrite-list vl-namedarglist-oprewrite
-  :type vl-namedarglist-p
-  :element vl-namedarg-oprewrite)
+(def-vl-oprewrite-list vl-namedarglist :element vl-namedarg)
 
-(def-vl-oprewrite vl-arguments-oprewrite
-  :type vl-arguments-p
-  :body (b* (((vl-arguments x) x)
-             ((mv warnings args-prime)
-              (if x.namedp
-                  (vl-namedarglist-oprewrite x.args warnings)
-                (vl-plainarglist-oprewrite x.args warnings))))
-            (mv warnings (vl-arguments x.namedp args-prime))))
+(def-vl-oprewrite vl-arguments
+  :body (vl-arguments-case x
+          :named (b* (((mv warnings args-prime)
+                       (vl-namedarglist-oprewrite x.args warnings)))
+                   (mv warnings (change-vl-arguments-named x :args args-prime)))
+          :plain (b* (((mv warnings args-prime)
+                       (vl-plainarglist-oprewrite x.args warnings)))
+                   (mv warnings (change-vl-arguments-plain x :args args-prime)))))
 
-(def-vl-oprewrite vl-modinst-oprewrite
-  :type vl-modinst-p
+(def-vl-oprewrite vl-modinst
   :body (b* (((vl-modinst x) x)
              ((mv warnings args-prime)
               (vl-arguments-oprewrite x.portargs warnings)))
             (mv warnings (change-vl-modinst x :portargs args-prime))))
 
-(def-vl-oprewrite-list vl-modinstlist-oprewrite
-  :type vl-modinstlist-p
-  :element vl-modinst-oprewrite)
+(def-vl-oprewrite-list vl-modinstlist :element vl-modinst)
 
-(def-vl-oprewrite vl-gateinst-oprewrite
-  :type vl-gateinst-p
+(def-vl-oprewrite vl-gateinst
   :body (b* (((vl-gateinst x) x)
              ((mv warnings args-prime)
               (vl-plainarglist-oprewrite x.args warnings)))
             (mv warnings (change-vl-gateinst x :args args-prime))))
 
-(def-vl-oprewrite-list vl-gateinstlist-oprewrite
-  :type vl-gateinstlist-p
-  :element vl-gateinst-oprewrite)
+(def-vl-oprewrite-list vl-gateinstlist :element vl-gateinst)
 
-(def-vl-oprewrite vl-delaycontrol-oprewrite
-  :type vl-delaycontrol-p
+(def-vl-oprewrite vl-delaycontrol
   :body (b* (((vl-delaycontrol x) x)
              ((mv warnings value-prime)
               (vl-expr-oprewrite x.value warnings)))
             (mv warnings (change-vl-delaycontrol x :value value-prime))))
 
-(def-vl-oprewrite vl-evatom-oprewrite
-  :type vl-evatom-p
+(def-vl-oprewrite vl-evatom
   :body (b* (((vl-evatom x) x)
              ((mv warnings expr-prime)
               (vl-expr-oprewrite x.expr warnings)))
             (mv warnings (change-vl-evatom x :expr expr-prime))))
 
-(def-vl-oprewrite-list vl-evatomlist-oprewrite
-  :type vl-evatomlist-p
-  :element vl-evatom-oprewrite)
+(def-vl-oprewrite-list vl-evatomlist :element vl-evatom)
 
-(def-vl-oprewrite vl-eventcontrol-oprewrite
-  :type vl-eventcontrol-p
+(def-vl-oprewrite vl-eventcontrol
   :body (b* (((vl-eventcontrol x) x)
              ((mv warnings atoms-prime)
               (vl-evatomlist-oprewrite x.atoms warnings)))
             (mv warnings (change-vl-eventcontrol x :atoms atoms-prime))))
 
-(def-vl-oprewrite vl-repeateventcontrol-oprewrite
-  :type vl-repeateventcontrol-p
+(def-vl-oprewrite vl-repeateventcontrol
   :body (b* (((vl-repeateventcontrol x) x)
              ((mv warnings expr-prime)
               (vl-expr-oprewrite x.expr warnings))
@@ -745,20 +762,13 @@ vl-expr-p) @('x') and returns @('(mv warnings-prime x-prime)')."
                                                     :ctrl ctrl-prime)))
             (mv warnings x-prime)))
 
-(encapsulate
- ()
- (local (in-theory (disable vl-delayoreventcontrol-p-when-vl-maybe-delayoreventcontrol-p)))
- (def-vl-oprewrite vl-delayoreventcontrol-oprewrite
-   :type vl-delayoreventcontrol-p
-   :body (case (tag x)
-           (:vl-delaycontrol (vl-delaycontrol-oprewrite x warnings))
-           (:vl-eventcontrol (vl-eventcontrol-oprewrite x warnings))
-           (:vl-repeat-eventcontrol (vl-repeateventcontrol-oprewrite x warnings))
-           (otherwise
-            (mv (impossible) x)))))
+(def-vl-oprewrite vl-delayoreventcontrol
+  :body (case (tag x)
+          (:vl-delaycontrol (vl-delaycontrol-oprewrite x warnings))
+          (:vl-eventcontrol (vl-eventcontrol-oprewrite x warnings))
+          (otherwise        (vl-repeateventcontrol-oprewrite x warnings))))
 
-(def-vl-oprewrite vl-maybe-delayoreventcontrol-oprewrite
-  :type vl-maybe-delayoreventcontrol-p
+(def-vl-oprewrite vl-maybe-delayoreventcontrol
   :body (if x
             (vl-delayoreventcontrol-oprewrite x warnings)
           (mv (ok) nil)))
@@ -774,150 +784,98 @@ vl-expr-p) @('x') and returns @('(mv warnings-prime x-prime)')."
           :use ((:instance return-type-of-vl-delayoreventcontrol-oprewrite.new-x)))))
 
 
-(def-vl-oprewrite vl-nullstmt-oprewrite
-  :type vl-nullstmt-p
-  :body (mv (ok) x))
-
-(def-vl-oprewrite vl-assignstmt-oprewrite
-  :type vl-assignstmt-p
-  :body (b* (((vl-assignstmt x) x)
-             ((mv warnings lvalue-prime)
-              (vl-expr-oprewrite x.lvalue warnings))
-             ((mv warnings expr-prime)
-              (vl-expr-oprewrite x.expr warnings))
-             ((mv warnings ctrl-prime)
-              (vl-maybe-delayoreventcontrol-oprewrite x.ctrl warnings))
-             (x-prime
-              (change-vl-assignstmt x
-                                    :lvalue lvalue-prime
-                                    :expr expr-prime
-                                    :ctrl ctrl-prime)))
-          (mv warnings x-prime)))
-
-(def-vl-oprewrite vl-deassignstmt-oprewrite
-  :type vl-deassignstmt-p
-  :body (b* (((vl-deassignstmt x) x)
-             ((mv warnings lvalue-prime)
-              (vl-expr-oprewrite x.lvalue warnings))
-             (x-prime
-              (change-vl-deassignstmt x :lvalue lvalue-prime)))
-          (mv warnings x-prime)))
-
-(def-vl-oprewrite vl-enablestmt-oprewrite
-  :type vl-enablestmt-p
-  :body (b* (((vl-enablestmt x) x)
-             ((mv warnings id-prime)
-              (vl-expr-oprewrite x.id warnings))
-             ((mv warnings args-prime)
-              (vl-exprlist-oprewrite x.args warnings))
-             (x-prime
-              (change-vl-enablestmt x
-                                    :id id-prime
-                                    :args args-prime)))
-          (mv warnings x-prime)))
-
-(def-vl-oprewrite vl-disablestmt-oprewrite
-  :type vl-disablestmt-p
-  :body (b* (((vl-disablestmt x) x)
-             ((mv warnings id-prime)
-              (vl-expr-oprewrite x.id warnings))
-             (x-prime
-              (change-vl-disablestmt x :id id-prime)))
-          (mv warnings x-prime)))
-
-(def-vl-oprewrite vl-eventtriggerstmt-oprewrite
-  :type vl-eventtriggerstmt-p
-  :body (b* (((vl-eventtriggerstmt x) x)
-             ((mv warnings id-prime)
-              (vl-expr-oprewrite x.id warnings))
-             (x-prime
-              (change-vl-eventtriggerstmt x :id id-prime)))
-          (mv warnings x-prime)))
-
-(def-vl-oprewrite vl-atomicstmt-oprewrite
-  :type vl-atomicstmt-p
-  :body (case (tag x)
-          (:vl-nullstmt         (vl-nullstmt-oprewrite x warnings))
-          (:vl-assignstmt       (vl-assignstmt-oprewrite x warnings))
-          (:vl-deassignstmt     (vl-deassignstmt-oprewrite x warnings))
-          (:vl-enablestmt       (vl-enablestmt-oprewrite x warnings))
-          (:vl-disablestmt      (vl-disablestmt-oprewrite x warnings))
-          (:vl-eventtriggerstmt (vl-eventtriggerstmt-oprewrite x warnings))
-          (otherwise
-           (mv (impossible) x))))
-
 (defines vl-stmt-oprewrite
 
   (define vl-stmt-oprewrite
     ((x        vl-stmt-p)
      (warnings vl-warninglist-p))
     :returns (mv (warnings vl-warninglist-p)
-                 (new-x    vl-stmt-p :hyp (force (vl-stmt-p x))))
+                 (new-x    vl-stmt-p))
     :verify-guards nil
-    :measure (two-nats-measure (acl2-count x) 1)
-    (b* (((when (vl-fast-atomicstmt-p x))
-          (vl-atomicstmt-oprewrite x warnings))
-         ((vl-compoundstmt x) x)
-         ((mv warnings exprs-prime)
-          (vl-exprlist-oprewrite x.exprs warnings))
-         ((mv warnings stmts-prime)
-          (vl-stmtlist-oprewrite x.stmts warnings))
-         ((mv warnings ctrl-prime)
-          (vl-maybe-delayoreventcontrol-oprewrite x.ctrl warnings))
-         (x-prime
+    :measure (vl-stmt-count x)
+    (b* ((x (vl-stmt-fix x))
+         ((when (vl-atomicstmt-p x))
+          (case (vl-stmt-kind x)
+            (:vl-nullstmt
+             (mv (ok) x))
+            (:vl-assignstmt
+             (b* (((vl-assignstmt x) x)
+                  ((mv warnings lvalue) (vl-expr-oprewrite x.lvalue warnings))
+                  ((mv warnings expr)   (vl-expr-oprewrite x.expr warnings))
+                  ((mv warnings ctrl)   (vl-maybe-delayoreventcontrol-oprewrite x.ctrl warnings)))
+               (mv warnings (change-vl-assignstmt x
+                                                  :lvalue lvalue
+                                                  :expr expr
+                                                  :ctrl ctrl))))
+            (:vl-deassignstmt
+             (b* (((vl-deassignstmt x) x)
+                  ((mv warnings lvalue) (vl-expr-oprewrite x.lvalue warnings)))
+               (mv warnings (change-vl-deassignstmt x :lvalue lvalue))))
+            (:vl-enablestmt
+             (b* (((vl-enablestmt x) x)
+                  ((mv warnings id)   (vl-expr-oprewrite x.id warnings))
+                  ((mv warnings args) (vl-exprlist-oprewrite x.args warnings)))
+               (mv warnings (change-vl-enablestmt x
+                                                  :id id
+                                                  :args args))))
+            (:vl-disablestmt
+             (b* (((vl-disablestmt x) x)
+                  ((mv warnings id) (vl-expr-oprewrite x.id warnings)))
+               (mv warnings (change-vl-disablestmt x :id id))))
+            (:vl-eventtriggerstmt
+             (b* (((vl-eventtriggerstmt x) x)
+                  ((mv warnings id) (vl-expr-oprewrite x.id warnings)))
+               (mv warnings (change-vl-eventtriggerstmt x :id id))))
+            (otherwise
+             (progn$ (impossible)
+                     (mv warnings x)))))
+         ((mv warnings exprs) (vl-exprlist-oprewrite (vl-compoundstmt->exprs x) warnings))
+         ((mv warnings stmts) (vl-stmtlist-oprewrite (vl-compoundstmt->stmts x) warnings))
+         ((mv warnings ctrl)  (vl-maybe-delayoreventcontrol-oprewrite (vl-compoundstmt->ctrl x) warnings)))
+      (mv warnings
           (change-vl-compoundstmt x
-                                  :exprs exprs-prime
-                                  :stmts stmts-prime
-                                  :ctrl ctrl-prime)))
-      (mv warnings x-prime)))
-
+                                  :exprs exprs
+                                  :stmts stmts
+                                  :ctrl ctrl))))
   (define vl-stmtlist-oprewrite
     ((x        vl-stmtlist-p)
      (warnings vl-warninglist-p))
     :returns (mv (warnings vl-warninglist-p)
-                 (new-x    (and (implies (force (vl-stmtlist-p x))
+                 (new-x    (and (implies (vl-stmtlist-p x)
                                          (vl-stmtlist-p new-x))
                                 (equal (len new-x) (len x)))))
-    :measure (two-nats-measure (acl2-count x) 0)
+    :measure (vl-stmtlist-count x)
     (b* (((when (atom x))
           (mv (ok) nil))
-         ((mv warnings car-prime) (vl-stmt-oprewrite (car x) warnings))
-         ((mv warnings cdr-prime) (vl-stmtlist-oprewrite (cdr x) warnings)))
-      (mv warnings (cons car-prime cdr-prime))))
+         ((mv warnings car) (vl-stmt-oprewrite (car x) warnings))
+         ((mv warnings cdr) (vl-stmtlist-oprewrite (cdr x) warnings)))
+      (mv warnings (cons car cdr))))
 
   ///
-  (verify-guards vl-stmt-oprewrite))
+  (verify-guards vl-stmt-oprewrite)
+  (deffixequiv-mutual vl-stmt-oprewrite))
 
-(def-vl-oprewrite vl-always-oprewrite
-  :type vl-always-p
-  :body (b* (((vl-always x) x)
-             ((mv warnings stmt-prime)
-              (vl-stmt-oprewrite x.stmt warnings))
-             (x-prime
-              (change-vl-always x :stmt stmt-prime)))
-            (mv warnings x-prime)))
+(def-vl-oprewrite vl-always
+  :body
+  (b* (((vl-always x) x)
+       ((mv warnings stmt) (vl-stmt-oprewrite x.stmt warnings)))
+    (mv warnings (change-vl-always x :stmt stmt))))
 
-(def-vl-oprewrite-list vl-alwayslist-oprewrite
-  :type vl-alwayslist-p
-  :element vl-always-oprewrite)
+(def-vl-oprewrite-list vl-alwayslist :element vl-always)
 
-(def-vl-oprewrite vl-initial-oprewrite
-  :type vl-initial-p
-  :body (b* (((vl-initial x) x)
-             ((mv warnings stmt-prime)
-              (vl-stmt-oprewrite x.stmt warnings))
-             (x-prime
-              (change-vl-initial x :stmt stmt-prime)))
-            (mv warnings x-prime)))
+(def-vl-oprewrite vl-initial
+  :body
+  (b* (((vl-initial x) x)
+       ((mv warnings stmt) (vl-stmt-oprewrite x.stmt warnings)))
+    (mv warnings (change-vl-initial x :stmt stmt))))
 
-(def-vl-oprewrite-list vl-initiallist-oprewrite
-  :type vl-initiallist-p
-  :element vl-initial-oprewrite)
+(def-vl-oprewrite-list vl-initiallist :element vl-initial)
 
 
 (define vl-module-oprewrite ((x vl-module-p))
-  :returns (new-x vl-module-p :hyp :fguard)
-  (b* (((vl-module x) x)
+  :returns (new-x vl-module-p)
+  (b* ((x (vl-module-fix x))
+       ((vl-module x) x)
        ((when (vl-module->hands-offp x))
         x)
        (warnings                x.warnings)
@@ -934,15 +892,13 @@ vl-expr-p) @('x') and returns @('(mv warnings-prime x-prime)')."
                       :initials initials
                       :warnings warnings)))
 
-(defprojection vl-modulelist-oprewrite (x)
-  (vl-module-oprewrite x)
-  :guard (vl-modulelist-p x)
-  :result-type vl-modulelist-p)
+(defprojection vl-modulelist-oprewrite ((x vl-modulelist-p))
+  :returns (new-x vl-modulelist-p)
+  (vl-module-oprewrite x))
 
 (define vl-design-oprewrite
   :short "Top-level @(see oprewrite) transform."
   ((x vl-design-p))
   :returns (new-x vl-design-p)
-  (b* ((x (vl-design-fix x))
-       ((vl-design x) x))
+  (b* (((vl-design x) x))
     (change-vl-design x :mods (vl-modulelist-oprewrite x.mods))))

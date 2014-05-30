@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -21,10 +21,13 @@
 (in-package "VL")
 (include-book "namefactory")
 (local (include-book "../util/arithmetic"))
+(local (std::add-default-post-define-hook :fix))
 
-(defaggregate vl-delta
+(defprod vl-delta
   :parents (transforms)
   :short "A set of changes to be made to a module."
+  :tag nil
+  :layout :tree
   ((nf        vl-namefactory-p)
    (netdecls  vl-netdecllist-p)
    (assigns   vl-assignlist-p)
@@ -32,9 +35,6 @@
    (gateinsts vl-gateinstlist-p)
    (warnings  vl-warninglist-p)
    (addmods   vl-modulelist-p))
-  :tag nil
-  :legiblep nil
-
   :long "<p>An @(see vl-delta-p) is mostly just a bunch of accumulators of
 different types, which may be useful when writing a transform that makes
 updates to a module.  It also has a @(see vl-namefactory-p) which can be used
@@ -75,22 +75,22 @@ code for transforms like @(see split).</p>
 <p>We found it useful to add a @(see vl-namefactory-p) to the delta, since that
 way any transform that wants to generate fresh names can do so easily.</p>")
 
-(define vl-warn-delta ((warning vl-warning-p)
-                       &key
-                       ((delta vl-delta-p) 'delta))
-  :returns (delta vl-delta-p :hyp :fguard)
-  :parents (vl-delta-p)
+(local (xdoc::set-default-parents vl-delta-p))
+
+(define vl-warn-delta
   :short "Add a warning to a delta."
+  ((warning vl-warning-p) &key ((delta vl-delta-p) 'delta))
+  :returns (delta vl-delta-p)
   :long "<p>Usually you will want to use @(see dwarn) instead because it allows
 you to construct the warning inline.  But, occasionally, the warning to add has
 already been constructed, in which case @('vl-warn-delta') is what you
 want.</p>"
   (change-vl-delta delta
-                   :warnings (cons warning (vl-delta->warnings delta))))
+                   :warnings (cons (vl-warning-fix warning)
+                                   (vl-delta->warnings delta))))
 
 
 (defsection dwarn
-  :parents (vl-delta-p)
   :short "Make a @(see vl-warning-p) and add it to a @(see vl-delta-p)."
   :long "<p>This is just a convenient shorthand.</p>
 
@@ -110,18 +110,14 @@ that your @(see vl-delta-p) is called @('delta').</p>"
                                      :fn     ,fn)
                     :delta ,delta)))
 
-(define vl-starting-delta ((x vl-module-p))
+(define vl-starting-delta
+  :short "Build an initial @(see vl-delta-p) for the module @('x')."
+ ((x vl-module-p))
   :returns delta
-  :parents (vl-delta-p)
-  :short "@(call vl-starting-delta) builds a fresh @(see vl-delta-p) for the
-module @('x')."
-
   :long "<p>The new delta has an appropriate starting namefactory for the
 module, and is also seeded with the module's @(see warnings).  The other
 accumulators are all empty to begin with.</p>"
-
   :enabled t
-
   (make-vl-delta :nf       (vl-starting-namefactory x)
                  :warnings (vl-module->warnings x)
                  :netdecls nil
@@ -130,14 +126,13 @@ accumulators are all empty to begin with.</p>"
                  :addmods  nil))
 
 
-(define vl-free-delta ((delta vl-delta-p))
-  :returns delta
-  :parents (vl-delta-p)
-  :short "@(call vl-free-delta) frees the namefactory within a @(see
-vl-delta-p) and returns @('delta')."
+(define vl-free-delta
+  :short "Frees the namefactory within a @(see vl-delta-p) and returns
+@('delta')."
+ ((delta vl-delta-p))
+  :returns (delta vl-delta-p)
   :enabled t
-
   (b* (((vl-delta delta) delta))
     (vl-free-namefactory delta.nf)
-    delta))
+    (vl-delta-fix delta)))
 

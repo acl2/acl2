@@ -44,6 +44,7 @@
               nrev-copy
               nrev-finish
               nrev-push
+              nrev-append
               with-local-nrev)))
 
 #!NREV
@@ -54,4 +55,5 @@
     nrev-copy
     nrev-finish
     nrev-push
+    nrev-append
     with-local-nrev))

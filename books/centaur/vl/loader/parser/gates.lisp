@@ -24,6 +24,7 @@
 (include-book "ranges")
 (include-book "lvalues")
 (include-book "../../mlib/expr-tools")
+(include-book "../../mlib/port-tools")
 (local (include-book "../../util/arithmetic"))
 
 

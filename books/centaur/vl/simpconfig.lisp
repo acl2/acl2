@@ -19,9 +19,11 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "std/util/defaggregate" :dir :system)
+(include-book "util/defs")
+(include-book "centaur/fty/deftypes" :dir :system)
+(include-book "centaur/fty/basetypes" :dir :system)
 
-(defaggregate vl-simpconfig
+(defprod vl-simpconfig
   :parents (vl-simplify)
   :short "Options for how to simplify Verilog modules."
   :tag :vl-simpconfig

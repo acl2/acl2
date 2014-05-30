@@ -96,8 +96,8 @@ repeatedly.  Linear in the length of @('x').</p>"
 (define vl-module-check-case ((x vl-module-p))
   :returns (new-x vl-module-p :hyp :fguard "Maybe with new warnings.")
   (b* (((vl-module x) x)
-       (names (vl-module->modnamespace-exec x))
-       (names (vl-portdecllist->names-exec x.portdecls names))
+       (names (append (vl-portdecllist->names x.portdecls)
+                      (vl-module->modnamespace x)))
        ;; Sort them to eliminate any repetitions of the same name.
        (names       (cwtime (mergesort names)
                             :name check-case-gather-names

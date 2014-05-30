@@ -23,10 +23,11 @@
 (include-book "../../util/next-power-of-2")
 (local (include-book "../../util/arithmetic"))
 (local (include-book "../../util/osets"))
+(local (std::add-default-post-define-hook :fix))
 (local (in-theory (disable vl-maybe-module-p-when-vl-module-p)))
 (local (non-parallel-book))
 
-(defsection *vl-1-bit-dynamic-bitselect*
+(defval *vl-1-bit-dynamic-bitselect*
   :parents (occform)
   :short "Degenerate 1-bit dynamic bit-selection module."
 
@@ -54,33 +55,33 @@ module VL_1_BIT_DYNAMIC_BITSELECT (out, in, idx);
 endmodule
 })"
 
-  (defconst *vl-1-bit-dynamic-bitselect*
-    (b* ((name (hons-copy "VL_1_BIT_DYNAMIC_BITSELECT"))
+  (b* ((name (hons-copy "VL_1_BIT_DYNAMIC_BITSELECT"))
 
-         ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
-         ((mv in-expr in-port in-portdecl in-netdecl)     (vl-primitive-mkport "in"  :vl-input))
-         ((mv idx-expr idx-port idx-portdecl idx-netdecl) (vl-primitive-mkport "idx" :vl-input))
+       ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
+       ((mv in-expr in-port in-portdecl in-netdecl)     (vl-primitive-mkport "in"  :vl-input))
+       ((mv idx-expr idx-port idx-portdecl idx-netdecl) (vl-primitive-mkport "idx" :vl-input))
 
-         ((mv ~idx-expr ~idx-netdecl) (vl-primitive-mkwire "idx_bar"))
-         ((mv a-expr a-netdecl)       (vl-primitive-mkwire "a"))
-         ((mv b-expr b-netdecl)       (vl-primitive-mkwire "b"))
+       ((mv ~idx-expr ~idx-netdecl) (vl-primitive-mkwire "idx_bar"))
+       ((mv a-expr a-netdecl)       (vl-primitive-mkwire "a"))
+       ((mv b-expr b-netdecl)       (vl-primitive-mkwire "b"))
 
-         (~idx-inst (vl-simple-inst *vl-1-bit-not* "mk_idx_bar" ~idx-expr idx-expr))
-         (a-inst    (vl-simple-inst *vl-1-bit-and* "mk_a"       a-expr    ~idx-expr in-expr))
-         (b-inst    (vl-simple-inst *vl-1-bit-and* "mk_b"       b-expr    idx-expr  |*sized-1'bx*|))
-         (out-inst  (vl-simple-inst *vl-1-bit-or*  "mk_out"     out-expr  a-expr    b-expr)))
+       (~idx-inst (vl-simple-inst *vl-1-bit-not* "mk_idx_bar" ~idx-expr idx-expr))
+       (a-inst    (vl-simple-inst *vl-1-bit-and* "mk_a"       a-expr    ~idx-expr in-expr))
+       (b-inst    (vl-simple-inst *vl-1-bit-and* "mk_b"       b-expr    idx-expr  |*sized-1'bx*|))
+       (out-inst  (vl-simple-inst *vl-1-bit-or*  "mk_out"     out-expr  a-expr    b-expr)))
 
-      (make-vl-module :name      name
-                      :origname  name
-                      :ports     (list out-port in-port idx-port)
-                      :portdecls (list out-portdecl in-portdecl idx-portdecl)
-                      :netdecls  (list out-netdecl in-netdecl idx-netdecl ~idx-netdecl a-netdecl b-netdecl)
-                      :modinsts  (list ~idx-inst a-inst b-inst out-inst)
-                      :minloc    *vl-fakeloc*
-                      :maxloc    *vl-fakeloc*))))
+    (hons-copy
+     (make-vl-module :name      name
+                     :origname  name
+                     :ports     (list out-port in-port idx-port)
+                     :portdecls (list out-portdecl in-portdecl idx-portdecl)
+                     :netdecls  (list out-netdecl in-netdecl idx-netdecl ~idx-netdecl a-netdecl b-netdecl)
+                     :modinsts  (list ~idx-inst a-inst b-inst out-inst)
+                     :minloc    *vl-fakeloc*
+                     :maxloc    *vl-fakeloc*))))
 
 
-(defsection *vl-2-bit-dynamic-bitselect*
+(defval *vl-2-bit-dynamic-bitselect*
   :parents (occform)
   :short "Primitive dynamic bit-selection module."
 
@@ -128,48 +129,48 @@ is @('X').  This wouldn't be okay: the Verilog specification mandates that if
 any bit of @('idx') is @('X'), then @('X') is returned from the bit
 select.</p>"
 
-  (defconst *vl-2-bit-dynamic-bitselect*
-    (b* ((name (hons-copy "VL_2_BIT_DYNAMIC_BITSELECT"))
+  (b* ((name (hons-copy "VL_2_BIT_DYNAMIC_BITSELECT"))
 
-         ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
-         ((mv in-expr in-port in-portdecl in-netdecl)     (vl-occform-mkport   "in"  :vl-input 2))
-         ((mv idx-expr idx-port idx-portdecl idx-netdecl) (vl-primitive-mkport "idx" :vl-input))
+       ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
+       ((mv in-expr in-port in-portdecl in-netdecl)     (vl-occform-mkport   "in"  :vl-input 2))
+       ((mv idx-expr idx-port idx-portdecl idx-netdecl) (vl-primitive-mkport "idx" :vl-input))
 
-         ((mv ~idx-expr ~idx-netdecl)   (vl-primitive-mkwire "idx_bar"))
-         ((mv idx_x-expr idx_x-netdecl) (vl-primitive-mkwire "idx_x"))
-         ((mv a-expr a-netdecl)         (vl-primitive-mkwire "a"))
-         ((mv b-expr b-netdecl)         (vl-primitive-mkwire "b"))
-         ((mv main-expr main-netdecl)   (vl-primitive-mkwire "main"))
+       ((mv ~idx-expr ~idx-netdecl)   (vl-primitive-mkwire "idx_bar"))
+       ((mv idx_x-expr idx_x-netdecl) (vl-primitive-mkwire "idx_x"))
+       ((mv a-expr a-netdecl)         (vl-primitive-mkwire "a"))
+       ((mv b-expr b-netdecl)         (vl-primitive-mkwire "b"))
+       ((mv main-expr main-netdecl)   (vl-primitive-mkwire "main"))
 
-         (in[0]-expr  (vl-make-bitselect in-expr 0))
-         (in[1]-expr  (vl-make-bitselect in-expr 1))
+       (in[0]-expr  (vl-make-bitselect in-expr 0))
+       (in[1]-expr  (vl-make-bitselect in-expr 1))
 
-         ;; not (idx_bar, idx);
-         ;; and (a, idx, in[1]) ;
-         ;; and (b, idx_bar, in[0]) ;
-         ;; or (main, a, b) ;
-         ;; xor (idx_x, idx, idx);
-         ;; xor (out, idx_x, main);
-         (~idx-inst  (vl-simple-inst *vl-1-bit-not* "mk_idx_bar" ~idx-expr  idx-expr))
-         (a-inst     (vl-simple-inst *vl-1-bit-and* "mk_a"       a-expr     idx-expr   in[1]-expr))
-         (b-inst     (vl-simple-inst *vl-1-bit-and* "mk_b"       b-expr     ~idx-expr  in[0]-expr))
-         (main-inst  (vl-simple-inst *vl-1-bit-or*  "mk_main"    main-expr  a-expr     b-expr))
-         (idx_x-inst (vl-simple-inst *vl-1-bit-xor* "mk_idx_x"   idx_x-expr idx-expr   idx-expr))
-         (out-inst   (vl-simple-inst *vl-1-bit-xor* "mk_out"     out-expr   idx_x-expr main-expr)))
+       ;; not (idx_bar, idx);
+       ;; and (a, idx, in[1]) ;
+       ;; and (b, idx_bar, in[0]) ;
+       ;; or (main, a, b) ;
+       ;; xor (idx_x, idx, idx);
+       ;; xor (out, idx_x, main);
+       (~idx-inst  (vl-simple-inst *vl-1-bit-not* "mk_idx_bar" ~idx-expr  idx-expr))
+       (a-inst     (vl-simple-inst *vl-1-bit-and* "mk_a"       a-expr     idx-expr   in[1]-expr))
+       (b-inst     (vl-simple-inst *vl-1-bit-and* "mk_b"       b-expr     ~idx-expr  in[0]-expr))
+       (main-inst  (vl-simple-inst *vl-1-bit-or*  "mk_main"    main-expr  a-expr     b-expr))
+       (idx_x-inst (vl-simple-inst *vl-1-bit-xor* "mk_idx_x"   idx_x-expr idx-expr   idx-expr))
+       (out-inst   (vl-simple-inst *vl-1-bit-xor* "mk_out"     out-expr   idx_x-expr main-expr)))
 
-      (make-vl-module :name      name
-                      :origname  name
-                      :ports     (list out-port in-port idx-port)
-                      :portdecls (list out-portdecl in-portdecl idx-portdecl)
-                      :netdecls  (list out-netdecl in-netdecl idx-netdecl
-                                       ~idx-netdecl a-netdecl b-netdecl main-netdecl
-                                       idx_x-netdecl)
-                      :modinsts (list ~idx-inst a-inst b-inst main-inst idx_x-inst out-inst)
-                      :minloc    *vl-fakeloc*
-                      :maxloc    *vl-fakeloc*))))
+    (hons-copy
+     (make-vl-module :name      name
+                     :origname  name
+                     :ports     (list out-port in-port idx-port)
+                     :portdecls (list out-portdecl in-portdecl idx-portdecl)
+                     :netdecls  (list out-netdecl in-netdecl idx-netdecl
+                                      ~idx-netdecl a-netdecl b-netdecl main-netdecl
+                                      idx_x-netdecl)
+                     :modinsts (list ~idx-inst a-inst b-inst main-inst idx_x-inst out-inst)
+                     :minloc    *vl-fakeloc*
+                     :maxloc    *vl-fakeloc*))))
 
 
-(def-vl-modgen vl-make-2^n-bit-dynamic-bitselect (n)
+(def-vl-modgen vl-make-2^n-bit-dynamic-bitselect ((n natp))
   :short "Generates a dynamic bit-selection module for wire widths that are
 powers of 2."
 
@@ -219,7 +220,6 @@ module VL_M_BIT_DYNAMIC_BITSELECT(out, in, idx) ;
 endmodule
 })"
 
-  :guard (natp n)
   :verify-guards nil
   :body
   (b* (((when (zp n))
@@ -299,7 +299,7 @@ endmodule
          :hints(("Goal" :in-theory (enable next-power-of-2)))))
 
 
-(def-vl-modgen vl-make-n-bit-dynamic-bitselect (n)
+(def-vl-modgen vl-make-n-bit-dynamic-bitselect ((n posp))
   :short "Generate a basic dynamic bit-selection module."
 
   :long "<p>We construct @('VL_N_BIT_DYNAMIC_BITSELECT(out, in, idx)'), a
@@ -328,9 +328,9 @@ module VL_6_BIT_DYNAMIC_BITSELECT(out, in, idx) ;
 endmodule
 })"
 
-  :guard (posp n)
   :body
-  (b* ( ;; bitlength = min { M : n <= 2^M }
+  (b* ((n           (lposfix n))
+       ;; bitlength = min { M : n <= 2^M }
        (bitlength   (next-power-of-2 n))
        (2^bitlength (expt 2 bitlength))
 
@@ -377,8 +377,8 @@ endmodule
 ;; (vl-pps-modulelist (vl-make-n-bit-dynamic-bitselect 75))
 
 
-
-(def-vl-modgen vl-make-n-bit-dynamic-bitselect-m (n m)
+(def-vl-modgen vl-make-n-bit-dynamic-bitselect-m ((n posp)
+                                                  (m posp))
    :short "Generate a dynamic bit-selection module for an N bit wire and an M
 bit select."
 
@@ -399,9 +399,10 @@ with zeros.  When larger, we need to do additional out-of-bounds checking.</p>"
 ; BOZO consider adding a warning when M > K.  The user could chop down the
 ; index to be the right number of bits.
 
-   :guard (and (posp n) (posp m))
    :body
-   (b* ((coremods  (vl-make-n-bit-dynamic-bitselect n))
+   (b* ((n         (lposfix n))
+        (m         (lposfix m))
+        (coremods  (vl-make-n-bit-dynamic-bitselect n))
         (coremod   (car coremods))
 
         ;; K is the width of the "index" port on our core module.  We could
@@ -410,11 +411,11 @@ with zeros.  When larger, we need to do additional out-of-bounds checking.</p>"
         (k (b* ((portdecls (vl-module->portdecls coremod))
                 (idx       (vl-find-portdecl "idx" portdecls))
                 ((unless idx) ;; Should never happen
-                 (er hard? 'vl-make-n-bit-dynamic-bitselect "coremod has no index port?")
+                 (raise "coremod has no index port?")
                  m)
                 (range    (vl-portdecl->range idx))
                 ((unless (vl-maybe-range-resolved-p range)) ;; Should never happen
-                 (er hard? 'vl-make-n-bit-dynamic-bitselect "coremod index range not resolved?")
+                 (raise "coremod index range not resolved?")
                  m))
              (vl-maybe-range-size range)))
 

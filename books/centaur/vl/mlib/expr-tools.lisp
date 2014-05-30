@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -19,17 +19,350 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "../parsetree")
+(include-book "../expr")
 (local (include-book "../util/arithmetic"))
+(local (std::add-default-post-define-hook :fix))
 (local (non-parallel-book))
 
 (defxdoc expr-tools
   :parents (mlib)
   :short "Basic functions for working with expressions.")
 
+(local (xdoc::set-default-parents expr-tools))
+
+(defthm vl-maybe-expr-fix-when-exists
+  (implies x
+           (equal (vl-maybe-expr-fix x)
+                  (vl-expr-fix x)))
+  :hints(("Goal" :in-theory (enable vl-maybe-expr-fix))))
+
+(defthm vl-expr-fix-under-vl-maybe-expr-equiv-when-exists
+  (implies x
+           (vl-maybe-expr-equiv (vl-expr-fix x)
+                                x))
+  :hints(("Goal" :in-theory (enable vl-maybe-expr-fix))))
+
+(defthm vl-atts-fix-when-atom
+  (implies (atom x)
+           (equal (vl-atts-fix x)
+                  nil))
+  :hints(("Goal" :in-theory (enable vl-atts-fix))))
+
+(defthm vl-atts-fix-of-cons
+  (equal (vl-atts-fix (cons a x))
+         (if (atom a)
+             (vl-atts-fix x)
+           (cons (cons (str-fix (car a))
+                       (vl-maybe-expr-fix (cdr a)))
+                 (vl-atts-fix x))))
+  :hints(("Goal" :in-theory (enable vl-atts-fix))))
+
+(defines vl-expr-count
+  :short "A measure for recurring over expressions."
+  :long "<p>This measure has a few nice properties.  It respects all of the
+equivalences for expressions and avoids having a function for @(see
+vl-maybe-expr-p).</p>"
+
+  :verify-guards nil
+  :flag vl-expr-flag ;; BOZO no way to override this on deftypes
+
+  :prepwork
+  ((local (defrule vl-exprlist-count-raw-of-vl-nonatom->args-rw
+            (implies (eq (vl-expr-kind x) :nonatom)
+                     (< (vl-exprlist-count-raw (vl-nonatom->args x))
+                        (vl-expr-count-raw x)))
+            :rule-classes :rewrite))
+
+   (local (defrule vl-exprlist-count-raw-of-cdr-weak
+            (<= (vl-exprlist-count-raw (cdr x))
+                (vl-exprlist-count-raw x))
+            :rule-classes ((:rewrite) (:linear))))
+
+   (local (defrule vl-exprlist-count-raw-of-cdr-rw
+            (implies (consp x)
+                     (< (vl-exprlist-count-raw (cdr x))
+                        (vl-exprlist-count-raw x)))
+            :rule-classes :rewrite))
+
+   (local (defrule vl-expr-count-raw-of-car-weak
+            (<= (vl-expr-count-raw (car x))
+                (vl-exprlist-count-raw x))
+            :rule-classes ((:rewrite) (:linear))))
+
+   (local (defrule vl-expr-count-raw-less-than-atts
+            ;; BOZO really gross
+            (implies x
+                     (< (vl-expr-count-raw x)
+                        (vl-atts-count-raw (cons (cons name x) alist))))
+            :in-theory (enable vl-atts-count-raw vl-maybe-expr-expr->expr)
+            :expand ((vl-maybe-expr-count-raw x))))
+
+   (local (defthm vl-maybe-expr-count-raw-of-vl-expr-fix
+            (implies x
+                     (equal (vl-maybe-expr-count-raw (vl-expr-fix x))
+                            (vl-maybe-expr-count-raw x)))
+            :hints(("Goal" :in-theory (enable vl-maybe-expr-count-raw)))))
+   )
+
+
+  (define vl-expr-count ((x vl-expr-p))
+    :measure (two-nats-measure (vl-expr-count-raw x) 0)
+    :flag :expr
+    (vl-expr-case x
+      :atom 1
+      :nonatom
+      (+ 1
+         (vl-atts-count x.atts)
+         (vl-exprlist-count x.args))))
+
+  (define vl-atts-count ((x vl-atts-p))
+    :measure (two-nats-measure (vl-atts-count-raw x) (len x))
+    :flag :atts
+    (cond ((atom x)
+           1)
+          ((atom (car x))
+           (vl-atts-count (cdr x)))
+          ((cdar x)
+           (+ 1
+              (vl-expr-count (cdar x))
+              (vl-atts-count (cdr x))))
+          (t
+           (+ 1
+              (vl-atts-count (cdr x))))))
+
+  (define vl-exprlist-count ((x vl-exprlist-p))
+    :measure (two-nats-measure (vl-exprlist-count-raw x) 0)
+    :flag :list
+    (if (atom x)
+        1
+      (+ 1
+         (vl-expr-count (car x))
+         (vl-exprlist-count (cdr x)))))
+
+  ///
+
+  (local (in-theory (enable vl-expr-count
+                            vl-atts-count
+                            vl-exprlist-count)))
+
+  (defrule vl-exprlist-count-of-cons
+    (equal (vl-exprlist-count (cons a x))
+           (+ 1
+              (vl-expr-count a)
+              (vl-exprlist-count x))))
+
+  (defrule vl-expr-count-of-car-weak
+    (<= (vl-expr-count (car x))
+        (vl-exprlist-count x))
+    :rule-classes ((:rewrite) (:linear)))
+
+  (defrule vl-expr-count-of-car-strong
+    (implies (consp x)
+             (< (vl-expr-count (car x))
+                (vl-exprlist-count x)))
+    :rule-classes ((:rewrite) (:linear)))
+
+  (defthm vl-expr-kind-when-vl-expr-count-is-1-fwd
+    ;; Goofy rule that helps with, e.g., vl-pp-expr
+    (implies (equal (vl-expr-count x) 1)
+             (equal (vl-expr-kind x) :atom))
+    :rule-classes ((:forward-chaining))
+    :hints(("Goal"
+            :expand (vl-expr-count x)
+            :in-theory (enable vl-expr-count))))
+
+  (defrule vl-exprlist-count-of-cdr-weak
+    (<= (vl-exprlist-count (cdr x))
+        (vl-exprlist-count x))
+    :rule-classes ((:rewrite) (:linear)))
+
+  (defrule vl-exprlist-count-of-cdr-strong
+    (implies (consp x)
+             (< (vl-exprlist-count (cdr x))
+                (vl-exprlist-count x)))
+    :rule-classes ((:rewrite) (:linear)))
+
+  (defrule vl-atts-count-when-atom
+    (implies (atom x)
+             (equal (vl-atts-count x)
+                    1)))
+
+  (defrule vl-atts-count-of-cons
+    (equal (vl-atts-count (cons a x))
+           (if (atom a)
+               (vl-atts-count x)
+             (+ 1
+                (if (cdr a) (vl-expr-count (cdr a)) 0)
+                (vl-atts-count x)))))
+
+  (defrule vl-atts-count-of-cdr-weak
+    (<= (vl-atts-count (cdr x))
+        (vl-atts-count x))
+    :rule-classes ((:rewrite) (:linear)))
+
+  (defrule vl-atts-count-of-cdr-strong
+    (implies (and (consp x)
+                  (consp (car x)))
+             (< (vl-atts-count (cdr x))
+                (vl-atts-count x)))
+    :rule-classes ((:rewrite) (:linear)))
+
+  (defthm vl-expr-count-of-cdar-when-vl-atts-p
+    (implies (and (vl-atts-p x) x)
+             (< (vl-expr-count (cdar x))
+                (vl-atts-count x)))
+    :rule-classes ((:rewrite) (:linear)))
+
+  (defrule vl-exprlist-count-of-vl-nonatom->args-strong
+    (implies (equal (vl-expr-kind x) :nonatom)
+             (< (vl-exprlist-count (vl-nonatom->args x))
+                (vl-expr-count x)))
+    :rule-classes ((:rewrite) (:linear))
+    :expand (vl-expr-count x))
+
+  (defrule vl-exprlist-count-of-vl-nonatom->atts-strong
+    (implies (equal (vl-expr-kind x) :nonatom)
+             (< (vl-atts-count (vl-nonatom->atts x))
+                (vl-expr-count x)))
+    :rule-classes ((:rewrite) (:linear))
+    :expand (vl-expr-count x))
+
+  (deffixequiv-mutual vl-expr-count
+    :hints(("Goal"
+            :expand (vl-atts-count x)
+            :in-theory (enable vl-expr-count
+                               vl-atts-count
+                               vl-exprlist-count
+                               vl-atts-fix
+                               vl-exprlist-fix)))))
+
+
+(encapsulate
+  ()
+
+  ;; A tricky recursion over expressions, to make sure our measure is good
+  ;; enough to handle lots of cases.  Doesn't compute anything useful.
+
+  (local (defines vl-expr-recursion-test
+           (define f-expr ((x vl-expr-p))
+             :measure (two-nats-measure (vl-expr-count x) 2)
+             (vl-expr-case x
+               :atom 1
+               :nonatom
+               (+ (case x.op
+                    ;; Explicit arg recursions for known arity operators
+                    (:vl-unary-plus   (+ 1 (f-expr (first x.args))))
+                    (:vl-binary-plus  (+ (f-expr (first x.args))
+                                         (f-expr (second x.args))))
+                    (:vl-qmark        (+ (f-expr (first x.args))
+                                         (f-expr (second x.args))
+                                         (f-expr (third x.args))))
+                    (otherwise 0))
+                  ;; Recursion on all args
+                  (f-exprlist x.args)
+                  ;; Recursion on all atts
+                  (f-atts x.atts))))
+
+           (define f-atts-aux ((x vl-atts-p))
+             :measure (two-nats-measure (vl-atts-count x) (len x))
+             (b* (((when (atom x))
+                   0)
+                  ;; NOTE: when recurring through attributes you always obey the non-alist
+                  ;; convention to match the equivalence relation.  See :doc std/alists if
+                  ;; you don't understand this convention.
+                  ((when (atom (car x)))
+                   (f-atts-aux (cdr x)))
+                  ((cons ?name expr) (car x)))
+               (+ 1
+                  (if expr (f-expr expr) 1)
+                  (f-atts-aux (cdr x)))))
+
+           (define f-atts ((x vl-atts-p))
+             :measure (two-nats-measure (vl-atts-count x) (+ 1 (len x)))
+             (f-atts-aux x))
+
+           (define f-exprlist-aux ((x vl-exprlist-p))
+             :measure (two-nats-measure (vl-exprlist-count x) 0)
+             (if (atom x)
+                 1
+               (+ (f-expr (car x))
+                  (f-exprlist-aux (cdr x)))))
+
+           (define f-exprlist ((x vl-exprlist-p))
+             :measure (two-nats-measure (vl-exprlist-count x) 1)
+             (f-exprlist-aux x))
+           ///
+           (deffixequiv-mutual vl-expr-recursion-test))))
+
+
+(defines vl-expr-count-noatts
+  :short "A measure for recurring over expressions but ignoring attributes."
+
+  (define vl-expr-count-noatts ((x vl-expr-p))
+    :measure (vl-expr-count x)
+    :flag :expr
+    (vl-expr-case x
+      :atom 1
+      :nonatom
+      (+ 1 (vl-exprlist-count-noatts x.args))))
+
+  (define vl-exprlist-count-noatts ((x vl-exprlist-p))
+    :measure (vl-exprlist-count x)
+    :flag :list
+    (if (atom x)
+        1
+      (+ 1
+         (vl-expr-count-noatts (car x))
+         (vl-exprlist-count-noatts (cdr x)))))
+  ///
+  (defrule vl-exprlist-count-noatts-of-cons
+    (equal (vl-exprlist-count-noatts (cons a x))
+           (+ 1
+              (vl-expr-count-noatts a)
+              (vl-exprlist-count-noatts x))))
+
+  (defrule vl-expr-count-noatts-of-car-weak
+    (<= (vl-expr-count-noatts (car x))
+        (vl-exprlist-count-noatts x))
+    :rule-classes ((:rewrite) (:linear)))
+
+  (defrule vl-expr-count-noatts-of-car-strong
+    (implies (consp x)
+             (< (vl-expr-count-noatts (car x))
+                (vl-exprlist-count-noatts x)))
+    :rule-classes ((:rewrite) (:linear)))
+
+  (defthm vl-expr-kind-when-vl-expr-count-noatts-is-1-fwd
+    ;; Goofy rule that helps with, e.g., vl-pp-expr
+    (implies (equal (vl-expr-count-noatts x) 1)
+             (equal (vl-expr-kind x) :atom))
+    :rule-classes ((:forward-chaining))
+    :hints(("Goal"
+            :expand (vl-expr-count-noatts x)
+            :in-theory (enable vl-expr-count-noatts))))
+
+  (defrule vl-exprlist-count-noatts-of-cdr-weak
+    (<= (vl-exprlist-count-noatts (cdr x))
+        (vl-exprlist-count-noatts x))
+    :rule-classes ((:rewrite) (:linear)))
+
+  (defrule vl-exprlist-count-noatts-of-cdr-strong
+    (implies (consp x)
+             (< (vl-exprlist-count-noatts (cdr x))
+                (vl-exprlist-count-noatts x)))
+    :rule-classes ((:rewrite) (:linear)))
+
+  (defrule vl-exprlist-count-noatts-of-vl-nonatom->args-strong
+    (implies (equal (vl-expr-kind x) :nonatom)
+             (< (vl-exprlist-count-noatts (vl-nonatom->args x))
+                (vl-expr-count-noatts x)))
+    :rule-classes ((:rewrite) (:linear))
+    :expand (vl-expr-count-noatts x))
+
+  (deffixequiv-mutual vl-expr-count-noatts))
+
 
 (defsection vl-one-bit-constants
-  :parents (expr-tools)
   :short "Already-sized, one-bit constants."
 
   :long "<p>Care should be taken when using these constants because they are
@@ -68,7 +401,6 @@ expression-sizing) is a very complex topic.</p>"
 
 
 (define vl-expr-resolved-p ((x vl-expr-p))
-  :parents (expr-tools)
   :short "Recognizes plain constant integer expressions."
 
   :long "<p>We say an expression is <b>resolved</b> when it is just an atomic,
@@ -80,42 +412,25 @@ selects.</p>"
   (and (vl-fast-atom-p x)
        (vl-fast-constint-p (vl-atom->guts x))))
 
-
-(define vl-resolved->val ((x (and (vl-expr-p x)
-                                  (vl-expr-resolved-p x))))
-  :parents (expr-tools)
+(define vl-resolved->val ((x vl-expr-p))
+  :guard (vl-expr-resolved-p x)
+  :returns (val natp :rule-classes :type-prescription)
   :short "Get the value from a resolved expression."
   :long "<p>Guaranteed to return a natural number.</p>"
-
-  (lnfix (vl-constint->value (vl-atom->guts x)))
-
-  :guard-hints (("Goal" :in-theory (enable vl-expr-resolved-p)))
-
-  ///
-  (defthm natp-of-vl-resolved->val
-    (natp (vl-resolved->val x))
-    :rule-classes :type-prescription))
+  (vl-constint->value (vl-atom->guts x))
+  :guard-hints (("Goal" :in-theory (enable vl-expr-resolved-p))))
 
 (deflist vl-exprlist-resolved-p (x)
   (vl-expr-resolved-p x)
-  :guard (vl-exprlist-p x)
-  :elementp-of-nil nil
-  :parents (expr-tools))
+  :guard (vl-exprlist-p x))
 
-(defprojection vl-exprlist-resolved->vals (x)
-  (vl-resolved->val x)
-  :guard (and (vl-exprlist-p x)
-              (vl-exprlist-resolved-p x))
-  :nil-preservingp nil
-  :parents (expr-tools)
-  :rest
-  ((defthm nat-listp-of-vl-exprlist-resolved->vals
-     (nat-listp (vl-exprlist-resolved->vals x)))))
-
+(defprojection vl-exprlist-resolved->vals ((x vl-exprlist-p))
+  :guard (vl-exprlist-resolved-p x)
+  :returns (vals nat-listp)
+  (vl-resolved->val x))
 
 
 (define vl-idexpr-p ((x vl-expr-p))
-  :parents (expr-tools)
   :short "Recognize plain identifier expressions."
   :long "<p>This recognizes simple non-hierarchical identifier expressions
 like @('foo').</p>"
@@ -125,45 +440,28 @@ like @('foo').</p>"
 
 (deflist vl-idexprlist-p (x)
   (vl-idexpr-p x)
-  :guard (vl-exprlist-p x)
-  :elementp-of-nil nil
-  :parents (expr-tools))
+  :guard (vl-exprlist-p x))
 
 
-(define vl-idexpr->name ((x (and (vl-expr-p x)
-                                 (vl-idexpr-p x))))
-  :parents (expr-tools)
+(define vl-idexpr->name ((x vl-expr-p))
+  :returns (name stringp :rule-classes :type-prescription)
+  :guard (vl-idexpr-p x)
   :short "Get the name from a @(see vl-idexpr-p)."
   :long "<p>Guaranteed to return a string.</p>"
   :inline t
+  (vl-id->name (vl-atom->guts x))
+  :guard-hints(("Goal" :in-theory (enable vl-idexpr-p))))
 
-  (mbe :logic (string-fix (vl-id->name (vl-atom->guts x)))
-       :exec (vl-id->name (vl-atom->guts x)))
-
-  :guard-hints(("Goal" :in-theory (enable vl-idexpr-p)))
-
-  ///
-
-  (defthm stringp-of-vl-idexpr->name
-    (stringp (vl-idexpr->name x))
-    :rule-classes :type-prescription))
-
-
-(defprojection vl-idexprlist->names (x)
-  (vl-idexpr->name x)
-  :guard (and (vl-exprlist-p x)
-              (vl-idexprlist-p x))
-  :parents (expr-tools)
-  :rest
-  ((defthm string-listp-of-vl-idexprlist->names
-     (string-listp (vl-idexprlist->names x)))))
-
+(defprojection vl-idexprlist->names ((x vl-exprlist-p))
+  :returns (names string-listp)
+  :guard (vl-idexprlist-p x)
+  (vl-idexpr->name x))
 
 
 (define vl-idexpr ((name stringp)
                    (finalwidth maybe-natp)
                    (finaltype vl-maybe-exprtype-p))
-  :parents (expr-tools)
+  :returns (expr vl-expr-p)
   :short "Construct an @(see vl-idexpr-p)."
   :long "<p>@(call vl-idexpr) constructs a simple identifier expression with the
 given name, width, and type.</p>
@@ -172,117 +470,119 @@ given name, width, and type.</p>
 identifier may be needed in several contexts, and since we often want to
 construct fast alists binding identifiers to things, etc.</p>"
   :inline t
-
-  (make-honsed-vl-atom :guts (make-honsed-vl-id :name name)
-                       :finalwidth finalwidth
-                       :finaltype finaltype)
-
+  (hons-copy
+   (make-vl-atom :guts (make-vl-id :name name)
+                 :finalwidth finalwidth
+                 :finaltype finaltype))
   ///
   (local (in-theory (enable vl-idexpr-p vl-idexpr->name)))
 
   (defthm vl-idexpr-p-of-vl-idexpr
-    (implies (and (force (stringp name))
-                  (force (maybe-natp finalwidth))
-                  (force (vl-maybe-exprtype-p finaltype)))
-             (vl-idexpr-p (vl-idexpr name finalwidth finaltype))))
+    (vl-idexpr-p (vl-idexpr name finalwidth finaltype)))
 
   (defthm vl-idexpr->name-of-vl-idexpr
-    (implies (force (stringp name))
-             (equal (vl-idexpr->name (vl-idexpr name finalwidth finaltype))
-                    name)))
+    (equal (vl-idexpr->name (vl-idexpr name finalwidth finaltype))
+           (str-fix name)))
 
   (defthm vl-expr->finalwidth-of-vl-idexpr
     (equal (vl-expr->finalwidth (vl-idexpr name finalwidth finaltype))
-           finalwidth))
+           (maybe-natp-fix finalwidth)))
 
   (defthm vl-expr->finaltype-of-vl-idexpr
     (equal (vl-expr->finaltype (vl-idexpr name finalwidth finaltype))
-           finaltype))
+           (vl-maybe-exprtype-fix finaltype)))
 
-  (defthm vl-atom-p-of-vl-idexpr
-    (implies (and (force (stringp name))
-                  (force (maybe-natp finalwidth))
-                  (force (vl-maybe-exprtype-p finaltype)))
-             (vl-atom-p (vl-idexpr name finalwidth finaltype)))))
+  (defthm vl-expr-kind-of-vl-idexpr
+    (equal (vl-expr-kind (vl-idexpr name finalwidth finaltype))
+           :atom)))
 
 
-
-(defprojection vl-make-idexpr-list (x finalwidth finaltype)
+(defprojection vl-make-idexpr-list ((x          string-listp)
+                                    (finalwidth maybe-natp)
+                                    (finaltype  vl-maybe-exprtype-p))
+  :returns (exprs (and (vl-exprlist-p exprs)
+                       (vl-idexprlist-p exprs)))
   (vl-idexpr x finalwidth finaltype)
-  :guard (and (string-listp x)
-              (maybe-natp finalwidth)
-              (vl-maybe-exprtype-p finaltype))
-  :result-type vl-exprlist-p
-  :parents (expr-tools)
   :long "<p>Each expression is given the specified @('finalwidth') and
 @('finaltype').</p>"
-  :rest
-  ((defthm vl-idexprlist-p-of-vl-make-idexpr-list
-     (implies (and (force (string-listp x))
-                   (force (maybe-natp finalwidth))
-                   (force (vl-maybe-exprtype-p finaltype)))
-              (vl-idexprlist-p (vl-make-idexpr-list x finalwidth finaltype))))
-
-   (defthm vl-idexprlist->names-of-vl-make-idexpr-list
-     (implies (force (string-listp x))
-              (equal (vl-idexprlist->names (vl-make-idexpr-list x finalwidth finaltype))
-                     x)))))
+  ///
+  (defthm vl-idexprlist->names-of-vl-make-idexpr-list
+    (implies (force (string-listp x))
+             (equal (vl-idexprlist->names (vl-make-idexpr-list x finalwidth finaltype))
+                    x))))
 
 
+(defines vl-expr-widthsfixed-p
+  :short "Determines if all of the @('finalwidth') fields throughout an
+expression are natural numbers."
 
-(defsection vl-expr-widthsfixed-p
-  :parents (expr-tools)
-  :short "@(call vl-expr-widthsfixed-p) determines if all of the
-@('finalwidth') fields throughout an expression are natural numbers."
+  (define vl-expr-widthsfixed-p ((x vl-expr-p))
+    :measure (vl-expr-count x)
+    (and (natp (vl-expr->finalwidth x))
+         (or (vl-fast-atom-p x)
+             (vl-exprlist-widthsfixed-p (vl-nonatom->args x)))))
 
-  (mutual-recursion
-
-   (defund vl-expr-widthsfixed-p (x)
-     (declare (xargs :guard (vl-expr-p x)
-                     :measure (two-nats-measure (acl2-count x) 1)))
-     (and (natp (vl-expr->finalwidth x))
-          (or (vl-fast-atom-p x)
-              (vl-exprlist-widthsfixed-p (vl-nonatom->args x)))))
-
-   (defund vl-exprlist-widthsfixed-p (x)
-     (declare (xargs :guard (vl-exprlist-p x)
-                     :measure (two-nats-measure (acl2-count x) 0)))
-     (if (consp x)
-         (and (vl-expr-widthsfixed-p (car x))
-              (vl-exprlist-widthsfixed-p (cdr x)))
-       t)))
-
+  (define vl-exprlist-widthsfixed-p ((x vl-exprlist-p))
+    :measure (vl-exprlist-count x)
+    (if (consp x)
+        (and (vl-expr-widthsfixed-p (car x))
+             (vl-exprlist-widthsfixed-p (cdr x)))
+      t))
+  ///
   (deflist vl-exprlist-widthsfixed-p (x)
     (vl-expr-widthsfixed-p x)
-    :already-definedp t
-    :parents (expr-tools))
+    :already-definedp t)
+
+  ;; BOZO doesn't work? (deffixequiv-mutual vl-expr-widthsfixed-p)
 
   (local (in-theory (enable vl-expr-widthsfixed-p)))
+
+  (local (in-theory (disable (force))))
 
   (defthm vl-expr-widthsfixed-p-of-car-of-vl-nonatom->args
     ;; BOZO bizarre.
     (implies (and (vl-expr-widthsfixed-p x)
-                  (force (not (vl-atom-p x)))
+                  (force (not (eq (vl-expr-kind x) :atom)))
                   (force (consp (vl-nonatom->args x))))
              (vl-expr-widthsfixed-p (car (vl-nonatom->args x)))))
 
   (defthm vl-expr-widthsfixed-p-of-cadr-of-vl-nonatom->args
     ;; BOZO bizarre.
     (implies (and (vl-expr-widthsfixed-p x)
-                  (force (not (vl-atom-p x)))
+                  (force (not (eq (vl-expr-kind x) :atom)))
                   (force (consp (cdr (vl-nonatom->args x)))))
              (vl-expr-widthsfixed-p (cadr (vl-nonatom->args x))))))
 
 
 
-(defsection vl-expr-names
-  :parents (expr-tools)
+
+(defines vl-expr-names-nrev
+  :parents (vl-expr-names)
+
+  (define vl-expr-names-nrev ((x vl-expr-p) nrev)
+    :measure (vl-expr-count x)
+    :flag :expr
+    (if (vl-fast-atom-p x)
+        (let ((guts (vl-atom->guts x)))
+          (if (vl-fast-id-p guts)
+              (nrev-push (vl-id->name guts) nrev)
+            (nrev-fix nrev)))
+      (vl-exprlist-names-nrev (vl-nonatom->args x) nrev)))
+
+  (define vl-exprlist-names-nrev ((x vl-exprlist-p) nrev)
+    :measure (vl-exprlist-count x)
+    :flag :list
+    (if (atom x)
+        (nrev-fix nrev)
+      (let ((nrev (vl-expr-names-nrev (car x) nrev)))
+        (vl-exprlist-names-nrev (cdr x) nrev)))))
+
+
+(defines vl-expr-names
   :short "Gather the names of all @(see vl-id-p) atoms throughout an
 expression."
 
-  :long "<p><b>Signature:</b> @(call vl-expr-names) returns a string list.</p>
-
-<p>We compute the names of all simple identifiers used throughout an
+  :long "<p>We compute the names of all simple identifiers used throughout an
 expression.</p>
 
 <p>These identifiers might refer to wires, registers, ports, parameters, or
@@ -303,56 +603,31 @@ names, since these are not treated as @(see vl-id-p) atoms, but are instead
 accumulator-style functions to do the collection.  Under the hood, we also use
 @('nreverse') optimization.</p>"
 
-  (defxdoc vl-exprlist-names
-    :parents (expr-tools)
-    :short "Gather the names of all @(see vl-id-p) atoms throughout an
-expression list."
+  :verify-guards nil
+  (define vl-expr-names ((x vl-expr-p))
+    :returns (names string-listp)
+    :measure (vl-expr-count x)
+    :flag :expr
+    (mbe :logic (if (vl-fast-atom-p x)
+                    (let ((guts (vl-atom->guts x)))
+                      (if (vl-id-p guts)
+                          (list (vl-id->name guts))
+                        nil))
+                  (vl-exprlist-names (vl-nonatom->args x)))
+         :exec (with-local-nrev
+                 (vl-expr-names-nrev x nrev))))
 
-    :long "<p>See @(see vl-expr-names)</p>")
-
-  (mutual-recursion
-
-   (defund vl-expr-names-exec (x acc)
-     (declare (xargs :guard (vl-expr-p x)
-                     :measure (vl-expr-count x)))
-     (if (vl-fast-atom-p x)
-         (let ((guts (vl-atom->guts x)))
-           (if (vl-fast-id-p guts)
-               (cons (vl-id->name guts) acc)
-             acc))
-       (vl-exprlist-names-exec (vl-nonatom->args x) acc)))
-
-   (defund vl-exprlist-names-exec (x acc)
-     (declare (xargs :guard (vl-exprlist-p x)
-                     :measure (vl-exprlist-count x)))
-     (if (consp x)
-         (vl-exprlist-names-exec (cdr x)
-                                 (vl-expr-names-exec (car x) acc))
-       acc)))
-
-  (mutual-recursion
-
-   (defund vl-expr-names (x)
-     (declare (xargs :guard (vl-expr-p x)
-                     :measure (vl-expr-count x)
-                     :verify-guards nil))
-     (mbe :logic (if (vl-atom-p x)
-                     (let ((guts (vl-atom->guts x)))
-                       (if (vl-id-p guts)
-                           (list (vl-id->name guts))
-                         nil))
-                   (vl-exprlist-names (vl-nonatom->args x)))
-          :exec (reverse (vl-expr-names-exec x nil))))
-
-   (defund vl-exprlist-names (x)
-     (declare (xargs :guard (vl-exprlist-p x)
-                     :measure (vl-exprlist-count x)))
-     (mbe :logic (if (consp x)
-                     (append (vl-expr-names (car x))
-                             (vl-exprlist-names (cdr x)))
-                   nil)
-          :exec (reverse (vl-exprlist-names-exec x nil)))))
-
+  (define vl-exprlist-names ((x vl-exprlist-p))
+    :returns (names string-listp)
+    :measure (vl-exprlist-count x)
+    :flag :list
+    (mbe :logic (if (consp x)
+                    (append (vl-expr-names (car x))
+                            (vl-exprlist-names (cdr x)))
+                  nil)
+         :exec (with-local-nrev
+                 (vl-exprlist-names-nrev x nrev))))
+  ///
   (defthm true-listp-of-vl-expr-names
     (true-listp (vl-expr-names x))
     :rule-classes :type-prescription)
@@ -361,63 +636,23 @@ expression list."
     (true-listp (vl-exprlist-names x))
     :rule-classes :type-prescription)
 
-  (FLAG::make-flag vl-fast-flag-expr-names
-                   vl-expr-names-exec
-                   :flag-mapping ((vl-expr-names-exec . expr)
-                                  (vl-exprlist-names-exec . list)))
-
-  (defthm-vl-fast-flag-expr-names lemma
-    (expr (equal (vl-expr-names-exec x acc)
-                 (revappend (vl-expr-names x) acc))
-          :name vl-expr-names-exec-removal)
-    (list (equal (vl-exprlist-names-exec x acc)
-                 (revappend (vl-exprlist-names x) acc))
-          :name vl-exprlist-names-exec-removal)
+  (defthm-vl-expr-names-nrev-flag
+    (defthm vl-expr-names-nrev-removal
+      (equal (vl-expr-names-nrev x nrev)
+             (append nrev (vl-expr-names x)))
+      :flag :expr)
+    (defthm vl-exprlist-names-nrev-removal
+      (equal (vl-exprlist-names-nrev x nrev)
+             (append nrev (vl-exprlist-names x)))
+      :flag :list)
     :hints(("Goal"
-            :induct (vl-fast-flag-expr-names flag x acc)
-            :expand ((vl-expr-names-exec x acc)
-                     (vl-exprlist-names-exec x acc)
+            :in-theory (enable acl2::rcons)
+            :expand ((vl-expr-names-nrev x nrev)
+                     (vl-exprlist-names-nrev x nrev)
                      (vl-expr-names x)
                      (vl-exprlist-names x)))))
 
-  (verify-guards vl-expr-names
-                 :hints(("Goal" :in-theory (enable vl-expr-names
-                                                   vl-expr-names-exec
-                                                   vl-exprlist-names
-                                                   vl-exprlist-names-exec))))
-
-  (defttag vl-optimize)
-  (never-memoize vl-expr-names-exec)
-  (never-memoize vl-exprlist-names-exec)
-  (progn! (set-raw-mode t)
-          (defun vl-expr-names (x)
-            (nreverse (vl-expr-names-exec x nil)))
-          (defun vl-exprlist-names (x)
-            (nreverse (vl-exprlist-names-exec x nil))))
-  (defttag nil)
-
-  (local (defthm lemma
-           (case flag
-             (expr (implies (vl-expr-p x)
-                            (string-listp (vl-expr-names x))))
-             (atts t)
-             (t (implies (vl-exprlist-p x)
-                         (string-listp (vl-exprlist-names x)))))
-           :rule-classes nil
-           :hints(("Goal"
-                   :induct (vl-expr-induct flag x)
-                   :expand ((vl-expr-names x)
-                            (vl-exprlist-names x))))))
-
-  (defthm string-listp-of-vl-expr-names
-    (implies (force (vl-expr-p x))
-             (string-listp (vl-expr-names x)))
-    :hints(("Goal" :use ((:instance lemma (flag 'expr))))))
-
-  (defthm string-listp-of-vl-exprlist-names
-    (implies (force (vl-exprlist-p x))
-             (string-listp (vl-exprlist-names x)))
-    :hints(("Goal" :use ((:instance lemma (flag 'list))))))
+  (verify-guards vl-expr-names)
 
   (defthm vl-exprlist-names-when-atom
     (implies (atom x)
@@ -456,142 +691,94 @@ expression list."
                                    (vl-exprlist-names y)))))
 
   (defcong set-equiv set-equiv (vl-exprlist-names x) 1
-    :hints(("Goal" :in-theory (enable set-equiv)))))
+    :hints(("Goal" :in-theory (enable set-equiv))))
+
+  (deffixequiv-mutual vl-expr-names))
 
 
+(defines vl-expr-ops-nrev
+  :parents (vl-expr-ops)
 
+  (define vl-expr-ops-nrev ((x vl-expr-p) nrev)
+    :measure (vl-expr-count x)
+    :flag :expr
+    (b* (((when (vl-fast-atom-p x))
+          (nrev-fix nrev))
+         (nrev (nrev-push (vl-nonatom->op x) nrev)))
+      (vl-exprlist-ops-nrev (vl-nonatom->args x) nrev)))
 
-(defsection vl-expr-ops
-  :parents (expr-tools)
+  (define vl-exprlist-ops-nrev ((x vl-exprlist-p) nrev)
+    :measure (vl-exprlist-count x)
+    :flag :list
+    (b* (((when (atom x))
+          (nrev-fix nrev))
+         (nrev (vl-expr-ops-nrev (car x) nrev)))
+      (vl-exprlist-ops-nrev (cdr x) nrev))))
+
+(defines vl-expr-ops
   :short "Gather all of the operators used throughout an expression."
-  :long "<p><b>Signature:</b> @(call vl-expr-ops) returns a @(see
-vl-oplist-p).</p>
+  :long "<p>We simply gather all of the operators, with repetition.  The
+resulting list may contain any @(see vl-op-p), including even odd such as
+@(':vl-syscall') or @(':vl-hid-dot'), which you might not ordinarily think of
+as an operator.</p>"
 
-<p>We simply gather all of the operators, with repetition.  The resulting list
-may contain any @(see vl-op-p), including even odd such as @(':vl-syscall') or
-@(':vl-hid-dot'), which you might not ordinarily think of as an operator.</p>"
+  (define vl-expr-ops ((x vl-expr-p))
+    :returns (ops vl-oplist-p)
+    :measure (vl-expr-count x)
+    :verify-guards nil
+    :flag :expr
+    (mbe :logic (if (vl-fast-atom-p x)
+                    nil
+                  (cons (vl-nonatom->op x)
+                        (vl-exprlist-ops (vl-nonatom->args x))))
+         :exec (with-local-nrev
+                 (vl-expr-ops-nrev x nrev))))
 
-  (defxdoc vl-exprlist-ops
-    :parents (expr-tools)
-    :short "Gather all operators used throughout an expression list."
-    :long "<p>See @(see vl-expr-ops).</p>")
-
-  (mutual-recursion
-
-   (defund vl-fast-expr-ops (x acc)
-     (declare (xargs :guard (vl-expr-p x)
-                     :measure (two-nats-measure (acl2-count x) 1)))
-     (if (vl-fast-atom-p x)
-         acc
-       (vl-fast-exprlist-ops (vl-nonatom->args x) (cons (vl-nonatom->op x) acc))))
-
-   (defund vl-fast-exprlist-ops (x acc)
-     (declare (xargs :guard (vl-exprlist-p x)
-                     :measure (two-nats-measure (acl2-count x) 0)))
-     (if (consp x)
-         (vl-fast-exprlist-ops (cdr x)
-                               (vl-fast-expr-ops (car x) acc))
-       acc)))
-
-  (mutual-recursion
-
-   (defund vl-expr-ops (x)
-     (declare (xargs :guard (vl-expr-p x)
-                     :measure (two-nats-measure (acl2-count x) 1)
-                     :verify-guards nil))
-     (mbe :logic (if (vl-atom-p x)
-                     nil
-                   (cons (vl-nonatom->op x) (vl-exprlist-ops (vl-nonatom->args x))))
-          :exec (reverse (vl-fast-expr-ops x nil))))
-
-   (defund vl-exprlist-ops (x)
-     (declare (xargs :guard (vl-exprlist-p x)
-                     :measure (two-nats-measure (acl2-count x) 0)))
+   (define vl-exprlist-ops ((x vl-exprlist-p))
+     :returns (ops vl-oplist-p)
+     :measure (vl-exprlist-count x)
+     :flag :list
      (mbe :logic (if (consp x)
                      (append (vl-expr-ops (car x))
                              (vl-exprlist-ops (cdr x)))
                    nil)
-          :exec (reverse (vl-fast-exprlist-ops x nil)))))
+         :exec (with-local-nrev
+                 (vl-exprlist-ops-nrev x nrev))))
+   ///
+   (defthm true-listp-of-vl-expr-ops
+     (true-listp (vl-expr-ops x))
+     :rule-classes :type-prescription)
 
-  (defttag vl-optimize)
-  (never-memoize vl-fast-expr-ops)
-  (never-memoize vl-fast-exprlist-ops)
-  (progn! (set-raw-mode t)
-          (defun vl-expr-ops (x)
-            (nreverse (vl-fast-expr-ops x nil)))
-          (defun vl-exprlist-ops (x)
-            (nreverse (vl-fast-exprlist-ops x nil))))
-  (defttag nil)
+   (defthm true-listp-of-vl-exprlist-ops
+     (true-listp (vl-exprlist-ops x))
+     :rule-classes :type-prescription)
 
-  (defthm true-listp-of-vl-expr-ops
-    (true-listp (vl-expr-ops x))
-    :rule-classes :type-prescription)
+   (defthm-vl-expr-ops-nrev-flag
+     (defthm vl-expr-ops-nrev-removal
+       (equal (vl-expr-ops-nrev x nrev)
+              (append nrev (vl-expr-ops x)))
+       :flag :expr)
+     (defthm vl-exprlist-ops-nrev-removal
+       (equal (vl-exprlist-ops-nrev x nrev)
+              (append nrev (vl-exprlist-ops x)))
+       :flag :list)
+     :hints(("Goal"
+             :expand ((vl-expr-ops-nrev x nrev)
+                      (vl-exprlist-ops-nrev x nrev)
+                      (vl-expr-ops x)
+                      (vl-exprlist-ops x)))))
 
-  (defthm true-listp-of-vl-exprlist-ops
-    (true-listp (vl-exprlist-ops x))
-    :rule-classes :type-prescription)
+   (verify-guards vl-expr-ops)
 
-  (encapsulate
-    ()
-    (local (FLAG::make-flag vl-fast-flag-expr-ops
-                            vl-fast-expr-ops
-                            :flag-mapping ((vl-fast-expr-ops . expr)
-                                           (vl-fast-exprlist-ops . list))))
-
-    (local (defthm-vl-fast-flag-expr-ops vl-fast-expr-ops-correct
-             (expr (equal (vl-fast-expr-ops x acc)
-                          (revappend (vl-expr-ops x) acc)))
-             (list (equal (vl-fast-exprlist-ops x acc)
-                          (revappend (vl-exprlist-ops x) acc)))
-             :hints(("Goal"
-                     :induct (vl-fast-flag-expr-ops flag x acc)
-                     :expand ((vl-fast-expr-ops x acc)
-                              (vl-fast-exprlist-ops x acc)
-                              (vl-expr-ops x)
-                              (vl-exprlist-ops x))))))
-
-    (verify-guards vl-expr-ops
-      :hints(("Goal" :in-theory (enable vl-expr-ops
-                                        vl-fast-expr-ops
-                                        vl-exprlist-ops
-                                        vl-fast-exprlist-ops)))))
-
-  (encapsulate
-    ()
-    (local (defthm lemma
-             (case flag
-               (expr (implies (vl-expr-p x)
-                              (vl-oplist-p (vl-expr-ops x))))
-               (atts t)
-               (t (implies (vl-exprlist-p x)
-                           (vl-oplist-p (vl-exprlist-ops x)))))
-             :rule-classes nil
-             :hints(("Goal"
-                     :induct (vl-expr-induct flag x)
-                     :expand ((vl-expr-ops x)
-                              (vl-exprlist-ops x))))))
-
-    (defthm vl-oplist-p-of-vl-expr-ops
-      (implies (force (vl-expr-p x))
-               (vl-oplist-p (vl-expr-ops x)))
-      :hints(("Goal" :use ((:instance lemma (flag 'expr))))))
-
-    (defthm vl-oplist-p-of-vl-exprlist-names
-      (implies (force (vl-exprlist-p x))
-               (vl-oplist-p (vl-exprlist-ops x)))
-      :hints(("Goal" :use ((:instance lemma (flag 'list))))))))
+   (deffixequiv-mutual vl-expr-ops))
 
 
+(defines vl-expr-has-ops-aux
 
-(defsection vl-expr-has-ops
-
-  (mutual-recursion
-
-   (defund vl-expr-has-ops-aux (ops x)
-     (declare (xargs :guard (and (vl-oplist-p ops)
-                                 (true-listp ops)
-                                 (vl-expr-p x))
-                     :measure (two-nats-measure (acl2-count x) 1)))
+   (define vl-expr-has-ops-aux ((ops vl-oplist-p)
+                                (x   vl-expr-p))
+     :guard (true-listp ops)
+     :measure (vl-expr-count x)
      (cond ((vl-fast-atom-p x)
             nil)
            ((member (vl-nonatom->op x) ops)
@@ -599,68 +786,55 @@ may contain any @(see vl-op-p), including even odd such as @(':vl-syscall') or
            (t
             (vl-exprlist-has-ops-aux ops (vl-nonatom->args x)))))
 
-   (defund vl-exprlist-has-ops-aux (ops x)
-     (declare (xargs :guard (and (vl-oplist-p ops)
-                                 (true-listp ops)
-                                 (vl-exprlist-p x))
-                     :measure (two-nats-measure (acl2-count x) 0)))
+   (define vl-exprlist-has-ops-aux ((ops vl-oplist-p)
+                                    (x   vl-exprlist-p))
+     :guard (true-listp ops)
+     :measure (vl-exprlist-count x)
      (if (atom x)
          nil
        (or (vl-expr-has-ops-aux ops (car x))
-           (vl-exprlist-has-ops-aux ops (cdr x))))))
+           (vl-exprlist-has-ops-aux ops (cdr x)))))
 
-  (local
-   (defthm lemma
-     (case flag
-       (expr (implies (vl-expr-p x)
-                      (equal (vl-expr-has-ops-aux ops x)
-                             (intersectp-equal ops (vl-expr-ops x)))))
-       (atts t)
-       (t    (implies (vl-exprlist-p x)
-                      (equal (vl-exprlist-has-ops-aux ops x)
-                             (intersectp-equal ops (vl-exprlist-ops x))))))
-     :rule-classes nil
+   ///
+
+   (defthm-vl-expr-ops-flag
+     (defthm vl-expr-has-ops-aux-removal
+       (equal (vl-expr-has-ops-aux ops x)
+              (intersectp-equal ops (vl-expr-ops x)))
+       :flag :expr)
+     (defthm vl-exprlist-has-ops-aux-removal
+       (equal (vl-exprlist-has-ops-aux ops x)
+              (intersectp-equal ops (vl-exprlist-ops x)))
+       :flag :list)
      :hints(("Goal"
-             :induct (vl-expr-induct flag x)
              :in-theory (enable vl-expr-ops
                                 vl-exprlist-ops
                                 vl-expr-has-ops-aux
                                 vl-exprlist-has-ops-aux)))))
 
-  (local (defthm vl-expr-has-ops-aux-removal
-           (implies (force (vl-expr-p x))
-                    (equal (vl-expr-has-ops-aux ops x)
-                           (intersectp-equal ops (vl-expr-ops x))))
-           :hints(("Goal" :use ((:instance lemma (flag 'expr)))))))
+(define vl-expr-has-ops ((ops vl-oplist-p)
+                         (x   vl-expr-p))
+  :enabled t
+  :hooks nil ;; BOZO? intersectp-equal doesn't respect oplist equiv
+  (mbe :logic (intersectp-equal ops (vl-expr-ops x))
+       :exec (vl-expr-has-ops-aux (redundant-list-fix ops) x)))
 
-  (local (defthm vl-exprlist-has-ops-aux-removal
-           (implies (force (vl-exprlist-p x))
-                    (equal (vl-exprlist-has-ops-aux ops x)
-                           (intersectp-equal ops (vl-exprlist-ops x))))
-           :hints(("Goal" :use ((:instance lemma (flag 'list)))))))
-
-  (defun vl-expr-has-ops (ops x)
-    (declare (xargs :guard (and (vl-oplist-p ops)
-                                (vl-expr-p x))))
-    (mbe :logic (intersectp-equal ops (vl-expr-ops x))
-         :exec (vl-expr-has-ops-aux (redundant-list-fix ops) x)))
-
-  (defun vl-exprlist-has-ops (ops x)
-    (declare (xargs :guard (and (vl-oplist-p ops)
-                                (vl-exprlist-p x))))
-    (mbe :logic (intersectp-equal ops (vl-exprlist-ops x))
-         :exec (vl-exprlist-has-ops-aux (redundant-list-fix ops) x))))
-
+(define vl-exprlist-has-ops ((ops vl-oplist-p)
+                             (x   vl-exprlist-p))
+  :enabled t
+  :hooks nil ;; BOZO? intersectp-equal doesn't respect oplist equiv
+  (mbe :logic (intersectp-equal ops (vl-exprlist-ops x))
+       :exec (vl-exprlist-has-ops-aux (redundant-list-fix ops) x)))
 
 
 (define vl-zbitlist-p ((x vl-bitlist-p))
   (if (consp x)
-      (and (equal (car x) :vl-zval)
+      (and (equal (vl-bit-fix (car x)) :vl-zval)
            (vl-zbitlist-p (cdr x)))
     t))
 
-(define vl-zatom-p (x)
-  (and (vl-atom-p x)
+(define vl-zatom-p ((x vl-expr-p))
+  (and (vl-fast-atom-p x)
        (let ((guts (vl-atom->guts x)))
          (and (vl-weirdint-p guts)
               (vl-zbitlist-p (vl-weirdint->bits guts))))))
@@ -668,54 +842,63 @@ may contain any @(see vl-op-p), including even odd such as @(':vl-syscall') or
 (define vl-obviously-true-expr-p ((x vl-expr-p))
   (and (vl-fast-atom-p x)
        (vl-fast-constint-p (vl-atom->guts x))
-       (equal (vl-constint->value (vl-atom->guts x)) 1)))
+       (eql (vl-constint->value (vl-atom->guts x)) 1)))
 
 (define vl-obviously-false-expr-p ((x vl-expr-p))
   (and (vl-fast-atom-p x)
        (vl-fast-constint-p (vl-atom->guts x))
-       (equal (vl-constint->value (vl-atom->guts x)) 0)))
-
+       (eql (vl-constint->value (vl-atom->guts x)) 0)))
 
 
 (define vl-make-index (n)
-  :parents (expr-tools)
   :short "Safely create a constant integer atom whose value is n."
   :long "<p>@('n') is expected to be a natural number, but our guard is only
 @('t').  We cause a hard error if we are given a non-natural number index, or
 one which is too large.  BOZO consider a stronger guard.</p>"
+  :returns (index vl-expr-p)
 
   (let* ((value  (if (natp n)
                      n
-                   (prog2$ (er hard? 'vl-make-index
-                               "Proposed index is not a natural: ~x0." n)
+                   (prog2$ (raise "Proposed index is not a natural: ~x0." n)
                            0)))
          (width (+ 1 (integer-length value))))
     (if (<= width 31)
         ;; Prefer to make indices that look like plain decimal numbers, I
         ;; didn't used to hons these, but now it seems like a good idea since
         ;; the same indicies may be needed frequently.
-        (make-honsed-vl-atom
-           :guts (make-honsed-vl-constint :origwidth 32
-                                          :origtype :vl-signed
-                                          :wasunsized t
-                                          :value value)
-           :finalwidth 32
-           :finaltype :vl-signed)
-        (make-honsed-vl-atom
-         :guts (make-honsed-vl-constint :origwidth width
-                                        :origtype :vl-signed
-                                        :value value)
-         :finalwidth width
-         :finaltype :vl-signed)))
-
+        (hons-copy
+         (make-vl-atom
+          :guts (make-vl-constint :origwidth 32
+                                  :origtype :vl-signed
+                                  :wasunsized t
+                                  :value value)
+          :finalwidth 32
+          :finaltype :vl-signed))
+      (hons-copy
+       (make-vl-atom
+        :guts (make-vl-constint :origwidth width
+                                :origtype :vl-signed
+                                :value value)
+        :finalwidth width
+        :finaltype :vl-signed))))
   ///
+  (local (in-theory (enable vl-make-index)))
 
-  (defthm vl-atom-p-of-vl-make-index
-    (vl-atom-p (vl-make-index n)))
+  (defthm vl-expr-kind-of-vl-make-index
+    (eq (vl-expr-kind (vl-make-index n)) :atom))
 
   (defthm vl-expr-resolved-p-of-vl-make-index
     (vl-expr-resolved-p (vl-make-index n))
     :hints(("Goal" :in-theory (enable vl-expr-resolved-p))))
+
+  (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
+
+  (local (defthm simple-loghead-identity
+           (implies (and (case-split (< n (expt 2 k)))
+                         (natp n)
+                         (natp k))
+                    (equal (acl2::loghead k n)
+                           n))))
 
   (defthm vl-resolved->val-of-vl-make-index
     (equal (vl-resolved->val (vl-make-index n))
@@ -724,28 +907,23 @@ one which is too large.  BOZO consider a stronger guard.</p>"
 
   (defthm posp-of-vl-expr->finalwidth-of-vl-make-index
     (posp (vl-expr->finalwidth (vl-make-index n)))
-    :rule-classes :type-prescription))
+    :rule-classes :type-prescription)
 
-
-
+  (deffixequiv vl-make-index :args ((n natp))))
 
 
 (define vl-sysfunexpr-p ((x vl-expr-p))
   (and (vl-fast-atom-p x)
        (vl-fast-sysfunname-p (vl-atom->guts x))))
 
-(define vl-sysfunexpr->name ((x (and (vl-expr-p x)
-                                     (vl-sysfunexpr-p x))))
-  (string-fix (vl-sysfunname->name (vl-atom->guts x)))
+(define vl-sysfunexpr->name ((x vl-expr-p))
+  :returns (name stringp :rule-classes :type-prescription)
+  :guard (vl-sysfunexpr-p x)
   :guard-hints(("Goal" :in-theory (enable vl-sysfunexpr-p)))
-  ///
-  (defthm stringp-of-vl-sysfunexpr->name
-    (stringp (vl-sysfunexpr->name x))
-    :rule-classes :type-prescription))
+  (vl-sysfunname->name (vl-atom->guts x)))
 
 
 (define vl-$random-expr-p ((x vl-expr-p))
-  :parents (expr-tools)
   :short "Recognize calls of the @('$random') system function."
 
   :long "<p>The syntax for @('$random') calls is described in Section 17.9.1 on
@@ -776,83 +954,65 @@ but we do not check what kind of identifier it is.</p>"
         ;; variable, but we only check that it's an identifier.
         t))
     nil)
-
   ///
-
-  (defthm vl-nonatom-p-when-vl-$random-expr-p
+  (defthm vl-expr-kind-when-vl-$random-expr-p
     (implies (and (vl-$random-expr-p x)
-                  (force (vl-expr-p x)))
-             (vl-nonatom-p x))
+                  ;(force (vl-expr-p x))
+                  )
+             (eq (vl-expr-kind x) :nonatom))
     :rule-classes ((:rewrite :backchain-limit-lst 1))))
 
 
 
-(defsection vl-expr-atoms
-  :parents (expr-tools)
+
+(defines vl-expr-atoms-nrev
+  :parents (vl-expr-atoms)
+
+  (define vl-expr-atoms-nrev ((x vl-expr-p) nrev)
+    :measure (vl-expr-count x)
+    :flag :expr
+    (if (vl-fast-atom-p x)
+        (nrev-push (vl-expr-fix x) nrev)
+      (vl-exprlist-atoms-nrev (vl-nonatom->args x) nrev)))
+
+  (define vl-exprlist-atoms-nrev ((x vl-exprlist-p) nrev)
+    :measure (vl-exprlist-count x)
+    :flag :list
+    (if (atom x)
+        (nrev-fix nrev)
+      (let ((nrev (vl-expr-atoms-nrev (car x) nrev)))
+        (vl-exprlist-atoms-nrev (cdr x) nrev)))))
+
+
+(defines vl-expr-atoms
   :short "Gather all of the atoms throughout an expression."
-  :long "<p><b>Signature:</b> @(call vl-expr-atoms) returns a @(see
-vl-atomlist-p).</p>
+  :long "<p>We simply gather all of the @(see vl-atom-p)s in the expression,
+with repetition.  The resulting list may contain any @(see vl-atom-p),
+including even odd things like hid pieces and function names, which you might
+not usually think of as atoms.</p>"
 
-<p>We simply gather all of the @(see vl-atom-p)s in the expression, with
-repetition.  The resulting list may contain any @(see vl-atom-p), including
-even odd things like hid pieces and function names, which you might not
-usually think of as atoms.</p>
+  (define vl-expr-atoms ((x vl-expr-p))
+    :returns (atoms (and (vl-exprlist-p atoms)
+                         (vl-atomlist-p atoms)))
+    :measure (vl-expr-count x)
+    :verify-guards nil
+    :flag :expr
+    (mbe :logic (if (vl-atom-p x)
+                    (list (vl-expr-fix x))
+                  (vl-exprlist-atoms (vl-nonatom->args x)))
+         :exec (with-local-nrev (vl-expr-atoms-nrev x nrev))))
 
-@(def vl-expr-atoms)"
-
-  (defxdoc vl-exprlist-atoms
-    :parents (expr-tools)
-    :short "Gather all atoms used throughout an expression list."
-    :long "<p>See @(see vl-expr-atoms).</p>")
-
-  (mutual-recursion
-
-   (defund vl-fast-expr-atoms (x acc)
-     (declare (xargs :guard (vl-expr-p x)
-                     :measure (two-nats-measure (acl2-count x) 1)))
-     (if (vl-fast-atom-p x)
-         (cons x acc)
-       (vl-fast-exprlist-atoms (vl-nonatom->args x) acc)))
-
-   (defund vl-fast-exprlist-atoms (x acc)
-     (declare (xargs :guard (vl-exprlist-p x)
-                     :measure (two-nats-measure (acl2-count x) 0)))
-     (if (consp x)
-         (vl-fast-exprlist-atoms (cdr x)
-                                 (vl-fast-expr-atoms (car x) acc))
-       acc)))
-
-  (mutual-recursion
-
-   (defund vl-expr-atoms (x)
-     (declare (xargs :guard (vl-expr-p x)
-                     :measure (two-nats-measure (acl2-count x) 1)
-                     :verify-guards nil))
-     (mbe :logic (if (vl-atom-p x)
-                     (list x)
-                   (vl-exprlist-atoms (vl-nonatom->args x)))
-          :exec (reverse (vl-fast-expr-atoms x nil))))
-
-   (defund vl-exprlist-atoms (x)
-     (declare (xargs :guard (vl-exprlist-p x)
-                     :measure (two-nats-measure (acl2-count x) 0)))
-     (mbe :logic (if (consp x)
-                     (append (vl-expr-atoms (car x))
-                             (vl-exprlist-atoms (cdr x)))
-                   nil)
-          :exec (reverse (vl-fast-exprlist-atoms x nil)))))
-
-  (defttag vl-optimize)
-  (never-memoize vl-fast-expr-atoms)
-  (never-memoize vl-fast-exprlist-atoms)
-  (progn!
-   (set-raw-mode t)
-   (defun vl-expr-atoms (x)
-     (nreverse (vl-fast-expr-atoms x nil)))
-   (defun vl-exprlist-atoms (x)
-     (nreverse (vl-fast-exprlist-atoms x nil))))
-  (defttag nil)
-
+  (define vl-exprlist-atoms ((x vl-exprlist-p))
+    :returns (atoms (and (vl-exprlist-p atoms)
+                         (vl-atomlist-p atoms)))
+    :measure (vl-exprlist-count x)
+    :flag :list
+    (mbe :logic (if (consp x)
+                    (append (vl-expr-atoms (car x))
+                            (vl-exprlist-atoms (cdr x)))
+                  nil)
+         :exec (with-local-nrev (vl-exprlist-atoms-nrev x nrev))))
+  ///
   (defthm true-listp-of-vl-expr-atoms
     (true-listp (vl-expr-atoms x))
     :rule-classes :type-prescription)
@@ -861,86 +1021,27 @@ usually think of as atoms.</p>
     (true-listp (vl-exprlist-atoms x))
     :rule-classes :type-prescription)
 
-  (encapsulate
-    ()
-    (local (FLAG::make-flag vl-fast-flag-expr-atoms
-                            vl-fast-expr-atoms
-                            :flag-mapping ((vl-fast-expr-atoms . expr)
-                                           (vl-fast-exprlist-atoms . list))))
+  (defthm-vl-expr-atoms-nrev-flag
+    (defthm vl-expr-atoms-nrev-removal
+      (equal (vl-expr-atoms-nrev x nrev)
+             (append nrev (vl-expr-atoms x)))
+      :flag :expr)
+    (defthm vl-exprlist-atoms-nrev-removal
+      (equal (vl-exprlist-atoms-nrev x nrev)
+             (append nrev (vl-exprlist-atoms x)))
+      :flag :list)
+    :hints(("Goal"
+            :in-theory (enable acl2::rcons)
+            :expand ((vl-expr-atoms-nrev x nrev)
+                     (vl-exprlist-atoms-nrev x nrev)))))
 
-    (local (defthm-vl-fast-flag-expr-atoms vl-fast-expr-atoms-correct
-             (expr (equal (vl-fast-expr-atoms x acc)
-                          (revappend (vl-expr-atoms x) acc)))
-             (list (equal (vl-fast-exprlist-atoms x acc)
-                          (revappend (vl-exprlist-atoms x) acc)))
-             :hints(("Goal"
-                     :induct (vl-fast-flag-expr-atoms flag x acc)
-                     :expand ((vl-fast-expr-atoms x acc)
-                              (vl-fast-exprlist-atoms x acc)
-                              (vl-expr-atoms x)
-                              (vl-exprlist-atoms x))))))
+  (verify-guards vl-expr-atoms)
 
-    (verify-guards vl-expr-atoms
-      :hints(("Goal" :in-theory (enable vl-expr-atoms
-                                        vl-fast-expr-atoms
-                                        vl-exprlist-atoms
-                                        vl-fast-exprlist-atoms)))))
-
-  (encapsulate
-    ()
-    (local (defthm lemma
-             (case flag
-               (expr (implies (vl-expr-p x)
-                              (vl-atomlist-p (vl-expr-atoms x))))
-               (atts t)
-               (t (implies (vl-exprlist-p x)
-                           (vl-atomlist-p (vl-exprlist-atoms x)))))
-             :rule-classes nil
-             :hints(("Goal"
-                     :induct (vl-expr-induct flag x)
-                     :expand ((vl-expr-atoms x)
-                              (vl-exprlist-atoms x))))))
-
-    (defthm vl-atomlist-p-of-vl-expr-atoms
-      (implies (force (vl-expr-p x))
-               (vl-atomlist-p (vl-expr-atoms x)))
-      :hints(("Goal" :use ((:instance lemma (flag 'expr))))))
-
-    (defthm vl-atomlist-p-of-vl-exprlist-names
-      (implies (force (vl-exprlist-p x))
-               (vl-atomlist-p (vl-exprlist-atoms x)))
-      :hints(("Goal" :use ((:instance lemma (flag 'list))))))))
+  (deffixequiv-mutual vl-expr-atoms))
 
 
-
-(define vl-exprlist-to-plainarglist
-  ((x    vl-exprlist-p        "list to convert")
-   &key
-   (dir  vl-maybe-direction-p "direction for each new plainarg")
-   (atts vl-atts-p            "attributes for each new plainarg"))
-  :returns (ans vl-plainarglist-p :hyp :fguard)
-  :parents (expr-tools)
-  :short "Convert expressions into @(see vl-plainarg-p)s."
-
-  (if (consp x)
-      (cons (make-vl-plainarg :expr (car x)
-                              :dir dir
-                              :atts atts)
-            (vl-exprlist-to-plainarglist-fn (cdr x) dir atts))
-    nil)
-
-  ///
-
-  (defthm vl-exprlist-to-plainarglist-under-iff
-    (iff (vl-exprlist-to-plainarglist x :dir dir :atts atts)
-         (consp x)))
-
-  (defthm len-of-vl-exprlist-to-plainarglist
-    (equal (len (vl-exprlist-to-plainarglist x :dir dir :atts atts))
-           (len x))))
-
-
-(define vl-atomlist-collect-funnames ((x vl-atomlist-p))
+(define vl-atomlist-collect-funnames ((x vl-exprlist-p))
+  :guard (vl-atomlist-p x)
   :returns (ans string-listp)
   :parents (vl-expr-funnames vl-atomlist-p)
   :short "Collect all the function names that occur in an @(see vl-atomlist-p)
@@ -952,26 +1053,19 @@ and return them as a string list."
        ((when (vl-fast-funname-p guts))
         (cons (string-fix (vl-funname->name guts))
               (vl-atomlist-collect-funnames (cdr x)))))
-    (vl-atomlist-collect-funnames (cdr x)))
-
-  :prepwork ((local (in-theory (disable (force))))))
-
+    (vl-atomlist-collect-funnames (cdr x))))
 
 (define vl-expr-funnames ((x vl-expr-p))
   :returns (ans string-listp)
-  :parents (expr-tools)
   :short "Collect the names of all functions that occur in a @(see vl-expr-p)
 and return them as a string list."
   (vl-atomlist-collect-funnames (vl-expr-atoms x)))
 
-
 (define vl-exprlist-funnames ((x vl-exprlist-p))
   :returns (ans string-listp)
-  :parents (expr-tools)
   :short "Collect the names of all functions that occur in a @(see
 vl-exprlist-p) and return them as a string list."
   (vl-atomlist-collect-funnames (vl-exprlist-atoms x)))
-
 
 (define vl-expr-has-funcalls ((x vl-expr-p))
   (mbe :logic (if (member :vl-funcall (vl-expr-ops x))
@@ -987,110 +1081,204 @@ vl-exprlist-p) and return them as a string list."
 
 
 
-(define vl-partition-plainargs
-  ;; BOZO find this a better home
-  ((x      vl-plainarglist-p "list to filter")
-   ;; bozo make these optional
-   (inputs   "accumulator for args with :dir :vl-input")
-   (outputs  "accumulator for args with :dir :vl-output")
-   (inouts   "accumulator for args with :dir :vl-inout")
-   (unknowns "accumulator for args with :dir nil"))
-  :returns (mv inputs outputs inouts unknowns)
-  :parents (vl-plainarglist-p)
-
-  (b* (((when (atom x))
-        (mv inputs outputs inouts unknowns))
-       (dir (vl-plainarg->dir (car x)))
-       ((when (eq dir :vl-input))
-        (vl-partition-plainargs (cdr x) (cons (car x) inputs) outputs inouts unknowns))
-       ((when (eq dir :vl-output))
-        (vl-partition-plainargs (cdr x) inputs (cons (car x) outputs) inouts unknowns))
-       ((when (eq dir :vl-inout))
-        (vl-partition-plainargs (cdr x) inputs outputs (cons (car x) inouts) unknowns)))
-    (vl-partition-plainargs (cdr x) inputs outputs inouts (cons (car x) unknowns)))
-
-  ///
-
-  (defthm vl-partition-plainarg-basics
-    (implies (and (force (vl-plainarglist-p x))
-                  (force (vl-plainarglist-p inputs))
-                  (force (vl-plainarglist-p outputs))
-                  (force (vl-plainarglist-p inouts))
-                  (force (vl-plainarglist-p unknowns)))
-             (b* (((mv inputs outputs inouts unknowns)
-                   (vl-partition-plainargs x inputs outputs inouts unknowns)))
-               (and (vl-plainarglist-p inputs)
-                    (vl-plainarglist-p outputs)
-                    (vl-plainarglist-p inouts)
-                    (vl-plainarglist-p unknowns))))))
-
-
-
-(defsection vl-expr-selects
-  :parents (expr-tools)
+(defines vl-expr-selects
   :short "Collects up all the selection expressions (bit-selects, part-selects,
 array indexing, and unresolved indexing) and returns them as a flat list of
 expressions."
+  :long "<p>Note: we assume there are no nested selects.</p>"
 
-  (mutual-recursion
+  (define vl-expr-selects ((x vl-expr-p))
+    :returns (selects vl-exprlist-p)
+    :measure (vl-expr-count x)
+    :flag :expr
+    (b* (((when (vl-fast-atom-p x))
+          nil)
+         ((vl-nonatom x) x)
+         ((when (or (eq x.op :vl-bitselect)
+                    (eq x.op :vl-partselect-colon)
+                    (eq x.op :vl-partselect-pluscolon)
+                    (eq x.op :vl-partselect-minuscolon)
+                    (eq x.op :vl-index)
+                    (eq x.op :vl-array-index)))
+          (list (vl-expr-fix x))))
+      (vl-exprlist-selects x.args)))
 
-   (defund vl-expr-selects (x)
-     ;; Assumes no nested selects
-     (declare (xargs :guard (vl-expr-p x)
-                     :measure (vl-expr-count x)))
-     (b* (((when (vl-fast-atom-p x))
-           nil)
-          ((vl-nonatom x) x)
-          ((when (or (eq x.op :vl-bitselect)
-                     (eq x.op :vl-partselect-colon)
-                     (eq x.op :vl-partselect-pluscolon)
-                     (eq x.op :vl-partselect-minuscolon)
-                     (eq x.op :vl-index)
-                     (eq x.op :vl-array-index)))
-           (list x)))
-       (vl-exprlist-selects x.args)))
-
-   (defund vl-exprlist-selects (x)
-     (declare (xargs :guard (vl-exprlist-p x)
-                     :measure (vl-exprlist-count x)))
-     (if (atom x)
-         nil
-       (append (vl-expr-selects (car x))
-               (vl-exprlist-selects (cdr x))))))
-
-  (flag::make-flag vl-flag-expr-selects
-                   vl-expr-selects
-                   :flag-mapping ((vl-expr-selects . expr)
-                                  (vl-exprlist-selects . list)))
-
-  (defthm-vl-flag-expr-selects
-    (defthm vl-exprlist-p-of-vl-expr-selects
-      (implies (force (vl-expr-p x))
-               (vl-exprlist-p (vl-expr-selects x)))
-      :flag expr)
-
-    (defthm vl-exprlist-p-of-vl-exprlist-selects
-      (implies (force (vl-exprlist-p x))
-               (vl-exprlist-p (vl-exprlist-selects x)))
-      :flag list)
-    :hints(("Goal" :expand ((vl-exprlist-selects x)
-                            (vl-expr-selects x))))))
+  (define vl-exprlist-selects ((x vl-exprlist-p))
+    :returns (selects vl-exprlist-p)
+    :measure (vl-exprlist-count x)
+    (if (atom x)
+        nil
+      (append (vl-expr-selects (car x))
+              (vl-exprlist-selects (cdr x)))))
+  ///
+  (deffixequiv-mutual vl-expr-selects))
 
 
-(define vl-bitlist-from-nat ((x natp)
+(define vl-bitlist-from-nat ((x     natp)
                              (width natp))
   :returns (bits vl-bitlist-p)
-  :parents (expr-tools)
   :short "Turn a natural number into a vl-bitlist-p of the given width."
   (b* (((when (zp width)) nil)
        (width (1- width))
-       (bit (if (logbitp width x)
+       (bit (if (logbitp width (lnfix x))
                 :vl-1val
               :vl-0val)))
     (cons bit (vl-bitlist-from-nat x width)))
-
+  :prepwork ((local (in-theory (disable logbitp))))
   ///
-
   (defthm len-of-vl-bitlist-from-nat
     (equal (len (vl-bitlist-from-nat x width))
            (nfix width))))
+
+
+(define vl-constexpr-reduce
+  :short "An evaluator for a small set of \"constant expressions\" in Verilog."
+
+  ((x vl-expr-p "Expression to try to evaluate."))
+  :returns
+  (value? "An unsigned 31-bit integer (i.e., a positive signed 32-bit
+           integer) on success, or @('nil') on failure."
+          maybe-natp :rule-classes :type-prescription)
+
+  :long "<p>This is a very careful, limited evaluator.  It checks, after every
+computation, that the result is in [0, 2^31).  This is the minimum size of
+\"integer\" for Verilog implementations, which is the size that plain decimal
+integer literals are supposed to have.  If we ever leave that range, we just
+fail to evaluate the expression.</p>
+
+<p>Note that in general it is <b>not safe</b> to call this function on
+arbitrary Verilog expressions to do constant folding because the size of the
+left-hand side can influence the widths at which the interior computations are
+to be done.  However, it is safe to use this inside of range expressions,
+because there is no left-hand side to provide us a context.</p>
+
+<p>BOZO is it really unsafe?  At worst the left-hand side is bigger than 31
+bits, and we end up with a larger context, right?  But can that actually hurt
+us in some way, if the result of every operation stays in bounds?  I don't
+think it can.</p>"
+
+  :measure (vl-expr-count x)
+
+  (cond ((vl-fast-atom-p x)
+         ;; The following is quite restrictive.  We only permit integer
+         ;; literals which were have the :wasunsized attribute set and are
+         ;; signed.  Such literals would arise in Verilog by being written as
+         ;; plain decimal integers like 5, or as unbased, signed integers in
+         ;; other bases such as 'shFFF and so on.
+         ;;
+         ;; The reason I am doing this is becuase these numbers are
+         ;; "predictable" in that they are to be interpreted as n-bit
+         ;; constants, where n is at least 32 bits, and I do not want any
+         ;; confusion about which width we are operating in.
+         ;;
+         ;; If you want to extend this, you need to be very careful to
+         ;; understand how the signedness rules and width rules are going to
+         ;; apply.  In particular, the calculations below in the non-atom case
+         ;; are currently relying upon the fact that everything is in the
+         ;; signed, 32-bit world.
+         (let ((guts (vl-atom->guts x)))
+           (and (vl-fast-constint-p guts)
+                (eq (vl-constint->origtype guts) :vl-signed)
+                (eql (vl-constint->origwidth guts) 32)
+                (vl-constint->wasunsized guts)
+                (< (vl-constint->value guts) (expt 2 31))
+                ;; This lnfix is a stupid hack that gives us an unconditional
+                ;; type prescription rule.  We "know" that the value is an
+                ;; natural nubmer as long as x is indeed an expression.
+                (lnfix (vl-constint->value guts)))))
+
+        (t
+         ;; Be very careful if you decide to try to extend this to support
+         ;; other operations!  In particular, you should understand the
+         ;; signedness rules and how operations like comparisons will take you
+         ;; out of the world of signed arithmetic.
+         (case (vl-nonatom->op x)
+           (:vl-unary-plus
+            (vl-constexpr-reduce (first (vl-nonatom->args x))))
+           (:vl-binary-plus
+            (b* ((arg1 (vl-constexpr-reduce (first (vl-nonatom->args x))))
+                 (arg2 (vl-constexpr-reduce (second (vl-nonatom->args x)))))
+              (and arg1
+                   arg2
+                   (< (+ arg1 arg2) (expt 2 31))
+                   (+ arg1 arg2))))
+           (:vl-binary-minus
+            (b* ((arg1 (vl-constexpr-reduce (first (vl-nonatom->args x))))
+                 (arg2 (vl-constexpr-reduce (second (vl-nonatom->args x)))))
+              (and arg1
+                   arg2
+                   (<= 0 (- arg1 arg2))
+                   (- arg1 arg2))))
+           (:vl-binary-times
+            (b* ((arg1 (vl-constexpr-reduce (first (vl-nonatom->args x))))
+                 (arg2 (vl-constexpr-reduce (second (vl-nonatom->args x)))))
+              (and arg1
+                   arg2
+                   (< (* arg1 arg2) (expt 2 31))
+                   (* arg1 arg2))))
+           (:vl-binary-shl
+            (b* ((arg1 (vl-constexpr-reduce (first (vl-nonatom->args x))))
+                 (arg2 (vl-constexpr-reduce (second (vl-nonatom->args x)))))
+              (and arg1
+                   arg2
+                   (< (ash arg1 arg2) (expt 2 31))
+                   (ash arg1 arg2))))
+           (t
+            ;; Some unsupported operation -- fail.
+            nil))))
+  :prepwork ((local (in-theory (enable maybe-natp))))
+  ///
+  (defthm upper-bound-of-vl-constexpr-reduce
+    (implies (force (vl-expr-p x))
+             (< (vl-constexpr-reduce x)
+                (expt 2 31)))
+    :rule-classes :linear))
+
+
+(defsection vl-exprtype-max
+  :parents (vl-expr-typedecide)
+  :short "@(call vl-exprtype-max) is given @(see vl-exprtype-p)s as arguments;
+it returns @(':vl-unsigned') if any argument is unsigned, or @(':vl-signed')
+when all arguments are signed."
+
+  (local (in-theory (enable vl-exprtype-p)))
+
+  (defund vl-exprtype-max-fn (x y)
+    (declare (xargs :guard (and (vl-exprtype-p x)
+                                (vl-exprtype-p y))))
+    ;; Goofy MBE stuff is just to make sure this function breaks if we ever add
+    ;; support for reals or other types.
+    (let ((x-fix (mbe :logic (case (vl-exprtype-fix x)
+                               (:vl-signed   :vl-signed)
+                               (otherwise    :vl-unsigned))
+                      :exec x))
+          (y-fix (mbe :logic (case (vl-exprtype-fix y)
+                               (:vl-signed   :vl-signed)
+                               (otherwise    :vl-unsigned))
+                      :exec y)))
+      (if (or (eq x-fix :vl-unsigned)
+              (eq y-fix :vl-unsigned))
+          :vl-unsigned
+        :vl-signed)))
+
+  (defmacro vl-exprtype-max (x y &rest rst)
+    (xxxjoin 'vl-exprtype-max-fn (cons x (cons y rst))))
+
+  (add-binop vl-exprtype-max vl-exprtype-max-fn)
+
+  (local (in-theory (enable vl-exprtype-max-fn)))
+
+  (defthm vl-exprtype-p-of-vl-exprtype-max
+    (vl-exprtype-p (vl-exprtype-max x y)))
+
+  (defthm type-of-vl-exprtype-max
+    (and (symbolp (vl-exprtype-max x y))
+         (not (equal t (vl-exprtype-max x y)))
+         (not (equal nil (vl-exprtype-max x y))))
+    :rule-classes :type-prescription)
+
+  (defthm vl-exprtype-max-of-vl-exprtype-max
+    (equal (vl-exprtype-max (vl-exprtype-max x y) z)
+           (vl-exprtype-max x (vl-exprtype-max y z))))
+
+  (deffixequiv vl-exprtype-max-fn :args ((x vl-exprtype-p) (y vl-exprtype-p))))

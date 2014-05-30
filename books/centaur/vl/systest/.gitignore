@@ -3,3 +3,7 @@ INCA_libs/
 *.ok
 impl.v
 *.log
+simv
+simv.daidir
+csrc/
+*.key

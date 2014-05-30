@@ -37,7 +37,7 @@
                (lsb? vl::maybe-natp :rule-classes :type-prescription))
   :parents (stv-expand)
   :short "Match an expression with an optional bit- or part-select."
-  (b* (((unless (vl::vl-nonatom-p x))
+  (b* (((when (vl::vl-atom-p x))
         (mv nil x nil nil))
        (op   (vl::vl-nonatom->op x))
        (args (vl::vl-nonatom->args x))

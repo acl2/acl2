@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -21,6 +21,7 @@
 (in-package "VL")
 (include-book "modnamespace")
 (local (include-book "../util/arithmetic"))
+(local (std::add-default-post-define-hook :fix))
 
 (defsection find-item
   :parents (mlib)
@@ -52,6 +53,7 @@ equivalent to the naive method of doing lookups.</p>")
   (let* ((mksym-package-symbol 'vl::foo)
          (fn            (mksym 'vl-find- type))
          (element-p     (mksym 'vl- type '-p))
+         (fix           (mksym 'vl- type '-fix))
          (type?         (mksym type '?))
          (tag           (intern (cat "VL-" (symbol-name type)) "KEYWORD"))
          (list-p        (mksym 'vl- type 'list-p))
@@ -64,39 +66,37 @@ equivalent to the naive method of doing lookups.</p>")
        :short ,(cat "Look up a " (symbol-name type) " in a list, by its name.")
        ((name stringp)
         (x    ,list-p))
+       :hooks ((:fix :args ((x ,list-p))))
        :returns (,type? (equal (,element-p ,type?)
                                (if ,type?
                                    t
-                                 nil))
-                        :hyp (force (,list-p x)))
+                                 nil)))
        (cond ((atom x)
               nil)
              ((equal name (,element->name (car x)))
-              (car x))
+              (,fix (car x)))
              (t
               (,fn name (cdr x))))
        ///
        (local (in-theory (disable (force))))
 
        (defthm ,(mksym fn '-under-iff)
-         (implies (and (force (,list-p x))
-                       ,(if names-may-be-nil
-                            '(force (stringp name))
-                          t))
+         (implies ,(if names-may-be-nil
+                       '(force (stringp name))
+                     t)
                   (iff (,fn name x)
                        (member-equal name (,list->names x)))))
 
        (defthm ,(mksym element->name '-of- fn)
-         (equal (,element->name (,fn name x))
-                (and (,fn name x)
-                     name)))
+         (implies (,fn name x)
+                  (equal (,element->name (,fn name x))
+                         name)))
 
        (defthm ,(mksym 'tag-of- fn)
-         (implies (force (,list-p x))
-                  (equal (tag (,fn name x))
-                         (if (,fn name x)
-                             ,tag
-                           nil))))
+         (equal (tag (,fn name x))
+                (if (,fn name x)
+                    ,tag
+                  nil)))
 
        (defthm ,(mksym 'member-equal-of- fn)
          (implies (force (,list-p x))
@@ -105,7 +105,7 @@ equivalent to the naive method of doing lookups.</p>")
 
        (defthm ,(mksym 'consp-of- fn '-when-member-equal)
          (implies (and (member-equal name (,list->names x))
-                       (force (,list-p x)))
+                       (force (stringp name)))
                   (consp (,fn name x)))))))
 
 (def-vl-find-moditem portdecl)
@@ -124,17 +124,16 @@ the whole @(see vl-portdecl-p) object."
   (if (atom x)
       nil
     (hons-acons (vl-portdecl->name (car x))
-                (car x)
+                (vl-portdecl-fix (car x))
                 (vl-portdecl-alist (cdr x))))
   ///
   (defthm alistp-of-vl-portdecl-alist
     (alistp (vl-portdecl-alist x)))
 
   (defthm hons-assoc-equal-of-vl-portdecl-alist
-    (implies (force (vl-portdecllist-p x))
-             (equal (hons-assoc-equal k (vl-portdecl-alist x))
-                    (and (vl-find-portdecl k x)
-                         (cons k (vl-find-portdecl k x)))))
+    (equal (hons-assoc-equal k (vl-portdecl-alist x))
+           (and (vl-find-portdecl k x)
+                (cons k (vl-find-portdecl k x))))
     :hints(("Goal" :in-theory (e/d (vl-find-portdecl)
                                    (vl-find-portdecl-under-iff))))))
 
@@ -145,6 +144,7 @@ the whole @(see vl-portdecl-p) object."
   :short "Faster version of @(see vl-find-portdecl), where the search is done
   as an fast-alist lookup rather than as string search."
   :enabled t
+  :hooks nil
   (mbe :logic (vl-find-portdecl name portdecls)
        :exec (cdr (hons-get name alist))))
 
@@ -155,14 +155,13 @@ the whole @(see vl-portdecl-p) object."
    (out string-listp)
    (inout string-listp))
   :parents (vl-portdecllist-p)
-  :returns (mv (in string-listp :hyp (and (force (vl-portdecllist-p x))
-                                          (force (string-listp in))))
-               (out string-listp :hyp (and (force (vl-portdecllist-p x))
-                                           (force (string-listp out))))
-               (inout string-listp :hyp (and (force (vl-portdecllist-p x))
-                                             (force (string-listp inout)))))
+  :returns (mv (in string-listp)
+               (out string-listp)
+               (inout string-listp))
   (b* (((when (atom x))
-        (mv in out inout))
+        (mv (string-list-fix in)
+            (string-list-fix out)
+            (string-list-fix inout)))
        (decl (car x))
        (name (vl-portdecl->name decl))
        (dir  (vl-portdecl->dir decl)))
@@ -207,16 +206,18 @@ up multiple items.</p>"
    (x    vl-module-p))
 
   :returns item?
+  :hooks ((:fix :args ((x vl-module-p))))
 
-  (or (vl-find-netdecl   name (vl-module->netdecls x))
-      (vl-find-regdecl   name (vl-module->regdecls x))
-      (vl-find-vardecl   name (vl-module->vardecls x))
-      (vl-find-eventdecl name (vl-module->eventdecls x))
-      (vl-find-paramdecl name (vl-module->paramdecls x))
-      (vl-find-fundecl   name (vl-module->fundecls x))
-      (vl-find-taskdecl  name (vl-module->taskdecls x))
-      (vl-find-modinst   name (vl-module->modinsts x))
-      (vl-find-gateinst  name (vl-module->gateinsts x)))
+  (b* (((vl-module x) x))
+    (or (vl-find-netdecl   name x.netdecls)
+        (vl-find-regdecl   name x.regdecls)
+        (vl-find-vardecl   name x.vardecls)
+        (vl-find-eventdecl name x.eventdecls)
+        (vl-find-paramdecl name x.paramdecls)
+        (vl-find-fundecl   name x.fundecls)
+        (vl-find-taskdecl  name x.taskdecls)
+        (vl-find-modinst   name x.modinsts)
+        (vl-find-gateinst  name x.gateinsts)))
 
   ///
 
@@ -229,80 +230,56 @@ up multiple items.</p>"
                   (not (vl-paramdecl-p (vl-find-moduleitem name x)))
                   (not (vl-fundecl-p   (vl-find-moduleitem name x)))
                   (not (vl-taskdecl-p  (vl-find-moduleitem name x)))
-                  (not (vl-modinst-p   (vl-find-moduleitem name x)))
-                  (force (stringp name))
-                  (force (vl-module-p x)))
+                  (not (vl-modinst-p   (vl-find-moduleitem name x))))
              (vl-gateinst-p (vl-find-moduleitem name x)))
     :hints(("Goal" :in-theory (enable vl-find-moduleitem)))
     :rule-classes ((:rewrite :backchain-limit-lst 1)))
 
-  (local (in-theory (disable vl-find-moduleitem)))
-
   (defthm type-of-vl-find-moduleitem
     ;; This is gross, but I'm not sure of a better approach.
-    (and (implies (and (equal (tag (vl-find-moduleitem name x)) :vl-netdecl)
-                       (force (stringp name))
-                       (force (vl-module-p x)))
-                  (vl-netdecl-p (vl-find-moduleitem name x)))
+    (and (equal (equal (tag (vl-find-moduleitem name x)) :vl-netdecl)
+                (vl-netdecl-p (vl-find-moduleitem name x)))
 
-         (implies (and (equal (tag (vl-find-moduleitem name x)) :vl-regdecl)
-                       (force (stringp name))
-                       (force (vl-module-p x)))
-                  (vl-regdecl-p (vl-find-moduleitem name x)))
+         (equal (equal (tag (vl-find-moduleitem name x)) :vl-regdecl)
+                (vl-regdecl-p (vl-find-moduleitem name x)))
 
-         (implies (and (equal (tag (vl-find-moduleitem name x)) :vl-vardecl)
-                       (force (stringp name))
-                       (force (vl-module-p x)))
-                  (vl-vardecl-p (vl-find-moduleitem name x)))
+         (equal (equal (tag (vl-find-moduleitem name x)) :vl-vardecl)
+                (vl-vardecl-p (vl-find-moduleitem name x)))
 
-         (implies (and (equal (tag (vl-find-moduleitem name x)) :vl-eventdecl)
-                       (force (stringp name))
-                       (force (vl-module-p x)))
-                  (vl-eventdecl-p (vl-find-moduleitem name x)))
+         (equal (equal (tag (vl-find-moduleitem name x)) :vl-eventdecl)
+                (vl-eventdecl-p (vl-find-moduleitem name x)))
 
-         (implies (and (equal (tag (vl-find-moduleitem name x)) :vl-paramdecl)
-                       (force (stringp name))
-                       (force (vl-module-p x)))
-                  (vl-paramdecl-p (vl-find-moduleitem name x)))
+         (equal (equal (tag (vl-find-moduleitem name x)) :vl-paramdecl)
+                (vl-paramdecl-p (vl-find-moduleitem name x)))
 
-         (implies (and (equal (tag (vl-find-moduleitem name x)) :vl-fundecl)
-                       (force (stringp name))
-                       (force (vl-module-p x)))
-                  (vl-fundecl-p (vl-find-moduleitem name x)))
+         (equal (equal (tag (vl-find-moduleitem name x)) :vl-fundecl)
+                (vl-fundecl-p (vl-find-moduleitem name x)))
 
-         (implies (and (equal (tag (vl-find-moduleitem name x)) :vl-taskdecl)
-                       (force (stringp name))
-                       (force (vl-module-p x)))
-                  (vl-taskdecl-p (vl-find-moduleitem name x)))
+         (equal (equal (tag (vl-find-moduleitem name x)) :vl-taskdecl)
+                (vl-taskdecl-p (vl-find-moduleitem name x)))
 
-         (implies (and (equal (tag (vl-find-moduleitem name x)) :vl-modinst)
-                       (force (stringp name))
-                       (force (vl-module-p x)))
-                  (vl-modinst-p (vl-find-moduleitem name x)))
+         (equal (equal (tag (vl-find-moduleitem name x)) :vl-modinst)
+                (vl-modinst-p (vl-find-moduleitem name x)))
 
-         (implies (and (equal (tag (vl-find-moduleitem name x)) :vl-gateinst)
-                       (force (stringp name))
-                       (force (vl-module-p x)))
-                  (vl-gateinst-p (vl-find-moduleitem name x))))
-
+         (equal (equal (tag (vl-find-moduleitem name x)) :vl-gateinst)
+                (vl-gateinst-p (vl-find-moduleitem name x))))
     :hints(("Goal"
-            :in-theory (disable vl-find-moduleitem-type-when-nothing-else)
+            :in-theory (e/d (tag-reasoning)
+                            (vl-find-moduleitem
+                             vl-find-moduleitem-type-when-nothing-else))
             :use ((:instance vl-find-moduleitem-type-when-nothing-else)))))
 
   (defthm consp-of-vl-find-moduleitem
-    (implies (and (force (stringp name))
-                  (force (vl-module-p x)))
-             (equal (consp (vl-find-moduleitem name x))
-                    (if (vl-find-moduleitem name x)
-                        t
-                      nil)))
+    (equal (consp (vl-find-moduleitem name x))
+           (if (vl-find-moduleitem name x)
+               t
+             nil))
     :hints(("Goal"
             :in-theory (disable vl-find-moduleitem-type-when-nothing-else)
             :use ((:instance vl-find-moduleitem-type-when-nothing-else)))))
 
   (defthm vl-find-moduleitem-when-in-namespace
-    (implies (and (member-equal name (vl-module->modnamespace x))
-                  (force (vl-module-p x)))
+    (implies (member-equal name (vl-module->modnamespace x))
              (vl-find-moduleitem name x))
     :hints(("Goal" :in-theory (enable vl-module->modnamespace vl-find-moduleitem)))))
 
@@ -311,30 +288,36 @@ up multiple items.</p>"
 
 ; FAST-ALIST BASED LOOKUPS ----------------------------------------------------
 
-(define vl-moditem-p (x)
+(deftranssum vl-moditem
   :short "Module items are basically any named object that can occur within a
 module (except that we don't support, e.g., named blocks.)"
+  (vl-netdecl
+   vl-regdecl
+   vl-vardecl
+   vl-eventdecl
+   vl-paramdecl
+   vl-fundecl
+   vl-taskdecl
+   vl-modinst
+   vl-gateinst))
 
-  (or (vl-netdecl-p x)
-      (vl-regdecl-p x)
-      (vl-vardecl-p x)
-      (vl-eventdecl-p x)
-      (vl-paramdecl-p x)
-      (vl-fundecl-p x)
-      (vl-taskdecl-p x)
-      (vl-modinst-p x)
-      (vl-gateinst-p x)))
+(fty::deflist vl-moditemlist
+  :elt-type vl-moditem-p)
 
 (deflist vl-moditemlist-p (x)
   (vl-moditem-p x)
-  :elementp-of-nil nil
-  :guard t)
+  :elementp-of-nil nil)
+
+(fty::defalist vl-moditem-alist
+  :key-type stringp
+  :val-type vl-moditem-p)
 
 (defalist vl-moditem-alist-p (x)
   :key (stringp x)
   :val (vl-moditem-p x)
   :keyp-of-nil nil
   :valp-of-nil nil
+  :already-definedp t
   :guard t)
 
 
@@ -349,9 +332,14 @@ module (except that we don't support, e.g., named blocks.)"
          (list-p        (mksym 'vl- type 'list-p))
          (alist-p       (mksym 'vl- type 'alist-p))
          (elt-p         (mksym 'vl- type '-p))
+         (elt-fix       (mksym 'vl- type '-fix))
          (element->name (or element->name (mksym 'vl- type '->name))))
     `(encapsulate
        ()
+       (fty::defalist ,alist-p
+         :key-type stringp
+         :val-type ,elt-p)
+
        (defalist ,alist-p (x)
          :key (stringp x)
          :val (,elt-p x)
@@ -364,11 +352,12 @@ module (except that we don't support, e.g., named blocks.)"
              ,(if names-may-be-nil
                   `(let ((name (,element->name (car x))))
                      (if name
-                         (hons-acons name (car x)
+                         (hons-acons name
+                                     (,elt-fix (car x))
                                      (,fast-fn (cdr x) acc))
                        (,fast-fn (cdr x) acc)))
                 `(hons-acons (,element->name (car x))
-                             (car x)
+                             (,elt-fix (car x))
                              (,fast-fn (cdr x) acc)))
            acc))
 
@@ -380,25 +369,23 @@ module (except that we don't support, e.g., named blocks.)"
                          ,(if names-may-be-nil
                               `(let ((name (,element->name (car x))))
                                  (if name
-                                     (cons (cons name (car x))
+                                     (cons (cons name (,elt-fix (car x)))
                                            (,fn (cdr x)))
                                    (,fn (cdr x))))
                             `(cons (cons (,element->name (car x))
-                                         (car x))
+                                         (,elt-fix (car x)))
                                    (,fn (cdr x))))
                        nil)
               :exec (,fast-fn x nil))
          ///
          (defthm ,(mksym 'vl-moditem-alist-p-of- fn)
-           (implies (force (,list-p x))
-                    (vl-moditem-alist-p (,fn x)))
+           (vl-moditem-alist-p (,fn x))
            :hints(("Goal" :in-theory (enable vl-moditem-p))))
 
          (defthm ,(mksym 'hons-assoc-equal-of- fn)
-           (implies (and (force (,list-p x))
-                         ,(if names-may-be-nil
-                              '(force (stringp name))
-                            t))
+           (implies ,(if names-may-be-nil
+                         '(force (stringp name))
+                       t)
                     (equal (hons-assoc-equal name (,fn x))
                            (if (,find-fn name x)
                                (cons name (,find-fn name x))
@@ -415,7 +402,6 @@ module (except that we don't support, e.g., named blocks.)"
                   (append (,fn x) acc)))
 
          (verify-guards ,fn)))))
-
 
 (vl-def-moditemlist-alist netdecl)
 (vl-def-moditemlist-alist regdecl)
@@ -437,42 +423,34 @@ module (except that we don't support, e.g., named blocks.)"
 want it to agree, completely, with the naive @(see vl-find-moduleitem).  The
 alist can be constructed in a one pass, using our fast builder functions.</p>"
 
-  (mbe :logic
-       (append (vl-netdecllist-alist (vl-module->netdecls x))
-               (vl-regdecllist-alist (vl-module->regdecls x))
-               (vl-vardecllist-alist (vl-module->vardecls x))
-               (vl-eventdecllist-alist (vl-module->eventdecls x))
-               (vl-paramdecllist-alist (vl-module->paramdecls x))
-               (vl-fundecllist-alist (vl-module->fundecls x))
-               (vl-taskdecllist-alist (vl-module->taskdecls x))
-               (vl-modinstlist-alist (vl-module->modinsts x))
-               (vl-gateinstlist-alist (vl-module->gateinsts x)))
-       :exec
-       ;; Reverse order from the above
-       (b* ((acc (vl-fast-gateinstlist-alist (vl-module->gateinsts x) nil))
-            (acc (vl-fast-modinstlist-alist (vl-module->modinsts x) acc))
-            (acc (vl-fast-taskdecllist-alist (vl-module->taskdecls x) acc))
-            (acc (vl-fast-fundecllist-alist (vl-module->fundecls x) acc))
-            (acc (vl-fast-paramdecllist-alist (vl-module->paramdecls x) acc))
-            (acc (vl-fast-eventdecllist-alist (vl-module->eventdecls x) acc))
-            (acc (vl-fast-vardecllist-alist (vl-module->vardecls x) acc))
-            (acc (vl-fast-regdecllist-alist (vl-module->regdecls x) acc)))
-         (vl-fast-netdecllist-alist (vl-module->netdecls x) acc)))
+  (b* (((vl-module x) x))
+    (mbe :logic
+         (append (vl-netdecllist-alist x.netdecls)
+                 (vl-regdecllist-alist x.regdecls)
+                 (vl-vardecllist-alist x.vardecls)
+                 (vl-eventdecllist-alist x.eventdecls)
+                 (vl-paramdecllist-alist x.paramdecls)
+                 (vl-fundecllist-alist x.fundecls)
+                 (vl-taskdecllist-alist x.taskdecls)
+                 (vl-modinstlist-alist x.modinsts)
+                 (vl-gateinstlist-alist x.gateinsts))
+         :exec
+         ;; Reverse order from the above
+         (b* ((acc (vl-fast-gateinstlist-alist x.gateinsts nil))
+              (acc (vl-fast-modinstlist-alist x.modinsts acc))
+              (acc (vl-fast-taskdecllist-alist x.taskdecls acc))
+              (acc (vl-fast-fundecllist-alist x.fundecls acc))
+              (acc (vl-fast-paramdecllist-alist x.paramdecls acc))
+              (acc (vl-fast-eventdecllist-alist x.eventdecls acc))
+              (acc (vl-fast-vardecllist-alist x.vardecls acc))
+              (acc (vl-fast-regdecllist-alist x.regdecls acc)))
+           (vl-fast-netdecllist-alist x.netdecls acc))))
   ///
   (defthm vl-moditem-alist-p-of-vl-moditem-alist
-    (implies (force (vl-module-p x))
-             (vl-moditem-alist-p (vl-moditem-alist x))))
-
-  (local (defthm lemma
-           (implies (stringp a)
-                    (equal (hons-assoc-equal a (append x y))
-                           (or (hons-assoc-equal a x)
-                               (hons-assoc-equal a y))))
-           :hints(("Goal" :in-theory (enable assoc-equal)))))
+    (vl-moditem-alist-p (vl-moditem-alist x)))
 
   (defthm hons-assoc-equal-of-vl-moditem-alist
-    (implies (and (force (stringp name))
-                  (force (vl-module-p x)))
+    (implies (force (stringp name))
              (equal (hons-assoc-equal name (vl-moditem-alist x))
                     (if (vl-find-moduleitem name x)
                         (cons name (vl-find-moduleitem name x))
@@ -486,6 +464,7 @@ alist can be constructed in a one pass, using our fast builder functions.</p>"
    (itemalist (equal itemalist (vl-moditem-alist x))))
   :short "Alternative to @(see vl-find-moduleitem) using fast alist lookups."
   :enabled t
+  :hooks nil
   (mbe :logic (vl-find-moduleitem name x)
        :exec (cdr (hons-get name itemalist))))
 

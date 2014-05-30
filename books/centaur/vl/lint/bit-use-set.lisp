@@ -372,16 +372,12 @@ warnings."
     all-walists))
 
 
-(defthm vl-portdecl->dir-default
-  (implies (and (not (equal (vl-portdecl->dir x) :vl-input))
-                (not (equal (vl-portdecl->dir x) :vl-output))
-                (force (vl-portdecl-p x)))
-           (equal (vl-portdecl->dir x)
-                  :vl-inout))
-  :hints(("Goal"
-          :in-theory (e/d (vl-direction-p)
-                          (return-type-of-vl-portdecl->dir))
-          :use ((:instance return-type-of-vl-portdecl->dir)))))
+;; (defthm vl-portdecl->dir-default
+;;   (implies (and (not (equal (vl-portdecl->dir x) :vl-input))
+;;                 (not (equal (vl-portdecl->dir x) :vl-output))
+;;                 (force (vl-portdecl-p x)))
+;;            (equal (vl-portdecl->dir x)
+;;                   :vl-inout)))
 
 ;; (defthm vl-compounstmt->ctrl-when-timingstmt
 ;;   ;; BOZO move to stmt tools
@@ -427,144 +423,129 @@ warnings."
              (vl-emodwirelist-p (mv-nth 2 (us-portdecllist-bits x walist))))))
 
 
-(defsection us-check-port-bits
-
+(define us-check-port-bits
+  :short "Possibly extends the mwalist."
 ; This is almost the same as vl-check-port-bits.  The idea is to make sure that
 ; each module's ports and port declarations agree with one another.  I wanted to
 ; use vl-check-port-bits directly, but it complains about inouts and just isn't
 ; quite what we need.
 
-  (defund us-check-port-bits (x walist mwalist)
-    "Possibly extends the mwalist."
-    (declare (xargs :guard (and (vl-module-p x)
-                                (vl-wirealist-p walist)
-                                (vl-modwarningalist-p mwalist))))
-    (b* (((vl-module x) x)
+  ((x vl-module-p)
+   (walist vl-wirealist-p)
+   (mwalist vl-modwarningalist-p))
 
-         ((mv successp warnings port-bits) (vl-portlist-msb-bit-pattern x.ports walist))
-         ((unless successp)
-          (vl-extend-modwarningalist-list x.name warnings mwalist))
+  :returns (new-mwalist vl-modwarningalist-p
+                        :hyp (and (force (vl-module-p x))
+                                  (force (vl-modwarningalist-p mwalist))))
 
-         ((mv successp warnings decl-bits) (us-portdecllist-bits x.portdecls walist))
-         ((unless successp)
-          (vl-extend-modwarningalist-list x.name warnings mwalist))
+  (b* (((vl-module x) x)
 
-         ;; Now some extra sanity checks.
-         (flat-ports   (flatten port-bits))
-         (flat-ports-s (mergesort flat-ports))
-         (decl-bits-s  (mergesort decl-bits))
+       ((mv successp warnings port-bits) (vl-portlist-msb-bit-pattern x.ports walist))
+       ((unless successp)
+        (vl-extend-modwarningalist-list x.name warnings mwalist))
 
-         ;; Check: unique bits for all port declarations.
-         (mwalist
-          (if (mbe :logic (uniquep decl-bits)
-                   :exec (same-lengthp decl-bits decl-bits-s))
-              mwalist
-            (b* ((dupe-names (duplicated-members (vl-portdecllist->names x.portdecls)))
-                 (dupe-bits  (duplicated-members decl-bits))
-                 (w (if dupe-names
-                        (make-vl-warning
-                         :type :vl-bad-portdecls
-                         :msg "The following ports are illegally declared ~
-                               more than once: ~&0."
-                         :args (list dupe-names)
-                         :fatalp t
-                         :fn 'us-check-port-bits)
+       ((mv successp warnings decl-bits) (us-portdecllist-bits x.portdecls walist))
+       ((unless successp)
+        (vl-extend-modwarningalist-list x.name warnings mwalist))
+
+       ;; Now some extra sanity checks.
+       (flat-ports   (flatten port-bits))
+       (flat-ports-s (mergesort flat-ports))
+       (decl-bits-s  (mergesort decl-bits))
+
+       ;; Check: unique bits for all port declarations.
+       (mwalist
+        (if (mbe :logic (uniquep decl-bits)
+                 :exec (same-lengthp decl-bits decl-bits-s))
+            mwalist
+          (b* ((dupe-names (duplicated-members (vl-portdecllist->names x.portdecls)))
+               (dupe-bits  (duplicated-members decl-bits))
+               (w (if dupe-names
                       (make-vl-warning
-                       :type :vl-programming-error
-                       :msg "Failed to generate unique portdecl bit names ~
+                       :type :vl-bad-portdecls
+                       :msg "The following ports are illegally declared ~
+                               more than once: ~&0."
+                       :args (list dupe-names)
+                       :fatalp t
+                       :fn 'us-check-port-bits)
+                    (make-vl-warning
+                     :type :vl-programming-error
+                     :msg "Failed to generate unique portdecl bit names ~
                              even though the portdecls have unique names.  ~
                              Jared thinks this should be impossible unless ~
                              the wire alist is invalid. Duplicate bits: ~&0."
-                       :args (list (vl-verilogify-emodwirelist dupe-bits))
-                       :fatalp t
-                       :fn 'us-check-port-bits))))
-              (vl-extend-modwarningalist x.name w mwalist))))
-
-         ;; Check: unique bits for all ports.
-         (mwalist
-          (if (mbe :logic (uniquep flat-ports)
-                   :exec (same-lengthp flat-ports-s flat-ports))
-              mwalist
-            (b* ((dupe-bits (duplicated-members flat-ports))
-                 (w (make-vl-warning
-                     :type :vl-bad-ports
-                     :msg "The following wires are directly connected to ~
-                           multiple ports: ~&0."
                      :args (list (vl-verilogify-emodwirelist dupe-bits))
                      :fatalp t
-                     :fn 'us-check-port-bits)))
-              (vl-extend-modwarningalist x.name w mwalist))))
+                     :fn 'us-check-port-bits))))
+            (vl-extend-modwarningalist x.name w mwalist))))
 
-         ;; Check: every declared bit is in a port, and vice versa.
-         (mwalist
-          (if (equal decl-bits-s flat-ports-s)
-              mwalist
-            (b* ((extra-port-bits (difference flat-ports-s decl-bits-s))
-                 (extra-decl-bits (difference decl-bits-s flat-ports-s))
-                 (w1 (and extra-port-bits
-                          (make-vl-warning
-                           :type :vl-bad-ports
-                           :msg "The following wires are used in ports, but ~
+       ;; Check: unique bits for all ports.
+       (mwalist
+        (if (mbe :logic (uniquep flat-ports)
+                 :exec (same-lengthp flat-ports-s flat-ports))
+            mwalist
+          (b* ((dupe-bits (duplicated-members flat-ports))
+               (w (make-vl-warning
+                   :type :vl-bad-ports
+                   :msg "The following wires are directly connected to ~
+                           multiple ports: ~&0."
+                   :args (list (vl-verilogify-emodwirelist dupe-bits))
+                   :fatalp t
+                   :fn 'us-check-port-bits)))
+            (vl-extend-modwarningalist x.name w mwalist))))
+
+       ;; Check: every declared bit is in a port, and vice versa.
+       (mwalist
+        (if (equal decl-bits-s flat-ports-s)
+            mwalist
+          (b* ((extra-port-bits (difference flat-ports-s decl-bits-s))
+               (extra-decl-bits (difference decl-bits-s flat-ports-s))
+               (w1 (and extra-port-bits
+                        (make-vl-warning
+                         :type :vl-bad-ports
+                         :msg "The following wires are used in ports, but ~
                                  have no corresponding port declarations: ~&0."
-                           :args (list (vl-verilogify-emodwirelist extra-port-bits))
-                           :fatalp t
-                           :fn 'us-check-port-bits)))
-                 (w2 (and extra-decl-bits
-                          (make-vl-warning
-                           :type :vl-bad-ports
-                           :msg "The following wires have port declarations, ~
+                         :args (list (vl-verilogify-emodwirelist extra-port-bits))
+                         :fatalp t
+                         :fn 'us-check-port-bits)))
+               (w2 (and extra-decl-bits
+                        (make-vl-warning
+                         :type :vl-bad-ports
+                         :msg "The following wires have port declarations, ~
                                  but are not used in any ports: ~&0."
-                           :args (list (vl-verilogify-emodwirelist extra-decl-bits))
-                           :fatalp t
-                           :fn 'us-check-port-bits))))
-              (cond ((and w1 w2)
-                     (vl-extend-modwarningalist-list x.name (list w1 w2) mwalist))
-                    (w1
-                     (vl-extend-modwarningalist x.name w1 mwalist))
-                    (w2
-                     (vl-extend-modwarningalist x.name w2 mwalist))
-                    (t
-                     mwalist))))))
-      mwalist))
+                         :args (list (vl-verilogify-emodwirelist extra-decl-bits))
+                         :fatalp t
+                         :fn 'us-check-port-bits))))
+            (cond ((and w1 w2)
+                   (vl-extend-modwarningalist-list x.name (list w1 w2) mwalist))
+                  (w1
+                   (vl-extend-modwarningalist x.name w1 mwalist))
+                  (w2
+                   (vl-extend-modwarningalist x.name w2 mwalist))
+                  (t
+                   mwalist))))))
+    mwalist))
 
-  (local (in-theory (enable us-check-port-bits)))
-
-  (defthm vl-modwarningalist-p-of-us-check-port-bits
-    (implies (and (force (vl-module-p x))
-                  (force (vl-modwarningalist-p mwalist)))
-             (vl-modwarningalist-p (us-check-port-bits x walist mwalist)))))
-
-
-(defsection us-modulelist-check-port-bits
-
-  (local (defthm car-when-vl-modulelist-p-under-iff
-           (implies (vl-modulelist-p x)
-                    (iff (car x)
-                         (consp x)))))
-
-  (defund us-modulelist-check-port-bits (x mods all-walists mwalist)
-    (declare (xargs :guard (and (vl-modulelist-p x)
-                                (vl-modulelist-p mods)
-                                (subsetp-equal (redundant-list-fix x)
-                                               (redundant-list-fix mods))
-                                (equal all-walists (vl-nowarn-all-wirealists mods))
-                                (vl-modwarningalist-p mwalist))))
-    (b* (((when (atom x))
-          mwalist)
-         (mod1    (car x))
-         (walist1 (cdr (hons-get (vl-module->name mod1) all-walists)))
-         (mwalist (us-check-port-bits mod1 walist1 mwalist)))
-      (us-modulelist-check-port-bits (cdr x) mods all-walists mwalist)))
-
-  (local (in-theory (enable us-modulelist-check-port-bits)))
-
-  (defthm us-modwarningalist-p-of-us-modulelist-check-port-bits
-    (implies (and (force (vl-modulelist-p x))
-                  (force (vl-modwarningalist-p mwalist)))
-             (vl-modwarningalist-p
-              (us-modulelist-check-port-bits x mods all-walists mwalist)))))
-
-
+(define us-modulelist-check-port-bits
+  ((x           vl-modulelist-p)
+   (mods        vl-modulelist-p)
+   (all-walists (equal all-walists (vl-nowarn-all-wirealists mods)))
+   (mwalist     vl-modwarningalist-p))
+  :guard (subsetp-equal (redundant-list-fix x)
+                        (redundant-list-fix mods))
+  :returns (new-mwalist vl-modwarningalist-p
+                        :hyp (and (force (vl-modulelist-p x))
+                                  (force (vl-modwarningalist-p mwalist))))
+  (b* (((when (atom x))
+        mwalist)
+       (mod1    (car x))
+       (walist1 (cdr (hons-get (vl-module->name mod1) all-walists)))
+       (mwalist (us-check-port-bits mod1 walist1 mwalist)))
+    (us-modulelist-check-port-bits (cdr x) mods all-walists mwalist))
+  :prepwork ((local (defthm car-when-vl-modulelist-p-under-iff
+                      (implies (vl-modulelist-p x)
+                               (iff (car x)
+                                    (consp x)))))))
 
 
 
@@ -578,18 +559,18 @@ warnings."
 ; falsely used, not falsely set).  But eventually we may set these bits as we
 ; infer that the wire is used/set.
 
-  (defconst *us-empty* 0)
+  (defval *us-empty* 0)
 
-  (defconst *us-truly-usedp*       0)
-  (defconst *us-truly-setp*        1)
-  (defconst *us-falsely-usedp*     2)
-  (defconst *us-falsely-setp*      3)
+  (defval *us-truly-usedp*       0)
+  (defval *us-truly-setp*        1)
+  (defval *us-falsely-usedp*     2)
+  (defval *us-falsely-setp*      3)
 
   ;; truly used/set in any superior module?
-  (defconst *us-truly-used-abovep* 4)
-  (defconst *us-truly-set-abovep*  5)
+  (defval *us-truly-used-abovep* 4)
+  (defval *us-truly-set-abovep*  5)
 
-  (defconst *us-above-mask* (acl2::bitset-list* *us-truly-set-abovep*
+  (defval *us-above-mask* (acl2::bitset-list* *us-truly-set-abovep*
                                                 *us-truly-used-abovep*
                                                 0))
 
@@ -618,52 +599,37 @@ warnings."
 ; We create an initial us-db-p from a wire alist, binding each wire to the
 ; empty set.
 
-  (defun sum-lens (x)
+  (define sum-lens (x)
     ;; We use this to get the initial size for each us-db-p.  This drastically
     ;; reduces memory usage from rehashing.
-    (declare (xargs :guard t))
     (if (atom x)
         0
       (+ (len (car x))
          (sum-lens (cdr x)))))
 
-  (defund us-initialize-db-aux1 (wires acc)
-    ;; Bind each wire in a list to the empty set
-    (declare (xargs :guard (vl-emodwirelist-p wires)))
+  (define us-initialize-db-aux1 ((wires vl-emodwirelist-p) acc)
+    :parents (us-initialize-db)
+    :short "Bind each wire in a list to the empty set."
+    :returns (acc us-db-p :hyp (and (force (vl-emodwirelist-p wires))
+                                    (force (us-db-p acc))))
     (if (atom wires)
         acc
       (hons-acons (car wires) 0 (us-initialize-db-aux1 (cdr wires) acc))))
 
-  (defund us-initialize-db-exec (walist acc)
-    ;; Bind each wire in a wirealist to the empty set
-    (declare (xargs :guard (vl-wirealist-p walist)))
+  (define us-initialize-db-exec ((walist vl-wirealist-p) acc)
+    :parents (us-initialize-db)
+    :short "Bind each wire in a wirealist to the empty set."
+    :returns (acc us-db-p :hyp (and (force (vl-wirealist-p walist))
+                                    (force (us-db-p acc))))
     (if (atom walist)
         acc
       (let ((acc (us-initialize-db-aux1 (cdar walist) acc)))
         (us-initialize-db-exec (cdr walist) acc))))
 
-  (defund us-initialize-db (walist)
-    (declare (xargs :guard (vl-wirealist-p walist)))
+  (define us-initialize-db ((walist vl-wirealist-p))
+    :returns (db us-db-p :hyp :fguard)
     (us-initialize-db-exec walist (- (sum-lens walist)
-                                     (len walist))))
-
-  (local (in-theory (enable us-initialize-db-aux1
-                            us-initialize-db-exec
-                            us-initialize-db)))
-
-  (defthm us-db-p-of-us-initialize-db-aux1
-    (implies (and (force (vl-emodwirelist-p wires))
-                  (force (us-db-p acc)))
-             (us-db-p (us-initialize-db-aux1 wires acc))))
-
-  (defthm us-db-p-of-us-initialize-db-exec
-    (implies (and (force (vl-wirealist-p walist))
-                  (force (us-db-p acc)))
-             (us-db-p (us-initialize-db-exec walist acc))))
-
-  (defthm us-db-p-of-us-initialize-db
-    (implies (force (vl-wirealist-p walist))
-             (us-db-p (us-initialize-db walist)))))
+                                     (len walist)))))
 
 
 
@@ -683,62 +649,38 @@ warnings."
 ; This is our main database updating function.  We union MASK into the bit-set
 ; for each wire in WIRES.
 
-  (defund us-mark-wire (mask wire db warnings elem)
-    "Returns (MV WARNINGS DB)"
-    (declare (xargs :guard (and (natp mask)
-                                (vl-emodwire-p wire)
-                                (us-db-p db)
-                                (vl-warninglist-p warnings)
-                                (vl-modelement-p elem))))
+  (define us-mark-wire ((mask     natp)
+                        (wire     vl-emodwire-p)
+                        (db       us-db-p)
+                        (warnings vl-warninglist-p)
+                        (elem     vl-modelement-p))
+    :returns (mv (warnings vl-warninglist-p)
+                 (db       us-db-p          :hyp :fguard))
     (b* ((curr (hons-get wire db))
          ((unless curr)
-          (b* ((w (make-vl-warning :type :use-set-fudging
-                                   :msg "~a0: expected use-set db entry for ~x1."
-                                   :args (list elem wire)
-                                   :fn 'us-mark-wire
-                                   :fatalp nil)))
-            (mv (cons w warnings) db)))
+          (mv (warn :type :use-set-fudging
+                    :msg "~a0: expected use-set db entry for ~x1."
+                    :args (list elem wire))
+              db))
          (val (acl2::bitset-union mask (cdr curr)))
          ;; dumb optimization: avoid consing if not necessary
          (db (if (= val (cdr curr))
                  db
                (hons-acons wire val db))))
-      (mv warnings db)))
+      (mv (ok) db)))
 
-  (local (in-theory (enable us-mark-wire)))
-
-  (defthm us-mark-wire-basics
-    (implies (and (force (natp mask))
-                  (force (vl-emodwire-p wire))
-                  (force (us-db-p db))
-                  (force (vl-warninglist-p warnings)))
-             (let ((ret (us-mark-wire mask wire db warnings elem)))
-               (and (vl-warninglist-p (mv-nth 0 ret))
-                    (us-db-p (mv-nth 1 ret))))))
-
-  (defund us-mark-wires (mask wires db warnings elem)
-    "Returns (MV WARNINGS DB)"
-    (declare (xargs :guard (and (natp mask)
-                                (vl-emodwirelist-p wires)
-                                (us-db-p db)
-                                (vl-warninglist-p warnings)
-                                (vl-modelement-p elem))))
+  (define us-mark-wires ((mask     natp)
+                         (wires    vl-emodwirelist-p)
+                         (db       us-db-p)
+                         (warnings vl-warninglist-p)
+                         (elem     vl-modelement-p))
+    :returns (mv (warnings vl-warninglist-p)
+                 (db       us-db-p          :hyp :fguard))
     (b* (((when (atom wires))
-          (mv warnings db))
+          (mv (ok) db))
          ((mv warnings db)
           (us-mark-wire mask (car wires) db warnings elem)))
       (us-mark-wires mask (cdr wires) db warnings elem)))
-
-  (local (in-theory (enable us-mark-wires)))
-
-  (defthm us-mark-wires-basics
-    (implies (and (force (natp mask))
-                  (force (vl-emodwirelist-p wires))
-                  (force (us-db-p db))
-                  (force (vl-warninglist-p warnings)))
-             (let ((ret (us-mark-wires mask wires db warnings elem)))
-               (and (vl-warninglist-p (mv-nth 0 ret))
-                    (us-db-p (mv-nth 1 ret))))))
 
 ; Handy wrappers that hide all this bit-masking nonsense:
 
@@ -777,53 +719,39 @@ warnings."
       `(us-mark-wires ,mask ,wires ,db ,warnings ,elem))))
 
 
-
-(defsection us-mark-toplevel-port-bits
-
-; We mark all the port bits for the top-level modules as either used from
-; above, set from above, or both, based on their direction.
-
-  (defund us-mark-toplevel-port-bits (x walist db warnings)
-    "Returns (MV WARNINGS DB)"
-    (declare (xargs :guard (and (vl-portdecllist-p x)
-                                (vl-wirealist-p walist)
-                                (us-db-p db)
-                                (vl-warninglist-p warnings))
-                    :verify-guards nil))
-    (b* (((when (atom x))
-          (mv warnings db))
-         ((mv warnings db)
-          (us-mark-toplevel-port-bits (cdr x) walist db warnings))
-         (entry (hons-get (vl-portdecl->name (car x)) walist))
-         (wires (cdr entry))
-         ((unless entry)
-          (b* ((w (make-vl-warning :type :vl-bad-portdecl
-                                   :msg "~a0: no corresponding wires."
-                                   :args (list (car x))
-                                   :fatalp t
-                                   :fn 'us-mark-toplevel-port-bits-for-module)))
-            (mv (cons w warnings) db)))
-         ((mv warnings db)
-          (case (vl-portdecl->dir (car x))
-            (:vl-input  (us-mark-wires-set-above wires db warnings (car x)))
-            (:vl-output (us-mark-wires-used-above wires db warnings (car x)))
-            (:vl-inout  (us-mark-wires-used/set-above wires db warnings (car x)))
-            (otherwise  (prog2$ (er hard 'us-mark-wires-used/set-above "Impossible")
-                                (mv warnings db))))))
-      (mv warnings db)))
-
-  (defthm us-mark-toplevel-port-bits-basics
-    (implies (and (force (vl-portdecllist-p x))
-                  (force (vl-wirealist-p walist))
-                  (force (us-db-p db))
-                  (force (vl-warninglist-p warnings)))
-             (let ((ret (us-mark-toplevel-port-bits x walist db warnings)))
-               (and (vl-warninglist-p (mv-nth 0 ret))
-                    (us-db-p (mv-nth 1 ret)))))
-    :hints(("Goal" :in-theory (enable us-mark-toplevel-port-bits))))
-
+(define us-mark-toplevel-port-bits
+  :short "We mark all the port bits for the top-level modules as either used
+          from above, set from above, or both, based on their direction."
+  ((x        vl-portdecllist-p)
+   (walist   vl-wirealist-p)
+   (db       us-db-p)
+   (warnings vl-warninglist-p))
+  :returns (mv (warnings vl-warninglist-p)
+               (db       us-db-p          :hyp :fguard))
+  :verify-guards nil
+  (b* (((when (atom x))
+        (mv (ok) db))
+       ((mv warnings db)
+        (us-mark-toplevel-port-bits (cdr x) walist db warnings))
+       (entry (hons-get (vl-portdecl->name (car x)) walist))
+       (wires (cdr entry))
+       ((unless entry)
+        (b* ((w (make-vl-warning :type :vl-bad-portdecl
+                                 :msg "~a0: no corresponding wires."
+                                 :args (list (car x))
+                                 :fatalp t
+                                 :fn 'us-mark-toplevel-port-bits-for-module)))
+          (mv (cons w warnings) db)))
+       ((mv warnings db)
+        (case (vl-portdecl->dir (car x))
+          (:vl-input  (us-mark-wires-set-above wires db warnings (car x)))
+          (:vl-output (us-mark-wires-used-above wires db warnings (car x)))
+          (:vl-inout  (us-mark-wires-used/set-above wires db warnings (car x)))
+          (otherwise  (prog2$ (impossible)
+                              (mv warnings db))))))
+    (mv warnings db))
+  ///
   (verify-guards us-mark-toplevel-port-bits))
-
 
 
 
@@ -838,27 +766,24 @@ warnings."
 ; or inouts.  We mark any wires being connected to inputs as truly used, and
 ; any wires connected to outputs as truly set.
 
-  (defund us-mark-wires-for-gateinst-arg (x walist db warnings elem)
-    "Returns (MV WARNINGS DB)"
-    (declare (xargs :guard (and (vl-plainarg-p x)
-                                (vl-wirealist-p walist)
-                                (us-db-p db)
-                                (vl-warninglist-p warnings)
-                                (vl-modelement-p elem))))
+  (define us-mark-wires-for-gateinst-arg
+    ((x        vl-plainarg-p)
+     (walist   vl-wirealist-p)
+     (db       us-db-p)
+     (warnings vl-warninglist-p)
+     (elem     vl-modelement-p))
+    :returns (mv (warnings vl-warninglist-p)
+                 (db us-db-p :hyp :fguard))
     (b* (((vl-plainarg x) x)
          ((unless x.expr)
           ;; Fine, there's nothing to do.
-          (mv warnings db))
+          (mv (ok) db))
 
          (warnings (if x.dir
-                       warnings
-                     (cons (make-vl-warning
-                            :type :use-set-fudging
-                            :msg "~a0: argument ~a1 has no direction; treating it as inout."
-                            :args (list elem x)
-                            :fn 'us-mark-wires-for-gateinst-arg
-                            :fatalp nil)
-                           warnings)))
+                       (ok)
+                     (warn :type :use-set-fudging
+                           :msg "~a0: argument ~a1 has no direction; treating it as inout."
+                           :args (list elem x))))
 
          (dir                  (or x.dir :vl-inout))
          ((mv warnings2 wires) (vl-expr-allwires x.expr walist))
@@ -868,82 +793,38 @@ warnings."
         (:vl-output (us-mark-wires-truly-set wires db warnings elem))
         (otherwise  (us-mark-wires-truly-used/set wires db warnings elem)))))
 
-  (defthm us-mark-wires-for-gateinst-arg-basics
-    (implies (and (force (vl-plainarg-p x))
-                  (force (vl-wirealist-p walist))
-                  (force (us-db-p db))
-                  (force (vl-warninglist-p warnings)))
-             (let ((ret (us-mark-wires-for-gateinst-arg x walist db warnings elem)))
-               (and (vl-warninglist-p (mv-nth 0 ret))
-                    (us-db-p (mv-nth 1 ret)))))
-    :hints(("Goal" :in-theory (enable us-mark-wires-for-gateinst-arg))))
-
-
-  (defund us-mark-wires-for-gateinst-args (x walist db warnings elem)
-    "Returns (MV WARNINGS DB)"
-    (declare (xargs :guard (and (vl-plainarglist-p x)
-                                (vl-wirealist-p walist)
-                                (us-db-p db)
-                                (vl-warninglist-p warnings)
-                                (vl-modelement-p elem))))
+  (define us-mark-wires-for-gateinst-args ((x        vl-plainarglist-p)
+                                           (walist   vl-wirealist-p)
+                                           (db       us-db-p)
+                                           (warnings vl-warninglist-p)
+                                           (elem     vl-modelement-p))
+    :returns (mv (warnings vl-warninglist-p)
+                 (db       us-db-p :hyp :fguard))
     (b* (((when (atom x))
-          (mv warnings db))
+          (mv (ok) db))
          ((mv warnings db)
           (us-mark-wires-for-gateinst-arg (car x) walist db warnings elem)))
       (us-mark-wires-for-gateinst-args (cdr x) walist db warnings elem)))
 
-  (defthm us-mark-wires-for-gateinst-args-basics
-    (implies (and (force (vl-plainarglist-p x))
-                  (force (vl-wirealist-p walist))
-                  (force (us-db-p db))
-                  (force (vl-warninglist-p warnings)))
-             (let ((ret (us-mark-wires-for-gateinst-args x walist db warnings elem)))
-               (and (vl-warninglist-p (mv-nth 0 ret))
-                    (us-db-p (mv-nth 1 ret)))))
-    :hints(("Goal" :in-theory (enable us-mark-wires-for-gateinst-args))))
-
-
-  (defund us-mark-wires-for-gateinst (x walist db warnings)
-    "Returns (MV WARNINGS DB)"
-    (declare (xargs :guard (and (vl-gateinst-p x)
-                                (vl-wirealist-p walist)
-                                (us-db-p db)
-                                (vl-warninglist-p warnings))))
+  (define us-mark-wires-for-gateinst ((x        vl-gateinst-p)
+                                      (walist   vl-wirealist-p)
+                                      (db       us-db-p)
+                                      (warnings vl-warninglist-p))
+    :returns (mv (warnings vl-warninglist-p)
+                 (db       us-db-p :hyp :fguard))
     (b* (((vl-gateinst x) x))
       (us-mark-wires-for-gateinst-args x.args walist db warnings x)))
 
-  (defthm us-mark-wires-for-gateinst-basics
-    (implies (and (force (vl-gateinst-p x))
-                  (force (vl-wirealist-p walist))
-                  (force (us-db-p db))
-                  (force (vl-warninglist-p warnings)))
-             (let ((ret (us-mark-wires-for-gateinst x walist db warnings)))
-               (and (vl-warninglist-p (mv-nth 0 ret))
-                    (us-db-p (mv-nth 1 ret)))))
-    :hints(("Goal" :in-theory (enable us-mark-wires-for-gateinst))))
-
-
-  (defund us-mark-wires-for-gateinstlist (x walist db warnings)
-    "Returns (MV WARNINGS DB)"
-    (declare (xargs :guard (and (vl-gateinstlist-p x)
-                                (vl-wirealist-p walist)
-                                (us-db-p db)
-                                (vl-warninglist-p warnings))))
+  (define us-mark-wires-for-gateinstlist ((x        vl-gateinstlist-p)
+                                          (walist   vl-wirealist-p)
+                                          (db       us-db-p)
+                                          (warnings vl-warninglist-p))
+    :returns (mv (warnings vl-warninglist-p)
+                 (db       us-db-p :hyp :fguard))
     (b* (((when (atom x))
-          (mv warnings db))
+          (mv (ok) db))
          ((mv warnings db) (us-mark-wires-for-gateinst (car x) walist db warnings)))
-      (us-mark-wires-for-gateinstlist (cdr x) walist db warnings)))
-
-  (defthm us-mark-wires-for-gateinstlist-basics
-    (implies (and (force (vl-gateinstlist-p x))
-                  (force (vl-wirealist-p walist))
-                  (force (us-db-p db))
-                  (force (vl-warninglist-p warnings)))
-             (let ((ret (us-mark-wires-for-gateinstlist x walist db warnings)))
-               (and (vl-warninglist-p (mv-nth 0 ret))
-                    (us-db-p (mv-nth 1 ret)))))
-    :hints(("Goal" :in-theory (enable us-mark-wires-for-gateinstlist)))))
-
+      (us-mark-wires-for-gateinstlist (cdr x) walist db warnings))))
 
 
 (defsection us-mark-wires-for-assignlist
@@ -960,340 +841,184 @@ warnings."
 ; more sophisticated approach, e.g., doing real symbolic simulations and using
 ; something like aig-vars to compute the dependencies.
 
-  (defund us-mark-wires-for-assign (x walist db warnings)
-    "Returns (MV WARNINGS DB)"
-    (declare (xargs :guard (and (vl-assign-p x)
-                                (vl-wirealist-p walist)
-                                (us-db-p db)
-                                (vl-warninglist-p warnings))))
+  (define us-mark-wires-for-assign ((x        vl-assign-p)
+                                    (walist   vl-wirealist-p)
+                                    (db       us-db-p)
+                                    (warnings vl-warninglist-p))
+    :returns (mv (warnings vl-warninglist-p)
+                 (db       us-db-p :hyp :fguard))
     (b* (((vl-assign x) x)
-
          ((mv warnings1 rhs-wires) (vl-expr-allwires x.expr walist))
          ((mv warnings2 lhs-wires) (vl-expr-allwires x.lvalue walist))
          (warnings (append warnings1 warnings2 warnings))
-
          ((mv warnings db) (us-mark-wires-truly-used rhs-wires db warnings x))
          ((mv warnings db) (us-mark-wires-truly-set lhs-wires db warnings x)))
       (mv warnings db)))
 
-  (defthm us-mark-wires-for-assign-basics
-    (implies (and (force (vl-assign-p x))
-                  (force (vl-wirealist-p walist))
-                  (force (us-db-p db))
-                  (force (vl-warninglist-p warnings)))
-             (let ((ret (us-mark-wires-for-assign x walist db warnings)))
-               (and (vl-warninglist-p (mv-nth 0 ret))
-                    (us-db-p (mv-nth 1 ret)))))
-    :hints(("Goal" :in-theory (enable us-mark-wires-for-assign))))
-
-  (defund us-mark-wires-for-assignlist (x walist db warnings)
-    "Returns (MV WARNINGS DB)"
-    (declare (xargs :guard (and (vl-assignlist-p x)
-                                (vl-wirealist-p walist)
-                                (us-db-p db)
-                                (vl-warninglist-p warnings))))
+  (define us-mark-wires-for-assignlist ((x        vl-assignlist-p)
+                                        (walist   vl-wirealist-p)
+                                        (db       us-db-p)
+                                        (warnings vl-warninglist-p))
+    :returns (mv (warnings vl-warninglist-p)
+                 (db       us-db-p :hyp :fguard))
     (b* (((when (atom x))
-          (mv warnings db))
+          (mv (ok) db))
          ((mv warnings db) (us-mark-wires-for-assign (car x) walist db warnings))
          ((mv warnings db) (us-mark-wires-for-assignlist (cdr x) walist db warnings)))
-      (mv warnings db)))
-
-  (defthm us-mark-wires-for-assignlist-basics
-    (implies (and (force (vl-assignlist-p x))
-                  (force (vl-wirealist-p walist))
-                  (force (us-db-p db))
-                  (force (vl-warninglist-p warnings)))
-             (let ((ret (us-mark-wires-for-assignlist x walist db warnings)))
-               (and (vl-warninglist-p (mv-nth 0 ret))
-                    (us-db-p (mv-nth 1 ret)))))
-    :hints(("Goal" :in-theory (enable us-mark-wires-for-assignlist)))))
-
+      (mv warnings db))))
 
 
 (defsection us-mark-wires-for-netdecllist
 
-; If a net is declared to be a supply0 or a supply1, then we want to think
-; about it as being driven.
-
-  (defund us-mark-wires-for-netdecl (x walist db warnings)
-    "Returns (MV WARNINGS DB)"
-    (declare (xargs :guard (and (vl-netdecl-p x)
-                                (vl-wirealist-p walist)
-                                (us-db-p db)
-                                (vl-warninglist-p warnings))))
+  (define us-mark-wires-for-netdecl
+    :short "If a net is declared to be a supply0 or a supply1, then we want to
+          think about it as being driven."
+    ((x        vl-netdecl-p)
+     (walist   vl-wirealist-p)
+     (db       us-db-p)
+     (warnings vl-warninglist-p))
+    :returns (mv (warnings vl-warninglist-p)
+                 (db       us-db-p :hyp :fguard))
     (b* (((vl-netdecl x) x)
          ((unless (or (eq x.type :vl-supply0)
                       (eq x.type :vl-supply1)))
-          (mv warnings db))
+          (mv (ok) db))
 
          (entry (hons-get x.name walist))
          (wires (cdr entry))
          ((unless entry)
-          (b* ((w (make-vl-warning :type :vl-bad-netdecl
-                                   :msg "~a0: no corresponding wires."
-                                   :args (list (car x))
-                                   :fatalp t
-                                   :fn 'us-mark-wires-for-netdecl)))
-            (mv (cons w warnings) db)))
+          (mv (fatal :type :vl-bad-netdecl
+                     :msg "~a0: no corresponding wires."
+                     :args (list (car x)))
+              db))
 
          ((mv warnings db) (us-mark-wires-truly-set wires db warnings x)))
       (mv warnings db)))
 
-  (defthm us-mark-wires-for-netdecl-basics
-    (implies (and (force (vl-netdecl-p x))
-                  (force (vl-wirealist-p walist))
-                  (force (us-db-p db))
-                  (force (vl-warninglist-p warnings)))
-             (let ((ret (us-mark-wires-for-netdecl x walist db warnings)))
-               (and (vl-warninglist-p (mv-nth 0 ret))
-                    (us-db-p (mv-nth 1 ret)))))
-    :hints(("Goal" :in-theory (enable us-mark-wires-for-netdecl))))
-
-  (defund us-mark-wires-for-netdecllist (x walist db warnings)
-    "Returns (MV WARNINGS DB)"
-    (declare (xargs :guard (and (vl-netdecllist-p x)
-                                (vl-wirealist-p walist)
-                                (us-db-p db)
-                                (vl-warninglist-p warnings))))
+  (define us-mark-wires-for-netdecllist ((x        vl-netdecllist-p)
+                                         (walist   vl-wirealist-p)
+                                         (db       us-db-p)
+                                         (warnings vl-warninglist-p))
+    :returns (mv (warnings vl-warninglist-p)
+                 (db       us-db-p :hyp :fguard))
     (b* (((when (atom x))
-          (mv warnings db))
-         ((mv warnings db)
-          (us-mark-wires-for-netdecl (car x) walist db warnings))
-         ((mv warnings db)
-          (us-mark-wires-for-netdecllist (cdr x) walist db warnings)))
-      (mv warnings db)))
-
-  (defthm us-mark-wires-for-netdecllist-basics
-    (implies (and (force (vl-netdecllist-p x))
-                  (force (vl-wirealist-p walist))
-                  (force (us-db-p db))
-                  (force (vl-warninglist-p warnings)))
-             (let ((ret (us-mark-wires-for-netdecllist x walist db warnings)))
-               (and (vl-warninglist-p (mv-nth 0 ret))
-                    (us-db-p (mv-nth 1 ret)))))
-    :hints(("Goal" :in-theory (enable us-mark-wires-for-netdecllist)))))
-
-(defsection us-mark-wires-for-stmt
-
-  (defund us-mark-wires-for-assignstmt (x walist db warnings elem)
-    "Returns (MV WARNINGS DB)"
-    (declare (xargs :guard (and (vl-assignstmt-p x)
-                                (vl-wirealist-p walist)
-                                (us-db-p db)
-                                (vl-warninglist-p warnings)
-                                (vl-modelement-p elem))))
-    (b* (((vl-assignstmt x) x)
-
-         ((mv warnings1 rhs-wires) (vl-expr-allwires x.expr walist))
-         ((mv warnings2 lhs-wires) (vl-expr-allwires x.lvalue walist))
-         (warnings (append warnings1 warnings2 warnings))
-
-         ((mv warnings db) (us-mark-wires-truly-used rhs-wires db warnings elem))
-         ((mv warnings db) (us-mark-wires-truly-set lhs-wires db warnings elem)))
-      (mv warnings db)))
-
-  (defthm us-mark-wires-for-assignstmt-basics
-    (implies (and (force (vl-assignstmt-p x))
-                  (force (vl-wirealist-p walist))
-                  (force (us-db-p db))
-                  (force (vl-warninglist-p warnings)))
-             (b* (((mv warnings db)
-                   (us-mark-wires-for-assignstmt x walist db warnings elem)))
-               (and (vl-warninglist-p warnings)
-                    (us-db-p db))))
-    :hints(("Goal" :in-theory (enable us-mark-wires-for-assignstmt))))
+          (mv (ok) db))
+         ((mv warnings db) (us-mark-wires-for-netdecl (car x) walist db warnings))
+         ((mv warnings db) (us-mark-wires-for-netdecllist (cdr x) walist db warnings)))
+      (mv warnings db))))
 
 
-  ;; - BOZO eventually properly support tasks and functions, and add support for enablestmts.
+(define vl-evatom-allwires ((x vl-evatom-p)
+                            (walist vl-wirealist-p))
+  :returns (mv (warnings vl-warninglist-p)
+               (wires    vl-emodwirelist-p :hyp :fguard))
+  (vl-expr-allwires (vl-evatom->expr x) walist))
 
-  (defund us-mark-wires-for-enablestmt (x walist db warnings elem)
-    "Returns (MV WARNINGS DB)"
-    (declare (xargs :guard (and (vl-enablestmt-p x)
-                                (vl-wirealist-p walist)
-                                (us-db-p db)
-                                (vl-warninglist-p warnings)
-                                (vl-modelement-p elem)))
-             (ignore walist))
-    (b* ((w (make-vl-warning
-             :type :use-set-fudging
-             :msg "~a0: Ignoring ~a1 since we don't currently support tasks/functions."
-             :args (list elem x)
-             :fn 'us-mark-wires-for-enablestmt
-             :fatalp nil)))
-      (mv (cons w warnings) db)))
+(define vl-evatomlist-allwires ((x      vl-evatomlist-p)
+                                (walist vl-wirealist-p))
+  :returns (mv (warnings vl-warninglist-p)
+               (wires    vl-emodwirelist-p :hyp :fguard))
+  (b* (((when (atom x))
+        (mv nil nil))
+       ((mv car-warnings car-wires) (vl-evatom-allwires (car x) walist))
+       ((mv cdr-warnings cdr-wires) (vl-evatomlist-allwires (cdr x) walist)))
+    (mv (append-without-guard car-warnings cdr-warnings)
+        (append-without-guard car-wires cdr-wires))))
 
-  (defthm us-mark-wires-for-enablestmt-basics
-    (implies (and (force (vl-enablestmt-p x))
-                  (force (vl-wirealist-p walist))
-                  (force (us-db-p db))
-                  (force (vl-warninglist-p warnings)))
-             (b* (((mv warnings db)
-                   (us-mark-wires-for-enablestmt x walist db warnings elem)))
-               (and (vl-warninglist-p warnings)
-                    (us-db-p db))))
-    :hints(("Goal" :in-theory (enable us-mark-wires-for-enablestmt))))
+(define vl-eventcontrol-allwires ((x      vl-eventcontrol-p)
+                                  (walist vl-wirealist-p))
+  :returns (mv (warnings vl-warninglist-p)
+               (wires    vl-emodwirelist-p :hyp :fguard))
+  (vl-evatomlist-allwires (vl-eventcontrol->atoms x) walist))
 
+(define vl-repeateventcontrol-allwires ((x      vl-repeateventcontrol-p)
+                                        (walist vl-wirealist-p))
+  :returns (mv (warnings vl-warninglist-p)
+               (wires    vl-emodwirelist-p :hyp :fguard))
+  (b* (((vl-repeateventcontrol x) x)
+       ((mv warnings1 wires1) (vl-expr-allwires x.expr walist))
+       ((mv warnings2 wires2) (vl-eventcontrol-allwires x.ctrl walist)))
+    (mv (append-without-guard warnings1 warnings2)
+        (append-without-guard wires1 wires2))))
 
-  ;; - Nothing to do for null statements.
-  ;; - Don't think we want to do anything for eventtriggerstmts?
-  ;; - Don't think we want to do anything for deassign statements?
-
-  (defund us-mark-wires-for-atomicstmt (x walist db warnings elem)
-    "Returns (MV WARNINGS DB)"
-    (declare (xargs :guard (and (vl-atomicstmt-p x)
-                                (vl-wirealist-p walist)
-                                (us-db-p db)
-                                (vl-warninglist-p warnings)
-                                (vl-modelement-p elem))))
-    (case (tag x)
-      (:vl-assignstmt       (us-mark-wires-for-assignstmt x walist db warnings elem))
-      (:vl-enablestmt       (us-mark-wires-for-enablestmt x walist db warnings elem))
-      (otherwise            (mv warnings db))))
-
-  (defthm us-mark-wires-for-atomicstmt-basics
-    (implies (and (force (vl-atomicstmt-p x))
-                  (force (vl-wirealist-p walist))
-                  (force (us-db-p db))
-                  (force (vl-warninglist-p warnings)))
-             (b* (((mv warnings db)
-                   (us-mark-wires-for-atomicstmt x walist db warnings elem)))
-               (and (vl-warninglist-p warnings)
-                    (us-db-p db))))
-    :hints(("Goal" :in-theory (enable us-mark-wires-for-atomicstmt))))
-
-  (defund vl-evatom-allwires (x walist)
-    "Returns (MV WARNINGS WIRES)"
-    (declare (xargs :guard (and (vl-evatom-p x)
-                                (vl-wirealist-p walist))))
-    (vl-expr-allwires (vl-evatom->expr x) walist))
-
-  (defthm vl-evatom-allwires-basics
-    (implies (and (force (vl-evatom-p x))
-                  (force (vl-wirealist-p walist)))
-             (b* (((mv warnings wires)
-                   (vl-evatom-allwires x walist)))
-               (and (vl-warninglist-p warnings)
-                    (vl-emodwirelist-p wires))))
-    :hints(("Goal" :in-theory (enable vl-evatom-allwires))))
-
-  (defund vl-evatomlist-allwires (x walist)
-    "Returns (MV WARNINGS WIRES)"
-    (declare (xargs :guard (and (vl-evatomlist-p x)
-                                (vl-wirealist-p walist))))
-    (b* (((when (atom x))
-          (mv nil nil))
-         ((mv car-warnings car-wires) (vl-evatom-allwires (car x) walist))
-         ((mv cdr-warnings cdr-wires) (vl-evatomlist-allwires (cdr x) walist)))
-      (mv (append-without-guard car-warnings cdr-warnings)
-          (append-without-guard car-wires cdr-wires))))
-
-  (defthm vl-evatomlist-allwires-basics
-    (implies (and (force (vl-evatomlist-p x))
-                  (force (vl-wirealist-p walist)))
-             (b* (((mv warnings wires) (vl-evatomlist-allwires x walist)))
-               (and (vl-warninglist-p warnings)
-                    (vl-emodwirelist-p wires))))
-    :hints(("Goal" :in-theory (enable vl-evatomlist-allwires))))
-
-  (defund vl-eventcontrol-allwires (x walist)
-    "Returns (MV WARNINGS WIRES)"
-    (declare (xargs :guard (and (vl-eventcontrol-p x)
-                                (vl-wirealist-p walist))))
-    (vl-evatomlist-allwires (vl-eventcontrol->atoms x) walist))
-
-  (defthm vl-eventcontrol-allwires-basics
-    (implies (and (force (vl-eventcontrol-p x))
-                  (force (vl-wirealist-p walist)))
-             (b* (((mv warnings wires) (vl-eventcontrol-allwires x walist)))
-               (and (vl-warninglist-p warnings)
-                    (vl-emodwirelist-p wires))))
-    :hints(("Goal" :in-theory (enable vl-eventcontrol-allwires))))
-
-  (defund vl-repeateventcontrol-allwires (x walist)
-    "Returns (MV WARNINGS WIRES)"
-    (declare (xargs :guard (and (vl-repeateventcontrol-p x)
-                                (vl-wirealist-p walist))))
-    (b* (((vl-repeateventcontrol x) x)
-         ((mv warnings1 wires1) (vl-expr-allwires x.expr walist))
-         ((mv warnings2 wires2) (vl-eventcontrol-allwires x.ctrl walist)))
-      (mv (append-without-guard warnings1 warnings2)
-          (append-without-guard wires1 wires2))))
-
-  (defthm vl-repeateventcontrol-allwires-basics
-    (implies (and (force (vl-repeateventcontrol-p x))
-                  (force (vl-wirealist-p walist)))
-             (b* (((mv warnings wires) (vl-repeateventcontrol-allwires x walist)))
-               (and (vl-warninglist-p warnings)
-                    (vl-emodwirelist-p wires))))
-    :hints(("Goal" :in-theory (enable vl-repeateventcontrol-allwires))))
-
-  (defund vl-delayoreventcontrol-allwires (x walist)
-    "Returns (MV WARNINGS WIRES)"
-    (declare (xargs :guard (and (vl-delayoreventcontrol-p x)
-                                (vl-wirealist-p walist))))
+(define vl-delayoreventcontrol-allwires ((x      vl-delayoreventcontrol-p)
+                                         (walist vl-wirealist-p))
+  :returns (mv (warnings vl-warninglist-p)
+               (wires    vl-emodwirelist-p :hyp :fguard))
+  (b* ((x (vl-delayoreventcontrol-fix x)))
     (case (tag x)
       (:vl-delaycontrol (vl-expr-allwires (vl-delaycontrol->value x) walist))
       (:vl-eventcontrol (vl-eventcontrol-allwires x walist))
-      (:vl-repeateventcontrol (vl-repeateventcontrol-allwires x walist))
-      (otherwise
-       (prog2$ (er hard? 'vl-delayoreventcontrol-allwires "Provably impossible")
-               (mv nil nil)))))
+      (otherwise        (vl-repeateventcontrol-allwires x walist)))))
 
-  (defthm vl-delayoreventcontrol-allwires-basics
-    (implies (and (force (vl-delayoreventcontrol-p x))
-                  (force (vl-wirealist-p walist)))
-             (b* (((mv warnings wires) (vl-delayoreventcontrol-allwires x walist)))
-               (and (vl-warninglist-p warnings)
-                    (vl-emodwirelist-p wires))))
-    :hints(("Goal" :in-theory (enable vl-delayoreventcontrol-allwires))))
+(defines us-mark-wires-for-stmt
 
-  (mutual-recursion
+  (define us-mark-wires-for-stmt ((x        vl-stmt-p)
+                                  (walist   vl-wirealist-p)
+                                  (db       us-db-p)
+                                  (warnings vl-warninglist-p)
+                                  (elem     vl-modelement-p))
+    :returns (mv (warnings vl-warninglist-p)
+                 (db       us-db-p :hyp :fguard))
+    :measure (vl-stmt-count x)
+    :verify-guards nil
+    (b* ((x (vl-stmt-fix x))
+         (warnings (vl-warninglist-fix warnings))
 
-   (defund us-mark-wires-for-stmt (x walist db warnings elem)
-     "Returns (MV WARNINGS DB)"
-     (declare (xargs :guard (and (vl-stmt-p x)
-                                 (vl-wirealist-p walist)
-                                 (us-db-p db)
-                                 (vl-warninglist-p warnings)
-                                 (vl-modelement-p elem))
-                     :verify-guards nil
-                     :measure (two-nats-measure (acl2-count x) 1)))
-     (b* (((when (vl-fast-atomicstmt-p x))
-           (us-mark-wires-for-atomicstmt x walist db warnings elem))
+         ((when (vl-atomicstmt-p x))
+          (case (tag (vl-stmt-kind x))
+            ;; - Nothing to do for null statements.
+            ;; - Don't think we want to do anything for eventtriggerstmts?
+            ;; - Don't think we want to do anything for deassign statements?
+            (:vl-assignstmt
+             (b* (((vl-assignstmt x) x)
+                  ((mv warnings1 rhs-wires) (vl-expr-allwires x.expr walist))
+                  ((mv warnings2 lhs-wires) (vl-expr-allwires x.lvalue walist))
+                  (warnings (append warnings1 warnings2 warnings))
+                  ((mv warnings db) (us-mark-wires-truly-used rhs-wires db warnings elem))
+                  ((mv warnings db) (us-mark-wires-truly-set lhs-wires db warnings elem)))
+               (mv warnings db)))
+            (:vl-enablestmt
+             (mv (warn :type :use-set-fudging
+                       :msg "~a0: Ignoring ~a1 since we don't currently support tasks/functions."
+                       :args (list elem x))
+                 db))
+            (otherwise
+             (mv warnings db))))
 
-          ;; Mark all use/set info for sub-statements.
-          ((mv warnings db)
-           (us-mark-wires-for-stmtlist (vl-compoundstmt->stmts x)
-                                       walist db warnings elem))
+         ;; Mark all use/set info for sub-statements.
+         ((mv warnings db)
+          (us-mark-wires-for-stmtlist (vl-compoundstmt->stmts x)
+                                      walist db warnings elem))
 
-          ((when (vl-casestmt-p x))
-           ;; Additionally mark all test expression wires as used since they're
-           ;; deciding which branch to follow.
-           (b* (((vl-casestmt x) x)
-                (exprs                (cons x.test x.exprs))
-                ((mv warnings1 wires) (vl-exprlist-allwires exprs walist))
-                (warnings             (append-without-guard warnings1 warnings)))
-             (us-mark-wires-truly-used wires db warnings elem)))
+         ((when (vl-casestmt-p x))
+          ;; Additionally mark all test expression wires as used since they're
+          ;; deciding which branch to follow.
+          (b* (((vl-casestmt x) x)
+               (exprs                (cons x.test (alist-keys x.cases)))
+               ((mv warnings1 wires) (vl-exprlist-allwires exprs walist))
+               (warnings             (append-without-guard warnings1 warnings)))
+            (us-mark-wires-truly-used wires db warnings elem)))
 
-          ((when (vl-ifstmt-p x))
-           ;; Additionally mark condition's wires as truly used since they're
-           ;; deciding which branch to follow.
-           (b* (((vl-ifstmt x) x)
-                ((mv warnings1 wires) (vl-expr-allwires x.condition walist))
-                (warnings             (append-without-guard warnings1 warnings)))
-             (us-mark-wires-truly-used wires db warnings elem)))
+         ((when (vl-ifstmt-p x))
+          ;; Additionally mark condition's wires as truly used since they're
+          ;; deciding which branch to follow.
+          (b* (((vl-ifstmt x) x)
+               ((mv warnings1 wires) (vl-expr-allwires x.condition walist))
+               (warnings             (append-without-guard warnings1 warnings)))
+            (us-mark-wires-truly-used wires db warnings elem)))
 
-          ((when (vl-foreverstmt-p x))
-           ;; Nothing extra to do.
-           (mv warnings db))
+         ((when (vl-foreverstmt-p x))
+          ;; Nothing extra to do.
+          (mv warnings db))
 
-          ((when (vl-waitstmt-p x))
-           ;; Additionally mark condition's wires as true, since they're used to
-           ;; decide when to execute the body
-           (b* (((vl-waitstmt x) x)
-                ((mv warnings1 wires) (vl-expr-allwires x.condition walist))
-                (warnings             (append-without-guard warnings1 warnings)))
-             (us-mark-wires-truly-used wires db warnings elem)))
+         ((when (vl-waitstmt-p x))
+          ;; Additionally mark condition's wires as true, since they're used to
+          ;; decide when to execute the body
+          (b* (((vl-waitstmt x) x)
+               ((mv warnings1 wires) (vl-expr-allwires x.condition walist))
+               (warnings             (append-without-guard warnings1 warnings)))
+            (us-mark-wires-truly-used wires db warnings elem)))
 
           ((when (vl-repeatstmt-p x))
            ;; Additionally mark the condition's wires as used, even though there
@@ -1329,16 +1054,13 @@ warnings."
           ((when (vl-blockstmt-p x))
            (b* (((vl-blockstmt x) x)
                 ((when x.decls)
-                 (b* ((w (make-vl-warning
-                          :type :use-set-fudging
-                          :msg "~a0: block statements with declarations are ~
-                                not really supported; we'll get the wrong ~
-                                use/set information for local declarations in ~
-                                block ~s1."
-                          :args (list elem x.name)
-                          :fatalp nil
-                          :fn 'us-mark-wires-for-stmt)))
-                   (mv (cons w warnings) db))))
+                 (mv (warn :type :use-set-fudging
+                           :msg "~a0: block statements with declarations are ~
+                                 not really supported; we'll get the wrong ~
+                                 use/set information for local declarations ~
+                                 in block ~s1."
+                           :args (list elem x.name))
+                     db)))
              (mv warnings db)))
 
           ((when (vl-timingstmt-p x))
@@ -1347,103 +1069,47 @@ warnings."
                 (warnings             (append-without-guard warnings1 warnings)))
              (us-mark-wires-truly-used wires db warnings elem))))
 
-       (er hard? 'us-mark-wires-for-stmt "Provably impossible.")
-       (mv warnings db)))
+      (impossible)
+      (mv warnings db)))
 
-   (defund us-mark-wires-for-stmtlist (x walist db warnings elem)
-     "Returns (MV WARNINGS DB)"
-     (declare (xargs :guard (and (vl-stmtlist-p x)
-                                 (vl-wirealist-p walist)
-                                 (us-db-p db)
-                                 (vl-warninglist-p warnings)
-                                 (vl-modelement-p elem))
-                     :measure (two-nats-measure (acl2-count x) 0)))
-     (b* (((when (atom x))
-           (mv warnings db))
-          ((mv warnings db) (us-mark-wires-for-stmt (car x) walist db warnings elem)))
-       (us-mark-wires-for-stmtlist (cdr x) walist db warnings elem))))
-
-  (flag::make-flag flag-us-mark-wires-for-stmt
-                   us-mark-wires-for-stmt
-                   :flag-mapping ((us-mark-wires-for-stmt . stmt)
-                                  (us-mark-wires-for-stmtlist . list)))
-
-  (local (in-theory (disable vl-warninglist-p-when-subsetp-equal)))
-
-  (defthm-flag-us-mark-wires-for-stmt
-    (defthm us-mark-wires-for-stmt-basics
-      (implies (and (force (vl-stmt-p x))
-                    (force (vl-wirealist-p walist))
-                    (force (us-db-p db))
-                    (force (vl-warninglist-p warnings))
-                    (force (vl-modelement-p elem)))
-               (b* (((mv warnings db)
-                     (us-mark-wires-for-stmt x walist db warnings elem)))
-                 (and (vl-warninglist-p warnings)
-                      (us-db-p db))))
-      :flag stmt)
-    (defthm us-mark-wires-for-stmtlist-basics
-      (implies (and (force (vl-stmtlist-p x))
-                    (force (vl-wirealist-p walist))
-                    (force (us-db-p db))
-                    (force (vl-warninglist-p warnings))
-                    (force (vl-modelement-p elem)))
-               (b* (((mv warnings db)
-                     (us-mark-wires-for-stmtlist x walist db warnings elem)))
-                 (and (vl-warninglist-p warnings)
-                      (us-db-p db))))
-      :flag list)
-    :hints(("Goal"
-            :expand ((us-mark-wires-for-stmt x walist db warnings elem)
-                     (us-mark-wires-for-stmtlist x walist db warnings elem)))))
-
-  (verify-guards us-mark-wires-for-stmt))
-
+  (define us-mark-wires-for-stmtlist ((x        vl-stmtlist-p)
+                                      (walist   vl-wirealist-p)
+                                      (db       us-db-p)
+                                      (warnings vl-warninglist-p)
+                                      (elem     vl-modelement-p))
+    :returns (mv (warnings vl-warninglist-p)
+                 (db       us-db-p :hyp :fguard))
+    :measure (vl-stmtlist-count x)
+    (b* (((when (atom x))
+          (mv (ok) db))
+         ((mv warnings db) (us-mark-wires-for-stmt (car x) walist db warnings elem)))
+      (us-mark-wires-for-stmtlist (cdr x) walist db warnings elem)))
+  ///
+  (verify-guards us-mark-wires-for-stmt
+    :hints(("Goal" :in-theory (enable vl-atomicstmt-p)))))
 
 
 (defsection us-mark-wires-for-alwayslist
 
-  (defund us-mark-wires-for-always (x walist db warnings)
-    "Returns (MV WARNINGS DB)"
-    (declare (xargs :guard (and (vl-always-p x)
-                                (vl-wirealist-p walist)
-                                (us-db-p db)
-                                (vl-warninglist-p warnings))))
+  (define us-mark-wires-for-always ((x        vl-always-p)
+                                    (walist   vl-wirealist-p)
+                                    (db       us-db-p)
+                                    (warnings vl-warninglist-p))
+    :returns (mv (warnings vl-warninglist-p)
+                 (db       us-db-p :hyp :fguard))
     (us-mark-wires-for-stmt (vl-always->stmt x) walist db warnings x))
 
-  (defthm us-mark-wires-for-always-basics
-    (implies (and (force (vl-always-p x))
-                  (force (vl-wirealist-p walist))
-                  (force (us-db-p db))
-                  (force (vl-warninglist-p warnings)))
-             (b* (((mv warnings db)
-                   (us-mark-wires-for-always x walist db warnings)))
-               (and (vl-warninglist-p warnings)
-                    (us-db-p db))))
-    :hints(("Goal" :in-theory (enable us-mark-wires-for-always))))
-
-  (defund us-mark-wires-for-alwayslist (x walist db warnings)
-    "Returns (MV WARNINGS DB)"
-    (declare (xargs :guard (and (vl-alwayslist-p x)
-                                (vl-wirealist-p walist)
-                                (us-db-p db)
-                                (vl-warninglist-p warnings))))
+  (define us-mark-wires-for-alwayslist ((x        vl-alwayslist-p)
+                                        (walist   vl-wirealist-p)
+                                        (db       us-db-p)
+                                        (warnings vl-warninglist-p))
+    :returns (mv (warnings vl-warninglist-p)
+                 (db       us-db-p :hyp :fguard))
     (b* (((when (atom x))
-          (mv warnings db))
+          (mv (ok) db))
          ((mv warnings db) (us-mark-wires-for-always (car x) walist db warnings))
          ((mv warnings db) (us-mark-wires-for-alwayslist (cdr x) walist db warnings)))
-      (mv warnings db)))
-
-  (defthm us-mark-wires-for-alwayslist-basics
-    (implies (and (force (vl-alwayslist-p x))
-                  (force (vl-wirealist-p walist))
-                  (force (us-db-p db))
-                  (force (vl-warninglist-p warnings)))
-             (b* (((mv warnings db)
-                   (us-mark-wires-for-alwayslist x walist db warnings)))
-               (and (vl-warninglist-p warnings)
-                    (us-db-p db))))
-    :hints(("Goal" :in-theory (enable us-mark-wires-for-alwayslist)))))
+      (mv warnings db))))
 
 
 
@@ -1458,48 +1124,25 @@ warnings."
 ; right at the beginning of the simulation.  While this is fairly rare, it is
 ; probably still worth filtering out.
 
-  (defund us-mark-wires-for-initial (x walist db warnings)
-    "Returns (MV WARNINGS DB)"
-    (declare (xargs :guard (and (vl-initial-p x)
-                                (vl-wirealist-p walist)
-                                (us-db-p db)
-                                (vl-warninglist-p warnings))))
+  (define us-mark-wires-for-initial ((x        vl-initial-p)
+                                     (walist   vl-wirealist-p)
+                                     (db       us-db-p)
+                                     (warnings vl-warninglist-p))
+    :returns (mv (warnings vl-warninglist-p)
+                 (db       us-db-p :hyp :fguard))
     (us-mark-wires-for-stmt (vl-initial->stmt x) walist db warnings x))
 
-  (defthm us-mark-wires-for-initial-basics
-    (implies (and (force (vl-initial-p x))
-                  (force (vl-wirealist-p walist))
-                  (force (us-db-p db))
-                  (force (vl-warninglist-p warnings)))
-             (b* (((mv warnings db)
-                   (us-mark-wires-for-initial x walist db warnings)))
-               (and (vl-warninglist-p warnings)
-                    (us-db-p db))))
-    :hints(("Goal" :in-theory (enable us-mark-wires-for-initial))))
-
-  (defund us-mark-wires-for-initiallist (x walist db warnings)
-    "Returns (MV WARNINGS DB)"
-    (declare (xargs :guard (and (vl-initiallist-p x)
-                                (vl-wirealist-p walist)
-                                (us-db-p db)
-                                (vl-warninglist-p warnings))))
+  (define us-mark-wires-for-initiallist ((x        vl-initiallist-p)
+                                         (walist   vl-wirealist-p)
+                                         (db       us-db-p)
+                                         (warnings vl-warninglist-p))
+    :returns (mv (warnings vl-warninglist-p)
+                 (db       us-db-p :hyp :fguard))
     (b* (((when (atom x))
-          (mv warnings db))
+          (mv (ok) db))
          ((mv warnings db) (us-mark-wires-for-initial (car x) walist db warnings))
          ((mv warnings db) (us-mark-wires-for-initiallist (cdr x) walist db warnings)))
-      (mv warnings db)))
-
-  (defthm us-mark-wires-for-initiallist-basics
-    (implies (and (force (vl-initiallist-p x))
-                  (force (vl-wirealist-p walist))
-                  (force (us-db-p db))
-                  (force (vl-warninglist-p warnings)))
-             (b* (((mv warnings db)
-                   (us-mark-wires-for-initiallist x walist db warnings)))
-               (and (vl-warninglist-p warnings)
-                    (us-db-p db))))
-    :hints(("Goal" :in-theory (enable us-mark-wires-for-initiallist)))))
-
+      (mv warnings db))))
 
 
 (defsection us-mark-false-inouts
@@ -1510,22 +1153,17 @@ warnings."
 ; outputs as falsely set.  This must happen as a "final pass" after determining
 ; all of the ordinary set/used wires in the module.
 
-  (defund us-mark-false-inouts-for-portdecl-wires
-    (wires    ; all wires from a portdecl
-     dir      ; dir of this portdecl
-     db       ; use-set database for this module (may be extended)
-     warnings ; warnings accumulator             (may be extended)
-     elem     ; context for warnings
-     )
-    "Returns (MV WARNINGS DB)"
-    (declare (xargs :guard (and (vl-emodwirelist-p wires)
-                                (vl-direction-p dir)
-                                (us-db-p db)
-                                (vl-warninglist-p warnings)
-                                (vl-modelement-p elem))
-                    :verify-guards nil))
+  (define us-mark-false-inouts-for-portdecl-wires
+    ((wires    vl-emodwirelist-p "all wires from a portdecl")
+     (dir      vl-direction-p    "dir of this portdecl")
+     (db       us-db-p           "use-set database for this module (may be extended)")
+     (warnings vl-warninglist-p  "warnings accumulator (may be extended)")
+     (elem     vl-modelement-p   "context for warnings"))
+    :returns (mv (warnings vl-warninglist-p)
+                 (db       us-db-p :hyp :fguard))
+    :verify-guards nil
     (b* (((when (atom wires))
-          (mv warnings db))
+          (mv (ok) db))
 
          ((mv warnings db)
           (us-mark-false-inouts-for-portdecl-wires (cdr wires) dir db warnings elem))
@@ -1533,13 +1171,11 @@ warnings."
          (wire1  (car wires))
          (lookup (hons-get wire1 db))
          ((unless lookup)
-          (b* ((w (make-vl-warning
-                   :type :use-set-fudging
-                   :msg "~a0: expected a database binding for ~s1.  Assuming ~
-                         it is not a false input/output."
-                   :args (list elem wire1)
-                   :fn 'us-mark-false-inouts-for-portdecl-wires)))
-            (mv (cons w warnings) db)))
+          (mv (warn :type :use-set-fudging
+                    :msg "~a0: expected a database binding for ~s1.  Assuming ~
+                          it is not a false input/output."
+                    :args (list elem wire1))
+              db))
 
          ((mv warnings db)
           (if (and (or (eq dir :vl-input)
@@ -1559,72 +1195,38 @@ warnings."
                             wire1 db warnings elem)
             (mv warnings db))))
 
-      (mv warnings db)))
-
-  (defthm us-mark-false-inouts-for-portdecl-wires-basics
-    (implies (and (force (vl-emodwirelist-p wires))
-                  (force (vl-direction-p dir))
-                  (force (us-db-p db))
-                  (force (vl-warninglist-p warnings))
-                  (force (vl-modelement-p elem)))
-             (let ((ret (us-mark-false-inouts-for-portdecl-wires wires dir db warnings elem)))
-               (and (vl-warninglist-p (mv-nth 0 ret))
-                    (us-db-p (mv-nth 1 ret)))))
-    :hints(("Goal" :in-theory (enable us-mark-false-inouts-for-portdecl-wires))))
-
-  (verify-guards us-mark-false-inouts-for-portdecl-wires)
+      (mv warnings db))
+    ///
+    (verify-guards us-mark-false-inouts-for-portdecl-wires))
 
 
-
-  (defund us-mark-false-inouts-for-portdecl (x db walist warnings)
-    "Returns (MV WARNINGS DB)"
-    (declare (xargs :guard (and (vl-portdecl-p x)
-                                (us-db-p db)
-                                (vl-wirealist-p walist)
-                                (vl-warninglist-p warnings))))
+  (define us-mark-false-inouts-for-portdecl ((x        vl-portdecl-p)
+                                             (db       us-db-p)
+                                             (walist   vl-wirealist-p)
+                                             (warnings vl-warninglist-p))
+    :returns (mv (warnings vl-warninglist-p)
+                 (db       us-db-p :hyp :fguard))
     (b* (((vl-portdecl x) x)
          (lookup (hons-get x.name walist))
          ((unless lookup)
-          (b* ((w (make-vl-warning
-                   :type :use-set-fudging
-                   :msg "~a0: expected wire-alist binding for ~s1.  Assuming ~
+          (mv (warn :type :use-set-fudging
+                    :msg "~a0: expected wire-alist binding for ~s1.  Assuming ~
                          its wires are not false input/outputs."
-                   :args (list x x.name)
-                   :fn 'us-mark-false-inouts-for-portdecl)))
-            (mv (cons w warnings) db))))
+                    :args (list x x.name))
+              db)))
       (us-mark-false-inouts-for-portdecl-wires (cdr lookup) x.dir db warnings x)))
 
-  (defthm us-mark-false-inouts-for-portdecl-basics
-    (implies (and (force (vl-portdecl-p x))
-                  (force (us-db-p db))
-                  (force (vl-wirealist-p walist))
-                  (force (vl-warninglist-p warnings)))
-             (let ((ret (us-mark-false-inouts-for-portdecl x db walist warnings)))
-               (and (vl-warninglist-p (mv-nth 0 ret))
-                    (us-db-p (mv-nth 1 ret)))))
-    :hints(("Goal" :in-theory (enable us-mark-false-inouts-for-portdecl))))
-
-  (defund us-mark-false-inouts (x db walist warnings)
-    "Returns (WARNINGS DB)"
-    (declare (xargs :guard (and (vl-portdecllist-p x)
-                                (us-db-p db)
-                                (vl-wirealist-p walist)
-                                (vl-warninglist-p warnings))))
+  (define us-mark-false-inouts  ((x        vl-portdecllist-p)
+                                 (db       us-db-p)
+                                 (walist   vl-wirealist-p)
+                                 (warnings vl-warninglist-p))
+    :returns (mv (warnings vl-warninglist-p)
+                 (db       us-db-p :hyp :fguard))
     (b* (((when (atom x))
-          (mv warnings db))
+          (mv (ok) db))
          ((mv warnings db)
           (us-mark-false-inouts-for-portdecl (car x) db walist warnings)))
-      (us-mark-false-inouts (cdr x) db walist warnings)))
-
-  (defthm us-mark-false-inouts-basics
-    (implies (and (force (vl-portdecllist-p x))
-                  (force (us-db-p db))
-                  (force (vl-wirealist-p walist))
-                  (force (vl-warninglist-p warnings)))
-             (let ((ret (us-mark-false-inouts x db walist warnings)))
-               (and (vl-warninglist-p (mv-nth 0 ret))
-                    (us-db-p (mv-nth 1 ret)))))
-    :hints(("Goal" :in-theory (enable us-mark-false-inouts)))))
+      (us-mark-false-inouts (cdr x) db walist warnings))))
 
 
 
@@ -2054,7 +1656,7 @@ warnings."
 
          ((unless (and (not x.range)
                        (atom (vl-arguments->args x.paramargs))
-                       (not (vl-arguments->namedp x.portargs))))
+                       (eq (vl-arguments-kind x.portargs) :plain)))
           (b* ((w (make-vl-warning
                    :type :use-set-fudging
                    :msg "~a0: skipping this module instance because it has a ~
@@ -2063,7 +1665,7 @@ warnings."
                    :fn 'us-mark-wires-for-modinst)))
             (mv (cons w warnings) db notes)))
 
-         (actuals (vl-arguments->args x.portargs))
+         (actuals (vl-arguments-plain->args x.portargs))
 
          (submod (vl-fast-find-module x.modname mods modalist))
          ((unless submod)

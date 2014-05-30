@@ -102,7 +102,9 @@
   (defsection symbol-equiv
     (defund symbol-fix (x)
       (declare (xargs :guard t))
-      (if (symbolp x) x nil))
+      (if (symbolp x)
+          x
+        'acl2::||))
 
     (local (in-theory (enable symbol-fix)))
 
@@ -114,7 +116,9 @@
       (implies (symbolp x)
                (equal (symbol-fix x) x)))
 
-    (fty::defbasetype symbol-equiv symbolp))
+    (fty::defbasetype symbol-equiv symbolp)
+
+    (defcong symbol-equiv equal (symbol-name x) 1))
 
   (defsection pos-equiv
     (defund pos-fix (x)

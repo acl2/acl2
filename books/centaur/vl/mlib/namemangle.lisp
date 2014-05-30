@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -21,7 +21,7 @@
 (in-package "VL")
 (include-book "namefactory")
 (local (include-book "../util/arithmetic"))
-
+(local (std::add-default-post-define-hook :fix))
 
 (defsection namemangle
   :parents (mlib)
@@ -30,83 +30,70 @@
 useful when we inline elements from one module into another and want to be sure
 they are given fresh names.</p>")
 
+(local (xdoc::set-default-parents namemangle))
 
-(defsection vl-namemangle-modinsts
-  :parents (namemangle)
+
+(define vl-namemangle-modinsts
   :short "Safely rename module instances, preferring names of the form
 @('prefix_{current-name}')."
-
-  (defund vl-namemangle-modinsts (prefix modinsts nf)
-    "Returns (MV MODINSTS' NF')"
-    (declare (xargs :guard (and (stringp prefix)
-                                (vl-modinstlist-p modinsts)
-                                (vl-namefactory-p nf))))
-    (b* (((when (atom modinsts))
-          (mv nil nf))
-         (instname1      (or (vl-modinst->instname (car modinsts)) "inst"))
-         (want1          (str::cat prefix "_" instname1))
-         ((mv fresh1 nf) (vl-namefactory-plain-name want1 nf))
-         (inst1          (change-vl-modinst (car modinsts) :instname fresh1))
-         ((mv insts2 nf) (vl-namemangle-modinsts prefix (cdr modinsts) nf)))
-      (mv (cons inst1 insts2) nf)))
-
-  (local (in-theory (enable vl-namemangle-modinsts)))
-
+  ((prefix   stringp)
+   (modinsts vl-modinstlist-p)
+   (nf       vl-namefactory-p))
+  :returns (mv (new-modinsts vl-modinstlist-p)
+               (new-nf       vl-namefactory-p))
+  (b* (((when (atom modinsts))
+        (mv nil (vl-namefactory-fix nf)))
+       (instname1      (or (vl-modinst->instname (car modinsts)) "inst"))
+       (want1          (str::cat prefix "_" instname1))
+       ((mv fresh1 nf) (vl-namefactory-plain-name want1 nf))
+       (inst1          (change-vl-modinst (car modinsts) :instname fresh1))
+       ((mv insts2 nf) (vl-namemangle-modinsts prefix (cdr modinsts) nf)))
+    (mv (cons inst1 insts2) nf))
+  ///
   (defmvtypes vl-namemangle-modinsts (true-listp nil))
 
-  (defthm vl-namemangle-modinsts-basics
-    (let ((ret (vl-namemangle-modinsts loc modinsts nf)))
-      (implies (and (force (vl-modinstlist-p modinsts))
-                    (force (vl-namefactory-p nf)))
-               (and (vl-modinstlist-p (mv-nth 0 ret))
-                    (vl-namefactory-p (mv-nth 1 ret))))))
-
   (defthm len-of-vl-namemangle-modinsts
-    (let ((ret (vl-namemangle-modinsts loc modinsts nf)))
-      (equal (len (mv-nth 0 ret))
+    (b* (((mv new-modinsts ?new-nf)
+          (vl-namemangle-modinsts loc modinsts nf)))
+      (equal (len new-modinsts)
              (len modinsts)))))
 
 
-(defsection vl-namemangle-gateinsts
-  :parents (namemangle)
+(define vl-namemangle-gateinsts
   :short "Safely rename gate instances, preferring names of the form
 @('prefix_{current-name}')."
-
-  (defund vl-namemangle-gateinsts (prefix gateinsts nf)
-    "Returns (MV GATEINSTS' NF')"
-    (declare (xargs :guard (and (stringp prefix)
-                                (vl-gateinstlist-p gateinsts)
-                                (vl-namefactory-p nf))))
-    (b* (((when (atom gateinsts))
-          (mv nil nf))
-         (instname1      (or (vl-gateinst->name (car gateinsts)) "g"))
-         (want1          (str::cat prefix "_" instname1))
-         ((mv fresh1 nf) (vl-namefactory-plain-name want1 nf))
-         (inst1          (change-vl-gateinst (car gateinsts) :name fresh1))
-         ((mv insts2 nf) (vl-namemangle-gateinsts prefix (cdr gateinsts) nf)))
-      (mv (cons inst1 insts2) nf)))
-
-  (local (in-theory (enable vl-namemangle-gateinsts)))
-
+  ((prefix    stringp)
+   (gateinsts vl-gateinstlist-p)
+   (nf        vl-namefactory-p))
+  :returns (mv (new-gateinsts vl-gateinstlist-p)
+               (new-nf        vl-namefactory-p))
+  (b* (((when (atom gateinsts))
+        (mv nil (vl-namefactory-fix nf)))
+       (instname1      (or (vl-gateinst->name (car gateinsts)) "g"))
+       (want1          (str::cat prefix "_" instname1))
+       ((mv fresh1 nf) (vl-namefactory-plain-name want1 nf))
+       (inst1          (change-vl-gateinst (car gateinsts) :name fresh1))
+       ((mv insts2 nf) (vl-namemangle-gateinsts prefix (cdr gateinsts) nf)))
+    (mv (cons inst1 insts2) nf))
+  ///
   (defmvtypes vl-namemangle-gateinsts (true-listp nil))
 
-  (defthm vl-namemangle-gateinsts-basics
-    (let ((ret (vl-namemangle-gateinsts loc gateinsts nf)))
-      (implies (and (force (vl-gateinstlist-p gateinsts))
-                    (force (vl-namefactory-p nf)))
-               (and (vl-gateinstlist-p (mv-nth 0 ret))
-                    (vl-namefactory-p (mv-nth 1 ret))))))
-
   (defthm len-of-vl-namemangle-gateinsts
-    (let ((ret (vl-namemangle-gateinsts loc gateinsts nf)))
-      (equal (len (mv-nth 0 ret))
+    (b* (((mv new-gateinsts ?new-nf)
+          (vl-namemangle-gateinsts loc gateinsts nf)))
+      (equal (len new-gateinsts)
              (len gateinsts)))))
 
 
-(defsection vl-namemangle-netdecls
-  :parents (namemangle)
+(define vl-namemangle-netdecls
   :short "Safely try to give these netdecls new names of the form
 @('prefix_{current-name}.')"
+
+  ((prefix   stringp)
+   (netdecls vl-netdecllist-p)
+   (nf       vl-namefactory-p))
+  :returns (mv (new-nets vl-netdecllist-p)
+               (new-nf   vl-namefactory-p))
 
   :long "<p>You'll generally want to do something like:</p>
 
@@ -117,33 +104,20 @@ they are given fresh names.</p>")
 
 <p>And then use this as a substitution.</p>"
 
-  (defund vl-namemangle-netdecls (prefix netdecls nf)
-    "Returns (MV NETDECLS' NF')"
-    (declare (xargs :guard (and (stringp prefix)
-                                (vl-netdecllist-p netdecls)
-                                (vl-namefactory-p nf))))
-    (b* (((when (atom netdecls))
-          (mv nil nf))
-         (name1          (vl-netdecl->name (car netdecls)))
-         (want1          (str::cat prefix "_" name1))
-         ((mv fresh1 nf) (vl-namefactory-plain-name want1 nf))
-         (inst1          (change-vl-netdecl (car netdecls) :name fresh1))
-         ((mv insts2 nf) (vl-namemangle-netdecls prefix (cdr netdecls) nf)))
-      (mv (cons inst1 insts2) nf)))
-
-  (local (in-theory (enable vl-namemangle-netdecls)))
-
+  (b* (((when (atom netdecls))
+        (mv nil (vl-namefactory-fix nf)))
+       (name1          (vl-netdecl->name (car netdecls)))
+       (want1          (str::cat prefix "_" name1))
+       ((mv fresh1 nf) (vl-namefactory-plain-name want1 nf))
+       (inst1          (change-vl-netdecl (car netdecls) :name fresh1))
+       ((mv insts2 nf) (vl-namemangle-netdecls prefix (cdr netdecls) nf)))
+    (mv (cons inst1 insts2) nf))
+  ///
   (defmvtypes vl-namemangle-netdecls (true-listp nil))
 
-  (defthm vl-namemangle-netdecls-basics
-    (let ((ret (vl-namemangle-netdecls loc netdecls nf)))
-      (implies (and (force (vl-netdecllist-p netdecls))
-                    (force (vl-namefactory-p nf)))
-               (and (vl-netdecllist-p (mv-nth 0 ret))
-                    (vl-namefactory-p (mv-nth 1 ret))))))
-
   (defthm len-of-vl-namemangle-netdecls
-    (let ((ret (vl-namemangle-netdecls loc netdecls nf)))
-      (equal (len (mv-nth 0 ret))
+    (b* (((mv new-netdecls ?new-nf)
+          (vl-namemangle-netdecls loc netdecls nf)))
+      (equal (len new-netdecls)
              (len netdecls)))))
 

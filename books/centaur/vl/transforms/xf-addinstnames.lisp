@@ -21,6 +21,7 @@
 (in-package "VL")
 (include-book "../mlib/namefactory")
 (local (include-book "../util/arithmetic"))
+(local (std::add-default-post-define-hook :fix))
 
 (defxdoc addinstnames
   :parents (transforms)
@@ -35,46 +36,46 @@ generated using a @(see vl-namefactory-p) and will have names such as
 
 (define vl-modinst-addinstnames ((x  vl-modinst-p)
                                  (nf vl-namefactory-p))
-  :returns (mv (new-x vl-modinst-p     :hyp :fguard)
-               (nf    vl-namefactory-p :hyp :fguard))
+  :returns (mv (new-x vl-modinst-p)
+               (nf    vl-namefactory-p))
   :short "Name a module instance, if necessary."
   (b* (((when (vl-modinst->instname x))
         ;; No need to generate a name.
-        (mv x nf))
+        (mv (vl-modinst-fix x) (vl-namefactory-fix nf)))
        ((mv new-name nf) (vl-namefactory-indexed-name "modinst" nf))
        (new-x            (change-vl-modinst x :instname new-name)))
     (mv new-x nf)))
 
 (define vl-modinstlist-addinstnames ((x  vl-modinstlist-p)
                                      (nf vl-namefactory-p))
-  :returns (mv (new-x vl-modinstlist-p :hyp :fguard)
-               (nf    vl-namefactory-p :hyp :fguard))
+  :returns (mv (new-x vl-modinstlist-p)
+               (nf    vl-namefactory-p))
   :short "Name unnamed module instances."
   (b* (((when (atom x))
-        (mv x nf))
+        (mv x (vl-namefactory-fix nf)))
        ((mv car nf) (vl-modinst-addinstnames (car x) nf))
        ((mv cdr nf) (vl-modinstlist-addinstnames (cdr x) nf)))
     (mv (cons car cdr) nf)))
 
 (define vl-gateinst-addinstnames ((x  vl-gateinst-p)
                                   (nf vl-namefactory-p))
-  :returns (mv (new-x vl-gateinst-p    :hyp :fguard)
-               (nf    vl-namefactory-p :hyp :fguard))
+  :returns (mv (new-x vl-gateinst-p)
+               (nf    vl-namefactory-p))
   :short "Name a gate instance, if necessary."
   (b* (((when (vl-gateinst->name x))
         ;; No need to generate a name.
-        (mv x nf))
+        (mv (vl-gateinst-fix x) (vl-namefactory-fix nf)))
        ((mv new-name nf) (vl-namefactory-indexed-name "gateinst" nf))
        (new-x            (change-vl-gateinst x :name new-name)))
     (mv new-x nf)))
 
 (define vl-gateinstlist-addinstnames ((x vl-gateinstlist-p)
                                       (nf vl-namefactory-p))
-  :returns (mv (new-x vl-gateinstlist-p :hyp :fguard)
-               (nf    vl-namefactory-p  :hyp :fguard))
+  :returns (mv (new-x vl-gateinstlist-p)
+               (nf    vl-namefactory-p))
   :short "Name unnamed gate instances."
   (b* (((when (atom x))
-        (mv x nf))
+        (mv x (vl-namefactory-fix nf)))
        ((mv car nf) (vl-gateinst-addinstnames (car x) nf))
        ((mv cdr nf) (vl-gateinstlist-addinstnames (cdr x) nf)))
     (mv (cons car cdr) nf)))
@@ -88,7 +89,7 @@ generated using a @(see vl-namefactory-p) and will have names such as
   (defthm vl-modinstlist-all-named-p-optimization
     (implies (vl-modinstlist-all-named-p x)
              (equal (vl-modinstlist-addinstnames x nf)
-                    (mv x nf)))
+                    (mv (vl-modinstlist-fix x) (vl-namefactory-fix nf))))
     :hints(("Goal" :in-theory (enable vl-modinstlist-addinstnames
                                       vl-modinst-addinstnames)))))
 
@@ -101,17 +102,17 @@ generated using a @(see vl-namefactory-p) and will have names such as
   (defthm vl-gateinstlist-all-named-p-optimizaiton
     (implies (vl-gateinstlist-all-named-p x)
              (equal (vl-gateinstlist-addinstnames x nf)
-                    (mv x nf)))
+                    (mv (vl-gateinstlist-fix x) (vl-namefactory-fix nf))))
     :hints(("Goal" :in-theory (enable vl-gateinstlist-addinstnames
                                       vl-gateinst-addinstnames)))))
 
 (define vl-module-addinstnames ((x vl-module-p))
-  :returns (new-x vl-module-p :hyp :fguard)
+  :returns (new-x vl-module-p)
   :short "Name any unnamed module and gate instances throughout a module."
   (mbe :logic
        (b* (((vl-module x) x)
             ((when (vl-module->hands-offp x))
-             x)
+             (vl-module-fix x))
             (nf                 (vl-starting-namefactory x))
             ((mv modinsts nf)   (vl-modinstlist-addinstnames x.modinsts nf))
             ((mv gateinsts ?nf) (vl-gateinstlist-addinstnames x.gateinsts nf)))
@@ -147,15 +148,13 @@ generated using a @(see vl-namefactory-p) and will have names such as
     (equal (vl-module->name (vl-module-addinstnames x))
            (vl-module->name x))))
 
-(defprojection vl-modulelist-addinstnames (x)
-  (vl-module-addinstnames x)
-  :guard (vl-modulelist-p x)
-  :result-type vl-modulelist-p)
+(defprojection vl-modulelist-addinstnames ((x vl-modulelist-p))
+  :returns (new-x vl-modulelist-p)
+  (vl-module-addinstnames x))
 
 (define vl-design-addinstnames ((x vl-design-p))
   :returns (new-x vl-design-p)
-  (b* ((x (vl-design-fix x))
-       ((vl-design x) x)
+  (b* (((vl-design x) x)
        (new-mods (vl-modulelist-addinstnames x.mods)))
     (change-vl-design x :mods new-mods)))
 

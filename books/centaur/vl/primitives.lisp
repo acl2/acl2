@@ -22,6 +22,7 @@
 (include-book "mlib/expr-building")
 (include-book "../esim/esim-primitives")
 (local (include-book "mlib/stmt-tools"))
+(local (std::add-default-post-define-hook :fix))
 
 (defxdoc primitives
   :parents (vl)
@@ -59,14 +60,15 @@ vl-make-1-bit-n-edge-flop).</p>")
   :short "Convenient way to generate a port for a primitive."
   ((name stringp)
    (dir  vl-direction-p))
-  :returns (mv (expr     vl-expr-p     :hyp :fguard)
-               (port     vl-port-p     :hyp :fguard)
-               (portdecl vl-portdecl-p :hyp :fguard)
-               (netdecl  vl-netdecl-p  :hyp :fguard))
+  :verbosep t
+  :returns (mv (expr     vl-expr-p)
+               (port     vl-port-p)
+               (portdecl vl-portdecl-p)
+               (netdecl  vl-netdecl-p))
   :long "<p>This is like @(see vl-occform-mkport), but our primitives are all
 one-bit things so we leave out the ranges to make them prettier.</p>"
 
-  (b* ((name     (hons-copy name))
+  (b* ((name     (hons-copy (string-fix name)))
        (expr     (vl-idexpr name 1 :vl-unsigned))
        (port     (make-vl-port     :name name :expr expr     :loc *vl-fakeloc*))
        (portdecl (make-vl-portdecl :name name :dir  dir      :loc *vl-fakeloc*))
@@ -85,7 +87,7 @@ all one-bit things so we leave out the ranges to make them prettier.</p>"
        (netdecl  (make-vl-netdecl :name name :type :vl-wire :loc *vl-fakeloc*)))
     (mv expr netdecl)))
 
-(defxdoc *vl-1-bit-t*
+(defval *vl-1-bit-t*
   :short "Primitive 1 (true) generator."
   :long "<p>The Verilog definition of this module is:</p>
 
@@ -99,26 +101,25 @@ endmodule
 <p>VL takes this as a primitive.  BOZO this module is currently unused but
 we are going to start using it soon.</p>
 
-<p>The corresponding @(see esim) primitive is @(see acl2::*esim-t*).</p>")
+<p>The corresponding @(see esim) primitive is @(see acl2::*esim-t*).</p>"
 
-(defconsts *vl-1-bit-t*
   (b* ((name "VL_1_BIT_T")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
        (out-assign (make-vl-assign :lvalue out-expr :expr |*sized-1'b1*| :loc *vl-fakeloc*)))
-    (make-honsed-vl-module :name      name
-                           :origname  name
-                           :ports     (list out-port)
-                           :portdecls (list out-portdecl)
-                           :netdecls  (list out-netdecl)
-                           :assigns   (list out-assign)
-                           :minloc    *vl-fakeloc*
-                           :maxloc    *vl-fakeloc*
-                           :atts      atts
-                           :esim      acl2::*esim-t*)))
+    (hons-copy
+     (make-vl-module :name      name
+                     :origname  name
+                     :ports     (list out-port)
+                     :portdecls (list out-portdecl)
+                     :netdecls  (list out-netdecl)
+                     :assigns   (list out-assign)
+                     :minloc    *vl-fakeloc*
+                     :maxloc    *vl-fakeloc*
+                     :atts      atts
+                     :esim      acl2::*esim-t*))))
 
-
-(defxdoc *vl-1-bit-f*
+(defval *vl-1-bit-f*
   :short "Primitive 0 (false) generator."
   :long "<p>The Verilog definition of this module is:</p>
 
@@ -132,26 +133,25 @@ endmodule
 <p>VL takes this as a primitive.  BOZO this module is currently unused but
 we are going to start using it soon.</p>
 
-<p>The corresponding @(see esim) primitive is @(see acl2::*esim-f*).</p>")
+<p>The corresponding @(see esim) primitive is @(see acl2::*esim-f*).</p>"
 
-(defconsts *vl-1-bit-f*
   (b* ((name "VL_1_BIT_F")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
        (out-assign (make-vl-assign :lvalue out-expr :expr |*sized-1'b0*| :loc *vl-fakeloc*)))
-    (make-honsed-vl-module :name      name
-                           :origname  name
-                           :ports     (list out-port)
-                           :portdecls (list out-portdecl)
-                           :netdecls  (list out-netdecl)
-                           :assigns   (list out-assign)
-                           :minloc    *vl-fakeloc*
-                           :maxloc    *vl-fakeloc*
-                           :atts      atts
-                           :esim      acl2::*esim-f*)))
+    (hons-copy
+     (make-vl-module :name      name
+                     :origname  name
+                     :ports     (list out-port)
+                     :portdecls (list out-portdecl)
+                     :netdecls  (list out-netdecl)
+                     :assigns   (list out-assign)
+                     :minloc    *vl-fakeloc*
+                     :maxloc    *vl-fakeloc*
+                     :atts      atts
+                     :esim      acl2::*esim-f*))))
 
-
-(defxdoc *vl-1-bit-x*
+(defval *vl-1-bit-x*
   :short "Primitive X (unknown) generator."
   :long "<p>The Verilog definition of this module is:</p>
 
@@ -165,26 +165,25 @@ endmodule
 <p>VL takes this as a primitive.  This module is mainly used by @(see
 weirdint-elim) to eliminate explicit X values from literals.</p>
 
-<p>The corresponding @(see esim) primitive is @(see acl2::*esim-x*).</p>")
+<p>The corresponding @(see esim) primitive is @(see acl2::*esim-x*).</p>"
 
-(defconsts *vl-1-bit-x*
   (b* ((name "VL_1_BIT_X")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
        (out-assign (make-vl-assign :lvalue out-expr :expr |*sized-1'bx*| :loc *vl-fakeloc*)))
-    (make-honsed-vl-module :name      name
-                           :origname  name
-                           :ports     (list out-port)
-                           :portdecls (list out-portdecl)
-                           :netdecls  (list out-netdecl)
-                           :assigns   (list out-assign)
-                           :minloc    *vl-fakeloc*
-                           :maxloc    *vl-fakeloc*
-                           :atts      atts
-                           :esim      acl2::*esim-x*)))
+    (hons-copy
+     (make-vl-module :name      name
+                     :origname  name
+                     :ports     (list out-port)
+                     :portdecls (list out-portdecl)
+                     :netdecls  (list out-netdecl)
+                     :assigns   (list out-assign)
+                     :minloc    *vl-fakeloc*
+                     :maxloc    *vl-fakeloc*
+                     :atts      atts
+                     :esim      acl2::*esim-x*))))
 
-
-(defxdoc *vl-1-bit-z*
+(defval *vl-1-bit-z*
   :short "Primitive Z (floating) generator."
   :long "<p>The Verilog definition of this module is:</p>
 
@@ -198,26 +197,25 @@ endmodule
 <p>VL takes this as a primitive.  This module is mainly used by @(see
 weirdint-elim) to eliminate explicit Z values from literals.</p>
 
-<p>The corresponding @(see esim) primitive is @(see acl2::*esim-z*).</p>")
+<p>The corresponding @(see esim) primitive is @(see acl2::*esim-z*).</p>"
 
-(defconsts *vl-1-bit-z*
   (b* ((name "VL_1_BIT_Z")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
        (out-assign (make-vl-assign :lvalue out-expr :expr |*sized-1'bz*| :loc *vl-fakeloc*)))
-    (make-honsed-vl-module :name      name
-                           :origname  name
-                           :ports     (list out-port)
-                           :portdecls (list out-portdecl)
-                           :netdecls  (list out-netdecl)
-                           :assigns   (list out-assign)
-                           :minloc    *vl-fakeloc*
-                           :maxloc    *vl-fakeloc*
-                           :atts      atts
-                           :esim      acl2::*esim-z*)))
+    (hons-copy
+     (make-vl-module :name      name
+                     :origname  name
+                     :ports     (list out-port)
+                     :portdecls (list out-portdecl)
+                     :netdecls  (list out-netdecl)
+                     :assigns   (list out-assign)
+                     :minloc    *vl-fakeloc*
+                     :maxloc    *vl-fakeloc*
+                     :atts      atts
+                     :esim      acl2::*esim-z*))))
 
-
-(defxdoc *vl-1-bit-power*
+(defval *vl-1-bit-power*
   :short "Primitive power source or @('supply1') signal."
   :long "<p>The Verilog definition of this module is:</p>
 
@@ -235,25 +233,24 @@ endmodule
 also how esim treats @(see *vl-1-bit-t*), i.e., in esim there is no difference
 between a power source and an ordinary constant @('1'b1') value.  We have a
 separate primitive mainly so that other backends with more transistor-level
-support can implement them in other ways.</p>")
+support can implement them in other ways.</p>"
 
-(defconsts *vl-1-bit-power*
   (b* ((name "VL_1_BIT_POWER")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
        ((mv ?out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
        (out-netdecl (change-vl-netdecl out-netdecl :type :vl-supply1)))
-    (make-honsed-vl-module :name      name
-                           :origname  name
-                           :ports     (list out-port)
-                           :portdecls (list out-portdecl)
-                           :netdecls  (list out-netdecl)
-                           :minloc    *vl-fakeloc*
-                           :maxloc    *vl-fakeloc*
-                           :atts      atts
-                           :esim      acl2::*esim-t*)))
+    (hons-copy
+     (make-vl-module :name      name
+                     :origname  name
+                     :ports     (list out-port)
+                     :portdecls (list out-portdecl)
+                     :netdecls  (list out-netdecl)
+                     :minloc    *vl-fakeloc*
+                     :maxloc    *vl-fakeloc*
+                     :atts      atts
+                     :esim      acl2::*esim-t*))))
 
-
-(defxdoc *vl-1-bit-ground*
+(defval *vl-1-bit-ground*
   :short "Primitive ground or @('supply0') signal."
   :long "<p>The Verilog definition of this module is:</p>
 
@@ -271,25 +268,24 @@ endmodule
 also how esim treats @(see *vl-1-bit-f*), i.e., in esim there is no difference
 between ground and an ordinary constant @('1'b0') value.  We have a separate
 primitive mainly so that other backends with more transistor-level support can
-implement them in other ways.</p>")
+implement them in other ways.</p>"
 
-(defconsts *vl-1-bit-ground*
   (b* ((name "VL_1_BIT_GROUND")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
        ((mv ?out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
        (out-netdecl (change-vl-netdecl out-netdecl :type :vl-supply0)))
-    (make-honsed-vl-module :name      name
-                           :origname  name
-                           :ports     (list out-port)
-                           :portdecls (list out-portdecl)
-                           :netdecls  (list out-netdecl)
-                           :minloc    *vl-fakeloc*
-                           :maxloc    *vl-fakeloc*
-                           :atts      atts
-                           :esim      acl2::*esim-f*)))
+    (hons-copy
+     (make-vl-module :name      name
+                     :origname  name
+                     :ports     (list out-port)
+                     :portdecls (list out-portdecl)
+                     :netdecls  (list out-netdecl)
+                     :minloc    *vl-fakeloc*
+                     :maxloc    *vl-fakeloc*
+                     :atts      atts
+                     :esim      acl2::*esim-f*))))
 
-
-(defxdoc *vl-1-bit-assign*
+(defval *vl-1-bit-assign*
   :short "Primitive assignment module."
   :long "<p>The Verilog definition of this module is:</p>
 
@@ -315,27 +311,26 @@ would also affect @('in'), and in Verilog this isn't the case.</p>
 <p>Originally our @(see occform) transformation tried to use buffers for
 assignments since this seemed to be more conservative.  But these extra buffers
 seemed to often be inappropriate, especially when dealing with lower level
-modules that involve transistors.</p>")
+modules that involve transistors.</p>"
 
-(defconsts *vl-1-bit-assign*
   (b* ((name "VL_1_BIT_ASSIGN")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
        ((mv in-expr  in-port  in-portdecl  in-netdecl)  (vl-primitive-mkport "in"  :vl-input))
        (assign (make-vl-assign :lvalue out-expr :expr in-expr :loc *vl-fakeloc*)))
-    (make-honsed-vl-module :name      name
-                           :origname  name
-                           :ports     (list out-port     in-port)
-                           :portdecls (list out-portdecl in-portdecl)
-                           :netdecls  (list out-netdecl  in-netdecl)
-                           :assigns   (list assign)
-                           :minloc    *vl-fakeloc*
-                           :maxloc    *vl-fakeloc*
-                           :atts      atts
-                           :esim      acl2::*esim-id*)))
+    (hons-copy
+     (make-vl-module :name      name
+                     :origname  name
+                     :ports     (list out-port     in-port)
+                     :portdecls (list out-portdecl in-portdecl)
+                     :netdecls  (list out-netdecl  in-netdecl)
+                     :assigns   (list assign)
+                     :minloc    *vl-fakeloc*
+                     :maxloc    *vl-fakeloc*
+                     :atts      atts
+                     :esim      acl2::*esim-id*))))
 
-
-(defxdoc *vl-1-bit-delay-1*
+(defval *vl-1-bit-delay-1*
   :short "Primitive assignment with delay."
   :long "<p>The Verilog definition of this module is:</p>
 
@@ -352,9 +347,8 @@ to separate delays from assignment statements.</p>
 
 <p>The corresponding @(see esim) primitive is @(see acl2::*esim-del*), but note
 that esim really has no notion of delays and this ends up being equivalent to
-an ordinary @(see *vl-1-bit-assign*).</p>")
+an ordinary @(see *vl-1-bit-assign*).</p>"
 
-(defconsts *vl-1-bit-delay-1*
   (b* ((name "VL_1_BIT_DELAY_1")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
@@ -362,19 +356,19 @@ an ordinary @(see *vl-1-bit-assign*).</p>")
        (one    (vl-make-index 1))
        (delay  (make-vl-gatedelay :rise one :fall one :high one))
        (assign (make-vl-assign :lvalue out-expr :expr in-expr :delay delay :loc *vl-fakeloc*)))
-    (make-honsed-vl-module :name      name
-                           :origname  name
-                           :ports     (list out-port     in-port)
-                           :portdecls (list out-portdecl in-portdecl)
-                           :netdecls  (list out-netdecl  in-netdecl)
-                           :assigns   (list assign)
-                           :minloc    *vl-fakeloc*
-                           :maxloc    *vl-fakeloc*
-                           :atts      atts
-                           :esim      acl2::*esim-del*)))
+    (hons-copy
+     (make-vl-module :name      name
+                     :origname  name
+                     :ports     (list out-port     in-port)
+                     :portdecls (list out-portdecl in-portdecl)
+                     :netdecls  (list out-netdecl  in-netdecl)
+                     :assigns   (list assign)
+                     :minloc    *vl-fakeloc*
+                     :maxloc    *vl-fakeloc*
+                     :atts      atts
+                     :esim      acl2::*esim-del*))))
 
-
-(defxdoc *vl-1-bit-buf*
+(defval *vl-1-bit-buf*
   :short "Primitive buffer module."
   :long "<p>The Verilog definition of this module is:</p>
 
@@ -390,9 +384,8 @@ endmodule
 probably not for much else since ordinary assignments are handled with @(see
 *vl-1-bit-assign*), instead.</p>
 
-<p>The corresponding @(see esim) primitive is @(see acl2::*esim-buf*).</p>")
+<p>The corresponding @(see esim) primitive is @(see acl2::*esim-buf*).</p>"
 
-(defconsts *vl-1-bit-buf*
   (b* ((name "VL_1_BIT_BUF")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
@@ -402,19 +395,19 @@ probably not for much else since ordinary assignments are handled with @(see
                                :args (list (make-vl-plainarg :expr out-expr :dir :vl-output)
                                            (make-vl-plainarg :expr in-expr  :dir :vl-input))
                                :loc *vl-fakeloc*)))
-    (make-honsed-vl-module :name      name
-                           :origname  name
-                           :ports     (list out-port     in-port)
-                           :portdecls (list out-portdecl in-portdecl)
-                           :netdecls  (list out-netdecl  in-netdecl)
-                           :gateinsts (list gate)
-                           :minloc    *vl-fakeloc*
-                           :maxloc    *vl-fakeloc*
-                           :atts      atts
-                           :esim      acl2::*esim-buf*)))
+    (hons-copy
+     (make-vl-module :name      name
+                     :origname  name
+                     :ports     (list out-port     in-port)
+                     :portdecls (list out-portdecl in-portdecl)
+                     :netdecls  (list out-netdecl  in-netdecl)
+                     :gateinsts (list gate)
+                     :minloc    *vl-fakeloc*
+                     :maxloc    *vl-fakeloc*
+                     :atts      atts
+                     :esim      acl2::*esim-buf*))))
 
-
-(defxdoc *vl-1-bit-not*
+(defval *vl-1-bit-not*
   :short "Primitive not-gate module."
   :long "<p>The Verilog definition of this module is:</p>
 
@@ -430,9 +423,8 @@ endmodule
 @('~') operators, and also in many modules we generate for other operators like
 @('+').</p>
 
-<p>The corresponding @(see esim) primitive is @(see acl2::*esim-not*).</p>")
+<p>The corresponding @(see esim) primitive is @(see acl2::*esim-not*).</p>"
 
-(defconsts *vl-1-bit-not*
   (b* ((name "VL_1_BIT_NOT")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
@@ -442,19 +434,19 @@ endmodule
                                :args (list (make-vl-plainarg :expr out-expr :dir :vl-output)
                                            (make-vl-plainarg :expr in-expr  :dir :vl-input))
                                :loc *vl-fakeloc*)))
-    (make-honsed-vl-module :name      name
-                           :origname  name
-                           :ports     (list out-port in-port)
-                           :portdecls (list out-portdecl in-portdecl)
-                           :netdecls  (list out-netdecl in-netdecl)
-                           :gateinsts (list gate)
-                           :minloc    *vl-fakeloc*
-                           :maxloc    *vl-fakeloc*
-                           :atts      atts
-                           :esim      acl2::*esim-not*)))
+    (hons-copy
+     (make-vl-module :name      name
+                     :origname  name
+                     :ports     (list out-port in-port)
+                     :portdecls (list out-portdecl in-portdecl)
+                     :netdecls  (list out-netdecl in-netdecl)
+                     :gateinsts (list gate)
+                     :minloc    *vl-fakeloc*
+                     :maxloc    *vl-fakeloc*
+                     :atts      atts
+                     :esim      acl2::*esim-not*))))
 
-
-(defxdoc *vl-1-bit-and*
+(defval *vl-1-bit-and*
   :short "Primitive and-gate module."
   :long "<p>The Verilog definition of this module is:</p>
 
@@ -471,9 +463,8 @@ endmodule
 @('&') operators, and also in many modules we generate for other operators like
 @('+').</p>
 
-<p>The corresponding @(see esim) primitive is @(see acl2::*esim-and*)</p>")
+<p>The corresponding @(see esim) primitive is @(see acl2::*esim-and*)</p>"
 
-(defconsts *vl-1-bit-and*
   (b* ((name "VL_1_BIT_AND")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
@@ -485,19 +476,19 @@ endmodule
                                            (make-vl-plainarg :expr a-expr   :dir :vl-input)
                                            (make-vl-plainarg :expr b-expr   :dir :vl-input))
                                :loc *vl-fakeloc*)))
-    (make-honsed-vl-module :name      name
-                           :origname  name
-                           :ports     (list out-port     a-port     b-port)
-                           :portdecls (list out-portdecl a-portdecl b-portdecl)
-                           :netdecls  (list out-netdecl  a-netdecl  b-netdecl)
-                           :gateinsts (list gate)
-                           :minloc    *vl-fakeloc*
-                           :maxloc    *vl-fakeloc*
-                           :atts      atts
-                           :esim      acl2::*esim-and*)))
+    (hons-copy
+     (make-vl-module :name      name
+                     :origname  name
+                     :ports     (list out-port     a-port     b-port)
+                     :portdecls (list out-portdecl a-portdecl b-portdecl)
+                     :netdecls  (list out-netdecl  a-netdecl  b-netdecl)
+                     :gateinsts (list gate)
+                     :minloc    *vl-fakeloc*
+                     :maxloc    *vl-fakeloc*
+                     :atts      atts
+                     :esim      acl2::*esim-and*))))
 
-
-(defxdoc *vl-1-bit-or*
+(defval *vl-1-bit-or*
   :short "Primitive or-gate module."
   :long "<p>The Verilog definition of this module is:</p>
 
@@ -514,9 +505,8 @@ endmodule
 @('|') operators, and also in many modules we generate for other operators like
 @('+').</p>
 
-<p>The corresponding @(see esim) primitive is @(see acl2::*esim-or*)</p>")
+<p>The corresponding @(see esim) primitive is @(see acl2::*esim-or*)</p>"
 
-(defconsts *vl-1-bit-or*
   (b* ((name "VL_1_BIT_OR")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
@@ -528,19 +518,19 @@ endmodule
                                            (make-vl-plainarg :expr a-expr   :dir :vl-input)
                                            (make-vl-plainarg :expr b-expr   :dir :vl-input))
                                :loc *vl-fakeloc*)))
-    (make-honsed-vl-module :name      name
-                           :origname  name
-                           :ports     (list out-port     a-port     b-port)
-                           :portdecls (list out-portdecl a-portdecl b-portdecl)
-                           :netdecls  (list out-netdecl  a-netdecl  b-netdecl)
-                           :gateinsts (list gate)
-                           :minloc    *vl-fakeloc*
-                           :maxloc    *vl-fakeloc*
-                           :atts      atts
-                           :esim      acl2::*esim-or*)))
+    (hons-copy
+     (make-vl-module :name      name
+                     :origname  name
+                     :ports     (list out-port     a-port     b-port)
+                     :portdecls (list out-portdecl a-portdecl b-portdecl)
+                     :netdecls  (list out-netdecl  a-netdecl  b-netdecl)
+                     :gateinsts (list gate)
+                     :minloc    *vl-fakeloc*
+                     :maxloc    *vl-fakeloc*
+                     :atts      atts
+                     :esim      acl2::*esim-or*))))
 
-
-(defxdoc *vl-1-bit-xor*
+(defval *vl-1-bit-xor*
   :short "Primitive xor-gate module."
   :long "<p>The Verilog definition of this module is:</p>
 
@@ -557,9 +547,8 @@ endmodule
 @('^') operators, and also in many modules we generate for other operators like
 @('+').</p>
 
-<p>The corresponding @(see esim) primitive is @(see acl2::*esim-xor*)</p>")
+<p>The corresponding @(see esim) primitive is @(see acl2::*esim-xor*)</p>"
 
-(defconsts *vl-1-bit-xor*
   (b* ((name "VL_1_BIT_XOR")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
@@ -571,19 +560,19 @@ endmodule
                                            (make-vl-plainarg :expr a-expr   :dir :vl-input)
                                            (make-vl-plainarg :expr b-expr   :dir :vl-input))
                                :loc *vl-fakeloc*)))
-    (make-honsed-vl-module :name      name
-                           :origname  name
-                           :ports     (list out-port     a-port     b-port)
-                           :portdecls (list out-portdecl a-portdecl b-portdecl)
-                           :netdecls  (list out-netdecl  a-netdecl  b-netdecl)
-                           :gateinsts (list gate)
-                           :minloc    *vl-fakeloc*
-                           :maxloc    *vl-fakeloc*
-                           :atts      atts
-                           :esim      acl2::*esim-xor*)))
+    (hons-copy
+     (make-vl-module :name      name
+                     :origname  name
+                     :ports     (list out-port     a-port     b-port)
+                     :portdecls (list out-portdecl a-portdecl b-portdecl)
+                     :netdecls  (list out-netdecl  a-netdecl  b-netdecl)
+                     :gateinsts (list gate)
+                     :minloc    *vl-fakeloc*
+                     :maxloc    *vl-fakeloc*
+                     :atts      atts
+                     :esim      acl2::*esim-xor*))))
 
-
-(defxdoc *vl-1-bit-nand*
+(defval *vl-1-bit-nand*
   :short "Primitive nand-gate module."
   :long "<p>The Verilog definition of this module is:</p>
 
@@ -599,9 +588,8 @@ endmodule
 <p>VL takes this as a primitive.  We use this in place of @('nand') gates but
 probably not much else.</p>
 
-<p>The corresponding @(see esim) primitive is @(see acl2::*esim-nand*)</p>")
+<p>The corresponding @(see esim) primitive is @(see acl2::*esim-nand*)</p>"
 
-(defconsts *vl-1-bit-nand*
   (b* ((name "VL_1_BIT_NAND")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
@@ -613,19 +601,19 @@ probably not much else.</p>
                                            (make-vl-plainarg :expr a-expr   :dir :vl-input)
                                            (make-vl-plainarg :expr b-expr   :dir :vl-input))
                                :loc *vl-fakeloc*)))
-    (make-honsed-vl-module :name      name
-                           :origname  name
-                           :ports     (list out-port     a-port     b-port)
-                           :portdecls (list out-portdecl a-portdecl b-portdecl)
-                           :netdecls  (list out-netdecl  a-netdecl  b-netdecl)
-                           :gateinsts (list gate)
-                           :minloc    *vl-fakeloc*
-                           :maxloc    *vl-fakeloc*
-                           :atts      atts
-                           :esim      acl2::*esim-nand*)))
+    (hons-copy
+     (make-vl-module :name      name
+                     :origname  name
+                     :ports     (list out-port     a-port     b-port)
+                     :portdecls (list out-portdecl a-portdecl b-portdecl)
+                     :netdecls  (list out-netdecl  a-netdecl  b-netdecl)
+                     :gateinsts (list gate)
+                     :minloc    *vl-fakeloc*
+                     :maxloc    *vl-fakeloc*
+                     :atts      atts
+                     :esim      acl2::*esim-nand*))))
 
-
-(defxdoc *vl-1-bit-nor*
+(defval *vl-1-bit-nor*
   :short "Primitive nor-gate module."
   :long "<p>The Verilog definition of this module is:</p>
 
@@ -641,9 +629,8 @@ endmodule
 <p>VL takes this as a primitive.  We use this in place of @('nor') gates, but
 probably not much else.</p>
 
-<p>The corresponding @(see esim) primitive is @(see acl2::*esim-nor*)</p>")
+<p>The corresponding @(see esim) primitive is @(see acl2::*esim-nor*)</p>"
 
-(defconsts *vl-1-bit-nor*
   (b* ((name "VL_1_BIT_NOR")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
@@ -655,19 +642,19 @@ probably not much else.</p>
                                            (make-vl-plainarg :expr a-expr   :dir :vl-input)
                                            (make-vl-plainarg :expr b-expr   :dir :vl-input))
                                :loc *vl-fakeloc*)))
-    (make-honsed-vl-module :name      name
-                           :origname  name
-                           :ports     (list out-port     a-port     b-port)
-                           :portdecls (list out-portdecl a-portdecl b-portdecl)
-                           :netdecls  (list out-netdecl  a-netdecl  b-netdecl)
-                           :gateinsts (list gate)
-                           :minloc    *vl-fakeloc*
-                           :maxloc    *vl-fakeloc*
-                           :atts      atts
-                           :esim      acl2::*esim-nor*)))
+    (hons-copy
+     (make-vl-module :name      name
+                     :origname  name
+                     :ports     (list out-port     a-port     b-port)
+                     :portdecls (list out-portdecl a-portdecl b-portdecl)
+                     :netdecls  (list out-netdecl  a-netdecl  b-netdecl)
+                     :gateinsts (list gate)
+                     :minloc    *vl-fakeloc*
+                     :maxloc    *vl-fakeloc*
+                     :atts      atts
+                     :esim      acl2::*esim-nor*))))
 
-
-(defxdoc *vl-1-bit-xnor*
+(defval *vl-1-bit-xnor*
   :short "Primitive xnor-gate module."
   :long "<p>The Verilog definition of this module is:</p>
 
@@ -683,9 +670,8 @@ endmodule
 <p>VL takes this as a primitive.  We use this in place of @('xnor') gates, but
 probably not much else.</p>
 
-<p>The corresponding @(see esim) primitive is @(see acl2::*esim-xnor*)</p>")
+<p>The corresponding @(see esim) primitive is @(see acl2::*esim-xnor*)</p>"
 
-(defconsts *vl-1-bit-xnor*
   ;; BOZO this should probably be a non-primitive.
   (b* ((name "VL_1_BIT_XNOR")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
@@ -698,18 +684,19 @@ probably not much else.</p>
                                            (make-vl-plainarg :expr a-expr   :dir :vl-input)
                                            (make-vl-plainarg :expr b-expr   :dir :vl-input))
                                :loc *vl-fakeloc*)))
-    (make-honsed-vl-module :name      name
-                           :origname  name
-                           :ports     (list out-port     a-port     b-port)
-                           :portdecls (list out-portdecl a-portdecl b-portdecl)
-                           :netdecls  (list out-netdecl  a-netdecl  b-netdecl)
-                           :gateinsts (list gate)
-                           :minloc    *vl-fakeloc*
-                           :maxloc    *vl-fakeloc*
-                           :atts      atts
-                           :esim      acl2::*esim-xnor*)))
+    (hons-copy
+     (make-vl-module :name      name
+                     :origname  name
+                     :ports     (list out-port     a-port     b-port)
+                     :portdecls (list out-portdecl a-portdecl b-portdecl)
+                     :netdecls  (list out-netdecl  a-netdecl  b-netdecl)
+                     :gateinsts (list gate)
+                     :minloc    *vl-fakeloc*
+                     :maxloc    *vl-fakeloc*
+                     :atts      atts
+                     :esim      acl2::*esim-xnor*))))
 
-(defxdoc *vl-1-bit-approx-mux*
+(defval *vl-1-bit-approx-mux*
   :short "Primitive 1-bit (more conservative) multiplexor module."
   :long "<p>The Verilog definition of this module is:</p>
 
@@ -773,9 +760,8 @@ tradeoffs involved, see @(see acl2::4v-ite).</p>
 a special @('VL_X_SELECT') that can be used to override this behavior.  @('?:')
 operators that are annotated with this attribute will be implemented in a less
 conservative way, as @(see *vl-1-bit-mux*) primitives.  See @(see
-vl-mux-occform) for more information.</p>")
+vl-mux-occform) for more information.</p>"
 
-(defconsts *vl-1-bit-approx-mux*
   (b* ((name "VL_1_BIT_APPROX_MUX")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
@@ -788,19 +774,19 @@ vl-mux-occform) for more information.</p>")
                                                         :finalwidth 1
                                                         :finaltype :vl-unsigned)
                                :loc *vl-fakeloc*)))
-    (make-honsed-vl-module :name      name
-                           :origname  name
-                           :ports     (list out-port     sel-port     a-port     b-port)
-                           :portdecls (list out-portdecl sel-portdecl a-portdecl b-portdecl)
-                           :netdecls  (list out-netdecl  sel-netdecl  a-netdecl  b-netdecl)
-                           :assigns   (list assign)
-                           :minloc    *vl-fakeloc*
-                           :maxloc    *vl-fakeloc*
-                           :atts      atts
-                           :esim      acl2::*esim-safe-mux*)))
+    (hons-copy
+     (make-vl-module :name      name
+                     :origname  name
+                     :ports     (list out-port     sel-port     a-port     b-port)
+                     :portdecls (list out-portdecl sel-portdecl a-portdecl b-portdecl)
+                     :netdecls  (list out-netdecl  sel-netdecl  a-netdecl  b-netdecl)
+                     :assigns   (list assign)
+                     :minloc    *vl-fakeloc*
+                     :maxloc    *vl-fakeloc*
+                     :atts      atts
+                     :esim      acl2::*esim-safe-mux*))))
 
-
-(defxdoc *vl-1-bit-mux*
+(defval *vl-1-bit-mux*
   :short "Primitive 1-bit (less conservative) multiplexor module."
   :long "<p>The Verilog definition of this module is:</p>
 
@@ -845,9 +831,8 @@ simulation performance in certain cases.  For additional discussion of these
 issues, see @(see *vl-1-bit-approx-mux*) and @(see acl2::4v-ite).</p>
 
 <p>Note that, like an approx-mux, a @('vl-1-bit-mux') still produces X when the
-selected data input is Z.</p>")
+selected data input is Z.</p>"
 
-(defconsts *vl-1-bit-mux*
   (b* ((name "VL_1_BIT_MUX")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
@@ -860,19 +845,19 @@ selected data input is Z.</p>")
                                                         :finalwidth 1
                                                         :finaltype :vl-unsigned)
                                :loc *vl-fakeloc*)))
-    (make-honsed-vl-module :name      name
-                           :origname  name
-                           :ports     (list out-port     sel-port     a-port     b-port)
-                           :portdecls (list out-portdecl sel-portdecl a-portdecl b-portdecl)
-                           :netdecls  (list out-netdecl  sel-netdecl  a-netdecl  b-netdecl)
-                           :assigns   (list assign)
-                           :minloc    *vl-fakeloc*
-                           :maxloc    *vl-fakeloc*
-                           :atts      atts
-                           :esim      acl2::*esim-unsafe-mux*)))
+    (hons-copy
+     (make-vl-module :name      name
+                     :origname  name
+                     :ports     (list out-port     sel-port     a-port     b-port)
+                     :portdecls (list out-portdecl sel-portdecl a-portdecl b-portdecl)
+                     :netdecls  (list out-netdecl  sel-netdecl  a-netdecl  b-netdecl)
+                     :assigns   (list assign)
+                     :minloc    *vl-fakeloc*
+                     :maxloc    *vl-fakeloc*
+                     :atts      atts
+                     :esim      acl2::*esim-unsafe-mux*))))
 
-
-(defxdoc *vl-1-bit-zmux*
+(defval *vl-1-bit-zmux*
   :short "Primitive tri-state buffer module."
   :long "<p>The Verilog meaning of this module is:</p>
 
@@ -906,9 +891,8 @@ to implement muxes.</p>
 
 <p>The corresponding @(see esim) primitive is @(see acl2::*esim-tri*), which
 drives its output to @('(tristate sel a)'); see @(see acl2::4v-tristate).  This
-matches the Verilog truth table exactly.</p>")
+matches the Verilog truth table exactly.</p>"
 
-(defconsts *vl-1-bit-zmux*
   (b* ((name "VL_1_BIT_ZMUX")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
@@ -920,19 +904,19 @@ matches the Verilog truth table exactly.</p>")
                                                       :finalwidth 1
                                                       :finaltype :vl-unsigned)
                                :loc *vl-fakeloc*)))
-    (make-honsed-vl-module :name      name
-                           :ports     (list out-port     sel-port     a-port)
-                           :portdecls (list out-portdecl sel-portdecl a-portdecl)
-                           :netdecls  (list out-netdecl  sel-netdecl  a-netdecl)
-                           :assigns   (list assign)
-                           :minloc    *vl-fakeloc*
-                           :maxloc    *vl-fakeloc*
-                           :atts      atts
-                           :origname  name
-                           :esim      acl2::*esim-tri*)))
+    (hons-copy
+     (make-vl-module :name      name
+                     :ports     (list out-port     sel-port     a-port)
+                     :portdecls (list out-portdecl sel-portdecl a-portdecl)
+                     :netdecls  (list out-netdecl  sel-netdecl  a-netdecl)
+                     :assigns   (list assign)
+                     :minloc    *vl-fakeloc*
+                     :maxloc    *vl-fakeloc*
+                     :atts      atts
+                     :origname  name
+                     :esim      acl2::*esim-tri*))))
 
-
-(defxdoc *vl-1-bit-ceq*
+(defval *vl-1-bit-ceq*
   :short "Primitive @('===') module."
   :long "<p>The Verilog definition of this module is:</p>
 
@@ -954,10 +938,8 @@ an unknown.  For our back-end tools, we usually conservatively approximate
 choose to give it a different interpretation.</p>
 
 <p>The corresponding @(see esim) primitive is @(see acl2::*esim-ceq*), which is
-just an @('xnor') gate.</p>")
+just an @('xnor') gate.</p>"
 
-(defconsts *vl-1-bit-ceq*
-  ;; BOZO this should probably be a non-primitive.
   (b* ((name "VL_1_BIT_CEQ")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
@@ -969,71 +951,19 @@ just an @('xnor') gate.</p>")
                                                       :finalwidth 1
                                                       :finaltype :vl-unsigned)
                                :loc *vl-fakeloc*)))
-    (make-honsed-vl-module :name      name
-                           :origname  name
-                           :ports     (list out-port     a-port     b-port)
-                           :portdecls (list out-portdecl a-portdecl b-portdecl)
-                           :netdecls  (list out-netdecl  a-netdecl  b-netdecl)
-                           :assigns   (list assign)
-                           :minloc    *vl-fakeloc*
-                           :maxloc    *vl-fakeloc*
-                           :atts      atts
-                           :esim      acl2::*esim-ceq*)))
+    (hons-copy
+     (make-vl-module :name      name
+                     :origname  name
+                     :ports     (list out-port     a-port     b-port)
+                     :portdecls (list out-portdecl a-portdecl b-portdecl)
+                     :netdecls  (list out-netdecl  a-netdecl  b-netdecl)
+                     :assigns   (list assign)
+                     :minloc    *vl-fakeloc*
+                     :maxloc    *vl-fakeloc*
+                     :atts      atts
+                     :esim      acl2::*esim-ceq*))))
 
-
-
-;; (defxdoc *vl-1-bit-flop*
-;;   :short "Primitive edge-triggered register."
-;;   :long "<p>The Verilog meaning of this module is:</p>
-
-;; @({
-;; module VL_1_BIT_FLOP (q, clk, d) ;
-;;   output reg q;
-;;   input clk;
-;;   input d;
-
-;;   always @@(posedge clk)
-;;      q <= d;
-
-;; endmodule
-;; })
-
-;; <p>VL takes this as a primitive.  The @(see always-top) transform converts
-;; certain @('always') statements into instances of this module.</p>
-
-;; <p>The corresponding @(see esim) primitive is @(see acl2::*esim-flop*).</p>")
-
-;; (defconsts *vl-1-bit-flop*
-;;   (b* ((name "VL_1_BIT_FLOP")
-;;        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
-
-;;        ((mv q-expr   q-port   q-portdecl   &)           (vl-primitive-mkport "q"   :vl-output))
-;;        ((mv clk-expr clk-port clk-portdecl clk-netdecl) (vl-primitive-mkport "clk" :vl-input))
-;;        ((mv d-expr   d-port   d-portdecl   d-netdecl)   (vl-primitive-mkport "d"   :vl-input))
-
-;;        (q-regdecl    (make-vl-regdecl :name "q" :loc *vl-fakeloc*))
-
-;;        ;; always @(posedge clk) q <= d;
-;;        (q<=d         (make-vl-assignstmt :type :vl-nonblocking :lvalue q-expr :expr d-expr :loc *vl-fakeloc*))
-;;        (posedge-clk  (make-vl-evatom :type :vl-posedge :expr clk-expr))
-;;        (@posedge-clk (make-vl-eventcontrol :starp nil :atoms (list posedge-clk)))
-;;        (stmt         (make-vl-timingstmt :ctrl @posedge-clk :body q<=d))
-;;        (always       (make-vl-always :stmt stmt :loc *vl-fakeloc*)))
-
-;;     (make-honsed-vl-module :name      name
-;;                            :origname  name
-;;                            :atts      atts
-;;                            :ports     (list q-port      clk-port     d-port)
-;;                            :portdecls (list q-portdecl  clk-portdecl d-portdecl)
-;;                            :netdecls  (list             clk-netdecl  d-netdecl)
-;;                            :regdecls  (list q-regdecl)
-;;                            :alwayses  (list always)
-;;                            :minloc    *vl-fakeloc*
-;;                            :maxloc    *vl-fakeloc*
-;;                            :esim      acl2::*esim-flop*)))
-
-
-(defxdoc *vl-1-bit-latch*
+(defval *vl-1-bit-latch*
   :short "Primitive level-sensitive latch."
   :long "<p>The Verilog meaning of this module is:</p>
 
@@ -1052,9 +982,8 @@ endmodule
 <p>VL takes this as a primitive.  The @(see always-top) transform converts
 certain @('always') statements into instances of this module.</p>
 
-<p>The corresponding @(see esim) primitive is @(see acl2::*esim-latch*).</p>")
+<p>The corresponding @(see esim) primitive is @(see acl2::*esim-latch*).</p>"
 
-(defconsts *vl-1-bit-latch*
   (b* ((name (hons-copy "VL_1_BIT_LATCH"))
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
 
@@ -1079,20 +1008,20 @@ certain @('always') statements into instances of this module.</p>
        (stmt          (make-vl-timingstmt :ctrl @d-or-clk :body |q<=clk?d:q|))
        (always        (make-vl-always :stmt stmt :loc *vl-fakeloc*)))
 
-    (make-honsed-vl-module :name      name
-                           :origname  name
-                           :ports     (list q-port     clk-port     d-port)
-                           :portdecls (list q-portdecl clk-portdecl d-portdecl)
-                           :netdecls  (list            clk-netdecl  d-netdecl)
-                           :regdecls  (list q-regdecl)
-                           :alwayses  (list always)
-                           :minloc    *vl-fakeloc*
-                           :maxloc    *vl-fakeloc*
-                           :atts      atts
-                           :esim      acl2::*esim-latch*)))
+    (hons-copy
+     (make-vl-module :name      name
+                     :origname  name
+                     :ports     (list q-port     clk-port     d-port)
+                     :portdecls (list q-portdecl clk-portdecl d-portdecl)
+                     :netdecls  (list            clk-netdecl  d-netdecl)
+                     :regdecls  (list q-regdecl)
+                     :alwayses  (list always)
+                     :minloc    *vl-fakeloc*
+                     :maxloc    *vl-fakeloc*
+                     :atts      atts
+                     :esim      acl2::*esim-latch*))))
 
-
-(defxdoc *vl-1-bit-bufif0*
+(defval *vl-1-bit-bufif0*
   :short "Primitive conditional driver."
   :long "<p>The Verilog meaning of this module is:</p>
 
@@ -1108,9 +1037,8 @@ endmodule
 <p>VL takes this as a primitive.  The @(see gate-elim) transform converts
 certain @('bufif0') gates into instances of this module.</p>
 
-<p>The corresponding @(see esim) primitive is @(see acl2::*esim-bufif0*).</p>")
+<p>The corresponding @(see esim) primitive is @(see acl2::*esim-bufif0*).</p>"
 
-(defconsts *vl-1-bit-bufif0*
   (b* ((name "VL_1_BIT_BUFIF0")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
@@ -1122,19 +1050,19 @@ certain @('bufif0') gates into instances of this module.</p>
                                            (make-vl-plainarg :expr data-expr   :dir :vl-input)
                                            (make-vl-plainarg :expr ctrl-expr   :dir :vl-input))
                                :loc *vl-fakeloc*)))
-    (make-honsed-vl-module :name      name
-                           :origname  name
-                           :ports     (list out-port     data-port     ctrl-port)
-                           :portdecls (list out-portdecl data-portdecl ctrl-portdecl)
-                           :netdecls  (list out-netdecl  data-netdecl  ctrl-netdecl)
-                           :gateinsts (list gate)
-                           :minloc    *vl-fakeloc*
-                           :maxloc    *vl-fakeloc*
-                           :atts      atts
-                           :esim      acl2::*esim-bufif0*)))
+    (hons-copy
+     (make-vl-module :name      name
+                     :origname  name
+                     :ports     (list out-port     data-port     ctrl-port)
+                     :portdecls (list out-portdecl data-portdecl ctrl-portdecl)
+                     :netdecls  (list out-netdecl  data-netdecl  ctrl-netdecl)
+                     :gateinsts (list gate)
+                     :minloc    *vl-fakeloc*
+                     :maxloc    *vl-fakeloc*
+                     :atts      atts
+                     :esim      acl2::*esim-bufif0*))))
 
-
-(defxdoc *vl-1-bit-bufif1*
+(defval *vl-1-bit-bufif1*
   :short "Primitive conditional driver."
   :long "<p>The Verilog meaning of this module is:</p>
 
@@ -1150,9 +1078,8 @@ endmodule
 <p>VL takes this as a primitive.  The @(see gate-elim) transform converts
 certain @('bufif1') gates into instances of this module.</p>
 
-<p>The corresponding @(see esim) primitive is @(see acl2::*esim-bufif1*).</p>")
+<p>The corresponding @(see esim) primitive is @(see acl2::*esim-bufif1*).</p>"
 
-(defconsts *vl-1-bit-bufif1*
   (b* ((name "VL_1_BIT_BUFIF1")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
@@ -1164,18 +1091,19 @@ certain @('bufif1') gates into instances of this module.</p>
                                            (make-vl-plainarg :expr data-expr   :dir :vl-input)
                                            (make-vl-plainarg :expr ctrl-expr   :dir :vl-input))
                                :loc *vl-fakeloc*)))
-    (make-honsed-vl-module :name      name
-                           :origname  name
-                           :ports     (list out-port     data-port     ctrl-port)
-                           :portdecls (list out-portdecl data-portdecl ctrl-portdecl)
-                           :netdecls  (list out-netdecl  data-netdecl  ctrl-netdecl)
-                           :gateinsts (list gate)
-                           :minloc    *vl-fakeloc*
-                           :maxloc    *vl-fakeloc*
-                           :atts      atts
-                           :esim      acl2::*esim-bufif1*)))
+    (hons-copy
+     (make-vl-module :name      name
+                     :origname  name
+                     :ports     (list out-port     data-port     ctrl-port)
+                     :portdecls (list out-portdecl data-portdecl ctrl-portdecl)
+                     :netdecls  (list out-netdecl  data-netdecl  ctrl-netdecl)
+                     :gateinsts (list gate)
+                     :minloc    *vl-fakeloc*
+                     :maxloc    *vl-fakeloc*
+                     :atts      atts
+                     :esim      acl2::*esim-bufif1*))))
 
-(defxdoc *vl-1-bit-notif0*
+(defval *vl-1-bit-notif0*
   :short "Primitive conditional driver."
   :long "<p>The Verilog meaning of this module is:</p>
 
@@ -1191,9 +1119,8 @@ endmodule
 <p>VL takes this as a primitive.  The @(see gate-elim) transform converts
 certain @('notif0') gates into instances of this module.</p>
 
-<p>The corresponding @(see esim) primitive is @(see acl2::*esim-notif0*).</p>")
+<p>The corresponding @(see esim) primitive is @(see acl2::*esim-notif0*).</p>"
 
-(defconsts *vl-1-bit-notif0*
   (b* ((name "VL_1_BIT_NOTIF0")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
@@ -1205,18 +1132,19 @@ certain @('notif0') gates into instances of this module.</p>
                                            (make-vl-plainarg :expr data-expr   :dir :vl-input)
                                            (make-vl-plainarg :expr ctrl-expr   :dir :vl-input))
                                :loc *vl-fakeloc*)))
-    (make-honsed-vl-module :name      name
-                           :origname  name
-                           :ports     (list out-port     data-port     ctrl-port)
-                           :portdecls (list out-portdecl data-portdecl ctrl-portdecl)
-                           :netdecls  (list out-netdecl  data-netdecl  ctrl-netdecl)
-                           :gateinsts (list gate)
-                           :minloc    *vl-fakeloc*
-                           :maxloc    *vl-fakeloc*
-                           :atts      atts
-                           :esim      acl2::*esim-notif0*)))
+    (hons-copy
+     (make-vl-module :name      name
+                     :origname  name
+                     :ports     (list out-port     data-port     ctrl-port)
+                     :portdecls (list out-portdecl data-portdecl ctrl-portdecl)
+                     :netdecls  (list out-netdecl  data-netdecl  ctrl-netdecl)
+                     :gateinsts (list gate)
+                     :minloc    *vl-fakeloc*
+                     :maxloc    *vl-fakeloc*
+                     :atts      atts
+                     :esim      acl2::*esim-notif0*))))
 
-(defxdoc *vl-1-bit-notif1*
+(defval *vl-1-bit-notif1*
   :short "Primitive conditional driver."
   :long "<p>The Verilog meaning of this module is:</p>
 
@@ -1232,9 +1160,8 @@ endmodule
 <p>VL takes this as a primitive.  The @(see gate-elim) transform converts
 certain @('notif1') gates into instances of this module.</p>
 
-<p>The corresponding @(see esim) primitive is @(see acl2::*esim-notif1*).</p>")
+<p>The corresponding @(see esim) primitive is @(see acl2::*esim-notif1*).</p>"
 
-(defconsts *vl-1-bit-notif1*
   (b* ((name "VL_1_BIT_NOTIF1")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
@@ -1246,19 +1173,19 @@ certain @('notif1') gates into instances of this module.</p>
                                            (make-vl-plainarg :expr data-expr   :dir :vl-input)
                                            (make-vl-plainarg :expr ctrl-expr   :dir :vl-input))
                                :loc *vl-fakeloc*)))
-    (make-honsed-vl-module :name      name
-                           :origname  name
-                           :ports     (list out-port     data-port     ctrl-port)
-                           :portdecls (list out-portdecl data-portdecl ctrl-portdecl)
-                           :netdecls  (list out-netdecl  data-netdecl  ctrl-netdecl)
-                           :gateinsts (list gate)
-                           :minloc    *vl-fakeloc*
-                           :maxloc    *vl-fakeloc*
-                           :atts      atts
-                           :esim      acl2::*esim-notif1*)))
+    (hons-copy
+     (make-vl-module :name      name
+                     :origname  name
+                     :ports     (list out-port     data-port     ctrl-port)
+                     :portdecls (list out-portdecl data-portdecl ctrl-portdecl)
+                     :netdecls  (list out-netdecl  data-netdecl  ctrl-netdecl)
+                     :gateinsts (list gate)
+                     :minloc    *vl-fakeloc*
+                     :maxloc    *vl-fakeloc*
+                     :atts      atts
+                     :esim      acl2::*esim-notif1*))))
 
-
-(defxdoc *vl-1-bit-nmos*
+(defval *vl-1-bit-nmos*
   :short "Primitive nmos transistor."
   :long "<p>The Verilog meaning of this module is:</p>
 
@@ -1276,9 +1203,8 @@ certain @('nmos') gates into instances of this module.</p>
 
 <p>ESIM has very little support for transistors, but this may be a useful
 target for other back-end tools.  The corresponding @(see esim) primitive is
-@(see acl2::*esim-nmos*).</p>")
+@(see acl2::*esim-nmos*).</p>"
 
-(defconsts *vl-1-bit-nmos*
   (b* ((name "VL_1_BIT_NMOS")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
@@ -1290,19 +1216,19 @@ target for other back-end tools.  The corresponding @(see esim) primitive is
                                            (make-vl-plainarg :expr data-expr   :dir :vl-input)
                                            (make-vl-plainarg :expr ctrl-expr   :dir :vl-input))
                                :loc *vl-fakeloc*)))
-    (make-honsed-vl-module :name      name
-                           :origname  name
-                           :ports     (list out-port     data-port     ctrl-port)
-                           :portdecls (list out-portdecl data-portdecl ctrl-portdecl)
-                           :netdecls  (list out-netdecl  data-netdecl  ctrl-netdecl)
-                           :gateinsts (list gate)
-                           :minloc    *vl-fakeloc*
-                           :maxloc    *vl-fakeloc*
-                           :atts      atts
-                           :esim      acl2::*esim-nmos*)))
+    (hons-copy
+     (make-vl-module :name      name
+                     :origname  name
+                     :ports     (list out-port     data-port     ctrl-port)
+                     :portdecls (list out-portdecl data-portdecl ctrl-portdecl)
+                     :netdecls  (list out-netdecl  data-netdecl  ctrl-netdecl)
+                     :gateinsts (list gate)
+                     :minloc    *vl-fakeloc*
+                     :maxloc    *vl-fakeloc*
+                     :atts      atts
+                     :esim      acl2::*esim-nmos*))))
 
-
-(defxdoc *vl-1-bit-rnmos*
+(defval *vl-1-bit-rnmos*
   :short "Primitive resistive nmos transistor."
   :long "<p>The Verilog meaning of this module is:</p>
 
@@ -1320,9 +1246,8 @@ certain @('rnmos') gates into instances of this module.</p>
 
 <p>ESIM has no notion of strengths and very little support for transistors, but
 this may be a convenient target for other back-end tools.  The corresponding
-@(see esim) primitive is @(see acl2::*esim-nmos*).</p>")
+@(see esim) primitive is @(see acl2::*esim-nmos*).</p>"
 
-(defconsts *vl-1-bit-rnmos*
   (b* ((name "VL_1_BIT_RNMOS")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
@@ -1334,19 +1259,20 @@ this may be a convenient target for other back-end tools.  The corresponding
                                            (make-vl-plainarg :expr data-expr   :dir :vl-input)
                                            (make-vl-plainarg :expr ctrl-expr   :dir :vl-input))
                                :loc *vl-fakeloc*)))
-    (make-honsed-vl-module :name      name
-                           :origname  name
-                           :ports     (list out-port     data-port     ctrl-port)
-                           :portdecls (list out-portdecl data-portdecl ctrl-portdecl)
-                           :netdecls  (list out-netdecl  data-netdecl  ctrl-netdecl)
-                           :gateinsts (list gate)
-                           :minloc    *vl-fakeloc*
-                           :maxloc    *vl-fakeloc*
-                           :atts      atts
-                           :esim      acl2::*esim-nmos*)))
+    (hons-copy
+     (make-vl-module :name      name
+                     :origname  name
+                     :ports     (list out-port     data-port     ctrl-port)
+                     :portdecls (list out-portdecl data-portdecl ctrl-portdecl)
+                     :netdecls  (list out-netdecl  data-netdecl  ctrl-netdecl)
+                     :gateinsts (list gate)
+                     :minloc    *vl-fakeloc*
+                     :maxloc    *vl-fakeloc*
+                     :atts      atts
+                     :esim      acl2::*esim-nmos*))))
 
 
-(defxdoc *vl-1-bit-pmos*
+(defval *vl-1-bit-pmos*
   :short "Primitive pmos transistor."
   :long "<p>The Verilog meaning of this module is:</p>
 
@@ -1364,9 +1290,8 @@ certain @('pmos') gates into instances of this module.</p>
 
 <p>ESIM has very little support for transistors, but this may be a useful
 target for other back-end tools.  The corresponding @(see esim) primitive is
-@(see acl2::*esim-pmos*).</p>")
+@(see acl2::*esim-pmos*).</p>"
 
-(defconsts *vl-1-bit-pmos*
   (b* ((name "VL_1_BIT_PMOS")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
@@ -1378,18 +1303,19 @@ target for other back-end tools.  The corresponding @(see esim) primitive is
                                            (make-vl-plainarg :expr data-expr   :dir :vl-input)
                                            (make-vl-plainarg :expr ctrl-expr   :dir :vl-input))
                                :loc *vl-fakeloc*)))
-    (make-honsed-vl-module :name      name
-                           :origname  name
-                           :ports     (list out-port     data-port     ctrl-port)
-                           :portdecls (list out-portdecl data-portdecl ctrl-portdecl)
-                           :netdecls  (list out-netdecl  data-netdecl  ctrl-netdecl)
-                           :gateinsts (list gate)
-                           :minloc    *vl-fakeloc*
-                           :maxloc    *vl-fakeloc*
-                           :atts      atts
-                           :esim      acl2::*esim-pmos*)))
+    (hons-copy
+     (make-vl-module :name      name
+                     :origname  name
+                     :ports     (list out-port     data-port     ctrl-port)
+                     :portdecls (list out-portdecl data-portdecl ctrl-portdecl)
+                     :netdecls  (list out-netdecl  data-netdecl  ctrl-netdecl)
+                     :gateinsts (list gate)
+                     :minloc    *vl-fakeloc*
+                     :maxloc    *vl-fakeloc*
+                     :atts      atts
+                     :esim      acl2::*esim-pmos*))))
 
-(defxdoc *vl-1-bit-rpmos*
+(defval *vl-1-bit-rpmos*
   :short "Primitive resistive pmos transistor."
   :long "<p>The Verilog meaning of this module is:</p>
 
@@ -1407,9 +1333,8 @@ certain @('rpmos') gates into instances of this module.</p>
 
 <p>ESIM has no notion of strengths and very little support for transistors, but
 this may be a convenient target for other back-end tools.  The corresponding
-@(see esim) primitive is @(see acl2::*esim-nmos*).</p>")
+@(see esim) primitive is @(see acl2::*esim-nmos*).</p>"
 
-(defconsts *vl-1-bit-rpmos*
   (b* ((name "VL_1_BIT_RPMOS")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
@@ -1421,18 +1346,19 @@ this may be a convenient target for other back-end tools.  The corresponding
                                            (make-vl-plainarg :expr data-expr   :dir :vl-input)
                                            (make-vl-plainarg :expr ctrl-expr   :dir :vl-input))
                                :loc *vl-fakeloc*)))
-    (make-honsed-vl-module :name      name
-                           :origname  name
-                           :ports     (list out-port     data-port     ctrl-port)
-                           :portdecls (list out-portdecl data-portdecl ctrl-portdecl)
-                           :netdecls  (list out-netdecl  data-netdecl  ctrl-netdecl)
-                           :gateinsts (list gate)
-                           :minloc    *vl-fakeloc*
-                           :maxloc    *vl-fakeloc*
-                           :atts      atts
-                           :esim      acl2::*esim-pmos*)))
+    (hons-copy
+     (make-vl-module :name      name
+                     :origname  name
+                     :ports     (list out-port     data-port     ctrl-port)
+                     :portdecls (list out-portdecl data-portdecl ctrl-portdecl)
+                     :netdecls  (list out-netdecl  data-netdecl  ctrl-netdecl)
+                     :gateinsts (list gate)
+                     :minloc    *vl-fakeloc*
+                     :maxloc    *vl-fakeloc*
+                     :atts      atts
+                     :esim      acl2::*esim-pmos*))))
 
-(defxdoc *vl-1-bit-cmos*
+(defval *vl-1-bit-cmos*
   :short "Primitive cmos transistor."
   :long "<p>The Verilog meaning of this module is:</p>
 
@@ -1451,9 +1377,8 @@ certain @('cmos') gates into instances of this module.</p>
 
 <p>ESIM has very little support for transistors, but this may be a useful
 target for other back-end tools.  The corresponding @(see esim) primitive is
-@(see acl2::*esim-cmos*).</p>")
+@(see acl2::*esim-cmos*).</p>"
 
-(defconsts *vl-1-bit-cmos*
   (b* ((name "VL_1_BIT_CMOS")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
        ((mv out-expr    out-port    out-portdecl    out-netdecl)    (vl-primitive-mkport "out"   :vl-output))
@@ -1467,18 +1392,19 @@ target for other back-end tools.  The corresponding @(see esim) primitive is
                                            (make-vl-plainarg :expr nctrl-expr :dir :vl-input)
                                            (make-vl-plainarg :expr pctrl-expr :dir :vl-input))
                                :loc *vl-fakeloc*)))
-    (make-honsed-vl-module :name      name
-                           :origname  name
-                           :ports     (list out-port     data-port     nctrl-port     pctrl-port)
-                           :portdecls (list out-portdecl data-portdecl nctrl-portdecl pctrl-portdecl)
-                           :netdecls  (list out-netdecl  data-netdecl  nctrl-netdecl  pctrl-netdecl)
-                           :gateinsts (list gate)
-                           :minloc    *vl-fakeloc*
-                           :maxloc    *vl-fakeloc*
-                           :atts      atts
-                           :esim      acl2::*esim-cmos*)))
+    (hons-copy
+     (make-vl-module :name      name
+                     :origname  name
+                     :ports     (list out-port     data-port     nctrl-port     pctrl-port)
+                     :portdecls (list out-portdecl data-portdecl nctrl-portdecl pctrl-portdecl)
+                     :netdecls  (list out-netdecl  data-netdecl  nctrl-netdecl  pctrl-netdecl)
+                     :gateinsts (list gate)
+                     :minloc    *vl-fakeloc*
+                     :maxloc    *vl-fakeloc*
+                     :atts      atts
+                     :esim      acl2::*esim-cmos*))))
 
-(defxdoc *vl-1-bit-rcmos*
+(defval *vl-1-bit-rcmos*
   :short "Primitive resistive cmos transistor."
   :long "<p>The Verilog meaning of this module is:</p>
 
@@ -1497,9 +1423,8 @@ certain @('rcmos') gates into instances of this module.</p>
 
 <p>ESIM has no notion of strengths and very little support for transistors, but
 this may be a convenient target for other back-end tools.  The corresponding
-@(see esim) primitive is @(see acl2::*esim-cmos*).</p>")
+@(see esim) primitive is @(see acl2::*esim-cmos*).</p>"
 
-(defconsts *vl-1-bit-rcmos*
   (b* ((name "VL_1_BIT_RCMOS")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
        ((mv out-expr    out-port    out-portdecl    out-netdecl)    (vl-primitive-mkport "out"   :vl-output))
@@ -1513,18 +1438,19 @@ this may be a convenient target for other back-end tools.  The corresponding
                                            (make-vl-plainarg :expr nctrl-expr :dir :vl-input)
                                            (make-vl-plainarg :expr pctrl-expr :dir :vl-input))
                                :loc *vl-fakeloc*)))
-    (make-honsed-vl-module :name      name
-                           :origname  name
-                           :ports     (list out-port     data-port     nctrl-port     pctrl-port)
-                           :portdecls (list out-portdecl data-portdecl nctrl-portdecl pctrl-portdecl)
-                           :netdecls  (list out-netdecl  data-netdecl  nctrl-netdecl  pctrl-netdecl)
-                           :gateinsts (list gate)
-                           :minloc    *vl-fakeloc*
-                           :maxloc    *vl-fakeloc*
-                           :atts      atts
-                           :esim      acl2::*esim-cmos*)))
+    (hons-copy
+     (make-vl-module :name      name
+                     :origname  name
+                     :ports     (list out-port     data-port     nctrl-port     pctrl-port)
+                     :portdecls (list out-portdecl data-portdecl nctrl-portdecl pctrl-portdecl)
+                     :netdecls  (list out-netdecl  data-netdecl  nctrl-netdecl  pctrl-netdecl)
+                     :gateinsts (list gate)
+                     :minloc    *vl-fakeloc*
+                     :maxloc    *vl-fakeloc*
+                     :atts      atts
+                     :esim      acl2::*esim-cmos*))))
 
-(defxdoc *vl-1-bit-tran*
+(defval *vl-1-bit-tran*
   :short "Primitive bidirectional connection."
   :long "<p>The Verilog meaning of this module is:</p>
 
@@ -1541,9 +1467,8 @@ certain @('tran') gates into instances of this module.</p>
 
 <p>There is no sensible way to model this in ESIM and hence there is no ESIM
 equivalent.  However, this module may be a convenient target for other back-end
-tools.</p>")
+tools.</p>"
 
-(defconsts *vl-1-bit-tran*
   (b* ((name "VL_1_BIT_TRAN")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
        ((mv a-expr    a-port    a-portdecl    a-netdecl)    (vl-primitive-mkport "a"   :vl-inout))
@@ -1553,19 +1478,20 @@ tools.</p>")
                                :args (list (make-vl-plainarg :expr a-expr  :dir :vl-inout)
                                            (make-vl-plainarg :expr b-expr  :dir :vl-inout))
                                :loc *vl-fakeloc*)))
-    (make-honsed-vl-module :name      name
-                           :origname  name
-                           :ports     (list a-port     b-port)
-                           :portdecls (list a-portdecl b-portdecl)
-                           :netdecls  (list a-netdecl  b-netdecl)
-                           :gateinsts (list gate)
-                           :minloc    *vl-fakeloc*
-                           :maxloc    *vl-fakeloc*
-                           :atts      atts
-                           :esim      nil   ;; no e equivalent
-                           )))
+    (hons-copy
+     (make-vl-module :name      name
+                     :origname  name
+                     :ports     (list a-port     b-port)
+                     :portdecls (list a-portdecl b-portdecl)
+                     :netdecls  (list a-netdecl  b-netdecl)
+                     :gateinsts (list gate)
+                     :minloc    *vl-fakeloc*
+                     :maxloc    *vl-fakeloc*
+                     :atts      atts
+                     :esim      nil ;; no e equivalent
+                     ))))
 
-(defxdoc *vl-1-bit-rtran*
+(defval *vl-1-bit-rtran*
   :short "Primitive, resistive bidirectional connection."
   :long "<p>The Verilog meaning of this module is:</p>
 
@@ -1582,9 +1508,8 @@ certain @('rtran') gates into instances of this module.</p>
 
 <p>There is no sensible way to model this in ESIM and hence there is no ESIM
 equivalent.  However, this module may be a convenient target for other back-end
-tools.</p>")
+tools.</p>"
 
-(defconsts *vl-1-bit-rtran*
   (b* ((name "VL_1_BIT_RTRAN")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
        ((mv a-expr    a-port    a-portdecl    a-netdecl)    (vl-primitive-mkport "a"   :vl-inout))
@@ -1594,19 +1519,20 @@ tools.</p>")
                                :args (list (make-vl-plainarg :expr a-expr  :dir :vl-inout)
                                            (make-vl-plainarg :expr b-expr  :dir :vl-inout))
                                :loc *vl-fakeloc*)))
-    (make-honsed-vl-module :name      name
-                           :origname  name
-                           :ports     (list a-port     b-port)
-                           :portdecls (list a-portdecl b-portdecl)
-                           :netdecls  (list a-netdecl  b-netdecl)
-                           :gateinsts (list gate)
-                           :minloc    *vl-fakeloc*
-                           :maxloc    *vl-fakeloc*
-                           :atts      atts
-                           :esim      nil   ;; no e equivalent
-                           )))
+    (hons-copy
+     (make-vl-module :name      name
+                     :origname  name
+                     :ports     (list a-port     b-port)
+                     :portdecls (list a-portdecl b-portdecl)
+                     :netdecls  (list a-netdecl  b-netdecl)
+                     :gateinsts (list gate)
+                     :minloc    *vl-fakeloc*
+                     :maxloc    *vl-fakeloc*
+                     :atts      atts
+                     :esim      nil   ;; no e equivalent
+                     ))))
 
-(defxdoc *vl-1-bit-tranif0*
+(defval *vl-1-bit-tranif0*
   :short "Primitive, conditional bidirectional connection."
   :long "<p>The Verilog meaning of this module is:</p>
 
@@ -1624,9 +1550,8 @@ certain @('tranif0') gates into instances of this module.</p>
 
 <p>There is no sensible way to model this in ESIM and hence there is no ESIM
 equivalent.  However, this module may be a convenient target for other back-end
-tools.</p>")
+tools.</p>"
 
-(defconsts *vl-1-bit-tranif0*
   (b* ((name "VL_1_BIT_TRANIF0")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
        ((mv a-expr    a-port    a-portdecl    a-netdecl)    (vl-primitive-mkport "a"   :vl-inout))
@@ -1638,21 +1563,20 @@ tools.</p>")
                                            (make-vl-plainarg :expr b-expr    :dir :vl-inout)
                                            (make-vl-plainarg :expr ctrl-expr :dir :vl-input))
                                :loc *vl-fakeloc*)))
-    (make-honsed-vl-module :name      name
-                           :origname  name
-                           :ports     (list a-port     b-port     ctrl-port)
-                           :portdecls (list a-portdecl b-portdecl ctrl-portdecl)
-                           :netdecls  (list a-netdecl  b-netdecl  ctrl-netdecl)
-                           :gateinsts (list gate)
-                           :minloc    *vl-fakeloc*
-                           :maxloc    *vl-fakeloc*
-                           :atts      atts
-                           :esim      nil   ;; no e equivalent
-                           )))
+    (hons-copy
+     (make-vl-module :name      name
+                     :origname  name
+                     :ports     (list a-port     b-port     ctrl-port)
+                     :portdecls (list a-portdecl b-portdecl ctrl-portdecl)
+                     :netdecls  (list a-netdecl  b-netdecl  ctrl-netdecl)
+                     :gateinsts (list gate)
+                     :minloc    *vl-fakeloc*
+                     :maxloc    *vl-fakeloc*
+                     :atts      atts
+                     :esim      nil ;; no e equivalent
+                     ))))
 
-
-
-(defxdoc *vl-1-bit-rtranif0*
+(defval *vl-1-bit-rtranif0*
   :short "Primitive, resistive, conditional bidirectional connection."
   :long "<p>The Verilog meaning of this module is:</p>
 
@@ -1670,9 +1594,8 @@ certain @('rtranif0') gates into instances of this module.</p>
 
 <p>There is no sensible way to model this in ESIM and hence there is no ESIM
 equivalent.  However, this module may be a convenient target for other back-end
-tools.</p>")
+tools.</p>"
 
-(defconsts *vl-1-bit-rtranif0*
   (b* ((name "VL_1_BIT_RTRANIF0")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
        ((mv a-expr    a-port    a-portdecl    a-netdecl)    (vl-primitive-mkport "a"   :vl-inout))
@@ -1684,20 +1607,20 @@ tools.</p>")
                                            (make-vl-plainarg :expr b-expr    :dir :vl-inout)
                                            (make-vl-plainarg :expr ctrl-expr :dir :vl-input))
                                :loc *vl-fakeloc*)))
-    (make-honsed-vl-module :name      name
-                           :origname  name
-                           :ports     (list a-port     b-port     ctrl-port)
-                           :portdecls (list a-portdecl b-portdecl ctrl-portdecl)
-                           :netdecls  (list a-netdecl  b-netdecl  ctrl-netdecl)
-                           :gateinsts (list gate)
-                           :minloc    *vl-fakeloc*
-                           :maxloc    *vl-fakeloc*
-                           :atts      atts
-                           :esim      nil   ;; no e equivalent
-                           )))
+    (hons-copy
+     (make-vl-module :name      name
+                     :origname  name
+                     :ports     (list a-port     b-port     ctrl-port)
+                     :portdecls (list a-portdecl b-portdecl ctrl-portdecl)
+                     :netdecls  (list a-netdecl  b-netdecl  ctrl-netdecl)
+                     :gateinsts (list gate)
+                     :minloc    *vl-fakeloc*
+                     :maxloc    *vl-fakeloc*
+                     :atts      atts
+                     :esim      nil ;; no e equivalent
+                     ))))
 
-
-(defxdoc *vl-1-bit-tranif1*
+(defval *vl-1-bit-tranif1*
   :short "Primitive, conditional bidirectional connection."
   :long "<p>The Verilog meaning of this module is:</p>
 
@@ -1715,9 +1638,8 @@ certain @('tranif1') gates into instances of this module.</p>
 
 <p>There is no sensible way to model this in ESIM and hence there is no ESIM
 equivalent.  However, this module may be a convenient target for other back-end
-tools.</p>")
+tools.</p>"
 
-(defconsts *vl-1-bit-tranif1*
   (b* ((name "VL_1_BIT_TRANIF1")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
        ((mv a-expr    a-port    a-portdecl    a-netdecl)    (vl-primitive-mkport "a"   :vl-inout))
@@ -1729,19 +1651,20 @@ tools.</p>")
                                            (make-vl-plainarg :expr b-expr    :dir :vl-inout)
                                            (make-vl-plainarg :expr ctrl-expr :dir :vl-input))
                                :loc *vl-fakeloc*)))
-    (make-honsed-vl-module :name      name
-                           :origname  name
-                           :ports     (list a-port     b-port     ctrl-port)
-                           :portdecls (list a-portdecl b-portdecl ctrl-portdecl)
-                           :netdecls  (list a-netdecl  b-netdecl  ctrl-netdecl)
-                           :gateinsts (list gate)
-                           :minloc    *vl-fakeloc*
-                           :maxloc    *vl-fakeloc*
-                           :atts      atts
-                           :esim      nil   ;; no e equivalent
-                           )))
+    (hons-copy
+     (make-vl-module :name      name
+                     :origname  name
+                     :ports     (list a-port     b-port     ctrl-port)
+                     :portdecls (list a-portdecl b-portdecl ctrl-portdecl)
+                     :netdecls  (list a-netdecl  b-netdecl  ctrl-netdecl)
+                     :gateinsts (list gate)
+                     :minloc    *vl-fakeloc*
+                     :maxloc    *vl-fakeloc*
+                     :atts      atts
+                     :esim      nil ;; no e equivalent
+                     ))))
 
-(defxdoc *vl-1-bit-rtranif1*
+(defval *vl-1-bit-rtranif1*
   :short "Primitive, resistive, conditional bidirectional connection."
   :long "<p>The Verilog meaning of this module is:</p>
 
@@ -1759,9 +1682,8 @@ certain @('rtranif1') gates into instances of this module.</p>
 
 <p>There is no sensible way to model this in ESIM and hence there is no ESIM
 equivalent.  However, this module may be a convenient target for other back-end
-tools.</p>")
+tools.</p>"
 
-(defconsts *vl-1-bit-rtranif1*
   (b* ((name "VL_1_BIT_RTRANIF1")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
        ((mv a-expr    a-port    a-portdecl    a-netdecl)    (vl-primitive-mkport "a"   :vl-inout))
@@ -1773,19 +1695,20 @@ tools.</p>")
                                            (make-vl-plainarg :expr b-expr    :dir :vl-inout)
                                            (make-vl-plainarg :expr ctrl-expr :dir :vl-input))
                                :loc *vl-fakeloc*)))
-    (make-honsed-vl-module :name      name
-                           :origname  name
-                           :ports     (list a-port     b-port     ctrl-port)
-                           :portdecls (list a-portdecl b-portdecl ctrl-portdecl)
-                           :netdecls  (list a-netdecl  b-netdecl  ctrl-netdecl)
-                           :gateinsts (list gate)
-                           :minloc    *vl-fakeloc*
-                           :maxloc    *vl-fakeloc*
-                           :atts      atts
-                           :esim      nil   ;; no e equivalent
-                           )))
+    (hons-copy
+     (make-vl-module :name      name
+                     :origname  name
+                     :ports     (list a-port     b-port     ctrl-port)
+                     :portdecls (list a-portdecl b-portdecl ctrl-portdecl)
+                     :netdecls  (list a-netdecl  b-netdecl  ctrl-netdecl)
+                     :gateinsts (list gate)
+                     :minloc    *vl-fakeloc*
+                     :maxloc    *vl-fakeloc*
+                     :atts      atts
+                     :esim      nil ;; no e equivalent
+                     ))))
 
-(defxdoc *vl-1-bit-pullup*
+(defval *vl-1-bit-pullup*
   :short "Primitive pullup element."
   :long "<p>The Verilog meaning of this module is:</p>
 
@@ -1801,9 +1724,8 @@ certain @('pullup') gates into instances of this module.</p>
 
 <p>There is no sensible way to model this in ESIM and hence there is no ESIM
 equivalent.  However, this module may be a convenient target for other back-end
-tools.</p>")
+tools.</p>"
 
-(defconsts *vl-1-bit-pullup*
   (b* ((name "VL_1_BIT_PULLUP")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
        ((mv out-expr    out-port    out-portdecl    out-netdecl)    (vl-primitive-mkport "out"   :vl-output))
@@ -1811,19 +1733,20 @@ tools.</p>")
                                :name "gate"
                                :args (list (make-vl-plainarg :expr out-expr    :dir :vl-output))
                                :loc *vl-fakeloc*)))
-    (make-honsed-vl-module :name      name
-                           :origname  name
-                           :ports     (list out-port)
-                           :portdecls (list out-portdecl)
-                           :netdecls  (list out-netdecl)
-                           :gateinsts (list gate)
-                           :minloc    *vl-fakeloc*
-                           :maxloc    *vl-fakeloc*
-                           :atts      atts
-                           :esim      nil   ;; no e equivalent
-                           )))
+    (hons-copy
+     (make-vl-module :name      name
+                     :origname  name
+                     :ports     (list out-port)
+                     :portdecls (list out-portdecl)
+                     :netdecls  (list out-netdecl)
+                     :gateinsts (list gate)
+                     :minloc    *vl-fakeloc*
+                     :maxloc    *vl-fakeloc*
+                     :atts      atts
+                     :esim      nil ;; no e equivalent
+                     ))))
 
-(defxdoc *vl-1-bit-pulldown*
+(defval *vl-1-bit-pulldown*
   :short "Primitive pulldown element."
   :long "<p>The Verilog meaning of this module is:</p>
 
@@ -1839,9 +1762,8 @@ certain @('pulldown') gates into instances of this module.</p>
 
 <p>There is no sensible way to model this in ESIM and hence there is no ESIM
 equivalent.  However, this module may be a convenient target for other back-end
-tools.</p>")
+tools.</p>"
 
-(defconsts *vl-1-bit-pulldown*
   (b* ((name "VL_1_BIT_PULLDOWN")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
        ((mv out-expr    out-port    out-portdecl    out-netdecl)    (vl-primitive-mkport "out"   :vl-output))
@@ -1849,61 +1771,18 @@ tools.</p>")
                                :name "gate"
                                :args (list (make-vl-plainarg :expr out-expr    :dir :vl-output))
                                :loc *vl-fakeloc*)))
-    (make-honsed-vl-module :name      name
-                           :origname  name
-                           :ports     (list out-port)
-                           :portdecls (list out-portdecl)
-                           :netdecls  (list out-netdecl)
-                           :gateinsts (list gate)
-                           :minloc    *vl-fakeloc*
-                           :maxloc    *vl-fakeloc*
-                           :atts      atts
-                           :esim      nil   ;; no e equivalent
-                           )))
-
-
-
-;; BOZO this is a whole family of primitives, I guess
-
-;; (defxdoc *vl-1-bit-resolve-wire*
-;;   :short "Primitive module that resolves multiple drivers on a wire."
-;;   :long "<p>The Verilog definition of this module is:</p>
-
-;; @({
-;; module VL_1_BIT_RESOLVE_WIRE (out, a, b) ;
-;;   output out;
-;;   input a;
-;;   input b;
-;;   assign out = a;
-;;   assign out = b;
-;; endmodule
-;; })
-
-;; <p>VL takes this as a primitive.  This module, and wrappers that extend it to
-;; higher arities and wider signals, may be introduced by the @(see multidrive)
-;; transform to deal with multiply driven wires.</p>
-
-;; <p>The corresponding @(see esim) primitive is @(see acl2::*esim-res*).</p>")
-
-;; (defconsts *vl-1-bit-resolve-wire*
-;;   (b* ((name "VL_1_BIT_RESOLVE_WIRE")
-;;        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
-;;        ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
-;;        ((mv a-expr   a-port   a-portdecl   a-netdecl)   (vl-primitive-mkport "a"   :vl-input))
-;;        ((mv b-expr   b-port   b-portdecl   b-netdecl)   (vl-primitive-mkport "b"   :vl-input))
-;;        (a-assign     (make-vl-assign :lvalue out-expr :expr a-expr :loc *vl-fakeloc*))
-;;        (b-assign     (make-vl-assign :lvalue out-expr :expr b-expr :loc *vl-fakeloc*)))
-;;     (make-honsed-vl-module :name      name
-;;                            :origname  name
-;;                            :ports     (list out-port     a-port      b-port)
-;;                            :portdecls (list out-portdecl a-portdecl  b-portdecl)
-;;                            :netdecls  (list out-netdecl  a-netdecl   b-netdecl)
-;;                            :assigns   (list              a-assign    b-assign)
-;;                            :minloc    *vl-fakeloc*
-;;                            :maxloc    *vl-fakeloc*
-;;                            :atts      atts
-;;                            :esim      acl2::*esim-res*)))
-
+    (hons-copy
+     (make-vl-module :name      name
+                     :origname  name
+                     :ports     (list out-port)
+                     :portdecls (list out-portdecl)
+                     :netdecls  (list out-netdecl)
+                     :gateinsts (list gate)
+                     :minloc    *vl-fakeloc*
+                     :maxloc    *vl-fakeloc*
+                     :atts      atts
+                     :esim      nil ;; no e equivalent
+                     ))))
 
 (defconst *vl-primitive-mods*
   (list *vl-1-bit-t*

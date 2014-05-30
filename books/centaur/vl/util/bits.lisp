@@ -20,6 +20,8 @@
 
 (in-package "VL")
 (include-book "defs")
+(include-book "centaur/fty/deftypes" :dir :system)
+(local (std::add-default-post-define-hook :fix))
 
 (defenum vl-bit-p
   (:vl-0val :vl-1val :vl-xval :vl-zval)
@@ -37,11 +39,16 @@ accepted by @('vl-bit-p'):</p>
  <li>@(':vl-zval') means Z.</li>
 </ul>")
 
+(fty::deflist vl-bitlist
+  :elt-type vl-bit-p
+  :true-listp nil)
+
 (deflist vl-bitlist-p (x)
   (vl-bit-p x)
   :guard t
   :elementp-of-nil nil
-  :parents (vl-weirdint-p))
+  :parents (vl-weirdint-p)
+  :already-definedp t)
 
 (define vl-bit->char ((x vl-bit-p))
   :parents (vl-bit-p)
@@ -49,22 +56,21 @@ accepted by @('vl-bit-p'):</p>
   :returns (char characterp :rule-classes :type-prescription)
   :long "<p>@(call vl-bit->char) produces the ASCII character for a @(see vl-bit-p).
 That is, it returns one of the characters: 0, 1, X, or Z.</p>"
-  (case x
-    (:vl-0val #\0)
-    (:vl-1val #\1)
-    (:vl-xval #\X)
-    (:vl-zval #\Z)
-    (otherwise
-     ;; hack for unconditional type prescription
-     (progn$ (impossible)
-             #\0))))
+  (let ((x (mbe :logic (vl-bit-fix x) :exec x)))
+    (case x
+      (:vl-0val #\0)
+      (:vl-1val #\1)
+      (:vl-xval #\X)
+      (:vl-zval #\Z)
+      (otherwise
+       ;; hack for unconditional type prescription
+       (progn$ (impossible)
+               #\X)))))
 
-(defprojection vl-bitlist->charlist (x)
+(defprojection vl-bitlist->charlist ((x vl-bitlist-p))
+  :returns (chars character-listp)
   :parents (vl-weirdint-p)
   :short "Get a character list for a @(see vl-bitlist-p)."
-  :guard (vl-bitlist-p x)
-  :result-type character-listp
-  :nil-preservingp nil
   (vl-bit->char x))
 
 (define vl-bitlist->string ((x vl-bitlist-p))
@@ -87,13 +93,15 @@ That is, it returns one of the characters: 0, 1, X, or Z.</p>"
   :parents (vl-timeunit-p)
   :short "Get the string corresponding to a @(see vl-timeunit-p)."
   :returns (str stringp :rule-classes :type-prescription)
-  (case x
-    (:vl-s "s")
-    (:vl-ms "ms")
-    (:vl-us "us")
-    (:vl-ns "ns")
-    (:vl-ps "ps")
-    (:vl-fs "fs")
-    (otherwise (progn$ (impossible)
-                       "s"))))
+  (let ((x (mbe :logic (vl-timeunit-fix x)
+                :exec x)))
+    (case x
+      (:vl-s "s")
+      (:vl-ms "ms")
+      (:vl-us "us")
+      (:vl-ns "ns")
+      (:vl-ps "ps")
+      (:vl-fs "fs")
+      (otherwise (progn$ (impossible)
+                         "s")))))
 

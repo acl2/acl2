@@ -41,12 +41,10 @@
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "data-structures/list-defthms" :dir :system))
 
-(defsection *nls*
+(defval *nls*
   :parents (utilities)
   :short "A string consisting of a newline character."
-
-  (defconst *nls*
-    (implode (list #\Newline))))
+  (implode (list #\Newline)))
 
 (define redundant-mergesort
   (x &key
@@ -91,11 +89,18 @@ typical example is:</p>
                  nil))
           (mergesort x)))))
 
-
 (deflist nat-listp (x)
   (natp x)
   :elementp-of-nil nil
   :parents (utilities))
+
+
+(define lposfix ((x posp))
+  :enabled t
+  :inline t
+  :hooks nil
+  (mbe :logic (pos-fix x)
+       :exec x))
 
 
 (deflist vl-maybe-nat-listp (x)
@@ -571,10 +576,8 @@ such that @('p') is a prefix of every list in @('x')."
   :long "<p>Note that we leave this function enabled.</p>"
   :enabled t
   :inline t
-
-  (mbe :logic (if (stringp x) x "")
+  (mbe :logic (str-fix x)
        :exec x)
-
   ///
   (defrule stringp-of-string-fix
     (stringp (string-fix x))

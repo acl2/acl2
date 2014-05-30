@@ -74,8 +74,9 @@ more and try to understand whether it's truly reasonable.</p>")
 
 (local (xdoc::set-default-parents edgesplit))
 
-(define vl-edgesplit-atomicstmt-p ((x vl-atomicstmt-p))
-  (case (tag x)
+(define vl-edgesplit-atomicstmt-p ((x vl-stmt-p))
+  :guard (vl-atomicstmt-p x)
+  (case (vl-stmt-kind x)
     (:vl-nullstmt t)
     (:vl-assignstmt (b* (((vl-assignstmt x) x))
                       (and (eq x.type :vl-nonblocking)
@@ -92,15 +93,16 @@ between the order of the assignments and the surrounding if structures.</p>"
   :hints(("Goal" :in-theory (disable (force))))
 
   (define vl-edgesplitstmt-p ((x vl-stmt-p))
-    :measure (two-nats-measure (acl2-count x) 1)
-    (b* (((when (vl-fast-atomicstmt-p x))
+    :measure (vl-stmt-count x)
+    (b* (((when (vl-atomicstmt-p x))
           (vl-edgesplit-atomicstmt-p x))
+         (kind (vl-stmt-kind x))
 
-         ((when (vl-ifstmt-p x))
+         ((when (eq kind :vl-ifstmt))
           (and (vl-edgesplitstmt-p (vl-ifstmt->truebranch x))
                (vl-edgesplitstmt-p (vl-ifstmt->falsebranch x))))
 
-         ((when (vl-blockstmt-p x))
+         ((when (eq kind :vl-blockstmt))
           (and (vl-blockstmt->sequentialp x)
                (not (vl-blockstmt->name x))
                (not (vl-blockstmt->decls x))
@@ -108,7 +110,7 @@ between the order of the assignments and the surrounding if structures.</p>"
       nil))
 
   (define vl-edgesplitstmtlist-p ((x vl-stmtlist-p))
-    :measure (two-nats-measure (acl2-count x) 0)
+    :measure (vl-stmtlist-count x)
     (if (atom x)
         t
       (and (vl-edgesplitstmt-p (first x))
@@ -120,10 +122,11 @@ between the order of the assignments and the surrounding if structures.</p>"
 
 
 (define vl-edgesplit-atomicstmt-lvalues
-  ((x (and (vl-atomicstmt-p x)
+  ((x (and (vl-stmt-p x)
+           (vl-atomicstmt-p x)
            (vl-edgesplit-atomicstmt-p x))))
   :returns (lvalue-names string-listp)
-  (case (tag x)
+  (case (vl-stmt-kind x)
     (:vl-assignstmt (list (vl-idexpr->name (vl-assignstmt->lvalue x))))
     (otherwise nil))
   :prepwork ((local (in-theory (enable vl-edgesplit-atomicstmt-p)))))
@@ -134,20 +137,21 @@ between the order of the assignments and the surrounding if structures.</p>"
   (define vl-edgesplitstmt-lvalues ((x (and (vl-stmt-p x)
                                             (vl-edgesplitstmt-p x))))
     :returns (lvalue-names string-listp)
-    :measure (two-nats-measure (acl2-count x) 1)
-    (b* (((when (vl-fast-atomicstmt-p x))
+    :measure (vl-stmt-count x)
+    (b* (((when (vl-atomicstmt-p x))
           (vl-edgesplit-atomicstmt-lvalues x))
-         ((when (vl-ifstmt-p x))
+         (kind (vl-stmt-kind x))
+         ((when (eq kind :vl-ifstmt))
           (append (vl-edgesplitstmt-lvalues (vl-ifstmt->truebranch x))
                   (vl-edgesplitstmt-lvalues (vl-ifstmt->falsebranch x))))
-         ((when (vl-blockstmt-p x))
+         ((when (eq kind :vl-blockstmt))
           (vl-edgesplitstmtlist-lvalues (vl-blockstmt->stmts x))))
       nil))
 
   (define vl-edgesplitstmtlist-lvalues ((x (and (vl-stmtlist-p x)
                                                 (vl-edgesplitstmtlist-p x))))
     :returns (lvalue-names string-listp)
-    :measure (two-nats-measure (acl2-count x) 0)
+    :measure (vl-stmtlist-count x)
     (if (atom x)
         nil
       (append (vl-edgesplitstmt-lvalues (first x))
@@ -161,7 +165,8 @@ between the order of the assignments and the surrounding if structures.</p>"
   :short "Determine an atomic, splittable statement's effect on a
           single lvalue."
   ((x      "The statement we're splitting into multiple always blocks."
-           (and (vl-atomicstmt-p x)
+           (and (vl-stmt-p x)
+                (vl-atomicstmt-p x)
                 (vl-edgesplit-atomicstmt-p x)))
    (lvalue "The particular lvalue we're splitting it up for this time."
            stringp))
@@ -169,7 +174,7 @@ between the order of the assignments and the surrounding if structures.</p>"
                   @('lvalue').  Or, if this statement has nothing to do with
                   @('lvalue'), just a null statement."
                  vl-stmt-p :hyp :fguard)
-  (case (tag x)
+  (case (vl-stmt-kind x)
     (:vl-assignstmt (if (equal (vl-idexpr->name (vl-assignstmt->lvalue x))
                                lvalue)
                         x
@@ -187,22 +192,23 @@ between the order of the assignments and the surrounding if structures.</p>"
      (lvalue "Particular lvalue we're splitting it up for."
              stringp))
     :returns (stmt vl-stmt-p :hyp :fguard)
-    :measure (two-nats-measure (acl2-count x) 1)
+    :measure (vl-stmt-count x)
     :verify-guards nil
-    (b* (((when (vl-fast-atomicstmt-p x))
+    (b* (((when (vl-atomicstmt-p x))
           (vl-edgesplit-atomicstmt-for-lvalue x lvalue))
-         ((when (vl-ifstmt-p x))
+         (kind (vl-stmt-kind x))
+         ((when (eq kind :vl-ifstmt))
           (b* (((vl-ifstmt x) x)
                (true  (vl-edgesplit-stmt-for-lvalue x.truebranch lvalue))
                (false (vl-edgesplit-stmt-for-lvalue x.falsebranch lvalue))
-               ((when (and (vl-fast-nullstmt-p true)
-                           (vl-fast-nullstmt-p false)))
+               ((when (and (eq (vl-stmt-kind true) :vl-nullstmt)
+                           (eq (vl-stmt-kind false) :vl-nullstmt)))
                 ;; Collapse 'if (condition) null null' --> null
                 true))
             (change-vl-ifstmt x
                               :truebranch true
                               :falsebranch false)))
-         ((when (vl-blockstmt-p x))
+         ((when (eq kind :vl-blockstmt))
           (b* (((vl-blockstmt x) x)
                (stmts (vl-edgesplit-stmtlist-for-lvalue x.stmts lvalue))
                ((when (atom stmts))
@@ -222,11 +228,11 @@ between the order of the assignments and the surrounding if structures.</p>"
      (lvalue "Particular lvalue we're splitting it up for."
              stringp))
     :returns (stmts vl-stmtlist-p :hyp :fguard)
-    :measure (two-nats-measure (acl2-count x) 0)
+    :measure (vl-stmtlist-count x)
     (b* (((when (atom x))
           nil)
          (new1 (vl-edgesplit-stmt-for-lvalue (first x) lvalue))
-         ((when (vl-fast-nullstmt-p new1))
+         ((when (eq (vl-stmt-kind new1) :vl-nullstmt))
           ;; Collapse 'null; ___' --> ___
           (vl-edgesplit-stmtlist-for-lvalue (rest x) lvalue)))
       (cons new1
@@ -241,10 +247,10 @@ between the order of the assignments and the surrounding if structures.</p>"
          (implies (vl-eventcontrol-p x)
                   (vl-delayoreventcontrol-p x))))
 
-(local (defthm crock2
-         (implies (vl-edge-control-p x)
-                  (vl-eventcontrol-p x))
-         :hints(("Goal" :in-theory (enable vl-edge-control-p)))))
+;; (local (defthm crock2
+;;          (implies (vl-edge-control-p x)
+;;                   (vl-eventcontrol-p x))
+;;          :hints(("Goal" :in-theory (enable vl-edge-control-p)))))
 
 (define vl-edgesplit-make-new-always
   :short "Create the new, split up always blocks for a single lvalue."
@@ -265,7 +271,7 @@ between the order of the assignments and the surrounding if structures.</p>"
             new always block we create."))
   :returns (new-always vl-always-p :hyp :fguard)
   (b* ((new-body (vl-edgesplit-stmt-for-lvalue body lvalue))
-       ((when (vl-fast-nullstmt-p new-body))
+       ((when (eq (vl-stmt-kind new-body) :vl-nullstmt))
         (raise "Programming error.  Something is horribly wrong with always
                 block splitting.  It shouldn't be possible to try to split
                 off a null always block for ~s0." lvalue)

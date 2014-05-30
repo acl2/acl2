@@ -21,15 +21,13 @@
 (in-package "VL")
 (include-book "welltyped")
 (local (include-book "../util/arithmetic"))
-
+(local (include-book "arithmetic-3/floor-mod/floor-mod" :dir :system))
+(local (std::add-default-post-define-hook :fix))
+(local (in-theory (disable acl2::functional-commutativity-of-minus-*-left
+                           acl2::normalize-factors-gather-exponents)))
 
 ;; The code here is styled after vl-msb-bitslice-constint, but whereas that
 ;; code produces new expressions, here we just produce a bit list.
-
-
-(local (include-book "arithmetic-3/floor-mod/floor-mod" :dir :system))
-(local (in-theory (disable acl2::functional-commutativity-of-minus-*-left
-                           acl2::normalize-factors-gather-exponents)))
 
 (local (defthm logand-1
          (implies (natp value)
@@ -41,12 +39,13 @@
   ((len   natp)
    (value natp))
   :returns (lsb-bits vl-bitlist-p)
+  :verbosep t
   :measure (nfix len)
   (b* (((when (zp len))
         nil)
-       (floor2          (mbe :logic (floor value 2)
+       (floor2          (mbe :logic (floor (nfix value) 2)
                              :exec (ash value -1)))
-       ((the bit mod2)  (mbe :logic (mod value 2)
+       ((the bit mod2)  (mbe :logic (mod (nfix value) 2)
                              :exec (logand value 1)))
        (bit             (if (eql mod2 0)
                             :vl-0val
@@ -97,10 +96,11 @@
   :short "Explode a <see topic='@(url vl-expr-welltyped-p)'>well-typed</see>
 @(see vl-constint-p) atom into MSB-ordered @(see vl-bitlist-p)."
 
-  ((x (and (vl-atom-p x)
-           (vl-atom-welltyped-p x)
-           (vl-fast-constint-p (vl-atom->guts x)))))
-  :returns (bits vl-bitlist-p :hyp :fguard)
+  ((x vl-expr-p))
+  :guard (and (vl-atom-p x)
+              (vl-atom-welltyped-p x)
+              (vl-fast-constint-p (vl-atom->guts x)))
+  :returns (bits vl-bitlist-p)
 
   :long "<p>We require that @('X') is a well-typed constant integer expression,
 i.e., our @(see expression-sizing) transform should have already been run.

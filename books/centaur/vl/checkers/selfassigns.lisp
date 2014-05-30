@@ -113,7 +113,7 @@ handle problems with collecting bits.</p>"
                                (mod    vl-module-p)
                                (ialist (equal ialist (vl-moditem-alist mod))))
     :returns (approx-bits string-listp)
-    :measure (two-nats-measure (acl2-count x) 1)
+    :measure (vl-expr-count x)
     (b* (((when (vl-fast-atom-p x))
           (if (vl-idexpr-p x)
               (b* ((name (vl-idexpr->name x))
@@ -167,7 +167,7 @@ handle problems with collecting bits.</p>"
     ((x      vl-exprlist-p)
      (mod    vl-module-p)
      (ialist (equal ialist (vl-moditem-alist mod))))
-    :measure (two-nats-measure (acl2-count x) 0)
+    :measure (vl-exprlist-count x)
     :returns (bits string-listp)
     (if (atom x)
         nil

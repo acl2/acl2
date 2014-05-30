@@ -22,6 +22,7 @@
 (include-book "../mlib/filter")
 (include-book "../mlib/hierarchy")
 (local (include-book "../util/arithmetic"))
+(local (std::add-default-post-define-hook :fix))
 
 (defsection drop-missing-submodules
   :parents (lint)
@@ -41,42 +42,40 @@ transformation process.</p>")
 (define vl-module-drop-missing-submodules
   ((x       vl-module-p  "Module to rewrite.")
    (missing string-listp "List of missing modules.")
-   (fal     "Precomputed fast alist for missing."
-            (equal fal (make-lookup-alist missing))))
-  :returns (new-x vl-module-p :hyp :fguard)
-  (b* (((vl-module x) x)
+   (fal     "Precomputed fast alist for missing." (equal fal (make-lookup-alist missing))))
+  :returns (new-x vl-module-p)
+  (b* ((x (vl-module-fix x))
+       ((vl-module x) x)
        ((mv bad-insts good-insts)
-        (vl-fast-filter-modinsts-by-modname missing fal x.modinsts nil nil))
+        (vl-filter-modinsts-by-modname+ missing x.modinsts fal))
        ((when bad-insts)
         (b* ((nbad      (len bad-insts))
              (bad-names (mergesort (vl-modinstlist->modnames bad-insts)))
-             (w (make-vl-warning
-                 :type :vl-dropped-insts
-                 :msg "In module ~m0, deleting ~x1 submodule instance~s2 ~
-                       because ~s3 to the undefined module~s4 ~&5.  These ~
-                       deletions might cause our analysis to be flawed."
-                 :args (list x.name
-                             nbad
-                             (if (eql nbad 1) "" "s")
-                             (if (eql nbad 1) "it refers" "they refer")
-                             (if (vl-plural-p bad-names) "s" "")
-                             bad-names)
-                 :fatalp t
-                 :fn 'vl-module-drop-missing-submodules)))
+             (warnings  (fatal :type :vl-dropped-insts
+                               :msg "In module ~m0, deleting ~x1 submodule ~
+                                     instance~s2 because ~s3 to the undefined ~
+                                     module~s4 ~&5.  These deletions might ~
+                                     cause our analysis to be flawed."
+                               :args (list x.name
+                                           nbad
+                                           (if (eql nbad 1) "" "s")
+                                           (if (eql nbad 1) "it refers" "they refer")
+                                           (if (vl-plural-p bad-names) "s" "")
+                                           bad-names)
+                               :acc x.warnings)))
           (change-vl-module x
                             :modinsts good-insts
-                            :warnings (cons w x.warnings)))))
+                            :warnings warnings))))
     x))
 
-(defprojection vl-modulelist-drop-missing-submodules-aux (x missing fal)
-  (vl-module-drop-missing-submodules x missing fal)
-  :guard (and (vl-modulelist-p x)
-              (string-listp missing)
-              (equal fal (make-lookup-alist missing)))
-  :result-type vl-modulelist-p)
+(defprojection vl-modulelist-drop-missing-submodules-aux ((x       vl-modulelist-p)
+                                                          (missing string-listp)
+                                                          (fal     (equal fal (make-lookup-alist missing))))
+  :returns (new-x vl-modulelist-p)
+  (vl-module-drop-missing-submodules x missing fal))
 
 (define vl-modulelist-drop-missing-submodules ((x vl-modulelist-p))
-  :returns (new-x vl-modulelist-p :hyp :fguard)
+  :returns (new-x vl-modulelist-p)
   (b* ((missing (vl-modulelist-missing x))
        (fal     (make-lookup-alist missing))
        (x-prime (vl-modulelist-drop-missing-submodules-aux x missing fal)))
@@ -85,6 +84,5 @@ transformation process.</p>")
 
 (define vl-design-drop-missing-submodules ((x vl-design-p))
   :returns (new-x vl-design-p)
-  (b* ((x (vl-design-fix x))
-       ((vl-design x) x))
+  (b* (((vl-design x) x))
     (change-vl-design x :mods (vl-modulelist-drop-missing-submodules x.mods))))

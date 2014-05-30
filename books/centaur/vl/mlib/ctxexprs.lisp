@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -22,9 +22,10 @@
 (include-book "allexprs")
 (include-book "context")
 (local (include-book "../util/arithmetic"))
+(local (std::add-default-post-define-hook :fix))
 
 (defxdoc ctxexprs
-  :parents (mlib)
+  :parents (contexts)
   :short "Functions for gathering expressions and the context in which they
 occur."
 
@@ -34,115 +35,89 @@ module.  But whereas the @('allexprs') functions just return flat lists of
 expressions, we return a @(see vl-exprctxalist-p) that associates each
 expression with a @(see vl-context-p) describing its origin.</p>")
 
+(fty::defalist vl-exprctxalist
+  :key-type vl-expr-p
+  :val-type vl-context-p)
 
-
-(defsection vl-exprctxalist-p
-  :parents (ctxexprs)
+(defalist vl-exprctxalist-p (x)
+  :parents (contexts)
   :short "An alist binding @(see vl-expr-p)s to @(see vl-context-p)s."
   :long "<p>These alists are produced by our @(see ctxexprs) functions, and
 essentially say where some expressions are from.</p>"
+  :key (vl-expr-p x)
+  :val (vl-context-p x)
+  :keyp-of-nil nil
+  :valp-of-nil nil
+  :already-definedp t)
 
-  (defund vl-exprctxalist-p (x)
-    (declare (xargs :guard t))
-    (or (atom x)
-        (and (consp (car x))
-             (vl-expr-p (caar x))
-             (vl-context-p (cdar x))
-             (vl-exprctxalist-p (cdr x)))))
+(defthm vl-exprlist-p-of-strip-cars-when-vl-exprctxalist-p
+  (implies (vl-exprctxalist-p x)
+           (vl-exprlist-p (strip-cars x)))
+  :hints(("Goal" :induct (len x))))
 
-  (local (in-theory (enable vl-exprctxalist-p)))
+(define vl-make-exprctxalist-nrev
+  :parents (vl-make-exprctxalist)
+  ((exprs vl-exprlist-p)
+   (ctx   vl-context-p)
+   nrev)
+  (if (atom exprs)
+      (nrev-fix nrev)
+    (let ((nrev (nrev-push (cons (vl-expr-fix (car exprs))
+                                 (vl-context-fix ctx))
+                           nrev)))
+      (vl-make-exprctxalist-nrev (cdr exprs) ctx nrev))))
 
-  (defthm vl-exprctxalist-p-when-not-consp
-    (implies (not (consp x))
-             (equal (vl-exprctxalist-p x)
-                    t)))
-
-  (defthm vl-exprctxalist-p-of-cons
-    (equal (vl-exprctxalist-p (cons a x))
-           (and (consp a)
-                (vl-expr-p (car a))
-                (vl-context-p (cdr a))
-                (vl-exprctxalist-p x))))
-
-  (defthm vl-exprctxalist-p-of-append
-    (implies (and (force (vl-exprctxalist-p x))
-                  (force (vl-exprctxalist-p y)))
-             (vl-exprctxalist-p (append x y))))
-
-  (defthm vl-exprlist-p-of-strip-cars-when-vl-exprctxalist-p
-    (implies (vl-exprctxalist-p x)
-             (vl-exprlist-p (strip-cars x))))
-
-  (defthm alistp-when-vl-exprctxalist-p
-    (implies (vl-exprctxalist-p x)
-             (equal (alistp x)
-                    (true-listp x)))))
-
-
-
-(defsection vl-make-exprctxalist
-
-  (defund vl-make-exprctxalist (exprs ctx)
-    (declare (xargs :guard (and (vl-exprlist-p exprs)
-                                (vl-context-p ctx))))
-    (if (atom exprs)
-        nil
-      (cons (cons (car exprs) ctx)
-            (vl-make-exprctxalist (cdr exprs) ctx))))
-
-  (local (in-theory (enable vl-make-exprctxalist)))
-
-  (defthm vl-exprctxalist-p-of-vl-make-exprctxalist
-    (implies (and (force (vl-exprlist-p exprs))
-                  (force (vl-context-p ctx)))
-             (vl-exprctxalist-p (vl-make-exprctxalist exprs ctx)))))
-
+(define vl-make-exprctxalist
+  :short "Bind some expressions to their context."
+  ((exprs vl-exprlist-p "List of expressions to bind.")
+   (ctx   vl-context-p  "Context to bind to all of these expressions."))
+  :returns (alist vl-exprctxalist-p)
+  :verify-guards nil
+  (mbe :logic
+       (if (atom exprs)
+           nil
+         (cons (cons (vl-expr-fix (car exprs))
+                     (vl-context-fix ctx))
+               (vl-make-exprctxalist (cdr exprs) ctx)))
+       :exec
+       (with-local-nrev (vl-make-exprctxalist-nrev exprs ctx nrev)))
+  ///
+  (local (in-theory (enable vl-make-exprctxalist-nrev)))
+  (defthm vl-make-exprctxalist-nrev-removal
+    (equal (vl-make-exprctxalist-nrev exprs ctx nrev)
+           (append nrev (vl-make-exprctxalist exprs ctx))))
+  (verify-guards vl-make-exprctxalist))
 
 (defmacro def-vl-ctxexprs (&key type)
   (let* ((mksym-package-symbol 'vl::foo)
-         (type-p   (mksym type '-p))
-         (collect  (mksym type '-ctxexprs))
-         (allexprs (mksym type '-allexprs))
-         (type-thm (mksym 'vl-exprctxalist-p-of- collect))
-         (true-thm (mksym 'true-listp-of- collect)))
-    `(defsection ,collect
-       :parents (ctxexprs)
+         (type-p       (mksym type '-p))
+         (fix          (mksym type '-fix))
+         (collect      (mksym type '-ctxexprs))
+         (collect-nrev (mksym type '-ctxexprs-nrev))
+         (allexprs     (mksym type '-allexprs)))
+    `(progn
+       (define ,collect-nrev ((mod stringp) (x ,type-p) nrev)
+         :parents (,collect)
+         :inline t
+         (let ((x (,fix x)))
+           (vl-make-exprctxalist-nrev (,allexprs x)
+                                      (make-vl-context :mod mod :elem x)
+                                      nrev)))
 
-       (defund ,collect (mod x)
-         (declare (xargs :guard (and (stringp mod)
-                                     (,type-p x))))
-         (vl-make-exprctxalist (,allexprs x)
-                               (make-vl-context :mod mod :elem x)))
+       (define ,collect
+         :parents (ctxexprs)
+         ((mod stringp)
+          (x   ,type-p))
+         :returns (alist vl-exprctxalist-p)
+         (let ((x (,fix x)))
+           (vl-make-exprctxalist (,allexprs x)
+                                 (make-vl-context :mod mod :elem x))))
 
-       (local (in-theory (enable ,collect)))
-
-       (defthm ,type-thm
-         (implies (and (force (stringp mod))
-                       (force (,type-p x)))
-                  (vl-exprctxalist-p (,collect mod x))))
-
-       (defthm ,true-thm
-         (true-listp (,collect mod x))
-         :rule-classes :type-prescription))))
-
-
-(defmacro def-vl-ctxexprs-list (&key element list)
-  (let* ((mksym-package-symbol 'vl::foo)
-         (list-type-p  (mksym list '-p))
-         (collect-list (mksym list '-ctxexprs))
-         (collect-elem (mksym element '-ctxexprs))
-         (type-thm     (mksym 'vl-exprctxalist-p-of- collect-list)))
-
-    `(defmapappend ,collect-list (mod x)
-       (,collect-elem mod x)
-       :guard (and (stringp mod)
-                   (,list-type-p x))
-       :parents (ctxexprs)
-       :rest
-       ((defthm ,type-thm
-          (implies (and (force (stringp mod))
-                        (force (,list-type-p x)))
-                   (vl-exprctxalist-p (,collect-list mod x))))))))
+       (defthm ,(mksym collect-nrev '-removal)
+         (equal (,collect-nrev mod x nrev)
+                (append nrev (,collect mod x)))
+         :hints(("Goal" :in-theory (enable ,collect-nrev
+                                           ,collect)))))))
 
 (def-vl-ctxexprs :type vl-port)
 (def-vl-ctxexprs :type vl-portdecl)
@@ -159,6 +134,46 @@ essentially say where some expressions are from.</p>"
 (def-vl-ctxexprs :type vl-always)
 (def-vl-ctxexprs :type vl-initial)
 
+(defmacro def-vl-ctxexprs-list (&key element list)
+  (let* ((mksym-package-symbol 'vl::foo)
+         (list-type-p       (mksym list '-p))
+         (collect-list      (mksym list '-ctxexprs))
+         (collect-list-nrev (mksym list '-ctxexprs-nrev))
+         (collect-elem      (mksym element '-ctxexprs))
+         (collect-elem-nrev (mksym element '-ctxexprs-nrev)))
+    `(progn
+       (define ,collect-list-nrev
+         :parents (,collect-list)
+         ((mod stringp)
+          (x ,list-type-p)
+          nrev)
+         (b* (((when (atom x))
+               (nrev-fix nrev))
+              (nrev (,collect-elem-nrev mod (car x) nrev)))
+           (,collect-list-nrev mod (cdr x) nrev)))
+
+       (define ,collect-list
+         :parents (ctxexprs)
+         :short ,(cat "Collect up a @(see vl-exprctxalist-p) from a list of @(see "
+                      (symbol-name list-type-p) ")s.")
+         ((mod stringp)
+          (x   ,list-type-p))
+         :returns (alist vl-exprctxalist-p)
+         :verify-guards nil
+         (mbe :logic
+              (if (atom x)
+                  nil
+                (append (,collect-elem mod (car x))
+                        (,collect-list mod (cdr x))))
+              :exec
+              (with-local-nrev (,collect-list-nrev mod x nrev)))
+         ///
+         (defthm ,(mksym collect-list-nrev '-removal)
+           (equal (,collect-list-nrev mod x nrev)
+                  (append nrev (,collect-list mod x)))
+           :hints(("Goal" :in-theory (enable ,collect-list-nrev))))
+         (verify-guards ,collect-list)))))
+
 (def-vl-ctxexprs-list :element vl-port      :list vl-portlist)
 (def-vl-ctxexprs-list :element vl-portdecl  :list vl-portdecllist)
 (def-vl-ctxexprs-list :element vl-assign    :list vl-assignlist)
@@ -174,52 +189,39 @@ essentially say where some expressions are from.</p>"
 (def-vl-ctxexprs-list :element vl-always    :list vl-alwayslist)
 (def-vl-ctxexprs-list :element vl-initial   :list vl-initiallist)
 
-(defsection vl-module-ctxexprs
-  :parents (ctxexprs)
-
-  (defund vl-module-ctxexprs (x)
-    (declare (xargs :guard (vl-module-p x)))
-    (b* (((vl-module x) x))
-      (mbe :logic
-           (append (vl-portlist-ctxexprs x.name x.ports)
-                   (vl-portdecllist-ctxexprs x.name x.portdecls)
-                   (vl-assignlist-ctxexprs x.name x.assigns)
-                   (vl-netdecllist-ctxexprs x.name x.netdecls)
-                   (vl-vardecllist-ctxexprs x.name x.vardecls)
-                   (vl-regdecllist-ctxexprs x.name x.regdecls)
-                   (vl-eventdecllist-ctxexprs x.name x.eventdecls)
-                   (vl-paramdecllist-ctxexprs x.name x.paramdecls)
-                   (vl-fundecllist-ctxexprs x.name x.fundecls)
-                   (vl-taskdecllist-ctxexprs x.name x.taskdecls)
-                   (vl-modinstlist-ctxexprs x.name x.modinsts)
-                   (vl-gateinstlist-ctxexprs x.name x.gateinsts)
-                   (vl-alwayslist-ctxexprs x.name x.alwayses)
-                   (vl-initiallist-ctxexprs x.name x.initials))
-           :exec
-           (b* ((acc nil)
-                (acc (vl-portlist-ctxexprs-exec x.name x.ports acc))
-                (acc (vl-portdecllist-ctxexprs-exec x.name x.portdecls acc))
-                (acc (vl-assignlist-ctxexprs-exec x.name x.assigns acc))
-                (acc (vl-netdecllist-ctxexprs-exec x.name x.netdecls acc))
-                (acc (vl-vardecllist-ctxexprs-exec x.name x.vardecls acc))
-                (acc (vl-regdecllist-ctxexprs-exec x.name x.regdecls acc))
-                (acc (vl-eventdecllist-ctxexprs-exec x.name x.eventdecls acc))
-                (acc (vl-paramdecllist-ctxexprs-exec x.name x.paramdecls acc))
-                (acc (vl-fundecllist-ctxexprs-exec x.name x.fundecls acc))
-                (acc (vl-taskdecllist-ctxexprs-exec x.name x.taskdecls acc))
-                (acc (vl-modinstlist-ctxexprs-exec x.name x.modinsts acc))
-                (acc (vl-gateinstlist-ctxexprs-exec x.name x.gateinsts acc))
-                (acc (vl-alwayslist-ctxexprs-exec x.name x.alwayses acc))
-                (acc (vl-initiallist-ctxexprs-exec x.name x.initials acc)))
-             (reverse acc)))))
-
-  (local (in-theory (enable vl-module-ctxexprs)))
-
-  (defthm vl-exprlist-p-of-vl-module-ctxexprs
-    (implies (vl-module-p x)
-             (vl-exprctxalist-p (vl-module-ctxexprs x))))
-
-  (defthm true-listp-of-vl-module-ctxexprs
-    (true-listp (vl-module-ctxexprs x))
-    :rule-classes :type-prescription))
+(define vl-module-ctxexprs ((x vl-module-p))
+  :returns (alist vl-exprctxalist-p)
+  (b* (((vl-module x) x))
+    (mbe :logic
+         (append (vl-portlist-ctxexprs x.name x.ports)
+                 (vl-portdecllist-ctxexprs x.name x.portdecls)
+                 (vl-assignlist-ctxexprs x.name x.assigns)
+                 (vl-netdecllist-ctxexprs x.name x.netdecls)
+                 (vl-vardecllist-ctxexprs x.name x.vardecls)
+                 (vl-regdecllist-ctxexprs x.name x.regdecls)
+                 (vl-eventdecllist-ctxexprs x.name x.eventdecls)
+                 (vl-paramdecllist-ctxexprs x.name x.paramdecls)
+                 (vl-fundecllist-ctxexprs x.name x.fundecls)
+                 (vl-taskdecllist-ctxexprs x.name x.taskdecls)
+                 (vl-modinstlist-ctxexprs x.name x.modinsts)
+                 (vl-gateinstlist-ctxexprs x.name x.gateinsts)
+                 (vl-alwayslist-ctxexprs x.name x.alwayses)
+                 (vl-initiallist-ctxexprs x.name x.initials))
+         :exec
+         (with-local-nrev
+           (b* ((nrev (vl-portlist-ctxexprs-nrev x.name x.ports nrev))
+                (nrev (vl-portdecllist-ctxexprs-nrev x.name x.portdecls nrev))
+                (nrev (vl-assignlist-ctxexprs-nrev x.name x.assigns nrev))
+                (nrev (vl-netdecllist-ctxexprs-nrev x.name x.netdecls nrev))
+                (nrev (vl-vardecllist-ctxexprs-nrev x.name x.vardecls nrev))
+                (nrev (vl-regdecllist-ctxexprs-nrev x.name x.regdecls nrev))
+                (nrev (vl-eventdecllist-ctxexprs-nrev x.name x.eventdecls nrev))
+                (nrev (vl-paramdecllist-ctxexprs-nrev x.name x.paramdecls nrev))
+                (nrev (vl-fundecllist-ctxexprs-nrev x.name x.fundecls nrev))
+                (nrev (vl-taskdecllist-ctxexprs-nrev x.name x.taskdecls nrev))
+                (nrev (vl-modinstlist-ctxexprs-nrev x.name x.modinsts nrev))
+                (nrev (vl-gateinstlist-ctxexprs-nrev x.name x.gateinsts nrev))
+                (nrev (vl-alwayslist-ctxexprs-nrev x.name x.alwayses nrev))
+                (nrev (vl-initiallist-ctxexprs-nrev x.name x.initials nrev)))
+             nrev)))))
 

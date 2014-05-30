@@ -22,6 +22,7 @@
 (include-book "../mlib/filter")
 (include-book "../mlib/modnamespace")
 (local (include-book "../util/arithmetic"))
+(local (std::add-default-post-define-hook :fix))
 
 (defxdoc drop-user-submodules
   :parents (lint)
@@ -39,57 +40,52 @@ they are, say, owned by some other logic designer.</p>")
    (names   string-listp "List of module names to drop.")
    (fal     "Precomputed fast alist for @('names')."
             (equal fal (make-lookup-alist names))))
-  :returns (new-x vl-module-p :hyp :fguard)
+  :returns (new-x vl-module-p)
   :short "Remove instances of modules that we're supposed to drop."
-  (b* (((vl-module x) x)
+  (b* ((x (vl-module-fix x))
+       ((vl-module x) x)
        ((mv bad-insts good-insts)
-        (vl-fast-filter-modinsts-by-modname names fal x.modinsts nil nil))
+        (vl-filter-modinsts-by-modname+ names x.modinsts fal))
        ((when bad-insts)
         (b* ((nbad      (len bad-insts))
              (bad-names (mergesort (vl-modinstlist->modnames bad-insts)))
-             (w (make-vl-warning
-                 :type :vl-dropped-insts
-                 :msg "In module ~m0, deleting ~x1 submodule instance~s2 ~
-                       because ~s3 to the module~s4 ~&5, which we have been ~
-                       told to drop.  These deletions might cause our ~
-                       analysis to be flawed."
-                 :args (list x.name
-                             nbad
-                             (if (eql nbad 1) "" "s")
-                             (if (eql nbad 1) "it refers" "they refer")
-                             (if (vl-plural-p bad-names) "s" "")
-                             bad-names)
-                 :fatalp t
-                 :fn 'vl-module-drop-user-submodules)))
+             (warnings  (fatal :type :vl-dropped-insts
+                               :msg "In module ~m0, deleting ~x1 submodule ~
+                                     instance~s2 because ~s3 to the module~s4 ~
+                                     ~&5, which we have been told to drop.  ~
+                                     These deletions might cause our analysis ~
+                                     to be flawed."
+                               :args (list x.name
+                                           nbad
+                                           (if (eql nbad 1) "" "s")
+                                           (if (eql nbad 1) "it refers" "they refer")
+                                           (if (vl-plural-p bad-names) "s" "")
+                                           bad-names)
+                               :acc x.warnings)))
           (change-vl-module x
                             :modinsts good-insts
-                            :warnings (cons w x.warnings)))))
+                            :warnings warnings))))
     x))
 
-(defprojection vl-modulelist-drop-user-submodules-aux (x names fal)
-  (vl-module-drop-user-submodules x names fal)
-  :guard (and (vl-modulelist-p x)
-              (string-listp names)
-              (equal fal (make-lookup-alist names)))
-  :result-type vl-modulelist-p)
+(defprojection vl-modulelist-drop-user-submodules-aux ((x     vl-modulelist-p)
+                                                       (names string-listp)
+                                                       (fal   (equal fal (make-lookup-alist names))))
+  :returns (new-x vl-modulelist-p)
+  (vl-module-drop-user-submodules x names fal))
 
-(define vl-modulelist-drop-user-submodules
-  ((x    vl-modulelist-p "Module list to filter.")
-   (drop string-listp    "Names of modules to drop."))
-  :returns (new-x vl-modulelist-p :hyp :fguard)
-  (b* ((x       (vl-delete-modules drop x))
+(define vl-modulelist-drop-user-submodules ((x    vl-modulelist-p "Module list to filter.")
+                                            (drop string-listp    "Names of modules to drop."))
+  :returns (new-x vl-modulelist-p)
+  (b* ((drop    (string-list-fix drop))
+       (x       (vl-delete-modules drop x))
        (fal     (make-lookup-alist drop))
        (x-prime (vl-modulelist-drop-user-submodules-aux x drop fal)))
     (fast-alist-free fal)
     x-prime))
 
-(define vl-design-drop-user-submodules
-  ((x    vl-design-p)
-   (drop string-listp))
+(define vl-design-drop-user-submodules ((x    vl-design-p)
+                                        (drop string-listp))
   :returns (new-x vl-design-p)
-  (b* ((x    (vl-design-fix x))
-       (drop (mbe :logic (and (string-listp drop) drop)
-                  :exec drop))
-       ((vl-design x) x)
+  (b* (((vl-design x) x)
        (new-mods (vl-modulelist-drop-user-submodules x.mods drop)))
     (change-vl-design x :mods new-mods)))

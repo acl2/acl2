@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -21,27 +21,32 @@
 (in-package "VL")
 (include-book "writer")
 (include-book "../util/cwtime")
-(include-book "../loader/inject-comments") ; BOZO why is this in the loader?
+(include-book "../loader/inject-comments")
 (local (include-book "../util/arithmetic"))
+(local (std::add-default-post-define-hook :fix))
 
 
-;                             COMMENT INJECTION
+; Pretty-Printing Modules with Comments
 ;
-; The above routines only print the parse-tree part of a module.  We now write
-; our main routine for merging the comments in and printing the module back out
-; in a reasonable order.
+; Our ordinary pretty-printing functions only print out the parse-tree part of
+; a module.  We now write our main routine for merging the comments back in and
+; printing the module back out in a reasonable order.
 ;
-; The comment map is an alist of (location . string) pairs.  Since each module
-; item has a location, and we can now pretty-print each kind of module item
-; into a string, we will just create another one of these alists for the the
-; module items.  Then, we just need to merge the two alists in order to put the
-; comments back into place.
+; Recall that:
+;  - The comment map is an alist of (location . string) pairs.
+;  - Meanwhile, each module item has a location
 ;
-
-(defthm alistp-when-vl-commentmap-p
-  (implies (vl-commentmap-p x)
-           (alistp x))
-  :hints(("Goal" :induct (len x))))
+; The basic way we're going to do this is:
+;   - Pretty-print each kind of module item into a string
+;   - Associate the location of each module item with its pretty-printed string
+;     (the result looks like a comment map!)
+;   - Merge the resulting module element map with the actual comment map
+;     (this is just ordinary comment-map sorting)
+;
+; The result is a location-sorted mixed list with module elements (already
+; printed) and the comments interspersed in the right places.  Merging the
+; strings gives us a pretty-printed version of the module with the comments
+; injected in.
 
 
 (defmacro with-semilocal-ps (&rest args)
@@ -59,194 +64,55 @@
               ,@args)))
      (mv (vl-ps->string) ps)))
 
-(define vl-portdecllist-ppmap ((x     vl-portdecllist-p)
-                               (alist vl-commentmap-p)
-                               &key (ps 'ps))
-  :returns (mv (alist vl-commentmap-p
-                      :hyp (and (force (vl-portdecllist-p x))
-                                (force (vl-commentmap-p alist))))
-               (ps))
-  (if (atom x)
-      (mv alist ps)
-    (mv-let (str ps)
-      (with-semilocal-ps (vl-pp-portdecl (car x)))
-      (vl-portdecllist-ppmap (cdr x)
-                             (acons (vl-portdecl->loc (car x)) str alist)))))
+(defmacro def-vl-ppmap (&key list elem)
+  (b* ((mksym-package-symbol (pkg-witness "VL"))
+       (fn        (mksym 'vl- list '-ppmap))
+       (list-p    (mksym 'vl- list '-p))
+       (pp-elem   (mksym 'vl-pp- elem))
+       (elem->loc (mksym 'vl- elem '->loc)))
+    `(define ,fn ((x        ,list-p)
+                  (item-map vl-commentmap-p)
+                  &key (ps 'ps))
+       :returns (mv (item-map vl-commentmap-p) ps)
+       :parents (vl-make-item-map-for-ppc-module)
+       (b* (((when (atom x))
+             (mv (vl-commentmap-fix item-map) ps))
+            ((mv str ps)
+             (with-semilocal-ps (,pp-elem (car x))))
+            (item-map (cons (cons (,elem->loc (car x)) str) item-map)))
+         (,fn (cdr x) item-map)))))
 
-(define vl-assignlist-ppmap ((x     vl-assignlist-p)
-                             (alist vl-commentmap-p)
-                             &key (ps 'ps))
-  :returns (mv (alist vl-commentmap-p
-                      :hyp (and (force (vl-assignlist-p x))
-                                (force (vl-commentmap-p alist))))
-               (ps))
-  (if (atom x)
-      (mv alist ps)
-    (mv-let (str ps)
-      (with-semilocal-ps (vl-pp-assign (car x)))
-      (vl-assignlist-ppmap (cdr x)
-                           (acons (vl-assign->loc (car x)) str alist)))))
+(def-vl-ppmap :list portdecllist :elem portdecl)
+(def-vl-ppmap :list assignlist :elem assign)
+(def-vl-ppmap :list netdecllist :elem netdecl)
+(def-vl-ppmap :list regdecllist :elem regdecl)
+(def-vl-ppmap :list vardecllist :elem vardecl)
+(def-vl-ppmap :list eventdecllist :elem eventdecl)
+(def-vl-ppmap :list gateinstlist :elem gateinst)
+(def-vl-ppmap :list alwayslist :elem always)
+(def-vl-ppmap :list initiallist :elem initial)
+(def-vl-ppmap :list paramdecllist :elem paramdecl)
+(def-vl-ppmap :list fundecllist :elem fundecl)
+(def-vl-ppmap :list taskdecllist :elem taskdecl)
 
-(define vl-netdecllist-ppmap ((x     vl-netdecllist-p)
-                              (alist vl-commentmap-p)
-                              &key (ps 'ps))
-  :returns (mv (alist vl-commentmap-p
-                      :hyp (and (force (vl-netdecllist-p x))
-                                (force (vl-commentmap-p alist))))
-               (ps))
-  (if (atom x)
-      (mv alist ps)
-    (mv-let (str ps)
-      (with-semilocal-ps (vl-pp-netdecl (car x)))
-      (vl-netdecllist-ppmap (cdr x)
-                            (acons (vl-netdecl->loc (car x)) str alist)))))
-
-(define vl-regdecllist-ppmap ((x     vl-regdecllist-p)
-                              (alist vl-commentmap-p)
-                              &key (ps 'ps))
-  :returns (mv (alist vl-commentmap-p
-                      :hyp (and (force (vl-regdecllist-p x))
-                                (force (vl-commentmap-p alist))))
-               (ps))
-  (if (atom x)
-      (mv alist ps)
-    (mv-let (str ps)
-      (with-semilocal-ps (vl-pp-regdecl (car x)))
-      (vl-regdecllist-ppmap (cdr x)
-                            (acons (vl-regdecl->loc (car x)) str alist)))))
-
-(define vl-vardecllist-ppmap ((x     vl-vardecllist-p)
-                              (alist vl-commentmap-p)
-                              &key (ps 'ps))
-  :returns (mv (alist vl-commentmap-p
-                      :hyp (and (force (vl-vardecllist-p x))
-                                (force (vl-commentmap-p alist))))
-               (ps))
-  (if (atom x)
-      (mv alist ps)
-    (mv-let (str ps)
-      (with-semilocal-ps (vl-pp-vardecl (car x)))
-      (vl-vardecllist-ppmap (cdr x)
-                            (acons (vl-vardecl->loc (car x)) str alist)))))
-
-(define vl-eventdecllist-ppmap ((x     vl-eventdecllist-p)
-                                (alist vl-commentmap-p)
-                                &key (ps 'ps))
-  :returns (mv (alist vl-commentmap-p
-                      :hyp (and (force (vl-eventdecllist-p x))
-                                (force (vl-commentmap-p alist))))
-               (ps))
-  (if (atom x)
-      (mv alist ps)
-    (mv-let (str ps)
-      (with-semilocal-ps (vl-pp-eventdecl (car x)))
-      (vl-eventdecllist-ppmap (cdr x)
-                              (acons (vl-eventdecl->loc (car x)) str alist)))))
-
+;; This one's a bit different because it takes mods/modalist
 (define vl-modinstlist-ppmap ((x        vl-modinstlist-p)
                               (mods     vl-modulelist-p)
                               (modalist (equal modalist (vl-modalist mods)))
-                              (alist    vl-commentmap-p)
+                              (item-map vl-commentmap-p)
                               &key (ps 'ps))
-  :returns (mv (alist vl-commentmap-p
-                      :hyp (and (force (vl-modinstlist-p x))
-                                (force (vl-modulelist-p mods))
-                                (force (equal modalist (vl-modalist mods)))
-                                (force (vl-commentmap-p alist))))
-               (ps))
-  (if (atom x)
-      (mv alist ps)
-    (mv-let (str ps)
-      (with-semilocal-ps (vl-pp-modinst (car x) mods modalist))
-      (vl-modinstlist-ppmap (cdr x) mods modalist
-                            (acons (vl-modinst->loc (car x)) str alist)))))
-
-(define vl-gateinstlist-ppmap ((x     vl-gateinstlist-p)
-                               (alist vl-commentmap-p)
-                               &key (ps 'ps))
-  :returns (mv (alist vl-commentmap-p
-                      :hyp (and (force (vl-gateinstlist-p x))
-                                (force (vl-commentmap-p alist))))
-               (ps))
-  (if (atom x)
-      (mv alist ps)
-    (mv-let (str ps)
-      (with-semilocal-ps (vl-pp-gateinst (car x)))
-      (vl-gateinstlist-ppmap (cdr x)
-                             (acons (vl-gateinst->loc (car x)) str alist)))))
-
-(define vl-alwayslist-ppmap ((x     vl-alwayslist-p)
-                             (alist vl-commentmap-p)
-                             &key (ps 'ps))
-  :returns (mv (alist vl-commentmap-p
-                      :hyp (and (force (vl-alwayslist-p x))
-                                (force (vl-commentmap-p alist))))
-               (ps))
-  (if (atom x)
-      (mv alist ps)
-    (mv-let (str ps)
-      (with-semilocal-ps (vl-pp-always (car x)))
-      (vl-alwayslist-ppmap (cdr x)
-                           (acons (vl-always->loc (car x)) str alist)))))
-
-(define vl-initiallist-ppmap ((x     vl-initiallist-p)
-                              (alist vl-commentmap-p)
-                              &key (ps 'ps))
-  :returns (mv (alist vl-commentmap-p
-                      :hyp (and (force (vl-initiallist-p x))
-                                (force (vl-commentmap-p alist))))
-               (ps))
-  (if (atom x)
-      (mv alist ps)
-    (mv-let (str ps)
-      (with-semilocal-ps (vl-pp-initial (car x)))
-      (vl-initiallist-ppmap (cdr x)
-                            (acons (vl-initial->loc (car x)) str alist)))))
-
-(define vl-paramdecllist-ppmap ((x     vl-paramdecllist-p)
-                                (alist vl-commentmap-p)
-                                &key (ps 'ps))
-  :returns (mv (alist vl-commentmap-p
-                      :hyp (and (force (vl-paramdecllist-p x))
-                                (force (vl-commentmap-p alist))))
-               (ps))
-  (if (atom x)
-      (mv alist ps)
-    (mv-let (str ps)
-      (with-semilocal-ps (vl-pp-paramdecl (car x)))
-      (vl-paramdecllist-ppmap (cdr x)
-                              (acons (vl-paramdecl->loc (car x)) str alist)))))
-
-(define vl-fundecllist-ppmap ((x     vl-fundecllist-p)
-                              (alist vl-commentmap-p)
-                              &key (ps 'ps))
-  :returns (mv (alist vl-commentmap-p
-                      :hyp (and (force (vl-fundecllist-p x))
-                                (force (vl-commentmap-p alist))))
-               (ps))
-  (if (atom x)
-      (mv alist ps)
-    (mv-let (str ps)
-      (with-semilocal-ps (vl-pp-fundecl (car x)))
-      (vl-fundecllist-ppmap (cdr x)
-                            (acons (vl-fundecl->loc (car x)) str alist)))))
-
-(define vl-taskdecllist-ppmap ((x     vl-taskdecllist-p)
-                               (alist vl-commentmap-p)
-                               &key (ps 'ps))
-  :returns (mv (alist vl-commentmap-p
-                      :hyp (and (force (vl-taskdecllist-p x))
-                                (force (vl-commentmap-p alist))))
-               (ps))
-  (if (atom x)
-      (mv alist ps)
-    (mv-let (str ps)
-      (with-semilocal-ps (vl-pp-taskdecl (car x)))
-      (vl-taskdecllist-ppmap (cdr x)
-                             (acons (vl-taskdecl->loc (car x)) str alist)))))
+  :returns (mv (item-map vl-commentmap-p) ps)
+       :parents (vl-make-item-map-for-ppc-module)
+  (b* (((when (atom x))
+        (mv (vl-commentmap-fix item-map) ps))
+       ((mv str ps)
+        (with-semilocal-ps (vl-pp-modinst (car x) mods modalist)))
+       (item-map (cons (cons (vl-modinst->loc (car x)) str) item-map)))
+    (vl-modinstlist-ppmap (cdr x) mods modalist item-map)))
 
 (define vl-add-newlines-after-block-comments ((x vl-commentmap-p))
   :returns (new-x vl-commentmap-p :hyp :fguard)
+  :hooks nil
   (b* (((when (atom x))
         nil)
        (loc1 (caar x))
@@ -261,6 +127,7 @@
 (define vl-html-encode-commentmap ((x vl-commentmap-p)
                                    (tabsize posp))
   :returns (new-x vl-commentmap-p :hyp (force (vl-commentmap-p x)))
+  :hooks nil
   ;; BOZO inefficient, potentially bad!
   (b* (((when (atom x))
         nil)
@@ -280,6 +147,7 @@
 ; color codes, etc.  So, we do not want to print these entries with vl-print,
 ; but instead we want to be sure to use vl-print-markup to avoid any
 ; re-encoding of the encoding.
+  :hooks nil
 
   (cond ((atom x)
          ps)
@@ -311,11 +179,7 @@
    (mods     vl-modulelist-p)
    (modalist (equal modalist (vl-modalist mods)))
    &key (ps 'ps))
-  :returns (mv (map vl-commentmap-p
-                    :hyp (and (force (vl-module-p x))
-                              (force (vl-modulelist-p mods))
-                              (force (equal modalist (vl-modalist mods)))))
-               (ps))
+  :returns (mv (map vl-commentmap-p) ps)
   :parents (vl-ppc-module)
   :short "Build a commentmap that has the encoded items for a module."
   (b* (((vl-module x) x)
@@ -355,7 +219,7 @@
        ;; think the answer is that some module elements may share a location,
        ;; and since our sort is stable we want to preserve their original order
        ;; in the lists above, if possible.
-       (imap (reverse imap))
+       (imap (rev imap))
 
        ;; Now that we are done generating the ppmap, restore the previous state
        ;; of the ps.

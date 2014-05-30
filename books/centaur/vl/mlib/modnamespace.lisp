@@ -21,6 +21,7 @@
 (in-package "VL")
 (include-book "../parsetree")
 (local (include-book "../util/arithmetic"))
+(local (std::add-default-post-define-hook :fix))
 
 (defxdoc modnamespace
   :parents (mlib)
@@ -58,83 +59,69 @@ any reasonable module is required to have a unique modnamespace.</p>
 to be handled.  We do at least get function and task names, and names from
 events.</p>")
 
-(defprojection vl-namedarglist->names (x)
+(local (xdoc::set-default-parents modnamespace))
+
+(defprojection vl-namedarglist->names ((x vl-namedarglist-p))
   ;; BOZO this function is somewhat misplaced, it doesn't really have anything
   ;; to do with the modnamespace.
-  (vl-namedarg->name x)
-  :guard (vl-namedarglist-p x)
-  :result-type string-listp
-  :nil-preservingp t
   :parents (vl-namedarglist-p)
-  :short "Collect all names from a @(see vl-namedarglist-p).")
+  :short "Collect all names from a @(see vl-namedarglist-p)."
+  :returns (names string-listp)
+  (vl-namedarg->name x))
 
-(defprojection vl-modinstlist->modnames (x)
+(defprojection vl-modinstlist->modnames ((x vl-modinstlist-p))
   ;; BOZO also somewhat misplaced -- doesn't have to do with the namespace.
-  (vl-modinst->modname x)
-  :guard (vl-modinstlist-p x)
-  :result-type string-listp
-  :nil-preservingp t
   :parents (vl-modinstlist-p)
   :short "Collect all module names (not instance names!) from a
-          @(see vl-modinstlist-p).")
+          @(see vl-modinstlist-p)."
+  :returns (modnames string-listp)
+  (vl-modinst->modname x))
 
-(defprojection vl-paramdecllist->names (x)
-  (vl-paramdecl->name x)
-  :guard (vl-paramdecllist-p x)
-  :result-type string-listp
-  :nil-preservingp t
+(defprojection vl-paramdecllist->names ((x vl-paramdecllist-p))
   :parents (vl-paramdecllist-p modnamespace)
-  :short "Collect all names declared in a @(see vl-paramdecllist-p).")
+  :short "Collect all names declared in a @(see vl-paramdecllist-p)."
+  :returns (names string-listp)
+  (vl-paramdecl->name x))
 
-(defprojection vl-portdecllist->names (x)
-  (vl-portdecl->name x)
-  :guard (vl-portdecllist-p x)
-  :result-type string-listp
-  :nil-preservingp t
+(defprojection vl-portdecllist->names ((x vl-portdecllist-p))
   :parents (vl-portdecllist-p modnamespace)
-  :short "Collect all names declared in a @(see vl-portdecllist-p).")
+  :short "Collect all names declared in a @(see vl-portdecllist-p)."
+  :returns (names string-listp)
+  (vl-portdecl->name x))
 
-(defprojection vl-netdecllist->names (x)
-  (vl-netdecl->name x)
-  :guard (vl-netdecllist-p x)
-  :result-type string-listp
-  :nil-preservingp t
+(defprojection vl-netdecllist->names ((x vl-netdecllist-p))
   :parents (vl-netdecllist-p modnamespace)
-  :short "Collect all names declared in a @(see vl-netdecllist-p).")
+  :short "Collect all names declared in a @(see vl-netdecllist-p)."
+  :returns (names string-listp)
+  (vl-netdecl->name x))
 
-(defprojection vl-vardecllist->names (x)
-  (vl-vardecl->name x)
-  :guard (vl-vardecllist-p x)
-  :result-type string-listp
-  :nil-preservingp t
+(defprojection vl-vardecllist->names ((x vl-vardecllist-p))
   :parents (vl-vardecllist-p modnamespace)
-  :short "Collect all names declared in a @(see vl-vardecllist-p).")
+  :short "Collect all names declared in a @(see vl-vardecllist-p)."
+  :returns (names string-listp)
+  (vl-vardecl->name x))
 
-(defprojection vl-regdecllist->names (x)
-  (vl-regdecl->name x)
-  :guard (vl-regdecllist-p x)
-  :result-type string-listp
-  :nil-preservingp t
+(defprojection vl-regdecllist->names ((x vl-regdecllist-p))
   :parents (vl-regdecllist-p modnamespace)
-  :short "Collect all names declared in a @(see vl-regdecllist-p).")
+  :short "Collect all names declared in a @(see vl-regdecllist-p)."
+  :returns (names string-listp)
+  (vl-regdecl->name x))
 
-(defprojection vl-eventdecllist->names (x)
-  (vl-eventdecl->name x)
-  :guard (vl-eventdecllist-p x)
-  :result-type string-listp
-  :nil-preservingp t
+(defprojection vl-eventdecllist->names ((x vl-eventdecllist-p))
   :parents (vl-eventdecllist-p modnamespace)
-  :short "Collect all names declared in a @(see vl-eventdecllist-p).")
+  :short "Collect all names declared in a @(see vl-eventdecllist-p)."
+  :returns (names string-listp)
+  (vl-eventdecl->name x))
 
-
-
-(define vl-gateinstlist->names-exec ((x vl-gateinstlist-p) acc)
+(define vl-gateinstlist->names-nrev ((x vl-gateinstlist-p) nrev)
   :parents (vl-gateinstlist->names)
   (b* (((when (atom x))
-        acc)
+        (nrev-fix nrev))
        (name (vl-gateinst->name (car x)))
-       (acc  (if name (cons name acc) acc)))
-    (vl-gateinstlist->names-exec (cdr x) acc)))
+       (nrev (if name
+                 (nrev-push name nrev)
+               nrev)))
+    (vl-gateinstlist->names-nrev (cdr x) nrev)))
 
 (define vl-gateinstlist->names ((x vl-gateinstlist-p))
   :parents (vl-gateinstlist-p modnamespace)
@@ -149,12 +136,12 @@ the number of gate instances in the list.</p>"
                             (vl-gateinstlist->names (cdr x)))
                     (vl-gateinstlist->names (cdr x)))
                 nil)
-       :exec (reverse (vl-gateinstlist->names-exec x nil)))
+       :exec (with-local-nrev (vl-gateinstlist->names-nrev x nrev)))
   ///
-  (defthm vl-gateinstlist->names-exec-removal
-    (equal (vl-gateinstlist->names-exec x acc)
-           (revappend (vl-gateinstlist->names x) acc))
-    :hints(("Goal" :in-theory (enable vl-gateinstlist->names-exec))))
+  (defthm vl-gateinstlist->names-nrev-removal
+    (equal (vl-gateinstlist->names-nrev x nrev)
+           (append nrev (vl-gateinstlist->names x)))
+    :hints(("Goal" :in-theory (enable vl-gateinstlist->names-nrev))))
 
   (verify-guards vl-gateinstlist->names)
 
@@ -191,17 +178,18 @@ the number of gate instances in the list.</p>"
            (rev (vl-gateinstlist->names x))))
 
   (defthm string-listp-of-vl-gateinstlist->names
-    (implies (force (vl-gateinstlist-p x))
-             (string-listp (vl-gateinstlist->names x)))))
+    (string-listp (vl-gateinstlist->names x))))
 
 
-(define vl-modinstlist->instnames-exec ((x vl-modinstlist-p) acc)
-  :parents (vl-modinstlist->instnames)
+(define vl-modinstlist->instnames-nrev ((x vl-modinstlist-p) nrev)
+  :parents (vl-modinstlist->names)
   (b* (((when (atom x))
-        acc)
+        (nrev-fix nrev))
        (name (vl-modinst->instname (car x)))
-       (acc  (if name (cons name acc) acc)))
-    (vl-modinstlist->instnames-exec (cdr x) acc)))
+       (nrev (if name
+                 (nrev-push name nrev)
+               nrev)))
+    (vl-modinstlist->instnames-nrev (cdr x) nrev)))
 
 (define vl-modinstlist->instnames ((x vl-modinstlist-p))
   :parents (vl-modinstlist-p modnamespace)
@@ -219,12 +207,12 @@ instances.</p>"
                             (vl-modinstlist->instnames (cdr x)))
                     (vl-modinstlist->instnames (cdr x)))
                 nil)
-       :exec (reverse (vl-modinstlist->instnames-exec x nil)))
+       :exec (with-local-nrev (vl-modinstlist->instnames-nrev x nrev)))
   ///
   (defthm vl-modinstlist->instnames-exec-removal
-    (equal (vl-modinstlist->instnames-exec x acc)
-           (revappend (vl-modinstlist->instnames x) acc))
-    :hints(("Goal" :in-theory (enable vl-modinstlist->instnames-exec))))
+    (equal (vl-modinstlist->instnames-nrev x nrev)
+           (append nrev (vl-modinstlist->instnames x)))
+    :hints(("Goal" :in-theory (enable vl-modinstlist->instnames-nrev))))
 
   (verify-guards vl-modinstlist->instnames)
 
@@ -263,35 +251,29 @@ instances.</p>"
            (rev (vl-modinstlist->instnames x))))
 
   (defthm string-listp-of-vl-modinstlist->instnames
-    (implies (force (vl-modinstlist-p x))
-             (string-listp (vl-modinstlist->instnames x)))))
+    (string-listp (vl-modinstlist->instnames x))))
 
 
-(define vl-module->modnamespace-exec ((x vl-module-p))
-  :parents (modnamespace)
+(define vl-module->modnamespace-nrev ((x vl-module-p) nrev)
+  :parents (vl-module->modnamespace)
   :short "Tail-recursive implementation of @(see vl-module->modnamespace)."
   :long "<p>This is sort of an inherently inefficient operation, since we are
 to perform a cons for every object in the module.  But we can at least do
 everything tail recursively, etc.</p>"
   (b* (((vl-module x) x)
-       (acc (vl-netdecllist->names-exec     x.netdecls   nil))
-       (acc (vl-regdecllist->names-exec     x.regdecls   acc))
-       (acc (vl-vardecllist->names-exec     x.vardecls   acc))
-       (acc (vl-eventdecllist->names-exec   x.eventdecls acc))
-       (acc (vl-paramdecllist->names-exec   x.paramdecls acc))
-       (acc (vl-fundecllist->names-exec     x.fundecls   acc))
-       (acc (vl-taskdecllist->names-exec    x.taskdecls  acc))
-       (acc (vl-modinstlist->instnames-exec x.modinsts   acc))
-       (acc (vl-gateinstlist->names-exec    x.gateinsts  acc)))
-    acc)
-  ///
-  (defthm true-listp-of-vl-module->modnamespace-exec
-    (true-listp (vl-module->modnamespace-exec x))
-    :rule-classes :type-prescription))
-
+       (nrev (vl-netdecllist->names-nrev     x.netdecls   nrev))
+       (nrev (vl-regdecllist->names-nrev     x.regdecls   nrev))
+       (nrev (vl-vardecllist->names-nrev     x.vardecls   nrev))
+       (nrev (vl-eventdecllist->names-nrev   x.eventdecls nrev))
+       (nrev (vl-paramdecllist->names-nrev   x.paramdecls nrev))
+       (nrev (vl-fundecllist->names-nrev     x.fundecls   nrev))
+       (nrev (vl-taskdecllist->names-nrev    x.taskdecls  nrev))
+       (nrev (vl-modinstlist->instnames-nrev x.modinsts   nrev))
+       (nrev (vl-gateinstlist->names-nrev    x.gateinsts  nrev)))
+    nrev))
 
 (define vl-module->modnamespace ((x vl-module-p))
-  :returns (names string-listp :hyp :fguard)
+  :returns (names string-listp)
   :parents (modnamespace)
   :short "Main function for gathering up the names that are declared as
 parameters, wires, variables, registers, and so on."
@@ -318,28 +300,20 @@ module illegally declares those duplicated names more than once.</p>
                  (vl-modinstlist->instnames x.modinsts)
                  (vl-gateinstlist->names    x.gateinsts)))
        :exec
-       (reverse (vl-module->modnamespace-exec x)))
+       (with-local-nrev
+         (vl-module->modnamespace-nrev x nrev)))
 
   ///
-  (defthm vl-module->modnamespace-exec-removal
-    (equal (vl-module->modnamespace-exec x)
-           (rev (vl-module->modnamespace x)))
-    :hints(("Goal" :in-theory (enable vl-module->modnamespace-exec))))
+  (defthm vl-module->modnamespace-nrev-removal
+    (equal (vl-module->modnamespace-nrev x nrev)
+           (append nrev (vl-module->modnamespace x)))
+    :hints(("Goal" :in-theory (enable vl-module->modnamespace-nrev))))
 
   (verify-guards vl-module->modnamespace)
-
-  (defttag vl-optimize)
-  (never-memoize vl-module->modnamespace-exec)
-  (progn! (set-raw-mode t)
-          (defun vl-module->modnamespace (x)
-            (nreverse (vl-module->modnamespace-exec x)))
-          (defttag nil))
-  (defttag nil)
 
   (defthm true-listp-of-vl-module->modnamespace
     (true-listp (vl-module->modnamespace x))
     :rule-classes :type-prescription))
-
 
 
 ;; These aren't part of the module's namespace, but are just utilities for
@@ -347,59 +321,58 @@ module illegally declares those duplicated names more than once.</p>
 
 (define vl-blockitem->name ((x vl-blockitem-p))
   :parents (vl-blockitem-p)
-  :returns (name stringp :hyp :guard)
+  :returns (name stringp)
   :short "Get the name declared by any @(see vl-blockitem-p)."
   :guard-hints(("Goal" :in-theory (enable vl-blockitem-p)))
-  (mbe :logic (cond ((vl-regdecl-p x)   (vl-regdecl->name x))
-                    ((vl-vardecl-p x)   (vl-vardecl->name x))
-                    ((vl-eventdecl-p x) (vl-eventdecl->name x))
-                    (t                  (vl-paramdecl->name x)))
+  (mbe :logic
+       (let ((x (vl-blockitem-fix x)))
+         (cond ((vl-regdecl-p x)   (vl-regdecl->name x))
+               ((vl-vardecl-p x)   (vl-vardecl->name x))
+               ((vl-eventdecl-p x) (vl-eventdecl->name x))
+               (t                  (vl-paramdecl->name x))))
        :exec (case (tag x)
                (:vl-regdecl   (vl-regdecl->name x))
                (:vl-vardecl   (vl-vardecl->name x))
                (:vl-eventdecl (vl-eventdecl->name x))
                (otherwise     (vl-paramdecl->name x)))))
 
-(defprojection vl-blockitemlist->names (x)
-  (vl-blockitem->name x)
-  :guard (vl-blockitemlist-p x)
-  :result-type string-listp
+(defprojection vl-blockitemlist->names ((x vl-blockitemlist-p))
   :parents (vl-blockitemlist-p)
-  :short "Collect the names declared in a @(see vl-blockitemlist-p).")
+  :short "Collect the names declared in a @(see vl-blockitemlist-p)."
+  :returns (naems string-listp)
+  (vl-blockitem->name x))
 
 
-(define vl-fundecl->namespace-exec ((x vl-fundecl-p) acc)
+(define vl-fundecl->namespace-nrev ((x vl-fundecl-p) nrev)
   :parents (vl-fundecl->namespace)
   (b* (((vl-fundecl x) x)
-       (acc (vl-taskportlist->names-exec x.inputs acc)))
-    (vl-blockitemlist->names-exec x.decls acc)))
+       (nrev (vl-taskportlist->names-nrev x.inputs nrev)))
+    (vl-blockitemlist->names-nrev x.decls nrev)))
 
 (define vl-fundecl->namespace ((x vl-fundecl-p))
   :parents (vl-fundecl-p modnamespace)
   :short "Compute the namespace of a function declaration."
-  :returns (names string-listp :hyp :guard)
+  :returns (names string-listp)
   :verify-guards nil
   (mbe :logic
        (b* (((vl-fundecl x) x))
          (append (vl-taskportlist->names x.inputs)
                  (vl-blockitemlist->names x.decls)))
        :exec
-       (reverse (vl-fundecl->namespace-exec x nil)))
+       (with-local-nrev
+         (vl-fundecl->namespace-nrev x nrev)))
   ///
-  (defthm vl-fundecl->namespace-exec-removal
-    (equal (vl-fundecl->namespace-exec x acc)
-           (append (rev (vl-fundecl->namespace x)) acc))
-    :hints(("Goal" :in-theory (enable vl-fundecl->namespace-exec))))
+  (defthm vl-fundecl->namespace-nrev-removal
+    (equal (vl-fundecl->namespace-nrev x nrev)
+           (append nrev (vl-fundecl->namespace x)))
+    :hints(("Goal" :in-theory (enable vl-fundecl->namespace-nrev))))
 
   (verify-guards vl-fundecl->namespace))
-
 
 (defmapappend vl-fundecllist->namespaces (x)
   (vl-fundecl->namespace x)
   :guard (vl-fundecllist-p x)
-  :transform-exec vl-fundecl->namespace-exec
   :rest
   ((defthm string-listp-of-vl-fundecllist->namespaces
-     (implies (vl-fundecllist-p x)
-              (string-listp (vl-fundecllist->namespaces x))))))
+     (string-listp (vl-fundecllist->namespaces x)))))
 

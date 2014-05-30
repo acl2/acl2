@@ -20,7 +20,9 @@
 
 (in-package "VL")
 (include-book "../mlib/clean-concats")
+(include-book "../mlib/stmt-tools")
 (local (include-book "../util/arithmetic"))
+(local (std::add-default-post-define-hook :fix))
 
 (defxdoc clean-selects
   :parents (transforms)
@@ -41,18 +43,16 @@ where we expect to see wires.</p>")
   `(define ,name ((x ,type)
                   (mod vl-module-p)
                   (ialist (equal ialist (vl-moditem-alist mod))))
-     :returns (new-x ,type :hyp :fguard)
+     :returns (new-x ,type)
      (declare (ignorable x mod ialist))
      ,body))
 
 (defmacro def-vl-clean-selects-list (name &key type element)
-  `(defprojection ,name (x mod ialist)
-     (,element x mod ialist)
-     :guard (and (,type x)
-                 (vl-module-p mod)
-                 (equal ialist (vl-moditem-alist mod)))
-     :result-type ,type
-     :nil-preservingp nil))
+  `(defprojection ,name ((x      ,type)
+                         (mod    vl-module-p)
+                         (ialist (equal ialist (vl-moditem-alist mod))))
+     :returns (new-x ,type)
+     (,element x mod ialist)))
 
 (def-vl-clean-selects vl-maybe-expr-clean-selects
   :type vl-maybe-expr-p
@@ -103,11 +103,9 @@ where we expect to see wires.</p>")
 
 (def-vl-clean-selects vl-arguments-clean-selects
   :type vl-arguments-p
-  :body (vl-arguments
-         (vl-arguments->namedp x)
-         (if (vl-arguments->namedp x)
-             (vl-namedarglist-clean-selects (vl-arguments->args x) mod ialist)
-           (vl-plainarglist-clean-selects (vl-arguments->args x) mod ialist))))
+  :body (vl-arguments-case x
+          :named (make-vl-arguments-named :args (vl-namedarglist-clean-selects x.args mod ialist))
+          :plain (make-vl-arguments-plain :args (vl-plainarglist-clean-selects x.args mod ialist))))
 
 (def-vl-clean-selects vl-modinst-clean-selects
   :type vl-modinst-p
@@ -130,127 +128,67 @@ where we expect to see wires.</p>")
   :element vl-gateinst-clean-selects)
 
 
-
-(def-vl-clean-selects vl-nullstmt-clean-selects
-  :type vl-nullstmt-p
-  :body x)
-
-(def-vl-clean-selects vl-assignstmt-clean-selects
-  :type vl-assignstmt-p
-  :body (b* (((vl-assignstmt x) x))
-          (change-vl-assignstmt x
-                                :lvalue (vl-expr-clean-selects x.lvalue mod ialist)
-                                :expr (vl-expr-clean-selects x.expr mod ialist))))
-
-(def-vl-clean-selects vl-deassignstmt-clean-selects
-  :type vl-deassignstmt-p
-  :body (b* (((vl-deassignstmt x) x))
-          (change-vl-deassignstmt x
-                                  :lvalue (vl-expr-clean-selects x.lvalue mod ialist))))
-
-(def-vl-clean-selects vl-enablestmt-clean-selects
-  :type vl-enablestmt-p
-  :body (b* (((vl-enablestmt x) x))
-          (change-vl-enablestmt x
-                                :args (vl-exprlist-clean-selects x.args mod ialist))))
-
-(def-vl-clean-selects vl-disablestmt-clean-selects
-  :type vl-disablestmt-p
-  :body x)
-
-(def-vl-clean-selects vl-eventtriggerstmt-clean-selects
-  :type vl-eventtriggerstmt-p
-  :body x)
-
-(def-vl-clean-selects vl-atomicstmt-clean-selects
-  :type vl-atomicstmt-p
-  :body (case (tag x)
-          (:vl-nullstmt         (vl-nullstmt-clean-selects x mod ialist))
-          (:vl-assignstmt       (vl-assignstmt-clean-selects x mod ialist))
-          (:vl-deassignstmt     (vl-deassignstmt-clean-selects x mod ialist))
-          (:vl-enablestmt       (vl-enablestmt-clean-selects x mod ialist))
-          (:vl-disablestmt      (vl-disablestmt-clean-selects x mod ialist))
-          (:vl-eventtriggerstmt (vl-eventtriggerstmt-clean-selects x mod ialist))))
-
-
-(defsection vl-stmt-clean-selects
+(defines vl-stmt-clean-selects
   :parents (clean-selects)
 
-  (mutual-recursion
+  (define vl-stmt-clean-selects ((x      vl-stmt-p)
+                                 (mod    vl-module-p)
+                                 (ialist (equal ialist (vl-moditem-alist mod))))
+    :returns (new-x vl-stmt-p)
+    :measure (vl-stmt-count x)
+    :verify-guards nil
+    (b* ((x (vl-stmt-fix x))
 
-   (defund vl-stmt-clean-selects (x mod ialist)
-     (declare (xargs :guard (and (vl-stmt-p x)
-                                 (vl-module-p mod)
-                                 (equal ialist (vl-moditem-alist mod)))
-                     :verify-guards nil
-                     :measure (two-nats-measure (acl2-count x) 1)))
-     (b* (((when (vl-fast-atomicstmt-p x))
-           (vl-atomicstmt-clean-selects x mod ialist))
-          ((vl-compoundstmt x) x))
-       (change-vl-compoundstmt x
-                               :exprs (vl-exprlist-clean-selects x.exprs mod ialist)
-                               :stmts (vl-stmtlist-clean-selects x.stmts mod ialist))))
+         ((when (vl-atomicstmt-p x))
+          (case (vl-stmt-kind x)
+            (:vl-nullstmt
+             x)
 
-   (defund vl-stmtlist-clean-selects (x mod ialist)
-     (declare (xargs :guard (and (vl-stmtlist-p x)
-                                 (vl-module-p mod)
-                                 (equal ialist (vl-moditem-alist mod)))
-                     :measure (two-nats-measure (acl2-count x) 0)))
-     (if (consp x)
-         (cons (vl-stmt-clean-selects (car x) mod ialist)
-               (vl-stmtlist-clean-selects (cdr x) mod ialist))
-       nil)))
+            (:vl-assignstmt
+             (b* (((vl-assignstmt x) x))
+               (change-vl-assignstmt x
+                                     :lvalue (vl-expr-clean-selects x.lvalue mod ialist)
+                                     :expr (vl-expr-clean-selects x.expr mod ialist))))
 
-  (defthm vl-stmtlist-clean-selects-when-not-consp
-    (implies (not (consp x))
-             (equal (vl-stmtlist-clean-selects x mod ialist)
-                    nil))
-    :hints(("Goal" :in-theory (enable vl-stmtlist-clean-selects))))
+            (:vl-deassignstmt
+             (b* (((vl-deassignstmt x) x))
+               (change-vl-deassignstmt x
+                                       :lvalue (vl-expr-clean-selects x.lvalue mod ialist))))
 
-  (defthm vl-stmtlist-clean-selects-of-cons
-    (equal (vl-stmtlist-clean-selects (cons a x) mod ialist)
-           (cons (vl-stmt-clean-selects a mod ialist)
-                 (vl-stmtlist-clean-selects x mod ialist)))
-    :hints(("Goal" :in-theory (enable vl-stmtlist-clean-selects))))
+            (:vl-enablestmt
+             (b* (((vl-enablestmt x) x))
+               (change-vl-enablestmt x
+                                     :args (vl-exprlist-clean-selects x.args mod ialist))))
+
+            (:vl-disablestmt
+             x)
+
+            (otherwise
+             ;; event trigger statement
+             x)))
+
+         (exprs (vl-exprlist-clean-selects (vl-compoundstmt->exprs x) mod ialist))
+         (stmts (vl-stmtlist-clean-selects (vl-compoundstmt->stmts x) mod ialist)))
+      (change-vl-compoundstmt x :exprs exprs :stmts stmts)))
+
+  (define vl-stmtlist-clean-selects ((x      vl-stmtlist-p)
+                                     (mod    vl-module-p)
+                                     (ialist (equal ialist (vl-moditem-alist mod))))
+    :returns (new-x (and (vl-stmtlist-p new-x)
+                         (equal (len new-x) (len x))))
+    :measure (vl-stmtlist-count x)
+    (if (consp x)
+        (cons (vl-stmt-clean-selects (car x) mod ialist)
+              (vl-stmtlist-clean-selects (cdr x) mod ialist))
+      nil))
+  ///
+  (verify-guards vl-stmt-clean-selects)
+  (deffixequiv-mutual vl-stmt-clean-selects)
 
   (defprojection vl-stmtlist-clean-selects (x mod ialist)
     (vl-stmt-clean-selects x mod ialist)
-    :already-definedp t)
+    :already-definedp t))
 
-  (local (defthm lemma
-           (implies (and (not (vl-atomicstmt-p x))
-                         (vl-stmtlist-p (vl-stmtlist-clean-selects (vl-compoundstmt->stmts x) mod ialist))
-                         (vl-stmt-p x)
-                         (vl-module-p mod)
-                         (equal ialist (vl-moditem-alist mod)))
-                    (vl-compoundstmt-basic-checksp
-                     (vl-compoundstmt->type x)
-                     (vl-exprlist-clean-selects (vl-compoundstmt->exprs x) mod ialist)
-                     (vl-stmtlist-clean-selects (vl-compoundstmt->stmts x) mod ialist)
-                     (vl-compoundstmt->name x)
-                     (vl-compoundstmt->decls x)
-                     (vl-compoundstmt->ctrl x)
-                     (vl-compoundstmt->sequentialp x)
-                     (vl-compoundstmt->casetype x)))
-           :hints(("goal"
-                   :in-theory (e/d (vl-compoundstmt-basic-checksp)
-                                   (vl-compoundstmt-basic-checksp-of-vl-compoundstmt))
-                   :use ((:instance vl-compoundstmt-basic-checksp-of-vl-compoundstmt))))))
-
-  (defthm-vl-flag-stmt-p vl-stmt-p-of-vl-stmt-clean-selects
-    (stmt (implies (and (force (vl-stmt-p x))
-                        (force (vl-module-p mod))
-                        (force (equal ialist (vl-moditem-alist mod))))
-                   (vl-stmt-p (vl-stmt-clean-selects x mod ialist))))
-    (list (implies (and (force (vl-stmtlist-p x))
-                        (force (vl-module-p mod))
-                        (force (equal ialist (vl-moditem-alist mod))))
-                   (vl-stmtlist-p (vl-stmtlist-clean-selects x mod ialist))))
-    :hints(("Goal"
-            :induct (vl-flag-stmt-p flag x)
-            :expand ((vl-stmt-clean-selects x mod ialist)))))
-
-  (verify-guards vl-stmt-clean-selects))
 
 (def-vl-clean-selects vl-always-clean-selects
   :type vl-always-p
@@ -274,8 +212,9 @@ where we expect to see wires.</p>")
   :element vl-initial-clean-selects)
 
 (define vl-module-clean-selects ((x vl-module-p))
-  :returns (new-x vl-module-p :hyp :fguard)
-  (b* (((vl-module x) x)
+  :returns (new-x vl-module-p)
+  (b* ((x (vl-module-fix x))
+       ((vl-module x) x)
        ((when (vl-module->hands-offp x))
         x)
        (ialist (vl-moditem-alist x))
@@ -290,14 +229,12 @@ where we expect to see wires.</p>")
     (fast-alist-free ialist)
     ans))
 
-(defprojection vl-modulelist-clean-selects (x)
-  (vl-module-clean-selects x)
-  :guard (vl-modulelist-p x)
-  :result-type vl-modulelist-p)
+(defprojection vl-modulelist-clean-selects ((x vl-modulelist-p))
+  :returns (new-x vl-modulelist-p)
+  (vl-module-clean-selects x))
 
 (define vl-design-clean-selects ((x vl-design-p))
   :short "Top-level @(see clean-selects) transform."
-  (b* ((x (vl-design-fix x))
-       ((vl-design x) x))
+  (b* (((vl-design x) x))
     (change-vl-design x :mods (vl-modulelist-clean-selects x.mods))))
 

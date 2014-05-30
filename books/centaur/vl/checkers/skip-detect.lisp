@@ -529,6 +529,11 @@ names in the module, which is needed by @(see sd-patalist-compare).</li>
 
 
 
+(defthm vl-exprlist-p-of-alist-keys-when-vl-exprctxalist-p
+  (implies (vl-exprctxalist-p x)
+           (vl-exprlist-p (alist-keys x)))
+  :hints(("Goal" :induct (len x))))
+
 (define sd-analyze-module-aux
   :short "Collect all the problems."
   ((x vl-module-p))
@@ -542,7 +547,7 @@ names in the module, which is needed by @(see sd-patalist-compare).</li>
        ;; BOZO is all-names sufficient?  Should we perhaps also collect all
        ;; declared wire names, in case they aren't ever used in an expression?
 
-       (all-names (cwtime (vl-exprlist-names (strip-cars ctxexprs))
+       (all-names (cwtime (vl-exprlist-names (alist-keys ctxexprs))
                           :mintime 1/2
                           :name sd-extract-names))
        (all-keys  (cwtime (mergesort (sd-keygen-list all-names nil))

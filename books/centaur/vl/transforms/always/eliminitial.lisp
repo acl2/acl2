@@ -21,6 +21,7 @@
 (in-package "VL")
 (include-book "../../parsetree")
 (local (include-book "../../util/arithmetic"))
+(local (std::add-default-post-define-hook :fix))
 
 (defxdoc eliminitial
   :parents (always-top)
@@ -39,8 +40,9 @@ wants to analyze the behavior of the synthesized modules.</p>")
 (local (xdoc::set-default-parents eliminitial))
 
 (define vl-module-eliminitial ((x vl-module-p))
-  :returns (new-x vl-module-p :hyp :fguard)
-  (b* (((vl-module x) x)
+  :returns (new-x vl-module-p)
+  (b* ((x (vl-module-fix x))
+       ((vl-module x) x)
        ((when (vl-module->hands-offp x))
         x)
        ((unless x.initials)
@@ -59,16 +61,13 @@ wants to analyze the behavior of the synthesized modules.</p>")
                       :initials nil
                       :warnings warnings)))
 
-(defprojection vl-modulelist-eliminitial (x)
-  (vl-module-eliminitial x)
-  :nil-preservingp t
-  :guard (vl-modulelist-p x)
-  :result-type vl-modulelist-p)
+(defprojection vl-modulelist-eliminitial ((x vl-modulelist-p))
+  :returns (new-x vl-modulelist-p)
+  (vl-module-eliminitial x))
 
 (define vl-design-eliminitial
   :short "Top-level @(see eliminitial) transform."
   ((x vl-design-p))
   :returns (new-x vl-design-p)
-  (b* ((x (vl-design-fix x))
-       ((vl-design x) x))
+  (b* (((vl-design x) x))
     (change-vl-design x :mods (vl-modulelist-eliminitial x.mods))))

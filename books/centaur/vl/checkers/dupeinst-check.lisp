@@ -20,7 +20,8 @@
 
 (in-package "VL")
 (include-book "../mlib/expr-tools")
-(include-book "../mlib/fix")
+(include-book "../mlib/port-tools")
+(include-book "../mlib/strip")
 (include-book "../mlib/writer")
 (local (include-book "../util/arithmetic"))
 
@@ -108,12 +109,12 @@ that key, which lets us immediately see which modinsts have the same key.</p>
        (x1 (car x))
        ((vl-modinst x1) x1)
 
-       ((when (vl-arguments->namedp x1.portargs))
+       ((when (eq (vl-arguments-kind x1.portargs) :named))
         ;; Args not resolved, skip it
         (vl-make-dupeinst-alist-aux (cdr x) alist))
 
        ((mv inputs ?outputs inouts unknowns)
-        (vl-partition-plainargs (vl-arguments->args x1.portargs) nil nil nil nil))
+        (vl-partition-plainargs (vl-arguments-plain->args x1.portargs) nil nil nil nil))
 
        ((unless (and (atom inouts)
                      (atom unknowns)))
@@ -124,7 +125,7 @@ that key, which lets us immediately see which modinsts have the same key.</p>
        ((when (member nil ins))
         ;; Blanks?  screw it, skip it.
         (vl-make-dupeinst-alist-aux (cdr x) alist))
-       (ins    (vl-exprlist-fix ins))
+       (ins    (vl-exprlist-strip ins))
        (key    (make-vl-dupeinst-key :modname x1.modname :inputs ins))
        (look   (hons-get key alist))
        (alist  (hons-acons key (cons x1 (cdr look)) alist)))
@@ -177,7 +178,7 @@ filtered out into minor warnings.</p>
   (b* (((when (atom x))
         nil)
        ((vl-modinst x1) (car x))
-       ((when (vl-arguments->namedp x1.portargs))
+       ((when (eq (vl-arguments-kind x1.portargs) :named))
         (raise "expected resolved args"))
        ((mv ?inputs outputs ?inouts ?unknowns)
         (vl-partition-plainargs (vl-arguments->args x1.portargs) nil nil nil nil))
@@ -186,7 +187,7 @@ filtered out into minor warnings.</p>
                            ;; Can't fix them up because there are blanks.
                            ;; Well, who cares.  We'll just leave them unfixed.
                            outexprs
-                         (vl-exprlist-fix outexprs))))
+                         (vl-exprlist-strip outexprs))))
     (cons fixed-outexprs
           (vl-modinstlist-fixed-up-outs (cdr x)))))
 

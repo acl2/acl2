@@ -22,6 +22,7 @@
 (include-book "../mlib/writer")
 (include-book "../mlib/allexprs")
 (local (include-book "../util/arithmetic"))
+(local (std::add-default-post-define-hook :fix))
 
 (defsection remove-toohard
   :parents (lint)
@@ -36,17 +37,17 @@ modules for sizing for the linter.</p>")
 
 (local (xdoc::set-default-parents remove-toohard))
 
-(define vl-atom-toohard ((x vl-atom-p))
+(define vl-atom-toohard ((x vl-expr-p))
   :returns (ans "NIL if the atom is okay, or X otherwise."
-                (equal (vl-expr-p ans) (if ans t nil))
-                :hyp :fguard)
-  (let ((guts (vl-atom->guts x)))
-    (if (or (vl-fast-id-p guts)
-            (vl-fast-constint-p guts)
-            (mbe :logic (vl-weirdint-p guts)
-                 :exec (eq (tag guts) :vl-weirdint)))
-        nil
-      x)))
+                (equal (vl-expr-p ans) (if ans t nil)))
+  :guard (vl-atom-p x)
+  (b* ((x    (vl-expr-fix x))
+       (guts (vl-atom->guts x))
+       ((when (or (vl-fast-id-p guts)
+                  (vl-fast-constint-p guts)
+                  (vl-fast-weirdint-p guts)))
+        nil))
+    x))
 
 (defval *not-toohard-ops*
   :short "Operators that we sort of expect to be able to deal with in the
@@ -96,10 +97,9 @@ modules for sizing for the linter.</p>")
 (assert! (equal (mergesort (append *toohard-ops* *not-toohard-ops*))
                 (mergesort (strip-cars *vl-ops-table*))))
 
-(define vl-op-toohard-p (x)
-  (declare (xargs :guard (vl-op-p x)
-                  :guard-hints(("Goal" :in-theory (enable vl-op-p)))))
-  (if (member x *toohard-ops*)
+(define vl-op-toohard-p ((x vl-op-p))
+  :guard-hints(("Goal" :in-theory (enable vl-op-p)))
+  (if (member (vl-op-fix x) *toohard-ops*)
       t
     nil))
 
@@ -108,133 +108,134 @@ modules for sizing for the linter.</p>")
   (define vl-expr-toohard-subexpr ((x vl-expr-p))
     :returns (ans "NIL if the expression is okay, or a problematic subexpression
                    if the expression has a problem."
-                  (equal (vl-expr-p ans) (if ans t nil))
-                  :hyp :fguard)
-    :measure (two-nats-measure (acl2-count x) 1)
-    (cond ((vl-fast-atom-p x)
-           (vl-atom-toohard x))
-          ((vl-$random-expr-p x)
-           nil)
-          ((vl-op-toohard-p (vl-nonatom->op x))
-           x)
-          (t
-           (vl-exprlist-toohard-subexpr (vl-nonatom->args x)))))
+                  (equal (vl-expr-p ans) (if ans t nil)))
+    :measure (vl-expr-count x)
+    (b* ((x (vl-expr-fix x))
+         ((when (vl-fast-atom-p x))
+          (vl-atom-toohard x))
+         ((when (vl-$random-expr-p x))
+          nil)
+         ((when (vl-op-toohard-p (vl-nonatom->op x)))
+          x))
+      (vl-exprlist-toohard-subexpr (vl-nonatom->args x))))
 
    (define vl-exprlist-toohard-subexpr ((x vl-exprlist-p))
     :returns (ans "NIL if all of the expressions are okay, or a problematic
                    subexpression if the expression has a problem."
-                  (equal (vl-expr-p ans) (if ans t nil))
-                  :hyp :fguard)
-     :measure (two-nats-measure (acl2-count x) 0)
+                  (equal (vl-expr-p ans) (if ans t nil)))
+     :measure (vl-exprlist-count x)
      (if (atom x)
          nil
        (or (vl-expr-toohard-subexpr (car x))
            (vl-exprlist-toohard-subexpr (cdr x))))))
 
-(define vl-assignlist-remove-toohard
-  ((x vl-assignlist-p)
-   (warnings vl-warninglist-p))
+(define vl-assignlist-remove-toohard ((x vl-assignlist-p)
+                                      (warnings vl-warninglist-p))
   :returns (mv (warnings vl-warninglist-p)
-               (new-x    vl-assignlist-p :hyp (force (vl-assignlist-p x))))
+               (new-x    vl-assignlist-p))
   (b* (((when (atom x))
         (mv (ok) nil))
        ((mv warnings cdr-prime)
         (vl-assignlist-remove-toohard (cdr x) warnings))
-       (car-exprs (vl-assign-allexprs (car x)))
+       (x1        (vl-assign-fix (car x)))
+       (car-exprs (vl-assign-allexprs x1))
        (car-hard  (vl-exprlist-toohard-subexpr car-exprs))
        ((when car-hard)
         (mv (fatal :type :vl-dropped-assign
                    :msg "Deleting ~a0 because it has unsupported ~
                          subexpression ~a1. This deletion may cause our ~
                          analysis to be flawed."
-                 :args (list (car x) car-hard))
+                 :args (list x1 car-hard))
             cdr-prime))
-       (x-prime (cons (car x) cdr-prime)))
+       (x-prime (cons x1 cdr-prime)))
     (mv warnings x-prime)))
 
-(define vl-modinstlist-remove-toohard
-  ((x vl-modinstlist-p)
-   (warnings vl-warninglist-p))
+(define vl-modinstlist-remove-toohard ((x vl-modinstlist-p)
+                                       (warnings vl-warninglist-p))
   :returns (mv (warnings vl-warninglist-p)
-               (new-x    vl-modinstlist-p :hyp (force (vl-modinstlist-p x))))
+               (new-x    vl-modinstlist-p))
   (b* (((when (atom x))
         (mv (ok) nil))
        ((mv warnings cdr-prime)
         (vl-modinstlist-remove-toohard (cdr x) warnings))
-       (car-exprs (vl-modinst-allexprs (car x)))
+       (x1        (vl-modinst-fix (car x)))
+       (car-exprs (vl-modinst-allexprs x1))
        (car-hard  (vl-exprlist-toohard-subexpr car-exprs))
        ((when car-hard)
         (mv (fatal :type :vl-dropped-modinst
                    :msg "Deleting ~a0 because it has unsupported ~
                          subexpression ~a1. This deletion may cause our ~
                          analysis to be flawed."
-                   :args (list (car x) car-hard))
+                   :args (list x1 car-hard))
             cdr-prime))
-       (x-prime (cons (car x) cdr-prime)))
+       (x-prime (cons x1 cdr-prime)))
     (mv warnings x-prime)))
 
-(define vl-gateinstlist-remove-toohard
-  ((x vl-gateinstlist-p)
-   (warnings vl-warninglist-p))
+(define vl-gateinstlist-remove-toohard ((x vl-gateinstlist-p)
+                                        (warnings vl-warninglist-p))
   :returns (mv (warnings vl-warninglist-p)
-               (new-x    vl-gateinstlist-p :hyp (force (vl-gateinstlist-p x))))
+               (new-x    vl-gateinstlist-p))
   (b* (((when (atom x))
         (mv (ok) nil))
        ((mv warnings cdr-prime)
         (vl-gateinstlist-remove-toohard (cdr x) warnings))
-       (car-exprs (vl-gateinst-allexprs (car x)))
+       (x1        (vl-gateinst-fix (car x)))
+       (car-exprs (vl-gateinst-allexprs x1))
        (car-hard  (vl-exprlist-toohard-subexpr car-exprs))
        ((when car-hard)
         (mv (fatal :type :vl-dropped-gateinst
-                   :msg "Deleting ~a0 because it has unsupported subexpression ~a1. ~
-                         This deletion may cause our analysis to be flawed."
-                   :args (list (car x) car-hard))
+                   :msg "Deleting ~a0 because it has unsupported ~
+                         subexpression ~a1. This deletion may cause our ~
+                         analysis to be flawed."
+                   :args (list x1 car-hard))
             cdr-prime))
-       (x-prime (cons (car x) cdr-prime)))
+       (x-prime (cons x1 cdr-prime)))
     (mv warnings x-prime)))
 
-(define vl-initiallist-remove-toohard
-  ((x vl-initiallist-p)
-   (warnings vl-warninglist-p))
+(define vl-initiallist-remove-toohard ((x vl-initiallist-p)
+                                       (warnings vl-warninglist-p))
   :returns (mv (warnings vl-warninglist-p)
-               (new-x    vl-initiallist-p :hyp (force (vl-initiallist-p x))))
+               (new-x    vl-initiallist-p))
   (b* (((when (atom x))
         (mv (ok) nil))
        ((mv warnings cdr-prime)
         (vl-initiallist-remove-toohard (cdr x) warnings))
-       (car-exprs (vl-initial-allexprs (car x)))
+       (x1        (vl-initial-fix (car x)))
+       (car-exprs (vl-initial-allexprs x1))
        (car-hard  (vl-exprlist-toohard-subexpr car-exprs))
        ((when car-hard)
         (mv (fatal :type :vl-dropped-initial
-                   :msg "Deleting ~a0 because it has unsupported subexpression ~a1. ~
-                         This deletion may cause our analysis to be flawed."
-                   :args (list (car x) car-hard))
+                   :msg "Deleting ~a0 because it has unsupported ~
+                         subexpression ~a1. This deletion may cause our ~
+                         analysis to be flawed."
+                   :args (list x1 car-hard))
             cdr-prime))
-       (x-prime (cons (car x) cdr-prime)))
+       (x-prime (cons x1 cdr-prime)))
     (mv warnings x-prime)))
 
-(define vl-alwayslist-remove-toohard
-  ((x vl-alwayslist-p)
-   (warnings vl-warninglist-p))
+(define vl-alwayslist-remove-toohard ((x vl-alwayslist-p)
+                                      (warnings vl-warninglist-p))
   :returns (mv (warnings vl-warninglist-p)
-               (new-x    vl-alwayslist-p :hyp (force (vl-alwayslist-p x))))
+               (new-x    vl-alwayslist-p))
   (b* (((when (atom x))
         (mv (ok) nil))
        ((mv warnings cdr-prime)
         (vl-alwayslist-remove-toohard (cdr x) warnings))
-       (car-exprs (vl-always-allexprs (car x)))
+       (x1        (vl-always-fix (car x)))
+       (car-exprs (vl-always-allexprs x1))
        (car-hard  (vl-exprlist-toohard-subexpr car-exprs))
        ((when car-hard)
         (mv (fatal :type :vl-dropped-always
-                   :msg "Deleting ~a0 because it has unsupported subexpression ~a1. ~
-                         This deletion may cause our analysis to be flawed."
-                   :args (list (car x) car-hard))
+                   :msg "Deleting ~a0 because it has unsupported ~
+                         subexpression ~a1. This deletion may cause our ~
+                         analysis to be flawed."
+                   :args (list x1 car-hard))
             cdr-prime))
-       (x-prime (cons (car x) cdr-prime)))
+       (x-prime (cons x1 cdr-prime)))
     (mv warnings x-prime)))
 
 (define vl-module-remove-toohard ((x vl-module-p))
-  :returns (new-x vl-module-p :hyp :fguard)
+  :returns (new-x vl-module-p)
   (b* (((vl-module x) x)
        (warnings x.warnings)
        ((mv warnings assigns)   (vl-assignlist-remove-toohard x.assigns warnings))
@@ -250,15 +251,13 @@ modules for sizing for the linter.</p>")
                       :initials initials
                       :alwayses alwayses)))
 
-(defprojection vl-modulelist-remove-toohard (x)
-  (vl-module-remove-toohard x)
-  :guard (vl-modulelist-p x)
-  :result-type vl-modulelist-p)
+(defprojection vl-modulelist-remove-toohard ((x vl-modulelist-p))
+  :returns (new-x vl-modulelist-p)
+  (vl-module-remove-toohard x))
 
 (define vl-design-remove-toohard ((x vl-design-p))
   :returns (new-x vl-design-p)
-  (b* ((x (vl-design-fix x))
-       ((vl-design x) x))
+  (b* (((vl-design x) x))
     (change-vl-design x :mods (vl-modulelist-remove-toohard x.mods))))
 
 

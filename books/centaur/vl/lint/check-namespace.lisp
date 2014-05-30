@@ -60,12 +60,10 @@ linting.</p>")
                                  :fn 'vl-module-check-namespace)
                 warnings)))
 
+       (palist (vl-portdecl-alist x.portdecls))
+       (ialist (vl-moditem-alist x))
        ((mv & warnings)
-        (vl-overlap-compatible-p-warn overlap x
-                                      (vl-portdecl-alist x.portdecls)
-                                      (vl-moditem-alist x)
-                                       warnings)))
-
+        (vl-overlap-compatible-p-warn overlap x palist ialist warnings)))
     (change-vl-module x :warnings warnings)))
 
 (defprojection vl-modulelist-check-namespace (x)

@@ -19,7 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "xf-subst")
+(include-book "../mlib/subst")
 (include-book "../mlib/namemangle")
 (include-book "../mlib/relocate")
 (include-book "../mlib/namefactory")
@@ -29,16 +29,18 @@
 (local (include-book "../util/arithmetic"))
 (local (include-book "../util/osets"))
 
-(local (defthm vl-string-values-p-of-pairlis$
-         (implies (and (force (same-lengthp x y))
-                       (string-listp y))
-                  (vl-string-values-p (pairlis$ x y)))
-         :hints(("Goal" :in-theory (enable pairlis$)))))
+(defalist vl-renaming-alist-p (x)
+  :key (stringp x)
+  :val (stringp x)
+  :keyp-of-nil nil
+  :valp-of-nil nil)
 
-(local (defthm vl-string-keys-p-of-pairlis$
-         (implies (string-listp x)
-                  (vl-string-keys-p (pairlis$ x y)))
-         :hints(("Goal" :in-theory (enable pairlis$)))))
+(defthm vl-renaming-alist-p-of-pairlis$
+  (implies (and (string-listp x)
+                (string-listp y)
+                (same-lengthp x y))
+           (vl-renaming-alist-p (pairlis$ x y)))
+  :hints(("Goal" :in-theory (enable pairlis$))))
 
 (defxdoc inline-mods
   :parents (transforms)
@@ -191,8 +193,7 @@ clever.</p>")
 
 (define vl-inline-rename-portdecl
   ((x     vl-portdecl-p)
-   (alist (and (vl-string-keys-p alist)
-               (vl-string-values-p alist))))
+   (alist vl-renaming-alist-p))
   :returns (new-x vl-portdecl-p :hyp :guard)
   (b* ((new-name (or (cdr (hons-get (vl-portdecl->name x) alist))
                      (raise "all portdecls should be bound")
@@ -202,8 +203,7 @@ clever.</p>")
 (defprojection vl-inline-rename-portdecls (x alist)
   (vl-inline-rename-portdecl x alist)
   :guard (and (vl-portdecllist-p x)
-              (vl-string-keys-p alist)
-              (vl-string-values-p alist))
+              (vl-renaming-alist-p alist))
   :result-type vl-portdecllist-p
   :short "Rename portdecls using the renaming alist (which binds old names to
           their new, mangled names).")
@@ -233,13 +233,13 @@ clever.</p>")
         ;; Not an instance of the desired module, do nothing to this instance.
         (mv nf (list x) nil nil nil (ok)))
 
-       ((when (vl-arguments->namedp x.portargs))
+       ((unless (eq (vl-arguments-kind x.portargs) :plain))
         (mv nf (list x) nil nil nil
             (fatal :type :vl-inline-fail
                    :msg "~a0: can't inline because args aren't resolved."
                    :args (list x))))
 
-       (plainargs (vl-arguments->args x.portargs))
+       (plainargs (vl-arguments-plain->args x.portargs))
        ((when (vl-arguments->args x.paramargs))
         (mv nf (list x) nil nil nil
             (fatal :type :vl-inline-fail

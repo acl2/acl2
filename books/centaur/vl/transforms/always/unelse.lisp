@@ -50,14 +50,13 @@ is:</p>
 (define vl-ifstmt-unelse
   ((x "any statement, but we only rewrite it when it's an if statement;
        this makes writing @(see vl-stmt-unelse) very simple."
-      (and (vl-stmt-p x)
-           (vl-compoundstmt-p x))))
+      vl-stmt-p))
   :returns (new-x vl-stmt-p :hyp :fguard)
   :short "Just handles a single if statement (not recursive)."
-  (b* (((unless (vl-ifstmt-p x))
+  (b* (((unless (eq (vl-stmt-kind x) :vl-ifstmt))
         x)
        ((vl-ifstmt x) x)
-       ((when (vl-fast-nullstmt-p x.falsebranch))
+       ((when (eq (vl-stmt-kind x.falsebranch) :vl-nullstmt))
         ;; The else branch is already NULL, so this is fine, don't do any
         ;; rewriting.
         x)
@@ -94,9 +93,9 @@ is:</p>
   (define vl-stmt-unelse ((x vl-stmt-p))
     :returns (new-x)
     :verify-guards nil
-    :measure (two-nats-measure (acl2-count x) 1)
+    :measure (vl-stmt-count x)
     :flag :stmt
-    (b* (((when (vl-fast-atomicstmt-p x))
+    (b* (((when (vl-atomicstmt-p x))
           x)
          ;; Remove elses from any sub-statements
          (substmts (vl-compoundstmt->stmts x))
@@ -107,7 +106,7 @@ is:</p>
 
   (define vl-stmtlist-unelse ((x vl-stmtlist-p))
     :returns (new-x)
-    :measure (two-nats-measure (acl2-count x) 0)
+    :measure (vl-stmtlist-count x)
     :flag :list
     (if (atom x)
         nil

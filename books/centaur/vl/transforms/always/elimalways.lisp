@@ -21,6 +21,7 @@
 (in-package "VL")
 (include-book "../../parsetree")
 (local (include-book "../../util/arithmetic"))
+(local (std::add-default-post-define-hook :fix))
 
 (defxdoc elimalways
   :parents (always-top)
@@ -35,17 +36,19 @@ to handle.</p>")
 
 (define vl-warn-about-bad-always-blocks ((x        vl-alwayslist-p)
                                          (warnings vl-warninglist-p))
-  :returns (warnings vl-warninglist-p :hyp :fguard)
+  :returns (warnings vl-warninglist-p)
   (b* (((when (atom x))
-        warnings)
+        (ok))
+       (always1 (vl-always-fix (car x)))
        (warnings (fatal :type :vl-bad-always
                         :msg "~a0: always block is not supported."
-                        :args (list (car x)))))
+                        :args (list always1))))
     (vl-warn-about-bad-always-blocks (cdr x) warnings)))
 
 (define vl-module-elimalways ((x vl-module-p))
-  :returns (new-x vl-module-p :hyp :fguard)
-  (b* (((vl-module x) x)
+  :returns (new-x vl-module-p)
+  (b* ((x (vl-module-fix x))
+       ((vl-module x) x)
        ((when (vl-module->hands-offp x))
         x)
        ((unless x.alwayses)
@@ -55,16 +58,13 @@ to handle.</p>")
                       :alwayses nil
                       :warnings warnings)))
 
-(defprojection vl-modulelist-elimalways (x)
-  (vl-module-elimalways x)
-  :nil-preservingp t
-  :guard (vl-modulelist-p x)
-  :result-type vl-modulelist-p)
+(defprojection vl-modulelist-elimalways ((x vl-modulelist-p))
+  :returns (new-x vl-modulelist-p)
+  (vl-module-elimalways x))
 
 (define vl-design-elimalways
   :short "Top-level @(see elimalways) transform."
   ((x vl-design-p))
   :returns (new-x vl-design-p)
-  (b* ((x (vl-design-fix x))
-       ((vl-design x) x))
+  (b* (((vl-design x) x))
     (change-vl-design x :mods (vl-modulelist-elimalways x.mods))))

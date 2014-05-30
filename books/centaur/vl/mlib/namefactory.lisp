@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -22,31 +22,56 @@
 (include-book "../util/namedb")
 (include-book "modnamespace")
 (local (include-book "../util/arithmetic"))
+(local (std::add-default-post-define-hook :fix))
 
+(local (xdoc::set-default-parents vl-namefactory-p))
 
-(defun vl-namefactory-okp (mod namedb)
-  ;; Note: we leave this enabled!
-  (declare (xargs :guard (and (vl-maybe-module-p mod)
-                              (vl-namedb-p namedb))))
-  (and (or (not mod)
-           (equal (vl-namedb->names namedb) nil)
-           (subsetp-equal (vl-module->modnamespace mod)
-                          (vl-namedb-allnames namedb)))
-       (vl-namedb-okp (vl-namedb->names namedb)
-                      (vl-namedb->pmap namedb)
-                      (vl-namedb->pset namedb))))
+(define vl-namefactory-namedb-okp ((mod    vl-maybe-module-p)
+                                   (namedb vl-namedb-p))
+  (or (not mod)
+      (not (vl-namedb->names namedb))
+      (subsetp-equal (vl-module->modnamespace mod)
+                     (vl-namedb-allnames namedb)))
+  ///
+  (defthm vl-namefactory-namedb-okp-of-nil
+    (vl-namefactory-namedb-okp nil namedb))
+  (defthm vl-namefactory-namedb-okp-of-vl-empty-namedb
+    (vl-namefactory-namedb-okp mod (vl-empty-namedb))
+    :hints(("Goal" :in-theory (enable vl-empty-namedb))))
+  (local (defthm vl-namedb->names-of-vl-starting-namedb
+           (equal (vl-namedb->names (vl-starting-namedb names))
+                  (make-lookup-alist (string-list-fix names)))
+           :hints(("Goal" :in-theory (enable vl-starting-namedb)))))
+  (defthm vl-namefactory-namedb-okp-of-vl-starting-namedb
+    (vl-namefactory-namedb-okp mod (vl-starting-namedb (vl-module->modnamespace mod)))))
 
-(defaggregate vl-namefactory
-  (mod namedb)
+(define vl-namefactory-namedb-fix ((mod    vl-maybe-module-p)
+                                   (namedb vl-namedb-p))
+  :guard (vl-namefactory-namedb-okp mod namedb)
+  :returns (new-db (and (vl-namedb-p new-db)
+                        (vl-namefactory-namedb-okp mod new-db)))
+  :inline t
+  (mbe :logic
+       (b* ((mod    (vl-maybe-module-fix mod))
+            (namedb (vl-namedb-fix namedb)))
+         (if (vl-namefactory-namedb-okp mod namedb)
+             namedb
+           (vl-empty-namedb)))
+       :exec
+       namedb)
+  ///
+  (defthm vl-namefactory-namedb-fix-when-vl-namefactory-namedb-okp
+    (implies (vl-namefactory-namedb-okp mod namedb)
+             (equal (vl-namefactory-namedb-fix mod namedb)
+                    (vl-namedb-fix namedb)))))
+
+(defprod vl-namefactory
   :tag :vl-namefactory
-  :legiblep nil
-  :require ((vl-maybe-module-p-of-vl-namefactory->mod  (vl-maybe-module-p mod))
-            (vl-namedb-p-of-vl-namefactory->namedb (vl-namedb-p namedb))
-
-            (vl-namefactory-okp-when-vl-namefactory-p
-             (vl-namefactory-okp mod namedb)))
+  :layout :tree
+  ((mod    vl-maybe-module-p)
+   (namedb vl-namedb-p :reqfix (vl-namefactory-namedb-fix mod namedb)))
+  :require (vl-namefactory-namedb-okp mod namedb)
   :parents (mlib)
-
   :short "Produces fresh names for a module."
 
   :long "<p>A <b>name factory</b> allows you to easily and efficiently generate
@@ -192,143 +217,115 @@ in the @(see vl-module->modnamespace) of @('mod') must be bound in it.</p>")
 
 (defthm subsetp-equal-of-modnamespace-when-vl-namefactory-p
   (implies (and (vl-namedb->names (vl-namefactory->namedb x))
-                (vl-namefactory->mod x)
-                (force (vl-namefactory-p x)))
+                (vl-namefactory->mod x))
            (subsetp-equal (vl-module->modnamespace (vl-namefactory->mod x))
                           (vl-namedb-allnames (vl-namefactory->namedb x))))
   :hints(("Goal"
-          :in-theory (disable vl-namefactory-okp-when-vl-namefactory-p)
-          :use ((:instance vl-namefactory-okp-when-vl-namefactory-p)))))
+          :in-theory (e/d (vl-namefactory-namedb-okp)
+                          (vl-namefactory-requirements))
+          :use ((:instance vl-namefactory-requirements)))))
 
 
-(defsection vl-namefactory-maybe-initialize
 
-  ;; Make sure that the modnamespace is computed, or generate it if it isn't
-  ;; available already.  We could do this as part of vl-starting-namefactory
-  ;; instead, but this allows us to make vl-starting-namefactory very cheap and
-  ;; avoid computing the modnamespace if it isn't used.
 
-  (defund vl-namefactory-maybe-initialize (factory)
-    (declare (xargs :guard (vl-namefactory-p factory)
-                    :guard-hints (("goal" :in-theory (enable vl-namedb-allnames)))))
-    (if (vl-namedb->names (vl-namefactory->namedb factory))
-        factory
-      (let* ((mod   (vl-namefactory->mod factory))
-             (modns (and mod (vl-module->modnamespace mod))))
-        (change-vl-namefactory factory :namedb
-                               (vl-starting-namedb modns)))))
-
-  (local (in-theory (enable vl-namefactory-maybe-initialize)))
-
-  (defthm vl-namefactory-p-of-vl-namefactory-maybe-initialize
-    (implies (force (vl-namefactory-p factory))
-             (vl-namefactory-p (vl-namefactory-maybe-initialize factory)))
-    :hints(("Goal" :in-theory (e/d (vl-namedb-allnames)
-                                   ( ;pick-a-point-subsetp-equal-strategy
-                                    (force))))))
-
+(define vl-namefactory-maybe-initialize
+  :short "Make sure that the modnamespace is computed, or generate it if it isn't
+  available already."
+  ((factory vl-namefactory-p))
+  :returns (new-factory vl-namefactory-p)
+  :long "<p>We could do this as part of @(see vl-starting-namefactory) instead,
+  but this allows us to make @('vl-starting-namefactory') very cheap and; avoid
+  computing the modnamespace if it isn't used.</p>"
+  :guard-hints (("goal" :in-theory (enable vl-namedb-allnames)))
+  (if (vl-namedb->names (vl-namefactory->namedb factory))
+      (vl-namefactory-fix factory)
+    (let* ((mod   (vl-namefactory->mod factory))
+           (modns (and mod (vl-module->modnamespace mod))))
+      (change-vl-namefactory factory :namedb (vl-starting-namedb modns))))
+  ///
   (defthm vl-namefactory->mod-of-vl-namefactory-maybe-initialize
     (equal (vl-namefactory->mod (vl-namefactory-maybe-initialize factory))
-           (vl-namefactory->mod factory))
-    :hints(("Goal" :in-theory (disable (force)))))
+           (vl-namefactory->mod factory)))
 
   (defthm subsetp-equal-of-modnamespace-and-vl-namefactory-maybe-initialize
-    (implies (and (vl-namefactory->mod factory)
-                  (force (vl-namefactory-p factory)))
+    (implies (vl-namefactory->mod factory)
              (subsetp-equal
               (vl-module->modnamespace (vl-namefactory->mod factory))
               (vl-namedb-allnames (vl-namefactory->namedb
-                                   (vl-namefactory-maybe-initialize
-                                    factory)))))
-    :hints((and stable-under-simplificationp
-                '(:in-theory (enable vl-namedb-allnames))))
+                                   (vl-namefactory-maybe-initialize factory)))))
     :rule-classes ((:rewrite)
                    (:forward-chaining :trigger-terms
-                                      ((vl-namefactory-maybe-initialize factory))))))
+                    ((vl-namefactory-maybe-initialize factory)))))
+
+  (defthm vl-namefactory-maybe-initialize-when-already-has-names
+    (implies (vl-namedb->names (vl-namefactory->namedb factory))
+             (equal (vl-namefactory-maybe-initialize factory)
+                    (vl-namefactory-fix factory)))))
 
 
-
-(defsection vl-namefactory-allnames
-  :parents (vl-namefactory-p)
-
+(define vl-namefactory-allnames
   :short "@(call vl-namefactory-p) returns a list of all names that are
 considered to be used by the name factory."
-
+  ((factory vl-namefactory-p))
+  :returns (names string-listp)
   :long "<p>This function is not particularly efficient, and probably should
 not ordinarily be executed in real programs.  Its main purpose is to establish
 the freshness guarantee for name factories, described in @(see
 vl-namefactory-p).</p>"
-
-  (defund vl-namefactory-allnames (factory)
-    (declare (xargs :guard (vl-namefactory-p factory)
-                    :verify-guards nil))
-    (mbe :logic
-         (vl-namedb-allnames
-          (vl-namefactory->namedb
-           (vl-namefactory-maybe-initialize factory)))
-         :exec
-         (let ((mod   (vl-namefactory->mod factory))
-               (namedb (vl-namefactory->namedb factory)))
-           (cond ((vl-namedb->names namedb)
-                  (vl-namedb-allnames namedb))
-                 (mod
-                  (vl-module->modnamespace mod))
-                 (t
-                  nil)))))
-
-  (local (in-theory (enable vl-namefactory-allnames
-                            vl-starting-namedb
+  :verify-guards nil
+  :prepwork ((local (in-theory (enable vl-namefactory-namedb-okp))))
+  (mbe :logic
+       (vl-namedb-allnames
+        (vl-namefactory->namedb
+         (vl-namefactory-maybe-initialize
+          factory)))
+       :exec
+       (let ((mod    (vl-namefactory->mod factory))
+             (namedb (vl-namefactory->namedb factory)))
+         (cond ((vl-namedb->names namedb)
+                (vl-namedb-allnames namedb))
+               (mod
+                (vl-module->modnamespace mod))
+               (t
+                nil))))
+  ///
+  (local (in-theory (enable vl-starting-namedb
                             vl-namedb-allnames
-                            vl-namefactory-maybe-initialize)))
+                            vl-namefactory-namedb-okp
+                            vl-namefactory-maybe-initialize
+                            )))
 
   (verify-guards vl-namefactory-allnames)
 
   (defthm vl-namefactory-allnames-of-vl-namefactory-maybe-initialize
     (equal (vl-namefactory-allnames (vl-namefactory-maybe-initialize factory))
-           (vl-namefactory-allnames factory))
-    :hints(("Goal" :in-theory (disable (force))))))
+           (vl-namefactory-allnames factory))))
 
 
-
-(defsection vl-starting-namefactory
-  :parents (vl-namefactory-p)
+(define vl-starting-namefactory
   :short "@(call vl-starting-namefactory) creates a name factory for a module."
+  ((mod vl-module-p))
+  :returns (nf vl-namefactory-p)
   :long "<p>This function is very cheap to call because the real work of
 initializing the name factory is deferred to its first use.  See @(see
 vl-namefactory-p) for all name factory documentation.</p>"
-
-  (defund vl-starting-namefactory (mod)
-    (declare (xargs :guard (vl-module-p mod)
-                    :guard-hints ((and stable-under-simplificationp
-                                       '(:in-theory (enable vl-empty-namedb))))))
-    (make-vl-namefactory :mod mod :namedb (vl-empty-namedb)))
-
-  (local (in-theory (enable vl-starting-namefactory)))
-
-  (defthm vl-namefactory-p-of-vl-starting-namefactory
-    (implies (force (vl-module-p mod))
-             (vl-namefactory-p (vl-starting-namefactory mod)))
-    :hints(("Goal" :in-theory (e/d (vl-empty-namedb) ((force))))))
-
+  :prepwork ((local (in-theory (enable vl-namefactory-namedb-okp))))
+  (make-vl-namefactory :mod (vl-module-fix mod) :namedb (vl-empty-namedb))
+  ///
   (defthm vl-namefactory-allnames-of-vl-starting-namefactory
-    (implies (force (vl-module-p mod))
-             (equal (vl-namefactory-allnames (vl-starting-namefactory mod))
-                    (vl-module->modnamespace mod)))
+    (equal (vl-namefactory-allnames (vl-starting-namefactory mod))
+           (vl-module->modnamespace mod))
     :hints(("Goal" :in-theory (e/d (vl-namefactory-allnames
                                     vl-starting-namedb
                                     vl-namedb-allnames
-                                    vl-namefactory-maybe-initialize)
-                                   ((force))))
-           (and stable-under-simplificationp
-                '(:in-theory (e/d (vl-empty-namedb) ((force))))))))
+                                    vl-namefactory-maybe-initialize
+                                    vl-empty-namedb))))))
 
 
-
-(defsection vl-empty-namefactory
-  :parents (vl-namefactory-p)
+(define vl-empty-namefactory ()
   :short "@(call vl-empty-namefactory) creates an empty name factory without
 a module."
-
+  :returns (nf vl-namefactory-p)
   :long "<p>Usually you should use @(see vl-starting-namefactory) instead;
 @('vl-starting-namefactory') automatically regards all of the names in the
 module as used, whereas @('vl-empty-namefactory') regards no names as used.</p>
@@ -337,17 +334,10 @@ module as used, whereas @('vl-empty-namefactory') regards no names as used.</p>
 generating modules from scratch and, hence, don't have a module to give to
 @('vl-starting-namefactory') yet.</p>"
 
-  (defund vl-empty-namefactory ()
-    (declare (xargs :guard t))
-    (make-vl-namefactory :mod nil :namedb (vl-empty-namedb)))
-
+  (make-vl-namefactory :mod nil :namedb (vl-empty-namedb))
+  ///
   (in-theory (disable (:executable-counterpart vl-empty-namefactory)))
-
-  (local (in-theory (enable vl-empty-namefactory
-                            vl-empty-namedb)))
-
-  (defthm vl-namefactory-p-of-vl-empty-namefactory
-    (vl-namefactory-p (vl-empty-namefactory)))
+  (local (in-theory (enable vl-empty-namedb)))
 
   (defthm vl-namefactory-allnames-of-vl-empty-namefactory
     (equal (vl-namefactory-allnames (vl-empty-namefactory))
@@ -355,125 +345,70 @@ generating modules from scratch and, hence, don't have a module to give to
 
 
 
-(defsection vl-namefactory-indexed-name
-  :parents (vl-namefactory-p)
+(define vl-namefactory-indexed-name
   :short "@(call vl-namefactory-indexed-name) constructs a fresh name that
 looks like @('prefix_n') for some natural number @('n'), and returns @('(mv
 fresh-name factory-prime)')."
+  ((prefix stringp)
+   (factory vl-namefactory-p))
+  :returns (mv (fresh-name stringp :rule-classes :type-prescription)
+               (new-factory vl-namefactory-p))
+  (b* ((factory (vl-namefactory-maybe-initialize factory))
+       ((mv newname db-prime)
+        (vl-namedb-indexed-name prefix (vl-namefactory->namedb factory)))
+       (factory (change-vl-namefactory factory :namedb db-prime)))
+    (mv newname factory))
 
-  (defund vl-namefactory-indexed-name (prefix factory)
-    "Returns (MV FRESH-NAME FACTORY-PRIME)"
-    (declare (xargs :guard (and (stringp prefix)
-                                (vl-namefactory-p factory))
-                    :verify-guards nil))
-    (b* ((factory (vl-namefactory-maybe-initialize factory))
-         ((mv newname db-prime)
-          (vl-namedb-indexed-name prefix (vl-namefactory->namedb factory)))
-
-         (factory (change-vl-namefactory factory :namedb db-prime)))
-        (mv newname factory)))
-
-  (local (in-theory (enable vl-namefactory-indexed-name)))
-
-  (local (defthm lemma2
-           (implies (hons-assoc-equal prefix pmap)
-                    (member-equal prefix (strip-cars pmap)))
-           :hints(("Goal" :in-theory (enable hons-assoc-equal
-                                             strip-cars)))))
-
-  (verify-guards vl-namefactory-indexed-name)
-
-  (defthm stringp-of-vl-namefactory-indexed-name
-    (stringp (mv-nth 0 (vl-namefactory-indexed-name prefix factory)))
-    :rule-classes :type-prescription)
-
-  (defthm vl-namefactory-p-of-vl-namefactory-indexed-name
-    (implies (and (force (vl-namefactory-p factory))
-                  (force (stringp prefix)))
-             (vl-namefactory-p (mv-nth 1 (vl-namefactory-indexed-name prefix factory)))))
+  :prepwork ((local (in-theory (enable vl-namefactory-allnames
+                                       vl-namefactory-namedb-okp))))
+  ///
 
   (defthm vl-namefactory-allnames-of-vl-namefactory-indexed-name
-    (implies (force (vl-namefactory-p factory))
-             (equal (vl-namefactory-allnames
-                     (mv-nth 1 (vl-namefactory-indexed-name prefix factory)))
-                    (cons
-                     (mv-nth 0 (vl-namefactory-indexed-name prefix factory))
-                     (vl-namefactory-allnames factory))))
-    :hints (("Goal"
-             :in-theory (enable vl-namefactory-maybe-initialize
-                                vl-starting-namedb
-                                vl-namefactory-allnames)
-             :do-not-induct t))
-    :otf-flg t)
+    (b* (((mv fresh-name new-factory)
+          (vl-namefactory-indexed-name prefix factory)))
+      (equal (vl-namefactory-allnames new-factory)
+             (cons fresh-name (vl-namefactory-allnames factory)))))
 
   (defthm vl-namefactory-indexed-name-is-fresh
-    (implies (and (force (stringp prefix))
-                  (force (vl-namefactory-p factory)))
-             (not (member-equal
-                   (mv-nth 0 (vl-namefactory-indexed-name prefix factory))
-                   (vl-namefactory-allnames factory))))
-    :hints(("Goal" :in-theory (enable vl-namefactory-allnames
-                                      vl-starting-namedb
-                                      vl-namefactory-maybe-initialize)))))
+    (b* (((mv fresh-name ?new-factory)
+          (vl-namefactory-indexed-name prefix factory)))
+      (not (member-equal fresh-name (vl-namefactory-allnames factory))))))
 
 
 
-
-(defsection vl-namefactory-plain-name
-  :parents (vl-namefactory-p)
+(define vl-namefactory-plain-name
   :short "@(call vl-namefactory-plain-name) returns @('(mv fresh-name
 factory-prime)').  When possible, @('fresh-name') is just @('name').  When this
 is not possible, a note is printed and @('fresh-name') looks like @('name_n')
 instead."
+  ((name    stringp)
+   (factory vl-namefactory-p))
+  :returns (mv (fresh-name stringp :rule-classes :type-prescription)
+               (new-factory vl-namefactory-p))
+  (b* ((factory (vl-namefactory-maybe-initialize factory))
+       ((mv newname db-prime)
+        (vl-namedb-plain-name name (vl-namefactory->namedb factory)))
+       (factory (change-vl-namefactory factory :namedb db-prime)))
+    (mv newname factory))
 
-  (defund vl-namefactory-plain-name (name factory)
-    "Returns (MV FRESH-NAME FACTORY-PRIME)"
-    (declare (xargs :guard (and (stringp name)
-                                (vl-namefactory-p factory))
-                    :verify-guards nil))
-    (b* ((factory (vl-namefactory-maybe-initialize factory))
-         ((mv newname db-prime)
-          (vl-namedb-plain-name name (vl-namefactory->namedb factory)))
+  :prepwork ((local (in-theory (enable vl-namefactory-namedb-okp
+                                       vl-namefactory-allnames))))
 
-         (factory (change-vl-namefactory factory :namedb db-prime)))
-        (mv newname factory)))
-
-  (local (in-theory (enable vl-namefactory-plain-name)))
-
-  (verify-guards vl-namefactory-plain-name)
-
-  (defthm stringp-of-vl-namefactory-plain-name
-    (implies (force (stringp name))
-             (stringp (mv-nth 0 (vl-namefactory-plain-name name factory))))
-    :rule-classes :type-prescription)
-
-  (defthm vl-namefactory-p-of-vl-namefactory-plain-name
-    (implies (and (force (vl-namefactory-p factory))
-                  (force (stringp name)))
-             (vl-namefactory-p (mv-nth 1 (vl-namefactory-plain-name name factory)))))
-
+  ///
   (defthm vl-namefactory-allnames-of-vl-namefactory-plain-name
-    (implies (force (vl-namefactory-p factory))
-             (equal (vl-namefactory-allnames
-                     (mv-nth 1 (vl-namefactory-plain-name name factory)))
-                    (cons
-                     (mv-nth 0 (vl-namefactory-plain-name name factory))
-                     (vl-namefactory-allnames factory))))
-    :hints(("Goal" :in-theory (enable vl-namefactory-allnames
-                                      vl-namefactory-maybe-initialize))))
+    (b* (((mv fresh-name new-factory)
+          (vl-namefactory-plain-name name factory)))
+      (equal (vl-namefactory-allnames new-factory)
+             (cons fresh-name (vl-namefactory-allnames factory)))))
 
-   (defthm vl-namefactory-plain-name-is-fresh
-     (implies (and (force (stringp name))
-                   (force (vl-namefactory-p factory)))
-              (not (member-equal
-                    (mv-nth 0 (vl-namefactory-plain-name name factory))
-                    (vl-namefactory-allnames factory))))
-     :hints(("Goal" :in-theory (enable vl-namefactory-allnames)))))
+  (defthm vl-namefactory-plain-name-is-fresh
+    (b* (((mv fresh-name ?new-factory)
+          (vl-namefactory-plain-name name factory)))
+      (not (member-equal fresh-name (vl-namefactory-allnames factory))))))
 
 
-
-(defsection vl-free-namefactory
-  :parents (vl-namefactory-p)
+(define vl-free-namefactory ((factory vl-namefactory-p))
+  :returns nil
   :short "@(call vl-free-namefactory) frees the fast alists associated with a
 name factory and returns @('nil')."
 
@@ -481,61 +416,47 @@ name factory and returns @('nil')."
 called, since doing so will result in fast-alist discipline failures.</p>
 
 <p>Note that we leave this function enabled.</p>"
+  :enabled t
+  :hooks nil
 
-  (defun vl-free-namefactory (factory)
-    (declare (xargs :guard (vl-namefactory-p factory)))
-    (progn$ (vl-free-namedb (vl-namefactory->namedb factory))
-            nil)))
+  (progn$ (vl-free-namedb (vl-namefactory->namedb factory))
+          nil))
 
 
-
-(defsection vl-namefactory-plain-names
-  :parents (vl-namefactory-p)
-  :short "@(call vl-namefactory-plain-names) returns @('(mv fresh-names
-factory-prime)').  When possible, @('fresh-names') are just @('names').  If
-this is not possible due to name collisions, then some of the @('fresh_names')
-may have additional indexes as in @(see vl-namefactory-indexed-name) and some
-notes may be printed."
-
-  (defund vl-namefactory-plain-names (names factory)
-    "Returns (MV NAMES' FACTORY')"
-    (declare (xargs :guard (and (string-listp names)
-                                (vl-namefactory-p factory))
-                    :guard-hints (("goal" :in-theory
-                                   (e/d () ((force)))))))
-    (b* (((when (atom names))
-          (mv nil factory))
-         ((mv name factory)
-          (vl-namefactory-plain-name (car names) factory))
-         ((mv rest factory)
-          (vl-namefactory-plain-names (cdr names) factory)))
-      (mv (cons name rest) factory)))
-
-  (local (in-theory (enable vl-namefactory-plain-names)))
-
-  (defthm string-listp-of-vl-namefactory-plain-names
-    (implies (force (string-listp names))
-             (string-listp (mv-nth 0 (vl-namefactory-plain-names names factory)))))
-
-  (defthm vl-namefactory-p-of-vl-namefactory-plain-names
-    (implies (and (force (string-listp names))
-                  (force (vl-namefactory-p factory)))
-             (vl-namefactory-p (mv-nth 1 (vl-namefactory-plain-names names factory)))))
-
-  (defthm vl-namefactory-plain-names-are-fresh
-    (implies (and (member-equal a (vl-namefactory-allnames factory))
-                  (force (string-listp names))
-                  (force (vl-namefactory-p factory)))
-             (not (member-equal a (mv-nth 0 (vl-namefactory-plain-names names
-                                                                        factory))))))
-
+(define vl-namefactory-plain-names
+  :short "Generate a list of fresh names, using particular, preferred names if
+  possible."
+  ((names   string-listp "The names you would ideally like to use.")
+   (factory vl-namefactory-p))
+  :returns (mv (fresh-names string-listp
+                            "Fresh names that you may use.  When possible,
+                             these are just @('names').  If this is not
+                             possible due to name collisions, then some of the
+                             @('fresh_names') may have additional indexes as in
+                             @(see vl-namefactory-indexed-name) and some notes
+                             may be printed.")
+               (new-factory vl-namefactory-p
+                            "Updated name factory where the @('fresh-names')
+                             are marked as used."))
+  (b* (((when (atom names))
+        (mv nil (vl-namefactory-fix factory)))
+       ((mv name factory)
+        (vl-namefactory-plain-name (car names) factory))
+       ((mv rest factory)
+        (vl-namefactory-plain-names (cdr names) factory)))
+    (mv (cons name rest) factory))
+  ///
   (defthm len-vl-namefactory-plain-names
     (equal (len (mv-nth 0 (vl-namefactory-plain-names names factory)))
            (len names)))
 
   (defthm true-listp-vl-namefactory-plain-names
     (true-listp (mv-nth 0 (vl-namefactory-plain-names names factory)))
-    :hints(("Goal" :in-theory (disable (force))))
-    :rule-classes :type-prescription))
+    :rule-classes :type-prescription)
 
+  (defthm vl-namefactory-plain-names-are-fresh
+    (implies (member-equal name (vl-namefactory-allnames factory))
+             (b* (((mv fresh-names ?new-factory)
+                   (vl-namefactory-plain-names names factory)))
+               (not (member name fresh-names))))))
 

@@ -21,12 +21,14 @@
 (in-package "VL")
 (include-book "../../lexer/lexer") ;; for make-test-tokens, etc.
 (include-book "../../../parsetree")
+(include-book "../../../mlib/expr-tools")
 
 ; We now introduce a function to convert expressions into a "pretty" format
 ; which makes it a bit easier to see if an expression is what you expect for
 ; writing unit tests.
 
-(define vl-pretty-atom ((x vl-atom-p))
+(define vl-pretty-atom ((x vl-expr-p))
+  :guard (vl-atom-p x)
   (let ((guts (vl-atom->guts x)))
     (cond ((vl-constint-p guts)    (vl-constint->value guts))
           ((vl-weirdint-p guts)
@@ -57,7 +59,7 @@
   :flag nil
 
   (define vl-pretty-expr ((x vl-expr-p))
-    :measure (two-nats-measure (acl2-count x) 1)
+    :measure (vl-expr-count x)
     (if (vl-fast-atom-p x)
         (vl-pretty-atom x)
       (list* (vl-nonatom->op x)
@@ -65,17 +67,18 @@
              (vl-pretty-exprlist (vl-nonatom->args x)))))
 
   (define vl-pretty-atts ((x vl-atts-p))
-    :measure (two-nats-measure (acl2-count x) 0)
-    (if (atom x)
-        nil
-      (cons
-       (if (cdar x)
-           (list (caar x) '<- (vl-pretty-expr (cdar x)))
-         (caar x))
-       (vl-pretty-atts (cdr x)))))
+    :measure (vl-atts-count x)
+    (b* ((x (vl-atts-fix x)))
+      (if (atom x)
+          nil
+        (cons
+         (if (cdar x)
+             (list (caar x) '<- (vl-pretty-expr (cdar x)))
+           (caar x))
+         (vl-pretty-atts (cdr x))))))
 
   (define vl-pretty-exprlist ((x vl-exprlist-p))
-    :measure (two-nats-measure (acl2-count x) 0)
+    :measure (vl-exprlist-count x)
     (if (atom x)
         nil
       (cons (vl-pretty-expr (car x))
@@ -127,8 +130,6 @@
           (vl-pretty-namedarg-list (cdr x)))))
 
 (define vl-pretty-arguments ((x vl-arguments-p))
-  (if (vl-arguments->namedp x)
-      (list :namedargs
-            (vl-pretty-namedarg-list (vl-arguments->args x)))
-    (list :plainargs
-          (vl-pretty-plainarg-list (vl-arguments->args x)))))
+  (vl-arguments-case x
+    :named (list :namedargs (vl-pretty-namedarg-list x.args))
+    :plain (list :plainargs (vl-pretty-plainarg-list x.args))))

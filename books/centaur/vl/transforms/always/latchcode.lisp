@@ -24,6 +24,7 @@
 (include-book "../../mlib/delta")
 (local (include-book "../../util/arithmetic"))
 (local (include-book "../../util/osets"))
+(local (in-theory (enable tag-reasoning)))
 
 (defxdoc latchcode
   :parents (transforms)
@@ -78,7 +79,7 @@ flip-flops.</p>"
                (delay "maybe natp"))
   :parents (vl-match-latch-main)
   :short "Match @('lhs = [#delay] test ? rhs : lhs')."
-  (b* (((unless (vl-fast-assignstmt-p x))
+  (b* (((unless (vl-assignstmt-p x))
         (mv nil nil nil nil))
        ((vl-assignstmt x) x)
        ((unless (or (eq x.type :vl-blocking)
@@ -117,8 +118,8 @@ flip-flops.</p>"
   (b* (((unless (vl-ifstmt-p x))
         (mv nil nil nil nil))
        ((vl-ifstmt x) x)
-       ((unless (and (vl-fast-nullstmt-p x.falsebranch)
-                     (vl-fast-assignstmt-p x.truebranch)))
+       ((unless (and (vl-nullstmt-p x.falsebranch)
+                     (vl-assignstmt-p x.truebranch)))
         (mv nil nil nil nil))
        ((vl-assignstmt ass) x.truebranch)
        ((unless (or (eq ass.type :vl-blocking)

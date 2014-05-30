@@ -47,7 +47,7 @@
 
 (defparser vl-parse-blocking-or-nonblocking-assignment (atts)
   :guard (vl-atts-p atts)
-  :result (vl-assignstmt-p val)
+  :result (vl-stmt-p val)
   :resultp-of-nil nil
   :fails gracefully
   :count strong
@@ -103,7 +103,7 @@
 
 (defparser vl-parse-task-enable (atts)
   :guard (vl-atts-p atts)
-  :result (vl-enablestmt-p val)
+  :result (vl-stmt-p val)
   :resultp-of-nil nil
   :fails gracefully
   :count strong
@@ -122,7 +122,7 @@
 
 (defparser vl-parse-system-task-enable (atts)
   :guard (vl-atts-p atts)
-  :result (vl-enablestmt-p val)
+  :result (vl-stmt-p val)
   :resultp-of-nil nil
   :fails gracefully
   :count strong
@@ -145,7 +145,7 @@
 
 (defparser vl-parse-disable-statement (atts)
   :guard (vl-atts-p atts)
-  :result (vl-disablestmt-p val)
+  :result (vl-stmt-p val)
   :resultp-of-nil nil
   :fails gracefully
   :count strong
@@ -161,7 +161,7 @@
 
 (defparser vl-parse-event-trigger (atts)
   :guard (vl-atts-p atts)
-  :result (vl-eventtriggerstmt-p val)
+  :result (vl-stmt-p val)
   :resultp-of-nil nil
   :fails gracefully
   :count strong
@@ -178,8 +178,6 @@
 
 ; PARSING CASE STATEMENTS.
 ;
-; See parsetree.lisp for a rudimentary discussion about our handling of compound
-; statements.  In this new approach, case statements are somewhat awkward to handle.
 ; The syntax of the case statement is essentially:
 ;
 ;    case_kwd (expr) case_item { case_item } endcase
@@ -197,13 +195,6 @@
 ;     expr { , expr } : stmt
 ;   | default [ : ] stmt
 ;
-; The only reason this is at all awkward is that in the parse tree, we just
-; have one big list of expressions and one big list of statements associated
-; with each statement.  (This is a really wonderful simplification that we did
-; not always have.)  So, what we need to do is collect up all of the
-; expressions and statements throughout this structure and linearize them
-; in some fashion.
-;
 ; A basic note is that a case item such as
 ;
 ;    expr1, expr2, expr3 : stmt1
@@ -214,29 +205,8 @@
 ;    expr2 : stmt2
 ;    expr3 : stmt3
 ;
-; By taking this approach, we can come up with a pairing of expressions and
-; statements that covers the main cases.  This only leaves any "default
-; statement", and the main "test" expression (i.e., the expression following
-; the "case" keyword) to be accounted for.
-;
-; According to Section 9.5 (page 127) the default statement is optional but
-; at most one default statement is permitted.  So, our representation of
-; each case statement will be:
-;
-;   Expressions: test_expr, caseitem_expr1, ..., caseitem_exprN
-;   Statements:  [default_stmt], caseitem_stmt1, ..., caseitem_stmtN
-;
-; In this scheme, we can detect the presence or absence of a default statement
-; by comparing the lengths of the expressions and statements.  I admit that
-; this is completely gross, but I think that the simplification it provides to
-; the rest of our statement handling is so well worth it that I am willing to
-; defend this ugly mess.
-;
-; If you have understood the above, then the parsing of case statements is not
-; difficult to follow.  Our parser just constructs an intermediate structure
-; that more directly captures the semantics of the case statement, and we
-; develop some functions to transform from this intermediate representation
-; into our desired statement structure.
+; According to Section 9.5 (page 127) the default statement is optional but at
+; most one default statement is permitted.
 
 (defaggregate vl-parsed-caseitem
   ;; Intermediate form for an individual case item.
@@ -264,8 +234,6 @@
   :guard (vl-parsed-caseitemlist-p x)
   :result-type vl-stmtlist-p)
 
-
-
 (define vl-make-parsed-caseitems ((stmt vl-stmt-p)
                                   (x vl-exprlist-p))
   ;; Given a stmt and a list of expressions, this builds the caseitemlist
@@ -275,7 +243,6 @@
       nil
     (cons (make-vl-parsed-caseitem :stmt stmt :expr (car x))
           (vl-make-parsed-caseitems stmt (cdr x)))))
-
 
 (define vl-filter-parsed-caseitemlist ((x vl-parsed-caseitemlist-p))
   ;; Given a list of case items, we walk over the list and gather up any
@@ -298,8 +265,6 @@
              (vl-exprlist-p
               (vl-parsed-caseitemlist->exprs
                (mv-nth 1 (vl-filter-parsed-caseitemlist x)))))))
-
-
 
 ; Additional statement constructors
 ;
@@ -333,8 +298,7 @@
                                     (:vl-kwd-casez :vl-casez))
                         :test expr
                         :default default
-                        :exprs match-exprs
-                        :bodies match-stmts
+                        :cases (pairlis$ match-exprs match-stmts)
                         :atts atts)))
 
 (local (in-theory (disable
@@ -367,16 +331,7 @@
                    rationalp-implies-acl2-numberp
                    rationalp-when-integerp
                    set::sets-are-true-lists
-                   vl-assignstmt-p-by-tag-when-vl-atomicstmt-p
-                   vl-atomicstmt-p-by-tag-when-vl-stmt-p
-                   vl-atomicstmt-p-when-vl-deassignstmt-p
-                   vl-deassignstmt-p-by-tag-when-vl-atomicstmt-p
-                   vl-disablestmt-p-by-tag-when-vl-atomicstmt-p
-                   vl-enablestmt-p-by-tag-when-vl-atomicstmt-p
-                   vl-eventtriggerstmt-p-by-tag-when-vl-atomicstmt-p
-                   vl-nullstmt-p-by-tag-when-vl-atomicstmt-p
                    vl-stmt-p-when-member-equal-of-vl-stmtlist-p
-                   vl-stmt-p-when-neither-atomic-nor-compound
                    vl-tokenlist-p-when-subsetp-equal
                    vl-tokenlist-p-when-member-equal-of-vl-tokenlistlist-p
                    ;; new ones

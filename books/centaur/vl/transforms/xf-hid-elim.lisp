@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -23,6 +23,7 @@
 (include-book "../mlib/find-module")
 (include-book "../mlib/find-item")
 (include-book "../mlib/expr-tools")
+(include-book "../mlib/stmt-tools")
 (include-book "../mlib/hid-tools")
 (include-book "../wf-ranges-resolved-p")
 (local (include-book "../util/arithmetic"))
@@ -332,7 +333,8 @@ hierarchical references to wires inside of @('processor'), etc.</p>")
 
          ((unless (and (or localp globalp)
                        (or (not localp) (not globalp))
-                       (and (vl-atom-p target-val)
+                       (and target-val
+                            (vl-atom-p target-val)
                             (vl-string-p (vl-atom->guts target-val)))))
           (mv (cons (make-vl-warning
                      :type :vl-bad-hid
@@ -489,7 +491,7 @@ hierarchical references to wires inside of @('processor'), etc.</p>")
                                  (vl-netdecllist-p netdecls))
                      :hints(("Goal" :in-theory (disable (force))))
                      :verify-guards nil
-                     :measure (two-nats-measure (acl2-count x) 1)))
+                     :measure (vl-expr-count x)))
      (cond ((vl-hidexpr-p x)
             (vl-hidexpr-hid-elim x mods modalist warnings netdecls))
 
@@ -511,7 +513,7 @@ hierarchical references to wires inside of @('processor'), etc.</p>")
                                  (equal modalist (vl-modalist mods))
                                  (vl-warninglist-p warnings)
                                  (vl-netdecllist-p netdecls))
-                     :measure (two-nats-measure (acl2-count x) 0)))
+                     :measure (vl-exprlist-count x)))
      (if (atom x)
          (mv warnings nil netdecls)
        (b* (((mv warnings car-prime netdecls)
@@ -766,14 +768,16 @@ hierarchical references to wires inside of @('processor'), etc.</p>")
 
 (def-vl-hid-elim vl-arguments-hid-elim
   :type vl-arguments-p
-  :body (b* ((namedp (vl-arguments->namedp x))
-             (args   (vl-arguments->args x))
-             ((mv warnings args-prime netdecls)
-              (if (vl-arguments->namedp x)
-                  (vl-namedarglist-hid-elim args mods modalist warnings netdecls)
-                (vl-plainarglist-hid-elim args mods modalist warnings netdecls)))
-             (x-prime (vl-arguments namedp args-prime)))
-            (mv warnings x-prime netdecls)))
+  :body
+  (vl-arguments-case x
+    :named (b* (((mv warnings args-prime netdecls)
+                 (vl-namedarglist-hid-elim x.args mods modalist warnings netdecls))
+                (x-prime (change-vl-arguments-named x :args args-prime)))
+            (mv warnings x-prime netdecls))
+    :plain (b* (((mv warnings args-prime netdecls)
+                 (vl-plainarglist-hid-elim x.args mods modalist warnings netdecls))
+                (x-prime (change-vl-arguments-plain x :args args-prime)))
+            (mv warnings x-prime netdecls))))
 
 (def-vl-hid-elim vl-modinst-hid-elim
   :type vl-modinst-p
@@ -878,86 +882,6 @@ hierarchical references to wires inside of @('processor'), etc.</p>")
                           (vl-delayoreventcontrol-p-of-vl-delayoreventcontrol-hid-elim))
           :use ((:instance vl-delayoreventcontrol-p-of-vl-delayoreventcontrol-hid-elim)))))
 
-
-(def-vl-hid-elim vl-nullstmt-hid-elim
-  :type vl-nullstmt-p
-  :body (mv warnings x netdecls))
-
-(def-vl-hid-elim vl-assignstmt-hid-elim
-  :type vl-assignstmt-p
-  :body (b* (((mv warnings lvalue-prime netdecls)
-              (vl-expr-hid-elim (vl-assignstmt->lvalue x)
-                                mods modalist warnings netdecls))
-             ((mv warnings expr-prime netdecls)
-              (vl-expr-hid-elim (vl-assignstmt->expr x)
-                                mods modalist warnings netdecls))
-             ((mv warnings ctrl-prime netdecls)
-              (vl-maybe-delayoreventcontrol-hid-elim (vl-assignstmt->ctrl x)
-                                                     mods modalist warnings netdecls))
-             (x-prime
-              (change-vl-assignstmt x
-                                    :lvalue lvalue-prime
-                                    :expr expr-prime
-                                    :ctrl ctrl-prime)))
-            (mv warnings x-prime netdecls)))
-
-(def-vl-hid-elim vl-deassignstmt-hid-elim
-  :type vl-deassignstmt-p
-  :body (b* (((mv warnings lvalue-prime netdecls)
-              (vl-expr-hid-elim (vl-deassignstmt->lvalue x)
-                                mods modalist warnings netdecls))
-             (x-prime
-              (change-vl-deassignstmt x :lvalue lvalue-prime)))
-            (mv warnings x-prime netdecls)))
-
-(def-vl-hid-elim vl-enablestmt-hid-elim
-  :type vl-enablestmt-p
-  :body (b* (((mv warnings id-prime netdecls)
-              (vl-expr-hid-elim (vl-enablestmt->id x)
-                                mods modalist warnings netdecls))
-             ((mv warnings args-prime netdecls)
-              (vl-exprlist-hid-elim (vl-enablestmt->args x)
-                                    mods modalist warnings netdecls))
-             (x-prime
-              (change-vl-enablestmt x
-                                    :id id-prime
-                                    :args args-prime)))
-            (mv warnings x-prime netdecls)))
-
-(def-vl-hid-elim vl-disablestmt-hid-elim
-  :type vl-disablestmt-p
-  :body (b* (((mv warnings id-prime netdecls)
-              (vl-expr-hid-elim (vl-disablestmt->id x)
-                                mods modalist warnings netdecls))
-             (x-prime
-              (change-vl-disablestmt x :id id-prime)))
-            (mv warnings x-prime netdecls)))
-
-(def-vl-hid-elim vl-eventtriggerstmt-hid-elim
-  :type vl-eventtriggerstmt-p
-  :body (b* (((mv warnings id-prime netdecls)
-              (vl-expr-hid-elim (vl-eventtriggerstmt->id x)
-                                mods modalist warnings netdecls))
-             (x-prime
-              (change-vl-eventtriggerstmt x :id id-prime)))
-            (mv warnings x-prime netdecls)))
-
-(def-vl-hid-elim vl-atomicstmt-hid-elim
-  :type vl-atomicstmt-p
-  :body (case (tag x)
-          (:vl-nullstmt         (vl-nullstmt-hid-elim     x mods modalist warnings netdecls))
-          (:vl-assignstmt       (vl-assignstmt-hid-elim   x mods modalist warnings netdecls))
-          (:vl-deassignstmt     (vl-deassignstmt-hid-elim x mods modalist warnings netdecls))
-          (:vl-enablestmt       (vl-enablestmt-hid-elim   x mods modalist warnings netdecls))
-          (:vl-disablestmt      (vl-disablestmt-hid-elim  x mods modalist warnings netdecls))
-          (:vl-eventtriggerstmt (vl-eventtriggerstmt-hid-elim x mods modalist warnings netdecls))
-          (otherwise
-           (mv (er hard 'vl-atomicstmt-hid-elim
-                   "Impossible case.   This is not really an error.  We are just ~
-                    using the guard mechanism to prove that all cases have been ~
-                    covered.")
-               x netdecls))))
-
 (defsection vl-stmt-hid-elim
 
   (mutual-recursion
@@ -969,24 +893,69 @@ hierarchical references to wires inside of @('processor'), etc.</p>")
                                  (vl-warninglist-p warnings)
                                  (vl-netdecllist-p netdecls))
                      :verify-guards nil
-                     :measure (two-nats-measure (acl2-count x) 1)))
-     (if (vl-fast-atomicstmt-p x)
-         (vl-atomicstmt-hid-elim x mods modalist warnings netdecls)
-       (b* (((mv warnings exprs-prime netdecls)
-             (vl-exprlist-hid-elim (vl-compoundstmt->exprs x)
-                                   mods modalist warnings netdecls))
-            ((mv warnings stmts-prime netdecls)
-             (vl-stmtlist-hid-elim (vl-compoundstmt->stmts x)
-                                   mods modalist warnings netdecls))
-            ((mv warnings ctrl-prime netdecls)
-             (vl-maybe-delayoreventcontrol-hid-elim (vl-compoundstmt->ctrl x)
-                                                    mods modalist warnings netdecls))
-            (x-prime
-             (change-vl-compoundstmt x
-                                     :exprs exprs-prime
-                                     :stmts stmts-prime
-                                     :ctrl ctrl-prime)))
-           (mv warnings x-prime netdecls))))
+                     :measure (vl-stmt-count x)))
+     (b* ((x (vl-stmt-fix x))
+          ((when (vl-atomicstmt-p x))
+           (case (vl-stmt-kind x)
+             (:vl-nullstmt
+              (mv warnings x netdecls))
+
+             (:vl-assignstmt
+              (b* (((mv warnings lvalue-prime netdecls)
+                    (vl-expr-hid-elim (vl-assignstmt->lvalue x) mods modalist warnings netdecls))
+                   ((mv warnings expr-prime netdecls)
+                    (vl-expr-hid-elim (vl-assignstmt->expr x) mods modalist warnings netdecls))
+                   ((mv warnings ctrl-prime netdecls)
+                    (vl-maybe-delayoreventcontrol-hid-elim (vl-assignstmt->ctrl x) mods modalist warnings netdecls))
+                   (x-prime (change-vl-assignstmt x
+                                                  :lvalue lvalue-prime
+                                                  :expr expr-prime
+                                                  :ctrl ctrl-prime)))
+                (mv warnings x-prime netdecls)))
+
+             (:vl-deassignstmt
+              (b* (((mv warnings lvalue-prime netdecls)
+                    (vl-expr-hid-elim (vl-deassignstmt->lvalue x) mods modalist warnings netdecls))
+                   (x-prime (change-vl-deassignstmt x :lvalue lvalue-prime)))
+                (mv warnings x-prime netdecls)))
+
+             (:vl-enablestmt
+              (b* (((mv warnings id-prime netdecls)
+                    (vl-expr-hid-elim (vl-enablestmt->id x) mods modalist warnings netdecls))
+                   ((mv warnings args-prime netdecls)
+                    (vl-exprlist-hid-elim (vl-enablestmt->args x) mods modalist warnings netdecls))
+                   (x-prime (change-vl-enablestmt x
+                                                  :id id-prime
+                                                  :args args-prime)))
+                (mv warnings x-prime netdecls)))
+
+             (:vl-disablestmt
+              (b* (((mv warnings id-prime netdecls)
+                    (vl-expr-hid-elim (vl-disablestmt->id x) mods modalist warnings netdecls))
+                   (x-prime (change-vl-disablestmt x :id id-prime)))
+                (mv warnings x-prime netdecls)))
+
+             (otherwise
+              (b* (((mv warnings id-prime netdecls)
+                    (vl-expr-hid-elim (vl-eventtriggerstmt->id x) mods modalist warnings netdecls))
+                   (x-prime (change-vl-eventtriggerstmt x :id id-prime)))
+                (mv warnings x-prime netdecls)))))
+
+          ((mv warnings exprs-prime netdecls)
+           (vl-exprlist-hid-elim (vl-compoundstmt->exprs x)
+                                 mods modalist warnings netdecls))
+          ((mv warnings stmts-prime netdecls)
+           (vl-stmtlist-hid-elim (vl-compoundstmt->stmts x)
+                                 mods modalist warnings netdecls))
+          ((mv warnings ctrl-prime netdecls)
+           (vl-maybe-delayoreventcontrol-hid-elim (vl-compoundstmt->ctrl x)
+                                                  mods modalist warnings netdecls))
+          (x-prime
+           (change-vl-compoundstmt x
+                                   :exprs exprs-prime
+                                   :stmts stmts-prime
+                                   :ctrl ctrl-prime)))
+       (mv warnings x-prime netdecls)))
 
    (defund vl-stmtlist-hid-elim (x mods modalist warnings netdecls)
      (declare (xargs :guard (and (vl-stmtlist-p x)
@@ -994,7 +963,7 @@ hierarchical references to wires inside of @('processor'), etc.</p>")
                                  (equal modalist (vl-modalist mods))
                                  (vl-warninglist-p warnings)
                                  (vl-netdecllist-p netdecls))
-                     :measure (two-nats-measure (acl2-count x) 0)))
+                     :measure (vl-stmtlist-count x)))
      (if (atom x)
          (mv warnings nil netdecls)
        (b* (((mv warnings car-prime netdecls)
@@ -1096,10 +1065,8 @@ hierarchical references to wires inside of @('processor'), etc.</p>")
 (def-vl-hid-elim vl-always-hid-elim
   :type vl-always-p
   :body (b* (((mv warnings stmt-prime netdecls)
-              (vl-stmt-hid-elim (vl-always->stmt x)
-                                mods modalist warnings netdecls))
-             (x-prime
-              (change-vl-always x :stmt stmt-prime)))
+              (vl-stmt-hid-elim (vl-always->stmt x) mods modalist warnings netdecls))
+             (x-prime (change-vl-always x :stmt stmt-prime)))
             (mv warnings x-prime netdecls)))
 
 (def-vl-hid-elim-list vl-alwayslist-hid-elim
@@ -1109,10 +1076,8 @@ hierarchical references to wires inside of @('processor'), etc.</p>")
 (def-vl-hid-elim vl-initial-hid-elim
   :type vl-initial-p
   :body (b* (((mv warnings stmt-prime netdecls)
-              (vl-stmt-hid-elim (vl-initial->stmt x)
-                                mods modalist warnings netdecls))
-             (x-prime
-              (change-vl-initial x :stmt stmt-prime)))
+              (vl-stmt-hid-elim (vl-initial->stmt x) mods modalist warnings netdecls))
+             (x-prime (change-vl-initial x :stmt stmt-prime)))
             (mv warnings x-prime netdecls)))
 
 (def-vl-hid-elim-list vl-initiallist-hid-elim
@@ -1151,7 +1116,7 @@ hierarchical references to wires inside of @('processor'), etc.</p>")
          ;; conflicting names.
          (new-netdecls (mergesort new-netdecls))
          (all-names    (vl-netdecllist->names-exec new-netdecls
-                                                   (vl-module->modnamespace-exec x)))
+                                                   (vl-module->modnamespace x)))
          ((unless (uniquep all-names))
           (let ((warning (make-vl-warning
                           :type :vl-hid-name-conflict

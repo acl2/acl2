@@ -19,7 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "xf-subst")
+(include-book "../mlib/subst")
 (include-book "../mlib/find-item")
 (local (include-book "../util/arithmetic"))
 

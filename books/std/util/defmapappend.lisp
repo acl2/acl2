@@ -47,6 +47,7 @@
          short                   ; nil by default
          long                    ; nil by default
          rest                    ; nil by default
+         already-definedp        ; nil by default
          )
 })
 
@@ -120,6 +121,11 @@ to introduce the recognizer in logic or program mode.  The default is whatever
 the current default defun-mode is for ACL2, i.e., if you are already in program
 mode, it will default to program mode, etc.</p>
 
+<p>The optional @(':already-definedp') keyword can be set if you have already
+defined the function.  This can be used to generate all of the ordinary
+@('defmapappend') theorems without generating a @('defund') event, and is
+useful when you are dealing with mutually recursive transformations.</p>
+
 <p>The optional @(':transform-true-list-p') argument can be set to @('t')
 whenever the transformation is known to unconditionally produce a true list,
 and allows us to slightly optimize our function.</p>
@@ -160,6 +166,7 @@ add theorems into the same section.</p>")
 (defun defmapappend-fn (name formals transform
                              guard verify-guards
                              transform-exec transform-true-list-p
+                             already-definedp
                              mode
                              parents short long
                              rest
@@ -244,28 +251,30 @@ add theorems into the same section.</p>")
                                    "@(def " (symbol-name name) ")"))))
 
        (def
-        `((defund ,exec-fn (,@formals ,acc)
-            (declare (xargs :guard ,guard
-                            :verify-guards nil))
-            (if (consp ,x)
-                (,exec-fn ,@(subst `(cdr ,x) x formals)
-                          ,(if transform-exec
-                               `(,transform-exec ,@(subst `(car ,x) x transform-args) ,acc)
-                             `(,(if transform-true-list-p
-                                    'revappend
-                                  'revappend-without-guard)
-                               (,transform-fn . ,(subst `(car ,x) x transform-args))
-                               ,acc)))
-              ,acc))
+        (if already-definedp
+            nil
+          `((defund ,exec-fn (,@formals ,acc)
+              (declare (xargs :guard ,guard
+                              :verify-guards nil))
+              (if (consp ,x)
+                  (,exec-fn ,@(subst `(cdr ,x) x formals)
+                            ,(if transform-exec
+                                 `(,transform-exec ,@(subst `(car ,x) x transform-args) ,acc)
+                               `(,(if transform-true-list-p
+                                      'revappend
+                                    'revappend-without-guard)
+                                 (,transform-fn . ,(subst `(car ,x) x transform-args))
+                                 ,acc)))
+                ,acc))
 
-          (defund ,name (,@formals)
-            (declare (xargs :guard ,guard
-                            :verify-guards nil))
-            (mbe :logic (if (consp ,x)
-                            (append (,transform-fn . ,(subst `(car ,x) x transform-args))
-                                    (,name . ,(subst `(cdr ,x) x formals)))
-                          nil)
-                 :exec (reverse (,exec-fn ,@formals nil))))))
+            (defund ,name (,@formals)
+              (declare (xargs :guard ,guard
+                              :verify-guards nil))
+              (mbe :logic (if (consp ,x)
+                              (append (,transform-fn . ,(subst `(car ,x) x transform-args))
+                                      (,name . ,(subst `(cdr ,x) x formals)))
+                            nil)
+                   :exec (reverse (,exec-fn ,@formals nil)))))))
 
        ((when (eq mode :program))
         `(defsection ,name
@@ -291,20 +300,22 @@ add theorems into the same section.</p>")
                            (,name . ,formals)))
             :hints(("Goal" :in-theory (enable ,name))))
 
-          (local (defthm lemma
-                   (implies (true-listp ,acc)
-                            (true-listp (,exec-fn ,@formals ,acc)))
-                   :hints(("Goal" :in-theory (enable ,exec-fn)))))
+          ,@(if already-definedp
+                nil
+              `((local (defthm lemma
+                         (implies (true-listp ,acc)
+                                  (true-listp (,exec-fn ,@formals ,acc)))
+                         :hints(("Goal" :in-theory (enable ,exec-fn)))))
 
-          (defthm ,(mksym exec-fn '-removal)
-            (equal (,exec-fn ,@formals ,acc)
-                   (append (rev (,name ,@formals)) ,acc))
-            :hints(("Goal" :in-theory (enable ,exec-fn))))
+                (defthm ,(mksym exec-fn '-removal)
+                  (equal (,exec-fn ,@formals ,acc)
+                         (append (rev (,name ,@formals)) ,acc))
+                  :hints(("Goal" :in-theory (enable ,exec-fn))))
 
-          ,@(if verify-guards
-                `((verify-guards ,exec-fn)
-                  (verify-guards ,name))
-              nil)
+                . ,(if verify-guards
+                       `((verify-guards ,exec-fn)
+                         (verify-guards ,name))
+                     nil)))
 
           (defthm ,(mksym name '-of-list-fix)
             (equal (,name . ,(subst `(list-fix ,x) x formals))
@@ -336,6 +347,7 @@ add theorems into the same section.</p>")
                              (transform-true-list-p 't)
                              (guard 't)
                              (verify-guards 't)
+                             already-definedp
                              mode
                              (parents 'nil parents-p)
                              (short 'nil)
@@ -349,6 +361,7 @@ add theorems into the same section.</p>")
                  (defmapappend-fn ',name ',formals ',transform
                    ',guard ',verify-guards
                    ',transform-exec ',transform-true-list-p
+                   ',already-definedp
                    mode
                    parents ',short ',long
                    ',rest))))

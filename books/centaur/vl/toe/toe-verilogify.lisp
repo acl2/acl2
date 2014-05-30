@@ -118,7 +118,8 @@ vl-merge-contiguous-indices).</p>"
     (implies (not (equal n (mv-nth 0 (vl-match-contiguous-indices n x))))
              (< (len (mv-nth 1 (vl-match-contiguous-indices n x)))
                 (len x)))
-    :rule-classes ((:rewrite) (:linear)))
+    :rule-classes ((:rewrite) (:linear))
+    :hints(("Goal" :in-theory (disable |(< c2 (+ c1 a))|))))
 
   (defthm vl-match-contiguous-indices-fails-on-nil
     (equal (mv-nth 0 (vl-match-contiguous-indices nil x))

@@ -21,6 +21,7 @@
 (in-package "VL")
 (include-book "../mlib/stmt-tools")
 (local (include-book "../util/arithmetic"))
+(local (std::add-default-post-define-hook :fix))
 
 (defsection lint-stmt-rewrite
   :parents (lint)
@@ -32,7 +33,7 @@ constructs.")
 
 (define vl-lint-throwaway-fn-p ((x vl-stmt-p))
   :returns (throwaway-p booleanp :rule-classes :type-prescription)
-  (b* (((unless (vl-fast-enablestmt-p x))
+  (b* (((unless (vl-enablestmt-p x))
         nil)
        ((vl-enablestmt x) x)
        ((unless (vl-fast-atom-p x.id))
@@ -50,23 +51,21 @@ constructs.")
 statements."
 
   (define vl-lint-stmt-rewrite ((x vl-stmt-p))
-    :returns (new-x vl-stmt-p :hyp :fguard)
-    :measure (two-nats-measure (acl2-count x) 1)
+    :returns (new-x vl-stmt-p)
+    :measure (vl-stmt-count x)
     :verify-guards nil
-    (cond ((vl-fast-atomicstmt-p x)
-           (if (vl-lint-throwaway-fn-p x)
-               (make-vl-nullstmt)
-             x))
-          (t
-           (change-vl-compoundstmt x
-                                   :stmts (vl-lint-stmtlist-rewrite
-                                           (vl-compoundstmt->stmts x))))))
+    (b* ((x (vl-stmt-fix x))
+         ((when (vl-atomicstmt-p x))
+          (if (vl-lint-throwaway-fn-p x)
+              (make-vl-nullstmt)
+            x))
+         (sub-stmts (vl-compoundstmt->stmts x)))
+      (change-vl-compoundstmt x :stmts (vl-lint-stmtlist-rewrite sub-stmts))))
 
   (define vl-lint-stmtlist-rewrite ((x vl-stmtlist-p))
-    :returns (new-x (and (implies (force (vl-stmtlist-p x))
-                                  (vl-stmtlist-p new-x))
+    :returns (new-x (and (vl-stmtlist-p new-x)
                          (equal (len new-x) (len x))))
-    :measure (two-nats-measure (acl2-count x) 0)
+    :measure (vl-stmtlist-count x)
     (if (atom x)
         nil
       (cons (vl-lint-stmt-rewrite (car x))
@@ -74,29 +73,26 @@ statements."
   ///
   (verify-guards vl-lint-stmt-rewrite))
 
-
 (define vl-always-lint-stmt-rewrite ((x vl-always-p))
-  :returns (new-x vl-always-p :hyp :fguard)
+  :returns (new-x vl-always-p)
   (change-vl-always x :stmt (vl-lint-stmt-rewrite (vl-always->stmt x))))
 
-(defprojection vl-alwayslist-lint-stmt-rewrite (x)
-  (vl-always-lint-stmt-rewrite x)
-  :guard (vl-alwayslist-p x)
-  :result-type vl-alwayslist-p)
-
+(defprojection vl-alwayslist-lint-stmt-rewrite ((x vl-alwayslist-p))
+  :returns (new-x vl-alwayslist-p)
+  (vl-always-lint-stmt-rewrite x))
 
 (define vl-initial-lint-stmt-rewrite ((x vl-initial-p))
-  :returns (new-x vl-initial-p :hyp :fguard)
+  :returns (new-x vl-initial-p)
   (change-vl-initial x :stmt (vl-lint-stmt-rewrite (vl-initial->stmt x))))
 
-(defprojection vl-initiallist-lint-stmt-rewrite (x)
-  (vl-initial-lint-stmt-rewrite x)
-  :guard (vl-initiallist-p x)
-  :result-type vl-initiallist-p)
+(defprojection vl-initiallist-lint-stmt-rewrite ((x vl-initiallist-p))
+  :returns (new-x vl-initiallist-p)
+  (vl-initial-lint-stmt-rewrite x))
 
 (define vl-module-lint-stmt-rewrite ((x vl-module-p))
-  :returns (new-x vl-module-p :hyp :fguard)
-  (b* (((vl-module x) x)
+  :returns (new-x vl-module-p)
+  (b* ((x (vl-module-fix x))
+       ((vl-module x) x)
        ((unless (or x.alwayses x.initials))
         x)
        (alwayses (vl-alwayslist-lint-stmt-rewrite x.alwayses))
@@ -105,14 +101,12 @@ statements."
                       :alwayses alwayses
                       :initials initials)))
 
-(defprojection vl-modulelist-lint-stmt-rewrite (x)
-  (vl-module-lint-stmt-rewrite x)
-  :guard (vl-modulelist-p x)
-  :result-type vl-modulelist-p)
+(defprojection vl-modulelist-lint-stmt-rewrite ((x vl-modulelist-p))
+  :returns (new-x vl-modulelist-p)
+  (vl-module-lint-stmt-rewrite x))
 
 (define vl-design-lint-stmt-rewrite ((x vl-design-p))
   :returns (new-x vl-design-p)
-  (b* ((x (vl-design-fix x))
-       ((vl-design x) x))
+  (b* (((vl-design x) x))
     (change-vl-design x :mods (vl-modulelist-lint-stmt-rewrite x.mods))))
 

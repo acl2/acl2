@@ -21,14 +21,16 @@
 (in-package "VL")
 (include-book "defs")
 (include-book "defsort/remove-dups" :dir :system)
+(include-book "centaur/fty/deftypes" :dir :system)
+(include-book "centaur/fty/basetypes" :dir :system)
 (local (include-book "arithmetic"))
-
+(local (std::add-default-post-define-hook :fix))
 (local (xdoc::set-default-parents warnings))
 
-(defaggregate vl-warning
+(defprod vl-warning
   :short "Fundamental warning object used throughout @(see VL)."
   :tag :vl-warning
-  :legiblep :ordered
+  :layout :alist
 
   ((type symbolp :rule-classes :type-prescription
          "A symbol, most often a keyword symbol, that describes very broadly
@@ -60,41 +62,23 @@
         the source of the warning more apparent.  Only good discipline (and
         handy macros) ensure that this is correctly reported.")))
 
+(fty::deflist vl-warninglist
+              :elt-type vl-warning-p
+              :true-listp nil)
+
 (deflist vl-warninglist-p (x)
-  :elementp-of-nil nil
   (vl-warning-p x)
+  :elementp-of-nil nil
+  :already-definedp t
   ///
   (defthm vl-warninglist-p-of-remove-adjacent-duplicates
     (implies (force (vl-warninglist-p x))
              (vl-warninglist-p (acl2::remove-adjacent-duplicates x)))
     :hints(("Goal" :in-theory (enable acl2::remove-adjacent-duplicates)))))
 
-(defprojection vl-warninglist->types (x)
-  :guard (vl-warninglist-p x)
-  :nil-preservingp t
+(defprojection vl-warninglist->types ((x vl-warninglist-p))
+  :returns (types symbol-listp)
   (vl-warning->type x))
-
-(define vl-warninglist-fix
-  :short "Fast fixing function for @(see warnings) lists."
-  ((x vl-warninglist-p))
-  :returns (x-fix vl-warninglist-p)
-  :long "<p>Many functions throughout VL extend warnings accumulators.  To
-allow these functions to unconditionally return a @(see vl-warninglist-p), it
-is useful to have them call @('vl-warninglist-fix') on their input warnings.
-Doing this eliminates @('vl-warninglist-p') hypotheses on many, many
-theorems.</p>
-
-<p>Our use of @(see mbe) and inlining should ensure that, in the execution,
-this fixing is (nearly) free.</p>"
-  :inline t
-  (mbe :logic (and (vl-warninglist-p x)
-                   x)
-       :exec x)
-  ///
-  (defthm vl-warninglist-fix-when-vl-warninglist-p
-    (implies (vl-warninglist-p x)
-             (equal (vl-warninglist-fix x)
-                    x))))
 
 (defsection ok
   :short "A convenient shorthand for calling @(see vl-warninglist-fix)."
@@ -255,7 +239,7 @@ fatal warnings instead of non-fatal warnings.</p>"
   :short "Remove warnings of certain types."
   ((types symbol-listp     "Types of warnings to remove.")
    (x     vl-warninglist-p "The list of warnings to filter."))
-  :returns (ans vl-warninglist-p :hyp (force (vl-warninglist-p x)))
+  :returns (ans vl-warninglist-p)
   :long "<p>This can be useful to filter out mundane warnings that you do not
 want to bother the user with.</p>"
   (cond ((atom x)
@@ -263,7 +247,8 @@ want to bother the user with.</p>"
         ((member (vl-warning->type (car x)) types)
          (vl-remove-warnings types (cdr x)))
         (t
-         (cons (car x) (vl-remove-warnings types (cdr x))))))
+         (cons (vl-warning-fix (car x))
+               (vl-remove-warnings types (cdr x))))))
 
 (define vl-keep-warnings
   :short "Keep only warnings of certain types."
@@ -275,7 +260,8 @@ particular interest.</p>"
   (cond ((atom x)
          nil)
         ((member (vl-warning->type (car x)) types)
-         (cons (car x) (vl-keep-warnings types (cdr x))))
+         (cons (vl-warning-fix (car x))
+               (vl-keep-warnings types (cdr x))))
         (t
          (vl-keep-warnings types (cdr x)))))
 

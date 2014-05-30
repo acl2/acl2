@@ -291,11 +291,13 @@ want to add additional kinds of information here.</p>")
                                      (alist vl-wireinfo-alistp))
   :returns (mv (new-alist vl-wireinfo-alistp :hyp :fguard)
                (warning-wires string-listp :hyp :fguard))
-  (if (vl-arguments->namedp x)
-      ;; Argresolve should have gotten rid of these.  We just collect up all of
-      ;; the wires, so we can report about them.
-      (mv alist (vl-exprlist-names (vl-namedarglist-allexprs (vl-arguments->args x))))
-    (vl-mark-wires-for-plainarglist (vl-arguments->args x) alist nil)))
+  (vl-arguments-case x
+    :named
+    ;; Argresolve should have gotten rid of these.  We just collect up all of
+    ;; the wires, so we can report about them.
+    (mv alist (vl-exprlist-names (vl-namedarglist-allexprs x.args)))
+    :plain
+    (vl-mark-wires-for-plainarglist x.args alist nil)))
 
 
 (define vl-mark-wires-for-modinst ((x vl-modinst-p)

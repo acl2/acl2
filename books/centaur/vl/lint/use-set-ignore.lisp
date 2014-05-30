@@ -24,7 +24,7 @@
 (include-book "../mlib/fmt")
 (include-book "../checkers/oddexpr") ;; bozo for *fake-modelement*
 (include-book "../toe/toe-wirealist")
-(include-book "../transforms/xf-sizing")
+(include-book "../transforms/xf-expr-size")
 (local (include-book "../util/arithmetic"))
 
 

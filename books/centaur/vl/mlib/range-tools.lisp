@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -22,7 +22,7 @@
 (include-book "find-item")
 (include-book "expr-tools")
 (local (include-book "../util/arithmetic"))
-
+(local (std::add-default-post-define-hook :fix))
 
 (defxdoc range-tools
   :parents (mlib)
@@ -73,90 +73,57 @@ and when we just write @('b') we're referring to that value.</p>
 <p>Where it <i>does</i> matter is when bits or parts are selected from the
 wire.  That is, @('b[0]') is 1 since its indices go from low to high.</p>")
 
+(local (xdoc::set-default-parents range-tools))
 
-(defsection vl-range-resolved-p
-  :parents (range-tools)
+(define vl-range-resolved-p ((x vl-range-p))
   :short "Determine if a range's indices have been resolved to constants."
-
-; Historically we required x.msb >= x.lsb, but now we try to handle both cases.
-
-  (defund vl-range-resolved-p (x)
-    (declare (xargs :guard (vl-range-p x)
-                    :guard-hints (("Goal" :in-theory (enable vl-expr-resolved-p)))))
-    (b* (((vl-range x) x))
-      (and (vl-expr-resolved-p x.msb)
-           (vl-expr-resolved-p x.lsb))))
-
-  (local (in-theory (enable vl-range-resolved-p)))
-
+  :long "<p>Historically we required @('x.msb >= x.lsb'), but now we try to
+handle both cases.</p>"
+  (b* (((vl-range x) x))
+    (and (vl-expr-resolved-p x.msb)
+         (vl-expr-resolved-p x.lsb)))
+  ///
   (defthm vl-expr-resolved-p-of-vl-range->msb-when-vl-range-resolved-p
     (implies (vl-range-resolved-p x)
              (vl-expr-resolved-p (vl-range->msb x))))
 
   (defthm vl-expr-resolved-p-of-vl-range->lsb-when-vl-range-resolved-p
     (implies (vl-range-resolved-p x)
-             (vl-expr-resolved-p (vl-range->lsb x))))
-
-  (defthm natp-of-vl-resolved->val-of-vl-range->lsb-when-vl-range-resolved-p
-    (implies (vl-range-resolved-p range)
-             (natp (vl-resolved->val (vl-range->lsb range)))))
-
-  (defthm natp-of-vl-resolved->val-of-vl-range->msb-when-vl-range-resolved-p
-    (implies (vl-range-resolved-p range)
-             (natp (vl-resolved->val (vl-range->msb range))))))
+             (vl-expr-resolved-p (vl-range->lsb x)))))
 
 
-
-(defsection vl-maybe-range-resolved-p
-
-  (definlined vl-maybe-range-resolved-p (x)
-    (declare (xargs :guard (vl-maybe-range-p x)))
-    (or (not x)
-        (vl-range-resolved-p x)))
-
-  (local (in-theory (enable vl-maybe-range-resolved-p)))
-
+(define vl-maybe-range-resolved-p ((x vl-maybe-range-p))
+  :inline t
+  (or (not x)
+      (vl-range-resolved-p x))
+  ///
   (defthm vl-maybe-range-resolved-p-when-vl-range-resolved-p
     (implies (vl-range-resolved-p x)
              (vl-maybe-range-resolved-p x)))
 
   (defthm vl-range-resolved-p-when-vl-maybe-range-resolved-p
-    (implies (vl-maybe-range-resolved-p x)
-             (equal (vl-range-resolved-p x)
-                    (if x t nil)))))
+    (implies (and (vl-maybe-range-resolved-p x)
+                  x)
+             (vl-range-resolved-p x))))
+
+
+(define vl-make-n-bit-range ((n posp))
+  :returns (maybe-range vl-maybe-range-p)
+  :short "Create the range @('[n-1:0]')."
+  (let ((n (mbe :logic (pos-fix n) :exec n)))
+    (make-vl-range :msb (vl-make-index (- n 1))
+                   :lsb (vl-make-index 0))))
 
 
 
-(defsection vl-make-n-bit-range
-  :parents (range-tools)
-  :short "Create the range @('[n-1:0]'), but only if necessary.  That is, if
-@('n') is @('1'), we just return @('nil'), which is still valid for use in any
-net or reg declaration."
-
-  (defund vl-make-n-bit-range (n)
-    "Returns MAYBE-RANGE"
-    (declare (xargs :guard (posp n)))
-    ;;(if (= n 1)
-    ;;    nil
-      (make-vl-range :msb (vl-make-index (- n 1))
-                     :lsb (vl-make-index 0)))
-
-  (local (in-theory (enable vl-make-n-bit-range)))
-
-  (defthm vl-maybe-range-p-of-vl-make-n-bit-range
-    (vl-maybe-range-p (vl-make-n-bit-range n))))
-
-
-
-
-(defund vl-slow-find-net/reg-range (name mod)
-  "Returns (MV SUCCESSP MAYBE-RANGE)"
-  (declare (xargs :guard (and (stringp name)
-                              (vl-module-p mod))))
-
-; We look up the range for a wire or register declaration.  SUCCESSP is true as
-; long as NAME is the name of a wire or register.
-
+(define vl-slow-find-net/reg-range ((name stringp)
+                                    (mod vl-module-p))
+  :short "Look up the range for a wire or register declaration."
+  :returns (mv (successp    booleanp :rule-classes :type-prescription
+                            "True when @('name') is the name of a wire or register.")
+               (maybe-range vl-maybe-range-p
+                            "The range of the wire, on success."))
+  :hooks ((:fix :args ((mod vl-module-p))))
   (b* ((find (or (vl-find-netdecl name (vl-module->netdecls mod))
                  (vl-find-regdecl name (vl-module->regdecls mod))))
        ((when (not find))
@@ -168,32 +135,22 @@ net or reg declaration."
        (range (if (eq tag :vl-netdecl)
                   (vl-netdecl->range find)
                 (vl-regdecl->range find))))
-      (mv t range)))
+      (mv t range))
+  ///
+  (defthm vl-range-p-of-vl-slow-find-net/reg-range
+    (equal (vl-range-p (mv-nth 1 (vl-slow-find-net/reg-range name mod)))
+           (if (mv-nth 1 (vl-slow-find-net/reg-range name mod))
+               t
+             nil))))
 
-(defthm vl-range-p-of-vl-slow-find-net/reg-range
-  (implies (and (force (stringp name))
-                (force (vl-module-p mod)))
-           (equal (vl-range-p (mv-nth 1 (vl-slow-find-net/reg-range name mod)))
-                  (if (mv-nth 1 (vl-slow-find-net/reg-range name mod))
-                      t
-                    nil)))
-   :hints(("Goal" :in-theory (enable vl-slow-find-net/reg-range))))
-
-(defthm vl-maybe-range-p-of-vl-slow-find-net/reg-range
-  (implies (and (force (stringp name))
-                (force (vl-module-p mod)))
-           (vl-maybe-range-p (mv-nth 1 (vl-slow-find-net/reg-range name mod))))
-  :hints(("Goal" :in-theory (enable vl-slow-find-net/reg-range))))
-
-
-
-
-(defun vl-find-net/reg-range (name mod ialist)
-  "Returns (MV SUCCESSP MAYBE-RANGE)"
-  (declare (xargs :guard (and (stringp name)
-                              (vl-module-p mod)
-                              (equal ialist (vl-moditem-alist mod)))
-                  :verify-guards nil))
+(define vl-find-net/reg-range ((name   stringp)
+                               (mod    vl-module-p)
+                               (ialist (equal ialist (vl-moditem-alist mod))))
+  :returns (mv successp maybe-range)
+  :enabled t
+  :hooks ((:fix :args ((mod vl-module-p))))
+  :guard-hints(("Goal" :in-theory (enable vl-slow-find-net/reg-range
+                                          vl-find-moduleitem)))
   (mbe :logic (vl-slow-find-net/reg-range name mod)
        :exec
        (b* ((find (vl-fast-find-moduleitem name mod ialist))
@@ -206,48 +163,30 @@ net or reg declaration."
             (range (if (eq tag :vl-netdecl)
                        (vl-netdecl->range find)
                      (vl-regdecl->range find))))
-           (mv t range))))
-
-(verify-guards vl-find-net/reg-range
-               :hints(("Goal" :in-theory (enable vl-slow-find-net/reg-range
-                                                 vl-find-moduleitem))))
+         (mv t range))))
 
 
-
-
-(defund vl-range-size (x)
-  (declare (xargs :guard (and (vl-range-p x)
-                              (vl-range-resolved-p x))))
-
-; The size of a range is one more than the difference between its high and low
-; components.  For example [3:0] has size 4.  Notice that this definition still
-; works in the case of [1:1] and so on.
-
-  (let ((left  (vl-resolved->val (vl-range->msb x)))
-        (right (vl-resolved->val (vl-range->lsb x))))
+(define vl-range-size ((x vl-range-p))
+  :guard (vl-range-resolved-p x)
+  :returns (size posp :rule-classes :type-prescription)
+  :short "The size of a range is one more than the difference between its msb
+and lsb.  For example [3:0] has size 4."
+  :long "<p>Notice that this definition still works in the case of [1:1] and so
+on.</p>"
+  (b* (((vl-range x) x)
+       (left  (vl-resolved->val x.msb))
+       (right (vl-resolved->val x.lsb)))
     (+ 1 (abs (- left right)))))
 
-(defthm posp-of-vl-range-size
-  (posp (vl-range-size x))
-  :rule-classes :type-prescription
-  :hints(("Goal" :in-theory (enable vl-range-size))))
-
-
-
-(definlined vl-maybe-range-size (x)
-  (declare (xargs :guard (and (vl-maybe-range-p x)
-                              (vl-maybe-range-resolved-p x))))
-
-; If x is the range of a net declaration or register declaration, this function
-; returns its width.  That is, if there is a range then the width of this wire
-; or register is the size of the range.  And otherwise, it is a single-bit wide.
-
+(define vl-maybe-range-size ((x vl-maybe-range-p))
+  :guard (vl-maybe-range-resolved-p x)
+  :returns (size posp :rule-classes :type-prescription)
+  :short "Usual way to compute the width of a net/reg, given its range."
+  :long "<p>If @('x') is the range of a net declaration or register
+declaration, this function returns its width.  That is, if there is a range
+then the width of this wire or register is the size of the range.  And
+otherwise, it is a single-bit wide.</p>"
   (if (not x)
       1
     (vl-range-size x)))
-
-(defthm posp-of-vl-maybe-range-size
-  (posp (vl-maybe-range-size x))
-  :rule-classes :type-prescription
-  :hints(("Goal" :in-theory (enable vl-maybe-range-size))))
 

@@ -19,7 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "../mlib/fix")
+(include-book "../mlib/strip")
 (include-book "../mlib/lvalues")
 (include-book "../toe/toe-wirealist")
 (include-book "../toe/toe-verilogify")
@@ -280,11 +280,11 @@ might indicate that the submodule is a transistor-level construct.</li>
         (mv (cons (car x) cdr-z) cdr-nonz))
 
        (args (vl-modinst->portargs (car x)))
-       ((when (vl-arguments->namedp args))
+       ((when (eq (vl-arguments-kind args) :named))
         ;; It's broken anyway, just put it as non-z, we warn about it later
         (mv cdr-z (cons (car x) cdr-nonz)))
        ((mv out-args inout-args)
-        (vl-zsplit-plainargs (vl-arguments->args args)))
+        (vl-zsplit-plainargs (vl-arguments-plain->args args)))
 
        ((when (and (not out-args)
                    (not inout-args)))
@@ -300,8 +300,8 @@ might indicate that the submodule is a transistor-level construct.</li>
 
        ;; Okay, make goofy modinsts that will just grab the outputs and the inouts
        ;; separately.
-       (z-modinst (change-vl-modinst (car x) :portargs (vl-arguments nil inout-args)))
-       (nonz-modinst (change-vl-modinst (car x) :portargs (vl-arguments nil out-args))))
+       (z-modinst (change-vl-modinst (car x) :portargs (make-vl-arguments-plain :args inout-args)))
+       (nonz-modinst (change-vl-modinst (car x) :portargs (make-vl-arguments-plain :args out-args))))
     (mv (cons z-modinst cdr-z)
         (cons nonz-modinst cdr-nonz))))
 
@@ -315,7 +315,7 @@ might indicate that the submodule is a transistor-level construct.</li>
   :short "Throw away a module instance's name."
   ((x vl-modinst-p))
   :returns (new-x vl-modinst-p :hyp :fguard)
-  (change-vl-modinst (vl-modinst-fix x)
+  (change-vl-modinst (vl-modinst-strip x)
                      :instname nil))
 
 (defprojection vl-modinstlist-name-drop-fix (x)

@@ -21,6 +21,7 @@
 (in-package "VL")
 (include-book "tokens")
 (local (include-book "../../util/arithmetic"))
+(local (in-theory (enable str-fix)))
 
 (defun revappend-of-take (n x y)
   ;; BOZO move to utilities

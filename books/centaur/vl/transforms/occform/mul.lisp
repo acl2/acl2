@@ -22,9 +22,12 @@
 (include-book "add")
 (local (include-book "../../util/arithmetic"))
 (local (include-book "../../util/osets"))
+(local (include-book "centaur/misc/arith-equivs" :dir :system))
+(local (std::add-default-post-define-hook :fix))
 (local (in-theory (disable vl-maybe-module-p-when-vl-module-p)))
+(local (in-theory (enable acl2::arith-equiv-forwarding)))
 
-(defsection *vl-1-bit-mult*
+(defval *vl-1-bit-mult*
   :parents (occform)
   :short "One-bit multiplier."
 
@@ -51,41 +54,43 @@ module VL_1_BIT_MULT (o, a, b);
 endmodule
 })"
 
-  (defconst *vl-1-bit-mult*
-    (b* ((name (hons-copy "VL_1_BIT_MULT"))
+  (b* ((name (hons-copy "VL_1_BIT_MULT"))
 
-         ((mv o-expr o-port o-portdecl o-netdecl) (vl-primitive-mkport "o" :vl-output))
-         ((mv a-expr a-port a-portdecl a-netdecl) (vl-primitive-mkport "a" :vl-input))
-         ((mv b-expr b-port b-portdecl b-netdecl) (vl-primitive-mkport "b" :vl-input))
+       ((mv o-expr o-port o-portdecl o-netdecl) (vl-primitive-mkport "o" :vl-output))
+       ((mv a-expr a-port a-portdecl a-netdecl) (vl-primitive-mkport "a" :vl-input))
+       ((mv b-expr b-port b-portdecl b-netdecl) (vl-primitive-mkport "b" :vl-input))
 
-         ((mv p0-expr p0-netdecl) (vl-primitive-mkwire "p0"))
-         ((mv x0-expr x0-netdecl) (vl-primitive-mkwire "x0"))
-         ((mv x1-expr x1-netdecl) (vl-primitive-mkwire "x1"))
+       ((mv p0-expr p0-netdecl) (vl-primitive-mkwire "p0"))
+       ((mv x0-expr x0-netdecl) (vl-primitive-mkwire "x0"))
+       ((mv x1-expr x1-netdecl) (vl-primitive-mkwire "x1"))
 
-         (p0-inst (vl-simple-inst *vl-1-bit-and* "mk_p0" p0-expr a-expr  b-expr))
-         (x0-inst (vl-simple-inst *vl-1-bit-xor* "mk_x0" x0-expr a-expr  b-expr))
-         (x1-inst (vl-simple-inst *vl-1-bit-xor* "mk_x1" x1-expr x0-expr x0-expr))
-         (o-inst  (vl-simple-inst *vl-1-bit-xor* "mk_o"  o-expr  p0-expr x1-expr)))
+       (p0-inst (vl-simple-inst *vl-1-bit-and* "mk_p0" p0-expr a-expr  b-expr))
+       (x0-inst (vl-simple-inst *vl-1-bit-xor* "mk_x0" x0-expr a-expr  b-expr))
+       (x1-inst (vl-simple-inst *vl-1-bit-xor* "mk_x1" x1-expr x0-expr x0-expr))
+       (o-inst  (vl-simple-inst *vl-1-bit-xor* "mk_o"  o-expr  p0-expr x1-expr)))
 
-      (make-vl-module :name      name
-                      :origname  name
-                      :ports     (list o-port a-port b-port)
-                      :portdecls (list o-portdecl a-portdecl b-portdecl)
-                      :netdecls  (list o-netdecl a-netdecl b-netdecl p0-netdecl x0-netdecl x1-netdecl)
-                      :modinsts  (list p0-inst x0-inst x1-inst o-inst)
-                      :minloc    *vl-fakeloc*
-                      :maxloc    *vl-fakeloc*))))
+    (hons-copy
+     (make-vl-module :name      name
+                     :origname  name
+                     :ports     (list o-port a-port b-port)
+                     :portdecls (list o-portdecl a-portdecl b-portdecl)
+                     :netdecls  (list o-netdecl a-netdecl b-netdecl p0-netdecl x0-netdecl x1-netdecl)
+                     :modinsts  (list p0-inst x0-inst x1-inst o-inst)
+                     :minloc    *vl-fakeloc*
+                     :maxloc    *vl-fakeloc*))))
 
 
 ;; bozo this all needs to be documented.
 
 (define vl-partprod-insts-aux ((i natp)
                                (n natp))
-  :returns (insts vl-modinstlist-p :hyp :fguard)
+  :returns (insts vl-modinstlist-p)
   :guard (< i n)
   ;; Create instances that drive pi, the i-th, shifted partial product for an
   ;; n-bit multiplier
-  (b* ((p-name (hons-copy (cat "p" (natstr i))))
+  (b* ((i      (lnfix i))
+       (n      (lnfix n))
+       (p-name (hons-copy (cat "p" (natstr i))))
        (p-expr (vl-idexpr p-name n :vl-unsigned))
        (p-high (vl-make-list-of-bitselects p-expr i (- n 1)))
        (p-low  (if (zp i)
@@ -111,15 +116,11 @@ endmodule
 
 (define vl-partprod-insts ((i natp)
                            (n natp))
-  :returns (insts vl-modinstlist-p :hyp :fguard)
+  :returns (insts vl-modinstlist-p)
   :guard (<= i n)
   :measure (nfix (- (nfix n) (nfix i)))
   ;; Create instances that drive all all pi (0 <= i < n), all partial products
   ;; for an n-bit multiplier
-  (declare (xargs :guard (and (natp i)
-                              (natp n)
-                              (<= i n))
-                  :measure (nfix (- (nfix n) (nfix i)))))
   (if (zp (- (nfix n) (nfix i)))
       nil
     (append (vl-partprod-insts-aux i n)
@@ -131,7 +132,7 @@ endmodule
                        (consp x)))
          :hints(("Goal" :in-theory (enable last)))))
 
-(def-vl-modgen vl-make-n-bit-mult (n)
+(def-vl-modgen vl-make-n-bit-mult ((n posp))
   :short "Generate an multiplier module."
 
   :long "<p>We produce @('VL_N_BIT_MULT') for the given @('n'), which is
@@ -154,9 +155,9 @@ with @('n-1') instances of an N-bit wide adder circuit.</p>
 @('X') or @('Z'), then every bit of the output is @('X').  We implement this
 explicitly, which adds a layer of X-detection around the core circuitry.</p>"
 
-  :guard (posp n)
   :body
-  (b* (((when (eql n 1))
+  (b* ((n (lposfix n))
+       ((when (eql n 1))
         (list *vl-1-bit-mult* *vl-1-bit-and* *vl-1-bit-xor*))
        (name  (hons-copy (cat "VL_" (natstr n) "_BIT_MULT")))
 

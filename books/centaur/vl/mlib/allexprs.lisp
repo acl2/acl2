@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -19,9 +19,13 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
+(include-book "../parsetree")
 (include-book "expr-tools")
+(include-book "stmt-tools")
 (local (include-book "../util/arithmetic"))
 (local (include-book "../util/osets"))
+(local (std::add-default-post-define-hook :fix))
+
 
 (defxdoc allexprs
   :parents (mlib)
@@ -37,114 +41,107 @@ would include two expressions: one for @('foo'), and one for @('a + b').</p>
 expressions within @('(* foo = bar *)')-style attributes.</p>")
 
 (defmacro def-vl-allexprs (&key type
-                                exec-body
+                                nrev-body
                                 body)
 
   (let* ((mksym-package-symbol 'vl::foo)
-
          (rec            (mksym type '-p))
-         (collect-exec   (mksym type '-allexprs-exec))
+         (fix            (mksym type '-fix))
+         (collect-nrev   (mksym type '-allexprs-nrev))
          (collect        (mksym type '-allexprs))
-         (remove-thm     (mksym collect-exec '-removal))
-         (true-list-thm  (mksym 'true-listp-of- collect))
-         (type-thm       (mksym 'vl-exprlist-p-of- collect))
+         (short          (cat "Gather all top-level expressions from a @(see "
+                              (symbol-name rec) ").")))
 
-         (rec-s           (symbol-name rec))
-         (collect-s       (symbol-name collect))
+    `(progn
 
-         (short          (cat
-"Gather all top-level expressions from a @(see " rec-s ")."))
-         (long           (cat
-"<p><b>Signature</b> @(call " collect-s ") returns a @(see vl-exprlist-p).</p>
+       (define ,collect-nrev ((x ,rec)
+                              (nrev))
+         :parents (,collect)
+         :inline t
+         (b* ((x (,fix x)))
+           ,nrev-body))
 
-<p>We return a list of all the top-level expressions used throughout a @(see "
-rec-s "), as described in @(see allexprs).</p>
+       (define ,collect ((x ,rec))
+         :returns (exprs vl-exprlist-p)
+         :parents (allexprs)
+         :short ,short
+         :verify-guards nil
+         (mbe :logic (b* ((x (,fix x)))
+                       ,body)
+              :exec (with-local-nrev (,collect-nrev x nrev)))
+         ///
+         (defthm ,(mksym 'true-listp-of- collect)
+           (true-listp (,collect x))
+           :rule-classes :type-prescription)
 
-<p>For efficiency we use a tail-recursive, accumulator-style functions to do
-the collection.  Under the hood, we also use @('nreverse')
-optimization.</p>")))
+         (defthm ,(mksym collect-nrev '-removal)
+           (equal (,collect-nrev x nrev)
+                  (append nrev (,collect x)))
+           :hints(("Goal" :in-theory (enable acl2::rcons
+                                             ,collect-nrev))))
 
-    `(defsection ,collect
-       :parents (,rec allexprs)
-       :short ,short
-       :long ,long
-
-       (definlined ,collect-exec (x acc)
-         (declare (xargs :guard (,rec x)))
-         ,exec-body)
-
-       (defund ,collect (x)
-         (declare (xargs :guard (,rec x)
-                         :verify-guards nil))
-         (mbe :logic ,body
-              :exec (reverse (,collect-exec x nil))))
-
-       (local (in-theory (enable ,collect-exec ,collect)))
-
-       (defthm ,remove-thm
-         (equal (,collect-exec x acc)
-                (append (rev (,collect x))
-                        acc)))
-
-       (verify-guards ,collect)
-
-       (defthm ,true-list-thm
-         (true-listp (,collect x))
-         :rule-classes :type-prescription)
-
-       (defthm ,type-thm
-         (implies (force (,rec x))
-                  (vl-exprlist-p (,collect x))))
-
-       (never-memoize ,collect-exec)
-       (defttag vl-optimize)
-       (progn! (set-raw-mode t)
-               (defun ,collect (x)
-                 (nreverse (,collect-exec x nil))))
-       (defttag nil))))
+         (verify-guards ,collect)))))
 
 
 (defmacro def-vl-allexprs-list (&key list element)
   (let* ((mksym-package-symbol 'vl::foo)
-
          (list-rec             (mksym list '-p))
          (list-collect         (mksym list '-allexprs))
+         (list-collect-nrev    (mksym list '-allexprs-nrev))
          (element-collect      (mksym element '-allexprs))
-         (element-collect-exec (mksym element '-allexprs-exec))
-         (type-thm             (mksym 'vl-exprlist-p-of- list-collect))
+         (element-collect-nrev (mksym element '-allexprs-nrev))
+         (short                (cat "Gather all top-level expressions from a @(see "
+                                    (symbol-name list-rec))))
+    `(progn
+       (define ,list-collect-nrev ((x ,list-rec) nrev)
+         :parents (,list-collect)
+         (if (atom x)
+             (nrev-fix nrev)
+           (let ((nrev (,element-collect-nrev (car x) nrev)))
+             (,list-collect-nrev (cdr x) nrev))))
 
-         (list-rec-s          (symbol-name list-rec))
-         (list-collect-s      (symbol-name list-collect))
+       (define ,list-collect ((x ,list-rec))
+         :returns (exprs vl-exprlist-p)
+         :parents (allexprs)
+         :short ,short
+         :verify-guards nil
+         (mbe :logic (if (atom x)
+                         nil
+                       (append (,element-collect (car x))
+                               (,list-collect (cdr x))))
+              :exec (with-local-nrev
+                      (,list-collect-nrev x nrev)))
+         ///
+         (defthm ,(mksym 'true-listp-of- list-collect)
+           (true-listp (,list-collect x))
+           :rule-classes :type-prescription)
 
-         (short          (cat
-"Gather all top-level expressions from a @(see " list-rec-s ")."))
-         (long           (cat
-"<p><b>Signature</b> @(call " list-collect-s ") returns a @(see vl-exprlist-p).</p>
+         (defthm ,(mksym list-collect-nrev '-removal)
+           (equal (,list-collect-nrev x nrev)
+                  (append nrev (,list-collect x)))
+           :hints(("Goal" :in-theory (enable acl2::rcons
+                                             ,list-collect-nrev))))
 
-<p>We return a list of all the top-level expressions used throughout a @(see "
-list-rec-s "), as described in @(see allexprs).</p>")))
+         (verify-guards ,list-collect)
 
-    `(defmapappend ,list-collect (x)
-       (,element-collect x)
-       :guard (,list-rec x)
-       :transform-true-list-p t
-       :transform-exec ,element-collect-exec
-       :parents (,list-rec allexprs)
-       :short ,short
-       :long ,long
-       :rest
-       ((defthm ,type-thm
-          (implies (force (,list-rec x))
-                   (vl-exprlist-p (,list-collect x))))))))
+         (defmapappend ,list-collect (x)
+           (,element-collect x)
+           :already-definedp t
+           :transform-true-list-p t
+           :parents nil)))))
 
 (def-vl-allexprs
   :type vl-maybe-expr
-  :exec-body (if x (cons x acc) acc)
-  :body (if x (list x) nil))
+  :nrev-body (if x
+                 (nrev-push x nrev)
+               (nrev-fix nrev))
+  :body (if x
+            (list x)
+          nil))
 
 (def-vl-allexprs
   :type vl-plainarg
-  :exec-body (vl-maybe-expr-allexprs-exec (vl-plainarg->expr x) acc)
+  :nrev-body (vl-maybe-expr-allexprs-nrev (vl-plainarg->expr x) nrev)
   :body (vl-maybe-expr-allexprs (vl-plainarg->expr x)))
 
 (def-vl-allexprs-list
@@ -153,7 +150,7 @@ list-rec-s "), as described in @(see allexprs).</p>")))
 
 (def-vl-allexprs
   :type vl-namedarg
-  :exec-body (vl-maybe-expr-allexprs-exec (vl-namedarg->expr x) acc)
+  :nrev-body (vl-maybe-expr-allexprs-nrev (vl-namedarg->expr x) nrev)
   :body (vl-maybe-expr-allexprs (vl-namedarg->expr x)))
 
 (def-vl-allexprs-list
@@ -162,30 +159,34 @@ list-rec-s "), as described in @(see allexprs).</p>")))
 
 (def-vl-allexprs
   :type vl-arguments
-  :exec-body
-  (b* (((vl-arguments x) x))
-      (if x.namedp
-          (vl-namedarglist-allexprs-exec x.args acc)
-        (vl-plainarglist-allexprs-exec x.args acc)))
+  :nrev-body
+  (vl-arguments-case x
+    :named (vl-namedarglist-allexprs-nrev x.args nrev)
+    :plain (vl-plainarglist-allexprs-nrev x.args nrev))
   :body
-  (b* (((vl-arguments x) x))
-      (if x.namedp
-          (vl-namedarglist-allexprs x.args)
-        (vl-plainarglist-allexprs x.args))))
+  (vl-arguments-case x
+    :named (vl-namedarglist-allexprs x.args)
+    :plain (vl-plainarglist-allexprs x.args)))
 
 (def-vl-allexprs
   :type vl-range
-  :exec-body
-  (b* (((vl-range x) x))
-      (list* x.lsb x.msb acc))
+  :nrev-body
+  (b* (((vl-range x) x)
+       (nrev (nrev-push x.msb nrev))
+       (nrev (nrev-push x.lsb nrev)))
+    nrev)
   :body
   (b* (((vl-range x) x))
       (list x.msb x.lsb)))
 
 (def-vl-allexprs
   :type vl-maybe-range
-  :exec-body (if x (vl-range-allexprs-exec x acc) acc)
-  :body (if x (vl-range-allexprs x) nil))
+  :nrev-body (if x
+                 (vl-range-allexprs-nrev x nrev)
+               (nrev-fix nrev))
+  :body (if x
+            (vl-range-allexprs x)
+          nil))
 
 (def-vl-allexprs-list
   :list vl-rangelist
@@ -193,23 +194,31 @@ list-rec-s "), as described in @(see allexprs).</p>")))
 
 (def-vl-allexprs
   :type vl-gatedelay
-  :exec-body
-  (b* (((vl-gatedelay x) x))
-      (vl-maybe-expr-allexprs-exec x.high (list* x.fall x.rise acc)))
+  :nrev-body
+  (b* (((vl-gatedelay x) x)
+       (nrev (nrev-push x.rise nrev))
+       (nrev (nrev-push x.fall nrev)))
+    (vl-maybe-expr-allexprs-nrev x.high nrev))
   :body
   (b* (((vl-gatedelay x) x))
       (list* x.rise x.fall (vl-maybe-expr-allexprs x.high))))
 
 (def-vl-allexprs
   :type vl-maybe-gatedelay
-  :exec-body (if x (vl-gatedelay-allexprs-exec x acc) acc)
-  :body (if x (vl-gatedelay-allexprs x) nil))
+  :nrev-body (if x
+                 (vl-gatedelay-allexprs-nrev x nrev)
+               (nrev-fix nrev))
+  :body (if x
+            (vl-gatedelay-allexprs x)
+          nil))
 
 (def-vl-allexprs
   :type vl-assign
-  :exec-body
-  (b* (((vl-assign x) x))
-      (vl-maybe-gatedelay-allexprs-exec x.delay (list* x.lvalue x.expr acc)))
+  :nrev-body
+  (b* (((vl-assign x) x)
+       (nrev (nrev-push x.expr nrev))
+       (nrev (nrev-push x.lvalue nrev)))
+      (vl-maybe-gatedelay-allexprs-nrev x.delay nrev))
   :body
   (b* (((vl-assign x) x))
       (list* x.expr x.lvalue (vl-maybe-gatedelay-allexprs x.delay))))
@@ -220,11 +229,11 @@ list-rec-s "), as described in @(see allexprs).</p>")))
 
 (def-vl-allexprs
   :type vl-gateinst
-  :exec-body
+  :nrev-body
   (b* (((vl-gateinst x) x)
-       (acc (vl-maybe-range-allexprs-exec x.range acc))
-       (acc (vl-plainarglist-allexprs-exec x.args acc)))
-      (vl-maybe-gatedelay-allexprs-exec x.delay acc))
+       (nrev (vl-maybe-range-allexprs-nrev x.range nrev))
+       (nrev (vl-plainarglist-allexprs-nrev x.args nrev)))
+      (vl-maybe-gatedelay-allexprs-nrev x.delay nrev))
   :body
   (b* (((vl-gateinst x) x))
       (append (vl-maybe-range-allexprs x.range)
@@ -237,12 +246,12 @@ list-rec-s "), as described in @(see allexprs).</p>")))
 
 (def-vl-allexprs
   :type vl-modinst
-  :exec-body
+  :nrev-body
   (b* (((vl-modinst x) x)
-       (acc (vl-maybe-range-allexprs-exec x.range acc))
-       (acc (vl-arguments-allexprs-exec x.paramargs acc))
-       (acc (vl-arguments-allexprs-exec x.portargs acc)))
-      (vl-maybe-gatedelay-allexprs-exec x.delay acc))
+       (nrev (vl-maybe-range-allexprs-nrev x.range nrev))
+       (nrev (vl-arguments-allexprs-nrev x.paramargs nrev))
+       (nrev (vl-arguments-allexprs-nrev x.portargs nrev)))
+      (vl-maybe-gatedelay-allexprs-nrev x.delay nrev))
   :body
   (b* (((vl-modinst x) x))
       (append (vl-maybe-range-allexprs x.range)
@@ -256,11 +265,11 @@ list-rec-s "), as described in @(see allexprs).</p>")))
 
 (def-vl-allexprs
   :type vl-netdecl
-  :exec-body
+  :nrev-body
   (b* (((vl-netdecl x) x)
-       (acc (vl-maybe-range-allexprs-exec x.range acc))
-       (acc (vl-rangelist-allexprs-exec x.arrdims acc)))
-      (vl-maybe-gatedelay-allexprs-exec x.delay acc))
+       (nrev (vl-maybe-range-allexprs-nrev x.range nrev))
+       (nrev (vl-rangelist-allexprs-nrev x.arrdims nrev)))
+      (vl-maybe-gatedelay-allexprs-nrev x.delay nrev))
   :body
   (b* (((vl-netdecl x) x))
       (append (vl-maybe-range-allexprs x.range)
@@ -273,10 +282,10 @@ list-rec-s "), as described in @(see allexprs).</p>")))
 
 (def-vl-allexprs
   :type vl-vardecl
-  :exec-body
+  :nrev-body
   (b* (((vl-vardecl x) x)
-       (acc (vl-rangelist-allexprs-exec x.arrdims acc)))
-    (vl-maybe-expr-allexprs-exec x.initval acc))
+       (nrev (vl-rangelist-allexprs-nrev x.arrdims nrev)))
+    (vl-maybe-expr-allexprs-nrev x.initval nrev))
   :body
   (b* (((vl-vardecl x) x))
       (append (vl-rangelist-allexprs x.arrdims)
@@ -288,11 +297,11 @@ list-rec-s "), as described in @(see allexprs).</p>")))
 
 (def-vl-allexprs
   :type vl-regdecl
-  :exec-body
+  :nrev-body
   (b* (((vl-regdecl x) x)
-       (acc (vl-maybe-range-allexprs-exec x.range acc))
-       (acc (vl-rangelist-allexprs-exec x.arrdims acc)))
-    (vl-maybe-expr-allexprs-exec x.initval acc))
+       (nrev (vl-maybe-range-allexprs-nrev x.range nrev))
+       (nrev (vl-rangelist-allexprs-nrev x.arrdims nrev)))
+    (vl-maybe-expr-allexprs-nrev x.initval nrev))
   :body
   (b* (((vl-regdecl x) x))
       (append (vl-maybe-range-allexprs x.range)
@@ -305,7 +314,7 @@ list-rec-s "), as described in @(see allexprs).</p>")))
 
 (def-vl-allexprs
   :type vl-eventdecl
-  :exec-body (vl-rangelist-allexprs-exec (vl-eventdecl->arrdims x) acc)
+  :nrev-body (vl-rangelist-allexprs-nrev (vl-eventdecl->arrdims x) nrev)
   :body (vl-rangelist-allexprs (vl-eventdecl->arrdims x)))
 
 (def-vl-allexprs-list
@@ -314,7 +323,7 @@ list-rec-s "), as described in @(see allexprs).</p>")))
 
 (def-vl-allexprs
   :type vl-portdecl
-  :exec-body (vl-maybe-range-allexprs-exec (vl-portdecl->range x) acc)
+  :nrev-body (vl-maybe-range-allexprs-nrev (vl-portdecl->range x) nrev)
   :body (vl-maybe-range-allexprs (vl-portdecl->range x)))
 
 (def-vl-allexprs-list
@@ -323,9 +332,10 @@ list-rec-s "), as described in @(see allexprs).</p>")))
 
 (def-vl-allexprs
   :type vl-paramdecl
-  :exec-body
-  (b* (((vl-paramdecl x) x))
-      (vl-maybe-range-allexprs-exec x.range (cons x.expr acc)))
+  :nrev-body
+  (b* (((vl-paramdecl x) x)
+       (nrev (nrev-push x.expr nrev)))
+    (vl-maybe-range-allexprs-nrev x.range nrev))
   :body
   (b* (((vl-paramdecl x) x))
       (cons x.expr (vl-maybe-range-allexprs x.range))))
@@ -336,12 +346,12 @@ list-rec-s "), as described in @(see allexprs).</p>")))
 
 (def-vl-allexprs
   :type vl-delaycontrol
-  :exec-body (cons (vl-delaycontrol->value x) acc)
+  :nrev-body (nrev-push (vl-delaycontrol->value x) nrev)
   :body (list (vl-delaycontrol->value x)))
 
 (def-vl-allexprs
   :type :vl-evatom
-  :exec-body (cons (vl-evatom->expr x) acc)
+  :nrev-body (nrev-push (vl-evatom->expr x) nrev)
   :body (list (vl-evatom->expr x)))
 
 (def-vl-allexprs-list
@@ -350,224 +360,233 @@ list-rec-s "), as described in @(see allexprs).</p>")))
 
 (def-vl-allexprs
   :type vl-eventcontrol
-  :exec-body (vl-evatomlist-allexprs-exec (vl-eventcontrol->atoms x) acc)
+  :nrev-body (vl-evatomlist-allexprs-nrev (vl-eventcontrol->atoms x) nrev)
   :body (vl-evatomlist-allexprs (vl-eventcontrol->atoms x)))
 
 (def-vl-allexprs
   :type vl-repeateventcontrol
-  :exec-body
-  (b* (((vl-repeateventcontrol x) x))
-      (vl-eventcontrol-allexprs-exec x.ctrl (cons x.expr acc)))
+  :nrev-body
+  (b* (((vl-repeateventcontrol x) x)
+       (nrev (nrev-push x.expr nrev)))
+    (vl-eventcontrol-allexprs-nrev x.ctrl nrev))
   :body
   (b* (((vl-repeateventcontrol x) x))
-      (cons x.expr (vl-eventcontrol-allexprs x.ctrl))))
+    (cons x.expr (vl-eventcontrol-allexprs x.ctrl))))
 
 (def-vl-allexprs
   :type vl-delayoreventcontrol
-  :exec-body
+  :nrev-body
   (case (tag x)
-    (:vl-delaycontrol        (vl-delaycontrol-allexprs-exec x acc))
-    (:vl-eventcontrol        (vl-eventcontrol-allexprs-exec x acc))
-    (:vl-repeat-eventcontrol (vl-repeateventcontrol-allexprs-exec x acc))
-    (otherwise               (or (impossible) acc)))
+    (:vl-delaycontrol (vl-delaycontrol-allexprs-nrev x nrev))
+    (:vl-eventcontrol (vl-eventcontrol-allexprs-nrev x nrev))
+    (otherwise        (vl-repeateventcontrol-allexprs-nrev x nrev)))
   :body
   (case (tag x)
-    (:vl-delaycontrol        (vl-delaycontrol-allexprs x))
-    (:vl-eventcontrol        (vl-eventcontrol-allexprs x))
-    (:vl-repeat-eventcontrol (vl-repeateventcontrol-allexprs x))))
+    (:vl-delaycontrol (vl-delaycontrol-allexprs x))
+    (:vl-eventcontrol (vl-eventcontrol-allexprs x))
+    (otherwise        (vl-repeateventcontrol-allexprs x))))
 
 (def-vl-allexprs
   :type vl-maybe-delayoreventcontrol
-  :exec-body (if x (vl-delayoreventcontrol-allexprs-exec x acc) acc)
-  :body (if x (vl-delayoreventcontrol-allexprs x) nil))
-
-(def-vl-allexprs
-  :type vl-assignstmt
-  :exec-body
-  (b* (((vl-assignstmt x) x))
-      (vl-maybe-delayoreventcontrol-allexprs-exec x.ctrl
-                                                  (list* x.expr x.lvalue acc)))
-  :body
-  (b* (((vl-assignstmt x) x))
-      (list* x.lvalue
-             x.expr
-             (vl-maybe-delayoreventcontrol-allexprs x.ctrl))))
-
-(def-vl-allexprs
-  :type vl-deassignstmt
-  :exec-body (cons (vl-deassignstmt->lvalue x) acc)
-  :body (list (vl-deassignstmt->lvalue x)))
-
-(def-vl-allexprs
-  :type vl-enablestmt
-  :exec-body
-  (b* (((vl-enablestmt x) x))
-      (revappend-without-guard x.args (cons x.id acc)))
-  :body
-  (b* (((vl-enablestmt x) x))
-      (cons x.id (list-fix x.args))))
-
-(def-vl-allexprs
-  :type vl-disablestmt
-  :exec-body (cons (vl-disablestmt->id x) acc)
-  :body (list (vl-disablestmt->id x)))
-
-(def-vl-allexprs
-  :type vl-eventtriggerstmt
-  :exec-body (cons (vl-eventtriggerstmt->id x) acc)
-  :body (list (vl-eventtriggerstmt->id x)))
-
-(def-vl-allexprs
-  :type vl-atomicstmt
-  :exec-body
-  (case (tag x)
-    (:vl-nullstmt         acc)
-    (:vl-assignstmt       (vl-assignstmt-allexprs-exec x acc))
-    (:vl-deassignstmt     (vl-deassignstmt-allexprs-exec x acc))
-    (:vl-enablestmt       (vl-enablestmt-allexprs-exec x acc))
-    (:vl-disablestmt      (vl-disablestmt-allexprs-exec x acc))
-    (:vl-eventtriggerstmt (vl-eventtriggerstmt-allexprs-exec x acc))
-    (otherwise            (or (impossible) acc)))
-  :body
-  (case (tag x)
-    (:vl-nullstmt         nil)
-    (:vl-assignstmt       (vl-assignstmt-allexprs x))
-    (:vl-deassignstmt     (vl-deassignstmt-allexprs x))
-    (:vl-enablestmt       (vl-enablestmt-allexprs x))
-    (:vl-disablestmt      (vl-disablestmt-allexprs x))
-    (:vl-eventtriggerstmt (vl-eventtriggerstmt-allexprs x))))
+  :nrev-body (if x
+                 (vl-delayoreventcontrol-allexprs-nrev x nrev)
+               (nrev-fix nrev))
+  :body (if x
+            (vl-delayoreventcontrol-allexprs x)
+          nil))
 
 (def-vl-allexprs
   :type vl-blockitem
-  :exec-body
+  :nrev-body
   (case (tag x)
-    (:vl-regdecl   (vl-regdecl-allexprs-exec x acc))
-    (:vl-vardecl   (vl-vardecl-allexprs-exec x acc))
-    (:vl-eventdecl (vl-eventdecl-allexprs-exec x acc))
-    (:vl-paramdecl (vl-paramdecl-allexprs-exec x acc))
-    (otherwise     (or (impossible) acc)))
+    (:vl-regdecl   (vl-regdecl-allexprs-nrev x nrev))
+    (:vl-vardecl   (vl-vardecl-allexprs-nrev x nrev))
+    (:vl-eventdecl (vl-eventdecl-allexprs-nrev x nrev))
+    (otherwise     (vl-paramdecl-allexprs-nrev x nrev)))
   :body
   (case (tag x)
     (:vl-regdecl   (vl-regdecl-allexprs x))
     (:vl-vardecl   (vl-vardecl-allexprs x))
     (:vl-eventdecl (vl-eventdecl-allexprs x))
-    (:vl-paramdecl (vl-paramdecl-allexprs x))))
+    (otherwise     (vl-paramdecl-allexprs x))))
 
 (def-vl-allexprs-list
   :list vl-blockitemlist
   :element vl-blockitem)
 
+(defines vl-stmt-allexprs-nrev
+  :verbosep t
 
-(defsection vl-stmt-allexprs
-  :parents (allexprs vl-stmt-p)
-  :short "Gather all top-level expressions from a @(see vl-stmt-p)."
+  (define vl-stmt-allexprs-nrev ((x vl-stmt-p) nrev)
+    :measure (vl-stmt-count x)
+    :flag :stmt
+    (vl-stmt-case x
+      :vl-nullstmt
+      (nrev-fix nrev)
+      :vl-assignstmt
+      (b* ((nrev (nrev-push x.lvalue nrev))
+           (nrev (nrev-push x.expr nrev))
+           (nrev (vl-maybe-delayoreventcontrol-allexprs-nrev x.ctrl nrev)))
+        nrev)
+      :vl-deassignstmt
+      (b* ((nrev (nrev-push x.lvalue nrev)))
+        nrev)
+      :vl-enablestmt
+      (b* ((nrev (nrev-push x.id nrev))
+           (nrev (nrev-append x.args nrev)))
+        nrev)
+      :vl-disablestmt
+      (b* ((nrev (nrev-push x.id nrev)))
+        nrev)
+      :vl-eventtriggerstmt
+      (b* ((nrev (nrev-push x.id nrev)))
+        nrev)
+      :vl-casestmt
+      (b* ((nrev (nrev-push x.test nrev))
+           (nrev (vl-stmt-allexprs-nrev x.default nrev))
+           (nrev (vl-caselist-allexprs-nrev x.cases nrev)))
+        nrev)
+      :vl-ifstmt
+      (b* ((nrev (nrev-push x.condition nrev))
+           (nrev (vl-stmt-allexprs-nrev x.truebranch nrev))
+           (nrev (vl-stmt-allexprs-nrev x.falsebranch nrev)))
+        nrev)
+      :vl-foreverstmt
+      (b* ((nrev (vl-stmt-allexprs-nrev x.body nrev)))
+        nrev)
+      :vl-waitstmt
+      (b* ((nrev (nrev-push x.condition nrev))
+           (nrev (vl-stmt-allexprs-nrev x.body nrev)))
+        nrev)
+      :vl-whilestmt
+      (b* ((nrev (nrev-push x.condition nrev))
+           (nrev (vl-stmt-allexprs-nrev x.body nrev)))
+        nrev)
+      :vl-forstmt
+      (b* ((nrev (nrev-push x.initlhs nrev))
+           (nrev (nrev-push x.initrhs nrev))
+           (nrev (nrev-push x.test nrev))
+           (nrev (nrev-push x.nextlhs nrev))
+           (nrev (nrev-push x.nextrhs nrev))
+           (nrev (vl-stmt-allexprs-nrev x.body nrev)))
+        nrev)
+      :vl-repeatstmt
+      (b* ((nrev (nrev-push x.condition nrev))
+           (nrev (vl-stmt-allexprs-nrev x.body nrev)))
+        nrev)
+      :vl-blockstmt
+      (b* ((nrev (vl-blockitemlist-allexprs-nrev x.decls nrev))
+           (nrev (vl-stmtlist-allexprs-nrev x.stmts nrev)))
+        nrev)
+      :vl-timingstmt
+      (b* ((nrev (vl-stmt-allexprs-nrev x.body nrev))
+           (nrev (vl-delayoreventcontrol-allexprs-nrev x.ctrl nrev)))
+        nrev)))
 
-  :long "<p><b>Signature</b> @(call vl-stmt-allexprs) returns a @(see
-vl-exprlist-p).</p>
+  (define vl-stmtlist-allexprs-nrev ((x vl-stmtlist-p) nrev)
+    :measure (vl-stmtlist-count x)
+    :flag :list
+    (b* (((when (atom x))
+          (nrev-fix nrev))
+         (nrev (vl-stmt-allexprs-nrev (car x) nrev)))
+      (vl-stmtlist-allexprs-nrev (cdr x) nrev)))
 
-<p>We return a list of all the top-level expressions used throughout a
-@(see vl-stmt-p), as described in @(see allexprs).</p>
+  (define vl-caselist-allexprs-nrev ((x vl-caselist-p) nrev)
+    :measure (vl-caselist-count x)
+    :flag :cases
+    (b* ((x (vl-caselist-fix x))
+         ((when (atom x))
+          (nrev-fix nrev))
+         ((cons expr stmt) (car x))
+         (nrev (nrev-push expr nrev))
+         (nrev (vl-stmt-allexprs-nrev stmt nrev)))
+      (vl-caselist-allexprs-nrev (cdr x) nrev))))
 
-<p>For efficiency we use a tail-recursive, accumulator-style functions to do
-the collection.  Under the hood, we also use @('nreverse') optimization.</p>"
 
-  (mutual-recursion
+(defines vl-stmt-allexprs
+  :parents (allexprs)
 
-   (defund vl-stmt-allexprs-exec (x acc)
-     (declare (xargs :guard (vl-stmt-p x)
-                     :measure (two-nats-measure (acl2-count x) 1)))
-     (if (vl-fast-atomicstmt-p x)
-         (vl-atomicstmt-allexprs-exec x acc)
-       (b* (((vl-compoundstmt x) x)
-            (acc (revappend-without-guard x.exprs acc))
-            (acc (vl-blockitemlist-allexprs-exec x.decls acc))
-            (acc (vl-maybe-delayoreventcontrol-allexprs-exec x.ctrl acc)))
-           (vl-stmtlist-allexprs-exec x.stmts acc))))
+  (define vl-stmt-allexprs ((x vl-stmt-p))
+    :measure (vl-stmt-count x)
+    :returns (exprs vl-exprlist-p)
+    :verify-guards nil
+    (mbe :logic
+         (vl-stmt-case x
+           :vl-nullstmt         nil
+           :vl-assignstmt       (list* x.lvalue x.expr (vl-maybe-delayoreventcontrol-allexprs x.ctrl))
+           :vl-deassignstmt     (list x.lvalue)
+           :vl-enablestmt       (cons x.id (list-fix x.args))
+           :vl-disablestmt      (list x.id)
+           :vl-eventtriggerstmt (list x.id)
+           :vl-casestmt         (cons x.test
+                                      (append (vl-stmt-allexprs x.default)
+                                              (vl-caselist-allexprs x.cases)))
+           :vl-ifstmt           (cons x.condition
+                                      (append (vl-stmt-allexprs x.truebranch)
+                                              (vl-stmt-allexprs x.falsebranch)))
+           :vl-foreverstmt      (vl-stmt-allexprs x.body)
+           :vl-waitstmt         (cons x.condition (vl-stmt-allexprs x.body))
+           :vl-whilestmt        (cons x.condition (vl-stmt-allexprs x.body))
+           :vl-forstmt          (list* x.initlhs
+                                       x.initrhs
+                                       x.test
+                                       x.nextlhs
+                                       x.nextrhs
+                                       (vl-stmt-allexprs x.body))
+           :vl-repeatstmt      (cons x.condition (vl-stmt-allexprs x.body))
+           :vl-blockstmt       (append (vl-blockitemlist-allexprs x.decls)
+                                       (vl-stmtlist-allexprs x.stmts))
+           :vl-timingstmt      (append (vl-stmt-allexprs x.body)
+                                       (vl-delayoreventcontrol-allexprs x.ctrl)))
+         :exec
+         (with-local-nrev (vl-stmt-allexprs-nrev x nrev))))
 
-   (defund vl-stmtlist-allexprs-exec (x acc)
-     (declare (xargs :guard (vl-stmtlist-p x)
-                     :measure (two-nats-measure (acl2-count x) 0)))
-     (if (atom x)
-         acc
-       (let ((acc (vl-stmt-allexprs-exec (car x) acc)))
-         (vl-stmtlist-allexprs-exec (cdr x) acc)))))
+  (define vl-stmtlist-allexprs ((x vl-stmtlist-p))
+    :measure (vl-stmtlist-count x)
+    :returns (exprs vl-exprlist-p)
+    (mbe :logic (if (atom x)
+                    nil
+                  (append (vl-stmt-allexprs (car x))
+                          (vl-stmtlist-allexprs (cdr x))))
+         :exec
+         (with-local-nrev (vl-stmtlist-allexprs-nrev x nrev))))
 
-  (mutual-recursion
-
-   (defund vl-stmt-allexprs (x)
-     (declare (xargs :guard (vl-stmt-p x)
-                     :verify-guards nil
-                     :measure (two-nats-measure (acl2-count x) 1)))
-     (mbe :logic
-          (if (vl-atomicstmt-p x)
-              (vl-atomicstmt-allexprs x)
-            (b* (((vl-compoundstmt x) x))
-                (append x.exprs
-                        (vl-blockitemlist-allexprs x.decls)
-                        (vl-maybe-delayoreventcontrol-allexprs x.ctrl)
-                        (vl-stmtlist-allexprs x.stmts))))
-          :exec
-          (reverse (vl-stmt-allexprs-exec x nil))))
-
-   (defund vl-stmtlist-allexprs (x)
-     (declare (xargs :guard (vl-stmtlist-p x)
-                     :measure (two-nats-measure (acl2-count x) 0)))
-     (mbe :logic
-          (if (atom x)
-              nil
-            (append (vl-stmt-allexprs (car x))
-                    (vl-stmtlist-allexprs (cdr x))))
-          :exec
-          (reverse (vl-stmtlist-allexprs-exec x nil)))))
-
-  (flag::make-flag vl-flag-stmt-allexprs-exec
-                   vl-stmt-allexprs-exec
-                   :flag-mapping ((vl-stmt-allexprs-exec . stmt)
-                                  (vl-stmtlist-allexprs-exec . list)))
-
-  (defthm-vl-flag-stmt-allexprs-exec lemma
-    (stmt (equal (vl-stmt-allexprs-exec x acc)
-                 (revappend (vl-stmt-allexprs x) acc))
-          :name vl-stmt-allexprs-exec-removal)
-    (list (equal (vl-stmtlist-allexprs-exec x acc)
-                 (revappend (vl-stmtlist-allexprs x) acc))
-          :name vl-stmtlist-allexprs-exec-removal)
+  (define vl-caselist-allexprs ((x vl-caselist-p))
+    :measure (vl-caselist-count x)
+    :returns (exprs vl-exprlist-p)
+    (mbe :logic (b* ((x (vl-caselist-fix x))
+                     ((when (atom x))
+                      nil)
+                     ((cons expr stmt) (car x)))
+                  (cons expr
+                        (append (vl-stmt-allexprs stmt)
+                                (vl-caselist-allexprs (cdr x)))))
+         :exec
+         (with-local-nrev (vl-caselist-allexprs-nrev x nrev))))
+  ///
+  (defthm-vl-stmt-allexprs-nrev-flag
+    (defthm vl-stmt-allexprs-nrev-removal
+      (equal (vl-stmt-allexprs-nrev x nrev)
+             (append nrev (vl-stmt-allexprs x)))
+      :flag :stmt)
+    (defthm vl-stmtlist-allexprs-nrev-removal
+      (equal (vl-stmtlist-allexprs-nrev x nrev)
+             (append nrev (vl-stmtlist-allexprs x)))
+      :flag :list)
+    (defthm vl-caselist-allexprs-nrev-removal
+      (equal (vl-caselist-allexprs-nrev x nrev)
+             (append nrev (vl-caselist-allexprs x)))
+      :flag :cases)
     :hints(("Goal"
-            :induct (vl-flag-stmt-allexprs-exec flag x acc)
-            :expand ((vl-stmt-allexprs x)
-                     (vl-stmtlist-allexprs x)
-                     (vl-stmt-allexprs-exec x acc)
-                     (vl-stmtlist-allexprs-exec x acc)))))
-
-  (verify-guards vl-stmt-allexprs
-                 :hints(("Goal" :in-theory (enable vl-stmt-allexprs
-                                                   vl-stmtlist-allexprs))))
-
-  (never-memoize vl-stmt-allexprs-exec)
-  (never-memoize vl-stmtlist-allexprs-exec)
-  (defttag vl-optimize)
-  (progn! (set-raw-mode t)
-          (defun vl-stmt-allexprs (x)
-            (nreverse (vl-stmt-allexprs-exec x nil)))
-          (defun vl-stmtlist-allexprs (x)
-            (nreverse (vl-stmtlist-allexprs-exec x nil))))
-  (defttag nil)
-
-  (defthm-vl-flag-stmt-p lemma
-    (stmt (implies (force (vl-stmt-p x))
-                   (vl-exprlist-p (vl-stmt-allexprs x)))
-          :name vl-exprlist-p-of-vl-stmt-allexprs)
-    (list (implies (force (vl-stmtlist-p x))
-                   (vl-exprlist-p (vl-stmtlist-allexprs x)))
-          :name vl-exprlist-p-of-vl-stmtlist-allexprs)
-    :hints(("Goal"
-            :induct (vl-flag-stmt-p flag x)
-            :expand ((vl-stmt-allexprs x)
-                     (vl-stmtlist-allexprs x))))))
+            :in-theory (enable acl2::rcons)
+            :expand ((vl-stmtlist-allexprs-nrev x nrev)
+                     (vl-caselist-allexprs-nrev x nrev)
+                     (vl-stmt-allexprs-nrev x nrev)))))
+  (verify-guards vl-stmt-allexprs))
 
 (def-vl-allexprs
   :type vl-initial
-  :exec-body (vl-stmt-allexprs-exec (vl-initial->stmt x) acc)
+  :nrev-body (vl-stmt-allexprs-nrev (vl-initial->stmt x) nrev)
   :body (vl-stmt-allexprs (vl-initial->stmt x)))
 
 (def-vl-allexprs-list
@@ -576,7 +595,7 @@ the collection.  Under the hood, we also use @('nreverse') optimization.</p>"
 
 (def-vl-allexprs
   :type vl-always
-  :exec-body (vl-stmt-allexprs-exec (vl-always->stmt x) acc)
+  :nrev-body (vl-stmt-allexprs-nrev (vl-always->stmt x) nrev)
   :body (vl-stmt-allexprs (vl-always->stmt x)))
 
 (def-vl-allexprs-list
@@ -585,7 +604,7 @@ the collection.  Under the hood, we also use @('nreverse') optimization.</p>"
 
 (def-vl-allexprs
   :type :vl-port
-  :exec-body (vl-maybe-expr-allexprs-exec (vl-port->expr x) acc)
+  :nrev-body (vl-maybe-expr-allexprs-nrev (vl-port->expr x) nrev)
   :body (vl-maybe-expr-allexprs (vl-port->expr x)))
 
 (def-vl-allexprs-list
@@ -594,7 +613,7 @@ the collection.  Under the hood, we also use @('nreverse') optimization.</p>"
 
 (def-vl-allexprs
   :type :vl-taskport
-  :exec-body (vl-maybe-range-allexprs-exec (vl-taskport->range x) acc)
+  :nrev-body (vl-maybe-range-allexprs-nrev (vl-taskport->range x) nrev)
   :body (vl-maybe-range-allexprs (vl-taskport->range x)))
 
 (def-vl-allexprs-list
@@ -603,11 +622,11 @@ the collection.  Under the hood, we also use @('nreverse') optimization.</p>"
 
 (def-vl-allexprs
   :type :vl-fundecl
-  :exec-body (b* (((vl-fundecl x) x)
-                  (acc (vl-maybe-range-allexprs-exec x.rrange acc))
-                  (acc (vl-taskportlist-allexprs-exec x.inputs acc))
-                  (acc (vl-blockitemlist-allexprs-exec x.decls acc)))
-               (vl-stmt-allexprs-exec x.body acc))
+  :nrev-body (b* (((vl-fundecl x) x)
+                  (nrev (vl-maybe-range-allexprs-nrev x.rrange nrev))
+                  (nrev (vl-taskportlist-allexprs-nrev x.inputs nrev))
+                  (nrev (vl-blockitemlist-allexprs-nrev x.decls nrev)))
+               (vl-stmt-allexprs-nrev x.body nrev))
   :body (b* (((vl-fundecl x) x))
           (append (vl-maybe-range-allexprs x.rrange)
                   (vl-taskportlist-allexprs x.inputs)
@@ -620,10 +639,10 @@ the collection.  Under the hood, we also use @('nreverse') optimization.</p>"
 
 (def-vl-allexprs
   :type :vl-taskdecl
-  :exec-body (b* (((vl-taskdecl x) x)
-                  (acc (vl-taskportlist-allexprs-exec x.ports acc))
-                  (acc (vl-blockitemlist-allexprs-exec x.decls acc)))
-               (vl-stmt-allexprs-exec x.body acc))
+  :nrev-body (b* (((vl-taskdecl x) x)
+                  (nrev (vl-taskportlist-allexprs-nrev x.ports nrev))
+                  (nrev (vl-blockitemlist-allexprs-nrev x.decls nrev)))
+               (vl-stmt-allexprs-nrev x.body nrev))
   :body (b* (((vl-taskdecl x) x))
           (append (vl-taskportlist-allexprs x.ports)
                   (vl-blockitemlist-allexprs x.decls)
@@ -636,24 +655,24 @@ the collection.  Under the hood, we also use @('nreverse') optimization.</p>"
 
 (def-vl-allexprs
   :type vl-module
-  :exec-body
+  :nrev-body
   (b* (((vl-module x) x)
        ;; bozo add support for params eventually
-       (acc (vl-portlist-allexprs-exec x.ports acc))
-       (acc (vl-portdecllist-allexprs-exec x.portdecls acc))
-       (acc (vl-assignlist-allexprs-exec x.assigns acc))
-       (acc (vl-netdecllist-allexprs-exec x.netdecls acc))
-       (acc (vl-vardecllist-allexprs-exec x.vardecls acc))
-       (acc (vl-regdecllist-allexprs-exec x.regdecls acc))
-       (acc (vl-eventdecllist-allexprs-exec x.eventdecls acc))
-       (acc (vl-paramdecllist-allexprs-exec x.paramdecls acc))
-       (acc (vl-fundecllist-allexprs-exec x.fundecls acc))
-       (acc (vl-taskdecllist-allexprs-exec x.taskdecls acc))
-       (acc (vl-modinstlist-allexprs-exec x.modinsts acc))
-       (acc (vl-gateinstlist-allexprs-exec x.gateinsts acc))
-       (acc (vl-alwayslist-allexprs-exec x.alwayses acc))
-       (acc (vl-initiallist-allexprs-exec x.initials acc)))
-      acc)
+       (nrev (vl-portlist-allexprs-nrev x.ports nrev))
+       (nrev (vl-portdecllist-allexprs-nrev x.portdecls nrev))
+       (nrev (vl-assignlist-allexprs-nrev x.assigns nrev))
+       (nrev (vl-netdecllist-allexprs-nrev x.netdecls nrev))
+       (nrev (vl-vardecllist-allexprs-nrev x.vardecls nrev))
+       (nrev (vl-regdecllist-allexprs-nrev x.regdecls nrev))
+       (nrev (vl-eventdecllist-allexprs-nrev x.eventdecls nrev))
+       (nrev (vl-paramdecllist-allexprs-nrev x.paramdecls nrev))
+       (nrev (vl-fundecllist-allexprs-nrev x.fundecls nrev))
+       (nrev (vl-taskdecllist-allexprs-nrev x.taskdecls nrev))
+       (nrev (vl-modinstlist-allexprs-nrev x.modinsts nrev))
+       (nrev (vl-gateinstlist-allexprs-nrev x.gateinsts nrev))
+       (nrev (vl-alwayslist-allexprs-nrev x.alwayses nrev))
+       (nrev (vl-initiallist-allexprs-nrev x.initials nrev)))
+      nrev)
   :body
   (b* (((vl-module x) x))
       (append (vl-portlist-allexprs x.ports)
@@ -675,12 +694,7 @@ the collection.  Under the hood, we also use @('nreverse') optimization.</p>"
   :list vl-modulelist
   :element vl-module)
 
-
-
-(defun vl-module-exprnames-set (x)
-  (declare (xargs :guard (vl-module-p x)))
-  (mbe :logic (mergesort (vl-exprlist-names (vl-module-allexprs x)))
-       :exec
-       (let* ((exprs (vl-module-allexprs-exec x nil))
-              (names (vl-exprlist-names-exec exprs nil)))
-         (mergesort names))))
+(define vl-module-exprnames-set ((x vl-module-p))
+  ;; This used to have a more optimized definition that avoided reversal, but
+  ;; now with nrev there isn't a way to do it.
+  (mergesort (vl-exprlist-names (vl-module-allexprs x))))

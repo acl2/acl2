@@ -22,9 +22,10 @@
 (include-book "simple")
 (local (include-book "../../util/arithmetic"))
 (local (include-book "../../util/osets"))
+(local (std::add-default-post-define-hook :fix))
 (local (in-theory (disable vl-maybe-module-p-when-vl-module-p)))
 
-(def-vl-modgen vl-make-n-bit-xdetect (n)
+(def-vl-modgen vl-make-n-bit-xdetect ((n posp))
   :short "Generate a module that detects X/Z bits."
 
   :long "<p>We generate a gate-based module with the following signature:</p>
@@ -49,9 +50,9 @@ bit with every bit of the answer from a compare, addition, subtraction, etc.
 If the X-DET bit is zero, then XOR'ing it with the answer just yields the
 original answer.  But if it is X, then the resulting bits are all X.</p>"
 
-  :guard (posp n)
   :body
-  (b* ((name  (hons-copy (cat "VL_" (natstr n) "_BIT_X_DETECT")))
+  (b* ((n    (lposfix n))
+       (name (hons-copy (cat "VL_" (natstr n) "_BIT_X_DETECT")))
 
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output 1))
        ((mv in-expr in-port in-portdecl in-netdecl)     (vl-occform-mkport "in" :vl-input n))
@@ -97,7 +98,7 @@ original answer.  But if it is X, then the resulting bits are all X.</p>"
 ||#
 
 
-(def-vl-modgen vl-make-n-bit-xor-each (n)
+(def-vl-modgen vl-make-n-bit-xor-each ((n posp))
   :short "Generate a module that XORs a bit with each bit of a vector."
 
   :long "<p>We generate a module that uses gates and is semantically equivalent
@@ -118,9 +119,9 @@ endmodule
 <p>In other words, we xor @('a') with each bit of @('b') and return the xor'ed
 vector.</p>"
 
-  :guard (posp n)
   :body
-  (b* ((name  (hons-copy (cat "VL_" (natstr n) "_BIT_XOR_EACH")))
+  (b* ((n     (lposfix n))
+       (name  (hons-copy (cat "VL_" (natstr n) "_BIT_XOR_EACH")))
 
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output n))
        ((mv a-expr a-port a-portdecl a-netdecl)         (vl-occform-mkport "a" :vl-input 1))
@@ -147,7 +148,8 @@ vector.</p>"
 
 
 
-(def-vl-modgen vl-make-n-bit-x-propagator (n m)
+(def-vl-modgen vl-make-n-bit-x-propagator ((n posp)
+                                           (m posp))
   :short "Generate a module that propagates Xes from inputs into an answer."
 
   :long "<p>We generate a gate-based module that has the following interface:</p>
@@ -165,11 +167,10 @@ endmodule
 is X/Z, then @('out') will be all X bits.  Otherwise @('out') is just a copy of
 @('ans').</p>"
 
-  :guard (and (posp n)
-              (posp m))
-
   :body
-  (b* ((name (hons-copy (cat "VL_" (natstr n) "_BY_" (natstr m) "_XPROP")))
+  (b* ((n    (lposfix n))
+       (m    (lposfix m))
+       (name (hons-copy (cat "VL_" (natstr n) "_BY_" (natstr m) "_XPROP")))
 
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output m))
        ((mv ans-expr ans-port ans-portdecl ans-netdecl) (vl-occform-mkport "ans" :vl-input m))

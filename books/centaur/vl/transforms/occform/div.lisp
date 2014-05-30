@@ -22,10 +22,11 @@
 (include-book "add")
 (local (include-book "../../util/arithmetic"))
 (local (include-book "../../util/osets"))
+(local (std::add-default-post-define-hook :fix))
 (local (in-theory (disable vl-maybe-module-p-when-vl-module-p)))
 
 
-(defsection *vl-1-bit-div-rem*
+(defval *vl-1-bit-div-rem*
   :parents (occform)
   :short "One-bit division and remainder."
 
@@ -41,76 +42,76 @@ applied to single-bit wires, we still need to implement it <i>somehow</i>.</p>
 really worth studying.  I basically just piled on X detection stuff until it
 matched the Verilog semantics.</p>"
 
-  (defconst *vl-1-bit-div-rem*
-    (b* ((name (hons-copy "VL_1_BIT_DIV_REM"))
+  (b* ((name (hons-copy "VL_1_BIT_DIV_REM"))
 
-         ((mv q-expr q-port q-portdecl q-netdecl) (vl-primitive-mkport "quotient"  :vl-output))
-         ((mv r-expr r-port r-portdecl r-netdecl) (vl-primitive-mkport "remainder" :vl-output))
-         ((mv e-expr e-port e-portdecl e-netdecl) (vl-primitive-mkport "dividend"  :vl-input))
-         ((mv d-expr d-port d-portdecl d-netdecl) (vl-primitive-mkport "divisor"   :vl-input))
+       ((mv q-expr q-port q-portdecl q-netdecl) (vl-primitive-mkport "quotient"  :vl-output))
+       ((mv r-expr r-port r-portdecl r-netdecl) (vl-primitive-mkport "remainder" :vl-output))
+       ((mv e-expr e-port e-portdecl e-netdecl) (vl-primitive-mkport "dividend"  :vl-input))
+       ((mv d-expr d-port d-portdecl d-netdecl) (vl-primitive-mkport "divisor"   :vl-input))
 
-         ;; wire 	 xwire;
-         ;; VL_1_BIT_X xdriver (xwire);
-         ((mv xwire-expr xwire-netdecl) (vl-primitive-mkwire "xwire"))
-         (xwire-inst (vl-simple-inst *vl-1-bit-x* "xdriver" xwire-expr))
+       ;; wire 	 xwire;
+       ;; VL_1_BIT_X xdriver (xwire);
+       ((mv xwire-expr xwire-netdecl) (vl-primitive-mkwire "xwire"))
+       (xwire-inst (vl-simple-inst *vl-1-bit-x* "xdriver" xwire-expr))
 
-         ;; To treat divides by zero, x, and z in the same way, the basic idea is to let
-         ;;    divisor_fix = (divisor === 1'b1) ? divisor : 1'bx;
-         ;;
-         ;; Implementation is slightly complex:
-         ;;   wire divisor_bar, divisor_x, divisor_fix;
-         ;;   VL_1_BIT_NOT dx1 (divisor_bar, divisor);
-         ;;   VL_1_BIT_AND dx2 (divisor_x, divisor_bar, xwire);
-         ;;   VL_1_BIT_OR  dx3 (divisor_fix, divisor, divisor_x) ;
-         ((mv d~-expr d~-netdecl) (vl-primitive-mkwire "divisor_bar"))
-         ((mv dx-expr dx-netdecl) (vl-primitive-mkwire "divisor_x"))
-         ((mv df-expr df-netdecl) (vl-primitive-mkwire "divisor_fix"))
-         (d~-inst (vl-simple-inst *vl-1-bit-not* "dx1" d~-expr d-expr))
-         (dx-inst (vl-simple-inst *vl-1-bit-and* "dx2" dx-expr d~-expr xwire-expr))
-         (df-inst (vl-simple-inst *vl-1-bit-or*  "dx3" df-expr d-expr dx-expr))
+       ;; To treat divides by zero, x, and z in the same way, the basic idea is to let
+       ;;    divisor_fix = (divisor === 1'b1) ? divisor : 1'bx;
+       ;;
+       ;; Implementation is slightly complex:
+       ;;   wire divisor_bar, divisor_x, divisor_fix;
+       ;;   VL_1_BIT_NOT dx1 (divisor_bar, divisor);
+       ;;   VL_1_BIT_AND dx2 (divisor_x, divisor_bar, xwire);
+       ;;   VL_1_BIT_OR  dx3 (divisor_fix, divisor, divisor_x) ;
+       ((mv d~-expr d~-netdecl) (vl-primitive-mkwire "divisor_bar"))
+       ((mv dx-expr dx-netdecl) (vl-primitive-mkwire "divisor_x"))
+       ((mv df-expr df-netdecl) (vl-primitive-mkwire "divisor_fix"))
+       (d~-inst (vl-simple-inst *vl-1-bit-not* "dx1" d~-expr d-expr))
+       (dx-inst (vl-simple-inst *vl-1-bit-and* "dx2" dx-expr d~-expr xwire-expr))
+       (df-inst (vl-simple-inst *vl-1-bit-or*  "dx3" df-expr d-expr dx-expr))
 
-         ;; Now we do ordinary X detection on the dividend (a) and on the
-         ;; divisor_fix.  It happens to be that remainder is X exactly when
-         ;; either of these is X/Z and 0 otherwise, so the remainder comes right
-         ;; from the x-detection.  That is:
-         ;;
-         ;;  wire xa, xb;
-         ;;  VL_1_BIT_XOR x1 (xa, dividend, dividend);
-         ;;  VL_1_BIT_XOR x2 (xb, divisor_fix, divisor_fix);
-         ;;  VL_1_BIT_XOR x3 (remainder, xa, xb);
-         ((mv xa-expr xa-netdecl) (vl-primitive-mkwire "xa"))
-         ((mv xb-expr xb-netdecl) (vl-primitive-mkwire "xb"))
-         (xa-inst (vl-simple-inst *vl-1-bit-xor* "x1" xa-expr e-expr e-expr))
-         (xb-inst (vl-simple-inst *vl-1-bit-xor* "x2" xb-expr df-expr df-expr))
-         (r-inst  (vl-simple-inst *vl-1-bit-xor* "x3" r-expr xa-expr xb-expr))
+       ;; Now we do ordinary X detection on the dividend (a) and on the
+       ;; divisor_fix.  It happens to be that remainder is X exactly when
+       ;; either of these is X/Z and 0 otherwise, so the remainder comes right
+       ;; from the x-detection.  That is:
+       ;;
+       ;;  wire xa, xb;
+       ;;  VL_1_BIT_XOR x1 (xa, dividend, dividend);
+       ;;  VL_1_BIT_XOR x2 (xb, divisor_fix, divisor_fix);
+       ;;  VL_1_BIT_XOR x3 (remainder, xa, xb);
+       ((mv xa-expr xa-netdecl) (vl-primitive-mkwire "xa"))
+       ((mv xb-expr xb-netdecl) (vl-primitive-mkwire "xb"))
+       (xa-inst (vl-simple-inst *vl-1-bit-xor* "x1" xa-expr e-expr e-expr))
+       (xb-inst (vl-simple-inst *vl-1-bit-xor* "x2" xb-expr df-expr df-expr))
+       (r-inst  (vl-simple-inst *vl-1-bit-xor* "x3" r-expr xa-expr xb-expr))
 
-         ;; Finally, compute the quotient.  The quotient is only 1 when the
-         ;; dividend is 1 and divisor is 1.  Otherwise it may as well be zero.
-         ;; We call this Qmain.  We then adjust for Xes accordingly to create
-         ;; the properly X-behaving quotient.
-         ;;
-         ;;  wire qmain;
-         ;;  VL_1_BIT_AND q1 (qmain, dividend, divisor_fix);
-         ;;  VL_1_BIT_XOR q2 (quotient, remainder, qmain);
-         ((mv qm-expr qm-netdecl) (vl-primitive-mkwire "qmain"))
-         (qm-inst (vl-simple-inst *vl-1-bit-and* "q1" qm-expr e-expr df-expr))
-         (q-inst  (vl-simple-inst *vl-1-bit-xor* "q2" q-expr r-expr qm-expr)))
+       ;; Finally, compute the quotient.  The quotient is only 1 when the
+       ;; dividend is 1 and divisor is 1.  Otherwise it may as well be zero.
+       ;; We call this Qmain.  We then adjust for Xes accordingly to create
+       ;; the properly X-behaving quotient.
+       ;;
+       ;;  wire qmain;
+       ;;  VL_1_BIT_AND q1 (qmain, dividend, divisor_fix);
+       ;;  VL_1_BIT_XOR q2 (quotient, remainder, qmain);
+       ((mv qm-expr qm-netdecl) (vl-primitive-mkwire "qmain"))
+       (qm-inst (vl-simple-inst *vl-1-bit-and* "q1" qm-expr e-expr df-expr))
+       (q-inst  (vl-simple-inst *vl-1-bit-xor* "q2" q-expr r-expr qm-expr)))
 
-      (make-vl-module :name      name
-                      :origname  name
-                      :ports     (list q-port r-port e-port d-port)
-                      :portdecls (list q-portdecl r-portdecl e-portdecl d-portdecl)
-                      :netdecls  (list q-netdecl r-netdecl e-netdecl d-netdecl
-                                       xwire-netdecl d~-netdecl dx-netdecl df-netdecl
-                                       xa-netdecl xb-netdecl qm-netdecl)
-                      :modinsts  (list xwire-inst d~-inst dx-inst df-inst
-                                       xa-inst xb-inst r-inst
-                                       qm-inst q-inst)
-                      :minloc    *vl-fakeloc*
-                      :maxloc    *vl-fakeloc*))))
+    (hons-copy
+     (make-vl-module :name      name
+                     :origname  name
+                     :ports     (list q-port r-port e-port d-port)
+                     :portdecls (list q-portdecl r-portdecl e-portdecl d-portdecl)
+                     :netdecls  (list q-netdecl r-netdecl e-netdecl d-netdecl
+                                      xwire-netdecl d~-netdecl dx-netdecl df-netdecl
+                                      xa-netdecl xb-netdecl qm-netdecl)
+                     :modinsts  (list xwire-inst d~-inst dx-inst df-inst
+                                      xa-inst xb-inst r-inst
+                                      qm-inst q-inst)
+                     :minloc    *vl-fakeloc*
+                     :maxloc    *vl-fakeloc*))))
 
 
-(def-vl-modgen vl-make-n-bit-div-step (n)
+(def-vl-modgen vl-make-n-bit-div-step ((n natp))
   :parents (vl-make-n-bit-div-rem)
   :short "Single step in a basic division/remainder algorithm."
 
@@ -197,10 +198,10 @@ or divisor is @('X') or @('Z'), then every bit of the output is @('X').  We do
 not deal with this requirement in the individual steps; it's part of the
 wrapper.</p>"
 
-  :guard (and (natp n)    ;; we deal with the one-bit case separately
-              (>= n 2))
+  :guard (>= n 2) ;; we deal with the one-bit case separately
   :body
-  (b* ((name  (hons-copy (cat "VL_" (natstr n) "_BIT_DIV_STEP")))
+  (b* ((n     (lnfix n))
+       (name  (hons-copy (cat "VL_" (natstr n) "_BIT_DIV_STEP")))
 
        ((mv an-expr an-port an-portdecl an-netdecl) (vl-occform-mkport "a_next"      :vl-output n))
        ((mv qn-expr qn-port qn-portdecl qn-netdecl) (vl-occform-mkport "q_next"      :vl-output n))
@@ -256,7 +257,7 @@ wrapper.</p>"
 
 
 
-(def-vl-modgen vl-make-n-bit-div-core (n)
+(def-vl-modgen vl-make-n-bit-div-core ((n natp))
   :parents (vl-make-n-bit-div-rem)
   :short "Core of a division/remainder module."
 
@@ -295,11 +296,11 @@ module VL_4_BIT_DIV_CORE (quotient, remainder, dividend, divisor);
 endmodule
 })"
 
-  :guard (and (natp n)
-              (>= n 2))
+  :guard (>= n 2)
 
   :body
-  (b* ((name (hons-copy (cat "VL_" (natstr n) "_BIT_DIV_CORE")))
+  (b* ((n    (lnfix n))
+       (name (hons-copy (cat "VL_" (natstr n) "_BIT_DIV_CORE")))
 
        ((mv q-expr q-port q-portdecl q-netdecl) (vl-occform-mkport "quotient"  :vl-output n))
        ((mv r-expr r-port r-portdecl r-netdecl) (vl-occform-mkport "remainder" :vl-output n))
@@ -346,8 +347,7 @@ endmodule
           support)))
 
 
-
-(def-vl-modgen vl-make-n-bit-div-rem (n)
+(def-vl-modgen vl-make-n-bit-div-rem ((n posp))
   :short "Top-level division/remainder module."
 
   :long "<p>We generate the module @('VL_N_BIT_DIV_REM') which exactly
@@ -363,9 +363,9 @@ must be X.</p>
 <p>This module just wraps up the core module with zero- and x-detection
 circuitry to achieve the desired behavior.</p>"
 
-  :guard (posp n)
   :body
-  (b* (((when (eql n 1))
+  (b* ((n (lposfix n))
+       ((when (eql n 1))
         ;; Custom definition for absurd case of 1-bit by 1-bit division
         (list *vl-1-bit-div-rem* *vl-1-bit-x* *vl-1-bit-not* *vl-1-bit-and*
               *vl-1-bit-or* *vl-1-bit-xor*))
@@ -456,7 +456,7 @@ circuitry to achieve the desired behavior.</p>"
 
 
 
-(def-vl-modgen vl-make-n-bit-unsigned-div (n)
+(def-vl-modgen vl-make-n-bit-unsigned-div ((n posp))
   :short "Generate an unsigned divider module."
 
   :long "<p>We generate @('VL_N_BIT_UNSIGNED_DIV') for the given @('n'), which is
@@ -474,9 +474,9 @@ endmodule
 <p>This is a thin wrapper around @(see vl-make-n-bit-div-rem).  It uses a naive
 N-step restoring division algorithm.</p>"
 
-  :guard (posp n)
   :body
-  (b* ((name (hons-copy (cat "VL_" (natstr n) "_BIT_UNSIGNED_DIV")))
+  (b* ((n    (lposfix n))
+       (name (hons-copy (cat "VL_" (natstr n) "_BIT_UNSIGNED_DIV")))
 
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output n))
        ((mv a-expr   a-port   a-portdecl   a-netdecl)   (vl-occform-mkport "a"   :vl-input n))
@@ -499,7 +499,7 @@ N-step restoring division algorithm.</p>"
           core-mods)))
 
 
-(def-vl-modgen vl-make-n-bit-unsigned-rem (n)
+(def-vl-modgen vl-make-n-bit-unsigned-rem ((n posp))
   :short "Generate an unsigned remainder module."
 
   :long "<p>We generate @('VL_N_BIT_UNSIGNED_REM') for the given @('n'), which is
@@ -517,9 +517,9 @@ endmodule
 <p>This is a thin wrapper around @(see vl-make-n-bit-div-rem).  It uses a naive
 N-step restoring division algorithm.</p>"
 
-  :guard (posp n)
   :body
-  (b* ((name (hons-copy (cat "VL_" (natstr n) "_BIT_UNSIGNED_REM")))
+  (b* ((n    (lposfix n))
+       (name (hons-copy (cat "VL_" (natstr n) "_BIT_UNSIGNED_REM")))
 
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output n))
        ((mv a-expr   a-port   a-portdecl   a-netdecl)   (vl-occform-mkport "a"   :vl-input n))

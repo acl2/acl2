@@ -151,10 +151,11 @@ a combinational loop.</li>
 
 (define vl-atomicstmt-cblock-p
   :parents (vl-stmt-cblock-p)
-  ((x vl-atomicstmt-p))
+  ((x vl-stmt-p))
+  :guard (vl-atomicstmt-p x)
   :returns (bool booleanp :rule-classes :type-prescription)
   :long "<p>We just support null statements and blocking assignments.</p>"
-  (case (tag x)
+  (case (vl-stmt-kind x)
     (:vl-nullstmt    t)
     (:vl-assignstmt  (and (eq (vl-assignstmt->type x) :vl-blocking)
                           ;; Don't tolerate delays on assignments because
@@ -189,9 +190,9 @@ flattened or anything like that.</p>"
   :hints(("Goal" :in-theory (disable (force))))
 
   (define vl-stmt-cblock-p ((x vl-stmt-p))
-    :measure (two-nats-measure (acl2-count x) 1)
+    :measure (vl-stmt-count x)
     :flag :stmt
-    (b* (((when (vl-fast-atomicstmt-p x))
+    (b* (((when (vl-atomicstmt-p x))
           (vl-atomicstmt-cblock-p x))
 
          ((when (vl-ifstmt-p x))
@@ -210,7 +211,7 @@ flattened or anything like that.</p>"
       nil))
 
   (define vl-stmtlist-cblock-p ((x vl-stmtlist-p))
-    :measure (two-nats-measure (acl2-count x) 0)
+    :measure (vl-stmtlist-count x)
     :flag :list
     (if (atom x)
         t
@@ -231,10 +232,11 @@ flattened or anything like that.</p>"
 
 (define vl-atomicstmt-cblock-rvalexprs
   :parents (vl-stmt-cblock-rvalexprs)
-  ((x (and (vl-atomicstmt-p x)
+  ((x (and (vl-stmt-p x)
+           (vl-atomicstmt-p x)
            (vl-atomicstmt-cblock-p x))))
   :returns (exprs vl-exprlist-p :hyp :fguard)
-  (case (tag x)
+  (case (vl-stmt-kind x)
     (:vl-nullstmt nil)
     (:vl-assignstmt (list (vl-assignstmt->expr x)))
     (otherwise nil)))
@@ -249,8 +251,8 @@ flattened or anything like that.</p>"
   (define vl-stmt-cblock-rvalexprs ((x (and (vl-stmt-p x)
                                               (vl-stmt-cblock-p x))))
     :returns (exprs vl-exprlist-p :hyp :fguard)
-    :measure (two-nats-measure (acl2-count x) 1)
-    (b* (((when (vl-fast-atomicstmt-p x))
+    :measure (vl-stmt-count x)
+    (b* (((when (vl-atomicstmt-p x))
           (vl-atomicstmt-cblock-rvalexprs x))
 
          ((when (vl-ifstmt-p x))
@@ -268,7 +270,7 @@ flattened or anything like that.</p>"
   (define vl-stmtlist-cblock-rvalexprs ((x (and (vl-stmtlist-p x)
                                                   (vl-stmtlist-cblock-p x))))
     :returns (exprs vl-exprlist-p :hyp :fguard)
-    :measure (two-nats-measure (acl2-count x) 0)
+    :measure (vl-stmtlist-count x)
     (if (atom x)
         nil
       (append (vl-stmt-cblock-rvalexprs (car x))
@@ -277,12 +279,13 @@ flattened or anything like that.</p>"
 
 (define vl-atomicstmt-cblock-lvalexprs
   :parents (vl-stmt-cblock-lvalexprs)
-  ((x (and (vl-atomicstmt-p x)
+  ((x (and (vl-stmt-p x)
+           (vl-atomicstmt-p x)
            (vl-atomicstmt-cblock-p x))))
   :returns (exprs (and (vl-exprlist-p exprs)
                        (vl-idexprlist-p exprs)) :hyp :fguard)
   :prepwork ((local (in-theory (enable vl-atomicstmt-cblock-p))))
-  (case (tag x)
+  (case (vl-stmt-kind x)
     (:vl-nullstmt nil)
     (:vl-assignstmt (list (vl-assignstmt->lvalue x)))
     (otherwise nil)))
@@ -297,8 +300,8 @@ flattened or anything like that.</p>"
                                               (vl-stmt-cblock-p x))))
     :returns (exprs (and (vl-exprlist-p exprs)
                          (vl-idexprlist-p exprs)) :hyp :fguard)
-    :measure (two-nats-measure (acl2-count x) 1)
-    (b* (((when (vl-fast-atomicstmt-p x))
+    :measure (vl-stmt-count x)
+    (b* (((when (vl-atomicstmt-p x))
           (vl-atomicstmt-cblock-lvalexprs x))
 
          ((when (vl-ifstmt-p x))
@@ -317,7 +320,7 @@ flattened or anything like that.</p>"
     :returns (exprs (and (vl-exprlist-p exprs)
                          (vl-idexprlist-p exprs))
                     :hyp :fguard)
-    :measure (two-nats-measure (acl2-count x) 0)
+    :measure (vl-stmtlist-count x)
     (if (atom x)
         nil
       (append (vl-stmt-cblock-lvalexprs (car x))
@@ -377,10 +380,11 @@ this.  After all, synthesis tools might not do hard work here, either.</p>")
 
 (define vl-atomicstmt-cblock-pathcheck1
   ((varname stringp)
-   (x       vl-atomicstmt-p))
+   (x       (and (vl-stmt-p x)
+                 (vl-atomicstmt-p x))))
   :guard (vl-atomicstmt-cblock-p x)
   :returns (bool booleanp :rule-classes :type-prescription)
-  (case (tag x)
+  (case (vl-stmt-kind x)
     (:vl-nullstmt    nil)
     (:vl-assignstmt  (equal (vl-idexpr->name (vl-assignstmt->lvalue x))
                             varname))
@@ -399,8 +403,8 @@ this.  After all, synthesis tools might not do hard work here, either.</p>")
      (x       vl-stmt-p))
     :guard (vl-stmt-cblock-p x)
     :returns (okp booleanp :rule-classes :type-prescription)
-    :measure (two-nats-measure (acl2-count x) 1)
-    (b* (((when (vl-fast-atomicstmt-p x))
+    :measure (vl-stmt-count x)
+    (b* (((when (vl-atomicstmt-p x))
           (vl-atomicstmt-cblock-pathcheck1 varname x))
          ((when (vl-ifstmt-p x))
           (b* (((vl-ifstmt x) x))
@@ -419,7 +423,7 @@ this.  After all, synthesis tools might not do hard work here, either.</p>")
             within some statement in a begin/end block list."
     :guard (vl-stmtlist-cblock-p x)
     :returns (okp booleanp :rule-classes :type-prescription)
-    :measure (two-nats-measure (acl2-count x) 0)
+    :measure (vl-stmtlist-count x)
     (if (atom x)
         nil
       (or (vl-stmt-cblock-pathcheck1 varname (car x))
@@ -640,7 +644,8 @@ are well-typed and have compatible widths.</p>")
   :short "Update our current expression for @('varname') to account for a new
           atomic statement."
   ((varname  stringp          "Variable we're considering.")
-   (x        vl-atomicstmt-p  "Statement that we're now encountering.")
+   (x        (and (vl-stmt-p x)
+                  (vl-atomicstmt-p x))  "Statement that we're now encountering.")
    (curr     vl-maybe-expr-p  "Expression we've built for varname up until now."))
   :guard (vl-atomicstmt-cblock-p x)
   :returns (expr? (and (vl-maybe-expr-p expr?)
@@ -648,7 +653,7 @@ are well-typed and have compatible widths.</p>")
                   :hyp :fguard
                   "New expression to assign to varname, after taking this
                    statement into account.")
-  (case (tag x)
+  (case (vl-stmt-kind x)
     (:vl-nullstmt
      ;; Null statement has no effect
      curr)
@@ -682,8 +687,8 @@ are well-typed and have compatible widths.</p>")
                          (vl-maybe-expr-p expr?))
                     :hyp :fguard
                     "New expression for varname, if any")
-    :measure (two-nats-measure (acl2-count x) 1)
-    (b* (((when (vl-fast-atomicstmt-p x))
+    :measure (vl-stmt-count x)
+    (b* (((when (vl-atomicstmt-p x))
           (vl-atomicstmt-cblock-varexpr varname x curr))
 
          ((when (vl-ifstmt-p x))
@@ -735,7 +740,7 @@ are well-typed and have compatible widths.</p>")
                          (vl-maybe-expr-p expr?))
                     :hyp :fguard
                     "New expression for varname, if any")
-    :measure (two-nats-measure (acl2-count x) 0)
+    :measure (vl-stmtlist-count x)
     (b* (((when (atom x))
           curr)
          (curr (vl-stmt-cblock-varexpr varname (car x) curr)))

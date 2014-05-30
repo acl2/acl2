@@ -327,3 +327,19 @@ nrev)."
 
   :autodoc nil
   (acl2::defstobj-clone nrev2 nrev :suffix "2"))
+
+
+(defsection nrev-append
+  :parents (nrev)
+  :short "Add several elements into @('nrev') at once."
+  :long "<p>We just leave this enabled.</p>"
+
+  (defun nrev-append (x nrev)
+    (declare (xargs :guard t :stobjs nrev))
+    (mbe :logic
+         (non-exec (append nrev (list-fix x)))
+         :exec
+         (if (atom x)
+             (nrev-fix nrev)
+           (let ((nrev (nrev-push (car x) nrev)))
+             (nrev-append (cdr x) nrev))))))

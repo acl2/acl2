@@ -69,7 +69,7 @@ remove @('else') expressions.</p>")
     :returns (mv (warnings vl-warninglist-p)
                  (flat-stmts vl-stmtlist-p :hyp :fguard))
     :verify-guards nil
-    :measure (two-nats-measure (acl2-count x) 1)
+    :measure (vl-stmt-count x)
     :hints(("Goal" :in-theory (disable (force))))
     :flag :stmt
     (b* (((fun (stop outer-cond x warnings))
@@ -82,13 +82,13 @@ remove @('else') expressions.</p>")
                                         :falsebranch (make-vl-nullstmt)))
                 (list x))))
 
-         ((when (vl-fast-nullstmt-p x))
+         ((when (vl-nullstmt-p x))
           ;; Special case: don't call STOP.  A null statement does nothing,
           ;; whether it has a condition or not, so just let it fizzle away.
           ;; This is like  rewriting "if (condition) [null] --> null".
           (mv (ok) nil))
 
-         ((when (vl-fast-atomicstmt-p x))
+         ((when (vl-atomicstmt-p x))
           (stop outer-cond x warnings))
 
          ((when (vl-ifstmt-p x))
@@ -112,7 +112,7 @@ remove @('else') expressions.</p>")
                                    it is not.  Raw expression: ~x1."
                             :args (list elem x.condition)
                             :fn 'vl-stmt-ifmerge)))
-               ((unless (vl-fast-nullstmt-p x.falsebranch))
+               ((unless (vl-nullstmt-p x.falsebranch))
                 (stop outer-cond x
                       (warn :type :vl-ifmerge-fail
                             :msg "~a0: can't merge if statement.  Expected ~
@@ -168,7 +168,7 @@ remove @('else') expressions.</p>")
     :returns (mv (warnings vl-warninglist-p)
                  (flat-stmts vl-stmtlist-p :hyp :fguard))
     :verify-guards nil
-    :measure (two-nats-measure (acl2-count x) 0)
+    :measure (vl-stmtlist-count x)
     :flag :list
     (b* (((when (atom x))
           (mv (ok) nil))

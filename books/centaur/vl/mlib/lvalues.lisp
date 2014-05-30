@@ -23,6 +23,7 @@
 (include-book "hid-tools")
 (include-book "stmt-tools")
 (local (include-book "../util/arithmetic"))
+(local (std::add-default-post-define-hook :fix))
 
 
 (defxdoc lvalues
@@ -52,42 +53,35 @@ also the lvalues which are permitted in continuous and procedural assignment
 statements.</p>"
 
   (define vl-expr-lvaluep ((x vl-expr-p))
-    :measure (two-nats-measure (acl2-count x) 1)
-    (cond ((vl-fast-atom-p x)
-           (let ((guts (vl-atom->guts x)))
-             (or (vl-fast-hidpiece-p guts)
-                 (vl-fast-id-p guts))))
-
-          ((mbe :logic (not (consp x))
-                :exec nil)
-           ;; Stupid termination hack
-           nil)
-
-          (t
-           ;; An lvalue should consist of identifiers, part selects, bit
-           ;; selects, concatenations, and multiple concatenations.
-           (let ((op   (vl-nonatom->op x))
-                 (args (vl-nonatom->args x)))
-             (case op
-               ((:vl-bitselect :vl-partselect-colon :vl-partselect-pluscolon
-                               :vl-partselect-minuscolon)
-                ;; foo[index] or foo[a:b] or foo[a+:b] or foo[a-:b] is an okay
-                ;; lvalue as long as foo is an identifier or hierarchical id.
-                (or (vl-idexpr-p (first args))
-                    (vl-hidexpr-p (first args))))
-               ((:vl-concat)
-                ;; { foo, bar, baz, ... } is valid if all the components are
-                ;; lvalues.
-                (vl-exprlist-lvaluesp args))
-               ((:vl-hid-dot)
-                ;; hierarchical identifiers are okay for lvalues
-                (vl-hidexpr-p x))
-               (otherwise
-                ;; nothing else is permitted.
-                nil))))))
+    :measure (vl-expr-count x)
+    (b* (((when (vl-fast-atom-p x))
+          (let ((guts (vl-atom->guts x)))
+            (or (vl-fast-hidpiece-p guts)
+                (vl-fast-id-p guts))))
+         ;; An lvalue should consist of identifiers, part selects, bit selects,
+         ;; concatenations, and multiple concatenations.
+         (op   (vl-nonatom->op x))
+         (args (vl-nonatom->args x)))
+      (case op
+        ((:vl-bitselect :vl-partselect-colon :vl-partselect-pluscolon
+          :vl-partselect-minuscolon)
+         ;; foo[index] or foo[a:b] or foo[a+:b] or foo[a-:b] is an okay
+         ;; lvalue as long as foo is an identifier or hierarchical id.
+         (or (vl-idexpr-p (first args))
+             (vl-hidexpr-p (first args))))
+        ((:vl-concat)
+         ;; { foo, bar, baz, ... } is valid if all the components are
+         ;; lvalues.
+         (vl-exprlist-lvaluesp args))
+        ((:vl-hid-dot)
+         ;; hierarchical identifiers are okay for lvalues
+         (vl-hidexpr-p x))
+        (otherwise
+         ;; nothing else is permitted.
+         nil))))
 
   (define vl-exprlist-lvaluesp ((x vl-exprlist-p))
-    :measure (two-nats-measure (acl2-count x) 0)
+    :measure (vl-exprlist-count x)
     (if (atom x)
         t
       (and (vl-expr-lvaluep (car x))
@@ -99,10 +93,11 @@ statements.</p>"
     :already-definedp t
     :elementp-of-nil nil)
 
+  (deffixequiv-mutual vl-expr-lvaluep)
+
   (defthm vl-exprlist-lvaluesp-of-vl-nonatom->args-when-concat
     (implies (and (equal (vl-nonatom->op x) :vl-concat)
                   (force (not (vl-atom-p x)))
-                  (force (vl-expr-p x))
                   (force (vl-expr-lvaluep x)))
              (vl-exprlist-lvaluesp (vl-nonatom->args x)))
     :hints(("Goal" :in-theory (enable vl-expr-lvaluep)))))
@@ -156,150 +151,131 @@ basically reasonable; if the functions can be expanded away then we shouldn't
 see them, and if they aren't expanded away then we don't really want to include
 their \"wires\" since they're in a different namespace.</p>")
 
-(defmacro def-vl-lvalexprs (&key type
-                                 exec-body
-                                 body)
+(defmacro def-vl-lvalexprs (&key type nrev-body body)
 
-  (let* ((mksym-package-symbol 'vl::foo)
-
+  (let* ((mksym-package-symbol (pkg-witness "VL"))
          (rec            (mksym type '-p))
-         (collect-exec   (mksym type '-lvalexprs-exec))
+         (fix            (mksym type '-fix))
+         (collect-nrev   (mksym type '-lvalexprs-nrev))
          (collect        (mksym type '-lvalexprs))
-         (remove-thm     (mksym collect-exec '-removal))
-         (true-list-thm  (mksym 'true-listp-of- collect))
-         (type-thm       (mksym 'vl-exprlist-p-of- collect))
-         (lv-thm         (mksym 'vl-exprlist-lvaluesp-of- collect))
+         (short          (cat "Gather lvalue-position expressions from a @(see "
+                              (symbol-name rec) ").")))
 
-         (rec-s           (symbol-name rec))
-         (collect-s       (symbol-name collect))
+    `(progn
 
-         (short          (cat
-"Gather lvalue-position expressions from a @(see " rec-s ")."))
-         (long           (cat
-"<p><b>Signature</b> @(call " collect-s ") returns a @(see vl-exprlist-p).</p>
+       (define ,collect-nrev ((x ,rec) (nrev))
+         :parents (,collect)
+         :inline t
+         (b* ((x (,fix x)))
+           ,nrev-body))
 
-<p>We return a list of all the top-level lvalue-positioned expressions used
-throughout a @(see " rec-s "), as described in @(see lvalexprs).</p>
+       (define ,collect ((x ,rec))
+         :returns (exprs vl-exprlist-p)
+         :parents (lvalexprs)
+         :short ,short
+         :verify-guards nil
+         (mbe :logic (b* ((x (,fix x)))
+                       ,body)
+              :exec (with-local-nrev (,collect-nrev x nrev)))
+         ///
+         (defthm ,(mksym collect-nrev '-removal)
+           (equal (,collect-nrev x nrev)
+                  (append nrev (,collect x)))
+           :hints(("Goal" :in-theory (enable acl2::rcons
+                                             ,collect-nrev))))
 
-<p>For efficiency we use a tail-recursive, accumulator-style functions to do
-the collection.  Under the hood, we also use @('nreverse')
-optimization.</p>")))
+         (verify-guards ,collect)
 
-    `(defsection ,collect
-       :parents (,rec lvalexprs)
-       :short ,short
-       :long ,long
+         (defthm ,(mksym 'true-listp-of- collect)
+           (true-listp (,collect x))
+           :rule-classes :type-prescription)
 
-       (definlined ,collect-exec (x acc)
-         (declare (xargs :guard (,rec x)))
-         ,exec-body)
-
-       (defund ,collect (x)
-         (declare (xargs :guard (,rec x)
-                         :verify-guards nil))
-         (mbe :logic ,body
-              :exec (reverse (,collect-exec x nil))))
-
-       (local (in-theory (enable ,collect-exec ,collect)))
-
-       (defthm ,remove-thm
-         (equal (,collect-exec x acc)
-                (append (rev (,collect x))
-                        acc))
-         :hints(("Goal" :in-theory (disable (force)))))
-
-       (verify-guards ,collect)
-
-       (defthm ,true-list-thm
-         (true-listp (,collect x))
-         :rule-classes :type-prescription)
-
-       (defthm ,type-thm
-         (implies (force (,rec x))
-                  (vl-exprlist-p (,collect x))))
-
-       (defthm ,lv-thm
-         (implies (force (,rec x))
-                  (vl-exprlist-lvaluesp (,collect x))))
-
-       (defttag vl-optimize)
-       (never-memoize ,collect-exec)
-       (progn! (set-raw-mode t)
-               (defun ,collect (x)
-                 (nreverse (,collect-exec x nil))))
-       (defttag nil))))
+         (defthm ,(mksym 'vl-exprlist-lvaluesp-of- collect)
+           (vl-exprlist-lvaluesp (,collect x)))))))
 
 
 (defmacro def-vl-lvalexprs-list (&key list element)
-  (let* ((mksym-package-symbol 'vl::foo)
-
+  (let* ((mksym-package-symbol (pkg-witness "VL"))
          (list-rec             (mksym list '-p))
          (list-collect         (mksym list '-lvalexprs))
+         (list-collect-nrev    (mksym list '-lvalexprs-nrev))
          (element-collect      (mksym element '-lvalexprs))
-         (element-collect-exec (mksym element '-lvalexprs-exec))
-         (type-thm             (mksym 'vl-exprlist-p-of- list-collect))
-         (lv-thm               (mksym 'vl-exprlist-lvaluesp-of- list-collect))
+         (element-collect-nrev (mksym element '-lvalexprs-nrev))
+         (short                (cat "Gather all top-level expressions from a @(see "
+                                    (symbol-name list-rec))))
+    `(progn
+       (define ,list-collect-nrev ((x ,list-rec) nrev)
+         :parents (,list-collect)
+         (if (atom x)
+             (nrev-fix nrev)
+           (let ((nrev (,element-collect-nrev (car x) nrev)))
+             (,list-collect-nrev (cdr x) nrev))))
 
-         (list-rec-s          (symbol-name list-rec))
-         (list-collect-s      (symbol-name list-collect))
+       (define ,list-collect ((x ,list-rec))
+         :returns (exprs vl-exprlist-p)
+         :parents (lvalexprs)
+         :short ,short
+         :verify-guards nil
+         (mbe :logic (if (atom x)
+                         nil
+                       (append (,element-collect (car x))
+                               (,list-collect (cdr x))))
+              :exec (with-local-nrev
+                      (,list-collect-nrev x nrev)))
+         ///
+         (defthm ,(mksym 'true-listp-of- list-collect)
+           (true-listp (,list-collect x))
+           :rule-classes :type-prescription)
 
-         (short          (cat
-"Gather lvalue-positioned expressions from a @(see " list-rec-s ")."))
-         (long           (cat
-"<p><b>Signature</b> @(call " list-collect-s ") returns a @(see vl-exprlist-p).</p>
+         (defthm ,(mksym list-collect-nrev '-removal)
+           (equal (,list-collect-nrev x nrev)
+                  (append nrev (,list-collect x)))
+           :hints(("Goal" :in-theory (enable acl2::rcons
+                                             ,list-collect-nrev))))
 
-<p>We return a list of all the top-level lvalue-positioned expressions used
-throughout a @(see " list-rec-s "), as described in @(see lvalexprs).</p>")))
+         (verify-guards ,list-collect)
 
-    `(defmapappend ,list-collect (x)
-       (,element-collect x)
-       :guard (,list-rec x)
-       :transform-true-list-p t
-       :transform-exec ,element-collect-exec
-       :parents (,list-rec lvalexprs)
-       :short ,short
-       :long ,long
-       :rest
-       ((defthm ,type-thm
-          (implies (force (,list-rec x))
-                   (vl-exprlist-p (,list-collect x))))
+         (defmapappend ,list-collect (x)
+           (,element-collect x)
+           :already-definedp t
+           :transform-true-list-p t
+           :parents nil)
 
-        (defthm ,lv-thm
-          (implies (force (,list-rec x))
-                   (vl-exprlist-lvaluesp (,list-collect x))))))))
+         (defthm ,(mksym 'vl-exprlist-lvaluesp-of- list-collect)
+           (vl-exprlist-lvaluesp (,list-collect x)))))))
 
 (def-vl-lvalexprs
   :type vl-plainarg
-  :exec-body
+  :nrev-body
   (b* (((vl-plainarg x) x))
       (cond ((not x.expr)
              ;; Fine, no expression, nothing to collect.
-             acc)
+             (nrev-fix nrev))
             ((not x.dir)
              (prog2$
               (cw "; vl-plainarg-lvalexprs: note skipping unresolved argument~%")
-              acc))
+              (nrev-fix nrev)))
             ((or (eq x.dir :vl-output)
                  (eq x.dir :vl-inout))
              (cond ((assoc-equal "VL_UNSET_OUTPUT" x.atts)
                     ;; Not actually driven by submodule, so don't consider it an lvalue.
-                    acc)
+                    (nrev-fix nrev))
                    ((vl-expr-lvaluep x.expr)
-                    (cons x.expr acc))
+                    (nrev-push x.expr nrev))
                    (t
                     (prog2$
                      (cw "; vl-plainarg-lvalexprs note: skipping ill-formed output/inout~%")
-                     acc))))
+                     (nrev-fix nrev)))))
             ((assoc-equal "VL_LVALUE_INPUT" x.atts)
              ;; It's connected to an input, but the input is used as an lvalue
              ;; in the submodule.  I.e., this is a backflow case.
              (if (vl-expr-lvaluep x.expr)
-                 (cons x.expr acc)
+                 (nrev-push x.expr nrev)
                (prog2$
                 (cw "; vl-plainarg-lvalexprs note: skipping non-lvalue backflow input~%")
-                acc)))
+                (nrev-fix nrev))))
             (t
-             acc)))
+             (nrev-fix nrev))))
   :body
   (b* (((vl-plainarg x) x))
       (cond ((not x.expr)
@@ -327,7 +303,7 @@ throughout a @(see " list-rec-s "), as described in @(see lvalexprs).</p>")))
 
 (def-vl-lvalexprs
   :type vl-gateinst
-  :exec-body (vl-plainarglist-lvalexprs-exec (vl-gateinst->args x) acc)
+  :nrev-body (vl-plainarglist-lvalexprs-nrev (vl-gateinst->args x) nrev)
   :body (vl-plainarglist-lvalexprs (vl-gateinst->args x)))
 
 (def-vl-lvalexprs-list
@@ -336,20 +312,20 @@ throughout a @(see " list-rec-s "), as described in @(see lvalexprs).</p>")))
 
 (def-vl-lvalexprs
   :type vl-modinst
-  :exec-body
+  :nrev-body
   (let ((args (vl-modinst->portargs x)))
-    (if (vl-arguments->namedp args)
+    (if (eq (vl-arguments-kind args) :named)
         (prog2$
          (cw "; vl-modinst-lvalexprs: skipping unresolved instance ~s0 of ~s1~%"
              (vl-modinst->instname x)
              (vl-modinst->modname x))
-         acc)
-      (vl-plainarglist-lvalexprs-exec (vl-arguments->args args) acc)))
+         (nrev-fix nrev))
+      (vl-plainarglist-lvalexprs-nrev (vl-arguments-plain->args args) nrev)))
   :body
   (let ((args (vl-modinst->portargs x)))
-    (if (vl-arguments->namedp args)
+    (if (eq (vl-arguments-kind args) :named)
         nil
-      (vl-plainarglist-lvalexprs (vl-arguments->args args)))))
+      (vl-plainarglist-lvalexprs (vl-arguments-plain->args args)))))
 
 (def-vl-lvalexprs-list
   :list vl-modinstlist
@@ -357,13 +333,13 @@ throughout a @(see " list-rec-s "), as described in @(see lvalexprs).</p>")))
 
 (def-vl-lvalexprs
   :type vl-assign
-  :exec-body
+  :nrev-body
   (b* (((vl-assign x) x))
       (if (vl-expr-lvaluep x.lvalue)
-          (cons x.lvalue acc)
+          (nrev-push x.lvalue nrev)
         (prog2$
          (cw "vl-assign-lvalexprs: skipping ill-formed lvalue~%")
-         acc)))
+         (nrev-fix nrev))))
   :body
   (b* (((vl-assign x) x))
       (if (vl-expr-lvaluep x.lvalue)
@@ -374,44 +350,87 @@ throughout a @(see " list-rec-s "), as described in @(see lvalexprs).</p>")))
   :list vl-assignlist
   :element vl-assign)
 
-(def-vl-lvalexprs
-  :type vl-assignstmt
-  :exec-body
-  (b* (((vl-assignstmt x) x))
-      (if (vl-expr-lvaluep x.lvalue)
-          (cons x.lvalue acc)
-        (prog2$
-         (cw "vl-assignstmt-lvalexprs: skipping ill-formed lvalue~%")
-         acc)))
-  :body
-  (b* (((vl-assignstmt x) x))
-      (if (vl-expr-lvaluep x.lvalue)
-          (list x.lvalue)
-        nil)))
 
-(def-vl-lvalexprs
-  :type vl-atomicstmt
-  :exec-body
-  (if (eq (tag x) :vl-assignstmt)
-      (vl-assignstmt-lvalexprs-exec x acc)
-    acc)
-  :body
-  (if (eq (tag x) :vl-assignstmt)
-      (vl-assignstmt-lvalexprs x)
-    nil))
+;; BOZO statements should also get initlhs and nextlhs from for loops
 
-(def-vl-lvalexprs-list
-  :list vl-atomicstmtlist
-  :element vl-atomicstmt)
+(defines vl-stmt-lvalexprs-nrev
 
-(def-vl-lvalexprs
-  :type vl-stmt
-  :exec-body (vl-atomicstmtlist-lvalexprs-exec (vl-stmt-atomicstmts x) acc)
-  :body (vl-atomicstmtlist-lvalexprs (vl-stmt-atomicstmts x)))
+  (define vl-stmt-lvalexprs-nrev ((x vl-stmt-p) nrev)
+    :measure (vl-stmt-count x)
+    :flag :stmt
+    (let ((x (vl-stmt-fix x)))
+      (if (vl-atomicstmt-p x)
+          (case (vl-stmt-kind x)
+            (:vl-assignstmt (b* (((vl-assignstmt x) x))
+                              (if (vl-expr-lvaluep x.lvalue)
+                                  (nrev-push x.lvalue nrev)
+                                (prog2$
+                                 (cw "vl-stmt-lvalexprs: skipping ill-formed lvalue~%")
+                                 (nrev-fix nrev)))))
+            (otherwise
+             (nrev-fix nrev)))
+        (vl-stmtlist-lvalexprs-nrev (vl-compoundstmt->stmts x) nrev))))
+
+  (define vl-stmtlist-lvalexprs-nrev ((x vl-stmtlist-p) nrev)
+    :measure (vl-stmtlist-count x)
+    :flag :list
+    (b* (((when (atom x))
+          (nrev-fix nrev))
+         (nrev (vl-stmt-lvalexprs-nrev (car x) nrev)))
+      (vl-stmtlist-lvalexprs-nrev (cdr x) nrev))))
+
+(defines vl-stmt-lvalexprs
+  :parents (lvalexprs)
+
+  (define vl-stmt-lvalexprs ((x vl-stmt-p))
+    :measure (vl-stmt-count x)
+    :returns (exprs (and (vl-exprlist-p exprs)
+                         (vl-exprlist-lvaluesp exprs)))
+    (mbe :logic
+         (let ((x (vl-stmt-fix x)))
+           (if (vl-atomicstmt-p x)
+               (case (vl-stmt-kind x)
+                 (:vl-assignstmt (b* (((vl-assignstmt x) x))
+                                   (if (vl-expr-lvaluep x.lvalue)
+                                       (list x.lvalue)
+                                     nil)))
+                 (otherwise
+                  nil))
+             (vl-stmtlist-lvalexprs (vl-compoundstmt->stmts x))))
+         :exec
+         (with-local-nrev (vl-stmt-lvalexprs-nrev x nrev))))
+
+  (define vl-stmtlist-lvalexprs ((x vl-stmtlist-p))
+    :measure (vl-stmtlist-count x)
+    :returns (exprs (and (vl-exprlist-p exprs)
+                         (vl-exprlist-lvaluesp exprs)))
+    :verify-guards nil
+    (mbe :logic (if (atom x)
+                    nil
+                  (append (vl-stmt-lvalexprs (car x))
+                          (vl-stmtlist-lvalexprs (cdr x))))
+         :exec
+         (with-local-nrev (vl-stmtlist-lvalexprs-nrev x nrev))))
+
+  ///
+  (defthm-vl-stmt-lvalexprs-nrev-flag
+    (defthm vl-stmt-lvalexprs-nrev-removal
+      (equal (vl-stmt-lvalexprs-nrev x nrev)
+             (append nrev (vl-stmt-lvalexprs x)))
+      :flag :stmt)
+    (defthm vl-stmtlist-lvalexprs-nrev-removal
+      (equal (vl-stmtlist-lvalexprs-nrev x nrev)
+             (append nrev (vl-stmtlist-lvalexprs x)))
+      :flag :list)
+    :hints(("Goal"
+            :in-theory (enable acl2::rcons)
+            :expand ((vl-stmtlist-lvalexprs-nrev x nrev)
+                     (vl-stmt-lvalexprs-nrev x nrev)))))
+  (verify-guards vl-stmt-lvalexprs))
 
 (def-vl-lvalexprs
   :type vl-initial
-  :exec-body (vl-stmt-lvalexprs-exec (vl-initial->stmt x) acc)
+  :nrev-body (vl-stmt-lvalexprs-nrev (vl-initial->stmt x) nrev)
   :body (vl-stmt-lvalexprs (vl-initial->stmt x)))
 
 (def-vl-lvalexprs-list
@@ -420,7 +439,7 @@ throughout a @(see " list-rec-s "), as described in @(see lvalexprs).</p>")))
 
 (def-vl-lvalexprs
   :type vl-always
-  :exec-body (vl-stmt-lvalexprs-exec (vl-always->stmt x) acc)
+  :nrev-body (vl-stmt-lvalexprs-nrev (vl-always->stmt x) nrev)
   :body (vl-stmt-lvalexprs (vl-always->stmt x)))
 
 (def-vl-lvalexprs-list
@@ -429,14 +448,14 @@ throughout a @(see " list-rec-s "), as described in @(see lvalexprs).</p>")))
 
 (def-vl-lvalexprs
   :type vl-module
-  :exec-body
+  :nrev-body
   (b* (((vl-module x) x)
-       (acc (vl-assignlist-lvalexprs-exec x.assigns acc))
-       (acc (vl-modinstlist-lvalexprs-exec x.modinsts acc))
-       (acc (vl-gateinstlist-lvalexprs-exec x.gateinsts acc))
-       (acc (vl-alwayslist-lvalexprs-exec x.alwayses acc))
-       (acc (vl-initiallist-lvalexprs-exec x.initials acc)))
-      acc)
+       (nrev (vl-assignlist-lvalexprs-nrev x.assigns nrev))
+       (nrev (vl-modinstlist-lvalexprs-nrev x.modinsts nrev))
+       (nrev (vl-gateinstlist-lvalexprs-nrev x.gateinsts nrev))
+       (nrev (vl-alwayslist-lvalexprs-nrev x.alwayses nrev))
+       (nrev (vl-initiallist-lvalexprs-nrev x.initials nrev)))
+      nrev)
   :body
   (b* (((vl-module x) x))
       (append (vl-assignlist-lvalexprs x.assigns)
@@ -552,12 +571,12 @@ problematic lvalues encountered.</p>" long)))
   :guard (and (vl-location-p loc)
               (maybe-stringp instname))
   :body
-  (if (vl-arguments->namedp x)
+  (if (eq (vl-arguments-kind x) :named)
       (warn :type :vl-programming-error
             :msg "~l0: expected arguments of instance ~s1 to be resolved, but ~
                   args are still named."
             :args (list loc instname))
-    (vl-plainarglist-lvaluecheck (vl-arguments->args x) loc instname warnings)))
+    (vl-plainarglist-lvaluecheck (vl-arguments-plain->args x) loc instname warnings)))
 
 (def-vl-lvaluecheck
   :type vl-modinst
@@ -591,96 +610,71 @@ problematic lvalues encountered.</p>" long)))
     (b* ((warnings (vl-gateinst-lvaluecheck (car x) warnings)))
       (vl-gateinstlist-lvaluecheck (cdr x) warnings))))
 
-(def-vl-lvaluecheck
-  :type vl-assignstmt
-  :body
-  (b* ((lvalue (vl-assignstmt->lvalue x))
-       ((when (vl-expr-lvaluep lvalue))
-        (ok))
-       (loc (vl-assignstmt->loc x)))
-    (warn :type :vl-bad-lvalue
-          :msg "~l0: assignment to bad lvalue, ~a1."
-          :args (list loc lvalue))))
 
-(def-vl-lvaluecheck
-  :type vl-deassignstmt
-  :body
-  (b* ((lvalue (vl-deassignstmt->lvalue x))
-       ((when (vl-expr-lvaluep lvalue))
-        (ok)))
-    (warn :type :vl-bad-lvalue
-          ;; BOZO add locations to deassign statements
-          :msg "Deassignment to bad lvalue, ~a0."
-          :args (list lvalue))))
 
-(def-vl-lvaluecheck
-  :type vl-atomicstmt
-  :body
-  (case (tag x)
-    (:vl-assignstmt   (vl-assignstmt-lvaluecheck x warnings))
-    (:vl-deassignstmt (vl-deassignstmt-lvaluecheck x warnings))
-    (otherwise        (ok))))
+(defines vl-stmt-lvaluecheck
 
-(defsection vl-stmt-lvaluecheck
+  (define vl-stmt-lvaluecheck ((x        vl-stmt-p)
+                               (warnings vl-warninglist-p))
+    :returns (new-warnings vl-warninglist-p)
+    :measure (vl-stmt-count x)
+    :verify-guards nil
+    :flag :stmt
+    (b* ((x (vl-stmt-fix x))
+         ((when (vl-atomicstmt-p x))
+          (case (vl-stmt-kind x)
+            (:vl-assignstmt (b* ((lvalue (vl-assignstmt->lvalue x))
+                                 ((when (vl-expr-lvaluep lvalue))
+                                  (ok))
+                                 (loc (vl-assignstmt->loc x)))
+                              (warn :type :vl-bad-lvalue
+                                    :msg "~l0: assignment to bad lvalue, ~a1."
+                                    :args (list loc lvalue))))
+            (:vl-deassignstmt (b* ((lvalue (vl-deassignstmt->lvalue x))
+                                   ((when (vl-expr-lvaluep lvalue))
+                                    (ok)))
+                                (warn :type :vl-bad-lvalue
+                                      ;; BOZO add locations to deassign statements
+                                      :msg "Deassignment to bad lvalue, ~a0."
+                                      :args (list lvalue))))
+            (otherwise (ok))))
 
-  (mutual-recursion
-
-   (defund vl-stmt-lvaluecheck (x warnings)
-     (declare (xargs :guard (and (vl-stmt-p x)
-                                 (vl-warninglist-p warnings))
-                     :verify-guards nil
-                     :measure (two-nats-measure (acl2-count x) 1)))
-     (cond ((vl-fast-atomicstmt-p x)
-            (vl-atomicstmt-lvaluecheck x warnings))
-
-; It looks to me like none of the compound statements have lvalues except for
-; for loops, which have the initial and next lhs.  So I explicitly check for
-; this here, then recursively check the substatements.
-
-           ((vl-forstmt-p x)
-            (b* (((vl-forstmt x) x)
-                 (warnings (if (vl-expr-lvaluep x.initlhs)
-                               (ok)
-                             (warn :type :vl-bad-lvalue
-                                   :msg "Bad lvalue in for-loop initialization: ~a0."
-                                   :args (list x.initlhs)
-                                   :fn 'vl-stmt-lvaluecheck)))
-                 (warnings (if (vl-expr-lvaluep x.nextlhs)
-                               (ok)
-                             (warn :type :vl-bad-lvalue
-                                   :msg "Bad lvalue in for-loop step: ~a0."
-                                   :args (list x.nextlhs)
-                                   :fn 'vl-stmt-lvaluecheck))))
-              (vl-stmtlist-lvaluecheck (vl-compoundstmt->stmts x) warnings)))
-
-           (t
+         ;; It looks to me like none of the compound statements have lvalues
+         ;; except for for loops, which have the initial and next lhs.  So I
+         ;; explicitly check for this here, then recursively check the
+         ;; substatements.
+         ((when (eq (vl-stmt-kind x) :vl-forstmt))
+          (b* (((vl-forstmt x) x)
+               (warnings (if (vl-expr-lvaluep x.initlhs)
+                             (ok)
+                           (warn :type :vl-bad-lvalue
+                                 :msg "Bad lvalue in for-loop initialization: ~a0."
+                                 :args (list x.initlhs)
+                                 :fn 'vl-stmt-lvaluecheck)))
+               (warnings (if (vl-expr-lvaluep x.nextlhs)
+                             (ok)
+                           (warn :type :vl-bad-lvalue
+                                 :msg "Bad lvalue in for-loop step: ~a0."
+                                 :args (list x.nextlhs)
+                                 :fn 'vl-stmt-lvaluecheck))))
             (vl-stmtlist-lvaluecheck (vl-compoundstmt->stmts x) warnings))))
+      (vl-stmtlist-lvaluecheck (vl-compoundstmt->stmts x) warnings)))
 
-   (defund vl-stmtlist-lvaluecheck (x warnings)
-     (declare (xargs :guard (and (vl-stmtlist-p x)
-                                 (vl-warninglist-p warnings))
-                     :measure (two-nats-measure (acl2-count x) 0)))
-     (if (atom x)
-         (ok)
-       (let ((warnings (vl-stmt-lvaluecheck (car x) warnings)))
-         (vl-stmtlist-lvaluecheck (cdr x) warnings)))))
-
-  (flag::make-flag vl-flag-stmt-lvaluecheck
-                   vl-stmt-lvaluecheck
-                   :flag-mapping ((vl-stmt-lvaluecheck . stmt)
-                                  (vl-stmtlist-lvaluecheck . list)))
-
-  (defthm-vl-flag-stmt-lvaluecheck lemma
-    (stmt (vl-warninglist-p (vl-stmt-lvaluecheck x warnings))
-          :name vl-warninglist-p-of-vl-stmt-lvaluecheck)
-    (list (vl-warninglist-p (vl-stmtlist-lvaluecheck x warnings))
-          :name vl-warninglist-p-of-vl-stmtlist-lvaluecheck)
+  (define vl-stmtlist-lvaluecheck ((x vl-stmtlist-p)
+                                   (warnings vl-warninglist-p))
+    :returns (new-warnings vl-warninglist-p)
+    :measure (vl-stmtlist-count x)
+    :flag :list
+    (if (atom x)
+        (ok)
+      (let ((warnings (vl-stmt-lvaluecheck (car x) warnings)))
+        (vl-stmtlist-lvaluecheck (cdr x) warnings))))
+  ///
+  (verify-guards vl-stmt-lvaluecheck)
+  (deffixequiv-mutual vl-stmt-lvaluecheck
     :hints(("Goal"
-            :induct (vl-flag-stmt-lvaluecheck flag x warnings)
             :expand ((vl-stmt-lvaluecheck x warnings)
-                     (vl-stmtlist-lvaluecheck x warnings)))))
-
-  (verify-guards vl-stmt-lvaluecheck))
+                     (vl-stmt-lvaluecheck (vl-stmt-fix x) warnings))))))
 
 (def-vl-lvaluecheck
   :type vl-always
@@ -731,10 +725,8 @@ problematic lvalues encountered.</p>" long)))
         (vl-taskdecllist-lvaluecheck (cdr x) warnings))))
 
 
-
 (define vl-module-lvaluecheck ((x vl-module-p))
-  :returns (new-x vl-module-p :hyp :fguard
-                  "Perhaps extended with some warnings.")
+  :returns (new-x vl-module-p "Perhaps extended with some warnings.")
   (b* (((vl-module x) x)
        (warnings  x.warnings)
        (warnings  (vl-assignlist-lvaluecheck   x.assigns   warnings))
@@ -748,12 +740,11 @@ problematic lvalues encountered.</p>" long)))
 
 (defprojection vl-modulelist-lvaluecheck (x)
   :guard (vl-modulelist-p x)
-  :result-type vl-modulelist-p
+  :returns (new-x vl-modulelist-p)
   (vl-module-lvaluecheck x))
 
 (define vl-design-lvaluecheck ((x vl-design-p))
   :returns (new-x vl-design-p)
-  (b* ((x (vl-design-fix x))
-       ((vl-design x) x))
+  (b* (((vl-design x) x))
     (change-vl-design x :mods (vl-modulelist-lvaluecheck x.mods))))
 

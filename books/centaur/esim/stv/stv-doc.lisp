@@ -51,6 +51,17 @@ generally just expect things to be well-formed at this point.</p>
 and is not supported by tools like @(':xdoc').  How these new tags get rendered
 into HTML is controlled by, e.g., @('xdoc/fancy/render.xsl').</p>")
 
+
+(local (defthm natp-of-vl-html-encode-string-aux
+         (natp (mv-nth 0 (vl::VL-HTML-ENCODE-STRING-AUX X N XL COL TABSIZE ACC)))
+         :rule-classes :type-prescription))
+
+(local (defthm character-listp-of-vl-html-encode-string-aux
+         (implies (character-listp acc)
+                  (character-listp (mv-nth 1 (vl::VL-HTML-ENCODE-STRING-AUX X N XL COL TABSIZE ACC))))))
+
+(local (in-theory (disable vl::vl-html-encode-string-aux)))
+
 (define stv-name-bits-to-xml ((bits true-listp)
                               (col  natp)
                               acc)

@@ -19,7 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "xf-subst")
+(include-book "../mlib/subst")
 (include-book "../mlib/remove-bad")
 (include-book "../mlib/print-warnings")
 (include-book "../wf-ranges-resolved-p")
@@ -143,9 +143,9 @@ done away with, we can safely remove @('plus') from our module list.</p>")
 
 (define vl-arguments-resolved-p ((x vl-arguments-p))
   :parents (vl-expr-resolved-p)
-  (if (vl-arguments->namedp x)
-      (vl-namedarglist-resolved-p (vl-arguments->args x))
-    (vl-plainarglist-resolved-p (vl-arguments->args x))))
+  (vl-arguments-case x
+    :named (vl-namedarglist-resolved-p x.args)
+    :plain (vl-plainarglist-resolved-p x.args)))
 
 (define vl-modinst-resolvedparams-p ((x vl-modinst-p))
   :parents (unparameterization)
@@ -555,7 +555,7 @@ these cases.</p>"
 
   (b* ((paramdecls (vl-module->paramdecls mod))
        (paramargs  (vl-modinst->paramargs inst))
-       (namedp     (vl-arguments->namedp paramargs))
+       (namedp     (eq (vl-arguments-kind paramargs) :named))
        (args       (vl-arguments->args paramargs))
        ((when namedp)
         (let ((argnames   (vl-namedarglist->names args))
@@ -872,7 +872,7 @@ by replacing all occurrences of @('size') with @('16').</li>
                                   :paramdecls nil))
        (newinst (change-vl-modinst inst
                                    :modname newname
-                                   :paramargs (vl-arguments nil nil))))
+                                   :paramargs (make-vl-arguments-plain :args nil))))
     ;; We always generate the new module, even if it's already been
     ;; generated before.  Then, at the end, as a sanity check, we check
     ;; to ensure that all modules of the same name are equal.

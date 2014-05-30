@@ -149,8 +149,6 @@
 (include-book "centaur/vl/util/prefix-hash" :dir :system)
 ;;(include-book "vl/util/prefixp")
 
-(include-book "centaur/vl/mlib/lvalues-mentioning" :dir :system)
-(include-book "centaur/vl/mlib/rvalues" :dir :system)
 ;; (include-book "vl/mlib/ram-tools")   obsolete
 
 

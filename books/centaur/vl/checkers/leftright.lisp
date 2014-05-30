@@ -21,7 +21,7 @@
 (in-package "VL")
 (include-book "../mlib/ctxexprs")
 (include-book "../mlib/writer")
-(include-book "../mlib/fix")
+(include-book "../mlib/strip")
 (local (include-book "../util/arithmetic"))
 
 (defxdoc leftright-check
@@ -75,6 +75,7 @@ these are pretty minor and uninteresting.</p>")
   ((op vl-op-ac-p "An associative and commutative binary operators.")
    (x  vl-expr-p  "An expression, typically it is an argument to @('op')."))
   :returns (args vl-exprlist-p :hyp :guard)
+  :measure (vl-expr-count x)
   :long "<p>If @('x') is itself an @('op') expression, we recursively collect
 up the ac-args of its sub-expressions.  Otherwise we just collect @('x').  For
 instance, if @('op') is @('|') and @('x') is:</p>
@@ -106,7 +107,7 @@ warnings.  We also use it to suppress warnings in certain cases.</p>"
 
   (define vl-expr-leftright-check ((x   vl-expr-p)
                                    (ctx vl-context-p))
-    :measure (two-nats-measure (acl2-count x) 1)
+    :measure (vl-expr-count x)
     ;; :hints(("Goal" :in-theory (disable (force))))))
     :returns (warnings vl-warninglist-p)
     (b* (((when (vl-fast-atom-p x))
@@ -131,7 +132,7 @@ warnings.  We also use it to suppress warnings in certain cases.</p>"
           ;; see if there are any duplicates.
           (b* ((subexprs     (append (vl-collect-ac-args op (first args))
                                      (vl-collect-ac-args op (second args))))
-               (subexprs-fix (vl-exprlist-fix subexprs))
+               (subexprs-fix (vl-exprlist-strip subexprs))
                (dupes        (duplicated-members subexprs-fix))
                ((when dupes)
                 (cons (make-vl-warning
@@ -205,7 +206,7 @@ warnings.  We also use it to suppress warnings in certain cases.</p>"
 
   (define vl-exprlist-leftright-check ((x vl-exprlist-p)
                                        (ctx vl-context-p))
-    :measure (two-nats-measure (acl2-count x) 0)
+    :measure (vl-exprlist-count x)
     :returns (warnings vl-warninglist-p)
     (if (atom x)
         nil

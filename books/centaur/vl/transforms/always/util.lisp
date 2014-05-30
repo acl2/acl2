@@ -24,9 +24,10 @@
 (include-book "../../mlib/find-item")
 (local (include-book "../../util/arithmetic"))
 (local (include-book "../../util/osets"))
+(local (std::add-default-post-define-hook :fix))
 
 (define vl-always-scary-regs-aux ((x vl-alwayslist-p))
-  :returns (names string-listp :hyp :fguard)
+  :returns (names string-listp)
   :parents (vl-always-scary-regs)
   :short "Returns a list where reg names are repeated N times if they are
 repeated in N different always blocks."
@@ -39,29 +40,32 @@ repeated in N different always blocks."
      (mergesort (vl-exprlist-names (vl-always-lvalexprs (car x))))
      (vl-always-scary-regs-aux (cdr x)))))
 
-(define vl-always-scary-regs ((x vl-alwayslist-p))
-  :returns (names :hyp :fguard (and (string-listp names)
-                                    (setp names)))
+(define vl-always-scary-regs
   :parents (synthalways)
   :short "Determine which lvalues are assigned to in multiple always blocks."
+  ((x vl-alwayslist-p))
+  :returns (names (and (string-listp names)
+                       (setp names)))
   :long "<p>These registers are generally too complicated to do anything
 sensible with.</p>"
   (redundant-mergesort
    (duplicated-members (vl-always-scary-regs-aux x))))
 
-
 (define vl-always-check-reg
+  :parents (synthalways)
+  :short "See if a register is simple enough to reasonably synthesize into
+a flop/latch."
   ((name "name of a supposed register to be checked" stringp)
    (regs "all registers in the module"               vl-regdecllist-p)
    (elem "context for error messages"                vl-modelement-p))
   :returns
-  (warning? (equal (vl-warning-p warning?) (if warning? t nil)))
-  :parents (synthalways)
-  :short "See if a register is simple enough to reasonably synthesize into
-a flop/latch."
+  (warning? (equal (vl-warning-p warning?)
+                   (if warning? t nil)))
   :long "<p>We just make sure @('name') is defined as a register and that it
 isn't an array.</p>"
-  (b* ((decl (vl-find-regdecl name regs))
+  (b* ((name (string-fix name))
+       (elem (vl-modelement-fix elem))
+       (decl (vl-find-regdecl name regs))
        ((unless decl)
         (make-vl-warning
          :type :vl-always-too-hard
@@ -90,10 +94,10 @@ isn't an array.</p>"
          :fatalp nil
          :fn __function__)))
     nil)
-
   ///
   (defthm reg-exists-unless-vl-always-check-reg
     (implies (and (not (vl-always-check-reg name regs elem))
+                  (force (stringp name))
                   (force (vl-regdecllist-p regs)))
              (member-equal name (vl-regdecllist->names regs)))))
 
@@ -107,16 +111,16 @@ isn't an array.</p>"
       nil
     (or (vl-always-check-reg (car names) regs elem)
         (vl-always-check-regs (cdr names) regs elem)))
-
   ///
   (defthm regs-exists-unless-vl-always-check-regs
     (implies (and (not (vl-always-check-regs names regs elem))
-                  (force (vl-regdecllist-p regs)))
+                  (force (vl-regdecllist-p regs))
+                  (force (string-listp names)))
              (subsetp-equal names (vl-regdecllist->names regs)))))
 
 
 (define vl-always-convert-reg ((x vl-regdecl-p))
-  :returns (netdecl vl-netdecl-p :hyp :fguard)
+  :returns (netdecl vl-netdecl-p)
   :parents (synthalways)
   :short "Convert a register into a wire."
 
@@ -138,16 +142,14 @@ register has array dimensions.</p>"
                      :atts    (acons (hons-copy "VL_CONVERTED_REG")
                                      nil x.atts))))
 
-(defprojection vl-always-convert-regs (x)
-  (vl-always-convert-reg x)
-  :guard (vl-regdecllist-p x)
-  :result-type vl-netdecllist-p
-  :parents (synthalways))
-
+(defprojection vl-always-convert-regs ((x vl-regdecllist-p))
+  :parents (synthalways)
+  :returns (nets vl-netdecllist-p)
+  (vl-always-convert-reg x))
 
 (define vl-stmt-guts ((body vl-stmt-p))
-  :returns (guts vl-stmtlist-p :hyp :fguard)
   :parents (synthalways)
+  :returns (guts vl-stmtlist-p)
   :short "Coerce a statement into a statement list."
   :long "<p>The idea here is to be able to treat things like these:</p>
 
@@ -163,11 +165,11 @@ register has array dimensions.</p>"
 e.g., an if statement, a single assignment, etc., then we just return it as a
 singleton statement list.</p>"
 
-  (if (and (vl-blockstmt-p body)
+  (if (and (eq (vl-stmt-kind body) :vl-blockstmt)
            (vl-blockstmt->sequentialp body)
            (not (vl-blockstmt->decls body)))
       (vl-blockstmt->stmts body)
-    (list body)))
+    (list (vl-stmt-fix body))))
 
 
 (local (defthm consp-of-vl-evatom->expr
@@ -176,12 +178,12 @@ singleton statement list.</p>"
          :rule-classes :type-prescription))
 
 (define vl-match-posedge-clk ((x vl-always-p))
-  :returns (mv (clk  :hyp :fguard (equal (vl-expr-p clk) (if clk t nil)))
-               (body :hyp :fguard (equal (vl-stmt-p body) (if clk t nil))))
+  :returns (mv (clk  (equal (vl-expr-p clk) (if clk t nil)))
+               (body (equal (vl-stmt-p body) (if clk t nil))))
   :parents (vl-always-p timing-statements)
   :short "Match @('always @(posedge clk) body')."
   (b* ((stmt (vl-always->stmt x))
-       ((unless (vl-timingstmt-p stmt))
+       ((unless (eq (vl-stmt-kind stmt) :vl-timingstmt))
         (mv nil nil))
        ((vl-timingstmt stmt) stmt)
        ;; Try to match ctrl with (posedge clk)
@@ -195,15 +197,11 @@ singleton statement list.</p>"
        (clk (vl-evatom->expr (car evatoms))))
     (mv clk stmt.body)))
 
-
-(defprojection vl-evatomlist->exprs (x)
+(defprojection vl-evatomlist->exprs ((x vl-evatomlist-p))
   ;; BOZO move to parsetree?
-  (vl-evatom->expr x)
-  :guard (vl-evatomlist-p x)
-  :result-type vl-exprlist-p
-  :parents (vl-evatomlist-p))
-
-
+  :parents (vl-evatomlist-p)
+  :returns (exprs vl-exprlist-p)
+  (vl-evatom->expr x))
 
 (define vl-evatomlist-all-have-edges-p ((x vl-evatomlist-p))
   (if (atom x)
@@ -215,25 +213,14 @@ singleton statement list.</p>"
 (define vl-edge-control-p ((x vl-delayoreventcontrol-p))
   :short "Recognize @@(posedge clk1 or negedge clk2 or ...) style event
           controls."
-  (b* (((unless (mbe :logic (vl-eventcontrol-p x)
-                     :exec (eq (tag x) :vl-eventcontrol)))
+  (b* ((x (vl-delayoreventcontrol-fix x))
+       ((unless (eq (tag x) :vl-eventcontrol))
         ;; Maybe a delay control like #5, not an @(...) control.
         nil)
        ((vl-eventcontrol x) x))
     (and (not x.starp)
          (consp x.atoms)
          (vl-evatomlist-all-have-edges-p x.atoms))))
-
-(local
- ;; BOZO move me to statement tools?
- (defthm vl-timingstmt->body-under-iff
-   (implies (and (force (vl-timingstmt-p x))
-                 (force (vl-stmt-p x)))
-            (vl-timingstmt->body x))
-   :hints(("Goal"
-           :in-theory (disable vl-stmt-p-of-vl-timingstmt->body)
-           :use ((:instance vl-stmt-p-of-vl-timingstmt->body))))))
-
 
 (define vl-match-always-at-some-edges ((x vl-stmt-p))
   :short "Recognize and decompose edge-triggered statements."
@@ -247,13 +234,11 @@ singleton statement list.</p>"
                            (vl-evatomlist-all-have-edges-p edges)
                            (equal (consp edges) (if body? t nil))
                            (iff edges body?))))
-  (b* (((unless (and (mbt (vl-stmt-p x))
-                     (vl-timingstmt-p x)))
+  (b* (((unless (eq (vl-stmt-kind x) :vl-timingstmt))
         (mv nil nil nil))
        ((vl-timingstmt x) x)
        ((unless (vl-edge-control-p x.ctrl))
         (mv nil nil nil)))
     (mv x.body x.ctrl (vl-eventcontrol->atoms x.ctrl)))
-  :prepwork ((local (in-theory (e/d (vl-edge-control-p)
-                                    ((force)))))))
+  :prepwork ((local (in-theory (e/d (vl-edge-control-p))))))
 

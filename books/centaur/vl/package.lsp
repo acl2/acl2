@@ -69,6 +69,7 @@
       lifix
       lbfix
       maybe-natp
+      maybe-natp-fix
       maybe-stringp
       maybe-posp
       maybe-integerp
@@ -76,13 +77,16 @@
       char-fix
       chareqv
       str-fix
+      str::string-list-fix
       streqv
       pos-fix
+      acl2::print-base-p
 
       std::mksym
       std::mksym-package-symbol
       std::extract-keyword-from-args
       std::throw-away-keyword-parts
+      std::defoption
 
       fty::defprod
       fty::deftypes
@@ -90,6 +94,9 @@
       fty::deffixtype
       fty::deffixequiv
       fty::deffixequiv-mutual
+      true-p
+      true-fix
+      true-equiv
 
       value
       file-measure

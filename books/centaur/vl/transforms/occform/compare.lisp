@@ -22,9 +22,10 @@
 (include-book "add")
 (local (include-book "../../util/arithmetic"))
 (local (include-book "../../util/osets"))
+(local (std::add-default-post-define-hook :fix))
 (local (in-theory (disable vl-maybe-module-p-when-vl-module-p)))
 
-(def-vl-modgen vl-make-n-bit-unsigned-gte (n)
+(def-vl-modgen vl-make-n-bit-unsigned-gte ((n posp))
   :short "Generate an unsigned greater-than or equal comparison module."
 
   :long "<p>We generate a gate-based module that is semantically equivalent
@@ -57,9 +58,9 @@ though no matter what the X digit is, we can see that the mathematical answer
 ought to be 1.  (This behavior might be intended to give synthesis tools as
 much freedom as possible when implementing the operation.)</p>"
 
-  :guard (posp n)
   :body
-  (b* ((name (hons-copy (cat "VL_" (natstr n) "_BIT_UNSIGNED_GTE")))
+  (b* ((n    (lposfix n))
+       (name (hons-copy (cat "VL_" (natstr n) "_BIT_UNSIGNED_GTE")))
 
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
        ((mv a-expr a-port a-portdecl a-netdecl)         (vl-occform-mkport "a" :vl-input n))
@@ -98,11 +99,7 @@ much freedom as possible when implementing the operation.)</p>"
 
 
 
-
-
-
-
-(defsection *vl-1-bit-signed-gte*
+(defval *vl-1-bit-signed-gte*
   :parents (occform)
   :short "Degenerate, single-bit signed greater-than-or-equal module."
 
@@ -146,46 +143,45 @@ module VL_1_BIT_SIGNED_GTE (out, a, b);
 endmodule
 })"
 
-  (defconst *vl-1-bit-signed-gte*
+  (b* ((name (hons-copy "VL_1_BIT_SIGNED_GTE"))
 
-    (b* ((name (hons-copy "VL_1_BIT_SIGNED_GTE"))
+       ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
+       ((mv a-expr a-port a-portdecl a-netdecl)         (vl-primitive-mkport "a" :vl-input))
+       ((mv b-expr b-port b-portdecl b-netdecl)         (vl-primitive-mkport "b" :vl-input))
 
-         ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
-         ((mv a-expr a-port a-portdecl a-netdecl)         (vl-primitive-mkport "a" :vl-input))
-         ((mv b-expr b-port b-portdecl b-netdecl)         (vl-primitive-mkport "b" :vl-input))
+       ((mv bbar-expr bbar-netdecl)       (vl-primitive-mkwire "bbar"))
+       ((mv mainbar-expr mainbar-netdecl) (vl-primitive-mkwire "mainbar"))
+       ((mv main-expr main-netdecl)       (vl-primitive-mkwire "main"))
+       ((mv xa-expr xa-netdecl)           (vl-primitive-mkwire "xa"))
+       ((mv xb-expr xb-netdecl)           (vl-primitive-mkwire "xb"))
+       ((mv xab-expr xab-netdecl)         (vl-primitive-mkwire "xab"))
 
-         ((mv bbar-expr bbar-netdecl)       (vl-primitive-mkwire "bbar"))
-         ((mv mainbar-expr mainbar-netdecl) (vl-primitive-mkwire "mainbar"))
-         ((mv main-expr main-netdecl)       (vl-primitive-mkwire "main"))
-         ((mv xa-expr xa-netdecl)           (vl-primitive-mkwire "xa"))
-         ((mv xb-expr xb-netdecl)           (vl-primitive-mkwire "xb"))
-         ((mv xab-expr xab-netdecl)         (vl-primitive-mkwire "xab"))
+       (bbar-inst    (vl-simple-inst *vl-1-bit-not* "mk_bbar"    bbar-expr    b-expr))
+       (mainbar-inst (vl-simple-inst *vl-1-bit-and* "mk_mainbar" mainbar-expr a-expr       bbar-expr))
+       (main-inst    (vl-simple-inst *vl-1-bit-not* "mk_main"    main-expr    mainbar-expr))
+       (xb-inst      (vl-simple-inst *vl-1-bit-xor* "mk_xb"      xb-expr      b-expr       b-expr))
+       (xa-inst      (vl-simple-inst *vl-1-bit-xor* "mk_xa"      xa-expr      a-expr       a-expr))
+       (xab-inst     (vl-simple-inst *vl-1-bit-xor* "mk_xab"     xab-expr     xa-expr      xb-expr))
+       (out-inst     (vl-simple-inst *vl-1-bit-xor* "mk_out"     out-expr     xab-expr     main-expr)))
 
-         (bbar-inst    (vl-simple-inst *vl-1-bit-not* "mk_bbar"    bbar-expr    b-expr))
-         (mainbar-inst (vl-simple-inst *vl-1-bit-and* "mk_mainbar" mainbar-expr a-expr       bbar-expr))
-         (main-inst    (vl-simple-inst *vl-1-bit-not* "mk_main"    main-expr    mainbar-expr))
-         (xb-inst      (vl-simple-inst *vl-1-bit-xor* "mk_xb"      xb-expr      b-expr       b-expr))
-         (xa-inst      (vl-simple-inst *vl-1-bit-xor* "mk_xa"      xa-expr      a-expr       a-expr))
-         (xab-inst     (vl-simple-inst *vl-1-bit-xor* "mk_xab"     xab-expr     xa-expr      xb-expr))
-         (out-inst     (vl-simple-inst *vl-1-bit-xor* "mk_out"     out-expr     xab-expr     main-expr)))
-
-      (make-vl-module :name      name
-                      :origname  name
-                      :ports     (list out-port a-port b-port)
-                      :portdecls (list out-portdecl a-portdecl b-portdecl)
-                      :netdecls  (list out-netdecl a-netdecl b-netdecl
-                                       bbar-netdecl mainbar-netdecl main-netdecl
-                                       xa-netdecl xb-netdecl xab-netdecl)
-                      :modinsts (list bbar-inst mainbar-inst main-inst
-                                       xa-inst xb-inst xab-inst out-inst)
-                      :minloc    *vl-fakeloc*
-                      :maxloc    *vl-fakeloc*))))
+    (hons-copy
+     (make-vl-module :name      name
+                     :origname  name
+                     :ports     (list out-port a-port b-port)
+                     :portdecls (list out-portdecl a-portdecl b-portdecl)
+                     :netdecls  (list out-netdecl a-netdecl b-netdecl
+                                      bbar-netdecl mainbar-netdecl main-netdecl
+                                      xa-netdecl xb-netdecl xab-netdecl)
+                     :modinsts (list bbar-inst mainbar-inst main-inst
+                                     xa-inst xb-inst xab-inst out-inst)
+                     :minloc    *vl-fakeloc*
+                     :maxloc    *vl-fakeloc*))))
 
 #||
 (vl-pps-module *vl-1-bit-signed-gte*)
 ||#
 
-(def-vl-modgen vl-make-n-bit-signed-gte (n)
+(def-vl-modgen vl-make-n-bit-signed-gte ((n posp))
   :short "Generate a signed greater-than or equal comparison module."
 
   :long "<p>We generate a gate-based module that is semantically equivalent
@@ -219,9 +215,9 @@ A is positive and B is negative, then their leading bits are 0 and 1,
 respectively, so B \"looks bigger\" even though A is actually bigger.  But
 ordinary unsigned comparisons work in the other cases.</p>"
 
-  :guard (posp n)
   :body
-  (b* (((when (eql n 1))
+  (b* ((n (lposfix n))
+       ((when (eql n 1))
         (list *vl-1-bit-signed-gte*))
 
        (name (hons-copy (cat "VL_" (natstr n) "_BIT_SIGNED_GTE")))
@@ -282,12 +278,4 @@ ordinary unsigned comparisons work in the other cases.</p>"
 #||
 (vl-pps-modulelist (vl-make-n-bit-signed-gte 10))
 ||#
-
-
-
-
-
-
-
-
 

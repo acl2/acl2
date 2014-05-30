@@ -103,8 +103,7 @@ sliceable, but that we still don't want to split up.</p>"
 
 (deflist vl-nosplitlist-p (x)
   (vl-nosplit-p x)
-  :guard (vl-exprlist-p x)
-  :elementp-of-nil nil)
+  :guard (vl-exprlist-p x))
 
 (defval *vl-tmp-wire-atts*
   (list (list (hons-copy "VL_TMP_WIRE"))))
@@ -300,8 +299,7 @@ up.</p>"
                             (delta vl-delta-p))
   :returns (mv (new-x vl-arguments-p :hyp :fguard)
                (delta vl-delta-p     :hyp :fguard))
-  (b* (((vl-arguments x) x)
-       ((when x.namedp)
+  (b* (((when (eq (vl-arguments-kind x) :named))
         (mv x (dwarn :type :vl-bad-arguments
                      :msg "~a0: expected to only encounter plain arguments, ~
                            but found a named argument list.  Not actually ~
@@ -310,8 +308,8 @@ up.</p>"
                      :fatalp t
                      :fn 'vl-arguments-split)))
        ((mv new-args delta)
-        (vl-plainarglist-split x.args elem delta))
-       (x-prime (vl-arguments nil new-args)))
+        (vl-plainarglist-split (vl-arguments-plain->args x) elem delta))
+       (x-prime (change-vl-arguments-plain x :args new-args)))
     (mv x-prime delta)))
 
 (define vl-modinst-split ((x vl-modinst-p)

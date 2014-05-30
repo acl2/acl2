@@ -236,3 +236,19 @@
 
 ; maybe actually report correct times
 (assign get-internal-time-as-realtime t)
+
+
+
+;; (define skip-until-subgoal-fn (prefix id clause)
+;;   :mode :program
+;;   (b* ((current-goal (acl2::string-for-tilde-@-clause-id-phrase id))
+;;        ((when (equal prefix current-goal))
+;;         (cw "Target goal: ~x0.~%" clause))
+;;        ((when (str::strprefixp prefix current-goal))
+;;         nil))
+;;     '(:by nil)))
+
+;; (defmacro skip-until-subtoal (prefix)
+;;   `(skip-until-subgoal-fn ,prefix id clause))
+
+;; (set-inhibit-output-lst '(acl2::prove acl2::proof-checker acl2::proof-tree))

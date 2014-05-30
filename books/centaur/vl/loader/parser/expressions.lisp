@@ -21,9 +21,9 @@
 (in-package "VL")
 (include-book "utils")
 (include-book "../../expr")
+(include-book "../../mlib/expr-tools")
 (local (include-book "../../util/arithmetic"))
 (local (non-parallel-book))
-
 
 ; BOZO we can probably speed this up quite a bit by getting rid of the big
 ; case-splits in parse-unary-expression and the smaller, similar case splits in
@@ -243,7 +243,8 @@ the plan is first to build a mixed list which looks like</p>
                                 :args (list e1 e2))
                rest)))
     (car x))
-  :prepwork ((local (in-theory (enable vl-mixed-binop-list-p)))))
+  :prepwork ((local (in-theory (enable vl-mixed-binop-list-p
+                                       vl-arity-ok-p)))))
 
 
 
@@ -268,7 +269,8 @@ them.</p>"
       expr
     (vl-build-indexing-nest (make-vl-nonatom :op :vl-index
                                              :args (list expr (car indices)))
-                            (cdr indices))))
+                            (cdr indices)))
+  :prepwork ((local (in-theory (enable vl-arity-ok-p)))))
 
 
 (defenum vl-erangetype-p
@@ -306,6 +308,7 @@ expression.</p>")
 
 (encapsulate
   ()
+  (local (in-theory (enable vl-arity-ok-p)))
   (local (defthm not-vl-erange-p-when-invalid-type
            (implies (and (not (equal (vl-erange->type range) :vl-index))
                          (not (equal (vl-erange->type range) :vl-colon))
@@ -502,18 +505,18 @@ literals, unbased unsized literals, @('this'), @('$'), and @('null').</p>"
 
         (when (vl-is-token? :vl-kwd-null)
           (:= (vl-match))
-          (return (make-honsed-vl-atom
-                   :guts (make-vl-keyguts :type :vl-null))))
+          (return (hons-copy (make-vl-atom
+                              :guts (make-vl-keyguts :type :vl-null)))))
 
         (when (vl-is-token? :vl-kwd-this)
           (:= (vl-match))
-          (return (make-honsed-vl-atom
-                   :guts (make-vl-keyguts :type :vl-this))))
+          (return (hons-copy (make-vl-atom
+                              :guts (make-vl-keyguts :type :vl-this)))))
 
         (when (vl-is-token? :vl-$)
           (:= (vl-match))
-          (return (make-honsed-vl-atom
-                   :guts (make-vl-keyguts :type :vl-$))))
+          (return (hons-copy (make-vl-atom
+                              :guts (make-vl-keyguts :type :vl-$)))))
 
         (return nil))
   ///
@@ -528,18 +531,18 @@ literals, unbased unsized literals, @('this'), @('$'), and @('null').</p>"
   :parents (vl-match-very-simple-type)
   :showval t
   (list
-   (cons :vl-kwd-byte      (make-honsed-vl-atom :guts (make-vl-basictype :kind :vl-byte)))
-   (cons :vl-kwd-shortint  (make-honsed-vl-atom :guts (make-vl-basictype :kind :vl-shortint)))
-   (cons :vl-kwd-int       (make-honsed-vl-atom :guts (make-vl-basictype :kind :vl-int)))
-   (cons :vl-kwd-longint   (make-honsed-vl-atom :guts (make-vl-basictype :kind :vl-longint)))
-   (cons :vl-kwd-integer   (make-honsed-vl-atom :guts (make-vl-basictype :kind :vl-integer)))
-   (cons :vl-kwd-time      (make-honsed-vl-atom :guts (make-vl-basictype :kind :vl-time)))
-   (cons :vl-kwd-bit       (make-honsed-vl-atom :guts (make-vl-basictype :kind :vl-bit)))
-   (cons :vl-kwd-logic     (make-honsed-vl-atom :guts (make-vl-basictype :kind :vl-logic)))
-   (cons :vl-kwd-reg       (make-honsed-vl-atom :guts (make-vl-basictype :kind :vl-reg)))
-   (cons :vl-kwd-shortreal (make-honsed-vl-atom :guts (make-vl-basictype :kind :vl-shortreal)))
-   (cons :vl-kwd-real      (make-honsed-vl-atom :guts (make-vl-basictype :kind :vl-real)))
-   (cons :vl-kwd-realtime  (make-honsed-vl-atom :guts (make-vl-basictype :kind :vl-realtime)))))
+   (cons :vl-kwd-byte      (hons-copy (make-vl-atom :guts (make-vl-basictype :kind :vl-byte))))
+   (cons :vl-kwd-shortint  (hons-copy (make-vl-atom :guts (make-vl-basictype :kind :vl-shortint))))
+   (cons :vl-kwd-int       (hons-copy (make-vl-atom :guts (make-vl-basictype :kind :vl-int))))
+   (cons :vl-kwd-longint   (hons-copy (make-vl-atom :guts (make-vl-basictype :kind :vl-longint))))
+   (cons :vl-kwd-integer   (hons-copy (make-vl-atom :guts (make-vl-basictype :kind :vl-integer))))
+   (cons :vl-kwd-time      (hons-copy (make-vl-atom :guts (make-vl-basictype :kind :vl-time))))
+   (cons :vl-kwd-bit       (hons-copy (make-vl-atom :guts (make-vl-basictype :kind :vl-bit))))
+   (cons :vl-kwd-logic     (hons-copy (make-vl-atom :guts (make-vl-basictype :kind :vl-logic))))
+   (cons :vl-kwd-reg       (hons-copy (make-vl-atom :guts (make-vl-basictype :kind :vl-reg))))
+   (cons :vl-kwd-shortreal (hons-copy (make-vl-atom :guts (make-vl-basictype :kind :vl-shortreal))))
+   (cons :vl-kwd-real      (hons-copy (make-vl-atom :guts (make-vl-basictype :kind :vl-real))))
+   (cons :vl-kwd-realtime  (hons-copy (make-vl-atom :guts (make-vl-basictype :kind :vl-realtime))))))
 
 (defval *vl-very-simple-type-tokens*
   :parents (vl-match-very-simple-type)
@@ -627,6 +630,7 @@ yet; they'll just cause a parse error.</p>"
   :resultp-of-nil nil
   :fails gracefully
   :count strong
+  :verify-guards nil
   (seqw tokens warnings
         (:= (vl-match-token :vl-scope))
         (head := (vl-match-token :vl-idtoken))
@@ -649,9 +653,11 @@ yet; they'll just cause a parse error.</p>"
                        :guts (make-vl-hidpiece :name (vl-idtoken->name head)))
                       tail)))))
 
+(verify-guards vl-parse-pva-tail-fn)
 
-;; Temporary hack
-(set-bogus-mutual-recursion-ok t)
+
+;; For debugging you may want to comment out functions and add, as a temporary hack:
+;; (set-bogus-mutual-recursion-ok t)
 
 (defparsers parse-expressions
   :parents (parser)
@@ -2260,7 +2266,8 @@ identifier, so we convert it into a hidpiece.</p>"
                            member-equal-when-member-equal-of-cdr-under-iff
                            default-car
                            default-cdr
-                           vl-atom-p-by-tag-when-vl-expr-p)))
+                           ;vl-atom-p-by-tag-when-vl-expr-p
+                           )))
 
 (with-output
  :off prove :gag-mode :goals
@@ -2329,16 +2336,11 @@ identifier, so we convert it into a hidpiece.</p>"
          (implies (alistp x)
                   (true-listp x))))
 
+(local (in-theory (enable vl-arity-ok-p)))
+
 (with-output
  :off prove :gag-mode :goals
  (verify-guards vl-parse-expression-fn))
-
-
-
-
-
-
-
 
 
 

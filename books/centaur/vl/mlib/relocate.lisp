@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2012 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -20,6 +20,8 @@
 
 (in-package "VL")
 (include-book "../parsetree")
+(local (include-book "../util/arithmetic"))
+(local (std::add-default-post-define-hook :fix))
 
 (defxdoc relocate
   :parents (mlib)
@@ -29,51 +31,45 @@
 location, e.g., when we are inlining elements from one module into another.
 These are just some utilities to perform such relocations.</p>")
 
-(defprojection vl-relocate-assigns (loc x)
-  (change-vl-assign x :loc loc)
-  :guard (and (vl-location-p loc)
-              (vl-assignlist-p x))
-  :result-type vl-assignlist-p
-  :parents (relocate vl-assignlist-p))
+(defprojection vl-relocate-assigns ((loc vl-location-p)
+                                    (x   vl-assignlist-p))
+  :parents (relocate vl-assignlist-p)
+  :returns (new-x vl-assignlist-p)
+  (change-vl-assign x :loc loc))
 
-(defprojection vl-relocate-modinsts (loc x)
-  (change-vl-modinst x :loc loc)
-  :guard (and (vl-location-p loc)
-              (vl-modinstlist-p x))
-  :result-type vl-modinstlist-p
-  :parents (relocate vl-modinstlist-p))
+(defprojection vl-relocate-modinsts ((loc vl-location-p)
+                                     (x   vl-modinstlist-p))
+  :parents (relocate vl-modinstlist-p)
+  :returns (new-x vl-modinstlist-p)
+  (change-vl-modinst x :loc loc))
 
-(defprojection vl-relocate-gateinsts (loc x)
-  (change-vl-gateinst x :loc loc)
-  :guard (and (vl-location-p loc)
-              (vl-gateinstlist-p x))
-  :result-type vl-gateinstlist-p
-  :parents (relocate vl-gateinstlist-p))
+(defprojection vl-relocate-gateinsts ((loc vl-location-p)
+                                      (x   vl-gateinstlist-p))
+  :parents (relocate vl-gateinstlist-p)
+  :returns (new-x vl-gateinstlist-p)
+  (change-vl-gateinst x :loc loc))
 
-(defprojection vl-relocate-netdecls (loc x)
-  (change-vl-netdecl x :loc loc)
-  :guard (and (vl-location-p loc)
-              (vl-netdecllist-p x))
-  :result-type vl-netdecllist-p
-  :parents (relocate vl-netdecllist-p))
+(defprojection vl-relocate-netdecls ((loc vl-location-p)
+                                     (x   vl-netdecllist-p))
+  :parents (relocate vl-netdecllist-p)
+  :returns (new-x vl-netdecllist-p)
+  (change-vl-netdecl x :loc loc))
 
-(defprojection vl-relocate-regdecls (loc x)
-  (change-vl-regdecl x :loc loc)
-  :guard (and (vl-location-p loc)
-              (vl-regdecllist-p x))
-  :result-type vl-regdecllist-p
-  :parents (relocate vl-regdecllist-p))
+(defprojection vl-relocate-regdecls ((loc vl-location-p)
+                                     (x   vl-regdecllist-p))
+  :parents (relocate vl-regdecllist-p)
+  :returns (new-x vl-regdecllist-p)
+  (change-vl-regdecl x :loc loc))
 
-(defprojection vl-relocate-portdecls (loc x)
-  (change-vl-portdecl x :loc loc)
-  :guard (and (vl-location-p loc)
-              (vl-portdecllist-p x))
-  :result-type vl-portdecllist-p
-  :parents (relocate vl-portdecllist-p))
+(defprojection vl-relocate-portdecls ((loc vl-location-p)
+                                      (x   vl-portdecllist-p))
+  :parents (relocate vl-portdecllist-p)
+  :returns (new-x vl-portdecllist-p)
+  (change-vl-portdecl x :loc loc))
 
-(defprojection vl-relocate-paramdecls (loc x)
-  (change-vl-paramdecl x :loc loc)
-  :guard (and (vl-location-p loc)
-              (vl-paramdecllist-p x))
-  :result-type vl-paramdecllist-p
-  :parents (relocate vl-paramdecllist-p))
+(defprojection vl-relocate-paramdecls ((loc vl-location-p)
+                                       (x   vl-paramdecllist-p))
+  :parents (relocate vl-paramdecllist-p)
+  :returns (new-x vl-paramdecllist-p)
+  (change-vl-paramdecl x :loc loc))
+

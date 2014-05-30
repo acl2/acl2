@@ -100,7 +100,7 @@ just used to generate more meaningful error messages.</p>"
   (define vl-expr-qmarksize-check ((x   vl-expr-p)
                                    (ctx vl-context-p))
     :returns (warnings vl-warninglist-p)
-    :measure (two-nats-measure (acl2-count x) 1)
+    :measure (vl-expr-count x)
     (b* (((when (vl-fast-atom-p x))
           nil)
          (op   (vl-nonatom->op x))
@@ -144,7 +144,7 @@ just used to generate more meaningful error messages.</p>"
   (define vl-exprlist-qmarksize-check ((x   vl-exprlist-p)
                                        (ctx vl-context-p))
     :returns (warnings vl-warninglist-p)
-    :measure (two-nats-measure (acl2-count x) 0)
+    :measure (vl-exprlist-count x)
     (if (atom x)
         nil
       (append (vl-expr-qmarksize-check (car x) ctx)

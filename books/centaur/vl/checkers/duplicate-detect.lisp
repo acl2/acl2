@@ -20,7 +20,7 @@
 
 (in-package "VL")
 (include-book "../mlib/writer")
-(include-book "../mlib/fix")
+(include-book "../mlib/strip")
 (include-book "../mlib/expr-tools")
 (local (include-book "../util/arithmetic"))
 
@@ -154,6 +154,7 @@ might well be copy/paste errors.</p>")
    (modname stringp))
   :guard (same-lengthp fixed orig)
   :returns (warnings vl-warninglist-p "Warnings for each duplicate assign.")
+  :guard-debug t
   (b* (((when (atom dupes))
         nil)
        (locs    (vl-duplicate-assign-locations (car dupes) fixed orig))
@@ -176,9 +177,9 @@ might well be copy/paste errors.</p>")
                   "Same as @('x'), but perhaps with more warnings.")
   (b* (((vl-module x) x)
 
-       (gateinsts-fix (vl-gateinstlist-fix x.gateinsts))
-       (modinsts-fix  (vl-modinstlist-fix x.modinsts))
-       (assigns-fix   (vl-assignlist-fix x.assigns))
+       (gateinsts-fix (vl-gateinstlist-strip x.gateinsts))
+       (modinsts-fix  (vl-modinstlist-strip x.modinsts))
+       (assigns-fix   (vl-assignlist-strip x.assigns))
 
        (gateinst-dupes (duplicated-members gateinsts-fix))
        (modinst-dupes  (duplicated-members modinsts-fix))

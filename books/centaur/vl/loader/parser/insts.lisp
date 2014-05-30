@@ -24,6 +24,7 @@
 (include-book "delays")
 (include-book "strengths")
 (include-book "../../mlib/expr-tools")
+(include-book "../../mlib/port-tools")
 (local (include-book "../../util/arithmetic"))
 
 
@@ -164,11 +165,11 @@
   (mv-let (erp val explore new-warnings)
           (seqw tokens warnings
                 (args := (vl-parse-list-of-ordered-port-connections))
-                (return (vl-arguments nil args)))
+                (return (make-vl-arguments-plain :args args)))
           (if erp
               (seqw tokens warnings
                     (args := (vl-parse-list-of-named-port-connections))
-                    (return (vl-arguments t args)))
+                    (return (make-vl-arguments-named :args args)))
             (mv erp val explore new-warnings))))
 
 
@@ -216,9 +217,9 @@
   (seqw tokens warnings
         (when (vl-is-token? :vl-dot)
           (args := (vl-parse-list-of-named-parameter-assignments))
-          (return (vl-arguments t args)))
+          (return (make-vl-arguments-named :args args)))
         (exprs := (vl-parse-1+-expressions-separated-by-commas))
-        (return (vl-arguments nil (vl-exprlist-to-plainarglist exprs)))))
+        (return (make-vl-arguments-plain :args (vl-exprlist-to-plainarglist exprs)))))
 
 (defparser vl-parse-parameter-value-assignment ()
   :result (vl-arguments-p val)
@@ -267,8 +268,7 @@
                                 :modname modname
                                 :range range
                                 :paramargs paramargs
-                                :portargs (or portargs
-                                              (vl-arguments nil nil))
+                                :portargs (or portargs (make-vl-arguments-plain :args nil))
                                 :atts atts))))
 
 (defparser vl-parse-1+-module-instances (modname paramargs atts)
@@ -299,8 +299,7 @@
         (when (vl-is-token? :vl-pound)
           (paramargs := (vl-parse-parameter-value-assignment)))
         (insts := (vl-parse-1+-module-instances (vl-idtoken->name modid)
-                                                (or paramargs
-                                                    (vl-arguments nil nil))
+                                                (or paramargs (make-vl-arguments-plain :args nil))
                                                 atts))
         (semi := (vl-match-token :vl-semi))
         (return insts)))
@@ -345,9 +344,9 @@
                                                 (vl-idtoken->name inst-id))
                                  :modname modname
                                  :range range
-                                 :paramargs (vl-arguments nil nil)
-                                 :portargs
-                                 (vl-arguments nil (vl-exprlist-to-plainarglist (cons lvalue exprs)))
+                                 :paramargs (make-vl-arguments-plain :args nil)
+                                 :portargs  (make-vl-arguments-plain
+                                             :args (vl-exprlist-to-plainarglist (cons lvalue exprs)))
                                  :str str
                                  :delay delay
                                  :atts atts))))

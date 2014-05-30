@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -86,9 +86,9 @@
 
 (defwellformed vl-arguments-widthsfixed-p (x)
   :guard (vl-arguments-p x)
-  :body  (if (vl-arguments->namedp x)
-             (@wf-call vl-namedarglist-widthsfixed-p (vl-arguments->args x))
-           (@wf-call vl-plainarglist-widthsfixed-p (vl-arguments->args x))))
+  :body  (vl-arguments-case x
+           :named (@wf-call vl-namedarglist-widthsfixed-p x.args)
+           :plain (@wf-call vl-plainarglist-widthsfixed-p x.args)))
 
 (defwellformed vl-modinst-widthsfixed-p (x)
 

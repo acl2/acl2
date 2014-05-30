@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -22,57 +22,8 @@
 (include-book "expr-tools")
 (include-book "range-tools")
 (local (include-book "../util/arithmetic"))
-
-
-
-;; BOZO consider automatically generating rules like these in defaggregate
-;; when illegible mode is used.  Is it too expensive?  Do they drive proofs
-;; in a bad direction?
-
-(local (defthm equal-of-vl-hidpiece-rewrite
-         (implies (vl-hidpiece-p x)
-                  (equal (equal x (make-vl-hidpiece :name name))
-                         (equal (vl-hidpiece->name x) name)))
-         :rule-classes ((:rewrite :backchain-limit-lst 1))
-         :hints(("Goal" :in-theory (enable vl-hidpiece
-                                           vl-hidpiece-p
-                                           vl-hidpiece->name)))))
-
-(local (defthm equal-of-vl-atom-rewrite
-         (implies (vl-atom-p x)
-                  (equal (equal x (make-vl-atom :guts guts
-                                                :finalwidth finalwidth
-                                                :finaltype finaltype))
-                         (and (equal (vl-atom->guts x) guts)
-                              (equal (vl-atom->finalwidth x) finalwidth)
-                              (equal (vl-atom->finaltype x) finaltype))))
-         :rule-classes ((:rewrite :backchain-limit-lst 1))
-         :hints(("Goal" :in-theory (enable vl-atom
-                                           vl-atom-p
-                                           vl-atom->guts
-                                           vl-atom->finalwidth
-                                           vl-atom->finaltype)))))
-
-(local (defthm equal-of-vl-nonatom-rewrite
-         (implies (vl-nonatom-p x)
-                  (equal (equal x (make-vl-nonatom :op op
-                                                   :atts atts
-                                                   :args args
-                                                   :finalwidth finalwidth
-                                                   :finaltype finaltype))
-                         (and (equal (vl-nonatom->op x) op)
-                              (equal (vl-nonatom->atts x) atts)
-                              (equal (vl-nonatom->args x) args)
-                              (equal (vl-nonatom->finalwidth x) finalwidth)
-                              (equal (vl-nonatom->finaltype x) finaltype))))
-         :rule-classes ((:rewrite :backchain-limit-lst 1))
-         :hints(("Goal" :in-theory (enable vl-nonatom
-                                           vl-nonatom-p
-                                           vl-nonatom->op
-                                           vl-nonatom->atts
-                                           vl-nonatom->args
-                                           vl-nonatom->finalwidth
-                                           vl-nonatom->finaltype)))))
+(local (in-theory (enable tag-reasoning)))
+(local (std::add-default-post-define-hook :fix))
 
 (local (defthm equal-of-cons-rewrite
          (equal (equal x (cons a b))
@@ -142,6 +93,7 @@ identifiers, e.g., the @('bar[3][4][5]') part of @('foo.bar[3][4][5].baz')."
   :long "<p>We match left-associated trees of indices that ultimately end with
 a @(see vl-hidpiece-p).  We don't restrict the actual index expressions, e.g.,
 an expression such as @('bar[width-1]') is acceptable.</p>"
+  :measure (vl-expr-count x)
 
   (if (vl-fast-atom-p x)
       (vl-fast-hidpiece-p (vl-atom->guts x))
@@ -149,13 +101,6 @@ an expression such as @('bar[width-1]') is acceptable.</p>"
       (and (eq x.op :vl-index)
            (vl-hidindex-p (first x.args)))))
   ///
-  (defthm consp-when-vl-hidindex-p
-    ;; Gross but useful
-    (implies (vl-hidindex-p x)
-             (consp x))
-    :rule-classes :compound-recognizer
-    :hints(("Goal" :in-theory (enable vl-nonatom->op))))
-
   (defthm vl-hidpiece-p-of-vl-atom->guts-when-vl-hidindex-p
     (implies (and (vl-hidindex-p x)
                   (force (vl-atom-p x)))
@@ -163,41 +108,47 @@ an expression such as @('bar[width-1]') is acceptable.</p>"
 
   (defthm vl-nonatom->op-when-vl-hidindex-p
     (implies (and (vl-hidindex-p x)
-                  (force (vl-nonatom-p x)))
+                  (force (not (vl-atom-p x))))
              (equal (vl-nonatom->op x) :vl-index))
     :rule-classes ((:rewrite) (:forward-chaining)))
 
   (defthm arity-when-vl-hidindex-p
     (implies (and (vl-hidindex-p x)
-                  (force (vl-nonatom-p x)))
+                  (force (not (vl-atom-p x))))
              (equal (vl-op-arity (vl-nonatom->op x)) 2)))
 
   (defthm len-of-vl-nonatom->args-when-vl-hidindex-p
     (implies (and (vl-hidindex-p x)
-                  (force (vl-nonatom-p x))
-                  (force (vl-expr-p x)))
+                  (force (not (vl-atom-p x))))
              (and ;; blah, so gross....
               (equal (len (vl-nonatom->args x)) 2)
               (consp (vl-nonatom->args x))
               (consp (cdr (vl-nonatom->args x))))))
 
+  (deffixequiv vl-hidindex-p)
+
   (defthm vl-hidindex-p-of-make-vl-atom
-    (implies (and (force (vl-atomguts-p guts))
-                  (force (maybe-posp finalwidth))
-                  (force (vl-maybe-exprtype-p finaltype)))
-             (equal (vl-hidindex-p (make-vl-atom :guts guts
-                                                 :finalwidth finalwidth
-                                                 :finaltype finaltype))
-                    (vl-hidpiece-p guts))))
+    (equal (vl-hidindex-p (make-vl-atom :guts guts
+                                        :finalwidth finalwidth
+                                        :finaltype finaltype))
+           (vl-hidpiece-p (vl-atomguts-fix guts))))
 
   (defthm vl-hidindex-p-of-make-vl-nonatom
-    (implies (and (equal op :vl-index)
-                  (force (vl-hidindex-p (first args))))
-             (vl-hidindex-p (make-vl-nonatom :op op
+    (implies (force (vl-hidindex-p (first args)))
+             (vl-hidindex-p (make-vl-nonatom :op :vl-index
                                              :args args
                                              :atts atts
                                              :finalwidth finalwidth
-                                             :finaltype finaltype))))
+                                             :finaltype finaltype)))
+    :hints(("Goal"
+            :in-theory (enable vl-arity-fix)
+            :expand ((:free (atts args finalwidth finaltype)
+                      (vl-hidindex-p
+                       (make-vl-nonatom :op :vl-index
+                                        :args args
+                                        :atts atts
+                                        :finalwidth finalwidth
+                                        :finaltype finaltype)))))))
 
   (defthm not-vl-hidindex-p-by-op
     (implies (and (not (eq (vl-nonatom->op x) :vl-index))
@@ -215,6 +166,7 @@ an expression such as @('bar[width-1]') is acceptable.</p>"
 (define vl-hidexpr-p ((x vl-expr-p))
   :returns (bool)
   :short "Recognizes well-formed hierarchical identifier expressions."
+  :measure (vl-expr-count x)
   (b* (((when (vl-fast-atom-p x))
         (vl-hidindex-p x))
        ((vl-nonatom x) x)
@@ -223,12 +175,6 @@ an expression such as @('bar[width-1]') is acceptable.</p>"
              (vl-hidexpr-p (second x.args)))))
     (vl-hidindex-p x))
   ///
-  (defthm consp-when-vl-hidexpr-p
-    (implies (vl-hidexpr-p x)
-             (consp x))
-    :rule-classes :compound-recognizer
-    :hints(("Goal" :in-theory (enable vl-nonatom->op))))
-
   (defthm vl-hidexpr-p-when-vl-hidindex-p
     (implies (vl-hidindex-p x)
              (vl-hidexpr-p x))
@@ -264,7 +210,7 @@ an expression such as @('bar[width-1]') is acceptable.</p>"
 
   (defthm len-of-vl-nonatom->args-when-vl-hidexpr-p
     (implies (and (vl-hidexpr-p x)
-                  (force (vl-nonatom-p x))
+                  (force (not (vl-atom-p x)))
                   (force (vl-expr-p x)))
              (and ;; blah, so gross....
               (equal (len (vl-nonatom->args x)) 2)
@@ -300,7 +246,16 @@ an expression such as @('bar[width-1]') is acceptable.</p>"
                                             :args args
                                             :atts atts
                                             :finalwidth finalwidth
-                                            :finaltype finaltype))))
+                                            :finaltype finaltype)))
+    :hints(("Goal"
+            :in-theory (enable vl-arity-fix)
+            :expand ((:free (args atts finalwidth finaltype)
+                      (vl-hidexpr-p
+                       (make-vl-nonatom :op :vl-hid-dot
+                                        :args args
+                                        :atts atts
+                                        :finalwidth finalwidth
+                                        :finaltype finaltype)))))))
 
   (defthm vl-hidexpr-p-of-vl-nonatom-index
     (implies (and (equal op :vl-index)
@@ -318,10 +273,12 @@ an expression such as @('bar[width-1]') is acceptable.</p>"
                         (not (eq (vl-nonatom->op x) :vl-hid-dot)))))))
 
 
-(define vl-hidindex-resolved-p ((x (and (vl-expr-p x)
-                                        (vl-hidindex-p x))))
+
+(define vl-hidindex-resolved-p ((x vl-expr-p))
+  :guard (vl-hidindex-p x)
   :returns (bool)
   :short "Determines if every index in a @(see vl-hidindex-p) is resolved."
+  :measure (vl-expr-count x)
   (b* (((when (vl-fast-atom-p x))
         t)
        ((vl-nonatom x) x))
@@ -333,16 +290,24 @@ an expression such as @('bar[width-1]') is acceptable.</p>"
     (implies (vl-atom-p x)
              (vl-hidindex-resolved-p x)))
 
+  (deffixequiv vl-hidindex-resolved-p)
+
   (defthm vl-hidindex-resolved-p-of-make-vl-nonatom
-    (implies (and (equal op :vl-index)
-                  (force (vl-hidindex-resolved-p (first args)))
+    (implies (and (force (vl-hidindex-resolved-p (first args)))
                   (force (vl-expr-resolved-p (second args))))
-             (vl-hidindex-resolved-p (make-vl-nonatom :op op
+             (vl-hidindex-resolved-p (make-vl-nonatom :op :vl-index
                                                       :args args
                                                       :atts atts
                                                       :finalwidth finalwidth
                                                       :finaltype finaltype)))
-    :hints(("Goal" :in-theory (disable (force)))))
+    :hints(("Goal"
+            :in-theory (e/d (vl-arity-fix) ((force)))
+            :expand ((:free (atts args finalwidth finaltype)
+                      (vl-hidindex-resolved-p (make-vl-nonatom :op :vl-index
+                                                               :args args
+                                                               :atts atts
+                                                               :finalwidth finalwidth
+                                                               :finaltype finaltype)))))))
 
   (defthm vl-nonatom->op-when-hidindex-resolved-p
     (implies (and (vl-hidindex-resolved-p x)
@@ -361,11 +326,12 @@ an expression such as @('bar[width-1]') is acceptable.</p>"
 
 
 
-(define vl-hidexpr-resolved-p ((x (and (vl-expr-p x)
-                                       (vl-hidexpr-p x))))
+(define vl-hidexpr-resolved-p ((x vl-expr-p))
+  :guard (vl-hidexpr-p x)
   :returns (bool)
   :short "Determines if every index throughout a @(see vl-hidexpr-p) is resolved."
   :guard-debug t
+  :measure (vl-expr-count x)
   (b* (((when (vl-fast-atom-p x))
         (vl-hidindex-resolved-p x))
        ((vl-nonatom x) x)
@@ -391,10 +357,9 @@ an expression such as @('bar[width-1]') is acceptable.</p>"
              (vl-hidexpr-resolved-p (second (vl-nonatom->args x)))))
 
   (defthm vl-hidexpr-resolved-p-of-make-vl-nonatom-for-index
-    (implies (and (equal op :vl-index)
-                  (force (vl-hidindex-resolved-p (first args)))
+    (implies (and (force (vl-hidindex-resolved-p (first args)))
                   (force (vl-expr-resolved-p (second args))))
-             (vl-hidexpr-resolved-p (make-vl-nonatom :op op
+             (vl-hidexpr-resolved-p (make-vl-nonatom :op :vl-index
                                                      :args args
                                                      :atts atts
                                                      :finalwidth finalwidth
@@ -402,15 +367,21 @@ an expression such as @('bar[width-1]') is acceptable.</p>"
     :hints(("Goal" :in-theory (disable (force)))))
 
   (defthm vl-hidexpr-resolved-p-of-make-vl-nonatom-for-dot
-    (implies (and (equal op :vl-hid-dot)
-                  (force (vl-hidindex-resolved-p (first args)))
+    (implies (and (force (vl-hidindex-resolved-p (first args)))
                   (force (vl-hidexpr-resolved-p (second args))))
-             (vl-hidexpr-resolved-p (make-vl-nonatom :op op
+             (vl-hidexpr-resolved-p (make-vl-nonatom :op :vl-hid-dot
                                                      :args args
                                                      :atts atts
                                                      :finalwidth finalwidth
                                                      :finaltype finaltype)))
-    :hints(("Goal" :in-theory (disable (force)))))
+    :hints(("Goal"
+            :expand (:free (atts args finalwidth finaltype)
+                      (vl-hidexpr-resolved-p (make-vl-nonatom :op :vl-hid-dot
+                                                              :args args
+                                                              :atts atts
+                                                              :finalwidth finalwidth
+                                                              :finaltype finaltype)))
+            :in-theory (e/d (vl-arity-fix) ((force))))))
 
   (defthm vl-hidindex-resolved-p-when-vl-hidexpr-resolved-p
     (implies (vl-hidexpr-resolved-p x)
@@ -419,20 +390,19 @@ an expression such as @('bar[width-1]') is acceptable.</p>"
                         (not (equal (vl-nonatom->op x) :vl-hid-dot)))))))
 
 
-
-(define vl-hidindex-final-name ((x (and (vl-expr-p x)
-                                        (vl-hidindex-p x))))
+(define vl-hidindex-final-name ((x vl-expr-p))
+  :guard (vl-hidindex-p x)
   :returns (name stringp :rule-classes :type-prescription)
+  :measure (vl-expr-count x)
   (b* (((when (vl-fast-atom-p x))
         (string-fix (vl-hidpiece->name (vl-atom->guts x))))
-       ((unless (mbt (consp x))) "")
        ((vl-nonatom x) x))
     (vl-hidindex-final-name (first x.args))))
 
-
-(define vl-hid-final-name ((x (and (vl-expr-p x)
-                                   (vl-hidexpr-p x))))
+(define vl-hid-final-name ((x vl-expr-p))
+  :guard (vl-hidexpr-p x)
   :returns (name stringp :rule-classes :type-prescription)
+  :measure (vl-expr-count x)
   (b* (((when (vl-fast-atom-p x))
         (vl-hidindex-final-name x))
        ((vl-nonatom x) x)
@@ -440,29 +410,28 @@ an expression such as @('bar[width-1]') is acceptable.</p>"
         (vl-hid-final-name (second x.args))))
     (vl-hidindex-final-name x)))
 
-
-(define vl-flatten-hidindex ((x (and (vl-expr-p x)
-                                     (vl-hidindex-p x)
-                                     (vl-hidindex-resolved-p x))))
+(define vl-flatten-hidindex ((x vl-expr-p))
+  :guard (and (vl-hidindex-p x)
+              (vl-hidindex-resolved-p x))
   :returns (flat-string stringp :rule-classes :type-prescription)
   :short "Converts a @(see vl-hidindex-p) into a string like
 @('\"bar[3][4][5]\"')."
+  :measure (vl-expr-count x)
   (b* (((when (vl-fast-atom-p x))
         (string-fix (vl-hidpiece->name (vl-atom->guts x))))
-       ((unless (mbt (consp x))) "")
        ((vl-nonatom x) x))
     (cat (vl-flatten-hidindex (first x.args))
          "["
          (str::natstr (vl-resolved->val (second x.args)))
          "]")))
 
-
-(define vl-flatten-hidexpr ((x (and (vl-expr-p x)
-                                    (vl-hidexpr-p x)
-                                    (vl-hidexpr-resolved-p x))))
+(define vl-flatten-hidexpr ((x vl-expr-p))
+  :guard (and (vl-hidexpr-p x)
+              (vl-hidexpr-resolved-p x))
   :returns (flat-string stringp :rule-classes :type-prescription)
   :short "Converts a hierarchical identifier expression into a string like
 @('foo.bar[3][4][5].baz')."
+  :measure (vl-expr-count x)
   (b* (((when (vl-fast-atom-p x))
         (string-fix (vl-hidpiece->name (vl-atom->guts x))))
        ((vl-nonatom x) x)
@@ -472,42 +441,34 @@ an expression such as @('bar[width-1]') is acceptable.</p>"
              (vl-flatten-hidexpr (second x.args)))))
     (vl-flatten-hidindex x)))
 
-
 (define vl-explode-hidindex
   :short "Explode a (resolved) @(see vl-hidindex-p) into a flat list of
           its components."
-
-  ((x "The hidindex to explode, e.g., @('foo[3][4][5]')"
-      (and (vl-expr-p x)
-           (vl-hidindex-p x)
-           (vl-hidindex-resolved-p x))))
-  :returns
-  (pieces "A flat, mixed list of strings and numbers, e.g.,
-           @('(\"foo\" 3 4 5)')."
-          true-listp :rule-classes :type-prescription)
-
+  ((x vl-expr-p "The hidindex to explode, e.g., @('foo[3][4][5]')"))
+  :guard (and (vl-hidindex-p x)
+              (vl-hidindex-resolved-p x))
+  :returns (pieces true-listp :rule-classes :type-prescription
+                   "A flat, mixed list of strings and numbers, e.g.,
+                   @('(\"foo\" 3 4 5)').")
+  :measure (vl-expr-count x)
   (b* (((when (vl-fast-atom-p x))
         (list (vl-hidpiece->name (vl-atom->guts x))))
-       ((unless (mbt (consp x)))
-        nil)
        ((vl-nonatom x) x)
        (from (vl-explode-hidindex (first x.args)))
        (idx  (vl-resolved->val (second x.args))))
     (append from (list idx))))
 
-
 (define vl-explode-hid
   :short "Explode a (resolved) @(see vl-hidexpr-p) into a flat list of its
           components."
-  ((x "The hidexpr to explode, e.g., foo.bar[2][3].baz."
-      (and (vl-expr-p x)
-           (vl-hidexpr-p x)
-           (vl-hidexpr-resolved-p x))))
+  ((x vl-expr-p "The hidexpr to explode, e.g., foo.bar[2][3].baz."))
+  :guard (and (vl-hidexpr-p x)
+              (vl-hidexpr-resolved-p x))
   :returns
-  (pieces "A flat, mixed list of strings and numbers, e.g.,
-           @('(\"foo\" \"bar\" 2 3 \"baz\")')."
-          true-listp :rule-classes :type-prescription)
-
+  (pieces true-listp :rule-classes :type-prescription
+          "A flat, mixed list of strings and numbers, e.g.,
+           @('(\"foo\" \"bar\" 2 3 \"baz\")').")
+  :measure (vl-expr-count x)
   (b* (((when (vl-fast-atom-p x))
         (vl-explode-hidindex x))
        ((vl-nonatom x) x)
@@ -516,13 +477,11 @@ an expression such as @('bar[width-1]') is acceptable.</p>"
                 (vl-explode-hid (second x.args)))))
     (vl-explode-hidindex x)))
 
-
 (define vl-hid-range
   :short "Try to look up a range for a HID, which may have been installed by
 @(see vl-expr-follow-hids)."
- ((x (and (vl-expr-p x)
-          (vl-nonatom-p x))
-     "This should generally be the top-level HID expression."))
+ ((x vl-expr-p  "This should generally be the top-level HID expression."))
+ :guard (not (vl-atom-p x))
  :returns (mv (successp booleanp :rule-classes :type-prescription)
               (range vl-maybe-range-p
                      :hints(("Goal" :in-theory (disable (force))))))
@@ -553,15 +512,15 @@ an expression such as @('bar[width-1]') is acceptable.</p>"
     (equal (vl-hid-range (vl-nonatom op (vl-nonatom->atts x) args fw ft))
            (vl-hid-range x))))
 
-
 (define vl-hid-rangeatts
   :short "Extend the attributes for a HID with range information."
   ;; BOZO we should probably be using this in vl-expr-follow-hids.
-  ((range (and (vl-maybe-range-p range)
-               (vl-maybe-range-resolved-p range)))
+  ((range vl-maybe-range-p)
    (atts vl-atts-p "the rest of the atts"))
-  :returns (new-atts vl-atts-p :hyp :guard)
-  (b* ((atts (if range
+  :guard (vl-maybe-range-resolved-p range)
+  :returns (new-atts vl-atts-p)
+  (b* ((atts (vl-atts-fix atts))
+       (atts (if range
                  (list* (cons "VL_HID_RESOLVED_RANGE_LEFT" (vl-range->msb range))
                         (cons "VL_HID_RESOLVED_RANGE_RIGHT" (vl-range->lsb range))
                         atts)
@@ -570,37 +529,25 @@ an expression such as @('bar[width-1]') is acceptable.</p>"
                       atts))))
     (cons (list "VL_HID_RESOLVED_RANGE_P") atts))
   ///
-  (local (defthm vl-range-identity
-           (implies (vl-range-p range)
-                    (equal (vl-range (vl-range->msb range)
-                                     (vl-range->lsb range))
-                           range))
-           :hints(("Goal" :in-theory (enable vl-range-p
-                                             vl-range
-                                             vl-range->msb
-                                             vl-range->lsb)))))
   (defthm vl-hid-range-of-vl-hid-rangeatts
-    (implies (vl-maybe-range-p range)
+    (implies range
              (equal (vl-hid-range (vl-nonatom op (vl-hid-rangeatts range atts) args fw ft))
-                    (mv t range)))
-    :hints(("Goal" :in-theory (e/d (vl-hid-range
-                                    vl-maybe-range-p
-                                    assoc-equal)
-                                   ((force)))))))
-
+                    (mv t (vl-range-fix range))))
+    :hints(("Goal" :in-theory (e/d (vl-hid-range))))))
 
 (define vl-hid-width
   :short "Try to return the width of a HID, using range attribute information
 that may have been installed by @(see vl-expr-follow-hids)."
-  ((x (and (vl-expr-p x)
-           (vl-nonatom-p x))))
+  ((x vl-expr-p))
+  :guard (not (vl-atom-p x))
   :enabled t
   :guard-hints (("goal" :in-theory (enable vl-hid-range
                                            vl-maybe-range-resolved-p
                                            vl-maybe-range-size
                                            vl-range-resolved-p
                                            vl-range-size
-                                           vl-width-from-difference)))
+                                           vl-width-from-difference
+                                           )))
   :returns (width maybe-posp :rule-classes :type-prescription)
   (mbe :logic (b* (((mv ok range) (vl-hid-range x)))
                 (and ok
@@ -621,20 +568,3 @@ that may have been installed by @(see vl-expr-follow-hids)."
               (- (vl-resolved->val left) (vl-resolved->val right)))
            1))))
 
-
-
-
-(define vl-hid/id-p ((x vl-expr-p))
-  :short "IDs and non-atomic HIDs can be bit/part-selected from."
-  (or (vl-idexpr-p x)
-      (and (vl-nonatom-p x)
-           (vl-hidexpr-p x)))
-  ///
-  (defthm vl-hid/id-p-when-idexpr
-    (implies (vl-idexpr-p x)
-             (vl-hid/id-p x)))
-  (defthm vl-hid/id-p-when-hidexpr
-    (implies (and (vl-nonatom-p x)
-                  (vl-hidexpr-p x))
-             (vl-hid/id-p x))
-    :hints(("Goal" :in-theory (enable vl-hidexpr-p)))))

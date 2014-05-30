@@ -902,7 +902,7 @@ modinsts-to-eoccs).</p>"
                    :fn 'vl-modinst-to-eocc)))
             (mv nil (cons w warnings) nil)))
 
-         ((when (vl-arguments->namedp x.portargs))
+         ((when (eq (vl-arguments-kind x.portargs) :named))
           (b* ((w (make-vl-warning
                    :type :vl-bad-instance
                    :msg "~a0: expected only resolved module instances, but ~
@@ -972,7 +972,7 @@ modinsts-to-eoccs).</p>"
 
          ;; Build the alist binding formals to actuals...
 
-         (actuals (vl-arguments->args x.portargs))
+         (actuals (vl-arguments-plain->args x.portargs))
          ((unless (same-lengthp actuals portpat))
           (b* ((w (make-vl-warning
                    :type :vl-bad-instance

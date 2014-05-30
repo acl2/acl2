@@ -52,7 +52,7 @@ are returned in a nonsensical order.</p>"
     :verify-guards nil
     :returns (mv (warnings vl-warninglist-p)
                  (wires    vl-emodwirelist-p :hyp (force (vl-wirealist-p walist))))
-    :measure (two-nats-measure (acl2-count x) 1)
+    :measure (vl-expr-count x)
     :flag :expr
     (b* (((when (vl-fast-atom-p x))
           (b* ((guts (vl-atom->guts x))
@@ -213,7 +213,7 @@ are returned in a nonsensical order.</p>"
                                  (walist vl-wirealist-p))
      :returns (mv (warnings vl-warninglist-p)
                   (wires vl-emodwirelist-p :hyp (force (vl-wirealist-p walist))))
-     :measure (two-nats-measure (acl2-count x) 0)
+     :measure (vl-exprlist-count x)
      :flag :list
      (b* (((when (atom x))
            (mv nil nil))
@@ -336,7 +336,7 @@ are returned in a nonsensical order.</p>"
   (b* (((vl-module x) x)
 
        (all-exprs
-        (cwtime (vl-module-allexprs-exec x nil)
+        (cwtime (vl-module-allexprs x)
                 :mintime 1/2))
 
        ((mv ?successp walist-warnings walist)

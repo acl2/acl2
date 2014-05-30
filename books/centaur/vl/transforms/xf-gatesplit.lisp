@@ -22,6 +22,7 @@
 (include-book "../mlib/expr-tools")
 (include-book "../mlib/range-tools")
 (include-book "../mlib/namefactory")
+(include-book "../mlib/port-tools")
 (local (include-book "../util/arithmetic"))
 (local (include-book "tools/do-not" :dir :system))
 (local (acl2::do-not fertilize))

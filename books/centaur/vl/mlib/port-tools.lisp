@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -23,24 +23,81 @@
 (include-book "range-tools")
 (include-book "find-item")
 (local (include-book "../util/arithmetic"))
-
+(local (std::add-default-post-define-hook :fix))
 
 (defsection port-tools
   :parents (mlib vl-port-p vl-portdecl-p)
-  :short "Basic functions for working with ports.")
+  :short "Basic functions for working with arguments and ports.")
 
 (local (xdoc::set-default-parents port-tools))
 
+
+
+(define vl-exprlist-to-plainarglist
+  ((x    vl-exprlist-p        "list to convert")
+   &key
+   (dir  vl-maybe-direction-p "direction for each new plainarg")
+   (atts vl-atts-p            "attributes for each new plainarg"))
+  :returns (ans vl-plainarglist-p)
+  :parents (expr-tools)
+  :short "Convert expressions into @(see vl-plainarg-p)s."
+  (if (consp x)
+      (cons (make-vl-plainarg :expr (vl-expr-fix (car x))
+                              :dir dir
+                              :atts atts)
+            (vl-exprlist-to-plainarglist-fn (cdr x) dir atts))
+    nil)
+  ///
+  (defthm vl-exprlist-to-plainarglist-under-iff
+    (iff (vl-exprlist-to-plainarglist x :dir dir :atts atts)
+         (consp x)))
+
+  (defthm len-of-vl-exprlist-to-plainarglist
+    (equal (len (vl-exprlist-to-plainarglist x :dir dir :atts atts))
+           (len x))))
+
+(define vl-partition-plainargs
+  :parents (vl-plainarglist-p)
+  ;; BOZO find this a better home
+  ((x      vl-plainarglist-p "list to filter")
+   ;; bozo make these optional
+   (inputs   vl-plainarglist-p "accumulator for args with :dir :vl-input")
+   (outputs  vl-plainarglist-p "accumulator for args with :dir :vl-output")
+   (inouts   vl-plainarglist-p "accumulator for args with :dir :vl-inout")
+   (unknowns vl-plainarglist-p "accumulator for args with :dir nil"))
+  :returns (mv (inputs   vl-plainarglist-p)
+               (outputs  vl-plainarglist-p)
+               (inouts   vl-plainarglist-p)
+               (unknowns vl-plainarglist-p))
+  (b* (((when (atom x))
+        (mv (vl-plainarglist-fix inputs)
+            (vl-plainarglist-fix outputs)
+            (vl-plainarglist-fix inouts)
+            (vl-plainarglist-fix unknowns)))
+       (x1  (vl-plainarg-fix (car x)))
+       (dir (vl-plainarg->dir x1))
+       ((when (eq dir :vl-input))
+        (vl-partition-plainargs (cdr x) (cons x1 inputs) outputs inouts unknowns))
+       ((when (eq dir :vl-output))
+        (vl-partition-plainargs (cdr x) inputs (cons x1 outputs) inouts unknowns))
+       ((when (eq dir :vl-inout))
+        (vl-partition-plainargs (cdr x) inputs outputs (cons x1 inouts) unknowns)))
+    (vl-partition-plainargs (cdr x) inputs outputs inouts (cons x1 unknowns))))
+
+
+
+(fty::deflist vl-directionlist
+  :elt-type vl-direction-p)
+
 (deflist vl-directionlist-p (x)
   (vl-direction-p x)
-  :elementp-of-nil nil
-  :guard t)
+  :elementp-of-nil nil)
 
 (define vl-basic-portexpr-p ((x vl-maybe-expr-p))
-  :parents (vl-portexpr-p)
   :returns (okp booleanp :rule-classes :type-prescription)
-  :short "Non-concatenations that can occur in port expressions."
-  (b* (((unless x)
+  :short "Recognize non-concatenations that can occur in port expressions."
+  (b* ((x (vl-maybe-expr-fix x))
+       ((unless x)
         t)
        ((when (vl-fast-atom-p x))
         (vl-idexpr-p x))
@@ -50,8 +107,7 @@
         (let ((from (first args))
               (bit  (second args)))
           (and (vl-idexpr-p from)
-               (vl-expr-resolved-p bit)
-               (natp (vl-resolved->val bit)))))
+               (vl-expr-resolved-p bit))))
        ((when (eq op :vl-partselect-colon))
         (let ((from (first args))
               (high (second args))
@@ -59,24 +115,24 @@
           (and (vl-idexpr-p from)
                (vl-expr-resolved-p high)
                (vl-expr-resolved-p low)
-               (natp (vl-resolved->val high))
-               (natp (vl-resolved->val low))
                (>= (vl-resolved->val high)
                    (vl-resolved->val low))))))
     nil)
   ///
-  (defthm vl-basic-portexpr-p-when-degenerate
-    (implies (and (not (vl-atom-p x))
-                  (not (vl-nonatom-p x))
-                  (vl-maybe-expr-p x))
-             (equal (vl-basic-portexpr-p x)
-                    (not x)))
-    :hints(("Goal" :in-theory (enable vl-basic-portexpr-p)))))
+  ;; BOZO not sure what to do about this.
+  ;; (defthm vl-basic-portexpr-p-when-degenerate
+  ;;   (implies (and (not (vl-atom-p x))
+  ;;                 (not (vl-nonatom-p x))
+  ;;                 (vl-maybe-expr-p x))
+  ;;            (equal (vl-basic-portexpr-p x)
+  ;;                   (not x)))
+  ;;   :hints(("Goal" :in-theory (enable vl-basic-portexpr-p))))
+  )
 
 (deflist vl-basic-portexprlist-p (x)
   (vl-basic-portexpr-p x)
-  :guard (vl-exprlist-p x)
-  :parents (vl-portexpr-p))
+  :guard (vl-exprlist-p x))
+
 
 (define vl-portexpr-p
   :short "Recognizer for well-formed port expressions."
@@ -141,50 +197,24 @@ basic port expressions.</p>"
   (vl-portexpr-p (vl-port->expr x))
   ///
   (defthm vl-portexpr-p-of-vl-port->expr
-    (implies (force (vl-port-wellformed-p x))
-             (vl-portexpr-p (vl-port->expr x)))
-    :hints(("Goal" :in-theory (enable vl-port-wellformed-p)))))
+    (implies (vl-port-wellformed-p x)
+             (vl-portexpr-p (vl-port->expr x)))))
 
 (deflist vl-portlist-wellformed-p (x)
   (vl-port-wellformed-p x)
   :guard (vl-portlist-p x)
-  :elementp-of-nil t)
-
-
-(define vl-port-named-p ((x vl-port-p))
-  :short "Recognizer for ports that have a non-blank name."
-  (if (vl-port->name x)
-      t
-    nil)
+  :elementp-of-nil t
   ///
-  (defthm stringp-of-vl-port->name-when-vl-port-named-p
-    (implies (and (vl-port-named-p x)
-                  (force (vl-port-p x)))
-             (stringp (vl-port->name x)))
-    :rule-classes ((:rewrite)
-                   (:type-prescription)
-                   (:rewrite :corollary
-                             (implies (and (vl-port-named-p x)
-                                           (force (vl-port-p x)))
-                                      (vl-port->name x))))
-    :hints(("Goal" :in-theory (e/d (vl-port-named-p))))))
-
-(deflist vl-portlist-named-p (x)
-  (vl-port-named-p x)
-  :guard (vl-portlist-p x)
-  :elementp-of-nil nil
-  :rest
-  ((defthm string-listp-of-vl-portlist->names
-     (implies (and (vl-portlist-named-p x)
-                   (force (vl-portlist-p x)))
-              (string-listp (vl-portlist->names x))))))
+  (deffixequiv vl-portlist-wellformed-p :args ((x vl-portlist-p))))
 
 
-(define vl-flatten-portexpr ((x (and (vl-maybe-expr-p x)
-                                     (vl-portexpr-p x))))
+
+(define vl-flatten-portexpr ((x vl-maybe-expr-p))
+  :guard (vl-portexpr-p x)
   :returns (exprs (and (vl-exprlist-p exprs)
                        (vl-basic-portexprlist-p exprs))
                   :hyp :fguard)
+  :hooks nil
   :short "Flatten a @(see vl-portexpr-p) into a list of @(see
 vl-basic-portexpr-p)s."
 
@@ -205,25 +235,22 @@ of basic port expressions, so that we can process them in a uniform way.</p>"
                              vl-basic-portexpr-p)))))
 
 
-(define vl-basic-portexpr-internal-wirename ((x (and (vl-expr-p x)
-                                                     (vl-basic-portexpr-p x))))
+(define vl-basic-portexpr-internal-wirename ((x vl-expr-p))
+  :guard (vl-basic-portexpr-p x)
   :guard-hints (("Goal" :in-theory (enable vl-basic-portexpr-p)))
   :parents (vl-port-internal-wirenames)
   (if (vl-fast-atom-p x)
       (vl-idexpr->name x)
     (vl-idexpr->name (first (vl-nonatom->args x)))))
 
-(defprojection vl-basic-portexprlist-internal-wirenames (x)
+(defprojection vl-basic-portexprlist-internal-wirenames ((x vl-exprlist-p))
   (vl-basic-portexpr-internal-wirename x)
-  :guard (and (vl-exprlist-p x)
-              (vl-basic-portexprlist-p x))
+  :guard (vl-basic-portexprlist-p x)
   :parents (vl-port-internal-wirenames)
-  ///
-  (defthm string-listp-of-vl-basic-portexprlist-internal-wirenames
-    (string-listp (vl-basic-portexprlist-internal-wirenames x))))
+  :returns (wirenames string-listp))
 
-(define vl-port-internal-wirenames ((x (and (vl-port-p x)
-                                            (vl-port-wellformed-p x))))
+(define vl-port-internal-wirenames ((x vl-port-p))
+  :guard (vl-port-wellformed-p x)
   :returns (names string-listp)
   :short "Collect the names of any internal wires that are connected to a
 well-formed port and return them as a list of strings."
@@ -259,10 +286,12 @@ return a list of strings.</p>"
   :returns
   (mv (successp booleanp :rule-classes :type-prescription)
       (warnings vl-warninglist-p)
-      (directions true-listp :rule-classes :type-prescription))
+      (directions vl-directionlist-p))
+  :verbosep t
   (b* (((when (atom names))
         (mv t (ok) nil))
-       (decl (vl-fast-find-portdecl (car names) portdecls palist))
+       (name1 (string-fix (car names)))
+       (decl (vl-fast-find-portdecl name1 portdecls palist))
        ((mv successp warnings directions)
         (vl-port-direction-aux (cdr names) portdecls palist warnings port))
        ((when decl)
@@ -271,17 +300,10 @@ return a list of strings.</p>"
         (warn :type :vl-bad-port
               :msg "~a0 refers to ~w1, but there is no port declaration for ~
                       ~w1."
-              :args (list port (car names)))
+              :args (list (vl-port-fix port) name1))
         directions))
   ///
-  (defthm vl-directionlist-p-of-vl-port-direction-aux
-    (implies (and (force (string-listp names))
-                  (force (vl-portdecllist-p portdecls))
-                  (force (equal palist (vl-portdecl-alist portdecls)))
-                  (force (vl-port-p port)))
-             (vl-directionlist-p
-              (mv-nth 2 (vl-port-direction-aux names portdecls palist warnings port))))
-    :hints(("Goal" :in-theory (enable vl-port-direction-aux)))))
+  (defmvtypes vl-port-direction-aux (nil nil true-listp)))
 
 (define vl-port-direction
   :short "Attempt to determine the direction for a port."
@@ -294,15 +316,13 @@ return a list of strings.</p>"
    (warnings  "Ordinary warnings accumulator, may be extended with non-fatal
                warnings."
               vl-warninglist-p))
+  ;:hooks nil
+  :verbosep t
   :returns
   (mv (warnings  vl-warninglist-p)
       (maybe-dir "The direction for this port, or @('nil') on failure."
                  vl-maybe-direction-p
-                 :hints(("Goal" :in-theory (enable vl-maybe-direction-p)))
-                 :hyp
-                 (and (force (vl-port-p port))
-                      (force (vl-portdecllist-p portdecls))
-                      (force (equal palist (vl-portdecl-alist portdecls))))))
+                 :hints(("Goal" :in-theory (enable vl-maybe-direction-p)))))
 
   :long "<p>We attempt to determine the direction of this port and return it.
 We can fail if the port is not well-formed or if there is no port declaration
@@ -314,7 +334,8 @@ directions, e.g., imagine a port such as @('.foo({bar,baz})'), where @('bar')
 is an input and @('baz') is an output.  We regard such a port as an @('inout'),
 and add a warning that this case is very unusual.</p>"
 
-  (b* (((unless (vl-port-wellformed-p port))
+  (b* ((port (vl-port-fix port))
+       ((unless (vl-port-wellformed-p port))
         (mv (warn :type :vl-bad-port
                   :msg "~a0 is not well-formed."
                   :args (list port))
@@ -338,14 +359,11 @@ and add a warning that this case is very unusual.</p>"
         nil))
   ///
   (defthm vl-direction-p-of-vl-port-direction
-    (implies (and (force (vl-port-p port))
-                  (force (vl-portdecllist-p portdecls))
-                  (force (equal palist (vl-portdecl-alist portdecls))))
-             (equal (vl-direction-p
-                     (mv-nth 1 (vl-port-direction port portdecls palist warnings)))
-                    (if (mv-nth 1 (vl-port-direction port portdecls palist warnings))
-                        t
-                      nil)))))
+    (equal (vl-direction-p
+            (mv-nth 1 (vl-port-direction port portdecls palist warnings)))
+           (if (mv-nth 1 (vl-port-direction port portdecls palist warnings))
+               t
+             nil))))
 
 
 (define vl-plainarg-blankfree-p ((x vl-plainarg-p))
@@ -356,7 +374,9 @@ and add a warning that this case is very unusual.</p>"
 
 (deflist vl-plainarglist-blankfree-p (x)
   (vl-plainarg-blankfree-p x)
-  :guard (vl-plainarglist-p x))
+  :guard (vl-plainarglist-p x)
+  ///
+  (deffixequiv vl-plainarglist-blankfree-p :args ((x vl-plainarglist-p))))
 
 (define vl-namedarg-blankfree-p ((x vl-namedarg-p))
   :inline t
@@ -366,12 +386,14 @@ and add a warning that this case is very unusual.</p>"
 
 (deflist vl-namedarglist-blankfree-p (x)
   (vl-namedarg-blankfree-p x)
-  :guard (vl-namedarglist-p x))
+  :guard (vl-namedarglist-p x)
+  ///
+  (deffixequiv vl-namedarglist-blankfree-p :args ((x vl-namedarglist-p))))
 
 (define vl-arguments-blankfree-p ((x vl-arguments-p))
-  (if (vl-arguments->namedp x)
-      (vl-namedarglist-blankfree-p (vl-arguments->args x))
-    (vl-plainarglist-blankfree-p (vl-arguments->args x))))
+  (vl-arguments-case x
+    :named (vl-namedarglist-blankfree-p x.args)
+    :plain (vl-plainarglist-blankfree-p x.args)))
 
 (define vl-modinst-blankfree-p ((x vl-modinst-p))
   :inline t
@@ -379,13 +401,15 @@ and add a warning that this case is very unusual.</p>"
 
 (deflist vl-modinstlist-blankfree-p (x)
   (vl-modinst-blankfree-p x)
-  :guard (vl-modinstlist-p x))
+  :guard (vl-modinstlist-p x)
+  ///
+  (deffixequiv vl-modinstlist-blankfree-p :args ((x vl-modinstlist-p))))
 
 
 
 (define vl-ports-from-portdecls ((x vl-portdecllist-p))
   :short "Construct basic ports corresponding to a list of portdecls."
-  :returns (ports vl-portlist-p :hyp :guard)
+  :returns (ports vl-portlist-p)
   (b* (((when (atom x))
         nil)
        (name (vl-portdecl->name (car x)))
@@ -398,10 +422,11 @@ and add a warning that this case is very unusual.</p>"
 (define vl-portdecls-with-dir ((dir vl-direction-p)
                                (x   vl-portdecllist-p))
   :short "Filter port declarations by direction."
-  :returns (sub-x vl-portdecllist-p :hyp (vl-portdecllist-p x))
+  :returns (sub-x vl-portdecllist-p)
   (cond ((atom x)
          nil)
-        ((eq dir (vl-portdecl->dir (car x)))
-         (cons (car x) (vl-portdecls-with-dir dir (cdr x))))
+        ((eq (vl-direction-fix dir) (vl-portdecl->dir (car x)))
+         (cons (vl-portdecl-fix (car x))
+               (vl-portdecls-with-dir dir (cdr x))))
         (t
          (vl-portdecls-with-dir dir (cdr x)))))

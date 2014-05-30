@@ -405,7 +405,10 @@ example:</p>
   :guard (and (posp width)
               (posp nedges))
   :body
-  (b* (((when (eql width 1))
+  (b* ((width  (lposfix width))
+       (nedges (lposfix nedges))
+
+       ((when (eql width 1))
         (list (vl-make-1-bit-n-edge-flop nedges)))
 
        (name (cat "VL_" (natstr width) "_BIT_" (natstr nedges) "_EDGE_FLOP"))
@@ -567,7 +570,7 @@ endmodule
                  (vl-nedgeflop-data-mux (cdr clks) (cdr ds) width))
      :finalwidth width
      :finaltype :vl-unsigned)))
-                          
+
 (define vl-nedgeflop-or-edges ((edges vl-exprlist-p))
   :Guard (consp edges)
   :returns (x vl-expr-p :hyp :guard)
@@ -580,24 +583,25 @@ endmodule
      :finalwidth 1
      :finaltype :vl-unsigned)))
 
-(local (defthm car-of-vl-modulelist-p
-         (implies (and (vl-modulelist-p x)
-                       (consp x))
-                  (Car x))))
-
 (def-vl-modgen vl-make-nedgeflop-vec (width nedges delay)
   :short "Generate a w-bit wide, n-edge flop with output delay d"
-  :guard (and (posp width) (posp nedges) (natp delay))
+  :guard (and (posp width)
+              (posp nedges)
+              (natp delay))
   :body
-  (b* ((name (if (zp delay)
+  (b* ((width (lposfix width))
+       (nedges (lposfix nedges))
+       (delay  (lnfix delay))
+
+       (name (if (zp delay)
                  (cat "VL_" (natstr width) "_BIT_" (natstr nedges) "_EDGE_FLOP")
                (cat "VL_" (natstr width) "_BIT_" (natstr nedges) "_EDGE_" (natstr delay) "_TICK_FLOP")))
 
        ((mv qexpr qport qportdecl qnetdecl) (vl-occform-mkport "q" :vl-output width))
        ((mv dexprs dports dportdecls dnetdecls) (vl-occform-mkports "d" 0 nedges :dir :vl-input :width width))
        ((mv clkexprs clkports clkportdecls clknetdecls) (vl-occform-mkports "clk" 0 nedges :dir :vl-input :width 1))
-       
-       
+
+
        ;; note qregdecls are netdecls not regdecls
        ((mv qregexpr qregdecls qreginsts qregmods)
         ;; this represents the final delay of q, which we don't need if
@@ -688,7 +692,7 @@ endmodule
                             :minloc *vl-fakeloc*
                             :maxloc *vl-fakeloc*)))
     (list* mod del11 (append delw1s qregmods))))
-       
+
 
 #||
 

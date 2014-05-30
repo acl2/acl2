@@ -26,6 +26,8 @@
 (include-book "expr-building")
 (include-book "hid-tools")
 (local (include-book "../util/arithmetic"))
+(local (std::add-default-post-define-hook :fix))
+(local (in-theory (enable tag-reasoning)))
 
 ; BOZO eventually want to integrate slicing properly throughout the whole
 ; transformation sequence
@@ -99,13 +101,27 @@ be quite a bit more complex.</p>")
 ;
 ; -----------------------------------------------------------------------------
 
+(define vl-hid/id-p ((x vl-expr-p))
+  :short "IDs and non-atomic HIDs can be bit/part-selected from."
+  (or (vl-idexpr-p x)
+      (and (not (vl-atom-p x))
+           (vl-hidexpr-p x)))
+  ///
+  (defthm vl-hid/id-p-when-idexpr
+    (implies (vl-idexpr-p x)
+             (vl-hid/id-p x)))
+  (defthm vl-hid/id-p-when-hidexpr
+    (implies (and (not (vl-atom-p x))
+                  (vl-hidexpr-p x))
+             (vl-hid/id-p x))
+    :hints(("Goal" :in-theory (enable vl-hidexpr-p)))))
+
 (defines vl-expr-sliceable-p
   :short "@(call vl-expr-sliceable-p) determines if the expression @('x') is
 sliceable."
-  :flag nil
 
   (define vl-expr-sliceable-p ((x vl-expr-p))
-    :measure (two-nats-measure (acl2-count x) 1)
+    :measure (vl-expr-count x)
     (b* (((when (vl-fast-atom-p x))
           (b* ((guts (vl-atom->guts x)))
             (or (vl-fast-constint-p guts)
@@ -136,7 +152,7 @@ sliceable."
       nil))
 
   (define vl-exprlist-sliceable-p ((x vl-exprlist-p))
-    :measure (two-nats-measure (acl2-count x) 0)
+    :measure (vl-exprlist-count x)
     (if (atom x)
         t
       (and (vl-expr-sliceable-p (car x))
@@ -144,18 +160,18 @@ sliceable."
   ///
   (deflist vl-exprlist-sliceable-p (x)
     (vl-expr-sliceable-p x)
-    :elementp-of-nil nil
-    :already-definedp t))
+    :already-definedp t)
+
+  (deffixequiv-mutual vl-expr-sliceable-p))
 
 
-(define vl-find-hid/id-range ((x (and (vl-expr-p x)
-                                      (vl-hid/id-p x)))
+(define vl-find-hid/id-range ((x vl-expr-p)
                               (mod vl-module-p)
                               (ialist (equal ialist (vl-moditem-alist mod))))
-  :guard-debug t
+  :guard (vl-hid/id-p x)
   :prepwork ((local (in-theory (enable vl-hid/id-p))))
-  :returns (mv (successp)
-               (range vl-maybe-range-p :hyp :fguard))
+  :returns (mv (successp booleanp :rule-classes :type-prescription)
+               (range    vl-maybe-range-p))
   (b* (((when (vl-idexpr-p x))
         (vl-find-net/reg-range (vl-idexpr->name x) mod ialist)))
     (vl-hid-range x)))
@@ -179,9 +195,9 @@ sliceable."
                     (equal (logand value 1)
                            (mod value 2)))))
 
-;; A logbitp based approach would potentially be more efficient when dealing
-;; with bignums, since shifting will cause us to generate new bignums.  But it
-;; would be pretty silly to be worried about things like that.
+  ;; A logbitp based approach would potentially be more efficient when dealing
+  ;; with bignums, since shifting will cause us to generate new bignums.  But it
+  ;; would be pretty silly to be worried about things like that.
 
 ; ------------------- CONSTANT INTEGERS -----------------------
 
@@ -192,9 +208,9 @@ sliceable."
     :measure (nfix len)
     (b* (((when (zp len))
           nil)
-         (floor2 (mbe :logic (floor value 2)
+         (floor2 (mbe :logic (floor (nfix value) 2)
                       :exec (ash value -1)))
-         (mod2   (mbe :logic (mod value 2)
+         (mod2   (mbe :logic (mod (nfix value) 2)
                       :exec (logand value 1)))
          (bit    (if (eql mod2 0)
                      |*sized-1'b0*|
@@ -259,10 +275,11 @@ sliceable."
   :short "Explode a <see topic='@(url vl-expr-welltyped-p)'>well-typed</see>
 @(see vl-constint-p) atom into MSB-ordered, single-bit expressions."
 
-  ((x (and (vl-atom-p x)
-           (vl-atom-welltyped-p x)
-           (vl-fast-constint-p (vl-atom->guts x)))))
-  :returns (bit-exprs vl-exprlist-p :hyp :fguard)
+  ((x vl-expr-p))
+  :guard (and (vl-atom-p x)
+              (vl-atom-welltyped-p x)
+              (vl-fast-constint-p (vl-atom->guts x)))
+  :returns (bit-exprs vl-exprlist-p)
 
   :long "<p>We require that @('X') is a well-typed constant integer expression,
 i.e., our @(see expression-sizing) transform should have already been run.
@@ -330,7 +347,7 @@ handled any sign/zero extensions, so we assume here that the atom's
   :parents (vl-msb-bitslice-weirdint)
   ((x vl-bit-p))
   :returns (bit-expr vl-expr-p)
-  (case x
+  (case (vl-bit-fix x)
     (:vl-0val |*sized-1'b0*|)
     (:vl-1val |*sized-1'b1*|)
     (:vl-xval |*sized-1'bx*|)
@@ -365,10 +382,10 @@ handled any sign/zero extensions, so we assume here that the atom's
   :short "Explode a <see topic='@(url vl-expr-welltyped-p)'>well-typed</see>,
 @(see vl-weirdint-p) atom into MSB-ordered, single-bit expressions."
 
-  ((x (and (vl-atom-p x)
-           (vl-atom-welltyped-p x)
-           (vl-fast-weirdint-p (vl-atom->guts x)))))
-
+  ((x vl-expr-p))
+  :guard (and (vl-atom-p x)
+              (vl-atom-welltyped-p x)
+              (vl-fast-weirdint-p (vl-atom->guts x)))
   :returns (bit-exprs vl-exprlist-p)
 
   :long "<p>We require that @('X') is a well-typed constant integer expression,
@@ -437,11 +454,10 @@ need to convert them into individual bits in the same order.</p>"
   :returns
   (mv (successp booleanp :rule-classes :type-prescription)
       (warnings vl-warninglist-p)
-      (bit-exprs vl-exprlist-p
-                 :hyp (and (force (stringp x))
-                           (force (vl-module-p mod))
-                           (force (equal ialist (vl-moditem-alist mod))))))
-  (b* (((mv successp range)
+      (bit-exprs vl-exprlist-p))
+  :verbosep t
+  (b* ((x (string-fix x))
+       ((mv successp range)
         (vl-find-net/reg-range x mod ialist))
        ((unless successp)
         (mv nil
@@ -480,7 +496,6 @@ need to convert them into individual bits in the same order.</p>"
                                        vl-maybe-range-size))))
   ///
   (defmvtypes vl-msb-bitslice-name (booleanp nil true-listp))
-
 
   (encapsulate nil
     (local (defthm nonempty-by-len-of-vl-make-msb-to-lsb-bitselects-asdfaf
@@ -636,42 +651,9 @@ need to convert them into individual bits in the same order.</p>"
     :hints (("goal" :in-theory (disable vl-msb-bitslice-name main2)
              :use main2)))
 
-
-
-  (defthm vl-expr-welltyped-p-of-vl-make-bitselect
-    (implies (and (force (vl-expr-p expr))
-                  (force (vl-expr-welltyped-p expr))
-                  (force (natp n)))
-             (vl-expr-welltyped-p (vl-make-bitselect expr n)))
-    :hints(("Goal" :in-theory (enable vl-make-bitselect
-                                      vl-make-index
-                                      vl-atom-welltyped-p
-                                      vl-expr-welltyped-p))))
-
-  (defthm vl-expr-welltyped-p-of-vl-idexpr
-    (implies (and (vl-exprtype-p finaltype)
-                  (posp finalwidth)
-                  (stringp name))
-             (vl-expr-welltyped-p (vl-idexpr name finalwidth finaltype)))
-    :hints(("Goal" :in-theory (e/d (vl-idexpr
-                                    vl-expr-welltyped-p
-                                    vl-atom-welltyped-p)))))
-
-  (defthm vl-exprlist-welltyped-p-of-vl-make-list-of-bitselects
-    (implies (and (force (vl-expr-p expr))
-                  (force (vl-expr-welltyped-p expr))
-                  (force (natp low))
-                  (force (natp high))
-                  (force (<= low high)))
-             (vl-exprlist-welltyped-p (vl-make-list-of-bitselects expr low high)))
-    :hints(("Goal" :in-theory (enable vl-make-list-of-bitselects))))
-
   (defthm vl-exprlist-welltyped-p-of-vl-msb-bitslice-name
     (let ((ret (vl-msb-bitslice-name x mod ialist warnings)))
-      (implies (and (mv-nth 0 ret)
-                    (force (stringp x))
-                    (force (vl-module-p mod))
-                    (force (equal ialist (vl-moditem-alist mod))))
+      (implies (mv-nth 0 ret)
                (vl-exprlist-welltyped-p (mv-nth 2 ret))))
     :hints(("Goal" :in-theory (enable vl-expr-welltyped-p
                                       vl-make-msb-to-lsb-bitselects)))))
@@ -679,18 +661,16 @@ need to convert them into individual bits in the same order.</p>"
 
 (define vl-msb-bitslice-hid
   :parents (vl-msb-bitslice-expr)
-  ((x (and (vl-expr-p x)
-           (vl-nonatom-p x)
-           (vl-hidexpr-p x)
-           (vl-expr-welltyped-p x)))
+  ((x vl-expr-p)
    (warnings vl-warninglist-p))
+  :guard (and (not (vl-atom-p x))
+              (vl-hidexpr-p x)
+              (vl-expr-welltyped-p x))
   :returns (mv (okp booleanp :rule-classes :type-prescription)
                (warnings vl-warninglist-p)
-               (bit-exprs vl-exprlist-p
-                          :hyp (and (force (vl-expr-p x))
-                                    (force (vl-module-p mod))
-                                    (force (equal ialist (vl-moditem-alist mod))))))
-  (b* (((mv ok range) (vl-hid-range x))
+               (bit-exprs vl-exprlist-p))
+  (b* ((x (vl-expr-fix x))
+       ((mv ok range) (vl-hid-range x))
        ((unless (and ok (vl-maybe-range-resolved-p range)))
         (mv nil
             (fatal :type :vl-slicing-fail
@@ -711,8 +691,7 @@ need to convert them into individual bits in the same order.</p>"
        ;; a list of 1-bit, unsigned expressions that are semantically
        ;; equivalent to the input expression, and we're going to make any
        ;; sign/zero extension explicit immediately below.
-       (main-bits (vl-make-msb-to-lsb-bitselects
-                   x msb-index lsb-index)))
+       (main-bits (vl-make-msb-to-lsb-bitselects x msb-index lsb-index)))
     (mv t (ok) main-bits))
 
   :prepwork ((local (in-theory (enable vl-maybe-range-p
@@ -816,8 +795,7 @@ need to convert them into individual bits in the same order.</p>"
 
 
   (local (defthm main
-           (implies (and (vl-expr-p x)
-                         (vl-nonatom-p x)
+           (implies (and (not (vl-atom-p x))
                          (vl-hidexpr-p x)
                          (vl-expr-welltyped-p x))
                     (let ((ret (vl-msb-bitslice-hid x warnings)))
@@ -829,8 +807,7 @@ need to convert them into individual bits in the same order.</p>"
                             (vl-expr-welltyped-p x))))))
 
   (defthm vl-exprlist->finalwidths-of-vl-msb-bitslice-hid
-    (implies (and (vl-expr-p x)
-                  (vl-nonatom-p x)
+    (implies (and (not (vl-atom-p x))
                   (vl-hidexpr-p x)
                   (vl-expr-welltyped-p x))
              (let ((ret (vl-msb-bitslice-hid x warnings)))
@@ -876,8 +853,7 @@ need to convert them into individual bits in the same order.</p>"
                                         (vl-make-list-of-bitselects expr low high)))))))))
 
   (local (defthm main2
-           (implies (and (vl-expr-p x)
-                         (vl-nonatom-p x)
+           (implies (and (not (vl-atom-p x))
                          (vl-hidexpr-p x)
                          (vl-expr-welltyped-p x))
                     (let ((ret (vl-msb-bitslice-hid x warnings)))
@@ -889,8 +865,7 @@ need to convert them into individual bits in the same order.</p>"
                             (vl-expr-welltyped-p x))))))
 
   (defthm vl-exprlist->finaltypes-of-vl-msb-bitslice-hid
-    (implies (and (vl-expr-p x)
-                  (vl-nonatom-p x)
+    (implies (and (not (vl-atom-p x))
                   (vl-hidexpr-p x)
                   (vl-expr-welltyped-p x))
              (let ((ret (vl-msb-bitslice-hid x warnings)))
@@ -899,41 +874,10 @@ need to convert them into individual bits in the same order.</p>"
     :hints (("goal" :in-theory (disable vl-msb-bitslice-hid main2)
              :use main2)))
 
-
-
-  (defthm vl-expr-welltyped-p-of-vl-make-bitselect
-    (implies (and (force (vl-expr-p expr))
-                  (force (vl-expr-welltyped-p expr))
-                  (force (natp n)))
-             (vl-expr-welltyped-p (vl-make-bitselect expr n)))
-    :hints(("Goal" :in-theory (enable vl-make-bitselect
-                                      vl-make-index
-                                      vl-atom-welltyped-p
-                                      vl-expr-welltyped-p))))
-
-  (defthm vl-expr-welltyped-p-of-vl-idexpr
-    (implies (and (vl-exprtype-p finaltype)
-                  (posp finalwidth)
-                  (stringp name))
-             (vl-expr-welltyped-p (vl-idexpr name finalwidth finaltype)))
-    :hints(("Goal" :in-theory (e/d (vl-idexpr
-                                    vl-expr-welltyped-p
-                                    vl-atom-welltyped-p)))))
-
-  (defthm vl-exprlist-welltyped-p-of-vl-make-list-of-bitselects
-    (implies (and (force (vl-expr-p expr))
-                  (force (vl-expr-welltyped-p expr))
-                  (force (natp low))
-                  (force (natp high))
-                  (force (<= low high)))
-             (vl-exprlist-welltyped-p (vl-make-list-of-bitselects expr low high)))
-    :hints(("Goal" :in-theory (enable vl-make-list-of-bitselects))))
-
   (defthm vl-exprlist-welltyped-p-of-vl-msb-bitslice-hid
     (let ((ret (vl-msb-bitslice-hid x warnings)))
       (implies (and (mv-nth 0 ret)
-                    (force (vl-expr-p x))
-                    (force (vl-nonatom-p x))
+                    (force (not (vl-atom-p x)))
                     (force (vl-hidexpr-p x))
                     (force (vl-expr-welltyped-p x)))
                (vl-exprlist-welltyped-p (mv-nth 2 ret))))
@@ -943,8 +887,7 @@ need to convert them into individual bits in the same order.</p>"
   (defthm len-of-vl-msb-bitslice-hid
     (let ((ret (vl-msb-bitslice-hid x warnings)))
       (implies (and (mv-nth 0 ret)
-                    (force (vl-expr-p x))
-                    (force (vl-nonatom-p x))
+                    (force (not (vl-atom-p x)))
                     (force (vl-hidexpr-p x))
                     (force (vl-expr-welltyped-p x)))
                (equal (len (mv-nth 2 ret))
@@ -961,21 +904,17 @@ need to convert them into individual bits in the same order.</p>"
   :short "Explode a <see topic='@(url vl-expr-welltyped-p)'>well-typed</see>,
 @(see vl-id-p) atom into MSB-ordered, single-bit expressions."
 
-  ((x        (and (vl-atom-p x)
-                  (vl-atom-welltyped-p x)
-                  (vl-fast-id-p (vl-atom->guts x))))
+  ((x        vl-expr-p)
    (mod      vl-module-p)
    (ialist   (equal ialist (vl-moditem-alist mod)))
    (warnings vl-warninglist-p))
+  :guard (and (vl-atom-p x)
+              (vl-atom-welltyped-p x)
+              (vl-fast-id-p (vl-atom->guts x)))
   :returns
   (mv (successp booleanp :rule-classes :type-prescription)
       (warnings vl-warninglist-p)
-      (bit-exprs vl-exprlist-p
-                 :hyp (and (force (vl-atom-p x))
-                           (force (vl-atom-welltyped-p x))
-                           (force (vl-id-p (vl-atom->guts x)))
-                           (force (vl-module-p mod))
-                           (force (equal ialist (vl-moditem-alist mod))))))
+      (bit-exprs vl-exprlist-p))
 
   :long "<p>We require that @('X') is a well-typed identifier expression, i.e.,
 our @(see expression-sizing) transform should have already been run.  See also
@@ -1000,7 +939,8 @@ wire [0:3] w;
 
 <p>Then we will want to return @('{w[0], w[1], w[2], w[3]}') instead.</p>"
 
-  (b* (((vl-atom x) x)
+  (b* ((x (vl-expr-fix x))
+       ((vl-atom x) x)
        (name (vl-id->name x.guts))
        ((mv successp warnings main-bits)
         (vl-msb-bitslice-name name mod ialist warnings))
@@ -1045,9 +985,7 @@ wire [0:3] w;
       (implies (and (mv-nth 0 ret)
                     (force (vl-atom-p x))
                     (force (vl-atom-welltyped-p x))
-                    (force (vl-id-p (vl-atom->guts x)))
-                    (force (vl-module-p mod))
-                    (force (equal ialist (vl-moditem-alist mod))))
+                    (force (vl-id-p (vl-atom->guts x))))
                (equal (len (mv-nth 2 ret))
                       (vl-atom->finalwidth x)))))
 
@@ -1071,9 +1009,7 @@ wire [0:3] w;
       (implies (and (mv-nth 0 ret)
                     (force (vl-atom-p x))
                     (force (vl-atom-welltyped-p x))
-                    (force (vl-id-p (vl-atom->guts x)))
-                    (force (vl-module-p mod))
-                    (force (equal ialist (vl-moditem-alist mod))))
+                    (force (vl-id-p (vl-atom->guts x))))
                (equal (vl-exprlist->finalwidths (mv-nth 2 ret))
                       (replicate (vl-atom->finalwidth x) 1)))))
 
@@ -1092,38 +1028,16 @@ wire [0:3] w;
       (implies (and (mv-nth 0 ret)
                     (force (vl-atom-p x))
                     (force (vl-atom-welltyped-p x))
-                    (force (vl-id-p (vl-atom->guts x)))
-                    (force (vl-module-p mod))
-                    (force (equal ialist (vl-moditem-alist mod))))
+                    (force (vl-id-p (vl-atom->guts x))))
                (equal (vl-exprlist->finaltypes (mv-nth 2 ret))
                       (replicate (vl-atom->finalwidth x) :vl-unsigned)))))
-
-  (defthm vl-expr-welltyped-p-of-vl-make-bitselect
-    (implies (and (force (vl-expr-p expr))
-                  (force (vl-expr-welltyped-p expr))
-                  (force (natp n)))
-             (vl-expr-welltyped-p (vl-make-bitselect expr n)))
-    :hints(("Goal" :in-theory (enable vl-make-bitselect
-                                      vl-make-index
-                                      vl-expr-welltyped-p))))
-
-  (defthm vl-exprlist-welltyped-p-of-vl-make-list-of-bitselects
-    (implies (and (force (vl-expr-p expr))
-                  (force (vl-expr-welltyped-p expr))
-                  (force (natp low))
-                  (force (natp high))
-                  (force (<= low high)))
-             (vl-exprlist-welltyped-p (vl-make-list-of-bitselects expr low high)))
-    :hints(("Goal" :in-theory (enable vl-make-list-of-bitselects))))
 
   (defthm vl-exprlist-welltyped-p-of-vl-msb-bitslice-id
     (let ((ret (vl-msb-bitslice-id x mod ialist warnings)))
       (implies (and (mv-nth 0 ret)
                     (force (vl-atom-p x))
                     (force (vl-atom-welltyped-p x))
-                    (force (vl-id-p (vl-atom->guts x)))
-                    (force (vl-module-p mod))
-                    (force (equal ialist (vl-moditem-alist mod))))
+                    (force (vl-id-p (vl-atom->guts x))))
                (vl-exprlist-welltyped-p (mv-nth 2 ret))))
     :hints(("Goal" :in-theory (enable vl-expr-welltyped-p
                                       vl-make-msb-to-lsb-bitselects)))))
@@ -1134,26 +1048,18 @@ wire [0:3] w;
   :short "Explode a <see topic='@(url vl-expr-welltyped-p)'>well-typed</see>,
 part-select into into MSB-ordered, single-bit expressions."
 
-  ((x        (and (vl-expr-p x)
-                  (vl-nonatom-p x)
-                  (equal (vl-nonatom->op x) :vl-partselect-colon)
-                  (vl-expr-welltyped-p x)
-                  (vl-expr-sliceable-p x)))
+  ((x        vl-expr-p)
    (mod      vl-module-p)
    (ialist   (equal ialist (vl-moditem-alist mod)))
    (warnings vl-warninglist-p))
-
+  :guard (and (not (vl-atom-p x))
+              (equal (vl-nonatom->op x) :vl-partselect-colon)
+              (vl-expr-welltyped-p x)
+              (vl-expr-sliceable-p x))
   :returns
   (mv (successp booleanp :rule-classes :type-prescription)
       (warnings vl-warninglist-p)
-      (bit-exprs vl-exprlist-p
-                 :hyp (and (force (vl-expr-p x))
-                           (force (vl-nonatom-p x))
-                           (force (equal (vl-nonatom->op x) :vl-partselect-colon))
-                           (force (vl-expr-welltyped-p x))
-                           (force (vl-expr-sliceable-p x))
-                           (force (vl-module-p mod))
-                           (force (equal ialist (vl-moditem-alist mod))))))
+      (bit-exprs vl-exprlist-p))
 
   :long "<p>We require that @('X') is a well-typed, and also @(see
 vl-expr-sliceable-p) part-select expression, i.e., our @(see expression-sizing)
@@ -1175,7 +1081,8 @@ wire [0:3] b;
 <li>@('a[0:2]') or @('b[2:0]'), which should be disallowed.</li>
 </ul>"
 
-  (b* ((args  (vl-nonatom->args x))
+  (b* ((x     (vl-expr-fix x))
+       (args  (vl-nonatom->args x))
 
        (from  (first args))
        (left  (second args))
@@ -1256,52 +1163,36 @@ wire [0:3] b;
   (defthm len-of-vl-msb-bitslice-partselect
     (let ((ret (vl-msb-bitslice-partselect x mod ialist warnings)))
       (implies (and (mv-nth 0 ret)
-                    (force (vl-expr-p x))
-                    (force (vl-nonatom-p x))
+                    (force (not (vl-atom-p x)))
                     (force (equal (vl-nonatom->op x) :vl-partselect-colon))
-                    (force (vl-expr-welltyped-p x))
-                    (force (vl-expr-sliceable-p x))
-                    (force (vl-module-p mod))
-                    (force (equal ialist (vl-moditem-alist mod))))
+                    (force (vl-expr-welltyped-p x)))
                (equal (len (mv-nth 2 ret))
                       (vl-nonatom->finalwidth x)))))
 
   (defthm vl-exprlist->finalwidths-of-vl-msb-bitslice-partselect
     (let ((ret (vl-msb-bitslice-partselect x mod ialist warnings)))
       (implies (and (mv-nth 0 ret)
-                    (force (vl-expr-p x))
-                    (force (vl-nonatom-p x))
+                    (force (not (vl-atom-p x)))
                     (force (equal (vl-nonatom->op x) :vl-partselect-colon))
-                    (force (vl-expr-welltyped-p x))
-                    (force (vl-expr-sliceable-p x))
-                    (force (vl-module-p mod))
-                    (force (equal ialist (vl-moditem-alist mod))))
+                    (force (vl-expr-welltyped-p x)))
                (equal (vl-exprlist->finalwidths (mv-nth 2 ret))
                       (replicate (vl-nonatom->finalwidth x) 1)))))
 
   (defthm vl-exprlist->finaltypes-of-vl-msb-bitslice-partselect
     (let ((ret (vl-msb-bitslice-partselect x mod ialist warnings)))
       (implies (and (mv-nth 0 ret)
-                    (force (vl-expr-p x))
-                    (force (vl-nonatom-p x))
+                    (force (not (vl-atom-p x)))
                     (force (equal (vl-nonatom->op x) :vl-partselect-colon))
-                    (force (vl-expr-welltyped-p x))
-                    (force (vl-expr-sliceable-p x))
-                    (force (vl-module-p mod))
-                    (force (equal ialist (vl-moditem-alist mod))))
+                    (force (vl-expr-welltyped-p x)))
                (equal (vl-exprlist->finaltypes (mv-nth 2 ret))
                       (replicate (vl-nonatom->finalwidth x) :vl-unsigned)))))
 
   (defthm vl-exprlist-welltyped-p-of-vl-msb-bitslice-partselect
     (let ((ret (vl-msb-bitslice-partselect x mod ialist warnings)))
       (implies (and (mv-nth 0 ret)
-                    (force (vl-expr-p x))
-                    (force (vl-nonatom-p x))
+                    (force (not (vl-atom-p x)))
                     (force (equal (vl-nonatom->op x) :vl-partselect-colon))
-                    (force (vl-expr-welltyped-p x))
-                    (force (vl-expr-sliceable-p x))
-                    (force (vl-module-p mod))
-                    (force (equal ialist (vl-moditem-alist mod))))
+                    (force (vl-expr-welltyped-p x)))
                (vl-exprlist-welltyped-p (mv-nth 2 ret))))
     :hints(("Goal" :in-theory (enable vl-make-msb-to-lsb-bitselects)))))
 
@@ -1328,20 +1219,22 @@ declared width.  These situations should not arise in practice if the
 expressions have been sized correctly.</p>"
 
   (define vl-msb-bitslice-expr
-    ((x        (and (vl-expr-p x)
-                    (vl-expr-sliceable-p x)
-                    (vl-expr-welltyped-p x)))
+    ((x        vl-expr-p)
      (mod      vl-module-p)
      (ialist   (equal ialist (vl-moditem-alist mod)))
      (warnings vl-warninglist-p))
+    :guard (and (vl-expr-sliceable-p x)
+                (vl-expr-welltyped-p x))
     :returns
     (mv (successp booleanp :rule-classes :type-prescription)
         (warnings vl-warninglist-p)
         (bit-exprs true-listp :rule-classes :type-prescription))
     :verify-guards nil
-    :measure (two-nats-measure (acl2-count x) 1)
+    :measure (vl-expr-count x)
     :flag :expr
-    (b* (((when (vl-fast-atom-p x))
+    (b* ((x (vl-expr-fix x))
+
+         ((when (vl-fast-atom-p x))
           (b* ((guts (vl-atom->guts x))
                ((when (vl-fast-constint-p guts))
                 (mv t (ok) (vl-msb-bitslice-constint x)))
@@ -1349,10 +1242,6 @@ expressions have been sized correctly.</p>"
                 (mv t (ok) (vl-msb-bitslice-weirdint x))))
             ;; Else, must be an id.
             (vl-msb-bitslice-id x mod ialist warnings)))
-
-         ((unless (mbt (consp x)))
-          (impossible)
-          (mv nil (ok) nil))
 
          ((when (vl-hidexpr-p x))
           (vl-msb-bitslice-hid x warnings))
@@ -1386,17 +1275,17 @@ expressions have been sized correctly.</p>"
       (mv successp warnings full-bits)))
 
   (define vl-msb-bitslice-exprlist
-    ((x        (and (vl-exprlist-p x)
-                    (vl-exprlist-sliceable-p x)
-                    (vl-exprlist-welltyped-p x)))
+    ((x        vl-exprlist-p)
      (mod      vl-module-p)
      (ialist   (equal ialist (vl-moditem-alist mod)))
      (warnings vl-warninglist-p))
+    :guard (and (vl-exprlist-sliceable-p x)
+                (vl-exprlist-welltyped-p x))
     :returns
     (mv (successp booleanp :rule-classes :type-prescription)
         (warnings vl-warninglist-p)
         (bit-exprs true-listp :rule-classes :type-prescription))
-    :measure (two-nats-measure (acl2-count x) 0)
+    :measure (vl-exprlist-count x)
     :flag :list
     (b* (((when (atom x))
           (mv t (ok) nil))
@@ -1419,21 +1308,11 @@ expressions have been sized correctly.</p>"
   (defthm-vl-msb-bitslice-expr-flag
     (defthm vl-exprlist-p-of-vl-msb-bitslice-expr
       (let ((ret (vl-msb-bitslice-expr x mod ialist warnings)))
-        (implies (and (force (vl-expr-p x))
-                      (force (vl-expr-sliceable-p x))
-                      (force (vl-expr-welltyped-p x))
-                      (force (vl-module-p mod))
-                      (force (equal ialist (vl-moditem-alist mod))))
-                 (vl-exprlist-p (mv-nth 2 ret))))
+        (vl-exprlist-p (mv-nth 2 ret)))
       :flag :expr)
     (defthm vl-exprlist-p-of-vl-msb-bitslice-exprlist
       (let ((ret (vl-msb-bitslice-exprlist x mod ialist warnings)))
-        (implies (and (force (vl-exprlist-p x))
-                      (force (vl-exprlist-sliceable-p x))
-                      (force (vl-exprlist-welltyped-p x))
-                      (force (vl-module-p mod))
-                      (force (equal ialist (vl-moditem-alist mod))))
-                 (vl-exprlist-p (mv-nth 2 ret))))
+        (vl-exprlist-p (mv-nth 2 ret)))
       :flag :list))
 
   (local (defthm len-of-flatten-of-replicate
@@ -1452,22 +1331,16 @@ expressions have been sized correctly.</p>"
     (defthm len-of-vl-msb-bitslice-expr
       (let ((ret (vl-msb-bitslice-expr x mod ialist warnings)))
         (implies (and (mv-nth 0 ret)
-                      (force (vl-expr-p x))
                       (force (vl-expr-sliceable-p x))
-                      (force (vl-expr-welltyped-p x))
-                      (force (vl-module-p mod))
-                      (force (equal ialist (vl-moditem-alist mod))))
+                      (force (vl-expr-welltyped-p x)))
                  (equal (len (mv-nth 2 ret))
                         (vl-expr->finalwidth x))))
       :flag :expr)
     (defthm len-of-vl-msb-bitslice-exprlist
       (let ((ret (vl-msb-bitslice-exprlist x mod ialist warnings)))
         (implies (and (mv-nth 0 ret)
-                      (force (vl-exprlist-p x))
                       (force (vl-exprlist-sliceable-p x))
-                      (force (vl-exprlist-welltyped-p x))
-                      (force (vl-module-p mod))
-                      (force (equal ialist (vl-moditem-alist mod))))
+                      (force (vl-exprlist-welltyped-p x)))
                  (equal (len (mv-nth 2 ret))
                         (sum-nats (vl-exprlist->finalwidths x)))))
       :flag :list)
@@ -1487,21 +1360,15 @@ expressions have been sized correctly.</p>"
            (defthm l0
              (let ((ret (vl-msb-bitslice-expr x mod ialist warnings)))
                (implies (and (mv-nth 0 ret)
-                             (force (vl-expr-p x))
                              (force (vl-expr-sliceable-p x))
-                             (force (vl-expr-welltyped-p x))
-                             (force (vl-module-p mod))
-                             (force (equal ialist (vl-moditem-alist mod))))
+                             (force (vl-expr-welltyped-p x)))
                         (all-equalp 1 (vl-exprlist->finalwidths (mv-nth 2 ret)))))
              :flag :expr)
            (defthm l1
              (let ((ret (vl-msb-bitslice-exprlist x mod ialist warnings)))
                (implies (and (mv-nth 0 ret)
-                             (force (vl-exprlist-p x))
                              (force (vl-exprlist-sliceable-p x))
-                             (force (vl-exprlist-welltyped-p x))
-                             (force (vl-module-p mod))
-                             (force (equal ialist (vl-moditem-alist mod))))
+                             (force (vl-exprlist-welltyped-p x)))
                         (all-equalp 1 (vl-exprlist->finalwidths (mv-nth 2 ret)))))
              :flag :list)
            :hints(("Goal"
@@ -1513,11 +1380,8 @@ expressions have been sized correctly.</p>"
   (defthm vl-exprlist->finalwidths-of-vl-msb-bitslice-expr
     (let ((ret (vl-msb-bitslice-expr x mod ialist warnings)))
       (implies (and (mv-nth 0 ret)
-                    (force (vl-expr-p x))
                     (force (vl-expr-sliceable-p x))
-                    (force (vl-expr-welltyped-p x))
-                    (force (vl-module-p mod))
-                    (force (equal ialist (vl-moditem-alist mod))))
+                    (force (vl-expr-welltyped-p x)))
                (equal (vl-exprlist->finalwidths (mv-nth 2 ret))
                       (replicate (vl-expr->finalwidth x) 1))))
     :hints(("Goal"
@@ -1527,11 +1391,8 @@ expressions have been sized correctly.</p>"
   (defthm vl-exprlist->finalwidths-of-vl-msb-bitslice-exprlist
     (let ((ret (vl-msb-bitslice-exprlist x mod ialist warnings)))
       (implies (and (mv-nth 0 ret)
-                    (force (vl-exprlist-p x))
                     (force (vl-exprlist-sliceable-p x))
-                    (force (vl-exprlist-welltyped-p x))
-                    (force (vl-module-p mod))
-                    (force (equal ialist (vl-moditem-alist mod))))
+                    (force (vl-exprlist-welltyped-p x)))
                (equal (vl-exprlist->finalwidths (mv-nth 2 ret))
                       (replicate (sum-nats (vl-exprlist->finalwidths x)) 1))))
     :hints(("Goal"
@@ -1548,21 +1409,15 @@ expressions have been sized correctly.</p>"
            (defthm m0
              (let ((ret (vl-msb-bitslice-expr x mod ialist warnings)))
                (implies (and (mv-nth 0 ret)
-                             (force (vl-expr-p x))
                              (force (vl-expr-sliceable-p x))
-                             (force (vl-expr-welltyped-p x))
-                             (force (vl-module-p mod))
-                             (force (equal ialist (vl-moditem-alist mod))))
+                             (force (vl-expr-welltyped-p x)))
                         (all-equalp :vl-unsigned (vl-exprlist->finaltypes (mv-nth 2 ret)))))
              :flag :expr)
            (defthm m1
              (let ((ret (vl-msb-bitslice-exprlist x mod ialist warnings)))
                (implies (and (mv-nth 0 ret)
-                             (force (vl-exprlist-p x))
                              (force (vl-exprlist-sliceable-p x))
-                             (force (vl-exprlist-welltyped-p x))
-                             (force (vl-module-p mod))
-                             (force (equal ialist (vl-moditem-alist mod))))
+                             (force (vl-exprlist-welltyped-p x)))
                         (all-equalp :vl-unsigned (vl-exprlist->finaltypes (mv-nth 2 ret)))))
              :flag :list)
            :hints(("Goal"
@@ -1574,11 +1429,8 @@ expressions have been sized correctly.</p>"
   (defthm vl-exprlist->finaltypes-of-vl-msb-bitslice-expr
     (let ((ret (vl-msb-bitslice-expr x mod ialist warnings)))
       (implies (and (mv-nth 0 ret)
-                    (force (vl-expr-p x))
                     (force (vl-expr-sliceable-p x))
-                    (force (vl-expr-welltyped-p x))
-                    (force (vl-module-p mod))
-                    (force (equal ialist (vl-moditem-alist mod))))
+                    (force (vl-expr-welltyped-p x)))
                (equal (vl-exprlist->finaltypes (mv-nth 2 ret))
                       (replicate (vl-expr->finalwidth x) :vl-unsigned))))
     :hints(("Goal"
@@ -1588,11 +1440,8 @@ expressions have been sized correctly.</p>"
   (defthm vl-exprlist->finaltypes-of-vl-msb-bitslice-exprlist
     (let ((ret (vl-msb-bitslice-exprlist x mod ialist warnings)))
       (implies (and (mv-nth 0 ret)
-                    (force (vl-exprlist-p x))
                     (force (vl-exprlist-sliceable-p x))
-                    (force (vl-exprlist-welltyped-p x))
-                    (force (vl-module-p mod))
-                    (force (equal ialist (vl-moditem-alist mod))))
+                    (force (vl-exprlist-welltyped-p x)))
                (equal (vl-exprlist->finaltypes (mv-nth 2 ret))
                       (replicate (sum-nats (vl-exprlist->finalwidths x)) :vl-unsigned))))
     :hints(("Goal"
@@ -1610,21 +1459,15 @@ expressions have been sized correctly.</p>"
     (defthm vl-exprlist-welltyped-p-of-vl-msb-bitslice-expr
       (let ((ret (vl-msb-bitslice-expr x mod ialist warnings)))
         (implies (and (mv-nth 0 ret)
-                      (force (vl-expr-p x))
                       (force (vl-expr-sliceable-p x))
-                      (force (vl-expr-welltyped-p x))
-                      (force (vl-module-p mod))
-                      (force (equal ialist (vl-moditem-alist mod))))
+                      (force (vl-expr-welltyped-p x)))
                  (vl-exprlist-welltyped-p (mv-nth 2 ret))))
       :flag :expr)
     (defthm vl-exprlist-welltyped-p-of-vl-msb-bitslice-exprlist
       (let ((ret (vl-msb-bitslice-exprlist x mod ialist warnings)))
         (implies (and (mv-nth 0 ret)
-                      (force (vl-exprlist-p x))
                       (force (vl-exprlist-sliceable-p x))
-                      (force (vl-exprlist-welltyped-p x))
-                      (force (vl-module-p mod))
-                      (force (equal ialist (vl-moditem-alist mod))))
+                      (force (vl-exprlist-welltyped-p x)))
                  (vl-exprlist-welltyped-p (mv-nth 2 ret))))
       :flag :list)
     :hints(("Goal"

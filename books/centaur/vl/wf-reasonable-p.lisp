@@ -410,22 +410,29 @@ item.</p>"
       (er hard 'vl-portdecl-and-moduleitem-compatible-p "Impossible case")
       (@wf-assert nil)))))
 
-(defwellformed vl-overlap-compatible-p (names x portdeclalist ialist)
+(defwellformed vl-overlap-compatible-p (names x palist ialist)
+  ;; For some very large modules (post synthesis), we found the overlap checking to be very
+  ;; expensive due to slow lookups.  So, we now optimize this to use fast-alist lookups.
   :parents (reasonable)
   :guard (and (string-listp names)
               (vl-module-p x)
-              (equal portdeclalist (vl-portdecl-alist (vl-module->portdecls x)))
+              (equal palist (vl-portdecl-alist (vl-module->portdecls x)))
               (equal ialist (vl-moditem-alist x))
               (subsetp-equal names (vl-portdecllist->names (vl-module->portdecls x)))
               (subsetp-equal names (vl-module->modnamespace x)))
   :body (if (atom names)
-            (@wf-assert t)
+            (progn$
+             ;; BOZO I hate this style where the aux function frees the fast alists,
+             ;; but for now it's easier to do it this way.
+             (fast-alist-free ialist)
+             (fast-alist-free palist)
+             (@wf-assert t))
           (@wf-progn
            (@wf-call vl-portdecl-and-moduleitem-compatible-p
-                     (vl-fast-find-portdecl (car names) (vl-module->portdecls x)
-                                            portdeclalist)
+                     (vl-fast-find-portdecl (car names) (vl-module->portdecls x) palist)
                      (vl-fast-find-moduleitem (car names) x ialist))
-           (@wf-call vl-overlap-compatible-p (cdr names) x portdeclalist ialist))))
+           (@wf-call vl-overlap-compatible-p (cdr names) x palist ialist))))
+
 
 
 
@@ -654,41 +661,30 @@ item.</p>"
   :guard (vl-module-p x)
   :extra-decls ((xargs :guard-debug t))
   :body
-  (let* ((name          (vl-module->name x))
-         (ports         (vl-module->ports x))
-         (portdecls     (vl-module->portdecls x))
-         (regdecls      (vl-module->regdecls x))
-         (netdecls      (vl-module->netdecls x))
-         (eventdecls    (vl-module->eventdecls x))
-         (modinsts      (vl-module->modinsts x))
-         (gateinsts     (vl-module->gateinsts x))
-         (initials      (vl-module->initials x))
-         (alwayses      (vl-module->alwayses x))
-         (minloc        (vl-module->minloc x))
-         (pdnames       (vl-portdecllist->names portdecls))
-         (pdnames-s     (mergesort pdnames))
-         (namespace     (vl-module->modnamespace x))
-         (namespace-s   (mergesort namespace))
-         (overlap       (intersect pdnames-s namespace-s))
-         (portdeclalist (vl-portdecl-alist portdecls))
-         (ialist        (vl-moditem-alist x)))
-    (declare (ignorable name eventdecls minloc initials alwayses))
+  (b* (((vl-module x) x)
+       (pdnames       (vl-portdecllist->names x.portdecls))
+       (pdnames-s     (mergesort pdnames))
+       (namespace     (vl-module->modnamespace x))
+       (namespace-s   (mergesort namespace))
+       (overlap       (intersect pdnames-s namespace-s))
+       (palist        (vl-portdecl-alist x.portdecls))
+       (ialist        (vl-moditem-alist x)))
     (@wf-progn
-     (@wf-call vl-portlist-reasonable-p ports)
-     (@wf-call vl-portdecllist-reasonable-p portdecls)
+     (@wf-call vl-portlist-reasonable-p x.ports)
+     (@wf-call vl-portdecllist-reasonable-p x.portdecls)
      ;; (@wf-call vl-ports-and-portdecls-compatible-p ports portdecls)
-     (@wf-call vl-netdecllist-reasonable-p netdecls)
-     (@wf-call vl-regdecllist-reasonable-p regdecls)
-     (@wf-note (not eventdecls)
+     (@wf-call vl-netdecllist-reasonable-p x.netdecls)
+     (@wf-call vl-regdecllist-reasonable-p x.regdecls)
+     (@wf-note (not x.eventdecls)
                :vl-eventdecls
                "~l0: module ~s1 contains event declarations."
-               (list minloc name))
-     (@wf-call vl-modinstlist-reasonable-p modinsts)
-     (@wf-call vl-gateinstlist-reasonable-p gateinsts)
-     (@wf-note (not initials)
+               (list x.minloc x.name))
+     (@wf-call vl-modinstlist-reasonable-p x.modinsts)
+     (@wf-call vl-gateinstlist-reasonable-p x.gateinsts)
+     (@wf-note (not x.initials)
                :vl-initial-stmts
                "~l0: module ~s1 contains initial statements."
-               (list minloc name))
+               (list x.minloc x.name))
 
 ; Not really a problem anymore
 ;     (@wf-note (not alwayses)
@@ -701,11 +697,8 @@ item.</p>"
                       :exec (same-lengthp namespace namespace-s))
                  :vl-namespace-error
                  "~l0: ~s1 illegally redefines ~&2."
-                 (list minloc name (duplicated-members namespace)))
-
-     ;; BOZO make a moditem and portdecl alist and use fast versions of
-     ;; find-* in this function
-     (@wf-call vl-overlap-compatible-p overlap x portdeclalist ialist))))
+                 (list x.minloc x.name (duplicated-members namespace)))
+     (@wf-call vl-overlap-compatible-p overlap x palist ialist))))
 
 (defwellformed-list vl-modulelist-reasonable-p (x)
   :parents (reasonable)

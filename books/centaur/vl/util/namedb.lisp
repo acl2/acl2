@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -19,26 +19,94 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "std/strings/top" :dir :system)
-(include-book "string-alists")
-(include-book "nat-alists")
+(include-book "defs")
+(include-book "centaur/fty/deftypes" :dir :system)
+(include-book "centaur/fty/basetypes" :dir :system)
 (local (include-book "arithmetic"))
 
+(defxdoc name-database
+  :parents (utilities)
+  :short "A general utility for generating fresh names."
 
+  :long "<p>A <b>name database</b> allows you to easily and efficiently
+generate good, fresh names that are not being used elsewhere.</p>
+
+<p>Name databases are a general-purpose mechanism that has nothing to do with
+Verilog.  When we want to generate fresh wire names for Verilog modules, we
+usually use a @(see vl-namefactory-p) instead.  Name factories build on top of
+name databases in a way that is specific to Verilog modules, and often allow us
+to avoid constructing the list of all wire names for a module.</p>
+
+<h3>Using Name Databases</h3>
+
+<p>Typically, the user begins by constructing a name database using
+@('(vl-starting-namedb names)'), where @('names') are just a list of the
+names (strings) that are \"in use.\"</p>
+
+<p>Once constructed, name databases must be used in a single-threaded
+discipline.  That is, the functions for generating names actually return @('(mv
+fresh-name db-prime)'), and to ensure that a sequence of generated names are
+unique, one must always use the most recently returned database to generate
+subsequent names.</p>
+
+<p>Two functions are provided for generating names:</p>
+
+<p>@('(vl-namedb-indexed-name prefix db)') produces a name that looks like
+@('prefix_n'), where @('n') is the smallest positive natural number @('n') such
+that the name @('prefix_n') is not in use.</p>
+
+<p>@('(vl-namedb-plain-name name db)') attempts to return @('name') verbatim.
+When this is not possible, a name of the form @('name_n'), a note will be
+printed to standard output and instead we will produce a name with
+@('vl-namedb-indexed-name').</p>
+
+<p>We use these functions for different purposes.  We think that @(see
+vl-namedb-indexed-name) should be used for \"throwaway\" names that don't need
+to be reliable or understandable, such as the names of temporary wires to be
+generated for split-up expressions.  Meanwhile, @(see vl-namedb-plain-name)
+should be used for splitting up instance names or in any other cases where a
+reliable name is desired.</p>
+
+<p>Because name databases make use of fast alists, they should be destroyed
+with @('(vl-free-namedb nf)') when you are done using them.</p>
+
+
+<h3>Freshness Guarantee</h3>
+
+<p>To establish that name databases generate only fresh names, we introduce the
+function @('(vl-namedb-allnames db)').  This function returns a list of all
+names that the name database currently considers to be in use.  We prove:</p>
+
+<ul>
+
+<li>Every name in @('names') is among the @('allnames') of the initial name
+database produced by @('(vl-starting-namedb names).')</li>
+
+<li>The @('fresh-name')s returned by @(see vl-namedb-indexed-name) or @(see
+vl-namedb-plain-name) are not members of the @('allnames') of the input
+database.</li>
+
+<li>The @('allnames') of the resulting @('db-prime') include exactly the
+@('allnames') of the input @('db'), along with the generated
+@('fresh-name').</li>
+
+</ul>
+
+<p>Together, these theorems ensure that, when properly used, the name database
+will only give you fresh names.</p>")
+
+(local (xdoc::set-default-parents name-database))
 
 (define vl-pgenstr ((prefix stringp)
                     (n natp))
-  :parents (vl-namedb-p)
   :short "@(call vl-pgenstr) creates the string \"@('prefix')_@('n')\"."
   :long "<p>We @(see hons-copy) the result because generated names are
 frequently used in fast alists.  See also @(see vl-pgenstr-p) and @(see
 vl-pgenstr->val).</p>"
   (hons-copy (cat prefix "_" (natstr n))))
 
-
 (define vl-pgenstr-p ((prefix stringp)
                       (str stringp))
-  :parents (vl-namedb-p)
   :short "@(call vl-pgenstr-p) recognizes strings of the form
 \"@('prefix')_n\"."
 
@@ -72,10 +140,8 @@ vl-pgenstr->val).</p>"
     :hints(("Goal" :in-theory (enable list-equiv)))))
 
 
-
 (define vl-pgenstr->val ((prefix stringp)
                          (str stringp))
-  :parents (vl-namedb-p)
   :short "@(call vl-pgenstr->val) retrieves @('n') from the string @('str'),
 which must have the form \"@('prefix')_@('n')\"; we return @('n') as a natural
 number."
@@ -104,7 +170,6 @@ number."
 
 (define vl-pgenstr-highest ((prefix stringp)
                             (names string-listp))
-  :parents (vl-namedb-p)
   :short "@(call vl-pgenstr-highest) returns the largest @('n') such that
 \"@('prefix')_n\" occurs in @('names')."
 
@@ -142,28 +207,75 @@ number."
     :hints(("Goal" :in-theory (disable (force))))))
 
 
-(define vl-pgenstr-highest-of-strip-cars ((prefix stringp)
-                                          (modns (and (alistp modns)
-                                                      (vl-string-keys-p modns))))
-  :parents (vl-namedb-p)
-  :short "Fusion of vl-pgenstr-highest and strip-cars, for efficiency."
+
+
+(encapsulate
+  ()
+  (local (in-theory (disable (:type-prescription true-fix)
+                             (:type-prescription true-equiv))))
+
+  (fty::defalist vl-namedb-nameset
+    :key-type stringp
+    :val-type true-p))
+
+(defalist vl-namedb-nameset-p (x)
+  :key (stringp x)
+  :val (true-p x)
+  :keyp-of-nil nil
+  :valp-of-nil nil
+  :already-definedp t)
+
+(defthm string-listp-of-alist-keys-when-vl-namedb-nameset-p
+  (implies (vl-namedb-nameset-p x)
+           (string-listp (alist-keys x)))
+  :hints(("Goal" :induct (len x))))
+
+(defthm vl-namedb-nameset-p-of-make-lookup-alist
+  (implies (string-listp names)
+           (vl-namedb-nameset-p (make-lookup-alist names)))
+  :hints(("Goal" :in-theory (enable make-lookup-alist))))
+
+
+
+(fty::defalist vl-namedb-prefixmap
+  :key-type stringp
+  :val-type natp)
+
+(defalist vl-namedb-prefixmap-p (x)
+  :key (stringp x)
+  :val (natp x)
+  :keyp-of-nil nil
+  :valp-of-nil nil
+  :already-definedp t)
+
+(defthm string-listp-of-alist-keys-when-vl-namedb-prefixmap-p
+  (implies (vl-namedb-prefixmap-p x)
+           (string-listp (alist-keys x)))
+  :hints(("Goal" :induct (len x))))
+
+
+
+
+(define vl-pgenstr-highest-of-alist-keys ((prefix stringp)
+                                          (names  vl-namedb-nameset-p))
+  :short "Fusion of vl-pgenstr-highest and alist-keys, for efficiency."
   :enabled t
   :verify-guards nil
 
   (mbe :logic
-       (vl-pgenstr-highest prefix (strip-cars modns))
+       (vl-pgenstr-highest prefix (alist-keys names))
        :exec
-       (cond ((atom modns)
+       (cond ((atom names)
               0)
-             ((vl-pgenstr-p prefix (caar modns))
-              (max (vl-pgenstr->val prefix (caar modns))
-                   (vl-pgenstr-highest-of-strip-cars prefix (cdr modns))))
+             ((vl-pgenstr-p prefix (caar names))
+              (max (vl-pgenstr->val prefix (caar names))
+                   (vl-pgenstr-highest-of-alist-keys prefix (cdr names))))
              (t
-              (vl-pgenstr-highest-of-strip-cars prefix (cdr modns)))))
+              (vl-pgenstr-highest-of-alist-keys prefix (cdr names)))))
 
   ///
   (local (in-theory (enable vl-pgenstr-highest)))
-  (verify-guards vl-pgenstr-highest-of-strip-cars))
+  (verify-guards vl-pgenstr-highest-of-alist-keys))
 
 
 (defsection vl-prefix-map-correct-p
@@ -171,9 +283,7 @@ number."
   (defund vl-prefix-map-correct-p-aux (domain pmap names)
     ;; Ensure PMAP[KEY] = (VL-PGENSTR-HIGHEST KEY NAMES) forall KEY in DOMAIN.
     (declare (xargs :guard (and (string-listp domain)
-                                (alistp pmap)
-                                (vl-string-keys-p pmap)
-                                (vl-nat-values-p pmap)
+                                (vl-namedb-prefixmap-p pmap)
                                 (string-listp names))))
     (if (atom domain)
         t
@@ -183,11 +293,9 @@ number."
 
   (defund vl-prefix-map-correct-p (pmap names)
     ;; Ensure PMAP[KEY] = (VL-PGENSTR-HIGHEST KEY NAMES) forall KEY bound in PMAP.
-    (declare (xargs :guard (and (alistp pmap)
-                                (vl-string-keys-p pmap)
-                                (vl-nat-values-p pmap)
+    (declare (xargs :guard (and (vl-namedb-prefixmap-p pmap)
                                 (string-listp names))))
-    (vl-prefix-map-correct-p-aux (strip-cars pmap) pmap names))
+    (vl-prefix-map-correct-p-aux (alist-keys pmap) pmap names))
 
   (defthm vl-prefix-map-correct-p-aux-of-atom
     (implies (atom domain)
@@ -219,7 +327,7 @@ number."
                        (equal (cdr x) b)))))
 
   (local (defthm lemma3
-           (implies (not (member-equal key (strip-cars alist)))
+           (implies (not (member-equal key (alist-keys alist)))
                     (not (hons-assoc-equal key alist)))
            :hints(("Goal" :in-theory (enable hons-assoc-equal)))))
 
@@ -239,10 +347,10 @@ number."
             :in-theory (e/d (vl-prefix-map-correct-p)
                             (hons-assoc-equal-when-vl-prefix-map-correct-p-aux))
             :use ((:instance hons-assoc-equal-when-vl-prefix-map-correct-p-aux
-                             (domain (strip-cars pmap))
-                             (pmap pmap)
-                             (names names)
-                             (key prefix))))))
+                   (domain (alist-keys pmap))
+                   (pmap pmap)
+                   (names names)
+                   (key prefix))))))
 
   (defthm vl-prefix-map-correct-p-aux-when-subset
     (implies (and (subsetp-equal x y)
@@ -268,136 +376,104 @@ number."
                             (vl-prefix-map-correct-p-aux-of-hons-shrink-alist
                              vl-prefix-map-correct-p-aux-when-subset))
             :use ((:instance vl-prefix-map-correct-p-aux-of-hons-shrink-alist
-                             (domain (strip-cars pmap)))
+                   (domain (alist-keys pmap)))
                   (:instance vl-prefix-map-correct-p-aux-when-subset
-                             (x (STRIP-CARS (HONS-SHRINK-ALIST PMAP NIL)))
-                             (y (STRIP-CARS PMAP))
-                             (pmap (HONS-SHRINK-ALIST PMAP NIL))))))))
+                   (x (alist-keys (HONS-SHRINK-ALIST PMAP NIL)))
+                   (y (alist-keys PMAP))
+                   (pmap (HONS-SHRINK-ALIST PMAP NIL))))))))
 
 
 
-(defun vl-namedb-okp (names pmap pset)
-  ;; Note: we leave this enabled!
-  (declare (xargs :guard (and (alistp names)
-                              (vl-string-keys-p names)
+(define vl-namedb-pmap-okp ((names vl-namedb-nameset-p)
+                            (pmap  vl-namedb-prefixmap-p))
+  (b* ((names (vl-namedb-nameset-fix names))
+       (pmap  (vl-namedb-prefixmap-fix pmap)))
+    (vl-prefix-map-correct-p pmap (alist-keys names)))
+  ///
+  (defthm vl-namedb-pmap-okp-of-nil
+    (implies (not pmap)
+             (vl-namedb-pmap-okp names pmap)))
+  (deffixequiv vl-namedb-pmap-okp))
 
-                              (alistp pmap)
-                              (vl-string-keys-p pmap)
-                              (vl-nat-values-p pmap)
+(define vl-namedb-pmap-fix ((names vl-namedb-nameset-p)
+                            (pmap  vl-namedb-prefixmap-p))
+  :guard (vl-namedb-pmap-okp names pmap)
+  :returns (pmap-fix (and (vl-namedb-prefixmap-p pmap-fix)
+                          (vl-namedb-pmap-okp names pmap-fix)))
+  :inline t
+  (mbe :logic (b* ((names (vl-namedb-nameset-fix names))
+                   (pmap  (vl-namedb-prefixmap-fix pmap)))
+                (if (vl-namedb-pmap-okp names pmap)
+                    pmap
+                  nil))
+       :exec pmap)
+  :prepwork ((local (in-theory (enable vl-namedb-pmap-okp))))
+  ///
+  (defthm vl-namedb-pmap-fix-when-vl-namedb-pmap-okp
+    (implies (vl-namedb-pmap-okp names pmap)
+             (equal (vl-namedb-pmap-fix names pmap)
+                    (vl-namedb-prefixmap-fix pmap))))
+  (defthm vl-namedb-pmap-okp-of-vl-namedb-pmap-fix
+    (implies (vl-namedb-nameset-p names)
+             (vl-namedb-pmap-okp names
+                                 (vl-namedb-pmap-fix names pmap))))
+  (deffixequiv vl-namedb-pmap-fix))
 
-                              (alistp pset)
-                              (vl-string-keys-p pset))))
-  (and (or names (not pmap))
-       (set-equiv (strip-cars pset) (strip-cars pmap))))
+(define vl-namedb-pset-okp ((pmap  vl-namedb-prefixmap-p)
+                            (pset  vl-namedb-nameset-p))
+  (b* ((pmap (vl-namedb-prefixmap-fix pmap))
+       (pset (vl-namedb-nameset-fix pset)))
+    (set-equiv (alist-keys pset) (alist-keys pmap)))
+  ///
+  (deffixequiv vl-namedb-pset-okp))
 
-(defaggregate vl-namedb
-  (names pmap pset)
+(define vl-namedb-pset-fix ((names vl-namedb-nameset-p)
+                            (pmap  vl-namedb-prefixmap-p)
+                            (pset  vl-namedb-nameset-p))
+  :guard (and (vl-namedb-pmap-okp names pmap)
+              (vl-namedb-pset-okp pmap pset))
+  :returns (pset-fix (and (vl-namedb-nameset-p pset-fix)
+                          (vl-namedb-pset-okp (vl-namedb-pmap-fix names pmap) pset-fix)))
+  :inline t
+  (mbe :logic (b* ((pmap (vl-namedb-pmap-fix names pmap))
+                   (pset (vl-namedb-nameset-fix pset)))
+                (if (vl-namedb-pset-okp pmap pset)
+                    pset
+                  (make-lookup-alist (alist-keys (vl-namedb-prefixmap-fix pmap)))))
+       :exec pset)
+  :prepwork ((local (in-theory (enable vl-namedb-pset-okp))))
+  ///
+  (defthm vl-namedb-pset-fix-when-vl-namedb-pset-okp
+    (implies (and (vl-namedb-pmap-okp names pmap)
+                  (vl-namedb-pset-okp pmap pset))
+             (equal (vl-namedb-pset-fix names pmap pset)
+                    (vl-namedb-nameset-fix pset))))
+
+  (deffixequiv vl-namedb-pset-fix))
+
+
+(defprod vl-namedb
   :tag :vl-namedb
-  :legiblep nil
-  :require ((alistp-of-vl-namedb->names           (alistp names))
-            (vl-string-keys-p-of-vl-namedb->names (vl-string-keys-p names))
+  :layout :tree
+  ((names  vl-namedb-nameset-p)
+   (pmap   vl-namedb-prefixmap-p :reqfix (vl-namedb-pmap-fix names pmap))
+   (pset   vl-namedb-nameset-p   :reqfix (vl-namedb-pset-fix names pmap pset)))
+  :require (and (vl-namedb-pmap-okp names pmap)
+                (vl-namedb-pset-okp pmap pset))
 
-            (alistp-of-vl-namedb->pmap            (alistp pmap))
-            (vl-string-keys-p-of-vl-namedb->pmap  (vl-string-keys-p pmap))
-            (vl-nat-values-p-of-vl-namedb->pmap   (vl-nat-values-p pmap))
+  :short "Name database structure."
 
-            (alistp-of-vl-namedb-pset             (alistp pset))
-            (vl-string-keys-p-of-vl-namedb->pset  (vl-string-keys-p pset))
-
-            (vl-prefix-map-correct-p-when-vl-namedb-p
-             (vl-prefix-map-correct-p pmap (strip-cars names)))
-
-            (vl-namedb-okp-when-vl-namedb-p
-             (vl-namedb-okp names pmap pset))
-            )
-  :parents (utilities)
-
-  :short "Produces fresh names for a module."
-
-  :long "<p>A <b>name db</b> allows you to easily and efficiently generate
-good, fresh names that are not being used elsewhere.</p>
-
-<p>Name DBs are a general-purpose construct that isn't Verilog specific.  When
-we want to generate fresh wire names for Verilog modules, we usually use a
-@(see vl-namefactory-p) instead.  A name factory is specific to Verilog
-modules, and often allows us to avoid constructing the list of all wire names
-for a module.</p>
-
-
-<h3>Using Name DBs</h3>
-
-<p>Typically, the user begins by constructing a name db using
-@('(vl-starting-namedb names)'), where @('names') are just a list of the
-strings that are \"in use.\"</p>
-
-<p>Once constructed, name DBs must be used in a single-threaded discipline.
-That is, the functions for generating names actually return @('(mv fresh-name
-db-prime)'), and to ensure that a sequence of generated names are unique, one
-must always use the most recently returned db to generate subsequent names.</p>
-
-<p>Two functions are provided for generating names:</p>
-
-<p>@('(vl-namedb-indexed-name prefix nf)') produces a name that looks like
-@('prefix_n'), where @('n') is the smallest positive natural number @('n') such
-that the name @('prefix_n') is not in use.</p>
-
-<p>@('(vl-namedb-plain-name name nf)') attempts to return @('name') verbatim.
-When this is not possible, a name of the form @('name_n'), a note will be
-printed to standard output and instead we will produce a name with
-@('vl-namedb-indexed-name').</p>
-
-<p>We use these functions for different purposes.  We think that @(see
-vl-namedb-indexed-name) should be used for \"throwaway\" names that don't need
-to be reliable or understandable, such as the names of temporary wires to be
-generated for split-up expressions.  Meanwhile, @(see vl-namedb-plain-name)
-should be used for splitting up instance names or in any other cases where a
-reliable name is desired.</p>
-
-<p>Because name DBs make use of fast alists, they should be destroyed with
-@('(vl-free-namedb nf)') when you are done using them.</p>
-
-
-<h3>Freshness Guarantee</h3>
-
-<p>To establish that name DBs generate only fresh names, we introduce the
-function @('(vl-namedb-allnames nf)').  This function returns a list of
-all names that the name db currently considers to be in use.  We prove:</p>
-
-<ul>
-
-<li>Every name in @('names') is among the @('allnames') of the initial name db
-produced by @('(vl-starting-namedb names).')</li>
-
-<li>The @('fresh-name')s returned by @(see vl-namedb-indexed-name) or @(see
-vl-namedb-plain-name) are not members of the @('allnames') of the input
-db.</li>
-
-<li>The @('allnames') of the resulting @('db-prime') include exactly the
-@('allnames') of the input @('db'), along with the generated
-@('fresh-name').</li>
-
-</ul>
-
-<p>Together, these theorems ensure that, when properly used, the name db will
-only give you fresh names.</p>
-
-
-<h3>Implementation</h3>
-
-<p>A name db has three fields:</p>
+  :long "<p>A name db has three fields:</p>
 
 <ul> <li>@('names'), a fast alist that associates strings to @('t').</li>
 <li>@('pmap'), a fast alist that associates strings to natural numbers.</li>
 <li>@('pset'), a fast alist that associates strings to @('t').</li> </ul>
 
-<p><u>Invariant B1</u>.  The @('pmap') is empty whenever @('names') is
-empty.</p>
+<p><u>Invariant</u>.  Each @('prefix') bound in @('pmap') is bound to
+@('(vl-pgenstr-highest prefix (alist-keys names))').</p>
 
-<p><u>Invariant B2</u>.  Each @('prefix') bound in @('pmap') is bound to
-@('(vl-pgenstr-highest prefix (strip-cars names))').</p>
-
-<p><u>Invariant C1</u>.  The @('pset') binds exactly those @('prefix')es that
-are bound in @('pmap').</p>
+<p><u>Invariant</u>.  The @('pset') binds exactly those @('prefix')es that are
+bound in @('pmap').</p>
 
 <p>Intuitively, the @('names') represents the set of all names that are
 currently in use.  We use a fast-alist representation so that we can very
@@ -411,147 +487,114 @@ This way, we only need to scan the @('names') once per prefix.</p>
 <p>The @('pset') is really just an optimization that allows us to avoid needing
 to shrink the psets.</p>")
 
-(defthm vl-namedb->pmap-when-no-names
-  (implies (and (not (vl-namedb->names x))
-                (force (vl-namedb-p x)))
-           (not (vl-namedb->pmap x)))
-  :hints(("Goal"
-          :in-theory (disable vl-namedb-okp-when-vl-namedb-p)
-          :use ((:instance vl-namedb-okp-when-vl-namedb-p)))))
-
 (defthm vl-namedb->pset-under-set-equiv
-  (implies (force (vl-namedb-p x))
-           (set-equiv (strip-cars (vl-namedb->pset x))
-                          (strip-cars (vl-namedb->pmap x))))
+  (set-equiv (alist-keys (vl-namedb->pset x))
+             (alist-keys (vl-namedb->pmap x)))
   :hints(("Goal"
-          :in-theory (disable vl-namedb-okp-when-vl-namedb-p)
-          :use ((:instance vl-namedb-okp-when-vl-namedb-p)))))
+          :in-theory (e/d (vl-namedb-pset-okp)
+                          (vl-namedb-requirements))
+          :use ((:instance vl-namedb-requirements)))))
+
+(defthm vl-prefix-map-correct-p-when-vl-namedb-p
+  (vl-prefix-map-correct-p (vl-namedb->pmap x)
+                           (alist-keys (vl-namedb->names x)))
+  :hints(("Goal"
+          :in-theory (e/d (vl-namedb-pmap-okp)
+                          (vl-namedb-requirements))
+          :use ((:instance vl-namedb-requirements)))))
+
 
 (defthm hons-assoc-equal-of-vl-namedb->pmap
   ;; This is better than HONS-ASSOC-EQUAL-WHEN-VL-PREFIX-MAP-CORRECT-P, because
   ;; we avoid the free variable NAMES by explicitly saying to consider the cars
   ;; of NAMES.
-  (implies (and (vl-namedb-p db)
-                (hons-assoc-equal prefix (vl-namedb->pmap db)))
+  (implies (hons-assoc-equal prefix (vl-namedb->pmap db))
            (equal (hons-assoc-equal prefix (vl-namedb->pmap db))
-                  (let ((names (strip-cars (vl-namedb->names db))))
+                  (let ((names (alist-keys (vl-namedb->names db))))
                     (cons prefix (vl-pgenstr-highest prefix names)))))
   :hints(("goal"
           :in-theory (disable hons-assoc-equal-when-vl-prefix-map-correct-p)
           :use ((:instance hons-assoc-equal-when-vl-prefix-map-correct-p
                            (pmap (vl-namedb->pmap db))
-                           (names (strip-cars (vl-namedb->names db))))))))
+                           (names (alist-keys (vl-namedb->names db))))))))
 
 
-
-
-(defsection vl-namedb-allnames
-  :parents (vl-namedb-p)
-
+(define vl-namedb-allnames
   :short "@(call vl-namedb-p) returns a list of all names that are
 considered to be used by the name db."
-
+  ((db vl-namedb-p))
+  :returns (allnames string-listp)
   :long "<p>This function is not particularly efficient, and probably should
 not ordinarily be executed in real programs.  Its main purpose is to establish
 the freshness guarantee for name DBs, described in @(see vl-namedb-p).</p>"
-
-  (defund vl-namedb-allnames (db)
-    (declare (xargs :guard (vl-namedb-p db)
-                    :verify-guards nil))
-    (strip-cars (vl-namedb->names db)))
-
-  (local (in-theory (enable vl-namedb-allnames)))
-
-  (verify-guards vl-namedb-allnames))
+  (alist-keys (vl-namedb->names db))
+  ///
+  (deffixequiv vl-namedb-allnames))
 
 
 
-
-(defsection vl-empty-namedb
-  :parents (vl-namedb-p)
+(define vl-empty-namedb ()
   :short "@(call vl-empty-namedb) creates an empty name db."
-
-  (defund vl-empty-namedb ()
-    (declare (xargs :guard t))
-    (make-vl-namedb :names nil :pmap nil :pset nil))
-
+  :returns (db vl-namedb-p)
+  (make-vl-namedb :names nil :pmap nil :pset nil)
+  ///
   (in-theory (disable (:executable-counterpart vl-empty-namedb)))
-
-  (local (in-theory (enable vl-empty-namedb)))
-
-  (defthm vl-namedb-p-of-vl-empty-namedb
-    (vl-namedb-p (vl-empty-namedb)))
 
   (defthm vl-namedb-allnames-of-vl-empty-namedb
     (equal (vl-namedb-allnames (vl-empty-namedb))
            nil)))
 
 
-
-(defsection vl-starting-namedb
-  :parents (vl-namedb-p)
+(define vl-starting-namedb ((names string-listp))
   :short "@(call vl-starting-namedb) creates a name database that regards
 @('names') as already in use."
-
-  (defund vl-starting-namedb (names)
-    (declare (xargs :guard (string-listp names)))
-    (make-vl-namedb :names (make-lookup-alist names)
-                    :pmap nil
-                    :pset nil))
-
+  :returns (db vl-namedb-p)
+  (make-vl-namedb :names (make-lookup-alist (string-list-fix names))
+                  :pmap nil
+                  :pset nil)
+  ///
   (in-theory (disable (:executable-counterpart vl-starting-namedb)))
-
-  (local (in-theory (enable vl-starting-namedb)))
-
-  (defthm vl-namedb-p-of-vl-starting-namedb
-    (implies (force (string-listp names))
-             (vl-namedb-p (vl-starting-namedb names))))
 
   (defthm vl-namedb-allnames-of-vl-starting-namedb
     (equal (vl-namedb-allnames (vl-starting-namedb names))
-           (list-fix names))
-    :hints(("Goal" :in-theory (enable vl-namedb-allnames)))))
+           (string-list-fix names))
+    :hints(("Goal" :in-theory (enable vl-namedb-allnames))))
+
+  (deffixequiv vl-starting-namedb))
 
 
-
-(defsection vl-namedb-indexed-name
-  :parents (vl-namedb-p)
+(define vl-namedb-indexed-name
   :short "@(call vl-namedb-indexed-name) constructs a fresh name that looks
-like @('prefix_n') for some natural number @('n'), and returns @('(mv
-fresh-name db-prime)')."
+like @('prefix_n') for some natural number @('n')."
+  ((prefix stringp)
+   (db     vl-namedb-p))
+  :returns (mv fresh-name new-db)
+  :verify-guards nil
+  (b* ((prefix (string-fix prefix))
 
-  (defund vl-namedb-indexed-name (prefix db)
-    "Returns (MV FRESH-NAME DB-PRIME)"
-    (declare (xargs :guard (and (stringp prefix)
-                                (vl-namedb-p db))
-                    :verify-guards nil))
-    (b* (
+       ;; Now, look up the highest index associated with the desired name.  If
+       ;; there's an entry in the pmap, we can use it.  Otherwise, we have to
+       ;; scan the namespace.
+       (names   (vl-namedb->names db))
+       (pmap    (vl-namedb->pmap db))
+       (pset    (vl-namedb->pset db))
 
-         ;; Now, look up the highest index associated with the desired name.  If
-         ;; there's an entry in the pmap, we can use it.  Otherwise, we have to
-         ;; scan the namespace.
-         (names   (vl-namedb->names db))
-         (pmap    (vl-namedb->pmap db))
-         (pset    (vl-namedb->pset db))
+       (lookup  (hons-get prefix pmap))
+       (maxidx  (if lookup
+                    (cdr lookup)
+                  (vl-pgenstr-highest-of-alist-keys prefix names)))
+       (newidx  (+ maxidx 1))
+       (newname (vl-pgenstr prefix newidx))
 
-         (lookup  (hons-get prefix pmap))
-         (maxidx  (if lookup
-                      (cdr lookup)
-                    (vl-pgenstr-highest-of-strip-cars prefix names)))
-         (newidx  (+ maxidx 1))
-         (newname (vl-pgenstr prefix newidx))
+       (names   (hons-acons newname t names))
+       (pmap    (hons-acons prefix newidx pmap))
+       (pset    (if lookup
+                    pset
+                  (hons-acons prefix t pset)))
 
-         (names   (hons-acons newname t names))
-         (pmap    (hons-acons prefix newidx pmap))
-         (pset    (if lookup
-                      pset
-                    (hons-acons prefix t pset)))
-
-         (db (change-vl-namedb db :names names :pmap pmap :pset pset)))
-        (mv newname db)))
-
-  (local (in-theory (enable vl-namedb-indexed-name)))
-
+       (db (change-vl-namedb db :names names :pmap pmap :pset pset)))
+    (mv newname db))
+  ///
   (local (defthm lemma
            (implies (and (vl-prefix-map-correct-p-aux domain pmap names)
                          (string-listp domain)
@@ -566,53 +609,54 @@ fresh-name db-prime)')."
 
   (local (defthm lemma2
            (implies (hons-assoc-equal prefix pmap)
-                    (member-equal prefix (strip-cars pmap)))
+                    (member-equal prefix (alist-keys pmap)))
            :hints(("Goal" :in-theory (enable hons-assoc-equal)))))
 
   (local (defthm lemma3
            (implies (and (vl-prefix-map-correct-p pmap names)
-                         (vl-string-keys-p pmap)
+                         (vl-namedb-prefixmap-p pmap)
                          (stringp prefix))
                     (vl-prefix-map-correct-p
                      (cons (cons prefix (+ 1 (vl-pgenstr-highest prefix names))) pmap)
                      (cons (vl-pgenstr prefix (+ 1 (vl-pgenstr-highest prefix names))) names)))
            :hints(("goal" :in-theory (enable vl-prefix-map-correct-p)))))
 
-  (verify-guards vl-namedb-indexed-name)
+  (encapsulate
+    ()
+    (local (in-theory (enable vl-namedb-pset-okp
+                              vl-namedb-pmap-okp)))
+    (verify-guards vl-namedb-indexed-name))
 
   (defthm stringp-of-vl-namedb-indexed-name
     (stringp (mv-nth 0 (vl-namedb-indexed-name prefix db)))
     :rule-classes :type-prescription)
 
   (defthm vl-namedb-p-of-vl-namedb-indexed-name
-    (implies (and (force (vl-namedb-p db))
-                  (force (stringp prefix)))
-             (vl-namedb-p (mv-nth 1 (vl-namedb-indexed-name prefix db)))))
+    (vl-namedb-p (mv-nth 1 (vl-namedb-indexed-name prefix db)))
+    :hints(("Goal" :in-theory (enable vl-namedb-pset-okp
+                                      vl-namedb-pmap-okp))))
 
   (defthm vl-namedb-allnames-of-vl-namedb-indexed-name
-    (implies (force (vl-namedb-p db))
-             (equal (vl-namedb-allnames
-                     (mv-nth 1 (vl-namedb-indexed-name prefix db)))
-                    (cons
-                     (mv-nth 0 (vl-namedb-indexed-name prefix db))
-                     (vl-namedb-allnames db))))
+    (equal (vl-namedb-allnames (mv-nth 1 (vl-namedb-indexed-name prefix db)))
+           (cons (mv-nth 0 (vl-namedb-indexed-name prefix db))
+                 (vl-namedb-allnames db)))
     :hints(("Goal" :in-theory (enable vl-namedb-allnames))))
 
   (defthm vl-namedb->names-of-vl-namedb-indexed-name
     (vl-namedb->names (mv-nth 1 (vl-namedb-indexed-name prefix db))))
 
-  (defthm vl-namedb-indexed-name-is-fresh
-    (implies (and (force (stringp prefix))
-                  (force (vl-namedb-p db)))
-             (not (member-equal
-                   (mv-nth 0 (vl-namedb-indexed-name prefix db))
-                   (vl-namedb-allnames db))))
-    :hints(("Goal" :in-theory (enable vl-namedb-allnames)))))
+  (local (in-theory (disable ACL2::ALIST-KEYS-MEMBER-HONS-ASSOC-EQUAL)))
 
+  (defthm vl-namedb-indexed-name-is-fresh
+    (b* (((mv fresh-name ?new-db)
+          (vl-namedb-indexed-name prefix db)))
+      (not (member-equal fresh-name (vl-namedb-allnames db))))
+    :hints(("Goal" :in-theory (enable vl-namedb-allnames))))
+
+  (deffixequiv vl-namedb-indexed-name))
 
 
 (defsection vl-unlike-any-prefix-p
-  :parents (vl-namedb-p)
   :short "@(call vl-unlike-any-prefix-p) determines whether for all @('p') in
 @('prefixes'), @('(vl-pgenstr-p p name)') is false."
 
@@ -673,7 +717,7 @@ matches a current prefix.</p>"
 
    (local (defthm lemma2
             (implies (and (hons-assoc-equal key pset)
-                          (vl-unlike-any-prefix-p name (strip-cars pset)))
+                          (vl-unlike-any-prefix-p name (alist-keys pset)))
                      (equal (vl-pgenstr-highest key (cons name names))
                             (vl-pgenstr-highest key names)))
             :hints(("Goal" :in-theory (enable hons-assoc-equal)))))
@@ -686,190 +730,158 @@ matches a current prefix.</p>"
 
    (defthm vl-prefix-map-correct-p-aux-when-vl-unlike-any-prefix-p
      (implies (and (vl-prefix-map-correct-p-aux domain pmap names)
-                   (vl-unlike-any-prefix-p name (strip-cars pmap)))
+                   (vl-unlike-any-prefix-p name (alist-keys pmap)))
               (vl-prefix-map-correct-p-aux domain pmap (cons name names)))
      :hints(("Goal" :in-theory (enable vl-prefix-map-correct-p-aux)))))
 
   (defthm vl-prefix-map-correct-p-when-vl-unlike-any-prefix-p
     (implies (and (vl-prefix-map-correct-p pset names)
-                  (vl-unlike-any-prefix-p name (strip-cars pset)))
+                  (vl-unlike-any-prefix-p name (alist-keys pset)))
              (vl-prefix-map-correct-p pset (cons name names)))
     :hints(("Goal" :in-theory (enable vl-prefix-map-correct-p)))))
 
 
 
-(defun vl-unlike-any-prefix-p-of-strip-cars (name pmap)
-  (declare (xargs :guard (and (stringp name)
-                              (alistp pmap)
-                              (vl-string-keys-p pmap))
-                  :verify-guards nil))
+(define vl-unlike-any-prefix-p-of-alist-keys ((name stringp)
+                                              (pset vl-namedb-nameset-p))
+  :enabled t
   (mbe :logic
-       (vl-unlike-any-prefix-p name (strip-cars pmap))
+       (vl-unlike-any-prefix-p name (alist-keys pset))
        :exec
-       (or (atom pmap)
-           (and (not (vl-pgenstr-p (caar pmap) name))
-                (vl-unlike-any-prefix-p-of-strip-cars name (cdr pmap))))))
-
-(verify-guards vl-unlike-any-prefix-p-of-strip-cars
-               ;; Again, can't give this directly as a :guard-hints...  stupid,
-               ;; stupid.
-               :hints(("Goal" :in-theory (enable vl-unlike-any-prefix-p))))
+       (or (atom pset)
+           (and (not (vl-pgenstr-p (caar pset) name))
+                (vl-unlike-any-prefix-p-of-alist-keys name (cdr pset))))))
 
 
+(define vl-namedb-plain-name
+  :short "Safely try to generate a particular name."
+  ((name stringp     "The desired name to use, if available.")
+   (db   vl-namedb-p "The name database."))
+  :returns
+  (mv (fresh-name stringp :rule-classes :type-prescription
+                  "When possible this is just @('name').  When @('name') is
+                   already in use, we instead produce, e.g., @('name_1'),
+                   @('name_2'), or similar.")
+      (new-db vl-namedb-p
+              "Extended name database with @('fresh-name') being marked as
+               used."
+              :hyp (vl-namedb-p db)))
+  :prepwork((local (in-theory (enable vl-namedb-pmap-okp))))
 
-(defsection vl-namedb-plain-name
-  :parents (vl-namedb-p)
-  :short "@(call vl-namedb-plain-name) returns @('(mv fresh-name db-prime)').
-When possible, @('fresh-name') is just @('name').  When this is not possible, a
-note is printed and @('fresh-name') looks like @('name_n') instead."
+  (b* ((name    (string-fix name))
+       (names   (vl-namedb->names db))
+       (pset    (vl-namedb->pset db))
 
-  (defund vl-namedb-plain-name (name db)
-    "Returns (MV FRESH-NAME DB-PRIME)"
-    (declare (xargs :guard (and (stringp name)
-                                (vl-namedb-p db))
-                    :verify-guards nil))
-    (b* ((name    (string-fix name))
-         (names   (vl-namedb->names db))
-         (pset    (vl-namedb->pset db))
+       ((when (hons-get name names))
+        (mv-let (fresh-name db)
+          (vl-namedb-indexed-name name db)
+          (prog2$
+           (cw "; Name db note: ~x0 is not available; made ~x1 instead.~%"
+               name fresh-name)
+           (mv fresh-name db))))
 
-         ((when (hons-get name names))
-          (mv-let (fresh-name db)
-                  (vl-namedb-indexed-name name db)
-                  (prog2$
-                   (cw "; Name db note: ~x0 is not available; made ~x1 instead.~%"
-                       name fresh-name)
-                   (mv fresh-name db))))
+       ((unless (vl-unlike-any-prefix-p-of-alist-keys name pset))
+        (mv-let (fresh-name db)
+          (vl-namedb-indexed-name name db)
+          (prog2$
+           (cw "; Name db note: ~x0 is like an existing prefix; made ~x1 instead.~%"
+               name fresh-name)
+           (mv fresh-name db))))
 
-         ((unless (vl-unlike-any-prefix-p-of-strip-cars name pset))
-          (mv-let (fresh-name db)
-                  (vl-namedb-indexed-name name db)
-                  (prog2$
-                   (cw "; Name db note: ~x0 is like an existing prefix; made ~x1 instead.~%"
-                       name fresh-name)
-                   (mv fresh-name db))))
+       (names   (hons-acons name t names))
+       (db (change-vl-namedb db :names names)))
+    (mv name db))
+  ///
+  (encapsulate
+    ()
+    (local (defthm lemma
+             ;; Ugh, kind of ugly, but not too bad really.  This is just addressing
+             ;; the particular case that doesn't default to indexed name generation
+             (implies (and (not (hons-assoc-equal name (vl-namedb->names db)))
+                           (vl-unlike-any-prefix-p name (alist-keys (vl-namedb->pmap db))))
+                      (equal
+                       (vl-namedb-allnames (vl-namedb (cons (cons name t) (vl-namedb->names db))
+                                                      (vl-namedb->pmap db)
+                                                      (vl-namedb->pset db)))
+                       (cons (str-fix name) (vl-namedb-allnames db))))
+             :hints(("Goal" :in-theory (enable vl-namedb-allnames)))))
 
-         (names   (hons-acons name t names))
-         (db (change-vl-namedb db :names names)))
-        (mv name db)))
+    (defthm vl-namedb-allnames-of-vl-namedb-plain-name
+      (b* (((mv fresh-name new-db) (vl-namedb-plain-name name db)))
+        (equal (vl-namedb-allnames new-db)
+               (cons fresh-name
+                     (vl-namedb-allnames db))))
+      :hints(("Goal" :in-theory (disable ACL2::CONS-OF-STR-FIX-K-UNDER-VL-NAMEDB-NAMESET-EQUIV))))
 
-  (local (in-theory (enable vl-namedb-plain-name)))
-
-  (verify-guards vl-namedb-plain-name)
-
-  (defthm stringp-of-vl-namedb-plain-name
-    (stringp (mv-nth 0 (vl-namedb-plain-name name db)))
-    :hints(("Goal" :in-theory (disable vl-namedb->pset-under-set-equiv)))
-    :rule-classes :type-prescription)
-
-  (defthm vl-namedb-p-of-vl-namedb-plain-name
-    (implies (and (force (vl-namedb-p db))
-                  (force (stringp name)))
-             (vl-namedb-p (mv-nth 1 (vl-namedb-plain-name name db)))))
+    (defthm vl-namedb->names-of-vl-namedb-plain-name
+      (vl-namedb->names (mv-nth 1 (vl-namedb-plain-name name db)))))
 
   (encapsulate
-   ()
-   (local (defthm lemma
-            ;; Ugh, kind of ugly, but not too bad really.  This is just addressing
-            ;; the particular case that doesn't default to indexed name generation
-            (IMPLIES
-             (AND
-              (VL-NAMEDB-P DB)
-              (NOT
-               (HONS-ASSOC-EQUAL
-                NAME
-                (VL-NAMEDB->NAMES DB)))
-              (VL-UNLIKE-ANY-PREFIX-P
-               NAME
-               (STRIP-CARS
-                (VL-NAMEDB->PMAP DB))))
-             (EQUAL
-              (VL-NAMEDB-ALLNAMES
-               (VL-NAMEDB
-                (CONS (CONS NAME T)
-                      (VL-NAMEDB->NAMES DB))
-                (VL-NAMEDB->PMAP DB)
-                (VL-NAMEDB->PSET DB)))
-              (CONS NAME (VL-NAMEDB-ALLNAMES DB))))
-            :hints(("Goal" :in-theory (enable vl-namedb-allnames)))))
+    ()
+    (local (defthm crock
+             (implies (alistp alist)
+                      (iff (member-equal prefix (alist-keys alist))
+                           (hons-assoc-equal prefix alist)))
+             :hints(("Goal" :in-theory (enable hons-assoc-equal)))))
 
-   (defthm vl-namedb-allnames-of-vl-namedb-plain-name
-     (implies (force (vl-namedb-p db))
-              (equal (vl-namedb-allnames
-                      (mv-nth 1 (vl-namedb-plain-name name db)))
-                     (cons
-                      (mv-nth 0 (vl-namedb-plain-name name db))
-                      (vl-namedb-allnames db))))))
+    (local (defthm lemma
+             (implies (and (not (hons-assoc-equal name (vl-namedb->names db)))
+                           (vl-unlike-any-prefix-p name (alist-keys (vl-namedb->pmap db))))
+                      (not (member-equal name (vl-namedb-allnames db))))
+             :hints(("Goal" :in-theory (enable vl-namedb-allnames)))))
 
+    (defthm vl-namedb-plain-name-is-fresh
+      (not (member-equal (mv-nth 0 (vl-namedb-plain-name name db))
+                         (vl-namedb-allnames db)))
+      :hints((and stable-under-simplificationp
+                  '(:in-theory (disable vl-namedb-indexed-name-is-fresh)
+                    :use ((:instance vl-namedb-indexed-name-is-fresh
+                           (prefix name))))))))
 
-  (defthm vl-namedb->names-of-vl-namedb-plain-name
-    (vl-namedb->names (mv-nth 1 (vl-namedb-plain-name name db)))
-    :hints(("Goal" :in-theory (disable (force)))))
+  (local (defthm crock
+           ;; bozo gross....
+           (implies (not (stringp name))
+                    (equal (VL-NAMEDB-INDEXED-NAME NAME DB)
+                           (VL-NAMEDB-INDEXED-NAME "" db)))
+           :hints(("Goal"
+                   :in-theory (e/d (streqv) (vl-namedb-indexed-name-streqv-congruence-on-prefix))
+                   :use ((:instance vl-namedb-indexed-name-streqv-congruence-on-prefix
+                          (prefix name)
+                          (prefix-equiv "")))))))
+
+  (deffixequiv vl-namedb-plain-name))
 
 
-  (encapsulate
-   ()
-   (local (defthm crock
-            (implies (alistp alist)
-                     (iff (member-equal prefix (strip-cars alist))
-                          (hons-assoc-equal prefix alist)))
-            :hints(("Goal" :in-theory (enable hons-assoc-equal)))))
+(define vl-namedb-plain-name-quiet
+  :short "Same as @(see vl-namedb-plain-name), but doesn't print messages when
+names aren't available."
+  ((name stringp)
+   (db   vl-namedb-p))
+  :returns (mv fresh-name new-db)
+  :enabled t
+  :guard-hints(("Goal" :in-theory (enable vl-namedb-plain-name
+                                          vl-namedb-pmap-okp)))
+  (mbe :logic (vl-namedb-plain-name name db)
+       :exec
+       (b* ((names   (vl-namedb->names db))
+            (pset    (vl-namedb->pset db))
 
-   (local (defthm lemma
-            (IMPLIES
-             (AND
-              (STRINGP NAME)
-              (VL-NAMEDB-P DB)
-              (NOT
-               (HONS-ASSOC-EQUAL
-                NAME
-                (VL-NAMEDB->NAMES DB)))
-              (VL-UNLIKE-ANY-PREFIX-P
-               NAME
-               (STRIP-CARS
-                (VL-NAMEDB->PMAP DB))))
-             (NOT (MEMBER-EQUAL NAME
-                                (VL-NAMEDB-ALLNAMES DB))))
-            :hints(("Goal" :in-theory (enable vl-namedb-allnames)))))
+            ((when (hons-get name names))
+             (mv-let (fresh db)
+               (vl-namedb-indexed-name name db)
+               (mv fresh db)))
 
-   (defthm vl-namedb-plain-name-is-fresh
-     (implies (and (force (stringp name))
-                   (force (vl-namedb-p db)))
-              (not (member-equal
-                    (mv-nth 0 (vl-namedb-plain-name name db))
-                    (vl-namedb-allnames db))))
-     :hints((and stable-under-simplificationp
-                 '(:in-theory (disable vl-namedb-indexed-name-is-fresh)
-                  :use ((:instance vl-namedb-indexed-name-is-fresh
-                                   (prefix name)))))))))
+            ((unless (vl-unlike-any-prefix-p-of-alist-keys name pset))
+             (mv-let (fresh db)
+               (vl-namedb-indexed-name name db)
+               (mv fresh db)))
+
+            (names   (hons-acons name t names))
+            (db (change-vl-namedb db :names names)))
+         (mv name db))))
 
 
-(defun vl-namedb-plain-name-quiet (name db)
-    "Returns (MV FRESH-NAME DB-PRIME)"
-    (declare (xargs :guard (and (stringp name)
-                                (vl-namedb-p db))
-                    :guard-hints(("Goal" :in-theory (enable vl-namedb-plain-name)))))
-    (mbe :logic (vl-namedb-plain-name name db)
-         :exec
-         (b* ((names   (vl-namedb->names db))
-              (pset    (vl-namedb->pset db))
-
-              ((when (hons-get name names))
-               (mv-let (fresh db)
-                 (vl-namedb-indexed-name name db)
-                 (mv fresh db)))
-
-              ((unless (vl-unlike-any-prefix-p-of-strip-cars name pset))
-               (mv-let (fresh db)
-                 (vl-namedb-indexed-name name db)
-                 (mv fresh db)))
-
-              (names   (hons-acons name t names))
-              (db (change-vl-namedb db :names names)))
-           (mv name db))))
-
-
-(defsection vl-free-namedb
-  :parents (vl-namedb-p)
+(define vl-free-namedb ((db vl-namedb-p))
   :short "@(call vl-free-namedb) frees the fast alists associated with a name
 db and returns @('nil')."
   :long "<p>The name db should never be used after this function is called,
@@ -877,67 +889,40 @@ since doing so will result in fast-alist discipline failures.</p>
 
 <p>Note that we leave this function enabled.</p>"
 
-  (defun vl-free-namedb (db)
-    (declare (xargs :guard (vl-namedb-p db)))
-    (progn$ (fast-alist-free (vl-namedb->names db))
-            (fast-alist-free (vl-namedb->pmap db))
-            (fast-alist-free (vl-namedb->pset db))
-            nil)))
+  (progn$ (fast-alist-free (vl-namedb->names db))
+          (fast-alist-free (vl-namedb->pmap db))
+          (fast-alist-free (vl-namedb->pset db))
+          nil))
 
 
-
-(defsection vl-namedb-plain-names
-  :parents (vl-namedb-p)
+(define vl-namedb-plain-names
   :short "Generate a list of fresh names."
-
-  :long "<p>@(call vl-namedb-plain-names) returns @('(mv fresh-names
-db-prime)').</p>
-
-<p>When possible, @('fresh-names') are just @('names').  When this is not
-possible due to name collisions, some of the @('fresh_names') may have
+  ((names string-listp)
+   (db    vl-namedb-p))
+  :returns (mv (fresh-names string-listp)
+               (new-db vl-namedb-p))
+  :long "<p>When possible, @('fresh-names') are just @('names').  When this is
+not possible due to name collisions, some of the @('fresh_names') may have
 additional indexes as in @(see vl-namedb-indexed-name), and notes may be
 printed.</p>"
 
-  (defund vl-namedb-plain-names (names db)
-    "Returns (MV NAMES' DB')"
-    (declare (xargs :guard (and (string-listp names)
-                                (vl-namedb-p db))))
-    (b* (((when (atom names))
-          (mv nil db))
-         ((mv name1 db)
-          (vl-namedb-plain-name (car names) db))
-         ((mv rest db)
-          (vl-namedb-plain-names (cdr names) db)))
-        (mv (cons name1 rest) db)))
-
-  (local (in-theory (enable vl-namedb-plain-names)))
-
-  (defthm string-listp-of-vl-namedb-plain-names
-    (implies (force (string-listp names))
-             (string-listp (mv-nth 0 (vl-namedb-plain-names names db)))))
-
-  (defthm vl-namedb-p-of-vl-namedb-plain-names
-    (implies (and (force (string-listp names))
-                  (force (vl-namedb-p db)))
-             (vl-namedb-p (mv-nth 1 (vl-namedb-plain-names names db)))))
-
+  (b* (((when (atom names))
+        (mv nil (vl-namedb-fix db)))
+       ((mv name1 db)
+        (vl-namedb-plain-name (car names) db))
+       ((mv rest db)
+        (vl-namedb-plain-names (cdr names) db)))
+    (mv (cons name1 rest) db))
+  ///
   (defthm vl-namedb-plain-names-are-fresh
-    (implies (and (member-equal a (vl-namedb-allnames db))
-                  (force (string-listp names))
-                  (force (vl-namedb-p db)))
-             (not (member-equal a (mv-nth 0 (vl-namedb-plain-names names
-                                                                   db))))))
+    (implies (member-equal a (vl-namedb-allnames db))
+             (not (member-equal a (mv-nth 0 (vl-namedb-plain-names names db))))))
 
   (defthm vl-namedb-allnames-of-vl-namedb-plain-names
-    (implies (and (force (vl-namedb-p db))
-                  (force (string-listp names)))
-             (equal (vl-namedb-allnames
-                     (mv-nth 1 (vl-namedb-plain-names names db)))
-                    (revappend
-                     (mv-nth 0 (vl-namedb-plain-names names db))
-                     (vl-namedb-allnames db))))))
+    (equal (vl-namedb-allnames (mv-nth 1 (vl-namedb-plain-names names db)))
+           (revappend (mv-nth 0 (vl-namedb-plain-names names db))
+                      (vl-namedb-allnames db))))
 
-
-
+  (deffixequiv vl-namedb-plain-names))
 
 

@@ -24,6 +24,7 @@
 (include-book "../mlib/stmt-tools")
 (local (include-book "../util/arithmetic"))
 (local (include-book "../util/osets"))
+(local (std::add-default-post-define-hook :fix))
 
 (defxdoc weirdint-elim
   :parents (transforms)
@@ -63,12 +64,12 @@ of Z muxes.</p>")
   :short "Translate MSB-first bits from a weirdint into expressions, which
 will become the arguments to a concatenation."
   ((bits vl-bitlist-p))
-  :returns (exprs vl-exprlist-p :hyp :fguard
+  :returns (exprs vl-exprlist-p
                   "Any 0 bits become 1'b0, 1 bits become 1'b1, Z bits
                    become vl-z-wire, and X bits become vl-x-wire.")
   (if (atom bits)
       nil
-    (cons (case (car bits)
+    (cons (case (vl-bit-fix (car bits))
             (:vl-0val |*sized-1'b0*|)
             (:vl-1val |*sized-1'b1*|)
             (:vl-xval *vl-x-wire-expr*)
@@ -79,20 +80,21 @@ will become the arguments to a concatenation."
   ((x        vl-weirdint-p)
    (warnings vl-warninglist-p))
    :returns (mv (warnings vl-warninglist-p)
-                (concat vl-expr-p :hyp (force (vl-weirdint-p x))))
-   (b* ((width (vl-weirdint->origwidth x))
-        (type  (vl-weirdint->origtype x))
-        (bits  (vl-weirdint->bits x))
-        ((when (eq type :vl-signed))
+                (concat vl-expr-p))
+   (b* ((x (vl-weirdint-fix x))
+        ((vl-weirdint x) x)
+        ((when (eq x.origtype :vl-signed))
          (mv (fatal :type :vl-unsupported
                     :msg "Don't want to think about signed weirdints, but found ~a0."
                     :args (list x))
              ;; Build an equivalent expr to use as the default value
-             (make-vl-atom :guts x :finalwidth width :finaltype :vl-signed))))
+             (make-vl-atom :guts x
+                           :finalwidth x.origwidth
+                           :finaltype :vl-signed))))
      (mv (ok)
          (make-vl-nonatom :op :vl-concat
-                          :args (vl-weirdint-bits-to-exprs bits)
-                          :finalwidth width
+                          :args (vl-weirdint-bits-to-exprs x.bits)
+                          :finalwidth x.origwidth
                           :finaltype :vl-unsigned))))
 
 (defines vl-expr-weirdint-elim
@@ -101,11 +103,12 @@ will become the arguments to a concatenation."
                                  (warnings vl-warninglist-p))
     :returns (mv (warnings vl-warninglist-p)
                  (changedp booleanp :rule-classes :type-prescription)
-                 (new-x vl-expr-p :hyp (force (vl-expr-p x))))
+                 (new-x vl-expr-p))
     :verify-guards nil
-    :measure (two-nats-measure (acl2-count x) 1)
+    :measure (vl-expr-count x)
     :flag :expr
-    (b* (((when (vl-fast-atom-p x))
+    (b* ((x (vl-expr-fix x))
+         ((when (vl-fast-atom-p x))
           (b* (((unless (vl-fast-weirdint-p (vl-atom->guts x)))
                 ;; Nothing needs to be changed.
                 (mv (ok) nil x))
@@ -136,9 +139,8 @@ will become the arguments to a concatenation."
     :returns (mv (warnings vl-warninglist-p)
                  (changedp booleanp :rule-classes :type-prescription)
                  (new-x (and (vl-exprlist-p new-x)
-                             (equal (len new-x) (len x)))
-                        :hyp (force (vl-exprlist-p x))))
-    :measure (two-nats-measure (acl2-count x) 0)
+                             (equal (len new-x) (len x)))))
+    :measure (vl-exprlist-count x)
     :flag :list
     (b* (((when (atom x))
           (mv (ok) nil nil))
@@ -149,107 +151,112 @@ will become the arguments to a concatenation."
          (changedp (or car-changedp cdr-changedp))
          (x-prime  (if changedp
                        (cons car-prime cdr-prime)
-                     x)))
+                     (vl-exprlist-fix x))))
       (mv warnings changedp x-prime)))
   ///
-  (verify-guards vl-expr-weirdint-elim))
+  (verify-guards vl-expr-weirdint-elim)
+  (deffixequiv-mutual vl-expr-weirdint-elim))
 
-(defmacro def-vl-weirdint-elim (name &key type body)
-  `(define ,name ((x ,type)
+(defmacro def-vl-weirdint-elim (name &key body)
+  (b* ((mksym-package-symbol (pkg-witness "VL"))
+       (fn   (mksym name '-weirdint-elim))
+       (type (mksym name '-p))
+       (fix  (mksym name '-fix)))
+  `(define ,fn ((x ,type)
                   (warnings vl-warninglist-p))
      :returns (mv (warnings vl-warninglist-p)
                   (changedp booleanp :rule-classes :type-prescription)
-                  (x-prime ,type :hyp (force (,type x))))
-      ,body))
+                  (x-prime ,type))
+     (b* ((x (,fix x)))
+       ,body))))
 
-(defmacro def-vl-weirdint-elim-list (name &key type element)
-  `(define ,name ((x ,type)
-                  (warnings vl-warninglist-p))
-     :returns (mv (warnings vl-warninglist-p)
-                  (changedp booleanp :rule-classes :type-prescription)
-                  (new-x ,type :hyp (,type x)))
-     (b* (((when (atom x))
-           (mv (ok) nil nil))
-          ((mv warnings car-changedp car-prime) (,element (car x) warnings))
-          ((mv warnings cdr-changedp cdr-prime) (,name (cdr x) warnings))
-          (changedp (or car-changedp cdr-changedp))
-          (x-prime  (if changedp (cons car-prime cdr-prime) x)))
-       (mv warnings changedp x-prime))))
 
-(def-vl-weirdint-elim vl-maybe-expr-weirdint-elim
-  :type vl-maybe-expr-p
+(defmacro def-vl-weirdint-elim-list (name &key element)
+  (b* ((mksym-package-symbol (pkg-witness "VL"))
+       (fn      (mksym name '-weirdint-elim))
+       (elem-fn (mksym element '-weirdint-elim))
+       (type    (mksym name '-p))
+       (fix     (mksym name '-fix)))
+    `(define ,fn ((x ,type)
+                    (warnings vl-warninglist-p))
+       :returns (mv (warnings vl-warninglist-p)
+                    (changedp booleanp :rule-classes :type-prescription)
+                    (new-x ,type))
+       (b* (((when (atom x))
+             (mv (ok) nil nil))
+            ((mv warnings car-changedp car-prime) (,elem-fn (car x) warnings))
+            ((mv warnings cdr-changedp cdr-prime) (,fn (cdr x) warnings))
+            (changedp (or car-changedp cdr-changedp))
+            (x-prime  (if changedp
+                          (cons car-prime cdr-prime)
+                        (,fix x))))
+         (mv warnings changedp x-prime)))))
+
+(def-vl-weirdint-elim vl-maybe-expr
   :body (if (not x)
             (mv (ok) nil nil)
           (vl-expr-weirdint-elim x warnings)))
 
-(def-vl-weirdint-elim vl-assign-weirdint-elim
-  :type vl-assign-p
-  :body (b* (((mv warnings lvalue-changedp lvalue-prime)
-              (vl-expr-weirdint-elim (vl-assign->lvalue x) warnings))
-             ((mv warnings expr-changedp expr-prime)
-              (vl-expr-weirdint-elim (vl-assign->expr x) warnings))
-             (changedp (or lvalue-changedp expr-changedp))
-             (x-prime  (if changedp
-                           (change-vl-assign x
-                                             :lvalue lvalue-prime
-                                             :expr expr-prime)
-                         x)))
-          (mv warnings changedp x-prime)))
+(def-vl-weirdint-elim vl-assign
+  :body
+  (b* (((vl-assign x) x)
+       ((mv warnings lvalue-changedp lvalue) (vl-expr-weirdint-elim x.lvalue warnings))
+       ((mv warnings expr-changedp expr)     (vl-expr-weirdint-elim x.expr warnings))
+       (changedp (or lvalue-changedp expr-changedp))
+       (x-prime  (if changedp
+                     (change-vl-assign x
+                                       :lvalue lvalue
+                                       :expr expr)
+                   x)))
+    (mv warnings changedp x-prime)))
 
-(def-vl-weirdint-elim-list vl-assignlist-weirdint-elim
-  :type vl-assignlist-p
-  :element vl-assign-weirdint-elim)
+(def-vl-weirdint-elim-list vl-assignlist :element vl-assign)
 
-(def-vl-weirdint-elim vl-plainarg-weirdint-elim
-  :type vl-plainarg-p
-  :body (b* ((expr (vl-plainarg->expr x))
-             ((unless expr)
-              (mv (ok) nil x))
-             ((mv warnings expr-changedp expr-prime)
-              (vl-expr-weirdint-elim expr warnings))
-             (changedp expr-changedp)
-             (x-prime  (if changedp
-                           (change-vl-plainarg x :expr expr-prime)
-                         x)))
-          (mv warnings changedp x-prime)))
+(def-vl-weirdint-elim vl-plainarg
+  :body
+  (b* (((vl-plainarg x) x)
+       ((unless x.expr)
+        (mv (ok) nil x))
+       ((mv warnings expr-changedp expr-prime) (vl-expr-weirdint-elim x.expr warnings))
+       (changedp expr-changedp)
+       (x-prime  (if changedp
+                     (change-vl-plainarg x :expr expr-prime)
+                   x)))
+    (mv warnings changedp x-prime)))
 
-(def-vl-weirdint-elim-list vl-plainarglist-weirdint-elim
-  :type vl-plainarglist-p
-  :element vl-plainarg-weirdint-elim)
+(def-vl-weirdint-elim-list vl-plainarglist :element vl-plainarg)
 
-(def-vl-weirdint-elim vl-namedarg-weirdint-elim
-  :type vl-namedarg-p
-  :body (b* ((expr (vl-namedarg->expr x))
-             ((unless expr)
-              (mv (ok) nil x))
-             ((mv warnings expr-changedp expr-prime)
-              (vl-expr-weirdint-elim expr warnings))
-             (changedp expr-changedp)
-             (x-prime  (if changedp
-                           (change-vl-namedarg x :expr expr-prime)
-                         x)))
-          (mv warnings changedp x-prime)))
+(def-vl-weirdint-elim vl-namedarg
+  :body
+  (b* (((vl-namedarg x) x)
+       ((unless x.expr)
+        (mv (ok) nil x))
+       ((mv warnings expr-changedp expr-prime) (vl-expr-weirdint-elim x.expr warnings))
+       (changedp expr-changedp)
+       (x-prime  (if changedp
+                     (change-vl-namedarg x :expr expr-prime)
+                   x)))
+    (mv warnings changedp x-prime)))
 
-(def-vl-weirdint-elim-list vl-namedarglist-weirdint-elim
-  :type vl-namedarglist-p
-  :element vl-namedarg-weirdint-elim)
+(def-vl-weirdint-elim-list vl-namedarglist :element vl-namedarg)
 
-(def-vl-weirdint-elim vl-arguments-weirdint-elim
-  :type vl-arguments-p
-  :body (b* ((namedp (vl-arguments->namedp x))
-             (args   (vl-arguments->args x))
-             ((mv warnings args-changedp args-prime)
-              (if (vl-arguments->namedp x)
-                  (vl-namedarglist-weirdint-elim args warnings)
-                (vl-plainarglist-weirdint-elim args warnings)))
-             (changedp args-changedp)
-             (x-prime  (if changedp
-                           (vl-arguments namedp args-prime)
-                         x)))
-          (mv warnings changedp x-prime)))
+(def-vl-weirdint-elim vl-arguments
+  :body
+  (vl-arguments-case x
+    :named (b* (((mv warnings changedp args-prime)
+                 (vl-namedarglist-weirdint-elim x.args warnings))
+                (x-prime (if changedp
+                             (change-vl-arguments-named x :args args-prime)
+                           x)))
+             (mv warnings changedp x-prime))
+    :plain (b* (((mv warnings changedp args-prime)
+                 (vl-plainarglist-weirdint-elim x.args warnings))
+                (x-prime (if changedp
+                             (change-vl-arguments-plain x :args args-prime)
+                           x)))
+             (mv warnings changedp x-prime))))
 
-(def-vl-weirdint-elim vl-modinst-weirdint-elim
-  :type vl-modinst-p
+(def-vl-weirdint-elim vl-modinst
   :body (b* (((mv warnings args-changedp args-prime)
               (vl-arguments-weirdint-elim (vl-modinst->portargs x) warnings))
              (changedp args-changedp)
@@ -258,12 +265,9 @@ will become the arguments to a concatenation."
                          x)))
           (mv warnings changedp x-prime)))
 
-(def-vl-weirdint-elim-list vl-modinstlist-weirdint-elim
-  :type vl-modinstlist-p
-  :element vl-modinst-weirdint-elim)
+(def-vl-weirdint-elim-list vl-modinstlist :element vl-modinst)
 
-(def-vl-weirdint-elim vl-gateinst-weirdint-elim
-  :type vl-gateinst-p
+(def-vl-weirdint-elim vl-gateinst
   :body (b* (((mv warnings args-changedp args-prime)
               (vl-plainarglist-weirdint-elim (vl-gateinst->args x) warnings))
              (changedp args-changedp)
@@ -272,12 +276,9 @@ will become the arguments to a concatenation."
                          x)))
           (mv warnings changedp x-prime)))
 
-(def-vl-weirdint-elim-list vl-gateinstlist-weirdint-elim
-  :type vl-gateinstlist-p
-  :element vl-gateinst-weirdint-elim)
+(def-vl-weirdint-elim-list vl-gateinstlist :element vl-gateinst)
 
-(def-vl-weirdint-elim vl-delaycontrol-weirdint-elim
-  :type vl-delaycontrol-p
+(def-vl-weirdint-elim vl-delaycontrol
   :body (b* (((mv warnings val-changedp value-prime)
               (vl-expr-weirdint-elim (vl-delaycontrol->value x) warnings))
              (changedp val-changedp)
@@ -286,8 +287,7 @@ will become the arguments to a concatenation."
                          x)))
           (mv warnings changedp x-prime)))
 
-(def-vl-weirdint-elim vl-evatom-weirdint-elim
-  :type vl-evatom-p
+(def-vl-weirdint-elim vl-evatom
   :body (b* (((mv warnings expr-changedp expr-prime)
               (vl-expr-weirdint-elim (vl-evatom->expr x) warnings))
              (changedp expr-changedp)
@@ -296,12 +296,9 @@ will become the arguments to a concatenation."
                          x)))
           (mv warnings changedp x-prime)))
 
-(def-vl-weirdint-elim-list vl-evatomlist-weirdint-elim
-  :type vl-evatomlist-p
-  :element vl-evatom-weirdint-elim)
+(def-vl-weirdint-elim-list vl-evatomlist :element vl-evatom)
 
-(def-vl-weirdint-elim vl-eventcontrol-weirdint-elim
-  :type vl-eventcontrol-p
+(def-vl-weirdint-elim vl-eventcontrol
   :body (b* (((mv warnings atoms-changedp atoms-prime)
               (vl-evatomlist-weirdint-elim (vl-eventcontrol->atoms x) warnings))
              (changedp atoms-changedp)
@@ -310,8 +307,7 @@ will become the arguments to a concatenation."
                          x)))
           (mv warnings changedp x-prime)))
 
-(def-vl-weirdint-elim vl-repeateventcontrol-weirdint-elim
-  :type vl-repeateventcontrol-p
+(def-vl-weirdint-elim vl-repeateventcontrol
   :body (b* (((mv warnings expr-changedp expr-prime)
               (vl-expr-weirdint-elim (vl-repeateventcontrol->expr x) warnings))
              ((mv warnings ctrl-changedp ctrl-prime)
@@ -324,20 +320,13 @@ will become the arguments to a concatenation."
                         x)))
           (mv warnings changedp x-prime)))
 
-(encapsulate
- ()
- (local (in-theory (disable vl-delayoreventcontrol-p-when-vl-maybe-delayoreventcontrol-p)))
- (def-vl-weirdint-elim vl-delayoreventcontrol-weirdint-elim
-   :type vl-delayoreventcontrol-p
-   :body (case (tag x)
-           (:vl-delaycontrol (vl-delaycontrol-weirdint-elim x warnings))
-           (:vl-eventcontrol (vl-eventcontrol-weirdint-elim x warnings))
-           (:vl-repeat-eventcontrol (vl-repeateventcontrol-weirdint-elim x warnings))
-           (otherwise
-            (mv (impossible) nil x)))))
+(def-vl-weirdint-elim vl-delayoreventcontrol
+  :body (case (tag x)
+          (:vl-delaycontrol (vl-delaycontrol-weirdint-elim x warnings))
+          (:vl-eventcontrol (vl-eventcontrol-weirdint-elim x warnings))
+          (otherwise        (vl-repeateventcontrol-weirdint-elim x warnings))))
 
-(def-vl-weirdint-elim vl-maybe-delayoreventcontrol-weirdint-elim
-  :type vl-maybe-delayoreventcontrol-p
+(def-vl-weirdint-elim vl-maybe-delayoreventcontrol
   :body (if x
             (vl-delayoreventcontrol-weirdint-elim x warnings)
           (mv (ok) nil nil)))
@@ -349,86 +338,10 @@ will become the arguments to a concatenation."
   :hints(("Goal"
           :in-theory (e/d (vl-maybe-delayoreventcontrol-weirdint-elim
                            vl-maybe-delayoreventcontrol-p)
-                          (RETURN-TYPE-OF-VL-DELAYOREVENTCONTROL-WEIRDINT-ELIM.X-PRIME                           ))
-          :use ((:instance RETURN-TYPE-OF-VL-DELAYOREVENTCONTROL-WEIRDINT-ELIM.X-PRIME                           )))))
+                          (RETURN-TYPE-OF-VL-DELAYOREVENTCONTROL-WEIRDINT-ELIM.X-PRIME))
+          :use ((:instance RETURN-TYPE-OF-VL-DELAYOREVENTCONTROL-WEIRDINT-ELIM.X-PRIME)))))
 
 
-(def-vl-weirdint-elim vl-nullstmt-weirdint-elim
-  :type vl-nullstmt-p
-  :body (mv (ok) nil x))
-
-(def-vl-weirdint-elim vl-assignstmt-weirdint-elim
-  :type vl-assignstmt-p
-  :body (b* (((mv warnings lvalue-changedp lvalue-prime)
-              (vl-expr-weirdint-elim (vl-assignstmt->lvalue x) warnings))
-             ((mv warnings expr-changedp expr-prime)
-              (vl-expr-weirdint-elim (vl-assignstmt->expr x) warnings))
-             ((mv warnings ctrl-changedp ctrl-prime)
-              (vl-maybe-delayoreventcontrol-weirdint-elim (vl-assignstmt->ctrl x) warnings))
-             (changedp (or lvalue-changedp expr-changedp ctrl-changedp))
-             (x-prime (if changedp
-                          (change-vl-assignstmt x
-                                                :lvalue lvalue-prime
-                                                :expr expr-prime
-                                                :ctrl ctrl-prime)
-                        x)))
-          (mv warnings changedp x-prime)))
-
-(def-vl-weirdint-elim vl-deassignstmt-weirdint-elim
-  :type vl-deassignstmt-p
-  :body (b* (((mv warnings lvalue-changedp lvalue-prime)
-              (vl-expr-weirdint-elim (vl-deassignstmt->lvalue x) warnings))
-             (changedp lvalue-changedp)
-             (x-prime (if changedp
-                          (change-vl-deassignstmt x :lvalue lvalue-prime)
-                        x)))
-          (mv warnings changedp x-prime)))
-
-(def-vl-weirdint-elim vl-enablestmt-weirdint-elim
-  :type vl-enablestmt-p
-  :body (b* (((mv warnings id-changedp id-prime)
-              (vl-expr-weirdint-elim (vl-enablestmt->id x) warnings))
-             ((mv warnings args-changedp args-prime)
-              (vl-exprlist-weirdint-elim (vl-enablestmt->args x) warnings))
-             (changedp (or id-changedp args-changedp))
-             (x-prime (if changedp
-                          (change-vl-enablestmt x
-                                                :id id-prime
-                                                :args args-prime)
-                        x)))
-          (mv warnings changedp x-prime)))
-
-(def-vl-weirdint-elim vl-disablestmt-weirdint-elim
-  :type vl-disablestmt-p
-  :body (b* (((mv warnings id-changedp id-prime)
-              (vl-expr-weirdint-elim (vl-disablestmt->id x) warnings))
-             (changedp id-changedp)
-             (x-prime (if changedp
-                          (change-vl-disablestmt x :id id-prime)
-                        x)))
-          (mv warnings changedp x-prime)))
-
-(def-vl-weirdint-elim vl-eventtriggerstmt-weirdint-elim
-  :type vl-eventtriggerstmt-p
-  :body (b* (((mv warnings id-changedp id-prime)
-              (vl-expr-weirdint-elim (vl-eventtriggerstmt->id x) warnings))
-             (changedp id-changedp)
-             (x-prime (if changedp
-                          (change-vl-eventtriggerstmt x :id id-prime)
-                        x)))
-          (mv warnings changedp x-prime)))
-
-(def-vl-weirdint-elim vl-atomicstmt-weirdint-elim
-  :type vl-atomicstmt-p
-  :body (case (tag x)
-          (:vl-nullstmt         (vl-nullstmt-weirdint-elim x warnings))
-          (:vl-assignstmt       (vl-assignstmt-weirdint-elim x warnings))
-          (:vl-deassignstmt     (vl-deassignstmt-weirdint-elim x warnings))
-          (:vl-enablestmt       (vl-enablestmt-weirdint-elim x warnings))
-          (:vl-disablestmt      (vl-disablestmt-weirdint-elim x warnings))
-          (:vl-eventtriggerstmt (vl-eventtriggerstmt-weirdint-elim x warnings))
-          (otherwise
-           (mv (impossible) nil x))))
 
 (defines vl-stmt-weirdint-elim
 
@@ -437,19 +350,75 @@ will become the arguments to a concatenation."
      (warnings vl-warninglist-p))
     :returns (mv (warnings vl-warninglist-p)
                  (changedp booleanp :rule-classes :type-prescription)
-                 (new-x    vl-stmt-p :hyp (force (vl-stmt-p x))))
+                 (new-x    vl-stmt-p))
     :verify-guards nil
-    :measure (two-nats-measure (acl2-count x) 1)
+    :measure (vl-stmt-count x)
     :flag :stmt
-    (b* (((when (vl-fast-atomicstmt-p x))
-          (vl-atomicstmt-weirdint-elim x warnings))
+    (b* ((x (vl-stmt-fix x))
+         ((when (vl-atomicstmt-p x))
+          (case (vl-stmt-kind x)
+            (:vl-nullstmt
+             (mv (ok) nil x))
+            (:vl-assignstmt
+             (b* (((mv warnings lvalue-changedp lvalue-prime)
+                   (vl-expr-weirdint-elim (vl-assignstmt->lvalue x) warnings))
+                  ((mv warnings expr-changedp expr-prime)
+                   (vl-expr-weirdint-elim (vl-assignstmt->expr x) warnings))
+                  ((mv warnings ctrl-changedp ctrl-prime)
+                   (vl-maybe-delayoreventcontrol-weirdint-elim (vl-assignstmt->ctrl x) warnings))
+                  (changedp (or lvalue-changedp expr-changedp ctrl-changedp))
+                  (x-prime (if changedp
+                               (change-vl-assignstmt x
+                                                     :lvalue lvalue-prime
+                                                     :expr expr-prime
+                                                     :ctrl ctrl-prime)
+                             x)))
+               (mv (ok) changedp x-prime)))
+            (:vl-deassignstmt
+             (b* (((mv warnings lvalue-changedp lvalue-prime)
+                   (vl-expr-weirdint-elim (vl-deassignstmt->lvalue x) warnings))
+                  (changedp lvalue-changedp)
+                  (x-prime (if changedp
+                               (change-vl-deassignstmt x :lvalue lvalue-prime)
+                             x)))
+               (mv (ok) changedp x-prime)))
+            (:vl-enablestmt
+             (b* (((mv warnings id-changedp id-prime)
+                   (vl-expr-weirdint-elim (vl-enablestmt->id x) warnings))
+                  ((mv warnings args-changedp args-prime)
+                   (vl-exprlist-weirdint-elim (vl-enablestmt->args x) warnings))
+                  (changedp (or id-changedp args-changedp))
+                  (x-prime (if changedp
+                               (change-vl-enablestmt x
+                                                     :id id-prime
+                                                     :args args-prime)
+                             x)))
+               (mv (ok) changedp x-prime)))
+            (:vl-disablestmt
+             (b* (((mv warnings id-changedp id-prime)
+                   (vl-expr-weirdint-elim (vl-disablestmt->id x) warnings))
+                  (changedp id-changedp)
+                  (x-prime (if changedp
+                               (change-vl-disablestmt x :id id-prime)
+                             x)))
+               (mv (ok) changedp x-prime)))
+            (:vl-eventtriggerstmt
+             (b* (((mv warnings id-changedp id-prime)
+                   (vl-expr-weirdint-elim (vl-eventtriggerstmt->id x) warnings))
+                  (changedp id-changedp)
+                  (x-prime (if changedp
+                               (change-vl-eventtriggerstmt x :id id-prime)
+                             x)))
+               (mv (ok) changedp x-prime)))
+            (otherwise
+             (mv (impossible) nil x))))
+         ;; Compound statements
          ((mv warnings expr-changedp exprs-prime)
           (vl-exprlist-weirdint-elim (vl-compoundstmt->exprs x) warnings))
          ((mv warnings stmts-changedp stmts-prime)
           (vl-stmtlist-weirdint-elim (vl-compoundstmt->stmts x) warnings))
          ((mv warnings ctrl-changedp ctrl-prime)
-          (vl-maybe-delayoreventcontrol-weirdint-elim (vl-compoundstmt->ctrl x)
-                                                      warnings))
+          (vl-maybe-delayoreventcontrol-weirdint-elim (vl-compoundstmt->ctrl x) warnings))
          (changedp (or expr-changedp stmts-changedp ctrl-changedp))
          (x-prime  (if changedp
                        (change-vl-compoundstmt x
@@ -464,9 +433,8 @@ will become the arguments to a concatenation."
      :returns (mv (warnings vl-warninglist-p)
                   (changedp booleanp :rule-classes :type-prescription)
                   (new-x    (and (vl-stmtlist-p new-x)
-                                 (equal (len new-x) (len x)))
-                            :hyp (force (vl-stmtlist-p x))))
-     :measure (two-nats-measure (acl2-count x) 0)
+                                 (equal (len new-x) (len x)))))
+     :measure (vl-stmtlist-count x)
      :flag :list
      (b* (((when (atom x))
            (mv (ok) nil nil))
@@ -475,14 +443,16 @@ will become the arguments to a concatenation."
           ((mv warnings cdr-changedp cdr-prime)
            (vl-stmtlist-weirdint-elim (cdr x) warnings))
           (changedp (or car-changedp cdr-changedp))
-          (x-prime  (if changedp (cons car-prime cdr-prime) x)))
+          (x-prime  (if changedp
+                        (cons car-prime cdr-prime)
+                      (vl-stmtlist-fix x))))
        (mv warnings changedp x-prime)))
 
    ///
-   (verify-guards vl-stmt-weirdint-elim))
+   (verify-guards vl-stmt-weirdint-elim)
+   (deffixequiv-mutual vl-stmt-weirdint-elim))
 
-(def-vl-weirdint-elim vl-always-weirdint-elim
-  :type vl-always-p
+(def-vl-weirdint-elim vl-always
   :body (b* (((mv warnings stmt-changedp stmt-prime)
               (vl-stmt-weirdint-elim (vl-always->stmt x) warnings))
              (changedp stmt-changedp)
@@ -491,12 +461,9 @@ will become the arguments to a concatenation."
                         x)))
             (mv warnings changedp x-prime)))
 
-(def-vl-weirdint-elim-list vl-alwayslist-weirdint-elim
-  :type vl-alwayslist-p
-  :element vl-always-weirdint-elim)
+(def-vl-weirdint-elim-list vl-alwayslist :element vl-always)
 
-(def-vl-weirdint-elim vl-initial-weirdint-elim
-  :type vl-initial-p
+(def-vl-weirdint-elim vl-initial
   :body (b* (((mv warnings stmt-changedp stmt-prime)
               (vl-stmt-weirdint-elim (vl-initial->stmt x) warnings))
              (changedp stmt-changedp)
@@ -505,9 +472,7 @@ will become the arguments to a concatenation."
                         x)))
             (mv warnings changedp x-prime)))
 
-(def-vl-weirdint-elim-list vl-initiallist-weirdint-elim
-  :type vl-initiallist-p
-  :element vl-initial-weirdint-elim)
+(def-vl-weirdint-elim-list vl-initiallist :element vl-initial)
 
 
 
@@ -530,9 +495,9 @@ will become the arguments to a concatenation."
    (mod   vl-module-p)
    (which (or (eq which :x) (eq which :z))))
   :returns
-  (mv (nf      vl-namefactory-p :hyp (force (vl-namefactory-p nf)))
-      (new-mod vl-module-p :hyp (and (force (vl-namefactory-p nf))
-                                     (force (vl-module-p mod)))))
+  (mv (nf      vl-namefactory-p)
+      (new-mod vl-module-p))
+
   (b* ((netdecls   (vl-module->netdecls mod))
        (modinsts   (vl-module->modinsts mod))
 
@@ -561,11 +526,11 @@ will become the arguments to a concatenation."
        (new-modinst (make-vl-modinst
                      :modname (vl-module->name target-mod)
                      :instname instname
-                     :paramargs (vl-arguments nil nil)
-                     :portargs (vl-arguments nil
-                                             (list (make-vl-plainarg :expr new-expr
-                                                                     :dir :vl-output
-                                                                     :portname "out")))
+                     :paramargs (make-vl-arguments-plain :args nil)
+                     :portargs (make-vl-arguments-plain
+                                :args (list (make-vl-plainarg :expr new-expr
+                                                              :dir :vl-output
+                                                              :portname "out")))
                      :loc *vl-fakeloc*))
 
        (mod-prime (change-vl-module mod
@@ -575,10 +540,11 @@ will become the arguments to a concatenation."
     (mv nf mod-prime)))
 
 (define vl-module-weirdint-elim ((x vl-module-p))
-  :returns (mv (new-x vl-module-p :hyp :fguard)
+  :returns (mv (new-x vl-module-p)
                (addmods vl-modulelist-p))
 
-  (b* (((when (vl-module->hands-offp x))
+  (b* ((x (vl-module-fix x))
+       ((when (vl-module->hands-offp x))
         (mv x nil))
        ((vl-module x) x)
        (warnings x.warnings)
@@ -657,8 +623,8 @@ will become the arguments to a concatenation."
   (defmvtypes vl-module-weirdint-elim (nil true-listp)))
 
 (define vl-modulelist-weirdint-elim-aux ((x vl-modulelist-p))
-  :returns (mv (new-x vl-modulelist-p :hyp :fguard)
-               (addmods vl-modulelist-p :hyp :fguard))
+  :returns (mv (new-x vl-modulelist-p)
+               (addmods vl-modulelist-p))
   (b* (((when (atom x))
         (mv nil nil))
        ((mv car-prime new1) (vl-module-weirdint-elim (car x)))
@@ -668,7 +634,7 @@ will become the arguments to a concatenation."
     (mv x-prime new)))
 
 (define vl-modulelist-weirdint-elim ((x vl-modulelist-p))
-  :returns (new-x vl-modulelist-p :hyp :fguard)
+  :returns (new-x vl-modulelist-p)
   (b* (((mv x-prime new-mods) (vl-modulelist-weirdint-elim-aux x))
        (new-mods              (mergesort new-mods))
        (full-mods             (mergesort (append new-mods x-prime)))
@@ -680,8 +646,7 @@ will become the arguments to a concatenation."
   :short "Top-level @(see weirdint-elim) transform."
   ((x vl-design-p))
   :returns (new-x vl-design-p)
-  (b* ((x (vl-design-fix x))
-       ((vl-design x) x))
+  (b* (((vl-design x) x))
     (change-vl-design x :mods (vl-modulelist-weirdint-elim x.mods))))
 
 

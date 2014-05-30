@@ -267,13 +267,14 @@ name clashes, the previous definition wins, and we add a warning to the
                (uniquep (vl-modulelist->names merged))))))
 
 
-
 (define vl-load-file ((filename stringp)
                       (st       vl-loadstate-p)
                       state)
   :returns (mv (st    vl-loadstate-p :hyp :fguard)
                (state state-p1       :hyp (force (state-p1 state))))
   :short "Main function for loading a single Verilog file."
+
+  :prepwork ((local (in-theory (disable (force)))))
 
   :long "<p>Even loading a single file is a multi-step process:</p>
 
@@ -514,12 +515,12 @@ up searching for.</p>"
        ((vl-loadconfig config) st.config)
 
        (mods-we-want-loaded
-        (mergesort (vl-modulelist-everinstanced-exec
-                    st.mods
-                    (append st.required config.start-modnames))))
+        (mergesort (append config.start-modnames
+                           st.required
+                           (vl-modulelist-everinstanced st.mods))))
 
        (mods-we-have-loaded
-        (mergesort (vl-modulelist->names-exec st.mods nil))))
+        (mergesort (vl-modulelist->names st.mods))))
 
     (difference mods-we-want-loaded mods-we-have-loaded)))
 

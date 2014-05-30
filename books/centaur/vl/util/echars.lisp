@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -21,15 +21,22 @@
 (in-package "VL")
 
 ;; This showed up in the critical path, so we try to reduce our dependencies
+(include-book "ihs/basic-definitions" :dir :system)
+(include-book "centaur/fty/deftypes" :dir :system)
+(include-book "centaur/fty/basetypes" :dir :system)
 (include-book "std/util/defaggregate" :dir :system)
 (include-book "std/util/defprojection" :dir :system)
+(include-book "std/util/defval" :dir :system)
 (include-book "std/util/deflist" :dir :system)
 (include-book "std/strings/cat" :dir :system)
 (include-book "std/strings/decimal" :dir :system)
 (include-book "centaur/nrev/pure" :dir :system)
+(local (include-book "centaur/misc/arith-equivs" :dir :system))
 (local (include-book "arithmetic/top" :dir :system))
 (local (include-book "std/lists/top" :dir :system))
 (local (include-book "misc/assert" :dir :system))
+(local (include-book "arithmetic"))
+(local (std::add-default-post-define-hook :fix))
 
 (local (defthm integerp-when-natp
          (implies (natp x)
@@ -39,6 +46,16 @@
   (implies (natp x)
            (equal (< x 0)
                   nil))))
+
+(local (defthm nthcdr-under-iff-when-true-listp
+         (implies (true-listp x)
+                  (iff (nthcdr n x)
+                       (< (nfix n) (len x))))
+         :hints(("Goal"
+                 :in-theory (disable acl2::consp-of-nthcdr)
+                 :use ((:instance acl2::consp-of-nthcdr
+                                  (acl2::n n)
+                                  (acl2::x x)))))))
 
 
 (defxdoc extended-characters
@@ -55,11 +72,11 @@ extended character as an @(see vl-echar-p), a structure that associates a
 character with its location.</p>")
 
 
-(defaggregate vl-location
+(defprod vl-location
   :parents (extended-characters)
   :short "Representation of a point in a source file."
   :tag :vl-location
-  :legiblep nil
+  :layout :tree
 
   ((filename stringp :rule-classes :type-prescription)
    (line     posp    :rule-classes :type-prescription)
@@ -70,14 +87,12 @@ These locations are attached to characters and module items to provide context
 during error reporting.</p>")
 
 
-(defsection *vl-fakeloc*
+(defval *vl-fakeloc*
   :parents (vl-location-p)
   :short "A \"fake\" @(see vl-location-p) which we use when generating our
 own @(see extended-characters) and module items."
 
-  (defconst *vl-fakeloc*
-    (vl-location "[[[ fake location ]]]" 1 0)))
-
+  (vl-location "[[[ fake location ]]]" 1 0))
 
 
 (define vl-location-string ((loc vl-location-p))
@@ -110,13 +125,12 @@ bounds."
            (equal x.filename high.filename)
 
            (or (< low.line x.line)
-               (and (int= low.line x.line)
+               (and (eql low.line x.line)
                     (<= low.col x.col)))
 
            (or (< x.line high.line)
-               (and (int= x.line high.line)
+               (and (eql x.line high.line)
                     (<= x.col high.col))))))
-
 
 
 (defsection vl-echar-p
@@ -183,6 +197,7 @@ the interface for constructing echars can be kept simple and bounds-free.</p>
 
   (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
   (local (include-book "centaur/bitops/equal-by-logbitp" :dir :system))
+  (local (std::remove-default-post-define-hook :fix))
 
   (local (defthmd l0
            (implies (and (unsigned-byte-p 8 code)
@@ -221,6 +236,7 @@ the interface for constructing echars can be kept simple and bounds-free.</p>
   (define vl-echarpack ((code (unsigned-byte-p 8 code))
                         (line posp)
                         (col  natp))
+    :hooks nil
     :parents (vl-echarpack-p)
     :inline t ;; should only really be called from vl-echar
     (declare (type (unsigned-byte 8) code))
@@ -310,33 +326,49 @@ the interface for constructing echars can be kept simple and bounds-free.</p>
 
   (local (in-theory (disable vl-echarpack-p vl-echarpack)))
 
-  (define vl-echar-p (x)
-    (and (consp x)
-         (stringp (car x)) ;; Filename
-         (vl-echarpack-p (cdr x))))
+  (define vl-echarpack-fix ((x vl-echarpack-p))
+    :returns (x-fix vl-echarpack-p)
+    :inline t
+    (mbe :logic (if (vl-echarpack-p x)
+                    x
+                  (vl-echarpack (acl2::loghead 8 (vl-echarpack->code x))
+                                (acl2::pos-fix (vl-echarpack->line x))
+                                (nfix (vl-echarpack->col x))))
+         :exec x)
+    ///
+    (defthm vl-echarpack-fix-when-vl-echarpack-p
+      (implies (vl-echarpack-p x)
+               (equal (vl-echarpack-fix x)
+                      x))))
 
-  (local (in-theory (enable vl-echar-p)))
+  (deffixtype vl-echarpack
+    :pred vl-echarpack-p
+    :fix  vl-echarpack-fix
+    :equiv vl-echarpack-equiv
+    :define t
+    :forward t)
 
-  (defthm booleanp-of-vl-echar-p
-    (booleanp (vl-echar-p x))
-    :rule-classes :type-prescription)
 
-  (defthm consp-when-vl-echar-p
-    (implies (vl-echar-p x)
-             (consp x))
-    :rule-classes :compound-recognizer)
+  (defprod vl-echar-raw
+    ((filename stringp :rule-classes :type-prescription)
+     (pack     vl-echarpack-p))
+    :layout :tree
+    :pred vl-echar-p
+    :fix vl-echar-fix)
 
   (define vl-echar ((char characterp)
                     (loc  vl-location-p))
-    :returns (echar vl-echar-p :hyp :fguard)
+    :returns (echar vl-echar-p)
     :parents (vl-echar-p)
     :short "High-level constructor for an @(see vl-echar-p)."
     :long "<p>See @(see make-vl-echar-fast) for a faster alternative.</p>"
     (b* (((vl-location loc) loc))
-      (cons loc.filename
-            (vl-echarpack (the (unsigned-byte 8) (char-code char))
-                          loc.line
-                          loc.col))))
+      (vl-echar-raw loc.filename
+                    (vl-echarpack (the (unsigned-byte 8) (char-code char))
+                                  loc.line
+                                  loc.col)))
+    ///
+    (deffixequiv vl-echar))
 
   (local (in-theory (enable vl-echar)))
 
@@ -355,68 +387,46 @@ the interface for constructing echars can be kept simple and bounds-free.</p>
                                           :line line
                                           :col col))
          :exec
-         (cons filename
-               (vl-echarpack (the (unsigned-byte 8) (char-code char))
-                             line col))))
+         (vl-echar-raw filename
+                       (vl-echarpack (the (unsigned-byte 8) (char-code char))
+                                     line col)))
+    ///
+    (deffixequiv make-vl-echar-fast))
 
   (defthm vl-echar-under-iff
     (iff (vl-echar char loc)
          t))
 
   (define vl-echar->char ((x vl-echar-p))
-    :returns (char characterp
-                   :rule-classes :type-prescription
-                   :hyp :fguard)
+    :returns (char characterp :rule-classes :type-prescription)
     :parents (vl-echar-p)
     :short "High-level accessor: get the character from an @(see vl-echar-p)."
     :inline t
     (the character
-      (code-char (the (unsigned-byte 8) (vl-echarpack->code (cdr x)))))
+      (code-char (the (unsigned-byte 8)
+                   (vl-echarpack->code (vl-echar-raw->pack x)))))
     ///
+    (deffixequiv vl-echar->char)
     (defthm vl-echar->char-of-vl-echar
-      (implies (and (force (characterp char))
-                    (force (vl-location-p loc)))
-               (equal (vl-echar->char (vl-echar char loc))
-                      char))))
+      (equal (vl-echar->char (vl-echar char loc))
+             (char-fix char))
+      :hints(("Goal" :in-theory (e/d (char-fix)
+                                     ((force)))))))
 
   (define vl-echar->loc ((x vl-echar-p))
-    :returns (loc vl-location-p :hyp :fguard)
+    :returns (loc vl-location-p)
     :parents (vl-echar-p)
     :short "High-level accessor: get the location from an @(see vl-echar-p)."
     :long "<p>Note that this has to construct a @(see vl-location-p) object.</p>"
-    (make-vl-location :filename (car x)
-                      :line (vl-echarpack->line (cdr x))
-                      :col  (vl-echarpack->col (cdr x)))
+    (b* (((vl-echar-raw x) x))
+      (make-vl-location :filename x.filename
+                        :line (vl-echarpack->line x.pack)
+                        :col  (vl-echarpack->col x.pack)))
     ///
-    (local (defthm m0
-             (implies (and (force (characterp char))
-                           (force (vl-location-p loc)))
-                      (equal (vl-echar->loc (vl-echar char loc))
-                             (make-vl-location
-                              :filename (vl-location->filename loc)
-                              :line     (vl-location->line loc)
-                              :col      (vl-location->col loc))))))
-
-    (local (defthm m1
-             (implies (and (vl-location-p x)
-                           (vl-location-p y))
-                      (equal (equal x y)
-                             (b* (((vl-location x) x)
-                                  ((vl-location y) y))
-                               (and (equal x.filename y.filename)
-                                    (equal x.line y.line)
-                                    (equal x.col y.col)))))
-             :hints(("Goal" :in-theory (enable vl-location-p
-                                               vl-location
-                                               vl-location->filename
-                                               vl-location->line
-                                               vl-location->col)))))
-
+    (deffixequiv vl-echar->loc)
     (defthm vl-echar->loc-of-vl-echar
-      (implies (and (force (characterp char))
-                    (force (vl-location-p loc)))
-               (equal (vl-echar->loc (vl-echar char loc))
-                      loc))))
+      (equal (vl-echar->loc (vl-echar char loc))
+             (vl-location-fix loc))))
 
   (make-event
    ;; Emulate defaggregate stuff
@@ -445,35 +455,36 @@ the interface for constructing echars can be kept simple and bounds-free.</p>
                      (equal c.loc *vl-fakeloc*)))))))
 
 
-
 ; Once upon a time we took special measures to print warnings if this function
 ; was given long lists, because this was useful in debugging some performance
 ; problems related to the execution of guards.  But we no longer think this is
 ; necessary, and so we return to the simple definition.
 
+(fty::deflist vl-echarlist :elt-type vl-echar-p
+              :true-listp nil)
+
 (deflist vl-echarlist-p (x)
   (vl-echar-p x)
   :elementp-of-nil nil
-  :parents (extended-characters))
-
-(defprojection vl-echarlist->chars (x)
-  (vl-echar->char x)
-  :guard (vl-echarlist-p x)
-  :nil-preservingp nil
-  :result-type character-listp
   :parents (extended-characters)
-  :rest
+  :already-definedp t)
+
+(defprojection vl-echarlist->chars ((x vl-echarlist-p))
+  :returns (chars character-listp)
+  (vl-echar->char x)
+  :parents (extended-characters)
+  :nil-preservingp nil
+  ///
   ;; Previously this was nil-preserving and defprojection added a rule like
   ;; this automatically (with no hyp).  The defprojection rule went the other
   ;; way.  I'm not sure why I wanted the rule to go this way.  If we extend
   ;; defprojection to add the other rule, we'll need to mark them as
   ;; incompatible, disable its rule, etc.
-  ((defthm vl-echarlist->chars-of-take
-     (implies (force (<= (nfix n) (len x)))
-              (equal (vl-echarlist->chars (take n x))
-                     (take n (vl-echarlist->chars x))))
-     :hints(("Goal" :in-theory (enable acl2::take-redefinition))))))
-
+  (defthm vl-echarlist->chars-of-take
+    (implies (force (<= (nfix n) (len x)))
+             (equal (vl-echarlist->chars (take n x))
+                    (take n (vl-echarlist->chars x))))
+    :hints(("Goal" :in-theory (enable acl2::take-redefinition)))))
 
 
 (define vl-echarlist->string ((x vl-echarlist-p))
@@ -489,7 +500,6 @@ notably saves a lot of memory when we build @(see vl-filemap-p)s.</p>"
 
   :enabled t
   (implode (vl-echarlist->chars x))
-
   ///
 
   (defttag vl-optimize)
@@ -513,7 +523,7 @@ notably saves a lot of memory when we build @(see vl-filemap-p)s.</p>"
 
 (define vl-change-echarlist-locations ((x vl-echarlist-p)
                                        (loc vl-location-p))
-  :returns (ans vl-echarlist-p :hyp :fguard)
+  :returns (ans vl-echarlist-p)
   :parents (extended-characters)
   :short "Override the locations of characters."
   :long "<p>@(call vl-change-echarlist-locations) is given a list of extended
@@ -533,6 +543,7 @@ handling more sensible.</p>"
                                      (line posp :type (integer 0 *))
                                      (col natp :type (integer 0 *))
                                      nrev)
+  :hooks nil
   :split-types t
   :parents (vl-echarlist-from-chars)
   (b* (((when (atom x))
@@ -558,47 +569,49 @@ handling more sensible.</p>"
     '"[internal character list]")
    ((line posp "Starting line") '1)
    ((col natp "Starting column") '0))
-  :returns (ans vl-echarlist-p :hyp :fguard)
+  :returns (ans vl-echarlist-p)
   :parents (extended-characters)
   :short "Transform an ordinary character list into a @(see vl-echarlist-p)."
+  :verify-guards nil
+  :verbosep t
   (mbe :logic
        (b* (((when (atom x))
              nil)
-            (echar (make-vl-echar-fast :char (car x)
+            (line  (acl2::pos-fix line))
+            (col   (nfix col))
+            (x1    (char-fix (car x)))
+            (echar (make-vl-echar-fast :char x1
                                        :filename filename
                                        :line line
                                        :col col))
-            (line (if (eql (car x) #\Newline) (+ 1 line) line))
-            (col  (if (eql (car x) #\Newline) 0 (+ 1 col))))
+            (line (if (eql x1 #\Newline) (+ 1 line) line))
+            (col  (if (eql x1 #\Newline) 0 (+ 1 col))))
          (cons echar
                (vl-echarlist-from-chars-fn (cdr x) filename line col)))
        :exec (with-local-nrev
               (vl-echarlist-from-chars-aux x filename line col nrev)))
-  :verify-guards nil
   ///
-  (never-memoize vl-echarlist-from-chars-aux)
-
   (defthm true-listp-of-vl-echarlist-from-chars-fn
     (true-listp (vl-echarlist-from-chars-fn x filename line col))
     :rule-classes :type-prescription)
 
   (defthm vl-echarlist->chars-of-vl-echarlist-from-chars-fn
-    (implies (and (force (character-listp x))
-                  (force (stringp filename))
-                  (force (posp line))
-                  (force (natp col)))
-             (equal (vl-echarlist->chars (vl-echarlist-from-chars-fn x filename line col))
+    (implies (force (character-listp x))
+             (equal (vl-echarlist->chars
+                     (vl-echarlist-from-chars-fn x filename line col))
                     x)))
 
   (local (in-theory (enable vl-echarlist-from-chars-aux)))
 
   (defthm vl-echarlist-from-chars-aux-removal
-    (equal (vl-echarlist-from-chars-aux x filename line col acc)
-           (append acc (vl-echarlist-from-chars-fn x filename line col))))
+    (implies (and (character-listp x)
+                  (natp col)
+                  (posp line))
+             (equal (vl-echarlist-from-chars-aux x filename line col acc)
+                    (append acc (vl-echarlist-from-chars-fn x filename line col)))))
 
-  (verify-guards vl-echarlist-from-chars-fn))
-
-
+  (verify-guards vl-echarlist-from-chars-fn
+    :hints(("Goal" :induct (vl-echarlist-from-chars-fn x filename line col)))))
 
 (define vl-echarlist-from-str-aux
   :parents (vl-echarlist-from-str)
@@ -612,12 +625,15 @@ handling more sensible.</p>"
   :guard (<= n xl)
   :measure (nfix (- (nfix xl) (nfix n)))
   :split-types t
+  :hooks nil
   (declare (type string x filename)
            (type (integer 0 *) n xl line col))
   (b* (((when (mbe :logic (zp (- (nfix xl) (nfix n)))
                    :exec (eql n xl)))
         (nrev-fix nrev))
-       ((the character char) (char x n))
+       ((the character char)
+        (mbe :logic (char-fix (char x n))
+             :exec (char x n)))
        (echar (make-vl-echar-fast :char char
                                   :filename filename
                                   :line line
@@ -633,6 +649,7 @@ handling more sensible.</p>"
                                (the (integer 0 *) (+ 1 (lnfix n)))
                                xl filename line col nrev)))
 
+
 (define vl-echarlist-from-str-nice
   :parents (vl-echarlist-from-str)
   ((x        stringp)
@@ -647,25 +664,30 @@ handling more sensible.</p>"
   :verify-guards nil
   (declare (type string x filename)
            (type integer n xl line col))
-  (mbe :logic (if (zp (- (nfix xl) (nfix n)))
-                  nil
-                (let ((char (char x n)))
-                  (cons (make-vl-echar-fast :char char
-                                            :filename filename
-                                            :line line
-                                            :col col)
-                        (vl-echarlist-from-str-nice
-                         x (+ 1 (nfix n)) xl filename
-                         (if (eql char #\Newline) (+ 1 line) line)
-                         (if (eql char #\Newline) 0 (+ 1 col))))))
+  (mbe :logic (b* (((when (zp (- (nfix xl) (nfix n))))
+                    nil)
+                   (char (char-fix (char x n)))
+                   (line (acl2::pos-fix line))
+                   (col  (nfix col))
+                   (echar (make-vl-echar-fast :char char
+                                              :filename filename
+                                              :line line
+                                              :col col)))
+                (cons echar
+                      (vl-echarlist-from-str-nice
+                       x (+ 1 (nfix n)) xl filename
+                       (if (eql char #\Newline) (+ 1 line) line)
+                       (if (eql char #\Newline) 0 (+ 1 col)))))
        :exec (with-local-nrev
-              (vl-echarlist-from-str-aux x n xl filename line col nrev)))
+               (vl-echarlist-from-str-aux x n xl filename line col nrev)))
   ///
   (defthm vl-echarlist-from-str-aux-correct
-    (equal (vl-echarlist-from-str-aux x n xl filename line col acc)
-           (append acc (vl-echarlist-from-str-nice x n xl filename line col)))
+    (implies (and (posp line)
+                  (natp col))
+             (equal (vl-echarlist-from-str-aux x n xl filename line col acc)
+                    (append acc (vl-echarlist-from-str-nice x n xl filename line col))))
     :hints(("Goal"
-            :in-theory (enable vl-echarlist-from-str-aux)
+            :in-theory (enable vl-echarlist-from-str-aux acl2::rcons)
             :induct (vl-echarlist-from-str-aux x n xl filename line col acc))))
 
   (verify-guards vl-echarlist-from-str-nice)
@@ -673,10 +695,20 @@ handling more sensible.</p>"
   (defthm vl-echarlist-from-str-nice-correct
     (equal (vl-echarlist-from-str-nice x n (len (explode x)) filename line col)
            (vl-echarlist-from-chars-fn (nthcdr n (explode x)) filename line col))
-    :hints(("Goal" :in-theory (enable nthcdr
-                                      vl-echarlist-from-str-nice
-                                      vl-echarlist-from-chars-fn)))))
-
+    :hints(("Goal"
+            :in-theory (enable nthcdr
+                               vl-echarlist-from-str-nice
+                               vl-echarlist-from-chars-fn)
+            :expand ((:free (filename line col)
+                      (vl-echarlist-from-chars (explode x)
+                                               :filename filename
+                                               :line line
+                                               :col col))
+                     (:free (filename line col)
+                      (vl-echarlist-from-chars (nthcdr n (explode x))
+                                               :filename filename
+                                               :line line
+                                               :col col)))))))
 
 (define vl-echarlist-from-str
   :parents (extended-characters)
@@ -711,18 +743,15 @@ better efficiency, we avoid the coerce and process the string directly.</p>"
 
 
 (define vl-echar-digit-value ((x vl-echar-p)
-                              (radix (and (integerp radix)
-                                          (<= 2 radix)
-                                          (<= radix 36))))
+                              (radix natp))
+  :guard (and (<= 2 radix)
+              (<= radix 36))
   :parents (extended-characters)
   :short "@(call vl-echar-digit-value) interprets the extended character @('x')
 as a base-@('radix') digit, or returns @('nil') if @('x') is not a valid digit
 in this base."
-
-  (digit-char-p (vl-echar->char x) radix)
-
+  (digit-char-p (vl-echar->char x) (lnfix radix))
   ///
-
   (defthm natp-of-vl-echar-digit-value
     (let ((ret (vl-echar-digit-value x radix)))
       (implies ret
@@ -738,12 +767,12 @@ in this base."
 
 
 (define vl-echarlist-unsigned-value-aux ((x vl-echarlist-p)
-                                         (radix (and (integerp radix)
-                                                     (<= 2 radix)
-                                                     (<= radix 36)))
+                                         (radix natp)
                                          (n (equal n (len x))))
+  :guard (and (<= 2 radix)
+              (<= radix 36))
   :parents (vl-echarlist-unsigned-value)
-
+  :verbosep t
   (b* (((when (atom x))
         0)
        (car-digit (vl-echar-digit-value (car x) radix))
@@ -752,13 +781,13 @@ in this base."
        (cdr-value (vl-echarlist-unsigned-value-aux (cdr x) radix (1- n)))
        ((unless cdr-value)
         nil))
-    (+ (* (expt radix (1- n)) car-digit)
+    (+ (* (expt (lnfix radix) (1- n)) car-digit)
        cdr-value)))
 
 (define vl-echarlist-unsigned-value ((x vl-echarlist-p)
-                                     (radix (and (integerp radix)
-                                                 (<= 2 radix)
-                                                 (<= radix 36))))
+                                     (radix natp))
+  :guard (and (<= 2 radix)
+              (<= radix 36))
   :parents (extended-characters)
   :short "@(call vl-echarlist-unsigned-value) interprets the extended character
 list @('x') as a base-@('radix') number, or returns @('nil') if @('x') is
@@ -773,8 +802,8 @@ any invalid digits, we return NIL.</p>"
   (if (not (consp x))
       nil
     (vl-echarlist-unsigned-value-aux x (lnfix radix) (len x)))
-
   ///
+  (local (in-theory (enable vl-echarlist-unsigned-value-aux)))
 
   (local (defthm natp-expt
            (implies (and (natp a)

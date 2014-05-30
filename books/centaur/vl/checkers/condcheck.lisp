@@ -20,7 +20,7 @@
 
 (in-package "VL")
 (include-book "../mlib/ctxexprs")
-(include-book "../mlib/fix")
+(include-book "../mlib/strip")
 (local (include-book "../util/arithmetic"))
 
 (defxdoc condcheck
@@ -220,7 +220,7 @@ occurs, and is used in any warning messages we produce.</p>"
      (ctx         vl-context-p))
     :returns (warnings vl-warninglist-p)
     :verify-guards nil
-    :measure (two-nats-measure (acl2-count x) 1)
+    :measure (vl-expr-count x)
     (b* (((when (vl-fast-atom-p x))
           nil)
          (op   (vl-nonatom->op x))
@@ -284,7 +284,7 @@ occurs, and is used in any warning messages we produce.</p>"
                        (true-listp tests-above)))
      (ctx vl-context-p))
     :returns (warnings vl-warninglist-p)
-    :measure (two-nats-measure (acl2-count x) 0)
+    :measure (vl-exprlist-count x)
     (if (atom x)
         nil
       (append (vl-expr-condcheck (car x) tests-above ctx)

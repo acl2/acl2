@@ -23,9 +23,16 @@
 (include-book "xdet")
 (local (include-book "../../util/arithmetic"))
 (local (include-book "../../util/osets"))
+(local (std::add-default-post-define-hook :fix))
 (local (in-theory (disable vl-maybe-module-p-when-vl-module-p)))
 
-(defsection *vl-1-bit-adder-core*
+(defval *vl-1-bit-adder-core-support*
+  :parents (*vl-1-bit-adder-core*)
+  (list *vl-1-bit-xor*
+        *vl-1-bit-and*
+        *vl-1-bit-or*))
+
+(defval *vl-1-bit-adder-core*
   :parents (occform)
   :short "Primitive one-bit full-adder module."
 
@@ -51,44 +58,35 @@ endmodule
 @('assign {carry, sum} = a + b + cin') in Verilog because of X handling.  See
 @(see vl-make-n-bit-plusminus) for the real module generator.</p>"
 
-  (defconst *vl-1-bit-adder-core-support*
-    (list *vl-1-bit-xor*
-          *vl-1-bit-and*
-          *vl-1-bit-or*))
+  (b* ((name (hons-copy "VL_1_BIT_ADDER_CORE"))
 
-  (defconst *vl-1-bit-adder-core*
+       ((mv sum-expr sum-port sum-portdecl sum-netdecl)     (vl-primitive-mkport "sum" :vl-output))
+       ((mv cout-expr cout-port cout-portdecl cout-netdecl) (vl-primitive-mkport "cout" :vl-output))
+       ((mv a-expr a-port a-portdecl a-netdecl)             (vl-primitive-mkport "a" :vl-input))
+       ((mv b-expr b-port b-portdecl b-netdecl)             (vl-primitive-mkport "b" :vl-input))
+       ((mv cin-expr cin-port cin-portdecl cin-netdecl)     (vl-primitive-mkport "cin" :vl-input))
 
-    (b* ((name (hons-copy "VL_1_BIT_ADDER_CORE"))
+       ((mv t1-expr t1-netdecl) (vl-primitive-mkwire "t1"))
+       ((mv t2-expr t2-netdecl) (vl-primitive-mkwire "t2"))
+       ((mv t3-expr t3-netdecl) (vl-primitive-mkwire "t3"))
 
-         ((mv sum-expr sum-port sum-portdecl sum-netdecl)     (vl-primitive-mkport "sum" :vl-output))
-         ((mv cout-expr cout-port cout-portdecl cout-netdecl) (vl-primitive-mkport "cout" :vl-output))
-         ((mv a-expr a-port a-portdecl a-netdecl)             (vl-primitive-mkport "a" :vl-input))
-         ((mv b-expr b-port b-portdecl b-netdecl)             (vl-primitive-mkport "b" :vl-input))
-         ((mv cin-expr cin-port cin-portdecl cin-netdecl)     (vl-primitive-mkport "cin" :vl-input))
+       (t1-inst   (vl-simple-inst *vl-1-bit-xor* "mk_t1"   t1-expr   a-expr  b-expr))
+       (sum-inst  (vl-simple-inst *vl-1-bit-xor* "mk_sum"  sum-expr  t1-expr cin-expr))
+       (t2-inst   (vl-simple-inst *vl-1-bit-and* "mk_t2"   t2-expr   t1-expr cin-expr))
+       (t3-inst   (vl-simple-inst *vl-1-bit-and* "mk_t3"   t3-expr   a-expr  b-expr))
+       (cout-inst (vl-simple-inst *vl-1-bit-or*  "mk_cout" cout-expr t2-expr t3-expr)))
 
-         ((mv t1-expr t1-netdecl) (vl-primitive-mkwire "t1"))
-         ((mv t2-expr t2-netdecl) (vl-primitive-mkwire "t2"))
-         ((mv t3-expr t3-netdecl) (vl-primitive-mkwire "t3"))
+    (hons-copy
+     (make-vl-module :name      name
+                     :origname  name
+                     :ports     (list sum-port cout-port a-port b-port cin-port)
+                     :portdecls (list sum-portdecl cout-portdecl a-portdecl b-portdecl cin-portdecl)
+                     :netdecls  (list sum-netdecl cout-netdecl a-netdecl b-netdecl cin-netdecl t1-netdecl t2-netdecl t3-netdecl)
+                     :modinsts (list t1-inst sum-inst t2-inst t3-inst cout-inst)
+                     :minloc    *vl-fakeloc*
+                     :maxloc    *vl-fakeloc*))))
 
-         (t1-inst   (vl-simple-inst *vl-1-bit-xor* "mk_t1"   t1-expr   a-expr  b-expr))
-         (sum-inst  (vl-simple-inst *vl-1-bit-xor* "mk_sum"  sum-expr  t1-expr cin-expr))
-         (t2-inst   (vl-simple-inst *vl-1-bit-and* "mk_t2"   t2-expr   t1-expr cin-expr))
-         (t3-inst   (vl-simple-inst *vl-1-bit-and* "mk_t3"   t3-expr   a-expr  b-expr))
-         (cout-inst (vl-simple-inst *vl-1-bit-or*  "mk_cout" cout-expr t2-expr t3-expr)))
-
-      (make-vl-module :name      name
-                      :origname  name
-                      :ports     (list sum-port cout-port a-port b-port cin-port)
-                      :portdecls (list sum-portdecl cout-portdecl a-portdecl b-portdecl cin-portdecl)
-                      :netdecls  (list sum-netdecl cout-netdecl a-netdecl b-netdecl cin-netdecl t1-netdecl t2-netdecl t3-netdecl)
-                      :modinsts (list t1-inst sum-inst t2-inst t3-inst cout-inst)
-                      :minloc    *vl-fakeloc*
-                      :maxloc    *vl-fakeloc*))))
-
-
-
-
-(def-vl-modgen vl-make-n-bit-adder-core (n)
+(def-vl-modgen vl-make-n-bit-adder-core ((n posp))
   :short "Generate an N-bit basic ripple-carry adder module."
 
   :long "<p>We generate a gate-based module with the following interface:</p>
@@ -116,10 +114,9 @@ addition and subtraction modules.</p>
 bit (which does not have a carry-in) and by dropping the wires on the carry for
 the last bit, but we think it's best to keep things simple.</p>"
 
-  :guard (posp n)
-
   :body
-  (b* (((when (eql n 1))
+  (b* ((n (lposfix n))
+       ((when (eql n 1))
         (cons *vl-1-bit-adder-core* *vl-1-bit-adder-core-support*))
 
        (name (hons-copy (cat "VL_" (natstr n) "_BIT_ADDER_CORE")))
@@ -171,7 +168,9 @@ the last bit, but we think it's best to keep things simple.</p>"
 
 
 
-(def-vl-modgen vl-make-n-bit-plusminus (type n)
+(def-vl-modgen vl-make-n-bit-plusminus ((type (member type (list :vl-binary-plus :vl-binary-minus)))
+                                        (n    posp))
+
   :short "Generate an addition or subtraction module."
 
   :long "<p>Depending on the @('type'), which should be either
@@ -201,11 +200,9 @@ X-detection and propagation circuitry.  This makes our adder rather bulky and
 unlike the actual hardware that would probably be synthesized or
 implemented.</p>"
 
-  :guard (and (member type (list :vl-binary-plus :vl-binary-minus))
-              (posp n))
-
   :body
-  (b* ((name  (hons-copy (cat "VL_" (natstr n) "_BIT_"
+  (b* ((n     (lposfix n))
+       (name  (hons-copy (cat "VL_" (natstr n) "_BIT_"
                               (case type
                                 (:vl-binary-plus "PLUS")
                                 (:vl-binary-minus "MINUS")))))

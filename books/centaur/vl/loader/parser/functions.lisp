@@ -190,6 +190,8 @@
 
 (defsection vl-taskport-or-blockitem-p
 
+  (local (in-theory (enable tag-reasoning)))
+
   (defund vl-taskport-or-blockitem-p (x)
     (declare (xargs :guard t))
     (or (vl-taskport-p x)
