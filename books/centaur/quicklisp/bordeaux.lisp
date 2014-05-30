@@ -21,6 +21,10 @@
 (in-package "ACL2")
 (include-book "base")
 
+; cert_param: (ccl-only)
+; [Jared]: This CCL-only restriction probably isn't necessary, but my copy of
+; SBCL isn't certifying this book for some reason that I haven't investigated.
+
 (defttag :quicklisp.bordeaux)
 ; (depends-on "bordeaux-raw.lsp")
 (include-raw "bordeaux-raw.lsp" :host-readtable t)
