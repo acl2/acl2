@@ -385,10 +385,15 @@
                   (clean-topics topics)))))
 
        (- (cw "; Saving JSON files for ~x0 topics.~%" (len topics)))
-       ((mv topics xtopics state)
+       ((mv topics xtopics sitemap state)
         (time$ (order-topics-by-importance topics state)
                :msg "; Importance sorting topics: ~st sec, ~sa bytes.~%"
                :mintime 1/2))
+
+       (smfile (oslib::catpath dir "sitemap.xml"))
+       ((mv channel state) (open-output-channel smfile :character state))
+       (state (princ$ sitemap channel state))
+       (state (close-output-channel channel state))
 
        (lcfile (oslib::catpath dir "linkcheck.html"))
        ((mv channel state) (open-output-channel lcfile :character state))

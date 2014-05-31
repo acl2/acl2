@@ -21,6 +21,7 @@
 (in-package "XDOC")
 (include-book "parse-xml")
 (include-book "save-classic")
+(include-book "misc/assert" :dir :system)
 (set-state-ok t)
 (program)
 
@@ -525,15 +526,6 @@
     (fast-alist-free ans)
     (rescale-page-ranks ans)))
 
-
-
-
-
-
-
-
-
-
 ; Now we have two different sets of ranks: the size rank for the amount of
 ; content, and the linkage rank for the number of cross-references/children.
 ; We want to merge these into a unified score.
@@ -559,24 +551,30 @@
     (cons (cons key1 (+ r1 r2))
           (merge-ranks (cdr keys) ranks-fal1 ranks-fal2))))
 
-(defun rank-xtopics
+(defun make-keys->ranks
   (keys     ; all keys to consider (may differ from xtopics keys if there are bad
             ; topics for which we didn't compute xtopics.
    xtopics  ; list of all xtopics
    )
-  ;; returns a slow alist binding keys to ranks
   (b* (;(names       (xtopiclist->names xtopics))
        (ranks-fal1  (make-fast-alist (dumb-rank-pages xtopics)))
        (ranks-fal2  (make-fast-alist (pairlis$ (make-keys (xtopiclist->names xtopics))
                                                (xtopiclist->sizes xtopics))))
-       (keys->ranks (merge-ranks keys ranks-fal1 ranks-fal2))
-       (-           (fast-alist-free ranks-fal1))
-       (-           (fast-alist-free ranks-fal2))
-       (- (or (equal (mergesort (strip-cars keys->ranks))
-                     (mergesort keys))
-              (er hard? 'rank-topics "Blah, wrong keys!")))
-                                
-       ;; keys->ranks binds keys to ranks and should have unique keys.  invert
+       (keys->ranks (merge-ranks keys ranks-fal1 ranks-fal2)))
+    (fast-alist-free ranks-fal1)
+    (fast-alist-free ranks-fal2)
+    (or (equal (mergesort (strip-cars keys->ranks))
+               (mergesort keys))
+        (er hard? 'make-keys->ranks "Blah, wrong keys!"))
+    (make-fast-alist keys->ranks)))
+
+(defun rank-xtopics
+  (keys     ; all keys to consider (may differ from xtopics keys if there are bad
+            ; topics for which we didn't compute xtopics.
+   keys->ranks ; alist binding all keys to their merged importance scores
+   )
+  ;; returns a slow alist binding keys to ranks
+  (b* (;; keys->ranks binds keys to ranks and should have unique keys.  invert
        ;; it and sort it to order the keys by their ranks
        (ranks->keys (pairlis$ (strip-cdrs keys->ranks)
                               (strip-cars keys->ranks)))
@@ -592,6 +590,77 @@
                      (mergesort keys))
               (er hard? 'rank-topics "Blah, wrong keys 3"))))
     keys-hi-to-lo))
+
+
+
+; ------------------------------------------------------------------------
+; site map support
+
+
+; This code builds a sitemap.xml file for an xdoc manual, using the format
+; provided by sitemaps.org.  This file is possibly useful for search engines
+; like Google to be able to index XDOC manuals that are published online.  Note
+; that the resulting sitemap just uses XDOCMANUALBASEURL all over the place.
+; To use this, you'd need to rewrite this, e.g., with sed, to a proper URL...
+
+(defun priority-float (x)
+  (declare (xargs :guard (and (rationalp x)
+                              (<= 0 x)
+                              (<= x 1))))
+  (if (equal x 1)
+      "1.0"
+    (str::cat "0." (str::natstr (floor (* x 100) 1)))))
+
+(assert! (equal (priority-float 1/10) "0.10"))
+(assert! (equal (priority-float 37/100) "0.37"))
+(assert! (equal (priority-float 374/1000) "0.37"))
+(assert! (equal (priority-float 375/1000) "0.37")) ;; good enough
+
+(defun make-sitemap-aux (xtopics     ; list of all xtopics
+                         keys->ranks ; keys to merged ranks
+                         acc         ; sitemap.xml characters, reverse order
+                         )
+  (b* (((when (atom xtopics))
+        acc)
+       ((xtopic x1) (car xtopics))
+       (key         (make-key x1.name))
+       (rank        (or (cdr (hons-get key keys->ranks))
+                        (er hard? 'make-sitemap-aux "No score for ~x0?~%" key)))
+       (- (or (and (<= 0 rank)
+                   (<= rank 200))
+              (er hard? 'make-sitemap-aux "Expected rank for ~x0 to be in [0, 200].~%")))
+       (priority-str (priority-float (/ rank 200)))
+
+       (acc (str::revappend-chars " <url>" acc))
+       (acc (cons #\Newline acc))
+       (acc (str::revappend-chars "  <loc>XDOCMANUALBASEURL?topic=" acc))
+       (acc (str::revappend-chars key acc))
+       (acc (str::revappend-chars "</loc>" acc))
+       (acc (cons #\Newline acc))
+       (acc (str::revappend-chars "  <changefreq>monthly</changefreq>" acc))
+       (acc (cons #\Newline acc))
+       (acc (str::revappend-chars "  <priority>" acc))
+       (acc (str::revappend-chars priority-str acc))
+       (acc (str::revappend-chars "</priority>" acc))
+       (acc (cons #\Newline acc))
+       (acc (str::revappend-chars " </url>" acc))
+       (acc (cons #\Newline acc)))
+    (make-sitemap-aux (cdr xtopics) keys->ranks acc)))
+
+(defun make-sitemap (xtopics keys->ranks)
+  (b* ((acc nil)
+       (acc (str::revappend-chars "<?xml version=\"1.0\" encoding=\"utf-8\"?>" acc))
+       (acc (cons #\Newline acc))
+       (acc (str::revappend-chars "<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">" acc))
+       (acc (cons #\Newline acc))
+       (acc (make-sitemap-aux xtopics keys->ranks acc))
+       (acc (str::revappend-chars "</urlset>" acc))
+       (acc (cons #\Newline acc)))
+    (str::rchars-to-string acc)))
+
+
+
+; -------------------------------------------------------------
 
 (defun collect-topics-by-importance
   (keys         ; list of keys for all topics in most-important-first order
@@ -616,6 +685,11 @@
           (collect-topics-by-importance (cdr keys) keymap topics-fal))))
 
 (defun order-topics-by-importance (all-topics state)
+  ;; Returns
+  ;;  (mv result    ; reordered version of all-topics, in importance order
+  ;;      xtopics   ; the computed xtopics
+  ;;      sitemap   ; site map for search engines
+  ;;      state)
   (b* ((topics-fal   (topics-fal all-topics))
        ;(- (cw "First 3 of topics-fal: ~x0.~%" (take 3 topics-fal)))
        ;(- (cw "Length of topics-fal: ~x0.~%" (len topics-fal)))
@@ -623,7 +697,8 @@
        (topics-keys  (make-keys topics-names))
        ((mv xtopics state) (xtopics-from-topics all-topics state))
        (state        (report-broken-links xtopics state))
-       (ordered-keys (rank-xtopics topics-keys xtopics))
+       (keys->ranks  (make-keys->ranks topics-keys xtopics))
+       (ordered-keys (rank-xtopics topics-keys keys->ranks))
 
        ;(- (cw "First 3 ordered-keys: ~x0.~%" (take 3 ordered-keys)))
        ;(- (cw "First 3 topics-keys: ~x0.~%" (take 3 topics-keys)))
@@ -641,14 +716,22 @@
        ;(- (cw "First 3 results: ~x0.~%" (take 3 result)))
        ;(- (cw "Length of result: ~x0.~%" (length result)))
        ;(- (cw "Names of result: ~x0.~%" (strip-cars (fast-alist-free (topics-fal result)))))
+       (site-map (time$ (make-sitemap xtopics keys->ranks)))
        )
+    (fast-alist-free keys->ranks)
     (fast-alist-free topics-fal)
     (fast-alist-free keymap)
     (or (equal (mergesort topics-names)
                (mergesort (strip-cars (fast-alist-free (topics-fal result)))))
         (er hard? 'order-topics-by-importance
             "Screwed up the database!"))
-    (mv result xtopics state)))
+    (mv result xtopics site-map state)))
+
+
+
+
+
+
 
 
 
@@ -660,23 +743,20 @@ picking these up.
 (ld
  "importance.lisp")
 
-(include-book
- "tools/defconsts" :dir :system)
-(include-book
- "centaur/aignet/portcullis" :dir :system)
-(include-book
- "centaur/getopt/portcullis" :dir :system)
-(include-book
- "centaur/vl/portcullis" :dir :system)
-(include-book
- "centaur/gl/portcullis" :dir :system)
-(include-book
- "centaur/clex/portcullis" :dir :system)
-(ld
- "cgen/package.lsp" :dir :system)
+;; (include-book "std/util/defconsts" :dir :system)
+;; (include-book "centaur/aignet/portcullis" :dir :system)
+;; (include-book "centaur/getopt/portcullis" :dir :system)
+;; (include-book "centaur/vl/portcullis" :dir :system)
+;; (include-book "centaur/gl/portcullis" :dir :system)
+;; (include-book "centaur/clex/portcullis" :dir :system)
+;; (include-book "centaur/bed/portcullis" :dir :system)
+;; (include-book "centaur/defrstobj/portcullis" :dir :system)
+;; (include-book "projects/milawa/ACL2/portcullis" :dir :system)
+;; (include-book "projects/doc" :dir :system)
+;; (include-book "cgen/defdata" :dir :system)
 
 (acl2::defconsts (*xdoc.sao* state)
-  (serialize-read "../centaur/xdoc.sao" :verbosep t))
+  (serialize-read "../doc/xdoc.sao" :verbosep t))
 
 (table xdoc 'doc
        (clean-topics *xdoc.sao*))
@@ -722,19 +802,21 @@ picking these up.
           (report (cdr keys)))))
 
 (make-event
- (b* ((keys   (make-keys *all-topic-names*))
-      (result (rank-xtopics keys *xtopics*)))
+ (b* ((keys        (make-keys *all-topic-names*))
+      (xtopics     *xtopics*)
+      (keys->ranks (make-keys->ranks keys xtopics))
+      (result      (rank-xtopics keys keys->ranks)))
    `(defconst *keys-in-order-of-importance*
       ',result)))
 
 (report *keys-in-order-of-importance*)
 
 
-(acl2::defconsts (*new-topics* state)
+(acl2::defconsts (*new-topics* *final-xtopics* *sitemap* state)
   (b* ((all-topics (get-xdoc-table (w state)))
-       ((mv new-topics state)
-        (time$ (order-topics-by-importance all-topics state))))
-    (mv new-topics state)))
+       ((mv new-topics xtopics sitemap state)
+        (time$ (order-topics-by-importance "http://blah/index.html" all-topics state))))
+    (mv new-topics xtopics sitemap state)))
 
 (report (make-keys (gather-topic-names *new-topics*)))
 
