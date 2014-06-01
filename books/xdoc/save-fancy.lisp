@@ -486,6 +486,7 @@
                                                 "xdataget.pl"
                                                 "xdata2sql.pl"
                                                 "zip.sh"
+                                                ".htaccess"
                                                 )
                                           dir state))
 

@@ -188,6 +188,7 @@
 
 
 (defines substitute-into-term
+  :flag-local nil
   (define substitute-into-term ((x pseudo-termp)
                                 (al alistp))
     :returns (xx pseudo-termp
@@ -376,6 +377,7 @@
 
 
 (defines simple-one-way-unify
+  :flag-local nil
   :verify-guards nil
   (define simple-one-way-unify ((pat pseudo-termp)
                                 (term pseudo-termp)

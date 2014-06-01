@@ -87,6 +87,7 @@
 
 
 (defines replace-subterms
+  :flag-local nil
   (define replace-subterms ((x pseudo-termp)
                             (alist alistp))
     :flag term
