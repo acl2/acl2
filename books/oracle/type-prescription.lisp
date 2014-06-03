@@ -19,6 +19,8 @@
 ; conjunction of consequences be used effectively?"  When used in a simple
 ; example like this, the answer appears to be "yes".
 
+; Note that :type-prescription rules can only describe a single "typed term."
+
 (in-theory
 ; Tau will prove whatever simple tests we concoct, so we disable it.
  (disable (tau-system)))

@@ -16,6 +16,7 @@
 (in-package "ACL2")
 
 (include-book "std/util/define" :dir :system)
+(include-book "std/util/defrule" :dir :system)
 
 (defxdoc def-gl-rule
   :parents (std/util)
@@ -102,3 +103,18 @@ rule after its proof finishes.</p>
     (if local
         `(local ,event)
       event)))
+
+(defmacro def-gl-ruled (name &rest rst)
+  `(def-gl-rule ,name :disabledp t ,@rst))
+
+(defmacro def-gl-rulel (name &rest rst)
+  `(def-gl-rule ,name :local t ,@rst))
+
+(defmacro def-gl-ruledl (name &rest rst)
+  `(def-gl-rule ,name :local t :disabledp t ,@rst))
+
+(defmacro defrulel (name &rest rst)
+  `(defrule ,name :local t ,@rst))
+
+(defmacro defruledl (name &rest rst)
+  `(defruled ,name :local t ,@rst))
