@@ -272,16 +272,6 @@
                            (x (append x y)))))))
 
 
-
-;; Deprecated -- now ACL2::UNIQUEP is imported, instead.
-;; (defexec uniquep (x)
-;;   (declare (xargs :guard (true-listp x)))
-;;   (mbe :logic (no-duplicatesp-equal x)
-;;        :exec (same-lengthp (mergesort x) x)))
-
-
-
-
 (defthm mergesort-of-rev
   (equal (mergesort (rev x))
          (mergesort (double-rewrite x))))
@@ -338,46 +328,4 @@
                           (set::subset-difference
                            set::pick-a-point-subset-strategy))
           )))
-
-
-
-
-#|
-
-:q
-
-(ccl::set-lisp-heap-gc-threshold (expt 2 30))
-
-(lp)
-
-(include-book ;; fool dependency scanner
- "util-osets")
-
-(include-book ;; fool dependency scanner
- "misc/hons-help" :dir :system)
-
-(defund strings (n)
-  (if (zp n)
-      nil
-    (cons (cat "String " (natstr n))
-          (strings (- n 1)))))
-
-(defconst *test* (strings 10000))
-
-;; 3.2 seconds, 16 bytes allocated
-(time$ (no-duplicatesp-equal *test*))
-
-
-(defconst *test2* (strings 300000))
-
-;; 0.89 seconds, 53.58 MB allocated
-(time$ (uniquep *test2*))
-
-;; 14.4 seconds; 55.48 MB allocated
-(time$ (acl2::hons-dups-p *test2*))
-
-|#
-
-
-
 

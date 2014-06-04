@@ -44,8 +44,10 @@ var xslt_impl = {};
 
 function xslt_init() {
 
-    if (window.ActiveXObject) {
-
+    if (window.ActiveXObject // detects IE <= version 11
+        || "ActiveXObject" in window // detects IE version 11
+       )
+    {
 	var xslt_plain = $.base64.decode(xslt_base64);
 
 	var xsltdom = new ActiveXObject("Msxml2.DOMDocument.6.0");

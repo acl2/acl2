@@ -25,7 +25,7 @@
 (include-book "../mlib/hierarchy")
 (include-book "../mlib/allexprs")
 (include-book "../mlib/lvalues")
-(include-book "../mlib/warnings")
+(include-book "../mlib/reportcard")
 (include-book "../util/cwtime")
 (include-book "use-set-ignore")
 (include-book "std/bitsets/bitsets" :dir :system)
@@ -241,7 +241,7 @@ from truly spurious wires.</p>
   :short "Safely generate the (fast) wirealists for a list of modules."
   ((x vl-modulelist-p))
   :returns
-  (mv (walist vl-modwarningalist-p :hyp :fguard)
+  (mv (reportcard vl-reportcard-p :hyp :fguard)
       (all-wirealists
        "Fast alist binding every module name to its wirealist."
        (equal (hons-assoc-equal name all-wirealists)
@@ -255,21 +255,21 @@ from truly spurious wires.</p>
 
        (car-name (vl-module->name (car x)))
 
-       ((mv warning-alist cdr-wire-alists)
+       ((mv reportcard cdr-wire-alists)
         (vl-modulelist-all-wirealists (cdr x)))
 
        ((mv ?successp car-warnings car-wire-alist)
         (vl-module-wirealist (car x) nil))
 
-       (warning-alist
+       (reportcard
         (if (consp car-warnings)
-            (vl-extend-modwarningalist-list car-name car-warnings warning-alist)
-          warning-alist))
+            (vl-extend-reportcard-list car-name car-warnings reportcard)
+          reportcard))
 
        (wire-alists
         (hons-acons car-name car-wire-alist cdr-wire-alists)))
 
-    (mv warning-alist wire-alists)))
+    (mv reportcard wire-alists)))
 
   #||
 
@@ -366,9 +366,9 @@ warnings."
   :enabled t
   :long "<p>We leave this enabled.  It's mostly useful for guards.</p>"
 
-  (b* (((mv warnings-alist all-walists)
+  (b* (((mv reportcard all-walists)
         (vl-modulelist-all-wirealists x)))
-    (fast-alist-free warnings-alist)
+    (fast-alist-free reportcard)
     all-walists))
 
 
@@ -424,7 +424,7 @@ warnings."
 
 
 (define us-check-port-bits
-  :short "Possibly extends the mwalist."
+  :short "Possibly extends the reportcard."
 ; This is almost the same as vl-check-port-bits.  The idea is to make sure that
 ; each module's ports and port declarations agree with one another.  I wanted to
 ; use vl-check-port-bits directly, but it complains about inouts and just isn't
@@ -432,21 +432,21 @@ warnings."
 
   ((x vl-module-p)
    (walist vl-wirealist-p)
-   (mwalist vl-modwarningalist-p))
+   (reportcard vl-reportcard-p))
 
-  :returns (new-mwalist vl-modwarningalist-p
+  :returns (new-reportcard vl-reportcard-p
                         :hyp (and (force (vl-module-p x))
-                                  (force (vl-modwarningalist-p mwalist))))
+                                  (force (vl-reportcard-p reportcard))))
 
   (b* (((vl-module x) x)
 
        ((mv successp warnings port-bits) (vl-portlist-msb-bit-pattern x.ports walist))
        ((unless successp)
-        (vl-extend-modwarningalist-list x.name warnings mwalist))
+        (vl-extend-reportcard-list x.name warnings reportcard))
 
        ((mv successp warnings decl-bits) (us-portdecllist-bits x.portdecls walist))
        ((unless successp)
-        (vl-extend-modwarningalist-list x.name warnings mwalist))
+        (vl-extend-reportcard-list x.name warnings reportcard))
 
        ;; Now some extra sanity checks.
        (flat-ports   (flatten port-bits))
@@ -454,10 +454,10 @@ warnings."
        (decl-bits-s  (mergesort decl-bits))
 
        ;; Check: unique bits for all port declarations.
-       (mwalist
+       (reportcard
         (if (mbe :logic (uniquep decl-bits)
                  :exec (same-lengthp decl-bits decl-bits-s))
-            mwalist
+            reportcard
           (b* ((dupe-names (duplicated-members (vl-portdecllist->names x.portdecls)))
                (dupe-bits  (duplicated-members decl-bits))
                (w (if dupe-names
@@ -477,13 +477,13 @@ warnings."
                      :args (list (vl-verilogify-emodwirelist dupe-bits))
                      :fatalp t
                      :fn 'us-check-port-bits))))
-            (vl-extend-modwarningalist x.name w mwalist))))
+            (vl-extend-reportcard x.name w reportcard))))
 
        ;; Check: unique bits for all ports.
-       (mwalist
+       (reportcard
         (if (mbe :logic (uniquep flat-ports)
                  :exec (same-lengthp flat-ports-s flat-ports))
-            mwalist
+            reportcard
           (b* ((dupe-bits (duplicated-members flat-ports))
                (w (make-vl-warning
                    :type :vl-bad-ports
@@ -492,12 +492,12 @@ warnings."
                    :args (list (vl-verilogify-emodwirelist dupe-bits))
                    :fatalp t
                    :fn 'us-check-port-bits)))
-            (vl-extend-modwarningalist x.name w mwalist))))
+            (vl-extend-reportcard x.name w reportcard))))
 
        ;; Check: every declared bit is in a port, and vice versa.
-       (mwalist
+       (reportcard
         (if (equal decl-bits-s flat-ports-s)
-            mwalist
+            reportcard
           (b* ((extra-port-bits (difference flat-ports-s decl-bits-s))
                (extra-decl-bits (difference decl-bits-s flat-ports-s))
                (w1 (and extra-port-bits
@@ -517,31 +517,31 @@ warnings."
                          :fatalp t
                          :fn 'us-check-port-bits))))
             (cond ((and w1 w2)
-                   (vl-extend-modwarningalist-list x.name (list w1 w2) mwalist))
+                   (vl-extend-reportcard-list x.name (list w1 w2) reportcard))
                   (w1
-                   (vl-extend-modwarningalist x.name w1 mwalist))
+                   (vl-extend-reportcard x.name w1 reportcard))
                   (w2
-                   (vl-extend-modwarningalist x.name w2 mwalist))
+                   (vl-extend-reportcard x.name w2 reportcard))
                   (t
-                   mwalist))))))
-    mwalist))
+                   reportcard))))))
+    reportcard))
 
 (define us-modulelist-check-port-bits
   ((x           vl-modulelist-p)
    (mods        vl-modulelist-p)
    (all-walists (equal all-walists (vl-nowarn-all-wirealists mods)))
-   (mwalist     vl-modwarningalist-p))
+   (reportcard     vl-reportcard-p))
   :guard (subsetp-equal (redundant-list-fix x)
                         (redundant-list-fix mods))
-  :returns (new-mwalist vl-modwarningalist-p
+  :returns (new-reportcard vl-reportcard-p
                         :hyp (and (force (vl-modulelist-p x))
-                                  (force (vl-modwarningalist-p mwalist))))
+                                  (force (vl-reportcard-p reportcard))))
   (b* (((when (atom x))
-        mwalist)
+        reportcard)
        (mod1    (car x))
        (walist1 (cdr (hons-get (vl-module->name mod1) all-walists)))
-       (mwalist (us-check-port-bits mod1 walist1 mwalist)))
-    (us-modulelist-check-port-bits (cdr x) mods all-walists mwalist))
+       (reportcard (us-check-port-bits mod1 walist1 reportcard)))
+    (us-modulelist-check-port-bits (cdr x) mods all-walists reportcard))
   :prepwork ((local (defthm car-when-vl-modulelist-p-under-iff
                       (implies (vl-modulelist-p x)
                                (iff (car x)
@@ -1836,17 +1836,17 @@ warnings."
 
 (defsection us-mark-wires-for-notes
 
-  (defund us-mark-wires-for-notes (submod mask wires db mwalist)
-    "Returns (MV MWALIST DB)"
+  (defund us-mark-wires-for-notes (submod mask wires db reportcard)
+    "Returns (MV REPORTCARD DB)"
     (declare (xargs :guard (and (stringp submod)
                                 (natp mask)
                                 (vl-emodwirelist-p wires)
                                 (us-db-p db)
-                                (vl-modwarningalist-p mwalist))))
+                                (vl-reportcard-p reportcard))))
     (b* (((when (atom wires))
-          (mv mwalist db))
-         ((mv mwalist db)
-          (us-mark-wires-for-notes submod mask (cdr wires) db mwalist))
+          (mv reportcard db))
+         ((mv reportcard db)
+          (us-mark-wires-for-notes submod mask (cdr wires) db reportcard))
          (wire1-look (hons-get (car wires) db))
          ((unless wire1-look)
           (b* ((w (make-vl-warning
@@ -1855,42 +1855,42 @@ warnings."
                    :args (list (car wires))
                    :fn 'us-mark-wires-for-notes
                    :fatalp nil)))
-            (mv (vl-extend-modwarningalist submod w mwalist) db)))
+            (mv (vl-extend-reportcard submod w reportcard) db)))
          (curr-mask (cdr wire1-look))
          (new-mask  (acl2::bitset-union curr-mask mask))
          ((when (= curr-mask new-mask))
           ;; nothing to do
-          (mv mwalist db))
+          (mv reportcard db))
          (db (hons-acons (car wires) new-mask db)))
-      (mv mwalist db)))
+      (mv reportcard db)))
 
   (defthm us-mark-wires-for-notes-basics
     (implies (and (force (stringp submod))
                   (force (natp mask))
                   (force (vl-emodwirelist-p wires))
                   (force (us-db-p db))
-                  (force (vl-modwarningalist-p mwalist)))
-             (let ((ret (us-mark-wires-for-notes submod mask wires db mwalist)))
-               (and (vl-modwarningalist-p (mv-nth 0 ret))
+                  (force (vl-reportcard-p reportcard)))
+             (let ((ret (us-mark-wires-for-notes submod mask wires db reportcard)))
+               (and (vl-reportcard-p (mv-nth 0 ret))
                     (us-db-p (mv-nth 1 ret)))))
     :hints(("Goal" :in-theory (enable us-mark-wires-for-notes)))))
 
 
 (defsection us-apply-notes
 
-  (defund us-apply-notes (super notes db dbalist mwalist)
-    "Returns (MV MWALIST' DBALIST')"
+  (defund us-apply-notes (super notes db dbalist reportcard)
+    "Returns (MV REPORTCARD' DBALIST')"
     (declare (xargs :guard (and (stringp super)
                                 (us-notelist-p notes)
                                 (us-db-p db)           ; DB for the current module
                                 (us-dbalist-p dbalist) ; DBS for the submodules
-                                (vl-modwarningalist-p mwalist))
+                                (vl-reportcard-p reportcard))
                     :verify-guards nil))
     (b* (((when (atom notes))
-          (mv mwalist dbalist))
+          (mv reportcard dbalist))
 
-         ((mv mwalist dbalist)
-          (us-apply-notes super (cdr notes) db dbalist mwalist))
+         ((mv reportcard dbalist)
+          (us-apply-notes super (cdr notes) db dbalist reportcard))
 
          ((us-note note1) (car notes))
 
@@ -1904,15 +1904,15 @@ warnings."
                    :args (list note1.submod note1.formals)
                    :fatalp nil
                    :fn 'us-apply-notes)))
-            (mv (vl-extend-modwarningalist note1.submod w mwalist)
+            (mv (vl-extend-reportcard note1.submod w reportcard)
                 dbalist)))
 
          ((mv warnings actuals-mask)
           (us-union-masks super note1.actuals db nil))
 
-         (mwalist (if (consp warnings)
-                      (vl-extend-modwarningalist-list note1.submod warnings mwalist)
-                    mwalist))
+         (reportcard (if (consp warnings)
+                      (vl-extend-reportcard-list note1.submod warnings reportcard)
+                    reportcard))
 
          (above-mask 0)
          ;; a wire is used above the submodule if used in the current module or
@@ -1926,20 +1926,20 @@ warnings."
                          (acl2::bitset-insert *us-truly-used-abovep* above-mask)
                        above-mask))
 
-         ((mv mwalist new-sub-db) (us-mark-wires-for-notes note1.submod above-mask note1.formals sub-db mwalist))
+         ((mv reportcard new-sub-db) (us-mark-wires-for-notes note1.submod above-mask note1.formals sub-db reportcard))
          (dbalist                 (hons-acons note1.submod new-sub-db dbalist))
 
          )
-      (mv mwalist dbalist)))
+      (mv reportcard dbalist)))
 
   (defthm us-apply-notes-basics
     (implies (and (force (stringp super))
                   (force (us-notelist-p notes))
                   (force (us-db-p db))
                   (force (us-dbalist-p dbalist))
-                  (force (vl-modwarningalist-p mwalist)))
-             (let ((ret (us-apply-notes super notes db dbalist mwalist)))
-               (and (vl-modwarningalist-p (mv-nth 0 ret))
+                  (force (vl-reportcard-p reportcard)))
+             (let ((ret (us-apply-notes super notes db dbalist reportcard)))
+               (and (vl-reportcard-p (mv-nth 0 ret))
                     (us-dbalist-p (mv-nth 1 ret))
                     )))
     :hints(("Goal"
@@ -1952,23 +1952,23 @@ warnings."
 
 (defsection us-apply-notesalist
 
-  (defund us-apply-notesalist (x notealist dbalist mwalist)
-    "Returns (MV MWALIST' DBALIST')"
+  (defund us-apply-notesalist (x notealist dbalist reportcard)
+    "Returns (MV REPORTCARD' DBALIST')"
     (declare (xargs :guard (and (vl-modulelist-p x)
                                 (us-notealist-p notealist)
                                 (us-dbalist-p dbalist)
-                                (vl-modwarningalist-p mwalist))))
+                                (vl-reportcard-p reportcard))))
     (b* (((when (atom x))
-          (mv mwalist dbalist))
+          (mv reportcard dbalist))
 
          ((vl-module x1) (car x))
          (db-look    (hons-get x1.name dbalist))
          (notes-look (hons-get x1.name notealist))
          (db         (cdr db-look))
          (notes      (cdr notes-look))
-         (mwalist
+         (reportcard
           (if (and db-look notes-look)
-              mwalist
+              reportcard
             (b* ((w (make-vl-warning
                      :type :use-set-fudging
                      :msg "Expected use-set database and notes for ~
@@ -1977,20 +1977,20 @@ warnings."
                      :args (list x1.name)
                      :fatalp nil
                      :fn 'us-apply-notesalist)))
-              (vl-extend-modwarningalist x1.name w mwalist))))
-         ((mv mwalist dbalist)
-          (us-apply-notes x1.name notes db dbalist mwalist))
-         ((mv mwalist dbalist)
-          (us-apply-notesalist (cdr x) notealist dbalist mwalist)))
-      (mv mwalist dbalist)))
+              (vl-extend-reportcard x1.name w reportcard))))
+         ((mv reportcard dbalist)
+          (us-apply-notes x1.name notes db dbalist reportcard))
+         ((mv reportcard dbalist)
+          (us-apply-notesalist (cdr x) notealist dbalist reportcard)))
+      (mv reportcard dbalist)))
 
   (defthm us-apply-notesalist-basics
     (implies (and (force (vl-modulelist-p x))
                   (force (us-notealist-p notealist))
                   (force (us-dbalist-p dbalist))
-                  (force (vl-modwarningalist-p mwalist)))
-             (let ((ret (us-apply-notesalist x notealist dbalist mwalist)))
-               (and (vl-modwarningalist-p (mv-nth 0 ret))
+                  (force (vl-reportcard-p reportcard)))
+             (let ((ret (us-apply-notesalist x notealist dbalist reportcard)))
+               (and (vl-reportcard-p (mv-nth 0 ret))
                     (us-dbalist-p (mv-nth 1 ret)))))
     :hints(("Goal" :in-theory (enable us-apply-notesalist)))))
 
@@ -2364,17 +2364,17 @@ warnings."
      modalist    ; modalist for all modules
      dbalist     ; use-set databases for previously analyzed modules
      all-walists ; precomputed walists for all mods
-     mwalist     ; modwarningalist we're building
+     reportcard     ; reportcard we're building
      toplevel    ; list of top level modules
      notealist
      )
-    "Returns (MV X' DBALIST' MWALIST' NOTEALIST')"
+    "Returns (MV X' DBALIST' REPORTCARD' NOTEALIST')"
     (declare (xargs :guard (and (vl-module-p x)
                                 (vl-modulelist-p mods)
                                 (equal modalist (vl-modalist mods))
                                 (us-dbalist-p dbalist)
                                 (equal all-walists (vl-nowarn-all-wirealists mods))
-                                (vl-modwarningalist-p mwalist)
+                                (vl-reportcard-p reportcard)
                                 (string-listp toplevel)
                                 (us-notealist-p notealist))))
     (b* (((vl-module x) x)
@@ -2383,7 +2383,7 @@ warnings."
          (walist      (cdr walist-look))
          ((unless walist-look)
           (er hard? 'us-analyze-mod "Expected a wire alist for ~x0." x.name)
-          (mv x dbalist mwalist notealist))
+          (mv x dbalist reportcard notealist))
 
 ;         (nwires (- (sum-lens walist) (len walist)))
 ;         (- (cw "Analyzing ~s0 (~x1 wires).~%" x.name nwires))
@@ -2430,7 +2430,7 @@ warnings."
          (warnings (append-without-guard warnings x.warnings))
          (x-prime (change-vl-module x :warnings warnings)))
 
-      (mv x-prime dbalist mwalist notealist)))
+      (mv x-prime dbalist reportcard notealist)))
 
   (defthm us-analyze-mod-basics
     (implies (and (force (vl-module-p x))
@@ -2438,13 +2438,13 @@ warnings."
                   (force (equal modalist (vl-modalist mods)))
                   (force (us-dbalist-p dbalist))
                   (force (equal all-walists (vl-nowarn-all-wirealists mods)))
-                  (force (vl-modwarningalist-p mwalist))
+                  (force (vl-reportcard-p reportcard))
                   (force (string-listp toplevel))
                   (force (us-notealist-p notealist)))
-             (let ((ret (us-analyze-mod x mods modalist dbalist all-walists mwalist toplevel notealist)))
+             (let ((ret (us-analyze-mod x mods modalist dbalist all-walists reportcard toplevel notealist)))
                (and (vl-module-p (mv-nth 0 ret))
                     (us-dbalist-p (mv-nth 1 ret))
-                    (vl-modwarningalist-p (mv-nth 2 ret))
+                    (vl-reportcard-p (mv-nth 2 ret))
                     (us-notealist-p (mv-nth 3 ret)))))
     :hints(("Goal" :in-theory (enable us-analyze-mod)))))
 
@@ -2452,26 +2452,26 @@ warnings."
 
 (defsection us-analyze-mods
 
-  (defund us-analyze-mods-aux (x mods modalist dbalist all-walists mwalist toplevel notealist)
-    "Returns (MV X' DBALIST' MWALIST')"
+  (defund us-analyze-mods-aux (x mods modalist dbalist all-walists reportcard toplevel notealist)
+    "Returns (MV X' DBALIST' REPORTCARD')"
     (declare (xargs :guard (and (vl-modulelist-p x)
                                 (vl-modulelist-p mods)
                                 (equal modalist (vl-modalist mods))
                                 (us-dbalist-p dbalist)
                                 (equal all-walists (vl-nowarn-all-wirealists mods))
-                                (vl-modwarningalist-p mwalist)
+                                (vl-reportcard-p reportcard)
                                 (string-listp toplevel)
                                 (us-notealist-p notealist))))
     (b* (((when (atom x))
-          (mv nil dbalist mwalist notealist))
-         ((mv car-prime dbalist mwalist notealist)
+          (mv nil dbalist reportcard notealist))
+         ((mv car-prime dbalist reportcard notealist)
           (us-analyze-mod (car x) mods modalist dbalist
-                          all-walists mwalist toplevel notealist))
-         ((mv cdr-prime dbalist mwalist notealist)
+                          all-walists reportcard toplevel notealist))
+         ((mv cdr-prime dbalist reportcard notealist)
           (us-analyze-mods-aux (cdr x) mods modalist dbalist
-                               all-walists mwalist toplevel notealist))
+                               all-walists reportcard toplevel notealist))
          (x-prime (cons car-prime cdr-prime)))
-      (mv x-prime dbalist mwalist notealist)))
+      (mv x-prime dbalist reportcard notealist)))
 
   (defthm us-analyze-mods-aux-basics
     (implies (and (force (vl-modulelist-p x))
@@ -2479,13 +2479,13 @@ warnings."
                   (force (equal modalist (vl-modalist mods)))
                   (force (us-dbalist-p dbalist))
                   (force (equal all-walists (vl-nowarn-all-wirealists mods)))
-                  (force (vl-modwarningalist-p mwalist))
+                  (force (vl-reportcard-p reportcard))
                   (force (string-listp toplevel))
                   (force (us-notealist-p notealist)))
-             (let ((ret (us-analyze-mods-aux x mods modalist dbalist all-walists mwalist toplevel notealist)))
+             (let ((ret (us-analyze-mods-aux x mods modalist dbalist all-walists reportcard toplevel notealist)))
                (and (vl-modulelist-p (mv-nth 0 ret))
                     (us-dbalist-p (mv-nth 1 ret))
-                    (vl-modwarningalist-p (mv-nth 2 ret))
+                    (vl-reportcard-p (mv-nth 2 ret))
                     (us-notealist-p (mv-nth 3 ret)))))
     :hints(("Goal" :in-theory (enable us-analyze-mods-aux))))
 
@@ -2519,7 +2519,7 @@ warnings."
          (- (fast-alist-free notealist))
 
          (x-prime
-          (cwtime (vl-apply-modwarningalist x-prime warnings-alist)
+          (cwtime (vl-modulelist-apply-reportcard x-prime warnings-alist)
                   :mintime 1/2))
          (- (fast-alist-free warnings-alist))
 

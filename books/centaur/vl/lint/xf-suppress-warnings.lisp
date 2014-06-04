@@ -22,6 +22,7 @@
 (include-book "../parsetree")
 (include-book "../mlib/stmt-tools")
 (local (include-book "../util/arithmetic"))
+(local (std::add-default-post-define-hook :fix))
 
 (defsection lint-warning-suppression
   :parents (lint warnings)
@@ -70,18 +71,15 @@ either upper or lower case, treating - and _ as equivalent, and with or without
             x)))
     x))
 
-(defprojection vl-mash-warning-strings (x)
-  (vl-mash-warning-string x)
-  :guard (string-listp x)
-  :rest ((defthm string-listp-of-vl-mash-warning-strings
-           (string-listp (vl-mash-warning-strings x))
-           :hints(("Goal" :induct (len x))))))
-
+(defprojection vl-mash-warning-strings ((x string-listp))
+  :returns (new-x string-listp)
+  (vl-mash-warning-string x))
 
 (define vl-lint-ignore-att-p ((x stringp))
   :short "Recognize strings that start with lint-ignore or lint_ignore, case
           insensitive"
-  (let ((x (str::strsubst "-" "_" x)))
+  (b* ((x (string-fix x))
+       (x (str::strsubst "-" "_" x)))
     (str::istrprefixp "lint_ignore" x)))
 
 (define vl-lint-ignore-att-mash ((x (and (stringp x)
@@ -102,6 +100,7 @@ either upper or lower case, treating - and _ as equivalent, and with or without
 (define vl-lint-attname-says-ignore ((attname stringp)
                                      (mashed-warning-type stringp))
   :returns (ignorep booleanp :rule-classes :type-prescription)
+  :hooks nil
   (b* (((unless (vl-lint-ignore-att-p attname))
         nil)
        (mashed-att (vl-lint-ignore-att-mash attname))
@@ -126,6 +125,7 @@ either upper or lower case, treating - and _ as equivalent, and with or without
 
 (define vl-lint-atts-say-ignore ((atts vl-atts-p)
                                  (mashed-warning-type stringp))
+  :hooks nil
   :returns (ignorep booleanp :rule-classes :type-prescription)
   (if (atom atts)
       nil
@@ -143,6 +143,7 @@ either upper or lower case, treating - and _ as equivalent, and with or without
 (define vl-lint-scan-for-ignore
   ((x "Arbitrary stuff that might occur in a warning's args.")
    (mwtype stringp))
+  :hooks nil
   :returns (ignorep booleanp :rule-classes :type-prescription)
   (b* (((when (atom x))
         nil)
@@ -153,9 +154,9 @@ either upper or lower case, treating - and _ as equivalent, and with or without
           (or
            ;; Recognize certain constructs that have attributes
            (case (car x)
-             (:vl-nonatom
+             (:nonatom
               (and (vl-expr-p x)
-                   (eq (vl-expr-kind x) :vl-nonatom)
+                   (eq (vl-expr-kind x) :nonatom)
                    (vl-lint-atts-say-ignore (vl-nonatom->atts x) mwtype)))
              (:vl-netdecl      (and (vl-netdecl-p x)       (vl-lint-atts-say-ignore (vl-netdecl->atts x)       mwtype)))
              (:vl-assign       (and (vl-assign-p x)        (vl-lint-atts-say-ignore (vl-assign->atts x)        mwtype)))
@@ -193,29 +194,53 @@ either upper or lower case, treating - and _ as equivalent, and with or without
         (vl-lint-scan-for-ignore (cdr x) mwtype))))
 
 (define vl-lint-suppress-warnings ((x vl-warninglist-p))
-  :returns (new-x vl-warninglist-p :hyp :guard)
+  :returns (new-x vl-warninglist-p)
   (b* (((when (atom x))
         nil)
        ((vl-warning x1) (car x))
        ((when (vl-lint-scan-for-ignore x1.args (vl-warning-type-mash x1.type)))
         (vl-lint-suppress-warnings (cdr x))))
-    (cons (car x) (vl-lint-suppress-warnings (cdr x)))))
+    (cons (vl-warning-fix (car x))
+          (vl-lint-suppress-warnings (cdr x)))))
 
-(define vl-module-suppress-lint-warnings ((x vl-module-p))
-  :returns (new-x vl-module-p :hyp :fguard)
-  (b* ((warnings (vl-lint-suppress-warnings (vl-module->warnings x))))
-    (change-vl-module x :warnings warnings)))
 
-(defprojection vl-modulelist-suppress-lint-warnings (x)
-  (vl-module-suppress-lint-warnings x)
-  :guard (vl-modulelist-p x)
-  :result-type vl-modulelist-p)
+
+
+(defmacro def-vl-suppress-lint-warnings (name)
+  (b* ((mksym-package-symbol (pkg-witness "VL"))
+       (elem-fn        (mksym 'vl- name '-suppress-lint-warnings))
+       (list-fn        (mksym 'vl- name 'list-suppress-lint-warnings))
+       (elem-p         (mksym 'vl- name '-p))
+       (list-p         (mksym 'vl- name 'list-p))
+       (elem->warnings (mksym 'vl- name '->warnings))
+       (change-elem    (mksym 'change-vl- name)))
+    `(progn
+       (define ,elem-fn ((x ,elem-p))
+         :parents (vl-design-suppress-lint-warnings)
+         :returns (new-x ,elem-p)
+         (,change-elem x :warnings (vl-lint-suppress-warnings (,elem->warnings x))))
+       (defprojection ,list-fn ((x ,list-p))
+         :parents (vl-design-suppress-lint-warnings)
+         :returns (new-x ,list-p)
+         (,elem-fn x)))))
+
+(def-vl-suppress-lint-warnings module)
+(def-vl-suppress-lint-warnings udp)
+(def-vl-suppress-lint-warnings interface)
+(def-vl-suppress-lint-warnings program)
+(def-vl-suppress-lint-warnings package)
+(def-vl-suppress-lint-warnings config)
 
 (define vl-design-suppress-lint-warnings ((x vl-design-p))
   :returns (new-x vl-design-p)
-  (b* ((x (vl-design-fix x))
-       ((vl-design x) x))
-    (change-vl-design x :mods (vl-modulelist-suppress-lint-warnings x.mods))))
+  (b* (((vl-design x) x))
+    (change-vl-design x
+                      :mods       (vl-modulelist-suppress-lint-warnings    x.mods)
+                      :udps       (vl-udplist-suppress-lint-warnings       x.udps)
+                      :interfaces (vl-interfacelist-suppress-lint-warnings x.interfaces)
+                      :programs   (vl-programlist-suppress-lint-warnings   x.programs)
+                      :packages   (vl-packagelist-suppress-lint-warnings   x.packages)
+                      :configs    (vl-configlist-suppress-lint-warnings    x.configs))))
 
 
 
@@ -223,46 +248,60 @@ either upper or lower case, treating - and _ as equivalent, and with or without
   :short "Globally suppress certain kinds of warnings."
   ((x vl-warninglist-p)
    (mashed-ignore-list string-listp))
-  :returns (new-warnings vl-warninglist-p :hyp (force (vl-warninglist-p x)))
-  (b* (((when (atom x))
+  :returns (new-warnings vl-warninglist-p)
+  (b* ((mashed-ignore-list (string-list-fix mashed-ignore-list))
+       ((when (atom x))
         nil)
        (type1 (vl-warning->type (car x)))
        (type1-mash (vl-warning-type-mash type1))
        ((when (member-equal type1-mash mashed-ignore-list))
         (vl-warninglist-lint-ignoreall (cdr x) mashed-ignore-list)))
-    (cons (car x)
+    (cons (vl-warning-fix (car x))
           (vl-warninglist-lint-ignoreall (cdr x) mashed-ignore-list))))
 
-(define vl-module-lint-ignoreall
-  ((x                  vl-module-p)
-   (mashed-ignore-list string-listp))
-  :returns (new-x vl-module-p :hyp (force (vl-module-p x)))
-  (b* (((vl-module x) x)
-       (new-warnings (vl-warninglist-lint-ignoreall x.warnings mashed-ignore-list)))
-    (change-vl-module x :warnings new-warnings)))
 
-(defprojection vl-modulelist-lint-ignoreall-aux (x mashed-ignore-list)
-  (vl-module-lint-ignoreall x mashed-ignore-list)
-  :guard (and (vl-modulelist-p x)
-              (string-listp mashed-ignore-list))
-  :result-type vl-modulelist-p)
+(defmacro def-vl-lint-ignoreall (name)
+  (b* ((mksym-package-symbol (pkg-witness "VL"))
+       (elem-fn        (mksym 'vl- name '-lint-ignoreall))
+       (list-fn        (mksym 'vl- name 'list-lint-ignoreall))
+       (elem-p         (mksym 'vl- name '-p))
+       (list-p         (mksym 'vl- name 'list-p))
+       (elem->warnings (mksym 'vl- name '->warnings))
+       (change-elem    (mksym 'change-vl- name)))
+    `(progn
+       (define ,elem-fn ((x                  ,elem-p)
+                         (mashed-ignore-list string-listp))
+         :parents (vl-design-lint-ignoreall)
+         :returns (new-x ,elem-p)
+         (,change-elem x :warnings (vl-warninglist-lint-ignoreall (,elem->warnings x)
+                                                                  mashed-ignore-list)))
+       (defprojection ,list-fn ((x                  ,list-p)
+                                (mashed-ignore-list string-listp))
+         :parents (vl-design-lint-ignoreall)
+         :returns (new-x ,list-p)
+         (,elem-fn x mashed-ignore-list)))))
 
-(define vl-modulelist-lint-ignoreall
-  ((x                vl-modulelist-p)
+(def-vl-lint-ignoreall module)
+(def-vl-lint-ignoreall udp)
+(def-vl-lint-ignoreall interface)
+(def-vl-lint-ignoreall program)
+(def-vl-lint-ignoreall package)
+(def-vl-lint-ignoreall config)
+
+(define vl-design-lint-ignoreall
+  ((x                vl-design-p)
    (user-ignore-list string-listp
                      "A list of user-level ignore strings.  We'll mash these
                       first.  That is, the user can say all kinds of things,
                       like \"oddexpr\" or \"vl_oddexpr\" or \"warn_oddexpr\"
                       or \"warn-oddexpr\" etc., to suppress oddexpr warnings."))
-  :returns (new-mods vl-modulelist-p :hyp (force (vl-modulelist-p x)))
-  (b* ((mashed-ignore-list (vl-mash-warning-strings user-ignore-list)))
-    (vl-modulelist-lint-ignoreall-aux x mashed-ignore-list)))
-
-(define vl-design-lint-ignoreall
-  ((x                vl-design-p)
-   (user-ignore-list string-listp))
   :returns (new-x vl-design-p)
-  (b* ((x (vl-design-fix x))
-       ((vl-design x) x))
+  (b* (((vl-design x) x)
+       (mashed-ignore-list (vl-mash-warning-strings user-ignore-list)))
     (change-vl-design x
-                      :mods (vl-modulelist-lint-ignoreall x.mods user-ignore-list))))
+                      :mods       (vl-modulelist-lint-ignoreall    x.mods       mashed-ignore-list)
+                      :udps       (vl-udplist-lint-ignoreall       x.udps       mashed-ignore-list)
+                      :interfaces (vl-interfacelist-lint-ignoreall x.interfaces mashed-ignore-list)
+                      :programs   (vl-programlist-lint-ignoreall   x.programs   mashed-ignore-list)
+                      :packages   (vl-packagelist-lint-ignoreall   x.packages   mashed-ignore-list)
+                      :configs    (vl-configlist-lint-ignoreall    x.configs    mashed-ignore-list))))

@@ -315,27 +315,32 @@
        ((mv good bad use-set-report)
         (xf-cwtime (vl-simplify loadresult.design simpconfig)))
 
-       (mods     (vl-design->mods good))
-       (failmods (vl-design->mods bad))
-       (walist   (vl-origname-modwarningalist
-                  (append-without-guard mods failmods)))
+       (reportcard (vl-design-origname-reportcard good))
        (- (vl-cw-ps-seq
-           (vl-cw "Successfully simplified ~x0 module(s).~%" (len mods))
-           ;; (vl-print-strings-with-commas (vl::vl-modulelist->names-exec mods nil) 4)
-           ;; (vl-println "")
-           (vl-cw "Failed to simplify ~x0 module~s1~%"
-                  (len failmods)
-                  (cond ((atom failmods) "s.")
-                        ((atom (cdr failmods)) ":")
-                        (t "s:")))
+           (vl-cw "Successfully simplified ~x0 module~s1.~%"
+                  (len (vl-design->mods good))
+                  (if (vl-plural-p (vl-design->mods good)) "s" ""))
+           (vl-println "")
+           (vl-println "Warnings for successful modules:")
+           (vl-print-reportcard reportcard)
+           (vl-println "")))
+       (- (fast-alist-free reportcard))
+
+       (reportcard (vl-design-origname-reportcard bad))
+       (failmods   (vl-design->mods bad))
+       (- (vl-cw-ps-seq
            (if (atom failmods)
                ps
-             (vl-print-strings-with-commas (vl::vl-modulelist->names-exec failmods nil) 4))
-           (vl-println "")
-           (vl-println "Warnings for all modules:")
-           (vl-print-modwarningalist walist)
-           (vl-println "")))
-       (- (fast-alist-free walist))
+             (vl-ps-seq
+              (vl-cw "Failed to simplify ~x0 module~s1: "
+                     (len failmods)
+                     (if (vl-plural-p failmods) "s" ""))
+              (vl-print-strings-with-commas (vl::vl-modulelist->names failmods) 4)
+              (vl-println "")
+              (vl-println "Warnings for failed descriptions:~%")
+              (vl-print-reportcard reportcard)
+              (vl-println "")))))
+       (- (fast-alist-free reportcard))
 
        (result (make-vl-translation :good          good
                                     :bad           bad

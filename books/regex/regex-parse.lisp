@@ -296,16 +296,16 @@
                             (integerp brcount)
                             (<= 0 brcount)))
                 (case-split (not (stringp 
-                                  (car (ere-parse 
+                                  (mv-nth 0 (ere-parse 
                                         str idx prev1 prev2 brcount opts))))))
-           (regex-p (car (ere-parse str idx prev1 prev2 brcount opts))))
+           (regex-p (mv-nth 0 (ere-parse str idx prev1 prev2 brcount opts))))
   :rule-classes
   (:rewrite
    (:forward-chaining
-    :trigger-terms ((car (ere-parse str idx prev1 prev2 brcount opts))))))
+    :trigger-terms ((mv-nth 0 (ere-parse str idx prev1 prev2 brcount opts))))))
 
 (defthm ere-parse-nonnil
-  (car (ere-parse str idx prev1 prev2 brcount opts))
+  (mv-nth 0 (ere-parse str idx prev1 prev2 brcount opts))
   :hints (("Goal" :in-theory (disable ere-parse-regex))))
 
 
@@ -418,16 +418,16 @@
                             (integerp brcount)
                             (<= 0 brcount)))
                 (case-split (not (stringp 
-                                  (car (bre-parse 
+                                  (mv-nth 0 (bre-parse 
                                         str idx prev1 prev2 brcount opts))))))
-           (regex-p (car (bre-parse str idx prev1 prev2 brcount opts))))
+           (regex-p (mv-nth 0 (bre-parse str idx prev1 prev2 brcount opts))))
   :rule-classes
   (:rewrite
    (:forward-chaining
-    :trigger-terms ((car (bre-parse str idx prev1 prev2 brcount opts))))))
+    :trigger-terms ((mv-nth 0 (bre-parse str idx prev1 prev2 brcount opts))))))
 
 (defthm bre-parse-nonnil
-  (car (bre-parse str idx prev1 prev2 brcount opts))
+  (mv-nth 0 (bre-parse str idx prev1 prev2 brcount opts))
   :hints (("Goal" :in-theory (disable bre-parse-regex))))
 
 
@@ -498,16 +498,16 @@
                             (integerp brcount)
                             (<= 0 brcount)))
                 (case-split (not (stringp 
-                                  (car (fixed-string-parse 
+                                  (mv-nth 0 (fixed-string-parse 
                                         str idx prev1 prev2 brcount opts))))))
-           (regex-p (car (fixed-string-parse str idx prev1 prev2 brcount opts))))
+           (regex-p (mv-nth 0 (fixed-string-parse str idx prev1 prev2 brcount opts))))
   :rule-classes
   (:rewrite
    (:forward-chaining
-    :trigger-terms ((car (fixed-string-parse str idx prev1 prev2 brcount opts))))))
+    :trigger-terms ((mv-nth 0 (fixed-string-parse str idx prev1 prev2 brcount opts))))))
 
 (defthm fixed-string-parse-nonnil
-  (car (fixed-string-parse str idx prev1 prev2 brcount opts))
+  (mv-nth 0 (fixed-string-parse str idx prev1 prev2 brcount opts))
   :hints (("Goal" :in-theory (disable fixed-string-parse-regex))))
 
 

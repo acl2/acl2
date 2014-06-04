@@ -48,6 +48,7 @@
 (include-book "../transforms/xf-assign-trunc")
 (include-book "../transforms/xf-blankargs")
 (include-book "../transforms/xf-clean-params")
+(include-book "../transforms/xf-clean-warnings")
 (include-book "../transforms/xf-drop-blankports")
 (include-book "../transforms/xf-expr-split")
 (include-book "../transforms/xf-expand-functions")
@@ -311,14 +312,14 @@ shown.</p>"
                @('ignore') options of @(see vl-lintconfig-p).  This is used for
                @(see skip-detection), for instance.")
 
-   (mwalist   vl-modwarningalist-p
-              "The main result: binds \"original\" (pre-unparameterization)
-               module names to their warnings.")
+   (reportcard vl-reportcard-p
+               "The main result: binds \"original\" (pre-unparameterization)
+                module names to their warnings.")
 
    (sd-probs  sd-problemlist-p
               "Possible problems noticed by @(see skip-detection).  These are
                in a different format than ordinary @(see warnings), so they
-               aren't included in the @('mwalist').")
+               aren't included in the @('reportcard').")
 
    (dalist    us-dbalist-p
               "Use-set database alist, mapping module names to use-set databases.
@@ -528,11 +529,11 @@ shown.</p>"
        (design   (cwtime (vl-design-lint-ignoreall design config.ignore)))
        (design   (cwtime (vl-lint-apply-quiet config.quiet design)))
        (sd-probs (cwtime (vl-delete-sd-problems-for-modnames config.quiet sd-probs)))
-       (mwalist  (cwtime (vl-origname-modwarningalist (vl-design->mods design)))))
+       (reportcard  (cwtime (vl-design-origname-reportcard design))))
 
     (make-vl-lintresult :design design
                         :design0 design0
-                        :mwalist mwalist
+                        :reportcard reportcard
                         :sd-probs sd-probs
                         :dalist dalist)))
 
@@ -586,39 +587,15 @@ shown.</p>"
          (implies (true-listp minor)
                   (true-listp (mv-nth 1 (sd-filter-problems x major minor)))))))
 
-(defthm symbol-listp-of-vl-warninglist->types
-  (implies (force (vl-warninglist-p x))
-           (symbol-listp (vl-warninglist->types x)))
-  :hints(("Goal" :induct (len x))))
-
-(define vl-modwarningalist-types ((x vl-modwarningalist-p))
-  :returns (types symbol-listp :hyp :fguard)
-  (if (atom x)
-      nil
-    (append (vl-warninglist->types (cdar x))
-            (vl-modwarningalist-types (cdr x)))))
-
-(define vl-keep-from-modwarningalist ((types symbol-listp)
-                                      (x vl-modwarningalist-p))
-  :returns (new-mwalist vl-modwarningalist-p :hyp :fguard "Fast alist.")
-  (b* (((when (atom x))
-        nil)
-       (name1     (caar x))
-       (warnings1 (cdar x))
-       (keep1     (vl-keep-warnings types warnings1))
-       (rest      (vl-keep-from-modwarningalist types (cdr x)))
-       ((when keep1)
-        (hons-acons name1 keep1 rest)))
-    rest))
 
 (define vl-lint-print-warnings ((filename stringp)
                                 (label    stringp)
                                 (types    symbol-listp)
-                                (walist   vl-modwarningalist-p)
+                                (reportcard   vl-reportcard-p)
                                 &key (ps 'ps))
-  (b* ((walist (vl-keep-from-modwarningalist types walist))
-       (walist (vl-clean-modwarningalist walist))
-       (count  (length (append-alist-vals walist)))
+  (b* ((reportcard (vl-keep-from-reportcard types reportcard))
+       (reportcard (vl-clean-reportcard reportcard))
+       (count  (length (append-alist-vals reportcard)))
        (-      (cond ((eql count 0)
                       (cw "~s0: No ~s1 Warnings.~%" filename label))
                      ((eql count 1)
@@ -632,9 +609,9 @@ shown.</p>"
             (vl-cw "One ~s0 Warning:~%~%" label))
            (t
             (vl-cw "~x0 ~s1 Warnings:~%~%" count label)))
-     (vl-print-modwarningalist walist))))
+     (vl-print-reportcard reportcard))))
 
-(define vl-jp-modwarningalist-aux ((x vl-modwarningalist-p) &key (ps 'ps))
+(define vl-jp-reportcard-aux ((x vl-reportcard-p) &key (ps 'ps))
   (b* (((when (atom x))
         ps)
        ((cons modname warnings) (car x)))
@@ -645,11 +622,11 @@ shown.</p>"
                (if (atom (cdr x))
                    ps
                  (vl-println ","))
-               (vl-jp-modwarningalist-aux (cdr x)))))
+               (vl-jp-reportcard-aux (cdr x)))))
 
-(define vl-jp-modwarningalist ((x vl-modwarningalist-p) &key (ps 'ps))
+(define vl-jp-reportcard ((x vl-reportcard-p) &key (ps 'ps))
   (vl-ps-seq (vl-print "{")
-             (vl-jp-modwarningalist-aux x)
+             (vl-jp-reportcard-aux x)
              (vl-println "}")))
 
 (defconst *use-set-warnings*
@@ -799,7 +776,7 @@ shown.</p>"
                   :stobjs state))
 
   (b* (((vl-lintresult lintresult) lintresult)
-       (walist   lintresult.mwalist)
+       (reportcard   lintresult.reportcard)
        (sd-probs lintresult.sd-probs)
 
        ((mv major minor)
@@ -809,7 +786,7 @@ shown.</p>"
 
        (- (cw "~%vl-lint: saving results...~%~%"))
 
-       (othertypes  (difference (mergesort (vl-modwarningalist-types walist))
+       (othertypes  (difference (mergesort (vl-reportcard-types reportcard))
                                 (mergesort (append *warnings-covered*
                                                    *warnings-ignored*))))
 
@@ -817,7 +794,7 @@ shown.</p>"
         (with-ps-file
          "vl-basic.txt"
          (vl-ps-update-autowrap-col 68)
-         (vl-lint-print-warnings "vl-basic.txt" "Basic" *basic-warnings* walist)))
+         (vl-lint-print-warnings "vl-basic.txt" "Basic" *basic-warnings* reportcard)))
 
        (state
         (with-ps-file
@@ -829,7 +806,7 @@ mean and how to avoid them.
 
 ")
 
-         (vl-lint-print-warnings "vl-trunc.txt" "Truncation/Extension" *trunc-warnings* walist)
+         (vl-lint-print-warnings "vl-trunc.txt" "Truncation/Extension" *trunc-warnings* reportcard)
 
          (vl-print "
 
@@ -874,25 +851,25 @@ you can see \"vl-trunc-minor.txt\" to review them.")))
         (with-ps-file
          "vl-fussy.txt"
          (vl-ps-update-autowrap-col 68)
-         (vl-lint-print-warnings "vl-fussy.txt" "Fussy Size Warnings" *fussy-size-warnings* walist)))
+         (vl-lint-print-warnings "vl-fussy.txt" "Fussy Size Warnings" *fussy-size-warnings* reportcard)))
 
        (state
         (with-ps-file
          "vl-fussy-minor.txt"
          (vl-ps-update-autowrap-col 68)
-         (vl-lint-print-warnings "vl-fussy-minor.txt" "Minor Fussy Size Warnings" *fussy-size-minor-warnings* walist)))
+         (vl-lint-print-warnings "vl-fussy-minor.txt" "Minor Fussy Size Warnings" *fussy-size-minor-warnings* reportcard)))
 
        (state
         (with-ps-file
          "vl-disconnected.txt"
          (vl-ps-update-autowrap-col 68)
-         (vl-lint-print-warnings "vl-disconnected.txt" "Disconnected Wire" *disconnected-warnings* walist)))
+         (vl-lint-print-warnings "vl-disconnected.txt" "Disconnected Wire" *disconnected-warnings* reportcard)))
 
        (state
         (with-ps-file
          "vl-multi.txt"
          (vl-ps-update-autowrap-col 68)
-         (vl-lint-print-warnings "vl-multi.txt" "Multidrive" *multidrive-warnings* walist)))
+         (vl-lint-print-warnings "vl-multi.txt" "Multidrive" *multidrive-warnings* reportcard)))
 
        (state
         (if (not major)
@@ -915,7 +892,7 @@ NOTE: see the bottom of this file for an explanation of what these warnings
 mean and how to avoid them.
 
 ")
-         (vl-lint-print-warnings "vl-trunc-minor.txt" "Minor Truncation/Extension" *trunc-minor-warnings* walist)
+         (vl-lint-print-warnings "vl-trunc-minor.txt" "Minor Truncation/Extension" *trunc-minor-warnings* reportcard)
          (vl-print "
 
 UNDERSTANDING THESE WARNINGS.
@@ -967,7 +944,7 @@ wide addition instead of a 10-bit wide addition.")))
         (with-ps-file
          "vl-multi-minor.txt"
          (vl-ps-update-autowrap-col 68)
-         (vl-lint-print-warnings "vl-multi-minor.txt" "Minor Multidrive" *multidrive-minor-warnings* walist)))
+         (vl-lint-print-warnings "vl-multi-minor.txt" "Minor Multidrive" *multidrive-minor-warnings* reportcard)))
 
        (state
         (if (not minor)
@@ -989,20 +966,20 @@ wide addition instead of a 10-bit wide addition.")))
          (vl-lint-print-warnings "vl-use-set.txt"
                                  "Unused/Unset Wire Warnings"
                                  *use-set-warnings*
-                                 walist)))
+                                 reportcard)))
 
 
        (state
         (with-ps-file
          "vl-smells.txt"
          (vl-ps-update-autowrap-col 68)
-         (vl-lint-print-warnings "vl-smells.txt" "Code-Smell Warnings" *smell-warnings* walist)))
+         (vl-lint-print-warnings "vl-smells.txt" "Code-Smell Warnings" *smell-warnings* reportcard)))
 
        (state
         (with-ps-file
          "vl-smells-minor.txt"
          (vl-ps-update-autowrap-col 68)
-         (vl-lint-print-warnings "vl-smells-minor.txt" "Minor Code-Smell Warnings" *smell-minor-warnings* walist)))
+         (vl-lint-print-warnings "vl-smells-minor.txt" "Minor Code-Smell Warnings" *smell-minor-warnings* reportcard)))
 
 
       (state
@@ -1011,20 +988,20 @@ wide addition instead of a 10-bit wide addition.")))
                      (vl-lint-print-warnings "vl-same-ports.txt"
                                              "Same-ports Warnings"
                                              *same-ports-warnings*
-                                             walist)))
+                                             reportcard)))
       (state
        (with-ps-file "vl-same-ports-minor.txt"
                      (vl-ps-update-autowrap-col 68)
                      (vl-lint-print-warnings "vl-same-ports-minor.txt"
                                              "Minor same-ports Warnings"
                                              *same-ports-minor-warnings*
-                                             walist)))
+                                             reportcard)))
 
       (state
        (with-ps-file
         "vl-other.txt"
         (vl-ps-update-autowrap-col 68)
-        (vl-lint-print-warnings "vl-other.txt" "Other/Unclassified" othertypes walist)))
+        (vl-lint-print-warnings "vl-other.txt" "Other/Unclassified" othertypes reportcard)))
 
       (- (cw "~%"))
 
@@ -1032,7 +1009,7 @@ wide addition instead of a 10-bit wide addition.")))
        (cwtime
         (with-ps-file "vl-warnings.json"
                       (vl-print "{\"warnings\":")
-                      (vl-jp-modwarningalist walist)
+                      (vl-jp-reportcard reportcard)
                       (vl-println "}"))
         :name write-warnings-json)))
 

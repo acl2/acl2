@@ -19,7 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "warnings")
+(include-book "reportcard")
 (include-book "fmt")
 (local (include-book "../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
@@ -181,26 +181,29 @@ warnings\".</p>"
 
        (vl-println-markup "</div>")))))
 
-(define vl-print-modwarningalist-aux ((x vl-modwarningalist-p) &key (ps 'ps))
-  :parents (warnings)
-  (if (atom x)
-      ps
+(define vl-print-reportcard-aux ((x vl-reportcard-p) &key (ps 'ps))
+  :parents (vl-reportcard-p)
+  :measure (vl-reportcard-count x)
+  (b* ((x (vl-reportcard-fix x))
+       ((when (atom x))
+        ps))
     (vl-ps-seq (vl-print-warnings-with-named-header (caar x) (cdar x))
                (vl-println "")
-               (vl-print-modwarningalist-aux (cdr x)))))
+               (vl-print-reportcard-aux (cdr x)))))
 
-(define vl-print-modwarningalist ((x vl-modwarningalist-p) &key (ps 'ps))
-  :parents (warnings)
-  :short "Pretty-print a @(see vl-modwarningalist-p)."
-  :long "<p>See also @(see vl-modwarningalist-to-string).</p>"
-  (b* ((x-shrink (hons-shrink-alist x nil))
+(define vl-print-reportcard ((x vl-reportcard-p) &key (ps 'ps))
+  :parents (vl-reportcard-p)
+  :short "Pretty-print a @(see vl-reportcard-p)."
+  :long "<p>See also @(see vl-reportcard-to-string).</p>"
+  (b* ((x        (vl-reportcard-fix x))
+       (x-shrink (hons-shrink-alist x nil))
        (-        (fast-alist-free x-shrink))
        (x-sorted (mergesort x-shrink)))
-      (vl-print-modwarningalist-aux x-sorted)))
+      (vl-print-reportcard-aux x-sorted)))
 
-(define vl-modwarningalist-to-string ((x vl-modwarningalist-p))
+(define vl-reportcard-to-string ((x vl-reportcard-p))
   :returns (str stringp :rule-classes :type-prescription)
-  :parents (warnings)
-  :short "Pretty-print a @(see vl-modwarningalist-p) into a string."
-  :long "<p>See also @(see vl-print-modwarningalist).</p>"
-  (with-local-ps (vl-print-modwarningalist x)))
+  :parents (vl-reportcard-p)
+  :short "Pretty-print a @(see vl-reportcard-p) into a string."
+  :long "<p>See also @(see vl-print-reportcard).</p>"
+  (with-local-ps (vl-print-reportcard x)))

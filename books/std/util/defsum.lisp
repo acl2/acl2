@@ -128,7 +128,7 @@ restrictions).</p>")
 
 (defun ds-recognizer-def (name agginfos)
   (let ((xvar (ds-x name)))
-    `(defun ,(ds-recognizer-name name) (,xvar)
+    `(defund ,(ds-recognizer-name name) (,xvar)
        (declare (xargs :guard t))
        (mbe :logic ,(ds-recognizer-logic-def name agginfos)
             :exec ,(ds-recognizer-exec-def name agginfos)))))
@@ -285,6 +285,7 @@ restrictions).</p>")
        (events
         `((logic)
           ,def
+           (local (in-theory (enable ,name-p)))
 
           (defthm ,(mksym 'consp-when- name-p)
             (implies (,name-p ,x)

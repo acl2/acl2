@@ -25,7 +25,6 @@
 (include-book "../mlib/namefactory")
 (include-book "../mlib/port-tools")
 (include-book "../mlib/writer")
-(include-book "../mlib/print-warnings")
 (local (include-book "../util/arithmetic"))
 (local (include-book "../util/osets"))
 

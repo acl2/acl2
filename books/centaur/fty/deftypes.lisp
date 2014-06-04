@@ -1752,7 +1752,11 @@
                     . ,(flexsum-fix-cases sum.prods))
                (nice-cond (flexsum-fix-cases-nokind sum.prods)))))
     `(define ,sum.fix ((,sum.xvar ,sum.pred))
-       ,@(and (member :fix sum.inline) `(:inline t))
+       ;; [Jared]: previously this was:
+       ;; ,@(and (member :fix sum.inline) `(:inline t))
+       ;; But why not just always make these inline?  They're identity functions
+       ;; after all...
+       :inline t
        :measure ,sum.measure
        ,@(and flagp `(:flag ,sum.name))
        :returns (newx ,sum.pred
@@ -1788,6 +1792,8 @@
                                         (,list.pred nil)))))
        :verify-guards nil
        :progn t
+       ;; [Jared]: inlining this since it's just an identity function
+       :inline t
        (mbe :logic (if (atom ,list.xvar)
                        ,(if list.true-listp
                             nil
@@ -1810,6 +1816,8 @@
                                         (,alist.pred nil)))))
        :verify-guards nil
        :progn t
+       ;; [Jared]: inlining this since it's just an identity function
+       :inline t
        (mbe :logic (if (atom ,alist.xvar)
                        ,(if alist.true-listp nil alist.xvar)
                      (if (consp (car ,alist.xvar))

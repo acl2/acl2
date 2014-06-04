@@ -21,7 +21,6 @@
 (in-package "VL")
 (include-book "typo-detect")
 (include-book "use-set-report")
-(include-book "../mlib/warnings")
 (include-book "../mlib/allexprs")
 (include-book "../mlib/find-item")
 (local (include-book "../util/arithmetic"))

@@ -2472,17 +2472,159 @@ transforms to not modules with this attribute.</p>"
     :rule-classes :compound-recognizer))
 
 
+(defprod vl-udp
+  :short "Representation of a user defined @('primitive')."
+  :tag :vl-udp
+  :layout :tree
+  ((name stringp
+         :rule-classes :type-prescription
+         "The name of this udp as a string.")
+   ;; ...
+   (warnings vl-warninglist-p)
+   (minloc   vl-location-p)
+   (maxloc   vl-location-p)
+   (atts     vl-atts-p)
+   (comments vl-commentmap-p))
+  :long "BOZO incomplete stub -- we don't really support user-defined
+  primitives yet.")
+
+(fty::deflist vl-udplist
+  :elt-type vl-udp-p)
+
+(deflist vl-udplist-p (x)
+  (vl-udp-p x)
+  :elementp-of-nil nil)
+
+
+(defprod vl-config
+  :short "Representation of a single @('config')."
+  :tag :vl-config
+  :layout :tree
+  ((name stringp
+         :rule-classes :type-prescription
+         "The name of this config as a string.")
+   ;; ...
+   (warnings vl-warninglist-p)
+   (minloc   vl-location-p)
+   (maxloc   vl-location-p)
+   (atts     vl-atts-p)
+   (comments vl-commentmap-p))
+  :long "BOZO incomplete stub -- we don't really support configs yet.")
+
+(fty::deflist vl-configlist :elt-type vl-config-p)
+
+(deflist vl-configlist-p (x)
+  (vl-config-p x)
+  :elementp-of-nil nil)
+
+
+(defprod vl-package
+  :short "Representation of a single @('package')."
+  :tag :vl-package
+  :layout :tree
+  ((name stringp
+         :rule-classes :type-prescription
+         "The name of this package as a string.")
+   ;; ...
+   (warnings vl-warninglist-p)
+   (minloc   vl-location-p)
+   (maxloc   vl-location-p)
+   (atts     vl-atts-p)
+   (comments vl-commentmap-p))
+  :long "BOZO incomplete stub -- we don't really support packages yet.")
+
+(fty::deflist vl-packagelist :elt-type vl-package-p)
+
+(deflist vl-packagelist-p (x)
+  (vl-package-p x)
+  :elementp-of-nil nil)
+
+
+(defprod vl-interface
+  :short "Representation of a single @('interface')."
+  :tag :vl-interface
+  :layout :tree
+  ((name stringp
+         :rule-classes :type-prescription
+         "The name of this interface as a string.")
+   ;; ...
+   (warnings vl-warninglist-p)
+   (minloc   vl-location-p)
+   (maxloc   vl-location-p)
+   (atts     vl-atts-p)
+   (comments vl-commentmap-p))
+  :long "BOZO incomplete stub -- we don't really support packages yet.")
+
+(fty::deflist vl-interfacelist :elt-type vl-interface-p)
+
+(deflist vl-interfacelist-p (x)
+  (vl-interface-p x)
+  :elementp-of-nil nil)
+
+
+(defprod vl-program
+  :short "Representation of a single @('program')."
+  :tag :vl-program
+  :layout :tree
+  ((name stringp
+         :rule-classes :type-prescription
+         "The name of this program as a string.")
+   ;; ...
+   (warnings vl-warninglist-p)
+   (minloc   vl-location-p)
+   (maxloc   vl-location-p)
+   (atts     vl-atts-p)
+   (comments vl-commentmap-p))
+  :long "BOZO incomplete stub -- we don't really support programs yet.")
+
+(fty::deflist vl-programlist :elt-type vl-program-p)
+
+(deflist vl-programlist-p (x)
+  (vl-program-p x)
+  :elementp-of-nil nil)
+
+
+
+(deftranssum vl-description
+  (vl-module
+   vl-udp
+   vl-package
+   vl-interface
+   vl-program
+   vl-config
+   ;; bozo package items, bind directives
+   ))
+
+(defrule tag-when-vl-description-p-forward
+  ;; bozo move to parsetree
+  (implies (vl-description-p x)
+           (or (equal (tag x) :vl-module)
+               (equal (tag x) :vl-udp)
+               (equal (tag x) :vl-package)
+               (equal (tag x) :vl-interface)
+               (equal (tag x) :vl-program)
+               (equal (tag x) :vl-config)))
+  :rule-classes ((:forward-chaining :trigger-terms ((vl-description-p x))))
+  :enable vl-description-p)
+
+
+(fty::deflist vl-descriptionlist :elt-type vl-description-p)
+
+(deflist vl-descriptionlist-p (x)
+  (vl-description-p x)
+  :elementp-of-nil nil)
+
+
 (defprod vl-design
   :short "Top level representation of all modules, interfaces, programs, etc.,
 resulting from parsing some Verilog source code."
   :tag :vl-design
   :layout :tree
-  ((mods       vl-modulelist-p "List of all modules")
-   (udps       "List of user defined primtives")
-   (interfaces "List of interfaces")
-   (programs   "List of all programs")
-   (packages   "List of all packages")
-   ;; package items?
-   ;; bind directives?
-   (configs    "List of configurations")))
+  ((mods       vl-modulelist-p    "List of all modules")
+   (udps       vl-udplist-p       "List of user defined primtives")
+   (interfaces vl-interfacelist-p "List of interfaces")
+   (programs   vl-programlist-p   "List of all programs")
+   (packages   vl-packagelist-p   "List of all packages")
+   (configs    vl-configlist-p    "List of configurations")))
+
 

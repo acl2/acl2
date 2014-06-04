@@ -318,7 +318,7 @@ list @('x') that have any parameters, and returns them as a new module list."
     (subsetp-equal (vl-modules-with-params mods) mods))
   (defthm uniquep-of-vl-modulelist->names-of-vl-modules-with-params
     (implies (uniquep (vl-modulelist->names mods))
-             (uniquep (vl-modulelist->names (vl-modules-with-params mods))))))
+             (no-duplicatesp (vl-modulelist->names (vl-modules-with-params mods))))))
 
 
 (define vl-delete-top-level-modules-with-params
@@ -1284,7 +1284,7 @@ unnecessary.</p>"
     (implies (and (vl-modulelist-p mods)
                   (uniquep (vl-modulelist->names mods)))
              (b* (((mv survivors victims) (vl-handle-unparam-fail mods)))
-               (uniquep (vl-modulelist->names (append survivors victims)))))))
+               (no-duplicatesp (vl-modulelist->names (append survivors victims)))))))
 
 
 (define vl-modulelist-unparameterize

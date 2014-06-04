@@ -885,7 +885,7 @@
 (defthm match-regex-at-char-string
   (implies (and
                 (stringp untrans-str)
-                (car (match-regex-at-char regex str untrans-str n)))
+                (mv-nth 0 (match-regex-at-char regex str untrans-str n)))
            (stringp (mv-nth 1 (match-regex-at-char regex str untrans-str n)))))
 
 (defun string-or-null-listp (x)
@@ -915,7 +915,7 @@
 (defthm match-regex-string
   (implies (and (stringp str)
                 (stringp untrans-str)
-                (car (match-regex-fun regex str untrans-str n)))
+                (mv-nth 0 (match-regex-fun regex str untrans-str n)))
            (stringp (mv-nth 1 (match-regex-fun regex str untrans-str n)))))
 
 (defthm match-regex-strlist

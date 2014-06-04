@@ -25,10 +25,10 @@
 (include-book "xf-designwires")
 (include-book "xf-follow-hids")
 (include-book "xf-resolve-indexing")
+(include-book "xf-clean-warnings")
 (include-book "cn-hooks")
 (include-book "../checkers/duplicate-detect")
 (include-book "../checkers/portcheck")
-(include-book "../mlib/warnings")
 (include-book "../util/cwtime")
 
 (define vl-annotate-design

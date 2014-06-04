@@ -21,11 +21,40 @@
 (in-package "VL")
 (include-book "preprocessor/defines")
 
-(defaggregate vl-loadconfig
+(define mintime-p (x)
+  (or (not x)
+      (rationalp x))
+  ///
+  (defthm mintime-p-compound-recognizer
+    (equal (mintime-p x)
+           (or (rationalp x)
+               (not x)))
+    :rule-classes :compound-recognizer))
+
+(define mintime-fix ((x mintime-p))
+  :inline t
+  :returns (x-fix mintime-p)
+  :prepwork ((local (in-theory (enable mintime-p))))
+  (and x
+       (rfix x))
+  ///
+  (defthm mintime-fix-when-mintime-p
+    (implies (mintime-p x)
+             (equal (mintime-fix x)
+                    x))))
+
+(deffixtype mintime
+  :pred mintime-p
+  :fix mintime-fix
+  :equiv mintime-equiv
+  :define t
+  :forward t)
+
+
+(defprod vl-loadconfig
   :parents (loader)
   :short "Options for how to load Verilog modules."
   :tag :vl-loadconfig
-  :legiblep :ordered
   ((edition        vl-edition-p
                    :default :system-verilog-2012
                    "Which standard are we implementing, e.g., IEEE Std
@@ -36,26 +65,28 @@
                    :rule-classes :type-prescription
                    :default nil
                    "VL normally implements certain extensions of the Verilog
-                    standard like overrides and @('//+VL') comments.  Turning
-                    on strict mode will disable these extensions and instruct
-                    VL to implement the standard more strictly.")
+                    standard like @('//+VL') comments.  Turning on strict mode
+                    will disable these extensions and instruct VL to implement
+                    the standard more strictly.")
 
    (start-files    string-listp
                    "A list of file names (not module names) that you want to
                     load; @(see vl-load) begins by trying to read, preprocess,
                     lex, and parse the contents of these files.")
 
-   (start-modnames string-listp
+   (start-names    string-listp
                    "Instead of (or in addition to) explicitly providing the
-                    @('start-files'), you can also provide a list of module
-                    names that you want to load.  @(see vl-load) will look for
-                    these modules in the search path, unless they happen to get
-                    loaded while processing the @('start-files').")
+                    @('start-files'), you can also provide a list of
+                    description names that you want to load (e.g., names of
+                    modules, packages, interfaces, programs, etc.).  @(see
+                    vl-load) will look for these descriptions in the search
+                    path, unless they happen to get loaded while processing the
+                    @('start-files').")
 
    (search-path    string-listp
-                   "A list of directories to search (in order) for modules in
-                    @('start-modnames') that were in the @('start-files'), and
-                    for <see topic=\"@(url vl-modulelist-missing)\">missing
+                   "A list of directories to search (in order) for descriptions
+                    in @('start-modnames') that were in the @('start-files'),
+                    and for <see topic=\"@(url vl-modulelist-missing)\">missing
                     modules</see>.  This is similar to \"library directories\"
                     in tools like Verilog-XL and NCVerilog.")
 
@@ -95,8 +126,7 @@
                    "How many rounds of @(see vl-flush-out-modules) are
                     allowed.")
 
-   (mintime        (or (not mintime)
-                       (rationalp mintime))
+   (mintime        mintime-p
                    :rule-classes :type-prescription
                    :default 1
                    "Minimum time threshold for performance messages.")))

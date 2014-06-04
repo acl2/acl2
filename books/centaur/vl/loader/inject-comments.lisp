@@ -19,7 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "../parsetree")
+(include-book "../mlib/descriptions")
 (local (include-book "../util/arithmetic"))
 (local (xdoc::set-default-parents vl-commentmap-p))
 
@@ -315,12 +315,13 @@ and max, gathering their comments.</p>"
 (define vl-adjust-minloc-for-comments
   :short "Tweak starting location so that we get comments preceding the
           @('module') keyword."
-  ((acc    vl-location-p   "Initially line 0 of the file.")
-   (minloc vl-location-p   "True @('minloc') of the module we're considering.")
-   (mods   vl-modulelist-p "All modules found in the file."))
+  ((acc     vl-location-p        "Initially line 0 of the file.")
+   (minloc  vl-location-p        "True @('minloc') of the module we're considering.")
+   (descs   vl-descriptionlist-p "All top-level descriptions found in the file."))
   :returns (adjusted-minloc vl-location-p :hyp :guard)
-  :long "<p>It turns out that useful comments about a module are often put
-<b>before</b> the module instead of within it.  For instance:</p>
+  :long "<p>It turns out that useful comments about a module (or other kind of
+top-level description) are often put <b>before</b> the module instead of within
+it.  For instance:</p>
 
 @({
     // Module: SuchAndSo
@@ -372,9 +373,9 @@ really stupid comments after @('end') keywords, such as:</p>
 <p>And we don't want to associate this @('// foo') comment with the subsequent
 module.</p>"
 
-  (b* (((when (atom mods))
+  (b* (((when (atom descs))
         acc)
-       (mod1.maxloc (vl-module->maxloc (car mods)))
+       (mod1.maxloc (vl-description->maxloc (car descs)))
        ((unless (and
                  ;; The other module needs to be in the same file,
                  ;; or we don't care about it.
@@ -388,80 +389,83 @@ module.</p>"
                  ;; or we don't care about it.
                  (< (vl-location->line acc)
                     (vl-location->line mod1.maxloc))))
-        (vl-adjust-minloc-for-comments acc minloc (cdr mods)))
+        (vl-adjust-minloc-for-comments acc minloc (cdr descs)))
        ;; Else, mod1.maxloc is better than what we have now.
        (acc (change-vl-location acc
                                 ;; Goofy computation ensures we never go backwards,
                                 ;; in case of one-line module ... endmodule stuff.
                                 :line (min (+ 1 (vl-location->line mod1.maxloc))
                                            (vl-location->line minloc)))))
-    (vl-adjust-minloc-for-comments acc minloc (cdr mods)))
+    (vl-adjust-minloc-for-comments acc minloc (cdr descs)))
   ///
   (defthm bound-of-vl-adjust-minloc-for-comments
     (implies (and (<= (vl-location->line acc) (vl-location->line minloc))
                   (force (vl-location-p acc))
                   (force (vl-location-p minloc))
-                  (force (vl-modulelist-p mods)))
-             (<= (vl-location->line (vl-adjust-minloc-for-comments acc minloc mods))
+                  (force (vl-descriptionlist-p descs)))
+             (<= (vl-location->line (vl-adjust-minloc-for-comments acc minloc descs))
                  (vl-location->line minloc)))
     :rule-classes ((:rewrite) (:linear))))
 
-(define vl-inject-comments-module
-  ((x   vl-module-p          "Module to inject some comments into.")
-   (fal vl-commentmap-falp   "All comments, gathered before parsing.")
-   (all-mods vl-modulelist-p "All modules, used to adjust starting locations."))
-  :returns (new-x vl-module-p :hyp :fguard
-                  "Same as @('x'), but with comments added.")
-  (b* (((when (vl-module->hands-offp x))
-        x)
-       (minloc  (vl-module->minloc x))
-       (maxloc  (vl-module->maxloc x))
+(define vl-description-inject-comments
+  :parents (vl-commentmap-p)
+  ((x         vl-description-p
+              "Description to inject some comments into.")
+   (fal       vl-commentmap-falp
+              "All comments, gathered before parsing.")
+   (all-descs vl-descriptionlist-p
+              "All descriptions, used to adjust starting locations."))
+  :returns (new-x vl-description-p "Same as @('x'), but with comments added.")
+  (b* (;; When we only supported modules, we respected hands-off here.  But
+       ;; I don't think there's any reason to worry about that.
+       (x       (vl-description-fix x))
+       (minloc  (vl-description->minloc x))
+       (maxloc  (vl-description->maxloc x))
        ((unless (<= (vl-location->line minloc) (vl-location->line maxloc)))
         (let ((warnings (warn :type :vl-warn-comment-injection
                               :msg "Cannot add comments, minloc exceeds maxloc?~% ~
                                     minloc = ~l0; maxloc = ~l1."
                               :args (list minloc maxloc)
-                              :acc (vl-module->warnings x))))
-          (change-vl-module x :warnings warnings)))
+                              :acc (vl-description->warnings x))))
+          (change-vl-description x :warnings warnings)))
 
-       (minloc (vl-adjust-minloc-for-comments (change-vl-location minloc :line 1)
-                                              minloc all-mods))
+       (minloc (vl-adjust-minloc-for-comments
+                (change-vl-location minloc :line 1)
+                minloc all-descs))
        (comments (vl-gather-comments-fal minloc maxloc fal)))
     (if (not comments)
         x
-      (change-vl-module x :comments comments)))
+      (change-vl-description x :comments comments)))
   ///
-  (defthm vl-module->name-of-vl-inject-comments-module
-    (equal (vl-module->name (vl-inject-comments-module x comment-map all-mods))
-           (vl-module->name x))))
+  (defthm vl-description->name-of-vl-description-inject-comments
+    (equal (vl-description->name (vl-description-inject-comments x comment-map all-mods))
+           (vl-description->name x))))
 
 
-(defprojection vl-inject-comments-modulelist-aux (x fal all-mods)
-  :parents (vl-inject-comments-modulelist)
-  (vl-inject-comments-module x fal all-mods)
-  :guard (and (vl-modulelist-p x)
-              (vl-commentmap-falp fal)
-              (vl-modulelist-p all-mods))
-  :result-type vl-modulelist-p
-  :rest
-  ((defthm vl-modulelist->names-of-vl-inject-comments-modulelist-aux
-     (equal (vl-modulelist->names (vl-inject-comments-modulelist-aux x comment-map all-mods))
-            (vl-modulelist->names x)))))
+(defprojection vl-descriptionlist-inject-comments-aux ((x         vl-descriptionlist-p)
+                                                       (fal       vl-commentmap-falp)
+                                                       (all-descs vl-descriptionlist-p))
+  :returns (new-x vl-descriptionlist-p)
+  (vl-description-inject-comments x fal all-descs)
+  ///
+  (defthm vl-descriptionlist->names-of-vl-descriptionlist-inject-comments-aux
+    (equal (vl-descriptionlist->names (vl-descriptionlist-inject-comments-aux x fal all-descs))
+           (vl-descriptionlist->names x))))
 
 
-(define vl-inject-comments-modulelist
-  :short "Associate all comments with their modules."
-  ((x           vl-modulelist-p "Parsed modules.")
-   (comment-map vl-commentmap-p "Comments gathered before parsing."))
-  :returns (new-x vl-modulelist-p "Parsed modules with their comments attached.")
-  :hooks (:fix)
-  (b* ((x   (vl-modulelist-fix x))
-       (fal (vl-commentmap-fal comment-map))
-       (ret (vl-inject-comments-modulelist-aux x fal x)))
+(define vl-descriptionlist-inject-comments
+  :parents (vl-commentmap-p)
+  :short "Associate all comments with their modules/interfaces/etc."
+  ((x           vl-descriptionlist-p "Parsed modules, packages, etc.")
+   (comment-map vl-commentmap-p      "Comments gathered before parsing."))
+  :returns
+  (new-x vl-descriptionlist-p "Parsed descriptions with their comments attached.")
+  (b* ((fal (vl-commentmap-fal comment-map))
+       (ret (vl-descriptionlist-inject-comments-aux x fal x)))
     (fast-alist-free fal)
     ret)
   ///
-  (defthm vl-modulelist->names-of-vl-inject-comments-modulelist
-    (equal (vl-modulelist->names (vl-inject-comments-modulelist x comment-map))
-           (vl-modulelist->names x))))
+  (defthm vl-descriptionlist->names-of-vl-descriptionlist-inject-comments
+    (equal (vl-descriptionlist->names (vl-descriptionlist-inject-comments x comment-map))
+           (vl-descriptionlist->names x))))
 

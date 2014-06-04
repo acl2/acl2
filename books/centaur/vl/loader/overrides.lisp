@@ -26,7 +26,7 @@
 (include-book "parser/error")
 (include-book "filemap")
 (include-book "../util/cwtime")
-(include-book "../mlib/warnings")
+(include-book "../mlib/reportcard")
 (include-book "oslib/ls" :dir :system)
 (include-book "std/strings/top" :dir :system)
 (local (include-book "../util/arithmetic"))
@@ -557,13 +557,13 @@ corresponding to a particular module.</p>"
   :short "Load an override file into a @(see vl-overridelist-p)."
 
   :long "<p>Signature: @(call vl-read-override-file) returns @('(mv successp
-overridelist filemap defines' comment-map' walist' state)').</p>"
+overridelist filemap defines' comment-map' reportcard' state)').</p>"
 
   ((path        stringp)
    (modname     stringp)
    (defines     vl-defines-p)
    (comment-map vl-commentmap-p)
-   (walist      vl-modwarningalist-p)
+   (reportcard      vl-reportcard-p)
    (filemapp    booleanp)
    state)
   :returns (mv (successp)
@@ -571,7 +571,7 @@ overridelist filemap defines' comment-map' walist' state)').</p>"
                (filemap)
                (defines)
                (comment-map)
-               (walist)
+               (reportcard)
                (state     state-p1 :hyp (force (state-p1 state))))
 
   (b* ((filename (cat path "/" modname ".ov"))
@@ -586,8 +586,8 @@ overridelist filemap defines' comment-map' walist' state)').</p>"
                                  :msg "Error reading override file ~s0."
                                  :args (list filename)
                                  :fn 'vl-read-override-file))
-             (walist (vl-extend-modwarningalist modname w walist)))
-          (mv nil nil filemap defines comment-map walist state)))
+             (reportcard (vl-extend-reportcard modname w reportcard)))
+          (mv nil nil filemap defines comment-map reportcard state)))
 
        (filemap (and filemapp
                      (list (cons filename (vl-echarlist->string contents)))))
@@ -603,8 +603,8 @@ overridelist filemap defines' comment-map' walist' state)').</p>"
                                  :msg "Preprocessing failed for override file ~s0."
                                  :args (list filename)
                                  :fn 'vl-read-override-file))
-             (walist (vl-extend-modwarningalist modname w walist)))
-          (mv nil nil filemap defines comment-map walist state)))
+             (reportcard (vl-extend-reportcard modname w reportcard)))
+          (mv nil nil filemap defines comment-map reportcard state)))
 
        ((mv successp lexed warnings)
         (cwtime (vl-lex preprocessed
@@ -612,16 +612,16 @@ overridelist filemap defines' comment-map' walist' state)').</p>"
                         :config *vl-default-loadconfig*
                         :warnings nil)
                 :mintime 1/2))
-       (walist (if warnings
-                   (vl-extend-modwarningalist-list modname warnings walist)
-                 walist))
+       (reportcard (if warnings
+                   (vl-extend-reportcard-list modname warnings reportcard)
+                 reportcard))
        ((unless successp)
         (b* ((w (make-vl-warning :type :vl-lex-failed
                                  :msg "Lexing failed for override file ~s0."
                                  :args (list filename)
                                  :fn 'vl-read-override-file))
-             (walist (vl-extend-modwarningalist modname w walist)))
-          (mv nil nil filemap defines comment-map walist state)))
+             (reportcard (vl-extend-reportcard modname w reportcard)))
+          (mv nil nil filemap defines comment-map reportcard state)))
 
        ((mv cleaned new-comments)
         (cwtime (vl-kill-whitespace-and-comments lexed) :mintime 1/2))
@@ -629,23 +629,23 @@ overridelist filemap defines' comment-map' walist' state)').</p>"
 
        ((mv successp override-list warnings)
         (cwtime (vl-parse-override-file modname cleaned nil) :mintime 1/2))
-       (walist (if warnings
-                   (vl-extend-modwarningalist-list modname warnings walist)
-                 walist))
+       (reportcard (if warnings
+                   (vl-extend-reportcard-list modname warnings reportcard)
+                 reportcard))
        ((unless successp)
         (b* ((w (make-vl-warning :type :vl-parse-failed
                                  :msg "Parsing failed for ~s0."
                                  :args (list filename)
                                  :fn 'vl-read-override-file))
-             (walist (vl-extend-modwarningalist modname w walist)))
-          (mv nil nil filemap defines comment-map walist state))))
+             (reportcard (vl-extend-reportcard modname w reportcard)))
+          (mv nil nil filemap defines comment-map reportcard state))))
 
-    (mv t override-list filemap defines comment-map walist state))
+    (mv t override-list filemap defines comment-map reportcard state))
 
   ///
   (defthm true-listp-of-vl-read-file-2
     (true-listp (mv-nth 2 (vl-read-override-file path modname defines comment-map
-                                                 walist filemapp state)))
+                                                 reportcard filemapp state)))
     :rule-classes :type-prescription)
 
   (defthm vl-read-override-file-basics
@@ -653,16 +653,16 @@ overridelist filemap defines' comment-map' walist' state)').</p>"
      (and (force (stringp path))
           (force (stringp modname))
           (force (vl-defines-p defines))
-          (force (vl-modwarningalist-p walist))
+          (force (vl-reportcard-p reportcard))
           (force (vl-commentmap-p comment-map))
           (force (state-p1 state)))
      (let ((result (vl-read-override-file path modname defines comment-map
-                                          walist filemapp state)))
+                                          reportcard filemapp state)))
        (and (vl-overridelist-p (mv-nth 1 result))
             (vl-filemap-p (mv-nth 2 result))
             (vl-defines-p (mv-nth 3 result))
             (vl-commentmap-p (mv-nth 4 result))
-            (vl-modwarningalist-p (mv-nth 5 result)))))))
+            (vl-reportcard-p (mv-nth 5 result)))))))
 
 
 
@@ -673,7 +673,7 @@ overridelist filemap defines' comment-map' walist' state)').</p>"
    (modnames    string-listp)
    (defines     vl-defines-p)
    (comment-map vl-commentmap-p)
-   (walist      vl-modwarningalist-p)
+   (reportcard      vl-reportcard-p)
    (filemapp    booleanp)
    state)
   :returns (mv (successp "Whether all the files were loaded with no problems.
@@ -683,24 +683,24 @@ overridelist filemap defines' comment-map' walist' state)').</p>"
                (filemap)
                (defines)
                (comment-map)
-               (walist)
+               (reportcard)
                (state state-p1 :hyp (force (state-p1 state))))
   (b* (((when (atom modnames))
-        (mv t nil nil defines comment-map walist state))
+        (mv t nil nil defines comment-map reportcard state))
 
-       ((mv successp1 alist1 filemap1 defines comment-map walist state)
+       ((mv successp1 alist1 filemap1 defines comment-map reportcard state)
         (vl-read-override-file path (car modnames)
-                               defines comment-map walist filemapp state))
+                               defines comment-map reportcard filemapp state))
 
-       ((mv successp2 rest-db filemap2 defines comment-map walist state)
+       ((mv successp2 rest-db filemap2 defines comment-map reportcard state)
         (vl-read-override-files path (cdr modnames)
-                                defines comment-map walist filemapp state))
+                                defines comment-map reportcard filemapp state))
 
        (successp    (and successp1 successp2))
        (override-db (cons (cons (car modnames) alist1) rest-db))
        (filemap     (append filemap1 filemap2)))
 
-    (mv successp override-db filemap defines comment-map walist state))
+    (mv successp override-db filemap defines comment-map reportcard state))
   ///
   (defmvtypes vl-read-override-files
     (nil true-listp true-listp))
@@ -710,16 +710,16 @@ overridelist filemap defines' comment-map' walist' state)').</p>"
      (and (force (stringp path))
           (force (string-listp modnames))
           (force (vl-defines-p defines))
-          (force (vl-modwarningalist-p walist))
+          (force (vl-reportcard-p reportcard))
           (force (vl-commentmap-p comment-map))
           (force (state-p1 state)))
      (let ((result (vl-read-override-files path modnames defines comment-map
-                                           walist filemapp state)))
+                                           reportcard filemapp state)))
        (and (vl-override-db-p (mv-nth 1 result))
             (vl-filemap-p (mv-nth 2 result))
             (vl-defines-p (mv-nth 3 result))
             (vl-commentmap-p (mv-nth 4 result))
-            (vl-modwarningalist-p (mv-nth 5 result)))))))
+            (vl-reportcard-p (mv-nth 5 result)))))))
 
 
 (define vl-collect-override-modnames ((filenames string-listp))
@@ -739,7 +739,7 @@ overridelist filemap defines' comment-map' walist' state)').</p>"
   ((dirs        string-listp)
    (defines     vl-defines-p)
    (comment-map vl-commentmap-p)
-   (walist      vl-modwarningalist-p)
+   (reportcard      vl-reportcard-p)
    (filemapp    booleanp)
    state)
   :returns (mv (successp)
@@ -747,10 +747,10 @@ overridelist filemap defines' comment-map' walist' state)').</p>"
                (filemap)
                (defines)
                (comment-map)
-               (walist)
+               (reportcard)
                (state state-p1 :hyp (force (state-p1 state))))
   (b* (((when (atom dirs))
-        (mv t nil nil defines comment-map walist state))
+        (mv t nil nil defines comment-map reportcard state))
 
        (path1 (car dirs))
        ((mv err filenames state) (oslib::ls-files path1))
@@ -759,19 +759,19 @@ overridelist filemap defines' comment-map' walist' state)').</p>"
                     filenames))
 
        (modnames1 (vl-collect-override-modnames filenames))
-       ((mv successp1 override-db1 filemap1 defines comment-map walist state)
+       ((mv successp1 override-db1 filemap1 defines comment-map reportcard state)
         (vl-read-override-files path1 modnames1 defines comment-map
-                                walist filemapp state))
+                                reportcard filemapp state))
 
-       ((mv successp2 override-db2 filemap2 defines comment-map walist state)
+       ((mv successp2 override-db2 filemap2 defines comment-map reportcard state)
         (vl-read-overrides-aux (cdr dirs) defines comment-map
-                               walist filemapp state))
+                               reportcard filemapp state))
 
        (successp    (and successp1 successp2))
        (override-db (append override-db1 override-db2))
        (filemap     (append filemap1 filemap2)))
 
-    (mv successp override-db filemap defines comment-map walist state))
+    (mv successp override-db filemap defines comment-map reportcard state))
   ///
   (defmvtypes vl-read-overrides-aux
     (nil true-listp true-listp))
@@ -780,15 +780,15 @@ overridelist filemap defines' comment-map' walist' state)').</p>"
     (implies
      (and (force (string-listp dirs))
           (force (vl-defines-p defines))
-          (force (vl-modwarningalist-p walist))
+          (force (vl-reportcard-p reportcard))
           (force (vl-commentmap-p comment-map))
           (force (state-p1 state)))
-     (let ((result (vl-read-overrides-aux dirs defines comment-map walist filemapp state)))
+     (let ((result (vl-read-overrides-aux dirs defines comment-map reportcard filemapp state)))
        (and (vl-override-db-p (mv-nth 1 result))
             (vl-filemap-p (mv-nth 2 result))
             (vl-defines-p (mv-nth 3 result))
             (vl-commentmap-p (mv-nth 4 result))
-            (vl-modwarningalist-p (mv-nth 5 result)))))))
+            (vl-reportcard-p (mv-nth 5 result)))))))
 
 
 
@@ -798,19 +798,19 @@ overridelist filemap defines' comment-map' walist' state)').</p>"
 vl-override-db-p)."
 
   :long "<p><b>Signature:</b> @(call vl-read-overrides) returns @('(mv successp
-override-db defines' comment-map walist state)').</p>
+override-db defines' comment-map reportcard state)').</p>
 
 <p>The success flag says whether everything was loaded successfully; even if
 successp is nil, a partial override database will be produced and may be
 useful.</p>"
 
   (defund vl-read-overrides (dirs defines filemapp state)
-    "Returns (MV SUCCESSP OVERRIDE-DB FILEMAP DEFINES' COMMENT-MAP WALIST STATE)"
+    "Returns (MV SUCCESSP OVERRIDE-DB FILEMAP DEFINES' COMMENT-MAP REPORTCARD STATE)"
     (declare (xargs :guard (and (string-listp dirs)
                                 (vl-defines-p defines)
                                 (booleanp filemapp))
                     :stobjs state))
-    (b* (((mv successp override-db filemap defines comment-map walist state)
+    (b* (((mv successp override-db filemap defines comment-map reportcard state)
           (vl-read-overrides-aux dirs defines nil nil filemapp state))
          (overridden-mods (strip-cars override-db))
          (- (or (uniquep overridden-mods)
@@ -822,7 +822,7 @@ useful.</p>"
       (mv successp
           (make-fal override-db nil)
           filemap
-          defines comment-map walist state)))
+          defines comment-map reportcard state)))
 
   (local (in-theory (enable vl-read-overrides)))
 
@@ -845,7 +845,7 @@ useful.</p>"
         (vl-filemap-p (mv-nth 2 result))
         (vl-defines-p (mv-nth 3 result))
         (vl-commentmap-p (mv-nth 4 result))
-        (vl-modwarningalist-p (mv-nth 5 result)))))))
+        (vl-reportcard-p (mv-nth 5 result)))))))
 
 
 
@@ -1080,7 +1080,7 @@ on success or @('nil') on failure.</p>"
   :short "Transform a token list using the overrides database."
 
   :long "<p><b>Signature:</b> @(call vl-apply-overrides) returns @('(mv
-walist-prime x-prime used modtokens)').</p>
+reportcard-prime x-prime used modtokens)').</p>
 
 <p>Inputs:</p>
 
@@ -1092,7 +1092,7 @@ been read from some ordinary Verilog file,</li>
 <li>@('db') is the @(see vl-override-db-p) and is typically constructed by
 @(see vl-read-overrides), and</li>
 
-<li>@('walist') is an @(see vl-modwarningalist-p) that we may extend with fatal
+<li>@('reportcard') is an @(see vl-reportcard-p) that we may extend with fatal
 warnings for any modules that we cannot find current overrides for.</li>
 
 </ul>
@@ -1104,7 +1104,7 @@ warnings for any modules that we cannot find current overrides for.</li>
 <li>@('x-prime'), a new token list that has been transformed by replacing
 overridden modules with their replacements,</li>
 
-<li>@('walist-prime'), the updated warning alist, and</li>
+<li>@('reportcard-prime'), the updated warning alist, and</li>
 
 <li>@('used'), the list of overrides we actually used to transform @('x') into
 @('x-prime'), and from which we can get all of the requirements we need to
@@ -1116,10 +1116,10 @@ eventually to check the \"requirements\" for each override.</li>
 
 </ul>"
 
-  (defund vl-apply-overrides-aux (x db walist acc used modtokens)
+  (defund vl-apply-overrides-aux (x db reportcard acc used modtokens)
     (declare (xargs :guard (and (vl-tokenlist-p x)
                                 (vl-override-db-p db)
-                                (vl-modwarningalist-p walist)
+                                (vl-reportcard-p reportcard)
                                 (vl-tokenlist-p acc)
                                 (vl-overridelist-p used)
                                 (vl-modtokensalist-p modtokens))))
@@ -1130,14 +1130,14 @@ eventually to check the \"requirements\" for each override.</li>
 ;  - MODTOKENS is a partial modtokens alist.
 
     (b* (((when (atom x))
-          (mv walist acc used modtokens))
+          (mv reportcard acc used modtokens))
 
          ((unless (and (or (eq (vl-token->type (first x)) :vl-kwd-module)
                            (eq (vl-token->type (first x)) :vl-kwd-macromodule))
                        (consp (cdr x))
                        (eq (vl-token->type (second x)) :vl-idtoken)))
           ;; Not the start of a module, keep going
-          (vl-apply-overrides-aux (cdr x) db walist (cons (car x) acc)
+          (vl-apply-overrides-aux (cdr x) db reportcard (cons (car x) acc)
                                   used modtokens))
 
          ;; If we get this far, we've found "module foo" and there are overrides
@@ -1153,15 +1153,15 @@ eventually to check the \"requirements\" for each override.</li>
                    :args (list (vl-token->loc (first x)) modname)
                    :fatalp t
                    :fn 'vl-apply-overrides-aux))
-               (walist (vl-extend-modwarningalist modname w walist)))
-            (vl-apply-overrides-aux (cdr x) db walist (cons (car x) acc)
+               (reportcard (vl-extend-reportcard modname w reportcard)))
+            (vl-apply-overrides-aux (cdr x) db reportcard (cons (car x) acc)
                                     used modtokens)))
 
          ;; Now decide if we need to do an override.
          (entry   (hons-get modname db))
          ((unless entry)
           ;; No overrides for this module, keep going
-          (vl-apply-overrides-aux rest db walist
+          (vl-apply-overrides-aux rest db reportcard
                                   (revappend body acc)
                                   used
                                   (acons modname body modtokens)))
@@ -1181,8 +1181,8 @@ eventually to check the \"requirements\" for each override.</li>
                    :args (list (vl-token->loc (first x)) modname)
                    :fatalp t
                    :fn 'vl-apply-overrides-aux))
-               (walist (vl-extend-modwarningalist modname w walist)))
-            (vl-apply-overrides-aux rest db walist
+               (reportcard (vl-extend-reportcard modname w reportcard)))
+            (vl-apply-overrides-aux rest db reportcard
                                     (revappend body acc)
                                     used
                                     (acons modname body modtokens))))
@@ -1198,7 +1198,7 @@ eventually to check the \"requirements\" for each override.</li>
          (used        (cons override used))
          (modtokens   (acons modname replacement modtokens)))
 
-      (vl-apply-overrides-aux rest db walist acc used modtokens)))
+      (vl-apply-overrides-aux rest db reportcard acc used modtokens)))
 
   (never-memoize revappend)
   (never-memoize revappend-without-guard)
@@ -1207,65 +1207,65 @@ eventually to check the \"requirements\" for each override.</li>
   (local (in-theory (enable vl-apply-overrides-aux)))
 
   (defthm true-listp-of-vl-apply-overrides-aux-1
-    (equal (true-listp (mv-nth 1 (vl-apply-overrides-aux x db walist acc used modtokens)))
+    (equal (true-listp (mv-nth 1 (vl-apply-overrides-aux x db reportcard acc used modtokens)))
            (true-listp acc)))
 
   (defthm true-listp-of-vl-apply-overrides-aux-2
-    (equal (true-listp (mv-nth 2 (vl-apply-overrides-aux x db walist acc used modtokens)))
+    (equal (true-listp (mv-nth 2 (vl-apply-overrides-aux x db reportcard acc used modtokens)))
            (true-listp used)))
 
   (defthm true-listp-of-vl-apply-overrides-aux-3
-    (equal (true-listp (mv-nth 3 (vl-apply-overrides-aux x db walist acc used modtokens)))
+    (equal (true-listp (mv-nth 3 (vl-apply-overrides-aux x db reportcard acc used modtokens)))
            (true-listp modtokens)))
 
   (defthm vl-apply-overrides-aux-basics
     (implies (and (force (vl-tokenlist-p x))
                   (force (vl-tokenlist-p acc))
                   (force (vl-override-db-p db))
-                  (force (vl-modwarningalist-p walist))
+                  (force (vl-reportcard-p reportcard))
                   (force (vl-overridelist-p used))
                   (force (vl-modtokensalist-p modtokens)))
-             (let ((result (vl-apply-overrides-aux x db walist acc used modtokens)))
-               (and (vl-modwarningalist-p (mv-nth 0 result))
+             (let ((result (vl-apply-overrides-aux x db reportcard acc used modtokens)))
+               (and (vl-reportcard-p (mv-nth 0 result))
                     (vl-tokenlist-p (mv-nth 1 result))
                     (vl-overridelist-p (mv-nth 2 result))
                     (vl-modtokensalist-p (mv-nth 3 result))))))
 
-  (defund vl-apply-overrides (x db walist)
-    "Returns (MV WALIST-PRIME X-PRIME USED MODTOKENS)"
+  (defund vl-apply-overrides (x db reportcard)
+    "Returns (MV REPORTCARD-PRIME X-PRIME USED MODTOKENS)"
     (declare (xargs :guard (and (vl-tokenlist-p x)
                                 (vl-override-db-p db)
-                                (vl-modwarningalist-p walist))))
+                                (vl-reportcard-p reportcard))))
     (b* (((when (atom db))
           ;; Optimization: if there are no overrides, don't do any of this
           ;; nonsense.
-          (mv walist x nil nil))
-         ((mv walist x-prime-rev used modtokens)
-          (vl-apply-overrides-aux x db walist nil nil nil))
+          (mv reportcard x nil nil))
+         ((mv reportcard x-prime-rev used modtokens)
+          (vl-apply-overrides-aux x db reportcard nil nil nil))
          (x-prime (reverse x-prime-rev)))
-      (mv walist x-prime used modtokens)))
+      (mv reportcard x-prime used modtokens)))
 
   (local (in-theory (enable vl-apply-overrides)))
 
   (defthm true-listp-of-vl-apply-overrides-1
     (implies (force (true-listp x))
-             (true-listp (mv-nth 1 (vl-apply-overrides x db walist))))
+             (true-listp (mv-nth 1 (vl-apply-overrides x db reportcard))))
     :rule-classes :type-prescription)
 
   (defthm true-listp-of-vl-apply-overrides-2
-    (true-listp (mv-nth 2 (vl-apply-overrides x db walist)))
+    (true-listp (mv-nth 2 (vl-apply-overrides x db reportcard)))
     :rule-classes :type-prescription)
 
   (defthm true-listp-of-vl-apply-overrides-3
-    (true-listp (mv-nth 3 (vl-apply-overrides x db walist)))
+    (true-listp (mv-nth 3 (vl-apply-overrides x db reportcard)))
     :rule-classes :type-prescription)
 
   (defthm vl-apply-overrides-basics
     (implies (and (force (vl-tokenlist-p x))
                   (force (vl-override-db-p db))
-                  (force (vl-modwarningalist-p walist)))
-             (let ((result (vl-apply-overrides x db walist)))
-               (and (vl-modwarningalist-p (mv-nth 0 result))
+                  (force (vl-reportcard-p reportcard)))
+             (let ((result (vl-apply-overrides x db reportcard)))
+               (and (vl-reportcard-p (mv-nth 0 result))
                     (vl-tokenlist-p (mv-nth 1 result))
                     (vl-overridelist-p (mv-nth 2 result))
                     (vl-modtokensalist-p (mv-nth 3 result)))))))
@@ -1277,12 +1277,12 @@ eventually to check the \"requirements\" for each override.</li>
   :short "Check that all of the requirements from overrides are met."
 
   :long "<p><b>Signature:</b> @(call vl-check-override-requirements) returns an
-updated @('walist').</p>
+updated @('reportcard').</p>
 
 <p>As inputs, we are given the actual list of all @('overrides') that were
 actually applied, and the full @('modtokens') alist which associates every
 module name with all of the tokens that comprise its (perhaps overridden) body.
-We are also given @('walist'), a @(see vl-modwarningalist-p) that will be
+We are also given @('reportcard'), a @(see vl-reportcard-p) that will be
 applied to the list of tokens after our check is done.</p>
 
 <p>We extend this warning alist with a fatal warning for any overridden module
@@ -1290,18 +1290,18 @@ whose requirements were not met.</p>
 
 <p>@('modtokens') is expected to be a fast alist.</p>"
 
-  (defund vl-check-override-requirements-aux (required-names override modtokens walist)
+  (defund vl-check-override-requirements-aux (required-names override modtokens reportcard)
     (declare (xargs :guard (and (string-listp required-names)
                                 (vl-override-p override)
                                 (vl-modtokensalist-p modtokens)
-                                (vl-modwarningalist-p walist))))
+                                (vl-reportcard-p reportcard))))
     (b* (((when (atom required-names))
-          walist)
+          reportcard)
          (actual-body1      (cdr (hons-get (car required-names) modtokens)))
          (acceptable-bodies (vl-override->requirements override))
          (acceptablep       (vl-tokenlist-equiv-to-some-p actual-body1 acceptable-bodies))
          ((when acceptablep)
-          (vl-check-override-requirements-aux (cdr required-names) override modtokens walist))
+          (vl-check-override-requirements-aux (cdr required-names) override modtokens reportcard))
          (modname (vl-override->name override))
          (w (make-vl-warning
              :type :vl-overrides-outdated
@@ -1312,38 +1312,38 @@ whose requirements were not met.</p>
              :args (list modname (car required-names))
              :fatalp t
              :fn 'vl-check-override-requirements-aux))
-         (walist (vl-extend-modwarningalist modname w walist)))
-      (vl-check-override-requirements-aux (cdr required-names) override modtokens walist)))
+         (reportcard (vl-extend-reportcard modname w reportcard)))
+      (vl-check-override-requirements-aux (cdr required-names) override modtokens reportcard)))
 
-  (defthm vl-modwarningalist-p-of-vl-check-override-requirements-aux
+  (defthm vl-reportcard-p-of-vl-check-override-requirements-aux
     (implies (and (force (string-listp required-names))
                   (force (vl-override-p override))
                   (force (vl-modtokensalist-p modtokens))
-                  (force (vl-modwarningalist-p walist)))
-             (vl-modwarningalist-p
-              (vl-check-override-requirements-aux required-names override modtokens walist)))
+                  (force (vl-reportcard-p reportcard)))
+             (vl-reportcard-p
+              (vl-check-override-requirements-aux required-names override modtokens reportcard)))
     :hints(("Goal" :in-theory (enable vl-check-override-requirements-aux))))
 
 
-  (defund vl-check-override-requirements (overrides modtokens walist)
+  (defund vl-check-override-requirements (overrides modtokens reportcard)
     (declare (xargs :guard (and (vl-overridelist-p overrides)
                                 (vl-modtokensalist-p modtokens)
-                                (vl-modwarningalist-p walist))))
+                                (vl-reportcard-p reportcard))))
     (b* (((when (atom overrides))
-          walist)
+          reportcard)
          (override1       (car overrides))
          (required-names1 (vl-override-requirement-names override1))
-         (walist          (vl-check-override-requirements-aux required-names1
+         (reportcard          (vl-check-override-requirements-aux required-names1
                                                               override1
                                                               modtokens
-                                                              walist)))
-      (vl-check-override-requirements (cdr overrides) modtokens walist)))
+                                                              reportcard)))
+      (vl-check-override-requirements (cdr overrides) modtokens reportcard)))
 
-  (defthm vl-modwarningalist-p-of-vl-check-override-requirements
+  (defthm vl-reportcard-p-of-vl-check-override-requirements
     (implies (and (force (vl-overridelist-p overrides))
                   (force (vl-modtokensalist-p modtokens))
-                  (force (vl-modwarningalist-p walist)))
-             (vl-modwarningalist-p
-              (vl-check-override-requirements overrides modtokens walist)))
+                  (force (vl-reportcard-p reportcard)))
+             (vl-reportcard-p
+              (vl-check-override-requirements overrides modtokens reportcard)))
     :hints(("Goal" :in-theory (enable vl-check-override-requirements)))))
 

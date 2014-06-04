@@ -6,9 +6,9 @@
 
 (in-package "ACL2")
 
-
 (include-book "regex-defs")
 (include-book "input-list")
+(include-book "tools/mv-nth" :dir :system)
 
 ;; Parsing inside bracket expressions
 (defun parse-bracket-inner (str idx last charset)
@@ -60,13 +60,13 @@
                     (charset-memberp last))
                 (charsetp charset)
                 (not (stringp 
-                      (car (parse-bracket-inner str idx last charset)))))
+                      (mv-nth 0 (parse-bracket-inner str idx last charset)))))
            (charsetp 
-            (car (parse-bracket-inner str idx last charset)))))
+            (mv-nth 0 (parse-bracket-inner str idx last charset)))))
 ;;   :rule-classes
 ;;   (:rewrite
 ;;    (:forward-chaining
-;;     :trigger-terms ((charsetp (car (parse-bracket-inner str idx last
+;;     :trigger-terms ((charsetp (mv-nth 0 (parse-bracket-inner str idx last
 ;;                                                         charset)))))))
 
 ;; If it's given a charlist, it returns one (the unused part)
@@ -138,13 +138,13 @@
 ;; the corresponding theorems about parse-bracket-inner.
 
 (defthm parse-bracket-charset
-  (implies (and (not (stringp (car (parse-bracket str idx))))
+  (implies (and (not (stringp (mv-nth 0 (parse-bracket str idx))))
                 (stringp str))
-           (charsetp (car (parse-bracket str idx)))))
+           (charsetp (mv-nth 0 (parse-bracket str idx)))))
 ;;   :rule-classes
 ;;   (:rewrite
 ;;    (:forward-chaining
-;;    :trigger-terms ((charsetp (car (parse-bracket str)))))))
+;;    :trigger-terms ((charsetp (mv-nth 0 (parse-bracket str)))))))
 
 
 (defthm parse-bracket-integer

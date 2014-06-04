@@ -21,12 +21,13 @@
 (in-package "ACL2")
 (include-book "defsort")
 (include-book "misc/total-order" :dir :system)
+(include-book "std/util/define" :dir :system)
 
 (defsort :compare< <<
          :prefix <<)
 
-(defund no-adjacent-duplicates-p (x)
-  (declare (xargs :guard t))
+(define no-adjacent-duplicates-p (x)
+  :parents (uniquep)
   (cond ((atom x)
          t)
         ((atom (cdr x))
@@ -35,7 +36,7 @@
          (and (not (equal (car x) (cadr x)))
               (no-adjacent-duplicates-p (cdr x))))))
 
-(defsection uniquep
+(define uniquep (x)
   :parents (no-duplicatesp)
   :short "Sometimes better than @(see no-duplicatesp): first sorts the list and
 then looks for adjacent duplicates."
@@ -43,6 +44,9 @@ then looks for adjacent duplicates."
   :long "<p>@(call uniquep) is provably equal to @('(no-duplicatesp x)'), but
 has different performance characteristics.  It operates by sorting its argument
 and then scanning for adjacent duplicates.</p>
+
+<p>Note: we leave this function enabled.  You should never write a theorem
+about @('uniquep').  Reason about @(see no-duplicatesp) instead.</p>
 
 <p>Since we use a mergesort, the complexity of @('uniquep') is @('O(n log n)').
 By comparison, @('no-duplicatesp') is @('O(n^2)').</p>
@@ -63,34 +67,20 @@ it looks for any duplicates.</li>
 <p>However, if your lists are sometimes long with few duplicates, @('uniquep')
 is probably a much better function to use.</p>"
 
-  (defun uniquep-exec (x)
-    (declare (xargs :guard (true-listp x)
-                    :verify-guards nil))
-    (mbe :logic (no-duplicatesp x)
-         :exec (no-adjacent-duplicates-p (<<-sort x))))
+  :inline t
+  :enabled t
 
-  (defmacro uniquep (x)
-    ;; Based on the equality-variants documentation, I think this is what we
-    ;; want to do so that we can prove theorems about uniquep and have them
-    ;; apply to no-duplicatesp.
-    ;; Note (Matt K.): Added :guardp nil on 5/19/2014 for let-mbe mod that
-    ;; provides better guard-checking, to get the old let-mbe behavior.
-    `(let-mbe ((x ,x))
-              :guardp nil
-              :logic (no-duplicatesp x)
-              :exec (uniquep-exec x)))
+  (mbe :logic (no-duplicatesp x)
+       :exec (no-adjacent-duplicates-p (<<-sort x)))
 
-  (local (defthm lemma
-           (implies (<<-ordered-p x)
-                    (equal (no-adjacent-duplicates-p x)
-                           (no-duplicatesp x)))
-           :hints(("Goal" :in-theory (enable no-duplicatesp
-                                             no-adjacent-duplicates-p
-                                             <<-ordered-p)))))
-
-  (verify-guards uniquep-exec)
-
-  (add-macro-alias uniquep no-duplicatesp-equal))
+  :prepwork
+  ((local (defthm lemma
+            (implies (<<-ordered-p x)
+                     (equal (no-adjacent-duplicates-p x)
+                            (no-duplicatesp x)))
+            :hints(("Goal" :in-theory (enable no-duplicatesp
+                                              no-adjacent-duplicates-p
+                                              <<-ordered-p)))))))
 
 
 #||

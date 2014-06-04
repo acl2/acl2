@@ -223,17 +223,59 @@ fatal warnings instead of non-fatal warnings.</p>"
              (vl-warninglist-p (vl-warning-sort x)))
     :hints(("Goal"
             :in-theory (disable vl-warning-sort-creates-comparable-listp)
-            :use ((:instance vl-warning-sort-creates-comparable-listp (ACL2::x x)))))))
+            :use ((:instance vl-warning-sort-creates-comparable-listp (ACL2::x x))))))
 
+  ;; BOZO this is pretty gross, and should probably be built into defsort.
+
+  (local (defthm l0
+           (implies (< 0 (duplicity a x))
+                    (consp x))))
+
+  (local (defthm l1
+           (implies (consp x)
+                    (consp (vl-warning-sort x)))
+           :hints(("Goal"
+                   :in-theory (disable l0
+                                       vl-warning-sort-preserves-duplicity)
+                   :use ((:instance l0 (a (car x)))
+                         (:instance vl-warning-sort-preserves-duplicity
+                          (acl2::a (car x))
+                          (acl2::x x)))))))
+
+  (local (defthm l2
+           (implies (equal (duplicity (car x) x) 0)
+                    (atom x))))
+
+  (local (defthm l3
+           (implies (consp (vl-warning-sort x))
+                    (consp x))
+           :hints(("Goal"
+                   :in-theory (disable l0
+                                       vl-warning-sort-preserves-duplicity)
+                   :use ((:instance l2
+                          (x (vl-warning-sort x)))
+                         (:instance vl-warning-sort-preserves-duplicity
+                          (acl2::a (car (vl-warning-sort x)))
+                          (acl2::x x)))))))
+
+  (defthm consp-of-vl-warning-sort
+    (equal (consp (vl-warning-sort x))
+           (consp x))
+    :hints(("Goal" :cases ((consp x))))))
 
 (define vl-clean-warnings
-  :short "Sort warnings and remove duplicates."
+  :parents (warnings clean-warnings)
+  :short "Sort and remove duplicates from a list of warnings."
   ((x vl-warninglist-p))
   :returns (ans vl-warninglist-p)
   (ACL2::remove-adjacent-duplicates
    (vl-warning-sort
     (redundant-list-fix
-     (vl-warninglist-fix x)))))
+     (vl-warninglist-fix x))))
+  ///
+  (defthm vl-clearn-warnings-under-iff
+    (iff (vl-clean-warnings x)
+         (consp x))))
 
 (define vl-remove-warnings
   :short "Remove warnings of certain types."

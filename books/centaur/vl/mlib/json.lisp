@@ -660,12 +660,12 @@ which could not hold such large values.</p>")
     :measure (two-nats-measure (vl-expr-count x) 0)
     (vl-expr-case x
       :atom
-      (jp-object :tag (jp-sym :vl-atom)
+      (jp-object :tag (jp-sym :atom)
                  :guts (vl-jp-atomguts x.guts)
                  :finalwidth (jp-maybe-nat x.finalwidth)
                  :finaltype (vl-jp-maybe-exprtype x.finaltype))
       :nonatom
-      (jp-object :tag        (jp-sym :vl-nonatom)
+      (jp-object :tag        (jp-sym :nonatom)
                  :atts       (vl-jp-atts x.atts)
                  :args       (vl-jp-exprlist x.args)
                  :finalwidth (jp-maybe-nat x.finalwidth)

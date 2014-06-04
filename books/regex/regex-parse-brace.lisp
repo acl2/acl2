@@ -7,6 +7,7 @@
 
 (include-book "regex-defs")
 (include-book "input-list")
+(include-book "tools/mv-nth" :dir :system)
 
 ;; Digit parsing, for brace expressions
 (defun get-digit-char (c)
@@ -46,13 +47,13 @@
   :rule-classes (:rewrite :type-prescription))
 
 (defthm parse-int-type1
-  (or (not (car (parse-int str idx)))
-      (and (integerp (car (parse-int str idx)))
-           (<= 0 (car (parse-int str idx)))))
+  (or (not (mv-nth 0 (parse-int str idx)))
+      (and (integerp (mv-nth 0 (parse-int str idx)))
+           (<= 0 (mv-nth 0 (parse-int str idx)))))
   :rule-classes ((:rewrite 
-                  :corollary (implies (car (parse-int str idx))
-                                      (and (integerp (car (parse-int str idx)))
-                                           (<= 0 (car (parse-int str idx))))))
+                  :corollary (implies (mv-nth 0 (parse-int str idx))
+                                      (and (integerp (mv-nth 0 (parse-int str idx)))
+                                           (<= 0 (mv-nth 0 (parse-int str idx))))))
                   :type-prescription))
 
 (defthm parse-int-type2-weak
@@ -110,13 +111,13 @@
 
 (defthm close-brace-p-yes
   (implies (and (integerp idx)
-                (car (close-brace-p str idx opts)))
+                (mv-nth 0 (close-brace-p str idx opts)))
            (< idx (mv-nth 1 (close-brace-p str idx opts))))
   :rule-classes 
   (:rewrite
    (:linear
     :corollary (implies (and (integerp idx)
-                             (car (close-brace-p str idx opts)))
+                             (mv-nth 0 (close-brace-p str idx opts)))
                         (< idx (mv-nth 1 (close-brace-p str idx opts)))))))
 
 (defthm close-brace-p-always
@@ -127,11 +128,11 @@
   (:rewrite
    (:type-prescription
     :corollary (implies (and (integerp idx)
-                             (car (close-brace-p str idx opts)))
+                             (mv-nth 0 (close-brace-p str idx opts)))
                         (integerp (mv-nth 1 (close-brace-p str idx opts)))))
    (:type-prescription
     :corollary (implies (and (natp idx)
-                             (car (close-brace-p str idx opts)))
+                             (mv-nth 0 (close-brace-p str idx opts)))
                         (natp (mv-nth 1 (close-brace-p str idx opts)))))
    (:linear
     :corollary (implies (integerp idx)
@@ -144,7 +145,7 @@
 
 
 (defthm close-brace-p-no
-  (implies (not (car (close-brace-p str idx opts)))
+  (implies (not (mv-nth 0 (close-brace-p str idx opts)))
            (= (mv-nth 1 (close-brace-p str idx opts))
               idx)))
 
@@ -250,14 +251,14 @@
 
 (defthm parse-brace-regexp
   (implies (and (regex-p reg)
-                (not (stringp (car (parse-brace str idx reg opts)))))
-           (regex-p (car (parse-brace str idx reg opts))))
+                (not (stringp (mv-nth 0 (parse-brace str idx reg opts)))))
+           (regex-p (mv-nth 0 (parse-brace str idx reg opts))))
   :rule-classes
   (:rewrite
    (:forward-chaining
-    :trigger-terms ((car (parse-brace str idx reg opts))))))
+    :trigger-terms ((mv-nth 0 (parse-brace str idx reg opts))))))
 
 (defthm parse-brace-nonnil
-  (car (parse-brace str idx reg opts)))
+  (mv-nth 0 (parse-brace str idx reg opts)))
 
 (in-theory (disable parse-brace))

@@ -20,6 +20,7 @@
 
 (in-package "VL")
 (include-book "../parsetree")
+(include-book "descriptions")
 (local (include-book "../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
 
@@ -334,6 +335,9 @@ function enabled and would think it odd to ever prove a theorem about it.</p>" f
     (def-vl-filter-by-name-fn type keep-long del-long filter-long
       short-name accessor suffix)))
 
+
+;; BOZO maybe build these into fty deflist
+
 (defthm vl-netdecllist-fix-of-list-fix
   (equal (vl-netdecllist-fix (list-fix x))
          (list-fix (vl-netdecllist-fix x)))
@@ -384,6 +388,38 @@ function enabled and would think it odd to ever prove a theorem about it.</p>" f
          (list-fix (vl-modulelist-fix x)))
   :hints(("Goal" :induct (len x))))
 
+(defthm vl-udplist-fix-of-list-fix
+  (equal (vl-udplist-fix (list-fix x))
+         (list-fix (vl-udplist-fix x)))
+  :hints(("Goal" :induct (len x))))
+
+(defthm vl-configlist-fix-of-list-fix
+  (equal (vl-configlist-fix (list-fix x))
+         (list-fix (vl-configlist-fix x)))
+  :hints(("Goal" :induct (len x))))
+
+(defthm vl-programlist-fix-of-list-fix
+  (equal (vl-programlist-fix (list-fix x))
+         (list-fix (vl-programlist-fix x)))
+  :hints(("Goal" :induct (len x))))
+
+(defthm vl-interfacelist-fix-of-list-fix
+  (equal (vl-interfacelist-fix (list-fix x))
+         (list-fix (vl-interfacelist-fix x)))
+  :hints(("Goal" :induct (len x))))
+
+(defthm vl-packagelist-fix-of-list-fix
+  (equal (vl-packagelist-fix (list-fix x))
+         (list-fix (vl-packagelist-fix x)))
+  :hints(("Goal" :induct (len x))))
+
+(defthm vl-descriptionlist-fix-of-list-fix
+  (equal (vl-descriptionlist-fix (list-fix x))
+         (list-fix (vl-descriptionlist-fix x)))
+  :hints(("Goal" :induct (len x))))
+
+
+
 
 (def-vl-filter-by-name netdecl)
 (def-vl-filter-by-name regdecl)
@@ -394,6 +430,35 @@ function enabled and would think it odd to ever prove a theorem about it.</p>" f
 (def-vl-filter-by-name fundecl)
 (def-vl-filter-by-name taskdecl)
 
+(def-vl-filter-by-name modinst
+  :accessor vl-modinst->modname
+  :short-name "modname"
+  :suffix modinsts-by-modname)
+
+(def-vl-filter-by-name modinst
+  :accessor vl-modinst->instname
+  :short-name "instname"
+  :suffix modinsts-by-instname)
+
+
+(define vl-filter-modinsts-by-modname+ ((names string-listp)
+                                        (x     vl-modinstlist-p)
+                                        (fal   (equal fal (make-lookup-alist names))))
+  :short "Same as @(see vl-filter-modinsts-by-modname+), but requires that the
+          fast alist of @('names') be provided instead of recomputing it."
+  :enabled t
+  (mbe :logic (vl-filter-modinsts-by-modname names x)
+       :exec (b* (((when (atom names))
+                   (mv nil (redundant-list-fix x)))
+                  ((when (atom x)) (mv nil nil))
+                  ((local-stobjs nrev nrev2)
+                   (mv yes no nrev nrev2))
+                  ((mv nrev nrev2)
+                   (vl-fast-filter-modinsts-by-modname names fal x nrev nrev2))
+                  (- (fast-alist-free fal))
+                  ((mv yes nrev) (nrev-finish nrev))
+                  ((mv no nrev2) (nrev-finish nrev2)))
+               (mv yes no nrev nrev2))))
 
 
 (def-vl-filter-by-name module
@@ -423,34 +488,12 @@ modules.</p>")
                (vl-delete-modules names mods))))
     :hints(("Goal" :in-theory (enable vl-delete-modules)))))
 
-(def-vl-filter-by-name modinst
-  :accessor vl-modinst->modname
-  :short-name "modname"
-  :suffix modinsts-by-modname)
 
-(def-vl-filter-by-name modinst
-  :accessor vl-modinst->instname
-  :short-name "instname"
-  :suffix modinsts-by-instname)
+(def-vl-filter-by-name udp)
+(def-vl-filter-by-name config)
+(def-vl-filter-by-name package)
+(def-vl-filter-by-name interface)
+(def-vl-filter-by-name program)
+(def-vl-filter-by-name description)
 
-
-
-(define vl-filter-modinsts-by-modname+ ((names string-listp)
-                                        (x     vl-modinstlist-p)
-                                        (fal   (equal fal (make-lookup-alist names))))
-  :short "Same as @(see vl-filter-modinsts-by-modname+), but requires that the
-          fast alist of @('names') be provided instead of recomputing it."
-  :enabled t
-  (mbe :logic (vl-filter-modinsts-by-modname names x)
-       :exec (b* (((when (atom names))
-                   (mv nil (redundant-list-fix x)))
-                  ((when (atom x)) (mv nil nil))
-                  ((local-stobjs nrev nrev2)
-                   (mv yes no nrev nrev2))
-                  ((mv nrev nrev2)
-                   (vl-fast-filter-modinsts-by-modname names fal x nrev nrev2))
-                  (- (fast-alist-free fal))
-                  ((mv yes nrev) (nrev-finish nrev))
-                  ((mv no nrev2) (nrev-finish nrev2)))
-               (mv yes no nrev nrev2))))
 
