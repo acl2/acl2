@@ -3630,4 +3630,3 @@ To avoid the following break and get only the above warning:~%  ~a~%"
   ;; Deprecated.
   (clear-memoize-tables)
   (hons-wash))
-
