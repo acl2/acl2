@@ -1033,7 +1033,7 @@
 
 (mutual-recursion
 
-(defun-one-output oneify-flet-bindings (alist fns w)
+(defun-one-output oneify-flet-bindings (alist fns w program-p)
 
 ; We throw away all type declarations.  If we were to keep a type declaration
 ; (satisfies fn), we would have to find it and convert it (at least in general)
@@ -1051,22 +1051,26 @@
                                (strip-cdrs (remove-strings (butlast (cddr def)
                                                                     1)))))
                         (ignore-vars (ignore-vars dcls))
-                        (oneified-body (oneify (car (last def)) fns w)))
+                        (oneified-body
+                         (oneify (car (last def)) fns w program-p)))
                    (list* (*1*-symbol (car def))
                           (cadr def)
                           (if ignore-vars
                               (list `(declare (ignore ,@ignore-vars))
                                     oneified-body)
                             (list oneified-body))))
-                 (oneify-flet-bindings (cdr alist) fns w)))))
+                 (oneify-flet-bindings (cdr alist) fns w program-p)))))
 
-(defun-one-output oneify (x fns w)
+(defun-one-output oneify (x fns w program-p)
 
 ; Keep this function in sync with translate11.  Errors have generally been
 ; removed, since we know they can't occur.
 
 ; Fns is a list of fns that have been flet-bound.  It is important not to treat
 ; any of these as macros.
+
+; Program-p is true when we want an MBE to use its :exec version.  Thus, use
+; program-p = t when attempting to approximate raw Lisp behavior.
 
   (cond
    ((or (atom x) (eq (car x) 'quote))
@@ -1087,8 +1091,7 @@
      (list* 'let (listlis (cadr (car x))
                           (cdr x))
             (cddr (car x)))
-     fns
-     w))
+     fns w program-p))
    ((eq (car x) 'return-last)
 
 ; Warning: Keep this in sync with stobj-let-fn and the handling of stobj-let in
@@ -1108,24 +1111,25 @@
 ; don't want to call return-last on top of that, or we'll be attempting to take
 ; the *1*-symbol of the *1*-symbol!
 
-             (oneify (car (last x)) fns w))
+             (oneify (car (last x)) fns w program-p))
             ((eq fn 'mbe1-raw)
 
 ; See the discussion in (defun-*1* return-last ...).
 
-             (let ((oneified-last (oneify (car (last x)) fns w)))
+             (let ((oneified-logic (oneify (cadddr x) fns w program-p))
+                   (oneified-exec (oneify (caddr x) fns w program-p)))
                `(if (f-get-global 'safe-mode *the-live-state*)
                     (,(*1*-symbol 'return-last)
                      ,qfn
-                     ,(oneify (caddr x) fns w)
-                     ,oneified-last)
-                  ,oneified-last)))
+                     ,oneified-exec
+                     ,oneified-logic)
+                  ,(if program-p oneified-exec oneified-logic))))
             (t
 
 ; Since fn is not 'ec-call1-raw, the guard of return-last is automatically met
 ; for the arguments.
 
-             (let ((args (oneify-lst (cddr x) fns w)))
+             (let ((args (oneify-lst (cddr x) fns w program-p)))
                (cons fn args))))))
    ((or (member-eq (car x) *oneify-primitives*)
 
@@ -1135,11 +1139,11 @@
 ;       (assoc-eq (car x) *super-defun-wart-table*)
 
         (member-eq (car x) *macros-for-nonexpansion-in-raw-lisp*))
-    (let ((args (oneify-lst (cdr x) fns w)))
+    (let ((args (oneify-lst (cdr x) fns w program-p)))
       (cons (car x) args)))
    ((eq (car x) 'mv-let)
-    (let ((value-form (oneify (caddr x) fns w))
-          (body-form (oneify (car (last x)) fns w)))
+    (let ((value-form (oneify (caddr x) fns w program-p))
+          (body-form (oneify (car (last x)) fns w program-p)))
       `(mv-let ,(cadr x)
                ,value-form
 
@@ -1161,10 +1165,13 @@
 
    ((eq (car x) 'flet) ; (flet ((fn1 ...) (fn2 ...) ...) declare-form* body)
     (list 'flet
-          (oneify-flet-bindings (cadr x) fns w)
-          (oneify (car (last x)) (union-eq (strip-cars (cadr x)) fns) w)))
+          (oneify-flet-bindings (cadr x) fns w program-p)
+          (oneify (car (last x))
+                  (union-eq (strip-cars (cadr x)) fns)
+                  w
+                  program-p)))
    ((eq (car x) 'translate-and-test)
-    (oneify (caddr x) fns w))
+    (oneify (caddr x) fns w program-p))
    ((eq (car x) 'with-local-stobj)
     (mv-let (erp st mv-let-form creator)
             (parse-with-local-stobj (cdr x))
@@ -1181,7 +1188,7 @@
 ; bindings.
 
     (let ((temp (oneify (stobj-let-fn x)
-                        fns w)))
+                        fns w program-p)))
       (case-match temp
 
 ; Warning: Keep these cases in sync with stobj-let-fn.
@@ -1215,13 +1222,13 @@
                  #-acl2-par (cdr x))
            (bindings (car args))
            (post-bindings (cdr args))
-           (value-forms (oneify-lst (strip-cadrs bindings) fns w))
-           (body-form (oneify (car (last post-bindings)) fns w)))
+           (value-forms (oneify-lst (strip-cadrs bindings) fns w program-p))
+           (body-form (oneify (car (last post-bindings)) fns w program-p)))
       `(,(car x)
         #+acl2-par
         ,@(and granularity-decl
                `((declare (granularity
-                           ,(oneify (cadr (cadr (cadr x))) fns w)))))
+                           ,(oneify (cadr (cadr (cadr x))) fns w program-p)))))
         ,(listlis (strip-cars bindings)
                   value-forms)
         ,@(butlast post-bindings 1)
@@ -1230,17 +1237,18 @@
    ((member-eq (car x) '(pand por pargs))
     (if (declare-granularity-p (cadr x))
         (list* (car x)
-               `(declare (granularity ,(oneify (cadr (cadr (cadr x))) fns w)))
-               (oneify-lst (cddr x) fns w))
+               `(declare (granularity
+                          ,(oneify (cadr (cadr (cadr x))) fns w program-p)))
+               (oneify-lst (cddr x) fns w program-p))
       (cons (car x)
-            (oneify-lst (cdr x) fns w))))
+            (oneify-lst (cdr x) fns w program-p))))
    ((eq (car x) 'throw-or-attach) ; already handled in oneify-cltl-code
     (interface-er
      "Implementation error: Unexpected call of throw-or-attach in oneify:~%~x0"
      x))
    ((and (getprop (car x) 'macro-body nil 'current-acl2-world w)
          (not (member-eq (car x) fns)))
-    (oneify (macroexpand1! x) fns w))
+    (oneify (macroexpand1! x) fns w program-p))
    ((eq (car x) 'wormhole-eval)
 
 ; We know that in a well-formed term (wormhole-eval x y z), x is a quoted
@@ -1257,16 +1265,16 @@
            (body (caddr (cadr qlambda))))
       (list 'wormhole-eval
             qname
-            (list 'quote (list 'lambda formals (oneify body fns w)))
+            (list 'quote (list 'lambda formals (oneify body fns w program-p)))
             *nil*)))
    (t
-    (let ((arg-forms (oneify-lst (cdr x) fns w)))
+    (let ((arg-forms (oneify-lst (cdr x) fns w program-p)))
       (cons (*1*-symbol (car x)) arg-forms)))))
 
-(defun-one-output oneify-lst (lst fns w)
+(defun-one-output oneify-lst (lst fns w program-p)
   (cond ((atom lst) nil)
-        (t (let ((x (oneify (car lst) fns w))
-                 (y (oneify-lst (cdr lst) fns w)))
+        (t (let ((x (oneify (car lst) fns w program-p))
+                 (y (oneify-lst (cdr lst) fns w program-p)))
              (cons x y)))))
 
 )
@@ -1518,7 +1526,7 @@
         ,formals
         ,(cons fn formals)))
      (t
-      (let* ((*1*guard (oneify guard nil wrld))
+      (let* ((*1*guard (oneify guard nil wrld (eq defun-mode :program)))
 
 ; We throw away most declararations and the doc string, keeping only ignore and
 ; ignorable declarations.  Note that it is quite reasonable to ignore
@@ -1537,7 +1545,7 @@
 ; the body of the top-level definition of *1*fn in the case of :program mode
 ; because we promise not to introduce a top-level flet in that case.
 
-              (oneify body nil wrld))
+              (oneify body nil wrld (eq defun-mode :program)))
              (invariant-risk
               (getprop fn 'invariant-risk nil 'current-acl2-world
                        wrld))
@@ -1580,7 +1588,11 @@
 
 ; Calls of a stobj primitive that takes its stobj as an argument are always
 ; guard-checked.  If that changes, consider also changing
-; ev-fncall-rec-logical.
+; ev-fncall-rec-logical.  Note that we rely on this guard-checking for handling
+; of invariant-risk; we arrange, using *guard-checking-on-form-invariant-risk*,
+; that evaluation stays with *1* functions up to reaching the stobj primitive,
+; which is responsible for causing a guard violation rather than allowing an
+; invariant to be violated.
 
                                t)
                               (t temp))))
@@ -1636,8 +1648,9 @@
                      '(member-eq (f-get-global 'guard-checking-on
                                                *the-live-state*)
                                  '(t :all)))
-                    (t `(and ,guard-checking-on-form
-                             (not (eq ,guard-checking-on-form :none))))))
+                    (t `(let ((x ,guard-checking-on-form))
+                          (and x
+                               (not (eq x :none)))))))
              (fail_guard ; form for reporting guard failure
               (oneify-fail-form
                'ev-fncall-guard-er fn formals guard super-stobjs-in wrld
