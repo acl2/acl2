@@ -21,7 +21,6 @@
 (in-package "VL")
 (include-book "writer")
 (include-book "../util/cwtime")
-(include-book "../loader/inject-comments")
 (local (include-book "../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
 
@@ -47,6 +46,57 @@
 ; printed) and the comments interspersed in the right places.  Merging the
 ; strings gives us a pretty-printed version of the module with the comments
 ; injected in.
+
+
+
+(defsection vl-commentmap-entry-sort
+  :short "A basic sort for comment maps."
+
+  :long "<p>Our pretty-printer uses the following routine in a funny way to get
+the comments put inline with the module elements.</p>
+
+<p>The sort is introduced with defsort, so it is a stable mergesort.  Note that
+we ignore file names.</p>"
+
+  (defund vl-commentmap-entry-p (x)
+    (declare (xargs :guard t))
+    (and (consp x)
+         (vl-location-p (car x))
+         (stringp (cdr x))))
+
+  (defund vl-commentmap-entry-< (x y)
+    (declare (xargs :guard (and (vl-commentmap-entry-p x)
+                                (vl-commentmap-entry-p y))
+                    :guard-hints (("Goal" :in-theory (enable vl-commentmap-entry-p)))))
+    (let ((line-x (vl-location->line (car x)))
+          (line-y (vl-location->line (car y))))
+      (or (< line-x line-y)
+          (and (= line-x line-y)
+               (< (vl-location->col (car x))
+                  (vl-location->col (car y)))))))
+
+  (defthm transitivity-of-vl-commentmap-entry-<
+    (implies (and (vl-commentmap-entry-< x y)
+                  (vl-commentmap-entry-< y z))
+             (vl-commentmap-entry-< x z))
+    :hints(("Goal" :in-theory (enable vl-commentmap-entry-<))))
+
+  (ACL2::defsort :comparablep vl-commentmap-entry-p
+                 :compare< vl-commentmap-entry-<
+                 :prefix vl-commentmap-entry)
+
+  (defthm vl-commentmap-entry-list-p-elim
+    (equal (vl-commentmap-entry-list-p x)
+           (vl-commentmap-p (list-fix x)))
+    :hints(("Goal"
+            :in-theory (enable vl-commentmap-entry-p
+                               vl-commentmap-entry-list-p))))
+
+  (defthm vl-commentmap-p-of-vl-commentmap-entry-sort
+    (implies (vl-commentmap-p x)
+             (vl-commentmap-p (vl-commentmap-entry-sort x)))
+    :hints(("goal" :use ((:instance vl-commentmap-entry-sort-creates-comparable-listp
+                                    (acl2::x x)))))))
 
 
 (defmacro with-semilocal-ps (&rest args)

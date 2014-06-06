@@ -347,7 +347,6 @@
                                     :orig          loadresult.design
                                     :filemap       loadresult.filemap
                                     :defines       loadresult.defines
-                                    :loadwarnings  loadresult.warnings
                                     :useset-report use-set-report
                                     )))
     (mv result state)))

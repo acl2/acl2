@@ -30,6 +30,8 @@
 (include-book "eventctrl")
 (include-book "expressions")
 (include-book "functions")
+(include-book "gates")
+(include-book "imports")
 (include-book "insts")
 (include-book "nets")
 (include-book "ports")

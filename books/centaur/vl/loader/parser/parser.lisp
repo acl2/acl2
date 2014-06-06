@@ -19,8 +19,15 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "modules")
+(include-book "../descriptions")
 (include-book "error")
+(include-book "modules")
+(include-book "udps")
+(include-book "interfaces")
+(include-book "packages")
+(include-book "programs")
+(include-book "configs")
+(include-book "imports")
 (local (include-book "../../util/arithmetic"))
 
 (defxdoc parser
@@ -56,351 +63,6 @@ deal with low-level timing issues.</p>
 1800-2012 standard.  But this is preliminary work and you should not yet expect
 VL to correctly handle any interesting fragment of SystemVerilog.</p>")
 
-; -----------------------------------------------------------------------------
-;
-;                           User-Defined Primitives
-;
-; -----------------------------------------------------------------------------
-
-; BOZO this is really not implemented.  We basically just read until
-; endprimitive, throwing away any tokens we encounter until then.
-
-; Verilog-2005 Syntax:
-;
-; udp_declaration ::=
-;
-;    {attribute_instance} 'primitive' udp_identifier '(' udp_port_list ')' ';'
-;       udp_port_declaration { udp_port_declaration }
-;       udp_body
-;       'endprimitive'
-;
-;    {attribute_instance} 'primitive' udp_identifier '(' udp_declaration_port_list ')' ';'
-;       udp_body
-;       'endprimitive'
-;
-;
-; SystemVerilog-2012 Syntax:
-;
-;   -- There is a bit more to it, but minimally it adds [ ':' identifier ] after
-;      the endprimitive keyword.
-
-; If we're dealing with SystemVerilog-2012, then the endprimitive can be
-; followed by the name of the primitive, e,g,:
-;
-;   primitive foo
-;     ...
-;   endprimitive : foo
-;
-; The ending name must match or it's an error, see "Block Names", Section 9.3.4
-; of the SystemVerilog-2012 spec.
-;
-; If we're only doing Verilog-2005, then ending name parts aren't allowed.
-
-(defaggregate vl-endinfo
-  :legiblep nil
-  ((name maybe-stringp :rule-classes :type-prescription)
-   (loc  vl-location-p)))
-
-(defparser vl-parse-udp-declaration-aux ()
-  :result (vl-endinfo-p val)
-  :resultp-of-nil nil
-  :fails gracefully
-  :count strong
-  (seqw tokens warnings
-        (unless (vl-is-token? :vl-kwd-endprimitive)
-          (:s= (vl-match-any))
-          (info := (vl-parse-udp-declaration-aux))
-          (return info))
-        (end := (vl-match))
-        (when (or (eq (vl-loadconfig->edition config) :verilog-2005)
-                  (not (vl-is-token? :vl-colon)))
-          (return (make-vl-endinfo :name nil
-                                   :loc (vl-token->loc end))))
-        (:= (vl-match))
-        (id := (vl-match-token :vl-idtoken))
-        (return (make-vl-endinfo :name (vl-idtoken->name id)
-                                 :loc (vl-token->loc id)))))
-
-(defparser vl-parse-udp-declaration (atts)
-  :guard (vl-atts-p atts)
-  :result (vl-udp-p val)
-  :resultp-of-nil nil
-  :fails gracefully
-  :count strong
-  (seqw tokens warnings
-        (:= (vl-match-token :vl-kwd-primitive))
-        (name := (vl-match-token :vl-idtoken))
-        (endinfo := (vl-parse-udp-declaration-aux))
-        (when (and (vl-endinfo->name endinfo)
-                   (not (equal (vl-idtoken->name name)
-                               (vl-endinfo->name endinfo))))
-          (return-raw
-           (vl-parse-error
-            (cat "Mismatched primitive/endprimitive pair: expected "
-                 (vl-idtoken->name name) " but found "
-                 (vl-endinfo->name endinfo)))))
-        (return
-         (make-vl-udp
-          :name (vl-idtoken->name name)
-          :atts atts
-          :warnings (fatal :type :vl-warn-primitive
-                           :msg "User-defined primitives are not supported."
-                           :args nil
-                           :acc nil)
-          :minloc (vl-token->loc name)
-          :maxloc (vl-endinfo->loc endinfo)))))
-
-
-
-; -----------------------------------------------------------------------------
-;
-;                               Configurations
-;
-; -----------------------------------------------------------------------------
-;
-; Syntax in Verilog-2005:
-;
-; config_declaration ::=
-;    'config' identifier ';'
-;       design_statement
-;       { config_rule_statement }
-;    'endconfig'
-;
-; Syntax in SystemVerilog-2012:
-;
-; config_declaration ::=
-;    'config' identifier ';'
-;       { local_parameter_declaration ';' }
-;       design_statement
-;       { config_rule_statement }
-;    'endconfig' [':' identifier]
-
-(defparser vl-parse-config-declaration-aux ()
-  :result (vl-endinfo-p val)
-  :resultp-of-nil nil
-  :fails gracefully
-  :count strong
-  (seqw tokens warnings
-        (unless (vl-is-token? :vl-kwd-endconfig)
-          (:s= (vl-match-any))
-          (info := (vl-parse-config-declaration-aux))
-          (return info))
-        (end := (vl-match))
-        (when (or (eq (vl-loadconfig->edition config) :verilog-2005)
-                  (not (vl-is-token? :vl-colon)))
-          (return (make-vl-endinfo :name nil
-                                   :loc (vl-token->loc end))))
-        (:= (vl-match))
-        (id := (vl-match-token :vl-idtoken))
-        (return (make-vl-endinfo :name (vl-idtoken->name id)
-                                 :loc (vl-token->loc id)))))
-
-(defparser vl-parse-config-declaration (atts)
-  :guard (vl-atts-p atts)
-  :result (vl-config-p val)
-  :resultp-of-nil nil
-  :fails gracefully
-  :count strong
-  (seqw tokens warnings
-        (:= (vl-match-token :vl-kwd-config))
-        (name := (vl-match-token :vl-idtoken))
-        (endinfo := (vl-parse-config-declaration-aux))
-        (when (and (vl-endinfo->name endinfo)
-                   (not (equal (vl-idtoken->name name)
-                               (vl-endinfo->name endinfo))))
-          (return-raw
-           (vl-parse-error
-            (cat "Mismatched config/endconfig pair: expected "
-                 (vl-idtoken->name name) " but found "
-                 (vl-endinfo->name endinfo)))))
-        (return
-         (make-vl-config
-          :name (vl-idtoken->name name)
-          :atts atts
-          :warnings (fatal :type :vl-warn-config
-                           :msg "Configs are not supported."
-                           :args nil
-                           :acc nil)
-          :minloc (vl-token->loc name)
-          :maxloc (vl-endinfo->loc endinfo)))))
-
-
-
-; -----------------------------------------------------------------------------
-;
-;                                Packages
-;
-; -----------------------------------------------------------------------------
-
-; BOZO we don't really implement packages yet.
-
-(defparser vl-parse-package-declaration-aux ()
-  :result (vl-endinfo-p val)
-  :resultp-of-nil nil
-  :fails gracefully
-  :count strong
-  ;; Similar to UDPs, but we don't have to check for Verilog-2005 because
-  ;; packages only exist in SystemVerilog-2012.
-  (seqw tokens warnings
-        (unless (vl-is-token? :vl-kwd-endpackage)
-          (:s= (vl-match-any))
-          (info := (vl-parse-package-declaration-aux))
-          (return info))
-        (end := (vl-match))
-        (unless (vl-is-token? :vl-colon)
-          (return (make-vl-endinfo :name nil
-                                   :loc (vl-token->loc end))))
-        (:= (vl-match))
-        (id := (vl-match-token :vl-idtoken))
-        (return (make-vl-endinfo :name (vl-idtoken->name id)
-                                 :loc (vl-token->loc id)))))
-
-(defparser vl-parse-package-declaration (atts)
-  :guard (vl-atts-p atts)
-  :result (vl-package-p val)
-  :resultp-of-nil nil
-  :fails gracefully
-  :count strong
-  (seqw tokens warnings
-        (:= (vl-match-token :vl-kwd-package))
-        (name := (vl-match-token :vl-idtoken))
-        (endinfo := (vl-parse-package-declaration-aux))
-        (when (and (vl-endinfo->name endinfo)
-                   (not (equal (vl-idtoken->name name)
-                               (vl-endinfo->name endinfo))))
-          (return-raw
-           (vl-parse-error
-            (cat "Mismatched package/endpackage pair: expected "
-                 (vl-idtoken->name name) " but found "
-                 (vl-endinfo->name endinfo)))))
-        (return
-         (make-vl-package
-          :name (vl-idtoken->name name)
-          :atts atts
-          :warnings (fatal :type :vl-warn-package
-                           :msg "Packages are not supported."
-                           :args nil
-                           :acc nil)
-          :minloc (vl-token->loc name)
-          :maxloc (vl-endinfo->loc endinfo)))))
-
-
-
-; -----------------------------------------------------------------------------
-;
-;                              Interfaces
-;
-; -----------------------------------------------------------------------------
-
-(defparser vl-parse-interface-declaration-aux ()
-  :result (vl-endinfo-p val)
-  :resultp-of-nil nil
-  :fails gracefully
-  :count strong
-  ;; Similar to UDPs, but we don't have to check for Verilog-2005 because
-  ;; interfaces only exist in SystemVerilog-2012.
-  (seqw tokens warnings
-        (unless (vl-is-token? :vl-kwd-endinterface)
-          (:s= (vl-match-any))
-          (info := (vl-parse-interface-declaration-aux))
-          (return info))
-        (end := (vl-match))
-        (unless (vl-is-token? :vl-colon)
-          (return (make-vl-endinfo :name nil
-                                   :loc (vl-token->loc end))))
-        (:= (vl-match))
-        (id := (vl-match-token :vl-idtoken))
-        (return (make-vl-endinfo :name (vl-idtoken->name id)
-                                 :loc (vl-token->loc id)))))
-
-(defparser vl-parse-interface-declaration (atts)
-  :guard (vl-atts-p atts)
-  :result (vl-interface-p val)
-  :resultp-of-nil nil
-  :fails gracefully
-  :count strong
-  (seqw tokens warnings
-        (:= (vl-match-token :vl-kwd-interface))
-        (name := (vl-match-token :vl-idtoken))
-        (endinfo := (vl-parse-interface-declaration-aux))
-        (when (and (vl-endinfo->name endinfo)
-                   (not (equal (vl-idtoken->name name)
-                               (vl-endinfo->name endinfo))))
-          (return-raw
-           (vl-parse-error
-            (cat "Mismatched interface/endinterface pair: expected "
-                 (vl-idtoken->name name) " but found "
-                 (vl-endinfo->name endinfo)))))
-        (return
-         (make-vl-interface
-          :name (vl-idtoken->name name)
-          :atts atts
-          :warnings (fatal :type :vl-warn-interface
-                           :msg "Interfaces are not supported."
-                           :args nil
-                           :acc nil)
-          :minloc (vl-token->loc name)
-          :maxloc (vl-endinfo->loc endinfo)))))
-
-
-
-; -----------------------------------------------------------------------------
-;
-;                              Programs
-;
-; -----------------------------------------------------------------------------
-
-(defparser vl-parse-program-declaration-aux ()
-  :result (vl-endinfo-p val)
-  :resultp-of-nil nil
-  :fails gracefully
-  :count strong
-  ;; Similar to UDPs, but we don't have to check for Verilog-2005 because
-  ;; programs only exist in SystemVerilog-2012.
-  (seqw tokens warnings
-        (unless (vl-is-token? :vl-kwd-endprogram)
-          (:s= (vl-match-any))
-          (info := (vl-parse-program-declaration-aux))
-          (return info))
-        (end := (vl-match))
-        (unless (vl-is-token? :vl-colon)
-          (return (make-vl-endinfo :name nil
-                                   :loc (vl-token->loc end))))
-        (:= (vl-match))
-        (id := (vl-match-token :vl-idtoken))
-        (return (make-vl-endinfo :name (vl-idtoken->name id)
-                                 :loc (vl-token->loc id)))))
-
-(defparser vl-parse-program-declaration (atts)
-  :guard (vl-atts-p atts)
-  :result (vl-program-p val)
-  :resultp-of-nil nil
-  :fails gracefully
-  :count strong
-  (seqw tokens warnings
-        (:= (vl-match-token :vl-kwd-program))
-        (name := (vl-match-token :vl-idtoken))
-        (endinfo := (vl-parse-program-declaration-aux))
-        (when (and (vl-endinfo->name endinfo)
-                   (not (equal (vl-idtoken->name name)
-                               (vl-endinfo->name endinfo))))
-          (return-raw
-           (vl-parse-error
-            (cat "Mismatched program/endprogram pair: expected "
-                 (vl-idtoken->name name) " but found "
-                 (vl-endinfo->name endinfo)))))
-        (return
-         (make-vl-program
-          :name (vl-idtoken->name name)
-          :atts atts
-          :warnings (fatal :type :vl-warn-program
-                           :msg "Programs are not supported."
-                           :args nil
-                           :acc nil)
-          :minloc (vl-token->loc name)
-          :maxloc (vl-endinfo->loc endinfo)))))
-
-
 
 ; -----------------------------------------------------------------------------
 ;
@@ -423,35 +85,65 @@ VL to correctly handle any interesting fragment of SystemVerilog.</p>")
 ;  | {attribute_instance} package_item         <-- not supported yet
 ;  | {attribute_instance} bind_directive       <-- not supported yet
 
+
+
 (defparser vl-parse-description ()
-  :result (vl-description-p val)
-  :resultp-of-nil nil
+  ;; Note: we return a list of descriptions because sometimes a 'single'
+  ;; construct actually introduces several things.  For instance, an import
+  ;; statement like "import foo::bar, foo::baz;" turns into two parsed imports.
+  :result (vl-descriptionlist-p val)
+  :resultp-of-nil t
+  :true-listp t
   :fails gracefully
   :count strong
   (seqw tokens warnings
         (atts := (vl-parse-0+-attribute-instances))
+        (when (atom tokens)
+          (return-raw (vl-parse-error "Unexpected EOF.")))
         (when (vl-is-token? :vl-kwd-config)
           (cfg := (vl-parse-config-declaration atts))
-          (return cfg))
+          (return (list cfg)))
         (when (vl-is-token? :vl-kwd-primitive)
           (udp := (vl-parse-udp-declaration atts))
-          (return udp))
+          (return (list udp)))
         (when (vl-is-some-token? '(:vl-kwd-module :vl-kwd-macromodule))
           (mod := (vl-parse-module-declaration atts))
-          (return mod))
+          (return (list mod)))
         (when (eq (vl-loadconfig->edition config) :verilog-2005)
           ;; Other things aren't supported
           (return-raw
            (vl-parse-error "Expected a module, primitive, or config.")))
         (when (vl-is-token? :vl-kwd-interface)
           (interface := (vl-parse-interface-declaration atts))
-          (return interface))
+          (return (list interface)))
         (when (vl-is-token? :vl-kwd-program)
           (program := (vl-parse-program-declaration atts))
-          (return program))
+          (return (list program)))
         (when (vl-is-token? :vl-kwd-package)
           (package := (vl-parse-package-declaration atts))
-          (return package))
+          (return (list package)))
+
+        (when (vl-is-token? :vl-kwd-bind)
+          (return-raw
+           (vl-parse-error "Bind directives are not implemented.")))
+
+        (when (vl-is-token? :vl-kwd-task)
+          (task := (vl-parse-task-declaration atts))
+          (return (list task)))
+        (when (vl-is-token? :vl-kwd-function)
+          (fn := (vl-parse-function-declaration atts))
+          (return (list fn)))
+        (when (vl-is-token? :vl-kwd-import)
+          (imports := (vl-parse-package-import-declaration atts))
+          (return imports))
+
+        ;; (when (member-eq (vl-token->type (car tokens)) *vl-netdecltypes-kwds*)
+        ;;   (return-raw
+        ;;    ;; bleh, have to do something here to deal with assignments in the nets?
+        ;;    (vl-parse-error "Top-level net declarations are not implemented.")))
+
+        ;; data_declaration -- jeeeish
+
         (return-raw
          (vl-parse-error "Unsupported top-level construct?"))))
 
@@ -475,7 +167,7 @@ VL to correctly handle any interesting fragment of SystemVerilog.</p>")
           (return nil))
         (first := (vl-parse-description))
         (rest := (vl-parse-source-text))
-        (return (cons first rest))))
+        (return (append first rest))))
 
 
 (define vl-parse

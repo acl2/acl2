@@ -19,59 +19,9 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "../mlib/descriptions")
+(include-book "descriptions")
 (local (include-book "../util/arithmetic"))
 (local (xdoc::set-default-parents vl-commentmap-p))
-
-(defsection vl-commentmap-entry-sort
-  :short "A basic sort for comment maps."
-
-  :long "<p>Our pretty-printer uses the following routine in a funny way to get
-the comments put inline with the module elements.</p>
-
-<p>The sort is introduced with defsort, so it is a stable mergesort.  Note that
-we ignore file names.</p>"
-
-  (defund vl-commentmap-entry-p (x)
-    (declare (xargs :guard t))
-    (and (consp x)
-         (vl-location-p (car x))
-         (stringp (cdr x))))
-
-  (defund vl-commentmap-entry-< (x y)
-    (declare (xargs :guard (and (vl-commentmap-entry-p x)
-                                (vl-commentmap-entry-p y))
-                    :guard-hints (("Goal" :in-theory (enable vl-commentmap-entry-p)))))
-    (let ((line-x (vl-location->line (car x)))
-          (line-y (vl-location->line (car y))))
-      (or (< line-x line-y)
-          (and (= line-x line-y)
-               (< (vl-location->col (car x))
-                  (vl-location->col (car y)))))))
-
-  (defthm transitivity-of-vl-commentmap-entry-<
-    (implies (and (vl-commentmap-entry-< x y)
-                  (vl-commentmap-entry-< y z))
-             (vl-commentmap-entry-< x z))
-    :hints(("Goal" :in-theory (enable vl-commentmap-entry-<))))
-
-  (ACL2::defsort :comparablep vl-commentmap-entry-p
-                 :compare< vl-commentmap-entry-<
-                 :prefix vl-commentmap-entry)
-
-  (defthm vl-commentmap-entry-list-p-elim
-    (equal (vl-commentmap-entry-list-p x)
-           (vl-commentmap-p (list-fix x)))
-    :hints(("Goal"
-            :in-theory (enable vl-commentmap-entry-p
-                               vl-commentmap-entry-list-p))))
-
-  (defthm vl-commentmap-p-of-vl-commentmap-entry-sort
-    (implies (vl-commentmap-p x)
-             (vl-commentmap-p (vl-commentmap-entry-sort x)))
-    :hints(("goal" :use ((:instance vl-commentmap-entry-sort-creates-comparable-listp
-                                    (acl2::x x)))))))
-
 
 (define vl-gather-comments-nrev ((min vl-location-p)
                                  (max vl-location-p)
@@ -310,7 +260,111 @@ and max, gathering their comments.</p>"
 
 
 
-; Tweaking module starting locations
+; Actually injecting the comments is gross.  When we only had modules this was
+; pretty straightforward.  But now there are other kinds of top-level
+; descriptions, and some of them don't have any comments of their own.
+
+(define vl-description-has-comments-p ((x vl-description-p))
+  (b* ((x (vl-description-fix x)))
+    (case (tag x)
+      ((:vl-module :vl-udp :vl-interface :vl-package :vl-program :vl-config)
+       t)
+      (otherwise
+       nil))))
+
+(local (in-theory (enable vl-description-has-comments-p)))
+
+(define vl-description->minloc ((x vl-description-p))
+  :returns (minloc vl-location-p)
+  (b* ((x (vl-description-fix x)))
+    (case (tag x)
+      (:vl-module    (vl-module->minloc x))
+      (:vl-udp       (vl-udp->minloc x))
+      (:vl-interface (vl-interface->minloc x))
+      (:vl-package   (vl-package->minloc x))
+      (:vl-program   (vl-program->minloc x))
+      (:vl-config    (vl-config->minloc x))
+      ;; Other things don't necessarily have minlocs, but we'll just use their
+      ;; ordinary locations.
+      (:vl-netdecl   (vl-netdecl->loc x))
+      (:vl-taskdecl  (vl-taskdecl->loc x))
+      (:vl-fundecl   (vl-fundecl->loc x))
+      (:vl-paramdecl (vl-paramdecl->loc x))
+      (:vl-import    (vl-import->loc x))
+      (otherwise     (progn$ (impossible) *vl-fakeloc*)))))
+
+(define vl-description->maxloc ((x vl-description-p))
+  :returns (maxloc vl-location-p)
+  (b* ((x (vl-description-fix x)))
+    (case (tag x)
+      (:vl-module    (vl-module->maxloc x))
+      (:vl-udp       (vl-udp->maxloc x))
+      (:vl-interface (vl-interface->maxloc x))
+      (:vl-package   (vl-package->maxloc x))
+      (:vl-program   (vl-program->maxloc x))
+      (:vl-config    (vl-config->maxloc x))
+      ;; Other things don't have separate min/max locs, but we'll just use
+      ;; their ordinary locations.
+      (:vl-netdecl   (vl-netdecl->loc x))
+      (:vl-taskdecl  (vl-taskdecl->loc x))
+      (:vl-fundecl   (vl-fundecl->loc x))
+      (:vl-paramdecl (vl-paramdecl->loc x))
+      (:vl-import    (vl-import->loc x))
+      (otherwise     (progn$ (impossible) *vl-fakeloc*)))))
+
+(define vl-description->comments ((x vl-description-p))
+  :guard (vl-description-has-comments-p x)
+  :returns (comments vl-commentmap-p)
+  (b* ((x (vl-description-fix x)))
+    (case (tag x)
+      (:vl-module    (vl-module->comments x))
+      (:vl-udp       (vl-udp->comments x))
+      (:vl-interface (vl-interface->comments x))
+      (:vl-package   (vl-package->comments x))
+      (:vl-program   (vl-program->comments x))
+      (:vl-config    (vl-config->comments x))
+      (otherwise     (impossible)))))
+
+(define vl-description-add-warning ((x vl-description-p)
+                                    (warning vl-warning-p))
+  :guard (vl-description-has-comments-p x)
+  :returns (new-x vl-description-p)
+  (b* ((x (vl-description-fix x)))
+    (case (tag x)
+      (:vl-module    (change-vl-module    x :warnings (cons warning (vl-module->warnings x))))
+      (:vl-udp       (change-vl-udp       x :warnings (cons warning (vl-udp->warnings x))))
+      (:vl-interface (change-vl-interface x :warnings (cons warning (vl-interface->warnings x))))
+      (:vl-package   (change-vl-package   x :warnings (cons warning (vl-package->warnings x))))
+      (:vl-program   (change-vl-program   x :warnings (cons warning (vl-program->warnings x))))
+      (:vl-config    (change-vl-config    x :warnings (cons warning (vl-config->warnings x))))
+      (otherwise     (progn$ (impossible) x))))
+  ///
+  (defthm vl-description->name-of-vl-description-add-warning
+    (equal (vl-description->name (vl-description-add-warning x warning))
+           (vl-description->name x))
+    :hints(("Goal" :in-theory (enable vl-description->name)))))
+
+
+(define vl-description-set-comments ((x        vl-description-p)
+                                     (comments vl-commentmap-p))
+  :guard (vl-description-has-comments-p x)
+  :returns (new-x vl-description-p)
+  (b* ((x (vl-description-fix x)))
+    (case (tag x)
+      (:vl-module    (change-vl-module    x :comments comments))
+      (:vl-udp       (change-vl-udp       x :comments comments))
+      (:vl-interface (change-vl-interface x :comments comments))
+      (:vl-package   (change-vl-package   x :comments comments))
+      (:vl-program   (change-vl-program   x :comments comments))
+      (:vl-config    (change-vl-config    x :comments comments))
+      (otherwise     (progn$ (impossible) x))))
+  ///
+  (defthm vl-description->name-of-vl-description-set-comments
+    (equal (vl-description->name (vl-description-set-comments x comments))
+           (vl-description->name x))
+    :hints(("Goal" :in-theory (enable vl-description->name)))))
+
+
 
 (define vl-adjust-minloc-for-comments
   :short "Tweak starting location so that we get comments preceding the
@@ -407,6 +461,7 @@ module.</p>"
                  (vl-location->line minloc)))
     :rule-classes ((:rewrite) (:linear))))
 
+
 (define vl-description-inject-comments
   :parents (vl-commentmap-p)
   ((x         vl-description-p
@@ -419,28 +474,29 @@ module.</p>"
   (b* (;; When we only supported modules, we respected hands-off here.  But
        ;; I don't think there's any reason to worry about that.
        (x       (vl-description-fix x))
+       ((unless (vl-description-has-comments-p x))
+        ;; Something too simple like a net declaration, no comments anyway.
+        x)
        (minloc  (vl-description->minloc x))
        (maxloc  (vl-description->maxloc x))
        ((unless (<= (vl-location->line minloc) (vl-location->line maxloc)))
-        (let ((warnings (warn :type :vl-warn-comment-injection
-                              :msg "Cannot add comments, minloc exceeds maxloc?~% ~
-                                    minloc = ~l0; maxloc = ~l1."
-                              :args (list minloc maxloc)
-                              :acc (vl-description->warnings x))))
-          (change-vl-description x :warnings warnings)))
-
-       (minloc (vl-adjust-minloc-for-comments
-                (change-vl-location minloc :line 1)
-                minloc all-descs))
+        (let ((w (make-vl-warning :type :vl-warn-comment-injection
+                                  :msg "Cannot add comments, minloc exceeds ~
+                                        maxloc?~% minloc = ~l0; maxloc = ~l1."
+                                  :args (list minloc maxloc)
+                                  :fatalp nil
+                                  :fn __function__)))
+          (vl-description-add-warning x w)))
+       (minloc (vl-adjust-minloc-for-comments (change-vl-location minloc :line 1)
+                                              minloc all-descs))
        (comments (vl-gather-comments-fal minloc maxloc fal)))
     (if (not comments)
         x
-      (change-vl-description x :comments comments)))
+      (vl-description-set-comments x comments)))
   ///
   (defthm vl-description->name-of-vl-description-inject-comments
     (equal (vl-description->name (vl-description-inject-comments x comment-map all-mods))
            (vl-description->name x))))
-
 
 (defprojection vl-descriptionlist-inject-comments-aux ((x         vl-descriptionlist-p)
                                                        (fal       vl-commentmap-falp)
@@ -468,4 +524,21 @@ module.</p>"
   (defthm vl-descriptionlist->names-of-vl-descriptionlist-inject-comments
     (equal (vl-descriptionlist->names (vl-descriptionlist-inject-comments x comment-map))
            (vl-descriptionlist->names x))))
+
+; BOZO we currently leave some comments unaccounted for.  For instance,
+; consider something like:
+;
+;    module foo ... endmodule
+;
+;    // comment about the import
+;    import mypkg::name;
+;
+;    // comment about bar
+;    module bar ... endmodule
+;
+; Here we'll get the comment about bar and associate it with bar.  However,
+; since imports don't have comments, the comment about the import will be lost.
+; Some day we might try to gather these comments and stick them in the design.
+; For now, well, we used to skip ALL comments between modules, so we're still
+; working pretty hard to do something reasonably sensible.
 

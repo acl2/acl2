@@ -341,8 +341,14 @@
            (:vl-kwd-realtime   (vl-parse-realtime-declaration atts))
            (:vl-kwd-event      (vl-parse-event-declaration atts))
            (:vl-kwd-genvar     (vl-parse-genvar-declaration atts))
-           (:vl-kwd-task       (vl-parse-task-declaration atts))
-           (:vl-kwd-function   (vl-parse-function-declaration atts))
+           (:vl-kwd-task
+            (seqw tokens warnings
+                  (task := (vl-parse-task-declaration atts))
+                  (return (list task))))
+           (:vl-kwd-function
+            (seqw tokens warnings
+                  (fun := (vl-parse-function-declaration atts))
+                  (return (list fun))))
            (:vl-kwd-localparam
             (seqw tokens warnings
                   ;; Note: non-local parameters not allowed

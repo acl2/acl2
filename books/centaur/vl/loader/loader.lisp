@@ -214,6 +214,15 @@ being kept.</p>"
         (mv old descalist reportcard))
        (newdesc1  (vl-description-fix (car new)))
        (newname1  (vl-description->name newdesc1))
+       ((unless newname1)
+        ;; Special kind of description like an import statement or an anonymous
+        ;; program.  Since there's no name, there's no possible name clash.
+        (vl-load-merge-descriptions (cdr new)
+                                    (cons newdesc1 old)
+                                    descalist
+                                    reportcard))
+
+       ;; Ordinary description with a name.  Check for previous definitions.
        (prevdesc  (vl-fast-find-description newname1 old descalist))
        ((unless prevdesc)
         ;; Great, new description, no redefinition.
@@ -599,14 +608,6 @@ will look for new modules.</p>"
                  control whether a filemap is generated in your @(see
                  vl-loadconfig-p).")
 
-   (warnings    vl-warninglist-p
-                "This holds any <b>floating</b> @(see warnings)&mdash;those
-                 that aren't associated with any module.  Few warnings get put
-                 here.  Instead, most warnings are associated with particular
-                 modules.  But some warnings from the early stages of file
-                 loading (like preprocessing and lexing), or warnings that
-                 somehow occur <i>between</i> modules, can end up here.")
-
    (defines     vl-defines-p
                 "Final defines that we ended up with.  This can be useful for
                  extracting the values of @('`define')s.  See also @(see
@@ -614,47 +615,6 @@ will look for new modules.</p>"
 
   :tag :vl-loadresult)
 
-
-(define vl-sort-descriptions ((x          vl-descriptionlist-p)
-                              (modules    vl-modulelist-p)
-                              (udps       vl-udplist-p)
-                              (interfaces vl-interfacelist-p)
-                              (programs   vl-programlist-p)
-                              (packages   vl-packagelist-p)
-                              (configs    vl-configlist-p))
-  :returns (mv (modules    vl-modulelist-p)
-               (udps       vl-udplist-p)
-               (interfaces vl-interfacelist-p)
-               (programs   vl-programlist-p)
-               (packages   vl-packagelist-p)
-               (configs    vl-configlist-p))
-  (b* (((when (atom x))
-        (mv (vl-modulelist-fix modules)
-            (vl-udplist-fix udps)
-            (vl-interfacelist-fix interfaces)
-            (vl-programlist-fix programs)
-            (vl-packagelist-fix packages)
-            (vl-configlist-fix configs)))
-       (x1  (vl-description-fix (car x)))
-       (tag (tag x1)))
-    (vl-sort-descriptions (cdr x)
-                          (if (eq tag :vl-module)    (cons x1 modules)    modules)
-                          (if (eq tag :vl-udp)       (cons x1 udps)       udps)
-                          (if (eq tag :vl-interface) (cons x1 interfaces) interfaces)
-                          (if (eq tag :vl-program)   (cons x1 programs)   programs)
-                          (if (eq tag :vl-package)   (cons x1 packages)   packages)
-                          (if (eq tag :vl-config)    (cons x1 configs)    configs))))
-
-(define vl-design-from-descriptions ((x vl-descriptionlist-p))
-  :returns (design vl-design-p)
-  (b* (((mv modules udps interfaces programs packages configs)
-        (vl-sort-descriptions x nil nil nil nil nil nil)))
-    (make-vl-design :mods       modules
-                    :udps       udps
-                    :interfaces interfaces
-                    :programs   programs
-                    :packages   packages
-                    :configs    configs)))
 
 (define vl-load-main
   :short "Top level interface for loading Verilog sources."
@@ -700,9 +660,11 @@ will look for new modules.</p>"
        ((vl-loadstate st) st)
        (design (vl-design-from-descriptions st.descs))
        (design (vl-apply-reportcard design st.reportcard))
+       (design (change-vl-design design
+                                 :warnings (append-without-guard st.warnings
+                                                                 (vl-design->warnings design))))
        (result (make-vl-loadresult :design   design
                                    :filemap  st.filemap
-                                   :warnings st.warnings
                                    :defines  st.defines)))
 
     (fast-alist-free st.descalist)
@@ -746,11 +708,11 @@ you might want to attach some other kind of report here.</p>
        ;; The warnings get returned, but we also summarize the floating
        ;; warnings as a convenience to whomever is running the translator.
        (regular-warnings (mergesort (vl-design-flat-warnings result.design)))
-       (all-warnings     (mergesort (append-without-guard result.warnings regular-warnings)))
+       (all-warnings     (mergesort (append-without-guard result.design.warnings regular-warnings)))
        (- (or (not all-warnings)
               (cw "Total number of warnings: ~x0.~%" (len all-warnings))))
 
-       (floating-warnings (mergesort result.warnings))
+       (floating-warnings (mergesort result.design.warnings))
        (- (or (not floating-warnings)
               (vl-cw-ps-seq
                (vl-ps-update-autowrap-col 68)

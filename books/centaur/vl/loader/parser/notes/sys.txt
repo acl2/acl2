@@ -1,0 +1,647 @@
+Primaries
+
+SystemVerilog Grammar, slightly refactored to clarify things:
+
+  implicit_class_handle ::= 'this'
+                          | 'super'
+                          | 'this' '.' 'super'
+
+  package_scope ::= identifier '::'            ;; :vl-scope operator
+                  | '$unit'    '::'            ;; (right associative)
+
+  ps_class_identifier ::= [ package_scope ] identifier
+
+  primary ::= [ class_qualifier | package_scope ] hierarchical_identifier select
+
+      -- this is extremely ambiguous, where does the hierarchical-identifier end
+         and the select begin, but it probably doesn't matter
+
+  class_qualifier ::= [ 'local' '::' ] implicit_class_handle '.'
+                    | [ 'local' '::' ] class_scope
+
+      -- note, it isn't clear whether spaces can go between 'local' and '::'
+
+  class_scope ::= class_type '::'
+
+  class_type ::= ps_class_identifier [ parameter_value_assignment ]
+                  { '::' identifier [ parameter_value_assignment ] }
+
+  hierarchical_identifier ::= [ '$root' '.' ]
+                              { identifier bit_select '.' } identifier
+
+  select ::= [ { '.' identifier bit_select } '.' identifier ]
+             bit_select
+             [ '[' part_select_range ']' ]
+
+  bit_select ::= { '[' expression ']' }
+
+
+
+
+
+-----------------------------------------------------
+
+Let hidsel ::= hierarchical_identifier select
+
+We are going to refactor this.
+
+Starting point:
+
+    hidsel   ::= hid sel
+    hid      ::= [ROOT DOT] { id bitsel DOT } id
+    sel      ::= [ { DOT id bitsel } DOT id ] bitsel [LBRACE part RBRACE]
+    bitsel   ::= { LBRACE expression RBRACE }
+
+--> lift [ROOT DOT] into hidsel:
+
+    hidsel   ::= [ROOT DOT] hid sel
+    hid      ::= { id bitsel DOT } id
+    sel      ::= [ { DOT id bitsel } DOT id ] bitsel [LBRACE part RBRACE]
+    bitsel   ::= { LBRACE expr RBRACE }
+
+--> commute {} in hid:
+
+    hidsel   ::= [ROOT DOT] hid sel
+    hid      ::= id { bitsel DOT id}
+    sel      ::= [ { DOT id bitsel } DOT id ] bitsel [LBRACE part RBRACE]
+    bitsel   ::= { LBRACE expr RBRACE }
+
+--> de-optionalize bitsel:
+
+    hidsel   ::= [ROOT DOT] hid sel
+    hid      ::= id { {bitsel} DOT id}
+    sel      ::= [ { DOT id {bitsel} } DOT id ] {bitsel} [LBRACE part RBRACE]
+    bitsel   ::= LBRACE expr RBRACE
+
+--> shuffle {}s:
+
+    hidsel   ::= [ROOT DOT] hid sel
+    hid      ::= id {bitsel} {DOT id}
+    sel      ::= [ {DOT id} {bitsel} DOT id ] {bitsel} [LBRACE part RBRACE]
+    bitsel   ::= LBRACE expr RBRACE
+
+--> refactor sel:
+
+    hidsel   ::= [ROOT DOT] hid sel
+    hid      ::= id {bitsel} {DOT id}
+    sel      ::= [ {DOT id} {bitsel} DOT id ] {bitsel} [partsel]
+    partsel  ::= LBRACE part RBRACE
+    bitsel   ::= LBRACE expr RBRACE
+
+--> eliminate hid, move it into sel:
+
+    hidsel   ::= [ROOT DOT] sel
+    sel      ::= id {bitsel} {DOT id} [ {DOT id} {bitsel} DOT id ] {bitsel} [partsel]
+    partsel  ::= LBRACE part RBRACE
+    bitsel   ::= LBRACE expr RBRACE
+
+---> make sel optional part explicit:
+
+    hidsel   ::= [ROOT DOT] sel
+    sel      ::= id {bitsel} {DOT id} {bitsel} [partsel]                                ; optional part dropped
+               | id {bitsel} {DOT id} {DOT id} {bitsel} DOT id {bitsel} [partsel]       ; optional part kept
+    partsel  ::= LBRACE part RBRACE
+    bitsel   ::= LBRACE expr RBRACE
+
+---> merge adjacent {DOT id} in sel variant 2:
+
+    hidsel   ::= [ROOT DOT] sel
+    sel      ::= id {bitsel} {DOT id} {bitsel} [partsel]
+               | id {bitsel} {DOT id} {bitsel} DOT id {bitsel} [partsel]
+    partsel  ::= LBRACE part RBRACE
+    bitsel   ::= LBRACE expr RBRACE
+
+---> make DOT id {bitsel} part of sel variant 2 optional: (it's clearly optional, see variant 1):
+
+    hidsel   ::= [ROOT DOT] sel
+    sel      ::= id {bitsel} {DOT id} {bitsel} [partsel]
+               | id {bitsel} {DOT id} {bitsel} [DOT id {bitsel}] [partsel]
+                                               \---------------/
+    partsel  ::= LBRACE part RBRACE
+    bitsel   ::= LBRACE expr RBRACE
+
+---> but now the highlighted part can be removed, because it's redundant with the preceeding {dot id} {bitsel} from earlier in variant 2:
+
+    hidsel   ::= [ROOT DOT] sel
+    sel      ::= id {bitsel} {DOT id} {bitsel} [partsel]
+               | id {bitsel} {DOT id} {bitsel} [partsel]
+    partsel  ::= LBRACE part RBRACE
+    bitsel   ::= LBRACE expr RBRACE
+
+---> fold sel variants:
+
+    hidsel   ::= [ROOT DOT] sel
+    sel      ::= id {bitsel} {DOT id} {bitsel} [partsel]
+    partsel  ::= LBRACE part RBRACE
+    bitsel   ::= LBRACE expr RBRACE
+
+---> move optional [partsel] part into top-level hidsel:
+
+    hidsel   ::= [ROOT DOT] sel [partsel]
+    sel      ::= id {bitsel} {DOT id} {bitsel}
+    partsel  ::= LBRACE part RBRACE
+    bitsel   ::= LBRACE expr RBRACE
+
+---> recursive reformulation of sel:
+
+    hidsel   ::= [ROOT DOT] sel
+
+    sel ::= id
+          | id {bitsel}
+          | id {bitsel} DOT sel
+
+    partsel  ::= LBRACE part RBRACE
+    bitsel   ::= LBRACE expr RBRACE
+
+
+
+
+
+sel ::= id
+      | id {bitsel}
+
+
+
+
+
+
+
+---> regroup optional:
+
+    hidsel   ::= [ROOT DOT] sel
+    sel      ::= id {bitsel} {DOT id} [{bitsel} partsel]
+    partsel  ::= LBRACE part RBRACE
+    bitsel   ::= LBRACE expr RBRACE
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+1. Inline hierarchical_identifier:
+
+    hidsel ::= [ '$root' '.' ]
+               { identifier bit_select '.' } identifier
+               select
+
+    select ::= [ { '.' identifier bit_select } '.' identifier ]
+               bit_select
+               [ '[' part_select_range ']' ]
+
+    bit_select ::= { '[' expression ']' }
+
+
+2.  Split optional $root part out of hidsel:
+
+    hidsel ::= hidsel_main
+             | '$root' '.' hidsel_main
+
+    hidsel_main ::= { identifier bit_select '.' } identifier
+                    select
+
+    select ::= [ { '.' identifier bit_select } '.' identifier ]
+               bit_select
+               [ '[' part_select_range ']' ]
+
+    bit_select ::= { '[' expression ']' }
+
+
+3.  Refactor bit_select:
+
+    hidsel ::= hidsel_main
+             | '$root' '.' hidsel_main
+
+    hidsel_main ::= { identifier bit_select '.' } identifier
+                    select
+
+    select ::= [ { '.' identifier bit_select } '.' identifier ]
+               bit_select
+               [ '[' part_select_range ']' ]
+
+    bit_select ::= { bsx }
+    bsx ::= '[' expression ']'
+
+
+4.  Inline bit_select:
+
+    hidsel ::= hidsel_main
+             | '$root' '.' hidsel_main
+
+    hidsel_main ::= { identifier {bsx} '.' } identifier
+                    select
+
+    select ::= [ { '.' identifier {bsx} } '.' identifier ]
+               {bsx} [ '[' part_select_range ']' ]
+
+    bsx ::= '[' expression ']'
+
+
+5.  Inline select:
+
+    hidsel ::= hidsel_main
+             | '$root' '.' hidsel_main
+
+    hidsel_main ::= { identifier {bsx} '.' } identifier
+                    [ { '.' identifier {bsx} } '.' identifier ]
+                    {bsx} [ '[' part_select_range ']' ]
+
+    bsx ::= '[' expression ']'
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+3.  Split tail off of select:
+
+    hidsel ::= hidsel_main
+             | '$root' '.' hidsel_main
+
+    hidsel_main ::= { identifier bit_select '.' } identifier
+                    select
+
+    select ::= [ { '.' identifier bit_select } '.' identifier ] select_tail
+
+    select_tail ::= bit_select [ '[' part_select_range ']' ]
+
+    bit_select ::= { '[' expression ']' }
+
+
+4.  Remove optional productions in select:
+
+    hidsel ::= hidsel_main
+             | '$root' '.' hidsel_main
+
+    hidsel_main ::= { identifier bit_select '.' } identifier
+                    select
+
+    select ::= select_tail
+             | { '.' identifier bit_select } '.' identifier select_tail
+
+    select_tail ::= bit_select [ '[' part_select_range ']' ]
+
+    bit_select ::= { '[' expression ']' }
+
+
+5.  Inline select_tail:
+
+    hidsel ::= hidsel_main
+             | '$root' '.' hidsel_main
+
+    select ::= bit_select [ '[' part_select_range ']' ]
+             | { '.' identifier bit_select } '.' identifier select_tail
+
+    select_tail ::= bit_select
+                  | bit_select '[' part_select_range ']'
+
+    bit_select ::= { '[' expression ']' }
+
+
+6.  Refactor hidsel_main:
+
+    hidsel ::= hidsel_main
+             | '$root' '.' hidsel_main
+
+    hidsel_main ::= { TempA } identifier select_tail
+                  | { TempA } identifier { TempB } '.' identifier select_tail
+
+    TempA ::= identifier bit_select '.'
+    TempB ::= '.' identifier bit_select
+
+    select_tail ::= bit_select
+                  | bit_select '[' part_select_range ']'
+
+    bit_select ::= { '[' expression ']' }
+
+
+
+6. The second production of hidsel_main is now redundant with the first.
+   Why?  Break it down into pieces:
+
+      { identifier bit_select '.' } identifier { '.' identifier bit_select } '.' identifier select_tail
+      \........ A .............../     B       \...........C............../  \............D.........../
+
+   We have {A} B {C} D
+
+
+
+
+
+hidel_main ::= identifier select_tail
+             | identifier bit_select '.' identifier select_tail
+             | identifier bit_select '.' identifier bit_select '.' identifier select_tail
+             | ...
+             | identifier '.' identifier select_tail
+             | identifier '.' identifier bit_select
+
+
+
+
+
+
+
+
+
+
+1. Lift optional prefix out of hidsel:
+
+   hidsel      ::= [ '$root' '.' ] hidsel_main
+   hidsel_main ::= { identifier bit_select '.' } identifier select
+
+
+2. Refactor select:
+
+  select      ::= [ { '.' identifier bit_select } '.' identifier ] select_tail
+  select_tail ::= bit_select [ '[' part_select_range ']' ]
+
+Make variants explicit:
+
+  select_tail ::= bit_select
+                | bit_select '[' part_select_range ']'
+
+Inline "select":
+
+  hidsel_main ::= { identifier bit_select '.' } identifier
+                  [ { '.' identifier bit_select } '.' identifier ]
+		    bit_select
+                  [ '[' part_select_range ']' ]
+
+
+
+
+
+
+
+
+Flatten first brackets into a second variant:
+
+  hidseltail ::= { identifier bit_select '.' } identifier bit_select [ '[' part_select_range ']' ]
+               | { identifier bit_select '.' } identifier
+                 { '.' identifier bit_select }
+                  '.' identifier bit_select [ '[' part_select_range ']' ]
+
+
+
+
+
+  hidseltail ::= { identifier bit_select '.' }
+                   identifier
+                 [ { '.' identifier bit_select } '.' identifier ]
+  		   bit_select
+                 [ '[' part_select_range ']' ]
+
+
+
+
+
+  bit_select ::= { '[' expression ']' }
+
+
+
+
+---------------------------
+
+  hierarchical_identifier ::= [ '$root' '.' ]
+                              { identifier bit_select '.' } identifier
+     --->
+  hierarchical_identifier ::= identifier
+                            | '$root' '.' hierarchical_identifier
+                            | identifier bit_select '.' hierarchical_identifier
+
+---------------------------
+
+  select ::= [ { '.' identifier bit_select } '.' identifier ]
+             bit_select
+             [ '[' part_select_range ']' ]
+
+    ---->
+  select_tail ::= bit_select [ '[' part_select_range ']' ]
+
+  select ::= [ { '.' identifier bit_select } '.' identifier ]
+             select_tail
+
+    ---->
+  select ::= select_tail
+           | '.' identifier select_tail
+           | '.' identifier bit_select select
+
+
+
+
+
+
+
+
+
+
+
+
+  part_select_range ::= expression ':' expression
+                      | expression '+:' expression
+                      | expression '-:' expression
+
+
+
+
+---- We aren't going to implement this for now, because doing so would
+     require a drastic change to our expression representation.
+
+  parameter_value_assignment ::= '#' '(' [list_of_parameter_assignments] ')'
+
+  list_of_parameter_assignments ::=
+     ordered_parameter_assignment { ',' ordered_parameter_assignment }
+   | named_parameter_assignment { ',' named_parameter_assignment }
+
+  ordered_parameter_assignment ::= param_expression
+  named_parameter_assignment ::= '.' identifier '(' [param_expression] ')'
+
+  param_expression ::= mintypmax_expression
+                     | data_type
+                     | '$'
+
+
+
+Verilog:
+
+  primary ::= hierarchical_identifier [
+                                        { '[' expression ']' }
+                                       '[' range_expression ']'
+                                      ]
+
+     --- a bit or part-select from a hid
+
+  hierarchical_identifier ::= { identifier [ '[' expression ']' ] '.' }  identifier
+
+     --- basically any amounts of hid-dots and hid-array-dots
+
+
+
+
+
+------ SystemVerilog-2012 ------
+
+primary ::=
+    primary_literal
+  | 'this'
+  | '$'
+  | 'null'
+
+
+  | [ class_qualifier | package_scope ] hierarchical_identifier select
+
+  | empty_queue
+
+  | concatenation '[' [range_expression] ']'
+     ;;  weird, optional range inside??
+
+  | multiple_concatenation '[' [ range_expression ] ']'
+     ;;  weird, optional range inside??
+
+  | function_subroutine_call
+
+  | let_expression
+
+  | '(' mintypmax_expression ')'
+
+  | cast
+  | assignment_pattern_expression
+  | streaming_concatenation
+  | sequence_method_call
+
+
+
+primary_literal ::=
+    number
+  | time_literal            ;; handled by the lexer, timetoken-p
+  | unbased_unsized_literal ;; handled by the lexer, extinttoken-p
+  | string_literal          ;; handled by the lexer, stringtoken-p
+
+number ::= integral_number  ;; handled by the lexer, inttoken-p
+         | real_number      ;; handled by the lexer, realtoken-p
+
+
+
+------- Verilog-2005 -------
+
+primary ::=
+    number
+  | hierarchical_identifier [
+                              { '[' expression ']' }
+                             '[' range_expression ']'
+                            ]
+  | concatenation
+  | multiple_concatenation
+  | function_call
+  | system_function_call
+  | '(' mintypmax_expression ')'
+
+  | string
+
+number ::= decimal_number  ;; handled by the lexer, it gives
+         | octal_number    ;;   us inttokens
+         | binary_number   ;;
+         | hex_number      ;;
+
+         | real_number     ;; handled by the lexer, it gives
+                           ;;   us realtokens
+
+
+
+
+
+
+--------------- data types ----------------------------------------------------------
+
+non_integer_type    ::= 'shortreal' | 'real' | 'realtime'
+integer_type        ::= 'integer_vector_type' | 'integer_atom_type'
+integer_atom_type   ::= 'byte' | 'shortint' | 'int' | 'longint' | 'integer' | 'time'
+integer_vector_type ::= 'bit' | 'logic' | 'reg'
+signing             ::= 'signed' | 'unsigned'
+struct_union        ::= 'struct' | 'union' [ 'tagged' ]
+
+data_type ::=
+     'string'
+   | 'chandle'
+   | 'event'
+   | non_integer_type
+   | integer_vector_type [signing] { packed_dimension }
+   | integer_atom_type [signing]
+
+   | struct_union [ 'packed' [signing] ]
+                  { struct_union_member { struct_union_member } }
+                  { packed_dimension }
+
+   | 'enum' [enum_base_type]
+            { enum_name_declaration { ',' enum_name_declaration } }
+            { packed_dimension }
+
+   | 'virtual' [ 'interface' ] identifier [ parameter_value_assignment ] [ '.' identifier ]
+
+   | [ class_scope | package_scope ] identifier { packed_dimension }
+
+   | class_type
+   | ps_covergroup_identifier
+   | type_reference
+
+
+type_reference ::= 'type' '(' expression ')'
+                 | 'type' '(' data_type ')'
+
+enum_name_declaration ::= identifier                                              ;; foo or
+                          [ '[' integral_number [ ':' integral_number ] ']' ]     ;; foo[3] or foo[3:0]
+                          [ '=' expression ]                                      ;; foo[3] = blah, or foo[6] = blah
+
+enum_base_type ::= integer_atom_type [ signing ]
+                 | integer_vector_type [ signing ] [ packed_dimension ]
+                 | identifier [ packed_dimension ]
+
+struct_union_member ::= { attribute_instance } [random_qualifier] data_type_or_void list_of_variable_decl_assignments ';'
+
+random_qualifier ::= rand | randc
+
+data_type_or_void ::= data_type | void
+
+list_of_variable_decl_assignments ::= variable_decl_assignment { ',' variable_decl_assignment }
+
+variable_decl_assignment ::=
+     identifier { variable_dimension } [ '=' expression ]
+   | identifier unsized_dimension { variable_dimension } [ '=' dynamic_array_new ]
+   | identifier [ '=' class_new ]
+
+dynamic_array_new ::= new [ expression ] [ ( expression ) ]
+
+class_new ::= [ class_scope ] new [ ( list_of_arguments ) ]
+            | new expression
+
+variable_dimension ::= unsized_dimension
+                     | unpacked_dimension
+                     | associative_dimension
+                     | queue_dimension
+
+unsized_dimension     ::= '[' ']'
+packed_dimension      ::= '[' constant_range ']' | unsized_dimension
+associative_dimension ::= '[' data_type ']' | '[' '*' ']'
+queue_dimension       ::= '[' '$' [ ':' expression ] ']'
+
+list_of_arguments ::= [expression] { ',' [expression] } { ',' '.' identifier '(' [expression] ')' }
+                    | '.' identifier '(' [expression] ')' { ',' '.' identifier '(' [expression] ')' }

@@ -1049,3 +1049,34 @@ listed types.  Causes an error on EOF."
            (if (mv-nth 0 (vl-match-any-except types))
                t
              nil))))
+
+
+
+(defaggregate vl-endinfo
+  :short "Temporary structure created to parse named endings like
+@('endmodule : foo')."
+
+  :long "<p>SystemVerilog allows many syntactic constructs such as modules,
+user-defined primitives, programs, packages, etc., to optionally be closed
+using a verbose syntax that repeats the name.  For instance, one can write:</p>
+
+@({
+       module foo (...);
+         ...
+       endmodule : foo     // <-- named ending
+})
+
+<p>The ending name must match or it's an error, see \"Block Names\", Section
+9.3.4 of the SystemVerilog-2012 spec.  Note that these named endings aren't
+allowed in Verilog-2005.</p>
+
+<p>An @('vl-endinfo-p') structure is just a temporary structure used by our
+parser when we encounter such an ending.</p>"
+
+  :legiblep nil
+
+  ((name maybe-stringp :rule-classes :type-prescription
+         "The name we matched after the colon, e.g., @('foo') above.")
+
+   (loc  vl-location-p
+         "The location of this name, for mismatch reporting.")))

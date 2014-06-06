@@ -324,12 +324,10 @@
 
 
 (defparser vl-parse-function-declaration (atts)
-  ;; Returns a (singleton) list of function decls instead of a just a function
-  ;; declaration, to fit nicely into vl-parse-module-or-generate-item.
   :guard (vl-atts-p atts)
-  :result (vl-fundecllist-p val)
-  :true-listp t
-  :resultp-of-nil t
+  :result (vl-fundecl-p val)
+  :true-listp nil
+  :resultp-of-nil nil
   :fails gracefully
   :count strong
   (seqw tokens warnings
@@ -366,7 +364,7 @@
                                       :body       stmt
                                       :atts       atts
                                       :loc        (vl-token->loc function))))
-             (mv nil (list ret) tokens warnings))))
+             (mv nil ret tokens warnings))))
 
         ;; Variant 2.
         (:= (vl-match-token :vl-lparen))
@@ -393,7 +391,7 @@
                                     :body       stmt
                                     :atts       atts
                                     :loc        (vl-token->loc function))))
-           (mv nil (list ret) tokens warnings)))))
+           (mv nil ret tokens warnings)))))
 
 
 
@@ -411,12 +409,10 @@
 ;    'endtask'
 
 (defparser vl-parse-task-declaration (atts)
-  ;; Returns a (singleton) list of task decls instead of a just a task
-  ;; declaration, to fit nicely into vl-parse-module-or-generate-item.
   :guard (vl-atts-p atts)
-  :result (vl-taskdecllist-p val)
-  :true-listp t
-  :resultp-of-nil t
+  :result (vl-taskdecl-p val)
+  :true-listp nil
+  :resultp-of-nil nil
   :fails gracefully
   :count strong
   (seqw tokens warnings
@@ -435,13 +431,13 @@
           (return
            (b* (((mv ports blockitems)
                  (vl-filter-taskport-or-blockitem-list decls)))
-             (list (make-vl-taskdecl :name       (vl-idtoken->name name)
-                                     :automaticp (if automatic t nil)
-                                     :ports      ports
-                                     :decls      blockitems
-                                     :body       stmt
-                                     :atts       atts
-                                     :loc        (vl-token->loc task))))))
+             (make-vl-taskdecl :name       (vl-idtoken->name name)
+                               :automaticp (if automatic t nil)
+                               :ports      ports
+                               :decls      blockitems
+                               :body       stmt
+                               :atts       atts
+                               :loc        (vl-token->loc task)))))
 
         ;; Variant 2.
         (:= (vl-match-token :vl-lparen))
@@ -451,11 +447,11 @@
         (blockitems := (vl-parse-0+-block-item-declarations))
         (stmt       := (vl-parse-statement-or-null))
         (:= (vl-match-token :vl-kwd-endtask))
-        (return (list (make-vl-taskdecl :name       (vl-idtoken->name name)
-                                        :automaticp (if automatic t nil)
-                                        :ports      ports
-                                        :decls      blockitems
-                                        :body       stmt
-                                        :atts       atts
-                                        :loc        (vl-token->loc task))))))
+        (return (make-vl-taskdecl :name       (vl-idtoken->name name)
+                                  :automaticp (if automatic t nil)
+                                  :ports      ports
+                                  :decls      blockitems
+                                  :body       stmt
+                                  :atts       atts
+                                  :loc        (vl-token->loc task)))))
 

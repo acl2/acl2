@@ -37,6 +37,8 @@
                            ;tag-when-vl-seqblockstmt-p
                            )))
 
+
+
 ;                         PARSING GATE INSTANTIATIONS
 ;
 ; There are a lot of alternatives for gate_instantiation.  We present the whole
@@ -162,6 +164,52 @@
           (strip-cars *vl-pass-switchtype-alist*)
           (strip-cars *vl-pull-gate-alist*)))
 
+
+
+
+; Notes for SystemVerilog-2012.  A careful reading of the spec shows that the
+; syntax has been changed to be slightly more permissive.  In particular,
+; instead of using name_of_gate_instance which, in Verilog-2005 is defined as:
+;
+;      name_of_gate_instance ::= identifier [ range ]
+;
+; The new grammar productions use name_of_instance defined as:
+;
+;      name_of_instance ::= identifier { unpacked_dimension }
+;      unpacked_dimension ::= '[' constant_range ']'
+;                           | '[' constant_expression ']'
+;
+; So the new grammar additionally permits things such as:
+;
+;      and foo [3] (o, a, b);             // single expression instead of a range
+;      and foo [3:0][5] (o, a, b);        // mixed ranges/plain dimensions
+;      and foo [3:0][4:0] (o, a, b);      // multiple range lists
+;      ...
+;
+; Despite this change, a careful comparison on Verilog-2005's Chapter 7: "Gate-
+; and switch-level modeling" against SystemVerilog-2012's Chapter 28: "Gate-
+; and switch-level modeling" shows virtually no differences in the language.
+; Particularly, Section 7.1.5 about "The range specification" is practically
+; identical to Section 28.3.5, "The range specification."
+;
+; Barbaric testing reveals that there is some support for at least the singular
+; form of these dimension specifiers:
+;
+;                                 |  Verilog-XL |  NCVerilog   |    VCS
+;  -------------------------------+-------------+--------------+------------
+;   and foo [3] (o, a, b);        |    error    |   accepted   |  accepted
+;   and foo [3][4] (o, a, b);     |    error    |   error      |  error
+;   and foo [3:0][5] (o, a, b);   |    error    |   error      |  error
+;   and foo [5][3:0] (o, a, b);   |    error    |   error      |  error
+;   and foo [3:0][4:0] (o, a, b); |    error    |   error      |  error
+;  -------------------------------+-------------+--------------+------------
+;
+; But without any discussion of what this stuff means, I think it seems pretty
+; reasonable for VL to not support it for now.  If we find that we need to look
+; into this more, consider the discussion in 23.3.2 Module instantiation
+; syntax, and particularly 23.3.3.5 Unpacked array ports and instances of
+; arrays, where an example of a two-dimensional array of flip-flops is
+; described.
 
 
 

@@ -151,29 +151,6 @@ their related warnings.</p>"
 (def-vl-apply-reportcard package)
 (def-vl-apply-reportcard config)
 
-(define vl-apply-reportcard ((x          vl-design-p)
-                             (reportcard vl-reportcard-p))
-  :returns (new-x vl-design-p)
-  :short "Update a design to include any warnings from a @(see
-vl-reportcard-p)."
-
-  :long "<p>This is typically the last step in using a reportcard.  We change
-the design @('x') by adding the warnings from throughout the report card to the
-appropriate design elements.  For instance, if there is a module named @('foo')
-in the design that currently has two warnings, and the report card lists three
-warnings about @('foo'), then in the new design these warnings will have been
-merged so that @('foo') will now have 5 warnings.</p>"
-
-  (b* (((vl-design x) x))
-    (change-vl-design x
-                      :mods       (vl-modulelist-apply-reportcard    x.mods       reportcard)
-                      :udps       (vl-udplist-apply-reportcard       x.udps       reportcard)
-                      :interfaces (vl-interfacelist-apply-reportcard x.interfaces reportcard)
-                      :programs   (vl-programlist-apply-reportcard   x.programs   reportcard)
-                      :packages   (vl-packagelist-apply-reportcard   x.packages   reportcard)
-                      :configs    (vl-configlist-apply-reportcard    x.configs    reportcard))))
-
-
 
 (define vl-clean-reportcard-aux
   :parents (vl-clean-reportcard)
@@ -208,6 +185,77 @@ redundant/unnecessary information and is suitable for, e.g., printing.</p>"
        (ret      (vl-clean-reportcard-aux x-shrink nil)))
     (fast-alist-free x-shrink)
     ret))
+
+
+(define vl-reportcard-nonfloating
+  :short "Fast alist binding all names of things we can attach warnings to."
+  ((design vl-design-p))
+  :returns (fal)
+  (b* (((vl-design design) design))
+    (make-lookup-alist
+     (mbe :logic (append (vl-modulelist->names design.mods)
+                         (vl-udplist->names design.udps)
+                         (vl-interfacelist->names design.interfaces)
+                         (vl-programlist->names design.programs)
+                         (vl-packagelist->names design.packages)
+                         (vl-configlist->names design.configs))
+          :exec (with-local-nrev
+                  (b* ((nrev (vl-modulelist->names-nrev design.mods nrev))
+                       (nrev (vl-udplist->names-nrev design.udps nrev))
+                       (nrev (vl-interfacelist->names-nrev design.interfaces nrev))
+                       (nrev (vl-programlist->names-nrev design.programs nrev))
+                       (nrev (vl-packagelist->names-nrev design.packages nrev))
+                       (nrev (vl-configlist->names-nrev design.configs nrev)))
+                    nrev))))))
+
+(define vl-reportcard-floating
+  :short "Collect up all floating warnings from a report card."
+  ((x           vl-reportcard-p  "Report card we're filtering.")
+   (nonfloating                  "Fast alist of names from @(see vl-reportcard-nonfloating).")
+   (warnings    vl-warninglist-p "Accumulator for floating warnings, may be extended."))
+  :returns (new-warnings vl-warninglist-p)
+  :measure (vl-reportcard-count x)
+  (b* ((x        (vl-reportcard-fix x))
+       (warnings (vl-warninglist-fix warnings))
+       ((when (atom x))
+        warnings)
+       ((cons name1 warnings1) (car x))
+       (warnings (if (hons-get name1 nonfloating)
+                     ;; These warnings are NOT floating.
+                     warnings
+                   ;; Else these warnings ARE floating.
+                   (append-without-guard warnings1 warnings))))
+    (vl-reportcard-floating (cdr x) nonfloating warnings)))
+
+(define vl-apply-reportcard ((x          vl-design-p)
+                             (reportcard vl-reportcard-p))
+  :returns (new-x vl-design-p)
+  :short "Update a design to include any warnings from a @(see
+vl-reportcard-p)."
+
+  :long "<p>This is typically the last step in using a reportcard.  We change
+the design @('x') by adding the warnings from throughout the report card to the
+appropriate design elements.  For instance, if there is a module named @('foo')
+in the design that currently has two warnings, and the report card lists three
+warnings about @('foo'), then in the new design these warnings will have been
+merged so that @('foo') will now have 5 warnings.</p>"
+
+  (b* (((vl-design x) x)
+       (reportcard      (vl-clean-reportcard reportcard))
+       (nonfloating-fal (vl-reportcard-nonfloating x))
+       (floating (vl-reportcard-floating reportcard nonfloating-fal x.warnings))
+       (- (fast-alist-free nonfloating-fal)))
+
+    (change-vl-design x
+                      :mods       (vl-modulelist-apply-reportcard    x.mods       reportcard)
+                      :udps       (vl-udplist-apply-reportcard       x.udps       reportcard)
+                      :interfaces (vl-interfacelist-apply-reportcard x.interfaces reportcard)
+                      :programs   (vl-programlist-apply-reportcard   x.programs   reportcard)
+                      :packages   (vl-packagelist-apply-reportcard   x.packages   reportcard)
+                      :configs    (vl-configlist-apply-reportcard    x.configs    reportcard)
+                      :warnings   floating)))
+
+
 
 (defmacro def-vl-gather-reportcard (name elem &key fn parents elem->name)
   (b* ((mksym-package-symbol (pkg-witness "VL"))

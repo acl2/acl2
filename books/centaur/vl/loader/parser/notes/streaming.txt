@@ -1,0 +1,8 @@
+stream_concatenation ::= '{' stream_expression { ',' stream_expression } '}'
+
+stream_expression ::= expression [ 'with' '[' array_range_expression ']' ]
+
+array_range_expression ::= expression
+                         | expression ':' expression
+                         | expression '+:' expression
+                         | expression '-:' expression

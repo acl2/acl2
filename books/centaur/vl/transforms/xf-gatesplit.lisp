@@ -35,7 +35,8 @@
 
 <p>This transformation is responsible for splitting up multi-input gates into
 multiple one-input gates for @('buf') and @('not'), or two-input gates for
-@('and'), @('or'), etc.</p>
+@('and'), @('or'), etc.  It also deals with degenerate cases like single-input
+@('and') gates, which are not ruled out by the Verilog specification.</p>
 
 <p><b>Ordering Notes.</b> This transformation must be done after widths have
 been computed, and after @(see replicate) has been run to eliminate any arrays.
@@ -57,12 +58,12 @@ gates come from.</p>")
          (implies (member type '(:vl-not :vl-buf))
                   (vl-gatetype-p type))))
 
-(local (defthm vl-gatetype-p-when-and/etc
-         (implies (member type '(:vl-and :vl-or :vl-xor :vl-xnor))
+(local (defthm vl-gatetype-p-when-and/or/xor
+         (implies (member type '(:vl-and :vl-or :vl-xor))
                   (vl-gatetype-p type))))
 
 (local (defthm vl-gatetype-p-when-nand/nor
-         (implies (member-eq type '(:vl-nand :vl-nor))
+         (implies (member type '(:vl-nand :vl-nor :vl-xnor))
                   (vl-gatetype-p type))))
 
 (local (in-theory (disable acl2::subsetp-of-cons
@@ -108,6 +109,126 @@ gates come from.</p>")
     (iff (mv-nth 0 (vl-make-temporary-wires prefix i nf loc))
          (not (zp i)))))
 
+
+(define vl-degenerate-gate-to-buf
+  :short "Replace a degenerate one-input logic gate with a buffer."
+  ((x        vl-gateinst-p     "Gate to coerce.")
+   (warnings vl-warninglist-p  "Ordinary @(see warnings) accumulator."))
+  :guard (b* (((vl-gateinst x) x))
+           (and (member x.type '(:vl-and :vl-or :vl-xor :vl-nand :vl-nor :vl-xnor))
+                (equal (len x.args) 2)))
+  :returns
+  (mv (warnings vl-warninglist-p)
+      (new-x    vl-gateinst-p))
+
+  :long "<p>The Verilog grammar doesn't rule out the existence of degenerate,
+one-input logic gates.  For instance, the following is syntactically legal:</p>
+
+@({
+     and mygate (o, a);
+})
+
+<p>The Verilog-2005 Standard (Section 7.2) and SystemVerilog-2012
+Standard (Section 28.4) both say <i>Versions of these six logic gates having
+more than two inputs shall have a natural extension...</i>, but do not explain
+the behavior in the one-input case.</p>
+
+<p>Testing on Verilog-XL and NCVerilog suggests that these degenerate @('and'),
+@('or'), and @('not') gates are to become buffers, whereas degenerate
+@('nand'), @('nor'), and @('xnor') gates are to become inverters.  However, VCS
+seems to produce truly bizarre answers in this case, e.g.,</p>
+
+@({
+  wire o_buf;
+  wire o_and;
+  reg a;
+  buf (o_buf, a);
+  and (o_and,  a);
+  initial begin
+    $display(\"1-input AND:\");
+    a = 1'b0; #10; $display(\"%b -> %b (ok = %b)\", a, o_and, o_and === o_buf);
+    a = 1'b1; #10; $display(\"%b -> %b (ok = %b)\", a, o_and, o_and === o_buf);
+    a = 1'bx; #10; $display(\"%b -> %b (ok = %b)\", a, o_and, o_and === o_buf);
+    a = 1'bz; #10; $display(\"%b -> %b (ok = %b)\", a, o_and, o_and === o_buf);
+  end
+})
+
+<p>Produces, on NCVerilog and Verilog-XL, the reasonably sensible output:</p>
+
+@({
+    1-input AND:
+    0 -> 0 (ok = 1)
+    1 -> 1 (ok = 1)
+    x -> x (ok = 1)
+    z -> x (ok = 1)
+})
+
+<p>However, on VCS H-2013.06-SP1 it yields something that seems broken:</p>
+
+@({
+    1-input AND:
+    0 -> 0 (ok = 1)
+    1 -> 1 (ok = x)   // wtf, 1 !== 1 ???
+    x -> x (ok = z)   // wtf, x !== x ???
+    z -> x (ok = 1)
+})
+
+<p>We'll mimic the behavior of Verilog-XL and NCVerilog, but warn that this is
+a strange construct and some Verilog tools may not support it.</p>"
+
+  :prepwork ((local (in-theory (enable len))))
+
+  (b* ((x (vl-gateinst-fix x))
+       ((vl-gateinst x) x)
+       ((when x.range)
+        ;; Sanity check.  For our wire-width checks to make sense, we need to
+        ;; have already gotten rid of any instance arrays.
+        (mv (fatal :type :vl-bad-gate
+                   :msg "~a0: expected no instance arrays; did you forget to ~
+                         run the replicate transform?"
+                   :args (list x))
+            x))
+
+       (outexpr (vl-plainarg->expr (first x.args)))
+       (inexpr  (vl-plainarg->expr (second x.args)))
+       ((unless (and outexpr (equal (vl-expr->finalwidth outexpr) 1)))
+        (mv (fatal :type :vl-bad-gate
+                   :msg "~a0: output terminal has width ~x1 but we only ~
+                         support 1-bit outputs.  The expression for the bad ~
+                         terminal is ~a2."
+                   :args (list x
+                               (and outexpr (vl-expr->finalwidth outexpr))
+                               outexpr))
+            x))
+       ((unless (and inexpr (equal (vl-expr->finalwidth inexpr) 1)))
+        (mv (fatal :type :vl-bad-gate
+                   :msg "~a0: input terminal has width ~x1 but we only ~
+                         support 1-bit inputs.  The expression for the bad ~
+                         terminal is ~a2."
+                   :args (list x
+                               (and inexpr (vl-expr->finalwidth inexpr))
+                               inexpr))
+            x))
+
+       (new-type (if (member x.type '(:vl-and :vl-or :vl-xor))
+                     :vl-buf
+                   ;; NAND, NOR, and XNOR become inverters
+                   :vl-not))
+
+       (warnings
+        (warn :type :vl-weird-gate
+              :msg "~a0:  ~s1 gate with a single input.  We treat this as a ~
+                    ~s2 gate, matching NCVerilog and Verilog-XL. However, ~
+                    other Verilog tools (including for instance VCS) have ~
+                    different interpretations.  If this is really what you ~
+                    want to do, it would be safer to use a buf gate instead."
+              :args (list x x.type new-type)))
+
+       ;; We're converting and(o, i) or similar into buf(o, i), so the
+       ;; arguments and everything are all fine and there's nothing to do but
+       ;; much with the type.
+       (new-x (change-vl-gateinst x :type new-type)))
+    (mv warnings new-x)))
 
 
 (define vl-make-gates-for-buf/not
@@ -163,7 +284,11 @@ drive each output in @('outs') with @('in').</p>"
        ((mv new-name nf) (vl-namefactory-indexed-name origname-s nf))
        (inst1     (make-vl-gateinst :name new-name
                                     :type (vl-gateinst->type x)
-                                    :args (cons in (list (car outs)))
+                                    ;; BUG found 2014-06-06!  I was putting the
+                                    ;; new gate together in backwards order, so
+                                    ;; we were driving the input instead of the
+                                    ;; outputs.
+                                    :args (list (car outs) in)
                                     :loc (vl-gateinst->loc x)
                                     :atts atts))
        ((mv warnings rest nf)
@@ -178,7 +303,7 @@ drive each output in @('outs') with @('in').</p>"
   ((x        vl-gateinst-p)
    (nf       vl-namefactory-p)
    (warnings vl-warninglist-p))
-  :guard (member-eq (vl-gateinst->type x) '(:vl-not :vl-buf))
+  :guard (member (vl-gateinst->type x) '(:vl-not :vl-buf))
   :returns
   (mv (warnings      vl-warninglist-p)
       (new-gateinsts vl-gateinstlist-p :hyp :fguard)
@@ -250,16 +375,14 @@ module.</p>"
   (defmvtypes vl-gatesplit-buf/not (nil true-listp nil)))
 
 
-
-(define vl-make-gates-for-and/etc
-  :parents (vl-gatesplit-and/etc)
-  :short "Produce a list of two-input @('and'), @('or'), @('xor'), or @('xnor')
-gates to replace a multi-input gate."
+(define vl-make-gates-for-and/or/xor
+  :parents (vl-gatesplit-and/or/xor)
+  :short "Produce a list of two-input @('and'), @('or'), or @('xor') gates to
+replace a multi-input gate."
   ((outs  vl-plainarglist-p "See below.")
    (lhses vl-plainarglist-p "See below.")
    (rhses vl-plainarglist-p "See below.")
-   (type  (member-eq type '(:vl-and :vl-or :vl-xor :vl-xnor))
-          "Type of gate we're splitting up.")
+   (type  (member type '(:vl-and :vl-or :vl-xor)) "Type of gate we're splitting up.")
    (name     stringp          "Name of the original gate (or @('<unnamed gate>').")
    (loc      vl-location-p    "Location of the original gate.")
    (atts     vl-atts-p        "Attributes of the original gate, already updated
@@ -286,6 +409,10 @@ vl-plainarglist-p)s which have equal lengths:</p>
 <p>We march down the three main input-lists, zipping them together into new
 gate instances.  The new gateinsts we return are intended to replace the
 original gate.</p>"
+
+; BUG found 2014-06-06!  I was splitting up XNOR gates using this function.
+; This was actually correct in the N=4 case, but not in the N=3 case.  The
+; proper way to split them up is like NOR/NAND gates.
 
   :prepwork ((local (in-theory (enable len))))
 
@@ -336,21 +463,22 @@ original gate.</p>"
                                 :atts atts
                                 :loc loc))
        ((mv warnings rest nf)
-        (vl-make-gates-for-and/etc (cdr outs) (cdr lhses) (cdr rhses)
+        (vl-make-gates-for-and/or/xor (cdr outs) (cdr lhses) (cdr rhses)
                                    type name loc atts nf warnings)))
 
     (mv warnings (cons gate1 rest) nf))
   ///
-  (defmvtypes vl-make-gates-for-and/etc (nil true-listp nil)))
+  (defmvtypes vl-make-gates-for-and/or/xor (nil true-listp nil)))
 
 
-(define vl-gatesplit-and/etc
+
+(define vl-gatesplit-and/or/xor
   :short "Split up a multi-input @('and'), @('or'), @('xor'), or @('xnor')
 gate, if necessary."
   ((x        vl-gateinst-p     "Gate to split (if necessary).")
    (nf       vl-namefactory-p  "For generating fresh names.")
    (warnings vl-warninglist-p  "Ordinary @(see warnings) accumulator."))
-  :guard (member-eq (vl-gateinst->type x) '(:vl-and :vl-or :vl-xor :vl-xnor))
+  :guard (member (vl-gateinst->type x) '(:vl-and :vl-or :vl-xor))
   :returns
   (mv (warnings       vl-warninglist-p)
       (new-decls      vl-netdecllist-p :hyp :fguard
@@ -391,12 +519,17 @@ gate(out,   tempN-2, iN);
                    :args (list x))
             nil (list x) nf))
 
-       ((when (< nargs 3))
-        ;; Sanity check.  Gate needs at least 3 args.
+       ((when (< nargs 2))
+        ;; Sanity check.  Gate needs at least 2 args.
         (mv (fatal :type :vl-bad-gate
-                   :msg "~a0: expected at least 3 arguments, but found ~x1."
+                   :msg "~a0: expected at least 2 arguments, but found ~x1."
                    :args (list x nargs))
             nil (list x) nf))
+
+       ((when (eql nargs 2))
+        ;; Weird gate like and(o, i) -- convert it into a buf and warn.
+        (b* (((mv warnings new-x) (vl-degenerate-gate-to-buf x warnings)))
+          (mv warnings nil (list new-x) nf)))
 
        ((when (eql nargs 3))
         ;; If the gate has exactly 3 arguments, we don't need to split it.
@@ -426,20 +559,20 @@ gate(out,   tempN-2, iN);
        (rhses i2-n)
 
        ((mv warnings gateinsts nf)
-        (vl-make-gates-for-and/etc outs lhses rhses type origname
+        (vl-make-gates-for-and/or/xor outs lhses rhses type origname
                                    loc atts nf warnings)))
     (mv warnings temp-decls gateinsts nf))
   ///
-  (defmvtypes vl-gatesplit-and/etc (nil true-listp true-listp nil)))
+  (defmvtypes vl-gatesplit-and/or/xor (nil true-listp true-listp nil)))
 
 
 
-(define vl-gatesplit-nand/nor
+(define vl-gatesplit-nand/nor/xnor
   :short "Split up a multi-input @('nand') or @('nor') gate, if necessary."
   ((x        vl-gateinst-p     "NAND/NOR gate to split up (if necessary).")
    (nf       vl-namefactory-p  "For generating fresh names.")
    (warnings vl-warninglist-p  "Ordinary @(see warnings) accumulator."))
-  :guard (member-eq (vl-gateinst->type x) '(:vl-nand :vl-nor))
+  :guard (member (vl-gateinst->type x) '(:vl-nand :vl-nor :vl-xnor))
   :returns
   (mv (warnings       vl-warninglist-p)
       (new-decls      vl-netdecllist-p :hyp :fguard
@@ -447,10 +580,10 @@ gate(out,   tempN-2, iN);
       (new-gateinsts  vl-gateinstlist-p :hyp :fguard
                       "Replacement gate instances.")
       (nf             vl-namefactory-p :hyp :fguard))
-  :long "<p>From Section 7.2, @('nand') and @('nor') gates have one output and
-many inputs.  The behavior for more than 2 inputs is described as the \"natural
-extension\".  We have used Verilog-XL to check that they behave as follows, at
-least for @('n = 4').</p>
+  :long "<p>From Section 7.2, @('nand'), @('nor'), and @('xnor') gates have one
+output and many inputs.  The behavior for more than 2 inputs is described as
+the \"natural extension\".  We have used Verilog-XL to check that they behave
+as follows, at least for @('n = 4').</p>
 
 @({
 nand(o, i1, i2, ..., iN)
@@ -466,7 +599,14 @@ or(temp, i1, i2, ..., iN)
 not(o, temp);
 })
 
-<p>This is basically similar to @(see vl-gatesplit-and/etc), except that
+@({
+xnor(o, i1, i2, ..., iN)
+ -->
+xor(temp, i1, i2, ..., iN)
+not(o, temp);
+})
+
+<p>This is basically similar to @(see vl-gatesplit-and/or/xor), except that
 we need to add a \"not\" gate at the end.</p>"
 
   :prepwork ((local (in-theory (enable len acl2::member-of-cons))))
@@ -487,12 +627,17 @@ we need to add a \"not\" gate at the end.</p>"
                    :args (list x))
             nil (list x) nf))
 
-       ((when (< nargs 3))
-        ;; Sanity check: gate is malformed unless it has at least 3 args.
+       ((when (< nargs 2))
+        ;; Sanity check: gate is malformed unless it has at least 2 args.
         (mv (fatal :type :vl-bad-gate
-                   :msg "~a0: expected at least 3 arguments, but found ~x1."
+                   :msg "~a0: expected at least 2 arguments, but found ~x1."
                    :args (list x nargs))
             nil (list x) nf))
+
+       ((when (eql nargs 2))
+        ;; Weird gate like nand(o, i) -- convert it into a buf and warn.
+        (b* (((mv warnings new-x) (vl-degenerate-gate-to-buf x warnings)))
+          (mv warnings nil (list new-x) nf)))
 
        ((when (eql nargs 3))
         ;; Already has 3 arguments, no need to split.
@@ -530,11 +675,12 @@ we need to add a \"not\" gate at the end.</p>"
 
        ;; Now, we generate the main mess of gates.
        ((mv warnings gateinsts nf)
-        (vl-make-gates-for-and/etc outs lhses rhses
-                                   (case (vl-gateinst->type x)
-                                     (:vl-nand :vl-and)
-                                     (:vl-nor  :vl-or))
-                                   origname loc atts nf warnings))
+        (vl-make-gates-for-and/or/xor outs lhses rhses
+                                      (case (vl-gateinst->type x)
+                                        (:vl-nand :vl-and)
+                                        (:vl-nor  :vl-or)
+                                        (:vl-xnor :vl-xor))
+                                      origname loc atts nf warnings))
 
        ;; Finally, we just need to hook up the "main" wire to
        ;; our output, o.
@@ -550,7 +696,7 @@ we need to add a \"not\" gate at the end.</p>"
         (append gateinsts (list final-gate))
         nf))
   ///
-  (defmvtypes vl-gatesplit-nand/nor (nil true-listp true-listp nil)))
+  (defmvtypes vl-gatesplit-nand/nor/xnor (nil true-listp true-listp nil)))
 
 
 (define vl-gateinst-gatesplit
@@ -560,21 +706,19 @@ we need to add a \"not\" gate at the end.</p>"
    (warnings vl-warninglist-p "Ordinary @(see warnings) accumulator."))
   :returns
   (mv (warnings       vl-warninglist-p)
-      (new-decls      vl-netdecllist-p :hyp :fguard
-                      "New declarations for temporary wires.")
-      (new-gateinsts  vl-gateinstlist-p :hyp :fguard
-                      "Replacement gate instances.")
+      (new-decls      vl-netdecllist-p :hyp :fguard "New declarations for temporary wires.")
+      (new-gateinsts  vl-gateinstlist-p :hyp :fguard "Replacement gate instances.")
       (nf             vl-namefactory-p :hyp :fguard))
   (case (vl-gateinst->type x)
-    ((:VL-NOT :VL-BUF)
+    ((:vl-not :vl-buf)
      ;; Blah, these don't generate new decls so the signature is incompatible
      (b* (((mv warnings new-gateinsts nf)
            (vl-gatesplit-buf/not x nf warnings)))
        (mv warnings nil new-gateinsts nf)))
-    ((:VL-AND :VL-OR :VL-XOR :VL-XNOR)
-     (vl-gatesplit-and/etc x nf warnings))
-    ((:VL-NAND :VL-NOR)
-     (vl-gatesplit-nand/nor x nf warnings))
+    ((:vl-and :vl-or :vl-xor)
+     (vl-gatesplit-and/or/xor x nf warnings))
+    ((:vl-nand :vl-nor :vl-xnor)
+     (vl-gatesplit-nand/nor/xnor x nf warnings))
     (otherwise
      (mv (ok) nil (list x) nf)))
   ///
@@ -587,10 +731,8 @@ we need to add a \"not\" gate at the end.</p>"
    (warnings vl-warninglist-p))
   :returns
   (mv (warnings       vl-warninglist-p)
-      (new-decls      vl-netdecllist-p :hyp :fguard
-                      "New declarations for temporary wires.")
-      (new-gateinsts  vl-gateinstlist-p :hyp :fguard
-                      "Replacement gate instances.")
+      (new-decls      vl-netdecllist-p :hyp :fguard "New declarations for temporary wires.")
+      (new-gateinsts  vl-gateinstlist-p :hyp :fguard "Replacement gate instances.")
       (nf             vl-namefactory-p :hyp :fguard))
   (b* (((when (atom x))
         (mv (ok) nil nil nf))

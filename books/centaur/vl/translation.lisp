@@ -59,15 +59,6 @@
                    sometimes useful for extracting definitions like opcodes,
                    etc.")
 
-   (loadwarnings  vl-warninglist-p
-                  "A list of \"floating\" warnings that were encountered during
-                   the load process.  This usually does not have anything
-                   interesting in it, because most warnings get associated with
-                   design elements in @('good') or @('fail') instead.  It may,
-                   however, contain miscellaneous warnings from <i>between</i>
-                   design elements which, therefore, can't be associated with
-                   particular modules.")
-
    (useset-report vl-useset-report-p
                   "A report that contains the results of running the @(see
                    use-set) analysis; this may help you identify wires that are

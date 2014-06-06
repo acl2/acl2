@@ -2495,6 +2495,11 @@ transforms to not modules with this attribute.</p>"
   (vl-udp-p x)
   :elementp-of-nil nil)
 
+(defprojection vl-udplist->names ((x vl-udplist-p))
+  :parents (vl-udplist-p)
+  :returns (names string-listp)
+  (vl-udp->name x))
+
 
 (defprod vl-config
   :short "Representation of a single @('config')."
@@ -2516,6 +2521,11 @@ transforms to not modules with this attribute.</p>"
 (deflist vl-configlist-p (x)
   (vl-config-p x)
   :elementp-of-nil nil)
+
+(defprojection vl-configlist->names ((x vl-configlist-p))
+  :parents (vl-configlist-p)
+  :returns (names string-listp)
+  (vl-config->name x))
 
 
 (defprod vl-package
@@ -2539,6 +2549,11 @@ transforms to not modules with this attribute.</p>"
   (vl-package-p x)
   :elementp-of-nil nil)
 
+(defprojection vl-packagelist->names ((x vl-packagelist-p))
+  :parents (vl-packagelist-p)
+  :returns (names string-listp)
+  (vl-package->name x))
+
 
 (defprod vl-interface
   :short "Representation of a single @('interface')."
@@ -2560,6 +2575,12 @@ transforms to not modules with this attribute.</p>"
 (deflist vl-interfacelist-p (x)
   (vl-interface-p x)
   :elementp-of-nil nil)
+
+(defprojection vl-interfacelist->names ((x vl-interfacelist-p))
+  :parents (vl-interfacelist-p)
+  :returns (names string-listp)
+  (vl-interface->name x))
+
 
 
 (defprod vl-program
@@ -2583,48 +2604,88 @@ transforms to not modules with this attribute.</p>"
   (vl-program-p x)
   :elementp-of-nil nil)
 
+(defprojection vl-programlist->names ((x vl-programlist-p))
+  :parents (vl-programlist-p)
+  :returns (names string-listp)
+  (vl-program->name x))
 
 
-(deftranssum vl-description
-  (vl-module
-   vl-udp
-   vl-package
-   vl-interface
-   vl-program
-   vl-config
-   ;; bozo package items, bind directives
-   ))
 
-(defrule tag-when-vl-description-p-forward
-  ;; bozo move to parsetree
-  (implies (vl-description-p x)
-           (or (equal (tag x) :vl-module)
-               (equal (tag x) :vl-udp)
-               (equal (tag x) :vl-package)
-               (equal (tag x) :vl-interface)
-               (equal (tag x) :vl-program)
-               (equal (tag x) :vl-config)))
-  :rule-classes ((:forward-chaining :trigger-terms ((vl-description-p x))))
-  :enable vl-description-p)
+(define vl-importpart-p (x)
+  (or (eq x :vl-import*)
+      (stringp x))
+  ///
+  (defthm vl-importpart-p-when-stringp
+    (implies (stringp x)
+             (vl-importpart-p x)))
 
+  (defthm vl-importpart-p-compound-recognizer
+    (implies (vl-importpart-p x)
+             (or (and (symbolp x)
+                      (not (equal x nil))
+                      (not (equal x t)))
+                 (stringp x)))
+    :rule-classes :compound-recognizer))
 
-(fty::deflist vl-descriptionlist :elt-type vl-description-p)
+(define vl-importpart-fix ((x vl-importpart-p))
+  :returns (part vl-importpart-p)
+  (if (vl-importpart-p x)
+      x
+    :vl-import*)
+  ///
+  (defthm vl-importpart-fix-when-vl-importpart-p
+    (implies (vl-importpart-p x)
+             (equal (vl-importpart-fix x)
+                    x))))
 
-(deflist vl-descriptionlist-p (x)
-  (vl-description-p x)
+(fty::deffixtype vl-importpart
+  :pred vl-importpart-p
+  :fix vl-importpart-fix
+  :equiv vl-importpart-equiv
+  :define t
+  :forward t)
+
+(defprod vl-import
+  :tag :vl-import
+  :layout :tree
+  :short "Representation of a single import item, i.e., @('import foo::bar;')."
+
+  ((pkg  stringp :rule-classes :type-prescription
+         "Package to import everything from, e.g., @('\"foo\"').")
+
+   (part vl-importpart-p
+         "Either: a single name to import, e.g., @('\"bar\"') above, or else
+          the symbol @(':vl-import*'), which means import everything, as in
+          @('import foo::*;').")
+
+   (loc  vl-location-p)
+   (atts vl-atts-p)))
+
+(fty::deflist vl-importlist :elt-type vl-import-p)
+
+(deflist vl-importlist-p (x)
+  (vl-import-p x)
   :elementp-of-nil nil)
-
 
 (defprod vl-design
   :short "Top level representation of all modules, interfaces, programs, etc.,
 resulting from parsing some Verilog source code."
   :tag :vl-design
   :layout :tree
-  ((mods       vl-modulelist-p    "List of all modules")
-   (udps       vl-udplist-p       "List of user defined primtives")
-   (interfaces vl-interfacelist-p "List of interfaces")
-   (programs   vl-programlist-p   "List of all programs")
-   (packages   vl-packagelist-p   "List of all packages")
-   (configs    vl-configlist-p    "List of configurations")))
+  ((mods       vl-modulelist-p    "List of all modules.")
+   (udps       vl-udplist-p       "List of user defined primtives.")
+   (interfaces vl-interfacelist-p "List of interfaces.")
+   (programs   vl-programlist-p   "List of all programs.")
+   (packages   vl-packagelist-p   "List of all packages.")
+   (configs    vl-configlist-p    "List of configurations.")
+   (netdecls   vl-netdecllist-p   "Top-level net declarations.")
+   (taskdecls  vl-taskdecllist-p  "Top-level task declarations.")
+   (fundecls   vl-fundecllist-p   "Top-level function declarations.")
+   (paramdecls vl-paramdecllist-p "Top-level (local and non-local) parameter declarations.")
+   (imports    vl-importlist-p    "Top-level package import statements.")
+   ;; BOZO lots of things still missing
+   (warnings   vl-warninglist-p   "So-called \"floating\" warnings.")
+   (comments   vl-commentmap-p    "So-called \"floating\" comments.")
+   ))
 
 
