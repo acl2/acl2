@@ -310,101 +310,181 @@
                        (t stobjs-out))))))))
 
 #-acl2-loop-only
+(defvar *mbe-as-exec*
+
+; For the sake of simplicity in the discussion below, we ignore the possibility
+; that guard-checking is set to :none or :all and we ignore safe-mode.  Also,
+; we assume that *ignore-invariant-risk* is nil, as should always be the case
+; unless someone is hacking; otherwise, the effect of this variable is
+; defeated.
+
+; Oneify-cltl-code uses this variable, *mbe-as-exec*, to arrange that when a
+; *1* :logic-mode function that calls mbe is itself called under a *1*
+; :program-mode function, then the :exec code of that mbe call is evaluated,
+; not the :logic code.  Our approach is basically as follows.  Globally,
+; *mbe-as-exec* is nil.  But we arrange the following, and explain below.
+; 
+; (a) The *1* code for an invariant-risk :program mode function binds
+;     *mbe-as-exec* to t.
+; 
+; (b) The *1* code for an mbe call reduces to its :exec code when *mbe-as-exec*
+;     is true.
+;
+; (c) Raw-ev-fncall binds *mbe-as-exec* to nil for :logic mode functions.
+
+; Without invariant-risk, none of this would be necessary: a :program mode
+; function call would lead to raw Lisp evaluation, where each mbe call
+; macroexpands to its :exec code.  But with invariant-risk, we need to stick
+; with *1* execution in order to avoid making ill-guarded stobj updater calls,
+; in which case (a) and (b) save us from execution of :logic code from an mbe
+; call.  Note that the use of :exec code from mbe calls can be important for
+; performance, as pointed out by Jared Davis.
+
+; To see why we need (c), consider the following example.
+
+;   (defstobj st (fld :type integer :initially 0))
+;   
+;   (defun lgc (st)
+;     (declare (xargs :mode :logic
+;                     :stobjs st
+;                     :verify-guards nil))
+;     (mbe :logic (prog2$ (cw "@@@LOGIC@@@~%")
+;                         (update-fld 3 st))
+;          :exec (prog2$ (cw "@@@EXEC@@@~%")
+;                        (update-fld 4 st))))
+;   
+;   (defun foo (state st)
+;     (declare (xargs :mode :program :stobjs (state st)))
+;     (let ((st (update-fld 7 st)))
+;       (mv-let (erp val state)
+;               (trans-eval
+;                '(thm (equal (with-local-stobj
+;                              st
+;                              (mv-let (val st)
+;                                      (let ((st (lgc st)))
+;                                        (mv (fld st) st))
+;                                      val))
+;                             4)) 'top state t)
+;               (mv erp val state st))))
+
+; The proof should fail when calling (foo state st), since logically, the value
+; of the with-local-stobj form is 3, not 4.  But since foo has invariant-risk,
+; *mbe-as-exec* is bound to t when calling *1*foo, so we might expect that
+; evaluation of the mbe form under (lgc st) would use the :exec form, leading
+; erroneously to a successful proof!  However, we bind *mbe-as-exec* to nil in
+; raw-ev-fncall precisely to avoid such a probem.
+
+  nil)
+
+#-acl2-loop-only
 (defun raw-ev-fncall (fn args latches w user-stobj-alist
                          hard-error-returns-nilp aok)
-  (let ((*aokp* aok))
-    (the #+acl2-mv-as-values (values t t t)
-         #-acl2-mv-as-values t
-         (let* ((pair (assoc-eq 'state latches))
-                (w (if pair (w (cdr pair)) w)) ; (cdr pair) = *the-live-state*
-                (throw-raw-ev-fncall-flg t)
-                (*1*fn (*1*-symbol fn))
-                (applied-fn (cond
-                             ((fboundp *1*fn) *1*fn)
-                             ((and (global-val 'boot-strap-flg w)
-                                   (not (global-val 'boot-strap-pass-2 w)))
-                              fn)
-                             (t
-                              (er hard 'raw-ev-fncall
-                                  "We had thought that *1* functions were ~
-                                   always defined outside the first pass of ~
-                                   initialization, but the *1* function for ~
-                                   ~x0, which should be ~x1, is not."
-                                  fn *1*fn))))
-                (stobjs-out
-                 (cond ((eq fn 'return-last)
+  (the #+acl2-mv-as-values (values t t t)
+       #-acl2-mv-as-values t
+       (let* ((*aokp* aok)
+              (pair (assoc-eq 'state latches))
+              (w (if pair (w (cdr pair)) w)) ; (cdr pair) = *the-live-state*
+              (throw-raw-ev-fncall-flg t)
+              (*mbe-as-exec*
+
+; We defeat the *mbe-as-exec* optimization so that when we use raw-ev-fncall to
+; evaluate a call of a :logic mode term, all of the evaluation will take place
+; in the logic.  Note that we don't restrict this special treatment to
+; :common-lisp-compliant functions, because such a function might call an
+; :ideal mode function wrapped in ec-call.  But we do restrict to :logic mode
+; functions, since they cannot call :program mode functions and hence there
+; cannot be a subsidiary rebinding of *mbe-as-exec* to t.
+
+               (if (logicalp fn w)
+                   nil
+                 *mbe-as-exec*))
+              (*1*fn (*1*-symbol fn))
+              (applied-fn (cond
+                           ((fboundp *1*fn) *1*fn)
+                           ((and (global-val 'boot-strap-flg w)
+                                 (not (global-val 'boot-strap-pass-2 w)))
+                            fn)
+                           (t
+                            (er hard 'raw-ev-fncall
+                                "We had thought that *1* functions were ~
+                                 always defined outside the first pass of ~
+                                 initialization, but the *1* function for ~
+                                 ~x0, which should be ~x1, is not."
+                                fn *1*fn))))
+              (stobjs-out
+               (cond ((eq fn 'return-last)
 
 ; Things can work out fine if we imagine that return-last returns a single
 ; value: in the case of (return-last ... (mv ...)), the mv returns a list and
 ; we just pass that along.
 
-                        '(nil))
+                      '(nil))
 ; The next form was originally conditionalized with #+acl2-extra-checks, but we
 ; want to do this unconditionally.
-                       (latches ; optimization
-                        (actual-stobjs-out fn args w user-stobj-alist))
-                       (t (stobjs-out fn w))))
-                (val (catch 'raw-ev-fncall
-                       (cond ((not (fboundp fn))
-                              (er hard 'raw-ev-fncall
-                                  "A function, ~x0, that was supposed to be ~
-                                   defined is not.  Supposedly, this can only ~
-                                   arise because of aborts during undoing.  ~
-                                   There is no recovery from this erroneous ~
-                                   state."
-                                  fn)))
-                       (prog1
-                           (let ((*hard-error-returns-nilp*
-                                  hard-error-returns-nilp))
-                             #-acl2-mv-as-values
-                             (apply applied-fn args)
-                             #+acl2-mv-as-values
-                             (cond ((null (cdr stobjs-out))
-                                    (apply applied-fn args))
-                                   (t (multiple-value-list
-                                       (apply applied-fn args)))))
-                         (setq throw-raw-ev-fncall-flg nil))))
+                     (latches ; optimization
+                      (actual-stobjs-out fn args w user-stobj-alist))
+                     (t (stobjs-out fn w))))
+              (val (catch 'raw-ev-fncall
+                     (cond ((not (fboundp fn))
+                            (er hard 'raw-ev-fncall
+                                "A function, ~x0, that was supposed to be ~
+                                 defined is not.  Supposedly, this can only ~
+                                 arise because of aborts during undoing.  ~
+                                 There is no recovery from this erroneous ~
+                                 state."
+                                fn)))
+                     (prog1
+                         (let ((*hard-error-returns-nilp*
+                                hard-error-returns-nilp))
+                           #-acl2-mv-as-values
+                           (apply applied-fn args)
+                           #+acl2-mv-as-values
+                           (cond ((null (cdr stobjs-out))
+                                  (apply applied-fn args))
+                                 (t (multiple-value-list
+                                     (apply applied-fn args)))))
+                       (setq throw-raw-ev-fncall-flg nil))))
 
 ; It is important to rebind w here, since we may have updated state since the
 ; last binding of w.
 
-                (w (if pair
+              (w (if pair
 
 ; We use the live state now if and only if we used it above, in which case (cdr
 ; pair) = *the-live-state*.
 
-                       (w (cdr pair))
-                     w)))
+                     (w (cdr pair))
+                   w)))
 
 ; Observe that if a throw to 'raw-ev-fncall occurred during the
 ; (apply fn args) then the local variable throw-raw-ev-fncall-flg
 ; is t and otherwise it is nil.  If a throw did occur, val is the
 ; value thrown.
 
-           (cond
-            (throw-raw-ev-fncall-flg
-             (mv t (ev-fncall-msg val w user-stobj-alist) latches))
-            (t #-acl2-mv-as-values ; adjust val for the multiple value case
-               (let ((val
-                      (cond
-                       ((null (cdr stobjs-out)) val)
-                       (t (cons val
-                                (mv-refs (1- (length stobjs-out))))))))
-                 (mv nil
-                     val
-; The next form was originally conditionalized with #+acl2-extra-checks, with
-; value latches when #-acl2-extra-checks; but we want this unconditionally.
-                     (latch-stobjs stobjs-out ; adjusted to actual-stobjs-out
-                                   val
-                                   latches)))
-               #+acl2-mv-as-values ; val already adjusted for multiple value case
+         (cond
+          (throw-raw-ev-fncall-flg
+           (mv t (ev-fncall-msg val w user-stobj-alist) latches))
+          (t #-acl2-mv-as-values ; adjust val for the multiple value case
+             (let ((val
+                    (cond
+                     ((null (cdr stobjs-out)) val)
+                     (t (cons val
+                              (mv-refs (1- (length stobjs-out))))))))
                (mv nil
                    val
 ; The next form was originally conditionalized with #+acl2-extra-checks, with
 ; value latches when #-acl2-extra-checks; but we want this unconditionally.
                    (latch-stobjs stobjs-out ; adjusted to actual-stobjs-out
                                  val
-                                 latches))))))))
+                                 latches)))
+             #+acl2-mv-as-values ; val already adjusted for multiple value case
+             (mv nil
+                 val
+; The next form was originally conditionalized with #+acl2-extra-checks, with
+; value latches when #-acl2-extra-checks; but we want this unconditionally.
+                 (latch-stobjs stobjs-out ; adjusted to actual-stobjs-out
+                               val
+                               latches)))))))
 
 (defun translated-acl2-unwind-protectp4 (term)
 
