@@ -143,6 +143,26 @@
            (disassemble-to-string (car objs) state)))
        (bridge::json-encode
         (list (cons :error nil)
-              (cons :val disassembly))))))
+              (cons :val disassembly)))))
+
+  (hunchentoot:define-easy-handler (props-handler :uri "/props") (name)
+     (setf (hunchentoot:content-type*) "application/json")
+     (b* ((state acl2::*the-live-state*)
+          ((mv errmsg objs state) (acl2::read-string name))
+          ((when errmsg)
+           (bridge::json-encode
+            (list (cons :error (format nil "Error in props: parsing failed: ~a: ~a~%"
+                                       name errmsg))
+                  (cons :val ""))))
+          ((unless (and (equal (len objs) 1)
+                        (symbolp (car objs))))
+           (bridge::json-encode
+            (list (cons :error (format nil "Error in props: not a symbol: ~a~%" name))
+                  (cons :val ""))))
+          ((mv props ?state)
+           (props-jalist (car objs) state)))
+       (bridge::json-encode
+        (list (cons :error nil)
+              (cons :val props))))))
 
 

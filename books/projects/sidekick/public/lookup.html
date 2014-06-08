@@ -28,6 +28,7 @@ along with this program; if not, write to the Free Software Foundation, Inc.,
 <script src="lib/jquery-2.1.0.min.js"></script>
 <script src="common.js"></script>
 <script src="toolbar.js"></script>
+<script src="lookup.js"></script>
 
 <style>
 <!--
@@ -51,6 +52,33 @@ along with this program; if not, write to the Free Software Foundation, Inc.,
     height: 100%;
     overflow-y: auto;
 }
+
+#propswrap {
+    overflow-x: auto;
+    overflow-y: auto;
+    width: 93%;
+    height: 20em;
+    background-color: #fffff0;
+    border-width: 3px;
+    border-style: inset;
+}
+
+.propstable {
+    border-collapse: collapse;
+}
+
+.propstable td, .propstable th {
+    text-align: left;
+}
+
+.propstable th {
+   font-variant: small-caps;
+}
+
+.propstable .longbody, .propstable .short {
+    border-bottom: 1px solid #808080;
+}
+
 -->
 </style>
 
@@ -62,24 +90,36 @@ along with this program; if not, write to the Free Software Foundation, Inc.,
 
 <div id="main">
 
-<div id="leftcolwrap">
-<div id="leftcol">
-
 <script language="javascript">
 <!--
 var params = getPageParameters();
 var what = params["lookup"];
-document.write("<h3>Searching for " + what + "</h3>");
+document.write("<h1>" + what + "</h1>");
 // -->
 </script>
 
+<div id="leftcolwrap">
+<div id="leftcol">
+
+
 BOZO implement me
+
+<hr>
+
+
 
 </div>
 </div>
 
 <div id="rightcolwrap">
 <div id="rightcol">
+
+<div id="props">
+Loading
+</div>
+
+</div>
+</div>
 
 <h3>General Lookup Page</h3>
 
@@ -93,6 +133,9 @@ BOZO implement me
 <li>Props</li>
 <li>XDOC topics</li>
 </ul>
+
+<p>Tie this into ACL2 with some kind of <tt>:show</tt> command that we
+poll for using the toolbar or whatever.</p>
 
 <p>When we mark up s-expressions with hyperlinks, they should be able
 to link here and leave us with a suitable thing.</p>

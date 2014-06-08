@@ -22,8 +22,13 @@ along with this program; if not, write to the Free Software Foundation, Inc.,
 
 function htmlEncode(value)
 {
-  // copied from stackoverflow:1219860
-  return $('<div/>').text(value).html();
+    // copied from stackoverflow:1219860
+    return $('<div/>').text(value).html();
+}
+
+String.prototype.upcaseFirst = function () {
+    var str = this;
+    return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
 function getPageParameters ()

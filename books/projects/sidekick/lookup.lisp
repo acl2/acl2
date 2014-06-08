@@ -19,33 +19,28 @@
 ; Original author: Jared Davis <jared@kookamara.com>
 
 (in-package "SIDEKICK")
-(include-book "centaur/quicklisp/hunchentoot" :dir :system)
-(include-book "centaur/bridge/to-json" :dir :system)
-(include-book "std/util/define" :dir :system)
-(include-book "std/util/defconsts" :dir :system)
-(include-book "oslib/catpath" :dir :system)
 (include-book "session")
 (include-book "disassemble")
-(include-book "lookup")
-(include-book "std/basic/defs" :dir :system)
-(include-book "std/strings/defs-program" :dir :system)
-(include-book "std/io/read-string" :dir :system)
-(defttag :sidekick)
 (set-state-ok t)
+(program)
 
-(defconsts *sidekick-dir* (cbd))
+(define props-jalist-aux (alist (config str::printconfig-p))
+  (b* (((when (atom alist))
+        nil)
+       ((cons key val) (car alist)))
+    (cons (cons key (str::pretty val :config config))
+          (props-jalist-aux (cdr alist) config))))
 
-(define start (&key (port maybe-natp))
-  :parents (sidekick)
-  :short "Start the ACL2 sidekick web server."
-  (declare (ignorable port))
-  (raise "Under the hood definition not installed."))
+(define props-jalist (name state)
+  (b* (((unless (symbolp name))
+        nil)
+       (world  (w state))
+       (alist  (getprops name 'acl2::current-acl2-world world))
+       (pkg    (current-package state))
+       (config (str::make-printconfig :home-package (pkg-witness pkg)
+                                      :print-lowercase t
+                                      :hard-right-margin 60
+                                      ))
+       (pretty-printed-alist (props-jalist-aux alist config)))
+    pretty-printed-alist))
 
-(define stop ()
-  :parents (sidekick)
-  :short "Stop the ACL2 sidekick web server."
-  (raise "Under the hood definition not installed."))
-
-; (depends-on "server-raw.lsp")
-(include-raw "server-raw.lsp"
-             :host-readtable t)
