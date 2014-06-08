@@ -28,19 +28,21 @@ ACL2](http://acl2-devel.googlecode.com) and [its
 books](http://acl2-books.googlecode.com).  Build ACL2 as usual, then
 certify at least the **basic** and **quicklisp** books, e.g.,:
 
-{{{
+```Shell
     $ cd acl2/books
     $ make USE_QUICKLISP=1 basic quicklisp
-}}}
+```
 
 Finally, get a copy of the Sidekick and certify its top book, e.g.,:
 
-{{{
+```Shell
     $ git clone https://github.com/jaredcdavis/sidekick.git
     $ cd sidekick
     $ cert.pl top     # should produce top.cert
-}}}
+```
 
 The Sidekick should now be ready.  To try it out, go to the **demo**
 directory and follow along with **demo.lsp**.
+
+
 
