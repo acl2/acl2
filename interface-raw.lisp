@@ -1454,13 +1454,6 @@
             ((eq rst t) tst)
             (t `(and ,tst ,rst))))))
 
-(defvar *guard-checking-on-form-invariant-risk*
-  '(if (member-eq '(f-get-global 'guard-checking-on
-                                 *the-live-state*)
-                  '(nil :none))
-       :none
-     :all))
-
 (defun oneify-cltl-code (defun-mode def stobj-flag wrld
                           &optional trace-rec-for-none)
 
@@ -1696,10 +1689,9 @@
 ; Calls of a stobj primitive that takes its stobj as an argument are always
 ; guard-checked.  If that changes, consider also changing
 ; ev-fncall-rec-logical.  Note that we rely on this guard-checking for handling
-; of invariant-risk; we arrange, using *guard-checking-on-form-invariant-risk*,
-; that evaluation stays with *1* functions up to reaching the stobj primitive,
-; which is responsible for causing a guard violation rather than allowing an
-; invariant to be violated.
+; of invariant-risk; we arrange that evaluation stays with *1* functions up to
+; reaching the stobj primitive, which is responsible for causing a guard
+; violation rather than allowing an invariant to be violated.
 
                                t)
                               (t temp))))
