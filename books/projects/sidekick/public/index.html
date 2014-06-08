@@ -1,0 +1,152 @@
+<!HTML>
+<html>
+
+<!--
+ACL2 Sidekick
+Copyright (C) 2014 Kookamara LLC
+
+Contact:
+  Kookamara LLC
+  11410 Windermere Meadows, Austin TX, 78759, USA.
+  http://www.kookamara.com/
+
+This program is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software
+Foundation; either version 2 of the License, or (at your option) any later
+version.  This program is distributed in the hope that it will be useful but
+WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.  You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software Foundation, Inc.,
+51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+-->
+
+<head>
+<meta charset="UTF-8">
+<title>ACL2 Sidekick</title>
+<link rel="stylesheet" type="text/css" href="style.css"/>
+<link rel="icon" type="image/png" href="icons/favicon.png"/>
+<script src="lib/jquery-2.1.0.min.js"></script>
+<script src="common.js"></script>
+<script src="toolbar.js"></script>
+</head>
+<body>
+
+<div id="toolbar"></div>
+
+<div id="main">
+
+<div align="center" style="padding-top: 1em; padding-bottom: 1.5em;">
+<table>
+<tr>
+<td rowspan="2"><img src="superhero-right.png"></td>
+<td valign="middle" class="logo"> ACL2 Sidekick </td>
+<!-- <td rowspan="2"><img src="superhero-right.png"></td> -->
+</tr>
+<tr>
+<td align="center" style="font-family: Geneva, Verdana, sans-serif; font-variant: small-caps; letter-spacing: .4em;">extreme beta</td>
+</tr>
+</table>
+</div>
+
+<div id="left" style="float: left; width: 55%;">
+
+<h3 style="margin-top: 0; padding-top: 0;">Welcome!</h3>
+
+<p>The ACL2 Sidekick extends ACL2 with many graphical capabilities.
+It lets you browse through your session, profile slow proofs, ..., all
+from your web browser.</p>
+
+
+<h4>Explore</h4>
+
+<dl>
+<dt><a href="session.html"><img src="icons/session.png" valign="middle" style="padding-right: .5em;">Session Viewer</a></dt>
+<dd>Explore the history of your ACL2 session</dd>
+<dd>See the effects of commands</dd>
+</dd>
+</dl>
+
+<dl>
+<dt><a href="profiler.html"><img src="icons/profiler.png" valign="middle" style="padding-right: .5em;">Proof Profiler</a></dt>
+<dd>See what the prover is doing</dd>
+<dd>Identify slow rules</dd>
+</dd>
+</dl>
+
+<dl>
+<dt><a href="linter.html"><img src="icons/linter.png" valign="middle" style="padding-right: .5em;">Theory Linter</a></dt>
+<dd>Identify conflicting and redundant rules</dd>
+</dd>
+</dl>
+
+
+
+
+
+<p>Disassembly feature: not yet integrated into anything</p>
+
+<ul>
+<li><a href="javascript:popup_disassemble('append')">Disassemble append</a></li>
+<li><a href="javascript:popup_disassemble('search')">Disassemble search</a></li>
+</ul>
+</div>
+
+<div id="right" style="float: left; width: 44%; margin: 0; padding-top: 0;">
+
+<h4 style="margin-top: 0; padding-top: 0;">Development Notes</h4>
+
+<p>Warning: this is <b>highly experimental</b> software that may have
+serious bugs.  Please send any bug reports
+to <a href="mailto:jared@kookamara.com">Jared Davis</a>.</p>
+
+
+<p>General wishlist</p>
+
+<ul>
+
+<li>Some kind of locking mechanism for access to things like ens.</li>
+
+<li>Welcome page needs lots of work: tour of sidekick</li>
+
+<li>Better s-expression display with clickable function names for
+    documentation, etc.</li>
+
+<li>XDOC integration</li>
+
+<li>Status bar -- always show brief :pcb :x information</li>
+
+</li>
+</ul>
+
+<h4>Miscellaneous Ideas</h4>
+
+<p>History-management.lisp has functions
+like <tt>print-time-summary</tt>.  If we plugged into that and
+associated times with events/commands in a sensible way, then we could
+use the information to annotate the session history with how long
+everything took, sort by long-taking events, etc.  Similar
+for <tt>print-steps-summary</tt>.</p>
+
+<p>It also has things like <tt>print-warnings-summary</tt>.  We could
+perhaps similarly associate warnings with events, and then be able t
+graphically show which events had warnings.</p>
+
+<p>It also has <tt>print-rules-summary</tt>.  If we associated events
+with the rules that were used, we could maybe cross-reference that
+against the rules introduced by commands, to be able to say, "show me
+where this theorem gets used later in my file".</p>
+
+<p>Is there something sensible we can do with proof-supporters?</p>
+
+</div>
+
+</div>
+
+<div id="footer"></div>
+
+</body>
+</html>
+
+
+

@@ -1,0 +1,107 @@
+<!HTML>
+<html>
+
+<!--
+ACL2 Sidekick
+Copyright (C) 2014 Kookamara LLC
+
+Contact:
+  Kookamara LLC
+  11410 Windermere Meadows, Austin TX, 78759, USA.
+  http://www.kookamara.com/
+
+This program is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software
+Foundation; either version 2 of the License, or (at your option) any later
+version.  This program is distributed in the hope that it will be useful but
+WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.  You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software Foundation, Inc.,
+51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+-->
+
+<head>
+<meta charset="UTF-8">
+<title>Lookup &mdash; ACL2 Sidekick</title>
+<link rel="stylesheet" type="text/css" href="style.css"/>
+<script src="lib/jquery-2.1.0.min.js"></script>
+<script src="common.js"></script>
+<script src="toolbar.js"></script>
+
+<style>
+<!--
+
+#leftcolwrap {
+    float: left;
+    left: 0;
+    top: 0;
+    width: 45%;
+    height: 100%;
+    overflow-y: auto;
+    margin-right: .5em;
+}
+
+#rightcolwrap {
+    float: left;
+    width: 54%;
+    padding-left: 0;
+    padding-top: 0;
+    margin: 0;
+    height: 100%;
+    overflow-y: auto;
+}
+-->
+</style>
+
+
+</head>
+<body>
+
+<div id="toolbar"></div>
+
+<div id="main">
+
+<div id="leftcolwrap">
+<div id="leftcol">
+
+<script language="javascript">
+<!--
+var params = getPageParameters();
+var what = params["lookup"];
+document.write("<h3>Searching for " + what + "</h3>");
+// -->
+</script>
+
+BOZO implement me
+
+</div>
+</div>
+
+<div id="rightcolwrap">
+<div id="rightcol">
+
+<h3>General Lookup Page</h3>
+
+<p>This should eventually implement a DWIM searching feature that covers:</p>
+
+<ul>
+<li>Function/Macro/Theorem definitions</li>
+<li>Source code origin</li>
+<li>PL/PE/PR style information</li>
+<li>Disassembly for functions</li>
+<li>Props</li>
+<li>XDOC topics</li>
+</ul>
+
+<p>When we mark up s-expressions with hyperlinks, they should be able
+to link here and leave us with a suitable thing.</p>
+
+<div id="footer"></div>
+
+
+</body>
+</html>
+
+
+

@@ -1,0 +1,208 @@
+<!HTML>
+<html>
+
+<!--
+ACL2 Sidekick
+Copyright (C) 2014 Kookamara LLC
+
+Contact:
+  Kookamara LLC
+  11410 Windermere Meadows, Austin TX, 78759, USA.
+  http://www.kookamara.com/
+
+This program is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software
+Foundation; either version 2 of the License, or (at your option) any later
+version.  This program is distributed in the hope that it will be useful but
+WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.  You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software Foundation, Inc.,
+51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+-->
+
+<head>
+<meta charset="UTF-8">
+<title>Session Viewer &mdash; ACL2 Sidekick</title>
+<link rel="stylesheet" type="text/css" href="style.css"/>
+<script src="lib/jquery-2.1.0.min.js"></script>
+<script src="common.js"></script>
+<script src="toolbar.js"></script>
+<script src="session.js"></script>
+
+<style>
+<!--
+
+#pbtwrap {
+    float: left;
+    left: 0;
+    top: 0;
+    width: 45%;
+    height: 100%;
+    overflow-y: auto;
+    margin-right: .5em;
+}
+
+#pcbwrap {
+    float: left;
+    width: 54%;
+    padding-left: 0;
+    padding-top: 0;
+    margin: 0;
+    height: 100%;
+    overflow-y: auto;
+}
+
+.pbt_form, .pcb_form {
+/* formulas in pbt display */
+   font-family: "Consolas", "Inconsolata", "Bitstream Vera Sans Mono",
+                "DejaVu Sans Mono", "Lucida Console", monospace;
+}
+
+.pbt_form a {
+    text-decoration: none;
+    color: inherit;
+}
+
+.pbt_table {
+    width: 100%;
+}
+
+.pbt_table th, .pbt_table td {
+    vertical-align: top;
+    border: 1px solid #909090;
+    padding-top: .2em;
+    padding-bottom: .2em;
+    padding-left: .5em;
+    padding-right: .5em;
+}
+
+.pbt_part_disabled {
+    background-color: #f0f0f0;
+}
+
+.pbt_disabled {
+    background-color: #e0e0e0;
+}
+
+.pbt_table {
+    border: 1px solid #909090;
+    border-collapse: collapse;
+}
+
+.pcb_table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0;
+    padding: 0;
+}
+
+.pcb_table td {
+    border: 1px solid #909090;
+}
+
+.pbt_verified {
+    color: #008000;
+}
+
+.pbt_logic {
+    color: #0000f0;
+}
+
+.pbt_program {
+    color: #f00000;
+}
+
+// -->
+</style>
+
+</head>
+<body>
+
+<div id="toolbar"></div>
+
+<div id="main">
+
+<div id="pbtwrap">
+<div id="pbt"> Loading... </div>
+</div>
+
+<div id="pcbwrap">
+<div id="pcb">
+
+<h3 class="banner"><img src="icons/session.png"/> Session Viewer</h3>
+
+<p>This is like ACL2's <b>:pbt</b> command.  It updates automatically
+as you submit new commands.</p>
+
+<ul>
+<li><b>Hover</b> to expand a command (like <b>:pc</b>).</li>
+
+<li><b>Click</b> to see even more (like <b>:pcb!</b>.)<br/>
+    Note: this can produce a lot of output
+    for commands like <tt>include-book</tt>.</li>
+</ul>
+
+
+<h5>Color Guide</h5>
+
+<table style="width: auto; margin-left: 3em; margin-right: 3em;">
+<tr valign="top">
+<td style="padding-left: .5em; padding-right: .5em;">
+
+<table class="pbt_table">
+<tr><td>Enabled</td>
+<tr><td class="pbt_part_disabled"><nobr>Partially enabled/disabled</nobr></td></tr>
+<tr><td class="pbt_disabled">Disabled</td></tr>
+</table>
+
+</td>
+
+<td style="padding-left: .5em; padding-right: .5em;">
+
+<table class="pbt_table">
+<tr><td class="pbt_verified">Logic mode, guards verified</td></tr>
+<tr><td class="pbt_logic">Logic mode, guards not verified</td></tr>
+<tr><td class="pbt_program">Program mode</td></tr>
+<tr><td>Other command, or mixed modes</td></tr>
+</table>
+
+</td></tr></table>
+
+<h4>Todo/Wishlist</h4>
+
+<ul>
+<li>Home package updating</li>
+
+<li>Add features: be able to undo things, disassemble things,
+somehow integrate with :PE and :PR.</li>
+
+<li>The :pcb display is confusing for large items like include-books;
+it'd be nice to better present how things are getting expanded, e.g.,
+with arrows/indentation showing the expansion steps...</li>
+
+<li>Capture/export session button</li>
+
+<li>See other things instead of just :pcb output, like :pr output.</li>
+
+<li>Search for events related to a particular symbol.</li>
+
+</ul>
+
+<p>Is there a way to see what definitions got introduced by a command?</P.
+
+<p>Is there a way to see what xdoc got introduced?</p>
+
+
+
+</div></div>
+
+
+<div id="footer"></div>
+
+
+</body>
+</html>
+
+
+
