@@ -24,6 +24,7 @@
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defconsts" :dir :system)
 (include-book "oslib/catpath" :dir :system)
+(include-book "system/origin" :dir :system)
 (include-book "session")
 (include-book "disassemble")
 (include-book "lookup")

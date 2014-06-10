@@ -50,13 +50,18 @@ along with this program; if not, write to the Free Software Foundation, Inc.,
     padding-top: 0;
     margin: 0;
     height: 100%;
-    overflow-y: auto;
+}
+
+#propshead {
+    margin: 0;
+    padding-left: 1em;
+    padding-bottom: .2em;
+    padding-top: .2em;
 }
 
 #propswrap {
     overflow-x: auto;
     overflow-y: auto;
-    width: 93%;
     height: 20em;
     background-color: #fffff0;
     border-width: 3px;
@@ -65,6 +70,7 @@ along with this program; if not, write to the Free Software Foundation, Inc.,
 
 .propstable {
     border-collapse: collapse;
+    width: 95%%;
 }
 
 .propstable td, .propstable th {
@@ -79,6 +85,21 @@ along with this program; if not, write to the Free Software Foundation, Inc.,
     border-bottom: 1px solid #808080;
 }
 
+.propstable .short th {
+    padding-right: 1em;
+}
+
+#include_path_header {
+   margin-top: 0;
+   margin-bottom: 0;
+   padding-bottom: 0;
+}
+
+#include_path ul, #include_path li {
+   padding: 0;
+   margin: 0;
+}
+
 -->
 </style>
 
@@ -89,22 +110,12 @@ along with this program; if not, write to the Free Software Foundation, Inc.,
 <div id="toolbar"></div>
 
 <div id="main">
-
-<script language="javascript">
-<!--
-var params = getPageParameters();
-var what = params["lookup"];
-document.write("<h1>" + what + "</h1>");
-// -->
-</script>
+<h1 id="what"></h1>
 
 <div id="leftcolwrap">
 <div id="leftcol">
 
-
-BOZO implement me
-
-<hr>
+<p id="origin">Loading</p>
 
 
 
@@ -113,11 +124,8 @@ BOZO implement me
 
 <div id="rightcolwrap">
 <div id="rightcol">
-
-<div id="props">
-Loading
-</div>
-
+<div id="props"></div>
+<div id="disassembly"></div>
 </div>
 </div>
 
@@ -127,10 +135,8 @@ Loading
 
 <ul>
 <li>Function/Macro/Theorem definitions</li>
-<li>Source code origin</li>
 <li>PL/PE/PR style information</li>
 <li>Disassembly for functions</li>
-<li>Props</li>
 <li>XDOC topics</li>
 </ul>
 

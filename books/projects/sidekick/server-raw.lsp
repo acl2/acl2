@@ -163,6 +163,28 @@
            (props-jalist (car objs) state)))
        (bridge::json-encode
         (list (cons :error nil)
-              (cons :val props))))))
+              (cons :val props)))))
+
+  (hunchentoot:define-easy-handler (origin-handler :uri "/origin") (name)
+     (setf (hunchentoot:content-type*) "application/json")
+     (b* ((state acl2::*the-live-state*)
+          ((mv errmsg objs state) (acl2::read-string name))
+          ((when errmsg)
+           (bridge::json-encode
+            (list (cons :error (format nil "Error in origin: parsing failed: ~a: ~a~%"
+                                       name errmsg))
+                  (cons :val ""))))
+          ((unless (and (equal (len objs) 1)
+                        (symbolp (car objs))))
+           (bridge::json-encode
+            (list (cons :error (format nil "Error in origin: not a symbol: ~a~%" name))
+                  (cons :val ""))))
+          ((mv er val ?state)
+           (acl2::origin-fn (car objs) state)))
+       (bridge::json-encode
+        (list (cons :error nil)
+              (cons :val val))))))
+
+
 
 

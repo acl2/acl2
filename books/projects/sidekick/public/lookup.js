@@ -31,18 +31,79 @@ function count_lines (str)
     return n;
 }
 
-function do_lookup ()
+function get_disassembly (name)
+{
+   $.get("/disassemble", {"name":name}, function(data,textStatus,jqXHR)
+   {
+       var err = data[":ERROR"];
+       var val = data[":VAL"];
+       if (err != "NIL") {
+	   $("#disassembly").html(err);
+	   return;
+       }
+       console.log("Disassembly is " + val);
+       var guts = "";
+       guts += "<h4>Disassembly of " + htmlEncode(name) + "</h4>";
+       guts += "<pre class='disassemble_out'>";
+       guts += val;
+       guts += "</pre>";
+       $("#disassembly").html(guts);
+    }).fail(function() {
+	$("#disassembly").html("Error getting /disassemble result");
+    });
+}
+
+function get_origin ()
+{
+    $.get("/origin", {"name":what}, function(data,textStatus,jqXHR)
+    {
+	var err = data[":ERROR"];
+	if (err != "NIL") {
+	    $("#origin").html("Error: " + htmlEncode(err));
+	    return;
+	}
+	var origin = "";
+	var val = data[":VAL"];
+	if (val == "NIL"){
+	    $("#origin").html("Origin not found.");
+	    return;
+	}
+	if (val == ":BUILT-IN") {
+	    origin = "<h4>Built into ACL2</h4>";
+	}
+	else if (val == ":TOP-LEVEL") {
+	    origin = "<h4>From current session</h4>";
+            origin += "<p>BOZO say which event number, ";
+	    origin += "offer to undo through here.</p>";
+	}
+	else {
+	    origin = "<h4 id='include_path_header'>From included book</h4>";
+	    origin += "<ul id='include_path'>";
+	    for(var i in val) {
+   	       origin += "<li><tt>" + htmlEncode(val[i]) + "</tt></li>";
+	    }
+	    origin += "</ul>";
+	}
+	$("#origin").html(origin);
+    }).fail(function() {
+	$("#origin").html("Error getting origin");
+    });
+}
+
+function get_props (name)
 {
     $.get("/props", {"name":what}, function(data,textStatus,jqXHR)
     {
-        $("#props").html("Hello");
 	var err = data[":ERROR"];
 	if (err != "NIL") {
 	    $("#props").html(htmlEncode(err));
 	    return;
 	}
 	var props = data[":VAL"];
-	var div = jQuery("<div></div>");
+	if (props == "NIL") {
+	    $("#props").html("No properties found.");
+	    return;
+	}
 
 	var shortrows = "";
 	var longrows = "";
@@ -54,8 +115,8 @@ function do_lookup ()
 	    var row = "";
 	    if (n == 0) {
 		row += "<tr class='short'>";
-		row += " <th width='30%'>" + htmlEncode(keystr) + "</th>";
-  	        row += " <td width='70%'><pre>" + htmlEncode(val) + "</pre></td>";
+		row += " <th width='200'>" + htmlEncode(keystr) + "</th>";
+  	        row += " <td><pre>" + htmlEncode(val) + "</pre></td>";
 		row += "</tr>";
 		shortrows += row;
 	    }
@@ -72,19 +133,30 @@ function do_lookup ()
 	    }
 	}
 
-	div += "<h4>Raw Properties</h4>";
-	div += "<div id='propswrap'>";
-	div += "<table class='propstable'>";
-	div += shortrows;
-	div += longrows;
-	div += "</table>";
-	div += "</div>";
+	var acc = "";
+	acc += "<h4 id='propshead'>Raw Properties</h4>";
+	acc += "<div id='propswrap'>";
+	acc += "<table class='propstable'>";
+	acc += shortrows;
+	acc += longrows;
+	acc += "</table>";
+	acc += "</div>";
 
-	$("#props").html(div);
+	$("#props").html(acc);
 
+	get_disassembly(what);
     }).fail(function() {
 	$("#props").html("Error getting props.");
     });
+}
+
+function do_lookup ()
+{
+    $("#what").html(htmlEncode(what));
+
+    get_origin();
+    get_props(what);
+
 }
 
 $(document).ready(do_lookup);
