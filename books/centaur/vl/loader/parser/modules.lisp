@@ -461,10 +461,10 @@
 ;        'endmodule'
 ;
 ; module_keyword ::= 'module' | 'macromodule'
-;
 
 (defparser vl-parse-module-items-until-endmodule ()
   ;; Look for module items until :vl-kwd-endmodule is encountered.
+  ;; Does NOT eat the :vl-kwd-endmodule
   :result (vl-modelementlist-p val)
   :resultp-of-nil t
   :true-listp t
@@ -479,6 +479,7 @@
 
 (defparser vl-parse-non-port-module-items-until-endmodule ()
   ;; Look for non-port module items until :vl-kwd-endmodule is encountered.
+  ;; Does NOT eat the :vl-kwd-endmodule
   :result (vl-modelementlist-p val)
   :resultp-of-nil t
   :true-listp t
@@ -491,6 +492,7 @@
         (first := (vl-parse-non-port-module-item atts))
         (rest := (vl-parse-non-port-module-items-until-endmodule))
         (return (append first rest))))
+
 
 
 (defparser vl-parse-module-declaration-variant-1 (atts module_keyword id)
@@ -524,12 +526,27 @@
         (:= (vl-match-token :vl-semi))
         (items := (vl-parse-module-items-until-endmodule))
         (endkwd := (vl-match-token :vl-kwd-endmodule))
+
+        ;; BOZO SystemVerilog adds various things we don't support yet, but it
+        ;; definitely adds "endmodule : name" style endings.
+        (when (and (vl-is-token? :vl-colon)
+                   (not (eq (vl-loadconfig->edition config) :verilog-2005)))
+          (:= (vl-match-token :vl-colon))
+          (endname := (vl-match-token :vl-idtoken)))
+
+        (when (and endname
+                   (not (equal (vl-idtoken->name id) (vl-idtoken->name endname))))
+          (return-raw
+           (vl-parse-error
+            (cat "Mismatched module/endmodule pair: expected "
+                 (vl-idtoken->name id) " but found "
+                 (vl-idtoken->name endname)))))
+
         (return (vl-make-module-by-items (vl-idtoken->name id)
                                          params ports items atts
                                          (vl-token->loc module_keyword)
                                          (vl-token->loc endkwd)
                                          warnings))))
-
 
 
 (defparser vl-parse-module-declaration-variant-2 (atts module_keyword id)
@@ -555,6 +572,21 @@
         (:= (vl-match-token :vl-semi))
         (items := (vl-parse-non-port-module-items-until-endmodule))
         (endkwd := (vl-match-token :vl-kwd-endmodule))
+
+        ;; BOZO SystemVerilog adds various things we don't support yet, but it
+        ;; definitely adds ": name" endings:
+        (when (and (vl-is-token? :vl-colon)
+                   (not (eq (vl-loadconfig->edition config) :verilog-2005)))
+          (:= (vl-match-token :vl-colon))
+          (endname := (vl-match-token :vl-idtoken)))
+        (when (and endname
+                   (not (equal (vl-idtoken->name id) (vl-idtoken->name endname))))
+          (return-raw
+           (vl-parse-error
+            (cat "Mismatched module/endmodule pair: expected "
+                 (vl-idtoken->name id) " but found "
+                 (vl-idtoken->name endname)))))
+
         (return (vl-make-module-by-items (vl-idtoken->name id)
                                          params
                                          (vl-ports-from-portdecls portdecls)
@@ -566,31 +598,103 @@
 
 
 
+(defparser vl-parse-module-main (atts module_keyword id)
+  :guard (and (vl-atts-p atts)
+              (vl-token-p module_keyword)
+              (vl-idtoken-p id))
+  :result (vl-module-p val)
+  :resultp-of-nil nil
+  :fails gracefully
+  :count strong
+  ;; Main function to try to parse a module either way.
+  (b* (((mv err1 mod v1-tokens &)
+        ;; A weird twist is that we want to associate all warnings encountered
+        ;; during the parsing of a module with that module as it is created,
+        ;; and NOT return them in the global list of warnings.  Because of
+        ;; this, we use a fresh warnings accumulator here.
+        (vl-parse-module-declaration-variant-1 atts module_keyword id
+                                               :tokens tokens
+                                               :warnings nil))
+       ((unless err1)
+        ;; Successfully parsed the module using variant 1.  We return the
+        ;; results from variant-1, except that we've already trapped the
+        ;; v1-warnings and associated them with mod, so we can just restore the
+        ;; previously encountered warnings.
+        (mv err1 mod v1-tokens warnings))
+
+       ((mv err2 mod v2-tokens &)
+        ;; Similar handling for warnings
+        (vl-parse-module-declaration-variant-2 atts module_keyword id
+                                               :tokens tokens
+                                               :warnings nil))
+       ((unless err2)
+        ;; Successfully parsed using variant 2.  Similar deal.
+        (mv err2 mod v2-tokens warnings))
+
+       ;; If we get this far, we saw "module foo" but were not able to parse
+       ;; the rest of this module definiton using either variant.  We need to
+       ;; report a parse error.  But which error do we report?  We have two
+       ;; errors, one from our Variant-1 attempt to parse the module, and one
+       ;; from our Variant-2 attempt.
+       ;;
+       ;; Well, originally I thought I'd just report both errors, but that was
+       ;; a really bad idea.  Why?  Well, imagine a mostly-well-formed module
+       ;; that happens to have a parse error far down within it.  Instead of
+       ;; getting told, "hey, I was expecting a semicolon after "assign foo =
+       ;; bar", the user gets TWO parse errors, one of which properly says
+       ;; this, but the other of which says that there's a parse error very
+       ;; closely after the module keyword.  (The wrong variant tends to fail
+       ;; very quickly because we either hit a list_of_port_declarations or a
+       ;; list_of_ports, at which point we get a failure.)  This parse error is
+       ;; really hard to understand, because where it occurs the module looks
+       ;; perfectly well-formed (under the other variant).
+       ;;
+       ;; So, as a gross but workable sort of hack, my new approach is simply:
+       ;; whichever variant "got farther" was probably the variant that we
+       ;; wanted to follow, so we'll just report its parse-error.  Maybe some
+       ;; day we'll rework the module parser so that it doesn't use
+       ;; backtracking so aggressively.
+       ((when (<= (len v1-tokens) (len v2-tokens)))
+        ;; Variant 1 got farther (or as far), so use it.
+        (mv err1 nil v1-tokens warnings)))
+    ;; Variant 2 got farther
+    (mv err2 nil v2-tokens warnings)))
+
+
 (defparser vl-skip-through-endmodule ()
-  :result (vl-token-p val)
+  :result (vl-endinfo-p val)
   :resultp-of-nil nil
   :fails gracefully
   :count strong
 
 ; This is a special function which is used to provide more fault-tolerance in
-; module parsing.  We just advance the token stream until :vl-kwd-endmodule is
-; encountered, and return the token itself.
+; module parsing.  Historically, we just advanced the token stream until
+; :vl-kwd-endmodule was encountered.  For SystemVerilog, we also capture the
+; "endmodule : foo" part and return a proper vl-endinfo-p.
 
   (seqw tokens warnings
-        (when (vl-is-token? :vl-kwd-endmodule)
-          (end := (vl-match))
-          (return end))
-        (:s= (vl-match-any))
-        (end := (vl-skip-through-endmodule))
-        (return end)))
+        (unless (vl-is-token? :vl-kwd-endmodule)
+          (:s= (vl-match-any))
+          (info := (vl-skip-through-endmodule))
+          (return info))
+        ;; Now we're at endmodule
+        (end := (vl-match))
+        (unless (and (vl-is-token? :vl-colon)
+                     (not (eq (vl-loadconfig->edition config) :verilog-2005)))
+          (return (make-vl-endinfo :name nil
+                                   :loc (vl-token->loc end))))
+        (:= (vl-match))
+        (id := (vl-match-token :vl-idtoken))
+        (return (make-vl-endinfo :name (vl-idtoken->name id)
+                                 :loc (vl-token->loc id)))))
 
 
-
-(defund vl-make-module-with-parse-error (name minloc maxloc err tokens)
-  (declare (xargs :guard (and (stringp name)
-                              (vl-location-p minloc)
-                              (vl-location-p maxloc)
-                              (vl-tokenlist-p tokens))))
+(define vl-make-module-with-parse-error ((name stringp)
+                                         (minloc vl-location-p)
+                                         (maxloc vl-location-p)
+                                         (err)
+                                         (tokens vl-tokenlist-p))
+  :returns (mod vl-module-p)
   (b* (;; We expect that ERR should be an object suitable for cw-obj, i.e.,
        ;; each should be a cons of a string onto some arguments.  But if this
        ;; is not the case, we handle it here by just making a generic error.
@@ -624,17 +728,6 @@
                     :maxloc maxloc
                     :warnings (list warn1 warn2))))
 
-(defthm vl-module-p-of-vl-make-module-with-parse-error
-  (implies (and (force (stringp name))
-                (force (vl-location-p minloc))
-                (force (vl-location-p maxloc)))
-           (vl-module-p
-            (vl-make-module-with-parse-error name minloc maxloc err tokens)))
-  :hints(("Goal" :in-theory (enable vl-make-module-with-parse-error))))
-
-
-
-
 
 (defparser vl-parse-module-declaration (atts)
   :guard (vl-atts-p atts)
@@ -646,66 +739,39 @@
         (kwd := (vl-match-some-token '(:vl-kwd-module :vl-kwd-macromodule)))
         (id  := (vl-match-token :vl-idtoken))
         (return-raw
-         (b* (((mv err1 mod v1-tokens &)
-               ;; A weird twist is that we want to associate all warnings
-               ;; encountered during the parsing of a module with that module
-               ;; as it is created, and NOT return them in the global list of
-               ;; warnings.  Because of this, we use a fresh warnings
-               ;; accumulator here.
-               (vl-parse-module-declaration-variant-1 atts kwd id
-                                                      :tokens tokens
-                                                      :warnings nil))
+         (b* (((mv err mod new-tokens &)
+               ;; We ignore the warnings because it traps them and associates
+               ;; them with the module, anyway.
+               (vl-parse-module-main atts kwd id))
+              ((unless err)
+               ;; Good deal, got the module successfully.
+               (mv err mod new-tokens warnings))
 
-              ((unless err1)
-               ;; Successfully parsed the module using variant 1.  We return
-               ;; the results from variant-1, except that we've already
-               ;; trapped the v1-warnings and associated them with mod, so we
-               ;; can just restore the previously encountered warnings.
-               (mv err1 mod v1-tokens warnings))
+              ;; We failed to parse a module but we are going to try to be
+              ;; somewhat fault tolerant and "recover" from the error.  The
+              ;; general idea is that we should advance until "endmodule."
+              ((mv recover-err endinfo recover-tokens recover-warnings)
+               (vl-skip-through-endmodule))
+              ((when recover-err)
+               ;; Failed to even find endmodule, abandon recovery effort.
+               (mv err mod new-tokens warnings))
 
-              ((mv err2 mod v2-tokens &)
-               (vl-parse-module-declaration-variant-2 atts kwd id
-                                                      :tokens tokens
-                                                      :warnings nil))
-              ((unless err2)
-               (mv err2 mod v2-tokens warnings)))
+              ;; In the Verilog-2005 days, we could just look for endmodule.
+              ;; But now we have to look for endmodule : foo, too.  If the
+              ;; name doesn't line up, we'll abandon our recovery effort.
+              ((when (and (vl-endinfo->name endinfo)
+                          (not (equal (vl-idtoken->name id)
+                                      (vl-endinfo->name endinfo)))))
+               (mv err mod new-tokens warnings))
 
-; If we get this far, we saw "module foo" but were not able to parse the rest
-; of this module definiton.  We attempt to be somewhat fault-tolerant by
-; advancing all the way to endtoken.  Note that we backtrack all the way to the
-; start of the module.
-;
-; We need to report a parse error.  But which error do we report?  We have two
-; errors, one from our Variant-1 attempt to parse the module, and one from our
-; Variant-2 attempt.
-;
-; Well, originally I thought I'd just report both errors, but that was a really
-; bad idea.  Why?  Well, imagine a mostly-well-formed module that happens to
-; have a parse error far down within it.  Instead of getting told, "hey, I was
-; expecting a semicolon after "assign foo = bar", the user gets TWO parse
-; errors, one of which properly says this, but the other of which says that
-; there's a parse error very closely after the module keyword.  (The wrong
-; variant tends to fail very quickly because we either hit a
-; list_of_port_declarations or a list_of_ports, at which point we get a
-; failure.)  This parse error is really hard to understand, because where it
-; occurs the module looks perfectly well-formed (under the other variant).
-;
-; So, as a gross but workable sort of hack, my new approach is simply:
-; whichever variant "got farther" was probably the variant that we wanted to
-; follow, so we'll just report its parse-error.  Maybe some day we'll rework
-; the module parser so that it doesn't use backtracking so aggressively.
-
-           (seqw tokens warnings
-                 (endkwd := (vl-skip-through-endmodule))
-                 (return
-                  (b* (((mv err tokens)
-                        (if (<= (len v1-tokens) (len v2-tokens))
-                            ;; Variant 1 got farther (or as far), so use it.
-                            (mv err1 v1-tokens)
-                          ;; Variant 2 got farther
-                          (mv err2 v2-tokens))))
-                    (vl-make-module-with-parse-error (vl-idtoken->name id)
-                                                     (vl-token->loc kwd)
-                                                     (vl-token->loc endkwd)
-                                                     err tokens))))))))
+              ;; Else, we found endmodule and, if there's a name, it seems
+              ;; to line up, so it seems okay to keep going.
+              (phony-module
+               (vl-make-module-with-parse-error (vl-idtoken->name id)
+                                                (vl-token->loc kwd)
+                                                (vl-endinfo->loc endinfo)
+                                                err new-tokens)))
+           ;; Subtle: we act like there's no error, because we're
+           ;; recovering from it.  Get it?
+           (mv nil phony-module recover-tokens recover-warnings)))))
 

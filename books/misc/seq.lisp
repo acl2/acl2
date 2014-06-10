@@ -26,7 +26,7 @@
   :parents (macro-libraries)
   :short "<i>Seq</i> is a macro language for applying actions to a stream."
 
-  :long "<p>In this context, a <i>stream<i> is any data structure that we want
+  :long "<p>In this context, a <i>stream</i> is any data structure that we want
 to update in an essentially sequential/single-threaded way.  It might be a
 stobj, but it could also be a regular ACL2 list or some other kind of
 structure.  For example, in the @(see vl) Verilog parser, we typically use seq
