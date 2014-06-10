@@ -412,6 +412,11 @@ function enabled and would think it odd to ever prove a theorem about it.</p>" f
          (list-fix (vl-packagelist-fix x)))
   :hints(("Goal" :induct (len x))))
 
+(defthm vl-typedeflist-fix-of-list-fix
+  (equal (vl-typedeflist-fix (list-fix x))
+         (list-fix (vl-typedeflist-fix x)))
+  :hints(("Goal" :induct (len x))))
+
 
 (def-vl-filter-by-name netdecl)
 (def-vl-filter-by-name regdecl)
@@ -486,6 +491,6 @@ modules.</p>")
 (def-vl-filter-by-name package)
 (def-vl-filter-by-name interface)
 (def-vl-filter-by-name program)
-
+(def-vl-filter-by-name typedef)
 
 

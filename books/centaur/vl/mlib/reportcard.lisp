@@ -150,7 +150,7 @@ their related warnings.</p>"
 (def-vl-apply-reportcard program)
 (def-vl-apply-reportcard package)
 (def-vl-apply-reportcard config)
-
+(def-vl-apply-reportcard typedef)
 
 (define vl-clean-reportcard-aux
   :parents (vl-clean-reportcard)
@@ -198,14 +198,16 @@ redundant/unnecessary information and is suitable for, e.g., printing.</p>"
                          (vl-interfacelist->names design.interfaces)
                          (vl-programlist->names design.programs)
                          (vl-packagelist->names design.packages)
-                         (vl-configlist->names design.configs))
+                         (vl-configlist->names design.configs)
+                         (vl-typedeflist->names design.typedefs))
           :exec (with-local-nrev
                   (b* ((nrev (vl-modulelist->names-nrev design.mods nrev))
                        (nrev (vl-udplist->names-nrev design.udps nrev))
                        (nrev (vl-interfacelist->names-nrev design.interfaces nrev))
                        (nrev (vl-programlist->names-nrev design.programs nrev))
                        (nrev (vl-packagelist->names-nrev design.packages nrev))
-                       (nrev (vl-configlist->names-nrev design.configs nrev)))
+                       (nrev (vl-configlist->names-nrev design.configs nrev))
+                       (nrev (vl-typedeflist->names-nrev design.typedefs nrev)))
                     nrev))))))
 
 (define vl-reportcard-floating
@@ -253,6 +255,7 @@ merged so that @('foo') will now have 5 warnings.</p>"
                       :programs   (vl-programlist-apply-reportcard   x.programs   reportcard)
                       :packages   (vl-packagelist-apply-reportcard   x.packages   reportcard)
                       :configs    (vl-configlist-apply-reportcard    x.configs    reportcard)
+                      :typedefs   (vl-typedeflist-apply-reportcard   x.typedefs   reportcard)
                       :warnings   floating)))
 
 
@@ -280,6 +283,7 @@ merged so that @('foo') will now have 5 warnings.</p>"
 (def-vl-gather-reportcard programlist program)
 (def-vl-gather-reportcard packagelist package)
 (def-vl-gather-reportcard configlist config)
+(def-vl-gather-reportcard typedeflist typedef)
 
 (define vl-design-reportcard
   :short "Constructs a @(see vl-reportcard-p) for a design."
@@ -296,6 +300,7 @@ original names.</p>"
        (acc (vl-programlist-gather-reportcard   x.programs acc))
        (acc (vl-packagelist-gather-reportcard   x.packages acc))
        (acc (vl-configlist-gather-reportcard    x.configs acc))
+       (acc (vl-typedeflist-gather-reportcard   x.typedefs acc))
        (ret (vl-clean-reportcard acc)))
     (fast-alist-free acc)
     ret))
@@ -335,6 +340,7 @@ cleaned up and merged.</p>"
        (acc (vl-programlist-gather-reportcard   x.programs acc))
        (acc (vl-packagelist-gather-reportcard   x.packages acc))
        (acc (vl-configlist-gather-reportcard    x.configs acc))
+       (acc (vl-typedeflist-gather-reportcard   x.typedefs acc))
        (ret (vl-clean-reportcard acc)))
     (fast-alist-free acc)
     ret))

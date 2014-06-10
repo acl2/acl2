@@ -41,6 +41,8 @@
    vl-fundecl
    vl-paramdecl
    vl-import
+   vl-fwdtypedef
+   vl-typedef
 
    ;; bozo lots of package items are missing
    )
@@ -66,6 +68,8 @@ process, we convert all of the descriptions into a @(see vl-design-p).</p>")
                (equal (tag x) :vl-fundecl)
                (equal (tag x) :vl-paramdecl)
                (equal (tag x) :vl-import)
+               (equal (tag x) :vl-fwdtypedef)
+               (equal (tag x) :vl-typedef)
                ))
   :rule-classes ((:forward-chaining :trigger-terms ((vl-description-p x))))
   :enable vl-description-p)
@@ -95,7 +99,10 @@ process, we convert all of the descriptions into a @(see vl-design-p).</p>")
        (implies (vl-taskdecllist-p x) (vl-descriptionlist-p x))
        (implies (vl-fundecllist-p x) (vl-descriptionlist-p x))
        (implies (vl-paramdecllist-p x) (vl-descriptionlist-p x))
-       (implies (vl-importlist-p x) (vl-descriptionlist-p x)))
+       (implies (vl-importlist-p x) (vl-descriptionlist-p x))
+       (implies (vl-fwdtypedeflist-p x) (vl-descriptionlist-p x))
+       (implies (vl-typedeflist-p x) (vl-descriptionlist-p x))
+       )
   :hints(("Goal" :induct (len x))))
 
 
@@ -105,17 +112,25 @@ doesn't introduce a name (e.g., an @('import') statement."
   :returns (name maybe-stringp :rule-classes :type-prescription)
   (b* ((x (vl-description-fix x)))
     (case (tag x)
-      (:vl-module    (vl-module->name x))
-      (:vl-udp       (vl-udp->name x))
-      (:vl-interface (vl-interface->name x))
-      (:vl-package   (vl-package->name x))
-      (:vl-program   (vl-program->name x))
-      (:vl-config    (vl-config->name x))
-      (:vl-netdecl   (vl-netdecl->name x))
-      (:vl-taskdecl  (vl-taskdecl->name x))
-      (:vl-fundecl   (vl-fundecl->name x))
-      (:vl-paramdecl (vl-paramdecl->name x))
-      (:vl-import    nil)
+      (:vl-module     (vl-module->name x))
+      (:vl-udp        (vl-udp->name x))
+      (:vl-interface  (vl-interface->name x))
+      (:vl-package    (vl-package->name x))
+      (:vl-program    (vl-program->name x))
+      (:vl-config     (vl-config->name x))
+      (:vl-netdecl    (vl-netdecl->name x))
+      (:vl-taskdecl   (vl-taskdecl->name x))
+      (:vl-fundecl    (vl-fundecl->name x))
+      (:vl-paramdecl  (vl-paramdecl->name x))
+      (:vl-import     nil)
+      (:vl-fwdtypedef
+       ;; SUBTLE: I don't want forward typedefs to look like they have names,
+       ;; because they aren't really a complete definition, and if we haven't
+       ;; loaded the "real" typedef, then I don't want to count these as loaded
+       ;; yet.  Moreover, a forward typedef shouldn't ever overwrite a real
+       ;; typedef or anything like that.
+       nil)
+      (:vl-typedef   (vl-typedef->name x))
       (otherwise     (impossible)))))
 
 
@@ -285,30 +300,34 @@ descriptions.  See @(see vl-fast-find-description) for a faster alternative.</p>
 (def-vl-filter-by-name description)
 
 
-(define vl-sort-descriptions ((x          vl-descriptionlist-p)
+(define vl-sort-descriptions ((x           vl-descriptionlist-p)
                               &key
-                              (modules    vl-modulelist-p)
-                              (udps       vl-udplist-p)
-                              (interfaces vl-interfacelist-p)
-                              (programs   vl-programlist-p)
-                              (packages   vl-packagelist-p)
-                              (configs    vl-configlist-p)
-                              (netdecls   vl-netdecllist-p)
-                              (taskdecls  vl-taskdecllist-p)
-                              (fundecls   vl-fundecllist-p)
-                              (paramdecls vl-paramdecllist-p)
-                              (imports    vl-importlist-p))
-  :returns (mv (modules    vl-modulelist-p)
-               (udps       vl-udplist-p)
-               (interfaces vl-interfacelist-p)
-               (programs   vl-programlist-p)
-               (packages   vl-packagelist-p)
-               (configs    vl-configlist-p)
-               (netdecls   vl-netdecllist-p)
-               (taskdecls  vl-taskdecllist-p)
-               (fundecls   vl-fundecllist-p)
-               (paramdecls vl-paramdecllist-p)
-               (imports    vl-importlist-p))
+                              (modules     vl-modulelist-p)
+                              (udps        vl-udplist-p)
+                              (interfaces  vl-interfacelist-p)
+                              (programs    vl-programlist-p)
+                              (packages    vl-packagelist-p)
+                              (configs     vl-configlist-p)
+                              (netdecls    vl-netdecllist-p)
+                              (taskdecls   vl-taskdecllist-p)
+                              (fundecls    vl-fundecllist-p)
+                              (paramdecls  vl-paramdecllist-p)
+                              (imports     vl-importlist-p)
+                              (fwdtypedefs vl-fwdtypedeflist-p)
+                              (typedefs    vl-typedeflist-p))
+  :returns (mv (modules     vl-modulelist-p)
+               (udps        vl-udplist-p)
+               (interfaces  vl-interfacelist-p)
+               (programs    vl-programlist-p)
+               (packages    vl-packagelist-p)
+               (configs     vl-configlist-p)
+               (netdecls    vl-netdecllist-p)
+               (taskdecls   vl-taskdecllist-p)
+               (fundecls    vl-fundecllist-p)
+               (paramdecls  vl-paramdecllist-p)
+               (imports     vl-importlist-p)
+               (fwdtypedefs vl-fwdtypedeflist-p)
+               (typedefs    vl-typedeflist-p))
   (b* (((when (atom x))
         (mv (vl-modulelist-fix modules)
             (vl-udplist-fix udps)
@@ -320,36 +339,53 @@ descriptions.  See @(see vl-fast-find-description) for a faster alternative.</p>
             (vl-taskdecllist-fix taskdecls)
             (vl-fundecllist-fix fundecls)
             (vl-paramdecllist-fix paramdecls)
-            (vl-importlist-fix imports)))
+            (vl-importlist-fix imports)
+            (vl-fwdtypedeflist-fix fwdtypedefs)
+            (vl-typedeflist-fix typedefs)))
        (x1  (vl-description-fix (car x)))
        (tag (tag x1)))
     (vl-sort-descriptions
      (cdr x)
-     :modules    (if (eq tag :vl-module)    (cons x1 modules)    modules)
-     :udps       (if (eq tag :vl-udp)       (cons x1 udps)       udps)
-     :interfaces (if (eq tag :vl-interface) (cons x1 interfaces) interfaces)
-     :programs   (if (eq tag :vl-program)   (cons x1 programs)   programs)
-     :packages   (if (eq tag :vl-package)   (cons x1 packages)   packages)
-     :configs    (if (eq tag :vl-config)    (cons x1 configs)    configs)
-     :netdecls   (if (eq tag :vl-netdecl)   (cons x1 netdecls)   netdecls)
-     :taskdecls  (if (eq tag :vl-taskdecl)  (cons x1 taskdecls)  taskdecls)
-     :fundecls   (if (eq tag :vl-fundecl)   (cons x1 fundecls)   fundecls)
-     :paramdecls (if (eq tag :vl-paramdecl) (cons x1 paramdecls) paramdecls)
-     :imports    (if (eq tag :vl-import)    (cons x1 imports)    imports))))
-
+     :modules     (if (eq tag :vl-module)     (cons x1 modules)     modules)
+     :udps        (if (eq tag :vl-udp)        (cons x1 udps)        udps)
+     :interfaces  (if (eq tag :vl-interface)  (cons x1 interfaces)  interfaces)
+     :programs    (if (eq tag :vl-program)    (cons x1 programs)    programs)
+     :packages    (if (eq tag :vl-package)    (cons x1 packages)    packages)
+     :configs     (if (eq tag :vl-config)     (cons x1 configs)     configs)
+     :netdecls    (if (eq tag :vl-netdecl)    (cons x1 netdecls)    netdecls)
+     :taskdecls   (if (eq tag :vl-taskdecl)   (cons x1 taskdecls)   taskdecls)
+     :fundecls    (if (eq tag :vl-fundecl)    (cons x1 fundecls)    fundecls)
+     :paramdecls  (if (eq tag :vl-paramdecl)  (cons x1 paramdecls)  paramdecls)
+     :imports     (if (eq tag :vl-import)     (cons x1 imports)     imports)
+     :fwdtypedefs (if (eq tag :vl-fwdtypedef) (cons x1 fwdtypedefs) fwdtypedefs)
+     :typedefs    (if (eq tag :vl-typedef)    (cons x1 typedefs)    typedefs))))
 
 (define vl-design-from-descriptions ((x vl-descriptionlist-p))
   :returns (design vl-design-p)
-  (b* (((mv modules udps interfaces programs packages configs netdecls taskdecls fundecls paramdecls imports)
+  (b* (((mv modules
+            udps
+            interfaces
+            programs
+            packages
+            configs
+            netdecls
+            taskdecls
+            fundecls
+            paramdecls
+            imports
+            fwdtypedefs
+            typedefs)
         (vl-sort-descriptions x)))
-    (make-vl-design :mods       modules
-                    :udps       udps
-                    :interfaces interfaces
-                    :programs   programs
-                    :packages   packages
-                    :configs    configs
-                    :netdecls   netdecls
-                    :taskdecls  taskdecls
-                    :fundecls   fundecls
-                    :paramdecls paramdecls
-                    :imports    imports)))
+    (make-vl-design :mods        modules
+                    :udps        udps
+                    :interfaces  interfaces
+                    :programs    programs
+                    :packages    packages
+                    :configs     configs
+                    :netdecls    netdecls
+                    :taskdecls   taskdecls
+                    :fundecls    fundecls
+                    :paramdecls  paramdecls
+                    :imports     imports
+                    :fwdtypes    fwdtypedefs
+                    :typedefs    typedefs)))

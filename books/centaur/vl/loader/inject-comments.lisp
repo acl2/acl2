@@ -267,7 +267,7 @@ and max, gathering their comments.</p>"
 (define vl-description-has-comments-p ((x vl-description-p))
   (b* ((x (vl-description-fix x)))
     (case (tag x)
-      ((:vl-module :vl-udp :vl-interface :vl-package :vl-program :vl-config)
+      ((:vl-module :vl-udp :vl-interface :vl-package :vl-program :vl-config :vl-typedef)
        t)
       (otherwise
        nil))))
@@ -284,14 +284,16 @@ and max, gathering their comments.</p>"
       (:vl-package   (vl-package->minloc x))
       (:vl-program   (vl-program->minloc x))
       (:vl-config    (vl-config->minloc x))
+      (:vl-typedef   (vl-typedef->minloc x))
       ;; Other things don't necessarily have minlocs, but we'll just use their
       ;; ordinary locations.
-      (:vl-netdecl   (vl-netdecl->loc x))
-      (:vl-taskdecl  (vl-taskdecl->loc x))
-      (:vl-fundecl   (vl-fundecl->loc x))
-      (:vl-paramdecl (vl-paramdecl->loc x))
-      (:vl-import    (vl-import->loc x))
-      (otherwise     (progn$ (impossible) *vl-fakeloc*)))))
+      (:vl-netdecl    (vl-netdecl->loc x))
+      (:vl-taskdecl   (vl-taskdecl->loc x))
+      (:vl-fundecl    (vl-fundecl->loc x))
+      (:vl-paramdecl  (vl-paramdecl->loc x))
+      (:vl-import     (vl-import->loc x))
+      (:vl-fwdtypedef (vl-fwdtypedef->loc x))
+      (otherwise      (progn$ (impossible) *vl-fakeloc*)))))
 
 (define vl-description->maxloc ((x vl-description-p))
   :returns (maxloc vl-location-p)
@@ -303,14 +305,16 @@ and max, gathering their comments.</p>"
       (:vl-package   (vl-package->maxloc x))
       (:vl-program   (vl-program->maxloc x))
       (:vl-config    (vl-config->maxloc x))
+      (:vl-typedef   (vl-typedef->maxloc x))
       ;; Other things don't have separate min/max locs, but we'll just use
       ;; their ordinary locations.
-      (:vl-netdecl   (vl-netdecl->loc x))
-      (:vl-taskdecl  (vl-taskdecl->loc x))
-      (:vl-fundecl   (vl-fundecl->loc x))
-      (:vl-paramdecl (vl-paramdecl->loc x))
-      (:vl-import    (vl-import->loc x))
-      (otherwise     (progn$ (impossible) *vl-fakeloc*)))))
+      (:vl-netdecl    (vl-netdecl->loc x))
+      (:vl-taskdecl   (vl-taskdecl->loc x))
+      (:vl-fundecl    (vl-fundecl->loc x))
+      (:vl-paramdecl  (vl-paramdecl->loc x))
+      (:vl-import     (vl-import->loc x))
+      (:vl-fwdtypedef (vl-fwdtypedef->loc x))
+      (otherwise      (progn$ (impossible) *vl-fakeloc*)))))
 
 (define vl-description->comments ((x vl-description-p))
   :guard (vl-description-has-comments-p x)
@@ -323,6 +327,7 @@ and max, gathering their comments.</p>"
       (:vl-package   (vl-package->comments x))
       (:vl-program   (vl-program->comments x))
       (:vl-config    (vl-config->comments x))
+      (:vl-typedef   (vl-typedef->comments x))
       (otherwise     (impossible)))))
 
 (define vl-description-add-warning ((x vl-description-p)
@@ -337,6 +342,7 @@ and max, gathering their comments.</p>"
       (:vl-package   (change-vl-package   x :warnings (cons warning (vl-package->warnings x))))
       (:vl-program   (change-vl-program   x :warnings (cons warning (vl-program->warnings x))))
       (:vl-config    (change-vl-config    x :warnings (cons warning (vl-config->warnings x))))
+      (:vl-typedef   (change-vl-typedef   x :warnings (cons warning (vl-typedef->warnings x))))
       (otherwise     (progn$ (impossible) x))))
   ///
   (defthm vl-description->name-of-vl-description-add-warning
@@ -357,6 +363,7 @@ and max, gathering their comments.</p>"
       (:vl-package   (change-vl-package   x :comments comments))
       (:vl-program   (change-vl-program   x :comments comments))
       (:vl-config    (change-vl-config    x :comments comments))
+      (:vl-typedef   (change-vl-typedef   x :comments comments))
       (otherwise     (progn$ (impossible) x))))
   ///
   (defthm vl-description->name-of-vl-description-set-comments

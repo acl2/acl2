@@ -28,6 +28,7 @@
 (include-book "programs")
 (include-book "configs")
 (include-book "imports")
+(include-book "typedefs")
 (local (include-book "../../util/arithmetic"))
 
 (defxdoc parser
@@ -142,7 +143,11 @@ VL to correctly handle any interesting fragment of SystemVerilog.</p>")
         ;;    ;; bleh, have to do something here to deal with assignments in the nets?
         ;;    (vl-parse-error "Top-level net declarations are not implemented.")))
 
-        ;; data_declaration -- jeeeish
+        (when (vl-is-token? :vl-kwd-typedef)
+          (typedef := (vl-parse-type-declaration atts))
+          (return (list typedef)))
+
+        ;; BOZO lots of other things
 
         (return-raw
          (vl-parse-error "Unsupported top-level construct?"))))
