@@ -5721,6 +5721,12 @@
                                (cons (car stobjs-out2) acc)))
         (t nil)))
 
+(defun deref-macro-name (macro-name macro-aliases)
+  (let ((entry (assoc-eq macro-name macro-aliases)))
+    (if entry
+        (cdr entry)
+      macro-name)))
+
 (mutual-recursion
 
 (defun translate11-flet-alist (form fives stobjs-out bindings known-stobjs
@@ -7851,8 +7857,21 @@
                                     (msg "~x0 is not a function symbol"
                                          fn)))
                                   (t (msg "~x0 is a macro, not a function ~
-                                           symbol"
-                                          fn))))))
+                                           symbol~@1"
+                                          fn
+                                          (let ((sym (deref-macro-name
+                                                      fn
+                                                      (macro-aliases wrld))))
+                                            (cond
+                                             ((eq sym fn) "")
+                                             (t
+                                              (msg ".  Note that ~x0 is a ~
+                                                    macro-alias for ~x1 (see ~
+                                                    :DOC ~
+                                                    macro-aliases-table), so ~
+                                                    a solution might be to ~
+                                                    replace ~x0 by ~x1"
+                                                   fn sym))))))))))
                ((and keyp
                      (let ((val (return-last-lookup key wrld)))
                        (or (null val)
