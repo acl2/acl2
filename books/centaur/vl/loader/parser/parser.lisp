@@ -137,6 +137,10 @@ VL to correctly handle any interesting fragment of SystemVerilog.</p>")
         (when (vl-is-token? :vl-kwd-import)
           (imports := (vl-parse-package-import-declaration atts))
           (return imports))
+        (when (vl-is-some-token? '(:vl-kwd-parameter :vl-kwd-localparam))
+          (params := (vl-parse-param-or-localparam-declaration atts '(:vl-kwd-parameter :vl-kwd-localparam)))
+          (:= (vl-match-token :vl-semi))
+          (return params))
 
         ;; (when (member-eq (vl-token->type (car tokens)) *vl-netdecltypes-kwds*)
         ;;   (return-raw

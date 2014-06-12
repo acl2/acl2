@@ -35,7 +35,7 @@
 (defmacro preprocessor-must-ignore (input &key defines)
   `(make-event
     (b* ((echars                     (vl-echarlist-from-str ,input))
-         ((mv successp ?defs output state)
+         ((mv successp ?defs ?filemap output state)
           (vl-preprocess echars
                          :defines ,defines
                          :config (make-vl-loadconfig
@@ -63,7 +63,7 @@
 (defmacro preprocessor-basic-test (&key input defines output)
   `(make-event
     (b* ((echars                           (vl-echarlist-from-str ,input))
-         ((mv successp ?defs output state)
+         ((mv successp ?defs ?filemap output state)
           (vl-preprocess echars
                          :defines ,defines
                          :config (make-vl-loadconfig

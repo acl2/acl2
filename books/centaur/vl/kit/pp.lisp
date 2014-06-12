@@ -149,7 +149,7 @@ Options:" *nls* *nls* *vl-pp-opts-usage* *nls*))
         (die "~@0~%" errmsg)
         state)
 
-       ((mv okp defines echars state)
+       ((mv okp defines ?filemap echars state)
         (cwtime (vl-preprocess echars
                                :defines (vl-loadconfig->defines loadconfig)
                                :config loadconfig)))

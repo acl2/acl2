@@ -452,7 +452,6 @@ function enabled and would think it odd to ever prove a theorem about it.</p>" f
                    (mv yes no nrev nrev2))
                   ((mv nrev nrev2)
                    (vl-fast-filter-modinsts-by-modname names fal x nrev nrev2))
-                  (- (fast-alist-free fal))
                   ((mv yes nrev) (nrev-finish nrev))
                   ((mv no nrev2) (nrev-finish nrev2)))
                (mv yes no nrev nrev2))))

@@ -129,6 +129,17 @@ Verilog, reusing much of @(see vl).</p>")
                 :merge acl2::rcons
                 :default '("v"))
 
+   (include-dirs string-listp
+                 :longname "incdir"
+                 :alias #\I
+                 :argname "DIR"
+                 "Control the list of directories for `include files.  You can
+                  give this switch multiple times.  By default, we look only in
+                  the current directory."
+                 :parser getopt::parse-string
+                 :merge acl2::rcons
+                 :default '("."))
+
    (topmods    string-listp
                :longname "topmod"
                :argname "MOD"
@@ -550,7 +561,8 @@ shown.</p>"
                     :strictp       config.strict
                     :start-files   config.start-files
                     :search-path   config.search-path
-                    :search-exts   config.search-exts))
+                    :search-exts   config.search-exts
+                    :include-dirs  config.include-dirs))
        (- (or (not config.debug)
               (cw "Load configuration: ~x0~%" loadconfig)))
 
@@ -1061,6 +1073,7 @@ wide addition instead of a 10-bit wide addition.")))
 
        (state (must-be-regular-files! config.start-files))
        (state (must-be-directories! config.search-path))
+       (state (must-be-directories! config.include-dirs))
 
        ((mv result state)
         (cwtime (run-vl-lint config)

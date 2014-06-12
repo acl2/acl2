@@ -259,7 +259,6 @@ being kept.</p>"
   :returns (mv (st    vl-loadstate-p)
                (state state-p1       :hyp (force (state-p1 state))))
   :short "Main function for loading a single Verilog file."
-
   :prepwork ((local (in-theory (disable (force)))))
 
   :long "<p>Even loading a single file is a multi-step process:</p>
@@ -323,9 +322,10 @@ descriptions.</li>
 ; This way things are pretty clear.  Whatever was in that file we couldn't
 ; parse didn't affect us.  If it had defines we wanted, that's too bad.
 
-       ((mv successp defines preprocessed state)
+       ((mv successp defines filemap preprocessed state)
         (time$ (vl-preprocess contents
                               :defines st.defines
+                              :filemap filemap
                               :config st.config)
                :msg "; ~s0: preprocess: ~st sec, ~sa bytes~%"
                :args (list filename)

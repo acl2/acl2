@@ -94,6 +94,17 @@
                 :parser getopt::parse-string
                 :merge acl2::rcons)
 
+   (include-dirs string-listp
+                 :longname "incdir"
+                 :alias #\I
+                 :argname "DIR"
+                 "Control the list of directories for `include files.  You can
+                  give this switch multiple times.  By default, we look only in
+                  the current directory."
+                 :parser getopt::parse-string
+                 :merge acl2::rcons
+                 :default '("."))
+
    (search-exts string-listp
                 :longname "searchext"
                 :argname "EXT"
@@ -108,15 +119,15 @@
                 :merge acl2::rcons
                 :default '("v"))
 
-   (overrides   string-listp
-                :longname "override"
-                :argname "DIR"
-                "(Advanced) Set up VL override directories.  You can give this
-                 switch multiple times.  By default there are no override
-                 directories.  See the VL documentation on overrides (under
-                 loader) for more information."
-                :parser getopt::parse-string
-                :merge acl2::rcons)
+   ;; (overrides   string-listp
+   ;;              :longname "override"
+   ;;              :argname "DIR"
+   ;;              "(Advanced) Set up VL override directories.  You can give this
+   ;;               switch multiple times.  By default there are no override
+   ;;               directories.  See the VL documentation on overrides (under
+   ;;               loader) for more information."
+   ;;              :parser getopt::parse-string
+   ;;              :merge acl2::rcons)
 
    (defines     string-listp
                 :longname "define"
@@ -191,10 +202,11 @@ Options:" *nls* *nls* *vl-model-opts-usage* *nls*))
        (loadconfig (make-vl-loadconfig
                     :edition       opts.edition
                     :strictp       opts.strict
-                    :override-dirs opts.overrides
+                    ;;:override-dirs opts.overrides
                     :start-files   opts.start-files
                     :search-path   opts.search-path
                     :search-exts   opts.search-exts
+                    :include-dirs  opts.include-dirs
                     :defines       (vl-make-initial-defines opts.defines)
                     :filemapp      want-translation-p))
 
@@ -275,9 +287,12 @@ Options:" *nls* *nls* *vl-model-opts-usage* *nls*))
        (- (cw " - search path: ~x0~%" opts.search-path))
        (state (must-be-directories! opts.search-path))
 
-       (- (and opts.overrides
-               (cw " - overrides: ~x0~%" opts.overrides)))
-       (state (must-be-directories! opts.overrides))
+       (- (cw " - include directories: ~x0~%" opts.include-dirs))
+       (state (must-be-directories! opts.include-dirs))
+
+       ;; (- (and opts.overrides
+       ;;         (cw " - overrides: ~x0~%" opts.overrides)))
+       ;; (state (must-be-directories! opts.overrides))
 
        (- (and opts.defines (cw "; defines: ~x0~%" opts.defines)))
 
