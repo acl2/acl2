@@ -84,11 +84,7 @@ assign foo = bar;
 
 @({
 //@VL my_attribute
-})
-
-<p><b>BOZO</b> where should things like VL-Only comments be documented?  There
-are lots of special implementation details (and extensions like @(see
-overrides)) that we should probably discuss somewhere.</p>")
+})")
 
 (local (xdoc::set-default-parents loader))
 

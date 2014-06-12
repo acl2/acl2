@@ -176,13 +176,17 @@ vl-plaintoken-p) whose type is, e.g., @(':vl-kwd-inout').</p>")
 (defval *vl-extra-keywords*
   :short "Special, extra keywords that are aren't part of the Verilog
 standards, but are instead added by VL."
-  :long "<p>These keywords are used in VL's @(see overrides) mechanism.</p>"
 
-  '("VL_OVERRIDE"
-    "VL_ORIGINAL"
-    "VL_REPLACEMENT"
-    "VL_REQUIRE"
-    "VL_ENDOVERRIDE"))
+  :long "<p>There's nothing here.  Originally we had added some keyword as part
+of a special, VL-only \"overrides\" mechanism.  I leave this list here in case
+we ever want to add our own keywords again.</p>"
+
+  '(;; "VL_OVERRIDE"
+    ;; "VL_ORIGINAL"
+    ;; "VL_REPLACEMENT"
+    ;; "VL_REQUIRE"
+    ;; "VL_ENDOVERRIDE"
+    ))
 
 (define vl-make-keyword-table ((x string-listp))
   :short "A keyword table binds the names of keywords (strings) to their

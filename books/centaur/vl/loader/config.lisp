@@ -117,9 +117,6 @@
                     constructed for the files we have loaded.  You may wish to
                     turn this off to save some memory.")
 
-   (override-dirs  string-listp
-                   "Directories to scan for any @(see overrides).")
-
    (flush-tries    posp
                    :rule-classes :type-prescription
                    :default 10000

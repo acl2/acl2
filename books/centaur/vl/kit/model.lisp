@@ -119,16 +119,6 @@
                 :merge acl2::rcons
                 :default '("v"))
 
-   ;; (overrides   string-listp
-   ;;              :longname "override"
-   ;;              :argname "DIR"
-   ;;              "(Advanced) Set up VL override directories.  You can give this
-   ;;               switch multiple times.  By default there are no override
-   ;;               directories.  See the VL documentation on overrides (under
-   ;;               loader) for more information."
-   ;;              :parser getopt::parse-string
-   ;;              :merge acl2::rcons)
-
    (defines     string-listp
                 :longname "define"
                 :alias #\D
@@ -202,7 +192,6 @@ Options:" *nls* *nls* *vl-model-opts-usage* *nls*))
        (loadconfig (make-vl-loadconfig
                     :edition       opts.edition
                     :strictp       opts.strict
-                    ;;:override-dirs opts.overrides
                     :start-files   opts.start-files
                     :search-path   opts.search-path
                     :search-exts   opts.search-exts
@@ -289,10 +278,6 @@ Options:" *nls* *nls* *vl-model-opts-usage* *nls*))
 
        (- (cw " - include directories: ~x0~%" opts.include-dirs))
        (state (must-be-directories! opts.include-dirs))
-
-       ;; (- (and opts.overrides
-       ;;         (cw " - overrides: ~x0~%" opts.overrides)))
-       ;; (state (must-be-directories! opts.overrides))
 
        (- (and opts.defines (cw "; defines: ~x0~%" opts.defines)))
 
