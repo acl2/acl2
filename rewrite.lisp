@@ -16411,6 +16411,18 @@
                             unify-subst gstack nil nil
                             rcnst state)
                     (mv step-limit nil simplify-clause-pot-lst)))
+                  ((null lst)
+
+; This case is an optimization of the final case.  We do not know if this case
+; can actually occur, but even if not, it's a cheap check and it is nice to
+; have in case it could occur in the future even if not now.
+
+                   (prog2$
+                    (brkpt2 t nil unify-subst gstack
+                            nil
+                            nil ; ttree, not used (see brkpt2)
+                            rcnst state)
+                    (mv step-limit nil simplify-clause-pot-lst)))
                   ((new-and-ugly-linear-varsp
                     (car lst)
                     (<= *max-linear-pot-loop-stopper-value*

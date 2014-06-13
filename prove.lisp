@@ -890,13 +890,13 @@
 
 (defmacro make-rcnst (ens wrld &rest args)
 
-; (Make-rcnst w) will make a rewrite-constant that is the result of filling in
-; *empty-rewrite-constant* with a few obviously necessary values, such as the
-; global-enabled-structure as the :current-enabled-structure.  Then it
-; additionally loads user supplied values specified by alternating keyword/value
-; pairs to override what is otherwise created.  E.g.,
+; (Make-rcnst ens w) will make a rewrite-constant that is the result of filling
+; in *empty-rewrite-constant* with a few obviously necessary values, such as
+; the global-enabled-structure as the :current-enabled-structure.  Then it
+; additionally loads user supplied values specified by alternating
+; keyword/value pairs to override what is otherwise created.  E.g.,
 
-; (make-rcnst w :expand-lst lst)
+; (make-rcnst ens w :expand-lst lst)
 
 ; will make a rewrite-constant that is like the default one except that it will
 ; have lst as the :expand-lst.
@@ -9336,7 +9336,7 @@
 ; args to supply a list of alternating keyword/value pairs to override the
 ; default settings.  E.g.,
 
-; (make-pspv w :rewrite-constant rcnst :displayed-goal dg)
+; (make-pspv ens w :rewrite-constant rcnst :displayed-goal dg)
 
 ; will make a pspv that is like the empty one except for the two fields
 ; listed above.
