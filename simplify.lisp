@@ -7670,57 +7670,65 @@
   (cond ((assoc-eq 'settled-down-clause hist)
 
 ; The clause has settled down under rewriting with the induction-hyp-terms
-; initially ignored and the induction-concl-terms forcibly expanded.  In
-; general, we now want to stop treating those terms specially and continue
-; simplifying.  However, there is a special case that will save a little time.
-; Suppose that the clause just settled down -- i.e., the most recent hist entry
-; is the one we just found.  And suppose that none of the specially treated
-; terms occurs in the clause we're to simplify.  Then we needn't simplify it
-; again.
+; initially ignored and the induction-concl-terms forcibly expanded.  We now
+; stop treating those terms specially and continue simplifying.
 
-         (cond ((and (eq 'settled-down-clause
-                         (access history-entry (car hist) :processor))
+; At one time we sometimes avoided simplifying again, in order to save a little
+; time, when the clause just settled down -- i.e., the most recent hist entry
+; is the one we just found.
 
-; If the rw-cache-state is :disabled immediately after a hit from
-; settled-down-clause, then we want to do the work of making a "desperation"
-; attempt at simplification.
+; (eq 'settled-down-clause (access history-entry (car hist) :processor))
 
-                     (not (eq (access rewrite-constant
-                                      (access prove-spec-var pspv
-                                              :rewrite-constant)
-                                      :rw-cache-state)
-                              :disabled))
-                     (not (some-element-dumb-occur-lst
-                           (access prove-spec-var
-                                   pspv
-                                   :induction-hyp-terms)
-                           cl)))
+; In that case, we avoided simplifying again when no specially treated term
+; occurs in the clause:
 
-; Since we know the induction-concl-terms couldn't occur in the clause -- they
-; would have been expanded -- we are done.  (Or at least: if they do occur in
-; the clause, then still, removing them from the expand-lst should not help the
-; rewriter!)  This test should speed up base cases and preinduction
-; simplification at least.
+; (not (some-element-dumb-occur-lst
+;       (access prove-spec-var
+;               pspv
+;               :induction-hyp-terms)
+;       cl)))
 
-                (mv step-limit 'miss nil nil nil))
-               (t
+; (Note that the induction-concl-terms also don't occur in the clause -- they
+; would have been expanded.  Or at least: if they do occur in the clause, then
+; still, removing them from the expand-lst should not help the rewriter!)
 
-; We now cease interfering and let the heuristics do their job.
+; Later, we added a second condition that must also hold in order to avoid
+; simplifying again.  If the rw-cache-state is :disabled immediately after a
+; hit from settled-down-clause, then we wanted to do the work of making a
+; last-ditch attempt at simplification.  So the following needed to be true in
+; order to avoid simplifying again.
 
-                (sl-let (changedp clauses ttree)
-                        (simplify-clause1
-                         cl hist
-                         (change rewrite-constant
-                                 (access prove-spec-var pspv
-                                         :rewrite-constant)
-                                 :force-info
-                                 (if (ffnnamep-lst 'if cl)
-                                     'weak
-                                   t))
-                         wrld
-                         state
-                         step-limit)
-                        (cond (changedp
+; (not (eq (access rewrite-constant
+;                  (access prove-spec-var pspv :rewrite-constant)
+;                  :rw-cache-state)
+;          :disabled))
+
+; But now, we always make the extra pass through the simplifier immediately
+; after settling down, in order to apply desperation heuristics.  At this time
+; the only such desperation heuristic is to arrange that add-linear-lemma
+; always linearizes the unrewritten conclusion, even when normally only the
+; rewritten conclusion would be linearized.  See add-linear-lemma, where
+; examples may be found that motivated this change.
+
+         (let* ((rcnst0 (access prove-spec-var pspv :rewrite-constant))
+                (local-rcnst (if (eq 'settled-down-clause
+                                     (access history-entry (car hist) :processor))
+                                 (change rewrite-constant
+                                         rcnst0
+                                         :force-info
+                                         (if (ffnnamep-lst 'if cl)
+                                             'weak
+                                           t)
+                                         :rewriter-state 'settled-down)
+                               (change rewrite-constant
+                                       rcnst0
+                                       :force-info
+                                       (if (ffnnamep-lst 'if cl)
+                                           'weak
+                                         t)))))
+           (sl-let (changedp clauses ttree)
+                   (simplify-clause1 cl hist local-rcnst wrld state step-limit)
+                   (cond (changedp
 
 ; Note: It is possible that our input, cl, is a member-equal of our output,
 ; clauses!  Such simplifications are said to be "specious."  But we do not
@@ -7731,8 +7739,8 @@
 ; caused a lot of confusion among experienced users, who saw simplifiable
 ; clauses being passed on to elim, etc.  See :DOC specious-simplification.
 
-                               (mv step-limit 'hit clauses ttree pspv))
-                              (t (mv step-limit 'miss nil ttree nil)))))))
+                          (mv step-limit 'hit clauses ttree pspv))
+                         (t (mv step-limit 'miss nil ttree nil))))))
         (t
 
 ; The clause has not settled down yet.  So we arrange to ignore the

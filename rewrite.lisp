@@ -5941,8 +5941,8 @@
 ; books/arithmetic-5/lib/basic-ops/default-hint.lisp  -- one occurrence
 ; books/hints/basic-tests.lisp -- two occurrences
 
-; WARNING: The name "rewrite-constant" is a misnomer because it is not
-; really constant during rewriting.  The active-theory is frequently
+; WARNING: The name "rewrite-constant" is a misnomer because it is not really
+; constant during rewriting.  For example, the active-theory is frequently
 ; toggled.
 
 ; The Rewriter's Constant Argument -- rcnst
@@ -5976,20 +5976,23 @@
 
 ; fns-to-be-ignored-by-rewrite     prove
 
+; rewriter-state                   add-linear-lemma
+
 ; The fields marked with *'s are involved in the soundness of the result
 ; of rewriting.  The rest are of heuristic use only.
 
 ; The current-literal not-flg and atm are always used together so we bundle
 ; them so we can extract them both at once:
 
-  ((active-theory . (backchain-limit-rw . rw-cache-state))
+  ((active-theory . (rewriter-state . rw-cache-state))
    current-enabled-structure
    (pt restrictions-alist . expand-lst)
    (force-info fns-to-be-ignored-by-rewrite . terms-to-be-ignored-by-rewrite)
    (top-clause . current-clause)
    ((splitter-output . current-literal) . oncep-override)
    (nonlinearp . cheap-linearp)
-   . case-split-limitations)
+   case-split-limitations
+   . backchain-limit-rw)
   t)
 
 ; Active-theory is either :standard or :arithmetic.  (It was added first to
@@ -6058,7 +6061,7 @@
 (defconst *empty-rewrite-constant*
   (make rewrite-constant
         :active-theory :standard
-        :backchain-limit-rw nil
+        :rewriter-state nil
         :case-split-limitations nil
         :splitter-output t ; initial value of state global splitter-output
         :current-clause nil
@@ -6074,7 +6077,8 @@
         :restrictions-alist nil
         :rw-cache-state *default-rw-cache-state*
         :terms-to-be-ignored-by-rewrite nil
-        :top-clause nil))
+        :top-clause nil
+        :backchain-limit-rw nil))
 
 ; So much for the rcnst.
 
@@ -12943,6 +12947,74 @@
                 rw-cache-alist-new))
         (t rw-cache-alist-new)))
 
+(defun add-linear-lemma-finish (concl force-flg rune rewritten-p
+                                      term type-alist wrld state
+                                      simplify-clause-pot-lst rcnst ttree)
+
+; We return (mv contradictionp new-pot-lst failure-reason brr-result), where
+; new-pot-lst can be new-pot-lst can be :null-lst when rewritten-p is true, to
+; indicate that another try is coming.
+
+  (let ((lst (linearize concl
+                        t
+                        type-alist
+                        (access rewrite-constant rcnst
+                                :current-enabled-structure)
+                        force-flg
+                        wrld
+                        (push-lemma rune ttree)
+                        state)))
+    (cond
+     ((and (null lst) rewritten-p) ; another try is coming
+      (mv nil :null-lst 'irrelevant 'irrelevant))
+     ((cdr lst)
+      (mv nil
+          simplify-clause-pot-lst
+          (if rewritten-p
+              'linearize-rewritten-produced-disjunction
+            'linearize-unrewritten-produced-disjunction)
+          nil))
+     ((null lst)
+
+; This case is an optimization of the final case.  We do not know if this case
+; can actually occur, but even if not, it's a cheap check and it is nice to
+; have in case it could occur in the future even if not now.
+
+      (mv nil simplify-clause-pot-lst nil nil))
+     ((new-and-ugly-linear-varsp
+       (car lst)
+       (<= *max-linear-pot-loop-stopper-value*
+           (loop-stopper-value-of-var
+            term
+            simplify-clause-pot-lst))
+       term)
+      (mv nil simplify-clause-pot-lst 'linear-possible-loop nil))
+     (t
+      (mv-let
+       (contradictionp new-pot-lst)
+       (add-polys (car lst)
+                  simplify-clause-pot-lst
+                  (access rewrite-constant rcnst :pt)
+                  (access rewrite-constant rcnst :nonlinearp)
+                  type-alist
+                  (access rewrite-constant rcnst
+                          :current-enabled-structure)
+                  force-flg
+                  wrld)
+       (cond
+        (contradictionp (mv contradictionp nil nil (car lst)))
+        (t (mv nil
+               (set-loop-stopper-values
+                (new-vars-in-pot-lst new-pot-lst
+                                     simplify-clause-pot-lst
+                                     nil)
+                new-pot-lst
+                term
+                (loop-stopper-value-of-var
+                 term simplify-clause-pot-lst))
+               nil
+               (car lst)))))))))
+
 (mutual-recursion
 
 ; State is an argument of rewrite only to permit us to call ev.  In general,
@@ -16375,95 +16447,140 @@
 
 ; We thank Robert Krug for providing this improvement.
 
-               (let* ((force-flg (ok-to-force rcnst))
-                      (temp-lst (linearize rewritten-concl
-                                           t
-                                           type-alist
-                                           (access rewrite-constant rcnst
-                                                   :current-enabled-structure)
-                                           force-flg
-                                           wrld
-                                           (push-lemma
-                                            rune
-                                            ttree2)
-                                           state))
-                      (lst (or temp-lst
-                               (linearize (sublis-var
-                                           unify-subst
-                                           (access linear-lemma lemma :concl))
-                                          t
-                                          type-alist
-                                          (access rewrite-constant rcnst
-                                                  :current-enabled-structure)
-                                          force-flg
-                                          wrld
-                                          (push-lemma
-                                           rune
-                                           (accumulate-rw-cache t ttree2 ttree1))
-                                          state))))
-                 (cond
-                  ((cdr lst)
-                   (prog2$
-                    (brkpt2 nil
-                            (if temp-lst
-                                'linearize-rewritten-produced-disjunction
-                              'linearize-unrewritten-produced-disjunction)
-                            unify-subst gstack nil nil
-                            rcnst state)
-                    (mv step-limit nil simplify-clause-pot-lst)))
-                  ((null lst)
-
-; This case is an optimization of the final case.  We do not know if this case
-; can actually occur, but even if not, it's a cheap check and it is nice to
-; have in case it could occur in the future even if not now.
-
-                   (prog2$
-                    (brkpt2 t nil unify-subst gstack
-                            nil
-                            nil ; ttree, not used (see brkpt2)
-                            rcnst state)
-                    (mv step-limit nil simplify-clause-pot-lst)))
-                  ((new-and-ugly-linear-varsp
-                    (car lst)
-                    (<= *max-linear-pot-loop-stopper-value*
-                        (loop-stopper-value-of-var
-                         term
-                         simplify-clause-pot-lst))
-                    term)
-                   (prog2$
-                    (brkpt2 nil 'linear-possible-loop
-                            unify-subst gstack nil nil
-                            rcnst state)
-                    (mv step-limit nil simplify-clause-pot-lst)))
-                  (t
-                   (prog2$
-                    (brkpt2 t nil unify-subst gstack
-                            (car lst)
-                            nil ; ttree, not used (see brkpt2)
-                            rcnst state)
+               (let ((force-flg (ok-to-force rcnst)))
+                 (mv-let
+                  (contradictionp new-pot-lst failure-reason brr-result)
+                  (add-linear-lemma-finish rewritten-concl force-flg rune t
+                                           term type-alist wrld state
+                                           simplify-clause-pot-lst rcnst ttree2)
+                  (cond
+                   (contradictionp
+                    (prog2$ (brkpt2 t nil unify-subst gstack
+                                    brr-result
+                                    nil ; ttree, not used (see brkpt2)
+                                    rcnst state)
+                            (mv step-limit contradictionp nil)))
+                   (t
                     (mv-let
-                     (contradictionp new-pot-lst)
-                     (add-polys (car lst)
-                                simplify-clause-pot-lst
-                                (access rewrite-constant rcnst :pt)
-                                (access rewrite-constant rcnst :nonlinearp)
-                                type-alist
-                                (access rewrite-constant rcnst
-                                        :current-enabled-structure)
-                                force-flg
-                                wrld)
-                     (cond
-                      (contradictionp (mv step-limit contradictionp nil))
-                      (t (mv step-limit
-                             nil
-                             (set-loop-stopper-values
-                              (new-vars-in-pot-lst new-pot-lst
-                                                   simplify-clause-pot-lst
-                                                   nil)
-                              new-pot-lst
-                              term
-                              (loop-stopper-value-of-var
-                               term simplify-clause-pot-lst))))))))))))
+                     (contradictionp new-pot-lst failure-reason brr-result)
+                     (let ((unrewritten-concl-to-try
+                            (and (or (eq new-pot-lst :null-lst)
+
+; Simplify-clause arranges for the following term to be true immediately after
+; the clause has settled down.  In that case, we are prepared to try any
+; "desperation heuristics", such as (here) linearizing the unrewritten
+; conclusion in cases when we would have stopped after linearizing the
+; rewritten conclusion.  Below are two examples that motivated this change.
+
+; Example 1.
+
+; Consider the following theorem:
+; (<= (len (cdr (cdr (nthcdr n stk))))
+;      (len stk))
+
+; A script is below that introduces two linear lemmas that one could reasonably
+; expect to suffice for proving this theorem, given the following informal
+; proof.
+
+;   (len (cdr (cdr (nthcdr n stk))))
+;   <=                                 ; by linear1
+;   (len (cdr (nthcdr n stk)))
+;   <=                                 ; by linear1
+;   (len (nthcdr n stk))
+;   <=                                 ; by linear2
+;   (len stk)
+
+; Here are the two linear lemmas.
+
+;   (defthm linear1
+;     (<= (len (cdr stk)) (len stk))
+;     :rule-classes :linear)
+
+;   (defthm linear2
+;     (<= (len (nthcdr n stk)) (len stk))
+;     :rule-classes :linear)
+
+; The following theorem did not prove until after we added this "desperate
+; heuristic" to linearize the unrewritten conclusion.
+
+;   (thm (<= (len (cdr (cdr (nthcdr n stk))))
+;            (len stk))
+;        :hints (("Goal" :do-not-induct t)))
+
+; Example 2.
+
+; First evaluate these events:
+
+;   (include-book "arithmetic-5/top" :dir :system)
+;
+;   (defthm mod-linear
+;     (implies (and (natp x) (natp k)) (<= (mod x k) x))
+;     :rule-classes :linear)
+;
+;   (encapsulate ((rd (x) t))
+;                (local (defun rd (x) (nfix x)))
+;                (defthm natp-rd (natp (rd x))
+;                  :rule-classes :type-prescription))
+
+; The following proves, and indeed proved (without induction) before the
+; change.
+
+;   (thm (<= (mod (rd x) 4)
+;            (+ 1 (rd x))))
+
+; But the following theorem only proved after the change.  Naively one wouldn't
+; expect the hypothesis to get in the way.  (We are not using induction in this
+; example.)  To make matters worse, the hypothesis is provable; the two
+; theorems really are equivalent.
+
+;   (thm (implies
+;         (< (mod (rd x) 4) 5)
+;         (<= (mod (rd x) 4)
+;             (+ 1 (rd x)))))
+
+                                     (eq (access rewrite-constant rcnst
+                                                 :rewriter-state)
+                                         'settled-down))
+                                 (sublis-var unify-subst
+                                             (access linear-lemma lemma
+                                                     :concl)))))
+                       (cond
+                        ((and unrewritten-concl-to-try
+                              (not (equal rewritten-concl
+                                          unrewritten-concl-to-try)))
+                         (add-linear-lemma-finish
+                          unrewritten-concl-to-try
+                          force-flg
+                          rune nil
+                          term type-alist wrld state
+                          (if (eq new-pot-lst :null-lst)
+                              simplify-clause-pot-lst
+                            new-pot-lst)
+                          rcnst
+                          (push-lemma
+                           rune
+                           (accumulate-rw-cache t
+                                                ttree2
+                                                ttree1))))
+                        (t (mv nil new-pot-lst failure-reason brr-result))))
+                     (cond (contradictionp
+                            (prog2$ (brkpt2 t nil unify-subst gstack
+                                            brr-result
+                                            nil ; ttree, not used (see brkpt2)
+                                            rcnst state)
+                                    (mv step-limit contradictionp nil)))
+                           (failure-reason
+                            (prog2$ (brkpt2 nil failure-reason unify-subst gstack
+                                            brr-result
+                                            nil ; ttree, not used (see brkpt2)
+                                            rcnst state)
+                                    (mv step-limit nil new-pot-lst)))
+                           (t
+                            (prog2$ (brkpt2 t nil unify-subst gstack
+                                            brr-result
+                                            nil ; ttree, not used (see brkpt2)
+                                            rcnst state)
+                                    (mv step-limit nil new-pot-lst)))))))))))
              (t (prog2$
                  (brkpt2 nil failure-reason
                          unify-subst gstack nil nil

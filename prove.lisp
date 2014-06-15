@@ -7298,11 +7298,16 @@
            *preprocess-clause-ledge*
            cl-id clause
 
-; Simplify-clause contains an optimization that lets us avoid resimplifying
-; the clause if the most recent history entry is settled-down-clause and
-; the induction hyp and concl terms don't occur in it.  We short-circuit that
-; short-circuit by removing the settled-down-clause entry if it is the most
-; recent.
+; Through Version_6.4, simplify-clause contained an optimization that avoided
+; resimplifying the clause if the most recent history entry is for
+; settled-down-clause and (approximately) the induction hyp and concl terms
+; don't occur in it.  Here, we short-circuited that short-circuited by removing
+; the settled-down-clause entry if it is the most recent.  We no longer have
+; that reason for removing the settled-down-clause entry, but it still seems
+; reasonable to do so, i.e., to consider the clause not to have settled down
+; when popping back to the top of the waterfall because of a hint.  Moreover,
+; we tried removing this modification to hist and found several regression
+; failures.
 
            (cond ((and (consp hist)
                        (eq (access history-entry (car hist) :processor)
