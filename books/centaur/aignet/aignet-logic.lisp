@@ -94,8 +94,6 @@
       x
     (const-stype))
   ///
-  (defthm stypep-of-stype-fix
-    (stypep (stype-fix x)))
   (defthm stype-fix-when-stypep
     (implies (stypep x)
              (equal (stype-fix x) x))))
@@ -152,8 +150,6 @@
       x
     (const-ctype))
   ///
-  (defthm ctypep-of-ctype-fix
-    (ctypep (ctype-fix x)))
   (defthm ctype-fix-when-ctypep
     (implies (ctypep x)
              (equal (ctype-fix x) x))))

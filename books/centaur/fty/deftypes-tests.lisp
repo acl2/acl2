@@ -41,7 +41,7 @@
     :returns (xx varp)
     (if (and (symbolp x) x) x 'x)
     ///
-    (defthm varp-of-var-fix
+    (defthm var-fix-when-varp
       (implies (varp x)
                (equal (var-fix x) x)))
 
@@ -96,7 +96,7 @@
     :returns (xx fnsym-p)
     (if (fnsym-p x) x 'some-fnsym)
     ///
-    (defthm fnsym-p-of-fnsym-fix
+    (defthm fnsym-fix-when-fnsym-p
       (implies (fnsym-p x)
                (equal (fnsym-fix x) X)))
 

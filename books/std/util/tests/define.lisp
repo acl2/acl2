@@ -284,5 +284,45 @@
 (assert! (acl2::logical-namep 'hooktest3-silly-thm (w state)))
 (assert! (not (acl2::logical-namep 'hooktest4-silly-thm (w state))))
 
+(define my-make-alist (keys)
+  :returns (alist alistp)
+  (if (atom keys)
+      nil
+    (cons (cons (car keys) nil)
+          (my-make-alist (cdr keys))))
+  ///
+  (more-returns
+   (alist true-listp :rule-classes :type-prescription)
+   (alist (equal (len alist) (len keys))
+          :name len-of-my-make-alist)))
+
+(local (in-theory (enable my-make-alist)))
+
+(include-book "std/lists/list-fix" :dir :system)
+
+(more-returns my-make-alist
+  (alist (equal (strip-cars alist) (list-fix keys))
+         :name strip-cars-of-my-make-alist))
+
+
+
+(define my-make-alist-and-len (keys)
+  :returns (mv (len natp :rule-classes :type-prescription)
+               (alist alistp))
+  (b* (((when (atom keys))
+        (mv 0 nil))
+       ((mv cdr-len cdr-alist) (my-make-alist-and-len (cdr keys))))
+    (mv (+ 1 cdr-len)
+        (cons (cons (car keys) nil) cdr-alist)))
+  ///
+  (more-returns
+   (len (equal len (len keys))
+        :name my-make-alist-and-len.len-removal)
+   (alist (integer-listp (strip-cars alist))
+          :hyp (integer-listp keys)
+          :name integer-listp-strip-cars-my-make-alist-and-len)
+   (alist true-listp :rule-classes :type-prescription)))
+
+
 
 

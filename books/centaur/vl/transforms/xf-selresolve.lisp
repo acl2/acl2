@@ -312,8 +312,8 @@ multiconcats throughout an expression."
   :hints(("Goal"
           :in-theory (e/d (vl-maybe-delayoreventcontrol-selresolve
                            vl-maybe-delayoreventcontrol-p)
-                          (return-type-of-vl-delayoreventcontrol-selresolve.new-x))
-          :use ((:instance return-type-of-vl-delayoreventcontrol-selresolve.new-x)))))
+                          (vl-delayoreventcontrol-p-of-vl-delayoreventcontrol-selresolve.new-x))
+          :use ((:instance vl-delayoreventcontrol-p-of-vl-delayoreventcontrol-selresolve.new-x)))))
 
 (defines vl-stmt-selresolve
 

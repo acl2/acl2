@@ -251,7 +251,7 @@
 
 (local (encapsulate ()
          (set-enforce-redundancy t)
-         (defthm return-type-of-nfix-list2
+         (defthm nat-listp-of-nfix-list2
            (implies (and (integer-listp x))
                     (b* ((new-x (nfix-list2 x)))
                       (nat-listp new-x))))))
@@ -262,7 +262,7 @@
 
 (local (encapsulate ()
          (set-enforce-redundancy t)
-         (defthm return-type-of-ifix-list
+         (defthm nat-listp-of-ifix-list
            (implies (nat-listp x)
                     (b* ((new-x (ifix-list x)))
                       (nat-listp new-x))))))

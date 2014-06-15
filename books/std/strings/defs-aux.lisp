@@ -38,7 +38,7 @@
     implode
     ;; Including this type-prescription rule improves the type-prescriptions of
     ;; some subsequent functions such as upcase-string.
-    acl2::return-type-of-implode$inline
+    acl2::stringp-of-implode
 
     ;; eqv.lisp
     charlisteqv

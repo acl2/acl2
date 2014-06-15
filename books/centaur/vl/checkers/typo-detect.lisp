@@ -440,9 +440,6 @@ prevent matching between signals like @('bcDWCBAEnt_C0_P') and
                 (typo-partition (explode (car x))))
           (typo-partitioning-alist (cdr x))))
   ///
-  (defthm alistp-of-typo-partitioning-alist
-    (alistp (typo-partitioning-alist x)))
-
   (defthm vl-string-keys-p-of-typo-partitioning-alist
     (implies (force (string-listp x))
              (vl-string-keys-p (typo-partitioning-alist x))))

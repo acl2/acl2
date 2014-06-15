@@ -53,11 +53,7 @@ might well be copy/paste errors.</p>")
         ((= n 2)
          (cat "~l2 and ~l1"))
         (t
-         (cat "~l" (natstr n) ", " (vl-locationlist-string (- n 1)))))
-  ///
-  (defthm stringp-of-vl-locationlist-string
-    (stringp (vl-locationlist-string n))
-    :rule-classes :type-prescription))
+         (cat "~l" (natstr n) ", " (vl-locationlist-string (- n 1))))))
 
 (define vl-make-duplicate-warning ((type stringp)
                                    (locs vl-locationlist-p)

@@ -270,6 +270,7 @@
       defines
       defconsts
       defval
+      more-returns
       xdoc
 ;               defaggregate
 ;               defenum
@@ -357,7 +358,8 @@
     defval
     defconsts
     raise
-    __function__))
+    __function__
+    more-returns))
 
 (assign acl2::verbose-theory-warning nil)
 

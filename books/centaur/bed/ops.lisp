@@ -65,9 +65,6 @@ the bits of the representation are the truth table for the operator.</p>"
     (logand #b1111
             (the integer (ifix x))))
   ///
-  (defthm bed-op-p-of-bed-op-fix
-    (equal (bed-op-p (bed-op-fix x))
-           t))
   (defthm bed-op-fix-when-bed-op-p
     (implies (bed-op-p x)
              (equal (bed-op-fix x)

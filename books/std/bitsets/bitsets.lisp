@@ -296,10 +296,6 @@ into an array access.</p>"
                   (logand (the (unsigned-byte 32) (1- (expt 2 32)))
                           (ash x (* -32 slice)))))
   ///
-  (defthm natp-of-bignum-extract
-    (natp (bignum-extract x slice))
-    :rule-classes :type-prescription)
-
   (defthm unsigned-byte-p-of-bignum-extract
     (unsigned-byte-p 32 (bignum-extract x slice))
     :hints(("Goal"

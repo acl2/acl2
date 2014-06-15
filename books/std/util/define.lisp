@@ -599,6 +599,12 @@ some kind of separator!</p>
                 (get-define-guts-alist world))))
 
 
+(defun get-define-current-function (world)
+  (cdr (assoc 'current-function (table-alist 'define world))))
+
+(defmacro set-define-current-function (fn)
+  `(table define 'current-function ',fn))
+
 
 ; ----------------- Hooks -----------------------------------------------------
 
@@ -912,6 +918,7 @@ some kind of separator!</p>
          ;; Extend the define table right away, in case anything during
          ;; the rest-events needs to make use of it.
          ,(extend-define-guts-alist guts)
+         (local (set-define-current-function ,guts.name))
 
          (local
           (make-event
@@ -921,7 +928,7 @@ some kind of separator!</p>
 
          (make-event
           (let* ((world (w state))
-                 (events (returnspec-thms ',guts.name-fn ',guts.returnspecs world)))
+                 (events (returnspec-thms ',guts.name ',guts.name-fn ',guts.returnspecs world)))
             (value (if events
                        `(with-output :stack :pop (progn . ,events))
                      '(value-triple :invisible)))))
@@ -939,6 +946,10 @@ some kind of separator!</p>
        ;; Now that the section has been submitted, its xdoc exists, so we can
        ;; do the doc generation and prepend it to the xdoc.
        ,(add-signature-from-guts guts)
+
+       ,@(if prognp
+             '((local (set-define-current-function nil)))
+           nil)
        )))
 
 (defun define-fn (name args world)
@@ -1034,3 +1045,133 @@ some kind of separator!</p>
          'untranslate-preprocess
          'untranslate-preproc-for-define))
 
+
+
+
+
+; ------------------------------------------------------------------------
+;
+;  More Returns!!!
+;
+; ------------------------------------------------------------------------
+
+(defxdoc more-returns
+  :parents (define returns-specifiers)
+  :short "Prove additional return-value theorems about a @(see define)d
+function."
+
+  :long "<p>@('more-returns') is a concise syntax for proving additional
+theorems about the return-values of your functions, using @(see define)'s
+@(':returns')-like syntax.</p>
+
+<p>Example <i>within a define</i>:</p>
+
+@({
+    (define my-make-alist (keys)
+     :returns (alist alistp)
+     (if (atom keys)
+         nil
+       (cons (cons (car keys) nil)
+             (my-make-alist (cdr keys))))
+     ///
+     (more-returns   ;; no name needed since we're in a define
+      (alist true-listp :rule-classes :type-prescription)
+      (alist (equal (len alist) (len keys))
+             :name len-of-my-make-alist)))
+})
+
+<p>Example outside a define:</p>
+
+@({
+    (local (in-theory (enable my-make-alist)))
+    (more-returns my-make-alist
+      (alist (equal (strip-cars alist) (list-fix keys))
+             :name strip-cars-of-my-make-alist))
+})
+
+<p>General form:</p>
+
+@({
+     (more-returns [name] ;; defaults to the current define
+       <return-spec-1>
+       <return-spec-2>
+       ...)
+})
+
+<p>Where each @('return-spec') is as described in @(see returns-specifiers) and
+shares a name with one of the @(':returns') from the @('define').</p>
+
+<p>Note that any @(see xdoc) documentation strings within these return
+specifiers is ignored.  You should usually put such documentation into the
+@(':returns') specifier for the @(see define), instead.</p>")
+
+(defun returnspec-additional-single-thm (guts newspec world)
+  ;; Only dealing with the single-return-value case.
+  ;; Guts is the define we're dealing with.  We assume it has a single return spec.
+  ;; Newspec is the new returnspec-p that we want to prove
+  (b* ((__function__ 'returnspec-additional-single-thm)
+       ((defguts guts) guts)
+       (origspec (car guts.returnspecs))
+       ((unless (equal (returnspec->name origspec)
+                       (returnspec->name newspec)))
+        (raise "Expected return value for ~x0 to be named ~x1, found ~x2."
+               guts.name
+               (returnspec->name origspec)
+               (returnspec->name newspec)))
+       (badname-okp
+        ;; This is meant to avoid name clashes.
+        nil))
+    (returnspec-single-thm guts.name guts.name-fn newspec badname-okp world)))
+
+(defun returnspec-additional-single-thms (guts newspecs world)
+  (if (atom newspecs)
+      nil
+    (append (returnspec-additional-single-thm guts (car newspecs) world)
+            (returnspec-additional-single-thms guts (cdr newspecs) world))))
+
+(defun returnspec-additional-multi-thms (guts newspecs world)
+  (b* ((__function__ 'returnspec-additional-multi-thms)
+       ((defguts guts) guts)
+       (fn-formals      (formallist->names guts.formals))
+       (fn-return-names (returnspeclist->names guts.returnspecs))
+       (ignorable-names (make-symbols-ignorable fn-return-names))
+       (binds           `((mv . ,ignorable-names) (,guts.name-fn . ,fn-formals)))
+       (new-return-names (returnspeclist->names newspecs))
+       ((unless (subsetp new-return-names fn-return-names))
+        (raise "No return value named ~x0 for function ~x1."
+               (car (set-difference-equal new-return-names fn-return-names))))
+       (badname-okp nil))
+    (returnspec-multi-thms guts.name guts.name-fn binds newspecs badname-okp world)))
+
+(defun returnspec-additional-thms (guts newspecs world)
+  ;; This deals with either the single- or multi-valued return case.
+  (b* ((__function__ 'returnspec-additional-thms)
+       ((defguts guts) guts)
+       ((unless guts.returnspecs)
+        (raise "Can't prove additional return-value theorems for ~x0 because ~
+                it doesn't have a :returns, so we don't know the names of its ~
+                return values.  Consider adding a :returns section."  guts.name))
+       ((when (eql (len guts.returnspecs) 1))
+        (returnspec-additional-single-thms guts newspecs world)))
+    (returnspec-additional-multi-thms guts newspecs world)))
+
+(defun more-returns-fn (args world)
+  (b* ((__function__ 'more-returns)
+       ((unless (consp args))
+        (raise "No arguments?"))
+       ((mv name rets)
+        (if (symbolp (car args))
+            (mv (car args) (cdr args))
+          (mv (or (get-define-current-function world)
+                  (raise "No function given and not in a /// section?"))
+              args)))
+       (guts (cdr (assoc name (get-define-guts-alist world))))
+       ((unless guts)
+        (raise "No define-guts entry for ~x0." name))
+       ((defguts guts) guts)
+       (returnspecs (parse-returnspecs-aux guts.name rets world))
+       (events      (returnspec-additional-thms guts returnspecs world)))
+    `(progn . ,events)))
+
+(defmacro more-returns (&rest args)
+  `(make-event (more-returns-fn ',args (w state))))

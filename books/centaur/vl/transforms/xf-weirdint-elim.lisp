@@ -338,8 +338,8 @@ will become the arguments to a concatenation."
   :hints(("Goal"
           :in-theory (e/d (vl-maybe-delayoreventcontrol-weirdint-elim
                            vl-maybe-delayoreventcontrol-p)
-                          (RETURN-TYPE-OF-VL-DELAYOREVENTCONTROL-WEIRDINT-ELIM.X-PRIME))
-          :use ((:instance RETURN-TYPE-OF-VL-DELAYOREVENTCONTROL-WEIRDINT-ELIM.X-PRIME)))))
+                          (vl-delayoreventcontrol-p-OF-VL-DELAYOREVENTCONTROL-WEIRDINT-ELIM.X-PRIME))
+          :use ((:instance vl-delayoreventcontrol-p-OF-VL-DELAYOREVENTCONTROL-WEIRDINT-ELIM.X-PRIME)))))
 
 
 

@@ -780,8 +780,8 @@ vl-expr-p) @('x') and returns @('(mv warnings-prime x-prime)')."
   :hints(("Goal"
           :in-theory (e/d (vl-maybe-delayoreventcontrol-oprewrite
                            vl-maybe-delayoreventcontrol-p)
-                          (return-type-of-vl-delayoreventcontrol-oprewrite.new-x))
-          :use ((:instance return-type-of-vl-delayoreventcontrol-oprewrite.new-x)))))
+                          (vl-delayoreventcontrol-p-of-vl-delayoreventcontrol-oprewrite.new-x))
+          :use ((:instance vl-delayoreventcontrol-p-of-vl-delayoreventcontrol-oprewrite.new-x)))))
 
 
 (defines vl-stmt-oprewrite

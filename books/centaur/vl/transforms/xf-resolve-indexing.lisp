@@ -359,9 +359,9 @@ able to handle more cases.</p>")
   :hints(("Goal"
           :in-theory (e/d (vl-maybe-delayoreventcontrol-resolve-indexing
                            vl-maybe-delayoreventcontrol-p)
-                          (return-type-of-vl-delayoreventcontrol-resolve-indexing.new-x))
+                          (vl-delayoreventcontrol-p-of-vl-delayoreventcontrol-resolve-indexing.new-x))
           :use ((:instance
-                 return-type-of-vl-delayoreventcontrol-resolve-indexing.new-x)))))
+                 vl-delayoreventcontrol-p-of-vl-delayoreventcontrol-resolve-indexing.new-x)))))
 
 (defines vl-stmt-resolve-indexing
 

@@ -1714,11 +1714,6 @@ without using up too many characters, then we should extend the first row.</p>
          (atom x))
   :hints(("Goal" :in-theory (enable pinstlist->max-width))))
 
-(defthm integerp-of-pinstlist->max-width
-  (integerp (pinstlist->max-width x maximum))
-  :rule-classes :type-prescription
-  :hints(("Goal" :in-theory (enable pinstlist->max-width))))
-
 (defthm lower-bound-of-pinstlist->max-width-alt
   (implies (integerp maximum)
            (<= maximum (pinstlist->max-width x maximum)))

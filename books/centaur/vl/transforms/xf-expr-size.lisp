@@ -42,8 +42,8 @@
            :rule-classes ((:forward-chaining
                            :trigger-terms ((vl-nonatom->op x))))
            :enable vl-op-p
-           :disable return-type-of-vl-nonatom->op$inline
-           :use ((:instance return-type-of-vl-nonatom->op$inline)))))
+           :disable vl-op-p-of-vl-nonatom->op
+           :use ((:instance vl-op-p-of-vl-nonatom->op)))))
 
 (defxdoc expression-sizing
   :parents (transforms)

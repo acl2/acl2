@@ -395,7 +395,8 @@ its flag in the flag-function.</p>")
         ,@(and process-returns
                `((make-event
                   (let* ((world (w state))
-                         (events (returnspec-thms ',guts.name-fn
+                         (events (returnspec-thms ',guts.name
+                                                  ',guts.name-fn
                                                   ',guts.returnspecs
                                                   world)))
                     `(with-output :stack :pop (progn . ,events))))))
