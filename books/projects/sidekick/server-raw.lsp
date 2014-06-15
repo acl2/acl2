@@ -54,6 +54,7 @@
     (setq *server* nil))
   nil)
 
+
 ; We go to some trouble to cache PBT results so that the client can poll it
 ; frequently.  We could do more to cache other results like PBT and PCB
 ; results, but this seems pretty workable so far.
@@ -183,7 +184,31 @@
            (acl2::origin-fn (car objs) state)))
        (bridge::json-encode
         (list (cons :error nil)
-              (cons :val val))))))
+              (cons :val val)))))
+
+  (hunchentoot:define-easy-handler (xdoc-handler :uri "/xdoc") (name)
+     (setf (hunchentoot:content-type*) "application/json")
+     (b* ((state acl2::*the-live-state*)
+          ((mv errmsg objs state) (acl2::read-string name))
+          ((when errmsg)
+           (bridge::json-encode
+            (list (cons :error (format nil "Error in origin: parsing failed: ~a: ~a~%"
+                                       name errmsg))
+                  (cons :val ""))))
+          ((unless (and (equal (len objs) 1)
+                        (symbolp (car objs))))
+           (bridge::json-encode
+            (list (cons :error (format nil "Error in origin: not a symbol: ~a~%" name))
+                  (cons :val ""))))
+          (name (car objs))
+          ((mv out ?state) (json-xdoc-topic name state)))
+       out))
+
+  (hunchentoot:define-easy-handler (webcommand-handler :uri "/webcommands") ()
+     (setf (hunchentoot:content-type*) "application/json")
+     (b* ((commands (get-webcommands-stack)))
+       (bridge::json-encode
+        (list (cons :commands commands))))))
 
 
 

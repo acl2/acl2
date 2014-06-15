@@ -25,10 +25,13 @@ along with this program; if not, write to the Free Software Foundation, Inc.,
 <meta charset="UTF-8">
 <title>Lookup &mdash; ACL2 Sidekick</title>
 <link rel="stylesheet" type="text/css" href="style.css"/>
+<link rel="stylesheet" type="text/css" href="xdoc/style.css"/>
 <script src="lib/jquery-2.1.0.min.js"></script>
 <script src="common.js"></script>
+<script src="xdoc/xslt.js"></script>
 <script src="toolbar.js"></script>
 <script src="lookup.js"></script>
+
 
 <style>
 <!--
@@ -62,15 +65,19 @@ along with this program; if not, write to the Free Software Foundation, Inc.,
 #propswrap {
     overflow-x: auto;
     overflow-y: auto;
+    margin-left: 2.5em;
     height: 20em;
+    width: 35em;
+/*
     background-color: #fffff0;
     border-width: 3px;
     border-style: inset;
+*/
 }
 
 .propstable {
     border-collapse: collapse;
-    width: 95%%;
+/*    width: 95%%; */
 }
 
 .propstable td, .propstable th {
@@ -117,6 +124,7 @@ along with this program; if not, write to the Free Software Foundation, Inc.,
 
 <p id="origin">Loading</p>
 
+<div id="xdoc">Loading</div>
 
 
 </div>

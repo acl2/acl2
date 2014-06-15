@@ -62,6 +62,7 @@ function footer_init()
     var guts = "";
     guts += "<tr>";
     guts += "<td id='package'></td>";
+    guts += "<td id='webcommand'></td>";
     guts += "<td id='status'></td>";
     guts += "<td align='right'>";
     guts += "<a href='http://www.kookamara.com/' target='_blank'><img src='icons/kookamara.png'/></a>";
@@ -72,6 +73,7 @@ function footer_init()
     $("#footer").html(footer);
     setTimeout(refresh_package, 10);
     setTimeout(refresh_status, 10);
+    setTimeout(check_webcommands, 10);
 }
 
 var footer_package = "";
@@ -96,6 +98,7 @@ var footer_status = "";
 
 function refresh_status()
 {
+    var refresh_time = 1000;
     $.get("/pbtx", null, function(data,textStatus,jqXHR)
     {
 	var ldd = data[":VAL"][0];
@@ -106,13 +109,58 @@ function refresh_status()
 	    $("#status").html(new_status);
 	    footer_status = new_status;
 	}
-	setTimeout(refresh_status, 1000);
+	setTimeout(refresh_status, refresh_time);
     }).fail(function() {
 	$("#status").html("???");
-	setTimeout(refresh_status, 1000);
+	setTimeout(refresh_status, refresh_time);
     });
 }
 
+function check_webcommands()
+{
+    var check_time = 200;
+    $.get("/webcommands", null, function(data,textStatus,jqXHR)
+    {
+	var commands = data[":COMMANDS"];
+	if (commands != "NIL") {
+	    //console.log("Commands = " + commands);
+	    //console.log("Commands keys = " + Object.keys(commands));
+	    process_webcommands(commands);
+	}
+	setTimeout(check_webcommands, check_time); // BOZO move to end
+
+    }).fail(function() {
+	$("#webcommand").html("Error getting webcommands");
+	setTimeout(check_webcommands, check_time);
+    });
+}
+
+function process_webcommands(commands)
+{
+    // It's a stack, so process it in reverse order
+    var len = commands.length;
+    console.log("Found " + len + " web commands.");
+    for(var i = len-1; i >= 0; i--) {
+	process_webcommand(commands[i]);
+    }
+}
+
+function process_webcommand(command)
+{
+    var action = command[":ACTION"];
+    if (!action) {
+	console.log("Command doesn't have an :action field?" + Object.keys(command));
+	return;
+    }
+
+    console.log("Processing web command: " + action);
+    if (action == ":SHOW") {
+	var name = command[":NAME"];
+	console.log("name is " + name);
+	window.location.href = "/lookup.html?lookup=" + name;
+    }
+
+}
 
 $(document).ready(function(){
     toolbar_init();

@@ -28,6 +28,8 @@
 (include-book "session")
 (include-book "disassemble")
 (include-book "lookup")
+(include-book "xdoc")
+(include-book "webcommand")
 (include-book "std/basic/defs" :dir :system)
 (include-book "std/strings/defs-program" :dir :system)
 (include-book "std/io/read-string" :dir :system)

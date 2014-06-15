@@ -43,6 +43,9 @@
 
                     ;; other handy functions
                     maybe-natp
+
+                    ;; interactive sidekick commands
+                    show
                     )
                   std::*std-exports*)
    *std-pkg-symbols*))

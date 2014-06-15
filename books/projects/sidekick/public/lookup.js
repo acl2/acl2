@@ -23,6 +23,8 @@ along with this program; if not, write to the Free Software Foundation, Inc.,
 var params = getPageParameters();
 var what = params["lookup"];
 
+console.log("Lookup parameter = " + what);
+
 function count_lines (str)
 {
     var n = 0;
@@ -150,13 +152,41 @@ function get_props (name)
     });
 }
 
+function get_xdoc (what)
+{
+    $.get("/xdoc", {"name":what}, function(data,textStatus,jqXHR)
+    {
+	var err = data[":ERROR"];
+	if (err != "NIL") {
+	    $("#xdoc").html(htmlEncode(err));
+	    return;
+	}
+
+	var short_xml = data[":SHORT"];
+	var long_xml = data[":LONG"];
+
+	var div = jQuery("<div></div>");
+	var shortpar = jQuery("<p></p>");
+	shortpar.append(render_html(short_xml));
+	div.append(shortpar);
+	div.append(render_html(long_xml));
+
+	$("#xdoc").html(div);
+
+
+
+    }).fail(function() {
+	$("#xdoc").html("Error getting /xdoc.");
+    });
+}
+
 function do_lookup ()
 {
     $("#what").html(htmlEncode(what));
 
     get_origin();
     get_props(what);
-
+    get_xdoc(what);
 }
 
 $(document).ready(do_lookup);
