@@ -30,6 +30,28 @@ along with this program; if not, write to the Free Software Foundation, Inc.,
 <script src="common.js"></script>
 <script src="toolbar.js"></script>
 </head>
+
+<style>
+<!--
+
+#fancymenu {
+   margin-left: 2em;
+}
+
+#fancymenu td {
+   padding-bottom: 1em;
+   padding-right: 1em;
+   font-size: 90%;
+}
+
+#fancymenu a {
+   text-decoration: none;
+   font-size: 110%;
+}
+
+// -->
+</style>
+
 <body>
 
 <div id="toolbar"></div>
@@ -60,28 +82,42 @@ from your web browser.</p>
 
 <h4>Explore</h4>
 
-<dl>
-<dt><a href="session.html"><img src="icons/session.png" valign="middle" style="padding-right: .5em;">Session Viewer</a></dt>
-<dd>Explore the history of your ACL2 session</dd>
-<dd>See the effects of commands</dd>
-</dd>
-</dl>
+<form id="lookup_form2" method="get" action="lookup.html">
+<table id="fancymenu">
+<tr>
+<td><a href="session.html"><img src="icons/session.png"/></a></td>
+<td><a href="session.html">Session Viewer</a></br/>
+Explore the history of your ACL2 session<br/>
+See the effects of commands</td>
+</tr>
 
-<dl>
-<dt><a href="profiler.html"><img src="icons/profiler.png" valign="middle" style="padding-right: .5em;">Proof Profiler</a></dt>
-<dd>See what the prover is doing</dd>
-<dd>Identify slow rules</dd>
-</dd>
-</dl>
+<tr>
+<td><a href="profiler.html"><img src="icons/profiler.png"/></a></td>
+<td><a href="profiler.html">Proof Profiler</a><br/>
+See what the prover is doing<br/>
+Identify slow rules<br/>
+</td>
+</tr>
 
-<dl>
-<dt><a href="linter.html"><img src="icons/linter.png" valign="middle" style="padding-right: .5em;">Theory Linter</a></dt>
-<dd>Identify conflicting and redundant rules</dd>
-</dd>
-</dl>
+<tr>
+<td><a href="linter.html"><img src="icons/linter.png"/></a></td>
+<td><a href="linter.html">Theory Linter</a><br/>
+Identify conflicting and redundant rules<br/>
+</td>
+</tr>
 
+<tr>
+<td><a href="lookup.html"><img src="icons/lookup.png"/></a></td>
+<td><a href="lookup.html">Show Anything</a><br/>
+See documentation, properties, disassembly, ...<br/>
+<tt><label for="lookup2">:show</label></tt>
+<input id="lookup2" name="lookup" type="text" size="20" placeholder="append"></input>
+<input type="submit" style="position: absolute; left: -9999px; width: 1px; height: 1px;" hidefocus="true" tabindex="-1"></input>
+</td>
+</tr>
 
-
+</table>
+</form>
 
 
 <p>Disassembly feature: not yet integrated into anything</p>

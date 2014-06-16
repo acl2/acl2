@@ -36,24 +36,27 @@ function toolbar_item(name, internalname)
 
 function toolbar_init()
 {
+    var form = jQuery("<form id='lookup_form' method='get' action='lookup.html'></form>");
+
     var toolbar = jQuery("<table></table>");
     var row = jQuery("<tr></tr>");
     row.append(toolbar_item("Home", "index"));
     row.append(toolbar_item("Session"));
     row.append(toolbar_item("Profiler"));
     row.append(toolbar_item("Linter"));
-    // row.append(toolbar_item("XDoc"));
 
-    var lookup = "<form id='lookup_form' method='get' action='lookup.html'>";
-    lookup += "<label for='lookup'>Lookup </label>";
+    var lookup = "";
+    lookup += "<label for='lookup'>:show </label>";
     lookup += "<input id='lookup' name='lookup' type='text' size='20' placeholder='append'></input>";
     lookup += "<input type='submit' style='position: absolute; left: -9999px; width: 1px; height: 1px;'";
     lookup += " hidefocus='true' tabindex='-1'></input>";
-    lookup += "</form>";
-    row.append("<td class='toolbutton' valign='middle' style='padding-top: 1em;'>" + lookup + "</td>");
-    row.append("<td></td>");
+//    lookup += "<img src='icons/lookup.png' valign='top' />";
+//    row.append("<td class='toolbutton' valign='middle' style='padding-top: 1em; text-align: right;' width='100%';>" + lookup + "</td>");
+    row.append("<td class='toolbutton' valign='middle' style='text-align: right;' width='100%';>" + lookup + "</td>");
     toolbar.append(row);
-    $("#toolbar").html(toolbar);
+
+    form.append(toolbar);
+    $("#toolbar").html(form);
 }
 
 function footer_init()

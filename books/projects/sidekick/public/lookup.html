@@ -38,21 +38,25 @@ along with this program; if not, write to the Free Software Foundation, Inc.,
 
 #leftcolwrap {
     float: left;
-    left: 0;
-    top: 0;
-    width: 45%;
-    height: 100%;
-    overflow-y: auto;
-    margin-right: .5em;
+    width: 100%;
+    margin-left: -32em;
+}
+
+#leftcol {
+    margin-left: 32em;
 }
 
 #rightcolwrap {
     float: left;
-    width: 54%;
+    width: 32em;
     padding-left: 0;
     padding-top: 0;
     margin: 0;
     height: 100%;
+}
+
+#rightcol {
+   padding-right: 1em;
 }
 
 #propshead {
@@ -67,8 +71,8 @@ along with this program; if not, write to the Free Software Foundation, Inc.,
     overflow-y: auto;
     margin-left: 2.5em;
     height: 20em;
-    width: 35em;
 /*
+    width: 35em;
     background-color: #fffff0;
     border-width: 3px;
     border-style: inset;
@@ -107,6 +111,15 @@ along with this program; if not, write to the Free Software Foundation, Inc.,
    margin: 0;
 }
 
+.disassemble_out {
+   overflow-y: auto;
+   height: 25em;
+   margin-left: 2.5em;
+/*
+   width: 35em;
+*/
+}
+
 -->
 </style>
 
@@ -120,39 +133,41 @@ along with this program; if not, write to the Free Software Foundation, Inc.,
 <h1 id="what"></h1>
 
 <div id="leftcolwrap">
-<div id="leftcol">
+ <div id="leftcol">
 
-<p id="origin">Loading</p>
+  <p id="origin">Loading</p>
 
-<div id="xdoc">Loading</div>
+  <div id="xdoc">Loading</div>
 
+  <hr>
 
-</div>
+  <h3>Lookup Page</h3>
+
+  <p>This should eventually implement a DWIM searching feature that covers:</p>
+
+  <ul>
+   <li>Function/Macro/Theorem definitions</li>
+   <li>PL/PE/PR style information</li>
+  </ul>
+
+  <p>Tie this into ACL2 with some kind of <tt>:show</tt> command that we
+  poll for using the toolbar or whatever.</p>
+
+  <p>When we mark up s-expressions with hyperlinks, they should be able
+  to link here and leave us with a suitable thing.</p>
+
+ </div>
 </div>
 
 <div id="rightcolwrap">
-<div id="rightcol">
-<div id="props"></div>
-<div id="disassembly"></div>
+ <div id="rightcol">
+   <div id="props"></div>
+   <div id="disassembly"></div>
+ </div>
 </div>
-</div>
 
-<h3>General Lookup Page</h3>
 
-<p>This should eventually implement a DWIM searching feature that covers:</p>
 
-<ul>
-<li>Function/Macro/Theorem definitions</li>
-<li>PL/PE/PR style information</li>
-<li>Disassembly for functions</li>
-<li>XDOC topics</li>
-</ul>
-
-<p>Tie this into ACL2 with some kind of <tt>:show</tt> command that we
-poll for using the toolbar or whatever.</p>
-
-<p>When we mark up s-expressions with hyperlinks, they should be able
-to link here and leave us with a suitable thing.</p>
 
 <div id="footer"></div>
 

@@ -158,7 +158,7 @@ function get_xdoc (what)
     {
 	var err = data[":ERROR"];
 	if (err != "NIL") {
-	    $("#xdoc").html(htmlEncode(err));
+	    $("#xdoc").html("<p>" + htmlEncode(err) + "</p>");
 	    return;
 	}
 

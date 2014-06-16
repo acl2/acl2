@@ -45,9 +45,10 @@
 body          { background-color: white;}
 #data_wrapper { background-color: #ffffff; }
 
+/*
 h1, h2, h1 .tt, h2 .tt, h1 .v, h2 .v  {  color: #A64300; }
-h3, h4, h5, h3 .tt, h4 .tt, h5 .tt, h3 .v, h4 .v, h5 .v
-{ color: #FF6700; }
+h3, h4, h5, h3 .tt, h4 .tt, h5 .tt, h3 .v, h4 .v, h5 .v { color: #FF6700; }
+*/
 
 
 .box          { border-color: black; }
@@ -124,12 +125,13 @@ img {
   border: 0px;
 }
 
-
+/*
 h1 { font-size: 2.2em; text-align: center; }
 h2 { font-size: 1.8em; }
 h3 { font-size: 1.5em; }
 h4 { font-size: 1.2em; }
 h5 { font-size: 1.1em; margin-left: 1em;}
+*/
 
 p, dl { margin-left: 1em; margin-right: 1em; }
 
@@ -155,6 +157,7 @@ dt {
   padding: .5em;
   border-left-width: 3px;
   border-left-style: solid;
+  overflow-x: auto;
 }
 
 li .code {

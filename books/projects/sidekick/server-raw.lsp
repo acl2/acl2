@@ -62,6 +62,26 @@
 (defvar *pbt-cached-world* nil)
 (defvar *pbt-cached-result* nil)
 
+
+; For some reason, reading using "read-string" sometimes initializes a hons
+; space.  But we want this to be fast.  So, make the hons space we create
+; small, and ensure that acl2-par is set so that we can set the default-hs to
+; nil.
+
+#-acl2-par
+(error "The ACL2 Sidekick requires that ACL2 be compiled with ACL2(p) support
+        enabled.")
+
+(setq acl2::*hl-hspace-str-ht-default-size*      100)
+(setq acl2::*hl-ctables-nil-ht-default-size*     100)
+(setq acl2::*hl-ctables-cdr-ht-default-size*     100)
+(setq acl2::*hl-ctables-cdr-ht-eql-default-size* 100)
+(setq acl2::*hl-hspace-addr-ht-default-size*     100)
+(setq acl2::*hl-hspace-sbits-default-size*       100)
+(setq acl2::*hl-hspace-other-ht-default-size*    100)
+(setq acl2::*hl-hspace-fal-ht-default-size*      100)
+(setq acl2::*hl-hspace-persist-ht-default-size*  100)
+
 (defun add-handlers ()
   (hunchentoot:define-easy-handler (say-yo :uri "/yo") (name)
     (setf (hunchentoot:content-type*) "application/json")
@@ -129,6 +149,7 @@
   (hunchentoot:define-easy-handler (disassemble-handler :uri "/disassemble") (name)
      (setf (hunchentoot:content-type*) "application/json")
      (b* ((state acl2::*the-live-state*)
+          (acl2::*default-hs* nil)
           ((mv errmsg objs state) (acl2::read-string name))
           ((when errmsg)
            (bridge::json-encode
@@ -149,6 +170,7 @@
   (hunchentoot:define-easy-handler (props-handler :uri "/props") (name)
      (setf (hunchentoot:content-type*) "application/json")
      (b* ((state acl2::*the-live-state*)
+          (acl2::*default-hs* nil)
           ((mv errmsg objs state) (acl2::read-string name))
           ((when errmsg)
            (bridge::json-encode
@@ -169,6 +191,7 @@
   (hunchentoot:define-easy-handler (origin-handler :uri "/origin") (name)
      (setf (hunchentoot:content-type*) "application/json")
      (b* ((state acl2::*the-live-state*)
+          (acl2::*default-hs* nil)
           ((mv errmsg objs state) (acl2::read-string name))
           ((when errmsg)
            (bridge::json-encode
@@ -189,6 +212,7 @@
   (hunchentoot:define-easy-handler (xdoc-handler :uri "/xdoc") (name)
      (setf (hunchentoot:content-type*) "application/json")
      (b* ((state acl2::*the-live-state*)
+          (acl2::*default-hs* nil)
           ((mv errmsg objs state) (acl2::read-string name))
           ((when errmsg)
            (bridge::json-encode
