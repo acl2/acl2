@@ -76,7 +76,7 @@
        (from (cdr (assoc :from x)))
        ((mv text state) (preprocess-topic
                          (acons :parents nil x) ;; horrible hack
-                         all-topics nil topics-fal
+                         all-topics topics-fal
                          t ;; disable autolinking to avoid auto links in text mode
                          state))
        ((mv err tokens) (parse-xml text))

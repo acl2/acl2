@@ -390,7 +390,7 @@
        (long     (or (cdr (assoc :long topic)) ""))
        (parents  (cdr (assoc :parents topic)))
 
-       ((mv long-rchars state) (preprocess-main long nil topics-fal base-pkg state nil))
+       ((mv long-rchars state) (preprocess-main long topics-fal base-pkg state nil))
        (long-str (str::rchars-to-string long-rchars))
        ((mv err long-tokens) (parse-xml long-str))
        (state
@@ -405,7 +405,7 @@
        ((when err)
         (mv nil state))
 
-       ((mv short-rchars state) (preprocess-main short nil topics-fal base-pkg state nil))
+       ((mv short-rchars state) (preprocess-main short topics-fal base-pkg state nil))
        (short-str (str::rchars-to-string short-rchars))
        ((mv err short-tokens) (parse-xml short-str))
        (state

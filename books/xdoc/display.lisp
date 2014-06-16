@@ -345,7 +345,7 @@
        ((mv text state)
         (preprocess-topic
          (acons :parents nil x) ;; horrible hack so we can control this better
-         all-topics nil topics-fal
+         all-topics topics-fal
          t ;; disable-autolinking to avoid auto links in text-mode code
          state))
        (- (fast-alist-free topics-fal))
@@ -423,7 +423,6 @@
 ;       (- (cw "Preprocessing...~%"))
        ;; Use NIL as the topics-fal as a simple way to suppress autolinks...
        ((mv short-acc state) (preprocess-main short
-                                              nil ;; no directory is needed here
                                               nil ;; no topics-fal, just keep it simple
                                               base-pkg
                                               state

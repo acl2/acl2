@@ -25,9 +25,9 @@
 (in-package "STD")
 (include-book "da-base")
 (include-book "formals")
-(include-book "xdoc/fmt-to-str" :dir :system)
 (include-book "tools/rulesets" :dir :system)
 (include-book "xdoc/names" :dir :system)
+(include-book "xdoc/fmt-to-str-orig" :dir :system)
 (set-state-ok t)
 
 (program)
@@ -720,7 +720,7 @@ optimization altogether.</p>")
   (b* (((formal x) x)
 
        (acc (str::revappend-chars "<li>" acc))
-       ((mv name-str state) (xdoc::fmt-to-str x.name base-pkg state))
+       ((mv name-str state) (xdoc::fmt-to-str-orig x.name base-pkg state))
        (acc (str::revappend-chars "<tt>" acc))
        (acc (xdoc::simple-html-encode-str name-str 0 (length name-str) acc))
        (acc (str::revappend-chars "</tt>" acc))
@@ -751,7 +751,7 @@ optimization altogether.</p>")
                 acc
               (str::revappend-chars "<br/>&nbsp;&nbsp;&nbsp;&nbsp;" acc)))
        (acc (str::revappend-chars "<color rgb='#606060'>" acc))
-       ((mv guard-str state) (xdoc::fmt-to-str x.guard base-pkg state))
+       ((mv guard-str state) (xdoc::fmt-to-str-orig x.guard base-pkg state))
        ;; Using @('...') here isn't necessarily correct.  If the sexpr has
        ;; something in it that can lead to '), we are hosed.  BOZO eventually
        ;; check for this and make sure we use <code> tags instead, if it

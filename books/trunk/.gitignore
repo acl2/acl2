@@ -19,3 +19,5 @@ startjob.*
 centaur/manual/
 *.fasl
 TAGS
+.#*
+*#

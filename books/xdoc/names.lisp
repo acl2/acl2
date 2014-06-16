@@ -96,27 +96,6 @@
   (equal (intern-in-package-of-symbol (symbol-name sym) base-pkg)
          sym))
 
-(defun simple-html-encode-chars (x acc)
-
-; X is a character list that we copy into acc (in reverse order), except that
-; we escape any HTML entities like < into the &lt; format.
-
-  (b* (((when (atom x))
-        acc)
-       (acc (case (car x)
-              (#\< (list* #\; #\t #\l #\& acc))         ;; "&lt;" (in reverse)
-              (#\> (list* #\; #\t #\g #\& acc))         ;; "&gt;"
-              (#\& (list* #\; #\p #\m #\a #\& acc))     ;; "&amp;"
-              (#\" (list* #\; #\t #\o #\u #\q #\& acc)) ;; "&quot;"
-              (t   (cons (car x) acc)))))
-    (simple-html-encode-chars (cdr x) acc)))
-
-#||
-(reverse (implode (simple-html-encode-chars '(#\a #\< #\b) nil)))
-(reverse (implode (simple-html-encode-chars '(#\a #\> #\b) nil)))
-(reverse (implode (simple-html-encode-chars '(#\a #\& #\b) nil)))
-(reverse (implode (simple-html-encode-chars '(#\a #\" #\b) nil)))
-||#
 
 (defun sneaky-downcase (x)
   (b* ((down (str::downcase-string x)))

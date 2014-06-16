@@ -361,7 +361,6 @@
                     "(<see topic=\"XDOC____FOO\">xdoc::foo</see> (<see topic=\"ACL2____F\">f</see> 1 2))")))))
 
 
-
 (defun xml-ppr-obj-aux
   (x          ; object to pretty-print
    topics-fal ; fast alist binding all xdoc topic names to [irrelevant]
@@ -369,28 +368,29 @@
    state
    acc)
   (b* ((kpa (known-package-alist state))
-       ((mv str state) (fmt-to-str x base-pkg state))
+       (str (fmt-to-str x base-pkg))
        (acc (autolink-and-encode str 0 (length str) topics-fal base-pkg kpa acc)))
-    (mv acc state)))
+    acc))
 
 (defun xml-ppr-obj-fn (x topics-fal base-pkg state)
-  (b* (((mv acc state) (xml-ppr-obj-aux x topics-fal base-pkg state nil))
-       (ret (str::rchars-to-string acc)))
-    (mv ret state)))
+  (str::rchars-to-string
+   (xml-ppr-obj-aux x topics-fal base-pkg state nil)))
 
-(defmacro xml-ppr-obj (x state ;; BOZO eventually switch to &key (state 'state)
-                         &key
+(defmacro xml-ppr-obj (x &key
+                         (state 'state)
                          (topics-fal 'nil)
                          (base-pkg   ''acl2::foo))
-  `(b* (((mv acc ,state)
-         (xml-ppr-obj-aux ,x ,topics-fal ,base-pkg ,state nil))
+  `(b* ((acc (xml-ppr-obj-aux ,x ,topics-fal ,base-pkg ,state nil))
         (ret (str::rchars-to-string acc)))
-     (mv ret ,state)))
+     ret))
 
+(local
+ (progn
+   (assert! (equal (xml-ppr-obj '(f 1 2)
+                                :topics-fal (make-fast-alist '((f . nil))))
+                   "(<see topic=\"XDOC____F\">xdoc::f</see> 1 2)"))
 
-#|
-(xml-ppr-obj '(f 1 2) state :topics-fal (make-fast-alist '((f . nil))))
-(xml-ppr-obj '(f 1 2) state
-             :topics-fal (make-fast-alist '((f . nil)))
-             :base-pkg 'xdoc::foo)
-|#
+   (assert! (equal (xml-ppr-obj '(f 1 2)
+                                :topics-fal (make-fast-alist '((f . nil)))
+                                :base-pkg 'xdoc::foo)
+                   "(<see topic=\"XDOC____F\">f</see> 1 2)"))))

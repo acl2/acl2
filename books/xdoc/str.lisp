@@ -128,5 +128,39 @@
    (acl2::value events)))
 
 
+(defun simple-html-encode-chars (x acc)
 
+; X is a character list that we copy into acc (in reverse order), except that
+; we escape any HTML entities like < into the &lt; format.
 
+  (b* (((when (atom x))
+        acc)
+       (acc (case (car x)
+              (#\< (list* #\; #\t #\l #\& acc))         ;; "&lt;" (in reverse)
+              (#\> (list* #\; #\t #\g #\& acc))         ;; "&gt;"
+              (#\& (list* #\; #\p #\m #\a #\& acc))     ;; "&amp;"
+              (#\" (list* #\; #\t #\o #\u #\q #\& acc)) ;; "&quot;"
+              (t   (cons (car x) acc)))))
+    (simple-html-encode-chars (cdr x) acc)))
+
+#||
+(reverse (implode (simple-html-encode-chars '(#\a #\< #\b) nil)))
+(reverse (implode (simple-html-encode-chars '(#\a #\> #\b) nil)))
+(reverse (implode (simple-html-encode-chars '(#\a #\& #\b) nil)))
+(reverse (implode (simple-html-encode-chars '(#\a #\" #\b) nil)))
+||#
+
+(defun simple-html-encode-str (x n xl acc)
+
+; Revappend the HTML encoding of X (e.g., & --> &amp;) onto ACC.
+
+  (b* (((when (int= n xl))
+        acc)
+       (char1 (char x n))
+       (acc   (case char1
+                (#\< (list* #\; #\t #\l #\& acc))         ;; "&lt;" (in reverse)
+                (#\> (list* #\; #\t #\g #\& acc))         ;; "&gt;"
+                (#\& (list* #\; #\p #\m #\a #\& acc))     ;; "&amp;"
+                (#\" (list* #\; #\t #\o #\u #\q #\& acc)) ;; "&quot;"
+                (t   (cons char1 acc)))))
+    (simple-html-encode-str x (+ 1 n) xl acc)))

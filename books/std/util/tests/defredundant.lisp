@@ -22,6 +22,7 @@
 (include-book "../defredundant")
 (include-book "misc/definline" :dir :system)
 (include-book "misc/assert" :dir :system)
+(include-book "../defines")
 
 (encapsulate
  ()
@@ -61,7 +62,7 @@
      (if (quotep x)
          2
        (cons (car x) (f4-list (cdr x))))))
- (defun f4-list (x)
+ (defund f4-list (x)
    (declare (xargs :guard (pseudo-term-listp x)))
    (if (atom x)
        nil
@@ -94,6 +95,24 @@
       0
     (+ (f9 (cdr x) (cdr y)))))
 
+(defines g0
+ (define g0-term (x)
+   :inline t
+   :guard (pseudo-termp x)
+   (if (atom x)
+       1
+     (if (quotep x)
+         2
+       (cons (car x) (g0-list (cdr x))))))
+ (define g0-list (x)
+   :guard (pseudo-term-listp x)
+   :enabled t
+   (if (atom x)
+       nil
+     (cons (g0-term (car x))
+           (g0-list (cdr x))))))
+
+
 ))
 
 
@@ -103,7 +122,10 @@
           f2
           natp-of-f2
           f3
-          f9))
+          f4-term
+          f5
+          f9
+          g0-list))
 
 ) ;; end of encapsulate
 
@@ -120,10 +142,29 @@
       (er soft 'assert-enabled "Expected (active-runep ~x0) to be ~x1, found ~x2.~%"
           rune ',enabled-p actual))))
 
+(defmacro assert-macro (name)
+  `(make-event
+    (b* ((macro-args (getprop ',name 'acl2::macro-args :bad 'acl2::current-acl2-world (w state)))
+         ((unless (eq macro-args :bad))
+          (value '(value-triple :success))))
+      (er soft 'assert-macro "Expected ~x0 to be a macro, but found no macro args." ',name))))
+
 (assert-enabled (:definition f1) t)
 (assert-enabled (:definition f2) nil)
 (assert-enabled (:definition f3) t)
+
+(assert-enabled (:definition f4-term) t)
+(assert-enabled (:definition f4-list) nil)
+
+(assert-enabled (:definition f5$inline) t)
+(assert-enabled (:type-prescription f5$inline) t)
+(assert-macro f5)
+
 (assert-enabled (:definition f9) nil)
+
+(assert-enabled (:definition g0-term) nil)
+(assert-enabled (:definition g0-list) t)
+(assert-macro g0-term)
 
 (assert-enabled (:rewrite natp-of-f1) t)
 (assert-enabled (:type-prescription natp-of-f2) nil)

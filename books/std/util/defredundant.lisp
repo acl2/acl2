@@ -20,6 +20,7 @@
 
 (in-package "STD")
 (include-book "support")
+(include-book "misc/assert" :dir :system)
 (set-state-ok t)
 (program)
 
@@ -43,6 +44,7 @@ copying and pasting code.")
     (cddr landmark)))
 
 (defun runes-to-e/ds (runes enables disables state)
+  ;; Returns (mv enables disables)
   (b* (((when (atom runes))
         (mv enables disables))
        (rune1     (car runes))
@@ -53,11 +55,23 @@ copying and pasting code.")
     (runes-to-e/ds (cdr runes) enables (cons rune1 disables) state)))
 
 (defun name-to-e/ds (name state)
+  ;; Returns (mv enables disables)
   (b* ((runic-mapping-pairs
         (getprop name 'acl2::runic-mapping-pairs
                  nil 'acl2::current-acl2-world (acl2::w state)))
        (runes (strip-cdrs runic-mapping-pairs)))
     (runes-to-e/ds runes nil nil state)))
+
+(defun names-to-e/ds (names state)
+  ;; Returns (mv enables disables)
+  (b* (((when (atom names))
+        (mv nil nil))
+       ((mv es1 ds1) (name-to-e/ds (car names) state))
+       ((mv es2 ds2) (names-to-e/ds (cdr names) state)))
+    (mv (append es1 es2)
+        (append ds1 ds2))))
+
+
 
 (defun redundant-clean-up-xargs
   (x ;; e.g., (:guard (natp x) :measure (acl2-count x) ...)
@@ -69,12 +83,10 @@ copying and pasting code.")
        ((when (atom (cdr x)))
         (raise "Invalid xargs... ~x0" x))
        ((list* kwd val rest) x)
-       ((when (member kwd '(:measure :mode :verify-guards
-                                     :guard-debug :guard-hints
-                                     :hints :otf-flg)))
+       ((when (member kwd '(:measure :mode :verify-guards :guard-debug
+                            :guard-hints :hints :otf-flg)))
         (redundant-clean-up-xargs rest)))
-    (list* kwd val
-           (redundant-clean-up-xargs rest))))
+    (list* kwd val (redundant-clean-up-xargs rest))))
 
 (defun redundant-clean-up-decl-args
   (x ;; the "..." part of a (declare . ...); i.e., ((type ...) (xargs ...) (ignore ...))
@@ -89,11 +101,9 @@ copying and pasting code.")
        ((when (or (eq (car arg1) 'type)
                   (eq (car arg1) 'ignore)
                   (eq (car arg1) 'ignorable)))
-        (cons arg1
-              (redundant-clean-up-decl-args rest)))
+        (cons arg1 (redundant-clean-up-decl-args rest)))
        ((when (eq (car arg1) 'xargs))
-        (cons (cons 'xargs
-                    (redundant-clean-up-xargs (cdr arg1)))
+        (cons (cons 'xargs (redundant-clean-up-xargs (cdr arg1)))
               (redundant-clean-up-decl-args rest))))
     (raise "Bad form in declare: ~x0" x)))
 
@@ -116,29 +126,28 @@ copying and pasting code.")
     (cons (cons 'declare (redundant-clean-up-decl-args decl1-args))
           (redundant-clean-up-decls rest))))
 
-(defun redundant-defun (event-tuple force-programp state)
-  (b* ((?__function__ 'redundant-defun)
+(defun redundant-clean-up-defun (form force-programp state)
+  ;; Returns a cleaned up (defun ...) form.
+  (b* ((__function__ 'redundant-rewrite-defun)
        (world (w state))
-       (form  (acl2::access-event-tuple-form event-tuple))
        ((unless (and (consp form)
-                     (eq (car form) 'defun)))
-        (raise "Called redundant-defun on ~x0?" event-tuple))
+                     (or (eq (car form) 'defun)
+                         ;; we might see defund's within mutual recursions.
+                         (eq (car form) 'defund))))
+        (raise "Called redundant-rewrite-defun on ~x0?" form))
        (fn      (second form))
        (formals (third form))
        (decls   (redundant-clean-up-decls (butlast (cdddr form) 1)))
        (body    (car (last form)))
-
        (world-formals (getprop fn 'acl2::formals :bad 'acl2::current-acl2-world world))
        ((unless (equal world-formals formals))
-        (raise "Problem with formals for ~x0?" event-tuple))
-
+        (raise "Problem with formals for ~x0: ~x1 vs ~x2?" fn formals world-formals))
        ;; elide measure in case it's not been redundantly introduced
        (just (getprop fn 'acl2::justification nil 'acl2::current-acl2-world world))
        (decls (if (not just)
                   decls
                 (cons `(declare (xargs :measure (:? . ,(acl2::access acl2::justification just :subset))))
                       decls)))
-
        ;; figure out the correct :mode and :verify-guards, based on current state
        (symbol-class (getprop fn 'acl2::symbol-class nil 'acl2::current-acl2-world world))
        (decls (cond ((or force-programp
@@ -152,9 +161,23 @@ copying and pasting code.")
                      (cons `(declare (xargs :mode :logic :verify-guards t))
                            decls))
                     (t
-                     (raise "Expected valid symbol-class for ~x0, found ~x1."
-                            event-tuple symbol-class))))
+                     (raise "Expected valid symbol-class for ~x0, found ~x1." fn symbol-class)))))
+    ;; Note: we use DEFUN even if it was a DEFUND; any enabling/disabling will
+    ;; happen separately.
+    `(defun ,fn ,formals ,@decls ,body)))
 
+(defun redundant-clean-up-defuns (forms force-programp state)
+  ;; Returns a list of cleaned up (defun ...) forms.
+  (if (atom forms)
+      nil
+    (cons (redundant-clean-up-defun (car forms) force-programp state)
+          (redundant-clean-up-defuns (cdr forms) force-programp state))))
+
+(defun redundant-defun (event-tuple force-programp state)
+  (b* ((?__function__ 'redundant-defun)
+       (form            (acl2::access-event-tuple-form event-tuple))
+       (cleaned-up-form (redundant-clean-up-defun form force-programp state))
+       (fn              (second form))
        ;; figure out if the function and its executable-counterpart are
        ;; enabled.  we won't do anything with type-prescriptions since they're
        ;; completely broken anyway (e.g., the TP you get is based on your
@@ -162,7 +185,24 @@ copying and pasting code.")
        ((mv enables disables) (if force-programp
                                   (mv nil nil)
                                 (name-to-e/ds fn state))))
-    `((defun ,fn ,formals ,@decls ,body)
+    `((value-triple (cw "Defun: ~x0.~%" ',fn))
+      ,cleaned-up-form
+      (in-theory (e/d ,enables ,disables)))))
+
+(defun redundant-mutrec (event-tuple force-programp state)
+  (b* ((?__function__ 'redundant-mutual-recursion)
+       (form  (acl2::access-event-tuple-form event-tuple))
+       ((unless (and (consp form)
+                     (eq (car form) 'mutual-recursion)))
+        (raise "Called redundant-mutual-recursion on ~x0?" event-tuple))
+       (defuns (cdr form))
+       (cleaned-up-defuns (redundant-clean-up-defuns defuns force-programp state))
+       ((mv enables disables) (if force-programp
+                                  (mv nil nil)
+                                (names-to-e/ds (strip-cadrs defuns) state)))
+       (cleaned-up-form `(mutual-recursion . ,cleaned-up-defuns)))
+    `((value-triple (cw "Mutual: ~x0.~%" ',(strip-cadrs (cdr form))))
+      ,cleaned-up-form
       (in-theory (e/d ,enables ,disables)))))
 
 (defun redundant-clean-defthm-kwdargs (kwdargs)
@@ -190,7 +230,8 @@ copying and pasting code.")
        (formula (third form))
        (kwdargs (redundant-clean-defthm-kwdargs (nthcdr 3 form)))
        ((mv enables disables) (name-to-e/ds name state)))
-    `((defthm ,name ,formula . ,kwdargs)
+    `((value-triple (cw "Defthm: ~x0.~%" ',name))
+      (defthm ,name ,formula . ,kwdargs)
       (in-theory (e/d ,enables ,disables)))))
 
 (defun redundant-defmacro (event-tuple state)
@@ -203,12 +244,9 @@ copying and pasting code.")
        (name    (second form))
        (formals (third form))
        (decls   (redundant-clean-up-decls (butlast (nthcdr 3 form) 1)))
-       (body    (car (last form)))
-       ;; BOZO how about macro-aliases
-       ;; BOZO how about binop-table
-       ;; BOZO how about untranslate-patterns
-       )
-    `((defmacro  ,name ,formals ,@decls ,body))))
+       (body    (car (last form))))
+    `((value-triple (cw "Macro: ~x0.~%" ',name))
+      (defmacro  ,name ,formals ,@decls ,body))))
 
 (defun redundant-defconst (event-tuple state)
   (declare (ignorable state))
@@ -220,7 +258,116 @@ copying and pasting code.")
        (name    (second form))
        (value   (third form))
        (?doc    (fourth form)))
-    `((defconst ,name ,value))))
+    `((value-triple (cw "Const: ~x0.~%" ',name))
+      (defconst ,name ,value))))
+
+(defun redundant-event1 (name force-programp state)
+  (b* ((?__function__ 'redundant-event1)
+       (world       (w state))
+       (event-tuple (get-event-tuple name world))
+       (form        (acl2::access-event-tuple-form event-tuple))
+       ((unless (consp form))
+        (raise "For ~x0: expected a valid event form, but found ~x1." name form))
+       (type (car form))
+       ((when (eq type 'defthm))
+        (redundant-defthm event-tuple state))
+       ((when (eq type 'defconst))
+        (redundant-defconst event-tuple state))
+       ((when (eq type 'defun))
+        (redundant-defun event-tuple force-programp state))
+       ((when (eq type 'defmacro))
+        (redundant-defmacro event-tuple state))
+       ((when (eq type 'mutual-recursion))
+        (redundant-mutrec event-tuple force-programp state)))
+     (raise "For ~x0: unsupported event type: ~x1" name type)))
+
+(defun redundant-events1 (names force-programp state)
+  (if (atom names)
+      nil
+    (append (redundant-event1 (car names) force-programp state)
+            (redundant-events1 (cdr names) force-programp state))))
+
+
+
+; Extension to handle macro aliases -------------------------------------------
+;
+; This is really subtle.  We generally want to introduce macro aliases first,
+; before their associated functions, under the theory that folks will do things
+; like:
+;
+;    (defmacro nice (foo bar &key baz boop)
+;      `(nice-fn ,foo ,bar ,baz ,boop))
+;    (defun nice-fn (foo bar baz boop)
+;       (if ...
+;          (nice (cdr foo) bar ...)        ;; i.e., using the macro in the def.
+;         ...))
+;
+; This is straightforward enough for singly recursive functions, but for mutual
+; recursions we need to possibly introduce all the macros first.
+
+(defun find-macro-aliases-for-defun (form world)
+  ;; Returns a list of macro-alias names (NIL if there are no aliases)
+  (b* ((__function__ 'find-macro-aliases-for-defun)
+       ((unless (and (consp form)
+                     (or (eq (car form) 'defun)
+                         (eq (car form) 'defund))))
+        (raise "Expected a defun form, not ~x0." form))
+       (name  (second form))
+       (alias (car (rassoc name (table-alist 'acl2::macro-aliases-table world))))
+       ((when alias)
+        (list alias)))
+    nil))
+
+(assert!
+ (equal (let ((world (w state)))
+          (find-macro-aliases-for-defun (acl2::access-event-tuple-form
+                                         (get-event-tuple 'binary-append world))
+                                        world))
+        '(append)))
+
+(defun find-macro-aliases-for-defuns (forms world)
+  ;; Returns a list of macro-alias names (NIL if there are no aliases)
+  (if (atom forms)
+      nil
+    (append (find-macro-aliases-for-defun (car forms) world)
+            (find-macro-aliases-for-defuns (cdr forms) world))))
+
+(defun find-defun-aliases-for-macro (form world) ;; form is a (defmacro foo ...)
+  ;; Returns (mv macros fns)
+  ;;   - macros is a list of macro names (including at least foo)
+  ;;   - fns is a list of function names
+  (b* ((__function__ 'find-defun-alias-for-macro)
+       ((unless (and (consp form)
+                     (eq (car form) 'defmacro)))
+        (raise "Expected a defmacro form, not ~x0." form)
+        (mv nil nil))
+       (name  (second form))
+       (fn    (cdr (assoc name (table-alist 'acl2::macro-aliases-table world))))
+       ((unless fn)
+        (mv (list name) nil))
+       (defun-form (acl2::access-event-tuple-form (get-event-tuple fn world)))
+       (type       (car defun-form))
+       ((when (eq type 'mutual-recursion))
+        (b* ((fns    (strip-cadrs (cdr defun-form)))
+             (macros (find-macro-aliases-for-defuns (cdr defun-form) world)))
+          (or (and (member name macros)
+                   (member fn fns))
+              (raise "Macro alias problem."))
+          (mv macros fns)))
+       ((when (eq type 'defun))
+        (mv (list name) (list fn))))
+    (raise "Expected macro alias for ~x0 to be a mutual-recursion or defun, ~
+            but found ~x1." name defun-form)
+    (mv nil nil)))
+
+(assert! (b* ((world (w state))
+              ((mv macros fns)
+               (find-defun-aliases-for-macro (acl2::access-event-tuple-form
+                                              (get-event-tuple 'append world))
+                                             world)))
+           (and (equal macros '(append))
+                (equal fns '(binary-append)))))
+
 
 (defun redundant-event (name force-programp state)
   (b* ((?__function__ 'redundant-event)
@@ -230,11 +377,33 @@ copying and pasting code.")
        ((unless (consp form))
         (raise "For ~x0: expected a valid event form, but found ~x1." name form))
        (type (car form))
-       ((when (eq type 'defun))    (redundant-defun event-tuple force-programp state))
-       ((when (eq type 'defthm))   (redundant-defthm event-tuple state))
-       ((when (eq type 'defmacro)) (redundant-defmacro event-tuple state))
-       ((when (eq type 'defconst)) (redundant-defconst event-tuple state))
-       )
+
+       ((when (or (eq type 'defthm)
+                  (eq type 'defconst)))
+        (redundant-event1 name force-programp state))
+
+       ((when (eq type 'defun))
+        (b* ((fn-events    (redundant-event1 name force-programp state))
+             (defun        (acl2::access-event-tuple-form event-tuple))
+             (macro-names  (find-macro-aliases-for-defun defun world))
+             (macro-events (redundant-events1 macro-names force-programp state)))
+          (append macro-events fn-events)))
+
+       ((when (eq type 'mutual-recursion))
+        (b* ((fn-events    (redundant-event1 name force-programp state))
+             (defuns       (cdr (acl2::access-event-tuple-form event-tuple)))
+             (macro-names  (find-macro-aliases-for-defuns defuns world))
+             (- (cw "Macro names for mutual recursion ~x0: ~x1.~%" name macro-names))
+             (macro-events (redundant-events1 macro-names force-programp state)))
+          (append macro-events fn-events)))
+
+       ((when (eq type 'defmacro))
+        (b* ((defmacro        (acl2::access-event-tuple-form event-tuple))
+             ((mv macros fns) (find-defun-aliases-for-macro defmacro world))
+             (macro-events    (redundant-events1 macros force-programp state))
+             (fn-events       (redundant-events1 fns force-programp state)))
+          (append macro-events fn-events))))
+
     (raise "For ~x0: unsupported event type: ~x1" name type)))
 
 (defun redundant-events (names force-programp state)
@@ -242,6 +411,10 @@ copying and pasting code.")
       nil
     (append (redundant-event (car names) force-programp state)
             (redundant-events (cdr names) force-programp state))))
+
+
+
+
 
 (defun defredundant-fn (names force-programp state)
   (let ((events (redundant-events names force-programp state)))

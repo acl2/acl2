@@ -26,7 +26,6 @@
 (include-book "import-acl2doc")
 (include-book "defxdoc-raw")
 (include-book "save-fancy")
-(include-book "save-classic")
 (include-book "oslib/mkdir" :dir :system)
 (program)
 
@@ -66,13 +65,9 @@
    x))
 
 (defmacro save (dir &key
-                    (type      ':fancy)
                     (import    't)
                     (redef-okp 'nil)
-                    (zip-p     't)
-                    ;; Classic options (ignored for type :fancy)
-                    (index-pkg 'acl2::foo)
-                    (expand-level '1))
+                    (zip-p     't))
   `(progn
      ;; ugh, stupid stupid writes-ok stupidity
      (defttag :xdoc)
@@ -96,9 +91,6 @@
                        just call XDOC::SAVE with :REDEF-OKP T to bypass this ~
                        error (and use the most recent version of each topic.)")))
            ((mv & & state) (assign acl2::writes-okp t))
-           (state
-            ,(if (eq type :fancy)
-                 `(save-fancy all-xdoc-topics ,dir ',zip-p state)
-               `(save-topics all-xdoc-topics ,dir ',index-pkg ',expand-level state))))
+           (state (save-fancy all-xdoc-topics ,dir ',zip-p state)))
         (value '(value-triple :invisible))))))
 

@@ -41,7 +41,6 @@
 (include-book "octal")
 (include-book "pad")
 (include-book "prefix-lines")
-(include-book "pretty")
 (include-book "strpos")
 (include-book "strrpos")
 (include-book "strprefixp")
@@ -65,7 +64,11 @@ ACL2.  The functions here are all in logic mode, with verified guards.  In many
 cases, some effort has been spent to make them both efficient and relatively
 straightforward to reason about.</p>
 
+
 <h3>Loading the library</h3>
+
+<p><b>Note:</b> All of the library's functions are found in the @('STR')
+package.</p>
 
 <p>Ordinarily, to use the library one should run</p>
 
@@ -73,11 +76,36 @@ straightforward to reason about.</p>
  (include-book \"std/strings/top\" :dir :system)
 })
 
-<p>All of the library's functions are found in the @('STR') package.</p>
+<p>To keep the top book more lightweight, certain functionality is excluded by
+default.  Here are additional books you may want to include:</p>
+
+<ul>
+<li>@('std/strings/base64') &mdash; support for @(see base64) encoding/decoding</li>
+<li>@('std/strings/pretty') &mdash; support for @(see pretty-printing) ACL2 expressions</li>
+</ul>
+
+<h5>Advanced Options</h5>
 
 <p>If you are willing to accept a trust tag, you may also include the
 @('fast-cat') book for faster string-concatenation; see @(see cat) for
 details.</p>
+
+<p>If you only need some subset of the available functions, it's generally
+reasonable to just include individual books instead of the @('top') book.
+However, book names and dependencies do sometimes change, so in general we
+recommend just loading the @('top') book.</p>
+
+<p>If you want to be able to use the string operations but don't have any need
+to reason about them, e.g., because you are writing code for macros, then you
+might instead want to load either:</p>
+
+<ul>
+<li>@('std/strings/defs') &mdash; logic mode definitions, minimal theorems</li>
+<li>@('std/strings/defs-program') &mdash; program mode definitions, no theorems</li>
+</ul>
+
+<p>These books may load slightly faster than the @('top') book and may help to
+minimize the effects of loading the library on your theory.</p>
 
 <h3>Copyright Information</h3>
 

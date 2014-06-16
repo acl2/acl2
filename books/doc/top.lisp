@@ -460,9 +460,7 @@ of proofs.")
                        :import nil
                        ;; Allow redefinition so that we don't have to get
                        ;; everything perfect (until it's release time)
-                       :redef-okp t
-                       ;; For classic mode only...
-                       :expand-level 2)
+                       :redef-okp t)
            (value `(value-triple :manual))))
 
 (local

@@ -19,17 +19,14 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "STR")
-(include-book "xdoc/top" :dir :system)
-(include-book "tools/bstar" :dir :system)
-(include-book "std/lists/list-defuns" :dir :system)
-(include-book "std/basic/defs" :dir :system)
+(include-book "defs")
 
 (encapsulate ()
-  (local (include-book "top"))
-  (local (include-book "defs-aux"))
+  (local (include-book "pretty"))
+  (local (include-book "pretty-defs-aux"))
   (local (include-book "std/util/defredundant" :dir :system))
 
   (make-event
-   (b* ((events (std::defredundant-fn *str-library-basic-defs* nil state)))
+   (b* ((events (std::defredundant-fn *pretty-defs* nil state)))
      (acl2::value events))))
 

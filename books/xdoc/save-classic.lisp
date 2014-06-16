@@ -251,254 +251,252 @@ command, along the following lines:</p>
     (find-orphaned-topics (cdr x) topics-fal acc)))
 
 
-(mutual-recursion
+;; (mutual-recursion
 
- (defun make-hierarchy-aux (path dir topics-fal index-pkg all id expand-level acc state)
+;;  (defun make-hierarchy-aux (path dir topics-fal index-pkg all id expand-level acc state)
 
-; - Path is our current location in the hierarchy, and is used to avoid loops.
-;   (The first element in path is the current topic we are on.)
-;
-; - Index-pkg is just used for symbol printing.
-;
-; - All is the list of all xdoc documentation topics.
-;
-; - ID is a number that we assign to this topic entry for hiding with
-;   JavaScript.  (We don't use names because the topics might be repeated under
-;   different parents).
-;
-; - Expand-level is how deep to expand topics, generally 1 by default.
-;
-; - Acc is the character list we are building.
-;
-; We return (MV ACC-PRIME ID-PRIME STATE)
+;; ; - Path is our current location in the hierarchy, and is used to avoid loops.
+;; ;   (The first element in path is the current topic we are on.)
+;; ;
+;; ; - Index-pkg is just used for symbol printing.
+;; ;
+;; ; - All is the list of all xdoc documentation topics.
+;; ;
+;; ; - ID is a number that we assign to this topic entry for hiding with
+;; ;   JavaScript.  (We don't use names because the topics might be repeated under
+;; ;   different parents).
+;; ;
+;; ; - Expand-level is how deep to expand topics, generally 1 by default.
+;; ;
+;; ; - Acc is the character list we are building.
+;; ;
+;; ; We return (MV ACC-PRIME ID-PRIME STATE)
 
-   (b* ((name     (car path))
-        (id-chars (list* #\t #\o #\p #\i #\c #\- (explode-atom id 10)))
-        (depth    (len path))
-        (children (find-children name all))
-        (kind     (cond ((not children) "leaf")
-                        ((< depth expand-level) "show")
-                        (t "hide")))
+;;    (b* ((name     (car path))
+;;         (id-chars (list* #\t #\o #\p #\i #\c #\- (explode-atom id 10)))
+;;         (depth    (len path))
+;;         (children (find-children name all))
+;;         (kind     (cond ((not children) "leaf")
+;;                         ((< depth expand-level) "show")
+;;                         (t "hide")))
 
-        ((when    (member-equal name (cdr path)))
-         (prog2$
-          (er hard? 'make-hierarchy "Circular topic hierarchy.  Path is ~x0.~%" path)
-          (mv acc id state)))
+;;         ((when    (member-equal name (cdr path)))
+;;          (prog2$
+;;           (er hard? 'make-hierarchy "Circular topic hierarchy.  Path is ~x0.~%" path)
+;;           (mv acc id state)))
 
-        (topic (find-topic name all))
-        (short    (cdr (assoc :short topic)))
-        (base-pkg (cdr (assoc :base-pkg topic)))
+;;         (topic (find-topic name all))
+;;         (short    (cdr (assoc :short topic)))
+;;         (base-pkg (cdr (assoc :base-pkg topic)))
 
-        (acc (str::revappend-chars "<hindex topic=\"" acc))
-        (acc (file-name-mangle name acc))
-        (acc (str::revappend-chars "\" id=\"" acc))
-        (acc (revappend id-chars acc))
-        (acc (str::revappend-chars "\" kind=\"" acc))
-        (acc (str::revappend-chars kind acc))
-        (acc (str::revappend-chars "\">" acc))
-        (acc (cons #\Newline acc))
+;;         (acc (str::revappend-chars "<hindex topic=\"" acc))
+;;         (acc (file-name-mangle name acc))
+;;         (acc (str::revappend-chars "\" id=\"" acc))
+;;         (acc (revappend id-chars acc))
+;;         (acc (str::revappend-chars "\" kind=\"" acc))
+;;         (acc (str::revappend-chars kind acc))
+;;         (acc (str::revappend-chars "\">" acc))
+;;         (acc (cons #\Newline acc))
 
-        (acc (str::revappend-chars "<hindex_name>" acc))
-        (acc (sym-mangle-cap name index-pkg acc))
-        (acc (str::revappend-chars "</hindex_name>" acc))
-        (acc (cons #\Newline acc))
+;;         (acc (str::revappend-chars "<hindex_name>" acc))
+;;         (acc (sym-mangle-cap name index-pkg acc))
+;;         (acc (str::revappend-chars "</hindex_name>" acc))
+;;         (acc (cons #\Newline acc))
 
-        (acc (str::revappend-chars "<hindex_short id=\"" acc))
-        (acc (revappend id-chars acc))
-        (acc (str::revappend-chars "\">" acc))
-        ((mv acc state) (preprocess-main short dir topics-fal base-pkg state acc))
-        (acc (str::revappend-chars "</hindex_short>" acc))
+;;         (acc (str::revappend-chars "<hindex_short id=\"" acc))
+;;         (acc (revappend id-chars acc))
+;;         (acc (str::revappend-chars "\">" acc))
+;;         ((mv acc state) (preprocess-main short dir topics-fal base-pkg state acc))
+;;         (acc (str::revappend-chars "</hindex_short>" acc))
 
-        (acc (str::revappend-chars "<hindex_children id=\"" acc))
-        (acc (revappend id-chars acc))
-        (acc (str::revappend-chars "\" kind=\"" acc))
-        (acc (str::revappend-chars kind acc))
-        (acc (str::revappend-chars "\">" acc))
-        (acc (cons #\Newline acc))
+;;         (acc (str::revappend-chars "<hindex_children id=\"" acc))
+;;         (acc (revappend id-chars acc))
+;;         (acc (str::revappend-chars "\" kind=\"" acc))
+;;         (acc (str::revappend-chars kind acc))
+;;         (acc (str::revappend-chars "\">" acc))
+;;         (acc (cons #\Newline acc))
 
-        (id   (+ id 1))
-        ((mv acc id state)
-         (make-hierarchy-list-aux children path dir topics-fal index-pkg all id expand-level acc state))
-        (acc (str::revappend-chars "</hindex_children>" acc))
-        (acc (str::revappend-chars "</hindex>" acc))
-        (acc (cons #\Newline acc)))
-       (mv acc id state)))
+;;         (id   (+ id 1))
+;;         ((mv acc id state)
+;;          (make-hierarchy-list-aux children path dir topics-fal index-pkg all id expand-level acc state))
+;;         (acc (str::revappend-chars "</hindex_children>" acc))
+;;         (acc (str::revappend-chars "</hindex>" acc))
+;;         (acc (cons #\Newline acc)))
+;;        (mv acc id state)))
 
- (defun make-hierarchy-list-aux (children path dir topics-fal index-pkg all id expand-level acc state)
+;;  (defun make-hierarchy-list-aux (children path dir topics-fal index-pkg all id expand-level acc state)
 
-; - Children are the children of this path.
-; - Path is our current location in the hierarchy.
+;; ; - Children are the children of this path.
+;; ; - Path is our current location in the hierarchy.
 
-   (if (atom children)
-       (mv acc id state)
-     (b* (((mv acc id state)
-           (make-hierarchy-aux (cons (car children) path) dir topics-fal index-pkg all id
-                               expand-level acc state))
-          ((mv acc id state)
-           (make-hierarchy-list-aux (cdr children) path dir topics-fal index-pkg all id
-                                    expand-level acc state)))
-         (mv acc id state)))))
-
-
-(defun save-hierarchy (x dir topics-fal index-pkg expand-level state)
-
-; X is all topics.  We assume all parents are normalized.
-
-  (b* ((roots (mergesort (find-roots x)))
-       (acc   nil)
-       (acc   (str::revappend-chars "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" acc))
-       (acc   (cons #\Newline acc))
-       (acc   (str::revappend-chars "<?xml-stylesheet type=\"text/xsl\" href=\"xml-topic-index.xsl\"?>" acc))
-       (acc   (cons #\Newline acc))
-       (acc   (str::revappend-chars *xml-entity-stuff* acc))
-       (acc   (str::revappend-chars "<page>" acc))
-       (acc   (cons #\Newline acc))
-       (acc   (str::revappend-chars "<hindex_root>" acc))
-       (acc   (cons #\Newline acc))
-       ((mv acc & state) (make-hierarchy-list-aux roots nil dir topics-fal index-pkg x 0
-                                                  expand-level acc state))
-       (acc   (str::revappend-chars "</hindex_root>" acc))
-       (acc   (cons #\Newline acc))
-       (acc   (str::revappend-chars "</page>" acc))
-       (acc   (cons #\Newline acc))
-       (filename (oslib::catpath dir "topics.xml"))
-       ((mv channel state) (open-output-channel filename :character state))
-       (state (princ$ (str::rchars-to-string acc) channel state))
-       (state (close-output-channel channel state)))
-      state))
+;;    (if (atom children)
+;;        (mv acc id state)
+;;      (b* (((mv acc id state)
+;;            (make-hierarchy-aux (cons (car children) path) dir topics-fal index-pkg all id
+;;                                expand-level acc state))
+;;           ((mv acc id state)
+;;            (make-hierarchy-list-aux (cdr children) path dir topics-fal index-pkg all id
+;;                                     expand-level acc state)))
+;;          (mv acc id state)))))
 
 
+;; (defun save-hierarchy (x dir topics-fal index-pkg expand-level state)
+
+;; ; X is all topics.  We assume all parents are normalized.
+
+;;   (b* ((roots (mergesort (find-roots x)))
+;;        (acc   nil)
+;;        (acc   (str::revappend-chars "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" acc))
+;;        (acc   (cons #\Newline acc))
+;;        (acc   (str::revappend-chars "<?xml-stylesheet type=\"text/xsl\" href=\"xml-topic-index.xsl\"?>" acc))
+;;        (acc   (cons #\Newline acc))
+;;        (acc   (str::revappend-chars *xml-entity-stuff* acc))
+;;        (acc   (str::revappend-chars "<page>" acc))
+;;        (acc   (cons #\Newline acc))
+;;        (acc   (str::revappend-chars "<hindex_root>" acc))
+;;        (acc   (cons #\Newline acc))
+;;        ((mv acc & state) (make-hierarchy-list-aux roots nil dir topics-fal index-pkg x 0
+;;                                                   expand-level acc state))
+;;        (acc   (str::revappend-chars "</hindex_root>" acc))
+;;        (acc   (cons #\Newline acc))
+;;        (acc   (str::revappend-chars "</page>" acc))
+;;        (acc   (cons #\Newline acc))
+;;        (filename (oslib::catpath dir "topics.xml"))
+;;        ((mv channel state) (open-output-channel filename :character state))
+;;        (state (princ$ (str::rchars-to-string acc) channel state))
+;;        (state (close-output-channel channel state)))
+;;       state))
 
 
 
-(defun save-index (x dir topics-fal index-pkg state)
+;; (defun save-index (x dir topics-fal index-pkg state)
 
-; Write index.xml for the whole list of all topics.
+;; ; Write index.xml for the whole list of all topics.
 
-  (b* ((acc nil)
-       (acc (str::revappend-chars "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" acc))
-       (acc (cons #\Newline acc))
-       (acc (str::revappend-chars "<?xml-stylesheet type=\"text/xsl\" href=\"xml-full-index.xsl\"?>" acc))
-       (acc (cons #\Newline acc))
-       (acc   (str::revappend-chars *xml-entity-stuff* acc))
-       (acc (str::revappend-chars "<page>" acc))
-       (acc (cons #\Newline acc))
-       ((mv acc state) (index-topics x "Full Index" dir topics-fal index-pkg state acc))
-       (acc (str::revappend-chars "</page>" acc))
-       (filename (oslib::catpath dir "index.xml"))
-       ((mv channel state) (open-output-channel filename :character state))
-       (state (princ$ (str::rchars-to-string acc) channel state))
-       (state (close-output-channel channel state)))
-      state))
+;;   (b* ((acc nil)
+;;        (acc (str::revappend-chars "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" acc))
+;;        (acc (cons #\Newline acc))
+;;        (acc (str::revappend-chars "<?xml-stylesheet type=\"text/xsl\" href=\"xml-full-index.xsl\"?>" acc))
+;;        (acc (cons #\Newline acc))
+;;        (acc   (str::revappend-chars *xml-entity-stuff* acc))
+;;        (acc (str::revappend-chars "<page>" acc))
+;;        (acc (cons #\Newline acc))
+;;        ((mv acc state) (index-topics x "Full Index" dir topics-fal index-pkg state acc))
+;;        (acc (str::revappend-chars "</page>" acc))
+;;        (filename (oslib::catpath dir "index.xml"))
+;;        ((mv channel state) (open-output-channel filename :character state))
+;;        (state (princ$ (str::rchars-to-string acc) channel state))
+;;        (state (close-output-channel channel state)))
+;;       state))
 
 
 
 
 ; -------------------- Making Topic Pages -----------------------
 
-(defun save-topic (x all-topics dir topics-fal state)
-  (b* ((name               (cdr (assoc :name x)))
-       (-                  (cw "Saving ~s0::~s1.~%" (symbol-package-name name) (symbol-name name)))
-       ((mv text state)    (preprocess-topic x all-topics dir topics-fal
-                                             nil ;; leave autolinking enabled
-                                             state))
-       (filename           (str::cat (str::rchars-to-string
-                                      (file-name-mangle name nil))
-                                     ".xml"))
-       (fullpath           (oslib::catpath dir filename))
-       ((mv channel state) (open-output-channel fullpath :character state))
-       (state              (princ$ text channel state))
-       (state              (close-output-channel channel state)))
-      state))
+;; (defun save-topic (x all-topics dir topics-fal state)
+;;   (b* ((name               (cdr (assoc :name x)))
+;;        (-                  (cw "Saving ~s0::~s1.~%" (symbol-package-name name) (symbol-name name)))
+;;        ((mv text state)    (preprocess-topic x all-topics dir topics-fal
+;;                                              nil ;; leave autolinking enabled
+;;                                              state))
+;;        (filename           (str::cat (str::rchars-to-string
+;;                                       (file-name-mangle name nil))
+;;                                      ".xml"))
+;;        (fullpath           (oslib::catpath dir filename))
+;;        ((mv channel state) (open-output-channel fullpath :character state))
+;;        (state              (princ$ text channel state))
+;;        (state              (close-output-channel channel state)))
+;;       state))
 
-(defun save-topics-aux (x all-topics dir topics-fal state)
-  (if (atom x)
-      state
-    (let ((state (save-topic (car x) all-topics dir topics-fal state)))
-      (save-topics-aux (cdr x) all-topics dir topics-fal state))))
+;; (defun save-topics-aux (x all-topics dir topics-fal state)
+;;   (if (atom x)
+;;       state
+;;     (let ((state (save-topic (car x) all-topics dir topics-fal state)))
+;;       (save-topics-aux (cdr x) all-topics dir topics-fal state))))
 
 
 
-(defun save-success-file (ntopics dir state)
-  (b* ((file           (oslib::catpath dir "success.txt"))
-       ((mv out state) (open-output-channel file :character state))
-       ((mv & state)   (fmt "Successfully wrote ~x0 topics.~%~%"
-                            (list (cons #\0 ntopics))
-                            out state nil))
-       (state          (close-output-channel out state)))
-      state))
+;; (defun save-success-file (ntopics dir state)
+;;   (b* ((file           (oslib::catpath dir "success.txt"))
+;;        ((mv out state) (open-output-channel file :character state))
+;;        ((mv & state)   (fmt "Successfully wrote ~x0 topics.~%~%"
+;;                             (list (cons #\0 ntopics))
+;;                             out state nil))
+;;        (state          (close-output-channel out state)))
+;;       state))
 
-(defun prepare-dir (dir state)
-  (b* (((unless (stringp dir))
-        (prog2$ (er hard? 'prepare-dir "Dir must be a string, but is: ~x0.~%" dir)
-                state))
-       (- (cw "; Preparing directory ~s0.~%" dir))
-       (dir/xml     (oslib::catpath dir "xml"))
-       (state       (oslib::mkdir! dir))
-       (state       (oslib::mkdir! dir/xml))
+;; (defun prepare-dir (dir state)
+;;   (b* (((unless (stringp dir))
+;;         (prog2$ (er hard? 'prepare-dir "Dir must be a string, but is: ~x0.~%" dir)
+;;                 state))
+;;        (- (cw "; Preparing directory ~s0.~%" dir))
+;;        (dir/xml     (oslib::catpath dir "xml"))
+;;        (state       (oslib::mkdir! dir))
+;;        (state       (oslib::mkdir! dir/xml))
 
-       (dir-system   (acl2::f-get-global 'acl2::system-books-dir state))
-       (xdoc-dir     (oslib::catpath dir-system "xdoc"))
-       (xdoc/classic (oslib::catpath xdoc-dir "classic"))
+;;        (dir-system   (acl2::f-get-global 'acl2::system-books-dir state))
+;;        (xdoc-dir     (oslib::catpath dir-system "xdoc"))
+;;        (xdoc/classic (oslib::catpath xdoc-dir "classic"))
 
-       ;; We copy classic/Makefile-trans to dir/Makefile.  The "-trans" part of
-       ;; its name is just to prevent people from thinking they can type "make"
-       ;; in the classic directory to accomplish anything.
-       (Makefile-trans (oslib::catpath xdoc/classic "Makefile-trans"))
-       (Makefile-out   (oslib::catpath dir "Makefile"))
-       (state   (stupid-copy-file Makefile-trans Makefile-out state))
-       (state   (stupid-copy-files xdoc/classic
-                                   (list "xdoc.css"
-                                         "xdoc.js"
-                                         "plus.png"
-                                         "minus.png"
-                                         "leaf.png"
-                                         "text-topic.xsl"
-                                         "html-core.xsl"
-                                         "html-topic.xsl"
-                                         "html-full-index.xsl"
-                                         "html-brief-index.xsl"
-                                         "html-topic-index.xsl"
-                                         "xml-topic.xsl"
-                                         "xml-topic-index.xsl"
-                                         "xml-full-index.xsl")
-                                   dir/xml state))
-       (state   (stupid-copy-files xdoc/classic
-                                   (list "frames2.html"
-                                         "frames3.html"
-                                         "preview.html")
-                                   dir state))
-       (state   (stupid-copy-files xdoc/classic
-                                   *acl2-graphics*
-                                   dir/xml state)))
-    state))
+;;        ;; We copy classic/Makefile-trans to dir/Makefile.  The "-trans" part of
+;;        ;; its name is just to prevent people from thinking they can type "make"
+;;        ;; in the classic directory to accomplish anything.
+;;        (Makefile-trans (oslib::catpath xdoc/classic "Makefile-trans"))
+;;        (Makefile-out   (oslib::catpath dir "Makefile"))
+;;        (state   (stupid-copy-file Makefile-trans Makefile-out state))
+;;        (state   (stupid-copy-files xdoc/classic
+;;                                    (list "xdoc.css"
+;;                                          "xdoc.js"
+;;                                          "plus.png"
+;;                                          "minus.png"
+;;                                          "leaf.png"
+;;                                          "text-topic.xsl"
+;;                                          "html-core.xsl"
+;;                                          "html-topic.xsl"
+;;                                          "html-full-index.xsl"
+;;                                          "html-brief-index.xsl"
+;;                                          "html-topic-index.xsl"
+;;                                          "xml-topic.xsl"
+;;                                          "xml-topic-index.xsl"
+;;                                          "xml-full-index.xsl")
+;;                                    dir/xml state))
+;;        (state   (stupid-copy-files xdoc/classic
+;;                                    (list "frames2.html"
+;;                                          "frames3.html"
+;;                                          "preview.html")
+;;                                    dir state))
+;;        (state   (stupid-copy-files xdoc/classic
+;;                                    *acl2-graphics*
+;;                                    dir/xml state)))
+;;     state))
 
-(defun save-topics (x dir index-pkg expand-level state)
-  (b* ((state (prepare-dir dir state))
-       (dir   (oslib::catpath dir "xml"))
-       (x     (clean-topics x))
-       (- (cw "; Processing ~x0 topics.~%" (len x)))
-       ;; Note: generate the index after the topic files, so that
-       ;; errors in short messages will be seen there.
-       (x      (time$ (normalize-parents-list x)
-                      :msg "; Normalizing parents: ~st sec, ~sa bytes~%"
-                      :mintime 1/2))
-       (topics-fal (time$ (topics-fal x)
-                          :msg "; Generating topics fal: ~st sec, ~sa bytes~%"
-                          :mintime 1/2))
-       (state  (time$ (save-topics-aux x x dir topics-fal state)
-                      :msg "; Saving topics: ~st sec, ~sa bytes~%"
-                      :mintime 1/2))
-       (state  (time$ (save-index x dir topics-fal index-pkg state)
-                      :msg "; Saving flat index: ~st sec, ~sa bytes~%"
-                      :mintime 1/2))
-       (state  (time$ (save-hierarchy x dir topics-fal index-pkg expand-level state)
-                      :msg "; Saving hierarchical index: ~st sec, ~sa bytes~%"))
-       (orphans (find-orphaned-topics x topics-fal nil))
-       (-       (fast-alist-free topics-fal))
-       (state   (save-success-file (len x) dir state)))
-    (or (not orphans)
-        (cw "~|~%WARNING: found topics with non-existent parents:~%~x0~%These ~
-             topics may only show up in the index pages.~%~%" orphans))
-    state))
+;; (defun save-topics (x dir index-pkg expand-level state)
+;;   (b* ((state (prepare-dir dir state))
+;;        (dir   (oslib::catpath dir "xml"))
+;;        (x     (clean-topics x))
+;;        (- (cw "; Processing ~x0 topics.~%" (len x)))
+;;        ;; Note: generate the index after the topic files, so that
+;;        ;; errors in short messages will be seen there.
+;;        (x      (time$ (normalize-parents-list x)
+;;                       :msg "; Normalizing parents: ~st sec, ~sa bytes~%"
+;;                       :mintime 1/2))
+;;        (topics-fal (time$ (topics-fal x)
+;;                           :msg "; Generating topics fal: ~st sec, ~sa bytes~%"
+;;                           :mintime 1/2))
+;;        (state  (time$ (save-topics-aux x x dir topics-fal state)
+;;                       :msg "; Saving topics: ~st sec, ~sa bytes~%"
+;;                       :mintime 1/2))
+;;        (state  (time$ (save-index x dir topics-fal index-pkg state)
+;;                       :msg "; Saving flat index: ~st sec, ~sa bytes~%"
+;;                       :mintime 1/2))
+;;        (state  (time$ (save-hierarchy x dir topics-fal index-pkg expand-level state)
+;;                       :msg "; Saving hierarchical index: ~st sec, ~sa bytes~%"))
+;;        (orphans (find-orphaned-topics x topics-fal nil))
+;;        (-       (fast-alist-free topics-fal))
+;;        (state   (save-success-file (len x) dir state)))
+;;     (or (not orphans)
+;;         (cw "~|~%WARNING: found topics with non-existent parents:~%~x0~%These ~
+;;              topics may only show up in the index pages.~%~%" orphans))
+;;     state))
 
