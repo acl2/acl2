@@ -6136,7 +6136,7 @@
 ;   (f-put-global 'parallelism-hazards-action t state)
 ;   (DEFTHM FORCE-TEST ...) ; see mini-proveall
 
-  `(cond ((and (eq (f-get-global 'print-base state) 10)
+  `(cond ((and (eql (f-get-global 'print-base state) 10)
                (eq (f-get-global 'print-radix state) nil))
           ,form)
          (t (mv-let (erp val state)

@@ -12744,10 +12744,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
       (0 . ,(if enabledp 0 (list 0))))))
 
 ; The default bounds for iprinting are deliberately rather high, in order to
-; minimize the chance that novice users attempt to read stale #@i# values.
-; We assume that for those who use ACL2 with large objects, for whom iprinting
-; causes a space problem because of these large bounds, will know to reset the
-; bounds using set-iprint.
+; minimize the chance that novice users attempt to read stale #@i# values.  We
+; assume that those who use ACL2 with large objects, for whom iprinting causes
+; a space problem because of these large bounds, will know to reset the bounds
+; using set-iprint.
 (defconst *iprint-soft-bound-default* 1000)
 (defconst *iprint-hard-bound-default* 10000)
 

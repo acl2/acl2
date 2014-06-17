@@ -22622,7 +22622,7 @@
                                (*32-bit-integer-stack-length*
                                 *32-bit-integer-stack-length*)))
                             (t `((,(the-live-var st) ,st)))))
-               ,(let ((p (if w (oneify producer flet-fns w) producer)))
+               ,(let ((p (if w (oneify producer flet-fns w t) producer)))
                   (if (eq st 'state)
 
 ; We should lock this computation when #+acl2-par, even though special
@@ -22649,8 +22649,8 @@
              (declare (ignore ,st))
              ,@(if w
                    (if (cdr rest) ; rest is ((declare (ignore ...)) body)
-                       (list (car rest) (oneify (cadr rest) flet-fns w))
-                     (list (oneify (car rest) flet-fns w)))
+                       (list (car rest) (oneify (cadr rest) flet-fns w t))
+                     (list (oneify (car rest) flet-fns w t)))
                  rest))))
 
 #-acl2-loop-only ; see the comment in mv-let-for-with-local-stobj

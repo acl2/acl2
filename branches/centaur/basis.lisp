@@ -1508,14 +1508,13 @@
 ; Let's also comment on why we have a soft and a hard bound (as described in
 ; :doc set-iprint).  In general we allow indices to increase between successive
 ; top-level invocations, so that the user can read back in any forms that were
-; printed. But the soft bound keeps forces a rollover at the top level of LD
-; when the last-index exceeds that bound, so that we don't hold on to a
-; potentially unbounded amount of space for the objects in the iprint-ar. The
-; hard bound (which generally exceeds the soft bound) steps in if the
-; last-index exceeds it after pretty-printing a single form.  Thus, if there
-; are large objects and very long runs between successive top-level forms,
-; space can be reclaimed. The hard bound is therefore probably less likely to
-; be of use.
+; printed. But the soft bound forces a rollover at the top level of LD when the
+; last-index exceeds that bound, so that we don't hold on to a potentially
+; unbounded amount of space for the objects in the iprint-ar. The hard bound
+; (which generally exceeds the soft bound) steps in if the last-index exceeds
+; it after pretty-printing a single form.  Thus, if there are large objects and
+; very long runs between successive top-level forms, space can be
+; reclaimed. The hard bound is therefore probably less likely to be of use.
 
 ; We maintain the invariant that the dimension of state global 'iprint-ar
 ; exceeds the hard bound.  Thus, when we update the 'iprint-ar in the normal

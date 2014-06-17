@@ -890,13 +890,13 @@
 
 (defmacro make-rcnst (ens wrld &rest args)
 
-; (Make-rcnst w) will make a rewrite-constant that is the result of filling in
-; *empty-rewrite-constant* with a few obviously necessary values, such as the
-; global-enabled-structure as the :current-enabled-structure.  Then it
-; additionally loads user supplied values specified by alternating keyword/value
-; pairs to override what is otherwise created.  E.g.,
+; (Make-rcnst ens w) will make a rewrite-constant that is the result of filling
+; in *empty-rewrite-constant* with a few obviously necessary values, such as
+; the global-enabled-structure as the :current-enabled-structure.  Then it
+; additionally loads user supplied values specified by alternating
+; keyword/value pairs to override what is otherwise created.  E.g.,
 
-; (make-rcnst w :expand-lst lst)
+; (make-rcnst ens w :expand-lst lst)
 
 ; will make a rewrite-constant that is like the default one except that it will
 ; have lst as the :expand-lst.
@@ -4896,6 +4896,7 @@
 (defun clausify-type-alist (type-alist cl ens w seen ttree)
 
 ; Consider a type-alist such as
+
 ; `((x ,*ts-cons*) (y ,*ts-integer*) (z ,(ts-union *ts-rational* *ts-symbol*)))
 
 ; and some term, such as (p x y z).  We wish to construct a clause
@@ -4907,13 +4908,19 @@
 ;          (p x y z))
 ; We return (mv clause ttree), where clause is the clause constructed.
 
+; Note that we convert each pair in the type-alist to a provably equivalent
+; term (i.e., we use convert-type-set-to-term1 with flg = t), since we are
+; trying to prove the resulting clause.  See also the comment about tau in
+; convert-type-set-to-term1.
+
   (cond ((null type-alist) (mv cl ttree))
         ((member-equal (caar type-alist) seen)
          (clausify-type-alist (cdr type-alist) cl ens w seen ttree))
         (t (mv-let (term ttree)
-                   (convert-type-set-to-term (caar type-alist)
-                                             (cadar type-alist)
-                                             ens w ttree)
+                   (convert-type-set-to-term1 (caar type-alist)
+                                              (cadar type-alist)
+                                              t ; flg; see above
+                                              ens w ttree)
                    (clausify-type-alist (cdr type-alist)
                                         (cons (dumb-negate-lit term) cl)
                                         ens w
@@ -7298,11 +7305,16 @@
            *preprocess-clause-ledge*
            cl-id clause
 
-; Simplify-clause contains an optimization that lets us avoid resimplifying
-; the clause if the most recent history entry is settled-down-clause and
-; the induction hyp and concl terms don't occur in it.  We short-circuit that
-; short-circuit by removing the settled-down-clause entry if it is the most
-; recent.
+; Through Version_6.4, simplify-clause contained an optimization that avoided
+; resimplifying the clause if the most recent history entry is for
+; settled-down-clause and (approximately) the induction hyp and concl terms
+; don't occur in it.  Here, we short-circuited that short-circuited by removing
+; the settled-down-clause entry if it is the most recent.  We no longer have
+; that reason for removing the settled-down-clause entry, but it still seems
+; reasonable to do so, i.e., to consider the clause not to have settled down
+; when popping back to the top of the waterfall because of a hint.  Moreover,
+; we tried removing this modification to hist and found several regression
+; failures.
 
            (cond ((and (consp hist)
                        (eq (access history-entry (car hist) :processor)
@@ -9336,7 +9348,7 @@
 ; args to supply a list of alternating keyword/value pairs to override the
 ; default settings.  E.g.,
 
-; (make-pspv w :rewrite-constant rcnst :displayed-goal dg)
+; (make-pspv ens w :rewrite-constant rcnst :displayed-goal dg)
 
 ; will make a pspv that is like the empty one except for the two fields
 ; listed above.

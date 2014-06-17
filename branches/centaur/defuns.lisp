@@ -5217,12 +5217,11 @@
 ; function occurring in bodies leads to an ill-guarded function call that
 ; causes an ACL2 invariant to become false.
 
-; Each updater f with non-t guard that is introduced by defstobj or defabsstobj
-; gets an 'invariant-risk property of f.  A built-in function may get an
-; 'invariant-risk property of :built-in (see initialize-invariant-risk), though
-; that could easily be changed so that it too has itself as the value of that
-; property.  The present function, put-invariant-risk, propagates these
-; 'invariant-risk properties up through callers.
+; Each updater f with non-t type or array type that is introduced by defstobj
+; or defabsstobj gets an 'invariant-risk property of f.  A built-in function
+; may get an 'invariant-risk property; see initialize-invariant-risk.  The
+; present function, put-invariant-risk, propagates these 'invariant-risk
+; properties up through callers.
 
   (cond (non-executablep wrld)
         (t (put-invariant-risk1 names
@@ -7017,6 +7016,12 @@
                 (if (cdr irrelevant-slots) 1 0)))))))))
 
 (defun chk-logic-subfunctions (names0 names terms wrld str ctx state)
+
+; WARNING: Before relaxing the requirement implemented by this check, consider
+; the comment in oneify-cltl-code about invariant-risk that says: "... since
+; :logic mode definitions cannot contain calls of :program mode functions,
+; :ideal functions should lead only to calls of *1* :logic-mode functions until
+; reaching a guard-compliant call of a guard-verified function."
 
 ; Assume we are defining names in terms of terms (1:1 correspondence).  Assume
 ; also that the definitions are to be :logic.  Then we insist that every
