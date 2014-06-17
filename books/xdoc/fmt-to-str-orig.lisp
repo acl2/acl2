@@ -19,7 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "XDOC")
-(include-book "str")
+(include-book "tools/bstar" :dir :system)
 (set-state-ok t)
 (program)
 

@@ -28,6 +28,34 @@
 (set-state-ok t)
 (program)
 
+(defun bootstrap-revappend-chars-aux (x n xl y)
+  (declare (type string x)
+           (type unsigned-byte n xl))
+  (if (eql n xl)
+      y
+    (bootstrap-revappend-chars-aux x
+                                   (the unsigned-byte (+ 1 n))
+                                   xl
+                                   (cons (char x n) y))))
+
+(defun bootstrap-revappend-chars (x y)
+  (bootstrap-revappend-chars-aux x 0 (length x) y))
+
+(defun bootstrap-html-encode-str (x n xl acc)
+  ;; Revappend the HTML encoding of X (e.g., & --> &amp;) onto ACC.
+  (declare (type string x)
+           (type unsigned-byte n xl))
+  (b* (((when (eql n xl))
+        acc)
+       (char1 (char x n))
+       (acc   (case char1
+                (#\< (list* #\; #\t #\l #\& acc))         ;; "&lt;" (in reverse)
+                (#\> (list* #\; #\t #\g #\& acc))         ;; "&gt;"
+                (#\& (list* #\; #\p #\m #\a #\& acc))     ;; "&amp;"
+                (#\" (list* #\; #\t #\o #\u #\q #\& acc)) ;; "&quot;"
+                (t   (cons char1 acc)))))
+    (bootstrap-html-encode-str x (the unsigned-byte (+ 1 n)) xl acc)))
+
 (defxdoc define
   :parents (std/util)
   :short "A very fine alternative to @(see defun)."
@@ -352,28 +380,28 @@ some kind of separator!</p>
        ((mv ret-str state)  (xdoc::fmt-to-str-orig ret-sexpr base-pkg state))
        (call-len (length call-str)) ;; sensible since not yet encoded
        (ret-len  (length ret-str))  ;; sensible since not yet encoded
-       (acc (str::revappend-chars "  <dt>Signature</dt><dt>" acc))
+       (acc (bootstrap-revappend-chars "  <dt>Signature</dt><dt>" acc))
        (acc (if (< (+ call-len ret-len) 60)
                 ;; Short signature, so put it all on the same line.  I'm still
                 ;; going to use <code> instead of <tt>, for consistency.
-                (b* ((acc (str::revappend-chars "<code>" acc))
-                     (acc (xdoc::simple-html-encode-str call-str 0 call-len acc))
-                     (acc (str::revappend-chars " &rarr; " acc))
-                     (acc (xdoc::simple-html-encode-str ret-str 0 ret-len acc))
-                     (acc (str::revappend-chars "</code>" acc)))
+                (b* ((acc (bootstrap-revappend-chars "<code>" acc))
+                     (acc (bootstrap-html-encode-str call-str 0 call-len acc))
+                     (acc (bootstrap-revappend-chars " &rarr; " acc))
+                     (acc (bootstrap-html-encode-str ret-str 0 ret-len acc))
+                     (acc (bootstrap-revappend-chars "</code>" acc)))
                   acc)
               ;; Long signature, so split it across lines.  Using <code> here
               ;; means it's basically okay if there are line breaks in call-str
               ;; or ret-str.
-              (b* ((acc (str::revappend-chars "<code>" acc))
-                   (acc (xdoc::simple-html-encode-str call-str 0 call-len acc))
+              (b* ((acc (bootstrap-revappend-chars "<code>" acc))
+                   (acc (bootstrap-html-encode-str call-str 0 call-len acc))
                    (acc (cons #\Newline acc))
-                   (acc (str::revappend-chars "  &rarr;" acc))
+                   (acc (bootstrap-revappend-chars "  &rarr;" acc))
                    (acc (cons #\Newline acc))
-                   (acc (xdoc::simple-html-encode-str ret-str 0 ret-len acc))
-                   (acc (str::revappend-chars "</code>" acc)))
+                   (acc (bootstrap-html-encode-str ret-str 0 ret-len acc))
+                   (acc (bootstrap-revappend-chars "</code>" acc)))
                 acc)))
-       (acc (str::revappend-chars "</dt>" acc)))
+       (acc (bootstrap-revappend-chars "</dt>" acc)))
     (mv acc state)))
 
 
@@ -397,38 +425,38 @@ some kind of separator!</p>
        ((unless (formal-can-generate-doc-p x))
         (mv acc state))
 
-       (acc (str::revappend-chars "  <dd>" acc))
+       (acc (bootstrap-revappend-chars "  <dd>" acc))
        ((mv name-str state) (xdoc::fmt-to-str-orig x.name base-pkg state))
-       (acc (str::revappend-chars "<tt>" acc))
-       (acc (xdoc::simple-html-encode-str name-str 0 (length name-str) acc))
-       (acc (str::revappend-chars "</tt>" acc))
-       (acc (str::revappend-chars " &mdash; " acc))
+       (acc (bootstrap-revappend-chars "<tt>" acc))
+       (acc (bootstrap-html-encode-str name-str 0 (length name-str) acc))
+       (acc (bootstrap-revappend-chars "</tt>" acc))
+       (acc (bootstrap-revappend-chars " &mdash; " acc))
 
        (acc (if (equal x.doc "")
                 acc
-              (b* ((acc (str::revappend-chars x.doc acc))
+              (b* ((acc (bootstrap-revappend-chars x.doc acc))
                    (acc (if (ends-with-period-p x.doc)
                             acc
                           (cons #\. acc))))
                 acc)))
 
        ((when (eq x.guard t))
-        (b* ((acc (str::revappend-chars "</dd>" acc))
+        (b* ((acc (bootstrap-revappend-chars "</dd>" acc))
              (acc (cons #\Newline acc)))
           (mv acc state)))
 
        (acc (if (equal x.doc "")
                 acc
-              (str::revappend-chars "<br/>&nbsp;&nbsp;&nbsp;&nbsp;" acc)))
-       (acc (str::revappend-chars "<color rgb='#606060'>" acc))
+              (bootstrap-revappend-chars "<br/>&nbsp;&nbsp;&nbsp;&nbsp;" acc)))
+       (acc (bootstrap-revappend-chars "<color rgb='#606060'>" acc))
        ((mv guard-str state) (xdoc::fmt-to-str-orig x.guard base-pkg state))
        ;; Using @('...') here isn't necessarily correct.  If the sexpr has
        ;; something in it that can lead to '), we are hosed.  BOZO eventually
        ;; check for this and make sure we use <code> tags instead, if it
        ;; happens.
-       (acc (str::revappend-chars "Guard @('" acc))
-       (acc (str::revappend-chars guard-str acc))
-       (acc (str::revappend-chars "').</color></dd>" acc))
+       (acc (bootstrap-revappend-chars "Guard @('" acc))
+       (acc (bootstrap-revappend-chars guard-str acc))
+       (acc (bootstrap-revappend-chars "').</color></dd>" acc))
        (acc (cons #\Newline acc)))
     (mv acc state)))
 
@@ -444,7 +472,7 @@ some kind of separator!</p>
   (declare (xargs :guard (formallist-p x)))
   (b* (((unless (formals-can-generate-doc-p x))
         (mv acc state))
-       (acc (str::revappend-chars "  <dt>Arguments</dt>" acc))
+       (acc (bootstrap-revappend-chars "  <dt>Arguments</dt>" acc))
        ((mv acc state) (doc-from-formals-aux x acc base-pkg state)))
     (mv acc state)))
 
@@ -469,54 +497,54 @@ some kind of separator!</p>
        ((unless (returnspec-can-generate-doc-p x))
         (mv acc state))
 
-       (acc (str::revappend-chars "<dd>" acc))
+       (acc (bootstrap-revappend-chars "<dd>" acc))
        ((mv name-str state) (xdoc::fmt-to-str-orig x.name base-pkg state))
-       (acc (str::revappend-chars "<tt>" acc))
-       (acc (xdoc::simple-html-encode-str name-str 0 (length name-str) acc))
-       (acc (str::revappend-chars "</tt>" acc))
-       (acc (str::revappend-chars " &mdash; " acc))
+       (acc (bootstrap-revappend-chars "<tt>" acc))
+       (acc (bootstrap-html-encode-str name-str 0 (length name-str) acc))
+       (acc (bootstrap-revappend-chars "</tt>" acc))
+       (acc (bootstrap-revappend-chars " &mdash; " acc))
 
        (acc (if (equal x.doc "")
                 acc
-              (b* ((acc (str::revappend-chars x.doc acc))
+              (b* ((acc (bootstrap-revappend-chars x.doc acc))
                    (acc (if (ends-with-period-p x.doc)
                             acc
                           (cons #\. acc))))
                 acc)))
 
        ((when (eq x.return-type t))
-        (b* ((acc (str::revappend-chars "</dd>" acc))
+        (b* ((acc (bootstrap-revappend-chars "</dd>" acc))
              (acc (cons #\Newline acc)))
           (mv acc state)))
 
        (acc (if (equal x.doc "")
                 acc
-              (str::revappend-chars "<br/>&nbsp;&nbsp;&nbsp;&nbsp;" acc)))
-       (acc      (str::revappend-chars "<color rgb='#606060'>" acc))
+              (bootstrap-revappend-chars "<br/>&nbsp;&nbsp;&nbsp;&nbsp;" acc)))
+       (acc      (bootstrap-revappend-chars "<color rgb='#606060'>" acc))
        ((mv type-str state) (xdoc::fmt-to-str-orig x.return-type base-pkg state))
        ;; Using @('...') here isn't necessarily correct.  If the sexpr has
        ;; something in it that can lead to '), we are hosed.  BOZO eventually
        ;; check for this and make sure we use <code> tags instead, if it
        ;; happens.
-       (acc (str::revappend-chars "Type @('" acc))
-       (acc (str::revappend-chars type-str acc))
-       (acc (str::revappend-chars "')" acc))
+       (acc (bootstrap-revappend-chars "Type @('" acc))
+       (acc (bootstrap-revappend-chars type-str acc))
+       (acc (bootstrap-revappend-chars "')" acc))
        ((mv acc state)
         (cond ((eq x.hyp t)
                (mv (cons #\. acc) state))
               ((or (eq x.hyp :guard)
                    (eq x.hyp :fguard))
-               (mv (str::revappend-chars ", given the @(see guard)." acc)
+               (mv (bootstrap-revappend-chars ", given the @(see guard)." acc)
                    state))
               (t
-               (b* ((acc (str::revappend-chars ", given @('" acc))
+               (b* ((acc (bootstrap-revappend-chars ", given @('" acc))
                     ((mv hyp-str state)
                      (xdoc::fmt-to-str-orig x.hyp base-pkg state))
-                    (acc (str::revappend-chars hyp-str acc))
-                    (acc (str::revappend-chars "')." acc)))
+                    (acc (bootstrap-revappend-chars hyp-str acc))
+                    (acc (bootstrap-revappend-chars "')." acc)))
                  (mv acc state)))))
-       (acc (str::revappend-chars "</color>" acc))
-       (acc (str::revappend-chars "</dd>" acc))
+       (acc (bootstrap-revappend-chars "</color>" acc))
+       (acc (bootstrap-revappend-chars "</dd>" acc))
        (acc (cons #\Newline acc)))
 
     (mv acc state)))
@@ -533,7 +561,7 @@ some kind of separator!</p>
   (declare (xargs :guard (returnspeclist-p x)))
   (b* (((unless (returnspecs-can-generate-doc-p x))
         (mv acc state))
-       (acc (str::revappend-chars "<dt>Returns</dt>" acc))
+       (acc (bootstrap-revappend-chars "<dt>Returns</dt>" acc))
        ((mv acc state) (doc-from-returnspecs-aux x acc base-pkg state)))
     (mv acc state)))
 
@@ -541,16 +569,16 @@ some kind of separator!</p>
   "Returns (mv str state)"
   (b* ((world (w state))
        (acc nil)
-       (acc (str::revappend-chars "<box><dl>" acc))
+       (acc (bootstrap-revappend-chars "<box><dl>" acc))
        (acc (cons #\Newline acc))
        (return-value-names (return-value-names fnname returnspecs world))
        ((mv acc state) (make-xdoc-signature wrapper return-value-names base-pkg acc state))
        ((mv acc state) (doc-from-formals formals acc base-pkg state))
        ((mv acc state) (doc-from-returnspecs returnspecs acc base-pkg state))
        (acc (cons #\Newline acc))
-       (acc (str::revappend-chars "</dl></box>" acc))
+       (acc (bootstrap-revappend-chars "</dl></box>" acc))
        (acc (cons #\Newline acc))
-       (str (str::rchars-to-string acc)))
+       (str (reverse (coerce acc 'string))))
     (mv str state)))
 
 
