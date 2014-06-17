@@ -43,7 +43,7 @@
                 (mv nil acc state)))))
    (error (condition)
           (return-from read-string-fn
-                       (mv (format nil "~S" condition) nil state)))
+                       (mv (format nil "~A" condition) nil state)))
    ;; Really bad-lisp-objectp shouldn't just stack-overflow on #1=(a . #1#).
    ;; Catching it is tricky...
    ;; "Because such a condition is indicative of a limitation of the
@@ -51,5 +51,5 @@
    ;;  objects of type storage-condition are not of type error."
    (storage-condition (condition)
                       (return-from read-string-fn
-                                   (mv (format nil "~S" condition) nil state)))))
+                                   (mv (format nil "~A" condition) nil state)))))
 
