@@ -1075,6 +1075,10 @@
 ; evaluate their :exec forms, as would have been done had we passed into raw
 ; Lisp.
 
+; Note that the code laid down by this function may set *mbe-as-exec*, so in
+; order that it remain nil globally, it is important that this code be executed
+; in a context where *mbe-as-exec* is let-bound.  See oneify-cltl-code.
+
 ; See raw-ev-fncall for another binding of *mbe-as-exec*.
 
   (let* ((guard-checking-on
@@ -1091,14 +1095,12 @@
                      `(and (member-eq ,guard-checking-on '(t nil))
                            (not ,safe-form))
                    `(member-eq ,guard-checking-on '(t nil))))))
-    `(let ((*mbe-as-exec*
-            (if ,test
-                t
-              *mbe-as-exec*)))
-       (when (or (not *ignore-invariant-risk*)
-                 (member-eq ,guard-checking-on
-                            '(:none :all)))
-         (return-from ,*1*fn ,*1*body)))))
+    `(when (or (not *ignore-invariant-risk*)
+               (member-eq ,guard-checking-on
+                          '(:none :all)))
+       (when ,test
+         (setq *mbe-as-exec* t))
+       (return-from ,*1*fn ,*1*body))))
 
 (mutual-recursion
 
@@ -2190,9 +2192,11 @@
                                    (t
                                     (append main-body-before-final-call
                                             (list *1*-labels-form))))))
+        (let ((*1*dcls (and declare-stobj-special
+                            (list declare-stobj-special))))
         `(,*1*fn
           ,formals
-          ,@(and declare-stobj-special (list declare-stobj-special))
+          ,@*1*dcls
 
 ; At one time we attempted to do some code-sharing using a macro call, by using
 ; *1*body-call in place of *1*body in the code above, where *1*body-call was
@@ -2232,7 +2236,22 @@
 ;                     ,@*1*-body-forms))
 ;               *1*-body-forms)
 
-          ,@*1*-body-forms))))))
+          ,@(if mbe-as-exec
+                `((let ((*mbe-as-exec* *mbe-as-exec*))
+
+; The binding just above is important because *1*-body-forms may set
+; *mbe-as-exec*.  See mbe-as-exec-return.  We use labels here, rather than
+; binding *mbe-as-exec* in the code laid down by mbe-as-exec-return, in case
+; that helps compilers remove tail recursions.  (We do it regardless of the
+; presence of recursion, simply because that is simplest and we expect, or at
+; least, hope, that there is only trivial impact on performance.)
+
+                    (labels ((,*1*fn
+                              ,formals
+                              ,@*1*dcls
+                              ,@*1*-body-forms))
+                            (,*1*fn ,@formals))))
+              *1*-body-forms))))))))
 
 
 ;          PROMPTS
