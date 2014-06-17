@@ -21,6 +21,8 @@
 
 (in-package "ACL2")
 
+(defparameter *read-string-should-check-bad-lisp-object* t)
+
 (defun read-string-fn (str state)
   (handler-case
    (progn (unless (live-state-p state)
@@ -37,7 +39,8 @@
                          (loop-finish)
                        (push elem acc)))))
             (setq acc (nreverse acc))
-            (let ((msg (bad-lisp-objectp acc)))
+            (let ((msg (and *read-string-should-check-bad-lisp-object*
+                            (bad-lisp-objectp acc))))
               (if msg
                   (mv msg nil state)
                 (mv nil acc state)))))
