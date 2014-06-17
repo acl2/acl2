@@ -35,6 +35,8 @@
 (include-book "std/io/read-string" :dir :system)
 (defttag :sidekick)
 (set-state-ok t)
+(program)
+
 
 (defconsts *sidekick-dir* (cbd))
 
@@ -48,6 +50,77 @@
   :parents (sidekick)
   :short "Stop the ACL2 sidekick web server."
   (raise "Under the hood definition not installed."))
+
+(define format$-fn (str args)
+  (declare (ignorable str args))
+  (raise "Under the hood definition not installed."))
+
+(defmacro format$ (str &rest args)
+  `(format$-fn ,str (list . ,args)))
+
+(defmacro sk-json-error (fmt-str &rest args)
+  `(bridge::json-encode
+    (list (cons :error (format$ ,fmt-str . ,args)))))
+
+(define sk-get-props ((name stringp) state)
+  :returns (mv json-props state)
+  (b* (((mv errmsg objs state) (acl2::read-string name))
+       ((when errmsg)
+        (mv (sk-json-error "Error in props: parsing failed: ~a: ~a" name errmsg)
+            state))
+       ((unless (and (equal (len objs) 1)
+                     (symbolp (car objs))))
+        (mv (sk-json-error "Error in props: not a symbol: ~a" name)
+            state))
+       (props (props-jalist (car objs) state)))
+    (mv (bridge::json-encode
+         (list (cons :error nil)
+               (cons :val props)))
+        state)))
+
+(define sk-get-origin ((name stringp) state)
+  :returns (mv json-props state)
+  (b* (((mv errmsg objs state) (acl2::read-string name))
+       ((when errmsg)
+        (mv (sk-json-error "Error in origin: parsing failed: ~a: ~a~%" name errmsg)
+            state))
+       ((unless (and (equal (len objs) 1)
+                     (symbolp (car objs))))
+        (mv (sk-json-error "Error in origin: not a symbol: ~a~%" name)
+            state))
+       ((mv ?er val ?state)
+        (acl2::origin-fn (car objs) state)))
+    (mv (bridge::json-encode (list (cons :error nil)
+                                   (cons :val val)))
+        state)))
+
+(define sk-get-xdoc ((name stringp) state)
+  :returns (mv json-props state)
+  (b* (((mv errmsg objs state) (acl2::read-string name))
+       ((when errmsg)
+        (mv (sk-json-error "Error in origin: parsing failed: ~a: ~a~%" name errmsg)
+            state))
+       ((unless (and (equal (len objs) 1)
+                     (symbolp (car objs))))
+        (mv (sk-json-error "Error in origin: not a symbol: ~a~%" name)
+            state))
+       ((mv out state) (json-xdoc-topic (car objs) state)))
+    (mv out state)))
+
+(define sk-get-disassembly ((name stringp) state)
+  :returns (mv json-props state)
+  (b* (((mv errmsg objs state) (acl2::read-string name))
+       ((when errmsg)
+        (mv (sk-json-error "Error in disassemble: parsing failed: ~a: ~a~%" name errmsg)
+            state))
+       ((unless (and (equal (len objs) 1)
+                     (symbolp (car objs))))
+        (mv (sk-json-error "Error in disassemble: not a symbol: ~a~%" name)
+            state))
+       ((mv disassembly state) (disassemble-to-string (car objs) state)))
+    (mv (bridge::json-encode (list (cons :error nil)
+                                   (cons :val disassembly)))
+        state)))
 
 ; (depends-on "server-raw.lsp")
 (include-raw "server-raw.lsp"

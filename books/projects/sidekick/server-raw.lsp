@@ -20,6 +20,9 @@
 
 (in-package "SIDEKICK")
 
+(defun format$-fn (str args)
+  (apply 'cl-user::format (cons nil (cons str args))))
+
 (defvar *server* nil)
 
 (defun start-fn (port)
@@ -62,16 +65,8 @@
 (defvar *pbt-cached-world* nil)
 (defvar *pbt-cached-result* nil)
 
-
-; For some reason, reading using "read-string" sometimes initializes a hons
-; space.  But we want this to be fast.  So, make the hons space we create
-; small, and ensure that acl2-par is set so that we can set the default-hs to
-; nil.
-
-#-acl2-par
-(error "The ACL2 Sidekick requires that ACL2 be compiled with ACL2(p) support
-        enabled.")
-
+; Optimizations so that when new threads create hons spaces, these spaces are
+; small.
 (setq acl2::*hl-hspace-str-ht-default-size*      100)
 (setq acl2::*hl-ctables-nil-ht-default-size*     100)
 (setq acl2::*hl-ctables-cdr-ht-default-size*     100)
@@ -81,6 +76,22 @@
 (setq acl2::*hl-hspace-other-ht-default-size*    100)
 (setq acl2::*hl-hspace-fal-ht-default-size*      100)
 (setq acl2::*hl-hspace-persist-ht-default-size*  100)
+
+(defmacro with-sidekick-bindings (&rest forms)
+  `(b* ((state
+         ;; Bind state since we often need that.
+         acl2::*the-live-state*)
+        (acl2::*default-hs*
+         ;; Give this thread its own hons space.  Hopefully it won't use it
+         ;; for anything.
+         nil)
+        (acl2::*read-string-should-check-bad-lisp-object*
+         ;; Turn this off because otherwise we run into hash table ownership
+         ;; problems, because bad-lisp-objectp is memoized and memoization
+         ;; isn't thread-safe.
+         nil))
+     (declare (ignorable state))
+     . ,forms))
 
 (defun add-handlers ()
   (hunchentoot:define-easy-handler (say-yo :uri "/yo") (name)
@@ -148,85 +159,27 @@
 
   (hunchentoot:define-easy-handler (disassemble-handler :uri "/disassemble") (name)
      (setf (hunchentoot:content-type*) "application/json")
-     (b* ((state acl2::*the-live-state*)
-          (acl2::*default-hs* nil)
-          ((mv errmsg objs state) (acl2::read-string name))
-          ((when errmsg)
-           (bridge::json-encode
-            (list (cons :error (format nil "Error in disassemble: parsing failed: ~a: ~a~%"
-                                       name errmsg))
-                  (cons :val ""))))
-          ((unless (and (equal (len objs) 1)
-                        (symbolp (car objs))))
-           (bridge::json-encode
-            (list (cons :error (format nil "Error in disassemble: not a symbol: ~a~%" name))
-                  (cons :val ""))))
-          ((mv disassembly ?state)
-           (disassemble-to-string (car objs) state)))
-       (bridge::json-encode
-        (list (cons :error nil)
-              (cons :val disassembly)))))
+     (with-sidekick-bindings
+       (b* (((mv ans state) (sk-get-disassembly name state)))
+         ans)))
 
   (hunchentoot:define-easy-handler (props-handler :uri "/props") (name)
      (setf (hunchentoot:content-type*) "application/json")
-     (b* ((state acl2::*the-live-state*)
-          (acl2::*default-hs* nil)
-          ((mv errmsg objs state) (acl2::read-string name))
-          ((when errmsg)
-           (bridge::json-encode
-            (list (cons :error (format nil "Error in props: parsing failed: ~a: ~a~%"
-                                       name errmsg))
-                  (cons :val ""))))
-          ((unless (and (equal (len objs) 1)
-                        (symbolp (car objs))))
-           (bridge::json-encode
-            (list (cons :error (format nil "Error in props: not a symbol: ~a~%" name))
-                  (cons :val ""))))
-          ((mv props ?state)
-           (props-jalist (car objs) state)))
-       (bridge::json-encode
-        (list (cons :error nil)
-              (cons :val props)))))
+     (with-sidekick-bindings
+       (b* (((mv ans state) (sk-get-props name state)))
+         ans)))
 
   (hunchentoot:define-easy-handler (origin-handler :uri "/origin") (name)
      (setf (hunchentoot:content-type*) "application/json")
-     (b* ((state acl2::*the-live-state*)
-          (acl2::*default-hs* nil)
-          ((mv errmsg objs state) (acl2::read-string name))
-          ((when errmsg)
-           (bridge::json-encode
-            (list (cons :error (format nil "Error in origin: parsing failed: ~a: ~a~%"
-                                       name errmsg))
-                  (cons :val ""))))
-          ((unless (and (equal (len objs) 1)
-                        (symbolp (car objs))))
-           (bridge::json-encode
-            (list (cons :error (format nil "Error in origin: not a symbol: ~a~%" name))
-                  (cons :val ""))))
-          ((mv er val ?state)
-           (acl2::origin-fn (car objs) state)))
-       (bridge::json-encode
-        (list (cons :error nil)
-              (cons :val val)))))
+     (with-sidekick-bindings
+       (b* (((mv ans state) (sk-get-origin name state)))
+         ans)))
 
   (hunchentoot:define-easy-handler (xdoc-handler :uri "/xdoc") (name)
      (setf (hunchentoot:content-type*) "application/json")
-     (b* ((state acl2::*the-live-state*)
-          (acl2::*default-hs* nil)
-          ((mv errmsg objs state) (acl2::read-string name))
-          ((when errmsg)
-           (bridge::json-encode
-            (list (cons :error (format nil "Error in origin: parsing failed: ~a: ~a~%"
-                                       name errmsg))
-                  (cons :val ""))))
-          ((unless (and (equal (len objs) 1)
-                        (symbolp (car objs))))
-           (bridge::json-encode
-            (list (cons :error (format nil "Error in origin: not a symbol: ~a~%" name))
-                  (cons :val ""))))
-          (name (car objs))
-          ((mv out ?state) (json-xdoc-topic name state)))
-       out))
+     (with-sidekick-bindings
+       (b* (((mv ans state) (sk-get-xdoc name state)))
+         ans)))
 
   (hunchentoot:define-easy-handler (webcommand-handler :uri "/webcommands") ()
      (setf (hunchentoot:content-type*) "application/json")

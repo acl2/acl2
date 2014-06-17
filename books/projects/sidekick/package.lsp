@@ -32,6 +32,9 @@
                     ;; for integrating documentation
                     sidekick
 
+                    str::cat
+                    str::natstr
+
                     ;; acl2 stuff we want access to
                     ens
                     er-decode-cd
