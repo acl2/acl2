@@ -1213,6 +1213,24 @@
         (t
          (equal x y))))
 
+(defun hl-hspace-hons-equal-1 (x y hs)
+
+; This is just hl-hspace-hons-equal, except that we require x to be normed and
+; we optimize under that assumption.
+
+  (declare (type hl-hspace hs))
+  (cond ((eq x y)
+         t)
+        ((consp x)
+         (and (consp y)
+              (not (hl-hspace-honsp y hs))
+              (hl-hspace-hons-equal-1 (car x) (car y) hs)
+              (hl-hspace-hons-equal-1 (cdr x) (cdr y) hs)))
+        ((consp y)
+         nil)
+        (t
+         (equal x y))))
+
 (defun hl-hspace-hons-equal (x y hs)
 
 ; (HL-HSPACE-HONS-EQUAL X Y HS) --> BOOL
@@ -1226,10 +1244,18 @@
          t)
         ((consp x)
          (and (consp y)
-              (not (and (hl-hspace-honsp x hs)
-                        (hl-hspace-honsp y hs)))
-              (hl-hspace-hons-equal (car x) (car y) hs)
-              (hl-hspace-hons-equal (cdr x) (cdr y) hs)))
+              (cond
+               ((hl-hspace-honsp x hs)
+                (cond
+                 ((hl-hspace-honsp y hs)
+                  nil)
+                 (t (and (hl-hspace-hons-equal-1 (car x) (car y) hs)
+                         (hl-hspace-hons-equal-1 (cdr x) (cdr y) hs)))))
+               ((hl-hspace-honsp y hs)
+                (and (hl-hspace-hons-equal-1 (car y) (car x) hs)
+                     (hl-hspace-hons-equal-1 (cdr y) (cdr x) hs)))
+               (t (and (hl-hspace-hons-equal (car x) (car y) hs)
+                       (hl-hspace-hons-equal (cdr x) (cdr y) hs))))))
         ((consp y)
          nil)
         (t
