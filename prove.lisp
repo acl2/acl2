@@ -4896,6 +4896,7 @@
 (defun clausify-type-alist (type-alist cl ens w seen ttree)
 
 ; Consider a type-alist such as
+
 ; `((x ,*ts-cons*) (y ,*ts-integer*) (z ,(ts-union *ts-rational* *ts-symbol*)))
 
 ; and some term, such as (p x y z).  We wish to construct a clause
@@ -4907,13 +4908,19 @@
 ;          (p x y z))
 ; We return (mv clause ttree), where clause is the clause constructed.
 
+; Note that we convert each pair in the type-alist to a provably equivalent
+; term (i.e., we use convert-type-set-to-term1 with flg = t), since we are
+; trying to prove the resulting clause.  See also the comment about tau in
+; convert-type-set-to-term1.
+
   (cond ((null type-alist) (mv cl ttree))
         ((member-equal (caar type-alist) seen)
          (clausify-type-alist (cdr type-alist) cl ens w seen ttree))
         (t (mv-let (term ttree)
-                   (convert-type-set-to-term (caar type-alist)
-                                             (cadar type-alist)
-                                             ens w ttree)
+                   (convert-type-set-to-term1 (caar type-alist)
+                                              (cadar type-alist)
+                                              t ; flg; see above
+                                              ens w ttree)
                    (clausify-type-alist (cdr type-alist)
                                         (cons (dumb-negate-lit term) cl)
                                         ens w

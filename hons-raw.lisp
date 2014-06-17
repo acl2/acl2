@@ -123,7 +123,7 @@
                    ))
 
 #+allegro
-(declaim (type hash-table *hl-hash-table-size-ht*))
+(declaim (type hash-table *allegro-hl-hash-table-size-ht*))
 #+allegro
 (defvar *allegro-hl-hash-table-size-ht*
 ; See the comment about this hash table in hl-mht.
@@ -3610,35 +3610,22 @@ To avoid the following break and get only the above warning:~%  ~a~%"
 ; We hide the hons space from the ACL2 user by making all ACL2-visible
 ; functions operate with respect to *default-hs*, the "default hons space."
 ;
-; For single-threaded versions of ACL2, we assume that *default-hs* is always
-; bound to a valid Hons Space.
-;
-; But when ACL2-PAR is enabled, we allow *default-hs* to be either NIL or a
-; valid hons space.  The consume-work-on-work-queue-when-there function in
-; acl2-par is responsible for creating all worker threads, and immediately
-; binds *default-hs* to NIL, which is quite cheap.  The idea is to allow
-; threads that don't do any honsing to avoid the overhead of creating a hons
-; space.
-;
-; Maybe we should make this a DEFVAR with no binding, and move it to whatever
-; initialization function is run when ACL2 starts.  This would keep the hons
-; space out of the default ACL2 image.  But that probably doesn't matter unless
-; we want to adopt much larger defaults, which we don't.
+; We allow *default-hs* to be either NIL or a valid hons space.  This is useful
+; for ACL2(p) or other (e.g., ttag-based, raw lisp) uses of parallelism.  The
+; idea is to allow threads that don't do any honsing to avoid the overhead of
+; creating a hons space.  For instance, in ACL2(p), the function
+; consume-work-on-work-queue-when-there is responsible for creating all worker
+; threads.  This function immediately binds *default-hs* to NIL, which is quite
+; cheap.  The first time such a thread needs a hons, a fresh hons space will
+; then be automatically created.
 
-  (hl-hspace-init))
+   (hl-hspace-init))
 
-(declaim
- #-acl2-par
- (type hl-hspace *default-hs*)
- #+acl2-par
- (type (or hl-hspace null) *default-hs*))
+(declaim (type (or hl-hspace null) *default-hs*))
 
 (declaim (inline hl-maybe-initialize-default-hs))
 
 (defun hl-maybe-initialize-default-hs ()
-  #-acl2-par
-  nil
-  #+acl2-par
   (unless *default-hs*
     (setq *default-hs* (hl-hspace-init))))
 
