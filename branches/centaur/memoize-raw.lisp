@@ -262,7 +262,15 @@
 ;
 ; [Jared]: dealt with this in books/memoize/timer.lsp
 
-(defg *float-ticks/second* 1.0)
+; NOTE: Whenever this is used, consider whether we want to initialize it if it's not already.
+; E.g.: fix-time is used in the wrappers of memoized functions, making it
+; performance-critical, and uses float-ticks/second to compute a heuristic
+; sanity check, so we don't reinitialize there.
+; On the other hand, total-time is used only when printing, so is not
+; performance-critical, and the exact value of float-ticks/second affects the
+; values reported.
+(defg *float-ticks/second* (float (expt 2 31)))
+(defg *float-ticks/second-initialized* nil)
 
 (defg *float-internal-time-units-per-second*
   (float internal-time-units-per-second))
@@ -279,18 +287,22 @@
                             most-positive-fixnum)))
 
 (defun-one-output float-ticks/second-init ()
-  (setq *float-ticks/second*
-        #+RDTSC
-        (let ((i1 (ccl::rdtsc64))
-              (i2 (progn (sleep .01) (ccl::rdtsc64))))
-          (if (>= i2 i1)
-              (* 100 (float (- i2 i1)))
-            (error "(float-ticks/second-init).")))
-        #-RDTSC
-        *float-internal-time-units-per-second*)
-  (check-type *float-ticks/second*
-              (and float (satisfies plusp))))
-
+  (unless *float-ticks/second-initialized*
+    (setq *float-ticks/second*
+          #+RDTSC
+          (let ((i1 (ccl::rdtsc64))
+                (i2 (progn (sleep .1) (ccl::rdtsc64))))
+            (if (>= i2 i1)
+                (* 10 (float (- i2 i1)))
+              (progn (cw "***WARNING***: Float-ticks/second-init failed; using ~
+                        arbitrary default value.  Memoize timings may be ~
+                        unreliable.~%")
+                     (float (expt 2 31)))))
+          #-RDTSC
+          *float-internal-time-units-per-second*)
+    (setq *float-ticks/second-initialized* t)
+    (check-type *float-ticks/second*
+                (and float (satisfies plusp)))))
 
 
 
@@ -2957,6 +2969,7 @@ the calls took.")
   "(PRINT-CALL-STACK) prints the stack of memoized function calls
   currently running and the time they have been running."
 
+  (float-ticks/second-init)
   (let (l
         (time (internal-real-time))
         (*print-case* :downcase))
@@ -3187,6 +3200,7 @@ the calls took.")
 ; One must call COMPUTE-CALLS-AND-TIMES before invoking
 ; TOTAL-TIME to get sensible results.
 
+  (float-ticks/second-init)
   (/ (aref *memoize-call-array*
            (the fixnum (1+ (the fixnum (* 2 x)))))
      *float-ticks/second*))
@@ -3314,7 +3328,7 @@ the calls took.")
 ;  If COMPUTE-CALLS-AND-TIMES is not called shortly before this
 ;  function, MEMOIZE-SUMMARY-AFTER-COMPUTE-CALLS-AND-TIMES, is called,
 ;  the information reported may be quite untimely.
-
+  (float-ticks/second-init)
  (let* ((fn-pairs (memoize-summary-sort))
         (ma *memoize-call-array*)
         (len-orig-fn-pairs (len fn-pairs))
@@ -4092,7 +4106,6 @@ the calls took.")
   ;; (in-package "ACL2")
 
   (memoize-init)
-  (float-ticks/second-init)
 
   ;; [Jared]: Not sure whether we care about this anymore.  With serialize
   ;; we probably do not.  It might be best NOT to mess with this to
