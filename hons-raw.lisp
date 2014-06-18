@@ -244,22 +244,28 @@
 ; this on 32-bit CCL.
 ;
 ; We right-shift the address by five places because smaller shifts led to worse
-; distributions.  We think this is because the low 3 bits are just tag bits
-; (which are not interesting), and the next 2 bits never add any information
-; because conses are word-aligned.
+; distributions.  Initially we thought this was because the low 3 bits are just
+; tag bits (which are not interesting), and the next 2 bits never add any
+; information because conses are word-aligned.  Gary Byers has, however,
+; informed us (email, 6/16/2014) that in 64-bit CCL, memory-allocated objects
+; (like conses) are 16-byte aligned, and the bottom 4 bits (all 0) are replaced
+; by tag bits (where those tag bits are always 3 for a cons).  So perhaps
+; shifting by 4 would suffice, but we may as well stick with 5.
 ;
-; To change this from 2^20 to other powers of 2, you should only need to adjust
-; the mask.  We think 2^20 is a good number, since a 2^20 element array seems
-; to require about 8 MB of memory, e.g., our whole cache (which consists of two
-; such arrays; see "Implementation 2" of Cache Tables, below) will take 16 MB.
+; It should be easy to change this from 2^20 to other powers of 2.  We think
+; 2^20 is a good number, since a 2^20 element array seems to require about 8 MB
+; of memory, e.g., our whole cache (which consists of two such arrays; see
+; "Implementation 2" of Cache Tables, below) will take 16 MB.
+;
+; The email mentioned above from Gary Byers also told us that the machine
+; address is not guaranteed to be a fixnum, so we avoid making this assumption.
+; Fortunately, performance and disassembly essentially agree with the earlier,
+; more complex code that made this assumption.
 
-  `(let* ((addr    (hl-machine-address-of ,x))
-          (addr>>5 (the fixnum (ash (the fixnum addr) -5))))
-     ;; (ADDR>>5) % 2^20
-; Note: disassembly is unaffacted by adding
-; (declare (type fixnum addr addr>>5))
-; here.
-     (the fixnum (logand (the fixnum addr>>5) #xFFFFF))))
+  `(the fixnum (ash (the fixnum
+                         (logand #x1FFFFFF
+                                 (the integer (hl-machine-address-of ,x))))
+                    -5)))
 
 
 ; ----------------------------------------------------------------------
@@ -334,28 +340,62 @@
 ;    explicitly check that this hash code has the proper KEY.
 ;
 ;    Our hashing function, hl-machine-hash, performs quite well.  According to
-;    a rough test, it takes only about the same time as three or four fixnum
-;    additions.  Here's the testing code we used:
+;    a rough test, it takes only about the same time as about 15 fixnum
+;    additions.  Just below is a log of our tests (on a MacBook Pro).  The time
+;    for running (g '((1 . 2))) had been 4.28 seconds with a previous
+;    implementation of hl-machine-hash, instead of 4.60 seconds, but that
+;    previous implementation made the unjustified assumption that the machine
+;    address is a fixnum.
 ;
-;      (defun f (x) ;; (f '(1 . 2)) takes 8.709 seconds
+;      ACL2 !>:q
+;
+;      Exiting the ACL2 read-eval-print loop.  To re-enter, execute (LP).
+;      ? (defun f (x)
 ;        (let ((acc 0))
 ;          (declare (type fixnum acc))
-;          (time (loop for i fixnum from 1 to 1000000000
-;                      do
-;                      (setq acc (the fixnum (+ (the fixnum acc) (the fixnum (car x)))))
-;                      (setq acc (the fixnum (+ (the fixnum acc) (the fixnum (cdr x)))))
-;                      (setq acc (the fixnum (+ (the fixnum acc) (the fixnum (car x)))))
-;                      (setq acc (the fixnum (+ (the fixnum acc) (the fixnum (cdr x)))))
-;                      ))
+;          (loop for i fixnum from 1 to 1000000000
+;                do
+;                (setq acc (the fixnum (+ (the fixnum acc) (the fixnum (car x)))))
+;                (setq acc (the fixnum (+ (the fixnum acc) (the fixnum (cdr x)))))
+;                (setq acc (the fixnum (+ (the fixnum acc) (the fixnum (car x)))))
+;                (setq acc (the fixnum (+ (the fixnum acc) (the fixnum (cdr x)))))
+;                (setq acc (the fixnum (+ (the fixnum acc) (the fixnum (car x)))))
+;                (setq acc (the fixnum (+ (the fixnum acc) (the fixnum (cdr x)))))
+;                (setq acc (the fixnum (+ (the fixnum acc) (the fixnum (car x)))))
+;                (setq acc (the fixnum (+ (the fixnum acc) (the fixnum (cdr x)))))
+;                (setq acc (the fixnum (+ (the fixnum acc) (the fixnum (car x)))))
+;                (setq acc (the fixnum (+ (the fixnum acc) (the fixnum (cdr x)))))
+;                (setq acc (the fixnum (+ (the fixnum acc) (the fixnum (car x)))))
+;                (setq acc (the fixnum (+ (the fixnum acc) (the fixnum (cdr x)))))
+;                (setq acc (the fixnum (+ (the fixnum acc) (the fixnum (car x)))))
+;                (setq acc (the fixnum (+ (the fixnum acc) (the fixnum (cdr x)))))
+;                (setq acc (the fixnum (+ (the fixnum acc) (the fixnum (car x)))))
+;                )
 ;          acc))
-;
-;      (defun g (x) ;; (g '(1 . 2)) takes 8.005 seconds
-;        (let ((acc 0))
-;          (declare (type fixnum acc))
-;          (time (loop for i fixnum from 1 to 1000000000
-;                      do
-;                      (setq acc (the fixnum (+ acc (the fixnum (hl-machine-hash x)))))))
-;          acc))
+;      F
+;      ? (time (f '(1 . 2)))
+;      (F '(1 . 2))
+;      took 4,643,143 microseconds (4.643143 seconds) to run.
+;      During that period, and with 4 available CPU cores,
+;           4,638,143 microseconds (4.638143 seconds) were spent in user mode
+;               2,980 microseconds (0.002980 seconds) were spent in system mode
+;      22000000000
+;      ? (defun g (x)
+;          (let ((acc 0))
+;            (declare (type fixnum acc))
+;            (loop for i fixnum from 1 to 1000000000
+;      	    do
+;      	    (setq acc (the fixnum (hl-machine-hash (car x)))))
+;            acc))
+;      G
+;      ? (time (g '((1 . 2))))
+;      (G '((1 . 2)))
+;      took 4,596,415 microseconds (4.596415 seconds) to run.
+;      During that period, and with 4 available CPU cores,
+;           4,593,425 microseconds (4.593425 seconds) were spent in user mode
+;               1,709 microseconds (0.001709 seconds) were spent in system mode
+;      93111
+;      ?
 ;
 ;    However, in addition to fast execution speed, we want this function to
 ;    produce a good distribution so that we may hash on its result.  We have
@@ -388,8 +428,8 @@
 ;    Specifically:
 ;    ? (let ((ans nil))
 ;        (loop for pair in *dupes* as n = (cdr pair)
-;    	  do (setq ans (put-assoc n (1+ (or (cdr (assoc n ans)) 0)) ans))
-;    	  finally (return ans)))
+;         do (setq ans (put-assoc n (1+ (or (cdr (assoc n ans)) 0)) ans))
+;         finally (return ans)))
 ;
 ;    ;;; Starting full GC,   1,133,510,656 bytes allocated.
 ;    ;;; Finished full GC.     168,228,208 bytes freed in 1.592444 s
