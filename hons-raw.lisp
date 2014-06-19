@@ -32,6 +32,14 @@
 ; and Hunt, and also by Sol Swords, Jared Davis, and Matt Kaufmann.  This file
 ; is now maintained by the ACL2 authors (see above).
 
+; This code is well commented and the comments have been contributed and
+; improved by all of the authors named above.  However, comments referring to
+; "I" or "my" are from Jared, as is the token "BOZO" which he uses to leave
+; a note about a wart or modification to consider.
+
+; Despite the comments here, we recommend reading the user-level documentation
+; for HONS-AND-MEMOIZATION before diving into this code.
+
 (in-package "ACL2")
 
 ;; We use the static honsing scheme on 64-bit CCL.
@@ -222,10 +230,21 @@
 
 #+static-hons
 (defmacro hl-staticp (x)
+
 ; CCL::%STATICP always returns a fixnum or nil, as per Gary Byers email June
 ; 16, 2014.  That email also confirmed that if the value is not nil after a
 ; garbage collection, then the value is unchanged from before the garbage
 ; collection; and also, that the value remains unchanged after saving an image.
+
+; Indeed, this function returns a fixnum (see also above) if x is a static
+; cons.  More may be true, as follows, but we don't count on it: in mid-2014,
+; at least, we see that the value returned is 128 for the first static cons and
+; is incremented by 1 for each additional static cons -- and after a garbage
+; collection, this repeats except that values for remaining static conses are
+; skipped.
+
+; See also *hl-hspace-sbits-default-size*.
+
   `(ccl::%staticp ,x))
 
 #+static-hons
@@ -559,14 +578,14 @@
 ;
 ; The 'ACL2 Objects' are described in the ACL2 function bad-lisp-objectp;
 ; essentially they are certain "good" symbols, characters, strings, and
-; numbers, recursively closed under consing.  Note that stobjs are not ACL2
-; Objects under this definition.
+; numbers, recursively closed under consing.  Note that live stobjs are not
+; ACL2 Objects under this definition.
 ;
 ; The 'Hons Spaces' are fairly complex structures, introduced with the
-; defstruct for hl-hspace, which must satisfy certain invariants.  At any point
-; in time there may be many active Hons Spaces, but separate threads may never
-; access the same Hons Space!  This restriction is intended to minimize the
-; need to lock while accessing Hons Spaces.
+; defstruct for hl-hspace, which must satisfy certain invariants.  At any time
+; there may be many active Hons Spaces, but separate threads may never access
+; the same Hons Space!  This restriction is intended to minimize the need to
+; lock while accessing Hons Spaces.
 ;
 ;    Aside.  Sharable Hons Spaces might have some advantages.  They might
 ;    result in lower overall memory usage and reduce the need to re-hons data
@@ -607,7 +626,7 @@
 ; the normed version of all strings that are equal to X.  We record this choice
 ; in the STR-HT field of the Hons Space, which is an EQUAL hash table.  The
 ; details of what we record in the STR-HT actually depend on whether 'classic
-; honsing' or 'static honsing' is being used.
+; honsing' or 'static honsing' is being used.  See below.
 ;
 ; Conses.  Like strings, there are EQUAL conses which are not EQL.  We could
 ; account for this by setting up another equal hash table, as we did for
@@ -671,14 +690,21 @@
 ; Prerequisite: see the Essay on Hons Spaces and the Essay on Static Conses.
 ;
 ; Static Honsing is a scheme for tracking normed conses that can be used only
-; in Clozure Common Lisp.
+; in Clozure Common Lisp (CCL).
 ;
 ; Static Honsing is an alternative to classic honsing that exploits static
-; conses for greater efficiency.  Here, only static conses can be considered
-; normed, and SBITS is a bit-array that records which static conses are
-; currently normed.  That is, suppose X is a static cons and let I be the index
-; of X.  Then X is considered normed exactly when the Ith bit of SBITS is 1.
-; This is a very fast way to determine if a cons is normed!
+; conses for greater efficiency.  Static conses are conses with several
+; interesting properties: to each static cons there corresponds a unique
+; natural number ``index''; it is possible to ``invert'' the index to retrieve
+; the static cons; each static cons has a fixnum ``machine address.''  Static
+; conses were implemented by Gary Byers and references to ``Gary'' below are to
+; him.
+;
+; Here, only static conses can be considered normed, and SBITS is a bit-array
+; that records which static conses are currently normed.  That is, suppose X is
+; a static cons and let I be the index of X.  Then X is considered normed
+; exactly when the Ith bit of SBITS is 1.  This is a very fast way to determine
+; if a cons is normed!
 ;
 ;
 ; Addresses for Normed Objects.
@@ -694,7 +720,8 @@
 ;
 ;    Characters are given addresses 0-255, corresponding to their codes.
 ;    NIL and T are given addresses 256 and 257, respectively.
-;    Integers in [-2^14, 2^23] are given the subsequent addresses.
+;    Integers in [-2^14, 2^23] are given the subsequent addresses
+;    successively starting at -2^14 (address 258).
 ;
 ; All other objects are dynamically assigned addresses.  In particular, suppose
 ; that BASE is the start of the dynamically-allocated range.  Then,
@@ -783,8 +810,14 @@
   150000)
 
 (defparameter *hl-hspace-sbits-default-size*
-  ;; Static honsing sbits array.  Pretty cheap.  Seems pretty sensible to
-  ;; just match the size of the address table.
+  ;; Static honsing sbits array; pretty cheap.  It seems pretty sensible to
+  ;; just match the size of the address table, given how indices appear to be
+  ;; generated for static conses (see hl-staticp).  But we believe everything
+  ;; would work correctly even if this were a tiny value like 100.  For
+  ;; example, in hl-hspace-truly-static-honsp we do an explicit bounds check
+  ;; before accessing sbits[i], and in hl-hspace-hons-normed we do an explicit
+  ;; bounds check and call hl-hspace-grow-sbits if there isn't enough room
+  ;; before setting sbits[i] = 1.
   *hl-hspace-addr-ht-default-size*)
 
 (defparameter *hl-hspace-other-ht-default-size*
@@ -801,6 +834,10 @@
   ;; For persistent honses.  Hardly anyone ever uses these so let's not
   ;; allocate very many by default.
   100)
+
+; Foreshadowing: We provide a means, hl-hspace-hons-clear, to wipe out all
+; honses -- except the mechanism protects fast alists and any hons marked as
+; ``persistent'' in the hl-hspace-persist-ht table.
 
 #-static-hons
 (defstruct hl-ctables
@@ -820,7 +857,7 @@
 
 (defun hl-initialize-faltable-table (fal-ht-size)
 
-; Create the initial TABLE for a the FALTABLE.  See the Essay on Fast Alists,
+; Create the initial TABLE for the FALTABLE.  See the Essay on Fast Alists,
 ; below, for more details.
 ;
 ; [Sol]: Note (Sol): The non-lock-free hashing algorithm in CCL [for keyword
@@ -1031,8 +1068,8 @@
 ; that it is converted into a hash table after reaching a certain size.
 ;
 ;   RESTRICTION 1.  A flex alist must be used according to the single threaded
-;   discipline, i.e., you must always extend the most recently extended flex
-;   alist.
+;   discipline, i.e., if you extend a flex alist A to a new flex alist, then
+;   you must no longer use A as a flex alist.
 ;
 ;   RESTRICTION 2.  A flex alist must never be extended twice with the same
 ;   key.  This ensures that the entry returned by flex-assoc is always EQ to
@@ -1229,7 +1266,7 @@
                 (entry  (gethash x str-ht)))
            (and entry
                 #+static-hons
-                (eq x (car entry))
+                (eq x (car entry)) ; entry = (<normed x> . <true addr>)
                 #-static-hons
                 (eq x entry))))
         (t
@@ -2105,10 +2142,10 @@
 ;       use of EQL-based backing hash tables.
 ;
 ;    3. The backing hash table, HT, must "agree with" AL.  In particular, for
-;       all ACL2 Objects, X, the following relation must be satisfied:
+;       all ACL2 Objects, KEY, the following relation must be satisfied:
 ;
-;        (equal (hons-assoc-equal X AL)
-;               (gethash (hons-copy X) HT))
+;        (equal (hons-assoc-equal KEY AL)
+;               (gethash (hons-copy KEY) HT))
 ;
 ;       In other words, for every (KEY . VALUE) pair in AL, HT must associate
 ;       KEY to (KEY . VALUE).  Meanwhile, if KEY is not bound in AL, then it
@@ -2944,7 +2981,6 @@ To avoid the following break and get only the above warning:~%  ~a~%"
     (hl-hspace-number-subtrees-aux x seen)
     (hash-table-count seen)))
 
-
 ; ----------------------------------------------------------------------
 ;
 ;                       CLEARING THE HONS SPACE
@@ -3134,8 +3170,8 @@ To avoid the following break and get only the above warning:~%  ~a~%"
 ;
 ; X is an ACL2 Object that we need to recursively reinstall.  We assume that X
 ; was previously normed; thus, all of the strings in X are still normed, and
-; moreover hl-addr-of etc. are still in good shape, because we we never clear
-; the STR-HT or (for static honsing) the OTHER-HT.
+; moreover hl-addr-of etc. are still in good shape, because we never clear the
+; STR-HT or (for static honsing) the OTHER-HT.
 ;
 ; The other fields are the corresponding fields from a Hons Space, but we
 ; assume they are detatched from any Hons Space and do not need to be updated
