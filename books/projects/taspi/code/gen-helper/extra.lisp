@@ -7,7 +7,7 @@
    Tree Analysis System for Phylogenetic Inquiry~/
    A suite a functions for working with trees.")
 
-(def-macro-alias hhshrink-alist hons-shrink-alist! 2)
+(def-macro-alias hhshrink-alist fast-alist-fork! 2)
 (def-macro-alias member-hqual hons-member-equal 2)
 
 (defmacro dis+ind (x)

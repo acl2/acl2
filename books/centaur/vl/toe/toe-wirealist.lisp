@@ -216,7 +216,7 @@ instead).</p>"
     (implies (and (vl-wirealist-p x)
                   (vl-wirealist-p y))
              (vl-wirealist-p (hons-shrink-alist x y)))
-    :hints(("Goal" :in-theory (enable (:induction hons-shrink-alist)))))
+    :hints(("Goal" :in-theory (enable (:i hons-shrink-alist)))))
 
   (defthm vl-emodwirelist-p-of-cdr-of-hons-assoc-equal-when-vl-wirealist-p
     (implies (vl-wirealist-p walist)

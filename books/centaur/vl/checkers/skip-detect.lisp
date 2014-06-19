@@ -221,7 +221,7 @@ sd-keylist-p)s."
     (implies (and (sd-patalist-p x)
                   (sd-patalist-p y))
              (sd-patalist-p (hons-shrink-alist x y)))
-    :hints(("Goal" :in-theory (enable (:induction hons-shrink-alist))))))
+    :hints(("Goal" :in-theory (enable (:i hons-shrink-alist))))))
 
 
 

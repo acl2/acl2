@@ -162,7 +162,14 @@ endif # HTTP_PROXY_WITH_PORT
 
 QUICKLISP_DIR := centaur/quicklisp
 
-ifneq ($(USE_QUICKLISP), )
+.PHONY: quicklisp
+
+ifeq ($(USE_QUICKLISP), )
+
+quicklisp:
+	$(MAKE) USE_QUICKLISP=1 $(QUICKLISP_DIR)/top.cert
+
+else
 
 $(QUICKLISP_DIR)/quicklisp.lsp:
 	@echo "Downloading Quicklisp"
@@ -182,7 +189,6 @@ $(QUICKLISP_DIR)/inst/setup.lisp: $(QUICKLISP_DIR)/quicklisp.lsp \
 
 $(QUICKLISP_DIR)/base.cert: $(QUICKLISP_DIR)/inst/setup.lisp
 
-.PHONY: quicklisp
 quicklisp: $(QUICKLISP_DIR)/top.cert
 
 # I don't think we need this now

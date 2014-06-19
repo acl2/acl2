@@ -741,7 +741,7 @@
     (implies (and (vcd-partitioned-names-p x)
                   (vcd-partitioned-names-p acc))
              (vcd-partitioned-names-p (hons-shrink-alist x acc)))
-    :hints(("Goal" :in-theory (enable (:induction hons-shrink-alist))))))
+    :hints(("Goal" :in-theory (enable (:i hons-shrink-alist))))))
 
 
 (defsection vcd-name-partition
