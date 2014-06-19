@@ -259,7 +259,7 @@ has been developed by Matt Kaufmann, and has many features.</p>
 
 <p>We've added at least some minimal @(see xdoc) documentation for several
 @(see projects): see @(see concurrent-programs), @(see des), @(see equational),
-@(see jfkr), @(see milawa), @(see paco), @(see projects/leftist-trees), @(see
+@(see jfkr), @(see milawa), @(see paco), @(see leftist-trees), @(see
 sha-2), @(see taspi), and @(see wp-gen).</p>
 
 <p>We've added significant documentation for many books and utilities,
@@ -297,7 +297,7 @@ everyone to contribute improvements.</p>
 <li>Fixed bugs with the @(see untranslate-preprocess) support in @(see define).</li>
 </ul>
 
-<h5>@(see str) - string library</h5>
+<h5>@(see std/strings) - string library</h5>
 <ul>
 <li>Added a @('str::binify') function, similar to @(see str::hexify).</li>
 <li>Documented @('binify') and @('hexify').</li>
@@ -423,8 +423,8 @@ local to an external context.</p>
 <p>A new tool, @('tools/last-theory-change'), lets you see when a rule was last
 enabled or disabled.</p>
 
-<p>A new tool, @(see def-dag-measure), may be useful when writing functions
-that traverse directed acyclic graphs.</p>
+<p>A new tool, @('centaur/misc/dag-measure'), may be useful when writing
+functions that traverse directed acyclic graphs.</p>
 
 <p>A new book, @('misc/enumerate.lisp'), demonstrates a trick by J Moore to
 separately consider all possible cases for a particular term during a
@@ -453,7 +453,7 @@ satlink) takes advantage of.</p>
 
 <p>@(see def-universal-equiv) now features @(see xdoc) integration.</p>
 
-<p>Fixed a bug related to undoing inclusion of the @(see intern-debugging)
+<p>Fixed a bug related to undoing inclusion of the @('intern-debugging')
 book.</p>
 
 <p>Added a workaround for a program-mode bug in SULFA's

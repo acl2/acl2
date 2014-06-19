@@ -102,7 +102,6 @@
 
     (deffixtype fnsym :pred fnsym-p :fix fnsym-fix :equiv fnsym-equiv :define t)))
 
-
 (deftypes pterm
   :prepwork ((local (defthm len-equal-val
                       (implies (syntaxp (quotep val))
@@ -987,3 +986,29 @@
    (c cons)
    (d))
   :layout :tree)
+
+
+(deftagsum jaredtree
+  (:leaf
+   :short "The leaf of a jared tree."
+   :long "<p>Green in the autumn, orange in the summer.</p>"
+   ((val natp "Kind of a like a @(see posp), but can also be <b>zero</b>!")))
+  (:pair
+   :short "Two jared trees glued together."
+   :long "<p>Protip: use wood glue.</p>"
+   ((left jaredtree-p    "The hand that makes an <i>L</i> shape.")
+    (right jaredtree-p   "The other hand, it makes a backwards L shape.")))
+  (:unary ((fn symbol    "Name of a function being called.")
+           (arg jaredtree)))
+  :layout :tree
+  :parents (top)
+  :short "A very goofy structure."
+  :long "<p>Don't let your cat get stuck in one of these!</p>")
+
+
+;; ;; ;; temporary
+
+;; (include-book "xdoc/save" :dir :system)
+;; ;; (include-book "std/strings/pretty" :dir :system)
+
+;; (xdoc::save "./manual" :redef-okp t)

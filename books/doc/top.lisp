@@ -122,6 +122,7 @@
 
 (include-book "std/strings/top" :dir :system)
 (include-book "std/strings/base64" :dir :system)
+(include-book "std/strings/pretty" :dir :system)
 
 (include-book "centaur/ubdds/lite" :dir :system)
 (include-book "centaur/ubdds/param" :dir :system)

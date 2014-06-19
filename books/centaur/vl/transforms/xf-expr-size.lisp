@@ -2652,7 +2652,7 @@ permitted operation.</p>
 
 <p>Another kind of extension warning that is stupidly minor is when we just
 have assignments like @('assign foo[127:0] = 0;').  We now do not even create a
-minor warning for assignments where the rhs is a constant."
+minor warning for assignments where the rhs is a constant.</p>"
 
   ((lhs-size natp       "We assume this is greater than the size of X, so we are
                          going to issue an extension warning.")

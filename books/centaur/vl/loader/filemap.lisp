@@ -51,7 +51,7 @@ extra price for coercing the characters.</p>
 
 <p>On the other hand, strings are more compact in memory and are generally
 faster to serialize and load than extended characters.  When we began to
-develop the @(see vl-server), these properties seemed quite attractive.</p>
+develop the VL server, these properties seemed quite attractive.</p>
 
 <p>You might ask why we introduce file maps at all.  After all, a file map is
 very similar to an alist that satisfies @(see vl-string-keys-p) and @(see

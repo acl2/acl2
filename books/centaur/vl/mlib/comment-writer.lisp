@@ -47,9 +47,8 @@
 ; strings gives us a pretty-printed version of the module with the comments
 ; injected in.
 
-
-
 (defsection vl-commentmap-entry-sort
+  :parents (vl-commentmap-p)
   :short "A basic sort for comment maps."
 
   :long "<p>Our pretty-printer uses the following routine in a funny way to get

@@ -213,6 +213,7 @@ singleton statement list.</p>"
 (define vl-edge-control-p ((x vl-delayoreventcontrol-p))
   :short "Recognize @@(posedge clk1 or negedge clk2 or ...) style event
           controls."
+  :parents (synthalways)
   (b* ((x (vl-delayoreventcontrol-fix x))
        ((unless (eq (tag x) :vl-eventcontrol))
         ;; Maybe a delay control like #5, not an @(...) control.
@@ -223,6 +224,7 @@ singleton statement list.</p>"
          (vl-evatomlist-all-have-edges-p x.atoms))))
 
 (define vl-match-always-at-some-edges ((x vl-stmt-p))
+  :parents (synthalways)
   :short "Recognize and decompose edge-triggered statements."
   :returns (mv (body? (equal (vl-stmt-p body?)
                              (if body? t nil)))

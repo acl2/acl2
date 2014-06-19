@@ -441,7 +441,8 @@ function enabled and would think it odd to ever prove a theorem about it.</p>" f
 (define vl-filter-modinsts-by-modname+ ((names string-listp)
                                         (x     vl-modinstlist-p)
                                         (fal   (equal fal (make-lookup-alist names))))
-  :short "Same as @(see vl-filter-modinsts-by-modname+), but requires that the
+  :parents (filtering-by-name vl-filter-modinsts-by-modname)
+  :short "Same as @(see vl-filter-modinsts-by-modname), but requires that the
           fast alist of @('names') be provided instead of recomputing it."
   :enabled t
   (mbe :logic (vl-filter-modinsts-by-modname names x)

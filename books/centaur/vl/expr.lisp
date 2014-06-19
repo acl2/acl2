@@ -28,124 +28,13 @@
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (std::add-default-post-define-hook :fix))
 
-
-(defsection vl-expr-p
-  :parents (syntax)
-  :short "Representation of Verilog expressions."
-
-  :long "<p>One goal of our expression representation was for the recursive
-structure of expressions to be as simple as possible.  More specifically, I did
-not want to have a different representation for a unary expression than for a
-binary expression, etc.  Instead, I just wanted each operator to take a list of
-arguments, each of which were themselves valid subexpressions.</p>
-
-<h3>Basic Terminology</h3>
-
-<h5>Atomic Expressions</h5>
-
-<p>The atomic expressions are recognized by @(see vl-atom-p).  Each
-atomic expression includes some <b>guts</b>, which refer to either an:</p>
-
-<ul>
-
-<li>@(see vl-id-p): a simple, non-hierarchical identifier,</li>
-
-<li>@(see vl-constint-p): an integer literal with no X or Z bits,</li>
-<li>@(see vl-weirdint-p): an integer literal with some X or Z bits,</li>
-<li>@(see vl-extint-p): an unbased, unsized integer literal like @(''0') or
-@(''x'),</li>
-
-<li>@(see vl-real-p): a \"real literal\", i.e., a floating point number,</li>
-
-<li>@(see vl-string-p): a string literal,</li>
-
-<li>@(see vl-time-p): time literals like @('3ns'),</li>
-
-<li>@(see vl-keyguts-p): special atomic expressions like @('null'), @('this'),
-@('super'), @('$'), @('local'), etc.</li>
-
-<li>@(see vl-hidpiece-p): one piece of a hierarchical identifier,</li>
-
-<li>@(see vl-funname-p): the name of an ordinary function, or</li>
-
-<li>@(see vl-sysfunname-p): the name of a system function (e.g.,
-@('$display')).</li>
-
-<li>@(see vl-basictype-p): simple type names like @('byte'), @('shortint'),
-@('time'), @('logic'), etc.</li>
-
-<li>@(see vl-tagname-p): the name of a tagged union type member.</li>
-
-</ul>
-
-<p>Some of these are probably not things you would ordinarily think of as
-atomic expressions.  However, accepting them as atomic expressions lets us
-achieve the straightforward recursive structure we desire for expressions.</p>
-
-<p>In addition to their guts, each @(see vl-atom-p) includes a</p>
-
-<ul>
-
-<li>@('finalwidth'), which is a @(see maybe-natp), and</li>
-
-<li>@('finaltype'), which is a @(see vl-maybe-exprtype-p).</li>
-
-</ul>
-
-<p>Typically, when we have just parsed the modules, these fields are left
-@('nil'): their values are only filled in during our expression typing and
-sizing computations.</p>
-
-<h5>Non-Atomic Expressions</h5>
-
-<p>All non-atomic expressions share a common cons structure, and @(see
-vl-nonatom-p) is a simple, non-recursive, structural validity check to see if
-this structure is obeyed at the top level.  Note that @(see vl-nonatom-p) is
-<b>not</b> sufficient to ensure that the object is a valid expression, because
-additional constraints (e.g., arity checks, recursive well-formedness) are
-imposed by @('vl-expr-p').</p>
-
-<p>Like atomic expressions, each @('vl-nonatom-p') includes @('finalwidth') and
-@('finaltype') fields, which are @('nil') upon parsing and may later be filled
-in by our expression typing and sizing computations.  To be accepted by
-@('vl-nonatom-p'), the @('finalwidth') and @('finaltype') must be valid @(see
-maybe-natp) and @(see vl-maybe-exprtype-p) objects, respectively.</p>
-
-<p>Additionally, each non-atomic expression includes:</p>
-
-<ul>
-
-<li>@('op'), the operation being applied.  For structural validity, @('op')
-must be one of the known operators found in @(see *vl-ops-table*).</li>
-
-<li>@('args'), the arguments the operation is being applied to.  No structural
-constraints are imposed upon @('args').</li>
-
-<li>@('atts'), which represent any attributes written in the @('(* foo = bar,
-baz *)') style that Verilog-2005 permits.  No structural constraints are placed
-upon @('atts').</li>
-
-</ul>
-
-<h5>Valid Expressions</h5>
-
-<p>The valid expressions are recognized by @(see vl-expr-p), which extends our
-basic structural checks recursively over the expression, and also ensures that
-each operator has the proper arity.</p>
-
-<h3>Definition</h3>
-
-@(def vl-expr-p)
-
-<h3>Basic Theorems</h3>")
-
-(local (xdoc::set-default-parents vl-expr-p))
+(local (xdoc::set-default-parents expressions))
 
 (defval *vl-ops-table*
   :short "Table of operators and their arities."
 
   :long "<p>The constant @(srclink *vl-ops-table*) defines the valid operators
-for @(see vl-nonatom-p) expressions.  It is preferred not to access this table
+in our expression representation.  It is preferred not to access this table
 directly, but rather to use @(see vl-op-p) and @(see vl-op-arity).</p>
 
 <p>The @('*vl-ops-table*') is an alist that maps our operators (keyword
@@ -980,7 +869,103 @@ vl-atomguts-p) is already known."
              (equal (vl-arity-fix op args) args))))
 
 
-(deftypes vl-expr
+(deftypes expressions
+  :parents (syntax)
+  :short "Representation of Verilog expressions."
+
+  :long "<p>One goal of our expression representation was for the recursive
+structure of expressions to be as simple as possible.  More specifically, I did
+not want to have a different representation for a unary expression than for a
+binary expression, etc.  Instead, I just wanted each operator to take a list of
+arguments, each of which were themselves valid subexpressions.</p>
+
+<h3>Basic Terminology</h3>
+
+<h5>Atomic Expressions</h5>
+
+<p>The atomic expressions are recognized by @(see vl-atom-p).  Each
+atomic expression includes some <b>guts</b>, which refer to either an:</p>
+
+<ul>
+
+<li>@(see vl-id-p): a simple, non-hierarchical identifier,</li>
+
+<li>@(see vl-constint-p): an integer literal with no X or Z bits,</li>
+<li>@(see vl-weirdint-p): an integer literal with some X or Z bits,</li>
+<li>@(see vl-extint-p): an unbased, unsized integer literal like @(''0') or
+@(''x'),</li>
+
+<li>@(see vl-real-p): a \"real literal\", i.e., a floating point number,</li>
+
+<li>@(see vl-string-p): a string literal,</li>
+
+<li>@(see vl-time-p): time literals like @('3ns'),</li>
+
+<li>@(see vl-keyguts-p): special atomic expressions like @('null'), @('this'),
+@('super'), @('$'), @('local'), etc.</li>
+
+<li>@(see vl-hidpiece-p): one piece of a hierarchical identifier,</li>
+
+<li>@(see vl-funname-p): the name of an ordinary function, or</li>
+
+<li>@(see vl-sysfunname-p): the name of a system function (e.g.,
+@('$display')).</li>
+
+<li>@(see vl-basictype-p): simple type names like @('byte'), @('shortint'),
+@('time'), @('logic'), etc.</li>
+
+<li>@(see vl-tagname-p): the name of a tagged union type member.</li>
+
+</ul>
+
+<p>Some of these are probably not things you would ordinarily think of as
+atomic expressions.  However, accepting them as atomic expressions lets us
+achieve the straightforward recursive structure we desire for expressions.</p>
+
+<p>In addition to their guts, each @(see vl-atom-p) includes a</p>
+
+<ul>
+
+<li>@('finalwidth'), which is a @(see maybe-natp), and</li>
+
+<li>@('finaltype'), which is a @(see vl-maybe-exprtype-p).</li>
+
+</ul>
+
+<p>Typically, when we have just parsed the modules, these fields are left
+@('nil'): their values are only filled in during our expression typing and
+sizing computations.</p>
+
+<h5>Non-Atomic Expressions</h5>
+
+<p>A non-atomic expression represents an operator being applied to some
+arguments.</p>
+
+<p>Like atomic expressions, each @('vl-nonatom-p') includes @('finalwidth') and
+@('finaltype') fields, which are @('nil') upon parsing and may later be filled
+in by our expression typing and sizing computations.</p>
+
+<p>Additionally, each non-atomic expression includes:</p>
+
+<ul>
+
+<li>@('op'), the operation being applied.  For structural validity, @('op')
+must be one of the known operators found in @(see *vl-ops-table*).</li>
+
+<li>@('args'), the arguments the operation is being applied to.  No structural
+constraints are imposed upon @('args').</li>
+
+<li>@('atts'), which represent any attributes written in the @('(* foo = bar,
+baz *)') style that Verilog-2005 permits.  No structural constraints are placed
+upon @('atts').</li>
+
+</ul>
+
+<h5>Valid Expressions</h5>
+
+<p>The valid expressions are recognized by @(see vl-expr-p), which extends our
+basic structural checks recursively over the expression, and also ensures that
+each operator has the proper arity.</p>"
 
   (deftagsum vl-expr
     (:atom

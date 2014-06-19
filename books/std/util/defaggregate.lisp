@@ -344,7 +344,7 @@ In this case, we would have:</p>
        ((len-of-mytype->args (equal (len args) arity))))
 })
 
-<p>This would result in an ordinary @(see type-prescription) return-type
+<p>This would result in an ordinary @(see acl2::type-prescription) return-type
 theorems for both @('arity') and @('args'), and a separate rewrite rule to deal
 with the length dependency:</p>
 
@@ -807,8 +807,7 @@ optimization altogether.</p>")
        (accessor (da-accessor-name name field.name))
        ;; bozo escaping issues...
        (short    (str::cat "Access the <tt>" (acl2::string-downcase (symbol-name field.name))
-                           "</tt> field of a @(see "
-                           (symbol-package-name foop) "::" (symbol-name foop)
+                           "</tt> field of a @(see " (xdoc::full-escape-symbol foop)
                            ") structure.")))
     `(defxdoc ,accessor
        :parents (,foop)
@@ -897,14 +896,14 @@ optimization altogether.</p>")
        (call-make-honsed-foo (da-ctor-optional-call make-honsed-foo opt-fields))
        (call-change-foo      (da-ctor-optional-call change-foo (cons "x" opt-fields)))
 
-       (def-foo           (str::cat "@(def " pkg "::" (symbol-name foo) ")"))
-       (def-honsed-foo    (str::cat "@(def " pkg "::" (symbol-name honsed-foo) ")"))
-       (def-make-foo-fn   (str::cat "@(def " pkg "::" (symbol-name make-foo-fn) ")"))
-       (def-make-foo      (str::cat "@(def " pkg "::" (symbol-name make-foo) ")"))
-       (def-make-honsed-foo-fn (str::cat "@(def " pkg "::" (symbol-name make-honsed-foo-fn) ")"))
-       (def-make-honsed-foo    (str::cat "@(def " pkg "::" (symbol-name make-honsed-foo) ")"))
-       (def-change-foo-fn (str::cat "@(def " pkg "::" (symbol-name change-foo-fn) ")"))
-       (def-change-foo    (str::cat "@(def " pkg "::" (symbol-name change-foo) ")")))
+       (def-foo                (str::cat "@(def " (xdoc::full-escape-symbol foo) ")"))
+       (def-honsed-foo         (str::cat "@(def " (xdoc::full-escape-symbol honsed-foo) ")"))
+       (def-make-foo-fn        (str::cat "@(def " (xdoc::full-escape-symbol make-foo-fn) ")"))
+       (def-make-foo           (str::cat "@(def " (xdoc::full-escape-symbol make-foo) ")"))
+       (def-make-honsed-foo-fn (str::cat "@(def " (xdoc::full-escape-symbol make-honsed-foo-fn) ")"))
+       (def-make-honsed-foo    (str::cat "@(def " (xdoc::full-escape-symbol make-honsed-foo) ")"))
+       (def-change-foo-fn      (str::cat "@(def " (xdoc::full-escape-symbol change-foo-fn) ")"))
+       (def-change-foo         (str::cat "@(def " (xdoc::full-escape-symbol change-foo) ")")))
 
     (list
      `(defxdoc ,foo

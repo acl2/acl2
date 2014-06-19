@@ -35,8 +35,7 @@
 
   :long "<p>Symbolic test vectors are integrated into @(see xdoc) so that you
 can generate attractive explanations of your setup.  This is often useful when
-communicating with logic designers.  For an example, see @(see counter-run) in
-the @(see esim-tutorial).</p>
+communicating with logic designers.</p>
 
 <p><b>NOTE</b>: the topics here cover how we generate this documentation.  If
 you just want to document your own STVs, you don't need to know about any of

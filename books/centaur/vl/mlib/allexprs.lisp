@@ -91,7 +91,7 @@ expressions within @('(* foo = bar *)')-style attributes.</p>")
          (element-collect      (mksym element '-allexprs))
          (element-collect-nrev (mksym element '-allexprs-nrev))
          (short                (cat "Gather all top-level expressions from a @(see "
-                                    (symbol-name list-rec))))
+                                    (symbol-name list-rec) ").")))
     `(progn
        (define ,list-collect-nrev ((x ,list-rec) nrev)
          :parents (,list-collect)

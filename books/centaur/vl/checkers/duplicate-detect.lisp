@@ -36,9 +36,9 @@
   :short "Check for instances and assignments that are literally identical."
 
   :long "<p>This is a heuristic for generating warnings.  We look for
-assignments, module instances, and gate instances that are identical <see
-topic='@(url fixing-functions)'>up to fixing</see>.  These sorts of things
-might well be copy/paste errors.</p>")
+assignments, module instances, and gate instances that are identical up to
+<i>stripping</i> as described in @(see stripping-functions).  These sorts of
+things might well be copy/paste errors.</p>")
 
 (local (xdoc::set-default-parents duplicate-detect))
 

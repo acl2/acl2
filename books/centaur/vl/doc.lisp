@@ -171,7 +171,7 @@ parse your design; see the documentation for the @(see loader).</p>
 
 <p>Once you have parsed your design (or at least some portion of it) you will
 have a list of modules.  You might want to at least glance through the
-documentation for @(see modules), which explains how modules are represented.
+documentation for @(see syntax), which explains how modules are represented.
 This may be particularly useful if you are going to write your own checkers or
 transforms.</p>
 

@@ -23,7 +23,6 @@
 (local (include-book "../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
 
-
 ; -----------------------------------------------------------------------------
 ;
 ;                    SIZING EXPRESSIONS THROUGHOUT A MODULE
@@ -799,10 +798,12 @@ the expression.</p>"
                       :warnings warnings)))
 
 (defprojection vl-modulelist-exprsize ((x vl-modulelist-p))
+  :parents (expression-sizing)
   :returns (new-x vl-modulelist-p)
   (vl-module-exprsize x))
 
 (define vl-design-exprsize
+  :parents (expression-sizing)
   :short "Top-level @(see expression-sizing) transform."
   ((x vl-design-p))
   :returns (new-x vl-design-p)

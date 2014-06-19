@@ -34,13 +34,13 @@
 
 <p>The idea is that in other books, we can add various theorems about how these
 generic functions behave in relation to other functions such as nth, index-of,
-member, etc, which we can use in pluggable forms of @(see deflist), @(see
-defprojection), or @(see defmapappend).  However, this functionality isn't yet
-implemented.</p>
+member, etc, which we can use in pluggable forms of @(see std::deflist), @(see
+std::defprojection), or @(see std::defmapappend).  However, this functionality
+isn't yet implemented.</p>
 
 <p>To collect theorems relating to list recognizers, projections, and mapappend
 functions, we also define macros @(see def-listp-rule), @(see
-def-projection-rule), and @(see def-mappapend-rule).  These are just like
+def-projection-rule), and @(see def-mapappend-rule).  These are just like
 defthm but additionally add the theorem name to a table so that later we can
 use the rules in that table as a basis for extensible forms of deflist,
 defprojection, and defmapappend.</p>")

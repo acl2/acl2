@@ -102,7 +102,7 @@ is at the heart of ACL2's s-expression printing.  In other words, this is an
 implementation of something like the @('~x') @(see fmt) directive.</p>
 
 <p>Even with respect to @('ppr'), there is some @(see missing-functionality).
-I don't implement @(see iprinting) or include any infix printing support.
+I don't implement @(see acl2::iprinting) or include any infix printing support.
 Various complex and unhelpful printer-control variables are also omitted.</p>
 
 
@@ -113,7 +113,7 @@ pretty-printing-implementation).</p>")
 
 (defxdoc pretty-printing-implementation
   :parents (pretty-printing)
-  :short "Implementation details of our @(see prettyprint) support."
+  :short "Implementation details of our @(see pretty-printing) support."
 
   :long "<p>My implementation is very much based on ACL2's pretty printer.  The
 pretty printer operates in two linear passes: the first pass builds a data
@@ -987,10 +987,10 @@ that tell the second pass how to print.  (In ACL2's pretty-printer, these
 structures are referred to as \"ppr tuples\".)</p>
 
 <p>We now define the valid kinds of printer instructions.  To understand these,
-it is very helpful to start with @(see ppr2), the <i>second</i> pass of
-pretty-printing, which follows these instructions to produce its output.  You
-can basically think of @('ppr2') as an evaluator that gives these instructions
-their semantics.</p>"
+it is very helpful to start with @(see print-instruction), the <i>second</i>
+pass of pretty-printing, which follows these instructions to produce its
+output.  You can basically think of @('print-instruction') as an evaluator that
+gives these instructions their semantics.</p>"
 
   (fty::deftagsum pinst
     (:flat

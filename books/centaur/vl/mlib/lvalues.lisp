@@ -202,7 +202,7 @@ their \"wires\" since they're in a different namespace.</p>")
          (element-collect      (mksym element '-lvalexprs))
          (element-collect-nrev (mksym element '-lvalexprs-nrev))
          (short                (cat "Gather all top-level expressions from a @(see "
-                                    (symbol-name list-rec))))
+                                    (symbol-name list-rec) ").")))
     `(progn
        (define ,list-collect-nrev ((x ,list-rec) nrev)
          :parents (,list-collect)

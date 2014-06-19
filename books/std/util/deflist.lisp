@@ -592,14 +592,14 @@ of which recognizers require true-listp and which don't.</p>")
        (short (or short
                   (and parents
                        (concatenate
-                        'string "@(call " (symbol-name name)
+                        'string "@(call " (xdoc::full-escape-symbol name)
                                  ") recognizes lists where every element "
                                  (if negatedp
                                      "is rejected by "
                                    "satisfies ")
                                  ;; bozo it'd be better to put the formals in
                                  ;; here, for multi-arity functions.
-                                 "@(see " (symbol-name elementp) ")."))))
+                                 "@(see? " (xdoc::full-escape-symbol elementp) ")."))))
 
        (long (or long
                  (and parents

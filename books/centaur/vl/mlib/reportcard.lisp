@@ -59,10 +59,12 @@ so instead we might create a report card that associates target module names
 with the new warnings we want to add to them.  The function @(see
 vl-apply-reportcard) can then be used to add these warnings to a design.</li>
 
-<p>Second, report cards can be useful when we want to print the warnings for a
-bunch of modules.  Depending on the context, we might want to associate either
-the elaborated (unparameterized) names of modules, or their original names, to
-their related warnings.</p>"
+<li>Report cards can be useful when we want to print the warnings for a bunch
+of modules.  Depending on the context, we might want to associate either the
+elaborated (unparameterized) names of modules, or their original names, to
+their related warnings.</li>
+
+</ol>"
   :already-definedp t)
 
 (local (xdoc::set-default-parents vl-reportcard-p))

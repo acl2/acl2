@@ -240,15 +240,15 @@ add theorems into the same section.</p>")
 
        (short (or short
                   (and parents
-                       (concatenate 'string  "@(call " (symbol-name name)
-                                    ") applies @(see " (symbol-name transform-fn)
+                       (concatenate 'string  "@(call " (xdoc::full-escape-symbol name)
+                                    ") applies @(see? " (xdoc::full-escape-symbol transform-fn)
                                     ") to every member of the list @('x'), "
                                     "and appends together all the resulting lists."))))
 
        (long (or long
                  (and parents
                       (concatenate 'string  "<p>This is an ordinary @(see std::defmapappend).</p>"
-                                   "@(def " (symbol-name name) ")"))))
+                                   "@(def " (xdoc::full-escape-symbol name) ")"))))
 
        (def
         (if already-definedp

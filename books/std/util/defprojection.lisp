@@ -326,9 +326,8 @@ now does nothing.</p>")
 
        (short (or short
                   (and parents
-                       (concatenate 'string "@(call " (symbol-name list-fn) ") maps "
-                                    "@(see " (symbol-package-name elem-fn)
-                                    "::" (symbol-name elem-fn) ") across a list."))))
+                       (concatenate 'string "@(call " (xdoc::full-escape-symbol list-fn) ") maps "
+                                    "@(see? " (xdoc::full-escape-symbol elem-fn) ") across a list."))))
 
        (long (or long
                  (and parents

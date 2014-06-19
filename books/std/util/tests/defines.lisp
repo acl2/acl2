@@ -202,3 +202,97 @@
       (append (my-flatten-term2 (car x))
               (my-flatten-term2-list (cdr x))))))
 
+
+;; BOZO try to get this working eventually
+
+;; (defines doc-test
+;;   :short "Test of local stuff."
+;;   :returns-hints (("goal" :in-theory (disable nat-listp)))
+;;   (define doc-test ((x my-termp))
+;;     :flag term
+;;     :returns (numbers nat-listp :hyp :guard
+;;                       :hints ((and stable-under-simplificationp
+;;                                    '(:in-theory (enable nat-listp)))))
+;;     (if (atom x)
+;;         (list x)
+;;       (doc-test-list (cdr x)))
+;;     ///
+;;     (local (defthm local1 (integerp (len x))))
+;;     (defthm global1 (integerp (len x))))
+
+;;   (define doc-test-list ((x my-term-listp))
+;;     :flag list
+;;     :returns (numbers nat-listp :hyp :guard
+;;                       :hints ((and stable-under-simplificationp
+;;                                    '(:in-theory (enable nat-listp)))))
+;;     (if (atom x)
+;;         nil
+;;       (append (doc-test (car x))
+;;               (doc-test-list (cdr x)))))
+
+;;   ///
+;;   (local (defthm local2 (integerp (len x))))
+;;   (defthm global2 (integerp (len x))))
+
+;; (include-book "str/substrp" :dir :system)
+;; (include-book "misc/assert" :dir :system)
+
+;; (assert!
+;;  (let ((long (cdr (assoc :long (xdoc::find-topic 'doc-test (xdoc::get-xdoc-table (w state)))))))
+;;    (and (or (str::substrp "GLOBAL1" long)
+;;             (er hard? 'doc-test "Missing global1"))
+;;         (or (str::substrp "GLOBAL2" long)
+;;             (er hard? 'doc-test "Missing global2"))
+;;         (or (not (str::substrp "LOCAL1" long))
+;;             (er hard? 'doc-test "Accidentally have local1"))
+;;         (or (not (str::substrp "LOCAL2" long))
+;;             (er hard? 'doc-test "Accidentally have local2")))))
+
+
+
+
+
+;; (DEFINES-FN
+;;       'DOC-TEST
+;;       '(:SHORT
+;;             "Test of local stuff." :RETURNS-HINTS
+;;             (("goal" :IN-THEORY (DISABLE NAT-LISTP)))
+;;             (DEFINE DOC-TEST ((X MY-TERMP))
+;;                     :FLAG TERM :RETURNS
+;;                     (NUMBERS NAT-LISTP
+;;                              :HYP :GUARD
+;;                              :HINTS ((AND STABLE-UNDER-SIMPLIFICATIONP
+;;                                           '(:IN-THEORY (ENABLE NAT-LISTP)))))
+;;                     (IF (ATOM X)
+;;                         (LIST X)
+;;                         (DOC-TEST-LIST (CDR X)))
+;;                     ///
+;;                     (LOCAL (DEFTHM LOCAL1 (INTEGERP (LEN X))))
+;;                     (DEFTHM GLOBAL1 (INTEGERP (LEN X))))
+;;             (DEFINE DOC-TEST-LIST ((X MY-TERM-LISTP))
+;;                     :FLAG LIST :RETURNS
+;;                     (NUMBERS NAT-LISTP
+;;                              :HYP :GUARD
+;;                              :HINTS ((AND STABLE-UNDER-SIMPLIFICATIONP
+;;                                           '(:IN-THEORY (ENABLE NAT-LISTP)))))
+;;                     (IF (ATOM X)
+;;                         NIL
+;;                         (APPEND (DOC-TEST (CAR X))
+;;                                 (DOC-TEST-LIST (CDR X)))))
+;;             ///
+;;             (LOCAL (DEFTHM LOCAL2 (INTEGERP (LEN X))))
+;;             (DEFTHM GLOBAL2 (INTEGERP (LEN X))))
+;;       (W STATE))
+
+
+
+;; (defsection-progn foo
+;;   :short "Foo"
+;;   (local (defthm local-lemma (integerp (len x))))
+;;   (defthm global-lemma (integerp (len x))))
+
+
+;; (encapsulate nil
+;;   (progn (defun fsdfs (x) x) (local (defun asdf (x) x)))
+;;   (local (make-event (let ((state (f-put-global 'old-w (w state) state)))
+;;                        (value '(value-triple :foo))))))

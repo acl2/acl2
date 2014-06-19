@@ -478,6 +478,8 @@
        (acc (file-name-mangle arg acc))
        (acc (str::revappend-chars "\">" acc))
        (acc (if (want-to-preserve-case-p arg arg-raw base-pkg)
+                ;; BOZO can this possibly be right?  What if arg-raw has '<' in it?
+                ;; If this is a bug, fix the other see-like directives below, too.
                 (str::revappend-chars (str::trim arg-raw) acc)
               (sym-mangle arg base-pkg acc)))
        (acc (str::revappend-chars "</see>" acc)))
@@ -496,6 +498,21 @@
   ;; @(tsee foo) is basically <tt>@(see ...)</tt>.
   (b* ((acc (str::revappend-chars "<tt>" acc))
        (acc (process-see-directive arg arg-raw base-pkg acc))
+       (acc (str::revappend-chars "</tt>" acc)))
+    acc))
+
+(defun process-see?-directive (arg arg-raw topics-fal base-pkg acc) ;; ===> ACC
+  ;; @(see? foo) is useful for macros like DEFLIST or DEFPROJECTION where you
+  ;; are extending some function.  If FOO is the name of a documented topic,
+  ;; then we insert a link to it just as in @(see foo).  But if FOO isn't
+  ;; documented, we just turn it into a <tt>foo</tt> style thing.
+  (b* (((when (hons-get arg topics-fal))
+        (process-see-directive arg arg-raw base-pkg acc))
+       ;; Not documented, don't insert a link.
+       (acc (str::revappend-chars "<tt>" acc))
+       (acc (if (want-to-preserve-case-p arg arg-raw base-pkg)
+                (str::revappend-chars (str::trim arg-raw) acc)
+              (sym-mangle arg base-pkg acc)))
        (acc (str::revappend-chars "</tt>" acc)))
     acc))
 
@@ -607,7 +624,6 @@
    ;; documentation string.  Carry out whatever directive we've been asked to
    ;; do.  Acc is the accumulator for our output characters.
    (case command
-
      (def       (mv (process-def-directive     arg topics-fal base-pkg state acc)     state))
      (thm       (mv (process-thm-directive     arg topics-fal base-pkg state acc)     state))
      (srclink   (mv (process-srclink-directive arg acc)                               state))
@@ -624,6 +640,7 @@
      (tsee      (mv (process-tsee-directive    arg arg-raw base-pkg acc)              state))
      (sym       (mv (process-sym-directive     arg base-pkg acc)                      state))
      (csym      (mv (process-sym-cap-directive arg base-pkg acc)                      state))
+     (see?      (mv (process-see?-directive    arg arg-raw topics-fal base-pkg acc)   state))
      (otherwise
       (progn$
        (and (xdoc-verbose-p)

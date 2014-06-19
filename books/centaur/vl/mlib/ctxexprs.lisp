@@ -68,6 +68,7 @@ essentially say where some expressions are from.</p>"
       (vl-make-exprctxalist-nrev (cdr exprs) ctx nrev))))
 
 (define vl-make-exprctxalist
+  :parents (ctxexprs)
   :short "Bind some expressions to their context."
   ((exprs vl-exprlist-p "List of expressions to bind.")
    (ctx   vl-context-p  "Context to bind to all of these expressions."))

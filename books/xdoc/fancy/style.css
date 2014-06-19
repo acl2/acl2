@@ -319,6 +319,8 @@ h3 { font-size: 1.5em; }
 h4 { font-size: 1.2em; }
 h5 { font-size: 1.1em; margin-left: 1em;}
 
+h4, h5 { margin-bottom: 0; }
+
 p, dl { margin-left: 1em; margin-right: 1em; }
 
 li    { margin-left: 1.0em; margin-right: 1em; margin-bottom: 0.5em; }

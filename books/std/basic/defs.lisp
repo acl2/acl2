@@ -238,7 +238,7 @@ interpreted as characters.  That is, non-characters are first coerced to be the
 NUL character (via @(see char-fix)), then we see if these coerced arguments are
 equal.</p>
 
-<p>See also @(see ichareqv) for a case-insensitive alternative.</p>"
+<p>See also @(see str::ichareqv) for a case-insensitive alternative.</p>"
 
   (defund-inline chareqv (x y)
     (declare (xargs :guard t))
@@ -298,7 +298,7 @@ interpreted as strings.  That is, non-strings are first coerced to be the empty
 string (via @(see str-fix)), then we see if these coerced arguments are
 equal.</p>
 
-<p>See also @(see istreqv) for a case-insensitive alternative.</p>"
+<p>See also @(see str::istreqv) for a case-insensitive alternative.</p>"
 
   (defund-inline streqv (x y)
     (declare (xargs :guard t))

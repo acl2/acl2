@@ -20,11 +20,12 @@
 
 
 (in-package "FTY")
-
 (include-book "std/util/da-base" :dir :system)
 (include-book "fixequiv")
 (include-book "tools/rulesets" :dir :system)
 (include-book "misc/hons-help" :dir :system) ;; for hons-list
+(include-book "xdoc/names" :dir :system)
+(set-state-ok t)
 
 (def-ruleset! std::tag-reasoning nil)
 
@@ -78,7 +79,7 @@
 
 (deftypes pterm3
   (defflexsum pterm3
-    (:var 
+    (:var
      :cond (atom x)
      :fields ((name :acc-body x :type symbolp))
      :ctor-body name)
@@ -111,6 +112,21 @@
 (program)
 
 ;; ------------------------- Misc Utilities ------------------------
+
+(defmacro revappend-chars (x y)
+  `(str::revappend-chars ,x ,y))
+
+(defmacro rchars-to-string (x)
+  `(str::rchars-to-string ,x))
+
+(defun html-encode-str (x acc)
+  (xdoc::simple-html-encode-str x 0 (length x) acc))
+
+(defmacro cat (&rest args)
+  `(str::cat . ,args))
+
+(defconst *nl* (str::implode (list #\Newline)))
+
 (defun nice-and (x y)
   (cond ((eq x t) y)
         ((eq y t) x)
@@ -215,9 +231,9 @@
     (if count-look
         (cdr count-look)
       (and (not (getarg :no-count nil kwd-alist))
-           (intern-in-package-of-symbol
-            (concatenate 'string (symbol-name name) "-COUNT")
-            name)))))
+           (intern-in-package-of-symbol (cat (symbol-name name) "-COUNT")
+                                        name)))))
+
 
 ;; ------------------------- Flexsum Parsing -----------------------
 
@@ -264,8 +280,7 @@
        (acc-name (getarg-nonnil!
                   :acc-name
                   (intern-in-package-of-symbol
-                   (concatenate 'string
-                                (symbol-name type-name) "->" (symbol-name name))
+                   (cat (symbol-name type-name) "->" (symbol-name name))
                    type-name)
                   kwd-alist))
        ((mv type fix equiv recp) (get-pred/fix/equiv kwd-alist our-fixtypes fixtypes :type))
@@ -290,7 +305,7 @@
       nil
     (cons (parse-flexprod-field (car x) type-name our-fixtypes fixtypes)
           (parse-flexprod-fields (cdr x) type-name our-fixtypes fixtypes))))
-       
+
 ;; --- Flexprods ---
 (def-primitive-aggregate flexprod
   (kind       ;; kind symbol
@@ -303,12 +318,13 @@
    ctor-name  ;; constructor function name
    ctor-macro ;; constructor macro (keyword args) name
    ctor-body  ;; constructor body, without fixing
-   doc        ;; string, not yet used
+   short      ;; xdoc
+   long       ;; xdoc
    inline     ;; inline keywords
    ))
 
 (defconst *flexprod-keywords*
-  '(:shape :fields :ctor-body :ctor-name :ctor-macro :cond :type-name :doc :inline :require))
+  '(:shape :fields :ctor-body :ctor-name :ctor-macro :cond :type-name :short :long :inline :require))
 
 (defun parse-flexprod (x sumname sumkind sum-kwds xvar rev-not-prevconds our-fixtypes fixtypes)
   (b* (((cons kind kws) x)
@@ -329,14 +345,13 @@
        (shape (getarg :shape t kwd-alist))
        (type-name (getarg-nonnil! :type-name
                                   (intern-in-package-of-symbol
-                                   (concatenate 'string (symbol-name sumname)
-                                                "-" (symbol-name kind))
+                                   (cat (symbol-name sumname) "-" (symbol-name kind))
                                    sumname)
                                   kwd-alist))
        (ctor-name (getarg-nonnil! :ctor-name type-name kwd-alist) )
        (ctor-macro (getarg-nonnil! :ctor-macro
                                    (intern-in-package-of-symbol
-                                    (concatenate 'string "MAKE-" (symbol-name ctor-name))
+                                    (cat "MAKE-" (symbol-name ctor-name))
                                     ctor-name)
                                    kwd-alist))
        (fields (parse-flexprod-fields (getarg :fields nil kwd-alist) type-name our-fixtypes fixtypes))
@@ -358,7 +373,8 @@
                   :ctor-name ctor-name
                   :ctor-macro ctor-macro
                   :ctor-body ctor-body
-                  :doc (getarg :doc "" kwd-alist)
+                  :short (getarg :short nil kwd-alist)
+                  :long (getarg :long nil kwd-alist)
                   :inline inline)))
 
 (defun parse-flexprods (x sumname sumkind sum-kwds xvar rev-not-prevconds our-fixtypes fixtypes)
@@ -390,6 +406,7 @@
    orig-prods  ;; original products
    inline      ;; inline kind, fix functions
    recp        ;; has a recusive field in some product
+   typemacro   ;; defflexsum, deftagsum, defprod
    )
   :tag :sum)
 
@@ -452,26 +469,21 @@
        ((mv kwd-alist orig-prods)
         (extract-keywords 'parse-flexsum *flexsum-keywords* args nil))
        (pred (or (getarg :pred nil kwd-alist)
-                 (intern-in-package-of-symbol
-                  (concatenate 'string (symbol-name name) "-P")
-                  name)))
+                 (intern-in-package-of-symbol (cat (symbol-name name) "-P")
+                                              name)))
        (fix (or (getarg :fix nil kwd-alist)
-                (intern-in-package-of-symbol
-                 (concatenate 'string (symbol-name name) "-FIX")
-                 name)))
+                (intern-in-package-of-symbol (cat (symbol-name name) "-FIX")
+                                             name)))
        (equiv (or (getarg :equiv nil kwd-alist)
-                  (intern-in-package-of-symbol
-                   (concatenate 'string (symbol-name name) "-EQUIV")
-                   name)))
+                  (intern-in-package-of-symbol (cat (symbol-name name) "-EQUIV")
+                                               name)))
        (kind (getarg! :kind
-                      (intern-in-package-of-symbol
-                       (concatenate 'string (symbol-name name) "-KIND")
-                       name)
+                      (intern-in-package-of-symbol (cat (symbol-name name) "-KIND")
+                                                   name)
                       kwd-alist))
        (case (getarg! :case
-                      (intern-in-package-of-symbol
-                       (concatenate 'string (symbol-name name) "-CASE")
-                       name)
+                      (intern-in-package-of-symbol (cat (symbol-name name) "-CASE")
+                                                   name)
                       kwd-alist))
        (inline (get-deftypes-inline-opt *inline-defaults* kwd-alist))
        (shape (getarg :shape t kwd-alist))
@@ -499,7 +511,8 @@
                   :measure measure
                   :kwd-alist kwd-alist
                   :orig-prods orig-prods
-                  :recp recp)))
+                  :recp recp
+                  :typemacro 'defflexsum)))
 
 
 ;; ------------------------- Defprod/tagsum Parsing -----------------------
@@ -618,7 +631,7 @@
         (if (< pos half)
             (tagsum-acc-for-tree pos half `(car ,expr))
           (tagsum-acc-for-tree (- pos half) (- num half) `(cdr ,expr)))))))
-      
+
 (defun tagsum-formal-to-flexsum-field (x pos num xvar layout)
   ;; num is the total number of fields, pos is x's position
   (b* (((std::formal x) x)
@@ -695,7 +708,7 @@
 
 (defconst *tagprod-formal-keywords* '(:rule-classes :default :reqfix))
 (defconst *tagprod-keywords*
-  '(:layout :hons :inline :base-name :require :short :long)) 
+  '(:layout :hons :inline :base-name :require :short :long))
 
 (defun tagsum-prod-to-flexprod (x xvar sum-kwds lastp have-basep our-fixtypes)
   (b* (((cons kind args) x)
@@ -707,6 +720,8 @@
        (layout (getarg :layout (getarg :layout :list sum-kwds) kwd-alist))
        (inlinep (assoc :inline kwd-alist))
        (requirep (assoc :require kwd-alist))
+       (shortp (assoc :short kwd-alist))
+       (longp (assoc :long kwd-alist))
        (hons (getarg :hons nil kwd-alist))
        (fields (car fields))
        (field-formals (tagprod-parse-formals 'parse-tagsum fields
@@ -734,6 +749,8 @@
           ,@(and inlinep `(:inline ,(cdr inlinep)))
           ,@(and requirep `(:require ,(cdr requirep)))
           ,@(and base-name `(:type-name ,base-name))
+          ,@(and shortp `(:short ,(cdr shortp)))
+          ,@(and longp `(:long ,(cdr longp)))
           :ctor-body (,(if hons 'hons 'cons) ,kind ,ctor-body1))
         basep)))
 
@@ -780,26 +797,21 @@
        ((mv kwd-alist orig-prods)
         (extract-keywords 'parse-tagsum *tagsum-keywords* args nil))
        (pred (or (getarg :pred nil kwd-alist)
-                 (intern-in-package-of-symbol
-                  (concatenate 'string (symbol-name name) "-P")
+                 (intern-in-package-of-symbol (cat (symbol-name name) "-P")
                   name)))
        (fix (or (getarg :fix nil kwd-alist)
-                (intern-in-package-of-symbol
-                 (concatenate 'string (symbol-name name) "-FIX")
-                 name)))
+                (intern-in-package-of-symbol (cat (symbol-name name) "-FIX")
+                                             name)))
        (equiv (or (getarg :equiv nil kwd-alist)
-                  (intern-in-package-of-symbol
-                   (concatenate 'string (symbol-name name) "-EQUIV")
-                   name)))
+                  (intern-in-package-of-symbol (cat (symbol-name name) "-EQUIV")
+                                               name)))
        (kind (getarg! :kind
-                      (intern-in-package-of-symbol
-                       (concatenate 'string (symbol-name name) "-KIND")
-                       name)
+                      (intern-in-package-of-symbol (cat (symbol-name name) "-KIND")
+                                                   name)
                       kwd-alist))
        (case (getarg! :case
-                      (intern-in-package-of-symbol
-                       (concatenate 'string (symbol-name name) "-CASE")
-                       name)
+                      (intern-in-package-of-symbol (cat (symbol-name name) "-CASE")
+                                                   name)
                       kwd-alist))
        (inline (get-deftypes-inline-opt *inline-defaults* kwd-alist))
        (count (flextype-get-count-fn name kwd-alist))
@@ -836,7 +848,8 @@
                   :measure measure
                   :kwd-alist kwd-alist
                   :orig-prods orig-prods
-                  :recp (flexprods-recursivep prods))))
+                  :recp (flexprods-recursivep prods)
+                  :typemacro 'deftagsum)))
 
 ;; --- Defprod parsing ---
 (defconst *defprod-keywords*
@@ -876,7 +889,7 @@
                     (nice-and `(eq (car ,xvar) ,tag) shape)
                   shape)
       :fields ,flexsum-fields
-      :type-name ,name 
+      :type-name ,name
       :ctor-body ,ctor-body
       ,@(and requirep `(:require ,(cdr requirep))))))
 
@@ -889,9 +902,8 @@
 (defun defprod-tag-events (pred xvar tag name formals)
   (b* ((foop pred)
        (x xvar))
-    `((defthmd ,(intern-in-package-of-symbol
-                 (concatenate 'string "TAG-WHEN-" (symbol-name foop))
-                 name)
+    `((defthmd ,(intern-in-package-of-symbol (cat "TAG-WHEN-" (symbol-name foop))
+                                             name)
         (implies (,foop ,x)
                  (equal (tag ,x)
                         ,tag))
@@ -899,29 +911,25 @@
                        (:forward-chaining))
         :hints(("Goal" :in-theory (enable tag ,foop))))
 
-      (defthmd ,(intern-in-package-of-symbol
-                 (concatenate 'string (symbol-name foop) "-WHEN-WRONG-TAG")
-                 name)
+      (defthmd ,(intern-in-package-of-symbol (cat (symbol-name foop) "-WHEN-WRONG-TAG")
+                                             name)
         (implies (not (equal (tag ,x) ,tag))
                  (equal (,foop ,x)
                         nil))
         :rule-classes ((:rewrite :backchain-limit-lst 1))
         :hints(("Goal" :in-theory (enable tag ,foop))))
 
-      (defthm ,(intern-in-package-of-symbol
-                (concatenate 'string "TAG-OF-" (symbol-name name))
-                name)
+      (defthm ,(intern-in-package-of-symbol (cat "TAG-OF-" (symbol-name name))
+                                            name)
         (equal (tag (,name . ,formals))
                ,tag)
         :hints (("goal" :in-theory (enable ,name tag))))
 
       (add-to-ruleset std::tag-reasoning
-                      '(,(intern-in-package-of-symbol
-                          (concatenate 'string "TAG-WHEN-" (symbol-name foop))
-                          name)
-                        ,(intern-in-package-of-symbol
-                          (concatenate 'string (symbol-name foop) "-WHEN-WRONG-TAG")
-                          name))))))
+                      '(,(intern-in-package-of-symbol (cat "TAG-WHEN-" (symbol-name foop))
+                                                      name)
+                        ,(intern-in-package-of-symbol (cat (symbol-name foop) "-WHEN-WRONG-TAG")
+                                                      name))))))
 
 (defun parse-defprod (x xvar our-fixtypes fixtypes)
   (b* (((cons name args) x)
@@ -936,17 +944,14 @@
         (er hard? 'parse-defprod "More than one list of fields present~%"))
        (fields (car fields))
        (pred (or (getarg :pred nil kwd-alist)
-                 (intern-in-package-of-symbol
-                  (concatenate 'string (symbol-name name) "-P")
-                  name)))
+                 (intern-in-package-of-symbol (cat (symbol-name name) "-P")
+                                              name)))
        (fix (or (getarg :fix nil kwd-alist)
-                (intern-in-package-of-symbol
-                 (concatenate 'string (symbol-name name) "-FIX")
-                 name)))
+                (intern-in-package-of-symbol (cat (symbol-name name) "-FIX")
+                                             name)))
        (equiv (or (getarg :equiv nil kwd-alist)
-                  (intern-in-package-of-symbol
-                   (concatenate 'string (symbol-name name) "-EQUIV")
-                   name)))
+                  (intern-in-package-of-symbol (cat (symbol-name name) "-EQUIV")
+                                               name)))
        (inline (get-deftypes-inline-opt *inline-defaults* kwd-alist))
        (count (flextype-get-count-fn name kwd-alist))
        (xvar (or (getarg :xvar xvar kwd-alist)
@@ -980,7 +985,8 @@
                                kwd-alist)
                   :orig-prods orig-prods
                   :inline inline
-                  :recp (flexprods-recursivep prods))))
+                  :recp (flexprods-recursivep prods)
+                  :typemacro 'defprod)))
 
 ;; ------------------------- Deflist Parsing -----------------------
 (def-primitive-aggregate flexlist
@@ -1030,17 +1036,14 @@
        ((mv elt-type elt-fix elt-equiv recp)
         (get-pred/fix/equiv kwd-alist our-fixtypes fixtypes :elt-type))
        (pred (or (getarg :pred nil kwd-alist)
-                 (intern-in-package-of-symbol
-                  (concatenate 'string (symbol-name name) "-P")
-                  name)))
+                 (intern-in-package-of-symbol (cat (symbol-name name) "-P")
+                                              name)))
        (fix (or (getarg :fix nil kwd-alist)
-                (intern-in-package-of-symbol
-                 (concatenate 'string (symbol-name name) "-FIX")
-                 name)))
+                (intern-in-package-of-symbol (cat (symbol-name name) "-FIX")
+                                             name)))
        (equiv (or (getarg :equiv nil kwd-alist)
-                  (intern-in-package-of-symbol
-                   (concatenate 'string (symbol-name name) "-EQUIV")
-                   name)))
+                  (intern-in-package-of-symbol (cat (symbol-name name) "-EQUIV")
+                                               name)))
        (count (flextype-get-count-fn name kwd-alist))
        (xvar (or (getarg :xvar nil kwd-alist)
                  xvar
@@ -1122,17 +1125,14 @@
        ((mv val-type val-fix val-equiv val-recp)
         (get-pred/fix/equiv kwd-alist our-fixtypes fixtypes :val-type))
        (pred (or (getarg :pred nil kwd-alist)
-                 (intern-in-package-of-symbol
-                  (concatenate 'string (symbol-name name) "-P")
-                  name)))
+                 (intern-in-package-of-symbol (cat (symbol-name name) "-P")
+                                              name)))
        (fix (or (getarg :fix nil kwd-alist)
-                (intern-in-package-of-symbol
-                 (concatenate 'string (symbol-name name) "-FIX")
-                 name)))
+                (intern-in-package-of-symbol (cat (symbol-name name) "-FIX")
+                                             name)))
        (equiv (or (getarg :equiv nil kwd-alist)
-                  (intern-in-package-of-symbol
-                   (concatenate 'string (symbol-name name) "-EQUIV")
-                   name)))
+                  (intern-in-package-of-symbol (cat (symbol-name name) "-EQUIV")
+                                               name)))
        (count (flextype-get-count-fn name kwd-alist))
        (xvar (or (getarg :xvar nil kwd-alist)
                  xvar
@@ -1162,8 +1162,7 @@
   (b* ((name (symbol-name x))
        (idx (search "*" name))
        ((unless idx) x)
-       (newname (concatenate 'string (subseq name 0 idx)
-                             str (subseq name (+ 1 idx) nil))))
+       (newname (cat (subseq name 0 idx) str (subseq name (+ 1 idx) nil))))
     (intern-in-package-of-symbol newname x)))
 
 (defun replace-*-in-symbols-with-str-rec (x str)
@@ -1193,7 +1192,7 @@
 
 (defun with-flextype-bindings-fn (binding body)
   (b* ((var (if (consp binding) (car binding) binding))
-       (add-binds (has-vardot-syms body (concatenate 'string (symbol-name var) ".")))
+       (add-binds (has-vardot-syms body (cat (symbol-name var) ".")))
        (sumbody (replace-*-in-symbols-with-str body "SUM"))
        (listbody (replace-*-in-symbols-with-str body "LIST"))
        (alistbody (replace-*-in-symbols-with-str body "ALIST"))
@@ -1232,17 +1231,14 @@
   ;; type/pred/fix/equiv, and bundles it into a fixtype structure.
   (b* (((list* & name args) x)
        (fix (or (cadr (member :fix args))
-                (intern-in-package-of-symbol
-                 (concatenate 'string (symbol-name name) "-FIX")
-                 name)))
+                (intern-in-package-of-symbol (cat (symbol-name name) "-FIX")
+                                             name)))
        (pred (or (cadr (member :pred args))
-                 (intern-in-package-of-symbol
-                  (concatenate 'string (symbol-name name) "-P")
-                  name)))
+                 (intern-in-package-of-symbol (cat (symbol-name name) "-P")
+                                              name)))
        (equiv (or (cadr (member :equiv args))
-                  (intern-in-package-of-symbol
-                   (concatenate 'string (symbol-name name) "-EQUIV")
-                   name))))
+                  (intern-in-package-of-symbol (cat (symbol-name name) "-EQUIV")
+                                               name))))
     (cons name
           (make-fixtype :name name
                         :pred pred
@@ -1258,7 +1254,7 @@
       nil
     (cons (flextype-form->fixtype (car x))
           (collect-flextypelist-fixtypes (cdr X)))))
-                                   
+
 (def-primitive-aggregate flextypes
   (name
    types      ;; flexlist and flexsums
@@ -1269,7 +1265,7 @@
    ;; post-fix-events
    ;; post-events
    recp))
-   
+
 (defconst *flextypes-keywords*
   '(:xvar :no-count
     :parents :short :long ;; xdoc
@@ -1312,9 +1308,8 @@
   (b* (((when (atom fields)) nil)
        ((flexprod-field x) (car fields))
        ((unless x.type)
-        (cons (list (intern-in-package-of-symbol
-                     (concatenate 'string "?" (symbol-name x.name))
-                     x.name) x.acc-body)
+        (cons (list (intern-in-package-of-symbol (cat "?" (symbol-name x.name))
+                                                 x.name) x.acc-body)
               (flexprod-fields-pred-bindings (cdr fields)))))
     (cons (list x.name x.acc-body)
           (flexprod-fields-pred-bindings (cdr fields)))))
@@ -1349,8 +1344,13 @@
           (flexsum-pred-cases-nokind (cdr prods)))))
 
 (defun flexsum-predicate-def (sum)
-  (b* (((flexsum sum) sum))
+  (b* (((flexsum sum) sum)
+       (short (cat "Recognizer for @(see " (xdoc::full-escape-symbol sum.name) ") structures."))
+       (bool  (intern-in-package-of-symbol "BOOL" sum.name)))
     `(define ,sum.pred (,sum.xvar)
+       :parents (,sum.name)
+       :short ,short
+       :returns ,bool
        :measure ,sum.measure
        :progn t
        ;; ,(if sum.kind
@@ -1363,9 +1363,8 @@
        (make-event
         '(:or (:do-proofs
                (with-output :off (error)
-                 (defthm ,(intern-in-package-of-symbol
-                           (concatenate 'string "CONSP-WHEN-" (symbol-name sum.pred))
-                           sum.pred)
+                 (defthm ,(intern-in-package-of-symbol (cat "CONSP-WHEN-" (symbol-name sum.pred))
+                                                       sum.pred)
                    (implies (,sum.pred ,sum.xvar)
                             (consp ,sum.xvar))
                    :hints (("goal" :expand ((,sum.pred ,sum.xvar)))
@@ -1392,20 +1391,16 @@
               (,list.pred (cdr ,list.xvar))))
        ///
        (local (in-theory (disable ,list.pred)))
-       (defthm ,(intern-in-package-of-symbol
-                 (concatenate 'string (symbol-name list.pred)
-                              "-OF-CONS")
-                 list.pred)
+       (defthm ,(intern-in-package-of-symbol (cat (symbol-name list.pred) "-OF-CONS")
+                                             list.pred)
          ;; Use special symbols for std::deflist compatibility
          (equal (,list.pred (cons ,stda ,stdx))
                 (and (,list.elt-type ,stda)
                      (,list.pred ,stdx)))
          :hints (("Goal" :Expand ((,list.pred (cons ,stda ,stdx))))))
 
-       (defthm ,(intern-in-package-of-symbol
-                 (concatenate 'string (symbol-name list.pred)
-                              "-OF-CDR")
-                 list.pred)
+       (defthm ,(intern-in-package-of-symbol (cat (symbol-name list.pred) "-OF-CDR")
+                                             list.pred)
          (implies (,list.pred ,list.xvar)
                   (,list.pred (cdr ,list.xvar)))
          :hints (("goal" :expand ((,list.pred ,list.xvar)))
@@ -1413,9 +1408,7 @@
                       '(:expand ((,list.pred (cdr ,list.xvar)))))))
 
        (defthm ,(intern-in-package-of-symbol
-                 (concatenate 'string (symbol-name list.elt-type)
-                              "-CAR-OF-"
-                              (symbol-name list.pred))
+                 (cat (symbol-name list.elt-type) "-CAR-OF-" (symbol-name list.pred))
                  list.pred)
          (implies (and (consp ,list.xvar)
                        (,list.pred ,list.xvar))
@@ -1425,8 +1418,7 @@
 
        ,@(and list.true-listp
               `((defthm ,(intern-in-package-of-symbol
-                          (concatenate 'string (symbol-name list.pred)
-                                       "-COMPOUND-RECOGNIZER")
+                          (cat (symbol-name list.pred) "-COMPOUND-RECOGNIZER")
                           list.pred)
                   (implies (,list.pred ,list.xvar)
                            (true-listp ,list.xvar))
@@ -1458,8 +1450,7 @@
        ///
        (local (in-theory (disable ,alist.pred)))
        (defthm ,(intern-in-package-of-symbol
-                 (concatenate 'string (symbol-name alist.pred)
-                              "-OF-CONS")
+                 (cat (symbol-name alist.pred) "-OF-CONS")
                  alist.pred)
          ;; Use special symbols for std::defalist compatibility
          (equal (,alist.pred (cons ,stda ,stdx))
@@ -1472,8 +1463,7 @@
          :hints (("goal" :expand ((,alist.pred (cons ,stda ,stdx))))))
 
        (defthm ,(intern-in-package-of-symbol
-                 (concatenate 'string (symbol-name alist.pred)
-                              "-OF-CDR")
+                 (cat (symbol-name alist.pred) "-OF-CDR")
                  alist.pred)
          (implies (,alist.pred ,alist.xvar)
                   (,alist.pred (cdr ,alist.xvar)))
@@ -1482,7 +1472,7 @@
                       '(:expand ((,alist.pred (cdr ,alist.xvar)))))))
 
        ;; (defthm ,(intern-in-package-of-symbol
-       ;;           (concatenate 'string (symbol-name alist.pred)
+       ;;           (cat (symbol-name alist.pred)
        ;;                        "-WHEN-CONSP")
        ;;           alist.pred)
        ;;   ;; Use special symbols for std::defalist compatibility
@@ -1498,9 +1488,7 @@
 
        ,@(and alist.key-type
               `((defthm ,(intern-in-package-of-symbol
-                          (concatenate 'string (symbol-name alist.key-type)
-                                       "-CAAR-OF-"
-                                       (symbol-name alist.pred))
+                          (cat (symbol-name alist.key-type) "-CAAR-OF-" (symbol-name alist.pred))
                           alist.pred)
                   (implies (and (consp ,alist.xvar)
                                 (,alist.pred ,alist.xvar))
@@ -1510,9 +1498,7 @@
 
        ,@(and alist.val-type
               `((defthm ,(intern-in-package-of-symbol
-                          (concatenate 'string (symbol-name alist.val-type)
-                                       "-CDAR-OF-"
-                                       (symbol-name alist.pred))
+                          (cat (symbol-name alist.val-type) "-CDAR-OF-" (symbol-name alist.pred))
                           alist.pred)
                   (implies (and (consp ,alist.xvar)
                                 (,alist.pred ,alist.xvar))
@@ -1522,8 +1508,7 @@
 
        ,@(and alist.true-listp
               `((defthm ,(intern-in-package-of-symbol
-                          (concatenate 'string (symbol-name alist.pred)
-                                       "-COMPOUND-RECOGNIZER")
+                          (cat (symbol-name alist.pred) "-COMPOUND-RECOGNIZER")
                           alist.pred)
                   (implies (,alist.pred ,alist.xvar)
                            (true-listp ,alist.xvar))
@@ -1554,9 +1539,8 @@
     (if (atom (cdr x.types))
         `(,(car defs)
           (local (in-theory (disable . ,(flextypelist-predicates x.types)))))
-      `((defines ,(intern-in-package-of-symbol
-                   (concatenate 'string (symbol-name x.name) "-P")
-                   x.name)
+      `((defines ,(intern-in-package-of-symbol (cat (symbol-name x.name) "-P")
+                                               x.name)
           :progn t
           ,@defs
           ///
@@ -1604,8 +1588,12 @@
        (possibilities (pairlis$ (make-list (len values) :initial-element 'equal)
                                 (pairlis$ (make-list (len values) :initial-element `(,sum.kind ,sum.xvar))
                                           (pairlis$ values nil))))
-       (condform (nice-cond conds)))
+       (condform (nice-cond conds))
+       (short (cat "Get the <i>kind</i> (tag) of a @(see " (xdoc::full-escape-symbol sum.name) ") structure.")))
     `((define ,sum.kind ((,sum.xvar ,sum.pred))
+        :parents (,sum.name)
+        :short ,short
+        :returns ,(intern-in-package-of-symbol "KIND" sum.name)
         ,@(and (member :kind sum.inline) `(:inline t))
         :guard-hints ((and stable-under-simplificationp '(:expand ((,sum.pred ,sum.xvar)))))
         :progn t
@@ -1614,9 +1602,8 @@
                    :exec ,sum.kind-body)
            condform)
         ///
-        (defthm ,(intern-in-package-of-symbol
-                  (concatenate 'string (symbol-name sum.kind) "-POSSIBILITIES")
-                  sum.kind)
+        (defthm ,(intern-in-package-of-symbol (cat (symbol-name sum.kind) "-POSSIBILITIES")
+                                              sum.kind)
           (or . ,possibilities)
           :rule-classes ((:forward-chaining :trigger-terms ((,sum.kind ,sum.xvar))))))
       (local (in-theory (enable ,sum.kind))))))
@@ -1651,7 +1638,7 @@
                           rest-args nil))
        ((when (and rest (intersectp kinds ;; remove other allowed keywords here?
                                     (strip-cars kwd-alist))))
-        ;; We don't know whether the 
+        ;; We don't know whether the
         ;; (sum-case x :kind1 term1 ...) or
         ;; (sum-case x (:kind1 term1) ...) syntax was intended.
         (er hard? sum.case "Inconsistent syntax: ~x0" rest-args))
@@ -1750,22 +1737,26 @@
        (body (if sum.kind
                  `(case (,sum.kind ,sum.xvar)
                     . ,(flexsum-fix-cases sum.prods))
-               (nice-cond (flexsum-fix-cases-nokind sum.prods)))))
+               (nice-cond (flexsum-fix-cases-nokind sum.prods))))
+       (short (cat "Fixing function for @(see " (xdoc::full-escape-symbol sum.name) ") structures."))
+       (newx (intern-in-package-of-symbol "NEW-X" sum.name)))
     `(define ,sum.fix ((,sum.xvar ,sum.pred))
        ;; [Jared]: previously this was:
        ;; ,@(and (member :fix sum.inline) `(:inline t))
        ;; But why not just always make these inline?  They're identity functions
        ;; after all...
+       :parents (,sum.name)
+       :short ,short
        :inline t
        :measure ,sum.measure
        ,@(and flagp `(:flag ,sum.name))
-       :returns (newx ,sum.pred
-                      :hints('(:in-theory (disable ,sum.fix ,sum.pred)
-                               :expand ((,sum.fix ,sum.xvar)))
-                             (and stable-under-simplificationp
-                                  (let ((lit (car (last clause))))
-                                    (and (eq (car lit) ',sum.pred)
-                                         `(:expand (,lit)))))))
+       :returns (,newx ,sum.pred
+                       :hints('(:in-theory (disable ,sum.fix ,sum.pred)
+                                :expand ((,sum.fix ,sum.xvar)))
+                              (and stable-under-simplificationp
+                                   (let ((lit (car (last clause))))
+                                     (and (eq (car lit) ',sum.pred)
+                                          `(:expand (,lit)))))))
        :progn t
        :verify-guards nil
        (mbe :logic
@@ -1870,33 +1861,27 @@
         :hints (("goal" :expand ((,x.fix x)))))
 
       (deffixcong ,x.elt-equiv ,x.equiv (cons x y) x
-        :hints (("goal" :Expand ((:free (a b) (,x.fix (cons a b))))))) 
+        :hints (("goal" :Expand ((:free (a b) (,x.fix (cons a b)))))))
 
       (deffixcong ,x.equiv ,x.equiv (cons x y) y
         :hints (("goal" :Expand ((:free (a b) (,x.fix (cons a b)))))))
 
-      (defthm ,(intern-in-package-of-symbol
-                (concatenate 'string "CONSP-OF-"
-                             (symbol-name x.fix))
-                x.fix)
+      (defthm ,(intern-in-package-of-symbol (cat "CONSP-OF-" (symbol-name x.fix))
+                                            x.fix)
         (equal (consp (,x.fix x))
                (consp x))
         :hints (("goal" :expand ((,x.fix x)))))
 
-      (defthm ,(intern-in-package-of-symbol
-                (concatenate 'string (symbol-name x.fix)
-                             "-OF-CONS")
-                x.fix)
+      (defthm ,(intern-in-package-of-symbol (cat (symbol-name x.fix) "-OF-CONS")
+                                            x.fix)
         ;; bozo make sure this is compatible with defprojection
         (equal (,x.fix (cons ,stda ,stdx))
                (cons (,x.elt-fix ,stda)
                      (,x.fix ,stdx)))
         :hints (("goal" :Expand ((:free (a b) (,x.fix (cons a b)))))))
 
-      (defthm ,(intern-in-package-of-symbol
-                (concatenate 'string "LEN-OF-"
-                             (symbol-name x.fix))
-                x.fix)
+      (defthm ,(intern-in-package-of-symbol (cat "LEN-OF-" (symbol-name x.fix))
+                                            x.fix)
         (equal (len (,x.fix x))
                (len x))
         :hints (("goal" :expand ((,x.fix x))
@@ -1917,10 +1902,8 @@
       (deffixcong ,x.equiv ,x.equiv (cons x y) y
         :hints (("goal" :Expand ((:free (a b) (,x.fix (cons a b)))))))
 
-      (defthm ,(intern-in-package-of-symbol
-                (concatenate 'string (symbol-name x.fix)
-                             "-OF-ACONS")
-                x.fix)
+      (defthm ,(intern-in-package-of-symbol (cat (symbol-name x.fix) "-OF-ACONS")
+                                            x.fix)
         ;; bozo make sure this is compatible with defprojection
         (equal (,x.fix (cons (cons a b) ,stdx))
                (cons (cons ,(if x.key-fix `(,x.key-fix a) 'a)
@@ -1938,10 +1921,8 @@
 ;; ------------------ Fix-when-predicate theorem -----------------------
 (defun flexsum-fix-when-pred-thm (x flagp)
   (b* (((flexsum x) x))
-    `(defthm ,(intern-in-package-of-symbol
-               (concatenate 'string (symbol-name x.fix) "-WHEN-"
-                            (symbol-name x.pred))
-               x.fix)
+    `(defthm ,(intern-in-package-of-symbol (cat (symbol-name x.fix) "-WHEN-" (symbol-name x.pred))
+                                           x.fix)
        (implies (,x.pred ,x.xvar)
                 (equal (,x.fix ,x.xvar) ,x.xvar))
        :hints ('(:expand ((,x.pred ,x.xvar)
@@ -1951,10 +1932,8 @@
 
 (defun flexlist-fix-when-pred-thm (x flagp)
   (b* (((flexlist x) x))
-    `(defthm ,(intern-in-package-of-symbol
-               (concatenate 'string (symbol-name x.fix) "-WHEN-"
-                            (symbol-name x.pred))
-               x.fix)
+    `(defthm ,(intern-in-package-of-symbol (cat (symbol-name x.fix) "-WHEN-" (symbol-name x.pred))
+                                           x.fix)
        (implies (,x.pred ,x.xvar)
                 (equal (,x.fix ,x.xvar) ,x.xvar))
        :hints ('(:expand ((,x.pred ,x.xvar)
@@ -1964,10 +1943,8 @@
 
 (defun flexalist-fix-when-pred-thm (x flagp)
   (b* (((flexalist x) x))
-    `(defthm ,(intern-in-package-of-symbol
-               (concatenate 'string (symbol-name x.fix) "-WHEN-"
-                            (symbol-name x.pred))
-               x.fix)
+    `(defthm ,(intern-in-package-of-symbol (cat (symbol-name x.fix) "-WHEN-" (symbol-name x.pred))
+                                           x.fix)
        (implies (,x.pred ,x.xvar)
                 (equal (,x.fix ,x.xvar) ,x.xvar))
        :hints ('(:expand ((,x.pred ,x.xvar)
@@ -2013,17 +1990,15 @@
        (flagp (consp (cdr x.types)))
        (defs (flextypelist-fix-defs x.types flagp))
        (flag-name (and flagp
-                       (intern-in-package-of-symbol
-                        (concatenate 'string (symbol-name x.name) "-FIX-FLAG")
-                        x.name)))
+                       (intern-in-package-of-symbol (cat (symbol-name x.name) "-FIX-FLAG")
+                                                    x.name)))
        (flag-defthm-name (and flagp
                               (flag::thm-macro-name flag-name)))
        (fix-when-pred-thms
         (flextypelist-fix-when-pred-thms x.types flagp)))
     `(,(append (if flagp
-                   `(defines ,(intern-in-package-of-symbol
-                               (concatenate 'string (symbol-name x.name) "-FIX")
-                               x.name)
+                   `(defines ,(intern-in-package-of-symbol (cat (symbol-name x.name) "-FIX")
+                                                           x.name)
                       :flag ,flag-name
                       :progn t
                       . ,defs)
@@ -2039,7 +2014,7 @@
                          '(("goal" :induct t))
                          (car fix-when-pred-thms))
                       (car fix-when-pred-thms)))
-                      
+
                  (verify-guards+ ,(cadr (car defs))
                    :hints (("goal"
                             :expand ,(flextypelist-pred-calls x.types))))
@@ -2059,8 +2034,18 @@
        ((flexprod prod) prod)
        ((flexprod-field x) x)
        ;; (fixprep (cdr (assoc :fixprep sum.kwd-alist)))
-       )
+       (short (b* ((acc nil)
+                   (acc (revappend-chars "Get the <tt>" acc))
+                   (acc (html-encode-str (xdoc::name-low (symbol-name x.name)) acc))
+                   (acc (revappend-chars "</tt> field from a @(see? " acc))
+                   (acc (revappend-chars (xdoc::full-escape-symbol prod.type-name) acc))
+                   (acc (revappend-chars ")." acc)))
+                (rchars-to-string acc)))
+       (long  "<p>This is an ordinary field accessor created by @(see fty::defprod).</p>"))
     `((define ,x.acc-name ((,sum.xvar ,sum.pred))
+        :parents (,prod.type-name)
+        :short ,short
+        :long ,long
         ,@(and (member :acc prod.inline) `(:inline t))
         ;; :prepwork ((local (in-theory (enable ,sum.fix ,sum.pred))))
         :guard ,prod.guard
@@ -2086,17 +2071,15 @@
         ///
         (deffixequiv ,x.acc-name
           :hints (,@(and sum.kind
-                         `(("goal" 
+                         `(("goal"
                             :in-theory (disable ,sum.kind))))
                   (and stable-under-simplificationp
                        '(,@(and sum.kind `(:in-theory (enable ,sum.kind)))
                          :expand ((,sum.fix ,sum.xvar))))))
 
         ,@(and (not (eq prod.guard t))
-               `((defthmd ,(intern-in-package-of-symbol
-                            (concatenate 'string (symbol-name x.acc-name)
-                                         "-WHEN-WRONG-KIND")
-                            x.acc-name)
+               `((defthmd ,(intern-in-package-of-symbol (cat (symbol-name x.acc-name) "-WHEN-WRONG-KIND")
+                                                        x.acc-name)
                    (implies (not ,prod.guard)
                             (equal (,x.acc-name ,sum.xvar)
                                    ,(if x.fix
@@ -2170,8 +2153,7 @@
                            ,x.reqfix)
                       x.reqfix))))
     (cons `(defthm ,(intern-in-package-of-symbol
-                     (concatenate 'string (symbol-name x.acc-name)
-                                  "-OF-" (symbol-name (car ctor-call)))
+                     (cat (symbol-name x.acc-name) "-OF-" (symbol-name (car ctor-call)))
                      x.acc-name)
              (equal (,x.acc-name ,ctor-call)
                     ,fixterm)
@@ -2215,12 +2197,11 @@
 (defun flexprod-fields-bind-accessors (x xvar)
   (b* (((when (atom x)) nil)
        ((flexprod-field f) (car x)))
-    (cons (list (intern-in-package-of-symbol
-                 (concatenate 'string "?" (symbol-name f.name))
-                 f.name)
+    (cons (list (intern-in-package-of-symbol (cat "?" (symbol-name f.name))
+                                             f.name)
                 `(,f.acc-name ,xvar))
           (flexprod-fields-bind-accessors (cdr x) xvar))))
-                
+
 (defun flexprod-constructor (prod sum)
   (b* (((flexsum sum) sum)
        ((flexprod prod) prod)
@@ -2229,18 +2210,11 @@
        (field-accs (pairlis$ fieldnames
                              (flexprod-fields->acc-names prod.fields)))
        (ctor-of-fields-thmname
-        (intern-in-package-of-symbol
-         (concatenate 'string
-                      (symbol-name prod.ctor-name)
-                      "-OF-FIELDS")
-         prod.ctor-name))
+        (intern-in-package-of-symbol (cat (symbol-name prod.ctor-name) "-OF-FIELDS")
+                                     prod.ctor-name))
        (fix-when-kind-thmname
-        (intern-in-package-of-symbol
-         (concatenate 'string
-                      (symbol-name sum.fix)
-                      "-WHEN-"
-                      (symbol-name prod.kind))
-         sum.fix))
+        (intern-in-package-of-symbol (cat (symbol-name sum.fix) "-WHEN-" (symbol-name prod.kind))
+                                     sum.fix))
 
        (typefixes (flexprod-fields-mbe-typefix-bindings prod.fields))
        (reqfixes (flexprod-fields-mbe-reqfix-bindings prod.fields))
@@ -2269,15 +2243,12 @@
         ,typefix-body
         ///
         (deffixequiv ,prod.ctor-name)
-        
+
         ,@(flexprod-acc-of-ctor-thms prod)
-        
+
         ,@(and (not (eq prod.require t))
-               `((defthm ,(intern-in-package-of-symbol
-                           (concatenate 'string
-                                        (symbol-name prod.ctor-name)
-                                        "-REQUIREMENTS")
-                           prod.ctor-name)
+               `((defthm ,(intern-in-package-of-symbol (cat (symbol-name prod.ctor-name) "-REQUIREMENTS")
+                                                       prod.ctor-name)
                    (b* ,(flexprod-fields-bind-accessors prod.fields sum.xvar)
                      ,prod.require))))
 
@@ -2303,11 +2274,8 @@
           . ,(and (not (eq prod.guard t))
                   '(:rule-classes ((:rewrite :backchain-limit-lst 0)))))
 
-        (defthm ,(intern-in-package-of-symbol
-                  (concatenate 'string
-                               "EQUAL-OF-"
-                               (symbol-name prod.ctor-name))
-                  prod.ctor-name)
+        (defthm ,(intern-in-package-of-symbol (cat "EQUAL-OF-" (symbol-name prod.ctor-name))
+                                              prod.ctor-name)
           (equal (equal ,(flexprod-ctor-call prod) ,sum.xvar)
                  (and (,sum.pred ,sum.xvar)
                       ,@(and (not (eq prod.guard t)) (list prod.guard))
@@ -2328,10 +2296,10 @@
                                             ,@(if (consp prod.fields)
                                                   `(,ctor-of-fields-thmname)
                                                 `(,fix-when-kind-thmname))))))))
-                                              
+
           ;; :hints (("goal" :expand ((,sum.pred ,sum.xvar))
           ;;          :in-theory (disable ,(intern-in-package-of-symbol
-          ;;                                (concatenate 'string
+          ;;                                (cat
           ;;                                             (symbol-name sum.fix)
           ;;                                             "-WHEN-"
           ;;                                             (symbol-name prod.kind))
@@ -2339,7 +2307,7 @@
 
         ;; ,@(and (consp prod.fields)
         ;;        `((defthm ,(intern-in-package-of-symbol
-        ;;                    (concatenate 'string
+        ;;                    (cat
         ;;                                 "EQUAL-OF-"
         ;;                                 (symbol-name sum.fix)
         ;;                                 "-WHEN-"
@@ -2354,7 +2322,7 @@
         ;;                                       . ,(flexprod-equal-of-field-accessors prod.fields sum.xvar)))
         ;;                           :hints (("goal" :expand ((,sum.pred ,sum.xvar))
         ;;                                    :in-theory (disable ,(intern-in-package-of-symbol
-        ;;                                                          (concatenate 'string
+        ;;                                                          (cat
         ;;                                                                       (symbol-name sum.fix)
         ;;                                                                       "-WHEN-"
         ;;                                                                       (symbol-name prod.kind))
@@ -2371,7 +2339,7 @@
 
         ,(std::da-make-changer-fn-gen prod.ctor-name field-accs)
         ,(std::da-make-changer prod.ctor-name fieldnames))
-      
+
       (local (in-theory (enable ,prod.ctor-name))))))
 
 ;; ------------ Collect accessor/constructor names ---------------
@@ -2423,10 +2391,8 @@
   (if (atom fields)
       nil
     (cons (let ((name (flexprod-field->name (car fields))))
-            (intern-in-package-of-symbol
-             (concatenate 'string (symbol-name xvar) "."
-                          (symbol-name name))
-             name))
+            (intern-in-package-of-symbol (cat (symbol-name xvar) "." (symbol-name name))
+                                         name))
           (flexprod-x-dot-fields xvar (cdr fields)))))
 
 (defun flexsum-fix-redef-prod-cases (prods xvar)
@@ -2453,9 +2419,8 @@
   (declare (ignorable types))
   (b* (((flexsum sum) sum))
     (append (flexsum-prods-accessor/constructors sum.prods sum)
-            `((defthmd ,(intern-in-package-of-symbol
-                        (concatenate 'string (symbol-name sum.fix) "-REDEF")
-                        sum.fix)
+            `((defthmd ,(intern-in-package-of-symbol (cat (symbol-name sum.fix) "-REDEF")
+                                                     sum.fix)
                 (equal (,sum.fix ,sum.xvar)
                        ,(if sum.kind
                             `(case (,sum.kind ,sum.xvar)
@@ -2465,7 +2430,7 @@
                        (and stable-under-simplificationp
                             '(:expand (,sum.fix ,sum.xvar))))
                 :rule-classes :definition)))))
-                
+
 (defun flextypes-sum-accessor/constructors (types alltypes)
   (if (atom types)
       nil
@@ -2512,8 +2477,13 @@
 
 (defun flexsum-count (x types)
   (b* (((flexsum x) x)
-       ((unless x.count) nil))
+       ((unless x.count) nil)
+       (short (cat "Measure for recurring over @(see "
+                   (xdoc::full-escape-symbol x.name)
+                   ") structures.")))
     `((define ,x.count ((,x.xvar ,x.pred))
+        :parents (,x.name)
+        :short ,short
         :verify-guards nil
         :returns (count natp :rule-classes :type-prescription
                         :hints ('(:expand (,x.count ,x.xvar)
@@ -2535,10 +2505,8 @@
        ((unless type-count) nil)
        ((flexprod prod) prod)
        ((flexsum sum) sum))
-    `((defthm ,(intern-in-package-of-symbol
-                (concatenate 'string (symbol-name type-count)
-                             "-OF-" (symbol-name x.acc-name))
-                x.acc-name)
+    `((defthm ,(intern-in-package-of-symbol (cat (symbol-name type-count) "-OF-" (symbol-name x.acc-name))
+                                            x.acc-name)
         ,(nice-implies prod.guard
                        `(< (,type-count (,x.acc-name ,sum.xvar))
                            (,sum.count ,sum.xvar)))
@@ -2577,10 +2545,8 @@
        ((when (not field-counts)) nil)
        (body `(< (+ . ,field-counts)
                  (,sum.count ,call))))
-    `((defthm ,(intern-in-package-of-symbol
-                (concatenate 'string (symbol-name sum.count)
-                             "-OF-" (symbol-name x.ctor-name))
-                sum.count)
+    `((defthm ,(intern-in-package-of-symbol (cat (symbol-name sum.count) "-OF-" (symbol-name x.ctor-name))
+                                            sum.count)
         ,(if x.require
              ;; NOTE: Not sure this makes sense, but is necessary in at least
              ;; some cases, e.g.: requirement that arglist arity matches lambda
@@ -2630,9 +2596,8 @@
        (eltcount (flextypes-find-count-for-pred x.elt-type types))
        ;; ((when (not eltcount)) nil)
        )
-    `((defthm ,(intern-in-package-of-symbol
-                (concatenate 'string (symbol-name x.count) "-OF-CONS")
-                x.count)
+    `((defthm ,(intern-in-package-of-symbol (cat (symbol-name x.count) "-OF-CONS")
+                                            x.count)
         (> (,x.count (cons a b))
            ,(if eltcount
                 `(+ (,eltcount a) (,x.count b))
@@ -2642,16 +2607,14 @@
 
       ,@(and
          eltcount
-         `((defthm ,(intern-in-package-of-symbol
-                     (concatenate 'string (symbol-name eltcount) "-OF-CAR")
-                     x.count)
+         `((defthm ,(intern-in-package-of-symbol (cat (symbol-name eltcount) "-OF-CAR")
+                                                 x.count)
              (implies (consp ,x.xvar)
                       (< (,eltcount (car ,x.xvar)) (,x.count ,x.xvar)))
              :rule-classes :linear)))
 
-      (defthm ,(intern-in-package-of-symbol
-                (concatenate 'string (symbol-name x.count) "-OF-CDR")
-                x.count)
+      (defthm ,(intern-in-package-of-symbol (cat (symbol-name x.count) "-OF-CDR")
+                                            x.count)
         (implies (consp ,x.xvar)
                  (< (,x.count (cdr ,x.xvar)) (,x.count ,x.xvar)))
         :rule-classes :linear))))
@@ -2691,9 +2654,8 @@
        (valcount (flextypes-find-count-for-pred x.val-type types))
        ;; ((when (not eltcount)) nil)
        )
-    `((defthm ,(intern-in-package-of-symbol
-                (concatenate 'string (symbol-name x.count) "-OF-CONS")
-                x.count)
+    `((defthm ,(intern-in-package-of-symbol (cat (symbol-name x.count) "-OF-CONS")
+                                            x.count)
         (>= (,x.count (cons a b))
             (,x.count b))
         :hints (("goal" :expand ((:free (a b) (,x.count (cons a b)))
@@ -2703,9 +2665,8 @@
         :rule-classes :linear)
 
       ,@(and (or keycount valcount)
-             `((defthm ,(intern-in-package-of-symbol
-                         (concatenate 'string (symbol-name x.count) "-OF-ACONS")
-                         x.count)
+             `((defthm ,(intern-in-package-of-symbol (cat (symbol-name x.count) "-OF-ACONS")
+                                                     x.count)
                  (> (,x.count (cons (cons a b) c))
                     (+ ,@(if keycount
                              (if valcount
@@ -2718,10 +2679,9 @@
                  :rule-classes :linear)))
       ,@(and
          keycount
-         `((defthm ,(intern-in-package-of-symbol
-                     (concatenate 'string (symbol-name keycount) "-OF-CAAR-"
-                                  (symbol-name x.count))
-                     x.count)
+         `((defthm ,(intern-in-package-of-symbol (cat (symbol-name keycount) "-OF-CAAR-"
+                                                      (symbol-name x.count))
+                                                 x.count)
              (implies (and (consp ,x.xvar)
                            (consp (car ,x.xvar)))
                       (< (,keycount (caar ,x.xvar)) (,x.count ,x.xvar)))
@@ -2729,18 +2689,16 @@
 
       ,@(and
          valcount
-         `((defthm ,(intern-in-package-of-symbol
-                     (concatenate 'string (symbol-name valcount) "-OF-CDAR-"
-                                  (symbol-name x.count))
+         `((defthm ,(intern-in-package-of-symbol (cat (symbol-name valcount) "-OF-CDAR-"
+                                                      (symbol-name x.count))
                      x.count)
              (implies (and (consp ,x.xvar)
                            (consp (car ,x.xvar)))
                       (< (,valcount (cdar ,x.xvar)) (,x.count ,x.xvar)))
              :rule-classes :linear)))
 
-      (defthm ,(intern-in-package-of-symbol
-                (concatenate 'string (symbol-name x.count) "-OF-CDR")
-                x.count)
+      (defthm ,(intern-in-package-of-symbol (cat (symbol-name x.count) "-OF-CDR")
+                                            x.count)
         (<= (,x.count (cdr ,x.xvar)) (,x.count ,x.xvar))
         :hints (("goal" :expand ((,x.fix ,x.xvar)
                                  (,x.count ,x.xvar)
@@ -2833,10 +2791,8 @@
   (if (atom prods)
       nil
     (if (consp (flexprod->fields (car prods)))
-        (cons (intern-in-package-of-symbol
-               (concatenate 'string (symbol-name (flexprod->ctor-name (car prods)))
-                            "-OF-FIELDS")
-               (flexprod->ctor-name (car prods)))
+        (cons (intern-in-package-of-symbol (cat (symbol-name (flexprod->ctor-name (car prods))) "-OF-FIELDS")
+                                           (flexprod->ctor-name (car prods)))
               (flexprods-ctor-of-fields-thms (cdr prods)))
       (flexprods-ctor-of-fields-thms (cdr prods)))))
 
@@ -2851,10 +2807,9 @@
   (if (atom prods)
       nil
     (if (consp (flexprod->fields (car prods)))
-        (cons (intern-in-package-of-symbol
-               (concatenate 'string (symbol-name (flexsum->fix sum))
-                            "-WHEN-" (symbol-name (flexprod->kind (car prods))))
-               (flexsum->fix sum))
+        (cons (intern-in-package-of-symbol (cat (symbol-name (flexsum->fix sum))
+                                                "-WHEN-" (symbol-name (flexprod->kind (car prods))))
+                                           (flexsum->fix sum))
               (flexprods-fix-when-kind-thms (cdr prods) sum))
       (flexprods-fix-when-kind-thms (cdr prods) sum))))
 
@@ -2864,7 +2819,7 @@
     (append (and (eq (caar types) :sum)
                  (flexprods-fix-when-kind-thms (flexsum->prods (car types)) (car types)))
             (flextypes-fix-when-kind-thms (cdr types)))))
-             
+
 (defun flextypes-count (x)
   (b* (((flextypes x) x)
        ((when x.no-count) nil)
@@ -2878,7 +2833,7 @@
         ;; `((and stable-under-simplificationp
         ;;        '(:in-theory (enable . ,(flextypes-acc/ctors x.types))))
         ;;   (and stable-under-simplificationp
-        ;;        '(:expand ,(flextypes-nokind-expand-fixes x.types)))) 
+        ;;        '(:expand ,(flextypes-nokind-expand-fixes x.types))))
         `((and stable-under-simplificationp
                '(:expand ,(flextypes-expand-fixes x.types)
                  :in-theory (e/d  ,(flextypes-ctors x.types))
@@ -2887,9 +2842,8 @@
        (prepwork `((local (in-theory (e/d ,(flextypes-fix-when-kind-thms x.types)
                                           ,(flextypes-ctor-of-fields-thms x.types)))))))
     (if flagp
-        (let ((defines-name (intern-in-package-of-symbol
-                             (concatenate 'string (symbol-name x.name) "-COUNT")
-                             x.name)))
+        (let ((defines-name (intern-in-package-of-symbol (cat (symbol-name x.name) "-COUNT")
+                                                         x.name)))
           `((defines ,defines-name
               :hints ,measure-hints
               :prepwork ,prepwork
@@ -2913,7 +2867,7 @@
                                                                 (list (caddr lit))))))
                                       (and expands
                                            `(:expand ,expands))))))))
-                                            
+
               . ,(flextypes-count-post-events x.types x.types))))
       (list
        (append
@@ -2933,30 +2887,456 @@
 
 ;; ------------------ Xdoc processing -----------------------
 
-(defun kwd-alist->defxdoc (name kwd-alist world)
-  (b* ((parents-look (assoc :parents kwd-alist))
-       (parents (if parents-look (cdr parents-look)
-                  (xdoc::get-default-parents world)))
-       (short (getarg :short nil kwd-alist))
-       (long (getarg :long nil kwd-alist))
-       ((unless (or parents-look short long)) nil))
-    `((defxdoc ,name
-        :parents ,parents
-         ,@(and short   `(:short ,short))
-         ,@(and long    `(:long ,long))))))
-    
-(defun flextypes-collect-defxdoc (types world)
+(defun flexlist->defxdoc (x parents state)
+  ;; Returns (mv events state)
+  (declare (ignorable x parents state))
+  (mv nil state))
+
+(defun flexalist->defxdoc (x parents state)
+  ;; Returns (mv events state)
+  (declare (ignorable x parents state))
+  (mv nil state))
+
+(defun defprod-field-doc (x acc base-pkg state)
+  (b* (((flexprod-field x) x)
+       (acc (revappend-chars "<dt>" acc))
+       ((mv name-str state) (xdoc::fmt-to-str-orig x.name base-pkg state))
+       (acc (html-encode-str name-str acc))
+       (acc (b* (((when (eq x.type nil))
+                  acc)
+                 (acc (revappend-chars " &mdash; @(see? " acc))
+                 (acc (revappend-chars (xdoc::full-escape-symbol x.type) acc))
+                 (acc (revappend-chars ")" acc)))
+              acc))
+       (acc (revappend-chars "</dt>" acc))
+       (acc (cons #\Newline acc))
+       (acc (b* (((when (equal x.doc ""))
+                  acc)
+                 (acc (revappend-chars "<dd>" acc))
+                 (acc (revappend-chars x.doc acc))
+                 (acc (revappend-chars "</dd>" acc))
+                 (acc (cons #\Newline acc)))
+              acc))
+       (acc (cons #\Newline acc)))
+    (mv acc state)))
+
+(defun defprod-fields-doc-aux (x acc base-pkg state)
+  (b* (((when (atom x))
+        (mv acc state))
+       ((mv acc state)
+        (defprod-field-doc (car x) acc base-pkg state)))
+    (defprod-fields-doc-aux (cdr x) acc base-pkg state)))
+
+(defun defprod-fields-doc (x acc base-pkg state)
+  (b* ((acc (revappend-chars "<ul>" acc))
+       ((mv acc state) (defprod-fields-doc-aux x acc base-pkg state))
+       (acc (revappend-chars "</ul>" acc)))
+    (mv acc state)))
+
+(defun defprod-main-description (prod base-pkg acc state)
+  ;; Returns (mv acc state)
+  (b* (((flexprod prod) prod)
+       (acc  (revappend-chars "<h5>Fields</h5>" acc))
+       (acc  (cons #\Newline acc))
+       ((mv acc state)
+        ;; BOZO this is all wrong
+        (defprod-fields-doc prod.fields acc base-pkg state))
+       ((when (eq prod.require t))
+        ;; Don't show stupidly trivial requirement
+        (mv acc state))
+       (acc (revappend-chars "<h5>Additional Requirements</h5>" acc))
+       (acc (revappend-chars "<p>The following invariant is enforced on the fields:</p>" acc))
+       ((mv req-str state) (xdoc::fmt-to-str-orig prod.require base-pkg state))
+       (acc (revappend-chars "<code>" acc))
+       (acc (html-encode-str req-str acc))
+       (acc (revappend-chars "</code>" acc)))
+    (mv acc state)))
+
+(defun defprod-main-autodoc (x parents base-pkg state)
+  ;; Returns (mv events state)
+  (b* (((flexsum x) x)
+       (prod  (car x.prods))
+       (short (cdr (assoc :short x.kwd-alist)))
+       (long  (cdr (assoc :long x.kwd-alist)))
+       (acc  nil)
+       (acc  (revappend-chars "<p>This is a product type introduced by @(see fty::defprod).</p>" acc))
+       (acc  (cons #\Newline acc))
+       ((mv acc state) (defprod-main-description prod base-pkg acc state))
+       (acc  (revappend-chars (or long "") acc))
+       (long (rchars-to-string acc)))
+    (mv `((defxdoc ,x.name
+            :parents ,parents
+            :short ,short
+            :long ,long))
+        state)))
+
+(defun defprod-ctor-optional-fields (field-names)
+  (declare (xargs :guard (symbol-listp field-names)))
+  (b* (((when (atom field-names))
+        nil)
+       (name1 (xdoc::name-low (symbol-name (car field-names))))
+       (acc   nil)
+       (acc   (revappend-chars "[:" acc))
+       (acc   (html-encode-str name1 acc))
+       (acc   (revappend-chars " &lt;" acc))
+       (acc   (html-encode-str name1 acc))
+       (acc   (revappend-chars "&gt;]" acc)))
+    (cons (rchars-to-string acc)
+          (defprod-ctor-optional-fields (cdr field-names)))))
+
+(defun defprod-ctor-optional-call (name        ; e.g., make-honsed-foo
+                                   field-strs  ; e.g., ("[:field1 <field1>]" "[field2 <field2>"])
+                                   )
+  (declare (xargs :guard (and (symbolp name)
+                              (string-listp field-strs))))
+  (b* ((ctor-name (xdoc::name-low (symbol-name name)))
+       ;; +2 to account for the leading paren and trailing space after ctor-name
+       (len       (+ 2 (length ctor-name)))
+       (pad       (str::implode (cons #\Newline (make-list len :initial-element #\Space))))
+       (args      (str::join field-strs pad)))
+    (str::cat "<code>" *nl* "(" ctor-name " " args ")" *nl* "</code>")))
+
+#||
+(defprod-ctor-optional-call 'make-honsed-foo
+                            '("[:lettuce <lettuce>]"
+                              "[:cheese <cheese>]"
+                              "[:meat <meat>]"))
+||#
+
+(defun defprod-ctor-autodoc (prod)
+  (b* (((flexprod prod)      prod)
+       (foo                  prod.type-name)
+       (make-foo-fn          prod.ctor-name)
+       (make-foo             prod.ctor-macro)
+       ;; It doesn't seem like these are stored in the product itself.
+       (change-foo-fn        (std::da-changer-fn-name foo))
+       (change-foo           (std::da-changer-name foo))
+
+       (plain-foo            (str::cat "<tt>" (xdoc::name-low (symbol-name foo)) "</tt>"))
+       (see-foo              (xdoc::see foo))
+       (see-make-foo         (xdoc::see make-foo))
+       (see-change-foo       (xdoc::see change-foo))
+
+       ;; For make-foo, change-foo, etc., it's nicer to present a list of [:fld <fld>] options
+       ;; rather than just saying &rest args, which is what @(call ...) would do.
+       (opt-fields           (defprod-ctor-optional-fields (flexprod-fields->names prod.fields)))
+       (call-make-foo        (defprod-ctor-optional-call make-foo opt-fields))
+       (call-change-foo      (defprod-ctor-optional-call change-foo (cons "x" opt-fields)))
+
+       (def-foo              (str::cat "@(def " (xdoc::full-escape-symbol foo)           ")"))
+       (def-make-foo-fn      (str::cat "@(def " (xdoc::full-escape-symbol make-foo-fn)   ")"))
+       (def-make-foo         (str::cat "@(def " (xdoc::full-escape-symbol make-foo)      ")"))
+       (def-change-foo-fn    (str::cat "@(def " (xdoc::full-escape-symbol change-foo-fn) ")"))
+       (def-change-foo       (str::cat "@(def " (xdoc::full-escape-symbol change-foo)    ")")))
+
+    `(;; Unlike defaggregate, I think we don't want to document the raw
+      ;; constructor, because it is going to share its name with the type.  I
+      ;; also won't try to include honsing information here, for now at least.
+      (defxdoc ,make-foo
+        :parents (,foo)
+        :short ,(str::cat "Basic constructor macro for " see-foo " structures.")
+        :long ,(str::cat
+                "<h5>Syntax</h5>"
+                call-make-foo
+
+                "<p>This is the usual way to construct " see-foo
+                " structures.  It simply conses together a structure with the
+                specified fields.</p>
+
+                <p>This macro generates a new " plain-foo " structure from
+                scratch.  See also " see-change-foo ", which can \"change\" an
+                existing structure, instead.</p>"
+
+                "<h3>Definition</h3>
+
+                <p>This is an ordinary @('make-') macro introduced by @(see
+                fty::defprod).</p>"
+
+                def-make-foo
+                def-make-foo-fn
+                def-foo))
+
+      (defxdoc ,change-foo
+        :parents (,foo)
+        :short ,(str::cat "Modifying constructor for " see-foo " structures.")
+        :long ,(str::cat
+                "<h5>Syntax</h5>"
+                call-change-foo
+
+                "<p>This is an often useful alternative to " see-make-foo ".</p>
+
+                <p>We construct a new " see-foo " structure that is a copy of
+                @('x'), except that you can explicitly change some particular
+                fields.  Any fields you don't mention just keep their values
+                from @('x').</p>
+
+                <h3>Definition</h3>
+
+                <p>This is an ordinary @('change-') macro introduced by @(see
+                fty::defprod).</p>"
+
+                def-change-foo
+                def-change-foo-fn
+                def-foo)))))
+
+(defun defprod->defxdoc (x parents base-pkg state)
+  ;; Returns (mv events state)
+  (b* (((flexsum x)      x)
+       (prod             (car x.prods))
+       ((flexprod prod)  prod)
+       (foo              x.name)
+       (foo-p            x.pred)
+       (foo-fix          x.fix)
+       (make-foo         prod.ctor-macro)
+       (change-foo       (std::da-changer-name foo))
+
+       ((mv main-doc state) (defprod-main-autodoc x parents base-pkg state))
+       (make/change         (defprod-ctor-autodoc prod))
+       (doc-events (append main-doc
+                           make/change
+                           ;; Special hack to make the subtopic order for a
+                           ;; structure look really nice.  We omit the
+                           ;; accessors.  XDOC will put them at the end in
+                           ;; alphabetical order.
+                           `((xdoc::order-subtopics ,foo
+                             (,foo-p ,foo-fix ,make-foo ,change-foo))))))
+    (mv doc-events state)))
+
+(defun deftagsum-prod-doc (sum  ; the containing sum type
+                           prod ; one of the products within it
+                           base-pkg state)
+  ;; Returns (mv events state)
+  (b* (((flexsum sum) sum)
+       ((flexprod prod) prod)
+       (acc  nil)
+       (acc  (revappend-chars "<p>This is a product type, introduced by @(see " acc))
+       (acc  (revappend-chars (xdoc::full-escape-symbol sum.typemacro) acc))
+       (acc  (revappend-chars ") in support of @(see " acc))
+       (acc  (revappend-chars (xdoc::full-escape-symbol sum.name) acc))
+       (acc  (revappend-chars ").</p>" acc))
+       (acc  (cons #\Newline acc))
+       ((mv acc state) (defprod-main-description prod base-pkg acc state))
+       (acc  (revappend-chars (or prod.long "") acc))
+       (long (rchars-to-string acc))
+       (top-doc `((defxdoc ,prod.type-name
+                    :parents (,sum.name)
+                    :short ,prod.short
+                    :long ,long)))
+       (make/change (defprod-ctor-autodoc prod))
+
+       (make-foo         prod.ctor-macro)
+       (change-foo       (std::da-changer-name prod.type-name))
+       ;; Unlike a standalone defprod, these don't have a fix function
+       ;; They also don't have a recognizer
+       )
+    (mv (append top-doc
+                make/change
+                `((xdoc::order-subtopics ,prod.type-name (,make-foo ,change-foo)))
+                )
+        state)))
+
+(defun deftagsum-prods-doc (sum prods base-pkg state)
+  ;; Returns (mv events state)
+  (b* (((when (atom prods))
+        (mv nil state))
+       ((mv events1 state) (deftagsum-prod-doc sum (car prods) base-pkg state))
+       ((mv events2 state) (deftagsum-prods-doc sum (cdr prods) base-pkg state)))
+    (mv (append events1 events2)
+        state)))
+
+(defun deftagsum-summarize-prod (sum prod base-pkg acc state)
+  ;; Returns (mv acc state)
+  (declare (ignorable sum base-pkg))
+  (b* (((flexprod prod) prod)
+       (acc (revappend-chars "<dt><tt>" acc))
+       ((mv kind-str state) (xdoc::fmt-to-str-orig prod.kind base-pkg state))
+       (acc (html-encode-str kind-str acc))
+       (acc (revappend-chars "</tt> &rarr; @(see " acc))
+       (acc (revappend-chars (xdoc::full-escape-symbol prod.type-name) acc))
+       (acc (revappend-chars ")</dt>" acc))
+       (acc (cons #\Newline acc))
+
+       ((unless prod.short)
+        (mv acc state))
+       (acc (revappend-chars "<dd>" acc))
+       (acc (revappend-chars prod.short acc))
+       (acc (revappend-chars "</dd>" acc))
+       (acc (cons #\Newline acc)))
+    (mv acc state)))
+
+(defun deftagsum-summarize-prods (sum prods base-pkg acc state)
+  ;; Returns (mv acc state)
+  (b* (((when (atom prods))
+        (mv acc state))
+       ((mv acc state) (deftagsum-summarize-prod sum (car prods) base-pkg acc state))
+       ((mv acc state) (deftagsum-summarize-prods sum (cdr prods) base-pkg acc state)))
+    (mv acc state)))
+
+(defun flexprodlist->type-names (x)
+  (if (atom x)
+      nil
+    (cons (flexprod->type-name (car x))
+          (flexprodlist->type-names (cdr x)))))
+
+(defun deftagsum->defxdoc (x parents base-pkg state)
+  ;; Returns (mv events state)
+  (declare (ignorable x parents base-pkg))
+  (b* (((flexsum x) x)
+       (short (cdr (assoc :short x.kwd-alist)))
+       (long  (cdr (assoc :long x.kwd-alist)))
+       (acc   nil)
+       (acc   (revappend-chars "<p>This is a tagged union type, introduced by @(see fty::deftagsum).</p>" acc))
+       (acc   (cons #\Newline acc))
+       (acc   (revappend-chars "<h5>Member Tags &rarr; Types</h5>" acc))
+       (acc   (revappend-chars "<dl>" acc))
+       ((mv acc state) (deftagsum-summarize-prods x x.prods base-pkg acc state))
+       (acc   (revappend-chars "</dl>" acc))
+       (acc   (cons #\Newline acc))
+       (acc   (revappend-chars (or long "") acc))
+       (long  (rchars-to-string acc))
+       (main-doc `((defxdoc ,x.name
+                     :parents ,parents
+                     :short ,short
+                     :long ,long)))
+       ((mv prods-doc state)
+        (deftagsum-prods-doc x x.prods base-pkg state)))
+    (mv (append main-doc
+                prods-doc
+                `((xdoc::order-subtopics ,x.name
+                                         (,x.pred ,x.fix ,x.kind ,x.equiv ,x.count
+                                          . ,(flexprodlist->type-names x.prods)))))
+        state)))
+
+(defun defflexsum->defxdoc (x parents base-pkg state)
+  ;; Returns (mv events state)
+  (declare (ignorable x parents base-pkg))
+  (b* (((flexsum x) x)
+       (short (cdr (assoc :short x.kwd-alist)))
+       (long  (cdr (assoc :long x.kwd-alist)))
+       (acc   nil)
+       (acc   (revappend-chars "<p>This is a sum-of-products (i.e., union) type, introduced by @(see fty::defflexsum).</p>" acc))
+       (acc   (cons #\Newline acc))
+       (acc   (revappend-chars "<h5>Members</h5>" acc))
+       (acc   (revappend-chars "<dl>" acc))
+       ((mv acc state) (deftagsum-summarize-prods x x.prods base-pkg acc state))
+       (acc   (revappend-chars "</dl>" acc))
+       (acc   (cons #\Newline acc))
+       (acc   (revappend-chars (or long "") acc))
+       (long  (rchars-to-string acc))
+       (main-doc `((defxdoc ,x.name
+                     :parents ,parents
+                     :short ,short
+                     :long ,long)))
+       ((mv prods-doc state)
+        (deftagsum-prods-doc x x.prods base-pkg state)))
+    (mv (append main-doc
+                prods-doc
+                `((xdoc::order-subtopics ,x.name
+                                         (,x.pred ,x.fix ,x.kind ,x.equiv ,x.count
+                                          . ,(flexprodlist->type-names x.prods)))))
+        state)))
+
+(defun flexsum->defxdoc (x parents state)
+  ;; Returns (mv events state)
+  (b* ((__function__ 'flexsum->defxdoc)
+       ((flexsum x) x)
+       (parents (or (cdr (assoc :parents x.kwd-alist)) parents))
+       (base-pkg (pkg-witness (acl2::f-get-global 'acl2::current-package state)))
+       ((unless (symbol-listp parents))
+        (mv (raise "~x0: :parents must be a list of symbols." x.name) state)))
+    (case x.typemacro
+      (defprod    (defprod->defxdoc x parents base-pkg state))
+      (deftagsum  (deftagsum->defxdoc x parents base-pkg state))
+      (defflexsum (defflexsum->defxdoc x parents base-pkg state))
+      (t (mv (raise "~x0: unknown typemacro" x.name) state)))))
+
+(defun flextype->defxdoc (x parents state)
+  ;; Returns (mv event state)
+  (b* ((__function__ 'flextype->defxdoc)
+       ((mv events state)
+        ;; Can't use this because its otherwise case is just NIL.
+        ;;(with-flextype-bindings x
+        ;;  (flex*->defxdoc x parents state))
+        (case (tag x)
+          (:sum (flexsum->defxdoc x parents state))
+          (:list (flexlist->defxdoc x parents state))
+          (:alist (flexalist->defxdoc x parents state))
+          (otherwise (mv (raise "Unexpected flex type: ~x0." (tag x))
+                         state)))))
+    (mv `(progn . ,events) state)))
+
+(defun flextypes-collect-defxdoc (types parents)
   (if (atom types)
       nil
-    (append (with-flextype-bindings (x (car types))
-              (kwd-alist->defxdoc x.name x.kwd-alist world))
-            (flextypes-collect-defxdoc (cdr types) world))))
+    (cons `(make-event (b* (((mv val state)
+                             (flextype->defxdoc ',(car types) ',parents state)))
+                         (value val)))
+          (flextypes-collect-defxdoc (cdr types) parents))))
+
+(defun remove-topic (name x)
+  (declare (xargs :mode :program))
+  (if (atom x)
+      nil
+    (if (equal (cdr (assoc :name (car x))) name)
+        (cdr x)
+      (cons (car x) (remove-topic name (cdr x))))))
+
+(defun flextypes-final-xdoc-fn (x world)
+  (b* (((flextypes x) x)
+       (parents-look (assoc :parents x.kwd-alist))
+       (short        (getarg :short nil x.kwd-alist))
+       (long         (getarg :long nil x.kwd-alist))
+       (parents      (or (cdr parents-look)
+                         (xdoc::get-default-parents world)
+                         '(acl2::undocumented)))
+       ;; x.name may or may not agree with the names of any of the things
+       ;; inside it.  For instance:
+       ;;   (deftypes pseudo-termp
+       ;;     (defprod pseudo-termp ...)
+       ;;     (deflist pseudo-term-listp ...))
+       ;; or
+       ;;   (deftypes statements
+       ;;     (defsum vl-stmt-p ...)
+       ;;     (deflist vl-stmtlist-p ...))
+       (topic (xdoc::find-topic x.name (xdoc::get-xdoc-table world)))
+       (sub-short (and (not (equal (cdr (assoc :short topic)) ""))
+                       (cdr (assoc :short topic))))
+       (sub-long  (and (not (equal (cdr (assoc :long topic)) ""))
+                       (cdr (assoc :long topic))))
+       ((when (and short sub-short))
+        (er hard? 'deftypes "Can't give a top-level :short when you are also ~
+                   putting :short documentation on the interior ~x0." x.name))
+       ((when (and long sub-long))
+        (er hard? 'deftypes "Can't give a top-level :long when you are also ~
+                   putting :long documentation on the interior ~x0." x.name))
+       (short (or short sub-short))
+       (long  (or long sub-long))
+       (new-defxdoc `(defxdoc ,x.name :parents ,parents :short ,short :long ,long))
+       ((unless topic)
+        new-defxdoc))
+    ;; There's existing sub-documentation, so remove it because we're going to
+    ;; overwrite it and we don't want redundant xdoc warnings.
+    `(progn
+       (table xdoc::xdoc 'xdoc::doc
+              (remove-topic ',x.name (xdoc::get-xdoc-table world)))
+       ,new-defxdoc)))
+
+(defmacro flextypes-final-xdoc (x)
+  `(make-event (flextypes-final-xdoc-fn ',x (w state))))
 
 (defun flextypes-defxdoc (x world)
-  (b* (((flextypes x) x))
-    (append (kwd-alist->defxdoc x.name x.kwd-alist world)
-            (flextypes-collect-defxdoc x.types world))))
-
+  (b* (((flextypes x) x)
+       (parents-look (assoc :parents x.kwd-alist))
+       (mutually-recursive-p (consp (cdr x.types)))
+       (parents      (or (cdr parents-look)
+                         (xdoc::get-default-parents world)
+                         '(acl2::undocumented)))
+       (parents-for-each-type
+        (if mutually-recursive-p
+            (list x.name)
+          parents)))
+    (append (flextypes-collect-defxdoc x.types parents-for-each-type)
+            `((flextypes-final-xdoc ,x)))))
 
 ;; ------------------ Ambient Theory Managment -----------------------
 (defun find-fix-when-pred-thm-aux (fix pred fix-rules)
@@ -2965,10 +3345,7 @@
                             (equal (,fix x) x))))
         (mv nil `(local (make-event
                          '(:or (defthm ,(intern-in-package-of-symbol
-                                         (concatenate 'string
-                                                      "TMP-DEFTYPES-"
-                                                      (symbol-name fix)
-                                                      "-WHEN-" (symbol-name pred))
+                                         (cat "TMP-DEFTYPES-" (symbol-name fix) "-WHEN-" (symbol-name pred))
                                          'fty)
                                  ,body)
                            (value-triple
@@ -3005,10 +3382,7 @@
         (mv nil
             `(local (make-event
                      '(:or (defthm ,(intern-in-package-of-symbol
-                                     (concatenate 'string
-                                                  "TMP-DEFTYPES-"
-                                                  (symbol-name PRED)
-                                                  "-OF-" (symbol-name fix))
+                                     (cat "TMP-DEFTYPES-" (symbol-name PRED) "-OF-" (symbol-name fix))
                                      'fty)
                              ,body)
                        (value-triple
@@ -3162,7 +3536,7 @@
               (mv (cons pred-rule enables) thms)
             (mv enables (cons pred-rule thms)))))
       (mv enables thms))))
-         
+
 ;; ------------------ Deftypes-events -----------------------
 ;; --- Flextype-collect-events ---
 (defun flextypelist-append-events (kwd types)
@@ -3184,7 +3558,7 @@
        ((mv enable-rules temp-thms) (collect-fix/pred-enable-rules fix/pred-pairs world)))
     `(with-output :off (prove event observation)
        :summary (acl2::form time)
-       (defsection ,x.name
+       (encapsulate nil       ;; was: defsection ,x.name
          (with-output :summary (acl2::form)
            (progn
              ,@(flextype-collect-events :prepwork x.kwd-alist x.types)
@@ -3211,7 +3585,7 @@
              ,@(flextypes-sum-accessor/constructors x.types x.types)
 
              (local (in-theory (disable . ,(flextypes-fns x.types))))
-             
+
              ,@(flextypes-count x)
 
              ,@(flextype-collect-events :post-events x.kwd-alist x.types)
@@ -3323,7 +3697,7 @@
        ((flexsum x) x)
        (flextypes (make-flextypes :name x.name
                                   :types (list x)
-                                  
+
                                   :no-count (not x.count)
                                   :kwd-alist '((:prepwork . ((local (in-theory (enable equal-of-strip-cars))))))
                                   :recp x.recp)))
@@ -3356,7 +3730,7 @@
                (args :type inttermlist :acc-body (cdr x)))
       :ctor-body (cons fn args)))
    (deflist inttermlist
-     :elt-type intterm))     
+     :elt-type intterm))
 })
 
 <p>This generates recognizers and fixing functions for two new types:</p>
@@ -3737,8 +4111,8 @@ a benefit of following a consistent type-fixing convention.</p>
       (:minus (- (arithtm-eval (arithtm-minus->arg x)))))
     ///
     (verify-guards arithtm-eval))
-  
-  
+
+
   (define arithtm-double ((x arithtm-p))
     :returns (xx arithtm-p)
     :measure (arithtm-count x)
@@ -3750,9 +4124,9 @@ a benefit of following a consistent type-fixing convention.</p>
      :minus (arithtm-minus (arithtm-double x.arg)))
     ///
     (verify-guards arithtm-double)
-  
+
     (local (include-book \"arithmetic/top-with-meta\" :dir :system))
-  
+
     (defthm arithtm-eval-of-double
       (equal (arithtm-eval (arithtm-double x))
              (* 2 (arithtm-eval x)))
@@ -3891,7 +4265,7 @@ different.</p>
                    (eql (len x) 2))
      :fields ((arg :type arithterm :acc-body (cadr x)))
      :ctor-body (list '- arg)))
-  
+
   (define arithterm-eval ((x arithterm-p))
     :returns (xval integerp :rule-classes :type-prescription)
     :measure (arithterm-count x)
@@ -3902,7 +4276,7 @@ different.</p>
       (t (- (arithterm-eval (arithterm-minus->arg x)))))
     ///
     (deffixequiv arithterm-eval))
-  
+
   (define arithterm-double ((x arithterm-p))
     :verify-guards nil ;; requires return type theorem first
     :returns (xx arithterm-p)
@@ -3914,11 +4288,11 @@ different.</p>
       :minus (arithterm-minus (arithterm-double x.arg)))
     ///
     (verify-guards arithterm-double)
-  
+
     (deffixequiv arithterm-double)
-  
+
     (local (include-book \"arithmetic/top-with-meta\" :dir :system))
-  
+
     (defthm arithterm-double-correct
       (equal (arithterm-eval (arithterm-double x))
              (* 2 (arithterm-eval x)))
