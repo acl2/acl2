@@ -540,7 +540,7 @@
 ; memoization.
 
 ; We use PONS instead of HONS in memoization because we could not
-; afford to honsify (using hons-shrink-alist!) certain alists in
+; afford to honsify (using fast-alist-fork!) certain alists in
 ; certain biology tests.  About the same time, we (gratuitously)
 ; decided to stop hons'ifying the output of memoized functions.
 

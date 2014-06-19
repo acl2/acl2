@@ -136,26 +136,48 @@
   alist)
 
 #+(or acl2-loop-only (not hons))
-(defn hons-shrink-alist (alist ans)
+(defn fast-alist-fork (alist ans)
   ;; Has an under-the-hood implementation
   (cond ((atom alist)
          ans)
         ((atom (car alist))
-         (hons-shrink-alist (cdr alist) ans))
+         (fast-alist-fork (cdr alist) ans))
         ((hons-assoc-equal (car (car alist)) ans)
-         (hons-shrink-alist (cdr alist) ans))
+         (fast-alist-fork (cdr alist) ans))
         (t
-         (hons-shrink-alist (cdr alist) (cons (car alist) ans)))))
+         (fast-alist-fork (cdr alist) (cons (car alist) ans)))))
 
 #+(or acl2-loop-only (not hons))
-(defn hons-shrink-alist! (alist ans)
+(defn fast-alist-fork! (alist ans)
   ;; Has an under-the-hood implementation
-  (hons-shrink-alist alist ans))
+  (fast-alist-fork alist ans))
+
+; Deprecated:
+
+(defmacro hons-shrink-alist (alist ans)
+  `(fast-alist-fork ,alist ,ans))
+(defmacro hons-shrink-alist! (alist ans)
+  `(fast-alist-fork! ,alist ,ans))
+(add-macro-alias hons-shrink-alist fast-alist-fork)
+(add-macro-alias hons-shrink-alist! fast-alist-fork!)
+
+#+(or acl2-loop-only (not hons))
+(defn fast-alist-clean (alist)
+  ;; Has an under-the-hood implementation
+  (fast-alist-fork alist
+                   (if (consp alist)
+                       (cdr (last alist))
+                     nil)))
+
+#+(or acl2-loop-only (not hons))
+(defn fast-alist-clean! (alist)
+  ;; Has an under-the-hood implementation
+  (fast-alist-clean alist))
 
 #+(or acl2-loop-only (not hons))
 (defn fast-alist-len (alist)
   ;; Has an under-the-hood implementation
-  (len (hons-shrink-alist alist nil)))
+  (len (fast-alist-fork alist nil)))
 
 #+(or acl2-loop-only (not hons))
 (defn fast-alist-free (alist)
@@ -241,8 +263,10 @@
             (:executable-counterpart hons-get)
             (:executable-counterpart hons-acons)
             (:executable-counterpart hons-acons!)
-            (:executable-counterpart hons-shrink-alist)
-            (:executable-counterpart hons-shrink-alist!)
+            (:executable-counterpart fast-alist-fork)
+            (:executable-counterpart fast-alist-fork!)
+            (:executable-counterpart fast-alist-clean)
+            (:executable-counterpart fast-alist-clean!)
             (:executable-counterpart fast-alist-len)
             (:executable-counterpart fast-alist-free)
             (:executable-counterpart flush-hons-get-hash-table-link)
