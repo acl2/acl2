@@ -260,16 +260,23 @@
 
 ; Timing Utilities ------------------------------------------------------------
 ;
-; [Jared]: dealt with this in books/memoize/timer.lsp
+; [Jared]: dealt with this in books/memoize/timer.lsp [now
+;          books/centaur/memoize/timer.lsp]
 
-; NOTE: Whenever this is used, consider whether we want to initialize it if it's not already.
-; E.g.: fix-time is used in the wrappers of memoized functions, making it
-; performance-critical, and uses float-ticks/second to compute a heuristic
-; sanity check, so we don't reinitialize there.
-; On the other hand, total-time is used only when printing, so is not
-; performance-critical, and the exact value of float-ticks/second affects the
-; values reported.
-(defg *float-ticks/second* (float (expt 2 31)))
+; WARNING: Whenever using *float-ticks/second*, consider whether it should be
+; properly initialized if that has not already been done.  Here is the story:
+
+; In order to set *float-ticks/second* to a reasonably accurate value, there is
+; a one-time delay due to a call of sleep in float-ticks/second-init, which
+; might be noticeable when starting up ACL2.  We avoid this delay until we need
+; the accuracy.  For example, fix-time is used in the wrappers of memoized
+; functions, making it performance-critical, but it only uses
+; float-ticks/second to compute a heuristic sanity check; so we avoid that
+; delay in fix-time.  On the other hand, for many purposes we want
+; *float-ticks/second* to be accurate, such as in calls of total-time (for
+; printing memoize-summary information).  For those, we tolerate the delay.
+
+(defg *float-ticks/second* (float (expt 2 31))) ; 2 GHz
 (defg *float-ticks/second-initialized* nil)
 
 (defg *float-internal-time-units-per-second*
@@ -533,7 +540,7 @@
 ; memoization.
 
 ; We use PONS instead of HONS in memoization because we could not
-; afford to honsify (using hons-shrink-alist!) certain alists in
+; afford to honsify (using fast-alist-fork!) certain alists in
 ; certain biology tests.  About the same time, we (gratuitously)
 ; decided to stop hons'ifying the output of memoized functions.
 
