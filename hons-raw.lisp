@@ -2981,6 +2981,25 @@ To avoid the following break and get only the above warning:~%  ~a~%"
     (hl-hspace-number-subtrees-aux x seen)
     (hash-table-count seen)))
 
+(defun hl-faltable-clear-cache (faltable)
+
+  ;; Destructively modifies HS, if faltable is the faltable of HS.
+  ;; Clears the fast alist cache slots, moving any items into the main hash
+  ;; table.  This operation should always be safe to use: we are just moving
+  ;; things out of the cache and putting them into the table.
+
+  ;; A reason to do this is that we want gc to be able to collect entries whose
+  ;; alists are garbage.  Recall that hl-initialize-faltable-table calls hl-mht
+  ;; with keyword argument :weak :key, so this works fine for the (weak) hash
+  ;; table field of faltable, but the cache slots don't allow for such
+  ;; collection.  This function evicts the cache in order to solve that
+  ;; problem.
+
+  (declare (type hl-faltable faltable))
+  (hl-faltable-eject (hl-faltable-slot1 faltable) faltable)
+  (hl-faltable-eject (hl-faltable-slot2 faltable) faltable)
+  (setf (hl-faltable-eject1 faltable) nil))
+
 ; ----------------------------------------------------------------------
 ;
 ;                       CLEARING THE HONS SPACE
@@ -3108,6 +3127,8 @@ To avoid the following break and get only the above warning:~%  ~a~%"
     ;; Similarly we need to clear the fal-ht and persist-ht before the ctables,
     ;; or an interrupt might leave us with stale allegedly normed conses in
     ;; those tables.
+
+    (hl-faltable-clear-cache faltable)
     (hl-cache-clear norm-cache)
     (setf (hl-hspace-faltable hs) temp-faltable)
     (setf (hl-hspace-persist-ht hs) temp-persist-ht)
@@ -3158,7 +3179,6 @@ To avoid the following break and get only the above warning:~%  ~a~%"
     (setf (hl-hspace-persist-ht hs) persist-ht))
 
   nil)
-
 
 #+static-hons
 (defun hl-hspace-static-restore (x addr-ht sbits str-ht other-ht)
@@ -3225,6 +3245,8 @@ To avoid the following break and get only the above warning:~%  ~a~%"
 
     ;; See also the classic version; order matters, you can't clear out addr-ht
     ;; and sbits before the other tables.
+
+    (hl-faltable-clear-cache faltable)
     (hl-cache-clear norm-cache)
     (setf (hl-hspace-faltable hs) temp-faltable)
     (setf (hl-hspace-persist-ht hs) temp-persist-ht)
@@ -3276,7 +3298,6 @@ To avoid the following break and get only the above warning:~%  ~a~%"
     (hl-make-addr-limit-current hs))
 
   nil)
-
 
 ; ----------------------------------------------------------------------
 ;
