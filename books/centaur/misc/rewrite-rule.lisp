@@ -22,43 +22,24 @@
 (in-package "ACL2")
 (include-book "std/util/define" :dir :system)
 
-;; Accessors for rewrite rules, since otherwise the proof obligations become
-;; giant cadaddrpillars.
-
-(define rewrite-rule->rune ((rule weak-rewrite-rule-p))
-  :inline t
-  (access rewrite-rule rule :rune))
-
-(define rewrite-rule->hyps ((rule weak-rewrite-rule-p))
-  :inline t
-  (access rewrite-rule rule :hyps))
-
-(define rewrite-rule->lhs ((rule weak-rewrite-rule-p))
-  :inline t
-  (access rewrite-rule rule :lhs))
-
-(define rewrite-rule->rhs ((rule weak-rewrite-rule-p))
-  :inline t
-  (access rewrite-rule rule :rhs))
-
-(define rewrite-rule->equiv ((rule weak-rewrite-rule-p))
-  :inline t
-  (access rewrite-rule rule :equiv))
-
-(define rewrite-rule->subclass ((rule weak-rewrite-rule-p))
-  :inline t
-  (access rewrite-rule rule :subclass))
-
-(define rewrite-rule->heuristic-info ((rule weak-rewrite-rule-p))
-  :inline t
-  (access rewrite-rule rule :heuristic-info))
-
+(include-book "std/util/defaggrify-defrec" :dir :system)
+(std::defaggrify-defrec rewrite-rule)
 
 (define drw-get-rules ((fn symbolp)
                        (world plist-worldp))
   :returns rules
   (fgetprop fn 'lemmas nil world))
 
+(in-theory (disable rewrite-rule->rune
+                    rewrite-rule->hyps
+                    rewrite-rule->lhs
+                    rewrite-rule->rhs
+                    rewrite-rule->equiv
+                    rewrite-rule->subclass
+                    rewrite-rule->heuristic-info))
+
+
+;; BOZO should extend defaggrify-defrec to do this sort of thing.
 
 (defmacro make-rewrite-rule (&key rune nume hyps equiv lhs rhs subclass
                                   heuristic-info backchain-limit-lst
