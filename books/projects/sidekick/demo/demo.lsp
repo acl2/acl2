@@ -39,7 +39,14 @@
 ;   - Interactively run ``:show append''.  It should bring up the lookup page
 ;     with documentation, properties, etc.
 ;
+;   - Try something like (include-book "std/top" :dir :system) and then take
+;     a look at the :lint command.  You can get there by clicking or by typing
+;     :lint.
+;
 ; More to come later.
+
+
+; This is just to test out the session viewer color stuff
 
 (defun app (x y)
   (if (atom x)

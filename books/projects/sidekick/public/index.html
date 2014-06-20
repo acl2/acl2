@@ -49,6 +49,11 @@ along with this program; if not, write to the Free Software Foundation, Inc.,
    font-size: 110%;
 }
 
+#fancymenu th {
+   font-family: "Tahoma", "Geneva", "Verdana", sans-serif;
+   font-size: 80%;
+}
+
 // -->
 </style>
 
@@ -75,9 +80,9 @@ along with this program; if not, write to the Free Software Foundation, Inc.,
 
 <h3 style="margin-top: 0; padding-top: 0;">Welcome!</h3>
 
-<p>The ACL2 Sidekick extends ACL2 with many graphical capabilities.
-It lets you browse through your session, profile slow proofs, ..., all
-from your web browser.</p>
+<p>The ACL2 Sidekick extends ACL2 with many graphical capabilities.  It lets
+you browse through your session, profile slow proofs, analyze your theory, and
+inspect things right from your web browser.</p>
 
 
 <h4>Explore</h4>
@@ -85,14 +90,16 @@ from your web browser.</p>
 <form id="lookup_form2" method="get" action="lookup.html">
 <table id="fancymenu">
 <tr>
-<td><a href="session.html"><img src="icons/session.png"/></a></td>
+<th><a href="session.html"><img src="icons/session.png"/></a><br/>
+:session</th>
 <td><a href="session.html">Session Viewer</a></br/>
 Explore the history of your ACL2 session<br/>
 See the effects of commands</td>
 </tr>
 
 <tr>
-<td><a href="profiler.html"><img src="icons/profiler.png"/></a></td>
+<th><a href="profiler.html"><img src="icons/profiler.png"/></a><br/>
+:bozo</th>
 <td><a href="profiler.html">Proof Profiler</a><br/>
 See what the prover is doing<br/>
 Identify slow rules<br/>
@@ -100,17 +107,19 @@ Identify slow rules<br/>
 </tr>
 
 <tr>
-<td><a href="linter.html"><img src="icons/linter.png"/></a></td>
+<th><a href="linter.html"><img src="icons/linter.png"/></a><br/>
+:lint</th>
 <td><a href="linter.html">Theory Linter</a><br/>
 Identify conflicting and redundant rules<br/>
 </td>
 </tr>
 
 <tr>
-<td><a href="lookup.html"><img src="icons/lookup.png"/></a></td>
+<th><a href="lookup.html"><img src="icons/lookup.png"/></a><br/>
+:show</th>
 <td><a href="lookup.html">Show Anything</a><br/>
 See documentation, properties, disassembly, ...<br/>
-<tt><label for="lookup2">:show</label></tt>
+<!-- <tt><label for="lookup2">:show</label></tt> -->
 <input id="lookup2" name="lookup" type="text" size="20" placeholder="append"></input>
 <input type="submit" style="position: absolute; left: -9999px; width: 1px; height: 1px;" hidefocus="true" tabindex="-1"></input>
 </td>
@@ -126,15 +135,16 @@ See documentation, properties, disassembly, ...<br/>
 <li><a href="javascript:popup_disassemble('append')">Disassemble append</a></li>
 <li><a href="javascript:popup_disassemble('search')">Disassemble search</a></li>
 </ul>
+
 </div>
 
 <div id="right" style="float: left; width: 44%; margin: 0; padding-top: 0;">
 
 <h4 style="margin-top: 0; padding-top: 0;">Development Notes</h4>
 
-<p>Warning: this is <b>highly experimental</b> software that may have
-serious bugs.  Please send any bug reports
-to <a href="mailto:jared@kookamara.com">Jared Davis</a>.</p>
+<p>Warning: this is <b>highly experimental</b> software that may have serious
+bugs.  For updates or to submit any bug reports or suggestions, please see the
+<a href='https://github.com/jaredcdavis/sidekick'>github project</a>.</p>
 
 
 <p>General wishlist</p>
