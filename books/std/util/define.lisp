@@ -946,7 +946,7 @@ some kind of separator!</p>
          ;; Extend the define table right away, in case anything during
          ;; the rest-events needs to make use of it.
          ,(extend-define-guts-alist guts)
-         (local (set-define-current-function ,guts.name))
+         (set-define-current-function ,guts.name)
 
          (local
           (make-event
@@ -976,7 +976,7 @@ some kind of separator!</p>
        ,(add-signature-from-guts guts)
 
        ,@(if prognp
-             '((local (set-define-current-function nil)))
+             `((set-define-current-function nil))
            nil)
        )))
 
