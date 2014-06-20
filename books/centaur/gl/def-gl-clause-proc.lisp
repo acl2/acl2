@@ -904,7 +904,7 @@ descriptions of each keyword argument:</p>
   (b* (((list hyp hyp-p concl concl-p g-bindings g-bindings-p cov-hints
               cov-hints-position cov-theory-add do-not-expand hyp-clk concl-clk
               n-counterexamples abort-indeterminate abort-ctrex exec-ctrex abort-vacuous test-side-goals
-              rule-classes) rest)
+              rule-classes no-defthm) rest)
        ((unless (and hyp-p concl-p g-bindings-p))
         (er hard 'def-gl-thm
             "The keyword arguments HYP, CONCL, and G-BINDINGS must be provided ~
@@ -928,14 +928,14 @@ in DEF-GL-THM.~%"))
                          :exec-ctrex ,exec-ctrex
                          :abort-vacuous ,abort-vacuous
                          :test-side-goals ,test-side-goals))
-                . ,(if test-side-goals
+                . ,(if (or test-side-goals no-defthm)
                        '(:rule-classes nil)
                      `(:rule-classes ,rule-classes)))))
-    (if test-side-goals
+    (if (or test-side-goals no-defthm)
         `(with-output
           :off :all :stack :push
           (make-event (er-progn (with-output :stack :pop ,form)
-                                (value '(value-triple 'test-side-goals)))))
+                                (value '(value-triple 'ok)))))
       form)))
 
 (defmacro latest-gl-clause-proc ()
@@ -1150,7 +1150,39 @@ rule-classes for the theorem produced, as in @(see defthm); the default is
       (list hyp hyp-p concl concl-p g-bindings g-bindings-p cov-hints
             cov-hints-position cov-theory-add do-not-expand hyp-clk concl-clk
             n-counterexamples abort-indeterminate abort-ctrex exec-ctrex abort-vacuous test-side-goals
-            rule-classes))))
+            rule-classes nil))))
+
+
+(defsection gl-thm
+  :parents (def-gl-thm)
+  :short "Prove a theorem using GL symbolic simulation, but don't store it, like with @(see thm)."
+  :long "<p>Exactly the same as @(see def-gl-thm), but does not store the
+resulting theorem: @(see def-gl-thm) is to @(see gl-thm) as @(see defthm) is to
+@(see thm).  The :rule-classes argument is accepted, but ignored.</p>"
+
+  (defmacro gl-thm
+    (name &key (clause-proc 'nil clause-procp)
+          skip-g-proofs
+          (hyp 'nil hyp-p)
+          (concl 'nil concl-p)
+          (g-bindings 'nil g-bindings-p)
+          cov-hints cov-hints-position
+          cov-theory-add
+          do-not-expand
+          (hyp-clk '1000000)
+          (concl-clk '1000000)
+          (n-counterexamples '3)
+          (abort-indeterminate 't) (abort-ctrex 't) (exec-ctrex 't) (abort-vacuous 't)
+          local
+          test-side-goals
+          (rule-classes ':rewrite))
+
+    (declare (ignore skip-g-proofs local))
+    (def-gl-thm-find-cp name clause-proc clause-procp
+      (list hyp hyp-p concl concl-p g-bindings g-bindings-p cov-hints
+            cov-hints-position cov-theory-add do-not-expand hyp-clk concl-clk
+            n-counterexamples abort-indeterminate abort-ctrex exec-ctrex abort-vacuous test-side-goals
+            rule-classes t))))
 
 
 
@@ -1162,7 +1194,7 @@ rule-classes for the theorem produced, as in @(see defthm); the default is
               cov-hints cov-hints-position cov-theory-add do-not-expand
               hyp-clk concl-clk n-counterexamples
               abort-indeterminate abort-ctrex exec-ctrex abort-vacuous run-before-cases run-after-cases
-              case-split-override case-split-hints test-side-goals rule-classes)
+              case-split-override case-split-hints test-side-goals rule-classes no-defthm)
         rest)
        ((unless (and hyp-p param-hyp-p concl-p cov-bindings-p
                      param-bindings-p))
@@ -1194,14 +1226,14 @@ PARAM-BINDINGS must be provided in DEF-GL-PARAM-THM.~%"))
                          :test-side-goals ,test-side-goals
                          :case-split-override ,case-split-override
                          :case-split-hints ,case-split-hints))
-                . ,(if test-side-goals
+                . ,(if (or test-side-goals no-defthm)
                        '(:rule-classes nil)
                      `(:rule-classes ,rule-classes)))))
-    (if test-side-goals
+    (if (or test-side-goals no-defthm)
         `(with-output
           :off :all :stack :push
           (make-event (er-progn (with-output :stack :pop ,form)
-                                (value '(value-triple 'test-side-goals)))))
+                                (value '(value-triple 'ok)))))
       form)))
 
 ;; If a clause-processor name is supplied, this creates a defthm event
@@ -1383,7 +1415,45 @@ Setting @(':ABORT-VACUOUS') to @('NIL') causes it to go on.</p>"
             cov-hints-position cov-theory-add do-not-expand hyp-clk concl-clk
             n-counterexamples abort-indeterminate abort-ctrex exec-ctrex
             abort-vacuous run-before-cases run-after-cases case-split-override
-            case-split-hints test-side-goals rule-classes))))
+            case-split-hints test-side-goals rule-classes nil))))
+
+(defsection gl-param-thm
+  :parents (reference optimization)
+  :short "Prove a theorem using GL symbolic simulation with parametrized
+case-splitting, without storing the theorem."
+
+  :long "<p>Exactly the same as @(see def-gl-param-thm), but does not store the
+resulting theorem: @(see def-gl-param-thm) is to @(see gl-param-thm) as @(see
+defthm) is to @(see thm).  The :rule-classes argument is accepted, but
+ignored.</p>"
+
+  (defmacro gl-param-thm
+    (name &key (clause-proc 'nil clause-procp)
+          skip-g-proofs
+          (hyp 'nil hyp-p)
+          (param-hyp 'nil param-hyp-p)
+          (concl 'nil concl-p)
+          (cov-bindings 'nil cov-bindings-p)
+          (param-bindings 'nil param-bindings-p)
+          cov-hints cov-hints-position
+          cov-theory-add
+          do-not-expand
+          (hyp-clk '1000000)
+          (concl-clk '1000000)
+          (n-counterexamples '3)
+          (abort-indeterminate 't) (abort-ctrex 't) (exec-ctrex 't) (abort-vacuous 'nil)
+          run-before-cases run-after-cases
+          case-split-override
+          case-split-hints local test-side-goals
+          (rule-classes ':rewrite))
+    (declare (ignore skip-g-proofs local))
+    (def-gl-param-thm-find-cp name clause-proc clause-procp
+      (list hyp hyp-p param-hyp param-hyp-p concl concl-p cov-bindings
+            cov-bindings-p param-bindings param-bindings-p cov-hints
+            cov-hints-position cov-theory-add do-not-expand hyp-clk concl-clk
+            n-counterexamples abort-indeterminate abort-ctrex exec-ctrex
+            abort-vacuous run-before-cases run-after-cases case-split-override
+            case-split-hints test-side-goals rule-classes t))))
 
 
 
