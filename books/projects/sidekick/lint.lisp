@@ -42,7 +42,7 @@
        (name (second rule.rune))
        ((mv er origin state) (acl2::origin-fn name state))
        (origin (if er :error origin)))
-    (mv (list (cons :rule name)
+    (mv (list (cons :rule (cat (symbol-package-name name) "::" (symbol-name name)))
               (cons :origin origin)
               (cons :body body-str))
         state)))
@@ -73,5 +73,9 @@
                                             ;; bozo probably smaller right-margin
                                             ))
        ((mv summary state) (json-summarize-redundancies redundancies printconfig state))
-       (ans (bridge::json-encode summary)))
+       (alist (list (cons :error nil)
+                    (cons :redundant summary)
+                    ;; Some day maybe other kinds of warnings
+                    ))
+       (ans (bridge::json-encode alist)))
     (mv ans state)))

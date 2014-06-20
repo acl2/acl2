@@ -40,10 +40,10 @@ function toolbar_init()
 
     var toolbar = jQuery("<table></table>");
     var row = jQuery("<tr></tr>");
-    row.append(toolbar_item("Home", "index"));
-    row.append(toolbar_item("Session"));
+    row.append(toolbar_item(":home", "index"));
+    row.append(toolbar_item(":session", "session"));
     row.append(toolbar_item("Profiler"));
-    row.append(toolbar_item("Linter"));
+    row.append(toolbar_item(":lint", "linter"));
 
     var lookup = "";
     lookup += "<label for='lookup'>:show </label>";
@@ -157,11 +157,21 @@ function process_webcommand(command)
     }
 
     console.log("Processing web command: " + action);
-    if (action == ":SHOW") {
+    if (action == ":HOME") {
+	window.location.href = "/index.html";
+    }
+    else if (action == ":LINT") {
+	window.location.href = "/linter.html";
+    }
+    else if (action == ":SESSION") {
+	window.location.href = "/session.html";
+    }
+    else if (action == ":SHOW") {
 	var name = command[":NAME"];
 	console.log("name is " + name);
 	window.location.href = "/lookup.html?lookup=" + name;
     }
+
 
 }
 

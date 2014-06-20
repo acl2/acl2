@@ -25,10 +25,48 @@ along with this program; if not, write to the Free Software Foundation, Inc.,
 <meta charset="UTF-8">
 <title>Theory Linter &mdash; ACL2 Sidekick</title>
 <link rel="stylesheet" type="text/css" href="style.css"/>
-<link rel="stylesheet" type="text/css" href="profiler.css"/>
 <script src="lib/jquery-2.1.0.min.js"></script>
 <script src="common.js"></script>
 <script src="toolbar.js"></script>
+<script src="linter.js"></script>
+
+<style>
+<!--
+
+.redundant_table {
+   width: 100%;
+   border-collapse: collapse;
+   border-spacing: .1em;
+}
+.redundant_table td { padding: 1em; vertical-align: top; }
+.redundant_table tr:nth-child(even) { background-color:#ffffff; }
+.redundant_table tr:nth-child(odd) { background-color:#fff8e3; }
+
+.redundant_table .vs {
+   text-align: center;
+   vertical-align: middle;
+}
+
+.rulename {
+    font-family: "Geneva", "Verdana", sans-serif;
+}
+
+.from {
+    color: #3C9DD0;
+}
+
+pre {
+   color: #006000;
+   margin-left: 2em;
+}
+
+hr {
+   width: 30%;
+   color: #999999;
+}
+-->
+</style>
+
 </head>
 <body>
 
@@ -36,22 +74,15 @@ along with this program; if not, write to the Free Software Foundation, Inc.,
 
 <div id="main">
 
-<div id="profwrap">
-<div id="prof"> BOZO implement me </div>
-</div>
-
-<div id="detailwrap">
-<div id="details">
-
 <h3 class="banner"><img src="icons/linter.png"/> Theory Linter</h3>
 
-<p>This tool analyzes your theory for conflicting and redundant
-rewrite rules.</p>
+<div id="lint">
+<p>Analyzing...</p>
+</div>
 
 <h4>Todo/Wishlist</h4>
 
 <ul>
-<li>Implement bare-bones version</li>
 <li>Eventually extend linter with more info.</li>
 </ul>
 
