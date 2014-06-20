@@ -21,7 +21,7 @@
 (in-package "ACL2")
 
 ; Note: the acl2-customization.lsp file in this directory loads the sidekick
-; book.  When you start acl2 in this directory you should see a message such
+; book.  When you start ACL2 in this directory, you should see a message such
 ; as:
 ;
 ; ----------------------------------------------------------------
@@ -30,8 +30,16 @@
 ;
 ; ----------------------------------------------------------------
 ;
-; To try out the sidekick, point your web browser to that address and then
-; start submitting these events.  Watch how the :pbt display grows.
+; To try out the Sidekick, point your web browser to that address.  Some things
+; to try:
+;
+;   - Go to the Session page.  Run through these events interactively, and see
+;     how it follows along with what you're doing.
+;
+;   - Interactively run ``:show append''.  It should bring up the lookup page
+;     with documentation, properties, etc.
+;
+; More to come later.
 
 (defun app (x y)
   (if (atom x)

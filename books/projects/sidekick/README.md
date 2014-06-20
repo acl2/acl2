@@ -17,7 +17,8 @@ it with Emacs:
 Note: the Sidekick is **highly experimental** software.  It doesn't do
 much yet, and at this point is mostly a proof of concept.
 
-## Installation
+
+## Basic Setup
 
 I use Linux/x86 with Firefox or Chromium as the browser, and
 [CCL](http://ccl.clozure.com) as my host Lisp for ACL2.  Other
@@ -25,10 +26,14 @@ platforms may not work.
 
 You'll need to use the [development version of
 ACL2](http://acl2-devel.googlecode.com) and [its
-books](http://acl2-books.googlecode.com).  Build ACL2 as usual, then
-certify at least the **basic** and **quicklisp** books, e.g.,:
+books](http://acl2-books.googlecode.com).
+
+Build **ACL2(h)** as usual, then certify at least the **basic** and
+**quicklisp** books, e.g.,:
 
 ```Shell
+    $ cd acl2
+    $ make LISP=ccl ACL2_HONS=h
     $ cd acl2/books
     $ make USE_QUICKLISP=1 basic quicklisp
 ```
@@ -43,6 +48,21 @@ Finally, get a copy of the Sidekick and certify its top book, e.g.,:
 
 The Sidekick should now be ready.  To try it out, go to the **demo**
 directory and follow along with **demo.lsp**.
+
+
+## Sidekick Images
+
+For instant startup times, you can build an ACL2 image with the
+Sidekick built in.
+
+```Shell
+    $ cd sidekick
+    $ make           # should produce a 'sidekick' executable
+    $ ./sidekick
+```
+
+You can then use this **sidekick** instead of invoking your normal
+**saved_acl2h** image.
 
 
 

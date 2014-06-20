@@ -94,10 +94,6 @@
      . ,forms))
 
 (defun add-handlers ()
-  (hunchentoot:define-easy-handler (say-yo :uri "/yo") (name)
-    (setf (hunchentoot:content-type*) "application/json")
-    (bridge::json-encode
-     (list 'foo :name name)))
 
   (hunchentoot:define-easy-handler (pbt-handler :uri "/pbt") ()
      (setf (hunchentoot:content-type*) "application/json")
