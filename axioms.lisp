@@ -15195,7 +15195,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; otherwise.
 
   (when (not (member-eq default '(:defaults :current)))
-    (error "The first argument of with-print-controls must be :DEFAULT ~
+    (error "The first argument of with-print-controls must be :DEFAULTS ~
             or :CURRENT."))
   (let ((raw-print-vars-alist
          '((*print-base* print-base . (f-get-global 'print-base state))
