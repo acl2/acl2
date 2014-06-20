@@ -25,6 +25,16 @@
 
 (defvar *server* nil)
 
+(defun maybe-launch-browser (port)
+  (b* ((state acl2::*the-live-state*)
+       ((mv ? browser state) (getenv$ "SIDEKICK_BROWSER" state))
+       ((unless (and (stringp browser)
+                     (not (equal browser ""))))
+        nil))
+    (acl2::tshell-ensure)
+    (acl2::tshell-run-background
+     (str::cat browser " http://localhost:" (str::natstr port) "/"))))
+
 (defun start-fn (port)
   (when *server*
     (stop))
@@ -48,7 +58,8 @@
     (format t ";~%")
     (format t "; ----------------------------------------------------------------~%~%")
     (add-handlers)
-    (setq *server* server))
+    (setq *server* server)
+    (maybe-launch-browser port))
   nil)
 
 (defun stop ()

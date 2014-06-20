@@ -30,6 +30,7 @@
 (include-book "lookup")
 (include-book "xdoc")
 (include-book "webcommand")
+(include-book "centaur/misc/tshell" :dir :system)
 (include-book "std/basic/defs" :dir :system)
 (include-book "std/strings/defs-program" :dir :system)
 (include-book "std/io/read-string" :dir :system)

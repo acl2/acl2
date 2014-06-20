@@ -50,7 +50,7 @@ The Sidekick should now be ready.  To try it out, go to the **demo**
 directory and follow along with **demo.lsp**.
 
 
-## Sidekick Images
+### Sidekick Images
 
 For instant startup times, you can build an ACL2 image with the
 Sidekick built in.
@@ -62,7 +62,32 @@ Sidekick built in.
 ```
 
 You can then use this **sidekick** instead of invoking your normal
-**saved_acl2h** image.
+**saved_acl2h** image when doing interactive development.
 
 
+### Browser Launching
+
+You can tell the Sidekick to automatically launch a web browser when
+it boots up by setting the **SIDEKICK_BROWSER** environment variable.
+For instance:
+
+```Shell
+    $ export SIDEKICK_BROWSER="firefox"
+```
+
+Whatever command you supply will simply be invoked, in the background,
+with the argument "http://localhost:9000/" (or similar).
+
+
+### Other Ports
+
+The Sidekick will try to listen on port 9000 by default, but this can
+be adjusted using SIDEKICK_PORT.  For instance:
+
+```Shell
+    $ export SIDEKICK_PORT=9001
+```
+
+You can also explicitly start the sidekick on a different port by
+using, e.g., (sidekick::start 9001).
 
