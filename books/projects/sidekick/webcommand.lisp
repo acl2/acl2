@@ -49,5 +49,8 @@
         (t
          (er hard? 'show "Expected a symbol, not ~x0." name))))
 
+(defmacro home ()
+  (push-webcommand (list (cons :action :home))))
+
 ; (depends-on "webcommand-raw.lsp")
 (include-raw "webcommand-raw.lsp")

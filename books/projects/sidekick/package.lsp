@@ -48,7 +48,10 @@
                     maybe-natp
 
                     ;; interactive sidekick commands
+                    home
                     show
+                    session
+                    lint
                     )
                   std::*std-exports*)
    *std-pkg-symbols*))

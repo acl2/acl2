@@ -23,13 +23,17 @@
 (reset-prehistory nil)
 
 (sidekick::stop)
+(acl2::tshell-stop)
 
 :q
 
 
 (setq *print-startup-banner* nil)
 
-(defun save-exec-init ()
+
+;; HORRIBLE HACK -- fix this when Matt adds :initial-command stuff to save-exec.
+;; For now just redefine maybe-load-acl2-init because it's easy.
+(defun maybe-load-acl2-init ()
   ;; Blah, recreate some output that print-startup-banner suppresses.  I really
   ;; just want to suppress the ugly modification notice.
   #+ccl

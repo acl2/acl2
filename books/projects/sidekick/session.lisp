@@ -18,10 +18,11 @@
 ;
 ; Original author: Jared Davis <jared@kookamara.com>
 
-(in-package "ACL2")
+(in-package "SIDEKICK")
 (include-book "std/util/define" :dir :system)
 (include-book "std/strings/defs-program" :dir :system)
 (include-book "std/strings/pretty" :dir :system)
+(include-book "webcommand")
 (set-state-ok t)
 (program)
 
@@ -127,30 +128,30 @@
 (define jalist-from-ldd (ldd state)
   ;; Based on reading the code for print-ldd and supporting stuff.
   ;; I have no idea what I'm doing.
-  (b* ((status (access-ldd-status ldd))
+  (b* ((status          (acl2::access-ldd-status ldd))
        (defun-mode-pair (access ldd-status status :defun-mode-pair))
-       (disabled (access ldd-status status :disabled))
-       (memoized (access ldd-status status :memoized))
-       (form-str (str::pretty (print-ldd-full-or-sketch (access-ldd-fullp ldd)
-                                                        (access-ldd-form ldd))
-                              :config *json-pbt-printconfig*
-                              :eviscp t))
+       (disabled        (access ldd-status status :disabled))
+       (memoized        (access ldd-status status :memoized))
+       (form-str        (str::pretty (acl2::print-ldd-full-or-sketch (acl2::access-ldd-fullp ldd)
+                                                                     (acl2::access-ldd-form ldd))
+                                     :config *json-pbt-printconfig*
+                                     :eviscp t))
        (alist (list
                ;; command or event
-               (cons :class (access-ldd-class ldd))
+               (cons :class (acl2::access-ldd-class ldd))
                ;; symbol class char, indicating program/ideal/verified
                (cons :orig-symbol-class (car defun-mode-pair))
                (cons :current-symbol-class (cdr defun-mode-pair))
                (cons :disabled disabled)
                (cons :memoized memoized)
                ;; don't think we care about the "mark" thing
-               (cons :markp  (access-ldd-markp ldd))
-               (cons :n (access-ldd-n ldd))
+               (cons :markp  (acl2::access-ldd-markp ldd))
+               (cons :n (acl2::access-ldd-n ldd))
                (cons :most-recent
-                     (and (eq (access-ldd-class ldd) 'command)
-                          (eql (access-ldd-n ldd)
-                               (absolute-to-relative-command-number
-                                (max-absolute-command-number (w state))
+                     (and (eq (acl2::access-ldd-class ldd) 'acl2::command)
+                          (eql (acl2::access-ldd-n ldd)
+                               (acl2::absolute-to-relative-command-number
+                                (acl2::max-absolute-command-number (w state))
                                 (w state)))))
                (cons :form form-str))))
     alist))
@@ -198,7 +199,7 @@
   (let ((wrld (w state))
         (ens (ens state)))
     (er-let* ((cmd-wrld (er-decode-cd cd wrld :pcb state)))
-             (let* ((ldds  (make-ldds-command-block cmd-wrld ens wrld fullp nil))
+             (let* ((ldds   (acl2::make-ldds-command-block cmd-wrld ens wrld fullp nil))
                     (alists (jalists-from-ldds ldds state)))
                (mv nil alists state)))))
 
@@ -215,8 +216,8 @@
 
 (defun json-pc-fn (cd state)
   (let ((wrld (w state)))
-    (er-let* ((cmd-wrld (er-decode-cd cd wrld :pc state)))
-             (let* ((ldd (make-command-ldd nil t cmd-wrld (ens state) wrld))
+    (er-let* ((cmd-wrld  (er-decode-cd cd wrld :pc state)))
+             (let* ((ldd (acl2::make-command-ldd nil t cmd-wrld (ens state) wrld))
                     (alist (jalist-from-ldd ldd state)))
                (mv nil alist state)))))
 
@@ -323,3 +324,7 @@
 ;;       (defun n5 (x) x))
 ;;     (defsection n6
 ;;       (defun n6 (x) x))))
+
+
+(defmacro session ()
+  (push-webcommand (list (cons :action :session))))

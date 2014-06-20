@@ -20,17 +20,6 @@
 
 #!ACL2 (in-package "ACL2")
 
-#!ACL2
-(mv-let (er val state)
-  (getenv$ "FVQ_PORT" state)
-  (declare (ignore er))
-  (progn$
-   (if (and val (not (equal val "")))
-       (progn$ (cw "Setting SIDEKICK_PORT = ~s0.~%" val)
-               (setenv$ "SIDEKICK_PORT" val))
-     nil)
-   state))
-
 #!ACL2 (include-book "../top")
 
 

@@ -25,7 +25,7 @@
 
 (defvar *server* nil)
 
-(defun maybe-launch-browser (port)
+(defun maybe-launch-browser (host port)
   (b* ((state acl2::*the-live-state*)
        ((mv ? browser state) (getenv$ "SIDEKICK_BROWSER" state))
        ((unless (and (stringp browser)
@@ -33,16 +33,33 @@
         nil))
     (acl2::tshell-ensure)
     (acl2::tshell-run-background
-     (str::cat browser " http://localhost:" (str::natstr port) "/"))))
+     (str::cat browser " http://" host ":" (str::natstr port) "/"))))
 
 (defun start-fn (port)
   (when *server*
     (stop))
   (let* ((port (or port
                    (b* ((state acl2::*the-live-state*)
-                        ((mv ? port state) (getenv$ "SIDEKICK_PORT" state)))
-                     (or (str::strval port)
-                         9000))))
+                        ((mv ? port state) (getenv$ "SIDEKICK_PORT" state))
+                        (port-num (str::strval port))
+                        ((when port-num)
+                         port-num)
+                        ;; Special hack for Centaur: fall back to FVQ_PORT if
+                        ;; it is defined.
+                        ((mv ? port state) (getenv$ "FVQ_PORT" state))
+                        (port-num (str::strval port))
+                        ((when port-num)
+                         port-num))
+                     ;; Else, just use the default port
+                     9000)))
+
+         ;; For complicated cluster setups, you might want to fudge the host in
+         ;; the usage message and in maybe-launch-browser.
+         (host (b* (((mv ? host state) (getenv$ "SIDEKICK_HOST" state))
+                    ((when (and (stringp host)
+                                (not (equal host ""))))
+                     host))
+                 "localhost"))
          (root
           ;; Note: apparently this has to include the trailing slash!
           (str::cat *sidekick-dir* "/public/"))
@@ -54,12 +71,12 @@
     (hunchentoot:start server)
     (format t "; ----------------------------------------------------------------~%")
     (format t ";~%")
-    (format t ";           Sidekick started, see http://localhost:~D/~%" port)
+    (format t ";           Sidekick started, see http://~a:~D/~%" host port)
     (format t ";~%")
     (format t "; ----------------------------------------------------------------~%~%")
     (add-handlers)
     (setq *server* server)
-    (maybe-launch-browser port))
+    (maybe-launch-browser host port))
   nil)
 
 (defun stop ()
@@ -112,7 +129,7 @@
           (world (w state))
           ((when (and *pbt-cached-result* (eq world *pbt-cached-world*)))
            *pbt-cached-result*)
-          ((mv er val ?state) (acl2::json-pbt 0))
+          ((mv er val ?state) (json-pbt 0))
           (ans (bridge::json-encode
                 (list (cons :error er)
                       (cons :val val)))))
@@ -127,7 +144,7 @@
      (setf (hunchentoot:content-type*) "application/json")
      (b* ((state acl2::*the-live-state*)
           (world (w state))
-          ((mv er val ?state) (acl2::json-pbt :x)))
+          ((mv er val ?state) (json-pbt :x)))
        (bridge::json-encode
         (list (cons :error er)
               (cons :val val)))))
@@ -140,7 +157,7 @@
                    0))
           (state acl2::*the-live-state*)
           (fullp (equal full "1"))
-          ((mv er val ?state) (acl2::json-pcb! num fullp)))
+          ((mv er val ?state) (json-pcb! num fullp)))
        (bridge::json-encode
         (list (cons :error er)
               (cons :val val)))))
@@ -159,7 +176,7 @@
                    (and (equal num ":x") :x)
                    0))
           (state acl2::*the-live-state*)
-          ((mv er val ?state) (acl2::json-pc num)))
+          ((mv er val ?state) (json-pc num)))
        (bridge::json-encode
         (list (cons :error er)
               (cons :val val)))))
@@ -169,6 +186,11 @@
      (with-sidekick-bindings
        (b* (((mv ans state) (sk-get-disassembly name state)))
          ans)))
+
+  (hunchentoot:define-easy-handler (lint-handler :uri "/lint") ()
+     (setf (hunchentoot:content-type*) "application/json")
+     (b* (((mv ans state) (json-lint state)))
+       ans))
 
   (hunchentoot:define-easy-handler (props-handler :uri "/props") (name)
      (setf (hunchentoot:content-type*) "application/json")
