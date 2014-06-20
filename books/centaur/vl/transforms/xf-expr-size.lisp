@@ -24,11 +24,20 @@
 (include-book "../mlib/context")
 (include-book "../mlib/welltyped")
 (include-book "../mlib/lvalues")
+(include-book "centaur/misc/arith-equivs" :dir :system)
+(local (in-theory (enable acl2::arith-equiv-forwarding lnfix)))
 (local (include-book "clause-processors/autohide" :dir :system))
 (local (include-book "../util/arithmetic"))
 (local (in-theory (enable tag-reasoning)))
 (local (std::add-default-post-define-hook :fix))
 
+(local (in-theory (disable member-equal-when-member-equal-of-cdr-under-iff
+                           acl2::consp-under-iff-when-true-listp)))
+
+(local (in-theory (disable acl2::hons-assoc-equal-of-cons
+                           acl2::member-of-cons
+                           integerp-when-natp
+                           not nfix acl2::zp-open)))
 
 (local (defun make-cases (ops)
          (if (atom ops)
@@ -41,7 +50,7 @@
            (or . ,(make-cases (strip-cars *vl-ops-table*)))
            :rule-classes ((:forward-chaining
                            :trigger-terms ((vl-nonatom->op x))))
-           :enable vl-op-p
+           :enable (vl-op-p acl2::hons-assoc-equal-of-cons)
            :disable vl-op-p-of-vl-nonatom->op
            :use ((:instance vl-op-p-of-vl-nonatom->op)))))
 
@@ -686,7 +695,8 @@ only meant as a heuristic for generating more useful warnings.</p>"
     :rule-classes :type-prescription)
 
   (verify-guards vl-expr-interesting-size-atoms
-    :hints(("Goal" :in-theory (enable vl-nonatom->op-forward))))
+    :hints(("Goal" :in-theory (enable vl-nonatom->op-forward
+                                      acl2::member-of-cons))))
 
   (deffixequiv-mutual vl-interesting-size-atoms))
 
@@ -847,7 +857,9 @@ expression.</p>
 SystemVerilog-2012 Table 11-21. See @(see expression-sizing).</p>"
 
   :prepwork ((local (in-theory (enable maybe-natp))))
-  :guard-hints (("Goal" :in-theory (enable vl-op-p vl-op-arity)))
+  :guard-hints (("Goal" :in-theory (e/d (vl-op-p vl-op-arity
+                                                 acl2::hons-assoc-equal-of-cons)
+                                        (nfix max (tau-system)))))
 
   (b* ((op      (vl-op-fix op))
        (context (vl-expr-fix context))
@@ -1562,9 +1574,12 @@ produce unsigned values.</li>
       (mv warnings (cons car-type cdr-type))))
 
   ///
-  (local (in-theory (enable member-equal-when-member-equal-of-cdr-under-iff
+  (local (in-theory (disable member-equal-when-member-equal-of-cdr-under-iff
                             vl-warninglist-p-when-subsetp-equal
-                            set::double-containment)))
+                            set::double-containment
+                            arg1-exists-by-arity
+                            default-car
+                            default-cdr)))
 
   (defrule vl-exprlist-typedecide-aux-when-atom
     (implies (atom x)
@@ -1594,7 +1609,8 @@ produce unsigned values.</li>
     :skip-others t)
 
   (verify-guards vl-expr-typedecide-aux
-    :hints(("Goal" :in-theory (enable vl-nonatom->op-forward))))
+    :hints(("Goal" :in-theory (enable vl-nonatom->op-forward
+                                      acl2::member-of-cons))))
 
   (local
    (defthm-vl-expr-typedecide-aux-flag
@@ -1827,7 +1843,7 @@ unchanged.</p>"
                     (force (vl-expr->finalwidth x))
                     (force (equal (vl-expr->finaltype x) :vl-unsigned)))
                (vl-expr-welltyped-p (mv-nth 2 ret))))
-    :enable (vl-expr-welltyped-p vl-atom-welltyped-p)))
+    :enable (vl-expr-welltyped-p vl-atom-welltyped-p acl2::member-of-cons)))
 
 
 
@@ -2789,12 +2805,22 @@ minor warning for assignments where the rhs is a constant.</p>"
      (warnings vl-warninglist-p                      "Ordinary @(see warnings) accumulator."))
     :returns
     (mv (successp booleanp :rule-classes :type-prescription
-                  "Indicates whether all sizing was successful.")
+                  "Indicates whether all sizing was successful."
+                  :hints ((and stable-under-simplificationp
+                               '(:expand ((:free (ialist lhs-size elem warnings)
+                                           (vl-expr-size lhs-size x mod ialist elem warnings))))))
+                  )
         (warnings vl-warninglist-p
-                  "Possibly extended with fatal or non-fatal warnings.")
+                  "Possibly extended with fatal or non-fatal warnings."
+                  :hints ((and stable-under-simplificationp
+                               '(:expand ((:free (ialist lhs-size elem warnings)
+                                           (vl-expr-size lhs-size x mod ialist elem warnings)))))))
         (new-x    vl-expr-p
                   "Updated version of @('x') where all the sizes/types have
-                  been computed and installed."))
+                  been computed and installed."
+                  :hints ((and stable-under-simplificationp
+                               '(:expand ((:free (ialist lhs-size elem warnings)
+                                           (vl-expr-size lhs-size x mod ialist elem warnings))))))))
     :long "<p>This function implements the two-phase algorithm described in
            @(see expression-sizing).  That is, it first determines the maximum
            size of any operand in @('x') and the desired type of @('x'), using
@@ -3471,10 +3497,9 @@ minor warning for assignments where the rhs is a constant.</p>"
                         vl-exprlist-size
                         vl-expr-expandsizes
                         vl-exprlist-expandsizes)
-                       (my-disables))))
+                       (my-disables)
+                       (lnfix))))
 
-(include-book "centaur/misc/arith-equivs" :dir :system)
-(in-theory (enable acl2::arith-equiv-forwarding lnfix))
 
 (deffixequiv vl-expr-size
   :hints(("Goal"
@@ -3630,8 +3655,7 @@ minor warning for assignments where the rhs is a constant.</p>"
 
 (defsection vl-expr-welltyped-p-of-vl-expr-size
 
-   (local (in-theory (e/d (my-disables
-                           all-equalp-when-atom
+   (local (in-theory (e/d (all-equalp-when-atom
                            all-equalp-of-cons)
                           (all-equalp
                            MEMBER-EQUAL-WHEN-MEMBER-EQUAL-OF-CDR-UNDER-IFF
@@ -3642,6 +3666,7 @@ minor warning for assignments where the rhs is a constant.</p>"
                            VL-NONATOM->OP-WHEN-HIDINDEX-RESOLVED-P
                            set::double-containment
                            acl2::subsetp-member
+                           acl2::zp-open
                            ))))
 
    (local (defthm posp-of-nfix
@@ -3711,7 +3736,10 @@ minor warning for assignments where the rhs is a constant.</p>"
        :flag vl-exprlist-expandsizes)
 
      :hints(("Goal"
-             :in-theory (enable vl-nonatom->op-forward)
+             :in-theory (enable vl-nonatom->op-forward
+                                acl2::member-of-cons
+                                ARG1-EXISTS-BY-ARITY
+                                acl2::member-when-atom)
              :do-not '(generalize fertilize)
              :expand ((:free (lhs-size ialist)
                        (vl-expr-size lhs-size x mod ialist elem warnings))

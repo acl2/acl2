@@ -217,8 +217,8 @@
 
           (defthm ,(mksym base-type '-when- name)
             (implies (,name ,x)
-                     (equal (,base-type ,x)
-                            (if (double-rewrite ,x) t nil))))
+                     (iff (,base-type ,x)
+                          (double-rewrite ,x))))
 
           (value-triple (cw "~|Defoption: introducing fixing function ~x0.~%"
                             ',fix))
