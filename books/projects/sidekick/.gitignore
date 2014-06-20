@@ -4,3 +4,7 @@
 *.port
 *.lx64fsl
 Makefile-tmp
+Makefile-deps
+Makefile-cache
+sidekick
+sidekick.ccl

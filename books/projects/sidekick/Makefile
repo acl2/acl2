@@ -47,7 +47,7 @@ all: top.cert sidekick
 
 clean:
 	clean.pl
-	rm -f Makefile-deps Makefile-cache
+	rm -f Makefile-deps Makefile-cache Makefile-tmp
 	rm -f sidekick sidekick.ccl
 
 sidekick: top.cert make-sidekick.lsp
