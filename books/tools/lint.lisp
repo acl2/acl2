@@ -174,9 +174,6 @@
    (find-redundancies-top (get-enabled-rewrite-rules state))
    state))
 
-(defmacro lint ()
-  `(lint-fn state))
-
 
 ;; there could probably be some kind of quick filtering based on leading function symbol to
 ;; narrow the search down...
@@ -189,6 +186,6 @@
  "tools/lint" :dir :system)
 (include-book
  "centaur/bitops/top" :dir :system)
-(lint)
+(lint-fn state)
 
 ||#
