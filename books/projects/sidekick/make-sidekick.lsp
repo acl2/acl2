@@ -20,6 +20,11 @@
 
 (in-package "ACL2")
 (include-book "top")
+
+(defun sidekick-startup-fn ()
+  (declare (xargs :mode :program))
+  (er hard? 'sidekick-startup-fn "Under the hood definition not installed?"))
+
 (reset-prehistory nil)
 
 (sidekick::stop)
@@ -27,13 +32,9 @@
 
 :q
 
-
 (setq *print-startup-banner* nil)
 
-
-;; HORRIBLE HACK -- fix this when Matt adds :initial-command stuff to save-exec.
-;; For now just redefine maybe-load-acl2-init because it's easy.
-(defun maybe-load-acl2-init ()
+(defun sidekick-startup-fn ()
   ;; Blah, recreate some output that print-startup-banner suppresses.  I really
   ;; just want to suppress the ugly modification notice.
   #+ccl
@@ -56,6 +57,7 @@
   (format t "~%")
   (sidekick::start))
 
-(save-exec "sidekick" nil)
+(save-exec "sidekick" nil
+           :init-forms '((sidekick-startup-fn)))
 
 
