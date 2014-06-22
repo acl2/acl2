@@ -55,7 +55,10 @@ supplement the usual ACL2 read-eval-print loop with graphical capabilities.</p>
 </ol>")
 
 (make-event
- (b* (((mv & no-autoload state) (getenv$ "SIDEKICK_NO_AUTOLOAD" state))
+ (b* (((when (f-get-global 'acl2::certify-book-info state))
+       ;; Certifying the top book, don't start sidekick.
+       (value '(value-triple :invisible)))
+      ((mv & no-autoload state) (getenv$ "SIDEKICK_NO_AUTOLOAD" state))
       ((when (and (stringp no-autoload)
                   (not (equal no-autoload ""))))
        (value '(value-triple :invisible))))
