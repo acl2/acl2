@@ -51,6 +51,6 @@ clean:
 	rm -f sidekick sidekick.ccl
 
 sidekick: top.cert make-sidekick.lsp
-	$(STARTJOB) -c "ACL2_CUSTOMIZATION=NONE $(ACL2) < make-sidekick.lsp &> sidekick.out"
+	$(STARTJOB) -c "SIDEKICK_NO_AUTOLOAD=1 ACL2_CUSTOMIZATION=NONE $(ACL2) < make-sidekick.lsp &> sidekick.out"
 
 

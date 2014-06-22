@@ -55,6 +55,10 @@ supplement the usual ACL2 read-eval-print loop with graphical capabilities.</p>
 </ol>")
 
 (make-event
- (progn$ (start)
-         (value '(value-triple :invisible)))
+ (b* (((mv & no-autoload state) (getenv$ "SIDEKICK_NO_AUTOLOAD" state))
+      ((when (and (stringp no-autoload)
+                  (not (equal no-autoload ""))))
+       (value '(value-triple :invisible))))
+   (start)
+   (value '(value-triple :invisible)))
  :check-expansion t)
