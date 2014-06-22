@@ -8192,18 +8192,20 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
                      *the-live-state*
                      nil)))
             (t (setq *lp-ever-entered-p* t)
-               (cond (*lp-init-forms*
-                      (let ((standard-oi (append *lp-init-forms*
-                                                 *standard-oi*)))
-                        (setq *lp-init-forms* nil)
-                        (ld-fn (put-assoc-eq 'standard-oi
-                                             standard-oi
-                                             (f-get-ld-specials *the-live-state*))
-                               *the-live-state*
-                               nil)))
-                     (t (ld-fn (f-get-ld-specials *the-live-state*)
-                               *the-live-state*
-                               nil)))
+               (f-put-global 'standard-oi *standard-oi* *the-live-state*)
+               (cond
+                (*lp-init-forms*
+                 (let ((standard-oi (append *lp-init-forms*
+                                            *standard-oi*)))
+                   (setq *lp-init-forms* nil)
+                   (ld-fn (put-assoc-eq 'standard-oi
+                                        standard-oi
+                                        (f-get-ld-specials *the-live-state*))
+                          *the-live-state*
+                          nil)))
+                (t (ld-fn (f-get-ld-specials *the-live-state*)
+                          *the-live-state*
+                          nil)))
                (fms "Exiting the ACL2 read-eval-print loop.  To re-enter, ~
                      execute (LP)."
                     nil *standard-co* *the-live-state* nil))))
