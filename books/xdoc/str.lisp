@@ -36,6 +36,7 @@
 ; cert_param (acl2x)
 ; cert_param (acl2xskip)
 
+; (depends-rec "std/strings/cat" :dir :system)
 (acl2::acl2x-replace (include-book
                       "std/strings/cat" :dir :system)
                      (value-triple :invisible)
@@ -43,6 +44,7 @@
                      (include-book
                       "std/strings/cat" :dir :system))
 
+; (depends-rec "std/strings/case-conversion" :dir :system)
 (acl2::acl2x-replace (include-book
                       "std/strings/case-conversion" :dir :system)
                      (value-triple :invisible)
@@ -50,6 +52,7 @@
                      (include-book
                       "std/strings/case-conversion" :dir :system))
 
+; (depends-rec "std/strings/strsubst" :dir :system)
 (acl2::acl2x-replace (include-book
                       "std/strings/strsubst" :dir :system)
                      (value-triple :invisible)
@@ -57,6 +60,7 @@
                      (include-book
                       "std/strings/strsubst" :dir :system))
 
+; (depends-rec "std/strings/decimal" :dir :system)
 (acl2::acl2x-replace (include-book
                       "std/strings/decimal" :dir :system)
                      (value-triple :invisible)
