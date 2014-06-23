@@ -55,11 +55,21 @@
 
 (test-fail "3.5")
 (test-fail "'#.(list 1 2 3)")
+
+#-sbcl
+;; Temporarily disabling this on SBCL due to https://bugs.launchpad.net/sbcl/+bug/1333327
 (test-fail "#\wtf ")
+
+#-sbcl
+;; Temporarily disabling this on SBCL due to https://bugs.launchpad.net/sbcl/+bug/1333327
 (test-fail "#\Return ")
+
+
+#+hons
 ; Matt K.: Commenting out the following, which apparently loops forever when
 ; using ACL2 rather than ACL2(h).
-; (test-fail "#1=(a . #1#)")
+; Jared -- changing it to only be tested on #+hons.
+(test-fail "#1=(a . #1#)")
 
 (test-ok "a" (acl2::a))
 (test-ok "acl2::a" (acl2::a))
