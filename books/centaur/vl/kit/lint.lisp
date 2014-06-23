@@ -63,7 +63,7 @@
 (include-book "../transforms/xf-selresolve")
 (include-book "../transforms/xf-sizing")
 (include-book "../transforms/xf-unparameterize")
-(include-book "../transforms/xf-unused-reg")
+(include-book "../transforms/xf-unused-vars")
 
 (include-book "../../misc/sneaky-load")
 
@@ -474,7 +474,7 @@ shown.</p>"
        (design (cwtime (vl-design-check-namespace design)))
 
        (- (cw "~%vl-lint: processing arguments, parameters...~%"))
-       (design (cwtime (vl-design-elim-unused-regs design)))
+       (design (cwtime (vl-design-elim-unused-vars design)))
        (design (cwtime (vl-design-argresolve design)))
        (design (cwtime (vl-design-dupeinst-check design)))
 
@@ -669,7 +669,7 @@ shown.</p>"
         :vl-warn-duplicates
         :vl-bad-instance
         :vl-unresolved-hid
-        :vl-warn-unused-reg
+        :vl-warn-unused-var
         :vl-warn-blank
         :vl-undefined-names
         :vl-port-mismatch))

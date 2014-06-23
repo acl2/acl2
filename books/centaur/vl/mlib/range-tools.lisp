@@ -115,27 +115,30 @@ handle both cases.</p>"
                    :lsb (vl-make-index 0))))
 
 
+;; BOZO horrible hack.  For now, we'll make find-net/reg-range only succeed for
+;; regs, not for other kinds of variables.  Eventually we will want to extend
+;; this code to deal with other kinds of variables, but for now, e.g., we don't
+;; want any confusion w.r.t. the range of integers, reals, etc.
 
 (define vl-slow-find-net/reg-range ((name stringp)
                                     (mod vl-module-p))
-  :short "Look up the range for a wire or register declaration."
+  :short "Look up the range for a wire or variable declaration."
   :returns (mv (successp    booleanp :rule-classes :type-prescription
-                            "True when @('name') is the name of a wire or register.")
+                            "True when @('name') is the name of a wire or variable.")
                (maybe-range vl-maybe-range-p
                             "The range of the wire, on success."))
   :hooks ((:fix :args ((mod vl-module-p))))
   (b* ((find (or (vl-find-netdecl name (vl-module->netdecls mod))
-                 (vl-find-regdecl name (vl-module->regdecls mod))))
+                 (vl-find-vardecl name (vl-module->vardecls mod))))
        ((when (not find))
         (mv nil nil))
        (tag (tag find))
-       ((when (and (not (eq tag :vl-netdecl))
-                   (not (eq tag :vl-regdecl))))
-        (mv nil nil))
-       (range (if (eq tag :vl-netdecl)
-                  (vl-netdecl->range find)
-                (vl-regdecl->range find))))
-      (mv t range))
+       ((when (eq tag :vl-netdecl))
+        (mv t (vl-netdecl->range find)))
+       ((when (and (eq tag :vl-vardecl)
+                   (eq (vl-vardecl->type find) :vl-reg)))
+        (mv t (vl-vardecl->range find))))
+    (mv nil nil))
   ///
   (defthm vl-range-p-of-vl-slow-find-net/reg-range
     (equal (vl-range-p (mv-nth 1 (vl-slow-find-net/reg-range name mod)))
@@ -157,14 +160,12 @@ handle both cases.</p>"
             ((when (not find))
              (mv nil nil))
             (tag (tag find))
-            ((when (and (not (eq tag :vl-netdecl))
-                        (not (eq tag :vl-regdecl))))
-             (mv nil nil))
-            (range (if (eq tag :vl-netdecl)
-                       (vl-netdecl->range find)
-                     (vl-regdecl->range find))))
-         (mv t range))))
-
+            ((when (eq tag :vl-netdecl))
+             (mv t (vl-netdecl->range find)))
+            ((when (and (eq tag :vl-vardecl)
+                        (eq (vl-vardecl->type find) :vl-reg)))
+             (mv t (vl-vardecl->range find))))
+         (mv nil nil))))
 
 (define vl-range-size ((x vl-range-p))
   :guard (vl-range-resolved-p x)

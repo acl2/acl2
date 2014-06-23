@@ -44,7 +44,6 @@ initially kept in a big, mixed list.</p>"
    vl-assign
    vl-netdecl
    vl-vardecl
-   vl-regdecl
    vl-eventdecl
    vl-paramdecl
    vl-fundecl
@@ -79,10 +78,6 @@ initially kept in a big, mixed list.</p>"
 
    (defthm vl-modelementlist-p-when-vl-vardecllist-p
      (implies (vl-vardecllist-p x)
-              (vl-modelementlist-p x)))
-
-   (defthm vl-modelementlist-p-when-vl-regdecllist-p
-     (implies (vl-regdecllist-p x)
               (vl-modelementlist-p x)))
 
    (defthm vl-modelementlist-p-when-vl-eventdecllist-p
@@ -129,7 +124,6 @@ initially kept in a big, mixed list.</p>"
       (:vl-assign    (vl-assign->loc x))
       (:vl-netdecl   (vl-netdecl->loc x))
       (:vl-vardecl   (vl-vardecl->loc x))
-      (:vl-regdecl   (vl-regdecl->loc x))
       (:vl-eventdecl (vl-eventdecl->loc x))
       (:vl-paramdecl (vl-paramdecl->loc x))
       (:vl-fundecl   (vl-fundecl->loc x))
@@ -148,7 +142,6 @@ initially kept in a big, mixed list.</p>"
    (assigns vl-assignlist-p)
    (netdecls vl-netdecllist-p)
    (vardecls vl-vardecllist-p)
-   (regdecls vl-regdecllist-p)
    (eventdecls vl-eventdecllist-p)
    (paramdecls vl-paramdecllist-p)
    (fundecls vl-fundecllist-p)
@@ -162,7 +155,6 @@ initially kept in a big, mixed list.</p>"
                (assigns vl-assignlist-p)
                (netdecls vl-netdecllist-p)
                (vardecls vl-vardecllist-p)
-               (regdecls vl-regdecllist-p)
                (eventdecls vl-eventdecllist-p)
                (paramdecls vl-paramdecllist-p)
                (fundecls vl-fundecllist-p)
@@ -177,7 +169,6 @@ initially kept in a big, mixed list.</p>"
             (rev (vl-assignlist-fix assigns))
             (rev (vl-netdecllist-fix netdecls))
             (rev (vl-vardecllist-fix vardecls))
-            (rev (vl-regdecllist-fix regdecls))
             (rev (vl-eventdecllist-fix eventdecls))
             (rev (vl-paramdecllist-fix paramdecls))
             (rev (vl-fundecllist-fix fundecls))
@@ -194,7 +185,6 @@ initially kept in a big, mixed list.</p>"
                          (if (eq tag :vl-assign)    (cons x1 assigns)    assigns)
                          (if (eq tag :vl-netdecl)   (cons x1 netdecls)   netdecls)
                          (if (eq tag :vl-vardecl)   (cons x1 vardecls)   vardecls)
-                         (if (eq tag :vl-regdecl)   (cons x1 regdecls)   regdecls)
                          (if (eq tag :vl-eventdecl) (cons x1 eventdecls) eventdecls)
                          (if (eq tag :vl-paramdecl) (cons x1 paramdecls) paramdecls)
                          (if (eq tag :vl-fundecl)   (cons x1 fundecls)   fundecls)
@@ -222,7 +212,6 @@ initially kept in a big, mixed list.</p>"
                       vl-modelement-p-when-member-equal-of-vl-modelementlist-p
                       vl-portlist-p-when-subsetp-equal
                       vl-initiallist-p-when-subsetp-equal
-                      vl-regdecllist-p-when-subsetp-equal
                       vl-assignlist-p-when-subsetp-equal
                       vl-alwayslist-p-when-subsetp-equal
                       vl-vardecllist-p-when-subsetp-equal
@@ -237,7 +226,6 @@ initially kept in a big, mixed list.</p>"
                       vl-modelementlist-p-when-vl-portlist-p
                       vl-modelementlist-p-when-vl-initiallist-p
                       vl-modelementlist-p-when-vl-vardecllist-p
-                      vl-modelementlist-p-when-vl-regdecllist-p
                       vl-modelementlist-p-when-vl-portdecllist-p
                       vl-modelementlist-p-when-vl-netdecllist-p
                       vl-modelementlist-p-when-vl-modinstlist-p

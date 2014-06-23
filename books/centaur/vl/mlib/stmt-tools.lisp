@@ -578,26 +578,24 @@ process them.</p>"
 (define vl-filter-blockitems ((x vl-blockitemlist-p))
   :parents (vl-blockitemlist-p)
   :short "Split up blockitems into lists by their type."
-  :returns (mv (regdecls vl-regdecllist-p)
-               (vardecls vl-vardecllist-p)
+  :returns (mv (vardecls vl-vardecllist-p)
                (eventdecls vl-eventdecllist-p)
                (paramdecls vl-paramdecllist-p))
   (b* (((when (atom x))
-        (mv nil nil nil nil))
-       ((mv regdecls vardecls eventdecls paramdecls)
+        (mv nil nil nil))
+       ((mv vardecls eventdecls paramdecls)
         (vl-filter-blockitems (cdr x)))
        (x1 (vl-blockitem-fix (car x))))
     (case (tag x1)
-      (:vl-regdecl   (mv (cons x1 regdecls) vardecls eventdecls paramdecls))
-      (:vl-vardecl   (mv regdecls (cons x1 vardecls) eventdecls paramdecls))
-      (:vl-eventdecl (mv regdecls vardecls (cons x1 eventdecls) paramdecls))
-      (:vl-paramdecl (mv regdecls vardecls eventdecls (cons x1 paramdecls)))
+      (:vl-vardecl   (mv (cons x1 vardecls) eventdecls paramdecls))
+      (:vl-eventdecl (mv vardecls (cons x1 eventdecls) paramdecls))
+      (:vl-paramdecl (mv vardecls eventdecls (cons x1 paramdecls)))
       (otherwise
        (progn$ (impossible)
-               (mv regdecls vardecls eventdecls paramdecls)))))
+               (mv vardecls eventdecls paramdecls)))))
   ///
   (defmvtypes vl-filter-blockitems
-    (true-listp true-listp true-listp true-listp)))
+    (true-listp true-listp true-listp)))
 
 
 (define vl-simpledelaycontrol-p ((x vl-delaycontrol-p))

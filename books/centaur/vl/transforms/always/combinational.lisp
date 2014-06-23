@@ -513,7 +513,7 @@ this.  After all, synthesis tools might not do hard work here, either.</p>")
   :short "Check whether an always block looks like a combinational block that
           we can support."
   ((always   vl-always-p)
-   (regs     vl-regdecllist-p "All the registers in the module.")
+   (vars     vl-vardecllist-p "All the variables in the module.")
    (scary    string-listp     "Names of all scary registers.")
    (warnings vl-warninglist-p "An ordinary @(see warnings) accumulator."))
   :returns
@@ -541,8 +541,7 @@ this.  After all, synthesis tools might not do hard work here, either.</p>")
         ;; Not a simple enough combinational statement for us to target.
         (mv nil (ok)))
 
-       (lvalues (mergesort
-                 (vl-idexprlist->names (vl-stmt-cblock-lvalexprs body))))
+       (lvalues (mergesort (vl-idexprlist->names (vl-stmt-cblock-lvalexprs body))))
        ((unless (vl-cblock-pathcheck lvalues body))
         ;; Some reg doesn't get updated in some path, not a combinational
         ;; block, maybe a latch or something.
@@ -567,18 +566,18 @@ this.  After all, synthesis tools might not do hard work here, either.</p>")
                              very scary: ~&1."
                        :args (list always scary-writes))))
 
-       (warn (vl-always-check-regs lvalues regs always))
+       (warn (vl-always-check-regs lvalues vars always))
        ((when warn)
-        ;; Can't convert the block, it refers to some weird non-register.
+        ;; Can't convert the block, it refers to some register that has a
+        ;; problem
         (mv nil (cons warn warnings)))
 
-       (non-regs (difference lvalues
-                             (mergesort (vl-regdecllist->names regs))))
-       ((when non-regs)
+       (non-vars (difference lvalues (mergesort (vl-vardecllist->names vars))))
+       ((when non-vars)
         (mv nil (fatal :type :vl-bad-always
                        :msg "~a0: can't synthesize this always block because ~
-                             it writes to non-regs: ~&1."
-                       :args (list always non-regs)))))
+                             it writes to non-variables: ~&1."
+                       :args (list always non-vars)))))
 
     ;; Else, all sanity checks pass, it seems okay to convert this block.
     (mv t warnings)))
@@ -586,7 +585,7 @@ this.  After all, synthesis tools might not do hard work here, either.</p>")
 (define vl-filter-cblocks
   :short "Separate always blocks into supported combinational blocks and others."
   ((x        vl-alwayslist-p)
-   (regs     vl-regdecllist-p "All the registers in the module.")
+   (vars     vl-vardecllist-p "All the variables in the module.")
    (scary    string-listp     "Names of all scary registers.")
    (warnings vl-warninglist-p "An ordinary @(see warnings) accumulator."))
   :returns
@@ -595,9 +594,9 @@ this.  After all, synthesis tools might not do hard work here, either.</p>")
       (warnings vl-warninglist-p))
   (b* (((when (atom x))
         (mv nil nil (ok)))
-       ((mv okp warnings) (vl-always-check-cblock (car x) regs scary warnings))
+       ((mv okp warnings) (vl-always-check-cblock (car x) vars scary warnings))
        ((mv cblocks others warnings)
-        (vl-filter-cblocks (cdr x) regs scary warnings)))
+        (vl-filter-cblocks (cdr x) vars scary warnings)))
     (if okp
         (mv (cons (car x) cblocks) others warnings)
       (mv cblocks (cons (car x) others) warnings))))
@@ -749,44 +748,44 @@ are well-typed and have compatible widths.</p>")
   ///
   (verify-guards vl-stmt-cblock-varexpr))
 
-(define vl-cblock-make-assign ((var   stringp)
-                               (regs  vl-regdecllist-p)
+(define vl-cblock-make-assign ((name   stringp)
+                               (vars  vl-vardecllist-p)
                                (body  vl-stmt-p)
                                (ctx   vl-always-p))
   :returns (assigns vl-assignlist-p :hyp :fguard)
   :guard (vl-stmt-cblock-p body)
-  (b* ((expr (vl-stmt-cblock-varexpr var body nil))
+  (b* ((expr (vl-stmt-cblock-varexpr name body nil))
        ((unless expr)
-        (raise "Failed to construct var expr for ~x0??" var))
-       (decl (vl-find-regdecl var regs))
+        (raise "Failed to construct var expr for ~x0??" name))
+       (decl (vl-find-vardecl name vars))
        ((unless decl)
-        (raise "Failed to find reg decl for ~x0??" var))
-       ((vl-regdecl decl) decl)
+        (raise "Failed to find reg decl for ~x0??" name))
+       ((vl-vardecl decl) decl)
        ((unless (and (not decl.arrdims)
                      (vl-maybe-range-resolved-p decl.range)))
-        (raise "Reg decl too hard for ~x0??" var))
+        (raise "Variable decl too hard for ~x0??" name))
        (size (vl-maybe-range-size decl.range))
        (type (if decl.signedp :vl-signed :vl-unsigned))
-       (lhs  (vl-idexpr var size type))
+       (lhs  (vl-idexpr name size type))
        (assign (make-vl-assign :lvalue lhs
                                :expr expr
                                :atts (acons "VL_COMBINATIONAL_BLOCK" nil nil)
                                :loc (vl-always->loc ctx))))
     (list assign)))
 
-(define vl-cblock-make-assigns ((vars string-listp)
-                                (regs vl-regdecllist-p)
-                                (body vl-stmt-p)
-                                (ctx  vl-always-p))
+(define vl-cblock-make-assigns ((names string-listp)
+                                (vars  vl-vardecllist-p)
+                                (body  vl-stmt-p)
+                                (ctx   vl-always-p))
   :returns (assigns vl-assignlist-p :hyp :fguard)
   :guard (vl-stmt-cblock-p body)
-  (if (atom vars)
+  (if (atom names)
       nil
-    (append (vl-cblock-make-assign (car vars) regs body ctx)
-            (vl-cblock-make-assigns (cdr vars) regs body ctx))))
+    (append (vl-cblock-make-assign (car names) vars body ctx)
+            (vl-cblock-make-assigns (cdr names) vars body ctx))))
 
 (define vl-cblock-synth ((x     vl-always-p)
-                         (regs  vl-regdecllist-p)
+                         (vars  vl-vardecllist-p)
                          (delta vl-delta-p))
   :short "Should only be called on good cblocks."
   :returns (mv (delta   vl-delta-p :hyp :fguard)
@@ -818,21 +817,21 @@ are well-typed and have compatible widths.</p>")
        (lvalues (mergesort
                  (vl-idexprlist->names
                   (vl-stmt-cblock-lvalexprs body))))
-       (assigns (vl-cblock-make-assigns lvalues regs body x))
+       (assigns (vl-cblock-make-assigns lvalues vars body x))
        (delta (change-vl-delta delta
                                :assigns (append assigns
                                                 (vl-delta->assigns delta)))))
     (mv delta lvalues)))
 
 (define vl-cblocks-synth ((x     vl-alwayslist-p)
-                          (regs  vl-regdecllist-p)
+                          (vars  vl-vardecllist-p)
                           (delta vl-delta-p))
   :returns (mv (delta vl-delta-p :hyp :fguard)
                (cvtregs string-listp))
   (b* (((when (atom x))
         (mv delta nil))
-       ((mv delta cvtregs1) (vl-cblock-synth (car x) regs delta))
-       ((mv delta cvtregs2) (vl-cblocks-synth (cdr x) regs delta)))
+       ((mv delta cvtregs1) (vl-cblock-synth (car x) vars delta))
+       ((mv delta cvtregs2) (vl-cblocks-synth (cdr x) vars delta)))
     (mv delta (append cvtregs1 cvtregs2))))
 
 
@@ -857,7 +856,7 @@ are well-typed and have compatible widths.</p>")
        (warnings x.warnings)
        (scary (vl-always-scary-regs x.alwayses))
        ((mv cblocks ?others warnings)
-        (vl-filter-cblocks x.alwayses x.regdecls scary warnings))
+        (vl-filter-cblocks x.alwayses x.vardecls scary warnings))
        ((unless cblocks)
         ;; No supported combinational always blocks to convert
         (change-vl-module x :warnings warnings))
@@ -867,26 +866,26 @@ are well-typed and have compatible widths.</p>")
        (delta (change-vl-delta delta
                                :netdecls x.netdecls
                                :assigns x.assigns))
-       ((mv delta cvtregs) (vl-cblocks-synth cblocks x.regdecls delta))
+       ((mv delta cvtregs) (vl-cblocks-synth cblocks x.vardecls delta))
        ;; The delta may have assigns, netdecls, and warnings for us.
        ((vl-delta delta) delta)
 
        (non-regs (difference (mergesort cvtregs)
-                             (mergesort (vl-regdecllist->names x.regdecls))))
+                             (mergesort (vl-vardecllist->names x.vardecls))))
        ((when non-regs)
         ;; Should be impossible
         (raise "Trying to convert non-registers: ~x0.~%" non-regs)
         x)
 
-       ((mv regdecls-to-convert new-regdecls)
-        (vl-filter-regdecls cvtregs x.regdecls))
+       ((mv vardecls-to-convert new-vardecls)
+        (vl-filter-vardecls cvtregs x.vardecls))
 
-       (new-netdecls (append (vl-always-convert-regs regdecls-to-convert)
+       (new-netdecls (append (vl-always-convert-regs vardecls-to-convert)
                              delta.netdecls))
        (new-x (change-vl-module x
                                 :alwayses others
                                 :netdecls new-netdecls
-                                :regdecls new-regdecls
+                                :vardecls new-vardecls
                                 :assigns  delta.assigns
                                 :warnings delta.warnings)))
     new-x))
@@ -898,8 +897,7 @@ are well-typed and have compatible widths.</p>")
 
 (define vl-design-combinational-elim ((x vl-design-p))
   :returns (new-x vl-design-p)
-  (b* ((x (vl-design-fix x))
-       ((vl-design x) x)
+  (b* (((vl-design x) x)
        (new-mods (vl-modulelist-combinational-elim x.mods)))
     (change-vl-design x :mods new-mods)))
 

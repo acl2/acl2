@@ -459,9 +459,6 @@ details.</p>")
   :long "<p><b>Warning</b>: this function should typically only be called by
 the @(see expression-sizing) transform.</p>
 
-<p><b>Signature:</b> @(call vl-atom-selfsize) returns @('(mv warnings
-size)')</p>
-
 <p>We attempt to compute the \"self-determined size\" of the atom @('x').
 Another way to look at this function is as an extension of \"origwidth\" from
 constint/weirdint atoms to include identifiers.</p>
@@ -510,15 +507,10 @@ are not really supposed to have sizes.</p>"
                    :args (list elem name))
             nil))
 
-       ((when (mbe :logic (or (vl-netdecl-p item)
-                              (vl-regdecl-p item))
-                   :exec (or (eq (tag item) :vl-netdecl)
-                             (eq (tag item) :vl-regdecl))))
-        (b* (((mv arrdims range)
-              (if (eq (tag item) :vl-netdecl)
-                  (mv (vl-netdecl->arrdims item) (vl-netdecl->range item))
-                (mv (vl-regdecl->arrdims item) (vl-regdecl->range item))))
-             ((when (consp arrdims))
+       (tag (tag item))
+       ((when (eq tag :vl-netdecl))
+        (b* (((vl-netdecl item) item)
+             ((when (consp item.arrdims))
               ;; Shouldn't happen unless the module directly uses the name of
               ;; an array in an expression; if we've properly converted
               ;; bitselects to array-references, our expression-sizing code
@@ -527,30 +519,41 @@ are not really supposed to have sizes.</p>"
                          :msg "~a0: cannot size w1 because it is an array."
                          :args (list elem name))
                   nil))
-             ((unless (vl-maybe-range-resolved-p range))
+             ((unless (vl-maybe-range-resolved-p item.range))
               ;; Shouldn't happen unless we had a problem resolving ranges
               ;; earlier.
               (mv (fatal :type :vl-bad-range
                          :msg "~a0: cannot size ~w1 because its range is not ~
                                resolved: ~a2."
-                         :args (list elem name range))
+                         :args (list elem name item.range))
                   nil))
-             (size (vl-maybe-range-size range)))
+             (size (vl-maybe-range-size item.range)))
           (mv (ok) size)))
 
-       ((when (and (mbe :logic (vl-vardecl-p item)
-                        :exec (eq (tag item) :vl-vardecl))))
-        (b* (((unless (eq (vl-vardecl->type item) :vl-integer))
-              ;; We don't try to size real, realtime, or time variables.
-              (mv (ok) nil))
-             ((when (consp (vl-vardecl->arrdims item)))
-              ;; Analogous to the netdecl/regdecl array case.
+       ((when (eq tag :vl-vardecl))
+        (b* (((vl-vardecl item) item)
+             ((when (consp item.arrdims))
+              ;; Analogous to the netdecl array case.
               (mv (fatal :type :vl-bad-identifier
                          :msg "~a0: cannot size ~w1 because it is an array."
                          :args (list elem name))
-                  nil)))
-          ;; Regular integer variables just have size 32.
-          (mv (ok) 32))))
+                  nil))
+             ((when (eq item.type :vl-integer))
+              ;; Regular (non-array) integer variable: 32 bits.
+              (mv (ok) 32))
+             ((unless (eq item.type :vl-reg))
+              ;; We don't try to deal with real, realtime, or time variables
+              (mv (ok) nil))
+             ((unless (vl-maybe-range-resolved-p item.range))
+              ;; Shouldn't happen unless we had a problem resolving ranges
+              ;; earlier.
+              (mv (fatal :type :vl-bad-range
+                         :msg "~a0: cannot size ~w1 because its range is not ~
+                               resolved: ~a2."
+                         :args (list elem name item.range))
+                  nil))
+             (size (vl-maybe-range-size item.range)))
+          (mv (ok) size))))
 
     ;; It would be surprising if we get here -- this is an identifier that
     ;; refers to something in the module, maybe an event, parameter, or
@@ -1316,17 +1319,10 @@ producing some warnings.</p>"
                    :args (list elem name))
             nil))
 
-       ((when (mbe :logic (or (vl-netdecl-p item)
-                              (vl-regdecl-p item))
-                   :exec (or (eq (tag item) :vl-netdecl)
-                             (eq (tag item) :vl-regdecl))))
-        (b* (((mv arrdims signedp)
-              (if (eq (tag item) :vl-netdecl)
-                  (mv (vl-netdecl->arrdims item)
-                      (vl-netdecl->signedp item))
-                (mv (vl-regdecl->arrdims item)
-                    (vl-regdecl->signedp item))))
-             ((when (consp arrdims))
+       (tag (tag item))
+       ((when (eq tag :vl-netdecl))
+        (b* (((vl-netdecl item) item)
+             ((when (consp item.arrdims))
               ;; Shouldn't happen unless the module directly uses the name of
               ;; an array in an expression.
               (mv (fatal :type :vl-bad-identifier
@@ -1334,24 +1330,29 @@ producing some warnings.</p>"
                                it is an unindexed reference to an array."
                          :args (list elem name))
                   nil))
-             (type (if signedp :vl-signed :vl-unsigned)))
+             (type (if item.signedp :vl-signed :vl-unsigned)))
           (mv (ok) type)))
 
-       ((when (and (mbe :logic (vl-vardecl-p item)
-                        :exec (eq (tag item) :vl-vardecl))))
-        (b* (((unless (eq (vl-vardecl->type item) :vl-integer))
-              ;; We don't try to give types to real, realtime, or time
-              ;; variables.
-              (mv (ok) nil))
-             ((when (consp (vl-vardecl->arrdims item)))
-              ;; Analogous to the netdecl/regdecl array case.
+       ((when (eq tag :vl-vardecl))
+        (b* (((vl-vardecl item) item)
+             ((when (consp item.arrdims))
+              ;; Shouldn't happen unless the module directly uses the name of
+              ;; an array in an expression.
               (mv (fatal :type :vl-bad-identifier
                          :msg "~a0: cannot determine the type of ~w1 because ~
                                it is an unindexed reference to an array."
                          :args (list elem name))
-                  nil)))
-          ;; Regular integer variables are signed.
-          (mv (ok) :vl-signed))))
+                  nil))
+             ((when (eq item.type :vl-integer))
+              ;; Regular integer variables are signed.
+              (mv (ok) :vl-signed))
+             ((unless (eq item.type :vl-reg))
+              ;; Some other kind of variable like a real, realtime, or time;
+              ;; lets not try to give this a type... yet anyway.
+              (mv (ok) nil))
+             ;; For regs, signedness is governed by signedp.
+             (type (if item.signedp :vl-signed :vl-unsigned)))
+          (mv (ok) type))))
 
     ;; It would be surprising if we get here -- this is an identifier that
     ;; refers to something in the module, maybe an event, parameter, or

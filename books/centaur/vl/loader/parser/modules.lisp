@@ -22,7 +22,7 @@
 (include-book "statements")
 (include-book "ports")      ;; vl-portdecllist-p, vl-portlist-p
 (include-book "nets")       ;; vl-assignlist-p, vl-netdecllist-p
-(include-book "blockitems") ;; vl-vardecllist-p, vl-regdecllist-p, vl-eventdecllist-p, vl-paramdecllist-p
+(include-book "blockitems") ;; vl-vardecllist-p, vl-eventdecllist-p, vl-paramdecllist-p
 (include-book "insts")      ;; vl-modinstlist-p
 (include-book "gates")      ;; vl-gateinstlist-p
 (include-book "functions")  ;; vl-fundecllist-p
@@ -31,71 +31,50 @@
 (include-book "../../mlib/port-tools")  ;; vl-ports-from-portdecls
 (local (include-book "../../util/arithmetic"))
 
-
-
-(defsection vl-make-module-by-items
+(define vl-make-module-by-items
 
 ; Our various parsing functions for declarations, assignments, etc., return all
 ; kinds of different module items.  We initially get all of these different
 ; kinds of items as a big list.  Then, here, we sort it into buckets by type,
 ; and turn it into a module.
 
-  (defund vl-make-module-by-items (name params ports items atts minloc maxloc warnings)
-    (declare (xargs :guard (and (stringp name)
-                                ;; BOZO add something about params
-                                (vl-portlist-p ports)
-                                (vl-modelementlist-p items)
-                                (vl-atts-p atts)
-                                (vl-location-p minloc)
-                                (vl-location-p maxloc)
-                                (vl-warninglist-p warnings)
-                                )))
-    (b* (((mv items warnings) (vl-make-implicit-wires items warnings))
-         ((mv item-ports portdecls assigns netdecls vardecls regdecls eventdecls paramdecls
-              fundecls taskdecls modinsts gateinsts alwayses initials)
-          (vl-sort-modelements items nil nil nil nil nil nil nil nil nil nil nil nil nil nil)))
-
-      (or (not item-ports)
-          (er hard? 'vl-make-module-by-items "There shouldn't be any ports in the items."))
-
-      (make-vl-module :name       name
-                      :params     params
-                      :ports      ports
-                      :portdecls  portdecls
-                      :assigns    assigns
-                      :netdecls   netdecls
-                      :vardecls   vardecls
-                      :regdecls   regdecls
-                      :eventdecls eventdecls
-                      :paramdecls paramdecls
-                      :fundecls   fundecls
-                      :taskdecls  taskdecls
-                      :modinsts   modinsts
-                      :gateinsts  gateinsts
-                      :alwayses   alwayses
-                      :initials   initials
-                      :atts       atts
-                      :minloc     minloc
-                      :maxloc     maxloc
-                      :warnings   warnings
-                      :origname   name
-                      :comments   nil
-                      )))
-
-  (local (in-theory (enable vl-make-module-by-items)))
-
-  (defthm vl-module-p-of-vl-make-module-by-items
-    (implies (and (force (stringp name))
-                  ;; BOZO add something about params
-                  (force (vl-portlist-p ports))
-                  (force (vl-modelementlist-p items))
-                  (force (vl-atts-p atts))
-                  (force (vl-location-p minloc))
-                  (force (vl-location-p maxloc))
-                  (force (vl-warninglist-p warnings)))
-             (vl-module-p (vl-make-module-by-items name params ports items atts minloc maxloc warnings)))))
-
-
+  ((name     stringp)
+   (params   ) ;; BOZO guards and such
+   (ports    vl-portlist-p)
+   (items    vl-modelementlist-p)
+   (atts     vl-atts-p)
+   (minloc   vl-location-p)
+   (maxloc   vl-location-p)
+   (warnings vl-warninglist-p))
+  :returns (mod vl-module-p)
+  (b* (((mv items warnings) (vl-make-implicit-wires items warnings))
+       ((mv item-ports portdecls assigns netdecls vardecls eventdecls paramdecls
+            fundecls taskdecls modinsts gateinsts alwayses initials)
+        (vl-sort-modelements items nil nil nil nil nil nil nil nil nil nil nil nil nil)))
+    (or (not item-ports)
+        (raise "There shouldn't be any ports in the items."))
+    (make-vl-module :name       name
+                    :params     params
+                    :ports      ports
+                    :portdecls  portdecls
+                    :assigns    assigns
+                    :netdecls   netdecls
+                    :vardecls   vardecls
+                    :eventdecls eventdecls
+                    :paramdecls paramdecls
+                    :fundecls   fundecls
+                    :taskdecls  taskdecls
+                    :modinsts   modinsts
+                    :gateinsts  gateinsts
+                    :alwayses   alwayses
+                    :initials   initials
+                    :atts       atts
+                    :minloc     minloc
+                    :maxloc     maxloc
+                    :warnings   warnings
+                    :origname   name
+                    :comments   nil
+                    )))
 
 (defparser vl-parse-initial-construct (atts)
   :guard (vl-atts-p atts)
@@ -124,10 +103,6 @@
         (return (list (make-vl-always :loc (vl-token->loc kwd)
                                       :stmt stmt
                                       :atts atts)))))
-
-
-
-
 
 
 

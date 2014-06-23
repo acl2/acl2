@@ -1774,7 +1774,7 @@ where we convert any negedge signals into posedge signals.</p>"
             "Always block to synthesize.")
    (scary   string-listp
             "The @(see vl-always-scary-regs) for this module.")
-   (regs    vl-regdecllist-p
+   (vars    vl-vardecllist-p
             "All of the registers in the module.")
    (cvtregs string-listp
             "Accumulator for the names of registers to convert into nets.")
@@ -1856,7 +1856,7 @@ where we convert any negedge signals into posedge signals.</p>"
 
        (target-name   (vl-idexpr->name target-lvalue))
        ;; Make sure the target register is simple enough to handle.
-       (w (vl-always-check-reg target-name regs x))
+       (w (vl-always-check-reg target-name vars x))
        ((when w)
         ;; The warning explains why we are failing.
         (mv x cvtregs (vl-warn-delta w)))
@@ -2002,7 +2002,7 @@ where we convert any negedge signals into posedge signals.</p>"
   :short "Extends @(see vl-always-edgesynth) to a list of always blocks."
   ((x          vl-alwayslist-p)
    (scary-regs string-listp)
-   (regs       vl-regdecllist-p)
+   (vars       vl-vardecllist-p)
    (cvtregs    string-listp)
    (delta      vl-delta-p)
    &key vecp)
@@ -2012,9 +2012,9 @@ where we convert any negedge signals into posedge signals.</p>"
   (b* (((when (atom x))
         (mv nil cvtregs delta))
        ((mv new-car? cvtregs delta)
-        (vl-always-edgesynth (car x) scary-regs regs cvtregs delta :vecp vecp))
+        (vl-always-edgesynth (car x) scary-regs vars cvtregs delta :vecp vecp))
        ((mv new-cdr cvtregs delta)
-        (vl-alwayslist-edgesynth (cdr x) scary-regs regs cvtregs delta :Vecp vecp))
+        (vl-alwayslist-edgesynth (cdr x) scary-regs vars cvtregs delta :vecp vecp))
        (new-x (if new-car?
                   (cons new-car? new-cdr)
                 new-cdr)))
@@ -2101,23 +2101,23 @@ where we convert any negedge signals into posedge signals.</p>"
        (cvtregs    nil)
 
        ((mv new-alwayses cvtregs delta)
-        (vl-alwayslist-edgesynth x.alwayses scary-regs x.regdecls
+        (vl-alwayslist-edgesynth x.alwayses scary-regs x.vardecls
                                  cvtregs delta :vecp vecp))
 
        ((vl-delta delta) (vl-free-delta delta))
 
-       ((mv regdecls-to-convert new-regdecls)
-        ;; We already know all of the cvtregs are among the regdecls and have
+       ((mv vardecls-to-convert new-vardecls)
+        ;; We already know all of the cvtregs are among the vardecls and have
         ;; no arrdims.  So, we can just freely convert look them up and convert
         ;; them here.
-        (vl-filter-regdecls cvtregs x.regdecls))
+        (vl-filter-vardecls cvtregs x.vardecls))
 
-       (new-netdecls (append (vl-always-convert-regs regdecls-to-convert)
+       (new-netdecls (append (vl-always-convert-regs vardecls-to-convert)
                              delta.netdecls))
 
        (new-x (change-vl-module x
                                 :netdecls new-netdecls
-                                :regdecls new-regdecls
+                                :vardecls new-vardecls
                                 :assigns  delta.assigns
                                 :modinsts delta.modinsts
                                 :alwayses new-alwayses
@@ -2157,8 +2157,7 @@ where we convert any negedge signals into posedge signals.</p>"
   :short "Top-level @(see edgesynth) transform."
   ((x vl-design-p) &key vecp)
   :returns (new-x vl-design-p)
-  (b* ((x             (vl-design-fix x))
-       ((vl-design x) x)
+  (b* (((vl-design x) x)
        (mods          (vl-modulelist-edgesynth x.mods :vecp vecp)))
     (change-vl-design x :mods mods)))
 

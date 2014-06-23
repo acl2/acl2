@@ -82,7 +82,8 @@
                               (vl-atts-p atts)
                               (vl-vardecl-tuple-list-p tuples))))
   (if (consp tuples)
-      (cons (make-vl-regdecl :loc loc
+      (cons (make-vl-vardecl :type :vl-reg
+                             :loc loc
                              :name (first (car tuples))
                              :signedp signedp
                              :range range
@@ -100,13 +101,13 @@
            (vl-vardecllist-p (vl-build-vardecls loc type atts tuples)))
   :hints(("Goal" :in-theory (enable vl-build-vardecls))))
 
-(defthm vl-regdecllist-p-of-vl-build-regdecls
+(defthm vl-vardecllist-p-of-vl-build-regdecls
   (implies (and (force (vl-location-p loc))
                 (force (booleanp signedp))
                 (force (vl-maybe-range-p range))
                 (force (vl-atts-p atts))
                 (force (vl-vardecl-tuple-list-p tuples)))
-           (vl-regdecllist-p (vl-build-regdecls loc signedp range atts tuples)))
+           (vl-vardecllist-p (vl-build-regdecls loc signedp range atts tuples)))
   :hints(("Goal" :in-theory (enable vl-build-regdecls))))
 
 (defparser vl-parse-variable-type ()
@@ -190,7 +191,7 @@
 
 (defparser vl-parse-reg-declaration (atts)
   :guard (vl-atts-p atts)
-  :result (vl-regdecllist-p val)
+  :result (vl-vardecllist-p val)
   :resultp-of-nil t
   :true-listp t
   :fails gracefully
@@ -402,14 +403,6 @@
 ; With this in mind, our approach is to reuse our parsers above and simply walk
 ; through to ensure that none of the variables have been given initial values.
 
-(defund vl-find-regdecl-with-initval (x)
-  (declare (xargs :guard (vl-regdecllist-p x)))
-  (if (consp x)
-      (if (vl-regdecl->initval (car x))
-          (car x)
-        (vl-find-regdecl-with-initval (cdr x)))
-    nil))
-
 (defund vl-find-vardecl-with-initval (x)
   (declare (xargs :guard (vl-vardecllist-p x)))
   (if (consp x)
@@ -455,10 +448,8 @@
                         (vl-parse-error "Invalid block item."))))
         (return-raw
          (let ((search (case type
-                         (:vl-kwd-reg
-                          (vl-find-regdecl-with-initval elements))
-                         ((:vl-kwd-integer :vl-kwd-time :vl-kwd-real
-                                           :vl-kwd-realtime)
+                         ((:vl-kwd-reg :vl-kwd-integer :vl-kwd-time
+                           :vl-kwd-real :vl-kwd-realtime)
                           (vl-find-vardecl-with-initval elements))
                          (t
                           nil))))

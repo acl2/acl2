@@ -173,7 +173,6 @@ the whole @(see vl-portdecl-p) object."
                           (mv nil nil nil))))))
 
 
-(def-vl-find-moditem regdecl)
 (def-vl-find-moditem vardecl)
 (def-vl-find-moditem netdecl)
 (def-vl-find-moditem eventdecl)
@@ -210,7 +209,6 @@ up multiple items.</p>"
 
   (b* (((vl-module x) x))
     (or (vl-find-netdecl   name x.netdecls)
-        (vl-find-regdecl   name x.regdecls)
         (vl-find-vardecl   name x.vardecls)
         (vl-find-eventdecl name x.eventdecls)
         (vl-find-paramdecl name x.paramdecls)
@@ -224,7 +222,6 @@ up multiple items.</p>"
   (defthm vl-find-moduleitem-type-when-nothing-else
     (implies (and (vl-find-moduleitem name x)
                   (not (vl-netdecl-p   (vl-find-moduleitem name x)))
-                  (not (vl-regdecl-p   (vl-find-moduleitem name x)))
                   (not (vl-vardecl-p   (vl-find-moduleitem name x)))
                   (not (vl-eventdecl-p (vl-find-moduleitem name x)))
                   (not (vl-paramdecl-p (vl-find-moduleitem name x)))
@@ -239,9 +236,6 @@ up multiple items.</p>"
     ;; This is gross, but I'm not sure of a better approach.
     (and (equal (equal (tag (vl-find-moduleitem name x)) :vl-netdecl)
                 (vl-netdecl-p (vl-find-moduleitem name x)))
-
-         (equal (equal (tag (vl-find-moduleitem name x)) :vl-regdecl)
-                (vl-regdecl-p (vl-find-moduleitem name x)))
 
          (equal (equal (tag (vl-find-moduleitem name x)) :vl-vardecl)
                 (vl-vardecl-p (vl-find-moduleitem name x)))
@@ -292,7 +286,6 @@ up multiple items.</p>"
   :short "Module items are basically any named object that can occur within a
 module (except that we don't support, e.g., named blocks.)"
   (vl-netdecl
-   vl-regdecl
    vl-vardecl
    vl-eventdecl
    vl-paramdecl
@@ -404,7 +397,6 @@ module (except that we don't support, e.g., named blocks.)"
          (verify-guards ,fn)))))
 
 (vl-def-moditemlist-alist netdecl)
-(vl-def-moditemlist-alist regdecl)
 (vl-def-moditemlist-alist vardecl)
 (vl-def-moditemlist-alist eventdecl)
 (vl-def-moditemlist-alist paramdecl)
@@ -426,7 +418,6 @@ alist can be constructed in a one pass, using our fast builder functions.</p>"
   (b* (((vl-module x) x))
     (mbe :logic
          (append (vl-netdecllist-alist x.netdecls)
-                 (vl-regdecllist-alist x.regdecls)
                  (vl-vardecllist-alist x.vardecls)
                  (vl-eventdecllist-alist x.eventdecls)
                  (vl-paramdecllist-alist x.paramdecls)
@@ -442,8 +433,7 @@ alist can be constructed in a one pass, using our fast builder functions.</p>"
               (acc (vl-fast-fundecllist-alist x.fundecls acc))
               (acc (vl-fast-paramdecllist-alist x.paramdecls acc))
               (acc (vl-fast-eventdecllist-alist x.eventdecls acc))
-              (acc (vl-fast-vardecllist-alist x.vardecls acc))
-              (acc (vl-fast-regdecllist-alist x.regdecls acc)))
+              (acc (vl-fast-vardecllist-alist x.vardecls acc)))
            (vl-fast-netdecllist-alist x.netdecls acc))))
   ///
   (defthm vl-moditem-alist-p-of-vl-moditem-alist

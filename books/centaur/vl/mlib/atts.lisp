@@ -45,13 +45,13 @@
         (t
          (vl-gather-netdecls-with-attribute (cdr x) att))))
 
-(define vl-gather-regdecls-with-attribute ((x vl-regdecllist-p)
+(define vl-gather-vardecls-with-attribute ((x vl-vardecllist-p)
                                            (att stringp))
-  :returns (sub-x vl-regdecllist-p)
+  :returns (sub-x vl-vardecllist-p)
   (cond ((atom x)
          nil)
-        ((assoc-equal (string-fix att) (vl-regdecl->atts (car x)))
-         (cons (vl-regdecl-fix (car x))
-               (vl-gather-regdecls-with-attribute (cdr x) att)))
+        ((assoc-equal (string-fix att) (vl-vardecl->atts (car x)))
+         (cons (vl-vardecl-fix (car x))
+               (vl-gather-vardecls-with-attribute (cdr x) att)))
         (t
-         (vl-gather-regdecls-with-attribute (cdr x) att))))
+         (vl-gather-vardecls-with-attribute (cdr x) att))))

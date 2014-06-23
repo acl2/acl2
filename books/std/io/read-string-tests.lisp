@@ -56,12 +56,10 @@
 (test-fail "3.5")
 (test-fail "'#.(list 1 2 3)")
 
-#-sbcl
-;; Temporarily disabling this on SBCL due to https://bugs.launchpad.net/sbcl/+bug/1333327
+;; Note: some older versions of SBCL can't handle the following tests due to a
+;; bug, e.g., see https://bugs.launchpad.net/sbcl/+bug/1333327.  This seems to
+;; be fixed as of SBCL 1.2.0, so we re-enable the tests.
 (test-fail "#\wtf ")
-
-#-sbcl
-;; Temporarily disabling this on SBCL due to https://bugs.launchpad.net/sbcl/+bug/1333327
 (test-fail "#\Return ")
 
 

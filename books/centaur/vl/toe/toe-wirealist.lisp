@@ -103,9 +103,8 @@
 
 
 
-(defsection vl-wirealist-p
+(define vl-wirealist-p (x)
   :parents (exploding-vectors)
-
   :short "Associates wire names (strings) to lists of @(see vl-emodwire-p)s
 which represent the wire's bits in <b>msb-first order</b>."
 
@@ -183,18 +182,14 @@ instead).</p>"
 
 ;; bozo switch to defalist?
 
-  (defund vl-wirealist-p (x)
-    (declare (xargs :guard t))
-    (if (atom x)
-        t
-      (and (consp (car x))
-           (stringp (caar x))
-           (true-listp (cdar x))
-           (vl-emodwirelist-p (cdar x))
-           (vl-wirealist-p (cdr x)))))
-
-  (local (in-theory (enable vl-wirealist-p)))
-
+  (if (atom x)
+      t
+    (and (consp (car x))
+         (stringp (caar x))
+         (true-listp (cdar x))             ;; bozo why do we care?
+         (vl-emodwirelist-p (cdar x))
+         (vl-wirealist-p (cdr x))))
+  ///
   (defthm vl-wirealist-p-when-atom
     (implies (atom x)
              (equal (vl-wirealist-p x)
@@ -228,9 +223,8 @@ instead).</p>"
 
 
 
-
-
-(defsection vl-plain-wire-name
+(define vl-plain-wire-name ((name stringp))
+  :returns (emodwire vl-emodwire-p)
   :parents (vl-wirealist-p)
   :short "@(call vl-plain-wire-name) is given @('name'), a string, and
 typically returns the symbol @('ACL2::name')."
@@ -272,69 +266,65 @@ replacements.  This should not be too confusing since, e.g., in Verilog
                (vl::vl-plain-wire-name "looksLikeAVerilogWire"))))
   ||#
 
-  (local (defthm equal-string-constant
-           (implies (and (syntaxp (quotep name))
-                         (stringp name))
-                    (equal (equal x name)
-                           (and (stringp x)
-                                (equal (explode x) (explode name)))))
-           :hints(("Goal"
-                   :in-theory (disable str::implode-of-explode)
-                   :use ((:instance str::implode-of-explode (str::x x))
-                         (:instance str::implode-of-explode (str::x name)))))))
+  :inline t
 
-  (local (defthm open-equal-len
-           (implies (syntaxp (quotep n))
-                    (equal (equal (len x) n)
-                           (if (zp n)
-                               (and (= n 0)
-                                    (atom x))
-                             (and (consp x)
-                                  (equal (len (cdr x)) (- n 1))))))
-           :hints(("Goal" :in-theory (enable len)))))
-
-  (local (defthm open-nth
-           (implies (syntaxp (quotep n))
-                    (equal (nth n x)
-                           (if (zp n)
-                               (car x)
-                             (nth (- n 1) (cdr x)))))
-           :hints(("Goal" :in-theory (enable nth)))))
-
-  (local (in-theory (enable len)))
-
-  (definlined vl-plain-wire-name (name)
-    (declare (xargs :guard (stringp name)
-                    :guard-hints(("Goal" :in-theory (disable str::explode-under-iff)))))
-    (mbe :logic
-         (cond ((equal name "T")
+  (mbe :logic
+       (cond ((equal name "T")
+              (make-vl-emodwire :basename "T" :index 0))
+             ((equal name "F")
+              (make-vl-emodwire :basename "F" :index 0))
+             ((equal name "NIL")
+              (make-vl-emodwire :basename "NIL" :index 0))
+             (t
+              (make-vl-emodwire :basename (string-fix name) :index nil)))
+       :exec
+       (let ((len (length name)))
+         (cond ((and (= len 1)
+                     (eql (char name 0) #\T))
                 (make-vl-emodwire :basename "T" :index 0))
-               ((equal name "F")
+               ((and (= len 1)
+                     (eql (char name 0) #\F))
                 (make-vl-emodwire :basename "F" :index 0))
-               ((equal name "NIL")
+               ((and (= len 3)
+                     (eql (char name 0) #\N)
+                     (eql (char name 1) #\I)
+                     (eql (char name 2) #\L))
                 (make-vl-emodwire :basename "NIL" :index 0))
                (t
-                (make-vl-emodwire :basename (string-fix name) :index nil)))
-         :exec
-         (let ((len (length name)))
-           (cond ((and (= len 1)
-                       (eql (char name 0) #\T))
-                  (make-vl-emodwire :basename "T" :index 0))
-                 ((and (= len 1)
-                       (eql (char name 0) #\F))
-                  (make-vl-emodwire :basename "F" :index 0))
-                 ((and (= len 3)
-                       (eql (char name 0) #\N)
-                       (eql (char name 1) #\I)
-                       (eql (char name 2) #\L))
-                  (make-vl-emodwire :basename "NIL" :index 0))
-                 (t
-                  (make-vl-emodwire :basename name :index nil))))))
+                (make-vl-emodwire :basename name :index nil)))))
 
-  (local (in-theory (enable vl-plain-wire-name)))
+  :guard-hints(("Goal" :in-theory (disable str::explode-under-iff)))
+  :prepwork
+  ((local (defthm equal-string-constant
+            (implies (and (syntaxp (quotep name))
+                          (stringp name))
+                     (equal (equal x name)
+                            (and (stringp x)
+                                 (equal (explode x) (explode name)))))
+            :hints(("Goal"
+                    :in-theory (disable str::implode-of-explode)
+                    :use ((:instance str::implode-of-explode (str::x x))
+                          (:instance str::implode-of-explode (str::x name)))))))
 
-  (defthm vl-emodwire-p-of-vl-plain-wire-name
-    (vl-emodwire-p (vl-plain-wire-name name))))
+   (local (defthm open-equal-len
+            (implies (syntaxp (quotep n))
+                     (equal (equal (len x) n)
+                            (if (zp n)
+                                (and (= n 0)
+                                     (atom x))
+                              (and (consp x)
+                                   (equal (len (cdr x)) (- n 1))))))
+            :hints(("Goal" :in-theory (enable len)))))
+
+   (local (defthm open-nth
+            (implies (syntaxp (quotep n))
+                     (equal (nth n x)
+                            (if (zp n)
+                                (car x)
+                              (nth (- n 1) (cdr x)))))
+            :hints(("Goal" :in-theory (enable nth)))))
+
+   (local (in-theory (enable len)))))
 
 
 
@@ -592,87 +582,65 @@ are the same you still get one wire.</p>"
 
 
 
-(defsection vl-emodwires-from-msb-to-lsb
+(define vl-emodwires-from-msb-to-lsb
   :parents (vl-wirealist-p)
   :short "@(call vl-emodwires-from-msb-to-lsb) returns a list of @(see
 vl-emodwire-p)s: @('(name[msb] name[msb +/- 1] ... name[lsb])')"
-
+  ((name stringp)
+   (msb  natp)
+   (lsb  natp))
   :long "<p>The range is inclusive on both sides, so if @('msb') and @('lsb')
 are the same you still get one wire.</p>"
-
-; I'm just leaving this enabled.
-
-  (defun vl-emodwires-from-msb-to-lsb (name msb lsb)
-    (declare (type string name)
-             (xargs :guard (and (natp msb)
-                                (natp lsb))))
-    ;; We think most ranges we'll encounter are [high:low], so we don't bother to
-    ;; optimize the reverse case, but it would be easy enough to do if it's slow.
-    (b* ((high          (max msb lsb))
-         (low           (min msb lsb))
-         (|w[high:low]| (vl-emodwires-from-high-to-low name high low))
-         (|w[msb:lsb]|  (if (>= msb lsb)
-                            |w[high:low]|
-                          ;; Unusual case of a wire like w[0:3], so the
-                          ;; w[high:low] is in the wrong order.
-                          (reverse |w[high:low]|))))
-      |w[msb:lsb]|)))
+  :enabled t
+  ;; We think most ranges we'll encounter are [high:low], so we don't bother to
+  ;; optimize the reverse case, but it would be easy enough to do if it's slow.
+  (b* ((high          (max msb lsb))
+       (low           (min msb lsb))
+       (|w[high:low]| (vl-emodwires-from-high-to-low name high low))
+       (|w[msb:lsb]|  (if (>= msb lsb)
+                          |w[high:low]|
+                        ;; Unusual case of a wire like w[0:3], so the
+                        ;; w[high:low] is in the wrong order.
+                        (reverse |w[high:low]|))))
+    |w[msb:lsb]|))
 
 
-
-(defsection vl-netdecl-msb-emodwires
+(define vl-netdecl-msb-emodwires
   :parents (vl-wirealist-p)
-  :short "The @(see vl-emodwire-p)s for a net declaration, in MSB-first order."
+  :short "Compute the @(see vl-emodwire-p)s for a net declaration, in MSB-first order."
+  ((x        vl-netdecl-p)
+   (warnings vl-warninglist-p))
+  :returns (mv (successp booleanp :rule-classes :type-prescription)
+               (warnings vl-warninglist-p)
+               (emodwires vl-emodwirelist-p))
+  (b* (((vl-netdecl x) x)
+       ((when x.arrdims)
+        (mv nil
+            (fatal :type :vl-bad-netdecl
+                   :msg "~a0 has array dimensions, which are not supported."
+                   :args (list x))
+            nil))
 
-  :long "<p><b>Signature:</b> @(call vl-netdecl-msb-emodwires) returns @('(mv
-successp warnings wires)').</p>"
+       ((when (not (vl-maybe-range-resolved-p x.range)))
+        (mv nil
+            (fatal :type :vl-bad-netdecl
+                   :msg "~a0 has unresolved range ~a1."
+                   :args (list x x.range))
+            nil))
 
-  (defund vl-netdecl-msb-emodwires (x warnings)
-    (declare (xargs :guard (and (vl-netdecl-p x)
-                                (vl-warninglist-p warnings))))
+       ((when (not x.range))
+        (mv t (ok) (list (vl-plain-wire-name x.name))))
 
-    (b* (((vl-netdecl x) x)
-         ((when x.arrdims)
-          (mv nil
-              (cons (make-vl-warning :type :vl-bad-netdecl
-                                     :msg "~a0 has array dimensions, which ~
-                                           are not supported."
-                                     :args (list x)
-                                     :fatalp t
-                                     :fn 'vl-netdecl-msb-emodwires)
-                    warnings)
-              nil))
-
-         ((when (not (vl-maybe-range-resolved-p x.range)))
-          (mv nil
-              (cons (make-vl-warning :type :vl-bad-netdecl
-                                     :msg "~a0 has unresolved range ~a1."
-                                     :args (list x x.range)
-                                     :fatalp t
-                                     :fn 'vl-netdecl-msb-emodwires)
-                    warnings)
-              nil))
-
-         ((when (not x.range))
-          (mv t warnings (list (vl-plain-wire-name x.name))))
-
-         (msb          (vl-resolved->val (vl-range->msb x.range)))
-         (lsb          (vl-resolved->val (vl-range->lsb x.range)))
-         (|w[msb:lsb]| (vl-emodwires-from-msb-to-lsb x.name msb lsb)))
-      (mv t warnings |w[msb:lsb]|)))
-
+       (msb          (vl-resolved->val (vl-range->msb x.range)))
+       (lsb          (vl-resolved->val (vl-range->lsb x.range)))
+       (|w[msb:lsb]| (vl-emodwires-from-msb-to-lsb x.name msb lsb)))
+    (mv t (ok) |w[msb:lsb]|))
+  ///
   (local (in-theory (enable vl-netdecl-msb-emodwires)))
 
-  (defmvtypes vl-netdecl-msb-emodwires
-    (booleanp nil true-listp))
-
-  (defthm vl-warninglist-p-of-vl-netdecl-msb-emodwires
-    (implies (force (vl-warninglist-p warnings))
-             (vl-warninglist-p
-              (mv-nth 1 (vl-netdecl-msb-emodwires x warnings)))))
-
-  (defthm vl-emodwirelist-p-of-vl-netdecl-msb-emodwires
-    (vl-emodwirelist-p (mv-nth 2 (vl-netdecl-msb-emodwires x warnings))))
+  (defthm true-listp-of-vl-netdecl-msb-emodwires
+    (true-listp (mv-nth 2 (vl-netdecl-msb-emodwires x warnings)))
+    :rule-classes :type-prescription)
 
   (defthm basenames-of-vl-netdecl-msb-emodwires
     (implies (vl-netdecl-p x)
@@ -687,145 +655,120 @@ successp warnings wires)').</p>"
       (mv-nth 2 (vl-netdecl-msb-emodwires x warnings))))))
 
 
-(defsection vl-netdecllist-to-wirealist
+(define vl-netdecllist-to-wirealist
   :parents (vl-wirealist-p)
   :short "Generate a (fast) wirealist from a @(see vl-netdecllist-p)."
+  ((x        vl-netdecllist-p)
+   (warnings vl-warninglist-p))
+  :returns (mv (successp booleanp :rule-classes :type-prescription
+                         "Whether <em>all</em> nets were successfully converted
+                          into wire-alist entries.")
+               (warnings vl-warninglist-p)
+               (walist   vl-wirealist-p))
+  :long "<p>Even if @('successp') is @('nil'), we will produce at least a
+partial wire alist for this module which is as complete as possible.  Any
+failure will result in at least one fatal warning.</p>"
 
-  :long "<p><b>Signature</b>: @(call vl-netdecllist-to-wirealist) returns
-@('(mv successp warnings walist)').</p>
-
-<p>The @('successp') flag indicates whether <em>all</em> nets were successfully
-converted into wire-alist entires; even if @('successp') is @('nil'), we will
-produce at least a partial wire alist for this module which is as complete as
-possible.  Any failure will result in at least one fatal warning.</p>"
-
-  (defund vl-netdecllist-to-wirealist (x warnings)
-    (declare (xargs :guard (and (vl-netdecllist-p x)
-                                (vl-warninglist-p warnings))))
-    (if (atom x)
-        (mv t warnings nil)
-      (b* (((mv successp1 warnings wires1)
-            (vl-netdecl-msb-emodwires (car x) warnings))
-           ((mv successp2 warnings walist)
-            (vl-netdecllist-to-wirealist (cdr x) warnings))
-           (successp (and successp1 successp2))
-           (walist   (if successp1
-                         (hons-acons (vl-netdecl->name (car x)) wires1 walist)
-                       walist)))
-        (mv successp warnings walist))))
-
-  (local (in-theory (enable vl-netdecllist-to-wirealist)))
-
-  (defthm vl-warninglist-p-of-vl-netdecllist-to-wirealist
-    (implies (force (vl-warninglist-p warnings))
-             (vl-warninglist-p (mv-nth 1 (vl-netdecllist-to-wirealist x warnings)))))
-
-  (defthm vl-wirealist-p-of-vl-netdecllist-to-wirealist
-    (implies (force (vl-netdecllist-p x))
-             (vl-wirealist-p (mv-nth 2 (vl-netdecllist-to-wirealist x warnings)))))
-
+  (b* (((when (atom x))
+        (mv t (ok) nil))
+       ((mv successp1 warnings wires1)
+        (vl-netdecl-msb-emodwires (car x) warnings))
+       ((mv successp2 warnings walist)
+        (vl-netdecllist-to-wirealist (cdr x) warnings))
+       (successp (and successp1 successp2))
+       (walist   (if successp1
+                     (hons-acons (vl-netdecl->name (car x)) wires1 walist)
+                   walist)))
+    (mv successp warnings walist))
+  ///
   (defthm subsetp-equal-of-strip-cars-of-vl-netdecllist-to-wirealist
     (subsetp-equal (strip-cars (mv-nth 2 (vl-netdecllist-to-wirealist x warnings)))
                    (vl-netdecllist->names x))))
 
 
-(defsection vl-regdecl-msb-emodwires
+(define vl-vardecl-msb-emodwires
   :parents (vl-wirealist-p)
-  :short "Same as @(see vl-netdecl-msb-emodwires), but for regs."
+  :short "Same as @(see vl-netdecl-msb-emodwires), but for variables."
+  ((x        vl-vardecl-p)
+   (warnings vl-warninglist-p))
+  :returns (mv (successp  booleanp :rule-classes :type-prescription)
+               (warnings  vl-warninglist-p)
+               (emodwires vl-emodwirelist-p))
+  (b* (((vl-vardecl x) x)
+       ((unless (eq x.type :vl-reg))
+        (mv nil
+            (fatal :type :vl-bad-vardecl
+                   :msg "~a0 has type ~s1, but only regs are currently supported."
+                   :args (list x x.type))
+            nil))
+       ((when x.arrdims)
+        (mv nil
+            (fatal :type :vl-bad-vardecl
+                   :msg "~a0 has array dimensions, which are not supported."
+                   :args (list x))
+            nil))
+       ((unless (vl-maybe-range-resolved-p x.range))
+        (mv nil
+            (fatal :type :vl-bad-vardecl
+                   :msg "~a0 has unresolved range ~a1."
+                   :args (list x x.range))
+            nil))
+       ((unless x.range)
+        (mv t (ok) (list (vl-plain-wire-name x.name))))
+       (msb          (vl-resolved->val (vl-range->msb x.range)))
+       (lsb          (vl-resolved->val (vl-range->lsb x.range)))
+       (|w[msb:lsb]| (vl-emodwires-from-msb-to-lsb x.name msb lsb)))
+    (mv t (ok) |w[msb:lsb]|))
+  ///
+  (defthm true-listp-of-vl-vardecl-msb-emodwires
+    (true-listp (mv-nth 2 (vl-vardecl-msb-emodwires x warnings)))
+    :rule-classes :type-prescription)
 
-  (defund vl-regdecl-msb-emodwires (x warnings)
-    (declare (xargs :guard (and (vl-regdecl-p x)
-                                (vl-warninglist-p warnings))))
-
-    (b* (((vl-regdecl x) x)
-         ((when x.arrdims)
-          (mv nil
-              (cons (make-vl-warning :type :vl-bad-regdecl
-                                     :msg "~a0 has array dimensions, which are ~
-                                           not supported."
-                                     :args (list x.loc x.name)
-                                     :fatalp t
-                                     :fn 'vl-regdecl-msb-emodwires)
-                    warnings)
-              nil))
-
-         ((when (not (vl-maybe-range-resolved-p x.range)))
-          (mv nil
-              (cons (make-vl-warning :type :vl-bad-regdecl
-                                     :msg "~a0 has unresolved range ~a1."
-                                     :args (list x x.range)
-                                     :fatalp t
-                                     :fn 'vl-regdecl-msb-emodwires)
-                    warnings)
-              nil))
-
-         ((when (not x.range))
-          (mv t warnings (list (vl-plain-wire-name x.name))))
-
-         (msb          (vl-resolved->val (vl-range->msb x.range)))
-         (lsb          (vl-resolved->val (vl-range->lsb x.range)))
-         (|w[msb:lsb]| (vl-emodwires-from-msb-to-lsb x.name msb lsb)))
-
-      (mv t warnings |w[msb:lsb]|)))
-
-  (local (in-theory (enable vl-regdecl-msb-emodwires)))
-
-  (defmvtypes vl-regdecl-msb-emodwires
-    (booleanp nil true-listp))
-
-  (defthm vl-warninglist-p-of-vl-regdecl-msb-emodwires
-    (implies (force (vl-warninglist-p warnings))
-             (vl-warninglist-p
-              (mv-nth 1 (vl-regdecl-msb-emodwires x warnings)))))
-
-  (defthm vl-emodwirelist-p-of-vl-regdecl-msb-emodwires
-    (vl-emodwirelist-p (mv-nth 2 (vl-regdecl-msb-emodwires x warnings))))
-
-  (defthm basenames-of-vl-regdecl-msb-emodwires
-    (implies (vl-regdecl-p x)
-             (let ((wires (mv-nth 2 (vl-regdecl-msb-emodwires x warnings))))
+  (defthm basenames-of-vl-vardecl-msb-emodwires
+    (implies (vl-vardecl-p x)
+             (let ((wires (mv-nth 2 (vl-vardecl-msb-emodwires x warnings))))
                (equal (vl-emodwirelist->basenames wires)
-                      (replicate (len wires) (vl-regdecl->name x)))))
+                      (replicate (len wires) (vl-vardecl->name x)))))
     :hints(("Goal" :in-theory (enable vl-plain-wire-name))))
 
-  (defthm unique-indicies-of-vl-regdecl-msb-emodwires
+  (defthm unique-indicies-of-vl-vardecl-msb-emodwires
     (no-duplicatesp-equal
      (vl-emodwirelist->indices
-      (mv-nth 2 (vl-regdecl-msb-emodwires x warnings))))))
+      (mv-nth 2 (vl-vardecl-msb-emodwires x warnings))))))
 
 
-(defsection vl-regdecllist-to-wirealist
+(defsection vl-vardecllist-to-wirealist
   :parents (vl-wirealist-p)
-  :short "Same as @(see vl-netdecllist-to-wirealist), but for regs."
+  :short "Same as @(see vl-netdecllist-to-wirealist), but for variables."
 
-  (defund vl-regdecllist-to-wirealist (x warnings)
-    (declare (xargs :guard (and (vl-regdecllist-p x)
+  (defund vl-vardecllist-to-wirealist (x warnings)
+    (declare (xargs :guard (and (vl-vardecllist-p x)
                                 (vl-warninglist-p warnings))))
     (if (atom x)
         (mv t warnings nil)
       (b* (((mv successp1 warnings wires1)
-            (vl-regdecl-msb-emodwires (car x) warnings))
+            (vl-vardecl-msb-emodwires (car x) warnings))
            ((mv successp2 warnings walist)
-            (vl-regdecllist-to-wirealist (cdr x) warnings))
+            (vl-vardecllist-to-wirealist (cdr x) warnings))
            (successp (and successp1 successp2))
            (walist   (if successp1
-                         (hons-acons (vl-regdecl->name (car x)) wires1 walist)
+                         (hons-acons (vl-vardecl->name (car x)) wires1 walist)
                        walist)))
         (mv successp warnings walist))))
 
-  (local (in-theory (enable vl-regdecllist-to-wirealist)))
+  (local (in-theory (enable vl-vardecllist-to-wirealist)))
 
-  (defthm vl-warninglist-p-of-vl-regdecllist-to-wirealist
+  (defthm vl-warninglist-p-of-vl-vardecllist-to-wirealist
     (implies (force (vl-warninglist-p warnings))
-             (vl-warninglist-p (mv-nth 1 (vl-regdecllist-to-wirealist x warnings)))))
+             (vl-warninglist-p (mv-nth 1 (vl-vardecllist-to-wirealist x warnings)))))
 
-  (defthm vl-wirealist-p-of-vl-regdecllist-to-wirealist
-    (implies (force (vl-regdecllist-p x))
-             (vl-wirealist-p (mv-nth 2 (vl-regdecllist-to-wirealist x warnings)))))
+  (defthm vl-wirealist-p-of-vl-vardecllist-to-wirealist
+    (implies (force (vl-vardecllist-p x))
+             (vl-wirealist-p (mv-nth 2 (vl-vardecllist-to-wirealist x warnings)))))
 
-  (defthm subsetp-equal-of-strip-cars-of-vl-regdecllist-to-wirealist
-    (subsetp-equal (strip-cars (mv-nth 2 (vl-regdecllist-to-wirealist x warnings)))
-                   (vl-regdecllist->names x))))
+  (defthm subsetp-equal-of-strip-cars-of-vl-vardecllist-to-wirealist
+    (subsetp-equal (strip-cars (mv-nth 2 (vl-vardecllist-to-wirealist x warnings)))
+                   (vl-vardecllist->names x))))
 
 
 (defsection vl-module-wirealist
@@ -920,10 +863,10 @@ theorem:</p>
 
          ((unless (mbe :logic
                        (uniquep (append (vl-netdecllist->names x.netdecls)
-                                        (vl-regdecllist->names x.regdecls)))
+                                        (vl-vardecllist->names x.vardecls)))
                        :exec
                        (let* ((names (vl-netdecllist->names-exec x.netdecls nil))
-                              (names (vl-regdecllist->names-exec x.regdecls names)))
+                              (names (vl-vardecllist->names-exec x.vardecls names)))
                          (uniquep names))))
           (mv nil
               (cons (make-vl-warning :type :vl-namespace-error
@@ -931,7 +874,7 @@ theorem:</p>
                                      :args (list x.name
                                                  (duplicated-members
                                                   (append (vl-netdecllist->names x.netdecls)
-                                                          (vl-regdecllist->names x.regdecls))))
+                                                          (vl-vardecllist->names x.vardecls))))
                                      :fatalp t
                                      :fn 'vl-modwire-alist)
                     warnings)
@@ -940,7 +883,7 @@ theorem:</p>
          ((mv successp1 warnings net-walist)
           (vl-netdecllist-to-wirealist x.netdecls warnings))
          ((mv successp2 warnings reg-walist)
-          (vl-regdecllist-to-wirealist x.regdecls warnings))
+          (vl-vardecllist-to-wirealist x.vardecls warnings))
 
          ;; In practice this hons-shrink-alist shouldn't really be more
          ;; expensive than having used an accumulator, because most modules
@@ -980,65 +923,65 @@ theorem:</p>
            :hints(("Goal" :induct (len x)))))
 
   (local
-   (defsection regdecls
+   (defsection vardecls
 
      (defthm rcars
-       (implies (no-duplicatesp-equal (vl-regdecllist->names x))
+       (implies (no-duplicatesp-equal (vl-vardecllist->names x))
                 (no-duplicatesp-equal
-                 (strip-cars (mv-nth 2 (vl-regdecllist-to-wirealist x warnings)))))
-       :hints(("Goal" :in-theory (enable vl-regdecllist-to-wirealist))))
+                 (strip-cars (mv-nth 2 (vl-vardecllist-to-wirealist x warnings)))))
+       :hints(("Goal" :in-theory (enable vl-vardecllist-to-wirealist))))
 
      (local
       (defthm r0
-        (implies (and (not (member-equal (vl-regdecl->name a)
-                                         (vl-regdecllist->names x)))
-                      ;(force (vl-regdecl-p a))
+        (implies (and (not (member-equal (vl-vardecl->name a)
+                                         (vl-vardecllist->names x)))
+                      ;(force (vl-vardecl-p a))
                       (consp x)
                       )
-                 (not (equal (vl-regdecl->name a)
-                             (vl-regdecl->name (first x)))))))
+                 (not (equal (vl-vardecl->name a)
+                             (vl-vardecl->name (first x)))))))
 
      (local
       (defthm r1
-        (implies (and (force (not (equal (vl-regdecl->name a)
-                                         (vl-regdecl->name b))))
-                      (force (vl-regdecl-p a))
-                      (force (vl-regdecl-p b)))
+        (implies (and (force (not (equal (vl-vardecl->name a)
+                                         (vl-vardecl->name b))))
+                      (force (vl-vardecl-p a))
+                      (force (vl-vardecl-p b)))
                  (not (intersectp-equal
-                       (mv-nth 2 (vl-regdecl-msb-emodwires a warnings1))
-                       (mv-nth 2 (vl-regdecl-msb-emodwires b warnings2)))))
+                       (mv-nth 2 (vl-vardecl-msb-emodwires a warnings1))
+                       (mv-nth 2 (vl-vardecl-msb-emodwires b warnings2)))))
         :hints(("Goal"
                 :use ((:instance empty-intersect-of-vl-emodwires-by-basename
-                                 (xname (vl-regdecl->name a))
-                                 (yname (vl-regdecl->name b))
-                                 (x (mv-nth 2 (vl-regdecl-msb-emodwires a warnings1)))
-                                 (y (mv-nth 2 (vl-regdecl-msb-emodwires b warnings2)))))))))
+                                 (xname (vl-vardecl->name a))
+                                 (yname (vl-vardecl->name b))
+                                 (x (mv-nth 2 (vl-vardecl-msb-emodwires a warnings1)))
+                                 (y (mv-nth 2 (vl-vardecl-msb-emodwires b warnings2)))))))))
 
      (local
       (defthm r2
-        (let ((r-wires          (mv-nth 2 (vl-regdecl-msb-emodwires r warnings1)))
-              (other-wire-lists (strip-cdrs (mv-nth 2 (vl-regdecllist-to-wirealist others warnings2)))))
-          (implies (and (force (not (member-equal (vl-regdecl->name r)
-                                                  (vl-regdecllist->names others))))
-                        (force (vl-regdecl-p r))
-                        (force (vl-regdecllist-p others)))
+        (let ((r-wires          (mv-nth 2 (vl-vardecl-msb-emodwires r warnings1)))
+              (other-wire-lists (strip-cdrs (mv-nth 2 (vl-vardecllist-to-wirealist others warnings2)))))
+          (implies (and (force (not (member-equal (vl-vardecl->name r)
+                                                  (vl-vardecllist->names others))))
+                        (force (vl-vardecl-p r))
+                        (force (vl-vardecllist-p others)))
                    (empty-intersect-with-each-p r-wires
                                                 other-wire-lists)))
         :hints(("Goal"
-                :induct (vl-regdecllist-to-wirealist others warnings2)
-                :in-theory (enable vl-regdecllist-to-wirealist)))))
+                :induct (vl-vardecllist-to-wirealist others warnings2)
+                :in-theory (enable vl-vardecllist-to-wirealist)))))
 
      (defthm rcdrs
-       (implies (and (no-duplicatesp-equal (vl-regdecllist->names x))
-                     (force (vl-regdecllist-p x)))
+       (implies (and (no-duplicatesp-equal (vl-vardecllist->names x))
+                     (force (vl-vardecllist-p x)))
                 (no-duplicatesp-equal
-                 (flatten (strip-cdrs (mv-nth 2 (vl-regdecllist-to-wirealist x warnings))))))
+                 (flatten (strip-cdrs (mv-nth 2 (vl-vardecllist-to-wirealist x warnings))))))
        :hints(("Goal"
-               :in-theory (enable vl-regdecllist-to-wirealist)
-               :induct (vl-regdecllist-to-wirealist x warnings))))))
+               :in-theory (enable vl-vardecllist-to-wirealist)
+               :induct (vl-vardecllist-to-wirealist x warnings))))))
 
 
-  ;; Lemmas for netdecls... same as regdecls.
+  ;; Lemmas for netdecls... same as vardecls.
 
   (local
    (defsection netdecls
@@ -1100,20 +1043,20 @@ theorem:</p>
 
 
   (local
-   (defsection reg/netdecls
+   (defsection var/netdecls
 
 ; One more lemma to show there aren't any duplicates between the separate
-; reg/net declarations.
+; var/net declarations.
 
      (local
       (defthm rn-0
-        (let ((wires (strip-cdrs (mv-nth 2 (vl-regdecllist-to-wirealist x warnings)))))
-          (implies (force (vl-regdecllist-p x))
+        (let ((wires (strip-cdrs (mv-nth 2 (vl-vardecllist-to-wirealist x warnings)))))
+          (implies (force (vl-vardecllist-p x))
                    (subsetp-equal (vl-emodwirelist->basenames (flatten wires))
-                                  (vl-regdecllist->names x))))
+                                  (vl-vardecllist->names x))))
         :hints(("Goal"
-                :induct (vl-regdecllist-to-wirealist x warnings)
-                :in-theory (enable vl-regdecllist-to-wirealist))
+                :induct (vl-vardecllist-to-wirealist x warnings)
+                :in-theory (enable vl-vardecllist-to-wirealist))
                (set-reasoning))))
 
      (local
@@ -1130,12 +1073,12 @@ theorem:</p>
      (local
       (defthm rn-2
         (let ((nwires (strip-cdrs (mv-nth 2 (vl-netdecllist-to-wirealist nets warnings1))))
-              (rwires (strip-cdrs (mv-nth 2 (vl-regdecllist-to-wirealist regs warnings2)))))
+              (rwires (strip-cdrs (mv-nth 2 (vl-vardecllist-to-wirealist vars warnings2)))))
           (implies (and (force (not (intersectp-equal
-                                     (vl-regdecllist->names regs)
+                                     (vl-vardecllist->names vars)
                                      (vl-netdecllist->names nets))))
                         (force (vl-netdecllist-p nets))
-                        (force (vl-regdecllist-p regs)))
+                        (force (vl-vardecllist-p vars)))
                    (not (intersectp-equal
                          (vl-emodwirelist->basenames (flatten nwires))
                          (vl-emodwirelist->basenames (flatten rwires))))))))
@@ -1147,14 +1090,14 @@ theorem:</p>
                  (not (intersectp-equal x y)))
         :hints(("Goal" :induct (len x)))))
 
-     (defthm reg/netdecls
+     (defthm var/netdecls
        (let ((nwires (strip-cdrs (mv-nth 2 (vl-netdecllist-to-wirealist nets warnings1))))
-             (rwires (strip-cdrs (mv-nth 2 (vl-regdecllist-to-wirealist regs warnings2)))))
+             (rwires (strip-cdrs (mv-nth 2 (vl-vardecllist-to-wirealist vars warnings2)))))
          (implies (and (force (not (intersectp-equal
-                                    (vl-regdecllist->names regs)
+                                    (vl-vardecllist->names vars)
                                     (vl-netdecllist->names nets))))
                        (force (vl-netdecllist-p nets))
-                       (force (vl-regdecllist-p regs)))
+                       (force (vl-vardecllist-p vars)))
                   (not (intersectp-equal (flatten nwires)
                                          (flatten rwires))))))))
 
@@ -1185,9 +1128,6 @@ theorem:</p>
     (implies (vl-module-p x)
              (let ((walist (mv-nth 2 (vl-module-wirealist x warnings))))
                (no-duplicatesp-equal (append-alist-vals walist))))))
-
-
-
 
 
 

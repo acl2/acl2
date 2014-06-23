@@ -22,6 +22,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
+(include-book "basic/top")
 (include-book "bitsets/top")
 (include-book "lists/top")
 (include-book "alists/top")
@@ -43,6 +44,7 @@ provide a well-thought-out, documented, coherent reasoning strategy.</p>
 but please be aware that things may change out from under you.</p>
 
 <p>So far, @('std') itself includes libraries about
+   <see topic='@(url std/basic)'>basic</see> concepts,
    <see topic='@(url std/lists)'>lists</see>,
    <see topic='@(url std/osets)'>sets</see>,
    <see topic='@(url std/alists)'>alists</see>,

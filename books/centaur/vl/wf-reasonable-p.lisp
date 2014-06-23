@@ -176,38 +176,23 @@ ranges, e.g., @('wire [7:0] w').  What we do not support are, e.g., @('wire w
   :parents (reasonable)
   :guard (vl-vardecl-p x)
   :extra-decls ((ignorable x))
-  :body (@wf-assert nil
-                    :vl-vardecl
-                    "~l0: variable declarations like ~s1 are not supported."
-                    (list (vl-vardecl->loc x)
-                          (vl-vardecl->name x))))
+  :body (b* (((vl-vardecl x) x))
+          (@wf-progn
+           ;; (@wf-assert (eq x.type :vl-reg)
+           ;;             :vl-vardecl
+           ;;             "~l0: variable declarations other than 'reg', like ~s1, are not supported."
+           ;;             (list (vl-vardecl->loc x)
+           ;;                   (vl-vardecl->name x)))
+           ;; We don't try to support registers that have "arrdims" (i.e., register arrays)
+           ;; instead of ranges (i.e., a multi-bit register).
+           (@wf-assert (not x.arrdims)
+                       :vl-regdecl-array
+                       "~l0: register ~s1 is an array, which is not supported."
+                       (list x.loc x.name)))))
 
 (defwellformed-list vl-vardecllist-reasonable-p (x)
   :element vl-vardecl-reasonable-p
   :guard (vl-vardecllist-p x)
-  :parents (reasonable))
-
-(defwellformed vl-regdecl-reasonable-p (x)
-  :parents (reasonable)
-  :guard (vl-regdecl-p x)
-  :body (let ((arrdims (vl-regdecl->arrdims x))
-              (name    (vl-regdecl->name x))
-              (loc     (vl-regdecl->loc x)))
-          (declare (ignorable name loc))
-
-          (@wf-progn
-
-; We don't try to support registers that have "arrdims" (i.e., register arrays)
-; instead of ranges (i.e., a multi-bit register).
-
-           (@wf-assert (not arrdims)
-                       :vl-regdecl-array
-                       "~l0: register ~s1 is an array, which is not supported."
-                       (list loc name)))))
-
-(defwellformed-list vl-regdecllist-reasonable-p (x)
-  :element vl-regdecl-reasonable-p
-  :guard (vl-regdecllist-p x)
   :parents (reasonable))
 
 (defwellformed vl-modinst-reasonable-p (x)
@@ -255,7 +240,6 @@ ranges, e.g., @('wire [7:0] w').  What we do not support are, e.g., @('wire w
 with some module item declaration, is a reasonable overlap."
   :guard (and (vl-portdecl-p portdecl)
               (or (vl-netdecl-p item)
-                  (vl-regdecl-p item)
                   (vl-vardecl-p item)
                   (vl-eventdecl-p item)
                   (vl-paramdecl-p item)
@@ -351,28 +335,36 @@ item.</p>"
                   (list (vl-portdecl->loc portdecl)
                         (vl-portdecl->name portdecl)))))
 
-    (:vl-regdecl
+    (:vl-vardecl
 
      (@wf-progn
+
+      (@wf-assert (eq (vl-vardecl->type item) :vl-reg)
+                  :vl-weird-port
+                  "~l0: port ~s1 is also declared to be a ~s2."
+                  (list (vl-portdecl->loc portdecl)
+                        (vl-portdecl->name portdecl)
+                        (vl-vardecl->type item)))
 
 ; Like for netdecls, this may be too severe, and will not permit us to "input
 ; [1+2:0] x;" followed by "reg [3:0] x;".  See also the "follow-up" in the
 ; netdecl case, above.
 
+
       (@wf-assert (equal (vl-portdecl->range portdecl)
-                         (vl-regdecl->range item))
+                         (vl-vardecl->range item))
                   :vl-incompatible-range
                   "~l0: port ~s1 is declared to have range ~a2, but is ~
                         also declared as a reg with range ~a3."
                   (list (vl-portdecl->loc portdecl)
                         (vl-portdecl->name portdecl)
                         (vl-portdecl->range portdecl)
-                        (vl-regdecl->range item)))
+                        (vl-vardecl->range item)))
 
 ; Make sure the signedness agrees; see the documentation in portdecl-sign for
 ; more information.
 
-      (@wf-assert (equal (vl-regdecl->signedp item)
+      (@wf-assert (equal (vl-vardecl->signedp item)
                          (vl-portdecl->signedp portdecl))
                   :vl-incompatible-sign
                   "~l0: port declaration for ~s1 has signedp ~x2, while reg ~
@@ -381,7 +373,7 @@ item.</p>"
                   (list (vl-portdecl->loc portdecl)
                         (vl-portdecl->name portdecl)
                         (vl-portdecl->signedp portdecl)
-                        (vl-regdecl->signedp item)))
+                        (vl-vardecl->signedp item)))
 
 ; It makes sense that a reg could be an output.  But I don't want to think
 ; about what it would mean for a reg to be an input or an inout wire.
@@ -389,14 +381,14 @@ item.</p>"
       (@wf-assert (equal (vl-portdecl->dir portdecl) :vl-output)
                   :vl-scary-reg
                   "~l0: port ~s1 has direction ~s2, but is also declared ~
-                        to be a register."
+                   to be a register."
                   (list (vl-portdecl->loc portdecl)
                         (vl-portdecl->name portdecl)
                         (vl-portdecl->dir portdecl)))
       ))
 
 ; It doesn't make sense to me that any of these would be a port.
-    ((:vl-vardecl :vl-eventdecl :vl-paramdecl :vl-fundecl :vl-taskdecl :vl-modinst :vl-gateinst)
+    ((:vl-eventdecl :vl-paramdecl :vl-fundecl :vl-taskdecl :vl-modinst :vl-gateinst)
 
      (@wf-assert nil
                  :vl-weird-port
@@ -674,7 +666,7 @@ item.</p>"
      (@wf-call vl-portdecllist-reasonable-p x.portdecls)
      ;; (@wf-call vl-ports-and-portdecls-compatible-p ports portdecls)
      (@wf-call vl-netdecllist-reasonable-p x.netdecls)
-     (@wf-call vl-regdecllist-reasonable-p x.regdecls)
+     (@wf-call vl-vardecllist-reasonable-p x.vardecls)
      (@wf-note (not x.eventdecls)
                :vl-eventdecls
                "~l0: module ~s1 contains event declarations."

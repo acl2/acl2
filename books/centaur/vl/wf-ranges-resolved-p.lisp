@@ -76,33 +76,33 @@
 
 
 
-(defwellformed vl-regdecl-range-resolved-p (x)
-  :guard (vl-regdecl-p x)
-  :body (let ((range (vl-regdecl->range x)))
+(defwellformed vl-vardecl-range-resolved-p (x)
+  :guard (vl-vardecl-p x)
+  :body (let ((range (vl-vardecl->range x)))
           (@wf-assert (vl-maybe-range-resolved-p range)
                       :vl-range-unresolved
-                      "~l0: failed to resolve range of reg ~s1: current range is ~x2."
-                      (list (vl-regdecl->loc x)
-                            (vl-regdecl->name x)
+                      "~l0: failed to resolve range of variable ~s1: current range is ~x2."
+                      (list (vl-vardecl->loc x)
+                            (vl-vardecl->name x)
                             range))))
 
-(deffixequiv vl-regdecl-range-resolved-p :args ((x vl-regdecl-p))
-  :hints(("Goal" :in-theory (enable vl-regdecl-range-resolved-p))))
+(deffixequiv vl-vardecl-range-resolved-p :args ((x vl-vardecl-p))
+  :hints(("Goal" :in-theory (enable vl-vardecl-range-resolved-p))))
 
-(defthm vl-maybe-range-resolved-p-of-vl-regdecl->range
-  (implies (vl-regdecl-range-resolved-p x)
-           (vl-maybe-range-resolved-p (vl-regdecl->range x)))
-  :hints(("Goal" :in-theory (enable vl-regdecl-range-resolved-p))))
+(defthm vl-maybe-range-resolved-p-of-vl-vardecl->range
+  (implies (vl-vardecl-range-resolved-p x)
+           (vl-maybe-range-resolved-p (vl-vardecl->range x)))
+  :hints(("Goal" :in-theory (enable vl-vardecl-range-resolved-p))))
 
-(defwellformed-list vl-regdecllist-ranges-resolved-p (x)
-  :element vl-regdecl-range-resolved-p
-  :guard (vl-regdecllist-p x))
+(defwellformed-list vl-vardecllist-ranges-resolved-p (x)
+  :element vl-vardecl-range-resolved-p
+  :guard (vl-vardecllist-p x))
 
-(defthm vl-range-resolved-p-of-vl-regdecl-range-of-vl-find-regdecl
-  (implies (force (vl-regdecllist-ranges-resolved-p x))
-           (vl-regdecl-range-resolved-p (vl-find-regdecl name x)))
+(defthm vl-range-resolved-p-of-vl-vardecl-range-of-vl-find-vardecl
+  (implies (force (vl-vardecllist-ranges-resolved-p x))
+           (vl-vardecl-range-resolved-p (vl-find-vardecl name x)))
   :hints(("Goal"
-          :in-theory (enable vl-find-regdecl))))
+          :in-theory (enable vl-find-vardecl))))
 
 
 
@@ -161,7 +161,7 @@
   (@wf-progn
    (@wf-call vl-portdecllist-ranges-resolved-p (vl-module->portdecls x))
    (@wf-call vl-netdecllist-ranges-resolved-p (vl-module->netdecls x))
-   (@wf-call vl-regdecllist-ranges-resolved-p (vl-module->regdecls x))
+   (@wf-call vl-vardecllist-ranges-resolved-p (vl-module->vardecls x))
    (@wf-call vl-modinstlist-ranges-resolved-p (vl-module->modinsts x))
    (@wf-call vl-gateinstlist-ranges-resolved-p (vl-module->gateinsts x))))
 
@@ -175,9 +175,9 @@
            (vl-netdecllist-ranges-resolved-p (vl-module->netdecls x)))
   :hints(("Goal" :in-theory (enable vl-module-ranges-resolved-p))))
 
-(defthm vl-regdecllist-ranges-resolved-p-when-vl-module-ranges-resolved-p
+(defthm vl-vardecllist-ranges-resolved-p-when-vl-module-ranges-resolved-p
   (implies (force (vl-module-ranges-resolved-p x))
-           (vl-regdecllist-ranges-resolved-p (vl-module->regdecls x)))
+           (vl-vardecllist-ranges-resolved-p (vl-module->vardecls x)))
   :hints(("Goal" :in-theory (enable vl-module-ranges-resolved-p))))
 
 (defthm vl-modinstlist-ranges-resolved-p-when-vl-module-ranges-resolved-p

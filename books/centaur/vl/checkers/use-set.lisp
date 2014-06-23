@@ -491,7 +491,7 @@ we add are</p>
 
 
        (declared-wires      (vl-netdecllist->names-exec x.netdecls nil))
-       (declared-wires      (vl-regdecllist->names-exec x.regdecls declared-wires))
+       (declared-wires      (vl-vardecllist->names-exec x.vardecls declared-wires))
 
        (params              (vl-paramdecllist->names-exec x.paramdecls nil))
        ((mv in out inout)   (vl-portdecllist-names-by-direction x.portdecls nil nil nil))
@@ -521,7 +521,6 @@ we add are</p>
        (alist (vl-mark-wires-used (vl-exprlist-names (vl-portdecllist-allexprs x.portdecls)) t alist))
        (alist (vl-mark-wires-used (vl-exprlist-names (vl-netdecllist-allexprs x.netdecls)) t alist))
        (alist (vl-mark-wires-used (vl-exprlist-names (vl-vardecllist-allexprs x.vardecls)) t alist))
-       (alist (vl-mark-wires-used (vl-exprlist-names (vl-regdecllist-allexprs x.regdecls)) t alist))
        (alist (vl-mark-wires-used (vl-exprlist-names (vl-eventdecllist-allexprs x.eventdecls)) t alist))
        (alist (vl-mark-wires-used (vl-exprlist-names (vl-paramdecllist-allexprs x.paramdecls)) t alist))
 

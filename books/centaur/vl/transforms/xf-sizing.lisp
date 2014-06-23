@@ -703,40 +703,19 @@ the expression.</p>"
 
 (def-vl-exprsize-list vl-netdecllist :element vl-netdecl)
 
-(def-vl-exprsize vl-regdecl
-  :body
-  (b* (((vl-regdecl x) x)
-       (elem x)
-       ((mv successp1 warnings range-prime)   (vl-maybe-range-exprsize x.range mod ialist elem warnings))
-       ((mv successp2 warnings arrdims-prime) (vl-rangelist-exprsize x.arrdims mod ialist elem warnings))
-
-       ;; BOZO we should really separate out initvals from regdecls.  For
-       ;; now lets just not size the initval, since it's hard to do it
-       ;; right.  We have to compute the size of the range and stuff it
-       ;; in there.
-
-       (successp (and successp1 successp2))
-       (x-prime (change-vl-regdecl x
-                                   :range range-prime
-                                   :arrdims arrdims-prime)))
-    (mv successp warnings x-prime)))
-
-(def-vl-exprsize-list vl-regdecllist :element vl-regdecl)
-
-
-
 (def-vl-exprsize vl-vardecl
   :body
   (b* (((vl-vardecl x) x)
        (elem x)
-       ((mv successp warnings arrdims-prime)
-        (vl-rangelist-exprsize x.arrdims mod ialist elem warnings))
-
+       ((mv successp1 warnings range-prime)   (vl-maybe-range-exprsize x.range mod ialist elem warnings))
+       ((mv successp2 warnings arrdims-prime) (vl-rangelist-exprsize x.arrdims mod ialist elem warnings))
        ;; BOZO we should really separate out initvals from vardecls.  For now
        ;; lets just not size the initval, since it's hard to do it right.  We
        ;; have to compute the size of the range and stuff it in there.
-
-       (x-prime (change-vl-vardecl x :arrdims arrdims-prime)))
+       (successp (and successp1 successp2))
+       (x-prime (change-vl-vardecl x
+                                   :range range-prime
+                                   :arrdims arrdims-prime)))
     (mv successp warnings x-prime)))
 
 (def-vl-exprsize-list vl-vardecllist :element vl-vardecl)
@@ -779,7 +758,6 @@ the expression.</p>"
        ((mv & warnings ports)      (vl-portlist-exprsize      x.ports      x ialist warnings))
        ((mv & warnings portdecls)  (vl-portdecllist-exprsize  x.portdecls  x ialist warnings))
        ((mv & warnings netdecls)   (vl-netdecllist-exprsize   x.netdecls   x ialist warnings))
-       ((mv & warnings regdecls)   (vl-regdecllist-exprsize   x.regdecls   x ialist warnings))
        ((mv & warnings vardecls)   (vl-vardecllist-exprsize   x.vardecls   x ialist warnings))
        ((mv & warnings eventdecls) (vl-eventdecllist-exprsize x.eventdecls x ialist warnings)))
     (fast-alist-free ialist)
@@ -792,7 +770,6 @@ the expression.</p>"
                       :ports ports
                       :portdecls portdecls
                       :netdecls netdecls
-                      :regdecls regdecls
                       :vardecls vardecls
                       :eventdecls eventdecls
                       :warnings warnings)))

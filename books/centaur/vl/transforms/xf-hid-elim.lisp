@@ -30,6 +30,8 @@
 (local (include-book "../util/osets"))
 
 
+;; NOTE ----- This is now only used in the linter, I think!
+
 (local (defthm crock3
          (implies (and (force (stringp name))
                        (force (vl-module-p x)))
@@ -274,7 +276,6 @@ hierarchical references to wires inside of @('processor'), etc.</p>")
 ; PART 2 --- REPLACING HIDS WITH FLATTENED NAMES
 ; BOZO add documentation
 
-
 (defsection vl-hidexpr-hid-elim
 
 ; We eliminate an HID by replacing it with an ordinary identifier.  We also
@@ -406,49 +407,72 @@ hierarchical references to wires inside of @('processor'), etc.</p>")
          (itemname (vl-hid-final-name x))
          (item     (vl-find-moduleitem itemname target-mod))
 
-         ((unless (or (eq (tag item) :vl-netdecl)
-                      (eq (tag item) :vl-regdecl)))
-          (mv (cons (make-vl-warning
-                     :type :vl-bad-hid
-                     :msg "The hierarchical identifier ~a0 refers to ~s1 in module ~
-                           ~m2, which is a module item of type ~s3.  But we only ~
-                           allow references to regs and nets."
-                     :args (list x itemname target-modname (tag item))
-                     :fatalp t
-                     :fn 'vl-hidexpr-hid-elim)
-                    warnings)
-              x netdecls))
+         ((when (eq (tag item) :vl-netdecl))
+          (b* (((vl-netdecl item) item)
+               ((unless (vl-maybe-range-resolved-p item.range))
+                (mv (cons (make-vl-warning
+                           :type :vl-bad-hid
+                           :msg "The hierarchical identifier ~a0 refers to ~
+                                 ~s1 in module ~m2, which is a net with range ~
+                                 ~a3.  Expected ranges to be resolved!"
+                           :args (list x itemname target-modname item.range)
+                           :fatalp t
+                           :fn 'vl-hidexpr-hid-elim)
+                          warnings)
+                    x netdecls))
+               (netdecl (make-vl-netdecl :name flat-name
+                                         :type :vl-wire
+                                         :range item.range
+                                         :signedp item.signedp
+                                         :arrdims item.arrdims
+                                         :loc *vl-fakeloc*
+                                         :atts decl-atts)))
+            (mv warnings x-prime (cons netdecl netdecls))))
 
-         ((mv range signedp arrdims)
-          (if (eq (tag item) :vl-netdecl)
-              (mv (vl-netdecl->range item)
-                  (vl-netdecl->signedp item)
-                  (vl-netdecl->arrdims item))
-            (mv (vl-regdecl->range item)
-                (vl-regdecl->signedp item)
-                (vl-regdecl->arrdims item))))
+         ((when (eq (tag item) :vl-vardecl))
+          (b* (((vl-vardecl item) item)
+               ((unless (eq item.type :vl-reg))
+                (mv (cons (make-vl-warning
+                           :type :vl-bad-hid
+                           :msg "The hierarchical identifier ~a0 refers to ~
+                                 ~s1 in module ~m2, which is a variable of ~
+                                 type ~s3.  But we only allow references to ~
+                                 regs and nets."
+                           :args (list x itemname target-modname item.type)
+                           :fatalp t
+                           :fn 'vl-hidexpr-hid-elim)
+                          warnings)
+                    x netdecls))
+               ((unless (vl-maybe-range-resolved-p item.range))
+                (mv (cons (make-vl-warning
+                           :type :vl-bad-hid
+                           :msg "The hierarchical identifier ~a0 refers to ~
+                                 ~s1 in module ~m2, which is a reg with range ~
+                                 ~a3.  Expected ranges to be resolved!"
+                           :args (list x itemname target-modname item.range)
+                           :fatalp t
+                           :fn 'vl-hidexpr-hid-elim)
+                          warnings)
+                    x netdecls))
+               (netdecl   (make-vl-netdecl :name flat-name
+                                           :type :vl-wire
+                                           :range item.range
+                                           :signedp item.signedp
+                                           :arrdims item.arrdims
+                                           :loc *vl-fakeloc*
+                                           :atts decl-atts)))
+            (mv warnings x-prime (cons netdecl netdecls)))))
 
-         ((unless (vl-maybe-range-resolved-p range))
-          (mv (cons (make-vl-warning
-                     :type :vl-bad-hid
-                     :msg "The hierarchical identifier ~a0 refers to ~s1 in module ~
-                           ~m2, which is a net/reg with range ~a3.  Expected ranges ~
-                           to be resolved!"
-                     :args (list x itemname target-modname range)
-                     :fatalp t
-                     :fn 'vl-hidexpr-hid-elim)
-                    warnings)
-              x netdecls))
-
-         (netdecl   (make-vl-netdecl :name flat-name
-                                     :type :vl-wire
-                                     :range range
-                                     :signedp signedp
-                                     :arrdims arrdims
-                                     :loc *vl-fakeloc*
-                                     :atts decl-atts)))
-
-        (mv warnings x-prime (cons netdecl netdecls))))
+      (mv (cons (make-vl-warning
+                 :type :vl-bad-hid
+                 :msg "The hierarchical identifier ~a0 refers to ~s1 in ~
+                       module ~m2, which is a module item of type ~s3.  But ~
+                       we only allow references to registers and nets."
+                 :args (list x itemname target-modname (tag item))
+                 :fatalp t
+                 :fn 'vl-hidexpr-hid-elim)
+                warnings)
+          x netdecls)))
 
   (local (in-theory (enable vl-hidexpr-hid-elim)))
 

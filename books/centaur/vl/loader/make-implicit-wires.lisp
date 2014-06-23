@@ -441,7 +441,6 @@ extends @('decls') with the newly declared name."
   (b* ((x (vl-blockitem-fix x))
        ((mv name exprs)
         (case (tag x)
-          (:vl-regdecl   (mv (vl-regdecl->name x)   (vl-regdecl-allexprs x)))
           (:vl-vardecl   (mv (vl-vardecl->name x)   (vl-vardecl-allexprs x)))
           (:vl-paramdecl (mv (vl-paramdecl->name x) (vl-paramdecl-allexprs x)))
           (otherwise     (mv (vl-eventdecl->name x) (vl-eventdecl-allexprs x)))))
@@ -739,7 +738,6 @@ later on.  We handle that in @(see vl-make-implicit-wires).</p>"
           (vl-make-implicit-wires-aux (cdr x) portdecls decls acc warnings)))
 
        ((when (or (eq tag :vl-vardecl)
-                  (eq tag :vl-regdecl)
                   (eq tag :vl-eventdecl)
                   (eq tag :vl-paramdecl)))
         (b* (((mv warnings decls)

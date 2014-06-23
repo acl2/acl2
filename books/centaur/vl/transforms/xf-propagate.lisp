@@ -269,12 +269,10 @@ places to be unsafe.</p>"
       (vl-exprlist-names (vl-fundecllist-allexprs x.fundecls))
       (vl-exprlist-names (vl-alwayslist-allexprs x.alwayses))
       (vl-exprlist-names (vl-initiallist-allexprs x.initials))
-      (vl-exprlist-names (vl-regdecllist-allexprs x.regdecls))
       (vl-exprlist-names (vl-vardecllist-allexprs x.vardecls))
       (vl-exprlist-names (vl-taskdecllist-allexprs x.taskdecls))
       (vl-exprlist-names (vl-eventdecllist-allexprs x.eventdecls))
       (vl-exprlist-names (vl-paramdecllist-allexprs x.paramdecls))
-      (vl-regdecllist->names x.regdecls)
       (vl-vardecllist->names x.vardecls)
       (vl-taskdecllist->names x.taskdecls)
       (vl-eventdecllist->names x.eventdecls)
@@ -409,7 +407,6 @@ places to be unsafe.</p>"
        ;; used in these areas.
        ;; ((when (or x.alwayses
        ;;            x.fundecls
-       ;;            x.regdecls
        ;;            x.vardecls
        ;;            x.paramdecls
        ;;            x.taskdecls

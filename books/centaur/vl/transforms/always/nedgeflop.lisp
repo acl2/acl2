@@ -272,7 +272,7 @@ example:</p>
         (vl-primitive-mkport "q" :vl-output))
 
        ;; reg q;
-       (q-regdecl (make-vl-regdecl :name "q" :loc *vl-fakeloc*))
+       (q-vardecl (make-vl-vardecl :type :vl-reg :name "q" :loc *vl-fakeloc*))
 
        ;; input d0, d1, ..., d{n-1};
        ((mv d-exprs d-ports d-portdecls d-netdecls)
@@ -293,7 +293,7 @@ example:</p>
                   :ports     (cons q-port (append d-ports clk-ports))
                   :portdecls (cons q-portdecl (append d-portdecls clk-portdecls))
                   :netdecls  (append d-netdecls clk-netdecls)
-                  :regdecls  (list q-regdecl)
+                  :vardecls  (list q-vardecl)
                   :alwayses  (list always)
                   :minloc    *vl-fakeloc*
                   :maxloc    *vl-fakeloc*

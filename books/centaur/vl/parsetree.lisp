@@ -1144,16 +1144,14 @@ enforces these restrictions, we do not encode them into the definition of
 
 
 (defenum vl-vardecltype-p
-  (:vl-integer
+  (:vl-reg
+   :vl-integer
    :vl-real
    :vl-time
    :vl-realtime)
-  :short "Representation of variable types."
+  :short "Representation of @('reg') and other variable types."
   :long "<p>We represent Verilog's variable types with the keyword symbols
-recognized by @(call vl-vardecltype-p).</p>
-
-<p><b>BOZO</b> consider consolidating variable and register declarations into a
-single parse tree element by adding an extra reg type to vl-vardecl-p.</p>")
+recognized by @(call vl-vardecltype-p).</p>")
 
 (defprod vl-vardecl
   :short "Representation of a single variable declaration."
@@ -1164,8 +1162,19 @@ single parse tree element by adding an extra reg type to vl-vardecl-p.</p>")
             :rule-classes :type-prescription
             "Name of the variable being declared.")
 
+   (signedp booleanp
+            :rule-classes :type-prescription
+            "Indicates whether they keyword @('signed') was used in the
+             declaration of the register.  By default, registers are unsigned.
+             Not applicable for some kinds of variables like @('real') or
+             @('realtime') variables.")
+
+   (range   vl-maybe-range-p
+            "Size for wide registers; see also @(see vl-netdecl-p) for
+             more discussion of @('range') versus @('arrdims').")
+
    (type    vl-vardecltype-p
-            "Kind of variable, e.g., integer, real, etc.")
+            "Kind of variable, e.g., reg, integer, real, etc.")
 
    (arrdims vl-rangelist-p
             "A list of array dimensions; empty unless this is an array or
@@ -1185,50 +1194,10 @@ single parse tree element by adding an extra reg type to vl-vardecl-p.</p>")
    (loc     vl-location-p
             "Where the declaration was found in the source code."))
 
-  :long "<p>We use @('vl-vardecl-p')s to represent @('integer'), @('real'),
-@('time'), and @('realtime') variable declarations.  As with nets and ports,
-our parser splits up combined declarations such as \"integer a, b\" into
-multiple, individual declarations, so each @('vl-vardecl-p') represents only
-one declaration.</p>")
-
-
-(defprod vl-regdecl
-  :short "Representation of a single @('reg') declaration."
-  :tag :vl-regdecl
-  :layout :tree
-  ((name    stringp
-            :rule-classes :type-prescription
-            "Name of the register being declared.")
-
-   (signedp booleanp
-            :rule-classes :type-prescription
-            "Indicates whether they keyword @('signed') was used in the
-             declaration of the register.  By default, registers are
-             unsigned.")
-
-   (range   vl-maybe-range-p
-            "Size for wide registers; see also @(see vl-netdecl-p) for
-             more discussion of @('range') versus @('arrdims').")
-
-   (arrdims vl-rangelist-p
-            "Array dimensions for arrays of registers; see @(see
-             vl-netdecl-p) for more discussion.")
-
-   (initval vl-maybe-expr-p
-            ;; BOZO eliminate initval and replace with an initial statement.
-            ;; Update the docs for vl-initial-p and also below when this is
-            ;; done.
-            "When present, indicates the initial value for this register.")
-
-   (atts    vl-atts-p
-            "Any attributes associated with this declaration.")
-
-   (loc     vl-location-p
-            "Where the declaration was found in the source code."))
-
-  :long "<p>@('vl-regdecl-p') is our representation for a single @('reg')
-declaration.  Our parser splits up combined declarations such as \"reg a, b\"
-into multiple, individual declarations, so each @('vl-regdecl-p') represents
+  :long "<p>We use @('vl-vardecl-p')s to represent @('reg'), @('integer'),
+@('real'), @('time'), and @('realtime') variable declarations.  As with nets
+and ports, our parser splits up combined declarations such as \"integer a, b\"
+into multiple, individual declarations, so each @('vl-vardecl-p') represents
 only one declaration.</p>")
 
 
@@ -1348,14 +1317,6 @@ endmodule
   (vl-vardecl-p x)
   :elementp-of-nil nil)
 
-(fty::deflist vl-regdecllist
-              :elt-type vl-regdecl-p
-              :true-listp nil)
-
-(deflist vl-regdecllist-p (x)
-  (vl-regdecl-p x)
-  :elementp-of-nil nil)
-
 (fty::deflist vl-eventdecllist
               :elt-type vl-eventdecl-p
               :true-listp nil)
@@ -1386,21 +1347,19 @@ endmodule
 (deftranssum vl-blockitem
   :short "Recognizer for a valid block item."
   :long "<p>@('vl-blockitem-p') is a sum-of-products style type for recognizing
-valid block items.  The valid block item declarations are register
-declarations, variable declarations (integer, real, time, and realtime), event
-declarations, and parameter declarations (parameter and localparam), which we
-represent as @(see vl-regdecl-p), @(see vl-vardecl-p), @(see vl-eventdecl-p),
-and @(see vl-paramdecl-p) objects, respectively.</p>"
-  (vl-regdecl
-   vl-vardecl
+valid block items.  The valid block item declarations are variable
+declarations (reg, integer, real, time, and realtime), event declarations, and
+parameter declarations (parameter and localparam), which we represent as @(see
+vl-vardecl-p), @(see vl-eventdecl-p), and @(see vl-paramdecl-p) objects,
+respectively.</p>"
+  (vl-vardecl
    vl-eventdecl
    vl-paramdecl))
 
 (defthm vl-blockitem-p-tag-forward
   ;; BOZO is this better than the rewrite rule we currently add?
   (implies (vl-blockitem-p x)
-           (or (equal (tag x) :vl-regdecl)
-               (equal (tag x) :vl-vardecl)
+           (or (equal (tag x) :vl-vardecl)
                (equal (tag x) :vl-eventdecl)
                (equal (tag x) :vl-paramdecl)))
   :rule-classes :forward-chaining)
@@ -1413,10 +1372,7 @@ and @(see vl-paramdecl-p) objects, respectively.</p>"
   (vl-blockitem-p x)
   :elementp-of-nil nil
   :rest
-  ((defthm vl-blockitemlist-p-when-vl-regdecllist-p
-     (implies (vl-regdecllist-p x)
-              (vl-blockitemlist-p x)))
-   (defthm vl-blockitemlist-p-when-vl-vardecllist-p
+  ((defthm vl-blockitemlist-p-when-vl-vardecllist-p
      (implies (vl-vardecllist-p x)
               (vl-blockitemlist-p x)))
    (defthm vl-blockitemlist-p-when-vl-eventdecllist-p
@@ -2329,11 +2285,8 @@ include delays, etc.</p>")
                 ...).")
 
    (vardecls   vl-vardecllist-p
-               "Variable declarations like @('integer i;') and @('real
-               foo;').")
-
-   (regdecls   vl-regdecllist-p
-               "Register declarations like @('reg [3:0] r;').")
+               "Variable declarations like @('reg [3:0] r;'), @('integer i;'),
+                and @('real foo;').")
 
    (eventdecls vl-eventdecllist-p
                "Event declarations like @('event foo ...')")

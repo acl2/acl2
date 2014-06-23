@@ -166,52 +166,52 @@ to report this information as well.</p>"
                                      (cat name " not found")))
                   x nil nil nil))
 
-             ((unless (or (eq (tag item) :vl-netdecl)
-                          (eq (tag item) :vl-regdecl)))
-              (mv (fatal :type :vl-unresolved-hid
-                         :msg *vl-unresolved-hid-msg*
-                         :args (list ctx-hid
-                                     ctx-modname
-                                     (vl-module->name curr)
-                                     name
-                                     (cat "Expected " name " to be a net or reg, but found "
-                                          (symbol-name (tag item)))))
-                  x nil nil nil))
+             (tag     (tag item))
+             (modname (string-fix (vl-module->name curr)))
 
-             ((mv range signedp arrdims)
-              (if (eq (tag item) :vl-netdecl)
-                  (mv (vl-netdecl->range item)
-                      (vl-netdecl->signedp item)
-                      (vl-netdecl->arrdims item))
-                (mv (vl-regdecl->range item)
-                    (vl-regdecl->signedp item)
-                    (vl-regdecl->arrdims item))))
+             ((when (eq tag :vl-netdecl))
+              (b* (((vl-netdecl item) item)
+                   ;; Try to simplify the range.  We didn't originally do this,
+                   ;; but I later found that we weren't fully resolving some
+                   ;; HIDs because their declared ranges were things like
+                   ;; [`foo-1:0].  So we can do a bit better by trying to
+                   ;; resolve the ranges.
+                   ((mv & range) (vl-maybe-rangeresolve item.range nil))
+                   (range-resolvedp
+                    ;; See vl-hid-expr-elim, don't say it's resolved unless
+                    ;; it's also unsigned and has no arrdims.
+                    (and (not item.signedp)
+                         (not item.arrdims)
+                         (vl-maybe-range-resolved-p range))))
+                (mv (ok) x modname range-resolvedp range)))
 
-             (range
-              ;; Try to simplify the range.  We didn't originally do this, but
-              ;; I later found that we weren't fully resolving some HIDs
-              ;; because their declared ranges were things like [`foo-1:0].  So
-              ;; we can do a bit better by trying to resolve the ranges.
-              (b* (((when (vl-maybe-range-resolved-p range))
-                          range)
-                         ((mv ?warnings new-range)
-                          (vl-rangeresolve range nil)))
-                      new-range))
+             ((when (eq tag :vl-vardecl))
+              (b* (((vl-vardecl item) item)
+                   ;; BOZO maybe handle some other kinds here
+                   ((unless (eq item.type :vl-reg))
+                    ;; Some other kind of variable: we will just not claim to
+                    ;; know the size of it.
+                    (mv (ok) x modname nil nil))
+                   ;; Reg case.
+                   ((mv & range) (vl-maybe-rangeresolve item.range nil))
+                   (range-resolvedp
+                    ;; See vl-hid-expr-elim, don't say it's resolved unless
+                    ;; it's also unsigned and has no arrdims.
+                    (and (not item.signedp)
+                         (not item.arrdims)
+                         (vl-maybe-range-resolved-p range))))
+                (mv (ok) x modname range-resolvedp range))))
 
-             (range-resolvedp
-              ;; See vl-hid-expr-elim, don't say it's resolved unless it's also
-              ;; unsigned and has no arrdims.
-              (and (not signedp)
-                   (not arrdims)
-                   (vl-maybe-range-resolved-p range)))
-
-             (modname (string-fix (vl-module->name curr))))
-
-          (mv (ok) x modname range-resolvedp range)))
-
-       ((unless (mbt (consp x)))
-        (impossible)
-        (mv (ok) x nil nil nil))
+          ;; Otherwise, some other kind of thing...
+          (mv (fatal :type :vl-unresolved-hid
+                     :msg *vl-unresolved-hid-msg*
+                     :args (list ctx-hid
+                                 ctx-modname
+                                 (vl-module->name curr)
+                                 name
+                                 (cat "Expected " name " to be a net or variable, but found "
+                                      (symbol-name (tag item)))))
+              x nil nil nil)))
 
        ((vl-nonatom x) x)
 
@@ -1175,7 +1175,6 @@ identifier.</p>"
   :short "Top-level @(see follow-hids) transform."
   ((x vl-design-p))
   :returns (new-x vl-design-p)
-  (b* ((x (vl-design-fix x))
-       ((vl-design x) x))
+  (b* (((vl-design x) x))
     (change-vl-design x :mods (vl-modulelist-follow-hids x.mods))))
 

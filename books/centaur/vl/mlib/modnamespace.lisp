@@ -101,12 +101,6 @@ events.</p>")
   :returns (names string-listp)
   (vl-vardecl->name x))
 
-(defprojection vl-regdecllist->names ((x vl-regdecllist-p))
-  :parents (vl-regdecllist-p modnamespace)
-  :short "Collect all names declared in a @(see vl-regdecllist-p)."
-  :returns (names string-listp)
-  (vl-regdecl->name x))
-
 (defprojection vl-eventdecllist->names ((x vl-eventdecllist-p))
   :parents (vl-eventdecllist-p modnamespace)
   :short "Collect all names declared in a @(see vl-eventdecllist-p)."
@@ -262,7 +256,6 @@ to perform a cons for every object in the module.  But we can at least do
 everything tail recursively, etc.</p>"
   (b* (((vl-module x) x)
        (nrev (vl-netdecllist->names-nrev     x.netdecls   nrev))
-       (nrev (vl-regdecllist->names-nrev     x.regdecls   nrev))
        (nrev (vl-vardecllist->names-nrev     x.vardecls   nrev))
        (nrev (vl-eventdecllist->names-nrev   x.eventdecls nrev))
        (nrev (vl-paramdecllist->names-nrev   x.paramdecls nrev))
@@ -291,7 +284,6 @@ module illegally declares those duplicated names more than once.</p>
   (mbe :logic
        (b* (((vl-module x) x))
          (append (vl-netdecllist->names     x.netdecls)
-                 (vl-regdecllist->names     x.regdecls)
                  (vl-vardecllist->names     x.vardecls)
                  (vl-eventdecllist->names   x.eventdecls)
                  (vl-paramdecllist->names   x.paramdecls)
@@ -326,12 +318,10 @@ module illegally declares those duplicated names more than once.</p>
   :guard-hints(("Goal" :in-theory (enable vl-blockitem-p)))
   (mbe :logic
        (let ((x (vl-blockitem-fix x)))
-         (cond ((vl-regdecl-p x)   (vl-regdecl->name x))
-               ((vl-vardecl-p x)   (vl-vardecl->name x))
+         (cond ((vl-vardecl-p x)   (vl-vardecl->name x))
                ((vl-eventdecl-p x) (vl-eventdecl->name x))
                (t                  (vl-paramdecl->name x))))
        :exec (case (tag x)
-               (:vl-regdecl   (vl-regdecl->name x))
                (:vl-vardecl   (vl-vardecl->name x))
                (:vl-eventdecl (vl-eventdecl->name x))
                (otherwise     (vl-paramdecl->name x)))))

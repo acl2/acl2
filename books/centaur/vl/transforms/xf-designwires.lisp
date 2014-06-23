@@ -60,20 +60,20 @@ tell whether a wire was in the original design.</p>")
   :result-type vl-netdecllist-p
   :nil-preservingp nil)
 
-(define vl-regdecl-designwires ((x vl-regdecl-p))
-  :returns (new-x vl-regdecl-p :hyp :fguard)
-  :short "Add a @('VL_DESIGN_WIRE') attribute to a @(see vl-regdecl-p)."
-  (b* (((vl-regdecl x) x)
+(define vl-vardecl-designwires ((x vl-vardecl-p))
+  :returns (new-x vl-vardecl-p :hyp :fguard)
+  :short "Add a @('VL_DESIGN_WIRE') attribute to a @(see vl-vardecl-p)."
+  (b* (((vl-vardecl x) x)
        ((when (assoc-equal "VL_DESIGN_WIRE" x.atts))
         ;; For idempotency, don't add it again.
         x)
        (atts (acons "VL_DESIGN_WIRE" nil x.atts)))
-    (change-vl-regdecl x :atts atts)))
+    (change-vl-vardecl x :atts atts)))
 
-(defprojection vl-regdecllist-designwires (x)
-  (vl-regdecl-designwires x)
-  :guard (vl-regdecllist-p x)
-  :result-type vl-regdecllist-p
+(defprojection vl-vardecllist-designwires (x)
+  (vl-vardecl-designwires x)
+  :guard (vl-vardecllist-p x)
+  :result-type vl-vardecllist-p
   :nil-preservingp nil)
 
 (define vl-module-designwires ((x vl-module-p))
@@ -85,7 +85,7 @@ in a module."
         x))
     (change-vl-module x
                       :netdecls (vl-netdecllist-designwires x.netdecls)
-                      :regdecls (vl-regdecllist-designwires x.regdecls))))
+                      :vardecls (vl-vardecllist-designwires x.vardecls))))
 
 (defprojection vl-modulelist-designwires (x)
   (vl-module-designwires x)

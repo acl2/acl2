@@ -215,24 +215,13 @@ attributes is left up to the implementation.</p>"
 (def-vl-subst vl-vardecl-subst
   :type vl-vardecl-p
   :body (change-vl-vardecl x
+                           :range (vl-maybe-range-subst (vl-vardecl->range x) sigma)
                            :arrdims (vl-rangelist-subst (vl-vardecl->arrdims x) sigma)
                            :initval (vl-maybe-expr-subst (vl-vardecl->initval x) sigma)))
 
 (def-vl-subst-list vl-vardecllist-subst
   :type vl-vardecllist-p
   :element vl-vardecl-subst)
-
-
-(def-vl-subst vl-regdecl-subst
-  :type vl-regdecl-p
-  :body (change-vl-regdecl x
-                           :range (vl-maybe-range-subst (vl-regdecl->range x) sigma)
-                           :arrdims (vl-rangelist-subst (vl-regdecl->arrdims x) sigma)
-                           :initval (vl-maybe-expr-subst (vl-regdecl->initval x) sigma)))
-
-(def-vl-subst-list vl-regdecllist-subst
-  :type vl-regdecllist-p
-  :element vl-regdecl-subst)
 
 
 
@@ -354,7 +343,6 @@ attributes is left up to the implementation.</p>"
   :type vl-blockitem-p
   :body (b* ((x (vl-blockitem-fix x)))
           (case (tag x)
-            (:vl-regdecl   (vl-regdecl-subst x sigma))
             (:vl-vardecl   (vl-vardecl-subst x sigma))
             (:vl-eventdecl (vl-eventdecl-subst x sigma))
             (otherwise     (vl-paramdecl-subst x sigma)))))
@@ -483,7 +471,6 @@ attributes is left up to the implementation.</p>"
                             :assigns    (vl-assignlist-subst    x.assigns    sigma)
                             :netdecls   (vl-netdecllist-subst   x.netdecls   sigma)
                             :vardecls   (vl-vardecllist-subst   x.vardecls   sigma)
-                            :regdecls   (vl-regdecllist-subst   x.regdecls   sigma)
                             :fundecls   (vl-fundecllist-subst   x.fundecls   sigma)
                             :eventdecls (vl-eventdecllist-subst x.eventdecls sigma)
                             :paramdecls (vl-paramdecllist-subst x.paramdecls sigma)

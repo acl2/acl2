@@ -44,7 +44,6 @@
 ;; (include-book "transforms/xf-gateredux")
 (include-book "transforms/xf-gatesplit")
 (include-book "transforms/xf-gate-elim")
-(include-book "transforms/xf-hid-elim")
 (include-book "transforms/xf-oprewrite")
 (include-book "transforms/xf-optimize-rw")
 (include-book "transforms/xf-orig")
@@ -55,7 +54,7 @@
 (include-book "transforms/xf-selresolve")
 (include-book "transforms/xf-sizing")
 (include-book "transforms/xf-unparameterize")
-(include-book "transforms/xf-unused-reg")
+(include-book "transforms/xf-unused-vars")
 (include-book "transforms/xf-weirdint-elim")
 (include-book "transforms/xf-annotate-mods")
 (include-book "util/clean-alist")
@@ -179,7 +178,7 @@
        (good           (xf-cwtime (vl-design-always-backend good)))
        ((mv good bad)  (xf-cwtime (vl-design-propagate-errors* good bad)))
 
-       (good           (xf-cwtime (vl-design-elim-unused-regs good)))
+       (good           (xf-cwtime (vl-design-elim-unused-vars good)))
        (good           (xf-cwtime (vl-design-drop-blankports good)))
        ((mv good bad)  (xf-cwtime (vl-design-propagate-errors* good bad)))
 

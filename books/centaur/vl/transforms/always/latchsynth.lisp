@@ -111,23 +111,23 @@ supported.</li>
        (cvtregs    nil)
 
        ((mv new-alwayses cvtregs delta)
-        (vl-latchcode-synth-alwayses x.alwayses scary-regs x.regdecls
+        (vl-latchcode-synth-alwayses x.alwayses scary-regs x.vardecls
                                      cvtregs delta careful-p vecp))
 
        ((vl-delta delta) (vl-free-delta delta))
 
-       ((mv regdecls-to-convert new-regdecls)
-        ;; We already know all of the cvtregs are among the regdecls and have
+       ((mv vardecls-to-convert new-vardecls)
+        ;; We already know all of the cvtregs are among the vardecls and have
         ;; no arrdims.  So, we can just freely convert look them up and convert
         ;; them here.
-        (vl-filter-regdecls cvtregs x.regdecls))
+        (vl-filter-vardecls cvtregs x.vardecls))
 
-       (new-netdecls (append (vl-always-convert-regs regdecls-to-convert)
+       (new-netdecls (append (vl-always-convert-regs vardecls-to-convert)
                              delta.netdecls))
 
        (new-x (change-vl-module x
                                 :netdecls new-netdecls
-                                :regdecls new-regdecls
+                                :vardecls new-vardecls
                                 :assigns  delta.assigns
                                 :modinsts delta.modinsts
                                 :alwayses new-alwayses

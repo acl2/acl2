@@ -50,21 +50,32 @@ able to handle more cases.</p>")
 
 (local (xdoc::set-default-parents resolve-indexing))
 
-(define vl-regdecllist-filter-arrays
-  :short "Filter register declarations into arrays and non-arrays."
-  ((x          vl-regdecllist-p "Decls we're filtering.")
-   (arrays     vl-regdecllist-p "Accumulator for the arrays.")
-   (non-arrays vl-regdecllist-p "Accumulator for the non-arrays."))
+(define vl-vardecllist-filter-arrays
+  :short "Filter variable declarations into arrays and non-arrays."
+  ((x          vl-vardecllist-p "Decls we're filtering.")
+   (arrays     vl-vardecllist-p "Accumulator for the arrays.")
+   (non-arrays vl-vardecllist-p "Accumulator for the non-arrays."))
+  :long "<p>We skip some variables, e.g., reals that aren't arrays, because we
+ don't know whether it's okay to select from them or what it means,
+ exactly.</p>"
   :returns
-  (mv (arrays vl-regdecllist-p)
-      (non-arrays vl-regdecllist-p))
+  (mv (arrays vl-vardecllist-p)
+      (non-arrays vl-vardecllist-p))
   (b* (((when (atom x))
-        (mv (vl-regdecllist-fix arrays)
-            (vl-regdecllist-fix non-arrays)))
-       (x1 (vl-regdecl-fix (car x))))
-    (if (consp (vl-regdecl->arrdims x1))
-        (vl-regdecllist-filter-arrays (cdr x) (cons x1 arrays) non-arrays)
-      (vl-regdecllist-filter-arrays (cdr x) arrays (cons x1 non-arrays)))))
+        (mv (vl-vardecllist-fix arrays)
+            (vl-vardecllist-fix non-arrays)))
+       (x1 (vl-vardecl-fix (car x)))
+       ((vl-vardecl x1) x1)
+       ((unless (eq x1.type :vl-reg))
+        ;; Something tricky.  Don't classify it as an array or a non-array.
+        ;; We'll just allow any indexing of this variable to remain unknown.
+        ;; (BOZO this is probably too conservative, i.e., we should probably be
+        ;; able to extend this to integer variables at least without any
+        ;; problems.)
+        (vl-vardecllist-filter-arrays (cdr x) (cons x1 arrays) non-arrays))
+       ((when (consp x1.arrdims))
+        (vl-vardecllist-filter-arrays (cdr x) (cons x1 arrays) non-arrays)))
+    (vl-vardecllist-filter-arrays (cdr x) arrays (cons x1 non-arrays))))
 
 (define vl-netdecllist-filter-arrays
   :short "Filter register declarations into arrays and non-arrays."
@@ -131,9 +142,10 @@ able to handle more cases.</p>")
          ((when (hons-get name arrfal))
           (mv (ok) t (change-vl-nonatom x :op :vl-array-index))))
 
-      ;; Else somehow not a name we know about?  It seems reasonably safe to
-      ;; leave it unresolved.  We could add a warning here, but we won't for
-      ;; now.
+      ;; Otherwise: we somehow don't know whether this name is an array or a
+      ;; non-array.  It might be, for instance, that this is a "real" variable
+      ;; or similar, which we aren't supporting.  We're just going to leave any
+      ;; indexing into such variables as unresolved.
       (mv (ok)
           args-changedp
           (if (not args-changedp)
@@ -488,7 +500,7 @@ able to handle more cases.</p>")
   (b* (((vl-fundecl x) x)
 
        ;; This is tricky because the function can have its own declarations.
-       ((mv regdecls vardecls eventdecls paramdecls)
+       ((mv vardecls eventdecls paramdecls)
         (vl-filter-blockitems x.decls))
 
        ;; Remove any locally declared names from the global arrfal/wirefal
@@ -497,8 +509,7 @@ able to handle more cases.</p>")
        ;; few variables.  So, I'm not worried about just using
        ;; set-difference-equal calls, here.
        (shadowed-names
-        (mergesort (append (vl-regdecllist->names regdecls)
-                           (vl-vardecllist->names vardecls)
+        (mergesort (append (vl-vardecllist->names vardecls)
                            (vl-eventdecllist->names eventdecls)
                            (vl-paramdecllist->names paramdecls))))
        (visible-global-arrnames
@@ -510,15 +521,15 @@ able to handle more cases.</p>")
        ;; selecting from most parameters and variables into bitselects.  But
        ;; for now we'll play it safe, and only really try to deal with
        ;; registers here.
-       ((mv reg-arrays reg-wires)
-        (vl-regdecllist-filter-arrays regdecls nil nil))
+       ((mv var-arrays var-wires)
+        (vl-vardecllist-filter-arrays vardecls nil nil))
 
        ;; The function's inputs are also okay to turn into bit selects, because
        ;; they can't be arrays.
        (innames         (vl-taskportlist->names x.inputs))
 
-       (local-arrnames  (append-without-guard reg-arrays visible-global-arrnames))
-       (local-wirenames (append-without-guard reg-wires
+       (local-arrnames  (append-without-guard var-arrays visible-global-arrnames))
+       (local-wirenames (append-without-guard var-wires
                                               innames
                                               visible-global-wirenames))
        (local-arrfal    (make-lookup-alist local-arrnames))
@@ -539,14 +550,14 @@ able to handle more cases.</p>")
        ((when (vl-module->hands-offp x))
         x)
 
-       ((mv reg-arrays reg-wires)
-        (vl-regdecllist-filter-arrays x.regdecls nil nil))
+       ((mv var-arrays var-wires)
+        (vl-vardecllist-filter-arrays x.vardecls nil nil))
        ((mv net-arrays net-wires)
         (vl-netdecllist-filter-arrays x.netdecls nil nil))
 
-       (arr-names (append (vl-regdecllist->names reg-arrays)
+       (arr-names (append (vl-vardecllist->names var-arrays)
                           (vl-netdecllist->names net-arrays)))
-       (wire-names (append (vl-regdecllist->names reg-wires)
+       (wire-names (append (vl-vardecllist->names var-wires)
                            (vl-netdecllist->names net-wires)))
 
        (arrfal  (make-lookup-alist arr-names))

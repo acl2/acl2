@@ -21,16 +21,6 @@
 (in-package "ACL2")
 (include-book "xdoc/top" :dir :system)
 
-(defxdoc std/basic
-  :parents (std)
-  :short "A collection of very basic functions that are occasionally
-convenient."
-
-  :long "<p>The @('std/basic') library adds a number of very basic definitions
-that are not built into ACL2.  There's very little to this, it's generally just
-a meant to be a home for simple definitions that don't fit into bigger
-libraries.</p>")
-
 (local (xdoc::set-default-parents std/basic))
 
 

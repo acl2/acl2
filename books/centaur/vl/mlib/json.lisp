@@ -749,9 +749,6 @@ which could not hold such large values.</p>")
 (def-vl-jp-aggregate netdecl)
 (def-vl-jp-list netdecl :newlines 4)
 
-(def-vl-jp-aggregate regdecl)
-(def-vl-jp-list regdecl :newlines 4)
-
 (def-vl-jp-aggregate plainarg)
 (def-vl-jp-list plainarg :newlines 4)
 
@@ -770,13 +767,11 @@ which could not hold such large values.</p>")
 (define vl-jp-blockitem ((x vl-blockitem-p) &key (ps 'ps))
   :guard-hints (("Goal" :in-theory (enable vl-blockitem-p)))
   (mbe :logic
-       (cond ((vl-regdecl-p x)    (vl-jp-regdecl x))
-             ((vl-vardecl-p x)    (vl-jp-vardecl x))
+       (cond ((vl-vardecl-p x)    (vl-jp-vardecl x))
              ((vl-eventdecl-p x)  (vl-jp-eventdecl x))
              (t                   (vl-jp-paramdecl x)))
        :exec
        (case (tag x)
-         (:vl-regdecl   (vl-jp-regdecl x))
          (:vl-vardecl   (vl-jp-vardecl x))
          (:vl-eventdecl (vl-jp-eventdecl x))
          (otherwise     (vl-jp-paramdecl x)))))

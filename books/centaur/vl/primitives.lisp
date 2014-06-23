@@ -991,7 +991,7 @@ certain @('always') statements into instances of this module.</p>
        ((mv clk-expr clk-port clk-portdecl clk-netdecl) (vl-primitive-mkport "clk" :vl-input))
        ((mv d-expr   d-port   d-portdecl   d-netdecl)   (vl-primitive-mkport "d"   :vl-input))
 
-       (q-regdecl     (make-vl-regdecl :name "q" :loc *vl-fakeloc*))
+       (q-vardecl     (make-vl-vardecl :type :vl-reg :name "q" :loc *vl-fakeloc*))
 
        ;; always @(d or clk) q <= clk ? d : q;
        (|clk?d:q|     (make-vl-nonatom :op :vl-qmark
@@ -1014,7 +1014,7 @@ certain @('always') statements into instances of this module.</p>
                      :ports     (list q-port     clk-port     d-port)
                      :portdecls (list q-portdecl clk-portdecl d-portdecl)
                      :netdecls  (list            clk-netdecl  d-netdecl)
-                     :regdecls  (list q-regdecl)
+                     :vardecls  (list q-vardecl)
                      :alwayses  (list always)
                      :minloc    *vl-fakeloc*
                      :maxloc    *vl-fakeloc*

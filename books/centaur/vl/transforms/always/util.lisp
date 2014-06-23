@@ -56,7 +56,7 @@ sensible with.</p>"
   :short "See if a register is simple enough to reasonably synthesize into
 a flop/latch."
   ((name "name of a supposed register to be checked" stringp)
-   (regs "all registers in the module"               vl-regdecllist-p)
+   (vars "all variables in the module"               vl-vardecllist-p)
    (elem "context for error messages"                vl-modelement-p))
   :returns
   (warning? (equal (vl-warning-p warning?)
@@ -65,7 +65,7 @@ a flop/latch."
 isn't an array.</p>"
   (b* ((name (string-fix name))
        (elem (vl-modelement-fix elem))
-       (decl (vl-find-regdecl name regs))
+       (decl (vl-find-vardecl name vars))
        ((unless decl)
         (make-vl-warning
          :type :vl-always-too-hard
@@ -75,7 +75,16 @@ isn't an array.</p>"
          :fatalp nil
          :fn __function__))
 
-       ((vl-regdecl decl) decl)
+       ((vl-vardecl decl) decl)
+       ((unless (eq decl.type :vl-reg))
+        (make-vl-warning
+         :type :vl-always-too-hard
+         :msg "~a0: statement is too complex to synthesize.  The variable ~
+               being targeted, ~w1, has type ~s2, but we only support regs."
+         :args (list elem name decl.type)
+         :fatalp nil
+         :fn __function__))
+
        ((when (consp decl.arrdims))
         (make-vl-warning
          :type :vl-always-too-hard
@@ -98,28 +107,28 @@ isn't an array.</p>"
   (defthm reg-exists-unless-vl-always-check-reg
     (implies (and (not (vl-always-check-reg name regs elem))
                   (force (stringp name))
-                  (force (vl-regdecllist-p regs)))
-             (member-equal name (vl-regdecllist->names regs)))))
+                  (force (vl-vardecllist-p regs)))
+             (member-equal name (vl-vardecllist->names regs)))))
 
 (define vl-always-check-regs ((names string-listp)
-                              (regs  vl-regdecllist-p)
+                              (vars  vl-vardecllist-p)
                               (elem  vl-modelement-p))
   :returns
   (warning? (equal (vl-warning-p warning?) (if warning? t nil)))
   :parents (synthalways)
   (if (atom names)
       nil
-    (or (vl-always-check-reg (car names) regs elem)
-        (vl-always-check-regs (cdr names) regs elem)))
+    (or (vl-always-check-reg (car names) vars elem)
+        (vl-always-check-regs (cdr names) vars elem)))
   ///
   (defthm regs-exists-unless-vl-always-check-regs
-    (implies (and (not (vl-always-check-regs names regs elem))
-                  (force (vl-regdecllist-p regs))
+    (implies (and (not (vl-always-check-regs names vars elem))
+                  (force (vl-vardecllist-p vars))
                   (force (string-listp names)))
-             (subsetp-equal names (vl-regdecllist->names regs)))))
+             (subsetp-equal names (vl-vardecllist->names vars)))))
 
 
-(define vl-always-convert-reg ((x vl-regdecl-p))
+(define vl-always-convert-reg ((x vl-vardecl-p))
   :returns (netdecl vl-netdecl-p)
   :parents (synthalways)
   :short "Convert a register into a wire."
@@ -131,9 +140,10 @@ to convert the register declaration into an ordinary net declaration.</p>
 have passed @(see vl-always-check-reg), so we cause a hard error if the
 register has array dimensions.</p>"
 
-  (b* (((vl-regdecl x) x)
-       (- (or (not x.arrdims)
-              (raise "Expected all regs to convert to be non-arrays."))))
+  (b* (((vl-vardecl x) x)
+       (- (or (and (eq x.type :vl-reg)
+                   (not x.arrdims))
+              (raise "Expected all variables to convert to be regs and not arrays."))))
     (make-vl-netdecl :name    x.name
                      :type    :vl-wire
                      :signedp x.signedp
@@ -142,7 +152,7 @@ register has array dimensions.</p>"
                      :atts    (acons (hons-copy "VL_CONVERTED_REG")
                                      nil x.atts))))
 
-(defprojection vl-always-convert-regs ((x vl-regdecllist-p))
+(defprojection vl-always-convert-regs ((x vl-vardecllist-p))
   :parents (synthalways)
   :returns (nets vl-netdecllist-p)
   (vl-always-convert-reg x))

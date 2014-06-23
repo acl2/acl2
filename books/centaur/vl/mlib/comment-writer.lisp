@@ -134,7 +134,6 @@ we ignore file names.</p>"
 (def-vl-ppmap :list portdecllist :elem portdecl)
 (def-vl-ppmap :list assignlist :elem assign)
 (def-vl-ppmap :list netdecllist :elem netdecl)
-(def-vl-ppmap :list regdecllist :elem regdecl)
 (def-vl-ppmap :list vardecllist :elem vardecl)
 (def-vl-ppmap :list eventdecllist :elem eventdecl)
 (def-vl-ppmap :list gateinstlist :elem gateinst)
@@ -252,7 +251,6 @@ we ignore file names.</p>"
        ;; use.
        ((mv imap ps) (vl-paramdecllist-ppmap x.paramdecls imap))
        ((mv imap ps) (vl-portdecllist-ppmap x.portdecls imap))
-       ((mv imap ps) (vl-regdecllist-ppmap x.regdecls imap))
        ((mv imap ps) (vl-vardecllist-ppmap x.vardecls imap))
        ((mv imap ps) (vl-eventdecllist-ppmap x.eventdecls imap))
        ((mv imap ps) (vl-netdecllist-ppmap x.netdecls imap))

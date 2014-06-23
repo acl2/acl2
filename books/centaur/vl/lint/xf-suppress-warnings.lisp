@@ -164,7 +164,6 @@ either upper or lower case, treating - and _ as equivalent, and with or without
              (:vl-gateinst     (and (vl-gateinst-p x)      (vl-lint-atts-say-ignore (vl-gateinst->atts x)      mwtype)))
              (:vl-portdecl     (and (vl-portdecl-p x)      (vl-lint-atts-say-ignore (vl-portdecl->atts x)      mwtype)))
              (:vl-vardecl      (and (vl-vardecl-p x)       (vl-lint-atts-say-ignore (vl-vardecl->atts x)       mwtype)))
-             (:vl-regdecl      (and (vl-regdecl-p x)       (vl-lint-atts-say-ignore (vl-regdecl->atts x)       mwtype)))
              (:vl-eventdecl    (and (vl-eventdecl-p x)     (vl-lint-atts-say-ignore (vl-eventdecl->atts x)     mwtype)))
              (:vl-paramdecl    (and (vl-paramdecl-p x)     (vl-lint-atts-say-ignore (vl-paramdecl->atts x)     mwtype)))
              (:vl-fundecl      (and (vl-fundecl-p x)       (vl-lint-atts-say-ignore (vl-fundecl->atts x)       mwtype)))

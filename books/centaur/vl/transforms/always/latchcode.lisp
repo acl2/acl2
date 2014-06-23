@@ -392,8 +392,8 @@ sanity checking."
                 blocks; these are too scary to try to synthesize"
                (and (string-listp scary-regs)
                     (setp scary-regs)))
-   (regs       "all the registers for the module"
-               vl-regdecllist-p)
+   (vars       "all the variables for the module"
+               vl-vardecllist-p)
    (cvtregs    "accumulator for names of registers to convert into nets"
                string-listp)
    (delta      "delta for the new nets, instances, etc."
@@ -429,7 +429,7 @@ sanity checking."
                    :msg "~a0: not synthesize a latch since the lhs doesn't ~
                          even have any names?  lhs: ~a1."
                    :args (list x lhs-names))))
-       (warning   (vl-always-check-regs lhs-names regs x))
+       (warning   (vl-always-check-regs lhs-names vars x))
        ((when warning)
         (mv x cvtregs (vl-warn-delta warning)))
        (lhs-scary (intersect lhs-names scary-regs))
@@ -548,7 +548,7 @@ sanity checking."
 (define vl-latchcode-synth-alwayses ((x          vl-alwayslist-p)
                                      (scary-regs (and (string-listp scary-regs)
                                                       (setp scary-regs)))
-                                     (regs       vl-regdecllist-p)
+                                     (vars       vl-vardecllist-p)
                                      (cvtregs    string-listp)
                                      (delta      vl-delta-p)
                                      (careful-p  booleanp)
@@ -559,10 +559,10 @@ sanity checking."
   (b* (((when (atom x))
         (mv nil cvtregs delta))
        ((mv new-car? cvtregs delta)
-        (vl-latchcode-synth-always (car x) scary-regs regs
+        (vl-latchcode-synth-always (car x) scary-regs vars
                                    cvtregs delta careful-p vecp))
        ((mv new-cdr cvtregs delta)
-        (vl-latchcode-synth-alwayses (cdr x) scary-regs regs
+        (vl-latchcode-synth-alwayses (cdr x) scary-regs vars
                                      cvtregs delta careful-p vecp))
        (new-x (if new-car?
                   (cons new-car? new-cdr)

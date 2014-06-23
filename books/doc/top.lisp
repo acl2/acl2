@@ -117,6 +117,7 @@
 (include-book "regex/regex-ui" :dir :system)
 
 (include-book "std/top" :dir :system)
+(include-book "std/basic/inductions" :dir :system)
 (include-book "std/io/unsound-read" :dir :system)
 (include-book "std/bitsets/top" :dir :system)
 

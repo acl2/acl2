@@ -68,9 +68,6 @@
        (vl-ps-seq (vl-basic-cw "Var declaration of ")
                   (vl-print-wirename (vl-vardecl->name x))))
 
-      (:vl-regdecl
-       (vl-ps-seq (vl-basic-cw "Reg declaration of ")
-                  (vl-print-wirename (vl-regdecl->name x))))
       (:vl-eventdecl
        (vl-ps-seq (vl-basic-cw "Event declaration of ")
                   (vl-print-wirename (vl-eventdecl->name x))))
@@ -153,7 +150,6 @@ quick summary instead, see @(see vl-pp-modelement-summary).</p>"
       (:vl-assign    (vl-pp-assign x))
       (:vl-netdecl   (vl-pp-netdecl x))
       (:vl-vardecl   (vl-pp-vardecl x))
-      (:vl-regdecl   (vl-pp-regdecl x))
       (:vl-eventdecl (vl-print "// BOZO implement vl-pp-eventdecl in vl-pp-modelement-full"))
       (:vl-paramdecl (vl-pp-paramdecl x))
       (:vl-fundecl   (vl-pp-fundecl x))

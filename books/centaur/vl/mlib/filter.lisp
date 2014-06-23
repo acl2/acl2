@@ -42,7 +42,7 @@ Assuming that hashing operations are constant time, constructing this table is
 @('O(|NAMES|)'), and the subsequent processing of @('X') is @('O(|X|)').</p>")
 
 (defund def-vl-filter-by-name-fn
-  (type          ;; should be 'netdecl, 'regdecl, 'vardecl, 'module, etc.
+  (type          ;; should be 'netdecl, 'vardecl, 'module, etc.
    keep-long     ;; extra documentation for the keep function
    del-long      ;; extra documentation for the delete function
    filter-long   ;; extra documentation for the filter function
@@ -342,11 +342,6 @@ function enabled and would think it odd to ever prove a theorem about it.</p>" f
          (list-fix (vl-netdecllist-fix x)))
   :hints(("Goal" :induct (len x))))
 
-(defthm vl-regdecllist-fix-of-list-fix
-  (equal (vl-regdecllist-fix (list-fix x))
-         (list-fix (vl-regdecllist-fix x)))
-  :hints(("Goal" :induct (len x))))
-
 (defthm vl-vardecllist-fix-of-list-fix
   (equal (vl-vardecllist-fix (list-fix x))
          (list-fix (vl-vardecllist-fix x)))
@@ -419,7 +414,6 @@ function enabled and would think it odd to ever prove a theorem about it.</p>" f
 
 
 (def-vl-filter-by-name netdecl)
-(def-vl-filter-by-name regdecl)
 (def-vl-filter-by-name vardecl)
 (def-vl-filter-by-name eventdecl)
 (def-vl-filter-by-name portdecl)
