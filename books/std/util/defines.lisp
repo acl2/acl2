@@ -150,6 +150,7 @@ any global @('other-events').</p>
 <dt>:guard-hints, :guard-debug, :verify-guards</dt>
 <dt>:well-founded-relation, :hints</dt>
 <dt>:otf-flg</dt>
+<dt>:ruler-extenders</dt>
 
 <dd>In an ordinary @(see mutual-recursion), each of these @(see xargs) style
 options can be attached to any @('defun') in the clique.  But we usually think
