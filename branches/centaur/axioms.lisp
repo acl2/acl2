@@ -12950,8 +12950,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (iprint-hard-bound . ,*iprint-hard-bound-default*)
     (iprint-soft-bound . ,*iprint-soft-bound-default*)
     (keep-tmp-files . nil)
+    (last-event-data . nil)
     (last-make-event-expansion . nil)
-    (last-prover-steps . nil)
     (last-step-limit . -1) ; any number should be OK
     (ld-level . 0)
     (ld-okp . :default) ; see :DOC calling-ld-in-bad-contexts
@@ -15195,7 +15195,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; otherwise.
 
   (when (not (member-eq default '(:defaults :current)))
-    (error "The first argument of with-print-controls must be :DEFAULT ~
+    (error "The first argument of with-print-controls must be :DEFAULTS ~
             or :CURRENT."))
   (let ((raw-print-vars-alist
          '((*print-base* print-base . (f-get-global 'print-base state))
@@ -19436,7 +19436,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     pc-assign
     illegal-to-certify-message
     acl2-sources-dir
-    last-prover-steps ; being conservative here; perhaps could omit
     including-uncertified-p
     ))
 

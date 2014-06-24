@@ -3491,6 +3491,8 @@ To avoid the following break and get only the above warning:~%  ~a~%"
             addr-ht-count addr-ht-size)
     (force-output note-stream)
 
+    (hl-faltable-clear-cache faltable)
+
     ;; Clear the (norming) memo table since it might prevent conses from being
     ;; garbage collected and it's unsound to leave it as the sbits/addr-ht are
     ;; cleared.
