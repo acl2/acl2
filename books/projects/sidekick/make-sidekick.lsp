@@ -30,6 +30,9 @@
 (sidekick::stop)
 (acl2::tshell-stop)
 
+;; BOZO this is horrible, but these warnings are really irritating.
+(assign acl2::slow-array-action nil)
+
 :q
 
 (setq *print-startup-banner* nil)
@@ -59,5 +62,3 @@
 
 (save-exec "sidekick" nil
            :init-forms '((sidekick-startup-fn)))
-
-
