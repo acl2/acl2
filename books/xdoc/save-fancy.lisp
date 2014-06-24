@@ -513,8 +513,15 @@
 
 (defun run-fancy-zip (dir state)
   (b* ((- (cw "; XDOC: Running zip.sh to create download/ directory.~%"))
+       ;; We formerly used oslib::catpath here.  However, David Rager reported
+       ;; (2014-06-24) that this caused failures when using directories such as
+       ;; "~/public_html", because the ~ doesn't get wildcard expanded in all
+       ;; Lisps, e.g., CCL.  So, we now use ACL2's extend-pathname, since it
+       ;; gets rid of the ~ characters.
+       (dir-fix (acl2::extend-pathname dir "." state))
+       (zip.sh  (acl2::extend-pathname dir-fix "zip.sh" state))
        ((mv erp val state)
-        (time$ (sys-call+ "sh" (list (oslib::catpath dir "zip.sh") dir) state)
+        (time$ (sys-call+ "sh" (list zip.sh dir-fix) state)
                :msg "; XDOC zip.sh: ~st sec, ~sa bytes.~%"))
        ((when erp)
         (er hard? 'run-fancy-zip
