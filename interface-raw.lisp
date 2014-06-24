@@ -1427,7 +1427,7 @@
 
 (defun labels-form-for-*1* (fn *1*fn formals *1*body
                                declare-stobj-special
-                               ignore-vars ignorable-vars type-dcls
+                               ignore-vars ignorable-vars
                                super-stobjs-in super-stobjs-chk
                                guard wrld)
   (let ((*1*fn-binding `(,*1*fn
@@ -1438,8 +1438,6 @@
                                 `((declare (ignore ,@ignore-vars))))
                          ,@(and ignorable-vars
                                 `((declare (ignorable ,@ignorable-vars))))
-                         ,@(and type-dcls
-                                `((declare ,@type-dcls)))
                          ,@(and super-stobjs-in
 
 ; If the form below is removed, we might expect to get a hard Lisp error from
@@ -1464,7 +1462,7 @@
                                       :live-stobj))))
                          ,*1*body)))
     `(labels (,*1*fn-binding)
-             (,*1*fn ,@formals))))    
+             (,*1*fn ,@formals))))
 
 (defun oneify-cltl-code (defun-mode def stobj-flag wrld
                           &optional trace-rec-for-none)
@@ -1664,7 +1662,6 @@
 
               (and (not super-stobjs-in) (ignore-vars dcls)))
              (ignorable-vars (ignorable-vars dcls))
-             (type-dcls (restrict-alist '(type) dcls))
              (program-p (eq defun-mode :program))
              (*1*guard (oneify guard nil wrld program-p))
 
@@ -2143,7 +2140,7 @@
                                   fn *1*fn formals
                                   (oneify body nil wrld 'invariant-risk)
                                   declare-stobj-special
-                                  ignore-vars ignorable-vars type-dcls
+                                  ignore-vars ignorable-vars
                                   super-stobjs-in super-stobjs-chk
                                   guard wrld))))))
                        (t `((,fn ,@formals))))))
@@ -2156,7 +2153,7 @@
                        (labels-form-for-*1*
                         fn *1*fn formals *1*body
                         declare-stobj-special
-                        ignore-vars ignorable-vars type-dcls
+                        ignore-vars ignorable-vars
                         super-stobjs-in super-stobjs-chk
                         guard wrld)))))))
         (let ((*1*dcls (and declare-stobj-special
