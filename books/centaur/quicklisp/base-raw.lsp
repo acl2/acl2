@@ -26,5 +26,7 @@
 ; both being built at separate times in separate threads, crashing into each
 ; other's working space.
 
-(ql:quickload "iolib.syscalls")
+;; (ql:quickload "iolib.syscalls")
 (ql:quickload "osicat")
+(ql:quickload :bordeaux-threads)
+(ql:quickload :hunchentoot)

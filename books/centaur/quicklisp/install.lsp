@@ -37,9 +37,20 @@
 (load "quicklisp.lsp")
 
 (quicklisp-quickstart:install :path (concatenate 'string acl2::*cbd* "inst"))
+
+
+#|| 
+;; Seeing available versions, instructions up at
+;;   http://blog.quicklisp.org/2011/08/going-back-in-dist-time.html
+
+(ql-dist:available-versions (ql-dist:dist "quicklisp"))
+
+||#
+
 (setq ql-util::*do-not-prompt* t)
 (ql-dist:install-dist
- "http://beta.quicklisp.org/dist/quicklisp/2014-01-13/distinfo.txt"
+ "http://beta.quicklisp.org/dist/quicklisp/2014-06-16/distinfo.txt"
+;; "http://beta.quicklisp.org/dist/quicklisp/2014-01-13/distinfo.txt"
  :replace t)
 
 (quit)

@@ -21,7 +21,6 @@
 
 (in-package "OSLIB")
 (include-book "logic-defs")
-(include-book "centaur/quicklisp/iolib" :dir :system)
 ; (depends-on "getpid-raw.lsp")
 
 (defttag oslib)

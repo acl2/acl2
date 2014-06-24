@@ -22,7 +22,6 @@
 (include-book "base")
 (include-book "bordeaux")
 (include-book "hunchentoot")
-(include-book "iolib")
 (include-book "osicat")
 
 (defsection quicklisp

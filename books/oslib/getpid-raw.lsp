@@ -27,12 +27,12 @@
     (er hard? 'getpid "Getpid can only be called on a live state.")
     (mv nil state))
 
-  (let ((pid (handler-case (iolib.syscalls::getpid)
+  (let ((pid (handler-case (acl2::getpid$)
                            (error (condition)
                                   (format nil "getpid: ~a" condition)))))
     (if (natp pid)
         (mv pid state)
       (progn
-        (format t "getpid error: (iolib.syscalls::getpid) returned ~a." pid)
+        (format t "getpid error: (acl2::getpid$) returned ~a." pid)
         (mv nil state)))))
 
