@@ -2353,6 +2353,36 @@
             (t state))))
    (t state)))
 
+(defun clear-event-data (state)
+  (f-put-global 'last-event-data nil state))
+
+(defun get-event-data (key state)
+
+; This function returns an alist with the following keys, reflecting
+; information printed in summaries.
+
+; form
+; hint-events
+; namex [0, a single name, or a list of names; see access-event-tuple-namex]
+; prover-steps-counted
+; rules
+; splitter-rules (case-split immed-forced if-intro)
+; time = (prove print proof-tree other)
+; warnings
+
+  (cdr (assoc key (f-get-global 'last-event-data state))))
+
+(defun put-event-data (key val state)
+
+; See get-event-data for keys.
+
+  (f-put-global 'last-event-data
+                (acons key val (f-get-global 'last-event-data state))
+                state))
+
+(defun last-prover-steps (state)
+  (get-event-data 'prover-steps-counted state))
+
 (defun initialize-summary-accumulators (state)
 
 ; This function is the standard way to start an ACL2 event.  We push a 0 onto
@@ -2399,25 +2429,37 @@
   (mv-let
    (warnings state)
    (pop-warning-frame t state)
-   (io? summary nil state
-        (warnings)
-        (cond ((member-eq 'warnings
-                          (f-get-global 'inhibited-summary-types
-                                        state))
-               state)
-              ((null warnings)
-               state)
-              (t
-               (let ((channel (proofs-co state)))
-                 (mv-let
-                  (col state)
-                  (fmt1 "Warnings:  ~*0~%"
-                        (list (cons #\0
-                                    (list "None" "~s*" "~s* and " "~s*, "
-                                          warnings)))
-                        0 channel state nil)
-                  (declare (ignore col))
-                  state)))))))
+   (pprogn
+    (put-event-data 'warnings warnings state)
+    (io? summary nil state
+         (warnings)
+         (cond ((member-eq 'warnings
+                           (f-get-global 'inhibited-summary-types
+                                         state))
+                state)
+               ((null warnings)
+                state)
+               (t
+                (let ((channel (proofs-co state)))
+                  (mv-let
+                   (col state)
+                   (fmt1 "Warnings:  ~*0~%"
+                         (list (cons #\0
+                                     (list "None" "~s*" "~s* and " "~s*, "
+                                           warnings)))
+                         0 channel state nil)
+                   (declare (ignore col))
+                   state))))))))
+
+(defun skip-proof-tree-time (state)
+
+; Note that get-timer is untouchable, and :pso calls trans-eval, hence
+; translate1.  Thus, we define this little function in order to avoid hitting
+; get-timer during the io? call in print-time-summary.
+
+  (and (member-eq 'proof-tree
+                  (f-get-global 'inhibit-output-lst state))
+       (= (car (get-timer 'proof-tree-time state)) 0)))
 
 (defun print-time-summary (state)
 
@@ -2434,23 +2476,16 @@
 ; of digits in it.  So we are doing it this way.
 
   (pprogn
-   (let ((skip-proof-tree-time
-
-; Note that get-timer is untouchable, and :pso calls trans-eval, hence
-; translate1; so we must bind skip-proof-tree-time up here, not under the io?
-; call below.
-
-          (and (member-eq 'proof-tree (f-get-global 'inhibit-output-lst state))
-               (= (car (get-timer 'proof-tree-time state)) 0))))
      (io? summary nil state
-          (skip-proof-tree-time)
+          ()
           (cond
            ((member-eq 'time
                        (f-get-global 'inhibited-summary-types
                                      state))
             state)
            (t
-            (let ((channel (proofs-co state)))
+            (let ((channel (proofs-co state))
+                  (skip-proof-tree-time (skip-proof-tree-time state)))
               (pprogn
                (princ$ "Time:  " channel state)
                (push-timer 'total-time 0 state)
@@ -2471,7 +2506,7 @@
                (princ$ ", other: " channel state)
                (print-timer 'other-time channel state)
                (princ$ ")" channel state)
-               (newline channel state)))))))
+               (newline channel state))))))
 
 ; The function initialize-summary-accumulators makes corresponding calls of
 ; push-timer, not under an io? call.  So the balancing calls of pop-timer below
@@ -2941,12 +2976,15 @@
 
   (let ((runes (merge-sort-runes
                 (all-runes-in-ttree ttree nil))))
-    (mv-let (col state)
-            (fmt1 "Rules: ~y0~|"
-                  (list (cons #\0 runes))
-                  0 channel state nil)
-            (declare (ignore col))
-            state)))
+    (pprogn (put-event-data 'rules runes state)
+            (io? summary nil state
+                 (runes channel)
+                 (mv-let (col state)
+                         (fmt1 "Rules: ~y0~|"
+                               (list (cons #\0 runes))
+                               0 channel state nil)
+                         (declare (ignore col))
+                         state)))))
 
 (defun use-names-in-ttree (ttree)
   (let* ((objs (tagged-objects :USE ttree))
@@ -2994,13 +3032,16 @@
            (lst (append (make-rune-like-objs :BY by-lst)
                         (make-rune-like-objs :CLAUSE-PROCESSOR cl-proc-lst)
                         (make-rune-like-objs :USE use-lst))))
-      (cond (lst (mv-let (col state)
-                         (fmt1 "Hint-events: ~y0~|"
-                               (list (cons #\0 lst))
-                               0 channel state nil)
-                         (declare (ignore col))
-                         state))
-            (t state)))))
+      (pprogn (put-event-data 'hint-events lst state)
+              (cond (lst (io? summary nil state
+                              (lst channel)
+                              (mv-let (col state)
+                                      (fmt1 "Hint-events: ~y0~|"
+                                            (list (cons #\0 lst))
+                                            0 channel state nil)
+                                      (declare (ignore col))
+                                      state)))
+                    (t state))))))
 
 (defun print-splitter-rules-summary (cl-id clauses ttree channel state)
 
@@ -3014,17 +3055,21 @@
         (immed-forced (merge-sort-runes
                        (tagged-objects 'splitter-immed-forced ttree))))
     (cond ((or if-intro case-split immed-forced)
-           (with-output-lock ; only necessary if cl-id is non-nil
-            (pprogn
-             (cond (cl-id (newline channel state))
-                   (t state))
-             (mv-let
-              (col state)
-              (fmt1 "Splitter ~s0 (see :DOC splitter)~@1~s2~|~@3~@4~@5"
-                    (list
-                     (cons #\0 (if cl-id "note" "rules"))
-                     (cons #\1
-                           (if cl-id
+           (pprogn
+            (cond (cl-id (newline channel state))
+                  (t (put-event-data 'splitter-rules
+                                     (list case-split immed-forced if-intro)
+                                     state)))
+            (io? summary nil state
+                 (cl-id clauses channel if-intro case-split immed-forced)
+                 (with-output-lock ; only necessary if cl-id is non-nil
+                  (mv-let
+                   (col state)
+                   (fmt1 "Splitter ~s0 (see :DOC splitter)~@1~s2~|~@3~@4~@5"
+                         (list
+                          (cons #\0 (if cl-id "note" "rules"))
+                          (cons #\1
+                                (if cl-id
 
 ; Since we are printing during a proof (see comment above) but not already
 ; printing the clause-id, we do so now.  This is redundant if (f-get-global
@@ -3034,52 +3079,50 @@
 ; We leave it to waterfall-msg1 to track print-time, so we avoid calling
 ; waterfall-print-clause-id.
 
-                               (msg " for ~@0 (~x1 subgoal~#2~[~/s~])"
-                                    (tilde-@-clause-id-phrase cl-id)
-                                    (length clauses)
-                                    clauses)
-                             ""))
-                     (cons #\2 (if cl-id "." ":"))
-                     (cons #\3
-                           (cond
-                            (case-split (msg "  case-split: ~y0"
-                                             case-split))
-                            (t "")))
-                     (cons #\4
-                           (cond
-                            (immed-forced (msg "  immed-forced: ~y0"
-                                               immed-forced))
-                            (t "")))
-                     (cons #\5
-                           (cond
-                            (if-intro (msg "  if-intro: ~y0"
-                                           if-intro))
-                            (t ""))))
-                    0 channel state nil)
-              (declare (ignore col))
-              (cond (cl-id (newline channel state))
-                    (t state))))))
-          (t state))))
+                                    (msg " for ~@0 (~x1 subgoal~#2~[~/s~])"
+                                         (tilde-@-clause-id-phrase cl-id)
+                                         (length clauses)
+                                         clauses)
+                                  ""))
+                          (cons #\2 (if cl-id "." ":"))
+                          (cons #\3
+                                (cond
+                                 (case-split (msg "  case-split: ~y0"
+                                                  case-split))
+                                 (t "")))
+                          (cons #\4
+                                (cond
+                                 (immed-forced (msg "  immed-forced: ~y0"
+                                                    immed-forced))
+                                 (t "")))
+                          (cons #\5
+                                (cond
+                                 (if-intro (msg "  if-intro: ~y0"
+                                                if-intro))
+                                 (t ""))))
+                         0 channel state nil)
+                   (declare (ignore col))
+                   (cond (cl-id (newline channel state))
+                         (t state)))))))
+          (cl-id state)
+          (t (put-event-data 'splitter-rules nil state)))))
 
 (defun print-rules-and-hint-events-summary (state)
-  (pprogn
-   (io? summary nil state
-        ()
-        (let ((channel (proofs-co state))
-              (acc-ttree (f-get-global 'accumulated-ttree state))
-              (inhibited-summary-types (f-get-global 'inhibited-summary-types
-                                                     state)))
-          (pprogn
-           (cond ((member-eq 'rules inhibited-summary-types)
-                  state)
-                 (t (print-runes-summary acc-ttree channel state)))
-           (cond ((member-eq 'hint-events inhibited-summary-types)
-                  state)
-                 (t (print-hint-events-summary acc-ttree channel state)))
-           (cond ((member-eq 'splitter-rules inhibited-summary-types)
-                  state)
-                 (t (print-splitter-rules-summary nil nil acc-ttree channel
-                                                  state))))))
+  (let ((channel (proofs-co state))
+        (acc-ttree (f-get-global 'accumulated-ttree state))
+        (inhibited-summary-types (f-get-global 'inhibited-summary-types
+                                               state)))
+    (pprogn
+     (cond ((member-eq 'rules inhibited-summary-types)
+            state)
+           (t (print-runes-summary acc-ttree channel state)))
+     (cond ((member-eq 'hint-events inhibited-summary-types)
+            state)
+           (t (print-hint-events-summary acc-ttree channel state)))
+     (cond ((member-eq 'splitter-rules inhibited-summary-types)
+            state)
+           (t (print-splitter-rules-summary nil nil acc-ttree channel
+                                            state)))
 
 ; Since we've already printed from the accumulated-ttree, there is no need to
 ; print again the next time we want to print rules or hint-events.  That is why
@@ -3087,10 +3130,7 @@
 ; to be able to print rules and hint-events when it fails, then we should use a
 ; stack of ttrees rather than a single accumulated-ttree.
 
-   (f-put-global 'accumulated-ttree nil state)))
-
-(defun last-prover-steps (state)
-  (f-get-global 'last-prover-steps state))
+     (f-put-global 'accumulated-ttree nil state))))
 
 (defun print-summary (erp noop-flg ctx state)
 
@@ -3149,12 +3189,27 @@
   (let ((wrld (w state))
         (steps (prover-steps state)))
     (pprogn
-     (f-put-global 'last-prover-steps steps state)
+     (clear-event-data state)
+     (let ((trip (car wrld)))
+       (cond ((and (not noop-flg)
+                   (eq (car trip) 'EVENT-LANDMARK)
+                   (eq (cadr trip) 'GLOBAL-VALUE))
+              (put-event-data 'namex
+                              (access-event-tuple-namex (cddr trip))
+                              state))
+             (t state)))
+     (put-event-data 'prover-steps-counted steps state)
+     (put-event-data 'form ctx state)
+     (increment-timer 'other-time state)
+     (put-event-data 'time
+                     (list (car (get-timer 'prove-time state))
+                           (car (get-timer 'print-time state))
+                           (car (get-timer 'proof-tree-time state))
+                           (car (get-timer 'other-time state)))
+                     state)
      (cond
-      ((or (ld-skip-proofsp state)
-           (output-ignored-p 'summary state))
-       (pprogn (increment-timer 'other-time state)
-               (if (or erp noop-flg)
+      ((ld-skip-proofsp state)
+       (pprogn (if (or erp noop-flg)
                    state
                  (print-redefinition-warning wrld ctx state))
                (pop-timer 'prove-time t state)
@@ -3167,64 +3222,66 @@
                        state)))
       (t
 
-; Even if 'summary is inhibited, we still use io? below, and inside some
-; functions below, because of its window hacking and saved-output functions.
+; Even if this case were only taken when 'summary is inhibited, we would still
+; use io? below, and inside some functions below, because of its window hacking
+; and saved-output functions.
 
-       (pprogn
-        (increment-timer 'other-time state)
-        (if (or erp noop-flg)
-            state
-          (print-redefinition-warning wrld ctx state))
-        (pprogn
-         (io? summary nil state
-              ()
-              (let ((channel (proofs-co state)))
-                (cond ((member-eq 'header
-                                  (f-get-global 'inhibited-summary-types
-                                                state))
-                       state)
-                      (t
-                       (pprogn (newline channel state)
-                               (princ$ "Summary" channel state)
-                               (newline channel state))))))
-         (io? summary nil state
-              (ctx)
-              (let ((channel (proofs-co state)))
-                (cond ((member-eq 'form
-                                  (f-get-global 'inhibited-summary-types
-                                                state))
-                       state)
-                      (t
-                       (mv-let
-                        (col state)
-                        (fmt1 "Form:  " nil 0 channel state nil)
+       (let ((output-ignored-p (output-ignored-p 'summary state)))
+         (pprogn
+          (if (or erp noop-flg output-ignored-p)
+              state
+            (print-redefinition-warning wrld ctx state))
+          (io? summary nil state
+               ()
+               (let ((channel (proofs-co state)))
+                 (cond ((member-eq 'header
+                                   (f-get-global 'inhibited-summary-types
+                                                 state))
+                        state)
+                       (t
+                        (pprogn (newline channel state)
+                                (princ$ "Summary" channel state)
+                                (newline channel state))))))
+          (io? summary nil state
+               (ctx)
+               (let ((channel (proofs-co state)))
+                 (cond ((member-eq 'form
+                                   (f-get-global 'inhibited-summary-types
+                                                 state))
+                        state)
+                       (t
                         (mv-let
                          (col state)
-                         (fmt-ctx ctx col channel state)
-                         (declare (ignore col))
-                         (newline channel state))))))))
-        (print-rules-and-hint-events-summary state) ; call of io? is inside
-        (pprogn (print-warnings-summary state)
-                (print-time-summary state)
-                (print-steps-summary steps state)
-                (progn$
+                         (fmt1 "Form:  " nil 0 channel state nil)
+                         (mv-let
+                          (col state)
+                          (fmt-ctx ctx col channel state)
+                          (declare (ignore col))
+                          (newline channel state)))))))
+          (print-rules-and-hint-events-summary state) ; call of io? is inside
+          (print-warnings-summary state)
+          (print-time-summary state)
+          (print-steps-summary steps state)
+          (progn$
+          (and
+            (not output-ignored-p)
 
 ; If the time-tracker call below is changed, update :doc time-tracker
 ; accordingly.
 
-                 (time-tracker
-                  :tau :print?
-                  :min-time 1
-                  :msg
-                  (concatenate
-                   'string
-                   "For the proof above, the total "
-                   (if (f-get-global 'get-internal-time-as-realtime
-                                     state)
-                       "realtime"
-                     "runtime")
-                   " spent in the tau system was ~st seconds.  See :DOC ~
-                    time-tracker-tau.~|~%"))
+            (time-tracker
+             :tau :print?
+             :min-time 1
+             :msg
+             (concatenate
+              'string
+              "For the proof above, the total "
+              (if (f-get-global 'get-internal-time-as-realtime
+                                state)
+                  "realtime"
+                "runtime")
+              " spent in the tau system was ~st seconds.  See :DOC ~
+                    time-tracker-tau.~|~%")))
 
 ; At one time we put (time-tracker :tau :end) here.  But in community book
 ; books/hints/basic-tests.lisp, the recursive proof attempt failed just below
@@ -3233,24 +3290,28 @@
 ; to avoid :end here; after all, we invoke :end before invoking :init anyhow,
 ; in case the proof was aborted without printing this part of the summary.
 
-                 state))
-        (cond (erp
-               (pprogn
-                (print-failure erp ctx state)
-                (cond
-                 ((f-get-global 'proof-tree state)
-                  (io? proof-tree nil state
-                       (ctx)
-                       (pprogn (f-put-global 'proof-tree-ctx
-                                             (cons :failed ctx)
-                                             state)
-                               (print-proof-tree state))))
-                 (t state))))
-              (t (pprogn
-                  #+acl2-par
-                  (erase-acl2p-checkpoints-for-summary state)
-                  state)))
-        (f-put-global 'proof-tree nil state)))))))
+           state)
+          (cond
+           (output-ignored-p state)
+           (t
+            (pprogn
+             (cond (erp
+                    (pprogn
+                     (print-failure erp ctx state)
+                     (cond
+                      ((f-get-global 'proof-tree state)
+                       (io? proof-tree nil state
+                            (ctx)
+                            (pprogn (f-put-global 'proof-tree-ctx
+                                                  (cons :failed ctx)
+                                                  state)
+                                    (print-proof-tree state))))
+                      (t state))))
+                   (t (pprogn
+                       #+acl2-par
+                       (erase-acl2p-checkpoints-for-summary state)
+                       state)))
+             (f-put-global 'proof-tree nil state)))))))))))
 
 (defun with-prover-step-limit-fn (limit form no-change-flg)
 
