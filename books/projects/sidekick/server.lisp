@@ -31,6 +31,7 @@
 (include-book "xdoc")
 (include-book "webcommand")
 (include-book "lint")
+(include-book "eventdata")
 (include-book "centaur/misc/tshell" :dir :system)
 (include-book "std/basic/defs" :dir :system)
 (include-book "std/strings/defs-program" :dir :system)

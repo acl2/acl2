@@ -328,3 +328,4 @@
 
 (defmacro session ()
   (push-webcommand (list (cons :action :session))))
+
