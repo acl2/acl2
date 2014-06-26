@@ -929,6 +929,9 @@ input."
              ((xor (buf a) b)       . (xor a b))
              ((xor a (buf b))       . (xor a b))
 
+             ((xor (not a) b)       . (not (xor a b)))
+             ((xor a (not b))       . (not (xor a b)))
+
              ;; OR constant propagation
              ((or (t) a)            . (t))
              ((or a (t))            . (t))
