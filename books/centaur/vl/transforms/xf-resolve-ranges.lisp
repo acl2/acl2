@@ -149,6 +149,95 @@ concatenations.</p>")
   :element vl-range
   :element-fn vl-rangeresolve)
 
+(def-vl-rangeresolve vl-packeddimension
+  :body (if (eq x :vl-unsized-dimension)
+            (mv (ok) x)
+          (vl-rangeresolve x warnings)))
+
+(def-vl-rangeresolve-list vl-packeddimensionlist
+  :element vl-packeddimension)
+
+(def-vl-rangeresolve vl-maybe-packeddimension
+  :body (if (not x)
+            (mv (ok) nil)
+          (vl-packeddimension-rangeresolve x warnings)))
+
+(def-vl-rangeresolve vl-enumbasetype
+  :body (b* (((vl-enumbasetype x) x)
+             ((mv warnings dim) (vl-maybe-packeddimension-rangeresolve x.dim warnings)))
+          (mv warnings (change-vl-enumbasetype x :dim dim))))
+
+(def-vl-rangeresolve vl-enumitem
+  :body (b* (((vl-enumitem x) x)
+             ((mv warnings range) (vl-maybe-rangeresolve x.range warnings)))
+          (mv warnings (change-vl-enumitem x :range range))))
+
+(def-vl-rangeresolve-list vl-enumitemlist
+  :element vl-enumitem)
+
+(defines vl-datatype-rangeresolve
+  :verify-guards nil
+
+  (define vl-datatype-rangeresolve ((x        vl-datatype-p)
+                                    (warnings vl-warninglist-p))
+    :measure (vl-datatype-count x)
+    :returns (mv (warnings vl-warninglist-p)
+                 (new-x vl-datatype-p))
+    (vl-datatype-case x
+      (:vl-coretype
+       (b* (((mv warnings dims) (vl-packeddimensionlist-rangeresolve x.dims warnings)))
+         (mv warnings (change-vl-coretype x :dims dims))))
+      (:vl-struct
+       (b* (((mv warnings dims)    (vl-packeddimensionlist-rangeresolve x.dims warnings))
+            ((mv warnings members) (vl-structmemberlist-rangeresolve x.members warnings)))
+         (mv warnings (change-vl-struct x
+                                        :dims dims
+                                        :members members))))
+      (:vl-union
+       (b* (((mv warnings dims)    (vl-packeddimensionlist-rangeresolve x.dims warnings))
+            ((mv warnings members) (vl-structmemberlist-rangeresolve x.members warnings)))
+         (mv warnings (change-vl-union x
+                                        :dims dims
+                                        :members members))))
+      (:vl-enum
+       (b* (((mv warnings basetype) (vl-enumbasetype-rangeresolve x.basetype warnings))
+            ((mv warnings items)    (vl-enumitemlist-rangeresolve x.items warnings))
+            ((mv warnings dims)     (vl-packeddimensionlist-rangeresolve x.dims warnings)))
+         (mv warnings (change-vl-enum x
+                                      :basetype basetype
+                                      :items    items
+                                      :dims     dims))))
+      (:vl-usertype
+       (b* (((mv warnings dims) (vl-packeddimensionlist-rangeresolve x.dims warnings)))
+         (mv warnings (change-vl-usertype x
+                                          :dims dims))))))
+
+  (define vl-structmemberlist-rangeresolve ((x vl-structmemberlist-p)
+                                            (warnings vl-warninglist-p))
+    :measure (vl-structmemberlist-count x)
+    :returns (mv (warnings vl-warninglist-p)
+                 (new-x vl-structmemberlist-p))
+    (b* (((when (atom x))
+          (mv (ok) nil))
+         ((mv warnings x1) (vl-structmember-rangeresolve (car x) warnings))
+         ((mv warnings x2) (vl-structmemberlist-rangeresolve (cdr x) warnings)))
+      (mv warnings (cons x1 x2))))
+
+  (define vl-structmember-rangeresolve ((x vl-structmember-p)
+                                        (warnings vl-warninglist-p))
+    :measure (vl-structmember-count x)
+    :returns (mv (warnings vl-warninglist-p)
+                 (new-x vl-structmember-p))
+    (b* (((vl-structmember x) x)
+         ((mv warnings type) (vl-datatype-rangeresolve x.type warnings))
+         ((mv warnings dims) (vl-packeddimensionlist-rangeresolve x.dims warnings)))
+      (mv warnings (change-vl-structmember x
+                                           :type type
+                                           :dims dims))))
+  ///
+  (verify-guards vl-datatype-rangeresolve)
+  (deffixequiv-mutual vl-datatype-rangeresolve))
+
 (def-vl-rangeresolve vl-portdecl
   :body (b* (((vl-portdecl x) x)
              ((mv warnings range) (vl-maybe-rangeresolve x.range warnings)))
@@ -168,11 +257,11 @@ concatenations.</p>")
 
 (def-vl-rangeresolve vl-vardecl
   :body (b* (((vl-vardecl x) x)
-             ((mv warnings range)   (vl-maybe-rangeresolve x.range warnings))
-             ((mv warnings arrdims) (vl-rangelist-rangeresolve x.arrdims warnings)))
+             ((mv warnings vartype) (vl-datatype-rangeresolve x.vartype warnings))
+             ((mv warnings dims)    (vl-packeddimensionlist-rangeresolve x.dims warnings)))
           (mv warnings (change-vl-vardecl x
-                                          :range range
-                                          :arrdims arrdims))))
+                                          :vartype vartype
+                                          :dims dims))))
 
 (def-vl-rangeresolve-list vl-vardecllist :element vl-vardecl)
 

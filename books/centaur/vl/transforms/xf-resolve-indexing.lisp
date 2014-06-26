@@ -50,32 +50,65 @@ able to handle more cases.</p>")
 
 (local (xdoc::set-default-parents resolve-indexing))
 
+(define vl-vardecl-bitselect-p ((x vl-vardecl-p))
+  :short "Recognize variables @('foo') where @('foo[i]') is definitely a
+          bit-select, i.e., not some kind of array index or similar."
+  :long "<p>BOZO this is pretty weak right now.  Eventually we'll want to
+         extend it to things like packed structures, etc.</p>"
+  (b* (((vl-vardecl x) x)
+       ((when (consp x.dims))
+        ;; Has array dimensions, doesn't seem like a bit-select.
+        nil)
+       ((unless (eq (vl-datatype-kind x.vartype) :vl-coretype))
+        ;; Struct or enum or user defined type of some kind.  Don't try to
+        ;; handle it yet.  BOZO eventually handle this sort of thing
+        nil)
+       ((vl-coretype x.vartype) x.vartype))
+    (or
+     ;; Vector integer types.  These may have an associated packed dimension list
+     ;; directly within the type, e.g., we might have `reg foo` or `reg [3:0] foo;`
+     (and (member x.vartype.name '(:vl-reg :vl-logic :vl-bit))
+          (or (atom x.vartype.dims)        ;; Selecting from reg foo; -- weird but we'll call it good
+              (atom (cdr x.vartype.dims))  ;; Selecting from reg [3:0] foo; -- fine
+              ;; Otherwise something like reg [3:0][4:0] foo -- doesn't seem like a bitselect
+              ))
+     ;; Atomic integer types.  It seems okay to bit-select from these.  They
+     ;; should never have associated dimensions.
+     (and (member x.vartype.name '(:vl-byte :vl-shortint :vl-int :vl-longint :vl-integer))
+          ;; dims should never happen here
+          (or (atom x.vartype.dims)
+              (raise "integer atom type with dimensions? ~x0." x)))
+     ;; Anything else is just too hard and we're not going to think about it.
+     ;; This includes, e.g.,: real, string, chandle, void, event
+     )))
+
 (define vl-vardecllist-filter-arrays
-  :short "Filter variable declarations into arrays and non-arrays."
+  :short "Filter variable declarations into those for which @('foo[i]') is a
+          bit-select versus an array-index."
   ((x          vl-vardecllist-p "Decls we're filtering.")
-   (arrays     vl-vardecllist-p "Accumulator for the arrays.")
-   (non-arrays vl-vardecllist-p "Accumulator for the non-arrays."))
-  :long "<p>We skip some variables, e.g., reals that aren't arrays, because we
- don't know whether it's okay to select from them or what it means,
- exactly.</p>"
+   (bitselects vl-vardecllist-p "Accumulator for variables whose selects are bit-selects.")
+   (arrays     vl-vardecllist-p "Accumulator for variables whose selects are array indexing operations.")
+   (others     vl-vardecllist-p "Accumulator for more complicated things."))
+  :verbosep t
   :returns
-  (mv (arrays vl-vardecllist-p)
-      (non-arrays vl-vardecllist-p))
+  (mv (bitselects vl-vardecllist-p)
+      (arrays     vl-vardecllist-p)
+      (others     vl-vardecllist-p))
   (b* (((when (atom x))
-        (mv (vl-vardecllist-fix arrays)
-            (vl-vardecllist-fix non-arrays)))
+        (mv (vl-vardecllist-fix bitselects)
+            (vl-vardecllist-fix arrays)
+            (vl-vardecllist-fix others)))
        (x1 (vl-vardecl-fix (car x)))
        ((vl-vardecl x1) x1)
-       ((unless (eq x1.type :vl-reg))
-        ;; Something tricky.  Don't classify it as an array or a non-array.
-        ;; We'll just allow any indexing of this variable to remain unknown.
-        ;; (BOZO this is probably too conservative, i.e., we should probably be
-        ;; able to extend this to integer variables at least without any
-        ;; problems.)
-        (vl-vardecllist-filter-arrays (cdr x) (cons x1 arrays) non-arrays))
-       ((when (consp x1.arrdims))
-        (vl-vardecllist-filter-arrays (cdr x) (cons x1 arrays) non-arrays)))
-    (vl-vardecllist-filter-arrays (cdr x) arrays (cons x1 non-arrays))))
+       ((when (consp x1.dims))
+        ;; I think this might be right.  It has array dimensions, so no matter
+        ;; what kind of base type it is, it seems reasonable to call an index
+        ;; into it an array index.
+        (vl-vardecllist-filter-arrays (cdr x) bitselects (cons x1 arrays) others))
+       ((when (vl-vardecl-bitselect-p x1))
+        (vl-vardecllist-filter-arrays (cdr x) (cons x1 bitselects) arrays others)))
+    ;; Otherwise, too hard, not sure what this is yet.
+    (vl-vardecllist-filter-arrays (cdr x) bitselects arrays (cons x1 others))))
 
 (define vl-netdecllist-filter-arrays
   :short "Filter register declarations into arrays and non-arrays."
@@ -88,10 +121,10 @@ able to handle more cases.</p>")
   (b* (((when (atom x))
         (mv (vl-netdecllist-fix arrays)
             (vl-netdecllist-fix non-arrays)))
-       (x1 (vl-netdecl-fix (car x))))
-    (if (consp (vl-netdecl->arrdims x1))
-        (vl-netdecllist-filter-arrays (cdr x) (cons x1 arrays) non-arrays)
-      (vl-netdecllist-filter-arrays (cdr x) arrays (cons x1 non-arrays)))))
+       (x1 (vl-netdecl-fix (car x)))
+       ((when (consp (vl-netdecl->arrdims x1)))
+        (vl-netdecllist-filter-arrays (cdr x) (cons x1 arrays) non-arrays)))
+    (vl-netdecllist-filter-arrays (cdr x) arrays (cons x1 non-arrays))))
 
 ;; BOZO maybe we can also have arrays of variables, events, etc.?
 
@@ -518,18 +551,17 @@ able to handle more cases.</p>")
         (set-difference-equal (alist-keys wirefal) shadowed-names))
 
        ;; It would probably be safe to turn indexing operations that are
-       ;; selecting from most parameters and variables into bitselects.  But
-       ;; for now we'll play it safe, and only really try to deal with
-       ;; registers here.
-       ((mv var-arrays var-wires)
-        (vl-vardecllist-filter-arrays vardecls nil nil))
+       ;; selecting from most parameters and variables into bitselects.
+       ((mv var-bitselects var-arrays ?var-others)
+        (vl-vardecllist-filter-arrays vardecls nil nil nil))
 
        ;; The function's inputs are also okay to turn into bit selects, because
        ;; they can't be arrays.
        (innames         (vl-taskportlist->names x.inputs))
 
-       (local-arrnames  (append-without-guard var-arrays visible-global-arrnames))
-       (local-wirenames (append-without-guard var-wires
+       (local-arrnames  (append-without-guard (vl-vardecllist->names var-arrays)
+                                              visible-global-arrnames))
+       (local-wirenames (append-without-guard (vl-vardecllist->names var-bitselects)
                                               innames
                                               visible-global-wirenames))
        (local-arrfal    (make-lookup-alist local-arrnames))
@@ -550,14 +582,14 @@ able to handle more cases.</p>")
        ((when (vl-module->hands-offp x))
         x)
 
-       ((mv var-arrays var-wires)
-        (vl-vardecllist-filter-arrays x.vardecls nil nil))
+       ((mv var-bitselects var-arrays ?var-others)
+        (vl-vardecllist-filter-arrays x.vardecls nil nil nil))
        ((mv net-arrays net-wires)
         (vl-netdecllist-filter-arrays x.netdecls nil nil))
 
        (arr-names (append (vl-vardecllist->names var-arrays)
                           (vl-netdecllist->names net-arrays)))
-       (wire-names (append (vl-vardecllist->names var-wires)
+       (wire-names (append (vl-vardecllist->names var-bitselects)
                            (vl-netdecllist->names net-wires)))
 
        (arrfal  (make-lookup-alist arr-names))

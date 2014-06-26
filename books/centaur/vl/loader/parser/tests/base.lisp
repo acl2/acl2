@@ -133,3 +133,106 @@
   (vl-arguments-case x
     :named (list :namedargs (vl-pretty-namedarg-list x.args))
     :plain (list :plainargs (vl-pretty-plainarg-list x.args))))
+
+
+
+(define vl-pretty-fwdtypedef ((x vl-fwdtypedef-p))
+  (b* (((vl-fwdtypedef x) x))
+    (list 'fwdtypedef
+          x.kind
+          x.name)))
+
+(define vl-pretty-packeddimension ((x vl-packeddimension-p))
+  :prepwork ((local (in-theory (enable vl-packeddimension-p))))
+  (if (eq x :vl-unsized-dimension)
+      x
+    (vl-pretty-range x)))
+
+(defprojection vl-pretty-packeddimensionlist ((x vl-packeddimensionlist-p))
+  (vl-pretty-packeddimension x))
+
+(define vl-pretty-enumbasetype ((x vl-enumbasetype-p))
+  (b* (((vl-enumbasetype x) x))
+    (list* x.kind
+           (if x.signedp 'signed 'unsigned)
+           (and x.dim
+                (list (vl-pretty-packeddimension x.dim))))))
+
+(define vl-pretty-enumitem ((x vl-enumitem-p))
+  (b* (((vl-enumitem x) x))
+    (append (list x.name)
+            (and x.range (list (vl-pretty-range x.range)))
+            (and x.value
+                 (list '= (vl-pretty-expr x.value))))))
+
+(defprojection vl-pretty-enumitemlist ((x vl-enumitemlist-p))
+  (vl-pretty-enumitem x))
+
+(defines vl-pretty-datatype
+
+  (define vl-pretty-datatype ((x vl-datatype-p))
+    :measure (vl-datatype-count x)
+    (vl-datatype-case x
+      (:vl-coretype
+       (list* x.name
+              (if x.signedp 'signed 'unsigned)
+              (vl-pretty-packeddimensionlist x.dims)))
+
+      (:vl-struct
+       (append '(:vl-struct)
+               (if x.packedp '(packed) nil)
+               (if x.signedp '(signed) nil)
+               (vl-pretty-structmemberlist x.members)
+               (and x.dims
+                    (cons :dims (vl-pretty-packeddimensionlist x.dims)))))
+
+      (:vl-union
+       (append '(:vl-union)
+               (if x.taggedp '(tagged) nil)
+               (if x.packedp '(packed) nil)
+               (if x.signedp '(signed) nil)
+               (vl-pretty-structmemberlist x.members)
+               (and x.dims
+                    (cons :dims (vl-pretty-packeddimensionlist x.dims)))))
+
+      (:vl-enum
+       (append '(:vl-enum)
+               (vl-pretty-enumbasetype x.basetype)
+               (vl-pretty-enumitemlist x.items)
+               (and x.dims
+                    (cons :dims (vl-pretty-packeddimensionlist x.dims)))))
+
+      (:vl-usertype
+       (append '(:vl-usertype)
+               (list (vl-pretty-expr x.kind))
+               (and x.dims
+                    (cons :dims (vl-pretty-packeddimensionlist x.dims)))))))
+
+  (define vl-pretty-structmemberlist ((x vl-structmemberlist-p))
+    :measure (vl-structmemberlist-count x)
+    (if (atom x)
+        nil
+      (cons (vl-pretty-structmember (car x))
+            (vl-pretty-structmemberlist (cdr x)))))
+
+  (define vl-pretty-structmember ((x vl-structmember-p))
+    :measure (vl-structmember-count x)
+    (b* (((vl-structmember x) x))
+      (append (list x.name)
+              (and x.rand (list x.rand))
+              (vl-pretty-datatype x.type)
+              (and x.dims
+                   (cons :dims (vl-pretty-packeddimensionlist x.dims)))
+              (and x.rhs
+                   (list '= (vl-pretty-expr x.rhs)))))))
+
+(define vl-pretty-typedef ((x vl-typedef-p))
+  (b* (((vl-typedef x) x))
+    (list :vl-typedef x.name
+          (vl-pretty-datatype x.type))))
+
+(define vl-pretty-type-declaration ((x (or (vl-typedef-p x)
+                                           (vl-fwdtypedef-p x))))
+  (if (eq (tag x) :vl-fwdtypedef)
+      (vl-pretty-fwdtypedef x)
+    (vl-pretty-typedef x)))

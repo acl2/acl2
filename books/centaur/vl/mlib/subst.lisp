@@ -165,6 +165,92 @@ attributes is left up to the implementation.</p>"
   :type vl-maybe-gatedelay-p
   :body (and x (vl-gatedelay-subst x sigma)))
 
+(def-vl-subst vl-packeddimension-subst
+  :type vl-packeddimension-p
+  :body
+  (b* ((x (vl-packeddimension-fix x)))
+    (if (eq x :vl-unsized-dimension)
+        x
+      (vl-range-subst x sigma))))
+
+(def-vl-subst vl-maybe-packeddimension-subst
+  :type vl-maybe-packeddimension-p
+  :body
+  (and x
+       (vl-packeddimension-subst x sigma)))
+
+(def-vl-subst-list vl-packeddimensionlist-subst
+  :type vl-packeddimensionlist-p
+  :element vl-packeddimension-subst)
+
+(def-vl-subst vl-enumbasetype-subst
+  :type vl-enumbasetype-p
+  :body (b* (((vl-enumbasetype x) x))
+          (change-vl-enumbasetype x
+                                  :dim (vl-maybe-packeddimension-subst x.dim sigma))))
+
+(def-vl-subst vl-enumitem-subst
+  :type vl-enumitem-p
+  :body
+  (b* (((vl-enumitem x) x))
+    (change-vl-enumitem x
+                        :range (vl-maybe-range-subst x.range sigma)
+                        :value (vl-maybe-expr-subst x.value sigma))))
+
+(def-vl-subst-list vl-enumitemlist-subst
+  :type vl-enumitemlist-p
+  :element vl-enumitem-subst)
+
+
+(defines vl-datatype-subst
+  :verify-guards nil
+
+  (define vl-datatype-subst ((x vl-datatype-p)
+                             (sigma vl-sigma-p))
+    :measure (vl-datatype-count x)
+    :returns (new-x vl-datatype-p)
+    (vl-datatype-case x
+      (:vl-coretype
+       (change-vl-coretype x :dims (vl-packeddimensionlist-subst x.dims sigma)))
+      (:vl-struct
+       (change-vl-struct x
+                         :dims (vl-packeddimensionlist-subst x.dims sigma)
+                         :members (vl-structmemberlist-subst x.members sigma)))
+      (:vl-union
+       (change-vl-union x
+                        :dims (vl-packeddimensionlist-subst x.dims sigma)
+                        :members (vl-structmemberlist-subst x.members sigma)))
+      (:vl-enum
+       (change-vl-enum x
+                       :basetype (vl-enumbasetype-subst x.basetype sigma)
+                       :items (vl-enumitemlist-subst x.items sigma)
+                       :dims (vl-packeddimensionlist-subst x.dims sigma)))
+      (:vl-usertype
+       (change-vl-usertype x
+                           :kind (vl-expr-subst x.kind sigma)
+                           :dims (vl-packeddimensionlist-subst x.dims sigma)))))
+
+  (define vl-structmemberlist-subst ((x vl-structmemberlist-p)
+                                     (sigma vl-sigma-p))
+    :measure (vl-structmemberlist-count x)
+    :returns (new-x vl-structmemberlist-p)
+    (if (atom x)
+        nil
+      (cons (vl-structmember-subst (car x) sigma)
+            (vl-structmemberlist-subst (cdr x) sigma))))
+
+  (define vl-structmember-subst ((x vl-structmember-p)
+                                 (sigma vl-sigma-p))
+    :measure (vl-structmember-count x)
+    :returns (new-x vl-structmember-p)
+    (b* (((vl-structmember x) x))
+      (change-vl-structmember x
+                              :rhs (vl-maybe-expr-subst x.rhs sigma)
+                              :dims (vl-packeddimensionlist-subst x.dims sigma)
+                              :type (vl-datatype-subst x.type sigma))))
+  ///
+  (verify-guards vl-datatype-subst)
+  (deffixequiv-mutual vl-datatype-subst))
 
 (def-vl-subst vl-port-subst
   :type vl-port-p
@@ -210,14 +296,13 @@ attributes is left up to the implementation.</p>"
   :type vl-netdecllist-p
   :element vl-netdecl-subst)
 
-
-
 (def-vl-subst vl-vardecl-subst
   :type vl-vardecl-p
-  :body (change-vl-vardecl x
-                           :range (vl-maybe-range-subst (vl-vardecl->range x) sigma)
-                           :arrdims (vl-rangelist-subst (vl-vardecl->arrdims x) sigma)
-                           :initval (vl-maybe-expr-subst (vl-vardecl->initval x) sigma)))
+  :body (b* (((vl-vardecl x) x))
+          (change-vl-vardecl x
+                             :vartype (vl-datatype-subst x.vartype sigma)
+                             :dims    (vl-packeddimensionlist-subst x.dims sigma)
+                             :initval (vl-maybe-expr-subst x.initval sigma))))
 
 (def-vl-subst-list vl-vardecllist-subst
   :type vl-vardecllist-p

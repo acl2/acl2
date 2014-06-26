@@ -19,99 +19,134 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "ranges")
+(include-book "datatypes")
 (local (include-book "../../util/arithmetic"))
 
-
-
-
-;                      PARSING BLOCK ITEM DECLARATIONS
+; Verilog-2005 Grammar for regs and variables, after filtering out some
+; duplication and indirection:
 ;
-; Regs and variables.
+;    integer_declaration  ::= 'integer'  list_of_variable_identifiers ';'
+;    real_declaration     ::= 'real'     list_of_variable_identifiers ';'
+;    time_declaration     ::= 'time'     list_of_variable_identifiers ';'
+;    realtime_declaration ::= 'realtime' list_of_variable_identifiers ';'
+;    reg_declaration      ::= 'reg' [ 'signed' ] [ range ] list_of_variable_identifiers ';'
 ;
-; Filtering out some duplication and indirection, we have:
+;    list_of_variable_identifiers ::= variable_type { ',' variable_type }
 ;
-; integer_declaration  ::= 'integer'  list_of_variable_identifiers ';'
-; real_declaration     ::= 'real'     list_of_variable_identifiers ';'
-; time_declaration     ::= 'time'     list_of_variable_identifiers ';'
-; realtime_declaration ::= 'realtime' list_of_variable_identifiers ';'
+;    variable_type ::= identifier { range }
+;                    | identifier '=' expression
 ;
-; reg_declaration      ::=
-;   'reg' [ 'signed' ] [ range ] list_of_variable_identifiers ';'
 ;
-; list_of_variable_identifiers ::=
-;    variable_type { ',' variable_type }
+; For SystemVerilog-2012 this is quite a bit more complex.  Quick rundown:
+;    - additional 'const', 'var', and lifetime specifiers
+;    - variables can be of many new built-in or user-defined types
+;    - initializers can have "new", etc., instead of just being expressions
+;    - ranges for each variable_type can now be lists of variable_dimensions
+
 ;
-; variable_type ::=
-;    identifier { range }
-;  | identifier '=' expression
+; The new grammar looks like this:
+;
+;    data_declaration ::=
+;        ['const'] ['var'] [lifetime] data_type_or_implicit list_of_variable_decl_assignments ';'
+;      | ...
+;
+;    variable_decl_assignment ::=
+;         identifier { variable_dimension } [ '=' expression ]
+;       | identifier unsized_dimension { variable_dimension } [ '=' dynamic_array_new ]
+;       | identifier [ '=' class_new ]
+;
+;    dynamic_array_new ::= new [ expression ] [ ( expression ) ]
+;
+;    class_new ::= [ class_scope ] new [ ( list_of_arguments ) ]
+;                | new expression
+;
+;    variable_dimension ::= unsized_dimension
+;                         | unpacked_dimension
+;                         | associative_dimension
+;                         | queue_dimension
+;
+;    unsized_dimension     ::= '[' ']'
+;    packed_dimension      ::= '[' constant_range ']' | unsized_dimension
+;    associative_dimension ::= '[' data_type ']' | '[' '*' ']'
+;    queue_dimension       ::= '[' '$' [ ':' expression ] ']'
+;
+;    list_of_arguments ::= [expression] { ',' [expression] } { ',' '.' identifier '(' [expression] ')' }
+;                        | '.' identifier '(' [expression] ')' { ',' '.' identifier '(' [expression] ')' }
 
-(defun vl-vardecl-tuple-p (x)
-  (declare (xargs :guard t))
-  (and (tuplep 3 x)
-       (stringp (first x))
-       (vl-rangelist-p (second x))
-       (vl-maybe-expr-p (third x))))
+(defprod vl-vardecltemp
+  :layout :tree
+  :short "Temporary structure used when parsing variable declarations."
+  ((name    stringp :rule-classes :type-prescription)
+   (dims    vl-packeddimensionlist-p)
+   (initval vl-maybe-expr-p))
+  :long "<p>This captures something like a @('variable_type') from
+Verilog-2005:</p>
 
-(defun vl-vardecl-tuple-list-p (x)
-  (declare (xargs :guard t))
-  (if (consp x)
-      (and (vl-vardecl-tuple-p (car x))
-           (vl-vardecl-tuple-list-p (cdr x)))
-    t))
+@({
+    variable_type ::= identifier { range }
+                    | identifier '=' expression
+})
 
-(defund vl-build-vardecls (loc type atts tuples)
-  (declare (xargs :guard (and (vl-location-p loc)
-                              (vl-vardecltype-p type)
-                              (vl-atts-p atts)
-                              (vl-vardecl-tuple-list-p tuples))))
-  (if (consp tuples)
-      (cons (make-vl-vardecl :loc loc
-                             :name (first (car tuples))
-                             :type type
-                             :arrdims (second (car tuples))
-                             :initval (third (car tuples))
-                             :atts atts)
-            (vl-build-vardecls loc type atts (cdr tuples)))
-    nil))
+<p>Or @('variable_decl_assignment') from SystemVerilog-2012, except that
+<b>BOZO</b> we don't yet support @('new') sorts of stuff.</p>
 
-(defund vl-build-regdecls (loc signedp range atts tuples)
-  (declare (xargs :guard (and (vl-location-p loc)
-                              (booleanp signedp)
-                              (vl-maybe-range-p range)
-                              (vl-atts-p atts)
-                              (vl-vardecl-tuple-list-p tuples))))
-  (if (consp tuples)
-      (cons (make-vl-vardecl :type :vl-reg
-                             :loc loc
-                             :name (first (car tuples))
-                             :signedp signedp
-                             :range range
-                             :arrdims (second (car tuples))
-                             :initval (third (car tuples))
-                             :atts atts)
-            (vl-build-regdecls loc signedp range atts (cdr tuples)))
-    nil))
+@({
+    variable_decl_assignment ::=
+         identifier { variable_dimension } [ '=' expression ]
+       | identifier unsized_dimension { variable_dimension } [ '=' dynamic_array_new ]
+       | identifier [ '=' class_new ]
+})")
 
-(defthm vl-vardecllist-p-of-vl-build-vardecls
-  (implies (and (force (vl-location-p loc))
-                (force (vl-vardecltype-p type))
-                (force (vl-atts-p atts))
-                (force (vl-vardecl-tuple-list-p tuples)))
-           (vl-vardecllist-p (vl-build-vardecls loc type atts tuples)))
-  :hints(("Goal" :in-theory (enable vl-build-vardecls))))
+(fty::deflist vl-vardecltemplist
+  :elt-type vl-vardecltemp)
 
-(defthm vl-vardecllist-p-of-vl-build-regdecls
-  (implies (and (force (vl-location-p loc))
-                (force (booleanp signedp))
-                (force (vl-maybe-range-p range))
-                (force (vl-atts-p atts))
-                (force (vl-vardecl-tuple-list-p tuples)))
-           (vl-vardecllist-p (vl-build-regdecls loc signedp range atts tuples)))
-  :hints(("Goal" :in-theory (enable vl-build-regdecls))))
+(deflist vl-vardecltemplist-p (x)
+  (vl-vardecltemp-p x)
+  :elementp-of-nil nil)
+
+(define vl-build-vardecls (&key (temps    vl-vardecltemplist-p)
+                                (constp   booleanp)
+                                (varp     booleanp)
+                                (lifetime vl-lifetime-p)
+                                (type     vl-datatype-p)
+                                (atts     vl-atts-p)
+                                (loc      vl-location-p))
+  :returns (vardecls vl-vardecllist-p)
+  (b* (((when (atom temps))
+        nil)
+       ((vl-vardecltemp temp1) (car temps))
+       (decl1 (make-vl-vardecl :name     temp1.name
+                               :dims     temp1.dims
+                               :initval  temp1.initval
+                               :constp   constp
+                               :varp     varp
+                               :lifetime lifetime
+                               :vartype  type
+                               :atts     atts
+                               :loc      loc)))
+    (cons decl1
+          (vl-build-vardecls :temps    (cdr temps)
+                             :constp   constp
+                             :varp     varp
+                             :lifetime lifetime
+                             :type     type
+                             :atts     atts
+                             :loc      loc))))
+
+
+
+
+(local (defthm vl-packeddimensionlist-p-when-vl-rangelist-p
+         (implies (vl-rangelist-p x)
+                  (vl-packeddimensionlist-p x))
+         :hints(("Goal" :induct (len x)))))
 
 (defparser vl-parse-variable-type ()
-  :result (vl-vardecl-tuple-p val)
+  ;; Verilog-2005.
+  ;;
+  ;; variable_type ::= identifier { range }
+  ;;                 | identifier '=' expression
+  :result (vl-vardecltemp-p val)
   :resultp-of-nil nil
   :fails gracefully
   :count strong
@@ -120,12 +155,19 @@
         (when (vl-is-token? :vl-equalsign)
           (:= (vl-match))
           (expr := (vl-parse-expression))
-          (return (list (vl-idtoken->name id) nil expr)))
+          (return (make-vl-vardecltemp :name (vl-idtoken->name id)
+                                       :dims nil
+                                       :initval expr)))
         (arrdims := (vl-parse-0+-ranges))
-        (return (list (vl-idtoken->name id) arrdims nil))))
+        (return (make-vl-vardecltemp :name (vl-idtoken->name id)
+                                     :dims arrdims
+                                     :initval nil))))
 
 (defparser vl-parse-list-of-variable-identifiers ()
-  :result (vl-vardecl-tuple-list-p val)
+  ;; Verilog-2005.
+  ;;
+  ;; list_of_variable_identifiers ::= variable_type { ',' variable_type }
+  :result (vl-vardecltemplist-p val)
   :resultp-of-nil t
   :true-listp t
   :fails gracefully
@@ -137,7 +179,18 @@
           (rest := (vl-parse-list-of-variable-identifiers)))
         (return (cons first rest))))
 
+
+(defval *vl-plain-old-integer-type*
+  :parents (vl-parse-integer-declaration)
+  (hons-copy
+   (make-vl-coretype :name    :vl-integer
+                     :signedp t   ;; integer type is signed
+                     :dims    nil ;; Not applicable to integers
+                     )))
+
 (defparser vl-parse-integer-declaration (atts)
+  ;; Verilog-2005.
+  ;;    integer_declaration  ::= 'integer'  list_of_variable_identifiers ';'
   :guard (vl-atts-p atts)
   :result (vl-vardecllist-p val)
   :resultp-of-nil t
@@ -146,11 +199,28 @@
   :count strong
   (seqw tokens warnings
         (kwd := (vl-match-token :vl-kwd-integer))
-        (tuples := (vl-parse-list-of-variable-identifiers))
+        (temps := (vl-parse-list-of-variable-identifiers))
         (semi := (vl-match-token :vl-semi))
-        (return (vl-build-vardecls (vl-token->loc kwd) :vl-integer atts tuples))))
+        (return (vl-build-vardecls :temps    temps
+                                   :constp   nil
+                                   :varp     nil
+                                   :lifetime nil
+                                   :type     *vl-plain-old-integer-type*
+                                   :atts     atts
+                                   :loc      (vl-token->loc kwd)))))
+
+
+(defval *vl-plain-old-real-type*
+  :parents (vl-parse-real-declaration)
+  (hons-copy
+   (make-vl-coretype :name    :vl-real
+                     :signedp nil ;; Not applicable to reals
+                     :dims    nil ;; Not applicable to reals
+                     )))
 
 (defparser vl-parse-real-declaration (atts)
+  ;; Verilog-2005.
+  ;;    real_declaration     ::= 'real'     list_of_variable_identifiers ';'
   :guard (vl-atts-p atts)
   :result (vl-vardecllist-p val)
   :resultp-of-nil t
@@ -159,11 +229,30 @@
   :count strong
   (seqw tokens warnings
         (kwd := (vl-match-token :vl-kwd-real))
-        (tuples := (vl-parse-list-of-variable-identifiers))
+        (temps := (vl-parse-list-of-variable-identifiers))
         (semi := (vl-match-token :vl-semi))
-        (return (vl-build-vardecls (vl-token->loc kwd) :vl-real atts tuples))))
+        (return (vl-build-vardecls :temps    temps
+                                   :constp   nil
+                                   :varp     nil
+                                   :lifetime nil
+                                   :type     *vl-plain-old-real-type*
+                                   :atts     atts
+                                   :loc      (vl-token->loc kwd)))))
+
+
+
+(defval *vl-plain-old-time-type*
+  :parents (vl-parse-time-declaration)
+  (hons-copy
+   (make-vl-coretype :name    :vl-time
+                     :signedp nil ;; Not applicable to times
+                     :dims    nil ;; Not applicable to times
+                     )))
 
 (defparser vl-parse-time-declaration (atts)
+  ;; Verilog-2005.
+  ;;
+  ;;   time_declaration     ::= 'time'     list_of_variable_identifiers ';'
   :guard (vl-atts-p atts)
   :result (vl-vardecllist-p val)
   :resultp-of-nil t
@@ -171,12 +260,30 @@
   :fails gracefully
   :count strong
   (seqw tokens warnings
-        (kwd := (vl-match-token :vl-kwd-time))
-        (tuples := (vl-parse-list-of-variable-identifiers))
-        (semi := (vl-match-token :vl-semi))
-        (return (vl-build-vardecls (vl-token->loc kwd) :vl-time atts tuples))))
+        (kwd    := (vl-match-token :vl-kwd-time))
+        (temps  := (vl-parse-list-of-variable-identifiers))
+        (semi   := (vl-match-token :vl-semi))
+        (return (vl-build-vardecls :temps    temps
+                                   :constp   nil
+                                   :varp     nil
+                                   :lifetime nil
+                                   :type     *vl-plain-old-time-type*
+                                   :atts     atts
+                                   :loc      (vl-token->loc kwd)))))
+
+
+(defval *vl-plain-old-realtime-type*
+  :parents (vl-parse-time-declaration)
+  (hons-copy
+   (make-vl-coretype :name    :vl-realtime
+                     :signedp nil ;; Not applicable to realtimes
+                     :dims    nil ;; Not applicable to realtimes
+                     )))
 
 (defparser vl-parse-realtime-declaration (atts)
+  ;; Verilog-2005.
+  ;;
+  ;;    realtime_declaration ::= 'realtime' list_of_variable_identifiers ';'
   :guard (vl-atts-p atts)
   :result (vl-vardecllist-p val)
   :resultp-of-nil t
@@ -184,12 +291,21 @@
   :fails gracefully
   :count strong
   (seqw tokens warnings
-        (kwd := (vl-match-token :vl-kwd-realtime))
-        (tuples := (vl-parse-list-of-variable-identifiers))
-        (semi := (vl-match-token :vl-semi))
-        (return (vl-build-vardecls (vl-token->loc kwd) :vl-realtime atts tuples))))
+        (kwd   := (vl-match-token :vl-kwd-realtime))
+        (temps := (vl-parse-list-of-variable-identifiers))
+        (semi  := (vl-match-token :vl-semi))
+        (return (vl-build-vardecls :temps    temps
+                                   :constp   nil
+                                   :varp     nil
+                                   :lifetime nil
+                                   :type     *vl-plain-old-realtime-type*
+                                   :atts     atts
+                                   :loc      (vl-token->loc kwd)))))
 
 (defparser vl-parse-reg-declaration (atts)
+  ;; Verilog-2005.
+  ;;
+  ;;    reg_declaration      ::= 'reg' [ 'signed' ] [ range ] list_of_variable_identifiers ';'
   :guard (vl-atts-p atts)
   :result (vl-vardecllist-p val)
   :resultp-of-nil t
@@ -203,10 +319,20 @@
           (signedp := (mv nil t tokens warnings)))
         (when (vl-is-token? :vl-lbrack)
           (range := (vl-parse-range)))
-        (tuples := (vl-parse-list-of-variable-identifiers))
-        (semi := (vl-match-token :vl-semi))
-        (return (vl-build-regdecls (vl-token->loc kwd) signedp range atts tuples))))
-
+        (temps := (vl-parse-list-of-variable-identifiers))
+        (semi  := (vl-match-token :vl-semi))
+        (return (vl-build-vardecls :temps temps
+                                   :constp nil
+                                   :varp nil
+                                   :lifetime nil
+                                   :type (hons-copy
+                                          (make-vl-coretype :name :vl-reg
+                                                            :signedp signedp
+                                                            :dims (if range
+                                                                      (list range)
+                                                                    nil)))
+                                   :atts atts
+                                   :loc (vl-token->loc kwd)))))
 
 
 

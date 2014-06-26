@@ -22,32 +22,44 @@
 (include-book "base")
 (include-book "../blockitems")
 
-(defun test-vardecls-fn (vars type atts names arrdims initvals)
-  (if (atom vars)
-      (and (atom names)
-           (atom arrdims)
-           (atom initvals))
+(defun test-vardecls-fn (vars ; produced by the parser
+                         constp
+                         varp
+                         lifetime
+                         type
+                         atts
+                         names
+                         dims
+                         initvals)
+  (b* (((when (atom vars))
+        (and (atom names)
+             (atom dims)
+             (atom initvals)))
+       (v1 (car vars))
+       ((unless (vl-vardecl-p v1))
+        (cw "Not even a valid variable decl: ~x0." v1))
+       ((vl-vardecl v1) v1))
     (debuggable-and
      (consp names)
-     (consp arrdims)
+     (consp dims)
      (consp initvals)
      (not (cw "Inspecting ~x0.~%" (car vars)))
-     (vl-vardecl-p (car vars))
-     (equal type          (vl-vardecl->type (car vars)))
-     (equal atts          (vl-vardecl->atts (car vars)))
-     (equal (car names)   (vl-vardecl->name (car vars)))
-     (equal (car arrdims) (vl-pretty-range-list (vl-vardecl->arrdims (car vars))))
-     (if (car initvals)
-         (debuggable-and
-          (vl-vardecl->initval (car vars))
-          (equal (car initvals)
-                 (vl-pretty-expr (vl-vardecl->initval (car vars)))))
-       (not (vl-vardecl->initval (car vars))))
-     (test-vardecls-fn (cdr vars) type atts
-                       (cdr names) (cdr arrdims) (cdr initvals)))))
+     (equal (car names)    v1.name)
+     (equal (car dims)     (vl-pretty-packeddimensionlist v1.dims))
+     (equal (car initvals) (and v1.initval (vl-pretty-expr v1.initval)))
+     (equal constp         v1.constp)
+     (equal varp           v1.varp)
+     (equal lifetime       v1.lifetime)
+     (equal type           (vl-pretty-datatype v1.vartype))
+     (equal atts           v1.atts)
+     (test-vardecls-fn (cdr vars)
+                       constp varp lifetime type atts
+                       (cdr names)
+                       (cdr dims)
+                       (cdr initvals)))))
 
 (defmacro test-parse-integer-declaration
-  (&key input atts names arrdims initvals (successp 't))
+  (&key input atts names dims initvals (successp 't))
   `(assert!
     (let ((tokens (make-test-tokens ,input))
           (warnings 'blah-warnings)
@@ -62,11 +74,18 @@
           (prog2$ (cw "VAL is ~x0.~%" val)
                   (and ,successp
                        (equal warnings 'blah-warnings)
-                       (test-vardecls-fn val :vl-integer ',atts
-                                         ',names ',arrdims ',initvals))))))))
+                       (test-vardecls-fn val
+                                         nil ; constp
+                                         nil ; varp
+                                         nil ; lifetime
+                                         '(:vl-integer signed)
+                                         ',atts
+                                         ',names
+                                         ',dims
+                                         ',initvals))))))))
 
 (defmacro test-parse-real-declaration
-  (&key input atts names arrdims initvals (successp 't))
+  (&key input atts names dims initvals (successp 't))
   `(assert!
     (let ((tokens (make-test-tokens ,input))
           (warnings 'blah-warnings)
@@ -81,11 +100,18 @@
           (prog2$ (cw "VAL is ~x0.~%" val)
                   (and ,successp
                        (equal warnings 'blah-warnings)
-                       (test-vardecls-fn val :vl-real ',atts
-                                         ',names ',arrdims ',initvals))))))))
+                       (test-vardecls-fn val
+                                         nil ; constp
+                                         nil ; varp
+                                         nil ; lifetime
+                                         '(:vl-real unsigned)
+                                         ',atts
+                                         ',names
+                                         ',dims
+                                         ',initvals))))))))
 
 (defmacro test-parse-time-declaration
-  (&key input atts names arrdims initvals (successp 't))
+  (&key input atts names dims initvals (successp 't))
   `(assert!
     (let ((tokens (make-test-tokens ,input))
           (warnings 'blah-warnings)
@@ -100,11 +126,18 @@
           (prog2$ (cw "VAL is ~x0.~%" val)
                   (and ,successp
                        (equal warnings 'blah-warnings)
-                       (test-vardecls-fn val :vl-time ',atts
-                                         ',names ',arrdims ',initvals))))))))
+                       (test-vardecls-fn val
+                                         nil ; constp
+                                         nil ; varp
+                                         nil ; lifetime
+                                         '(:vl-time unsigned)
+                                         ',atts
+                                         ',names
+                                         ',dims
+                                         ',initvals))))))))
 
 (defmacro test-parse-realtime-declaration
-  (&key input atts names arrdims initvals (successp 't))
+  (&key input atts names dims initvals (successp 't))
   `(assert!
     (let ((tokens (make-test-tokens ,input))
           (warnings 'blah-warnings)
@@ -119,8 +152,15 @@
           (prog2$ (cw "VAL is ~x0.~%" val)
                   (and ,successp
                        (equal warnings 'blah-warnings)
-                       (test-vardecls-fn val :vl-realtime ',atts
-                                         ',names ',arrdims ',initvals))))))))
+                       (test-vardecls-fn val
+                                         nil ; constp
+                                         nil ; varp
+                                         nil ; lifetime
+                                         '(:vl-realtime unsigned)
+                                         ',atts
+                                         ',names
+                                         ',dims
+                                         ',initvals))))))))
 
 (test-parse-integer-declaration :input "integer a, ; "
                                 :successp nil)
@@ -137,31 +177,31 @@
 (test-parse-integer-declaration :input "integer a ; "
                                 :atts (("some") ("atts"))
                                 :names ("a")
-                                :arrdims (nil)
+                                :dims (nil)
                                 :initvals (nil))
 
 (test-parse-integer-declaration :input "integer a, b, c; "
                                 :atts (("some") ("atts"))
                                 :names ("a" "b" "c")
-                                :arrdims (nil nil nil)
+                                :dims (nil nil nil)
                                 :initvals (nil nil nil))
 
 (test-parse-integer-declaration :input "integer a[1:2], b, c; "
                                 :atts (("some") ("atts"))
                                 :names ("a" "b" "c")
-                                :arrdims (((range 1 2)) nil nil)
+                                :dims (((range 1 2)) nil nil)
                                 :initvals (nil nil nil))
 
 (test-parse-integer-declaration :input "integer a[1:2][3:4], b, c; "
                                 :atts (("some") ("atts"))
                                 :names ("a" "b" "c")
-                                :arrdims (((range 1 2) (range 3 4)) nil nil)
+                                :dims (((range 1 2) (range 3 4)) nil nil)
                                 :initvals (nil nil nil))
 
 (test-parse-integer-declaration :input "integer a[1:2][3:4], b = 5, c = 17 + 8; "
                                 :atts (("some") ("atts"))
                                 :names ("a" "b" "c")
-                                :arrdims (((range 1 2) (range 3 4)) nil nil)
+                                :dims (((range 1 2) (range 3 4)) nil nil)
                                 :initvals (nil 5 (:vl-binary-plus nil 17 8)))
 
 ;; Not allowed to have a range plus initial value.
@@ -188,31 +228,31 @@
 (test-parse-real-declaration :input "real a ; "
                              :atts (("some") ("atts"))
                              :names ("a")
-                             :arrdims (nil)
+                             :dims (nil)
                              :initvals (nil))
 
 (test-parse-real-declaration :input "real a, b, c; "
                              :atts (("some") ("atts"))
                              :names ("a" "b" "c")
-                             :arrdims (nil nil nil)
+                             :dims (nil nil nil)
                              :initvals (nil nil nil))
 
 (test-parse-real-declaration :input "real a[1:2], b, c; "
                              :atts (("some") ("atts"))
                              :names ("a" "b" "c")
-                             :arrdims (((range 1 2)) nil nil)
+                             :dims (((range 1 2)) nil nil)
                              :initvals (nil nil nil))
 
 (test-parse-real-declaration :input "real a[1:2][3:4], b, c; "
                              :atts (("some") ("atts"))
                              :names ("a" "b" "c")
-                             :arrdims (((range 1 2) (range 3 4)) nil nil)
+                             :dims (((range 1 2) (range 3 4)) nil nil)
                              :initvals (nil nil nil))
 
 (test-parse-real-declaration :input "real a[1:2][3:4], b = 5, c = 17 + 8; "
                              :atts (("some") ("atts"))
                              :names ("a" "b" "c")
-                             :arrdims (((range 1 2) (range 3 4)) nil nil)
+                             :dims (((range 1 2) (range 3 4)) nil nil)
                              :initvals (nil 5 (:vl-binary-plus nil 17 8)))
 
 ;; Not allowed to have a range plus initial value.
@@ -239,31 +279,31 @@
 (test-parse-time-declaration :input "time a ; "
                              :atts (("some") ("atts"))
                              :names ("a")
-                             :arrdims (nil)
+                             :dims (nil)
                              :initvals (nil))
 
 (test-parse-time-declaration :input "time a, b, c; "
                              :atts (("some") ("atts"))
                              :names ("a" "b" "c")
-                             :arrdims (nil nil nil)
+                             :dims (nil nil nil)
                              :initvals (nil nil nil))
 
 (test-parse-time-declaration :input "time a[1:2], b, c; "
                              :atts (("some") ("atts"))
                              :names ("a" "b" "c")
-                             :arrdims (((range 1 2)) nil nil)
+                             :dims (((range 1 2)) nil nil)
                              :initvals (nil nil nil))
 
 (test-parse-time-declaration :input "time a[1:2][3:4], b, c; "
                              :atts (("some") ("atts"))
                              :names ("a" "b" "c")
-                             :arrdims (((range 1 2) (range 3 4)) nil nil)
+                             :dims (((range 1 2) (range 3 4)) nil nil)
                              :initvals (nil nil nil))
 
 (test-parse-time-declaration :input "time a[1:2][3:4], b = 5, c = 17 + 8; "
                              :atts (("some") ("atts"))
                              :names ("a" "b" "c")
-                             :arrdims (((range 1 2) (range 3 4)) nil nil)
+                             :dims (((range 1 2) (range 3 4)) nil nil)
                              :initvals (nil 5 (:vl-binary-plus nil 17 8)))
 
 ;; Not allowed to have a range plus initial value.
@@ -289,31 +329,31 @@
 (test-parse-realtime-declaration :input "realtime a ; "
                                  :atts (("some") ("atts"))
                                  :names ("a")
-                                 :arrdims (nil)
+                                 :dims (nil)
                                  :initvals (nil))
 
 (test-parse-realtime-declaration :input "realtime a, b, c; "
                                  :atts (("some") ("atts"))
                                  :names ("a" "b" "c")
-                                 :arrdims (nil nil nil)
+                                 :dims (nil nil nil)
                                  :initvals (nil nil nil))
 
 (test-parse-realtime-declaration :input "realtime a[1:2], b, c; "
                                  :atts (("some") ("atts"))
                                  :names ("a" "b" "c")
-                                 :arrdims (((range 1 2)) nil nil)
+                                 :dims (((range 1 2)) nil nil)
                                  :initvals (nil nil nil))
 
 (test-parse-realtime-declaration :input "realtime a[1:2][3:4], b, c; "
                                  :atts (("some") ("atts"))
                                  :names ("a" "b" "c")
-                                 :arrdims (((range 1 2) (range 3 4)) nil nil)
+                                 :dims (((range 1 2) (range 3 4)) nil nil)
                                  :initvals (nil nil nil))
 
 (test-parse-realtime-declaration :input "realtime a[1:2][3:4], b = 5, c = 17 + 8; "
                                  :atts (("some") ("atts"))
                                  :names ("a" "b" "c")
-                                 :arrdims (((range 1 2) (range 3 4)) nil nil)
+                                 :dims (((range 1 2) (range 3 4)) nil nil)
                                  :initvals (nil 5 (:vl-binary-plus nil 17 8)))
 
 ;; Not allowed to have a range plus initial value.
@@ -321,34 +361,34 @@
                                  :successp nil)
 
 
-(defun test-regdecls-fn
-  (regs atts signedp range names arrdims initvals)
-  (if (atom regs)
-      (and (atom names)
-           (atom arrdims)
-           (atom initvals))
-    (debuggable-and
-     (consp names)
-     (consp arrdims)
-     (consp initvals)
-     (not (cw "Inspecting ~x0.~%" (car regs)))
-     (vl-vardecl-p (car regs))
-     (equal (vl-vardecl->type (car regs)) :vl-reg)
-     (equal atts          (vl-vardecl->atts (car regs)))
-     (equal signedp       (vl-vardecl->signedp (car regs)))
-     (equal range         (vl-pretty-maybe-range (vl-vardecl->range (car regs))))
-     (equal (car names)   (vl-vardecl->name (car regs)))
-     (equal (car arrdims) (vl-pretty-range-list (vl-vardecl->arrdims (car regs))))
-     (if (car initvals)
-         (debuggable-and (vl-vardecl->initval (car regs))
-                         (equal (car initvals)
-                                (vl-pretty-expr (vl-vardecl->initval (car regs)))))
-       (not (vl-vardecl->initval (car regs))))
-     (test-regdecls-fn (cdr regs) atts signedp range
-                       (cdr names) (cdr arrdims) (cdr initvals)))))
+;; (defun test-regdecls-fn
+;;   (regs atts signedp range names arrdims initvals)
+;;   (if (atom regs)
+;;       (and (atom names)
+;;            (atom arrdims)
+;;            (atom initvals))
+;;     (debuggable-and
+;;      (consp names)
+;;      (consp arrdims)
+;;      (consp initvals)
+;;      (not (cw "Inspecting ~x0.~%" (car regs)))
+;;      (vl-vardecl-p (car regs))
+;;      (equal (vl-vardecl->type (car regs)) :vl-reg)
+;;      (equal atts          (vl-vardecl->atts (car regs)))
+;;      (equal signedp       (vl-vardecl->signedp (car regs)))
+;;      (equal range         (vl-pretty-maybe-range (vl-vardecl->range (car regs))))
+;;      (equal (car names)   (vl-vardecl->name (car regs)))
+;;      (equal (car arrdims) (vl-pretty-range-list (vl-vardecl->arrdims (car regs))))
+;;      (if (car initvals)
+;;          (debuggable-and (vl-vardecl->initval (car regs))
+;;                          (equal (car initvals)
+;;                                 (vl-pretty-expr (vl-vardecl->initval (car regs)))))
+;;        (not (vl-vardecl->initval (car regs))))
+;;      (test-regdecls-fn (cdr regs) atts signedp range
+;;                        (cdr names) (cdr arrdims) (cdr initvals)))))
 
 (defmacro test-parse-reg-declaration
-  (&key input atts signedp range names arrdims initvals (successp 't))
+  (&key input atts type names dims initvals (successp 't))
   `(assert!
     (let ((tokens (make-test-tokens ,input))
           (warnings 'blah-warnings)
@@ -363,8 +403,15 @@
           (prog2$ (cw "VAL is ~x0.~%" val)
                   (and ,successp
                        (equal warnings 'blah-warnings)
-                       (test-regdecls-fn val ',atts ',signedp ',range
-                                         ',names ',arrdims ',initvals))))))))
+                       (test-vardecls-fn val
+                                         nil ; constp
+                                         nil ; varp
+                                         nil ; lifetime
+                                         ',type
+                                         ',atts
+                                         ',names
+                                         ',dims
+                                         ',initvals))))))))
 
 (test-parse-reg-declaration :input "reg a, ; "
                             :successp nil)
@@ -380,66 +427,58 @@
 
 (test-parse-reg-declaration :input "reg a ; "
                             :atts (("some") ("atts"))
-                            :range (no-range)
-                            :signedp nil
+                            :type (:vl-reg unsigned)
                             :names ("a")
-                            :arrdims (nil)
+                            :dims (nil)
                             :initvals (nil))
 
 (test-parse-reg-declaration :input "reg signed a ; "
                             :atts (("some") ("atts"))
-                            :range (no-range)
-                            :signedp t
+                            :type (:vl-reg signed)
                             :names ("a")
-                            :arrdims (nil)
+                            :dims (nil)
                             :initvals (nil))
 
 (test-parse-reg-declaration :input "reg [1:3] a ; "
                             :atts (("some") ("atts"))
-                            :range (range 1 3)
-                            :signedp nil
+                            :type (:vl-reg unsigned (range 1 3))
                             :names ("a")
-                            :arrdims (nil)
+                            :dims (nil)
                             :initvals (nil))
 
 (test-parse-reg-declaration :input "reg signed [1:3] a ; "
                             :atts (("some") ("atts"))
-                            :range (range 1 3)
-                            :signedp t
+                            :type (:vl-reg signed (range 1 3))
                             :names ("a")
-                            :arrdims (nil)
+                            :dims (nil)
                             :initvals (nil))
 
 (test-parse-reg-declaration :input "reg signed [1:3] a, b, c; "
                             :atts (("some") ("atts"))
+                            :type (:vl-reg signed (range 1 3))
                             :names ("a" "b" "c")
-                            :signedp t
-                            :range (range 1 3)
-                            :arrdims (nil nil nil)
+                            :dims (nil nil nil)
                             :initvals (nil nil nil))
 
 (test-parse-reg-declaration :input "reg a[1:2], b, c; "
                             :atts (("some") ("atts"))
                             :names ("a" "b" "c")
-                            :range (no-range)
-                            :signedp nil
-                            :arrdims (((range 1 2)) nil nil)
+                            :type (:vl-reg unsigned)
+                            :dims (((range 1 2)) nil nil)
                             :initvals (nil nil nil))
 
 (test-parse-reg-declaration :input "reg signed a[1:2][3:4], b, c; "
                             :atts (("some") ("atts"))
                             :names ("a" "b" "c")
-                            :range (no-range)
-                            :signedp t
-                            :arrdims (((range 1 2) (range 3 4)) nil nil)
+                            :type (:vl-reg signed)
+                            :dims (((range 1 2) (range 3 4)) nil nil)
                             :initvals (nil nil nil))
 
 (test-parse-reg-declaration :input "reg [7:0] a[1:2][3:4], b = 5, c = 17 + 8; "
                             :atts (("some") ("atts"))
                             :names ("a" "b" "c")
-                            :range (range 7 0)
-                            :signedp nil
-                            :arrdims (((range 1 2) (range 3 4)) nil nil)
+                            :type (:vl-reg unsigned (range 7 0))
+                            :dims (((range 1 2) (range 3 4)) nil nil)
                             :initvals (nil 5 (:vl-binary-plus nil 17 8)))
 
 ;; Not allowed to have a range plus initial value.

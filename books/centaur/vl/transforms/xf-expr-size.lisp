@@ -532,27 +532,58 @@ are not really supposed to have sizes.</p>"
 
        ((when (eq tag :vl-vardecl))
         (b* (((vl-vardecl item) item)
-             ((when (consp item.arrdims))
+             ((when (consp item.dims))
               ;; Analogous to the netdecl array case.
               (mv (fatal :type :vl-bad-identifier
                          :msg "~a0: cannot size ~w1 because it is an array."
                          :args (list elem name))
                   nil))
-             ((when (eq item.type :vl-integer))
-              ;; Regular (non-array) integer variable: 32 bits.
-              (mv (ok) 32))
-             ((unless (eq item.type :vl-reg))
-              ;; We don't try to deal with real, realtime, or time variables
+             ((unless (eq (vl-datatype-kind item.vartype) :vl-coretype))
+              ;; Don't try to size tricky things yet.
               (mv (ok) nil))
-             ((unless (vl-maybe-range-resolved-p item.range))
+             ((vl-coretype item.vartype) item.vartype)
+
+             ;; These sizes come from Section 6.11 of the SystemVerilog-2012 Standard
+             ((when (eq item.vartype.name :vl-byte))     (mv (ok) 8))
+             ((when (eq item.vartype.name :vl-shortint)) (mv (ok) 16))
+             ((when (eq item.vartype.name :vl-int))      (mv (ok) 32))
+             ((when (eq item.vartype.name :vl-integer))  (mv (ok) 32))
+             ((when (eq item.vartype.name :vl-longint))  (mv (ok) 64))
+             ((when (eq item.vartype.name :vl-time))     (mv (ok) 64))
+
+             ((unless (or (eq item.vartype.name :vl-bit)
+                          (eq item.vartype.name :vl-logic)
+                          (eq item.vartype.name :vl-reg)))
+              ;; Something like a real, shortreal, void, realtime, chandle, etc.,
+              ;; I'm just not going to try to size these.
+              (mv (ok) nil))
+
+             ;; Else, some integer vector type.
+             ((when (atom item.vartype.dims)) (mv (ok) 1)) ;; No dimensions --> 1 bit.
+             ((when (consp (cdr item.vartype.dims)))
+              (mv (fatal :type :vl-bad-dimensions
+                         :msg "~a0: cannot size ~w1.  It has multiple dimensions,
+                               which we don't yet support."
+                         :args (list elem name))
+                  nil))
+
+             ;; Else there's exactly one packed dimension here.
+             (dim (car item.vartype.dims))
+             ((when (eq dim :vl-unsized-dimension))
+              (mv (fatal :type :vl-bad-dimensions
+                         :msg "~a0: cannot size ~w1.  It has an unsized dimension."
+                         :args (list elem name))
+                  nil))
+
+             ((unless (vl-range-resolved-p dim))
               ;; Shouldn't happen unless we had a problem resolving ranges
               ;; earlier.
               (mv (fatal :type :vl-bad-range
                          :msg "~a0: cannot size ~w1 because its range is not ~
                                resolved: ~a2."
-                         :args (list elem name item.range))
+                         :args (list elem name dim))
                   nil))
-             (size (vl-maybe-range-size item.range)))
+             (size (vl-maybe-range-size dim)))
           (mv (ok) size))))
 
     ;; It would be surprising if we get here -- this is an identifier that
@@ -1335,7 +1366,7 @@ producing some warnings.</p>"
 
        ((when (eq tag :vl-vardecl))
         (b* (((vl-vardecl item) item)
-             ((when (consp item.arrdims))
+             ((when (consp item.dims))
               ;; Shouldn't happen unless the module directly uses the name of
               ;; an array in an expression.
               (mv (fatal :type :vl-bad-identifier
@@ -1343,16 +1374,25 @@ producing some warnings.</p>"
                                it is an unindexed reference to an array."
                          :args (list elem name))
                   nil))
-             ((when (eq item.type :vl-integer))
-              ;; Regular integer variables are signed.
-              (mv (ok) :vl-signed))
-             ((unless (eq item.type :vl-reg))
-              ;; Some other kind of variable like a real, realtime, or time;
-              ;; lets not try to give this a type... yet anyway.
+             ((unless (eq (vl-datatype-kind item.vartype) :vl-coretype))
+              ;; Don't try to size tricky things yet.
               (mv (ok) nil))
-             ;; For regs, signedness is governed by signedp.
-             (type (if item.signedp :vl-signed :vl-unsigned)))
-          (mv (ok) type))))
+             ((vl-coretype item.vartype) item.vartype)
+             ((when (member item.vartype.name
+                            '(:vl-byte :vl-shortint :vl-int :vl-integer :vl-longint :vl-time
+                              :vl-bit :vl-logic :vl-reg)))
+              ;; See also vl-parse-core-data-type.  When using any of the above
+              ;; types, a logic designer can provide an optional `signed` or
+              ;; `unsigned` keyword that, presumably, overrides the default
+              ;; signedness.  The parser handles this and must set up the
+              ;; coretype.signedp field appropriately.  So, here, we just need
+              ;; to look at that field.
+              (mv (ok) (if item.vartype.signedp
+                           :vl-signed
+                         :vl-unsigned))))
+          ;; Else, some other kind of core type, like void, string, chandle,
+          ;; event, or similar.  We're not going to assign any type to these.
+          (mv (ok) nil))))
 
     ;; It would be surprising if we get here -- this is an identifier that
     ;; refers to something in the module, maybe an event, parameter, or

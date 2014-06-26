@@ -516,11 +516,6 @@ encoding.</p>"
   :inline t
   (jp-sym x))
 
-(define vl-jp-vardecltype ((x vl-vardecltype-p) &key (ps 'ps))
-  :parents (json-encoders)
-  :inline t
-  (jp-sym x))
-
 (define vl-jp-paramdecltype ((x vl-paramdecltype-p) &key (ps 'ps))
   :parents (json-encoders)
   :inline t
@@ -537,7 +532,6 @@ encoding.</p>"
 (add-json-encoder vl-casetype-p         vl-jp-casetype)
 (add-json-encoder vl-netdecltype-p      vl-jp-netdecltype)
 (add-json-encoder vl-taskporttype-p     vl-jp-taskporttype)
-(add-json-encoder vl-vardecltype-p      vl-jp-vardecltype)
 (add-json-encoder vl-paramdecltype-p    vl-jp-paramdecltype)
 
 
@@ -754,6 +748,122 @@ which could not hold such large values.</p>")
 
 (def-vl-jp-aggregate namedarg)
 (def-vl-jp-list namedarg :newlines 4)
+
+
+
+(define vl-jp-lifetime ((x vl-lifetime-p) &key (ps 'ps))
+  :parents (json-encoders)
+  :inline t
+  (jp-sym x))
+
+(define vl-jp-randomqualifier ((x vl-randomqualifier-p) &key (ps 'ps))
+  :parents (json-encoders)
+  :inline t
+  (jp-sym x))
+
+(define vl-jp-coretypename ((x vl-coretypename-p) &key (ps 'ps))
+  :parents (json-encoders)
+  :inline t
+  (jp-sym x))
+
+(add-json-encoder vl-lifetime-p         vl-jp-lifetime)
+(add-json-encoder vl-randomqualifier-p  vl-jp-randomqualifier)
+(add-json-encoder vl-coretypename-p     vl-jp-coretypename)
+
+(define vl-jp-packeddimension ((x vl-packeddimension-p) &key (ps 'ps))
+  :parents (json-encoders)
+  (if (eq x :vl-unsized-dimension)
+      (jp-sym x)
+    (vl-jp-range x)))
+
+(add-json-encoder vl-packeddimension-p vl-jp-packeddimension)
+(def-vl-jp-list packeddimension)
+
+(define vl-jp-maybe-packeddimension ((x vl-maybe-packeddimension-p) &key (ps 'ps))
+  :parents (json-encoders)
+  (if x
+      (vl-jp-packeddimension x)
+    (vl-print "null")))
+
+(add-json-encoder vl-maybe-packeddimension-p vl-jp-maybe-packeddimension)
+
+(define vl-jp-enumbasekind ((x vl-enumbasekind-p) &key (ps 'ps))
+  :guard-hints(("Goal" :in-theory (enable vl-enumbasekind-p)))
+  (if (stringp x)
+      (jp-object :tag (jp-sym :user-defined-type)
+                 :name (jp-str x))
+    (jp-sym x)))
+
+(add-json-encoder vl-enumbasekind-p vl-jp-enumbasekind)
+
+(def-vl-jp-aggregate enumbasetype)
+(def-vl-jp-aggregate enumitem)
+(def-vl-jp-list enumitem)
+
+
+(defines vl-jp-datatype
+
+ (define vl-jp-datatype ((x vl-datatype-p) &key (ps 'ps))
+   :measure (two-nats-measure (vl-datatype-count x) 0)
+   (vl-datatype-case x
+     :vl-coretype
+     (jp-object :tag     (jp-sym :vl-coretype)
+                :name    (vl-jp-coretypename x.name)
+                :signedp (jp-bool x.signedp)
+                :dism    (vl-jp-packeddimensionlist x.dims))
+     :vl-struct
+     (jp-object :tag     (jp-sym :vl-struct)
+                :packedp (jp-bool x.packedp)
+                :signedp (jp-bool x.signedp)
+                :dims    (vl-jp-packeddimensionlist x.dims)
+                :members (vl-jp-structmemberlist x.members))
+     :vl-union
+     (jp-object :tag     (jp-sym :vl-union)
+                :packedp (jp-bool x.packedp)
+                :signedp (jp-bool x.signedp)
+                :taggedp (jp-bool x.taggedp)
+                :dims    (vl-jp-packeddimensionlist x.dims)
+                :members (vl-jp-structmemberlist x.members))
+     :vl-enum
+     (jp-object :tag      (jp-sym :vl-enum)
+                :basetype (vl-jp-enumbasetype x.basetype)
+                :items    (vl-jp-enumitemlist x.items)
+                :dims     (vl-jp-packeddimensionlist x.dims))
+     :vl-usertype
+     (jp-object :tag      (jp-sym :vl-usertype)
+                :kind     (vl-jp-expr x.kind)
+                :dims     (vl-jp-packeddimensionlist x.dims))))
+
+ (define vl-jp-structmemberlist ((x vl-structmemberlist-p) &key (ps 'ps))
+   ;; Print the stmtessions as a JSON array with brackets.
+   :measure (two-nats-measure (vl-structmemberlist-count x) 1)
+   (vl-ps-seq (vl-print "[")
+              (vl-jp-structmemberlist-aux x)
+              (vl-println? "]")))
+
+ (define vl-jp-structmemberlist-aux ((x vl-structmemberlist-p) &key (ps 'ps))
+   :measure (two-nats-measure (vl-structmemberlist-count x) 0)
+   (if (atom x)
+       ps
+     (vl-ps-seq (vl-jp-structmember (car x))
+                (if (atom (cdr x))
+                    ps
+                  (vl-println? ", "))
+                (vl-jp-structmemberlist-aux (cdr x)))))
+
+ (define vl-jp-structmember ((x vl-structmember-p) &key (ps 'ps))
+   :measure (two-nats-measure (vl-structmember-count x) 0)
+   (b* (((vl-structmember x) x))
+     (jp-object :tag      (jp-sym :vl-structmember)
+                :atts     (vl-jp-atts x.atts)
+                :rand     (vl-jp-randomqualifier x.rand)
+                :dims     (vl-jp-packeddimensionlist x.dims)
+                :rhs      (vl-jp-maybe-expr x.rhs)
+                :type     (vl-jp-datatype x.type)))))
+
+(add-json-encoder vl-datatype-p vl-jp-datatype)
+(add-json-encoder vl-structmember-p vl-jp-structmember)
+(add-json-encoder vl-structmemberlist-p vl-jp-structmemberlist)
 
 (def-vl-jp-aggregate vardecl)
 (def-vl-jp-list vardecl :newlines 4)

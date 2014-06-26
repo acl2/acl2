@@ -186,19 +186,20 @@ to report this information as well.</p>"
                 (mv (ok) x modname range-resolvedp range)))
 
              ((when (eq tag :vl-vardecl))
-              (b* (((vl-vardecl item) item)
-                   ;; BOZO maybe handle some other kinds here
-                   ((unless (eq item.type :vl-reg))
+              (b* (;; BOZO maybe handle some other kinds here
+                   ((unless (vl-simplereg-p item))
                     ;; Some other kind of variable: we will just not claim to
                     ;; know the size of it.
                     (mv (ok) x modname nil nil))
                    ;; Reg case.
-                   ((mv & range) (vl-maybe-rangeresolve item.range nil))
+                   (signedp (vl-simplereg->signedp item))
+                   (range   (vl-simplereg->range item))
+                   ((mv & range) (vl-maybe-rangeresolve range nil))
                    (range-resolvedp
                     ;; See vl-hid-expr-elim, don't say it's resolved unless
                     ;; it's also unsigned and has no arrdims.
-                    (and (not item.signedp)
-                         (not item.arrdims)
+                    (and (not signedp)
+                         ;; already know there are no arrdims since it's a simplereg
                          (vl-maybe-range-resolved-p range))))
                 (mv (ok) x modname range-resolvedp range))))
 
@@ -1134,24 +1135,20 @@ identifier.</p>"
   :returns (new-x vl-module-p :hyp :fguard)
   (b* (((when (vl-module->hands-offp x))
         x)
+       ((vl-module x) x)
        (warnings (vl-module->warnings x))
-       ((mv warnings assigns)
-        (vl-assignlist-follow-hids (vl-module->assigns x) x mods modalist toplev warnings))
-       ((mv warnings modinsts)
-        (vl-modinstlist-follow-hids (vl-module->modinsts x) x mods modalist toplev warnings))
-       ((mv warnings gateinsts)
-        (vl-gateinstlist-follow-hids (vl-module->gateinsts x) x mods modalist toplev warnings))
-       ((mv warnings alwayses)
-        (vl-alwayslist-follow-hids (vl-module->alwayses x) x mods modalist toplev warnings))
-       ((mv warnings initials)
-        (vl-initiallist-follow-hids (vl-module->initials x) x mods modalist toplev warnings)))
+       ((mv warnings assigns)   (vl-assignlist-follow-hids   x.assigns   x mods modalist toplev warnings))
+       ((mv warnings modinsts)  (vl-modinstlist-follow-hids  x.modinsts  x mods modalist toplev warnings))
+       ((mv warnings gateinsts) (vl-gateinstlist-follow-hids x.gateinsts x mods modalist toplev warnings))
+       ((mv warnings alwayses)  (vl-alwayslist-follow-hids   x.alwayses  x mods modalist toplev warnings))
+       ((mv warnings initials)  (vl-initiallist-follow-hids  x.initials  x mods modalist toplev warnings)))
     (change-vl-module x
-                      :assigns assigns
-                      :modinsts modinsts
+                      :assigns   assigns
+                      :modinsts  modinsts
                       :gateinsts gateinsts
-                      :alwayses alwayses
-                      :initials initials
-                      :warnings warnings)))
+                      :alwayses  alwayses
+                      :initials  initials
+                      :warnings  warnings)))
 
 (defprojection vl-modulelist-follow-hids-aux (x mods modalist toplev)
   (vl-module-follow-hids x mods modalist toplev)

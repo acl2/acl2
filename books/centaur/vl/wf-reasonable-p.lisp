@@ -22,6 +22,7 @@
 (include-book "mlib/modnamespace")
 (include-book "mlib/find-item")
 (include-book "mlib/expr-tools")
+(include-book "mlib/range-tools")
 (include-book "util/defwellformed")
 (include-book "util/warnings")
 (include-book "defsort/duplicated-members" :dir :system)
@@ -178,17 +179,11 @@ ranges, e.g., @('wire [7:0] w').  What we do not support are, e.g., @('wire w
   :extra-decls ((ignorable x))
   :body (b* (((vl-vardecl x) x))
           (@wf-progn
-           ;; (@wf-assert (eq x.type :vl-reg)
-           ;;             :vl-vardecl
-           ;;             "~l0: variable declarations other than 'reg', like ~s1, are not supported."
-           ;;             (list (vl-vardecl->loc x)
-           ;;                   (vl-vardecl->name x)))
-           ;; We don't try to support registers that have "arrdims" (i.e., register arrays)
-           ;; instead of ranges (i.e., a multi-bit register).
-           (@wf-assert (not x.arrdims)
-                       :vl-regdecl-array
-                       "~l0: register ~s1 is an array, which is not supported."
-                       (list x.loc x.name)))))
+           (@wf-assert (vl-simplereg-p x)
+                       :vl-variable-toohard
+                       "~a0: variable declarations other than simple 'reg' or 'logic' wires ~
+                        are not yet supported."
+                       (list x)))))
 
 (defwellformed-list vl-vardecllist-reasonable-p (x)
   :element vl-vardecl-reasonable-p
@@ -339,33 +334,35 @@ item.</p>"
 
      (@wf-progn
 
-      (@wf-assert (eq (vl-vardecl->type item) :vl-reg)
+      (@wf-assert (vl-simplereg-p item)
                   :vl-weird-port
-                  "~l0: port ~s1 is also declared to be a ~s2."
+                  "~l0: port ~s1 is also declared to be a ~a2."
                   (list (vl-portdecl->loc portdecl)
                         (vl-portdecl->name portdecl)
-                        (vl-vardecl->type item)))
+                        (vl-vardecl->vartype item)))
 
 ; Like for netdecls, this may be too severe, and will not permit us to "input
 ; [1+2:0] x;" followed by "reg [3:0] x;".  See also the "follow-up" in the
 ; netdecl case, above.
 
 
-      (@wf-assert (equal (vl-portdecl->range portdecl)
-                         (vl-vardecl->range item))
+      (@wf-assert (or (not (vl-simplereg-p item))
+                      (equal (vl-portdecl->range portdecl)
+                             (vl-simplereg->range item)))
                   :vl-incompatible-range
                   "~l0: port ~s1 is declared to have range ~a2, but is ~
                         also declared as a reg with range ~a3."
                   (list (vl-portdecl->loc portdecl)
                         (vl-portdecl->name portdecl)
                         (vl-portdecl->range portdecl)
-                        (vl-vardecl->range item)))
+                        (vl-simplereg->range item)))
 
 ; Make sure the signedness agrees; see the documentation in portdecl-sign for
 ; more information.
 
-      (@wf-assert (equal (vl-vardecl->signedp item)
-                         (vl-portdecl->signedp portdecl))
+      (@wf-assert (or (not (vl-simplereg-p item))
+                      (equal (vl-simplereg->signedp item)
+                             (vl-portdecl->signedp portdecl)))
                   :vl-incompatible-sign
                   "~l0: port declaration for ~s1 has signedp ~x2, while reg ~
                    declaration has signedp ~x3.  This case should have been ~
@@ -373,7 +370,7 @@ item.</p>"
                   (list (vl-portdecl->loc portdecl)
                         (vl-portdecl->name portdecl)
                         (vl-portdecl->signedp portdecl)
-                        (vl-vardecl->signedp item)))
+                        (vl-simplereg->signedp item)))
 
 ; It makes sense that a reg could be an output.  But I don't want to think
 ; about what it would mean for a reg to be an input or an inout wire.

@@ -1164,6 +1164,216 @@ expression into a string."
     (vl-ps-seq (vl-pp-range (car x))
                (vl-pp-rangelist (cdr x)))))
 
+
+
+
+(define vl-randomqualifier-string ((x vl-randomqualifier-p))
+  :returns (str stringp :rule-classes :type-prescription)
+  :guard-hints(("Goal" :in-theory (enable vl-randomqualifier-p)))
+  (case (vl-randomqualifier-fix x)
+    ('nil         "")
+    (:vl-rand     "rand")
+    (:vl-randc    "randc")
+    (otherwise    (or (impossible) ""))))
+
+(define vl-coretypename-string ((x vl-coretypename-p))
+  :returns (str stringp :rule-classes :type-prescription)
+  :guard-hints(("Goal" :in-theory (enable vl-coretypename-p)))
+  (case (vl-coretypename-fix x)
+    (:vl-void      "void")
+    (:vl-byte      "byte")
+    (:vl-shortint  "shortint")
+    (:vl-int       "int")
+    (:vl-longint   "longint")
+    (:vl-integer   "integer")
+    (:vl-time      "time")
+    (:vl-bit       "bit")
+    (:vl-logic     "logic")
+    (:vl-reg       "reg")
+    (:vl-shortreal "shortreal")
+    (:vl-real      "real")
+    (:vl-realtime  "realtime")
+    (:vl-string    "string")
+    (:vl-chandle   "chandle")
+    (:vl-event     "event")
+    (otherwise     (or (impossible) ""))))
+
+(define vl-pp-packeddimension ((x vl-packeddimension-p) &key (ps 'ps))
+  (b* ((x (vl-packeddimension-fix x)))
+    (if (eq x :vl-unsized-dimension)
+        (vl-print "[]")
+      (vl-pp-range x))))
+
+(define vl-pp-packeddimensionlist ((x vl-packeddimensionlist-p) &key (ps 'ps))
+  (if (atom x)
+      ps
+    (vl-ps-seq (vl-pp-packeddimension (car x))
+               (vl-pp-packeddimensionlist (cdr x)))))
+
+(define vl-pp-enumbasekind ((x vl-enumbasekind-p) &key (ps 'ps))
+  :guard-hints(("Goal" :in-theory (enable vl-enumbasekind-p)))
+  (b* ((x (vl-enumbasekind-fix x))
+       ((when (stringp x))
+        (vl-print-modname x)))
+    (vl-ps-span "vl_key" (vl-print-str (case x
+                                         (:vl-byte     "byte")
+                                         (:vl-shortint "shortint")
+                                         (:vl-int      "int")
+                                         (:vl-longint  "longint")
+                                         (:vl-integer  "integer")
+                                         (:vl-time     "time")
+                                         (:vl-bit      "bit")
+                                         (:vl-logic    "logic")
+                                         (:vl-reg      "reg"))))))
+
+(define vl-pp-enumbasetype ((x vl-enumbasetype-p) &key (ps 'ps))
+  (b* (((vl-enumbasetype x) x))
+    (vl-ps-seq (vl-pp-enumbasekind x.kind)
+               ;; BOZO this isn't quite right, should only print signedness if it's
+               ;; not the default for this type
+               (vl-ps-span "vl_key" (vl-print (if x.signedp " signed" " unsigned")))
+               (if x.dim
+                   (vl-ps-seq (vl-print " ")
+                              (vl-pp-packeddimension x.dim))
+                 ps))))
+
+(define vl-pp-enumitem ((x vl-enumitem-p) &key (ps 'ps))
+  (b* (((vl-enumitem x) x))
+    (vl-ps-seq (vl-indent 4)
+               (vl-print-wirename x.name)
+               (if x.range
+                   ;; Special case to print [5:5] style ranges as just [5]
+                   (b* ((msb (vl-range->msb x.range))
+                        (lsb (vl-range->lsb x.range))
+                        ((when (and (vl-expr-resolved-p msb)
+                                    (vl-expr-resolved-p lsb)
+                                    (equal (vl-resolved->val msb)
+                                           (vl-resolved->val lsb))))
+                         (vl-ps-seq (vl-print-str "[")
+                                    (vl-print-nat (vl-resolved->val msb))
+                                    (vl-print-str "]"))))
+                     ;; Otherwise just print a normal range
+                     (vl-pp-range x.range))
+                 ps)
+               (if x.value
+                   (vl-ps-seq (vl-print " = ")
+                              (vl-pp-expr x.value))
+                 ps)
+               (vl-println " ;"))))
+
+(define vl-pp-enumitemlist ((x vl-enumitemlist-p) &key (ps 'ps))
+  (if (atom x)
+      ps
+    (vl-ps-seq (vl-pp-enumitem (car x))
+               (vl-pp-enumitemlist (cdr x)))))
+
+(defines vl-pp-datatype
+
+  (define vl-pp-datatype ((x vl-datatype-p) &key (ps 'ps))
+    :measure (vl-datatype-count x)
+    (vl-datatype-case x
+      (:vl-coretype
+       (vl-ps-seq (vl-indent 2)
+                  (vl-ps-span "vl_key" (vl-print-str (vl-coretypename-string x.name)))
+                  ;; BOZO this isn't quite right -- we shouldn't print the
+                  ;; signedness if it's not applicable to this kind of type.
+                  (vl-print " ")
+                  ;; signing, if applicable
+                  (cond ((and (member x.name '(:vl-byte :vl-shortint :vl-int :vl-longint :vl-integer))
+                              (not x.signedp))
+                         ;; default signed, but this one is unsigned
+                         (vl-ps-span "vl_key" (vl-print-str "unsigned")))
+                        ((and (member x.name '(:vl-time :vl-bit :vl-logic :vl-reg))
+                              x.signedp)
+                         ;; default unsigned, but this one is signed
+                         (vl-ps-span "vl_key" (vl-print-str "signed")))
+                        (t
+                         ;; other core types don't have an optional signing.  they'd better
+                         ;; be marked as unsigned or it doesn't make sense
+                         (progn$ (or (not x.signedp)
+                                     (raise "core type ~x0 marked as signed? ~x1" x.name x))
+                                 ps)))
+                  (vl-print " ")
+                  (vl-pp-packeddimensionlist x.dims)))
+
+      (:vl-struct
+       (vl-ps-seq (vl-indent 2)
+                  (vl-ps-span "vl_key"
+                              (vl-print "struct ")
+                              (if x.packedp
+                                  (vl-ps-seq (vl-print "packed ")
+                                             (if x.signedp
+                                                 (vl-print "signed ")
+                                               ps))
+                                ps))
+                  (vl-println "{")
+                  (vl-pp-structmemberlist x.members)
+                  (vl-print "} ")
+                  (vl-pp-packeddimensionlist x.dims)))
+
+      (:vl-union
+       (vl-ps-seq (vl-indent 2)
+                  (vl-ps-span "vl_key"
+                              (vl-print "union ")
+                              (if x.taggedp
+                                  (vl-print "tagged ")
+                                ps)
+                              (if x.packedp
+                                  (vl-ps-seq (vl-print "packed ")
+                                             (if x.signedp
+                                                 (vl-print "signed ")
+                                               ps))
+                                ps))
+                  (vl-println "{")
+                  (vl-pp-structmemberlist x.members)
+                  (vl-indent 2)
+                  (vl-print "} ")
+                  (vl-pp-packeddimensionlist x.dims)))
+
+      (:vl-enum
+       (vl-ps-seq (vl-indent 2)
+                  (vl-ps-span "vl_key" (vl-print "enum "))
+                  (vl-pp-enumbasetype x.basetype)
+                  (vl-println " {")
+                  (vl-pp-enumitemlist x.items)
+                  (vl-indent 2)
+                  (vl-println "} ")
+                  (vl-pp-packeddimensionlist x.dims)))
+
+      (:vl-usertype
+       (vl-ps-seq (vl-pp-expr x.kind)
+                  (vl-print " ")
+                  (vl-pp-packeddimensionlist x.dims)))))
+
+  (define vl-pp-structmemberlist ((x vl-structmemberlist-p) &key (ps 'ps))
+    :measure (vl-structmemberlist-count x)
+    (if (atom x)
+        ps
+      (vl-ps-seq (vl-pp-structmember (car x))
+                 (vl-pp-structmemberlist (cdr x)))))
+
+  (define vl-pp-structmember ((x vl-structmember-p) &key (ps 'ps))
+    :measure (vl-structmember-count x)
+    (b* (((vl-structmember x) x))
+      (vl-ps-seq (vl-indent 4)
+                 (if x.atts (vl-pp-atts x.atts) ps)
+                 (if x.rand
+                     (vl-ps-span "vl_key"
+                                 (vl-print-str (vl-randomqualifier-string x.rand))
+                                 (vl-print " "))
+                   ps)
+                 (vl-pp-datatype x.type)
+                 (vl-print " ")
+                 (vl-print-wirename x.name)
+                 (vl-print " ")
+                 (vl-pp-packeddimensionlist x.dims)
+                 (if x.rhs
+                     (vl-ps-seq (vl-print " = ")
+                                (vl-pp-expr x.rhs))
+                   ps)
+                 (vl-println " ;")))))
+
+
 (define vl-pp-portdecl ((x vl-portdecl-p) &key (ps 'ps))
   (b* (((vl-portdecl x) x))
     (vl-ps-seq (vl-print "  ")
@@ -1187,43 +1397,43 @@ expression into a string."
     (vl-ps-seq (vl-pp-portdecl (car x))
                (vl-pp-portdecllist (cdr x)))))
 
-(define vl-vardecltype-string ((x vl-vardecltype-p))
-  :returns (str stringp :rule-classes :type-prescription)
-  :guard-hints(("Goal" :in-theory (enable vl-vardecltype-p)))
-  (case (vl-vardecltype-fix x)
-    (:vl-reg      "reg")
-    (:vl-integer  "integer")
-    (:vl-real     "real")
-    (:vl-time     "time")
-    (:vl-realtime "realtime")
-    (otherwise (or (impossible) ""))))
+
+(define vl-lifetime-string ((x vl-lifetime-p))
+  (case (vl-lifetime-fix x)
+    ('nil          "")
+    (:vl-static    "static")
+    (:vl-automatic "automatic")
+    (otherwise (progn$ (impossible) ""))))
 
 (define vl-pp-vardecl ((x vl-vardecl-p) &key (ps 'ps))
-  (b* (((vl-vardecl x) x)
-       ((when (and x.initval x.arrdims))
-        (raise "Unreasonable vardecl: ~x0.~%" x)
-        ps))
+  (b* (((vl-vardecl x) x))
     (vl-ps-seq
-     (if x.atts (vl-pp-atts x.atts) ps)
-     (vl-ps-span "vl_key"
-                 (vl-print "  ")
-                 (vl-print-str (vl-vardecltype-string x.type))
-                 (if (and (eq x.type :vl-reg) x.signedp)
-                     (vl-println? " signed")
-                   ps))
-     (if (not x.range)
-         ps
-       (vl-ps-seq (vl-print " ")
-                  (vl-pp-range x.range)))
+     (vl-print "  ")
+     (if x.atts
+         (vl-ps-seq (vl-pp-atts x.atts)
+                    (vl-print " "))
+       ps)
+     (if x.constp
+         (vl-ps-span "vl_key" (vl-print "const "))
+       ps)
+     (if x.varp
+         (vl-ps-span "vl_key" (vl-print "var "))
+       ps)
+     (if x.lifetime
+         (vl-ps-span "vl_key"
+                     (vl-ps-seq (vl-print-str (vl-lifetime-string x.lifetime))
+                                (vl-println? " ")))
+       ps)
+     (vl-pp-datatype x.vartype)
      (vl-print " ")
      (vl-print-wirename x.name)
-     (if x.arrdims
-         (vl-pp-rangelist x.arrdims)
+     (if x.dims
+         (vl-pp-packeddimensionlist x.dims)
        ps)
      (if x.initval
          (vl-ps-seq (vl-print " = ")
                     (vl-pp-expr x.initval))
-       (vl-pp-rangelist x.arrdims))
+       ps)
      (vl-println " ;"))))
 
 (define vl-pp-vardecllist ((x vl-vardecllist-p) &key (ps 'ps))
@@ -2509,208 +2719,6 @@ module elements and its comments.</p>"
                (vl-pp-importlist (cdr x)))))
 
 
-
-
-(define vl-randomqualifier-string ((x vl-randomqualifier-p))
-  :returns (str stringp :rule-classes :type-prescription)
-  :guard-hints(("Goal" :in-theory (enable vl-randomqualifier-p)))
-  (case (vl-randomqualifier-fix x)
-    ('nil         "")
-    (:vl-rand     "rand")
-    (:vl-randc    "randc")
-    (otherwise    (or (impossible) ""))))
-
-(define vl-coretypename-string ((x vl-coretypename-p))
-  :returns (str stringp :rule-classes :type-prescription)
-  :guard-hints(("Goal" :in-theory (enable vl-coretypename-p)))
-  (case (vl-coretypename-fix x)
-    (:vl-void      "void")
-    (:vl-byte      "byte")
-    (:vl-shortint  "shortint")
-    (:vl-int       "int")
-    (:vl-longint   "longint")
-    (:vl-integer   "integer")
-    (:vl-time      "time")
-    (:vl-bit       "bit")
-    (:vl-logic     "logic")
-    (:vl-reg       "reg")
-    (:vl-shortreal "shortreal")
-    (:vl-real      "real")
-    (:vl-realtime  "realtime")
-    (:vl-string    "string")
-    (:vl-chandle   "chandle")
-    (:vl-event     "event")
-    (otherwise     (or (impossible) ""))))
-
-(defthm vl-range-p-when-vl-packeddimension-p
-  (implies (vl-packeddimension-p x)
-           (equal (vl-range-p x)
-                  (not (equal x :vl-unsized-dimension))))
-  :hints(("Goal" :in-theory (enable vl-packeddimension-p))))
-
-(define vl-pp-packeddimension ((x vl-packeddimension-p) &key (ps 'ps))
-  (b* ((x (vl-packeddimension-fix x)))
-    (if (eq x :vl-unsized-dimension)
-        (vl-print "[]")
-      (vl-pp-range x))))
-
-(define vl-pp-packeddimensionlist ((x vl-packeddimensionlist-p) &key (ps 'ps))
-  (if (atom x)
-      ps
-    (vl-ps-seq (vl-pp-packeddimension (car x))
-               (vl-pp-packeddimensionlist (cdr x)))))
-
-(define vl-pp-enumbasekind ((x vl-enumbasekind-p) &key (ps 'ps))
-  :guard-hints(("Goal" :in-theory (enable vl-enumbasekind-p)))
-  (b* ((x (vl-enumbasekind-fix x))
-       ((when (stringp x))
-        (vl-print-modname x)))
-    (vl-ps-span "vl_key" (vl-print-str (case x
-                                         (:vl-byte     "byte")
-                                         (:vl-shortint "shortint")
-                                         (:vl-int      "int")
-                                         (:vl-longint  "longint")
-                                         (:vl-integer  "integer")
-                                         (:vl-time     "time")
-                                         (:vl-bit      "bit")
-                                         (:vl-logic    "logic")
-                                         (:vl-reg      "reg"))))))
-
-(define vl-pp-enumbasetype ((x vl-enumbasetype-p) &key (ps 'ps))
-  (b* (((vl-enumbasetype x) x))
-    (vl-ps-seq (vl-pp-enumbasekind x.kind)
-               ;; BOZO this isn't quite right, should only print signedness if it's
-               ;; not the default for this type
-               (vl-ps-span "vl_key" (vl-print (if x.signedp " signed" " unsigned")))
-               (if x.dim
-                   (vl-ps-seq (vl-print " ")
-                              (vl-pp-packeddimension x.dim))
-                 ps))))
-
-(define vl-pp-enumitem ((x vl-enumitem-p) &key (ps 'ps))
-  (b* (((vl-enumitem x) x))
-    (vl-ps-seq (vl-indent 4)
-               (vl-print-wirename x.name)
-               (if x.range
-                   ;; Special case to print [5:5] style ranges as just [5]
-                   (b* ((msb (vl-range->msb x.range))
-                        (lsb (vl-range->lsb x.range))
-                        ((when (and (vl-expr-resolved-p msb)
-                                    (vl-expr-resolved-p lsb)
-                                    (equal (vl-resolved->val msb)
-                                           (vl-resolved->val lsb))))
-                         (vl-ps-seq (vl-print-str "[")
-                                    (vl-print-nat (vl-resolved->val msb))
-                                    (vl-print-str "]"))))
-                     ;; Otherwise just print a normal range
-                     (vl-pp-range x.range))
-                 ps)
-               (if x.value
-                   (vl-ps-seq (vl-print " = ")
-                              (vl-pp-expr x.value))
-                 ps)
-               (vl-println " ;"))))
-
-(define vl-pp-enumitemlist ((x vl-enumitemlist-p) &key (ps 'ps))
-  (if (atom x)
-      ps
-    (vl-ps-seq (vl-pp-enumitem (car x))
-               (vl-pp-enumitemlist (cdr x)))))
-
-
-(defines vl-pp-datatype
-
-  (define vl-pp-datatype ((x vl-datatype-p) &key (ps 'ps))
-    :measure (vl-datatype-count x)
-    (vl-datatype-case x
-      (:vl-coretype
-       (vl-ps-seq (vl-indent 2)
-                  (vl-ps-span "vl_key" (vl-print-str (vl-coretypename-string x.name)))
-                  ;; BOZO this isn't quite right -- we shouldn't print the
-                  ;; signedness if it's not applicable to this kind of type.
-                  (vl-print " ")
-                  (vl-ps-span "vl_key" (if x.signedp
-                                           (vl-print-str "signed")
-                                         (vl-print-str "unsigned")))
-                  (vl-print " ")
-                  (vl-pp-packeddimensionlist x.dims)))
-
-      (:vl-struct
-       (vl-ps-seq (vl-indent 2)
-                  (vl-ps-span "vl_key"
-                              (vl-print "struct ")
-                              (if x.packedp
-                                  (vl-ps-seq (vl-print "packed ")
-                                             (if x.signedp
-                                                 (vl-print "signed ")
-                                               ps))
-                                ps))
-                  (vl-println "{")
-                  (vl-pp-structmemberlist x.members)
-                  (vl-print "} ")
-                  (vl-pp-packeddimensionlist x.dims)))
-
-      (:vl-union
-       (vl-ps-seq (vl-indent 2)
-                  (vl-ps-span "vl_key"
-                              (vl-print "union ")
-                              (if x.taggedp
-                                  (vl-print "tagged ")
-                                ps)
-                              (if x.packedp
-                                  (vl-ps-seq (vl-print "packed ")
-                                             (if x.signedp
-                                                 (vl-print "signed ")
-                                               ps))
-                                ps))
-                  (vl-println "{")
-                  (vl-pp-structmemberlist x.members)
-                  (vl-indent 2)
-                  (vl-print "} ")
-                  (vl-pp-packeddimensionlist x.dims)))
-
-      (:vl-enum
-       (vl-ps-seq (vl-indent 2)
-                  (vl-ps-span "vl_key" (vl-print "enum "))
-                  (vl-pp-enumbasetype x.basetype)
-                  (vl-println " {")
-                  (vl-pp-enumitemlist x.items)
-                  (vl-indent 2)
-                  (vl-println "} ")
-                  (vl-pp-packeddimensionlist x.dims)))
-
-      (:vl-usertype
-       (vl-ps-seq (vl-pp-expr x.kind)
-                  (vl-print " ")
-                  (vl-pp-packeddimensionlist x.dims)))))
-
-  (define vl-pp-structmemberlist ((x vl-structmemberlist-p) &key (ps 'ps))
-    :measure (vl-structmemberlist-count x)
-    (if (atom x)
-        ps
-      (vl-ps-seq (vl-pp-structmember (car x))
-                 (vl-pp-structmemberlist (cdr x)))))
-
-  (define vl-pp-structmember ((x vl-structmember-p) &key (ps 'ps))
-    :measure (vl-structmember-count x)
-    (b* (((vl-structmember x) x))
-      (vl-ps-seq (vl-indent 4)
-                 (if x.atts (vl-pp-atts x.atts) ps)
-                 (if x.rand
-                     (vl-ps-span "vl_key"
-                                 (vl-print-str (vl-randomqualifier-string x.rand))
-                                 (vl-print " "))
-                   ps)
-                 (vl-pp-datatype x.type)
-                 (vl-print " ")
-                 (vl-print-wirename x.name)
-                 (vl-print " ")
-                 (vl-pp-packeddimensionlist x.dims)
-                 (if x.rhs
-                     (vl-ps-seq (vl-print " = ")
-                                (vl-pp-expr x.rhs))
-                   ps)
-                 (vl-println " ;")))))
 
 
 (define vl-fwdtypedefkind-string ((x vl-fwdtypedefkind-p))

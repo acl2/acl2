@@ -78,31 +78,31 @@
 
 (defwellformed vl-vardecl-range-resolved-p (x)
   :guard (vl-vardecl-p x)
-  :body (let ((range (vl-vardecl->range x)))
-          (@wf-assert (vl-maybe-range-resolved-p range)
-                      :vl-range-unresolved
-                      "~l0: failed to resolve range of variable ~s1: current range is ~x2."
-                      (list (vl-vardecl->loc x)
-                            (vl-vardecl->name x)
-                            range))))
+  :body (@wf-assert (or (not (vl-simplereg-p x))
+                        (vl-maybe-range-resolved-p (vl-simplereg->range x)))
+                    :vl-range-unresolved
+                    "~l0: failed to resolve range of variable ~s1: current range is ~x2."
+                    (list (vl-vardecl->loc x)
+                          (vl-vardecl->name x)
+                          (vl-simplereg->range x))))
 
 (deffixequiv vl-vardecl-range-resolved-p :args ((x vl-vardecl-p))
   :hints(("Goal" :in-theory (enable vl-vardecl-range-resolved-p))))
 
-(defthm vl-maybe-range-resolved-p-of-vl-vardecl->range
-  (implies (vl-vardecl-range-resolved-p x)
-           (vl-maybe-range-resolved-p (vl-vardecl->range x)))
-  :hints(("Goal" :in-theory (enable vl-vardecl-range-resolved-p))))
+;; (defthm vl-maybe-range-resolved-p-of-vl-vardecl->range
+;;   (implies (vl-vardecl-range-resolved-p x)
+;;            (vl-maybe-range-resolved-p (vl-vardecl->range x)))
+;;   :hints(("Goal" :in-theory (enable vl-vardecl-range-resolved-p))))
 
 (defwellformed-list vl-vardecllist-ranges-resolved-p (x)
   :element vl-vardecl-range-resolved-p
   :guard (vl-vardecllist-p x))
 
-(defthm vl-range-resolved-p-of-vl-vardecl-range-of-vl-find-vardecl
-  (implies (force (vl-vardecllist-ranges-resolved-p x))
-           (vl-vardecl-range-resolved-p (vl-find-vardecl name x)))
-  :hints(("Goal"
-          :in-theory (enable vl-find-vardecl))))
+;; (defthm vl-range-resolved-p-of-vl-vardecl-range-of-vl-find-vardecl
+;;   (implies (force (vl-vardecllist-ranges-resolved-p x))
+;;            (vl-vardecl-range-resolved-p (vl-find-vardecl name x)))
+;;   :hints(("Goal"
+;;           :in-theory (enable vl-find-vardecl))))
 
 
 

@@ -500,8 +500,9 @@ atom (if it is the name of an unsigned net or register.)</p>"
             nil)
            ((when (eq (tag look) :vl-netdecl))
             (not (vl-netdecl->signedp look)))
-           ((when (eq (tag look) :vl-vardecl))
-            (not (vl-vardecl->signedp look))))
+           ((when (and (eq (tag look) :vl-vardecl)
+                       (vl-simplereg-p look)))
+            (not (vl-simplereg->signedp look))))
         nil)
     (or (eq (vl-nonatom->op arg) :vl-bitselect)
         (eq (vl-nonatom->op arg) :vl-partselect-colon)
@@ -621,8 +622,12 @@ flattening out nested concatenations and merging concatenations like
          (decl (vl-fast-find-moduleitem name mod ialist))
          ((mv decl-okp range)
           (case (tag decl)
-            (:vl-netdecl (mv (not (vl-netdecl->signedp decl)) (vl-netdecl->range decl)))
-            (:vl-vardecl (mv (not (vl-vardecl->signedp decl)) (vl-vardecl->range decl)))
+            (:vl-netdecl
+             (mv (not (vl-netdecl->signedp decl)) (vl-netdecl->range decl)))
+            (:vl-vardecl
+             (if (vl-simplereg-p decl)
+                 (mv (not (vl-simplereg->signedp decl)) (vl-simplereg->range decl))
+               (mv nil nil)))
             (otherwise (mv nil nil))))
 
          ((unless (and decl-okp (vl-maybe-range-resolved-p range)))

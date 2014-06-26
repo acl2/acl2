@@ -76,16 +76,16 @@ isn't an array.</p>"
          :fn __function__))
 
        ((vl-vardecl decl) decl)
-       ((unless (eq decl.type :vl-reg))
+       ((unless (vl-simplereg-p decl))
         (make-vl-warning
          :type :vl-always-too-hard
          :msg "~a0: statement is too complex to synthesize.  The variable ~
-               being targeted, ~w1, has type ~s2, but we only support regs."
-         :args (list elem name decl.type)
+               being targeted, ~w1, is not a simple enough register."
+         :args (list elem name)
          :fatalp nil
          :fn __function__))
 
-       ((when (consp decl.arrdims))
+       ((when (consp decl.dims))
         (make-vl-warning
          :type :vl-always-too-hard
          :msg "~a0: statement is too complex to synthesize.  The register ~
@@ -94,12 +94,13 @@ isn't an array.</p>"
          :fatalp nil
          :fn __function__))
 
-       ((unless (vl-maybe-range-resolved-p decl.range))
+       (range (vl-simplereg->range decl))
+       ((unless (vl-maybe-range-resolved-p range))
         (make-vl-warning
          :type :vl-always-too-hard
          :msg "~a0: statement is too complex to synthesize.  The register ~
                being targeted, ~w1, does not have a resolved size: ~x2"
-         :args (list elem name decl.range)
+         :args (list elem name range)
          :fatalp nil
          :fn __function__)))
     nil)
@@ -141,13 +142,13 @@ have passed @(see vl-always-check-reg), so we cause a hard error if the
 register has array dimensions.</p>"
 
   (b* (((vl-vardecl x) x)
-       (- (or (and (eq x.type :vl-reg)
-                   (not x.arrdims))
-              (raise "Expected all variables to convert to be regs and not arrays."))))
+       (- (or (and (vl-simplereg-p x)
+                   (not x.dims))
+              (raise "Expected all variables to convert to be simple regs and not arrays."))))
     (make-vl-netdecl :name    x.name
                      :type    :vl-wire
-                     :signedp x.signedp
-                     :range   x.range
+                     :signedp (ec-call (vl-simplereg->signedp x))
+                     :range   (ec-call (vl-simplereg->range x))
                      :loc     x.loc
                      :atts    (acons (hons-copy "VL_CONVERTED_REG")
                                      nil x.atts))))

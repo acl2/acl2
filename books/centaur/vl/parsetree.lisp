@@ -41,6 +41,14 @@ regular view of the source code.</p>")
 
 (local (xdoc::set-default-parents syntax))
 
+(defoption maybe-stringp stringp
+  ;; BOZO find me a home.  This is mainly to get the fixtypes stuff
+  :fix maybe-string-fix
+  :equiv maybe-string-equiv)
+
+
+
+
 (defprod vl-range
   :short "Representation of ranges on wire declarations, instance array
 declarations, and so forth."
@@ -102,10 +110,413 @@ try to support the use of both ascending and descending ranges.</p>")
   (vl-rangelist-p x)
   :elementp-of-nil t)
 
-(defoption maybe-stringp stringp
-  ;; BOZO find me a home.  This is mainly to get the fixtypes stuff
-  :fix maybe-string-fix
-  :equiv maybe-string-equiv)
+
+
+
+
+; -----------------------------------------------------------------------------
+;
+;                        Data Types (SystemVerilog)
+;
+; -----------------------------------------------------------------------------
+
+(defenum vl-randomqualifier-p
+  (nil
+   :vl-rand
+   :vl-randc)
+  :short "Random qualifiers that can be put on struct or union members.")
+
+(defenum vl-coretypename-p
+  (:vl-void
+   ;; integer atom types:
+   :vl-byte
+   :vl-shortint
+   :vl-int
+   :vl-longint
+   :vl-integer
+   :vl-time
+   ;; integer vector types
+   :vl-bit
+   :vl-logic
+   :vl-reg
+   ;; non integer types:
+   :vl-shortreal
+   :vl-real
+   :vl-realtime
+   ;; misc core data types
+   :vl-string
+   :vl-chandle
+   :vl-event)
+  :short "Basic kinds of data types."
+  :long "<p>Our <i>core types</i> basically correspond to the following small
+subset of the valid @('data_type')s:</p>
+
+@({
+     data_type_or_void ::= data_type | 'void'
+     data_type ::=
+         integer_vector_type [signing] { packed_dimension }
+       | integer_atom_type [signing]
+       | non_integer_type
+       | 'string'
+       | 'chandle'
+       | 'event'
+       | <non core types >
+})
+
+<p>We include @('void') here only because it's convenient to do so.</p>")
+
+
+
+(define vl-packeddimension-p (x)
+  :short "Recognizes ranges and unsized dimensions."
+  :long "<p>From the SystemVerilog-2012 grammar:</p>
+@({
+    unsized_dimension ::= '[' ']'
+    packed_dimension ::= '[' constant_range ']' | unsized_dimension
+})"
+
+  (or (eq x :vl-unsized-dimension)
+      (vl-range-p x))
+  ///
+  (defthm vl-packeddimension-p-when-vl-range-p
+    (implies (vl-range-p x)
+             (vl-packeddimension-p x)))
+  (defthm vl-range-p-when-vl-packeddimension-p
+    (implies (and (not (equal x :vl-unsized-dimension))
+                  (vl-packeddimension-p x))
+             (vl-range-p x))))
+
+(define vl-packeddimension-fix ((x vl-packeddimension-p))
+  :returns (x-fix vl-packeddimension-p)
+  :inline t
+  (mbe :logic (if (vl-packeddimension-p x)
+                  x
+                (vl-range-fix x))
+       :exec x)
+  :prepwork ((local (in-theory (enable vl-packeddimension-p))))
+  ///
+  (defthm vl-packeddimension-fix-when-vl-packeddimension-p
+    (implies (vl-packeddimension-p x)
+             (equal (vl-packeddimension-fix x)
+                    x))))
+
+(deffixtype vl-packeddimension
+  :pred vl-packeddimension-p
+  :fix vl-packeddimension-fix
+  :equiv vl-packeddimension-equiv
+  :define t
+  :forward t)
+
+(fty::deflist vl-packeddimensionlist
+  :elt-type vl-packeddimension)
+
+(deflist vl-packeddimensionlist-p (x)
+  (vl-packeddimension-p x)
+  :elementp-of-nil nil)
+
+(defoption vl-maybe-packeddimension-p vl-packeddimension-p)
+
+
+(define vl-enumbasekind-p (x)
+  :parents (vl-enumbasetype-p x)
+  :short "Kinds of base types for enums."
+  :long "<p>The SystemVerilog-2012 rules for @('enum_base_type') are:</p>
+
+@({
+      enum_base_type ::=
+          integer_atom_type   [signing]
+        | integer_vector_type [signing] [packed_dimension]
+        | type_identifier               [packed_dimension]
+})
+
+<p>A @('vl-enumbasetag-p') corresponds to the main part of this, i.e., it is
+either:</p>
+
+<ul>
+ <li>A string, corresponding to the name of the @('type_identifier')</li>
+ <li>A symbol like @(':vl-byte'), corresponding to an @('integer_atom_type'), or</li>
+ <li>A symbol like @(':vl-logic'), corresponding to an @('integer_vector_type').</li>
+</ul>
+
+<p>Per Section 6.19, the default type is @('int').</p>"
+
+  (or (stringp x)
+      ;; integer atom types
+      (eq x :vl-byte)
+      (eq x :vl-shortint)
+      (eq x :vl-int)
+      (eq x :vl-longint)
+      (eq x :vl-integer)
+      (eq x :vl-time)
+      ;; integer vector types
+      (eq x :vl-bit)
+      (eq x :vl-logic)
+      (eq x :vl-reg)))
+
+(define vl-enumbasekind-fix ((x vl-enumbasekind-p))
+  :returns (x-fix vl-enumbasekind-p)
+  :inline t
+  (mbe :logic (if (vl-enumbasekind-p x)
+                  x
+                :vl-logic)
+       :exec x)
+  ///
+  (defthm vl-enumbasekind-fix-when-vl-enumbasekind-p
+    (implies (vl-enumbasekind-p x)
+             (equal (vl-enumbasekind-fix x)
+                    x))))
+
+(deffixtype vl-enumbasekind
+  :pred vl-enumbasekind-p
+  :fix vl-enumbasekind-fix
+  :equiv vl-enumbasekind-equiv
+  :define t
+  :forward t)
+
+(defprod vl-enumbasetype
+  :tag :vl-enumbasetype
+  :layout :tree
+  :short "The base types for SystemVerilog enumerations."
+  ((kind    vl-enumbasekind-p)
+   (signedp booleanp :rule-classes :type-prescription)
+   (dim     vl-maybe-packeddimension-p))
+
+  :long "<p>The base type for an enumeration is given by the following
+SystemVerilog grammar rule:</p>
+
+@({
+      enum_base_type ::=
+          integer_atom_type [signing]
+        | integer_vector_type [signing] [packed_dimension]
+        | type_identifier [packed_dimension]
+})
+
+<p>The main part of this (integer_atom_type, integer_vector_type, or
+type_identifier) is captured by the <b>kind</b> field.</p>
+
+<p>The <b>signedp</b> field isn't sensible for @('type_identifiers') but we
+include it for uniformity.  For the other kinds of enums, it captures whether
+the @('signed') keyword was mentioned.  or @('unsigned') keywords were
+mentioned.</p>
+
+<p>The optional dimension, if applicable.  BOZO we don't currently support
+unsized dimensions.</p>")
+
+(defprod vl-enumitem
+  :tag :vl-enumitem
+  :layout :tree
+  :short "A single member of an @('enum')."
+  ;; enum_name_declaration ::=
+  ;;   enum_identifier [ [ integral_number [ : integral_number ] ] ] [ = constant_expression ]
+  ((name  stringp           :rule-classes :type-prescription)
+   (range vl-maybe-range-p)
+   (value vl-maybe-expr-p)))
+
+(fty::deflist vl-enumitemlist
+  :elt-type vl-enumitem-p)
+
+(deflist vl-enumitemlist-p (x)
+  (vl-enumitem-p x)
+  :elementp-of-nil nil)
+
+
+;    variable_dimension ::= unsized_dimension
+;                         | unpacked_dimension
+;                         | associative_dimension
+;                         | queue_dimension
+;
+;    unsized_dimension ::= '[' ']'
+;
+;    unpacked_dimension ::= '[' constant_range ']'
+;                         | '[' constant_expression ']'
+;
+;    associative_dimension ::= '[' data_type ']'
+;                            | '[' '*' ']'
+;
+;    queue_dimension ::= '[' '$' [ ':' constant_expression ] ']'
+
+(deftypes data-types
+
+; BOZO it's a little unfortunate to have to put these measures in here.
+; Without these measures, in the case where a STRUCTMEMBER is an atom, the
+; fixing function just recurs on (cadr x) and so on without ever checking
+; consp, so we just need to rig things up so that structmember can always recur
+; to datatype.  It'd be nice if that were more automatic.
+
+  (deftagsum vl-datatype
+    :measure (two-nats-measure (acl2-count x) 0)
+    (:vl-coretype
+     :layout :tree
+     :base-name vl-coretype
+     :short "Representation of basic SystemVerilog data types like @('integer')
+             and @('string'), and also @('void')."
+
+     ((name    vl-coretypename-p
+               "Kind of primitive data type, e.g., @('byte'), @('string'),
+                etc.")
+
+      (signedp booleanp :rule-classes :type-prescription
+               "Only valid for integer types, indicates whether the integer
+                type is signed or not.")
+
+      (dims    vl-packeddimensionlist-p
+               "Only valid for integer vector types (bit, logic, reg).")))
+
+    (:vl-struct
+     :layout :tree
+     :base-name vl-struct
+     :short "Representation of SystemVerilog structs."
+     ;; data_type ::= ... | struct_union [ 'packed' [signing] ] '{'
+     ;;                       struct_union_member { struct_union_member }
+     ;;                     '}' { packed_dimension }
+     ((packedp booleanp :rule-classes :type-prescription)
+      (signedp booleanp :rule-classes :type-prescription)
+      (members vl-structmemberlist-p)
+      (dims    vl-packeddimensionlist-p)))
+
+    (:vl-union
+     :layout :tree
+     :base-name vl-union
+     :short "Representation of SystemVerilog unions."
+     ;; data_type ::= ... | struct_union [ 'packed' [signing] ] '{'
+     ;;                       struct_union_member { struct_union_member }
+     ;;                     '}' { packed_dimension }
+     ((packedp booleanp :rule-classes :type-prescription)
+      (signedp booleanp :rule-classes :type-prescription)
+      (taggedp booleanp :rule-classes :type-prescription)
+      (members vl-structmemberlist-p)
+      (dims    vl-packeddimensionlist-p)))
+
+    (:vl-enum
+     :layout :tree
+     :base-name vl-enum
+     :short "Representation of SystemVerilog enumerations."
+     ;; data_type ::= ... | 'enum' [ enum_base_type ] '{'
+     ;;                        enum_name_declaration { ',' enum_name_declaration }
+     ;;                     '}' { packed_dimension }
+     ((basetype vl-enumbasetype)
+      (items    vl-enumitemlist-p)
+      (dims     vl-packeddimensionlist-p)))
+
+    (:vl-usertype
+     :layout :tree
+     :base-name vl-usertype
+     ;; data_type ::= ... | [ class_scope | package_scope ] type_identifier { packed_dimension }
+     ((kind vl-expr-p "Kind of this type, should be an identifier or some
+                       kind of scoped/hierarchical identifier.")
+      (dims vl-packeddimensionlist-p)))
+
+
+    ;;  BOZO not yet implemented:
+    ;;
+    ;; data_type ::= ...
+    ;;  | 'virtual' [ 'interface' ] interface_identifier [ parameter_value_assignment ] [ '.' modport_identifier ]
+    ;;  | class_type
+    ;;  | type_reference
+    )
+
+  (fty::deflist vl-structmemberlist
+    :measure (two-nats-measure (acl2-count x) 0)
+    :elt-type vl-structmember)
+
+  (defprod vl-structmember
+    :measure (two-nats-measure (acl2-count x) 1)
+    :count vl-structmember-count
+    :tag :vl-structmember
+    :layout :tree
+    :short "A single member of a struct or union."
+    ;;   struct_union_member ::=  { attribute_instance } [random_qualifier]
+    ;;                            data_type_or_void
+    ;;                            list_of_variable_decl_assignments ';'
+    ((atts vl-atts-p)
+     (rand vl-randomqualifier-p)
+     (type vl-datatype-p)
+     ;; now we want a single variable_decl_assignment
+     (name stringp :rule-classes :type-prescription)
+     (dims vl-packeddimensionlist-p)
+     (rhs  vl-maybe-expr-p)
+     )
+    :long "<p>Currently our structure members are very limited.  In the long
+run we may want to support more of the SystemVerilog grammar.  It allows a list
+of variable declaration assignments, which can have fancy dimensions and
+different kinds of @('new') operators.</p>
+
+<p>Notes for the future:</p>
+
+@({
+   variable_decl_assignment ::=
+         variable_identifier { variable_dimension } [ '=' expression ]
+       | dynamic_array_variable_identifier unsized_dimension { variable_dimension } [ '=' dynamic_array_new ]
+       | class_variable_identifier [ '=' class_new ]
+})
+
+<p>These fancy _identifiers are all just identifiers.  So really this is:</p>
+
+@({
+     variable_decl_assignment ::=
+         identifier { variable_dimension }                   [ '=' expression ]
+       | identifier unsized_dimension { variable_dimension } [ '=' dynamic_array_new ]
+       | identifier                                          [ '=' class_new ]
+})
+
+<p>The @('new') keyword can occur in a variety of places.  One of these is
+related to defining constructors for classes, e.g., in class constructor
+prototypes/declarations we can have things like</p>
+
+@({
+     function ... new (...) ...
+})
+
+<p>And @('super.new(...)') and so on.  But for now let's think of these as
+separate cases; that is, our approach to @('new') in other contexts doesn't
+necessarily need to have anything to do with these constructors, which we might
+instead handle more explicitly.</p>
+
+<p>The other places where @('new') can occur are in:</p>
+
+@({
+    dynamic_array_new ::= new '[' expression ']' [ '(' expression ')' ]
+
+    class_new ::= [ class_scope ] 'new' [ '(' list_of_arguments ')' ]
+                | 'new' expression
+})
+
+<p>Which in turn can occur in blocking assignments:</p>
+
+@({
+         [some fancy lhs] = dynamic_array_new
+      or [some other fancy lhs] = class_new
+      or other things not involving new
+})
+
+<p>(Which is interesting because we also have to support a lot of other new
+kinds of assignments like @('+=') and @('*='), so maybe this could become a
+@('new=') kind of assignment or something.)</p>
+
+<p>And they can also occur in variable decl assignments:</p>
+
+@({
+          simple id [ = expression ]
+      or  some fancy lhs with some various dimensions [= dynamic_array_new]
+      or  some simple lhs [= class_new]
+})
+
+<p>Which can occur in:</p>
+
+<ul>
+<li>SVA assertion variable declarations</li>
+<li>Data declarations (e.g., top-level @('const suchandso = new ...')</li>
+<li>Structure members in structs and unions.</li>
+</ul>
+
+<p>So maybe we don't so much need these to be expressions.  Maybe we can get
+away with them as alternate kinds of assignments.</p>"))
+
+(deflist vl-structmemberlist-p (x)
+  (vl-structmember-p x)
+  :elementp-of-nil nil)
+
+
 
 (defprod vl-port
   :short "Representation of a single Verilog port."
@@ -1142,16 +1553,21 @@ enforces these restrictions, we do not encode them into the definition of
   :elementp-of-nil nil)
 
 
+;; (defenum vl-vardecltype-p
+;;   (:vl-reg
+;;    :vl-integer
+;;    :vl-real
+;;    :vl-time
+;;    :vl-realtime)
+;;   :short "Representation of @('reg') and other variable types."
+;;   :long "<p>We represent Verilog's variable types with the keyword symbols
+;; recognized by @(call vl-vardecltype-p).</p>")
 
-(defenum vl-vardecltype-p
-  (:vl-reg
-   :vl-integer
-   :vl-real
-   :vl-time
-   :vl-realtime)
-  :short "Representation of @('reg') and other variable types."
-  :long "<p>We represent Verilog's variable types with the keyword symbols
-recognized by @(call vl-vardecltype-p).</p>")
+(defenum vl-lifetime-p
+  (nil
+   :vl-static
+   :vl-automatic)
+  :short "Representation of the lifetime of a variable.")
 
 (defprod vl-vardecl
   :short "Representation of a single variable declaration."
@@ -1162,28 +1578,54 @@ recognized by @(call vl-vardecltype-p).</p>")
             :rule-classes :type-prescription
             "Name of the variable being declared.")
 
-   (signedp booleanp
-            :rule-classes :type-prescription
-            "Indicates whether they keyword @('signed') was used in the
-             declaration of the register.  By default, registers are unsigned.
-             Not applicable for some kinds of variables like @('real') or
-             @('realtime') variables.")
+   (constp   booleanp
+             :rule-classes :type-prescription
+             "Indicates whether the @('const') keyword was provided.")
 
-   (range   vl-maybe-range-p
-            "Size for wide registers; see also @(see vl-netdecl-p) for
-             more discussion of @('range') versus @('arrdims').")
+   (varp     booleanp
+             :rule-classes :type-prescription
+             "Indicates whether the @('var') keyword was provided.")
 
-   (type    vl-vardecltype-p
-            "Kind of variable, e.g., reg, integer, real, etc.")
+   (lifetime vl-lifetime-p
+             "See SystemVerilog-2012 Section 6.21.  There are pretty complex rules
+              for variable lifetimes.  BOZO we don't really support this yet in any
+              meaningful way, and the @('lifetime') field is currently just used
+              to record whether a @('static') or @('automatic') keyword was found
+              during parsing.")
 
-   (arrdims vl-rangelist-p
+; For SystemVerilog, signedp and range become part of the data type itself.
+; BOZO we probably also want to merge event declarations into here.  But
+; this can probably wait awhile.
+
+   ;; (signedp booleanp
+   ;;          :rule-classes :type-prescription
+   ;;          "Indicates whether they keyword @('signed') was used in the
+   ;;           declaration of the register.  By default, registers are unsigned.
+   ;;           Not applicable for some kinds of variables like @('real') or
+   ;;           @('realtime') variables.")
+
+   ;; (range   vl-maybe-range-p
+   ;;          "Size for wide registers; see also @(see vl-netdecl-p) for
+   ;;           more discussion of @('range') versus @('arrdims').")
+
+   (vartype vl-datatype-p
+            ;; BOZO eventually rename this to just "type".  It used to be named
+            ;; "type", back when it was a vardecltype-p.  I'm renaming it so
+            ;; that all existing code based on vardecltype-p will break, so I
+            ;; can fix it up.
+            "Kind of variable, e.g., logic, reg, integer, real, etc.")
+
+   (dims    vl-packeddimensionlist-p
             "A list of array dimensions; empty unless this is an array or
              multi-dimensional array of variables.")
 
+; BOZO.  initial values can also be things like 'new' calls.  This will need to
+; change to accommodate that.  When we change this we'll also want to change
+; struct members.  In fact, we might want to just merge the dims and initval
+; stuff between structmembers and here, into some kind of other structure (or
+; maybe not).
+
    (initval vl-maybe-expr-p
-            ;; BOZO eliminate initval and replace with an initial statement.
-            ;; Update the docs for vl-initial-p and also below when this is
-            ;; done.
             "When present, indicates the initial value for the variable, e.g.,
              if one writes @('integer i = 3;'), then the @('initval') will be
              the @(see vl-expr-p) for @('3').")
@@ -1194,12 +1636,14 @@ recognized by @(call vl-vardecltype-p).</p>")
    (loc     vl-location-p
             "Where the declaration was found in the source code."))
 
-  :long "<p>We use @('vl-vardecl-p')s to represent @('reg'), @('integer'),
-@('real'), @('time'), and @('realtime') variable declarations.  As with nets
-and ports, our parser splits up combined declarations such as \"integer a, b\"
-into multiple, individual declarations, so each @('vl-vardecl-p') represents
-only one declaration.</p>")
+  :long "<p>For Verilog-2005, we use @('vl-vardecl-p')s to represent @('reg'),
+@('integer'), @('real'), @('time'), and @('realtime') variable declarations.
+For SystemVerilog-2012, these can also be used to represent many other kinds of
+types.</p>
 
+<p>As with nets and ports, our parser splits up combined declarations such as
+\"integer a, b\" into multiple, individual declarations, so each
+@('vl-vardecl-p') represents only one declaration.</p>")
 
 (defprod vl-eventdecl
   :short "Representation of a single event declaration."
@@ -2620,409 +3064,6 @@ transforms to not modules with this attribute.</p>"
   (vl-import-p x)
   :elementp-of-nil nil)
 
-
-
-; -----------------------------------------------------------------------------
-;
-;                        Data Types (SystemVerilog)
-;
-; -----------------------------------------------------------------------------
-
-
-(defenum vl-randomqualifier-p
-  (nil
-   :vl-rand
-   :vl-randc)
-  :short "Random qualifiers that can be put on struct or union members.")
-
-(defenum vl-coretypename-p
-  (:vl-void
-   ;; integer atom types:
-   :vl-byte
-   :vl-shortint
-   :vl-int
-   :vl-longint
-   :vl-integer
-   :vl-time
-   ;; integer vector types
-   :vl-bit
-   :vl-logic
-   :vl-reg
-   ;; non integer types:
-   :vl-shortreal
-   :vl-real
-   :vl-realtime
-   ;; misc core data types
-   :vl-string
-   :vl-chandle
-   :vl-event)
-  :short "Basic kinds of data types."
-  :long "<p>Our <i>core types</i> basically correspond to the following small
-subset of the valid @('data_type')s:</p>
-
-@({
-     data_type_or_void ::= data_type | 'void'
-     data_type ::=
-         integer_vector_type [signing] { packed_dimension }
-       | integer_atom_type [signing]
-       | non_integer_type
-       | 'string'
-       | 'chandle'
-       | 'event'
-       | <non core types >
-})
-
-<p>We include @('void') here only because it's convenient to do so.</p>")
-
-
-
-
-(define vl-packeddimension-p (x)
-  :short "Recognizes ranges and unsized dimensions."
-  :long "<p>From the SystemVerilog-2012 grammar:</p>
-@({
-    unsized_dimension ::= '[' ']'
-    packed_dimension ::= '[' constant_range ']' | unsized_dimension
-})"
-
-  (or (eq x :vl-unsized-dimension)
-      (vl-range-p x))
-  ///
-  (defthm vl-packeddimension-p-when-vl-range-p
-    (implies (vl-range-p x)
-             (vl-packeddimension-p x))))
-
-(define vl-packeddimension-fix ((x vl-packeddimension-p))
-  :returns (x-fix vl-packeddimension-p)
-  :inline t
-  (mbe :logic (if (vl-packeddimension-p x)
-                  x
-                (vl-range-fix x))
-       :exec x)
-  :prepwork ((local (in-theory (enable vl-packeddimension-p))))
-  ///
-  (defthm vl-packeddimension-fix-when-vl-packeddimension-p
-    (implies (vl-packeddimension-p x)
-             (equal (vl-packeddimension-fix x)
-                    x))))
-
-(deffixtype vl-packeddimension
-  :pred vl-packeddimension-p
-  :fix vl-packeddimension-fix
-  :equiv vl-packeddimension-equiv
-  :define t
-  :forward t)
-
-(fty::deflist vl-packeddimensionlist
-  :elt-type vl-packeddimension)
-
-(deflist vl-packeddimensionlist-p (x)
-  (vl-packeddimension-p x)
-  :elementp-of-nil nil)
-
-(defoption vl-maybe-packeddimension-p vl-packeddimension-p)
-
-
-(define vl-enumbasekind-p (x)
-  :parents (vl-enumbasetype-p x)
-  :short "Kinds of base types for enums."
-  :long "<p>The SystemVerilog-2012 rules for @('enum_base_type') are:</p>
-
-@({
-      enum_base_type ::=
-          integer_atom_type   [signing]
-        | integer_vector_type [signing] [packed_dimension]
-        | type_identifier               [packed_dimension]
-})
-
-<p>A @('vl-enumbasetag-p') corresponds to the main part of this, i.e., it is
-either:</p>
-
-<ul>
- <li>A string, corresponding to the name of the @('type_identifier')</li>
- <li>A symbol like @(':vl-byte'), corresponding to an @('integer_atom_type'), or</li>
- <li>A symbol like @(':vl-logic'), corresponding to an @('integer_vector_type').</li>
-</ul>
-
-<p>Per Section 6.19, the default type is @('int').</p>"
-
-  (or (stringp x)
-      ;; integer atom types
-      (eq x :vl-byte)
-      (eq x :vl-shortint)
-      (eq x :vl-int)
-      (eq x :vl-longint)
-      (eq x :vl-integer)
-      (eq x :vl-time)
-      ;; integer vector types
-      (eq x :vl-bit)
-      (eq x :vl-logic)
-      (eq x :vl-reg)))
-
-(define vl-enumbasekind-fix ((x vl-enumbasekind-p))
-  :returns (x-fix vl-enumbasekind-p)
-  :inline t
-  (mbe :logic (if (vl-enumbasekind-p x)
-                  x
-                :vl-logic)
-       :exec x)
-  ///
-  (defthm vl-enumbasekind-fix-when-vl-enumbasekind-p
-    (implies (vl-enumbasekind-p x)
-             (equal (vl-enumbasekind-fix x)
-                    x))))
-
-(deffixtype vl-enumbasekind
-  :pred vl-enumbasekind-p
-  :fix vl-enumbasekind-fix
-  :equiv vl-enumbasekind-equiv
-  :define t
-  :forward t)
-
-(defprod vl-enumbasetype
-  :tag :vl-enumbasetype
-  :layout :tree
-  :short "The base types for SystemVerilog enumerations."
-  ((kind    vl-enumbasekind-p)
-   (signedp booleanp :rule-classes :type-prescription)
-   (dim     vl-maybe-packeddimension-p))
-
-  :long "<p>The base type for an enumeration is given by the following
-SystemVerilog grammar rule:</p>
-
-@({
-      enum_base_type ::=
-          integer_atom_type [signing]
-        | integer_vector_type [signing] [packed_dimension]
-        | type_identifier [packed_dimension]
-})
-
-<p>The main part of this (integer_atom_type, integer_vector_type, or
-type_identifier) is captured by the <b>kind</b> field.</p>
-
-<p>The <b>signedp</b> field isn't sensible for @('type_identifiers') but we
-include it for uniformity.  For the other kinds of enums, it captures whether
-the @('signed') keyword was mentioned.  or @('unsigned') keywords were
-mentioned.</p>
-
-<p>The optional dimension, if applicable.  BOZO we don't currently support
-unsized dimensions.</p>")
-
-(defprod vl-enumitem
-  :tag :vl-enumitem
-  :layout :tree
-  :short "A single member of an @('enum')."
-  ;; enum_name_declaration ::=
-  ;;   enum_identifier [ [ integral_number [ : integral_number ] ] ] [ = constant_expression ]
-  ((name  stringp           :rule-classes :type-prescription)
-   (range vl-maybe-range-p)
-   (value vl-maybe-expr-p)))
-
-(fty::deflist vl-enumitemlist
-  :elt-type vl-enumitem-p)
-
-(deflist vl-enumitemlist-p (x)
-  (vl-enumitem-p x)
-  :elementp-of-nil nil)
-
-
-;    variable_dimension ::= unsized_dimension
-;                         | unpacked_dimension
-;                         | associative_dimension
-;                         | queue_dimension
-;
-;    unsized_dimension ::= '[' ']'
-;
-;    unpacked_dimension ::= '[' constant_range ']'
-;                         | '[' constant_expression ']'
-;
-;    associative_dimension ::= '[' data_type ']'
-;                            | '[' '*' ']'
-;
-;    queue_dimension ::= '[' '$' [ ':' constant_expression ] ']'
-
-
-
-(deftypes data-types
-
-; BOZO it's a little unfortunate to have to put these measures in here.
-; Without these measures, in the case where a STRUCTMEMBER is an atom, the
-; fixing function just recurs on (cadr x) and so on without ever checking
-; consp, so we just need to rig things up so that structmember can always recur
-; to datatype.  It'd be nice if that were more automatic.
-
-  (deftagsum vl-datatype
-    :measure (two-nats-measure (acl2-count x) 0)
-    (:vl-coretype
-     :layout :tree
-     :base-name vl-coretype
-     :short "Representation of basic SystemVerilog data types like @('integer')
-             and @('string'), and also @('void')."
-
-     ((name    vl-coretypename-p
-               "Kind of primitive data type, e.g., @('byte'), @('string'),
-                etc.")
-
-      (signedp booleanp :rule-classes :type-prescription
-               "Only valid for integer types, indicates whether the integer
-                type is signed or not.")
-
-      (dims    vl-packeddimensionlist-p
-               "Only valid for integer vector types (bit, logic, reg).")))
-
-    (:vl-struct
-     :layout :tree
-     :base-name vl-struct
-     :short "Representation of SystemVerilog structs."
-     ;; data_type ::= ... | struct_union [ 'packed' [signing] ] '{'
-     ;;                       struct_union_member { struct_union_member }
-     ;;                     '}' { packed_dimension }
-     ((packedp booleanp :rule-classes :type-prescription)
-      (signedp booleanp :rule-classes :type-prescription)
-      (members vl-structmemberlist-p)
-      (dims    vl-packeddimensionlist-p)))
-
-    (:vl-union
-     :layout :tree
-     :base-name vl-union
-     :short "Representation of SystemVerilog unions."
-     ;; data_type ::= ... | struct_union [ 'packed' [signing] ] '{'
-     ;;                       struct_union_member { struct_union_member }
-     ;;                     '}' { packed_dimension }
-     ((packedp booleanp :rule-classes :type-prescription)
-      (signedp booleanp :rule-classes :type-prescription)
-      (taggedp booleanp :rule-classes :type-prescription)
-      (members vl-structmemberlist-p)
-      (dims    vl-packeddimensionlist-p)))
-
-    (:vl-enum
-     :layout :tree
-     :base-name vl-enum
-     :short "Representation of SystemVerilog enumerations."
-     ;; data_type ::= ... | 'enum' [ enum_base_type ] '{'
-     ;;                        enum_name_declaration { ',' enum_name_declaration }
-     ;;                     '}' { packed_dimension }
-     ((basetype vl-enumbasetype)
-      (items    vl-enumitemlist-p)
-      (dims     vl-packeddimensionlist-p)))
-
-    (:vl-usertype
-     :layout :tree
-     :base-name vl-usertype
-     ;; data_type ::= ... | [ class_scope | package_scope ] type_identifier { packed_dimension }
-     ((kind vl-expr-p "Kind of this type, should be an identifier or some
-                       kind of scoped/hierarchical identifier.")
-      (dims vl-packeddimensionlist-p)))
-
-
-    ;;  BOZO not yet implemented:
-    ;;
-    ;; data_type ::= ...
-    ;;  | 'virtual' [ 'interface' ] interface_identifier [ parameter_value_assignment ] [ '.' modport_identifier ]
-    ;;  | class_type
-    ;;  | type_reference
-    )
-
-  (fty::deflist vl-structmemberlist
-    :measure (two-nats-measure (acl2-count x) 0)
-    :elt-type vl-structmember)
-
-  (defprod vl-structmember
-    :measure (two-nats-measure (acl2-count x) 1)
-    :count vl-structmember-count
-    :tag :vl-structmember
-    :layout :tree
-    :short "A single member of a struct or union."
-    ;;   struct_union_member ::=  { attribute_instance } [random_qualifier]
-    ;;                            data_type_or_void
-    ;;                            list_of_variable_decl_assignments ';'
-    ((atts vl-atts-p)
-     (rand vl-randomqualifier-p)
-     (type vl-datatype-p)
-     ;; now we want a single variable_decl_assignment
-     (name stringp :rule-classes :type-prescription)
-     (dims vl-packeddimensionlist-p)
-     (rhs  vl-maybe-expr-p)
-     )
-    :long "<p>Currently our structure members are very limited.  In the long
-run we may want to support more of the SystemVerilog grammar.  It allows a list
-of variable declaration assignments, which can have fancy dimensions and
-different kinds of @('new') operators.</p>
-
-<p>Notes for the future:</p>
-
-@({
-   variable_decl_assignment ::=
-         variable_identifier { variable_dimension } [ '=' expression ]
-       | dynamic_array_variable_identifier unsized_dimension { variable_dimension } [ '=' dynamic_array_new ]
-       | class_variable_identifier [ '=' class_new ]
-})
-
-<p>These fancy _identifiers are all just identifiers.  So really this is:</p>
-
-@({
-     variable_decl_assignment ::=
-         identifier { variable_dimension }                   [ '=' expression ]
-       | identifier unsized_dimension { variable_dimension } [ '=' dynamic_array_new ]
-       | identifier                                          [ '=' class_new ]
-})
-
-<p>The @('new') keyword can occur in a variety of places.  One of these is
-related to defining constructors for classes, e.g., in class constructor
-prototypes/declarations we can have things like</p>
-
-@({
-     function ... new (...) ...
-})
-
-<p>And @('super.new(...)') and so on.  But for now let's think of these as
-separate cases; that is, our approach to @('new') in other contexts doesn't
-necessarily need to have anything to do with these constructors, which we might
-instead handle more explicitly.</p>
-
-<p>The other places where @('new') can occur are in:</p>
-
-@({
-    dynamic_array_new ::= new '[' expression ']' [ '(' expression ')' ]
-
-    class_new ::= [ class_scope ] 'new' [ '(' list_of_arguments ')' ]
-                | 'new' expression
-})
-
-<p>Which in turn can occur in blocking assignments:</p>
-
-@({
-         [some fancy lhs] = dynamic_array_new
-      or [some other fancy lhs] = class_new
-      or other things not involving new
-})
-
-<p>(Which is interesting because we also have to support a lot of other new
-kinds of assignments like @('+=') and @('*='), so maybe this could become a
-@('new=') kind of assignment or something.)</p>
-
-<p>And they can also occur in variable decl assignments:</p>
-
-@({
-          simple id [ = expression ]
-      or  some fancy lhs with some various dimensions [= dynamic_array_new]
-      or  some simple lhs [= class_new]
-})
-
-<p>Which can occur in:</p>
-
-<ul>
-<li>SVA assertion variable declarations</li>
-<li>Data declarations (e.g., top-level @('const suchandso = new ...')</li>
-<li>Structure members in structs and unions.</li>
-</ul>
-
-<p>So maybe we don't so much need these to be expressions.  Maybe we can get
-away with them as alternate kinds of assignments.</p>"))
-
-(deflist vl-structmemberlist-p (x)
-  (vl-structmember-p x)
-  :elementp-of-nil nil)
 
 
 

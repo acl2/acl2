@@ -193,6 +193,169 @@ expressions within @('(* foo = bar *)')-style attributes.</p>")
   :element vl-range)
 
 (def-vl-allexprs
+  :type vl-packeddimension
+  :nrev-body
+  (if (eq x :vl-unsized-dimension)
+      (nrev-fix nrev)
+    (vl-range-allexprs-nrev x nrev))
+  :body
+  (if (eq x :vl-unsized-dimension)
+      nil
+    (vl-range-allexprs x)))
+
+(def-vl-allexprs
+  :type vl-maybe-packeddimension
+  :nrev-body
+  (if x
+      (vl-packeddimension-allexprs-nrev x nrev)
+    (nrev-fix nrev))
+  :body
+  (if x
+      (vl-packeddimension-allexprs x)
+    nil))
+
+(def-vl-allexprs-list
+  :list vl-packeddimensionlist
+  :element vl-packeddimension)
+
+(def-vl-allexprs
+  :type vl-enumbasetype
+  :nrev-body
+  (b* (((vl-enumbasetype x) x))
+    (vl-maybe-packeddimension-allexprs-nrev x.dim nrev))
+  :body
+  (b* (((vl-enumbasetype x) x))
+    (vl-maybe-packeddimension-allexprs x.dim)))
+
+(def-vl-allexprs
+  :type vl-enumitem
+  :nrev-body
+  (b* (((vl-enumitem x) x)
+       (nrev (vl-maybe-range-allexprs-nrev x.range nrev))
+       (nrev (vl-maybe-expr-allexprs-nrev x.value nrev)))
+    nrev)
+  :body
+  (b* (((vl-enumitem x) x))
+    (append (vl-maybe-range-allexprs x.range)
+            (vl-maybe-expr-allexprs x.value))))
+
+(def-vl-allexprs-list
+  :list vl-enumitemlist
+  :element vl-enumitem)
+
+(defines vl-datatype-allexprs-nrev
+  :parents (vl-datatype-allexprs)
+  :flag-local nil
+
+  (define vl-datatype-allexprs-nrev ((x vl-datatype-p) nrev)
+    :measure (vl-datatype-count x)
+    :flag :datatype
+    (vl-datatype-case x
+      (:vl-coretype
+       (vl-packeddimensionlist-allexprs-nrev x.dims nrev))
+      (:vl-struct
+       (b* ((nrev (vl-packeddimensionlist-allexprs-nrev x.dims nrev)))
+         (vl-structmemberlist-allexprs-nrev x.members nrev)))
+      (:vl-union
+       (b* ((nrev (vl-packeddimensionlist-allexprs-nrev x.dims nrev)))
+         (vl-structmemberlist-allexprs-nrev x.members nrev)))
+      (:vl-enum
+       (b* ((nrev (vl-enumbasetype-allexprs-nrev x.basetype nrev))
+            (nrev (vl-enumitemlist-allexprs-nrev x.items nrev)))
+         (vl-packeddimensionlist-allexprs-nrev x.dims nrev)))
+      (:vl-usertype
+       (b* ((nrev (nrev-push x.kind nrev))
+            (nrev (vl-packeddimensionlist-allexprs-nrev x.dims nrev)))
+         nrev))))
+
+  (define vl-structmemberlist-allexprs-nrev ((x vl-structmemberlist-p) nrev)
+    :flag :structmemberlist
+    :measure (vl-structmemberlist-count x)
+    (b* (((when (atom x))
+          (nrev-fix nrev))
+         (nrev (vl-structmember-allexprs-nrev (car x) nrev)))
+      (vl-structmemberlist-allexprs-nrev (cdr x) nrev)))
+
+  (define vl-structmember-allexprs-nrev ((x vl-structmember-p) nrev)
+    :flag :structmember
+    :measure (vl-structmember-count x)
+    (b* (((vl-structmember x) x)
+         (nrev (vl-maybe-expr-allexprs-nrev x.rhs nrev))
+         (nrev (vl-packeddimensionlist-allexprs-nrev x.dims nrev)))
+      (vl-datatype-allexprs-nrev x.type nrev))))
+
+(defines vl-datatype-allexprs
+  :parents (vl-datatype-allexprs)
+  :flag-local nil
+
+  (define vl-datatype-allexprs ((x vl-datatype-p))
+    :measure (vl-datatype-count x)
+    :returns (exprs vl-exprlist-p)
+    :verify-guards nil
+    (mbe :logic
+         (vl-datatype-case x
+           (:vl-coretype
+            (vl-packeddimensionlist-allexprs x.dims))
+           (:vl-struct
+            (append (vl-packeddimensionlist-allexprs x.dims)
+                    (vl-structmemberlist-allexprs x.members)))
+           (:vl-union
+            (append (vl-packeddimensionlist-allexprs x.dims)
+                    (vl-structmemberlist-allexprs x.members)))
+           (:vl-enum
+            (append (vl-enumbasetype-allexprs x.basetype)
+                    (vl-enumitemlist-allexprs x.items)
+                    (vl-packeddimensionlist-allexprs x.dims)))
+           (:vl-usertype
+            (cons x.kind (vl-packeddimensionlist-allexprs x.dims))))
+         :exec
+         (with-local-nrev (vl-datatype-allexprs-nrev x nrev))))
+
+  (define vl-structmemberlist-allexprs ((x vl-structmemberlist-p))
+    :measure (vl-structmemberlist-count x)
+    :returns (exprs vl-exprlist-p)
+    (mbe :logic
+         (if (atom x)
+             nil
+           (append (vl-structmember-allexprs (car x))
+                   (vl-structmemberlist-allexprs (cdr x))))
+         :exec
+         (with-local-nrev (vl-structmemberlist-allexprs-nrev x nrev))))
+
+  (define vl-structmember-allexprs ((x vl-structmember-p) )
+    :measure (vl-structmember-count x)
+    :returns (exprs vl-exprlist-p)
+    (mbe :logic
+         (b* (((vl-structmember x) x))
+           (append (vl-maybe-expr-allexprs x.rhs)
+                   (vl-packeddimensionlist-allexprs x.dims)
+                   (vl-datatype-allexprs x.type)))
+         :exec
+         (with-local-nrev (vl-structmember-allexprs-nrev x nrev))))
+  ///
+  (defthm-vl-datatype-allexprs-nrev-flag
+    (defthm vl-datatype-allexprs-nrev-removal
+      (equal (vl-datatype-allexprs-nrev x nrev)
+             (append nrev (vl-datatype-allexprs x)))
+      :flag :datatype)
+    (defthm vl-structmemberlist-allexprs-nrev-removal
+      (equal (vl-structmemberlist-allexprs-nrev x nrev)
+             (append nrev (vl-structmemberlist-allexprs x)))
+      :flag :structmemberlist)
+    (defthm vl-structmember-allexprs-nrev-removal
+      (equal (vl-structmember-allexprs-nrev x nrev)
+             (append nrev (vl-structmember-allexprs x)))
+      :flag :structmember)
+    :hints(("Goal"
+            :expand ((vl-datatype-allexprs x)
+                     (vl-datatype-allexprs-nrev x nrev)
+                     (vl-structmember-allexprs x)
+                     (vl-structmember-allexprs-nrev x nrev)
+                     (vl-structmemberlist-allexprs x)
+                     (vl-structmemberlist-allexprs-nrev x nrev)))))
+  (verify-guards vl-datatype-allexprs))
+
+(def-vl-allexprs
   :type vl-gatedelay
   :nrev-body
   (b* (((vl-gatedelay x) x)
@@ -284,14 +447,14 @@ expressions within @('(* foo = bar *)')-style attributes.</p>")
   :type vl-vardecl
   :nrev-body
   (b* (((vl-vardecl x) x)
-       (nrev (vl-maybe-range-allexprs-nrev x.range nrev))
-       (nrev (vl-rangelist-allexprs-nrev x.arrdims nrev)))
+       (nrev (vl-datatype-allexprs-nrev x.vartype nrev))
+       (nrev (vl-packeddimensionlist-allexprs-nrev x.dims nrev)))
     (vl-maybe-expr-allexprs-nrev x.initval nrev))
   :body
   (b* (((vl-vardecl x) x))
-      (append (vl-maybe-range-allexprs x.range)
-              (vl-rangelist-allexprs x.arrdims)
-              (vl-maybe-expr-allexprs x.initval))))
+    (append (vl-datatype-allexprs x.vartype)
+            (vl-packeddimensionlist-allexprs x.dims)
+            (vl-maybe-expr-allexprs x.initval))))
 
 (def-vl-allexprs-list
   :list vl-vardecllist

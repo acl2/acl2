@@ -20,6 +20,7 @@
 
 (in-package "VL")
 (include-book "always/stmtrewrite") ;; bozo
+(include-book "../mlib/range-tools")
 (include-book "../mlib/subst")
 (include-book "../mlib/context")
 (include-book "../mlib/allexprs")
@@ -1304,30 +1305,38 @@ vl-taskportlist-types-okp).</p>"
       (warnings vl-warninglist-p))
   (b* (((when (atom x))
         (mv t (ok)))
-       ((vl-vardecl x1) (car x))
-       ((unless (eq x1.type :vl-reg))
+       (x1 (vl-vardecl-fix (car x)))
+       ((vl-vardecl x1) x1)
+       ((unless (vl-simplereg-p x1))
         (mv nil (fatal :type :vl-bad-function-vardecl
-                       :msg "In ~a0, variable ~s1 is not a 'reg'.  Other types ~
-                             of variables are not yet supported."
+                       :msg "In ~a0, variable ~s1 is not a simple register.  ~
+                             Other types of variables are not yet supported."
                        :args (list function x1.name))))
-       ((when x1.arrdims)
-        (mv nil (fatal :type :vl-bad-function-vardecl
-                       :msg "In ~a0, ~s1 has array dimensions, which are ~
-                             not supported."
-                       :args (list function x1.name))))
+       ;; ruled out by simplereg-p
+       ;; ((when x1.arrdims)
+       ;;  (mv nil (fatal :type :vl-bad-function-vardecl
+       ;;                 :msg "In ~a0, ~s1 has array dimensions, which are ~
+       ;;                       not supported."
+       ;;                 :args (list function x1.name))))
        ((when x1.initval)
         ;; I don't think this is even allowed by the grammar.
         (mv nil (fatal :type :vl-bad-function-vardecl
                        :msg "In ~a0, ~s1 has an initial value, which is ~
                              not supported."
                        :args (list function x1.name)))))
-    (vl-fun-vardecllist-types-okp (cdr x) warnings function)))
+    (vl-fun-vardecllist-types-okp (cdr x) warnings function))
+  ///
+  (defthm vl-simplereglist-p-when-vl-fun-vardecllist-types-okp
+    (b* (((mv okp ?warnings) (vl-fun-vardecllist-types-okp x warnings function)))
+      (implies okp
+               (vl-simplereglist-p x)))))
 
 (define vl-fun-vardecl-to-netdecl
   :parents (vl-funtemplate-p)
   :short "Convert a function's var declaration into a net declaration for its
 funtemplate."
   ((x vl-vardecl-p))
+  :guard (vl-simplereg-p x)
   :returns (netdecl vl-netdecl-p)
   :long "<p>We assume the input is okay in the sense of @(see
 vl-fun-vardecllist-types-okp).</p>"
@@ -1335,15 +1344,16 @@ vl-fun-vardecllist-types-okp).</p>"
        (name-atom (make-vl-atom :guts (make-vl-string :value x.name))))
     (make-vl-netdecl :name    x.name
                      :type    :vl-wire
-                     :range   x.range
-                     :arrdims x.arrdims ;; should be NIL if vardecllist-types-okp.
+                     :range   (vl-simplereg->range x)
+                     :arrdims nil
                      :atts    (acons "VL_FUNCTION_VAR" name-atom x.atts)
-                     :signedp x.signedp
+                     :signedp (vl-simplereg->signedp x)
                      :loc     x.loc)))
 
 (defprojection vl-fun-vardecllist-to-netdecls ((x vl-vardecllist-p))
   :parents (vl-funtemplate-p)
   :returns (nets vl-netdecllist-p)
+  :guard (vl-simplereglist-p x)
   (vl-fun-vardecl-to-netdecl x))
 
 

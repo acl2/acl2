@@ -272,7 +272,9 @@ example:</p>
         (vl-primitive-mkport "q" :vl-output))
 
        ;; reg q;
-       (q-vardecl (make-vl-vardecl :type :vl-reg :name "q" :loc *vl-fakeloc*))
+       (q-vardecl (make-vl-vardecl :vartype (make-vl-coretype :name :vl-reg)
+                                   :name "q"
+                                   :loc *vl-fakeloc*))
 
        ;; input d0, d1, ..., d{n-1};
        ((mv d-exprs d-ports d-portdecls d-netdecls)

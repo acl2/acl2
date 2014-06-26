@@ -110,6 +110,150 @@
   :takes-elem t
   :element vl-range)
 
+(def-vl-exprsize vl-packeddimension
+  :takes-elem t
+  :body
+  (b* ((x (vl-packeddimension-fix x)))
+    (if (eq x :vl-unsized-dimension)
+        (mv t warnings x)
+      (vl-range-exprsize x mod ialist elem warnings))))
+
+(def-vl-exprsize vl-maybe-packeddimension
+  :takes-elem t
+  :body
+  (if x
+      (vl-packeddimension-exprsize x mod ialist elem warnings)
+    (mv t warnings x)))
+
+(def-vl-exprsize-list vl-packeddimensionlist
+  :takes-elem t
+  :element vl-packeddimension)
+
+(def-vl-exprsize vl-enumbasetype
+  :takes-elem t
+  :body (b* (((vl-enumbasetype x) x)
+             ((mv successp warnings dim)
+              (vl-maybe-packeddimension-exprsize x.dim mod ialist elem warnings)))
+          (mv successp warnings (change-vl-enumbasetype x :dim dim))))
+
+(def-vl-exprsize vl-enumitem
+  :takes-elem t
+  :body
+  (b* (((vl-enumitem x) x)
+       ((mv range-successp warnings new-range)
+        (vl-maybe-range-exprsize x.range mod ialist elem warnings))
+       ((mv value-successp warnings new-value)
+        (vl-maybe-expr-size x.value mod ialist elem warnings))
+       (successp (and range-successp value-successp))
+       (new-x    (change-vl-enumitem x
+                                     :range new-range
+                                     :value new-value)))
+    (mv successp warnings new-x)))
+
+(def-vl-exprsize-list vl-enumitemlist
+  :takes-elem t
+  :element vl-enumitem)
+
+
+(defines vl-datatype-exprsize
+  :verify-guards nil
+
+  (define vl-datatype-exprsize ((x        vl-datatype-p)
+                                (mod      vl-module-p)
+                                (ialist   (equal ialist (vl-moditem-alist mod)))
+                                (elem     vl-modelement-p)
+                                (warnings vl-warninglist-p))
+    :returns (mv (successp booleanp :rule-classes :type-prescription)
+                 (warnings vl-warninglist-p)
+                 (new-x    vl-datatype-p))
+    :measure (vl-datatype-count x)
+    (vl-datatype-case x
+      (:vl-coretype
+       (b* (((mv dims-successp warnings new-dims)
+             (vl-packeddimensionlist-exprsize x.dims mod ialist elem warnings))
+            (new-x (change-vl-coretype x :dims new-dims)))
+         (mv dims-successp warnings new-x)))
+      (:vl-struct
+       (b* (((mv members-successp warnings new-members)
+             (vl-structmemberlist-exprsize x.members mod ialist elem warnings))
+            ((mv dims-successp warnings new-dims)
+             (vl-packeddimensionlist-exprsize x.dims mod ialist elem warnings))
+            (successp (and members-successp dims-successp))
+            (new-x    (change-vl-struct x :members new-members :dims new-dims)))
+         (mv successp warnings new-x)))
+      (:vl-union
+       (b* (((mv members-successp warnings new-members)
+             (vl-structmemberlist-exprsize x.members mod ialist elem warnings))
+            ((mv dims-successp warnings new-dims)
+             (vl-packeddimensionlist-exprsize x.dims mod ialist elem warnings))
+            (successp (and members-successp dims-successp))
+            (new-x    (change-vl-union x :members new-members :dims new-dims)))
+         (mv successp warnings new-x)))
+      (:vl-enum
+       (b* (((mv basetype-successp warnings new-basetype)
+             (vl-enumbasetype-exprsize x.basetype mod ialist elem warnings))
+            ((mv items-successp warnings new-items)
+             (vl-enumitemlist-exprsize x.items mod ialist elem warnings))
+            ((mv dims-successp warnings new-dims)
+             (vl-packeddimensionlist-exprsize x.dims mod ialist elem warnings))
+            (successp (and basetype-successp items-successp dims-successp))
+            (new-x    (change-vl-enum x
+                                      :basetype new-basetype
+                                      :items new-items
+                                      :dims new-dims)))
+         (mv successp warnings new-x)))
+      (:vl-usertype
+       (b* (((mv kind-successp warnings new-kind)
+             (vl-expr-size nil x.kind mod ialist elem warnings))
+            ((mv dims-successp warnings new-dims)
+             (vl-packeddimensionlist-exprsize x.dims mod ialist elem warnings))
+            (successp (and kind-successp dims-successp))
+            (new-x    (change-vl-usertype x :kind new-kind :dims new-dims)))
+         (mv successp warnings new-x)))))
+
+  (define vl-structmemberlist-exprsize ((x        vl-structmemberlist-p)
+                                        (mod      vl-module-p)
+                                        (ialist   (equal ialist (vl-moditem-alist mod)))
+                                        (elem     vl-modelement-p)
+                                        (warnings vl-warninglist-p))
+    :returns (mv (successp booleanp :rule-classes :type-prescription)
+                 (warnings vl-warninglist-p)
+                 (new-x    vl-structmemberlist-p))
+    :measure (vl-structmemberlist-count x)
+    (b* (((when (atom x))
+          (mv t (ok) nil))
+         ((mv car-successp warnings new-car) (vl-structmember-exprsize (car x) mod ialist elem warnings))
+         ((mv cdr-successp warnings new-cdr) (vl-structmemberlist-exprsize (cdr x) mod ialist elem warnings))
+         (successp (and car-successp cdr-successp))
+         (new-x    (cons new-car new-cdr)))
+      (mv successp warnings new-x)))
+
+  (define vl-structmember-exprsize ((x        vl-structmember-p)
+                                    (mod      vl-module-p)
+                                    (ialist   (equal ialist (vl-moditem-alist mod)))
+                                    (elem     vl-modelement-p)
+                                    (warnings vl-warninglist-p))
+    :returns (mv (successp booleanp :rule-classes :type-prescription)
+                 (warnings vl-warninglist-p)
+                 (new-x    vl-structmember-p))
+    :measure (vl-structmember-count x)
+    (b* (((vl-structmember x) x)
+         ((mv type-successp warnings new-type)
+          (vl-datatype-exprsize x.type mod ialist elem warnings))
+         ((mv dims-successp warnings new-dims)
+          (vl-packeddimensionlist-exprsize x.dims mod ialist elem warnings))
+         ((mv rhs-successp warnings new-rhs)
+          (vl-maybe-expr-size x.rhs mod ialist elem warnings))
+         (successp (and type-successp dims-successp rhs-successp))
+         (new-x    (change-vl-structmember x
+                                           :type new-type
+                                           :dims new-dims
+                                           :rhs new-rhs)))
+      (mv successp warnings new-x)))
+  ///
+  (verify-guards vl-datatype-exprsize)
+  (deffixequiv-mutual vl-datatype-exprsize))
+
 (def-vl-exprsize vl-gatedelay
   :takes-elem t
   :body (b* (((vl-gatedelay x) x)
@@ -131,11 +275,6 @@
   :body (if x
             (vl-gatedelay-exprsize x mod ialist elem warnings)
           (mv t warnings x)))
-
-
-
-
-
 
 ; Truncation warnings are really, really good to have, and have found many
 ; bugs.  However, if we just issue a truncation warning about everything, we
@@ -704,18 +843,19 @@ the expression.</p>"
 (def-vl-exprsize-list vl-netdecllist :element vl-netdecl)
 
 (def-vl-exprsize vl-vardecl
+  ;; BOZO -- this probably isn't right.  We probably need to consider the size
+  ;; of the variable as a context and pass that size in!!!
   :body
   (b* (((vl-vardecl x) x)
        (elem x)
-       ((mv successp1 warnings range-prime)   (vl-maybe-range-exprsize x.range mod ialist elem warnings))
-       ((mv successp2 warnings arrdims-prime) (vl-rangelist-exprsize x.arrdims mod ialist elem warnings))
-       ;; BOZO we should really separate out initvals from vardecls.  For now
-       ;; lets just not size the initval, since it's hard to do it right.  We
-       ;; have to compute the size of the range and stuff it in there.
-       (successp (and successp1 successp2))
+       ((mv successp1 warnings vartype-prime) (vl-datatype-exprsize x.vartype mod ialist elem warnings))
+       ((mv successp2 warnings dims-prime)    (vl-packeddimensionlist-exprsize x.dims mod ialist elem warnings))
+       ((mv successp3 warnings initval-prime) (vl-maybe-expr-size x.initval mod ialist elem warnings))
+       (successp (and successp1 successp2 successp3))
        (x-prime (change-vl-vardecl x
-                                   :range range-prime
-                                   :arrdims arrdims-prime)))
+                                   :vartype vartype-prime
+                                   :dims    dims-prime
+                                   :initval initval-prime)))
     (mv successp warnings x-prime)))
 
 (def-vl-exprsize-list vl-vardecllist :element vl-vardecl)

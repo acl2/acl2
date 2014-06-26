@@ -115,10 +115,56 @@ handle both cases.</p>"
                    :lsb (vl-make-index 0))))
 
 
+
+(define vl-simplereg-p ((x vl-vardecl-p))
+  ;; Horrible hack to try to help with porting existing code.
+  ;;
+  ;; This will recognize only variables that are either basic reg (or logic)
+  ;; wires, signed or unsigned, perhaps with a single range, but not with any
+  ;; more complex dimensions.
+  (b* (((vl-vardecl x) x))
+    (and (not x.constp)
+         (not x.varp)
+         (not x.lifetime)
+         (not x.dims)
+         (eq (vl-datatype-kind x.vartype) :vl-coretype)
+         (b* (((vl-coretype x.vartype) x.vartype))
+           (and (or (eq x.vartype.name :vl-reg)
+                    (eq x.vartype.name :vl-logic))
+                (or (atom x.vartype.dims)
+                    (and (atom (cdr x.vartype.dims))
+                         (mbe :logic (vl-range-p (car x.vartype.dims))
+                              :exec (not (eq (car x.vartype.dims) :vl-unsized-dimension))))))))))
+
+(deflist vl-simplereglist-p (x)
+  :guard (vl-vardecllist-p x)
+  (vl-simplereg-p x))
+
+(define vl-simplereg->signedp ((x vl-vardecl-p))
+  :returns (signedp booleanp :rule-classes :type-prescription)
+  :guard (vl-simplereg-p x)
+  :guard-hints (("Goal" :in-theory (enable vl-simplereg-p)))
+  (b* (((vl-vardecl x) x)
+       ((vl-coretype x.vartype) x.vartype))
+    x.vartype.signedp))
+
+(define vl-simplereg->range ((x vl-vardecl-p))
+  :returns (range vl-maybe-range-p)
+  :guard (vl-simplereg-p x)
+  :prepwork ((local (in-theory (enable vl-simplereg-p vl-maybe-range-p))))
+  (b* (((vl-vardecl x) x)
+       ((vl-coretype x.vartype) x.vartype))
+    (and (consp x.vartype.dims)
+         (vl-range-fix (car x.vartype.dims))))
+  ///
+  (more-returns
+   (range (equal (vl-range-p range) (if range t nil))
+          :name vl-range-p-of-vl-simplereg->range)))
+
 ;; BOZO horrible hack.  For now, we'll make find-net/reg-range only succeed for
-;; regs, not for other kinds of variables.  Eventually we will want to extend
-;; this code to deal with other kinds of variables, but for now, e.g., we don't
-;; want any confusion w.r.t. the range of integers, reals, etc.
+;; simple regs, not for other kinds of variables.  Eventually we will want to
+;; extend this code to deal with other kinds of variables, but for now, e.g.,
+;; we don't want any confusion w.r.t. the range of integers, reals, etc.
 
 (define vl-slow-find-net/reg-range ((name stringp)
                                     (mod vl-module-p))
@@ -136,15 +182,13 @@ handle both cases.</p>"
        ((when (eq tag :vl-netdecl))
         (mv t (vl-netdecl->range find)))
        ((when (and (eq tag :vl-vardecl)
-                   (eq (vl-vardecl->type find) :vl-reg)))
-        (mv t (vl-vardecl->range find))))
+                   (vl-simplereg-p find)))
+        (mv t (vl-simplereg->range find))))
     (mv nil nil))
   ///
-  (defthm vl-range-p-of-vl-slow-find-net/reg-range
-    (equal (vl-range-p (mv-nth 1 (vl-slow-find-net/reg-range name mod)))
-           (if (mv-nth 1 (vl-slow-find-net/reg-range name mod))
-               t
-             nil))))
+  (more-returns
+   (maybe-range (equal (vl-range-p maybe-range) (if maybe-range t nil))
+                :name vl-range-p-of-vl-slow-find-net/reg-range)))
 
 (define vl-find-net/reg-range ((name   stringp)
                                (mod    vl-module-p)
@@ -163,8 +207,8 @@ handle both cases.</p>"
             ((when (eq tag :vl-netdecl))
              (mv t (vl-netdecl->range find)))
             ((when (and (eq tag :vl-vardecl)
-                        (eq (vl-vardecl->type find) :vl-reg)))
-             (mv t (vl-vardecl->range find))))
+                        (vl-simplereg-p find)))
+             (mv t (vl-simplereg->range find))))
          (mv nil nil))))
 
 (define vl-range-size ((x vl-range-p))

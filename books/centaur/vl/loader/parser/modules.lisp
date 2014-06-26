@@ -297,48 +297,60 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (cond ((not (consp tokens))
-         (vl-parse-error "Unexpected EOF."))
-        ((member-eq (vl-token->type (car tokens)) *vl-netdecltypes-kwds*)
-         (seqw tokens warnings
-               ((assigns . decls) := (vl-parse-net-declaration atts))
-               ;; Note: this order is important, the decls have to come first
-               ;; or we'll try to infer implicit nets from the assigns.
-               (return (append decls assigns))))
-        ((member-eq (vl-token->type (car tokens)) *vl-gate-type-keywords*)
-         (vl-parse-gate-instantiation atts))
-        (t
-         (case (vl-token->type (car tokens))
-           (:vl-kwd-reg        (vl-parse-reg-declaration atts))
-           (:vl-kwd-integer    (vl-parse-integer-declaration atts))
-           (:vl-kwd-real       (vl-parse-real-declaration atts))
-           (:vl-kwd-time       (vl-parse-time-declaration atts))
-           (:vl-kwd-realtime   (vl-parse-realtime-declaration atts))
-           (:vl-kwd-event      (vl-parse-event-declaration atts))
-           (:vl-kwd-genvar     (vl-parse-genvar-declaration atts))
-           (:vl-kwd-task
-            (seqw tokens warnings
-                  (task := (vl-parse-task-declaration atts))
-                  (return (list task))))
-           (:vl-kwd-function
-            (seqw tokens warnings
-                  (fun := (vl-parse-function-declaration atts))
-                  (return (list fun))))
-           (:vl-kwd-localparam
-            (seqw tokens warnings
-                  ;; Note: non-local parameters not allowed
-                  (ret := (vl-parse-param-or-localparam-declaration atts '(:vl-kwd-localparam)))
-                  (:= (vl-match-token :vl-semi))
-                  (return ret)))
-           (:vl-kwd-defparam   (vl-parse-parameter-override atts))
-           (:vl-kwd-assign     (vl-parse-continuous-assign atts))
-           (:vl-idtoken        (vl-parse-udp-or-module-instantiation atts))
-           (:vl-kwd-initial    (vl-parse-initial-construct atts))
-           (:vl-kwd-always     (vl-parse-always-construct atts))
-           (:vl-kwd-for        (vl-parse-loop-generate-construct atts))
-           ((:vl-kwd-if :vl-kwd-case) (vl-parse-conditional-generate-construct atts))
-           (t
-            (vl-parse-error "Invalid module or generate item."))))))
+  (b* (((when (atom tokens))
+        (vl-parse-error "Unexpected EOF."))
+       (type1 (vl-token->type (car tokens)))
+       ((when (member type1 *vl-netdecltypes-kwds*))
+        (seqw tokens warnings
+              ((assigns . decls) := (vl-parse-net-declaration atts))
+              ;; Note: this order is important, the decls have to come first
+              ;; or we'll try to infer implicit nets from the assigns.
+              (return (append decls assigns))))
+       ((when (member type1 *vl-gate-type-keywords*))
+        (vl-parse-gate-instantiation atts))
+       ((when (eq type1 :vl-kwd-genvar))
+        (vl-parse-genvar-declaration atts))
+       ((when (eq type1 :vl-kwd-task))
+        (seqw tokens warnings
+              (task := (vl-parse-task-declaration atts))
+              (return (list task))))
+       ((when (eq type1 :vl-kwd-function))
+        (seqw tokens warnings
+              (fun := (vl-parse-function-declaration atts))
+              (return (list fun))))
+       ((when (eq type1 :vl-kwd-localparam))
+        (seqw tokens warnings
+              ;; Note: non-local parameters not allowed
+              (ret := (vl-parse-param-or-localparam-declaration atts '(:vl-kwd-localparam)))
+              (:= (vl-match-token :vl-semi))
+              (return ret)))
+       ((when (eq type1 :vl-kwd-defparam))
+        (vl-parse-parameter-override atts))
+       ((when (eq type1 :vl-kwd-assign))
+        (vl-parse-continuous-assign atts))
+       ((when (eq type1 :vl-idtoken))
+        (vl-parse-udp-or-module-instantiation atts))
+       ((when (eq type1 :vl-kwd-initial))
+        (vl-parse-initial-construct atts))
+       ((when (eq type1 :vl-kwd-always))
+        (vl-parse-always-construct atts))
+       ((when (eq type1 :vl-kwd-for))
+        (vl-parse-loop-generate-construct atts))
+       ((when (or (eq type1 :vl-kwd-if)
+                  (eq type1 :vl-kwd-case)))
+        (vl-parse-conditional-generate-construct atts))
+       ((when (eq type1 :vl-kwd-event))
+        ;; BOZO eventually maybe merge this into vardecls?
+        (vl-parse-event-declaration atts)))
+    ;; BOZO need to switch this for SystemVerilog to cover additional types.
+    (case type1
+      (:vl-kwd-reg        (vl-parse-reg-declaration atts))
+      (:vl-kwd-integer    (vl-parse-integer-declaration atts))
+      (:vl-kwd-real       (vl-parse-real-declaration atts))
+      (:vl-kwd-time       (vl-parse-time-declaration atts))
+      (:vl-kwd-realtime   (vl-parse-realtime-declaration atts))
+      (t
+       (vl-parse-error "Invalid module or generate item.")))))
 
 (defparser vl-parse-non-port-module-item (atts)
   :guard (vl-atts-p atts)

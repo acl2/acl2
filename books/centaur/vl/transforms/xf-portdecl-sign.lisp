@@ -19,7 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "../parsetree")
+(include-book "../mlib/range-tools")
 (local (include-book "../util/arithmetic"))
 (local (include-book "../util/osets"))
 (local (std::add-default-post-define-hook :fix))
@@ -87,11 +87,15 @@ declarations.</p>")
   :short "Gather the names of any signed reg declarations."
   :long "<p>Note that we really only look at @('reg') declarations here.  While
 things like @('integer') variables are signed, they can't be used as ports in
-Verilog-2005.  (Is that still true in SystemVerilog?)</p>"
+Verilog-2005.  (Is that still true in SystemVerilog?)</p>
+
+<p>BOZO probably this isn't correct at all for SystemVerilog, but we're going
+to have to really extend ports to deal with modports stuff anyway, so let's
+just go with it for now.</p>"
   (cond ((atom x)
          nil)
-        ((and (eq (vl-vardecl->type (car x)) :vl-reg)
-              (vl-vardecl->signedp (car x)))
+        ((and (vl-simplereg-p (car x))
+              (vl-simplereg->signedp (car x)))
          (cons (vl-vardecl->name (car x))
                (vl-signed-vardecls (cdr x))))
         (t
@@ -130,13 +134,19 @@ Verilog-2005.  (Is that still true in SystemVerilog?)</p>"
    (x     "original vardecls"                vl-vardecllist-p))
   :returns (new-x vl-vardecllist-p)
   :short "Change some variable declarations to make them signed."
+  :guard-hints(("Goal" :in-theory (enable vl-simplereg-p)))
+  :measure (len x)
   (b* ((names (string-list-fix names))
        ((when (atom x))
         nil)
        (x1     (vl-vardecl-fix (car x)))
-       (new-x1 (if (member-equal (vl-vardecl->name x1) names)
-                   (change-vl-vardecl x1 :signedp t)
-                 x1)))
+       ((unless (member-equal (vl-vardecl->name x1) names))
+        (cons x1 (vl-make-vardecls-signed names (cdr x))))
+       ((unless (vl-simplereg-p x1))
+        (raise "Expected a simple register but found ~x0." x1))
+       (new-x1 (change-vl-vardecl x1
+                                  :vartype (change-vl-coretype (vl-vardecl->vartype x1)
+                                                               :signedp t))))
     (cons new-x1 (vl-make-vardecls-signed names (cdr x)))))
 
 (define vl-module-portdecl-sign ((x vl-module-p))

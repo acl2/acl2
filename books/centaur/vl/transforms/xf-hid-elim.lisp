@@ -430,35 +430,36 @@ hierarchical references to wires inside of @('processor'), etc.</p>")
             (mv warnings x-prime (cons netdecl netdecls))))
 
          ((when (eq (tag item) :vl-vardecl))
-          (b* (((vl-vardecl item) item)
-               ((unless (eq item.type :vl-reg))
+          (b* (((unless (vl-simplereg-p item))
                 (mv (cons (make-vl-warning
                            :type :vl-bad-hid
                            :msg "The hierarchical identifier ~a0 refers to ~
                                  ~s1 in module ~m2, which is a variable of ~
-                                 type ~s3.  But we only allow references to ~
+                                 type ~a3.  But we only allow references to ~
                                  regs and nets."
-                           :args (list x itemname target-modname item.type)
+                           :args (list x itemname target-modname (vl-vardecl->vartype item))
                            :fatalp t
                            :fn 'vl-hidexpr-hid-elim)
                           warnings)
                     x netdecls))
-               ((unless (vl-maybe-range-resolved-p item.range))
+               (signedp (vl-simplereg->signedp item))
+               (range   (vl-simplereg->range item))
+               ((unless (vl-maybe-range-resolved-p range))
                 (mv (cons (make-vl-warning
                            :type :vl-bad-hid
                            :msg "The hierarchical identifier ~a0 refers to ~
                                  ~s1 in module ~m2, which is a reg with range ~
                                  ~a3.  Expected ranges to be resolved!"
-                           :args (list x itemname target-modname item.range)
+                           :args (list x itemname target-modname range)
                            :fatalp t
                            :fn 'vl-hidexpr-hid-elim)
                           warnings)
                     x netdecls))
                (netdecl   (make-vl-netdecl :name flat-name
                                            :type :vl-wire
-                                           :range item.range
-                                           :signedp item.signedp
-                                           :arrdims item.arrdims
+                                           :range range
+                                           :signedp signedp
+                                           :arrdims nil ;; we know simpleregs have no arrdims
                                            :loc *vl-fakeloc*
                                            :atts decl-atts)))
             (mv warnings x-prime (cons netdecl netdecls)))))

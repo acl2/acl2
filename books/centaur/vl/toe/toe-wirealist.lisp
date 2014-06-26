@@ -685,7 +685,6 @@ failure will result in at least one fatal warning.</p>"
     (subsetp-equal (strip-cars (mv-nth 2 (vl-netdecllist-to-wirealist x warnings)))
                    (vl-netdecllist->names x))))
 
-
 (define vl-vardecl-msb-emodwires
   :parents (vl-wirealist-p)
   :short "Same as @(see vl-netdecl-msb-emodwires), but for variables."
@@ -695,28 +694,24 @@ failure will result in at least one fatal warning.</p>"
                (warnings  vl-warninglist-p)
                (emodwires vl-emodwirelist-p))
   (b* (((vl-vardecl x) x)
-       ((unless (eq x.type :vl-reg))
+       ((unless (vl-simplereg-p x))
         (mv nil
             (fatal :type :vl-bad-vardecl
-                   :msg "~a0 has type ~s1, but only regs are currently supported."
-                   :args (list x x.type))
-            nil))
-       ((when x.arrdims)
-        (mv nil
-            (fatal :type :vl-bad-vardecl
-                   :msg "~a0 has array dimensions, which are not supported."
+                   :msg "~a0 is not yet supported: we only handle simple reg/logic ~
+                         wires with at most a single range."
                    :args (list x))
             nil))
-       ((unless (vl-maybe-range-resolved-p x.range))
+       (range (vl-simplereg->range x))
+       ((unless (vl-maybe-range-resolved-p range))
         (mv nil
             (fatal :type :vl-bad-vardecl
                    :msg "~a0 has unresolved range ~a1."
-                   :args (list x x.range))
+                   :args (list x range))
             nil))
-       ((unless x.range)
+       ((unless range)
         (mv t (ok) (list (vl-plain-wire-name x.name))))
-       (msb          (vl-resolved->val (vl-range->msb x.range)))
-       (lsb          (vl-resolved->val (vl-range->lsb x.range)))
+       (msb          (vl-resolved->val (vl-range->msb range)))
+       (lsb          (vl-resolved->val (vl-range->lsb range)))
        (|w[msb:lsb]| (vl-emodwires-from-msb-to-lsb x.name msb lsb)))
     (mv t (ok) |w[msb:lsb]|))
   ///
