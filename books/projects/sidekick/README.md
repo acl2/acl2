@@ -12,7 +12,7 @@ You use the Sidekick **along with**---not instead of---Emacs or your
 favorite ACL2 development environment.  Here's a screenshot of using
 it with Emacs:
 
-![Screenshot](screenshot/emacs.png?raw=true)
+![Screenshot](screenshots/emacs.png?raw=true)
 
 Note: the Sidekick is **highly experimental** software.  It doesn't do
 much yet, and at this point is mostly a proof of concept.
