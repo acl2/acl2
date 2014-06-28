@@ -505,7 +505,9 @@
    (4v-env-equiv a b)
    (4v-alist-extract vars b)
    (4v-sexpr-eval-alist a env)
-   (4v-sexpr-eval a env)))
+   (4v-sexpr-eval a env)
+   (pairlis$ x y)
+   (revappend x y)))
 
 (local
  (define stv-decomp-process-alist-quote (x)
@@ -729,6 +731,57 @@
     :rule-classes ((:meta :trigger-fns (4v-env-equiv)))))
 
 
+
+(defun open-one-revappend-pairlis$ (term)
+  (declare (xargs :guard t))
+  (case-match term
+    (('revappend ('pairlis$ ('cons a x)
+                            y)
+                 z)
+     `(revappend (pairlis$ ,x (cdr ,y))
+                 (cons (cons ,a (car ,y))
+                       ,z)))
+    (t nil)))
+
+(defun my-measure (term)
+  (case-match term
+    (('revappend ('pairlis$ x &)
+                 &)
+     (acl2-count x))
+    (& ; irrelevant
+     0)))
+
+(defun open-all-revappend-pairlis$ (term)
+  (declare (xargs :measure (my-measure term)))
+  (let ((new (open-one-revappend-pairlis$ term)))
+    (cond (new (open-all-revappend-pairlis$ new))
+          (t term))))
+
+(defthmd open-all-revappend-pairlis$-meta-rule
+  (equal (stv-decomp-ev x env)
+         (stv-decomp-ev (open-all-revappend-pairlis$ x) env))
+  :rule-classes ((:meta :trigger-fns (revappend)))
+  :hints (("Goal" :in-theory
+; There's some rule in ACL2o that sends this out to lunch, so we explicily
+; provide the theory we need.
+           '((:DEFINITION OPEN-ALL-REVAPPEND-PAIRLIS$)
+             (:DEFINITION OPEN-ONE-REVAPPEND-PAIRLIS$)
+             (:EXECUTABLE-COUNTERPART EQUAL)
+             (:INDUCTION OPEN-ALL-REVAPPEND-PAIRLIS$)
+             (:REWRITE APPEND-OF-CONS)
+             (:REWRITE APPEND-WHEN-NOT-CONSP)
+             (:REWRITE ASSOCIATIVITY-OF-APPEND)
+             (:REWRITE CAR-CONS)
+             (:REWRITE CDR-CONS)
+             (:REWRITE PAIRLIS$-OF-CONS)
+             (:REWRITE REV-OF-CONS)
+             (:REWRITE REVAPPEND-REMOVAL)
+             (:REWRITE STV-DECOMP-EV-CONSTRAINT-15)
+             (:REWRITE STV-DECOMP-EV-CONSTRAINT-16)
+             (:REWRITE STV-DECOMP-EV-CONSTRAINT-7)
+             (:REWRITE STV-DECOMP-EV-CONSTRAINT-8)
+             (:REWRITE STV-DECOMP-EV-CONSTRAINT-9)))))
+
 (def-ruleset stv-decomp-rules
   '(stv-run-fn
     stv-run-make-eval-env
@@ -774,7 +827,8 @@
     boolean-listp-bool-from-4v-list
     eq eql
     (:t 4v-sexpr-eval-alist)
-    append-to-nil))
+    append-to-nil
+    open-all-revappend-pairlis$-meta-rule))
 
 (defmacro stv-decomp-theory ()
   '(union-theories (get-ruleset 'stv-decomp-rules world)

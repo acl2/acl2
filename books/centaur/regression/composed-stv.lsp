@@ -810,6 +810,56 @@
                      triple-reg-decomp-cutpoint-type-with-specific-hyps))
               (:then :split :prove))))))
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; [TRIPLE REG] Scenario 6
+;
+; Here we perform Scenario 5, attempting to use
+; open-all-revappend-pairlis$-meta-rule instead of revappend-pairlis$-open.
+;
+; We omit the proof checked hint, because we don't use it in practice.
+;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-fail
+(defthmd triple-reg-decomp-is-full-via-rewriting-fails-scenario-6
+  (implies (and (natp d)
+                (< d (expt 2 1)))
+           (b* ((comp1-ins `((d . ,d)))
+                (comp1-outs (stv-run (triple-reg-decomp-stv)
+                                     comp1-ins))
+                (q (cdr (assoc 'q comp1-outs)))
+
+                (comp2-ins `((q . ,q)))
+                (comp2-outs (stv-run (triple-reg-decomp-stv)
+                                     comp2-ins))
+                (qq (cdr (assoc 'qq comp2-outs)))
+
+                (comp3-ins `((qq . ,qq)))
+                (comp3-outs (stv-run (triple-reg-decomp-stv)
+                                     comp3-ins))
+                (comp-qqq (cdr (assoc 'qqq comp3-outs)))
+
+
+                (full-ins (triple-reg-full-stv-autoins))
+                (full-outs (stv-run (triple-reg-full-stv)
+                                    full-ins))
+                (full-qqq (cdr (assoc 'qqq full-outs))))
+               (equal comp-qqq full-qqq)))
+  :hints
+  (("goal"
+    :in-theory (theory 'minimal-theory) ; just beta-reduce all LETs
+    :use ((:instance
+           triple-reg-decomp-cutpoint-type-with-specific-hyps)))
+
+; Now a computed hint, to take place after all the LETs have been expanded
+; away.
+
+   (and stable-under-simplificationp
+        '(:in-theory (set-difference-theories
+                      (stv-decomp-theory)
+                      '((:rewrite revappend-pairlis$-open))))))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Utility functions (some redefinitions)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
