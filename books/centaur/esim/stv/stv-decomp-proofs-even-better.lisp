@@ -741,6 +741,12 @@
      `(revappend (pairlis$ ,x (cdr ,y))
                  (cons (cons ,a (car ,y))
                        ,z)))
+    (('revappend ('pairlis$ ('quote (a . x))
+                            y)
+                 z)
+     `(revappend (pairlis$ (quote ,x) (cdr ,y))
+                 (cons (cons (quote ,a) (car ,y))
+                       ,z)))
     (t nil)))
 
 (defun my-measure (term)
@@ -750,6 +756,12 @@
      (acl2-count x))
     (& ; irrelevant
      0)))
+
+(local
+(defthm acl2-count-cons
+  (equal (acl2-count (cons x y))
+         (1+ (+ (acl2-count x) (acl2-count y))))
+  :hints (("Goal" :expand ((acl2-count (cons x y)))))))
 
 (defun open-all-revappend-pairlis$ (term)
   (declare (xargs :measure (my-measure term)))
@@ -764,9 +776,13 @@
   :hints (("Goal" :in-theory
 ; There's some rule in ACL2o that sends this out to lunch, so we explicily
 ; provide the theory we need.
-           '((:DEFINITION OPEN-ALL-REVAPPEND-PAIRLIS$)
+           '((:DEFINITION NOT)
+             (:DEFINITION OPEN-ALL-REVAPPEND-PAIRLIS$)
              (:DEFINITION OPEN-ONE-REVAPPEND-PAIRLIS$)
+             (:ELIM CAR-CDR-ELIM)
              (:EXECUTABLE-COUNTERPART EQUAL)
+             (:EXECUTABLE-COUNTERPART NOT)
+             (:EXECUTABLE-COUNTERPART SYMBOLP)
              (:INDUCTION OPEN-ALL-REVAPPEND-PAIRLIS$)
              (:REWRITE APPEND-OF-CONS)
              (:REWRITE APPEND-WHEN-NOT-CONSP)
@@ -778,6 +794,7 @@
              (:REWRITE REVAPPEND-REMOVAL)
              (:REWRITE STV-DECOMP-EV-CONSTRAINT-15)
              (:REWRITE STV-DECOMP-EV-CONSTRAINT-16)
+             (:REWRITE STV-DECOMP-EV-CONSTRAINT-2)
              (:REWRITE STV-DECOMP-EV-CONSTRAINT-7)
              (:REWRITE STV-DECOMP-EV-CONSTRAINT-8)
              (:REWRITE STV-DECOMP-EV-CONSTRAINT-9)))))

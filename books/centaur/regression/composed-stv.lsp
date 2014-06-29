@@ -814,14 +814,14 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; [TRIPLE REG] Scenario 6
 ;
-; Here we perform Scenario 5, attempting to use
-; open-all-revappend-pairlis$-meta-rule instead of revappend-pairlis$-open.
+; Here we perform Scenario 5, but using open-all-revappend-pairlis$-meta-rule
+; instead of revappend-pairlis$-open.  This makes larger versions of this proof
+; go from 60 seconds to 17.85 seconds.
 ;
 ; We omit the proof checked hint, because we don't use it in practice.
 ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(must-fail
 (defthmd triple-reg-decomp-is-full-via-rewriting-fails-scenario-6
   (implies (and (natp d)
                 (< d (expt 2 1)))
@@ -858,7 +858,7 @@
    (and stable-under-simplificationp
         '(:in-theory (set-difference-theories
                       (stv-decomp-theory)
-                      '((:rewrite revappend-pairlis$-open))))))))
+                      '((:rewrite revappend-pairlis$-open)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Utility functions (some redefinitions)
