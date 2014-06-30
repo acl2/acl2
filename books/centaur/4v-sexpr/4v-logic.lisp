@@ -291,6 +291,44 @@ truth table:</p>
   (prove-4v-equiv-cong 4v-not (a)))
 
 
+(defsection 4v-xdet
+  :parents (4v-operations)
+  :short "X-detection or identity circuit."
+
+  :long "<p>@(call 4v-xdet) returns the value specified by the following
+truth table:</p>
+
+@({
+    a  |  out
+  -----+-------
+    T  |   F
+    F  |   F
+    X  |   X
+    Z  |   X
+  -----+-------
+})
+
+<p>This is a special operation that does not correspond to any sort of hardware
+circuit, but that is useful for efficiently implementing the x-detection
+semantics of Verilog's vector arithmetic operations.</p>"
+
+  (definline 4v-xdet (a)
+    (declare (xargs :guard t))
+    (4vcases a
+      (t (4vf))
+      (f (4vf))
+      (& (4vx))))
+
+  (defthm 4v-xdet-truth-table
+    ;; "Correctness" of 4v-xdet
+    (and (equal (4v-xdet (4vt)) (4vf))
+         (equal (4v-xdet (4vf)) (4vf))
+         (equal (4v-xdet (4vx)) (4vx))
+         (equal (4v-xdet (4vz)) (4vx)))
+    :rule-classes nil)
+
+  (prove-4v-equiv-cong 4v-xdet (a)))
+
 
 (defsection 4v-and
   :parents (4v-operations)
@@ -982,13 +1020,14 @@ specification).</p>
 
 
 
-(def-ruleset 4v-op-defs '(4v-fix 4v-unfloat 4v-not 4v-and 4v-or 4v-xor 4v-iff
+(def-ruleset 4v-op-defs '(4v-fix 4v-unfloat 4v-not 4v-xdet 4v-and 4v-or 4v-xor 4v-iff
                                  4v-res 4v-ite 4v-ite* 4v-zif 4v-tristate 4v-pullup
                                  4v-wand 4v-wor))
 
 (def-ruleset 4v-op-execs '((4v-fix$inline)
                            (4v-unfloat$inline)
                            (4v-not$inline)
+                           (4v-xdet$inline)
                            (4v-and$inline)
                            (4v-or$inline)
                            (4v-xor$inline)
@@ -1132,6 +1171,7 @@ value of the input, then we are unsure of the value of the output.</p>"
   (prove-4v-monotonic 4v-fix (a))
   (prove-4v-monotonic 4v-unfloat (a))
   (prove-4v-monotonic 4v-not (a))
+  (prove-4v-monotonic 4v-xdet (a))
   (prove-4v-monotonic 4v-and (a b))
   (prove-4v-monotonic 4v-or (a b))
   (prove-4v-monotonic 4v-xor (a b))

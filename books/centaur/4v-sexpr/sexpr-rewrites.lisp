@@ -852,8 +852,8 @@ input."
              ;; AND with self
              ((and a a)             . (buf a))
              ;; ??? "Normalize" false-when-boolean things to (xor a a)
-             ((and a (not a))       . (xor a a))
-             ((and (not a) a)       . (xor a a))
+             ((and a (not a))       . (xdet a))
+             ((and (not a) a)       . (xdet a))
              ;; AND inputs are buffered
              ((and (buf a) b)       . (and a b))
              ((and a (buf b))       . (and a b))
@@ -940,8 +940,8 @@ input."
              ;; OR with self
              ((or a a)              . (buf a))
              ;; ??? "Normalize" true-when-boolean to (not (xor a a))
-             ((or a (not a))        . (not (xor a a)))
-             ((or (not a) a)        . (not (xor a a)))
+             ((or a (not a))        . (not (xdet a)))
+             ((or (not a) a)        . (not (xdet a)))
              ;; OR inputs are buffered
              ((or (buf a) b)        . (or a b))
              ((or a (buf b))        . (or a b))
@@ -1010,7 +1010,6 @@ input."
              ((ite* (f) a b)         . (buf b))
              ((ite* a (T) (F))       . (buf a))
              ((ite* a (F) (T))       . (not a))
-
              ;; ITE* remove NOT on condition
              ((ite* (not c) a b)     . (ite* c b a))
              ;; ITE* inputs are buffered
@@ -1061,7 +1060,15 @@ input."
              ((pullup (pullup a))      . (pullup a))
 
              ;; ID can always just go away.
-             ((id a)                . a))))
+             ((id a)                . a)
+
+             ;; Fancy new rule to replace (xor a a) with smaller AIGs.  This
+             ;; reduces AIG sizes by about 8% on an example from MMX.
+             ((xor a a) . (xdet a))
+             ((xdet (not a)) . (xdet a))
+             ((xdet (buf a)) . (xdet a))
+
+             )))
 
       (reverse
        (fast-alist-free

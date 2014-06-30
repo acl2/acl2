@@ -47,6 +47,7 @@
 
   (prove-3vp 4v-unfloat (a))
   (prove-3vp 4v-not (a))
+  (prove-3vp 4v-xdet (a))
   (prove-3vp 4v-and (a b))
   (prove-3vp 4v-or (a b))
   (prove-3vp 4v-xor (a b))

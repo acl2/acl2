@@ -168,6 +168,40 @@ evaluate to Z."
   (defcong faig-fix-equiv equal (f-aig-not a) 1
     :hints(("Goal" :in-theory (enable faig-fix-equiv faig-fix)))))
 
+(define t-aig-xdet (a)
+  :parents (faig-constructors)
+  :short "@(call t-aig-xdet) constructs an FAIG for @(see 4v-xdet), assuming
+that the argument @('a') cannot evaluate to Z."
+  :inline t
+  :enabled t
+  (b* (((faig a1 a0) a))
+    ;; Want 0 if it's boolean, or X if it's not.
+    ;; Offset must always be 1.
+    ;; Onset is: (and a1 a0)
+    (cons (aig-and a1 a0) t))
+  ///
+  (prove-faig-op-commutes t-aig-xdet (a))
+
+  (defcong faig-fix-equiv equal (t-aig-xdet a) 1
+    :hints(("Goal" :in-theory (enable faig-fix-equiv faig-fix)))))
+
+
+(define f-aig-xdet (a)
+  :parents (faig-constructors)
+  :short "@(call f-aig-xdet) constructs an FAIG for @(see 4v-xdet)."
+  :inline t
+  :enabled t
+  (b* (((faig a1 a0) a))
+    ;; Want 0 if it's boolean, or X if it's not.
+    ;; Offset must always be 1.
+    ;; Onset is: (iff a1 a0)
+    (cons (aig-iff a1 a0) t))
+  ///
+  (prove-faig-op-commutes f-aig-xdet (a))
+
+  (defcong faig-fix-equiv equal (f-aig-xdet a) 1
+    :hints(("Goal" :in-theory (enable faig-fix-equiv faig-fix)))))
+
 
 (define t-aig-and (a b)
   :parents (faig-constructors)
@@ -497,6 +531,7 @@ resistor."
 (def-ruleset f-aig-defs
   '(f-aig-unfloat
     f-aig-not
+    f-aig-xdet
     f-aig-and
     f-aig-or
     f-aig-xor
@@ -514,6 +549,7 @@ resistor."
     t-aig-ite
     t-aig-ite*
     t-aig-not
+    t-aig-xdet
     t-aig-or
     t-aig-xor))
 

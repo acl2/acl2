@@ -272,6 +272,7 @@ faig-constructors)."
   (fv-4v-commute 4v-fix      faig-const-fix (a))
   (fv-4v-commute 4v-unfloat  f-aig-unfloat      (a))
   (fv-4v-commute 4v-not      f-aig-not      (a))
+  (fv-4v-commute 4v-xdet     f-aig-xdet     (a))
   (fv-4v-commute 4v-and      f-aig-and      (a b))
   (fv-4v-commute 4v-or       f-aig-or       (a b))
   (fv-4v-commute 4v-xor      f-aig-xor      (a b))
@@ -284,8 +285,6 @@ faig-constructors)."
   (fv-4v-commute 4v-res      f-aig-res      (a b)))
 
 
-
-
 (define 4v-sexpr-to-faig-apply (fn (args true-listp))
   (b* ((arg1 (4v-first args))
        (arg2 (4v-second args))
@@ -296,6 +295,7 @@ faig-constructors)."
       ((z) (faig-z))
       ((x) (faig-x))
       (not       (f-aig-not    arg1))
+      (xdet      (f-aig-xdet   arg1))
       (and       (f-aig-and    arg1 arg2))
       (xor       (f-aig-xor    arg1 arg2))
       (iff       (f-aig-iff    arg1 arg2))
@@ -368,6 +368,7 @@ use the @('f-') versions of the @(see faig-constructors) at each level.</p>"
                 (ite*      (f-aig-ite*   arg1 arg2 arg3))
                 (zif       (f-aig-zif    arg1 arg2 arg3))
                 (buf       (f-aig-unfloat    arg1))
+                (xdet      (f-aig-xdet   arg1))
                 (res       (f-aig-res    arg1 arg2))
                 (tristate  (t-aig-tristate    arg1 arg2))
                 (ite       (f-aig-ite    arg1 arg2 arg3))
@@ -451,6 +452,18 @@ use the @('f-') versions of the @(see faig-constructors) at each level.</p>"
      (equal (t-aig-not (f-aig-unfloat x))
             (f-aig-not x)))
 
+   (defthm t-aig-xdet-of-f-aig-unfloat
+     (equal (faig-eval (t-aig-xdet (f-aig-unfloat x)) env)
+            (faig-eval (f-aig-xdet x) env))
+     :hints(("Goal" :in-theory (enable faig-eval))))
+
+   (defthm t-aig-xdet-of-f-aig-unfloat-for-constants
+     (implies (faig-const-p x)
+              (equal (t-aig-xdet (f-aig-unfloat x))
+                     (f-aig-xdet x)))
+     :hints(("Goal" :in-theory (enable faig-const-p
+                                       aig-iff aig-not aig-and))))
+
    (defthm t-aig-and-f-aig-unfloat
      (equal (t-aig-and (f-aig-unfloat x) (f-aig-unfloat y))
             (f-aig-and x y)))
@@ -485,7 +498,6 @@ use the @('f-') versions of the @(see faig-constructors) at each level.</p>"
          (if (zp n)
              (cons x y)
            (nth-both-ind (1- n) (cdr x) (cdr y)))))
-
 
 
 (define maybe-f-aig-unfloat (sexpr faig)
@@ -543,6 +555,7 @@ use the @('f-') versions of the @(see faig-constructors) at each level.</p>"
       (pullup    (f-aig-pullup farg1))
       (zif       (t-aig-ite* targ1 farg2 farg3))
       (not       (t-aig-not  targ1))
+      (xdet      (t-aig-xdet targ1))
       (and       (t-aig-and  targ1 targ2))
       (xor       (t-aig-xor  targ1 targ2))
       (iff       (t-aig-iff  targ1 targ2))
@@ -552,6 +565,8 @@ use the @('f-') versions of the @(see faig-constructors) at each level.</p>"
       (ite       (t-aig-ite  targ1 targ2 targ3))
       (otherwise (faig-x))))
   ///
+
+  (local (in-theory (enable 4v-sexpr-to-faig-opt-apply)))
   
   (local (defthm faig-eval-maybe-f-aig-unfloat-bind
            (implies (and (bind-free '((senv . senv)) (senv))
@@ -640,6 +655,7 @@ use the @('f-') versions of the @(see faig-constructors) at each level.</p>"
                       (ite*      (t-aig-ite* arg1 arg2 arg3))
                       (or        (t-aig-or   arg1 arg2))
                       (buf       (faig-fix   arg1))
+                      (xdet      (t-aig-xdet arg1))
                       (ite       (t-aig-ite  arg1 arg2 arg3))
                       (otherwise (faig-x)))))))
    (defun 4v-sexpr-to-faig-opt-list (x onoff)
