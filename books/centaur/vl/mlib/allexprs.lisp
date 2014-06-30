@@ -461,15 +461,6 @@ expressions within @('(* foo = bar *)')-style attributes.</p>")
   :element vl-vardecl)
 
 (def-vl-allexprs
-  :type vl-eventdecl
-  :nrev-body (vl-rangelist-allexprs-nrev (vl-eventdecl->arrdims x) nrev)
-  :body (vl-rangelist-allexprs (vl-eventdecl->arrdims x)))
-
-(def-vl-allexprs-list
-  :list vl-eventdecllist
-  :element vl-eventdecl)
-
-(def-vl-allexprs
   :type vl-portdecl
   :nrev-body (vl-maybe-range-allexprs-nrev (vl-portdecl->range x) nrev)
   :body (vl-maybe-range-allexprs (vl-portdecl->range x)))
@@ -548,12 +539,10 @@ expressions within @('(* foo = bar *)')-style attributes.</p>")
   :nrev-body
   (case (tag x)
     (:vl-vardecl   (vl-vardecl-allexprs-nrev x nrev))
-    (:vl-eventdecl (vl-eventdecl-allexprs-nrev x nrev))
     (otherwise     (vl-paramdecl-allexprs-nrev x nrev)))
   :body
   (case (tag x)
     (:vl-vardecl   (vl-vardecl-allexprs x))
-    (:vl-eventdecl (vl-eventdecl-allexprs x))
     (otherwise     (vl-paramdecl-allexprs x))))
 
 (def-vl-allexprs-list
@@ -809,7 +798,6 @@ expressions within @('(* foo = bar *)')-style attributes.</p>")
        (nrev (vl-assignlist-allexprs-nrev x.assigns nrev))
        (nrev (vl-netdecllist-allexprs-nrev x.netdecls nrev))
        (nrev (vl-vardecllist-allexprs-nrev x.vardecls nrev))
-       (nrev (vl-eventdecllist-allexprs-nrev x.eventdecls nrev))
        (nrev (vl-paramdecllist-allexprs-nrev x.paramdecls nrev))
        (nrev (vl-fundecllist-allexprs-nrev x.fundecls nrev))
        (nrev (vl-taskdecllist-allexprs-nrev x.taskdecls nrev))
@@ -825,7 +813,6 @@ expressions within @('(* foo = bar *)')-style attributes.</p>")
               (vl-assignlist-allexprs x.assigns)
               (vl-netdecllist-allexprs x.netdecls)
               (vl-vardecllist-allexprs x.vardecls)
-              (vl-eventdecllist-allexprs x.eventdecls)
               (vl-paramdecllist-allexprs x.paramdecls)
               (vl-fundecllist-allexprs x.fundecls)
               (vl-taskdecllist-allexprs x.taskdecls)

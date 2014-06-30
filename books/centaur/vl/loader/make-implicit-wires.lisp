@@ -442,8 +442,7 @@ extends @('decls') with the newly declared name."
        ((mv name exprs)
         (case (tag x)
           (:vl-vardecl   (mv (vl-vardecl->name x)   (vl-vardecl-allexprs x)))
-          (:vl-paramdecl (mv (vl-paramdecl->name x) (vl-paramdecl-allexprs x)))
-          (otherwise     (mv (vl-eventdecl->name x) (vl-eventdecl-allexprs x)))))
+          (otherwise     (mv (vl-paramdecl->name x) (vl-paramdecl-allexprs x)))))
 
        ;; First, make sure all the names used in expressions like ranges and
        ;; array dimensions have been declared.  Then, add a binding for the
@@ -738,7 +737,6 @@ later on.  We handle that in @(see vl-make-implicit-wires).</p>"
           (vl-make-implicit-wires-aux (cdr x) portdecls decls acc warnings)))
 
        ((when (or (eq tag :vl-vardecl)
-                  (eq tag :vl-eventdecl)
                   (eq tag :vl-paramdecl)))
         (b* (((mv warnings decls)
               (vl-blockitem-check-undeclared elem portdecls decls warnings))

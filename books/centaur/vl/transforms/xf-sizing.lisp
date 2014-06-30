@@ -861,17 +861,6 @@ the expression.</p>"
 (def-vl-exprsize-list vl-vardecllist :element vl-vardecl)
 
 
-(def-vl-exprsize vl-eventdecl
-  :body (b* (((vl-eventdecl x) x)
-             (elem x)
-             ((mv successp warnings arrdims-prime)
-              (vl-rangelist-exprsize x.arrdims mod ialist elem warnings))
-             (x-prime (change-vl-eventdecl x :arrdims arrdims-prime)))
-          (mv successp warnings x-prime)))
-
-(def-vl-exprsize-list vl-eventdecllist :element vl-eventdecl)
-
-
 (define vl-module-exprsize ((x vl-module-p))
   :parents (expression-sizing)
   :returns (new-x vl-module-p)
@@ -899,7 +888,7 @@ the expression.</p>"
        ((mv & warnings portdecls)  (vl-portdecllist-exprsize  x.portdecls  x ialist warnings))
        ((mv & warnings netdecls)   (vl-netdecllist-exprsize   x.netdecls   x ialist warnings))
        ((mv & warnings vardecls)   (vl-vardecllist-exprsize   x.vardecls   x ialist warnings))
-       ((mv & warnings eventdecls) (vl-eventdecllist-exprsize x.eventdecls x ialist warnings)))
+       )
     (fast-alist-free ialist)
     (change-vl-module x
                       :assigns assigns
@@ -911,7 +900,6 @@ the expression.</p>"
                       :portdecls portdecls
                       :netdecls netdecls
                       :vardecls vardecls
-                      :eventdecls eventdecls
                       :warnings warnings)))
 
 (defprojection vl-modulelist-exprsize ((x vl-modulelist-p))

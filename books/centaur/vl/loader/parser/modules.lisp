@@ -22,7 +22,7 @@
 (include-book "statements")
 (include-book "ports")      ;; vl-portdecllist-p, vl-portlist-p
 (include-book "nets")       ;; vl-assignlist-p, vl-netdecllist-p
-(include-book "blockitems") ;; vl-vardecllist-p, vl-eventdecllist-p, vl-paramdecllist-p
+(include-book "blockitems") ;; vl-vardecllist-p, vl-paramdecllist-p
 (include-book "insts")      ;; vl-modinstlist-p
 (include-book "gates")      ;; vl-gateinstlist-p
 (include-book "functions")  ;; vl-fundecllist-p
@@ -48,9 +48,9 @@
    (warnings vl-warninglist-p))
   :returns (mod vl-module-p)
   (b* (((mv items warnings) (vl-make-implicit-wires items warnings))
-       ((mv item-ports portdecls assigns netdecls vardecls eventdecls paramdecls
+       ((mv item-ports portdecls assigns netdecls vardecls paramdecls
             fundecls taskdecls modinsts gateinsts alwayses initials)
-        (vl-sort-modelements items nil nil nil nil nil nil nil nil nil nil nil nil nil)))
+        (vl-sort-modelements items nil nil nil nil nil nil nil nil nil nil nil nil)))
     (or (not item-ports)
         (raise "There shouldn't be any ports in the items."))
     (make-vl-module :name       name
@@ -60,7 +60,6 @@
                     :assigns    assigns
                     :netdecls   netdecls
                     :vardecls   vardecls
-                    :eventdecls eventdecls
                     :paramdecls paramdecls
                     :fundecls   fundecls
                     :taskdecls  taskdecls

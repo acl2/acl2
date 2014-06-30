@@ -286,13 +286,6 @@ concatenations.</p>")
 
 (def-vl-rangeresolve-list vl-paramdecllist :element vl-paramdecl)
 
-(def-vl-rangeresolve vl-eventdecl
-  :body (b* (((vl-eventdecl x) x)
-             ((mv warnings arrdims) (vl-rangelist-rangeresolve x.arrdims warnings)))
-          (mv warnings (change-vl-eventdecl x :arrdims arrdims))))
-
-(def-vl-rangeresolve-list vl-eventdecllist :element vl-eventdecl)
-
 (def-vl-rangeresolve vl-taskport
   :body (b* (((vl-taskport x) x)
              ((mv warnings range) (vl-maybe-rangeresolve x.range warnings)))
@@ -303,7 +296,6 @@ concatenations.</p>")
 (def-vl-rangeresolve vl-blockitem
   :body (case (tag x)
           (:vl-vardecl   (vl-vardecl-rangeresolve   x warnings))
-          (:vl-eventdecl (vl-eventdecl-rangeresolve x warnings))
           (otherwise     (vl-paramdecl-rangeresolve x warnings))))
 
 (def-vl-rangeresolve-list vl-blockitemlist :element vl-blockitem)
@@ -329,7 +321,6 @@ concatenations.</p>")
        ((mv warnings portdecls)  (vl-portdecllist-rangeresolve  x.portdecls  warnings))
        ((mv warnings netdecls)   (vl-netdecllist-rangeresolve   x.netdecls   warnings))
        ((mv warnings vardecls)   (vl-vardecllist-rangeresolve   x.vardecls   warnings))
-       ((mv warnings eventdecls) (vl-eventdecllist-rangeresolve x.eventdecls warnings))
        ((mv warnings modinsts)   (vl-modinstlist-rangeresolve   x.modinsts   warnings))
        ((mv warnings gateinsts)  (vl-gateinstlist-rangeresolve  x.gateinsts  warnings))
        ((mv warnings fundecls)   (vl-fundecllist-rangeresolve   x.fundecls   warnings))
@@ -340,7 +331,6 @@ concatenations.</p>")
                         :portdecls  portdecls
                         :netdecls   netdecls
                         :vardecls   vardecls
-                        :eventdecls eventdecls
                         :modinsts   modinsts
                         :gateinsts  gateinsts
                         :fundecls   fundecls)))

@@ -1442,23 +1442,6 @@ expression into a string."
     (vl-ps-seq (vl-pp-vardecl (car x))
                (vl-pp-vardecllist (cdr x)))))
 
-(define vl-pp-eventdecl ((x vl-eventdecl-p) &key (ps 'ps))
-  (b* (((vl-eventdecl x) x))
-    (vl-ps-seq
-     (if x.atts (vl-pp-atts x.atts) ps)
-     (vl-ps-span "vl_key" (vl-print "  event "))
-     (vl-print-wirename x.name)
-     (if x.arrdims
-         (vl-pp-rangelist x.arrdims)
-       ps)
-     (vl-println " ;"))))
-
-(define vl-pp-eventdecllist ((x vl-eventdecllist-p) &key (ps 'ps))
-  (if (atom x)
-      ps
-    (vl-ps-seq (vl-pp-eventdecl (car x))
-               (vl-pp-eventdecllist (cdr x)))))
-
 (define vl-pp-paramdecl ((x vl-paramdecl-p) &key (ps 'ps))
   (b* (((vl-paramdecl x) x))
     (vl-ps-seq (vl-print "  ")
@@ -1496,7 +1479,6 @@ expression into a string."
   (b* ((x (vl-blockitem-fix x)))
     (case (tag x)
       (:vl-vardecl   (vl-pp-vardecl x))
-      (:vl-eventdecl (vl-pp-eventdecl x))
       (:vl-paramdecl (vl-pp-paramdecl x))
       (otherwise     (progn$ (impossible) ps)))))
 
@@ -2560,7 +2542,6 @@ instead of @(see ps).</p>"
                (vl-pp-portdecllist x.portdecls)
                (vl-pp-netdecllist x.netdecls)
                (vl-pp-vardecllist x.vardecls)
-               (vl-pp-eventdecllist x.eventdecls)
                (vl-pp-fundecllist x.fundecls) ;; put them here, so they can refer to declared wires
                (vl-pp-taskdecllist x.taskdecls)
                (vl-pp-assignlist x.assigns)

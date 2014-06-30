@@ -1645,25 +1645,6 @@ types.</p>
 \"integer a, b\" into multiple, individual declarations, so each
 @('vl-vardecl-p') represents only one declaration.</p>")
 
-(defprod vl-eventdecl
-  :short "Representation of a single event declaration."
-  :tag :vl-eventdecl
-  :layout :tree
-
-  ((name    stringp
-            :rule-classes :type-prescription
-            "Name of the event being declared.")
-   (arrdims vl-rangelist-p
-            "Indicates that this is an array of events?  Because that makes
-             sense?")
-   (atts    vl-atts-p
-            "Any attributes associated with this declaration.")
-   (loc     vl-location-p
-            "Where the declaration was found in the source code."))
-
-  :long "<p>BOZO document event declarations.</p>")
-
-
 (defenum vl-paramdecltype-p
   (:vl-plain
    :vl-integer
@@ -1761,14 +1742,6 @@ endmodule
   (vl-vardecl-p x)
   :elementp-of-nil nil)
 
-(fty::deflist vl-eventdecllist
-              :elt-type vl-eventdecl-p
-              :true-listp nil)
-
-(deflist vl-eventdecllist-p (x)
-  (vl-eventdecl-p x)
-  :elementp-of-nil nil)
-
 (fty::deflist vl-paramdecllist
               :elt-type vl-paramdecl-p
               :true-listp nil)
@@ -1791,20 +1764,17 @@ endmodule
 (deftranssum vl-blockitem
   :short "Recognizer for a valid block item."
   :long "<p>@('vl-blockitem-p') is a sum-of-products style type for recognizing
-valid block items.  The valid block item declarations are variable
-declarations (reg, integer, real, time, and realtime), event declarations, and
-parameter declarations (parameter and localparam), which we represent as @(see
-vl-vardecl-p), @(see vl-eventdecl-p), and @(see vl-paramdecl-p) objects,
+valid block items.  The valid block item declarations include variable
+declarations and parameter declarations (parameter and localparam), which we
+represent as @(see vl-vardecl-p) and @(see vl-paramdecl-p) objects,
 respectively.</p>"
   (vl-vardecl
-   vl-eventdecl
    vl-paramdecl))
 
 (defthm vl-blockitem-p-tag-forward
   ;; BOZO is this better than the rewrite rule we currently add?
   (implies (vl-blockitem-p x)
            (or (equal (tag x) :vl-vardecl)
-               (equal (tag x) :vl-eventdecl)
                (equal (tag x) :vl-paramdecl)))
   :rule-classes :forward-chaining)
 
@@ -1818,9 +1788,6 @@ respectively.</p>"
   :rest
   ((defthm vl-blockitemlist-p-when-vl-vardecllist-p
      (implies (vl-vardecllist-p x)
-              (vl-blockitemlist-p x)))
-   (defthm vl-blockitemlist-p-when-vl-eventdecllist-p
-     (implies (vl-eventdecllist-p x)
               (vl-blockitemlist-p x)))
    (defthm vl-blockitemlist-p-when-vl-paramdecllist-p
      (implies (vl-paramdecllist-p x)
@@ -2730,10 +2697,7 @@ include delays, etc.</p>")
 
    (vardecls   vl-vardecllist-p
                "Variable declarations like @('reg [3:0] r;'), @('integer i;'),
-                and @('real foo;').")
-
-   (eventdecls vl-eventdecllist-p
-               "Event declarations like @('event foo ...')")
+                @('real foo;'), and so forth.")
 
    (paramdecls vl-paramdecllist-p
                "The parameter declarations for this module, e.g., @('parameter

@@ -68,10 +68,6 @@
        (vl-ps-seq (vl-basic-cw "Var declaration of ")
                   (vl-print-wirename (vl-vardecl->name x))))
 
-      (:vl-eventdecl
-       (vl-ps-seq (vl-basic-cw "Event declaration of ")
-                  (vl-print-wirename (vl-eventdecl->name x))))
-
       (:vl-paramdecl
        (vl-ps-seq (vl-basic-cw "Param declaration of ")
                   (vl-print-wirename (vl-paramdecl->name x))))

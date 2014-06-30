@@ -50,6 +50,11 @@
 ;        ['const'] ['var'] [lifetime] data_type_or_implicit list_of_variable_decl_assignments ';'
 ;      | ...
 ;
+;    data_type_or_implicit ::= data_type
+;                            | implicit_data_type
+;
+;    implicit_data_type ::= [ signing ] { packed_dimension }
+;
 ;    variable_decl_assignment ::=
 ;         identifier { variable_dimension } [ '=' expression ]
 ;       | identifier unsized_dimension { variable_dimension } [ '=' dynamic_array_new ]
@@ -336,6 +341,10 @@ Verilog-2005:</p>
 
 
 
+
+
+
+
 ; Events.
 ;
 ; event_declaration ::=
@@ -346,7 +355,7 @@ Verilog-2005:</p>
 
 (defparser vl-parse-list-of-event-identifiers (atts)
   :guard (vl-atts-p atts)
-  :result (vl-eventdecllist-p val)
+  :result (vl-vardecllist-p val)
   :resultp-of-nil t
   :true-listp t
   :fails gracefully
@@ -357,15 +366,16 @@ Verilog-2005:</p>
         (when (vl-is-token? :vl-comma)
           (:= (vl-match))
           (rest := (vl-parse-list-of-event-identifiers atts)))
-        (return (cons (make-vl-eventdecl :loc (vl-token->loc id)
-                                         :name (vl-idtoken->name id)
-                                         :arrdims arrdims
-                                         :atts atts)
+        (return (cons (make-vl-vardecl :vartype (make-vl-coretype :name :vl-event)
+                                       :name (vl-idtoken->name id)
+                                       :dims arrdims
+                                       :loc (vl-token->loc id)
+                                       :atts atts)
                       rest))))
 
 (defparser vl-parse-event-declaration (atts)
   :guard (vl-atts-p atts)
-  :result (vl-eventdecllist-p val)
+  :result (vl-vardecllist-p val)
   :resultp-of-nil t
   :true-listp t
   :fails gracefully

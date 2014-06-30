@@ -162,6 +162,34 @@
                                          ',dims
                                          ',initvals))))))))
 
+(defmacro test-parse-event-declaration
+  (&key input atts names dims (successp 't))
+  `(assert!
+    (let ((tokens (make-test-tokens ,input))
+          (warnings 'blah-warnings)
+          (config   *vl-default-loadconfig*))
+      (mv-let (erp val tokens warnings)
+        (vl-parse-event-declaration ',atts)
+        (declare (ignore tokens))
+        (if erp
+            (prog2$ (cw "ERP is ~x0.~%" erp)
+                    (and (equal warnings 'blah-warnings)
+                         (not ,successp)))
+          (prog2$ (cw "VAL is ~x0.~%" val)
+                  (and ,successp
+                       (equal warnings 'blah-warnings)
+                       (test-vardecls-fn val
+                                         nil ; constp
+                                         nil ; varp
+                                         nil ; lifetime
+                                         '(:vl-event unsigned) ;; unsigned is goofy but whatever
+                                         ',atts
+                                         ',names
+                                         ',dims
+                                         (replicate (len val) nil) ;; initvals
+                                         ))))))))
+
+
 (test-parse-integer-declaration :input "integer a, ; "
                                 :successp nil)
 
@@ -487,40 +515,6 @@
 
 
 
-
-(defun test-eventdecls-fn (events atts names arrdims)
-  (if (atom events)
-      (and (atom names)
-           (atom arrdims))
-    (debuggable-and
-     (consp names)
-     (consp arrdims)
-     (not (cw "Inspecting ~x0.~%" (car events)))
-     (vl-eventdecl-p (car events))
-     (equal atts          (vl-eventdecl->atts (car events)))
-     (equal (car names)   (vl-eventdecl->name (car events)))
-     (equal (car arrdims) (vl-pretty-range-list (vl-eventdecl->arrdims (car events))))
-     (test-eventdecls-fn (cdr events) atts (cdr names) (cdr arrdims)))))
-
-(defmacro test-parse-event-declaration
-  (&key input atts names arrdims (successp 't))
-  `(assert!
-    (let ((tokens (make-test-tokens ,input))
-          (warnings 'blah-warnings)
-          (config   *vl-default-loadconfig*))
-      (mv-let (erp val tokens warnings)
-        (vl-parse-event-declaration ',atts)
-        (declare (ignore tokens))
-        (if erp
-            (prog2$ (cw "ERP is ~x0.~%" erp)
-                    (and (equal warnings 'blah-warnings)
-                         (not ,successp)))
-          (prog2$ (cw "VAL is ~x0.~%" val)
-                  (and ,successp
-                       (equal warnings 'blah-warnings)
-                       (test-eventdecls-fn val ',atts ',names ',arrdims))))))))
-
-
 (test-parse-event-declaration :input "event a, ; "
                               :successp nil)
 
@@ -536,19 +530,19 @@
 (test-parse-event-declaration :input "event a ; "
                               :atts (("some") ("atts"))
                               :names ("a")
-                              :arrdims (nil))
+                              :dims (nil))
 
 (test-parse-event-declaration :input "event a, b, c ; "
                               :atts (("some") ("atts"))
                               :names ("a" "b" "c")
-                              :arrdims (nil nil nil))
+                              :dims (nil nil nil))
 
 (test-parse-event-declaration :input "event a[3:4][5:6], b[1:2], c ; "
                               :atts (("some") ("atts"))
                               :names ("a" "b" "c")
-                              :arrdims (((range 3 4) (range 5 6))
-                                        ((range 1 2))
-                                        nil))
+                              :dims (((range 3 4) (range 5 6))
+                                     ((range 1 2))
+                                     nil))
 
 
 

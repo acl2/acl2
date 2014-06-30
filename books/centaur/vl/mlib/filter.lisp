@@ -347,11 +347,6 @@ function enabled and would think it odd to ever prove a theorem about it.</p>" f
          (list-fix (vl-vardecllist-fix x)))
   :hints(("Goal" :induct (len x))))
 
-(defthm vl-eventdecllist-fix-of-list-fix
-  (equal (vl-eventdecllist-fix (list-fix x))
-         (list-fix (vl-eventdecllist-fix x)))
-  :hints(("Goal" :induct (len x))))
-
 (defthm vl-portdecllist-fix-of-list-fix
   (equal (vl-portdecllist-fix (list-fix x))
          (list-fix (vl-portdecllist-fix x)))
@@ -415,7 +410,6 @@ function enabled and would think it odd to ever prove a theorem about it.</p>" f
 
 (def-vl-filter-by-name netdecl)
 (def-vl-filter-by-name vardecl)
-(def-vl-filter-by-name eventdecl)
 (def-vl-filter-by-name portdecl)
 (def-vl-filter-by-name paramdecl)
 (def-vl-filter-by-name fundecl)

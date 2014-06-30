@@ -236,7 +236,6 @@ with some module item declaration, is a reasonable overlap."
   :guard (and (vl-portdecl-p portdecl)
               (or (vl-netdecl-p item)
                   (vl-vardecl-p item)
-                  (vl-eventdecl-p item)
                   (vl-paramdecl-p item)
                   (vl-fundecl-p item)
                   (vl-taskdecl-p item)
@@ -385,7 +384,7 @@ item.</p>"
       ))
 
 ; It doesn't make sense to me that any of these would be a port.
-    ((:vl-eventdecl :vl-paramdecl :vl-fundecl :vl-taskdecl :vl-modinst :vl-gateinst)
+    ((:vl-paramdecl :vl-fundecl :vl-taskdecl :vl-modinst :vl-gateinst)
 
      (@wf-assert nil
                  :vl-weird-port
@@ -664,10 +663,6 @@ item.</p>"
      ;; (@wf-call vl-ports-and-portdecls-compatible-p ports portdecls)
      (@wf-call vl-netdecllist-reasonable-p x.netdecls)
      (@wf-call vl-vardecllist-reasonable-p x.vardecls)
-     (@wf-note (not x.eventdecls)
-               :vl-eventdecls
-               "~l0: module ~s1 contains event declarations."
-               (list x.minloc x.name))
      (@wf-call vl-modinstlist-reasonable-p x.modinsts)
      (@wf-call vl-gateinstlist-reasonable-p x.gateinsts)
      (@wf-note (not x.initials)

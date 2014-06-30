@@ -310,14 +310,6 @@ attributes is left up to the implementation.</p>"
 
 
 
-(def-vl-subst vl-eventdecl-subst
-  :type vl-eventdecl-p
-  :body (change-vl-eventdecl x
-                             :arrdims (vl-rangelist-subst (vl-eventdecl->arrdims x) sigma)))
-
-(def-vl-subst-list vl-eventdecllist-subst
-  :type vl-eventdecllist-p
-  :element vl-eventdecl-subst)
 
 
 
@@ -429,7 +421,6 @@ attributes is left up to the implementation.</p>"
   :body (b* ((x (vl-blockitem-fix x)))
           (case (tag x)
             (:vl-vardecl   (vl-vardecl-subst x sigma))
-            (:vl-eventdecl (vl-eventdecl-subst x sigma))
             (otherwise     (vl-paramdecl-subst x sigma)))))
 
 (def-vl-subst-list vl-blockitemlist-subst
@@ -557,7 +548,6 @@ attributes is left up to the implementation.</p>"
                             :netdecls   (vl-netdecllist-subst   x.netdecls   sigma)
                             :vardecls   (vl-vardecllist-subst   x.vardecls   sigma)
                             :fundecls   (vl-fundecllist-subst   x.fundecls   sigma)
-                            :eventdecls (vl-eventdecllist-subst x.eventdecls sigma)
                             :paramdecls (vl-paramdecllist-subst x.paramdecls sigma)
                             :modinsts   (vl-modinstlist-subst   x.modinsts   sigma)
                             :gateinsts  (vl-gateinstlist-subst  x.gateinsts  sigma)

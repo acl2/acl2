@@ -521,7 +521,6 @@ we add are</p>
        (alist (vl-mark-wires-used (vl-exprlist-names (vl-portdecllist-allexprs x.portdecls)) t alist))
        (alist (vl-mark-wires-used (vl-exprlist-names (vl-netdecllist-allexprs x.netdecls)) t alist))
        (alist (vl-mark-wires-used (vl-exprlist-names (vl-vardecllist-allexprs x.vardecls)) t alist))
-       (alist (vl-mark-wires-used (vl-exprlist-names (vl-eventdecllist-allexprs x.eventdecls)) t alist))
        (alist (vl-mark-wires-used (vl-exprlist-names (vl-paramdecllist-allexprs x.paramdecls)) t alist))
 
 ; Now we're on to the core of our analysis.  We sweep through the assignments,

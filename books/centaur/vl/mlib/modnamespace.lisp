@@ -101,12 +101,6 @@ events.</p>")
   :returns (names string-listp)
   (vl-vardecl->name x))
 
-(defprojection vl-eventdecllist->names ((x vl-eventdecllist-p))
-  :parents (vl-eventdecllist-p modnamespace)
-  :short "Collect all names declared in a @(see vl-eventdecllist-p)."
-  :returns (names string-listp)
-  (vl-eventdecl->name x))
-
 (define vl-gateinstlist->names-nrev ((x vl-gateinstlist-p) nrev)
   :parents (vl-gateinstlist->names)
   (b* (((when (atom x))
@@ -257,7 +251,6 @@ everything tail recursively, etc.</p>"
   (b* (((vl-module x) x)
        (nrev (vl-netdecllist->names-nrev     x.netdecls   nrev))
        (nrev (vl-vardecllist->names-nrev     x.vardecls   nrev))
-       (nrev (vl-eventdecllist->names-nrev   x.eventdecls nrev))
        (nrev (vl-paramdecllist->names-nrev   x.paramdecls nrev))
        (nrev (vl-fundecllist->names-nrev     x.fundecls   nrev))
        (nrev (vl-taskdecllist->names-nrev    x.taskdecls  nrev))
@@ -285,7 +278,6 @@ module illegally declares those duplicated names more than once.</p>
        (b* (((vl-module x) x))
          (append (vl-netdecllist->names     x.netdecls)
                  (vl-vardecllist->names     x.vardecls)
-                 (vl-eventdecllist->names   x.eventdecls)
                  (vl-paramdecllist->names   x.paramdecls)
                  (vl-fundecllist->names     x.fundecls)
                  (vl-taskdecllist->names    x.taskdecls)
@@ -319,11 +311,9 @@ module illegally declares those duplicated names more than once.</p>
   (mbe :logic
        (let ((x (vl-blockitem-fix x)))
          (cond ((vl-vardecl-p x)   (vl-vardecl->name x))
-               ((vl-eventdecl-p x) (vl-eventdecl->name x))
                (t                  (vl-paramdecl->name x))))
        :exec (case (tag x)
                (:vl-vardecl   (vl-vardecl->name x))
-               (:vl-eventdecl (vl-eventdecl->name x))
                (otherwise     (vl-paramdecl->name x)))))
 
 (defprojection vl-blockitemlist->names ((x vl-blockitemlist-p))

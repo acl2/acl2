@@ -271,11 +271,9 @@ places to be unsafe.</p>"
       (vl-exprlist-names (vl-initiallist-allexprs x.initials))
       (vl-exprlist-names (vl-vardecllist-allexprs x.vardecls))
       (vl-exprlist-names (vl-taskdecllist-allexprs x.taskdecls))
-      (vl-exprlist-names (vl-eventdecllist-allexprs x.eventdecls))
       (vl-exprlist-names (vl-paramdecllist-allexprs x.paramdecls))
       (vl-vardecllist->names x.vardecls)
       (vl-taskdecllist->names x.taskdecls)
-      (vl-eventdecllist->names x.eventdecls)
       (vl-paramdecllist->names x.paramdecls)
       ))))
 
@@ -410,7 +408,6 @@ places to be unsafe.</p>"
        ;;            x.vardecls
        ;;            x.paramdecls
        ;;            x.taskdecls
-       ;;            x.eventdecls
        ;;            ))
        ;;  (cw "Note: not propagating in ~s0; module looks too complicated.~%" x.name)
        ;;  x))

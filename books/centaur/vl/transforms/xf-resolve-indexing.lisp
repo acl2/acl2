@@ -533,7 +533,7 @@ able to handle more cases.</p>")
   (b* (((vl-fundecl x) x)
 
        ;; This is tricky because the function can have its own declarations.
-       ((mv vardecls eventdecls paramdecls)
+       ((mv vardecls paramdecls)
         (vl-filter-blockitems x.decls))
 
        ;; Remove any locally declared names from the global arrfal/wirefal
@@ -543,7 +543,6 @@ able to handle more cases.</p>")
        ;; set-difference-equal calls, here.
        (shadowed-names
         (mergesort (append (vl-vardecllist->names vardecls)
-                           (vl-eventdecllist->names eventdecls)
                            (vl-paramdecllist->names paramdecls))))
        (visible-global-arrnames
         (set-difference-equal (alist-keys arrfal) shadowed-names))

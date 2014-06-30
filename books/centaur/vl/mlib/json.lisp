@@ -868,9 +868,6 @@ which could not hold such large values.</p>")
 (def-vl-jp-aggregate vardecl)
 (def-vl-jp-list vardecl :newlines 4)
 
-(def-vl-jp-aggregate eventdecl)
-(def-vl-jp-list eventdecl :newlines 4)
-
 (def-vl-jp-aggregate paramdecl)
 (def-vl-jp-list paramdecl :newlines 4)
 
@@ -878,12 +875,10 @@ which could not hold such large values.</p>")
   :guard-hints (("Goal" :in-theory (enable vl-blockitem-p)))
   (mbe :logic
        (cond ((vl-vardecl-p x)    (vl-jp-vardecl x))
-             ((vl-eventdecl-p x)  (vl-jp-eventdecl x))
              (t                   (vl-jp-paramdecl x)))
        :exec
        (case (tag x)
          (:vl-vardecl   (vl-jp-vardecl x))
-         (:vl-eventdecl (vl-jp-eventdecl x))
          (otherwise     (vl-jp-paramdecl x)))))
 
 (add-json-encoder vl-blockitem-p vl-jp-blockitem)

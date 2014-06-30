@@ -470,7 +470,7 @@ better come after the parameter is introduced.</p>"
        (allexprs (case x1-tag
                    (:vl-paramdecl (vl-paramdecl-allexprs x1))
                    (:vl-vardecl   (vl-vardecl-allexprs x1))
-                   (:vl-eventdecl (vl-eventdecl-allexprs x1))))
+                   (otherwise     (impossible))))
        (names    (vl-exprlist-names allexprs))
        (bad-used (intersectp-equal bad-params names))
        ((when bad-used)
@@ -588,7 +588,7 @@ okay (since eliminating parameters changes the function's namespace).</p>"
 
   (b* ((x (vl-fundecl-fix x))
        ((vl-fundecl x) x)
-       ((mv vardecls eventdecls paramdecls)
+       ((mv vardecls paramdecls)
         (vl-filter-blockitems x.decls))
 
        ((unless paramdecls)
@@ -599,7 +599,6 @@ okay (since eliminating parameters changes the function's namespace).</p>"
        (local-namespace
         (append (list x.name) ;; functions' name needs to be included since it gets assigned to at the end
                 (vl-vardecllist->names vardecls)
-                (vl-eventdecllist->names eventdecls)
                 param-names))
 
        ;; Make sure there are no name clashes, for good measure.
@@ -634,10 +633,9 @@ okay (since eliminating parameters changes the function's namespace).</p>"
        ((with-fast sigma))
 
        (vardecls   (vl-vardecllist-subst vardecls sigma))
-       (eventdecls (vl-eventdecllist-subst eventdecls sigma))
        (body       (vl-stmt-subst x.body sigma))
        (new-x      (change-vl-fundecl x
-                                      :decls (append vardecls eventdecls)
+                                      :decls vardecls
                                       :body body)))
 
     (mv t warnings new-x)))
@@ -959,7 +957,7 @@ criteria.</li>
 <p>We also take this opportunity to issue non-fatal warnings about unused
 variables and inputs.</p>"
 
-  (b* (((mv vardecls ?eventdecls ?paramdecls)
+  (b* (((mv vardecls ?paramdecls)
         (vl-filter-blockitems (vl-fundecl->decls function)))
        (varnames (vl-vardecllist->names vardecls))
        (innames  (vl-taskportlist->names (vl-fundecl->inputs function)))
@@ -1385,14 +1383,8 @@ unsupported constructs or doesn't meet our other sanity criteria.</p>"
                              function has type ~s1."
                        :args (list x x.rtype))))
 
-       ((mv vardecls eventdecls paramdecls)
+       ((mv vardecls paramdecls)
         (vl-filter-blockitems x.decls))
-
-       ((when eventdecls)
-        (mv nil (fatal :type :vl-bad-function
-                       :msg "In ~a0, we do not support functions with event ~
-                             declarations."
-                       :args (list x))))
 
        ((when paramdecls)
         (mv nil (fatal :type :vl-programming-error
@@ -2281,20 +2273,6 @@ which is free of function calls on success.</p>"
   :element vl-vardecl-expand-function-calls)
 
 
-(def-vl-expand-function-calls vl-eventdecl-expand-function-calls
-  :type vl-eventdecl-p
-  :body
-  (b* ((x (vl-eventdecl-fix x))
-       ((mv okp warnings)
-        (vl-check-bad-funcalls x (vl-eventdecl-allexprs x)
-                               "event declarations" warnings)))
-    (mv okp warnings nf x netdecls assigns)))
-
-(def-vl-expand-function-calls-list vl-eventdecllist-expand-function-calls
-  :type vl-eventdecllist-p
-  :element vl-eventdecl-expand-function-calls)
-
-
 (def-vl-expand-function-calls vl-paramdecl-expand-function-calls
   :type vl-paramdecl-p
   :body
@@ -2460,7 +2438,6 @@ doublebuf_template.</p>"
 (local (in-theory (disable VL-ASSIGNLIST-P-WHEN-SUBSETP-EQUAL
                            VL-NETDECLLIST-P-WHEN-SUBSETP-EQUAL
                            VL-PARAMDECLLIST-P-WHEN-SUBSETP-EQUAL
-                           VL-EVENTDECLLIST-P-WHEN-SUBSETP-EQUAL
                            VL-VARDECLLIST-P-WHEN-SUBSETP-EQUAL
                            VL-FUNTEMPLATELIST-P-WHEN-SUBSETP-EQUAL
                            VL-PORTDECLLIST-P-WHEN-SUBSETP-EQUAL
@@ -2511,7 +2488,6 @@ doublebuf_template.</p>"
    (portdecls vl-portdecllist-p)
    (netdecls vl-netdecllist-p)
    (vardecls vl-vardecllist-p)
-   (eventdecls vl-eventdecllist-p)
    (paramdecls vl-paramdecllist-p)
    (templates vl-funtemplatelist-p)
    (nf vl-namefactory-p)
@@ -2527,18 +2503,16 @@ doublebuf_template.</p>"
                (portdecls  vl-portdecllist-p  :hyp :fguard)
                (netdecls   vl-netdecllist-p   :hyp :fguard)
                (vardecls   vl-vardecllist-p   :hyp :fguard)
-               (eventdecls vl-eventdecllist-p :hyp :fguard)
                (paramdecls vl-paramdecllist-p :hyp :fguard))
   (b* (((mv okp1  warnings nf ports      nacc aacc) (vl-portlist-expand-function-calls      ports      templates nf nacc aacc warnings))
        ((mv okp2  warnings nf portdecls  nacc aacc) (vl-portdecllist-expand-function-calls  portdecls  templates nf nacc aacc warnings))
        ((mv okp3  warnings nf netdecls   nacc aacc) (vl-netdecllist-expand-function-calls   netdecls   templates nf nacc aacc warnings))
        ((mv okp4  warnings nf vardecls   nacc aacc) (vl-vardecllist-expand-function-calls   vardecls   templates nf nacc aacc warnings))
-       ((mv okp5  warnings nf eventdecls nacc aacc) (vl-eventdecllist-expand-function-calls eventdecls templates nf nacc aacc warnings))
-       ((mv okp6  warnings nf paramdecls nacc aacc) (vl-paramdecllist-expand-function-calls paramdecls templates nf nacc aacc warnings)))
+       ((mv okp5  warnings nf paramdecls nacc aacc) (vl-paramdecllist-expand-function-calls paramdecls templates nf nacc aacc warnings)))
     ;; Using and* here cuts the proof time for the next proof by about 10x.
-    (mv (and* okp1 okp2 okp3 okp4 okp5 okp6)
+    (mv (and* okp1 okp2 okp3 okp4 okp5)
         warnings nf nacc aacc
-        ports portdecls netdecls vardecls eventdecls paramdecls)))
+        ports portdecls netdecls vardecls paramdecls)))
 
 
 (define vl-module-expand-calls-in-nondecls
@@ -2629,10 +2603,9 @@ and assignments that need to be added to the module.</li>
        (aacc nil)   ;; accumulator for new assignments
 
        ((mv okp1 warnings nf nacc aacc
-            ports portdecls netdecls vardecls eventdecls paramdecls)
+            ports portdecls netdecls vardecls paramdecls)
         (vl-module-expand-calls-in-decls x.ports x.portdecls x.netdecls x.vardecls
-                                         x.eventdecls x.paramdecls
-                                         templates nf nacc aacc warnings))
+                                         x.paramdecls templates nf nacc aacc warnings))
        ((mv okp2 warnings nf nacc aacc
             assigns modinsts gateinsts alwayses initials)
         (vl-module-expand-calls-in-nondecls x.assigns x.modinsts x.gateinsts
@@ -2651,7 +2624,6 @@ and assignments that need to be added to the module.</li>
                                   :portdecls  portdecls
                                   :netdecls   (append-without-guard nacc netdecls)
                                   :vardecls   vardecls
-                                  :eventdecls eventdecls
                                   :paramdecls paramdecls
                                   :fundecls   nil
                                   :assigns    (append-without-guard aacc assigns)
