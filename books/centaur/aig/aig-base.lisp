@@ -411,7 +411,9 @@ care to fold constants and reduce @('x & x') and @('x & ~x').</p>"
   :parents (aig-constructors)
   :short "@(call aig-ite) constructs an AIG representing @('(if a b c)')."
   :returns aig
-  (cond ((hons-equal b c)
+  (cond ((eq a t) b)
+        ((eq a nil) c)
+        ((hons-equal b c)
          b)
         ((eq b t)
          (aig-or a c))

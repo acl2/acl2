@@ -294,7 +294,7 @@
               (let ((test (car (cdr x)))
                     (tbr (car (cdr (cdr x))))
                     (fbr (car (cdr (cdr (cdr x))))))
-                (interp-if/or test tbr fbr alist contexts . ,*glcp-common-inputs*)))
+                (interp-if/or test tbr fbr x alist contexts . ,*glcp-common-inputs*)))
 
              ((when (eq (car x) 'gl-aside))
               (if (eql (len x) 2)
@@ -380,7 +380,7 @@
                   (glcp-interp-abort :unreachable)
                 (glcp-value else-obj)))
              ((when else-unreach) (glcp-value then-obj)))
-          (merge-branches test-bfr then-obj else-obj nil contexts . ,*glcp-common-inputs*)))
+          (merge-branches test-bfr then-obj else-obj x nil contexts . ,*glcp-common-inputs*)))
 
 
       (defun maybe-interp-fncall-ifs (fn actuals x contexts branchcond . ,*glcp-common-inputs*)
@@ -415,7 +415,8 @@
                                                   'gl-uninterpreted-functions (w
                                                                                state)))))
              ((mv fncall-failed ans)
-              (if (and (not uninterp)
+              (if (and (or (not uninterp)
+                           (eq uninterp :concrete-only))
                        (general-concrete-listp actuals))
                   (acl2::magic-ev-fncall fn (general-concrete-obj-list actuals)
                                          state t nil)
@@ -452,7 +453,7 @@ but its arity is ~x3.  Its formal parameters are ~x4."
           (interp-term-equivs body (pairlis$ formals actuals)
                               contexts . ,*glcp-common-inputs*)))
 
-      (defun interp-if/or (test tbr fbr alist contexts . ,*glcp-common-inputs*)
+      (defun interp-if/or (test tbr fbr x alist contexts . ,*glcp-common-inputs*)
         (declare (xargs
                   :measure (list (pos-fix clk) 2020 (+ (acl2-count test)
                                                        (acl2-count tbr)
@@ -466,8 +467,8 @@ but its arity is ~x3.  Its formal parameters are ~x4."
                               . ,*glcp-common-guards*)
                   :stobjs ,*glcp-stobjs*))
         (if (hqual test tbr)
-            (interp-or test fbr alist contexts . ,*glcp-common-inputs*)
-          (interp-if test tbr fbr alist contexts . ,*glcp-common-inputs*)))
+            (interp-or test fbr x alist contexts . ,*glcp-common-inputs*)
+          (interp-if test tbr fbr x alist contexts . ,*glcp-common-inputs*)))
 
       (defun maybe-interp (x alist contexts branchcond . ,*glcp-common-inputs*)
         (declare (xargs
@@ -483,7 +484,7 @@ but its arity is ~x3.  Its formal parameters are ~x4."
          (interp-term-equivs
           x alist contexts . ,*glcp-common-inputs*)))
 
-      (defun interp-or (test fbr alist contexts . ,*glcp-common-inputs*)
+      (defun interp-or (test fbr x alist contexts . ,*glcp-common-inputs*)
         (declare (xargs
                   :measure (list (pos-fix clk) 2020 (+ (acl2-count test)
                                                        (acl2-count fbr)) 50)
@@ -504,9 +505,9 @@ but its arity is ~x3.  Its formal parameters are ~x4."
                fbr alist contexts (bfr-not test-bfr) . ,*glcp-common-inputs*))
              ((when else-unreach)
               (glcp-value test-obj)))
-          (merge-branches test-bfr test-obj else nil contexts . ,*glcp-common-inputs*)))
+          (merge-branches test-bfr test-obj else x nil contexts . ,*glcp-common-inputs*)))
 
-      (defun interp-if (test tbr fbr alist contexts . ,*glcp-common-inputs*)
+      (defun interp-if (test tbr fbr x alist contexts . ,*glcp-common-inputs*)
         (declare (xargs
                   :measure (list (pos-fix clk) 2020 (+ (acl2-count test)
                                                        (acl2-count tbr)
@@ -534,9 +535,9 @@ but its arity is ~x3.  Its formal parameters are ~x4."
                 (glcp-value else)))
              ((when else-unreachable)
               (glcp-value then)))
-          (merge-branches test-bfr then else nil contexts . ,*glcp-common-inputs*)))
+          (merge-branches test-bfr then else x nil contexts . ,*glcp-common-inputs*)))
 
-      (defun merge-branches (test-bfr then else switchedp contexts . ,*glcp-common-inputs*)
+      (defun merge-branches (test-bfr then else x switchedp contexts . ,*glcp-common-inputs*)
         (declare (xargs
                   :measure (list (pos-fix clk) 1818
                                  (+ (acl2-count then) (acl2-count else))
@@ -545,7 +546,8 @@ but its arity is ~x3.  Its formal parameters are ~x4."
                   :guard (and (posp clk)
                               (contextsp contexts)
                               . ,*glcp-common-guards*)
-                  :stobjs ,*glcp-stobjs*))
+                  :stobjs ,*glcp-stobjs*)
+                 (ignorable x))
         (b* ((pathcond (lbfr-hyp-fix pathcond))
              ((when (eq test-bfr t)) (glcp-value then))
              ((when (eq test-bfr nil)) (glcp-value else))
@@ -557,8 +559,8 @@ but its arity is ~x3.  Its formal parameters are ~x4."
                                  (eq (g-apply->fn then) 'quote)))))
               (if switchedp
                   (merge-branch-subterms
-                   (bfr-not test-bfr) else then . ,*glcp-common-inputs*)
-                (merge-branches (bfr-not test-bfr) else then t contexts . ,*glcp-common-inputs*)))
+                   (bfr-not test-bfr) else then x . ,*glcp-common-inputs*)
+                (merge-branches (bfr-not test-bfr) else then x t contexts . ,*glcp-common-inputs*)))
              (fn (if (eq (tag then) :g-apply)
                      (g-apply->fn then)
                    'cons))
@@ -572,10 +574,10 @@ but its arity is ~x3.  Its formal parameters are ~x4."
               (b* ((clk (1- clk)))
                 (interp-term-equivs term bindings contexts . ,*glcp-common-inputs*))))
           (if switchedp
-              (merge-branch-subterms (bfr-not test-bfr) else then . ,*glcp-common-inputs*)
-            (merge-branches (bfr-not test-bfr) else then t contexts . ,*glcp-common-inputs*))))
+              (merge-branch-subterms (bfr-not test-bfr) else then x . ,*glcp-common-inputs*)
+            (merge-branches (bfr-not test-bfr) else then x t contexts . ,*glcp-common-inputs*))))
 
-      (defun merge-branch-subterms (test-bfr then else
+      (defun merge-branch-subterms (test-bfr then else x
                                              . ,*glcp-common-inputs*)
         (declare (xargs :measure (list (pos-fix clk) 1818
                                        (+ (acl2-count then) (acl2-count else))
@@ -602,11 +604,11 @@ but its arity is ~x3.  Its formal parameters are ~x4."
               (b* (((glcp-er car) (merge-branches test-bfr
                                                   (general-consp-car then)
                                                   (general-consp-car else)
-                                                  nil nil . ,*glcp-common-inputs*))
+                                                  x nil nil . ,*glcp-common-inputs*))
                    ((glcp-er cdr) (merge-branches test-bfr
                                                   (general-consp-cdr then)
                                                   (general-consp-cdr else)
-                                                  nil nil . ,*glcp-common-inputs*)))
+                                                  x nil nil . ,*glcp-common-inputs*)))
                 (glcp-value ;; (gl-cons-split-ite car cdr)
                  (gl-cons-maybe-split car cdr
                                       (glcp-config->split-conses config)
@@ -615,13 +617,14 @@ but its arity is ~x3.  Its formal parameters are ~x4."
               (merge-branch-subterm-lists test-bfr
                                           (g-apply->args then)
                                           (g-apply->args else)
+                                          x
                                           . ,*glcp-common-inputs*)))
           (glcp-value (gl-fncall-maybe-split
                        (g-apply->fn then) args
                        (glcp-config->split-fncalls config)
                        (w state)))))
 
-      (defun merge-branch-subterm-lists (test-bfr then else
+      (defun merge-branch-subterm-lists (test-bfr then else x
                                                   . ,*glcp-common-inputs*)
         (declare (xargs :measure (list (pos-fix clk) 1818
                                        (+ (acl2-count then) (acl2-count else))
@@ -635,9 +638,9 @@ but its arity is ~x3.  Its formal parameters are ~x4."
               (glcp-value nil))
              ((cons then1 thenr) then)
              ((cons else1 elser) else)
-             ((glcp-er rest) (merge-branch-subterm-lists test-bfr thenr elser
+             ((glcp-er rest) (merge-branch-subterm-lists test-bfr thenr elser x
                                                          . ,*glcp-common-inputs*))
-             ((glcp-er first) (merge-branches test-bfr then1 else1 nil nil
+             ((glcp-er first) (merge-branches test-bfr then1 else1 x nil nil
                                               . ,*glcp-common-inputs*)))
           (glcp-value (cons first rest))))
 

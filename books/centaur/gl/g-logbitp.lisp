@@ -156,7 +156,6 @@
                                       rationalp-implies-acl2-numberp
                                       hons-assoc-equal
                                       default-car default-cdr
-                                      bfr-eval-list-consts
                                       mv-nth-cons-meta
                                       possibilities-for-x-5
                                       possibilities-for-x-3

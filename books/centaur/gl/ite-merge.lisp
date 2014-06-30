@@ -20,7 +20,7 @@
 
 (in-package "GL")
 (include-book "general-objects")
-(include-book "bvec-ite")
+(include-book "symbolic-arithmetic")
 (include-book "hyp-fix")
 (include-book "split-args")
 (include-book "std/misc/two-nats-measure" :dir :system)
@@ -799,7 +799,6 @@
 
                             len
 
-                            bfr-eval-list-consts
                             default-*-1 default-*-2
                             (:type-prescription booleanp)
                             (:type-prescription hons-assoc-equal)

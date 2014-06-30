@@ -1083,3 +1083,10 @@
 ;;            (sv-equiv (scdr b) b))
 ;;   :hints(("Goal" :in-theory (enable s-endp scdr)))
 ;;   :rule-classes ((:rewrite :backchain-limit-lst 0)))
+
+
+;; redundant-list-fix, like in vl/util/defs
+(defun rlist-fix (x)
+  (declare (xargs :guard t))
+  (mbe :logic (acl2::list-fix x)
+       :exec (if (true-listp X) x (acl2::list-fix x))))

@@ -31,14 +31,6 @@
   (if x t nil))
 
 
-;; redundant-list-fix, like in vl/util/defs
-(defun rlist-fix (x)
-  (declare (xargs :guard t))
-  (mbe :logic (acl2::list-fix x)
-       :exec (if (true-listp X) x (acl2::list-fix x))))
-
-
-
 ;; Pulls apart a number into its components.  They are stored in order of how
 ;; often we expect them to be non-default values:
 ;; real numerator   (can stop here for naturals. Default: nil (meaning zero))

@@ -190,6 +190,15 @@ At each atom in the tree:
                sym
              (or pkg? pkg-sym))))))
 
+(defun tmpl-sym-tree-sublis (alist tree pkg-sym)
+  (declare (xargs :mode :program))
+  (if (atom tree)
+      (if (symbolp tree)
+          (tmpl-sym-sublis alist tree pkg-sym)
+        tree)
+    (cons (tmpl-sym-tree-sublis alist (car tree) pkg-sym)
+          (tmpl-sym-tree-sublis alist (cdr tree) pkg-sym))))
+
 
 (mutual-recursion
  (defun check-features (features feature-form)

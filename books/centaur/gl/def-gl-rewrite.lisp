@@ -127,9 +127,9 @@ simply produce an object (of the :g-apply type) representing a call of
 
 <p>@('gl::gl-unset-uninterpreted') undoes the effect of @('gl::gl-set-uninterpreted').</p>"
 
-  (defmacro gl-set-uninterpreted (fn)
+  (defmacro gl-set-uninterpreted (fn &optional (val 't))
     `(make-event
-      (gl-set-uninterpreted-fn ',fn t (w state)))))
+      (gl-set-uninterpreted-fn ',fn ,val (w state)))))
 
 (defmacro gl-unset-uninterpreted (fn)
   `(make-event

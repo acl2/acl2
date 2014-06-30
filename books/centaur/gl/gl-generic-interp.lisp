@@ -329,25 +329,25 @@
      (glcp-generic-interp-fncall fn actuals x contexts . ,*glcp-ind-inputs*))
     (if/or
         (mv ?val . ,*glcp-ind-retvals*)
-        (glcp-generic-interp-if/or test tbr fbr alist contexts . ,*glcp-ind-inputs*))
+        (glcp-generic-interp-if/or test tbr fbr x alist contexts . ,*glcp-ind-inputs*))
     (maybe
      (mv ?unreachp ?val . ,*glcp-ind-retvals*)
      (glcp-generic-maybe-interp x alist contexts branchcond . ,*glcp-ind-inputs*))
     (if
         (mv ?val . ,*glcp-ind-retvals*)
-        (glcp-generic-interp-if test tbr fbr alist contexts . ,*glcp-ind-inputs*))
+        (glcp-generic-interp-if test tbr fbr x alist contexts . ,*glcp-ind-inputs*))
     (or
         (mv ?val . ,*glcp-ind-retvals*)
-        (glcp-generic-interp-or test fbr alist contexts . ,*glcp-ind-inputs*))
+        (glcp-generic-interp-or test fbr x alist contexts . ,*glcp-ind-inputs*))
     (merge
         (mv ?val . ,*glcp-ind-retvals*)
-        (glcp-generic-merge-branches test-bfr then else switchedp contexts . ,*glcp-ind-inputs*))
+        (glcp-generic-merge-branches test-bfr then else x switchedp contexts . ,*glcp-ind-inputs*))
     (merge-sub
         (mv ?val . ,*glcp-ind-retvals*)
-        (glcp-generic-merge-branch-subterms test-bfr then else . ,*glcp-ind-inputs*))
+        (glcp-generic-merge-branch-subterms test-bfr then else x . ,*glcp-ind-inputs*))
     (merge-list
         (mv ?val . ,*glcp-ind-retvals*)
-        (glcp-generic-merge-branch-subterm-lists test-bfr then else
+        (glcp-generic-merge-branch-subterm-lists test-bfr then else x
                                                  . ,*glcp-ind-inputs*))
     (maybe-test-simp
      (mv ?unreachp ?val . ,*glcp-ind-retvals*)

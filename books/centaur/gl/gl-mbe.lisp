@@ -204,3 +204,9 @@ the specification is unaffected.</p>"
 (defthm gl-error-is-nil
   (equal (gl-error x) nil)
   :hints(("Goal" :in-theory (enable gl-error))))
+
+
+
+(defun gl-hide (x)
+  (declare (xargs :guard t))
+  x)
