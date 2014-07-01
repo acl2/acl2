@@ -34,6 +34,7 @@
 (include-book "imports")
 (include-book "insts")
 (include-book "nets")
+(include-book "paramdecls")
 (include-book "ports")
 (include-book "ranges")
 (include-book "statements")

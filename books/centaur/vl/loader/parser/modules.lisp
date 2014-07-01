@@ -289,6 +289,16 @@
 (defconst *vl-netdecltypes-kwds*
   (strip-cars *vl-netdecltypes-kwd-alist*))
 
+(local (defthm vl-modelement-p-when-vl-blockitem-p
+         (implies (vl-blockitem-p x)
+                  (vl-modelement-p x))
+         :hints(("Goal" :in-theory (enable vl-blockitem-p)))))
+
+(local (defthm vl-modelementlist-p-when-vl-blockitemlist-p
+         (implies (vl-blockitemlist-p x)
+                  (vl-modelementlist-p x))
+         :hints(("Goal" :induct (len x)))))
+
 (defparser vl-parse-module-or-generate-item (atts)
   :guard (vl-atts-p atts)
   :result (vl-modelementlist-p val)
@@ -338,18 +348,20 @@
        ((when (or (eq type1 :vl-kwd-if)
                   (eq type1 :vl-kwd-case)))
         (vl-parse-conditional-generate-construct atts))
-       ((when (eq type1 :vl-kwd-event))
-        ;; BOZO eventually maybe merge this into vardecls?
-        (vl-parse-event-declaration atts)))
-    ;; BOZO need to switch this for SystemVerilog to cover additional types.
-    (case type1
-      (:vl-kwd-reg        (vl-parse-reg-declaration atts))
-      (:vl-kwd-integer    (vl-parse-integer-declaration atts))
-      (:vl-kwd-real       (vl-parse-real-declaration atts))
-      (:vl-kwd-time       (vl-parse-time-declaration atts))
-      (:vl-kwd-realtime   (vl-parse-realtime-declaration atts))
-      (t
-       (vl-parse-error "Invalid module or generate item.")))))
+
+       ((when (eq (vl-loadconfig->edition config) :verilog-2005))
+        (case type1
+          (:vl-kwd-reg        (vl-parse-reg-declaration atts))
+          (:vl-kwd-integer    (vl-parse-integer-declaration atts))
+          (:vl-kwd-real       (vl-parse-real-declaration atts))
+          (:vl-kwd-time       (vl-parse-time-declaration atts))
+          (:vl-kwd-realtime   (vl-parse-realtime-declaration atts))
+          (:vl-kwd-event      (vl-parse-event-declaration atts))
+          (t (vl-parse-error "Invalid module or generate item.")))))
+
+    ;; SystemVerilog -- BOZO haven't thought this through very thoroughly, but it's
+    ;; probably a fine starting place.
+    (vl-parse-block-item-declaration-noatts atts)))
 
 (defparser vl-parse-non-port-module-item (atts)
   :guard (vl-atts-p atts)

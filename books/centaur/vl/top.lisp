@@ -56,6 +56,7 @@
 (include-book "transforms/xf-unparameterize")
 (include-book "transforms/xf-unused-vars")
 (include-book "transforms/xf-weirdint-elim")
+(include-book "transforms/xf-wildeq")
 (include-book "transforms/xf-annotate-mods")
 (include-book "util/clean-alist")
 (include-book "translation")
@@ -175,6 +176,7 @@
        (good           (xf-cwtime (vl-design-exprsize good)))
        ((mv good bad)  (xf-cwtime (vl-design-propagate-errors* good bad)))
 
+       (good           (xf-cwtime (vl-design-wildelim good)))
        (good           (xf-cwtime (vl-design-always-backend good)))
        ((mv good bad)  (xf-cwtime (vl-design-propagate-errors* good bad)))
 

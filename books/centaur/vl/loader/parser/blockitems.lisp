@@ -20,6 +20,7 @@
 
 (in-package "VL")
 (include-book "datatypes")
+(include-book "paramdecls")
 (local (include-book "../../util/arithmetic"))
 
 ; Verilog-2005 Grammar for regs and variables, after filtering out some
@@ -55,6 +56,8 @@
 ;
 ;    implicit_data_type ::= [ signing ] { packed_dimension }
 ;
+;    list_of_variable_decl_assignments ::= variable_decl_assignment { ',' variable_decl_assignment }
+;
 ;    variable_decl_assignment ::=
 ;         identifier { variable_dimension } [ '=' expression ]
 ;       | identifier unsized_dimension { variable_dimension } [ '=' dynamic_array_new ]
@@ -78,38 +81,14 @@
 ;    list_of_arguments ::= [expression] { ',' [expression] } { ',' '.' identifier '(' [expression] ')' }
 ;                        | '.' identifier '(' [expression] ')' { ',' '.' identifier '(' [expression] ')' }
 
-(defprod vl-vardecltemp
-  :layout :tree
-  :short "Temporary structure used when parsing variable declarations."
-  ((name    stringp :rule-classes :type-prescription)
-   (dims    vl-packeddimensionlist-p)
-   (initval vl-maybe-expr-p))
-  :long "<p>This captures something like a @('variable_type') from
-Verilog-2005:</p>
 
-@({
-    variable_type ::= identifier { range }
-                    | identifier '=' expression
-})
+; -------------------------------------------------------------------------
+;
+;       Verilog-2005 Style Variables
+;
+; -------------------------------------------------------------------------
 
-<p>Or @('variable_decl_assignment') from SystemVerilog-2012, except that
-<b>BOZO</b> we don't yet support @('new') sorts of stuff.</p>
-
-@({
-    variable_decl_assignment ::=
-         identifier { variable_dimension } [ '=' expression ]
-       | identifier unsized_dimension { variable_dimension } [ '=' dynamic_array_new ]
-       | identifier [ '=' class_new ]
-})")
-
-(fty::deflist vl-vardecltemplist
-  :elt-type vl-vardecltemp)
-
-(deflist vl-vardecltemplist-p (x)
-  (vl-vardecltemp-p x)
-  :elementp-of-nil nil)
-
-(define vl-build-vardecls (&key (temps    vl-vardecltemplist-p)
+(define vl-build-vardecls (&key (temps    vl-vardeclassignlist-p)
                                 (constp   booleanp)
                                 (varp     booleanp)
                                 (lifetime vl-lifetime-p)
@@ -119,10 +98,10 @@ Verilog-2005:</p>
   :returns (vardecls vl-vardecllist-p)
   (b* (((when (atom temps))
         nil)
-       ((vl-vardecltemp temp1) (car temps))
-       (decl1 (make-vl-vardecl :name     temp1.name
+       ((vl-vardeclassign temp1) (car temps))
+       (decl1 (make-vl-vardecl :name     temp1.id
                                :dims     temp1.dims
-                               :initval  temp1.initval
+                               :initval  temp1.expr
                                :constp   constp
                                :varp     varp
                                :lifetime lifetime
@@ -138,20 +117,17 @@ Verilog-2005:</p>
                              :atts     atts
                              :loc      loc))))
 
-
-
-
 (local (defthm vl-packeddimensionlist-p-when-vl-rangelist-p
          (implies (vl-rangelist-p x)
                   (vl-packeddimensionlist-p x))
          :hints(("Goal" :induct (len x)))))
 
 (defparser vl-parse-variable-type ()
-  ;; Verilog-2005.
+  ;; Verilog-2005 Only.
   ;;
   ;; variable_type ::= identifier { range }
   ;;                 | identifier '=' expression
-  :result (vl-vardecltemp-p val)
+  :result (vl-vardeclassign-p val)
   :resultp-of-nil nil
   :fails gracefully
   :count strong
@@ -160,19 +136,19 @@ Verilog-2005:</p>
         (when (vl-is-token? :vl-equalsign)
           (:= (vl-match))
           (expr := (vl-parse-expression))
-          (return (make-vl-vardecltemp :name (vl-idtoken->name id)
-                                       :dims nil
-                                       :initval expr)))
+          (return (make-vl-vardeclassign :id (vl-idtoken->name id)
+                                         :dims nil
+                                         :expr expr)))
         (arrdims := (vl-parse-0+-ranges))
-        (return (make-vl-vardecltemp :name (vl-idtoken->name id)
-                                     :dims arrdims
-                                     :initval nil))))
+        (return (make-vl-vardeclassign :id (vl-idtoken->name id)
+                                       :dims arrdims
+                                       :expr nil))))
 
 (defparser vl-parse-list-of-variable-identifiers ()
-  ;; Verilog-2005.
+  ;; Verilog-2005 Only.
   ;;
   ;; list_of_variable_identifiers ::= variable_type { ',' variable_type }
-  :result (vl-vardecltemplist-p val)
+  :result (vl-vardeclassignlist-p val)
   :resultp-of-nil t
   :true-listp t
   :fails gracefully
@@ -194,7 +170,8 @@ Verilog-2005:</p>
                      )))
 
 (defparser vl-parse-integer-declaration (atts)
-  ;; Verilog-2005.
+  ;; Verilog-2005 Only.
+  ;;
   ;;    integer_declaration  ::= 'integer'  list_of_variable_identifiers ';'
   :guard (vl-atts-p atts)
   :result (vl-vardecllist-p val)
@@ -224,7 +201,8 @@ Verilog-2005:</p>
                      )))
 
 (defparser vl-parse-real-declaration (atts)
-  ;; Verilog-2005.
+  ;; Verilog-2005 Only.
+  ;;
   ;;    real_declaration     ::= 'real'     list_of_variable_identifiers ';'
   :guard (vl-atts-p atts)
   :result (vl-vardecllist-p val)
@@ -255,7 +233,7 @@ Verilog-2005:</p>
                      )))
 
 (defparser vl-parse-time-declaration (atts)
-  ;; Verilog-2005.
+  ;; Verilog-2005 Only.
   ;;
   ;;   time_declaration     ::= 'time'     list_of_variable_identifiers ';'
   :guard (vl-atts-p atts)
@@ -286,7 +264,7 @@ Verilog-2005:</p>
                      )))
 
 (defparser vl-parse-realtime-declaration (atts)
-  ;; Verilog-2005.
+  ;; Verilog-2005 Only.
   ;;
   ;;    realtime_declaration ::= 'realtime' list_of_variable_identifiers ';'
   :guard (vl-atts-p atts)
@@ -308,7 +286,7 @@ Verilog-2005:</p>
                                    :loc      (vl-token->loc kwd)))))
 
 (defparser vl-parse-reg-declaration (atts)
-  ;; Verilog-2005.
+  ;; Verilog-2005 Only.
   ;;
   ;;    reg_declaration      ::= 'reg' [ 'signed' ] [ range ] list_of_variable_identifiers ';'
   :guard (vl-atts-p atts)
@@ -339,21 +317,11 @@ Verilog-2005:</p>
                                    :atts atts
                                    :loc (vl-token->loc kwd)))))
 
-
-
-
-
-
-
-; Events.
-;
-; event_declaration ::=
-;    'event' list_of_event_identifiers ';'
-;
-; list_of_event_identifiers ::=
-;    identifier {range} { ',' identifier {range} }
-
 (defparser vl-parse-list-of-event-identifiers (atts)
+  ;; Verilog-2005 Only.
+  ;;
+  ;; list_of_event_identifiers ::=
+  ;;    identifier {range} { ',' identifier {range} }
   :guard (vl-atts-p atts)
   :result (vl-vardecllist-p val)
   :resultp-of-nil t
@@ -374,6 +342,10 @@ Verilog-2005:</p>
                       rest))))
 
 (defparser vl-parse-event-declaration (atts)
+  ;; Verilog-2005 Only.
+  ;;
+  ;; event_declaration ::=
+  ;;    'event' list_of_event_identifiers ';'
   :guard (vl-atts-p atts)
   :result (vl-vardecllist-p val)
   :resultp-of-nil t
@@ -388,130 +360,142 @@ Verilog-2005:</p>
 
 
 
-
-; Parameters.
+; -------------------------------------------------------------------------
 ;
-; local_parameter_declaration ::=
-;    'localparam' ['signed'] [range] list_of_param_assignments
-;  | 'localparam' parameter_type list_of_param_assignments
+;       Verilog-2012 Style Variables
 ;
-; parameter_declaration ::=
-;    'parameter' ['signed'] [range] list_of_param_assignments
-;  | 'parameter' parameter_type list_of_param_assignments
+; -------------------------------------------------------------------------
 ;
-; parameter_type ::=
-;    'integer' | 'real' | 'realtime' | 'time'
+;    data_declaration ::=
+;        ['const'] ['var'] [lifetime] data_type_or_implicit list_of_variable_decl_assignments ';'
+;      | ...
 ;
-; list_of_param_assignments ::= param_assignment { ',' param_assignment }
+;    data_type_or_implicit ::= data_type
+;                            | implicit_data_type
 ;
-; param_assignment ::=
-;    identifier = mintypmax_expression
+;    implicit_data_type ::= [ signing ] { packed_dimension }
 
-(defaggregate vl-param-assignment-tuple
-  (loc name expr)
-  :tag :vl-param-assignment-tuple
-  :legiblep nil
-  :require ((vl-location-p-of-vl-param-assignment-tuple->loc (vl-location-p loc))
-            (stringp-of-vl-param-assignment-tuple->name      (stringp name))
-            (vl-expr-p-of-vl-param-assignment-tuple->expr    (vl-expr-p expr)))
-  :parents (parser))
+; There are a lot of ways for a data_declaration to start, so we'll use
+; backtracking and just try to parse one.
 
-(deflist vl-param-assignment-tuple-list-p (x)
-  (vl-param-assignment-tuple-p x)
-  :elementp-of-nil nil)
-
-(defund vl-build-paramdecls (tuples type localp range atts)
-  (declare (xargs :guard (and (vl-param-assignment-tuple-list-p tuples)
-                              (vl-paramdecltype-p type)
-                              (booleanp localp)
-                              (vl-maybe-range-p range)
-                              (vl-atts-p atts))))
-  (if (consp tuples)
-      (cons (make-vl-paramdecl
-             :loc (vl-param-assignment-tuple->loc (car tuples))
-             :name (vl-param-assignment-tuple->name (car tuples))
-             :expr (vl-param-assignment-tuple->expr (car tuples))
-             :type type
-             :localp localp
-             :range range
-             :atts atts)
-            (vl-build-paramdecls (cdr tuples) type localp range atts))
-    nil))
-
-(defthm vl-paramdecllist-p-of-vl-build-paramdecls
-  (implies (and (force (vl-param-assignment-tuple-list-p tuples))
-                (force (vl-paramdecltype-p type))
-                (force (booleanp localp))
-                (force (vl-maybe-range-p range))
-                (force (vl-atts-p atts)))
-           (vl-paramdecllist-p (vl-build-paramdecls tuples type localp range atts)))
-  :hints(("Goal" :in-theory (enable vl-build-paramdecls))))
-
-(defparser vl-parse-param-assignment ()
-  :result (vl-param-assignment-tuple-p val)
-  :resultp-of-nil nil
-  :fails gracefully
-  :count strong
-  (seqw tokens warnings
-        (id := (vl-match-token :vl-idtoken))
-        (:= (vl-match-token :vl-equalsign))
-        (expr := (vl-parse-mintypmax-expression))
-        (return (vl-param-assignment-tuple (vl-token->loc id)
-                                           (vl-idtoken->name id)
-                                           expr))))
-
-(defparser vl-parse-list-of-param-assignments ()
-  :result (vl-param-assignment-tuple-list-p val)
+(defparser vl-maybe-parse-lifetime ()
+  :result (vl-lifetime-p val)
   :resultp-of-nil t
-  :true-listp t
   :fails gracefully
-  :count strong
+  :count strong-on-value
   (seqw tokens warnings
-        (first := (vl-parse-param-assignment))
-        (when (vl-is-token? :vl-comma)
+        (when (vl-is-token? :vl-kwd-static)
           (:= (vl-match))
-          (rest := (vl-parse-list-of-param-assignments)))
-        (return (cons first rest))))
+          (return :vl-static))
+        (when (vl-is-token? :vl-kwd-automatic)
+          (:= (vl-match))
+          (return :vl-automatic))
+        (return nil)))
 
-(defparser vl-parse-param-or-localparam-declaration (atts types)
-  :guard (and (vl-atts-p atts)
-              ;; Types says what kinds (local or nonlocal) of parameters we permit
-              (true-listp types)
-              (subsetp types '(:vl-kwd-parameter :vl-kwd-localparam)))
-  :result (vl-paramdecllist-p val)
+(defparser vl-parse-main-data-declaration (atts)
+  ;; SystemVerilog-2012 Only.
+  ;;
+  ;;    data_declaration ::=
+  ;;       ['const'] ['var'] [lifetime] data_type_or_implicit list_of_variable_decl_assignments ';'
+  ;;     | ...
+  ;;
+  :guard (vl-atts-p atts)
+  :result (vl-vardecllist-p val)
+  :guard-debug t
   :resultp-of-nil t
   :true-listp t
   :fails gracefully
   :count strong
   (seqw tokens warnings
-        (start := (vl-match-some-token types))
-        (when (vl-is-some-token? '(:vl-kwd-integer :vl-kwd-real
-                                                   :vl-kwd-realtime :vl-kwd-time))
-          (type := (vl-match))
-          (tuples := (vl-parse-list-of-param-assignments))
-          (return
-           (let ((type    (case (vl-token->type type)
-                            (:vl-kwd-integer  :vl-integer)
-                            (:vl-kwd-real     :vl-real)
-                            (:vl-kwd-realtime :vl-realtime)
-                            (:vl-kwd-time     :vl-time)))
-                 (localp  (eq (vl-token->type start) :vl-kwd-localparam)))
-             (vl-build-paramdecls tuples type localp nil atts))))
-        (when (vl-is-token? :vl-kwd-signed)
-          (signed := (vl-match)))
-        (when (vl-is-token? :vl-lbrack)
-          (range := (vl-parse-range)))
-        (tuples := (vl-parse-list-of-param-assignments))
-        (return
-         (let ((localp  (eq (vl-token->type start) :vl-kwd-localparam)))
-           (vl-build-paramdecls tuples
-                                (if signed :vl-signed :vl-plain)
-                                localp range atts)))))
+        (loc := (vl-current-loc))
+        (when (vl-is-token? :vl-kwd-const)
+          (const := (vl-match)))
+        (when (vl-is-token? :vl-kwd-var)
+          (var := (vl-match)))
+        (lifetime := (vl-maybe-parse-lifetime))
+        ;; In the implicit case (which is only legal when the 'var' keyword is provided), it
+        ;; seems like we probably need to just use backtracking.  After all, we have:
+        ;;    implicit_data_type ::= [ signing ] { packed_dimension }
+        ;; so the whole thing can be null, and if it is null, then we're left with the task
+        ;; of distinguishing between a data_type, which could just be an identifier, versus
+        ;; a variable_decl_assignment, which could also just be an identifier.  So we're
+        ;; really not going to know which one we're dealing with until we read the whole
+        ;; data type and then see if there are any variables that come afterward.
+        (return-raw
+         (b* (((mv explicit-err explicit-val explicit-tokens explicit-warnings)
+               (seqw tokens warnings
+                     ;; Try to match the explicit data type case.
+                     (datatype := (vl-parse-datatype))
+                     (assigns := (vl-parse-1+-variable-decl-assignments-separated-by-commas))
+                     (:= (vl-match-token :vl-semi))
+                     (return
+                      (vl-build-vardecls :temps    assigns
+                                         :constp   (if const t nil)
+                                         :varp     (if var t nil)
+                                         :lifetime lifetime
+                                         :type     datatype
+                                         :atts     atts
+                                         :loc      loc))))
+              ((unless explicit-err)
+               ;; Successfully matched explicit data type case, return answer
+               (mv explicit-err explicit-val explicit-tokens explicit-warnings))
+              ((unless var)
+               ;; Not allowed to have implicit data type because didn't say 'var'.
+               ;; Just return the failure from the explicit case.
+               (mv explicit-err explicit-val explicit-tokens explicit-warnings))
+
+              ;; Try to handle the implicit case.
+              ((mv implicit-err implicit-val implicit-tokens implicit-warnings)
+               (seqw tokens warnings
+                     ;; Try to match the implicit data type case.
+                     ;;    implicit_data_type ::= [ signing ] { packed_dimension }
+                     (when (vl-is-some-token? '(:vl-kwd-signed :vl-kwd-unsigned))
+                       (signing := (vl-match)))
+                     (when (vl-is-token? :vl-lbrack)
+                       ;; BOZO for now just try to match packed dimensions
+                       (dims := (vl-parse-0+-packed-dimensions)))
+                     (assigns := (vl-parse-1+-variable-decl-assignments-separated-by-commas))
+                     (:= (vl-match-token :vl-semi))
+                     (return
+                      (vl-build-vardecls :temps    assigns
+                                         :constp   (if const t nil)
+                                         :varp     (if var t nil)
+                                         :lifetime lifetime
+                                         ;; Per SystemVerilog-2012 Section 6.8,
+                                         ;; if a data type is not specified or
+                                         ;; if only a range and/or signing is
+                                         ;; specified, then the data type is
+                                         ;; implicitly declared as 'logic'.
+                                         :type (make-vl-coretype
+                                                :name :vl-logic
+                                                :signedp (and signing
+                                                              (eq (vl-token->type signing) :vl-kwd-signed))
+                                                :dims dims)
+                                         :atts atts
+                                         :loc loc))))
+              ((unless implicit-err)
+               (mv implicit-err implicit-val implicit-tokens implicit-warnings)))
+
+           ;; Blah, tricky case.  We have errors for both the explicit and
+           ;; implicit attempts.  It's not clear that one error is better than
+           ;; the other.  In module parsing we run into a similar thing and try
+           ;; to take "whichever got farther."  I think, here, it's probably
+           ;; not so bad to just go with the explicit error.
+           (mv explicit-err explicit-val explicit-tokens explicit-warnings)))))
+
+;; BOZO eventually support other allowed data declarations: type declarations,
+;; package import declarations, and net type declarations.  But to do this
+;; we'll probably first want to extend our notion of vl-blockitem-p to allow
+;; imports and type declarations.
 
 
+; -------------------------------------------------------------------------
+;
+;                            Block Items
+;
+; -------------------------------------------------------------------------
 
-
-; Now we get to block items, themselves.
+; Verilog-2005:
 ;
 ; block_item_declaration ::=
 ;    {attribute_instance} 'reg' ['signed'] [range] list_of_block_variable_identifiers ';'
@@ -528,7 +512,6 @@ Verilog-2005:</p>
 ;
 ; block_variable_type ::= identifier { dimension }
 ;
-;
 ; Of particular note is that the rules for reg, integer, time, real, and
 ; realtime above are different than reg_declaration, integer_declaration, etc.,
 ; using list_of_block_variable_identifiers versus list_of_variable_identifiers.
@@ -540,6 +523,7 @@ Verilog-2005:</p>
 ; through to ensure that none of the variables have been given initial values.
 
 (defund vl-find-vardecl-with-initval (x)
+  ; Verilog-2005 Only.
   (declare (xargs :guard (vl-vardecllist-p x)))
   (if (consp x)
       (if (vl-vardecl->initval (car x))
@@ -547,8 +531,8 @@ Verilog-2005:</p>
         (vl-find-vardecl-with-initval (cdr x)))
     nil))
 
-
-(defparser vl-parse-block-item-declaration-noatts (atts)
+(defparser vl-2005-parse-block-item-declaration-noatts (atts)
+  ; Verilog-2005 Only.
   :guard (vl-atts-p atts)
   :result (vl-blockitemlist-p val)
   :resultp-of-nil t
@@ -594,6 +578,62 @@ Verilog-2005:</p>
                                initial values.")
              (mv nil elements tokens warnings))))))
 
+; SystemVerilog-2012 version:
+;
+;   block_item_declaration ::=
+;      {attribute_instance} data_declaration                          // no semicolon
+;    | {attribute_instance} local_parameter_declaration ';'
+;    | {attribute_instance} parameter_declaration       ';'
+;    | {attribute_instance} overload_declaration                      // no semicolon
+;    | {attribute_instance} let_declaration                           // no semicolon
+;
+; The data_declaration subsumes the reg, integer, time, real, realtime, and
+; event cases in Verilog-2005.
+;
+; We don't yet support overload or let declarations, but we have:
+;
+;   overload_declaration ::= 'bind' ...
+;   let_declaration ::= 'let' ...
+;
+; So we can easily identify when these things occur. Moreover we know that a
+; parameter or local_parameter declaration always starts with 'parameter' or
+; 'localparam', so we can at least gracefully fail if we encounter anything we
+; don't support.
+
+(defparser vl-2012-parse-block-item-declaration-noatts (atts)
+  :guard (vl-atts-p atts)
+  :result (vl-blockitemlist-p val)
+  :resultp-of-nil t
+  :true-listp t
+  :fails gracefully
+  :count strong
+  (seqw tokens warnings
+        (when (vl-is-token? :vl-kwd-bind)
+          (return-raw (vl-parse-error "overload declarations (\"bind ...\") are not yet supported")))
+        (when (vl-is-token? :vl-kwd-let)
+          (return-raw (vl-parse-error "let declarations are not yet supported")))
+        (when (vl-is-some-token? '(:vl-kwd-localparam :vl-kwd-parameter))
+          ;; Do not eat the token.
+          (elems := (vl-parse-param-or-localparam-declaration atts '(:vl-kwd-localparam :vl-kwd-parameter)))
+          ;; Unusual case: have to explicitly eat a semicolon here.
+          (:= (vl-match-token :vl-semi))
+          (return elems))
+        ;; Otherwise, we are presumably in the data_declaration case.  Eventually we will
+        ;; need to extend this to handle typedefs, imports, etc., but for now we'll at least
+        ;; get the main data declarations.
+        (elems := (vl-parse-main-data-declaration atts))
+        (return elems)))
+
+(defparser vl-parse-block-item-declaration-noatts (atts)
+  :guard (vl-atts-p atts)
+  :result (vl-blockitemlist-p val)
+  :resultp-of-nil t
+  :true-listp t
+  :fails gracefully
+  :count strong
+  (if (eq (vl-loadconfig->edition config) :verilog-2005)
+      (vl-2005-parse-block-item-declaration-noatts atts)
+    (vl-2012-parse-block-item-declaration-noatts atts)))
 
 (defparser vl-parse-block-item-declaration ()
   :result (vl-blockitemlist-p val)

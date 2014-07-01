@@ -21,7 +21,7 @@
 .PHONY: all clean debug
 
 ACL2     ?= acl2
-VERILOG  ?= ncverilog +access+r
+VERILOG  ?= ncverilog +access+r +sv
 STARTJOB ?= bash
 VL       ?= $(PWD)/../bin/vl
 

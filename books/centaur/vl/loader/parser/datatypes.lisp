@@ -310,18 +310,38 @@
 ;; But for now we're just going to not deal with these dimensions!
 
 (defaggregate vl-vardeclassign
-  :parents (vl-parse-datatype)
-  ;; BOZO eventually include things like the variable dimensions and some kind
-  ;; of new operator representation, but for now I'm keeping it simple.
+  :parents (vl-parse-datatype vl-build-vardecls)
+  :short "Temporary structure used when parsing variable declarations."
   :legiblep nil
   ((id   stringp :rule-classes :type-prescription)
-   (expr vl-maybe-expr-p)))
+   (dims vl-packeddimensionlist-p "BOZO not sufficiently general.")
+   (expr vl-maybe-expr-p          "BOZO not sufficiently general."))
+
+:long "<p>This captures something like a @('variable_type') from
+Verilog-2005:</p>
+
+@({
+    variable_type ::= identifier { range }
+                    | identifier '=' expression
+})
+
+<p>Or @('variable_decl_assignment') from SystemVerilog-2012, except that
+<b>BOZO</b> we don't yet support @('new') sorts of stuff or certain kinds of
+dimensions.</p>
+
+@({
+    variable_decl_assignment ::=
+         identifier { variable_dimension } [ '=' expression ]
+       | identifier unsized_dimension { variable_dimension } [ '=' dynamic_array_new ]
+       | identifier [ '=' class_new ]
+})")
 
 (deflist vl-vardeclassignlist-p (x)
   (vl-vardeclassign-p x)
   :elementp-of-nil nil)
 
 (defparser vl-parse-variable-decl-assignment ()
+  ;; SystemVerilog-2012 Only.
   :result (vl-vardeclassign-p val)
   :resultp-of-nil nil
   :fails gracefully
@@ -329,8 +349,9 @@
   (seqw tokens warnings
         (id := (vl-match-token :vl-idtoken))
         (when (vl-is-token? :vl-lbrack)
-          ;; Dimension stuff.
-          (return-raw (vl-parse-error "Implement dimension support for struct/union members!")))
+          ;; BOZO this doesn't yet support all the possible variable_dimension things, but
+          ;; we'll at least support arbitrary lists of packed dimensions.
+          (dims := (vl-parse-0+-packed-dimensions)))
 
         (when (vl-is-token? :vl-equalsign)
           (:= (vl-match))
@@ -342,10 +363,13 @@
 
         (return (make-vl-vardeclassign
                  :id (vl-idtoken->name id)
+                 :dims dims
                  :expr expr))))
 
-;   list_of_variable_decl_assignments ::= variable_decl_assignment { ',' variable_decl_assignment }
 (defparser vl-parse-1+-variable-decl-assignments-separated-by-commas ()
+  ;; SystemVerilog-2012 Only.
+  ;;
+  ;;   list_of_variable_decl_assignments ::= variable_decl_assignment { ',' variable_decl_assignment }
   :result (vl-vardeclassignlist-p val)
   :resultp-of-nil t
   :true-listp t
@@ -369,6 +393,7 @@
                                 :rand rand
                                 :type type
                                 :name (vl-vardeclassign->id (car decls))
+                                :dims (vl-vardeclassign->dims (car decls))
                                 :rhs  (vl-vardeclassign->expr (car decls)))
           (vl-make-structmembers atts rand type (cdr decls)))))
 
