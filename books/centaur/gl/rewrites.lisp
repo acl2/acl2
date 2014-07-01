@@ -85,8 +85,14 @@
 (def-gl-rewrite loghead-of-0
   (equal (loghead 0 x) 0))
 
+(defun term-gobj-p (x)
+  (and (consp x)
+       (member (car x) '(:g-apply :g-var :g-ite))))
+
 (def-gl-rewrite logapp-tail-0
-  (equal (logapp n a 0) (loghead n a)))
+  (implies (syntaxp (and (integerp n)
+                         (term-gobj-p a)))
+           (equal (logapp n a 0) (loghead n a))))
 
 (def-gl-rewrite logbitp-of-logapp
   (equal (logbitp n (logapp m a b))
