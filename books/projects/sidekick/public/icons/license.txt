@@ -12,6 +12,12 @@ Some icons are original work:
      superhero*.*
      favicon.*
 
+Images featuring the ACL2 Ribbon are adapted from the ACL2 Logo
+   Copyright (C) 2014, Regents of the University of Texas
+   License: BSD-3-Clause style
+
+     fromacl2.png
+
 
 The XDOC icon is part of XDOC
    Copyright (C) 2009-2013 Centaur Technology

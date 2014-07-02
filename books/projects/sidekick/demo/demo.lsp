@@ -74,6 +74,18 @@
 
 ; And partially disabled/enabled events get a slightly lighter color:
 
+(defun fib (x)
+  (declare (xargs :verify-guards nil))
+  (if (zp x)
+      1
+    (if (equal x 1)
+        1
+      (+ (fib (- x 1)) (fib (- x 2))))))
+
+(make-event
+ `(defthm fib-of-36
+    (equal (fib 36) ,(fib 36))))
+
 (defsection partially-disabled
 
   (defthmd disabled-lemma

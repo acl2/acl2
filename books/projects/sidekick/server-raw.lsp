@@ -214,8 +214,10 @@
      (setf (hunchentoot:content-type*) "application/json")
      (b* ((commands (get-webcommands-stack)))
        (bridge::json-encode
-        (list (cons :commands commands))))))
+        (list (cons :commands commands)))))
 
-
-
-
+  (hunchentoot:define-easy-handler (eventdata-handler :uri "/eventdata") (name)
+     (setf (hunchentoot:content-type*) "application/json")
+     (with-sidekick-bindings
+       (b* (((mv ans state) (sk-get-eventdata name state)))
+         ans))))

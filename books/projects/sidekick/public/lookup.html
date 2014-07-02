@@ -59,13 +59,6 @@ along with this program; if not, write to the Free Software Foundation, Inc.,
    padding-right: 1em;
 }
 
-#propshead {
-    margin: 0;
-    padding-left: 1em;
-    padding-bottom: .2em;
-    padding-top: .2em;
-}
-
 #propswrap {
     overflow-x: auto;
     overflow-y: auto;
@@ -100,25 +93,49 @@ along with this program; if not, write to the Free Software Foundation, Inc.,
     padding-right: 1em;
 }
 
-#include_path_header {
-   margin-top: 0;
-   margin-bottom: 0;
-   padding-bottom: 0;
+#include_path ul {
+   margin: 0;
+   padding: 0;
 }
 
-#include_path ul, #include_path li {
+#include_path li {
    padding: 0;
-   margin: 0;
+   margin-left: 1em;
+   margin-top: 0;
+   margin-bottom: 0;
+}
+
+#include_path tt {
+   color: #3C9DD0;
 }
 
 .disassemble_out {
    overflow-y: auto;
    height: 25em;
    margin-left: 2.5em;
-/*
-   width: 35em;
-*/
+   /* width: 35em; */
 }
+
+.secheader {
+    margin-left: 0;
+    padding-left: 0;
+    padding-bottom: 0em;
+    padding-top: .2em;
+}
+
+.secheader img {
+    vertical-align: middle;
+    padding-right: .3em;
+}
+
+#xdoc table {
+  margin-left: 0.5em;
+}
+
+.xdoc_main {
+  margin-left: 1em;
+}
+
 
 -->
 </style>
@@ -149,7 +166,7 @@ along with this program; if not, write to the Free Software Foundation, Inc.,
    <li>Function/Macro/Theorem definitions</li>
    <li>PL/PE/PR style information</li>
    <li>Make xdoc links work</li>
-   <li>Look up by event number? (something like :pcb but that makes sense)</li>
+   <li>Search community books if not found</li>
   </ul>
 
   <p>When we mark up s-expressions with hyperlinks, they should be able

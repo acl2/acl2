@@ -39,9 +39,8 @@ function wrap_xdoc_fragment(str) {
 }
 
 var xslt_impl = {};
-var xslt_ready = false;
 
-function xslt_init() {
+function xslt_ready(whenReady) {
 
     // BOZO need to reinstall IE support
 
@@ -80,24 +79,20 @@ function xslt_init() {
 		return dom;
 	    }
 
-	    xslt_ready = true;
+	    whenReady();
 	}
     }
     xhttp.send();
 }
 
-function render_text(str) {
-    if (xlst_ready)
-	return xslt_impl["render_text"](str);
-    else
-	return "XSLT not ready.";
+function render_text(str)
+{
+    return xslt_impl["render_text"](str);
 }
 
-function render_html(str) {
-    if (xslt_ready)
-	return xslt_impl["render_html"](str);
-    else
-	return "XSLT not ready.";
+function render_html(str)
+{
+    return xslt_impl["render_html"](str);
 }
 
-xslt_init();
+

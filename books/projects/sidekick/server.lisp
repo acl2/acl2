@@ -125,6 +125,21 @@
                                    (cons :val disassembly)))
         state)))
 
+(define sk-get-eventdata ((name stringp) state)
+  :returns (mv json-eventdata state)
+  (b* (((mv errmsg objs state) (acl2::read-string name))
+       ((when errmsg)
+        (mv (sk-json-error "Error in eventdata: parsing failed: ~a: ~a~%" name errmsg)
+            state))
+       ((unless (and (equal (len objs) 1)
+                     (symbolp (car objs))))
+        (mv (sk-json-error "Error in eventdata: not a symbol: ~a~%" name)
+            state))
+       (data (find-eventdata (car objs) (sidekick-get-all-event-data)))
+       (ans  (bridge::json-encode (list (cons :error nil)
+                                   (cons :val data)))))
+    (mv ans state)))
+
 ; (depends-on "server-raw.lsp")
 (include-raw "server-raw.lsp"
              :host-readtable t)

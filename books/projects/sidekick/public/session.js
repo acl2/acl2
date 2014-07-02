@@ -121,6 +121,16 @@ function ldd_disabled(ldd)
 	return "pbt_enabled";
 }
 
+function undo_back_through(n)
+{
+    $.post("/ubt", {"n":n},function(data,textStatus,jqXHR) {
+       // Successful undo, nothing to do, the window will refresh momentarily.
+    }).fail(function() {
+	window.alert("Undo back through " + n + " failed!");
+    });
+    return false;
+}
+
 var pbt_last_row = null;
 function render_pbt(ldds)
 {
@@ -134,14 +144,21 @@ function render_pbt(ldds)
 	var disabled = ldd_disabled(ldd);
 
 	var row = "";
-	row += "<tr class='pbt_line " + disabled + "'";
+	row += "<tr class='pbt_line " + disabled + "'>";
+	row += "<th>" + n + "</th>";
+	row += "<td class='pbt_form " + mode + "'";
         row += " onMouseEnter='enter_pbt_entry(" + n + ")'";
         row += " onMouseLeave='exit_pbt_entry(" + n + ")'";
         row += " onClick='show_pcb(" + n + ", 1)'>";
-	row += "<th>" + n + "</th>";
-	row += "<td class='pbt_form " + mode + "'>";
 	row += "<pre id='pbt_form_" + n + "'>" + htmlEncode(form) + "</pre>";
 	row += "</td>";
+
+	row += "<td>";
+	row += "<a href='#' title='Undo back through here' onclick='undo_back_through(" + n + ");'>";
+	row += "<img src='icons/session-undo.png' title='Undo back through here.'/>";
+	row += "</a>";
+	row += "</td>";
+
 	row += "</tr>\n";
 	tbl.append(row);
 	pbt_last_row = n;

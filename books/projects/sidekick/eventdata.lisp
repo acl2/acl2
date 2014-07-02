@@ -22,21 +22,72 @@
 (include-book "lock")
 (include-book "tools/bstar" :dir :system)
 (include-book "std/strings/defs-program" :dir :system)
-(program)
+(include-book "centaur/bridge/to-json" :dir :system)
+(local (include-book "ihs/quotient-remainder-lemmas" :dir :system))
+(local (include-book "arithmetic/top" :dir :system))
 
 (defun sidekick-eventdata-push (data)
   (declare (ignorable data))
-  (declare (xargs :guard t
-                  :mode :logic))
+  (declare (xargs :guard t))
   (er hard? 'sidekick-eventdata-push "raw lisp definition not installed?"))
 
+(defun float.2 (x)
+  ;; Convert rational to float, two digits of precision
+  (declare (xargs :guard (rationalp x)))
+  (let* ((sign     (if (< x 0) "-" ""))
+         (x        (abs x))
+         (ipart    (truncate x 1))
+         (fpart    (- x ipart))
+         (100fpart (* fpart 100))
+         (chop     (truncate 100fpart 1)))
+    (cat sign
+         (natstr ipart)
+         "."
+         (if (< chop 10)
+             (cat "0" (natstr chop))
+           (natstr chop)))))
+
+(local (defthm acl2-numberp-when-rationalp
+         (implies (rationalp x)
+                  (acl2-numberp x))))
+(local (include-book "std/typed-lists/rational-listp" :dir :system))
+
 (defun sidekick-finalize-event-user (ctx body state)
-  (declare (xargs :stobjs state
-                  :mode :logic))
-  (b* ((alist (list* (cons :ctx ctx)
-                     (cons :body body)
-                     (and (acl2::f-boundp-global 'acl2::last-event-data state)
-                          (acl2::f-get-global 'acl2::last-event-data state)))))
+  (declare (xargs :stobjs state))
+  (b* ((evdata (and (acl2::f-boundp-global 'acl2::last-event-data state)
+                    (acl2::f-get-global 'acl2::last-event-data state)))
+       ((unless evdata)
+        ;; Uh, okay, nothing to do, I guess.
+        state)
+       ((unless (alistp evdata))
+        (er hard? 'sidekick-finalize-event-user
+            "Expected an alist, got ~x0." evdata)
+        state)
+       (times (cdr (assoc 'acl2::time evdata)))
+       ((unless (and (rational-listp times)
+                     (equal (len times) 4)))
+        (er hard? 'sidekick-finalize-event-user
+            "Expected four rational-valued times.  Found ~x0.  X is ~x1" times evdata)
+        state)
+       ;; Allegedly the format is: (prove print proof-tree other)
+       (prove-time-f      (float.2 (first times)))
+       (print-time-f      (float.2 (second times)))
+       (proof-tree-time-f (float.2 (third times)))
+       (other-time-f      (float.2 (fourth times)))
+       (total-time        (+ (the rational (first times))
+                             (the rational (second times))
+                             (the rational (third times))
+                             (the rational (fourth times))))
+       (total-time-f      (float.2 total-time))
+       (alist (list* (cons :ctx               ctx)
+                     (cons :body              body)
+                     (cons :total-time        total-time)
+                     (cons :total-time-f      total-time-f)
+                     (cons :prove-time-f      prove-time-f)
+                     (cons :print-time-f      print-time-f)
+                     (cons :proof-tree-time-f proof-tree-time-f)
+                     (cons :other-time-f      other-time-f)
+                     evdata)))
     (with-sidekick-lock
       (sidekick-eventdata-push alist))
     state))
@@ -51,8 +102,6 @@
 (include-raw "eventdata-raw.lsp")
 
 (defattach acl2::finalize-event-user sidekick-finalize-event-user)
-
-
 
 (defun eventdata->namex (x)
   (let ((look (assoc 'acl2::namex x)))
@@ -81,24 +130,15 @@
            (fourth times))
       nil)))
 
-(defun chop-to-hundreths (x)
-  (declare (xargs :guard (and (rationalp x)
-                              (<= 0 x))))
-  (let* ((ipart    (truncate x 1))
-         (fpart    (- x ipart))
-         (100fpart (* fpart 100))
-         (chop     (truncate 100fpart 1)))
-    (cat (natstr ipart)
-         "."
-         (if (< chop 10)
-             (cat "0" (natstr chop))
-           (natstr chop)))))
-
 #||
+
+(defun f (x) x)
+
+(find-eventdata 'f (sidekick-get-all-event-data))))
 
 (chop-to-hundreths
  (eventdata->total-time
-  (find-eventdata 'vl::vl-exprlist->finalwidths (sidekick-get-all-event-data))))
+(find-eventdata 'vl::vl-exprlist->finalwidths (sidekick-get-all-event-data))))
 
 ||#
 
@@ -107,7 +147,5 @@
 ;;  - figure out how to grab all events from a command block
 ;;  - simple sum up their total times, etc.
 ;;  - implement top-level command-block-time command.
-
-
 
 

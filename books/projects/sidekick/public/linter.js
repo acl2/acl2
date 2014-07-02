@@ -29,15 +29,25 @@ function rule_to_string(x)
     var origin = x[":ORIGIN"];
     var body = x[":BODY"];
 
+    var icon;
+
     if (origin instanceof Array) {
 	origin = origin[origin.length-1];
+	icon = "frombook.png";
     }
     else if (origin == ":BUILT-IN") {
 	origin = "Built into ACL2";
+	icon = "fromacl2.png";
+    }
+    else {
+	origin = "Current session";
+	icon = "fromsession.png";
     }
 
     var ret = "";
-    ret += "<p><span class='rulename'>" + htmlEncode(name.toLowerCase()) + "</span><br/>";
+    ret += "<p>";
+    ret += "<img src='icons/" + icon + "' align='left' style='padding-right: .3em;'/>";
+    ret += "<span class='rulename'>" + htmlEncode(name.toLowerCase()) + "</span><br/>";
     ret += "<small><span class='from'>" + htmlEncode(origin) + "</span></small></p>"
     ret += "<pre>" + htmlEncode(body) + "</pre>";
     return ret;
