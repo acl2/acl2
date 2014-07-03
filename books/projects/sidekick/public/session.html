@@ -35,22 +35,23 @@ along with this program; if not, write to the Free Software Foundation, Inc.,
 
 #pbtwrap {
     float: left;
-    left: 0;
-    top: 0;
-    width: 45%;
+    width: 98%;
+    margin-left: -32em;
     height: 100%;
     overflow-y: auto;
-    margin-right: .5em;
+}
+
+#pbt {
+    margin-left: 32em;
 }
 
 #pcbwrap {
     float: left;
-    width: 54%;
-    padding-left: 0;
+    width: 32em;
+    padding-left: 1em;
     padding-top: 0;
     margin: 0;
     height: 100%;
-    overflow-y: auto;
 }
 
 .pbt_form, .pcb_form {
@@ -65,7 +66,8 @@ along with this program; if not, write to the Free Software Foundation, Inc.,
 }
 
 .pbt_table {
-    width: 100%;
+    width: 95%;
+    overflow-x: auto;
 }
 
 .pbt_table th, .pbt_table td {
@@ -75,6 +77,7 @@ along with this program; if not, write to the Free Software Foundation, Inc.,
     padding-bottom: .2em;
     padding-left: .5em;
     padding-right: .5em;
+    overflow-x: auto;
 }
 
 .pbt_part_disabled {
@@ -174,8 +177,7 @@ as you submit new commands.</p>
 <ul>
 <li>Home package updating</li>
 
-<li>Add features: be able to undo things, disassemble things,
-somehow integrate with :PE and :PR.</li>
+<li>Hyperlinks to lookup page or some other better info mechanism.</li>
 
 <li>The :pcb display is confusing for large items like include-books;
 it'd be nice to better present how things are getting expanded, e.g.,

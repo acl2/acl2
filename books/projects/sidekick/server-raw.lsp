@@ -106,7 +106,7 @@
 (setq acl2::*hl-hspace-persist-ht-default-size*  100)
 
 (defmacro with-sidekick-bindings (&rest forms)
-  `(b* ((state
+  `(b* ((?state
          ;; Bind state since we often need that.
          acl2::*the-live-state*)
         (acl2::*default-hs*
@@ -118,7 +118,6 @@
          ;; problems, because bad-lisp-objectp is memoized and memoization
          ;; isn't thread-safe.
          nil))
-     (declare (ignorable state))
      . ,forms))
 
 (defun add-handlers ()
@@ -220,4 +219,13 @@
      (setf (hunchentoot:content-type*) "application/json")
      (with-sidekick-bindings
        (b* (((mv ans state) (sk-get-eventdata name state)))
-         ans))))
+         ans)))
+
+  (hunchentoot:define-easy-handler (ubt-handler :uri "/ubt" :default-request-type :post)
+                                   ((n :parameter-type 'string))
+    (setf (hunchentoot:content-type*) "application/json")
+    (with-sidekick-bindings
+      (b* (((mv ans state) (sk-undo-back-through n state)))
+        ans)))
+
+  )

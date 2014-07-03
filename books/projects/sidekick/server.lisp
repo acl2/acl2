@@ -140,6 +140,25 @@
                                    (cons :val data)))))
     (mv ans state)))
 
+(define sk-undo-back-through ((num stringp) state)
+  :returns (mv json-eventdata state)
+  :mode :program
+  (b* ((n (str::strval num))
+       ((unless n)
+        (mv (sk-json-error "Error in sk-undo-back-through: not a number: ~a" num)
+            state))
+       #+hons
+       ((when t)
+        (mv (sk-json-error "Sorry, undo doesn't work on ACL2(h) because memoization isn't ~
+                            thread safe.")
+            state))
+       ((mv erp ?val state) (acl2::ubt!-ubu!-fn :ubt n state))
+       ((when erp)
+        (mv (sk-json-error "ubt!-ubu!-fn returned an error.")
+            state))
+       (ans (bridge::json-encode (list (cons :error nil)))))
+    (mv ans state)))
+
 ; (depends-on "server-raw.lsp")
 (include-raw "server-raw.lsp"
              :host-readtable t)

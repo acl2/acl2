@@ -28,7 +28,7 @@ You'll need to use the [development version of
 ACL2](http://acl2-devel.googlecode.com) and [its
 books](http://acl2-books.googlecode.com).
 
-Build **ACL2(h)** as usual, then certify at least the **basic** and
+Build ACL2 as usual, then certify at least the **basic** and
 **quicklisp** books, e.g.,:
 
 ```Shell

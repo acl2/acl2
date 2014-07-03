@@ -123,8 +123,13 @@ function ldd_disabled(ldd)
 
 function undo_back_through(n)
 {
-    $.post("/ubt", {"n":n},function(data,textStatus,jqXHR) {
-       // Successful undo, nothing to do, the window will refresh momentarily.
+    $.post("/ubt", {"n":n},function(data,textStatus,jqXHR)
+    {
+	var err = data[":ERROR"];
+	if (err != "NIL") {
+	    window.alert("Undo back through " + n + " failed: " + err);
+	}
+	// Else, everything is fine, display will update soon, nothing to do
     }).fail(function() {
 	window.alert("Undo back through " + n + " failed!");
     });
