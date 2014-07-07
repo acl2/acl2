@@ -28,9 +28,10 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 ;
-; Additional copyright notice:
+; Additional Copyright Notice.
 ;
-; This file is adapted from Milawa, which is also released under the GPL.
+; This file is adapted from the Milawa Theorem Prover, Copyright (C) 2005-2009
+; Kookamara LLC, which is also available under an MIT/X11 style license.
 
 (in-package "STD")
 (include-book "da-base")

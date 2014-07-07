@@ -28,10 +28,10 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 ;
-; Additional copyright notice for make-character-list.lisp:
+; Additional Copyright Notice.
 ;
 ; This file is adapted from the Unicode library, Copyright (C) 2005-2013 by
-; Jared Davis, which was also released under the GPL.
+; Kookamara LLC, which is also available under an MIT/X11 style license.
 
 (in-package "STR")
 (include-book "char-fix")

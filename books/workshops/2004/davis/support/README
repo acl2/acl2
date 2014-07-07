@@ -1,7 +1,7 @@
 _____________________________________________________________________
 
                  Fully Ordered Finite Sets for ACL2
-               Copyright (C) 2003, 2004 by Jared Davis
+               Copyright (C) 2003, 2004 Kookamara LLC
 
                        Version 0.90 - README
 _____________________________________________________________________
@@ -17,37 +17,32 @@ _____________________________________________________________________
        Ordered Sets Home Page:
         - http://www.cs.utexas.edu/users/jared/osets/
 
-    The home page includes documentation and information on the 
-    latest and upcoming versions, and you shoudl check to make 
+    The home page includes documentation and information on the
+    latest and upcoming versions, and you shoudl check to make
     sure you have a recent copy.
-  
-    This library is licensed under the GNU General Public License,
-    see the file COPYING for more information.
-  
 
 
   Build Instructions
 
     You must have ACL2 2.9 installed to build this library.
-    
+
     1. Edit the makefile.
-  
-       - Change "include [...]/Makefile-generic" to point to the 
-         file Makefile-generic in your acl2-sources/books 
+
+       - Change "include [...]/Makefile-generic" to point to the
+         file Makefile-generic in your acl2-sources/books
          directory.
 
-       - Change "ACL2 = [...]/saved_acl2" to point to your ACL2 
+       - Change "ACL2 = [...]/saved_acl2" to point to your ACL2
          executable.
 
 
     2. Run "make" to build the library.
 
        - Check to make sure that the following files were created:
-         sets.cert, quantify.cert, set-order.cert, and map.cert.  
-         If there was a problem, please send a report to 
+         sets.cert, quantify.cert, set-order.cert, and map.cert.
+         If there was a problem, please send a report to
          jared@cs.utexas.edu.
 
 
 
   All usage instructions are on the web page.
-

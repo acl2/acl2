@@ -28,10 +28,11 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 ;
-; Additional copyright notice:
+; Additional Copyright Notice.
 ;
 ; Portions of this file were adapted from the data-structures/memories library,
-; which is also released under the GPL.
+; Copyright (c) 2005-2006 Kookamara LLC, which is also available under an
+; MIT/X11 style license.
 
 (in-package "ACL2")
 (include-book "xdoc/top" :dir :system)

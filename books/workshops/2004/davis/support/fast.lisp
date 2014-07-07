@@ -1,52 +1,57 @@
-#| 
-
-   Fully Ordered Finite Sets, Version 0.9
-   Copyright (C) 2003, 2004 by Jared Davis <jared@cs.utexas.edu>
-
-   This program is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public License as
-   published by the Free Software Foundation; either version 2 of
-   the License, or (at your option) any later version.
-
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public Lic-
-   ense along with this program; if not, write to the Free Soft-
-   ware Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
-   02111-1307, USA.
-
-
-
- fast.lisp
-
-  The MBE feature in ACL2 version 2.8 provides the opportunity to
-  introduce functions which take advantage of the set order for good
-  execution efficiency, while still using simple/nice functions for
-  reasoning about.  
-
-  This file contains efficient versions of the union, intersect, and
-  difference functions, and a few theorems about them.  The goal is
-  to show that for each of these "fast" functions, when given two 
-  sets as inputs:
-
-    (1) produces a set, and
-    (2) has the correct membership properties
-
-  These facts can then be used to make an equal-by-membership argu-
-  ment with the simple versions as required by MBE. 
-
-  Note that this file is very ugly.  There are many factors that con-
-  tribute to this problem.  For one, these functions are written in
-  terms of cons and therefore we have to consider many cases.  This 
-  also means we have lots of subgoals when we do inductions.  It is
-  also challenging to develop a "good" rewrite theory when it comes
-  to the cons function, which does not have very nice properties when
-  related to sets.
-
-|#
+; Fully Ordered Finite Sets, Version 0.9
+; Copyright (C) 2003, 2004 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+;
+; Original author: Jared Davis <jared@kookamara.com>
+;
+; fast.lisp
+;
+; The MBE feature in ACL2 version 2.8 provides the opportunity to introduce
+; functions which take advantage of the set order for good execution
+; efficiency, while still using simple/nice functions for reasoning about.
+;
+; This file contains efficient versions of the union, intersect, and difference
+; functions, and a few theorems about them.  The goal is to show that for each
+; of these "fast" functions, when given two sets as inputs:
+;
+;   (1) produces a set, and
+;   (2) has the correct membership properties
+;
+; These facts can then be used to make an equal-by-membership argu- ment with
+; the simple versions as required by MBE.
+;
+; Note that this file is very ugly.  There are many factors that con- tribute
+; to this problem.  For one, these functions are written in terms of cons and
+; therefore we have to consider many cases.  This also means we have lots of
+; subgoals when we do inductions.  It is also challenging to develop a "good"
+; rewrite theory when it comes to the cons function, which does not have very
+; nice properties when related to sets.
 
 (in-package "SET")
 (include-book "membership")

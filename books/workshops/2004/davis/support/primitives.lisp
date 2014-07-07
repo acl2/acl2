@@ -1,74 +1,78 @@
-#|
-
-   Fully Ordered Finite Sets, Version 0.9
-   Copyright (C) 2003, 2004 by Jared Davis <jared@cs.utexas.edu>
-
-   This program is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public License as
-   published by the Free Software Foundation; either version 2 of
-   the License, or (at your option) any later version.
-
-   This program is distributed in the hope that it will be useful
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public Lic-
-   ense along with this program; if not, write to the Free Soft-
-   ware Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
-   02111-1307, USA.
-
-
-
- primitives.lisp 
-
-  Consider implementing a set theory library in ACL2.  Lists are a 
-  natural choice for an underlying representation.  And, naturally,
-  we are drawn to define our functions in terms of the primitive 
-  list functions (car, cdr, endp, cons).  
-
-  These functions are ill-suited for use in our set theory books be-
-  cause of the non-set convention.  This convention states that non-
-  sets should be treated as the empty set.  But the primitive list 
-  functions do not support this idea.  For example:
-
-    (car '(1 1 1)) = 1, but (car nil) = nil
-    (cdr '(1 1 1)) = (1 1), but (cdr nil) = nil
-    (cons 1 '(1 1 1)) = (1 1 1 1), but (cons 1 nil) = (1)
-    (endp '(1 1 1)) = nil, but (endp nil) = t
-
-  These are "problems" in the sense that, when reasoning about sets, 
-  the primitive list functions do not respect the non-set convention.
-  These functions do not fit our problem well, and will introduce all
-  manner of cases into our proofs that we should not have to con-
-  sider.
-
-  Having recognized this as a problem, here is what we are going to
-  do.  Instead of using the list primitives to manipulate sets, we 
-  will use new primitives which are very similar, but which respect
-  the non-set convention.  These primitives get the following names:
-  
-    (head X) - the first element of a set, nil for non/empty sets.
-    (tail X) - all but the first element, nil for non/empty sets.
-    (insert a X) - ordered insert of a into the set X
-    (empty X) - recognizer for non/empty sets.
-
-  This file introduces these functions, and shows several theorems 
-  about them.  The purpose of all of this is to, at the end of this
-  file, disable the definitions for these functions, and thereby 
-  keep the primitive list functions (car, cdr, ...) confined where
-  they cannot cause case splits.
-
-  Before we can introduce the list primitives, we need to be able
-  to define a set.  Our sets will be ordered under a total order, 
-  <<.  Note that this order is encapsulated: we locally use the 
-  same order as the standard "misc/total-order" book, which was 
-  put together by Matt Kaufmann, Pete Manolios, and Rob Sumners.
-  However, we will only use this locally and will allow other 
-  orders to be used, in order to be a more flexible library.
-
-|#
-
+; Fully Ordered Finite Sets, Version 0.9
+; Copyright (C) 2003, 2004 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+;
+; Original author: Jared Davis <jared@kookamara.com>
+;
+; primitives.lisp
+;
+; Consider implementing a set theory library in ACL2.  Lists are a natural
+; choice for an underlying representation.  And, naturally, we are drawn to
+; define our functions in terms of the primitive list functions (car, cdr,
+; endp, cons).
+;
+; These functions are ill-suited for use in our set theory books because of the
+; non-set convention.  This convention states that non-sets should be treated
+; as the empty set.  But the primitive list functions do not support this idea.
+; For example:
+;
+;   (car '(1 1 1)) = 1, but (car nil) = nil
+;   (cdr '(1 1 1)) = (1 1), but (cdr nil) = nil
+;   (cons 1 '(1 1 1)) = (1 1 1 1), but (cons 1 nil) = (1)
+;   (endp '(1 1 1)) = nil, but (endp nil) = t
+;
+; These are "problems" in the sense that, when reasoning about sets, the
+; primitive list functions do not respect the non-set convention.  These
+; functions do not fit our problem well, and will introduce all manner of cases
+; into our proofs that we should not have to consider.
+;
+; Having recognized this as a problem, here is what we are going to do.
+; Instead of using the list primitives to manipulate sets, we will use new
+; primitives which are very similar, but which respect the non-set convention.
+; These primitives get the following names:
+;
+;   (head X) - the first element of a set, nil for non/empty sets.
+;   (tail X) - all but the first element, nil for non/empty sets.
+;   (insert a X) - ordered insert of a into the set X
+;   (empty X) - recognizer for non/empty sets.
+;
+; This file introduces these functions, and shows several theorems about them.
+; The purpose of all of this is to, at the end of this file, disable the
+; definitions for these functions, and thereby keep the primitive list
+; functions (car, cdr, ...) confined where they cannot cause case splits.
+;
+; Before we can introduce the list primitives, we need to be able to define a
+; set.  Our sets will be ordered under a total order, <<.  Note that this order
+; is encapsulated: we locally use the same order as the standard
+; "misc/total-order" book, which was put together by Matt Kaufmann, Pete
+; Manolios, and Rob Sumners.  However, we will only use this locally and will
+; allow other orders to be used, in order to be a more flexible library.
 
 (in-package "SET")
 (set-verify-guards-eagerness 2)
@@ -77,7 +81,7 @@
 
 ;;; First we introduce the total order, <<. and prove that it is a
 ;;; total order (irreflexivity, transitivity, asymmetricity, trichot-
-;;; omy). 
+;;; omy).
 
 (defun << (a b)
   (declare (xargs :guard t))
@@ -116,7 +120,7 @@
 ;;; will inherently be somewhat slow since we have to check that the
 ;;; elements are in order.  However, its complexity is still only lin-
 ;;; ear with the size of X.
- 
+
 (defun setp (X)
   (declare (xargs :guard t))
   (if (atom X)
@@ -141,36 +145,36 @@
 ;;; At this point, we simply introduce the remainder of the primitive
 ;;; functions.  These definitions should hold few surprises.  The MBE
 ;;; macro is used in all of these functions except for insert, to
-;;; avoid potentially slow calls to setp. 
- 
+;;; avoid potentially slow calls to setp.
+
 (defun empty (X)
   (declare (xargs :guard (setp X)))
   (mbe :logic (or (null X)
                   (not (setp X)))
        :exec  (null X)))
- 
+
 (defthm empty-type
   (or (equal (empty X) t)
       (equal (empty X) nil))
   :rule-classes :type-prescription)
- 
+
 (defun sfix (X)
   (declare (xargs :guard (setp X)))
   (mbe :logic (if (empty X) nil X)
        :exec  X))
- 
+
 (defun head (X)
   (declare (xargs :guard (and (setp X)
                               (not (empty X)))))
   (mbe :logic (car (sfix X))
        :exec  (car X)))
- 
+
 (defun tail (X)
   (declare (xargs :guard (and (setp X)
                               (not (empty X)))))
   (mbe :logic (cdr (sfix X))
        :exec  (cdr X)))
- 
+
 (defun insert (a X)
   (declare (xargs :guard (setp X)))
   (cond ((empty X) (list a))
@@ -188,7 +192,7 @@
 ;;; functions terminate.  Naturally, we show that acl2-count decreases
 ;;; with tail.  We also show that acl2-count decreases with head, in
 ;;; case this fact is needed.
- 
+
 (defthm tail-count
   (implies (not (empty X))
            (< (acl2-count (tail X)) (acl2-count X)))
@@ -356,7 +360,7 @@
 ;;; membership.lisp will fail.
 
 (defthm head-insert-empty
-  (implies (empty X) 
+  (implies (empty X)
            (equal (head (insert a X)) a)))
 
 (defthm tail-insert-empty
