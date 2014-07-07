@@ -6,7 +6,8 @@
 
 Some icons are original work:
   Copyright (c) 2013-2014 Kookamara LLC
-  License: GNU General Public License:
+  License: An MIT/X11 Style License, see the LICENSE file distributed
+           with the ACL2 Sidekick for details.
 
      kookamara.png
      superhero*.*
@@ -21,7 +22,7 @@ Images featuring the ACL2 Ribbon are adapted from the ACL2 Logo
 
 The XDOC icon is part of XDOC
    Copyright (C) 2009-2013 Centaur Technology
-   License: GNU General Public License
+   License: MIT/X11
 
      xdoc.png
 
