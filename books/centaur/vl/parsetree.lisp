@@ -2367,12 +2367,26 @@ register and variable declarations with initial values, i.e., @('reg r =
 0;').</p>")
 
 
+(defenum vl-alwaystype-p
+  (:vl-always
+   :vl-always-comb
+   :vl-always-latch
+   :vl-always-ff)
+  :short "Indicates the kind of an always statement."
+  :long "<p>In Verilog-2005 there are only @('always') statements.
+SystemVerilog-2012 adds @('always_comb'), @('always_latch'), and
+@('always_ff').</p>")
+
 (defprod vl-always
   :short "Representation of an always statement."
   :tag :vl-always
   :layout :tree
 
-  ((stmt vl-stmt-p
+  ((type vl-alwaystype-p
+         "What kind of @('always') block this is, e.g., @('always'), @('always_comb'),
+          @('always_latch'), or @('always_ff').")
+
+   (stmt vl-stmt-p
          "The actual statement, e.g., @('@(posedge clk) myreg <= in')
           below. The statement does not have to include a timing control like
           @('@(posedge clk)') or @('@(a or b or c)'), but often does.")

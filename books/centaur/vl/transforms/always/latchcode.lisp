@@ -419,6 +419,30 @@ sanity checking."
   :short "Try to synthesize a single @('always') block into a latch."
 
   (b* (((vl-always x) x)
+
+       ((unless (or (eq x.type :vl-always)
+                    (eq x.type :vl-always-latch)))
+        ;; Don't touch always_comb or always_ff blocks.
+        (mv x cvtregs delta))
+
+       ((when (eq x.type :vl-always-latch))
+        ;; BOZO.  For now we do not try to really support always_latch.  To
+        ;; support always_latch we will need to adjust our pattern matching
+        ;; stuff because the always_latch drops the timing statement.  That
+        ;; is, you write something like:
+        ;;
+        ;;    always_latch if (clk) q <= d;
+        ;;
+        ;; instead of:
+        ;;
+        ;;    always @(clk or d) if (clk) q <= d;
+        ;;
+        ;; So our pattern-matching stuff isn't right for always_latch yet.
+        (mv x cvtregs
+            (dwarn :type :vl-latchcode-fail
+                   :msg "~a0: always_latch blocks are not yet implemented."
+                   :args (list x))))
+
        (warnings (vl-delta->warnings delta))
 
        ((mv warnings test lhs rhs delay)

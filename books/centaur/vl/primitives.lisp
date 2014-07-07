@@ -1018,7 +1018,9 @@ certain @('always') statements into instances of this module.</p>
        (clk-evatom    (make-vl-evatom :type :vl-noedge :expr clk-expr))
        (@d-or-clk     (make-vl-eventcontrol :starp nil :atoms (list d-evatom clk-evatom)))
        (stmt          (make-vl-timingstmt :ctrl @d-or-clk :body |q<=clk?d:q|))
-       (always        (make-vl-always :stmt stmt :loc *vl-fakeloc*)))
+       (always        (make-vl-always :type :vl-always
+                                      :stmt stmt
+                                      :loc *vl-fakeloc*)))
 
     (hons-copy
      (make-vl-module :name      name

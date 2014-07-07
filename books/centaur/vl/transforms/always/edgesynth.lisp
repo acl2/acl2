@@ -1801,6 +1801,11 @@ where we convert any negedge signals into posedge signals.</p>"
   ;; :irrelevant-formals-ok t
   ;; :guard-debug t
   (b* (((vl-always x) x)
+       ((unless (or (eq x.type :vl-always)
+                    (eq x.type :vl-always-ff)))
+        ;; Don't touch this block because it's combinational or latch logic.
+        (mv x cvtregs delta))
+
        ((mv body ?ctrl edges) (vl-match-always-at-some-edges x.stmt))
        ((unless (and body
                      (vl-edgesynth-stmt-p body)))

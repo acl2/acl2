@@ -39,8 +39,9 @@
 
 (defxdoc cblock
   :parents (always-top)
-  :short "Transform simple, purely combinational always blocks into
-corresponding @('assign') statements, replacing registers with wiring."
+  :short "Transform simple, purely combinational @('always') and
+@('always_comb') blocks into corresponding @('assign') statements, replacing
+registers with wiring."
 
   :long "<p>Some basic criteria for treating an always block as
 combinational:</p>
@@ -49,11 +50,14 @@ combinational:</p>
 
 <li>Expressions must be sized.</li>
 
-<li>There must be a sensitivity list.  It may not mention any edge-triggered
-components (since if it does, this block isn't combinational).  Moreover, the
-sensitivity list needs to be \"correct\": either it may be @('always @(*)'), or
-else it must correctly mention every net/reg that is used in an rvalue context,
-including @('if') conditions and right-hand sides of assignments.</li>
+<li>It must be a plain @('always') block or an @('always_comb') block.</li>
+
+<li>Plain @('always') blocks must be a sensitivity list.  This sensitivity list
+may not mention any edge-triggered components (since if it does, this block
+isn't combinational).  Moreover, the sensitivity list needs to be \"correct\":
+either it may be @('always @(*)'), or else it must correctly mention every
+net/reg that is used in an rvalue context, including @('if') conditions and
+right-hand sides of assignments.</li>
 
 <li>For simplicity, we don't try to handle sensitivity lists that include part-
 or bit-selects.  That is, we support things like @('always @(a or b)'), but not
@@ -91,9 +95,8 @@ Having multiple @('always') statements updating the same register is way too
 hard to think about.  See @(see vl-always-scary-regs).</li>
 
 <li>Always blocks that update only a portion of a register (even if the
-specified range is the entire register) are not supported, since this leaves us
-without an easy way to convert the @('reg') into a @('wire').  (The above
-parenthetical exception is just a casualty of having limited time.)</li>
+specified range is the entire register) are not currently supported, since this
+leaves us without an easy way to convert the @('reg') into a @('wire').</li>
 
 <li>Each lvalue register must be assigned to in every branch.  Otherwise we
 need to infer a latch, e.g., the following can't be turned into ordinary
@@ -534,14 +537,31 @@ this.  After all, synthesis tools might not do hard work here, either.</p>")
                  (about signals that are unnecessarily included.)"
                 vl-warninglist-p))
   (b* ((stmt (vl-always->stmt always))
-       ((unless (vl-timingstmt-p stmt))
+       (type (vl-always->type always))
+
+       ((when (or (eq type :vl-always-latch)
+                  (eq type :vl-always-ff)))
+        ;; Definitely not supposed to be a combinational block.
+        (mv nil (ok)))
+
+       ((mv okp ctrl body)
+        ;; An always_comb block doesn't need any control, but an plain always
+        ;; block needs to be of the form "always @(...)".
+        (cond ((eq type :vl-always-comb)
+               (mv t nil stmt))
+              ((and (eq type :vl-always)
+                    (vl-timingstmt-p stmt))
+               (mv t (vl-timingstmt->ctrl stmt) (vl-timingstmt->body stmt)))
+              (t
+               (mv nil nil stmt))))
+
+       ((unless okp)
         ;; Something like "always $display(...)" or "always begin ...", clearly
         ;; not anything we can support.
         (mv nil (ok)))
 
-       (ctrl (vl-timingstmt->ctrl stmt))
-       (body (vl-timingstmt->body stmt))
-       ((unless (or (vl-star-control-p ctrl)
+       ((unless (or (eq type :vl-always-comb) ;; no control to check
+                    (vl-star-control-p ctrl)
                     (vl-classic-control-p ctrl)))
         ;; Something like "always @(posedge clk)" or "always #3 ...", clearly
         ;; not anything we can support here.
@@ -561,7 +581,10 @@ this.  After all, synthesis tools might not do hard work here, either.</p>")
        ;; combinational always block.  At this point it's probably fine to
        ;; start issuing warnings.
        ((mv sens-okp warnings)
-        (vl-check-sensitivity-list ctrl body always warnings))
+        (if (eq type :vl-always-comb) ;; no control to check
+            (mv t (ok))
+          (vl-check-sensitivity-list ctrl body always warnings)))
+
        ((unless sens-okp)
         ;; Some problem with the sensitivity list or lvalues, just too hard.
         ;; Already issued warnings.
@@ -801,13 +824,23 @@ are well-typed and have compatible widths.</p>")
   :returns (mv (delta   vl-delta-p :hyp :fguard)
                (cvtregs string-listp))
   (b* ((stmt (vl-always->stmt x))
-       ((unless (vl-timingstmt-p stmt))
+       (type (vl-always->type x))
+
+       ((mv okp ctrl body)
+        (cond ((eq type :vl-always-comb)
+               (mv t nil stmt))
+              ((and (eq type :vl-always)
+                    (vl-timingstmt-p stmt))
+               (mv t (vl-timingstmt->ctrl stmt) (vl-timingstmt->body stmt)))
+              (t
+               (mv nil nil nil))))
+
+       ((unless okp)
         (raise "Not a valid cblock: ~x0." x)
         (mv delta nil))
 
-       (ctrl (vl-timingstmt->ctrl stmt))
-       (body (vl-timingstmt->body stmt))
-       ((unless (and (or (vl-star-control-p ctrl)
+       ((unless (and (or (eq type :vl-always-comb)
+                         (vl-star-control-p ctrl)
                          (vl-classic-control-p ctrl))
                      (vl-stmt-cblock-p body)))
         (raise "Not a valid cblock: ~x0." x)

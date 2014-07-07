@@ -286,11 +286,13 @@ between the order of the assignments and the surrounding if structures.</p>"
                 block splitting.  It shouldn't be possible to try to split
                 off a null always block for ~s0." lvalue)
         ;; Nonsensical thing for unconditional return value theorem
-        (make-vl-always :stmt body
+        (make-vl-always :type :vl-always
+                        :stmt body
                         :loc loc))
        (new-stmt (make-vl-timingstmt :ctrl ctrl
                                      :body new-body))
-       (new-always (make-vl-always :stmt new-stmt
+       (new-always (make-vl-always :type :vl-always  ;; BOZO should we make these always_ffs?
+                                   :stmt new-stmt
                                    :atts atts
                                    :loc loc)))
     new-always))
@@ -309,6 +311,11 @@ between the order of the assignments and the surrounding if structures.</p>"
 (define vl-always-edgesplit ((x vl-always-p))
   :returns (new-alwayses vl-alwayslist-p :hyp :fguard)
   (b* (((vl-always x) x)
+       ((unless (or (eq x.type :vl-always)
+                    (eq x.type :vl-always-ff)))
+        ;; Don't touch always_comb or always_latch blocks.
+        (list x))
+
        ((mv body ctrl ?edges) (vl-match-always-at-some-edges x.stmt))
        ((unless (and body
                      (vl-edgesplitstmt-p body)))

@@ -2380,11 +2380,21 @@ expression into a string."
                             (vl-pp-cases (vl-caselist-fix x))
                             (vl-pp-cases nil))))))
 
+(define vl-alwaystype-string ((x vl-alwaystype-p))
+  :returns (str stringp :rule-classes :type-prescription)
+  (case (vl-alwaystype-fix x)
+    (:vl-always       "always")
+    (:vl-always-comb  "always_comb")
+    (:vl-always-ff    "always_ff")
+    (:vl-always-latch "always_latch")
+    (otherwise         (progn$ (impossible) ""))))
+
 (define vl-pp-always ((x vl-always-p) &key (ps 'ps))
   (b* (((vl-always x) x))
     (vl-ps-seq (vl-print "  ")
                (if x.atts (vl-pp-atts x.atts) ps)
-               (vl-ps-span "vl_key" (vl-print "always "))
+               (vl-ps-span "vl_key" (vl-print-str (vl-alwaystype-string x.type)))
+               (vl-print " ")
                (vl-pp-stmt x.stmt))))
 
 (define vl-pp-alwayslist ((x vl-alwayslist-p) &key (ps 'ps))

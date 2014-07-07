@@ -531,6 +531,11 @@ encoding.</p>"
   :inline t
   (jp-sym x))
 
+(define vl-jp-alwaystype ((x vl-alwaystype-p) &key (ps 'ps))
+  :parents (json-encoders)
+  :inline t
+  (jp-sym x))
+
 (add-json-encoder vl-exprtype-p         vl-jp-exprtype)
 (add-json-encoder vl-cstrength-p        vl-jp-cstrength)
 (add-json-encoder vl-dstrength-p        vl-jp-dstrength)
@@ -543,6 +548,7 @@ encoding.</p>"
 (add-json-encoder vl-netdecltype-p      vl-jp-netdecltype)
 (add-json-encoder vl-taskporttype-p     vl-jp-taskporttype)
 (add-json-encoder vl-paramdecltype-p    vl-jp-paramdecltype)
+(add-json-encoder vl-alwaystype-p       vl-jp-alwaystype)
 
 
 (define vl-jp-maybe-exprtype ((x vl-maybe-exprtype-p) &key (ps 'ps))

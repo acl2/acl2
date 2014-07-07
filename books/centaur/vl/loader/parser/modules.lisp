@@ -99,6 +99,25 @@
                                        :stmt stmt
                                        :atts atts)))))
 
+(defparser vl-parse-alwaystype ()
+  :result (vl-alwaystype-p val)
+  :resultp-of-nil nil
+  :fails gracefully
+  :count strong
+  (seqw tokens warnings
+        (when (eq (vl-loadconfig->edition config) :verilog-2005)
+          (:= (vl-match-token :vl-always))
+          (return :vl-always))
+        (kwd := (vl-match-some-token '(:vl-kwd-always
+                                       :vl-kwd-always_comb
+                                       :vl-kwd-always_latch
+                                       :vl-kwd-always_ff)))
+        (return (case (vl-token->type kwd)
+                  (:vl-kwd-always       :vl-always)
+                  (:vl-kwd-always_comb  :vl-always-comb)
+                  (:vl-kwd-always_latch :vl-always-latch)
+                  (:vl-kwd-always_ff    :vl-always-ff)))))
+
 (defparser vl-parse-always-construct (atts)
   :guard (vl-atts-p atts)
   :result (vl-alwayslist-p val)
@@ -107,9 +126,11 @@
   :fails gracefully
   :count strong
   (seqw tokens warnings
-        (kwd := (vl-match-token :vl-kwd-always))
+        (loc  := (vl-current-loc))
+        (type := (vl-parse-alwaystype))
         (stmt := (vl-parse-statement))
-        (return (list (make-vl-always :loc (vl-token->loc kwd)
+        (return (list (make-vl-always :loc  loc
+                                      :type type
                                       :stmt stmt
                                       :atts atts)))))
 
@@ -288,7 +309,7 @@
 ;  | {attribute_instance} udp_instantiation                   ;; identifier
 ;  | {attribute_instance} module_instantiation                ;; identifier
 ;  | {attribute_instance} initial_construct                   ;; 'initial'
-;  | {attribute_instance} always_construct                    ;; 'always'
+;  | {attribute_instance} always_construct                    ;; 'always'  (sysv adds 'always_comb' 'always_ff' 'always_latch')
 ;  | {attribute_instance} loop_generate_construct             ;; 'for'
 ;  | {attribute_instance} conditional_generate_construct      ;; 'if' or 'case'
 ;
@@ -367,7 +388,14 @@
           (:vl-kwd-time       (vl-parse-time-declaration atts))
           (:vl-kwd-realtime   (vl-parse-realtime-declaration atts))
           (:vl-kwd-event      (vl-parse-event-declaration atts))
-          (t (vl-parse-error "Invalid module or generate item.")))))
+          (t (vl-parse-error "Invalid module or generate item."))))
+
+       ;; SystemVerilog extensions ----
+
+       ((when (or (eq type1 :vl-kwd-always_ff)
+                  (eq type1 :vl-kwd-always_latch)
+                  (eq type1 :vl-kwd-always_comb)))
+        (vl-parse-always-construct atts)))
 
     ;; SystemVerilog -- BOZO haven't thought this through very thoroughly, but it's
     ;; probably a fine starting place.

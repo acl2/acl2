@@ -180,7 +180,8 @@ asynchronous set and reset signals.</p>
        (body    (vl-nedgeflop-ifstmt q-expr clk-exprs data-exprs))
        (stmt    (make-vl-timingstmt :ctrl evctrl
                                     :body body)))
-    (make-vl-always :stmt stmt
+    (make-vl-always :type :vl-always ;; bozo use always_ff instead?
+                    :stmt stmt
                     :loc *vl-fakeloc*)))
 
 (define vl-nedgeflop-some-edge-sexpr

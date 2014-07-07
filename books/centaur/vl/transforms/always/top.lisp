@@ -79,7 +79,11 @@ warnings) added.</p>"
        ;; how many of these transforms are still necessary.  Some of them
        ;; may have only existed to support the old "flopcode" stuff, which
        ;; predated edgesynth
-       (x (xf-cwtime (vl-design-stmttemps x)))
+
+       ;; I don't think we want to run this.  This was only meant for flop-like
+       ;; blocks and it doesn't do anything unless we match posedge clk.
+       ;;   (x (xf-cwtime (vl-design-stmttemps x)))
+
        (x (xf-cwtime (vl-design-unelse x)))
        (x (xf-cwtime (vl-design-ifmerge x)))
        (x (xf-cwtime (vl-design-latchsynth x :careful-p careful-p :vecp vecp)))
