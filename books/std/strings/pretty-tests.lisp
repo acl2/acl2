@@ -254,7 +254,7 @@ world" "blah blah"))
 
 (acl2::defconsts (*real-forms* state)
   ;; Go read some real forms from some books
-  (b* (((mv & forms1 state) (acl2::read-file "fmt.lisp" state))
+  (b* (((mv & forms1 state) (acl2::read-file "pretty.lisp" state))
        ((mv & forms2 state) (acl2::read-file "base64.lisp" state))
        ((mv & forms3 state) (acl2::read-file "arithmetic.lisp" state))
        ((mv & forms4 state) (acl2::read-file "case-conversion.lisp" state))
