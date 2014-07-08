@@ -29,10 +29,20 @@
 // Original author: Jared Davis <jared@centtech.com>
 
 
+`ifndef SYSTEM_VERILOG_MODE
+
+module dummy ();
+
+  initial $display("This test is for SystemVerilog only, nothing to check.");
+
+endmodule
+
+`else
+
 // Exhaustive testing of binary operators up to some small size
 
 `include "spec.v"
-`include "impl.v"
+`include "impl.sv"
 
 // Nasty preprocessor garbage to introduce comparison modules for each of the
 // various sizes.  See aux-compare-binary.v for details.
@@ -189,3 +199,5 @@ module compare () ;
    end
 
 endmodule
+
+`endif

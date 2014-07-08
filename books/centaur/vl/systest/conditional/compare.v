@@ -32,7 +32,12 @@
 // tests of the ?: operator
 
 `include "spec.v"
-`include "impl.v"
+
+`ifdef SYSTEM_VERILOG_MODE
+ `include "impl.sv"
+`else
+ `include "impl.v"
+`endif
 
 module convert_z_to_x (out, in);
 

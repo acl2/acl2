@@ -28,8 +28,18 @@
 //
 // Original author: Jared Davis <jared@centtech.com>
 
+`ifndef SYSTEM_VERILOG_MODE
+
+module dummy ();
+
+  initial $display("This test is for SystemVerilog only, nothing to check.");
+
+endmodule
+
+`else
+
 `include "spec.v"
-`include "impl.v"
+`include "impl.sv"
 
 // Using a global random seed seems like a good idea -- When each instance of
 // randomBit2 had its own seed, they seemed to just always produce the same
@@ -263,7 +273,4 @@ module test () ;
 endmodule
 
 
-
-
-
-
+`endif

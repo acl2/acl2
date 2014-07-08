@@ -31,14 +31,19 @@
 .PHONY: all clean debug
 
 ACL2     ?= acl2
-VERILOG  ?= ncverilog +access+r +sv
+
+VERILOG    ?= ncverilog +access+r
+SYSVERILOG ?= ncverilog +access+r +sv +define+SYSTEM_VERILOG_MODE
+
 STARTJOB ?= bash
 VL       ?= $(PWD)/../bin/vl
 
-SPEC_FILES := $(wildcard */spec.v)
-TEST_DIRS  := $(patsubst %/spec.v, %, $(SPEC_FILES))
-IMPL_FILES := $(patsubst %/spec.v, %/impl.v, $(SPEC_FILES))
-RUN_OKS    := $(patsubst %/spec.v, %/run.ok, $(SPEC_FILES))
+SPEC_FILES    := $(wildcard */spec.v)
+TEST_DIRS     := $(patsubst %/spec.v, %,               $(SPEC_FILES))
+V_IMPL_FILES  := $(patsubst %/spec.v, %/impl.v,        $(SPEC_FILES))
+SV_IMPL_FILES := $(patsubst %/spec.v, %/impl.sv,       $(SPEC_FILES))
+V_OKS         := $(patsubst %/spec.v, %/verilog.ok,    $(SPEC_FILES))
+SV_OKS        := $(patsubst %/spec.v, %/sysverilog.ok, $(SPEC_FILES))
 
 all:
 
@@ -49,25 +54,43 @@ debug:
 	@echo "IMPL_FILES = $(IMPL_FILES)"
 
 
+TRANSLATE_V  := $(VL) model spec.v --mem=2 --search=. --verilog-file=impl.v  --edition=Verilog
+TRANSLATE_SV := $(VL) model spec.v --mem=2 --search=. --verilog-file=impl.sv --edition=SystemVerilog --define=SYSTEM_VERILOG_MODE
+
+%/impl.sv: %/spec.v
+	@echo "Making $*/impl.sv"
+	@cd $*; $(STARTJOB) -c \
+	  'echo `hostname` &> impl.out; $(TRANSLATE_SV) &>> impl.sv.out'
+	@ls -l $*/impl.sv
+
 %/impl.v: %/spec.v
 	@echo "Making $*/impl.v"
 	@cd $*; $(STARTJOB) -c \
-	  'echo `hostname` &> impl.out; $(VL) model spec.v --verilog-file=impl.v --mem=2 --search=. &>> impl.out'
+	  'echo `hostname` &> impl.out; $(TRANSLATE_V) &>> impl.out'
 	@ls -l $*/impl.v
 
-%/run.ok: %/impl.v $(wildcard %/*.v)
-	@echo "Making $*/run.ok"
-	@cd $*; $(STARTJOB) -c \
-	  "$(VERILOG) compare.v &> run.out"
-	@ls -l $*/run.out
-	@./errcheck.pl $*/run.out
+%/verilog.ok: %/impl.v $(wildcard %/*.v)
+	@echo "Making $*/verilog.ok"
+	@cd $*; $(STARTJOB) -c "$(VERILOG) compare.v &> verilog.out"
+	@ls -l $*/verilog.out
+	@./errcheck.pl $*/verilog.out
 # Dumb, need some kind of certificate here
-	@cp $*/run.out $*/run.ok
+	@cp $*/verilog.out $*/verilog.ok
+
+%/sysverilog.ok: %/impl.sv $(wildcard %/*.v)
+	@echo "Making $*/sysverilog.ok"
+	@cd $*; $(STARTJOB) -c "$(SYSVERILOG) compare.v &> sysverilog.out"
+	@ls -l $*/sysverilog.out
+	@./errcheck.pl $*/sysverilog.out
+# Dumb, need some kind of certificate here
+	@cp $*/sysverilog.out $*/sysverilog.ok
 
 clean:
-	rm -f */impl.v */*.sao */*.log */*.out */run.ok
+	rm -f */impl.v */impl.sv */*.sao */*.log */*.out */*.ok
 	rm -rf */INCA_libs */*.vcd */*.key
 
-all: $(IMPL_FILES)
-all: $(RUN_OKS)
+all: $(V_IMPL_FILES)
+all: $(SV_IMPL_FILES)
+all: $(V_OKS)
+all: $(SV_OKS)
 

@@ -32,7 +32,12 @@
 // Exhaustive testing of binary operators up to some small size
 
 `include "spec.v"
-`include "impl.v"
+
+`ifdef SYSTEM_VERILOG_MODE
+ `include "impl.sv"
+`else
+ `include "impl.v"
+`endif
 
 // Nasty preprocessor garbage to introduce comparison modules for each of the
 // various sizes.  See aux-compare-binary.v for details.

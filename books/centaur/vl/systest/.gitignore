@@ -2,6 +2,7 @@ INCA_libs/
 *.vcd
 *.ok
 impl.v
+impl.sv
 *.log
 simv
 simv.daidir

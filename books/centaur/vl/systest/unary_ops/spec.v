@@ -50,7 +50,10 @@ out_xnor2,   // ^~in
 out_true,    // constant t
 out_false,   // constant f
 out_x,       // constant x
-out_z,       // constant z
+out_z       // constant z
+
+`ifdef SYSTEM_VERILOG_MODE
+,
 
 // some tests of ==? and !=? operators against certain patterns
 out_wildeq1,
@@ -62,6 +65,8 @@ out_wildneq1,
 out_wildneq2,
 out_wildneq3,
 out_wildneq4
+
+`endif
 
 );
 
@@ -87,6 +92,8 @@ out_wildneq4
    output out_x ;
    output out_z ;
 
+`ifdef SYSTEM_VERILOG_MODE
+
    output out_wildeq1;
    output out_wildeq2;
    output out_wildeq3;
@@ -96,6 +103,8 @@ out_wildneq4
    output out_wildneq2;
    output out_wildneq3;
    output out_wildneq4;
+
+`endif
 
    assign out_bitnot = ~in ;
    assign out_plus = +in;
@@ -115,6 +124,8 @@ out_wildneq4
    assign out_x = 1'bx;
    assign out_z = 1'bz;
 
+`ifdef SYSTEM_VERILOG_MODE
+
    assign out_wildeq1 = in ==? 4'b1010;
    assign out_wildeq2 = in ==? 4'bxx10;
    assign out_wildeq3 = in ==? 4'b0?z1;
@@ -124,6 +135,8 @@ out_wildneq4
    assign out_wildneq2 = in !=? 4'bxx10;
    assign out_wildneq3 = in !=? 4'b0?z1;
    assign out_wildneq4 = in !=? 4'bz1x0;
+
+`endif
 
 endmodule
 
@@ -136,8 +149,12 @@ module make_tests () ;
    wire [100:0] w;
    wire a;
 
- `define OUTS a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a
- 
+ `ifdef SYSTEM_VERILOG_MODE
+    `define OUTS a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a
+ `else
+    `define OUTS a, a, a, a, a, a, a, a, a, a, a, a
+ `endif
+
    unary_ops_test #(1) unary_test_1 (1'b0, w[0:0], w[0:0], w[0:0], `OUTS);
    unary_ops_test #(2) unary_test_2 (2'b0, w[1:0], w[1:0], w[1:0], `OUTS);
    unary_ops_test #(3) unary_test_3 (3'b0, w[2:0], w[2:0], w[2:0], `OUTS);

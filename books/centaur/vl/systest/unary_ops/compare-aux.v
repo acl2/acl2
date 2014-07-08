@@ -74,6 +74,8 @@ module `COMPARE_NAME (src, chk);
    wire spec_false ;
    wire spec_x ;
    wire spec_z ;
+
+   `ifdef SYSTEM_VERILOG_MODE
    wire spec_wildeq1 ;
    wire spec_wildeq2 ;
    wire spec_wildeq3 ;
@@ -82,8 +84,21 @@ module `COMPARE_NAME (src, chk);
    wire spec_wildneq2 ;
    wire spec_wildneq3 ;
    wire spec_wildneq4 ;
+   `endif
 
    unary_ops_test #(`SIZE) spec (
+
+     `ifdef SYSTEM_VERILOG_MODE
+     .out_wildeq1(spec_wildeq1),
+     .out_wildeq2(spec_wildeq2),
+     .out_wildeq3(spec_wildeq3),
+     .out_wildeq4(spec_wildeq4),
+     .out_wildneq1(spec_wildneq1),
+     .out_wildneq2(spec_wildneq2),
+     .out_wildneq3(spec_wildneq3),
+     .out_wildneq4(spec_wildneq4),
+     `endif
+
      .in(src),
      .out_bitnot(spec_bitnot),
      .out_plus(spec_plus),
@@ -99,15 +114,7 @@ module `COMPARE_NAME (src, chk);
      .out_true(spec_true),
      .out_false(spec_false),
      .out_x(spec_x),
-     .out_z(spec_z),
-     .out_wildeq1(spec_wildeq1),
-     .out_wildeq2(spec_wildeq2),
-     .out_wildeq3(spec_wildeq3),
-     .out_wildeq4(spec_wildeq4),
-     .out_wildneq1(spec_wildneq1),
-     .out_wildneq2(spec_wildneq2),
-     .out_wildneq3(spec_wildneq3),
-     .out_wildneq4(spec_wildneq4)
+     .out_z(spec_z)
    );
 
    wire [`SIZE-1:0] impl_bitnot ;
@@ -121,6 +128,8 @@ module `COMPARE_NAME (src, chk);
    wire impl_xor ;
    wire impl_xnor ;
    wire impl_xnor2 ;
+
+  `ifdef SYSTEM_VERILOG_MODE
    wire impl_wildeq1 ;
    wire impl_wildeq2 ;
    wire impl_wildeq3 ;
@@ -129,8 +138,21 @@ module `COMPARE_NAME (src, chk);
    wire impl_wildneq2 ;
    wire impl_wildneq3 ;
    wire impl_wildneq4 ;
+  `endif
 
    `MODNAME_SIZE impl (
+
+     `ifdef SYSTEM_VERILOG_MODE
+     .out_wildeq1(impl_wildeq1),
+     .out_wildeq2(impl_wildeq2),
+     .out_wildeq3(impl_wildeq3),
+     .out_wildeq4(impl_wildeq4),
+     .out_wildneq1(impl_wildneq1),
+     .out_wildneq2(impl_wildneq2),
+     .out_wildneq3(impl_wildneq3),
+     .out_wildneq4(impl_wildneq4),
+     `endif
+
      .in(src),
      .out_bitnot(impl_bitnot),
      .out_plus(impl_plus),
@@ -146,15 +168,7 @@ module `COMPARE_NAME (src, chk);
      .out_true(impl_true),
      .out_false(impl_false),
      .out_x(impl_x),
-     .out_z(impl_z),
-     .out_wildeq1(impl_wildeq1),
-     .out_wildeq2(impl_wildeq2),
-     .out_wildeq3(impl_wildeq3),
-     .out_wildeq4(impl_wildeq4),
-     .out_wildneq1(impl_wildneq1),
-     .out_wildneq2(impl_wildneq2),
-     .out_wildneq3(impl_wildneq3),
-     .out_wildneq4(impl_wildneq4)
+     .out_z(impl_z)
    );
 
 
@@ -229,6 +243,7 @@ module `COMPARE_NAME (src, chk);
 	  `SIZE, src, spec_z, impl_z);
 
 
+      `ifdef SYSTEM_VERILOG_MODE
 
       if (spec_wildeq1 !== impl_wildeq1)
 	$display("compare_unary_ops fail (wildeq1): size = %0d, src = %b, spec = %b, impl = %b",
@@ -261,6 +276,8 @@ module `COMPARE_NAME (src, chk);
       if (spec_wildneq4 !== impl_wildneq4)
 	$display("compare_unary_ops fail (wildneq4): size = %0d, src = %b, spec = %b, impl = %b",
 	  `SIZE, src, spec_wildneq4, impl_wildneq4);
+
+      `endif
 
    end
 

@@ -29,7 +29,12 @@
 // Original author: Jared Davis <jared@centtech.com>
 
 `include "spec.v"
-`include "impl.v"
+
+`ifdef SYSTEM_VERILOG_MODE
+ `include "impl.sv"
+`else
+ `include "impl.v"
+`endif
 
 // Using a global random seed seems like a good idea -- When each instance of
 // randomBit2 had its own seed, they seemed to just always produce the same
