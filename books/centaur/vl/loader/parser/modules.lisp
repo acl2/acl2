@@ -106,7 +106,7 @@
   :count strong
   (seqw tokens warnings
         (when (eq (vl-loadconfig->edition config) :verilog-2005)
-          (:= (vl-match-token :vl-always))
+          (:= (vl-match-token :vl-kwd-always))
           (return :vl-always))
         (kwd := (vl-match-some-token '(:vl-kwd-always
                                        :vl-kwd-always_comb
