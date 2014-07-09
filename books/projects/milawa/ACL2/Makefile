@@ -36,7 +36,7 @@ STARTJOB ?= $(SHELL)
 PWD := $(shell pwd)
 
 PATH := $(PWD)/acl2-images:$(PATH)
-WAIT := $(PWD)/wait.pl
+WAIT := $(PWD)/../../../build/wait.pl
 
 # We really only need to tell cert.pl about the high level books we care about.
 # This is a little haphazard, but basically we don't want to include the

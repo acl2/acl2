@@ -186,6 +186,7 @@ $(QUICKLISP_DIR)/quicklisp.lsp:
 	@cd $(QUICKLISP_DIR); \
 	   curl http://beta.quicklisp.org/quicklisp.lisp \
              -o quicklisp.lsp $(HTTP_PROXY_FLAG)
+	@$(BUILD_DIR)/wait.pl $(QUICKLISP_DIR)/quicklisp.lsp
 	@ls -l $(QUICKLISP_DIR)/quicklisp.lsp
 
 $(QUICKLISP_DIR)/inst/setup.lisp: $(QUICKLISP_DIR)/quicklisp.lsp \
@@ -194,6 +195,7 @@ $(QUICKLISP_DIR)/inst/setup.lisp: $(QUICKLISP_DIR)/quicklisp.lsp \
 	@cd $(QUICKLISP_DIR); \
            ($(STARTJOB) -c \
               "ACL2_CUSTOMIZATION=NONE $(ACL2) < install.lsp &> install.out" ; \
+	    $(BUILD_DIR)/wait.pl inst/setup.lisp ;\
 	    ls -l inst/setup.lisp) \
 	   || (tail -300 install.out | sed 's/^/   | /'; false)
 
