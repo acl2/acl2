@@ -112,12 +112,13 @@
 ; -----------------------------------------------------------------------------
 
 ; To follow this tutorial you will need one (or more!) DIMACS-compatible SAT
-; solvers installed on your system.  For information on how to get a SAT solver
-; and what solvers we currently recommend, please see
+; solvers installed on your system.
+;
+; For information on how to get a SAT solver and what solvers we currently
+; recommend, please see
 ;
 ;     :XDOC SATLINK::SAT-SOLVER-OPTIONS
-
-
+;
 ; The particular SAT solver that SATLINK will call, and other options about,
 ; e.g., what kind of debugging information will be printed, whether temporary
 ; files should be removed, etc., are governed by a configuration object.  For
@@ -126,13 +127,8 @@
 
 (gl::gl-satlink-config)
 
-; We have configured our path so that we can run Lingeling by simply typing
-; "lingeling".  If you install lingeling on your system like this, then this
-; default configuration will work fine.
-;
-; But maybe you want to use a different SAT solver, say Glucose.  Here are some
-; examples of how to set up custom configurations.  We'll turn VERBOSE on, so
-; we can see the SAT solvers working:
+; Here are some examples of how to define new Satlink configurations.  We'll
+; always turn :verbose on here, so we can see the SAT solvers working.
 
 (defun my-glucose-config ()
   (declare (xargs :guard t))
@@ -155,11 +151,12 @@
                         :mintime 1/2
                         :remove-temps t))
 
-; You can, of course, add other SAT solver configurations by modifying the
-; above.  If you're experimenting with a new SAT solver, it's a good idea to
-; run a really quick check that your SAT solver configuration seems to be
-; working.  If all is well, the satlink::check-config command should say "Good
-; deal -- this SATLINK configuration seems OK."
+; You should be able to easily adapt these examples to call any other SAT
+; solver that you would like to use.  When doing so, it's a good idea to run a
+; really quick check that your SAT solver configuration seems to be working.
+; Satlink includes a check-config command that you can use for this.  For
+; example, if the above solvers are installed on your system, you can try
+; running:
 
 (include-book "centaur/satlink/check-config" :dir :system)
 (satlink::check-config (my-glucose-config))
@@ -173,9 +170,9 @@
 
 (defattach gl::gl-satlink-config my-glucose-config)
 
-; While this attachment is active, GL will call Glucose instead of Lingeling
-; to carry out the proof.  If we want to, say, go back to Lingeling for some
-; other particular proof, we just set up a new attachment, e.g.,:
+; While this attachment is active, GL will call Glucose to carry out the proof.
+; If we want to, say, switch to Lingeling for some other particular proof, we
+; just set up a new attachment, e.g.,:
 
 (defattach gl::gl-satlink-config my-lingeling-config)
 

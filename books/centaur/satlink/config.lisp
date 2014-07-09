@@ -43,8 +43,9 @@ invoke the SAT solver.</p>"
   :tag :satlink-config
 
   ((cmdline "Command line to use to invoke the SAT solver, except for the
-             filename.  For instance, @('\"lingeling\"')."
-            stringp :rule-classes :type-prescription)
+             filename.  For instance, @('\"lingeling\"') or
+             @('\"glucose-cert\"'); see @(see sat-solver-options)."
+             stringp :rule-classes :type-prescription)
 
    (verbose "Should we print excessive output for debugging?"
             booleanp :rule-classes :type-prescription)
@@ -66,7 +67,7 @@ invoke the SAT solver.</p>"
 @(def *default-config*)"
 
   (defconst *default-config*
-    (make-config :cmdline "lingeling"
+    (make-config :cmdline "glucose-cert"
                  :verbose t
                  :mintime 1/2
                  :remove-temps t)))
