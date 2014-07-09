@@ -73,11 +73,12 @@
 (test-fail "#\Return ")
 
 
-#+hons
+;; #+hons
 ; Matt K.: Commenting out the following, which apparently loops forever when
 ; using ACL2 rather than ACL2(h).
 ; Jared -- changing it to only be tested on #+hons.
-(test-fail "#1=(a . #1#)")
+; Jared -- Commenting it out again, see Issue 193.
+;; (test-fail "#1=(a . #1#)")
 
 (test-ok "a" (acl2::a))
 (test-ok "acl2::a" (acl2::a))
