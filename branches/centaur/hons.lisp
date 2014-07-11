@@ -167,7 +167,7 @@
   (fast-alist-fork alist
                    (if (consp alist)
                        (cdr (last alist))
-                     nil)))
+                     alist)))
 
 #+(or acl2-loop-only (not hons))
 (defn fast-alist-clean! (alist)
