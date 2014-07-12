@@ -31,11 +31,11 @@
 
 (in-package "ACL2")
 (include-book "list-fix")
-(include-book "rev")
 (local (include-book "std/basic/inductions" :dir :system))
-(local (include-book "take"))
-(local (include-book "arithmetic/top" :dir :system))
 (local (include-book "append"))
+;; (include-book "rev")
+;; (local (include-book "take"))
+;; (local (include-book "arithmetic/top" :dir :system))
 
 
 ; [Jared]: I split these out of centaur/misc/lists.lisp.  I tried to mainly
@@ -143,20 +143,10 @@ functions."
 
   (defcong list-equiv list-equiv (revappend x y) 2)
 
-  (defcong list-equiv equal (butlast lst n) 1
-    :hints(("Goal" :induct (cdr-cdr-induct lst lst-equiv))))
-
   (defcong list-equiv list-equiv (last x) 1
     :hints(("Goal" :induct (cdr-cdr-induct x x-equiv))))
 
   (defcong list-equiv list-equiv (make-list-ac n val ac) 3)
-
-  (defcong list-equiv equal (take n x) 2
-    :hints(("Goal"
-            :induct (and (take n x)
-                         (cdr-cdr-induct x x-equiv)))))
-
-  (defcong list-equiv equal (take n x) 2)
 
   (defcong list-equiv equal (no-duplicatesp-equal x) 1
     :hints(("Goal" :induct (cdr-cdr-induct x x-equiv))))
@@ -179,9 +169,5 @@ functions."
 
    (defthm list-equiv-of-revappend-and-revappend
      (equal (list-equiv (revappend a x) (revappend a y))
-            (list-equiv x y)))
-
-   (defthm list-equiv-of-rev-and-rev
-     (equal (list-equiv (rev x) (rev y))
             (list-equiv x y))))
 

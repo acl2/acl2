@@ -198,12 +198,14 @@
               (esc-alist-p x)))
   :hints(("Goal" :in-theory (enable esc-alist-p))))
 
-(defthm alistp-when-esc-alist-p
+;; (sswords) -- Enabling this only locally since it can be expensive when
+;; reasoning about unrelated alists
+(defthmd alistp-when-esc-alist-p
   (implies (esc-alist-p x)
            (alistp x))
   :hints(("Goal" :induct (len x))))
 
-
+(local (in-theory (enable alistp-when-esc-alist-p)))
 
 (defund esc-alist-to-equalities (x)
   "Convert an esc-alist-p into a list of (equal key val) terms."

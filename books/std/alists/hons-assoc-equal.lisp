@@ -30,8 +30,7 @@
 ;                   Sol Swords <sswords@centtech.com>
 
 (in-package "ACL2")
-(include-book "../lists/list-defuns")
-(local (include-book "../lists/list-fix"))
+(include-book "../lists/equiv")
 (local (in-theory (enable hons-assoc-equal)))
 
 (defsection std/alists/hons-assoc-equal

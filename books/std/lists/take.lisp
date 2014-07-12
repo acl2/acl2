@@ -35,7 +35,9 @@
 
 (in-package "ACL2")
 (include-book "list-fix")
+(include-book "equiv")
 (local (include-book "arithmetic/top" :dir :system))
+(local (include-book "std/basic/inductions" :dir :system))
 
 (defun simpler-take-induction (n xs)
   ;; Not generally meant to be used; only meant for take-induction
@@ -174,7 +176,19 @@ recommend using @('take-redefinition') instead of @('(:definition take)').</p>"
     ;; Note: see also replicate.lisp for related cases and a stronger rule that
     ;; case-splits.
     (equal (take a (take a x))
-           (take a x))))
+           (take a x)))
+
+  
+  (defcong list-equiv equal (take n x) 2
+    :hints(("Goal"
+            :induct (and (take n x)
+                         (cdr-cdr-induct x x-equiv)))))
+
+  (defcong list-equiv equal (take n x) 2)
+
+  
+  (defcong list-equiv equal (butlast lst n) 1
+    :hints(("Goal" :induct (cdr-cdr-induct lst lst-equiv)))))
 
 
 (defsection first-n

@@ -37,6 +37,7 @@
 (include-book "list-fix")
 (local (include-book "revappend"))
 (local (include-book "append"))
+(include-book "equiv")
 
 (defun revappend-without-guard (x y)
   (declare (xargs :guard t))
@@ -172,6 +173,11 @@ perform quite well thanks to @(see mbe).</p>"
       :hints(("Goal" :in-theory (enable make-character-list)))))
 
 
+  (defthm list-equiv-of-rev-and-rev
+    (equal (list-equiv (rev x) (rev y))
+           (list-equiv x y))
+    :hints(("Goal" :in-theory (enable list-equiv))))
+
   (def-listp-rule element-list-p-of-rev
     (implies (element-list-p x)
              (element-list-p (rev x))))
@@ -183,6 +189,3 @@ perform quite well thanks to @(see mbe).</p>"
   (def-projection-rule elementlist-projection-of-rev
     (equal (elementlist-projection (rev x))
            (rev (elementlist-projection x)))))
-
-
-

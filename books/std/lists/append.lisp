@@ -36,7 +36,7 @@
 (in-package "ACL2")
 (include-book "list-fix")
 (local (include-book "std/basic/inductions" :dir :system))
-(local (include-book "arithmetic/top" :dir :system))
+;; (local (include-book "arithmetic/top" :dir :system))
 
 
 (defsection std/lists/append
@@ -79,11 +79,11 @@ library."
     (equal (len (append x y))
            (+ (len x) (len y))))
 
-  (defthm nth-of-append
-    (equal (nth n (append x y))
-           (if (< (nfix n) (len x))
-               (nth n x)
-             (nth (- n (len x)) y))))
+  ;; (defthm nth-of-append
+  ;;   (equal (nth n (append x y))
+  ;;          (if (< (nfix n) (len x))
+  ;;              (nth n x)
+  ;;            (nth (- n (len x)) y))))
 
   (defthm equal-when-append-same
     (equal (equal (append x y1)

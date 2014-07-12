@@ -30,8 +30,11 @@
 ;                   Sol Swords <sswords@centtech.com>
 
 (in-package "ACL2")
-(include-book "std/lists/list-defuns" :dir :system)
-(local (include-book "std/lists/sets" :dir :system))
+
+(include-book "xdoc/top" :dir :system)
+;; (include-book "std/lists/list-fix" :dir :system)
+(include-book "std/lists/equiv" :dir :system)
+;; (include-book "std/lists/sets" :dir :system)
 
 (defsection alist-keys
   :parents (std/alists strip-cars)
@@ -96,25 +99,6 @@ do not non-@(see local)ly switch the normal form.</p>"
               :use ((:instance l0 (x x))
                     (:instance l0 (x acl2::x-equiv)))))))
 
-  (encapsulate
-    ()
-    (local (defthm l0
-             (implies (member (cons a b) x)
-                      (member a (alist-keys x)))))
-
-    (local (defthm l1
-             (implies (and (subsetp x y)
-                           (member a (alist-keys x)))
-                      (member a (alist-keys y)))))
-
-    (local (defthm l2
-             (implies (subsetp x y)
-                      (subsetp (alist-keys x)
-                               (alist-keys y)))))
-
-    (defcong set-equiv set-equiv (alist-keys x) 1
-      :hints(("Goal" :in-theory (enable set-equiv)))))
-
 
   (defthm true-listp-of-alist-keys
     (true-listp (alist-keys x))
@@ -156,9 +140,9 @@ do not non-@(see local)ly switch the normal form.</p>"
            (append (alist-keys x)
                    (alist-keys y))))
 
-  (defthm alist-keys-of-rev
-    (equal (alist-keys (rev x))
-           (rev (alist-keys x))))
+  ;; (defthm alist-keys-of-rev
+  ;;   (equal (alist-keys (rev x))
+  ;;          (rev (alist-keys x))))
 
   (defthm alist-keys-of-revappend
     (equal (alist-keys (revappend x y))

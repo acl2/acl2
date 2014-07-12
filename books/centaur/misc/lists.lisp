@@ -25,6 +25,7 @@
 
 (include-book "arith-equivs")
 (include-book "std/lists/equiv" :dir :system)
+(local (include-book "std/lists/take" :dir :system))
 (include-book "data-structures/list-defthms" :dir :system)
 (local (in-theory (enable* arith-equiv-forwarding)))
 (local (include-book "arithmetic/top-with-meta" :dir :system))

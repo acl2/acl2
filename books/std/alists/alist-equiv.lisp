@@ -31,9 +31,9 @@
 
 (in-package "ACL2")
 (include-book "xdoc/top" :dir :system)
-(include-book "alist-keys")
+(include-book "alist-vals")
 (local (include-book "hons-assoc-equal"))
-(local (include-book "../lists/sets"))
+(include-book "../lists/sets")
 
 (defsection alists-agree
   :parents (std/alists)
@@ -361,6 +361,51 @@ about alist equivalence.</p>"
   (defcong list-equiv equal (sub-alistp x y) 2)
 
   ||#
+
+  (encapsulate
+    ()
+    (local (in-theory (e/d (member alist-keys)
+                           (alist-keys-member-hons-assoc-equal))))
+
+    (local (defthm l0
+             (implies (member (cons a b) x)
+                      (member a (alist-keys x)))))
+
+    (local (defthm l1
+             (implies (and (subsetp x y)
+                           (member a (alist-keys x)))
+                      (member a (alist-keys y)))))
+
+    (local (defthm l2
+             (implies (subsetp x y)
+                      (subsetp (alist-keys x)
+                               (alist-keys y)))))
+
+    (defcong set-equiv set-equiv (alist-keys x) 1
+      :hints(("Goal" :in-theory (enable set-equiv)))))
+
+
+  (encapsulate
+    ()
+    (local (in-theory (enable member alist-vals)))
+
+    (local (defthm l0
+             (implies (member (cons a b) x)
+                      (member b (alist-vals x)))))
+
+    (local (defthm l1
+             (implies (and (subsetp x y)
+                           (member a (alist-vals x)))
+                      (member a (alist-vals y)))))
+
+    (local (defthm l2
+             (implies (subsetp x y)
+                      (subsetp (alist-vals x)
+                               (alist-vals y)))))
+
+    (defcong set-equiv set-equiv (alist-vals x) 1
+      :hints(("Goal" :in-theory (enable set-equiv)))))
+
 
   (defsection alist-keys-set-equivalence
 

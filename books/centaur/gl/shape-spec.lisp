@@ -1603,7 +1603,8 @@
     (shape-spec-obj-in-range) (g-keyword-symbolp) (ash)
     (expt) (unary--) (binary-+) (consp) (integerp) (len)
     (car) (cdr) (booleanp) (list-of-g-booleansp) (tag)
-    eql len-plus-one len-zero (zp) (boolean-listp) (true-listp)))
+    eql len-plus-one len-zero (zp) (boolean-listp) (true-listp)
+    unsigned-byte-p signed-byte-p acl2::integer-range-p))
 
 (def-ruleset! shape-spec-obj-in-range-open
   '(shape-spec-obj-in-range-open-cons
@@ -1622,7 +1623,8 @@
     (shape-spec-obj-in-range) (g-keyword-symbolp) (ash)
     (expt) (unary--) (binary-+) (consp) (integerp) (len)
     (car) (cdr) (booleanp) (list-of-g-booleansp) (tag) eql
-    len-plus-one len-zero (zp) (boolean-listp) (true-listp)))
+    len-plus-one len-zero (zp) (boolean-listp) (true-listp)
+    unsigned-byte-p signed-byte-p acl2::integer-range-p))
 
 
 

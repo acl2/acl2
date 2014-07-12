@@ -30,9 +30,9 @@
 
 (in-package "VL")
 (include-book "defs")
+(include-book "printedlist")
 (include-book "print-urlencode")
 (include-book "print-htmlencode")
-(include-book "centaur/fty/deftypes" :dir :system)
 (include-book "cw-unformatted")
 (include-book "std/strings/decimal" :dir :system)
 (local (include-book "arithmetic"))
@@ -50,7 +50,6 @@
   (mbe :logic (make-character-list x)
        :exec x))
 
-
 (defxdoc printer
   :parents (vl)
   :short "Applicative \"printer\" for building strings."
@@ -62,64 +61,10 @@ strings into a list.  These printed elements are kept in reverse order, which
 makes the sequential printing of small chunks of text reasonably
 efficient.</p>")
 
-(define vl-printed-p (x)
-  :parents (printer)
-  :short "Recognize a printed object (string or character)."
-  (or (characterp x)
-      (stringp x))
-  ///
-  (defthm vl-printed-p-cr
-    (equal (vl-printed-p x)
-           (or (characterp x)
-               (stringp x)))
-    :rule-classes :compound-recognizer
-    :hints(("Goal" :in-theory (enable vl-printed-p))))
-
-  (defthm vl-printed-p-by-backchaining
-    (implies (or (characterp x)
-                 (stringp x))
-             (vl-printed-p x))))
-
-(define vl-printed-fix
-  :parents (vl-printed-p)
-  :short "Fixing function for @(see vl-printed-p) objects."
-  ((x vl-printed-p))
-  :returns (x-fix vl-printed-p)
-  :inline t
-  (mbe :logic (if (vl-printed-p x)
-                  x
-                "")
-       :exec x)
-  ///
-  (defthm vl-printed-fix-when-vl-printed-p
-    (implies (vl-printed-p x)
-             (equal (vl-printed-fix x)
-                    x))))
-
-(fty::deffixtype vl-printed
-  :pred vl-printed-p
-  :fix vl-printed-fix
-  :equiv vl-printed-equiv
-  :define t
-  :forward t)
-
-(fty::deflist vl-printedlist
-  :elt-type vl-printed-p)
-
-(deflist vl-printedlist-p (x)
-  (vl-printed-p x)
-  :guard t
-  :elementp-of-nil nil
-  :parents (printer)
-  :short "Recognizer for mixed lists of strings and characters."
-  ///
-  (defthm vl-printedlist-p-when-character-listp
-    (implies (character-listp x)
-             (vl-printedlist-p x)))
-
-  (defthm vl-printedlist-p-when-string-listp
-    (implies (string-listp x)
-             (vl-printedlist-p x)))
+(defsection vl-printedlist-p-util
+  :extension vl-printedlist-p
+  
+  (local (in-theory (enable vl-printedlist-p)))
 
   (local (in-theory (e/d (repeated-revappend)
                          ((:executable-counterpart force)))))
@@ -128,11 +73,6 @@ efficient.</p>")
     (implies (and (vl-printedlist-p x)
                   (force (vl-printedlist-p y)))
              (vl-printedlist-p (repeated-revappend n x y))))
-
-  (defthm vl-printedlist-p-of-make-list-ac
-    (implies (and (vl-printed-p x)
-                  (force (vl-printedlist-p y)))
-             (vl-printedlist-p (make-list-ac n x y))))
 
   (defthm vl-printedlist-p-of-vl-html-encode-push
     (implies (vl-printedlist-p acc)
@@ -143,11 +83,6 @@ efficient.</p>")
     (implies (vl-printedlist-p acc)
              (vl-printedlist-p (mv-nth 1 (vl-html-encode-chars-aux x col tabsize acc))))
     :hints(("Goal" :in-theory (enable vl-html-encode-chars-aux))))
-
-  (defthm vl-printedlist-p-of-revappend-chars
-    (implies (vl-printedlist-p acc)
-             (vl-printedlist-p (str::revappend-chars x acc)))
-    :hints(("Goal" :in-theory (enable str::revappend-chars))))
 
   (defthm vl-printedlist-p-of-vl-html-encode-string-aux
     (implies (vl-printedlist-p acc)
@@ -164,40 +99,6 @@ efficient.</p>")
     :hints(("Goal" :in-theory (enable vl-url-encode-string-aux)))))
 
 
-(define vl-printedlist-length ((x vl-printedlist-p)
-                               (acc natp))
-  :returns (len natp :rule-classes :type-prescription)
-  :parents (vl-printedlist-p)
-  :short "Compute the total length of the list, in characters."
-  :long "<p>This is different than ordinary @(see len) because any strings
-within the list may have their own lengths.</p>"
-  (b* (((when (atom x))
-        (lnfix acc))
-       (x1   (vl-printed-fix (car x)))
-       (len1 (if (characterp x1)
-                 1
-               (length x1))))
-    (vl-printedlist-length (cdr x) (+ len1 (lnfix acc)))))
-
-(define vl-printedlist-peek
-  ((x vl-printedlist-p "The printed list, which we assume is in reverse order!"))
-  :returns (maybe-char (or (not maybe-char)
-                           (characterp maybe-char))
-                       :rule-classes :type-prescription)
-  :parents (vl-printedlist-p)
-  :short "Extract the last character that was printed."
-  :long "<p>This is generally useful for things like <i>insert a space unless
-we just printed a newline</i>, etc.</p>"
-  (and (consp x)
-       (let ((x1 (vl-printed-fix (car x))))
-         (if (characterp x1)
-             x1
-           (let ((len (length x1)))
-             (if (zp len)
-                 ;; Degenerate case where we printed an empty string, look
-                 ;; further.
-                 (vl-printedlist-peek (cdr x))
-               (char x1 (1- len))))))))
 
 
 (defxdoc ps
@@ -722,25 +623,7 @@ vl-ps->rchars), but it is a weird @(see vl-printedlist-p) structure, is in
 reverse order, and is generally not very convenient to work with.  So, it is
 typically more convenient to use these alternatives.</p>")
 
-(define vl-rchars-to-chars ((x vl-printedlist-p)
-                            acc)
-  :returns (chars character-listp :hyp (character-listp acc))
-  :parents (vl-ps->chars)
-  :short "Convert a printed list (in reverse order) into characters (in proper
-  order)."
-  :long "<p>BOZO this is misnamed for historic reasons.</p>"
 
-  (b* (((when (atom x))
-        acc)
-       (x1 (vl-printed-fix (car x)))
-       ((when (characterp x1))
-        ;; Prefer to test characterp instead of stringp, since characters are
-        ;; immediates in CCL.
-        (vl-rchars-to-chars (cdr x) (cons x1 acc))))
-    ;; Subtle: the rchars are in reverse order, but the strings within it are
-    ;; in proper order, so we need to use append-chars instead of
-    ;; revappend-chars here.
-    (vl-rchars-to-chars (cdr x) (str::append-chars x1 acc))))
 
 (define vl-ps->chars (&key (ps 'ps))
   :returns (chars character-listp)
@@ -750,75 +633,16 @@ the proper, non-reversed, printed order."
   :long "<p>This is expensive.  It necessarily involves creating @('n') conses,
 where @('n') is the number of characters printed.  If you really want a string,
 @(see vl-ps->string) will be faster.</p>"
-  (vl-rchars-to-chars (vl-ps->rchars) nil))
+  (vl-printedlist->chars (vl-ps->rchars) nil))
+
+
 
 (define vl-ps->string (&key (ps 'ps))
   :returns (str stringp :rule-classes :type-prescription)
   :parents (accessing-printed-output)
   :short "@('(vl-ps->string)') returns the printed characters as a string in
 the proper, non-reversed, printed order."
-  :long "<p>This is logically just @('(implode (vl-ps->chars))'), but we
-install a more efficient definition under the hood in raw Lisp.</p>"
-  (implode (vl-ps->chars))
-  ///
-  (defttag vl-optimize)
-  (progn!
-   (set-raw-mode t)
-
-   (defund vl-ps->string-fn (ps)
-
-     ;; Optimized PS->STRING routine.  We're going to build the return string in
-     ;; two passes.  In the first pass we'll determine how big of an array we
-     ;; need.  In the second, we'll fill in its characters with the reverse of
-     ;; the elems.
-
-     (let* ((elems (vl-ps->rchars))
-            (size  (vl-printedlist-length elems 0)))
-       (unless (typep size 'fixnum)
-         (er hard? 'vl-ps->string-fn
-             "Printed list will will be longer than a fixnum (~x0).  You don't ~
-            actually want to turn it into a string, I think." size))
-
-       ;; Since the elems are in reverse order, we'll work backwards from the end
-       ;; of the array.
-       (let* ((ret (make-array size :element-type 'character))
-              (i   (the fixnum (- (the fixnum size) 1))))
-         (declare (type fixnum i))
-         (loop while (consp elems)
-               do
-               (let ((elem (car elems)))
-                 (if (characterp elem)
-                     (progn (setf (schar ret i) elem)
-                            (decf i))
-
-                   ;; For strings, things are trickier because the characters of
-                   ;; the string *are* in the right order.  It's very helpful to
-                   ;; think of a concrete example.  Suppose we do:
-                   ;;
-                   ;;   print #\A
-                   ;;   print #\B
-                   ;;   print #\C
-                   ;;   print "abc"
-                   ;;   print #\D
-                   ;;   print #\E
-                   ;;
-                   ;; Then the rchars we'll have are (#\E #\D "abc" #\C #\B #\A).
-                   ;; The ret array is 8 entries long and we've already set
-                   ;;   ret[7] = #\E
-                   ;;   ret[6] = #\D
-                   ;; So we now want to set
-                   ;;   ret[5] = #\c
-                   ;;   ret[4] = #\b
-                   ;;   ret[3] = #\a
-                   ;;
-                   ;; I think it's easiest to just go down from the end of the
-                   ;; string so we can (decf i) like before.
-                   (loop for j fixnum from (- (length (the string elem)) 1) downto 0 do
-                         (setf (schar ret i) (schar elem j))
-                         (decf i))))
-               (setq elems (cdr elems)))
-         ret))))
-  (defttag nil))
+  (vl-printedlist->string (vl-ps->rchars)))
 
 
 (define vl-print-to-file ((filename stringp) &key (ps 'ps) (state 'state))

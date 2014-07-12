@@ -31,7 +31,7 @@
 
 (in-package "ACL2")
 (include-book "alist-keys")
-(local (include-book "std/lists/sets" :dir :system))
+;; (local (include-book "std/lists/sets" :dir :system))
 
 (defsection alist-vals
   :parents (std/alists strip-cdrs)
@@ -77,25 +77,6 @@ discussion of this convention.</p>
               :use ((:instance l0 (x x))
                     (:instance l0 (x acl2::x-equiv)))))))
 
-  (encapsulate
-    ()
-    (local (defthm l0
-             (implies (member (cons a b) x)
-                      (member b (alist-vals x)))))
-
-    (local (defthm l1
-             (implies (and (subsetp x y)
-                           (member a (alist-vals x)))
-                      (member a (alist-vals y)))))
-
-    (local (defthm l2
-             (implies (subsetp x y)
-                      (subsetp (alist-vals x)
-                               (alist-vals y)))))
-
-    (defcong set-equiv set-equiv (alist-vals x) 1
-      :hints(("Goal" :in-theory (enable set-equiv)))))
-
   (defthm true-listp-of-alist-vals
     (true-listp (alist-vals x))
     :rule-classes :type-prescription)
@@ -119,9 +100,9 @@ discussion of this convention.</p>
            (append (alist-vals x)
                    (alist-vals y))))
 
-  (defthm alist-vals-of-rev
-    (equal (alist-vals (rev x))
-           (rev (alist-vals x))))
+  ;; (defthm alist-vals-of-rev
+  ;;   (equal (alist-vals (rev x))
+  ;;          (rev (alist-vals x))))
 
   (defthm alist-vals-of-revappend
     (equal (alist-vals (revappend x y))

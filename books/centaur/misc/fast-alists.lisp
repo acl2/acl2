@@ -43,7 +43,7 @@
 ;; Functions are all written so as to ignore non-pair elements of alists.  This
 ;; way we shouldn't ever need an alistp hyp.
 
-
+(include-book "std/alists/alist-fix" :dir :system)
 (include-book "alist-witness")
 (include-book "equal-sets")
 (include-book "universal-equiv")
@@ -120,23 +120,10 @@
           (set-reasoning)))
 
 
-
-(defn alist-fix (al)
-  (if (atom al)
-      nil
-    (if (atom (car al))
-        (alist-fix (cdr al))
-      (cons (car al) (alist-fix (cdr al))))))
-
-(defthmd hons-assoc-equal-alist-fix
-  (equal (hons-assoc-equal k (alist-fix a))
-         (hons-assoc-equal k a)))
-
 (defthm alist-fix-alist-equiv
   (alist-equiv (alist-fix a) a)
   :hints(("Goal" :in-theory
-          (enable alist-equiv-iff-agree-on-bad-guy
-                  hons-assoc-equal-alist-fix))))
+          (enable alist-equiv-iff-agree-on-bad-guy))))
 
 
 (defn nonempty-alistp (x)
