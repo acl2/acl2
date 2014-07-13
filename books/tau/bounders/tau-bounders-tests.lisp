@@ -7,5 +7,10 @@
 
 (defthm tau-bounders-test-expt2
   (implies
-    (and (natp w) (> w 2))
-    (>= (expt2 (* w w)) 512)))
+   (and (natp w) (> w 2))
+   (>= (expt2 (* w w)) 512)))
+
+(defthm tau-bounders-test-expt
+  (implies
+   (and (integerp w) (< w 2))
+   (>= (/ (+ 1 (expt 2 w)))  1/3)))

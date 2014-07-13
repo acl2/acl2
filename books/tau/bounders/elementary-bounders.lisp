@@ -2483,8 +2483,8 @@
                 (make-tau-interval 'rationalp nil (expt 2 loy) nil (expt 2 hiy))
                 (make-tau-interval 'rationalp nil (expt 2 loy) nil nil)))
         (if hiy
-            (make-tau-interval 'rationalp nil nil nil (expt 2 hiy))
-            (make-tau-interval 'rationalp nil nil nil nil)))))
+            (make-tau-interval 'rationalp t 0 nil (expt 2 hiy))
+            (make-tau-interval 'rationalp t 0 nil nil)))))
 
 ; Warning:  We only deal with (EXPT 2 y), for integerp y!
 
