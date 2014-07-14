@@ -2506,9 +2506,9 @@
 ; -----------------------------------------------------------------
 ; (EXPT r i)
 
-; Both parameters of this tau-bounder are intervals. So tau-system can accept it.
-; It recognizes specific case r=2 and delegates it to the previous bounder and
-; returns entire real axis in general case.
+; Both parameters of this tau-bounder are intervals. So tau-system can accept
+; it.  It recognizes specific case r=2 and delegates it to the previous bounder
+; and returns rationals in the general case.
 
 (defun tau-bounder-expt (intr inti)
   (if
