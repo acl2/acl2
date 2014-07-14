@@ -171,7 +171,7 @@
 (include-book "tools/plev-ccl" :dir :system)
 (include-book "tools/with-supporters" :dir :system)
 (include-book "tools/remove-hyps" :dir :system)
-
+(include-book "clause-processors/doc" :dir :system)
 
 ; [Jared] removing these to speed up the manual build
 ;(include-book "tutorial/intro")
