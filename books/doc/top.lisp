@@ -75,6 +75,11 @@
 (include-book "centaur/aignet/types" :dir :system)
 (include-book "centaur/aignet/vecsim" :dir :system)
 
+; The rest of ihs is included elsewhere transitively.
+; We load logops-lemmas first so that the old style :doc-strings don't get
+; stripped away when they're loaded redundantly later.
+(include-book "ihs/logops-lemmas" :dir :system)
+
 (include-book "centaur/bitops/top" :dir :system)
 (include-book "centaur/bitops/congruences" :dir :system)
 (include-book "centaur/bitops/defaults" :dir :system)
@@ -187,8 +192,6 @@
 ;; other topics...
 (include-book "arithmetic-5/top" :dir :system)
 (include-book "arithmetic/top" :dir :system)
-; The rest of ihs is included elsewhere transitively
-(include-book "ihs/logops-lemmas" :dir :system)
 
 (include-book "rtl/rel9/lib/top" :dir :system)
 (include-book "rtl/rel9/lib/logn" :dir :system)
