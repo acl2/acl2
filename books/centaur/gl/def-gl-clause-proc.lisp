@@ -587,12 +587,12 @@ execute all existing symbolic counterpart functions.</p>
 
 <p>There is rarely a necessity for a user to define a new GL clause processor
 now, unless they have added symbolic counterpart functions either by
-hand-coding them or using @(see make-g-world).</p>
+hand-coding them or using make-g-world.</p>
 
 <p>Each GL clause processor has an associated sets of functions that it can
 directly execute symbolically.  DEF-GL-CLAUSE-PROCESSOR makes a new processor
 that can execute the full set of existing symbolic counterparts. (Symbolic
-counterparts may be defined by hand or using @(see make-g-world).)</p>
+counterparts may be defined by hand or using make-g-world.)</p>
 
 <p>It used to be the case that the clause processor also had a fixed set of
 functions it could execute concretely.  That is no longer the case.  We still
