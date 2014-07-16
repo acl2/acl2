@@ -2508,7 +2508,7 @@
 
 ; Both parameters of this tau-bounder are intervals. So tau-system can accept
 ; it.  It recognizes specific case r=2 and delegates it to the previous bounder
-; and returns rationals in the general case.
+; and returns the entire rational set in the general case.
 
 (defun tau-bounder-expt (intr inti)
   (if
