@@ -738,6 +738,11 @@ See :DOC GL::COVERAGE-PROOFS.
                  cov-hint-fail)))))
 
 
+(defmacro latest-gl-clause-proc ()
+  '(cdr (assoc 'clause-proc (table-alist
+                             'latest-greatest-gl-clause-proc
+                             (w state)))))
+
 (defun gl-hint-fn (clause-proc bindings param-bindings hyp param-hyp
                                concl hyp-clk concl-clk
                                cov-hints cov-hints-position cov-theory-add
@@ -763,7 +768,8 @@ See :DOC GL::COVERAGE-PROOFS.
         ;; ((er overrides)
         ;;  (preferred-defs-to-overrides
         ;;   (table-alist 'preferred-defs (w state)) state))
-
+        (clause-proc (or clause-proc
+                         (latest-gl-clause-proc)))
         (config (make-glcp-config
                  :abort-unknown abort-indeterminate
                  :abort-ctrex abort-ctrex
@@ -808,6 +814,7 @@ bindings:
                              ',trparam ',trconcl ',concl ',config)
                 state)))
      (value (glcp-combine-hints call cov-hints hyp-hints result-hints case-split-hints))))
+
 
 
 (defsection gl-hint
@@ -881,24 +888,24 @@ descriptions of each keyword argument:</p>
 <p>The keyword arguments to @('gl-hint') are similar to ones for the macros
 @(see def-gl-thm) and @(see def-gl-param-thm), and are documented there.</p>"
 
-  (defmacro gl-hint (clause-proc &key
-                                 bindings param-bindings
-                                 (hyp-clk '1000000)
-                                 (concl-clk '1000000)
-                                 cov-hints cov-hints-position
-                                 cov-theory-add do-not-expand
-                                 hyp-hints
-                                 result-hints
-                                 (hyp ''t) param-hyp concl
-                                 (n-counterexamples '3)
-                                 (abort-indeterminate 't)
-                                 (abort-ctrex 't)
-                                 (exec-ctrex 't)
-                                 (abort-vacuous 't)
-                                 (case-split-override 'nil)
-                                 case-split-hints
-                                 run-before-cases run-after-cases
-                                 test-side-goals)
+  (defmacro gl-hint (&key clause-proc
+                          bindings param-bindings
+                          (hyp-clk '1000000)
+                          (concl-clk '1000000)
+                          cov-hints cov-hints-position
+                          cov-theory-add do-not-expand
+                          hyp-hints
+                          result-hints
+                          (hyp ''t) param-hyp concl
+                          (n-counterexamples '3)
+                          (abort-indeterminate 't)
+                          (abort-ctrex 't)
+                          (exec-ctrex 't)
+                          (abort-vacuous 't)
+                          (case-split-override 'nil)
+                          case-split-hints
+                          run-before-cases run-after-cases
+                          test-side-goals)
 
     (gl-hint-fn clause-proc bindings param-bindings hyp param-hyp concl
                 hyp-clk concl-clk cov-hints cov-hints-position
@@ -908,83 +915,60 @@ descriptions of each keyword argument:</p>
                 case-split-override case-split-hints test-side-goals)))
 
 
-(defun def-gl-thm-fn
-  (name clause-proc rest)
-  (declare (xargs :mode :program))
-  (b* (((list hyp hyp-p concl concl-p g-bindings g-bindings-p cov-hints
-              cov-hints-position cov-theory-add do-not-expand hyp-clk concl-clk
-              n-counterexamples abort-indeterminate abort-ctrex exec-ctrex abort-vacuous test-side-goals
-              rule-classes no-defthm) rest)
-       ((unless (and hyp-p concl-p g-bindings-p))
-        (er hard 'def-gl-thm
-            "The keyword arguments HYP, CONCL, and G-BINDINGS must be provided ~
-in DEF-GL-THM.~%"))
-       (form `(defthm ,name
-                ,(if test-side-goals t `(implies ,hyp ,concl))
-                :hints ((gl-hint
-                         ,clause-proc
-                         :bindings ,g-bindings
-                         :hyp-clk ,hyp-clk
-                         :concl-clk ,concl-clk
-                         :cov-hints ,cov-hints
-                         :cov-hints-position ,cov-hints-position
-                         :cov-theory-add ,cov-theory-add
-                         :do-not-expand ,do-not-expand
-                         :hyp ',hyp
-                         :concl ',concl
-                         :n-counterexamples ,n-counterexamples
-                         :abort-indeterminate ,abort-indeterminate
-                         :abort-ctrex ,abort-ctrex
-                         :exec-ctrex ,exec-ctrex
-                         :abort-vacuous ,abort-vacuous
-                         :test-side-goals ,test-side-goals))
-                . ,(if (or test-side-goals no-defthm)
-                       '(:rule-classes nil)
-                     `(:rule-classes ,rule-classes)))))
-    (if (or test-side-goals no-defthm)
-        `(with-output
-          :off :all :stack :push
-          (make-event (er-progn (with-output :stack :pop ,form)
-                                (value '(value-triple 'ok)))))
-      form)))
-
-(defmacro latest-gl-clause-proc ()
-  '(cdr (assoc 'clause-proc (table-alist
-                             'latest-greatest-gl-clause-proc
-                             (w state)))))
-
-(defmacro latest-gl-interp ()
-  '(cdr (assoc 'interp-term
-               (table-alist
-                'latest-greatest-gl-clause-proc
-                (w state)))))
-
 
 ;; just wraps with-output around all this stuff and invisiblifies the return value
 (defmacro without-waterfall-parallelism (form)
   `(with-output :off :all :stack :push
      (progn
        (acl2::without-waterfall-parallelism
-        (with-output :stack :pop
-          ,form))
+         (with-output :stack :pop
+           ,form))
        (value-triple :invisible))))
 
 
-
-;; If a clause-processor name is supplied, this creates a defthm event
-;; using def-gl-thm-fn.  Otherwise, this creates a make-event which
-;; looks up the most recently defined clause processor in the table
-;; latest-greatest-gl-clause-proc and uses def-gl-thm-fn with this
-;; clause processor setting.
-(defun def-gl-thm-find-cp (name clause-proc clause-procp rest)
+(defun def-gl-thm-fn
+  (name args)
   (declare (xargs :mode :program))
-  (if clause-procp
-      `(without-waterfall-parallelism
-        ,(def-gl-thm-fn name clause-proc rest))
-    `(without-waterfall-parallelism
-      (make-event
-       (let ((clause-proc (latest-gl-clause-proc)))
-         (def-gl-thm-fn ',name clause-proc ',rest))))))
+  (b* (((list clause-proc hyp hyp-p concl concl-p g-bindings g-bindings-p cov-hints
+              cov-hints-position cov-theory-add do-not-expand hyp-clk concl-clk
+              n-counterexamples abort-indeterminate abort-ctrex exec-ctrex abort-vacuous test-side-goals
+              rule-classes no-defthm) args)
+       ((unless (and hyp-p concl-p g-bindings-p))
+        (er hard 'def-gl-thm
+            "The keyword arguments HYP, CONCL, and G-BINDINGS must be provided ~
+in DEF-GL-THM.~%"))
+       (form `(without-waterfall-parallelism
+                (defthm ,name
+                  ,(if test-side-goals t `(implies ,hyp ,concl))
+                  :hints ((gl-hint
+                           :clause-proc ,clause-proc
+                           :bindings ,g-bindings
+                           :hyp-clk ,hyp-clk
+                           :concl-clk ,concl-clk
+                           :cov-hints ,cov-hints
+                           :cov-hints-position ,cov-hints-position
+                           :cov-theory-add ,cov-theory-add
+                           :do-not-expand ,do-not-expand
+                           :hyp ',hyp
+                           :concl ',concl
+                           :n-counterexamples ,n-counterexamples
+                           :abort-indeterminate ,abort-indeterminate
+                           :abort-ctrex ,abort-ctrex
+                           :exec-ctrex ,exec-ctrex
+                           :abort-vacuous ,abort-vacuous
+                           :test-side-goals ,test-side-goals))
+                  . ,(if (or test-side-goals no-defthm)
+                         '(:rule-classes nil)
+                       `(:rule-classes ,rule-classes))))))
+    (if (or test-side-goals no-defthm)
+        `(with-output
+           :off :all :stack :push
+           (make-event (er-progn (with-output :stack :pop ,form)
+                                 (value '(value-triple 'ok)))))
+      form)))
+
+
+
 
 
 
@@ -1139,7 +1123,7 @@ rule-classes for the theorem produced, as in @(see defthm); the default is
   ;; Define a macro that provides a drop-in replacement for DEF-G-THM and
   ;; uses the new clause processor.
   (defmacro def-gl-thm
-    (name &key (clause-proc 'nil clause-procp)
+    (name &key clause-proc
           skip-g-proofs
           (hyp 'nil hyp-p)
           (concl 'nil concl-p)
@@ -1156,11 +1140,11 @@ rule-classes for the theorem produced, as in @(see defthm); the default is
           (rule-classes ':rewrite))
 
     (declare (ignore skip-g-proofs local))
-    (def-gl-thm-find-cp name clause-proc clause-procp
-      (list hyp hyp-p concl concl-p g-bindings g-bindings-p cov-hints
+    (def-gl-thm-fn name
+      (list clause-proc hyp hyp-p concl concl-p g-bindings g-bindings-p cov-hints
             cov-hints-position cov-theory-add do-not-expand hyp-clk concl-clk
-            n-counterexamples abort-indeterminate abort-ctrex exec-ctrex abort-vacuous test-side-goals
-            rule-classes nil))))
+            n-counterexamples abort-indeterminate abort-ctrex exec-ctrex
+            abort-vacuous test-side-goals rule-classes nil))))
 
 
 (defsection gl-thm
@@ -1171,7 +1155,7 @@ resulting theorem: @(see def-gl-thm) is to @(see gl-thm) as @(see defthm) is to
 @(see thm).  The :rule-classes argument is accepted, but ignored.</p>"
 
   (defmacro gl-thm
-    (name &key (clause-proc 'nil clause-procp)
+    (name &key clause-proc
           skip-g-proofs
           (hyp 'nil hyp-p)
           (concl 'nil concl-p)
@@ -1188,80 +1172,64 @@ resulting theorem: @(see def-gl-thm) is to @(see gl-thm) as @(see defthm) is to
           (rule-classes ':rewrite))
 
     (declare (ignore skip-g-proofs local))
-    (def-gl-thm-find-cp name clause-proc clause-procp
-      (list hyp hyp-p concl concl-p g-bindings g-bindings-p cov-hints
+    (def-gl-thm-fn name
+      (list clause-proc hyp hyp-p concl concl-p g-bindings g-bindings-p cov-hints
             cov-hints-position cov-theory-add do-not-expand hyp-clk concl-clk
-            n-counterexamples abort-indeterminate abort-ctrex exec-ctrex abort-vacuous test-side-goals
-            rule-classes t))))
+            n-counterexamples abort-indeterminate abort-ctrex exec-ctrex
+            abort-vacuous test-side-goals rule-classes t))))
 
 
 
 
-(defun def-gl-param-thm-fn (name clause-proc rest)
+(defun def-gl-param-thm-fn (name args)
   (declare (xargs :mode :program))
-  (b* (((list hyp hyp-p param-hyp param-hyp-p concl concl-p cov-bindings
+  (b* (((list clause-proc hyp hyp-p param-hyp param-hyp-p concl concl-p cov-bindings
               cov-bindings-p param-bindings param-bindings-p
               cov-hints cov-hints-position cov-theory-add do-not-expand
               hyp-clk concl-clk n-counterexamples
               abort-indeterminate abort-ctrex exec-ctrex abort-vacuous run-before-cases run-after-cases
               case-split-override case-split-hints test-side-goals rule-classes no-defthm)
-        rest)
+        args)
        ((unless (and hyp-p param-hyp-p concl-p cov-bindings-p
                      param-bindings-p))
         (er hard 'def-gl-param-thm
             "The keyword arguments HYP, PARAM-HYP, CONCL, COV-BINDINGS, and ~
 PARAM-BINDINGS must be provided in DEF-GL-PARAM-THM.~%"))
-       (form `(defthm ,name
-                ,(if test-side-goals t `(implies ,hyp ,concl))
-                :hints ((gl-hint
-                         ,clause-proc
-                         :bindings ,cov-bindings
-                         :param-bindings ,param-bindings
-                         :hyp-clk ,hyp-clk
-                         :concl-clk ,concl-clk
-                         :cov-hints ,cov-hints
-                         :cov-hints-position ,cov-hints-position
-                         :cov-theory-add ,cov-theory-add
-                         :do-not-expand ,do-not-expand
-                         :hyp ',hyp
-                         :param-hyp ',param-hyp
-                         :concl ',concl
-                         :n-counterexamples ,n-counterexamples
-                         :abort-indeterminate ,abort-indeterminate
-                         :abort-ctrex ,abort-ctrex
-                         :exec-ctrex ,exec-ctrex
-                         :abort-vacuous ,abort-vacuous
-                         :run-before-cases ,run-before-cases
-                         :run-after-cases ,run-after-cases
-                         :test-side-goals ,test-side-goals
-                         :case-split-override ,case-split-override
-                         :case-split-hints ,case-split-hints))
-                . ,(if (or test-side-goals no-defthm)
-                       '(:rule-classes nil)
-                     `(:rule-classes ,rule-classes)))))
+       (form `(without-waterfall-parallelism
+                (defthm ,name
+                  ,(if test-side-goals t `(implies ,hyp ,concl))
+                  :hints ((gl-hint
+                           :clause-proc ,clause-proc
+                           :bindings ,cov-bindings
+                           :param-bindings ,param-bindings
+                           :hyp-clk ,hyp-clk
+                           :concl-clk ,concl-clk
+                           :cov-hints ,cov-hints
+                           :cov-hints-position ,cov-hints-position
+                           :cov-theory-add ,cov-theory-add
+                           :do-not-expand ,do-not-expand
+                           :hyp ',hyp
+                           :param-hyp ',param-hyp
+                           :concl ',concl
+                           :n-counterexamples ,n-counterexamples
+                           :abort-indeterminate ,abort-indeterminate
+                           :abort-ctrex ,abort-ctrex
+                           :exec-ctrex ,exec-ctrex
+                           :abort-vacuous ,abort-vacuous
+                           :run-before-cases ,run-before-cases
+                           :run-after-cases ,run-after-cases
+                           :test-side-goals ,test-side-goals
+                           :case-split-override ,case-split-override
+                           :case-split-hints ,case-split-hints))
+                  . ,(if (or test-side-goals no-defthm)
+                         '(:rule-classes nil)
+                       `(:rule-classes ,rule-classes))))))
     (if (or test-side-goals no-defthm)
         `(with-output
           :off :all :stack :push
           (make-event (er-progn (with-output :stack :pop ,form)
                                 (value '(value-triple 'ok)))))
       form)))
-
-;; If a clause-processor name is supplied, this creates a defthm event
-;; using def-gl-param-thm-fn.  Otherwise, this creates a make-event which
-;; looks up the most recently defined clause processor in the table
-;; latest-greatest-gl-clause-proc and uses def-gl-param-thm-fn with this
-;; clause processor setting.
-(defun def-gl-param-thm-find-cp
-  (name clause-proc clause-procp rest)
-  (declare (xargs :mode :program))
-  (if clause-procp
-      `(without-waterfall-parallelism
-         ,(def-gl-param-thm-fn name clause-proc rest))
-    `(without-waterfall-parallelism
-       (make-event
-        (let ((clause-proc (latest-gl-clause-proc)))
-          (def-gl-param-thm-fn ',name clause-proc ',rest))))))
-
 
 
 (defsection def-gl-param-thm
@@ -1400,7 +1368,7 @@ will fail after the clause processor returns because it will produce a goal of
 Setting @(':ABORT-VACUOUS') to @('NIL') causes it to go on.</p>"
 
   (defmacro def-gl-param-thm
-    (name &key (clause-proc 'nil clause-procp)
+    (name &key clause-proc
           skip-g-proofs
           (hyp 'nil hyp-p)
           (param-hyp 'nil param-hyp-p)
@@ -1419,8 +1387,8 @@ Setting @(':ABORT-VACUOUS') to @('NIL') causes it to go on.</p>"
           case-split-hints local test-side-goals
           (rule-classes ':rewrite))
     (declare (ignore skip-g-proofs local))
-    (def-gl-param-thm-find-cp name clause-proc clause-procp
-      (list hyp hyp-p param-hyp param-hyp-p concl concl-p cov-bindings
+    (def-gl-param-thm-fn name
+      (list clause-proc hyp hyp-p param-hyp param-hyp-p concl concl-p cov-bindings
             cov-bindings-p param-bindings param-bindings-p cov-hints
             cov-hints-position cov-theory-add do-not-expand hyp-clk concl-clk
             n-counterexamples abort-indeterminate abort-ctrex exec-ctrex
@@ -1438,7 +1406,7 @@ defthm) is to @(see thm).  The :rule-classes argument is accepted, but
 ignored.</p>"
 
   (defmacro gl-param-thm
-    (name &key (clause-proc 'nil clause-procp)
+    (name &key clause-proc
           skip-g-proofs
           (hyp 'nil hyp-p)
           (param-hyp 'nil param-hyp-p)
@@ -1457,8 +1425,8 @@ ignored.</p>"
           case-split-hints local test-side-goals
           (rule-classes ':rewrite))
     (declare (ignore skip-g-proofs local))
-    (def-gl-param-thm-find-cp name clause-proc clause-procp
-      (list hyp hyp-p param-hyp param-hyp-p concl concl-p cov-bindings
+    (def-gl-param-thm-fn name
+      (list clause-proc hyp hyp-p param-hyp param-hyp-p concl concl-p cov-bindings
             cov-bindings-p param-bindings param-bindings-p cov-hints
             cov-hints-position cov-theory-add do-not-expand hyp-clk concl-clk
             n-counterexamples abort-indeterminate abort-ctrex exec-ctrex
@@ -1467,3 +1435,9 @@ ignored.</p>"
 
 
 
+
+(defmacro latest-gl-interp ()
+  '(cdr (assoc 'interp-term
+               (table-alist
+                'latest-greatest-gl-clause-proc
+                (w state)))))
