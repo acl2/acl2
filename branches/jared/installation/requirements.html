@@ -1,0 +1,282 @@
+<HTML>
+<HEAD><TITLE>ACL2 Version 6.4 Installation Guide: Requirements</TITLE></HEAD>
+
+<BODY TEXT="#000000">
+<BODY BGCOLOR="#FFFFFF">
+
+<H1>Requirements</A></H1>
+
+<b><font>[<a href="installation.html">Back to main page of Installation Guide.</a>]</font></b>
+
+<p><hr size=3 noshade><p>
+
+ACL2 Version 6.4<br> Copyright (C) 2014, Regents of the University of
+Texas<br>
+
+ACL2 is licensed under the terms of
+the <a href="../LICENSE">LICENSE</a>
+file distributed with ACL2.  See also the documentation topic,
+<a href="../../manual/index.html?topic=ACL2____COPYRIGHT">COPYRIGHT</a>.
+
+<p><hr size=3 noshade><p>
+
+<H3>Table of Contents</H3>
+
+<UL>
+  <LI><A HREF="#Performance">Performance comparisons</A>
+  <LI><A HREF="#Obtaining-Lisp">Obtaining Common Lisp</A> (alphabetical listing)
+  <UL>
+    <LI><A HREF="#Obtaining-Allegro">Obtaining Allegro Common Lisp</A>
+    <LI><A HREF="#Obtaining-CCL">Obtaining CCL (OpenMCL)</A>
+    <LI><A HREF="#Obtaining-CLISP">Obtaining CLisp</A>
+    <LI><A HREF="#Obtaining-CMUCL">Obtaining CMU Common Lisp</A>
+    <LI><A HREF="#Obtaining-GCL">Obtaining GCL</A>
+    <LI><A HREF="#Obtaining-LispWorks">Obtaining LispWorks</A>
+    <LI><A HREF="#Obtaining-SBCL">Obtaining SBCL</A>
+  </UL>
+</UL>
+
+<p><hr size=3 noshade><p>
+
+<H3><A NAME="Performance">Performance comparisons</A></H3>
+
+You can see recent performance numbers by following <a
+href="http://www.cs.utexas.edu/users/moore/acl2/v6-4/new.html#performance">this
+link</a>, or by going to the <a
+href="http://www.cs.utexas.edu/users/moore/acl2/">ACL2 home page on
+the web</a> and following the link "Recent changes to this page".
+
+<H3><A NAME="Obtaining-Lisp">Obtaining Common Lisp</A></H3>
+
+ACL2 works on Unix, GNU-Linux, and Mac OS X, which we call "Unix-like
+systems", as well as many Windows operating systems (at least
+including Windows 98, Windows 2000, and Windows XP).  It can be built
+on top of any of the following Common Lisps, listed here
+alphabetically.
+
+<ul>
+<LI><A HREF="#Obtaining-Allegro">Allegro Common Lisp</A></B><P>
+<LI><A HREF="#Obtaining-CCL">CCL (OpenMCL)</A></B><P>
+<LI><A HREF="#Obtaining-CLISP">CLisp</A></B><P>
+<LI><A HREF="#Obtaining-CMUCL">CMU Common Lisp</A></B><P>
+<LI><A HREF="#Obtaining-GCL">GCL</A></B><P>
+<LI><A HREF="#Obtaining-LispWorks">LispWorks</A></B><P>
+<LI><A HREF="#Obtaining-SBCL">SBCL</A></B><P>
+</ul>
+
+<p>
+
+<P><B><A NAME="Obtaining-Allegro">Obtaining Allegro Common Lisp</A></B><P>
+
+The website for Allegro Common Lisp, a commercial implementation, is
+<code><a href="http://www.franz.com/">http://www.franz.com/</a></code>.
+You may be able to obtain a trial version there.
+
+<P><B><A NAME="Obtaining-CCL">Obtaining CCL (OpenMCL)</A></B><P>
+
+Clozure CL (CCL) was formerly known as OpenMCL.  Quoting from the <a
+href="http://clozure.com/clozurecl.html">Clozure CL web page</a>:
+``Clozure CL is a fast, mature, open source Common Lisp implementation
+that runs on Linux, Mac OS X and BSD on either Intel x86-64 or PPC.''
+
+<p>
+
+For Windows users: We observed stalls using CCL 1.5 on Windows (in
+May, 2010), though not with CCL 1.4.  We have been told by a CCL
+implementor that this bug has been fixed, and people running CCL 1.5
+under Windows at a revision less than 13900 should update.
+
+<p>
+
+Here is an easy way to obtain and build the latest version (generally
+recommended) for Linux on running on x86 or x86-64.  First execute the
+following shell command to create a <code>ccl</code> directory, but
+substituting for <code>linuxx86</code>, if appropriate, any of
+<code>darwinx86</code> (which we use for modern Macs), <code>freebsdx86</code>,
+<code>solarisx86</code>, <code>windows</code>, <code>darwinppc</code>,
+or <code>linuxppc</code>.
+
+<pre>
+svn co http://svn.clozure.com/publicsvn/openmcl/trunk/linuxx86/ccl
+</pre>
+
+Note: if you prefer the latest release, you can obtain that instead,
+for example as follows (but replace "1.9" by the latest version,
+for example as described
+at <code>http://ccl.clozure.com/download.html</code>, and
+replace <code>linuxx86</code> if appropriate as described above).
+
+<pre>
+svn co http://svn.clozure.com/publicsvn/openmcl/release/1.9/linuxx86/ccl
+</pre>
+
+Next rebuild the executable by issuing the following commands, but
+replace "<code>./lx86cl64</code>" by a suitable executable; e.g., for
+64-bit Darwin (on Mac OS) use "<code>./dx86cl64</code>".
+
+<hr>
+<pre>
+./lx86cl64
+(rebuild-ccl :full t)
+(quit)
+./lx86cl64
+(rebuild-ccl :full t)
+(quit)
+</pre>
+<hr>
+
+<p>
+
+Now your CCL executable is up to date.  Next, create a suitable
+script, say as follows, where <code>DIR</code> is the full pathname
+for the directory above the new <code>ccl</code> directory.
+
+<hr>
+<pre>
+#!/bin/sh
+
+tmp=`uname -a | fgrep x86_64`
+export CCL_DEFAULT_DIRECTORY=DIR/ccl
+# Start up 64-bit or 32-bit lisp, respectively:
+if [ "$tmp" != "" ] ; then \
+    DIR/ccl/scripts/ccl64 $* ; \
+else \
+    DIR/ccl/scripts/ccl $* ; \
+fi
+</pre>
+<hr>
+
+Be sure to make your script executable.  For example, if your script
+filename is <code>my-script</code> then on linux you might want to
+execute the following shell command.
+
+<pre>
+chmod +x my-script
+</pre>
+
+Your script (invoked with a suitable pathname, or just the filename if
+the directory is on your path) will now start the updated CCL lisp
+image.
+
+<p>
+
+More details if you want or need them:<br>
+
+Step 3 in
+<code><a
+href="http://trac.clozure.com/openmcl/wiki/UpdatingFromSource">http://trac.clozure.com/openmcl/wiki/UpdatingFromSource</a></code>
+has more details on building from source.
+Alternatively, you can download a gzipped tar
+file; see <a href="http://trac.clozure.com/openmcl">the main CCL
+page</a>, or visit the page of <a
+href="http://trac.clozure.com/openmcl/wiki/StableReleasesForACL2">stable
+Clozure CL snapshots for ACL2 users</a>.  (Subversion and gzipped tar
+files are great, but not so much a CCL disk image (<code>.dmg</code>
+file), as we have had a report of the extracted CCL opening its own
+window when you start it up.)  If you don't want to write your own
+script (as suggested above) then after obtaining CCL, you may wish to
+edit file <code>ccl/scripts/ccl</code> or file
+<code>ccl/scripts/ccl64</code>, depending on whether you want to
+use a 32-bit or 64-bit version (respectively).
+
+<P><B><A NAME="Obtaining-CLISP">Obtaining CLISP</A></B><P>
+
+CLISP is a non-commercial Common Lisp implementation, available from <code><a
+href="http://clisp.cons.org/">http://clisp.cons.org/</a></code>.
+
+<P><B><A NAME="Obtaining-CMUCL">Obtaining CMU Common Lisp</A></B><P>
+
+CMU Common Lisp (sometimes called CMUCL) is a non-commercial Common Lisp
+implementation, available from <code><a
+href="http://www.cons.org/cmucl/">http://www.cons.org/cmucl/</a></code>.
+
+<P><B><A NAME="Obtaining-GCL">Obtaining GCL</A></B><P>
+
+You might be able
+to <A HREF="http://packages.qa.debian.org/a/acl2.html">download a
+binary Debian package for ACL2</A>.  Thanks to Camm Maguire for
+maintaining this package.  Note however that it may take some time
+after each ACL2 release for this binary Debian package to be updated
+for that release.  Here is a shell command that might be used to
+obtain that package (if running Debian).
+
+<pre>
+apt-get -q install gcl gcl-doc
+</pre>
+
+Otherwise, it should be easy to obtain and build GCL yourself.  There
+are two recommended versions of GCL for building ACL2: GCL 2.6.8 and
+GCL 2.6.10.  (GCL 2.6.9, which is <i>not</i> recommended, has some
+issues that were fixed in GCL 2.6.10.)  GCL 2.6.8 appeared initially
+to be faster for ACL2 regressions than GCL 2.6.10, but we recently
+measured GCL 2.6.10 (actually GCL 2.6.10pre, as of Oct. 1, 2013) to be
+slightly faster, using non-ANSI builds for both.  We have also had
+better success with GCL 2.6.10 than GCL 2.6.8 on a Mac, where 2.6.8
+ran out of memory for two regression tests but 2.6.10 (again, actually
+2.6.10pre) did not.  Note that GCL 2.6.10 probably has better ANSI
+support than 2.6.8, and ANSI support is needed if you choose to build
+<a href="http://www.cs.utexas.edu/users/moore/acl2/v6-4/combined-manual/index.html?topic=ACL2____HONS-AND-MEMOIZATION">ACL2(h)</a>).
+
+<p>
+
+You can fetch either GCL 2.6.8 and GCL 2.6.10 as a tarball from the
+<a href="http://www.gnu.org/software/gcl/">main GNU website for
+  GCL</a>.  From GCL source you can build an executable by extracting
+  from the tarball, standing in the resulting <code>gcl/</code>
+  directory, and issuing one of the following commands.
+
+<pre>
+# Recommended for 64-bit Linux:
+./configure --enable-maxpage=1048576 && make
+
+# Recommended for Mac OS:
+./configure && make
+
+# If you want an ANSI build
+# (but add "--enable-maxpage=1048576" in the case of 64-bit Linux, as above):
+./configure --enable-ansi && make
+</pre>
+
+<P><B><A NAME="Obtaining-LispWorks">Obtaining LispWorks</A></B><P>
+
+LispWorks is a commercial Common Lisp implementation. You can download
+a free, restricted, version
+from <code><a href="http://www.lispworks.com/">http://www.lispworks.com/</a></code>.
+You may ask the vendor for an evaluation license for the full product
+if you are considering purchasing a license.
+
+<P><B><A NAME="Obtaining-SBCL">Obtaining SBCL</A></B><P>
+
+SBCL (Steel Bank Common Lisp) is a non-commercial Common Lisp
+implementation, available from <code><a
+href="http://sbcl.sourceforge.net/">http://sbcl.sourceforge.net/</a></code>.
+
+<p>
+
+<!-- I don't know that we need this comment any longer, since we write
+    a suitable --dynamic-space-size argument to saved_acl2 scripts.
+Note for 32-bit linux users: When building ACL2 with SBCL 1.0.18 and
+1.0.39 on 32-bit Linux, we ran out of memory with the SBCL message
+"Heap exhausted, game over."  We solved the problem by modifying our
+sbcl script to use <code>--dynamic-space-size 2000</code>, for example:
+
+<hr>
+<pre>
+#!/bin/sh
+export SBCL_HOME=/projects/acl2/lisps/sbcl/sbcl-1.0.39-x86-linux/output
+/projects/acl2/lisps/sbcl/sbcl-1.0.39-x86-linux/src/runtime/sbcl --dynamic-space-size 2000 $*
+</pre>
+<hr>
+
+Your results may vary; one user has reported solving the problem with
+<code>--dynamic-space-size 2000000000</code>.
+-->
+
+<p>
+
+<b><font size="+2">[<a href="installation.html">Back to Installation Guide.</a>]</font></b>
+
+<BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR>
+
+</BODY>
+</HTML>

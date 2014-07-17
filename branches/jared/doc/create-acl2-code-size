@@ -1,0 +1,68 @@
+#!/bin/sh
+
+if [ -z "${ACL2_SOURCES}" ] ; then \
+    echo "ERROR: Environment variable ACL2_SOURCES must have a non-empty string"
+    echo "       as its value.  Perhaps you intended to call"
+    echo "       $0"
+    echo "       from GNUmakefile using \"make STATS\"."
+    exit 1 ;\
+fi
+
+# Here we remove doc.lisp from the sources, since its contents are a
+# direct extraction of the contents of books/system/doc/acl2-doc.lisp,
+# whose size is reported separately.  Actually, this step isn't
+# necessary (as of this writing) when executing "make STATS" in the
+# parent directory (i.e., the ACL2 sources directory), because
+# doc.lisp is explicitly excluded from ACL2_SOURCES there.  But
+# because we exclude doc.lisp ourselves, we do not depend on that
+# exclusion.
+actual_sources=`echo $ACL2_SOURCES | sed 's/doc.lisp//'`
+
+echo 'Computing code size statistics.'
+
+if [ "$ACL2" = "" ] ; then
+    echo "Note: Setting variable ACL2 to the default: acl2."
+    ACL2=acl2
+fi
+
+echo '; Lines / Characters'                               > doc/acl2-wc.txt
+echo '; Code lines (whitespace followed by non-whitespace other than ; ):' >> doc/acl2-wc.txt
+
+# The following commands assume that the only whitespace characters
+# are newlines and spaces.  We check for that in write-acl2-code-size.
+# We also assume that there are no multi-line comments, but we don't
+# check this because we have one in a :doc string, as displayed just
+# below.  We could perhaps, with some effort, count those and also
+# count them in :doc strings, and make sure the difference is 0; but
+# we haven't done so.  For now, one can do something like the
+# following, manually:
+
+#  ~/acl2/devel$ grep '^[^;]*#|' *.lisp
+#  other-events.lisp:  multi-line comments (~c[#|..|#]).  These will be ignored if preceded by a
+#  ~/acl2/devel$ 
+
+(cat ${actual_sources} | grep '^[ ]*[^ ;]' | wc -lc)       >> doc/acl2-wc.txt
+echo '; Comment lines ( ; preceded only by whitespace):' >> doc/acl2-wc.txt
+(cat ${actual_sources} | grep '^[ ]*;'      | wc -lc)      >> doc/acl2-wc.txt
+echo '; Blank lines (only whitespace):'                  >> doc/acl2-wc.txt
+(cat ${actual_sources} | grep '^[ ]*$'      | wc -lc)      >> doc/acl2-wc.txt
+echo '; TOTAL:'                                          >> doc/acl2-wc.txt
+(cat ${actual_sources}                       | wc -lc)     >> doc/acl2-wc.txt
+wc -lc books/system/doc/acl2-doc.lisp                    >> doc/acl2-wc.txt
+
+cd doc
+
+echo '(value :q)' > workxxx.create-acl2-code-size
+echo '(lp)' >> workxxx.create-acl2-code-size
+echo '(certify-book "write-acl2-code-size")' >> workxxx.create-acl2-code-size
+echo '(acl2::write-acl2-code-size "acl2-wc.txt" "acl2-code-size.txt")' >> workxxx.create-acl2-code-size
+echo ':q' >> workxxx.create-acl2-code-size
+echo '(acl2::quit)' >> workxxx.create-acl2-code-size
+
+${ACL2} < workxxx.create-acl2-code-size
+
+# We could remove acl2-wc.txt at this point, but it seems harmless to leave it.
+rm -f workxxx.create-acl2-code-size
+
+echo ''
+echo 'Finished computing code size statistics.'

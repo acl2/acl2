@@ -1,0 +1,155 @@
+acl2-characters
+acl2-check.lisp
+acl2-customization-files
+acl2-fns.lisp
+acl2-init.lisp
+acl2.lisp
+# acl2-proclaims.lisp -- generated file
+# acl2-status.txt -- generated file
+acl2-startup-info.txt
+# acl2r.lisp -- generated file
+akcl-acl2-trace.lisp
+# all-files-developers.txt -- developer file
+# all-files-extra.txt -- developer file
+allegro-acl2-trace.lisp
+all-files.txt
+axioms.lisp
+basis.lisp
+bdd.lisp
+# bin -- under svn control but not distributed
+# books -- no longer distributed at UT
+boot-strap-pass-2.lisp
+build-allegro-exe.cl
+defpkgs.lisp
+defthm.lisp
+defuns.lisp
+doc
+doc.lisp
+emacs
+futures-raw.lisp
+GNUmakefile
+graphics
+history-management.lisp
+hons.lisp
+hons-raw.lisp
+induct.lisp
+init.lisp
+installation
+interface-raw.lisp
+ld.lisp
+LICENSE
+linear-a.lisp
+linear-b.lisp
+Makefile
+mcl-acl2-startup.lisp
+memoize.lisp
+memoize-raw.lisp
+multi-threading-raw.lisp
+new.html
+non-linear.lisp
+openmcl-acl2-trace.lisp
+other-events.lisp
+other-processes.lisp
+other-releases.html
+parallel.lisp
+parallel-raw.lisp
+# p.lisp -- developer file
+proof-checker-a.lisp
+proof-checker-b.lisp
+proof-checker-pkg.lisp
+prove.lisp
+rewrite.lisp
+# The following is distributed but is not in the svn repository:
+saved
+save-gprof.lsp
+serialize.lisp
+serialize-raw.lisp
+simplify.lisp
+# The following is distributed but is not in the svn repository:
+TAGS
+tau.lisp
+translate.lisp
+type-set-a.lisp
+type-set-b.lisp
+# unversioned-files.txt -- under svn control but not distributed
+workshops.html
+
+acl2-customization-files:
+bookdata.lisp
+parallel-full.lisp
+parallel-resource-based.lisp
+parallel-top-level.lisp
+pseudo-parallel.lisp
+README
+serial.lisp
+
+doc:
+# The following is distributed but is not in the svn repository:
+acl2-code-size.txt
+create-acl2-code-size
+create-doc
+# The following is distributed but is not in the svn repository:
+home-page.html
+home-page.lisp
+# The following is distributed but is not in the svn repository:
+HTML
+# The following is distributed but is not in the svn repository:
+manual
+README
+write-acl2-code-size.lisp
+
+# The following is distributed but is not in the svn repository:
+doc/HTML:
+LICENSE
+installation
+*.html
+*.gif
+
+# The following is distributed but is not in the svn repository:
+doc/HTML/installation:
+installation.html
+installing-make.html
+misc.html
+obtaining-and-installing.html
+requirements.html
+using.html
+windows7.html
+windows-gcl-jared.html
+
+# The following is distributed but is not in the svn repository:
+doc/manual:
+LICENSE
+*.*
+
+# The following is distributed but is not in the svn repository:
+doc/manual/download:
+
+# The following is distributed but is not in the svn repository:
+doc/manual/images:
+*
+
+# The following is distributed but is not in the svn repository:
+doc/manual/lib:
+*
+
+emacs:
+acl2-doc.el
+emacs-acl2.el
+monitor.el
+README
+
+graphics:
+*.gif
+
+installation:
+installation.html
+installing-make.html
+misc.html
+obtaining-and-installing.html
+requirements.html
+using.html
+windows7.html
+windows-gcl-jared.html
+
+# The following is distributed but is not in the svn repository:
+saved:

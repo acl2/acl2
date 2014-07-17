@@ -1,0 +1,6 @@
+File emacs-acl2.el provides quite a few utilities.  Some make it easy
+to use proof-trees (see :DOC proof-tree).  This file also loads the
+ACL2-Doc Emacs browser for ACL2 documentation, and loads a file that
+provides support for xdoc-link-mode, used by the web-based acl2+books
+documentation.  See the top of emacs-acl2.el for more complete
+documentation.

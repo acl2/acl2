@@ -1,0 +1,750 @@
+<HTML>
+<HEAD><TITLE>ACL2 Version 6.4 Installation Guide: Obtaining and Installing ACL2</TITLE></HEAD>
+
+<BODY TEXT="#000000">
+<BODY BGCOLOR="#FFFFFF">
+
+<H1>Obtaining and Installing ACL2</A></H1>
+
+<b><font>[<a href="installation.html">Back to main page of Installation Guide.</a>]</font></b>
+
+<p>
+
+<B>Table of Contents</B><BR>
+
+<UL>
+  <LI><A HREF="#Shortcuts">Pre-built Binary Distributions</A>
+  <UL>
+    <LI><A HREF="#Shortcut-acl2s">Linux/Mac/Windows Binaries in ACL2s</A>
+    <LI><A HREF="#Shortcut-windows">Windows</A>
+    <LI><A HREF="#Shortcut-MacPorts">MacPorts for Mac OS X</A>
+    <LI><A HREF="#Shortcut-debian">Debian GNU Linux</A>
+  </UL>
+  <LI><A HREF="#Sources">Obtaining the Sources and Community Books</A>
+  <LI><A HREF="#Create-Image">Creating or Obtaining an Executable Image</A>
+  <UL>
+<!-- The following is only for non-incremental releases. -->
+    <LI><A HREF="#Pre-Built-Images">Pre-Built Images</A>
+<!-- End of only for non-incremental releases. -->
+    <LI><A HREF="#Other-Unix">Building an Executable image on a Unix-like System</A>
+    <LI><A HREF="#Non-Unix">Building an Executable image on Other than
+    a Unix-like Systems</A>
+    <LI><A HREF="#Build-Particular">Building an Executable Image on Some Particular Systems</A>
+    <UL>
+      <LI><A HREF="#Windows-GCL">Special Case: Building an Executable Image on a Windows System using GCL</A>
+      <LI><A HREF="windows-gcl-jared.html">Older instructions from Jared Davis for
+      building ACL2 on Windows using mingw</A>
+    </UL>
+  </UL>
+  <LI><A HREF="#Running">Running Without Building an Executable Image</A>
+  <LI><A HREF="#Summary">Summary of Distribution</A>
+  <LI><A HREF="#Bleeding-edge">Bleeding-edge Distributions via SVN</A>
+</UL>
+
+<p><hr size=4 noshade><p>
+
+ACL2 is more than just the executable image.  In particular, it comes
+with a user's manual, but you will almost certainly want to obtain the
+distributed books.  Start here and we will take you through the whole
+process of obtaining and installing ACL2.
+
+<p>
+
+First, create a directory in which to store ACL2 Version 6.4.  We will
+call this directory <I>dir</I>.  For example, <I>dir</I> might be
+<CODE>/home/jones/acl2/v6-4</CODE>.
+
+<H3>NOTE: If you intend to obtain an incremental release (e.g. 2.9.4 as opposed
+to 2.9), please see the <a href="../new.html">ACL2 News</a> for instructions.
+Otherwise, continue reading here.</H3>
+
+<p>
+
+A collection of <em>books</em> (ACL2 input files typically including
+definitions and theorems) has been developed over the years for use
+with ACL2, called the "community books".  It is very useful to
+obtain these books, which are distributed from the Google
+Code <a href="https://code.google.com/p/acl2-books/">acl2-books
+project website</a>; directions are included below.
+
+<BR><HR noshade size=8><BR>
+<H2><A NAME="Shortcuts">Pre-built Binary Distributions</A></H2>
+
+Visit the "Recent changes to this page" link on the <A
+HREF="http://www.cs.utexas.edu/users/moore/acl2/">ACL2 home page</A> to see if
+there are other shortcuts available.
+
+<p>
+
+WARNING: Some of these packages might be for old version of ACL2.  We
+recommend that you use the latest version of ACL2 (Version 6.4).
+
+<UL>
+
+<LI><B><A NAME="Shortcut-acl2s">Linux/Mac/Windows Binaries in ACL2s</A></B>
+
+<p>
+
+The <a href="http://acl2s.ccs.neu.edu/acl2s/doc/">ACL2 Sedan</a>
+(ACL2s) is an Eclipse-based IDE for ACL2 that is distributed with pre-certified
+books and pre-built binaries.  If you
+  use an alternative development environment (such as Emacs), you
+can still <a href="http://acl2s.ccs.neu.edu/acl2s/src/acl2/">fetch a
+tarball</a> for your x86-based Linux/Mac/Windows system that contains a
+pre-built binary of (pure) ACL2, using the following instructions
+based on information kindly provided by Harsh Raju Chamarthi.
+Just extract the
+appropriate tarball (using <code>tar xfz</code> on Linux or Mac
+and <code>unzip</code> on Windows)
+under a path with <i>no</i> spaces.
+Then run the script you will
+find, <code>run_acl2</code> on Linux or Mac
+and <code>run_acl2.exe</code> on Windows, to start an ACL2 session.
+(Note that The first time you execute that command,
+the certificate (<code>.cert</code>) files are automatically
+fixed, according to the full pathname of your <code>books/</code> directory.)
+Also see
+the <a href="http://www.cs.utexas.edu/users/moore/acl2/v6-4/combined-manual/index.html?topic=ACL2____ACL2-SEDAN">ACL2
+documentation topic on the ACL2 Sedan</a>.
+
+
+<LI><B><A NAME="Shortcut-windows">Windows</A></B>
+
+<p>
+
+In the past, a Windows Installer for ACL2 has included a Unix
+environment, pre-certified standard and workshop books, and a copy of
+Gnu Emacs.  This capability has largely been superseded
+by <a href="#Build-Particular">the section on Building an Executable
+Image on Some Particular Systems</a> and
+the Shortcut using the ACL2 Sedan, <a href="#Shortcut-acl2s">above</a>.
+See also <a href="../distrib/windows/">information about ACL2 on
+Windows</a>.
+
+<LI><B><A NAME="Shortcut-MacPorts">MacPorts for Mac OS X</A></B>
+
+<p>
+
+ACL2 versions have sometimes been made available under MacPorts.  If
+  we learn that an up-to-date version is available, we will add
+  instructions here.
+
+<LI><B><A NAME="Shortcut-debian">Debian GNU Linux</A></B>
+
+<p>
+
+A Debian Gnu Linux package is available, which is likely to work on
+other Linux systems as well.  Thanks to Camm Maguire for maintaining
+this package, and for pointing out that as Debian packages are simply
+ar and tar archives, they can be unpacked on any linux system, and who
+has said: "If someone is running Debian, all they want to do is
+'apt-get install acl2', doing likewise for any optional add-on package
+they wish as well, e.g. emacs, infix, etc."  Alternatively, Debian GNU
+Linux users may wish
+to <A HREF="http://packages.qa.debian.org/a/acl2.html">download the
+Debian package for Linux</A>.  Or, see following annotated log,
+provided by Camm Maguire, to see another way to proceed.
+
+<pre>
+     camm@localhost:~$ cd /tmp
+     camm@localhost:/tmp$ mkdir a
+     camm@localhost:/tmp$ cd a
+     camm@localhost:/tmp/a$ wget ftp://ftp.debian.org/debian/pool/main/a/acl2/acl2*5.0*_{i386,all}*b
+
+     ;;; or ftp, use browser, etc.  I.e. download the .deb files.  Replace
+     ;;; i386 above with amd64 if the target is a 64bit Ubuntu machine.
+     ;;; Other target names should be self explanatory.  The 'all'
+     ;;; designation refers to binary independent data. 
+
+     camm@localhost:/tmp/a$ ls
+     acl2_5.0-1_i386.deb	   acl2-books-certs_5.0-1_all.deb   acl2-doc_5.0-1_all.deb    acl2-infix_5.0-1_i386.deb        acl2-source_5.0-1_all.deb
+     acl2-books_5.0-1_i386.deb  acl2-books-source_5.0-1_all.deb  acl2-emacs_5.0-1_all.deb  acl2-infix-source_5.0-1_all.deb
+     camm@localhost:/tmp/a$ for i in *b; do ar x $i; tar zxf data.tar.gz; done
+
+     ;;; unpack files in current directory
+
+     camm@localhost:/tmp/a$ sed -e 's,usr,tmp/a/usr,g' usr/bin/acl2 &gt;tmp && chmod 755 tmp && mv tmp usr/bin/acl2
+
+     ;;; Edit shell script wrapper to refer to the local path
+
+     camm@localhost:/tmp/a$ usr/bin/acl2
+     GCL (GNU Common Lisp)  2.6.7 CLtL1    Aug 22 2012 15:25:31
+     Source License: LGPL(gcl,gmp), GPL(unexec,bfd,xgcl)
+     Binary License:  GPL due to GPL'ed components: (XGCL READLINE UNEXEC)
+     Modifications of this banner must retain notice of a compatible license
+     Dedicated to the memory of W. Schelter
+
+     Use (help) to get some basic information on how to use GCL.
+     Temporary directory for compiler files set to /tmp/
+
+      ACL2 Version 5.0 built August 25, 2012  11:53:08.
+      Copyright (C) 2012  University of Texas at Austin
+      ACL2 comes with ABSOLUTELY NO WARRANTY.  This is free software and you
+      are welcome to redistribute it under certain conditions.  For details,
+      see the GNU General Public License.
+
+      Initialized with (INITIALIZE-ACL2 'INCLUDE-BOOK *ACL2-PASS-2-FILES*).
+      See the documentation topic note-5-0 for recent changes.
+      Note: We have modified the prompt in some underlying Lisps to further
+      distinguish it from the ACL2 prompt.
+
+     ACL2 Version 5.0.  Level 1.  Cbd "/tmp/a/".
+     System books directory "/tmp/a/usr/share/acl2-5.0/books/".
+     Type :help for help.
+     Type (good-bye) to quit completely out of ACL2.
+
+     ACL2 !&gt;
+</pre>
+
+</UL>
+
+<BR><HR noshade size=8><BR>
+<H2><A NAME="Sources">Obtaining the Sources and Community Books</A></H2>
+
+Obtain the sources and place them in directory
+<I>dir</I> as follows.
+
+<p>
+
+(First, a note for Windows users only: we suggest that you obtain a
+Unix-like environment or, at least, download a utility such as
+<code>djtarnt.exe</code> to use with the <code>-x</code> option on
+gzipped tarfiles.  WARNING: At least one user experienced CR/LF issues
+when using WinZIP, but we have received the suggestion that people
+untarring with that utility should probably turn off smart cr/lf
+conversion.)
+
+<UL>
+
+<LI>Save <A HREF="http://www.cs.utexas.edu/users/moore/acl2/v6-4/distrib/acl2.tar.gz">
+    acl2.tar.gz</A> on directory <I>dir</I>.  (You can
+    run <code>md5sum</code> and compare
+    with <A HREF="http://www.cs.utexas.edu/users/moore/acl2/v6-4/distrib/acl2-tar-gz-md5sum">
+    acl2-tar-gz-md5sum</A> if you wish to verify the transmission.)
+  </LI>
+<BR>
+
+<LI>Execute the following four Unix commands.  (<b>Note</b>:
+Gnu tar is preferred, as there have been some problems with long file
+names when using tar provided by SunOS.  You may want to use the -i
+option, "<code>tar xpvfi acl2.tar</code>", if you have problems with
+other than Gnu tar.  You can see if you have Gnu tar by running
+"<code>tar -v</code>".)
+
+<BR><BR>
+<CODE>cd <I>dir</I></CODE><BR>
+<CODE>tar xfz acl2.tar.gz</CODE><BR>
+<CODE>rm acl2.tar.gz</CODE><BR>
+<CODE>cd acl2-sources</CODE><BR>
+<BR>
+</LI>
+
+<LI><A NAME="Obtaining-books"</A>We strongly suggest that you now
+       install the community books,
+       using <b><font color="red">one</font></b> of the following
+       methods, while still connected to the new <acl2-sources/>
+       directory.
+       <BR><BR>
+
+<UL>
+
+  <li><b>Easy download.</b>
+    Fetch <CODE><A HREF="http://acl2-books.googlecode.com/files/books-6.4.tar.gz">a
+    gzipped tarfile</A></CODE> of the community books from the Google Code website, and then
+    extract as follows to create a <code>books/</code>
+    subdirectory:<BR>
+
+    <code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;tar xfz books-6.4.tar.gz</code>
+  </li>
+
+  <li><b><font color="red">OR</font></b>, obtain a read-only copy
+    using SVN as a new subdirectory, <code>books/</code>:<br>
+
+      <code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;svn checkout http://acl2-books.googlecode.com/svn/branches/6.4 books</code>
+  </li>
+	
+  <li><b><font color="red">OR</font></b>, for read-write access,
+    become a member of the acl2-books project by contacting one of the
+    project administrators
+    (see <a href="https://code.google.com/p/acl2-books/">the
+    acl2-books project page</a>). Then:<br>
+	  
+    <code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;svn checkout https://acl2-books.googlecode.com/svn/branches/6.4 books --username &lt;name&gt;</code>
+  </li>
+  <BR>
+
+</UL>
+
+<B><font color="red">NOTE</font></B>:  The second and third methods
+provide all of the community books, but the first omits the
+<code>workshops/</code> and <code>nonstd/</code> subdirectories of
+these <code>books/</code>, which (respectively) are books contributed
+in support of papers presented at ACL2 workshops, and books for use
+with ACL2(r).  You can fetch these easily as gzipped tarfiles, as
+follows, using the following links to the Google Code website.
+
+<UL>
+<LI><A HREF="http://acl2-books.googlecode.com/files/workshops-6.4.tar.gz">ACL2 Workshops books</A></LI>
+<LI><A HREF="http://acl2-books.googlecode.com/files/nonstd-6.4.tar.gz">ACL2(r) books</A></LI>
+</UL>
+
+Then put the gzipped tarfile(s) in
+the <CODE>acl2-sources/books/</CODE> directory, connect to that
+directory, and extract to create <CODE>workshops/</CODE>
+and <CODE>nonstd/</CODE> subdirectories, respectively:<BR>
+
+<CODE>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;tar xfz workshops-6.4.tar.gz</CODE><BR>
+<CODE>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;tar xfz nonstd-6.4.tar.gz</CODE>
+
+</UL>
+
+<BR><HR noshade size=8><BR>
+<H2><A NAME="Create-Image">Creating or Obtaining an Executable Image</A></H2>
+
+The next step is to create an executable image.  The common approach is to
+build that image from the sources you have already obtained.
+<!-- The following is only for non-incremental releases. -->
+However, you may
+be able to <A HREF="#Pre-Built-Images">take a short cut by downloading an
+ACL2 image</A>, in which case you can skip ahead to <A HREF="#Summary">Summary of
+Distribution</A>.  Otherwise you should click on one of the links just below.
+<!-- End of only for non-incremental releases. -->
+Choose the last option if you are using a Common Lisp on which you cannot save
+an image (e.g., a trial version of Allegro Common Lisp).
+
+<P>
+PLEASE NOTE: The available memory for ACL2 is determined by the underlying
+Common Lisp executable.  If you need more memory, refer to your Common Lisp's
+instructions for building an executable.
+
+<UL>
+<LI><A HREF="#Other-Unix">Building an Executable Image on a Unix-like System</A>
+<LI><A HREF="#Non-Unix">Building an Executable Image on Other than a
+    Unix-like System</A>
+<LI><A HREF="#Running">Running Without Building an Executable Image</A>
+</UL>
+
+<!-- The following is only for non-incremental releases. -->
+
+<BR><HR><BR>
+<H3><A NAME="Pre-Built-Images">Short Cut:  Pre-Built ACL2 Images</A></H3>
+
+The site <a
+href="http://www.cs.utexas.edu/users/moore/acl2/v6-4/distrib/images/Readme.html">http://www.cs.utexas.edu/users/moore/acl2/v6-4/distrib/images/Readme.html</a>
+contains links to ACL2 executables and packages.  Each <code>-md5sum</code> file
+was created using <code>md5sum</code>.  We may add additional
+links from time to time.
+
+<p>
+
+Now proceed to <A HREF="using.html">Using ACL2</A>.
+
+<!-- End of only for non-incremental releases. -->
+
+<BR><HR><BR>
+<H3><A NAME="Other-Unix">Building an Executable Image on a Unix-like System</A></H3>
+
+We assume you have obtained ACL2 and placed it in directory <I>dir</I>, as
+described <A HREF="#Sources">above</A>.
+<!-- The following is only for non-incremental releases. -->
+If you downloaded a <A
+HREF="#Pre-Built-Images">pre-built ACL2 image</A>, you may skip this section.
+<!-- End of only for non-incremental releases. -->
+Connect to <I>dir</I> as above and execute <BR><BR> <CODE>cd
+acl2-sources</CODE><BR> <CODE>make LISP=</CODE><I>xxx</I><BR>
+<BR>
+where <I>xxx</I> is the command to run your local Common Lisp.
+<P>
+By default, if no <CODE>LISP=</CODE><I>xxx</I> is specified,
+<CODE>LISP=ccl</CODE> is used.  On our hosts, <CODE>ccl</CODE> is the name of
+Clozure Common Lisp (CCL), which can be obtained as explained <a
+href="requirements.html#Obtaining-CCL">in the Requirements document</a>.
+
+<P>
+
+This will create executable <code>saved_acl2</code> in the
+<code>acl2-sources</code> directory.
+
+<P>
+
+The time taken to carry out this process depends on the host processor but may
+be only a few minutes for a fast processor.  The size of the resulting binary
+image is dependent on which Lisp was used, but it may be up to a
+couple hundred megabytes or so.
+
+<P>
+This <CODE>make</CODE> works for the Common Lisps listed
+in <A HREF="requirements.html">Requirements document</A> on systems we
+have tested.  See the file <CODE>acl2-sources/GNUmakefile</CODE> for
+further details.  If this <CODE>make</CODE> command does not work for
+you, please see the instructions below for <A HREF="#Non-Unix">other
+than Unix-like systems</A>.
+
+<P>
+You can now skip to <A HREF="using.html">Using ACL2</A>.
+<P>
+
+<BR><HR><BR>
+<H3><A NAME="Non-Unix">Building an Executable Image on Other than a
+    Unix-like System</A></H3>
+
+Next we describe how to create a binary image containing ACL2 without
+using the `<code>make</code>' utility.  If you are using a <B>trial
+version</B> of Allegro Common Lisp, then you may not be able to save
+an image.  In that case, skip to <A href="#Running">Running Without
+Building an Executable Image</A>.
+
+<P>
+
+See also <a href="#Build-Particular">Building an Executable Image on Some Particular
+Systems</a>, in case you want to skip directly to the instructions in one of
+its subtopics.
+
+<P>
+
+Otherwise, proceed as follows.
+
+<P>
+
+Your Common Lisp should be one of those listed in
+<A HREF="requirements.html">Requirements document</A>.  Filenames
+below should default to the <I>dir</I><CODE>/acl2-sources</CODE>
+directory; please connect to that directory before continuing.
+
+<OL>
+<P><LI> Remove file <CODE>nsaved_acl2</CODE> if it exists.</LI>
+
+<P><LI> Start up Common Lisp in the <CODE>acl2-sources</CODE> directory
+and submit the following sequence of commands.
+
+<PRE>
+  ; Compile
+  (load "init.lisp")
+  (in-package "ACL2")
+  (compile-acl2)
+</PRE>
+
+  The commands above will compile the ACL2 sources and create compiled object
+  files on your <CODE>acl2-sources</CODE> subdirectory.
+</LI>
+
+<P><LI> Now exit your Common Lisp and invoke a fresh copy of it (mainly to avoid
+  saving an image with the garbage created by the compilation process). Again
+  arrange to connect to the <CODE>acl2-sources</CODE> subdirectory. In the
+  fresh Lisp <a name="initialization-first-pass">type</a>:
+
+<PRE>
+  ; Initialization, first pass
+  (load "init.lisp")
+  (in-package "ACL2")
+  (load-acl2)
+  (initialize-acl2)
+</PRE>
+
+  This will load the new object files in the Lisp image and bootstrap ACL2 by
+  reading and processing the source files. But the attempt at initialization
+  will end in an error saying that it is impossible to finish because a certain
+  file was compiled during the processing, thus dirtying the image yet again.
+  (If however the attempt ends with an error during compilation of file
+  <code>TMP1.lisp</code>, see the first troubleshooting tip <a
+  href="#troubleshooting-TMP1">below</a>.)
+</LI>
+
+<P><LI> So now exit your Common Lisp and invoke a fresh copy of it (again arranging
+  to connect to your <CODE>acl2-sources</CODE> subdirectory). Then, in the
+  fresh Lisp type:
+
+<PRE>
+  ; Initialization, second pass
+  (load "init.lisp")
+  (in-package "ACL2")
+  (save-acl2 (quote (initialize-acl2))
+             "saved_acl2")
+</PRE>
+
+  You have now saved an image.  Exit Lisp now.  Subsequent steps will put the
+  image in the right place.
+
+<P><LI> Remove <CODE>osaved_acl2</CODE> if it exists.
+
+<P><LI> <b>IF</b> <CODE>saved_acl2</CODE> and <CODE>saved_acl2.dxl</CODE> both exist <b>THEN</b>:
+<ul>
+     <li>move <CODE>saved_acl2.dxl</CODE> to <CODE>osaved_acl2.dxl</CODE></li>
+     <li>move <CODE>saved_acl2</CODE> to <CODE>osaved_acl2</CODE>
+         and edit <CODE>osaved_acl2</CODE>, changing <CODE>saved_acl2.dxl</CODE>
+         (at end of line) to <CODE>osaved_acl2.dxl</CODE></li>
+</ul>
+     <b>ELSE IF</b> <CODE>saved_acl2</CODE> exists <b>THEN</b>:
+<ul>
+     <li>move <CODE>saved_acl2</CODE> to <CODE>osaved_acl2</CODE></li>
+</ul>
+</LI>
+
+<P><LI> Move <CODE>nsaved_acl2</CODE> to <CODE>saved_acl2</CODE>.</LI>
+
+<P><LI> For some Common Lisps, a
+     file <CODE>nsaved_acl2.</CODE><em>suffix</em> is created for some
+     <em>suffix</em>.
+     Move it to: <CODE>saved_acl2.</CODE><em>suffix</em></LI>
+
+<P><LI> Make sure <CODE>saved_acl2</CODE> is executable.  For Windows
+this involves two mini-steps:
+
+<blockquote>
+
+(a) Remove the <code>"$*"</code> from the <code>saved_acl2</code>
+script (because Windows does not understand <code>$*</code>).
+Consequently, any arguments you pass to ACL2 via the command line will
+be ignored.
+
+<p>
+
+(b) Rename <code>saved_acl2</code> to <code>saved_acl2.bat</code>, for
+example by executing the following command.<br><br>
+<code>rename saved_acl2 saved_acl2.bat</code>
+
+</blockquote>
+</LI>
+
+</OL>
+
+<BR><HR><BR>
+<H3><A NAME="Build-Particular">Building an Executable Image on Some Particular Systems</A></H3>
+
+Subtopics of this section are as follows.
+
+    <UL>
+      <LI><A HREF="#Windows-GCL">Special Case: Building an Executable Image on a Windows System using GCL</A>
+      <LI><A HREF="windows7.html">Instructions from David Rager
+      for building ACL2 on Windows</A>
+      <LI><A HREF="windows-gcl-jared.html">Older instructions from Jared Davis for
+      building ACL2 on Windows using mingw</A>
+    </UL>
+
+<BR><HR><BR>
+<H3><A NAME="Windows-GCL">Special Case: Building an Executable Image on a Windows System using GCL</A></H3>
+
+You may want to skip this section and instead read <A
+HREF="windows7.html">Instructions from David Rager for building ACL2
+on Windows</A>.
+
+<!-- The following is only for non-incremental releases. -->
+Or, you may be able to <a href="#Pre-Built-Images">download a pre-built ACL2 image</a>
+for Windows instead of reading this section.
+<!-- End of only for non-incremental releases. -->
+
+<p>
+
+Otherwise here are steps to follow.
+
+<ol>
+<li><b>FIRST</b> get GCL running on your Windows system using <b>ONE</b> of the
+following two options.  Note that GCL can be unhappy with spaces in filenames,
+so you should probably save the GCL distribution to a directory whose path is
+free of spaces.
+
+<ul>
+<li><b>OR</b>, obtain GCL for Windows systems from <code><a
+href="ftp://ftp.gnu.org/gnu/gcl/">ftp://ftp.gnu.org/gnu/gcl/</a></code>
+or as explained <a href="#Obtaining-GCL">above</a>.  You
+may wish to pick a <code>.zip</code> file from the <code>cvs/</code>
+subdirectory (containing pre-releases) that has "<code>mingw32</code>" in the
+name.
+
+<li><b>OR ELSE</b>, perhaps you can build GCL on your Windows system from the
+sources.  The mingw tools and the cygnus bash shell have been used to build
+distributed GCL executables.
+
+</ul>
+
+<li><b>SECOND</b>, create an appropriate GCL batch file.  When we tried running
+the script <code>gclm/bin/gclm.bat</code> that came with
+<code>gcl-cvs-20021014-mingw32</code> from the above ftp site, a separate
+window popped up, and with an error.  Many ACL2 users prefer running in an
+emacs shell buffer.  (We obtained emacs for Windows from <code><a
+href="ftp://ftp.gnu.org/gnu/windows/emacs/21.2/emacs-21.2-fullbin-i386.tar.gz">ftp://ftp.gnu.org/gnu/windows/emacs/21.2/emacs-21.2-fullbin-i386.tar.gz</a></code>.)
+The following modification of <code>gclm.bat</code> seemed to solve the problem
+(your pathnames may vary).
+<pre>
+@
+% do not delete this line %
+@ECHO off
+set cwd=%cd%
+path C:\gcl\gclm\mingw\bin;%PATH%
+C:\gcl\gclm\lib\gcl-2.6.2\unixport\saved_gcl.exe -dir C:/gcl/gclm/lib/gcl-2.6.2/unixport/ -libdir  C:/gcl/gclm/lib/gcl-2.6.2/ -eval "(setq si::*allow-gzipped-file* t)" %1 %2 %3 %4 %5 %6 %7 %8 %9
+</pre>
+
+<li><b>THIRD</b>, follow the <A HREF="#Non-Unix">instructions for
+    other than Unix-like systems</A> above, though the resulting file
+    may be called
+<code>saved_acl2.exe</code> rather than <code>saved_acl2</code>.
+
+<!-- NOTE to developers: v6-4 below indicates a normal release, which is OK. -->
+<!-- Do not edit that for incremental releases. -->
+
+<li><b>FINALLY</b>, create a file <code>acl2.bat</code> as explained in
+<code><a href="http://www.cs.utexas.edu/users/moore/acl2/v6-4/distrib/images/Readme.html#acl2-bat">
+http://www.cs.utexas.edu/users/moore/acl2/v6-4/distrib/images/Readme.html</a></code>.
+
+</ol>
+
+<p>
+
+We hope that the above simply works.  If you experience
+problems, the following hints may help.
+
+<p>
+
+<b>TROUBLESHOOTING:</b>
+<ul>
+
+<li><a name="troubleshooting-TMP1">We</a> tried building ACL2 on Windows XP on
+top of GCL, our attempt broke at the end of the "<a
+href="#initialization-first-pass">Initialization, first pass</a>" step, while
+compiling <code>TMP1.lisp</code>.  That was easily remedied by starting up a
+fresh GCL session and invoking <code>(compile-file "TMP1.lisp")</code> before
+proceeding to the next step.
+
+<li>Yishai Feldman has provided some nice instructions at <code><a
+href="http://www.faculty.idc.ac.il/yishai/reasoning/win-install.htm">http://www.faculty.idc.ac.il/yishai/reasoning/win-install.htm</a></code>,
+some of which we have tried to incorporate here.  A useful point made there is
+that when you want to quit ACL2, use <code>:good-bye</code> (or
+<code>(good-bye)</code> which works even in raw Lisp).  Or you can use
+<code>(user::bye)</code> in raw Lisp.  The point is:  Avoid <code>control-c
+control-d</code>, even thought that often works fine in emacs under
+Unix-like systems.
+
+<li>If the above batch file does not work for some reason, an alternate
+approach may be to set environment variables.  You may be able to add to the
+<code>PATH</code> variable <i>gcl-dir</i><code>\gcc\bin</code>, where
+<i>gcl-dir</i> is the directory where GCL is installed.  To get to the place to
+set environment variables, you might be able to go to the control panel, under
+system, under advanced.  Alternately, you might be able to get there by opening
+<code>My Computer</code> and right-clicking to get to <code>Properties</code>,
+then selecting the <code>Advanced</code> tab.  At one time, when GCL/Windows
+was release as Maxima, Pete Manolios suggested adding the system variable
+LD_LIBRARY_PATH with the value "maxima-dir\gcc\i386-mingw32msvc\include"; this
+may or may not be necessary for your GCL installation (and the path would of
+course likely be different).
+
+</ul>
+
+<BR><HR noshade size=8><BR>
+
+<H2><A NAME="Running">Running Without Building an Executable Image</A></H2>
+
+The most convenient way to use ACL2 is first to install an executable image as
+described above for <A HREF="#Other-Unix">Unix-like systems</A> and <A
+HREF="#Non-Unix">other</A> platforms.  However, in some cases this is not
+possible, for example if you are using a trial version of Allegro Common Lisp.
+In that case you should follow the steps below each time you want to start up
+ACL2.
+
+<P>
+
+We assume you have obtained ACL2 and placed it in directory <I>dir</I>, as
+described above for <A HREF="#Sources">Unix-like systems</A> or <A
+HREF="#Sources-Non-Unix">other</A> platforms.
+<!-- The following is only for non-incremental releases. -->
+(If you downloaded a <A
+HREF="#Pre-Built-Images">pre-built ACL2 image</A>, then you may skip this section.)
+<!-- End of only for non-incremental releases. -->
+Connect to subdirectory <CODE>acl2-sources</CODE> of <I>dir</I>,
+start up your Common Lisp, and compile by executing the following forms.
+<I>This sequence of steps need only be performed once.</I>
+
+<PRE>
+  (load "init.lisp")
+  (in-package "ACL2")
+  (compile-acl2)
+</PRE>
+
+Now each time you want to use ACL2, you need only execute the following forms
+after starting up Common Lisp in subdirectory <CODE>acl2-sources</CODE> of
+<I>dir</I>.
+
+<PRE>
+  (load "init.lisp")
+  (in-package "ACL2")
+  (load-acl2)
+  (initialize-acl2)
+</PRE>
+
+<I>Note.</I> The resulting process includes the ACL2 documentation, and hence
+will probably be considerably larger (perhaps twice the size) than the result
+of running an executable image created as described <A
+HREF="#Create-Image">above</A>.
+
+<P>
+
+Now proceed to read more about <A HREF="using.html">Using ACL2</A>.
+
+<BR><HR noshade size=8><BR>
+<H2><A NAME="Summary">Summary of Distribution</A></H2>
+
+The ACL2
+    distribution, <code><A HREF="http://www.cs.utexas.edu/users/moore/acl2/v6-4/distrib/acl2.tar.gz">
+    acl2.tar.gz</A></code>, includes the ACL2 source files as well as
+    the following files and directories (and a few others not
+    mentioned here).  Note that a <code>books/</code> directory
+    is <b>not included</b>; see instructions above to fetch the community
+    books.
+<PRE>
+  LICENSE       ; ACL2 license file
+  GNUmakefile   ; For GNU make
+  TAGS          ; Handy for looking at source files with emacs
+  doc/          ; ACL2 documentation
+  emacs/        ; Some helpful emacs utilities
+  installation/ ; Installation instructions (start with installation.html)
+  saved/        ; Empty directory for backing up copies during make
+</PRE>
+
+Also available are the following.
+
+<ul>
+
+<li><code><a href="http://www.cs.utexas.edu/users/moore/acl2/v6-4/distrib/images/">images/</a></code>:
+Some gzip'd tar'd executables; see <code><a href="http://www.cs.utexas.edu/users/moore/acl2/v6-4/distrib/images/Readme.html">images/Readme.html</a></code></li>
+
+<li><code><a href="http://www.cs.utexas.edu/users/moore/acl2/v6-4/distrib/split/">split/</a></code>: The result of splitting up <code>acl2.tar.gz</code></li>
+
+</ul>
+
+<P>
+We estimate that the
+entire <code>acl2.tar.gz</code> consists of approximately 6 MB, which extracts to
+about 29 MB, and the size of gzipped tarfile <code>books-6.4.tar.gz</code> (obtained
+as described
+<a href="#Obtaining-books">above</a>) is about 14 MB, which extracts
+to about 180 MB.  Additional space is required to build an image,
+perhaps 50 to 300 megabytes depending on the platform (including the
+host Lisp); and more will be required
+to <A HREF="using.html#Certifying">certify books</A>.
+
+<p>
+
+<b><font size="+2">[<a href="installation.html">Back to Installation Guide.</a>]</font></b>
+
+<BR><HR noshade size=8><BR>
+<H2><A NAME="Bleeding-edge">Bleeding-edge Distributions via SVN</A></H2>
+
+We strongly recommend that ACL2 users update their local copies of the
+system and community books at each ACL2 release.  While that should
+suffice for most ACL2 users, nevertheless for those who prefer to
+obtain the latest developments, the ACL2 source code and community
+books have been made available between ACL2 releases, by way of
+revision control using SVN.
+<i>The authors of ACL2 consider SVN distributions to be experimental;
+while they will likely be fully functional in most cases, they could
+however be incomplete, fragile, and unable to pass our own
+regression.</i> If you decide to use SVN versions of either the ACL2
+or the community books, then you should use both, as they tend to be
+kept in sync.  See the project
+websites, <code><A HREF="http://acl2-books.googlecode.com/">acl2-books</A></code>
+and <code><A HREF="http://acl2-devel.googlecode.com/">acl2-devel</A></code>,
+for the ACL2 community books and development sources, respectively.
+
+<BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR>
+
+</BODY>
+</HTML>
