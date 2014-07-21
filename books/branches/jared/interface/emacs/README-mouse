@@ -1,0 +1,6 @@
+See the file PROOF-TREE-EMACS.txt for how to start up and use proof
+trees with emacs.
+
+The file README-mouse.doc in this directory explains additional features, not
+currently supported though they may work, provided by this interface -- notably
+mouse/menu support.

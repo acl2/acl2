@@ -1,0 +1,54 @@
+This directory contains solutions for exercises in Chapter 11 of
+
+ Computer-Aided Reasoning:  An Approach, by Kaufmann, Manolios, and Moore,
+ Kluwer Academic Publishers, June, 2000.
+
+See books/textbook/README for a guide to all solutions and general
+information.
+
+The following files (or extensions) may be present on this directory.
+
+README     - guide to contents of the directory
+Makefile   - Unix file for recertifying the ACL2 books on the directory
+             (present on all but chap7, which contains no books)
+
+*.lisp     - certifiable ACL2 book containing solutions to exercises
+*.txt      - solutions to exercises not amenable to ACL2 formulation
+*.acl2     - driver used by Makefile to recertify some *.lisp files
+
+*.cert     - certificate indicating that *.lisp has been certified
+*.date     - date of beginning of recertification run
+*.log      - output of make
+*.out      - output produced by ACL2 during certification
+*.o        - compiled version of *.lisp file in some Common Lisps
+*.fasl     - compiled version of *.lisp file in some Common Lisps
+
+Any file with the extension ``.lisp'' is a certifiable book that can
+be included into your ACL2 session with include-book.
+
+To recertify all the books, stand in this directory and type make.
+
+Location of Solutions to Particular Exercises
+
+We provide more than one solution for some exercises.  This is just a
+matter of taste.  Different authors prefer different styles.
+Sometimes, one solution is less elegant than another but more clearly
+indicates how the solution was discovered.
+
+  11 Theorem Prover Exercises 
+     Exercises 11.1-11.4: chap11/starters.lisp
+     Exercise 11.5: chap11/perm.lisp
+     Exercises 11.6 - 11.7: chap11/perm-append.lisp
+     Exercises 11.8 - 11.14: chap11/qsort.lisp
+     Exercises 11.15 - 11.16: chap11/mergesort.lisp
+     Exercises 11.17 - 11.25: chap11/compress.lisp
+     Exercises 11.26 - 11.33: chap11/summations.lisp
+     Exercises 11.26 - 11.33, using an arithmetic book:
+       chap11/summations-book.lisp
+     Exercises 11.34 - 11.41: chap11/tautology.lisp
+     Exercises 11.42 - 11.46: chap11/encap.lisp
+     Exercises 11.47 - 11.51 via approach 1: chap11/how-many-soln1.lisp
+     Exercises 11.47 - 11.51 via approach 2: chap11/how-many-soln2.lisp
+     Exercise  11.52 via approach 1: chap11/xtr.lisp
+     Exercise  11.52 via approach 2: chap11/xtr2.lisp
+     Exercises 11.53 - 11.57: chap11/finite-sets.lisp

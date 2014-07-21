@@ -1,0 +1,4 @@
+(in-package "ACL2")
+(ld "defpkg.lsp")
+; cert-flags: ? t :skip-proofs-okp t :defaxioms-okp t
+(certify-book "kalman-proof" ? t :skip-proofs-okp t :defaxioms-okp t)

@@ -1,0 +1,4 @@
+(in-package "ACL2")
+(ld "sat-package.acl2")
+; cert-flags: ? :all
+(certify-book "sulfa-dir-const" ? :all)

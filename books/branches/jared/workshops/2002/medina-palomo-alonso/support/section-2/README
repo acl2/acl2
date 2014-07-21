@@ -1,0 +1,43 @@
+     Implementation in ACL2 of Well-Founded Polynomial Orderings
+
+The code under this directory explains the ideas behind section 2 in
+an abstract setting, hiding implementation details and properties
+which are not detailed in the corresponding paper. It has been tested
+under ACL2 2.6/GCL 2.4.
+
+* *.acl2:
+
+Package definitions (UPOL and NPOL) and certification commands.
+
+* upol-1.lisp:
+
+Unnormalized polynomials (UPOL package). An encapsulation of the ring
+operations and properties, the normalization function and the semantic
+equivalence. See [1] for implementation details.
+
+* upol-2.lisp:
+
+Unnormalized polynomials (UPOL package) in more detail. It explains
+how the theorems |p + nf(q) = p + q| and |p * nf(q) = p * q| are used
+to prove congruences. The proof of |p * nf(q) = p * q| did not appear
+in our previous work on unnormalized polynomials [1]. It is highly
+technical and it is not told here. Please, feel free to contact the
+authors if you are interested.
+
+* npol.lisp:
+
+Normalized polynomials (NPOL package). It explains how the definitions
+and the ring properties for unnormalized polynomials are translated to
+a normalized setting.
+
+Encapsulated events, with the exception of |p * nf(q) = p * q| and
+their corresponding congruences, are developed in (event names may
+have changed):
+
+[1] Medina Bulo, I., Alonso Jiménez, J. A., Palomo Lozano, F.:
+    Automatic Verification of Polynomial Rings Fundamental Properties in ACL2.  
+    The University of Texas at Austin, Department of Computer Sciences.	
+    Technical Report 0029 (2000)
+
+Inmaculada Medina Bulo		Francisco Palomo Lozano
+inmaculada.medina@uca.es	francisco.palomo@uca.es

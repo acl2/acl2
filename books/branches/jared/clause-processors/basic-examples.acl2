@@ -1,0 +1,8 @@
+(in-package "ACL2")
+
+#+acl2-par
+; clause processors that modify state
+(set-waterfall-parallelism nil)
+
+; cert-flags: ? t :ttags (my-ttag) :defaxioms-okp t
+(certify-book "basic-examples" ? t :ttags (my-ttag) :defaxioms-okp t)

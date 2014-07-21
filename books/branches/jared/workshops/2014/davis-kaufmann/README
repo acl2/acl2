@@ -1,0 +1,6 @@
+Industrial-Strength Documentation for ACL2
+Jared Davis and Matt Kaufmann
+
+The contributions from this paper are found in various places
+throughout the ACL2 source code and Community Books, for example in
+books/doc/, books/xdoc/, and books/system/doc/.

@@ -1,0 +1,11 @@
+; Tail-Recursive Completion of Inductive Assertions
+;  in an Operational Semantics Setting
+
+; J Strother Moore
+
+; This directory contains supporting material for the paper above.
+; To recertify the books here, type make to the linux prompt or
+; get into ACL2 while standing on this directory and type
+
+; (ld "certify.lsp" :ld-pre-eval-print t)
+

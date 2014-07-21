@@ -1,0 +1,2 @@
+(ld "../book/packages.lsp")
+; cert-flags: ? t

@@ -1,0 +1,5 @@
+; Since "m1" includes "good-statep", which includes "use-when", then
+; "use-when" should not include "m1".  So we create this file in order
+; to override the use of cert.acl2, which would include "m1".
+
+(certify-book "use-when")

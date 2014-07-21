@@ -1,0 +1,116 @@
+
+                         ACL2 XDOC FANCY VIEWER
+                           License Information
+
+
+Scope of this LICENSE file:
+
+   An XDOC manual has both Viewer Files for displaying topics and Content Files
+   that store the actual topic data.  This LICENSE file describes the copyright
+   and licensing of the Viewer Files, only.
+
+   The topics in Content Files, such as xindex.js, xdata.js, and (in some
+   cases) xdata.db, are usually derived from ACL2 books and/or other source
+   code files.  These topics are typically subject to their own copyright and
+   licensing terms, which are beyond the scope of this LICENSE.
+
+
+Copyright for main source files:
+
+   XDOC Documentation System for ACL2
+   Copyright (C) 2009-2013 Centaur Technology
+
+   Contact:
+     Centaur Technology Formal Verification Group
+     7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+     http://www.centtech.com/
+
+   License: (An MIT/X11-style license)
+
+     Permission is hereby granted, free of charge, to any person obtaining a
+     copy of this software and associated documentation files (the "Software"),
+     to deal in the Software without restriction, including without limitation
+     the rights to use, copy, modify, merge, publish, distribute, sublicense,
+     and/or sell copies of the Software, and to permit persons to whom the
+     Software is furnished to do so, subject to the following conditions:
+
+     The above copyright notice and this permission notice shall be included in
+     all copies or substantial portions of the Software.
+
+     THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+     IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+     FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+     THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+     LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+     FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+     DEALINGS IN THE SOFTWARE.
+
+   Original author: Jared Davis <jared@centtech.com>
+
+
+Copyrights for Supporting Libraries: (within the "lib" directory)
+
+   jQuery:
+     Copyright 2005, 2013 jQuery Foundation, Inc. and other contributors
+     Released under the MIT license.
+     http://jquery.com/
+
+   jquery.base64.js:
+     Copyright 2012 Yannick Albert
+     Released under MIT license.
+     https://github.com/yckart/jquery.base64.js
+
+   PowerTip:
+     Copyright 2013 Steven Benner
+     Released under MIT license.
+     http://stevenbenner.github.com/jquery-powertip/
+
+   LazyLoad:
+     Copyright 2011 Ryan Grove
+     Released under MIT license.
+     https://github.com/rgrove/lazyload
+
+   Typeahead:
+     Copyright 2013 Twitter, Inc. and other contributors
+     Released under MIT license.
+     https://github.com/twitter/typeahead
+
+
+Copyrights for other supporting files:
+
+   Original XDOC Images
+     Copyright 2009-2013 Centaur Technology
+     License: MIT/X11 Style License
+
+     - leaf.png
+     - plus.png
+     - minus.png
+     - expand_subtopics.png
+     - collapse_subtopics.png
+     - favicon.png
+     - xdoc-home.png
+     - xdoc-logo.png
+
+   Oxygen Icon Set Images
+     http://www.oxygen-icons.org/
+     Released under GNU General Public License
+     Accessed 2012-08-13 from:
+       http://kde-look.org/content/show.php/Oxygen+Icons?content=74184
+
+     - printer.png
+     - download.png
+     - view_flat.png   (adapted)
+     - view_tree.png   (adapted)
+
+   External Link Image:
+     Released under GNU General Public License
+     Accessed 2013-07-26 from
+       http://commons.wikimedia.org/wiki/File:Icon_External_Link.png
+
+     - Icon_External_Link.png
+
+
+   ACL2 Tour Images (.gif files within the images/ directory)
+     Copyright 2012 Regents of the University of Texas
+     Released under a BSD-style license (distributed with ACL2)
+

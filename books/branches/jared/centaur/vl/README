@@ -1,0 +1,107 @@
+
+
+                          VL Verilog Toolkit
+                               README
+
+  +-----------------------------------------------------------------------+
+  | Note: VL has extensive documentation; see the README.html file in the |
+  | centaur/ directory for instructions on building the reference manual. |
+  | This README is just a small guide to the layout of VL's source code.  |
+  +-----------------------------------------------------------------------+
+
+vl/util/           -- basic ACL2 stuff used throughout VL
+
+   * Generic functions (tuplep, same-lengthp, ...)
+   * The VL Printer
+   * Warning Objects
+   * Locations, Extended Characters
+   * Misnamed "arithmetic" book -- reasoning support for ACL2 concepts
+
+
+vl/parsetree.lisp  -- core definitions of our internal representation for
+                      Verilog constructs (modules, expressions, ...)
+
+
+vl/primitives.lisp -- defines the Verilog modules we use as primitives in
+                      simplified Verilog output
+
+
+vl/loader/         -- how we read Verilog files
+                      (top-level function here: vl-load)
+
+   * preprocessor, lexer, parser
+   * override system
+   * wrapper code for finding missing modules, search paths
+
+
+
+vl/mlib/           -- general purpose, low-level functions for working
+                      with Verilog constructs
+
+   This has functions for dealing with:
+     * basic expressions, ranges, procedural statements, etc.
+     * the module hierarchy (finding modules, seeing dependencies)
+     * warnings (propagating fatal errors, assigning warnings to modules)
+     * generating fresh names for new wires
+     * pretty-printing
+     * bit-level views of modules, ...
+
+   We typically build on these functions when we write transforms and static
+   checkers.
+
+
+
+vl/transforms/     -- main verilog->verilog simplifications
+
+   Includes many general purpose transforms like:
+
+    * resolving arguments for module instances
+    * expanding away module parameters
+    * "resolving" wire sizes and computing bit- and part-select indices
+    * determining the sizes of expressions
+
+   We also have many more specialized transforms that accomplish
+   our E translation, e.g.,
+
+    * simplifying expressions by rewriting operators
+    * splitting up expressions and eliminating assignment statements
+    * inferring flops and latches from always statements
+    * synthesizing operators into module instances
+
+   You may wish to pick and choose from these transformations when
+   developing new static checks or repurposing VL to do something
+   else.
+
+
+vl/toe/            -- "to E", convert Verilog to E modules
+
+
+vl/checkers/      -- static checks
+
+  * These are various static checking tools (typo detection, "duplicate
+    element" (copy/paste) detection, multiply driven wire detection, skipped
+    wire detection, etc.)
+
+
+vl/top.lisp       -- top-level book
+
+  * loads everything needed to load and transform Verilog files
+  * defines vl-simplify (the transformation sequence)
+  * provides the defmodules command
+
+
+vl/kit/           -- VL as a command-line program
+
+  * this is where the "vl" program gets generated from
+
+vl/bin
+
+
+MISCELLANEOUS STUFF
+
+vl/lint/           -- a basic Verilog linter
+
+vl/talks/          -- some old talks about VL
+
+vl/wf-*.lisp       -- well-formedness checks (mostly old)
+

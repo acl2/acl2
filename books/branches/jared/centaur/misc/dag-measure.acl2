@@ -1,0 +1,1 @@
+(ld "tools/flag-package.lsp" :dir :system)

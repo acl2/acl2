@@ -1,0 +1,22 @@
+#!/bin/bash
+
+## usage:
+##
+## > find-conflicts-files [book__bookdata.out]*
+
+## This script executes the common lisp conflict analyzer
+## on the list of bookdata files provied as arguments to
+## the script.
+
+command=`dirname "$0"`
+path=`(cd "$command" && pwd)`
+
+term="(analyzer-command"
+for arg in $*
+do
+  echo "$arg"
+  term="$term \"$arg\""
+done
+term="$term )"
+
+"$path/conflicts_img" -e "$term"

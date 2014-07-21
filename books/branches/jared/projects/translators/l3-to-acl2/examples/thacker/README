@@ -1,0 +1,24 @@
+Files in this directory (see notes below for further explanation):
+
+Makefile           support for using "make" to certify books
+README             this README
+gold/              some saved results:
+  mail.txt           saved result from Anthony Fox
+  run-check.out      result from our run, which compares with mail.txt
+  tiny.lisp          :program mode, auto-generated tiny.lisp
+  tiny-logic.lisp    :logic mode, auto-generated tiny.lisp
+l3-run             (not used here) from Anthony Fox, for running HOL4 model
+run.lisp           support for running the translated model
+tiny-acl2.txt      input for translator from Anthony Fox, produced from tiny.spec
+tiny-manual.lisp   guard-verified, manually-generated version of tiny.lisp
+... and these files from Anthony Fox, not used here:
+  tiny.spec          Thacker L3 example
+  tinyScript.sml     original form for tiny-acl2.txt
+  tinyTheory.sig     HOL4 code generated from tiny.spec
+
+See ../../README for instructions and explanation.
+
+Run "make clean" to clean.  Sorry about some issues, which might be
+cleaned up later:
+- Errors from egrep
+- Rebuilding of some other stuff

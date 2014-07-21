@@ -1,0 +1,28 @@
+On Feb. 6, 2014, Yan Peng posed the following challenge problem in an
+email to the acl2-help list.  Consider the following two definitions,
+where the first sums from n down to 0 while the second sums from 0 up
+to n.
+
+(defun sum1 (n)
+  (declare (xargs :measure (if (or (not (integerp n)) 
+                                   (<= n 0))
+                               0
+                             n)))
+  (if (or (not (integerp n)) (<= n 0))
+      0
+    (+ n (sum1 (- n 1)))))
+
+(defun sum2 (i n0)
+  (declare (xargs :measure (if (or (not (integerp i))
+                                   (< i 0))
+                               0
+                             (+ 1 i))))
+  (if (or (not (integerp i)) (< i 0))
+      0
+    (+ (- n0 i) (sum2 (- i 1) n0))))
+
+The challenge is to ``prove the equivalence of "(sum1 n)" and "(sum2 n n)".''
+
+The books in this directory present some solutions to this challenge.
+Members of the ACL2 community are invited to contribute additional
+certifiable books in this directory that solve that challenge.

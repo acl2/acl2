@@ -1,0 +1,10 @@
+#|-*-Lisp-*-=================================================================|#
+#|                                                                           |#
+#| coi: Computational Object Inference                                       |#
+#|                                                                           |#
+#|===========================================================================|#
+
+(in-package "ACL2")
+(ld "cert.acl2")
+(ld "data-structures/memories/package.lsp" :dir :system)
+(certify-book "mem-fast" ? t)
