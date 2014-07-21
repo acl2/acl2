@@ -1,7 +1,8 @@
+; Copyright (C) 2014, Regents of the University of Texas
+; Original author: Matt Kaufmann
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
 (in-package "ACL2")
-
-; Original author: Matt Kaufmann
 
 ; See book-thms.lisp.  This is an example that tests the utilities contained in
 ; that book.
