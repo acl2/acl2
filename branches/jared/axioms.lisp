@@ -5150,6 +5150,13 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
            (symbolp x))
   :rule-classes :forward-chaining)
 
+(defun all-keywords-p (keywords)
+  (declare (xargs :guard t))
+  (if (consp keywords)
+      (and (keywordp (car keywords))
+           (all-keywords-p (cdr keywords)))
+    (not keywords)))
+
 (defaxiom intern-in-package-of-symbol-symbol-name
 
 ; This axiom assumes that "" is not the name of any package, but is instead
@@ -6342,6 +6349,12 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (declare (xargs :guard t))
   (and (consp x)
        (eq (car x) 'quote)))
+
+(defun all-quoteps (lst)
+  (declare (xargs :guard t))
+  (cond ((atom lst) t)
+        (t (and (quotep (car lst))
+                (all-quoteps (cdr lst))))))
 
 (defconst *t* (quote (quote t)))
 (defconst *nil* (quote (quote nil)))
@@ -26308,3 +26321,4 @@ Lisp definition."
        (<? (tau-interval-hi-rel int)
            (fix x)
            (tau-interval-hi int))))
+

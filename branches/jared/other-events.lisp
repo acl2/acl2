@@ -24203,12 +24203,6 @@
 
   '(:native :def :multiplicity))
 
-(defun all-keywords-p (keywords)
-  (if (consp keywords)
-      (and (keywordp (car keywords))
-           (all-keywords-p (cdr keywords)))
-    (null keywords)))
-
 (defun first-assoc-keyword (keys x)
   (declare (xargs :guard (and (keyword-value-listp x)
                               (all-keywords-p keys))))

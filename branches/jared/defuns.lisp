@@ -2892,15 +2892,6 @@
         (t (cons (ts-union (car ts-lst1) (car ts-lst2))
                  (vector-ts-union (cdr ts-lst1) (cdr ts-lst2))))))
 
-(defun map-cons-tag-trees (lst ttree)
-
-; Cons-tag-tree every element of lst into ttree.
-
-  (cond ((null lst) ttree)
-        (t (map-cons-tag-trees
-            (cdr lst)
-            (cons-tag-trees (car lst) ttree)))))
-
 (defun type-set-and-returned-formals-with-rule1
   (alist rule-vars type-alist ens wrld basic-ts vars-ts vars ttree)
 

@@ -1506,24 +1506,6 @@
                        (enabled-numep (access elim-rule rule :nume)
                                       ens)))))))
 
-(defun dumb-occur-lst-except (term lst lit)
-
-; Like dumb-occur-lst except that it does not look into the first
-; element of lst that is equal to lit.  If you think of lst as a
-; clause and lit as a literal, we ask whether term occurs in some
-; literal of clause other than lit.  In Nqthm we looked for an eq
-; occurrence of lit, which we can't do here.  But if there are two
-; occurrences of lit in lst, then normally in Nqthm they would not
-; be eq and hence we'd look in one of them.  Thus, here we look in
-; all the literals of lst after we've seen lit.  This is probably
-; unnecessarily complicated.
-
-  (cond ((null lst) nil)
-        ((equal lit (car lst))
-         (dumb-occur-lst term (cdr lst)))
-        (t (or (dumb-occur term (car lst))
-               (dumb-occur-lst-except term (cdr lst) lit)))))
-
 (defun fertilize-feasible (lit cl hist term ens wrld)
 
 ; Lit is a literal of the form (not (equiv term val)) (or the commuted

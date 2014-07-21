@@ -359,17 +359,6 @@
         (cons '*ts-character* *ts-character*)
         (cons '*ts-empty* *ts-empty*)))
 
-(defun logior-lst (lst ans)
-  (cond
-   ((null lst) ans)
-   (t (logior-lst (cdr lst)
-                  (logior (car lst) ans)))))
-
-(defun logand-lst (lst ans)
-  (cond
-   ((null lst) ans)
-   (t (logand-lst (cdr lst)
-                  (logand (car lst) ans)))))
 
 (mutual-recursion
 
@@ -453,6 +442,23 @@
         `(declare (type (integer ,*min-type-set* ,*max-type-set*)
                         ts1 ts2))
         '(ts= (ts-intersection ts1 ts2) ts1)))
+
+
+(defabbrev ts-acl2-numberp (ts)
+  (ts-subsetp ts *ts-acl2-number*))
+
+(defabbrev ts-rationalp (ts)
+  (ts-subsetp ts *ts-rational*))
+
+(defabbrev ts-real/rationalp (ts)
+  #+non-standard-analysis
+  (ts-subsetp ts *ts-real*)
+  #-non-standard-analysis
+  (ts-subsetp ts *ts-rational*))
+
+(defabbrev ts-integerp (ts)
+  (ts-subsetp ts *ts-integer*))
+
 
 ;; RAG - I modified this to include cases for the irrationals and
 ;; complex numbers.

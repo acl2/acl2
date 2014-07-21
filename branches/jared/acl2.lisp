@@ -874,6 +874,9 @@
     #+hons "hons-raw"
     #+hons "memoize-raw"
     "translate"
+    "utilities"
+    "tag-tree"
+    "term-order"
     "type-set-a"
     "linear-a"
     "type-set-b"
@@ -882,19 +885,20 @@
     "tau"
     "rewrite"
     "simplify"
-    "bdd"
     "other-processes"
     "induct"
     "proof-checker-pkg"
     "doc"
     "history-management"
+    "bdd"
     "prove"
     "defuns"
     "proof-checker-a"
     "defthm"
     "other-events"
-    "ld"
     "proof-checker-b"
+    "ld"
+    ;; "proof-checker-b"
     "interface-raw"
     "defpkgs"
     "boot-strap-pass-2" ; at the end so that it is compiled last
@@ -1502,34 +1506,19 @@ which is saved just in case it's needed later.")
                     old)))))
 
 (defun define-sharp-dot ()
-  (set-dispatch-macro-character
-   #\#
-   #\.
-   #'sharp-dot-read))
+  (set-dispatch-macro-character #\# #\. #'sharp-dot-read))
 
 (defun define-sharp-comma ()
-  (set-dispatch-macro-character
-   #\#
-   #\,
-   #'sharp-comma-read))
+  (set-dispatch-macro-character #\# #\, #'sharp-comma-read))
 
 (defun define-sharp-atsign ()
-  (set-new-dispatch-macro-character
-   #\#
-   #\@
-   #'sharp-atsign-read))
+  (set-new-dispatch-macro-character #\# #\@ #'sharp-atsign-read))
 
 (defun define-sharp-bang ()
-  (set-new-dispatch-macro-character
-   #\#
-   #\!
-   #'sharp-bang-read))
+  (set-new-dispatch-macro-character #\# #\! #'sharp-bang-read))
 
 (defun define-sharp-u ()
-  (set-new-dispatch-macro-character
-   #\#
-   #\u
-   #'sharp-u-read))
+  (set-new-dispatch-macro-character #\# #\u #'sharp-u-read))
 
 (defvar *old-character-reader*
   (get-dispatch-macro-character #\# #\\))
@@ -1544,16 +1533,10 @@ which is saved just in case it's needed later.")
 ; *reckless-acl2-readtable*.
 
     #+hons ; SBCL requires #+hons (same restriction as ser-hons-reader-macro)
-    (set-new-dispatch-macro-character
-     #\#
-     #\Z
-     'ser-hons-reader-macro)
+    (set-new-dispatch-macro-character #\# #\Z 'ser-hons-reader-macro)
 
     #+hons ; SBCL requires #+hons (same restriction as ser-cons-reader-macro)
-    (set-new-dispatch-macro-character
-     #\#
-     #\Y
-     'ser-cons-reader-macro)
+    (set-new-dispatch-macro-character #\# #\Y 'ser-cons-reader-macro)
 
 ; Backquote
 
@@ -1589,10 +1572,7 @@ which is saved just in case it's needed later.")
 ;  to restrict reading of such characters in .fas files.
 
     (when do-all-changes
-      (set-dispatch-macro-character
-       #\#
-       #\\
-       #'acl2-character-reader))))
+      (set-dispatch-macro-character #\# #\\ #'acl2-character-reader))))
 
 (eval-when
  #-cltl2
@@ -1611,26 +1591,16 @@ which is saved just in case it's needed later.")
           (define-sharp-atsign)
           (define-sharp-bang)
           (define-sharp-u)
-          (set-dispatch-macro-character
-           #\#
-           #\\
-           #'acl2-character-reader))))
+          (set-dispatch-macro-character #\# #\\ #'acl2-character-reader))))
 
 (defvar *reckless-acl2-readtable*
 
 ; See "SUPPORT FOR FAST #n= and #n#" in acl2-fns.lisp.
 
   (let ((*readtable* (copy-readtable *acl2-readtable*)))
-    (set-dispatch-macro-character #\#
-                                  #\#
-                                  #'reckless-sharp-sharp-read)
-    (set-dispatch-macro-character #\#
-                                  #\=
-                                  #'reckless-sharp-equal-read)
-    (set-dispatch-macro-character
-     #\#
-     #\\
-     *old-character-reader*)
+    (set-dispatch-macro-character #\# #\# #'reckless-sharp-sharp-read)
+    (set-dispatch-macro-character #\# #\= #'reckless-sharp-equal-read)
+    (set-dispatch-macro-character #\# #\\ *old-character-reader*)
     *readtable*))
 
 (defvar *load-compiled-verbose* nil)

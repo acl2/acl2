@@ -101,43 +101,6 @@
                (insert-neg-evgs1 (car x) x (cdr neg-evg-lst))))
         (t (insert-neg-evgs1 (car x) x neg-evg-lst))))
 
-; Now we define some other sorting functions.
-
-(defun merge-car-< (l1 l2)
-  (cond ((null l1) l2)
-        ((null l2) l1)
-        ((< (car (car l1)) (car (car l2)))
-         (cons (car l1) (merge-car-< (cdr l1) l2)))
-        (t (cons (car l2) (merge-car-< l1 (cdr l2))))))
-
-(defun merge-sort-car-< (l)
-
-; Merge-sort, where elements a and b are compared via (car a) < (car b).
-
-  (cond ((null (cdr l)) l)
-        (t (merge-car-< (merge-sort-car-< (evens l))
-                        (merge-sort-car-< (odds l))))))
-
-(defun merge-cadr-< (l1 l2)
-  (cond ((null l1) l2)
-        ((null l2) l1)
-        ((< (cadr (car l1)) (cadr (car l2)))
-         (cons (car l1) (merge-cadr-< (cdr l1) l2)))
-        (t (cons (car l2) (merge-cadr-< l1 (cdr l2))))))
-
-(defun merge-sort-cadr-< (l)
-
-; Merge-sort, where elements a and b are compared via (cadr a) < (cadr b).
-
-  (cond ((null (cdr l)) l)
-        (t (merge-cadr-< (merge-sort-cadr-< (evens l))
-                         (merge-sort-cadr-< (odds l))))))
-
-(defun strip-caddrs (x)
-  (declare (xargs :guard (all->=-len x 3)))
-  (cond ((null x) nil)
-        (t (cons (caddar x) (strip-caddrs (cdr x))))))
-
 ; In forming rules from terms we often strip out individual branches of the
 ; term, e.g., (implies (and h1 h2) (and c1 (implies h3 c2))) is treated as
 ; though it were (and (implies (and h1 h2) c1) (implies (and h1 h2 h3) c2)),
@@ -711,38 +674,6 @@
      (push-lemma (access type-set-inverter-rule (car rules) :rune)
                  ttree)))
    (t (convert-type-set-to-term-lst ts (cdr rules) ens lst ttree))))
-
-; Here is one of the most basic functions in the theorem prover.  It is
-; surprising we got so far into the sources without defining it!
-
-; (Students of our code should study this elementary function just to see how
-; we recur through terms.  The function instantiates a variable, i.e.,
-; (subst-var new old form) substitutes the term new for the variable old in the
-; term form.  For example, (subst-var '(car a) 'x '(foo x y)) = '(foo (car a)
-; y).)
-
-(mutual-recursion
-
-(defun subst-var (new old form)
-  (declare (xargs :guard (and (pseudo-termp new)
-                              (variablep old)
-                              (pseudo-termp form))))
-  (cond ((variablep form)
-         (cond ((eq form old) new)
-               (t form)))
-        ((fquotep form) form)
-        (t (cons-term (ffn-symb form)
-                      (subst-var-lst new old (fargs form))))))
-
-(defun subst-var-lst (new old l)
-  (declare (xargs :guard (and (pseudo-termp new)
-                              (variablep old)
-                              (pseudo-term-listp l))))
-  (cond ((endp l) nil)
-        (t (cons (subst-var new old (car l))
-                 (subst-var-lst new old (cdr l))))))
-
-)
 
 (defun convert-type-set-to-term1 (x ts flg ens w ttree)
 
@@ -8116,11 +8047,6 @@
 ; applies bounder to that list of arguments to get an interval known to contain
 ; the fn term.
 
-(defun all-cars-nil (pairs)
-  (cond ((endp pairs) t)
-        (t (and (null (car (car pairs)))
-                (all-cars-nil (cdr pairs))))))
-
 (defun find-subject-bounder-link-term (pairs pairs0)
 
 ; Pairs is a list of (hyp . concl) pairs.  To be sensible, every hyp must be
@@ -8485,12 +8411,6 @@
 ; theorems we frequently encounter many lemmas (and also many corollaries of
 ; each bounder correctness theorem) that are less complete than the final
 ; bounder correctness theorem for a function.
-
-(defun pairwise-subsetp-eq (doms-lst1 doms-lst2)
-  (cond ((endp doms-lst1) t)
-        ((subsetp-eq (car doms-lst1) (car doms-lst2))
-         (pairwise-subsetp-eq (cdr doms-lst1) (cdr doms-lst2)))
-        (t nil)))
 
 (defun bounder-subsumedp (bc1 bc2)
 

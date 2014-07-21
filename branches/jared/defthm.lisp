@@ -5752,6 +5752,13 @@
 ; We pop posn-many elements off lst, accumulating them into acc and returning
 ; the resulting extension of acc together with what remains of lst.
 
+; [Jared] The above comment doesn't seem right, since actually we take the
+; first posn-1 elements.  That is, you can easily prove this is equal to:
+;
+; (let ((n (- posn 1)))
+;   (mv (revappend (take n lst) acc)
+;       (nthcdr n lst)))
+
   (cond ((eql posn 1)
          (mv acc lst))
         (t (split-at-position (1- posn) (cdr lst) (cons (car lst) acc)))))

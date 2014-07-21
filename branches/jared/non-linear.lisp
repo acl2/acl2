@@ -926,29 +926,6 @@
                      (car leaves)
                      (binary-*-tree (cdr leaves)))))))
 
-(defun merge-arith-term-order (l1 l2)
-  (cond ((null l1) l2)
-        ((null l2) l1)
-        ((arith-term-order (car l2) (car l1))
-         (cons (car l2) (merge-arith-term-order l1 (cdr l2))))
-        (t (cons (car l1) (merge-arith-term-order (cdr l1) l2)))))
-
-(defun insert-arith-term-order (item list)
-  (cond ((null list)
-         (list item))
-        ((arith-term-order item (car list))
-         (cons item list))
-        (t
-         (cons (car list)
-               (insert-arith-term-order item (cdr list))))))
-
-(defun sort-arith-term-order (list)
-  (cond ((null list)
-         nil)
-        (t
-         (insert-arith-term-order (car list)
-                                  (sort-arith-term-order (cdr list))))))
-
 (defun multiply-alist-and-const (alist const poly)
   (cond ((null alist)
          poly)

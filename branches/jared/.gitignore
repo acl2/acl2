@@ -1,0 +1,11 @@
+osaved_acl2
+osaved_acl2h
+saved_acl2
+saved_acl2h
+saved_acl2.*
+saved_acl2h.*
+saved/
+acl2-status.txt
+\#*\#
+.\#*
+TAGS

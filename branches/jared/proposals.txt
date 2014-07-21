@@ -1,0 +1,33 @@
+[Jared] proposals of things to do:
+
+ - Merge bstar and xdoc base into ACL2
+
+ - Get rid of cltl1 support
+
+ - Change ACL2 to support Unicode everywhere
+
+ - Incorporate Quicklisp and use bordeaux-threads instead of our own
+   parallelism primitives, or turn our threading primitives into a
+   new Common Lisp library to compete with bordeaux-threads.
+
+ - Move build-related stuff (e.g., make-tags, copy-distribution) out
+   of acl2-init.lisp and into the Makefile, eliminate explicit lists
+   of files in make-tags, etc.
+
+ - Can we make the ACL2 build more parallel?  I'd like to separately
+   compile new files like tag-tree and term-order, since they don't
+   depend on one another.  Splitting out these dependencies would be
+   informative for modularizing the system.
+
+ - Consolidate lisp-related checking stuff
+
+ - Localize variables to the extent possible
+
+ - Why have *lisp-extension*?  We seem to have many uses of ".lisp" in
+   the sources...
+
+ - Change mergesorts to not use odd/even (worse performance than
+   first-half/last-half)
+
+
+

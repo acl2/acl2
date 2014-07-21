@@ -3640,21 +3640,6 @@
                assumptions
                nil nil))))
 
-(defun merge-length (l1 l2)
-  (declare (xargs :guard (and (true-list-listp l1)
-                              (true-list-listp l2))))
-  (cond ((null l1) l2)
-        ((null l2) l1)
-        ((<= (length (car l1)) (length (car l2)))
-         (cons (car l1) (merge-length (cdr l1) l2)))
-        (t (cons (car l2) (merge-length l1 (cdr l2))))))
-
-(defun merge-sort-length (l)
-  (declare (xargs :guard (true-list-listp l)))
-  (cond ((null (cdr l)) l)
-        (t (merge-length (merge-sort-length (evens l))
-                         (merge-sort-length (odds l))))))
-
 (defun member-equal-+- (lit clause)
 
 ; We return '+ if lit is a member of clause.  We return '- if the complement of
@@ -3948,15 +3933,6 @@
         ((extra-info-lit-p (car cl))
          (extra-info-lits (cdr cl) (cons (car cl) acc)))
         (t (extra-info-lits (cdr cl) acc))))
-
-(defun rev-union-equal (x y)
-  (declare (xargs :guard (and (true-listp x)
-                              (true-listp y))))
-  (cond ((endp x) y)
-        ((member-equal (car x) y)
-         (rev-union-equal (cdr x) y))
-        (t
-         (rev-union-equal (cdr x) (cons (car x) y)))))
 
 (defun merge-extra-info-lits (cl cl0 tree)
 
@@ -4511,157 +4487,6 @@
 ; by a term that precedes the instantiation of var1 in the term-order.
 ; Nqthm's loop stopper would prevent this application of the rule, but
 ; the implementation below allows it.
-
-(defun remove-invisible-fncalls (term invisible-fns)
-
-; Given a term and a list of unary function symbols considered invisible,
-; strip off all the invisible outermost function symbols from the term.
-
-  (cond
-   ((or (variablep term)
-        (fquotep term)
-        (flambda-applicationp term))
-    term)
-   ((member-eq (ffn-symb term) invisible-fns)
-    (remove-invisible-fncalls (fargn term 1) invisible-fns))
-   (t term)))
-
-(defun term-order+ (x1 x2 invisible-fns)
-
-; See the doc string for loop-stopper to find an implicit description
-; of this function.  See the comment below for a proof that this
-; function is a total order, provided term-order is a total order.
-
-  (let ((x1-guts (remove-invisible-fncalls x1 invisible-fns))
-        (x2-guts (remove-invisible-fncalls x2 invisible-fns)))
-    (cond
-     ((equal x1-guts x2-guts)
-      (term-order x1 x2))
-     (t
-      (term-order x1-guts x2-guts)))))
-
-; We wish to prove that term-order+ is a total ordering on terms, which,
-; recall, means that it is antisymmetric, transitive, and enjoys the trichotomy
-; property.  However, because term-order+ and its main subroutine, term-order,
-; are :program functions we cannot do this directly without reclassifying them.
-; In addition, we would first need to prove the lemma that term-order is a
-; total ordering.  Rather than undertake such a large proof effort, we attack a
-; slightly different problem.  The basic idea is to constrain the new functions
-; xtermp, xterm-order, and xremove-invisible-fncalls to have the properties we
-; are willing to assume about the corresponding :program functions.  In
-; particular, we assume that xterm-order is a total ordering on xtermps and
-; that xremove-invisible-fncalls preserves xtermp.  Then we define xterm-order+
-; analogously to the definition above of term-order+ and we prove that
-; xterm-order+ is a total ordering on xterms.
-
-
-; Introduce xtermp, xterm-order and xremove-invisible-fncalls by constraint.
-; Observe that in the three properties characterizing xterm-order as a total
-; ordering we restrict our claims to the cases where only xtermps are involved.
-; We also require that xremove-invisible-fncalls preserve xtermp.
-
-;   (encapsulate (((xtermp *) => *)
-;                 ((xterm-order * *) => *)
-;                 ((xremove-invisible-fncalls * *) => *))
-
-; We witness xtermp with rationalp, xterm-order with <= on the rationals,
-; and xremove-invisible-fncalls by the identify function.
-
-;    (local (defun xtermp (x) (rationalp x)))
-;    (local (defun xterm-order (x y)
-;             (and (xtermp x) (xtermp y) (<= x y))))
-;    (local (defun xremove-invisible-fncalls (x lst) (declare (ignore lst)) x))
-
-; Here we establish that xremove-invisible-fncalls preserves xtermp.
-
-;    (defthm xtermp-xremove-invisible-fncalls
-;      (implies (xtermp x) (xtermp (xremove-invisible-fncalls x lst))))
-
-; We now prove the three total ordering properties.  In each case we
-; state the property elegantly and then store it as an effective
-; rewrite rule.
-
-;    (defthm antisymmetry-of-xterm-order
-;      (implies (and (xtermp x)
-;                    (xtermp y)
-;                    (xterm-order x y)
-;                    (xterm-order y x))
-;               (equal x y))
-;
-;      :rule-classes
-;      ((:rewrite :corollary
-;                 (implies (and (xtermp x)
-;                               (xtermp y)
-;                               (xterm-order x y)
-;                               (xterm-order y x))
-;                          (equal (equal x y) t)))))
-;
-;    (defthm transitivity-of-xterm-order
-;      (implies (and (xtermp x)
-;                    (xtermp y)
-;                    (xtermp z)
-;                    (xterm-order x y)
-;                    (xterm-order y z))
-;               (xterm-order x z))
-;
-;      :rule-classes
-;      ((:rewrite :corollary
-;                 (implies (and (xtermp x)
-;                               (xterm-order x y)
-;                               (xtermp y)
-;                               (xtermp z)
-;                               (xterm-order y z))
-;                          (xterm-order x z)))))
-;
-;    (defthm trichotomy-of-xterm-order
-;      (implies (and (xtermp x)
-;                    (xtermp y))
-;               (or (xterm-order x y) (xterm-order y x)))
-;
-;      :rule-classes
-;      ((:rewrite :corollary
-;                 (implies (and (xtermp x)
-;                               (xtermp y)
-;                               (not (xterm-order x y)))
-;                          (xterm-order y x))))))
-
-; Introduce the derived order, xterm-order+, that transduces with
-; xremove-invisible-fncalls.  This is exactly analogous to the definition
-; of term-order+ above.
-
-;    (defun xterm-order+ (x1 x2 invisible-fns)
-;     (let ((x1-guts (xremove-invisible-fncalls x1 invisible-fns))
-;           (x2-guts (xremove-invisible-fncalls x2 invisible-fns)))
-;       (cond
-;        ((equal x1-guts x2-guts)
-;         (xterm-order x1 x2))
-;        (t
-;         (xterm-order x1-guts x2-guts)))))
-
-; Prove the three properties of xterm-order+, restricted to the xtermp cases.
-
-;    (defthm antisymmetry-of-xterm-order+
-;     (implies (and (xtermp x)
-;                   (xtermp y)
-;                   (xterm-order+ x y invisible-fns)
-;                   (xterm-order+ y x invisible-fns))
-;              (equal x y))
-;     :rule-classes nil)
-;
-;    (defthm transitivity-of-xterm-order+
-;     (implies (and (xtermp x)
-;                   (xtermp y)
-;                   (xtermp z)
-;                   (xterm-order+ x y invisible-fns)
-;                   (xterm-order+ y z invisible-fns))
-;              (xterm-order+ x z invisible-fns)))
-;
-;    (defthm trichotomy-of-xterm-order+
-;     (implies (and (xtermp x)
-;                   (xtermp y))
-;              (or (xterm-order+ x y invisible-fns)
-;                  (xterm-order+ y x invisible-fns)))
-;     :rule-classes nil)
 
 (defun invisible-fns (fns alist acc)
 
@@ -6186,15 +6011,6 @@
 ; remove the formal from the (declare (ignore ...)) and might cause us
 ; to think about the incoming value.
 
-(defun plist-to-alist (lst)
-
-; Convert '(key1 val1 key2 val2 ...) to '((key1 . val1) (key2 . val2) ...).
-; In use here, the keys are all in the keyword package.
-
-  (cond ((null lst) nil)
-        (t (cons (cons (car lst) (cadr lst))
-                 (plist-to-alist (cddr lst))))))
-
 (defmacro adjust-rdepth (rdepth)
 
 ; Keep the following in sync with zero-depthp.
@@ -7180,14 +6996,6 @@
         (t (pprogn (put-brr-local (caar alist)  (cdar alist) state)
                    (put-brr-local-lst (cdr alist) state)))))
 
-(defun some-cdr-equalp (little big)
-
-; We return t if some cdr of big, including big itself, is equal to little.
-
-  (cond ((equal little big) t)
-        ((null big) nil)
-        (t (some-cdr-equalp little (cdr big)))))
-
 (defun push-brr-stack-frame (state)
 
 ; This function may be used inside code executed within "break-rewrite".  It
@@ -7658,18 +7466,6 @@
    (t
     (cons (car segs)
           (add-to-type-alist-segments ts term (cdr segs))))))
-
-(defun merge-term-order (l1 l2)
-  (cond ((null l1) l2)
-        ((null l2) l1)
-        ((term-order (car l1) (car l2))
-         (cons (car l1) (merge-term-order (cdr l1) l2)))
-        (t (cons (car l2) (merge-term-order l1 (cdr l2))))))
-
-(defun merge-sort-term-order (l)
-  (cond ((null (cdr l)) l)
-        (t (merge-term-order (merge-sort-term-order (evens l))
-                             (merge-sort-term-order (odds l))))))
 
 (defun sort-type-alist-segments (segs)
   (if (endp segs)
@@ -8445,16 +8241,6 @@
                        (t (expand-permission-result1 term (cdr expand-lst)
                                                      geneqv wrld)))))))))
     (mv nil nil nil nil nil)))
-
-(defun remove1-by-position (target-index lst acc)
-  (declare (xargs :guard (and (true-listp lst)
-                              (true-listp acc)
-                              (natp target-index)
-                              (< target-index (len lst)))))
-  (cond
-   ((zp target-index)
-    (revappend acc (cdr lst)))
-   (t (remove1-by-position (1- target-index) (cdr lst) (cons (car lst) acc)))))
 
 (defun expand-permission-result (term rcnst geneqv wrld)
 
@@ -9438,17 +9224,6 @@
                                         (memo-key1 (fargn term 2)))))))
                  16384)))))
 
-(defun bounded-length (lst ans max)
-  (declare (type (signed-byte 30) ans max))
-
-; We assume ans <= max.
-
-  (the-fixnum
-   (cond
-    ((null lst) ans)
-    ((= ans max) max)
-    (t (bounded-length (cdr lst) (+ 1 ans) max)))))
-
 (defun memo-key (term stack)
 
 ; This is how we compute a hash key for term and stack.
@@ -10026,12 +9801,6 @@
    ((endp terms) nil)
    (t (cons (lambda-stack (car exts) (car terms))
             (reconcile-terms (cdr terms) (cdr exts))))))
-
-(defun all-equal (x lst)
-  (declare (xargs :guard t))
-  (cond ((atom lst) t)
-        (t (and (equal x (car lst))
-                (all-equal x (cdr lst))))))
 
 (defun recon (terms stacks)
 
@@ -11519,16 +11288,6 @@
                           failure-reason-lstxx))
                unify-substxx ttreexx allpxx rw-cache-alist-newxx)))
 
-(defun set-difference-assoc-eq (lst alist)
-  (declare (xargs :guard (and (true-listp lst)
-                              (alistp alist)
-                              (or (symbol-listp lst)
-                                  (symbol-alistp alist)))))
-  (cond ((endp lst) nil)
-        ((assoc-eq (car lst) alist)
-         (set-difference-assoc-eq (cdr lst) alist))
-        (t (cons (car lst) (set-difference-assoc-eq (cdr lst) alist)))))
-
 (defun extend-unify-subst (alist unify-subst)
 
 ; We attempt to keep all terms in quote-normal form, which explains the
@@ -12028,28 +11787,6 @@
 
   `(eq (car ,cache) t))
 
-(defun merge-symbol-alistp (a1 a2)
-  (cond ((endp a1) a2)
-        ((endp a2) a1)
-        ((symbol-< (caar a1) (caar a2))
-         (cons (car a1)
-               (merge-symbol-alistp (cdr a1) a2)))
-        (t
-         (cons (car a2)
-               (merge-symbol-alistp a1 (cdr a2))))))
-
-(defun merge-sort-symbol-alistp (alist)
-  (cond ((endp (cdr alist)) alist)
-        ((endp (cddr alist))
-         (cond ((symbol-< (car (car alist)) (car (cadr alist)))
-                alist)
-               (t (list (cadr alist) (car alist)))))
-        (t (let* ((n (length alist))
-                  (a (ash n -1)))
-             (merge-symbol-alistp
-              (merge-sort-symbol-alistp (take a alist))
-              (merge-sort-symbol-alistp (nthcdr a alist)))))))
-
 (defun cdr-sort-rw-cache (cache)
 
 ; We sort the given rw-cache.
@@ -12195,13 +11932,6 @@
            nil)
           (t entry))))
 
-(defun maybe-extend-tag-tree (tag vals ttree)
-
-; Warning: We assume that tag is not a key of ttree.
-
-  (cond ((null vals) ttree)
-        (t (extend-tag-tree tag vals ttree))))
-
 (defun accumulate-rw-cache1 (replace-p tag new-ttree old-ttree)
 
 ; This function is intended to return an extension of the rw-cache of old-ttree
@@ -12282,23 +12012,7 @@
     (or ttree2-or-nil
         ttree1-or-nil)))
 
-(mutual-recursion
 
-(defun dumb-occur-var (var term)
-
-; This function determines if variable var occurs in the given term.  This is
-; the same as dumb-occur, but optimized for the case that var is a variable.
-
-  (cond ((eq var term) t)
-        ((variablep term) nil)
-        ((fquotep term) nil)
-        (t (dumb-occur-var-lst var (fargs term)))))
-
-(defun dumb-occur-var-lst (var lst)
-  (cond ((null lst) nil)
-        (t (or (dumb-occur-var var (car lst))
-               (dumb-occur-var-lst var (cdr lst))))))
-)
 
 (defun restrict-alist-to-all-vars1 (alist term)
 
@@ -12316,24 +12030,6 @@
                                 (t (mv nil alist))))
                          (t (mv t rest)))))))
 
-(mutual-recursion
-
-(defun all-vars-boundp (term alist)
-  (declare (xargs :guard (and (pseudo-termp term)
-                              (symbol-alistp alist))))
-  (cond ((variablep term)
-         (assoc-eq term alist))
-        ((fquotep term) t)
-        (t (all-vars-lst-boundp (fargs term) alist))))
-
-(defun all-vars-lst-boundp (lst alist)
-  (declare (xargs :guard (and (pseudo-term-listp lst)
-                              (symbol-alistp alist))))
-  (cond ((endp lst) t)
-        (t (and (all-vars-boundp (car lst) alist)
-                (all-vars-lst-boundp (cdr lst) alist)))))
-
-)
 
 (defun restrict-alist-to-all-vars (alist term)
 
@@ -12861,18 +12557,6 @@
     (tagged-objects 'rw-cache-nil-tag ttree1)
     (cons-tag-trees (erase-rw-cache ttree1)
                     (erase-rw-cache ttree2)))))
-
-(defun alist-keys-subsetp (x keys)
-  (cond ((endp x) t)
-        ((member-eq (caar x) keys)
-         (alist-keys-subsetp (cdr x) keys))
-        (t nil)))
-
-(defmacro tag-tree-tags-subsetp (ttree tags)
-
-; Note: Tag-tree primitive
-
-  `(alist-keys-subsetp ,ttree ,tags))
 
 (defun rw-cache (ttree)
 

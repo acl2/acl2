@@ -86,14 +86,6 @@
 ; designators", "theories," (both "common theories" and "runic
 ; theories") and "enabled structures".
 
-(defun assoc-equal-cdr (x alist)
-
-; Like assoc-equal but compares against the cdr of each pair in alist.
-
-  (cond ((null alist) nil)
-        ((equal x (cdar alist)) (car alist))
-        (t (assoc-equal-cdr x (cdr alist)))))
-
 (defun runep (x wrld)
 
 ; This function returns non-nil iff x is a rune, i.e., a "rule name,"
@@ -1381,22 +1373,6 @@
 
   ((forcing-round . pool-lst) case-lst . primes)
   t)
-
-(defun pos-listp (l)
-  (declare (xargs :guard t))
-  (cond ((atom l)
-         (eq l nil))
-        (t (and (posp (car l))
-                (pos-listp (cdr l))))))
-
-(defun all-digits-p (lst radix)
-  (declare (xargs :guard (and (character-listp lst)
-                              (integerp radix)
-                              (<= 2 radix)
-                              (<= radix 36))))
-  (cond ((endp lst) t)
-        (t (and (digit-char-p (car lst) radix)
-                (all-digits-p (cdr lst) radix)))))
 
 (defun d-pos-listp (lst)
   (declare (xargs :guard t))
@@ -2736,52 +2712,6 @@
          (mv *ts-zero* (puffert ttree)))
         (t (mv *ts-non-negative-integer* (puffert ttree0)))))
 
-(defun fn-count-1 (flg x fn-count-acc p-fn-count-acc)
-
-; Warning: Keep this in sync with the var-fn-count-1.
-
-; This definition is similar to var-fn-count-1, except that it counts only fns
-; and pseudo-fns, not vars.  It was introduced when a check of fn-counts was
-; added to ancestors-check1, in order to improve efficiency a bit.  (We now use
-; var-fn-count for that purpose.)  A 2.6% decrease in user time (using Allegro
-; 5.0.1) was observed when the fn-counts check was added, yet that test was
-; found to be critical in certain cases (see the comment in ancestors-check1).
-
-; We discovered that the Allegro compiler does not do as good a job at tail
-; recursion elimination for mutual recursion nests as for single recursion.  So
-; we code this as a singly recursive function with a flag, flg:  When flg is
-; nil then x is a term, and otherwise x is a list of terms.  We have since also
-; taken advantage of the use of this single "flag" function when verifying
-; termination and guards.
-
-  (declare (xargs :guard (and (if flg
-                                  (pseudo-term-listp x)
-                                (pseudo-termp x))
-                              (integerp fn-count-acc)
-                              (integerp p-fn-count-acc))
-                  :verify-guards NIL))
-  (cond (flg
-         (cond ((atom x)
-                (mv fn-count-acc p-fn-count-acc))
-               (t
-                (mv-let (fn-cnt p-fn-cnt)
-                        (fn-count-1 nil (car x) fn-count-acc p-fn-count-acc)
-                        (fn-count-1   t (cdr x) fn-cnt p-fn-cnt)))))
-        ((variablep x)
-         (mv fn-count-acc p-fn-count-acc))
-        ((fquotep x)
-         (mv fn-count-acc
-             (+ p-fn-count-acc (fn-count-evg (cadr x)))))
-        (t (fn-count-1 t (fargs x) (1+ fn-count-acc) p-fn-count-acc))))
-
-(defmacro fn-count (term)
-  `(fn-count-1 nil ,term 0 0))
-
-(defun term-order (term1 term2)
-
-; See term-order1 for comments.
-
-  (term-order1 term1 term2 nil))
 
 ; Type Prescriptions
 
@@ -3370,14 +3300,6 @@
                      (equal old (fargn term 2)))))
           (subst-type-alist1-check old equiv (cdr type-alist))))))
 
-(defun nil-fn ()
-
-; This trivial definition is used for making a sort of placeholder entry,
-; *nil-fn-ts-entry*, when simplifying type-alists.  See subst-type-alist1.
-
-  (declare (xargs :guard t :mode :logic))
-  nil)
-
 (defconst *nil-fn-ts-entry*
   (list* (cons-term 'nil-fn nil)
          *ts-nil*
@@ -3793,43 +3715,6 @@
   (mv-let (ts ttree)
     (assoc-type-alist term type-alist wrld)
     (mv (if ts ts *ts-unknown*) ttree)))
-
-(defun member-char-stringp (chr str i)
-  (declare (xargs :guard (and (stringp str)
-                              (integerp i)
-                              (< i (length str)))
-                  :measure (nfix (+ 1 i))))
-  (cond ((not (mbt (integerp i)))
-         nil)
-        ((< i 0) nil)
-        (t (or (eql chr (char str i))
-               (member-char-stringp chr str (1- i))))))
-
-(defun terminal-substringp1 (str1 str2 max1 max2)
-  (declare (xargs :guard (and (stringp str1)
-                              (stringp str2)
-                              (integerp max1)
-                              (integerp max2)
-                              (< max1 (length str1))
-                              (< max2 (length str2))
-                              (<= max1 max2))
-                  :measure (nfix (+ 1 max1))))
-  (cond ((not (mbt (integerp max1)))
-         nil)
-        ((< max1 0) t)
-        ((eql (char str1 max1) (char str2 max2))
-         (terminal-substringp1 str1 str2 (1- max1) (1- max2)))
-        (t nil)))
-
-(defun terminal-substringp (str1 str2 max1 max2)
-  (declare (xargs :guard (and (stringp str1)
-                              (stringp str2)
-                              (integerp max1)
-                              (integerp max2)
-                              (< max1 (length str1))
-                              (< max2 (length str2)))))
-  (cond ((< max2 max1) nil)
-        (t (terminal-substringp1 str1 str2 max1 max2))))
 
 (defun evg-occur (x y)
 
@@ -5345,20 +5230,6 @@
                                   unify-subst
                                   ttree))))
 
-(mutual-recursion
-
-(defun free-varsp (term alist)
-  (cond ((variablep term) (not (assoc-eq term alist)))
-        ((fquotep term) nil)
-        (t (free-varsp-lst (fargs term) alist))))
-
-(defun free-varsp-lst (args alist)
-  (cond ((null args) nil)
-        (t (or (free-varsp (car args) alist)
-               (free-varsp-lst (cdr args) alist)))))
-
-)
-
 (defun search-type-alist-with-rest (term typ type-alist unify-subst ttree wrld)
 
 ; See search-type-alist.
@@ -5980,18 +5851,6 @@
 
 (defmacro set-accumulated-persistence (flg)
   `(accumulated-persistence ,flg))
-
-(defun merge-car-> (l1 l2)
-  (cond ((null l1) l2)
-        ((null l2) l1)
-        ((> (car (car l1)) (car (car l2)))
-         (cons (car l1) (merge-car-> (cdr l1) l2)))
-        (t (cons (car l2) (merge-car-> l1 (cdr l2))))))
-
-(defun merge-sort-car-> (l)
-  (cond ((null (cdr l)) l)
-        (t (merge-car-> (merge-sort-car-> (evens l))
-                        (merge-sort-car-> (odds l))))))
 
 (defconst *accp-major-separator*
   "   --------------------------------~%")
@@ -10458,32 +10317,6 @@
                hitp (car type-alist) rest-type-alist type-alist w)
               nil)))))))
 
-(defun clean-up-alist (alist ans)
-
-; Remove duplicate (mod equal) key entries from alist, accumulating the final
-; answer onto ans (which is assumed to be nil initially).  We keep the first of
-; each duplicate binding and thus we do not change the value of assoc-equal on
-; the alist.  However, the order of the pairs in the returned alist is the
-; reverse of that in the initial alist.
-
-  (cond ((null alist) ans)
-        ((assoc-equal (caar alist) ans)
-         (clean-up-alist (cdr alist) ans))
-        (t (clean-up-alist (cdr alist) (cons (car alist) ans)))))
-
-(defun duplicate-keysp (alist)
-
-; Determine whether there is a key bound twice (mod equal) in alist.  We return
-; the first pair whose key is bound twice, so that we can extract the key from
-; that pair in an error report if we like.  (We could return the car of the
-; first pair, but if it were nil then we could not distinguish from the error
-; case.)
-
-  (cond ((null alist) nil)
-        ((assoc-equal (caar alist) (cdr alist))
-         (car alist))
-        (t (duplicate-keysp (cdr alist)))))
-
 (defun clean-type-alist (type-alist)
 
 ; We obtained a 12.4% decrease in the time for an example from Dave Greve, by
@@ -11024,11 +10857,6 @@
               (eq (ffn-symb (car args)) 'if))
          (mv i (car args)))
         (t (first-if (cdr args) (1+ i)))))
-
-(defun all-variablep (lst)
-  (cond ((null lst) t)
-        (t (and (variablep (car lst))
-                (all-variablep (cdr lst))))))
 
 (defun normalize-with-type-set (term iff-flg type-alist ens wrld ttree)
 

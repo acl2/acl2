@@ -3330,11 +3330,6 @@
                                           fn-cnt
                                           p-fn-cnt)))))
 
-(defun all-dumb-occur-lst (args cl)
-  (cond ((endp args) t)
-        (t (and (dumb-occur-lst (car args) cl)
-                (all-dumb-occur-lst (cdr args) cl)))))
-
 (defun all-args-occur-after-strip-not (term cl)
 
 ; One of our heuristics for approving a derivation is that all of the
