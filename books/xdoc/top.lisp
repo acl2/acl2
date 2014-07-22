@@ -88,7 +88,7 @@
                     all-topics))
                    (t
                     (let* ((other-topics (remove-equal old-topic all-topics))
-                           (old-long     (cdr (assoc :long old-topic)))
+                           (old-long     (or (cdr (assoc :long old-topic)) ""))
                            (new-long     (concatenate 'string old-long long))
                            (new-topic    (acons :long new-long
                                                 (delete-assoc :long old-topic))))
