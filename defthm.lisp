@@ -1936,17 +1936,27 @@
                                   (hide-lambdas non-rec-fns)))
                        (t state))
                       (cond
-                       ((and (car (cddddr free-max-terms-msg))
+                       ((and (nth 4 free-max-terms-msg)
                              (null match-free))
                         (pprogn
                          (warning$ ctx "Free"
                                    "A :LINEAR rule generated from ~x0 will be ~
                                     triggered by the term~#1~[~/s~] ~&1.  ~*2This is ~
                                     generally a severe restriction on the ~
-                                    applicability of the :LINEAR rule."
+                                    applicability of the :LINEAR rule~@3."
                                    name
                                    max-terms
-                                   free-max-terms-msg)
+                                   free-max-terms-msg
+                                   (let ((len-max-terms (length max-terms))
+                                         (len-bad-max-terms
+                                          (length (nth 4 free-max-terms-msg))))
+                                     (cond ((eql len-bad-max-terms
+                                                 len-max-terms)
+                                            "")
+                                           ((eql len-bad-max-terms 1)
+                                            " for this trigger")
+                                           (t (msg " for these ~n0 triggers"
+                                                   len-bad-max-terms)))))
                          (free-variable-error? :linear name ctx wrld state)))
                        (t (value nil))))))))))))))
 
@@ -5749,7 +5759,7 @@
 
 (defun split-at-position (posn lst acc)
 
-; We pop posn-many elements off lst, accumulating them into acc and returning
+; We pop posn - 1 elements off lst, accumulating them into acc and returning
 ; the resulting extension of acc together with what remains of lst.
 
   (cond ((eql posn 1)
