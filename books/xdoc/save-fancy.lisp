@@ -486,7 +486,7 @@
                                                 "print.html"
                                                 "printer.png"
                                                 "render.js"
-                                                "render.xsl"
+                                                "render-html.xsl"
                                                 "style.css"
                                                 "view_flat.png"
                                                 "view_tree.png"
