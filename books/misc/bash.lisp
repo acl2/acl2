@@ -2,11 +2,10 @@
 ; Written by Matt Kaufmann (original date October, 2006)
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
-; NOTE: This book includes GPL community book xdoc/top.  Therefore, as per
-; Section 2(b) of the Gnu Public License Version 2, software distributions of
-; books that include this book must have a GPL license.  If you want to use the
-; software documented in this book under a 3-clause BSD license, consider
-; the book bash-bsd.lisp instead.
+; NOTE: This book includes community book xdoc/top, and was created on top of
+; separate book bash-bsd.lisp because xdoc/top had a GPL license.  That is no
+; longer the case, but for simplicity we keep both books as is.  (Perhaps
+; someone will want to eliminate bash-bsd.lisp.)
 
 (in-package "ACL2")
 
