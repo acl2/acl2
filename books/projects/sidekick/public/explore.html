@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Disassembly &mdash; ACL2 Sidekick</title>
+<title>Proof Explorer &mdash; ACL2 Sidekick</title>
 
 <!--
 ACL2 Sidekick
@@ -37,44 +37,59 @@ License: (An MIT/X11-style license)
 -->
 
 <link rel="stylesheet" type="text/css" href="style.css"/>
+<script src="lib/jquery-2.1.0.min.js"></script>
+<script src="common.js"></script>
+<script src="toolbar.js"></script>
+<script src="explore.js"></script>
+
 <style>
 <!--
 
-#disassembly {
-   margin-left: 1em;
-   widht: 100%;
-   margin-right: 1em;
+#goal {
+
+}
+.sf { font-family: "Geneva", "Verdana", sans-serif; }
+
+.hyps {
+  margin-left: 2em;
+  border-collapse: collapse;
 }
 
-#disassembly pre {
-  background-color: #ffffe0;
-  border: 1px solid black;
-  padding: 1em;
-  border-radius: 5px;
-  box-shadow: 4px 4px 10px 2px rgba(0,64,80,0.7);
+.hyps td, .hyps th {
+   vertical-align: top;
 }
 
-.banner { margin-top: .5em; }
+.current_term pre {
+   margin-left: 2em;
+}
 
-// -->
+.hyps pre, .current_term pre {
+  color: #006000;
+}
+
+-->
 </style>
-<script src="lib/jquery-2.1.0.min.js"></script>
-<script src="common.js"></script>
-<script src="disassemble.js"></script>
+
+
 </head>
 <body>
 
-<h3 class="banner"><img src="icons/disassembly.png"/> <span id='dis_header'>Disassembling...</span></h3>
+<div id="toolbar"></div>
 
-<div id="disassembly"></div>
+<div id="main">
 
-<h3>Todo/wishlist</h3>
+<h3 class="banner"><img src="icons/explore.png"/> Proof Explorer</h3>
 
-<ul>
-<li>Minimal help about how to read disassembly</li>
-<li>Proper integration with the rest of sidekick.</li>
-</ul>
+<div id="goal">Loading</div>
+
+
+</div>
+
+<div id="footer"></div>
 
 
 </body>
 </html>
+
+
+

@@ -1,5 +1,8 @@
 <!HTML>
 <html>
+<head>
+<meta charset="UTF-8">
+<title>ACL2 Sidekick</title>
 
 <!--
 ACL2 Sidekick
@@ -33,9 +36,6 @@ License: (An MIT/X11-style license)
   DEALINGS IN THE SOFTWARE.
 -->
 
-<head>
-<meta charset="UTF-8">
-<title>ACL2 Sidekick</title>
 <link rel="stylesheet" type="text/css" href="style.css"/>
 <link rel="icon" type="image/png" href="icons/favicon.png"/>
 <script src="lib/jquery-2.1.0.min.js"></script>
@@ -97,7 +97,7 @@ you browse through your session, profile slow proofs, analyze your theory, and
 inspect things right from your web browser.</p>
 
 
-<h4>Explore</h4>
+<h4>Tools</h4>
 
 <form id="lookup_form2" method="get" action="lookup.html">
 <table id="fancymenu">
@@ -123,6 +123,14 @@ Identify slow rules<br/>
 :lint</th>
 <td><a href="linter.html">Theory Linter</a><br/>
 Identify conflicting and redundant rules<br/>
+</td>
+</tr>
+
+<tr>
+<th><a href="explore.html"><img src="icons/explore.png"/></a><br/>
+:explore</th>
+<td><a href="explore.html">Proof Explorer</a><br/>
+Carry out proofs interactively<br/>
 </td>
 </tr>
 

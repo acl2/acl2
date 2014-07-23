@@ -31,13 +31,14 @@
 ; Original author: Jared Davis <jared@kookamara.com>
 
 (in-package "SIDEKICK")
-(include-book "std/util/define" :dir :system)
-(include-book "std/strings/defs-program" :dir :system)
+(include-book "io")
 (include-book "std/strings/pretty" :dir :system)
 (include-book "webcommand")
 (set-state-ok t)
 (program)
 
+(defmacro session ()
+  (push-webcommand (list (cons :action :session))))
 
 ; Notes about the ACL2 world.
 
@@ -237,7 +238,24 @@
   (list 'json-pc-fn cd 'state))
 
 
-
+(define sk-undo-back-through ((num stringp) state)
+  :returns (mv json-eventdata state)
+  :mode :program
+  (b* ((n (str::strval num))
+       ((unless n)
+        (mv (sk-json-error "Error in sk-undo-back-through: not a number: ~a" num)
+            state))
+       #+hons
+       ((when t)
+        (mv (sk-json-error "Sorry, undo doesn't work on ACL2(h) because memoization isn't ~
+                            thread safe.")
+            state))
+       ((mv erp ?val state) (acl2::ubt!-ubu!-fn :ubt n state))
+       ((when erp)
+        (mv (sk-json-error "ubt!-ubu!-fn returned an error.")
+            state))
+       (ans (bridge::json-encode (list (cons :error nil)))))
+    (mv ans state)))
 
 
 
@@ -338,6 +356,4 @@
 ;;       (defun n6 (x) x))))
 
 
-(defmacro session ()
-  (push-webcommand (list (cons :action :session))))
 

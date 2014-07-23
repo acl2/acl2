@@ -31,35 +31,6 @@
 ; Original author: Jared Davis <jared@kookamara.com>
 
 (in-package "SIDEKICK")
-(include-book "io")
-(defttag :sidekick)
-(set-state-ok t)
 
-(define disassemble-to-string ((fn symbolp) state)
-  (declare (ignorable fn))
-  (b* ((- (er hard? 'disassemble-to-string "Raw Lisp definition not installed?"))
-       ((mv err val state) (read-acl2-oracle state))
-       ((when (or err
-                  (not (stringp val))))
-        (mv "" state)))
-    (mv val state)))
-
-; (depends-on "disassemble-raw.lsp")
-(include-raw "disassemble-raw.lsp")
-
-(define sk-get-disassembly ((name stringp) state)
-  :returns (mv json-props state)
-  :mode :program
-  (b* (((mv errmsg objs state) (acl2::read-string name))
-       ((when errmsg)
-        (mv (sk-json-error "Error in disassemble: parsing failed: ~a: ~a~%" name errmsg)
-            state))
-       ((unless (and (equal (len objs) 1)
-                     (symbolp (car objs))))
-        (mv (sk-json-error "Error in disassemble: not a symbol: ~a~%" name)
-            state))
-       ((mv disassembly state) (disassemble-to-string (car objs) state)))
-    (mv (bridge::json-encode (list (cons :error nil)
-                                   (cons :val disassembly)))
-        state)))
-
+(defun format$-fn (str args)
+  (apply 'cl-user::format (cons nil (cons str args))))

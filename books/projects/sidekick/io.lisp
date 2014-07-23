@@ -31,24 +31,24 @@
 ; Original author: Jared Davis <jared@kookamara.com>
 
 (in-package "SIDEKICK")
-(include-book "xdoc/save" :dir :system)
-(set-state-ok t)
-(program)
+(include-book "centaur/bridge/to-json" :dir :system)
+(include-book "std/strings/defs-program" :dir :system)
+(include-book "std/io/read-string" :dir :system)
+(include-book "std/util/define" :dir :system)
 
-(defun json-xdoc-topic (name state)
-  (b* (((mv topics state)    (xdoc::all-xdoc-topics state))
-       (topics-fal           (xdoc::topics-fal topics))
-       (topic                (cdr (hons-get name topics-fal)))
-       ((unless topic)
-        (mv (bridge::json-encode
-             (list (cons :error (str::cat "No xdoc for topic " (symbol-name name)))))
-            state))
-       ((mv short-str state) (xdoc::short-xml-for-topic topic topics-fal state))
-       ((mv long-str  state) (xdoc::long-xml-for-topic  topic topics-fal state)))
-    (mv (bridge::json-encode
-         (list (cons :error nil)
-               (cons :short short-str)
-               (cons :long long-str)))
-        state)))
+(define format$-fn (str args)
+  :mode :program
+  (declare (ignorable str args))
+  (raise "Under the hood definition not installed."))
 
+(defmacro format$ (str &rest args)
+  `(format$-fn ,str (list . ,args)))
 
+(defmacro sk-json-error (fmt-str &rest args)
+  `(bridge::json-encode
+    (list (cons :error (format$ ,fmt-str . ,args)))))
+
+(defttag :sidekick)
+
+; (depends-on "io-raw.lsp")
+(include-raw "io-raw.lsp" :host-readtable t)

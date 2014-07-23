@@ -32,9 +32,6 @@
 
 (in-package "SIDEKICK")
 
-(defun format$-fn (str args)
-  (apply 'cl-user::format (cons nil (cons str args))))
-
 (defvar *server* nil)
 
 (defun maybe-launch-browser (host port)
@@ -239,5 +236,14 @@
     (with-sidekick-bindings
       (b* (((mv ans state) (sk-undo-back-through n state)))
         ans)))
+
+;; Proof explorer
+
+  (hunchentoot:define-easy-handler (handle-explore-th :uri "/explore-th") ()
+     (setf (hunchentoot:content-type*) "application/json")
+     (with-sidekick-bindings
+       (b* (((mv ans state) (sk-explore-th state)))
+         ans)))
+
 
   )

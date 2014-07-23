@@ -56,6 +56,7 @@ function toolbar_init()
     row.append(toolbar_item(":session", "session"));
     row.append(toolbar_item("Profiler"));
     row.append(toolbar_item(":lint", "linter"));
+    row.append(toolbar_item(":explore", "explore"));
 
     var lookup = "";
     lookup += "<label for='lookup'>:show </label>";
@@ -177,6 +178,9 @@ function process_webcommand(command)
     }
     else if (action == ":SESSION") {
 	window.location.href = "/session.html";
+    }
+    else if (action == ":EXPLORE") {
+	window.location.href = "/explore.html";
     }
     else if (action == ":SHOW") {
 	var name = command[":NAME"];

@@ -32,20 +32,17 @@
 
 (in-package "SIDEKICK")
 (include-book "lock")
-(include-book "tools/bstar" :dir :system)
-(include-book "std/strings/defs-program" :dir :system)
-(include-book "centaur/bridge/to-json" :dir :system)
+(include-book "io")
+(local (include-book "std/typed-lists/rational-listp" :dir :system))
 (local (include-book "ihs/quotient-remainder-lemmas" :dir :system))
 (local (include-book "arithmetic/top" :dir :system))
 
-(defun sidekick-eventdata-push (data)
+(define sidekick-eventdata-push (data)
   (declare (ignorable data))
-  (declare (xargs :guard t))
   (er hard? 'sidekick-eventdata-push "raw lisp definition not installed?"))
 
-(defun float.2 (x)
+(define float.2 ((x rationalp))
   ;; Convert rational to float, two digits of precision
-  (declare (xargs :guard (rationalp x)))
   (let* ((sign     (if (< x 0) "-" ""))
          (x        (abs x))
          (ipart    (truncate x 1))
@@ -59,10 +56,9 @@
              (cat "0" (natstr chop))
            (natstr chop)))))
 
-(local (defthm acl2-numberp-when-rationalp
-         (implies (rationalp x)
-                  (acl2-numberp x))))
-(local (include-book "std/typed-lists/rational-listp" :dir :system))
+;; (local (defthm acl2-numberp-when-rationalp
+;;          (implies (rationalp x)
+;;                   (acl2-numberp x))))
 
 (defun sidekick-finalize-event-user (ctx body state)
   (declare (xargs :stobjs state))
@@ -104,8 +100,7 @@
       (sidekick-eventdata-push alist))
     state))
 
-(defun sidekick-get-all-event-data ()
-  (declare (xargs :guard t))
+(define sidekick-get-all-event-data ()
   ;; BOZO completely unsound
   (er hard? 'sidekick-get-all-event-data "raw lisp definition not installed?"))
 
@@ -115,12 +110,24 @@
 
 (defattach acl2::finalize-event-user sidekick-finalize-event-user)
 
-(defun eventdata->namex (x)
+(define eventdata->namex ((x alistp))
   (let ((look (assoc 'acl2::namex x)))
     (and look
          (cdr look))))
 
-(defun find-eventdata (name all-event-data)
+(define eventdata->total-time ((x alistp))
+  (let ((times (cdr (assoc 'acl2::time x))))
+    (if (and (equal (len times) 4)
+             (rational-listp times))
+        ;; Allegedly the format is: (prove print proof-tree other)
+        (+ (first times)
+           (second times)
+           (third times)
+           (fourth times))
+      nil)))
+
+(define find-eventdata (name all-event-data)
+  :verify-guards nil
   (b* (((when (atom all-event-data))
         nil)
        (namex1 (eventdata->namex (car all-event-data)))
@@ -131,16 +138,21 @@
         (car all-event-data)))
     (find-eventdata name (cdr all-event-data))))
 
-(defun eventdata->total-time (x)
-  (let ((times (cdr (assoc 'acl2::time x))))
-    (if (and (equal (len times) 4)
-             (rational-listp times))
-        ;; Allegedly the format is: (prove print proof-tree other)
-        (+ (first times)
-           (second times)
-           (third times)
-           (fourth times))
-      nil)))
+(define sk-get-eventdata ((name stringp) state)
+  :returns (mv json-eventdata state)
+  :mode :program
+  (b* (((mv errmsg objs state) (acl2::read-string name))
+       ((when errmsg)
+        (mv (sk-json-error "Error in eventdata: parsing failed: ~a: ~a~%" name errmsg)
+            state))
+       ((unless (and (equal (len objs) 1)
+                     (symbolp (car objs))))
+        (mv (sk-json-error "Error in eventdata: not a symbol: ~a~%" name)
+            state))
+       (data (find-eventdata (car objs) (sidekick-get-all-event-data)))
+       (ans  (bridge::json-encode (list (cons :error nil)
+                                   (cons :val data)))))
+    (mv ans state)))
 
 #||
 
@@ -154,7 +166,7 @@
 
 ||#
 
-;; Good deal.  So, next time:
+;; Good deal.  So, what remains --
 ;;
 ;;  - figure out how to grab all events from a command block
 ;;  - simple sum up their total times, etc.
