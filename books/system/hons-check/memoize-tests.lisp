@@ -140,6 +140,8 @@
       nil
     (cons n (nats (1- n)))))
 
+(comp t) ; needed for GCL (and maybe other Lisps)
+
 (defconst *data*
   (flatten (append (make-list 1000 :initial-element *stuff*)
                    (hons-copy (make-list 1000 :initial-element *stuff*)))))
