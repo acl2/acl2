@@ -34,6 +34,7 @@
 (include-book "equal-sets")
 (local (include-book "std/typed-lists/atom-listp" :dir :system))
 
+(local (in-theory (acl2::enable* set::definitions set::expensive-rules)))
 
 ; Abuse of atom-listp on ordered sets
 

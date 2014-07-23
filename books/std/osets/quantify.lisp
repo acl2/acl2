@@ -160,7 +160,7 @@
 (set-verify-guards-eagerness 2)
 
 
-
+(local (in-theory (enable expensive-rules definitions)))
 ; We introduce our theory as a constant so that we can derive new instances of
 ; it for concrete predicates
 

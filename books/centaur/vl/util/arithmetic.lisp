@@ -42,6 +42,9 @@
 (include-book "std/util/deflist" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 
+;; assumes this book will only be locally included
+(in-theory (enable set::definitions
+                   set::expensive-rules))
 
 ;; BOZO how much of this is still needed, given the new Tau system?
 (defrule rationalp-when-integerp

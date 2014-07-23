@@ -40,7 +40,7 @@
 (include-book "arithmetic/nat-listp" :dir :system)
 
 (local (in-theory (disable natp)))
-
+(local (in-theory (enable* set::definitions set::expensive-rules)))
 
 (defthm nat-listp-of-insert-strong
   (implies (set::setp x)

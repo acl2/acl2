@@ -124,6 +124,7 @@
 (include-book "quantify")
 (set-verify-guards-eagerness 2)
 
+(local (in-theory (enable definitions expensive-rules)))
 
 ; BOZO ugly extra theorems we probably shouldn't need
 

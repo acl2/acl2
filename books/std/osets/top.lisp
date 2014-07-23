@@ -104,6 +104,18 @@ and @(see double-containment).</p>
  (include-book \"std/osets/top\" :dir :system)
 })
 
+<p>The definitions of the main set-manipulation functions are disabled, but are
+in a ruleset and may be enabled using:</p>
+@({
+ (in-theory (acl2::enable* set::definitions))
+})
+
+<p>Some potentially useful (but potentially expensive) rules are also left
+disabled and may be enabled using:</p>
+@({
+ (in-theory (acl2::enable* set::expensive-rules))
+})
+
 <p>Besides this @(see xdoc::xdoc) documentation, you may be interested in the
 2004 ACL2 workshop paper, <a
 href='http://www.cs.utexas.edu/users/jared/publications/2004-acl2-osets/set-theory.pdf'>Finite
@@ -900,7 +912,7 @@ from the accompanying talk.</p>")
   (equal (intersect X (intersect X Z))
          (intersect X Z)))
 
-
+; i am here
 
 (defthm difference-set
   (setp (difference X Y)))
@@ -1056,6 +1068,10 @@ from the accompanying talk.</p>")
              t
            nil)))
 
+(defthm in-mergesort-under-iff
+  (iff (in a (mergesort x))
+       (member a x)))
+
 (defthm mergesort-set-identity
   (implies (setp X)
 	   (equal (mergesort X) X)))
@@ -1171,3 +1187,56 @@ from the accompanying talk.</p>")
 
 (defcong acl2::set-equiv equal (mergesort x) 1
   :event-name set-equiv-implies-equal-mergesort-1)
+
+
+;; This is the set of top-level recursive function definitions (as opposed to
+;; fast- or auxiliary ones) that are enabled above this point but that we'll
+;; disable shortly to make light set reasoning cheaper.  Note also that if a
+;; non-recursive function is left enabled above (e.g. intersectp) then it's
+;; treated as basically an abbreviation and we leave it enabled (and out of
+;; this ruleset).
+(def-ruleset! definitions
+  '(in
+    subset
+    delete
+    union
+    intersect
+    difference
+    cardinality
+    mergesort))
+
+
+;; This is a set of rules defined (and left enabled) above that seem
+;; potentially expensive.  The determination is somewhat subjective.
+(def-ruleset! expensive-rules
+  '(pick-a-point-subset-strategy
+    double-containment
+    subset-membership-tail
+    subset-membership-tail-2
+    subset-transitive
+    subset-in
+    subset-in-2
+    union-symmetric
+    union-commutative
+    union-delete-x
+    union-delete-y
+    union-with-subset-left
+    union-with-subset-right
+    intersect-symmetric
+    intersect-commutative
+    intersect-insert-x
+    intersect-insert-y
+    intersect-with-subset-left
+    intersect-with-subset-right
+    intersect-over-union
+    difference-over-union
+    difference-over-intersect
+    difference-insert-x
+    difference-delete-y
+    insert-cardinality
+    delete-cardinality
+    in-mergesort))
+
+
+(in-theory (acl2::disable* definitions
+                           expensive-rules))

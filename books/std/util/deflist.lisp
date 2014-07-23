@@ -303,6 +303,7 @@ of which recognizers require true-listp and which don't.</p>")
   ;; lemmas that we enable so that it will work.
 
   (local (include-book "std/osets/under-set-equiv" :dir :system))
+  (local (in-theory (acl2::enable* set::definitions set::expensive-rules)))
 
   (defthmd deflist-lemma-member-of-car
     (iff (member-equal (car x) x)

@@ -167,6 +167,8 @@
 (include-book "witness-cp")
 (include-book "tools/rulesets" :dir :system)
 
+(local (in-theory (enable definitions)))
+
 (defun nonsubset-witness (x y)
   (declare (xargs :guard (and (setp x) (setp y))))
   (if (empty x)

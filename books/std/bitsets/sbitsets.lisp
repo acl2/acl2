@@ -41,6 +41,7 @@
 ;(local (include-book "arithmetic-3/bind-free/top" :dir :system))
 ;(local (in-theory (disable acl2::cancel-mod-+)))
 
+(local (in-theory (acl2::enable* set::definitions set::expensive-rules)))
 
 (defxdoc sbitsets
   :parents (std/bitsets)
