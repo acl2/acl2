@@ -139,7 +139,7 @@
         (er hard? 'defxdoc-raw
             "Bad defxdoc-raw arguments: ~s0" err)
       (defxdoc-raw-fn name parents short long))))
-        
+
 (defmacro defxdoc-raw (name &key parents short long)
   `(defxdoc-raw-after-check ',name ',parents ,short ,long))
 

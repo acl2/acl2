@@ -32,7 +32,7 @@
 
 (include-book "centaur/fty/deftypes" :dir :system)
 (include-book "std/util/deflist" :dir :system)
-(include-book "str/cat" :dir :system)
+(include-book "std/strings/cat" :dir :system)
 
 (defxdoc vl-printedlist
   :parents (printer)

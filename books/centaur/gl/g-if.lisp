@@ -264,5 +264,6 @@
   `(mv ,x hyp))
 
 (acl2::def-b*-binder gret
+  :body
   `(b* (((mv ,(car acl2::args) hyp) . ,acl2::forms))
      ,acl2::rest-expr))

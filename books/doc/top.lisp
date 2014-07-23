@@ -391,7 +391,6 @@ of proofs.")
 ; we'll do them globally, so they'll be included, e.g., in the Emacs version of
 ; the combined manual.
 (xdoc::change-parents ihs (arithmetic))
-(xdoc::change-parents b* (macro-libraries))
 (xdoc::change-parents data-definitions (macro-libraries projects debugging))
 (xdoc::change-parents with-timeout (data-definitions))
 (xdoc::change-parents data-structures (macro-libraries))

@@ -1,3 +1,4 @@
+; MV-NTH Meta Rule
 ; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
@@ -68,6 +69,5 @@
   (equal (eval-for-mv-nth x a)
          (eval-for-mv-nth (mv-nth-eval-fn x) a))
   :rule-classes ((:meta :trigger-fns (mv-nth))))
-
 
 (in-theory (disable mv-nth))

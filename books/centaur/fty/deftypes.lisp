@@ -2343,6 +2343,7 @@
                 . , (flexprod-fields->names prod.fields)))
 
         (acl2::def-b*-binder ,prod.ctor-name
+          :body
           (std::da-patbind-fn ',prod.ctor-name
                               ',field-accs
                               acl2::args acl2::forms acl2::rest-expr))

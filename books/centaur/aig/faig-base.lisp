@@ -161,18 +161,18 @@ faig-fix)."
                (faig-fix-alist (cdr x))))))
 
 (def-b*-binder faig
-  ":doc-section B*-BINDERS
-Binds two variables to the onset and offset, respectively, of the
-faig-fix of the given expression.~/~/~/"
-  (declare (xargs :guard (and (true-listp args)
-                              (equal (len args) 2)
-                              (true-listp forms)
-                              (equal (len forms) 1))))
+  :parents (b*-binders faig)
+  :short "@(see b*) binder that binds two variables to the onset and offset,
+ respectively, of the @(see faig-fix) of the given expression."
+  :decls ((declare (xargs :guard (and (true-listp args)
+                                      (equal (len args) 2)
+                                      (true-listp forms)
+                                      (equal (len forms) 1)))))
+  :body
   `(b* (((mv ,(first args) ,(second args))
          (let ((x (faig-fix ,(car forms))))
            (mv (car x) (cdr x)))))
      ,rest-expr))
-
 
 (define faig-const-p (x)
   :parents (4v-sexpr-to-faig)
@@ -186,7 +186,7 @@ i.e., the four possible constant FAIGs.</p>
        (booleanp (car x))
        (booleanp (cdr x)))
   ///
-  
+
   (defthm faig-const-p-of-faig-eval
     (faig-const-p (faig-eval x env))
     :hints(("Goal" :in-theory (enable faig-eval)))))

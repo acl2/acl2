@@ -513,32 +513,6 @@ General form: ~
 
 
 
-
-#!ACL2  ;;copied from Sol Swords.
-(progn
-  (defun access-b*-bindings (recname var pairs)
-    (if (atom pairs)
-        nil
-      (cons
-       (if (atom (car pairs))
-           (list (car pairs) `(acl2::access ,recname ,var
-                                            ,(intern-in-package-of-symbol
-                                             (symbol-name (car pairs))
-                                             :keyword)))
-         (list (caar pairs) `(acl2::access ,recname ,var
-                                           ,(intern-in-package-of-symbol
-                                            (symbol-name (cadar pairs))
-                                            :keyword))))
-       (access-b*-bindings recname var (cdr pairs)))))
-
-  (def-b*-binder
-    access
-    `(b* ,(access-b*-bindings (car args) (car forms) (cdr args))
-       ,rest-expr)))
-
-
-
-
 (defconst   *primitives*
   '(+f   *f   |1+f|   =  |1-f|   -f   /=  <=  <  >  >=
     plus-mod-m31 double-mod-m31 times-expt-2-16-mod-m31 times-mod-m31

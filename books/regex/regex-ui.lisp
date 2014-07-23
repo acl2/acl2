@@ -143,7 +143,7 @@
          :rule-classes :type-prescription
          :hints(("Goal" :in-theory (enable match-regex-fun)))))
 
-(define do-regex-match-precomp 
+(define do-regex-match-precomp
   ((str stringp "String to test")
    (regex regex-p "Regular expression specifying the pattern to find")
    (opts parse-opts-p "Options for test.  <br />
@@ -213,7 +213,7 @@
  (do-regex-match \"cdeAbfdEfDeghIj\"
                  \"ab([def]*)\\1([gh])\"
                  (parse-options 'fixed nil nil nil t))
-}) 
+})
 
 <p>returns <tt>(mv nil nil nil)</tt>, and </p>
 
@@ -350,8 +350,12 @@
                        (not substrs)))))
 
 (def-b*-binder match
-  (declare (xargs :guard (and (consp forms) (not (cdr forms))
-                              (true-listp args))))
+  :parents (b*-binders regex)
+  :short "@(see b*) binder for regular expression matching."
+  :decls ((declare (xargs :guard (and (consp forms)
+                                      (not (cdr forms))
+                                      (true-listp args)))))
+  :body
   (b* ((string (car forms)) ;; string to match against the pattern
        (pat (car args))
        (options (cdr args))
@@ -401,7 +405,7 @@
  (make-event
   (b* ((res1-ok
         (equal
-        
+
          (b* (((match "ab([def]*)\\1([gh])" :i
                       :full f
                       :substrs (a b))
@@ -440,7 +444,7 @@
 
          '("fdE" "AbfdEfDeg"))))
 
-      
+
     (if (and res1-ok res2-ok res3-ok)
         '(value-triple :ok)
       (er hard? 'regex-ui
@@ -492,14 +496,14 @@
   :guard t
   (cond ((atom x)
          (null x))
-        (t 
+        (t
          (and (consp (car x))
               (stringp (caar x))
               (string-keyed-alist-p (cdr x))))))
 
 (local (in-theory (enable string-keyed-alist-p)))
 
-(define regex-get 
+(define regex-get
   ((str stringp "String to lookup")
    (alist string-keyed-alist-p "Alistp where keys are regular expressions in
                                 string form and the values are of an
@@ -570,8 +574,8 @@
                  \"The list of integers associated with the given key\"
                  :hyp :fguard)
    (let ((val (regex-get key dictionary)))
-     (if (consp val) 
-         (cdr val) 
+     (if (consp val)
+         (cdr val)
        nil))) ; return value in the atom case is chosen by user
 })
 "
@@ -582,7 +586,7 @@
       (do-regex-match str
                       (caar alist)
                       (parse-options 'ere
-                                     nil nil nil 
+                                     nil nil nil
                                      nil)) ; case sensitive
       (declare (ignore substrs))
       (cond (err (er hard? 'regex-get err))

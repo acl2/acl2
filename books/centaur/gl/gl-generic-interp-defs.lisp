@@ -202,8 +202,8 @@
 
 ;; BOZO replace with defaggrify-defrec
 (make-event ;; rewrite-rule b* binder
- `(acl2::def-b*-binder
-    rewrite-rule
+ `(acl2::def-b*-binder rewrite-rule
+    :body
     #!acl2
     (std::da-patbind-fn 'rewrite-rule
                         #!GL ',(let ((fields '(rune hyps lhs rhs equiv subclass heuristic-info)))

@@ -1,6 +1,4 @@
-
 ; Match-tree.lisp: Term pattern matching and substitution for meta reasoning.
-
 ; Copyright (C) 2013 Centaur Technology
 ;
 ; Contact:
@@ -30,10 +28,8 @@
 ;
 ; Original author: Sol Swords <sswords@centtech.com>
 
-
 (in-package "ACL2")
 (include-book "bstar")
-
 
 ;; Notes.  This book defines a B* binder UNLESS-MATCH which uses a function
 ;; MATCH-TREE to check that a term matches a particular pattern and return an
@@ -45,7 +41,7 @@
 ;; A pattern P matches a tree X and produces bindings as follows:
 
 ;; Match conditions                                 Bindings produced
-;; P is an atom and P = X     
+;; P is an atom and P = X
 ;; P is (:? <symb>)                                 (<symb> . X)
 ;; P is (:! <symb>)                                 (<symb> . X)
 ;; P is (:?S <symb>) and X is a symbol              (<symb> . X)
@@ -197,10 +193,10 @@
 ;;;   ((tree t "Tree to check"))
 ;;;   :returns (ans booleanp)
 ;;;   (b* (((when-match tree
-;;;                     ("IdentifierRag" 
+;;;                     ("IdentifierRag"
 ;;;                      ("Identifier" ("IDENTIFIER" (:? id)))))
 ;;;         (stringp id))
-;;;        ((when-match tree 
+;;;        ((when-match tree
 ;;;                     ("IdentifierRag"
 ;;;                      ("Identifier" ("IDENTIFIER" (:? id)))
 ;;;                      ("PERIOD" ".")
@@ -377,7 +373,7 @@
 
 (defun match-tree-initial-alist-term (vars)
   `(list . ,(match-tree-initial-alist-lst vars)))
-        
+
 (defun prefix-?-vars (vars)
   (declare (xargs :guard (symbol-listp vars)))
   (if (atom vars)
@@ -404,13 +400,15 @@
         ,match-body))))
 
 (def-b*-binder unless-match
-  (declare (xargs :guard (equal (len args) 2)))
+  :decls ((declare (xargs :guard (equal (len args) 2))))
+  :body
   (treematch-fn (car args) (cadr args)
                 `(progn$ . ,forms)
                 rest-expr))
 
 (def-b*-binder when-match
-  (declare (xargs :guard (equal (len args) 2)))
+  :decls ((declare (xargs :guard (equal (len args) 2))))
+  :body
   (treematch-fn (car args) (cadr args)
                 rest-expr
                 `(progn$ . ,forms)))
@@ -553,10 +551,10 @@
 (defmacro add-replace-equalities-rule (thmname)
   `(table replace-equalities-rules
           (replace-equalities-thm-fnsym ',thmname world)
-          (cons ',thmname 
+          (cons ',thmname
                 (cdr (assoc (replace-equalities-thm-fnsym ',thmname world)
                             (table-alist 'replace-equalities-rules world))))))
-                           
+
 
 
 (defun match-tree-rw-fname (prefix var)
@@ -612,7 +610,7 @@
 (defun match-tree-block-substs-var-fn (var vars! pat prefix)
   (let* ((fnname (match-tree-rw-fname prefix var))
          (thmname (intern-in-package-of-symbol
-                   (concatenate 'string 
+                   (concatenate 'string
                                 (symbol-name fnname) "-BLOCK-EQUALITY-SUBST")
                    fnname)))
   `((defthm ,thmname
@@ -686,7 +684,7 @@
        (restrs (match-tree-restrictions pat))
        (type-events (match-tree-restrs-events restrs vars! pat prefix)))
     `(progn ,@fn-events ,@meas-events ,@bs-events ,@type-events . ,rw-events)))
-  
+
 (defmacro def-match-tree-rewrites (pat &key prefix)
   (def-match-tree-rewrites-fn pat prefix))
 
