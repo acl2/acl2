@@ -2863,6 +2863,7 @@ the calls took.")
   (setq alist
         (loop for x in alist collect
               (progn
+                #-gcl ; avoid bug in GCL 2.6.10 (!! temporary)
                 (check-type x
                             (cons (or string symbol)
                                   (cons (or string (integer 0))
@@ -3495,11 +3496,11 @@ the calls took.")
                                 `((,(format nil " To ~a"
                                             (fixnum-to-symbol callern))
                                    ,(format nil
-                                     "~8,2e calls took~8,2e;~5,1f%"
-                                     calls ltt
-                                     (if (> (* 10000 ltt) tt)
-                                         (* 100 (/ ltt tt))
-                                       '?)))
+                                            "~8,2e calls took~8,2e;~a%"
+                                            calls ltt
+                                            (if (> (* 10000 ltt) tt)
+                                                (format nil "~5,1f" (* 100 (/ ltt tt)))
+                                              "?")))
                                   . ,(if *sort-to-from-by-calls*
                                          calls
                                        time))
@@ -3507,12 +3508,14 @@ the calls took.")
                  (when (> outside-fn-time 0)
                    (push
                     `((,(format nil " To other functions")
-                       ,(format nil "~8,2e calls took~8,2e;~5,1f%"
+                       ,(format nil "~8,2e calls took~8,2e;~a%"
                                 outside-fn-count
                                 outside-fn-time
                                 (if (> (* 10000 outside-fn-time) tt)
-                                    (* 100 (/ outside-fn-time tt))
-                                  '?)))
+                                    (format nil
+                                            "~5,1f"
+                                            (* 100 (/ outside-fn-time tt)))
+                                  "?")))
                       . ,(if *sort-to-from-by-calls*
                              outside-fn-count
                            outside-fn-time))
@@ -3520,11 +3523,13 @@ the calls took.")
                  (when (and (> selftime 0)
                             (not (= selftime tt)))
                    (push `((,(ofn " To self/unprofiled functions")
-                            ,(ofn "~8,2e;~5,1f%"
+                            ,(ofn "~8,2e;~a%"
                                   selftime
                                   (if (> (* 10000 selftime) tt)
-                                      (* 100 (/ selftime tt))
-                                    '?)))
+                                      (format nil
+                                              "~5,1f"
+                                              (* 100 (/ selftime tt)))
+                                    "?")))
                            . ,(if *sort-to-from-by-calls*
                                   0 ;; ?
                                 (* selftime *float-ticks/second*)))
@@ -3558,12 +3563,14 @@ the calls took.")
                        (t (push
                            `((,(ofn " From ~a"
                                     (fixnum-to-symbol callern))
-                              ,(ofn "~8,2e calls took~8,2e;~5,1f%"
+                              ,(ofn "~8,2e calls took~8,2e;~a%"
                                     calls
                                     ltt
                                     (if (< .001 ltt tt)
-                                        (* 100 (/ ltt tt))
-                                      '?)))
+                                        (format nil
+                                                "~5,1f"
+                                                (* 100 (/ ltt tt)))
+                                      "?")))
                              . ,(if *sort-to-from-by-calls*
                                     calls
                                   time))
@@ -3571,12 +3578,14 @@ the calls took.")
                  (when (> outside-caller-time 0)
                    (push
                     `((,(ofn " From other functions")
-                       ,(ofn "~8,2e calls took~8,2e;~5,1f%"
+                       ,(ofn "~8,2e calls took~8,2e;~a%"
                              outside-caller-count
                              outside-caller-time
                              (if (< .001 outside-caller-time tt)
-                                 (* 100 (/ outside-caller-time tt))
-                               '?)))
+                                 (format nil
+                                         "~5,1f"
+                                         (* 100 (/ outside-caller-time tt)))
+                               "?")))
                       . ,(if *sort-to-from-by-calls*
                              outside-caller-count
                            outside-caller-time))
