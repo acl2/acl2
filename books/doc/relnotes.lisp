@@ -622,10 +622,8 @@ SAT-based @(see gl::modes).</p>
 bit-vector operations like @(see logcar), @(see logcdr), @(see loghead), and
 @(see logtail).</p>
 
-<p>GL has been refactored to make introducing symbolic arithmetic functions
-easier, possibly improving AIG performance on some arithemtic functions.  Its
-bitvector arithmetic functions are also now pluggable to allow for more
-experimentation.</p>
+<p>Some symbolic arithmetic functions have been changed so as to possibly
+improve AIG performance.</p>
 
 <p>GL's rewrites to @(see 4v) constants have been improved.</p>
 
