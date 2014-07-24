@@ -41,6 +41,7 @@
 (include-book "std/strings/cat" :dir :system)
 (include-book "std/strings/decimal" :dir :system)
 (include-book "centaur/nrev/pure" :dir :system)
+(include-book "xdoc/alter" :dir :system)
 (local (include-book "centaur/misc/arith-equivs" :dir :system))
 (local (include-book "arithmetic/top" :dir :system))
 (local (include-book "std/lists/top" :dir :system))
@@ -142,67 +143,7 @@ bounds."
                (and (eql x.line high.line)
                     (<= x.col high.col))))))
 
-
 (defsection vl-echar-p
-  :parents (extended-characters)
-  :short "Representation of a single extended character."
-
-  :long "<p>Historically, a @('vl-echar-p') was an ordinary aggregate with a
-character and a location.  This was nice and simple, but required a lot of
-memory.  Here is a back-of-the-napkin analysis, where the underlying cons-tree
-representation of each echar is understood as:</p>
-
-@({
-    vl-echar ::=  (char . (:vl-location . (filename . (line . col)))))
-})
-
-<p>Assume we need no extra overhead to represent the filename, line, or column.
-This is fair: typically whole giant sets of echars all have their filename
-pointing to the same string, so we don't need extra memory for the file name.
-Furthermore, the line and column number are always fixnums in practice, i.e.,
-they are immediates that don't take any extra space.  Then, the memory required
-for each echar is:</p>
-
-@({
-    4 conses = 128 bits * 4 = 512 bits = 64 bytes
-})
-
-<p>But since echars generally go in a list, we basically also need 1 extra cons
-per character to join it to the rest of the list.  So, the total overhead just
-for echars is really more like 80 bytes.  In short, to read a file with N bytes
-in it we need 80N bytes of memory, so if we want to process a 100 MB Verilog
-file we need 8 GB of space!  (It's actually worse than this, because that's
-just the cost of reading the characters in the first place.  After that we have
-to preprocess them, which is basically an echarlist-to-echarlist
-transformation.  Preprocessing doesn't need to deeply copy the echars
-themselves, but it is still going to deeply copy the list, which means an 16
-bytes of overhead.  So we're up to 9.6 GB for a 100 MB file before reaching a
-good place where we can garbage collect.</p>
-
-<p>To reduce this overhead, we now use a more efficient encoding scheme.</p>
-
-<h3>Encoding Scheme</h3>
-
-<p>We will use a simple encoding that allows us to represent almost any
-practical echar as a single cons of an immediate onto a filename pointer.  We
-will assume we can represent any unsigned 60-bit number as a fixnum, which is
-true in 64-bit CCL.  This seems like plenty of space.  We divide it up, rather
-arbitrarily, as follows:</p>
-
-<ul>
-<li>8-bit character code, so we can represent any character code</li>
-<li>30-bit line number, so our maximum line number is ~1 billion</li>
-<li>22-bit column number, so our maximum column number is ~4 million</li>
-</ul>
-
-<p>It is hard to imagine hitting these limits in practice, but as a fallback we
-will simply allow any characters from locations outside this range to be
-represented as cons structures with line, column, and character code
-components.  This is no worse than our former representation, and means that
-the interface for constructing echars can be kept simple and bounds-free.</p>
-
-@(def vl-echar-p)"
-
   :autodoc nil
 
   (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
@@ -358,7 +299,6 @@ the interface for constructing echars can be kept simple and bounds-free.</p>
     :define t
     :forward t)
 
-
   (defprod vl-echar-raw
     ((filename stringp :rule-classes :type-prescription)
      (pack     vl-echarpack-p))
@@ -463,6 +403,68 @@ the interface for constructing echars can be kept simple and bounds-free.</p>
                    ((vl-echar c) c))
                 (and (equal c.char #\b)
                      (equal c.loc *vl-fakeloc*)))))))
+
+(xdoc::delete-topic vl-echar-p)
+
+(defxdoc vl-echar-p
+  :parents (extended-characters)
+  :short "Representation of a single extended character."
+  :long "<p>Historically, a @('vl-echar-p') was an ordinary aggregate with a
+character and a location.  This was nice and simple, but required a lot of
+memory.  Here is a back-of-the-napkin analysis, where the underlying cons-tree
+representation of each echar is understood as:</p>
+
+@({
+    vl-echar ::=  (char . (:vl-location . (filename . (line . col)))))
+})
+
+<p>Assume we need no extra overhead to represent the filename, line, or column.
+This is fair: typically whole giant sets of echars all have their filename
+pointing to the same string, so we don't need extra memory for the file name.
+Furthermore, the line and column number are always fixnums in practice, i.e.,
+they are immediates that don't take any extra space.  Then, the memory required
+for each echar is:</p>
+
+@({
+    4 conses = 128 bits * 4 = 512 bits = 64 bytes
+})
+
+<p>But since echars generally go in a list, we usually also need 1 extra cons
+per character to join it to the rest of the list.  So, the total overhead just
+for echars is really more like 80 bytes.  In short, to read a file with N bytes
+in it we need 80N bytes of memory, so if we want to process a 100 MB Verilog
+file we need 8 GB of space!  (It's actually worse than this, because that's
+just the cost of reading the characters in the first place.  After that we have
+to preprocess them, which is basically an echarlist-to-echarlist
+transformation.  Preprocessing doesn't need to deeply copy the echars
+themselves, but it is still going to deeply copy the list, which means an extra
+16 bytes of overhead per character.  So we're up to 9.6 GB for a 100 MB file
+before reaching a good place where we can garbage collect.</p>
+
+<p>To reduce this overhead, we now use a more efficient encoding scheme.</p>
+
+<h3>Encoding Scheme</h3>
+
+<p>We will use a simple encoding that allows us to represent almost any
+practical echar as a single cons of an immediate onto a filename pointer.  We
+will assume we can represent any unsigned 60-bit number as a fixnum, which is
+true in 64-bit CCL.  This seems like plenty of space.  We divide it up, rather
+arbitrarily, as follows:</p>
+
+<ul>
+<li>8-bit character code, so we can represent any character code</li>
+<li>30-bit line number, so our maximum line number is ~1 billion</li>
+<li>22-bit column number, so our maximum column number is ~4 million</li>
+</ul>
+
+<p>It is hard to imagine hitting these limits in practice, but as a fallback we
+will simply allow any characters from locations outside this range to be
+represented as cons structures with line, column, and character code
+components.  This is no worse than our former representation, and means that
+the interface for constructing echars can be kept simple and bounds-free.</p>
+
+@(def vl-echar-p)")
+
 
 
 ; Once upon a time we took special measures to print warnings if this function

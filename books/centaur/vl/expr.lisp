@@ -822,7 +822,9 @@ vl-atomguts-p) is already known."
   (mbe :logic (vl-sysfunname-p x)
        :exec (eq (tag x) :vl-sysfunname)))
 
-(defoption maybe-natp natp) ;; BOZO misplaced
+(defoption maybe-natp natp
+  ;; BOZO misplaced, :parents nil to settle documentation issues
+  :parents nil)
 
 
 (define vl-arity-ok-p ((op vl-op-p) (args))
@@ -1080,7 +1082,6 @@ each operator has the proper arity.</p>"
        :hints(("Goal" :in-theory (enable vl-arity-ok-p)))))))
 
 
-
 (define vl-atom-p ((x vl-expr-p))
   :long "<p>We leave this function enabled and reason about @('vl-expr-kind')
 instead.</p>"
@@ -1270,7 +1271,14 @@ is a @(see vl-maybe-exprtype-p).</p>"
 
   )
 
-(defsection vl-atts-p
+
+(defalist vl-atts-p (x)
+  :key (stringp x)
+  :val (vl-maybe-expr-p x)
+  :keyp-of-nil nil
+  :valp-of-nil t
+  :already-definedp t
+  :true-listp t
   :short "Representation of @('(* foo = 3, bar *)') style attributes."
 
   :long "<p>Verilog-2005 and SystemVerilog-2012 allow many constructs, (e.g.,
@@ -1293,7 +1301,6 @@ ordinary @(see vl-expr-p), and keys with no values are bound to @('nil')
 instead.</p>
 
 @(def vl-atts-p)
-
 
 <h3>Size/Types of Attribute Values</h3>
 
@@ -1376,7 +1383,10 @@ place; these annotations can be useful in error messages.</li>
 </ul>
 
 <p>As a general rule, attributes added by VL <i>should</i> be prefixed with
-@('VL_').  In practice, we may sometimes forget to follow this rule.</p>"
+@('VL_').  In practice, we may sometimes forget to follow this rule.</p>")
+
+(defsection vl-atts-p-thms
+  :extension vl-atts-p
 
   (local (in-theory (enable vl-atts-p)))
 
@@ -1391,14 +1401,6 @@ place; these annotations can be useful in error messages.</li>
                 (stringp (car a))
                 (vl-maybe-expr-p (cdr a))
                 (vl-atts-p x))))
-
-  (defalist vl-atts-p (x)
-    :key (stringp x)
-    :val (vl-maybe-expr-p x)
-    :keyp-of-nil nil
-    :valp-of-nil t
-    :already-definedp t
-    :true-listp t)
 
   (defthm alistp-when-vl-atts-p-rewrite
     ;; This is potentially expensive, but without it we sometimes fail to

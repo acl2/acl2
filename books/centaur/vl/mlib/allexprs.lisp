@@ -295,7 +295,7 @@ expressions within @('(* foo = bar *)')-style attributes.</p>")
       (vl-datatype-allexprs-nrev x.type nrev))))
 
 (defines vl-datatype-allexprs
-  :parents (vl-datatype-allexprs)
+  :parents (allexprs)
   :flag-local nil
 
   (define vl-datatype-allexprs ((x vl-datatype-p))

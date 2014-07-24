@@ -51,7 +51,8 @@
 
 (defxdoc note-6-5-books
   :parents (note-6-5)
-  :short "Release notes for the ACL2 Community Books for ACL2 6.5 (BOZO month)"
+  :short "Release notes for the ACL2 Community Books for ACL2 6.5 (August
+2014)."
 
 ; Currently covered: through revision 2869.
 
@@ -160,8 +161,8 @@ between books.  See its @('README') file for more information.</p>
 <p>Support for ACL2(r) is now directly included in the top-level Makefile.
 ACL2(r) users no longer need to use a separate build process and can now make
 use of many additional books.  Books that are incompatible with ACL2(r) should
-be annotated with @('non-acl2r') @(see cert-param)s, and books that require
-ACL2(r) should have a @('uses-acl2r') cert-param.</p>
+be annotated with @('non-acl2r') @('cert_param')s, and books that require
+ACL2(r) should have a @('uses-acl2r') cert_param.</p>
 
 
 <p>The top-level Makefile has been made more robust in various ways.</p>
@@ -180,9 +181,9 @@ is set and Hons is not present.</li>
 <li>It no longer tries to build the @(see gl) solutions book, as this can
 overwhelm modest machines.</li>
 
-<li>A new @('ccl-only') @(see cert-param) can be used for books that require
-CCL.  Used this to avoid trying to certify certain books that require, e.g.,
-@(see tshell).</li>
+<li>A new @('ccl-only') @('cert_param') can be used for books that require CCL.
+Used this to avoid trying to certify certain books that require, e.g., @(see
+tshell).</li>
 
 <li>The Centaur regression/tutorial books have been removed from
 @('doc/top.lisp') to avoid requiring Glucose to build the ACL2+Books
@@ -235,12 +236,16 @@ continually rebuild ACL2 and the books on various platforms.</p>
 
 <h3>Licensing Changes</h3>
 
-<p>Books contributed by Centaur Technology are now licensed under a (more
-permissive) MIT/X11 style license.  (They were previously licensed under the
-GNU General Public License.)</p>
+<p>Books contributed by Computational Logic, Inc. are now licensed under
+a (more permissive) 3-clause BSD style license instead of the GNU General
+Public License.</p>
 
-<p>Books contributed by Jared Davis / Kookamara now also have an MIT/X11 style
-license instead of the GNU General Public License.</p>
+<p>Books contributed by Centaur Technology, Inc. are now licensed under a (more
+permissive) MIT/X11 style license instead of the GNU General Public
+License.</p>
+
+<p>Books contributed by Jared Davis / Kookamara are now licensed under an
+MIT/X11 style license instead of the GNU General Public License.</p>
 
 <p>Many books that lacked explicit licensing information have been updated to
 include appropriate copyright headers.</p>
@@ -267,9 +272,9 @@ simplification.</p>
 <p>The new @(see with-supporters) macro can be used to automatically produce
 redundant versions of events that are needed from local include books.</p>
 
-<p>The new @(see def-doublevar-induction) macro can be used to create certain
-kinds of induction schemes, and may be especially useful for proving @(see
-congruence) rules about mutually recursive functions.</p>
+<p>The new @(see flag::def-doublevar-induction) macro can be used to create
+certain kinds of induction schemes, and may be especially useful for proving
+@(see congruence) rules about mutually recursive functions.</p>
 
 <p>The new @(see nrev) book is something like @('nreverse').  It can be used to
 implement in-order, tail-recursive list processing functions.  With a trust
@@ -312,7 +317,7 @@ developing ACL2 books.</p>
 <p>The documentation for portions of the @(see ihs) library and @(see plev) had
 been inadvertently excluded from the manual, but are now included.</p>
 
-<p>A new topic describes some noteworthy @(see clause-processors).</p>
+<p>A new topic describes some noteworthy @(see clause-processor-tools).</p>
 
 <p>The topic hierarchy has received some attention, e.g., all topics that were
 formerly listed under the grab-bag @('switches-parameters-and-modes') have been
@@ -484,8 +489,8 @@ support of @(see std::defines).</li>
 <li>The @(see with-output) macro is now used to avoid printing so much
 output.</li>
 
-<li>A performance bug with the @(see var-is-stobj-p) function, notably used by
-@('define'), has been fixed.</li>
+<li>A performance bug with the @(see std::var-is-stobj-p) function, notably
+used by @('define'), has been fixed.</li>
 
 <li>Experimental <i>post-define hooks</i> can allow for custom actions to be
 carried out after submitting a @('define'); such a hook allows for a tight
@@ -503,7 +508,7 @@ aliases</see>.</li>
 
 <li>@(see std::defmvtypes) now has smarter handling of @(see force).</li>
 
-<li>@(see defenum) now automatically produces a fixing function and
+<li>@(see std::defenum) now automatically produces a fixing function and
 forward-chaining rule to give the possible values of the objects.</li>
 
 <li>@(see std::defrule) now has a @(':local') option.</li>
@@ -618,7 +623,7 @@ be reliable.</p>
 with unsatisfiable path conditions (i.e., unreachable code regions) when using
 SAT-based @(see gl::modes).</p>
 
-<p>New @(see preferred-definitions) may slightly improve performance of
+<p>New @(see gl::preferred-definitions) may slightly improve performance of
 bit-vector operations like @(see logcar), @(see logcdr), @(see loghead), and
 @(see logtail).</p>
 
@@ -627,22 +632,22 @@ improve AIG performance.</p>
 
 <p>GL's rewrites to @(see 4v) constants have been improved.</p>
 
-<p>The new macro @(see gl-thm) is like @(see def-gl-thm), but doesn't store the
-theorem.  That is, it's like @(see thm) is to @(see defthm).  Similarly, @(see
-gl-param-thm) is to @(see def-gl-param-thm), and @(see def-gl-rule) is similar
-to @(see defrule).</p>
+<p>The new macro @(see gl::gl-thm) is like @(see gl::def-gl-thm), but doesn't
+store the theorem.  That is, it's like @(see thm) is to @(see defthm).
+Similarly, @(see gl::gl-param-thm) is to @(see gl::def-gl-param-thm), and @(see
+gl::def-gl-rule) is similar to @(see std::defrule).</p>
 
 <p>The definitions of @('def-gl-thm'), etc., have been simplified, @(see
-gl-hint) can now be told which GL clause processor to use.</p>
+gl::gl-hint) can now be told which GL clause processor to use.</p>
 
 <p>Minor bugs have been fixed.</p>
 <ul>
 
-<li>GL's @(see add-gl-rewrite) macro has been reworked to avoid the possibility
-of dropping rules when books are included in different orders.</li>
+<li>GL's @(see gl::def-gl-rewrite) macro has been reworked to avoid the
+possibility of dropping rules when books are included in different orders.</li>
 
 <li>The GL interpreter now uses the @('clk') from the given @(see
-glcp-config).</li>
+gl::glcp-config).</li>
 
 </ul>
 
@@ -708,8 +713,7 @@ alternative to @(see stv-run).</p>
 
 <p>Some lemmas have been localized in @(see esim).</p>
 
-<p>@(see aignet) now has a basic @(see aignet::aignet-print) function for
-debugging.</p>
+<p>@(see aignet) now has a basic @('aignet-print') function for debugging.</p>
 
 <p>The @(see bridge::json-encoding) routines now use @(see define) for better
 documentation.</p>

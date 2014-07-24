@@ -28,13 +28,13 @@
 ;
 ; Original authors: Sol Swords <sswords@centtech.com>
 
-
 (in-package "ACL2")
-
-
 (include-book "xdoc/top" :dir :system)
 
 (defsection alist-fix
+  :parents (std/alists)
+  :short "Basic fixing function for \"modern\" alists that respects the
+behavior of @(see hons-assoc-equal)."
 
   (defund alist-fix (x)
     (declare (xargs :guard t))
@@ -69,4 +69,4 @@
     :rule-classes ((:rewrite :backchain-limit-lst 0))))
 
 
-      
+

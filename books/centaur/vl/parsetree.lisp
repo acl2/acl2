@@ -52,7 +52,8 @@ regular view of the source code.</p>")
 (local (xdoc::set-default-parents syntax))
 
 (defoption maybe-stringp stringp
-  ;; BOZO find me a home.  This is mainly to get the fixtypes stuff
+  ;; BOZO misplaced, also has documentation issues
+  :parents nil
   :fix maybe-string-fix
   :equiv maybe-string-equiv)
 

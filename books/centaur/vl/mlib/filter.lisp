@@ -111,7 +111,7 @@ Assuming that hashing operations are constant time, constructing this table is
        (define ,keep-fn
          :parents (filtering-by-name)
          :short ,(cat "Keep @(see VL-" (symbol-name type) "-P)s by " short-name ".")
-         ((names string-listp ,(cat "Names of @(see VL-" (symbol-name type) "-P)s to keep."))
+         ((names string-listp ,(cat "Names of @(see VL-" (symbol-name type) ")s to keep."))
           (x     ,list-p      "List to filter."))
          :long ,keep-long
          :returns (filtered-x ,list-p)
@@ -199,8 +199,8 @@ Assuming that hashing operations are constant time, constructing this table is
 
        (define ,del-fn
          :parents (filtering-by-name)
-         :short ,(cat "Delete @(see VL-" (symbol-name type) "-P)s by " short-name ".")
-         ((names string-listp ,(cat "Names of @(see VL-" (symbol-name type) "-P)s to remove."))
+         :short ,(cat "Delete @(see VL-" (symbol-name type) ")s by " short-name ".")
+         ((names string-listp ,(cat "Names of @(see VL-" (symbol-name type) ")s to remove."))
           (x     ,list-p      "List to filter."))
          :returns (filtered-x ,list-p)
          :long ,del-long
@@ -283,7 +283,7 @@ Assuming that hashing operations are constant time, constructing this table is
 
        (define ,fn
          :parents (filtering-by-name)
-         :short ,(cat "Partition a list of @(see VL-" (symbol-name type) "-P)s by " short-name ".")
+         :short ,(cat "Partition a list of @(see VL-" (symbol-name type) ")s by " short-name ".")
          ((names string-listp "Names to filter with.")
           (x     ,list-p      "List to filter."))
          :returns (mv named unnamed)

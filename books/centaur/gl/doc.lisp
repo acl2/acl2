@@ -823,7 +823,7 @@ executes the function in one of three ways:</p>
 
 <li>As a special case, if the actuals evaluate to concrete objects, then GL may
 be able to stop symbolically executing and just call the actual ACL2 function
-on these arguments; see @(see concrete-execution).</li>
+on these arguments.</li>
 
 <li>For primitive ACL2 functions like @(see +), @(see consp), @(see equal), and
 for some defined functions like @(see logand) and @(see ash) where performance
@@ -1039,7 +1039,7 @@ definition instead, as described in the next section.</p>")
     (gl::set-preferred-def filter1 filter1-for-gl)
 })
 
-<p>The @(see gl::set-preferred-def) form extends a table that GL consults when
+<p>The @('set-preferred-def') form extends a table that GL consults when
 expanding a function's definition.  Each entry in the table pairs a function
 name with the name of a theorem.  The theorem must state that a call of the
 function is unconditionally equal to some other term.</p>

@@ -29,15 +29,16 @@
 ; Original authors: Sol Swords <sswords@centtech.com>
 
 (in-package "ACL2")
-
 (include-book "xdoc/top" :dir :system)
 (include-book "alist-fix")
 
 (defsection hons-remove-assoc
+  :parents (std/alists)
+  :short "Remove a particular key from a \"modern\" alist."
+  :long "<p>The @('hons-') here just refers to our observation of the
+\"modern\" atom-skipping convention as in @(see hons-assoc-equal), etc.  There
+is nothing fast or hons-specific here.</p>"
 
-  ;; "hons-" just refers to our observation of the atom-skipping convention as in
-  ;; hons-assoc-equal, hons-shrink-alist, etc.  There is nothing fast or
-  ;; hons-specific here.
   (defund hons-remove-assoc (k x)
     (declare (xargs :guard t))
     (if (atom x)

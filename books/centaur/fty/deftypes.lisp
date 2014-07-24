@@ -1391,6 +1391,8 @@
        (stdx (intern-in-package-of-symbol "X" list.pred))
        (stda (intern-in-package-of-symbol "A" list.pred)))
     `(define ,list.pred (,list.xvar)
+       ;; BOZO not exactly clear when/where to add docs for the predicate
+       :parents nil
        :progn t
        :measure ,list.measure
        (if (atom ,list.xvar)
@@ -1445,6 +1447,7 @@
        (stdx (intern-in-package-of-symbol "X" alist.pred))
        (stda (intern-in-package-of-symbol "A" alist.pred)))
     `(define ,alist.pred (,alist.xvar)
+       :parents nil ;; BOZO not clear when to add docs for this
        :progn t
        :measure ,alist.measure
        (if (atom ,alist.xvar)
@@ -2242,6 +2245,9 @@
        ;;            prod.ctor-name))
        )
     `((define ,prod.ctor-name ,(flexprod-field-names-types prod.fields)
+        ;; explicitly turn off parents because it's likely to be the same as
+        ;; the name for the type.
+        :parents nil
         ,@(and (member :xtor prod.inline) `(:inline t))
         :guard ,prod.require
         :returns (,sum.xvar ,(if (eq prod.guard t)

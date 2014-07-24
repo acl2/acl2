@@ -66,6 +66,10 @@
 (include-book "computed-hints")
 
 (local
+ ;; Another part of the xdoc hack -- make sure this documentation doesn't
+ ;; get inadvertently slurped in
+ (include-book "std/lists/sets" :dir :system))
+(local
  ;; xdoc hack part 1: throw away all current xdoc
  (table xdoc::xdoc 'xdoc::doc nil))
 
@@ -80,7 +84,7 @@
  ;; stick them onto the proper doc
  (let ((slurped-docs (xdoc::get-xdoc-table (w state))))
    (acl2::value `(table xdoc::xdoc 'xdoc::doc
-                        (append ',slurped-docs (xdoc::get-xdoc-table acl2::world))))))
+                        (union-equal ',slurped-docs (xdoc::get-xdoc-table acl2::world))))))
 
 (defxdoc std/osets
   :parents (std)

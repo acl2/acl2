@@ -57,7 +57,7 @@
 ; transformation sequence, replacing them with their VL module equivalents,
 ; then only deal with module instances instead of gate instances here.
 
-(defxdoc replicate
+(defxdoc replicate-insts
   :parents (transforms)
   :short "Eliminate arrays of gate and module instances."
 
@@ -102,7 +102,7 @@ module; we discuss this further in @(see vl-replicated-instnames).</p>
 with the new arguments for each new instance we are generating.  This is
 addressed in @(see argument-partitioning).</p>")
 
-(local (xdoc::set-default-parents replicate))
+(local (xdoc::set-default-parents replicate-insts))
 
 (define vl-preferred-replicate-names
   :parents (vl-replicated-instnames)
@@ -148,8 +148,7 @@ addressed in @(see argument-partitioning).</p>")
 (local (in-theory (enable vl-range-resolved-p)))
 
 (define vl-replicated-instnames
-  :short "Generate the new names that we'll use for @(see replicate)d
-          instances."
+  :short "Generate the new names that we'll use for replicated instances."
   ((instname  maybe-stringp     "Name of the instance array we are replicating.")
    (instrange vl-range-p        "Its associated range.")
    (nf        vl-namefactory-p  "For generating fresh names.")
@@ -283,8 +282,8 @@ then we return @('foo_0, ..., foo_N').</p>"
   :short "How arguments to instance arrays are split up and given to the
 individual instances."
 
-  :long "<p>Recall that in the @(see replicate) transform we are basically
-rewriting instance arrays like this:</p>
+  :long "<p>Recall that in the @(see replicate-insts) transform we are
+basically rewriting instance arrays like this:</p>
 
 @({
    type instname [N:0] (arg1, arg2, ..., argM) ;
@@ -1297,7 +1296,7 @@ then we try to split it into a list of @('nil')-ranged, simple instances.  If
     result))
 
 (define vl-design-replicate
-  :short "Top-level @(see replicate) transform."
+  :short "Top-level @(see replicate-insts) transform."
   ((x vl-design-p))
   :returns (new-x vl-design-p)
   (b* (((vl-design x) x))

@@ -39,10 +39,6 @@
 ; case-splits in parse-unary-expression and the smaller, similar case splits in
 ; the other functions that deal with several operators.
 
-(defsection parse-expressions
-  :parents (parser)
-  :short "Routines for expression parsing.")
-
 (local (xdoc::set-default-parents parse-expressions))
 
 (local (defthm nfix-of-len

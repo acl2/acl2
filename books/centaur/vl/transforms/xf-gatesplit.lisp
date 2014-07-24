@@ -49,9 +49,9 @@ multiple one-input gates for @('buf') and @('not'), or two-input gates for
 @('and') gates, which are not ruled out by the Verilog specification.</p>
 
 <p><b>Ordering Notes.</b> This transformation must be done after widths have
-been computed, and after @(see replicate) has been run to eliminate any arrays.
-Replication is necessary for certain well-formedness checks on the widths to
-succeed.</p>
+been computed, and after @(see replicate-insts) has been run to eliminate any
+arrays.  Replication is necessary for certain well-formedness checks on the
+widths to succeed.</p>
 
 <p>Unlike occforming, we lay down gates directly instead of introducing new
 modules.  It might be nicer to do it the other way and introduce modules
@@ -195,7 +195,7 @@ a strange construct and some Verilog tools may not support it.</p>"
         ;; have already gotten rid of any instance arrays.
         (mv (fatal :type :vl-bad-gate
                    :msg "~a0: expected no instance arrays; did you forget to ~
-                         run the replicate transform?"
+                         run the replicate-insts transform?"
                    :args (list x))
             x))
 
@@ -269,7 +269,7 @@ drive each output in @('outs') with @('in').</p>"
           (fatal :type :vl-bad-gate
                  :msg "~a0: expected all instance arrays to have been ~
                        eliminated, but found a range.  Did you forget to run ~
-                       the replicate transform?"
+                       the replicate-insts transform?"
                  :args (list x))))
        (warnings
         ;; Cadence does not allow a multi-bit wire to be used as the output of
@@ -525,7 +525,7 @@ gate(out,   tempN-2, iN);
         ;; have already gotten rid of any instance arrays.
         (mv (fatal :type :vl-bad-gate
                    :msg "~a0: expected no instance arrays; did you forget to ~
-                         run the replicate transform?"
+                         run the replicate-insts transform?"
                    :args (list x))
             nil (list x) nf))
 

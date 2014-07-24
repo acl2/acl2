@@ -119,6 +119,7 @@
 (include-book "centaur/misc/load-stobj" :dir :system)
 (include-book "centaur/misc/load-stobj-tests" :dir :system)
 (include-book "centaur/misc/count-up" :dir :system)
+(include-book "centaur/misc/fast-alist-pop" :dir :system)
 
 ;; BOZO conflicts with something in 4v-sexpr?
 
@@ -362,28 +363,7 @@ of proofs.")
 (xdoc::import-acl2doc)
 
 (include-book "xdoc/topics" :dir :system)
-
-#!XDOC
-(defun change-parents-fn (name new-parents all-topics)
-  (declare (xargs :mode :program))
-  (b* (((when (atom all-topics))
-        (er hard? 'change-parents-fn "Topic ~x0 was not found." name))
-       (topic (car all-topics))
-       ((unless (equal (cdr (assoc :name topic)) name))
-        (cons (car all-topics)
-              (change-parents-fn name new-parents (cdr all-topics))))
-       (- (cw "; Note: changing parents of ~x0 from ~x1 to ~x2.~%"
-              name (cdr (assoc :parents topic)) new-parents))
-       (topic (cons (cons :parents new-parents)
-                    (delete-assoc-equal :parents topic))))
-    (cons topic (cdr all-topics))))
-
-#!XDOC
-(defmacro change-parents (name new-parents)
-  `(table xdoc 'doc
-          (change-parents-fn ',name ',new-parents
-                             (get-xdoc-table world))))
-
+(include-book "xdoc/alter" :dir :system)
 
 
 ; These are legacy defdoc topics that need to be incorporated into the
@@ -512,3 +492,43 @@ of proofs.")
                  :expand-level 2)
      (value `(value-triple :manual)))))
 
+
+
+
+
+
+#|| 
+
+(redef-errors (get-xdoc-table (w state)))
+
+(defun collect-topics-with-name (name topics)
+  (if (atom topics)
+      nil
+    (if (equal (cdr (assoc :name (car topics))) name)
+        (cons (Car topics) (collect-topics-with-name name (Cdr topics)))
+      (collect-topics-with-name name (Cdr topics)))))
+
+(b* (((list a b) (collect-topics-with-name 'oslib::lisp-type (get-xdoc-table (w state)))))
+  (equal a b))
+
+(b* (((list a b) (collect-topics-with-name 'acl2::ADD-LISTFIX-RULE (get-xdoc-table (w state)))))
+  (equal a b))
+
+
+
+(defun map-topic-names (x)
+  (if (atom x)
+      nil
+    (cons (cdr (assoc :name (car x)))
+          (map-topic-names (cdr x)))))
+
+(map-topic-names (get-xdoc-table (w state)))
+
+
+(b* (((list a b) (collect-topics-with-name 'oslib::lisp-type (get-xdoc-table (w state)))))
+  (equal a b))
+
+
+
+(collect-topics-with-name 'acl2::add-listfix-rule (get-xdoc-table (w state)))
+||#

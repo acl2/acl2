@@ -45,7 +45,7 @@ the VL's primitive modules like @(see *vl-1-bit-and*).</p>
 
 <p>Ordering notes.  This transform should typically be run after @(see
 gatesplit), and also after other transforms like @(see blankargs), @(see
-expression-sizing), and @(see replicate).</p>
+expression-sizing), and @(see replicate-insts).</p>
 
 <p>We only try to deal with non-array instances of gates, with the usual
 arities (i.e., 2 arguments to a NOT or BUF, and 3 arguments to AND, OR,
@@ -125,7 +125,8 @@ gateinsts/modinsts should be equivalent to the gate being eliminated.</p>
 <li>it has more than the usual number of arguments (higher arity gates can
 simplified by @(see gatesplit),</li>
 
-<li>it is an array of gates (these can be split up by @(see replicate)),</li>
+<li>it is an array of gates (these can be split up by @(see
+replicate-insts)),</li>
 
 <li>it has blank arguments (these can be handled by @(see blankargs)), or</li>
 

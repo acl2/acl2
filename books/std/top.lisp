@@ -41,6 +41,7 @@
 (include-book "util/top")
 
 (defsection std
+  :parents (top)
   :short "Standard libraries for ACL2."
 
   :long "<p>The <b>std</b> library is meant to become <i>ACL2, Batteries

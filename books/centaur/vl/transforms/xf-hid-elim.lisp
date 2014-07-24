@@ -1197,21 +1197,15 @@ hierarchical references to wires inside of @('processor'), etc.</p>")
             (vl-modulelist->names x)))))
 
 
-(defsection vl-modulelist-hid-elim
-
-  (defund vl-modulelist-hid-elim (x)
-    (declare (xargs :guard (vl-modulelist-p x)))
-    (b* ((modalist (vl-modalist x))
-         (ret      (vl-modulelist-hid-elim-aux x x modalist)))
-      (fast-alist-free modalist)
-      ret))
-
-  (local (in-theory (enable vl-modulelist-hid-elim)))
-
-  (defthm vl-modulelist-p-of-vl-modulelist-hid-elim
-    (implies (vl-modulelist-p x)
-             (vl-modulelist-p (vl-modulelist-hid-elim x))))
-
+(define vl-modulelist-hid-elim
+  :parents (hid-elim)
+  ((x vl-modulelist-p))
+  :returns (new-x vl-modulelist-p :hyp :guard)
+  (b* ((modalist (vl-modalist x))
+       (ret      (vl-modulelist-hid-elim-aux x x modalist)))
+    (fast-alist-free modalist)
+    ret)
+  ///
   (defthm vl-modulelist->names-of-vl-modulelist-hid-elim
     (equal (vl-modulelist->names (vl-modulelist-hid-elim x))
            (vl-modulelist->names x))))

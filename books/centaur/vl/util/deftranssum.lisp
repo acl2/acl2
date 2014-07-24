@@ -383,7 +383,7 @@
 
        (long (or long
                  (and parents
-                      "<p>This is an ordinary @(see std::deftranssum) of aggregates.</p>")))
+                      "<p>This is an ordinary @(see vl::deftranssum) of aggregates.</p>")))
 
        ((unless (std::tuplep 1 other-args))
         (raise "deftranssum should be given exactly one non-keyword argument, but got ~x0"
@@ -437,7 +437,7 @@
           ;; BOZO some kind of pattern-match macros?
           )))
 
-    `(defsection ,name
+    `(defsection ,foo-p
        ,@(and parents `(:parents ,parents))
        ,@(and short   `(:short ,short))
        ,@(and long    `(:long ,long))

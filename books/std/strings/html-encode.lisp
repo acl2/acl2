@@ -58,6 +58,7 @@ HTML.</p>")
 (defmacro html-quote ()    (list 'quote (coerce "&quot;" 'list)))
 
 (define html-encode-char-basic
+  :parents (html-encoding)
   :short "HTML encode a single character (simple version, no column/tabsize support)."
   ((x   characterp "Character to encode.")
    (acc            "Accumulator for output characters, reverse order."))
@@ -125,6 +126,7 @@ HTML.</p>")
     :hints(("Goal" :in-theory (enable html-encode-chars-basic-aux)))))
 
 (define html-encode-string-basic
+  :parents (html-encoding)
   :short "Convert a string into HTML."
   ((x stringp))
   :returns (html-string stringp :rule-classes :type-prescription)
@@ -132,6 +134,7 @@ HTML.</p>")
    (html-encode-string-basic-aux x 0 (length x) nil)))
 
 (define repeated-revappend ((n natp) x y)
+  :parents (html-encoding)
   (if (zp n)
       y
     (repeated-revappend (- n 1) x (acl2::revappend-without-guard x y)))
@@ -143,6 +146,7 @@ HTML.</p>")
 
 (define distance-to-tab ((col     natp)
                          (tabsize posp))
+  :parents (html-encoding)
   :inline t
   :split-types t
   (declare (type unsigned-byte col tabsize))
@@ -213,7 +217,7 @@ HTML.</p>")
            (type unsigned-byte n xl col tabsize))
   :measure (nfix (- (nfix xl) (nfix n)))
   :long "<p>This is similar to @(see html-encode-chars-aux), but encodes part
-of a the string @('x') instead of a character list."
+of a the string @('x') instead of a character list.</p>"
   :verify-guards nil
 
   (mbe :logic (html-encode-chars-aux (nthcdr n (explode x)) col tabsize acc)

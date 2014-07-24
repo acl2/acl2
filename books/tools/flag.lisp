@@ -101,8 +101,8 @@ precise, it is @('pkg::flag') where @('pkg') is the package of the new flag
 function's name; usually this means you don't have to think about the
 package.</li>
 
-<li>@(':ruler-extenders') lets you give a value for the @(see ruler-extenders)
-of the new flag function.</li>
+<li>@(':ruler-extenders') lets you give a value for the @(see
+acl2::ruler-extenders) of the new flag function.</li>
 
 </ul>
 

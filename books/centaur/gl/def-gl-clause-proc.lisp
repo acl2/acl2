@@ -832,9 +832,9 @@ bindings:
 
 <p>The above hint causes an attempt to apply the clause processor
 my-gl-clause-processor to the current clause.  Such a clause processor must be
-created using @(see def-gl-clause-processor).  One such clause processor, @(see
-glcp), is predefined in the GL system.  Various keyword arguments control the
-symbolic simulation and auxilliary proofs.</p>
+created using @(see def-gl-clause-processor).  One such clause processor,
+@('glcp'), is predefined in the GL system.  Various keyword arguments control
+the symbolic simulation and auxilliary proofs.</p>
 
 <p>The full interface is as follows, with default values and brief
 descriptions of each keyword argument:</p>
@@ -1101,7 +1101,7 @@ syntactically determined to be non-nil; for example, the result may contain a
 @(':G-APPLY') object.  In these situations, the proof attempt will abort, and
 an example will be shown of inputs for which the symbolic result's value could
 not be determined.  To debug this type of problem, see @(see
-debugging-indeterminate-results).</p>
+false-counterexamples).</p>
 
 <p>The symbolic interpreter and all symbolic counterpart functions take a clock
 argument to ensure termination.  The starting clocks for the symbolic

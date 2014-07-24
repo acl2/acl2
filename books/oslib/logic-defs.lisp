@@ -312,28 +312,6 @@ detect errors.</p>"
                  val)))
     (mv okp state)))
 
-
-(define lisp-type (&optional (state 'state))
-  :returns (mv (description stringp :rule-classes :type-prescription
-                            "E.g., @('\"Clozure Common Lisp\").")
-               (state state-p1 :hyp (force (state-p1 state))))
-  :short "Get a host-Lisp specific string describing what kind of Common Lisp
-implementation this is."
-  :long "<p>In the logic this function reads from the ACL2 oracle.  In the
-execution, we call the Common Lisp function @('lisp-implementation-type').
-When this produces a string, we return it.</p>
-
-<p>Note that the Common Lisp @('lisp-implementation-type') function is
-technically allowed to return @('nil'); in this case we return the empty
-string.</p>"
-
-  (b* (((mv err val state) (read-acl2-oracle state))
-       (description (if (and (not err)
-                             (stringp val))
-                        val
-                      "")))
-    (mv description state)))
-
 (define lisp-type (&optional (state 'state))
   :returns (mv (description stringp :rule-classes :type-prescription
                             "E.g., @('\"Clozure Common Lisp\"').")

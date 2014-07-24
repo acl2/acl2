@@ -35,7 +35,7 @@
 
 (defsection std/typed-lists/pseudo-term-listp
   :parents (pseudo-termp)
-  :short "Lemmas about @(see pseudo-term-listp) available in the @(see
+  :short "Lemmas about lists of @(see pseudo-termp)s, available in the @(see
 std/typed-lists) library."
 
   :long "<p>Most of these are generated automatically with @(see

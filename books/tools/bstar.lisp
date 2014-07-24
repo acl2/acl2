@@ -600,11 +600,11 @@ for more details.</p>")
   (let* ((macro-name (macro-name-for-patbind name))
          (short      (or short
                          (concatenate 'string
-                                      "@(see b*) binder form @('" (symbol-name name)
+                                      "@(see acl2::b*) binder form @('" (symbol-name name)
                                       "') (placeholder).")))
          (long       (or long
                          (concatenate 'string
-                                      "<p>This is a b* binder introduced with @(see def-b*-binder).</p>
+                                      "<p>This is a b* binder introduced with @(see acl2::def-b*-binder).</p>
                                       @(def " (symbol-name macro-name) ")"))))
     `(progn
        (defxdoc ,macro-name :parents ,parents :short ,short :long ,long)

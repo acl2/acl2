@@ -192,7 +192,7 @@ function @('(vl-subcount-modinst modinst sigma)').</p>
          sub3 bar [6:0] (...);
     })
     This simplification is done by just substituting in the sigma and
-    then rewrititing with @(see vl-rangeexpr-reduce).</li>
+    then rewrititing with @(see vl-constexpr-reduce).</li>
 
 <li>We then try to construct a new sigma to use for the submodule, e.g.,
     we would bind foo's parameter to 6; but bar has no parameters so its

@@ -37,6 +37,7 @@
 (local (include-book "misc/assert" :dir :system))
 
 (defxdoc regex
+  :parents (top)
   :short "Regular expression library for ACL2"
   :long "<p>This library is modeled after the regular expression parsing
          functionality of GNU grep.  While the code is mostly considered to be

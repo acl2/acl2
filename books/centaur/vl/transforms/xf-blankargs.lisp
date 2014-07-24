@@ -62,8 +62,8 @@ well for inputs and outputs.  We give these wires names such as
 <p>Unlike @(see drop-blankports) which can be applied at any time after @(see
 argresolve), the blankargs transformation requires that expression sizes have
 been computed (see @(see expression-sizing)) since the new wires need to have
-the appropriate size.  We also expect that the @(see replicate) transform has
-been run to ensure that no instances have ranges.</p>")
+the appropriate size.  We also expect that the @(see replicate-insts) transform
+has been run to ensure that no instances have ranges.</p>")
 
 (local (xdoc::set-default-parents blankargs))
 
