@@ -25042,10 +25042,12 @@ Lisp definition."
   #+clisp (apply 'ext:gc args)
   #+cmu (apply 'system::gc args)
   #+gcl
-  (if (eql (length args) 1)
-      (apply 'si::gbc args)
-    (er hard 'gc$
-        "In GCL, gc$ requires exactly one argument, typically T."))
+  (case (length args)
+    (1 (si::gbc (car args)))
+    (0 (si::gbc t))
+    (otherwise
+     (er hard 'gc$
+         "In GCL, gc$ requires one argument, typically T, or no arguments.")))
   #+lispworks (apply 'hcl::gc-generation (or args (list #+lispworks-64bit 7
                                                         #-lispworks-64bit 3)))
   #+sbcl (apply 'sb-ext:gc args)

@@ -1032,6 +1032,9 @@ ACL2 from scratch.")
              *the-live-state*)
             #+unix
             (f-put-global 'tmp-dir "/tmp" *the-live-state*)
+            #+gcl ; for every OS, including Windows (thanks to Camm Maguire)
+            (when (boundp 'si::*tmp-dir*)
+              (f-put-global 'tmp-dir si::*tmp-dir* *the-live-state*))
             #-acl2-mv-as-values
             (f-put-global 'raw-arity-alist *initial-raw-arity-alist*
                           *the-live-state*))))
