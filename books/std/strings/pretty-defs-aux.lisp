@@ -175,4 +175,5 @@
     ppr1
     ppr
     pretty
-    revappend-pretty))
+    revappend-pretty
+    pretty-list))

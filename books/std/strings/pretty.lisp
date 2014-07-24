@@ -1844,3 +1844,18 @@ character list."
 to extend existing character lists.  See for instance the discussion in @(see
 revappend-chars).</p>"
   (ppr x col config eviscp acc))
+
+
+(define pretty-list
+  :parents (pretty-printing)
+  :short "Pretty-print a list of ACL2 objects, creating a list of strings."
+  ((x "The ACL2 objects to pretty-print.")
+   &key
+   ((config printconfig-p "Optional pretty-printer configuration options.")  '*default-printconfig*)
+   ((col    natp          "Optional starting column number.")                '0)
+   ((eviscp booleanp      "Optional flag for use with eviscerated objects.") 'nil))
+  :returns (pretty-x string-listp)
+  (if (atom x)
+      nil
+    (cons (pretty      (car x) :config config :col col :eviscp eviscp)
+          (pretty-list (cdr x) :config config :col col :eviscp eviscp))))
