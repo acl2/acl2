@@ -386,7 +386,7 @@ an ordinary @(see *vl-1-bit-assign*).</p>"
 module VL_1_BIT_BUF (out, in) ;
   output out;
   input in;
-  buf gate (out, in);
+  assign out = ~(~in);
 endmodule
 })
 
@@ -400,10 +400,16 @@ probably not for much else since ordinary assignments are handled with @(see
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
        ((mv in-expr  in-port  in-portdecl  in-netdecl)  (vl-primitive-mkport "in"  :vl-input))
-       (gate (make-vl-gateinst :type :vl-buf
-                               :name "gate"
-                               :args (list (make-vl-plainarg :expr out-expr :dir :vl-output)
-                                           (make-vl-plainarg :expr in-expr  :dir :vl-input))
+       (assign (make-vl-assign :lvalue out-expr
+                               :expr (make-vl-nonatom
+                                      :op :vl-unary-bitnot
+                                      :args (list (make-vl-nonatom
+                                                   :op :vl-unary-bitnot
+                                                   :args (list in-expr)
+                                                   :finalwidth 1
+                                                   :finaltype :vl-unsigned))
+                                      :finalwidth 1
+                                      :finaltype :vl-unsigned)
                                :loc *vl-fakeloc*)))
     (hons-copy
      (make-vl-module :name      name
@@ -411,7 +417,7 @@ probably not for much else since ordinary assignments are handled with @(see
                      :ports     (list out-port     in-port)
                      :portdecls (list out-portdecl in-portdecl)
                      :netdecls  (list out-netdecl  in-netdecl)
-                     :gateinsts (list gate)
+                     :assigns   (list assign)
                      :minloc    *vl-fakeloc*
                      :maxloc    *vl-fakeloc*
                      :atts      atts
@@ -425,7 +431,7 @@ probably not for much else since ordinary assignments are handled with @(see
 module VL_1_BIT_NOT (out, in) ;
   output out;
   input in;
-  not gate (out, in);
+  assign out = ~in;
 endmodule
 })
 
@@ -439,10 +445,12 @@ endmodule
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
        ((mv in-expr  in-port  in-portdecl  in-netdecl)  (vl-primitive-mkport "in"  :vl-input))
-       (gate (make-vl-gateinst :type :vl-not
-                               :name "gate"
-                               :args (list (make-vl-plainarg :expr out-expr :dir :vl-output)
-                                           (make-vl-plainarg :expr in-expr  :dir :vl-input))
+       (assign (make-vl-assign :lvalue out-expr
+                               :expr (make-vl-nonatom
+                                      :op :vl-unary-bitnot
+                                      :args (list in-expr)
+                                      :finalwidth 1
+                                      :finaltype :vl-unsigned)
                                :loc *vl-fakeloc*)))
     (hons-copy
      (make-vl-module :name      name
@@ -450,7 +458,7 @@ endmodule
                      :ports     (list out-port in-port)
                      :portdecls (list out-portdecl in-portdecl)
                      :netdecls  (list out-netdecl in-netdecl)
-                     :gateinsts (list gate)
+                     :assigns   (list assign)
                      :minloc    *vl-fakeloc*
                      :maxloc    *vl-fakeloc*
                      :atts      atts
@@ -465,7 +473,7 @@ module VL_1_BIT_AND (out, a, b) ;
   output out;
   input a;
   input b;
-  and gate (out, a, b);
+  assign out = a & b;
 endmodule
 })
 
@@ -480,11 +488,12 @@ endmodule
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
        ((mv a-expr   a-port   a-portdecl   a-netdecl)   (vl-primitive-mkport "a"   :vl-input))
        ((mv b-expr   b-port   b-portdecl   b-netdecl)   (vl-primitive-mkport "b"   :vl-input))
-       (gate (make-vl-gateinst :type :vl-and
-                               :name "gate"
-                               :args (list (make-vl-plainarg :expr out-expr :dir :vl-output)
-                                           (make-vl-plainarg :expr a-expr   :dir :vl-input)
-                                           (make-vl-plainarg :expr b-expr   :dir :vl-input))
+       (assign (make-vl-assign :lvalue out-expr
+                               :expr (make-vl-nonatom
+                                      :op :vl-binary-bitand
+                                      :args (list a-expr b-expr)
+                                      :finalwidth 1
+                                      :finaltype :vl-unsigned)
                                :loc *vl-fakeloc*)))
     (hons-copy
      (make-vl-module :name      name
@@ -492,7 +501,7 @@ endmodule
                      :ports     (list out-port     a-port     b-port)
                      :portdecls (list out-portdecl a-portdecl b-portdecl)
                      :netdecls  (list out-netdecl  a-netdecl  b-netdecl)
-                     :gateinsts (list gate)
+                     :assigns   (list assign)
                      :minloc    *vl-fakeloc*
                      :maxloc    *vl-fakeloc*
                      :atts      atts
@@ -507,7 +516,7 @@ module VL_1_BIT_OR (out, a, b) ;
   output out;
   input a;
   input b;
-  or gate (out, a, b);
+  assign out = a | b;
 endmodule
 })
 
@@ -522,11 +531,12 @@ endmodule
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
        ((mv a-expr   a-port   a-portdecl   a-netdecl)   (vl-primitive-mkport "a"   :vl-input))
        ((mv b-expr   b-port   b-portdecl   b-netdecl)   (vl-primitive-mkport "b"   :vl-input))
-       (gate (make-vl-gateinst :type :vl-or
-                               :name "gate"
-                               :args (list (make-vl-plainarg :expr out-expr :dir :vl-output)
-                                           (make-vl-plainarg :expr a-expr   :dir :vl-input)
-                                           (make-vl-plainarg :expr b-expr   :dir :vl-input))
+       (assign (make-vl-assign :lvalue out-expr
+                               :expr (make-vl-nonatom
+                                      :op :vl-binary-bitor
+                                      :args (list a-expr b-expr)
+                                      :finalwidth 1
+                                      :finaltype :vl-unsigned)
                                :loc *vl-fakeloc*)))
     (hons-copy
      (make-vl-module :name      name
@@ -534,7 +544,7 @@ endmodule
                      :ports     (list out-port     a-port     b-port)
                      :portdecls (list out-portdecl a-portdecl b-portdecl)
                      :netdecls  (list out-netdecl  a-netdecl  b-netdecl)
-                     :gateinsts (list gate)
+                     :assigns   (list assign)
                      :minloc    *vl-fakeloc*
                      :maxloc    *vl-fakeloc*
                      :atts      atts
@@ -549,7 +559,7 @@ module VL_1_BIT_XOR (out, a, b) ;
   output out;
   input a;
   input b;
-  xor gate (out, a, b);
+  assign out = a ^ b;
 endmodule
 })
 
@@ -564,11 +574,12 @@ endmodule
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
        ((mv a-expr   a-port   a-portdecl   a-netdecl)   (vl-primitive-mkport "a"   :vl-input))
        ((mv b-expr   b-port   b-portdecl   b-netdecl)   (vl-primitive-mkport "b"   :vl-input))
-       (gate (make-vl-gateinst :type :vl-xor
-                               :name "gate"
-                               :args (list (make-vl-plainarg :expr out-expr :dir :vl-output)
-                                           (make-vl-plainarg :expr a-expr   :dir :vl-input)
-                                           (make-vl-plainarg :expr b-expr   :dir :vl-input))
+       (assign (make-vl-assign :lvalue out-expr
+                               :expr (make-vl-nonatom
+                                      :op :vl-binary-xor
+                                      :args (list a-expr b-expr)
+                                      :finalwidth 1
+                                      :finaltype :vl-unsigned)
                                :loc *vl-fakeloc*)))
     (hons-copy
      (make-vl-module :name      name
@@ -576,7 +587,7 @@ endmodule
                      :ports     (list out-port     a-port     b-port)
                      :portdecls (list out-portdecl a-portdecl b-portdecl)
                      :netdecls  (list out-netdecl  a-netdecl  b-netdecl)
-                     :gateinsts (list gate)
+                     :assigns   (list assign)
                      :minloc    *vl-fakeloc*
                      :maxloc    *vl-fakeloc*
                      :atts      atts
@@ -591,7 +602,7 @@ module VL_1_BIT_NAND (out, a, b) ;
   output out;
   input a;
   input b;
-  nand gate (out, a, b);
+  assign out = ~(a & b);
 endmodule
 })
 
@@ -605,11 +616,16 @@ probably not much else.</p>
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
        ((mv a-expr   a-port   a-portdecl   a-netdecl)   (vl-primitive-mkport "a"   :vl-input))
        ((mv b-expr   b-port   b-portdecl   b-netdecl)   (vl-primitive-mkport "b"   :vl-input))
-       (gate (make-vl-gateinst :type :vl-nand
-                               :name "gate"
-                               :args (list (make-vl-plainarg :expr out-expr :dir :vl-output)
-                                           (make-vl-plainarg :expr a-expr   :dir :vl-input)
-                                           (make-vl-plainarg :expr b-expr   :dir :vl-input))
+       (assign (make-vl-assign :lvalue out-expr
+                               :expr (make-vl-nonatom
+                                      :op :vl-unary-bitnot
+                                      :args (list (make-vl-nonatom
+                                                   :op :vl-binary-bitand
+                                                   :args (list a-expr b-expr)
+                                                   :finalwidth 1
+                                                   :finaltype :vl-unsigned))
+                                      :finalwidth 1
+                                      :finaltype :vl-unsigned)
                                :loc *vl-fakeloc*)))
     (hons-copy
      (make-vl-module :name      name
@@ -617,7 +633,7 @@ probably not much else.</p>
                      :ports     (list out-port     a-port     b-port)
                      :portdecls (list out-portdecl a-portdecl b-portdecl)
                      :netdecls  (list out-netdecl  a-netdecl  b-netdecl)
-                     :gateinsts (list gate)
+                     :assigns   (list assign)
                      :minloc    *vl-fakeloc*
                      :maxloc    *vl-fakeloc*
                      :atts      atts
@@ -632,7 +648,7 @@ module VL_1_BIT_NOR (out, a, b) ;
   output out;
   input a;
   input b;
-  nor gate (out, a, b);
+  assign out = ~(a | b);
 endmodule
 })
 
@@ -646,11 +662,16 @@ probably not much else.</p>
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
        ((mv a-expr   a-port   a-portdecl   a-netdecl)   (vl-primitive-mkport "a"   :vl-input))
        ((mv b-expr   b-port   b-portdecl   b-netdecl)   (vl-primitive-mkport "b"   :vl-input))
-       (gate (make-vl-gateinst :type :vl-nor
-                               :name "gate"
-                               :args (list (make-vl-plainarg :expr out-expr :dir :vl-output)
-                                           (make-vl-plainarg :expr a-expr   :dir :vl-input)
-                                           (make-vl-plainarg :expr b-expr   :dir :vl-input))
+       (assign (make-vl-assign :lvalue out-expr
+                               :expr (make-vl-nonatom
+                                      :op :vl-unary-bitnot
+                                      :args (list (make-vl-nonatom
+                                                   :op :vl-binary-bitor
+                                                   :args (list a-expr b-expr)
+                                                   :finalwidth 1
+                                                   :finaltype :vl-unsigned))
+                                      :finalwidth 1
+                                      :finaltype :vl-unsigned)
                                :loc *vl-fakeloc*)))
     (hons-copy
      (make-vl-module :name      name
@@ -658,7 +679,7 @@ probably not much else.</p>
                      :ports     (list out-port     a-port     b-port)
                      :portdecls (list out-portdecl a-portdecl b-portdecl)
                      :netdecls  (list out-netdecl  a-netdecl  b-netdecl)
-                     :gateinsts (list gate)
+                     :assigns   (list assign)
                      :minloc    *vl-fakeloc*
                      :maxloc    *vl-fakeloc*
                      :atts      atts
@@ -673,7 +694,7 @@ module VL_1_BIT_XNOR (out, a, b) ;
   output out;
   input a;
   input b;
-  xnor gate (out, a, b);
+  assign out = ~(a ^ b);
 endmodule
 })
 
@@ -688,11 +709,16 @@ probably not much else.</p>
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
        ((mv a-expr   a-port   a-portdecl   a-netdecl)   (vl-primitive-mkport "a"   :vl-input))
        ((mv b-expr   b-port   b-portdecl   b-netdecl)   (vl-primitive-mkport "b"   :vl-input))
-       (gate (make-vl-gateinst :type :vl-xnor
-                               :name "gate"
-                               :args (list (make-vl-plainarg :expr out-expr :dir :vl-output)
-                                           (make-vl-plainarg :expr a-expr   :dir :vl-input)
-                                           (make-vl-plainarg :expr b-expr   :dir :vl-input))
+       (assign (make-vl-assign :lvalue out-expr
+                               :expr (make-vl-nonatom
+                                      :op :vl-unary-bitnot
+                                      :args (list (make-vl-nonatom
+                                                   :op :vl-binary-xor
+                                                   :args (list a-expr b-expr)
+                                                   :finalwidth 1
+                                                   :finaltype :vl-unsigned))
+                                      :finalwidth 1
+                                      :finaltype :vl-unsigned)
                                :loc *vl-fakeloc*)))
     (hons-copy
      (make-vl-module :name      name
@@ -700,7 +726,7 @@ probably not much else.</p>
                      :ports     (list out-port     a-port     b-port)
                      :portdecls (list out-portdecl a-portdecl b-portdecl)
                      :netdecls  (list out-netdecl  a-netdecl  b-netdecl)
-                     :gateinsts (list gate)
+                     :assigns   (list assign)
                      :minloc    *vl-fakeloc*
                      :maxloc    *vl-fakeloc*
                      :atts      atts
@@ -1044,7 +1070,7 @@ module VL_1_BIT_BUFIF0 (out, data, ctrl);
    output out;
    input data;
    input ctrl;
-   bufif0 gate (out, data, ctrl);
+   assign out = ctrl ? 1'bz : ~~data;
 endmodule
 })
 
@@ -1058,11 +1084,22 @@ certain @('bufif0') gates into instances of this module.</p>
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
        ((mv data-expr   data-port   data-portdecl   data-netdecl)   (vl-primitive-mkport "data"   :vl-input))
        ((mv ctrl-expr   ctrl-port   ctrl-portdecl   ctrl-netdecl)   (vl-primitive-mkport "ctrl"   :vl-input))
-       (gate (make-vl-gateinst :type :vl-bufif0
-                               :name "gate"
-                               :args (list (make-vl-plainarg :expr out-expr :dir :vl-output)
-                                           (make-vl-plainarg :expr data-expr   :dir :vl-input)
-                                           (make-vl-plainarg :expr ctrl-expr   :dir :vl-input))
+       (assign (make-vl-assign :lvalue out-expr
+                               :expr (make-vl-nonatom
+                                      :op :vl-qmark
+                                      :args (list ctrl-expr
+                                                  |*sized-1'bz*|
+                                                  (make-vl-nonatom
+                                                   :op :vl-unary-bitnot
+                                                   :args (list (make-vl-nonatom
+                                                                :op :vl-unary-bitnot
+                                                                :args (list data-expr)
+                                                                :finalwidth 1
+                                                                :finaltype :vl-unsigned))
+                                                   :finalwidth 1
+                                                   :finaltype :vl-unsigned))
+                                      :finalwidth 1
+                                      :finaltype :vl-unsigned)
                                :loc *vl-fakeloc*)))
     (hons-copy
      (make-vl-module :name      name
@@ -1070,7 +1107,7 @@ certain @('bufif0') gates into instances of this module.</p>
                      :ports     (list out-port     data-port     ctrl-port)
                      :portdecls (list out-portdecl data-portdecl ctrl-portdecl)
                      :netdecls  (list out-netdecl  data-netdecl  ctrl-netdecl)
-                     :gateinsts (list gate)
+                     :assigns   (list assign)
                      :minloc    *vl-fakeloc*
                      :maxloc    *vl-fakeloc*
                      :atts      atts
@@ -1085,7 +1122,7 @@ module VL_1_BIT_BUFIF1 (out, data, ctrl);
    output out;
    input data;
    input ctrl;
-   bufif1 gate (out, data, ctrl);
+   assign out = ctrl ? ~~data : 1'bz;
 endmodule
 })
 
@@ -1099,11 +1136,22 @@ certain @('bufif1') gates into instances of this module.</p>
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
        ((mv data-expr   data-port   data-portdecl   data-netdecl)   (vl-primitive-mkport "data"   :vl-input))
        ((mv ctrl-expr   ctrl-port   ctrl-portdecl   ctrl-netdecl)   (vl-primitive-mkport "ctrl"   :vl-input))
-       (gate (make-vl-gateinst :type :vl-bufif1
-                               :name "gate"
-                               :args (list (make-vl-plainarg :expr out-expr :dir :vl-output)
-                                           (make-vl-plainarg :expr data-expr   :dir :vl-input)
-                                           (make-vl-plainarg :expr ctrl-expr   :dir :vl-input))
+       (assign (make-vl-assign :lvalue out-expr
+                               :expr (make-vl-nonatom
+                                      :op :vl-qmark
+                                      :args (list ctrl-expr
+                                                  (make-vl-nonatom
+                                                   :op :vl-unary-bitnot
+                                                   :args (list (make-vl-nonatom
+                                                                :op :vl-unary-bitnot
+                                                                :args (list data-expr)
+                                                                :finalwidth 1
+                                                                :finaltype :vl-unsigned))
+                                                   :finalwidth 1
+                                                   :finaltype :vl-unsigned)
+                                                  |*sized-1'bz*|)
+                                      :finalwidth 1
+                                      :finaltype :vl-unsigned)
                                :loc *vl-fakeloc*)))
     (hons-copy
      (make-vl-module :name      name
@@ -1111,7 +1159,7 @@ certain @('bufif1') gates into instances of this module.</p>
                      :ports     (list out-port     data-port     ctrl-port)
                      :portdecls (list out-portdecl data-portdecl ctrl-portdecl)
                      :netdecls  (list out-netdecl  data-netdecl  ctrl-netdecl)
-                     :gateinsts (list gate)
+                     :assigns   (list assign)
                      :minloc    *vl-fakeloc*
                      :maxloc    *vl-fakeloc*
                      :atts      atts
@@ -1126,7 +1174,7 @@ module VL_1_BIT_NOTIF0 (out, data, ctrl);
    output out;
    input data;
    input ctrl;
-   notif0 gate (out, data, ctrl);
+   assign out = ctrl ? 1'bz : ~data;
 endmodule
 })
 
@@ -1140,11 +1188,18 @@ certain @('notif0') gates into instances of this module.</p>
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
        ((mv data-expr   data-port   data-portdecl   data-netdecl)   (vl-primitive-mkport "data"   :vl-input))
        ((mv ctrl-expr   ctrl-port   ctrl-portdecl   ctrl-netdecl)   (vl-primitive-mkport "ctrl"   :vl-input))
-       (gate (make-vl-gateinst :type :vl-notif0
-                               :name "gate"
-                               :args (list (make-vl-plainarg :expr out-expr :dir :vl-output)
-                                           (make-vl-plainarg :expr data-expr   :dir :vl-input)
-                                           (make-vl-plainarg :expr ctrl-expr   :dir :vl-input))
+       (assign (make-vl-assign :lvalue out-expr
+                               :expr (make-vl-nonatom
+                                      :op :vl-qmark
+                                      :args (list ctrl-expr
+                                                  |*sized-1'bz*|
+                                                  (make-vl-nonatom
+                                                                :op :vl-unary-bitnot
+                                                                :args (list data-expr)
+                                                                :finalwidth 1
+                                                                :finaltype :vl-unsigned))
+                                      :finalwidth 1
+                                      :finaltype :vl-unsigned)
                                :loc *vl-fakeloc*)))
     (hons-copy
      (make-vl-module :name      name
@@ -1152,7 +1207,7 @@ certain @('notif0') gates into instances of this module.</p>
                      :ports     (list out-port     data-port     ctrl-port)
                      :portdecls (list out-portdecl data-portdecl ctrl-portdecl)
                      :netdecls  (list out-netdecl  data-netdecl  ctrl-netdecl)
-                     :gateinsts (list gate)
+                     :assigns   (list assign)
                      :minloc    *vl-fakeloc*
                      :maxloc    *vl-fakeloc*
                      :atts      atts
@@ -1167,7 +1222,7 @@ module VL_1_BIT_NOTIF1 (out, data, ctrl);
    output out;
    input data;
    input ctrl;
-   notif1 gate (out, data, ctrl);
+   assign out = ctrl ? ~data : 1'bz;
 endmodule
 })
 
@@ -1181,11 +1236,18 @@ certain @('notif1') gates into instances of this module.</p>
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
        ((mv data-expr   data-port   data-portdecl   data-netdecl)   (vl-primitive-mkport "data"   :vl-input))
        ((mv ctrl-expr   ctrl-port   ctrl-portdecl   ctrl-netdecl)   (vl-primitive-mkport "ctrl"   :vl-input))
-       (gate (make-vl-gateinst :type :vl-notif1
-                               :name "gate"
-                               :args (list (make-vl-plainarg :expr out-expr :dir :vl-output)
-                                           (make-vl-plainarg :expr data-expr   :dir :vl-input)
-                                           (make-vl-plainarg :expr ctrl-expr   :dir :vl-input))
+       (assign (make-vl-assign :lvalue out-expr
+                               :expr (make-vl-nonatom
+                                      :op :vl-qmark
+                                      :args (list ctrl-expr
+                                                  (make-vl-nonatom
+                                                                :op :vl-unary-bitnot
+                                                                :args (list data-expr)
+                                                                :finalwidth 1
+                                                                :finaltype :vl-unsigned)
+                                                  |*sized-1'bz*|)
+                                      :finalwidth 1
+                                      :finaltype :vl-unsigned)
                                :loc *vl-fakeloc*)))
     (hons-copy
      (make-vl-module :name      name
@@ -1193,7 +1255,7 @@ certain @('notif1') gates into instances of this module.</p>
                      :ports     (list out-port     data-port     ctrl-port)
                      :portdecls (list out-portdecl data-portdecl ctrl-portdecl)
                      :netdecls  (list out-netdecl  data-netdecl  ctrl-netdecl)
-                     :gateinsts (list gate)
+                     :assigns   (list assign)
                      :minloc    *vl-fakeloc*
                      :maxloc    *vl-fakeloc*
                      :atts      atts
