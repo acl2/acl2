@@ -1,5 +1,9 @@
 ;;; Contributed by Ruben A. Gamboa
 
+; Copyright (C) 2014, University of Wyoming
+; All rights reserved.
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+
 #|
 
 This file contains some obvious theorems about the integer division and
