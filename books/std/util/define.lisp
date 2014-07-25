@@ -243,6 +243,15 @@ needed for termination.</dd>
 
 </dl>
 
+<dt>@(':t-proof val')</dt>
+
+<dd>By default, the termination proof is lost after admitting a function.
+But if @(':t-proof t') is provided, we will create a theorem without
+any rule-classes that holds the proof of termination for this function and
+measure.</dd>
+
+</dl>
+
 <h4>@('Returns') Specifications</h4>
 
 <p>See @(see returns-specifiers)</p>
@@ -323,7 +332,8 @@ some kind of separator!</p>
             :prepwork
             :verbosep
             :progn
-            :hooks)
+            :hooks
+            :t-proof)
           acl2::*xargs-keywords*))
 
 
@@ -616,6 +626,7 @@ some kind of separator!</p>
    kwd-alist   ;; keyword options passed to define
    returnspecs ;; returns specifiers, already parsed
 
+   t-proof     ;; the full event to prove the required termination for this function
    main-def    ;; the full defun[d] event for the function
    macro       ;; macro wrapper (if necessary), nil or a defmacro event
    raw-formals ;; not parsed, includes any &optional, &key parts
@@ -643,7 +654,21 @@ some kind of separator!</p>
 (defmacro set-define-current-function (fn)
   `(table define 'current-function ',fn))
 
-
+; -------- Proving termination of some function definition separately -------
+(defun make-termination-proof (thmName thmHints defun)
+  `((make-event 
+        (let* ((state (f-put-global 'last-clause '(t) state))
+               (oldHint (override-hints (w state))))
+          (er-progn
+           (set-override-hints
+            '((pprogn (f-put-global 'last-clause clause state)
+                      (mv 'err nil state))))
+           (mv-let (x y state) ,defun
+                   (declare (ignore x y))
+                   (value `(progn (set-override-hints ,oldHint)
+                                  (defthm ,',thmName ,(cons 'or (@ last-clause))
+                                    :hints ,',thmHints :rule-classes nil)))))))))
+                                    
 ; ----------------- Hooks -----------------------------------------------------
 
 ; WARNING: Undocumented, experimental feature; all details may change.
@@ -779,6 +804,15 @@ some kind of separator!</p>
        ((unless (true-listp prepwork))
         (raise "Error in ~x0: expected :prepwork to be a true-listp, but found ~x1."
                name prepwork))
+               
+       (t-proof    (getarg :t-proof        nil kwd-alist))
+       ; If you can think of a good extension for t-proof, you may relax the
+       ; requirement of booleanp while preserving the old behavior for t and
+       ; nil. It would be nice if you would invent a syntactically generalisable
+       ; extension (s.t. some syntax remains invalid)
+       ((unless (booleanp t-proof))
+        (raise "Error in ~x0: expected :t-proof to be a booleanp, but found ~x1."
+               name prepwork))
 
        (need-macrop (or inline-p (has-macro-args raw-formals)))
        (name-fn     (cond (inline-p
@@ -816,7 +850,11 @@ some kind of separator!</p>
                                    ,extended-body)
                         extended-body))
 
-       (xargs         (get-xargs-from-kwd-alist kwd-alist))
+       (xargs         (get-xargs-from-kwd-alist (remove-from-alist ':hints kwd-alist)))
+       (t-hints       (getarg :hints nil kwd-alist))
+       (t-proof-name  (if t-proof (ACL2::packn (LIST name-fn '|-| t-proof)) nil))
+       (new-hint      (if t-proof `('(:by ,t-proof-name)) t-hints))
+       (xargs         (if new-hint (LIST* ':hints new-hint xargs) xargs))
 
        (returnspecs   (parse-returnspecs name returns world))
        (defun-sym     (if enabled-p 'defun 'defund))
@@ -885,7 +923,9 @@ some kind of separator!</p>
                   :macro       macro
                   :raw-formals raw-formals
                   :formals     formals
-                  :rest-events rest-events)))
+                  :rest-events rest-events
+                  :t-proof     (if t-proof (cons t-proof-name t-hints) nil)
+                  )))
 
 (defun add-signature-from-guts (guts)
   (b* (((defguts guts) guts))
@@ -929,7 +969,8 @@ some kind of separator!</p>
                             guts.kwd-alist))
 
        (set-ignores (get-set-ignores-from-kwd-alist guts.kwd-alist))
-       (prognp (getarg :progn nil guts.kwd-alist)))
+       (prognp      (getarg :progn         nil guts.kwd-alist))
+       )
 
     `(progn
        (,(if prognp 'defsection-progn 'defsection) ,guts.name
@@ -940,6 +981,8 @@ some kind of separator!</p>
          ,@(and prepwork
                 `((with-output :stack :pop
                     (progn . ,prepwork))))
+
+         ,@(and guts.t-proof (make-termination-proof (car guts.t-proof) (cdr guts.t-proof) guts.main-def))
 
          ;; Define the macro first, so that it can be used in recursive calls,
          ;; e.g., to take advantage of nicer optional/keyword args.
@@ -963,7 +1006,7 @@ some kind of separator!</p>
            (if (logic-mode-p ',guts.name-fn (w state))
                '(in-theory (enable ,guts.name))
              '(value-triple :invisible))))
-
+         
          (make-event
           (let* ((world (w state))
                  (events (returnspec-thms ',guts.name ',guts.name-fn ',guts.returnspecs world)))
