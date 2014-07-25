@@ -170,16 +170,20 @@ endmodule
        ((mv clk-expr clk-port clk-portdecl clk-netdecl) (vl-occform-mkport "clk" :vl-input 1))
        ((mv d-expr d-port d-portdecl d-netdecl)         (vl-occform-mkport "d" :vl-input n))
 
-       ((mv qreg-expr qreg-decls qreg-insts qreg-addmods)
+       ;; note qregdecls are netdecls not regdecls
+       ((mv qreg-expr qreg-decls qreg-assigns)
+        ;; this represents the final delay of q, which we don't need if
+        ;; delay=0.  in that case rather than creating a new redundant wire we
+        ;; just use q itself in the place of qreg above.
         (b* (((when (zp del))
-              ;; no need to use an extra wire for qreg
-              (mv q-expr nil nil nil))
-             ((mv qreg-expr qreg-decl) (vl-occform-mkwire "qreg" n))
-             (addmods (vl-make-n-bit-delay-m n del :vecp t))
-             (delnd (car addmods))
-             (qreg-inst (vl-simple-inst delnd "qoutinst" q-expr qreg-expr)))
-          (mv qreg-expr (list qreg-decl) (list qreg-inst) addmods)))
-
+              (mv q-expr nil nil))
+             ((mv qregexpr qregdecl)
+              (vl-occform-mkwire "qreg" n))
+             (ddelassign (make-vl-assign :lvalue q-expr
+                                         :expr qregexpr
+                                         :delay (vl-make-constdelay del)
+                                         :loc *vl-fakeloc*)))
+          (mv qregexpr (list qregdecl) (list ddelassign))))
 
        ;; non-propagating atts
        (triggers (make-vl-nonatom :op :vl-concat
@@ -190,11 +194,11 @@ endmodule
                    (cons "VL_NON_PROP_BOUND" qreg-expr)
                    (list "VL_STATE_DELAY")))
        ((mv qdel-expr qdel-decl)      (vl-occform-mkwire "qdel" n))
-       (addmods (vl-make-n-bit-delay-1 n :vecp t))
-       (deln1 (car addmods))
-       (qdel-inst (change-vl-modinst
-                   (vl-simple-inst deln1 "qdelinst" qdel-expr qreg-expr)
-                   :atts atts))
+       (qdel-assign (make-vl-assign :lvalue qdel-expr
+                                    :expr qreg-expr
+                                    :delay (vl-make-constdelay 1)
+                                    :loc *vl-fakeloc*
+                                    :atts atts))
 
        (qreg-assign (make-vl-assign
                      :lvalue qreg-expr
@@ -210,14 +214,13 @@ endmodule
                             ;; properly non-propagating
                             :atts (list (list "VL_LATCH_MUX")))
                      :loc *vl-fakeloc*)))
-    (cons (make-vl-module :name      name
+    (list (make-vl-module :name      name
                           :origname  name
                           :ports     (list q-port clk-port d-port)
                           :portdecls (list q-portdecl clk-portdecl d-portdecl)
                           :netdecls  (list* q-netdecl clk-netdecl d-netdecl
                                             qdel-decl qreg-decls)
-                          :assigns (list qreg-assign)
-                          :modinsts  (cons qdel-inst qreg-insts)
+                          :assigns (list* qreg-assign qdel-assign qreg-assigns)
+                          ;; :modinsts  (cons qdel-inst qreg-insts)
                           :minloc    *vl-fakeloc*
-                          :maxloc    *vl-fakeloc*)
-          (append addmods qreg-addmods))))
+                          :maxloc    *vl-fakeloc*))))

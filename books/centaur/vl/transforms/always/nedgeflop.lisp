@@ -507,17 +507,16 @@ wire [3:0] dfull;
 // note maybe mark these as non-propagating delays:
 // everything that depends on these depends on qreg
 // q only updates when one of the clocks toggles
-vl_1_bit_delay1 clk0delinst (clk0del, clk0);
-vl_1_bit_delay1 clk1delinst (clk1del, clk1);
-vl_1_bit_delay1 clk2delinst (clk2del, clk2);
-vl_4_bit_delay1 d0delinst (d0del, d0);
-vl_4_bit_delay1 d1delinst (d1del, d1);
-vl_4_bit_delay1 d2delinst (d2del, d2);
-vl_4_bit_delay1 qdelinst (qdel, qreg);
+assign #1 clk0del = clk0;
+assign #1 clk1del = clk1;
+assign #1 clk2del = clk2;
+assign #1 d0del = d0;
+assign #1 d1del = d1;
+assign #1 d2del = d2;
+assign #1 qdel = qreg;
 
 // this one is a propagating delay
-vl_4_bit_delay2 qoutinst (q, qreg);
-
+assign #2 q = qreg;
 
 assign clk0edge = clk0 & ~clk0del;
 assign clk1edge = clk1 & ~clk1del;
@@ -596,6 +595,22 @@ endmodule
      :finalwidth 1
      :finaltype :vl-unsigned)))
 
+(define vl-make-delay-assigns ((lhses vl-exprlist-p)
+                               (rhses vl-exprlist-p)
+                               (delay-amt natp)
+                               (atts vl-atts-p))
+  :guard (equal (len lhses)
+                (len rhses))
+  :returns (assigns vl-assignlist-p)
+  (if (atom lhses)
+      nil
+    (cons (make-vl-assign :lvalue (car lhses)
+                          :expr (car rhses)
+                          :delay (vl-make-constdelay delay-amt)
+                          :atts atts
+                          :loc *vl-fakeloc*)
+          (vl-make-delay-assigns (cdr lhses) (cdr rhses) delay-amt atts))))
+
 (def-vl-modgen vl-make-nedgeflop-vec (width nedges delay)
   :short "Generate a w-bit wide, n-edge flop with output delay d"
   :guard (and (posp width)
@@ -614,20 +629,20 @@ endmodule
        ((mv dexprs dports dportdecls dnetdecls) (vl-occform-mkports "d" 0 nedges :dir :vl-input :width width))
        ((mv clkexprs clkports clkportdecls clknetdecls) (vl-occform-mkports "clk" 0 nedges :dir :vl-input :width 1))
 
-
        ;; note qregdecls are netdecls not regdecls
-       ((mv qregexpr qregdecls qreginsts qregmods)
+       ((mv qregexpr qregdecls qregassigns)
         ;; this represents the final delay of q, which we don't need if
         ;; delay=0.  in that case rather than creating a new redundant wire we
         ;; just use q itself in the place of qreg above.
         (b* (((when (zp delay))
-              (mv qexpr nil nil nil))
+              (mv qexpr nil nil))
              ((mv qregexpr qregdecl)
               (vl-occform-mkwire "qreg" width))
-             (ddelnds (vl-make-n-bit-delay-m width delay :vecp t))
-             (ddelnd (Car ddelnds))
-             (qoutinst (vl-simple-inst ddelnd "qoutinst" qexpr qregexpr)))
-          (mv qregexpr (list qregdecl) (list qoutinst) ddelnds)))
+             (ddelassign (make-vl-assign :lvalue qexpr
+                                         :expr qregexpr
+                                         :delay (vl-make-constdelay delay)
+                                         :loc *vl-fakeloc*)))
+          (mv qregexpr (list qregdecl) (list ddelassign))))
 
        ;; non-propagating atts
        (clkconcat (make-vl-nonatom
@@ -640,22 +655,17 @@ endmodule
                    (list "VL_STATE_DELAY")))
 
        ((mv clkdelexprs clkdeldecls) (vl-occform-mkwires "clkdel" 0 nedges :width 1))
-       (del11 *vl-1-bit-delay-1*)
-       (clkdelinsts (vl-modinsts-add-atts
-                     (vl-simple-inst-list del11 "clkdelinst" clkdelexprs clkexprs)
-                     atts))
+       (clkdel-assigns (vl-make-delay-assigns clkdelexprs clkexprs 1 atts))
 
        ((mv ddelexprs ddeldecls) (vl-occform-mkwires "ddel" 0 nedges :width width))
-       (delw1s (vl-make-n-bit-delay-1 width :vecp t))
-       (delw1 (car delw1s))
-       (ddelinsts (vl-modinsts-add-atts
-                   (vl-simple-inst-list delw1 "ddelinst" ddelexprs dexprs)
-                   atts))
+       (ddel-assigns (vl-make-delay-assigns ddelexprs dexprs 1 atts))
 
        ((mv qdelexpr qdeldecl) (vl-occform-mkwire "qdel" width))
-       (qdelinst (change-vl-modinst
-                  (vl-simple-inst delw1 "qdelinst" qdelexpr qregexpr)
-                  :atts atts))
+       (qdel-assigns (list (make-vl-assign :lvalue qdelexpr
+                                           :expr qregexpr
+                                           :delay (vl-make-constdelay 1)
+                                           :loc *vl-fakeloc*
+                                           :atts atts)))
 
        ((mv clkedgeexprs clkedgedecls) (vl-occform-mkwires "clkedge" 0 nedges :width 1))
        (clkedge-assigns (vl-nedgeflop-clkedge-assigns clkedgeexprs clkexprs clkdelexprs))
@@ -694,17 +704,22 @@ endmodule
                                         ,@clkedgedecls
                                         ,anyedgedecl
                                         ,dfulldecl)
-                            :assigns `(,@clkedge-assigns
+                            :assigns `(,@qregassigns
+                                       ,@clkdel-assigns
+                                       ,@ddel-assigns
+                                       ,@qdel-assigns
+                                       ,@clkedge-assigns
                                        ,anyedge-assign
                                        ,dfull-assign
                                        ,qassign)
-                            :modinsts `(,@clkdelinsts
-                                        ,@ddelinsts
-                                        ,@qreginsts
-                                        ,qdelinst)
+                            ;; :modinsts `(,@clkdelinsts
+                            ;;             ,@ddelinsts
+                            ;;             ,@qreginsts
+                            ;;             ,qdelinst)
                             :minloc *vl-fakeloc*
                             :maxloc *vl-fakeloc*)))
-    (list* mod del11 (append delw1s qregmods))))
+    (list mod ;; del11 (append delw1s qregmods)
+          )))
 
 
 #||

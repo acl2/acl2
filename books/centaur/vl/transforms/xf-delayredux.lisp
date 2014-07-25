@@ -38,6 +38,13 @@
                   (iff (first x)
                        (consp x)))))
 
+(define vl-make-constdelay ((n natp))
+  :returns (del vl-gatedelay-p)
+  (let ((expr (vl-make-index n)))
+    (make-vl-gatedelay :rise expr
+                       :fall expr
+                       :high expr)))
+
 (defsection delayredux
   :parents (transforms)
   :short "Convert delays into explicit module instances."
@@ -422,7 +429,7 @@ like this:</p>
 
 (define vl-assign-delayredux ((x vl-assign-p)
                               (delta vl-delta-p)
-                              &key vecp)
+                              &key vecp state-onlyp)
   :returns (mv (new-x vl-assign-p :hyp :fguard)
                (delta vl-delta-p  :hyp :fguard))
   :short "Remove the delay from an assignment by introducing an explicit delay
@@ -455,6 +462,10 @@ module."
         ;; Goofy, explicit zero delay -- just drop it from this assignment.
         (mv (change-vl-assign x :delay nil) delta))
 
+       ((when (and state-onlyp (not (hons-assoc-equal "VL_STATE_DELAY" x.atts))))
+        ;; Drop plain tick delays, i.e. ones that are not stateholding
+        (mv (change-vl-assign x :delay nil) delta))
+
        ((vl-delta delta) delta)
 
        (addmods           (vl-make-n-bit-delay-m width delay :vecp vecp))
@@ -485,13 +496,13 @@ module."
 
 (define vl-assignlist-delayredux ((x vl-assignlist-p)
                                   (delta vl-delta-p)
-                                  &key vecp)
+                                  &key vecp state-onlyp)
   :returns (mv (new-x vl-assignlist-p :hyp :fguard)
                (delta vl-delta-p      :hyp :fguard))
   (b* (((when (atom x))
         (mv nil delta))
-       ((mv car delta) (vl-assign-delayredux (car x) delta :vecp vecp))
-       ((mv cdr delta) (vl-assignlist-delayredux (cdr x) delta :vecp vecp)))
+       ((mv car delta) (vl-assign-delayredux (car x) delta :vecp vecp :state-onlyp state-onlyp))
+       ((mv cdr delta) (vl-assignlist-delayredux (cdr x) delta :vecp vecp :state-onlyp state-onlyp)))
     (mv (cons car cdr) delta)))
 
 
@@ -605,7 +616,7 @@ module."
 
 (define vl-gateinst-delayredux ((x vl-gateinst-p)
                                 (delta vl-delta-p)
-                                &key vecp)
+                                &key vecp state-onlyp)
   :returns (mv (new-x vl-gateinst-p :hyp :fguard)
                (delta vl-delta-p    :hyp :fguard))
   (b* (((vl-gateinst x) x)
@@ -625,6 +636,11 @@ module."
        ((when (zp amount))
         ;; Goofy, explicit zero delay -- just drop it from this gateinst.
         ;; BOZO is this really okay?
+        (mv (change-vl-gateinst x :delay nil) delta))
+
+       ((when (and state-onlyp (not (hons-assoc-equal "VL_STATE_DELAY" x.atts))))
+        ;; Drop plain tick delays, i.e. ones that are not stateholding
+        ;; BOZO make this a simpconfig option
         (mv (change-vl-gateinst x :delay nil) delta))
 
        (badarg (vl-first-bad-gatearg-for-delayredux x.args))
@@ -648,16 +664,16 @@ module."
 
 (define vl-gateinstlist-delayredux ((x vl-gateinstlist-p)
                                     (delta vl-delta-p)
-                                    &key vecp)
+                                    &key vecp state-onlyp)
   :returns (mv (new-x vl-gateinstlist-p :hyp :fguard)
                (delta vl-delta-p        :hyp :fguard))
   (b* (((when (atom x))
         (mv nil delta))
-       ((mv car delta) (vl-gateinst-delayredux (car x) delta :vecp vecp))
-       ((mv cdr delta) (vl-gateinstlist-delayredux (cdr x) delta :vecp vecp)))
+       ((mv car delta) (vl-gateinst-delayredux (car x) delta :vecp vecp :state-onlyp state-onlyp))
+       ((mv cdr delta) (vl-gateinstlist-delayredux (cdr x) delta :vecp vecp :state-onlyp state-onlyp)))
     (mv (cons car cdr) delta)))
 
-(define vl-module-delayredux ((x vl-module-p) &key vecp)
+(define vl-module-delayredux ((x vl-module-p) &key vecp state-onlyp)
   :returns (mv (new-x   vl-module-p     :hyp :fguard)
                (addmods vl-modulelist-p :hyp :fguard))
   (b* (((vl-module x) x)
@@ -668,8 +684,8 @@ module."
        (delta (change-vl-delta delta
                                :netdecls x.netdecls
                                :modinsts x.modinsts))
-       ((mv assigns delta)   (vl-assignlist-delayredux x.assigns delta :vecp vecp))
-       ((mv gateinsts delta) (vl-gateinstlist-delayredux x.gateinsts delta :vecp vecp))
+       ((mv assigns delta)   (vl-assignlist-delayredux x.assigns delta :vecp vecp :state-onlyp state-onlyp))
+       ((mv gateinsts delta) (vl-gateinstlist-delayredux x.gateinsts delta :vecp vecp :state-onlyp state-onlyp))
        ((vl-delta delta)     (vl-free-delta delta))
 
        (new-x (change-vl-module
@@ -686,29 +702,29 @@ module."
     (mv new-x delta.addmods))
   ///
   (defthm vl-module->name-of-vl-module-delayredux
-    (equal (vl-module->name (mv-nth 0 (vl-module-delayredux x :vecp vecp)))
+    (equal (vl-module->name (mv-nth 0 (vl-module-delayredux x :vecp vecp :state-onlyp state-onlyp)))
            (vl-module->name x))))
 
-(define vl-modulelist-delayredux-aux ((x vl-modulelist-p) &key vecp)
+(define vl-modulelist-delayredux-aux ((x vl-modulelist-p) &key vecp state-onlyp)
   :returns (mv (new-x   vl-modulelist-p :hyp :fguard)
                (addmods vl-modulelist-p :hyp :fguard))
   (b* (((when (atom x))
         (mv nil nil))
-       ((mv car car-addmods) (vl-module-delayredux (car x) :vecp vecp))
-       ((mv cdr cdr-addmods) (vl-modulelist-delayredux-aux (cdr x) :vecp vecp)))
+       ((mv car car-addmods) (vl-module-delayredux (car x) :vecp vecp :state-onlyp state-onlyp))
+       ((mv cdr cdr-addmods) (vl-modulelist-delayredux-aux (cdr x) :vecp vecp :state-onlyp state-onlyp)))
     (mv (cons car cdr)
         (append-without-guard car-addmods cdr-addmods)))
   ///
   (defthm vl-modulelist->names-of-vl-modulelist-delayredux-aux
-    (b* (((mv new-x ?addmods) (vl-modulelist-delayredux-aux x :vecp vecp)))
+    (b* (((mv new-x ?addmods) (vl-modulelist-delayredux-aux x :vecp vecp :state-onlyp state-onlyp)))
       (equal (vl-modulelist->names new-x)
              (vl-modulelist->names x)))))
 
 
-(define vl-modulelist-delayredux ((x vl-modulelist-p) &key vecp)
+(define vl-modulelist-delayredux ((x vl-modulelist-p) &key vecp state-onlyp)
   :returns (new-x vl-modulelist-p :hyp :fguard)
   (b* (((mv x-prime addmods)
-        (vl-modulelist-delayredux-aux x :vecp vecp))
+        (vl-modulelist-delayredux-aux x :vecp vecp :state-onlyp state-onlyp))
        (merged (union (mergesort x-prime)
                       (mergesort addmods)))
        ((unless (uniquep (vl-modulelist->names merged)))
@@ -717,13 +733,13 @@ module."
       merged)
   ///
   (defthm no-duplicatesp-equal-of-vl-modulelist->names-of-vl-modulelist-delayredux
-    (no-duplicatesp-equal (vl-modulelist->names (vl-modulelist-delayredux x :vecp vecp)))))
+    (no-duplicatesp-equal (vl-modulelist->names (vl-modulelist-delayredux x :vecp vecp :state-onlyp state-onlyp)))))
 
 
-(define vl-design-delayredux ((x vl-design-p) &key vecp)
+(define vl-design-delayredux ((x vl-design-p) &key vecp state-onlyp)
   :returns (new-x vl-design-p)
   (b* ((x (vl-design-fix x))
        ((vl-design x) x))
-    (change-vl-design x :mods (vl-modulelist-delayredux x.mods :vecp vecp))))
+    (change-vl-design x :mods (vl-modulelist-delayredux x.mods :vecp vecp :state-onlyp state-onlyp))))
 
 
