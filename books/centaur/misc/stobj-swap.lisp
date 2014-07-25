@@ -36,6 +36,15 @@
 
 ;; Defines a function called swap-stobj1.  Stobj2 should be another stobj
 ;; declared congruent to stobj1.
+
+;; Implementation note: ACL2 sometimes assumes that the stobj returned by a
+;; form is the same object (i.e. pointer) as the corresponding stobj that was
+;; input to that form.  E.g., stobj-let has an optimization that assumes stobj
+;; fields that are updated do not actually need to be reinstalled in the stobj
+;; that they came from -- it'll just be the same pointer, so reinstalling them
+;; would be no-ops.  This has the consequence that we can't just do (in the raw
+;; Lisp executable version of our swap) what we say we're doing in the non-exec
+;; version, namely, return the pointers, just swapped.
 (defmacro def-stobj-swap (stobj1 stobj2)
   (let* ((swap-nx (intern-in-package-of-symbol
                    (concatenate 'string "SWAP-" (symbol-name stobj1) "S-NX")
