@@ -198,7 +198,7 @@
 
     :long (concatenate
            'string
-           "<p>This book supports the @(see fixtype) typed reasoning approach
+           "<p>This book supports the @(see fty) typed reasoning approach
 by associating fixing functions and equivalence relations with many of the
 basic ACL2 built-in types.  This book makes the following associations (all in
 the ACL2 package):</p>

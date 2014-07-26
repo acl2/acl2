@@ -364,27 +364,7 @@
 
 (defn hons-duplicates (l)
   (hons-duplicates1 l nil))
-         
 
-
-(defn hons-remove-duplicates1 (l tab)
-  (cond ((atom l)
-         (ansfl nil tab))
-        ((hons-get (car l) tab)
-         (hons-remove-duplicates1 (cdr l) tab))
-        (t
-         (cons (car l)
-               (hons-remove-duplicates1 (cdr l)
-                                        (hons-acons (car l) t tab))))))
-
-
-
-(defn hons-remove-duplicates (l)
-
-; preserves order, deleting later occurrences.  Note that this is not the same
-; as remove-duplicates, since that deletes the earlier occurrences.
-
-  (hons-remove-duplicates1 l '*hons-remove-duplicates*))
 
 
 

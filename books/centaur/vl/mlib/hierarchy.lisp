@@ -429,10 +429,12 @@ report.\" It may not be in use any more.</p>"
   (verify-guards vl-modulelist-highlevel))
 
 
-
-(fty::defalist vl-depalist
-  :key-type stringp
-  :val-type string-listp)
+(xdoc::without-xdoc
+  ;; suppress fty-generated docs since they conflict with the function vl-depalist,
+  ;; which constructs a depalist.
+  (fty::defalist vl-depalist
+    :key-type stringp
+    :val-type string-listp))
 
 (defalist vl-depalist-p (x)
   :key (stringp x)
@@ -440,6 +442,7 @@ report.\" It may not be in use any more.</p>"
   :keyp-of-nil nil
   :valp-of-nil t
   :already-definedp t
+  :parents (hierarchy)
   :short "Associates modules names to the lists of modules that instantiate them."
   :long "<p>Typically these are produced by @(see vl-depalist).</p>")
 

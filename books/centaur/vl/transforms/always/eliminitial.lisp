@@ -39,8 +39,8 @@
 warnings) to the affected modules."
 
   :long "<p>This transform can be run at any time, but it is typically done
-somewhere before @(see synthalways), since it will not process modules with
-@('initial') statements.</p>
+somewhere before @(see always-top), since some always-block code may be
+reluctant to process modules with @('initial') statements.</p>
 
 <p>Initial statements can be important for simulation, but are meaningless if
 we want to consider the post synthesis/build behavior of the actual part.

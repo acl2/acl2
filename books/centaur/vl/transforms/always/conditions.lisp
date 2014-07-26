@@ -40,7 +40,7 @@
                 (and (vl-expr-p rhs)
                      (equal (vl-expr->finalwidth rhs) 1)
                      (equal (vl-expr->finaltype rhs) :vl-unsigned)))
-  :parents (if-statements)
+  :parents (vl-ifstmt)
   :short "Construct a one-bit wide expression that is equivalent to
 @('condition') in the context of @('if (condition) ...')."
 
@@ -86,7 +86,7 @@ only one bit wide to begin with, then we just return it unchanged.</p>"
                 (and (vl-expr-p rhs)
                      (equal (vl-expr->finalwidth rhs) 1)
                      (equal (vl-expr->finaltype rhs) :vl-unsigned)))
-  :parents (if-statements)
+  :parents (vl-ifstmt)
   :short "Construct a one-bit wide expression that is equivalent to
 @('!condition')."
 
@@ -140,7 +140,7 @@ is:</p>
                 (and (vl-expr-p ans)
                      (equal (vl-expr->finalwidth ans) 1)
                      (equal (vl-expr->finaltype ans) :vl-unsigned)))
-  :parents (if-statements)
+  :parents (vl-ifstmt)
   :short "Join conditions from nested @('if') expressions."
   :long "<p>For compatibility with @(see oprewrite), we actually build
 something like @('(|outer-cond & |inner-cond)'), except we omit the reduction

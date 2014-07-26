@@ -33,63 +33,73 @@
 (include-book "paramdecls")
 (local (include-book "../../util/arithmetic"))
 
-; Verilog-2005 Grammar for regs and variables, after filtering out some
-; duplication and indirection:
-;
-;    integer_declaration  ::= 'integer'  list_of_variable_identifiers ';'
-;    real_declaration     ::= 'real'     list_of_variable_identifiers ';'
-;    time_declaration     ::= 'time'     list_of_variable_identifiers ';'
-;    realtime_declaration ::= 'realtime' list_of_variable_identifiers ';'
-;    reg_declaration      ::= 'reg' [ 'signed' ] [ range ] list_of_variable_identifiers ';'
-;
-;    list_of_variable_identifiers ::= variable_type { ',' variable_type }
-;
-;    variable_type ::= identifier { range }
-;                    | identifier '=' expression
-;
-;
-; For SystemVerilog-2012 this is quite a bit more complex.  Quick rundown:
-;    - additional 'const', 'var', and lifetime specifiers
-;    - variables can be of many new built-in or user-defined types
-;    - initializers can have "new", etc., instead of just being expressions
-;    - ranges for each variable_type can now be lists of variable_dimensions
+(defxdoc parse-blockitems
+  :short "Functions for parsing Verilog and SystemVerilog block items."
 
-;
-; The new grammar looks like this:
-;
-;    data_declaration ::=
-;        ['const'] ['var'] [lifetime] data_type_or_implicit list_of_variable_decl_assignments ';'
-;      | ...
-;
-;    data_type_or_implicit ::= data_type
-;                            | implicit_data_type
-;
-;    implicit_data_type ::= [ signing ] { packed_dimension }
-;
-;    list_of_variable_decl_assignments ::= variable_decl_assignment { ',' variable_decl_assignment }
-;
-;    variable_decl_assignment ::=
-;         identifier { variable_dimension } [ '=' expression ]
-;       | identifier unsized_dimension { variable_dimension } [ '=' dynamic_array_new ]
-;       | identifier [ '=' class_new ]
-;
-;    dynamic_array_new ::= new [ expression ] [ ( expression ) ]
-;
-;    class_new ::= [ class_scope ] new [ ( list_of_arguments ) ]
-;                | new expression
-;
-;    variable_dimension ::= unsized_dimension
-;                         | unpacked_dimension
-;                         | associative_dimension
-;                         | queue_dimension
-;
-;    unsized_dimension     ::= '[' ']'
-;    packed_dimension      ::= '[' constant_range ']' | unsized_dimension
-;    associative_dimension ::= '[' data_type ']' | '[' '*' ']'
-;    queue_dimension       ::= '[' '$' [ ':' expression ] ']'
-;
-;    list_of_arguments ::= [expression] { ',' [expression] } { ',' '.' identifier '(' [expression] ')' }
-;                        | '.' identifier '(' [expression] ')' { ',' '.' identifier '(' [expression] ')' }
+  :long "<p>The Verilog-2005 grammar for regs and variables is, after filtering
+out some duplication and indirection:</p>
+
+@({
+    integer_declaration  ::= 'integer'  list_of_variable_identifiers ';'
+    real_declaration     ::= 'real'     list_of_variable_identifiers ';'
+    time_declaration     ::= 'time'     list_of_variable_identifiers ';'
+    realtime_declaration ::= 'realtime' list_of_variable_identifiers ';'
+    reg_declaration      ::= 'reg' [ 'signed' ] [ range ] list_of_variable_identifiers ';'
+
+    list_of_variable_identifiers ::= variable_type { ',' variable_type }
+
+    variable_type ::= identifier { range }
+                    | identifier '=' expression
+})
+
+<p>For SystemVerilog-2012 this is quite a bit more complex.  Quick rundown:</p>
+
+<ul>
+<li>additional 'const', 'var', and lifetime specifiers</li>
+<li>variables can be of many new built-in or user-defined types</li>
+<li>initializers can have \"new\", etc., instead of just being expressions</li>
+<li>ranges for each variable_type can now be lists of variable_dimensions</li>
+</ul>
+
+<p>The new grammar looks like this:</p>
+
+@({
+    data_declaration ::=
+        ['const'] ['var'] [lifetime] data_type_or_implicit list_of_variable_decl_assignments ';'
+      | ...
+
+    data_type_or_implicit ::= data_type
+                            | implicit_data_type
+
+    implicit_data_type ::= [ signing ] { packed_dimension }
+
+    list_of_variable_decl_assignments ::= variable_decl_assignment { ',' variable_decl_assignment }
+
+    variable_decl_assignment ::=
+         identifier { variable_dimension } [ '=' expression ]
+       | identifier unsized_dimension { variable_dimension } [ '=' dynamic_array_new ]
+       | identifier [ '=' class_new ]
+
+    dynamic_array_new ::= new [ expression ] [ ( expression ) ]
+
+    class_new ::= [ class_scope ] new [ ( list_of_arguments ) ]
+                | new expression
+
+    variable_dimension ::= unsized_dimension
+                         | unpacked_dimension
+                         | associative_dimension
+                         | queue_dimension
+
+    unsized_dimension     ::= '[' ']'
+    packed_dimension      ::= '[' constant_range ']' | unsized_dimension
+    associative_dimension ::= '[' data_type ']' | '[' '*' ']'
+    queue_dimension       ::= '[' '$' [ ':' expression ] ']'
+
+    list_of_arguments ::= [expression] { ',' [expression] } { ',' '.' identifier '(' [expression] ')' }
+                        | '.' identifier '(' [expression] ')' { ',' '.' identifier '(' [expression] ')' }
+})")
+
+(local (xdoc::set-default-parents parse-blockitems))
 
 
 ; -------------------------------------------------------------------------

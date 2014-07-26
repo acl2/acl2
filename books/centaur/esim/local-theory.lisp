@@ -63,21 +63,24 @@
                   (set-difference-equal a keys)))
   :hints(("Goal" :in-theory (enable set-difference-equal))))
 
-(defthm hons-remove-duplicates1-is-remove-duplicates
-  (equal (hons-remove-duplicates1 lst tab)
-         (rev (set-difference-equal
-               (remove-duplicates-equal (rev lst))
-               (alist-keys tab))))
-  :hints(("Goal" :in-theory (enable rev set-difference-equal))))
 
 (defthm set-difference-equal-nil
   (equal (set-difference-equal x nil)
          (append x nil))
   :hints(("Goal" :in-theory (enable set-difference-equal))))
 
-(defthm hons-remove-duplicates-is-remove-duplicates
-  (equal (hons-remove-duplicates lst)
-         (rev (remove-duplicates-equal (rev lst)))))
+;; (defthm hons-remove-duplicates1-is-remove-duplicates
+;;   (equal (hons-remove-duplicates1 lst tab)
+;;          (rev (set-difference-equal
+;;                (remove-duplicates-equal (rev lst))
+;;                (alist-keys tab))))
+;;   :hints(("Goal" :in-theory (enable rev set-difference-equal))))
+
+;; (defthm hons-remove-duplicates-is-remove-duplicates
+;;   (equal (hons-remove-duplicates lst)
+;;          (rev (remove-duplicates-equal (rev lst)))))
+
+(in-theory (enable hons-remove-duplicates))
 
 (defthm hons-dups-p1-when-table-member
   (implies (and (member-equal x lst)

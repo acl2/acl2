@@ -241,8 +241,6 @@ are passed to a @('defsection') for this definition.</dd>
 itself, for instance it might include @('-aux') functions or local lemmas
 needed for termination.</dd>
 
-</dl>
-
 <dt>@(':t-proof val')</dt>
 
 <dd>By default, the termination proof is lost after admitting a function.

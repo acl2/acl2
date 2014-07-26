@@ -539,9 +539,10 @@ expression are natural numbers."
              (vl-exprlist-widthsfixed-p (cdr x)))
       t))
   ///
-  (deflist vl-exprlist-widthsfixed-p (x)
-    (vl-expr-widthsfixed-p x)
-    :already-definedp t)
+  (xdoc::without-xdoc
+    (deflist vl-exprlist-widthsfixed-p (x)
+      (vl-expr-widthsfixed-p x)
+      :already-definedp t))
 
   ;; BOZO doesn't work? (deffixequiv-mutual vl-expr-widthsfixed-p)
 

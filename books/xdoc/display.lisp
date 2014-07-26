@@ -432,7 +432,7 @@
        (short    (cdr (assoc :short x)))
 ;       (- (cw "Preprocessing...~%"))
        ;; Use NIL as the topics-fal as a simple way to suppress autolinks...
-       ((mv short-acc state) (preprocess-main short
+       ((mv short-acc state) (preprocess-main short name
                                               nil ;; no topics-fal, just keep it simple
                                               base-pkg
                                               state

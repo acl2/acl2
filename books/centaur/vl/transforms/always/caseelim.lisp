@@ -49,14 +49,13 @@
 
 (defxdoc caseelim
   :parents (transforms)
-  :short "Replace simple @(see case-statements) with equivalent @(see
-if-statements)."
+  :short "Replace simple @(see vl-casestmt)s with equivalent @(see
+vl-ifstmt)s."
 
-  :long "<p>This rewrite eliminates @(see case-statements) into @(see
-if-statements).  It requires that sizes have been computed that the test
-expressions and match expressions agree on their sizes.  If these conditions
-are not met, it may issue non-fatal warnings and fail to rewrite the case
-statements.</p>
+  :long "<p>This rewrite eliminates case statements into if statements.  It
+requires that sizes have been computed that the test expressions and match
+expressions agree on their sizes.  If these conditions are not met, it may
+issue non-fatal warnings and fail to rewrite the case statements.</p>
 
 <p>This transform is practically useful for supporting designs that involve
 case statements, and we believe it is basically reasonable.  But Verilog's case
@@ -131,7 +130,7 @@ these are terrible, non-conservative semantics, and we think our behavior is
 about as reasonable as possible.</p>")
 
 (defxdoc case-statement-problems
-  :parents (case-statements caseelim)
+  :parents (vl-casestmt caseelim)
   :short "The official behavior of @('case'), @('casez') and @('casex') is
 problematic with respect to X and Z values."
 

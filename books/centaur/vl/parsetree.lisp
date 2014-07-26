@@ -229,7 +229,7 @@ subset of the valid @('data_type')s:</p>
 
 
 (define vl-enumbasekind-p (x)
-  :parents (vl-enumbasetype-p x)
+  :parents (vl-enumbasetype-p)
   :short "Kinds of base types for enums."
   :long "<p>The SystemVerilog-2012 rules for @('enum_base_type') are:</p>
 

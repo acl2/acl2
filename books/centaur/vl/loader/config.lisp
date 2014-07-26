@@ -130,7 +130,7 @@
    (flush-tries    posp
                    :rule-classes :type-prescription
                    :default 10000
-                   "How many rounds of @(see vl-flush-out-modules) are
+                   "How many rounds of @(see vl-flush-out-descriptions) are
                     allowed.")
 
    (mintime        mintime-p

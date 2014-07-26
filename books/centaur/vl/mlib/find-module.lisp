@@ -110,10 +110,10 @@ modules.  See @(see vl-fast-find-module) for a faster alternative.</p>"
 
   (deffixequiv vl-find-module :args ((mods vl-modulelist-p))))
 
-
-(fty::defalist vl-modalist
-  :key-type stringp
-  :val-type vl-module-p)
+(xdoc::without-xdoc
+  (fty::defalist vl-modalist
+    :key-type stringp
+    :val-type vl-module-p))
 
 (defalist vl-modalist-p (x)
   :key (stringp x)

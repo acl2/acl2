@@ -41,8 +41,8 @@
   :short "Simple pattern matching for recognizing latches."
 
   :long "<p>BOZO eventually we will want to develop something akin to @(see
-flopcode) for dealing with @('always') blocks for latches and combinational
-logic.  But for now our latch recognition is extremely primitive.</p>")
+edgesynth) for dealing with @('always') blocks for latches, but for now our
+latch recognition is extremely primitive.</p>")
 
 (local (xdoc::set-default-parents latchcode))
 

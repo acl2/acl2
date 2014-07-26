@@ -51,6 +51,7 @@
 (include-book "nthcdr")
 (include-book "prefixp")
 (include-book "remove")
+(include-book "remove-duplicates")
 (include-book "repeat")
 (include-book "resize-list")
 (include-book "revappend")

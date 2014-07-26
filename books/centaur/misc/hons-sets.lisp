@@ -30,7 +30,7 @@
 
 
 (in-package "ACL2")
-
+(include-book "std/lists/remove-duplicates" :dir :system)
 (include-book "misc/hons-help2" :dir :system)
 (include-book "equal-sets")
 
@@ -263,29 +263,29 @@
 
 
 
+;; absorbed into std/lists/remove-duplicates
 
-(defthm member-hons-remove-duplicates1
-  (iff (member-equal x (hons-remove-duplicates1 lst al))
-       (and (member-equal x lst)
-            (not (hons-assoc-equal x al))))
-  :hints(("Goal" :in-theory (enable hons-assoc-equal))))
+;; (defthm member-hons-remove-duplicates1
+;;   (iff (member-equal x (hons-remove-duplicates1 lst al))
+;;        (and (member-equal x lst)
+;;             (not (hons-assoc-equal x al))))
+;;   :hints(("Goal" :in-theory (enable hons-assoc-equal))))
 
-(defthm no-duplicatesp-equal-hons-remove-duplicates1
-  (no-duplicatesp-equal (hons-remove-duplicates1 lst al))
-  :hints(("Goal" :in-theory (enable hons-assoc-equal))))
+;; (defthm no-duplicatesp-equal-hons-remove-duplicates1
+;;   (no-duplicatesp-equal (hons-remove-duplicates1 lst al))
+;;   :hints(("Goal" :in-theory (enable hons-assoc-equal))))
 
-(defthm no-duplicatesp-equal-hons-remove-duplicates
-  (no-duplicatesp-equal (hons-remove-duplicates lst)))
+;; (defthm no-duplicatesp-equal-hons-remove-duplicates
+;;   (no-duplicatesp-equal (hons-remove-duplicates lst)))
 
-(defthm member-hons-remove-duplicates
-  (iff (member-equal x (hons-remove-duplicates lst))
-       (member-equal x lst))
-  :hints(("Goal" :in-theory (enable hons-assoc-equal))))
+;; (defthm member-hons-remove-duplicates
+;;   (iff (member-equal x (hons-remove-duplicates lst))
+;;        (member-equal x lst))
+;;   :hints(("Goal" :in-theory (enable hons-assoc-equal))))
 
-
-(defthm set-equiv-hons-remove-duplicates
-  (set-equiv (hons-remove-duplicates lst) lst)
-  :hints (("goal" :in-theory (Disable set-equiv))))
+;; (defthm set-equiv-hons-remove-duplicates
+;;   (set-equiv (hons-remove-duplicates lst) lst)
+;;   :hints (("goal" :in-theory (Disable set-equiv))))
 
 
 

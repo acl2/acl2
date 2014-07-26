@@ -33,7 +33,7 @@
 
 (in-package "ACL2")
 (include-book "xdoc/top" :dir :system)
-(include-book "misc/hons-help" :dir :system)
+(include-book "std/lists/remove-duplicates" :dir :system)
 (include-book "tools/bstar" :dir :system)
 (include-book "arithmetic/nat-listp" :dir :system)
 (local (include-book "arithmetic/top-with-meta" :dir :system))
@@ -196,7 +196,9 @@ it can handle sparse lists well.</li>
 
 (defund hons-remove-duplicates1-tail (l tab acc)
   (declare (xargs :guard t))
-  (cond ((atom l) (ansfl acc tab))
+  (cond ((atom l)
+         (progn$ (fast-alist-free tab)
+                 acc))
         ((hons-get (car l) tab)
          (hons-remove-duplicates1-tail (cdr l) tab acc))
         (t
@@ -559,6 +561,7 @@ it can handle sparse lists well.</li>
  (defsection hons-remove-duplicates1-atom-irrelevance
 
    (local (include-book "centaur/misc/alist-equiv" :dir :system))
+   (local (in-theory (enable hons-remove-duplicates1)))
 
    (local (defun my-induct (x tab1 tab2)
             (if (atom x)
@@ -593,7 +596,8 @@ it can handle sparse lists well.</li>
 
 (verify-guards nat-list-remove-duplicates-exec
   :hints(("Goal"
-          :in-theory (disable max-nat)
+          :in-theory (e/d (hons-remove-duplicates1-of-nil)
+                          (max-nat))
           :restrict ((nat-remove-dups-with-stobj-aux-elim
                       ((al '*hons-remove-duplicates*)))))))
 

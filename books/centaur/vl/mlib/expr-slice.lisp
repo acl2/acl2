@@ -153,9 +153,10 @@ sliceable."
       (and (vl-expr-sliceable-p (car x))
            (vl-exprlist-sliceable-p (cdr x)))))
   ///
-  (deflist vl-exprlist-sliceable-p (x)
-    (vl-expr-sliceable-p x)
-    :already-definedp t)
+  (xdoc::without-xdoc
+    (deflist vl-exprlist-sliceable-p (x)
+      (vl-expr-sliceable-p x)
+      :already-definedp t))
 
   (deffixequiv-mutual vl-expr-sliceable-p))
 

@@ -399,7 +399,7 @@ its flag in the flag-function.</p>")
                        parents
                      (and cliquename (list cliquename)))))
 
-    `((defsection-progn ,guts.name
+    `((defsection ,guts.name
         ,@(and parents `(:parents ,parents))
         ,@(and short   `(:short ,short))
         ,@(and long    `(:long ,long))
@@ -762,7 +762,7 @@ its flag in the flag-function.</p>")
              '(in-theory (enable . ,fnnames))
            '(value-triple :invisible))))
 
-       (defsection-progn rest-events
+       (defsection rest-events-1
          ,@(and want-xdoc-p `(:extension ,name))
          ,@(and returns-induct
                 `((make-event

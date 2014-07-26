@@ -1509,7 +1509,7 @@ place; these annotations can be useful in error messages.</li>
 
 
 (defsection arity-reasoning
-  :parents (vl-op-arity vl-expr-p vl-nonatom-p)
+  :parents (vl-op-arity vl-expr vl-nonatom)
   :short "Rules for reasoning about how many arguments an expression has."
 
   :long "<p>These rules have evolved a lot over time.  The current iteration

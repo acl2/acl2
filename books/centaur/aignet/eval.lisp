@@ -61,8 +61,7 @@ corresponding register input in the <tt>aignet-vals</tt> structure.  For both
 of these node types, @('aignet-eval') assumes that they are already set to the
 desired values, and skips them.  The final result is equivalent to the result
 of @('aignet-vals') after first copying the RI values to the corresponding ROs
-and the inputs from the appropriate frame:
-@(thm aignet-eval-frame-rw)</p>
+and the inputs from the appropriate frame.</p>
 
 <p>For higher-level functions for simulation, see the book \"aignet-sim.lisp\".</p>
 "

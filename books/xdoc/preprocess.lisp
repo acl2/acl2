@@ -43,7 +43,7 @@
 
 ; ----------------- World Lookup Stuff --------------------------
 
-(defun get-formals (fn world)
+(defun get-formals (fn context world)
   (b* ((formals (getprop fn 'formals :bad 'current-acl2-world world))
        ((unless (eq formals :bad))
         formals)
@@ -51,36 +51,35 @@
        ((unless (eq macro-args :bad))
         macro-args))
     (and (xdoc-verbose-p)
-         (cw "; xdoc note: get-formals failed for ~s0::~s1.~%"
-             (symbol-package-name fn) (symbol-name fn)))
+         (cw "; xdoc error in ~x0: get-formals failed for ~x1.~%" context fn))
     (str::cat "Error getting formals for "
               (symbol-package-name fn)
               "::"
               (symbol-name fn))))
 
-(defun get-measure (fn world)
+(defun get-measure (fn context world)
   (b* ((just (getprop fn 'justification nil 'current-acl2-world world))
        ((when just)
         (access justification just :measure)))
     (and (xdoc-verbose-p)
-         (cw "; xdoc note: get-measure failed for ~x0.~%" fn))
+         (cw "; xdoc error in ~x0: get-measure failed for ~x1.~%" context fn))
     (str::cat "Error getting measure for "
               (symbol-package-name fn)
               "::"
               (symbol-name fn))))
 
-(defun get-guard (fn world)
+(defun get-guard (fn context world)
   (b* ((formals (getprop fn 'formals :bad 'current-acl2-world world))
        ((unless (eq formals :bad))
         (getprop fn 'guard nil 'current-acl2-world world)))
     (and (xdoc-verbose-p)
-         (cw "; xdoc note: get-guard failed for ~x0.~%" fn))
+         (cw "; xdoc error in ~x0: get-guard failed for ~x1.~%" context fn))
     (str::cat "Error getting guard for "
               (symbol-package-name fn)
               "::"
               (symbol-name fn))))
 
-(defun get-body (fn world)
+(defun get-body (fn context world)
   ;; This gets the original body normalized or non-normalized body based on
   ;; what the user typed for the :normalize xarg.  The use of "last" skips past
   ;; any other :definition rules that have been added since then.
@@ -88,7 +87,7 @@
        ((when bodies)
         (access def-body (car (last bodies)) :concl)))
     (and (xdoc-verbose-p)
-         (cw "; xdoc note: get-body failed for ~x0.~%" fn))
+         (cw "; xdoc error in ~x0: get-body failed for ~x1.~%" context fn))
     (str::cat "Error getting body for "
               (symbol-package-name fn)
               "::"
@@ -229,21 +228,21 @@
            (xdoc::get-event* name (scan-to-event (cdr wrld1))))
           (t ev))))
 
-(defun get-event-aux (name world)
+(defun get-event-aux (name context world)
   ;; A general purpose event lookup as in :pe
   (b* ((props (acl2::getprops name 'current-acl2-world world))
        (evt   (and props (get-event* name world)))
        ((when evt)
         evt))
     (and (xdoc-verbose-p)
-         (cw "; xdoc note: get-event failed for ~x0.~%" name))
+         (cw "; xdoc error in ~x0: get-event failed for ~x1.~%" context name))
     (str::cat "Error getting event for "
               (symbol-package-name name)
               "::"
               (symbol-name name))))
 
-(defun get-event (name world)
-  (clean-up-event name (get-event-aux name world)))
+(defun get-event (name context world)
+  (clean-up-event name (get-event-aux name context world)))
 
 (defun start-event (event acc)
   (b* ((acc (str::revappend-chars "<b>" acc))
@@ -533,18 +532,18 @@
        (acc (str::revappend-chars "</srclink>" acc)))
     acc))
 
-(defun process-body-directive (arg topics-fal base-pkg state acc) ;; ===> ACC
+(defun process-body-directive (arg context topics-fal base-pkg state acc) ;; ===> ACC
   ;; @(body foo) -- look up the body and pretty-print it in a <code> block.
-  (b* ((body (get-body arg (w state)))
+  (b* ((body (get-body arg context (w state)))
        (acc  (str::revappend-chars "<code>" acc))
        (acc  (xml-ppr-obj-aux body topics-fal base-pkg state acc))
        (acc  (str::revappend-chars "</code>" acc)))
     acc))
 
-(defun process-def-directive (arg topics-fal base-pkg state acc) ;; ===> ACC
+(defun process-def-directive (arg context topics-fal base-pkg state acc) ;; ===> ACC
   ;; @(def foo) -- look up the definition for foo, pretty-print it in a <code>
   ;; block, along with a source-code link.
-  (b* ((def (get-event arg (w state)))
+  (b* ((def (get-event arg context (w state)))
        (acc (str::revappend-chars "<p>" acc))
        (acc (start-event def acc))
        (acc (process-srclink-directive arg acc))
@@ -554,11 +553,11 @@
        (acc (str::revappend-chars "</code>" acc)))
     acc))
 
-(defun process-gdef-directive (arg topics-fal base-pkg state acc) ;; ===> ACC
+(defun process-gdef-directive (arg context topics-fal base-pkg state acc) ;; ===> ACC
   ;; @(gdef foo) -- Look up the definition for foo, pretty-print it as in @def,
   ;; but don't use a source-code link because this is a "Generated Definition"
   ;; for which a tags-search will probably fail.
-  (b* ((def (get-event arg (w state)))
+  (b* ((def (get-event arg context (w state)))
        (acc (str::revappend-chars "<p>" acc))
        (acc (start-event def acc))
        (acc (sym-mangle arg base-pkg acc))
@@ -568,10 +567,10 @@
        (acc (str::revappend-chars "</code>" acc)))
     acc))
 
-(defun process-thm-directive (arg topics-fal base-pkg state acc) ;; ===> ACC
+(defun process-thm-directive (arg context topics-fal base-pkg state acc) ;; ===> ACC
   ;; @(thm foo) -- Look up the theorem named foo, and pretty-print its event
   ;; along with a source link.
-  (b* ((def (get-event arg (w state)))
+  (b* ((def (get-event arg context (w state)))
        (acc (str::revappend-chars "<p>" acc))
        (acc (start-event def acc))
        (acc (process-srclink-directive arg acc))
@@ -581,10 +580,10 @@
        (acc (str::revappend-chars "</code>" acc)))
     acc))
 
-(defun process-gthm-directive (arg topics-fal base-pkg state acc) ;; ===> ACC
+(defun process-gthm-directive (arg context topics-fal base-pkg state acc) ;; ===> ACC
   ;; @(gthm foo) -- Like @(thm foo), but don't provide a source link since this
   ;; is a generated theorem.
-  (b* ((def (get-event arg (w state)))
+  (b* ((def (get-event arg context (w state)))
        (acc (str::revappend-chars "<p>" acc))
        (acc (start-event def acc))
        (acc (sym-mangle arg base-pkg acc))
@@ -594,56 +593,56 @@
        (acc (str::revappend-chars "</code>" acc)))
     acc))
 
-(defun process-formals-directive (arg base-pkg state acc) ;; ===> ACC
+(defun process-formals-directive (arg context base-pkg state acc) ;; ===> ACC
   ;; @(formals foo) -- just find the formals for foo and print them with;out
   ;; any extra formatting.
-  (b* ((formals (get-formals arg (w state)))
+  (b* ((formals (get-formals arg context (w state)))
        (acc     (fmt-and-encode-to-acc formals base-pkg acc)))
     acc))
 
-(defun process-call-directive (arg base-pkg state acc) ;; ===> ACC
+(defun process-call-directive (arg context base-pkg state acc) ;; ===> ACC
   ;; @(call foo) -- find the formals to foo and insert <tt>(foo x y z)</tt>.
-  (b* ((formals (get-formals arg (w state)))
+  (b* ((formals (get-formals arg context (w state)))
        (call    (cons arg formals))
        (acc     (str::revappend-chars "<tt>" acc))
        (acc     (fmt-and-encode-to-acc call base-pkg acc))
        (acc     (str::revappend-chars "</tt>" acc)))
     acc))
 
-(defun process-ccall-directive (arg base-pkg state acc) ;; ===> ACC
+(defun process-ccall-directive (arg context base-pkg state acc) ;; ===> ACC
   ;; @(ccall foo) -- "code call" is like @(call foo), but uses <code> instead
   ;; of <tt> tags.
-  (b* ((formals (get-formals arg (w state)))
+  (b* ((formals (get-formals arg context (w state)))
        (call    (cons arg formals))
        (acc     (str::revappend-chars "<code>" acc))
        (acc     (fmt-and-encode-to-acc call base-pkg acc))
        (acc     (str::revappend-chars "</code>" acc)))
     acc))
 
-(defun process-measure-directive (arg base-pkg state acc) ;; ===> ACC
+(defun process-measure-directive (arg context base-pkg state acc) ;; ===> ACC
   ;; @(measure foo) -- find the measure for foo and print it without any extra
   ;; formatting.
-  (b* ((measure (get-measure arg (w state)))
+  (b* ((measure (get-measure arg context (w state)))
        (acc     (fmt-and-encode-to-acc measure base-pkg acc)))
     acc))
 
 
-(defun process-directive (command arg arg-raw topics-fal base-pkg state acc)
+(defun process-directive (command arg arg-raw context topics-fal base-pkg state acc)
    "Returns (MV ACC STATE)"
    ;; Command and Arg are the already-parsed symbols we have read from the
    ;; documentation string.  Carry out whatever directive we've been asked to
    ;; do.  Acc is the accumulator for our output characters.
    (case command
-     (def       (mv (process-def-directive     arg topics-fal base-pkg state acc)     state))
-     (thm       (mv (process-thm-directive     arg topics-fal base-pkg state acc)     state))
+     (def       (mv (process-def-directive     arg context topics-fal base-pkg state acc)     state))
+     (thm       (mv (process-thm-directive     arg context topics-fal base-pkg state acc)     state))
      (srclink   (mv (process-srclink-directive arg acc)                               state))
-     (gdef      (mv (process-gdef-directive    arg topics-fal base-pkg state acc)     state))
-     (gthm      (mv (process-gthm-directive    arg topics-fal base-pkg state acc)     state))
-     (body      (mv (process-body-directive    arg topics-fal base-pkg state acc)     state))
-     (formals   (mv (process-formals-directive arg base-pkg state acc)                state))
-     (measure   (mv (process-measure-directive arg base-pkg state acc)                state))
-     (call      (mv (process-call-directive    arg base-pkg state acc)                state))
-     (ccall     (mv (process-ccall-directive   arg base-pkg state acc)                state))
+     (gdef      (mv (process-gdef-directive    arg context topics-fal base-pkg state acc)     state))
+     (gthm      (mv (process-gthm-directive    arg context topics-fal base-pkg state acc)     state))
+     (body      (mv (process-body-directive    arg context topics-fal base-pkg state acc)     state))
+     (formals   (mv (process-formals-directive arg context base-pkg state acc)                state))
+     (measure   (mv (process-measure-directive arg context base-pkg state acc)                state))
+     (call      (mv (process-call-directive    arg context base-pkg state acc)                state))
+     (ccall     (mv (process-ccall-directive   arg context base-pkg state acc)                state))
      (url       (mv (process-url-directive     arg acc)                               state))
      (see       (mv (process-see-directive     arg arg-raw base-pkg acc)              state))
      (csee      (mv (process-see-cap-directive arg base-pkg acc)                      state))
@@ -654,7 +653,7 @@
      (otherwise
       (progn$
        (and (xdoc-verbose-p)
-            (cw "; xdoc error: unknown directive ~x0.~%" command))
+            (cw "; xdoc error in ~x0: unknown directive ~x1.~%" context command))
        (let* ((acc (str::revappend-chars "[[ unknown directive " acc))
               (acc (str::revappend-chars (symbol-package-name command) acc))
               (acc (str::revappend-chars "::" acc))
@@ -1122,24 +1121,24 @@ baz
              kind (str::pretty sexpr))
         acc state)))
 
-(defun preprocess-eval (str topics-fal base-pkg kpa state acc)
+(defun preprocess-eval (str topics-fal context base-pkg kpa state acc)
   "Returns (MV ACC STATE)"
   (b* (((mv errmsg sexpr state) (preprocess-eval-parse str base-pkg state))
        ((when errmsg)
         (or (not (xdoc-verbose-p))
-            (cw "; xdoc error: ~@0~%" errmsg))
+            (cw "; xdoc error in ~x0: ~@1~%" context errmsg))
         (let ((acc (simple-html-encode-str errmsg 0 (length errmsg) acc)))
           (mv acc state)))
        ((mv errmsg acc state)
         (preprocess-eval-main sexpr topics-fal base-pkg kpa state acc))
        ((when errmsg)
         (or (not (xdoc-verbose-p))
-            (cw "; xdoc error: ~@0~%" errmsg))
+            (cw "; xdoc error in ~x0: ~@1~%" context errmsg))
         (let ((acc (simple-html-encode-str errmsg 0 (length errmsg) acc)))
           (mv acc state))))
     (mv acc state)))
 
-(defun preprocess-aux (x n xl topics-fal base-pkg kpa state acc)
+(defun preprocess-aux (x n xl context topics-fal base-pkg kpa state acc)
   "Returns (MV ACC STATE)"
   ;; Main preprocessor loop.  Read from the string and accumulate the result
   ;; into acc, expanding away any preprocessor directives.
@@ -1152,7 +1151,7 @@ baz
         (cond ((and (< (+ n 1) xl)
                     (eql (char x (+ n 1)) #\@))
                ;; @@ --> @
-               (preprocess-aux x (+ n 2) xl topics-fal base-pkg kpa state (cons #\@ acc)))
+               (preprocess-aux x (+ n 2) xl context topics-fal base-pkg kpa state (cons #\@ acc)))
 
               ((and (< (+ n 1) xl)
                     (eql (char x (+ n 1)) #\())
@@ -1169,7 +1168,7 @@ baz
                                              xl))
                           ((unless end)
                            (prog2$ (and (xdoc-verbose-p)
-                                        (cw "; xdoc error: no closing ') found for @(' ...~%"))
+                                        (cw "; xdoc error in ~x0: no closing ') found for @(' ...~%" context))
                                    (mv acc state)))
                           (sub
                            ;; Change January 2014: we were using fancy-extract-block here, but it
@@ -1179,7 +1178,7 @@ baz
                           (acc (str::revappend-chars "<v>" acc))
                           (acc (autolink-and-encode sub 0 (length sub) topics-fal base-pkg kpa acc))
                           (acc (str::revappend-chars "</v>" acc)))
-                       (preprocess-aux x (+ end 2) xl topics-fal base-pkg kpa state acc)))
+                       (preprocess-aux x (+ end 2) xl context topics-fal base-pkg kpa state acc)))
 
                     ((when (and (< (+ n 2) xl)
                                 (eql (char x (+ n 2)) #\{)))
@@ -1189,13 +1188,13 @@ baz
                            (str::strpos-fast "})" x (+ n 3) 2 xl))
                           ((unless end)
                            (prog2$ (and (xdoc-verbose-p)
-                                        (cw "; xdoc error: no closing }) found for @({ ...~%"))
+                                        (cw "; xdoc error in ~x0: no closing }) found for @({ ...~%" context))
                                    (mv acc state)))
                           (sub (maybe-fix-spaces-in-sub (fancy-extract-block x (+ n 3) end)))
                           (acc (str::revappend-chars "<code>" acc))
                           (acc (autolink-and-encode sub 0 (length sub) topics-fal base-pkg kpa acc))
                           (acc (str::revappend-chars "</code>" acc)))
-                       (preprocess-aux x (+ end 2) xl topics-fal base-pkg kpa state acc)))
+                       (preprocess-aux x (+ end 2) xl context topics-fal base-pkg kpa state acc)))
 
                     ((when (and (< (+ n 2) xl)
                                 (eql (char x (+ n 2)) #\`)))
@@ -1203,24 +1202,24 @@ baz
                      (b* ((end (str::strpos-fast "`)" x (+ n 2) 2 xl))
                           ((unless end)
                            (prog2$ (and (xdoc-verbose-p)
-                                        (cw "; xdoc error: no closing `) found for @(` ...~%"))
+                                        (cw "; xdoc error in ~x0: no closing `) found for @(` ...~%" context))
                                    (mv acc state)))
                           (str (subseq x (+ n 3) end))
-                          ((mv acc state) (preprocess-eval str topics-fal base-pkg kpa state acc)))
-                       (preprocess-aux x (+ end 2) xl topics-fal base-pkg kpa state acc)))
+                          ((mv acc state) (preprocess-eval str context topics-fal base-pkg kpa state acc)))
+                       (preprocess-aux x (+ end 2) xl context topics-fal base-pkg kpa state acc)))
 
                     ((mv error command arg arg-raw n) (parse-directive x (+ n 2) xl base-pkg kpa))
                     ((when error)
                      (prog2$ (and (xdoc-verbose-p)
-                                  (cw "; xdoc error: ~x0.~%" error))
+                                  (cw "; xdoc error in ~x0: ~x1.~%" context error))
                              (mv acc state)))
                     ((mv acc state)
-                     (process-directive command arg arg-raw topics-fal base-pkg state acc)))
-                 (preprocess-aux x n xl topics-fal base-pkg kpa state acc)))
+                     (process-directive command arg arg-raw context topics-fal base-pkg state acc)))
+                 (preprocess-aux x n xl context topics-fal base-pkg kpa state acc)))
 
               (t
                ;; @ sign in some other context.
-               (preprocess-aux x (+ n 1) xl topics-fal base-pkg kpa state (cons #\@ acc)))))
+               (preprocess-aux x (+ n 1) xl context topics-fal base-pkg kpa state (cons #\@ acc)))))
 
        ((when (eql char #\Newline))
         ;; Gross hack #1: eat initial newlines from the start of a <code>
@@ -1229,19 +1228,19 @@ baz
             (if (and (< (+ n 1) xl)
                      (eql (char x (+ n 1)) #\Newline))
                 ;; Avoid eating multiple newlines at the start of a code block.
-                (preprocess-aux x (+ n 2) xl topics-fal base-pkg kpa state (cons #\Newline acc))
-              (preprocess-aux x (+ n 1) xl topics-fal base-pkg kpa state acc))
+                (preprocess-aux x (+ n 2) xl context topics-fal base-pkg kpa state (cons #\Newline acc))
+              (preprocess-aux x (+ n 1) xl context topics-fal base-pkg kpa state acc))
           ;; Gross hack #2: the XSLT transformer in firefox seems to have some
           ;; problems if there aren't spaces at the end of lines, e.g., it will
           ;; run together the hover-text in the hierarchical description in
           ;; preview.html.  Fix by putting a space before newlines.  Horrible.
-          (preprocess-aux x (+ n 1) xl topics-fal base-pkg kpa state
+          (preprocess-aux x (+ n 1) xl context topics-fal base-pkg kpa state
                           (list* #\Newline #\Space acc)))))
 
     ;; Otherwise just keep the char and keep going.
-    (preprocess-aux x (+ n 1) xl topics-fal base-pkg kpa state (cons char acc))))
+    (preprocess-aux x (+ n 1) xl context topics-fal base-pkg kpa state (cons char acc))))
 
-(defun preprocess-main (x topics-fal base-pkg state acc)
+(defun preprocess-main (x context topics-fal base-pkg state acc)
   "Returns (mv acc state)"
   (declare (type (or string null) x))
   (b* ((x (or x ""))
@@ -1250,7 +1249,7 @@ baz
        ;; ((mv & & state) (acl2::set-current-package (symbol-package-name base-pkg) state))
        (kpa            (known-package-alist state))
        (x              (transform-code x))
-       ((mv acc state) (preprocess-aux x 0 (length x) topics-fal base-pkg kpa state acc))
+       ((mv acc state) (preprocess-aux x 0 (length x) context topics-fal base-pkg kpa state acc))
        ;; Restore base-pkg for whoever called us.
        ;; ((mv & & state) (acl2::set-current-package current-pkg state))
        )

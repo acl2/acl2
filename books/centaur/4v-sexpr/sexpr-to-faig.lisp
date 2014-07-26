@@ -87,7 +87,7 @@ details.</p>
 <p>You might regard @('4v-sexpr-to-faig') as a somewhat low-level function.
 Its correctness theorem is rather elaborate and to make use of it you generally
 need to construct an @('onoff') alist that sensibly accomplishes your goal.  A
-good starting place and example might be @(see 4v-sexpr-eval-by-faig), which
+good starting place and example might be @('4v-sexpr-eval-by-faig'), which
 generates an appropriate @('onoff') so that it can carry out a @(see
 4v-sexpr-eval) computation using FAIG evaluation as the engine.</p>")
 

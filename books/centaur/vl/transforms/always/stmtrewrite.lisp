@@ -500,7 +500,7 @@ blocks with names/decls seems tricky due to hierarchical identifiers.</p>"
                             (warnings vl-warninglist-p))
   :returns (mv (warnings vl-warninglist-p :hyp :fguard)
                (stmt     vl-stmt-p        :hyp :fguard))
-  :short "Eliminate purely null @(see for-statements)."
+  :short "Eliminate purely null @(see vl-forstmt)s."
   :long "<p>The basic rewrite this performs is:</p>
 
 @({

@@ -204,8 +204,8 @@
 
 (defun dts-recognizer-def (name prodinfos)
   (let ((xvar (dts-x name)))
-    `(defund ,(dts-recognizer-name name) (,xvar)
-       (declare (xargs :guard t))
+    `(define ,(dts-recognizer-name name) (,xvar)
+       :parents (,name)
        (mbe :logic ,(dts-recognizer-logic-def name prodinfos)
             :exec ,(dts-recognizer-exec-def name prodinfos)))))
 
@@ -327,8 +327,9 @@
        (sum-fix (dts-fix-name name))
        (sum-p   (dts-recognizer-name name))
        (xvar    (dts-x name)))
-    `(defund-inline ,sum-fix (,xvar)
-       (declare (xargs :guard (,sum-p ,xvar)))
+    `(define ,sum-fix ((,xvar ,sum-p))
+       :parents (,name)
+       :inline t
        (mbe :logic (if (,sum-p ,xvar)
                        ,xvar
                      (,mem-fix ,xvar))
@@ -400,7 +401,7 @@
        (fix-def   (dts-fix-def name prodinfos))
 
        ((when (eq mode :program))
-        `(defsection ,foo-p
+        `(defsection ,name
            ,@(and parents `(:parents ,parents))
            ,@(and short   `(:short ,short))
            ,@(and long    `(:long ,long))
@@ -427,7 +428,7 @@
           ,(dts-when-invalid-tag-thm name prodinfos)
           ,@(dts-fix-thms name)
 
-          (fty::deffixtype name
+          (fty::deffixtype ,name
             :pred  ,foo-p
             :equiv ,foo-equiv
             :fix   ,foo-fix
@@ -437,7 +438,7 @@
           ;; BOZO some kind of pattern-match macros?
           )))
 
-    `(defsection ,foo-p
+    `(defsection ,name
        ,@(and parents `(:parents ,parents))
        ,@(and short   `(:short ,short))
        ,@(and long    `(:long ,long))

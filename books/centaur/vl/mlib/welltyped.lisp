@@ -326,10 +326,11 @@ hierarchical identifiers.</p>"
              (vl-exprlist-welltyped-p (cdr x)))))
 
   ///
-  (deflist vl-exprlist-welltyped-p (x)
-    (vl-expr-welltyped-p x)
-    :guard (vl-exprlist-p x)
-    :already-definedp t)
+  (xdoc::without-xdoc
+    (deflist vl-exprlist-welltyped-p (x)
+      (vl-expr-welltyped-p x)
+      :guard (vl-exprlist-p x)
+      :already-definedp t))
 
   (deffixequiv-mutual vl-expr-welltyped-p))
 

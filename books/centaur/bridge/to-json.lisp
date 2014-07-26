@@ -267,7 +267,7 @@ cases.  For now we do it dumbly.</p>"
     (json-encode-chars (cdr x) acc)))
 
 (define json-encode-str-aux
-  :parents (json-encode-string)
+  :parents (json-encode-str)
   ((x stringp :type string)
    (n natp :type (integer 0 *))
    (xl (equal xl (length x)) :type (integer 0 *))

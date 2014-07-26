@@ -150,7 +150,7 @@ bitset."
   (b* (((the (unsigned-byte 8) code) (char-code x)))
     (and (<= 33 code)
          (<= code 126)))
-  :parents (whitespace identifiers)
+  :parents (whitespace lex-identifiers)
   :short "Match any printable non-whitespace character."
   :long "<p>These characters are of interest in escaped identifiers.  We don't
 have to explicitly check for whitespace, because that's ruled out by the
@@ -172,7 +172,7 @@ character code range.</p>")
              (<= code (explicit-char-code #\Z)) ;; upper-case
              (= code (explicit-char-code #\_))  ;; underscore
              )))
-  :parents (identifiers chartypes)
+  :parents (lex-identifiers chartypes)
   :short "[a-zA-Z_]"
   :long "<p>We originally defined this as:</p>
 @({
@@ -208,7 +208,7 @@ underscore is between upper and lowercase.</p>
       (if (<= (explicit-char-code #\0) code)
           (<= code (explicit-char-code #\9))
         (= code (explicit-char-code #\$)))))
-  :parents (identifiers chartypes)
+  :parents (lex-identifiers chartypes)
   :short "[a-zA-Z0-9_$]"
   :long "<p>Original definition was:</p>
 
@@ -248,13 +248,13 @@ letter or underscore.  Otherwise, it must be a number or dollar.</p>
   (or (eql x #\z)
       (eql x #\Z)
       (eql x #\?))
-  :parents (chartypes numbers)
+  :parents (chartypes lex-numbers)
   :short "z | Z | ?")
 
 (defchar x-digit
   (or (eql x #\x)
       (eql x #\X))
-  :parents (chartypes numbers)
+  :parents (chartypes lex-numbers)
   :short "x | X")
 
 (defchar hex-digit
@@ -264,7 +264,7 @@ letter or underscore.  Otherwise, it must be a number or dollar.</p>
         (and (char<= #\A x) (char<= x #\F))
         (vl-x-digit-p x)
         (vl-z-digit-p x)))
-  :parents (chartypes numbers)
+  :parents (chartypes lex-numbers)
   :short "x_digit | z_digit | [0-9a-fA-F]"
   :long "<p>We originally defined this as:</p>
 @({
@@ -283,7 +283,7 @@ come before ? or letters, and tries to optimize for numbers.</p>")
       (char<= #\0 x)
     (or (vl-x-digit-p x)
         (vl-z-digit-p x)))
-  :parents (chartypes numbers)
+  :parents (chartypes lex-numbers)
   :short "x_digit | z_digit | [0-7]"
   :long "<p>We originally defined this as:</p>
 @({
@@ -301,44 +301,44 @@ come before ? or letters.</p>")
       (eql x #\1)
       (vl-x-digit-p x)
       (vl-z-digit-p x))
-  :parents (chartypes numbers)
+  :parents (chartypes lex-numbers)
   :short "x_digit | z_digit | 0 | 1")
 
 (defchar decimal-digit
   (and (char<= #\0 x)
        (char<= x #\9))
-  :parents (chartypes numbers)
+  :parents (chartypes lex-numbers)
   :short "[0-9]")
 
 (defchar non-zero-decimal-digit
   (and (char<= #\1 x)
        (char<= x #\9))
-  :parents (chartypes numbers)
+  :parents (chartypes lex-numbers)
   :short "[1-9]")
 
 
 (defchar underscore-or-hex-digit
   (or (vl-hex-digit-p x)
       (eql x #\_))
-  :parents (chartypes numbers)
+  :parents (chartypes lex-numbers)
   :short "_ | hex_digit")
 
 (defchar underscore-or-octal-digit
   (or (vl-octal-digit-p x)
       (eql x #\_))
-  :parents (chartypes numbers)
+  :parents (chartypes lex-numbers)
   :short "_ | octal_digit")
 
 (defchar underscore-or-binary-digit
   (or (vl-binary-digit-p x)
       (eql x #\_))
-  :parents (chartypes numbers)
+  :parents (chartypes lex-numbers)
   :short "_ | binary_digit")
 
 (defchar underscore-or-decimal-digit
   (or (vl-decimal-digit-p x)
       (eql x #\_))
-  :parents (chartypes numbers)
+  :parents (chartypes lex-numbers)
   :short "_ | decimal_digit")
 
 (defchar underscore

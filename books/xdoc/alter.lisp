@@ -99,3 +99,66 @@
                              (get-xdoc-table world))))
 
 
+;; Idea:
+;;   (without-xdoc (defun foo ...)
+;;                 (defxdoc bar...)
+;;                 (defxdoc baz ...)
+;;                 (defun gah ...))
+;;
+;; should act like:
+;;   (defun foo ...)
+;;   (defun gah ...)
+;;
+;; Implementation: save the xdoc table aside at the start, do all the forms,
+;; then smash the xdoc table with whatever we've saved.  This nicely stays
+;; make-event free and doesn't, e.g., smash the xdoc table in any kind of
+;; permanent or include-book hostile way.
+;;
+;; By treating the backups as a stack, we can even get this stuff to be
+;; properly nestable.
+
+(defun get-xdoc-backup-stack (world)
+  (declare (xargs :mode :program))
+  (cdr (assoc-eq 'xdoc-backup-stack (table-alist 'xdoc world))))
+
+(defmacro without-xdoc (&rest forms)
+  `(progn
+     ;; Push current documentation onto the backup stack
+     (table xdoc 'xdoc-backup-stack
+            (cons (get-xdoc-table world)
+                  (get-xdoc-backup-stack world)))
+     ;; Do all forms.  They may alter the doc table however they like
+     ,@forms
+     ;; Restore the doc table from the backup stack, smashing whatever
+     ;; the forms did to it.
+     (table xdoc 'doc (car (get-xdoc-backup-stack world)))
+     ;; Pop the backup stack so that we don't have extra giant tables around
+     ;; and for proper nesting stuff.
+     (table xdoc 'xdoc-backup-stack (cdr (get-xdoc-backup-stack world)))))
+
+(local (progn
+
+(include-book "misc/assert" :dir :system)
+
+(table xdoc 'doc nil)
+(defxdoc foo :short "test topic")
+(assert! (equal (len (get-xdoc-table (w state))) 1))
+
+(without-xdoc
+  (defun xyz (x) x)
+  (defxdoc xyz :short "xyz is great!")
+  (defun abc (x) x)
+  (defxdoc abc :short "abc is great!"))
+
+(assert! (equal (fgetprop 'xyz 'acl2::formals :blah (w state)) '(x))) ;; xyz should be defined
+(assert! (equal (fgetprop 'abc 'acl2::formals :blah (w state)) '(x))) ;; abc should be defined
+(assert! (equal (len (get-xdoc-table (w state))) 1)) ;; still should just have doc foo
+
+(without-xdoc
+  (defxdoc xyz2 :short "xyz is great!")
+  (without-xdoc
+    (defxdoc abc2 :short "abc is great!")))
+
+(assert! (equal (len (get-xdoc-table (w state))) 1)) ;; still should just have doc foo
+
+))

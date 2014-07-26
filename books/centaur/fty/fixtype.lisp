@@ -108,7 +108,7 @@ common ACL2 base types (numbers, symbols, strings).</li>
   :short "Define a named type, associating a unary predicate, fixing function,
 and equivalence relation."
   :long "<p>Part of an attempt to automate the proof discipline described at
-@(see fixtype).</p>
+@(see fty).</p>
 
 <p>@('DEFFIXTYPE') simply associates a type name with an existing predicate,
 fixing function, and equivalence relation.  It stores this association in a

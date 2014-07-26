@@ -39,11 +39,11 @@
 (local (include-book "../../util/arithmetic"))
 
 (defxdoc nedgeflop
-  :parents (edgecode primitives)
+  :parents (edgesynth primitives)
   :short "Generation of new @(see primitives) for edge-triggered always
 blocks."
 
-  :long "<p>See @(see edgecode) for an overview of how we handle edge-triggered
+  :long "<p>See @(see edgesynth) for an overview of how we handle edge-triggered
 always blocks.</p>
 
 <p>To support these blocks, VL creates primitive flip-flop modules with some

@@ -126,9 +126,10 @@ between the order of the assignments and the surrounding if structures.</p>"
       (and (vl-edgesplitstmt-p (first x))
            (vl-edgesplitstmtlist-p (rest x)))))
   ///
-  (deflist vl-edgesplitstmtlist-p (x)
-    (vl-edgesplitstmt-p x)
-    :already-definedp t))
+  (xdoc::without-xdoc ;; gets documented by the defines form
+    (deflist vl-edgesplitstmtlist-p (x)
+      (vl-edgesplitstmt-p x)
+      :already-definedp t)))
 
 
 (define vl-edgesplit-atomicstmt-lvalues

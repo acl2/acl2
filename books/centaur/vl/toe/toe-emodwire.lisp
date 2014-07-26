@@ -184,7 +184,7 @@ used the following, trivial encoding scheme:</p>
 special characters @('.'), @('!'), and @('/') also do not occur.  Why?  We
 think having @('.') in a name could be confusing to some tools since it is used
 as a hierarchical identifier in Verilog.  Meanwhile, @('!') is used as a
-hierarchical identifier in E (e.g., @(see acl2::mod-state)).  And we have
+hierarchical identifier in E (e.g., see @('mod-state')).  And we have
 occasionally seen other Verilog tools that use @('/') as a hierarchical
 separator.</p>
 

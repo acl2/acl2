@@ -214,10 +214,10 @@ the number of descriptions in the list.</p>"
   (defthm no-nil-in-vl-descriptionlist->names
     (not (member nil (vl-descriptionlist->names x)))))
 
-
-(fty::defalist vl-descalist
-  :key-type stringp
-  :val-type vl-description-p)
+(xdoc::without-xdoc ;; autodoc conflicts with (vl-descalist ...)
+  (fty::defalist vl-descalist
+    :key-type stringp
+    :val-type vl-description-p))
 
 (defalist vl-descalist-p (x)
   :key (stringp x)

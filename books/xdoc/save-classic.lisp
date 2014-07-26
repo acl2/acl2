@@ -316,7 +316,7 @@ command, along the following lines:</p>
 ;;         (acc (str::revappend-chars "<hindex_short id=\"" acc))
 ;;         (acc (revappend id-chars acc))
 ;;         (acc (str::revappend-chars "\">" acc))
-;;         ((mv acc state) (preprocess-main short dir topics-fal base-pkg state acc))
+;;         ((mv acc state) (preprocess-main short name dir topics-fal base-pkg state acc))
 ;;         (acc (str::revappend-chars "</hindex_short>" acc))
 
 ;;         (acc (str::revappend-chars "<hindex_children id=\"" acc))

@@ -65,7 +65,7 @@ supported.</li>
 
 </ul>")
 
-(local (xdoc::set-default-parents synthalways))
+(local (xdoc::set-default-parents latchsynth))
 
 (define vl-module-latchsynth
   :short "Synthesize simple latch-like @('always') blocks in a module."

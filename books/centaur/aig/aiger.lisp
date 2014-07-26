@@ -730,8 +730,8 @@ CNSTR-AIGS - list of constraint AIGs. "
   :parents (aig-other)
   :short "Write out a collection of AIGs into an AIGER file, directly, without
 going through @(see aignet)."
-  :long "<p>See also @(see aignet::aiger-write) for an @(see aignet)-based
-alternative.  We generally prefer to use @(see aignet::aiger-write) and may
+  :long "<p>See also @('aignet::aiger-write') for an @(see aignet)-based
+alternative.  We generally prefer to use @('aignet::aiger-write') and may
 eventually move to deprecate this function.</p>"
   (b* (((mv channel state)
         (open-output-channel! fname :byte state))

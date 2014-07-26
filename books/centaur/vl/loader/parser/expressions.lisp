@@ -534,7 +534,7 @@ literals, unbased unsized literals, @('this'), @('$'), and @('null').</p>"
 
 
 (defval *vl-very-simple-type-table*
-  :parents (vl-match-very-simple-type)
+  :parents (vl-parse-very-simple-type)
   :showval t
   (list
    (cons :vl-kwd-byte      (hons-copy (make-vl-atom :guts (make-vl-basictype :kind :vl-byte))))
@@ -551,7 +551,7 @@ literals, unbased unsized literals, @('this'), @('$'), and @('null').</p>"
    (cons :vl-kwd-realtime  (hons-copy (make-vl-atom :guts (make-vl-basictype :kind :vl-realtime))))))
 
 (defval *vl-very-simple-type-tokens*
-  :parents (vl-match-very-simple-type)
+  :parents (vl-parse-very-simple-type)
   :showval t
   (alist-keys *vl-very-simple-type-table*))
 

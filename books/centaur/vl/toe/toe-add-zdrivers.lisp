@@ -40,7 +40,7 @@
   :parents (e-conversion)
   :short "How we ensure every wire is driven."
 
-  :long "<p>The @(see good-esim-modulep) well-formedness check requires that
+  :long "<p>The @('good-esim-modulep') well-formedness check requires that
 every wire of a module is driven by some occurrence (or is an input).  But in
 Verilog there is no such requirement, e.g., one can legally write a module like
 this:</p>

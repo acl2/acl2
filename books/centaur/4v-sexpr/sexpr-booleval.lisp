@@ -39,6 +39,8 @@
 (include-book "centaur/gl/def-gl-rewrite" :dir :system)
 (include-book "centaur/vl/util/cwtime" :dir :system)
 
+;; BOZO convert these comments into xdoc, some day
+
 ; Suppose you have a hardware module represented as a 4v-sexpr and you want to
 ; prove that it implements a certain function.
 ;

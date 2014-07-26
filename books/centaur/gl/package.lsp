@@ -40,6 +40,7 @@
      hons-assoc-equal make-fal
      definline definlined
      defxdoc defsection define
+     __function__
 
      alist-keys alist-vals
 
@@ -163,6 +164,13 @@
      gobjectp glc glr gl-fnsym gl-interp
      gl-interp-raw gl-interp
      gl-aside gl-ignore nonnil-symbol-listp
+
+     def-gl-rule
+     def-gl-ruled
+     def-gl-rulel
+     def-gl-ruledl
+     defrulel
+     defruledl
 
      xor
      gl-bdd-mode gl-aig-mode gl-mbe

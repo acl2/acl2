@@ -49,7 +49,7 @@ wires by inserting explicit resolution modules.</p>
 
 <p><b>Note:</b> In this transform we assume that the module's primary inputs
 are not driven by any occurrence.  This is something we explicitly check for in
-@(see bozo-say-where-we-check-for-it).</p>
+@(see vl-module-make-esim); see the warning about @(':vl-backflow') there.</p>
 
 <p>Given this assumption, we basically need to do three things:</p>
 

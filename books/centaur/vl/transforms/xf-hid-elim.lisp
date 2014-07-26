@@ -74,10 +74,10 @@ like:</p>
 
 <ul>
 
-<li>@(see vl-modulelist-follow-hids) should happen after implicit wire
+<li>@(see vl-design-follow-hids) should happen after implicit wire
 declarations are added, but before any modules are thrown out.</li>
 
-<li>@(see vl-modulelist-hid-elim) should happen after unparameterization and
+<li>@(see vl-design-hid-elim) should happen after unparameterization and
 range resolution, but before any expression sizing.</li>
 
 </ul>
@@ -1211,6 +1211,7 @@ hierarchical references to wires inside of @('processor'), etc.</p>")
            (vl-modulelist->names x))))
 
 (define vl-design-hid-elim ((x vl-design-p))
+  :parents (hid-elim)
   :returns (new-x vl-design-p)
   (b* ((x (vl-design-fix x))
        ((vl-design x) x))

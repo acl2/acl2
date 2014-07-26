@@ -367,7 +367,7 @@ savings when BDDs are involved.</p>"
                        numbers or X.")
 
   :long "<p>See @(see stv-run).  The only difference between @(see stv-run) and
-this function is that this function uses @(see 4v-sexpr-eval-default) instead
+this function is that this function uses @('4v-sexpr-eval-default') instead
 of @(see 4v-sexpr-eval), which means that any variables not bound by the
 user-provided inputs are set to false, instead of (effectively) X.</p>"
 

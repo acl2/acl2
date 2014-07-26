@@ -57,7 +57,7 @@
          :hints(("Goal" :in-theory (enable vl-atomicstmt-p)))))
 
 (defxdoc edgesynth
-  :parents (synthalways)
+  :parents (always-top)
   :short "Synthesize simple edge-triggered @('always') blocks into primitives."
 
   :long "<p>This is our \"final,\" transformation for synthesizing
@@ -77,9 +77,8 @@ some of the challenges and our general approach below.</p>
 <h3>Preliminaries: Edge-Triggered Blocks, Clocks</h3>
 
 <p><u>Definition.</u> We say that an @('always') block is <b>edge-triggered</b>
-when it contains a <see topic='@(url timing-statements)'>timing-statement</see>
-whose control is a list of @('posedge') or @('negedge') events.  As
-examples:</p>
+when it contains a @(see vl-timingstmt) whose control is a list of @('posedge')
+or @('negedge') events.  As examples:</p>
 
 @({
  always @(posedge clk) ... ;                  // edge-triggered
@@ -430,7 +429,6 @@ instances of these primitives.</p>")
 ; -----------------------------------------------------------------------------
 
 (defsection edge-tables
-  :parents (edgesynth)
   :short "Data structure that conveniently summarizes a sensitivity list."
   :long "<p>In @(see edgesynth) we only support always blocks with simple event
 controls such as</p>
@@ -601,10 +599,11 @@ statements, non-blocking assignments to whole identifiers."
            (vl-edgesynth-stmtlist-p (cdr x)))))
 
   ///
-  (deflist vl-edgesynth-stmtlist-p (x)
-    (vl-edgesynth-stmt-p x)
-    :already-definedp t
-    :true-listp t)
+  (xdoc::without-xdoc
+    (deflist vl-edgesynth-stmtlist-p (x)
+      (vl-edgesynth-stmt-p x)
+      :already-definedp t
+      :true-listp t))
 
   (defthm vl-stmt-p-when-vl-edgesynth-stmt-p
     (implies (vl-edgesynth-stmt-p x)
@@ -804,14 +803,14 @@ statements, non-blocking assignments to whole identifiers."
 
 (define vl-edgesynth-simple-delay-p ((x vl-maybe-delayoreventcontrol-p))
   :short "Recognizer for empty delays and simple integer delays like @('#5')."
-  :parents (vl-edgesynth-compatible-delays-p)
+  :parents (vl-edgesynth-delays-okp)
   (or (not x)
       (and (mbe :logic (vl-delaycontrol-p x)
                 :exec (eq (tag x) :vl-delaycontrol))
            (vl-expr-resolved-p (vl-delaycontrol->value x)))))
 
 (define vl-edgesynth-simple-delay->amount
-  :parents (vl-edgesynth-compatible-delays-p)
+  :parents (vl-edgesynth-delays-okp)
   :short "Extract the delay amount from a simple enough delay, if any."
   ((x (and (vl-maybe-delayoreventcontrol-p x)
            (vl-edgesynth-simple-delay-p x))))
@@ -822,12 +821,14 @@ statements, non-blocking assignments to whole identifiers."
 
 (deflist vl-edgesynth-simple-delays-p (x)
   (vl-edgesynth-simple-delay-p x)
-  :guard (vl-assigncontrols-p x))
+  :guard (vl-assigncontrols-p x)
+  :parents (vl-edgesynth-delays-okp))
 
 (defprojection vl-edgesynth-simple-delays->amounts (x)
   (vl-edgesynth-simple-delay->amount x)
   :guard (and (vl-assigncontrols-p x)
-              (vl-edgesynth-simple-delays-p x)))
+              (vl-edgesynth-simple-delays-p x))
+  :parents (vl-edgesynth-delays-okp))
 
 (define vl-edgesynth-delays-okp
   :short "Check that internal delays on assignments are simple enough to

@@ -13,13 +13,12 @@
 ;
 ; Original author: David L. Rager <david.rager@oracle.com>
 
-(in-package "ACL2")
-
+(in-package "GL")
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 
 (defxdoc def-gl-rule
-  :parents (std/util)
+  :parents (def-gl-thm)
   :short "A slightly enhanced version of @(see def-gl-thm)"
   :long "<p>@('def-gl-rule') is a drop-in replacement for @('def-gl-thm') that
 adds:</p>
@@ -46,8 +45,6 @@ rule after its proof finishes.</p>
 
 <p>Some examples:</p>
 
-
-
 @({
   (def-gl-rule baz        -->  (local
       ...                        (encapsulate ()
@@ -60,9 +57,10 @@ rule after its proof finishes.</p>
       :disabledp t)
 })")
 
+(local (xdoc::set-default-parents def-gl-rule))
+
 (define find-and-remove-key (key lst)
-  :short "Remove keyword <tt>key</tt> and associated value from list
-          <tt>lst</tt>"
+  :short "Remove keyword <tt>key</tt> and associated value from list <tt>lst</tt>"
   (cond ((atom lst)
          (mv nil lst))
         ((and (equal (car lst) key)
@@ -81,16 +79,11 @@ rule after its proof finishes.</p>
            (mv val (cons (car lst) recur-lst))))))
 
 (defmacro def-gl-rule (name &rest rst)
-  (b* (((mv short rst)
-        (find-and-remove-key :short rst))
-       ((mv long rst)
-        (find-and-remove-key :long rst))
-       ((mv parents rst)
-        (find-and-remove-key :parents rst))
-       ((mv disabledp rst)
-        (find-and-remove-key :disabledp rst))
-       ((mv local rst)
-        (find-and-remove-key :local rst))
+  (b* (((mv short rst)     (find-and-remove-key :short rst))
+       ((mv long rst)      (find-and-remove-key :long rst))
+       ((mv parents rst)   (find-and-remove-key :parents rst))
+       ((mv disabledp rst) (find-and-remove-key :disabledp rst))
+       ((mv local rst)     (find-and-remove-key :local rst))
        (event
         `(defsection ,name
            :short ,short

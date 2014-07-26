@@ -351,7 +351,7 @@ describes the same wire:</p>
 })
 
 <p>@('Fast-canonicalize-path') should be given a valid path in the sense of
-@(see mod-all-paths), and tries to return the canonical equivalent.  Failure
+@('mod-all-paths'), and tries to return the canonical equivalent.  Failure
 indicates that the given path is invalid, but we do only minimal error
 checking.  In other words, you should not rely on this function to see whether
 a path is valid.</p>"

@@ -232,9 +232,10 @@ flattened or anything like that.</p>"
            (vl-stmtlist-cblock-p (cdr x)))))
 
   ///
-  (deflist vl-stmtlist-cblock-p (x)
-    (vl-stmt-cblock-p x)
-    :already-definedp t))
+  (xdoc::without-xdoc
+    (deflist vl-stmtlist-cblock-p (x)
+      (vl-stmt-cblock-p x)
+      :already-definedp t)))
 
 
 ; -----------------------------------------------------------------------------

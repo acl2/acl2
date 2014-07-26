@@ -51,7 +51,7 @@ repeated in N different always blocks."
      (vl-always-scary-regs-aux (cdr x)))))
 
 (define vl-always-scary-regs
-  :parents (synthalways)
+  :parents (always-top)
   :short "Determine which lvalues are assigned to in multiple always blocks."
   ((x vl-alwayslist-p))
   :returns (names (and (string-listp names)
@@ -62,7 +62,7 @@ sensible with.</p>"
    (duplicated-members (vl-always-scary-regs-aux x))))
 
 (define vl-always-check-reg
-  :parents (synthalways)
+  :parents (always-top)
   :short "See if a register is simple enough to reasonably synthesize into
 a flop/latch."
   ((name "name of a supposed register to be checked" stringp)
@@ -126,7 +126,7 @@ isn't an array.</p>"
                               (elem  vl-modelement-p))
   :returns
   (warning? (equal (vl-warning-p warning?) (if warning? t nil)))
-  :parents (synthalways)
+  :parents (always-top)
   (if (atom names)
       nil
     (or (vl-always-check-reg (car names) vars elem)
@@ -141,7 +141,7 @@ isn't an array.</p>"
 
 (define vl-always-convert-reg ((x vl-vardecl-p))
   :returns (netdecl vl-netdecl-p)
-  :parents (synthalways)
+  :parents (always-top)
   :short "Convert a register into a wire."
 
   :long "<p>When we replace @('always') blocks with explicit instances, we have
@@ -164,12 +164,12 @@ register has array dimensions.</p>"
                                      nil x.atts))))
 
 (defprojection vl-always-convert-regs ((x vl-vardecllist-p))
-  :parents (synthalways)
+  :parents (always-top)
   :returns (nets vl-netdecllist-p)
   (vl-always-convert-reg x))
 
 (define vl-stmt-guts ((body vl-stmt-p))
-  :parents (synthalways)
+  :parents (always-top)
   :returns (guts vl-stmtlist-p)
   :short "Coerce a statement into a statement list."
   :long "<p>The idea here is to be able to treat things like these:</p>
@@ -201,7 +201,7 @@ singleton statement list.</p>"
 (define vl-match-posedge-clk ((x vl-always-p))
   :returns (mv (clk  (equal (vl-expr-p clk) (if clk t nil)))
                (body (equal (vl-stmt-p body) (if clk t nil))))
-  :parents (vl-always-p timing-statements)
+  :parents (vl-always-p vl-timingstmt)
   :short "Match @('always @(posedge clk) body')."
   (b* ((stmt (vl-always->stmt x))
        ((unless (eq (vl-stmt-kind stmt) :vl-timingstmt))
@@ -234,7 +234,7 @@ singleton statement list.</p>"
 (define vl-edge-control-p ((x vl-delayoreventcontrol-p))
   :short "Recognize @@(posedge clk1 or negedge clk2 or ...) style event
           controls."
-  :parents (synthalways)
+  :parents (always-top)
   (b* ((x (vl-delayoreventcontrol-fix x))
        ((unless (eq (tag x) :vl-eventcontrol))
         ;; Maybe a delay control like #5, not an @(...) control.
@@ -245,7 +245,7 @@ singleton statement list.</p>"
          (vl-evatomlist-all-have-edges-p x.atoms))))
 
 (define vl-match-always-at-some-edges ((x vl-stmt-p))
-  :parents (synthalways)
+  :parents (always-top)
   :short "Recognize and decompose edge-triggered statements."
   :returns (mv (body? (equal (vl-stmt-p body?)
                              (if body? t nil)))

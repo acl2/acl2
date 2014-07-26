@@ -41,7 +41,7 @@
    ((n "current index, for name generation, counts up" natp) '0))
   :guard (same-lengthp q-wires d-wires)
   :returns (insts vl-modinstlist-p)
-  :parents (vl-make-n-bit-flop)
+  :parents (vl-make-n-bit-latch)
   :short "Build a list of @('VL_1_BIT_LATCH') instances."
   :long "<p>We produce a list of latch instances like:</p>
 

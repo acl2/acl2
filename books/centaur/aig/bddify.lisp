@@ -47,6 +47,35 @@
 (include-book "centaur/ubdds/extra-operations" :dir :system)
 (include-book "centaur/misc/memory-mgmt-logic" :dir :system)
 
+(defxdoc bddify
+  :parents (aig)
+  :short "An verified algorithm for converting @(see aig)s into @(see ubdds)."
+
+  :long "<p>The @('bddify') algorithm can convert AIGs into BDDs.  This can be
+used, for instance, to solve satisfiability problems without reaching out to an
+external SAT solver.</p>
+
+<p>The algorithm uses two methods to simplify an input AIG using BDDs of
+limited size; it repeatedly applies these methods while varying the BDD size
+limit. One method is similar to dynamic weakening in that it replaces oversized
+BDDs by a conservative approximation; the other method introduces fresh
+variables to represent oversized BDDs.</p>
+
+<p>While we have not documented the algorithm with @(see xdoc), a description
+of its operation and verification can be found in:</p>
+
+<box>
+<p>Sol Swords and Warren A. Hunt, Jr.  <a
+href='http://dx.doi.org/10.1007/978-3-642-14052-5_30'>A Mechanically Verified
+AIG to BDD Conversion Algorithm</a>.  In ITP 2010.  Springer LNCS 6172, pages
+435-449.</p>
+</box>
+
+<p><a
+href='https://www.cs.utexas.edu/users/kaufmann/itp-2010/session6/swords-itp.pdf'>Slides</a>
+from the ITP presentation are also available.</p>")
+
+
 ;; AIG-Q-COMPOSE builds a BDD from an AIG; each AIG variable must be
 ;; mapped to a BDD in the alist argument or it will be assigned the
 ;; value NIL.  Naive method: not to be used for real problems.

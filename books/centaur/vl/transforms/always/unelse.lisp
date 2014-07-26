@@ -51,7 +51,11 @@ is:</p>
        body2          end
 })
 
-<p>This gets us a little closer to @(see flopcode) programs.</p>
+<p>This transform used to be important, but now VL has smarter edge-triggered
+block handling, so it is probably not at all useful.  We don't even run this
+until after combinational and flop-like always blocks have already been
+transformed, and even then, it seems unlikely that this could actually help
+with latch synthesis.</p>
 
 <p>We expect it to be run only after expressions are sized.</p>")
 

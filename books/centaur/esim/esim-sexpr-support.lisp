@@ -609,15 +609,6 @@
 ;; These functions are useful for EMOD compatibility.
 
 
-
-(local
- (defthm hons-remove-duplicates1-acl2-count
-   (<= (acl2-count (hons-remove-duplicates1 x y))
-       (acl2-count x))
-   :hints(("Goal" :in-theory (e/d (acl2-count))))
-   :rule-classes :linear))
-
-
 ;; Removes duplicate occurrences in the module and reduces the fields to the
 ;; subset that have semantic meaning in ESIM-FAIG (mostly.  Actually, :n and
 ;; :full-s are unused and :s is unused in non-primitives.)

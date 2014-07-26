@@ -96,7 +96,7 @@ That is, it returns one of the characters: 0, 1, X, or Z.</p>"
    :vl-ns
    :vl-ps
    :vl-fs)
-  :parents (modules)
+  :parents (syntax)
   :short "Representation for SystemVerilog time units (s, ms, ps, ...)")
 
 (define vl-timeunit->string ((x vl-timeunit-p))

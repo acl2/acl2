@@ -2460,7 +2460,7 @@ doublebuf_template.</p>"
 ;; To try to control the case explosion we break the function into a few parts.
 
 (define vl-module-expand-functions-aux
-  :parents (vl-module-expand-function)
+  :parents (vl-module-expand-functions)
   ((x vl-module-p))
   :returns (mv (okp       booleanp :rule-classes :type-prescription)
                (warnings  vl-warninglist-p)
@@ -2493,7 +2493,7 @@ doublebuf_template.</p>"
     (mv t warnings nf templates)))
 
 (define vl-module-expand-calls-in-decls
-  :parents (vl-module-expand-function)
+  :parents (vl-module-expand-functions)
   ((ports vl-portlist-p)
    (portdecls vl-portdecllist-p)
    (netdecls vl-netdecllist-p)
@@ -2526,7 +2526,7 @@ doublebuf_template.</p>"
 
 
 (define vl-module-expand-calls-in-nondecls
-  :parents (vl-module-expand-function)
+  :parents (vl-module-expand-functions)
   ((assigns   vl-assignlist-p)
    (modinsts  vl-modinstlist-p)
    (gateinsts vl-gateinstlist-p)

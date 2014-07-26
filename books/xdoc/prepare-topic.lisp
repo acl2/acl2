@@ -94,7 +94,7 @@
        (acc   (cons #\Newline acc))
        (acc   (str::revappend-chars "<index_body>" acc))
        (acc   (cons #\Newline acc))
-       ((mv acc state) (preprocess-main short topics-fal base-pkg state acc))
+       ((mv acc state) (preprocess-main short name topics-fal base-pkg state acc))
        (acc   (cons #\Newline acc))
        (acc   (str::revappend-chars "</index_body>" acc))
        (acc   (cons #\Newline acc))
@@ -207,9 +207,10 @@
        (acc    (str::revappend-chars "<short>" acc))
 
        ((mv short-acc state)
-        (preprocess-main short (if disable-autolinking-p
-                                   nil
-                                 topics-fal)
+        (preprocess-main short name
+                         (if disable-autolinking-p
+                             nil
+                           topics-fal)
                          base-pkg state nil))
        (short-str  (str::rchars-to-string short-acc))
 
@@ -236,9 +237,10 @@
        (acc    (str::revappend-chars "<long>" acc))
 
        ((mv long-acc state)
-        (preprocess-main long (if disable-autolinking-p
-                                  nil
-                                topics-fal)
+        (preprocess-main long name
+                         (if disable-autolinking-p
+                             nil
+                           topics-fal)
                          base-pkg state nil))
        (long-str (str::rchars-to-string long-acc))
        ((mv err &) (parse-xml long-str))

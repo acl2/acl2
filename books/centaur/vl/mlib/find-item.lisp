@@ -304,9 +304,10 @@ module (except that we don't support, e.g., named blocks.)"
   (vl-moditem-p x)
   :elementp-of-nil nil)
 
-(fty::defalist vl-moditem-alist
-  :key-type stringp
-  :val-type vl-moditem-p)
+(xdoc::without-xdoc
+  (fty::defalist vl-moditem-alist
+    :key-type stringp
+    :val-type vl-moditem-p))
 
 (defalist vl-moditem-alist-p (x)
   :key (stringp x)
@@ -332,9 +333,10 @@ module (except that we don't support, e.g., named blocks.)"
          (element->name (or element->name (mksym 'vl- type '->name))))
     `(encapsulate
        ()
-       (fty::defalist ,alist-p
-         :key-type stringp
-         :val-type ,elt-p)
+       (xdoc::without-xdoc
+         (fty::defalist ,alist-p
+           :key-type stringp
+           :val-type ,elt-p))
 
        (defalist ,alist-p (x)
          :key (stringp x)

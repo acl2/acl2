@@ -86,8 +86,7 @@ ensures that every wire has exactly one driver.</li>
 </ol>
 
 <p>Some final sanity checking is done to ensure that the module's inputs and
-outputs are properly marked and there is no <see topic='@(url
-backflow)'>backflow</see> occurring.</p>
+outputs are properly marked and there is no \"backflow\" occurring.</p>
 
 <p>The resulting E module for each Verilog module is saved in the @('esim')
 field of each @(see vl-module-p).</p>")

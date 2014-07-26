@@ -48,7 +48,7 @@
 <p><b>Getopt</b> is a tool for writing command-line programs in ACL2.  It is
 similar in spirit to <a
 href='http://perldoc.perl.org/Getopt/Long.html'>Getopt::Long</a> for Perl, <a
-href='http://trollop.rubyforge.org/'>Trollop</a> for Ruby, and so on.</p>
+href='https://rubygems.org/gems/trollop/'>Trollop</a> for Ruby, and so on.</p>
 
 <p>We basically extend @(see defaggregate) with a command-line parsing layer.
 This has some nice consequences:</p>

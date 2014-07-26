@@ -1170,7 +1170,7 @@ array.  In these cases we generate fatal warnings.</p>
 
 <p>BOZO we might eventually add as inputs the full list of modules and a
 modalist so that we can look up HIDs.  An alternative would be to use the
-annotations left by @(see vl-modulelist-follow-hids) like (e.g.,
+annotations left by @(see vl-design-follow-hids) like (e.g.,
 @('VL_HID_RESOLVED_RANGE_P')) to see how wide HIDs are.</p>"
 
   (define vl-expr-selfsize

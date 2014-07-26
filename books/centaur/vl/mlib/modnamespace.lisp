@@ -180,7 +180,7 @@ the number of gate instances in the list.</p>"
 
 
 (define vl-modinstlist->instnames-nrev ((x vl-modinstlist-p) nrev)
-  :parents (vl-modinstlist->names)
+  :parents (vl-modinstlist->instnames)
   (b* (((when (atom x))
         (nrev-fix nrev))
        (name (vl-modinst->instname (car x)))

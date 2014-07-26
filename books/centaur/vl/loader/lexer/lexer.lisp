@@ -681,28 +681,29 @@ bother to preprocess the input and just ignore any warning.</p>"
 ;; BOZO I don't think we should be using VL-READ-IDENTIFIER.  The lexer doesn't
 ;; use it.  But some other custom code (e.g., for STVs) is currently based on
 ;; it.
-(local (xdoc::set-default-parents))
-(define vl-read-identifier
-  ((echars vl-echarlist-p))
-  :returns (mv (name "A stringp with the interpreted name of this identifier
+
+(xdoc::without-xdoc ;; suppress xdoc here since this is deprecated
+  (define vl-read-identifier
+    ((echars vl-echarlist-p))
+    :returns (mv (name "A stringp with the interpreted name of this identifier
                       on success, or nil otherwise.")
-               prefix remainder)
-  (b* (((mv prefix remainder) (vl-read-simple-identifier echars))
-       ((when prefix)
-        (mv (hons-copy (vl-echarlist->string prefix)) prefix remainder)))
-    (vl-read-escaped-identifier echars))
-  ///
-  (defthm stringp-of-vl-read-identifier
-    (implies (force (vl-echarlist-p echars))
-             (equal (stringp (mv-nth 0 (vl-read-identifier echars)))
-                    (if (mv-nth 0 (vl-read-identifier echars))
-                        t
-                      nil))))
+                 prefix remainder)
+    (b* (((mv prefix remainder) (vl-read-simple-identifier echars))
+         ((when prefix)
+          (mv (hons-copy (vl-echarlist->string prefix)) prefix remainder)))
+      (vl-read-escaped-identifier echars))
+    ///
+    (defthm stringp-of-vl-read-identifier
+      (implies (force (vl-echarlist-p echars))
+               (equal (stringp (mv-nth 0 (vl-read-identifier echars)))
+                      (if (mv-nth 0 (vl-read-identifier echars))
+                          t
+                        nil))))
 
-  (defthm vl-read-identifier-under-iff
-    (iff (mv-nth 1 (vl-read-identifier echars))
-         (mv-nth 0 (vl-read-identifier echars))))
+    (defthm vl-read-identifier-under-iff
+      (iff (mv-nth 1 (vl-read-identifier echars))
+           (mv-nth 0 (vl-read-identifier echars))))
 
-  (def-prefix/remainder-thms vl-read-identifier
-    :prefix-n 1
-    :remainder-n 2))
+    (def-prefix/remainder-thms vl-read-identifier
+      :prefix-n 1
+      :remainder-n 2)))

@@ -98,10 +98,11 @@ statements.</p>"
            (vl-exprlist-lvaluesp (cdr x)))))
 
   ///
-  (deflist vl-exprlist-lvaluesp (x)
-    (vl-expr-lvaluep x)
-    :already-definedp t
-    :elementp-of-nil nil)
+  (xdoc::without-xdoc
+    (deflist vl-exprlist-lvaluesp (x)
+      (vl-expr-lvaluep x)
+      :already-definedp t
+      :elementp-of-nil nil))
 
   (deffixequiv-mutual vl-expr-lvaluep)
 
@@ -138,9 +139,9 @@ and we just need to collect the expression on the left.</p>
 <p>But gathering the lvalues from module instances is more involved.  Here, we
 need to know which ports are inputs and outputs, which we do not know until the
 @(see argresolve) transform is run.  Even then, the situation is complicated
-because (1) due to @(see backflow) it is not necessarily the case that inputs
-to the submodule are undriven, and (2) the submodule might not actually drive
-all of its outputs.</p>
+because (1) due to \"backflow\" it is not necessarily the case that inputs to
+the submodule are undriven, and (2) the submodule might not actually drive all
+of its outputs.</p>
 
 <p>We try to take these into account as best we can.  For the most accurate
 results you should typically only run lvalexprs after first running argresolve

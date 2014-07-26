@@ -141,8 +141,8 @@
              "On success, the actual range of the target wire.  We only produce
               a range and say it is resolved if (1) the wire is unsigned,
               and (2) there are no arrdims.  These are important for soundness;
-              see @(see vl-hidexpr-hid-elim).  It would probably not be too
-              hard to relax the unsigned restriction, but arrdims might be more
+              see @('vl-hidexpr-hid-elim').  It would probably not be too hard
+              to relax the unsigned restriction, but arrdims might be more
               difficult."
              :hyp (and (force (vl-expr-p x))
                        (force (vl-hidexpr-p x))
@@ -1179,7 +1179,7 @@ identifier.</p>"
 
 (define vl-design-follow-hids
   :parents (hid-elim)
-  :short "Top-level @(see follow-hids) transform."
+  :short "Top-level @('follow-hids') phase of the @(see hid-elim) transform."
   ((x vl-design-p))
   :returns (new-x vl-design-p)
   (b* (((vl-design x) x))

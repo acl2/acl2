@@ -47,9 +47,9 @@
   :parents (fty)
   :short "Generates boilerplate theorems about fixing functions and equivalence relations."
 
-  :long "<p>Part of an attempt to automate the proof discipline described at
-@(see fixtype).  See also @(see deffixequiv-mutual) for a version that can be
-used on mutually recursive functions created using @(see defines).</p>
+  :long "<p>Part of an attempt to automate the proof discipline described in
+@(see fty).  See also @(see deffixequiv-mutual) for a version that can be used
+on mutually recursive functions created using @(see defines).</p>
 
 <p>Deffixequiv generates theorems about typed arguments of a given function.
 There are two ways to invoke it:</p>
@@ -140,8 +140,8 @@ one and can be skipped by either:</p>
 (defxdoc deffixequiv-mutual
   :parents (fty)
   :short "@(see deffixequiv) for mutually-recursive functions."
-  :long "<p>Part of an attempt to automate the proof discipline described at
-@(see fixtype).  Before reading this, please also read @(see deffixequiv).</p>
+  :long "<p>Part of an attempt to automate the proof discipline described in
+@(see fty).  Before reading this, please also read @(see deffixequiv).</p>
 
 <p>Important Note: @('deffixequiv-mutual') will not work if the mutual
 recursion in question was not created using @(see defines).</p>

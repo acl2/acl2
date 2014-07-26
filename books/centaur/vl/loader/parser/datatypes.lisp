@@ -35,6 +35,12 @@
 (local (acl2::do-not generalize fertilize))
 
 
+(defxdoc parse-datatypes
+  :short "Functions for parsing SystemVerilog data types.")
+
+(local (xdoc::set-default-parents parse-datatypes))
+
+
 ; BOZO eventually need variable_dimension stuff
 
 ;    variable_dimension ::= unsized_dimension

@@ -107,6 +107,7 @@
 (include-book "centaur/gl/gl-ttags" :dir :system)
 (include-book "centaur/gl/gobject-type-thms" :dir :system)
 (include-book "centaur/gl/bfr-satlink" :dir :system)
+(include-book "centaur/gl/def-gl-rule" :dir :system)
 
 (include-book "centaur/satlink/top" :dir :system)
 (include-book "centaur/satlink/check-config" :dir :system)
@@ -444,6 +445,10 @@ of proofs.")
                               :verbosep t)))
    (value '(value-triple "xdoc.sao"))))
 
+(value-triple
+ (progn$ (cw "--- Writing ACL2+Books Manual ----------------------------------~%")
+         :invisible))
+
 (make-event
 ; xdoc::save is an event, so we might have just called it directly.  But for
 ; reasons Jared doesn't understand this is screwing up the extended manual we
@@ -456,6 +461,10 @@ of proofs.")
                        ;; everything perfect (until it's release time)
                        :redef-okp t)
            (value `(value-triple :manual))))
+
+(value-triple
+ (progn$ (cw "--- Done Writing ACL2+Books Manual -----------------------------~%")
+         :invisible))
 
 (local
  (defmacro doc-rebuild ()
