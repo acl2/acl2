@@ -50,14 +50,6 @@
 (include-book "relnotes")
 (include-book "practices")
 
-(local
-
-; The TOP topic will be the first thing the user sees when they open the
-; manual!  We localize this because you may want to write your own top topics
-; for custom manuals.
-
- (include-book "top-topic"))
-
 (include-book "xdoc/save" :dir :system)
 
 (include-book "build/doc" :dir :system)
@@ -434,6 +426,15 @@ of proofs.")
 
      ))
 
+(local
+
+; The TOP topic will be the first thing the user sees when they open the
+; manual!  We localize this because you may want to write your own top topics
+; for custom manuals.
+
+ (include-book "top-topic"))
+
+
 (comp t)
 
 (local (xdoc::fix-the-hierarchy))
@@ -465,6 +466,67 @@ of proofs.")
 (value-triple
  (progn$ (cw "--- Done Writing ACL2+Books Manual -----------------------------~%")
          :invisible))
+
+
+
+; Support for the Emacs-based Manual
+;
+; Historically this was part of system/doc/render-doc-combined.lisp.  However,
+; that file ended up being quite expensive and in the critical path.  Most of
+; the expense was that it just had to include-book doc/top.lisp, which takes
+; a lot of time because of how many books are included.
+;
+; So now, instead, to improve performance, we just merge the export of the
+; text-based manual into doc/top.lisp.
+
+(include-book "system/doc/render-doc-base" :dir :system)
+
+(defttag :open-output-channel!)
+
+#!XDOC
+(acl2::defconsts
+ (& & state)
+ (state-global-let*
+  ((current-package "ACL2" set-current-package-state))
+  (b* ((all-topics (force-root-parents
+                    (maybe-add-top-topic
+                     (normalize-parents-list ; Should we clean-topics?
+                      (get-xdoc-table (w state))))))
+       ((mv rendered state)
+        (render-topics all-topics all-topics state))
+       (rendered (split-acl2-topics rendered nil nil nil))
+       (outfile (acl2::extend-pathname (cbd)
+                                       "../system/doc/rendered-doc-combined.lsp"
+                                       state))
+       (- (cw "Writing ~s0~%" outfile))
+       ((mv channel state) (open-output-channel! outfile :character state))
+       ((unless channel)
+        (cw "can't open ~s0 for output." outfile)
+        (acl2::silent-error state))
+       (state (princ$ "; Documentation for acl2+books
+; WARNING: GENERATED FILE, DO NOT HAND EDIT!
+; The contents of this file are derived from the full acl2+books
+; documentation.  For license and copyright information, see community book
+; xdoc/fancy/LICENSE.
+
+; This program is distributed in the hope that it will be useful,
+; but WITHOUT ANY WARRANTY; without even the implied warranty of
+; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+; LICENSE for more details.
+
+(in-package \"ACL2\")
+
+(defconst *acl2+books-documentation* '"
+                      channel state))
+       (state (fms! "~x0"
+                    (list (cons #\0 rendered))
+                    channel state nil))
+       (state (fms! ")" nil channel state nil))
+       (state (newline channel state))
+       (state (close-output-channel channel state)))
+      (value nil))))
+
+
 
 (local
  (defmacro doc-rebuild ()
@@ -500,7 +562,6 @@ of proofs.")
                  :redef-okp t
                  :expand-level 2)
      (value `(value-triple :manual)))))
-
 
 
 

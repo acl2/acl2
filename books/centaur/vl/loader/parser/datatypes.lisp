@@ -36,6 +36,7 @@
 
 
 (defxdoc parse-datatypes
+  :parents (parser)
   :short "Functions for parsing SystemVerilog data types.")
 
 (local (xdoc::set-default-parents parse-datatypes))

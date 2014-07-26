@@ -34,6 +34,7 @@
 (local (include-book "../../util/arithmetic"))
 
 (defxdoc parse-blockitems
+  :parents (parser)
   :short "Functions for parsing Verilog and SystemVerilog block items."
 
   :long "<p>The Verilog-2005 grammar for regs and variables is, after filtering
