@@ -33,4 +33,5 @@
 (include-book "oslib/portcullis" :dir :system)
 (include-book "centaur/bridge/portcullis" :dir :system)
 (include-book "centaur/satlink/portcullis" :dir :system)
+(ld "centaur/fty/package.lsp" :dir :system)
 ; cert-flags: ? t :ttags :all :skip-proofs-okp t
