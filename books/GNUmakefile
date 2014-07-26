@@ -966,7 +966,7 @@ everything:
 # BOZO I probably broke this, we shouldn't use --targets, we should use ok_certs...
 critpath.txt: $(OK_CERTS)
 	echo "Building critpath.txt..."
-	time $(BUILD_DIR)/critpath.pl -m 2 --targets Makefile-books > critpath.txt
+	time $(BUILD_DIR)/critpath.pl -m 2 --targets $(BUILD_DIR)/Makefile-books > critpath.txt
 
 
 # Targets for building whole directories of books.
