@@ -31,11 +31,21 @@
 
 (in-package "ACL2")
 (include-book "list-defuns")
-(local (include-book "len"))
-(local (include-book "list-fix"))
 (local (include-book "repeat"))
 (local (include-book "nth"))
-(local (include-book "arithmetic/top" :dir :system))
+
+(local (defthm commutativity-2-of-+
+         (equal (+ x (+ y z))
+                (+ y (+ x z)))))
+
+(local (defthm fold-consts-in-+
+         (implies (and (syntaxp (quotep x))
+                       (syntaxp (quotep y)))
+                  (equal (+ x (+ y z)) (+ (+ x y) z)))))
+
+(local (defthm distributivity-of-minus-over-+
+         (equal (- (+ x y)) (+ (- x) (- y)))))
+
 
 (defthm resize-list-when-zp
   (implies (zp n)

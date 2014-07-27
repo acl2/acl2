@@ -35,7 +35,6 @@
 
 (in-package "ACL2")
 (include-book "list-fix")
-(local (include-book "arithmetic/top" :dir :system))
 (local (include-book "take"))
 
 (local (defthm equal-len-0

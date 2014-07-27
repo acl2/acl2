@@ -30,6 +30,7 @@
 ;                   Sol Swords <sswords@centtech.com>
 
 (in-package "ACL2")
+(include-book "xdoc/top" :dir :system)
 (include-book "../lists/list-defuns")
 (local (include-book "../lists/sets"))
 (local (include-book "../lists/take"))

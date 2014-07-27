@@ -1,5 +1,5 @@
 ; Definitions of List Functions
-; Copyright (C) 2008-2013 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -26,31 +26,32 @@
 ;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ;   DEALINGS IN THE SOFTWARE.
 ;
-; list-defuns.lisp
-;
-; This file was originally part of the Unicode library.  It has since then been
-; extended with additional definitions, e.g., from Centaur libraries.
+; Additional copyright notice for list-defuns.lisp.  This file was originally
+; part of the Unicode library.  It has since then been extended with additional
+; definitions, e.g., from Centaur libraries.
 
 (in-package "ACL2")
 (include-book "tools/bstar" :dir :system)
-(include-book "tools/rulesets" :dir :system)
-(local (include-book "append"))
-(local (include-book "duplicity"))
-(local (include-book "list-fix"))
-(local (include-book "flatten"))
-(local (include-book "final-cdr"))
-(local (include-book "prefixp"))
-(local (include-book "take"))
-(local (include-book "repeat"))
-(local (include-book "revappend"))
-(local (include-book "nthcdr"))
-(local (include-book "rcons"))
-(local (include-book "rev"))
-(local (include-book "equiv"))
-(local (include-book "sets"))
-(local (include-book "same-lengthp"))
-(local (include-book "sublistp"))
-(set-enforce-redundancy t)
+
+; This book is intended to be a rather bare-minimum set of list definitions.
+; Historically it included most of the books in the std/lists library and then
+; just redundantly introduced the logic-mode, guard-verified definitions.
+; However, to really optimize things and avoid having lots of dependencies, we
+; now prove the bare-minimum theorems inline and avoid including the other
+; books.
+
+(local (defthm commutativity-2-of-+
+         (equal (+ x (+ y z))
+                (+ y (+ x z)))))
+
+(local (defthm fold-consts-in-+
+         (implies (and (syntaxp (quotep x))
+                       (syntaxp (quotep y)))
+                  (equal (+ x (+ y z)) (+ (+ x y) z)))))
+
+(local (defthm distributivity-of-minus-over-+
+         (equal (- (+ x y)) (+ (- x) (- y)))))
+
 
 (defund list-fix (x)
   (declare (xargs :guard t))
@@ -78,7 +79,8 @@
   ;; prove a theorem that concluded (LIST-EQUIV X Y).  If then in book B we
   ;; load list/equiv.lisp first and then include book A, this is no longer a
   ;; valid rewrite rule and we get a horrible error!
-  )
+  :hints(("Goal" :in-theory (enable list-equiv))))
+
 
 (defun set-equiv (x y)
   (declare (xargs :guard (and (true-listp x)
@@ -86,10 +88,58 @@
   (and (subsetp-equal x y)
        (subsetp-equal y x)))
 
-(defequiv set-equiv)
+(encapsulate
+  ()
+  ;; We prove these for the same reason as we show (defequiv list-equiv).
+  (local (defthm l0
+           (implies (subsetp x (cdr y))
+                    (subsetp x y))))
 
-(defrefinement list-equiv set-equiv)
+  (local (defthm l1
+           (subsetp x x)))
 
+  (local (defthm l2
+           (implies (and (member a x)
+                         (subsetp x y))
+                    (member a y))))
+
+  (local (defthm l3
+           (implies (and (subsetp x y)
+                         (subsetp y z))
+                    (subsetp x z))))
+
+  (defequiv set-equiv)
+
+
+  ;; It seems basically reasonable to also prove the fundamental refinement
+  ;; relation.
+  (local (defthm r0
+           (equal (subsetp-equal (list-fix x) y)
+                  (subsetp-equal x y))
+           :hints(("Goal" :in-theory (enable list-fix)))))
+
+  (local (defthm r1
+           (iff (member-equal a (list-fix x))
+                (member-equal a x))
+           :hints(("Goal" :in-theory (enable list-fix)))))
+
+  (local (defthm r2
+           (equal (subsetp-equal x (list-fix y))
+                  (subsetp-equal x y))))
+
+  (local (defthm r3
+           (equal (set-equiv (list-fix x) y)
+                  (set-equiv x y))))
+
+  (local (defthm r4
+           (equal (set-equiv x (list-fix y))
+                  (set-equiv x y))))
+
+  (defrefinement list-equiv set-equiv
+    :hints(("Goal"
+            :in-theory (e/d (list-equiv) (set-equiv r4))
+            :use ((:instance r4 (y x))
+                  (:instance r4 (x y)))))))
 
 (defun binary-append-without-guard (x y)
   (declare (xargs :guard t))
@@ -119,12 +169,27 @@
   (append-without-guard x (list a)))
 
 (defund rev (x)
-  (declare (xargs :guard t))
+  (declare (xargs :guard t :verify-guards nil))
   (mbe :logic (if (consp x)
                   (append (rev (cdr x))
                           (list (car x)))
                 nil)
        :exec (revappend-without-guard x nil)))
+
+(encapsulate
+  ()
+  (local (defthm l1
+           (equal (append (append rv (list x1)) y)
+                  (append rv (cons x1 y)))))
+
+  (local (defthm l2
+           (equal (revappend x y)
+                  (append (rev x) y))
+           :hints(("Goal" :in-theory (enable rev)))))
+
+  (verify-guards rev
+    :hints(("Goal" :in-theory (enable rev)))))
+
 
 (defund prefixp (x y)
   (declare (xargs :guard t))
@@ -142,7 +207,8 @@
     nil))
 
 (defund replicate-fn (n x)
-  (declare (xargs :guard (natp n)))
+  (declare (xargs :guard (natp n)
+                  :verify-guards nil))
   (mbe :logic (if (zp n)
                   nil
                 (cons x (replicate-fn (- n 1) x)))
@@ -153,11 +219,33 @@
 
 (add-macro-alias replicate replicate-fn)
 
+(local
+ (encapsulate
+   ()
+   (local (defthm l0
+            (equal (append (replicate n x) (cons x acc))
+                   (cons x (append (replicate n x) acc)))
+            :hints(("Goal" :in-theory (enable replicate)))))
+
+   (defthm make-list-ac-redef
+     (equal (make-list-ac n x acc)
+            (append (replicate n x)
+                    acc))
+     :hints(("Goal" :in-theory (enable replicate-fn))))))
+
+(verify-guards replicate-fn
+  :hints(("Goal" :in-theory (enable replicate-fn))))
+
+
 (defund final-cdr (x)
   (declare (xargs :guard t))
   (if (atom x)
       x
     (final-cdr (cdr x))))
+
+(local (defthm nthcdr-of-nil
+         (equal (nthcdr n nil)
+                nil)))
 
 (defun rest-n (n x)
   (declare (xargs :guard (natp n)))
@@ -171,7 +259,7 @@
               (rest-n (- n 1) (cdr x))))))
 
 (defun first-n (n x)
-  (declare (xargs :guard (natp n)))
+  (declare (xargs :guard (natp n) :verify-guards nil))
   (mbe :logic (take n x)
        :exec
        (cond ((zp n)
@@ -181,6 +269,41 @@
              (t
               (cons (car x)
                     (first-n (- n 1) (cdr x)))))))
+
+(encapsulate
+  ()
+  (local (defun simpler-take-induction (n xs)
+           (if (zp n)
+               nil
+             (cons (car xs)
+                   (simpler-take-induction (1- n) (cdr xs))))))
+
+  (local (defthm equivalence-lemma
+           (implies (true-listp acc)
+                    (equal (first-n-ac n xs acc)
+                           (revappend acc (simpler-take-induction n xs))))))
+
+  (local (defthm take-redefinition
+           (equal (take n x)
+                  (if (zp n)
+                      nil
+                    (cons (car x)
+                          (take (1- n) (cdr x)))))
+           :rule-classes ((:definition :controller-alist ((TAKE T NIL))))))
+
+  (local (in-theory (disable take)))
+
+  (local (defthm take-when-atom
+           (implies (atom x)
+                    (equal (take n x)
+                           (replicate n nil)))
+           :hints(("Goal"
+                   :induct (simpler-take-induction n x)
+                   :in-theory (enable replicate)))))
+
+  (verify-guards first-n
+    :hints(("Goal" :in-theory (enable replicate)))))
+
 
 (defun same-lengthp (x y)
   (declare (xargs :guard t))
@@ -217,7 +340,7 @@
                       n))))
 
 (defund duplicity (a x)
-  (declare (xargs :guard t))
+  (declare (xargs :guard t :verify-guards nil))
   (mbe :logic (cond ((atom x)
                      0)
                     ((equal (car x) a)
@@ -225,3 +348,12 @@
                     (t
                      (duplicity a (cdr x))))
        :exec (duplicity-exec a x 0)))
+
+(local (defthm duplicity-exec-removal
+         (implies (natp n)
+                  (equal (duplicity-exec a x n)
+                         (+ (duplicity a x) n)))
+         :hints(("Goal" :in-theory (enable duplicity duplicity-exec)))))
+
+(verify-guards duplicity
+  :hints(("Goal" :in-theory (enable duplicity))))

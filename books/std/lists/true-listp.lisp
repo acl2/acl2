@@ -29,6 +29,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
+(include-book "xdoc/top" :dir :system)
 (include-book "std/lists/list-defuns" :dir :system)
 (in-theory (disable true-listp))
 

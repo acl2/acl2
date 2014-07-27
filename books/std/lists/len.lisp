@@ -30,7 +30,6 @@
 
 (in-package "ACL2")
 (include-book "abstract")
-(local (include-book "arithmetic/top" :dir :system))
 
 (defsection std/lists/len
   :parents (std/lists len)

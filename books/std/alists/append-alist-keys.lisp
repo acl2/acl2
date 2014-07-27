@@ -29,6 +29,7 @@
 ; Original authors: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
+(include-book "xdoc/top" :dir :system)
 (include-book "../lists/list-defuns")
 (local (include-book "../lists/append"))
 (local (include-book "../lists/revappend"))

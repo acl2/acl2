@@ -30,9 +30,7 @@
 
 
 (in-package "ACL2")
-
 (include-book "xdoc/top" :dir :system)
-(local (include-book "arithmetic/top-with-meta" :dir :system))
 
 (defsection index-of
   :parents (std/lists search)

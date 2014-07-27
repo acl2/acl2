@@ -33,10 +33,6 @@
 (include-book "list-fix")
 (local (include-book "std/basic/inductions" :dir :system))
 (local (include-book "append"))
-;; (include-book "rev")
-;; (local (include-book "take"))
-;; (local (include-book "arithmetic/top" :dir :system))
-
 
 ; [Jared]: I split these out of centaur/misc/lists.lisp.  I tried to mainly
 ; keep the rules about list-equiv and how it relates to built-in functions.

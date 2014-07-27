@@ -36,7 +36,6 @@
 (in-package "ACL2")
 (include-book "list-fix")
 (local (include-book "std/basic/inductions" :dir :system))
-;; (local (include-book "arithmetic/top" :dir :system))
 
 
 (defsection std/lists/append

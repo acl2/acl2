@@ -34,7 +34,16 @@
 
 (in-package "ACL2")
 (local (include-book "take"))
-(local (include-book "arithmetic/top" :dir :system))
+
+(local (defthm commutativity-2-of-+
+         (equal (+ x (+ y z)) (+ y (+ x z)))))
+
+(local (defthm fold-consts-in-+
+         (implies (and (syntaxp (quotep x))
+                       (syntaxp (quotep y)))
+                  (equal (+ x (+ y z)) (+ (+ x y) z)))))
+
+(local (in-theory (enable take-redefinition)))
 
 (defthm butlast-redefinition
   (equal (butlast x n)

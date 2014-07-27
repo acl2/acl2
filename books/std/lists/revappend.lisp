@@ -35,7 +35,6 @@
 
 (in-package "ACL2")
 (include-book "list-fix")
-;; (local (include-book "arithmetic/top" :dir :system))
 
 (local (defthm len-when-consp
          (implies (consp x)

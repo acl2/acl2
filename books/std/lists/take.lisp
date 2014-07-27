@@ -36,8 +36,19 @@
 (in-package "ACL2")
 (include-book "list-fix")
 (include-book "equiv")
-(local (include-book "arithmetic/top" :dir :system))
 (local (include-book "std/basic/inductions" :dir :system))
+
+(local (defthm commutativity-2-of-+
+         (equal (+ x (+ y z))
+                (+ y (+ x z)))))
+
+(local (defthm fold-consts-in-+
+         (implies (and (syntaxp (quotep x))
+                       (syntaxp (quotep y)))
+                  (equal (+ x (+ y z)) (+ (+ x y) z)))))
+
+(local (defthm distributivity-of-minus-over-+
+         (equal (- (+ x y)) (+ (- x) (- y)))))
 
 (defun simpler-take-induction (n xs)
   ;; Not generally meant to be used; only meant for take-induction
@@ -178,7 +189,7 @@ recommend using @('take-redefinition') instead of @('(:definition take)').</p>"
     (equal (take a (take a x))
            (take a x)))
 
-  
+
   (defcong list-equiv equal (take n x) 2
     :hints(("Goal"
             :induct (and (take n x)
@@ -186,7 +197,7 @@ recommend using @('take-redefinition') instead of @('(:definition take)').</p>"
 
   (defcong list-equiv equal (take n x) 2)
 
-  
+
   (defcong list-equiv equal (butlast lst n) 1
     :hints(("Goal" :induct (cdr-cdr-induct lst lst-equiv)))))
 

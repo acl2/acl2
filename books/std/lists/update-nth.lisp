@@ -29,13 +29,22 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
+(include-book "xdoc/top" :dir :system)
 (include-book "list-defuns")
-(local (include-book "equiv"))
-(local (include-book "repeat"))
-(local (include-book "append"))
-(local (include-book "len"))
 (local (include-book "take"))
-(local (include-book "arithmetic/top" :dir :system))
+
+(local (defthm commutativity-2-of-+
+         (equal (+ x (+ y z))
+                (+ y (+ x z)))))
+
+(local (defthm fold-consts-in-+
+         (implies (and (syntaxp (quotep x))
+                       (syntaxp (quotep y)))
+                  (equal (+ x (+ y z)) (+ (+ x y) z)))))
+
+(local (defthm distributivity-of-minus-over-+
+         (equal (- (+ x y)) (+ (- x) (- y)))))
+
 
 (defsection std/lists/update-nth
   :parents (std/lists update-nth)

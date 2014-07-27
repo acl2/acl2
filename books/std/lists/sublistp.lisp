@@ -30,10 +30,19 @@
 
 (in-package "ACL2")
 (include-book "prefixp")
-(include-book "equiv")
-(local (include-book "take"))
 (local (include-book "nthcdr"))
-(local (include-book "arithmetic/top-with-meta" :dir :system))
+
+(local (defthm commutativity-2-of-+
+         (equal (+ x (+ y z))
+                (+ y (+ x z)))))
+
+(local (defthm fold-consts-in-+
+         (implies (and (syntaxp (quotep x))
+                       (syntaxp (quotep y)))
+                  (equal (+ x (+ y z)) (+ (+ x y) z)))))
+
+(local (defthm distributivity-of-minus-over-+
+         (equal (- (+ x y)) (+ (- x) (- y)))))
 
 (defsection sublistp
   :parents (std/lists search)
