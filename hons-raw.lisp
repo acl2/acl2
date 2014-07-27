@@ -562,7 +562,7 @@
   #+static-hons
   (let ((keydata (hl-cache-keydata cache))
         (valdata (hl-cache-valdata cache)))
-    (loop for i fixnum from 0 to (expt 2 20) do
+    (loop for i fixnum below (expt 2 20) do
           (setf (svref keydata i) nil)
           (setf (svref valdata i) nil)))
 
