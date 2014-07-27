@@ -2960,6 +2960,28 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
            (true-listp (append a b)))
   :rule-classes :type-prescription)
 
+(defaxiom car-cdr-elim
+  (implies (consp x)
+           (equal (cons (car x) (cdr x)) x))
+  :rule-classes :elim)
+
+(defaxiom car-cons (equal (car (cons x y)) x))
+
+(defaxiom cdr-cons (equal (cdr (cons x y)) y))
+
+(defaxiom cons-equal
+  (equal (equal (cons x1 y1) (cons x2 y2))
+         (and (equal x1 x2)
+              (equal y1 y2))))
+
+; Induction Schema:   (and (implies (not (consp x)) (p x))
+;                          (implies (and (consp x) (p (car x)) (p (cdr x)))
+;                                   (p x)))
+;                     ----------------------------------------------
+;                     (p x)
+;
+;
+
 (defthm append-to-nil
   (implies (true-listp x)
            (equal (append x nil)
@@ -4088,38 +4110,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
        )
 
   :rule-classes :tau-system)
-
-; ; For each of the primitives we have the axiom that when their guards
-; ; are unhappy, the result is given by apply.  This is what permits us
-; ; to replace unguarded terms by apply's.  E.g.,
-;
-; (defaxiom +-guard
-;   (implies (or (not (rationalp x))
-;                (not (rationalp y)))
-;            (equal (+ x y)
-;                   (apply '+ (list x y)))))
-
-(defaxiom car-cdr-elim
-  (implies (consp x)
-           (equal (cons (car x) (cdr x)) x))
-  :rule-classes :elim)
-
-(defaxiom car-cons (equal (car (cons x y)) x))
-
-(defaxiom cdr-cons (equal (cdr (cons x y)) y))
-
-(defaxiom cons-equal
-  (equal (equal (cons x1 y1) (cons x2 y2))
-         (and (equal x1 x2)
-              (equal y1 y2))))
-
-; Induction Schema:   (and (implies (not (consp x)) (p x))
-;                          (implies (and (consp x) (p (car x)) (p (cdr x)))
-;                                   (p x)))
-;                     ----------------------------------------------
-;                     (p x)
-;
-;
 
 (defaxiom booleanp-characterp
   (booleanp (characterp x))
