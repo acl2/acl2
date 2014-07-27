@@ -1351,7 +1351,31 @@ instantiations.</li>
     ',verbosep stable-under-simplificationp state))
 
 
+(make-event
 
+; Added by Matt K., 7/27/2014: here we disable waterfall parallelism in order
+; to avoid the error shown below when using ACL2(p) (or ACL2(hp)).  Quite
+; possibly, anyone who includes this book will also need to disabled waterfall
+; parallelism; but here we only disable it for the events below.  (Quoting :doc
+; set-waterfall-parallelism: "However, a call of this macro will not affect
+; waterfall-parallelism when including a certified book that contains that
+; call.")
+
+; Here is the error message referenced above:
+
+; ACL2 Error in ( DEFTHM PASS-CONTEXT-OF-LOGAPP ...):  Since we are translating
+; a form in ACL2(p) intended to be executed with waterfall parallelism
+; enabled, the form (LOGBITP-REASONING) was expected to represent an
+; ordinary value, not an error triple (mv erp val state), as would be
+; acceptable in a serial execution of ACL2.  Therefore, the form returning
+; a tuple of the form (* * STATE) is an error.  See :DOC unsupported-
+; waterfall-parallelism-features and :DOC error-triples-and-parallelism
+; for further explanation.
+
+ (if (f-get-global 'parallel-execution-enabled state)
+     (er-progn (set-waterfall-parallelism nil)
+               (value '(value-triple nil)))
+   (value '(value-triple nil))))
 
 ;; Demo
 (local
