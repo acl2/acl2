@@ -22588,10 +22588,12 @@
      protect-default congruent-to missing-only doc ctx state event-form)))
 
 #-acl2-loop-only
-(defun-one-output mv-let-for-with-local-stobj (mv-let-form st creator flet-fns w)
+(defun-one-output mv-let-for-with-local-stobj (mv-let-form st creator flet-fns
+                                                           w program-p)
 
 ; If w is not nil, then it is the current ACL2 world and we are to oneify the
-; appropriate subforms.
+; appropriate subforms with the indicated program-p argument.  If w is nil,
+; then program-p is irrelevant.
 
 ; It was tempting to have an acl2-loop-only version of the body below as well,
 ; which would omit the binding of the live var.  But if someone were to
@@ -22622,7 +22624,9 @@
                                (*32-bit-integer-stack-length*
                                 *32-bit-integer-stack-length*)))
                             (t `((,(the-live-var st) ,st)))))
-               ,(let ((p (if w (oneify producer flet-fns w t) producer)))
+               ,(let ((p (if w
+                             (oneify producer flet-fns w program-p)
+                           producer)))
                   (if (eq st 'state)
 
 ; We should lock this computation when #+acl2-par, even though special
@@ -22649,8 +22653,9 @@
              (declare (ignore ,st))
              ,@(if w
                    (if (cdr rest) ; rest is ((declare (ignore ...)) body)
-                       (list (car rest) (oneify (cadr rest) flet-fns w t))
-                     (list (oneify (car rest) flet-fns w t)))
+                       (list (car rest)
+                             (oneify (cadr rest) flet-fns w program-p))
+                     (list (oneify (car rest) flet-fns w program-p)))
                  rest))))
 
 #-acl2-loop-only ; see the comment in mv-let-for-with-local-stobj
@@ -22888,7 +22893,7 @@
               (er hard 'with-local-stobj
                   "Macroexpansion of a with-local-stobj call caused an error. ~
                    See :DOC with-local-stobj.")
-            (mv-let-for-with-local-stobj mv-let-form st creator nil nil))))
+            (mv-let-for-with-local-stobj mv-let-form st creator nil nil nil))))
 
 (defun create-state ()
   (declare (xargs :guard t))

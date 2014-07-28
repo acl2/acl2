@@ -1034,17 +1034,17 @@
 (defvar *ignore-invariant-risk*
 
 ; In oneify-cltl-code we handle an "invariant-risk" that stobj invariants
-; aren't violated by guard violations upon applying their updaters.  The idea
-; is to force evaluation to use *1* functions down to those primitives, which
-; always check their guards.  See also the comment in *mbe-as-exec*.  Note that
-; this is a separate issue from the lack of atomicity of some defabsstobj
-; exports (which is implemented using *inside-absstobj-update*).
+; aren't violated upon ill-guarded calls of stobj updaters.  The idea is to
+; force evaluation to use *1* functions down to those primitives, which always
+; check their guards.  See also the comment in *mbe-as-exec*.  Note that this
+; is a separate issue from the lack of atomicity of some defabsstobj exports
+; (which is implemented using *inside-absstobj-update*).
 
 ; There may be cases where this use of *1* functions may be slower than one
 ; likes.  By setting *ignore-invariant-risk* to any non-nil value, one defeats
 ; that behavior.  This could be unsound, but since one needs to slip into raw
 ; Lisp to set this global, we take the position that setting it is much like
-; redefining prove to succeed by returning (value nil).
+; redefining prove so that one always gets the "Q.E.D."
 
 ; Perhaps we will consider avoiding this use of *1* functions when the only
 ; danger of invariant violations is from local stobjs.  Since only :program
@@ -1146,8 +1146,56 @@
 ; don't want to call return-last on top of that, or we'll be attempting to take
 ; the *1*-symbol of the *1*-symbol!
 
-             (oneify (car (last x)) fns w program-p))
+             (cond
+              ((not (eq program-p 'invariant-risk))
+               (oneify (car (last x)) fns w program-p))
+              (t
+
+; In the case that program-p is 'invariant-risk, we are in the process of
+; oneifying the body of a :program mode function with invariant-risk, for which
+; any call of an invariant-risk functions is to execute with its *1* function
+; but other calls should use raw Lisp functions; see the final case in oneify.
+; Here, though, we want to call the *1* function even if it does not have
+; invariant-risk, because of the ec-call wrapper.
+
+; We need to be careful in this case that ec-call really does invoke a *1*
+; function here, and does so properly.  Consider the following example.  If we
+; use the oneify call above (from the case that (not (eq program-p
+; 'invariant-risk))), then EXEC is returned by the call of f-prog2 below, which
+; is incorrect.  The EXEC return value would be OK if f-prog2 were defined with
+; the ec-call wrapper removed, because f-log has no invariant-risk and hence we
+; want it to execute fast using the :exec form from its mbe.  But the ec-call
+; means that we really want to call *1*f-log -- we are no longer slipping into
+; raw Lisp and hence we no longer want the special *mbe-as-exec* handling,
+; which is inappropriate here since it is intended to give the illusion that we
+; are in raw Lisp.  Thus, we call *1*f-log and what's more, we bind
+; *mbe-as-exec* to nil.
+
+;   (defun f-log () (mbe :logic 'logic :exec 'exec))
+;   (defstobj st (fld :type integer :initially 0))
+;   (defun f-prog (st)
+;     (declare (xargs :stobjs st :mode :program))
+;     (let ((st (update-fld 3 st)))
+;       (mv (f-log) st)))
+;   (f-prog st)
+;   (defun f-prog2 (st)
+;     (declare (xargs :stobjs st :mode :program))
+;     (let ((st (update-fld 3 st)))
+;       (mv (ec-call (f-log)) st)))
+;   (f-prog2 st) ; EXEC (wrong)
+
+             (let ((form (car (last x))))
+               `(let* ((args (list ,@(oneify-lst (cdr form) fns w program-p)))
+                       (*mbe-as-exec* nil))
+                  (apply ',(*1*-symbol (car form)) args))))))
             ((eq fn 'mbe1-raw)
+
+; Here we process macroexpansions of mbe calls.
+
+; For :program mode functions (i.e., when program-p is non-nil), an mbe call
+; always reduces to its :exec value, and moreover the :logic code is only
+; called in safe-mode.  Before changing this behavior, consider the comment in
+; put-invariant-risk.
 
 ; See the discussion in (defun-*1* return-last ...).  Here, we discuss only the
 ; special variable *mbe-as-exec*.
@@ -1247,7 +1295,8 @@
     (mv-let (erp st mv-let-form creator)
             (parse-with-local-stobj (cdr x))
             (declare (ignore erp)) ; should be nil
-            (mv-let-for-with-local-stobj mv-let-form st creator fns w)))
+            (mv-let-for-with-local-stobj mv-let-form st creator fns w
+                                         program-p)))
    ((eq (car x) 'stobj-let)
 
 ; Stobj-let is rather complicated, so we prefer to take advantage of the logic

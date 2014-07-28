@@ -4331,7 +4331,8 @@
 
 (defun all-fnnames1-exec (flg x acc)
 
-; Keep this in sync with all-fnnames1.
+; Keep this in sync with all-fnnames1.  Also see the comment about
+; all-fnnames1-exec in put-invariant-risk before modifying this function.
 
   (cond (flg ; x is a list of terms
          (cond ((null x) acc)
@@ -5222,6 +5223,21 @@
 ; may get an 'invariant-risk property; see initialize-invariant-risk.  The
 ; present function, put-invariant-risk, propagates these 'invariant-risk
 ; properties up through callers.
+
+; When we call all-fnnames1-exec below, we are ignoring :logic code from mbe
+; calls.  To see that this is sound, first note that we are determining when
+; there is a risk of bypassing guard checks that would avoid invariant
+; violations.  If we are executing :logic code from an mbe call, then we must
+; be in the *1* code for a :logic mode function, since :program mode functions
+; always execute the :exec code of an mbe call (see oneify), as does raw Lisp
+; code.  But invariants are checked (in particular, by checking guards for live
+; stobj manipulation) when making *1* calls of :logic mode functions.  There is
+; actually one other case that all-fnnames1-exec ignores function symbols in
+; the call tree: it does not collect function symbol F from (ec-call (F ...)).
+; But in this case, *1*F is called, and if there is a non-nil 'invariant-risk
+; property for F, then we trust that oneify has laid down suitable *1* code for
+; F to preserve invariants, so there is no risk to bypassing guards in the
+; evaluation of bodies.
 
   (cond (non-executablep wrld)
         (t (put-invariant-risk1 names

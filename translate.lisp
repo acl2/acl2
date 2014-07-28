@@ -331,6 +331,9 @@
 ;     is true.
 ;
 ; (c) Raw-ev-fncall binds *mbe-as-exec* to nil for :logic mode functions.
+;
+; (d) Oneify binds *mbe-as-exec* to nil when ec-call is applied to a :logic
+;     mode function.
 
 ; Without invariant-risk, none of this would be necessary: a :program mode
 ; function call would lead to raw Lisp evaluation, where each mbe call
@@ -373,6 +376,9 @@
 ; evaluation of the mbe form under (lgc st) would use the :exec form, leading
 ; erroneously to a successful proof!  However, we bind *mbe-as-exec* to nil in
 ; raw-ev-fncall precisely to avoid such a probem.
+
+; To see why we need (d), see the example in a comment in oneify that starts
+; with "(defun f-log".
 
   nil)
 
