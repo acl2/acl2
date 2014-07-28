@@ -69,7 +69,11 @@
 ;; Note: some older versions of SBCL can't handle the following tests due to a
 ;; bug, e.g., see https://bugs.launchpad.net/sbcl/+bug/1333327.  This seems to
 ;; be fixed as of SBCL 1.2.0, so we re-enable the tests.
+;; Note: These fail in the CMUCL 2014-06 snapshot and also (at least for the
+;; first)  CMUCL 20, so we comment them out for CMUCL.
+#-cmucl
 (test-fail "#\wtf ")
+#-cmucl
 (test-fail "#\Return ")
 
 
