@@ -1350,11 +1350,8 @@ instantiations.</li>
     clause ',restrict ',passes ',prune-examples ',simp-hint ',add-hints
     ',verbosep stable-under-simplificationp state))
 
-
-(make-event
-
-; Added by Matt K., 7/27/2014: here we disable waterfall parallelism in order
-; to avoid the error shown below when using ACL2(p) (or ACL2(hp)).  Quite
+; Added by Matt K., 7/2014: Next we disable waterfall parallelism in order to
+; avoid the error shown below when using ACL2(p) (or ACL2(hp)).  Quite
 ; possibly, anyone who includes this book will also need to disabled waterfall
 ; parallelism; but here we only disable it for the events below.  (Quoting :doc
 ; set-waterfall-parallelism: "However, a call of this macro will not affect
@@ -1372,10 +1369,8 @@ instantiations.</li>
 ; waterfall-parallelism-features and :DOC error-triples-and-parallelism
 ; for further explanation.
 
- (if (f-get-global 'parallel-execution-enabled state)
-     (er-progn (set-waterfall-parallelism nil)
-               (value '(value-triple nil)))
-   (value '(value-triple nil))))
+(local (include-book "std/system/non-parallel-book" :dir :system))
+(local (non-parallel-book)) ; probably need not be local
 
 ;; Demo
 (local

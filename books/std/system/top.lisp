@@ -4,3 +4,4 @@
 (in-package "ACL2")
 
 (include-book "system/top" :dir :system)
+(include-book "non-parallel-book")

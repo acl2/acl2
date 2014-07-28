@@ -48,6 +48,7 @@
 (include-book "std/strings/fast-cat" :dir :system)
 (include-book "misc/assert" :dir :system)
 (include-book "misc/definline" :dir :system) ;; bozo
+(include-book "std/system/non-parallel-book" :dir :system)
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "data-structures/list-defthms" :dir :system))
 
@@ -1035,23 +1036,6 @@ occasionally useful, e.g., when defining structures using macros that expect
 constraints for certain fields.</p>"
   (declare (ignore x))
   t)
-
-
-
-(defsection non-parallel-book
-  :parents (utilities)
-  :short "Mark a book as incompatible with ACL2(p) waterfall parallelism."
-  :long "<p>ACL2(h)'s memoization code isn't thread safe, and this can
-sometimes cause problems for users of ACL2(hp).  This macro disables waterfall
-parallelism if running on ACL2(hp).</p>"
-
-  (defmacro non-parallel-book ()
-    '(make-event
-      (if (and (ACL2::hons-enabledp state)
-               (f-get-global 'ACL2::parallel-execution-enabled state))
-          (er-progn (set-waterfall-parallelism nil)
-                    (value '(value-triple nil)))
-        (value '(value-triple nil))))))
 
 
 (defenum vl-edition-p

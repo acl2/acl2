@@ -1,4 +1,7 @@
-; Matt Kaufmann
+; Copyright (C) 2014, Regents of the University of Texas
+; Contributed by Matt Kaufmann (original date October, 2012)
+; based on earlier work by Sol Swords.
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
 ; (certify-book "meta-extract-simple-test" 0 t :ttags :all)
 

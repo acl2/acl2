@@ -68,18 +68,12 @@
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "equal-by-logbitp"))
 
-(make-event
+; Added by Matt K., 7/2014: disable waterfall parallelism for the proofs below,
+; since some call logbitp-reasoning.  See the long comment near the form
+; (non-parallel-book) in centaur/bitops/equal-by-logbitp.lisp.
 
-; Added by Matt K., 7/27/2014: disable waterfall parallelism for the proofs
-; below, since some call logbitp-reasoning.  See the long comment about
-; "disable waterfall parallelism" in centaur/bitops/equal-by-logbitp.lisp.  In
-; particular, note that this form does not affect waterfall-parallelism when
-; including this book.
-
- (if (f-get-global 'parallel-execution-enabled state)
-     (er-progn (set-waterfall-parallelism nil)
-               (value '(value-triple nil)))
-   (value '(value-triple nil))))
+(local (include-book "std/system/non-parallel-book" :dir :system))
+(local (non-parallel-book)) ; probably need not be local
 
 (defmacro def-context-rule (name body &rest args)
   (let* ((fnname-look (ec-call (assoc-keyword :fnname args)))

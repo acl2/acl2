@@ -1,3 +1,7 @@
+; Copyright (C) 2014, Regents of the University of Texas
+; Written by Matt Kaufmann (original date December, 2009)
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+
 ; This book checks our world invariants.  Feel free to strengthen those checks
 ; as we add new ones.  Note that the real checking goes on in the make-event
 ; form(s) in worldp-check.acl2.

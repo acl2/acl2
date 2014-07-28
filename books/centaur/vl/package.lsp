@@ -216,6 +216,8 @@
       str::implode
       str::explode
 
+      non-parallel-book
+
       ;; To make VL::VL show up as just VL in the ACL2 package, e.g., to
       ;; make the XDOC index prettier.
       vl
@@ -225,8 +227,6 @@
       ;; acl2-customization file stuff
       why
       with-redef
-
-
 
       ))
 

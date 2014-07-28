@@ -134,6 +134,11 @@
 (include-book "std/strings/base64" :dir :system)
 (include-book "std/strings/pretty" :dir :system)
 
+; Note, 7/28/2014: if we include
+; (include-book "std/system/top" :dir :system)
+; instead of the following, we get a name conflict.
+(include-book "std/system/non-parallel-book" :dir :system)
+
 (include-book "centaur/ubdds/lite" :dir :system)
 (include-book "centaur/ubdds/param" :dir :system)
 
