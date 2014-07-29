@@ -483,8 +483,8 @@ for structures introduced using @('defrec').</li>
 
 <ul>
 
-<li>It has been to make it easier to extend, largely in support of @(see
-std::defines).</li>
+<li>It has been modified to make it easier to extend, largely in support of
+@(see std::defines).</li>
 
 <li>It now uses @(see with-output) to avoid printing so much output.</li>
 
