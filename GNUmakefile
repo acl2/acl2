@@ -520,10 +520,11 @@ proofs: compile-ok
 .PHONY: DOC acl2-manual
 
 # The next target, DOC, is the target that should generally be used
-# for rebuilding the ACL2 User's Manual.  See the warnings for some
-# targets below.  Also note the following:
+# for rebuilding the ACL2 User's Manual.
+# WARNING: Sub-targets below have their own warnings!
+# WARNING: This is unlikely to work with ACL2; use ACL2(h).
 # WARNING: We suggest that you supply ACL2=, e.g., make DOC
-# ACL2=/u/acl2/saved_acl2.  Otherwise parts of the build might use
+# ACL2=/u/acl2/saved_acl2h.  Otherwise parts of the build might use
 # copies of ACL2 that surprise you.  (It seems awkward to pass
 # ACL2 through recursive calls of make so we leave this to the
 # user.)

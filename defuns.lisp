@@ -2706,7 +2706,7 @@
                     #+:non-standard-analysis
                     (wrld (if std-p
                               (putprop fn 'constrainedp t
-                                       wrld)
+                                       (putprop fn 'constraint-lst (list term) wrld))
                             wrld)))
                 (mv-let
                  (wrld ttree)
