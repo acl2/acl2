@@ -54,7 +54,7 @@
   :short "Release notes for the ACL2 Community Books for ACL2 6.5 (August
 2014)."
 
-; Currently covered: through revision 2869.
+; Currently covered: through revision 2894.
 
   :long "<p>The following is a brief summary of changes made to the @(see
 community-books) between the releases of ACL2 6.4 and 6.5.</p>
@@ -189,6 +189,10 @@ tshell).</li>
 @('doc/top.lisp') to avoid requiring Glucose to build the ACL2+Books
 manual.</li>
 
+<li>Certain problematic books have been annotated with @(see
+non-parallel-book), to avoid incompatibilities with @(see
+waterfall-parallelism) problems on ACL2(p).</li>
+
 </ul>
 
 
@@ -222,8 +226,8 @@ target.</li>
 @('defung-stress') book, also substantially improving the critical path for
 @('make all').</li>
 
-<li>Reduced dependencies in @(see std/util) and @(see xdoc) to speed up
-certification.</li>
+<li>Reduced dependencies in @(see std/util), @(see std/lists), @(see
+std/alists), and @(see xdoc) to speed up certification.</li>
 
 </ul>
 
@@ -249,6 +253,7 @@ MIT/X11 style license instead of the GNU General Public License.</p>
 
 <p>Many books that lacked explicit licensing information have been updated to
 include appropriate copyright headers.</p>
+
 
 <h2>New Libraries, Demos, and Documentation</h2>
 
@@ -327,7 +332,8 @@ relocated to more suitable homes.</p>
 into @(see xdoc) format.</p>
 
 <p>Many topics have been improved by eliminating typos, making minor
-clarifications, adding appropriate cross-references.</p>
+clarifications, adding appropriate cross-references, fixing broken links, and
+ensuring that @(':parents') are correct.</p>
 
 
 
@@ -357,7 +363,7 @@ links.</li>
 href='http://www.sitemaps.org/'>sitemap</a> and other \"static\" HTML files,
 which may be useful for search engine optimization.</li>
 
-<li>Added .htaccess files to fancy manuals, which can enable server-side
+<li>Added @('.htaccess') files to fancy manuals, which can enable server-side
 compression for significant file size/performance improvements.</li>
 
 </ul>
@@ -374,7 +380,7 @@ been fixed.  It also now handles mutually recursive functions more nicely.</li>
 to write manuals to paths like @('~/my-manual').</li>
 
 <li>Fixed bugs in XDOC's handling of <tt>@@('...')</tt> and <tt>@@({...})</tt>
-directives.</li>
+directives, and otherwise improved error messages with more context.</li>
 
 <li>Fixed a problem with @(see xdoc::xdoc-extend) when the topic to extend
 lacked a @(':long') string.</li>
@@ -414,6 +420,9 @@ macros.  This may help to simplify guard obligations in functions that call
 <h5>@(see std/lists)</h5>
 
 <p>An @(see std/lists/update-nth) book has been added.</p>
+
+<p>A @('remove-duplicates') book has been added with lemmas about @(see
+remove-duplicates-equal) and @(see hons-remove-duplicates).</p>
 
 <p>Added a missing rule about @(see acl2-count) to
 @('std/lists/acl2-count').</p>
@@ -474,20 +483,16 @@ for structures introduced using @('defrec').</li>
 
 <ul>
 
+<li>It has been to make it easier to extend, largely in support of @(see
+std::defines).</li>
+
+<li>It now uses @(see with-output) to avoid printing so much output.</li>
+
 <li>Theorems introduced by @(see std::returns-specifiers) now often have better
 names, and the name can also be controlled using @(':name').</li>
 
 <li>The new @(see std::more-returns) macro allows for additional @(see
 std::returns-specifiers) style theorems after a @('define').</li>
-
-<li>@(see std::define) now has an option to avoid introducing an
-encapsulate.</li>
-
-<li>Refactored @(see std::define) to make it easier to extend, largely in
-support of @(see std::defines).</li>
-
-<li>The @(see with-output) macro is now used to avoid printing so much
-output.</li>
 
 <li>A performance bug with the @(see std::var-is-stobj-p) function, notably
 used by @('define'), has been fixed.</li>
@@ -495,6 +500,9 @@ used by @('define'), has been fixed.</li>
 <li>Experimental <i>post-define hooks</i> can allow for custom actions to be
 carried out after submitting a @('define'); such a hook allows for a tight
 integration between @('define') and the new @(see fty::fty) library.</li>
+
+<li>New options allow you to avoid introducing an encapsulate and to name and
+save the termination proof.</li>
 
 </ul>
 
@@ -730,7 +738,6 @@ lognot) and @(see logmask).</p>
 <p>The new @('centaur/bitops/contrib') directory contains additional lemmas.</p>
 
 
-
 <h2>Other Changes</h2>
 
 <p>(File interface/emacs/inf-acl2.el) One now gets a clear error, suggesting a
@@ -764,7 +771,26 @@ properly non-executable.</p>
 <p>The tau @('elementary-bounders') book has been extended with additional
 lemmas about @(see expt) for powers of 2.</p>
 
-")
+
+
+<h2>Changes to ACL2(r) Books</h2>
+
+<p>Many explicit function definitions have been replaced with constraints, in
+order to make theorems about those functions more useful for functional
+instantiation later.  For example, instead of insisting that @('(f+g)(x)') is
+really equal to @('f(x) + g(x)'), this is now only required for valid values of
+@('x').</p>
+
+<p>The theory of integration is now updated to conform to the current version
+of continuity and differentiability (which allows functions that are only
+continuous or differentiable over a particular domain).</p>
+
+<p>The concepts of continuity, differentiability, and integration now have both
+non-standard and classical definitions.  These are shown to be equivalent for
+classical functions without parameters.  Even when parameters are present, the
+classical definitions can be used to take advantage of important theorems, such
+as the intermediate-value theorem, mean-value theorem, fundamental theorem of
+calculus, etc.</p>")
 
 
 (defxdoc note-6-4-books
