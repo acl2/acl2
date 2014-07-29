@@ -1525,6 +1525,10 @@
 ; stored.  Stobj-flag is the name of the stobj (whether from defstobj or
 ; defabsstobj), if any, that the given definition supports.
 
+; Warning: wrld is not necessarily the ACL2 world at the time def is submitted.
+; See the comment below in the binding of cl-compliant-p-optimization.
+; However, wrld is a legal ACL2 world, typically, the current ACL2 world.
+
 ; See the template above for detailed comments, which however are not
 ; necessarily kept fully up-to-date.
 
@@ -1623,8 +1627,34 @@
          (fn (car def))
          (*1*fn (*1*-symbol fn))
          (cl-compliant-p-optimization
-          (and (eq (symbol-class fn wrld) :common-lisp-compliant)
-               (assert$ (eq defun-mode :logic) t)))
+          (and (eq defun-mode :logic)
+
+; One might think that the conjunct above is implied by the one below.  But
+; consider this book:
+
+;   (in-package "ACL2")
+;   (defun foo (x)
+;     (declare (xargs :mode :program))
+;     x)
+;   (verify-termination foo)
+;   (verify-guards foo)
+
+; At one point we checked the symbol-class first, and then did an assert check
+; that defun-mode is :logic -- and we got the assertion error during Step 3 of
+; certify-book for this example!  The backtrace looked like this:
+
+;   1. THROW-RAW-EV-FNCALL
+;   2. (HARD-ERROR ASSERT$ ...)
+;   3. ONEIFY-CLTL-CODE
+;   4. INSTALL-DEFS-FOR-ADD-TRIP
+;   5. HCOMP-BUILD-FROM-STATE-RAW
+
+; The problem was that the world wasn't rolled back by Step 3, and hence foo
+; was :common-lisp-compliant at the point where we were processing the first
+; defun.  Our solution is to make sure that we are oneifying a function that is
+; truly :common-lisp-compliant.
+
+               (eq (symbol-class fn wrld) :common-lisp-compliant)))
          (formals (cadr def))
          (boot-strap-p (global-val 'boot-strap-flg (w *the-live-state*))))
     (cond
