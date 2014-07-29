@@ -1,5 +1,7 @@
 (in-package "ACL2")
 
+; cert_param: (uses-acl2r)
+
 (defun real-polynomial-p (poly)
   (if (consp poly)
       (and (realp (car poly))
