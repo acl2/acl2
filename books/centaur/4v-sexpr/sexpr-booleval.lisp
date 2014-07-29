@@ -503,7 +503,8 @@
     :hints(("Goal" :in-theory (e/d* (4v-sexpr-apply)
                                     (4v-<= 4v-op-defs
                                            nth
-                                           nth-when-zp))
+                                           ;nth-when-zp
+                                           ))
             :do-not-induct t)))
 
   (defthm 4v-lookup-default-<=-4v-lookup

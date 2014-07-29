@@ -31,9 +31,38 @@
 
 (in-package "ACL2")
 (include-book "xdoc/top" :dir :system)
+(include-book "alist-keys")
 (include-book "alist-vals")
-(local (include-book "hons-assoc-equal"))
-(include-book "../lists/sets")
+
+(local
+ (encapsulate
+   ()
+   (in-theory (enable list-fix))
+
+   (local (defthm l0
+            (implies (subsetp x (cdr y))
+                     (subsetp x y))))
+
+   (defthm subsetp-equal-reflexive
+     (subsetp-equal x x))
+
+   (defthm hons-assoc-equal-of-list-fix
+     (equal (hons-assoc-equal key (list-fix alist))
+            (hons-assoc-equal key alist)))
+
+   (defthm hons-assoc-equal-of-list-fix
+     (equal (hons-assoc-equal key (list-fix alist))
+            (hons-assoc-equal key alist)))
+
+   (defthm hons-assoc-equal-append
+     (equal (hons-assoc-equal x (append a b))
+            (or (hons-assoc-equal x a)
+                (hons-assoc-equal x b))))
+
+   (defthm alist-keys-of-list-fix
+     (equal (alist-keys (list-fix x))
+            (alist-keys x)))))
+
 
 (defsection alists-agree
   :parents (std/alists)

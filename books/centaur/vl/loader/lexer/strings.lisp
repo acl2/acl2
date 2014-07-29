@@ -32,6 +32,7 @@
 (include-book "lexstate")
 (include-book "chartypes")
 (include-book "utils")
+(local (include-book "../../util/arithmetic"))
 
 (defsection lex-strings
   :parents (lexer)

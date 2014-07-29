@@ -39,6 +39,7 @@
 (local (include-book "centaur/misc/hons-sets" :dir :system))
 (local (include-book "centaur/aig/eval-restrict" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
+(local (include-book "std/lists/nth" :dir :system))
 (local (in-theory (disable nth-when-zp)))
 
 

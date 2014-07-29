@@ -31,12 +31,8 @@
 
 (in-package "ACL2")
 (include-book "alist-equiv")
-(include-book "tools/bstar" :dir :system)
-(local (include-book "hons-assoc-equal"))
-(local (include-book "../lists/append"))
-(local (include-book "../lists/rev"))
-(local (include-book "../lists/equiv"))
 
+(local (in-theory (enable list-fix rev)))
 
 (defsection fal-extract
   :parents (std/alists)
@@ -130,6 +126,11 @@ temporarily made fast.</p>"
     (<= (len (fal-extract x al))
         (len x))
     :rule-classes ((:rewrite) (:linear)))
+
+  (local (defthm l0
+           (implies (hons-assoc-equal key alist)
+                    (equal (car (hons-assoc-equal key alist))
+                           key))))
 
   (defthm hons-assoc-equal-fal-extract
     (equal (hons-assoc-equal x (fal-extract keys al))

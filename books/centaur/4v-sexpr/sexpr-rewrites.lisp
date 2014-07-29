@@ -34,6 +34,8 @@
 (include-book "centaur/misc/hons-extra" :dir :system)
 (include-book "sexpr-vars-1pass")
 (include-book "std/misc/two-nats-measure" :dir :system)
+(include-book "std/lists/remove-duplicates" :dir :system)
+(local (include-book "std/lists/top" :dir :system))
 (local (in-theory (disable set::double-containment)))
 
 (make-event

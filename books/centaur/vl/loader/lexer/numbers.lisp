@@ -33,6 +33,7 @@
 (include-book "chartypes")
 (include-book "utils")
 (include-book "../../util/warnings")
+(local (include-book "../../util/arithmetic"))
 
 (defxdoc lex-numbers
   :parents (lexer)

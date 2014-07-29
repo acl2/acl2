@@ -36,8 +36,6 @@
 ; you can include the individual books, which mostly try to leave the default
 ; theory alone.
 
-(include-book "../lists/top")
-
 (include-book "alistp")
 (include-book "alist-keys")
 (include-book "alist-vals")

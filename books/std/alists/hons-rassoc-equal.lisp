@@ -33,7 +33,6 @@
 (include-book "../lists/list-defuns")
 (include-book "alist-keys")
 (include-book "alist-vals")
-(local (include-book "../lists/list-fix"))
 
 (defsection hons-rassoc-equal
   :parents (std/alists)
@@ -76,7 +75,8 @@ convention.</p>"
     ()
     (local (defthmd l0
              (equal (hons-rassoc-equal key (list-fix alist))
-                    (hons-rassoc-equal key alist))))
+                    (hons-rassoc-equal key alist))
+             :hints(("Goal" :in-theory (enable list-fix)))))
 
     (defcong list-equiv equal (hons-rassoc-equal key alist) 2
       :hints(("Goal"

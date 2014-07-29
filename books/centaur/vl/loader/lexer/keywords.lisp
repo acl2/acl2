@@ -30,6 +30,7 @@
 
 (in-package "VL")
 (include-book "../../util/defs")
+(local (include-book "../../util/arithmetic"))
 
 (defsection lex-keywords
   :parents (lexer)

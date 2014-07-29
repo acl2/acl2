@@ -39,7 +39,7 @@
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "centaur/misc/fast-alists" :dir :system))
-
+(local (include-book "std/lists/take" :dir :system))
 
 (defund slice-to-bdd-env (slice env)
   (declare (xargs :guard (and (alistp slice)
@@ -427,7 +427,7 @@
                                   (member-equal
                                    acl2::list-fix-when-true-listp
                                    acl2::list-fix-when-len-zero
-                                   acl2::consp-by-len
+                                   ;acl2::consp-by-len
                                    boolean-listp
                                    binary-append))
            :expand ((shape-spec-to-gobj x)
@@ -492,7 +492,7 @@
                                   (member-equal
                                    acl2::list-fix-when-true-listp
                                    acl2::list-fix-when-len-zero
-                                   acl2::consp-by-len
+                                   ;acl2::consp-by-len
                                    boolean-listp
                                    binary-append))
            :expand ((shape-spec-to-gobj x)
@@ -560,7 +560,7 @@
                                   (member-equal
                                    acl2::list-fix-when-true-listp
                                    acl2::list-fix-when-len-zero
-                                   acl2::consp-by-len
+                                   ;acl2::consp-by-len
                                    boolean-listp
                                    binary-append))
            :expand ((shape-spec-to-gobj x)
@@ -625,7 +625,7 @@
                                   (member-equal
                                    acl2::list-fix-when-true-listp
                                    acl2::list-fix-when-len-zero
-                                   acl2::consp-by-len
+                                   ;acl2::consp-by-len
                                    boolean-listp
                                    binary-append))
            :expand ((shape-spec-to-gobj x)
@@ -865,7 +865,7 @@
  (encapsulate nil
    (local (in-theory (disable set::double-containment
                               acl2::no-duplicatesp-equal-non-cons
-                              acl2::no-duplicatesp-equal-when-atom
+                              ;acl2::no-duplicatesp-equal-when-atom
                               acl2::subsetp-car-member
                               acl2::append-when-not-consp
                               tag-when-atom
@@ -2373,9 +2373,9 @@ for (e.g.)  adding rules to the coverage strategy are likely to change.</p>")
   (local (in-theory (disable (:t shape-spec-oblig-term)
                              (:t shape-spec-env-term)
                              shape-spec-call-free-by-tag
-                             acl2::consp-by-len
+                             ;acl2::consp-by-len
                              acl2::true-listp-append
-                             acl2::no-duplicatesp-equal-when-atom
+                             ;acl2::no-duplicatesp-equal-when-atom
                              acl2::no-duplicatesp-equal-non-cons
                              acl2::consp-of-append
                              default-car

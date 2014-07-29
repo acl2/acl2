@@ -31,9 +31,40 @@
 (in-package "ACL2")
 (include-book "xdoc/top" :dir :system)
 (include-book "../lists/list-defuns")
-(local (include-book "../lists/append"))
-(local (include-book "../lists/revappend"))
-(local (include-book "../lists/rev"))
+
+(local (defthm list-fix-when-true-listp
+         (implies (true-listp x)
+                  (equal (list-fix x) x))
+         :hints(("Goal" :in-theory (enable list-fix)))))
+
+(local (defthm append-of-nil
+         (equal (append x nil) (list-fix x))
+         :hints(("Goal" :in-theory (enable list-fix)))))
+
+(local (defthm associativity-of-append
+         (equal (append (append x y) z)
+                (append x (append y z)))))
+
+(local
+ (encapsulate
+   ()
+   (local (defthm l0
+            (equal (append (append rv (list x1)) y)
+                   (append rv (cons x1 y)))))
+
+   (defthm revappend-removal
+     (equal (revappend x y) (append (rev x) y))
+     :hints(("Goal" :in-theory (enable rev))))))
+
+(local (defthm rev-of-append
+         (equal (rev (append x y))
+                (append (rev y) (rev x)))
+         :hints(("Goal" :in-theory (enable rev)))))
+
+(local (defthm rev-of-rev
+         (equal (rev (rev x))
+                (list-fix x))
+         :hints(("Goal" :in-theory (enable rev list-fix)))))
 
 
 (defsection append-alist-vals-exec
@@ -128,7 +159,8 @@ will include the values from any \"shadowed pairs\" in the list.</p>"
 
   (local (defthm append-alist-vals-of-list-fix
            (equal (append-alist-vals (list-fix x))
-                  (append-alist-vals x))))
+                  (append-alist-vals x))
+           :hints(("Goal" :in-theory (enable list-fix)))))
 
   (defcong list-equiv equal (append-alist-vals x) 1
     :hints(("Goal"

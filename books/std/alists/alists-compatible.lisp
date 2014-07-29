@@ -32,7 +32,6 @@
 (in-package "ACL2")
 (include-book "alist-equiv")
 (local (include-book "hons-assoc-equal"))
-(local (include-book "../lists/list-fix"))
 
 (defun alists-compatible-on-keys (keys a b)
   (declare (xargs :guard t))

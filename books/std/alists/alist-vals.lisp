@@ -31,7 +31,6 @@
 
 (in-package "ACL2")
 (include-book "alist-keys")
-;; (local (include-book "std/lists/sets" :dir :system))
 
 (defsection alist-vals
   :parents (std/alists strip-cdrs)
@@ -70,10 +69,12 @@ discussion of this convention.</p>
     ()
     (local (defthmd l0
              (equal (alist-vals (list-fix x))
-                    (alist-vals x))))
+                    (alist-vals x))
+             :hints(("Goal" :in-theory (enable list-fix)))))
 
     (defcong list-equiv equal (alist-vals x) 1
       :hints(("Goal"
+              :in-theory (enable list-equiv)
               :use ((:instance l0 (x x))
                     (:instance l0 (x acl2::x-equiv)))))))
 
@@ -88,7 +89,8 @@ discussion of this convention.</p>
   (defthm alist-vals-of-pairlis$
     (implies (equal (len keys) (len vals))
              (equal (alist-vals (pairlis$ keys vals))
-                    (list-fix vals))))
+                    (list-fix vals)))
+    :hints(("Goal" :in-theory (enable list-fix))))
 
   (defthm len-of-alist-vals
     (equal (len (alist-vals x))

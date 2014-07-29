@@ -36,6 +36,7 @@
 (include-book "centaur/aig/faig-equivs" :dir :system)
 (include-book "centaur/aig/aig-equivs" :dir :system)
 (include-book "centaur/misc/tuplep" :dir :system)
+(local (include-book "std/lists/nth" :dir :system))
 (local (include-book "centaur/aig/eval-restrict" :dir :system))
 
 (local (in-theory (disable 4v-sexpr-eval)))

@@ -31,11 +31,14 @@
 (in-package "RSTOBJ")
 (include-book "def-typed-record")
 (include-book "generic")
-(include-book "misc/definline" :dir :system)
 (include-book "misc/records" :dir :system)
 (include-book "tools/bstar" :dir :system)
 (include-book "centaur/misc/arith-equivs" :dir :system)
 (include-book "centaur/misc/absstobjs" :dir :system)
+(include-book "std/lists/nth" :dir :system)
+(include-book "std/lists/resize-list" :dir :system)
+(include-book "std/lists/len" :dir :system)
+
 
 (defsection defrstobj
   :parents (stobj macro-libraries)

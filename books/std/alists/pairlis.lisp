@@ -32,11 +32,20 @@
 (in-package "ACL2")
 (include-book "xdoc/top" :dir :system)
 (include-book "../lists/list-defuns")
-(local (include-book "alistp"))
-(local (include-book "strip-cars"))
-(local (include-book "strip-cdrs"))
-(local (include-book "../lists/equiv"))
+(local (include-book "../lists/take"))
 (local (in-theory (enable pairlis$)))
+
+(local (defthm commutativity-2-of-+
+         (equal (+ x (+ y z))
+                (+ y (+ x z)))))
+
+(local (defthm fold-consts-in-+
+         (implies (and (syntaxp (quotep x))
+                       (syntaxp (quotep y)))
+                  (equal (+ x (+ y z)) (+ (+ x y) z)))))
+
+(local (defthm distributivity-of-minus-over-+
+         (equal (- (+ x y)) (+ (- x) (- y)))))
 
 (defsection std/alists/pairlis$
   :parents (std/alists pairlis$)
@@ -61,24 +70,25 @@ proper, @('nil')-terminated @(see alistp) which can be used with either
     (equal (len (pairlis$ x y))
            (len x)))
 
-  (encapsulate
-    ()
-    ;; Some redundant things from alistp, strip-cars, strip-cdrs.
-    (set-enforce-redundancy t) ;; Implicitly local
+  ;; Some redundant things from alistp, strip-cars, strip-cdrs.
+  (defthm alistp-of-pairlis$
+    (alistp (pairlis$ x y)))
 
-    (defthm alistp-of-pairlis$
-      (alistp (pairlis$ x y)))
+  (defthm strip-cars-of-pairlis$
+    (equal (strip-cars (pairlis$ x y))
+           (list-fix x)))
 
-    (defthm strip-cars-of-pairlis$
-      (equal (strip-cars (pairlis$ x y))
-             (list-fix x)))
+  (local (defthm l0
+           (equal (strip-cdrs (pairlis$ x2 nil))
+                  (replicate (len x2) nil))
+           :hints(("goal" :in-theory (enable replicate)))))
 
-    (defthm strip-cdrs-of-pairlis$
-      (equal (strip-cdrs (pairlis$ x y))
-             (if (<= (len x) (len y))
-                 (take (len x) y)
-               (append y (replicate (- (len x) (len y)) nil))))))
-
+  (defthm strip-cdrs-of-pairlis$
+    (equal (strip-cdrs (pairlis$ x y))
+           (if (<= (len x) (len y))
+               (take (len x) y)
+             (append y (replicate (- (len x) (len y)) nil))))
+    :hints(("Goal" :in-theory (enable replicate))))
 
   (defthm pairlis$-of-list-fix-left
     (equal (pairlis$ (list-fix x) y)

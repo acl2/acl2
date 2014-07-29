@@ -32,12 +32,29 @@
 (in-package "ACL2")
 (include-book "xdoc/top" :dir :system)
 (include-book "../lists/list-defuns")
-(local (include-book "../lists/sets"))
 (local (include-book "../lists/take"))
-(local (include-book "../lists/repeat"))
-(local (include-book "../lists/nthcdr"))
-(local (include-book "arithmetic/top" :dir :system))
 (local (in-theory (enable strip-cdrs)))
+
+(local (defthm commutativity-2-of-+
+         (equal (+ x (+ y z))
+                (+ y (+ x z)))))
+
+(local (defthm fold-consts-in-+
+         (implies (and (syntaxp (quotep x))
+                       (syntaxp (quotep y)))
+                  (equal (+ x (+ y z)) (+ (+ x y) z)))))
+
+(local (defthm distributivity-of-minus-over-+
+         (equal (- (+ x y)) (+ (- x) (- y)))))
+
+(local (defthm take-of-nil
+         (equal (take n nil)
+                (replicate n nil))
+         :hints(("Goal" :in-theory (enable replicate)))))
+
+(local (defthm nthcdr-of-nil
+         (equal (nthcdr n nil)
+                nil)))
 
 (defsection std/alists/strip-cdrs
   :parents (std/alists strip-cdrs)
@@ -125,7 +142,8 @@ for some reason that's what you want to do.</p>"
 
   (defthm strip-cdrs-of-rev
     (equal (strip-cdrs (rev x))
-           (rev (strip-cdrs x))))
+           (rev (strip-cdrs x)))
+    :hints(("Goal" :in-theory (enable rev))))
 
   (defthm strip-cdrs-of-revappend
     (equal (strip-cdrs (revappend x y))
@@ -139,7 +157,8 @@ for some reason that's what you want to do.</p>"
 
   (defthm strip-cdrs-of-take
     (equal (strip-cdrs (take n x))
-           (take n (strip-cdrs x))))
+           (take n (strip-cdrs x)))
+    :hints(("Goal" :in-theory (enable replicate))))
 
   (defthm strip-cdrs-of-nthcdr
     (equal (strip-cdrs (nthcdr n x))

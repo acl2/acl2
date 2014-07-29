@@ -159,7 +159,8 @@
                                  (4v-sexpr-eval
                                   sexpr-eval-list-norm-env-when-ground-args-p
                                   vl::consp-of-car-when-cons-listp
-                                  consp-under-iff-when-true-listp)))))
+                                  ;consp-under-iff-when-true-listp
+                                  )))))
 
 (local
  (defthm rev-of-4v-sexpr-eval-alist
@@ -256,7 +257,7 @@
                               4v-unfloat
                               set::union
                               set::subset
-                              consp-under-iff-when-true-listp
+                              ;consp-under-iff-when-true-listp
                               subsetp-trans2
                               subsetp-when-atom-right
                               4v-alists-agree

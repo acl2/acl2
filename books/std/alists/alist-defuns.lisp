@@ -33,14 +33,8 @@
 (include-book "tools/bstar" :dir :system)
 (include-book "../lists/list-defuns")
 (local (include-book "alist-equiv"))
-(local (include-book "alist-keys"))
-(local (include-book "alist-vals"))
-(local (include-book "hons-rassoc-equal"))
-(local (include-book "fal-extract"))
-(local (include-book "fal-extract-vals"))
 (local (include-book "append-alist-keys"))
 (local (include-book "append-alist-vals"))
-(set-enforce-redundancy t)
 
 (defund alist-keys (x)
   (declare (xargs :guard t))
@@ -120,7 +114,8 @@
 
 (defund fal-extract (keys al)
   "Makes AL fast if necessary"
-  (declare (xargs :guard t))
+  (declare (xargs :guard t
+                  :guard-hints(("Goal" :in-theory (enable fal-extract fal-extract1)))))
   (mbe :logic
        (b* (((when (atom keys))
              nil)
@@ -142,7 +137,8 @@
 
 (defund fal-extract-vals (keys al)
   "Makes AL fast if necessary"
-  (declare (xargs :guard t))
+  (declare (xargs :guard t
+                  :guard-hints(("Goal" :in-theory (enable fal-extract-vals fal-extract-vals1)))))
   (mbe :logic
        (if (atom keys)
            nil

@@ -86,7 +86,7 @@
                            acl2::consp-of-car-when-alistp
                            set::double-containment
                            acl2::aig-eval
-                           acl2::consp-under-iff-when-true-listp
+                           ;;acl2::consp-under-iff-when-true-listp
                            default-car default-cdr)))
 
 (define calist-lookup (x calist)
@@ -1427,7 +1427,7 @@
                           bfr-hyp->bfr$c
                           bfr-constr->bfr)
                          ((bfr-hyp-fix)
-                          acl2::nth-when-zp
+                          ;;acl2::nth-when-zp
                           nth update-nth))))
   (acl2::defabsstobj-events hyp
     :concrete hyp$c

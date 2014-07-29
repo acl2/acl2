@@ -32,12 +32,18 @@
 (in-package "ACL2")
 (include-book "xdoc/top" :dir :system)
 (include-book "../lists/list-defuns")
-(local (include-book "../lists/sets"))
 (local (include-book "../lists/take"))
-(local (include-book "../lists/repeat"))
-(local (include-book "../lists/nthcdr"))
 
 (local (in-theory (enable strip-cars)))
+
+(local (defthm take-of-nil
+         (equal (take n nil)
+                (replicate n nil))
+         :hints(("Goal" :in-theory (enable replicate)))))
+
+(local (defthm nthcdr-of-nil
+         (equal (nthcdr n nil)
+                nil)))
 
 (defsection std/alists/strip-cars
   :parents (std/alists strip-cars)
@@ -125,7 +131,8 @@ for some reason that's what you want to do.</p>"
 
   (defthm strip-cars-of-rev
     (equal (strip-cars (rev x))
-           (rev (strip-cars x))))
+           (rev (strip-cars x)))
+    :hints(("Goal" :in-theory (enable rev))))
 
   (defthm strip-cars-of-revappend
     (equal (strip-cars (revappend x y))
@@ -139,7 +146,8 @@ for some reason that's what you want to do.</p>"
 
   (defthm strip-cars-of-take
     (equal (strip-cars (take n x))
-           (take n (strip-cars x))))
+           (take n (strip-cars x)))
+    :hints(("Goal" :in-theory (enable replicate))))
 
   (defthm strip-cars-of-nthcdr
     (equal (strip-cars (nthcdr n x))

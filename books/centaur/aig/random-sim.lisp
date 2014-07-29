@@ -38,6 +38,7 @@
 (include-book "centaur/bitops/equal-by-logbitp" :dir :system)
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "ihs/quotient-remainder-lemmas" :dir :system))
+(local (include-book "std/lists/top" :dir :system))
 (set-state-ok t)
 (local (in-theory (enable* arith-equiv-forwarding)))
 (local (in-theory (disable aig-vars)))

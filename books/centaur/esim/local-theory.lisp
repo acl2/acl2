@@ -39,6 +39,7 @@
 (include-book "data-structures/no-duplicates" :dir :system)
 (include-book "centaur/misc/fast-alists" :dir :system)
 (include-book "centaur/misc/equal-sets" :dir :system)
+(include-book "std/lists/remove-duplicates" :dir :system)
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 
 

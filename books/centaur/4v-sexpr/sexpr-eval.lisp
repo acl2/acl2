@@ -39,6 +39,7 @@
 (include-book "4v-logic")
 (include-book "centaur/misc/fast-alists" :dir :system)
 (include-book "centaur/misc/hons-extra" :dir :system)
+(local (include-book "std/lists/nth" :dir :system))
 
 (defsection 4v-sexpr-ind
   :parents (4v-sexprs)
@@ -271,7 +272,8 @@ counterpart.</p>")
       :flag sexpr-list)
     :hints (("goal"
              :in-theory (disable* (:ruleset 4v-op-defs) 4v-<= 4v-lookup
-                                  default-car default-cdr nth-when-zp nth-add1 nth))
+                                  default-car default-cdr nth-when-zp nth-add1 nth
+                                  ))
             (and stable-under-simplificationp
                  '(:use ((:instance 4v-alist-<=-necc
                                     (k x)

@@ -31,10 +31,8 @@
 
 (in-package "ACL2")
 (include-book "alist-equiv")
-(local (include-book "../lists/append"))
-(local (include-book "../lists/rev"))
-(local (include-book "../lists/equiv"))
 
+(local (in-theory (enable list-fix rev)))
 
 (defsection fal-extract-vals
   :parents (std/alists)

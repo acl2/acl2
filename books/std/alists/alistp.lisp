@@ -32,10 +32,7 @@
 (in-package "ACL2")
 (include-book "xdoc/top" :dir :system)
 (include-book "../lists/list-defuns")
-(local (include-book "../lists/append"))
-(local (include-book "../lists/rev"))
 (local (include-book "../lists/take"))
-(local (include-book "../lists/repeat"))
 (local (in-theory (enable alistp)))
 
 (defsection std/alists/alistp
@@ -65,23 +62,33 @@ Accordingly, you may not really need to reason about @('alistp') at all.</p>"
   (defthm alistp-of-append
     (equal (alistp (append x y))
            (and (alistp (list-fix x))
-                (alistp y))))
+                (alistp y)))
+    :hints(("Goal" :in-theory (enable list-fix))))
 
   (defthm alistp-of-revappend
     (equal (alistp (revappend x y))
            (and (alistp (list-fix x))
-                (alistp y))))
+                (alistp y)))
+    :hints(("Goal" :in-theory (enable list-fix))))
+
+  (local (defthm list-fix-when-true-listp
+           (implies (true-listp x) (equal (list-fix x) x))
+           :hints(("Goal" :in-theory (enable list-fix)))))
 
   (defthm alistp-of-rev
     (equal (alistp (rev x))
            (alistp (list-fix x)))
-    :hints(("Goal" :induct (len x))))
+    :hints(("Goal"
+            :in-theory (enable rev list-fix)
+            :induct (len x))))
 
   (defthm alistp-of-reverse
     (equal (alistp (reverse x))
            (and (not (stringp x))
                 (alistp (list-fix x))))
-    :hints(("Goal" :induct (len x))))
+    :hints(("Goal"
+            :in-theory (enable list-fix)
+            :induct (len x))))
 
   (defthm alistp-of-cdr
     (implies (alistp x)
