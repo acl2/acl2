@@ -81,6 +81,53 @@ function g(x)=-f(x).
 
 ;; And here is the second version of the intermediate value theorem.
 
+(local
+ (defthm standardp-minus-z
+   (implies (and (realp z)
+                 (standardp z))
+            (standardp (- z)))
+   :rule-classes (:type-prescription :forward-chaining)))
+
+(local
+ (defthmd definition-of-find-zero-2-lemma
+   (implies (and (standardp a)
+                 (standardp b)
+                 (standardp z))
+            (equal (find-zero-2 a b z)
+                   (if (and (realp a)
+                            (realp b)
+                            (realp z)
+                            (< a b))
+                       (standard-part
+                        (find-zero-n-2 a
+                                       z 
+                                       0 
+                                       (i-large-integer)
+                                       (/ (- b a) (i-large-integer))))
+                     0)))))
+
+(local
+ (defthmd definition-of-find-zero-2-uminus-z
+   (implies (and (standardp a)
+                 (standardp b)
+                 (standardp z))
+            (equal (find-zero-2 a b (- z))
+                   (if (and (realp a)
+                            (realp b)
+                            (realp (- z))
+                            (< a b))
+                       (standard-part
+                        (find-zero-n-2 a
+                                       (- z)
+                                       0 
+                                       (i-large-integer)
+                                       (/ (- b a) (i-large-integer))))
+                     0)))
+   :hints (("Goal"
+            :use ((:instance definition-of-find-zero-2-lemma
+                             (z (- z))))))
+   ))
+
 (defthm intermediate-value-theorem-2
   (implies (and (realp a)
 		(realp b)
@@ -100,12 +147,13 @@ function g(x)=-f(x).
 		   (rcfn (lambda (x) (- (rcfn x))))
 		   (find-zero (lambda (a b z)
 				(find-zero-2 a b
-					     (- z))))
+					     (if (realp z) (- z) z))))
 		   (find-zero-n (lambda (a z i n
 					   eps)
 				  (find-zero-n-2
 				   a (- z) i n eps))))
-		  (z (- z))
+		  (z (if (realp z) (- z) z))
 		  ))
 	   :in-theory 
-	   (disable intermediate-value-theorem))))
+	   (disable intermediate-value-theorem))
+           ))

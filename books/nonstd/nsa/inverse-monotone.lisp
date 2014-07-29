@@ -233,7 +233,9 @@
 		   (:functional-instance intermediate-value-theorem
 					 (rcfn icfn)
 					 (rcfn-domain icfn-domain)
-					 (find-zero find-zero-increasing))
+					 (find-zero find-zero-increasing)
+                                         (find-zero-n find-zero-increasing-n)
+                                         )
 		   (a (interval-left-endpoint (icfn-inv-interval y)))
 		   (b (interval-right-endpoint (icfn-inv-interval y)))
 		   (z y))
@@ -241,7 +243,8 @@
 		   (:functional-instance intermediate-value-theorem-2
 					 (rcfn icfn)
 					 (rcfn-domain icfn-domain)
-					 (find-zero-2 find-zero-decreasing))
+					 (find-zero-2 find-zero-decreasing)
+                                         (find-zero-n-2 find-zero-decreasing-n))
 		   (a (interval-left-endpoint (icfn-inv-interval y)))
 		   (b (interval-right-endpoint (icfn-inv-interval y)))
 		   (z y))
