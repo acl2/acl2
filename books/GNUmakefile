@@ -973,7 +973,7 @@ critpath.txt: $(OK_CERTS)
 
 # basic is the default set of books to build:
 .PHONY: basic
-basic: arithmetic arithmetic-2 arithmetic-3 arithmetic-5 ihs std str xdoc tools misc data-structures
+basic: arithmetic arithmetic-2 arithmetic-3 arithmetic-5 ihs std xdoc tools misc data-structures
 
 
 .PHONY: add-ons

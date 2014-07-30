@@ -49,12 +49,54 @@
 ;  - The following URL is very useful for updating the comments here:
 ;       http://code.google.com/p/acl2-books/source/list
 
+(defxdoc note-6-6-books
+  :parents (note-6-6)
+  :short "Release notes for the ACL2 Community Books for ACL2 6.6 (BOZO month??)"
+
+; Currently covered: through revision r2901
+
+  :long "<p>The following is a brief summary of changes made to the @(see
+community-books) between the releases of ACL2 6.5 and 6.6.</p>
+
+<p>The <a
+href='https://code.google.com/p/acl2-books/wiki/ReleaseVersionNumbers'>acl2-books
+Wiki page on ReleaseVersionNumbers</a> gives SVN revision numbers corresponding
+to releases.  See also @(see note-6-6) for the changes made to ACL2 itself.
+For additional details, you may also see the raw <a
+href='http://code.google.com/p/acl2-books/source/list'>commit log</a>.</p>
+
+<h3>Deleted Stubs</h3>
+
+<p>When we move a book, we often add a <b>stub</b> book in its previous
+location to help you transition your @(see include-book) commands.  The @(see
+cert.pl) build system prints warnings when a stub book is being included.</p>
+
+<p>Stub books have a lifespan of one release.  The following books were stubs
+in ACL2 6.5, so we've deleted them.</p>
+
+@({
+     Previous Location                New Location
+   ---------------------------------------------------------------
+     str/*                            std/strings/*
+
+     xdoc/portcullis                  std/portcullis
+     std/osets/portcullis             std/portcullis
+     std/bitsets/portcullis           std/portcullis
+     std/strings/portcullis           std/portcullis
+
+     coi/osets/instance               std/osets/instance
+     coi/osets/computed-hints         std/osets/computed-hints
+
+     centaur/bitops/sign-extend       centaur/bitops/fast-logext
+
+   ---------------------------------------------------------------
+})")
+
+
 (defxdoc note-6-5-books
   :parents (note-6-5)
   :short "Release notes for the ACL2 Community Books for ACL2 6.5 (August
 2014)."
-
-; Currently covered: through revision 2894.
 
   :long "<p>The following is a brief summary of changes made to the @(see
 community-books) between the releases of ACL2 6.4 and 6.5.</p>
