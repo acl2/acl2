@@ -186,7 +186,12 @@ is a simpler alternative to @(see make-list)."
 
   (defthm rev-of-repeat
     (equal (rev (repeat n a))
-           (repeat n a))))
+           (repeat n a)))
+
+  (def-listp-rule element-list-p-of-repeat
+    (iff (element-list-p (repeat n x))
+         (or (element-p x)
+             (zp n)))))
 
 
 (local (in-theory (enable repeat)))

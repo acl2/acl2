@@ -309,11 +309,8 @@ and avoid large case splits.</p>"
 
 (fty::deflist vl-oplist
               :elt-type vl-op-p
-              :true-listp nil)
-
-(deflist vl-oplist-p (x)
-  (vl-op-p x)
-  :elementp-of-nil nil)
+              :true-listp nil
+              :elementp-of-nil nil)
 
 
 (define vl-op-arity ((x vl-op-p))
@@ -1059,6 +1056,7 @@ each operator has the proper arity.</p>"
   (fty::deflist vl-exprlist
     :elt-type vl-expr-p
     :true-listp nil
+    :elementp-of-nil nil
     :measure (two-nats-measure (acl2-count x) 0)
     :count   vl-exprlist-count-raw)
 
@@ -1083,9 +1081,21 @@ each operator has the proper arity.</p>"
     :post-pred-events
     ((defthm vl-expr-p-of-vl-default-expression
        (vl-expr-p *vl-default-expr*))
-     (deflist vl-exprlist-p (x)
-       (vl-expr-p x)
-       :elementp-of-nil nil)
+     (local (defthm vl-exprlist-p-of-replicate-tmp
+              (implies (vl-expr-p x)
+                       (vl-exprlist-p (replicate n x)))
+              :hints(("Goal" :in-theory (enable replicate)))))
+     (local (defthm vl-exprlist-p-of-take-tmp
+              (implies (and (vl-exprlist-p x)
+                            (< (nfix n) (len x)))
+                       (vl-exprlist-p (take n x)))
+              :hints(("Goal" :in-theory (enable acl2::take-redefinition
+                                                acl2::take-induction)))))
+     (local (defthm vl-exprlist-p-of-append-tmp
+              (implies (and (vl-exprlist-p x)
+                            (vl-exprlist-p y))
+                       (vl-exprlist-p (append x y)))
+              :hints(("Goal" :in-theory (enable append)))))
      (defthm vl-exprlist-p-of-vl-arity-fix
        (implies (vl-exprlist-p x)
                 (vl-exprlist-p (vl-arity-fix op x)))
@@ -1481,22 +1491,20 @@ place; these annotations can be useful in error messages.</li>
   :parents (vl-exprlist-p))
 
 (fty::deflist vl-exprlistlist
-              :elt-type vl-exprlist-p
-              :true-listp nil)
-
-(deflist vl-exprlistlist-p (x)
-  (vl-exprlist-p x)
+  :elt-type vl-exprlist-p
   :elementp-of-nil t
-  :rest
-  ((defthm vl-exprlist-p-of-flatten
-     (implies (vl-exprlistlist-p x)
-              (vl-exprlist-p (flatten x))))
+  :true-listp nil
+  ///
+  (defthm vl-exprlist-p-of-flatten
+    (implies (vl-exprlistlist-p x)
+             (vl-exprlist-p (flatten x)))
+    :hints(("Goal" :in-theory (enable flatten))))
 
-   (defthm vl-exprlistlist-p-of-pairlis$
-     (implies (and (vl-exprlist-p a)
-                   (vl-exprlistlist-p x))
-              (vl-exprlistlist-p (pairlis$ a x)))
-     :hints(("Goal" :in-theory (enable pairlis$))))))
+  (defthm vl-exprlistlist-p-of-pairlis$
+    (implies (and (vl-exprlist-p a)
+                  (vl-exprlistlist-p x))
+             (vl-exprlistlist-p (pairlis$ a x)))
+    :hints(("Goal" :in-theory (enable pairlis$)))))
 
 
 

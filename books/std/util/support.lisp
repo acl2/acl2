@@ -188,3 +188,43 @@ extract-keywords), with default-value support."
 
 
 
+
+(defsection dumb-string-sublis
+  :parents (support)
+  :short "Non-recursively applies a list of substring substitutions to a string."
+  :long "<p>Earlier key/value pairs take precedence over later ones, and no
+substitutions are reapplied to the result of other substitutions.</p>"
+
+  (defun dumb-str-sublis-iter (remainder alist x start end len)
+    ;; remainder is a tail of alist, which contains the full list of substutions.
+    ;; len is the length of x
+    (b* (((when (atom remainder))
+          (if (or (not (int= start 0))
+                  (not (int= end len)))
+              (subseq x start end)
+            ;; we got through all the substitutions without any hits
+            x))
+         ((cons old-str new-str) (car remainder))
+         (loc (search old-str x :start2 start :end2 end))
+         ((unless loc)
+          ;; not found, look for other substitutions
+          (dumb-str-sublis-iter (cdr remainder) alist x start end len))
+         ;; since we're searching from the beginning of the string, we've already
+         ;; ruled out existence of any previous keys in the prefix
+         (prefix-rw
+          (dumb-str-sublis-iter
+           (cdr remainder) alist x start loc len))
+         ;; but for the suffix, we need to try each of them, starting over with the full alist
+         (suffix-rw
+          (dumb-str-sublis-iter
+           alist alist x (+ loc (length old-str)) end len)))
+      (if (and (string-equal prefix-rw "")
+               (string-equal suffix-rw ""))
+          new-str
+        (concatenate 'string prefix-rw new-str suffix-rw))))
+
+
+  (defun dumb-str-sublis (alist str)
+    (declare (xargs :mode :program))
+    (let ((len (length str)))
+      (dumb-str-sublis-iter alist alist str 0 len len))))

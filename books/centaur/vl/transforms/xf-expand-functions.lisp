@@ -1237,11 +1237,7 @@ vl-flatten-funtemplates) we use our ordinary function-expansion code to expand
 any function calls within function templates, so that when we expand functions
 throughout the rest of the module we only need one pass.</p>")
 
-(fty::deflist vl-funtemplatelist :elt-type vl-funtemplate-p)
-
-(deflist vl-funtemplatelist-p (x)
-  (vl-funtemplate-p x)
-  :guard t
+(fty::deflist vl-funtemplatelist :elt-type vl-funtemplate-p
   :elementp-of-nil nil
   :parents (vl-funtemplate-p))
 

@@ -135,7 +135,14 @@ library."
                    (elementlist-mapappend b))))
 
   (defcong element-list-equiv element-list-equiv (append a b) 1)
-  (add-listp-rule)
+  (table listfix-rules 'element-list-equiv-implies-element-list-equiv-append-1 t)
   (defcong element-list-equiv element-list-equiv (append a b) 2)
-  (add-listp-rule))
+  (table listfix-rules 'element-list-equiv-implies-element-list-equiv-append-2 t)
+
+  (def-listp-rule element-list-p-of-append-true-list
+    (equal (element-list-p (append a b))
+           (and (element-list-p (list-fix a))
+                (element-list-p b)))
+    :requirement true-listp
+    :name element-list-p-of-append))
 

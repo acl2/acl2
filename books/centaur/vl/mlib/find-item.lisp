@@ -298,10 +298,7 @@ module (except that we don't support, e.g., named blocks.)"
    vl-gateinst))
 
 (fty::deflist vl-moditemlist
-  :elt-type vl-moditem-p)
-
-(deflist vl-moditemlist-p (x)
-  (vl-moditem-p x)
+  :elt-type vl-moditem-p
   :elementp-of-nil nil)
 
 (xdoc::without-xdoc
@@ -388,7 +385,7 @@ module (except that we don't support, e.g., named blocks.)"
                            (if (,find-fn name x)
                                (cons name (,find-fn name x))
                              nil)))
-           :hints(("Goal" :in-theory (enable ,find-fn)))))
+           :hints(("Goal" :in-theory (e/d (,find-fn) ((force)))))))
 
        (defsection ,(mksym fast-fn '-removal)
          :extension ,fast-fn

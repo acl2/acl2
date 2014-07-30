@@ -63,13 +63,11 @@ initially kept in a big, mixed list.</p>"
    vl-initial))
 
 (fty::deflist vl-modelementlist
-  :elt-type vl-modelement-p)
-
-(deflist vl-modelementlist-p (x)
-  (vl-modelement-p x)
+  :elt-type vl-modelement-p
   :elementp-of-nil nil
-  :rest
-  ((defthm vl-modelementlist-p-when-vl-portlist-p
+  ///
+  (local (in-theory (enable vl-modelementlist-p)))
+  (defthm vl-modelementlist-p-when-vl-portlist-p
      (implies (vl-portlist-p x)
               (vl-modelementlist-p x)))
 
@@ -115,7 +113,7 @@ initially kept in a big, mixed list.</p>"
 
    (defthm vl-modelementlist-p-when-vl-initiallist-p
      (implies (vl-initiallist-p x)
-              (vl-modelementlist-p x)))))
+              (vl-modelementlist-p x))))
 
 
 (define vl-modelement-loc ((x vl-modelement-p))

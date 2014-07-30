@@ -73,13 +73,9 @@
         handy macros) ensure that this is correctly reported.")))
 
 (fty::deflist vl-warninglist
-              :elt-type vl-warning-p
-              :true-listp nil)
-
-(deflist vl-warninglist-p (x)
-  (vl-warning-p x)
+  :elt-type vl-warning-p
   :elementp-of-nil nil
-  :already-definedp t
+  :true-listp nil
   ///
   (defthm vl-warninglist-p-of-remove-adjacent-duplicates
     (implies (force (vl-warninglist-p x))

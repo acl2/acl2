@@ -555,7 +555,8 @@
 
 (std::deflist node-listp (x)
               (node-p x)
-              :true-listp t)
+              :true-listp t
+              :elementp-of-nil t)
 
 (define proper-node-p (x)
   (and (node-p x)

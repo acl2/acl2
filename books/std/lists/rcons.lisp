@@ -105,6 +105,12 @@ inefficient: we have to copy the whole list just to add one element!</p>"
 
   (defthm revappend-of-rcons
     (equal (revappend (rcons a x) y)
-           (cons a (revappend x y)))))
+           (cons a (revappend x y))))
+
+  (def-listp-rule element-list-p-of-rcons
+    (iff (element-list-p (rcons a x))
+         (and (element-p a)
+              (element-list-p (list-fix x))))
+    :hints (("goal" :cases ((element-list-final-cdr-p t))))))
 
 

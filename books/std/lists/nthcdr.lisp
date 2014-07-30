@@ -205,7 +205,17 @@ library."
     ;; This looks redundant with the list-equiv, but it's stronger since it
     ;; targets equal
     (equal (nthcdr n (list-fix x))
-           (list-fix (nthcdr n x)))))
+           (list-fix (nthcdr n x))))
+
+  
+  (def-listp-rule element-list-p-of-nthcdr
+    (implies (element-list-p (double-rewrite x))
+             (element-list-p (nthcdr n x))))
+
+
+  (def-projection-rule nthcdr-of-elementlist-projection
+    (equal (nthcdr n (elementlist-projection x))
+           (elementlist-projection (nthcdr n x)))))
 
 
 (defsection rest-n

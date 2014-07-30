@@ -321,9 +321,9 @@
          (local (deflist none-listp (x)
                   (nonep x)))))
 
-(local (encapsulate ()
-         (local (deflist not-listp (x)
-                  (not x)))))
+;; (local (encapsulate ()
+;;          (local (deflist not-listp (x)
+;;                   (not x)))))
 
 (local (encapsulate ()
          (local (deflist null-listp (x)
@@ -340,10 +340,10 @@
                   (nonep x)
                   :elementp-of-nil nil))))
 
-(local (encapsulate ()
-         (local (deflist not-listp (x)
-                  (not x)
-                  :elementp-of-nil t))))
+;; (local (encapsulate ()
+;;          (local (deflist not-listp (x)
+;;                   (not x)
+;;                   :elementp-of-nil t))))
 
 (local (encapsulate ()
          (local (deflist null-listp (x)

@@ -509,7 +509,7 @@
             ;; Need to know that the intermediate values are non-X:
             :use ((:instance boothmul-pps-types))
             :in-theory (stv-decomp-theory)))))
-|#
+
 
 ; For reference, here is the same decomposition lemma, but proven using GL
 ; instead of the specialized theory:
@@ -532,6 +532,9 @@
    :g-bindings (boothmul-decomp-autobinds)))
 
 (local (in-theory (disable boothmul-decomp-is-boothmul-via-GL)))
+
+|#
+
 
 ; All that remains is to chain the above facts together.
 ;

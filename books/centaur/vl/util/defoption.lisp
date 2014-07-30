@@ -226,9 +226,9 @@
                      (,name ,x)))
 
           (defthm ,(mksym base-type '-when- name)
-            (implies (,name ,x)
-                     (iff (,base-type ,x)
-                          (double-rewrite ,x))))
+            (implies (and (,name ,x)
+                          (double-rewrite ,x))
+                     (,base-type ,x)))
 
           (value-triple (cw "~|Defoption: introducing fixing function ~x0.~%"
                             ',fix))

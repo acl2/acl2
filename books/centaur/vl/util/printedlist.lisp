@@ -86,13 +86,9 @@ the @(see ps) printer-state stobj.</p>")
 (fty::deflist vl-printedlist
   :elt-type vl-printed-p)
 
-(deflist vl-printedlist-p (x)
-  (vl-printed-p x)
-  :guard t
-  :elementp-of-nil nil
+(defsection vl-printedlist-p
   :parents (vl-printedlist)
   :short "Recognizer for mixed lists of strings and characters."
-  ///
   (defthm vl-printedlist-p-when-character-listp
     (implies (character-listp x)
              (vl-printedlist-p x)))

@@ -133,9 +133,9 @@ these lemmas may be useful.</p>"
                            (revappend x2 y))))))
 
   (def-listp-rule element-list-p-of-revappend
-    (implies (element-list-p x)
-             (equal (element-list-p (revappend x y))
-                    (element-list-p y))))
+    (equal (element-list-p (revappend x y))
+           (and (element-list-p (list-fix x))
+                (element-list-p y))))
 
   (def-listfix-rule element-list-fix-of-revappend
     (equal (element-list-fix (revappend x y))

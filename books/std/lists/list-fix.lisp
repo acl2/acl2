@@ -126,6 +126,48 @@ common @(see equivalence) relation.</p>"
     (equal (equal x (list-fix x))
            (true-listp x)))
 
-  (def-listp-rule element-list-fix-of-list-fix
-    (equal (element-list-fix (list-fix x))
-           (element-list-fix x))))
+  (def-listp-rule element-list-p-of-list-fix-non-true-listp
+    (implies (element-list-final-cdr-p t)
+             (equal (element-list-p (list-fix x))
+                    (element-list-p x)))
+    :hints(("Goal" :in-theory (enable list-fix)))
+    :requirement (not true-listp)
+    :name element-list-p-of-list-fix
+    :body (equal (element-list-p (list-fix x))
+                    (element-list-p x)))
+
+  (def-listp-rule element-list-p-of-list-fix-true-listp
+    (implies (element-list-p x)
+             (element-list-p (list-fix x)))
+    :hints(("Goal" :in-theory (enable list-fix)))
+    :requirement true-listp
+    :name element-list-p-of-list-fix)
+
+
+  (def-listfix-rule element-list-fix-of-list-fix-true-list
+    (implies (not (element-list-final-cdr-p t))
+             (equal (element-list-fix (list-fix x))
+                    (element-list-fix x)))
+    :hints(("Goal" :in-theory (enable list-fix)))
+    :requirement true-listp
+    :name element-list-fix-of-list-fix
+    :body (equal (element-list-fix (list-fix x))
+                    (element-list-fix x)))
+
+  (def-listfix-rule element-list-fix-of-list-fix-non-true-list
+    (implies (element-list-final-cdr-p t)
+             (equal (element-list-fix (list-fix x))
+                    (list-fix (element-list-fix x))))
+    :hints(("Goal" :in-theory (enable list-fix)))
+    :requirement (not true-listp)
+    :name element-list-fix-of-list-fix
+    :body (equal (element-list-fix (list-fix x))
+                 (list-fix (element-list-fix x))))
+
+  (def-projection-rule elementlist-projection-of-list-fix
+    (equal (elementlist-projection (list-fix x))
+           (elementlist-projection x)))
+
+  (def-mapappend-rule elementlist-mapappend-of-list-fix
+    (equal (elementlist-mapappend (list-fix x))
+           (elementlist-mapappend x))))

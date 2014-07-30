@@ -85,11 +85,7 @@ answer and undercount.</p>")
    (warnings vl-warninglist-p)))
 
 (fty::deflist vl-subcountlist
-  :elt-type vl-subcount)
-
-(deflist vl-subcountlist-p (x)
-  (vl-subcount-p x)
-  :guard t
+  :elt-type vl-subcount
   :elementp-of-nil nil)
 
 (fty::defalist vl-subcountalist

@@ -33,6 +33,7 @@
 (in-package "ACL2")
 (include-book "xdoc/top" :dir :system)
 (include-book "list-defuns")
+(include-book "abstract")
 (local (include-book "list-fix"))
 (local (include-book "append"))
 (local (include-book "rev"))
@@ -114,5 +115,9 @@
                  ((consp x)
                   (cons (car x) y))
                  (t
-                  y)))))
+                  y))))
+
+  (def-listp-rule element-list-p-of-last
+    (implies (element-list-p (double-rewrite x))
+             (element-list-p (last x)))))
 

@@ -179,8 +179,8 @@ perform quite well thanks to @(see mbe).</p>"
     :hints(("Goal" :in-theory (enable list-equiv))))
 
   (def-listp-rule element-list-p-of-rev
-    (implies (element-list-p x)
-             (element-list-p (rev x))))
+    (equal (element-list-p (rev x))
+           (element-list-p (list-fix x))))
 
   (def-listfix-rule element-list-fix-of-rev
     (equal (element-list-fix (rev x))

@@ -31,6 +31,7 @@
 (in-package "ACL2")
 (include-book "xdoc/top" :dir :system)
 (include-book "list-defuns")
+(include-book "abstract")
 (local (include-book "take"))
 
 (local (defthm commutativity-2-of-+
@@ -262,5 +263,17 @@ library."
 
 
 ;; BOZO eventually integrate centaur/misc/nth-equiv stuff here
+
+
+
+(def-listp-rule element-list-p-of-update-nth
+  (implies (element-list-p (double-rewrite x))
+           (iff (element-list-p (update-nth n y x))
+                (and (element-p y)
+                     (or (<= (nfix n) (len x))
+                         (element-p nil)))))
+  :hints(("Goal" :in-theory (disable update-nth-when-atom)
+          :induct (update-nth n y x))))
+
 
 )

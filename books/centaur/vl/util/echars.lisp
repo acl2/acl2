@@ -473,13 +473,8 @@ the interface for constructing echars can be kept simple and bounds-free.</p>
 ; necessary, and so we return to the simple definition.
 
 (fty::deflist vl-echarlist :elt-type vl-echar-p
-              :true-listp nil)
-
-(deflist vl-echarlist-p (x)
-  (vl-echar-p x)
   :elementp-of-nil nil
-  :parents (extended-characters)
-  :already-definedp t)
+  :true-listp nil)
 
 (defprojection vl-echarlist->chars ((x vl-echarlist-p))
   :returns (chars character-listp)

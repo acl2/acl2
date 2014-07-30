@@ -831,7 +831,8 @@ behavior in cases like:</p>
 
 (deflist cons-listp (x)
   (consp x)
-  :elementp-of-nil nil)
+  :elementp-of-nil nil
+  :cheap t)
 
 (deflist cons-list-listp (x)
   (cons-listp x)

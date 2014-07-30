@@ -30,6 +30,7 @@
 
 (in-package "ACL2")
 (include-book "uniquep")
+(local (include-book "std/lists/sets" :dir :system))
 (local (include-book "std/lists/no-duplicatesp" :dir :system))
 
 
@@ -178,6 +179,27 @@
 (defthm no-duplicatesp-equal-of-duplicated-members
   (no-duplicatesp-equal (duplicated-members x))
   :hints(("Goal" :in-theory (enable duplicated-members))))
+
+(local (defthm element-p-by-duplicity-in-element-list-p
+         (implies (and (element-list-p x)
+                       (< 0 (duplicity a x)))
+                  (element-p a))))
+
+(local (defthm element-list-p-when-subset-of-duplicated-members
+         (implies (and (subsetp x (duplicated-members y))
+                       (element-list-p y))
+                  (equal (element-list-p x)
+                         (or (element-list-final-cdr-p t)
+                             (true-listp x))))))
+
+(def-listp-rule element-list-p-of-duplicated-members
+  (implies (element-list-p x)
+           (element-list-p (duplicated-members x)))
+  :hints (("goal" :use ((:instance element-list-p-when-subset-of-duplicated-members
+                         (y x) (x (duplicated-members x))))
+           :in-theory (disable element-list-p-when-subset-of-duplicated-members)))
+  :tags (:duplicated-members))
+
 
 (encapsulate
   ()

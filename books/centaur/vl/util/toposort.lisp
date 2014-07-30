@@ -107,7 +107,6 @@ as a sanity check on any loops we claim to have found.</p>"
   (two-nats-measure (len (set-difference-equal (alist-keys graph) (alist-keys seen)))
                     (len queue)))
 
-
 (defsection toposort-aux
   :parents (toposort)
   :short "Main depth-first topological sorting routine."
@@ -542,6 +541,11 @@ strategy is the easiest way to topologically sort your data.</p>"
            (implies (alistp x)
                     (equal (consp (car x))
                            (if x t nil)))))
+
+  (local (defthm consp-of-first-when-cons-listp
+           (implies (cons-listp x)
+                    (equal (consp (car x))
+                           (consp x)))))
 
   (defund toposort (graph)
     (declare (xargs :guard t))

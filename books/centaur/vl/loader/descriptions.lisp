@@ -84,10 +84,8 @@ process, we convert all of the descriptions into a @(see vl-design-p).</p>")
   :rule-classes ((:forward-chaining :trigger-terms ((vl-description-p x))))
   :enable vl-description-p)
 
-(fty::deflist vl-descriptionlist :elt-type vl-description-p)
-
-(deflist vl-descriptionlist-p (x)
-  (vl-description-p x)
+(fty::deflist vl-descriptionlist
+  :elt-type vl-description-p
   :elementp-of-nil nil
   :parents (loader))
 

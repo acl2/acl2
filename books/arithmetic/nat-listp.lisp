@@ -85,5 +85,4 @@ instead see @(see std/typed-lists/nat-listp).</p>
   (defthm nat-listp-of-cdr-when-nat-listp
     ;; [Jared] added double-rewrite in support of std/typed-lists/nat-listp
     (implies (nat-listp (double-rewrite x))
-             (equal (nat-listp (cdr x))
-                    t))))
+             (nat-listp (cdr x)))))

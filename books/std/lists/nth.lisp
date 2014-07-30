@@ -30,6 +30,7 @@
 
 (in-package "ACL2")
 (include-book "list-defuns")
+(include-book "abstract")
 (local (include-book "rev"))
 (local (include-book "append"))
 (local (include-book "take"))
@@ -154,6 +155,86 @@
          (if (< (nfix n) (- (len x) (nfix m)))
              (nth n x)
            nil)))
+
+
+
+
+;; Generic rules about nth of element-lists, projections
+(def-listp-rule element-p-of-nth-when-element-list-p-when-nil-element
+  (implies (and (element-p nil)
+                (element-list-p x))
+           (element-p (nth n x)))
+  :requirement element-p-of-nil
+  :name element-p-of-nth-when-element-list-p
+  :body (implies (element-list-p x)
+                    (element-p (nth n x))))
+
+(def-listp-rule element-p-of-nth-when-element-list-p-when-nil-unknown
+  (implies (and (element-list-p x)
+                (< (nfix n) (len x)))
+           (element-p (nth n x)))
+  :requirement (and (not element-p-of-nil)
+                    (not not-element-p-of-nil))
+  :name element-p-of-nth-when-element-list-p)
+
+(def-listp-rule element-p-of-nth-when-element-list-p-when-nil-not-element-non-negated
+  (implies (and (not (element-p nil))
+                (element-list-p x))
+           (iff (element-p (nth n x))
+                (< (nfix n) (len x))))
+  :requirement (and not-element-p-of-nil
+                    (not negatedp))
+  :name element-p-of-nth-when-element-list-p
+  :body (implies (element-list-p x)
+                 (iff (element-p (nth n x))
+                      (< (nfix n) (len x)))))
+
+(def-listp-rule element-p-of-nth-when-element-list-p-when-nil-not-element-negated
+  (implies (and (not (element-p nil))
+                (element-list-p x))
+           (iff (non-element-p (nth n x))
+                (<= (len x) (nfix n))))
+  :requirement (and not-element-p-of-nil
+                    negatedp)
+  :name element-p-of-nth-when-element-list-p
+  :body (implies (element-list-p x)
+                 (iff (non-element-p (nth n x))
+                      (<= (len x) (nfix n)))))
+
+
+(def-projection-rule nth-of-elementlist-projection-when-nil-to-nil
+  (implies (equal (element-xformer nil) nil)
+           (equal (nth n (elementlist-projection x))
+                  (element-xformer (nth n x))))
+  :requirement nil-to-nil
+  :name nth-of-elementlist-projection
+  :body (equal (nth n (elementlist-projection x))
+               (element-xformer (nth n x))))
+
+(def-projection-rule nth-of-elementlist-projection-when-not-nil-to-nil
+  (equal (nth n (elementlist-projection x))
+         (and (< (nfix n) (len x))
+              (element-xformer (nth n x))))
+  :requirement (not nil-to-nil)
+  :name nth-of-elementlist-projection)
+
+
+(def-listfix-rule nth-of-element-list-fix-when-nil-element
+  (implies (element-p nil)
+           (equal (nth n (element-list-fix x))
+                  (element-fix (nth n x))))
+  :requirement element-p-of-nil
+  :name nth-of-element-list-fix
+  :body (equal (nth n (element-list-fix x))
+               (element-fix (nth n x))))
+
+(def-listfix-rule nth-of-element-list-fix-unless-nil-element
+  (equal (nth n (element-list-fix x))
+         (and (< (nfix n) (len x))
+              (element-fix (nth n x))))
+  :requirement (not element-p-of-nil)
+  :name nth-of-element-list-fix)
+
 
 ;; No rule about update-nth, because nth-update-nth is an ACL2 builtin.
 

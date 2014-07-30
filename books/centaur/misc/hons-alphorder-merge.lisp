@@ -32,7 +32,7 @@
 (in-package "ACL2")
 (include-book "misc/total-order" :dir :system)
 (include-book "equal-sets")
-(local (include-book "std/typed-lists/atom-listp" :dir :system))
+(include-book "std/typed-lists/atom-listp" :dir :system)
 
 (local (in-theory (acl2::enable* set::definitions set::expensive-rules)))
 
@@ -48,22 +48,22 @@
            (atom-listp (set::tail x)))
   :hints(("Goal" :in-theory (enable* (:ruleset set::primitive-rules)))))
 
-(defthm atom-listp-of-sfix
-  (implies (atom-listp (double-rewrite x))
-           (equal (atom-listp (set::sfix x))
-                  t))
-  :hints(("Goal" :in-theory (enable* (:ruleset set::primitive-rules)))))
+;; (defthm atom-listp-of-sfix
+;;   (implies (atom-listp (double-rewrite x))
+;;            (equal (atom-listp (set::sfix x))
+;;                   t))
+;;   :hints(("Goal" :in-theory (enable* (:ruleset set::primitive-rules)))))
 
-(defthm atom-listp-of-insert
-  (implies (and (atom a)
-                (atom-listp x))
-           (atom-listp (set::insert a x)))
-  :hints(("Goal" :in-theory (enable* (:ruleset set::primitive-rules) set::insert))))
+;; (defthm atom-listp-of-insert
+;;   (implies (and (atom a)
+;;                 (atom-listp x))
+;;            (atom-listp (set::insert a x)))
+;;   :hints(("Goal" :in-theory (enable* (:ruleset set::primitive-rules) set::insert))))
 
-(defthm atom-listp-of-union
-  (equal (atom-listp (set::union x y))
-         (and (atom-listp (set::sfix x))
-              (atom-listp (set::sfix y)))))
+;; (defthm atom-listp-of-union
+;;   (equal (atom-listp (set::union x y))
+;;          (and (atom-listp (set::sfix x))
+;;               (atom-listp (set::sfix y)))))
 
 
 

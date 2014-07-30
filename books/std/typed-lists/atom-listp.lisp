@@ -39,51 +39,55 @@ std/typed-lists) library."
 std::deflist).</p>"
 
   (std::deflist atom-listp (x)
-    (atom x)
+    (consp x)
+    :negatedp t
+    :cheap t
     :true-listp t
-    :elementp-of-nil t
+    :elementp-of-nil nil
     :already-definedp t
     ;; Set :parents to nil to avoid overwriting the built-in ACL2 documentation
     :parents nil)
 
-  ;; These rules are no good because they target ATOM instead of CONSP:
-  (in-theory (disable ATOM-WHEN-MEMBER-EQUAL-OF-ATOM-LISTP
-                      ATOM-OF-CAR-WHEN-ATOM-LISTP))
+  ;; ;; These rules are no good because they target ATOM instead of CONSP:
+  ;; (in-theory (disable CONSP-WHEN-MEMBER-EQUAL-OF-ATOM-LISTP
+  ;;                     CONSP-OF-CAR-WHEN-ATOM-LISTP))
 
-  (defthmd consp-when-member-equal-of-atom-listp
-    ;; The free variable matching may make this reasonably cheap for some uses,
-    ;; but I think it's likely to cause performance problems, so I'll leave it
-    ;; disabled by default.
-    (implies (and (member-equal a x)
-                  (atom-listp x))
-             (equal (consp a)
-                    nil))
-    :rule-classes ((:rewrite :backchain-limit-lst 1)
-                   (:rewrite
-                    :corollary (implies (and (atom-listp x)
-                                             (member-equal a x))
-                                        (equal (consp a)
-                                               nil))
-                    :backchain-limit-lst 1)))
+  ;; (defthmd consp-when-member-equal-of-atom-listp
+  ;;   ;; The free variable matching may make this reasonably cheap for some uses,
+  ;;   ;; but I think it's likely to cause performance problems, so I'll leave it
+  ;;   ;; disabled by default.
+  ;;   (implies (and (member-equal a x)
+  ;;                 (atom-listp x))
+  ;;            (equal (consp a)
+  ;;                   nil))
+  ;;   :rule-classes ((:rewrite :backchain-limit-lst 1)
+  ;;                  (:rewrite
+  ;;                   :corollary (implies (and (atom-listp x)
+  ;;                                            (member-equal a x))
+  ;;                                       (equal (consp a)
+  ;;                                              nil))
+  ;;                   :backchain-limit-lst 1)))
 
-  (defthm consp-of-car-when-atom-listp
-    (implies (atom-listp (double-rewrite x))
-             (equal (consp (car x))
-                    nil))
-    ;; I have seen this be expensive, e.g., in centaur/vl/parse-nets,
-    ;; so severely limit it.
-    :rule-classes ((:rewrite :backchain-limit-lst 0)))
+  ;; (defthm consp-of-car-when-atom-listp
+  ;;   (implies (atom-listp (double-rewrite x))
+  ;;            (equal (consp (car x))
+  ;;                   nil))
+  ;;   ;; I have seen this be expensive, e.g., in centaur/vl/parse-nets,
+  ;;   ;; so severely limit it.
+  ;;   :rule-classes ((:rewrite :backchain-limit-lst 0)))
 
   (defthm atom-listp-of-remove-equal
     ;; BOZO probably add to deflist
     (implies (atom-listp x)
-             (atom-listp (remove-equal a x))))
+             (atom-listp (remove-equal a x)))
+    :hints(("Goal" :in-theory (enable remove-equal))))
 
   (defthm atom-listp-of-make-list-ac
     (equal (atom-listp (make-list-ac n x ac))
            (and (atom-listp ac)
                 (or (atom x)
-                    (zp n)))))
+                    (zp n))))
+    :hints(("Goal" :in-theory (enable make-list-ac zp))))
 
   (defthm atom-listp-of-rev
     ;; BOZO consider adding to deflist

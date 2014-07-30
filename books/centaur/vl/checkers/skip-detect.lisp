@@ -421,6 +421,14 @@ In other words, the alarm level is somehow like a confidence indicator that
 says how suspicious this omission is -- it's not too suspicious to omit one out
 of three wires, but it's really suspicious to omit one out of ten.</p>"
 
+  :prepwork ((local (defthm consp-when-len-gt-0
+                      (implies (< 0 (len x))
+                               (consp x)))))
+
+  :guard-hints (("goal" :in-theory (disable acl2::set-equiv-implies-equal-consp-1
+                                            set::difference-under-set-equiv)
+                 :do-not-induct t))
+
   (b* ((ys (mergesort y))
        (yl (len ys))
        ((unless (> yl 2))

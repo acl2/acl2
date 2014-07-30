@@ -31,6 +31,7 @@
 
 (in-package "FTY")
 (include-book "std/util/da-base" :dir :system)
+(include-book "std/util/deflist-base" :dir :system)
 (include-book "fixequiv")
 (include-book "tools/rulesets" :dir :system)
 (include-book "misc/hons-help" :dir :system) ;; for hons-list
@@ -476,8 +477,9 @@
        ((unless (symbolp name))
         (er hard? 'parse-flexsum
             "Malformed flexsum: ~x0: name must be a symbol" x))
+       ((mv pre-/// post-///) (std::split-/// 'parse-flexsum args))
        ((mv kwd-alist orig-prods)
-        (extract-keywords 'parse-flexsum *flexsum-keywords* args nil))
+        (extract-keywords 'parse-flexsum *flexsum-keywords* pre-/// nil))
        (pred (or (getarg :pred nil kwd-alist)
                  (intern-in-package-of-symbol (cat (symbol-name name) "-P")
                                               name)))
@@ -519,7 +521,10 @@
                   :inline inline
                   :shape shape
                   :measure measure
-                  :kwd-alist kwd-alist
+                  :kwd-alist (if post-///
+                                 (cons (cons :///-events post-///)
+                                       kwd-alist)
+                               kwd-alist)
                   :orig-prods orig-prods
                   :recp recp
                   :typemacro 'defflexsum)))
@@ -804,8 +809,9 @@
        ((unless (symbolp name))
         (er hard? 'parse-tagsum
             "Malformed tagsum: ~x0: name must be a symbol" x))
+       ((mv pre-/// post-///) (std::split-/// 'parse-tagsum args))
        ((mv kwd-alist orig-prods)
-        (extract-keywords 'parse-tagsum *tagsum-keywords* args nil))
+        (extract-keywords 'parse-tagsum *tagsum-keywords* pre-/// nil))
        (pred (or (getarg :pred nil kwd-alist)
                  (intern-in-package-of-symbol (cat (symbol-name name) "-P")
                   name)))
@@ -856,7 +862,10 @@
                   :xvar xvar
                   :inline inline
                   :measure measure
-                  :kwd-alist kwd-alist
+                  :kwd-alist (if post-///
+                                 (cons (cons :///-events post-///)
+                                       kwd-alist)
+                               kwd-alist)
                   :orig-prods orig-prods
                   :recp (flexprods-recursivep prods)
                   :typemacro 'deftagsum)))
@@ -946,8 +955,9 @@
        ((unless (symbolp name))
         (er hard? 'parse-defprod
             "Malformed defprod: ~x0: name must be a symbol" x))
+       ((mv pre-/// post-///) (std::split-/// 'parse-defprod args))
        ((mv kwd-alist fields)
-        (extract-keywords 'parse-defprod *defprod-keywords* args nil))
+        (extract-keywords 'parse-defprod *defprod-keywords* pre-/// nil))
        ((when (atom fields))
         (er hard? 'parse-defprod "List of fields is missing~%"))
        ((when (consp (cdr fields)))
@@ -977,7 +987,11 @@
 
        (measure (or (getarg :measure nil kwd-alist)
                     `(acl2-count ,xvar)))
-       (field-names (flexprod-fields->names (flexprod->fields (car prods)))))
+       (field-names (flexprod-fields->names (flexprod->fields (car prods))))
+       (post-events (if tag 
+                        (append (defprod-tag-events pred xvar tag name field-names)
+                                (cdr (assoc :post-events kwd-alist)))
+                      (cdr (assoc :post-events kwd-alist)))))
     (make-flexsum :name name
                   :pred pred
                   :fix fix
@@ -988,11 +1002,9 @@
                   :prods prods
                   :xvar xvar
                   :measure measure
-                  :kwd-alist (if tag (cons
-                                      (cons :post-events
-                                            (defprod-tag-events pred xvar tag name field-names))
-                                      kwd-alist)
-                               kwd-alist)
+                  :kwd-alist (list* (cons :///-events post-///)
+                                    (cons :post-events post-events)
+                                    kwd-alist)
                   :orig-prods orig-prods
                   :inline inline
                   :recp (flexprods-recursivep prods)
@@ -1012,6 +1024,8 @@
    xvar       ;; variable name denoting the object
    kwd-alist  ;; original keyword alist
    true-listp ;; require nil final cdr
+   elementp-of-nil
+   cheap            ;; passed to std::deflist
    recp       ;; elt-type is recursive
    )
   :tag :list)
@@ -1022,6 +1036,8 @@
     :measure
     :xvar
     :true-listp
+    :elementp-of-nil
+    :cheap
     :parents :short :long  ;; xdoc
     :no-count
     :prepwork
@@ -1034,8 +1050,9 @@
        ((unless (symbolp name))
         (er hard? 'parse-flexlist
             "Malformed flexlist: ~x0: name must be a symbol" x))
+       ((mv pre-/// post-///) (std::split-/// 'parse-flexlist args))
        ((mv kwd-alist rest)
-        (extract-keywords 'parse-flexlist *flexlist-keywords* args nil))
+        (extract-keywords 'parse-flexlist *flexlist-keywords* pre-/// nil))
        ((when rest)
         (er hard? 'parse-flexlist
             "Malformed flexlist: ~x0: after kind should be a keyword/value list." x))
@@ -1054,6 +1071,8 @@
        (equiv (or (getarg :equiv nil kwd-alist)
                   (intern-in-package-of-symbol (cat (symbol-name name) "-EQUIV")
                                                name)))
+       (elementp-of-nil (getarg :elementp-of-nil :unknown kwd-alist))
+       (cheap           (getarg :cheap           nil kwd-alist))
        (count (flextype-get-count-fn name kwd-alist))
        (xvar (or (getarg :xvar nil kwd-alist)
                  xvar
@@ -1071,7 +1090,13 @@
                   :elt-fix elt-fix
                   :elt-equiv elt-equiv
                   :true-listp true-listp
+                  :elementp-of-nil elementp-of-nil
+                  :cheap cheap
                   :measure measure
+                  :kwd-alist (if post-///
+                                 (cons (cons :///-events post-///)
+                                       kwd-alist)
+                               kwd-alist)
                   :xvar xvar
                   :recp recp)))
 
@@ -1117,8 +1142,9 @@
        ((unless (symbolp name))
         (er hard? 'parse-flexalist
             "Malformed flexalist: ~x0: name must be a symbol" x))
+       ((mv pre-/// post-///) (std::split-/// 'parse-flexalist args))
        ((mv kwd-alist rest)
-        (extract-keywords 'parse-flexalist *flexalist-keywords* args nil))
+        (extract-keywords 'parse-flexalist *flexalist-keywords* pre-/// nil))
        ((when rest)
         (er hard? 'parse-flexalist
             "Malformed flexalist: ~x0: after kind should be a keyword/value list." x))
@@ -1163,6 +1189,10 @@
                     :val-fix val-fix
                     :val-equiv val-equiv
                     :measure measure
+                    :kwd-alist (if post-///
+                                   (cons (cons :///-events post-///)
+                                         kwd-alist)
+                                 kwd-alist)
                     :xvar xvar
                     :true-listp true-listp
                     :recp (or key-recp val-recp))))
@@ -1296,8 +1326,9 @@
        ((unless (symbolp name))
         (er hard? 'parse-flextypes
             "Malformed flextypes: name must be a symbol, but found ~x0" name))
+       ((mv pre-/// post-///) (std::split-/// 'parse-flexsum x))
        ((mv kwd-alist typedecls)
-        (extract-keywords 'parse-flextypes *flextypes-keywords* x nil))
+        (extract-keywords 'parse-flextypes *flextypes-keywords* pre-/// nil))
        (our-fixtypes (collect-flextypelist-fixtypes typedecls))
        (fixtype-al (append our-fixtypes
                            (get-fixtypes-alist wrld)))
@@ -1307,7 +1338,10 @@
     (make-flextypes :name name
                     :types types
                     :no-count no-count
-                    :kwd-alist kwd-alist
+                    :kwd-alist (if post-///
+                                   (cons (cons :///-events post-///)
+                                         kwd-alist)
+                                 kwd-alist)
                     :recp (flextypelist-recp types))))
 
 ;; ------------------ Predicate: flexsum -----------------------
@@ -1389,7 +1423,8 @@
   (b* (((flexlist list) list)
        ;; std::deflist-compatible variable names
        (stdx (intern-in-package-of-symbol "X" list.pred))
-       (stda (intern-in-package-of-symbol "A" list.pred)))
+       ;; (stda (intern-in-package-of-symbol "A" 'acl2::foo))
+       )
     `(define ,list.pred (,list.xvar)
        ;; BOZO not exactly clear when/where to add docs for the predicate
        :parents nil
@@ -1403,41 +1438,49 @@
               (,list.pred (cdr ,list.xvar))))
        ///
        (local (in-theory (disable ,list.pred)))
-       (defthm ,(intern-in-package-of-symbol (cat (symbol-name list.pred) "-OF-CONS")
-                                             list.pred)
-         ;; Use special symbols for std::deflist compatibility
-         (equal (,list.pred (cons ,stda ,stdx))
-                (and (,list.elt-type ,stda)
-                     (,list.pred ,stdx)))
-         :hints (("Goal" :Expand ((,list.pred (cons ,stda ,stdx))))))
+       (std::deflist ,list.pred (,stdx)
+         (,list.elt-type ,stdx)
+         :already-definedp t
+         ,@(and (not (eq list.elementp-of-nil :unknown))
+                `(:elementp-of-nil ,list.elementp-of-nil))
+         :true-listp ,list.true-listp
+         :cheap ,list.cheap)
+       ;; (defthm ,(intern-in-package-of-symbol (cat (symbol-name list.pred) "-OF-CONS")
+       ;;                                       list.pred)
+       ;;   ;; Use special symbols for std::deflist compatibility
+       ;;   (equal (,list.pred (cons ,stda ,stdx))
+       ;;          (and (,list.elt-type ,stda)
+       ;;               (,list.pred ,stdx)))
+       ;;   :hints (("Goal" :Expand ((,list.pred (cons ,stda ,stdx))))))
 
-       (defthm ,(intern-in-package-of-symbol (cat (symbol-name list.pred) "-OF-CDR")
-                                             list.pred)
-         (implies (,list.pred ,list.xvar)
-                  (,list.pred (cdr ,list.xvar)))
-         :hints (("goal" :expand ((,list.pred ,list.xvar)))
-                 (and stable-under-simplificationp
-                      '(:expand ((,list.pred (cdr ,list.xvar)))))))
+       ;; (defthm ,(intern-in-package-of-symbol (cat (symbol-name list.pred) "-OF-CDR")
+       ;;                                       list.pred)
+       ;;   (implies (,list.pred ,list.xvar)
+       ;;            (,list.pred (cdr ,list.xvar)))
+       ;;   :hints (("goal" :expand ((,list.pred ,list.xvar)))
+       ;;           (and stable-under-simplificationp
+       ;;                '(:expand ((,list.pred (cdr ,list.xvar)))))))
 
-       (defthm ,(intern-in-package-of-symbol
-                 (cat (symbol-name list.elt-type) "-CAR-OF-" (symbol-name list.pred))
-                 list.pred)
-         (implies (and (consp ,list.xvar)
-                       (,list.pred ,list.xvar))
-                  (,list.elt-type (car ,list.xvar)))
-         :hints (("goal" :expand ((,list.pred ,list.xvar))))
-         :rule-classes ((:rewrite :backchain-limit-lst (0 nil))))
+       ;; (defthm ,(intern-in-package-of-symbol
+       ;;           (cat (symbol-name list.elt-type) "-CAR-OF-" (symbol-name list.pred))
+       ;;           list.pred)
+       ;;   (implies (and (consp ,stdx)
+       ;;                 (,list.pred ,stdx))
+       ;;            (,list.elt-type (car ,stdx)))
+       ;;   :hints (("goal" :expand ((,list.pred ,stdx))))
+       ;;   :rule-classes ((:rewrite :backchain-limit-lst (0 nil))))
 
-       ,@(and list.true-listp
-              `((defthm ,(intern-in-package-of-symbol
-                          (cat (symbol-name list.pred) "-COMPOUND-RECOGNIZER")
-                          list.pred)
-                  (implies (,list.pred ,list.xvar)
-                           (true-listp ,list.xvar))
-                  :hints (("goal" :expand ((,list.pred ,list.xvar))
-                           :induct (true-listp ,list.xvar)
-                           :in-theory (enable true-listp)))
-                  :rule-classes :compound-recognizer))))))
+       ;; ,@(and list.true-listp
+       ;;        `((defthm ,(intern-in-package-of-symbol
+       ;;                    (cat (symbol-name list.pred) "-COMPOUND-RECOGNIZER")
+       ;;                    list.pred)
+       ;;            (implies (,list.pred ,list.xvar)
+       ;;                     (true-listp ,list.xvar))
+       ;;            :hints (("goal" :expand ((,list.pred ,list.xvar))
+       ;;                     :induct (true-listp ,list.xvar)
+       ;;                     :in-theory (enable true-listp)))
+       ;;            :rule-classes :compound-recognizer)))
+       )))
 
 ;; ------------------ Predicate: defalist -----------------------
 
@@ -1555,10 +1598,8 @@
       `((defines ,(intern-in-package-of-symbol (cat (symbol-name x.name) "-P")
                                                x.name)
           :progn t
-          ,@defs
-          ///
-          (local (in-theory (disable . ,(flextypelist-predicates x.types))))
-          ///)))))
+          ,@defs)
+        (local (in-theory (disable . ,(flextypelist-predicates x.types))))))))
 
 
 
@@ -3582,6 +3623,7 @@
              (set-bogus-defun-hints-ok t)
              (set-ignore-ok t)
              (set-irrelevant-formals-ok t)
+             (local (deftheory deftypes-orig-theory (current-theory :here)))
              (progn . ,temp-thms)
              (local (in-theory (disable . ,disable-rules)))
              (local (in-theory (enable . ,enable-rules)))
@@ -3605,7 +3647,11 @@
 
              ,@(flextypes-count x)
 
+             (local (in-theory (enable deftypes-orig-theory)))
+
              ,@(flextype-collect-events :post-events x.kwd-alist x.types)
+             
+             ,@(flextype-collect-events :///-events x.kwd-alist x.types)
 
              (table flextypes-table ',x.name ',x)
 

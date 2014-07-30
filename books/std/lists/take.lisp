@@ -203,7 +203,18 @@ recommend using @('take-redefinition') instead of @('(:definition take)').</p>"
 
 
   (defcong list-equiv equal (butlast lst n) 1
-    :hints(("Goal" :induct (cdr-cdr-induct lst lst-equiv)))))
+    :hints(("Goal" :induct (cdr-cdr-induct lst lst-equiv))))
+
+
+  (local (defthm element-list-p-of-take-nil
+           (implies (element-p nil)
+                    (element-list-p (take n nil)))))
+
+  (def-listp-rule element-list-p-of-take
+    (implies (element-list-p (double-rewrite x))
+             (iff (element-list-p (take n x))
+                  (or (element-p nil)
+                      (<= (nfix n) (len x)))))))
 
 
 (defsection first-n

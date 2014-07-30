@@ -99,27 +99,18 @@ try to support the use of both ascending and descending ranges.</p>")
 
 (fty::deflist vl-maybe-range-list
               :elt-type vl-maybe-range-p
+              :elementp-of-nil t
               :true-listp nil)
-
-(deflist vl-maybe-range-list-p (x)
-  (vl-maybe-range-p x)
-  :elementp-of-nil t)
 
 (fty::deflist vl-rangelist
               :elt-type vl-range-p
+              :elementp-of-nil nil
               :true-listp nil)
-
-(deflist vl-rangelist-p (x)
-  (vl-range-p x)
-  :elementp-of-nil nil)
 
 (fty::deflist vl-rangelist-list
               :elt-type vl-rangelist-p
-              :true-listp nil)
-
-(deflist vl-rangelist-list-p (x)
-  (vl-rangelist-p x)
-  :elementp-of-nil t)
+              :true-listp nil
+              :elementp-of-nil t)
 
 
 
@@ -219,10 +210,7 @@ subset of the valid @('data_type')s:</p>
   :forward t)
 
 (fty::deflist vl-packeddimensionlist
-  :elt-type vl-packeddimension)
-
-(deflist vl-packeddimensionlist-p (x)
-  (vl-packeddimension-p x)
+  :elt-type vl-packeddimension
   :elementp-of-nil nil)
 
 (defoption vl-maybe-packeddimension-p vl-packeddimension-p)
@@ -324,10 +312,7 @@ unsized dimensions.</p>")
    (value vl-maybe-expr-p)))
 
 (fty::deflist vl-enumitemlist
-  :elt-type vl-enumitem-p)
-
-(deflist vl-enumitemlist-p (x)
-  (vl-enumitem-p x)
+  :elt-type vl-enumitem-p
   :elementp-of-nil nil)
 
 
@@ -428,7 +413,8 @@ unsized dimensions.</p>")
 
   (fty::deflist vl-structmemberlist
     :measure (two-nats-measure (acl2-count x) 0)
-    :elt-type vl-structmember)
+    :elt-type vl-structmember
+    :elementp-of-nil nil)
 
   (defprod vl-structmember
     :measure (two-nats-measure (acl2-count x) 1)
@@ -523,9 +509,6 @@ kinds of assignments like @('+=') and @('*='), so maybe this could become a
 <p>So maybe we don't so much need these to be expressions.  Maybe we can get
 away with them as alternate kinds of assignments.</p>"))
 
-(deflist vl-structmemberlist-p (x)
-  (vl-structmember-p x)
-  :elementp-of-nil nil)
 
 
 
@@ -624,11 +607,8 @@ expression-sizing) for details.</p>")
 
 (fty::deflist vl-portlist
               :elt-type vl-port-p
-              :true-listp nil)
-
-(deflist vl-portlist-p (x)
-  (vl-port-p x)
-  :elementp-of-nil nil)
+              :true-listp nil
+              :elementp-of-nil nil)
 
 (defprojection vl-portlist->exprs ((x vl-portlist-p))
   :parents (vl-portlist-p)
@@ -749,11 +729,8 @@ the bottom on Page 174.</p>")
 
 (fty::deflist vl-portdecllist
               :elt-type vl-portdecl-p
-              :true-listp nil)
-
-(deflist vl-portdecllist-p (x)
-  (vl-portdecl-p x)
-  :elementp-of-nil nil)
+              :true-listp nil
+              :elementp-of-nil nil)
 
 
 (defprod vl-gatedelay
@@ -975,11 +952,8 @@ properly preserve them.</p>")
 
 (fty::deflist vl-assignlist
               :elt-type vl-assign-p
-              :true-listp nil)
-
-(deflist vl-assignlist-p (x)
-  (vl-assign-p x)
-  :elementp-of-nil nil)
+              :true-listp nil
+              :elementp-of-nil nil)
 
 (defprojection vl-assignlist->lvalues ((x vl-assignlist-p))
   :returns (lvalues vl-exprlist-p)
@@ -1202,11 +1176,8 @@ our transformations may not preserve it correctly.</p>")
 
 (fty::deflist vl-netdecllist
               :elt-type vl-netdecl-p
-              :true-listp nil)
-
-(deflist vl-netdecllist-p (x)
-  (vl-netdecl-p x)
-  :elementp-of-nil nil)
+              :true-listp nil
+              :elementp-of-nil nil)
 
 
 (defprod vl-plainarg
@@ -1273,29 +1244,25 @@ portnames.</p>")
 
 (fty::deflist vl-plainarglist
               :elt-type vl-plainarg-p
-              :true-listp nil)
-
-(deflist vl-plainarglist-p (x)
-  (vl-plainarg-p x)
-  :elementp-of-nil nil)
+              :true-listp nil
+              :elementp-of-nil nil)
 
 (fty::deflist vl-plainarglistlist
               :elt-type vl-plainarglist-p
-              :true-listp nil)
+              :true-listp nil
+              :elementp-of-nil t
+              ///
+              (defthm vl-plainarglist-p-of-strip-cars
+                (implies (and (vl-plainarglistlist-p x)
+                              (all-have-len x n)
+                              (not (zp n)))
+                         (vl-plainarglist-p (strip-cars x)))
+                :hints(("Goal" :in-theory (enable strip-cars))))
 
-(deflist vl-plainarglistlist-p (x)
-  (vl-plainarglist-p x)
-  :elementp-of-nil t
-  ///
-  (defthm vl-plainarglist-p-of-strip-cars
-    (implies (and (vl-plainarglistlist-p x)
-                  (all-have-len x n)
-                  (not (zp n)))
-             (vl-plainarglist-p (strip-cars x))))
-
-  (defthm vl-plainarglistlist-p-of-strip-cdrs
-    (implies (vl-plainarglistlist-p x)
-             (vl-plainarglistlist-p (strip-cdrs x)))))
+              (defthm vl-plainarglistlist-p-of-strip-cdrs
+                (implies (vl-plainarglistlist-p x)
+                         (vl-plainarglistlist-p (strip-cdrs x)))
+                :hints(("Goal" :in-theory (enable strip-cdrs)))))
 
 (defprojection vl-plainarglist->exprs ((x vl-plainarglist-p))
   (vl-plainarg->expr x)
@@ -1337,11 +1304,8 @@ directions.</p>")
 
 (fty::deflist vl-namedarglist
               :elt-type vl-namedarg-p
-              :true-listp nil)
-
-(deflist vl-namedarglist-p (x)
-  (vl-namedarg-p x)
-  :elementp-of-nil nil)
+              :true-listp nil
+              :elementp-of-nil nil)
 
 
 (deftagsum vl-arguments
@@ -1379,11 +1343,8 @@ variety.</p>"
 
 (fty::deflist vl-argumentlist
               :elt-type vl-arguments-p
-              :true-listp nil)
-
-(deflist vl-argumentlist-p (x)
-  (vl-arguments-p x)
-  :elementp-of-nil nil)
+              :true-listp nil
+              :elementp-of-nil nil)
 
 
 (defprod vl-modinst
@@ -1443,11 +1404,8 @@ represents exactly one instance (or instance array).</p>")
 
 (fty::deflist vl-modinstlist
               :elt-type vl-modinst-p
-              :true-listp nil)
-
-(deflist vl-modinstlist-p (x)
-  (vl-modinst-p x)
-  :elementp-of-nil nil)
+              :true-listp nil
+              :elementp-of-nil nil)
 
 
 (defenum vl-gatetype-p
@@ -1557,11 +1515,8 @@ enforces these restrictions, we do not encode them into the definition of
 
 (fty::deflist vl-gateinstlist
               :elt-type vl-gateinst-p
-              :true-listp nil)
-
-(deflist vl-gateinstlist-p (x)
-  (vl-gateinst-p x)
-  :elementp-of-nil nil)
+              :true-listp nil
+              :elementp-of-nil nil)
 
 
 ;; (defenum vl-vardecltype-p
@@ -1747,27 +1702,18 @@ endmodule
 
 (fty::deflist vl-vardecllist
               :elt-type vl-vardecl-p
-              :true-listp nil)
-
-(deflist vl-vardecllist-p (x)
-  (vl-vardecl-p x)
-  :elementp-of-nil nil)
+              :true-listp nil
+              :elementp-of-nil nil)
 
 (fty::deflist vl-paramdecllist
               :elt-type vl-paramdecl-p
-              :true-listp nil)
+              :true-listp nil
+              :elementp-of-nil nil)
 
-(deflist vl-paramdecllist-p (x)
-  (vl-paramdecl-p x)
-  :elementp-of-nil nil)
-
-(fty::deflist vl-paramdecllistlist
+(fty::deflist vl-paramdecllist-list
               :elt-type vl-paramdecllist-p
-              :true-listp nil)
-
-(deflist vl-paramdecllist-list-p (x)
-  (vl-paramdecllist-p x)
-  :elementp-of-nil t)
+              :true-listp nil
+              :elementp-of-nil t)
 
 
 
@@ -1790,19 +1736,20 @@ respectively.</p>"
   :rule-classes :forward-chaining)
 
 (fty::deflist vl-blockitemlist
-              :elt-type vl-blockitem-p
-              :true-listp nil)
-
-(deflist vl-blockitemlist-p (x)
-  (vl-blockitem-p x)
+  :elt-type vl-blockitem-p
+  :true-listp nil
   :elementp-of-nil nil
-  :rest
-  ((defthm vl-blockitemlist-p-when-vl-vardecllist-p
-     (implies (vl-vardecllist-p x)
-              (vl-blockitemlist-p x)))
-   (defthm vl-blockitemlist-p-when-vl-paramdecllist-p
-     (implies (vl-paramdecllist-p x)
-              (vl-blockitemlist-p x)))))
+  ///
+  (defthm vl-blockitemlist-p-when-vl-vardecllist-p
+    (implies (vl-vardecllist-p x)
+             (vl-blockitemlist-p x))
+    :hints(("Goal" :in-theory (enable vl-vardecllist-p
+                                      vl-blockitemlist-p))))
+  (defthm vl-blockitemlist-p-when-vl-paramdecllist-p
+    (implies (vl-paramdecllist-p x)
+             (vl-blockitemlist-p x))
+    :hints(("Goal" :in-theory (enable vl-paramdecllist-p
+                                      vl-blockitemlist-p)))))
 
 
 
@@ -1843,11 +1790,8 @@ applied to a Verilog expression.</p>")
 
 (fty::deflist vl-evatomlist
               :elt-type vl-evatom-p
-              :true-listp nil)
-
-(deflist vl-evatomlist-p (x)
-  (vl-evatom-p x)
-  :elementp-of-nil nil)
+              :true-listp nil
+              :elementp-of-nil nil)
 
 
 (defprod vl-eventcontrol
@@ -1987,16 +1931,15 @@ contain sub-statements and are mutually-recursive with @('vl-stmt-p').</p>"
                               ACL2::CONSP-OF-CAR-WHEN-ALISTP
                               car-when-all-equalp
                               VL-EXPRLIST-P-OF-CAR-WHEN-VL-EXPRLISTLIST-P
-                              VL-EXPR-P-CAR-OF-VL-EXPRLIST-P
                               VL-EXPRLIST-P-OF-CDR-WHEN-VL-EXPRLIST-P
                               VL-EXPR-P-WHEN-VL-MAYBE-EXPR-P
                               VL-EXPRLISTLIST-P-OF-CDR-WHEN-VL-EXPRLISTLIST-P
-                              VL-EXPRLIST-P-CAR-OF-VL-EXPRLISTLIST-P
                               ))))
 
   (fty::deflist vl-stmtlist
     :elt-type vl-stmt-p
-    :true-listp t)
+    :true-listp t
+    :elementp-of-nil nil)
 
   (fty::defalist vl-caselist
     :key-type vl-exprlist   ;; The match expressions in a case item
@@ -2338,10 +2281,6 @@ block name to each variable name.</p>"
       (atts vl-atts-p)))
     ))
 
-(deflist vl-stmtlist-p (x)
-  (vl-stmt-p x)
-  :already-definedp t
-  :true-listp t)
 
 
 
@@ -2419,17 +2358,11 @@ endmodule
 })")
 
 (fty::deflist vl-initiallist
-  :elt-type vl-initial-p)
-
-(deflist vl-initiallist-p (x)
-  (vl-initial-p x)
+  :elt-type vl-initial-p
   :elementp-of-nil nil)
 
 (fty::deflist vl-alwayslist
-  :elt-type vl-always-p)
-
-(deflist vl-alwayslist-p (x)
-  (vl-always-p x)
+  :elt-type vl-always-p
   :elementp-of-nil nil)
 
 
@@ -2527,10 +2460,7 @@ task ports can have types like @('integer') or @('real').</p>
 have input ports that are very similar to task ports.  So, we reuse
 @('vl-taskport-p') structures for function inputs.</p>")
 
-(fty::deflist vl-taskportlist :elt-type vl-taskport-p)
-
-(deflist vl-taskportlist-p (x)
-  (vl-taskport-p x)
+(fty::deflist vl-taskportlist :elt-type vl-taskport-p
   :elementp-of-nil nil)
 
 (defprojection vl-taskportlist->names ((x vl-taskportlist-p))
@@ -2617,10 +2547,7 @@ endfunction
 assign to a function's name to indicate its return value.</p>")
 
 (fty::deflist vl-fundecllist
-  :elt-type vl-fundecl-p)
-
-(deflist vl-fundecllist-p (x)
-  (vl-fundecl-p x)
+  :elt-type vl-fundecl-p
   :elementp-of-nil nil)
 
 (defprojection vl-fundecllist->names ((x vl-fundecllist-p))
@@ -2689,10 +2616,7 @@ but they can have fewer restrictions, e.g., they can have multiple outputs, can
 include delays, etc.</p>")
 
 (fty::deflist vl-taskdecllist
-  :elt-type vl-taskdecl-p)
-
-(deflist vl-taskdecllist-p (x)
-  (vl-taskdecl-p x)
+  :elt-type vl-taskdecl-p
   :elementp-of-nil nil)
 
 (defprojection vl-taskdecllist->names ((x vl-taskdecllist-p))
@@ -2801,10 +2725,7 @@ include delays, etc.</p>")
                 VL module.")))
 
 (fty::deflist vl-modulelist
-  :elt-type vl-module-p)
-
-(deflist vl-modulelist-p (x)
-  (vl-module-p x)
+  :elt-type vl-module-p
   :elementp-of-nil nil)
 
 (define vl-module->hands-offp ((x vl-module-p))
@@ -2886,10 +2807,7 @@ transforms to not modules with this attribute.</p>"
   primitives yet.")
 
 (fty::deflist vl-udplist
-  :elt-type vl-udp-p)
-
-(deflist vl-udplist-p (x)
-  (vl-udp-p x)
+  :elt-type vl-udp-p
   :elementp-of-nil nil)
 
 (defprojection vl-udplist->names ((x vl-udplist-p))
@@ -2913,10 +2831,7 @@ transforms to not modules with this attribute.</p>"
    (comments vl-commentmap-p))
   :long "BOZO incomplete stub -- we don't really support configs yet.")
 
-(fty::deflist vl-configlist :elt-type vl-config-p)
-
-(deflist vl-configlist-p (x)
-  (vl-config-p x)
+(fty::deflist vl-configlist :elt-type vl-config-p
   :elementp-of-nil nil)
 
 (defprojection vl-configlist->names ((x vl-configlist-p))
@@ -2940,10 +2855,7 @@ transforms to not modules with this attribute.</p>"
    (comments vl-commentmap-p))
   :long "BOZO incomplete stub -- we don't really support packages yet.")
 
-(fty::deflist vl-packagelist :elt-type vl-package-p)
-
-(deflist vl-packagelist-p (x)
-  (vl-package-p x)
+(fty::deflist vl-packagelist :elt-type vl-package-p
   :elementp-of-nil nil)
 
 (defprojection vl-packagelist->names ((x vl-packagelist-p))
@@ -2967,10 +2879,7 @@ transforms to not modules with this attribute.</p>"
    (comments vl-commentmap-p))
   :long "BOZO incomplete stub -- we don't really support packages yet.")
 
-(fty::deflist vl-interfacelist :elt-type vl-interface-p)
-
-(deflist vl-interfacelist-p (x)
-  (vl-interface-p x)
+(fty::deflist vl-interfacelist :elt-type vl-interface-p
   :elementp-of-nil nil)
 
 (defprojection vl-interfacelist->names ((x vl-interfacelist-p))
@@ -2995,10 +2904,7 @@ transforms to not modules with this attribute.</p>"
    (comments vl-commentmap-p))
   :long "BOZO incomplete stub -- we don't really support programs yet.")
 
-(fty::deflist vl-programlist :elt-type vl-program-p)
-
-(deflist vl-programlist-p (x)
-  (vl-program-p x)
+(fty::deflist vl-programlist :elt-type vl-program-p
   :elementp-of-nil nil)
 
 (defprojection vl-programlist->names ((x vl-programlist-p))
@@ -3058,10 +2964,7 @@ transforms to not modules with this attribute.</p>"
    (loc  vl-location-p)
    (atts vl-atts-p)))
 
-(fty::deflist vl-importlist :elt-type vl-import-p)
-
-(deflist vl-importlist-p (x)
-  (vl-import-p x)
+(fty::deflist vl-importlist :elt-type vl-import-p
   :elementp-of-nil nil)
 
 
@@ -3085,10 +2988,7 @@ transforms to not modules with this attribute.</p>"
    (loc  vl-location-p)))
 
 (fty::deflist vl-fwdtypedeflist
-  :elt-type vl-fwdtypedef-p)
-
-(deflist vl-fwdtypedeflist-p (x)
-  (vl-fwdtypedef-p x)
+  :elt-type vl-fwdtypedef-p
   :elementp-of-nil nil)
 
 (defprod vl-typedef
@@ -3104,10 +3004,7 @@ transforms to not modules with this attribute.</p>"
    (comments vl-commentmap-p)))
 
 (fty::deflist vl-typedeflist
-  :elt-type vl-typedef-p)
-
-(deflist vl-typedeflist-p (x)
-  (vl-typedef-p x)
+  :elt-type vl-typedef-p
   :elementp-of-nil nil)
 
 (defprojection vl-typedeflist->names ((x vl-typedeflist-p))

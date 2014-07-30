@@ -1249,7 +1249,9 @@
           :expand ((:free (vals) (eval-bdd x vals))
                    (bdd-max-depth x)
                    (take n vals))
-          :in-theory (enable default-cdr not-consp-ubdd-fix))))
+          :in-theory (e/d (default-cdr not-consp-ubdd-fix)
+                          (take-when-atom
+                           take-of-too-many)))))
 
 (defcong bdd-equiv bdd-equiv (qcar x) 1
   :hints (("goal" :in-theory (disable bdd-equiv-is-an-equivalence))
@@ -1365,7 +1367,8 @@
      (defthm make-list-cons-make-list
        (equal (make-list-ac n elt tail)
               (cons-make-list n elt tail))
-       :hints (("goal" :induct (make-list-ac n elt tail)))))
+       :hints (("goal" :induct (make-list-ac n elt tail)
+                :in-theory (disable make-list-ac-removal)))))
 
    (defun eval-bdd-depth-ind (x n)
      (if (atom x)

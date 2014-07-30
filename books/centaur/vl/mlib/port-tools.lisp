@@ -97,10 +97,7 @@
 
 
 (fty::deflist vl-directionlist
-  :elt-type vl-direction-p)
-
-(deflist vl-directionlist-p (x)
-  (vl-direction-p x)
+  :elt-type vl-direction-p
   :elementp-of-nil nil)
 
 (define vl-basic-portexpr-p ((x vl-maybe-expr-p))

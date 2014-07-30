@@ -33,6 +33,7 @@
 (in-package "ACL2")
 (include-book "xdoc/top" :dir :system)
 (include-book "list-defuns")
+(include-book "abstract")
 (local (include-book "duplicity"))
 (local (include-book "append"))
 (local (include-book "sets"))
@@ -144,7 +145,11 @@ library."
 
   (defthm remove-of-set-difference-equal
     (equal (remove a (set-difference-equal x y))
-           (set-difference-equal (remove a x) y))))
+           (set-difference-equal (remove a x) y)))
+
+  (def-listp-rule element-list-p-of-remove
+    (implies (element-list-p x)
+             (element-list-p (remove a x)))))
 
 
 

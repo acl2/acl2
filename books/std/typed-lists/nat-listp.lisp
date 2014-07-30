@@ -77,17 +77,20 @@ std::deflist).</p>
   (defthm nat-listp-of-remove-equal
     ;; BOZO probably add to deflist
     (implies (nat-listp x)
-             (nat-listp (remove-equal a x))))
+             (nat-listp (remove-equal a x)))
+    :hints(("Goal" :in-theory (enable remove))))
 
   (defthm nat-listp-of-make-list-ac
     ;; BOZO probably silly given REPEAT as the normal form...
     (equal (nat-listp (make-list-ac n x ac))
            (and (nat-listp ac)
                 (or (natp x)
-                    (zp n)))))
+                    (zp n))))
+    :hints(("Goal" :in-theory (enable make-list-ac))))
 
   (defthm eqlable-listp-when-nat-listp
     ;; Useful for the guards of MEMBER on nat-listp's.
     ;; BOZO should this just be a TAU rule?
     (implies (nat-listp x)
-             (eqlable-listp x))))
+             (eqlable-listp x))
+    :hints(("Goal" :in-theory (enable eqlable-listp eqlablep)))))

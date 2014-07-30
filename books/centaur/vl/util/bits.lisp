@@ -51,14 +51,9 @@ accepted by @('vl-bit-p'):</p>
 
 (fty::deflist vl-bitlist
   :elt-type vl-bit-p
-  :true-listp nil)
-
-(deflist vl-bitlist-p (x)
-  (vl-bit-p x)
-  :guard t
   :elementp-of-nil nil
-  :parents (vl-weirdint-p)
-  :already-definedp t)
+  :true-listp nil
+  :parents (vl-weirdint-p))
 
 (define vl-bit->char ((x vl-bit-p))
   :parents (vl-bit-p)

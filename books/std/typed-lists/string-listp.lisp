@@ -59,4 +59,3 @@ std::deflist).</p>"
     ;; BOZO probably add to deflist
     (implies (string-listp x)
              (string-listp (remove-equal a x)))))
-

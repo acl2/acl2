@@ -500,7 +500,8 @@
      (fourth 4uplelist))
     :measure (two-nats-measure (acl2-count x) 1))
   (deflist 4uplelist :elt-type 4uple :measure
-    (two-nats-measure (acl2-count x) 0)))
+    (two-nats-measure (acl2-count x) 0)
+    :elementp-of-nil nil))
 
 
 (include-book "std/util/deflist" :dir :system)
@@ -511,7 +512,7 @@
   :already-definedp t)
 
 
-(deflist 4uplelist2 :elt-type 4uple :true-listp t)
+(deflist 4uplelist2 :elt-type 4uple :true-listp t :elementp-of-nil nil)
 
 (std::deflist 4uplelist2-p (x)
   (4uple-p x)
@@ -713,13 +714,14 @@
      :ctor-body (cons (list 'lambda formals body) args))
 
     
-    :post-pred-events ((defthm pterm3list-p-of-take
-                         (implies (pterm3list-p x)
-                                  (pterm3list-p (take n x))))
-                       (defthm pterm3list-p-implies-true-listp
-                         (implies (pterm3list-p x)
-                                  (true-listp x))
-                         :rule-classes :forward-chaining))
+    :post-pred-events (;; (defthm pterm3list-p-of-take
+                       ;;   (implies (pterm3list-p x)
+                       ;;            (pterm3list-p (take n x))))
+                       ;; (defthm pterm3list-p-implies-true-listp
+                       ;;   (implies (pterm3list-p x)
+                       ;;            (true-listp x))
+                       ;;   :rule-classes :forward-chaining)
+                       )
 
     :xvar y)
   ;; (defflexsum pfunc
@@ -738,6 +740,7 @@
   ;;   :xvar z)
 
   (deflist pterm3list :elt-type pterm3-p :xvar acl2-asg::x
+    :elementp-of-nil t
     :true-listp t))
 
 
@@ -836,33 +839,35 @@
 
   (deflist pterm4list :elt-type pterm4-p :xvar acl2-asg::x
     :true-listp t
+    :elementp-of-nil nil
     :measure (two-nats-measure (acl2-count acl2-asg::x) 0) )
 
 
   
-  :post-pred-events ((defthm pterm4list-p-of-append
-                       (implies (and (pterm4list-p x)
-                                     (pterm4list-p y))
-                                (pterm4list-p (append x y)))
-                       :hints(("Goal" :in-theory (enable pterm4list-p))))
-                     (defthm pterm4list-p-of-take
-                       (implies (and (pterm4list-p x)
-                                     (< (nfix n) (len x)))
-                                (pterm4list-p (take n x)))
-                       :hints(("Goal" :in-theory (enable pterm4list-p len))))
-                     (defthm pterm4list-p-of-replicate
-                       (implies (pterm4-p x)
-                                (pterm4list-p (replicate n x)))
-                       :hints(("Goal" :in-theory (enable pterm4list-p
-                                                         replicate))))
+  :post-pred-events (;; (defthm pterm4list-p-of-append
+                     ;;   (implies (and (pterm4list-p x)
+                     ;;                 (pterm4list-p y))
+                     ;;            (pterm4list-p (append x y)))
+                     ;;   :hints(("Goal" :in-theory (enable pterm4list-p))))
+                     ;; (defthm pterm4list-p-of-take
+                     ;;   (implies (and (pterm4list-p x)
+                     ;;                 (< (nfix n) (len x)))
+                     ;;            (pterm4list-p (take n x)))
+                     ;;   :hints(("Goal" :in-theory (enable pterm4list-p len))))
+                     ;; (defthm pterm4list-p-of-replicate
+                     ;;   (implies (pterm4-p x)
+                     ;;            (pterm4list-p (replicate n x)))
+                     ;;   :hints(("Goal" :in-theory (enable pterm4list-p
+                     ;;                                     replicate))))
                      (defthm pterm4list-p-of-pterm4-take
                        (implies (pterm4list-p x)
                                 (pterm4list-p (pterm4-take n x)))
                        :hints(("Goal" :in-theory (enable pterm4-take))))
-                     (defthm pterm4list-p-implies-true-listp
-                       (implies (pterm4list-p x)
-                                (true-listp x))
-                       :rule-classes :forward-chaining)))
+                     ;; (defthm pterm4list-p-implies-true-listp
+                     ;;   (implies (pterm4list-p x)
+                     ;;            (true-listp x))
+                     ;;   :rule-classes :forward-chaining)
+                     ))
 
 
 
@@ -948,33 +953,16 @@
 
   (deflist pterm5list :elt-type pterm5-p :xvar acl2-asg::x
     :true-listp t
+    :elementp-of-nil nil
     :measure (two-nats-measure (acl2-count acl2-asg::x) 0) )
 
 
   
-  :post-pred-events ((defthm pterm5list-p-of-append
-                       (implies (and (pterm5list-p x)
-                                     (pterm5list-p y))
-                                (pterm5list-p (append x y)))
-                       :hints(("Goal" :in-theory (enable pterm5list-p))))
-                     (defthm pterm5list-p-of-take
-                       (implies (and (pterm5list-p x)
-                                     (< (nfix n) (len x)))
-                                (pterm5list-p (take n x)))
-                       :hints(("Goal" :in-theory (enable pterm5list-p len))))
-                     (defthm pterm5list-p-of-replicate
-                       (implies (pterm5-p x)
-                                (pterm5list-p (replicate n x)))
-                       :hints(("Goal" :in-theory (enable pterm5list-p
-                                                         replicate))))
+  :post-pred-events (
                      (defthm pterm5list-p-of-pterm5-take
                        (implies (pterm5list-p x)
                                 (pterm5list-p (pterm5-take n x)))
-                       :hints(("Goal" :in-theory (enable pterm5-take))))
-                     (defthm pterm5list-p-implies-true-listp
-                       (implies (pterm5list-p x)
-                                (true-listp x))
-                       :rule-classes :forward-chaining)))
+                       :hints(("Goal" :in-theory (enable pterm5-take))))))
 
 (define cons-fix ((x consp))
   :returns (xx consp :rule-classes :type-prescription)
