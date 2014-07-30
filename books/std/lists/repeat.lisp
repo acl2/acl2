@@ -256,3 +256,16 @@ relationship between @('a') and @('b'), using the following related rules:</p>
            (if (<= (nfix a) (nfix b))
                (take a x)
              (append (take b x) (replicate (- (nfix a) (nfix b)) nil))))))
+
+
+(defsection take-of-too-many
+  :parents (std/lists/take replicate)
+  :short "Rewrite @('(take n x)') when @('n') is more than @('(len x)')."
+
+  :long "<p>This rule may sometimes lead your proof in a bad direction.  If you
+see unwanted @('replicate') terms, you may want to disable it.</p>"
+
+  (defthm take-of-too-many
+    (implies (<= (len x) (nfix n))
+             (equal (take n x)
+                    (append x (replicate (- (nfix n) (len x)) nil))))))

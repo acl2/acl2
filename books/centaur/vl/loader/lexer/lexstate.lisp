@@ -105,7 +105,7 @@ particular standard we're implementing.</p>"
 
    (dollarops vl-plaintoken-alistp "Special tokens starting with @('$').")
 
-   (assignpatp booleanp "Enable SystemVerilog 2012 '{ tokens?")
+   (quotesp    booleanp "Enable SystemVerilog 2012 ' tokens?")
    (strextsp   booleanp "Enable SystemVerilog 2012 string literal extensions?")
    (timelitsp  booleanp "Enable SystemVerilog 2012 time literals?")
    (extintsp   booleanp "Enable SystemVerilog 2012 '0/'1/'x/'z integers?")
@@ -167,7 +167,7 @@ particular standard we're implementing.</p>"
    :barops   '(("||"   . :vl-logor)
                ("|"    . :vl-bitor))
    :dollarops  nil
-   :assignpatp nil
+   :quotesp    nil
    :strextsp   nil
    :timelitsp  nil
    :extintsp   nil
@@ -180,7 +180,7 @@ particular standard we're implementing.</p>"
           (uniquep (alist-keys al))
           (uniquep (alist-vals al)))))
   (assert!
-   (not (vl-lexstate->assignpatp *vl-2005-strict-lexstate*))))
+   (not (vl-lexstate->quotesp *vl-2005-strict-lexstate*))))
 
 (defval *vl-2005-lexstate*
   :parents (lexstate)
@@ -258,7 +258,7 @@ particular standard we're implementing.</p>"
    :dollarops '(("$root" . :vl-$root)
                 ("$unit" . :vl-$unit)
                 ("$"     . :vl-$))
-   :assignpatp t
+   :quotesp    t
    :strextsp   t
    :timelitsp  t
    :extintsp   t)
@@ -290,7 +290,7 @@ particular standard we're implementing.</p>"
             (difference (mergesort new-spec)
                         ;; These are special because they're not just
                         ;; handled as simple plaintoken-alists.
-                        '(:vl-assignpat))))))
+                        '(:vl-quote))))))
 
 (defval *vl-2012-lexstate*
   :parents (lexstate)

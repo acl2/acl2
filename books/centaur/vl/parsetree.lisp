@@ -1959,6 +1959,17 @@ respectively.</p>")
 
 </ul>")
 
+(defenum vl-casecheck-p
+  (nil
+   :vl-unique
+   :vl-unique0
+   :vl-priority)
+  :parents (vl-stmt-p)
+  :short "Case statement violation checking mode."
+  :long "<p>For ordinary @('case') statements this will be @('nil').  The other
+values are for SystemVerilog's @('unique'), @('unique0'), and @('priority')
+case statements.</p>")
+
 (deftypes statements
   :short "Representation of a statement."
 
@@ -1988,8 +1999,8 @@ contain sub-statements and are mutually-recursive with @('vl-stmt-p').</p>"
     :true-listp t)
 
   (fty::defalist vl-caselist
-    :key-type vl-expr
-    :val-type vl-stmt
+    :key-type vl-exprlist   ;; The match expressions in a case item
+    :val-type vl-stmt       ;; The associated statement
     :true-listp t)
 
   (deftagsum vl-stmt
@@ -2122,32 +2133,32 @@ expressions that can follow the trigger?  Maybe they just become part of the
     (:vl-casestmt
      :base-name vl-casestmt
      :layout :tree
-     :short "Representation of case statements."
-     :long "<h4>General Form:</h4>
+     :short "Representation of case, casez, and casex statements."
+     :long "<p>Case statements are discussed in the Verilog-2005 standard,
+Section 9.5 (page 127), and in the SystemVerilog-2012 standard in Section
+12.5 (page 270).</p>
 
-@({
-case ( <test> )
-   <match-1> : <body-1>
-   <match-2> : <body-2>
-   ...
-   <match-N> : <body-N>
-   default : <default-body>
-endcase
-})
+<p>We do not yet support some SystemVerilog extensions, in particular:</p>
 
-<p>Note that in Verilog, case statements can include multiple <i>match</i>
-expressions on the same line, but our parser splits these up into separate
-lines with the same body.  Note also that the default case is optional, but we
-insert a null statement in such cases, so we can always give you a default
-statement.</p>
+<ul>
+ <li>@('case ... matches ...')</li>
+ <li>@('case ... inside ...')</li>
+</ul>"
 
-<p>Case statements are discussed in Section 9.5 (page 127).  There are three
-kinds of case statements, which we identify with @(see vl-casetype-p).</p>"
-
-     ((casetype vl-casetype-p "Case statement type: @('case'), @('casez'), @('casex').")
-      (test     vl-expr-p     "Expression being tested.")
-      (cases    vl-caselist-p "Match/body pairs.")
-      (default  vl-stmt-p     "Default statement.")
+     ((casetype vl-casetype-p
+                "Basic case statement type: @('case'), @('casez'), or
+                 @('casex').")
+      (check    vl-casecheck-p
+                "SystemVerilog violation checking specification: @('unique'),
+                 @('unique0'), @('priority'), or none.")
+      (test     vl-expr-p
+                "The expression being tested.")
+      (caselist vl-caselist-p
+                "The match expressions and associated statements.")
+      (default  vl-stmt-p
+                "The default statement, if provided.  This is optional in the
+                 Verilog and SystemVerilog syntax.  If it is omitted, our
+                 parser will put a null statement here.")
       (atts     vl-atts-p)))
 
     (:vl-ifstmt

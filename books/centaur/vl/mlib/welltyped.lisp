@@ -127,6 +127,7 @@ hierarchical identifiers.</p>"
   (define vl-expr-welltyped-p ((x vl-expr-p))
     :measure (vl-expr-count x)
     :returns (welltyped-p booleanp :rule-classes :type-prescription)
+    :verify-guards nil
     (b* (((when (vl-fast-atom-p x))
           (vl-atom-welltyped-p x))
          ((vl-nonatom x) x)
@@ -316,7 +317,30 @@ hierarchical identifiers.</p>"
           ;; type.  This means things like (3:4:5) + 1 are not well-typed.
           ;; I think of this more as a feature than as a limitation.
           (and (not x.finalwidth)
-               (not x.finaltype)))))))
+               (not x.finaltype)))
+
+         ;; New things that we aren't really supporting yet
+         ((:vl-stream-left
+           :vl-stream-right
+           :vl-stream-left-sized
+           :vl-stream-right-sized
+           :vl-binary-cast
+           :vl-scope
+           :vl-tagged
+           :vl-with-index
+           :vl-with-colon
+           :vl-with-pluscolon
+           :vl-with-minuscolon
+           )
+          t)
+
+         ((:vl-hid-dot :vl-hid-array-dot)
+          ;; Shouldn't hit this case, checked hidexpr-p above.  Makes guard
+          ;; happy because we've covered all cases.
+          nil)
+
+         (otherwise
+          (impossible))))))
 
   (define vl-exprlist-welltyped-p ((x vl-exprlist-p))
     :measure (vl-exprlist-count x)
@@ -332,7 +356,13 @@ hierarchical identifiers.</p>"
       :guard (vl-exprlist-p x)
       :already-definedp t))
 
-  (deffixequiv-mutual vl-expr-welltyped-p))
+  (deffixequiv-mutual vl-expr-welltyped-p)
+
+  (verify-guards vl-expr-welltyped-p
+    :hints((and stable-under-simplificationp
+                '(:use ((:instance vl-op-p-of-vl-nonatom->op))
+                  :in-theory (e/d (vl-op-p)
+                                  (vl-op-p-of-vl-nonatom->op)))))))
 
 (defthm vl-expr-welltyped-p-of-vl-make-bitselect
   (implies (force (vl-expr-welltyped-p expr))

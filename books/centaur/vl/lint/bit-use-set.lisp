@@ -1005,7 +1005,7 @@ warnings."
           ;; Additionally mark all test expression wires as used since they're
           ;; deciding which branch to follow.
           (b* (((vl-casestmt x) x)
-               (exprs                (cons x.test (alist-keys x.cases)))
+               (exprs                (cons x.test (flatten (alist-keys x.caselist))))
                ((mv warnings1 wires) (vl-exprlist-allwires exprs walist))
                (warnings             (append-without-guard warnings1 warnings)))
             (us-mark-wires-truly-used wires db warnings elem)))

@@ -102,6 +102,8 @@ modules for sizing for the linter.</p>")
         :vl-stream-right
         :vl-stream-right-sized
         :vl-tagged
+
+        :vl-binary-cast ;; eventually we should be able to handle these
         ))
 
 (assert! (equal (mergesort (append *toohard-ops* *not-toohard-ops*))

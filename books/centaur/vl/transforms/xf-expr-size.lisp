@@ -697,6 +697,10 @@ only meant as a heuristic for generating more useful warnings.</p>"
 
                         :vl-binary-wildeq :vl-binary-wildneq
                         :vl-implies :vl-equiv
+
+                        ;; This can definitely affect sizes, but I'm not sure what to do
+                        ;; about it yet.
+                        :vl-binary-cast
                         )
          ;; Don't gather anything from here.
          nil)
@@ -1094,7 +1098,7 @@ SystemVerilog-2012 Table 11-21. See @(see expression-sizing).</p>"
         :vl-with-index :vl-with-colon :vl-with-pluscolon :vl-with-minuscolon
         :vl-stream-left :vl-stream-right
         :vl-stream-left-sized :vl-stream-right-sized
-        :vl-tagged
+        :vl-tagged :vl-binary-cast
         )
        ;; We don't handle these here.  They should be handled in
        ;; vl-expr-selfsize specially, because unlike all of the other
@@ -1593,7 +1597,7 @@ produce unsigned values.</li>
           :vl-with-index :vl-with-colon :vl-with-pluscolon :vl-with-minuscolon
           :vl-stream-left :vl-stream-right
           :vl-stream-left-sized :vl-stream-right-sized
-          :vl-tagged
+          :vl-tagged :vl-binary-cast
           )
          ;; Should have handled these above.
          (mv warnings nil))
@@ -3528,7 +3532,7 @@ minor warning for assignments where the rhs is a constant.</p>"
                     :vl-with-index :vl-with-colon :vl-with-pluscolon :vl-with-minuscolon
                     :vl-stream-left :vl-stream-right
                     :vl-stream-left-sized :vl-stream-right-sized
-                    :vl-tagged
+                    :vl-tagged :vl-binary-cast
                     )
         (mv nil
             (fatal :type :vl-unsupported

@@ -148,7 +148,7 @@
             (">>="  . :vl-shreq)
             ("<<<=" . :vl-ashleq)
             (">>>=" . :vl-ashreq)
-            ("'{"   . :vl-assignpat)
+            ("'"    . :vl-quote)
             ("$"    . :vl-$))))
 
 (defun make-punctuation-tests (alist config)
@@ -170,8 +170,11 @@
              ans))
        (ans
         ;; How about for "OP1"?  This doesn't work for $1, because that's a
-        ;; valid system identifier.  So, gross hack to avoid that.
-        (if (equal (caar alist) "$")
+        ;; valid system identifier.  So, gross hack to avoid that.  It also
+        ;; doesn't work for quote, because '1 is an extended integer, so
+        ;; another gross hack to avoid that.
+        (if (or (equal (caar alist) "$")
+                (equal (caar alist) "'"))
             ans
           (cons `(vl-lex-op-testcase :input ,(cat (caar alist) "1")
                                      :config ',config

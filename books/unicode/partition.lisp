@@ -74,11 +74,6 @@
                          0))
          :hints(("Goal" :induct (len x)))))
 
-(local (defthm equal-of-take-and-list-fix
-         (equal (equal (take n x) (list-fix x))
-                (equal (nfix n) (len x)))
-         :hints(("Goal" :in-theory (enable take-redefinition)))))
-
 (local (defthm reassemble-lemma
          (implies (<= (nfix n) (len x))
                   (equal (append (take n x)

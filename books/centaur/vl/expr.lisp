@@ -166,7 +166,15 @@ hierarchical identifiers.</p>
 <li>@('foo.bar') becomes @(':vl-hid-dot') (arity 2)</li>
 <li>@('foo[3][4].bar') becomes a @(':vl-hid-dot') whose @('from') argument
 is a tree of @(':vl-index') operators.</li>
-</ul>"
+</ul>
+
+<h5>Casting</h5>
+
+<p>The SystemVerilog-2012 casting operator, e.g., @('int'(2.0)'), is
+represented with a binary operator, @(':vl-binary-cast').  The first argument
+is the desired type (e.g., @('int')), and the second argument is the expression
+to cast to this type (e.g., @('2.0')).  See Section 6.24 from the
+SystemVerilog-2012 Standard.</p>"
 
   (list
    ;; Basic Unary Operators
@@ -249,6 +257,9 @@ is a tree of @(':vl-index') operators.</li>
 
    ;; Tagged Union Expressions, should have arity 1 or 2
    (cons :vl-tagged nil) ;; e.g., "tagged Valid 13" or "tagged Invalid"
+
+   ;; Casting Expressions
+   (cons :vl-binary-cast           2)    ;;; e.g., int'(2.0)
 
    ))
 
@@ -705,7 +716,13 @@ distinguished by keywords such as @('null'), @('this'), @('super'), @('$'),
    :vl-reg
    :vl-shortreal
    :vl-real
-   :vl-realtime)
+   :vl-realtime
+   ;; Extra things that are valid in casts.
+   :vl-signed
+   :vl-unsigned
+   :vl-string
+   :vl-const
+   )
   :parents (vl-basictype-p)
   :short "The various kinds of basic, atomic, built-in SystemVerilog types.")
 
@@ -1610,4 +1627,50 @@ fairly easily solve the HIDEXPR problem.</p>"
             :in-theory (e/d (vl-arity-ok-p)
                             (vl-nonatom-requirements len-of-vl-nonatom->args))
             :use ((:instance vl-nonatom-requirements))))))
+
+
+
+
+(defsection vl-exprlist-fix-basics
+
+  ;; BOZO should FTY automatically prove this kind of stuff?
+
+  (defthm vl-exprlist-fix-of-list-fix
+    (equal (vl-exprlist-fix (list-fix x))
+           (list-fix (vl-exprlist-fix x)))
+    :hints(("Goal" :induct (len x))))
+
+  (defthm vl-exprlist-fix-of-append
+    (equal (vl-exprlist-fix (append x y))
+           (append (vl-exprlist-fix x) (vl-exprlist-fix y)))
+    :hints(("Goal" :induct (len x))))
+
+  (defthm vl-exprlist-fix-of-rev
+    (equal (vl-exprlist-fix (rev x))
+           (rev (vl-exprlist-fix x)))
+    :hints(("Goal" :induct (len x))))
+
+  (defthm vl-exprlist-fix-of-nthcdr
+    (equal (vl-exprlist-fix (nthcdr n x))
+           (nthcdr n (vl-exprlist-fix x)))
+    :hints(("Goal"
+            :in-theory (e/d (nthcdr)
+                            (acl2::nthcdr-of-cdr))
+            :do-not '(generalize fertilize))))
+
+  (defthm vl-exprlist-fix-of-take
+    (equal (take n (vl-exprlist-fix x))
+           (if (<= (nfix n) (len x))
+               (vl-exprlist-fix (take n x))
+             (append (vl-exprlist-fix x)
+                     (replicate (- (nfix n) (len x)) nil))))
+    :hints(("Goal" :in-theory (enable acl2::take-redefinition))))
+
+  (defcong vl-exprlist-equiv vl-exprlist-equiv (list-fix x) 1)
+  (defcong vl-exprlist-equiv vl-exprlist-equiv (append x y) 1)
+  (defcong vl-exprlist-equiv vl-exprlist-equiv (append x y) 2)
+  (defcong vl-exprlist-equiv vl-exprlist-equiv (rev x) 1)
+  (defcong vl-exprlist-equiv vl-exprlist-equiv (take n x) 2
+    :hints(("Goal" :in-theory (enable acl2::take-redefinition))))
+  (defcong vl-exprlist-equiv vl-exprlist-equiv (nthcdr n x) 2))
 

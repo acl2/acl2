@@ -112,4 +112,9 @@ strengthening rewrite rules by removing hypotheses.</p>"
     (equal (final-cdr (nthcdr n x))
            (if (<= (nfix n) (len x))
                (final-cdr x)
-             nil))))
+             nil)))
+
+  (defthm append-self-onto-final-cdr
+    (equal (append x (final-cdr x))
+           x)))
+

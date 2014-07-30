@@ -511,6 +511,11 @@ encoding.</p>"
   :inline t
   (jp-sym x))
 
+(define vl-jp-casecheck ((x vl-casecheck-p) &key (ps 'ps))
+  :parents (json-encoders)
+  :inline t
+  (jp-sym x))
+
 (define vl-jp-casetype ((x vl-casetype-p) &key (ps 'ps))
   :parents (json-encoders)
   :inline t
@@ -545,6 +550,7 @@ encoding.</p>"
 (add-json-encoder vl-assign-type-p      vl-jp-assign-type)
 (add-json-encoder vl-deassign-type-p    vl-jp-deassign-type)
 (add-json-encoder vl-casetype-p         vl-jp-casetype)
+(add-json-encoder vl-casecheck-p        vl-jp-casecheck)
 (add-json-encoder vl-netdecltype-p      vl-jp-netdecltype)
 (add-json-encoder vl-taskporttype-p     vl-jp-taskporttype)
 (add-json-encoder vl-paramdecltype-p    vl-jp-paramdecltype)
@@ -998,9 +1004,10 @@ which could not hold such large values.</p>")
        :vl-casestmt
        (jp-object :tag      (jp-sym kind)
                   :casetype (vl-jp-casetype x.casetype)
+                  :check    (vl-jp-casecheck x.check)
                   :test     (vl-jp-expr x.test)
                   :default  (vl-jp-stmt x.default)
-                  :cases    (vl-jp-cases x.cases)
+                  :caselist (vl-jp-cases x.caselist)
                   :atts     (vl-jp-atts x.atts))
 
        :vl-ifstmt
@@ -1089,9 +1096,9 @@ which could not hold such large values.</p>")
    (b* ((x (vl-caselist-fix x))
         ((when (atom x))
          ps)
-        ((cons expr1 stmt1) (car x)))
+        ((cons exprs stmt1) (car x)))
      (vl-ps-seq (vl-print "[")
-                (vl-jp-expr expr1)
+                (vl-jp-exprlist exprs)
                 (vl-println? ",")
                 (vl-jp-stmt stmt1)
                 (vl-println? "]")

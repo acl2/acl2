@@ -589,7 +589,7 @@ expressions within @('(* foo = bar *)')-style attributes.</p>")
       :vl-casestmt
       (b* ((nrev (nrev-push x.test nrev))
            (nrev (vl-stmt-allexprs-nrev x.default nrev))
-           (nrev (vl-caselist-allexprs-nrev x.cases nrev)))
+           (nrev (vl-caselist-allexprs-nrev x.caselist nrev)))
         nrev)
       :vl-ifstmt
       (b* ((nrev (nrev-push x.condition nrev))
@@ -642,8 +642,8 @@ expressions within @('(* foo = bar *)')-style attributes.</p>")
     (b* ((x (vl-caselist-fix x))
          ((when (atom x))
           (nrev-fix nrev))
-         ((cons expr stmt) (car x))
-         (nrev (nrev-push expr nrev))
+         ((cons exprs stmt) (car x))
+         (nrev (nrev-append exprs nrev))
          (nrev (vl-stmt-allexprs-nrev stmt nrev)))
       (vl-caselist-allexprs-nrev (cdr x) nrev))))
 
@@ -665,7 +665,7 @@ expressions within @('(* foo = bar *)')-style attributes.</p>")
            :vl-eventtriggerstmt (list x.id)
            :vl-casestmt         (cons x.test
                                       (append (vl-stmt-allexprs x.default)
-                                              (vl-caselist-allexprs x.cases)))
+                                              (vl-caselist-allexprs x.caselist)))
            :vl-ifstmt           (cons x.condition
                                       (append (vl-stmt-allexprs x.truebranch)
                                               (vl-stmt-allexprs x.falsebranch)))
@@ -702,10 +702,10 @@ expressions within @('(* foo = bar *)')-style attributes.</p>")
     (mbe :logic (b* ((x (vl-caselist-fix x))
                      ((when (atom x))
                       nil)
-                     ((cons expr stmt) (car x)))
-                  (cons expr
-                        (append (vl-stmt-allexprs stmt)
-                                (vl-caselist-allexprs (cdr x)))))
+                     ((cons exprs stmt) (car x)))
+                  (append exprs
+                          (append (vl-stmt-allexprs stmt)
+                                  (vl-caselist-allexprs (cdr x)))))
          :exec
          (with-local-nrev (vl-caselist-allexprs-nrev x nrev))))
   ///

@@ -832,7 +832,7 @@ values.</p>"
 ; regular function calls are allowed to.
 
   (defparser vl-parse-1+-expressions-separated-by-commas ()
-    :measure (two-nats-measure (len tokens) 29)
+    :measure (two-nats-measure (len tokens) 31)
     (seqw tokens warnings
           (first :s= (vl-parse-expression))
           (when (vl-is-token? :vl-comma)
@@ -859,7 +859,7 @@ values.</p>"
 ;  | expression ':' expression ':' expression
 
   (defparser vl-parse-mintypmax-expression ()
-    :measure (two-nats-measure (len tokens) 29)
+    :measure (two-nats-measure (len tokens) 31)
     (seqw tokens warnings
           (min :s= (vl-parse-expression))
           (unless (vl-is-token? :vl-colon)
@@ -898,7 +898,7 @@ several additional productions.</p>
                     | expression '-:' expression
 })"
 
-    :measure (two-nats-measure (len tokens) 29)
+    :measure (two-nats-measure (len tokens) 31)
     (seqw tokens warnings
           (e1 :s= (vl-parse-expression))
           (unless (vl-is-some-token? '(:vl-colon :vl-pluscolon :vl-minuscolon))
@@ -932,7 +932,7 @@ syntax of a concatenation.</p>"
 <p>Where @('array_range_expression') is identical to
 @('range_expression').</p>"
 
-    :measure (two-nats-measure (len tokens) 29)
+    :measure (two-nats-measure (len tokens) 31)
     (seqw tokens warnings
           (expr :s= (vl-parse-expression))
           (unless (vl-is-token? :vl-kwd-with)
@@ -946,7 +946,7 @@ syntax of a concatenation.</p>"
   (defparser vl-parse-1+-stream-expressions-separated-by-commas ()
     :short "Match at least one (but perhaps more) stream expressions, return them
             as an expression list."
-    :measure (two-nats-measure (len tokens) 30)
+    :measure (two-nats-measure (len tokens) 32)
     (seqw tokens warnings
           (first :s= (vl-parse-stream-expression))
           (when (vl-is-token? :vl-comma)
@@ -1057,7 +1057,7 @@ which are used streaming concatenations.</p>
      slice_size ::= simple_type | expression
 })"
 
-    :measure (two-nats-measure (len tokens) 29)
+    :measure (two-nats-measure (len tokens) 31)
     (b* (((mv err expr new-tokens new-warnings)
           (vl-parse-simple-type))
          ((unless err)
@@ -1366,9 +1366,13 @@ identifier, so we convert it into a hidpiece.</p>"
                         (vl-build-range-select main range)
                       main)))))
 
-  (defparser vl-parse-primary ()
+  (defparser vl-parse-primary-main ()
     :measure (two-nats-measure (len tokens) 2)
+    ;; This handles most primaries, but does not deal with casting.
     (b* (((mv errmsg? expr new-tokens new-warnings)
+          ;; Base primary handles things like numbers, 'this', 'null', '$'.
+          ;; It doesn't deal with identifiers (which might be followed by dots/scopes)
+          ;; It doens't match anything that can be used in a cast.
           (vl-maybe-parse-base-primary))
          ((when (or errmsg? expr))
           (mv errmsg? expr new-tokens new-warnings))
@@ -1377,12 +1381,8 @@ identifier, so we convert it into a hidpiece.</p>"
 
          ((when (atom tokens))
           (vl-parse-error "Unexpected EOF."))
-         (type (vl-token->type (car tokens)))
 
-         ((when (eq type :vl-lcurly))
-          ;; Concatenation, multiple concatenation, streaming concatenation,
-          ;; or empty queue
-          (vl-parse-any-sort-of-concatenation))
+         (type (vl-token->type (car tokens)))
 
          ((when (or (eq type :vl-idtoken)
                     (eq type :vl-$root)))
@@ -1395,6 +1395,11 @@ identifier, so we convert it into a hidpiece.</p>"
                 (mv err funcall explore new-warnings)))
             (vl-parse-indexed-id)))
 
+         ((when (eq type :vl-lcurly))
+          ;; Concatenation, multiple concatenation, streaming concatenation,
+          ;; or empty queue
+          (vl-parse-any-sort-of-concatenation))
+
          ((when (eq type :vl-sysidtoken))
           ;; It can only be a system function call.
           (vl-parse-system-function-call))
@@ -1406,6 +1411,82 @@ identifier, so we convert it into a hidpiece.</p>"
                 (expr := (vl-parse-mintypmax-expression))
                 (:= (vl-match-token :vl-rparen))
                 (return (vl-mark-as-explicit-parens expr)))))
+
+      (vl-parse-error "Failed to match a primary expression.")))
+
+  (defparser vl-parse-primary-cast ()
+    :measure (two-nats-measure (len tokens) 3)
+    ;; SystemVerilog Only.
+    ;;
+    ;; Matches main (cast-free) primaries and also primaries with casts.
+    ;;
+    ;; primary ::= cast | ...
+    ;; cast ::= casting_type ''' '(' expression ')'       // <--- ''' is literally a quote mark
+    ;; casting_type ::= ... | constant_primary | ...
+    ;;
+    ;; Arguably we should be able to do, e.g., "unsigned ' (-2'sd1) ' (1'bx);"
+    ;; and in fact both NCVerilog and VCS seem to allow this.  But this makes
+    ;; no sense and causes problems for termination, so, we'll insist that the
+    ;; left-hand side of a cast is not itself a cast.
+    (seqw tokens warnings
+          (primary :s= (vl-parse-primary-main))
+          (when (vl-is-token? :vl-quote)
+            ;; Primary followed by a cast.
+            (:= (vl-match))
+            (:= (vl-match-token :vl-lparen))
+            (arg := (vl-parse-expression))
+            (:= (vl-match-token :vl-rparen))
+            (return (make-vl-nonatom :op :vl-binary-cast :args (list primary arg))))
+          ;; Primary but not a cast.  Good enough.
+          (return primary)))
+
+  (defparser vl-parse-nonprimary-cast ()
+    :measure (two-nats-measure (len tokens) 3)
+    ;; SystemVerilog Only.
+    ;;
+    ;; The other (non-primary) casting types are:
+    ;;   simple_type, 'signed', 'unsigned', 'string', 'const'
+    (seqw tokens warnings
+          (when (vl-is-some-token? '(:vl-kwd-signed :vl-kwd-unsigned :vl-kwd-string :vl-kwd-const))
+            (type := (vl-match))
+            (:= (vl-match-token :vl-quote))
+            (:= (vl-match-token :vl-lparen))
+            (arg := (vl-parse-expression))
+            (:= (vl-match-token :vl-rparen))
+            (return
+             (b* ((casting-type (case (vl-token->type type)
+                                  (:vl-kwd-signed   :vl-signed)
+                                  (:vl-kwd-unsigned :vl-unsigned)
+                                  (:vl-kwd-string   :vl-string)
+                                  (:vl-kwd-const    :vl-const)))
+                  (type-atom (make-vl-atom :guts (make-vl-basictype :kind casting-type))))
+               (make-vl-nonatom :op :vl-binary-cast
+                                :args (list type-atom arg)))))
+
+          ;; Otherwise, better be a simple-type.
+          (type :s= (vl-parse-simple-type))
+          (:= (vl-match-token :vl-quote))
+          (:= (vl-match-token :vl-lparen))
+          (arg := (vl-parse-expression))
+          (:= (vl-match-token :vl-rparen))
+          (return (make-vl-nonatom :op :vl-binary-cast
+                                   :args (list type arg)))))
+
+ (defparser vl-parse-primary ()
+    :measure (two-nats-measure (len tokens) 4)
+    ;; Deals with casting and also other primaries.
+    (b* (((when (eq (vl-loadconfig->edition config) :verilog-2005))
+          (vl-parse-primary-main))
+
+         ;; Try to parse basic primaries with or without casts
+         ((mv errmsg expr new-tokens new-warnings) (vl-parse-primary-cast))
+         ((unless errmsg)
+          (mv errmsg expr new-tokens new-warnings))
+
+         ;; Try to parse other kinds of casts
+         ((mv errmsg expr new-tokens new-warnings) (vl-parse-nonprimary-cast))
+         ((unless errmsg)
+          (mv errmsg expr new-tokens new-warnings)))
 
       (vl-parse-error "Failed to match a primary expression.")))
 
@@ -1516,7 +1597,7 @@ identifier, so we convert it into a hidpiece.</p>"
 ; expression ::= impl_expression
 
   (defparser vl-parse-unary-expression ()
-    :measure (two-nats-measure (len tokens) 3)
+    :measure (two-nats-measure (len tokens) 5)
     (seqw tokens warnings
           (op := (vl-parse-op 1 '((:vl-plus   . :vl-unary-plus)   ;;; +
                                   (:vl-minus  . :vl-unary-minus)  ;;; -
@@ -1544,7 +1625,7 @@ identifier, so we convert it into a hidpiece.</p>"
 ;    unary_expression { '**' { attribute_instance } unary_expression }
 
   (defparser vl-parse-power-expression-aux ()
-    :measure (two-nats-measure (len tokens) 4)
+    :measure (two-nats-measure (len tokens) 6)
     (seqw tokens warnings
           (first :s= (vl-parse-unary-expression))
           (unless (vl-is-token? :vl-power)
@@ -1555,7 +1636,7 @@ identifier, so we convert it into a hidpiece.</p>"
           (return (list* first :vl-binary-power atts tail))))
 
   (defparser vl-parse-power-expression ()
-    :measure (two-nats-measure (len tokens) 5)
+    :measure (two-nats-measure (len tokens) 7)
     (seqw tokens warnings
           (mixed := (vl-parse-power-expression-aux))
           (return (vl-left-associate-mixed-binop-list mixed))))
@@ -1568,7 +1649,7 @@ identifier, so we convert it into a hidpiece.</p>"
 ;    power_expression { mult_op { attribute_instance } power_expression }
 
   (defparser vl-parse-mult-expression-aux ()
-    :measure (two-nats-measure (len tokens) 6)
+    :measure (two-nats-measure (len tokens) 8)
     (seqw tokens warnings
           (first :s= (vl-parse-power-expression))
           (op := (vl-parse-op 2 '((:vl-times . :vl-binary-times)
@@ -1581,7 +1662,7 @@ identifier, so we convert it into a hidpiece.</p>"
           (return (list* first op atts tail))))
 
   (defparser vl-parse-mult-expression ()
-    :measure (two-nats-measure (len tokens) 7)
+    :measure (two-nats-measure (len tokens) 9)
     (seqw tokens warnings
           (mixed := (vl-parse-mult-expression-aux))
           (return (vl-left-associate-mixed-binop-list mixed))))
@@ -1593,7 +1674,7 @@ identifier, so we convert it into a hidpiece.</p>"
 ;    mult_expression { add_op { attribute_instance } mult_expression }
 
   (defparser vl-parse-add-expression-aux ()
-    :measure (two-nats-measure (len tokens) 8)
+    :measure (two-nats-measure (len tokens) 10)
     (seqw tokens warnings
           (first :s= (vl-parse-mult-expression))
           (op := (vl-parse-op 2 '((:vl-plus  . :vl-binary-plus)
@@ -1605,7 +1686,7 @@ identifier, so we convert it into a hidpiece.</p>"
           (return (list* first op atts tail))))
 
   (defparser vl-parse-add-expression ()
-    :measure (two-nats-measure (len tokens) 9)
+    :measure (two-nats-measure (len tokens) 11)
     (seqw tokens warnings
           (mixed := (vl-parse-add-expression-aux))
           (return (vl-left-associate-mixed-binop-list mixed))))
@@ -1617,7 +1698,7 @@ identifier, so we convert it into a hidpiece.</p>"
 ;    add_expression { shift_op { attribute_instance } add_expression }
 
   (defparser vl-parse-shift-expression-aux ()
-    :measure (two-nats-measure (len tokens) 10)
+    :measure (two-nats-measure (len tokens) 12)
     (seqw tokens warnings
           (first :s= (vl-parse-add-expression))
           (op := (vl-parse-op 2 '((:vl-shl  . :vl-binary-shl)
@@ -1631,7 +1712,7 @@ identifier, so we convert it into a hidpiece.</p>"
           (return (list* first op atts tail))))
 
   (defparser vl-parse-shift-expression ()
-    :measure (two-nats-measure (len tokens) 11)
+    :measure (two-nats-measure (len tokens) 13)
     (seqw tokens warnings
           (mixed := (vl-parse-shift-expression-aux))
           (return (vl-left-associate-mixed-binop-list mixed))))
@@ -1643,7 +1724,7 @@ identifier, so we convert it into a hidpiece.</p>"
 ;    shift_expression { compare_op { attribute_instance } shift_expression }
 
   (defparser vl-parse-compare-expression-aux ()
-    :measure (two-nats-measure (len tokens) 12)
+    :measure (two-nats-measure (len tokens) 14)
     (seqw tokens warnings
           (first :s= (vl-parse-shift-expression))
           (op := (vl-parse-op 2 '((:vl-lt  . :vl-binary-lt)
@@ -1657,7 +1738,7 @@ identifier, so we convert it into a hidpiece.</p>"
           (return (list* first op atts tail))))
 
   (defparser vl-parse-compare-expression ()
-    :measure (two-nats-measure (len tokens) 13)
+    :measure (two-nats-measure (len tokens) 15)
     (seqw tokens warnings
           (mixed := (vl-parse-compare-expression-aux))
           (return (vl-left-associate-mixed-binop-list mixed))))
@@ -1669,7 +1750,7 @@ identifier, so we convert it into a hidpiece.</p>"
 ;    compare_expression { equality_op { attribute_instance } compare_expression }
 
   (defparser vl-parse-equality-expression-aux ()
-    :measure (two-nats-measure (len tokens) 14)
+    :measure (two-nats-measure (len tokens) 16)
     (seqw tokens warnings
           (first :s= (vl-parse-compare-expression))
           (op := (vl-parse-op 2 '((:vl-eq      . :vl-binary-eq)
@@ -1685,7 +1766,7 @@ identifier, so we convert it into a hidpiece.</p>"
           (return (list* first op atts tail))))
 
   (defparser vl-parse-equality-expression ()
-    :measure (two-nats-measure (len tokens) 15)
+    :measure (two-nats-measure (len tokens) 17)
     (seqw tokens warnings
           (mixed := (vl-parse-equality-expression-aux))
           (return (vl-left-associate-mixed-binop-list mixed))))
@@ -1696,7 +1777,7 @@ identifier, so we convert it into a hidpiece.</p>"
 ;     equality_expression { '&' { attribute_instance } equality_expression }
 
   (defparser vl-parse-bitand-expression-aux ()
-    :measure (two-nats-measure (len tokens) 16)
+    :measure (two-nats-measure (len tokens) 18)
     (seqw tokens warnings
           (first :s= (vl-parse-equality-expression))
           (unless (vl-is-token? :vl-bitand)
@@ -1707,7 +1788,7 @@ identifier, so we convert it into a hidpiece.</p>"
           (return (list* first :vl-binary-bitand atts tail))))
 
   (defparser vl-parse-bitand-expression ()
-    :measure (two-nats-measure (len tokens) 17)
+    :measure (two-nats-measure (len tokens) 19)
     (seqw tokens warnings
           (mixed := (vl-parse-bitand-expression-aux))
           (return (vl-left-associate-mixed-binop-list mixed))))
@@ -1719,7 +1800,7 @@ identifier, so we convert it into a hidpiece.</p>"
 ;    bitand_expression { bitxor_op { attribute_instance } bitand_expression }
 
   (defparser vl-parse-bitxor-expression-aux ()
-    :measure (two-nats-measure (len tokens) 18)
+    :measure (two-nats-measure (len tokens) 20)
     (seqw tokens warnings
           (first :s= (vl-parse-bitand-expression))
           (op := (vl-parse-op 2 '((:vl-xor . :vl-binary-xor)
@@ -1731,7 +1812,7 @@ identifier, so we convert it into a hidpiece.</p>"
           (return (list* first op atts tail))))
 
   (defparser vl-parse-bitxor-expression ()
-    :measure (two-nats-measure (len tokens) 19)
+    :measure (two-nats-measure (len tokens) 21)
     (seqw tokens warnings
           (mixed := (vl-parse-bitxor-expression-aux))
           (return (vl-left-associate-mixed-binop-list mixed))))
@@ -1742,7 +1823,7 @@ identifier, so we convert it into a hidpiece.</p>"
 ;    bitxor_expression { '|' { attribute_instance } bitxor_expression }
 
   (defparser vl-parse-bitor-expression-aux ()
-    :measure (two-nats-measure (len tokens) 20)
+    :measure (two-nats-measure (len tokens) 22)
     (seqw tokens warnings
           (first :s= (vl-parse-bitxor-expression))
           (unless (vl-is-token? :vl-bitor)
@@ -1753,7 +1834,7 @@ identifier, so we convert it into a hidpiece.</p>"
           (return (list* first :vl-binary-bitor atts tail))))
 
   (defparser vl-parse-bitor-expression ()
-    :measure (two-nats-measure (len tokens) 21)
+    :measure (two-nats-measure (len tokens) 23)
     (seqw tokens warnings
           (mixed := (vl-parse-bitor-expression-aux))
           (return (vl-left-associate-mixed-binop-list mixed))))
@@ -1764,7 +1845,7 @@ identifier, so we convert it into a hidpiece.</p>"
 ;    bitor_expression { '&&' { attribute_instance } bitor_expression }
 
   (defparser vl-parse-logand-expression-aux ()
-    :measure (two-nats-measure (len tokens) 22)
+    :measure (two-nats-measure (len tokens) 24)
     (seqw tokens warnings
           (first :s= (vl-parse-bitor-expression))
           (unless (vl-is-token? :vl-logand)
@@ -1775,7 +1856,7 @@ identifier, so we convert it into a hidpiece.</p>"
           (return (list* first :vl-binary-logand atts tail))))
 
   (defparser vl-parse-logand-expression ()
-    :measure (two-nats-measure (len tokens) 23)
+    :measure (two-nats-measure (len tokens) 25)
     (seqw tokens warnings
           (mixed := (vl-parse-logand-expression-aux))
           (return (vl-left-associate-mixed-binop-list mixed))))
@@ -1786,7 +1867,7 @@ identifier, so we convert it into a hidpiece.</p>"
 ;    logand_expression { '||' { attribute_instance } logand_expression }
 
   (defparser vl-parse-logor-expression-aux ()
-    :measure (two-nats-measure (len tokens) 24)
+    :measure (two-nats-measure (len tokens) 26)
     (seqw tokens warnings
           (first :s= (vl-parse-logand-expression))
           (unless (vl-is-token? :vl-logor)
@@ -1797,7 +1878,7 @@ identifier, so we convert it into a hidpiece.</p>"
           (return (list* first :vl-binary-logor atts tail))))
 
   (defparser vl-parse-logor-expression ()
-    :measure (two-nats-measure (len tokens) 25)
+    :measure (two-nats-measure (len tokens) 27)
     (seqw tokens warnings
           (mixed := (vl-parse-logor-expression-aux))
           (return (vl-left-associate-mixed-binop-list mixed))))
@@ -1815,7 +1896,7 @@ identifier, so we convert it into a hidpiece.</p>"
 ; Rather than as:            (1 ? 2 : 3) ? 4 : 5   =  4
 
   (defparser vl-parse-qmark-expression ()
-    :measure (two-nats-measure (len tokens) 26)
+    :measure (two-nats-measure (len tokens) 28)
     (seqw tokens warnings
           (first :s= (vl-parse-logor-expression))
           (unless (vl-is-token? :vl-qmark)
@@ -1848,7 +1929,7 @@ identifier, so we convert it into a hidpiece.</p>"
 ; Hence we don't need to do any mixed-binop-list nonsense.
 
   (defparser vl-parse-impl-expression ()
-    :measure (two-nats-measure (len tokens) 27)
+    :measure (two-nats-measure (len tokens) 29)
     (seqw tokens warnings
           (first :s= (vl-parse-qmark-expression))
           (when (eq (vl-loadconfig->edition config) :verilog-2005)
@@ -1864,7 +1945,7 @@ identifier, so we convert it into a hidpiece.</p>"
 
 
   (defparser vl-parse-expression ()
-    :measure (two-nats-measure (len tokens) 28)
+    :measure (two-nats-measure (len tokens) 30)
     (seqw tokens warnings
           (unless (and (vl-is-token? :vl-kwd-tagged)
                        (not (eq (vl-loadconfig->edition config) :verilog-2005)))
@@ -1904,6 +1985,7 @@ identifier, so we convert it into a hidpiece.</p>"
                                       :args (list tagexpr expr))))
              (mv nil ans new-tokens new-warnings))))))
 
+
 (defun vl-val-when-error-claim-fn (name args)
   `'(,name (implies (mv-nth 0 (,name . ,args))
                     (equal (mv-nth 1 (,name . ,args))
@@ -1939,6 +2021,9 @@ identifier, so we convert it into a hidpiece.</p>"
       ,(vl-val-when-error-claim vl-parse-function-call)
       ,(vl-val-when-error-claim vl-parse-0+-bracketed-expressions)
       ,(vl-val-when-error-claim vl-parse-indexed-id)
+      ,(vl-val-when-error-claim vl-parse-primary-main)
+      ,(vl-val-when-error-claim vl-parse-primary-cast)
+      ,(vl-val-when-error-claim vl-parse-nonprimary-cast)
       ,(vl-val-when-error-claim vl-parse-primary)
       ,(vl-val-when-error-claim vl-parse-unary-expression)
       ,(vl-val-when-error-claim vl-parse-power-expression-aux)
@@ -2003,6 +2088,9 @@ identifier, so we convert it into a hidpiece.</p>"
      ,(vl-tokenlist-claim vl-parse-function-call)
      ,(vl-tokenlist-claim vl-parse-0+-bracketed-expressions)
      ,(vl-tokenlist-claim vl-parse-indexed-id)
+     ,(vl-tokenlist-claim vl-parse-primary-main)
+     ,(vl-tokenlist-claim vl-parse-primary-cast)
+     ,(vl-tokenlist-claim vl-parse-nonprimary-cast)
      ,(vl-tokenlist-claim vl-parse-primary)
      ,(vl-tokenlist-claim vl-parse-unary-expression)
      ,(vl-tokenlist-claim vl-parse-power-expression-aux)
@@ -2066,6 +2154,9 @@ identifier, so we convert it into a hidpiece.</p>"
       ,(vl-warninglist-claim vl-parse-function-call)
       ,(vl-warninglist-claim vl-parse-0+-bracketed-expressions)
       ,(vl-warninglist-claim vl-parse-indexed-id)
+      ,(vl-warninglist-claim vl-parse-primary-main)
+      ,(vl-warninglist-claim vl-parse-primary-cast)
+      ,(vl-warninglist-claim vl-parse-nonprimary-cast)
       ,(vl-warninglist-claim vl-parse-primary)
       ,(vl-warninglist-claim vl-parse-unary-expression)
       ,(vl-warninglist-claim vl-parse-power-expression-aux)
@@ -2141,6 +2232,9 @@ identifier, so we convert it into a hidpiece.</p>"
       ,(vl-progress-claim vl-parse-function-call)
       ,(vl-progress-claim vl-parse-0+-bracketed-expressions :strongp nil)
       ,(vl-progress-claim vl-parse-indexed-id)
+      ,(vl-progress-claim vl-parse-primary-main)
+      ,(vl-progress-claim vl-parse-primary-cast)
+      ,(vl-progress-claim vl-parse-nonprimary-cast)
       ,(vl-progress-claim vl-parse-primary)
       ,(vl-progress-claim vl-parse-unary-expression)
       ,(vl-progress-claim vl-parse-power-expression-aux)
@@ -2187,7 +2281,6 @@ identifier, so we convert it into a hidpiece.</p>"
 (defmacro vl-eof-claim (name type &key args)
   (vl-eof-claim-fn name args type))
 
-
 (with-output
   :off prove
   :gag-mode :goals
@@ -2216,6 +2309,9 @@ identifier, so we convert it into a hidpiece.</p>"
         ,(vl-eof-claim vl-parse-function-call :error)
         ,(vl-eof-claim vl-parse-0+-bracketed-expressions nil)
         ,(vl-eof-claim vl-parse-indexed-id :error)
+        ,(vl-eof-claim vl-parse-primary-main :error)
+        ,(vl-eof-claim vl-parse-primary-cast :error)
+        ,(vl-eof-claim vl-parse-nonprimary-cast :error)
         ,(vl-eof-claim vl-parse-primary :error)
         ,(vl-eof-claim vl-parse-unary-expression :error)
         ,(vl-eof-claim vl-parse-power-expression-aux :error)
@@ -2303,6 +2399,9 @@ identifier, so we convert it into a hidpiece.</p>"
       ,(vl-expression-claim vl-parse-function-call :expr)
       ,(vl-expression-claim vl-parse-0+-bracketed-expressions :exprlist)
       ,(vl-expression-claim vl-parse-indexed-id :expr)
+      ,(vl-expression-claim vl-parse-primary-main :expr)
+      ,(vl-expression-claim vl-parse-primary-cast :expr)
+      ,(vl-expression-claim vl-parse-nonprimary-cast :expr)
       ,(vl-expression-claim vl-parse-primary :expr)
       ,(vl-expression-claim vl-parse-unary-expression :expr)
       ,(vl-expression-claim vl-parse-power-expression-aux :mixed)

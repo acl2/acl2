@@ -714,12 +714,6 @@
      (equal (partial-ev (mk-list-term x) al)
             (partial-ev-lst x al)))
 
-   (local
-    (defthm take-len-when-true-listp
-      (implies (and (true-listp x) (equal n (len x)))
-               (equal (take n x)
-                      x))))
-
    (defthm partial-ev-lst-type
      (true-listp (partial-ev-lst x al))
      :hints (("goal" :induct (len x)))

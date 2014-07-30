@@ -2141,7 +2141,7 @@ which is free of function calls on success.</p>"
                 ((vl-casestmt-p x)
                  ;; Don't allow function calls in match expressions
                  (vl-check-bad-funcalls ctx
-                                        (alist-keys (vl-casestmt->cases x))
+                                        (flatten (alist-keys (vl-casestmt->caselist x)))
                                         "case-statement match expressions"
                                         warnings))
                 (t

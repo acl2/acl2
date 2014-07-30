@@ -386,7 +386,7 @@ an ordinary @(see *vl-1-bit-assign*).</p>"
 module VL_1_BIT_BUF (out, in) ;
   output out;
   input in;
-  assign out = ~(~in);
+  assign out = |in;
 endmodule
 })
 
@@ -394,7 +394,12 @@ endmodule
 probably not for much else since ordinary assignments are handled with @(see
 *vl-1-bit-assign*), instead.</p>
 
-<p>The corresponding @(see esim) primitive is @(see acl2::*esim-buf*).</p>"
+<p>The corresponding @(see esim) primitive is @(see acl2::*esim-buf*).</p>
+
+<p>We once tried to implement this primitive using @('out = ~ (~in)'), but
+found that NCVerilog (incorrectly) canceled the double negation and could hence
+produce Z bits on the output.  The or-based definition above does not appear to
+have this problem.</p>"
 
   (b* ((name "VL_1_BIT_BUF")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
@@ -402,12 +407,8 @@ probably not for much else since ordinary assignments are handled with @(see
        ((mv in-expr  in-port  in-portdecl  in-netdecl)  (vl-primitive-mkport "in"  :vl-input))
        (assign (make-vl-assign :lvalue out-expr
                                :expr (make-vl-nonatom
-                                      :op :vl-unary-bitnot
-                                      :args (list (make-vl-nonatom
-                                                   :op :vl-unary-bitnot
-                                                   :args (list in-expr)
-                                                   :finalwidth 1
-                                                   :finaltype :vl-unsigned))
+                                      :op :vl-unary-bitor
+                                      :args (list in-expr)
                                       :finalwidth 1
                                       :finaltype :vl-unsigned)
                                :loc *vl-fakeloc*)))

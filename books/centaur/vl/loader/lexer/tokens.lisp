@@ -139,7 +139,7 @@ SystemVerilog 2012 source code."
             :vl-shreq      ;;; >>=
             :vl-ashleq     ;;; <<<=
             :vl-ashreq     ;;; >>>=
-            :vl-assignpat  ;;; '{
+            :vl-quote      ;;; '
             :vl-$          ;;; $
             :vl-$root      ;;; $root
             :vl-$unit      ;;; $unit

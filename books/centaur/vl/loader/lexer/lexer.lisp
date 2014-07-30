@@ -267,10 +267,26 @@ order, you can search for long prefixes first, e.g., @('>>>') before
            (vl-lex-plain-alist echars (vl-lexstate->andops st) warnings))
 
           (#\' ;; 39
-           (cond ((vl-matches-string-p "'{" echars)
-                  (vl-lex-plain echars "'{" :vl-assignpat warnings))
-                 (t
-                  (vl-lex-number echars st warnings))))
+           ;; Quotes mark is tricky.  Could be a casting operator, a structure literal,
+           ;; or an extended integer like 'x or '1.
+           ;;
+           ;; NCVerilog appears to prohibit spaces between '{, but allows
+           ;; spaces around casting operators like unsigned'(...).
+           ;;
+           ;; VCS appears to allow spaces between '{ and around casting
+           ;; operators.
+           ;;
+           ;; We'll mimic VCS here and support spaces in either place.  That
+           ;; is, instead of producing a single, combined token for '{, we'll
+           ;; produce a two-token sequence, :vl-quote :vl-lcurly.  Similarly,
+           ;; for '( we'll just produce :vl-quote :vl-lparen.
+           (b* (((mv tok remainder warnings)
+                 (vl-lex-number echars st warnings))
+                ((when tok)
+                 (mv tok remainder warnings))
+                ((unless (vl-lexstate->quotesp st))
+                 (mv nil remainder warnings)))
+             (vl-lex-plain echars "'" :vl-quote warnings)))
 
           (#\( ;; 40
            (vl-lex-plain-alist echars

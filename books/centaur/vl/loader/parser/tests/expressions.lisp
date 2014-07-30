@@ -1258,9 +1258,23 @@ A very useful tracing mechanism for debugging:
    (make-exprtest :input "1 !=? 2 | 3" :expect '(:vl-binary-bitor nil (:vl-binary-wildneq nil 1 2) 3))
 
 
+   ;; casting tests
 
+   (make-exprtest :input "unsigned'(3)" :expect '(:vl-binary-cast nil (basic :vl-unsigned) 3))
+   (make-exprtest :input "signed'(3+4)" :expect '(:vl-binary-cast nil (basic :vl-signed) (:vl-binary-plus nil 3 4)))
+   (make-exprtest :input "const'(3+4)" :expect '(:vl-binary-cast nil (basic :vl-const) (:vl-binary-plus nil 3 4)))
+   (make-exprtest :input "string'(3+4)" :expect '(:vl-binary-cast nil (basic :vl-string) (:vl-binary-plus nil 3 4)))
 
+   (make-exprtest :input "logic'(3+4)" :expect '(:vl-binary-cast nil (basic :vl-logic) (:vl-binary-plus nil 3 4)))
+   (make-exprtest :input "myfoo'(3+4)" :expect '(:vl-binary-cast nil (id "myfoo") (:vl-binary-plus nil 3 4)))
 
+   (make-exprtest :input "12'(3+4)" :expect '(:vl-binary-cast nil 12 (:vl-binary-plus nil 3 4)))
+
+   ;; weird but legal, 1 + 2 is a valid expr, is a mintypmax expr, so (1 + 2) is a primary.
+   (make-exprtest :input "(1+2)'(3+4)" :expect '(:vl-binary-cast nil (:vl-binary-plus ("VL_EXPLICIT_PARENS") 1 2)
+                                                                     (:vl-binary-plus nil 3 4)))
+
+   (make-exprtest :input "1+2'(3)" :expect '(:vl-binary-plus nil 1 (:vl-binary-cast nil 2 3)))
 
    ))
 

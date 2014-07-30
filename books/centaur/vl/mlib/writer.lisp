@@ -410,6 +410,10 @@ displays.  The module browser's web pages are responsible for defining the
     (:vl-shortreal "shortreal")
     (:vl-real      "real")
     (:vl-realtime  "realtime")
+    (:vl-signed    "signed")
+    (:vl-unsigned  "unsigned")
+    (:vl-string    "string")
+    (:vl-const     "const")
     (otherwise (progn$ (impossible) "reg"))))
 
 (define vl-pp-basictype ((x vl-basictype-p) &key (ps 'ps))
@@ -532,6 +536,11 @@ displays.  The module browser's web pages are responsible for defining the
      (:VL-STREAM-LEFT-SIZED  . 20)
      (:VL-STREAM-RIGHT-SIZED . 20)
      (:VL-TAGGED             . 20)
+
+     ;; All of these things with precedence 20 is kind of concerning/confusing.
+     ;; Can this really be right?  Well, what's one more?
+     (:VL-BINARY-CAST        . 20)
+
 
      ;; This part is based on Verilog-2005 Table 5-4, and SystemVerilog-2012
      ;; Table 11-2.
@@ -733,6 +742,30 @@ its arguments, if necessary.</p>"
                         (vl-pp-expr arg2)
                         (if want-parens-2p (vl-print ")") ps)
                         (vl-println? ""))))
+
+          (:vl-binary-cast
+           (b* (((unless (consp args))
+                 (impossible)
+                 ps)
+                (arg1 (first args))
+                (arg2 (second args))
+                (want-parens-1p (if (vl-fast-atom-p arg1)
+                                    nil
+                                  ;; Ugh.  I don't think there's a right way to do this.
+                                  ;; Anything that was a non-atomic primary, like (1 + 2), does need parens
+                                  ;; here.  But certain simple_type expressions like foo.bar.baz should not
+                                  ;; get explicit parens.  Let's just put them in for now and fix it later
+                                  ;; if it bites us.
+                                  t))
+                ;; Always want parens around the second arg, because, e.g.,
+                ;; unsigned'(foo) always requires explicit parens.
+                )
+             (vl-ps-seq (if want-parens-1p (vl-print "(") ps)
+                        (vl-pp-expr arg1)
+                        (if want-parens-1p (vl-print ")") ps)
+                        (vl-print-str "'(")
+                        (vl-pp-expr arg2)
+                        (vl-println? ")"))))
 
           ((:vl-qmark)
            (b* (((unless (consp args))
@@ -2146,6 +2179,15 @@ expression into a string."
     (:vl-casez    "casez")
     (otherwise    (or (impossible) ""))))
 
+(define vl-casecheck-string ((x vl-casecheck-p))
+  :returns (str stringp :rule-classes :type-prescription)
+  :guard-hints (("Goal" :in-theory (enable vl-casecheck-p)))
+  (case (vl-casecheck-fix x)
+    ('nil         "")
+    (:vl-priority "priority")
+    (:vl-unique   "unique")
+    (:vl-unique0  "unique0")
+    (otherwise    (or (impossible) ""))))
 
 (defines vl-pp-stmt
 
@@ -2333,11 +2375,16 @@ expression into a string."
       (vl-ps-seq (vl-pp-stmt-autoindent)
                  (if x.atts (vl-pp-atts x.atts) ps)
                  (vl-ps-span "vl_key"
+                             (if x.check
+                                 (vl-ps-seq
+                                  (vl-print-str (vl-casecheck-string x.check))
+                                  (vl-print " "))
+                               ps)
                              (vl-print-str (vl-casetype-string x.casetype)))
                  (vl-print " (")
                  (vl-pp-expr x.test)
                  (vl-println ")")
-                 (vl-pp-stmt-indented (vl-pp-cases x.cases))
+                 (vl-pp-stmt-indented (vl-pp-cases x.caselist))
                  (vl-pp-stmt-autoindent)
                  (vl-ps-span "vl_key" (vl-print "default"))
                  (vl-println " :")
@@ -2358,9 +2405,9 @@ expression into a string."
     (b* ((x (vl-caselist-fix x))
          ((when (atom x))
           ps)
-         ((cons expr stmt) (car x)))
+         ((cons exprs stmt) (car x)))
       (vl-ps-seq (vl-pp-stmt-autoindent)
-                 (vl-pp-expr expr)
+                 (vl-pp-exprlist exprs)
                  (vl-println " :")
                  (vl-pp-stmt-indented (vl-pp-stmt stmt))
                  (vl-pp-cases (cdr x)))))

@@ -174,10 +174,4 @@ for some reason that's what you want to do.</p>"
 
   (defthm strip-cdrs-of-pairlis$
     (equal (strip-cdrs (pairlis$ x y))
-           (if (<= (len x) (len y))
-               (take (len x) y)
-             (append y (replicate (- (len x) (len y)) nil))))
-    :hints(("Goal"
-            :induct (pairlis$ x y)
-            :in-theory (enable replicate)))))
-
+           (take (len x) y))))

@@ -1,6 +1,7 @@
 
 (in-package "ACL2")
 
+
 ;; Supplementing list-defthms, moving to a slightly different approach.
 
 ;; - For functions like take, etc that could have convenient
@@ -27,8 +28,23 @@
 (include-book "std/lists/equiv" :dir :system)
 (local (include-book "std/lists/take" :dir :system))
 (include-book "data-structures/list-defthms" :dir :system)
+
+
+(defun cdr-cdr-dec-ind (x y n)
+  (declare (xargs :measure (+ (len x) (len y) (nfix n))
+                  :hints(("Goal" :in-theory (enable nfix)))))
+  (if (and (atom x) (atom y) (zp n))
+      nil
+    (cdr-cdr-dec-ind (cdr x) (cdr y) (1- (nfix n)))))
+
+
+
+#||
+
 (local (in-theory (enable* arith-equiv-forwarding)))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
+
+
 
 (local (in-theory (enable list-fix)))
 
@@ -163,10 +179,5 @@
 
 (defcong nat-equiv equal (make-list-ac n val ac) 1)
 
-(defun cdr-cdr-dec-ind (x y n)
-  (declare (xargs :measure (+ (len x) (len y) (nfix n))
-                  :hints(("Goal" :in-theory (enable nfix)))))
-  (if (and (atom x) (atom y) (zp n))
-      nil
-    (cdr-cdr-dec-ind (cdr x) (cdr y) (1- (nfix n)))))
+||#
 

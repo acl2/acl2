@@ -38,20 +38,6 @@
 (local (in-theory (enable tag-reasoning)))
 (local (std::add-default-post-define-hook :fix))
 
-(local (defthm vl-exprlist-fix-of-take-in-bounds
-         (implies (<= n (len x))
-                  (equal (vl-exprlist-fix (take n x))
-                         (take n (vl-exprlist-fix x))))
-         :hints(("Goal" :in-theory (enable acl2::take-redefinition)))))
-
-(local (defthm vl-exprlist-fix-of-nthcdr
-         (equal (vl-exprlist-fix (nthcdr n x))
-                (nthcdr n (vl-exprlist-fix x)))
-         :hints(("Goal"
-                 :induct (nthcdr n x)
-                 :in-theory (enable nthcdr)))))
-
-
 ; BOZO now that we have VL primitive modules for other gates, it might make the
 ; most sense to try to just eliminate all gates in one fell swoop early in the
 ; transformation sequence, replacing them with their VL module equivalents,

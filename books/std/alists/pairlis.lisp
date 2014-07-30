@@ -70,7 +70,6 @@ proper, @('nil')-terminated @(see alistp) which can be used with either
     (equal (len (pairlis$ x y))
            (len x)))
 
-  ;; Some redundant things from alistp, strip-cars, strip-cdrs.
   (defthm alistp-of-pairlis$
     (alistp (pairlis$ x y)))
 
@@ -85,10 +84,7 @@ proper, @('nil')-terminated @(see alistp) which can be used with either
 
   (defthm strip-cdrs-of-pairlis$
     (equal (strip-cdrs (pairlis$ x y))
-           (if (<= (len x) (len y))
-               (take (len x) y)
-             (append y (replicate (- (len x) (len y)) nil))))
-    :hints(("Goal" :in-theory (enable replicate))))
+           (take (len x) y)))
 
   (defthm pairlis$-of-list-fix-left
     (equal (pairlis$ (list-fix x) y)

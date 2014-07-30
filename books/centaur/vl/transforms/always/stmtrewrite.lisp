@@ -257,22 +257,23 @@ just carry out two simple rewrites:</p>
 
 
 (define vl-caselist-all-null-p ((x vl-caselist-p))
-  (if (atom x)
-      t
-    (and (vl-nullstmt-p (cdar x))
-         (vl-caselist-all-null-p (cdr x)))))
+  (b* (((when (atom x))
+        t)
+       ((cons ?exprs stmt1) (first x)))
+    (and (vl-nullstmt-p stmt1)
+         (vl-caselist-all-null-p (rest x)))))
 
-
-(define vl-casestmt-rewrite ((casetype vl-casetype-p)
-                             (test    vl-expr-p)
-                             (cases   vl-caselist-p)
-                             (default vl-stmt-p)
-                             (atts    vl-atts-p))
+(define vl-casestmt-rewrite ((check    vl-casecheck-p)
+                             (casetype vl-casetype-p)
+                             (test     vl-expr-p)
+                             (caselist vl-caselist-p)
+                             (default  vl-stmt-p)
+                             (atts     vl-atts-p))
   :returns (stmt vl-stmt-p :hyp :fguard)
   :short "Eliminate pure-null case statements."
   :long "<p>This is a pretty silly rewrite:</p>
 @({
-   case/casex/casez(expr):    -->   [null stmt]
+   [priority/unique/unique0/nil] [case/casex/casez](expr):    -->   [null stmt]
      expr1 : [null stmt];
      expr2 : [null stmt];
      ...
@@ -287,14 +288,15 @@ real case-statement &rarr; if-statement transform we shouldn't need this
 anymore.</p>"
 
   (if (and (vl-nullstmt-p default)
-           (vl-caselist-all-null-p cases))
+           (vl-caselist-all-null-p caselist))
       ;; All statements are null, just turn into null.
       (make-vl-nullstmt)
     ;; Otherwise don't change it.  Eventually convert all case statements
     ;; into if statements?
-    (make-vl-casestmt :casetype casetype
+    (make-vl-casestmt :check check
+                      :casetype casetype
                       :test test
-                      :cases cases
+                      :caselist caselist
                       :default default
                       :atts atts)))
 
@@ -580,9 +582,9 @@ us to ignore for loops with @('$display') statements and similar.</p>"
 
             ((vl-casestmt-p x)
              (b* (((vl-casestmt x) x)
-                  ((mv warnings cases)   (vl-caselist-rewrite x.cases unroll-limit warnings))
-                  ((mv warnings default) (vl-stmt-rewrite x.default unroll-limit warnings))
-                  (x-prime               (vl-casestmt-rewrite x.casetype x.test cases default x.atts)))
+                  ((mv warnings caselist) (vl-caselist-rewrite x.caselist unroll-limit warnings))
+                  ((mv warnings default)  (vl-stmt-rewrite x.default unroll-limit warnings))
+                  (x-prime                (vl-casestmt-rewrite x.check x.casetype x.test caselist default x.atts)))
                (mv warnings x-prime)))
 
             ((vl-forstmt-p x)

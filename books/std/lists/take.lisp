@@ -168,6 +168,10 @@ recommend using @('take-redefinition') instead of @('(:definition take)').</p>"
              (equal (take len x)
                     (list-fix x))))
 
+  (defthm equal-of-take-and-list-fix
+    (equal (equal (take n x) (list-fix x))
+           (equal (len x) (nfix n))))
+
   (defthm take-of-len
     (equal (take (len x) x)
            (list-fix x)))
