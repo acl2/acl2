@@ -15,6 +15,7 @@
 (include-book "sublis-var")
 (include-book "subcor-var")
 (include-book "subst-expr")
+(include-book "subst-var")
 (include-book "convert-normalized-term-to-pairs")
 (include-book "gather-dcls")
 (include-book "meta-extract")
