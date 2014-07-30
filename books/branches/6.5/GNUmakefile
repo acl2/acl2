@@ -958,7 +958,11 @@ all: $(OK_CERTS)
 # be necessary, because at one point doc/top.cert was not
 # otherwise made (something related to glucose).
 everything:
+ifeq ($(ACL2_HAS_HONS), )
+	$(MAKE) all $(ADDED_BOOKS)
+else
 	$(MAKE) all USE_QUICKLISP=1 $(ADDED_BOOKS) doc/top.cert
+endif # ifeq ($(ACL2_HAS_HONS), )
 
 # The critical path report will work only if you have set up certificate timing
 # BEFORE you build the books.  See ./critpath.pl --help for details.
