@@ -34,7 +34,8 @@
 
 (defconst *str-library-basic-defs*
   '(acl2::rest-n
-    acl2::replicate-fn
+    acl2::repeat
+    repeat
     replicate
     prefixp
     listpos

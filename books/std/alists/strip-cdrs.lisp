@@ -49,8 +49,8 @@
 
 (local (defthm take-of-nil
          (equal (take n nil)
-                (replicate n nil))
-         :hints(("Goal" :in-theory (enable replicate)))))
+                (repeat n nil))
+         :hints(("Goal" :in-theory (enable repeat)))))
 
 (local (defthm nthcdr-of-nil
          (equal (nthcdr n nil)
@@ -150,15 +150,15 @@ for some reason that's what you want to do.</p>"
            (revappend (strip-cdrs x)
                       (strip-cdrs y))))
 
-  (defthm strip-cdrs-of-replicate
-    (equal (strip-cdrs (replicate n x))
-           (replicate n (cdr x)))
-    :hints(("Goal" :in-theory (enable replicate))))
+  (defthm strip-cdrs-of-repeat
+    (equal (strip-cdrs (repeat n x))
+           (repeat n (cdr x)))
+    :hints(("Goal" :in-theory (enable repeat))))
 
   (defthm strip-cdrs-of-take
     (equal (strip-cdrs (take n x))
            (take n (strip-cdrs x)))
-    :hints(("Goal" :in-theory (enable replicate))))
+    :hints(("Goal" :in-theory (enable repeat))))
 
   (defthm strip-cdrs-of-nthcdr
     (equal (strip-cdrs (nthcdr n x))

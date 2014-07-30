@@ -601,11 +601,11 @@ records book.  See @(see def-typed-record).</p>")
        (recog (cdr (assoc :recog-name$c fta)))
        (hyp (translate-declaration-to-guard (second type) 'v w)))
     (append
-     `((defthm ,(mksym recog '-of-replicate)
+     `((defthm ,(mksym recog '-of-repeat)
          (implies ,hyp
-                  (,recog (acl2::replicate n v)))
-         :hints(("Goal" :in-theory (enable acl2::replicate)
-                 :induct (acl2::replicate n v))))
+                  (,recog (acl2::repeat n v)))
+         :hints(("Goal" :in-theory (enable acl2::repeat)
+                 :induct (acl2::repeat n v))))
 
        (defthm ,(mksym recog '-of-update-nth)
          (implies (and ,hyp
@@ -747,10 +747,10 @@ records book.  See @(see def-typed-record).</p>")
                             ((:t nfix)
                              natp-compound-recognizer
                              zp-compound-recognizer
-                             nth-of-replicate
-                             len-of-replicate
+                             nth-of-repeat
+                             len-of-repeat
                              append-to-nil
-                             (:t replicate)
+                             (:t repeat)
                              make-list-ac-removal
                              nth-when-atom
                              nth-0-cons
@@ -768,7 +768,7 @@ records book.  See @(see def-typed-record).</p>")
                              resize-list-when-zp
                              (:rules-of-class :executable-counterpart :here))
                             ((make-list-ac)
-                             (replicate)))))
+                             (repeat)))))
 
          (local (in-theory (e/d
                             (plus-collect-consts

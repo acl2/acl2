@@ -51,82 +51,77 @@
          (equal (- (+ x y)) (+ (- x) (- y)))))
 
 
-(defsection replicate
+(defsection repeat
   :parents (std/lists make-list)
-  :short "@(call replicate) creates a list of @('x')es with length @('n'); it
+  :short "@(call repeat) creates a list of @('x')es with length @('n'); it
 is a simpler alternative to @(see make-list)."
 
-  (defund replicate-fn (n x)
+  (defund repeat (n x)
     (declare (xargs :guard (natp n)
                     :verify-guards nil))
     (mbe :logic (if (zp n)
                     nil
-                  (cons x (replicate-fn (- n 1) x)))
+                  (cons x (repeat (- n 1) x)))
 
-; On CCL, a simple loop of (loop for i from 1 to 10000 do (replicate 10000 6))
+; On CCL, a simple loop of (loop for i from 1 to 10000 do (repeat 10000 6))
 ; finished in 2.74 seconds when we use make-list, versus 3.69 seconds when we
 ; use make-list-ac.  So lets use make-list.
 
          :exec (make-list n :initial-element x)))
 
-  (defmacro replicate (n x)
-    `(replicate-fn ,n ,x))
+  (local (in-theory (enable repeat)))
 
-  (add-macro-alias replicate replicate-fn)
-
-  (local (in-theory (enable replicate)))
-
-  (defthm replicate-when-zp
+  (defthm repeat-when-zp
     (implies (zp n)
-             (equal (replicate n a)
+             (equal (repeat n a)
                     nil)))
 
-  (defthm |(replicate 0 x)|
-    (equal (replicate 0 x)
+  (defthm |(repeat 0 x)|
+    (equal (repeat 0 x)
            nil))
 
-  (defthm replicate-under-iff
-    (iff (replicate n x)
+  (defthm repeat-under-iff
+    (iff (repeat n x)
          (not (zp n))))
 
-  (defthm consp-of-replicate
-    (equal (consp (replicate n a))
+  (defthm consp-of-repeat
+    (equal (consp (repeat n a))
            (not (zp n))))
 
-  (defthm replicate-1
-    (equal (replicate 1 a)
+  (defthm repeat-1
+    (equal (repeat 1 a)
            (list a)))
 
   (defthm take-when-atom
     (implies (atom x)
              (equal (take n x)
-                    (replicate n nil))))
+                    (repeat n nil))))
 
-  (defthm len-of-replicate
-    (equal (len (replicate n x))
+  (defthm len-of-repeat
+    (equal (len (repeat n x))
            (nfix n)))
 
-  (defthm replicate-of-nfix
-    (equal (replicate (nfix n) x)
-           (replicate n x)))
+  (defthm repeat-of-nfix
+    (equal (repeat (nfix n) x)
+           (repeat n x)))
 
-  (defthm car-of-replicate-increment
-    ;; Goofy rule that helps when recurring when replicate is involved.
+  (defthm car-of-repeat-increment
+    ;; Goofy rule that helps when recurring when repeat is involved.
     ;; BOZO there's a better rule than this in str/arithmetic, but it case-splits.
     (implies (natp n)
-             (equal (car (replicate (+ 1 n) x))
+             (equal (car (repeat (+ 1 n) x))
                     x)))
 
-  (defthm cdr-of-replicate-increment
-    ;; Goofy rule that helps when recurring when replicate is involved.
+  (defthm cdr-of-repeat-increment
+    ;; Goofy rule that helps when recurring when repeat is involved.
     (implies (natp n)
-             (equal (cdr (replicate (+ 1 n) x))
-                    (replicate n x))))
+             (equal (cdr (repeat (+ 1 n) x))
+                    (repeat n x))))
 
-  (defthm member-of-replicate
-    (equal (member a (replicate n b))
+  (defthm member-of-repeat
+    (equal (member a (repeat n b))
            (if (equal a b)
-               (replicate n b)
+               (repeat n b)
              nil)))
 
   (encapsulate
@@ -138,89 +133,89 @@ is a simpler alternative to @(see make-list)."
                    nil
                  (dec-dec-induct (- k 1) (- n 1))))))
 
-    (defthm take-of-replicate
-      (equal (take n (replicate k a))
+    (defthm take-of-repeat
+      (equal (take n (repeat k a))
              (if (<= (nfix n) (nfix k))
-                 (replicate n a)
-               (append (replicate k a)
-                       (replicate (- (nfix n) (nfix k)) nil))))
+                 (repeat n a)
+               (append (repeat k a)
+                       (repeat (- (nfix n) (nfix k)) nil))))
       :hints(("Goal" :induct (dec-dec-induct k n))))
 
-    (defthm nthcdr-of-replicate
-      (equal (nthcdr n (replicate k a))
+    (defthm nthcdr-of-repeat
+      (equal (nthcdr n (repeat k a))
              (if (<= (nfix n) (nfix k))
-                 (replicate (- (nfix k) (nfix n)) a)
+                 (repeat (- (nfix k) (nfix n)) a)
                nil))
       :hints(("Goal" :induct (dec-dec-induct k n)))))
 
 
-  (defthm append-of-replicate-to-cons-of-same
-    (equal (append (replicate n a) (cons a x))
-           (cons a (append (replicate n a) x))))
+  (defthm append-of-repeat-to-cons-of-same
+    (equal (append (repeat n a) (cons a x))
+           (cons a (append (repeat n a) x))))
 
   (encapsulate
     ()
     (local (defthm l0
-             (implies (equal (append (replicate n a) x) y)
-                      (and (equal (replicate n a) (take n y))
+             (implies (equal (append (repeat n a) x) y)
+                      (and (equal (repeat n a) (take n y))
                            (equal (nthcdr n y) x)))))
 
     (local (defthm l1
              (implies (not (<= (nfix n) (len y)))
-                      (not (equal (append (replicate n a) x) y)))))
+                      (not (equal (append (repeat n a) x) y)))))
 
     (local (defthm l2
              (implies (and (<= n (len y))
-                           (equal (replicate n a) (take n y))
+                           (equal (repeat n a) (take n y))
                            (equal x (nthcdr n y)))
-                      (equal (append (replicate n a) x) y))
+                      (equal (append (repeat n a) x) y))
              :hints(("Goal"
                      :in-theory (disable append-of-take-and-nthcdr)
                      :use ((:instance append-of-take-and-nthcdr
                                       (n n)
                                       (x y)))))))
 
-    (defthm equal-of-append-replicate
+    (defthm equal-of-append-repeat
       (implies (case-split (<= n (len y)))
-               (equal (equal (append (replicate n a) x) y)
-                      (and (equal (replicate n a) (take n y))
+               (equal (equal (append (repeat n a) x) y)
+                      (and (equal (repeat n a) (take n y))
                            (equal x (nthcdr n y)))))
       :hints(("Goal"
               :use ((:instance l0)
                     (:instance l2))))))
 
-  (defthm rev-of-replicate
-    (equal (rev (replicate n a))
-           (replicate n a))))
+  (defthm rev-of-repeat
+    (equal (rev (repeat n a))
+           (repeat n a))))
 
 
-(local (in-theory (enable replicate)))
+(local (in-theory (enable repeat)))
 
 
 (defsection make-list-ac-removal
-  :parents (replicate make-list)
+  :parents (repeat make-list)
   :short "Rewrite rule that eliminates @('make-list-ac') (and hence @(see
-make-list)) in favor of @(see replicate)."
+make-list)) in favor of @(see repeat)."
 
-  (local (defun silly-replicate (n x acc)
+  (local (defun silly-repeat (n x acc)
            (if (zp n)
                acc
-             (cons x (silly-replicate (- n 1) x acc)))))
+             (cons x (silly-repeat (- n 1) x acc)))))
 
   (local (defthm lemma1
            (equal (make-list-ac n x acc)
-                  (silly-replicate n x acc))))
+                  (silly-repeat n x acc))))
 
   (local (defthm lemma2
-           (equal (silly-replicate n x acc)
-                  (append (replicate n x) acc))))
+           (equal (silly-repeat n x acc)
+                  (append (repeat n x) acc))))
 
   (defthm make-list-ac-removal
     (equal (make-list-ac n x acc)
-           (append (replicate n x)
+           (append (repeat n x)
                    acc))))
 
-(verify-guards replicate-fn)
+(verify-guards repeat)
 
 
 (defsection take-of-take-split
@@ -247,7 +242,7 @@ relationship between @('a') and @('b'), using the following related rules:</p>
   (defthm take-more-of-take-fewer
     (implies (< (nfix b) (nfix a))
              (equal (take a (take b x))
-                    (append (take b x) (replicate (- (nfix a) (nfix b)) nil))))
+                    (append (take b x) (repeat (- (nfix a) (nfix b)) nil))))
     :hints(("Goal" :induct (my-induct a b x))))
 
   (defthm take-of-take-split
@@ -255,17 +250,27 @@ relationship between @('a') and @('b'), using the following related rules:</p>
     (equal (take a (take b x))
            (if (<= (nfix a) (nfix b))
                (take a x)
-             (append (take b x) (replicate (- (nfix a) (nfix b)) nil))))))
+             (append (take b x) (repeat (- (nfix a) (nfix b)) nil))))))
 
 
 (defsection take-of-too-many
-  :parents (std/lists/take replicate)
+  :parents (std/lists/take repeat)
   :short "Rewrite @('(take n x)') when @('n') is more than @('(len x)')."
 
   :long "<p>This rule may sometimes lead your proof in a bad direction.  If you
-see unwanted @('replicate') terms, you may want to disable it.</p>"
+see unwanted @('repeat') terms, you may want to disable it.</p>"
 
   (defthm take-of-too-many
     (implies (<= (len x) (nfix n))
              (equal (take n x)
-                    (append x (replicate (- (nfix n) (len x)) nil))))))
+                    (append x (repeat (- (nfix n) (len x)) nil))))))
+
+
+(defsection replicate
+  :parents (repeat)
+  :short "Alias for @(see repeat)."
+
+  (defmacro replicate (n x)
+    `(repeat ,n ,x))
+
+  (add-macro-alias replicate repeat))

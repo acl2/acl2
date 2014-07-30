@@ -38,8 +38,8 @@
 
 (local (defthm take-of-nil
          (equal (take n nil)
-                (replicate n nil))
-         :hints(("Goal" :in-theory (enable replicate)))))
+                (repeat n nil))
+         :hints(("Goal" :in-theory (enable repeat)))))
 
 (local (defthm nthcdr-of-nil
          (equal (nthcdr n nil)
@@ -139,15 +139,15 @@ for some reason that's what you want to do.</p>"
            (revappend (strip-cars x)
                       (strip-cars y))))
 
-  (defthm strip-cars-of-replicate
-    (equal (strip-cars (replicate n x))
-           (replicate n (car x)))
-    :hints(("Goal" :in-theory (enable replicate))))
+  (defthm strip-cars-of-repeat
+    (equal (strip-cars (repeat n x))
+           (repeat n (car x)))
+    :hints(("Goal" :in-theory (enable repeat))))
 
   (defthm strip-cars-of-take
     (equal (strip-cars (take n x))
            (take n (strip-cars x)))
-    :hints(("Goal" :in-theory (enable replicate))))
+    :hints(("Goal" :in-theory (enable repeat))))
 
   (defthm strip-cars-of-nthcdr
     (equal (strip-cars (nthcdr n x))

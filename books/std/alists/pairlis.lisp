@@ -79,8 +79,8 @@ proper, @('nil')-terminated @(see alistp) which can be used with either
 
   (local (defthm l0
            (equal (strip-cdrs (pairlis$ x2 nil))
-                  (replicate (len x2) nil))
-           :hints(("goal" :in-theory (enable replicate)))))
+                  (repeat (len x2) nil))
+           :hints(("goal" :in-theory (enable repeat)))))
 
   (defthm strip-cdrs-of-pairlis$
     (equal (strip-cdrs (pairlis$ x y))

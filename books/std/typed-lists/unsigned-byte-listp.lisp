@@ -89,11 +89,11 @@
     (implies (unsigned-byte-listp bytes x)
              (unsigned-byte-listp bytes (list-fix x))))
 
-  (defthm unsigned-byte-listp-of-replicate
-    (equal (unsigned-byte-listp bytes (replicate n x))
+  (defthm unsigned-byte-listp-of-repeat
+    (equal (unsigned-byte-listp bytes (repeat n x))
            (or (zp n)
                (unsigned-byte-p bytes x)))
-    :hints(("Goal" :in-theory (enable replicate))))
+    :hints(("Goal" :in-theory (enable repeat))))
 
   (defthm unsigned-byte-listp-of-take
     (implies (unsigned-byte-listp bytes x)

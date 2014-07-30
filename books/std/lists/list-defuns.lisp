@@ -206,18 +206,18 @@
                             (flatten (cdr x)))
     nil))
 
-(defund replicate-fn (n x)
+(defund repeat (n x)
   (declare (xargs :guard (natp n)
                   :verify-guards nil))
   (mbe :logic (if (zp n)
                   nil
-                (cons x (replicate-fn (- n 1) x)))
+                (cons x (repeat (- n 1) x)))
        :exec (make-list n :initial-element x)))
 
 (defmacro replicate (n x)
-  `(replicate-fn ,n ,x))
+  `(repeat ,n ,x))
 
-(add-macro-alias replicate replicate-fn)
+(add-macro-alias replicate repeat)
 
 (local
  (encapsulate
@@ -231,10 +231,10 @@
      (equal (make-list-ac n x acc)
             (append (replicate n x)
                     acc))
-     :hints(("Goal" :in-theory (enable replicate-fn))))))
+     :hints(("Goal" :in-theory (enable repeat))))))
 
-(verify-guards replicate-fn
-  :hints(("Goal" :in-theory (enable replicate-fn))))
+(verify-guards repeat
+  :hints(("Goal" :in-theory (enable repeat))))
 
 
 (defund final-cdr (x)

@@ -130,14 +130,14 @@
               (list n m)
             (my-induct (- n 1) (- m 1)))))
 
- (defthm nth-of-replicate
-   (equal (nth n (replicate m a))
+ (defthm nth-of-repeat
+   (equal (nth n (repeat m a))
           (if (< (nfix n) (nfix m))
               a
             nil))
    :hints(("Goal"
            :induct (my-induct n m)
-           :in-theory (enable replicate)))))
+           :in-theory (enable repeat)))))
 
 (defthm nth-of-nthcdr
   (equal (nth n (nthcdr m x))

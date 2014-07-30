@@ -11,11 +11,15 @@
 
 ;; bzo (jcd) - consider disabling repeat
 
-(defund repeat (n v)
-  (declare (xargs :guard (natp n)))
-  (if (zp n)
-      nil
-    (cons v (repeat (1- n) v))))
+(defund repeat (n x)
+  ;; [Jared]: Modified by adding MBE and changing variable name from V to X,
+  ;; for compatibility with std/lists/repeat.lisp
+  (declare (xargs :guard (natp n)
+                  :verify-guards nil))
+  (mbe :logic (if (zp n)
+                  nil
+                (cons x (repeat (- n 1) x)))
+       :exec (make-list n :initial-element x)))
 
 (local (encapsulate
         ()
@@ -124,3 +128,31 @@
   :hints (("Goal" :in-theory (e/d (LIST::EQUAL-APPEND-REDUCTION!) 
                                   ()))))
         
+
+(encapsulate
+  ()
+  ;; [Jared] MBE equivalence proof adapted from std/lists/repeat.lisp
+
+  (local (defthm commutativity-2-of-+
+           (equal (+ x (+ y z))
+                  (+ y (+ x z)))))
+
+  (local (defthm fold-consts-in-+
+           (implies (and (syntaxp (quotep x))
+                         (syntaxp (quotep y)))
+                    (equal (+ x (+ y z)) (+ (+ x y) z)))))
+
+  (local (defthm distributivity-of-minus-over-+
+           (equal (- (+ x y)) (+ (- x) (- y)))))
+
+  (local (defthm l0
+           (equal (append (repeat n x) (cons x acc))
+                  (append (repeat (+ 1 (nfix n)) x) acc))
+           :hints(("Goal" :in-theory (enable repeat)))))
+
+  (local (defthm make-list-ac-removal
+           (equal (make-list-ac n x acc)
+                  (append (repeat n x)
+                          acc))))
+
+  (verify-guards repeat))
