@@ -34,12 +34,13 @@ acl2.tar.gz</A> into a new directory, say <code>acl2/v6-4/</code>.</li>
 <li>Execute the following to create directory <code>acl2-sources/</code>:<br>
 <code>tar xfz acl2.tar.gz</code></li>
 
-<li><A NAME="create-books">We strongly suggest</A> that you fetch the ACL2 community books, for
-  example
-  as <A HREF="http://acl2-books.googlecode.com/files/books-6.4.tar.gz">a
-  tarball from the acl2-books project website</A>, into your
-  new <code>acl2-sources/</code> directory; then execute the following
-  in <code>acl2-sources/</code> to create a
+<li><A NAME="create-books">We strongly suggest</A> that you fetch the
+  ACL2 community books, for example via SVN from the Google
+  Code <a href="https://code.google.com/p/acl2-books/">acl2-books
+  project website</a> or as a gzipped tarfile
+  from <code><a href="http://acl2.org">http://acl2.org</a></code>.  In
+  the latter case, stand in your new <code>acl2-sources/</code>
+  directory and execute the following to create a
   <code>books/</code> subdirectory:<br>
 <code>tar xfz books-6.4.tar.gz</code></li>
 
@@ -49,9 +50,9 @@ already have one.</li>
 <li>Build by connecting to your <code>acl2-sources/</code> directory
 and typing the following, which may take a few minutes to complete.
 <font color="red">Note:</font> You will need Gnu make.  We have seen
-rare problems with Version 3.81 of that utility, so if you encounter
-errors, please consider our <a
-href="installing-make.html">instructions for downloading and
+problems on some Linux systems with Version 3.81 of that utility, so
+if you encounter errors, please consider
+our <a href="installing-make.html">instructions for downloading and
 installing GNU make version 3.80</a>.
 <pre>
 make LISP=&lt;path_to_your_lisp_executable&gt;

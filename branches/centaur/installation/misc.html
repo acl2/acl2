@@ -59,22 +59,11 @@ extension and how to build it, and a warning about its experimental nature.
 
 <P>
 
-If you care to use ACL2(r), we strongly suggest that you first
-<A HREF="http://acl2-books.googlecode.com/files/nonstd-6.4.tar.gz">
-download the non-standard analysis community books (gzipped tar file)</A> from
-the Google
-Code <a href="https://code.google.com/p/acl2-books/">acl2-books
-project website</a>, and save to the
-<code>books/</code> subdirectory of your copy of the ACL2 distribution, say,
-<I>dir</I>/acl2-sources/books/</code>.  Then extract to create
-subdirectory <CODE>nonstd/</CODE>:
-<pre>
-tar xvfz nonstd-6.4.tar.gz
-</pre>
-<p>
-Next build an executable image and certify books.  First, connect to your
-<I>dir</I><code>/acl2-sources/</code> directory and execute<BR><BR> <CODE>cd
-acl2-sources</CODE><BR> <CODE>make large-acl2r LISP=</CODE><I>xxx</I><BR>
+If you care to use ACL2(r), you will need to build an executable image
+and you will probably want to certify books.  First, connect to your
+<I>dir</I><code>/acl2-sources/</code> directory and
+execute<BR><BR><CODE>cd acl2-sources</CODE><BR><CODE>make large-acl2r
+LISP=</CODE><I>xxx</I><BR>
 <BR>
 where <I>xxx</I> is the command to run your local Common Lisp.
 <P>
@@ -84,18 +73,15 @@ Clozure Common Lisp (CCL), which can be obtained as explained <a
 href="obtaining-and-installing.html#Obtaining-CCL">in the Requirements document</a>.
 <P>
 This will create executable <code>saved_acl2r</code> in the
-<I>dir</I><code>/acl2-sources</code> directory (notice the trailing
-<code>r</code> in the executable filename).
+<I>dir</I><code>/acl2-sources</code> directory (notice the final
+letter <code>r</code> in the executable filename).
 
 <P>
 
-Finally, to certify books under directory
-<I>dir</I>/acl2-sources/books/nonstd/<code> with ACL2(r), stand in the
-</CODE><I>dir</I><CODE>/acl2-sources/</CODE> directory and execute the
-following command.
-<pre>
-make regression-nonstd ACL2=<I>dir</I>/acl2-sources/saved_acl2r
-</pre>
+Finally, you can certify books under directory
+<I>dir</I>/acl2-sources/books/nonstd/<code> with ACL2(r) in the usual
+way; for example, see the documentation topic for
+<a href="../../manual/index.html?topic=ACL2____BOOKS-CERTIFICATION">BOOKS-CERTIFICATION</a>.
 
 <BR><HR><BR>
 <H3><A NAME="Addresses">Links and Mailing Lists</A></H3>

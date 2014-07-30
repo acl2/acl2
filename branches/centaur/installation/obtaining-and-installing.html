@@ -63,9 +63,11 @@ Otherwise, continue reading here.</H3>
 A collection of <em>books</em> (ACL2 input files typically including
 definitions and theorems) has been developed over the years for use
 with ACL2, called the "community books".  It is very useful to
-obtain these books, which are distributed from the Google
+obtain these books, which are distributed via SVN from the Google
 Code <a href="https://code.google.com/p/acl2-books/">acl2-books
-project website</a>; directions are included below.
+project website</a> or, as gzipped tarfiles, from
+<code><a href="http://acl2.org">http://acl2.org</a></code>.
+Directions are included below.
 
 <BR><HR noshade size=8><BR>
 <H2><A NAME="Shortcuts">Pre-built Binary Distributions</A></H2>
@@ -248,17 +250,17 @@ other than Gnu tar.  You can see if you have Gnu tar by running
 
 <UL>
 
-  <li><b>Easy download.</b>
-    Fetch <CODE><A HREF="http://acl2-books.googlecode.com/files/books-6.4.tar.gz">a
-    gzipped tarfile</A></CODE> of the community books from the Google Code website, and then
-    extract as follows to create a <code>books/</code>
+  <li><b>Easy download.</b>  Fetch a gzipped tarfile of the community
+    books
+    from <code><a href="http://acl2.org">http://acl2.org</a></code>,
+    and then extract as follows to create a <code>books/</code>
     subdirectory:<BR>
 
     <code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;tar xfz books-6.4.tar.gz</code>
   </li>
 
   <li><b><font color="red">OR</font></b>, obtain a read-only copy
-    using SVN as a new subdirectory, <code>books/</code>:<br>
+    using SVN to be placed in a new subdirectory, <code>books/</code>:<br>
 
       <code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;svn checkout http://acl2-books.googlecode.com/svn/branches/6.4 books</code>
   </li>
@@ -277,24 +279,16 @@ other than Gnu tar.  You can see if you have Gnu tar by running
 
 <B><font color="red">NOTE</font></B>:  The second and third methods
 provide all of the community books, but the first omits the
-<code>workshops/</code> and <code>nonstd/</code> subdirectories of
-these <code>books/</code>, which (respectively) are books contributed
-in support of papers presented at ACL2 workshops, and books for use
-with ACL2(r).  You can fetch these easily as gzipped tarfiles, as
-follows, using the following links to the Google Code website.
-
-<UL>
-<LI><A HREF="http://acl2-books.googlecode.com/files/workshops-6.4.tar.gz">ACL2 Workshops books</A></LI>
-<LI><A HREF="http://acl2-books.googlecode.com/files/nonstd-6.4.tar.gz">ACL2(r) books</A></LI>
-</UL>
-
-Then put the gzipped tarfile(s) in
-the <CODE>acl2-sources/books/</CODE> directory, connect to that
-directory, and extract to create <CODE>workshops/</CODE>
-and <CODE>nonstd/</CODE> subdirectories, respectively:<BR>
+<code>workshops/</code> subdirectories of these <code>books/</code>,
+which contains books contributed in support of papers presented at
+ACL2 workshops.  You can fetch the gzipped tarball for
+the <code>workshops/</code> directory
+from <code><a href="http://acl2.org">http://acl2.org</a></code>.  Then
+put that gzipped tarfile in the <CODE>acl2-sources/books/</CODE>
+directory, connect to that directory, and extract to create
+a <CODE>workshops/</CODE> subdirectory:<BR>
 
 <CODE>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;tar xfz workshops-6.4.tar.gz</CODE><BR>
-<CODE>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;tar xfz nonstd-6.4.tar.gz</CODE>
 
 </UL>
 
@@ -367,13 +361,13 @@ This will create executable <code>saved_acl2</code> in the
 
 <P>
 
-The time taken to carry out this process depends on the host processor but may
-be only a few minutes for a fast processor.  The size of the resulting binary
-image is dependent on which Lisp was used, but it may be up to a
-couple hundred megabytes or so.
+The time taken to carry out this process depends on the host processor
+but may be only a few minutes for a fast processor.  The size of the
+resulting binary image is dependent on which Lisp was used, but it may
+a couple hundred megabytes or so.
 
 <P>
-This <CODE>make</CODE> works for the Common Lisps listed
+This <CODE>make</CODE> works for the Common Lisp implementations listed
 in <A HREF="requirements.html">Requirements document</A> on systems we
 have tested.  See the file <CODE>acl2-sources/GNUmakefile</CODE> for
 further details.  If this <CODE>make</CODE> command does not work for
@@ -696,7 +690,6 @@ The ACL2
   doc/          ; ACL2 documentation
   emacs/        ; Some helpful emacs utilities
   installation/ ; Installation instructions (start with installation.html)
-  saved/        ; Empty directory for backing up copies during make
 </PRE>
 
 Also available are the following.
@@ -711,15 +704,17 @@ Some gzip'd tar'd executables; see <code><a href="http://www.cs.utexas.edu/users
 </ul>
 
 <P>
-We estimate that the
-entire <code>acl2.tar.gz</code> consists of approximately 6 MB, which extracts to
-about 29 MB, and the size of gzipped tarfile <code>books-6.4.tar.gz</code> (obtained
-as described
-<a href="#Obtaining-books">above</a>) is about 14 MB, which extracts
-to about 180 MB.  Additional space is required to build an image,
-perhaps 50 to 300 megabytes depending on the platform (including the
-host Lisp); and more will be required
-to <A HREF="using.html#Certifying">certify books</A>.
+We estimate that the entire <code>acl2.tar.gz</code> consists of
+approximately 4 MB, which extracts to about 15 MB, and the size of
+gzipped tarfile <code>books-6.4.tar.gz</code> (obtained as described
+<a href="#Obtaining-books">above</a>) is about 15 MB, which extracts
+to about 87 MB.  (Gzipped tarfile <code>workshops-6.4.tar.gz</code>
+and corresponding directory <code>workshops</code>, which are
+mentioned above, have sizes of about 37 MB and 58 MB, respectively.)
+Additional space is required to build an image, perhaps 50 to 300
+megabytes depending on the platform (including the host Lisp); and
+more will be required to <A HREF="using.html#Certifying">certify
+books</A>.
 
 <p>
 
@@ -730,7 +725,7 @@ to <A HREF="using.html#Certifying">certify books</A>.
 
 We strongly recommend that ACL2 users update their local copies of the
 system and community books at each ACL2 release.  While that should
-suffice for most ACL2 users, nevertheless for those who prefer to
+suffice for many ACL2 users, nevertheless for those who prefer to
 obtain the latest developments, the ACL2 source code and community
 books have been made available between ACL2 releases, by way of
 revision control using SVN.

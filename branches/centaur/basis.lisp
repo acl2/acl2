@@ -1405,6 +1405,8 @@
         (t (fargn1 v n))))
 
 (defun all-but-last (l)
+  (declare (xargs :guard (true-listp l) ; and let's verify termination/guards:
+                  :mode :logic))
   (cond ((endp l) nil)
         ((endp (cdr l)) nil)
         (t (cons (car l) (all-but-last (cdr l))))))

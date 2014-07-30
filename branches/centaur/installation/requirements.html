@@ -89,9 +89,10 @@ under Windows at a revision less than 13900 should update.
 <p>
 
 Here is an easy way to obtain and build the latest version (generally
-recommended) for Linux on running on x86 or x86-64.  First execute the
-following shell command to create a <code>ccl</code> directory, but
-substituting for <code>linuxx86</code>, if appropriate, any of
+recommended) for Linux (or another OS; see below) running on an x86 or
+x86-64.  First execute the following shell command to create
+a <code>ccl</code> directory, but substituting
+for <code>linuxx86</code>, if appropriate, any of
 <code>darwinx86</code> (which we use for modern Macs), <code>freebsdx86</code>,
 <code>solarisx86</code>, <code>windows</code>, <code>darwinppc</code>,
 or <code>linuxppc</code>.
@@ -100,9 +101,9 @@ or <code>linuxppc</code>.
 svn co http://svn.clozure.com/publicsvn/openmcl/trunk/linuxx86/ccl
 </pre>
 
-Note: if you prefer the latest release, you can obtain that instead,
-for example as follows (but replace "1.9" by the latest version,
-for example as described
+Note: if however you insist on using the latest release, you can
+obtain that instead, for example as follows (but replace "1.9" by the
+latest version, for example as described
 at <code>http://ccl.clozure.com/download.html</code>, and
 replace <code>linuxx86</code> if appropriate as described above).
 
@@ -182,7 +183,9 @@ use a 32-bit or 64-bit version (respectively).
 <P><B><A NAME="Obtaining-CLISP">Obtaining CLISP</A></B><P>
 
 CLISP is a non-commercial Common Lisp implementation, available from <code><a
-href="http://clisp.cons.org/">http://clisp.cons.org/</a></code>.
+href="http://clisp.cons.org/">http://clisp.cons.org/</a></code>.  It
+appears to be much slower for ACL2, and it does not currently support
+building ACL2(h), so we do not recommend it.
 
 <P><B><A NAME="Obtaining-CMUCL">Obtaining CMU Common Lisp</A></B><P>
 
