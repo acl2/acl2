@@ -646,6 +646,7 @@ reasoning about @('car') in general.</p>"
   ;; symbol-name is in varstrs.
   (if (atom form)
       (if (and (symbolp form)
+               (not (keywordp form))
                (member-equal (symbol-name form) varstrs)
                (not (member-eq form acc)))
           (cons form acc)
@@ -661,57 +662,6 @@ reasoning about @('car') in general.</p>"
            (binding  (list (car vars) call))) ;; (x.foo (taco->shell foo))
       (cons binding
             (da-patbind-alist-to-bindings (cdr vars) valist target)))))
-
-
-(defxdoc defaggregate-b*-syntax-error
-  :parents (defaggregate)
-  :short "The @(see b*) binders introduced by @(see defaggregate) now cause
-syntax errors in certain cases that were previously accepted."
-
-  :long "<p>Say we have a simple aggregate such as:</p>
-@({
-    (defaggregate employee (name title phone))
-})
-
-<p>Previously the following was a valid (but error-prone!) use of @('b*'):</p>
-
-@({
-    (b* ((x            'oops)
-         ((employee x) (make-employee :name \"Jimmy\"
-                                      :title \"Beta Tester\"
-                                      :phone 3145)))
-      (list :name x.name
-            :title x.title
-            :phone x.phone
-            :whole x))
-})
-
-<p>Here, the @('b*') binder for the aggregate would properly bind the values of
-@('x.name'), @('x.title'), and so forth.  However, it previously <b>did not
-rebind @('x') itself</b>.  So, the result produced by the above is:</p>
-
-@({
-    (:name \"Jimmy\" :title \"Beta Tester\" :phone 3145 :whole oops)
-})
-
-<p>This was counter-intuitive, since it sure looks like @('x') is being
-re-bound to the @('make-employee') call.</p>
-
-<p>To reduce the chance for confusion, we now detect cases like this and cause
-an error.</p>
-
-<h3>Future Plan</h3>
-
-<p>This restriction is a temporary measure, meant to help to ensure that any
-existing code based on @('b*') can be updated safely.</p>
-
-<p>After the release of ACL2 6.5, we will remove this restriction and change
-the way that these @('b*') binders work, so that they will also bind the
-variable itself.</p>
-
-<p>See also <a
-href='https://code.google.com/p/acl2-books/issues/detail?id=41'>Issue 41</a> in
-the acl2-books issue tracker.</p>")
 
 ;; notes: fields-accs is now a mapping from field names to accessors.
 ;; Defaggregate itself just needs the field names because it always generates
@@ -737,50 +687,22 @@ the acl2-books issue tracker.</p>")
        (full-vars-alist (da-patbind-make-field-acc-alist var fields-accs))
        (field-vars      (strip-cars full-vars-alist))
        (used-vars       (da-patbind-find-used-vars rest-expr field-vars nil))
-       ((unless (or used-vars (cdr (assoc :quietp kwd-alist))))
-        (progn$
-         (cw "Note: not introducing any ~x0 field bindings for ~x1, since ~
-              none of its fields appear to be used.~%" name var)
-         rest-expr))
+       (- (or used-vars
+              (cdr (assoc :quietp kwd-alist))
+              (cw "Note: not introducing any ~x0 field bindings for ~x1, ~
+                   since none of its fields appear to be used.~%" name var)))
 
-       ;;(- (cw "Var is ~x0.~%" var))
-       ;;(- (cw "Full vars alist is ~x0.~%" full-vars-alist))
-       ;;(- (cw "Unnecessary field vars are ~x0.~%" unused-vars))
-       ;;(- (cw "Optimized vars alist is ~x0.~%" vars-alist))
-
-       ;; The below is adapted from patbind-nth.  Sol is using (pack binding)
-       ;; to generate a name that is probably unused.  We'll do the same.
-
-       (binding  (if forms (car forms) var))
-       (evaledp  (or (atom binding) (eq (car binding) 'quote)))
-       (target   (if evaledp binding (acl2::pack binding)))
-       (bindings (da-patbind-alist-to-bindings used-vars full-vars-alist target))
-
-       ;;(- (cw "Binding is ~x0.~%" var))
-       ;;(- (cw "Evaledp is ~x0.~%" var))
-       ;;(- (cw "Target is ~x0.~%" target))
-       ;;(- (cw "New bindings are ~x0.~%" bindings))
-
-       (rest-expr
-        (if (equal var binding)
-            ;; E.g., The something like ((vl-module x) x) -- this is a common pattern
-            ;; and a safe thing to do, so don't cause an error.
-            rest-expr
-          ;; Found something like ((vl-module x) (change-module y ...)) -- we want to
-          ;; make sure x never occurs in the rest-expr now, so that we can bind it in
-          ;; future versions of defaggregate.
-          `(acl2::translate-and-test
-            (lambda (term)
-              (or (not (member ',var (all-vars term)))
-                  (msg "B* binding of ~x0 to ~x1 is not currently allowed.  See :doc ~x2."
-                       ',var ',binding 'defaggregate-b*-syntax-error)))
-            ,rest-expr))))
-
-    (if evaledp
+       (bindings (da-patbind-alist-to-bindings used-vars full-vars-alist var)))
+    (if (eq var (car forms))
+        ;; No need to rebind: this actually turns out to matter for some
+        ;; expansion heuristics in the svex library (3vec-fix), which is
+        ;; annoying because you'd think a (let nil ...) should be equivalent to
+        ;; ... but, well, whatever.
         `(b* ,bindings ,rest-expr)
-      `(let ((,target ,binding))
-         (b* ,bindings
-           (check-vars-not-free (,target) ,rest-expr))))))
+      `(let ((,var ,(car forms)))
+         (declare (ignorable ,var))
+         ;; We know var is used in at least the bindings
+         (b* ,bindings ,rest-expr)))))
 
 ;; more general than da-make-binder: takes the mapping from fields to accessors
 ;; instead of generating it

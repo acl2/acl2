@@ -168,6 +168,8 @@
 ;;           :my-taco my-taco))
 
 (b* (((taco x)
+      ;; Previously failed due to using keywords with the same names as
+      ;; variables, but now we properly avoid keywords.
       (make-taco :shell 5
                  :meat 'beef
                  :cheese 'swiss
@@ -178,8 +180,8 @@
           :x.lettuce x.lettuce
           :five five))
 
-;; Improper binding... fails nicely
 (b* (((taco x y)
+      ;; Improper binding... fails nicely
       (make-taco :shell 5
                  :meat 'beef
                  :cheese 'swiss
@@ -190,16 +192,29 @@
           :x.lettuce x.lettuce
           :five five))
 
-;; Unused binding collapses to nothing.  warning noted.
-(b* (((taco x) (make-taco :shell 5
-                          :meat 'beef
-                          :cheese 'swiss
-                          :lettuce 'iceberg
-                          :sauce 'green))
+(b* (((taco x)
+      ;; Unused binding collapses to nothing.  Nicely creates a warning.
+      (make-taco :shell 5
+                 :meat 'beef
+                 :cheese 'swiss
+                 :lettuce 'iceberg
+                 :sauce 'green))
      (five (+ 2 3)))
     five)
 
-;; Good, inadvertent capture is detected
+(b* (((taco x :quietp t)
+      ;; Unused binding collapses to nothing.  Quiet suppresses warning.
+      (make-taco :shell 5
+                 :meat 'beef
+                 :cheese 'swiss
+                 :lettuce 'iceberg
+                 :sauce 'green))
+     (five (+ 2 3)))
+    five)
+
+;; Previously this failed because we were using ACL2::|(IDENTITY FOO)| as a
+;; variable.  We no longer do that.  Now, instead, it should fails because
+;; ACL2::|(IDENTITY FOO)| is unbound.  See also acl2-books Issue 41.
 (b* ((foo (make-taco :shell 5
                      :meat 'beef
                      :cheese 'swiss
@@ -239,10 +254,19 @@
                 (equal emp.salary 25)
                 emp)))
 
+;; This was prohibited through the release of ACL2 6.5, but now it is allowed
+;; and works as expected; see Issue 41.
+(assert! (b* ((emp (make-employee :name "foo"))
+              ((employee emp2) emp))
+           (and (equal emp2.name "foo")
+                (equal emp2.salary 25)
+                emp2)))
 
-
-
-
+;; Similarly is now supported
+(assert! (b* (((employee emp2) (make-employee :name "foo")))
+           (and (equal emp2.name "foo")
+                (equal emp2.salary 25)
+                emp2)))
 
 
 
@@ -268,8 +292,6 @@
            (and topic
                 (equal (cdr (assoc :parents topic))
                        '(bar)))))
-
-
 
 (defaggregate pancake
   :tag :pancake
