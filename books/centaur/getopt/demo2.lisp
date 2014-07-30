@@ -77,7 +77,12 @@ options, see @(see demo) instead.</p>
    (version "Print out a version message and exit with status 0."
             booleanp
             :rule-classes :type-prescription
-            :alias #\v)))
+            :alias #\v)
+
+   (fail   "Print nothing and exit with status 1."
+           booleanp
+           :rule-classes :type-prescription
+           :alias #\f)))
 
 (defsection demo2-main
   :parents (demo2)
@@ -104,6 +109,10 @@ options, see @(see demo) instead.</p>
          ((when opts.version)
           (cw "demo2: version 1.234~%")
           (exit 0)
+          state)
+
+         ((when opts.fail)
+          (exit 1)
           state))
 
       (cw "colorless green ideas sleep furiously~%")

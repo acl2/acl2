@@ -1371,6 +1371,26 @@ clean_vl:
 
 clean: clean_vl
 
+
+
+# Getopt Demo
+
+centaur/getopt/demo2: centaur/getopt/demo2.cert
+	@echo "Making getopt demo executable"
+	@cd centaur/getopt; \
+	 ACL2_CUSTOMIZATION=NONE $(STARTJOB) -c "$(ACL2) < demo2-save.lsp &> demo2-save.out"
+	@ls -l centaur/getopt/demo2
+
+centaur/getopt/demo2-test.ok: centaur/getopt/demo2 \
+                              centaur/getopt/demo2-test.pl
+	@echo "Testing getopt demo executable"
+	@cd centaur/getopt; \
+         $(STARTJOB) -c "./demo2-test.pl &> demo2-test.out"
+	@cd centaur/getopt; cp demo2-test.out demo2-test.ok
+	@ls -l centaur/getopt/demo2-test.ok
+
+all: centaur/getopt/demo2-test.ok
+
 ##############################
 ### Section: Tags
 ##############################
@@ -1539,3 +1559,4 @@ TAGS : $(CERT_PL_SOURCES)
 # cert-flags instead of certify-book commands.  Alternately, maybe the scheme
 # should be something like: if you give a certify-book command, we use it;
 # otherwise we generate one using the cert-flags.
+
