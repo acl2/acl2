@@ -38,8 +38,6 @@
 (local (include-book "std/lists/append" :dir :system))
 (local (include-book "ihs/quotient-remainder-lemmas" :dir :system))
 (local (include-book "misc/assert" :dir :system))
-;(local (include-book "arithmetic-3/bind-free/top" :dir :system))
-;(local (in-theory (disable acl2::cancel-mod-+)))
 
 (local (in-theory (acl2::enable* set::definitions set::expensive-rules)))
 
@@ -216,10 +214,9 @@ optimized version of @(see sbitset-pair-members).</p>"
      :hints (("goal" :induct (niq-ind a b c))
              (and stable-under-simplificationp
                   '(:nonlinearp t))))
-                          
 
    (local (include-book "arithmetic-3/bind-free/top" :dir :system))
-   (local (in-theory (disable acl2::cancel-mod-+)))
+   (local (in-theory (disable acl2::cancel-mod-+-basic)))
 
    (local (defthm l0
             (implies (and (integerp a)
@@ -618,8 +615,6 @@ block size.</p>"
                (bits-between 0 *sbitset-block-size* (sbitset-pair-block x)))
 
   ///
-
-  ;; (local (in-theory (disable acl2::cancel-mod-+))) ;; loops
 
   (defthm sbitset-pair-members-of-nil
     (equal (sbitset-pair-members nil)

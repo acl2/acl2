@@ -260,7 +260,7 @@ since rotating @('width')-many times is the same as not rotating at all.</p>"
                          (equal (mod a n) 0))
                     (equal (mod (+ -1 a) n)
                            (- n 1)))
-           :hints(("goal" :use ((:instance ACL2::CANCEL-MOD-+
+           :hints(("goal" :use ((:instance ACL2::CANCEL-MOD-+-BASIC
                                            (acl2::x n)
                                            (acl2::y (+ 1 a))
                                            (acl2::z n)))))))

@@ -592,18 +592,38 @@
 
 
 (defthm floor-=-x/y
+  ;; [Jared] modified on 2014-07-29 to make compatible with ihs/quotient-remainder-lemmas.
+  ;;
+  ;; The original IHS rule had the following rule classes:
+  ;; ((:rewrite)
+  ;;  (:generalize)
+  ;;  (:rewrite :corollary (implies (and (equal r (/ x y))
+  ;;                                     (integerp r))
+  ;;                                (equal (floor x y) r))))
+  ;;
+  ;; The original arithmetic-5 rule has the following rule-classes:
+  ;;
+  ;; (:rewrite :corollary (implies (integerp (/ x y))
+  ;;                               (equal (floor x y)
+  ;;                                      (/ x y))))
+  ;; (:rewrite :corollary (implies (equal (* x (/ y)) z)
+  ;;                               (equal (equal (floor x y) z)
+  ;;                                      (integerp z))))
+  ;;
+  ;; Solution: DO ALL THE THINGS.
   (equal (equal (floor x y) (* x (/ y)))
 	 (integerp (/ x y)))
-  :rule-classes ((:rewrite
-		  :corollary
-		  (implies (integerp (/ x y))
-			   (equal (floor x y)
-				  (/ x y))))
-		 (:rewrite
-		  :corollary
-		  (implies (equal (* x (/ y)) z)
-			   (equal (equal (floor x y) z)
-				  (integerp z))))))
+  :rule-classes ((:rewrite)
+                 (:generalize)
+                 (:rewrite :corollary (implies (and (equal r (/ x y))
+                                                    (integerp r))
+                                               (equal (floor x y) r)))
+                 (:rewrite :corollary (implies (integerp (/ x y))
+                                               (equal (floor x y)
+                                                      (/ x y))))
+		 (:rewrite :corollary (implies (equal (* x (/ y)) z)
+                                               (equal (equal (floor x y) z)
+                                                      (integerp z))))))
 
 (defthm mod-nonnegative
   (implies (and (real/rationalp (/ x y))

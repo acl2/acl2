@@ -203,8 +203,8 @@
     (<= (floor x y) x))
    :hints
    (("Goal"
-     :in-theory (disable justify-floor-recursion)
-     :use ((:instance justify-floor-recursion))))))
+     :in-theory (disable floor-recursion)
+     :use ((:instance floor-recursion))))))
 
 ;  DISABLE theories implicated in :LINEAR thrashing.
 
@@ -576,8 +576,8 @@
    (unsigned-byte-p size (floor i x)))
   :hints
   (("Goal"
-    :in-theory (disable justify-floor-recursion)
-    :use ((:instance justify-floor-recursion (x i) (y x)))))
+    :in-theory (disable floor-recursion)
+    :use ((:instance floor-recursion (x i) (y x)))))
   :doc ":doc-section unsigned-byte-p-lemmas
   Rewrite: (UNSIGNED-BYTE-P size (FLOOR i x)), when (UNSIGNED-BYTE-P size i)
   and x > 1.
