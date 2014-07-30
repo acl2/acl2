@@ -1,2 +1,3 @@
 (assign :suppress-preload-xdoc t)
-(ld "xdoc/package.lsp" :dir :system)
+; (Matt K., 7/29/2014) File does not exist, so commenting this out:
+; (ld "xdoc/package.lsp" :dir :system)
