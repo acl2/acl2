@@ -1,0 +1,2 @@
+(include-book "m1-with-stobj")
+(certify-book "m1-with-stobj-clock-example" 1)

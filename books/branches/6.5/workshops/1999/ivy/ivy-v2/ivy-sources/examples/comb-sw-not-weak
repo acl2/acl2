@@ -1,0 +1,10 @@
+;; IVY operation: MODEL
+;;
+;; With basis S and W, show that not all combinators have fixed points.
+
+(and (= (a (a (a (S) x) y) z)
+	(a (a x z) (a y z)))
+     (= (a (a (W) x) y)
+	(a (a x y) y))
+     
+     (not (all f (exists y (= (a f y) y)))))

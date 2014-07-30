@@ -1,0 +1,14 @@
+#!/bin/bash
+
+## usage:
+##
+## > find-conflicts-here
+
+## This script executes the find-conflicts-files script on
+## all of the bookdata files it can find in the current
+## directory and all of its sub-directories.
+
+command=`dirname "$0"`
+path=`(cd "$command" && pwd)`
+
+"$path/find-conflicts-files" `find . -name "*__bookdata.out" -print`

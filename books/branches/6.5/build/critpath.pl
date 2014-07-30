@@ -1,0 +1,321 @@
+#!/usr/bin/env perl
+
+# cert.pl build system
+# Copyright (C) 2008-2014 Centaur Technology
+#
+# Contact:
+#   Centaur Technology Formal Verification Group
+#   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+#   http://www.centtech.com/
+#
+# License: (An MIT/X11-style license)
+#
+#   Permission is hereby granted, free of charge, to any person obtaining a
+#   copy of this software and associated documentation files (the "Software"),
+#   to deal in the Software without restriction, including without limitation
+#   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+#   and/or sell copies of the Software, and to permit persons to whom the
+#   Software is furnished to do so, subject to the following conditions:
+#
+#   The above copyright notice and this permission notice shall be included in
+#   all copies or substantial portions of the Software.
+#
+#   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+#   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+#   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+#   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+#   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+#   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+#   DEALINGS IN THE SOFTWARE.
+#
+# Original author: Sol Swords <sswords@centtech.com>
+
+# critpath.pl - Critical path analysis for ACL2 books
+
+use warnings;
+use strict;
+use Getopt::Long qw(:config bundling); 
+use File::Spec;
+use FindBin qw($RealBin);
+use Storable;
+
+# Note: Trying out FindBin::$RealBin.  If breaks, we can go back to
+# the system below.
+
+(do "$RealBin/certlib.pl") or die("Error loading $RealBin/certlib.pl:\n $!");
+
+
+my $HELP_MESSAGE = "
+
+ critpath.pl [OPTIONS] <top-book1> <top-book2> ... 
+
+ This program displays the longest dependency chain leading up to any of the
+ top-books specified, measured in sequential certification time.  This is the
+ amount of time it would take to certify your book if you had as many parallel
+ processors as could be used, each running at a fixed speed.  Additionally, by
+ default, it then displays the complete list of dependencies, sorted by
+ cumulative certification time.
+
+ Steps for using this program:
+
+ 1. Use cert.pl to certify all the books you're interested in (from scratch)
+    with the TIME_CERT environment variable set to \"yes\" and exported.
+
+    For example,
+     setenv TIME_CERT yes   # in csh, or
+     export TIME_CERT=yes   # in bash
+     cert.pl top.lisp -c    # clean
+     cert.pl top.lisp -j 8  # recertify using 8 parallel processors
+
+ 2. Run critpath.pl [OPTIONS] <target> ..., where each <target> is a
+    book with or without a .lisp or .cert extension.
+
+    The options are as follows:
+
+       -h, --html   Print HTML formatted output (the default is plain text.)
+
+       --nowarn     Suppress warnings.
+       --nopath     Suppress critical path information.
+       --nolist     Suppress individual-files list.
+
+       -r, --real   Toggle real time versus user+system
+
+       --help       Print this help message and exit.
+
+       -t, --targets <filename>
+                    Add all targets listed in <filename>, in addition
+                    to any given on the command line.
+
+       -p, --deps-of <filename>
+                    Add as targets all dependencies of the specified
+                    source file.
+
+       -m, --max-depth <N>
+                    Print a maximum of N levels of directory context;
+                    default 1.
+
+       -c, --cache <filename>
+                    Read/write a sourcefile events cache, which may
+                    improve performance.  See 'cert.pl --help' for
+                    more info.
+
+       -w, --write-costs <filename>
+                    Write the base costs for each file into <filename>
+                    in perl's Storable format.
+
+       --costs-file <filename>
+                    Instead of reading the costs for each file from
+                    its .cert.time file, read them all from a file (as
+                    written by write_costs).  Only really works
+                    correctly if all targets/dependencies are the
+                    same.
+";
+
+my %OPTIONS = (
+  'html'    => '',
+  'help'    => '',
+  'nowarn'  => '',
+  'nopath'  => '',
+  'nolist'  => '',
+  'short'   => 1,
+  'real'    => 0,
+  'pcert'   => $ENV{'ACL2_PCERT'},
+  'write_costs' => 0,
+  'costs_file' => 0,
+);
+
+my @user_targets = ();
+my @targets = ();
+my @deps_of = ();
+
+my $debug = 0;
+
+my $cache_file = 0;
+my $params_file = 0;
+my $options_okp = GetOptions('h|html' => \$OPTIONS{'html'},
+			     'help'   => \$OPTIONS{'help'},
+			     'nowarn' => \$OPTIONS{'nowarn'},
+			     'nopath' => \$OPTIONS{'nopath'},
+			     'nolist' => \$OPTIONS{'nolist'},
+			     'short=i' =>  \$OPTIONS{'short'},
+			     'max-depth|m=i' =>  \$OPTIONS{'short'},
+			     'real|r'  => \$OPTIONS{'real'},
+			     'debug|d' => \$debug,
+			     "targets|t=s"          
+			              => sub { shift;
+					       read_targets(shift, \@user_targets);
+					   },
+			     "deps-of|p=s"
+			              => \@deps_of,
+			     "cache|c=s"
+			              => \$cache_file,
+			     "params=s"             => \$params_file,
+			     "write-costs|w=s" => \$OPTIONS{'write_costs'},
+			     "costs-file=s" => \$OPTIONS{'costs_file'},
+			     );
+
+my $cache = {};
+$cache = retrieve_cache($cache_file);
+
+my $depdb = new Depdb( evcache => $cache );
+
+push (@user_targets, @ARGV);
+
+if (!$options_okp || $OPTIONS{"help"})
+{
+    print $HELP_MESSAGE;
+    exit ($OPTIONS{"help"} ? 0 : 1);
+}
+
+my $costs = {};
+my $warnings = [];
+
+my %certlib_opts = ( "debugging" => 0,
+		     "clean_certs" => 0,
+		     "print_deps" => 0,
+		     "all_deps" => 1 );
+
+certlib_set_opts(\%certlib_opts);
+
+# add :dir :system as the path to this executable
+certlib_add_dir("SYSTEM", "$RealBin/..");
+
+
+foreach my $target (@user_targets) {
+    my $path = canonical_path(to_cert_name($target));
+    if ($path) {
+	push (@targets, $path);
+    } else {
+	print "Warning: bad target path $target\n";
+    }
+}
+
+foreach my $top (@deps_of) {
+    my $path = canonical_path(to_source_name($top));
+    if ($path) {
+	my $certinfo = find_deps($path, $depdb, 0);
+	push (@targets, @{$certinfo->bookdeps});
+	push (@targets, @{$certinfo->portdeps});
+    } else {
+	print "Warning: bad path in --deps-of/-p $top\n";
+    }
+}
+
+unless (@targets) {
+    print "\nError: No targets provided.\n";
+    print $HELP_MESSAGE;
+    exit 1;
+}
+
+foreach my $target (@targets) {
+    if ($target =~ /\.cert/) {
+	add_deps($target, $depdb, 0);
+    }
+}
+
+if ($params_file && open (my $params, "<", $params_file)) {
+    while (my $pline = <$params>) {
+	my @parts = $pline =~ m/([^:]*):(.*)/;
+	if (@parts) {
+	    my ($certname, $paramstr) = @parts;
+	    my $certpars = cert_get_params($certname, $depdb);
+	    if ($certpars) {
+		my $passigns = parse_params($paramstr);
+		foreach my $pair (@$passigns) {
+		    $certpars->{$pair->[0]} = $pair->[1];
+		}
+	    }
+	}
+    }
+    close($params);
+}
+
+store_cache($cache, $cache_file);
+
+my $basecosts;
+if ($OPTIONS{'costs_file'}) {
+    $basecosts = retrieve($OPTIONS{'costs_file'});
+} else {
+    $basecosts = {};
+    read_costs($depdb, $basecosts, $warnings, $OPTIONS{'real'}, $OPTIONS{'pcert'});
+    print "done read_costs\n" if $debug;
+}
+
+# foreach my $file (keys %$basecosts) {
+#     if ($file =~ /\.cert$/) {
+# 	$basecosts->{$file} = 0.00001;
+#     }
+# }
+
+if ($OPTIONS{'write_costs'}) {
+    nstore($basecosts, $OPTIONS{'write_costs'});
+}
+
+
+compute_cost_paths($depdb, $basecosts, $costs, $warnings, $OPTIONS{'pcert'});
+print "done compute_cost_paths\n" if $debug;
+
+print "costs: " .  $costs . "\n" if $debug;
+
+(my $topbook, my $topbook_cost) = find_most_expensive(\@targets, $costs);
+
+my $savings = compute_savings($costs, $basecosts, \@targets, $debug, $depdb, $OPTIONS{'pcert'}); 
+
+
+	# ($costs, $warnings) = make_costs_table($target, $depdb, $costs, $warnings, $OPTIONS{"short"});
+
+
+
+unless ($OPTIONS{'nowarn'}) {
+    print warnings_report($warnings, $OPTIONS{"html"});
+}
+
+unless ($OPTIONS{'nopath'}) {
+    print critical_path_report($costs, $basecosts, $savings, $topbook, $OPTIONS{"html"}, $OPTIONS{"short"});
+}
+
+unless ($OPTIONS{'nolist'}) {
+    print individual_files_report($costs, $basecosts, $OPTIONS{"html"}, $OPTIONS{"short"});
+}
+
+
+
+my ($max_parallel, $max_start_time, $max_end_time, $avg_parallel, $sum_parallel)
+    = parallelism_stats($costs, $basecosts);
+
+if (! $OPTIONS{"html"}) {
+    print "Maximum parallelism: $max_parallel processes, from time $max_start_time to $max_end_time\n";
+    print "Average level of parallelism: $avg_parallel.\n";
+    print "Total time for all files: " . human_time($sum_parallel,0) . ".\n";
+}
+
+if ((! $OPTIONS{"html"}) && $OPTIONS{"pcert"}) {
+    my $acl2xtime = 0.0;
+    my $pcert1time = 0.0;
+    my $pcert0time = 0.0;
+    my $certtime = 0.0;
+    foreach my $key (keys %$basecosts) {
+	my $selfcost = $basecosts->{$key};
+	$selfcost = ($selfcost >= 0) ? $selfcost : 0.0;
+	if ($key =~ /\.cert$/) {
+	    $certtime = $certtime + $selfcost;
+	} elsif ($key =~ /\.acl2x$/) {
+	    $acl2xtime = $acl2xtime + $selfcost;
+	} elsif ($key =~ /\.pcert1$/) {
+	    $pcert1time = $pcert1time + $selfcost;
+	} elsif ($key =~ /\.pcert0$/) {
+	    $pcert0time = $pcert0time + $selfcost;
+	}
+    }
+
+    print "\n";
+    print "Total acl2x build time: " . human_time($acl2xtime) . "\n";
+    print "Total pcert0 build time: " . human_time($pcert0time) . "\n";
+    print "Total pcert1 build time: " . human_time($pcert1time) . "\n";
+    print "Total cert build time: " . human_time($certtime) . "\n";
+}
+
+# print "\n\nBasecosts:\n";
+# while ((my $key, my $val) = each %$basecosts) {
+#     print "$key: $val\n";
+# }

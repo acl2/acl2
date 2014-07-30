@@ -1,0 +1,37 @@
+; -*- mode: lisp -*-
+;
+; This is an example .stv file for use with stv2c.
+; Generally the syntax is that of Lisp/ACL2.
+
+
+; Name of the Verilog module you want to run:
+
+:mod "alu16"
+
+; Input specification, as in DEFSTV.
+;
+; List of lines that say what variables to use for each input at each phase.
+; Format:  (name   phase1 phase2 ...)
+;
+; We only have one phase, so we'll just use single variables.  There are many
+; options here, see DEFSTV.
+
+:inputs (("opcode" op)
+         ("abus"   a)
+         ("bbus"   b))
+
+
+; Outputs to capture, as in DEFSTV.
+
+:outputs (("out"    res))
+
+
+; Internals to capture, as in DEFSTV.  We don't need them for this example.
+
+:internals nil
+
+; Overrides to apply and capture, as in DEFSTV.  We don't need them for this
+; example, so we won't use any.
+
+:overrides nil
+

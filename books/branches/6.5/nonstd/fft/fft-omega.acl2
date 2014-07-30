@@ -1,0 +1,3 @@
+(ld "powerlists/defpkg.lsp" :dir :system)
+
+(certify-book "fft-omega" ? t)

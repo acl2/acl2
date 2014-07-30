@@ -1,0 +1,7 @@
+(in-package "ACL2")
+
+; [Jared] changed this to load the packages directly from cowles, instead of
+; redefining them, so we can more easily change them.
+(include-book "cowles/portcullis" :dir :system)
+
+(certify-book "ed1" ? t)

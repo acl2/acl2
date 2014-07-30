@@ -1,0 +1,17 @@
+Makefile-cache
+Makefile-deps
+Makefile-pdeps
+acl2-images/
+build/autodoc/
+build/proofs/
+clauses/autodoc/
+clauses/if-lifting/autodoc/
+clauses/if-lifting/proofs/
+clauses/proofs/
+rewrite/assms/autodoc/
+rewrite/assms/proofs/
+rewrite/autodoc/
+rewrite/traces/autodoc/
+rewrite/traces/proofs/
+tactics/autodoc/
+tactics/proofs/

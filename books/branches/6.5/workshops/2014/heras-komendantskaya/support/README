@@ -1,0 +1,10 @@
+This directory contains the following file:
+
+acl2ml.zip: the ACL2(ml) extension for Emacs. To install ACL2(ml), unzip the
+            file and follow the instructions of the user manual.
+
+The most recent version of ACL2(ml) together with the papers documenting
+this work can be downloaded from:
+http://staff.computing.dundee.ac.uk/katya/ACL2ml/
+
+Please address any queries about ACL2(ml) to joheras@gmail.com

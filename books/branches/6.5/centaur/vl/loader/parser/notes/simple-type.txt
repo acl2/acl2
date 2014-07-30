@@ -1,0 +1,244 @@
+-------------------------------------------------------------------------------
+
+           Sanification of SystemVerilog simple_type Grammar
+
+-------------------------------------------------------------------------------
+
+We are given the following:
+
+     simple_type ::= integer_type
+                   | non_integer_type
+                   | ps_type_identifier
+                   | ps_parameter_identifier
+
+The first two variants are trivial:
+
+    integer_vector_type ::= 'bit' | 'logic' | 'reg'
+
+    integer_atom_type   ::= 'byte' | 'shortint' | 'int'
+                          | 'longint' | 'integer' | 'time'
+
+    non_integer_type ::= 'shortreal' | 'real' | 'realtime'
+
+    integer_type ::= integer_vector_type | integer_atom_type
+
+
+This is all fine.  Unfortunately there is a lot of redundancy between
+ps_parameter_identifier and ps_type_identifier.
+
+
+PS_TYPE_IDENTIFIER ----------------------------------------------------------
+
+     package_scope ::= identifier '::' | '$unit' '::'
+
+     ps_class_identifier ::= [ package_scope ] identifier
+
+     ps_type_identifier ::= [ 'local' '::' | package_scope ] identifier
+
+Flattening these out, we have the equivalent productions:
+
+     ps_class_identifier ::= identifier
+                           | identifier '::' identifier
+                           | '$unit'    '::' identifier
+
+     ps_type_identifier ::= identifier
+                           | identifier '::' identifier
+                           | '$unit'    '::' identifier
+                           | 'local'    '::' identifier
+
+Well then we may as well use:
+
+     ps_type_identifier ::= ps_class_identifier
+                          | 'local' '::' identifier
+
+
+
+CLASS_TYPE ------------------------------------------------------------------
+
+     ps_class_identifier ::= identifier                    (from above)
+                           | identifier '::' identifier
+                           | '$unit'    '::' identifier
+
+     class_type ::=
+        ps_class_identifier  [ parameter_value_assignment ]
+             { '::' identifier [ parameter_value_assignment ] }
+
+For brevify let's use pva for parameter_value_assignment.  Now, splitting
+class_type by the three variants of pc_class_identifier, we have:
+
+    class_type ::=
+       identifier                 [ pva ] { '::' identifier [ pva ] }
+     | identifier '::' identifier [ pva ] { '::' identifier [ pva ] }
+     | '$unit'    '::' identifier [ pva ] { '::' identifier [ pva ] }
+
+But the second variant is just a special case of the first, so we can simplify
+this to:
+
+    class_type ::=
+       identifier                 [ pva ] { '::' identifier [ pva ] }
+     | '$unit'    '::' identifier [ pva ] { '::' identifier [ pva ] }
+
+
+
+PS_PARAMETER_IDENTIFIER -----------------------------------------------------
+
+     ps_parameter_identifier ::=
+         [ package_scope | class_scope ] identifier
+       | { identifier [ '[' expression ']' ] '.' } identifier
+
+Flattening out the first variant:
+
+     ps_parameter_identifier ::=
+         identifier
+       | package_scope identifier
+       | class_scope identifier
+       | { identifier [ '[' expression ']' ] '.' } identifier
+
+Recall the definitions of class_scope and package_scope:
+
+     class_scope ::= class_type '::'
+     package_scope ::= identifier '::' | '$unit' '::'
+
+Inlining these we have:
+
+     ps_parameter_identifier ::=
+         identifier
+       | identifier '::' identifier
+       | '$unit'    '::' identifier
+       | class_type '::' identifier
+       | { identifier [ '[' expression ']' ] '.' } identifier
+
+Rearranging the last variant to get the identifier first, we have:
+
+     ps_parameter_identifier ::=
+         identifier
+       | identifier '::' identifier
+       | '$unit'    '::' identifier
+       | class_type '::' identifier
+       | identifier { [ '[' expression ']' ] '.' identifier }
+
+Recall (from above) our simplified definition of class_type:
+
+    class_type ::=
+       identifier                 [ pva ] { '::' identifier [ pva ] }
+     | '$unit'    '::' identifier [ pva ] { '::' identifier [ pva ] }
+
+Incorporating this and inlining the variants:
+
+     ps_parameter_identifier ::=
+         identifier
+       | identifier '::' identifier
+       | '$unit'    '::' identifier
+       | identifier [ pva ] { '::' identifier [ pva ] }                 '::' identifier
+       | '$unit'    '::' identifier [ pva ] { '::' identifier [ pva ] } '::' identifier
+       | identifier { [ '[' expression ']' ] '.' identifier }
+
+Merely reordering the variants to make the next step more clear:
+
+     ps_parameter_identifier ::=
+         identifier
+       | identifier '::' identifier
+       | identifier [ pva ] { '::' identifier [ pva ] } '::' identifier
+       | '$unit'    '::' identifier
+       | '$unit'    '::' identifier [ pva ] { '::' identifier [ pva ] } '::' identifier
+       | identifier { [ '[' expression ']' ] '.' identifier }
+
+Note that variants 2 is just a special case of variant 3:
+
+     variant 2: identifier '::' identifier
+     variant 3: identifier [ pva ] { '::' identifier [ pva ] } '::' identifier
+
+So we can reduce this to:
+
+     ps_parameter_identifier ::=
+         identifier
+       | identifier [ pva ] { '::' identifier [ pva ] } '::' identifier
+       | '$unit'    '::' identifier
+       | '$unit'    '::' identifier [ pva ] { '::' identifier [ pva ] } '::' identifier
+       | identifier { [ '[' expression ']' ] '.' identifier }
+
+Now let's focus on variants 3/4:
+
+    variant 3: '$unit' '::' id
+    variant 4: '$unit' '::' id [ pva ] { '::' id [ pva ] } '::' id
+
+These can be collapsed to a new, unified variant:
+
+         '$unit' { '::' id [ pva ] } '::' id
+
+Leaving us with:
+
+     ps_parameter_identifier ::=
+         identifier
+       | identifier [ pva ] { '::' identifier [ pva ] } '::' identifier
+       | '$unit'    { '::' identifier [ pva ] } '::' identifier
+       | identifier { [ '[' expression ']' ] '.' identifier }
+
+
+PUTTING IT ALL TOGETHER -------------------------------------------------------
+
+To review, above we came up with:
+
+     simple_type ::= integer_type
+                   | non_integer_type
+                   | ps_type_identifier
+                   | ps_parameter_identifier
+
+     ps_type_identifier ::= identifier
+                           | identifier '::' identifier
+                           | '$unit'    '::' identifier
+                           | 'local'    '::' identifier
+
+     ps_parameter_identifier ::=
+         identifier
+       | identifier [ pva ] { '::' identifier [ pva ] } '::' identifier
+       | '$unit'    { '::' identifier [ pva ] } '::' identifier
+       | identifier { [ '[' expression ']' ] '.' identifier }
+
+
+If we inline ps_parameter_identifier and ps_type_identifier into simple_type,
+we can get it down to:
+
+     simple_type ::=
+1        integer_type
+2      | non_integer_type
+3      | identifier
+4      | identifier '::' identifier
+5      | '$unit'    '::' identifier
+6      | 'local'    '::' identifier
+7      | identifier
+8      | identifier [ pva ] { '::' identifier [ pva ] } '::' identifier
+9      | '$unit'    { '::' identifier [ pva ] } '::' identifier
+10     | identifier { [ '[' expression ']' ] '.' identifier }
+
+Much of this is redundant.
+  - Variants 3 and 7 are identical.
+  - Variant 4 is a special case of 8.
+  - Variant 5 is a special case of 9.
+
+So eliminating variants 4, 5, and 7 we have:
+
+     simple_type ::=
+1        integer_type
+2      | non_integer_type
+3      | identifier
+6      | 'local'    '::' identifier
+8      | identifier [ pva ] { '::' identifier [ pva ] } '::' identifier
+9      | '$unit'    { '::' identifier [ pva ] } '::' identifier
+10     | identifier { [ '[' expression ']' ] '.' identifier }
+
+Toward something we can implement easily, let's introduce new rules:
+
+   pva_tail ::=  { '::' identifier [ pva ] } '::' identifier
+
+   simple_type ::=
+        integer_type
+      | non_integer_type
+      | identifier
+      | 'local'    '::' identifier
+      | identifier [ pva ] pva_tail
+      | '$unit'    pva_tail
+      | identifier { [ '[' expression ']' ] '.' identifier }
+
+All productions except for the last don't require expression.  So, we can deal
+with them separately.

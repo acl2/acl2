@@ -1,0 +1,2 @@
+(ld "coi/util/def-defpkg.lsp" :dir :system)
+(certify-book "example2" ?)

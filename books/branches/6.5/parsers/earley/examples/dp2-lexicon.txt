@@ -1,0 +1,5 @@
+john :class <Noun>
+mary :class <Noun>
+called :class <Verb>
+from :class <Prep>
+denver :class <Noun>

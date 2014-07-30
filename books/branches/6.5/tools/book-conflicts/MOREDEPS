@@ -1,0 +1,14 @@
+
+conflicts_img: conflicts-raw.lsp conflicts.cert
+	$(RM) conflicts.make
+	touch conflicts.make
+	echo '(include-book "conflicts")' >> conflicts.make
+	echo ':q' >> conflicts.make
+	echo '(in-package "COMMON-LISP-USER")' >> conflicts.make
+	echo '(load "conflicts-raw.lsp")' >> conflicts.make
+	echo '(save-application "conflicts_img" :error-handler :quit :prepend-kernel t)' >> conflicts.make
+	cat conflicts.make | $(ACL2)
+	$(RM) conflicts.make
+
+cleanup:
+	$(RM) conflicts_img

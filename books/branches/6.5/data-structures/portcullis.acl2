@@ -1,0 +1,2 @@
+(ld "define-u-package.lsp")
+(ld "define-defstructure-package.lsp")

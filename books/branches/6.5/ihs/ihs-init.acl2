@@ -1,0 +1,14 @@
+; ihs-init.acl2 -- helper for ihs-init.lisp certification
+; Copyright (C) 1997  Computational Logic, Inc.
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+
+; If you're looking at this file because something is blowing up, what you
+; probably have to do is change the path below to point to the place where
+; the U package definition is for your system.  When you installed the system
+; it was in ...<acl2 stuff>.../books/data-structures.
+
+(in-package "ACL2")
+(include-book "data-structures/portcullis" :dir :system)
+(certify-book "ihs-init" ? t)
+
+
