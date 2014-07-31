@@ -124,16 +124,6 @@ library."
     (equal (append (append a b) c)
            (append a (append b c))))
 
-  (def-projection-rule elementlist-projection-of-append
-    (equal (elementlist-projection (append a b))
-           (append (elementlist-projection a)
-                   (elementlist-projection b))))
-
-  (def-mapappend-rule elementlist-mapappend-of-append
-    (equal (elementlist-mapappend (append a b))
-           (append (elementlist-mapappend a)
-                   (elementlist-mapappend b))))
-
   (defcong element-list-equiv element-list-equiv (append a b) 1)
   (table listfix-rules 'element-list-equiv-implies-element-list-equiv-append-1 t)
   (defcong element-list-equiv element-list-equiv (append a b) 2)

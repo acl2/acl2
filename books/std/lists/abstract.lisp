@@ -789,6 +789,10 @@ about elementlist-mapappend."
            (append (element-listxformer a)
                    (elementlist-mapappend b))))
 
+  (def-mapappend-rule elementlist-mapappend-when-not-consp
+    (implies (not (consp x))
+             (equal (elementlist-mapappend x) nil)))
+
   (def-mapappend-rule elementlist-mapappend-of-append
     (equal (elementlist-mapappend (append a b))
            (append (elementlist-mapappend a)

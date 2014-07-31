@@ -31,6 +31,7 @@
 (in-package "STD")
 (include-book "../defmapappend")
 (include-book "../deflist")
+(include-book "../defprojection")
 (include-book "misc/assert" :dir :system)
 
 (deflist my-nat-listp (x)
@@ -66,9 +67,7 @@
   :guard (my-nat-listp x))
 
 (assert! (let ((topic (xdoc::find-topic 'm0 (xdoc::get-xdoc-table (w state)))))
-           (and topic
-                (equal (cdr (assoc :parents topic))
-                       '(acl2::undocumented)))))
+           (not topic)))
 
 (xdoc::set-default-parents foo bar)
 

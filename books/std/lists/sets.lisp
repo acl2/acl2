@@ -140,7 +140,12 @@ library.")
 
   (def-projection-rule member-of-element-xformer-in-elementlist-projection
     (implies (member k x)
-             (member (element-xformer k) (elementlist-projection x)))))
+             (member (element-xformer k) (elementlist-projection x))))
+
+  (def-mapappend-rule member-in-elementlist-mapappend
+    (implies (and (member k (element-listxformer j))
+                  (member j x))
+             (member k (elementlist-mapappend x)))))
 
 
 
@@ -517,7 +522,29 @@ about set equivalence.</p>"
     (iff (subsetp a (intersection-equal b c))
          (and (subsetp a b)
               (subsetp a c)))
-    :hints(("Goal" :in-theory (enable subsetp)))))
+    :hints(("Goal" :in-theory (enable subsetp))))
+
+  (local (defthm subsetp-of-elementlist-mapappend-when-subset-of-element-listxformer
+           (implies (and (subsetp x (element-listxformer z))
+                         (member z y))
+                    (subsetp x (elementlist-mapappend y)))))
+  
+  (local (defthm subsetp-element-listxformer-of-elementlist-mapappend
+           (implies (member x y)
+                    (subsetp (element-listxformer x) (elementlist-mapappend y)))))
+  
+  (def-mapappend-rule subsetp-of-elementlist-mapappend-when-subsetp
+    (implies (subsetp x y)
+             (subsetp (elementlist-mapappend x)
+                      (elementlist-mapappend y)))
+    :hints(("Goal" :in-theory (enable subsetp))))
+
+  (def-mapappend-rule set-equiv-congruence-over-elementlist-mapappend
+    (implies (set-equiv x y)
+             (set-equiv (elementlist-mapappend x)
+                        (elementlist-mapappend y)))
+    :rule-classes :congruence
+    :hints(("Goal" :in-theory (enable set-equiv)))))
 
 
 (defthm union-equal-under-set-equiv

@@ -276,4 +276,22 @@ library."
           :induct (update-nth n y x))))
 
 
+(def-projection-rule elementlist-projection-of-update-nth
+  (implies (<= (nfix n) (len x))
+           (equal (elementlist-projection (update-nth n v x))
+                  (update-nth n (element-xformer v) (elementlist-projection x))))
+  :hints(("Goal" :in-theory (disable update-nth-when-atom)))
+  :name elementlist-projection-of-update-nth
+  :requirement (not nil-preservingp))
+
+(def-projection-rule elementlist-projection-of-update-nth-nil-preserving
+  (implies (equal (element-xformer nil) nil)
+           (equal (elementlist-projection (update-nth n v x))
+                  (update-nth n (element-xformer v) (elementlist-projection x))))
+  :hints(("Goal" :in-theory (disable update-nth-when-atom)))
+  :name elementlist-projection-of-update-nth
+  :requirement nil-preservingp
+  :body (equal (elementlist-projection (update-nth n v x))
+               (update-nth n (element-xformer v) (elementlist-projection x))))
+
 )
