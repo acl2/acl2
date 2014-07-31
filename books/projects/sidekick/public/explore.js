@@ -99,6 +99,89 @@ function get_goal_loop()
     });
 }
 
+
+function undo_to(n)
+{
+    $.post("/explore-undo", {"n":n},function(data,textStatus,jqXHR)
+    {
+	var err = data[":ERROR"];
+	if (err != "NIL") {
+	    window.alert("Undo through " + n + " failed: " + err);
+	}
+	// Else, everything is fine, display will update soon, nothing to do
+    }).fail(function() {
+	window.alert("Undo through " + n + " failed!");
+    });
+    return false;
+}
+
+function format_commands(cmds)
+{
+    var div = jQuery("<div></div>");
+    if (cmds.length != 0)
+    {
+	div.append("<p class='sf'>Commands</p>");
+	var tbl = "<table class='commandlist'>";
+	for(var i = 0; i < cmds.length; ++i)
+	{
+	    var cmd = cmds[i];
+	    var idx = cmd[":INDEX"];
+	    var form = cmd[":COMMAND"];
+
+	    if (idx == "NIL") {
+		continue;
+	    }
+
+	    tbl += "<tr>";
+	    tbl += "<td>";
+	    tbl += "<a href='#' title='Undo through this command' onclick='undo_to(" + idx + ");'>";
+  	    tbl += "<img src='icons/session-undo.png'/>";
+	    tbl += "</a>";
+	    tbl += "</td>";
+	    // Showing the numbers seems useful for command-line proof-checker users because they can
+	    // say where to undo through, but it seems less useful for the web interface and I don't
+	    // at all like the jarring way that the numbers are ordered.  If we simply reversed the
+	    // indices and had the new commands have the highest numbers, there would be far greater
+	    // continuity after undoing.  For now I'm just going to hide the command numbers. 
+	    // tbl += "<th>" + idx + "</th>";
+	    tbl += "<td><pre>" + form + "</pre></td>";
+	    tbl += "</tr>";
+	}
+	tbl += "<tr><td colspan='2'><i><small>Oldest</small></i></tr>";
+	tbl += "</table>";
+	div.append(tbl);
+    }
+    else
+    {
+	div.append("<p class='sf'>No Commands Yet</p>");
+    }
+    return div;
+}
+
+function get_commands_loop()
+{
+    $.get("/explore-commands", null, function(data,textStatus,jqXHR)
+    {
+	var err = data[":ERROR"];
+	var val = data[":VAL"];
+	var msg = "";
+
+	if (err != "NIL") {
+	    msg += "<p><b>Error:</b> " + htmlEncode(err) + "</p>";
+	}
+	else {
+	    msg = format_commands(val);
+	}
+
+	$("#commands").html(msg);
+	setTimeout(get_commands_loop, 200);
+    }).fail(function() {
+	$("#commands").html("<p>Error getting commands.</p>");
+	setTimeout(get_commands_loop, 200);
+    });
+}
+
 $(document).ready(function(){
    get_goal_loop();
+   get_commands_loop();
 });

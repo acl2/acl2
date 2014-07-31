@@ -65,6 +65,50 @@
                                    (cons :val ans)))
         state)))
 
+
+(define sk-jsonify-indexed-instrs (indexed-instrs config)
+  :mode :program
+  (if (atom indexed-instrs)
+      nil
+    (cons (list (cons :index (caar indexed-instrs))
+                (cons :command (str::pretty (cdar indexed-instrs) :config config)))
+          (sk-jsonify-indexed-instrs (cdr indexed-instrs) config))))
+
+(define sk-explore-commands (state)
+  :returns (mv json-info state)
+  :mode :program
+  (b* ((state-stack (acl2::state-stack))
+       ((unless state-stack)
+        (mv (sk-json-error "Not currently verifying a formula.")
+            state))
+       (config (str::make-printconfig :home-package
+                                      (pkg-witness (current-package state))))
+       (instrs (acl2::raw-indexed-instrs 1 (length state-stack) state-stack))
+       (ans (sk-jsonify-indexed-instrs instrs config)))
+    (mv (bridge::json-encode (list (cons :error nil)
+                                   (cons :val ans)))
+        state)))
+
+
+(define sk-explore-undo ((num stringp) state)
+  :returns (mv json-info state)
+  :mode :program
+  (b* ((n (str::strval num))
+       ((unless n)
+        (mv (sk-json-error "Error in sk-explore-undo: not a number: ~a" num)
+            state))
+       ((mv erp ?val state) (acl2-pc::undo (list n) state))
+       ((when erp)
+        (mv (sk-json-error "acl2-pc::undo returned an error: erp ~a, val ~a"
+                           (str::pretty erp) (str::pretty val))
+            state))
+       (ans (bridge::json-encode (list (cons :error nil)))))
+    (mv ans state)))
+
+
+
+
+
 #||
 
 (sk-explore-th state) ;; Good, error.

@@ -45,9 +45,7 @@ License: (An MIT/X11-style license)
 <style>
 <!--
 
-#goal {
 
-}
 .sf { font-family: "Geneva", "Verdana", sans-serif; }
 
 .hyps {
@@ -67,6 +65,26 @@ License: (An MIT/X11-style license)
   color: #006000;
 }
 
+
+.commandlist {
+   border-collapse: collapse;
+   margin-left: 2em;
+}
+
+.commandlist td, .commandlist th {
+   vertical-align: top;
+   padding-left: .5em;
+   padding-right: .5em;
+   padding-top: .1em;
+   padding-bottom: .1em;
+}
+
+.commandlist pre {
+  color: #006000;
+  margin-bottom: 0;
+}
+
+
 -->
 </style>
 
@@ -80,7 +98,27 @@ License: (An MIT/X11-style license)
 
 <h3 class="banner"><img src="icons/explore.png"/> Proof Explorer</h3>
 
-<div id="goal">Loading</div>
+<table width="100%">
+<tr>
+<td width="70%" valign="top"> <div id="goal">Loading</div> </td>
+<td width="30%" valign="top"> <div id="commands">Loading</div> </td>
+</tr>
+</table>
+
+
+
+
+
+<h3>Todo/Wishlist</h3>
+
+<ul>
+<li>Buttons to take actions like sr, bash, etc.</li>
+<li>Contraposable hyps</li>
+<li>Diveable terms</li>
+<li>Hover over a command to see back in time to that command</li>
+<li>Goal management -- current goal, etc.</li>
+</ul>
+
 
 
 </div>

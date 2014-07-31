@@ -245,5 +245,18 @@
        (b* (((mv ans state) (sk-explore-th state)))
          ans)))
 
+  (hunchentoot:define-easy-handler (handle-explore-commands :uri "/explore-commands") ()
+     (setf (hunchentoot:content-type*) "application/json")
+     (with-sidekick-bindings
+       (b* (((mv ans state) (sk-explore-commands state)))
+         ans)))
+
+  (hunchentoot:define-easy-handler (explore-undo-handler :uri "/explore-undo" :default-request-type :post)
+                                   ((n :parameter-type 'string))
+    (setf (hunchentoot:content-type*) "application/json")
+    (with-sidekick-bindings
+      (b* (((mv ans state) (sk-explore-undo n state)))
+        ans)))
+
 
   )
