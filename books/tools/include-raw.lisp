@@ -201,23 +201,29 @@ differences between ACL2's reader and what raw Lisp code is expecting.</p>")
 
       (defun raw-load (name error-on-fail on-fail state)
         ;; See comment in raw-compile, above, for why we avoid #+cltl2/#-cltl2.
-        (let* ((fname (extend-pathname (cbd) name state))
-               (compiled-fname (compile-file-pathname fname)))
+        (let* ((fname          (extend-pathname (cbd) name state))
+               (compiled-fname (compile-file-pathname fname))
+               (src-date       (file-write-date fname))
+               (compiled-date  (file-write-date compiled-fname)))
           (cond
+
+           ((and src-date compiled-date (< compiled-date src-date))
+            ;; Explicit sanity check to fix Issue 128.
+            (format t "Include-raw Warning: source file is newer than compiled file, loading uncompiled ~a~%" fname)
+            (raw-load-uncompiled name error-on-fail on-fail state))
+
            ((not (member :cltl2 *features*)) ; #-cltl2
             (cond ((probe-file compiled-fname)
                    (load-compiled compiled-fname))
-                  (t (format t "Compiled file ~a does not exist; loading uncompiled ~a~%"
-                             (namestring compiled-fname)
-                             fname)
+                  (t (format t "Include-raw Warning: compiled file does not exist; loading uncompiled ~a~%" fname)
                      (raw-load-uncompiled name error-on-fail on-fail state))))
+
            (t ; #+cltl2
             (handler-case
              (load-compiled compiled-fname)
              (error (condition)
                     (progn
-                      (format t "Compiled file ~a did not load; loading uncompiled ~a.~%Message: ~a~%"
-                              (namestring compiled-fname)
+                      (format t "Include-raw Warning: compiled file failed to load; loading uncompiled ~a~%Details: ~a~%"
                               fname condition)
                       (raw-load-uncompiled name error-on-fail on-fail state))))))
           nil)))
