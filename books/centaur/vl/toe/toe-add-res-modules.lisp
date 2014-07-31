@@ -356,7 +356,8 @@ for N=1 (in which case it acts like an ordinary assignment).</p>"
            (implies (and (atom-listp x)
                          (not (member nil x)))
                     (equal (pat-flatten1 x)
-                           x))))
+                           x))
+           :hints(("Goal" :in-theory (enable atom-listp)))))
 
   (local (defthm c1
            (implies (vl-emodwirelist-p x)
