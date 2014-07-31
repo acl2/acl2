@@ -428,7 +428,7 @@ several related expressions under the same alist, as in @(see
 4v-sexpr-restrict-alist).  So, you'll generally need to manage clearing the
 memoization table yourself.</p>
 
-<p>Note that this function is \"dumb\" and does not try to in any way to simplify
+<p>Note that this function is \"dumb\" and does not try in any way to simplify
 the resulting expressions.  The function @(see 4v-sexpr-restrict-with-rw) is a
 \"smarter\" alternative that is generally slower but can produce simpler sexprs
 as output.</p>"
