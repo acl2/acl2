@@ -38,6 +38,8 @@ std/typed-lists) library."
   :long "<p>Most of these are generated automatically with @(see
 std::deflist).</p>"
 
+  (in-theory (disable atom-listp))
+
   (std::deflist atom-listp (x)
     (consp x)
     :negatedp t
