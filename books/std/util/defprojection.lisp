@@ -34,11 +34,11 @@
 ; Kookamara LLC, which is also available under an MIT/X11 style license.
 
 (in-package "STD")
-(include-book "deflist")
 (include-book "std/strings/defs-program" :dir :system)
 (include-book "std/lists/append" :dir :system)
 (include-book "centaur/nrev/pure" :dir :system)
 (include-book "define")
+(include-book "maybe-defthm")
 (set-state-ok t)
 
 (defun variable-or-constant-listp (x)
@@ -216,12 +216,151 @@ now does nothing.</p>")
                     acl2::append-when-not-consp
                     acl2::append-of-cons
                     acl2::associativity-of-append
-                    acl2::rev-of-cons
-                    acl2::rev-when-not-consp
-                    acl2::revappend-removal
-                    acl2::reverse-removal)
-                  (union-theories (theory 'minimal-theory)
-                                  (theory 'deflist-support-lemmas))))
+                    ;acl2::rev-of-cons
+                    ;acl2::rev-when-not-consp
+                    ;acl2::revappend-removal
+                    ;acl2::reverse-removal
+                    )
+                  (theory 'minimal-theory)))
+                  ;; (union-theories (theory 'minimal-theory)
+                  ;;                 (theory 'deflist-support-lemmas))))
+
+
+#!acl2
+(defsection elementlist-projection-exec
+  (defun elementlist-projection-exec (x acc)
+    (if (atom x)
+        acc
+      (elementlist-projection-exec (cdr x) (cons (element-xformer (car x)) acc))))
+
+  (def-projection-rule elementlist-projection-exec-removal
+    (equal (elementlist-projection-exec x acc)
+           (revappend (elementlist-projection x) acc))
+    :requirement exec-fn))
+
+#!acl2
+(defsection elemenlist-projection-nrev
+  (defun elementlist-projection-nrev (x nrev)
+    (declare (xargs :stobjs nrev))
+    (if (atom x)
+        (nrev-fix nrev)
+      (let ((nrev (nrev-push (element-xformer (car x)) nrev)))
+        (elementlist-projection-nrev (cdr x) nrev))))
+
+  (def-projection-rule elementlist-projection-nrev-removal
+    (equal (elementlist-projection-nrev x nrev)
+           (append nrev (elementlist-projection x)))
+    :hints(("Goal" :in-theory (enable rcons)))
+    :requirement nrev-fn))
+
+
+(program)
+
+(defun defprojection-substitution (name exec nrev formals element kwd-alist x)
+  (b* ((already-definedp (getarg :already-definedp nil kwd-alist)))
+    `((acl2::element-xformer (lambda (,x) ,element))
+      (acl2::elementlist-projection (lambda (,x) (,name . ,formals)))
+      ;; BOZO fix for when we deal with return types
+      (acl2::element-p (lambda (,x) t))
+      (acl2::outelement-p (lambda (,x) t))
+      ,@(and (not already-definedp)
+             `((acl2::elementlist-projection-nrev (lambda (,x nrev::nrev) (,nrev ,@formals nrev::nrev)))
+               (acl2::elementlist-projection-exec (lambda (,x acl2::acc) (,exec ,@formals acl2::acc))))))))
+
+(defun defprojection-requirement-alist (kwd-alist formals)
+  (b* ((nil-preservingp (getarg :nil-preservingp nil kwd-alist))
+       (already-definedp (getarg :already-definedp nil kwd-alist))
+       (single-var (eql (len formals) 1))
+       (cheap      (getarg :cheap      nil kwd-alist)))
+    `((acl2::nil-preservingp . ,nil-preservingp)
+      (acl2::nil-to-nil . ,nil-preservingp)
+      (acl2::exec-fn . ,(not already-definedp))
+      (acl2::nrev-fn . ,(not already-definedp))
+      (acl2::single-var . ,single-var)
+      (acl2::cheap      . ,cheap)
+      (acl2::resulttype . nil))))
+
+(mutual-recursion
+ (defun defprojection-thmbody-subst (body element name exec nrev formals x)
+   (if (atom body)
+       body
+     (case (car body)
+       (acl2::element-xformer
+        (cons (car element) (subst (cadr body) x (cdr element))))
+       (acl2::elementlist-projection
+        (cons name (subst (cadr body) x formals)))
+       (acl2::elementlist-projection-exec
+        (cons exec (append (subst (cadr body) x formals) (cddr body))))
+       (acl2::elementlist-projection-nrev
+        (cons nrev (append (subst (cadr body) x formals) (cddr body))))
+       (t (if (symbolp (car body))
+              (cons (car body)
+                    (defprojection-thmbody-list-subst (cdr body) element name exec nrev formals x))
+            (defprojection-thmbody-list-subst body element name exec nrev formals x))))))
+ (defun defprojection-thmbody-list-subst (body element name exec nrev formals x)
+   (if (atom body)
+       body
+     (cons (defprojection-thmbody-subst (car body) element name exec nrev formals x)
+           (defprojection-thmbody-list-subst (cdr body) element name exec nrev formals x)))))
+
+
+(defun defprojection-thmname-subst (thmname name element)
+  (b* ((thmname (symbol-name thmname))
+       (subst-list `(("ELEMENTLIST-PROJECTION" . ,(symbol-name name))
+                     ("ELEMENT-XFORMER" . ,(symbol-name element)))))
+    (intern-in-package-of-symbol
+     (dumb-str-sublis subst-list thmname)
+     name)))
+
+
+(defun defprojection-instantiate (table-entry element name exec nrev formals kwd-alist x
+                                              req-alist fn-subst world)
+  (b* (((cons inst-thm alist) table-entry)
+       ((when (not alist)) nil)
+       (alist (and (not (eq alist t)) alist))
+       (req-look (assoc :requirement alist))
+       (req-ok (or (not req-look)
+                   (generic-eval-requirement (cadr req-look) req-alist)))
+       ((unless req-ok) nil)
+       (thmname-base (let ((look (assoc :name alist)))
+                       (if look (cadr look) inst-thm)))
+       (thmname (defprojection-thmname-subst thmname-base name (car element)))
+       (body (let ((look (assoc :body alist)))
+               (if look (cadr look) (fgetprop inst-thm 'acl2::untranslated-theorem nil world))))
+       ((when (not body)) (er hard? 'defprojection-instantiate
+                              "Bad defprojection table entry: ~x0~%" inst-thm))
+       (rule-classes
+        (b* ((cheap-look (and (getarg :cheap nil kwd-alist)
+                              (assoc :cheap-rule-classes alist)))
+             ((when cheap-look) (cadr cheap-look))
+             (look (assoc :rule-classes alist)))
+          (if look (cadr look) (fgetprop inst-thm 'acl2::classes nil world)))))
+    `((defthm ,thmname
+        ,(defprojection-thmbody-subst body element name exec nrev formals x)
+        :hints (("goal" :use ((:functional-instance
+                               ,inst-thm
+                               . ,fn-subst))))
+        :rule-classes ,rule-classes))))
+       
+       
+(defun defprojection-instantiate-table-thms-aux
+  (table element name exec nrev formals kwd-alist x
+         req-alist fn-subst world)
+  (if (atom table)
+      nil
+    (append (defprojection-instantiate (car table) element name exec nrev formals kwd-alist x
+              req-alist fn-subst world)
+            (defprojection-instantiate-table-thms-aux (cdr table) element name exec nrev formals kwd-alist x
+              req-alist fn-subst world))))
+
+(defun defprojection-instantiate-table-thms (name exec nrev formals element kwd-alist x world)
+  (b* ((table (table-alist 'acl2::projection-rules world))
+       (fn-subst (defprojection-substitution name exec nrev formals element kwd-alist x))
+       (req-alist (defprojection-requirement-alist kwd-alist formals)))
+    (defprojection-instantiate-table-thms-aux table element name exec nrev formals kwd-alist x req-alist fn-subst world)))
+
+
+
 
 
 (defconst *defprojection-valid-keywords*
@@ -232,6 +371,7 @@ now does nothing.</p>")
     :returns
     :mode
     :already-definedp
+    :cheap
     :parallelize
     :verbosep
     :parents
@@ -458,240 +598,11 @@ now does nothing.</p>")
                                       '((:type-prescription alistp)))))))))
 
           (value-triple (cw "Defprojection: proving defprojection theorems.~%"))
-          (defthm ,listp-when-not-consp
-            (implies (not (consp ,x))
-                     (equal (,list-fn ,@list-args)
-                            nil))
-            :hints(("Goal"
-                    :in-theory
-                    (union-theories '(,list-fn)
-                                    (theory 'defprojection-theory)))))
-
-          (defthm ,listp-of-cons
-            (equal (,list-fn ,@(subst `(cons ,a ,x) x list-args))
-                   (cons (,elem-fn ,@(subst a x elem-args))
-                         (,list-fn ,@list-args)))
-            :hints(("Goal"
-                    :in-theory
-                    (union-theories '(,list-fn)
-                                    (theory 'defprojection-theory)))))
-
-          (defthm ,(mksym 'true-listp-of- list-fn)
-            (equal (true-listp (,list-fn ,@list-args))
-                   t)
-            :hints(("Goal"
-                    :induct (len ,x)
-                    :in-theory
-                    (union-theories '(,listp-when-not-consp
-                                      ,listp-of-cons)
-                                    (theory 'defprojection-theory)))))
-
-          (defthm ,(mksym 'len-of- list-fn)
-            (equal (len (,list-fn ,@list-args))
-                   (len ,x))
-            :hints(("Goal"
-                    :induct (len ,x)
-                    :in-theory
-                    (union-theories '(,listp-when-not-consp
-                                      ,listp-of-cons)
-                                    (theory 'defprojection-theory)))))
-
-          (defthm ,(mksym 'consp-of- list-fn)
-            (equal (consp (,list-fn ,@list-args))
-                   (consp ,x))
-            :hints(("Goal"
-                    :induct (len ,x)
-                    :in-theory
-                    (union-theories '(,listp-when-not-consp
-                                      ,listp-of-cons)
-                                    (theory 'defprojection-theory)))))
-
-          (defthm ,(mksym 'car-of- list-fn)
-            (equal (car (,list-fn ,@list-args))
-                   ,(if nil-preservingp
-                        `(,elem-fn ,@(subst `(car ,x) x elem-args))
-                      `(if (consp ,x)
-                           (,elem-fn ,@(subst `(car ,x) x elem-args))
-                         nil)))
-            :hints(("Goal"
-                    :in-theory
-                    (union-theories '(,listp-when-not-consp
-                                      ,listp-of-cons
-                                      . ,(and nil-preservingp
-                                              `(,listp-nil-preservingp
-                                                acl2::default-car)))
-                                    (theory 'defprojection-theory)))))
-
-          (defthm ,(mksym 'cdr-of- list-fn)
-            (equal (cdr (,list-fn ,@list-args))
-                   (,list-fn ,@(subst `(cdr ,x) x list-args)))
-            :hints(("Goal"
-                    :in-theory
-                    (union-theories '(,listp-when-not-consp
-                                      ,listp-of-cons)
-                                    (theory 'defprojection-theory)))))
-
-
-          (defthm ,(mksym list-fn '-under-iff)
-            (iff (,list-fn ,@list-args)
-                 (consp ,x))
-            :hints(("Goal"
-                    :induct (len ,x)
-                    :in-theory
-                    (union-theories '(,listp-when-not-consp
-                                      ,listp-of-cons)
-                                    (theory 'defprojection-theory)))))
-
-          (defthm ,(mksym list-fn '-of-list-fix)
-            (equal (,list-fn ,@(subst `(list-fix ,x) x list-args))
-                   (,list-fn ,@list-args))
-            :hints(("Goal"
-                    :induct (len ,x)
-                    :in-theory
-                    (union-theories '(,listp-when-not-consp
-                                      ,listp-of-cons)
-                                    (theory 'defprojection-theory)))))
-
-          (defthm ,(mksym list-fn '-of-append)
-            (equal (,list-fn ,@(subst `(append ,x ,y) x list-args))
-                   (append (,list-fn ,@list-args)
-                           (,list-fn ,@(subst y x list-args))))
-            :hints(("Goal"
-                    :induct (len ,x)
-                    :in-theory
-                    (union-theories '(,listp-when-not-consp
-                                      ,listp-of-cons)
-                                    (theory 'defprojection-theory)))))
-
-          (defthm ,(mksym list-fn '-of-rev)
-            (equal (,list-fn ,@(subst `(rev ,x) x list-args))
-                   (rev (,list-fn ,@list-args)))
-            :hints(("Goal"
-                    :induct (len ,x)
-                    :in-theory
-                    (union-theories '(,(mksym list-fn '-of-append)
-                                      ,listp-when-not-consp
-                                      ,listp-of-cons)
-                                    (theory 'defprojection-theory)))))
-
-          (defthm ,(mksym list-fn '-of-revappend)
-            (equal (,list-fn ,@(subst `(revappend ,x ,y) x list-args))
-                   (revappend (,list-fn ,@list-args)
-                              (,list-fn ,@(subst y x list-args))))
-            :hints(("Goal" :in-theory
-                    (union-theories '(,(mksym list-fn '-of-append)
-                                      ,(mksym list-fn '-of-rev))
-                                    (theory 'defprojection-theory)))))
-
-          ,@(if nil-preservingp
-                `((defthm ,(mksym 'take-of- list-fn)
-                    (equal (take ,n (,list-fn ,@list-args))
-                           (,list-fn ,@(subst `(take ,n ,x) x list-args)))
-                    :hints(("Goal"
-                            :induct (take ,n ,x)
-                            :in-theory
-                            (union-theories '(acl2::take-redefinition
-                                              ,listp-when-not-consp
-                                              ,listp-of-cons
-                                              . ,(and nil-preservingp
-                                                      `(,listp-nil-preservingp
-                                                        acl2::default-car)))
-                                            (theory 'defprojection-theory))))))
-              nil)
-
-          (defthm ,(mksym 'nthcdr-of- list-fn)
-            (equal (nthcdr ,n (,list-fn ,@list-args))
-                   (,list-fn ,@(subst `(nthcdr ,n ,x) x list-args)))
-            :hints(("Goal"
-                    :induct (nthcdr ,n ,x)
-                    :in-theory
-                    (union-theories '(nthcdr
-                                      ,listp-when-not-consp
-                                      ,listp-of-cons)
-                                    (theory 'defprojection-theory)))))
-
-          (defthm ,(mksym 'member-equal-of- elem-fn '-in- list-fn '-when-member-equal)
-            (implies (member-equal ,a (double-rewrite ,x))
-                     (member-equal (,elem-fn ,@(subst a x elem-args))
-                                   (,list-fn ,@list-args)))
-            :hints(("Goal"
-                    :induct (len ,x)
-                    :in-theory
-                    (union-theories '(member-equal
-                                      ,listp-when-not-consp
-                                      ,listp-of-cons)
-                                    (theory 'defprojection-theory)))))
-
-          (defthm ,(mksym 'subsetp-equal-of- list-fn 's-when-subsetp-equal)
-            (implies (subsetp-equal (double-rewrite ,x)
-                                    (double-rewrite ,y))
-                     (subsetp-equal (,list-fn ,@list-args)
-                                    (,list-fn ,@(subst y x list-args))))
-            :hints(("Goal"
-                    :induct (len ,x)
-                    :in-theory
-                    (union-theories '(subsetp-equal
-                                      ,(mksym 'member-equal-of- elem-fn
-                                              '-in- list-fn '-when-member-equal)
-                                      ,listp-when-not-consp
-                                      ,listp-of-cons
-                                      car-cons
-                                      cdr-cons
-                                      car-cdr-elim
-                                      (:induction len))
-                                    (theory 'minimal-theory)))))
-
-          ,@(if nil-preservingp
-                `((defthm ,(mksym 'nth-of- list-fn)
-                    (equal (nth ,n (,list-fn ,@list-args))
-                           (,elem-fn ,@(subst `(nth ,n ,x) x elem-args)))
-                    :hints(("Goal"
-                            :induct (nth ,n ,x)
-                            :in-theory
-                            (union-theories '(nth
-                                              ,listp-when-not-consp
-                                              ,listp-of-cons
-                                              . ,(and nil-preservingp
-                                                      `(,listp-nil-preservingp
-                                                        acl2::default-car)))
-                                            (theory 'defprojection-theory))))))
-              nil)
-
-          ,@(if already-definedp
-                nil
-              `((defthm ,(mksym exec-fn '-removal)
-                  ;; we don't need the hyp... (implies (force (true-listp ,acc))
-                  (equal (,exec-fn ,@list-args ,acc)
-                         (revappend (,list-fn ,@list-args) ,acc))
-                  :hints(("Goal"
-                          :induct (,exec-fn ,@list-args ,acc)
-                          :in-theory
-                          (union-theories '(,exec-fn
-                                            ,listp-when-not-consp
-                                            ,listp-of-cons)
-                                          (theory 'defprojection-theory)))))
-
-                (defthm ,(mksym nrev-fn '-removal)
-                  (equal (,nrev-fn ,@list-args nrev::nrev)
-                         (append nrev::nrev (,list-fn ,@list-args)))
-                  :hints(("Goal"
-                          :induct (,nrev-fn ,@list-args nrev::nrev)
-                          :in-theory
-                          (union-theories '(,nrev-fn
-                                            acl2::rcons
-                                            ACL2::NREV-FIX
-                                            ACL2::NREV-PUSH
-					    nrev::nrev$a-push
-                                            nrev::nrev$a-fix
-                                            defprojection-append-nil-is-list-fix
-                                            ,listp-when-not-consp
-                                            ,listp-of-cons)
-                                          (theory 'defprojection-theory)))))
-
-                ))
-
-
-          )))
+          ,(if already-definedp
+               `(local (in-theory (enable ,list-fn)))
+             `(local (in-theory (enable ,nrev-fn ,exec-fn ,list-fn))))
+          ,@(defprojection-instantiate-table-thms
+              list-fn exec-fn nrev-fn list-args element kwd-alist x world))))
 
     `(defsection ,name
        (logic)
@@ -788,3 +699,5 @@ now does nothing.</p>")
         `(progn ,(defprojection-fn ',name ',formals ',element ',kwd-alist
                    ',other-events state)
                 (value-triple '(defprojection ,',name)))))))
+
+

@@ -381,7 +381,7 @@ shown.</p>"
 
 (local (in-theory (disable
                    NO-DUPLICATESP-EQUAL-WHEN-SAME-LENGTH-MERGESORT
-                   SUBSETP-EQUAL-OF-VL-MODINSTLIST->MODNAMESS-WHEN-SUBSETP-EQUAL
+                   SUBSETP-OF-VL-MODINSTLIST->MODNAMES-WHEN-SUBSETP
                    CDR-OF-VL-MODULELIST-DUPERHS-CHECK
                    CDR-OF-VL-MODULELIST-ORIGEXPRS
                    vl-modulelist-p-of-append

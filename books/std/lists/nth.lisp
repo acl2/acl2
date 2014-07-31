@@ -202,20 +202,20 @@
                       (<= (len x) (nfix n)))))
 
 
-(def-projection-rule nth-of-elementlist-projection-when-nil-to-nil
+(def-projection-rule nth-of-elementlist-projection-when-nil-preservingp
   (implies (equal (element-xformer nil) nil)
            (equal (nth n (elementlist-projection x))
                   (element-xformer (nth n x))))
-  :requirement nil-to-nil
+  :requirement nil-preservingp
   :name nth-of-elementlist-projection
   :body (equal (nth n (elementlist-projection x))
                (element-xformer (nth n x))))
 
-(def-projection-rule nth-of-elementlist-projection-when-not-nil-to-nil
+(def-projection-rule nth-of-elementlist-projection-when-not-nil-preservingp
   (equal (nth n (elementlist-projection x))
          (and (< (nfix n) (len x))
               (element-xformer (nth n x))))
-  :requirement (not nil-to-nil)
+  :requirement (not nil-preservingp)
   :name nth-of-elementlist-projection)
 
 

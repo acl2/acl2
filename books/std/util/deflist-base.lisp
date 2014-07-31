@@ -367,34 +367,6 @@ of which recognizers require true-listp and which don't.</p>")
       (acl2::cheap      . ,cheap))))
 
 (mutual-recursion
- (defun deflist-eval-requirement (req req-alist)
-   (if (atom req)
-       (let ((look (assoc req req-alist)))
-         (if look
-             (cdr look)
-           (er hard? 'deflist-eval-requirement
-               "Unrecognized requirement variable: ~x0~%" req)))
-     (case (car req)
-       ('not (not (deflist-eval-requirement (cadr req) req-alist)))
-       ('and (deflist-and-requirements (cdr req) req-alist))
-       ('or  (deflist-or-requirements (cdr req) req-alist))
-       ('if  (if (deflist-eval-requirement (cadr req) req-alist)
-                 (deflist-eval-requirement (caddr req) req-alist)
-               (deflist-eval-requirement (cadddr req) req-alist)))
-       (otherwise (er hard? 'deflist-eval-requirement
-                      "malformed requirement term: ~x0~%")))))
- (defun deflist-and-requirements (reqs req-alist)
-   (if (atom reqs)
-       t
-     (and (deflist-eval-requirement (car reqs) req-alist)
-          (deflist-and-requirements (cdr reqs) req-alist))))
- (defun deflist-or-requirements (reqs req-alist)
-   (if (atom reqs)
-       nil
-     (or (deflist-eval-requirement (car reqs) req-alist)
-         (deflist-or-requirements (cdr reqs) req-alist)))))
-
-(mutual-recursion
  (defun deflist-thmbody-subst (body element name formals x negatedp)
    (if (atom body)
        body
@@ -440,7 +412,7 @@ of which recognizers require true-listp and which don't.</p>")
        (alist (and (not (eq alist t)) alist))
        (req-look (assoc :requirement alist))
        (req-ok (or (not req-look)
-                   (deflist-eval-requirement (cadr req-look) req-alist)))
+                   (generic-eval-requirement (cadr req-look) req-alist)))
        ((unless req-ok) nil)
        (thmname-base (let ((look (assoc :name alist)))
                        (if look (cadr look) inst-thm)))

@@ -701,12 +701,33 @@ about elementlist-mapappend."
            (cons (element-xformer a)
                  (elementlist-projection b))))
 
-  (def-projection-rule car-of-elementlist-projection-when-nil-to-nil
+  (def-projection-rule elementlist-projection-when-not-consp
+    (implies (not (consp x))
+             (equal (elementlist-projection x) nil)))
+
+  (def-projection-rule true-listp-of-elementlist-projection
+    (true-listp (elementlist-projection x))
+    :rule-classes :type-prescription
+    ;; hack: acl2 inserts :typed-term in rule-classes which screws us up
+    :inst-rule-classes :type-prescription)
+
+  (def-projection-rule len-of-elementlist-projection
+    (equal (len (elementlist-projection x))
+           (len x)))
+
+  (def-projection-rule consp-of-elementlist-projection
+    (equal (consp (elementlist-projection x))
+           (consp x)))
+
+  (def-projection-rule elementlist-projection-under-iff
+    (iff (elementlist-projection x) (consp x)))
+
+  (def-projection-rule car-of-elementlist-projection-when-nil-preservingp
     (implies (equal nil (element-xformer nil))
              (equal (car (elementlist-projection x))
                     (element-xformer (car x))))
 
-    :requirement nil-to-nil
+    :requirement nil-preservingp
     :name car-of-elementlist-projection
     :body (equal (car (elementlist-projection x))
                  (element-xformer (car x))))
@@ -715,7 +736,7 @@ about elementlist-mapappend."
     (equal (car (elementlist-projection x))
            (and (consp x)
                 (element-xformer (car x))))
-    :requirement (not nil-to-nil))
+    :requirement (not nil-preservingp))
 
   (def-projection-rule cdr-of-elementlist-projection
     (equal (cdr (elementlist-projection x))
@@ -724,17 +745,17 @@ about elementlist-mapappend."
   (def-projection-rule elementlist-projection-of-append
     (equal (elementlist-projection (append a b))
            (append (elementlist-projection a)
-                   (elementlist-projection b))))
+                   (elementlist-projection b)))))
 
-  (def-projection-rule consp-of-elementlist-projection
-    (equal (consp (elementlist-projection x))
-           (consp x)))
-
-  (def-projection-rule len-of-elementlist-projection
-    (equal (len (elementlist-projection x))
-           (len x))))
-
-
+;; list-fix
+;; rev
+;; revappend
+;; take (nil-preserving)
+;; nthcdr
+;; member-of-xformer-in-projection
+;; subsetp-of-projection-in-projection
+;; nth-of-projection
+;; 
 
 (defsection element-listxformer
   :short "Generic element-list transform for mapappend"

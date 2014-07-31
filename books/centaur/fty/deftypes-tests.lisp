@@ -520,12 +520,12 @@
   :elementp-of-nil nil
   :already-definedp t)
 
-(include-book "std/util/defprojection" :dir :system)
+;; (include-book "std/util/defprojection" :dir :system)
 
-(std::defprojection 4uplelist2-fix (x)
-  (4uple-fix x)
-  :guard (4uplelist-p x)
-  :already-definedp t)
+;; (std::defprojection 4uplelist2-fix (x)
+;;   (4uple-fix x)
+;;   :guard (4uplelist-p x)
+;;   :already-definedp t)
 
 
 ;; make sure b* binders are working

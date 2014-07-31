@@ -228,3 +228,37 @@ substitutions are reapplied to the result of other substitutions.</p>"
     (declare (xargs :mode :program))
     (let ((len (length str)))
       (dumb-str-sublis-iter alist alist str 0 len len))))
+
+
+(defsection generic-eval-requirement
+  :short "Evaluate a requirement of a generic theorem for deflist/defprojection/defmapappend"
+  :long "<p>See @(see acl2::std/lists/abstract).</p>"
+
+  (mutual-recursion
+   (defun generic-eval-requirement (req req-alist)
+     (if (atom req)
+         (let ((look (assoc req req-alist)))
+           (if look
+               (cdr look)
+             (er hard? 'generic-eval-requirement
+                 "Unrecognized requirement variable: ~x0~%" req)))
+       (case (car req)
+         ('not (not (generic-eval-requirement (cadr req) req-alist)))
+         ('and (generic-and-requirements (cdr req) req-alist))
+         ('or  (generic-or-requirements (cdr req) req-alist))
+         ('if  (if (generic-eval-requirement (cadr req) req-alist)
+                   (generic-eval-requirement (caddr req) req-alist)
+                 (generic-eval-requirement (cadddr req) req-alist)))
+         (otherwise (er hard? 'generic-eval-requirement
+                        "malformed requirement term: ~x0~%")))))
+   (defun generic-and-requirements (reqs req-alist)
+     (if (atom reqs)
+         t
+       (and (generic-eval-requirement (car reqs) req-alist)
+            (generic-and-requirements (cdr reqs) req-alist))))
+   (defun generic-or-requirements (reqs req-alist)
+     (if (atom reqs)
+         nil
+       (or (generic-eval-requirement (car reqs) req-alist)
+           (generic-or-requirements (cdr reqs) req-alist))))))
+

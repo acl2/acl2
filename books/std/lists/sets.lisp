@@ -136,7 +136,11 @@ library.")
                        (member-equal a x))
                   (not (non-element-p a))))
     :requirement negatedp
-    :name element-p-when-member-equal-of-element-list))
+    :name element-p-when-member-equal-of-element-list)
+
+  (def-projection-rule member-of-element-xformer-in-elementlist-projection
+    (implies (member k x)
+             (member (element-xformer k) (elementlist-projection x)))))
 
 
 
@@ -210,7 +214,11 @@ library.")
                         (element-list-p x))
                (implies (and (element-list-p y)
                              (subsetp-equal x y))
-                        (element-list-p x)))))
+                        (element-list-p x))))
+
+  (def-projection-rule subsetp-of-elementlist-projection-when-subsetp
+    (implies (subsetp x y)
+             (subsetp (elementlist-projection x) (elementlist-projection y)))))
 
 
 
@@ -364,7 +372,13 @@ heavier-weight (but not necessarily recommended) alternative is to use the
 
     (defequiv set-equiv))
 
-  (defrefinement list-equiv set-equiv))
+  (defrefinement list-equiv set-equiv)
+
+  (def-projection-rule set-equiv-congruence-over-elementlist-projection
+    (implies (set-equiv x y)
+             (set-equiv (elementlist-projection x)
+                        (elementlist-projection y)))
+    :rule-classes :congruence))
 
 
 (defsection set-equiv-congruences

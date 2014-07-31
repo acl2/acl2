@@ -481,17 +481,18 @@ the interface for constructing echars can be kept simple and bounds-free.</p>
   (vl-echar->char x)
   :parents (extended-characters)
   :nil-preservingp nil
-  ///
-  ;; Previously this was nil-preserving and defprojection added a rule like
-  ;; this automatically (with no hyp).  The defprojection rule went the other
-  ;; way.  I'm not sure why I wanted the rule to go this way.  If we extend
-  ;; defprojection to add the other rule, we'll need to mark them as
-  ;; incompatible, disable its rule, etc.
-  (defthm vl-echarlist->chars-of-take
-    (implies (force (<= (nfix n) (len x)))
-             (equal (vl-echarlist->chars (take n x))
-                    (take n (vl-echarlist->chars x))))
-    :hints(("Goal" :in-theory (enable acl2::take-redefinition)))))
+  ;; ///
+  ;; ;; Previously this was nil-preserving and defprojection added a rule like
+  ;; ;; this automatically (with no hyp).  The defprojection rule went the other
+  ;; ;; way.  I'm not sure why I wanted the rule to go this way.  If we extend
+  ;; ;; defprojection to add the other rule, we'll need to mark them as
+  ;; ;; incompatible, disable its rule, etc.
+  ;; (defthm vl-echarlist->chars-of-take
+  ;;   (implies (force (<= (nfix n) (len x)))
+  ;;            (equal (vl-echarlist->chars (take n x))
+  ;;                   (take n (vl-echarlist->chars x))))
+  ;;   :hints(("Goal" :in-theory (enable acl2::take-redefinition))))
+  )
 
 
 (define vl-echarlist->string ((x vl-echarlist-p))

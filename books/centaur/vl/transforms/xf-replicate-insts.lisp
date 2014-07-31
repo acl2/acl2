@@ -486,7 +486,8 @@ re-integrate it.</p>"
                   (force (all-equalp 1 (vl-exprlist->finalwidths x))))
              (vl-exprlist-welltyped-p (vl-partition-msb-bitslices n x)))
     :hints(("Goal" :in-theory (e/d (vl-expr-welltyped-p)
-                                   (all-equalp))))))
+                                   (all-equalp
+                                    vl-exprlist->finalwidths-of-take))))))
 
 
 (define vl-partition-plainarg

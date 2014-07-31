@@ -1132,18 +1132,6 @@ implement.</p>"
     :hints(("Goal" :in-theory (enable 4v-onehot-sexpr-prime
                                       4v-onehot-sexpr-list-prime))))
 
-  (defthm 4v-onehot-sexpr-list-prime-when-atom
-    (implies (atom x)
-             (equal (4v-onehot-sexpr-list-prime vars x)
-                    nil))
-    :hints(("Goal" :in-theory (enable 4v-onehot-sexpr-list-prime))))
-
-  (defthm 4v-onehot-sexpr-list-prime-of-cons
-    (equal (4v-onehot-sexpr-list-prime vars (cons a x))
-           (cons (4v-onehot-sexpr-prime vars a)
-                 (4v-onehot-sexpr-list-prime vars x)))
-    :hints(("Goal" :in-theory (enable 4v-onehot-sexpr-list-prime))))
-
   (std::defprojection 4v-onehot-sexpr-list-prime (vars x)
     (4v-onehot-sexpr-prime vars x)
     :already-definedp t

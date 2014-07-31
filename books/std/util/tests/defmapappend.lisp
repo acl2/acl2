@@ -30,6 +30,7 @@
 
 (in-package "STD")
 (include-book "../defmapappend")
+(include-book "../deflist")
 (include-book "misc/assert" :dir :system)
 
 (deflist my-nat-listp (x)

@@ -129,7 +129,7 @@ library."
            (append (elementlist-projection a)
                    (elementlist-projection b))))
 
-  (def-projection-rule elementlist-mapappend-of-append
+  (def-mapappend-rule elementlist-mapappend-of-append
     (equal (elementlist-mapappend (append a b))
            (append (elementlist-mapappend a)
                    (elementlist-mapappend b))))

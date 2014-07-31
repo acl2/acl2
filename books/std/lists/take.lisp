@@ -214,7 +214,25 @@ recommend using @('take-redefinition') instead of @('(:definition take)').</p>"
     (implies (element-list-p (double-rewrite x))
              (iff (element-list-p (take n x))
                   (or (element-p nil)
-                      (<= (nfix n) (len x)))))))
+                      (<= (nfix n) (len x))))))
+
+  (def-projection-rule elementlist-projection-of-take-nil-preserving
+    (implies (equal nil (element-xformer nil))
+             (equal (elementlist-projection (take n x))
+                    (take n (elementlist-projection x))))
+    :hints (("goal" :induct (take n x)))
+    :name elementlist-projection-of-take
+    :requirement nil-preservingp
+    :body (equal (elementlist-projection (take n x))
+                 (take n (elementlist-projection x))))
+
+  (def-projection-rule elementlist-projection-of-take
+    (implies (<= (nfix n) (len x))
+             (equal (elementlist-projection (take n x))
+                    (take n (elementlist-projection x))))
+    :hints (("goal" :induct (take n x)))
+    :name elementlist-projection-of-take
+    :requirement (not nil-preservingp)))
 
 
 (defsection first-n
