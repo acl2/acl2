@@ -1,4 +1,4 @@
-; ACL2 Version 6.4 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 6.5 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2014, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -53,7 +53,7 @@
     programming                         ;;; d
     rule-classes                        ;;; e
     books                               ;;; f
-    note-6-4                            ;;; g   ; current release notes
+    note-6-5                            ;;; g   ; current release notes
     the-method                          ;;; h
     introduction-to-the-theorem-prover  ;;; i   ; This is not used right now.
     interesting-applications            ;;; j
@@ -215,7 +215,7 @@ Recent changes to this page</A>
 <A HREF=\"~sg\"><IMG SRC=\"HTML/note02.gif\" BORDER=0></A>
 </TD>
 <TD>
-<A HREF=\"~sg\">Differences from Version 6.3</A><A HREF=\"~sq\"> <IMG
+<A HREF=\"~sg\">Differences from Version 6.4</A><A HREF=\"~sq\"> <IMG
 SRC=\"HTML/twarning.gif\"></A>
 </TD>
 <TD ALIGN=CENTER VALIGN=MIDDLE>
@@ -301,7 +301,7 @@ included in a much more complete <A href=\"~sk\">acknowledgments page</A>.)
 <LI>National Science Foundation
   <UL>
   <LI>This material is based upon work supported by the National Science
-      Foundation under Grant Nos. EIA-0303609, CNS-0429591, ISS-0417413,
+      Foundation under Grant Nos. CCF-1153558, EIA-0303609, CNS-0429591, ISS-0417413,
       CCF-0945316, and CNS-0910913.</LI>
   <LI>Any opinions, findings and conclusions or recomendations expressed in
       this material are those of the authors and do not necessarily reflect the
@@ -366,9 +366,7 @@ been developed by many users over the years.  These books contain definitions
 and theorems that you might find useful in your models and proofs.  In
 addition, some books contain ACL2 reasoning or analysis tools built by users.
 The <A HREF=\"HTML/installation/installation.html\">installation instructions</A>
-explain how to <A
-HREF=\"http://code.google.com/p/acl2-books/downloads/\">download</A> and
-install the community books.
+explain how to download and install the community books.
 
 <p>
 

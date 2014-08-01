@@ -1,5 +1,5 @@
 <HTML>
-<HEAD><TITLE>ACL2 Version 6.4 Installation Guide: Requirements</TITLE></HEAD>
+<HEAD><TITLE>ACL2 Version 6.5 Installation Guide: Requirements</TITLE></HEAD>
 
 <BODY TEXT="#000000">
 <BODY BGCOLOR="#FFFFFF">
@@ -10,7 +10,7 @@
 
 <p><hr size=3 noshade><p>
 
-ACL2 Version 6.4<br> Copyright (C) 2014, Regents of the University of
+ACL2 Version 6.5<br> Copyright (C) 2014, Regents of the University of
 Texas<br>
 
 ACL2 is licensed under the terms of
@@ -41,7 +41,7 @@ file distributed with ACL2.  See also the documentation topic,
 <H3><A NAME="Performance">Performance comparisons</A></H3>
 
 You can see recent performance numbers by following <a
-href="http://www.cs.utexas.edu/users/moore/acl2/v6-4/new.html#performance">this
+href="http://www.cs.utexas.edu/users/moore/acl2/v6-5/HTML/new.html#performance">this
 link</a>, or by going to the <a
 href="http://www.cs.utexas.edu/users/moore/acl2/">ACL2 home page on
 the web</a> and following the link "Recent changes to this page".
@@ -74,17 +74,12 @@ You may be able to obtain a trial version there.
 
 <P><B><A NAME="Obtaining-CCL">Obtaining CCL (OpenMCL)</A></B><P>
 
-Clozure CL (CCL) was formerly known as OpenMCL.  Quoting from the <a
-href="http://clozure.com/clozurecl.html">Clozure CL web page</a>:
-``Clozure CL is a fast, mature, open source Common Lisp implementation
-that runs on Linux, Mac OS X and BSD on either Intel x86-64 or PPC.''
-
-<p>
-
-For Windows users: We observed stalls using CCL 1.5 on Windows (in
-May, 2010), though not with CCL 1.4.  We have been told by a CCL
-implementor that this bug has been fixed, and people running CCL 1.5
-under Windows at a revision less than 13900 should update.
+Clozure Common Lisp (Clozure CL, or CCL) was formerly known as
+OpenMCL.  Quoting from the <a href="http://ccl.clozure.com/">Clozure
+Common Lisp web page</a> (July, 2014): ``Some distinguishing features
+of the implementation include fast compilation speed, native threads,
+a precise, generational, compacting garbage collector, and a
+convenient foreign-function interface.''
 
 <p>
 
@@ -168,10 +163,8 @@ Step 3 in
 href="http://trac.clozure.com/openmcl/wiki/UpdatingFromSource">http://trac.clozure.com/openmcl/wiki/UpdatingFromSource</a></code>
 has more details on building from source.
 Alternatively, you can download a gzipped tar
-file; see <a href="http://trac.clozure.com/openmcl">the main CCL
-page</a>, or visit the page of <a
-href="http://trac.clozure.com/openmcl/wiki/StableReleasesForACL2">stable
-Clozure CL snapshots for ACL2 users</a>.  (Subversion and gzipped tar
+file; see <a href="http://trac.clozure.com/openmcl">the main
+Clozure CL page</a>.  (Note: Subversion and gzipped tar
 files are great, but not so much a CCL disk image (<code>.dmg</code>
 file), as we have had a report of the extracted CCL opening its own
 window when you start it up.)  If you don't want to write your own
@@ -218,7 +211,7 @@ better success with GCL 2.6.10 than GCL 2.6.8 on a Mac, where 2.6.8
 ran out of memory for two regression tests but 2.6.10 (again, actually
 2.6.10pre) did not.  Note that GCL 2.6.10 probably has better ANSI
 support than 2.6.8, and ANSI support is needed if you choose to build
-<a href="http://www.cs.utexas.edu/users/moore/acl2/v6-4/combined-manual/index.html?topic=ACL2____HONS-AND-MEMOIZATION">ACL2(h)</a>).
+<a href="http://www.cs.utexas.edu/users/moore/acl2/v6-5/combined-manual/index.html?topic=ACL2____HONS-AND-MEMOIZATION">ACL2(h)</a>).
 
 <p>
 

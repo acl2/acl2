@@ -1,4 +1,4 @@
-; ACL2 Version 6.4 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 6.5 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2014, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -12843,7 +12843,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; The reason MCL needs special treatment is that (char-code #\Newline) = 13 in
 ; MCL, not 10.  See also :DOC version.
 
-; ACL2 Version 6.4
+; ACL2 Version 6.5
 
 ; We put the version number on the line above just to remind ourselves to bump
 ; the value of state global 'acl2-version, which gets printed out with the
@@ -12869,7 +12869,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; reformatting :DOC comments.
 
                   ,(concatenate 'string
-                                "ACL2 Version 6.4"
+                                "ACL2 Version 6.5"
                                 #+non-standard-analysis
                                 "(r)"
                                 #+(and mcl (not ccl))
@@ -15240,17 +15240,18 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                    (t (cddr triple))))))
               ,@body)))))
 
-#+(and allegro (not acl2-loop-only))
-(defun allegro-print-number-base-16 (x stream)
+#+(and (or allegro cmucl) (not acl2-loop-only))
+(defun print-number-base-16-upcase-digits (x stream)
 
-; In base 16, Allegro CL's function PRINC prints alphabetic digits in lower
-; case, unlike other Lisps we have seen.  While Allegro CL is compliant with
-; the Common Lisp spec in this regard, we have represented printing in the
-; logic in a manner consistent with those other Lisps, and hence Allegro CL's
-; PRINC violates our axioms.  Therefore, ACL2 built on Allegro CL prints
-; radix-16 numbers without using the underlying lisp's PRINC function.  Thanks
-; to David Margolies of Franz Inc. for passing along a remark from his
-; colleague, which showed how to use format here.
+; In base 16, in Allegro CL and CMUCL, the function PRINC prints alphabetic
+; digits in lower case, unlike other Lisps we have seen.  While that behavior
+; is compliant with the Common Lisp spec in this regard, we have represented
+; printing in the logic in a manner consistent with those other Lisps, and
+; hence PRINC violates our axioms in those two host Lisp implementations.
+; Therefore, ACL2 built on these host Lisps prints radix-16 numbers without
+; using the underlying lisp's PRINC function.  Thanks to David Margolies of
+; Franz Inc. for passing along a remark from his colleague, which showed how to
+; use format here.
 
   (if *print-radix*
       (assert$ (eql *print-base* 16)
@@ -15323,12 +15324,12 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                (*print-base* (f-get-global 'print-base state))
                (*print-radix* (f-get-global 'print-radix state))
                (*print-case* (f-get-global 'print-case state)))
-              #+allegro
+              #+(or allegro cmucl)
               (cond ((and (acl2-numberp x)
                           (> *print-base* 10))
-                     (allegro-print-number-base-16 x stream))
+                     (print-number-base-16-upcase-digits x stream))
                     (t (princ x stream)))
-              #-allegro
+              #-(or allegro cmucl)
               (princ x stream))))
            (cond ((eql x #\Newline)
                   (force-output stream)))
@@ -19012,12 +19013,12 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
              (*print-radix* (f-get-global 'print-radix state))
              (*print-case* (f-get-global 'print-case state)))
             (cond ((acl2-numberp x)
-                   #+allegro
+                   #+(or allegro cmucl)
                    (cond ((and (acl2-numberp x)
                                (> *print-base* 10))
-                          (allegro-print-number-base-16 x stream))
+                          (print-number-base-16-upcase-digits x stream))
                          (t (princ x stream)))
-                   #-allegro
+                   #-(or allegro cmucl)
                    (princ x stream))
                   ((characterp x)
                    (princ "#\\" stream)
