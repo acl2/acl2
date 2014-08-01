@@ -643,11 +643,17 @@
 
        (acc (str::revappend-chars " <url>" acc))
        (acc (cons #\Newline acc))
-       (acc (str::revappend-chars "  <loc>XDOCMANUALBASEURL?topic=" acc))
+       ;; The following three lines were used to generate a sitemap for
+       ;; index.html.  But, we don't use index.html for indexing, because
+       ;; search engines don't use javascript.
+       ;; (acc (str::revappend-chars "  <loc>XDOCMANUALBASEURL?topic=" acc))
+       ;; (acc (str::revappend-chars key acc))
+       ;; (acc (str::revappend-chars "</loc>" acc))
+       (acc (str::revappend-chars "  <loc>XDOCMANUALBASEURL/HTML/" acc))
        (acc (str::revappend-chars key acc))
-       (acc (str::revappend-chars "</loc>" acc))
+       (acc (str::revappend-chars ".html</loc>" acc))
        (acc (cons #\Newline acc))
-       (acc (str::revappend-chars "  <changefreq>monthly</changefreq>" acc))
+       (acc (str::revappend-chars "  <changefreq>daily</changefreq>" acc))
        (acc (cons #\Newline acc))
        (acc (str::revappend-chars "  <priority>" acc))
        (acc (str::revappend-chars priority-str acc))

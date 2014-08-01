@@ -123,6 +123,7 @@ else {
 print "; Parsing JSON index.\n";
 my $xsi = new JSON::XS;
 my $xindex = $xsi->decode($json);
+
 if (!(ref($xindex) eq "ARRAY")) {
     print "Error: JSON object within xindex.js not a hash?\n";
     exit(1);
@@ -149,42 +150,71 @@ while(my ($key,$val) = each %$xdata)
     my $enc = $xsd->encode($val);
 	my $long = $val->[3];
 	my $human_readable_name = $human_readable_names{$key};
+
 	my $short = $shorts{$key};
-	my $pagexml = "";
-	$pagexml .= "<p>$short</p>\n";
-	$pagexml .= "$long";
-	$pagexml = wrap_xdoc_fragment($pagexml);
-	my $xml = $xml_parser->parse_string($pagexml);
 	my $results = "";
-    $results = $stylesheet->transform($xml);
-	my $output = $stylesheet->output_string($results);
+	my $shortxml = "";
+	$shortxml = "<p>$short</p>";
+	$shortxml = wrap_xdoc_fragment($shortxml);
+	$shortxml = $xml_parser->parse_string($shortxml);
+    $results = $stylesheet->transform($shortxml);
+	my $short_output = $stylesheet->output_string($results);
+
+	my $bothxml = "";
+	$bothxml .= "<p>$short</p>$long";
+	$bothxml = wrap_xdoc_fragment($bothxml);
+
+	$bothxml = $xml_parser->parse_string($bothxml);
+    $results = $stylesheet->transform($bothxml);
+	my $both_output = $stylesheet->output_string($results);
 
 
 	my $pagehtml .= "<html>\n<head>\n";
 	$pagehtml .= "<meta charset=\"UTF-8\">\n";
 	$pagehtml .= "<title>$human_readable_name</title>\n";
-	# To debug this script, you may need to comment out the
-	# javascript, since it causes the browser to immediately redirect.
-	# Since it's javascript, this redirect should not be run by search
-	# engines, allowing them to crawl this HTML page.
+	$pagehtml .= "<meta name=\"description\" content=\"$short_output\">\n";
+	$pagehtml .= "<link rel=\"stylesheet\" type=\"text/css\" href=\"../style.css\"/>\n";
+
+	# To debug this script, you may wish to comment out the
+	# javascript, since it causes the browser to redirect.  It appears
+	# that Googlebot crawls the static page so long as the timout is
+	# at least 5 seconds (it could be 4 seconds, but I didn't test it
+	# -- 3 seconds results in google crawling the redirected page
+	# [index.html], which isn't our goal [because it will fail to do
+	# so in a productive way]).
+
 	$pagehtml .= "<script language=\"javascript\">\n";
 	$pagehtml .= "<!--\n";
-	$pagehtml .= "  location.replace(\"../index.html?topic=$key\");\n";
+	$pagehtml .= "  setTimeout(function () {
+                      window.location = \"../index.html?topic=$key\";
+                    }, 5000);\n";
 	$pagehtml .= "//-->\n";
 	$pagehtml .= "</script>\n";
-	$pagehtml .= "<link rel=\"stylesheet\" type=\"text/css\" href=\"../style.css\"/>\n";
-    $pagehtml .= "</head>\n<body>\n\n<h3>";
-    $pagehtml .= "$key";
-	$pagehtml .= "</h3>\n\n";
-	$pagehtml .= "$output";
+
+# One can instead call the following to prevent the redirect from
+# showing up in the history.
+# window.location.replace(\"../index.html?topic=$key\");
+
+    $pagehtml .= "</head>\n<body>\n\n";
+	$pagehtml .= "<h3>Redirecting to $human_readable_name ";
+	$pagehtml .= "in the <a href=\"../index.html?topic=$key\">Full Manual</a></h3>\n\n";
+
+# If we can't get Google to search the static pages with redirecting
+# enabled, we will need to fall back to having no redirect.
+
+	# $pagehtml .= "<h3><a href=\"../index.html?topic=$key\">Click for ";
+    # $pagehtml .= "$human_readable_name";
+	# $pagehtml .= " in the Full Manual</a></h3>\n\n"
+
+	$pagehtml .= "$both_output";
 	$pagehtml .= "</body>\n</html>\n";
 
 	print $fh "$pagehtml";
 
-	if ($progress % 500 == 0) {
-		print "Done generating $progress HTML files\n";
-	}
 	$progress++;
+	if ($progress % 500 == 0) {
+		print "; Done generating $progress HTML files\n";
+	}
 }
 
-print "; All done.\n\n";
+print "; All done. Generated $progress HTML files.\n\n";
