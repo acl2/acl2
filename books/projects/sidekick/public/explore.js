@@ -32,6 +32,22 @@ License: (An MIT/X11-style license)
 
 */
 
+
+function contrapose_with(n)
+{
+    $.post("/explore-contrapose", {"n":n},function(data,textStatus,jqXHR)
+    {
+	var err = data[":ERROR"];
+	if (err != "NIL") {
+	    window.alert("Contrapose with " + n + " failed: " + err);
+	}
+	// Else, everything is fine, display will update soon, nothing to do
+    }).fail(function() {
+	window.alert("Contrapose with " + n + " failed!");
+    });
+    return false;
+}
+
 function format_goal(goal)
 {
     var hyps = goal[":HYPS"];
@@ -49,8 +65,16 @@ function format_goal(goal)
 	for(var i = 0; i < hyps.length; ++i) {
 	    var hyp = hyps[i];
 	    var row = "<tr>";
-	    row += "<th>" + i + ".</th>";
+//	    row += "<th>" + (i+1) + ".</th>";
+
+	    row += "<td style='padding-right: .5em;'>";
+	    row += "<a href='#' title='Contrapose this hypothesis and the conclusion.' onclick='contrapose_with(" + (i+1) + ");'>";
+	    row += "<img src='icons/explore-contrapose.png'>";
+	    row += "</a>";
+	    row += "</td>";
+
   	    row += "<td><pre>" + htmlEncode(hyp) + "</pre></td>";
+
 	    row += "</tr>";
 	    tbl += row;
 	}
