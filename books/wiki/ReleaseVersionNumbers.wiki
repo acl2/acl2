@@ -2,9 +2,11 @@
 
 = Introduction =
 
-Version 6.4 of ACL2 corresponds to r2407 (in the 6.4/ branch)
+Version 6.5 of ACL2 corresponds to r2915 (in the 6.5/ branch)
 
 = Details =
+
+Version 6.5 of ACL2 corresponds to r2915 (in the 6.5/ branch)
 
 Version 6.4 of ACL2 corresponds to r2407 (in the 6.4/ branch)
 
