@@ -1391,11 +1391,13 @@ centaur/getopt/demo2-test.ok: centaur/getopt/demo2 \
 	@cd centaur/getopt; cp demo2-test.out demo2-test.ok
 	@ls -l centaur/getopt/demo2-test.ok
 
+all: centaur/getopt/demo2-test.ok
+
 else
 $(info Excluding centaur/getopt/demo2 test since host lisp is $(ACL2_HOST_LISP))
 endif
 
-all: centaur/getopt/demo2-test.ok
+
 
 ##############################
 ### Section: Tags
