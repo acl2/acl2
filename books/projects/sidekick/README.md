@@ -2,15 +2,11 @@ ACL2 Sidekick
 =============
 
 The **ACL2 Sidekick** is a graphical add-on for
-[ACL2](http://www.cs.utexas.edu/users/moore/acl2/).
-
-It extends your ACL2 session with a [web
-server](http://weitz.de/hunchentoot/) so that you can interact with
-ACL2 through your browser.
-
-You use the Sidekick **along with**---not instead of---Emacs or your
-favorite ACL2 development environment.  Here's a screenshot of using
-it with Emacs:
+[ACL2](http://www.cs.utexas.edu/users/moore/acl2/).  It extends your
+ACL2 session with a [web server](http://weitz.de/hunchentoot/) so that
+you can interact with ACL2 through your browser.  You use the Sidekick
+**along with**---not instead of---Emacs or your favorite ACL2
+development environment.  Here's a screenshot of using it with Emacs:
 
 ![Screenshot](screenshots/emacs.png?raw=true)
 

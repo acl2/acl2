@@ -90,10 +90,10 @@
         state)))
 
 
-(define sk-explore-undo ((num stringp) state)
+(define sk-explore-undo ((num maybe-stringp) state)
   :returns (mv json-info state)
   :mode :program
-  (b* ((n (str::strval num))
+  (b* ((n (and num (str::strval num)))
        ((unless n)
         (mv (sk-json-error "Error in sk-explore-undo: not a number: ~a" num)
             state))
@@ -105,7 +105,75 @@
        (ans (bridge::json-encode (list (cons :error nil)))))
     (mv ans state)))
 
+; So how does contrapose work?
+; (define-pc-primitive contrapose (&optional n) ...)
+;   defines acl2-pc::contrapose which returns (mv pc-state state)
+;   where (pc-value state-stack) has not yet been changed for state
+; it seems like the idea is to use pc-single-step-primitive instead?
 
+;; (trace$ (acl2::pc-single-step-primitive
+;;          :entry (list :instr (first acl2::arglist))
+;;          :exit (list :er (first acl2::values)
+;;                      :val (second acl2::values))))
+
+; (verify)
+; (contrapose 4)
+; 1> (:INSTR (ACL2-PC::CONTRAPOSE 4))
+; *** NO CHANGE *** -- There are no top-level hypotheses.
+; <1 (:ER NIL :VAL NIL)
+
+(define sk-explore-contrapose ((num maybe-stringp) state)
+  :returns (mv json-info state)
+  :mode :program
+  (b* ((n (and num (str::strval num)))
+       (- (cw "Sidekick: contrapose ~x0.~%" n))
+       ((unless n)
+        (mv (sk-json-error "Error in sk-explore-contrapose: not a number: ~a" num)
+            state))
+       ((mv erp ?val state) (acl2::pc-single-step-primitive (list 'acl2-pc::contrapose n) state))
+       ((when erp)
+        (mv (sk-json-error "acl2-pc::contrapose returned an error: erp ~a, val ~a"
+                           (str::pretty erp) (str::pretty val))
+            state))
+       (ans (bridge::json-encode (list (cons :error nil)))))
+    (mv ans state)))
+
+(define sk-explore-demote ((num maybe-stringp) state)
+  :returns (mv json-info state)
+  :mode :program
+  (b* ((n (and num (str::strval num)))
+       (- (cw "Sidekick: demote ~x0.~%" n))
+       ((unless (or (not num)
+                    (equal num "")
+                    n))
+        (mv (sk-json-error "Error in sk-explore-demote: bad argument: ~a" num)
+            state))
+       (instr (if (natp n)
+                  (list 'acl2-pc::demote n)
+                (list 'acl2-pc::demote)))
+       ((mv erp ?val state) (acl2::pc-single-step-primitive instr state))
+       ((when erp)
+        (mv (sk-json-error "acl2-pc::demote returned an error: erp ~a, val ~a"
+                           (str::pretty erp) (str::pretty val))
+            state))
+       (ans (bridge::json-encode (list (cons :error nil)))))
+    (mv ans state)))
+
+(define sk-explore-drop ((num maybe-stringp) state)
+  :returns (mv json-info state)
+  :mode :program
+  (b* ((n (and num (str::strval num)))
+       (- (cw "Sidekick: drop ~x0.~%" n))
+       ((unless n)
+        (mv (sk-json-error "Error in sk-explore-drop: not a number: ~a" num)
+            state))
+       ((mv erp ?val state) (acl2::pc-single-step-primitive (list 'acl2-pc::drop n) state))
+       ((when erp)
+        (mv (sk-json-error "acl2-pc::drop returned an error: erp ~a, val ~a"
+                           (str::pretty erp) (str::pretty val))
+            state))
+       (ans (bridge::json-encode (list (cons :error nil)))))
+    (mv ans state)))
 
 
 

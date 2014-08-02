@@ -258,5 +258,26 @@
       (b* (((mv ans state) (sk-explore-undo n state)))
         ans)))
 
+  (hunchentoot:define-easy-handler (explore-contrapose-handler :uri "/explore-contrapose" :default-request-type :post)
+                                   ((n :parameter-type 'string))
+    (setf (hunchentoot:content-type*) "application/json")
+    (with-sidekick-bindings
+      (b* (((mv ans state) (sk-explore-contrapose n state)))
+        ans)))
+
+  (hunchentoot:define-easy-handler (explore-demote-handler :uri "/explore-demote" :default-request-type :post)
+                                   ((n :parameter-type 'string))
+    (setf (hunchentoot:content-type*) "application/json")
+    (with-sidekick-bindings
+      (b* (((mv ans state) (sk-explore-demote n state)))
+        ans)))
+
+  (hunchentoot:define-easy-handler (explore-drop-handler :uri "/explore-drop" :default-request-type :post)
+                                   ((n :parameter-type 'string))
+    (setf (hunchentoot:content-type*) "application/json")
+    (with-sidekick-bindings
+      (b* (((mv ans state) (sk-explore-drop n state)))
+        ans)))
+
 
   )

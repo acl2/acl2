@@ -58,6 +58,7 @@
 
                     ;; other handy functions
                     maybe-natp
+                    maybe-stringp
 
                     ;; interactive sidekick commands
                     home

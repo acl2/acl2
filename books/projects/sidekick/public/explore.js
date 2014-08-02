@@ -48,6 +48,36 @@ function contrapose_with(n)
     return false;
 }
 
+function demote(n)
+{
+    $.post("/explore-demote", {"n":n},function(data,textStatus,jqXHR)
+    {
+	var err = data[":ERROR"];
+	if (err != "NIL") {
+	    window.alert("Demote " + n + " failed: |" + err + "|");
+	}
+	// Else, everything is fine, display will update soon, nothing to do
+    }).fail(function() {
+	window.alert("Demote " + n + " failed!");
+    });
+    return false;
+}
+
+function drop(n)
+{
+    $.post("/explore-drop", {"n":n},function(data,textStatus,jqXHR)
+    {
+	var err = data[":ERROR"];
+	if (err != "NIL") {
+	    window.alert("Drop " + n + " failed: |" + err + "|");
+	}
+	// Else, everything is fine, display will update soon, nothing to do
+    }).fail(function() {
+	window.alert("Drop " + n + " failed!");
+    });
+    return false;
+}
+
 function format_goal(goal)
 {
     var hyps = goal[":HYPS"];
@@ -60,7 +90,17 @@ function format_goal(goal)
 
     if (hyps.length != 0)
     {
-	div.append("<p class='sf'>Top-level hypotheses</p>");
+	var head = "";
+	head += "<p class='sf'>";
+	head += "Top-level hypotheses &nbsp; ";
+
+	head += "<a href='#' ";
+	head += "   title='Demote all hypotheses, pushing them into the conclusion.'";
+	head += "   onclick='demote(\"\")');'>";
+	head += "<img src='icons/explore-demote.png'/>";
+	head += "</a>";
+	head += "</p>";
+
 	var tbl = "<table class='hyps'>";
 	for(var i = 0; i < hyps.length; ++i) {
 	    var hyp = hyps[i];
@@ -69,9 +109,23 @@ function format_goal(goal)
 
 	    row += "<td style='padding-right: .5em;'>";
 	    row += "<a href='#' title='Contrapose this hypothesis and the conclusion.' onclick='contrapose_with(" + (i+1) + ");'>";
-	    row += "<img src='icons/explore-contrapose.png'>";
+	    row += "<img src='icons/explore-contrapose.png'/>";
 	    row += "</a>";
 	    row += "</td>";
+
+	    row += "<td style='padding-right: .5em;'>";
+	    row += "<a href='#' title='Demote this hypothesis, pushing it into the conclusion.' onclick='demote(" + (i+1) + ");'>";
+	    row += "<img src='icons/explore-demote.png'/>";
+	    row += "</a>";
+	    row += "</td>";
+
+	    row += "<td style='padding-right: .5em;'>";
+	    row += "<a href='#' title='Drop this hypothesis.' onclick='drop(" + (i+1) + ");'>";
+	    row += "<img src='icons/explore-drop.png'/>";
+	    row += "</a>";
+	    row += "</td>";
+
+
 
   	    row += "<td><pre>" + htmlEncode(hyp) + "</pre></td>";
 
@@ -79,6 +133,8 @@ function format_goal(goal)
 	    tbl += row;
 	}
 	tbl += "</table>";
+
+	div.append(head);
 	div.append(tbl);
     }
 
