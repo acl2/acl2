@@ -1162,7 +1162,7 @@ legacy-defrstobj: $(filter projects/legacy-defrstobj/%, $(OK_CERTS))
 MILAWA_DEPS := misc/untranslate-patterns.cert \
                misc/hons-help2.cert \
                misc/definline.cert \
-               str/top.cert \
+               std/strings/top.cert \
                arithmetic-3/floor-mod/floor-mod.cert \
                tools/include-raw.cert \
                centaur/misc/seed-random.cert \

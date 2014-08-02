@@ -147,6 +147,11 @@
                    (hons-copy (make-list 1000 :initial-element *stuff*)))))
 
 
+; Matt K., 7/31/2014: Commenting out the remainder of this file until after the
+; ACL2 Version 6.5 release, because both Allegro CL and LispWorks hang on the
+; next form.  Probably it will be simple to solve this by making f1-list
+; etc. be tail-recursive.
+#||
 
 (defconst *f1-test* (f1-list *data*))
 (defconst *f2-test* (f2-list *data*))
@@ -200,3 +205,5 @@
 (unmemoize 'f4)
 (unmemoize 'f5)
 (unmemoize 'f6)
+
+||#
