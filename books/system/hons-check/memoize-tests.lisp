@@ -26,7 +26,9 @@
 ;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ;   DEALINGS IN THE SOFTWARE.
 ;
-; Original author: Jared Davis <jared@centtech.com>
+; Original author: Jared Davis <jared@centtech.com> Modified 8/2014 by Matt
+; Kaufmann to make functions tail recursive, to avoid errors in LispWorks and
+; Allegro CL (at least).
 
 (in-package "ACL2")
 (include-book "misc/assert" :dir :system)
@@ -42,82 +44,111 @@
   (declare (xargs :guard t))
   x)
 
+(defun f1-list-tailrec (x acc)
+  (declare (xargs :guard (true-listp acc)))
+  (if (atom x)
+      (reverse acc)
+    (f1-list-tailrec (cdr x)
+                     (cons (f1 (car x)) acc))))
+
 (defun f1-list (x)
   (declare (xargs :guard t))
-  (if (atom x)
-      nil
-    (cons (f1 (car x))
-          (f1-list (cdr x)))))
+  (f1-list-tailrec x nil))
 
 
 (defun f2 (x)
   (declare (xargs :guard t))
   (cons x x))
 
+(defun f2-list-tailrec (x acc)
+  (declare (xargs :guard (true-listp acc)))
+  (if (atom x)
+      (reverse acc)
+    (f2-list-tailrec (cdr x)
+                     (cons (f2 (car x)) acc))))
+
 (defun f2-list (x)
   (declare (xargs :guard t))
-  (if (atom x)
-      nil
-    (cons (f2 (car x))
-          (f2-list (cdr x)))))
+  (f2-list-tailrec x nil))
 
 
 (defun f3 (x)
   (declare (xargs :guard t))
   (mv x (cons x x)))
 
+(defun f3-list-tailrec (x acc)
+  (declare (xargs :guard (true-listp acc)))
+  (if (atom x)
+      (reverse acc)
+    (mv-let (a b)
+            (f3 (car x))
+            (f3-list-tailrec (cdr x)
+                             (list* b a acc)))))
+
+
 (defun f3-list (x)
   (declare (xargs :guard t))
-  (if (atom x)
-      nil
-    (mv-let (a b) (f3 (car x))
-      (list* a b (f3-list (cdr x))))))
+  (f3-list-tailrec x nil))
 
 
 (defun f4 (x y)
   (declare (xargs :guard t))
   (cons x y))
 
+(defun f4-list-tailrec (x acc)
+  (declare (xargs :guard (true-listp acc)))
+  (if (atom x)
+      (reverse acc)
+    (if (atom (cdr x))
+        (reverse acc)
+      (f4-list-tailrec (cdr x)
+                       (cons (f4 (first x) (second x))
+                             acc)))))
+
 (defun f4-list (x)
   (declare (xargs :guard t))
-  (if (atom x)
-      nil
-    (if (atom (cdr x))
-        nil
-      (cons (f4 (first x) (second x))
-            (f4-list (cdr x))))))
+  (f4-list-tailrec x nil))
 
 
 (defun f5 (x y)
   (declare (xargs :guard t))
   (mv x y))
 
+(defun f5-list-tailrec (x acc)
+  (declare (xargs :guard (true-listp acc)))
+  (if (atom x)
+      (reverse acc)
+    (if (atom (cdr x))
+        (reverse acc)
+      (mv-let (a b)
+              (f5 (first x) (second x))
+              (f5-list-tailrec (cdr x)
+                               (list* b a acc))))))
+
 (defun f5-list (x)
   (declare (xargs :guard t))
-  (if (atom x)
-      nil
-    (if (atom (cdr x))
-        nil
-      (mv-let (a b) (f5 (first x) (second x))
-        (list* a b (f5-list (cdr x)))))))
-
+  (f5-list-tailrec x nil))
 
 
 (defun f6 (x y z)
   (declare (xargs :guard t))
   (list x y z))
 
+(defun f6-list-tailrec (x acc)
+  (declare (xargs :guard (true-listp acc)))
+  (if (atom x)
+      (reverse acc)
+    (if (atom (cdr x))
+        (reverse acc)
+      (if (atom (cddr x))
+          (reverse acc)
+        (f6-list-tailrec (cdr x)
+                         (cons (f6 (first x) (second x) (third x))
+                               acc))))))
+
 (defun f6-list (x)
   (declare (xargs :guard t))
-  (if (atom x)
-      nil
-    (if (atom (cdr x))
-        nil
-      (if (atom (cddr x))
-          nil
-        (cons (f6 (first x) (second x) (third x))
-              (f6-list (cdr x)))))))
-
+  (f6-list-tailrec x nil))
 
 
 (defconst *stuff*
@@ -146,12 +177,6 @@
   (flatten (append (make-list 1000 :initial-element *stuff*)
                    (hons-copy (make-list 1000 :initial-element *stuff*)))))
 
-
-; Matt K., 7/31/2014: Commenting out the remainder of this file until after the
-; ACL2 Version 6.5 release, because both Allegro CL and LispWorks hang on the
-; next form.  Probably it will be simple to solve this by making f1-list
-; etc. be tail-recursive.
-#||
 
 (defconst *f1-test* (f1-list *data*))
 (defconst *f2-test* (f2-list *data*))
@@ -205,5 +230,3 @@
 (unmemoize 'f4)
 (unmemoize 'f5)
 (unmemoize 'f6)
-
-||#

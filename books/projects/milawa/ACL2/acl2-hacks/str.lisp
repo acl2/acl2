@@ -31,7 +31,7 @@
 ; Original author: Jared Davis <jared@kookamara.com>
 
 (in-package "STR")
-(include-book "str/top" :dir :system)
+(include-book "std/strings/top" :dir :system)
 
 ;; We introduce some string manipulation functions.  Note that we do not do
 ;; much with strings, so we have not tried to make these functions efficient.

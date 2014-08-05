@@ -49,8 +49,8 @@
 ;  - The following URL is very useful for updating the comments here:
 ;       http://code.google.com/p/acl2-books/source/list
 
-(defxdoc note-6-6-books
-  :parents (note-6-6)
+(defxdoc note-7-0-books
+  :parents (note-7-0)
   :short "Release notes for the ACL2 Community Books for ACL2 6.6 (BOZO month??)"
 
 ; Currently covered: through revision r2901
@@ -61,7 +61,7 @@ community-books) between the releases of ACL2 6.5 and 6.6.</p>
 <p>The <a
 href='https://code.google.com/p/acl2-books/wiki/ReleaseVersionNumbers'>acl2-books
 Wiki page on ReleaseVersionNumbers</a> gives SVN revision numbers corresponding
-to releases.  See also @(see note-6-6) for the changes made to ACL2 itself.
+to releases.  See also @(see note-7-0) for the changes made to ACL2 itself.
 For additional details, you may also see the raw <a
 href='http://code.google.com/p/acl2-books/source/list'>commit log</a>.</p>
 
