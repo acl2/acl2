@@ -142,8 +142,8 @@
 
 (defun unknown-pkg-error-msg (fn pkg-name)
   (msg
-   "The call ~x0 is illegal because the argument is not the name of a ~
-      package currently known to ACL2."
+   "The call ~x0 is illegal because the argument is not the name of a package ~
+    currently known to ACL2."
    (list fn pkg-name)))
 
 (defun illegal-msg ()
@@ -2288,7 +2288,7 @@
     (ev-fncall-creator-er-msg
      (cadr val)))
    ((and (consp val)
-         (member-eq (car val) '(pkg-witness-er pkg-imports-er)))
+         (member-eq (car val) '(pkg-witness pkg-imports)))
     (unknown-pkg-error-msg (car val) (cadr val)))
 
 ; At one time we had the following case:

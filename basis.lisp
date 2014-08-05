@@ -8117,9 +8117,6 @@
 ; use of f-put-global on 'acl2-raw-mode-p in the definition of progn!.
 
 #-acl2-loop-only
-(defvar *load-compiled-stack* nil)
-
-#-acl2-loop-only
 (defun observe-raw-mode-setting (v state)
 
 ; We are about to set state global 'acl2-raw-mode-p to v.  We go through some

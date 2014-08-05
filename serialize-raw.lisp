@@ -812,7 +812,7 @@
     (unless (<= stop (length arr))
       (error "Invalid serialized object, too many symbols."))
     (when check-packagesp
-      (acl2::pkg-witness pkg-name))
+      (pkg-witness pkg-name))
     (loop until (= (the fixnum stop) free) do
           (setf (svref arr free)
                 (let ((temp (ser-decode-str version :never stream)))

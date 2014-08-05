@@ -436,6 +436,20 @@
 ; See acl2-fns.lisp for a fix to user-homedir-pathname for some versions of
 ; GCL.
 
+; See the function print-number-base-16-upcase-digits for an explanation of the
+; following code, which pushes a feature when that function can be needed.
+(let ((*print-base* 16) (*print-case* :downcase))
+  (let ((tmp (with-output-to-string (s) (princ 10 s))))
+    (cond ((equal tmp "A"))
+          ((equal tmp "a")
+           (format t
+                   "~%Note: Numbers in base 16 will be printed using a ~
+                    special-purpose~%      ACL2 function, ~s."
+                   'print-number-base-16-upcase-digits)
+           (push :acl2-print-number-base-16-upcase-digits *features*))
+          (t (error "Surprising result for (princ 10 s) in base 16: ~s"
+                    tmp)))))
+
 ; To use ACL2 under LispWorks 3.2.0, execute the following to work around a
 ; bug.
 

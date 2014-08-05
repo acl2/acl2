@@ -5330,34 +5330,50 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; non-symbol are "".
 
 #-acl2-loop-only
+(defvar *load-compiled-stack* nil)
+
+#-acl2-loop-only
 (defun-one-output pkg-imports (pkg)
+
+; Warning: Keep this function in sync with pkg-witness.
+
   (declare (type string pkg))
-  (let ((entry (find-non-hidden-package-entry pkg
-                                              (known-package-alist
-                                               *the-live-state*))))
+  (let ((entry (if *load-compiled-stack*
+                   (find-package-entry pkg *ever-known-package-alist*)
+                 (find-non-hidden-package-entry pkg
+                                                (known-package-alist
+                                                 *the-live-state*)))))
     (cond (entry (package-entry-imports entry))
-          (t (throw-raw-ev-fncall (list 'pkg-imports-er pkg))))))
+          (t (throw-raw-ev-fncall (list 'pkg-imports pkg))))))
 
 #-acl2-loop-only
 (defun-one-output pkg-witness (pkg)
 
-; Warning: Function ser-decode-and-load-package sometimes relies on an error
-; being signalled by pkg-witness when the package is not known to ACL2.
+; Warning: This function is responsible for halting execution when pkg is not
+; the name of a package known to ACL2.  (However, when including compiled files
+; or expansion files on behalf of include-book, we instead assume that event
+; processing can take responsibility for doing such a check, so we make a
+; weaker check that avoids assuming that defpkg events have been evaluated in
+; the loop.)  Keep this function in sync with pkg-imports.
 
   (declare (type string pkg))
-  (cond ((find-non-hidden-package-entry pkg
-                                        (known-package-alist *the-live-state*))
-         (let ((ans (intern *pkg-witness-name* pkg)))
-; See comment in intern-in-package-of-symbol for an explanation of this trick.
-           ans))
-        (t
+  (let ((entry (if *load-compiled-stack* ; including a book; see comment above
+                   (find-package-entry pkg *ever-known-package-alist*)
+                 (find-non-hidden-package-entry pkg
+                                                (known-package-alist
+                                                 *the-live-state*)))))
+    (cond (entry
+           (let ((ans (intern *pkg-witness-name* pkg)))
 
-; We use error rather than illegal, because we want to throw an error even when
+; See comment in intern-in-package-of-symbol for an explanation of this trick.
+
+             ans))
+          (t
+
+; We avoid using illegal, because we want to halt execution even when
 ; *hard-error-returns-nilp* is true.
 
-         (error "The argument supplied to PKG-WITNESS, ~s, is not the name of ~
-                 a package currently known to ACL2."
-                pkg))))
+           (throw-raw-ev-fncall (list 'pkg-imports pkg))))))
 
 ;  UTILITIES - definitions of the rest of applicative Common Lisp.
 
@@ -15240,25 +15256,25 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                    (t (cddr triple))))))
               ,@body)))))
 
-#+(and (or allegro cmucl) (not acl2-loop-only))
+#-acl2-loop-only
 (defun print-number-base-16-upcase-digits (x stream)
 
-; In base 16, in Allegro CL and CMUCL, the function PRINC prints alphabetic
-; digits in lower case, unlike other Lisps we have seen.  While that behavior
-; is compliant with the Common Lisp spec in this regard, we have represented
-; printing in the logic in a manner consistent with those other Lisps, and
-; hence PRINC violates our axioms in those two host Lisp implementations.
-; Therefore, ACL2 built on these host Lisps prints radix-16 numbers without
-; using the underlying lisp's PRINC function.  Thanks to David Margolies of
-; Franz Inc. for passing along a remark from his colleague, which showed how to
-; use format here.
+; In base 16, in Allegro CL and (when *print-case* is :downcase) CMUCL, the
+; function PRINC prints alphabetic digits in lower case, unlike other Lisps we
+; have seen.  While that behavior is compliant with the Common Lisp spec in
+; this regard, we have represented printing in the logic in a manner consistent
+; with those other Lisps, and hence PRINC violates our axioms in those two host
+; Lisp implementations.  Therefore, ACL2 built on these host Lisps prints
+; radix-16 numbers without using the underlying lisp's PRINC function.  Thanks
+; to David Margolies of Franz Inc. for passing along a remark from his
+; colleague, which showed how to use format here.
 
+  (assert (eql *print-base* 16)) ; for base <= 10, there's no need to call this
   (if *print-radix*
-      (assert$ (eql *print-base* 16)
-               (cond ((realp x)
-                      (format stream "#x~:@(~x~)" x))
-                     (t (format stream "#C(#x~:@(~x~) #x~:@(~x~))"
-                                (realpart x) (imagpart x)))))
+      (cond ((realp x)
+             (format stream "#x~:@(~x~)" x))
+            (t (format stream "#C(#x~:@(~x~) #x~:@(~x~))"
+                       (realpart x) (imagpart x))))
     (format stream "~:@(~x~)" x)))
 
 ; ?? (v. 1.8) I'm not going to look at many, or any, of the skip-proofs
@@ -15324,12 +15340,12 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                (*print-base* (f-get-global 'print-base state))
                (*print-radix* (f-get-global 'print-radix state))
                (*print-case* (f-get-global 'print-case state)))
-              #+(or allegro cmucl)
+              #+acl2-print-number-base-16-upcase-digits
               (cond ((and (acl2-numberp x)
                           (> *print-base* 10))
                      (print-number-base-16-upcase-digits x stream))
                     (t (princ x stream)))
-              #-(or allegro cmucl)
+              #-acl2-print-number-base-16-upcase-digits
               (princ x stream))))
            (cond ((eql x #\Newline)
                   (force-output stream)))
@@ -19013,12 +19029,12 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
              (*print-radix* (f-get-global 'print-radix state))
              (*print-case* (f-get-global 'print-case state)))
             (cond ((acl2-numberp x)
-                   #+(or allegro cmucl)
+                   #+acl2-print-number-base-16-upcase-digits
                    (cond ((and (acl2-numberp x)
                                (> *print-base* 10))
                           (print-number-base-16-upcase-digits x stream))
                          (t (princ x stream)))
-                   #-(or allegro cmucl)
+                   #-acl2-print-number-base-16-upcase-digits
                    (princ x stream))
                   ((characterp x)
                    (princ "#\\" stream)
