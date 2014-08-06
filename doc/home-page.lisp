@@ -41,7 +41,7 @@
   "manual/")
 
 (defconst *combined-manual*
-  "http://www.cs.utexas.edu/users/moore/acl2/current/combined-manual/")
+  "http://www.cs.utexas.edu/users/moore/acl2/v6-5/combined-manual/")
 
 (defconst *bleeding-edge-manual*
   "http://www.cs.utexas.edu/users/moore/acl2/manuals/current/manual/")

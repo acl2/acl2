@@ -18992,7 +18992,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
    (sym foundp)
    (find-symbol (symbol-name x)
                 (f-get-global 'current-package state))
-   (and foundp ; in case x is nil
+   (and foundp ; return nil when x is nil but is not in the current package
         (eq sym x))))
 
 (skip-proofs
