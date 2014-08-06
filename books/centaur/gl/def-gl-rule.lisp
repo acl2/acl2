@@ -99,15 +99,3 @@ rule after its proof finishes.</p>
 
 (defmacro def-gl-ruled (name &rest rst)
   `(def-gl-rule ,name :disabledp t ,@rst))
-
-(defmacro def-gl-rulel (name &rest rst)
-  `(def-gl-rule ,name :local t ,@rst))
-
-(defmacro def-gl-ruledl (name &rest rst)
-  `(def-gl-rule ,name :local t :disabledp t ,@rst))
-
-(defmacro defrulel (name &rest rst)
-  `(defrule ,name :local t ,@rst))
-
-(defmacro defruledl (name &rest rst)
-  `(defruled ,name :local t ,@rst))

@@ -319,3 +319,9 @@ generated using @(see defthmd) instead of @(see defthm).</p>")
 
 (defmacro defruled (name &rest args)
   (defrule-fn name args t))
+
+(defmacro defrulel (name &rest rst)
+  `(defrule ,name :local t ,@rst))
+
+(defmacro defruledl (name &rest rst)
+  `(defruled ,name :local t ,@rst))

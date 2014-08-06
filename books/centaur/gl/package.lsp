@@ -169,8 +169,6 @@
      def-gl-ruled
      def-gl-rulel
      def-gl-ruledl
-     defrulel
-     defruledl
 
      xor
      gl-bdd-mode gl-aig-mode gl-mbe

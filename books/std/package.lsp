@@ -275,6 +275,8 @@
       defmvtypes
       defrule
       defruled
+      defruledl
+      defrulel
       define
       defines
       defconsts
