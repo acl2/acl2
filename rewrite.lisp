@@ -8027,6 +8027,12 @@
             (prog2$
              (cw-gframe 1 nil (car (reverse (get-brr-global 'brr-gstack state))) nil)
              (value :invisible))))
+       (:btm
+        0 (lambda nil
+            (prog2$
+             (let ((gstack (get-brr-global 'brr-gstack state)))
+               (cw-gframe (length gstack) nil (car gstack) nil))
+             (value :invisible))))
        (:help
         0 (lambda nil
             (doc 'brr-commands)))
@@ -8337,6 +8343,12 @@
              (cw-gframe 1 nil
                         (car (reverse (get-brr-global 'brr-gstack state)))
                         nil)
+             (value :invisible))))
+       (:btm
+        0 (lambda nil
+            (prog2$
+             (let ((gstack (get-brr-global 'brr-gstack state)))
+               (cw-gframe (length gstack) nil (car gstack) nil))
              (value :invisible))))
        (:help
         0 (lambda nil
