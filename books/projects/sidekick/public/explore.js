@@ -32,48 +32,122 @@ License: (An MIT/X11-style license)
 
 */
 
+var DELAY = 250;
 
 function contrapose_with(n)
 {
-    $.post("/explore-contrapose", {"n":n},function(data,textStatus,jqXHR)
-    {
-	var err = data[":ERROR"];
-	if (err != "NIL") {
-	    window.alert("Contrapose with " + n + " failed: " + err);
-	}
-	// Else, everything is fine, display will update soon, nothing to do
-    }).fail(function() {
-	window.alert("Contrapose with " + n + " failed!");
+    $.ajax({url: "/explore-contrapose",
+            type: "POST",
+	    data: {"n":n},
+	    cache: false,
+	    success: function(data,textStatus,jqXHR) {
+		var err = data[":ERROR"];
+		if (err != "NIL") {
+		    window.alert("Contrapose with " + n + " failed: " + err);
+		}
+		// Else, everything is fine, display will update soon, nothing to do
+	    },
+	    fail: function() {
+		window.alert("Contrapose with " + n + " failed!");
+	    }
     });
     return false;
 }
 
 function demote(n)
 {
-    $.post("/explore-demote", {"n":n},function(data,textStatus,jqXHR)
-    {
-	var err = data[":ERROR"];
-	if (err != "NIL") {
-	    window.alert("Demote " + n + " failed: |" + err + "|");
-	}
-	// Else, everything is fine, display will update soon, nothing to do
-    }).fail(function() {
-	window.alert("Demote " + n + " failed!");
+    $.ajax({url: "/explore-demote",
+            type: "POST",
+	    data: {"n":n},
+	    cache: false,
+	    success: function(data,textStatus,jqXHR)
+	    {
+		var err = data[":ERROR"];
+		if (err != "NIL") {
+		    window.alert("Demote " + n + " failed: |" + err + "|");
+		}
+		// Else, everything is fine, display will update soon, nothing to do
+	    },
+	    fail: function() {
+		window.alert("Demote " + n + " failed!");
+	    }
     });
     return false;
 }
 
 function drop(n)
 {
-    $.post("/explore-drop", {"n":n},function(data,textStatus,jqXHR)
+    $.ajax({url: "/explore-drop",
+            type: "POST",
+	    data: {"n":n},
+	    cache: false,
+	    success: function(data,textStatus,jqXHR)
+	    {
+		var err = data[":ERROR"];
+		if (err != "NIL") {
+		    window.alert("Drop " + n + " failed: |" + err + "|");
+		}
+		// Else, everything is fine, display will update soon, nothing to do
+	    },
+	    fail: function() {
+		window.alert("Drop " + n + " failed!");
+	    }
+    });
+    return false;
+}
+
+function split()
+{
+    $.ajax({url: "/explore-split",
+            type: "POST",
+	    cache: false,
+	    success: function(data,textStatus,jqXHR)
+	    {
+		var err = data[":ERROR"];
+		if (err != "NIL") {
+		    window.alert("Split failed: |" + err + "|");
+		}
+		// Else, everything is fine, display will update soon, nothing to do
+	    },
+	    fail: function() {
+		window.alert("Split failed!");
+	    }
+    });
+    return false;
+}
+
+function pro()
+{
+    $.ajax({url: "/explore-pro",
+            type: "POST",
+	    cache: false,
+	    success: function(data,textStatus,jqXHR)
+	    {
+		var err = data[":ERROR"];
+		if (err != "NIL") {
+		    window.alert("Pro failed: |" + err + "|");
+		}
+		// Else, everything is fine, display will update soon, nothing to do
+	    },
+	    fail: function() {
+		window.alert("Pro failed!");
+	    }
+    });
+    return false;
+}
+
+// BOZO port to uncacheable ajax
+function undo_to(n)
+{
+    $.post("/explore-undo", {"n":n},function(data,textStatus,jqXHR)
     {
 	var err = data[":ERROR"];
 	if (err != "NIL") {
-	    window.alert("Drop " + n + " failed: |" + err + "|");
+	    window.alert("Undo through " + n + " failed: " + err);
 	}
 	// Else, everything is fine, display will update soon, nothing to do
     }).fail(function() {
-	window.alert("Drop " + n + " failed!");
+	window.alert("Undo through " + n + " failed!");
     });
     return false;
 }
@@ -92,13 +166,12 @@ function format_goal(goal)
     {
 	var head = "";
 	head += "<p class='sf'>";
-	head += "Top-level hypotheses &nbsp; ";
-
 	head += "<a href='#' ";
 	head += "   title='Demote all hypotheses, pushing them into the conclusion.'";
 	head += "   onclick='demote(\"\")');'>";
 	head += "<img src='icons/explore-demote.png'/>";
 	head += "</a>";
+	head += " Top-level hypotheses &nbsp; ";
 	head += "</p>";
 
 	var tbl = "<table class='hyps'>";
@@ -108,24 +181,22 @@ function format_goal(goal)
 //	    row += "<th>" + (i+1) + ".</th>";
 
 	    row += "<td style='padding-right: .5em;'>";
-	    row += "<a href='#' title='Contrapose this hypothesis and the conclusion.' onclick='contrapose_with(" + (i+1) + ");'>";
+	    row += "<a href='javascript:void(0)' title='Contrapose this hypothesis and the conclusion.' onclick='contrapose_with(" + (i+1) + ");'>";
 	    row += "<img src='icons/explore-contrapose.png'/>";
 	    row += "</a>";
 	    row += "</td>";
 
 	    row += "<td style='padding-right: .5em;'>";
-	    row += "<a href='#' title='Demote this hypothesis, pushing it into the conclusion.' onclick='demote(" + (i+1) + ");'>";
+	    row += "<a href='javascript:void(0)' title='Demote this hypothesis, pushing it into the conclusion.' onclick='demote(" + (i+1) + ");'>";
 	    row += "<img src='icons/explore-demote.png'/>";
 	    row += "</a>";
 	    row += "</td>";
 
 	    row += "<td style='padding-right: .5em;'>";
-	    row += "<a href='#' title='Drop this hypothesis.' onclick='drop(" + (i+1) + ");'>";
+	    row += "<a href='javascript:void(0)' title='Drop this hypothesis.' onclick='drop(" + (i+1) + ");'>";
 	    row += "<img src='icons/explore-drop.png'/>";
 	    row += "</a>";
 	    row += "</td>";
-
-
 
   	    row += "<td><pre>" + htmlEncode(hyp) + "</pre></td>";
 
@@ -138,7 +209,15 @@ function format_goal(goal)
 	div.append(tbl);
     }
 
-    var curr = "<p class='sf'>Current term</p>";
+    var curr = "<p class='sf'>";
+    curr += "<a href='javascript:void(0)' ";
+    curr += "   title='Promote terms from IMPLIES structure into hypotheses'";
+    curr += "   onclick='pro()');'>";
+    curr += "<img src='icons/explore-split.png'/>";
+    curr += "</a>";
+    curr += " Current term &nbsp; ";
+    curr += "</p>";
+
     curr += "<div class='current_term'>";
     curr += "<pre>";
     curr += htmlEncode(current_term);
@@ -172,27 +251,11 @@ function get_goal_loop()
 	}
 
 	$("#goal").html(msg);
-	setTimeout(get_goal_loop, 200);
+	setTimeout(get_goal_loop, DELAY);
     }).fail(function() {
 	$("#goal").html("<p>Error getting <tt>th</tt> information.</p>");
-	setTimeout(get_goal_loop, 200);
+	setTimeout(get_goal_loop, DELAY);
     });
-}
-
-
-function undo_to(n)
-{
-    $.post("/explore-undo", {"n":n},function(data,textStatus,jqXHR)
-    {
-	var err = data[":ERROR"];
-	if (err != "NIL") {
-	    window.alert("Undo through " + n + " failed: " + err);
-	}
-	// Else, everything is fine, display will update soon, nothing to do
-    }).fail(function() {
-	window.alert("Undo through " + n + " failed!");
-    });
-    return false;
 }
 
 function format_commands(cmds)
@@ -254,10 +317,10 @@ function get_commands_loop()
 	}
 
 	$("#commands").html(msg);
-	setTimeout(get_commands_loop, 200);
+	setTimeout(get_commands_loop, DELAY);
     }).fail(function() {
 	$("#commands").html("<p>Error getting commands.</p>");
-	setTimeout(get_commands_loop, 200);
+	setTimeout(get_commands_loop, DELAY);
     });
 }
 

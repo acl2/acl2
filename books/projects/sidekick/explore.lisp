@@ -175,6 +175,28 @@
        (ans (bridge::json-encode (list (cons :error nil)))))
     (mv ans state)))
 
+(define sk-explore-split (state)
+  :returns (mv json-info state)
+  :mode :program
+  (b* (((mv erp ?val state) (acl2::pc-single-step '(acl2-pc::split) state))
+       ((when erp)
+        (mv (sk-json-error "acl2-pc::split returned an error: erp ~a, val ~a"
+                           (str::pretty erp) (str::pretty val))
+            state))
+       (ans (bridge::json-encode (list (cons :error nil)))))
+    (mv ans state)))
+
+(define sk-explore-pro (state)
+  :returns (mv json-info state)
+  :mode :program
+  (b* (((mv erp ?val state) (acl2::pc-single-step '(acl2-pc::pro) state))
+       ((when erp)
+        (mv (sk-json-error "acl2-pc::pro returned an error: erp ~a, val ~a"
+                           (str::pretty erp) (str::pretty val))
+            state))
+       (ans (bridge::json-encode (list (cons :error nil)))))
+    (mv ans state)))
+
 
 
 #||

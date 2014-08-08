@@ -32,6 +32,14 @@
 
 (in-package "ACL2")
 
+(verify (implies (and (natp x)
+                      (consp y)
+                      (integerp z)
+                      (<= x y)
+                      (< z (expt 2 k)))
+                 (equal (append x y)
+                        (revappend z (floor k n)))))
+
 ; Note: the acl2-customization.lsp file in this directory loads the sidekick
 ; book.  When you start ACL2 in this directory, you should see a message such
 ; as:

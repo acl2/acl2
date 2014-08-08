@@ -279,5 +279,19 @@
       (b* (((mv ans state) (sk-explore-drop n state)))
         ans)))
 
+  (hunchentoot:define-easy-handler (explore-split-handler :uri "/explore-split" :default-request-type :post)
+                                   ()
+    (setf (hunchentoot:content-type*) "application/json")
+    (with-sidekick-bindings
+      (b* (((mv ans state) (sk-explore-split state)))
+        ans)))
+
+  (hunchentoot:define-easy-handler (explore-pro-handler :uri "/explore-pro" :default-request-type :post)
+                                   ()
+    (setf (hunchentoot:content-type*) "application/json")
+    (with-sidekick-bindings
+      (b* (((mv ans state) (sk-explore-pro state)))
+        ans)))
+
 
   )

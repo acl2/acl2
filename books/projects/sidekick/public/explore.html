@@ -111,14 +111,25 @@ License: (An MIT/X11-style license)
 
 <h3>Todo/Wishlist</h3>
 
+
+<p>The current design is sort of snapshot-oriented.  David suggested a
+more history-oriented focus where you could see the previous goals and
+how things changed.  I think that could work much better.  (It should
+be quite easy to switch over to that sort of a model)</p>
+
 <ul>
 <li>Buttons to take actions like sr, bash, etc.</li>
-<li>Contraposable hyps</li>
+<li>Integrate show rules, show linear, etc., options for which rule to use</li>
+<li>Automatic counterexample generation attempts to point out false goals.</li>
 <li>Diveable terms</li>
-<li>Hover over a command to see back in time to that command</li>
-<li>Goal management -- current goal, etc.</li>
+<li>Goal management -- current goal instead of just current term, highlight
+current term within the goal, etc.</li>
 </ul>
 
+<h3>Bugs</h3>
+
+<p><tt>split</tt> doesn't work in ACL2(h) due to memoize being unthreadsafe for
+whatever reason.  Currently we avoid this using <tt>pro</tt> instead.</p>
 
 
 </div>
