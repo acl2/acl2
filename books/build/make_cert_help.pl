@@ -581,7 +581,6 @@ write_whole_file($lisptmp, $instrs);
     $shinsts .= "#PBS -l pmem=${max_mem}gb\n";
     $shinsts .= "#PBS -l walltime=${max_time}:00\n\n";
 
-    $shinsts .= "pwd >> $outfile\n";
 # $shinsts .= "echo List directories of prereqs >> $outfile\n";
 # $shinsts .= "time ( ls @$prereq_dirs > /dev/null ) 2> $outfile\n";
 # foreach my $prereq (@$PREREQS) {
@@ -589,19 +588,28 @@ write_whole_file($lisptmp, $instrs);
 #     $shinsts .= "ls -l $startdir/$prereq >> $outfile 2>&1 \n";
 # }
     $shinsts .= "echo >> $outfile\n";
+    $shinsts .= "pwd >> $outfile\n";
     $shinsts .= "hostname >> $outfile\n";
+    $shinsts .= "echo >> $outfile\n";
+
+    $shinsts .= "echo Environment variables: >> $outfile\n";
+    my @relevant_env_vars = ("ACL2_CUSTOMIZATION", "ACL2_SYSTEM_BOOKS", "ACL2");
+    foreach my $var (@relevant_env_vars) {
+	if (exists $ENV{$var}) {
+	    $shinsts .= "echo $var=$ENV{$var} >> $outfile\n";
+	}
+    }
     $shinsts .= "echo >> $outfile\n";
 
     $shinsts .= "echo Temp lisp file: >> $outfile\n";
     $shinsts .= "cat $lisptmp >> $outfile\n";
+    $shinsts .= "echo --- End temp lisp file --- >> $outfile\n";
     $shinsts .= "echo >> $outfile\n";
 
     $shinsts .= "echo TARGET: $TARGET >> $outfile\n";
     $shinsts .= "echo STEP: $STEP >> $outfile\n";
     $shinsts .= "echo Start of output: >> $outfile\n";
     $shinsts .= "echo >> $outfile\n";
-
-    $shinsts .= "echo ACL2_SYSTEM_BOOKS: \${ACL2_SYSTEM_BOOKS} >> $outfile\n";
 
     $shinsts .= "export ACL2_WRITE_PORT=t\n";
     if ($TIME_CERT) {
