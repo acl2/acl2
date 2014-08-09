@@ -153,7 +153,22 @@
 
 (defthm maybe-byte-p-of-read-byte-buf-res
   (maybe-byte-p (mv-nth 0 (read-byte-buf stream buf state)))
-  :rule-classes (:rewrite :type-prescription))
+  :rule-classes (:rewrite
+                 (:type-prescription
+
+; Added by Matt K., 8/9/2014: the :typed-term provided below was implicit
+; before an ACL2 change considered for source function
+; find-type-prescription-pat, which avoids using weak compound-recognizer rules
+; (in this case, maybe-byte-p-compound-recognizer) to infer the :typed-term
+; when it is not supplied.  I'm now making the :typed-term explicit so that
+; this book certifies regardless of whether or not such a change is made to
+; ACl2.
+
+; See also maybe-byte-p-of-peek-byte-buf-res, which has been modified in the
+; same way for the same reason.
+
+                  :typed-term
+                  (mv-nth 0 (read-byte-buf stream buf state)))))
 
 (defthm maybe-byte-p-of-read-byte-buf-buf
   (maybe-byte-p (mv-nth 1 (read-byte-buf stream buf state)))
@@ -180,7 +195,13 @@
 
 (defthm maybe-byte-p-of-peek-byte-buf-res
   (maybe-byte-p (mv-nth 0 (peek-byte-buf stream buf state)))
-  :rule-classes (:rewrite :type-prescription))
+  :rule-classes (:rewrite (:type-prescription
+
+; Added by Matt K., 8/9/2014: See the comment in
+; maybe-byte-p-of-read-byte-buf-res, which is equally applicable here.
+
+                           :typed-term
+                           (mv-nth 0 (peek-byte-buf stream buf state)))))
 
 (defthm maybe-byte-p-of-peek-byte-buf-buf
   (maybe-byte-p (mv-nth 1 (peek-byte-buf stream buf state)))
