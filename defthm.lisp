@@ -4605,6 +4605,19 @@
         ((most-recent-enabled-recog-tuple (ffn-symb term)
                                           (global-val 'recognizer-alist wrld)
                                           ens)
+
+; Discussion with Jared Davis 8/9/2014 tempts us to replace the test above with
+; the following test.  An ACL2(h) "everything" regression failed to certify
+; community book centaur/aig/aiger-help.lisp with that change, which however
+; has been modified to certify with either version of this code.
+
+;        (let ((recog-tuple
+;               (most-recent-enabled-recog-tuple (ffn-symb term)
+;                                                (global-val 'recognizer-alist
+;                                                            wrld)
+;                                                ens)))
+;          (and recog-tuple (access recognizer-tuple recog-tuple :strongp)))
+
          (fargn term 1))
         (t term)))
 
