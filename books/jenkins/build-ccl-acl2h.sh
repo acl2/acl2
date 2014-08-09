@@ -1,5 +1,6 @@
 #!/bin/sh
 
+# Cause the script to exit immediately upon failure
 set -e
 
 echo "Starting build-ccl-acl2h.sh"
