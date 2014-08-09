@@ -1,3 +1,7 @@
+; Copyright (C) 2014, ForrestHunt, Inc.
+; Written by Matt Kaufmann, August, 2014
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+
 (in-package "ACL2")
 
 (include-book "misc/expander" :dir :system)

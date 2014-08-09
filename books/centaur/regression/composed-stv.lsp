@@ -555,6 +555,11 @@ Goal''
 ;
 ; Here we provide automation for the approach illustrated in Scenario 5.
 ;
+; The tool, normalize-lhs, has a keyword argument for disabling
+; stv-simvar-inputs-to-bits-open.  That option doesn't currently seem to be
+; working, but perhaps it will find use as a way to avoid undesirable case
+; splits caused by that rule.
+;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (include-book "oracle/stv-decomp-theory-expander" :dir :system)
@@ -572,7 +577,7 @@ Goal''
 
 #||
 ACL2 !>:pcb! :x
-   D      50:x(NORMALIZE-LHS
+   D      46:x(NORMALIZE-LHS
                DOUBLE-REG-DECOMP-CUTPOINT-TYPE-WITH-SPECIFIC-HYPS
                DOUBLE-REG-DECOMP-CUTPOINT-TYPE-WITH-SPECIFIC-HYPS-NORMALIZED-LEMMA-AGAIN
                DOUBLE-REG-DECOMP-CUTPOINT-TYPE-WITH-SPECIFIC-HYPS-NORMALIZED-AGAIN
