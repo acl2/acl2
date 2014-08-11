@@ -29,6 +29,6 @@
                        literal of the form ~x1."
                       cl '(equal term ?))))))))
 
-(defmacro simp (x)
-  `(er-let* ((clauses (bash-term-to-dnf '(equal ,x ?) nil nil t state)))
+(defmacro simp (x &key hints)
+  `(er-let* ((clauses (bash-term-to-dnf '(equal ,x ?) ',hints nil t state)))
      (simp-pairs clauses (w state) state nil)))
