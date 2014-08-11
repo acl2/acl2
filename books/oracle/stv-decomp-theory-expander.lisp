@@ -4,7 +4,7 @@
 
 (in-package "ACL2")
 
-(include-book "misc/expander" :dir :system)
+(include-book "misc/simp" :dir :system)
 
 ; See centaur/regression/composed-stv.lsp for an example of the following
 ; tool's usage.
@@ -15,51 +15,51 @@
 ; -- rename "lhs" to "target"
 ; -- get rid of need for stv-simvar-inputs-to-bits-open-disabledp
 
-(defmacro normalize-lhs (general name1 name2
+(defmacro normalize-lhs (general target-name
                                  &key
                                  hyp
                                  lhs
-                                 stv-simvar-inputs-to-bits-open-disabledp)
+                                 verbose)
   (let ((hyps
          (case-match hyp
            (('and . x) x)
            (& (list hyp))))
         (hints `(("Goal"
                   :in-theory (theory 'minimal-theory)) ; beta-reduce lets
-                 ("Goal''"
+                 ("Goal'"
                   :in-theory
                   (union-theories '(return-last)
-                                  ,(if stv-simvar-inputs-to-bits-open-disabledp
-                                       '(set-difference-theories
-                                         (stv-decomp-theory)
-                                         '(stv-simvar-inputs-to-bits-open))
-                                     '(stv-decomp-theory)))))))
+                                  (stv-decomp-theory))))))
     `(make-event
-      (er-let* ((lst-lst (symsim ,lhs ,hyps
-                                 :hints ,hints
-                                 ;;:inhibit-output nil ; optional
+      (er-let* ((term-hyps-pairs (simp ,lhs ,hyps
+                                       :hints ,hints
+                                       :verbose ,verbose
+                                 ;;:inhibit-output nil ; optional (and not implemented)
                                  )))
         (cond
-         ((cdr lst-lst)
+         ((cdr term-hyps-pairs)
           (er soft 'defthm-stv?
               "Sorry, got two or more goals."))
          (t
-          (let* ((lst (car lst-lst))
-                 (new-lhs (caddr lst)))
-            (value (list 'progn
-                         (list 'defthmd ',name1
-                               (list 'implies
-                                     (cons 'and ',hyps)
-                                     (list 'equal ',lhs new-lhs))
-                               :hints ',hints)
-                         (list 'defthmd ',name2
+          (let* ((new-lhs (caar term-hyps-pairs))
+                 (new-hyps (cdar term-hyps-pairs)))
+            (declare (ignorable new-hyps))
+            (value (list 'encapsulate
+                         ()
+                         (list 'local
+                               (list 'defthmd 'normalize-lhs-generated-lemma
+                                     (list 'implies
+                                           (cons 'and ',hyps)
+                                           (list 'equal ',lhs new-lhs))
+                                     :hints ',hints))
+                         (list 'defthmd ',target-name
                                (list 'implies
                                      (cons 'and ',hyps)
                                      new-lhs)
                                :hints
                                '(("Goal"
                                   :use
-                                  (,general ,name1)
+                                  (,general normalize-lhs-generated-lemma)
                                   :in-theory
                                   (theory 'minimal-theory)))))))))))))
 
