@@ -571,7 +571,7 @@ for handling @('case(foo) ... 3'b110, 3'b111: ... endcase')."
 ; -----------------------------------------------------------------------------
 
 (define vl-casezx-match-bits
-  :parents (vl-casexz-compare-expr)
+  :parents (vl-casezx-matchexpr)
   :short "Try to explode a match-expression into a @(see vl-bitlist-p)."
 
   ((x vl-expr-p
@@ -611,7 +611,7 @@ constints, but that's probably overkill.</p>"
 
 
 (define vl-casezx-matchexpr-aux
-  :parents (vl-casexz-compare-expr)
+  :parents (vl-casezx-matchexpr)
   ((type       vl-casetype-p)
    (test-bits  vl-exprlist-p "One-bit expressions for @('data') in MSB-first order.")
    (match-bits vl-bitlist-p  "Bits of the match expression like @('4'b10??') in
@@ -699,7 +699,6 @@ constints, but that's probably overkill.</p>"
 
 
 (define vl-casezx-matchexpr
-  :parents (vl-casexz-compare-expr)
   :short "Creates, e.g., the expression @('data[3] === 1'b1 & data[2] ===
 1'b0') for handling @('casez(data) ... 4'b10??: ... endcase')."
 
@@ -913,7 +912,7 @@ the same body."
        (new-warnings
         (if okp
             new-warnings
-          (warn :type :vl-casexz-fail
+          (warn :type :vl-casezx-fail
                 :msg "~a0: can't handle ~s1 statement because we failed to ~
                        determine the bits of the test expression ~a2."
                 :args (list ctx
