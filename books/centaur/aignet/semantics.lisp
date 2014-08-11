@@ -384,6 +384,10 @@ binding for orig-aignet.</p>
              (mv (and (symbolp function) 0) function args))
             (& (mv nil nil nil))))
          ((unless valnum) (mv nil nil))
+         ((when (or (eq function 'if)
+                    (eq function 'return-last)))
+          ;; Can't call stobjs-out on either of these
+          (mv nil nil))
          ((when (and (eq function 'cons)
                      (int= valnum 0)))
           ;; special case for update-nth.
