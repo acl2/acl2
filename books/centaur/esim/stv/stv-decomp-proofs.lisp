@@ -293,6 +293,7 @@
     
 
 (defun 4v-sexpr-restrict-list-fast (sexprs sexpr-alist)
+  (declare (xargs :guard t))
   (with-fast-alist sexpr-alist
     (4v-sexpr-restrict-list sexprs sexpr-alist)))
 
