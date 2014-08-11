@@ -9,6 +9,12 @@
 ; See centaur/regression/composed-stv.lsp for an example of the following
 ; tool's usage.
 
+; TODO:
+;
+; -- localize name1 inside an enapsulate.  Call it lemma-something
+; -- rename "lhs" to "target"
+; -- get rid of need for stv-simvar-inputs-to-bits-open-disabledp
+
 (defmacro normalize-lhs (general name1 name2
                                  &key
                                  hyp
@@ -19,6 +25,8 @@
            (('and . x) x)
            (& (list hyp))))
         (hints `(("Goal"
+                  :in-theory (theory 'minimal-theory)) ; beta-reduce lets
+                 ("Goal''"
                   :in-theory
                   (union-theories '(return-last)
                                   ,(if stv-simvar-inputs-to-bits-open-disabledp
@@ -28,7 +36,9 @@
                                      '(stv-decomp-theory)))))))
     `(make-event
       (er-let* ((lst-lst (symsim ,lhs ,hyps
-                                 :hints ,hints)))
+                                 :hints ,hints
+                                 ;;:inhibit-output nil ; optional
+                                 )))
         (cond
          ((cdr lst-lst)
           (er soft 'defthm-stv?

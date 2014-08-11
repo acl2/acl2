@@ -99,23 +99,42 @@
                     (cons (cons a (car y))
                           z))))
 
-(defthmd stv-simvar-inputs-to-bits-open
-  (equal (stv-simvar-inputs-to-bits (cons (cons name val) alist) in-usersyms)
-         (b* ((rest (stv-simvar-inputs-to-bits alist in-usersyms))
-              (in-usersyms (make-fast-alist in-usersyms))
-              (LOOK (HONS-GET NAME IN-USERSYMS))
-              ((UNLESS LOOK)
-               REST)
-              (VARS (CDR LOOK))
-              (NVARS (LEN VARS))
-              (VALS
-               (COND
-                ((EQ VAL *4VX*) (REPLICATE NVARS *4VX*))
-                ((AND (NATP VAL) (< VAL (ASH 1 NVARS)))
-                 (BOOL-TO-4V-LST (INT-TO-V VAL NVARS)))
-                (T (REPLICATE NVARS *4VX*)))))
-           (SAFE-PAIRLIS-ONTO-ACC VARS VALS REST)))
-  :hints(("Goal" :in-theory (enable stv-simvar-inputs-to-bits))))
+(defthm stv-simvar-inputs-to-bits-open
+  (implies (hons-get name (make-fast-alist in-usersyms))
+           (equal
+            (stv-simvar-inputs-to-bits (cons (cons name val) alist)
+                                       in-usersyms)
+            (b* ((rest (stv-simvar-inputs-to-bits alist in-usersyms))
+                 (in-usersyms (make-fast-alist in-usersyms))
+                 (look (hons-get name in-usersyms))
+; ((unless look) rest)
+                 (vars (cdr look))
+                 (nvars (len vars))
+                 (vals (cond ((eq val *4vx*) (replicate nvars *4vx*))
+                             ((and (natp val) (< val (ash 1 nvars)))
+                              (bool-to-4v-lst (int-to-v val nvars)))
+                             (t (replicate nvars *4vx*)))))
+              (safe-pairlis-onto-acc vars vals rest))))
+  :hints
+  (("goal" :in-theory (enable stv-simvar-inputs-to-bits))))
+
+;; (defthmd stv-simvar-inputs-to-bits-open
+;;   (equal (stv-simvar-inputs-to-bits (cons (cons name val) alist) in-usersyms)
+;;          (b* ((rest (stv-simvar-inputs-to-bits alist in-usersyms))
+;;               (in-usersyms (make-fast-alist in-usersyms))
+;;               (LOOK (HONS-GET NAME IN-USERSYMS))
+;;               ((UNLESS LOOK)
+;;                REST)
+;;               (VARS (CDR LOOK))
+;;               (NVARS (LEN VARS))
+;;               (VALS
+;;                (COND
+;;                 ((EQ VAL *4VX*) (REPLICATE NVARS *4VX*))
+;;                 ((AND (NATP VAL) (< VAL (ASH 1 NVARS)))
+;;                  (BOOL-TO-4V-LST (INT-TO-V VAL NVARS)))
+;;                 (T (REPLICATE NVARS *4VX*)))))
+;;            (SAFE-PAIRLIS-ONTO-ACC VARS VALS REST)))
+;;   :hints(("Goal" :in-theory (enable stv-simvar-inputs-to-bits))))
 
 (defthm stv-simvar-inputs-to-bits-nil
   (equal (stv-simvar-inputs-to-bits nil in-usersyms)
@@ -345,6 +364,7 @@
 
 
 (defun 4v-sexpr-restrict-list-fast (sexprs sexpr-alist)
+  (declare (xargs :guard t))
   (with-fast-alist sexpr-alist
     (4v-sexpr-restrict-list sexprs sexpr-alist)))
 
@@ -856,8 +876,15 @@
     eq eql
     (:t 4v-sexpr-eval-alist)
     append-to-nil
-    open-all-revappend-pairlis$-meta-rule))
+    ;open-all-revappend-pairlis$-meta-rule
+    ))
 
 (defmacro stv-decomp-theory ()
-  '(union-theories (get-ruleset 'stv-decomp-rules world)
-                   (executable-counterpart-theory :here)))
+  '(set-difference-theories
+    (union-theories (get-ruleset 'stv-decomp-rules world)
+                    (executable-counterpart-theory :here))
+    '((:EXECUTABLE-COUNTERPART IMMEDIATE-FORCE-MODEP))))
+
+;; (defmacro stv-decomp-theory ()
+;;   '(union-theories (get-ruleset 'stv-decomp-rules world)
+;;                    (executable-counterpart-theory :here)))
