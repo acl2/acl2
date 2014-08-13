@@ -28,13 +28,21 @@
 ;; ----------------------------------------------------------------------
 ;; Load all of the various acl2-interface files, if necessary.
 
-(load "inf-acl2.el")			;(require 'inf-acl2)
-(load "mfm-acl2.el")			;(require 'mfm-acl2)
-(load "interface-macros.el")		;(require 'interface-macros)
+; The changes below were made August 2014 as suggested by Camm
+; Maguire, "in response to a Debian bug regarding certain emacs
+; policies."
+
+;(load "inf-acl2.el")			;(require 'inf-acl2)
+;(load "mfm-acl2.el")			;(require 'mfm-acl2)
+;(load "interface-macros.el")		;(require 'interface-macros)
+(require 'inf-acl2)
+(require 'mfm-acl2)
+(require 'interface-macros)
 
 (update-mode-menu-alist *acl2-user-map-interface*)
 
-(load "acl2-interface-functions.el")
+;(load "acl2-interface-functions.el")
+(load "acl2-interface-functions")
 
 ;; ----------------------------------------------------------------------
 ;; Specials used by functions in interface-macros.el.
