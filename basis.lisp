@@ -7730,14 +7730,14 @@
 
 (defun strip-cadrs (x)
   (declare (xargs :guard (all->=-len x 2)))
-  (cond ((null x) nil)
+  (cond ((endp x) nil)
         (t (cons (cadar x) (strip-cadrs (cdr x))))))
 
 ; Rockwell Addition: Just moved from other-events.lisp
 
 (defun strip-cddrs (x)
   (declare (xargs :guard (all->=-len x 2)))
-  (cond ((null x) nil)
+  (cond ((endp x) nil)
         (t (cons (cddar x) (strip-cddrs (cdr x))))))
 
 (defun global-set-lst (alist wrld)
