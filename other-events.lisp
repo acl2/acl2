@@ -13548,22 +13548,32 @@
 ; This function supports the creation of relocated .cert files for Debian GCL
 ; distributions.  See make-certificate-file.
 
-; Warning: It is tempting to replace strings in (car portcullis), which is the
-; list of portcullis commands, and the expansion-alist.  However, that will
-; result in an uncertified book after moving the .cert.final file to the .cert
-; file, because post-alist3 contains a checksum for the book as computed by
-; function check-sum-cert, using the portcullis commands and the
-; expansion-alist.
+; WARNING: Relocating .cert files is not truly supported!  This is just a
+; best-effort attempt to do so.  In particular, consider the question of
+; whether to apply the function replace-string-prefix-in-tree in (car
+; portcullis), which is the list of portcullis commands, and in
+; expansion-alist, which stores results from make-event expansion.  On the one
+; hand, doing so will likely result in an uncertified book after moving the
+; .cert.final file to the .cert file, because post-alist3 contains a checksum
+; for the book as computed by function check-sum-cert, using the portcullis
+; commands and the expansion-alist.  But an explicit uncertified book error
+; seems preferable to leaving the strings unchanged, since they are probably
+; invalid pathnames (based on pathnames at certify-book time, not on the user's
+; current file system).  So we go ahead and include those applications of
+; replace-string-prefix-in-tree.
 
   (make-certificate-file1
    file
-   (cons (car portcullis)
+   (cons (replace-string-prefix-in-tree ; see comment above
+          (car portcullis) old-dir (length old-dir) new-dir)
          (replace-string-prefix-in-tree
           (cdr portcullis) old-dir (length old-dir) new-dir))
    certification-file
    (replace-string-prefix-in-tree
     post-alist3 old-dir (length old-dir) new-dir)
-   expansion-alist pcert-info cert-op ctx state))
+   (replace-string-prefix-in-tree ; see comment above
+    expansion-alist old-dir (length old-dir) new-dir)
+   pcert-info cert-op ctx state))
 
 (defun make-certificate-file (file portcullis post-alist1 post-alist2
                                    expansion-alist pcert-info
@@ -25879,7 +25889,7 @@
                                caller))
                           (alt-pair
                            (er soft ctx
-                               "The keyword ~x0 was previoiusly bound to ~
+                               "The keyword ~x0 was previously bound to ~
                                 directory ~x1 by a call of ~x2.  To bind ~x0 ~
                                 with ~x3 first evaluate ~x4."
                                keyword

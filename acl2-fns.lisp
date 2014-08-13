@@ -1541,21 +1541,16 @@ notation causes an error and (b) the use of ,. is not permitted."
 
 ; It's not clear that there is a meaningful notion of host on Linux.  So we
 ; play it safe and define our own, error-free (for CLtL2) version of
-; user-homedir-pathname.  We have observed in the past that we needed our own
-; version of user-homedir-pathname for GCL 2.7.0 anyhow (see below).
+; user-homedir-pathname.
 
   #+gcl
-  (cond
-   ((gcl-version->= 2 7 0)
 
-; It seems that GCL 2.7.0 has had problems with user-homedir-pathname in static
-; versions because of how some system functions are relocated.  So we define
-; our own version for use by all GCLs 2.7.0 and beyond.
+; Camm Maguire has explained that for GCL running under Debian autobuilders,
+; using HOME is the most reliable way to get the home directory.
 
-    (let ((home (si::getenv "HOME")))
-      (and home
-           (pathname (concatenate 'string home "/")))))
-   (t (our-ignore-errors (pathname (user-homedir-pathname)))))
+  (let ((home (si::getenv "HOME")))
+    (and home
+         (pathname (concatenate 'string home "/"))))
   #-gcl ; presumably CLtL2
   (our-ignore-errors (user-homedir-pathname)))
 
