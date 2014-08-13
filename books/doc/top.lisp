@@ -159,7 +159,6 @@
 (include-book "centaur/vl/transforms/xf-propagate" :dir :system)
 (include-book "centaur/vl/transforms/xf-expr-simp" :dir :system)
 (include-book "centaur/vl/transforms/xf-inline" :dir :system)
-(include-book "centaur/vl/mlib/sub-counts" :dir :system)
 
 ;; BOZO these are incompatible?  which is right?
 (include-book "centaur/vl/util/prefix-hash" :dir :system)

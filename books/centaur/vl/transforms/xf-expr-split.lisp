@@ -309,7 +309,7 @@ up.</p>"
                             (delta vl-delta-p))
   :returns (mv (new-x vl-arguments-p :hyp :fguard)
                (delta vl-delta-p     :hyp :fguard))
-  (b* (((when (eq (vl-arguments-kind x) :named))
+  (b* (((when (eq (vl-arguments-kind x) :vl-arguments-named))
         (mv x (dwarn :type :vl-bad-arguments
                      :msg "~a0: expected to only encounter plain arguments, ~
                            but found a named argument list.  Not actually ~

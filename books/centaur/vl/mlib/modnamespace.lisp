@@ -30,6 +30,7 @@
 
 (in-package "VL")
 (include-book "../parsetree")
+(include-book "stmt-tools")
 (local (include-book "../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
 
@@ -308,61 +309,4 @@ module illegally declares those duplicated names more than once.</p>
   (defthm true-listp-of-vl-module->modnamespace
     (true-listp (vl-module->modnamespace x))
     :rule-classes :type-prescription))
-
-
-;; These aren't part of the module's namespace, but are just utilities for
-;; collecting up various names.
-
-(define vl-blockitem->name ((x vl-blockitem-p))
-  :parents (vl-blockitem-p)
-  :returns (name stringp)
-  :short "Get the name declared by any @(see vl-blockitem-p)."
-  :guard-hints(("Goal" :in-theory (enable vl-blockitem-p)))
-  (mbe :logic
-       (let ((x (vl-blockitem-fix x)))
-         (cond ((vl-vardecl-p x)   (vl-vardecl->name x))
-               (t                  (vl-paramdecl->name x))))
-       :exec (case (tag x)
-               (:vl-vardecl   (vl-vardecl->name x))
-               (otherwise     (vl-paramdecl->name x)))))
-
-(defprojection vl-blockitemlist->names ((x vl-blockitemlist-p))
-  :parents (vl-blockitemlist-p)
-  :short "Collect the names declared in a @(see vl-blockitemlist-p)."
-  :returns (naems string-listp)
-  (vl-blockitem->name x))
-
-
-(define vl-fundecl->namespace-nrev ((x vl-fundecl-p) nrev)
-  :parents (vl-fundecl->namespace)
-  (b* (((vl-fundecl x) x)
-       (nrev (vl-taskportlist->names-nrev x.inputs nrev)))
-    (vl-blockitemlist->names-nrev x.decls nrev)))
-
-(define vl-fundecl->namespace ((x vl-fundecl-p))
-  :parents (vl-fundecl-p modnamespace)
-  :short "Compute the namespace of a function declaration."
-  :returns (names string-listp)
-  :verify-guards nil
-  (mbe :logic
-       (b* (((vl-fundecl x) x))
-         (append (vl-taskportlist->names x.inputs)
-                 (vl-blockitemlist->names x.decls)))
-       :exec
-       (with-local-nrev
-         (vl-fundecl->namespace-nrev x nrev)))
-  ///
-  (defthm vl-fundecl->namespace-nrev-removal
-    (equal (vl-fundecl->namespace-nrev x nrev)
-           (append nrev (vl-fundecl->namespace x)))
-    :hints(("Goal" :in-theory (enable vl-fundecl->namespace-nrev))))
-
-  (verify-guards vl-fundecl->namespace))
-
-(defmapappend vl-fundecllist->namespaces (x)
-  (vl-fundecl->namespace x)
-  :guard (vl-fundecllist-p x)
-  :rest
-  ((defthm string-listp-of-vl-fundecllist->namespaces
-     (string-listp (vl-fundecllist->namespaces x)))))
 

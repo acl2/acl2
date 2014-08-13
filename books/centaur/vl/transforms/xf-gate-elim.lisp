@@ -172,7 +172,7 @@ happened and leave the gate unchanged.</p>"
                  :instname  x.name
                  :modname   (vl-module->name target)
                  :portargs  (make-vl-arguments-plain :args args)
-                 :paramargs (make-vl-arguments-plain :args nil)
+                 :paramargs (make-vl-paramargs-plain :args nil)
                  :loc       x.loc)))
     (mv (ok) nil (list modinst) (list target)))
   ///

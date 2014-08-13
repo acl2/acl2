@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2013 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -155,9 +155,10 @@ and including the surrounding quotes."
                           (character-listp x))
                      (vl-printedlist-p (bridge::json-encode-chars x acc)))
             :hints(("Goal"
-                    :in-theory (enable bridge::json-encode-chars
-                                       bridge::json-encode-char
-                                       bridge::json-encode-weird-char)))))))
+                    :in-theory (e/d (bridge::json-encode-chars
+                                     bridge::json-encode-char
+                                     bridge::json-encode-weird-char)
+                                    (digit-to-char))))))))
 
 (add-json-encoder stringp jp-str)
 
@@ -531,11 +532,6 @@ encoding.</p>"
   :inline t
   (jp-sym x))
 
-(define vl-jp-paramdecltype ((x vl-paramdecltype-p) &key (ps 'ps))
-  :parents (json-encoders)
-  :inline t
-  (jp-sym x))
-
 (define vl-jp-alwaystype ((x vl-alwaystype-p) &key (ps 'ps))
   :parents (json-encoders)
   :inline t
@@ -553,7 +549,6 @@ encoding.</p>"
 (add-json-encoder vl-casecheck-p        vl-jp-casecheck)
 (add-json-encoder vl-netdecltype-p      vl-jp-netdecltype)
 (add-json-encoder vl-taskporttype-p     vl-jp-taskporttype)
-(add-json-encoder vl-paramdecltype-p    vl-jp-paramdecltype)
 (add-json-encoder vl-alwaystype-p       vl-jp-alwaystype)
 
 
@@ -887,8 +882,33 @@ which could not hold such large values.</p>")
 (add-json-encoder vl-structmember-p vl-jp-structmember)
 (add-json-encoder vl-structmemberlist-p vl-jp-structmemberlist)
 
+(define vl-jp-maybe-datatype ((x vl-maybe-datatype-p) &key (ps 'ps))
+  (if x
+      (vl-jp-datatype x)
+    (vl-print "null")))
+
+(add-json-encoder vl-maybe-datatype-p vl-jp-maybe-datatype)
+
 (def-vl-jp-aggregate vardecl)
 (def-vl-jp-list vardecl :newlines 4)
+
+
+(define vl-jp-paramtype ((x vl-paramtype-p) &key (ps 'ps))
+   (vl-paramtype-case x
+     (:vl-implicitvalueparam
+      (jp-object :tag     (jp-sym :vl-implicitvalueparam)
+                 :sign    (jp-sym x.sign)
+                 :range   (vl-jp-maybe-range x.range)
+                 :default (vl-jp-maybe-expr x.default)))
+     (:vl-explicitvalueparam
+      (jp-object :tag     (jp-sym :vl-explicitvalueparam)
+                 :type    (vl-jp-datatype x.type)
+                 :default (vl-jp-maybe-expr x.default)))
+     (:vl-typeparam
+      (jp-object :tag     (jp-sym :vl-typeparam)
+                 :default (vl-jp-maybe-datatype x.default)))))
+
+(add-json-encoder vl-paramtype-p vl-jp-paramtype)
 
 (def-vl-jp-aggregate paramdecl)
 (def-vl-jp-list paramdecl :newlines 4)
@@ -909,11 +929,11 @@ which could not hold such large values.</p>")
 (define vl-jp-arguments ((x vl-arguments-p) &key (ps 'ps))
   :parents (json-encoders vl-arguments-p)
   (vl-arguments-case x
-    :named
+    :vl-arguments-named
     (jp-object :tag    (jp-sym :vl-arguments)
                :namedp (jp-bool t)
                :args   (vl-jp-namedarglist x.args))
-    :plain
+    :vl-arguments-plain
     (jp-object :tag    (jp-sym :vl-arguments)
                :namedp (jp-bool nil)
                :args   (vl-jp-plainarglist x.args))))
@@ -928,6 +948,43 @@ which could not hold such large values.</p>")
     (vl-print "null")))
 
 (add-json-encoder vl-maybe-gatestrength-p vl-jp-maybe-gatestrength)
+
+
+
+
+(define vl-jp-paramvalue ((x vl-paramvalue-p) &key (ps 'ps))
+  :parents (json-encoders vl-paramvalue-p)
+  (b* ((x (vl-paramvalue-fix x)))
+    (vl-paramvalue-case x
+      :expr     (vl-jp-expr x)
+      :datatype (vl-jp-datatype x))))
+
+(add-json-encoder vl-paramvalue-p vl-jp-paramvalue)
+
+(def-vl-jp-list paramvalue)
+
+(define vl-jp-maybe-paramvalue ((x vl-maybe-paramvalue-p) &key (ps 'ps))
+  (if x
+      (vl-jp-paramvalue x)
+    (vl-print "null")))
+
+(add-json-encoder vl-maybe-paramvalue-p vl-jp-maybe-paramvalue)
+
+(def-vl-jp-aggregate namedparamvalue)
+(def-vl-jp-list namedparamvalue)
+
+(define vl-jp-paramargs ((x vl-paramargs-p) &key (ps 'ps))
+  (vl-paramargs-case x
+    :vl-paramargs-named
+    (jp-object :tag    (jp-sym :vl-paramargs)
+               :namedp (jp-bool t)
+               :args   (vl-jp-namedparamvaluelist x.args))
+    :vl-paramargs-plain
+    (jp-object :tag    (jp-sym :vl-paramargs)
+               :namedp (jp-bool nil)
+               :args   (vl-jp-paramvaluelist x.args))))
+
+(add-json-encoder vl-paramargs-p vl-jp-paramargs)
 
 (def-vl-jp-aggregate modinst)
 (def-vl-jp-list modinst)
@@ -1184,6 +1241,8 @@ TEXT versions of the message.</p>"
              (vl-println? "]")))
 
 (add-json-encoder vl-commentmap-p vl-jp-commentmap)
+
+
 
 (def-vl-jp-aggregate module
   :omit (params esim)

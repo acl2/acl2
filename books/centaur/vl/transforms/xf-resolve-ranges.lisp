@@ -29,8 +29,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "../mlib/expr-tools")
-(include-book "../parsetree")
+(include-book "../mlib/consteval")
 (local (include-book "../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
 
@@ -53,28 +52,7 @@ unparameterization).  For instance, </p>
 })
 
 <p>And so in order to determine what the size of @('r') is, we need to evaluate
-these expressions.  This leads us to a precarious place, because normally in
-order to evaluate a Verilog expression, we need to have computed its size and
-the sizes of all its subexpressions.  And so, we want to restrict ourselves to
-a subset of the Verilog expressions which we can confidently resolve to a
-constant without having their widths available.</p>
-
-<p>In short, we carve out a very small set of Verilog expressions which includes
-only:</p>
-
-<ul>
- <li>Plain decimal integers (which are both unsized and signed)</li>
- <li>Addition, subtraction, and multiplication</li>
-</ul>
-
-<p>In practice, at Centaur we don't even need this much -- subtraction would do
-just fine.  But it was so easy to add the others that I went ahead and did it
-anyway, on the off chance that some day we will want @('2 * width') or @('width
-+ 1') or something along those lines.</p>
-
-<p>These constant expressions occur in net and register declarations, and also
-may occur in expressions such as bit-selects, part-selects, and multiple
-concatenations.</p>")
+these expressions.</p>")
 
 (local (xdoc::set-default-parents rangeresolve))
 
@@ -112,32 +90,27 @@ concatenations.</p>")
   :fn vl-rangeresolve
   :body
   (b* (((vl-range x) x)
-       (msb-val (vl-constexpr-reduce x.msb))
-       (lsb-val (vl-constexpr-reduce x.lsb)))
-    (if (and msb-val lsb-val)
-        ;; Ordinary case, build a new range.  We could probably use
-        ;; vl-make-index here instead of constructing these manually, but
-        ;; it produces sized results and maybe it's slightly better not
-        ;; to size these yet.  Hrmn.  It probably doesn't matter.
-        ;; Whatever.
-        (mv (ok)
-            (hons-copy (make-vl-range
-                        :msb (make-vl-atom
-                              :guts (make-vl-constint :origwidth 32
-                                                      :origtype :vl-signed
-                                                      :value msb-val
-                                                      :wasunsized t))
-                        :lsb (make-vl-atom
-                              :guts (make-vl-constint :origwidth 32
-                                                      :origtype :vl-signed
-                                                      :value lsb-val
-                                                      :wasunsized t)))))
-      ;; Failure, just return the unreduced range.
-      (mv (warn :type :vl-bad-range
-                ;; BOZO need some context
-                :msg "Unable to safely resolve range ~a0."
-                :args (list x))
-          x))))
+       ((mv msb-ok msb) (vl-consteval x.msb))
+       ((mv lsb-ok lsb) (vl-consteval x.lsb))
+       ((unless (and msb-ok lsb-ok))
+        ;; Failure, just return the unreduced range.
+        (mv (warn :type :vl-bad-range
+                  ;; BOZO need some context
+                  :msg "Unable to safely resolve range ~a0."
+                  :args (list x))
+            x))
+       ;; We could create a new range that just had the reduced MSB and LSB
+       ;; here.  However, we don't really care at all about the width/type
+       ;; of the resulting expressions.  That is, nobody wants to see:
+       ;;
+       ;;    wire [4'd3 : 4'd0] foo;
+       ;;
+       ;; So since the widths/types don't matter, we'll just use VL-MAKE-INDEX
+       ;; to recreate the indices; it does something clever for 32-bit integers
+       ;; to make them look like they're unsized.
+       (msb (vl-make-index (vl-resolved->val msb)))
+       (lsb (vl-make-index (vl-resolved->val lsb))))
+    (mv (ok) (hons-copy (make-vl-range :msb msb :lsb lsb)))))
 
 (def-vl-rangeresolve vl-maybe-range
   :fn vl-maybe-rangeresolve
@@ -248,6 +221,11 @@ concatenations.</p>")
   (verify-guards vl-datatype-rangeresolve)
   (deffixequiv-mutual vl-datatype-rangeresolve))
 
+(def-vl-rangeresolve vl-maybe-datatype
+  :body (if (not x)
+            (mv (ok) nil)
+          (vl-datatype-rangeresolve x warnings)))
+
 (def-vl-rangeresolve vl-portdecl
   :body (b* (((vl-portdecl x) x)
              ((mv warnings range) (vl-maybe-rangeresolve x.range warnings)))
@@ -289,10 +267,26 @@ concatenations.</p>")
 
 (def-vl-rangeresolve-list vl-gateinstlist :element vl-gateinst)
 
+(def-vl-rangeresolve vl-paramtype
+  :body
+  (vl-paramtype-case x
+    (:vl-implicitvalueparam
+     (b* (((mv warnings range-prime)   (vl-maybe-rangeresolve x.range warnings))
+          (x-prime                     (change-vl-implicitvalueparam x :range range-prime)))
+       (mv warnings x-prime)))
+    (:vl-explicitvalueparam
+     (b* (((mv warnings type-prime)    (vl-datatype-rangeresolve x.type warnings))
+          (x-prime                     (change-vl-explicitvalueparam x :type type-prime)))
+       (mv warnings x-prime)))
+    (:vl-typeparam
+     (b* (((mv warnings default-prime) (vl-maybe-datatype-rangeresolve x.default warnings))
+          (x-prime                     (change-vl-typeparam x :default default-prime)))
+       (mv warnings x-prime)))))
+
 (def-vl-rangeresolve vl-paramdecl
   :body (b* (((vl-paramdecl x) x)
-             ((mv warnings range) (vl-maybe-rangeresolve x.range warnings)))
-          (mv warnings (change-vl-paramdecl x :range range))))
+             ((mv warnings type) (vl-paramtype-rangeresolve x.type warnings)))
+          (mv warnings (change-vl-paramdecl x :type type))))
 
 (def-vl-rangeresolve-list vl-paramdecllist :element vl-paramdecl)
 

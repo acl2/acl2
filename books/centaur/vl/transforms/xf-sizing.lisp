@@ -529,16 +529,65 @@ the expression.</p>"
   :takes-elem t
   :body
   (vl-arguments-case x
-    :named
+    :vl-arguments-named
     (b* (((mv successp warnings args-prime)
           (vl-namedarglist-exprsize x.args mod ialist elem warnings))
          (x-prime (change-vl-arguments-named x :args args-prime)))
       (mv successp warnings x-prime))
-    :plain
+    :vl-arguments-plain
     (b* (((mv successp warnings args-prime)
           (vl-plainarglist-exprsize x.args mod ialist elem warnings))
          (x-prime (change-vl-arguments-plain x :args args-prime)))
       (mv successp warnings x-prime))))
+
+
+(def-vl-exprsize vl-paramvalue
+  :takes-elem t
+  :body
+  (b* ((x (vl-paramvalue-fix x)))
+    (vl-paramvalue-case x
+      :expr (vl-expr-size nil x mod ialist elem warnings)
+      :datatype (vl-datatype-exprsize x mod ialist elem warnings))))
+
+(def-vl-exprsize-list vl-paramvaluelist
+  :takes-elem t
+  :element vl-paramvalue)
+
+(def-vl-exprsize vl-maybe-paramvalue
+  :takes-elem t
+  :body
+  (if x
+      (vl-paramvalue-exprsize x mod ialist elem warnings)
+    (mv t warnings nil)))
+
+(def-vl-exprsize vl-namedparamvalue
+  :takes-elem t
+  :body
+  (b* (((vl-namedparamvalue x) x)
+       ((mv successp warnings value)
+        (vl-maybe-paramvalue-exprsize x.value mod ialist elem warnings))
+       (x-prime (change-vl-namedparamvalue x :value value)))
+    (mv successp warnings x-prime)))
+
+(def-vl-exprsize-list vl-namedparamvaluelist
+  :takes-elem t
+  :element vl-namedparamvalue)
+
+(def-vl-exprsize vl-paramargs
+  :takes-elem t
+  :body
+  (vl-paramargs-case x
+    :vl-paramargs-named
+    (b* (((mv successp warnings args)
+          (vl-namedparamvaluelist-exprsize x.args mod ialist elem warnings))
+         (x-prime (change-vl-paramargs-named x :args args)))
+      (mv successp warnings x-prime))
+    :vl-paramargs-plain
+    (b* (((mv successp warnings args)
+          (vl-paramvaluelist-exprsize x.args mod ialist elem warnings))
+         (x-prime (change-vl-paramargs-plain x :args args)))
+      (mv successp warnings x-prime))))
+
 
 (def-vl-exprsize vl-modinst
   :body
@@ -547,7 +596,7 @@ the expression.</p>"
        ((mv successp1 warnings portargs-prime)
         (vl-arguments-exprsize x.portargs mod ialist elem warnings))
        ((mv successp2 warnings paramargs-prime)
-        (vl-arguments-exprsize x.paramargs mod ialist elem warnings))
+        (vl-paramargs-exprsize x.paramargs mod ialist elem warnings))
        ((mv successp3 warnings range-prime)
         (vl-maybe-range-exprsize x.range mod ialist elem warnings))
        ((mv successp4 warnings delay-prime)

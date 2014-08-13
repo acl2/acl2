@@ -33,6 +33,7 @@
 (include-book "lvalues")
 (include-book "delays")
 (include-book "strengths")
+(include-book "datatypes")
 (include-book "../../mlib/expr-tools")
 (include-book "../../mlib/port-tools")
 (local (include-book "../../util/arithmetic"))
@@ -183,17 +184,83 @@
             (mv erp val explore new-warnings))))
 
 
-; parameter_value_assignment ::= '#' '(' list_of_parameter_assignments ')'
+
+; Verilog-2005:
 ;
-; list_of_parameter_assignments ::=
-;    expression { ',' expression }
-;  | named_parameter_assignment { ',' named_parameter_assignment }
+;   parameter_value_assignment ::= '#' '(' list_of_parameter_assignments ')'
 ;
-; named_parameter_assignment ::=
-;  '.' identifier '(' [ mintypmax_expression ] ')'
+;   list_of_parameter_assignments ::=
+;      expression { ',' expression }
+;    | named_parameter_assignment { ',' named_parameter_assignment }
+;
+;   named_parameter_assignment ::=
+;     '.' identifier '(' [ mintypmax_expression ] ')'
+;
+;
+; SystemVerilog-2012:
+;
+;   parameter_value_assignment ::= '#' '(' [ list_of_parameter_assignments ] ')'
+;
+;   list_of_parameter_assignments ::=
+;       ordered_parameter_assignment { ',' ordered_parameter_assignment }
+;     | named_parameter_assignment { ',' named_parameter_assignment }
+;
+;   ordered_parameter_assignment ::= param_expression
+;
+;   named_parameter_assignment   ::=
+;      '.' identifier ( [ param_expression ] )
+;
+;   param_expression ::= mintypmax_expression | data_type | $
+;
+; In short, SystemVerilog-2012 is extending the Verilog-2005 grammar by:
+;
+;   - Permitting completely blank lists, i.e., ``#()``
+;   - Permitting datatypes instead of just expressions as values
+;   - Allowing mintypmax expressions in plain lists
+
+(defparser vl-parse-param-expression ()
+  ;; Verilog-2005:       Matches mintypmax_expression
+  ;; SystemVerilog-2012: Matches mintypmax_expression | data_type | $
+  ;;
+  ;; Except that our SystemVerilog expression parser already accepts $ as an
+  ;; expression, so we really just match:
+  ;;
+  ;; param_expression ::= mintypmax_expression | data_type
+  ;;
+  ;; But BOZO BOZO BOZO ----- This is impossible!
+  ;;
+  ;; Problem: data types and expressions are ambiguous.  In particular, we
+  ;; have:
+  ;;
+  ;;   data_type ::= [optional stuff] type_identifier [optional_stuff]
+  ;;
+  ;; But type_identifier is just an identifier.  So if we see a plain old
+  ;; identifier, it's unclear whether it's a type or an expression.  Arrrgh.
+  ;;
+  ;; I think to actually deal with this, I'm going to have to rework the parser
+  ;; to not be context-insensitive.  Instead, I'll need to pass around some
+  ;; kind of symbol table that records, e.g., what the names of the data types
+  ;; are, etc.
+  ;;
+  ;; Even though this will be a big change, it probably won't be too hard: via
+  ;; SEQW we're already passing around a warnings structure everywhere, so
+  ;; basically we can just change this structure to be more of a parse-state
+  ;; structure instead.  (In fact we could consider extending the loadstate
+  ;; objects from the loader.)
+  ;;
+  ;; Well, I don't want to completely rework the parser while I'm in the middle
+  ;; of implementing the new parameter handling.  So, for now, I'm just going
+  ;; to have this function parse expressions.
+  :result (vl-paramvalue-p val)
+  :resultp-of-nil nil
+  :fails gracefully
+  :count strong
+  (seqw tokens warnings
+        (ans := (vl-parse-mintypmax-expression))
+        (return ans)))
 
 (defparser vl-parse-named-parameter-assignment ()
-  :result (vl-namedarg-p val)
+  :result (vl-namedparamvalue-p val)
   :resultp-of-nil nil
   :fails gracefully
   :count strong
@@ -201,13 +268,14 @@
         (:= (vl-match-token :vl-dot))
         (id := (vl-match-token :vl-idtoken))
         (:= (vl-match-token :vl-lparen))
-        (expr := (vl-parse-mintypmax-expression))
+        (unless (vl-is-token? :vl-rparen)
+          (value := (vl-parse-param-expression)))
         (:= (vl-match-token :vl-rparen))
-        (return (make-vl-namedarg :name (vl-idtoken->name id)
-                                  :expr expr))))
+        (return (make-vl-namedparamvalue :name (vl-idtoken->name id)
+                                         :value value))))
 
 (defparser vl-parse-list-of-named-parameter-assignments ()
-  :result (vl-namedarglist-p val)
+  :result (vl-namedparamvaluelist-p val)
   :resultp-of-nil t
   :true-listp t
   :fails gracefully
@@ -219,32 +287,54 @@
           (rest := (vl-parse-list-of-named-parameter-assignments)))
         (return (cons first rest))))
 
+(defparser vl-parse-list-of-ordered-parameter-assignments ()
+  :result (vl-paramvaluelist-p val)
+  :resultp-of-nil t
+  :true-listp t
+  :fails gracefully
+  :count strong
+  (seqw tokens warnings
+        (first := (vl-parse-param-expression))
+        (when (vl-is-token? :vl-comma)
+          (:= (vl-match-token :vl-comma))
+          (rest := (vl-parse-list-of-ordered-parameter-assignments)))
+        (return (cons first rest))))
+
 (defparser vl-parse-list-of-parameter-assignments ()
-  :result (vl-arguments-p val)
+  :result (vl-paramargs-p val)
   :resultp-of-nil nil
   :fails gracefully
   :count strong
   (seqw tokens warnings
         (when (vl-is-token? :vl-dot)
           (args := (vl-parse-list-of-named-parameter-assignments))
-          (return (make-vl-arguments-named :args args)))
-        (exprs := (vl-parse-1+-expressions-separated-by-commas))
-        (return (make-vl-arguments-plain :args (vl-exprlist-to-plainarglist exprs)))))
+          (return (make-vl-paramargs-named :args args)))
+        (exprs := (if (eq (vl-loadconfig->edition config) :verilog-2005)
+                      ;; Verilog-2005 doesn't allow mintypmax exprs here.
+                      (vl-parse-1+-expressions-separated-by-commas)
+                    ;; SystemVerilog-2012 does.
+                    (vl-parse-list-of-ordered-parameter-assignments)))
+        (return (make-vl-paramargs-plain :args exprs))))
 
 (defparser vl-parse-parameter-value-assignment ()
-  :result (vl-arguments-p val)
+  :result (vl-paramargs-p val)
   :resultp-of-nil nil
   :fails gracefully
   :count strong
   (seqw tokens warnings
         (:= (vl-match-token :vl-pound))
         (:= (vl-match-token :vl-lparen))
+
+        (when (and (vl-is-token? :vl-rparen)
+                   (not (eq (vl-loadconfig->edition config) :verilog-2005)))
+          ;; In SystemVerilog, #() is allowed.  However, in Verilog-2005 it's a
+          ;; parse error.
+          (:= (vl-match))
+          (return (make-vl-paramargs-plain :args nil)))
+
         (args := (vl-parse-list-of-parameter-assignments))
         (:= (vl-match-token :vl-rparen))
         (return args)))
-
-
-
 
 
 
@@ -255,10 +345,9 @@
 ; module_instance ::=
 ;    identifier [range] '(' [list_of_port_connections] ')'
 
-
 (defparser vl-parse-module-instance (modname paramargs atts)
   :guard (and (stringp modname)
-              (vl-arguments-p paramargs)
+              (vl-paramargs-p paramargs)
               (vl-atts-p atts))
   :result (vl-modinst-p val)
   :resultp-of-nil nil
@@ -283,7 +372,7 @@
 
 (defparser vl-parse-1+-module-instances (modname paramargs atts)
   :guard (and (stringp modname)
-              (vl-arguments-p paramargs)
+              (vl-paramargs-p paramargs)
               (vl-atts-p atts))
   :result (vl-modinstlist-p val)
   :resultp-of-nil t
@@ -309,13 +398,11 @@
         (when (vl-is-token? :vl-pound)
           (paramargs := (vl-parse-parameter-value-assignment)))
         (insts := (vl-parse-1+-module-instances (vl-idtoken->name modid)
-                                                (or paramargs (make-vl-arguments-plain :args nil))
+                                                (or paramargs
+                                                    (make-vl-paramargs-plain :args nil))
                                                 atts))
         (semi := (vl-match-token :vl-semi))
         (return insts)))
-
-
-
 
 
 
@@ -354,7 +441,7 @@
                                                 (vl-idtoken->name inst-id))
                                  :modname modname
                                  :range range
-                                 :paramargs (make-vl-arguments-plain :args nil)
+                                 :paramargs (make-vl-paramargs-plain :args nil)
                                  :portargs  (make-vl-arguments-plain
                                              :args (vl-exprlist-to-plainarglist (cons lvalue exprs)))
                                  :str str

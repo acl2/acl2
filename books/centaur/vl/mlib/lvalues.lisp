@@ -325,7 +325,7 @@ their \"wires\" since they're in a different namespace.</p>")
   :type vl-modinst
   :nrev-body
   (let ((args (vl-modinst->portargs x)))
-    (if (eq (vl-arguments-kind args) :named)
+    (if (eq (vl-arguments-kind args) :vl-arguments-named)
         (prog2$
          (cw "; vl-modinst-lvalexprs: skipping unresolved instance ~s0 of ~s1~%"
              (vl-modinst->instname x)
@@ -334,7 +334,7 @@ their \"wires\" since they're in a different namespace.</p>")
       (vl-plainarglist-lvalexprs-nrev (vl-arguments-plain->args args) nrev)))
   :body
   (let ((args (vl-modinst->portargs x)))
-    (if (eq (vl-arguments-kind args) :named)
+    (if (eq (vl-arguments-kind args) :vl-arguments-named)
         nil
       (vl-plainarglist-lvalexprs (vl-arguments-plain->args args)))))
 
@@ -582,7 +582,7 @@ problematic lvalues encountered.</p>" long)))
   :guard (and (vl-location-p loc)
               (maybe-stringp instname))
   :body
-  (if (eq (vl-arguments-kind x) :named)
+  (if (eq (vl-arguments-kind x) :vl-arguments-named)
       (warn :type :vl-programming-error
             :msg "~l0: expected arguments of instance ~s1 to be resolved, but ~
                   args are still named."

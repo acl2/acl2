@@ -150,35 +150,6 @@ expressions within @('(* foo = bar *)')-style attributes.</p>")
           nil))
 
 (def-vl-allexprs
-  :type vl-plainarg
-  :nrev-body (vl-maybe-expr-allexprs-nrev (vl-plainarg->expr x) nrev)
-  :body (vl-maybe-expr-allexprs (vl-plainarg->expr x)))
-
-(def-vl-allexprs-list
-  :list vl-plainarglist
-  :element vl-plainarg)
-
-(def-vl-allexprs
-  :type vl-namedarg
-  :nrev-body (vl-maybe-expr-allexprs-nrev (vl-namedarg->expr x) nrev)
-  :body (vl-maybe-expr-allexprs (vl-namedarg->expr x)))
-
-(def-vl-allexprs-list
-  :list vl-namedarglist
-  :element vl-namedarg)
-
-(def-vl-allexprs
-  :type vl-arguments
-  :nrev-body
-  (vl-arguments-case x
-    :named (vl-namedarglist-allexprs-nrev x.args nrev)
-    :plain (vl-plainarglist-allexprs-nrev x.args nrev))
-  :body
-  (vl-arguments-case x
-    :named (vl-namedarglist-allexprs x.args)
-    :plain (vl-plainarglist-allexprs x.args)))
-
-(def-vl-allexprs
   :type vl-range
   :nrev-body
   (b* (((vl-range x) x)
@@ -366,6 +337,17 @@ expressions within @('(* foo = bar *)')-style attributes.</p>")
   (verify-guards vl-datatype-allexprs))
 
 (def-vl-allexprs
+  :type vl-maybe-datatype
+  :nrev-body
+  (if x
+      (vl-datatype-allexprs-nrev x nrev)
+    (nrev-fix nrev))
+  :body
+  (if x
+      (vl-datatype-allexprs x)
+    nil))
+
+(def-vl-allexprs
   :type vl-gatedelay
   :nrev-body
   (b* (((vl-gatedelay x) x)
@@ -400,6 +382,39 @@ expressions within @('(* foo = bar *)')-style attributes.</p>")
   :list vl-assignlist
   :element vl-assign)
 
+
+
+
+(def-vl-allexprs
+  :type vl-plainarg
+  :nrev-body (vl-maybe-expr-allexprs-nrev (vl-plainarg->expr x) nrev)
+  :body (vl-maybe-expr-allexprs (vl-plainarg->expr x)))
+
+(def-vl-allexprs-list
+  :list vl-plainarglist
+  :element vl-plainarg)
+
+(def-vl-allexprs
+  :type vl-namedarg
+  :nrev-body (vl-maybe-expr-allexprs-nrev (vl-namedarg->expr x) nrev)
+  :body (vl-maybe-expr-allexprs (vl-namedarg->expr x)))
+
+(def-vl-allexprs-list
+  :list vl-namedarglist
+  :element vl-namedarg)
+
+(def-vl-allexprs
+  :type vl-arguments
+  :nrev-body
+  (vl-arguments-case x
+    :vl-arguments-named (vl-namedarglist-allexprs-nrev x.args nrev)
+    :vl-arguments-plain (vl-plainarglist-allexprs-nrev x.args nrev))
+  :body
+  (vl-arguments-case x
+    :vl-arguments-named (vl-namedarglist-allexprs x.args)
+    :vl-arguments-plain (vl-plainarglist-allexprs x.args)))
+
+
 (def-vl-allexprs
   :type vl-gateinst
   :nrev-body
@@ -417,18 +432,67 @@ expressions within @('(* foo = bar *)')-style attributes.</p>")
   :list vl-gateinstlist
   :element vl-gateinst)
 
+
+(def-vl-allexprs
+  :type vl-paramvalue
+  :nrev-body
+  (vl-paramvalue-case x
+    :expr (nrev-push x nrev)
+    :datatype (vl-datatype-allexprs-nrev x nrev))
+  :body
+  (vl-paramvalue-case x
+    :expr (list x)
+    :datatype (vl-datatype-allexprs x)))
+
+(def-vl-allexprs-list
+  :list vl-paramvaluelist
+  :element vl-paramvalue)
+
+(def-vl-allexprs
+  :type vl-maybe-paramvalue
+  :nrev-body (if x
+                 (vl-paramvalue-allexprs-nrev x nrev)
+               (nrev-fix nrev))
+  :body (if x
+            (vl-paramvalue-allexprs x)
+          nil))
+
+(def-vl-allexprs
+  :type vl-namedparamvalue
+  :nrev-body
+  (b* (((vl-namedparamvalue x) x))
+    (vl-maybe-paramvalue-allexprs-nrev x.value nrev))
+  :body
+  (b* (((vl-namedparamvalue x) x))
+    (vl-maybe-paramvalue-allexprs x.value)))
+
+(def-vl-allexprs-list
+  :list vl-namedparamvaluelist
+  :element vl-namedparamvalue)
+
+(def-vl-allexprs
+  :type vl-paramargs
+  :nrev-body
+  (vl-paramargs-case x
+    :vl-paramargs-named (vl-namedparamvaluelist-allexprs-nrev x.args nrev)
+    :vl-paramargs-plain (vl-paramvaluelist-allexprs-nrev x.args nrev))
+  :body
+  (vl-paramargs-case x
+    :vl-paramargs-named (vl-namedparamvaluelist-allexprs x.args)
+    :vl-paramargs-plain (vl-paramvaluelist-allexprs x.args)))
+
 (def-vl-allexprs
   :type vl-modinst
   :nrev-body
   (b* (((vl-modinst x) x)
        (nrev (vl-maybe-range-allexprs-nrev x.range nrev))
-       (nrev (vl-arguments-allexprs-nrev x.paramargs nrev))
+       (nrev (vl-paramargs-allexprs-nrev x.paramargs nrev))
        (nrev (vl-arguments-allexprs-nrev x.portargs nrev)))
       (vl-maybe-gatedelay-allexprs-nrev x.delay nrev))
   :body
   (b* (((vl-modinst x) x))
       (append (vl-maybe-range-allexprs x.range)
-              (vl-arguments-allexprs x.paramargs)
+              (vl-paramargs-allexprs x.paramargs)
               (vl-arguments-allexprs x.portargs)
               (vl-maybe-gatedelay-allexprs x.delay))))
 
@@ -480,14 +544,36 @@ expressions within @('(* foo = bar *)')-style attributes.</p>")
   :element vl-portdecl)
 
 (def-vl-allexprs
+  :type vl-paramtype
+  :nrev-body
+  (vl-paramtype-case x
+    (:vl-implicitvalueparam
+     (b* ((nrev (vl-maybe-range-allexprs-nrev x.range nrev)))
+       (vl-maybe-expr-allexprs-nrev x.default nrev)))
+    (:vl-explicitvalueparam
+     (b* ((nrev (vl-datatype-allexprs-nrev x.type nrev)))
+       (vl-maybe-expr-allexprs-nrev x.default nrev)))
+    (:vl-typeparam
+     (vl-maybe-datatype-allexprs-nrev x.default nrev)))
+  :body
+  (vl-paramtype-case x
+    (:vl-implicitvalueparam
+     (append (vl-maybe-range-allexprs x.range)
+             (vl-maybe-expr-allexprs x.default)))
+    (:vl-explicitvalueparam
+     (append (vl-datatype-allexprs x.type)
+             (vl-maybe-expr-allexprs x.default)))
+    (:vl-typeparam
+     (vl-maybe-datatype-allexprs x.default))))
+
+(def-vl-allexprs
   :type vl-paramdecl
   :nrev-body
-  (b* (((vl-paramdecl x) x)
-       (nrev (nrev-push x.expr nrev)))
-    (vl-maybe-range-allexprs-nrev x.range nrev))
+  (b* (((vl-paramdecl x) x))
+    (vl-paramtype-allexprs-nrev x.type nrev))
   :body
   (b* (((vl-paramdecl x) x))
-      (cons x.expr (vl-maybe-range-allexprs x.range))))
+    (vl-paramtype-allexprs x.type)))
 
 (def-vl-allexprs-list
   :list vl-paramdecllist

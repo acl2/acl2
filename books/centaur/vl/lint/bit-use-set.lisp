@@ -1665,8 +1665,8 @@ warnings."
     (b* (((vl-modinst x) x)
 
          ((unless (and (not x.range)
-                       (atom (vl-arguments->args x.paramargs))
-                       (eq (vl-arguments-kind x.portargs) :plain)))
+                       (vl-paramargs-empty-p x.paramargs)
+                       (eq (vl-arguments-kind x.portargs) :vl-arguments-plain)))
           (b* ((w (make-vl-warning
                    :type :use-set-fudging
                    :msg "~a0: skipping this module instance because it has a ~

@@ -87,7 +87,7 @@ ports because we expect @(see argresolve) to have done that.</p>")
                    :msg "~a0 refers to undefined module ~m1."
                    :args (list x x.modname))
             x))
-       ((unless (eq (vl-arguments-kind x.portargs) :plain))
+       ((unless (eq (vl-arguments-kind x.portargs) :vl-arguments-plain))
         (mv (fatal :type :vl-programming-error
                    :msg "~a0: expected all modules to be using plain ~
                          arguments, but found named arguments.  Did you ~

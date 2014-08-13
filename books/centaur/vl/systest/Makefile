@@ -59,12 +59,14 @@ TRANSLATE_SV := $(VL) model spec.v --mem=2 --search=. --verilog-file=impl.sv --e
 
 %/impl.sv: %/spec.v
 	@echo "Making $*/impl.sv"
+	@rm -f %/impl.sv
 	@cd $*; $(STARTJOB) -c \
 	  'echo `hostname` &> impl.out; $(TRANSLATE_SV) &>> impl.sv.out'
 	@ls -l $*/impl.sv
 
 %/impl.v: %/spec.v
 	@echo "Making $*/impl.v"
+	@rm -f %/impl.v
 	@cd $*; $(STARTJOB) -c \
 	  'echo `hostname` &> impl.out; $(TRANSLATE_V) &>> impl.out'
 	@ls -l $*/impl.v

@@ -156,7 +156,7 @@ that takes care of looking up the ports for the module being instanced.</p>"
 
        ((vl-modinst x) x)
 
-       ((when (eq (vl-arguments-kind x.portargs) :named))
+       ((when (eq (vl-arguments-kind x.portargs) :vl-arguments-named))
         (mv (fatal :type :vl-programming-error
                    :msg "~a0: expected arguments to be plain argument lists, ~
                          but found named arguments.  Did you forget to run ~

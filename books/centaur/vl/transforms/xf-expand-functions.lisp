@@ -551,15 +551,28 @@ some special handling.</p>"
         (mv t (ok)))
 
        ((vl-paramdecl x1) (car x))
-       ((unless (eq x1.type :vl-plain))
+
+       ;; BOZO historically we prohibited any kind of type stuff on parameters
+       ;; within a function.  It seems safe to continue to reject that for now.
+       ;; Some day we will probably want to revisit this.  Some questions to
+       ;; investigate:
+       ;;
+       ;;   - Is it still the case, in SystemVerilog, that function parameters
+       ;;     can't be instantiated in function calls?
+       ;;
+       ;;   - Does our handling of parameters (turning them into substitutions)
+       ;;     make any sense at all with respect to types?  Perhaps we should
+       ;;     instead be creating assignments to some appropriate type.
+       ((unless (and (eq (vl-paramtype-kind x1.type) :vl-implicitvalueparam)
+                     (not (vl-implicitvalueparam->sign x1.type))
+                     (not (vl-implicitvalueparam->range x1.type))))
         (mv nil (fatal :type :vl-bad-function-paramdecl
-                       :msg "In ~a0, parameter ~s1 has unsupported type ~s2."
+                       :msg "In ~a0, parameter ~s1 has unsupported type ~x2."
                        :args (list function x1.name x1.type))))
 
-       ((when x1.range)
+       ((unless (vl-implicitvalueparam->default x1.type))
         (mv nil (fatal :type :vl-bad-function-paramdecl
-                       :msg "In ~a0, parameter ~s1 has a range, but this is ~
-                             not supported."
+                       :msg "In ~a0, parameter ~s1 has no value, which is not supported."
                        :args (list function x1.name)))))
 
     (vl-fun-paramdecllist-types-okp (cdr x) warnings function)))
@@ -569,10 +582,14 @@ some special handling.</p>"
   :short "Bind a function's parameter names to their values."
   ((x vl-paramdecllist-p))
   :returns (sigma vl-sigma-p :hyp :fguard)
-  (if (atom x)
-      nil
-    (cons (cons (vl-paramdecl->name (car x))
-                (vl-paramdecl->expr (car x)))
+  (b* (((when (atom x))
+        nil)
+       ((vl-paramdecl x1) (car x))
+       ((unless (and (eq (vl-paramtype-kind x1.type) :vl-implicitvalueparam)
+                     (vl-implicitvalueparam->default x1.type)))
+        ;; Checking paramdecllist-types-okp should prevent this
+        (raise "Bad parameter for param-sigma: ~x0." x1)))
+    (cons (cons x1.name (vl-implicitvalueparam->default x1.type))
           (vl-fundecl-param-sigma (cdr x)))))
 
 (define vl-fundecl-expand-params
@@ -1690,6 +1707,16 @@ since it will be so tricky to get right.</p>"
          (equal (len (cdr (vl-exprlist-fix x)))
                 (len (cdr x)))))
 
+(local (in-theory (disable VL-WARNINGLIST-P-WHEN-SUBSETP-EQUAL
+                           MEMBER-EQUAL-WHEN-MEMBER-EQUAL-OF-CDR-UNDER-IFF
+                           DEFAULT-CAR
+                           DEFAULT-CDR
+                           ACL2::CONSP-WHEN-MEMBER-EQUAL-OF-ATOM-LISTP
+                           ACL2::CONSP-UNDER-IFF-WHEN-TRUE-LISTP
+                           CONSP-WHEN-MEMBER-EQUAL-OF-CONS-LISTP
+                           acl2::true-listp-member-equal
+                           double-containment)))
+
 (defines vl-expr-expand-function-calls
   :short "Expand function calls throughout an expression."
 
@@ -1978,7 +2005,7 @@ which is free of function calls on success.</p>"
         ;; Common case of no function calls, nothing to do, don't need to
         ;; be adding fatal warnings everywhere in case of unresolved args.
         (mv t (ok) nf x netdecls assigns))
-       ((when (eq (vl-arguments-kind x) :named))
+       ((when (eq (vl-arguments-kind x) :vl-arguments-named))
         (mv nil
             (fatal :type :vl-bad-instance
                    :msg "In ~a0, we expected all arguments to be resolved ~
@@ -2004,7 +2031,7 @@ which is free of function calls on success.</p>"
         (vl-check-bad-funcalls x (vl-maybe-gatedelay-allexprs x.delay)
                                "delay expressions" warnings))
        ((mv okp3 warnings)
-        (vl-check-bad-funcalls x (vl-arguments-allexprs x.paramargs)
+        (vl-check-bad-funcalls x (vl-paramargs-allexprs x.paramargs)
                                "module instance parameter-lists" warnings))
        ((mv okp4 warnings nf portargs-prime netdecls assigns)
         (vl-arguments-expand-function-calls x.portargs templates nf

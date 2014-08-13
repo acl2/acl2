@@ -901,12 +901,14 @@ identifier.</p>"
   :type vl-arguments-p
   :body
   (vl-arguments-case x
-    :named (b* (((mv warnings args-prime)
-                 (vl-namedarglist-follow-hids x.args mod mods modalist toplev warnings)))
-             (mv warnings (change-vl-arguments-named x :args args-prime)))
-    :plain (b* (((mv warnings args-prime)
-                 (vl-plainarglist-follow-hids x.args mod mods modalist toplev warnings)))
-             (mv warnings (change-vl-arguments-plain x :args args-prime)))))
+    :vl-arguments-named
+    (b* (((mv warnings args-prime)
+          (vl-namedarglist-follow-hids x.args mod mods modalist toplev warnings)))
+      (mv warnings (change-vl-arguments-named x :args args-prime)))
+    :vl-arguments-plain
+    (b* (((mv warnings args-prime)
+          (vl-plainarglist-follow-hids x.args mod mods modalist toplev warnings)))
+      (mv warnings (change-vl-arguments-plain x :args args-prime)))))
 
 (def-vl-follow-hids vl-modinst-follow-hids
   :type vl-modinst-p

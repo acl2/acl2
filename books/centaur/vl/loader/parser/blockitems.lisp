@@ -182,14 +182,6 @@ out some duplication and indirection:</p>
         (return (cons first rest))))
 
 
-(defval *vl-plain-old-integer-type*
-  :parents (vl-parse-integer-declaration)
-  (hons-copy
-   (make-vl-coretype :name    :vl-integer
-                     :signedp t   ;; integer type is signed
-                     :dims    nil ;; Not applicable to integers
-                     )))
-
 (defparser vl-parse-integer-declaration (atts)
   ;; Verilog-2005 Only.
   ;;
@@ -211,15 +203,6 @@ out some duplication and indirection:</p>
                                    :type     *vl-plain-old-integer-type*
                                    :atts     atts
                                    :loc      (vl-token->loc kwd)))))
-
-
-(defval *vl-plain-old-real-type*
-  :parents (vl-parse-real-declaration)
-  (hons-copy
-   (make-vl-coretype :name    :vl-real
-                     :signedp nil ;; Not applicable to reals
-                     :dims    nil ;; Not applicable to reals
-                     )))
 
 (defparser vl-parse-real-declaration (atts)
   ;; Verilog-2005 Only.
@@ -244,15 +227,6 @@ out some duplication and indirection:</p>
                                    :loc      (vl-token->loc kwd)))))
 
 
-
-(defval *vl-plain-old-time-type*
-  :parents (vl-parse-time-declaration)
-  (hons-copy
-   (make-vl-coretype :name    :vl-time
-                     :signedp nil ;; Not applicable to times
-                     :dims    nil ;; Not applicable to times
-                     )))
-
 (defparser vl-parse-time-declaration (atts)
   ;; Verilog-2005 Only.
   ;;
@@ -274,15 +248,6 @@ out some duplication and indirection:</p>
                                    :type     *vl-plain-old-time-type*
                                    :atts     atts
                                    :loc      (vl-token->loc kwd)))))
-
-
-(defval *vl-plain-old-realtime-type*
-  :parents (vl-parse-time-declaration)
-  (hons-copy
-   (make-vl-coretype :name    :vl-realtime
-                     :signedp nil ;; Not applicable to realtimes
-                     :dims    nil ;; Not applicable to realtimes
-                     )))
 
 (defparser vl-parse-realtime-declaration (atts)
   ;; Verilog-2005 Only.

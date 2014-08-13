@@ -301,11 +301,11 @@ want to add additional kinds of information here.</p>")
   :returns (mv (new-alist vl-wireinfo-alistp :hyp :fguard)
                (warning-wires string-listp :hyp :fguard))
   (vl-arguments-case x
-    :named
+    :vl-arguments-named
     ;; Argresolve should have gotten rid of these.  We just collect up all of
     ;; the wires, so we can report about them.
     (mv alist (vl-exprlist-names (vl-namedarglist-allexprs x.args)))
-    :plain
+    :vl-arguments-plain
     (vl-mark-wires-for-plainarglist x.args alist nil)))
 
 
@@ -332,7 +332,7 @@ want to add additional kinds of information here.</p>")
        ;; that parameters are sometimes only used in the paramlist or ranges of
        ;; module instances.  So, now we collect wires from those and mark them
        ;; as used.
-       (param-wires (vl-exprlist-names (vl-arguments-allexprs paramargs)))
+       (param-wires (vl-exprlist-names (vl-paramargs-allexprs paramargs)))
        (range-wires (vl-exprlist-names (vl-maybe-range-allexprs range)))
        (alist       (vl-mark-wires-used param-wires t alist))
        (alist       (vl-mark-wires-used range-wires t alist)))

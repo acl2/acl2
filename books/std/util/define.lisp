@@ -1218,7 +1218,8 @@ specifiers is ignored.  You should usually put such documentation into the
        (new-return-names (returnspeclist->names newspecs))
        ((unless (subsetp new-return-names fn-return-names))
         (raise "No return value named ~x0 for function ~x1."
-               (car (set-difference-equal new-return-names fn-return-names))))
+               (car (set-difference-equal new-return-names fn-return-names))
+               guts.name))
        (badname-okp nil))
     (returnspec-multi-thms guts.name guts.name-fn binds newspecs badname-okp world)))
 

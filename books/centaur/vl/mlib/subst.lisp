@@ -38,6 +38,7 @@
 (defxdoc substitution
   :parents (mlib)
   :short "Substitution into Verilog constructs"
+
   :long "<p>We implement routines to substitute values for identifiers
 throughout Verilog constructs such as expressions, assignments, and
 modules.</p>
@@ -53,7 +54,8 @@ substitution to be more generally useful, and prefer to use fast alists.</p>")
 
 (fty::defalist vl-sigma
   :key-type stringp
-  :val-type vl-expr-p)
+  :val-type vl-expr-p
+  :count vl-sigma-count)
 
 (defalist vl-sigma-p (x)
   :short "An alist mapping strings to expressions, used in @(see substitution)."
@@ -62,6 +64,14 @@ substitution to be more generally useful, and prefer to use fast alists.</p>")
   :keyp-of-nil nil
   :valp-of-nil nil
   :already-definedp t)
+
+(defthm vl-sigma-count-of-cdr-strong
+  (implies (and (vl-sigma-p x)
+                (consp x))
+           (< (vl-sigma-count (cdr x))
+              (vl-sigma-count x)))
+  :rule-classes ((:rewrite) (:linear))
+  :hints(("Goal" :in-theory (enable vl-sigma-count))))
 
 (defthm vl-exprlist-p-of-alist-vals-when-vl-sigma-p
   (implies (vl-sigma-p x)
@@ -262,6 +272,12 @@ attributes is left up to the implementation.</p>"
   (verify-guards vl-datatype-subst)
   (deffixequiv-mutual vl-datatype-subst))
 
+(def-vl-subst vl-maybe-datatype-subst
+  :type vl-maybe-datatype-p
+  :body (if x
+            (vl-datatype-subst x sigma)
+          nil))
+
 (def-vl-subst vl-port-subst
   :type vl-port-p
   :body (change-vl-port x
@@ -318,21 +334,31 @@ attributes is left up to the implementation.</p>"
   :type vl-vardecllist-p
   :element vl-vardecl-subst)
 
-
-
-
-
+(def-vl-subst vl-paramtype-subst
+  :type vl-paramtype-p
+  :body
+  (vl-paramtype-case x
+    (:vl-implicitvalueparam
+     (change-vl-implicitvalueparam x
+                                   :range (vl-maybe-range-subst x.range sigma)
+                                   :default (vl-maybe-expr-subst x.default sigma)))
+    (:vl-explicitvalueparam
+     (change-vl-explicitvalueparam x
+                                   :type (vl-datatype-subst x.type sigma)
+                                   :default (vl-maybe-expr-subst x.default sigma)))
+    (:vl-typeparam
+     (change-vl-typeparam x
+                          :default (vl-maybe-datatype-subst x.default sigma)))))
 
 (def-vl-subst vl-paramdecl-subst
   :type vl-paramdecl-p
-  :body (change-vl-paramdecl x
-                             :expr (vl-expr-subst (vl-paramdecl->expr x) sigma)
-                             :range (vl-maybe-range-subst (vl-paramdecl->range x) sigma)))
+  :body (b* (((vl-paramdecl x) x))
+          (change-vl-paramdecl x
+                               :type (vl-paramtype-subst x.type sigma))))
 
 (def-vl-subst-list vl-paramdecllist-subst
   :type vl-paramdecllist-p
   :element vl-paramdecl-subst)
-
 
 
 (def-vl-subst vl-plainarg-subst
@@ -357,14 +383,50 @@ attributes is left up to the implementation.</p>"
   :type vl-arguments-p
   :body
   (vl-arguments-case x
-    :named (make-vl-arguments-named :args (vl-namedarglist-subst x.args sigma))
-    :plain (make-vl-arguments-plain :args (vl-plainarglist-subst x.args sigma))))
+    :vl-arguments-named (make-vl-arguments-named :args (vl-namedarglist-subst x.args sigma))
+    :vl-arguments-plain (make-vl-arguments-plain :args (vl-plainarglist-subst x.args sigma))))
+
+(def-vl-subst vl-paramvalue-subst
+  :type vl-paramvalue-p
+  :body
+  (b* ((x (vl-paramvalue-fix x)))
+    (vl-paramvalue-case x
+      :expr     (vl-expr-subst x sigma)
+      :datatype (vl-datatype-subst x sigma))))
+
+(def-vl-subst-list vl-paramvaluelist-subst
+  :type vl-paramvaluelist-p
+  :element vl-paramvalue-subst)
+
+(def-vl-subst vl-maybe-paramvalue-subst
+  :type vl-maybe-paramvalue-p
+  :body (and x (vl-paramvalue-subst x sigma)))
+
+(def-vl-subst vl-namedparamvalue-subst
+  :type vl-namedparamvalue-p
+  :body
+  (b* (((vl-namedparamvalue x) x))
+    (change-vl-namedparamvalue x :value (vl-maybe-paramvalue-subst x.value sigma))))
+
+(def-vl-subst-list vl-namedparamvaluelist-subst
+  :type vl-namedparamvaluelist-p
+  :element vl-namedparamvalue-subst)
+
+(def-vl-subst vl-paramargs-subst
+  :type vl-paramargs-p
+  :body
+  (vl-paramargs-case x
+    :vl-paramargs-named
+    (change-vl-paramargs-named x :args (vl-namedparamvaluelist-subst x.args sigma))
+    :vl-paramargs-plain
+    (change-vl-paramargs-plain x :args (vl-paramvaluelist-subst x.args sigma))))
+
 
 (def-vl-subst vl-modinst-subst
   :type vl-modinst-p
   :body (change-vl-modinst x
                            :range (vl-maybe-range-subst (vl-modinst->range x) sigma)
-                           :paramargs (vl-arguments-subst (vl-modinst->paramargs x) sigma)
+                           :paramargs (vl-paramargs-subst (vl-modinst->paramargs x) sigma)
                            :portargs (vl-arguments-subst (vl-modinst->portargs x) sigma)))
 
 (def-vl-subst-list vl-modinstlist-subst

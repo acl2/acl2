@@ -171,7 +171,7 @@ named arguments with missing ports, and only issue non-fatal warnings.</p>"
        (inst (vl-modinst-fix inst))
        ((vl-modinst inst) inst)
 
-       ((when (eq (vl-arguments-kind x) :plain))
+       ((when (eq (vl-arguments-kind x) :vl-arguments-plain))
         ;; Already uses plain arguments, nothing to do.
         (mv t (ok) x))
 
@@ -243,8 +243,8 @@ named arguments with missing ports, and only issue non-fatal warnings.</p>"
                    (vl-convert-namedargs x ports warnings inst)))
                (equal (vl-arguments-kind new-x)
                       (if successp
-                          :plain
-                        :named))))))
+                          :vl-arguments-plain
+                        :vl-arguments-named))))))
 
 
 (define vl-annotate-plainargs

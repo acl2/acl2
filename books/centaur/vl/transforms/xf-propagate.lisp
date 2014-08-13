@@ -161,7 +161,7 @@ correctly.</p>"
   ((x vl-modinst-p))
   :returns (driven-names string-listp :hyp :fguard)
   (b* ((args (vl-modinst->portargs x))
-       ((unless (eq (vl-arguments-kind args) :plain))
+       ((unless (eq (vl-arguments-kind args) :vl-arguments-plain))
         ;; Could make this more general by just returning all exprs in this
         ;; case...
         (raise "args still named???")))

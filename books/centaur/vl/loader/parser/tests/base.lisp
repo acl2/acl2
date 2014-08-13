@@ -141,8 +141,10 @@
 
 (define vl-pretty-arguments ((x vl-arguments-p))
   (vl-arguments-case x
-    :named (list :namedargs (vl-pretty-namedarg-list x.args))
-    :plain (list :plainargs (vl-pretty-plainarg-list x.args))))
+    :vl-arguments-named
+    (list :namedargs (vl-pretty-namedarg-list x.args))
+    :vl-arguments-plain
+    (list :plainargs (vl-pretty-plainarg-list x.args))))
 
 
 

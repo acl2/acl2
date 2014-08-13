@@ -1322,21 +1322,24 @@ expression into a string."
                   ;; signedness if it's not applicable to this kind of type.
                   (vl-print " ")
                   ;; signing, if applicable
-                  (cond ((and (member x.name '(:vl-byte :vl-shortint :vl-int :vl-longint :vl-integer))
-                              (not x.signedp))
-                         ;; default signed, but this one is unsigned
-                         (vl-ps-span "vl_key" (vl-print-str "unsigned")))
-                        ((and (member x.name '(:vl-time :vl-bit :vl-logic :vl-reg))
-                              x.signedp)
-                         ;; default unsigned, but this one is signed
-                         (vl-ps-span "vl_key" (vl-print-str "signed")))
+                  (cond ((member x.name '(:vl-byte :vl-shortint :vl-int :vl-longint :vl-integer))
+                         ;; Default is signed.  Only need to print anything if it's unsigned.
+                         (if x.signedp
+                             ps
+                           (vl-ps-span "vl_key" (vl-print-str "unsigned "))))
+
+                        ((member x.name '(:vl-time :vl-bit :vl-logic :vl-reg))
+                         ;; Default is unsigned.  Only need to print anything if it's signed.
+                         (if x.signedp
+                             (vl-ps-span "vl_key" (vl-print-str "signed "))
+                           ps))
+
                         (t
                          ;; other core types don't have an optional signing.  they'd better
                          ;; be marked as unsigned or it doesn't make sense
                          (progn$ (or (not x.signedp)
                                      (raise "core type ~x0 marked as signed? ~x1" x.name x))
                                  ps)))
-                  (vl-print " ")
                   (vl-pp-packeddimensionlist x.dims)))
 
       (:vl-struct
@@ -1495,21 +1498,49 @@ expression into a string."
                (vl-ps-span "vl_key"
                            (if x.localp
                                (vl-print "localparam ")
-                             (vl-print "parameter "))
-                           (case x.type
-                             (:vl-signed (vl-print "signed "))
-                             (:vl-integer (vl-print "integer "))
-                             (:vl-real (vl-print "real "))
-                             (:vl-time (vl-print "time "))
-                             (:vl-realtime (vl-print "realtime "))
-                             (otherwise ps)))
-               (if x.range
-                   (vl-ps-seq (vl-pp-range x.range)
-                              (vl-print " "))
-                 ps)
-               (vl-print-wirename x.name)
-               (vl-print " = ")
-               (vl-pp-expr x.expr)
+                             (vl-print "parameter ")))
+               (vl-paramtype-case x.type
+                 (:vl-implicitvalueparam
+                  ;; Something like "parameter a = 1" or "parameter signed [3:0] a = 2"
+                  ;; The signed part, if any, comes first.
+                  (vl-ps-seq (case x.type.sign
+                               (:vl-signed   (vl-ps-span "vl_key" (vl-print "signed ")))
+                               (:vl-unsigned (vl-ps-span "vl_key" (vl-print "unsigned ")))
+                               (otherwise    ps))
+                             (if x.type.range
+                                 (vl-ps-seq (vl-pp-range x.type.range)
+                                            (vl-print " "))
+                               ps)
+                             (vl-print-wirename x.name)
+                             (if x.type.default
+                                 (vl-ps-seq (vl-print " = ")
+                                            (vl-pp-expr x.type.default))
+                               ps)))
+
+                 (:vl-explicitvalueparam
+                  ;; Something like "parameter integer a = 1";
+                  (vl-ps-seq (vl-pp-datatype x.type.type)
+                             (vl-print " ")
+                             (vl-print-wirename x.name)
+                             (if x.type.default
+                                 (vl-ps-seq (vl-print " = ")
+                                            (vl-pp-expr x.type.default))
+                               ps)))
+
+                 (:vl-typeparam
+                  ;; Something like "parameter type foo = struct { int a; };"
+                  (vl-ps-seq (vl-ps-span "vl_key" (vl-print "type "))
+                             (vl-print-wirename x.name)
+                             (if x.type.default
+                                 (vl-ps-seq (vl-print " ")
+                                            (vl-pp-datatype x.type.default))
+                               ps))))
+
+               ;; BOZO do we want to print a closing semicolon here?  Almost
+               ;; always there is supposed to be one, but not in certain cases
+               ;; such as in parameter_port_declaration lists.  But I don't know
+               ;; if we're ever going to try to print a parameter_port_declaration
+               ;; list, so for now I think I'm just going to print the semicolon.
                (vl-println ";"))))
 
 (define vl-pp-paramdecllist ((x vl-paramdecllist-p) &key (ps 'ps))
@@ -1840,10 +1871,10 @@ expression into a string."
                     (vl-pp-namedarglist (cdr x) force-newlinesp)))))
 
 (define vl-pp-arguments ((x vl-arguments-p) &key (ps 'ps))
-  (b* ((namedp         (eq (vl-arguments-kind x) :named))
+  (b* ((namedp         (eq (vl-arguments-kind x) :vl-arguments-named))
        (args           (vl-arguments-case x
-                         :named (vl-arguments-named->args x)
-                         :plain (vl-arguments-plain->args x)))
+                         :vl-arguments-named (vl-arguments-named->args x)
+                         :vl-arguments-plain (vl-arguments-plain->args x)))
        (force-newlinep (longer-than-p 5 args))
        ((when namedp)
         (vl-pp-namedarglist args force-newlinep))
@@ -1863,20 +1894,64 @@ expression into a string."
               (vl-pp-namedarglist (list namedarg) force-newlinep))
           ;; We don't even have a name.  How did this happen?
           (progn$
-           (raise "Congrats!  You have reached a remarkably obscure corner ~
-                   case.  You are trying to print a plain argument list, of ~
-                   length 1, which contains a \"blank\" entry.  But there is ~
-                   actually no way to express this in Verilog.  See ~
-                   cbooks/vl/blank.v for a basic summary of the problem. ~
-                   There are some ways we can work around this: (1) convert ~
-                   into a named argument list, or (2) eliminating the blank ~
-                   by, for outputs, adding a wire name of the appropriate ~
-                   width; for inputs, convert into n'bz where n is the ~
-                   appropriate width.  But there isn't enough information in ~
-                   vl-pp-arguments to carry out this transformation.  At any ~
-                   rate, we give up.  Well done!")
+           (raise "Trying to print a plain argument list, of length 1, which ~
+                   contains a \"blank\" entry.  But there is actually no way ~
+                   to express this in Verilog.")
            ps))))
     (vl-pp-plainarglist args force-newlinep)))
+
+
+(define vl-pp-paramvalue ((x vl-paramvalue-p) &key (ps 'ps))
+  (b* ((x (vl-paramvalue-fix x)))
+    (vl-paramvalue-case x
+      :expr     (vl-pp-expr x)
+      :datatype (vl-pp-datatype x))))
+
+(define vl-pp-paramvaluelist ((x vl-paramvaluelist-p) force-newlinesp &key (ps 'ps))
+  (cond ((atom x)
+         ps)
+        ((atom (cdr x))
+         (vl-pp-paramvalue (car x)))
+        (t
+         (vl-ps-seq (vl-pp-paramvalue (car x))
+                    (if force-newlinesp
+                        (vl-ps-seq (vl-println ",")
+                                   (vl-indent (vl-ps->autowrap-ind)))
+                      (vl-println? ", "))
+                    (vl-pp-paramvaluelist (cdr x) force-newlinesp)))))
+
+(define vl-pp-namedparamvalue ((x vl-namedparamvalue-p) &key (ps 'ps))
+  (b* (((vl-namedparamvalue x) x))
+    (vl-ps-seq (vl-print ".")
+               (vl-ps-span "vl_id" (vl-print (vl-maybe-escape-identifier x.name)))
+               (vl-print "(")
+               (if x.value
+                   (vl-pp-paramvalue x.value)
+                 ps)
+               (vl-print ")"))))
+
+(define vl-pp-namedparamvaluelist ((x vl-namedparamvaluelist-p) force-newlinesp &key (ps 'ps))
+  (cond ((atom x)
+         ps)
+        ((atom (cdr x))
+         (vl-pp-namedparamvalue (car x)))
+        (t
+         (vl-ps-seq (vl-pp-namedparamvalue (car x))
+                    (if force-newlinesp
+                        (vl-ps-seq (vl-println ",")
+                                   (vl-indent (vl-ps->autowrap-ind)))
+                      (vl-println? ", "))
+                    (vl-pp-namedparamvaluelist (cdr x) force-newlinesp)))))
+
+(define vl-pp-paramargs ((x vl-paramargs-p) &key (ps 'ps))
+  (vl-paramargs-case x
+    :vl-paramargs-named
+    (b* ((force-newlinep (longer-than-p 5 x.args)))
+      (vl-pp-namedparamvaluelist x.args force-newlinep))
+    :vl-paramargs-plain
+    (b* ((force-newlinep (longer-than-p 5 x.args)))
+      (vl-pp-paramvaluelist x.args force-newlinep))))
+
 
 (define vl-pp-modinst-atts-begin ((x vl-atts-p) &key (ps 'ps))
   (b* ((x (vl-atts-fix x))
@@ -1945,9 +2020,9 @@ expression into a string."
                        (modalist (equal modalist (vl-modalist mods)))
                        &key (ps 'ps))
   (b* (((vl-modinst x) x)
-       (paramargs (vl-arguments-case x.paramargs
-                    :named x.paramargs.args
-                    :plain x.paramargs.args)))
+       (have-params-p (vl-paramargs-case x.paramargs
+                        :vl-paramargs-named (consp x.paramargs.args)
+                        :vl-paramargs-plain (consp x.paramargs.args))))
     (if (or x.str x.delay)
         (prog2$ (cw "; Note: in vl-pp-modinst, dropping str/delay from ~x0 instance.~%"
                     x.modname)
@@ -1960,10 +2035,10 @@ expression into a string."
                  (if (vl-ps->htmlp)
                      (vl-pp-modulename-link x.modname mods modalist)
                    (vl-print-modname x.modname))
-                 (if (not paramargs)
+                 (if (not have-params-p)
                      ps
                    (vl-ps-seq (vl-print " #(")
-                              (vl-pp-arguments x.paramargs)
+                              (vl-pp-paramargs x.paramargs)
                               (vl-println? ")")))
                  (vl-print " ")
                  (if x.instname

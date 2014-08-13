@@ -165,15 +165,15 @@ expression."
 (define vl-arguments-strip ((x vl-arguments-p))
   :returns (x-strip vl-arguments-p)
   (vl-arguments-case x
-    :named (make-vl-arguments-named :args (vl-namedarglist-strip x.args))
-    :plain (make-vl-arguments-plain :args (vl-plainarglist-strip x.args))))
+    :vl-arguments-named (make-vl-arguments-named :args (vl-namedarglist-strip x.args))
+    :vl-arguments-plain (make-vl-arguments-plain :args (vl-plainarglist-strip x.args))))
+
 
 (define vl-modinst-strip ((x vl-modinst-p))
   :returns (x-strip vl-modinst-p)
   (b* (((vl-modinst x) x))
     (change-vl-modinst x
                        :range     (vl-maybe-range-strip x.range)
-                       :paramargs (vl-arguments-strip x.paramargs)
                        :portargs  (vl-arguments-strip x.portargs)
                        :str nil
                        :delay nil

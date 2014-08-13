@@ -97,8 +97,8 @@
 (defwellformed vl-arguments-widthsfixed-p (x)
   :guard (vl-arguments-p x)
   :body  (vl-arguments-case x
-           :named (@wf-call vl-namedarglist-widthsfixed-p x.args)
-           :plain (@wf-call vl-plainarglist-widthsfixed-p x.args)))
+           :vl-arguments-named (@wf-call vl-namedarglist-widthsfixed-p x.args)
+           :vl-arguments-plain (@wf-call vl-plainarglist-widthsfixed-p x.args)))
 
 (defwellformed vl-modinst-widthsfixed-p (x)
 

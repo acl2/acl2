@@ -238,14 +238,14 @@ clever.</p>")
         ;; Not an instance of the desired module, do nothing to this instance.
         (mv nf (list x) nil nil nil (ok)))
 
-       ((unless (eq (vl-arguments-kind x.portargs) :plain))
+       ((unless (eq (vl-arguments-kind x.portargs) :vl-arguments-plain))
         (mv nf (list x) nil nil nil
             (fatal :type :vl-inline-fail
                    :msg "~a0: can't inline because args aren't resolved."
                    :args (list x))))
 
        (plainargs (vl-arguments-plain->args x.portargs))
-       ((when (vl-arguments->args x.paramargs))
+       ((unless (vl-paramargs-empty-p x.paramargs))
         (mv nf (list x) nil nil nil
             (fatal :type :vl-inline-fail
                    :msg "~a0: can't inline because of parameters."

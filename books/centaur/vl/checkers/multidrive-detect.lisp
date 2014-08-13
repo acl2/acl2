@@ -290,7 +290,7 @@ might indicate that the submodule is a transistor-level construct.</li>
         (mv (cons (car x) cdr-z) cdr-nonz))
 
        (args (vl-modinst->portargs (car x)))
-       ((when (eq (vl-arguments-kind args) :named))
+       ((when (eq (vl-arguments-kind args) :vl-arguments-named))
         ;; It's broken anyway, just put it as non-z, we warn about it later
         (mv cdr-z (cons (car x) cdr-nonz)))
        ((mv out-args inout-args)

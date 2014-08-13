@@ -153,8 +153,10 @@ consing the original version of X into its attributes.</p>"
 (def-vl-origexprs vl-arguments
   :body
   (vl-arguments-case x
-    :named (make-vl-arguments-named :args (vl-namedarglist-origexprs x.args))
-    :plain (make-vl-arguments-plain :args (vl-plainarglist-origexprs x.args))))
+    :vl-arguments-named
+    (make-vl-arguments-named :args (vl-namedarglist-origexprs x.args))
+    :vl-arguments-plain
+    (make-vl-arguments-plain :args (vl-plainarglist-origexprs x.args))))
 
 (def-vl-origexprs vl-gateinst
   :body

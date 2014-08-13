@@ -29,96 +29,421 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "ranges")
+(include-book "datatypes")
 (local (include-book "../../util/arithmetic"))
 
+(defxdoc parse-paramdecls
+  :parents (parser)
+  :short "Functions for parsing parameter declarations."
+
+  :long "<p>See the comments in @(see vl-paramdecl) and also especially in
+@(see vl-paramtype) for details on how we represent parameter declarations.
+Here are the grammar rules from Verilog-2005:</p>
+
+@({
+    local_parameter_declaration ::=
+      'localparam' ['signed'] [range] list_of_param_assignments
+    | 'localparam' parameter_type list_of_param_assignments
+
+    parameter_declaration ::=
+      'parameter' ['signed'] [range] list_of_param_assignments
+    | 'parameter' parameter_type list_of_param_assignments
+
+    parameter_type ::=
+       'integer' | 'real' | 'realtime' | 'time'
+
+    list_of_param_assignments ::= param_assignment { ',' param_assignment }
+
+    param_assignment ::= identifier = mintypmax_expression
+})
+
+<p>SystemVerilog-2012 extends this in three ways.</p>
+
+<p>First, it expands the valid types for value parameters, so that parameters
+can now be of any arbitrary data type.  In particular:</p>
+
+@({
+    local_parameter_declaration ::=
+        'localparam' data_type_or_implicit list_of_param_assignments
+      | ...
+
+    parameter_declaration ::=
+       'parameter' data_type_or_implicit list_of_param_assignments
+      | ...
+
+    data_type_or_implicit ::= data_type
+                            | implicit_data_type
+
+    implicit_data_type ::= [ signing ] { packed_dimension }
+
+    signing ::= 'signed' | 'unsigned'
+})
+
+<p>Second, it extends parameter assignments so that (1) the default value for
+non-local parameters becomes optional, and (2) there can be an arbitrary list
+of unpacked dimensions.  However, I don't believe the meaning of these unpacked
+dimensions is ever explained, so VL <b>does not support it</b>.  There is no
+place for these dimensions in our parsed representation, and our parser will
+fail to parse declarations that include such dimensions:</p>
+
+@({
+    param_assignment ::= identifier { unpacked_dimension } [ '=' constant_param_expression ]
+
+    constant_param_expression ::= constant_mintypmax_expression | data_type | '$'
+
+    constant_mintypmax_expression ::=
+       constant_expression
+     | constant_expression : constant_expression : constant_expression
+})
+
+<p>It is unclear to me what it would mean to assign a data type to a value
+parameter, so the parser currently does not support this.</p>
+
+<p>The @('$') is a special, unbounded integer value.  See SystemVerilog Section
+6.20.2.1.</p>
+
+<p>Note that the omitting the default value for a parameter is not legal for
+local parameters.  (SystemVerilog-2012, section A.10, note 18).  We enforce
+this in the parser.</p>
+
+<p>Finally, SystemVerilog-2012 adds completely new <b>type parameter</b>s in
+addition to the <b>value parameters</b> above.  The syntax here is:</p>
+
+@({
+    local_parameter_declaration ::=
+       ...
+     | 'localparam' 'type' list_of_type_assignments
+
+    parameter_declaration ::=
+       ...
+     | 'parameter' 'type' list_of_type_assignments
+
+    list_of_type_assignments ::= type_assignment { ',' type_assignment }
+
+    type_assignment ::= identifier [ '=' data_type ]
+})
+
+<p>Note that, as with value parameters, it is not legal to omit the default
+data type for a local type parameter.  We enforce this in the parser.</p>")
+
+(local (xdoc::set-default-parents parse-paramdecls))
 
 
-; BOZO haven't looked at any of this for SystemVerilog
+; Value Parameters ------------------------------------------------------------
 
-; Parameters.
-;
-; local_parameter_declaration ::=
-;    'localparam' ['signed'] [range] list_of_param_assignments
-;  | 'localparam' parameter_type list_of_param_assignments
-;
-; parameter_declaration ::=
-;    'parameter' ['signed'] [range] list_of_param_assignments
-;  | 'parameter' parameter_type list_of_param_assignments
-;
-; parameter_type ::=
-;    'integer' | 'real' | 'realtime' | 'time'
-;
-; list_of_param_assignments ::= param_assignment { ',' param_assignment }
-;
-; param_assignment ::=
-;    identifier = mintypmax_expression
+(defparser vl-parse-param-assignment (atts localp type)
+  ;; Verilog-2005:       param_assignment ::= identifier = mintypmax_expression
+  ;; SystemVerilog-2012: param_assignment ::= identifier { unpacked_dimension } [ '=' constant_param_expression ]
+  :guard (and (vl-atts-p atts)
+              (booleanp localp)
+              ;; Type: a full or partial paramtype whose default value we haven't read yet.
+              (vl-paramtype-p type)
+              (member (vl-paramtype-kind type) '(:vl-implicitvalueparam :vl-explicitvalueparam)))
+  :result (vl-paramdecl-p val)
+  :resultp-of-nil nil
+  :fails gracefully
+  :count strong
+  (seqw tokens warnings
+        (id := (vl-match-token :vl-idtoken))
+        ;; For SystemVerilog-2012, there's an optional {unpacked_dimension} part here.  But we don't
+        ;; support it because we don't know what it's supposed to mean.
 
-(defaggregate vl-param-assignment-tuple
-  (loc name expr)
-  :tag :vl-param-assignment-tuple
-  :legiblep nil
-  :require ((vl-location-p-of-vl-param-assignment-tuple->loc (vl-location-p loc))
-            (stringp-of-vl-param-assignment-tuple->name      (stringp name))
-            (vl-expr-p-of-vl-param-assignment-tuple->expr    (vl-expr-p expr)))
-  :parents (parser))
+        ;; For SystemVerilog-2012, the right hand side is optional but only for non-local parameters.
+        (when (and (not (vl-is-token? :vl-equalsign))
+                   (not (eq (vl-loadconfig->edition config) :verilog-2005))
+                   (not localp))
+          ;; Special case: SystemVerilog-2012 with a non-local parameter, so
+          ;; we're allowed to not have a default value here.
+          (return (make-vl-paramdecl :loc (vl-token->loc id)
+                                     :name (vl-idtoken->name id)
+                                     :atts atts
+                                     :localp localp
+                                     :type type)))
 
-(deflist vl-param-assignment-tuple-list-p (x)
-  (vl-param-assignment-tuple-p x)
-  :elementp-of-nil nil)
+        ;; Otherwise, a default value has been given or is required.
+        (:= (vl-match-token :vl-equalsign))
 
-(defund vl-build-paramdecls (tuples type localp range atts)
-  (declare (xargs :guard (and (vl-param-assignment-tuple-list-p tuples)
-                              (vl-paramdecltype-p type)
-                              (booleanp localp)
-                              (vl-maybe-range-p range)
-                              (vl-atts-p atts))))
-  (if (consp tuples)
-      (cons (make-vl-paramdecl
-             :loc (vl-param-assignment-tuple->loc (car tuples))
-             :name (vl-param-assignment-tuple->name (car tuples))
-             :expr (vl-param-assignment-tuple->expr (car tuples))
-             :type type
-             :localp localp
-             :range range
-             :atts atts)
-            (vl-build-paramdecls (cdr tuples) type localp range atts))
-    nil))
+        ;; For SystemVerilog-2012, the default value is supposed to be a
+        ;;    constant_param_expression ::= constant_mintypmax_expression | data_type | '$'
+        ;; But
+        ;;   (1) I don't know what a data_type would mean here so I'm not going to support that, and
+        ;;   (2) The lone $ is already supported as a kind of base expression
+        ;; So this all just collapses down into a mintypmax expression.
+        (default := (vl-parse-mintypmax-expression))
+        (return (make-vl-paramdecl
+                 :loc (vl-token->loc id)
+                 :name (vl-idtoken->name id)
+                 :atts atts
+                 :localp localp
+                 :type
+                 (if (eq (vl-paramtype-kind type) :vl-implicitvalueparam)
+                     (change-vl-implicitvalueparam type :default default)
+                   (change-vl-explicitvalueparam type :default default))))))
 
-(defthm vl-paramdecllist-p-of-vl-build-paramdecls
-  (implies (and (force (vl-param-assignment-tuple-list-p tuples))
-                (force (vl-paramdecltype-p type))
-                (force (booleanp localp))
-                (force (vl-maybe-range-p range))
-                (force (vl-atts-p atts)))
-           (vl-paramdecllist-p (vl-build-paramdecls tuples type localp range atts)))
-  :hints(("Goal" :in-theory (enable vl-build-paramdecls))))
+(defparser vl-parse-list-of-param-assignments (atts localp type)
+  ;; list_of_param_assignments ::= param_assignment { ',' param_assignment }
+  :guard (and (vl-atts-p atts)
+              (booleanp localp)
+              (vl-paramtype-p type)
+              (member (vl-paramtype-kind type) '(:vl-implicitvalueparam :vl-explicitvalueparam)))
+  :result (vl-paramdecllist-p val)
+  :resultp-of-nil t
+  :true-listp t
+  :fails gracefully
+  :count strong
+  (seqw tokens warnings
+        (first := (vl-parse-param-assignment atts localp type))
+        (when (vl-is-token? :vl-comma)
+          (:= (vl-match))
+          (rest := (vl-parse-list-of-param-assignments atts localp type)))
+        (return (cons first rest))))
 
-(defparser vl-parse-param-assignment ()
-  :result (vl-param-assignment-tuple-p val)
+
+; Type Parameters -------------------------------------------------------------
+
+(defparser vl-parse-type-assignment (atts localp)
+  ;; SystemVerilog-2012 Only.
+  ;; type_assignment ::= identifier [ '=' data_type ]
+  :guard (and (vl-atts-p atts)
+              (booleanp localp))
+  :result (vl-paramdecl-p val)
   :resultp-of-nil nil
   :fails gracefully
   :count strong
   (seqw tokens warnings
         (id := (vl-match-token :vl-idtoken))
         (:= (vl-match-token :vl-equalsign))
-        (expr := (vl-parse-mintypmax-expression))
-        (return (vl-param-assignment-tuple (vl-token->loc id)
-                                           (vl-idtoken->name id)
-                                           expr))))
+        (type := (vl-parse-datatype))
+        (return (make-vl-paramdecl
+                 :loc  (vl-token->loc id)
+                 :name (vl-idtoken->name id)
+                 :atts atts
+                 :localp localp
+                 :type (make-vl-typeparam :default type)))))
 
-(defparser vl-parse-list-of-param-assignments ()
-  :result (vl-param-assignment-tuple-list-p val)
+(defparser vl-parse-list-of-type-assignments (atts localp)
+  ;; SystemVerilog-2012 Only.
+  ;; list_of_type_assignments ::= type_assignment { ',' type_assignment }
+  :guard (and (vl-atts-p atts)
+              (booleanp localp))
+  :result (vl-paramdecllist-p val)
   :resultp-of-nil t
   :true-listp t
   :fails gracefully
   :count strong
   (seqw tokens warnings
-        (first := (vl-parse-param-assignment))
+        (first := (vl-parse-type-assignment atts localp))
         (when (vl-is-token? :vl-comma)
           (:= (vl-match))
-          (rest := (vl-parse-list-of-param-assignments)))
+          (rest := (vl-parse-list-of-type-assignments atts localp)))
         (return (cons first rest))))
+
+
+; Arbitrary Parameters --------------------------------------------------------
+
+(defparser vl-parse-param-or-localparam-declaration-2005 (atts types)
+  ;; Verilog-2005 Only.
+  :guard (and (vl-atts-p atts)
+              ;; Types says what kinds (local or nonlocal) of parameters we permit
+              (true-listp types)
+              (subsetp types '(:vl-kwd-parameter :vl-kwd-localparam)))
+  :result (vl-paramdecllist-p val)
+  :resultp-of-nil t
+  :true-listp t
+  :fails gracefully
+  :count strong
+  (seqw tokens warnings
+        ;; Verilog-2005 rules:
+        ;;
+        ;; local_parameter_declaration ::=
+        ;;    'localparam' ['signed'] [range] list_of_param_assignments
+        ;;  | 'localparam' parameter_type list_of_param_assignments
+        ;;
+        ;; parameter_declaration ::=
+        ;;    'parameter' ['signed'] [range] list_of_param_assignments
+        ;;  | 'parameter' parameter_type list_of_param_assignments
+        (start := (vl-match-some-token types))
+
+        (when (vl-is-some-token? '(:vl-kwd-integer :vl-kwd-real :vl-kwd-realtime :vl-kwd-time))
+          ;; No range on these types
+          (type := (vl-match))
+          ;; The type to use is tricky.  Consider the rules from Section 12.2
+          ;; of the Verilog-2005 standard.  We are in the case where there is a
+          ;; type but no range (because the grammar doesn't permit a range
+          ;; here).  In this case, any override value shall be converted to the
+          ;; type of the parameter.  So I think we're justified in calling
+          ;; these fully specified and saying that we know the type.
+          (decls := (vl-parse-list-of-param-assignments
+                     atts
+                     (eq (vl-token->type start) :vl-kwd-localparam) ;; localp
+                     (make-vl-explicitvalueparam
+                      :type (case (vl-token->type type)
+                              (:vl-kwd-integer  *vl-plain-old-integer-type*)
+                              (:vl-kwd-real     *vl-plain-old-real-type*)
+                              (:vl-kwd-realtime *vl-plain-old-realtime-type*)
+                              (:vl-kwd-time     *vl-plain-old-time-type*)
+                              ))))
+          (return decls))
+
+        (when (vl-is-token? :vl-kwd-signed)
+          (signed := (vl-match)))
+        (when (vl-is-token? :vl-lbrack)
+          (range := (vl-parse-range)))
+
+        ;; The type to use is again tricky.  Consider the rules from Section
+        ;; 12.2 of the Verilog-2005 standard.
+        (decls := (vl-parse-list-of-param-assignments
+                     atts
+                     (eq (vl-token->type start) :vl-kwd-localparam) ;; localp
+
+                     (mbe :logic
+                          (cond
+                           ((and (not signed)
+                                 (not range))
+                            ;; No type or range.  The rule is: use the type and
+                            ;; range of the final override value.  This is the
+                            ;; fully unspecified, partial case.
+                            (make-vl-implicitvalueparam :range nil :sign nil))
+
+                           ((not signed)
+                            ;; Range but no type.  The rule is: use this range,
+                            ;; and unsigned.
+                            (make-vl-implicitvalueparam :range range :sign nil))
+
+                           ((not range)
+                            ;; Sign but no range.  Convert the final override
+                            ;; value to signed, but keep its range.
+                            (make-vl-implicitvalueparam :range nil :sign :vl-signed))
+
+                           (t
+                            ;; Sign and range.  This is fully specified.  It
+                            ;; will be signed and will keep the range of its
+                            ;; declaration.  I think there are a couple of
+                            ;; options for how to represent this.  I think I'm
+                            ;; just going to allow the partial type to be fully
+                            ;; specified, so that it's easy to identify this
+                            ;; case in, e.g., pretty printing.
+                            (make-vl-implicitvalueparam :range range :sign :vl-signed)))
+
+                          :exec
+                          ;; I'll keep the above since it makes all the cases
+                          ;; explicit, but it boils down to something very
+                          ;; simple:
+                          (make-vl-implicitvalueparam :range range
+                                                      :sign (and signed :vl-signed)))))
+
+        (return decls)))
+
+
+(defparser vl-parse-param-or-localparam-declaration-2012 (atts types)
+  ;; Verilog-2012 Only.
+  :guard (and (vl-atts-p atts)
+              ;; Types says what kinds (local or nonlocal) of parameters we permit
+              (true-listp types)
+              (subsetp types '(:vl-kwd-parameter :vl-kwd-localparam)))
+  :result (vl-paramdecllist-p val)
+  :resultp-of-nil t
+  :true-listp t
+  :fails gracefully
+  :count strong
+  (seqw tokens warnings
+        (start := (vl-match-some-token types)) ;; localparam or parameter
+
+        (when (vl-is-token? :vl-kwd-type)
+          ;; local_parameter_declaration ::= ... | 'localparam' 'type' list_of_type_assignments
+          ;; parameter_declaration       ::= ... | 'parameter'  'type' list_of_type_assignments
+          (:= (vl-match))
+          (decls := (vl-parse-list-of-type-assignments atts
+                                                       (eq (vl-token->type start) :vl-kwd-localparam)))
+          (return decls))
+
+        ;; Otherwise:
+        ;; local_parameter_declaration ::= 'localparam' data_type_or_implicit list_of_param_assignments | ...
+        ;; parameter_declaration       ::= 'parameter'  data_type_or_implicit list_of_param_assignments | ...
+        ;;
+        ;; data_type_or_implicit ::= data_type
+        ;;                         | implicit_data_type
+        ;;
+        ;; implicit_data_type ::= [ signing ] { packed_dimension }
+        ;;
+        ;; signing ::= 'signed' | 'unsigned'
+        ;;
+        ;; We'll handle the implicit case first.
+        (when (vl-is-some-token? '(:vl-kwd-signed :vl-kwd-unsigned))
+          (signing := (vl-match)))
+
+        (when (vl-is-token? :vl-lbrack)
+          ;; the grammar allows things like parameter signed [3:0][4:0] ..., but I don't
+          ;; know what we would really do with those, so for now I'm just going to accept
+          ;; at most a single range here.
+          (range := (vl-parse-range)))
+
+        (when (or signing range)
+          ;; This is similar to what we do in the Verilog-2005 version.
+          (decls := (vl-parse-list-of-param-assignments
+                     atts
+                     (eq (vl-token->type start) :vl-kwd-localparam)
+                     (make-vl-implicitvalueparam :range range
+                                                 :sign (and signing
+                                                            (case (vl-token->type signing)
+                                                              (:vl-kwd-signed   :vl-signed)
+                                                              (:vl-kwd-unsigned :vl-unsigned))))))
+          (return decls))
+
+        ;; Now this is tricky.  We know we don't have a signing or range, but
+        ;; implicit_data_type might also be empty!  So valid tails at this
+        ;; point include at least:
+        ;;
+        ;;   ``foo, bar``
+        ;;   ``foo = 5``
+        ;;   ``foo_t bar = 6``
+        ;;
+        ;; Basic idea: the sequences ``identifier ,`` and ``identifier =`` can only be the
+        ;; start of a list_of_param_assignments.
+        ;;
+        ;; Things that can validly follow a parameter_declaration or local_parameter_declaration:
+        ;;   semicolon (interface_class_item, config_declaration, class_item, package_or_generate_item_declaration,
+        ;;              block item declaration)
+        ;;   comma or close paren (parameter_port_declaration)
+        ;;
+        ;; Blah, this parameter_port_declaration stuff looks potentially ambiguous.
+        ;;
+        ;; For now I'm going to just try to implement this using backtracking.
+        ;; This might work if we make sure to try to parse the data type first.
+        (return-raw
+         (b* ((localp    (eq (vl-token->type start) :vl-kwd-localparam))
+              (emptytype (make-vl-implicitvalueparam :range nil :sign nil))
+
+              ;; Case 1: maybe there's some data_type there.
+              ((mv some-err some-decls some-tokens some-warnings)
+               (seqw tokens warnings
+                     (type := (vl-parse-datatype))
+                     (decls := (vl-parse-list-of-param-assignments
+                                atts localp
+                                (make-vl-explicitvalueparam :type type)))
+                     (return decls)))
+              ((unless some-err)
+               ;; It worked, so that's great and we're done.
+               (mv some-err some-decls some-tokens some-warnings))
+
+              ;; Case 2: suppose there is no data_type.  Then we should be able
+              ;; to just parse the param assignments.
+              ((mv empty-err empty-decls empty-tokens empty-warnings)
+               (vl-parse-list-of-param-assignments atts localp emptytype))
+              ((unless empty-err)
+               ;; It worked.  So there can't be a data type because the second
+               ;; token has to be an = sign.  We win and we're done.
+               (mv empty-err empty-decls empty-tokens empty-warnings)))
+
+           ;; Final cleanup case.  What if neither one works?  We have two
+           ;; errors now.  Do the usual thing and choose whichever path got
+           ;; farther.
+           (if (< (len empty-tokens) (len some-tokens))
+               ;; Case 2 got farther.  (it has fewer tokens left)
+               (mv empty-err empty-decls empty-tokens empty-warnings)
+             ;; Case 1 got farther.
+             (mv some-err some-decls some-tokens some-warnings))))))
+
 
 (defparser vl-parse-param-or-localparam-declaration (atts types)
   :guard (and (vl-atts-p atts)
@@ -130,27 +455,6 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
-        (start := (vl-match-some-token types))
-        (when (vl-is-some-token? '(:vl-kwd-integer :vl-kwd-real
-                                                   :vl-kwd-realtime :vl-kwd-time))
-          (type := (vl-match))
-          (tuples := (vl-parse-list-of-param-assignments))
-          (return
-           (let ((type    (case (vl-token->type type)
-                            (:vl-kwd-integer  :vl-integer)
-                            (:vl-kwd-real     :vl-real)
-                            (:vl-kwd-realtime :vl-realtime)
-                            (:vl-kwd-time     :vl-time)))
-                 (localp  (eq (vl-token->type start) :vl-kwd-localparam)))
-             (vl-build-paramdecls tuples type localp nil atts))))
-        (when (vl-is-token? :vl-kwd-signed)
-          (signed := (vl-match)))
-        (when (vl-is-token? :vl-lbrack)
-          (range := (vl-parse-range)))
-        (tuples := (vl-parse-list-of-param-assignments))
-        (return
-         (let ((localp  (eq (vl-token->type start) :vl-kwd-localparam)))
-           (vl-build-paramdecls tuples
-                                (if signed :vl-signed :vl-plain)
-                                localp range atts)))))
+  (if (equal (vl-loadconfig->edition config) :verilog-2005)
+      (vl-parse-param-or-localparam-declaration-2005 atts types)
+    (vl-parse-param-or-localparam-declaration-2012 atts types)))

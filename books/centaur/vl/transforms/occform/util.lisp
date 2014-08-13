@@ -194,7 +194,7 @@ arity checking.</p>"
           (raise "Wrong number of arguments for ~x0.~%" x.name))))
     (make-vl-modinst :modname   x.name
                      :instname  (string-fix instname)
-                     :paramargs (make-vl-arguments-plain :args nil)
+                     :paramargs (make-vl-paramargs-plain :args nil)
                      :portargs  (make-vl-arguments-plain :args plainargs)
                      :loc       loc)))
 

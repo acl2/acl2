@@ -204,7 +204,6 @@
         (return ports)))
 
 
-
 ;                              PORT DECLARATIONS
 ;
 ; port_declaration ::=

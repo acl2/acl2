@@ -901,7 +901,7 @@ modinsts-to-eoccs).</p>"
                    :fn 'vl-modinst-to-eocc)))
             (mv nil (cons w warnings) nil)))
 
-         ((when (consp (vl-arguments->args x.paramargs)))
+         ((unless (vl-paramargs-empty-p x.paramargs))
           (b* ((w (make-vl-warning
                    :type :vl-bad-instance
                    :msg "~a0: expected only simple module instances, but ~s1 ~
@@ -912,7 +912,7 @@ modinsts-to-eoccs).</p>"
                    :fn 'vl-modinst-to-eocc)))
             (mv nil (cons w warnings) nil)))
 
-         ((when (eq (vl-arguments-kind x.portargs) :named))
+         ((when (eq (vl-arguments-kind x.portargs) :vl-arguments-named))
           (b* ((w (make-vl-warning
                    :type :vl-bad-instance
                    :msg "~a0: expected only resolved module instances, but ~

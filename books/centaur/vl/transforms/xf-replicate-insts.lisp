@@ -911,7 +911,7 @@ vl-gateinstlist-p)."
                  "The new arguments to give to each (split up) module instance."))
 
   (b* ((insts (pos-fix insts))
-       ((when (eq (vl-arguments-kind args) :named))
+       ((when (eq (vl-arguments-kind args) :vl-arguments-named))
         (mv nil
             (fatal :type :vl-bad-arguments
                    :msg "~a0: Expected only plain argument lists, but found ~
@@ -990,7 +990,7 @@ vl-gateinstlist-p)."
    (modname   stringp           "Module being instantiated.")
    (str       vl-maybe-gatestrength-p)
    (delay     vl-maybe-gatedelay-p)
-   (paramargs vl-arguments-p)
+   (paramargs vl-paramargs-p)
    (atts      vl-atts-p)
    (loc       vl-location-p))
   :guard (same-lengthp names args)
@@ -1129,7 +1129,7 @@ then we try to split it into a list of @('nil')-ranged, simple instances.  If
             (list x)
             nf))
 
-       ((when (vl-arguments->args x.paramargs))
+       ((unless (vl-paramargs-empty-p x.paramargs))
         ;; Probably unnecessary, but I don't really want to think about
         ;; parameters here.
         (mv (fatal :type :vl-bad-instance

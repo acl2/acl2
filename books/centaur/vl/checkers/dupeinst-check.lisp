@@ -119,7 +119,7 @@ that key, which lets us immediately see which modinsts have the same key.</p>
        (x1 (car x))
        ((vl-modinst x1) x1)
 
-       ((when (eq (vl-arguments-kind x1.portargs) :named))
+       ((when (eq (vl-arguments-kind x1.portargs) :vl-arguments-named))
         ;; Args not resolved, skip it
         (vl-make-dupeinst-alist-aux (cdr x) alist))
 
@@ -188,7 +188,7 @@ filtered out into minor warnings.</p>
   (b* (((when (atom x))
         nil)
        ((vl-modinst x1) (car x))
-       ((when (eq (vl-arguments-kind x1.portargs) :named))
+       ((when (eq (vl-arguments-kind x1.portargs) :vl-arguments-named))
         (raise "expected resolved args"))
        ((mv ?inputs outputs ?inouts ?unknowns)
         (vl-partition-plainargs (vl-arguments->args x1.portargs) nil nil nil nil))

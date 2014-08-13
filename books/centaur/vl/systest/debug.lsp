@@ -8,10 +8,12 @@
 (set-ld-skip-proofsp t state)
 
 (defconst *edgesynth-debug* t)
+(defconst *vl-unparam-debug* t)
 
 (defconst *loadconfig*
   (make-vl-loadconfig
-   :start-files (list "fns2/spec.v")
+   :start-files (list "param2/spec.v")
+   :search-path (list "param2/")
    ))
 
 (defconsts (*loadresult* state)
@@ -19,6 +21,101 @@
 
 (defconsts *simpconfig*
   (make-vl-simpconfig))
+
+(defconsts (*good* *bad* &)
+  (vl-simplify (vl-loadresult->design *loadresult*) *simpconfig*))
+
+(top-level
+ (with-local-ps
+   (vl-print-reportcard (vl-design-reportcard *good*))))
+
+(top-level
+ (with-local-ps
+   (vl-print-reportcard (vl-design-reportcard *bad*))))
+
+(car (vl-design->mods *bad*))
+
+
+(vl-pps-modulelist
+ (vl-design->mods (vl-annotate-design (vl-loadresult->design *loadresult*))))
+
+(vl-pps-modulelist
+ (vl-design->mods *good*))
+
+(vl-pps-modulelist
+ (vl-design->mods *bad*))
+
+(defconsts (*pre* state)
+  (sneaky-load :pre-unparam state))
+
+(vl-pps-modulelist (vl-design->mods *pre*))
+
+
+(define vl-design-unparameterize
+  :short "Top-level @(see unparameterization) transform."
+  ((x vl-design-p))
+  :returns (new-x vl-design-p)
+  (b* (;; Throw out modules that have problems with shadowed parameters.
+       (- (sneaky-save :pre-unparam x))
+       ((vl-design x) (vl-design-unparam-check x))
+       ((unless (uniquep (vl-modulelist->names x.mods)))
+        (raise "Programming error: module names are not unique.")
+        x)
+       (new-mods (vl-modulelist-unparameterize x.mods 1000))
+
+       ;; Just to be absolutely certain this can't happen:
+       ((unless (mbt (uniquep (vl-modulelist->names new-mods))))
+        (impossible)
+        x)
+
+       (- (clear-memoize-table 'vl-create-unparameterized-module))
+       (- (cw "; vl-unparameterize: ~x0 => ~x1 modules.~%" (len x.mods) (len new-mods)))
+       (ans (change-vl-design x :mods new-mods))
+       (- (sneaky-save :post-unparam ans)))
+    ans))
+
+
+
+
+
+
+(define vl-design-caseelim ((x vl-design-p))
+  :returns (new-x vl-design-p)
+  (b* (((vl-design x) x)
+       (- (sneaky-save :pre-caseelim x))
+       (ans (change-vl-design x :mods (vl-modulelist-caseelim x.mods)))
+       (- (sneaky-save :post-caseelim ans)))
+    ans))
+
+(define vl-design-elim-unused-vars
+  :short "Top-level @(see elim-unused-vars) transform."
+  ((x vl-design-p))
+  :returns (new-x vl-design-p)
+  (b* (((vl-design x) x)
+       (- (sneaky-save :pre-unused x))
+       (ans (change-vl-design x
+                              :mods (vl-modulelist-elim-unused-vars x.mods)))
+       (- (sneaky-save :post-unused x)))
+    ans))
+
+(defconsts (*pre-un* state) (sneaky-load :pre-unused state))
+(defconsts (*post-un* state) (sneaky-load :post-unused state))
+
+(vl-pps-modulelist (vl-design->mods *pre-un*))
+
+
+(defconsts (*des* state)
+  (sneaky-load :post-caseelim state))
+
+(vl-pps-modulelist (vl-design->mods *des*))
+(vl-pps-modulelist (vl-design->mods *bad*))
+
+
+
+
+
+
+
 
 
 
@@ -85,20 +182,5 @@
        (- (fast-alist-free local-wirefal))
        (new-x (change-vl-fundecl x :body new-body)))
     (mv warnings new-x)))
-
-
-(defconsts (*good* *bad* &)
-  (vl-simplify (vl-loadresult->design *loadresult*) *simpconfig*))
-
-(top-level
- (with-local-ps
-  (let* ((all-mods (append (vl-design->mods *good*)
-                           (vl-design->mods *bad*)))
-         (mwalist (vl-origname-modwarningalist all-mods)))
-    (vl-print-modwarningalist mwalist))))
-
-
-
-
 
 

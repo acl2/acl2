@@ -29,7 +29,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "../xf-resolve-ranges")
+(include-book "../../mlib/consteval")
 (include-book "../../mlib/stmt-tools")
 (local (include-book "../../util/arithmetic"))
 
@@ -173,12 +173,12 @@ implement.</p>"
 })
 
 <p>We only try to unroll when @('n') is easily resolved to a constant that is
-less than the @('unroll-limit').  In particular, we use @(see
-vl-constexpr-reduce) to try to evaluate the condition.  This lets us handle
-things like @('repeat(width-1) body') after @(see unparameterization) has
-occurred.</p>"
+less than the @('unroll-limit').  In particular, we use @(see vl-consteval) to
+try to evaluate the condition.  This lets us handle things like
+@('repeat(width-1) body') after @(see unparameterization) has occurred.</p>"
 
-  (b* ((count (vl-constexpr-reduce condition))
+  (b* (((mv ok count-expr) (vl-consteval condition))
+       (count (and ok (vl-resolved->val count-expr)))
        ((when (and count (<= count unroll-limit)))
         (mv warnings
             ;; This works even when N is 0 or 1.  We expect our later block

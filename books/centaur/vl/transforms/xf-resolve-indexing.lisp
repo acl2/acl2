@@ -339,12 +339,14 @@ able to handle more cases.</p>")
 (def-vl-resolve-indexing vl-arguments
   :body
   (vl-arguments-case x
-    :named (b* (((mv warnings args-prime)
-                 (vl-namedarglist-resolve-indexing x.args arrfal wirefal warnings)))
-             (mv warnings (change-vl-arguments-named x :args args-prime)))
-    :plain (b* (((mv warnings args-prime)
-                 (vl-plainarglist-resolve-indexing x.args arrfal wirefal warnings)))
-             (mv warnings (change-vl-arguments-plain x :args args-prime)))))
+    :vl-arguments-named
+    (b* (((mv warnings args-prime)
+          (vl-namedarglist-resolve-indexing x.args arrfal wirefal warnings)))
+      (mv warnings (change-vl-arguments-named x :args args-prime)))
+    :vl-arguments-plain
+    (b* (((mv warnings args-prime)
+          (vl-plainarglist-resolve-indexing x.args arrfal wirefal warnings)))
+      (mv warnings (change-vl-arguments-plain x :args args-prime)))))
 
 (def-vl-resolve-indexing vl-modinst
   :body (b* (((vl-modinst x) x)

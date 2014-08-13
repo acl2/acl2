@@ -400,10 +400,10 @@ output using an equivalence checker.</p>")
   (b* ((x (vl-modinst-fix x))
        ((vl-modinst x) x))
     (vl-arguments-case x.portargs
-      :named
+      :vl-arguments-named
       ;; Not resolved, don't modify
       x
-      :plain
+      :vl-arguments-plain
       (b* ((plainargs (vl-plainarglist-simp x.portargs.args))
            (args      (make-vl-arguments-plain :args plainargs)))
         (change-vl-modinst x :portargs args)))))

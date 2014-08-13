@@ -1071,34 +1071,35 @@ module VL_1_BIT_BUFIF0 (out, data, ctrl);
    output out;
    input data;
    input ctrl;
-   assign out = ctrl ? 1'bz : ~~data;
+   assign out = ctrl ? 1'bz : |data;
 endmodule
 })
 
 <p>VL takes this as a primitive.  The @(see gate-elim) transform converts
 certain @('bufif0') gates into instances of this module.</p>
 
-<p>The corresponding @(see esim) primitive is @(see acl2::*esim-bufif0*).</p>"
+<p>The corresponding @(see esim) primitive is @(see acl2::*esim-bufif0*).</p>
+
+<p>We once tried to implement this primitive using @('~~data') instead of
+@('|data'), but we found that NCVerilog (incorrectly) canceled the double
+negation and could hence produce Z bits on the output.  The or-based definition
+above does not appear to have this problem.</p>"
 
   (b* ((name "VL_1_BIT_BUFIF0")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
        ((mv data-expr   data-port   data-portdecl   data-netdecl)   (vl-primitive-mkport "data"   :vl-input))
        ((mv ctrl-expr   ctrl-port   ctrl-portdecl   ctrl-netdecl)   (vl-primitive-mkport "ctrl"   :vl-input))
+
        (assign (make-vl-assign :lvalue out-expr
                                :expr (make-vl-nonatom
                                       :op :vl-qmark
                                       :args (list ctrl-expr
                                                   |*sized-1'bz*|
-                                                  (make-vl-nonatom
-                                                   :op :vl-unary-bitnot
-                                                   :args (list (make-vl-nonatom
-                                                                :op :vl-unary-bitnot
-                                                                :args (list data-expr)
-                                                                :finalwidth 1
-                                                                :finaltype :vl-unsigned))
-                                                   :finalwidth 1
-                                                   :finaltype :vl-unsigned))
+                                                  (make-vl-nonatom :op :vl-unary-bitor
+                                                                   :args (list data-expr)
+                                                                   :finalwidth 1
+                                                                   :finaltype :vl-unsigned))
                                       :finalwidth 1
                                       :finaltype :vl-unsigned)
                                :loc *vl-fakeloc*)))
@@ -1130,7 +1131,12 @@ endmodule
 <p>VL takes this as a primitive.  The @(see gate-elim) transform converts
 certain @('bufif1') gates into instances of this module.</p>
 
-<p>The corresponding @(see esim) primitive is @(see acl2::*esim-bufif1*).</p>"
+<p>The corresponding @(see esim) primitive is @(see acl2::*esim-bufif1*).</p>
+
+<p>We once tried to implement this primitive using @('~~data') instead of
+@('|data'), but we found that NCVerilog (incorrectly) canceled the double
+negation and could hence produce Z bits on the output.  The or-based definition
+above does not appear to have this problem.</p>"
 
   (b* ((name "VL_1_BIT_BUFIF1")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
@@ -1141,15 +1147,10 @@ certain @('bufif1') gates into instances of this module.</p>
                                :expr (make-vl-nonatom
                                       :op :vl-qmark
                                       :args (list ctrl-expr
-                                                  (make-vl-nonatom
-                                                   :op :vl-unary-bitnot
-                                                   :args (list (make-vl-nonatom
-                                                                :op :vl-unary-bitnot
-                                                                :args (list data-expr)
-                                                                :finalwidth 1
-                                                                :finaltype :vl-unsigned))
-                                                   :finalwidth 1
-                                                   :finaltype :vl-unsigned)
+                                                  (make-vl-nonatom :op :vl-unary-bitor
+                                                                   :args (list data-expr)
+                                                                   :finalwidth 1
+                                                                   :finaltype :vl-unsigned)
                                                   |*sized-1'bz*|)
                                       :finalwidth 1
                                       :finaltype :vl-unsigned)

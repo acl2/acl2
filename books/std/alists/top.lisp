@@ -44,6 +44,7 @@
 (include-book "append-alist-vals")
 (include-book "alist-equiv")
 (include-book "alists-compatible")
+(include-book "fal-find-any")
 (include-book "fal-extract")
 (include-book "fal-extract-vals")
 (include-book "hons-assoc-equal")

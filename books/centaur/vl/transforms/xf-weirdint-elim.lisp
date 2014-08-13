@@ -253,18 +253,20 @@ will become the arguments to a concatenation."
 (def-vl-weirdint-elim vl-arguments
   :body
   (vl-arguments-case x
-    :named (b* (((mv warnings changedp args-prime)
-                 (vl-namedarglist-weirdint-elim x.args warnings))
-                (x-prime (if changedp
-                             (change-vl-arguments-named x :args args-prime)
-                           x)))
-             (mv warnings changedp x-prime))
-    :plain (b* (((mv warnings changedp args-prime)
-                 (vl-plainarglist-weirdint-elim x.args warnings))
-                (x-prime (if changedp
-                             (change-vl-arguments-plain x :args args-prime)
-                           x)))
-             (mv warnings changedp x-prime))))
+    :vl-arguments-named
+    (b* (((mv warnings changedp args-prime)
+          (vl-namedarglist-weirdint-elim x.args warnings))
+         (x-prime (if changedp
+                      (change-vl-arguments-named x :args args-prime)
+                    x)))
+      (mv warnings changedp x-prime))
+    :vl-arguments-plain
+    (b* (((mv warnings changedp args-prime)
+          (vl-plainarglist-weirdint-elim x.args warnings))
+         (x-prime (if changedp
+                      (change-vl-arguments-plain x :args args-prime)
+                    x)))
+      (mv warnings changedp x-prime))))
 
 (def-vl-weirdint-elim vl-modinst
   :body (b* (((mv warnings args-changedp args-prime)
@@ -536,7 +538,7 @@ will become the arguments to a concatenation."
        (new-modinst (make-vl-modinst
                      :modname (vl-module->name target-mod)
                      :instname instname
-                     :paramargs (make-vl-arguments-plain :args nil)
+                     :paramargs (make-vl-paramargs-plain :args nil)
                      :portargs (make-vl-arguments-plain
                                 :args (list (make-vl-plainarg :expr new-expr
                                                               :dir :vl-output

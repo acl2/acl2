@@ -718,12 +718,14 @@ vl-expr-p) @('x') and returns @('(mv warnings-prime x-prime)')."
 
 (def-vl-oprewrite vl-arguments
   :body (vl-arguments-case x
-          :named (b* (((mv warnings args-prime)
-                       (vl-namedarglist-oprewrite x.args warnings)))
-                   (mv warnings (change-vl-arguments-named x :args args-prime)))
-          :plain (b* (((mv warnings args-prime)
-                       (vl-plainarglist-oprewrite x.args warnings)))
-                   (mv warnings (change-vl-arguments-plain x :args args-prime)))))
+          :vl-arguments-named
+          (b* (((mv warnings args-prime)
+                (vl-namedarglist-oprewrite x.args warnings)))
+            (mv warnings (change-vl-arguments-named x :args args-prime)))
+          :vl-arguments-plain
+          (b* (((mv warnings args-prime)
+                (vl-plainarglist-oprewrite x.args warnings)))
+            (mv warnings (change-vl-arguments-plain x :args args-prime)))))
 
 (def-vl-oprewrite vl-modinst
   :body (b* (((vl-modinst x) x)

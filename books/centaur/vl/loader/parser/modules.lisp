@@ -481,16 +481,18 @@
 
 ;                                    MODULES
 ;
+; Grammar rules from Verilog-2005:
+;
 ; module_declaration ::=
 ;
-;   // I call this "Variant 1"
+;   // I call this the "Non-ANSI" variant
 ;
 ;    {attribute_instance} module_keyword identifier [module_parameter_port_list]
 ;        list_of_ports ';' {module_item}
 ;        'endmodule'
 ;
 ;
-;   // I call this "Variant 2"
+;   // I call this the "ANSI" variant
 ;
 ;  | {attribute_instance} module_keyword identifier [module_parameter_port_list]
 ;        [list_of_port_declarations] ';' {non_port_module_item}
@@ -531,7 +533,7 @@
 
 
 
-(defparser vl-parse-module-declaration-variant-1 (atts module_keyword id)
+(defparser vl-parse-module-declaration-nonansi (atts module_keyword id)
   :guard (and (vl-atts-p atts)
               (vl-token-p module_keyword)
               (vl-idtoken-p id))
@@ -540,7 +542,7 @@
   :fails gracefully
   :count strong
 
-; We try to match Variant 1:
+; We try to match Nonansi:
 ;
 ;    {attribute_instance} module_keyword identifier [module_parameter_port_list]
 ;        list_of_ports ';' {module_item}
@@ -585,7 +587,7 @@
                                          warnings))))
 
 
-(defparser vl-parse-module-declaration-variant-2 (atts module_keyword id)
+(defparser vl-parse-module-declaration-ansi (atts module_keyword id)
   :guard (and (vl-atts-p atts)
               (vl-token-p module_keyword)
               (vl-idtoken-p id))
@@ -594,7 +596,7 @@
   :fails gracefully
   :count strong
 
-; This is for Variant 2.
+; This is for the ANSI Variant:
 ;
 ;  | {attribute_instance} module_keyword identifier [module_parameter_port_list]
 ;        [list_of_port_declarations] ';' {non_port_module_item}
@@ -648,30 +650,30 @@
         ;; during the parsing of a module with that module as it is created,
         ;; and NOT return them in the global list of warnings.  Because of
         ;; this, we use a fresh warnings accumulator here.
-        (vl-parse-module-declaration-variant-1 atts module_keyword id
-                                               :tokens tokens
-                                               :warnings nil))
+        (vl-parse-module-declaration-nonansi atts module_keyword id
+                                             :tokens tokens
+                                             :warnings nil))
        ((unless err1)
-        ;; Successfully parsed the module using variant 1.  We return the
-        ;; results from variant-1, except that we've already trapped the
-        ;; v1-warnings and associated them with mod, so we can just restore the
-        ;; previously encountered warnings.
+        ;; Successfully parsed the module using the nonansi variant.  We return
+        ;; the results, except that we've already trapped the warnings and
+        ;; associated them with mod, so we can just restore the previously
+        ;; encountered warnings.
         (mv err1 mod v1-tokens warnings))
 
        ((mv err2 mod v2-tokens &)
         ;; Similar handling for warnings
-        (vl-parse-module-declaration-variant-2 atts module_keyword id
-                                               :tokens tokens
-                                               :warnings nil))
+        (vl-parse-module-declaration-ansi atts module_keyword id
+                                          :tokens tokens
+                                          :warnings nil))
        ((unless err2)
-        ;; Successfully parsed using variant 2.  Similar deal.
+        ;; Successfully parsed using ansi variant.  Similar deal.
         (mv err2 mod v2-tokens warnings))
 
        ;; If we get this far, we saw "module foo" but were not able to parse
        ;; the rest of this module definiton using either variant.  We need to
        ;; report a parse error.  But which error do we report?  We have two
-       ;; errors, one from our Variant-1 attempt to parse the module, and one
-       ;; from our Variant-2 attempt.
+       ;; errors, one from our nonansi attempt to parse the module, and one
+       ;; from our ansi attempt.
        ;;
        ;; Well, originally I thought I'd just report both errors, but that was
        ;; a really bad idea.  Why?  Well, imagine a mostly-well-formed module
@@ -691,9 +693,9 @@
        ;; day we'll rework the module parser so that it doesn't use
        ;; backtracking so aggressively.
        ((when (<= (len v1-tokens) (len v2-tokens)))
-        ;; Variant 1 got farther (or as far), so use it.
+        ;; nonansi variant got farther (or as far), so use it.
         (mv err1 nil v1-tokens warnings)))
-    ;; Variant 2 got farther
+    ;; ansi variant got farther
     (mv err2 nil v2-tokens warnings)))
 
 

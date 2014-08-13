@@ -29,7 +29,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "../mlib/expr-tools")
+(include-book "../mlib/consteval")
 (include-book "../mlib/stmt-tools")
 (local (include-book "../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
@@ -87,31 +87,29 @@ arisen during the course of unparameterization.</p>"
        (b* ((from   (vl-expr-fix (first args)))
             (index1 (vl-expr-fix (second args)))
             (index2 (vl-expr-fix (third args)))
-            (val1   (vl-constexpr-reduce index1))
-            (val2   (vl-constexpr-reduce index2))
-            ((unless (and val1 val2))
+            ((mv ok1 index1) (vl-consteval index1))
+            ((mv ok2 index2) (vl-consteval index2))
+            ((unless (and ok1 ok2))
              (mv (warn :type :vl-bad-expression
                        ;; BOZO need some context
                        :msg "Unable to safely resolve indices on part-select ~a0."
                        :args (list context))
                  args))
-            (msb (hons-copy (make-vl-atom
-                             :guts (make-vl-constint :origwidth 32
-                                                     :origtype :vl-signed
-                                                     :value val1
-                                                     :wasunsized t))))
-            (lsb (hons-copy (make-vl-atom
-                             :guts (make-vl-constint :origwidth 32
-                                                     :origtype :vl-signed
-                                                     :value val2
-                                                     :wasunsized t)))))
+            ;; See also vl-rangeresolve.  We could create a part-select that
+            ;; just uses the reduced index1 and index2 expressions.  But nobody
+            ;; wants to look at things like foo[4'd3 : 4'd0].  So, instead of
+            ;; keeping the size information, use vl-make-index, which can
+            ;; usually build special indexes that the pretty-printer knows not
+            ;; to put sizes on.
+            (msb (vl-make-index (vl-resolved->val index1)))
+            (lsb (vl-make-index (vl-resolved->val index2))))
          (mv (ok) (list from msb lsb))))
 
       (:vl-bitselect
        (b* ((from  (vl-expr-fix (first args)))
             (index (vl-expr-fix (second args)))
-            (val   (vl-constexpr-reduce index))
-            ((unless val)
+            ((mv ok index) (vl-consteval index))
+            ((unless ok)
              (mv (warn :type :vl-dynamic-bsel
                        ;; BOZO need some context
                        :msg "Unable to safely resolve index on bit-select ~a0, ~
@@ -119,29 +117,23 @@ arisen during the course of unparameterization.</p>"
                              instead."
                        :args (list context))
                  args))
-            (atom (hons-copy (make-vl-atom
-                              :guts (make-vl-constint :origwidth 32
-                                                      :origtype :vl-signed
-                                                      :value val
-                                                      :wasunsized t)))))
+            ;; As in the partselect case.
+            (atom (vl-make-index (vl-resolved->val index))))
          (mv (ok) (list from atom))))
 
       (:vl-multiconcat
-       (b* ((mult   (vl-expr-fix (first args)))
-            (kitty  (vl-expr-fix (second args)))
-            (val    (vl-constexpr-reduce mult))
-            ((unless val)
+       (b* ((mult        (vl-expr-fix (first args)))
+            (kitty       (vl-expr-fix (second args)))
+            ((mv ok val) (vl-consteval mult))
+            ((unless ok)
              (mv (warn :type :vl-bad-expression
                        ;; BOZO need some context
                        :msg "Unable to safely resolve multiplicity on ~
                              multiconcat ~a0."
                        :args (list context))
                  args))
-            (atom (hons-copy (make-vl-atom
-                              :guts (make-vl-constint :origwidth 32
-                                                      :origtype :vl-signed
-                                                      :value val
-                                                      :wasunsized t)))))
+            ;; As in the partselect case.
+            (atom (vl-make-index (vl-resolved->val val))))
          (mv (ok) (list atom kitty))))
 
       (otherwise
@@ -257,14 +249,54 @@ multiconcats throughout an expression."
 
 (def-vl-selresolve vl-arguments
   :body (vl-arguments-case x
-          :named (b* (((mv warnings args) (vl-namedarglist-selresolve x.args warnings)))
-                   (mv warnings (change-vl-arguments-named x :args args)))
-          :plain (b* (((mv warnings args) (vl-plainarglist-selresolve x.args warnings)))
-                   (mv warnings (change-vl-arguments-plain x :args args)))))
+          :vl-arguments-named
+          (b* (((mv warnings args) (vl-namedarglist-selresolve x.args warnings)))
+            (mv warnings (change-vl-arguments-named x :args args)))
+          :vl-arguments-plain
+          (b* (((mv warnings args) (vl-plainarglist-selresolve x.args warnings)))
+            (mv warnings (change-vl-arguments-plain x :args args)))))
+
+
+
+
+
+
+
+
+(def-vl-selresolve vl-paramvalue
+  :body (b* ((x (vl-paramvalue-fix x)))
+          (vl-paramvalue-case x
+            :expr (vl-expr-selresolve x warnings)
+            :datatype
+            ;; BOZO should probably go into the datatype and resolve selects there, too.
+            (mv warnings x))))
+
+(def-vl-selresolve-list vl-paramvaluelist :element vl-paramvalue)
+
+(def-vl-selresolve vl-maybe-paramvalue
+  :body (if x
+            (vl-paramvalue-selresolve x warnings)
+          (mv warnings nil)))
+
+(def-vl-selresolve vl-namedparamvalue
+  :body (b* (((vl-namedparamvalue x) x)
+             ((mv warnings value) (vl-maybe-paramvalue-selresolve x.value warnings)))
+          (mv warnings (change-vl-namedparamvalue x :value value))))
+
+(def-vl-selresolve-list vl-namedparamvaluelist :element vl-namedparamvalue)
+
+(def-vl-selresolve vl-paramargs
+  :body (vl-paramargs-case x
+          :vl-paramargs-named
+          (b* (((mv warnings args) (vl-namedparamvaluelist-selresolve x.args warnings)))
+            (mv warnings (change-vl-paramargs-named x :args args)))
+          :vl-paramargs-plain
+          (b* (((mv warnings args) (vl-paramvaluelist-selresolve x.args warnings)))
+            (mv warnings (change-vl-paramargs-plain x :args args)))))
 
 (def-vl-selresolve vl-modinst
   :body (b* (((vl-modinst x) x)
-             ((mv warnings paramargs) (vl-arguments-selresolve x.paramargs warnings))
+             ((mv warnings paramargs) (vl-paramargs-selresolve x.paramargs warnings))
              ((mv warnings portargs)  (vl-arguments-selresolve x.portargs warnings)))
           (mv warnings (change-vl-modinst x
                                           :paramargs paramargs

@@ -248,38 +248,38 @@ Usage:    vl lint [OPTIONS] file.v [file2.v ...]
 Options:" *nls* *nls* *vl-lintconfig-usage* *nls*))
 
 
-(define vl-filter-mods-with-good-paramdecls
-  ((x    vl-modulelist-p "List of modules to filter.")
-   (good vl-modulelist-p "Accumulator for good modules.")
-   (bad  vl-modulelist-p "Accumulator for bad modules."))
-  :returns (mv (good vl-modulelist-p :hyp :fguard)
-               (bad  vl-modulelist-p :hyp :fguard))
-  :parents (lint)
-  :short "(unsound transform) Throw away modules with too-complex parameter
-declarations. "
+;; (define vl-filter-mods-with-good-paramdecls
+;;   ((x    vl-modulelist-p "List of modules to filter.")
+;;    (good vl-modulelist-p "Accumulator for good modules.")
+;;    (bad  vl-modulelist-p "Accumulator for bad modules."))
+;;   :returns (mv (good vl-modulelist-p :hyp :fguard)
+;;                (bad  vl-modulelist-p :hyp :fguard))
+;;   :parents (lint)
+;;   :short "(unsound transform) Throw away modules with too-complex parameter
+;; declarations. "
 
-  :long "<p>@(csee unparameterization) requires that the module list is
-complete and that all modules have good parameters.  In our ordinary
-translation process (e.g., @(see vl-simplify)), we throw away any modules with
-bad parameters, any then transitively throw away any modules with instances of
-missing modules.  But for linting, we'd like to try to carry out
-unparameterization with as little damage as possible.</p>
+;;   :long "<p>@(csee unparameterization) requires that the module list is
+;; complete and that all modules have good parameters.  In our ordinary
+;; translation process (e.g., @(see vl-simplify)), we throw away any modules with
+;; bad parameters, any then transitively throw away any modules with instances of
+;; missing modules.  But for linting, we'd like to try to carry out
+;; unparameterization with as little damage as possible.</p>
 
-<p>As a pre-unparameterization step, in this transform we throw away any
-modules with bad parameters and then throw away any instances of missing
-modules.  This is obviously unsound, so it should never be used in our ordinary
-translation process.</p>"
+;; <p>As a pre-unparameterization step, in this transform we throw away any
+;; modules with bad parameters and then throw away any instances of missing
+;; modules.  This is obviously unsound, so it should never be used in our ordinary
+;; translation process.</p>"
 
-  (cond ((atom x)
-         (mv good bad))
-        ((vl-good-paramdecllist-p (vl-module->paramdecls (car x)))
-         (vl-filter-mods-with-good-paramdecls (cdr x)
-                                              (cons (car x) good)
-                                              bad))
-        (t
-         (vl-filter-mods-with-good-paramdecls (cdr x)
-                                              good
-                                              (cons (car x) bad)))))
+;;   (cond ((atom x)
+;;          (mv good bad))
+;;         ((vl-good-paramdecllist-p (vl-module->paramdecls (car x)))
+;;          (vl-filter-mods-with-good-paramdecls (cdr x)
+;;                                               (cons (car x) good)
+;;                                               bad))
+;;         (t
+;;          (vl-filter-mods-with-good-paramdecls (cdr x)
+;;                                               good
+;;                                               (cons (car x) bad)))))
 
 
 (define vl-print-certain-warnings
@@ -408,40 +408,40 @@ shown.</p>"
     (change-vl-design design :mods new-mods)))
 
 
-(define vl-lint-unparam ((good vl-design-p))
-  :returns (good vl-design-p)
-  (b* ((good (vl-design-fix good))
+;; (define vl-lint-unparam ((good vl-design-p))
+;;   :returns (good vl-design-p)
+;;   (b* ((good (vl-design-fix good))
 
-       ;; Subtle thing.  Move any bad modules out of the way before doing
-       ;; unparameterization.
-       ((mv ok-mods bad-mods)
-        (vl-filter-mods-with-good-paramdecls (vl-design->mods good) nil nil))
+;;        ;; Subtle thing.  Move any bad modules out of the way before doing
+;;        ;; unparameterization.
+;;        ((mv ok-mods bad-mods)
+;;         (vl-filter-mods-with-good-paramdecls (vl-design->mods good) nil nil))
 
-       (- (or (not bad-mods)
-              (progn$
-               (cw "~%~%Note: deleting ~x0 module~s1 because they include ~
-                    unsupported parameter declarations.~%~%~
-                    Module~s1 being deleted: ~&2~%~%~
-                    Details:~%~%"
-                   (len bad-mods)
-                   (if (vl-plural-p bad-mods) "s" "")
-                   (mergesort (vl-modulelist->names bad-mods)))
-               (vl-print-certain-warnings bad-mods
-                                          (list :vl-bad-paramdecl
-                                                :vl-bad-paramdecls)
-                                          nil))))
+;;        (- (or (not bad-mods)
+;;               (progn$
+;;                (cw "~%~%Note: deleting ~x0 module~s1 because they include ~
+;;                     unsupported parameter declarations.~%~%~
+;;                     Module~s1 being deleted: ~&2~%~%~
+;;                     Details:~%~%"
+;;                    (len bad-mods)
+;;                    (if (vl-plural-p bad-mods) "s" "")
+;;                    (mergesort (vl-modulelist->names bad-mods)))
+;;                (vl-print-certain-warnings bad-mods
+;;                                           (list :vl-bad-paramdecl
+;;                                                 :vl-bad-paramdecls)
+;;                                           nil))))
 
-       (good (change-vl-design good :mods ok-mods))
-       (good (cwtime (vl-design-drop-missing-submodules good)))
-       (good (vl-design-unparameterize good))
-       (good (change-vl-design good :mods (append-without-guard
-                                           bad-mods (vl-design->mods good)))))
-    (or (uniquep (vl-modulelist->names (vl-design->mods good)))
-        (raise "Programming error.  Expected modules to have unique names ~
-                after vl-unparameterize, but found duplicate modules named ~
-                ~x0.  Please tell Jared."
-               (duplicated-members (vl-modulelist->names (vl-design->mods good)))))
-    good))
+;;        (good (change-vl-design good :mods ok-mods))
+;;        (good (cwtime (vl-design-drop-missing-submodules good)))
+;;        (good (vl-design-unparameterize good))
+;;        (good (change-vl-design good :mods (append-without-guard
+;;                                            bad-mods (vl-design->mods good)))))
+;;     (or (uniquep (vl-modulelist->names (vl-design->mods good)))
+;;         (raise "Programming error.  Expected modules to have unique names ~
+;;                 after vl-unparameterize, but found duplicate modules named ~
+;;                 ~x0.  Please tell Jared."
+;;                (duplicated-members (vl-modulelist->names (vl-design->mods good)))))
+;;     good))
 
 (define vl-lint-apply-quiet ((quiet string-listp)
                              (design vl-design-p))
@@ -498,8 +498,8 @@ shown.</p>"
        (design (cwtime (mp-verror-transform-hook design))) ;; BOZO really keep this???
        (design (cwtime (vl-design-follow-hids design)))
        (design (cwtime (vl-design-clean-params design)))
-       (design (cwtime (vl-design-check-good-paramdecls design)))
-       (design (cwtime (vl-lint-unparam design)))
+       ;; (design (cwtime (vl-design-check-good-paramdecls design)))
+       (design (cwtime (vl-design-unparameterize design)))
        (- (vl-gc))
 
        (- (cw "~%vl-lint: processing ranges, statements...~%"))

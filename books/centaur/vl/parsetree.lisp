@@ -509,7 +509,7 @@ kinds of assignments like @('+=') and @('*='), so maybe this could become a
 <p>So maybe we don't so much need these to be expressions.  Maybe we can get
 away with them as alternate kinds of assignments.</p>"))
 
-
+(defoption vl-maybe-datatype-p vl-datatype-p)
 
 
 (defprod vl-port
@@ -1180,8 +1180,9 @@ our transformations may not preserve it correctly.</p>")
               :elementp-of-nil nil)
 
 
+
 (defprod vl-plainarg
-  :parents (syntax vl-arguments-p)
+  :parents (vl-arguments-p)
   :short "Representation of a single argument in a plain argument list."
   :tag :vl-plainarg
   :layout :tree
@@ -1196,11 +1197,10 @@ our transformations may not preserve it correctly.</p>")
              :rule-classes
              ((:type-prescription)
               (:rewrite
-               :corollary (implies (force (vl-plainarg-p x))
-                                   (equal (stringp (vl-plainarg->portname x))
-                                          (if (vl-plainarg->portname x)
-                                              t
-                                            nil)))))
+               :corollary (equal (stringp (vl-plainarg->portname x))
+                                 (if (vl-plainarg->portname x)
+                                     t
+                                   nil))))
              "Not part of the Verilog syntax.  This <b>may</b> indicate the
               name of the port (i.e., the <i>formal</i>) that this expression
               is connected to; see below.")
@@ -1243,26 +1243,28 @@ a name, some arguments to module instances may also not be given
 portnames.</p>")
 
 (fty::deflist vl-plainarglist
-              :elt-type vl-plainarg-p
-              :true-listp nil
-              :elementp-of-nil nil)
+  :parents (vl-arguments-p)
+  :elt-type vl-plainarg-p
+  :true-listp nil
+  :elementp-of-nil nil)
 
 (fty::deflist vl-plainarglistlist
-              :elt-type vl-plainarglist-p
-              :true-listp nil
-              :elementp-of-nil t
-              ///
-              (defthm vl-plainarglist-p-of-strip-cars
-                (implies (and (vl-plainarglistlist-p x)
-                              (all-have-len x n)
-                              (not (zp n)))
-                         (vl-plainarglist-p (strip-cars x)))
-                :hints(("Goal" :in-theory (enable strip-cars))))
+  :parents (vl-arguments-p)
+  :elt-type vl-plainarglist-p
+  :true-listp nil
+  :elementp-of-nil t
+  ///
+  (defthm vl-plainarglist-p-of-strip-cars
+    (implies (and (vl-plainarglistlist-p x)
+                  (all-have-len x n)
+                  (not (zp n)))
+             (vl-plainarglist-p (strip-cars x)))
+    :hints(("Goal" :in-theory (enable strip-cars))))
 
-              (defthm vl-plainarglistlist-p-of-strip-cdrs
-                (implies (vl-plainarglistlist-p x)
-                         (vl-plainarglistlist-p (strip-cdrs x)))
-                :hints(("Goal" :in-theory (enable strip-cdrs)))))
+  (defthm vl-plainarglistlist-p-of-strip-cdrs
+    (implies (vl-plainarglistlist-p x)
+             (vl-plainarglistlist-p (strip-cdrs x)))
+    :hints(("Goal" :in-theory (enable strip-cdrs)))))
 
 (defprojection vl-plainarglist->exprs ((x vl-plainarglist-p))
   (vl-plainarg->expr x)
@@ -1307,44 +1309,246 @@ directions.</p>")
               :true-listp nil
               :elementp-of-nil nil)
 
-
 (deftagsum vl-arguments
-  :short "Representation of arguments to a module instance (for ports and also
-for parameters)."
+  :short "Representation of arguments to a module instance (for ports, not
+parameters)."
 
-  :long "<p>There are two kinds of argument lists for module instantiations,
-which we call <i>plain</i> and <i>named</i> arguments.</p>
+  :long "<p>There are two kinds of argument lists for the ports of module
+instantiations, which we call <i>plain</i> and <i>named</i> arguments.</p>
 
 @({
   modname instname ( 1, 2, 3 );             <-- \"plain\" arguments
   modname instname ( .a(1), .b(2), .c(3) ); <-- \"named\" arguments
 })
 
-<p>Similarly, named or plain argument lists can be used in order to give
-parameters to a module, e.g.,</p>
-
-@({
-  modname #(.width(6)) instname(o, a, b);
-  modname #(6) instname(o, a, b);
-})
-
 <p>A @('vl-arguments-p') structure represents an argument list of either
 variety.</p>"
 
-  (:named ((args vl-namedarglist-p)))
-  (:plain ((args vl-plainarglist-p))))
+  (:vl-arguments-named
+   :base-name vl-arguments-named
+   ((args vl-namedarglist-p)))
+  (:vl-arguments-plain
+   :base-name vl-arguments-plain
+   ((args vl-plainarglist-p))))
 
 (define vl-arguments->args ((x vl-arguments-p))
   :inline t
   :enabled t
   (vl-arguments-case x
-    :named x.args
-    :plain x.args))
+    :vl-arguments-named x.args
+    :vl-arguments-plain x.args))
 
 (fty::deflist vl-argumentlist
               :elt-type vl-arguments-p
               :true-listp nil
               :elementp-of-nil nil)
+
+
+
+(defsection vl-paramvalue
+  :parents (vl-paramargs)
+  :short "Representation for the actual values given to parameters."
+  :long "<p>In Verilog-2005, the values for a parameterized module were always
+ordinary expressions, e.g., 3 and 5 below.</p>
+
+@({
+      myalu #(.delay(3), .width(5)) alu1 (...);
+})
+
+<p>However, in SystemVerilog-2012 there can also be type parameters.  For
+instance, a valid instance might look like:</p>
+
+@({
+      myalu #(.delay(3), .Bustype(logic [63:0])) myinst (...);
+})
+
+<p>The @('vl-paramvalue-p') is a sum-of-products style type that basically
+corresponds to the SystemVerilog @('param_exprewssion') grammar rule:</p>
+
+@({
+     param_expression ::= mintypmax_expression | data_type | '$'
+})
+
+<p>But note that @('$') is a valid @(see vl-expr-p) so this essentially
+collapses into only two cases: expression or data type.</p>")
+
+(encapsulate
+  ()
+  (local (xdoc::set-default-parents vl-paramvalue))
+
+  (local (defthmd l0
+           (implies (vl-expr-p x)
+                    (equal (vl-expr-kind x)
+                           (tag x)))
+           :hints(("Goal" :in-theory (enable vl-expr-kind vl-expr-p tag)))))
+
+  (local (defthmd l1
+           (implies (vl-datatype-p x)
+                    (equal (vl-datatype-kind x)
+                           (tag x)))
+           :hints(("Goal" :in-theory (enable vl-datatype-kind tag vl-datatype-p)))))
+
+  (local (defthm l2
+           (implies (vl-expr-p x)
+                    (or (eq (tag x) :atom)
+                        (eq (tag x) :nonatom)))
+           :rule-classes :forward-chaining
+           :hints(("Goal" :use ((:instance l0))))))
+
+  (local (defthm l3
+           (implies (vl-datatype-p x)
+                    (not (or (eq (tag x) :atom)
+                             (eq (tag x) :nonatom))))
+           :rule-classes :forward-chaining
+           :hints(("Goal" :use ((:instance l1))))))
+
+
+  (define vl-paramvalue-p (x)
+    :short "Recognizer for valid @(see vl-paramvalue) structures."
+    (mbe :logic
+         (or (vl-expr-p x)
+             (vl-datatype-p x))
+         :exec
+         (b* ((tag (tag x)))
+           (if (or (eq tag :atom)
+                   (eq tag :nonatom))
+               (vl-expr-p x)
+             (vl-datatype-p x))))
+    ///
+    (defthm type-when-vl-paramvalue-p
+      (implies (vl-paramvalue-p x)
+               (consp x))
+      :rule-classes :compound-recognizer)
+
+    (defthm vl-paramvalue-p-forward
+      (implies (vl-paramvalue-p x)
+               (or (vl-expr-p x)
+                   (vl-datatype-p x)))
+      :rule-classes :forward-chaining)
+
+    (defthm vl-paramvalue-p-when-vl-expr-p
+      (implies (vl-expr-p x)
+               (vl-paramvalue-p x)))
+
+    (defthm vl-paramvalue-p-when-vl-datatype-p
+      (implies (vl-datatype-p x)
+               (vl-paramvalue-p x))))
+
+  (define vl-paramvalue-fix ((x vl-paramvalue-p))
+    :short "Fixing function for @(see vl-paramvalue) structures."
+    :inline t
+    :returns (x-fix vl-paramvalue-p)
+    (mbe :logic
+         (if (vl-expr-p x)
+             (vl-expr-fix x)
+           (vl-datatype-fix x))
+         :exec
+         x)
+    ///
+    (defthm vl-paramvalue-fix-when-vl-paramvalue-p
+      (implies (vl-paramvalue-p x)
+               (equal (vl-paramvalue-fix x)
+                      x))))
+
+  (deffixtype vl-paramvalue
+    :pred vl-paramvalue-p
+    :fix vl-paramvalue-fix
+    :equiv vl-paramvalue-equiv
+    :define t
+    :forward t)
+
+  (define vl-paramvalue-expr-p ((x vl-paramvalue-p))
+    :short "Fast recognizer for @(see vl-paramvalue)s that are expressions."
+    :enabled t
+    :inline t
+    (mbe :logic (vl-expr-p (vl-paramvalue-fix x))
+         :exec (b* ((tag (tag x)))
+                 (or (eq tag :atom)
+                     (eq tag :nonatom)))))
+
+  (define vl-paramvalue-datatype-p ((x vl-paramvalue-p))
+    :short "Fast recognizer for @(see vl-paramvalue)s that are expressions."
+    :enabled t
+    :inline t
+    (mbe :logic (vl-datatype-p (vl-paramvalue-fix x))
+         :exec (not (vl-paramvalue-expr-p x))))
+
+  (defxdoc vl-paramvalue-case
+    :short "Case macro for @(see vl-paramvalue)s."
+    :long "@(def vl-paramvalue-case)")
+
+  (defmacro vl-paramvalue-case (x &key expr datatype)
+    `(if (vl-paramvalue-expr-p ,x)
+         ,expr
+       ,datatype)))
+
+(fty::deflist vl-paramvaluelist
+              :elt-type vl-paramvalue-p
+              :true-listp nil
+              :elementp-of-nil nil
+              ///
+              (defthm vl-paramvaluelist-p-when-vl-exprlist-p
+                (implies (vl-exprlist-p x)
+                         (vl-paramvaluelist-p x))
+                :hints(("Goal" :induct (len x)))))
+
+(defoption vl-maybe-paramvalue-p vl-paramvalue-p
+  :parents (vl-paramargs)
+  ///
+  (defthm type-when-vl-maybe-paramvalue-p
+    (implies (vl-maybe-paramvalue-p x)
+             (or (consp x)
+                 (not x)))
+    :rule-classes :compound-recognizer))
+
+(defprod vl-namedparamvalue
+  :parents (vl-paramargs)
+  :short "Representation of a single, named parameter argument."
+  :tag :vl-namedparamvalue
+  :layout :tree
+
+  ((name     stringp :rule-classes :type-prescription
+             "The name of the parameter, e.g., @('size') in @('.size(3)')")
+
+   (value    vl-maybe-paramvalue-p
+             "The value being given to this parameter, e.g., @('3') in @('.size(3)').
+              In Verilog-2005 this is usually an expression but might also be
+              @('nil') because the value can be omitted.  SystemVerilog-2012
+              extends this to also allow data types.")))
+
+(fty::deflist vl-namedparamvaluelist
+              :elt-type vl-namedparamvalue-p
+              :true-listp nil
+              :elementp-of-nil nil)
+
+(deftagsum vl-paramargs
+  :short "Representation of the values to use for a module instance's
+  parameters (not ports)."
+
+  :long "<p>There are two kinds of argument lists for the parameters of module
+instantiations, which we call <i>plain</i> and <i>named</i> arguments.</p>
+
+@({
+  myalu #(3, 6) alu1 (...);                  <-- \"plain\" arguments
+  myalu #(.size(3), .delay(6)) alu2 (...);   <-- \"named\" arguments
+})
+
+<p>A @('vl-paramargs-p') structure represents an argument list of either
+variety.</p>"
+
+  (:vl-paramargs-named
+   :base-name vl-paramargs-named
+   ((args vl-namedparamvaluelist-p)))
+
+  (:vl-paramargs-plain
+   :base-name vl-paramargs-plain
+   ((args vl-paramvaluelist-p))))
+
+(define vl-paramargs-empty-p ((x vl-paramargs-p))
+  :parents (vl-paramargs)
+  (vl-paramargs-case x
+    :vl-paramargs-named (atom x.args)
+    :vl-paramargs-plain (atom x.args)))
 
 
 (defprod vl-modinst
@@ -1367,7 +1571,7 @@ instance."
               "When present, indicates that this is an array of instances,
                instead of a single instance.")
 
-   (paramargs vl-arguments-p
+   (paramargs vl-paramargs-p
               "Values to use for module parameters, e.g., this might specify
                the width to use for an adder module, etc.")
 
@@ -1611,46 +1815,68 @@ types.</p>
 \"integer a, b\" into multiple, individual declarations, so each
 @('vl-vardecl-p') represents only one declaration.</p>")
 
-(defenum vl-paramdecltype-p
-  (:vl-plain
-   :vl-integer
-   :vl-real
-   :vl-realtime
-   :vl-time
-   :vl-signed)
-  :short "Representation of parameter types."
-  :long "<p>We represent Verilog's parameter types with the keyword symbols
-recognized by @(call vl-paramdecltype-p).  The valid keywords are visible in
-its definition:</p>
 
-@(def vl-paramdecltype-p)
+(deftagsum vl-paramtype
+  :parents (vl-paramdecl)
+  :short "Representation of the kind and default for a parameter declaration."
 
-<p>What do these types mean?  Here is the syntax for parameters:</p>
+  :long "<p>Both Verilog-2005 and SystemVerilog-2012 allow parameters to be
+declared without any explicit type information, e.g., one can write:</p>
 
 @({
-parameter_declaration ::=
-    'parameter' ['signed'] [range] list_of_param_assignments
-  | 'parameter' parameter_type list_of_param_assignments
-
-parameter_type ::=
-   'integer' | 'real' | 'realtime' | 'time'
+    parameter size = 5;          <-- no explicit type, signedness, or range
+    parameter signed foo = -1;   <-- explicitly signed, no explicit range
+    parameter [3:0] bar = 2;     <-- explicitly 4 bits, no explicit signedness
 })
 
-<p>In other words, every declaration either has:</p>
+<p>The ultimate, post-elaboration type and range of these parameters are
+described in Verilog-2005 Section 12.2 and in SystemVerilog-2012 sections
+6.20.2 and 23.10.  These rules are exotic.  When no explicit type/range is
+given, the final type/range is taken from whatever value is ultimately assigned
+to the parameter.  In other cases, i.e., there is only a signedness but no
+explicit range, or vice versa, then some aspects of the final type/range are
+determined by the value assigned to the parameter, and other aspects are
+governed by the parameter declaration itself.</p>
 
-<ul>
+<p>A consequence of these weird rules is that we cannot simply assign some
+default type to plain parameter declarations.  Instead, we need to know that
+the parameter doesn't have parts of its type specified.  To accommodate this,
+we use @(see vl-implicitparamtype) structures when the type of a parameter is
+implicitly specified, or @(see vl-explicitparamtype) structures for parameters
+with explicitly specified types.</p>
 
-<li>A \"parameter_type\" (@('integer'), @('real'), @('realtime'), or
-@('time')), in which case we use the symbols @(':vl-integer'), @(':vl-real'),
-@(':vl-time'), or @(':vl-realtime'); <b>OR</b></li>
+<p>All of the above parameters are <b>value parameters</b>.  In Verilog-2005,
+all parameters are value parameters.  However, in SystemVerilog-2012, it is
+also possible to have type parameters (See Section 6.20.3), e.g.,</p>
 
-<li>A @('signed') declaration without any other type, in which case we use
-@(':vl-signed'), <b>OR</b></li>
+@({
+    parameter type bus_t = logic [31:0];
+})
 
-<li>(most commonly) No type or sign declaration whatsoever, in which case we
-use @(':vl-plain').</li>
+<p>Type parameters are quite different from value parameters.  We represent
+their types as @(see vl-typeparamtype)s.</p>"
 
-</ul>")
+  (:vl-implicitvalueparam
+   :layout :tree
+   :base-name vl-implicitvalueparam
+   :short "Representation for implicitly specified value parameter types."
+   ((range   vl-maybe-range-p    "The range for this parameter, if provided.")
+    (sign    vl-maybe-exprtype-p "The signedness for this parameter, if provided.")
+    (default vl-maybe-expr-p     "The default value for this parameter, if provided.")))
+
+  (:vl-explicitvalueparam
+   :layout :tree
+   :base-name vl-explicitvalueparam
+   :short "Representation for explicitly specified value parameter types."
+   ((type    vl-datatype     "Type of this parameter.")
+    (default vl-maybe-expr-p "The default value for this parameter, if provided.")))
+
+  (:vl-typeparam
+   :layout :tree
+   :short "Representation for type parameter types."
+   :base-name vl-typeparam
+   ((default vl-maybe-datatype-p "The default type for this parameter, if provided."))))
+
 
 (defprod vl-paramdecl
   :short "Representation of a single @('parameter') or @('localparam')
@@ -1662,13 +1888,6 @@ declaration."
            :rule-classes :type-prescription
            "Name of the parameter being declared.")
 
-   (expr   vl-expr-p
-           "Default value for this parameter.")
-
-   (type   vl-paramdecltype-p
-           "Indicates the type of the parameter, e.g., @('signed'), @('integer'),
-            @('realtime'), etc.")
-
    (localp booleanp
            :rule-classes :type-prescription
            "True for @('localparam') declarations, @('nil') for @('parameter')
@@ -1679,9 +1898,10 @@ declaration."
             introduce named constants without polluting the @('`define')
             namespace.)")
 
-   (range  vl-maybe-range-p
-           "Some ridiculous thing allowed by the grammar and who knows what it
-            means.  Some description of it in 12.2.")
+   (type   vl-paramtype-p
+           "Indicates the type and default value of the parameter, and also
+            distinguishes between implicit/explicit value parameters and type
+            parameters.")
 
    (atts   vl-atts-p
            "Any attributes associated with this declaration.")
@@ -1689,8 +1909,7 @@ declaration."
    (loc    vl-location-p
            "Where the declaration was found in the source code."))
 
-  :long "<p>Parameters are discussed in 12.2.  Some examples of parameter
-declarations include:</p>
+  :long "<p>Some examples of parameter declarations include:</p>
 
 @({
 module mymod (a, b, ...) ;
@@ -2624,6 +2843,60 @@ include delays, etc.</p>")
   (vl-taskdecl->name x))
 
 
+(define vl-importpart-p (x)
+  (or (eq x :vl-import*)
+      (stringp x))
+  ///
+  (defthm vl-importpart-p-when-stringp
+    (implies (stringp x)
+             (vl-importpart-p x)))
+
+  (defthm vl-importpart-p-compound-recognizer
+    (implies (vl-importpart-p x)
+             (or (and (symbolp x)
+                      (not (equal x nil))
+                      (not (equal x t)))
+                 (stringp x)))
+    :rule-classes :compound-recognizer))
+
+(define vl-importpart-fix ((x vl-importpart-p))
+  :returns (part vl-importpart-p)
+  (if (vl-importpart-p x)
+      x
+    :vl-import*)
+  ///
+  (defthm vl-importpart-fix-when-vl-importpart-p
+    (implies (vl-importpart-p x)
+             (equal (vl-importpart-fix x)
+                    x))))
+
+(fty::deffixtype vl-importpart
+  :pred vl-importpart-p
+  :fix vl-importpart-fix
+  :equiv vl-importpart-equiv
+  :define t
+  :forward t)
+
+(defprod vl-import
+  :tag :vl-import
+  :layout :tree
+  :short "Representation of a single import item, i.e., @('import foo::bar;')."
+
+  ((pkg  stringp :rule-classes :type-prescription
+         "Package to import everything from, e.g., @('\"foo\"').")
+
+   (part vl-importpart-p
+         "Either: a single name to import, e.g., @('\"bar\"') above, or else
+          the symbol @(':vl-import*'), which means import everything, as in
+          @('import foo::*;').")
+
+   (loc  vl-location-p)
+   (atts vl-atts-p)))
+
+(fty::deflist vl-importlist :elt-type vl-import-p
+  :elementp-of-nil nil)
+
+
 (defprod vl-module
   :short "Representation of a single module."
   :tag :vl-module
@@ -2641,6 +2914,16 @@ include delays, etc.</p>")
    (params     "Any @('defparam') statements for this module.  BOZO these are
                 bad form anyway, but eventually we should provide better
                 support for them and proper structures.")
+
+   ;; BOZO possibly add lifetime declarations, but the spec seems pretty vague
+   ;; about what they mean.  The only thing I see about them is that they are
+   ;; the "default lifetime (static or automatic) of subroutines defined within
+   ;; the module."  Which doesn't seem like a very good idea anyway...
+
+   ;; BOZO possibly add timeunits declarations.
+
+   ;; (imports    vl-importlist-p
+   ;;             "Import statements for this module, like @('import foo::*').")
 
    (ports      vl-portlist-p
                "The module's ports list, i.e., @('a'), @('b'), and @('c') in
@@ -2911,61 +3194,6 @@ transforms to not modules with this attribute.</p>"
   :parents (vl-programlist-p)
   :returns (names string-listp)
   (vl-program->name x))
-
-
-
-(define vl-importpart-p (x)
-  (or (eq x :vl-import*)
-      (stringp x))
-  ///
-  (defthm vl-importpart-p-when-stringp
-    (implies (stringp x)
-             (vl-importpart-p x)))
-
-  (defthm vl-importpart-p-compound-recognizer
-    (implies (vl-importpart-p x)
-             (or (and (symbolp x)
-                      (not (equal x nil))
-                      (not (equal x t)))
-                 (stringp x)))
-    :rule-classes :compound-recognizer))
-
-(define vl-importpart-fix ((x vl-importpart-p))
-  :returns (part vl-importpart-p)
-  (if (vl-importpart-p x)
-      x
-    :vl-import*)
-  ///
-  (defthm vl-importpart-fix-when-vl-importpart-p
-    (implies (vl-importpart-p x)
-             (equal (vl-importpart-fix x)
-                    x))))
-
-(fty::deffixtype vl-importpart
-  :pred vl-importpart-p
-  :fix vl-importpart-fix
-  :equiv vl-importpart-equiv
-  :define t
-  :forward t)
-
-(defprod vl-import
-  :tag :vl-import
-  :layout :tree
-  :short "Representation of a single import item, i.e., @('import foo::bar;')."
-
-  ((pkg  stringp :rule-classes :type-prescription
-         "Package to import everything from, e.g., @('\"foo\"').")
-
-   (part vl-importpart-p
-         "Either: a single name to import, e.g., @('\"bar\"') above, or else
-          the symbol @(':vl-import*'), which means import everything, as in
-          @('import foo::*;').")
-
-   (loc  vl-location-p)
-   (atts vl-atts-p)))
-
-(fty::deflist vl-importlist :elt-type vl-import-p
-  :elementp-of-nil nil)
 
 
 

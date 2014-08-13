@@ -352,7 +352,7 @@ We produce a list of one-bit @(see vl-netdecl-p)s, one for each name in
   (b* (((vl-modinst x) x))
     (mv (vl-arguments-allexprs x.portargs)
         (append (vl-maybe-range-allexprs x.range)
-                (vl-arguments-allexprs x.paramargs)
+                (vl-paramargs-allexprs x.paramargs)
                 (vl-maybe-gatedelay-allexprs x.delay))))
   ///
   (defmvtypes vl-modinst-exprs-for-implicit-wires (true-listp true-listp))

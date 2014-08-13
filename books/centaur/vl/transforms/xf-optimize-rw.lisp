@@ -274,16 +274,17 @@ rewritten, split up, simplified tree.</p>
 (def-vl-optimize-list vl-namedarglist vl-namedarg)
 
 (def-vl-optimize vl-arguments
-  (vl-arguments-case
-    x
-    :named (b* (((mv changedp args-prime) (vl-namedarglist-optimize x.args mod ialist)))
-             (if (not changedp)
-                 (mv nil x)
-               (mv t (change-vl-arguments-named x :args args-prime))))
-    :plain (b* (((mv changedp args-prime) (vl-plainarglist-optimize x.args mod ialist)))
-             (if (not changedp)
-                 (mv nil x)
-               (mv t (change-vl-arguments-plain x :args args-prime))))))
+  (vl-arguments-case x
+    :vl-arguments-named
+    (b* (((mv changedp args-prime) (vl-namedarglist-optimize x.args mod ialist)))
+      (if (not changedp)
+          (mv nil x)
+        (mv t (change-vl-arguments-named x :args args-prime))))
+    :vl-arguments-plain
+    (b* (((mv changedp args-prime) (vl-plainarglist-optimize x.args mod ialist)))
+      (if (not changedp)
+          (mv nil x)
+        (mv t (change-vl-arguments-plain x :args args-prime))))))
 
 (def-vl-optimize vl-modinst
   (b* (((mv changedp args-prime)

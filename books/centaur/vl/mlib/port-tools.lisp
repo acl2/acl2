@@ -399,8 +399,8 @@ and add a warning that this case is very unusual.</p>"
 
 (define vl-arguments-blankfree-p ((x vl-arguments-p))
   (vl-arguments-case x
-    :named (vl-namedarglist-blankfree-p x.args)
-    :plain (vl-plainarglist-blankfree-p x.args)))
+    :vl-arguments-named (vl-namedarglist-blankfree-p x.args)
+    :vl-arguments-plain (vl-plainarglist-blankfree-p x.args)))
 
 (define vl-modinst-blankfree-p ((x vl-modinst-p))
   :inline t

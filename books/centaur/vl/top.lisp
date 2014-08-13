@@ -157,7 +157,7 @@
        (good          (xf-cwtime (vl-design-lvaluecheck good)))
        (good          (xf-cwtime (vl-design-check-reasonable good)))
        (good          (xf-cwtime (vl-design-check-complete good)))
-       (good          (xf-cwtime (vl-design-check-good-paramdecls good)))
+       ;; (good          (xf-cwtime (vl-design-check-good-paramdecls good)))
        ((mv good bad) (xf-cwtime (vl-design-propagate-errors* good bad)))
 
        ;;(- (sneaky-save :pre-unparam good))

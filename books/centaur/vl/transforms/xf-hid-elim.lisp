@@ -805,14 +805,16 @@ hierarchical references to wires inside of @('processor'), etc.</p>")
   :type vl-arguments-p
   :body
   (vl-arguments-case x
-    :named (b* (((mv warnings args-prime netdecls)
-                 (vl-namedarglist-hid-elim x.args mods modalist warnings netdecls))
-                (x-prime (change-vl-arguments-named x :args args-prime)))
-            (mv warnings x-prime netdecls))
-    :plain (b* (((mv warnings args-prime netdecls)
-                 (vl-plainarglist-hid-elim x.args mods modalist warnings netdecls))
-                (x-prime (change-vl-arguments-plain x :args args-prime)))
-            (mv warnings x-prime netdecls))))
+    :vl-arguments-named
+    (b* (((mv warnings args-prime netdecls)
+          (vl-namedarglist-hid-elim x.args mods modalist warnings netdecls))
+         (x-prime (change-vl-arguments-named x :args args-prime)))
+      (mv warnings x-prime netdecls))
+    :vl-arguments-plain
+    (b* (((mv warnings args-prime netdecls)
+          (vl-plainarglist-hid-elim x.args mods modalist warnings netdecls))
+         (x-prime (change-vl-arguments-plain x :args args-prime)))
+      (mv warnings x-prime netdecls))))
 
 (def-vl-hid-elim vl-modinst-hid-elim
   :type vl-modinst-p

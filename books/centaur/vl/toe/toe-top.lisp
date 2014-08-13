@@ -117,19 +117,45 @@ field of each @(see vl-module-p).</p>")
                          :hyp (force (vl-warninglist-p warnings))))
   (b* (((vl-module x) x)
        ;; Gather up a message about what unsupported constructs there are.
+
+       (warnings
+        ;; Unused variable declarations occasionally don't get eliminated by
+        ;; the unused-vars transform, because they might be things like
+        ;;   output reg o1;
+        ;; Which are never really unused because of ports.  Extra variable
+        ;; declarations seem less problematic than other sorts of things
+        ;; like assignments, so we'll just issue non-fatal warnings for
+        ;; these.
+        (if x.vardecls
+            (warn :type :vl-warn-vardecls
+                  :msg "During conversion to E modules, module ~a0 still has ~
+                        variable declarations: ~&1.  We generally expect that ~
+                        most variable declarations should be eliminated ~
+                        before now."
+                  :args (list x.name (vl-vardecllist->names x.vardecls)))
+          warnings))
+
+       ;; Some other kinds of constructs seem more problematic:
        (acc nil)
-       (acc (if x.vardecls   (cons "variable declarations" acc)  acc))
-       (acc (if x.paramdecls (cons "parameter declarations" acc) acc))
-       (acc (if x.fundecls   (cons "function declarations" acc)  acc))
-       (acc (if x.taskdecls  (cons "task declarations" acc)      acc))
-       (acc (if x.assigns    (cons "assigns" acc)                acc))
-       (acc (if x.gateinsts  (cons "gate instances" acc)         acc))
-       (acc (if x.alwayses   (cons "always blocks" acc)          acc))
+       (acc (if x.paramdecls
+                (cons (str::join (cons "parameter declarations: " (vl-paramdecllist->names x.paramdecls)) " ")
+                      acc)
+              acc))
+       (acc (if x.fundecls
+                (cons (str::join (cons "function declarations: " (vl-fundecllist->names x.fundecls)) " ")
+                      acc)
+              acc))
+       (acc (if x.taskdecls
+                (cons (str::join (cons "task declarations: " (vl-taskdecllist->names x.taskdecls)) " ")
+                      acc)
+              acc))
+       (acc (if x.assigns    (cons "assigns" acc)        acc))
+       (acc (if x.gateinsts  (cons "gate instances" acc) acc))
+       (acc (if x.alwayses   (cons "always blocks" acc)  acc))
        ;; We'll allow but ignore initial statements
        (acc (if (vl-has-any-hid-netdecls x.netdecls)
                 (cons "hierarchical identifiers" acc)
               acc))
-
        ;; BOZO BOZO BOZO !!!!!
        ;; need to check netdecls for WOR, etc.
 

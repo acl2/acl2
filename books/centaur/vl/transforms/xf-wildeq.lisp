@@ -840,6 +840,14 @@ is just a constant integer.  So this is just:</p>
   (verify-guards vl-datatype-wildelim)
   (deffixequiv-mutual vl-datatype-wildelim))
 
+(def-vl-wildelim vl-maybe-datatype
+  :takes-elem t
+  :inline t
+  :body
+  (if x
+      (vl-datatype-wildelim x elem warnings)
+    (mv warnings x)))
+
 (def-vl-wildelim vl-gatedelay
   :takes-elem t
   :body (b* (((vl-gatedelay x) x)
@@ -906,21 +914,61 @@ is just a constant integer.  So this is just:</p>
   :takes-elem t
   :body
   (vl-arguments-case x
-    :named
+    :vl-arguments-named
     (b* (((mv warnings args-prime) (vl-namedarglist-wildelim x.args elem warnings))
          (x-prime (change-vl-arguments-named x :args args-prime)))
       (mv warnings x-prime))
-    :plain
+    :vl-arguments-plain
     (b* (((mv warnings args-prime) (vl-plainarglist-wildelim x.args elem warnings))
          (x-prime (change-vl-arguments-plain x :args args-prime)))
       (mv warnings x-prime))))
+
+(def-vl-wildelim vl-paramvalue
+  :takes-elem t
+  :body
+  (vl-paramvalue-case x
+    :expr     (vl-expr-wildelim x elem warnings)
+    :datatype (vl-datatype-wildelim x elem warnings)))
+
+(def-vl-wildelim-list vl-paramvaluelist
+  :takes-elem t
+  :element vl-paramvalue)
+
+(def-vl-wildelim vl-maybe-paramvalue
+  :takes-elem t
+  :inline t
+  :body (if x
+            (vl-paramvalue-wildelim x elem warnings)
+          (mv warnings x)))
+
+(def-vl-wildelim vl-namedparamvalue
+  :takes-elem t
+  :body
+  (b* (((vl-namedparamvalue x) x)
+       ((mv warnings value) (vl-maybe-paramvalue-wildelim x.value elem warnings)))
+    (mv warnings (change-vl-namedparamvalue x :value value))))
+
+(def-vl-wildelim-list vl-namedparamvaluelist
+  :takes-elem t
+  :element vl-namedparamvalue)
+
+(def-vl-wildelim vl-paramargs
+  :takes-elem t
+  :body
+  (vl-paramargs-case x
+    :vl-paramargs-named
+    (b* (((mv warnings args) (vl-namedparamvaluelist-wildelim x.args elem warnings)))
+      (mv warnings (change-vl-paramargs-named x :args args)))
+    :vl-paramargs-plain
+    (b* (((mv warnings args) (vl-paramvaluelist-wildelim x.args elem warnings)))
+      (mv warnings (change-vl-paramargs-plain x :args args)))))
 
 (def-vl-wildelim vl-modinst
   :body
   (b* (((vl-modinst x) x)
        (elem x)
        ((mv warnings portargs-prime)  (vl-arguments-wildelim x.portargs elem warnings))
-       ((mv warnings paramargs-prime) (vl-arguments-wildelim x.paramargs elem warnings))
+       ((mv warnings paramargs-prime) (vl-paramargs-wildelim x.paramargs elem warnings))
        ((mv warnings range-prime)     (vl-maybe-range-wildelim x.range elem warnings))
        ((mv warnings delay-prime)     (vl-maybe-gatedelay-wildelim x.delay elem warnings))
        (x-prime (change-vl-modinst x
@@ -1001,15 +1049,37 @@ is just a constant integer.  So this is just:</p>
 
 (def-vl-wildelim-list vl-vardecllist :element vl-vardecl)
 
+(def-vl-wildelim vl-paramtype
+  :takes-elem t
+  :body
+  (vl-paramtype-case x
+    (:vl-implicitvalueparam
+     (b* (((mv warnings range-prime)   (vl-maybe-range-wildelim x.range elem warnings))
+          ((mv warnings default-prime) (vl-maybe-expr-wildelim x.default elem warnings))
+          (x-prime                     (change-vl-implicitvalueparam x
+                                                                     :range   range-prime
+                                                                     :default default-prime)))
+       (mv warnings x-prime)))
+
+    (:vl-explicitvalueparam
+     (b* (((mv warnings type-prime)    (vl-datatype-wildelim x.type elem warnings))
+          ((mv warnings default-prime) (vl-maybe-expr-wildelim x.default elem warnings))
+          (x-prime                     (change-vl-explicitvalueparam x
+                                                                     :type    type-prime
+                                                                      :default default-prime)))
+       (mv warnings x-prime)))
+
+    (:vl-typeparam
+     (b* (((mv warnings default-prime) (vl-maybe-datatype-wildelim x.default elem warnings))
+          (x-prime                     (change-vl-typeparam x :default default-prime)))
+       (mv warnings x-prime)))))
+
 (def-vl-wildelim vl-paramdecl
   :body
   (b* (((vl-paramdecl x) x)
        (elem x)
-       ((mv warnings expr-prime)    (vl-expr-wildelim x.expr elem warnings))
-       ((mv warnings range-prime)   (vl-maybe-range-wildelim x.range elem warnings))
-       (x-prime (change-vl-paramdecl x
-                                     :expr  expr-prime
-                                     :range range-prime)))
+       ((mv warnings type-prime)  (vl-paramtype-wildelim x.type elem warnings))
+       (x-prime                   (change-vl-paramdecl x :type type-prime)))
     (mv warnings x-prime)))
 
 (def-vl-wildelim-list vl-paramdecllist :element vl-paramdecl)
