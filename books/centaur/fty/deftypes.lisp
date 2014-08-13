@@ -1230,7 +1230,7 @@
   (b* (((mv ?ch newx) (replace-*-in-symbols-with-str-rec x str)))
     newx))
 
-(defun with-flextype-bindings-fn (binding body)
+(defun with-flextype-bindings-fn (binding body default)
   (b* ((var (if (consp binding) (car binding) binding))
        (add-binds (has-vardot-syms body (cat (symbol-name var) ".")))
        (sumbody (replace-*-in-symbols-with-str body "SUM"))
@@ -1240,13 +1240,14 @@
         `(case (tag ,var)
            (:sum ,(if add-binds `(b* (((flexsum ,var) ,var)) ,sumbody) sumbody))
            (:list ,(if add-binds `(b* (((flexlist ,var) ,var)) ,listbody) listbody))
-           (:alist ,(if add-binds `(b* (((flexalist ,var) ,var)) ,alistbody) alistbody)))))
+           (:alist ,(if add-binds `(b* (((flexalist ,var) ,var)) ,alistbody) alistbody))
+           (otherwise ,default))))
     (if (consp binding)
         `(let ((,var ,(cadr binding))) ,cases)
       cases)))
 
-(defmacro with-flextype-bindings (binding body)
-  (with-flextype-bindings-fn binding body))
+(defmacro with-flextype-bindings (binding body &key default)
+  (with-flextype-bindings-fn binding body default))
 
 
 ;; ------------------------- Deftypes Parsing -----------------------
@@ -2945,15 +2946,29 @@
 
 ;; ------------------ Xdoc processing -----------------------
 
-(defun flexlist->defxdoc (x parents state)
+(defun flexlist->defxdoc (x parents kwd-alist state)
   ;; Returns (mv events state)
-  (declare (ignorable x parents state))
-  (mv nil state))
+  (declare (ignorable state))
+  (b* (((flexlist x) x)
+       (short (getarg :short nil kwd-alist))
+       (long (getarg :long nil kwd-alist)))
+    (if (or short long)
+        (mv `((defxdoc ,x.name :parents ,parents
+                :short ,short :long ,long))
+            state)
+      (mv nil state))))
 
-(defun flexalist->defxdoc (x parents state)
+(defun flexalist->defxdoc (x parents kwd-alist state)
   ;; Returns (mv events state)
-  (declare (ignorable x parents state))
-  (mv nil state))
+  (declare (ignorable state))
+  (b* (((flexalist x) x)
+       (short (getarg :short nil kwd-alist))
+       (long (getarg :long nil kwd-alist)))
+    (if (or short long)
+        (mv `((defxdoc ,x.name :parents ,parents
+                :short ,short :long ,long))
+            state)
+      (mv nil state))))
 
 (defun defprod-field-doc (x acc base-pkg state)
   (b* (((flexprod-field x) x)
@@ -3010,12 +3025,12 @@
        (acc (revappend-chars "</code>" acc)))
     (mv acc state)))
 
-(defun defprod-main-autodoc (x parents base-pkg state)
+(defun defprod-main-autodoc (x parents kwd-alist base-pkg state)
   ;; Returns (mv events state)
   (b* (((flexsum x) x)
        (prod  (car x.prods))
-       (short (cdr (assoc :short x.kwd-alist)))
-       (long  (cdr (assoc :long x.kwd-alist)))
+       (short (cdr (assoc :short kwd-alist)))
+       (long  (cdr (assoc :long kwd-alist)))
        (acc  nil)
        (acc  (revappend-chars "<p>This is a product type introduced by @(see fty::defprod).</p>" acc))
        (acc  (cons #\Newline acc))
@@ -3137,7 +3152,7 @@
                 def-change-foo-fn
                 def-foo)))))
 
-(defun defprod->defxdoc (x parents base-pkg state)
+(defun defprod->defxdoc (x parents kwd-alist base-pkg state)
   ;; Returns (mv events state)
   (b* (((flexsum x)      x)
        (prod             (car x.prods))
@@ -3148,7 +3163,7 @@
        (make-foo         prod.ctor-macro)
        (change-foo       (std::da-changer-name foo))
 
-       ((mv main-doc state) (defprod-main-autodoc x parents base-pkg state))
+       ((mv main-doc state) (defprod-main-autodoc x parents kwd-alist base-pkg state))
        (make/change         (defprod-ctor-autodoc prod))
        (doc-events (append main-doc
                            make/change
@@ -3236,12 +3251,12 @@
     (cons (flexprod->type-name (car x))
           (flexprodlist->type-names (cdr x)))))
 
-(defun deftagsum->defxdoc (x parents base-pkg state)
+(defun deftagsum->defxdoc (x parents kwd-alist base-pkg state)
   ;; Returns (mv events state)
   (declare (ignorable x parents base-pkg))
   (b* (((flexsum x) x)
-       (short (cdr (assoc :short x.kwd-alist)))
-       (long  (cdr (assoc :long x.kwd-alist)))
+       (short (cdr (assoc :short kwd-alist)))
+       (long  (cdr (assoc :long kwd-alist)))
        (acc   nil)
        (acc   (revappend-chars "<p>This is a tagged union type, introduced by @(see fty::deftagsum).</p>" acc))
        (acc   (cons #\Newline acc))
@@ -3265,12 +3280,12 @@
                                           . ,(flexprodlist->type-names x.prods)))))
         state)))
 
-(defun defflexsum->defxdoc (x parents base-pkg state)
+(defun defflexsum->defxdoc (x parents kwd-alist base-pkg state)
   ;; Returns (mv events state)
   (declare (ignorable x parents base-pkg))
   (b* (((flexsum x) x)
-       (short (cdr (assoc :short x.kwd-alist)))
-       (long  (cdr (assoc :long x.kwd-alist)))
+       (short (cdr (assoc :short kwd-alist)))
+       (long  (cdr (assoc :long kwd-alist)))
        (acc   nil)
        (acc   (revappend-chars "<p>This is a sum-of-products (i.e., union) type, introduced by @(see fty::defflexsum).</p>" acc))
        (acc   (cons #\Newline acc))
@@ -3294,40 +3309,37 @@
                                           . ,(flexprodlist->type-names x.prods)))))
         state)))
 
-(defun flexsum->defxdoc (x parents state)
+(defun flexsum->defxdoc (x parents kwd-alist state)
   ;; Returns (mv events state)
   (b* ((__function__ 'flexsum->defxdoc)
        ((flexsum x) x)
-       (parents (or (cdr (assoc :parents x.kwd-alist)) parents))
+       (parents (or (cdr (assoc :parents kwd-alist)) parents))
        (base-pkg (pkg-witness (acl2::f-get-global 'acl2::current-package state)))
        ((unless (symbol-listp parents))
         (mv (raise "~x0: :parents must be a list of symbols." x.name) state)))
     (case x.typemacro
-      (defprod    (defprod->defxdoc x parents base-pkg state))
-      (deftagsum  (deftagsum->defxdoc x parents base-pkg state))
-      (defflexsum (defflexsum->defxdoc x parents base-pkg state))
+      (defprod    (defprod->defxdoc x parents kwd-alist base-pkg state))
+      (deftagsum  (deftagsum->defxdoc x parents kwd-alist base-pkg state))
+      (defflexsum (defflexsum->defxdoc x parents kwd-alist base-pkg state))
       (t (mv (raise "~x0: unknown typemacro" x.name) state)))))
 
-(defun flextype->defxdoc (x parents state)
+(defun flextype->defxdoc (x parents kwd-alist state)
   ;; Returns (mv event state)
   (b* ((__function__ 'flextype->defxdoc)
        ((mv events state)
-        ;; Can't use this because its otherwise case is just NIL.
-        ;;(with-flextype-bindings x
-        ;;  (flex*->defxdoc x parents state))
-        (case (tag x)
-          (:sum (flexsum->defxdoc x parents state))
-          (:list (flexlist->defxdoc x parents state))
-          (:alist (flexalist->defxdoc x parents state))
-          (otherwise (mv (raise "Unexpected flex type: ~x0." (tag x))
-                         state)))))
+        (with-flextype-bindings x
+          (flex*->defxdoc x parents
+                          (append kwd-alist (flex*->kwd-alist x))
+                          state)
+          :default (mv (raise "Unexpected flex type: ~x0." (tag x))
+                       state))))
     (mv `(progn . ,events) state)))
 
 (defun flextypes-collect-defxdoc (types parents)
   (if (atom types)
       nil
     (cons `(make-event (b* (((mv val state)
-                             (flextype->defxdoc ',(car types) ',parents state)))
+                             (flextype->defxdoc ',(car types) ',parents nil state)))
                          (value val)))
           (flextypes-collect-defxdoc (cdr types) parents))))
 
@@ -3339,14 +3351,20 @@
         (cdr x)
       (cons (car x) (remove-topic name (cdr x))))))
 
+(defun find-subtype-kwd-alist (types name)
+  (if (atom types)
+      (mv nil nil)
+    (with-flextype-bindings (x (car types))
+      (if (eq name (flex*->name x))
+          (mv (flex*->kwd-alist x) x)
+        (find-subtype-kwd-alist (cdr types) name))
+      :default (find-subtype-kwd-alist (cdr types) name))))
+
 (defun flextypes-final-xdoc-fn (x world)
   (b* (((flextypes x) x)
        (parents-look (assoc :parents x.kwd-alist))
        (short        (getarg :short nil x.kwd-alist))
        (long         (getarg :long nil x.kwd-alist))
-       (parents      (or (cdr parents-look)
-                         (xdoc::get-default-parents world)
-                         '(acl2::undocumented)))
        ;; x.name may or may not agree with the names of any of the things
        ;; inside it.  For instance:
        ;;   (deftypes pseudo-termp
@@ -3356,11 +3374,20 @@
        ;;   (deftypes statements
        ;;     (defsum vl-stmt-p ...)
        ;;     (deflist vl-stmtlist-p ...))
-       (topic (xdoc::find-topic x.name (xdoc::get-xdoc-table world)))
-       (sub-short (and (not (equal (cdr (assoc :short topic)) ""))
-                       (cdr (assoc :short topic))))
-       (sub-long  (and (not (equal (cdr (assoc :long topic)) ""))
-                       (cdr (assoc :long topic))))
+
+       ((mv sub-kwd-alist subtype) (find-subtype-kwd-alist x.types x.name))
+       (sub-parents-look (assoc :parents sub-kwd-alist))
+       ((when (and parents-look sub-parents-look))
+        (er hard? 'deftypes "Parents listed for both top-level ~x0 and type ~x0.~%" x.name))
+       (parents      (or (cdr parents-look)
+                         (cdr sub-parents-look)
+                         (xdoc::get-default-parents world)
+                         '(acl2::undocumented)))
+       (sub-short (getarg :short nil sub-kwd-alist))
+       (sub-long (getarg :long nil sub-kwd-alist))
+       ((unless subtype)
+        `(defxdoc ,x.name :parents ,parents :short ,short :long ,long))
+              
        ((when (and short sub-short))
         (er hard? 'deftypes "Can't give a top-level :short when you are also ~
                    putting :short documentation on the interior ~x0." x.name))
@@ -3369,15 +3396,20 @@
                    putting :long documentation on the interior ~x0." x.name))
        (short (or short sub-short))
        (long  (or long sub-long))
-       (new-defxdoc `(defxdoc ,x.name :parents ,parents :short ,short :long ,long))
-       ((unless topic)
-        new-defxdoc))
+       (new-event  `(make-event
+                     (b* (((mv val state)
+                           (flextype->defxdoc
+                            ',subtype ',parents
+                            '((:short . ,short)
+                              (:long . ,long))
+                            state)))
+                         (value val)))))
     ;; There's existing sub-documentation, so remove it because we're going to
     ;; overwrite it and we don't want redundant xdoc warnings.
     `(progn
        (table xdoc::xdoc 'xdoc::doc
               (remove-topic ',x.name (xdoc::get-xdoc-table world)))
-       ,new-defxdoc)))
+       ,new-event)))
 
 (defmacro flextypes-final-xdoc (x)
   `(make-event (flextypes-final-xdoc-fn ',x (w state))))

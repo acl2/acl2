@@ -34,13 +34,6 @@
 (include-book "std/util/deflist" :dir :system)
 (include-book "std/strings/cat" :dir :system)
 
-(defxdoc vl-printedlist
-  :parents (printer)
-  :short "A list of strings/characters to print in reverse order."
-  :long "<p>Useful for formatting a long string to print.  Also the basis of
-the @(see ps) printer-state stobj.</p>")
-
-
 
 (define vl-printed-p (x)
   :parents (vl-printedlist)
@@ -84,11 +77,13 @@ the @(see ps) printer-state stobj.</p>")
   :forward t)
 
 (fty::deflist vl-printedlist
-  :elt-type vl-printed-p)
+  :elt-type vl-printed-p
+  :parents (printer)
+  :short "A list of strings/characters to print in reverse order."
+  :long "<p>Useful for formatting a long string to print.  Also the basis of
+the @(see ps) printer-state stobj.</p>")
 
 (defsection vl-printedlist-p
-  :parents (vl-printedlist)
-  :short "Recognizer for mixed lists of strings and characters."
   (defthm vl-printedlist-p-when-character-listp
     (implies (character-listp x)
              (vl-printedlist-p x)))

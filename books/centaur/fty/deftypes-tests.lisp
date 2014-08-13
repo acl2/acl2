@@ -1010,3 +1010,18 @@
 ;; ;; (include-book "std/strings/pretty" :dir :system)
 
 ;; (xdoc::save "./manual" :redef-okp t)
+
+;; (local (include-book "xdoc/save" :dir :system))
+;; (local (make-event
+;;         (b* (((mv all-xdoc-topics state) (xdoc::all-xdoc-topics state))
+;;              (redef-report (xdoc::redef-errors (set::mergesort all-xdoc-topics)))
+;;              (- (or (not redef-report)
+;;                     (cw "Redefined topics report: ~x0.~%" redef-report)))
+;;              (- (or (not redef-report)
+;;                     (er hard? 'save
+;;                         "Some XDOC topics have multiple definitions.  The above ~
+;;                        report may help you to fix these errors.  Or, you can ~
+;;                        just call XDOC::SAVE with :REDEF-OKP T to bypass this ~
+;;                        error (and use the most recent version of each topic.)"))))
+;;           (value '(value-triple :invisible)))))
+        
