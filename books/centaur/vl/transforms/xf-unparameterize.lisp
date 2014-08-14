@@ -622,10 +622,6 @@ types.</p>"
   :elementp-of-nil nil
   :true-listp nil)
 
-(deflist vl-paramdecloverridelist-p (x)
-  (vl-paramdecloverride-p x)
-  :elementp-of-nil nil)
-
 (define vl-make-paramdecloverrides-named
   :short "Line up named parameter arguments with parameter declarations."
   ((formals vl-paramdecllist-p       "In proper order, from the submodule.")

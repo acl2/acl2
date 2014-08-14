@@ -222,7 +222,8 @@ number."
 (encapsulate
   ()
   (local (in-theory (disable (:type-prescription true-fix)
-                             (:type-prescription true-equiv))))
+                             (:type-prescription true-equiv)
+                             (true-fix) true-fix)))
 
   (fty::defalist vl-namedb-nameset
     :key-type stringp

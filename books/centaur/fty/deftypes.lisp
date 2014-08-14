@@ -36,6 +36,7 @@
 (include-book "tools/rulesets" :dir :system)
 (include-book "misc/hons-help" :dir :system) ;; for hons-list
 (include-book "xdoc/names" :dir :system)
+(include-book "std/lists/acl2-count" :dir :system)
 (set-state-ok t)
 
 (def-ruleset! std::tag-reasoning nil)
@@ -57,6 +58,43 @@
 ;; seems generally good so we'll leave it enabled
 (defthm strip-cars-under-iff
   (iff (strip-cars x) (consp x)))
+
+(defthmd equal-of-plus-one
+  (implies (syntaxp (quotep y))
+           (equal (equal (+ 1 x) y)
+                  (and (acl2-numberp y)
+                       (equal (fix x) (+ -1 y))))))
+
+(defthmd len-of-cons
+  (equal (len (cons a b))
+         (+ 1 (len b))))
+
+(defthmd equal-of-len
+  (implies (syntaxp (quotep n))
+           (equal (equal (len x) n)
+                  (if (zp n)
+                      (and (equal n 0) (not (consp x)))
+                    (and (consp x)
+                         (equal (len (cdr x)) (+ -1 n)))))))
+
+(deftheory deftypes-theory
+  '(equal-of-strip-cars
+    car-cons cdr-cons
+    alistp strip-cars
+    strip-cars-under-iff
+    eqlablep (len) len-of-cons
+    equal-of-len (zp)
+    (:t acl2-count)
+    acl2::acl2-count-of-car
+    acl2::acl2-count-of-cdr
+    acl2::acl2-count-of-consp-positive
+    acl2::acl2-count-of-cons
+    o< o-finp
+    (natp) acl2::natp-compound-recognizer
+    hons
+    ;;  len
+    ;; equal-of-plus-one fix
+    ))
 
 
 #||
@@ -436,6 +474,7 @@
     :post-fix-events
     :post-events
     :inline
+    :enable-rules
     ))
 
 (defun find-symbols-named-x (tree)
@@ -802,7 +841,8 @@
     :prepwork
     :post-pred-events
     :post-fix-events
-    :post-events))
+    :post-events
+    :enable-rules))
 
 (defun parse-tagsum (x xvar these-fixtypes fixtypes)
   (b* (((cons name args) x)
@@ -886,6 +926,7 @@
     :post-pred-events
     :post-fix-events
     :post-events
+    :enable-rules
     ))
 
 (defun defprod-fields-to-flexsum-prod (fields xvar name kwd-alist)
@@ -1043,7 +1084,8 @@
     :prepwork
     :post-pred-events
     :post-fix-events
-    :post-events))
+    :post-events
+    :enable-rules))
 
 (defun parse-flexlist (x xvar our-fixtypes fixtypes)
   (b* (((cons name args) x)
@@ -1135,7 +1177,8 @@
     :prepwork
     :post-pred-events
     :post-fix-events
-    :post-events))
+    :post-events
+    :enable-rules))
 
 (defun parse-flexalist (x xvar our-fixtypes fixtypes)
   (b* (((cons name args) x)
@@ -1314,6 +1357,7 @@
     :post-pred-events
     :post-fix-events
     :post-events
+    :enable-rules
     ))
 
 (defun flextypelist-recp (x)
@@ -3460,7 +3504,8 @@
                                    (eq var (cadr (car hyps)))))
                       nil)
                      (equiv (acl2::access acl2::rewrite-rule rule :equiv))
-                     ((unless (eq equiv 'equal)) nil))
+                     ((unless (eq equiv 'equal)) nil)
+                     ((unless (eq (acl2::access acl2::rewrite-rule rule :backchain-limit-lst) nil)) nil))
                   (acl2::access acl2::rewrite-rule rule :rune))))
       (if rune
           (mv t rune)
@@ -3500,45 +3545,6 @@
       (if rune
           (mv t rune)
         (find-pred-of-fix-thm-aux fix pred (cdr pred-rules))))))
-
-(defun fix-rule-disablep (rule)
-  ;; not including the fix-when-pred rule, which is enabled later
-  (b* (((when (acl2::access acl2::rewrite-rule rule :hyps)) t)
-       ((unless (eq (acl2::access acl2::rewrite-rule rule :subclass)
-                    'acl2::abbreviation))
-        t)
-       (arg (cadr (acl2::access acl2::rewrite-rule rule :lhs)))
-       ((unless (symbolp arg)) t)
-       ((unless (eq (acl2::access acl2::rewrite-rule rule :rhs) arg)) t))
-    nil))
-
-(defun collect-fix-runes-to-disable (rules)
-  (if (atom rules)
-      nil
-    (if (fix-rule-disablep (car rules))
-        (cons (acl2::access acl2::rewrite-rule (car rules) :rune)
-              (collect-fix-runes-to-disable (cdr rules)))
-      (collect-fix-runes-to-disable (cdr rules)))))
-
-
-(defun pred-rule-disablep (rule)
-  ;; disable backchain rules, rules that target (pred x), i.e. where the
-  ;; argument to pred doesn't have a function symbol, and rules that rewrite
-  ;; pred to something other than t
-  (b* (((unless (eq (acl2::access acl2::rewrite-rule rule :subclass)
-                    'acl2::abbreviation))
-        t)
-       ((when (symbolp (cadr (acl2::access acl2::rewrite-rule rule :lhs)))) t)
-       ((unless (equal (acl2::access acl2::rewrite-rule rule :rhs) ''t)) t))
-    nil))
-
-(defun collect-pred-runes-to-disable (rules)
-  (if (atom rules)
-      nil
-    (if (pred-rule-disablep (car rules))
-        (cons (acl2::access acl2::rewrite-rule (car rules) :rune)
-              (collect-pred-runes-to-disable (cdr rules)))
-      (collect-pred-runes-to-disable (cdr rules)))))
 
 (defun flexprod-fields-collect-fix/pred-pairs (fields)
   (if (atom fields)
@@ -3580,19 +3586,9 @@
 (defun flextypes-collect-fix/pred-pairs (types)
   (remove-duplicates-equal (flextypes-collect-fix/pred-pairs-aux types)))
 
-(defun collect-disable-runes-fixes (x world)
-  (if (atom x)
-      nil
-    (append (collect-fix-runes-to-disable
-             (getprop (car x) 'acl2::lemmas nil 'acl2::current-acl2-world world))
-            (collect-disable-runes-fixes (cdr x) world))))
 
-(defun collect-disable-runes-preds (x world)
-  (if (atom x)
-      nil
-    (append (collect-pred-runes-to-disable
-             (getprop (car x) 'acl2::lemmas nil 'acl2::current-acl2-world world))
-            (collect-disable-runes-preds (cdr x) world))))
+
+
 
 (defun collect-fix/pred-enable-rules (pairs world)
   ;; returns (mv runes-to-enable thms-to-admit)
@@ -3640,11 +3636,53 @@
   (append (getarg kwd nil kwd-alist)
           (flextypelist-append-events kwd types)))
 
+(defun flextypelist-collect-enable-rules (types)
+  (if (atom types)
+      nil
+    (append (with-flextype-bindings (x (car types))
+              (cdr (assoc :enable-rules x.kwd-alist)))
+            (flextypelist-collect-enable-rules (cdr types)))))
+
+(defun flextypes-collect-enable-rules (x)
+  (append (cdr (assoc :enable-rules (flextypes->kwd-alist x)))
+          (flextypelist-collect-enable-rules (flextypes->types x))))
+
+(defun find-type-prescription-rule-for-rune (rune type-prescriptions)
+  (if (atom type-prescriptions)
+      nil
+    (if (equal rune (acl2::access acl2::type-prescription (car type-prescriptions) :rune))
+        (car type-prescriptions)
+      (find-type-prescription-rule-for-rune rune (cdr type-prescriptions)))))
+
+(defun find-type-prescription-rule-in-props (rune props)
+  (cond ((endp props) nil)
+        ((eq (cadar props) 'acl2::type-prescriptions)
+         (or (find-type-prescription-rule-for-rune rune (cddar props))
+             (find-type-prescription-rule-in-props rune (cdr props))))
+        (t (find-type-prescription-rule-in-props rune (cdr props)))))
+        
+(defun collect-uncond-type-prescriptions (runic-theory wrld)
+  (if (atom runic-theory)
+      nil
+    (b* ((rune (car runic-theory))
+         ((unless (eq (car rune) :type-prescription))
+          (collect-uncond-type-prescriptions (cdr runic-theory) wrld))
+         (name (cadr rune))
+         (suffix (cdr (acl2::decode-logical-name name wrld)))
+         (segment (acl2::world-to-next-event suffix))
+         (props (acl2::actual-props segment nil nil))
+         (type-prescription (find-type-prescription-rule-in-props rune props))
+         ((when (and type-prescription
+                     (eq (acl2::access acl2::type-prescription type-prescription :hyps) nil)))
+          (cons rune (collect-uncond-type-prescriptions (cdr runic-theory) wrld))))
+      (collect-uncond-type-prescriptions (cdr runic-theory) wrld))))
+      
+
+
+
 (defun deftypes-events (x world)
   (b* (((flextypes x) x)
        (fix/pred-pairs (flextypes-collect-fix/pred-pairs x.types))
-       (disable-rules (append (collect-disable-runes-fixes (strip-cars fix/pred-pairs) world)
-                              (collect-disable-runes-preds (strip-cdrs fix/pred-pairs) world)))
        ((mv enable-rules temp-thms) (collect-fix/pred-enable-rules fix/pred-pairs world)))
     `(with-output :off (prove event observation)
        :summary (acl2::form time)
@@ -3657,9 +3695,18 @@
              (set-irrelevant-formals-ok t)
              (local (deftheory deftypes-orig-theory (current-theory :here)))
              (progn . ,temp-thms)
-             (local (in-theory (disable . ,disable-rules)))
-             (local (in-theory (enable . ,enable-rules)))
-
+             (local (in-theory (disable deftypes-orig-theory)))
+             (local (make-event
+                     (let ((acl2::world (w state)))
+                       `(in-theory (enable
+                                    . ,(collect-uncond-type-prescriptions
+                                        (theory 'deftypes-orig-theory) acl2::world))))))
+             (local (in-theory (enable deftypes-theory
+                                        ,@(flextypes-collect-enable-rules x)
+                                        . ,enable-rules)))
+             (local (set-default-hints
+                     '((and stable-under-simplificationp
+                            '(:in-theory (enable deftypes-orig-theory))))))
              ;; Don't try to automatically define equivalences while we're setting up types
              (local (std::remove-default-post-define-hook :fix))
 
@@ -3680,6 +3727,7 @@
              ,@(flextypes-count x)
 
              (local (in-theory (enable deftypes-orig-theory)))
+             (local (set-default-hints nil))
 
              ,@(flextype-collect-events :post-events x.kwd-alist x.types)
              
@@ -3794,7 +3842,6 @@
                                   :types (list x)
 
                                   :no-count (not x.count)
-                                  :kwd-alist '((:prepwork . ((local (in-theory (enable equal-of-strip-cars))))))
                                   :recp x.recp)))
     (deftypes-events flextypes wrld)))
 
