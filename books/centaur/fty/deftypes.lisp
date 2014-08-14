@@ -511,6 +511,26 @@
     (or (flexprod-fields-recursivep (flexprod->fields (car x)))
         (flexprods-recursivep (cdr x)))))
 
+(defun flexprod-fields-check-xvar (xvar fields prodname)
+  (if (atom fields)
+      nil
+    (b* (((flexprod-field x) (car fields))
+         ((when (eq x.name xvar))
+          (er hard? 'parse-flexum
+              "Product ~x0 has a field named ~x1, which is not allowed ~
+               because it's also the name of the variable representing the ~
+               whole product.  You may change the field name or provide an ~
+               explicit :xvar argument.~%" prodname x.name)))
+      (flexprod-fields-check-xvar xvar (cdr fields) prodname))))
+              
+
+(defun flexprods-check-xvar (xvar prods)
+  (if (atom prods)
+      nil
+    (b* (((flexprod x) (car prods)))
+      (flexprod-fields-check-xvar xvar x.fields x.kind)
+      (flexprods-check-xvar xvar (cdr prods)))))
+
 (defun parse-flexsum (x xvar our-fixtypes fixtypes)
   (b* (((cons name args) x)
        ((unless (symbolp name))
@@ -544,6 +564,7 @@
        ((when (atom prods))
         (er hard? 'parse-flexsum
             "Malformed SUM ~x0: Must have at least one product"))
+       (- (flexprods-check-xvar xvar prods))
        (measure (or (getarg :measure nil kwd-alist)
                     `(acl2-count ,xvar)))
        (recp (flexprods-recursivep prods)))
@@ -884,6 +905,7 @@
         (er hard? 'parse-tagsum
             ":Base-case-override value must be one of the product names"))
        (prods (parse-flexprods flexprods-in name kind kwd-alist xvar nil these-fixtypes fixtypes))
+       (- (flexprods-check-xvar xvar prods))
        ((when (atom prods))
         (er hard? 'parse-tagsum
             "Malformed SUM ~x0: Must have at least one product"))
@@ -1025,7 +1047,7 @@
        (orig-prod (defprod-fields-to-flexsum-prod fields xvar name kwd-alist))
        (orig-prods (list orig-prod))
        (prods (parse-flexprods orig-prods name nil kwd-alist xvar nil our-fixtypes fixtypes))
-
+       (- (flexprods-check-xvar xvar prods))
        (measure (or (getarg :measure nil kwd-alist)
                     `(acl2-count ,xvar)))
        (field-names (flexprod-fields->names (flexprod->fields (car prods))))
