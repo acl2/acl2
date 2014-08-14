@@ -456,7 +456,7 @@
 ; because we want to allow their use as constants.
 
 ; We now allow some variables (but still no constants) from the main Lisp
-; package.  See *common-lisp-specials-and-constants*.  The following two note
+; package.  See *common-lisp-specials-and-constants*.  The following note
 ; explains why we have been cautious here.
 
 ; Historical Note
