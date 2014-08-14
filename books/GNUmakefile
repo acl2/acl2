@@ -1521,26 +1521,9 @@ TAGS : $(CERT_PL_SOURCES)
 #       default to simply (certify-book "foo" ? t)
 #     These instructions specify arguments to certify-book, for example:
 #       ; cert-flags: ? t :ttags :all
-#   - In the following cases, books may be skipped in which case,
-#     recursively, so are books that include such books, books that
-#     include those parent books, and so on.  In each case, the
-#     indicated line may be placed either in the .lisp file or in the
-#     .acl2 file that is consulted, as discussed above.
-#       - Books that depend on ACL2(h), such as
-#         centaur/tutorial/alu16-book.lisp, contain this line:
-#           ; cert_param: (hons-only)
-#       - Books that depend on ANSI Common Lisp, such as
-#         oslib/*.lisp, contain this line (or in this case,
-#         file cert.acl2 contains this line):
-#           ; cert_param: (ansi-only)
-#       - Books that require glucose (a SAT solver) contain this line:
-#           ; cert_param: (uses-glucose)
-#       - Books that require quicklisp contain this line:
-#           ; cert_param: (uses-quicklisp)
-#   - Two-pass certification is handled as follows, for example in
-#     books/make-event/stobj-test.acl2 (as indicated above, this can
-#     also go into the book instead of the relevant .acl2 file):
-#       ; cert_param: (acl2x)
+#   - See :DOC books-certification for documentation of the cert_param
+#     comment, which can be used to restrict which books are to be
+#     certified.
 #   - It's not clear that provisional certification is fully
 #     supported.  For now, we implement it for two specific
 #     directories; search below for "provisional certification" to see

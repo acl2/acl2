@@ -172,7 +172,7 @@ gets certified, such as whether it uses provisional certification
 (pcert), acl2x expansion (acl2x), and skip-proofs during acl2x
 expansion (acl2xskip).
 
-See files make-targets and regression-targets for example uses of
+See the documentation topic BOOKS-CERTIFICATION for supported uses of
 cert.pl.
 
 SPECIAL MAKEFILE VARIABLES

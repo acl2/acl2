@@ -29,6 +29,19 @@
 ; Original authors: Jared Davis <jared@centtech.com>
 ;                   Sol Swords <sswords@centtech.com>
 
+; Added by Matt K.:
+
+; As of 8/2014, the book oslib/tests/mkdir fails to certify with SBCL because
+; of an error from a call of ls-subdirs.  For now, after discussing this issue
+; with Jared, I'm adding the cert_param directive below.  I found that this
+; change is necessary in order for an "everything" regression to complete using
+; SBCL 1.2.1.  It might be good to test other host Lisps and if some can
+; support this book, then weaken ccl-only to some new kind of cert_param
+; specification that says which host Lisps are supported (rather than which are
+; not supported).
+
+; cert_param: (ccl-only)
+
 (in-package "OSLIB")
 (include-book "logic-defs")
 ; (depends-on "ls-raw.lsp")
