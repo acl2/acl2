@@ -36,6 +36,53 @@
 (local (include-book "util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
 
+
+; ----------------------------------------------------------------------------
+;
+;                            BIG WARNING MESSAGE
+;
+;     If you modify the any actual parse-tree syntax,
+;
+;                               then you should update the syntax version!
+;
+; ----------------------------------------------------------------------------
+
+(defval *vl-current-syntax-version*
+  :parents (vl-syntaxversion-p)
+  :short "Version of VL syntax being used."
+
+  :long "<p>This is a barbaric mechanism to make sure that we don't try to mix
+together translations produced by different versions of VL.  Each design is
+annotated with a @('version') field that must match exactly this string.</p>"
+
+  ;; Current syntax version: generally a string like
+  ;; "VL Syntax [date of modification]"
+  "VL Syntax 2014-08-14")
+
+(define vl-syntaxversion-p (x)
+  :parents (syntax)
+  (equal x *vl-current-syntax-version*))
+
+(define vl-syntaxversion-fix (x)
+  :parents (vl-syntaxversion-p)
+  :returns (version vl-syntaxversion-p)
+  (if (vl-syntaxversion-p x)
+      x
+    *vl-current-syntax-version*)
+  ///
+  (defthm vl-syntaxversion-fix-when-vl-syntaxversion-p
+    (implies (vl-syntaxversion-p x)
+             (equal (vl-syntaxversion-fix x) x))))
+
+(deffixtype vl-syntaxversion
+  :pred vl-syntaxversion-p
+  :fix vl-syntaxversion-fix
+  :equiv vl-syntaxversion-equiv
+  :define t
+  :forward t)
+
+
+
 (defxdoc syntax
   :parents (vl)
   :short "Representation of Verilog structures."
@@ -3240,14 +3287,14 @@ transforms to not modules with this attribute.</p>"
   :returns (names string-listp)
   (vl-typedef->name x))
 
-
-
 (defprod vl-design
   :short "Top level representation of all modules, interfaces, programs, etc.,
 resulting from parsing some Verilog source code."
   :tag :vl-design
   :layout :tree
-  ((mods       vl-modulelist-p    "List of all modules.")
+  ((version    vl-syntaxversion-p "Version of VL syntax being used."
+               :default *vl-current-syntax-version*)
+   (mods       vl-modulelist-p    "List of all modules.")
    (udps       vl-udplist-p       "List of user defined primtives.")
    (interfaces vl-interfacelist-p "List of interfaces.")
    (programs   vl-programlist-p   "List of all programs.")
@@ -3263,6 +3310,7 @@ resulting from parsing some Verilog source code."
    ;; BOZO lots of things still missing
    (warnings   vl-warninglist-p   "So-called \"floating\" warnings.")
    (comments   vl-commentmap-p    "So-called \"floating\" comments.")
+
    ))
 
 

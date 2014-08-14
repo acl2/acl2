@@ -187,13 +187,12 @@ ranges, e.g., @('wire [7:0] w').  What we do not support are, e.g., @('wire w
   :parents (reasonable)
   :guard (vl-vardecl-p x)
   :extra-decls ((ignorable x))
-  :body (b* (((vl-vardecl x) x))
-          (@wf-progn
-           (@wf-assert (vl-simplereg-p x)
-                       :vl-variable-toohard
-                       "~a0: variable declarations other than simple 'reg' or 'logic' wires ~
+  :body (@wf-progn
+         (@wf-assert (vl-simplereg-p x)
+                     :vl-variable-toohard
+                     "~a0: variable declarations other than simple 'reg' or 'logic' wires ~
                         are not yet supported."
-                       (list x)))))
+                     (list x))))
 
 (defwellformed-list vl-vardecllist-reasonable-p (x)
   :element vl-vardecl-reasonable-p

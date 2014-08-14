@@ -407,7 +407,6 @@ places to be unsafe.</p>"
    (limits propagate-limits-p))
   :returns (new-x vl-module-p)
   (b* ((x (vl-module-fix x))
-       ((vl-module x) x)
        ((when (vl-module->hands-offp x))
         x)
        ;; We no longer prohibit this.  Instead we try to prevent it from

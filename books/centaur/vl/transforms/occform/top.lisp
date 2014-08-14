@@ -336,8 +336,7 @@ its signedness is no longer relevant.</p>"
           (vl-occform-extend-id x item.range warnings)))
 
        ((when (eq tag :vl-vardecl))
-        (b* (((vl-vardecl item) item)
-             ((unless (vl-simplereg-p item))
+        (b* (((unless (vl-simplereg-p item))
               (mv (fatal :type :vl-occform-bad-id
                          :msg "Trying to occform identifier ~a0, which is not a simple reg."
                          :args (list x))

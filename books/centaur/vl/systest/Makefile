@@ -61,7 +61,7 @@ TRANSLATE_SV := $(VL) model spec.v --mem=2 --search=. --verilog-file=impl.sv --e
 	@echo "Making $*/impl.sv"
 	@rm -f %/impl.sv
 	@cd $*; $(STARTJOB) -c \
-	  'echo `hostname` &> impl.out; $(TRANSLATE_SV) &>> impl.sv.out'
+	  'echo `hostname` &> impl.sv.out; $(TRANSLATE_SV) &>> impl.sv.out'
 	@ls -l $*/impl.sv
 
 %/impl.v: %/spec.v
@@ -96,3 +96,15 @@ all: $(SV_IMPL_FILES)
 all: $(V_OKS)
 all: $(SV_OKS)
 
+
+
+# Stupid little aliases so you can just type, e.g., "make case" to do the
+# testes in the case/ directory.
+
+.PHONY: $(TEST_DIRS)
+
+define mkDirTarget
+$(1): $(1)/sysverilog.ok $(1)/verilog.ok
+endef
+
+$(foreach dir, $(TEST_DIRS), $(eval $(call mkDirTarget, $(dir))))

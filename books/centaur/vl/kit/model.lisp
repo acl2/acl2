@@ -221,8 +221,7 @@ Options:" *nls* *nls* *vl-model-opts-usage* *nls*))
         (if (equal opts.model-file "")
             state
           (serialize-write (oslib::catpath opts.outdir opts.model-file)
-                           translation
-                           :verbosep t)))
+                           translation)))
 
        (state
         (if (equal opts.esims-file "")
@@ -230,8 +229,7 @@ Options:" *nls* *nls* *vl-model-opts-usage* *nls*))
           (serialize-write (oslib::catpath opts.outdir opts.esims-file)
                            (vl-modulelist->esims
                             (vl-design->mods
-                             (vl-translation->good translation)))
-                           :verbosep t)))
+                             (vl-translation->good translation))))))
 
        (state
         (if (equal opts.verilog-file "")
