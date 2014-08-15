@@ -1543,15 +1543,15 @@ notation causes an error and (b) the use of ,. is not permitted."
 ; play it safe and define our own, error-free (for CLtL2) version of
 ; user-homedir-pathname.
 
-  #+gcl
+; For GCL, Camm Maguire has told us that calling user-homedir-pathname should
+; work on GCL 2.6.8 or later, at least if there is a proper home directory and
+; password entry.  But if thata fails for some reason, one can use the
+; commented-out alternative code below instead.
 
-; Camm Maguire has explained that for GCL running under Debian autobuilders,
-; using HOME is the most reliable way to get the home directory.
+; (let ((home (si::getenv "HOME")))
+;   (and home
+;        (pathname (concatenate 'string home "/"))))
 
-  (let ((home (si::getenv "HOME")))
-    (and home
-         (pathname (concatenate 'string home "/"))))
-  #-gcl ; presumably CLtL2
   (our-ignore-errors (user-homedir-pathname)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
