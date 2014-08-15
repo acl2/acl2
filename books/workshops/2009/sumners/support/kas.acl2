@@ -1,3 +1,17 @@
 (in-package "ACL2")
+
+; Added by Matt K.:
+; The next setq form was suggested by Camm Maguire as a way to
+; avoid exhausting the available space when using GCL 2.6.8 to certify
+; kas.lisp.  The second setq form is also necessary.
+#+gcl
+(acl2::value :q)
+#+gcl
+(setq si:*optimize-maximum-pages* nil)
+#+gcl
+(setq si::*multiply-stacks* 2)
+#+gcl
+(acl2::lp)
+
 ; cert-flags: ? t :ttags :all
 (certify-book "kas" ? t :ttags :all)
