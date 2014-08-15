@@ -7012,7 +7012,7 @@
 ; whether loop-only-p is true or false, respectively.
 
   (let ((*features* (if loop-only-p
-                        (push :acl2-loop-only *features*)
+                        (cons :acl2-loop-only *features*)
                       (remove :acl2-loop-only *features*))))
     (loop for filename in filenames
           do (note-fns-in-file filename ht))))
