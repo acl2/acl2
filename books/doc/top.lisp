@@ -400,6 +400,44 @@ of proofs.")
     (cons topic
           (fix-redundant-acl2-parents (cdr all-topics)))))
 
+
+(defxdoc *acl2-exports*
+  :parents (packages)
+  :short "Symbols that are often imported into new @(see packages) to provide
+easy access to ACL2 functionality."
+
+  :long "<p>When you define a new package for your own work with @(see defpkg),
+you will usually want to import many symbols from the @('\"ACL2\"') package,
+for instance you will usually want to be able to use symbols like @(see
+defthm), @(see in-theory), @(see xargs), @(see state), etc., without an
+@('acl2::') prefix.</p>
+
+<p>The constant @('*acl2-exports*') lists @(`(len *acl2-exports*)`) symbols,
+including most documented ACL2 system constants, functions, and macros.  You
+will typically also want to import many symbols from Common Lisp; see @(see
+*common-lisp-symbols-from-main-lisp-package*).</p>
+
+@(`(:code *acl2-exports*)`)")
+
+(defxdoc *common-lisp-symbols-from-main-lisp-package*
+  :parents (packages)
+  :short "Symbols that are often imported into new packages to provide easy
+access to Common Lisp functionality."
+
+  :long "<p>When you define a new package for your own work with @(see defpkg),
+you will usually want to import many symbols from the @('\"COMMON-LISP\"')
+package so that you can access them without a @('common-lisp::') or @('acl2::')
+prefix.</p>
+
+<p>The constant @('*common-lisp-symbols-from-main-lisp-package*') lists the
+@(`(len *common-lisp-symbols-from-main-lisp-package*)`) symbols of the
+@('COMMON-LISP') package found in <a
+href='http://dx.doi.org/10.1145/147135.147249'>dpAns</a>.  You will typically
+also want to import many symbols from ACL2; see @(see *acl2-exports*).</p>
+
+@(`(:code *common-lisp-symbols-from-main-lisp-package*)`)")
+
+
 (defmacro xdoc::fix-the-hierarchy ()
   ;; Semi-bozo.
   ;;
@@ -427,6 +465,528 @@ of proofs.")
      ;; bozo where should this go... Matt suggests maybe interfacing-tools?
      ;; But by the same token, maybe programming, maybe lots of places...
      (xdoc::change-parents unsound-eval (miscellaneous))
+
+; New proposals from Jared ------------------------------
+
+; Things that were in miscellaneous/other
+
+     (xdoc::change-parents command (history))
+     (xdoc::change-parents world (state))
+     (xdoc::change-parents props (world))
+     (xdoc::change-parents guard (acl2 note1))
+
+     (xdoc::change-parents wormhole (state ld))
+
+     (xdoc::change-parents sharp-comma-reader (defconst))
+     (xdoc::change-parents sharp-dot-reader (defconst))
+
+
+;; stuff from acl2-built-ins
+
+     (defxdoc packages
+       :parents (acl2)
+       :short "Packages are collections of symbols.  They can be used to avoid name
+conflicts when working on large ACL2 projects.")
+
+     (xdoc::change-parents defpkg (packages events))
+     (xdoc::change-parents in-package (packages))
+     (xdoc::change-parents sharp-bang-reader (packages))
+     (xdoc::change-parents pkg-witness (packages))
+     (xdoc::change-parents pkg-imports (packages))
+     (xdoc::change-parents hidden-death-package (packages))
+     (xdoc::change-parents hidden-defpkg (packages))
+     (xdoc::change-parents package-reincarnation-import-restrictions (packages))
+     (xdoc::change-parents managing-acl2-packages (packages))
+     (xdoc::change-parents working-with-packages (best-practices packages))
+     (xdoc::change-parents intern (packages))
+     (xdoc::change-parents intern-in-package-of-symbol (packages))
+     (xdoc::change-parents intern$ (packages))
+     (xdoc::change-parents acl2-user (packages))
+
+     (xdoc::change-parents symbol-name (symbolp))
+     (xdoc::change-parents symbol-package-name (symbolp packages))
+     (xdoc::change-parents symbol-< (symbolp))
+     (xdoc::change-parents keywordp (symbolp))
+     (xdoc::change-parents add-to-set (symbolp)) ;; bozo horrible name for this function
+
+
+     (defxdoc numbers
+       :parents (acl2)
+       :short "Arithmetic functions for working with numbers in ACL2."
+       :long "<p>BOZO see @(see |Numbers in ACL2|) for introductory background.
+See @(see arithmetic) for libraries for arithmetic reasoning.</p>")
+
+     (xdoc::change-parents *  (numbers))
+     (xdoc::change-parents +  (numbers))
+     (xdoc::change-parents -  (numbers))
+     (xdoc::change-parents /  (numbers))
+     (xdoc::change-parents /= (numbers))
+     (xdoc::change-parents 1+ (numbers))
+     (xdoc::change-parents 1- (numbers))
+     (xdoc::change-parents <  (numbers))
+     (xdoc::change-parents <= (numbers))
+     (xdoc::change-parents =  (numbers))
+     (xdoc::change-parents >  (numbers))
+     (xdoc::change-parents >= (numbers))
+
+     (xdoc::change-parents acl2-numberp (numbers))
+     (xdoc::change-parents acl2-number-listp (numbers))
+
+     (xdoc::change-parents ash (numbers))
+     (xdoc::change-parents abs (numbers))
+     (xdoc::change-parents binary-* (*))
+     (xdoc::change-parents binary-+ (+))
+     (xdoc::change-parents boole$ (numbers))
+     (xdoc::change-parents ceiling (numbers))
+     (xdoc::change-parents complex (numbers))
+     (xdoc::change-parents complex-rationalp (numbers))
+     (xdoc::change-parents complex/complex-rationalp (numbers))
+     (xdoc::change-parents conjugate (numbers))
+
+     (xdoc::change-parents denominator (numbers))
+     (xdoc::change-parents expt (numbers))
+     (xdoc::change-parents fix (numbers))
+     (xdoc::change-parents floor (numbers))
+     (xdoc::change-parents ifix (numbers))
+     (xdoc::change-parents imagpart (numbers))
+     (xdoc::change-parents int= (numbers))
+     (xdoc::change-parents integerp (numbers))
+     (xdoc::change-parents integer-listp (numbers))
+     (xdoc::change-parents integer-length (numbers))
+
+     (xdoc::change-parents logand (numbers))
+     (xdoc::change-parents logandc1 (numbers))
+     (xdoc::change-parents logandc2 (numbers))
+     (xdoc::change-parents logbitp (numbers))
+     (xdoc::change-parents logcount (numbers))
+     (xdoc::change-parents logeqv (numbers))
+     (xdoc::change-parents logior (numbers))
+     (xdoc::change-parents lognand (numbers))
+     (xdoc::change-parents lognor  (numbers))
+     (xdoc::change-parents lognot (numbers))
+     (xdoc::change-parents lognor (numbers))
+     (xdoc::change-parents logorc1 (numbers))
+     (xdoc::change-parents logorc2 (numbers))
+     (xdoc::change-parents logtest (numbers))
+     (xdoc::change-parents logxor (numbers))
+     (xdoc::change-parents max (numbers))
+     (xdoc::change-parents min (numbers))
+     (xdoc::change-parents mod (numbers))
+     (xdoc::change-parents mod-expt (numbers))
+     (xdoc::change-parents minusp (numbers))
+
+     (xdoc::change-parents natp (numbers))
+     (xdoc::change-parents nat-listp (numbers))
+     (xdoc::change-parents nfix (numbers))
+     (xdoc::change-parents nonnegative-integer-quotient (numbers))
+     (xdoc::change-parents numerator (numbers))
+
+     (xdoc::change-parents oddp (numbers))
+     (xdoc::change-parents evenp (numbers))
+     (xdoc::change-parents plusp (numbers))
+     (xdoc::change-parents posp (numbers))
+     (xdoc::change-parents rationalp (numbers))
+     (xdoc::change-parents rational-listp (numbers))
+     (xdoc::change-parents realpart (numbers))
+     (xdoc::change-parents realfix (numbers))
+     (xdoc::change-parents real/rationalp (numbers))
+     (xdoc::change-parents round (numbers))
+     (xdoc::change-parents rem (numbers))
+     (xdoc::change-parents rfix (numbers))
+
+     (xdoc::change-parents signed-byte-p (numbers))
+     (xdoc::change-parents signum (numbers))
+     (xdoc::change-parents truncate (numbers))
+     (xdoc::change-parents unary-- (-))
+     (xdoc::change-parents unary-/ (/))
+     (xdoc::change-parents unsigned-byte-p (numbers))
+
+     (xdoc::change-parents zero-test-idioms (numbers))
+     (xdoc::change-parents zerop (numbers))
+     (xdoc::change-parents zip (numbers))
+     (xdoc::change-parents zp (numbers))
+     (xdoc::change-parents zpf (numbers))
+
+     (xdoc::change-parents sharp-u-reader (numbers))
+
+     (defxdoc alists
+       :parents (acl2)
+       :short "Association lists bind keys to values.")
+
+     (xdoc::change-parents alistp (alists))
+     (xdoc::change-parents acons (alists))
+     (xdoc::change-parents assoc (alists))
+     (xdoc::change-parents assoc-string-equal (alists))
+     (xdoc::change-parents delete-assoc (alists))
+     (xdoc::change-parents eqlable-alistp (alists))
+     (xdoc::change-parents rassoc (alists))
+     (xdoc::change-parents put-assoc (alists))
+     (xdoc::change-parents rassoc (alists))
+     (xdoc::change-parents r-eqlable-alistp (alists))
+     (xdoc::change-parents r-symbol-alistp (alists))
+     (xdoc::change-parents standard-string-alistp (alists))
+     (xdoc::change-parents strip-cars (alists))
+     (xdoc::change-parents strip-cdrs (alists))
+     (xdoc::change-parents symbol-alistp (alists))
+
+     (xdoc::change-parents assoc-keyword (keyword-value-listp))
+
+
+     (defxdoc conses
+       :parents (acl2)
+       :short "A <b>cons</b> is an ordered pair.  In ACL2, data structures like
+ @(see lists), @(see alists), etc., are made up of conses.")
+
+     (xdoc::change-parents atom (conses))
+     (xdoc::change-parents atom-listp (conses))
+     (xdoc::change-parents cons (conses))
+     (xdoc::change-parents consp (conses))
+     (xdoc::change-parents car (conses))
+     (xdoc::change-parents cdr (conses))
+     (xdoc::change-parents caaaar (conses))
+     (xdoc::change-parents caaadr (conses))
+     (xdoc::change-parents caaar (conses))
+     (xdoc::change-parents caadar (conses))
+     (xdoc::change-parents caaddr (conses))
+     (xdoc::change-parents caadr (conses))
+     (xdoc::change-parents caar (conses))
+     (xdoc::change-parents cadaar (conses))
+     (xdoc::change-parents cadadr (conses))
+     (xdoc::change-parents cadar (conses))
+     (xdoc::change-parents caddar (conses))
+     (xdoc::change-parents cadddr (conses))
+     (xdoc::change-parents caddr (conses))
+     (xdoc::change-parents cadr (conses))
+     (xdoc::change-parents cdaaar (conses))
+     (xdoc::change-parents cdaadr (conses))
+     (xdoc::change-parents cdaar (conses))
+     (xdoc::change-parents cdadar (conses))
+     (xdoc::change-parents cdaddr (conses))
+     (xdoc::change-parents cdadr (conses))
+     (xdoc::change-parents cdar (conses))
+     (xdoc::change-parents cddaar (conses))
+     (xdoc::change-parents cddadr (conses))
+     (xdoc::change-parents cddar (conses))
+     (xdoc::change-parents cdddar (conses))
+     (xdoc::change-parents cddddr (conses))
+     (xdoc::change-parents cdddr (conses))
+     (xdoc::change-parents cddr (conses))
+     (xdoc::change-parents cdr (conses))
+
+
+     (xdoc::change-parents arrays (acl2))
+     (xdoc::change-parents aref1 (arrays))
+     (xdoc::change-parents aref2 (arrays))
+     (xdoc::change-parents array1p (arrays))
+     (xdoc::change-parents array2p (arrays))
+     (xdoc::change-parents aset1 (arrays))
+     (xdoc::change-parents aset2 (arrays))
+     (xdoc::change-parents compress1 (arrays))
+     (xdoc::change-parents compress2 (arrays))
+     (xdoc::change-parents default (arrays))
+     (xdoc::change-parents dimensions (arrays))
+     (xdoc::change-parents flush-compress (arrays))
+     (xdoc::change-parents header (arrays))
+     (xdoc::change-parents maximum-length (arrays))
+
+     (xdoc::change-parents characters (acl2))
+     (xdoc::change-parents alpha-char-p (characters))
+     (xdoc::change-parents char (characters))
+     (xdoc::change-parents char-code (characters))
+     (xdoc::change-parents char-downcase (characters))
+     (xdoc::change-parents char-equal (characters))
+     (xdoc::change-parents char-upcase (characters))
+     (xdoc::change-parents char< (characters))
+     (xdoc::change-parents char<= (characters))
+     (xdoc::change-parents char> (characters))
+     (xdoc::change-parents char>= (characters))
+     (xdoc::change-parents character-alistp (characters alists))
+     (xdoc::change-parents character-listp (characters))
+     (xdoc::change-parents characterp (characters))
+     (xdoc::change-parents code-char (characters))
+     (xdoc::change-parents digit-char-p (characters))
+     (xdoc::change-parents digit-to-char (characters))
+     (xdoc::change-parents lower-case-p (characters))
+     (xdoc::change-parents make-character-list (characters))
+     (xdoc::change-parents standard-char-p (characters))
+     (xdoc::change-parents standard-char-listp (characters))
+     (xdoc::change-parents upper-case-p (characters))
+
+     (xdoc::change-parents make-ord (ordinals))
+     (xdoc::change-parents O-finp (ordinals))
+     (xdoc::change-parents O-first-coeff (ordinals))
+     (xdoc::change-parents O-first-expt (ordinals))
+     (xdoc::change-parents O-infp (ordinals))
+     (xdoc::change-parents O-p (ordinals))
+     (xdoc::change-parents O-rst (ordinals))
+     (xdoc::change-parents O< (ordinals))
+     (xdoc::change-parents O<= (ordinals))
+     (xdoc::change-parents O> (ordinals))
+     (xdoc::change-parents O>= (ordinals))
+
+     (xdoc::change-parents io (interfacing-tools))
+     (xdoc::change-parents fms (io))
+     (xdoc::change-parents Fms! (io))
+     (xdoc::change-parents Fmt (io))
+     (xdoc::change-parents Fmt1 (io))
+     (xdoc::change-parents Fmt1! (io))
+     (xdoc::change-parents Fmt! (io))
+     (xdoc::change-parents Fmt-to-comment-window (io))
+     (xdoc::change-parents printing-to-strings (io))
+     (xdoc::change-parents proofs-co (io))
+     (xdoc::change-parents msg (io))
+     (xdoc::change-parents standard-co (io))
+     (xdoc::change-parents standard-oi (io))
+     (xdoc::change-parents princ$ (io))
+     (xdoc::change-parents observation (io))
+     (xdoc::change-parents cw (io))
+     (xdoc::change-parents cw! (io))
+
+     ;; I guess Matt just did these
+     ;; (xdoc::change-parents pso (prover-output))
+     ;; (xdoc::change-parents pso! (prover-output))
+     ;; (xdoc::change-parents psof (prover-output))
+     ;; (xdoc::change-parents psog (prover-output))
+     (xdoc::change-parents gag-mode (prover-output))
+
+
+     (xdoc::change-parents String (stringp))
+     (xdoc::change-parents String-append (stringp))
+     (xdoc::change-parents String-downcase (stringp))
+     (xdoc::change-parents String-equal (stringp))
+     (xdoc::change-parents String-listp (stringp))
+     (xdoc::change-parents String-upcase (stringp))
+     (xdoc::change-parents String< (stringp))
+     (xdoc::change-parents String<= (stringp))
+     (xdoc::change-parents String> (stringp))
+     (xdoc::change-parents String>= (stringp))
+     (xdoc::change-parents Stringp (stringp))
+
+     (xdoc::change-parents coerce (stringp characters))
+
+     (defxdoc errors
+       :parents (acl2)
+       :short "Support for causing runtime errors, breaks, assertions, etc.")
+
+     (xdoc::change-parents er (errors))
+     (xdoc::change-parents illegal (errors))
+     (xdoc::change-parents error1 (errors))
+     (xdoc::change-parents hard-error (errors))
+     (xdoc::change-parents er-progn (errors state))
+     (xdoc::change-parents assert$ (errors))
+     (xdoc::change-parents break$ (errors))
+     (xdoc::change-parents breaks (errors))
+     (xdoc::change-parents error-triples (errors state))
+
+     (xdoc::change-parents mbe (guard))
+     (xdoc::change-parents mbe1 (mbe))
+     (xdoc::change-parents mbt (mbe))
+     (xdoc::change-parents must-be-equal (mbe))
+
+     (xdoc::change-parents mv-let (mv))
+     (xdoc::change-parents mv-list (mv))
+     (xdoc::change-parents mv-nth (mv))
+     (xdoc::change-parents mv? (mv))
+     (xdoc::change-parents mv?-let (mv))
+
+     (xdoc::change-parents state (acl2))
+     (xdoc::change-parents pprogn (state))
+     (xdoc::change-parents read-acl2-oracle (state))
+     (xdoc::change-parents read-run-time (state))
+     (xdoc::change-parents with-live-state (state))
+     (xdoc::change-parents state-global-let* (state))
+     (xdoc::change-parents setenv$ (state))
+     (xdoc::change-parents getenv$ (state))
+     (xdoc::change-parents canonical-pathname (state))
+     (xdoc::change-parents assign (state))
+     (xdoc::change-parents f-put-global (assign))
+     (xdoc::change-parents @ (state))
+     (xdoc::change-parents f-get-global (@))
+
+     (xdoc::change-parents comp (compilation))
+     (xdoc::change-parents comp-gcl (compilation))
+     (xdoc::change-parents disassemble$ (compilation debugging))
+
+
+     (defsection lists
+       :parents (acl2)
+       :short "Lists of objects, the classic Lisp data structure.")
+
+     (xdoc::change-parents binary-append (append))
+
+     (xdoc::change-parents list (lists))
+     (xdoc::change-parents append (lists))
+     (xdoc::change-parents butlast (lists))
+     (xdoc::change-parents endp (lists))
+     (xdoc::change-parents fix-true-list (lists))
+     (xdoc::change-parents proper-consp (lists))
+     (xdoc::change-parents improper-consp (lists))
+     (xdoc::change-parents intersection$ (lists))
+     (xdoc::change-parents intersectp (lists))
+     (xdoc::change-parents last (lists))
+     (xdoc::change-parents len (lists))
+     (xdoc::change-parents make-list (lists))
+     (xdoc::change-parents list* (lists))
+     (xdoc::change-parents listp (lists))
+     (xdoc::change-parents member (lists))
+     (xdoc::change-parents no-duplicatesp (lists))
+     (xdoc::change-parents nth (lists))
+     (xdoc::change-parents nthcdr (lists))
+     (xdoc::change-parents pairlis (lists))
+     (xdoc::change-parents pairlis$ (lists))
+     (xdoc::change-parents remove (lists))
+     (xdoc::change-parents remove1 (lists))
+     (xdoc::change-parents revappend (lists))
+     (xdoc::change-parents set-difference$ (lists))
+     (xdoc::change-parents subsetp (lists))
+     (xdoc::change-parents take (lists))
+     (xdoc::change-parents true-listp (lists))
+     (xdoc::change-parents true-list-listp (lists))
+     (xdoc::change-parents union$ (lists))
+     (xdoc::change-parents update-nth (lists))
+
+     (xdoc::change-parents first (nth))
+     (xdoc::change-parents rest (nth))
+     (xdoc::change-parents second (nth))
+     (xdoc::change-parents third (nth))
+     (xdoc::change-parents fourth (nth))
+     (xdoc::change-parents fifth (nth))
+     (xdoc::change-parents sixth (nth))
+     (xdoc::change-parents seventh (nth))
+     (xdoc::change-parents eighth (nth))
+     (xdoc::change-parents ninth (nth))
+     (xdoc::change-parents tenth (nth))
+
+     (xdoc::change-parents concatenate (lists stringp))
+     (xdoc::change-parents count (lists stringp))
+     (xdoc::change-parents length (lists stringp))
+     (xdoc::change-parents position (lists stringp))
+     (xdoc::change-parents remove-duplicates (lists stringp))
+     (xdoc::change-parents reverse (lists stringp))
+     (xdoc::change-parents search (lists stringp))
+     (xdoc::change-parents subseq (lists stringp))
+     (xdoc::change-parents substitute (lists stringp))
+
+     (xdoc::change-parents kwote (pseudo-termp))
+     (xdoc::change-parents kwote-lst (pseudo-termp))
+
+     (xdoc::change-parents ec-call (guard))
+     (xdoc::change-parents non-exec (guard))
+     (xdoc::change-parents the (guard compilation))
+
+     (defxdoc basics
+       :parents (acl2)
+       :short "Basic control structures like @(see if) and @(see cond), binding
+ operators like @(see let) and @(see flet), and @(see mv), and so forth.")
+
+     (xdoc::change-parents and (basics))
+     (xdoc::change-parents booleanp (basics))
+     (xdoc::change-parents case (basics))
+     (xdoc::change-parents case-match (basics))
+     (xdoc::change-parents cond (basics))
+     (xdoc::change-parents equal (basics))
+     (xdoc::change-parents flet (basics))
+     (xdoc::change-parents identity (basics))
+     (xdoc::change-parents if (basics))
+     (xdoc::change-parents iff (basics))
+     (xdoc::change-parents implies (basics))
+     (xdoc::change-parents let (basics))
+     (xdoc::change-parents let* (basics))
+     (xdoc::change-parents mv (basics))
+     (xdoc::change-parents not (basics))
+     (xdoc::change-parents null (basics))
+     (xdoc::change-parents quote (basics))
+     (xdoc::change-parents or (basics))
+     (xdoc::change-parents xor (basics))
+     (xdoc::change-parents progn$ (basics))
+     (xdoc::change-parents prog2$ (progn$))
+     (xdoc::change-parents good-bye (basics))
+
+     (xdoc::change-parents eq (equal))
+     (xdoc::change-parents eql (equal))
+     (xdoc::change-parents eqlablep (equal))
+     (xdoc::change-parents eqlable-listp (equal))
+
+     (xdoc::change-parents sys-call+ (sys-call))
+     (xdoc::change-parents sys-call-status (sys-call))
+
+     (xdoc::change-parents getprop (world))
+     (xdoc::change-parents putprop (world))
+
+     (xdoc::change-parents cpu-core-count (parallelism))
+
+     (xdoc::change-parents boolean-listp (booleanp))
+
+     (xdoc::change-parents random$ (state numbers))
+     (xdoc::change-parents lexorder (<<))
+     (xdoc::change-parents alphorder (<<))
+
+     (xdoc::change-parents oracle-apply (state))
+     (xdoc::change-parents oracle-apply-raw (state))
+     (xdoc::change-parents oracle-funcall (state))
+
+     (xdoc::change-parents check-sum (certificate))
+
+     (xdoc::change-parents fast-alists (alists))
+     (xdoc::change-parents cons-subtrees (fast-alists))
+     (xdoc::change-parents fast-alist-clean (fast-alists))
+     (xdoc::change-parents fast-alist-clean! (fast-alists))
+     (xdoc::change-parents fast-alist-fork (fast-alists))
+     (xdoc::change-parents fast-alist-fork! (fast-alists))
+     (xdoc::change-parents fast-alist-free (fast-alists))
+     (xdoc::change-parents fast-alist-free-on-exit (fast-alists))
+     (xdoc::change-parents fast-alists-free-on-exit (fast-alists))
+     (xdoc::change-parents fast-alist-len (fast-alists))
+     (xdoc::change-parents fast-alist-pop (fast-alists))
+     (xdoc::change-parents fast-alist-summary (fast-alists))
+     (xdoc::change-parents fast-alist-free-on-exit (fast-alists))
+     (xdoc::change-parents flush-hons-get-hash-table-link (fast-alist-free))
+     (xdoc::change-parents hons-acons (fast-alists))
+     (xdoc::change-parents hons-acons! (fast-alists))
+     (xdoc::change-parents hons-assoc-equal (fast-alists))
+     (xdoc::change-parents hons-get (fast-alists))
+     (xdoc::change-parents make-fal (fast-alists))
+     (xdoc::change-parents make-fast-alist (fast-alists))
+     (xdoc::change-parents with-fast-alist (fast-alists))
+     (xdoc::change-parents with-fast-alists (fast-alists))
+     (xdoc::change-parents with-stolen-alist (fast-alists))
+     (xdoc::change-parents with-stolen-alists (fast-alists))
+     (xdoc::change-parents slow-alist-warning (fast-alists))
+
+
+     (xdoc::change-parents hons (acl2))
+     (xdoc::change-parents hons-clear (hons))
+     (xdoc::change-parents hons-copy (hons))
+     (xdoc::change-parents hons-copy-persistent (hons))
+     (xdoc::change-parents hons-equal (hons))
+     (xdoc::change-parents hons-equal-lite (hons))
+     (xdoc::change-parents hons-make-list (hons))
+     (xdoc::change-parents hons-make-list-acc (hons))
+     (xdoc::change-parents hons-note (hons))
+     (xdoc::change-parents hons-resize (hons))
+     (xdoc::change-parents hons-sublis (hons))
+     (xdoc::change-parents hons-summary (hons))
+     (xdoc::change-parents hons-wash (hons))
+     (xdoc::change-parents maybe-wash-memory (hons))
+     (xdoc::change-parents normed (hons))
+
+     (xdoc::change-parents memoize (acl2))
+     (xdoc::change-parents clear-memoize-tables (memoize))
+     (xdoc::change-parents memoize-summary (memoize))
+     (xdoc::change-parents memsum (memoize))
+     (xdoc::change-parents never-memoize (memoize))
+     (xdoc::change-parents restore-memoization-settings (memoize))
+     (xdoc::change-parents save-and-clear-memoization-settings (memoize))
+     (xdoc::change-parents unmemoize (memoize))
+     (xdoc::change-parents clear-memoize-table (memoize))
+     (xdoc::change-parents clear-memoize-tables (memoize))
+     (xdoc::change-parents clear-hash-tables (memoize))
+
+     (xdoc::change-parents disabledp (theories))
+
+
+     
+
 
      ))
 

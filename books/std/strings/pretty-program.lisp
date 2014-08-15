@@ -29,15 +29,24 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "STR")
+(local (include-book "std/util/defredundant" :dir :system))
+(local (include-book "make-event/acl2x-help" :dir :system))
+(local (include-book "pretty-defs-aux"))
+(program)
+
+; cert_param (acl2x)
+; cert_param (acl2xskip)
+; (depends-rec "pretty")
+(acl2::acl2x-replace (include-book
+                      "pretty")
+                     (value-triple :invisible)
+                     :outside-certification
+                     (include-book
+                      "pretty"))
+
 (include-book "defs-program")
-
-(encapsulate ()
-  (local (include-book "pretty"))
-  (local (include-book "pretty-defs-aux"))
-  (local (include-book "std/util/defredundant" :dir :system))
-
-  (make-event
-   (b* ((events (std::defredundant-fn *pretty-defs* t state)))
-     (acl2::value events))))
+(make-event
+ (b* ((events (std::defredundant-fn *pretty-defs* t state)))
+   (acl2::value events)))
 
 
