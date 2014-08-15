@@ -469,8 +469,9 @@ ADDED_BOOKS := \
 
 ADDED_BOOKS += workshops/2013/hardin-hardin/support/APSP.cert
 
+ADDED_BOOK_TARGETS :=
 ifneq ($(ACL2_HAS_HONS), )
-ADDED_BOOKS += milawa-test-basic
+ADDED_BOOK_TARGETS := milawa-test-basic
 endif
 
 # Now SLOW_BOOKS is defined as the list above, except that below, we
@@ -479,7 +480,7 @@ endif
 # Then we remove SLOW_BOOKS from regressions, restoring its subset,
 # ADDED_BOOKS, for the "everything" target.
 
-SLOW_BOOKS := $(ADDED_BOOKS)
+SLOW_BOOKS := $(ADDED_BOOKS) $(ADDED_BOOK_TARGETS)
 
 # The models/y86 books are a special case.  We prefer to include them
 # only with the "everything" target, not the "all" target, since they
@@ -509,6 +510,10 @@ ifneq ($(filter CCL ALLEGRO SBCL, $(ACL2_HOST_LISP)), )
   ADDED_BOOKS += $(filter models/y86/%, $(OK_CERTS))
 endif # ifneq ($(filter CCL ALLEGRO SBCL, $(ACL2_HOST_LISP)), )
 endif # ifneq ($(ACL2_HAS_HONS), )
+
+# Remove ADDED_BOOKS as necessary because of dependence on Quicklisp,
+# HONS, CCL, etc.:
+ADDED_BOOKS := $(filter $(ADDED_BOOKS), $(OK_CERTS))
 
 OK_CERTS := $(filter-out $(SLOW_BOOKS) models/y86/%, $(OK_CERTS))
 
@@ -947,22 +952,13 @@ endif # ifeq ($(realpath workshops), )
 
 all: $(OK_CERTS)
 
-# It was tempting to handle the `everything' target as follows:
-#  everything: USE_QUICKLISP = 1
-#  everything: all $(ADDED_BOOKS)
-# But that didn't work, presumably because the value of OK_CERTS was
-# on a first pass through the Makefile without USE_QUICKLISP being
-# set.
+# Starting 8/15/2014, everything does not automatically set
+# USE_QUICKLISP=1, even in the HONS case.  In particular, "make
+# everything" no longer makes doc/manual/; for that, specify
+# USE_QUICKLISP=1.
 .PHONY: everything
-# Note: We add doc/top.cert explicitly, even though that might not
-# be necessary, because at one point doc/top.cert was not
-# otherwise made (something related to glucose).
 everything:
-ifeq ($(ACL2_HAS_HONS), )
-	$(MAKE) all $(ADDED_BOOKS)
-else
-	$(MAKE) all USE_QUICKLISP=1 $(ADDED_BOOKS) doc/top.cert
-endif # ifeq ($(ACL2_HAS_HONS), )
+	$(MAKE) all $(ADDED_BOOKS) $(ADDED_BOOK_TARGETS)
 
 # The critical path report will work only if you have set up certificate timing
 # BEFORE you build the books.  See ./critpath.pl --help for details.

@@ -37,7 +37,7 @@ the input term.  If ACL2 cannot simplify the input term (e.g., if there is a
 translation error), then it prints a warning and returns <tt>(mv nil input-term
 state)</tt>.</p>
 
-<p>For a related utility, see @(see bash-term-to-dnf).</p>
+<p>For related utilities, see @(see bash-term-to-dnf) and @(see simp).</p>
 
 <h3>Examples</h3>
 
@@ -218,7 +218,7 @@ goals produced by ACL2's simplification process, much as for the result of
 is a list of terms that represents the disjunction of those terms, and the list
 of clauses is implicitly conjoined.</p>
 
-<p>Again: For a related utility, see @('bash').</p>
+<p>Again: For related utilities, see @(see simp) and @(see bash).</p>
 
 <h3>Example</h3>
 

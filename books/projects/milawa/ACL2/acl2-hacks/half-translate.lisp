@@ -42,12 +42,17 @@
 ;;  2. We use ACL2's translator to get rid of ACL2-specific macros
 ;;  3. We finally unrewrite the "wrappers" back into their macro form.
 
+; Matt K.: Commented out 8/15/2014 to avoid conflict with tuplep deined in
+; std/basic/defs.lisp.
+#||
 (defun tuplep (n x)
   (declare (xargs :mode :program))
   (if (zp n)
       (equal x nil)
     (and (consp x)
          (tuplep (- n 1) (cdr x)))))
+||#
+(include-book "std/basic/defs" :dir :system) ; still need tuplep for next def'n
 
 (defun tuple-listp (n x)
   (declare (xargs :mode :program))

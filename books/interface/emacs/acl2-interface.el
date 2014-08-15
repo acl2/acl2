@@ -30,7 +30,7 @@
 
 ; The changes below were made August 2014 as suggested by Camm
 ; Maguire, "in response to a Debian bug regarding certain emacs
-; policies."
+; policies", "to load the byte compiled versions when available".
 
 ;(load "inf-acl2.el")			;(require 'inf-acl2)
 ;(load "mfm-acl2.el")			;(require 'mfm-acl2)

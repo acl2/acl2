@@ -51,12 +51,12 @@
 
 (defxdoc note-7-0-books
   :parents (note-7-0)
-  :short "Release notes for the ACL2 Community Books for ACL2 6.6 (BOZO month??)"
+  :short "Release notes for the ACL2 Community Books for ACL2 7.0 (BOZO month??)"
 
 ; Currently covered: through revision r2901
 
   :long "<p>The following is a brief summary of changes made to the @(see
-community-books) between the releases of ACL2 6.5 and 6.6.</p>
+community-books) between the releases of ACL2 6.5 and 7.0.</p>
 
 <p>The <a
 href='https://code.google.com/p/acl2-books/wiki/ReleaseVersionNumbers'>acl2-books
@@ -90,7 +90,15 @@ in ACL2 6.5, so we've deleted them.</p>
      centaur/bitops/sign-extend       centaur/bitops/fast-logext
 
    ---------------------------------------------------------------
-})")
+})
+
+<h3>Build System Changes</h3>
+
+<p>The implementation of ``@('make everything')'' has been cleaned up.  In
+particular, it no longer sets @('USE_QUICKLISP=1'), which must now be provided
+explicitly in order for the command above to build the ACL2+Books Manual.</p>
+
+")
 
 
 (defxdoc note-6-5-books
