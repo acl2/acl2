@@ -6,6 +6,7 @@
 
 (in-package "ACL2")
 (include-book "gentle")
+(include-book "std/alists/worth-hashing" :dir :system)
 (set-state-ok t)
 
 
@@ -442,17 +443,6 @@
   Lisp folklore says it is faster to use ASSOC than GETHASH on a list
   if the list has length 18 or less.~/~/")
 
-(defun worth-hashing1 (l n)
-  (declare (type (integer 0 18) n)
-           (xargs :guard t))
-  (cond ((eql n 0) t)
-        ((atom l) nil)
-        (t (worth-hashing1 (cdr l) (the (integer 0 18)
-                                     ;; 18 is a *magic-number*
-                                     (1- n))))))
-
-(defn worth-hashing (l)
-  (worth-hashing1 l *magic-number-for-hashing*))
 
 ; [Jared] BOZO it would be nice to prove these equivalent to simple set
 ; operations with no fast alist stuff.

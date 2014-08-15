@@ -65,7 +65,7 @@ assuming constant-time hashing.</p>"
           (mv t seen))
          (node1 (car nodes))
          (deps1 (cdr (hons-get node1 graph)))
-         ((unless (keys-boundp deps1 seen))
+         ((unless (fal-all-boundp deps1 seen))
           (mv nil seen))
          (seen  (hons-acons node1 t seen)))
       (topologically-ordered-p-aux (cdr nodes) graph seen)))

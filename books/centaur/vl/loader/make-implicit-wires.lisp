@@ -186,15 +186,13 @@ be able to contain implicit wires?</p>
 
 <p>We mimick these tools and disallow the implicit net, even thought the spec
 might perhaps be interpreted as allowing it, because it allows us to avoid
-certain scoping issues.</p>
-
-<p>In particular, suppose we see a procedural continuous assignment statement,
-@('assign w = ...'), where @('w') is not declared.  If this statement occurs in
-a task or a named block within an initial/always statement, should the
-declaration for @('w') be added to the module or to this more local scope?  I'm
-not sure.  So, the good thing about not inferring implicit nets for these
-assignments is that I don't have to be able to answer the question, because I'm
-not going to infer a net anyway.</p>
+certain scoping issues.  In particular, suppose we see a procedural continuous
+assignment statement, @('assign w = ...'), where @('w') is not declared.  If
+this statement occurs in a task or a named block within an initial/always
+statement, should the declaration for @('w') be added to the module or to this
+more local scope?  I'm not sure.  So, the good thing about not inferring
+implicit nets for these assignments is that I don't have to be able to answer
+the question, because I'm not going to infer a net anyway.</p>
 
 <p><b>#5</b>.  As expected, neither implementation tolerates undeclared wires
 on either side of assignments in function bodies.  This seems perfectly
@@ -288,8 +286,9 @@ signedness of the port, which isn't discussed above, but appears to be the
 correct thing to do; see @(see portdecl-sign) for details.  We place the
 implicit wire declaration at the same location as the corresponding port
 declaration, which seems like the easiest place to put it.  We also mark each
-implicit wire declaration with the @('VL_PORT_IMPLICIT') attribute, though we
-have no particular use for this.</p>
+implicit wire declaration with the @('VL_PORT_IMPLICIT') attribute.  This
+attribute is used by the @(see printer) to avoid printing any net declarations
+that were implicit.</p>
 
 <p>With regard to Case 2, we add one-bit wire declarations for any undeclared
 wires that occur within the port arguments of gate and module instances, and

@@ -35,6 +35,7 @@
 (local (std::add-default-post-define-hook :fix))
 
 (defxdoc unparam-check
+  :parents (transforms)
   :short "Sanity check for ensuring that parameters aren't shadowed by local
 declarations within functions, tasks, or other statements."
 

@@ -237,6 +237,24 @@
   :hints(("Goal" :in-theory (enable repeat))))
 
 
+(encapsulate
+  ()
+  (local (in-theory (enable repeat list-fix)))
+
+  (defun all-equalp (a x)
+    (declare (xargs :guard t :verify-guards nil))
+    (let ((__function__ 'all-equalp))
+      (declare (ignorable __function__))
+      (mbe :logic
+           (equal (list-fix x) (repeat (len x) a))
+           :exec
+           (if (consp x)
+               (and (equal a (car x))
+                    (all-equalp a (cdr x)))
+             t))))
+
+  (verify-guards all-equalp))
+
 (defund final-cdr (x)
   (declare (xargs :guard t))
   (if (atom x)

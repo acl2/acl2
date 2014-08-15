@@ -231,6 +231,7 @@ substitutions are reapplied to the result of other substitutions.</p>"
 
 
 (defsection generic-eval-requirement
+  :parents (std/lists/abstract)
   :short "Evaluate a requirement of a generic theorem for deflist/defprojection/defmapappend"
   :long "<p>See @(see acl2::std/lists/abstract).</p>"
 

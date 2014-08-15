@@ -315,3 +315,57 @@ equal.</p>
   (defcong streqv equal (char x n) 1)
   (defcong streqv equal (string-append x y) 1)
   (defcong streqv equal (string-append x y) 2))
+
+
+(defsection tuplep
+  :parents (std/basic)
+  :short "Recognizers for true-lists of some particular length."
+  :long "<p>@(call tuplep) recognizes @('n')-tuples.  For instance:</p>
+
+@({
+    (tuplep 3 '(1 2 3))     --> t
+    (tuplep 3 '(1 2))       --> nil (not long enough)
+    (tuplep 3 '(1 2 3 . 4)) --> nil (not a true-listp)
+})
+
+<p>We generally just leave this enabled.</p>"
+
+  (defun tuplep (n x)
+    (declare (xargs :guard (natp n)))
+    (mbe :logic (and (true-listp x)
+                     (equal (len x) n))
+         :exec (and (true-listp x)
+                    (eql (length x) n)))))
+
+
+(defsection impossible
+  :parents (std/basic)
+  :short "Prove that some case is unreachable using @(see guard)s."
+
+  :long "<p>Logically, @('(impossible)') just returns @('nil').</p>
+
+<p>But @('impossible') has a guard of @('nil'), so whenever you use it in a
+function, you will be obliged to prove that it cannot be executed when the
+guard holds.</p>
+
+<p>What good is this?  One use is to make sure that every possible case in a
+sum type has been covered.  For instance, you can write:</p>
+
+@({
+ (define f ((x whatever-p))
+   (case (type-of x)
+     (:foo (handle-foo ...))
+     (:bar (handle-bar ...))
+     (otherwise (impossible))))
+})
+
+<p>This is a nice style in that, if we later extend @('x') so that its type can
+also be @(':baz'), then the guard verification will fail and remind us that we
+need to extend @('f') to handle @(':baz') types as well.</p>
+
+<p>If somehow @('(impossible)') is ever executed (e.g., due to program mode
+code that is violating guards), it just causes a hard error.</p>"
+
+  (defun impossible ()
+    (declare (xargs :guard nil))
+    (er hard 'impossible "Provably impossible")))

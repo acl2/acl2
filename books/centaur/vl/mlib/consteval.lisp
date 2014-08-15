@@ -141,7 +141,7 @@
                            ACL2::ZP-WHEN-GT-0
                            ACL2::POSP-RW
                            SUM-NATS-WHEN-ALL-EQUALP-1
-                           MEMBER-EQUAL-WHEN-ALL-EQUALP
+                           acl2::MEMBER-EQUAL-WHEN-ALL-EQUALP
                            VL-HIDINDEX-P-WHEN-VL-HIDEXPR-P
                            all-equalp
                            CONSP-OF-VL-EXPRLIST->FINALWIDTHS
@@ -152,7 +152,7 @@
                            (:TYPE-PRESCRIPTION VL-NONATOM->OP$INLINE)
                            VL-EXPR-KIND-WHEN-VL-$RANDOM-EXPR-P
                            VL-NONATOM->OP-WHEN-VL-HIDINDEX-P
-                           CAR-WHEN-ALL-EQUALP
+                           acl2::CAR-WHEN-ALL-EQUALP
 
                            ACL2::CANCEL_TIMES-EQUAL-CORRECT
                            ACL2::CANCEL_PLUS-EQUAL-CORRECT

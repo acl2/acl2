@@ -39,8 +39,9 @@
 (local (include-book "data-structures/list-defthms" :dir :system))
 (local (include-book "arithmetic/top" :dir :system))
 (local (include-book "std/lists/no-duplicatesp" :dir :system))
+(local (include-book "std/lists/all-equalp" :dir :system))
 (set-inhibit-warnings "theory" "non-rec")
-
+(local (in-theory (disable all-equalp)))
 
 (defxdoc onehot-rewriting
   :parents (sexpr-rewriting)
@@ -380,28 +381,6 @@ sexprs.</p>")
                          alist))
      :hints((witness)))))
 
-
-
-
-(defsection all-equalp
-
-  (defund all-equalp (a x)
-    (declare (xargs :guard t))
-    (if (atom x)
-        t
-      (and (equal a (car x))
-           (all-equalp a (cdr x)))))
-
-  (local (in-theory (enable all-equalp)))
-
-  (defthm all-equalp-of-atom
-    (implies (atom x)
-             (all-equalp a x)))
-
-  (defthm all-equalp-of-cons
-    (equal (all-equalp a (cons b x))
-           (and (equal a b)
-                (all-equalp a x)))))
 
 
 

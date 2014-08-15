@@ -542,6 +542,7 @@ types.</p>"
          (mv t (ok) new-decl))))))
 
 (define vl-override-parameter-value
+  :parents (unparameterization)
   :short "Try to override an arbitrary parameter with its final value."
   ((decl     vl-paramdecl-p     "Some parameter from the submodule.")
    (value    vl-paramvalue-p    "Final value to override the parameter with.")
@@ -623,6 +624,7 @@ types.</p>"
   :true-listp nil)
 
 (define vl-make-paramdecloverrides-named
+  :parents (unparameterization)
   :short "Line up named parameter arguments with parameter declarations."
   ((formals vl-paramdecllist-p       "In proper order, from the submodule.")
    (actuals vl-namedparamvaluelist-p "From the instance."))
@@ -919,6 +921,7 @@ types.</p>"
     (mv t (ok) valsigma (hons-acons! name final typesigma))))
 
 (define vl-override-parameters
+  :parents (unparameterization)
   :short "Override all parameters, creating value and type sigmas."
   ((x         vl-paramdecloverridelist-p "Overrides from @(see vl-make-paramdecloverrides).")
    (valsigma  vl-sigma-p                 "Value substitution we're accumulating.")

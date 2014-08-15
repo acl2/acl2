@@ -30,6 +30,7 @@
 ;                   Sol Swords <sswords@centtech.com>
 
 (in-package "ACL2")
+(include-book "std/util/define" :dir :system)
 (include-book "tools/bstar" :dir :system)
 (include-book "../lists/list-defuns")
 (local (include-book "alist-equiv"))
@@ -197,3 +198,68 @@
          (append (caar x) (append-alist-keys (cdr x))))
        :exec
        (reverse (append-alist-keys-exec x nil))))
+
+
+(define worth-hashing1 (x n)
+  (declare (type (unsigned-byte 8) n)
+           (xargs :guard t))
+  (mbe :logic (>= (len x) n)
+       :exec
+       (cond ((eql n 0) t)
+             ((atom x) nil)
+             (t (worth-hashing1 (cdr x) (the (unsigned-byte 8) (1- n)))))))
+
+(local (in-theory (enable worth-hashing1)))
+
+(define worth-hashing (x)
+  :returns bool
+  :inline t
+  (mbe :logic (>= (len x) 18)
+       :exec (and (consp x)
+                  (worth-hashing1 (cdr x) 17))))
+
+(define fal-all-boundp-fast (keys alist)
+  (if (atom keys)
+      t
+    (and (hons-get (car keys) alist)
+         (fal-all-boundp-fast (cdr keys) alist))))
+
+(define fal-all-boundp-slow (keys alist)
+  (if (atom keys)
+      t
+    (and (hons-assoc-equal (car keys) alist)
+         (fal-all-boundp-slow (cdr keys) alist))))
+
+(define fal-all-boundp (keys alist)
+  (declare (xargs :guard t :verify-guards nil))
+  (mbe :logic
+       (if (atom keys)
+           t
+         (and (hons-assoc-equal (car keys) alist)
+              (fal-all-boundp (cdr keys) alist)))
+       :exec
+       (if (atom keys)
+           t
+         (if (and (worth-hashing keys)
+                  (worth-hashing alist))
+             (with-fast-alist alist
+               (fal-all-boundp-fast keys alist))
+           (fal-all-boundp-slow keys alist)))))
+
+(encapsulate
+  ()
+  (local (in-theory (enable fal-all-boundp)))
+
+  (defthm fal-all-boundp-fast-removal
+    (equal (fal-all-boundp-fast keys alist)
+           (fal-all-boundp keys alist))
+    :hints(("Goal" :in-theory (enable fal-all-boundp-fast))))
+
+  (defthm fal-all-boundp-slow-removal
+    (equal (fal-all-boundp-slow keys alist)
+           (fal-all-boundp keys alist))
+    :hints(("Goal" :in-theory (enable fal-all-boundp-slow))))
+
+  (verify-guards fal-all-boundp))
+
+

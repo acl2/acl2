@@ -36,6 +36,7 @@
 ; theory alone.
 
 (include-book "append")
+(include-book "all-equalp")
 (include-book "duplicity")
 (include-book "equiv")
 (include-book "final-cdr")

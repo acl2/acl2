@@ -313,7 +313,7 @@
                    acl2::true-listp-when-character-listp-rewrite
                    acl2::true-listp-when-string-listp-rewrite
                    acl2::true-listp-when-symbol-listp-rewrite
-                   car-when-all-equalp
+                   acl2::car-when-all-equalp
                    consp-when-member-equal-of-cons-listp
                    default-<-1
                    default-<-2
@@ -336,10 +336,9 @@
                    acl2::prefixp-when-equal-lengths
                    acl2::sublistp-when-prefixp
                    acl2::subsetp-member
-                   car-when-all-equalp
                    consp-when-member-equal-of-vl-defines-p
                    default-+-2
-                   member-equal-when-all-equalp
+                   acl2::member-equal-when-all-equalp
                    member-equal-when-member-equal-of-cdr-under-iff
                    )))
 

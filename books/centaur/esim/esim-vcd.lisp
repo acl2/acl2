@@ -346,7 +346,7 @@
 
          (visible-p
           ;; This is a little goofy.  I might have instead written something like
-          ;; (keys-boundp-fal wires dwires-fal) here.  But, I think due to the
+          ;; (fall-all-boundp wires dwires-fal) here.  But, I think due to the
           ;; way they are constructed, the design-wires should either include all
           ;; of the wires or none of them.  If that's the case, it should suffice
           ;; to just check the first wire, for speed.

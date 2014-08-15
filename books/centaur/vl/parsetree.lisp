@@ -1888,8 +1888,8 @@ governed by the parameter declaration itself.</p>
 <p>A consequence of these weird rules is that we cannot simply assign some
 default type to plain parameter declarations.  Instead, we need to know that
 the parameter doesn't have parts of its type specified.  To accommodate this,
-we use @(see vl-implicitparamtype) structures when the type of a parameter is
-implicitly specified, or @(see vl-explicitparamtype) structures for parameters
+we use @(see vl-implicitvalueparam) structures when the type of a parameter is
+implicitly specified, or @(see vl-explicitvalueparam) structures for parameters
 with explicitly specified types.</p>
 
 <p>All of the above parameters are <b>value parameters</b>.  In Verilog-2005,
@@ -1901,7 +1901,7 @@ also possible to have type parameters (See Section 6.20.3), e.g.,</p>
 })
 
 <p>Type parameters are quite different from value parameters.  We represent
-their types as @(see vl-typeparamtype)s.</p>"
+their types as @(see vl-typeparam)s.</p>"
 
   (:vl-implicitvalueparam
    :layout :tree
@@ -2195,7 +2195,7 @@ contain sub-statements and are mutually-recursive with @('vl-stmt-p').</p>"
                               VL-MAYBE-EXPR-P-OF-CDAR-WHEN-VL-ATTS-P
                               VL-ATTS-P-OF-CDR-WHEN-VL-ATTS-P
                               ACL2::CONSP-OF-CAR-WHEN-ALISTP
-                              car-when-all-equalp
+                              acl2::car-when-all-equalp
                               VL-EXPRLIST-P-OF-CAR-WHEN-VL-EXPRLISTLIST-P
                               VL-EXPRLIST-P-OF-CDR-WHEN-VL-EXPRLIST-P
                               VL-EXPR-P-WHEN-VL-MAYBE-EXPR-P

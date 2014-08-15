@@ -398,7 +398,7 @@ raw-lisp for better performance.</p>"
                                   ACL2::LIST-FIX-WHEN-TRUE-LISTP
                                   double-containment
                                   MEMBER-EQUAL-WHEN-MEMBER-EQUAL-OF-CDR-UNDER-IFF
-                                  MEMBER-EQUAL-WHEN-ALL-EQUALP
+                                  acl2::MEMBER-EQUAL-WHEN-ALL-EQUALP
                                   acl2::subsetp-trans
                                   acl2::subsetp-trans2
 

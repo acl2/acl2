@@ -2788,7 +2788,7 @@ minor warning for assignments where the rhs is a constant.</p>"
            posp-when-member-equal-of-pos-listp
            natp-when-member-equal-of-nat-listp
            (:ruleset tag-reasoning)
-           car-when-all-equalp
+           acl2::car-when-all-equalp
            member-equal-when-member-equal-of-cdr-under-iff
            (:ruleset basic-arithmetic-rules)
            acl2::consp-by-len
@@ -2811,7 +2811,7 @@ minor warning for assignments where the rhs is a constant.</p>"
            vl-atom-p-of-car-when-vl-atomlist-p
            acl2::true-listp-member-equal
            SUM-NATS-WHEN-ATOM
-           ALL-EQUALP-WHEN-ATOM
+           acl2::ALL-EQUALP-WHEN-ATOM
            ARG1-EXISTS-BY-ARITY
            all-equalp
 
@@ -2833,7 +2833,7 @@ minor warning for assignments where the rhs is a constant.</p>"
            VL-HIDINDEX-P-WHEN-VL-HIDEXPR-P
            (:TYPE-PRESCRIPTION VL-NONATOM->OP$INLINE)
            ACL2::NATP-WHEN-MAYBE-NATP
-           MEMBER-EQUAL-WHEN-ALL-EQUALP
+           acl2::MEMBER-EQUAL-WHEN-ALL-EQUALP
            )))
 
 
@@ -3710,8 +3710,8 @@ minor warning for assignments where the rhs is a constant.</p>"
 
 (defsection vl-expr-welltyped-p-of-vl-expr-size
 
-   (local (in-theory (e/d (all-equalp-when-atom
-                           all-equalp-of-cons)
+   (local (in-theory (e/d (acl2::all-equalp-when-atom
+                           acl2::all-equalp-of-cons)
                           (all-equalp
                            MEMBER-EQUAL-WHEN-MEMBER-EQUAL-OF-CDR-UNDER-IFF
                            ACL2::CONSP-UNDER-IFF-WHEN-TRUE-LISTP

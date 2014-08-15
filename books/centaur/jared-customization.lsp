@@ -105,6 +105,10 @@
         (brr t)
         (monitor '(:rewrite ,rule) ''(:eval :go t))))
 
+    (defmacro all-included-books ()
+      ;; Simple macro to list all books that have been included, recursively
+      '(strip-cars (global-val 'include-book-alist (w state))))
+
     (defmacro with-redef (&rest forms)
       ;; A handy macro you can use to temporarily enable redefinition, but then
       ;; keep it disabled for the rest of the session
@@ -262,3 +266,4 @@
 ;;   `(skip-until-subgoal-fn ,prefix id clause))
 
 ;; (set-inhibit-output-lst '(acl2::prove acl2::proof-checker acl2::proof-tree))
+

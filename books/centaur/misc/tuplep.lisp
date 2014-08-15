@@ -34,17 +34,10 @@
 ;  - tuple-listp: recognizer for n-tuple lists
 
 (in-package "ACL2")
-
-(defun tuplep (n x)
-  ;; Note: we leave this enabled and allow it to expand.
-  (declare (xargs :guard t))
-  (and (true-listp x)
-       (eql (mbe :logic (len x)
-                 :exec (length x))
-            n)))
+(include-book "std/basic/defs" :dir :system)
 
 (defund tuple-listp (n x)
-  (declare (xargs :guard t))
+  (declare (xargs :guard (natp n)))
   (if (atom x)
       (not x)
     (and (tuplep n (car x))

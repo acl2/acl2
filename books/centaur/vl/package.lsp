@@ -91,6 +91,9 @@
       streqv
       pos-fix
       acl2::print-base-p
+      impossible
+      tuplep
+      all-equalp
 
       std::mksym
       std::mksym-package-symbol
@@ -133,6 +136,7 @@
       with-fast-alist
       with-fast
       with-stolen
+      fal-all-boundp
 
       run-when
       run-if

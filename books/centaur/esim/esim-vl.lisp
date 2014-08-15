@@ -33,7 +33,7 @@
 (in-package "VL")
 (include-book "esim-sexpr-support")
 (include-book "centaur/vl/toe/toe-wirealist" :dir :system)
-
+(local (include-book "std/lists/all-equalp" :dir :system))
 
 (defsection esim-vl
   :parents (acl2::esim vl)

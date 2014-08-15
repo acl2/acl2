@@ -644,10 +644,10 @@ its arguments, if necessary.</p>"
                               default-cdr
                               assoc-equal-elim
                               acl2::consp-under-iff-when-true-listp
-                              member-equal-when-all-equalp
+                              acl2::member-equal-when-all-equalp
                               acl2::cancel_times-equal-correct
                               acl2::cancel_plus-equal-correct
-                              CAR-WHEN-ALL-EQUALP
+                              acl2::CAR-WHEN-ALL-EQUALP
                               CONSP-WHEN-MEMBER-EQUAL-OF-VL-MODALIST-P
                               CONSP-WHEN-MEMBER-EQUAL-OF-VL-DEFINES-P
                               CONSP-WHEN-MEMBER-EQUAL-OF-VL-COMMENTMAP-P
@@ -1161,7 +1161,6 @@ expression into a string."
                     (vl-println? ", ")
                     (vl-pp-portlist (cdr x))))))
 
-
 (define vl-netdecltype-string ((x vl-netdecltype-p))
   :returns (str stringp :rule-classes :type-prescription)
   :guard-hints (("Goal" :in-theory (enable vl-netdecltype-p)))
@@ -1666,7 +1665,10 @@ expression into a string."
 
 (defmacro vl-pp-netdecl-special-atts ()
   ''("VL_IMPLICIT"
-     "VL_PORT_IMPLICIT"
+     ;; Historically we also included VL_PORT_IMPLICIT and printed the net
+     ;; declarations.  But that's chatty and doesn't work correctly with
+     ;; ANSI-style ports lists where it's illegal to re-declare the net.  So,
+     ;; now, we hide any VL_PORT_IMPLICIT ports separately; see vl-pp-netdecl.
      "VL_UNUSED"
      "VL_MAYBE_UNUSED"
      "VL_UNSET"
@@ -1719,9 +1721,6 @@ expression into a string."
        (notes   (if (member-equal "VL_IMPLICIT" cars)
                     (cons "Implicit" notes)
                   notes))
-       (notes   (if (member-equal "VL_PORT_IMPLICIT" cars)
-                    (cons "Port implicit" notes)
-                  notes))
        (notes   (cond ((member-equal "VL_UNUSED" cars)
                        (cons "Unused" notes))
                       ((member-equal "VL_MAYBE_UNUSED" cars)
@@ -1741,7 +1740,13 @@ expression into a string."
                 (vl-println ""))))
 
 (define vl-pp-netdecl ((x vl-netdecl-p) &key (ps 'ps))
-  (b* (((vl-netdecl x) x))
+  (b* (((vl-netdecl x) x)
+       ((when (assoc-equal "VL_PORT_IMPLICIT" x.atts))
+        ;; As a special hack, we now do not print any net declarations that are
+        ;; implicitly derived from the port.  These were just noisy and may not
+        ;; be allowed if we're printing the nets for an ANSI style module.  See
+        ;; also make-implicit-wires.
+        ps))
     (vl-ps-seq
      (if (not x.atts)
          ps
