@@ -7057,7 +7057,19 @@
                (progn
                  (assert (symbolp key))
                  (let ((raw-val (gethash key ht-raw)))
-                   (or (equal logic-val raw-val)
+
+; We use equalp rather than equal below because in August, 2014 using SBCL
+; 1.2.2 (and this might happen with other Lisps in the future), backquote was
+; implemented using structures hence equal could fail.  For example, in SBCL
+; 1.2.2 we found that (equalp '`,x '`,x) evaluates to t but (equal '`,x '`,x)
+; evaluates to nil.  Here is why (again, in SBCL 1.2.2):
+
+; * '`,x
+;
+; (SB-INT:QUASIQUOTE #S(SB-IMPL::COMMA :EXPR X :KIND 0))
+; *
+
+                   (or (equalp logic-val raw-val)
                        (let ((x
                               (if *check-built-in-constants-debug*
                                   (list key :logic logic-val :raw raw-val)
