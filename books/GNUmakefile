@@ -459,19 +459,13 @@ ADDED_BOOKS := \
   system/parallel/proofs/ideal-speedup.cert \
   workshops/2009/sumners/support/examples.cert \
   workshops/2011/krug-et-al/support/MinVisor/va-to-pa-thm.cert \
-  workshops/2011/krug-et-al/support/MinVisor/setup-nested-page-tables.cert
-
-# The following has taken only a couple of minutes on a decent Linux
-# system in 2013.  However, ACL2 built on GCL 2.6.8 and Mac OS 10.6
-# cannot complete the certification without running exhausting STRING
-# storage, probably because it contains a large stobj.  So we certify
-# it only in "everything" regressions.
-
-ADDED_BOOKS += workshops/2013/hardin-hardin/support/APSP.cert
+  workshops/2011/krug-et-al/support/MinVisor/setup-nested-page-tables.cert \
+  workshops/2013/hardin-hardin/support/APSP.cert
 
 ADDED_BOOK_TARGETS :=
+
 ifneq ($(ACL2_HAS_HONS), )
-ADDED_BOOK_TARGETS := milawa-test-basic
+ADDED_BOOK_TARGETS += milawa-test-basic
 endif
 
 # Now SLOW_BOOKS is defined as the list above, except that below, we
