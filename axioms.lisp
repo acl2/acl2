@@ -5795,8 +5795,35 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defconst *summary-types*
   '(header form rules hint-events warnings time steps value splitter-rules))
 
+(defmacro with-evisc-tuple (form &key ; from *evisc-tuple-sites*
+                                 (term 'nil termp)
+                                 (ld 'nil ldp)
+                                 (trace 'nil tracep)
+                                 (abbrev 'nil abbrevp)
+                                 (gag-mode 'nil gag-modep))
+
+; Unlike without-evisc, form must return an error triple.
+
+  `(state-global-let*
+    (,@(and termp `((term-evisc-tuple (term-evisc-tuple nil state)
+                                      set-term-evisc-tuple-state)))
+     ,@(and ldp `((ld-evisc-tuple (ld-evisc-tuple state)
+                                  set-ld-evisc-tuple-state)))
+     ,@(and tracep `((trace-evisc-tuple nil set-trace-evisc-tuple)))
+     ,@(and abbrevp `((abbrev-evisc-tuple (abbrev-evisc-tuple state)
+                                          set-abbrev-evisc-tuple-state)))
+     ,@(and gag-modep `((gag-mode-evisc-tuple (gag-mode-evisc-tuple state)
+                                              set-gag-mode-evisc-tuple-state))))
+    (er-progn
+     ,@(and termp `((set-term-evisc-tuple ,term state)))
+     ,@(and ldp `((set-ld-evisc-tuple ,ld state)))
+     ,@(and tracep `((set-trace-evisc-tuple ,trace state)))
+     ,@(and abbrevp `((set-abbrev-evisc-tuple ,abbrev state)))
+     ,@(and gag-modep `((set-gag-mode-evisc-tuple ,gag-mode state)))
+     ,form)))
+
 (defun with-output-fn (ctx args off on gag-mode off-on-p gag-p stack
-                           summary summary-p)
+                           summary summary-p evisc evisc-p)
   (declare (xargs :mode :program
                   :guard (true-listp args)))
   (cond
@@ -5814,11 +5841,14 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
              (cadr args)
              '(t :goals nil)) ; keep this list in sync with set-gag-mode
             (with-output-fn ctx (cddr args) off on (cadr args) off-on-p t
-                           stack summary summary-p))
+                            stack summary summary-p evisc evisc-p))
            (t (illegal ctx
                        illegal-value-string
                        (list (cons #\0 (cadr args))
                              (cons #\1 :gag-mode))))))
+         ((eq (car args) :evisc) ; we leave it to without-evisc to check syntax
+          (with-output-fn ctx (cddr args) off on gag-mode off-on-p gag-p
+                            stack summary summary-p (cadr args) t))
          ((eq (car args) :stack)
           (cond
            (stack
@@ -5828,7 +5858,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                      (list (cons #\0 'with-output))))
            ((member-eq (cadr args) '(:push :pop))
             (with-output-fn ctx (cddr args) off on gag-mode off-on-p gag-p
-                           (cadr args) summary summary-p))
+                            (cadr args) summary summary-p evisc evisc-p))
            (t (illegal ctx
                        illegal-value-string
                        (list (cons #\0 (cadr args))
@@ -5850,7 +5880,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                 (cons #\1 *summary-types*))))
                 (t
                  (with-output-fn ctx (cddr args) off on gag-mode off-on-p gag-p
-                                 stack (cadr args) t))))
+                                 stack
+                                 (cadr args) t
+                                 evisc evisc-p))))
          ((not (member-eq (car args) '(:on :off)))
           (illegal ctx
                    "~x0 is not a legal keyword for a call of with-output.  ~
@@ -5870,7 +5902,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                                      :all
                                                    syms)
                                                  gag-mode t gag-p stack summary
-                                                 summary-p)))
+                                                 summary-p evisc evisc-p)))
                            (t ; (eq (car args) :off)
                             (and (null off)
                                  (with-output-fn ctx (cddr args)
@@ -5878,7 +5910,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                                      :all
                                                    syms)
                                                  on gag-mode t gag-p stack
-                                                 summary summary-p)))))
+                                                 summary summary-p
+                                                 evisc evisc-p)))))
                     (t (illegal ctx
                                 illegal-value-string
                                 (list (cons #\0 (cadr args))
@@ -5910,50 +5943,53 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                    (cons #\2 on)
                    (cons #\3 (set-difference-eq on *valid-output-names*)))))
    (t
-    `(state-global-let*
-      (,@
-       (and gag-p
-            `((gag-mode (f-get-global 'gag-mode state)
-                        set-gag-mode-fn)))
-       ,@
-       (and (or off-on-p
-                (eq stack :pop))
-            '((inhibit-output-lst (f-get-global 'inhibit-output-lst state))))
-       ,@
-       (and stack
-            '((inhibit-output-lst-stack
-               (f-get-global 'inhibit-output-lst-stack state))))
-       ,@
-       (and summary-p
-            `((inhibited-summary-types
-               ,(if (eq summary :all)
-                    nil
-                  (list 'quote
-                        (set-difference-eq *summary-types* summary)))))))
-      (er-progn
-       ,@(and gag-p
-              `((pprogn (set-gag-mode ,gag-mode)
-                        (value nil))))
-       ,@(and stack
-              `((pprogn ,(if (eq stack :pop)
-                             '(pop-inhibit-output-lst-stack state)
-                           '(push-inhibit-output-lst-stack state))
-                        (value nil))))
-       ,@(and off-on-p
-              `((set-inhibit-output-lst
-                 ,(cond ((eq on :all)
-                         (if (eq off :all)
-                             '*valid-output-names*
-                           `(quote ,off)))
-                        ((eq off :all)
-                         `(set-difference-eq *valid-output-names* ',on))
-                        (t
-                         `(union-eq ',off
-                                    (set-difference-eq
-                                     (f-get-global 'inhibit-output-lst
-                                                   state)
-                                     ',on)))))))
-       ,(car args))))))
+    (let ((form
+           `(state-global-let*
+             (,@
+              (and gag-p
+                   `((gag-mode (f-get-global 'gag-mode state)
+                               set-gag-mode-fn)))
+              ,@
+              (and (or off-on-p
+                       (eq stack :pop))
+                   '((inhibit-output-lst (f-get-global 'inhibit-output-lst state))))
+              ,@
+              (and stack
+                   '((inhibit-output-lst-stack
+                      (f-get-global 'inhibit-output-lst-stack state))))
+              ,@
+              (and summary-p
+                   `((inhibited-summary-types
+                      ,(if (eq summary :all)
+                           nil
+                         (list 'quote
+                               (set-difference-eq *summary-types* summary)))))))
+             (er-progn
+              ,@(and gag-p
+                     `((pprogn (set-gag-mode ,gag-mode)
+                               (value nil))))
+              ,@(and stack
+                     `((pprogn ,(if (eq stack :pop)
+                                    '(pop-inhibit-output-lst-stack state)
+                                  '(push-inhibit-output-lst-stack state))
+                               (value nil))))
+              ,@(and off-on-p
+                     `((set-inhibit-output-lst
+                        ,(cond ((eq on :all)
+                                (if (eq off :all)
+                                    '*valid-output-names*
+                                  `(quote ,off)))
+                               ((eq off :all)
+                                `(set-difference-eq *valid-output-names* ',on))
+                               (t
+                                `(union-eq ',off
+                                           (set-difference-eq
+                                            (f-get-global 'inhibit-output-lst
+                                                          state)
+                                            ',on)))))))
+              ,(car args)))))
+      (cond (evisc-p `(with-evisc-tuple ,form ,@evisc))
+            (t form))))))
 
 #+acl2-loop-only
 (defun last (l)
@@ -6004,8 +6040,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 #+acl2-loop-only
 (defmacro with-output (&rest args)
-  (let ((val
-         (with-output-fn 'with-output args nil nil nil nil nil nil nil nil)))
+  (let ((val (with-output-fn 'with-output
+                             args nil nil nil nil nil nil nil nil nil nil)))
     (or val
         (illegal 'with-output
                  "Macroexpansion of ~q0 failed."
