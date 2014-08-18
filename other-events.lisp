@@ -2890,13 +2890,13 @@
      (> ACL2-BUILT-INS)
      (>= ACL2-BUILT-INS)
      (@ ACL2-BUILT-INS)
-     (|A Flying Tour of ACL2| |Pages Written Especially for the Tours|)
-     (|A Sketch of How the Rewriter Works|
-      |Pages Written Especially for the Tours|)
-     (|A Tiny Warning Sign| |Pages Written Especially for the Tours|)
-     (|A Trivial Proof| |Pages Written Especially for the Tours|)
-     (|A Typical State| |Pages Written Especially for the Tours|)
-     (|A Walking Tour of ACL2| |Pages Written Especially for the Tours|)
+;    (|A Flying Tour of ACL2| |Pages Written Especially for the Tours|)
+;    (|A Sketch of How the Rewriter Works|
+;     |Pages Written Especially for the Tours|)
+;    (|A Tiny Warning Sign| |Pages Written Especially for the Tours|)
+;    (|A Trivial Proof| |Pages Written Especially for the Tours|)
+;    (|A Typical State| |Pages Written Especially for the Tours|)
+;    (|A Walking Tour of ACL2| |Pages Written Especially for the Tours|)
      (A! MISCELLANEOUS)
      (ABORT! MISCELLANEOUS)
      (ABOUT-ACL2 legacy-orphans)
@@ -2904,16 +2904,16 @@
      (ACCUMULATED-PERSISTENCE OTHER)
      (ACCUMULATED-PERSISTENCE-SUBTLETIES ACCUMULATED-PERSISTENCE)
      (ACKNOWLEDGMENTS MISCELLANEOUS)
-     (|ACL2 Characters| |Pages Written Especially for the Tours|)
-     (|ACL2 Conses or Ordered Pairs| |Pages Written Especially for the Tours|)
-     (|ACL2 Strings| |Pages Written Especially for the Tours|)
-     (|ACL2 Symbols| |Pages Written Especially for the Tours|)
-     (|ACL2 System Architecture| |Pages Written Especially for the Tours|)
-     (|ACL2 as an Interactive Theorem Prover|
-      |Pages Written Especially for the Tours|)
-     (|ACL2 as an Interactive Theorem Prover (cont)|
-      |Pages Written Especially for the Tours|)
-     (|ACL2 is an Untyped Language| |Pages Written Especially for the Tours|)
+;    (|ACL2 Characters| |Pages Written Especially for the Tours|)
+;    (|ACL2 Conses or Ordered Pairs| |Pages Written Especially for the Tours|)
+;    (|ACL2 Strings| |Pages Written Especially for the Tours|)
+;    (|ACL2 Symbols| |Pages Written Especially for the Tours|)
+;    (|ACL2 System Architecture| |Pages Written Especially for the Tours|)
+;    (|ACL2 as an Interactive Theorem Prover|
+;     |Pages Written Especially for the Tours|)
+;    (|ACL2 as an Interactive Theorem Prover (cont)|
+;     |Pages Written Especially for the Tours|)
+;    (|ACL2 is an Untyped Language| |Pages Written Especially for the Tours|)
      (ACL2-AS-STANDALONE-PROGRAM ACL2-TUTORIAL)
      (ACL2-BUILT-INS PROGRAMMING)
      (ACL2-COUNT ACL2-BUILT-INS)
@@ -2984,16 +2984,16 @@
      (ASSOC-STRING-EQUAL ACL2-BUILT-INS)
      (ATOM ACL2-BUILT-INS)
      (ATOM-LISTP ACL2-BUILT-INS)
-     (|About Models| |Pages Written Especially for the Tours|)
-     (|About Types| |Pages Written Especially for the Tours|)
-     (|About the ACL2 Home Page| |Pages Written Especially for the Tours|)
-     (|About the Admission of Recursive Definitions|
-      |Pages Written Especially for the Tours|)
-     (|About the Prompt| |Pages Written Especially for the Tours|)
-     (|An Example Common Lisp Function Definition|
-      |Pages Written Especially for the Tours|)
-     (|An Example of ACL2 in Use| |Pages Written Especially for the Tours|)
-     (|Analyzing Common Lisp Models| |Pages Written Especially for the Tours|)
+;    (|About Models| |Pages Written Especially for the Tours|)
+;    (|About Types| |Pages Written Especially for the Tours|)
+;    (|About the ACL2 Home Page| |Pages Written Especially for the Tours|)
+;    (|About the Admission of Recursive Definitions|
+;     |Pages Written Especially for the Tours|)
+;    (|About the Prompt| |Pages Written Especially for the Tours|)
+;    (|An Example Common Lisp Function Definition|
+;     |Pages Written Especially for the Tours|)
+;    (|An Example of ACL2 in Use| |Pages Written Especially for the Tours|)
+;    (|Analyzing Common Lisp Models| |Pages Written Especially for the Tours|)
      (BACKCHAIN-LIMIT MISCELLANEOUS)
      (BACKCHAIN-LIMIT-RW MISCELLANEOUS)
      (BACKTRACK MISCELLANEOUS)
@@ -3149,11 +3149,11 @@
      (CW ACL2-BUILT-INS)
      (CW! ACL2-BUILT-INS)
      (CW-GSTACK OTHER)
-     (|Common Lisp| |Pages Written Especially for the Tours|)
-     (|Common Lisp as a Modeling Language|
-      |Pages Written Especially for the Tours|)
-     (|Conversion| |Pages Written Especially for the Tours|)
-     (|Corroborating Models| |Pages Written Especially for the Tours|)
+;    (|Common Lisp| |Pages Written Especially for the Tours|)
+;    (|Common Lisp as a Modeling Language|
+;     |Pages Written Especially for the Tours|)
+;    (|Conversion| |Pages Written Especially for the Tours|)
+;    (|Corroborating Models| |Pages Written Especially for the Tours|)
      (DEAD-EVENTS OTHER)
      (DEALING-WITH-KEY-COMBINATIONS-OF-FUNCTION-SYMBOLS
       INTRODUCTION-TO-THE-THEOREM-PROVER)
@@ -3310,7 +3310,7 @@
      (EXTENDED-METAFUNCTIONS MISCELLANEOUS)
      (EXTERNAL-FORMAT IO)
      (EXTRA-INFO GUARD)
-     (|Evaluating App on Sample Input| |Pages Written Especially for the Tours|)
+;    (|Evaluating App on Sample Input| |Pages Written Especially for the Tours|)
      (F-GET-GLOBAL ACL2-BUILT-INS)
      (F-PUT-GLOBAL ACL2-BUILT-INS)
      (ACL2-PC::FAIL PROOF-CHECKER-COMMANDS)
@@ -3370,12 +3370,12 @@
      (FUNCTIONAL-INSTANTIATION-IN-ACL2R MISCELLANEOUS)
      (FURTHER-INFORMATION-ON-REWRITING INTRODUCTION-TO-THE-THEOREM-PROVER)
      (FUTURE-WORK-RELATED-TO-THE-TAU-SYSTEM INTRODUCTION-TO-THE-TAU-SYSTEM)
-     (|Flawed Induction Candidates in App Example|
-      |Pages Written Especially for the Tours|)
-     (|Free Variables in Top-Level Input|
-      |Pages Written Especially for the Tours|)
-     (|Functions for Manipulating these Objects|
-      |Pages Written Especially for the Tours|)
+;    (|Flawed Induction Candidates in App Example|
+;     |Pages Written Especially for the Tours|)
+;    (|Free Variables in Top-Level Input|
+;     |Pages Written Especially for the Tours|)
+;    (|Functions for Manipulating these Objects|
+;     |Pages Written Especially for the Tours|)
      (GAG-MODE MISCELLANEOUS)
      (GC$ MISCELLANEOUS)
      (GC-VERBOSE MISCELLANEOUS)
@@ -3411,10 +3411,10 @@
      (GUARD-QUICK-REFERENCE GUARD)
      (GUARDS-AND-EVALUATION GUARD)
      (GUARDS-FOR-SPECIFICATION GUARD)
-     (|Guards| |Pages Written Especially for the Tours|)
-     (|Guessing the Type of a Newly Admitted Function|
-      |Pages Written Especially for the Tours|)
-     (|Guiding the ACL2 Theorem Prover| |Pages Written Especially for the Tours|)
+;    (|Guards| |Pages Written Especially for the Tours|)
+;    (|Guessing the Type of a Newly Admitted Function|
+;     |Pages Written Especially for the Tours|)
+;    (|Guiding the ACL2 Theorem Prover| |Pages Written Especially for the Tours|)
      (HANDS-OFF MISCELLANEOUS)
      (HARD-ERROR ACL2-BUILT-INS)
      (HEADER ARRAYS)
@@ -3446,14 +3446,14 @@
      (HONS-SUMMARY HONS-AND-MEMOIZATION)
      (HONS-WASH HONS-AND-MEMOIZATION)
      (ACL2-PC::HYPS PROOF-CHECKER-COMMANDS)
-     (|Hey Wait!  Is ACL2 Typed or Untyped(Q)|
-      |Pages Written Especially for the Tours|)
-     (|How Long Does It Take to Become an Effective User(Q)|
-      |Pages Written Especially for the Tours|)
-     (|How To Find Out about ACL2 Functions|
-      |Pages Written Especially for the Tours|)
-     (|How To Find Out about ACL2 Functions (cont)|
-      |Pages Written Especially for the Tours|)
+;    (|Hey Wait!  Is ACL2 Typed or Untyped(Q)|
+;     |Pages Written Especially for the Tours|)
+;    (|How Long Does It Take to Become an Effective User(Q)|
+;     |Pages Written Especially for the Tours|)
+;    (|How To Find Out about ACL2 Functions|
+;     |Pages Written Especially for the Tours|)
+;    (|How To Find Out about ACL2 Functions (cont)|
+;     |Pages Written Especially for the Tours|)
      (I-AM-HERE MISCELLANEOUS)
      (I-CLOSE REAL)
      (I-LARGE REAL)
@@ -3662,10 +3662,10 @@
      (MV-NTH ACL2-BUILT-INS)
      (MV? ACL2-BUILT-INS)
      (MV?-LET ACL2-BUILT-INS)
-     (|Modeling in ACL2| |Pages Written Especially for the Tours|)
-     (|Models in Engineering| |Pages Written Especially for the Tours|)
-     (|Models of Computer Hardware and Software|
-      |Pages Written Especially for the Tours|)
+;    (|Modeling in ACL2| |Pages Written Especially for the Tours|)
+;    (|Models in Engineering| |Pages Written Especially for the Tours|)
+;    (|Models of Computer Hardware and Software|
+;     |Pages Written Especially for the Tours|)
      (NAME MISCELLANEOUS)
      (NAT-LISTP ACL2-BUILT-INS)
      (NATP ACL2-BUILT-INS)
@@ -3788,9 +3788,9 @@
      (NUMBER-SUBTREES HONS-AND-MEMOIZATION)
      (NUMERATOR ACL2-BUILT-INS)
      (ACL2-PC::NX PROOF-CHECKER-COMMANDS)
-     (|Name the Formula Above| |Pages Written Especially for the Tours|)
-     (|Nontautological Subgoals| |Pages Written Especially for the Tours|)
-     (|Numbers in ACL2| |Pages Written Especially for the Tours|)
+;    (|Name the Formula Above| |Pages Written Especially for the Tours|)
+;    (|Nontautological Subgoals| |Pages Written Especially for the Tours|)
+;    (|Numbers in ACL2| |Pages Written Especially for the Tours|)
      (O-FINP ACL2-BUILT-INS)
      (O-FIRST-COEFF ACL2-BUILT-INS)
      (O-FIRST-EXPT ACL2-BUILT-INS)
@@ -3824,22 +3824,22 @@
      (OTHER legacy-orphans)
      (OUTPUT-TO-FILE IO)
      (OVERRIDE-HINTS MISCELLANEOUS)
-     (|On the Naming of Subgoals| |Pages Written Especially for the Tours|)
-     (|Other Requirements| |Pages Written Especially for the Tours|)
-     (|Overview of the Expansion of ENDP in the Base Case|
-      |Pages Written Especially for the Tours|)
-     (|Overview of the Expansion of ENDP in the Induction Step|
-      |Pages Written Especially for the Tours|)
-     (|Overview of the Final Simplification in the Base Case|
-      |Pages Written Especially for the Tours|)
-     (|Overview of the Proof of a Trivial Consequence|
-      |Pages Written Especially for the Tours|)
-     (|Overview of the Simplification of the Base Case to T|
-      |Pages Written Especially for the Tours|)
-     (|Overview of the Simplification of the Induction Conclusion|
-      |Pages Written Especially for the Tours|)
-     (|Overview of the Simplification of the Induction Step to T|
-      |Pages Written Especially for the Tours|)
+;    (|On the Naming of Subgoals| |Pages Written Especially for the Tours|)
+;    (|Other Requirements| |Pages Written Especially for the Tours|)
+;    (|Overview of the Expansion of ENDP in the Base Case|
+;     |Pages Written Especially for the Tours|)
+;    (|Overview of the Expansion of ENDP in the Induction Step|
+;     |Pages Written Especially for the Tours|)
+;    (|Overview of the Final Simplification in the Base Case|
+;     |Pages Written Especially for the Tours|)
+;    (|Overview of the Proof of a Trivial Consequence|
+;     |Pages Written Especially for the Tours|)
+;    (|Overview of the Simplification of the Base Case to T|
+;     |Pages Written Especially for the Tours|)
+;    (|Overview of the Simplification of the Induction Conclusion|
+;     |Pages Written Especially for the Tours|)
+;    (|Overview of the Simplification of the Induction Step to T|
+;     |Pages Written Especially for the Tours|)
      (ACL2-PC::P PROOF-CHECKER-COMMANDS)
      (P! MISCELLANEOUS)
      (ACL2-PC::P-TOP PROOF-CHECKER-COMMANDS)
@@ -3948,11 +3948,11 @@
      (PUT-ASSOC-EQL ACL2-BUILT-INS)
      (PUT-ASSOC-EQUAL ACL2-BUILT-INS)
      (PUTPROP ACL2-BUILT-INS)
-     (|Pages Written Especially for the Tours| legacy-orphans)
-     (|Perhaps| |Pages Written Especially for the Tours|)
-     (|Popping out of an Inductive Proof|
-      |Pages Written Especially for the Tours|)
-     (|Proving Theorems about Models| |Pages Written Especially for the Tours|)
+;    (|Pages Written Especially for the Tours| legacy-orphans)
+;    (|Perhaps| |Pages Written Especially for the Tours|)
+;    (|Popping out of an Inductive Proof|
+;     |Pages Written Especially for the Tours|)
+;    (|Proving Theorems about Models| |Pages Written Especially for the Tours|)
      (Q OTHER)
      (QUANTIFIER-TUTORIAL DEFUN-SK)
      (QUANTIFIERS DEFUN-SK)
@@ -4054,10 +4054,10 @@
      (ACL2-PC::RUN-INSTR-ON-NEW-GOALS PROOF-CHECKER-COMMANDS)
      (RUNE THEORIES)
      (ACL2-PC::RUNES PROOF-CHECKER-COMMANDS)
-     (|Revisiting the Admission of App| |Pages Written Especially for the Tours|)
-     (|Rewrite Rules are Generated from DEFTHM Events|
-      |Pages Written Especially for the Tours|)
-     (|Running Models| |Pages Written Especially for the Tours|)
+;    (|Revisiting the Admission of App| |Pages Written Especially for the Tours|)
+;    (|Rewrite Rules are Generated from DEFTHM Events|
+;     |Pages Written Especially for the Tours|)
+;    (|Running Models| |Pages Written Especially for the Tours|)
      (ACL2-PC::S PROOF-CHECKER-COMMANDS)
      (ACL2-PC::S-PROP PROOF-CHECKER-COMMANDS)
      (ACL2-PC::SAVE PROOF-CHECKER-COMMANDS)
@@ -4257,11 +4257,11 @@
      (SYS-CALL ACL2-BUILT-INS)
      (SYS-CALL+ ACL2-BUILT-INS)
      (SYS-CALL-STATUS ACL2-BUILT-INS)
-     (|Subsumption of Induction Candidates in App Example|
-      |Pages Written Especially for the Tours|)
-     (|Suggested Inductions in the Associativity of App Example|
-      |Pages Written Especially for the Tours|)
-     (|Symbolic Execution of Models| |Pages Written Especially for the Tours|)
+;    (|Subsumption of Induction Candidates in App Example|
+;     |Pages Written Especially for the Tours|)
+;    (|Suggested Inductions in the Associativity of App Example|
+;     |Pages Written Especially for the Tours|)
+;    (|Symbolic Execution of Models| |Pages Written Especially for the Tours|)
      (TABLE EVENTS)
      (TAKE ACL2-BUILT-INS)
      (TAU-DATA HISTORY)
@@ -4321,80 +4321,80 @@
      (TYPE-SET-INVERTER RULE-CLASSES)
      (TYPE-SPEC DECLARE)
      (TYPESPEC-CHECK MISCELLANEOUS)
-     (|The Admission of App| |Pages Written Especially for the Tours|)
-     (|The Associativity of App| |Pages Written Especially for the Tours|)
-     (|The Base Case in the App Example|
-      |Pages Written Especially for the Tours|)
-     (|The End of the Flying Tour| |Pages Written Especially for the Tours|)
-     (|The End of the Proof of the Associativity of App|
-      |Pages Written Especially for the Tours|)
-     (|The End of the Walking Tour| |Pages Written Especially for the Tours|)
-     (|The Event Summary| |Pages Written Especially for the Tours|)
-     (|The Expansion of ENDP in the Induction Step (Step 0)|
-      |Pages Written Especially for the Tours|)
-     (|The Expansion of ENDP in the Induction Step (Step 1)|
-      |Pages Written Especially for the Tours|)
-     (|The Expansion of ENDP in the Induction Step (Step 2)|
-      |Pages Written Especially for the Tours|)
-     (|The Falling Body Model| |Pages Written Especially for the Tours|)
-     (|The Final Simplification in the Base Case (Step 0)|
-      |Pages Written Especially for the Tours|)
-     (|The Final Simplification in the Base Case (Step 1)|
-      |Pages Written Especially for the Tours|)
-     (|The Final Simplification in the Base Case (Step 2)|
-      |Pages Written Especially for the Tours|)
-     (|The Final Simplification in the Base Case (Step 3)|
-      |Pages Written Especially for the Tours|)
-     (|The First Application of the Associativity Rule|
-      |Pages Written Especially for the Tours|)
-     (|The Induction Scheme Selected for the App Example|
-      |Pages Written Especially for the Tours|)
-     (|The Induction Step in the App Example|
-      |Pages Written Especially for the Tours|)
-     (|The Instantiation of the Induction Scheme|
-      |Pages Written Especially for the Tours|)
-     (|The Justification of the Induction Scheme|
-      |Pages Written Especially for the Tours|)
-     (|The Proof of the Associativity of App|
-      |Pages Written Especially for the Tours|)
-     (|The Q.E.D. Message| |Pages Written Especially for the Tours|)
-     (|The Rules used in the Associativity of App Proof|
-      |Pages Written Especially for the Tours|)
-     (|The Simplification of the Induction Conclusion (Step 0)|
-      |Pages Written Especially for the Tours|)
-     (|The Simplification of the Induction Conclusion (Step 1)|
-      |Pages Written Especially for the Tours|)
-     (|The Simplification of the Induction Conclusion (Step 10)|
-      |Pages Written Especially for the Tours|)
-     (|The Simplification of the Induction Conclusion (Step 11)|
-      |Pages Written Especially for the Tours|)
-     (|The Simplification of the Induction Conclusion (Step 12)|
-      |Pages Written Especially for the Tours|)
-     (|The Simplification of the Induction Conclusion (Step 2)|
-      |Pages Written Especially for the Tours|)
-     (|The Simplification of the Induction Conclusion (Step 3)|
-      |Pages Written Especially for the Tours|)
-     (|The Simplification of the Induction Conclusion (Step 4)|
-      |Pages Written Especially for the Tours|)
-     (|The Simplification of the Induction Conclusion (Step 5)|
-      |Pages Written Especially for the Tours|)
-     (|The Simplification of the Induction Conclusion (Step 6)|
-      |Pages Written Especially for the Tours|)
-     (|The Simplification of the Induction Conclusion (Step 7)|
-      |Pages Written Especially for the Tours|)
-     (|The Simplification of the Induction Conclusion (Step 8)|
-      |Pages Written Especially for the Tours|)
-     (|The Simplification of the Induction Conclusion (Step 9)|
-      |Pages Written Especially for the Tours|)
-     (|The Summary of the Proof of the Trivial Consequence|
-      |Pages Written Especially for the Tours|)
-     (|The Theorem that App is Associative|
-      |Pages Written Especially for the Tours|)
-     (|The Time Taken to do the Associativity of App Proof|
-      |Pages Written Especially for the Tours|)
-     (|The Tours| |Pages Written Especially for the Tours|)
-     (|The WARNING about the Trivial Consequence|
-      |Pages Written Especially for the Tours|)
+;    (|The Admission of App| |Pages Written Especially for the Tours|)
+;    (|The Associativity of App| |Pages Written Especially for the Tours|)
+;    (|The Base Case in the App Example|
+;     |Pages Written Especially for the Tours|)
+;    (|The End of the Flying Tour| |Pages Written Especially for the Tours|)
+;    (|The End of the Proof of the Associativity of App|
+;     |Pages Written Especially for the Tours|)
+;    (|The End of the Walking Tour| |Pages Written Especially for the Tours|)
+;    (|The Event Summary| |Pages Written Especially for the Tours|)
+;    (|The Expansion of ENDP in the Induction Step (Step 0)|
+;     |Pages Written Especially for the Tours|)
+;    (|The Expansion of ENDP in the Induction Step (Step 1)|
+;     |Pages Written Especially for the Tours|)
+;    (|The Expansion of ENDP in the Induction Step (Step 2)|
+;     |Pages Written Especially for the Tours|)
+;    (|The Falling Body Model| |Pages Written Especially for the Tours|)
+;    (|The Final Simplification in the Base Case (Step 0)|
+;     |Pages Written Especially for the Tours|)
+;    (|The Final Simplification in the Base Case (Step 1)|
+;     |Pages Written Especially for the Tours|)
+;    (|The Final Simplification in the Base Case (Step 2)|
+;     |Pages Written Especially for the Tours|)
+;    (|The Final Simplification in the Base Case (Step 3)|
+;     |Pages Written Especially for the Tours|)
+;    (|The First Application of the Associativity Rule|
+;     |Pages Written Especially for the Tours|)
+;    (|The Induction Scheme Selected for the App Example|
+;     |Pages Written Especially for the Tours|)
+;    (|The Induction Step in the App Example|
+;     |Pages Written Especially for the Tours|)
+;    (|The Instantiation of the Induction Scheme|
+;     |Pages Written Especially for the Tours|)
+;    (|The Justification of the Induction Scheme|
+;     |Pages Written Especially for the Tours|)
+;    (|The Proof of the Associativity of App|
+;     |Pages Written Especially for the Tours|)
+;    (|The Q.E.D. Message| |Pages Written Especially for the Tours|)
+;    (|The Rules used in the Associativity of App Proof|
+;     |Pages Written Especially for the Tours|)
+;    (|The Simplification of the Induction Conclusion (Step 0)|
+;     |Pages Written Especially for the Tours|)
+;    (|The Simplification of the Induction Conclusion (Step 1)|
+;     |Pages Written Especially for the Tours|)
+;    (|The Simplification of the Induction Conclusion (Step 10)|
+;     |Pages Written Especially for the Tours|)
+;    (|The Simplification of the Induction Conclusion (Step 11)|
+;     |Pages Written Especially for the Tours|)
+;    (|The Simplification of the Induction Conclusion (Step 12)|
+;     |Pages Written Especially for the Tours|)
+;    (|The Simplification of the Induction Conclusion (Step 2)|
+;     |Pages Written Especially for the Tours|)
+;    (|The Simplification of the Induction Conclusion (Step 3)|
+;     |Pages Written Especially for the Tours|)
+;    (|The Simplification of the Induction Conclusion (Step 4)|
+;     |Pages Written Especially for the Tours|)
+;    (|The Simplification of the Induction Conclusion (Step 5)|
+;     |Pages Written Especially for the Tours|)
+;    (|The Simplification of the Induction Conclusion (Step 6)|
+;     |Pages Written Especially for the Tours|)
+;    (|The Simplification of the Induction Conclusion (Step 7)|
+;     |Pages Written Especially for the Tours|)
+;    (|The Simplification of the Induction Conclusion (Step 8)|
+;     |Pages Written Especially for the Tours|)
+;    (|The Simplification of the Induction Conclusion (Step 9)|
+;     |Pages Written Especially for the Tours|)
+;    (|The Summary of the Proof of the Trivial Consequence|
+;     |Pages Written Especially for the Tours|)
+;    (|The Theorem that App is Associative|
+;     |Pages Written Especially for the Tours|)
+;    (|The Time Taken to do the Associativity of App Proof|
+;     |Pages Written Especially for the Tours|)
+;    (|The Tours| |Pages Written Especially for the Tours|)
+;    (|The WARNING about the Trivial Consequence|
+;     |Pages Written Especially for the Tours|)
      (U HISTORY)
      (UBT HISTORY)
      (UBT! HISTORY)
@@ -4437,9 +4437,9 @@
      (USING-COMPUTED-HINTS-8 MISCELLANEOUS)
      (USING-ENABLED-RULES MISCELLANEOUS)
      (USING-TABLES-EFFICIENTLY TABLE)
-     (|Undocumented Topic| |Pages Written Especially for the Tours|)
-     (|Using the Associativity of App to Prove a Trivial Consequence|
-      |Pages Written Especially for the Tours|)
+;    (|Undocumented Topic| |Pages Written Especially for the Tours|)
+;    (|Using the Associativity of App to Prove a Trivial Consequence|
+;     |Pages Written Especially for the Tours|)
      (VALUE-TRIPLE EVENTS)
      (VERBOSE-PSTACK PSTACK)
      (VERIFY PROOF-CHECKER)
@@ -4482,19 +4482,19 @@
      (ACL2-PC::WRAP-INDUCT PROOF-CHECKER-COMMANDS)
      (ACL2-PC::WRAP1 PROOF-CHECKER-COMMANDS)
      (WRITE-BYTE$ ACL2-BUILT-INS)
-     (|What Is ACL2(Q)| |Pages Written Especially for the Tours|)
-     (|What is Required of the User(Q)| |Pages Written Especially for the Tours|)
-     (|What is a Mathematical Logic(Q)| |Pages Written Especially for the Tours|)
-     (|What is a Mechanical Theorem Prover(Q)|
-      |Pages Written Especially for the Tours|)
-     (|What is a Mechanical Theorem Prover(Q) (cont)|
-      |Pages Written Especially for the Tours|)
+;    (|What Is ACL2(Q)| |Pages Written Especially for the Tours|)
+;    (|What is Required of the User(Q)| |Pages Written Especially for the Tours|)
+;    (|What is a Mathematical Logic(Q)| |Pages Written Especially for the Tours|)
+;    (|What is a Mechanical Theorem Prover(Q)|
+;     |Pages Written Especially for the Tours|)
+;    (|What is a Mechanical Theorem Prover(Q) (cont)|
+;     |Pages Written Especially for the Tours|)
      (ACL2-PC::X PROOF-CHECKER-COMMANDS)
      (ACL2-PC::X-DUMB PROOF-CHECKER-COMMANDS)
      (XARGS MISCELLANEOUS)
      (XOR ACL2-BUILT-INS)
-     (|You Must Think about the Use of a Formula as a Rule|
-      |Pages Written Especially for the Tours|)
+;    (|You Must Think about the Use of a Formula as a Rule|
+;     |Pages Written Especially for the Tours|)
      (ZERO-TEST-IDIOMS PROGRAMMING)
      (ZEROP ACL2-BUILT-INS)
      (ZIP ACL2-BUILT-INS)
