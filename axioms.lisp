@@ -5798,7 +5798,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defmacro with-evisc-tuple (form &key ; from *evisc-tuple-sites*
                                  (term 'nil termp)
                                  (ld 'nil ldp)
-                                 (trace 'nil tracep)
                                  (abbrev 'nil abbrevp)
                                  (gag-mode 'nil gag-modep))
 
@@ -5809,7 +5808,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                       set-term-evisc-tuple-state)))
      ,@(and ldp `((ld-evisc-tuple (ld-evisc-tuple state)
                                   set-ld-evisc-tuple-state)))
-     ,@(and tracep `((trace-evisc-tuple nil set-trace-evisc-tuple)))
      ,@(and abbrevp `((abbrev-evisc-tuple (abbrev-evisc-tuple state)
                                           set-abbrev-evisc-tuple-state)))
      ,@(and gag-modep `((gag-mode-evisc-tuple (gag-mode-evisc-tuple state)
@@ -5817,7 +5815,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (er-progn
      ,@(and termp `((set-term-evisc-tuple ,term state)))
      ,@(and ldp `((set-ld-evisc-tuple ,ld state)))
-     ,@(and tracep `((set-trace-evisc-tuple ,trace state)))
      ,@(and abbrevp `((set-abbrev-evisc-tuple ,abbrev state)))
      ,@(and gag-modep `((set-gag-mode-evisc-tuple ,gag-mode state)))
      ,form)))
@@ -12532,7 +12529,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     set-debugger-enable-fn ; lisp::*break-enable* and *debugger-hook*
     break$ ; break
     prin1$ prin1-with-slashes
-    member-equal assoc-equal subsetp-equal no-duplicatesp-equal
+    member-equal assoc-equal subsetp-equal
     rassoc-equal remove-equal position-equal
     maybe-finish-output$
     symbol-in-current-package-p
@@ -12665,7 +12662,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     bind-acl2-time-limit
     defattach defproxy
     count
-    member assoc subsetp no-duplicatesp rassoc remove remove-duplicates
+    member assoc subsetp rassoc remove remove-duplicates
     position
     catch-step-limit
     step-limit-error
