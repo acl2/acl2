@@ -6,8 +6,8 @@ or use ../cert.pl ccg.cert ccg-settings-dependencies.cert
 
 To get CCG to do termination proofs, use the following two commands.
 
-(include-book "ccg" :ttags ((:ccg)) :load-compiled-file nil)
-(ld "ccg-settings.lsp")
+(include-book "ccg/ccg" :ttags ((:ccg)) :dir :system :load-compiled-file nil)
+(ld "ccg/ccg-settings.lsp" :dir :system)
 
 Documentation - :doc ccg 
 
