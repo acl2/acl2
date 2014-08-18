@@ -42,6 +42,7 @@
 (include-book "integer-length")
 (include-book "merge")
 (include-book "part-select")
+(include-book "part-install")
 (include-book "rotate")
 (include-book "saturate")
 (include-book "signed-byte-p")
@@ -255,6 +256,12 @@ definition of @('logrev'), thanks to @(see mbe).</p>
 <p>This book provides a readable nice macro for extracting a portion of an
 integer, e.g., bits 15-8.</p>
 
+<h5>@(see bitops/part-install)</h5>
+
+<p>This book provides a function and a macro to set a portion of an
+integer to some value. It also includes some theorems about the
+interaction of @('part-install') with @(see bitops/part-select).</p>
+
 <h5>@(see bitops/rotate)</h5>
 
 <p>This book defines @(see rotate-left) and @(see rotate-right) operations.  It
@@ -435,4 +442,3 @@ arithmetic into your problem.</p>
 <p>It's possible to overcome and work around these problems, but you may want
 to be looking out for these sorts of issues and making sure that you aren't
 being pulled toward competing normal forms.</p>")
-
