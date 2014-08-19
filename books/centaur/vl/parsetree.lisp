@@ -3194,6 +3194,50 @@ transforms to not modules with this attribute.</p>"
   (vl-package->name x))
 
 
+
+(defprod vl-modport-port
+  :parents (vl-interface)
+  :short "A single port from a modport declaration."
+  :long  "<p>The syntax for this is:</p>
+@({
+ modport_simple_ports_declaration ::=
+ port_direction modport_simple_port { , modport_simple_port }
+ 
+ modport_simple_port ::=
+ port_identifier
+ | . port_identifier ( [ expression ] )
+ })
+
+<p>As with regular ports, if the expression is not provided then the port
+identifier is turned into an expression.  The variables used in the expression
+must be declared in the interface, but it is permissible for the expression to
+be non-sliceable, at least if it's an input.</p>"
+ 
+  ((name stringp         "Name of the port; often the same as the expr")
+   (dir  vl-direction-p  "Port direction")
+   (expr vl-maybe-expr-p "Expression in terms of the declared variables of the interface.")
+   (atts vl-atts-p       "attributes")
+   (loc  vl-location-p :default *vl-fakeloc*)))
+
+(fty::deflist vl-modport-portlist
+  :elt-type vl-modport-port
+  :elementp-of-nil nil
+  :true-listp nil)
+
+(defprod vl-modport
+  :parents (vl-interface)
+  :short "A modport declaration within an interface"
+  :long "<p>Missing task/function import/exports and clocking blocks.</p>"
+  ((name      stringp                "the name of the modport declaration; often master or slave")
+   (ports     vl-modport-portlist-p  "the ports; names must be declared in the interface")
+   (loc       vl-location-p :default *vl-fakeloc*))
+  :tag :vl-modport)
+
+(fty::deflist vl-modportlist :elt-type vl-modport
+  :elementp-of-nil nil
+  :true-listp t)
+
+
 (defprod vl-interface
   :short "Representation of a single @('interface')."
   :tag :vl-interface
@@ -3201,13 +3245,15 @@ transforms to not modules with this attribute.</p>"
   ((name stringp
          :rule-classes :type-prescription
          "The name of this interface as a string.")
+   (vardecls vl-vardecllist-p)
+   (modports vl-modportlist-p)
    ;; ...
    (warnings vl-warninglist-p)
    (minloc   vl-location-p)
    (maxloc   vl-location-p)
    (atts     vl-atts-p)
    (comments vl-commentmap-p))
-  :long "BOZO incomplete stub -- we don't really support packages yet.")
+  :long "BOZO incomplete stub -- we don't really support interfaces yet.")
 
 (fty::deflist vl-interfacelist :elt-type vl-interface-p
   :elementp-of-nil nil)

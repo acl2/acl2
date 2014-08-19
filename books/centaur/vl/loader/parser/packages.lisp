@@ -33,7 +33,51 @@
 (include-book "../../parsetree")
 (local (include-book "../../util/arithmetic"))
 
-; BOZO we don't really implement packages yet.
+;; package_declaration ::=
+;; { attribute_instance } package [ lifetime ] package_identifier ;
+;; [ timeunits_declaration ] { { attribute_instance } package_item }
+;; endpackage [ : package_identifier ]
+
+;; package_item ::=
+;; package_or_generate_item_declaration
+;; | anonymous_program
+;; | package_export_declaration
+;; | timeunits_declaration
+
+;; package_or_generate_item_declaration ::=
+;; net_declaration
+;; | data_declaration
+;; | task_declaration
+;; | function_declaration
+;; | checker_declaration
+;; | dpi_import_export
+;; | extern_constraint_declaration
+;; | class_declaration
+;; | class_constructor_declaration
+;; | local_parameter_declaration ;
+;; | parameter_declaration ;
+;; | covergroup_declaration
+;; | overload_declaration
+;; | assertion_item_declaration
+;; | ;
+
+;; anonymous_program ::= program ; { anonymous_program_item } endprogram
+
+;; anonymous_program_item ::=
+;; task_declaration
+;; | function_declaration
+;; | class_declaration
+;; | covergroup_declaration
+;; | class_constructor_declaration
+;; | ;
+
+;; anonymous_program_item ::=
+;; task_declaration
+;; | function_declaration
+;; | class_declaration
+;; | covergroup_declaration
+;; | class_constructor_declaration
+;; | ;
 
 (defparser vl-parse-package-declaration-aux ()
   :result (vl-endinfo-p val)
