@@ -4602,22 +4602,23 @@
                     (fquotep (fargn term 2)))
                 (fargn term 1))
                (t nil)))
-        ((most-recent-enabled-recog-tuple (ffn-symb term)
-                                          (global-val 'recognizer-alist wrld)
-                                          ens)
+        ((let ((recog-tuple
+                (most-recent-enabled-recog-tuple (ffn-symb term)
+                                                 (global-val 'recognizer-alist
+                                                             wrld)
+                                                 ens)))
+           (and recog-tuple
 
-; Discussion with Jared Davis 8/9/2014 tempts us to replace the test above with
-; the following test.  An ACL2(h) "everything" regression failed to certify
-; community book centaur/aig/aiger-help.lisp with that change, which however
-; has been modified to certify with either version of this code.
+; An ACL2(h) "everything" regression in August 2014 failed to certify community
+; book centaur/aig/aiger-help.lisp when we added the following condition.  So
+; we modified two defthm forms in that book by making the :typed-term explicit.
 
-;        (let ((recog-tuple
-;               (most-recent-enabled-recog-tuple (ffn-symb term)
-;                                                (global-val 'recognizer-alist
-;                                                            wrld)
-;                                                ens)))
-;          (and recog-tuple (access recognizer-tuple recog-tuple :strongp)))
+; Note that the most-recent-enabled-recog-tuple is the one used in
+; assume-true-false-rec.  So here, we only consider that tuple; if it is not
+; :strongp, then we do not look for a less recent enabled recog-tuple that is
+; :strongp.
 
+                (access recognizer-tuple recog-tuple :strongp)))
          (fargn term 1))
         (t term)))
 
@@ -5037,6 +5038,12 @@
         ((eq (ffn-symb term) 'not)
          (warned-non-rec-fns-for-tp (fargn term 1) recognizer-alist ens wrld))
         ((strong-compound-recognizer-p (ffn-symb term) recognizer-alist ens)
+
+; We noticed in August 2014 that only the most-recent-enabled-recog-tuple is
+; relevant here; see assume-true-false-rec.  But this code has been in place
+; for a long time, and it's not terribly unreasonable, since enabled status can
+; change.
+
          (non-recursive-fnnames-lst (fargs term) ens wrld))
         (t (non-recursive-fnnames term ens wrld))))
 

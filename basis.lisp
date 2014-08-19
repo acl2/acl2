@@ -492,6 +492,22 @@
                      ((and (not (= (length s) 0))
                            (eql (char s 0) #\*)
                            (eql (char s (1- (length s))) #\*))
+
+; It was an oversight that a symbol with a symbol-name of "*" has always been
+; considered a constant rather than a variable.  The intention was to view "*"
+; as a delimeter -- thus, even "**" is probably OK for a constant since the
+; empty string is delimited.  But it doesn't seem important to change this
+; now.  If we do make such a change, consider the following (at least).
+
+; - It will be necessary to update :doc defconst.
+
+; - Fix the error message for, e.g., (defconst foo::* 17), so that it doesn't
+;   say "does not begin and end with the character *".
+
+; - Make sure the error message is correct for (defun foo (*) *).  It should
+;   probably complain about the main Lisp package, not about "the syntax of a
+;   constant".
+
                       (if (equal p *main-lisp-package-name*)
                           nil
                         'constant))
