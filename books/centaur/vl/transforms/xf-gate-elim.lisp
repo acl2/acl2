@@ -53,37 +53,47 @@ arities (i.e., 2 arguments to a NOT or BUF, and 3 arguments to AND, OR,
 
 (local (xdoc::set-default-parents gate-elim))
 
-(define vl-gateinst-primitive-module ((type vl-gatetype-p))
-  (case type
-    (:vl-buf  *vl-1-bit-buf*)
-    (:vl-not  *vl-1-bit-not*)
-    (:vl-and  *vl-1-bit-and*)
-    (:vl-or   *vl-1-bit-or*)
-    (:vl-xor  *vl-1-bit-xor*)
-    (:vl-nand *vl-1-bit-nand*)
-    (:vl-nor  *vl-1-bit-nor*)
-    (:vl-xnor *vl-1-bit-xnor*)
-    (:vl-bufif0 *vl-1-bit-bufif0*)
-    (:vl-bufif1 *vl-1-bit-bufif1*)
-    (:vl-notif0 *vl-1-bit-notif0*)
-    (:vl-notif1 *vl-1-bit-notif1*)
-    (:vl-nmos *vl-1-bit-nmos*)
-    (:vl-rnmos *vl-1-bit-rnmos*)
-    (:vl-pmos *vl-1-bit-pmos*)
-    (:vl-rpmos *vl-1-bit-rpmos*)
-    (:vl-cmos *vl-1-bit-cmos*)
-    (:vl-rcmos *vl-1-bit-rcmos*)
-    (:vl-tran *vl-1-bit-tran*)
-    (:vl-rtran *vl-1-bit-rtran*)
-    (:vl-tranif0 *vl-1-bit-tranif0*)
-    (:vl-rtranif0 *vl-1-bit-rtranif0*)
-    (:vl-tranif1 *vl-1-bit-tranif1*)
-    (:vl-rtranif1 *vl-1-bit-rtranif1*)
-    (:vl-pullup *vl-1-bit-pullup*)
-    (:vl-pulldown *vl-1-bit-pulldown*)
-    (otherwise nil)))
+(defconst *vl-gateinst-primitives-alist*
+  `((:vl-buf  . ,*vl-1-bit-buf*)
+    (:vl-not  . ,*vl-1-bit-not*)
+    (:vl-and  . ,*vl-1-bit-and*)
+    (:vl-or   . ,*vl-1-bit-or*)
+    (:vl-xor  . ,*vl-1-bit-xor*)
+    (:vl-nand . ,*vl-1-bit-nand*)
+    (:vl-nor  . ,*vl-1-bit-nor*)
+    (:vl-xnor . ,*vl-1-bit-xnor*)
+    (:vl-bufif0 . ,*vl-1-bit-bufif0*)
+    (:vl-bufif1 . ,*vl-1-bit-bufif1*)
+    (:vl-notif0 . ,*vl-1-bit-notif0*)
+    (:vl-notif1 . ,*vl-1-bit-notif1*)
+    (:vl-nmos . ,*vl-1-bit-nmos*)
+    (:vl-rnmos . ,*vl-1-bit-rnmos*)
+    (:vl-pmos . ,*vl-1-bit-pmos*)
+    (:vl-rpmos . ,*vl-1-bit-rpmos*)
+    (:vl-cmos . ,*vl-1-bit-cmos*)
+    (:vl-rcmos . ,*vl-1-bit-rcmos*)
+    (:vl-tran . ,*vl-1-bit-tran*)
+    (:vl-rtran . ,*vl-1-bit-rtran*)
+    (:vl-tranif0 . ,*vl-1-bit-tranif0*)
+    (:vl-rtranif0 . ,*vl-1-bit-rtranif0*)
+    (:vl-tranif1 . ,*vl-1-bit-tranif1*)
+    (:vl-rtranif1 . ,*vl-1-bit-rtranif1*)
+    (:vl-pullup . ,*vl-1-bit-pullup*)
+    (:vl-pulldown . ,*vl-1-bit-pulldown*)))
 
-(local (in-theory (enable vl-gateinst-primitive-module)))
+(xdoc::without-xdoc
+  (fty::defalist vl-primalist
+    :key-type symbolp
+    :val-type vl-module-p))
+
+(defalist vl-primalist-p (x)
+  :key (symbolp x)
+  :val (vl-module-p x)
+  :keyp-of-nil t
+  :valp-of-nil nil
+  :already-definedp t
+  :short "An alist mapping gate primitive names to primitive modules.")
+
 
 
 (define vl-add-portnames-to-plainargs
@@ -105,6 +115,8 @@ arities (i.e., 2 arguments to a NOT or BUF, and 3 arguments to AND, OR,
 (define vl-gateinst-gate-elim
   :short "Try to convert a single gate into one of VL's primitive modules."
   ((x        vl-gateinst-p)
+   (primalist vl-primalist-p
+              "Mapping from gate types to primitive modules")
    (warnings vl-warninglist-p))
   :returns
   (mv (warnings  vl-warninglist-p)
@@ -141,7 +153,7 @@ happened and leave the gate unchanged.</p>"
 
   (b* (((vl-gateinst x) x)
 
-       (target (vl-gateinst-primitive-module x.type))
+       (target (cdr (hons-assoc-equal x.type primalist)))
        (exprs  (vl-plainarglist->exprs x.args))
 
        ((unless target)
@@ -150,6 +162,8 @@ happened and leave the gate unchanged.</p>"
                         gate-elim; leaving this gate unchanged."
                   :args (list x x.type))
             (list x) nil nil))
+
+       (target (vl-module-fix target))
 
        (ports (vl-module->ports target))
 
@@ -182,6 +196,8 @@ happened and leave the gate unchanged.</p>"
 (define vl-gateinstlist-gate-elim
   :short "Extends @(see vl-gateinst-gate-elim) to a list of gate instances."
   ((x        vl-gateinstlist-p)
+   (primalist vl-primalist-p
+              "Mapping from gate types to primitive modules")
    (warnings vl-warninglist-p))
   :returns
   (mv (warnings  vl-warninglist-p)
@@ -191,9 +207,9 @@ happened and leave the gate unchanged.</p>"
   (b* (((when (atom x))
         (mv (ok) nil nil nil))
        ((mv warnings car-gateinsts car-modinsts car-addmods)
-        (vl-gateinst-gate-elim (car x) warnings))
+        (vl-gateinst-gate-elim (car x) primalist warnings))
        ((mv warnings cdr-gateinsts cdr-modinsts cdr-addmods)
-        (vl-gateinstlist-gate-elim (cdr x) warnings)))
+        (vl-gateinstlist-gate-elim (cdr x) primalist warnings)))
     (mv warnings
         (append car-gateinsts cdr-gateinsts)
         (append car-modinsts  cdr-modinsts)
@@ -204,7 +220,9 @@ happened and leave the gate unchanged.</p>"
 
 (define vl-module-gate-elim
   :short "Convert gates throughout a module."
-  ((x vl-module-p))
+  ((x vl-module-p)
+   (primalist vl-primalist-p
+              "Mapping from gate types to primitive modules"))
   :returns (mv (new-x vl-module-p :hyp :fguard)
                (addmods vl-modulelist-p :hyp :fguard))
   (b* (((vl-module x) x)
@@ -216,7 +234,7 @@ happened and leave the gate unchanged.</p>"
         ;; Dumb optimization to avoid re-consing
         (mv x nil))
        ((mv warnings new-gateinsts new-modinsts addmods)
-        (vl-gateinstlist-gate-elim x.gateinsts x.warnings))
+        (vl-gateinstlist-gate-elim x.gateinsts primalist x.warnings))
        (new-x (change-vl-module x
                                 :warnings  warnings
                                 :gateinsts new-gateinsts
@@ -227,13 +245,15 @@ happened and leave the gate unchanged.</p>"
 
 (define vl-modulelist-gate-elim-aux
   :short "Extends @(see vl-module-gate-elim) across a module list."
-  ((x vl-modulelist-p))
+  ((x vl-modulelist-p)
+   (primalist vl-primalist-p
+              "Mapping from gate types to primitive modules"))
   :returns (mv (new-x vl-modulelist-p :hyp :fguard)
                (addmods vl-modulelist-p :hyp :fguard))
   (b* (((when (atom x))
         (mv nil nil))
-       ((mv car-prime car-addmods) (vl-module-gate-elim (car x)))
-       ((mv cdr-prime cdr-addmods) (vl-modulelist-gate-elim-aux (cdr x))))
+       ((mv car-prime car-addmods) (vl-module-gate-elim (car x) primalist))
+       ((mv cdr-prime cdr-addmods) (vl-modulelist-gate-elim-aux (cdr x) primalist)))
     (mv (cons car-prime cdr-prime)
         (append car-addmods cdr-addmods)))
   ///
@@ -242,10 +262,14 @@ happened and leave the gate unchanged.</p>"
 (define vl-modulelist-gate-elim
   :short "Convert gates throughout a list of modules and add any new primitives
 into the module list."
-  ((x vl-modulelist-p))
+  ((x vl-modulelist-p)
+   &key
+   ((primalist vl-primalist-p
+               "Mapping from gate types to primitive modules")
+    '*vl-gateinst-primitives-alist*))
   :returns (new-x vl-modulelist-p :hyp :fguard)
   (b* (((mv new-x addmods)
-        (vl-modulelist-gate-elim-aux x))
+        (vl-modulelist-gate-elim-aux x primalist))
        (addmods (mergesort addmods))
        (allmods (mergesort (append addmods new-x)))
        ((unless (uniquep (vl-modulelist->names allmods)))
@@ -256,9 +280,14 @@ into the module list."
 
 (define vl-design-gate-elim
   :short "Top-level @(see gate-elim) transform."
-  ((x vl-design-p))
+  ((x vl-design-p)
+   &key
+   ((primalist vl-primalist-p
+               "Mapping from gate types to primitive modules")
+    '*vl-gateinst-primitives-alist*))
   :returns (new-x vl-design-p)
   (b* ((x (vl-design-fix x))
        ((vl-design x) x))
-    (change-vl-design x :mods (vl-modulelist-gate-elim x.mods))))
+    (change-vl-design x :mods (vl-modulelist-gate-elim x.mods :primalist primalist))))
+
 
