@@ -6128,7 +6128,7 @@
                     table encapsulate defstobj) form)
     (otherwise form)))
 
-(defun print-ldd-full-or-sketch (fullp form)
+(defun print-ldd-full-or-sketch (fullp form state)
 
 ; When fullp is nil, this function is like eviscerate with print-level
 ; 2 and print-length 3, except that we here recognize several special
@@ -6157,25 +6157,40 @@
 ; reveals that there are no keywords among the uneviscerated parts.
 
   (cond
-   ((atom form) form)
-   (fullp (zap-doc-string-from-event-form form))
+   ((atom form) (mv form state))
+   (fullp (let* ((form (zap-doc-string-from-event-form form))
+                 (evisc-tuple (ld-evisc-tuple state))
+                 (evisc-alist (world-evisceration-alist state (car evisc-tuple)))
+                 (print-level (cadr evisc-tuple))
+                 (print-length (caddr evisc-tuple)))
+            (cond (evisc-tuple
+                   (eviscerate-top form
+                                   print-level
+                                   print-length
+                                   evisc-alist
+                                   (table-alist 'evisc-table (w state))
+                                   nil
+                                   state))
+                  (t (mv form state)))))
    (t
-    (case
-     (car form)
-     ((defun defund defmacro)
-      (list (car form) (cadr form) (caddr form) *evisceration-ellipsis-mark*))
-     ((defthm defthmd)
-       (list (car form) (cadr form) *evisceration-ellipsis-mark*))
-     ((defdoc defconst)
-      (list (car form) (cadr form) *evisceration-ellipsis-mark*))
-     (mutual-recursion
-      (cons 'mutual-recursion
-            (print-ldd-full-or-sketch/mutual-recursion (cdr form))))
-     (encapsulate
-      (list 'encapsulate
-            (print-ldd-full-or-sketch/encapsulate (cadr form))
-            *evisceration-ellipsis-mark*))
-     (t (eviscerate-simple form 2 3 nil nil nil))))))
+    (mv
+     (case
+       (car form)
+       ((defun defund defmacro)
+        (list (car form) (cadr form) (caddr form) *evisceration-ellipsis-mark*))
+       ((defthm defthmd)
+        (list (car form) (cadr form) *evisceration-ellipsis-mark*))
+       ((defdoc defconst)
+        (list (car form) (cadr form) *evisceration-ellipsis-mark*))
+       (mutual-recursion
+        (cons 'mutual-recursion
+              (print-ldd-full-or-sketch/mutual-recursion (cdr form))))
+       (encapsulate
+        (list 'encapsulate
+              (print-ldd-full-or-sketch/encapsulate (cadr form))
+              *evisceration-ellipsis-mark*))
+       (t (eviscerate-simple form 2 3 nil nil nil)))
+     state))))
 
 (defmacro with-base-10 (form)
 
@@ -6259,14 +6274,19 @@
              (declare (ignore col))
              state)
           (spaces (- formula-col cur-col) cur-col channel state)))
-      (fmt-ppr
+      (mv-let
+       (form state)
        (print-ldd-full-or-sketch (access-ldd-fullp ldd)
-                                 (access-ldd-form ldd))
-       t
-       (+f (fmt-hard-right-margin state) (-f formula-col))
-       0
-       formula-col channel state
-       (not (access-ldd-fullp ldd)))
+                                 (access-ldd-form ldd)
+                                 state)
+       (fmt-ppr
+        form
+        t
+        (+f (fmt-hard-right-margin state) (-f formula-col))
+        0
+        formula-col channel state
+        (not (and (access-ldd-fullp ldd)
+                  (null (ld-evisc-tuple state))))))
       (newline channel state)))))
 
 (defun print-ldds (ldds channel state)

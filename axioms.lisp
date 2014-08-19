@@ -12514,7 +12514,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     ACONS NTH SUBSEQ LENGTH REVERSE ZIP STANDARD-CHAR-P
     ALPHA-CHAR-P UPPER-CASE-P LOWER-CASE-P CHAR< CHAR> CHAR<= CHAR>=
     CHAR-EQUAL CHAR-UPCASE CHAR-DOWNCASE
-    AND-LIST OR-LIST ; relevant for #+acl2-par
 
 ; Might as well add additional ones below:
 

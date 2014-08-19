@@ -1429,15 +1429,11 @@
           state))
 
 (defun print-pc-defthm (ev state)
-  (let ((ldd (make-ldd 'event nil #\Space 0 t
-                       ev)))
-    (io? proof-checker nil state
-         (ldd)
-         (fms0 "~|~y0"
-               (list (cons #\0
-                           (print-ldd-full-or-sketch
-                            (access-ldd-fullp ldd)
-                            (access-ldd-form ldd))))))))
+  (io? proof-checker nil state
+       (ev)
+       (fms0 "~|~Y01"
+             (list (cons #\0 ev)
+                   (cons #\1 (ld-evisc-tuple state))))))
 
 (defmacro print-pc-goal (&optional goal)
   `(let ((goal ,(or goal '(car (access pc-state (car (state-stack)) :goals)))))
