@@ -57,10 +57,29 @@ modules.</p>
 @('*vl-1-bit-delay-1*') as a simple assignment.  Other backend tools, of
 course, can treat delays in different ways.</p></box>
 
+<p>The delayredux transform, @(see vl-design-delayredux), takes two keyword
+arguments, @(':vecp') and @(':state-onlyp'), both Boolean values defaulting to
+@('NIL'), whose meanings are discussed below.</p>
+
 <p>We only target <see topic='@(url vl-simpledelay-p)'>simple delays</see> like
-@('#5').  Our delay modules are based on the @(see *vl-1-bit-delay-1*).
-Building on this primitive, we can generate a module that delays any sized
-input by any number of ticks; see @(see vl-make-n-bit-delay-m).</p>
+@('#5').  Our delay modules are based on the @(see *vl-1-bit-delay-1*) unless
+the @(':vecp') option is set, in which case they are based on N-bit single-tick
+delay modules (see @(see vl-make-n-bit-delay-1)).  We chain these modules in series
+to generate modules that produce an arbitrary M-tick delay; see @(see
+vl-make-n-bit-delay-m).</p>
+
+<p>If the @(':state-onlyp') option is set, then delay modules are only inserted
+for assignments and gates annotated with the \"VL_STATE_DELAY\" attribute;
+other delays are just deleted, leaving the assignments or gates delay-free.
+The \"VL_STATE_DELAY\" attribute comes from always-block processing (see @(see
+vl-design-always-backend)); it is applied to tick delays that are used to
+implement flop or latch primitives, but not tick delays that merely affect
+signal timing within a clock phase.  @(':state-onlyp') is therefore useful in
+frameworks that are not delay-sensitive, but that make use of the definitions
+of VL latch and flop modules rather than considering them to be primitives.</p>
+
+<p>The following explanation applies in cases where the @(':state-onlyp')
+option is not set or else the \"VL_STATE_DELAY\" annotation is present.</p>
 
 <p>For <b>continuous assignments</b>, we basically replace assignments like</p>
 
@@ -117,7 +136,8 @@ for a gate with inouts to have a delay.</p>
 <h3>Ordering Notes</h3>
 
 <p>This transform must be run after sizing so that we can introduce delay
-modules of the appropriate sizes.</p>
+modules of the appropriate sizes.  It also should be run after the always
+backend, which can add delays that this transform should process.</p>
 
 <p>We generally want to do this before @(see split).  Otherwise, when we see an
 assignment like:</p>
