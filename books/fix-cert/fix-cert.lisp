@@ -120,6 +120,10 @@
                             (mv error-flg val state))))))))))
 
 
+(defun books-dir-pathname (p)
+  "given full path of book name p, find the prefix that corresponds the the book directory"
+  (subseq p  0 (+ (length "books/") (search "books/" p :from-end t))))
+
 ;==========================================================================
 ; Code for actually fixing certificate files based on their new location.
 
@@ -151,18 +155,41 @@
              (pcert-info (access cert-obj cert-obj :pcert-info))
              (expansion-alist-nonelided (and (consp pcert-info) pcert-info))
              (old-full-book-name (caar post-alist))
+; harshrc bugfix 18 Aug 2014 (helped by Matt K)
+; 1. new-directory-name is fixed and can be found using global system-books-dir
+; 2. The old directory is found by searching for the last occurrence of 'books/'
+;    in the old book path name.
+; This fixes the wrong fix-cert behavior on a portcullis containing occurences
+; of filenames that didnt occur in the same directory as the cert file being fixed.
+
              (old-directory-name (remove-after-last-directory-separator
                                   old-full-book-name))
+             (old-systems-dir (books-dir-pathname old-full-book-name))
              (new-directory-name (remove-after-last-directory-separator
-                                  new-full-book-name)))
-        (if (equal old-full-book-name new-full-book-name)
-            (value :not-needed)
+                                  new-full-book-name))
+             (new-systems-dir (@ system-books-dir))
+             )
+        
+; harshrc: Always fix. Dont check for redundancy.
+        ;; (if (equal old-full-book-name new-full-book-name)
+        ;;     (value :not-needed)
+        (if (equal old-systems-dir new-systems-dir)
+;hack: If same, then we are testing fix-cert within the community books, then
+;use the old solution which will not work for the more complex cert files that
+;need to be fixed in a fix-cert on the complete regression.
+            (make-certificate-file-relocated
+            new-full-book-name portcullis
+            (convert-book-name-to-cert-name new-full-book-name t)
+            post-alist expansion-alist expansion-alist-nonelided
+            old-directory-name new-directory-name
+            nil ctx state)
+          
           (make-certificate-file-relocated
-                 new-full-book-name portcullis
-                 (convert-book-name-to-cert-name new-full-book-name t)
-                 post-alist expansion-alist expansion-alist-nonelided
-                 old-directory-name new-directory-name
-                 nil ctx state)))))))
+            new-full-book-name portcullis
+            (convert-book-name-to-cert-name new-full-book-name t)
+            post-alist expansion-alist expansion-alist-nonelided
+            old-systems-dir new-systems-dir
+            nil ctx state)))))))
 
 ; Beware that in order to create packages before they are needed,
 ; the order of the books to be fixed needs to satisfy the dependencies.
