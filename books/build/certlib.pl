@@ -1004,12 +1004,12 @@ sub get_ld {
 
 sub ftimestamp {
     my $file = shift;
-    return (stat($file))[9];
-}
-
-sub newer_than {
-    my ($file1,$file2) = @_;
-    return ftimestamp($file1) > ftimestamp($file2);
+    my @statinfo = stat($file);
+    if (@statinfo) {
+	return $statinfo[9];
+    } else {
+	return -1;
+    }
 }
 
 sub excludep {
@@ -1042,7 +1042,7 @@ sub print_dirs {
 sub scan_src {
     my $fname = shift;
     my @events = ();
-
+    my $timestamp = -1;
     if (open(my $file, "<", $fname)) {
 	while (my $the_line = <$file>) {
 	    my $done = 0;
@@ -1054,9 +1054,9 @@ sub scan_src {
 	    $done = $done || get_add_dir($fname, $the_line, \@events);
 	    $done = $done || get_cert_param($fname, $the_line, \@events);
 	}
+	$timestamp = ftimestamp($file);
 	close($file);
     }
-    my $timestamp = ftimestamp($fname);
 
     return (\@events, $timestamp);
 }
@@ -1082,10 +1082,16 @@ sub src_events {
 	    print " (required by $parent)";
 	}
 	print "\n";
-	return [];
+	# Add an entry with no events and a negative timestamp.
+	# signalling that the file didn't exist.
+	my $cache_entry =  [[], 0];
+	$checked->{$fname} = 1;
+	$evcache->{$fname} = $cache_entry;
+	return $cache_entry->[0];
     }
 
-    if ($entry && ! $entry_ok && (ftimestamp($fname) <= $entry->[1])) {
+    # check timestamp: to be valid, the entry's timestamp must equal the file's.
+    if ($entry && ! $entry_ok && (ftimestamp($fname) == $entry->[1])) {
 	print "timestamp of $fname ok\n" if $debugging;
 	$checked->{$fname} = 1;
 	$entry_ok = 1;
@@ -1192,10 +1198,13 @@ sub src_deps {
 	print "events: $fname";
 	print_events($events);
     }
-    if (! ($believe_cache || $depdb->tscache->{$fname})) {
-	# The file doesn't exist.  We've already printed an error message.
-	return;
-    }
+    # NOTE: We no longer check if the file exists here -- represented
+    # by the tscache entry being valid
+
+    # if (! ($believe_cache || $depdb->tscache->{$fname})) {
+    # 	# The file doesn't exist.  We've already printed an error message.
+    # 	return;
+    # }
     push(@{$certinfo->srcdeps}, $fname);
     $depdb->sources->{$fname} = 1;
 
@@ -1576,13 +1585,13 @@ sub add_deps {
     }
 
     # First check that the corresponding .lisp file exists.
-    if (! -e $lispfile) {
-	print "Error: Need $lispfile to build $target"
-               . ($parent ? " (parent: $parent)" : "")
-	       . ".\n";
-	delete $depdb->certdeps->{$target};
-	return;
-    }
+    # if (! -e $lispfile) {
+    # 	print "Error: Need $lispfile to build $target"
+    #            . ($parent ? " (parent: $parent)" : "")
+    # 	       . ".\n";
+    # 	delete $depdb->certdeps->{$target};
+    # 	return;
+    # }
 
     # print "add_deps $target, current stack:\n";
     # foreach my $book (@{$depdb->stack}) {
