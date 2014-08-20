@@ -110,17 +110,11 @@ modules.  See @(see vl-fast-find-module) for a faster alternative.</p>"
 
   (deffixequiv vl-find-module :args ((mods vl-modulelist-p))))
 
-(xdoc::without-xdoc
-  (fty::defalist vl-modalist
-    :key-type stringp
-    :val-type vl-module-p))
-
-(defalist vl-modalist-p (x)
-  :key (stringp x)
-  :val (vl-module-p x)
+(fty::defalist vl-modalist
+  :key-type stringp
+  :val-type vl-module-p
   :keyp-of-nil nil
   :valp-of-nil nil
-  :already-definedp t
   :short "An alist mapping module names to modules."
   :long "<p>A modalist is generally constructed by @(see vl-modalist).</p>")
 

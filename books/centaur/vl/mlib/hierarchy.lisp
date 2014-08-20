@@ -429,19 +429,11 @@ report.\" It may not be in use any more.</p>"
   (verify-guards vl-modulelist-highlevel))
 
 
-(xdoc::without-xdoc
-  ;; suppress fty-generated docs since they conflict with the function vl-depalist,
-  ;; which constructs a depalist.
-  (fty::defalist vl-depalist
-    :key-type stringp
-    :val-type string-listp))
-
-(defalist vl-depalist-p (x)
-  :key (stringp x)
-  :val (string-listp x)
+(fty::defalist vl-depalist
+  :key-type stringp
+  :val-type string-listp
   :keyp-of-nil nil
   :valp-of-nil t
-  :already-definedp t
   :parents (hierarchy)
   :short "Associates modules names to the lists of modules that instantiate them."
   :long "<p>Typically these are produced by @(see vl-depalist).</p>")
@@ -1480,7 +1472,7 @@ submodules.</p>"
   :hints(("Goal"
           :in-theory (disable NATP-OF-CDR-OF-HONS-ASSOC-EQUAL-WHEN-VL-DEPORDER-ALISTP)
           :use ((:instance NATP-OF-CDR-OF-HONS-ASSOC-EQUAL-WHEN-VL-DEPORDER-ALISTP
-                 (a name) (x x))))))
+                 (acl2::k name) (acl2::x x))))))
 
 
 

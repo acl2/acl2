@@ -179,6 +179,8 @@ of rewrite rules</li>
 <li>@('true-listp') is true if the list recognizer is strict, i.e., implies true-listp</li>
 <li>@('single-var') is true if the list recognizer has no parameters other than the list variable</li>
 <li>@('cheap') is true if the user gave an extra option requesting cheaper versions of some rules.</li>
+<li>@('simple') is true if the element recognizer is a simple function, rather
+than some more complicated term.</li>
 </ul>
 
 <h3>Using Tags to Disable Instantiation</h3>
@@ -205,8 +207,7 @@ tagged with @(':osets') you could do:</p>
 
 
 (defsection element-p
-  :short "Generic typed list element recognizer.  Its only constraint is that
-there must exist some element satisfying element-p."
+  :short "Generic typed list element recognizer."
   ;; Elementp functions for defining various types of list recognizers, with fixing functions.
   (encapsulate (((element-p *) => *)
                 ((element-example) => *))
@@ -340,7 +341,8 @@ there must exist some element satisfying element-p."
 (defun ruletable-delete-tags (tags table)
   (if (atom table)
       nil
-    (if (intersectp-eq tags (cdr (assoc :tags (cdar table))))
+    (if (and (consp (cdar table))
+             (intersectp-eq tags (cdr (assoc :tags (cdar table)))))
         (ruletable-delete-tags tags (cdr table))
       (cons (car table) (ruletable-delete-tags tags (cdr table))))))
 
@@ -352,7 +354,8 @@ there must exist some element satisfying element-p."
 (defun ruletable-keep-tags (tags table)
   (if (atom table)
       nil
-    (if (intersectp-eq tags (cdr (assoc :tags (cdar table))))
+    (if (and (consp (cdar table))
+             (intersectp-eq tags (cdr (assoc :tags (cdar table)))))
         (cons (car table) (ruletable-keep-tags tags (cdr table)))
       (ruletable-keep-tags tags (cdr table)))))
 
@@ -436,7 +439,7 @@ about elementlist-mapappend."
     (implies (and (element-p nil)
                   (element-list-p x))
              (element-p (car x)))
-    :requirement element-p-of-nil
+    :requirement (and element-p-of-nil simple)
     :name element-p-of-car-when-element-list-p
     :body (implies (element-list-p x)
                    (element-p (car x)))
@@ -448,7 +451,8 @@ about elementlist-mapappend."
              (iff (element-p (car x))
                   (consp x)))
     :requirement (and not-element-p-of-nil
-                      (not negatedp))
+                      (not negatedp)
+                      simple)
     :name element-p-of-car-when-element-list-p
     :body (implies (element-list-p x)
                    (iff (element-p (car x))
@@ -461,7 +465,8 @@ about elementlist-mapappend."
              (iff (non-element-p (car x))
                   (not (consp x))))
     :requirement (and not-element-p-of-nil
-                      negatedp)
+                      negatedp
+                      simple)
     :name element-p-of-car-when-element-list-p
     :body (implies (element-list-p x)
                    (iff (non-element-p (car x))
@@ -475,7 +480,8 @@ about elementlist-mapappend."
                       (element-p nil))))
     :requirement (and (not element-p-of-nil)
                       (not not-element-p-of-nil)
-                      (not negatedp))
+                      (not negatedp)
+                      simple)
     :name element-p-of-car-when-element-list-p
     :body (implies (element-list-p x)
                    (iff (element-p (car x))
@@ -492,7 +498,8 @@ about elementlist-mapappend."
     
     :requirement (and (not element-p-of-nil)
                       (not not-element-p-of-nil)
-                      negatedp)
+                      negatedp
+                      simple)
     :name element-p-of-car-when-element-list-p
     :body (implies (element-list-p x)
                    (iff (non-element-p (car x))

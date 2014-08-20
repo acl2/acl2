@@ -81,17 +81,11 @@ arities (i.e., 2 arguments to a NOT or BUF, and 3 arguments to AND, OR,
     (:vl-pullup . ,*vl-1-bit-pullup*)
     (:vl-pulldown . ,*vl-1-bit-pulldown*)))
 
-(xdoc::without-xdoc
-  (fty::defalist vl-primalist
-    :key-type symbolp
-    :val-type vl-module-p))
-
-(defalist vl-primalist-p (x)
-  :key (symbolp x)
-  :val (vl-module-p x)
+(fty::defalist vl-primalist
+  :key-type symbolp
+  :val-type vl-module-p
   :keyp-of-nil t
   :valp-of-nil nil
-  :already-definedp t
   :short "An alist mapping gate primitive names to primitive modules.")
 
 

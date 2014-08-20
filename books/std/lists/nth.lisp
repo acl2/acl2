@@ -164,7 +164,7 @@
   (implies (and (element-p nil)
                 (element-list-p x))
            (element-p (nth n x)))
-  :requirement element-p-of-nil
+  :requirement (and element-p-of-nil simple)
   :name element-p-of-nth-when-element-list-p
   :body (implies (element-list-p x)
                     (element-p (nth n x))))
@@ -174,6 +174,7 @@
                 (< (nfix n) (len x)))
            (element-p (nth n x)))
   :requirement (and (not element-p-of-nil)
+                    simple
                     (not not-element-p-of-nil))
   :name element-p-of-nth-when-element-list-p)
 
@@ -183,6 +184,7 @@
            (iff (element-p (nth n x))
                 (< (nfix n) (len x))))
   :requirement (and not-element-p-of-nil
+                    simple
                     (not negatedp))
   :name element-p-of-nth-when-element-list-p
   :body (implies (element-list-p x)
@@ -195,6 +197,7 @@
            (iff (non-element-p (nth n x))
                 (<= (len x) (nfix n))))
   :requirement (and not-element-p-of-nil
+                    simple
                     negatedp)
   :name element-p-of-nth-when-element-list-p
   :body (implies (element-list-p x)

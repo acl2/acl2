@@ -47,18 +47,13 @@ expression with a @(see vl-context-p) describing its origin.</p>")
 
 (fty::defalist vl-exprctxalist
   :key-type vl-expr-p
-  :val-type vl-context-p)
-
-(defalist vl-exprctxalist-p (x)
+  :val-type vl-context-p
   :parents (context)
   :short "An alist binding @(see vl-expr-p)s to @(see vl-context-p)s."
   :long "<p>These alists are produced by our @(see ctxexprs) functions, and
 essentially say where some expressions are from.</p>"
-  :key (vl-expr-p x)
-  :val (vl-context-p x)
   :keyp-of-nil nil
-  :valp-of-nil nil
-  :already-definedp t)
+  :valp-of-nil nil)
 
 (defthm vl-exprlist-p-of-strip-cars-when-vl-exprctxalist-p
   (implies (vl-exprctxalist-p x)

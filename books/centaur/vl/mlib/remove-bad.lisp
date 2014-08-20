@@ -82,14 +82,9 @@ elements that (transitively) have errors from @('good') to @('bad').</p>")
 
 (fty::defalist vl-blamealist
   :key-type stringp
-  :val-type string-listp)
-
-(defalist vl-blamealist-p (x)
-  :key (stringp x)
-  :val (string-listp x)
+  :val-type string-listp
   :keyp-of-nil nil
   :valp-of-nil t
-  :already-definedp t
   :short "A record of which submodules are to blame for transitive failures to
   translate modules."
 

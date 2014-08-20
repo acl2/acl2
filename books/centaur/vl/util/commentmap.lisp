@@ -32,16 +32,13 @@
 (include-book "echars")
 (include-book "std/util/defalist" :dir :system)
 
-(fty::defalist vl-commentmap
-  :key-type vl-location-p
-  :val-type stringp)
 
-(defalist vl-commentmap-p (x)
+
+(fty::defalist vl-commentmap
   :parents (syntax)
   :short "Representation of comments within a top-level design elements."
-  :already-definedp t
-  :key (vl-location-p x)
-  :val (stringp x)
+  :key-type vl-location-p
+  :val-type stringp
   :keyp-of-nil nil
   :valp-of-nil nil
 

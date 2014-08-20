@@ -74,15 +74,11 @@ is not okay to replace @('foo_t') with, say, a tagged @('union').</p>")
 (fty::defalist vl-typesigma
   :key-type stringp
   :val-type vl-datatype-p
-  :count vl-typesigma-count)
-
-(defalist vl-typesigma-p (x)
+  :count vl-typesigma-count
   :short "An alist mapping strings to datatypes.  Should be fast alists."
-  :key (stringp x)
-  :val (vl-datatype-p x)
   :keyp-of-nil nil
-  :valp-of-nil nil
-  :already-definedp t)
+  :valp-of-nil nil)
+
 
 
 

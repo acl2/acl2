@@ -55,15 +55,10 @@ substitution to be more generally useful, and prefer to use fast alists.</p>")
 (fty::defalist vl-sigma
   :key-type stringp
   :val-type vl-expr-p
-  :count vl-sigma-count)
-
-(defalist vl-sigma-p (x)
+  :count vl-sigma-count
   :short "An alist mapping strings to expressions, used in @(see substitution)."
-  :key (stringp x)
-  :val (vl-expr-p x)
   :keyp-of-nil nil
-  :valp-of-nil nil
-  :already-definedp t)
+  :valp-of-nil nil)
 
 (defthm vl-sigma-count-of-cdr-strong
   (implies (and (vl-sigma-p x)

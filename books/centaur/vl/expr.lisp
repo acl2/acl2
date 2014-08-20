@@ -1066,7 +1066,114 @@ each operator has the proper arity.</p>"
     :val-type vl-maybe-expr
     :measure (two-nats-measure (acl2-count x) 0)
     :count   vl-atts-count-raw
-    :true-listp t)
+    :true-listp t
+    :keyp-of-nil nil
+    :valp-of-nil t
+    :short "Representation of @('(* foo = 3, bar *)') style attributes."
+
+    :long "<p>Verilog-2005 and SystemVerilog-2012 allow many constructs, (e.g.,
+module instances, wire declarations, assignments, subexpressions, and so on) to
+be annotated with <b>attributes</b>.</p>
+
+<p>Each individual attribute can either be a single key with no value (e.g.,
+@('baz') above), or can have the form @('key = value').  The keys are always
+identifiers, and the values (if provided) are expressions.  Both Verilog-2005
+and SystemVerilog-2012 agree that an attribute with no explicit value is to be
+treated as having value @('1').</p>
+
+
+<h3>Representation</h3>
+
+<p>We represent attributes as alists mapping names to their values.  We use
+ordinary ACL2 strings to represent the keys.  These strings are typically
+honsed to improve memory sharing.  Each explicit value is represented by an
+ordinary @(see vl-expr-p), and keys with no values are bound to @('nil')
+instead.</p>
+
+@(def vl-atts-p)
+
+<h3>Size/Types of Attribute Values</h3>
+
+<p>Verilog-2005 doesn't say anything about the types of attribute
+expressions.</p>
+
+<p>SystemVerilog-2012 says (Section 5.12) that the type of an attribute with no
+value is @('bit'), and that otherwise its type is the (presumably
+self-determined) type of the expression.</p>
+
+<p>This is not really an adequate spec.  Consider for instance an attribute
+like:</p>
+
+@({
+    (* foo = a + b *)
+})
+
+<p>Attributes live in their own namespace and are generally not very
+well-specified.  It isn't clear what @('a') and @('b') refer to here.  For
+instance, are they wires in this module, or perhaps global values that are
+known by the Verilog tool.  It doesn't seem at all clear what the type or size
+of such an expression is supposed to be.</p>
+
+<p>Well, no matter.  Attributes are not used for much and if their sizes and
+types aren't well specified, that's not necessarily any kind of problem.  For
+VL's part, our sizing code simply ignores attributes and does not try to
+determine their sizes and types at all.</p>
+
+
+<h3>Nesting Attributes</h3>
+
+<p>Note that both Verilog-2005 and SystemVerilog-2012 prohibit the nesting of
+attributes.  That is, expressions like the following are not allowed:</p>
+
+@({
+     (* foo = a + (* bar *) b *)
+})
+
+<p>VL's parser enforces this restriction and will not allow expressions to have
+nested attributes; see @(see vl-parse-0+-attribute-instances).</p>
+
+<p>Internally we make <b>no such restriction</b>.  Our @(see vl-expr-p)
+structures can have attributes nested to any arbitrary depth.</p>
+
+
+<h3>Redundant and Conflicting Attributes</h3>
+
+<p>When the same attribute name is given repeatedly, both Verilog-2005 and
+SystemVerilog-2012 agree that the last occurrences of the attribute should be
+used.  That is, the value of @('foo') below should be 5:</p>
+
+@({
+     (* foo = 1, foo = 5 *)
+     assign w = a + b;
+})
+
+<p>VL's parser properly handles this case.  It issues warnings when duplicate
+attributes are used, and always produces @('vl-atts-p') structures that are
+free from duplicate keys, and where the entry for each attribute corresponds to
+the last occurrence of it; see @(see vl-parse-0+-attribute-instances).</p>
+
+<p>Internally we make <b>no such restriction</b>.  We treat @('vl-atts-p')
+structures as ordinary alists.</p>
+
+
+<h3>Internal Use of Attributes by VL</h3>
+
+<p>VL transformations occasionally add attributes throughout modules.  As a
+couple of examples:</p>
+
+<ul>
+
+<li>The @('VL_HANDS_OFF') attribute is used to say that a module is somehow
+special and should not be modified by transformations.</li>
+
+<li>VL may add @('VL_ORIG_EXPR') annotations to remember the \"original\"
+versions of expressions, before any rewriting or other simplification has taken
+place; these annotations can be useful in error messages.</li>
+
+</ul>
+
+<p>As a general rule, attributes added by VL <i>should</i> be prefixed with
+@('VL_').  In practice, we may sometimes forget to follow this rule.</p>")
 
   (fty::defflexsum vl-maybe-expr
     (:null :cond (not x)
@@ -1299,135 +1406,23 @@ is a @(see vl-maybe-exprtype-p).</p>"
   )
 
 
-(defalist vl-atts-p (x)
-  :key (stringp x)
-  :val (vl-maybe-expr-p x)
-  :keyp-of-nil nil
-  :valp-of-nil t
-  :already-definedp t
-  :true-listp t
-  :short "Representation of @('(* foo = 3, bar *)') style attributes."
-
-  :long "<p>Verilog-2005 and SystemVerilog-2012 allow many constructs, (e.g.,
-module instances, wire declarations, assignments, subexpressions, and so on) to
-be annotated with <b>attributes</b>.</p>
-
-<p>Each individual attribute can either be a single key with no value (e.g.,
-@('baz') above), or can have the form @('key = value').  The keys are always
-identifiers, and the values (if provided) are expressions.  Both Verilog-2005
-and SystemVerilog-2012 agree that an attribute with no explicit value is to be
-treated as having value @('1').</p>
-
-
-<h3>Representation</h3>
-
-<p>We represent attributes as alists mapping names to their values.  We use
-ordinary ACL2 strings to represent the keys.  These strings are typically
-honsed to improve memory sharing.  Each explicit value is represented by an
-ordinary @(see vl-expr-p), and keys with no values are bound to @('nil')
-instead.</p>
-
-@(def vl-atts-p)
-
-<h3>Size/Types of Attribute Values</h3>
-
-<p>Verilog-2005 doesn't say anything about the types of attribute
-expressions.</p>
-
-<p>SystemVerilog-2012 says (Section 5.12) that the type of an attribute with no
-value is @('bit'), and that otherwise its type is the (presumably
-self-determined) type of the expression.</p>
-
-<p>This is not really an adequate spec.  Consider for instance an attribute
-like:</p>
-
-@({
-    (* foo = a + b *)
-})
-
-<p>Attributes live in their own namespace and are generally not very
-well-specified.  It isn't clear what @('a') and @('b') refer to here.  For
-instance, are they wires in this module, or perhaps global values that are
-known by the Verilog tool.  It doesn't seem at all clear what the type or size
-of such an expression is supposed to be.</p>
-
-<p>Well, no matter.  Attributes are not used for much and if their sizes and
-types aren't well specified, that's not necessarily any kind of problem.  For
-VL's part, our sizing code simply ignores attributes and does not try to
-determine their sizes and types at all.</p>
-
-
-<h3>Nesting Attributes</h3>
-
-<p>Note that both Verilog-2005 and SystemVerilog-2012 prohibit the nesting of
-attributes.  That is, expressions like the following are not allowed:</p>
-
-@({
-     (* foo = a + (* bar *) b *)
-})
-
-<p>VL's parser enforces this restriction and will not allow expressions to have
-nested attributes; see @(see vl-parse-0+-attribute-instances).</p>
-
-<p>Internally we make <b>no such restriction</b>.  Our @(see vl-expr-p)
-structures can have attributes nested to any arbitrary depth.</p>
-
-
-<h3>Redundant and Conflicting Attributes</h3>
-
-<p>When the same attribute name is given repeatedly, both Verilog-2005 and
-SystemVerilog-2012 agree that the last occurrences of the attribute should be
-used.  That is, the value of @('foo') below should be 5:</p>
-
-@({
-     (* foo = 1, foo = 5 *)
-     assign w = a + b;
-})
-
-<p>VL's parser properly handles this case.  It issues warnings when duplicate
-attributes are used, and always produces @('vl-atts-p') structures that are
-free from duplicate keys, and where the entry for each attribute corresponds to
-the last occurrence of it; see @(see vl-parse-0+-attribute-instances).</p>
-
-<p>Internally we make <b>no such restriction</b>.  We treat @('vl-atts-p')
-structures as ordinary alists.</p>
-
-
-<h3>Internal Use of Attributes by VL</h3>
-
-<p>VL transformations occasionally add attributes throughout modules.  As a
-couple of examples:</p>
-
-<ul>
-
-<li>The @('VL_HANDS_OFF') attribute is used to say that a module is somehow
-special and should not be modified by transformations.</li>
-
-<li>VL may add @('VL_ORIG_EXPR') annotations to remember the \"original\"
-versions of expressions, before any rewriting or other simplification has taken
-place; these annotations can be useful in error messages.</li>
-
-</ul>
-
-<p>As a general rule, attributes added by VL <i>should</i> be prefixed with
-@('VL_').  In practice, we may sometimes forget to follow this rule.</p>")
 
 (defsection vl-atts-p-thms
   :extension vl-atts-p
 
   (local (in-theory (enable vl-atts-p)))
 
-  (defthm vl-atts-p-when-not-consp
-    (implies (not (consp x))
-             (equal (vl-atts-p x)
-                    (not x))))
+  ;; (defthm vl-atts-p-when-not-consp
+  ;;   (implies (not (consp x))
+  ;;            (equal (vl-atts-p x)
+  ;;                   (not x))))
 
-  (defthm vl-atts-p-of-cons
-    (equal (vl-atts-p (cons a x))
-           (and (consp a)
-                (stringp (car a))
-                (vl-maybe-expr-p (cdr a))
-                (vl-atts-p x))))
+  ;; (defthm vl-atts-p-of-cons
+  ;;   (equal (vl-atts-p (cons a x))
+  ;;          (and (consp a)
+  ;;               (stringp (car a))
+  ;;               (vl-maybe-expr-p (cdr a))
+  ;;               (vl-atts-p x))))
 
   (defthm alistp-when-vl-atts-p-rewrite
     ;; This is potentially expensive, but without it we sometimes fail to

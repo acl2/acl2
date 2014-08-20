@@ -36,14 +36,9 @@
 (fty::defalist vl-defines
   :key-type stringp
   :val-type vl-echarlist-p
-  :true-listp t)
-
-(defalist vl-defines-p (x)
-  :key (stringp x)
-  :val (vl-echarlist-p x)
+  :true-listp t
   :keyp-of-nil nil
   :valp-of-nil t
-  :true-listp t
   :parents (preprocessor)
   :short "Alist for definitions."
 
@@ -52,8 +47,7 @@ simple alist that maps strings to their values.  Each value is an @(see
 vl-echarlist-p) of the characters in the definition.</p>
 
 <p>This model is too simple to support macros with arguments, but it is adequate
-for simple macros.</p>"
-  :already-definedp t)
+for simple macros.</p>")
 
 (defthm vl-defines-p-of-remove-from-alist
   (implies (vl-defines-p x)

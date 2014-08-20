@@ -301,18 +301,11 @@ module (except that we don't support, e.g., named blocks.)"
   :elt-type vl-moditem-p
   :elementp-of-nil nil)
 
-(xdoc::without-xdoc
-  (fty::defalist vl-moditem-alist
-    :key-type stringp
-    :val-type vl-moditem-p))
-
-(defalist vl-moditem-alist-p (x)
-  :key (stringp x)
-  :val (vl-moditem-p x)
+(fty::defalist vl-moditem-alist
+  :key-type stringp
+  :val-type vl-moditem-p
   :keyp-of-nil nil
-  :valp-of-nil nil
-  :already-definedp t
-  :guard t)
+  :valp-of-nil nil)
 
 
 (defmacro vl-def-moditemlist-alist (type &key
@@ -325,19 +318,15 @@ module (except that we don't support, e.g., named blocks.)"
          (find-fn       (mksym 'vl-find- type))
          (list-p        (mksym 'vl- type 'list-p))
          (alist-p       (mksym 'vl- type 'alist-p))
+         (alist         (mksym 'vl- type 'alist))
          (elt-p         (mksym 'vl- type '-p))
          (elt-fix       (mksym 'vl- type '-fix))
          (element->name (or element->name (mksym 'vl- type '->name))))
     `(encapsulate
        ()
-       (xdoc::without-xdoc
-         (fty::defalist ,alist-p
-           :key-type stringp
-           :val-type ,elt-p))
-
-       (defalist ,alist-p (x)
-         :key (stringp x)
-         :val (,elt-p x)
+       (fty::defalist ,alist
+         :key-type stringp
+         :val-type ,elt-p
          :keyp-of-nil nil
          :valp-of-nil nil)
 

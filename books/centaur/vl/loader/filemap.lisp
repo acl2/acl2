@@ -36,15 +36,9 @@
 (fty::defalist vl-filemap
   :key-type stringp
   :val-type stringp
-  :true-listp t)
-
-(defalist vl-filemap-p (x)
-  :key (stringp x)
-  :val (stringp x)
+  :true-listp t
   :keyp-of-nil nil
   :valp-of-nil nil
-  :true-listp t
-  :already-definedp t
   :parents (vl-load)
   :short "Mapping of source files to their contents."
 

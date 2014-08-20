@@ -353,8 +353,27 @@ of which recognizers require true-listp and which don't.</p>")
                                            'not
                                          '(lambda (x) t))))))
 
-(defun deflist-requirement-alist (kwd-alist formals)
+
+
+(defun atom/quote-listp (x)
+  (if (atom x)
+      (eq x nil)
+    (and (or (atom (car x))
+             (eq (caar x) 'quote))
+         (atom/quote-listp (cdr x)))))
+
+(defun simple-fncall-p-hack (x)
+  ;; Recognizes a function call with variable/quote
+  ;; arguments.  Maybe nested function calls could be
+  ;; considered simple; anything containing an if shouldn't
+  ;; be, though.
+  (and (consp x)
+       (symbolp (car x))
+       (atom/quote-listp (cdr x))))
+
+(defun deflist-requirement-alist (kwd-alist formals element)
   (b* ((negatedp (getarg :negatedp nil kwd-alist))
+       (simple (simple-fncall-p-hack element))
        (true-listp (getarg :true-listp nil kwd-alist))
        (elementp-of-nil (getarg :elementp-of-nil :unknown kwd-alist))
        (single-var (eql (len formals) 1))
@@ -364,7 +383,8 @@ of which recognizers require true-listp and which don't.</p>")
       (acl2::negatedp . ,negatedp)
       (acl2::true-listp . ,true-listp)
       (acl2::single-var . ,single-var)
-      (acl2::cheap      . ,cheap))))
+      (acl2::cheap      . ,cheap)
+      (acl2::simple     . ,simple))))
 
 (mutual-recursion
  (defun deflist-thmbody-subst (body element name formals x negatedp)
@@ -405,6 +425,26 @@ of which recognizers require true-listp and which don't.</p>")
      listp-name)))
 
 
+(defun deflist-ruleclasses-subst (rule-classes element name formals x negatedp)
+  (b* (((when (atom rule-classes)) rule-classes)
+       (class (car rule-classes))
+       ((when (atom class))
+        (cons class
+              (deflist-ruleclasses-subst
+                (cdr rule-classes) element name formals x negatedp)))
+       (corollary-look (assoc-keyword :corollary class))
+       ((unless corollary-look)
+        (cons class
+              (deflist-ruleclasses-subst
+                (cdr rule-classes) element name formals x negatedp)))
+       (prefix (take (- (len class) (len corollary-look)) class))
+       (corollary-term (deflist-thmbody-subst
+                         (cadr corollary-look)
+                         element name formals x negatedp)))
+    (cons (append prefix `(:corollary ,corollary-term . ,(cddr corollary-look)))
+          (deflist-ruleclasses-subst
+                (cdr rule-classes) element name formals x negatedp))))
+
 (defun deflist-instantiate (table-entry element name formals kwd-alist x
                                         req-alist fn-subst world)
   (b* (((cons inst-thm alist) table-entry)
@@ -427,7 +467,8 @@ of which recognizers require true-listp and which don't.</p>")
              ((when cheap-look) (cadr cheap-look))
              (look (assoc :rule-classes alist)))
           (if look (cadr look) (fgetprop inst-thm 'acl2::classes nil world))))
-       (negatedp (getarg :negatedp nil kwd-alist)))
+       (negatedp (getarg :negatedp nil kwd-alist))
+       (rule-classes (deflist-ruleclasses-subst rule-classes element name formals x negatedp)))
     `((defthm ,thmname
         ,(deflist-thmbody-subst body element name formals x negatedp)
         :hints (("goal" :use ((:functional-instance
@@ -443,13 +484,13 @@ of which recognizers require true-listp and which don't.</p>")
       nil
     (append (deflist-instantiate (car table) element name formals kwd-alist x
               req-alist fn-subst world)
-            (deflist-instantiate-table-thms-aux (cdr table) element name formals kwd-alist x
-              req-alist fn-subst world))))
+            (deflist-instantiate-table-thms-aux (cdr table) element name
+formals kwd-alist x req-alist fn-subst world))))
 
 (defun deflist-instantiate-table-thms (name formals element kwd-alist x world)
   (b* ((table (table-alist 'acl2::listp-rules world))
        (fn-subst (deflist-substitution name formals element kwd-alist x))
-       (req-alist (deflist-requirement-alist kwd-alist formals)))
+       (req-alist (deflist-requirement-alist kwd-alist formals element)))
     (deflist-instantiate-table-thms-aux table element name formals kwd-alist x req-alist fn-subst world)))
 
       

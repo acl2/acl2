@@ -227,14 +227,9 @@ number."
 
   (fty::defalist vl-namedb-nameset
     :key-type stringp
-    :val-type true-p))
-
-(defalist vl-namedb-nameset-p (x)
-  :key (stringp x)
-  :val (true-p x)
-  :keyp-of-nil nil
-  :valp-of-nil nil
-  :already-definedp t)
+    :val-type true-p
+    :keyp-of-nil nil
+    :valp-of-nil nil))
 
 (defthm string-listp-of-alist-keys-when-vl-namedb-nameset-p
   (implies (vl-namedb-nameset-p x)
@@ -250,14 +245,9 @@ number."
 
 (fty::defalist vl-namedb-prefixmap
   :key-type stringp
-  :val-type natp)
-
-(defalist vl-namedb-prefixmap-p (x)
-  :key (stringp x)
-  :val (natp x)
+  :val-type natp
   :keyp-of-nil nil
-  :valp-of-nil nil
-  :already-definedp t)
+  :valp-of-nil nil)
 
 (defthm string-listp-of-alist-keys-when-vl-namedb-prefixmap-p
   (implies (vl-namedb-prefixmap-p x)

@@ -125,7 +125,7 @@ library.")
          (implies (and (element-list-p x)
                        (member-equal a x))
                   (element-p a)))
-    :requirement (not negatedp)
+    :requirement (and (not negatedp) simple)
     :name element-p-when-member-equal-of-element-list)
 
   (def-listp-rule element-p-when-member-equal-of-element-list-negated
@@ -135,7 +135,7 @@ library.")
          (implies (and (element-list-p x)
                        (member-equal a x))
                   (not (non-element-p a))))
-    :requirement negatedp
+    :requirement (and negatedp simple)
     :name element-p-when-member-equal-of-element-list)
 
   (def-projection-rule member-of-element-xformer-in-elementlist-projection

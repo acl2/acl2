@@ -556,6 +556,10 @@
 (defalist sym-nat-alist :key-type symbol :val-type nat)
 (defalist sym-nat-alist2 :key-type symbol :val-type nat :true-listp t)
 
+(defmap sym-nat-alist3 :key-type symbol :val-type nat)
+(defalist sym-nat-alist4 :key-type symbol :val-type nat :true-listp t
+  :strategy :drop-keys)
+
 
 (deftypes recalist
   (deftagsum alterm
@@ -564,6 +568,8 @@
          (al recalist)))
     :layout :list)
   (defalist recalist :key-type int :val-type alterm))
+
+
 
 
 (include-book "std/util/defalist" :dir :system)
@@ -583,6 +589,14 @@
 
 (std::defalist recalist2-p (x) :key (alterm2-p x) :val (integerp x)
   :true-listp t :already-definedp t)
+
+(deftypes recalist3
+  (deftagsum alterm3
+    (:v ((val natp)))
+    (:t ((fn symbolp)
+         (al recalist3)))
+    :layout :list)
+  (defmap recalist3 :key-type alterm3 :val-type alterm3))
 
 
 
@@ -934,7 +948,7 @@
      :ctor-body val)
     :measure (two-nats-measure (acl2-count x) 3))
 
-  (defalist pterm5-atts :key-type stringp :val-type maybe-pterm5
+  (defmap pterm5-atts :key-type stringp :val-type maybe-pterm5
     :measure (two-nats-measure (acl2-count x) 0))
   ;; (defflexsum pfunc
   ;;   ;; :kind nil

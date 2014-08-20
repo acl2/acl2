@@ -32,6 +32,7 @@
 (in-package "FTY")
 (include-book "std/util/da-base" :dir :system)
 (include-book "std/util/deflist-base" :dir :system)
+(include-book "std/util/defalist-base" :dir :system)
 (include-book "fixequiv")
 (include-book "tools/rulesets" :dir :system)
 (include-book "misc/hons-help" :dir :system) ;; for hons-list
@@ -1177,9 +1178,12 @@
    val-type   ;; value type name
    val-fix    ;; value fixing function
    val-equiv  ;; value equiv function
+   strategy   ;; :fixkeys or :dropkeys
    measure    ;; termination measure
    xvar       ;; variable name denoting the object
    kwd-alist  ;; original keyword alist
+   keyp-of-nil ;; passed to std::defalist
+   valp-of-nil ;; passed to std::defalist
    ;; get get-fast ;; more fn names
    ;; set set-fast
    true-listp
@@ -1197,6 +1201,9 @@
     :parents :short :long  ;; xdoc
     :no-count :true-listp
     :prepwork
+    :strategy
+    :keyp-of-nil
+    :valp-of-nil
     :post-pred-events
     :post-fix-events
     :post-events
@@ -1241,7 +1248,10 @@
                  (intern-in-package-of-symbol "X" name)))
        (measure (or (getarg :measure nil kwd-alist)
                     `(acl2-count ,xvar)))
-       (true-listp (getarg :true-listp nil kwd-alist)))
+       (true-listp (getarg :true-listp nil kwd-alist))
+       (strategy (getarg :strategy :fix-keys kwd-alist))
+       (- (and (not (member strategy '(:fix-keys :drop-keys)))
+               (er hard? 'parse-flexalist "Invalid strategy: ~x0~%" strategy))))
     (make-flexalist :name name
                     :pred pred
                     :fix fix
@@ -1254,13 +1264,16 @@
                     :val-fix val-fix
                     :val-equiv val-equiv
                     :measure measure
+                    :strategy strategy
                     :kwd-alist (if post-///
                                    (cons (cons :///-events post-///)
                                          kwd-alist)
                                  kwd-alist)
                     :xvar xvar
                     :true-listp true-listp
-                    :recp (or key-recp val-recp))))
+                    :recp (or key-recp val-recp)
+                    :keyp-of-nil (getarg :keyp-of-nil :unknown kwd-alist)
+                    :valp-of-nil (getarg :valp-of-nil :unknown kwd-alist))))
 
 ;; --- With-flextype-bindings ---
 (defun replace-*-in-symbol-with-str (x str)
@@ -1327,6 +1340,9 @@
             (deftagsum (parse-tagsum (cdar x) xvar our-fixtypes fixtypes))
             (deflist (parse-flexlist (cdar x) xvar our-fixtypes fixtypes))
             (defalist (parse-flexalist (cdar x) xvar our-fixtypes fixtypes))
+            (defmap   (change-flexalist
+                       (parse-flexalist (cdar x) xvar our-fixtypes fixtypes)
+                       :strategy :drop-keys))
             (otherwise (er hard? 'parse-flextypelist
                            "Recognized flextypes are ~x0, not ~x1~%"
                            *known-flextype-generators* (caar x))))
@@ -1555,7 +1571,8 @@
   (b* (((flexalist alist) alist)
        ;; std::deflist-compatible variable names
        (stdx (intern-in-package-of-symbol "X" alist.pred))
-       (stda (intern-in-package-of-symbol "A" alist.pred)))
+       ;; (stda (intern-in-package-of-symbol "A" alist.pred))
+       )
     `(define ,alist.pred (,alist.xvar)
        :parents nil ;; BOZO not clear when to add docs for this
        :progn t
@@ -1572,73 +1589,13 @@
               (,alist.pred (cdr ,alist.xvar))))
        ///
        (local (in-theory (disable ,alist.pred)))
-       (defthm ,(intern-in-package-of-symbol
-                 (cat (symbol-name alist.pred) "-OF-CONS")
-                 alist.pred)
-         ;; Use special symbols for std::defalist compatibility
-         (equal (,alist.pred (cons ,stda ,stdx))
-                (and (consp ,stda)
-                     ,@(and alist.key-type
-                            `((,alist.key-type (car ,stda))))
-                     ,@(and alist.val-type
-                            `((,alist.val-type (cdr ,stda))))
-                     (,alist.pred ,stdx)))
-         :hints (("goal" :expand ((,alist.pred (cons ,stda ,stdx))))))
-
-       (defthm ,(intern-in-package-of-symbol
-                 (cat (symbol-name alist.pred) "-OF-CDR")
-                 alist.pred)
-         (implies (,alist.pred ,alist.xvar)
-                  (,alist.pred (cdr ,alist.xvar)))
-         :hints (("goal" :expand ((,alist.pred ,alist.xvar)))
-                 (and stable-under-simplificationp
-                      '(:expand ((,alist.pred (cdr ,alist.xvar)))))))
-
-       ;; (defthm ,(intern-in-package-of-symbol
-       ;;           (cat (symbol-name alist.pred)
-       ;;                        "-WHEN-CONSP")
-       ;;           alist.pred)
-       ;;   ;; Use special symbols for std::defalist compatibility
-       ;;   (implies (consp ,stdx)
-       ;;            (equal (,alist.pred ,stdx)
-       ;;                   (and (consp (car ,stdx))
-       ;;                        ,@(and alist.key-type
-       ;;                               `((,alist.key-type (car (car ,stdx)))))
-       ;;                        ,@(and alist.val-type
-       ;;                               `((,alist.val-type (cdr (car ,stdx)))))
-       ;;                        (,alist.pred (cdr ,stdx)))))
-       ;;   :rule-classes ((:rewrite :backchain-limit-lst 0)))
-
-       ,@(and alist.key-type
-              `((defthm ,(intern-in-package-of-symbol
-                          (cat (symbol-name alist.key-type) "-CAAR-OF-" (symbol-name alist.pred))
-                          alist.pred)
-                  (implies (and (consp ,alist.xvar)
-                                (,alist.pred ,alist.xvar))
-                           (,alist.key-type (caar ,alist.xvar)))
-                  :hints (("goal" :expand ((,alist.pred ,alist.xvar))))
-                  :rule-classes ((:rewrite :backchain-limit-lst (0 nil))))))
-
-       ,@(and alist.val-type
-              `((defthm ,(intern-in-package-of-symbol
-                          (cat (symbol-name alist.val-type) "-CDAR-OF-" (symbol-name alist.pred))
-                          alist.pred)
-                  (implies (and (consp ,alist.xvar)
-                                (,alist.pred ,alist.xvar))
-                           (,alist.val-type (cdar ,alist.xvar)))
-                  :hints (("goal" :expand ((,alist.pred ,alist.xvar))))
-                  :rule-classes ((:rewrite :backchain-limit-lst (0 nil))))))
-
-       ,@(and alist.true-listp
-              `((defthm ,(intern-in-package-of-symbol
-                          (cat (symbol-name alist.pred) "-COMPOUND-RECOGNIZER")
-                          alist.pred)
-                  (implies (,alist.pred ,alist.xvar)
-                           (true-listp ,alist.xvar))
-                  :hints (("goal" :expand ((,alist.pred ,alist.xvar))
-                           :induct (true-listp ,alist.xvar)
-                           :in-theory (enable true-listp)))
-                  :rule-classes :compound-recognizer))))))
+       (std::defalist ,alist.pred (,stdx)
+         ,@(and alist.key-type `(:key (,alist.key-type ,stdx)))
+         ,@(and alist.val-type `(:val (,alist.val-type ,stdx)))
+         :true-listp ,alist.true-listp
+         :keyp-of-nil ,alist.keyp-of-nil
+         :valp-of-nil ,alist.valp-of-nil
+         :already-definedp t))))
 
 
 ;; ------------------ Predicates: deftypes -----------------------
@@ -1932,15 +1889,30 @@
        :inline t
        (mbe :logic (if (atom ,alist.xvar)
                        ,(if alist.true-listp nil alist.xvar)
-                     (if (consp (car ,alist.xvar))
-                         (cons (cons ,(if alist.key-fix
-                                          `(,alist.key-fix (caar ,alist.xvar))
-                                        `(caar ,alist.xvar))
-                                     ,(if alist.val-fix
-                                          `(,alist.val-fix (cdar ,alist.xvar))
-                                        `(cdar ,alist.xvar)))
-                               (,alist.fix (cdr ,alist.xvar)))
-                       (,alist.fix (cdr ,alist.xvar))))
+                     ,(if alist.key-fix
+                          (if (eq alist.strategy :fix-keys)
+                              `(if (consp (car ,alist.xvar))
+                                   (cons (cons (,alist.key-fix (caar ,alist.xvar))
+                                               ,(if alist.val-fix
+                                                    `(,alist.val-fix (cdar ,alist.xvar))
+                                                  `(cdar ,alist.xvar)))
+                                         (,alist.fix (cdr ,alist.xvar)))
+                                 (,alist.fix (cdr ,alist.xvar)))
+                            `(if (and (consp (car ,alist.xvar))
+                                      (,alist.key-type (caar ,alist.xvar)))
+                                 (cons (cons (caar ,alist.xvar)
+                                             ,(if alist.val-fix
+                                                  `(,alist.val-fix (cdar ,alist.xvar))
+                                                `(cdar ,alist.xvar)))
+                                       (,alist.fix (cdr ,alist.xvar)))
+                               (,alist.fix (cdr ,alist.xvar))))
+                        `(if (consp (car ,alist.xvar))
+                             (cons (cons (caar ,alist.xvar)
+                                         ,(if alist.val-fix
+                                              `(,alist.val-fix (cdar ,alist.xvar))
+                                            `(cdar ,alist.xvar)))
+                                   (,alist.fix (cdr ,alist.xvar)))
+                           (,alist.fix (cdr ,alist.xvar)))))
             :exec ,alist.xvar))))
 
 ;; ------------------ Fixing function: deftypes -----------------------
@@ -2012,7 +1984,7 @@
   (b* (((flexalist x) x)
        ;; std::defprojection-compatible variable names
        (stdx (intern-in-package-of-symbol "X" x.pred)))
-    `(,@(and x.key-type
+    `(,@(and x.key-type (eq x.strategy :fix-keys)
              `((deffixcong ,x.key-equiv ,x.equiv (cons (cons k v) x) k
                  :hints (("goal" :Expand ((:free (a b) (,x.fix (cons a b)))))))))
 
@@ -2027,9 +1999,14 @@
                                             x.fix)
         ;; bozo make sure this is compatible with defprojection
         (equal (,x.fix (cons (cons a b) ,stdx))
-               (cons (cons ,(if x.key-fix `(,x.key-fix a) 'a)
-                           ,(if x.val-fix `(,x.val-fix b) 'b))
-                     (,x.fix ,stdx)))
+               ,(if (or (eq x.strategy :fix-keys) (not x.key-fix))
+                    `(cons (cons ,(if x.key-fix `(,x.key-fix a) 'a)
+                                 ,(if x.val-fix `(,x.val-fix b) 'b))
+                           (,x.fix ,stdx))
+                  `(if (,x.key-type a)
+                       (cons (cons a ,(if x.val-fix `(,x.val-fix b) 'b))
+                             (,x.fix ,stdx))
+                     (,x.fix ,stdx))))
         :hints (("goal" :Expand ((:free (a b) (,x.fix (cons a b))))))))))
 
 (defun flextypelist-fix-postevents (types)
@@ -2792,14 +2769,25 @@
       ,@(and (or keycount valcount)
              `((defthm ,(intern-in-package-of-symbol (cat (symbol-name x.count) "-OF-ACONS")
                                                      x.count)
-                 (> (,x.count (cons (cons a b) c))
-                    (+ ,@(if keycount
-                             (if valcount
-                                 `((,keycount a)
-                                   (,valcount b))
-                               `((,keycount a)))
-                           `((,valcount b)))
-                       (,x.count c)))
+                 ,(if (or (eq x.strategy :fix-keys)
+                          (not x.key-fix))
+                      `(> (,x.count (cons (cons a b) c))
+                          (+ ,@(if keycount
+                                   (if valcount
+                                       `((,keycount a)
+                                         (,valcount b))
+                                     `((,keycount a)))
+                                 `((,valcount b)))
+                             (,x.count c)))
+                    `(implies (,x.key-type a)
+                              (> (,x.count (cons (cons a b) c))
+                                 (+ ,@(if keycount
+                                          (if valcount
+                                              `((,keycount a)
+                                                (,valcount b))
+                                            `((,keycount a)))
+                                        `((,valcount b)))
+                                    (,x.count c)))))
                  :hints (("goal" :expand ((:free (a b) (,x.count (cons a b))))))
                  :rule-classes :linear)))
       ,@(and
@@ -2808,7 +2796,9 @@
                                                       (symbol-name x.count))
                                                  x.count)
              (implies (and (consp ,x.xvar)
-                           (consp (car ,x.xvar)))
+                           (consp (car ,x.xvar))
+                           ,@(and (not (eq x.strategy :fix-keys))
+                                  `((,x.key-type (caar ,x.xvar)))))
                       (< (,keycount (caar ,x.xvar)) (,x.count ,x.xvar)))
              :rule-classes :linear)))
 
@@ -2818,7 +2808,10 @@
                                                       (symbol-name x.count))
                      x.count)
              (implies (and (consp ,x.xvar)
-                           (consp (car ,x.xvar)))
+                           (consp (car ,x.xvar))
+                           ,@(and (not (eq x.strategy :fix-keys))
+                                  x.key-fix
+                                  `((,x.key-type (caar ,x.xvar)))))
                       (< (,valcount (cdar ,x.xvar)) (,x.count ,x.xvar)))
              :rule-classes :linear)))
 
@@ -3829,6 +3822,27 @@
   (declare (ignore args))
   `(make-event (defalist-fn ',form (w state))))
 
+(defun defmap-fn (whole wrld)
+  (b* ((our-fixtypes (list (flextype-form->fixtype whole)))
+       (fixtype-al (append our-fixtypes
+                           (get-fixtypes-alist wrld)))
+       (x (parse-flexalist (cdr whole) nil our-fixtypes fixtype-al))
+       (x (change-flexalist x :strategy :drop-keys))
+       (x (if (member :count (cdr whole))
+              x
+            (change-flexalist x :count nil)))
+       ((flexalist x) x)
+       (flextypes (make-flextypes :name x.name
+                                  :types (list x)
+                                  :no-count (not x.count)
+                                  :kwd-alist nil
+                                  :recp x.recp)))
+    (deftypes-events flextypes wrld)))
+
+(defmacro defmap (&whole form &rest args)
+  (declare (ignore args))
+  `(make-event (defmap-fn ',form (w state))))
+
 (defun deftagsum-fn (whole wrld)
   (b* ((fixtype (flextype-form->fixtype whole))
        (fixtype-al (cons fixtype
@@ -4030,11 +4044,18 @@ functions.</p>
                        ;; (may be nil; skipped unless mutually recursive)
     :no-count t        ;; default: nil, same as :count nil
     :true-listp t      ;; default: nil, require nil final cdr
+    :strategy :drop-keys ;; default: :fix-keys
   )
  })
 
 <p>The keyword arguments are all optional, although it doesn't make much sense
 to define an alist with neither a key-type nor value-type.</p>
+
+<p>The @(':strategy') keyword changes the way the fixing function works; by
+default, every pair in the alist is kept but its key and value are fixed.  With
+@(':strategy :drop-keys'), pairs with malformed keys are dropped, but malformed
+values are still fixed. @(See Defmap) is an abbreviation for @('defalist') with
+@(':strategy :drop-keys').</p>
 
 <p>@('Defalist') does not attempt to be as comprehensive in the theorems it
 proves as is @(see std::defalist).  However, it is compatible with
@@ -4050,6 +4071,13 @@ arguments.  For example: </p>
     :already-definedp t)
 
  })")
+
+(defxdoc defmap
+  :parents (fty deftypes)
+  :short "Define an alist type with a fixing function that drops pairs with malformed keys rather than fixing them."
+  :long "<p>@('Defmap') is just an abbreviation for @('defalist') with the option
+@(':strategy :drop-keys').</p>")
+
 
 (defxdoc defprod
   :parents (fty deftypes)

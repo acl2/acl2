@@ -160,6 +160,18 @@
                   :valp-of-nil nil))))
 
 
+
+(local (encapsulate ()
+         (local (defalist no-key (x)
+                  :val (integerp x)
+                  :valp-of-nil nil))))
+
+
+(local (encapsulate ()
+         (local (defalist no-val (x)
+                  :key (integer-listp x)
+                  :keyp-of-nil t))))
+
 ;; check for special trivial sorts of things that ACL2 can rewrite in deep
 ;; ways.  this has screwed us up before due to restrictions on :rewrite rules,
 ;; etc.
@@ -211,6 +223,8 @@
                   :val (not x)
                   :keyp-of-nil t
                   :valp-of-nil t))))
+
+
 
 
 
@@ -284,16 +298,16 @@
          (my-alistp (cdr x)))))
 
 (defthm my-alistp-when-not-consp
-  (implies (not (consp x))
-           (equal (my-alistp x)
-                  (not x))))
+  (implies (not (consp acl2::x))
+           (equal (my-alistp acl2::x)
+                  (not acl2::x))))
 
 (defthm my-alistp-of-cons
-  (equal (my-alistp (cons a x))
-         (and (consp a)
-              (stringp (car a))
-              (maybe-natp (cdr a))
-              (my-alistp x))))
+  (equal (my-alistp (cons acl2::a acl2::x))
+         (and (and (consp acl2::a)
+                   (stringp (car acl2::a))
+                   (maybe-natp (cdr acl2::a)))
+              (my-alistp acl2::x))))
 
 (defalist my-alistp (x)
   :key (stringp x)
@@ -301,6 +315,7 @@
   :keyp-of-nil nil
   :valp-of-nil t
   :already-definedp t
-  :true-listp t)
+  :true-listp t
+  :theory-hack ((local (in-theory (enable maybe-natp)))))
 
 ))

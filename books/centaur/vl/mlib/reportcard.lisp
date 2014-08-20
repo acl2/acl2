@@ -36,22 +36,9 @@
 (fty::defalist vl-reportcard
   :key-type stringp
   :val-type vl-warninglist-p
-  :count vl-reportcard-count)
-
-(defthm vl-reportcard-count-of-cdr-strong
-  (implies (and (vl-reportcard-p x)
-                (consp x))
-           (< (vl-reportcard-count (cdr x))
-              (vl-reportcard-count x)))
-  :rule-classes ((:rewrite) (:linear))
-  :hints(("Goal" :in-theory (enable vl-reportcard-count))))
-
-
-(defalist vl-reportcard-p (x)
+  :count vl-reportcard-count
   :parents (warnings)
   :short "A (typically fast) alist associating names to warnings."
-  :key (stringp x)
-  :val (vl-warninglist-p x)
   :keyp-of-nil nil
   :valp-of-nil t
   :long "<p>A <i>report card</i> associates names (strings) to lists of
@@ -74,24 +61,19 @@ of modules.  Depending on the context, we might want to associate either the
 elaborated (unparameterized) names of modules, or their original names, to
 their related warnings.</li>
 
-</ol>"
-  :already-definedp t)
+</ol>")
+
+(defthm vl-reportcard-count-of-cdr-strong
+  (implies (and (vl-reportcard-p x)
+                (consp x))
+           (< (vl-reportcard-count (cdr x))
+              (vl-reportcard-count x)))
+  :rule-classes ((:rewrite) (:linear))
+  :hints(("Goal" :in-theory (enable vl-reportcard-count))))
 
 (local (xdoc::set-default-parents vl-reportcard-p))
 
 (defsection vl-reportcard-basics
-
-  (defthm vl-reportcard-p-of-insert
-    (implies (and (consp a)
-                  (stringp (car a))
-                  (vl-warninglist-p (cdr a))
-                  (vl-reportcard-p x))
-             (vl-reportcard-p (insert a x)))
-    :hints(("Goal" :in-theory (enable (:ruleset set::primitive-rules)))))
-
-  (defthm vl-reportcard-p-of-mergesort
-    (implies (force (vl-reportcard-p x))
-             (vl-reportcard-p (mergesort x))))
 
   (defthm string-listp-of-alist-keys-when-vl-reportcard-p
     (implies (vl-reportcard-p x)

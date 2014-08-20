@@ -827,12 +827,6 @@
   (defmacro vl-stmt-claim (name type &key args extra-hyps true-listp)
     (vl-stmt-claim-fn name args extra-hyps type true-listp))
 
-  (local (defthm vl-caselist-p-of-append
-           (implies (and (vl-caselist-p x)
-                         (vl-caselist-p y))
-                    (vl-caselist-p (append x y)))
-           :hints(("Goal" :induct (len x)))))
-
   (with-output
     :off prove :gag-mode :goals
     (make-event
