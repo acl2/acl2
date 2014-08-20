@@ -7062,7 +7062,8 @@
 ; 1.2.2 (and this might happen with other Lisps in the future), backquote was
 ; implemented using structures hence equal could fail.  For example, in SBCL
 ; 1.2.2 we found that (equalp '`,x '`,x) evaluates to t but (equal '`,x '`,x)
-; evaluates to nil.  Here is why (again, in SBCL 1.2.2):
+; evaluates to nil.  Here is why (again, in SBCL 1.2.2), where first we
+; evaluate (setq *print-pretty* nil):
 
 ; * '`,x
 ;
