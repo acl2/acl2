@@ -1,4 +1,4 @@
-; ACL2 Version 6.4 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 6.5 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2014, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -8115,9 +8115,6 @@
 ; We define progn! here so that it is available before its call in redef+.  But
 ; first we define observe-raw-mode-setting, a call of which is laid down by the
 ; use of f-put-global on 'acl2-raw-mode-p in the definition of progn!.
-
-#-acl2-loop-only
-(defvar *load-compiled-stack* nil)
 
 #-acl2-loop-only
 (defun observe-raw-mode-setting (v state)

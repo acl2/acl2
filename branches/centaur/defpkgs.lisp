@@ -1,4 +1,4 @@
-; ACL2 Version 6.4 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 6.5 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2014, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -373,9 +373,9 @@
         ORDERED-SYMBOL-ALISTP-DELETE-ASSOC-EQ
         OTHERWISE
         OUR-DIGIT-CHAR-P OVERRIDE-HINTS
-        P! PKG-IMPORTS PAIRLIS$ PAIRLIS2 PAND PARGS
+        P! PAIRLIS$ PAIRLIS2 PAND PARGS
         PBT PC PCB PCB! PCS PE PE! PEEK-CHAR$
-        PF PKG-WITNESS PL PL2 PLET PLIST-WORLDP
+        PF PKG-IMPORTS PKG-WITNESS PL PL2 PLET PLIST-WORLDP
         PLIST-WORLDP-FORWARD-TO-ASSOC-EQ-EQUAL-ALISTP
         PLUSP POP-TIMER POR POSITION
         POSITION-AC POSITION-EQ POSITION-EQ-AC

@@ -1,4 +1,4 @@
-; ACL2 Version 6.4 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 6.5 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2014, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -931,16 +931,11 @@
 (defun-*1* pkg-imports (pkg)
   (if (stringp pkg)
       (pkg-imports pkg)
-    (gv pkg-witness (pkg) nil)))
+    (gv pkg-imports (pkg) nil)))
 
 (defun-*1* pkg-witness (pkg)
   (if (stringp pkg)
-      (if (find-non-hidden-package-entry
-           pkg (known-package-alist *the-live-state*))
-          (let ((ans (intern *pkg-witness-name* pkg)))
-; See comment in intern-in-package-of-symbol for an explanation of this trick.
-            ans)
-        (throw-raw-ev-fncall (list 'pkg-witness-er pkg)))
+      (pkg-witness pkg)
     (gv pkg-witness (pkg) (intern *pkg-witness-name* "ACL2"))))
 
 (defun-*1* numerator (x)

@@ -1,14 +1,14 @@
 <HTML>
-<HEAD><TITLE>ACL2 Version 6.4 Installation Guide</TITLE></HEAD>
+<HEAD><TITLE>ACL2 Version 6.5 Installation Guide</TITLE></HEAD>
 
 <BODY TEXT="#000000">
 <BODY BGCOLOR="#FFFFFF">
 
-<H1><A NAME="top">ACL2 Version 6.4 Installation Guide</A></H1>
+<H1><A NAME="top">ACL2 Version 6.5 Installation Guide</A></H1>
 
 <H3>NOTE: From time to time we may provide so-called <i>incremental
 releases</i> of ACL2.  Please follow the <a
-href="http://www.cs.utexas.edu/users/moore/acl2/v6-4/new.html">recent changes
+href="http://www.cs.utexas.edu/users/moore/acl2/v6-5/HTML/new.html">recent changes
 to this page</a> link on the <a
 href="http://www.cs.utexas.edu/users/moore/acl2/">ACL2 home page</a> for more
 information.</H3>
@@ -28,8 +28,8 @@ distribution</a> if one is available for your platform.  Otherwise:
 
 <ol>
 
-<li>Fetch <A HREF="http://www.cs.utexas.edu/users/moore/acl2/v6-4/distrib/acl2.tar.gz">
-acl2.tar.gz</A> into a new directory, say <code>acl2/v6-4/</code>.</li>
+<li>Fetch <A HREF="http://www.cs.utexas.edu/users/moore/acl2/v6-5/distrib/acl2.tar.gz">
+acl2.tar.gz</A> into a new directory, say <code>acl2/v6-5/</code>.</li>
 
 <li>Execute the following to create directory <code>acl2-sources/</code>:<br>
 <code>tar xfz acl2.tar.gz</code></li>
@@ -42,7 +42,7 @@ acl2.tar.gz</A> into a new directory, say <code>acl2/v6-4/</code>.</li>
   the latter case, stand in your new <code>acl2-sources/</code>
   directory and execute the following to create a
   <code>books/</code> subdirectory:<br>
-<code>tar xfz books-6.4.tar.gz</code></li>
+<code>tar xfz books-6.5.tar.gz</code></li>
 
 <li><a href="requirements.html">Obtain a Common Lisp implementation</a> if you don't
 already have one.</li>
@@ -61,15 +61,11 @@ make LISP=&lt;path_to_your_lisp_executable&gt;
 This will create a script in your <code>acl2-sources</code>
 directory for running ACL2, named <code>saved_acl2</code>.
 
-<li>OPTIONAL: Download gzipped tarfiles
-for <A HREF="http://acl2-books.googlecode.com/files/workshops-6.4.tar.gz">workshops
-books</A>
-and/or <A HREF="http://acl2-books.googlecode.com/files/nonstd-6.4.tar.gz">nonstd
-books</A> from the Google Code website
-into the <CODE>books/</CODE> directory (but first
-  create <CODE>books/</CODE> if you
-  skipped <A HREF="#create-books">that step</A>).  Further
-  instructions
+<li>OPTIONAL (and only if you obtained a gzipped tarfile above for the
+  books instead of using SVN): Download a gzipped tarfile for the
+  workshops books
+  from <code><a href="http://acl2.org">http://acl2.org</a></code>.
+  Further instructions
   are <A HREF="obtaining-and-installing.html#Sources">here</A>.</li>
 
 <li><A NAME="certify-books">Certify books (but first
@@ -86,7 +82,7 @@ The resulting log file, <code>make-regression.log</code>, should
 contain no occurrences of the string ``CERTIFICATION FAILED''; a
 normal exit (status 0) should guarantee this.  If you want additional
 explanation and further options, see the documentation
-for <A HREF="http://www.cs.utexas.edu/users/moore/acl2/v6-4/combined-manual/index.html?topic=ACL2____BOOKS-CERTIFICATION">BOOKS-CERTIFICATION</A>.
+for <A HREF="http://www.cs.utexas.edu/users/moore/acl2/v6-5/combined-manual/index.html?topic=ACL2____BOOKS-CERTIFICATION">BOOKS-CERTIFICATION</A>.
 
 </ol>
 

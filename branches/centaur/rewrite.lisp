@@ -1,4 +1,4 @@
-; ACL2 Version 6.4 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 6.5 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2014, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -8027,6 +8027,12 @@
             (prog2$
              (cw-gframe 1 nil (car (reverse (get-brr-global 'brr-gstack state))) nil)
              (value :invisible))))
+       (:btm
+        0 (lambda nil
+            (prog2$
+             (let ((gstack (get-brr-global 'brr-gstack state)))
+               (cw-gframe (length gstack) nil (car gstack) nil))
+             (value :invisible))))
        (:help
         0 (lambda nil
             (doc 'brr-commands)))
@@ -8337,6 +8343,12 @@
              (cw-gframe 1 nil
                         (car (reverse (get-brr-global 'brr-gstack state)))
                         nil)
+             (value :invisible))))
+       (:btm
+        0 (lambda nil
+            (prog2$
+             (let ((gstack (get-brr-global 'brr-gstack state)))
+               (cw-gframe (length gstack) nil (car gstack) nil))
              (value :invisible))))
        (:help
         0 (lambda nil

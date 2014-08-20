@@ -1,4 +1,4 @@
-; ACL2 Version 6.4 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 6.5 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2014, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -142,8 +142,8 @@
 
 (defun unknown-pkg-error-msg (fn pkg-name)
   (msg
-   "The call ~x0 is illegal because the argument is not the name of a ~
-      package currently known to ACL2."
+   "The call ~x0 is illegal because the argument is not the name of a package ~
+    currently known to ACL2."
    (list fn pkg-name)))
 
 (defun illegal-msg ()
@@ -2288,7 +2288,7 @@
     (ev-fncall-creator-er-msg
      (cadr val)))
    ((and (consp val)
-         (member-eq (car val) '(pkg-witness-er pkg-imports-er)))
+         (member-eq (car val) '(pkg-witness pkg-imports)))
     (unknown-pkg-error-msg (car val) (cadr val)))
 
 ; At one time we had the following case:
@@ -5445,7 +5445,7 @@
                        ,@(and modified-bound-vars
                               `((declare (ignore ,@modified-bound-vars))))
 
-; Here is a proof of nil in ACL2(h) 6.4 that exploits an unfortunate
+; Here is a proof of nil in ACL2(h)  6.4 that exploits an unfortunate
 ; "interaction of stobj-let and memoize", discussed in :doc note-6-5.  This
 ; example let us to add the call of memoize-flush in flush-form, below.  A
 ; comment in chk-stobj-field-descriptor explains how this flushing is important
