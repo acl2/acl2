@@ -456,7 +456,7 @@
 ; because we want to allow their use as constants.
 
 ; We now allow some variables (but still no constants) from the main Lisp
-; package.  See *common-lisp-specials-and-constants*.  The following two note
+; package.  See *common-lisp-specials-and-constants*.  The following note
 ; explains why we have been cautious here.
 
 ; Historical Note
@@ -492,6 +492,22 @@
                      ((and (not (= (length s) 0))
                            (eql (char s 0) #\*)
                            (eql (char s (1- (length s))) #\*))
+
+; It was an oversight that a symbol with a symbol-name of "*" has always been
+; considered a constant rather than a variable.  The intention was to view "*"
+; as a delimeter -- thus, even "**" is probably OK for a constant since the
+; empty string is delimited.  But it doesn't seem important to change this
+; now.  If we do make such a change, consider the following (at least).
+
+; - It will be necessary to update :doc defconst.
+
+; - Fix the error message for, e.g., (defconst foo::* 17), so that it doesn't
+;   say "does not begin and end with the character *".
+
+; - Make sure the error message is correct for (defun foo (*) *).  It should
+;   probably complain about the main Lisp package, not about "the syntax of a
+;   constant".
+
                       (if (equal p *main-lisp-package-name*)
                           nil
                         'constant))
@@ -7730,14 +7746,14 @@
 
 (defun strip-cadrs (x)
   (declare (xargs :guard (all->=-len x 2)))
-  (cond ((null x) nil)
+  (cond ((endp x) nil)
         (t (cons (cadar x) (strip-cadrs (cdr x))))))
 
 ; Rockwell Addition: Just moved from other-events.lisp
 
 (defun strip-cddrs (x)
   (declare (xargs :guard (all->=-len x 2)))
-  (cond ((null x) nil)
+  (cond ((endp x) nil)
         (t (cons (cddar x) (strip-cddrs (cdr x))))))
 
 (defun global-set-lst (alist wrld)

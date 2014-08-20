@@ -9,7 +9,15 @@
 # except that file acl2-startup-info.txt is always updated, with
 # a time stamp so that it will always be committed.
 
-rm -f acl2-startup-info.txt
+if [ -f "acl2-startup-info.txt" ]; then \
+    rm acl2-startup-info.txt ; \
+else \
+    echo "ERROR: There is no file acl2-startup-info.txt in this directory." ; \
+    echo "       Perhaps you are not in an ACL2 sources directory, as is" ; \
+    echo "       required in order to run $0." ; \
+    exit 1 ; \
+fi
+
 echo '"$Revision: $"' > acl2-startup-info.txt
 date >> acl2-startup-info.txt
 echo "Books \c" >> acl2-startup-info.txt
