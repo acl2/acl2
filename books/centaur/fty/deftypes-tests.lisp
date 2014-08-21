@@ -657,6 +657,21 @@
           (arithtmlist-double (cdr x)))))
 
 
+(define arithtm-op-p ((x arithtm-p))
+  (arithtm-case x
+    :num nil
+    :otherwise t))
+
+(define arithtm-op-p2 ((x arithtm-p))
+  (arithtm-case x
+    (:num nil)
+    (& t)))
+
+(define arithtm-op-p3 ((x arithtm-p))
+  (arithtm-case x
+    (:num nil)
+    (:plus t)
+    (& t)))
 
 
 (include-book "ihs/basic-definitions" :dir :system)

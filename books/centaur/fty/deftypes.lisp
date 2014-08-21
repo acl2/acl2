@@ -1686,49 +1686,83 @@
           :rule-classes ((:forward-chaining :trigger-terms ((,sum.kind ,sum.xvar))))))
       (local (in-theory (enable ,sum.kind))))))
 
-(defun flexsum-case-macro-kinds (var prods kwd-alist)
+(defun find-prod-by-kind (kind prods)
   (b* (((when (atom prods)) nil)
-       ((flexprod prod) (car prods)))
-    (cons `(,(if (atom (cdr prods))
+       ((flexprod prod) (car prods))
+       ((when (eq prod.kind kind)) prod))
+    (find-prod-by-kind kind (cdr prods))))
+    
+
+(defun flexsum-case-macro-kinds (var prods kwd-alist)
+  (b* (((when (atom kwd-alist)) nil)
+       ((when (eq (caar kwd-alist) :otherwise))
+        `((otherwise ,(cdar kwd-alist))))
+       ((flexprod prod) (find-prod-by-kind (caar kwd-alist) prods)))
+    (cons `(,(if (atom (cdr kwd-alist))
                  'otherwise
                prod.kind)
             (b* (((,prod.ctor-name ,var :quietp t) ,var))
               ,(cdr (assoc prod.kind kwd-alist))))
-          (flexsum-case-macro-kinds var (cdr prods) kwd-alist))))
+          (flexsum-case-macro-kinds var prods (cdr kwd-alist)))))
 
 (defun flexsum-case-macro-conds (var prods kwd-alist)
-  (b* (((when (atom prods)) nil)
-       ((flexprod prod) (car prods)))
-    (cons `(,(if (atom (cdr prods))
+  (b* (((when (atom kwd-alist)) nil)
+       ((when (eq (caar kwd-alist) :otherwise))
+        `((t ,(cdar kwd-alist))))
+       ((flexprod prod) (find-prod-by-kind (caar kwd-alist) prods)))
+    (cons `(,(if (atom (cdr kwd-alist))
                  t
                prod.cond)
             (b* (((,prod.ctor-name ,var :quietp t) ,var))
               ,(cdr (assoc prod.kind kwd-alist))))
-          (flexsum-case-macro-conds var (cdr prods) kwd-alist))))
+          (flexsum-case-macro-conds var prods (cdr kwd-alist)))))
 
 (defun flexsum-case-macro-fn (var-or-binding rest-args sum)
   (b* (((flexsum sum) sum)
        (var (if (consp var-or-binding) (car var-or-binding) var-or-binding))
        (kinds (flexprods->kinds sum.prods))
+       (allowed-keywordlist-keys (append kinds '(:otherwise)))
+       (allowed-parenthesized-keys (append kinds '(acl2::otherwise :otherwise acl2::&)))
+       ;; extract :foo bar :baz fuz style arguments
        ((mv kwd-alist rest)
         (extract-keywords sum.case
-                          kinds ;; add other allowed keywords here
+                          allowed-keywordlist-keys
                           rest-args nil))
-       ((when (and rest (intersectp kinds ;; remove other allowed keywords here?
-                                    (strip-cars kwd-alist))))
-        ;; We don't know whether the
-        ;; (sum-case x :kind1 term1 ...) or
-        ;; (sum-case x (:kind1 term1) ...) syntax was intended.
+       (kwd-alist (reverse kwd-alist))
+       ((when (and rest kwd-alist))
+        ;; Note: if we ever want to allow keyword options that aren't themselves cases,
+        ;; change this error condition.
+        ;; For now, only allow one kind of syntax --
+        ;; either :foo bar :baz fuz
+        ;; or    (:foo bar) (:baz fuz)
+        ;; but not :foo bar (:baz fuz).
         (er hard? sum.case "Inconsistent syntax: ~x0" rest-args))
        ((unless (and (alistp rest)
                      (true-list-listp rest)
                      ;; weaken this?
-                     (subsetp (strip-cars rest) kinds)))
+                     (subsetp (strip-cars rest) allowed-parenthesized-keys)))
         (er hard? sum.case "Malformed cases: ~x0~%" rest))
-       (kind-kwd-alist (append (pairlis$ (strip-cars rest)
-                                         (pairlis$ (make-list (len rest) :initial-element 'progn$)
-                                                   (strip-cdrs rest)))
-                               kwd-alist))
+       (keys (if kwd-alist
+                 (strip-cars kwd-alist)
+               (sublis '((acl2::otherwise . :otherwise)
+                         (acl2::&         . :otherwise))
+                       (strip-cars rest))))
+       (vals (if kwd-alist
+                 (strip-cdrs kwd-alist)
+               (pairlis$ (make-list (len rest) :initial-element 'progn$)
+                         (strip-cdrs rest))))
+       ((unless (<= (len (member :otherwise keys)) 1))
+        ;; otherwise must be last or not exist
+        (er hard? sum.case "Otherwise case must be last"))
+       ((unless (no-duplicatesp keys))
+        (er hard? sum.case "Duplicate cases among: ~x0" keys))
+       ((unless (or (member :otherwise keys)
+                    (subsetp kinds keys)))
+        (er hard? sum.case "Missing case(s): ~x0~%" (set-difference-eq kinds keys)))
+       ((when (and (member :otherwise keys)
+                   (subsetp kinds keys)))
+        (er hard? sum.case "Otherwise is present but all cases are already covered"))
+       (kind-kwd-alist (pairlis$ keys vals))
        (body
         (if sum.kind
             `(case (,sum.kind ,var)

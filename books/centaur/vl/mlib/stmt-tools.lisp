@@ -227,7 +227,8 @@ expressions.</p>"
     :vl-forstmt          (list x.body)
     :vl-blockstmt        x.stmts
     :vl-repeatstmt       (list x.body)
-    :vl-timingstmt       (list x.body))
+    :vl-timingstmt       (list x.body)
+    :otherwise           nil)
   ///
   (local (in-theory (enable vl-stmtlist-count
                             vl-caselist-count
@@ -270,7 +271,8 @@ directly part of the statement.</p>"
     :vl-forstmt     (list x.initlhs x.initrhs x.test x.nextlhs x.nextrhs)
     :vl-repeatstmt  (list x.condition)
     :vl-blockstmt   nil
-    :vl-timingstmt  nil))
+    :vl-timingstmt  nil
+    :otherwise      nil))
 
 
 (define vl-compoundstmt->ctrl

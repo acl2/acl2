@@ -228,7 +228,10 @@ with, we can safely remove @('plus') from our module list.</p>")
 
     (:vl-usertype
      ;; BOZO maybe some day extend this to be able to do lookups
-     nil)))
+     nil)
+
+    ;; ??
+    (:vl-enum nil)))
 
 (define vl-datatype-exprtype ((x vl-datatype-p))
   ;; BOZO misplaced, eventually should be integrated into sizing, etc.
@@ -258,7 +261,10 @@ with, we can safely remove @('plus') from our module list.</p>")
 
     (:vl-usertype
      ;; BOZO maybe some day extend this to be able to do lookups
-     nil)))
+     nil)
+
+    ;; ???
+    (:vl-enum nil)))
 
 (define vl-override-parameter-with-type
   :short "Try to override a parameter with a new datatype."

@@ -53,6 +53,7 @@
     fty::patbind-flexprod
     fty::flexprod->ctor-name
     fty::nice-cond
+    fty::find-prod-by-kind
     fty::flexsum-case-macro-kinds
     fty::flexsum-case-macro-conds
     fty::flexsum-case-macro-fn
