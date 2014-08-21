@@ -62,8 +62,10 @@
 (defconst *vl-nettypes-kwds*
   (strip-cars *vl-nettypes-kwd-alist*))
 
+(defoption vl-maybe-nettypename-p vl-nettypename-p)
+
 (defparser vl-parse-optional-nettype ()
-  :result (vl-maybe-netdecltype-p val)
+  :result (vl-maybe-nettypename-p val)
   :resultp-of-nil t
   :fails never
   :count strong-on-value
@@ -102,7 +104,7 @@
 
 (defthm vl-netdecltype-p-of-vl-parse-netdecltype
   (implies (not (mv-nth 0 (vl-parse-netdecltype)))
-           (vl-netdecltype-p (car (mv-nth 1 (vl-parse-netdecltype)))))
+           (vl-nettypename-p (car (mv-nth 1 (vl-parse-netdecltype)))))
   :hints(("Goal" :in-theory (enable vl-parse-netdecltype))))
 
 (defthm vl-location-p-of-vl-parse-netdecltype
@@ -246,14 +248,12 @@
           (rest := (vl-parse-list-of-net-identifiers)))
         (return (cons (cons id ranges) rest))))
 
-
-
 (define vl-build-netdecls
   ((loc         vl-location-p)
    (pairs       (and (alistp pairs)
                      (vl-idtoken-list-p (strip-cars pairs))
                      (vl-rangelist-list-p (strip-cdrs pairs))))
-   (type        vl-netdecltype-p)
+   (typename    vl-nettypename-p)
    (range       vl-maybe-range-p)
    (atts        vl-atts-p)
    (vectoredp   booleanp)
@@ -261,22 +261,28 @@
    (signedp     booleanp)
    (delay       vl-maybe-gatedelay-p)
    (cstrength   vl-maybe-cstrength-p))
-  :returns (nets vl-netdecllist-p :hyp :fguard)
+  :returns (nets vl-vardecllist-p :hyp :fguard)
   (if (atom pairs)
       nil
-    (cons (make-vl-netdecl :loc loc
+    (cons (make-vl-vardecl :loc loc
                            :name (vl-idtoken->name (caar pairs))
-                           :type type
-                           :range range
-                           :arrdims (cdar pairs)
+                           :type (make-vl-nettype :name typename
+                                                  :range range
+                                                  :signedp signedp)
+                           :dims (cdar pairs)
                            :atts atts
                            :vectoredp vectoredp
                            :scalaredp scalaredp
-                           :signedp signedp
                            :delay delay
                            :cstrength cstrength)
-          (vl-build-netdecls loc (cdr pairs) type range atts
-                             vectoredp scalaredp signedp delay cstrength))))
+          (vl-build-netdecls loc (cdr pairs) typename range atts
+                             vectoredp scalaredp signedp delay cstrength)))
+
+  :prepwork
+  ((local (defthm l0
+            (implies (vl-rangelist-p x)
+                     (vl-packeddimensionlist-p x))
+            :hints(("Goal" :induct (len x)))))))
 
 
 
@@ -444,7 +450,7 @@
    :guard (vl-atts-p atts)
    :result (and (consp val)
                 (vl-assignlist-p (car val))
-                (vl-netdecllist-p (cdr val)))
+                (vl-vardecllist-p (cdr val)))
    :fails gracefully
    :count strong
 

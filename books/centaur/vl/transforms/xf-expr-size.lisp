@@ -453,6 +453,77 @@ details.</p>")
 ;
 ; -----------------------------------------------------------------------------
 
+(define vl-datatype-width
+  :parents (vl-expr-selfsize)
+  :short "Get the self-determined width for a data type."
+  ((x vl-datatype-p))
+  :returns
+  (mv (successp booleanp :rule-classes :type-prescription
+                "NOTE: @('width') may still be NIL on success.")
+      (errmsg maybe-stringp :rule-classes :type-prescription
+              "On failure: a very brief explanation of the failure reason.")
+      (width  maybe-posp :rule-classes :type-prescription
+              "On success: the self-determined width for this type or NIL
+               if this type doesn't have a self-determined width (e.g.,
+               real numbers)."))
+  :long "<p>BOZO we don't try very hard yet.  Eventually this will need to know
+         how to look up the sizes of user-defined types, etc.</p>"
+  (b* (((fun (fail reason))   (mv nil reason nil))
+       ((fun (success width)) (mv t nil width)))
+
+    (vl-datatype-case x
+
+      (:vl-nettype
+       ;; The self-determined width is completely governed by the range, so
+       ;; this is easy:
+       (if (vl-maybe-range-resolved-p x.range)
+           (success (vl-maybe-range-size x.range))
+         (fail "range isn't resolved")))
+
+      (:vl-coretype
+       (case x.name
+         ;; See SystemVerilog-2012 Section 6.11, Integer Data Types.
+
+         ;; integer atom types -- these don't have any dimensions, they're just fixed sizes
+         (:vl-byte     (success 8))
+         (:vl-shortint (success 16))
+         (:vl-int      (success 32))
+         (:vl-longint  (success 64))
+         (:vl-integer  (success 32))
+         (:vl-time     (success 64))
+
+         ;; integer vector types -- these have arbitrary packed dimensions.
+         ((:vl-bit :vl-logic :vl-reg)
+          (cond ((atom x.dims)
+                 ;; No dimensions means it's just a scalar.  That's fine: just 1 bit.
+                 (success 1))
+                ((atom (cdr x.dims))
+                 ;; A single dimension, maybe we can figure out its size?
+                 (b* ((dim (car x.dims))
+                      ((when (eq dim :vl-unsized-dimension)) (fail "unsized dimension"))
+                      ((unless (vl-range-resolved-p dim))    (fail "range isn't resolved")))
+                   (success (vl-range-size dim))))
+                (t
+                 (fail "multi-dimensional array"))))
+
+         (otherwise
+          ;; Something like a real, shortreal, void, realtime, chandle, etc.
+          ;; We don't try to size these, but we still claim success: these just
+          ;; don't have sizes.
+          (success nil))))
+
+      (:vl-struct ;; Eventually we'll want to support this for packed sizes
+       (fail "bozo: implement struct sizing"))
+
+      (:vl-union ;; Can these even be packed?
+       (fail "bozo: implement union sizing"))
+
+      (:vl-enum ;; need to compute size from the base type?
+       (fail "bozo: implement enum sizing"))
+
+      (:vl-usertype ;; need some way to do type lookups
+       (fail "bozo: implement sizing for user-defined types")))))
+
 (define vl-atom-selfsize
   :parents (vl-expr-selfsize)
   :short "Compute the self-determined size of an atom."
@@ -518,93 +589,37 @@ are not really supposed to have sizes.</p>"
             nil))
 
        (tag (tag item))
-       ((when (eq tag :vl-netdecl))
-        (b* (((vl-netdecl item) item)
-             ((when (consp item.arrdims))
-              ;; Shouldn't happen unless the module directly uses the name of
-              ;; an array in an expression; if we've properly converted
-              ;; bitselects to array-references, our expression-sizing code
-              ;; should not try to size its name.
-              (mv (fatal :type :vl-bad-identifier
-                         :msg "~a0: cannot size w1 because it is an array."
-                         :args (list elem name))
-                  nil))
-             ((unless (vl-maybe-range-resolved-p item.range))
-              ;; Shouldn't happen unless we had a problem resolving ranges
-              ;; earlier.
-              (mv (fatal :type :vl-bad-range
-                         :msg "~a0: cannot size ~w1 because its range is not ~
-                               resolved: ~a2."
-                         :args (list elem name item.range))
-                  nil))
-             (size (vl-maybe-range-size item.range)))
-          (mv (ok) size)))
+       ((unless (eq tag :vl-vardecl))
+        ;; It would be surprising if we get here -- this is an identifier that
+        ;; refers to something in the module, maybe an event, parameter, or
+        ;; instance?  It seems like we shouldn't hit this case unless the
+        ;; module contains something really strange.
+        (mv (fatal :type :vl-bad-identifier
+                   :msg "~a0: cannot size ~w1 because it is a ~x2; we ~
+                         expected to only need to size nets, registers, and ~
+                         variables."
+                   :args (list elem name (tag item)))
+            nil))
 
-       ((when (eq tag :vl-vardecl))
-        (b* (((vl-vardecl item) item)
-             ((when (consp item.dims))
-              ;; Analogous to the netdecl array case.
-              (mv (fatal :type :vl-bad-identifier
-                         :msg "~a0: cannot size ~w1 because it is an array."
-                         :args (list elem name))
-                  nil))
-             ((unless (eq (vl-datatype-kind item.vartype) :vl-coretype))
-              ;; Don't try to size tricky things yet.
-              (mv (ok) nil))
-             ((vl-coretype item.vartype) item.vartype)
+       ((vl-vardecl item) item)
+       ((when (consp item.dims))
+        ;; Shouldn't happen unless the module directly uses the name of an
+        ;; array in an expression; if we've properly converted bitselects to
+        ;; array-references, our expression-sizing code should not try to size
+        ;; its name.
+        (mv (fatal :type :vl-bad-identifier
+                   :msg "~a0: cannot size ~w1 because it is an array."
+                   :args (list elem name))
+            nil))
 
-             ;; These sizes come from Section 6.11 of the SystemVerilog-2012 Standard
-             ((when (eq item.vartype.name :vl-byte))     (mv (ok) 8))
-             ((when (eq item.vartype.name :vl-shortint)) (mv (ok) 16))
-             ((when (eq item.vartype.name :vl-int))      (mv (ok) 32))
-             ((when (eq item.vartype.name :vl-integer))  (mv (ok) 32))
-             ((when (eq item.vartype.name :vl-longint))  (mv (ok) 64))
-             ((when (eq item.vartype.name :vl-time))     (mv (ok) 64))
+       ((mv okp reason size) (vl-datatype-width item.type))
+       ((unless okp)
+        (mv (fatal :type :vl-sizing-failure
+                   :msg "~a0: failed to size ~w1; ~s2."
+                   :args (list elem name reason))
+            nil)))
+    (mv (ok) size))
 
-             ((unless (or (eq item.vartype.name :vl-bit)
-                          (eq item.vartype.name :vl-logic)
-                          (eq item.vartype.name :vl-reg)))
-              ;; Something like a real, shortreal, void, realtime, chandle, etc.,
-              ;; I'm just not going to try to size these.
-              (mv (ok) nil))
-
-             ;; Else, some integer vector type.
-             ((when (atom item.vartype.dims)) (mv (ok) 1)) ;; No dimensions --> 1 bit.
-             ((when (consp (cdr item.vartype.dims)))
-              (mv (fatal :type :vl-bad-dimensions
-                         :msg "~a0: cannot size ~w1.  It has multiple dimensions,
-                               which we don't yet support."
-                         :args (list elem name))
-                  nil))
-
-             ;; Else there's exactly one packed dimension here.
-             (dim (car item.vartype.dims))
-             ((when (eq dim :vl-unsized-dimension))
-              (mv (fatal :type :vl-bad-dimensions
-                         :msg "~a0: cannot size ~w1.  It has an unsized dimension."
-                         :args (list elem name))
-                  nil))
-
-             ((unless (vl-range-resolved-p dim))
-              ;; Shouldn't happen unless we had a problem resolving ranges
-              ;; earlier.
-              (mv (fatal :type :vl-bad-range
-                         :msg "~a0: cannot size ~w1 because its range is not ~
-                               resolved: ~a2."
-                         :args (list elem name dim))
-                  nil))
-             (size (vl-maybe-range-size dim)))
-          (mv (ok) size))))
-
-    ;; It would be surprising if we get here -- this is an identifier that
-    ;; refers to something in the module, maybe an event, parameter, or
-    ;; instance?  It seems like we shouldn't hit this case unless the module
-    ;; contains something really strange.
-    (mv (fatal :type :vl-bad-identifier
-               :msg "~a0: cannot size ~w1 because it is a ~x2; we expected to ~
-                     only need to size nets, registers, and variables."
-               :args (list elem name (tag item)))
-        nil))
   ///
   (defrule warning-irrelevance-of-vl-atom-selfsize
     (let ((ret1 (vl-atom-selfsize x mod ialist elem warnings))
@@ -656,7 +671,6 @@ the size of @('$random') as 32.</p>"
           (ret2 (vl-syscall-selfsize args arg-sizes context elem nil)))
       (implies (syntaxp (not (equal warnings ''nil)))
                (equal (mv-nth 1 ret1) (mv-nth 1 ret2))))))
-
 
 
 
@@ -1311,6 +1325,59 @@ annotations left by @(see vl-design-follow-hids) like (e.g.,
 ;
 ; -----------------------------------------------------------------------------
 
+
+(define vl-datatype-exprtype
+  :parents (vl-expr-typedecide)
+  :short "Get the self-determined type for a datatype."
+  ((x vl-datatype-p))
+  :returns
+  (mv (successp booleanp :rule-classes :type-prescription
+                "NOTE: type may still be NIL on success.")
+      (errmsg maybe-stringp :rule-classes :type-prescription
+              "On failure: a very brief explanation of the failure reason.")
+      (type vl-maybe-exprtype-p
+            "On success: the self-determined type of this expression.  Note
+             that some expressions (e.g., real numbers) have type NIL."))
+  :long "<p>BOZO we don't try very hard yet.  Eventually this will need to know
+         how to look up the sizes of user-defined types, etc.</p>"
+  (b* (((fun (fail reason))   (mv nil reason nil))
+       ((fun (success width)) (mv t nil width)))
+    (vl-datatype-case x
+
+      (:vl-nettype
+       (success (if x.signedp :vl-signed :vl-unsigned)))
+
+      (:vl-coretype
+       (case x.name
+         ((:vl-byte :vl-shortint :vl-int :vl-longint :vl-integer :vl-time
+           :vl-bit :vl-logic :vl-reg)
+          ;; See also vl-parse-core-data-type.  When using any of the above
+          ;; types, a logic designer can provide an optional `signed` or
+          ;; `unsigned` keyword that, presumably, overrides the default
+          ;; signedness.  The parser handles this and must set up the
+          ;; coretype.signedp field appropriately.  So, here, we just need to
+          ;; look at that field.
+          (success (if x.signedp :vl-signed :vl-unsigned)))
+
+         (otherwise
+          ;; Some other kind of core type like void, string, chandle, event,
+          ;; or similar.  We're not going to assign any type to these, but
+          ;; it's not any kind of error.
+          (success nil))))
+
+      (:vl-enum ;; just need to look at the base type, right?
+       (fail "bozo: implement enum typing"))
+
+      (:vl-struct ;; just need to look at signedp and packed?
+       (fail "bozo: implement struct typing"))
+
+      (:vl-union ;; just need to look at signedp and packed?
+       (fail "bozo: implement union typing"))
+
+      (:vl-usertype
+       ;; BOZO maybe some day extend this to be able to do lookups
+       (fail "bozo: implement user-defined type typing")))))
+
 (define vl-atom-typedecide
   :parents (vl-expr-typedecide)
   :short "Effectively computes the \"self-determined\" type of an atom."
@@ -1365,59 +1432,35 @@ producing some warnings.</p>"
             nil))
 
        (tag (tag item))
-       ((when (eq tag :vl-netdecl))
-        (b* (((vl-netdecl item) item)
-             ((when (consp item.arrdims))
-              ;; Shouldn't happen unless the module directly uses the name of
-              ;; an array in an expression.
-              (mv (fatal :type :vl-bad-identifier
-                         :msg "~a0: cannot determine the type of ~w1 because ~
-                               it is an unindexed reference to an array."
-                         :args (list elem name))
-                  nil))
-             (type (if item.signedp :vl-signed :vl-unsigned)))
-          (mv (ok) type)))
+       ((unless (eq tag :vl-vardecl))
+        ;; It would be surprising if we get here -- this is an identifier that
+        ;; refers to something in the module, maybe an event, parameter, or
+        ;; instance?  It seems like we shouldn't hit this case unless the
+        ;; module contains something really strange.
+        (mv (fatal :type :vl-bad-identifier
+                   :msg "~a0: cannot determine the type of ~w1 because it is ~
+                         a ~x2; we only expected to type net, register, and ~
+                         variable declarations."
+                   :args (list elem name (tag item)))
+            nil))
 
-       ((when (eq tag :vl-vardecl))
-        (b* (((vl-vardecl item) item)
-             ((when (consp item.dims))
-              ;; Shouldn't happen unless the module directly uses the name of
-              ;; an array in an expression.
-              (mv (fatal :type :vl-bad-identifier
-                         :msg "~a0: cannot determine the type of ~w1 because ~
-                               it is an unindexed reference to an array."
-                         :args (list elem name))
-                  nil))
-             ((unless (eq (vl-datatype-kind item.vartype) :vl-coretype))
-              ;; Don't try to size tricky things yet.
-              (mv (ok) nil))
-             ((vl-coretype item.vartype) item.vartype)
-             ((when (member item.vartype.name
-                            '(:vl-byte :vl-shortint :vl-int :vl-integer :vl-longint :vl-time
-                              :vl-bit :vl-logic :vl-reg)))
-              ;; See also vl-parse-core-data-type.  When using any of the above
-              ;; types, a logic designer can provide an optional `signed` or
-              ;; `unsigned` keyword that, presumably, overrides the default
-              ;; signedness.  The parser handles this and must set up the
-              ;; coretype.signedp field appropriately.  So, here, we just need
-              ;; to look at that field.
-              (mv (ok) (if item.vartype.signedp
-                           :vl-signed
-                         :vl-unsigned))))
-          ;; Else, some other kind of core type, like void, string, chandle,
-          ;; event, or similar.  We're not going to assign any type to these.
-          (mv (ok) nil))))
+       ((vl-vardecl item) item)
+       ((when (consp item.dims))
+        ;; Shouldn't happen unless the module directly uses the name of an
+        ;; array in an expression.
+        (mv (fatal :type :vl-bad-identifier
+                   :msg "~a0: cannot determine the type of ~w1 because it is ~
+                         an unindexed reference to an array."
+                   :args (list elem name))
+            nil))
+       ((mv okp reason type) (vl-datatype-exprtype item.type))
+       ((unless okp)
+        (mv (fatal :type :vl-bad-identifier
+                   :msg "~a0: cannot determine the type of ~w1; ~s2."
+                   :args (list elem name reason))
+            nil)))
+    (mv (ok) type))
 
-    ;; It would be surprising if we get here -- this is an identifier that
-    ;; refers to something in the module, maybe an event, parameter, or
-    ;; instance?  It seems like we shouldn't hit this case unless the module
-    ;; contains something really strange.
-    (mv (fatal :type :vl-bad-identifier
-               :msg "~a0: cannot determine the type of ~w1 because it is a ~
-                     ~x2; we only expected to type net, register, and ~
-                     variable declarations."
-               :args (list elem name (tag item)))
-        nil))
   ///
   (defrule warning-irrelevance-of-vl-atom-typedecide
     (let ((ret1 (vl-atom-typedecide x mod ialist elem warnings))

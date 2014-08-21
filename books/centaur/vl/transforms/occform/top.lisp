@@ -326,27 +326,19 @@ its signedness is no longer relevant.</p>"
             x))
 
        (tag (tag item))
-       ((when (eq tag :vl-netdecl))
-        (b* (((vl-netdecl item) item)
-             ((unless (atom item.arrdims))
-              (mv (fatal :type :vl-occform-bad-id
-                         :msg "Trying to occform identifier ~a0, which has array dimensions."
-                         :args (list x))
-                  x)))
-          (vl-occform-extend-id x item.range warnings)))
+       ((unless (eq tag :vl-vardecl))
+        (mv (fatal :type :vl-occform-bad-id
+                   :msg "Trying to occform identifier ~a0, which has some strange type ~x1."
+                   :args (list x (tag item)))
+            x))
 
-       ((when (eq tag :vl-vardecl))
-        (b* (((unless (vl-simplereg-p item))
-              (mv (fatal :type :vl-occform-bad-id
-                         :msg "Trying to occform identifier ~a0, which is not a simple reg."
-                         :args (list x))
-                  x)))
-          (vl-occform-extend-id x (vl-simplereg->range item) warnings))))
+       ((unless (vl-simplevar-p item))
+        (mv (fatal :type :vl-occform-bad-id
+                   :msg "Trying to occform identifier ~a0, which is not a simple var."
+                   :args (list x))
+            x)))
 
-    (mv (fatal :type :vl-occform-bad-id
-               :msg "Trying to occform identifier ~a0, which has some strange type ~x1."
-               :args (list x (tag item)))
-        x))
+    (vl-occform-extend-id x (vl-simplevar->range item) warnings))
   ///
   (defthm vl-expr->finalwidth-of-vl-occform-argfix
     (equal (vl-expr->finalwidth (mv-nth 1 (vl-occform-argfix x mod ialist warnings)))
@@ -390,14 +382,6 @@ its signedness is no longer relevant.</p>"
 
 (defmacro occform-return (&key (warnings 'warnings) (nf 'nf) mods modinsts assigns)
   `(mv ,warnings ,mods ,modinsts ,assigns ,nf))
-
-
-
-;; (define vl-occform-argfix ((x vl-expr-p))
-;;   :guard (and (posp (vl-expr->finalwidth x))
-;;               (vl-expr->finaltype x))
-;;   :returns (new-x vl-expr-p)
-;;   (if (vl-idexpr-p x)
 
 
 

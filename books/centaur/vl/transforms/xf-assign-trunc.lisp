@@ -253,10 +253,11 @@ its width reduced and that drops the chopped off bits.</p>"
        (tmp-expr         (vl-idexpr tmp-name rhsw :vl-unsigned))
 
        ;; wire [rhsw-1:0] trunc_12345;
-       (tmp-decl   (make-vl-netdecl :loc   x.loc
+       (type       (change-vl-nettype *vl-plain-old-wire-type*
+                                      :range (vl-make-n-bit-range rhsw)))
+       (tmp-decl   (make-vl-vardecl :loc   x.loc
                                     :name  tmp-name
-                                    :type  :vl-wire
-                                    :range (vl-make-n-bit-range rhsw)))
+                                    :type  type))
 
        ;; assign trunc_12345 = rhs;
        (tmp-assign (make-vl-assign :loc    x.loc
@@ -264,7 +265,7 @@ its width reduced and that drops the chopped off bits.</p>"
                                    :expr   x.expr))
 
        (delta      (change-vl-delta delta
-                                    :netdecls (cons tmp-decl delta.netdecls)
+                                    :vardecls (cons tmp-decl delta.vardecls)
                                     :assigns  (cons tmp-assign delta.assigns)
                                     :nf       nf))
 
@@ -320,14 +321,14 @@ its width reduced and that drops the chopped off bits.</p>"
         x)
 
        (delta              (vl-starting-delta x))
-       (delta              (change-vl-delta delta :netdecls x.netdecls))
+       (delta              (change-vl-delta delta :vardecls x.vardecls))
        ((mv assigns delta) (vl-assignlist-trunc x.assigns delta))
        ((vl-delta delta)   (vl-free-delta delta)))
 
     (change-vl-module x
-                      ;; We started out with x.netdecls and extended them, so
+                      ;; We started out with x.vardecls and extended them, so
                       ;; this has everything we want
-                      :netdecls delta.netdecls
+                      :vardecls delta.vardecls
                       ;; We rewrote all of x's assigns, but there are also
                       ;; assigns in the delta, so merge them.
                       :assigns (revappend-without-guard delta.assigns assigns)

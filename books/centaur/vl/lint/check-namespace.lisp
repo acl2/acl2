@@ -47,44 +47,54 @@ linting.</p>")
 (local (xdoc::set-default-parents check-namespace))
 
 (define vl-module-check-namespace ((x vl-module-p))
-  :returns (new-x vl-module-p :hyp :fguard "Perhaps extended with warnings.")
+  :returns (new-x vl-module-p "Perhaps extended with warnings.")
   (b* (((vl-module x) x)
        (warnings x.warnings)
+
+       ;; Clashing external port names?
+       (portdupes (duplicated-members (remove nil (vl-portlist->names x.ports))))
+       (warnings
+        (if portdupes
+            (fatal :type :vl-bad-ports
+                   :msg "Duplicate port names: ~&0."
+                   :args (list portdupes))
+          warnings))
+
+       ;; Clashing port decls?
        (pdnames     (vl-portdecllist->names x.portdecls))
        (pdnames-s   (mergesort pdnames))
+       (warnings
+        (if (mbe :logic (no-duplicatesp-equal pdnames)
+                 :exec (same-lengthp pdnames pdnames-s))
+            warnings
+          (fatal :type :vl-bad-portdecls
+                 :msg "Duplicate port declaration names: ~&0."
+                 :args (list (duplicated-members pdnames)))))
+
+       ;; Clashing internal names?
        (namespace   (vl-module->modnamespace x))
        (namespace-s (mergesort namespace))
-       (overlap     (intersect pdnames-s namespace-s))
-
-       ((mv & warnings)
-        (vl-portlist-reasonable-p-warn x.ports warnings))
-
        (warnings
         (if (mbe :logic (no-duplicatesp-equal namespace)
                  :exec (same-lengthp namespace namespace-s))
             warnings
-          (cons (make-vl-warning :type :vl-namespace-error
-                                 :msg "Illegal redefinition of ~&0."
-                                 :args (list (duplicated-members namespace))
-                                 :fatalp t
-                                 :fn 'vl-module-check-namespace)
-                warnings)))
+          (fatal :type :vl-namespace-error
+                 :msg "Illegal redefinition of ~&0."
+                 :args (list (duplicated-members namespace)))))
 
-       (palist (vl-portdecl-alist x.portdecls))
-       (ialist (vl-moditem-alist x))
+       (overlap (intersect pdnames-s namespace-s))
+       (palist  (vl-portdecl-alist x.portdecls))
+       (ialist  (vl-moditem-alist x))
        ((mv & warnings)
         (vl-overlap-compatible-p-warn overlap x palist ialist warnings)))
     (change-vl-module x :warnings warnings)))
 
-(defprojection vl-modulelist-check-namespace (x)
-  (vl-module-check-namespace x)
-  :guard (vl-modulelist-p x)
-  :result-type vl-modulelist-p)
+(defprojection vl-modulelist-check-namespace ((x vl-modulelist-p))
+  :returns (new-x vl-modulelist-p)
+  (vl-module-check-namespace x))
 
 (define vl-design-check-namespace ((x vl-design-p))
   :returns (new-x vl-design-p)
-  (b* ((x (vl-design-fix x))
-       ((vl-design x) x))
-    (change-vl-design x
-                      :mods (vl-modulelist-check-namespace x.mods))))
+  (b* (((vl-design x) x))
+    (change-vl-design x :mods (vl-modulelist-check-namespace x.mods))))
 

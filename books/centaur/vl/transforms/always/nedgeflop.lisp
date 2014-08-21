@@ -83,28 +83,28 @@ asynchronous set and reset signals.</p>
   :returns (mv (exprs     vl-exprlist-p :hyp :fguard)
                (ports     vl-portlist-p :hyp :fguard)
                (portdecls vl-portdecllist-p :hyp :fguard)
-               (netdecls  vl-netdecllist-p :hyp :fguard))
+               (vardecls  vl-vardecllist-p :hyp :fguard))
   :short "Helper function for creating lists of primitive port declarations."
   :measure (nfix (- (nfix n) (nfix i)))
   (b* (((when (mbe :logic (zp (- (lnfix n) (lnfix i)))
                    :exec (eql i n)))
         (mv nil nil nil nil))
        (name1 (hons-copy (cat prefix (natstr i))))
-       ((mv expr1 port1 portdecl1 netdecl1)
+       ((mv expr1 port1 portdecl1 vardecl1)
         (vl-primitive-mkport name1 dir))
-       ((mv exprs2 ports2 portdecls2 netdecls2)
+       ((mv exprs2 ports2 portdecls2 vardecls2)
         (vl-primitive-mkports prefix (+ 1 (lnfix i)) n
                               :dir dir :loc loc)))
     (mv (cons expr1 exprs2)
         (cons port1 ports2)
         (cons portdecl1 portdecls2)
-        (cons netdecl1 netdecls2)))
+        (cons vardecl1 vardecls2)))
   ///
   (defmvtypes vl-primitive-mkports-fn
     (true-listp true-listp true-listp true-listp))
 
   (defthm len-of-vl-primitive-mkports
-    (b* (((mv exprs ports portdecls netdecls)
+    (b* (((mv exprs ports portdecls vardecls)
           (vl-primitive-mkports prefix i n
                                 :dir dir
                                 :loc loc))
@@ -112,10 +112,10 @@ asynchronous set and reset signals.</p>
       (and (equal (len exprs) len)
            (equal (len ports) len)
            (equal (len portdecls) len)
-           (equal (len netdecls) len))))
+           (equal (len vardecls) len))))
 
   (defthm vl-primitive-mkports-under-iff
-    (b* (((mv exprs ports portdecls netdecls)
+    (b* (((mv exprs ports portdecls vardecls)
           (vl-primitive-mkports prefix i n
                                 :dir dir
                                 :loc loc))
@@ -123,7 +123,7 @@ asynchronous set and reset signals.</p>
       (and (iff exprs     (posp len))
            (iff ports     (posp len))
            (iff portdecls (posp len))
-           (iff netdecls  (posp len))))))
+           (iff vardecls  (posp len))))))
 
 (define vl-nedgeflop-posedge-clks
   :short "Build the Verilog sensitivity list for a primitive n-edge flop."
@@ -279,20 +279,19 @@ example:</p>
   (b* ((name (cat "VL_1_BIT_" (natstr n) "_EDGE_FLOP"))
 
        ;; output q;
-       ((mv q-expr q-port q-portdecl ?q-netdecl)
+       ((mv q-expr q-port q-portdecl q-vardecl)
         (vl-primitive-mkport "q" :vl-output))
 
        ;; reg q;
-       (q-vardecl (make-vl-vardecl :vartype (make-vl-coretype :name :vl-reg)
-                                   :name "q"
-                                   :loc *vl-fakeloc*))
+       (q-portdecl (change-vl-portdecl q-portdecl :type *vl-plain-old-reg-type*))
+       (q-vardecl  (change-vl-vardecl  q-vardecl  :type *vl-plain-old-reg-type*))
 
        ;; input d0, d1, ..., d{n-1};
-       ((mv d-exprs d-ports d-portdecls d-netdecls)
+       ((mv d-exprs d-ports d-portdecls d-vardecls)
         (vl-primitive-mkports "d" 0 n :dir :vl-input))
 
        ;; input clk0, clk1, ..., clk{n-1};
-       ((mv clk-exprs clk-ports clk-portdecls clk-netdecls)
+       ((mv clk-exprs clk-ports clk-portdecls clk-vardecls)
         (vl-primitive-mkports "clk" 0 n :dir :vl-input))
        ;; always @(posedge clk0 or posedge clk1 or ...)
        ;;   if (clk0) q <= d0;
@@ -305,8 +304,7 @@ example:</p>
                   :origname  name
                   :ports     (cons q-port (append d-ports clk-ports))
                   :portdecls (cons q-portdecl (append d-portdecls clk-portdecls))
-                  :netdecls  (append d-netdecls clk-netdecls)
-                  :vardecls  (list q-vardecl)
+                  :vardecls  (cons q-vardecl (append d-vardecls clk-vardecls))
                   :alwayses  (list always)
                   :minloc    *vl-fakeloc*
                   :maxloc    *vl-fakeloc*
@@ -380,6 +378,8 @@ example:</p>
 
 ||#
 
+
+
 (defprojection vl-make-same-bitselect-from-each (x index)
   (vl-make-bitselect x index)
   :guard (and (vl-exprlist-p x)
@@ -388,6 +388,7 @@ example:</p>
   (defthm vl-exprlist-p-of-vl-make-same-bitselect-from-each
     (implies (force (vl-exprlist-p x))
              (vl-exprlist-p (vl-make-same-bitselect-from-each x index))))
+  (local (in-theory (enable repeat)))
   (defthm vl-exprlist->finalwidths-of-vl-make-same-bitselect-from-each
     (equal (vl-exprlist->finalwidths (vl-make-same-bitselect-from-each x index))
            (replicate (len x) 1)))
@@ -427,18 +428,18 @@ example:</p>
        (name (cat "VL_" (natstr width) "_BIT_" (natstr nedges) "_EDGE_FLOP"))
 
        ;; output [width-1:0] q;
-       ((mv q-expr q-port q-portdecl ?q-netdecl)
+       ((mv q-expr q-port q-portdecl q-vardecl)
         (vl-occform-mkport "q" :vl-output width))
 
        ;; Note: no reg declaration for q, because the actual regs will live in
        ;; the submodule instances.
 
        ;; input [width-1:0] d0, d1, ..., d{n-1};
-       ((mv d-exprs d-ports d-portdecls d-netdecls)
+       ((mv d-exprs d-ports d-portdecls d-vardecls)
         (vl-occform-mkports "d" 0 nedges :dir :vl-input :width width))
 
        ;; input clk0, clk1, ..., clk{n-1};
-       ((mv clk-exprs clk-ports clk-portdecls clk-netdecls)
+       ((mv clk-exprs clk-ports clk-portdecls clk-vardecls)
         (vl-occform-mkports "clk" 0 nedges :dir :vl-input :width 1))
 
        (primitive (vl-make-1-bit-n-edge-flop nedges))
@@ -449,7 +450,7 @@ example:</p>
            :origname  name
            :ports     (cons q-port (append d-ports clk-ports))
            :portdecls (cons q-portdecl (append d-portdecls clk-portdecls))
-           :netdecls  (cons q-netdecl (append d-netdecls clk-netdecls))
+           :vardecls  (cons q-vardecl (append d-vardecls clk-vardecls))
            :modinsts  modinsts
            :minloc    *vl-fakeloc*
            :maxloc    *vl-fakeloc*)
@@ -625,9 +626,9 @@ endmodule
                  (cat "VL_" (natstr width) "_BIT_" (natstr nedges) "_EDGE_FLOP")
                (cat "VL_" (natstr width) "_BIT_" (natstr nedges) "_EDGE_" (natstr delay) "_TICK_FLOP")))
 
-       ((mv qexpr qport qportdecl qnetdecl) (vl-occform-mkport "q" :vl-output width))
-       ((mv dexprs dports dportdecls dnetdecls) (vl-occform-mkports "d" 0 nedges :dir :vl-input :width width))
-       ((mv clkexprs clkports clkportdecls clknetdecls) (vl-occform-mkports "clk" 0 nedges :dir :vl-input :width 1))
+       ((mv qexpr qport qportdecl qvardecl) (vl-occform-mkport "q" :vl-output width))
+       ((mv dexprs dports dportdecls dvardecls) (vl-occform-mkports "d" 0 nedges :dir :vl-input :width width))
+       ((mv clkexprs clkports clkportdecls clkvardecls) (vl-occform-mkports "clk" 0 nedges :dir :vl-input :width 1))
 
        ;; note qregdecls are netdecls not regdecls
        ((mv qregexpr qregdecls qregassigns)
@@ -694,9 +695,9 @@ endmodule
                             :origname name
                             :ports (cons qport (append dports clkports))
                             :portdecls (cons qportdecl (append dportdecls clkportdecls))
-                            :netdecls `(,qnetdecl
-                                        ,@dnetdecls
-                                        ,@clknetdecls
+                            :vardecls `(,qvardecl
+                                        ,@dvardecls
+                                        ,@clkvardecls
                                         ,@clkdeldecls
                                         ,@ddeldecls
                                         ,@qregdecls

@@ -467,7 +467,6 @@ vl-merge-consts-aux on this yields</p>
   (deffixequiv-mutual vl-merge-consts))
 
 
-
 (define vl-spurious-concatenation-p
   :parents (vl-expr-clean-concats)
   :short "Determine if a concatenation such as @('{foo}') can be safely
@@ -506,14 +505,11 @@ atom (if it is the name of an unsigned net or register.)</p>"
             ;; Other things might be okay too, but for now we don't care.
             nil)
            (look (vl-fast-find-moduleitem (vl-id->name guts) mod ialist))
-           ((unless look)
-            nil)
-           ((when (eq (tag look) :vl-netdecl))
-            (not (vl-netdecl->signedp look)))
-           ((when (and (eq (tag look) :vl-vardecl)
-                       (vl-simplereg-p look)))
-            (not (vl-simplereg->signedp look))))
-        nil)
+           ((unless (and look
+                         (eq (tag look) :vl-vardecl)
+                         (vl-simplevar-p look)))
+            nil))
+        (not (vl-simplevar->signedp look)))
     (or (eq (vl-nonatom->op arg) :vl-bitselect)
         (eq (vl-nonatom->op arg) :vl-partselect-colon)
         ;; It would probably be fine to extend this with other operators
@@ -578,7 +574,6 @@ flattening out nested concatenations and merging concatenations like
   (deffixequiv-mutual vl-expr-clean-concats))
 
 
-
 (defines vl-expr-clean-selects1
   :short "Core routine behind @(see vl-expr-clean-selects)."
 
@@ -631,14 +626,12 @@ flattening out nested concatenations and merging concatenations like
          ;; now be signed, whereas the original was unsigned.
          (decl (vl-fast-find-moduleitem name mod ialist))
          ((mv decl-okp range)
-          (case (tag decl)
-            (:vl-netdecl
-             (mv (not (vl-netdecl->signedp decl)) (vl-netdecl->range decl)))
-            (:vl-vardecl
-             (if (vl-simplereg-p decl)
-                 (mv (not (vl-simplereg->signedp decl)) (vl-simplereg->range decl))
-               (mv nil nil)))
-            (otherwise (mv nil nil))))
+          (if (and decl
+                   (eq (tag decl) :vl-vardecl)
+                   (vl-simplevar-p decl)
+                   (not (vl-simplevar->signedp decl)))
+              (mv t (vl-simplevar->range decl))
+            (mv nil nil)))
 
          ((unless (and decl-okp (vl-maybe-range-resolved-p range)))
           ;; The declaration is too complex for us to really try to simplify any

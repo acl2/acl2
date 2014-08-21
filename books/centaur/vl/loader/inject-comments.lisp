@@ -297,7 +297,6 @@ and max, gathering their comments.</p>"
       (:vl-typedef   (vl-typedef->minloc x))
       ;; Other things don't necessarily have minlocs, but we'll just use their
       ;; ordinary locations.
-      (:vl-netdecl    (vl-netdecl->loc x))
       (:vl-taskdecl   (vl-taskdecl->loc x))
       (:vl-fundecl    (vl-fundecl->loc x))
       (:vl-paramdecl  (vl-paramdecl->loc x))
@@ -318,7 +317,6 @@ and max, gathering their comments.</p>"
       (:vl-typedef   (vl-typedef->maxloc x))
       ;; Other things don't have separate min/max locs, but we'll just use
       ;; their ordinary locations.
-      (:vl-netdecl    (vl-netdecl->loc x))
       (:vl-taskdecl   (vl-taskdecl->loc x))
       (:vl-fundecl    (vl-fundecl->loc x))
       (:vl-paramdecl  (vl-paramdecl->loc x))

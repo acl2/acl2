@@ -52,7 +52,6 @@ initially kept in a big, mixed list.</p>"
   (vl-port
    vl-portdecl
    vl-assign
-   vl-netdecl
    vl-vardecl
    vl-paramdecl
    vl-fundecl
@@ -77,10 +76,6 @@ initially kept in a big, mixed list.</p>"
 
    (defthm vl-modelementlist-p-when-vl-assignlist-p
      (implies (vl-assignlist-p x)
-              (vl-modelementlist-p x)))
-
-   (defthm vl-modelementlist-p-when-vl-netdecllist-p
-     (implies (vl-netdecllist-p x)
               (vl-modelementlist-p x)))
 
    (defthm vl-modelementlist-p-when-vl-vardecllist-p
@@ -125,7 +120,6 @@ initially kept in a big, mixed list.</p>"
       (:vl-port      (vl-port->loc x))
       (:vl-portdecl  (vl-portdecl->loc x))
       (:vl-assign    (vl-assign->loc x))
-      (:vl-netdecl   (vl-netdecl->loc x))
       (:vl-vardecl   (vl-vardecl->loc x))
       (:vl-paramdecl (vl-paramdecl->loc x))
       (:vl-fundecl   (vl-fundecl->loc x))
@@ -138,51 +132,47 @@ initially kept in a big, mixed list.</p>"
 
 
 (define vl-sort-modelements
-  ((x vl-modelementlist-p)
-   (ports vl-portlist-p)
-   (portdecls vl-portdecllist-p)
-   (assigns vl-assignlist-p)
-   (netdecls vl-netdecllist-p)
-   (vardecls vl-vardecllist-p)
+  ((x          vl-modelementlist-p)
+   (ports      vl-portlist-p)
+   (portdecls  vl-portdecllist-p)
+   (assigns    vl-assignlist-p)
+   (vardecls   vl-vardecllist-p)
    (paramdecls vl-paramdecllist-p)
-   (fundecls vl-fundecllist-p)
-   (taskdecls vl-taskdecllist-p)
-   (modinsts vl-modinstlist-p)
-   (gateinsts vl-gateinstlist-p)
-   (alwayses vl-alwayslist-p)
-   (initials vl-initiallist-p))
-  :returns (mv (ports vl-portlist-p)
-               (portdecls vl-portdecllist-p)
-               (assigns vl-assignlist-p)
-               (netdecls vl-netdecllist-p)
-               (vardecls vl-vardecllist-p)
+   (fundecls   vl-fundecllist-p)
+   (taskdecls  vl-taskdecllist-p)
+   (modinsts   vl-modinstlist-p)
+   (gateinsts  vl-gateinstlist-p)
+   (alwayses   vl-alwayslist-p)
+   (initials   vl-initiallist-p))
+  :returns (mv (ports      vl-portlist-p)
+               (portdecls  vl-portdecllist-p)
+               (assigns    vl-assignlist-p)
+               (vardecls   vl-vardecllist-p)
                (paramdecls vl-paramdecllist-p)
-               (fundecls vl-fundecllist-p)
-               (taskdecls vl-taskdecllist-p)
-               (modinsts vl-modinstlist-p)
-               (gateinsts vl-gateinstlist-p)
-               (alwayses vl-alwayslist-p)
-               (initials vl-initiallist-p))
+               (fundecls   vl-fundecllist-p)
+               (taskdecls  vl-taskdecllist-p)
+               (modinsts   vl-modinstlist-p)
+               (gateinsts  vl-gateinstlist-p)
+               (alwayses   vl-alwayslist-p)
+               (initials   vl-initiallist-p))
   (b* (((when (atom x))
-        (mv (rev (vl-portlist-fix ports))
-            (rev (vl-portdecllist-fix portdecls))
-            (rev (vl-assignlist-fix assigns))
-            (rev (vl-netdecllist-fix netdecls))
-            (rev (vl-vardecllist-fix vardecls))
+        (mv (rev (vl-portlist-fix      ports))
+            (rev (vl-portdecllist-fix  portdecls))
+            (rev (vl-assignlist-fix    assigns))
+            (rev (vl-vardecllist-fix   vardecls))
             (rev (vl-paramdecllist-fix paramdecls))
-            (rev (vl-fundecllist-fix fundecls))
-            (rev (vl-taskdecllist-fix taskdecls))
-            (rev (vl-modinstlist-fix modinsts))
-            (rev (vl-gateinstlist-fix gateinsts))
-            (rev (vl-alwayslist-fix alwayses))
-            (rev (vl-initiallist-fix initials))))
+            (rev (vl-fundecllist-fix   fundecls))
+            (rev (vl-taskdecllist-fix  taskdecls))
+            (rev (vl-modinstlist-fix   modinsts))
+            (rev (vl-gateinstlist-fix  gateinsts))
+            (rev (vl-alwayslist-fix    alwayses))
+            (rev (vl-initiallist-fix   initials))))
        (x1  (vl-modelement-fix (car x)))
        (tag (tag x1)))
     (vl-sort-modelements (cdr x)
                          (if (eq tag :vl-port)      (cons x1 ports)      ports)
                          (if (eq tag :vl-portdecl)  (cons x1 portdecls)  portdecls)
                          (if (eq tag :vl-assign)    (cons x1 assigns)    assigns)
-                         (if (eq tag :vl-netdecl)   (cons x1 netdecls)   netdecls)
                          (if (eq tag :vl-vardecl)   (cons x1 vardecls)   vardecls)
                          (if (eq tag :vl-paramdecl) (cons x1 paramdecls) paramdecls)
                          (if (eq tag :vl-fundecl)   (cons x1 fundecls)   fundecls)
@@ -214,7 +204,6 @@ initially kept in a big, mixed list.</p>"
                       vl-alwayslist-p-when-subsetp-equal
                       vl-vardecllist-p-when-subsetp-equal
                       vl-paramdecllist-p-when-subsetp-equal
-                      vl-netdecllist-p-when-subsetp-equal
                       vl-modinstlist-p-when-subsetp-equal
                       vl-gateinstlist-p-when-subsetp-equal
                       vl-fundecllist-p-when-subsetp-equal
@@ -224,7 +213,6 @@ initially kept in a big, mixed list.</p>"
                       vl-modelementlist-p-when-vl-initiallist-p
                       vl-modelementlist-p-when-vl-vardecllist-p
                       vl-modelementlist-p-when-vl-portdecllist-p
-                      vl-modelementlist-p-when-vl-netdecllist-p
                       vl-modelementlist-p-when-vl-modinstlist-p
                       vl-modelementlist-p-when-vl-gateinstlist-p
                       vl-modelementlist-p-when-vl-fundecllist-p

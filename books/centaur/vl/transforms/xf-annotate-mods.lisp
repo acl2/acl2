@@ -29,7 +29,6 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "xf-portdecl-sign")
 (include-book "xf-argresolve")
 (include-book "xf-orig")
 (include-book "xf-designwires")
@@ -54,8 +53,6 @@
                           :name xf-portcheck))
        (design (xf-cwtime (vl-design-designwires design)
                           :name xf-mark-design-wires))
-       (design (xf-cwtime (vl-design-portdecl-sign design)
-                          :name xf-crosscheck-port-signedness))
        (design (xf-cwtime (vl-design-resolve-indexing design)
                           :name xf-resolve-indexing))
        (design (xf-cwtime (vl-design-argresolve design)

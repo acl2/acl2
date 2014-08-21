@@ -52,8 +52,8 @@ it might not have the expected precedence.</p>
 (local (xdoc::set-default-parents oddexpr-check))
 
 (defval *fake-modelement*
-  (make-vl-netdecl :name "Fake_Module_Element"
-                   :type :vl-wire
+  (make-vl-vardecl :name "Fake_Module_Element"
+                   :type (make-vl-nettype :name :vl-wire)
                    :loc *vl-fakeloc*))
 
 (define vl-expr-probable-selfsize

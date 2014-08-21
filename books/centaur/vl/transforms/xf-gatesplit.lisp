@@ -33,6 +33,7 @@
 (include-book "../mlib/range-tools")
 (include-book "../mlib/namefactory")
 (include-book "../mlib/port-tools")
+(include-book "../mlib/expr-building")
 (local (include-book "../util/arithmetic"))
 (local (include-book "tools/do-not" :dir :system))
 (local (acl2::do-not fertilize))
@@ -90,7 +91,7 @@ gates come from.</p>")
   (mv (exprs    (and (vl-exprlist-p exprs)
                      (equal (len exprs) (nfix i)))
                 "Expressions for the new one-bit wires.")
-      (netdecls vl-netdecllist-p
+      (vardecls vl-vardecllist-p
                 :hyp (force (vl-location-p loc))
                 "Declarations for the new wires.")
       (nf       vl-namefactory-p
@@ -103,9 +104,8 @@ gates come from.</p>")
        (expr1    (make-vl-atom :guts (make-vl-id :name new-name)
                                :finalwidth 1
                                :finaltype :vl-unsigned))
-       (decl1    (make-vl-netdecl :name new-name
-                                  :type :vl-wire
-                                  :range nil
+       (decl1    (make-vl-vardecl :name new-name
+                                  :type *vl-plain-old-wire-type*
                                   :loc loc))
        ((mv exprs decls nf)
         (vl-make-temporary-wires prefix (- i 1) nf loc)))
@@ -491,7 +491,7 @@ gate, if necessary."
   :guard (member (vl-gateinst->type x) '(:vl-and :vl-or :vl-xor))
   :returns
   (mv (warnings       vl-warninglist-p)
-      (new-decls      vl-netdecllist-p :hyp :fguard
+      (new-decls      vl-vardecllist-p :hyp :fguard
                       "New declarations for temporary wires.")
       (new-gateinsts  vl-gateinstlist-p :hyp :fguard
                       "Replacement gate instances.")
@@ -585,7 +585,7 @@ gate(out,   tempN-2, iN);
   :guard (member (vl-gateinst->type x) '(:vl-nand :vl-nor :vl-xnor))
   :returns
   (mv (warnings       vl-warninglist-p)
-      (new-decls      vl-netdecllist-p :hyp :fguard
+      (new-decls      vl-vardecllist-p :hyp :fguard
                       "New declarations for temporary wires.")
       (new-gateinsts  vl-gateinstlist-p :hyp :fguard
                       "Replacement gate instances.")
@@ -716,7 +716,7 @@ we need to add a \"not\" gate at the end.</p>"
    (warnings vl-warninglist-p "Ordinary @(see warnings) accumulator."))
   :returns
   (mv (warnings       vl-warninglist-p)
-      (new-decls      vl-netdecllist-p :hyp :fguard "New declarations for temporary wires.")
+      (new-decls      vl-vardecllist-p :hyp :fguard "New declarations for temporary wires.")
       (new-gateinsts  vl-gateinstlist-p :hyp :fguard "Replacement gate instances.")
       (nf             vl-namefactory-p :hyp :fguard))
   (case (vl-gateinst->type x)
@@ -741,7 +741,7 @@ we need to add a \"not\" gate at the end.</p>"
    (warnings vl-warninglist-p))
   :returns
   (mv (warnings       vl-warninglist-p)
-      (new-decls      vl-netdecllist-p :hyp :fguard "New declarations for temporary wires.")
+      (new-decls      vl-vardecllist-p :hyp :fguard "New declarations for temporary wires.")
       (new-gateinsts  vl-gateinstlist-p :hyp :fguard "Replacement gate instances.")
       (nf             vl-namefactory-p :hyp :fguard))
   (b* (((when (atom x))
@@ -763,13 +763,13 @@ we need to add a \"not\" gate at the end.</p>"
         x)
        (gateinsts (vl-module->gateinsts x))
        (warnings  (vl-module->warnings x))
-       (netdecls  (vl-module->netdecls x))
+       (vardecls  (vl-module->vardecls x))
        (nf        (vl-starting-namefactory x))
        ((mv warnings new-decls gates nf)
         (vl-gateinstlist-gatesplit gateinsts nf warnings))
        (-         (vl-free-namefactory nf)))
     (change-vl-module x
-                      :netdecls (append new-decls netdecls)
+                      :vardecls (append new-decls vardecls)
                       :gateinsts gates
                       :warnings warnings)))
 

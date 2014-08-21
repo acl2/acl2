@@ -7,6 +7,27 @@
 (redef!)
 (set-ld-skip-proofsp t state)
 
+(defmacro trace-parser (fn)
+  `(trace$ (,fn
+            :entry (list ',fn
+                         ;;:tokens (vl-tokenlist->string-with-spaces tokens)
+                         ;;:warnings (len warnings)
+                         )
+            :exit (list :errmsg (first values)
+                        :val (second values)
+                        ;; :remainder (vl-tokenlist->string-with-spaces
+                        ;;             (third values))
+                        ;; :next-token (and (consp (third values))
+                        ;;                  (vl-token->type (car (third values))))
+                        ;; :warnings (len (fourth values))
+                        ))))
+(untrace$)
+
+(trace-parser vl-parse-port-declaration-noatts-fn)
+(trace-parser vl-parse-port-declaration-atts-fn)
+(trace-parser vl-parse-basic-port-declaration-tail)
+
+
 (defconst *edgesynth-debug* t)
 (defconst *vl-unparam-debug* t)
 
@@ -16,8 +37,27 @@
    :search-path (list "param2/")
    ))
 
+(defconst *loadconfig*
+  (make-vl-loadconfig
+   :start-files (list "gates/spec.v")
+   ))
+
 (defconsts (*loadresult* state)
   (vl-load *loadconfig*))
+
+
+
+(top-level
+ (with-local-ps
+   (vl-pp-modulelist (vl-design->mods (vl-loadresult->design *loadresult*)))))
+
+
+
+(untrace$)
+(trace$ (vl-parse-port-declaration-noatts-fn
+         :entry nil
+         :exit (list (second acl2::values))))
+
 
 (defconsts *simpconfig*
   (make-vl-simpconfig))

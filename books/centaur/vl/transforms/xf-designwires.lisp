@@ -31,6 +31,7 @@
 (in-package "VL")
 (include-book "../parsetree")
 (local (include-book "../util/arithmetic"))
+(local (std::add-default-post-define-hook :fix))
 
 (defxdoc designwires
   :parents (transforms)
@@ -54,54 +55,33 @@ tell whether a wire was in the original design.</p>")
 
 (local (xdoc::set-default-parents designwires))
 
-(define vl-netdecl-designwires ((x vl-netdecl-p))
-  :returns (new-x vl-netdecl-p :hyp :fguard)
-  :short "Add a @('VL_DESIGN_WIRE') attribute to a @(see vl-netdecl-p)."
-  (b* (((vl-netdecl x) x)
-       ((when (assoc-equal "VL_DESIGN_WIRE" x.atts))
-        ;; For idempotency, don't add it again.
-        x)
-       (atts (acons "VL_DESIGN_WIRE" nil x.atts)))
-    (change-vl-netdecl x :atts atts)))
-
-(defprojection vl-netdecllist-designwires (x)
-  (vl-netdecl-designwires x)
-  :guard (vl-netdecllist-p x)
-  :result-type vl-netdecllist-p
-  :nil-preservingp nil)
-
 (define vl-vardecl-designwires ((x vl-vardecl-p))
-  :returns (new-x vl-vardecl-p :hyp :fguard)
+  :returns (new-x vl-vardecl-p)
   :short "Add a @('VL_DESIGN_WIRE') attribute to a @(see vl-vardecl-p)."
-  (b* (((vl-vardecl x) x)
+  (b* (((vl-vardecl x) (vl-vardecl-fix x))
        ((when (assoc-equal "VL_DESIGN_WIRE" x.atts))
         ;; For idempotency, don't add it again.
         x)
        (atts (acons "VL_DESIGN_WIRE" nil x.atts)))
     (change-vl-vardecl x :atts atts)))
 
-(defprojection vl-vardecllist-designwires (x)
-  (vl-vardecl-designwires x)
-  :guard (vl-vardecllist-p x)
-  :result-type vl-vardecllist-p
-  :nil-preservingp nil)
+(defprojection vl-vardecllist-designwires ((x vl-vardecllist-p))
+  :returns (new-x vl-vardecllist-p)
+  (vl-vardecl-designwires x))
 
 (define vl-module-designwires ((x vl-module-p))
-  :returns (new-x vl-module-p :hyp :fguard)
+  :returns (new-x vl-module-p)
   :short "Add a @('VL_DESIGN_WIRE') attribute to every net and reg declaration
 in a module."
-  (b* (((vl-module x) x)
+  (b* (((vl-module x) (vl-module-fix x))
        ((when (vl-module->hands-offp x))
-        x))
-    (change-vl-module x
-                      :netdecls (vl-netdecllist-designwires x.netdecls)
-                      :vardecls (vl-vardecllist-designwires x.vardecls))))
+        x)
+       (new-vardecls (vl-vardecllist-designwires x.vardecls)))
+    (change-vl-module x :vardecls new-vardecls)))
 
-(defprojection vl-modulelist-designwires (x)
-  (vl-module-designwires x)
-  :guard (vl-modulelist-p x)
-  :result-type vl-modulelist-p
-  :nil-preservingp nil)
+(defprojection vl-modulelist-designwires ((x vl-modulelist-p))
+  :returns (new-x vl-modulelist-p)
+  (vl-module-designwires x))
 
 (define vl-design-designwires ((x vl-design-p))
   :returns (new-x vl-design-p)

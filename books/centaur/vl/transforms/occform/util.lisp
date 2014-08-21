@@ -46,7 +46,7 @@
    &key
    ((loc vl-location-p) '*vl-fakeloc*))
   :returns (mv (expr    vl-expr-p "already sized, unsigned")
-               (netdecl vl-netdecl-p))
+               (vardecl vl-vardecl-p))
   :verbosep t
   :long "<p>Imagine that we are trying to programmatically generate a module,
 and we want to add a wire with the given name and width.  This function just
@@ -55,11 +55,9 @@ generates the corresponding expression and net declaration.</p>"
        (width    (lposfix width))
        (expr     (vl-idexpr name width :vl-unsigned))
        (range    (vl-make-n-bit-range width))
-       (netdecl  (make-vl-netdecl :name name
-                                  :type :vl-wire
-                                  :range range
-                                  :loc loc)))
-    (mv expr netdecl)))
+       (type     (hons-copy (make-vl-nettype :name :vl-wire :signedp nil :range range)))
+       (vardecl  (make-vl-vardecl :name name :type type :loc loc)))
+    (mv expr vardecl)))
 
 (define vl-occform-mkport ((name  stringp)
                            (dir   vl-direction-p)
@@ -67,7 +65,7 @@ generates the corresponding expression and net declaration.</p>"
   :returns (mv (expr     vl-expr-p)
                (port     vl-port-p)
                (portdecl vl-portdecl-p)
-               (netdecl  vl-netdecl-p))
+               (vardecl  vl-vardecl-p))
   :short "Helper for creating ports in generated modules."
   :long "<p>Imagine that we are trying to programmatically generate a module,
 and we want to add a port with the given name, direction, and width.  This
@@ -78,18 +76,11 @@ and net declaration.</p>"
        (width    (lposfix width))
        (expr     (vl-idexpr name width :vl-unsigned))
        (range    (vl-make-n-bit-range width))
+       (type     (hons-copy (make-vl-nettype :name :vl-wire :signedp nil :range range)))
        (port     (make-vl-port :name name :expr expr :loc *vl-fakeloc*))
-       (portdecl (make-vl-portdecl :name  name
-                                   :dir   dir
-                                   :range range
-                                   :loc   *vl-fakeloc*))
-       (netdecl  (make-vl-netdecl :name  name
-                                  :type  :vl-wire
-                                  :range range
-                                  :loc   *vl-fakeloc*)))
-      (mv expr port portdecl netdecl)))
-
-
+       (portdecl (make-vl-portdecl :name  name :type type :dir dir :loc *vl-fakeloc*))
+       (vardecl  (make-vl-vardecl  :name  name :type type :loc *vl-fakeloc* :atts '(("VL_PORT_IMPLICIT")))))
+    (mv expr port portdecl vardecl)))
 
 (defun def-vl-modgen-fn (name raw-formals
                               parents short long
@@ -255,7 +246,7 @@ you don't have to put the actuals in a list."
                             ((loc vl-location-p) '*vl-fakeloc*))
   :guard   (<= i n)
   :returns (mv (exprs vl-exprlist-p)
-               (decls vl-netdecllist-p))
+               (decls vl-vardecllist-p))
   :short "Helper function for creating lists of net declarations."
   :long "<p>We generate a list of net declarations,</p>
 @({
@@ -275,9 +266,9 @@ sizes pre-computed.</p>"
        (width (lposfix width))
        (name  (hons-copy (cat prefix (natstr i))))
        (expr  (vl-idexpr name width :vl-unsigned))
-       (decl  (make-vl-netdecl :name  name
-                               :type  :vl-wire
-                               :range (vl-make-n-bit-range width)
+       (type  (make-vl-nettype :name :vl-wire :range (vl-make-n-bit-range width)))
+       (decl  (make-vl-vardecl :name  name
+                               :type  type
                                :loc   loc))
        ((mv rest-exprs rest-decls)
         (vl-occform-mkwires prefix (+ 1 (lnfix i)) n
@@ -314,7 +305,7 @@ sizes pre-computed.</p>"
   :returns (mv (exprs     vl-exprlist-p)
                (ports     vl-portlist-p)
                (portdecls vl-portdecllist-p)
-               (netdecls  vl-netdecllist-p))
+               (vardecls  vl-vardecllist-p))
   :short "Helper function for creating lists of port declarations."
   :measure (nfix (- (nfix n) (nfix i)))
 
@@ -322,39 +313,32 @@ sizes pre-computed.</p>"
                    :exec (eql i n)))
         (mv nil nil nil nil))
        (name1 (hons-copy (cat prefix (natstr i))))
-       ((mv expr1 port1 portdecl1 netdecl1)
+       ((mv expr1 port1 portdecl1 vardecl1)
         (vl-occform-mkport name1 dir width))
-       ((mv exprs2 ports2 portdecls2 netdecls2)
-        (vl-occform-mkports prefix (+ 1 (lnfix i)) n
-                            :dir dir :width width :loc loc)))
+       ((mv exprs2 ports2 portdecls2 vardecls2)
+        (vl-occform-mkports prefix (+ 1 (lnfix i)) n :dir dir :width width :loc loc)))
     (mv (cons expr1 exprs2)
         (cons port1 ports2)
         (cons portdecl1 portdecls2)
-        (cons netdecl1 netdecls2)))
+        (cons vardecl1 vardecls2)))
   ///
   (defmvtypes vl-occform-mkports-fn
     (true-listp true-listp true-listp true-listp))
 
   (defthm len-of-vl-occform-mkports
-    (b* (((mv exprs ports portdecls netdecls)
-          (vl-occform-mkports prefix i n
-                              :dir dir
-                              :width width
-                              :loc loc))
+    (b* (((mv exprs ports portdecls vardecls)
+          (vl-occform-mkports prefix i n :dir dir :width width :loc loc))
          (len (nfix (- (nfix n) (nfix i)))))
       (and (equal (len exprs) len)
            (equal (len ports) len)
            (equal (len portdecls) len)
-           (equal (len netdecls) len))))
+           (equal (len vardecls) len))))
 
   (defthm vl-occform-mkports-under-iff
-    (b* (((mv exprs ports portdecls netdecls)
-          (vl-occform-mkports prefix i n
-                              :dir dir
-                              :width width
-                              :loc loc))
+    (b* (((mv exprs ports portdecls vardecls)
+          (vl-occform-mkports prefix i n :dir dir :width width :loc loc))
          (len (- (nfix n) (nfix i))))
       (and (iff exprs     (posp len))
            (iff ports     (posp len))
            (iff portdecls (posp len))
-           (iff netdecls  (posp len))))))
+           (iff vardecls  (posp len))))))

@@ -70,15 +70,15 @@ endmodule
 
   (b* ((name (hons-copy "VL_1_BIT_ADDER_CORE"))
 
-       ((mv sum-expr sum-port sum-portdecl sum-netdecl)     (vl-primitive-mkport "sum" :vl-output))
-       ((mv cout-expr cout-port cout-portdecl cout-netdecl) (vl-primitive-mkport "cout" :vl-output))
-       ((mv a-expr a-port a-portdecl a-netdecl)             (vl-primitive-mkport "a" :vl-input))
-       ((mv b-expr b-port b-portdecl b-netdecl)             (vl-primitive-mkport "b" :vl-input))
-       ((mv cin-expr cin-port cin-portdecl cin-netdecl)     (vl-primitive-mkport "cin" :vl-input))
+       ((mv sum-expr sum-port sum-portdecl sum-vardecl)     (vl-primitive-mkport "sum" :vl-output))
+       ((mv cout-expr cout-port cout-portdecl cout-vardecl) (vl-primitive-mkport "cout" :vl-output))
+       ((mv a-expr a-port a-portdecl a-vardecl)             (vl-primitive-mkport "a" :vl-input))
+       ((mv b-expr b-port b-portdecl b-vardecl)             (vl-primitive-mkport "b" :vl-input))
+       ((mv cin-expr cin-port cin-portdecl cin-vardecl)     (vl-primitive-mkport "cin" :vl-input))
 
-       ((mv t1-expr t1-netdecl) (vl-primitive-mkwire "t1"))
-       ((mv t2-expr t2-netdecl) (vl-primitive-mkwire "t2"))
-       ((mv t3-expr t3-netdecl) (vl-primitive-mkwire "t3"))
+       ((mv t1-expr t1-vardecl) (vl-primitive-mkwire "t1"))
+       ((mv t2-expr t2-vardecl) (vl-primitive-mkwire "t2"))
+       ((mv t3-expr t3-vardecl) (vl-primitive-mkwire "t3"))
 
        (t1-inst   (vl-simple-inst *vl-1-bit-xor* "mk_t1"   t1-expr   a-expr  b-expr))
        (sum-inst  (vl-simple-inst *vl-1-bit-xor* "mk_sum"  sum-expr  t1-expr cin-expr))
@@ -91,7 +91,7 @@ endmodule
                      :origname  name
                      :ports     (list sum-port cout-port a-port b-port cin-port)
                      :portdecls (list sum-portdecl cout-portdecl a-portdecl b-portdecl cin-portdecl)
-                     :netdecls  (list sum-netdecl cout-netdecl a-netdecl b-netdecl cin-netdecl t1-netdecl t2-netdecl t3-netdecl)
+                     :vardecls  (list sum-vardecl cout-vardecl a-vardecl b-vardecl cin-vardecl t1-vardecl t2-vardecl t3-vardecl)
                      :modinsts (list t1-inst sum-inst t2-inst t3-inst cout-inst)
                      :minloc    *vl-fakeloc*
                      :maxloc    *vl-fakeloc*))))
@@ -131,14 +131,14 @@ the last bit, but we think it's best to keep things simple.</p>"
 
        (name (hons-copy (cat "VL_" (natstr n) "_BIT_ADDER_CORE")))
 
-       ((mv sum-expr sum-port sum-portdecl sum-netdecl)     (vl-occform-mkport "sum" :vl-output n))
-       ((mv cout-expr cout-port cout-portdecl cout-netdecl) (vl-primitive-mkport "cout" :vl-output))
-       ((mv a-expr a-port a-portdecl a-netdecl)             (vl-occform-mkport "a" :vl-input n))
-       ((mv b-expr b-port b-portdecl b-netdecl)             (vl-occform-mkport "b" :vl-input n))
-       ((mv cin-expr cin-port cin-portdecl cin-netdecl)     (vl-primitive-mkport "cin" :vl-input))
+       ((mv sum-expr sum-port sum-portdecl sum-vardecl)     (vl-occform-mkport "sum" :vl-output n))
+       ((mv cout-expr cout-port cout-portdecl cout-vardecl) (vl-primitive-mkport "cout" :vl-output))
+       ((mv a-expr a-port a-portdecl a-vardecl)             (vl-occform-mkport "a" :vl-input n))
+       ((mv b-expr b-port b-portdecl b-vardecl)             (vl-occform-mkport "b" :vl-input n))
+       ((mv cin-expr cin-port cin-portdecl cin-vardecl)     (vl-primitive-mkport "cin" :vl-input))
 
        ;; wire [n-2:0] carry;
-       ((mv carry-expr carry-netdecl) (vl-occform-mkwire "carry" (- n 1)))
+       ((mv carry-expr carry-vardecl) (vl-occform-mkwire "carry" (- n 1)))
 
        ;; Now we build a big array of full-adders, basically:
 
@@ -165,7 +165,7 @@ the last bit, but we think it's best to keep things simple.</p>"
                            :origname  name
                            :ports     (list sum-port cout-port a-port b-port cin-port)
                            :portdecls (list sum-portdecl cout-portdecl a-portdecl b-portdecl cin-portdecl)
-                           :netdecls  (list sum-netdecl cout-netdecl a-netdecl b-netdecl cin-netdecl carry-netdecl)
+                           :vardecls  (list sum-vardecl cout-vardecl a-vardecl b-vardecl cin-vardecl carry-vardecl)
                            :modinsts  fa-insts
                            :minloc    *vl-fakeloc*
                            :maxloc    *vl-fakeloc*)
@@ -217,28 +217,28 @@ implemented.</p>"
                                 (:vl-binary-plus "PLUS")
                                 (:vl-binary-minus "MINUS")))))
 
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output n))
-       ((mv a-expr a-port a-portdecl a-netdecl)         (vl-occform-mkport "a" :vl-input n))
-       ((mv b-expr b-port b-portdecl b-netdecl)         (vl-occform-mkport "b" :vl-input n))
+       ((mv out-expr out-port out-portdecl out-vardecl) (vl-occform-mkport "out" :vl-output n))
+       ((mv a-expr a-port a-portdecl a-vardecl)         (vl-occform-mkport "a" :vl-input n))
+       ((mv b-expr b-port b-portdecl b-vardecl)         (vl-occform-mkport "b" :vl-input n))
 
-       ((mv sum-expr sum-netdecl)     (vl-occform-mkwire "sum" n))
-       ((mv carry-expr carry-netdecl) (vl-primitive-mkwire "carry"))
+       ((mv sum-expr sum-vardecl)     (vl-occform-mkwire "sum" n))
+       ((mv carry-expr carry-vardecl) (vl-primitive-mkwire "carry"))
 
        ;; For addition, we use a carry-in of zero and do not negate b.  But
        ;; if we are subtracting, we need to use a carry-in of 1 and negate
        ;; the B input.
-       ((mv cin bin sub-netdecls sub-modinsts sub-support)
+       ((mv cin bin sub-vardecls sub-modinsts sub-support)
         (if (eq type :vl-binary-plus)
             ;; addition: carry in = 0, b-input = b
             (mv |*sized-1'b0*| b-expr nil nil nil)
           ;; subtraction: carry in = 1, b-input = ~b
           (b* (;; wire [n-1:0] bnot = ~b;
-               ((mv bnot-expr bnot-netdecl)  (vl-occform-mkwire "bnot" n))
+               ((mv bnot-expr bnot-vardecl)  (vl-occform-mkwire "bnot" n))
                ((cons bnot-mod bnot-support) (vl-make-n-bit-not n))
                (bnot-inst (vl-simple-inst bnot-mod "mk_bnot" bnot-expr b-expr)))
             (mv |*sized-1'b1*|
                 bnot-expr
-                (list bnot-netdecl)
+                (list bnot-vardecl)
                 (list bnot-inst)
                 (cons bnot-mod bnot-support)))))
 
@@ -254,7 +254,7 @@ implemented.</p>"
                            :origname  name
                            :ports     (list out-port a-port b-port)
                            :portdecls (list out-portdecl a-portdecl b-portdecl)
-                           :netdecls  (list* out-netdecl a-netdecl b-netdecl sum-netdecl carry-netdecl sub-netdecls)
+                           :vardecls  (list* out-vardecl a-vardecl b-vardecl sum-vardecl carry-vardecl sub-vardecls)
                            :modinsts  (append sub-modinsts (list core-inst xprop-inst))
                            :minloc    *vl-fakeloc*
                            :maxloc    *vl-fakeloc*)

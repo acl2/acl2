@@ -95,7 +95,7 @@
                     (equal constp         v1.constp)
                     (equal varp           v1.varp)
                     (equal lifetime       v1.lifetime)
-                    (equal type           (vl-pretty-datatype v1.vartype))
+                    (equal type           (vl-pretty-datatype v1.type))
                     (equal atts           v1.atts)
                     (run-vardecltest-aux (cdr vars)
                                          constp varp lifetime type atts

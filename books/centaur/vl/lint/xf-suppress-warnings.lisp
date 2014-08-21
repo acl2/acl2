@@ -168,7 +168,6 @@ either upper or lower case, treating - and _ as equivalent, and with or without
               (and (vl-expr-p x)
                    (eq (vl-expr-kind x) :nonatom)
                    (vl-lint-atts-say-ignore (vl-nonatom->atts x) mwtype)))
-             (:vl-netdecl      (and (vl-netdecl-p x)       (vl-lint-atts-say-ignore (vl-netdecl->atts x)       mwtype)))
              (:vl-assign       (and (vl-assign-p x)        (vl-lint-atts-say-ignore (vl-assign->atts x)        mwtype)))
              (:vl-modinst      (and (vl-modinst-p x)       (vl-lint-atts-say-ignore (vl-modinst->atts x)       mwtype)))
              (:vl-gateinst     (and (vl-gateinst-p x)      (vl-lint-atts-say-ignore (vl-gateinst->atts x)      mwtype)))

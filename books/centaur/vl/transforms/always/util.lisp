@@ -32,6 +32,7 @@
 (include-book "../../mlib/context")
 (include-book "../../mlib/lvalues")
 (include-book "../../mlib/find-item")
+(include-book "../../mlib/filter")
 (local (include-book "../../util/arithmetic"))
 (local (include-book "../../util/osets"))
 (local (std::add-default-post-define-hook :fix))
@@ -138,9 +139,8 @@ isn't an array.</p>"
                   (force (string-listp names)))
              (subsetp-equal names (vl-vardecllist->names vars)))))
 
-
 (define vl-always-convert-reg ((x vl-vardecl-p))
-  :returns (netdecl vl-netdecl-p)
+  :returns (netdecl vl-vardecl-p)
   :parents (always-top)
   :short "Convert a register into a wire."
 
@@ -152,21 +152,85 @@ have passed @(see vl-always-check-reg), so we cause a hard error if the
 register has array dimensions.</p>"
 
   (b* (((vl-vardecl x) x)
-       (- (or (and (vl-simplereg-p x)
-                   (not x.dims))
-              (raise "Expected all variables to convert to be simple regs and not arrays."))))
-    (make-vl-netdecl :name    x.name
-                     :type    :vl-wire
-                     :signedp (ec-call (vl-simplereg->signedp x))
-                     :range   (ec-call (vl-simplereg->range x))
-                     :loc     x.loc
-                     :atts    (acons (hons-copy "VL_CONVERTED_REG")
-                                     nil x.atts))))
+       ((unless (vl-simplereg-p x))
+        (raise "Expected all variables to convert to be simple regs and not arrays.")
+        (vl-vardecl-fix x))
+       (new-type (make-vl-nettype :name :vl-wire
+                                  :signedp (vl-simplereg->signedp x)
+                                  :range   (vl-simplereg->range x))))
+    (change-vl-vardecl x
+                       :type new-type
+                       :atts (acons (hons-copy "VL_CONVERTED_REG") nil x.atts))))
 
 (defprojection vl-always-convert-regs ((x vl-vardecllist-p))
   :parents (always-top)
-  :returns (nets vl-netdecllist-p)
+  :returns (nets vl-vardecllist-p)
   (vl-always-convert-reg x))
+
+(define vl-always-convert-regport ((x vl-portdecl-p))
+  :returns (new-x vl-portdecl-p)
+  :parents (always-top)
+  :short "Convert a @('reg') portdecl into a @('wire') portdecl."
+  :long "<p>See @(see vl-always-convert-reg).</p>"
+  (b* (((vl-portdecl x) (vl-portdecl-fix x))
+
+       ((unless (and (eq (vl-datatype-kind x.type) :vl-coretype)
+                     (member (vl-coretype->name x.type) '(:vl-reg :vl-logic))))
+        (raise "Not actually a portdecl reg?  ~x0" x)
+        x)
+
+       (signedp (vl-coretype->signedp x.type))
+       (dims    (vl-coretype->dims x.type))
+       ((unless (or (atom dims)
+                    (and (atom (cdr dims))
+                         (vl-range-p (car dims)))))
+        (raise "Multi-dimensional array on portdecl reg? ~x0" x)
+        x)
+
+       (range (and (consp dims)
+                   (car dims)))
+       (new-type (make-vl-nettype :name :vl-wire
+                                  :signedp signedp
+                                  :range   range)))
+    (change-vl-portdecl x
+                       :type new-type
+                       :atts (acons (hons-copy "VL_CONVERTED_REG") nil x.atts))))
+
+(defprojection vl-always-convert-regports ((x vl-portdecllist-p))
+  :parents (always-top)
+  :returns (nets vl-portdecllist-p)
+  (vl-always-convert-regport x))
+
+(define vl-convert-regs
+  :parents (always-top)
+  ((cvtregs   string-listp)
+   (vardecls  vl-vardecllist-p)
+   (portdecls vl-portdecllist-p))
+  :returns (mv (new-vardecls  vl-vardecllist-p)
+               (new-portdecls vl-portdecllist-p))
+  (b* ((cvtregs   (string-list-fix cvtregs))
+       (vardecls  (vl-vardecllist-fix vardecls))
+       (portdecls (vl-portdecllist-fix portdecls))
+
+       ;; Extra sanity check: cvtregs have been identified for conversion.
+       ;; They had better all be names we know about.
+       (non-regs (difference (mergesort cvtregs)
+                             (mergesort (vl-vardecllist->names vardecls))))
+       ((when non-regs)
+        ;; Should be impossible
+        (raise "Trying to convert non-registers: ~x0.~%" non-regs)
+        (mv vardecls portdecls))
+
+       ((mv vardecls-to-convert vardecls-to-leave-alone)
+        (vl-filter-vardecls cvtregs vardecls))
+       ((mv portdecls-to-convert portdecls-to-leave-alone)
+        (vl-filter-portdecls cvtregs portdecls))
+
+       (converted-vardecls (vl-always-convert-regs vardecls-to-convert))
+       (converted-portdecls (vl-always-convert-regports portdecls-to-convert)))
+    (mv (append converted-vardecls vardecls-to-leave-alone)
+        (append converted-portdecls portdecls-to-leave-alone))))
+
 
 (define vl-stmt-guts ((body vl-stmt-p))
   :parents (always-top)

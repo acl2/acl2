@@ -37,6 +37,17 @@
 (local (include-book "../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
 
+(define vl-pp-strings-separated-by-commas ((x string-listp) &key (ps 'ps))
+  (cond ((atom x)
+         ps)
+        ((atom (cdr x))
+         (vl-print-str (car x)))
+        (t
+         (vl-ps-seq
+          (vl-print-str (car x))
+          (vl-print ", ")
+          (vl-pp-strings-separated-by-commas (cdr x))))))
+
 (defxdoc verilog-printing
   :parents (printer)
   :short "Printing routines for displaying Verilog constructs."
@@ -1161,23 +1172,6 @@ expression into a string."
                     (vl-println? ", ")
                     (vl-pp-portlist (cdr x))))))
 
-(define vl-netdecltype-string ((x vl-netdecltype-p))
-  :returns (str stringp :rule-classes :type-prescription)
-  :guard-hints (("Goal" :in-theory (enable vl-netdecltype-p)))
-  (case (vl-netdecltype-fix x)
-    (:vl-wire    "wire")
-    (:vl-supply0 "supply0")
-    (:vl-supply1 "supply1")
-    (:vl-tri     "tri")
-    (:vl-triand  "triand")
-    (:vl-trior   "trior")
-    (:vl-tri0    "tri0")
-    (:vl-tri1    "tri1")
-    (:vl-trireg  "trireg")
-    (:vl-uwire   "uwire")
-    (:vl-wand    "wand")
-    (:vl-wor     "wor")
-    (otherwise   (or (impossible) ""))))
 
 (define vl-direction-string ((x vl-direction-p))
   :returns (str stringp :rule-classes :type-prescription)
@@ -1218,10 +1212,31 @@ expression into a string."
     (:vl-randc    "randc")
     (otherwise    (or (impossible) ""))))
 
+(define vl-nettypename-string ((x vl-nettypename-p))
+  :returns (str stringp :rule-classes :type-prescription)
+  :guard-hints (("Goal" :in-theory (enable vl-nettypename-p)))
+  (case (vl-nettypename-fix x)
+    (:vl-wire    "wire")
+    (:vl-tri     "tri")
+    (:vl-supply0 "supply0")
+    (:vl-supply1 "supply1")
+    (:vl-triand  "triand")
+    (:vl-trior   "trior")
+    (:vl-tri0    "tri0")
+    (:vl-tri1    "tri1")
+    (:vl-trireg  "trireg")
+    (:vl-uwire   "uwire")
+    (:vl-wand    "wand")
+    (:vl-wor     "wor")
+    (otherwise   (or (impossible) ""))))
+
 (define vl-coretypename-string ((x vl-coretypename-p))
   :returns (str stringp :rule-classes :type-prescription)
   :guard-hints(("Goal" :in-theory (enable vl-coretypename-p)))
   (case (vl-coretypename-fix x)
+    (:vl-logic     "logic")
+    (:vl-reg       "reg")
+    (:vl-bit       "bit")
     (:vl-void      "void")
     (:vl-byte      "byte")
     (:vl-shortint  "shortint")
@@ -1229,9 +1244,6 @@ expression into a string."
     (:vl-longint   "longint")
     (:vl-integer   "integer")
     (:vl-time      "time")
-    (:vl-bit       "bit")
-    (:vl-logic     "logic")
-    (:vl-reg       "reg")
     (:vl-shortreal "shortreal")
     (:vl-real      "real")
     (:vl-realtime  "realtime")
@@ -1314,6 +1326,18 @@ expression into a string."
   (define vl-pp-datatype ((x vl-datatype-p) &key (ps 'ps))
     :measure (vl-datatype-count x)
     (vl-datatype-case x
+      (:vl-nettype
+       (vl-ps-seq (vl-indent 2)
+                  (vl-ps-span "vl_key"
+                              (vl-print-str (vl-nettypename-string x.name))
+                              (if (not x.signedp)
+                                  ps
+                                (vl-println? " signed")))
+                  (if (not x.range)
+                      ps
+                    (vl-ps-seq (vl-print " ")
+                               (vl-pp-range x.range)))))
+
       (:vl-coretype
        (vl-ps-seq (vl-indent 2)
                   (vl-ps-span "vl_key" (vl-print-str (vl-coretypename-string x.name)))
@@ -1418,20 +1442,14 @@ expression into a string."
                    ps)
                  (vl-println " ;")))))
 
-
 (define vl-pp-portdecl ((x vl-portdecl-p) &key (ps 'ps))
   (b* (((vl-portdecl x) x))
     (vl-ps-seq (vl-print "  ")
                (if x.atts (vl-pp-atts x.atts) ps)
                (vl-ps-span "vl_key"
-                           (vl-println? (vl-direction-string x.dir))
-                           (if (not x.signedp)
-                               ps
-                             (vl-println? " signed")))
-               (if (not x.range)
-                   ps
-                 (vl-ps-seq (vl-print " ")
-                            (vl-pp-range x.range)))
+                           (vl-println? (vl-direction-string x.dir)))
+               (vl-print " ")
+               (vl-pp-datatype x.type)
                (vl-println? " ")
                (vl-print-wirename x.name)
                (vl-println " ;"))))
@@ -1442,50 +1460,6 @@ expression into a string."
     (vl-ps-seq (vl-pp-portdecl (car x))
                (vl-pp-portdecllist (cdr x)))))
 
-
-(define vl-lifetime-string ((x vl-lifetime-p))
-  (case (vl-lifetime-fix x)
-    ('nil          "")
-    (:vl-static    "static")
-    (:vl-automatic "automatic")
-    (otherwise (progn$ (impossible) ""))))
-
-(define vl-pp-vardecl ((x vl-vardecl-p) &key (ps 'ps))
-  (b* (((vl-vardecl x) x))
-    (vl-ps-seq
-     (vl-print "  ")
-     (if x.atts
-         (vl-ps-seq (vl-pp-atts x.atts)
-                    (vl-print " "))
-       ps)
-     (if x.constp
-         (vl-ps-span "vl_key" (vl-print "const "))
-       ps)
-     (if x.varp
-         (vl-ps-span "vl_key" (vl-print "var "))
-       ps)
-     (if x.lifetime
-         (vl-ps-span "vl_key"
-                     (vl-ps-seq (vl-print-str (vl-lifetime-string x.lifetime))
-                                (vl-println? " ")))
-       ps)
-     (vl-pp-datatype x.vartype)
-     (vl-print " ")
-     (vl-print-wirename x.name)
-     (if x.dims
-         (vl-pp-packeddimensionlist x.dims)
-       ps)
-     (if x.initval
-         (vl-ps-seq (vl-print " = ")
-                    (vl-pp-expr x.initval))
-       ps)
-     (vl-println " ;"))))
-
-(define vl-pp-vardecllist ((x vl-vardecllist-p) &key (ps 'ps))
-  (if (atom x)
-      ps
-    (vl-ps-seq (vl-pp-vardecl (car x))
-               (vl-pp-vardecllist (cdr x)))))
 
 (define vl-pp-paramdecl ((x vl-paramdecl-p) &key (ps 'ps))
   (b* (((vl-paramdecl x) x))
@@ -1548,20 +1522,23 @@ expression into a string."
     (vl-ps-seq (vl-pp-paramdecl (car x))
                (vl-pp-paramdecllist (cdr x)))))
 
-(define vl-pp-blockitem ((x vl-blockitem-p) &key (ps 'ps))
-  (b* ((x (vl-blockitem-fix x)))
-    (case (tag x)
-      (:vl-vardecl   (vl-pp-vardecl x))
-      (:vl-paramdecl (vl-pp-paramdecl x))
-      (otherwise     (progn$ (impossible) ps)))))
-
-(define vl-pp-blockitemlist ((x vl-blockitemlist-p) &key (ps 'ps))
-  (if (atom x)
-      ps
-    (vl-ps-seq (vl-pp-blockitem (car x))
-               (vl-pp-blockitemlist (cdr x)))))
 
 
+(define vl-cstrength-string ((x vl-cstrength-p))
+  :returns (str stringp :rule-classes :type-prescription)
+  :guard-hints (("Goal" :in-theory (enable vl-cstrength-p)))
+  (case (vl-cstrength-fix x)
+    (:vl-large  "large")
+    (:vl-medium "medium")
+    (:vl-small  "small")
+    (otherwise  (or (impossible) ""))))
+
+(define vl-lifetime-string ((x vl-lifetime-p))
+  (case (vl-lifetime-fix x)
+    ('nil          "")
+    (:vl-static    "static")
+    (:vl-automatic "automatic")
+    (otherwise (progn$ (impossible) ""))))
 
 (define vl-pp-gatedelay ((x vl-gatedelay-p) &key (ps 'ps))
   (b* (((vl-gatedelay x) x))
@@ -1626,6 +1603,183 @@ expression into a string."
                                  (:vl-highz  "highz1"))))
      (vl-println? ")"))))
 
+(defmacro vl-pp-vardecl-special-atts ()
+  ;; Attributes that will get turned into nice comments.
+  ''("VL_IMPLICIT"
+     ;; Historically we also included VL_PORT_IMPLICIT and printed the net
+     ;; declarations.  But that's chatty and doesn't work correctly with
+     ;; ANSI-style ports lists where it's illegal to re-declare the net.  So,
+     ;; now, we hide any VL_PORT_IMPLICIT ports separately; see vl-pp-netdecl.
+     "VL_UNUSED"
+     "VL_MAYBE_UNUSED"
+     "VL_UNSET"
+     "VL_MAYBE_UNSET"
+     "VL_DESIGN_WIRE"))
+
+(define vl-pp-vardecl-atts-begin ((x vl-atts-p) &key (ps 'ps))
+  :measure (vl-atts-count x)
+  (b* ((x (vl-atts-fix x))
+       ((unless x)
+        ps)
+       (x (vl-remove-keys (vl-pp-vardecl-special-atts) x))
+       ((unless x)
+        ps)
+       ((when (and (tuplep 1 x)
+                   (equal (caar x) "VL_FOR")))
+        (if (not (and (cdar x)
+                      (vl-atom-p (cdar x))
+                      (vl-string-p (vl-atom->guts (cdar x)))))
+            (prog2$
+             (raise "Expected FROM to contain a string.")
+             ps)
+          (vl-ps-seq
+           (vl-println "")
+           (vl-ps-span "vl_cmt"
+                       (vl-print "/* For ")
+                       (vl-print-str (vl-string->value (vl-atom->guts (cdar x))))
+                       (vl-println " */"))))))
+    (vl-ps-seq (vl-println "")
+               (vl-pp-atts x)
+               (vl-println ""))))
+
+(define vl-pp-vardecl-atts-end ((x vl-atts-p) &key (ps 'ps))
+  (b* ((x (vl-atts-fix x))
+       ((unless x)
+        (vl-println ""))
+       (cars    (strip-cars x))
+       (notes   nil)
+       (notes   (if (member-equal "VL_IMPLICIT" cars)
+                    (cons "Implicit" notes)
+                  notes))
+       (notes   (cond ((member-equal "VL_UNUSED" cars)
+                       (cons "Unused" notes))
+                      ((member-equal "VL_MAYBE_UNUSED" cars)
+                       (cons "Unused?" notes))
+                      (t notes)))
+       (notes   (cond ((member-equal "VL_UNSET" cars)
+                       (cons "Unset" notes))
+                      ((member-equal "VL_MAYBE_UNSET" cars)
+                       (cons "Unset?" notes))
+                      (t notes)))
+       ((unless notes)
+        (vl-println "")))
+    (vl-ps-span "vl_cmt"
+                (vl-indent 30)
+                (vl-print "// ")
+                (vl-pp-strings-separated-by-commas notes)
+                (vl-println ""))))
+
+(define vl-pp-vardecl-as-var ((x vl-vardecl-p) &key (ps 'ps))
+  ;; This used to just print variables, before we merged nets in.
+  :guard (not (eq (vl-datatype-kind (vl-vardecl->type x)) :vl-nettype))
+  (b* (((vl-vardecl x) x))
+    (vl-ps-seq
+     (vl-print "  ")
+     (if x.atts
+         (vl-ps-seq (vl-pp-atts x.atts)
+                    (vl-print " "))
+       ps)
+     (if x.constp
+         (vl-ps-span "vl_key" (vl-print "const "))
+       ps)
+     (if x.varp
+         (vl-ps-span "vl_key" (vl-print "var "))
+       ps)
+     (if x.lifetime
+         (vl-ps-span "vl_key"
+                     (vl-ps-seq (vl-print-str (vl-lifetime-string x.lifetime))
+                                (vl-println? " ")))
+       ps)
+     (vl-pp-datatype x.type)
+     (vl-print " ")
+     (vl-print-wirename x.name)
+     (if x.dims
+         (vl-pp-packeddimensionlist x.dims)
+       ps)
+     (if x.initval
+         (vl-ps-seq (vl-print " = ")
+                    (vl-pp-expr x.initval))
+       ps)
+     (vl-println " ;"))))
+
+(define vl-pp-vardecl-as-net ((x vl-vardecl-p) &key (ps 'ps))
+  :guard (eq (vl-datatype-kind (vl-vardecl->type x)) :vl-nettype)
+  ;; This used to just print nets.  We use custom code here because we need
+  ;; to put the vectored/scalared stuff in the middle of the type...
+  (b* (((vl-vardecl x) x)
+       ((vl-nettype x.type) x.type))
+    (vl-ps-seq
+     (if (not x.atts)
+         ps
+       (vl-pp-vardecl-atts-begin x.atts))
+     (vl-print "  ")
+     (vl-ps-span "vl_key"
+                 (vl-print-str (vl-nettypename-string x.type.name))
+                 (if (not x.cstrength)
+                     ps
+                   (vl-ps-seq (vl-print " ")
+                              (vl-println? (vl-cstrength-string x.cstrength))))
+                 (if (not x.vectoredp)
+                     ps
+                   (vl-println? " vectored"))
+                 (if (not x.scalaredp)
+                     ps
+                   (vl-println? " scalared"))
+                 (if (not x.type.signedp)
+                     ps
+                   (vl-println? " signed")))
+     (if (not x.type.range)
+         ps
+       (vl-ps-seq (vl-print " ")
+                  (vl-pp-range x.type.range)))
+     (if (not x.delay)
+         ps
+       (vl-ps-seq (vl-print " ")
+                  (vl-pp-gatedelay x.delay)))
+     (vl-print " ")
+     (vl-print-wirename x.name)
+     (if (not x.dims)
+         ps
+       (vl-ps-seq (vl-print " ")
+                  (vl-pp-packeddimensionlist x.dims)))
+     (vl-print " ;")
+     (vl-pp-vardecl-atts-end x.atts))))
+
+(define vl-pp-vardecl ((x vl-vardecl-p) &key (ps 'ps))
+  (b* (((vl-vardecl x) x)
+       ((when (assoc-equal "VL_PORT_IMPLICIT" x.atts))
+        ;; As a special hack, we now do not print any net declarations that are
+        ;; implicitly derived from the port.  These were just noisy and may not
+        ;; be allowed if we're printing the nets for an ANSI style module.  See
+        ;; also make-implicit-wires.
+        ps))
+    (if (eq (vl-datatype-kind (vl-vardecl->type x)) :vl-nettype)
+        (vl-pp-vardecl-as-net x)
+      (vl-pp-vardecl-as-var x))))
+
+(define vl-pp-vardecllist ((x vl-vardecllist-p) &key (ps 'ps))
+  (if (atom x)
+      ps
+    (vl-ps-seq (vl-pp-vardecl (car x))
+               (vl-pp-vardecllist (cdr x)))))
+
+
+
+(define vl-pp-blockitem ((x vl-blockitem-p) &key (ps 'ps))
+  (b* ((x (vl-blockitem-fix x)))
+    (case (tag x)
+      (:vl-vardecl   (vl-pp-vardecl x))
+      (:vl-paramdecl (vl-pp-paramdecl x))
+      (otherwise     (progn$ (impossible) ps)))))
+
+(define vl-pp-blockitemlist ((x vl-blockitemlist-p) &key (ps 'ps))
+  (if (atom x)
+      ps
+    (vl-ps-seq (vl-pp-blockitem (car x))
+               (vl-pp-blockitemlist (cdr x)))))
+
+
+
 (define vl-pp-assign ((x vl-assign-p) &key (ps 'ps))
   (b* (((vl-assign x) x))
     (vl-ps-seq
@@ -1654,142 +1808,6 @@ expression into a string."
     (vl-ps-seq (vl-pp-assign (car x))
                (vl-pp-assignlist (cdr x)))))
 
-(define vl-cstrength-string ((x vl-cstrength-p))
-  :returns (str stringp :rule-classes :type-prescription)
-  :guard-hints (("Goal" :in-theory (enable vl-cstrength-p)))
-  (case (vl-cstrength-fix x)
-    (:vl-large  "large")
-    (:vl-medium "medium")
-    (:vl-small  "small")
-    (otherwise  (or (impossible) ""))))
-
-(defmacro vl-pp-netdecl-special-atts ()
-  ''("VL_IMPLICIT"
-     ;; Historically we also included VL_PORT_IMPLICIT and printed the net
-     ;; declarations.  But that's chatty and doesn't work correctly with
-     ;; ANSI-style ports lists where it's illegal to re-declare the net.  So,
-     ;; now, we hide any VL_PORT_IMPLICIT ports separately; see vl-pp-netdecl.
-     "VL_UNUSED"
-     "VL_MAYBE_UNUSED"
-     "VL_UNSET"
-     "VL_MAYBE_UNSET"
-     "VL_DESIGN_WIRE"))
-
-(define vl-pp-netdecl-atts-begin ((x vl-atts-p) &key (ps 'ps))
-  :measure (vl-atts-count x)
-  (b* ((x (vl-atts-fix x))
-       ((unless x)
-        ps)
-       (x (vl-remove-keys (vl-pp-netdecl-special-atts) x))
-       ((unless x)
-        ps)
-       ((when (and (tuplep 1 x)
-                   (equal (caar x) "VL_FOR")))
-        (if (not (and (cdar x)
-                      (vl-atom-p (cdar x))
-                      (vl-string-p (vl-atom->guts (cdar x)))))
-            (prog2$
-             (raise "Expected FROM to contain a string.")
-             ps)
-          (vl-ps-seq
-           (vl-println "")
-           (vl-ps-span "vl_cmt"
-                       (vl-print "/* For ")
-                       (vl-print-str (vl-string->value (vl-atom->guts (cdar x))))
-                       (vl-println " */"))))))
-    (vl-ps-seq (vl-println "")
-               (vl-pp-atts x)
-               (vl-println ""))))
-
-(define vl-pp-strings-separated-by-commas ((x string-listp) &key (ps 'ps))
-  (cond ((atom x)
-         ps)
-        ((atom (cdr x))
-         (vl-print-str (car x)))
-        (t
-         (vl-ps-seq
-          (vl-print-str (car x))
-          (vl-print ", ")
-          (vl-pp-strings-separated-by-commas (cdr x))))))
-
-(define vl-pp-netdecl-atts-end ((x vl-atts-p) &key (ps 'ps))
-  (b* ((x (vl-atts-fix x))
-       ((unless x)
-        (vl-println ""))
-       (cars    (strip-cars x))
-       (notes   nil)
-       (notes   (if (member-equal "VL_IMPLICIT" cars)
-                    (cons "Implicit" notes)
-                  notes))
-       (notes   (cond ((member-equal "VL_UNUSED" cars)
-                       (cons "Unused" notes))
-                      ((member-equal "VL_MAYBE_UNUSED" cars)
-                       (cons "Unused?" notes))
-                      (t notes)))
-       (notes   (cond ((member-equal "VL_UNSET" cars)
-                       (cons "Unset" notes))
-                      ((member-equal "VL_MAYBE_UNSET" cars)
-                       (cons "Unset?" notes))
-                      (t notes)))
-       ((unless notes)
-        (vl-println "")))
-    (vl-ps-span "vl_cmt"
-                (vl-indent 30)
-                (vl-print "// ")
-                (vl-pp-strings-separated-by-commas notes)
-                (vl-println ""))))
-
-(define vl-pp-netdecl ((x vl-netdecl-p) &key (ps 'ps))
-  (b* (((vl-netdecl x) x)
-       ((when (assoc-equal "VL_PORT_IMPLICIT" x.atts))
-        ;; As a special hack, we now do not print any net declarations that are
-        ;; implicitly derived from the port.  These were just noisy and may not
-        ;; be allowed if we're printing the nets for an ANSI style module.  See
-        ;; also make-implicit-wires.
-        ps))
-    (vl-ps-seq
-     (if (not x.atts)
-         ps
-       (vl-pp-netdecl-atts-begin x.atts))
-     (vl-print "  ")
-     (vl-ps-span "vl_key"
-                 (vl-print-str (vl-netdecltype-string x.type))
-                 (if (not x.cstrength)
-                     ps
-                   (vl-ps-seq (vl-print " ")
-                              (vl-println? (vl-cstrength-string x.cstrength))))
-                 (if (not x.vectoredp)
-                     ps
-                   (vl-println? " vectored"))
-                 (if (not x.scalaredp)
-                     ps
-                   (vl-println? " scalared"))
-                 (if (not x.signedp)
-                     ps
-                   (vl-println? " signed")))
-     (if (not x.range)
-         ps
-       (vl-ps-seq (vl-print " ")
-                  (vl-pp-range x.range)))
-     (if (not x.delay)
-         ps
-       (vl-ps-seq (vl-print " ")
-                  (vl-pp-gatedelay x.delay)))
-     (vl-print " ")
-     (vl-print-wirename x.name)
-     (if (not x.arrdims)
-         ps
-       (vl-ps-seq (vl-print " ")
-                  (vl-pp-rangelist x.arrdims)))
-     (vl-print " ;")
-     (vl-pp-netdecl-atts-end x.atts)
-     )))
-
-(define vl-pp-netdecllist ((x vl-netdecllist-p) &key (ps 'ps))
-  (if (atom x)
-      ps
-    (vl-ps-seq (vl-pp-netdecl (car x))
-               (vl-pp-netdecllist (cdr x)))))
 
 (define vl-pp-plainarg ((x vl-plainarg-p) &key (ps 'ps))
   (b* (((vl-plainarg x) x)
@@ -2687,7 +2705,6 @@ instead of @(see ps).</p>"
                (vl-println ");")
                (vl-pp-paramdecllist x.paramdecls)
                (vl-pp-portdecllist x.portdecls)
-               (vl-pp-netdecllist x.netdecls)
                (vl-pp-vardecllist x.vardecls)
                (vl-pp-fundecllist x.fundecls) ;; put them here, so they can refer to declared wires
                (vl-pp-taskdecllist x.taskdecls)

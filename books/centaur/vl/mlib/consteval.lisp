@@ -67,8 +67,8 @@
   nil)
 
 (defval *vl-fake-elem-for-vl-consteval*
-  (make-vl-netdecl :name "VL_FAKE_ELEM_FOR_VL_CONSTEVAL"
-                   :type :vl-wire
+  (make-vl-vardecl :name "VL_FAKE_ELEM_FOR_VL_CONSTEVAL"
+                   :type *vl-plain-old-wire-type*
                    :loc *vl-fakeloc*))
 
 (local (assert! (equal (vl-moditem-alist *vl-fake-module-for-vl-consteval*)
@@ -531,114 +531,5 @@ supported by @(see vl-consteval-main), and the evaluation must proceed without
    (ans (implies successp
                  (vl-exprtype-p (vl-expr->finaltype ans)))
         :name vl-expr->finaltype-of-vl-consteval)))
-
-
-
-;; Old code for reducing constant expressions.  But I think the above is
-;; generally a lot better.
-
-;; (define vl-constexpr-reduce
-;;   :short "An evaluator for a small set of \"constant expressions\" in Verilog."
-
-;;   ((x vl-expr-p "Expression to try to evaluate."))
-;;   :returns
-;;   (value? "An unsigned 31-bit integer (i.e., a positive signed 32-bit
-;;            integer) on success, or @('nil') on failure."
-;;           maybe-natp :rule-classes :type-prescription)
-
-;;   :long "<p>This is a very careful, limited evaluator.  It checks, after every
-;; computation, that the result is in [0, 2^31).  This is the minimum size of
-;; \"integer\" for Verilog implementations, which is the size that plain decimal
-;; integer literals are supposed to have.  If we ever leave that range, we just
-;; fail to evaluate the expression.</p>
-
-;; <p>Note that in general it is <b>not safe</b> to call this function on
-;; arbitrary Verilog expressions to do constant folding because the size of the
-;; left-hand side can influence the widths at which the interior computations are
-;; to be done.  However, it is safe to use this inside of range expressions,
-;; because there is no left-hand side to provide us a context.</p>
-
-;; <p>BOZO is it really unsafe?  At worst the left-hand side is bigger than 31
-;; bits, and we end up with a larger context, right?  But can that actually hurt
-;; us in some way, if the result of every operation stays in bounds?  I don't
-;; think it can.</p>"
-
-;;   :measure (vl-expr-count x)
-
-;;   (cond ((vl-fast-atom-p x)
-;;          ;; The following is quite restrictive.  We only permit integer
-;;          ;; literals which were have the :wasunsized attribute set and are
-;;          ;; signed.  Such literals would arise in Verilog by being written as
-;;          ;; plain decimal integers like 5, or as unbased, signed integers in
-;;          ;; other bases such as 'shFFF and so on.
-;;          ;;
-;;          ;; The reason I am doing this is becuase these numbers are
-;;          ;; "predictable" in that they are to be interpreted as n-bit
-;;          ;; constants, where n is at least 32 bits, and I do not want any
-;;          ;; confusion about which width we are operating in.
-;;          ;;
-;;          ;; If you want to extend this, you need to be very careful to
-;;          ;; understand how the signedness rules and width rules are going to
-;;          ;; apply.  In particular, the calculations below in the non-atom case
-;;          ;; are currently relying upon the fact that everything is in the
-;;          ;; signed, 32-bit world.
-;;          (let ((guts (vl-atom->guts x)))
-;;            (and (vl-fast-constint-p guts)
-;;                 (eq (vl-constint->origtype guts) :vl-signed)
-;;                 (eql (vl-constint->origwidth guts) 32)
-;;                 (vl-constint->wasunsized guts)
-;;                 (< (vl-constint->value guts) (expt 2 31))
-;;                 ;; This lnfix is a stupid hack that gives us an unconditional
-;;                 ;; type prescription rule.  We "know" that the value is an
-;;                 ;; natural nubmer as long as x is indeed an expression.
-;;                 (lnfix (vl-constint->value guts)))))
-
-;;         (t
-;;          ;; Be very careful if you decide to try to extend this to support
-;;          ;; other operations!  In particular, you should understand the
-;;          ;; signedness rules and how operations like comparisons will take you
-;;          ;; out of the world of signed arithmetic.
-;;          (case (vl-nonatom->op x)
-;;            (:vl-unary-plus
-;;             (vl-constexpr-reduce (first (vl-nonatom->args x))))
-;;            (:vl-binary-plus
-;;             (b* ((arg1 (vl-constexpr-reduce (first (vl-nonatom->args x))))
-;;                  (arg2 (vl-constexpr-reduce (second (vl-nonatom->args x)))))
-;;               (and arg1
-;;                    arg2
-;;                    (< (+ arg1 arg2) (expt 2 31))
-;;                    (+ arg1 arg2))))
-;;            (:vl-binary-minus
-;;             (b* ((arg1 (vl-constexpr-reduce (first (vl-nonatom->args x))))
-;;                  (arg2 (vl-constexpr-reduce (second (vl-nonatom->args x)))))
-;;               (and arg1
-;;                    arg2
-;;                    (<= 0 (- arg1 arg2))
-;;                    (- arg1 arg2))))
-;;            (:vl-binary-times
-;;             (b* ((arg1 (vl-constexpr-reduce (first (vl-nonatom->args x))))
-;;                  (arg2 (vl-constexpr-reduce (second (vl-nonatom->args x)))))
-;;               (and arg1
-;;                    arg2
-;;                    (< (* arg1 arg2) (expt 2 31))
-;;                    (* arg1 arg2))))
-;;            (:vl-binary-shl
-;;             (b* ((arg1 (vl-constexpr-reduce (first (vl-nonatom->args x))))
-;;                  (arg2 (vl-constexpr-reduce (second (vl-nonatom->args x)))))
-;;               (and arg1
-;;                    arg2
-;;                    (< (ash arg1 arg2) (expt 2 31))
-;;                    (ash arg1 arg2))))
-;;            (t
-;;             ;; Some unsupported operation -- fail.
-;;             nil))))
-;;   :prepwork ((local (in-theory (enable maybe-natp))))
-;;   ///
-;;   (defthm upper-bound-of-vl-constexpr-reduce
-;;     (implies (force (vl-expr-p x))
-;;              (< (vl-constexpr-reduce x)
-;;                 (expt 2 31)))
-;;     :rule-classes :linear))
-
 
 

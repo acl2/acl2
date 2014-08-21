@@ -250,8 +250,8 @@ endmodule
 
        (name  (cat "VL_" (natstr n) "_BIT_DELAY_1"))
 
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output n))
-       ((mv in-expr  in-port  in-portdecl  in-netdecl)  (vl-occform-mkport "in" :vl-input n))
+       ((mv out-expr out-port out-portdecl out-vardecl) (vl-occform-mkport "out" :vl-output n))
+       ((mv in-expr  in-port  in-portdecl  in-vardecl)  (vl-occform-mkport "in" :vl-input n))
 
        ((when vecp)
         (b* ((assign (make-vl-assign
@@ -264,7 +264,7 @@ endmodule
                                   :origname name
                                   :ports (list out-port in-port)
                                   :portdecls (list out-portdecl in-portdecl)
-                                  :netdecls (list out-netdecl in-netdecl)
+                                  :vardecls (list out-vardecl in-vardecl)
                                   :assigns (list assign)
                                   :minloc *vl-fakeloc*
                                   :atts `(("VL_SVEX_PRIMITIVE" . ,(make-vl-atom :guts (vl-string "delay")))
@@ -281,7 +281,7 @@ endmodule
                               :origname  name
                               :ports     (list out-port     in-port)
                               :portdecls (list out-portdecl in-portdecl)
-                              :netdecls  (list out-netdecl  in-netdecl)
+                              :vardecls  (list out-vardecl  in-vardecl)
                               :modinsts  insts
                               :minloc    *vl-fakeloc*
                               :maxloc    *vl-fakeloc*)))
@@ -335,10 +335,10 @@ endmodule
 
        (name  (cat "VL_1_BIT_DELAY_" (natstr m)))
 
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output 1))
-       ((mv in-expr  in-port  in-portdecl  in-netdecl)  (vl-occform-mkport "in" :vl-input 1))
+       ((mv out-expr out-port out-portdecl out-vardecl) (vl-occform-mkport "out" :vl-output 1))
+       ((mv in-expr  in-port  in-portdecl  in-vardecl)  (vl-occform-mkport "in" :vl-input 1))
 
-       ((mv temp-expr temp-netdecl) (vl-occform-mkwire "temp" (- m 1)))
+       ((mv temp-expr temp-vardecl) (vl-occform-mkwire "temp" (- m 1)))
        (temp-wires (vl-make-list-of-bitselects temp-expr 0 (- m 2)))
 
        (outs  (append temp-wires (list out-expr)))
@@ -351,7 +351,7 @@ endmodule
                               :origname  name
                               :ports     (list out-port     in-port)
                               :portdecls (list out-portdecl in-portdecl)
-                              :netdecls  (list out-netdecl  in-netdecl   temp-netdecl)
+                              :vardecls  (list out-vardecl  in-vardecl   temp-vardecl)
                               :modinsts  insts
                               :atts      '(("VL_HANDS_OFF"))
                               :minloc    *vl-fakeloc*
@@ -411,11 +411,11 @@ like this:</p>
 
        (name (cat "VL_" (natstr n) "_BIT_DELAY_" (natstr m)))
 
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output n))
-       ((mv in-expr  in-port  in-portdecl  in-netdecl)  (vl-occform-mkport "in" :vl-input n))
+       ((mv out-expr out-port out-portdecl out-vardecl) (vl-occform-mkport "out" :vl-output n))
+       ((mv in-expr  in-port  in-portdecl  in-vardecl)  (vl-occform-mkport "in" :vl-input n))
 
 
-       ((mv tmp-exprs tmp-netdecls) (vl-occform-mkwires "temp" 1 m :width n))
+       ((mv tmp-exprs tmp-vardecls) (vl-occform-mkwires "temp" 1 m :width n))
 
        (outs  (append tmp-exprs (list out-expr)))
        (ins   (cons in-expr tmp-exprs))
@@ -426,7 +426,7 @@ like this:</p>
                             :origname  name
                             :ports     (list out-port in-port)
                             :portdecls (list out-portdecl in-portdecl)
-                            :netdecls  (list* out-netdecl in-netdecl tmp-netdecls)
+                            :vardecls  (list* out-vardecl in-vardecl tmp-vardecls)
                             :modinsts  insts
                             :minloc    *vl-fakeloc*
                             :maxloc    *vl-fakeloc*)))
@@ -493,7 +493,7 @@ module."
        ((mv instname nf)  (vl-namefactory-indexed-name "vl_mkdel" nf))
 
        ;; wire [rhsw-1:0] tmp;
-       ((mv temp-expr temp-netdecl) (vl-occform-mkwire temp-name width :loc x.loc))
+       ((mv temp-expr temp-vardecl) (vl-occform-mkwire temp-name width :loc x.loc))
 
        ;; VL_N_BIT_DELAY_M mkdel (tmp, rhs);
        (modinst (vl-simple-instantiate (car addmods) instname (list temp-expr x.expr)
@@ -507,7 +507,7 @@ module."
 
        (delta (change-vl-delta delta
                                :nf       nf
-                               :netdecls (cons temp-netdecl delta.netdecls)
+                               :vardecls (cons temp-vardecl delta.vardecls)
                                :modinsts (cons modinst delta.modinsts)
                                :addmods  (revappend-without-guard addmods
                                                                   delta.addmods))))
@@ -608,13 +608,13 @@ module."
 
        ;; wire del;
        ;; VL_1_BIT_DELAY_N mkdel (del, x.expr);
-       ((mv del-expr del-netdecl) (vl-occform-mkwire del-name 1 :loc loc))
+       ((mv del-expr del-vardecl) (vl-occform-mkwire del-name 1 :loc loc))
        (mkdel-inst (vl-simple-instantiate delaymod mkdel-name
                                           (list del-expr x.expr) :loc loc))
 
        (delta (change-vl-delta delta
                                :nf nf
-                               :netdecls (cons del-netdecl delta.netdecls)
+                               :vardecls (cons del-vardecl delta.vardecls)
                                :modinsts (cons mkdel-inst delta.modinsts)))
        (new-x (change-vl-plainarg x :expr del-expr)))
     (mv new-x delta)))
@@ -702,7 +702,7 @@ module."
 
        (delta (vl-starting-delta x))
        (delta (change-vl-delta delta
-                               :netdecls x.netdecls
+                               :vardecls x.vardecls
                                :modinsts x.modinsts))
        ((mv assigns delta)   (vl-assignlist-delayredux x.assigns delta :vecp vecp :state-onlyp state-onlyp))
        ((mv gateinsts delta) (vl-gateinstlist-delayredux x.gateinsts delta :vecp vecp :state-onlyp state-onlyp))
@@ -710,9 +710,9 @@ module."
 
        (new-x (change-vl-module
                x
-               ;; We started the delta with the netdecls, modinsts, and warnings
+               ;; We started the delta with the vardecls, modinsts, and warnings
                ;; from X, and extended them, so use the new, extended versions.
-               :netdecls delta.netdecls
+               :vardecls delta.vardecls
                :modinsts delta.modinsts
                :warnings delta.warnings
                ;; We rewrote all of our own assigns/gateinsts and never add any

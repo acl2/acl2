@@ -126,7 +126,7 @@ out some duplication and indirection:</p>
                                :constp   constp
                                :varp     varp
                                :lifetime lifetime
-                               :vartype  type
+                               :type     type
                                :atts     atts
                                :loc      loc)))
     (cons decl1
@@ -320,7 +320,7 @@ out some duplication and indirection:</p>
         (when (vl-is-token? :vl-comma)
           (:= (vl-match))
           (rest := (vl-parse-list-of-event-identifiers atts)))
-        (return (cons (make-vl-vardecl :vartype (make-vl-coretype :name :vl-event)
+        (return (cons (make-vl-vardecl :type (make-vl-coretype :name :vl-event)
                                        :name (vl-idtoken->name id)
                                        :dims arrdims
                                        :loc (vl-token->loc id)

@@ -172,7 +172,7 @@ so that later transforms just need to deal with compatible assignments.</p>")
 
     (mv new-x (change-vl-delta delta
                                :nf       nf
-                               :netdecls (cons temp-decl delta.netdecls)
+                               :vardecls (cons temp-decl delta.vardecls)
                                :assigns  (cons temp-ass delta.assigns)))))
 
 (define vl-ifstmt-stmttemps
@@ -228,7 +228,7 @@ so that later transforms just need to deal with compatible assignments.</p>")
         (change-vl-delta delta
                          :nf       nf
                          :assigns  (cons temp-assign delta.assigns)
-                         :netdecls (cons temp-decl delta.netdecls)))))
+                         :vardecls (cons temp-decl delta.vardecls)))))
 
 (defines vl-stmt-stmttemps
 
@@ -303,14 +303,14 @@ so that later transforms just need to deal with compatible assignments.</p>")
         x)
        (delta (vl-starting-delta x))
        (delta (change-vl-delta delta
-                               :netdecls x.netdecls
+                               :vardecls x.vardecls
                                :assigns x.assigns))
        ((mv alwayses delta) (vl-alwayslist-stmttemps x.alwayses delta))
        ((vl-delta delta)    (vl-free-delta delta)))
     (change-vl-module x
                       :alwayses alwayses
                       :assigns  delta.assigns
-                      :netdecls delta.netdecls
+                      :vardecls delta.vardecls
                       :warnings delta.warnings)))
 
 (defprojection vl-modulelist-stmttemps (x)

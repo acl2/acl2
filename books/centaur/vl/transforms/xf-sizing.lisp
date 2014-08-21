@@ -178,6 +178,11 @@
                  (new-x    vl-datatype-p))
     :measure (vl-datatype-count x)
     (vl-datatype-case x
+      (:vl-nettype
+       (b* (((mv range-successp warnings new-range)
+             (vl-maybe-range-exprsize x.range mod ialist elem warnings))
+            (new-x (change-vl-nettype x :range new-range)))
+         (mv range-successp warnings new-x)))
       (:vl-coretype
        (b* (((mv dims-successp warnings new-dims)
              (vl-packeddimensionlist-exprsize x.dims mod ialist elem warnings))
@@ -878,43 +883,29 @@ the expression.</p>"
 (def-vl-exprsize vl-portdecl
   :body (b* (((vl-portdecl x) x)
              (elem x)
-             ((mv successp warnings range-prime)
-              (vl-maybe-range-exprsize x.range mod ialist elem warnings))
-             (x-prime (change-vl-portdecl x :range range-prime)))
+             ((mv successp warnings type-prime)
+              (vl-datatype-exprsize x.type mod ialist elem warnings))
+             (x-prime (change-vl-portdecl x :type type-prime)))
           (mv successp warnings x-prime)))
 
 (def-vl-exprsize-list vl-portdecllist :element vl-portdecl)
 
-(def-vl-exprsize vl-netdecl
-  :body
-  (b* (((vl-netdecl x) x)
-       (elem x)
-       ((mv successp1 warnings range-prime)   (vl-maybe-range-exprsize x.range mod ialist elem warnings))
-       ((mv successp2 warnings arrdims-prime) (vl-rangelist-exprsize x.arrdims mod ialist elem warnings))
-       ((mv successp3 warnings delay-prime)   (vl-maybe-gatedelay-exprsize x.delay mod ialist elem warnings))
-       (successp (and successp1 successp2 successp3))
-       (x-prime  (change-vl-netdecl x
-                                    :range range-prime
-                                    :arrdims arrdims-prime
-                                    :delay delay-prime)))
-    (mv successp warnings x-prime)))
-
-(def-vl-exprsize-list vl-netdecllist :element vl-netdecl)
-
 (def-vl-exprsize vl-vardecl
   ;; BOZO -- this probably isn't right.  We probably need to consider the size
-  ;; of the variable as a context and pass that size in!!!
+  ;; of the variable as a context and pass that size in when sizing the initial value!!
   :body
   (b* (((vl-vardecl x) x)
        (elem x)
-       ((mv successp1 warnings vartype-prime) (vl-datatype-exprsize x.vartype mod ialist elem warnings))
+       ((mv successp1 warnings type-prime)    (vl-datatype-exprsize x.type mod ialist elem warnings))
        ((mv successp2 warnings dims-prime)    (vl-packeddimensionlist-exprsize x.dims mod ialist elem warnings))
        ((mv successp3 warnings initval-prime) (vl-maybe-expr-size x.initval mod ialist elem warnings))
-       (successp (and successp1 successp2 successp3))
+       ((mv successp4 warnings delay-prime)   (vl-maybe-gatedelay-exprsize x.delay mod ialist elem warnings))
+       (successp (and successp1 successp2 successp3 successp4))
        (x-prime (change-vl-vardecl x
-                                   :vartype vartype-prime
+                                   :type    type-prime
                                    :dims    dims-prime
-                                   :initval initval-prime)))
+                                   :initval initval-prime
+                                   :delay   delay-prime)))
     (mv successp warnings x-prime)))
 
 (def-vl-exprsize-list vl-vardecllist :element vl-vardecl)
@@ -945,7 +936,6 @@ the expression.</p>"
        ((mv & warnings initials)   (vl-initiallist-exprsize   x.initials   x ialist warnings))
        ((mv & warnings ports)      (vl-portlist-exprsize      x.ports      x ialist warnings))
        ((mv & warnings portdecls)  (vl-portdecllist-exprsize  x.portdecls  x ialist warnings))
-       ((mv & warnings netdecls)   (vl-netdecllist-exprsize   x.netdecls   x ialist warnings))
        ((mv & warnings vardecls)   (vl-vardecllist-exprsize   x.vardecls   x ialist warnings))
        )
     (fast-alist-free ialist)
@@ -957,7 +947,6 @@ the expression.</p>"
                       :initials initials
                       :ports ports
                       :portdecls portdecls
-                      :netdecls netdecls
                       :vardecls vardecls
                       :warnings warnings)))
 

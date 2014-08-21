@@ -66,7 +66,6 @@
 (include-book "../transforms/xf-hid-elim")
 (include-book "../transforms/xf-orig")
 (include-book "../transforms/xf-oprewrite")
-(include-book "../transforms/xf-portdecl-sign")
 (include-book "../transforms/xf-resolve-indexing")
 (include-book "../transforms/xf-resolve-ranges")
 (include-book "../transforms/xf-replicate-insts")
@@ -479,7 +478,7 @@ shown.</p>"
        ;; BOZO reinstate this??
        ;; (mods (cwtime (vl-modulelist-add-undefined-names mods)))
        (design (cwtime (vl-design-resolve-indexing design)))
-       (design (cwtime (vl-design-portdecl-sign design)))
+       ;; (design (cwtime (vl-design-portdecl-sign design)))
        (design (cwtime (vl-design-origexprs design)))
        (design (cwtime (vl-design-check-namespace design)))
 

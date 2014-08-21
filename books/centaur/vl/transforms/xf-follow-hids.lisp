@@ -35,7 +35,7 @@
 (include-book "../mlib/expr-tools")
 (include-book "../mlib/hid-tools")
 (include-book "../mlib/stmt-tools")
-(include-book "../wf-ranges-resolved-p")
+;(include-book "../wf-ranges-resolved-p")
 (local (include-book "../util/arithmetic"))
 (local (include-book "../util/osets"))
 (local (in-theory (enable tag-reasoning)))
@@ -179,50 +179,37 @@ to report this information as well.</p>"
              (tag     (tag item))
              (modname (string-fix (vl-module->name curr)))
 
-             ((when (eq tag :vl-netdecl))
-              (b* (((vl-netdecl item) item)
-                   ;; Try to simplify the range.  We didn't originally do this,
-                   ;; but I later found that we weren't fully resolving some
-                   ;; HIDs because their declared ranges were things like
-                   ;; [`foo-1:0].  So we can do a bit better by trying to
-                   ;; resolve the ranges.
-                   ((mv & range) (vl-maybe-rangeresolve item.range nil))
-                   (range-resolvedp
-                    ;; See vl-hid-expr-elim, don't say it's resolved unless
-                    ;; it's also unsigned and has no arrdims.
-                    (and (not item.signedp)
-                         (not item.arrdims)
-                         (vl-maybe-range-resolved-p range))))
-                (mv (ok) x modname range-resolvedp range)))
+             ((unless (eq tag :vl-vardecl))
+              (mv (fatal :type :vl-unresolved-hid
+                         :msg *vl-unresolved-hid-msg*
+                         :args (list ctx-hid
+                                     ctx-modname
+                                     (vl-module->name curr)
+                                     name
+                                     (cat "Expected " name " to be a net or variable, but found "
+                                          (symbol-name (tag item)))))
+                  x nil nil nil))
 
-             ((when (eq tag :vl-vardecl))
-              (b* (;; BOZO maybe handle some other kinds here
-                   ((unless (vl-simplereg-p item))
-                    ;; Some other kind of variable: we will just not claim to
-                    ;; know the size of it.
-                    (mv (ok) x modname nil nil))
-                   ;; Reg case.
-                   (signedp (vl-simplereg->signedp item))
-                   (range   (vl-simplereg->range item))
-                   ((mv & range) (vl-maybe-rangeresolve range nil))
-                   (range-resolvedp
-                    ;; See vl-hid-expr-elim, don't say it's resolved unless
-                    ;; it's also unsigned and has no arrdims.
-                    (and (not signedp)
-                         ;; already know there are no arrdims since it's a simplereg
-                         (vl-maybe-range-resolved-p range))))
-                (mv (ok) x modname range-resolvedp range))))
+             ((unless (vl-simplevar-p item))
+              ;; Some other kind of variable: we will just not claim to know
+              ;; the size of it.
+              (mv (ok) x modname nil nil))
 
-          ;; Otherwise, some other kind of thing...
-          (mv (fatal :type :vl-unresolved-hid
-                     :msg *vl-unresolved-hid-msg*
-                     :args (list ctx-hid
-                                 ctx-modname
-                                 (vl-module->name curr)
-                                 name
-                                 (cat "Expected " name " to be a net or variable, but found "
-                                      (symbol-name (tag item)))))
-              x nil nil nil)))
+             (signedp (vl-simplevar->signedp item))
+             (range   (vl-simplevar->range item))
+
+             ;; Try to simplify the range.  We didn't originally do this, but I
+             ;; later found that we weren't fully resolving some HIDs because
+             ;; their declared ranges were things like [`foo-1:0].  So we can
+             ;; do a bit better by trying to resolve the ranges.
+             ((mv & range) (vl-maybe-rangeresolve range nil))
+             (range-resolvedp
+              ;; See vl-hid-expr-elim, don't say it's resolved unless
+              ;; it's also unsigned and has no arrdims.
+              (and (not signedp)
+                   (vl-maybe-range-resolved-p range))))
+
+          (mv (ok) x modname range-resolvedp range)))
 
        ((vl-nonatom x) x)
 

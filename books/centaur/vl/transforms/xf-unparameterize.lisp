@@ -33,15 +33,13 @@
 (include-book "../mlib/consteval")
 (include-book "../mlib/subst")
 (include-book "../mlib/typesubst")
-(include-book "../mlib/writer")           ; BOZO necessary?
-(include-book "../mlib/remove-bad")       ; BOZO necessary?
-(include-book "../mlib/print-warnings")   ; BOZO necessary?
-(include-book "../wf-ranges-resolved-p")  ; BOZO necessary?
-(include-book "../util/cwtime")           ; BOZO necessary?
+(include-book "../mlib/fmt")
+(include-book "../mlib/hierarchy")
+(include-book "../mlib/remove-bad")
 (local (include-book "../util/arithmetic"))
 (local (include-book "../mlib/modname-sets"))
 (local (include-book "../util/osets"))
-(local (include-book "centaur/bitops/ihsext-basics" :dir :system))  ; BOZO necessary?
+(local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (std::add-default-post-define-hook :fix))
 
 (local (in-theory (disable vl-maybe-module-p-when-vl-module-p)))
@@ -176,96 +174,6 @@ with, we can safely remove @('plus') from our module list.</p>")
 
 (local (xdoc::set-default-parents vl-override-parameter-value))
 
-(define vl-datatype-width ((x vl-datatype-p))
-  ;; BOZO misplaced, eventually should be integrated into sizing, etc.
-  :returns (width maybe-posp :rule-classes :type-prescription)
-  ;; We don't try very hard yet.
-  (vl-datatype-case x
-    (:vl-coretype
-     (case x.name
-       ;; See SystemVerilog-2012 Section 6.11, Integer Data Types.
-
-       ;; integer atom types -- these don't have any dimensions, they're just fixed sizes
-       (:vl-byte     8)
-       (:vl-shortint 16)
-       (:vl-int      32)
-       (:vl-longint  64)
-       (:vl-integer  32)
-       (:vl-time     64)
-
-       ;; integer vector types -- these have arbitrary packed dimensions.
-       ((:vl-bit :vl-logic :vl-reg)
-        (cond ((atom x.dims)
-               ;; No dimensions means it's just a scalar
-               1)
-              ((atom (cdr x.dims))
-               ;; A single dimension, maybe we can figure out its size
-               (b* ((dim (car x.dims))
-                    ((when (eq dim :vl-unsized-dimension))
-                     ;; ah, what a pity
-                     nil)
-                    ((unless (vl-range-resolved-p dim))
-                     ;; well shucks
-                     nil))
-                 (vl-range-size dim)))
-              (t
-               ;; Multiple dimensions?  Good luck with that.
-               nil)))
-
-       (otherwise
-        ;; (:vl-shortreal :vl-real :vl-realtime)
-        ;; We arguably *could* handle things like shortreal/real/realtime and even perhaps string,
-        ;; but that doesn't seem like anything we actually *should* do.
-        nil)))
-
-    (:vl-struct
-     ;; Maybe some day support packed structure sizes
-     nil)
-
-    (:vl-union
-     ;; Can these even be packed?
-     nil)
-
-    (:vl-usertype
-     ;; BOZO maybe some day extend this to be able to do lookups
-     nil)
-
-    ;; ??
-    (:vl-enum nil)))
-
-(define vl-datatype-exprtype ((x vl-datatype-p))
-  ;; BOZO misplaced, eventually should be integrated into sizing, etc.
-  :returns (type vl-maybe-exprtype-p)
-  ;; We don't try very hard yet.
-  (vl-datatype-case x
-    (:vl-coretype
-     (case x.name
-       ;; integer atom types -- signedness is determined at parse time, so just
-       ;; look at the signedp field.
-       ((:vl-byte :vl-shortint :vl-int :vl-longint :vl-integer :vl-time)
-        (if x.signedp :vl-signed :vl-unsigned))
-
-       ;; integer vector types -- signedness is also determined at parse time
-       ((:vl-bit :vl-logic :vl-reg)
-        (if x.signedp :vl-signed :vl-unsigned))
-
-       (otherwise
-        nil)))
-
-    (:vl-struct
-     ;; Maybe packed structures should be viewed as unsigned?
-     nil)
-
-    (:vl-union
-     nil)
-
-    (:vl-usertype
-     ;; BOZO maybe some day extend this to be able to do lookups
-     nil)
-
-    ;; ???
-    (:vl-enum nil)))
-
 (define vl-override-parameter-with-type
   :short "Try to override a parameter with a new datatype."
   ((decl     vl-paramdecl-p        "Some parameter from the submodule.")
@@ -359,16 +267,17 @@ types.</p>"
        ;; and type.  We want to convert it from whatever size/type it currently
        ;; happens to have into the type that is specified by this parameter.
        ;; That means getting the type and size from a datatype.
-       (desired-width (vl-datatype-width type))
-       (desired-type  (vl-datatype-exprtype type))
-       ((unless (and desired-width desired-type))
-        (vl-unparam-debug "~a0: can't override ~a1: width or type unknown: width ~a2, type ~a3."
-                          inst paramname desired-width desired-type)
+       ((mv okp1 errmsg1 desired-width) (vl-datatype-width type))
+       ((mv okp2 errmsg2 desired-type)  (vl-datatype-exprtype type))
+       ((unless (and okp1 okp2 desired-width desired-type))
+        (vl-unparam-debug "~a0: can't override ~a1: width or type unknown: width ~a2, type ~a3; ~s4/~s5."
+                          inst paramname desired-width desired-type
+                          errmsg1 errmsg2)
         (mv nil
             (fatal :type :vl-bad-instance
                    :msg "~a0: can't override parameter ~s1: don't know the ~
-                         correct width/signedness for type ~a2."
-                   :args (list inst paramname type))
+                         correct width/signedness for type ~a2; ~s3/~s4."
+                   :args (list inst paramname type errmsg1 errmsg2))
             expr))
 
        ;; Theory: correct way to do conversion is:

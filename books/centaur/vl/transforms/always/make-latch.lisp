@@ -102,9 +102,9 @@ endmodule
 
        (name        (hons-copy (cat "VL_" (natstr n) "_BIT_LATCH")))
 
-       ((mv q-expr q-port q-portdecl q-netdecl)         (vl-occform-mkport "q" :vl-output n))
-       ((mv clk-expr clk-port clk-portdecl clk-netdecl) (vl-occform-mkport "clk" :vl-input 1))
-       ((mv d-expr d-port d-portdecl d-netdecl)         (vl-occform-mkport "d" :vl-input n))
+       ((mv q-expr q-port q-portdecl q-vardecl)         (vl-occform-mkport "q" :vl-output n))
+       ((mv clk-expr clk-port clk-portdecl clk-vardecl) (vl-occform-mkport "clk" :vl-input 1))
+       ((mv d-expr d-port d-portdecl d-vardecl)         (vl-occform-mkport "d" :vl-input n))
 
        (q-wires     (vl-make-list-of-bitselects q-expr 0 (- n 1)))
        (d-wires     (vl-make-list-of-bitselects d-expr 0 (- n 1)))
@@ -113,7 +113,7 @@ endmodule
                           :origname  name
                           :ports     (list q-port clk-port d-port)
                           :portdecls (list q-portdecl clk-portdecl d-portdecl)
-                          :netdecls  (list q-netdecl clk-netdecl d-netdecl)
+                          :vardecls  (list q-vardecl clk-vardecl d-vardecl)
                           :modinsts  modinsts
                           :atts      (acons "VL_HANDS_OFF" nil nil) ; <-- may not be needed with the new sizing code
                           :minloc    *vl-fakeloc*
@@ -166,9 +166,9 @@ endmodule
                             (cat "VL_" (natstr n) "_BIT_LATCH")
                           (cat "VL_" (natstr n) "_BIT_" (natstr del) "_TICK_LATCH"))))
 
-       ((mv q-expr q-port q-portdecl q-netdecl)         (vl-occform-mkport "q" :vl-output n))
-       ((mv clk-expr clk-port clk-portdecl clk-netdecl) (vl-occform-mkport "clk" :vl-input 1))
-       ((mv d-expr d-port d-portdecl d-netdecl)         (vl-occform-mkport "d" :vl-input n))
+       ((mv q-expr q-port q-portdecl q-vardecl)         (vl-occform-mkport "q" :vl-output n))
+       ((mv clk-expr clk-port clk-portdecl clk-vardecl) (vl-occform-mkport "clk" :vl-input 1))
+       ((mv d-expr d-port d-portdecl d-vardecl)         (vl-occform-mkport "d" :vl-input n))
 
        ;; note qregdecls are netdecls not regdecls
        ((mv qreg-expr qreg-decls qreg-assigns)
@@ -218,7 +218,7 @@ endmodule
                           :origname  name
                           :ports     (list q-port clk-port d-port)
                           :portdecls (list q-portdecl clk-portdecl d-portdecl)
-                          :netdecls  (list* q-netdecl clk-netdecl d-netdecl
+                          :vardecls  (list* q-vardecl clk-vardecl d-vardecl
                                             qdel-decl qreg-decls)
                           :assigns (list* qreg-assign qdel-assign qreg-assigns)
                           ;; :modinsts  (cons qdel-inst qreg-insts)

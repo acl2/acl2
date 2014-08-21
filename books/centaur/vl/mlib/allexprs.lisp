@@ -232,6 +232,8 @@ expressions within @('(* foo = bar *)')-style attributes.</p>")
     :measure (vl-datatype-count x)
     :flag :datatype
     (vl-datatype-case x
+      (:vl-nettype
+       (vl-maybe-range-allexprs-nrev x.range nrev))
       (:vl-coretype
        (vl-packeddimensionlist-allexprs-nrev x.dims nrev))
       (:vl-struct
@@ -275,6 +277,8 @@ expressions within @('(* foo = bar *)')-style attributes.</p>")
     :verify-guards nil
     (mbe :logic
          (vl-datatype-case x
+           (:vl-nettype
+            (vl-maybe-range-allexprs x.range))
            (:vl-coretype
             (vl-packeddimensionlist-allexprs x.dims))
            (:vl-struct
@@ -501,34 +505,20 @@ expressions within @('(* foo = bar *)')-style attributes.</p>")
   :element vl-modinst)
 
 (def-vl-allexprs
-  :type vl-netdecl
-  :nrev-body
-  (b* (((vl-netdecl x) x)
-       (nrev (vl-maybe-range-allexprs-nrev x.range nrev))
-       (nrev (vl-rangelist-allexprs-nrev x.arrdims nrev)))
-      (vl-maybe-gatedelay-allexprs-nrev x.delay nrev))
-  :body
-  (b* (((vl-netdecl x) x))
-      (append (vl-maybe-range-allexprs x.range)
-              (vl-rangelist-allexprs x.arrdims)
-              (vl-maybe-gatedelay-allexprs x.delay))))
-
-(def-vl-allexprs-list
-  :list vl-netdecllist
-  :element vl-netdecl)
-
-(def-vl-allexprs
   :type vl-vardecl
   :nrev-body
   (b* (((vl-vardecl x) x)
-       (nrev (vl-datatype-allexprs-nrev x.vartype nrev))
-       (nrev (vl-packeddimensionlist-allexprs-nrev x.dims nrev)))
-    (vl-maybe-expr-allexprs-nrev x.initval nrev))
+       (nrev (vl-datatype-allexprs-nrev x.type nrev))
+       (nrev (vl-packeddimensionlist-allexprs-nrev x.dims nrev))
+       (nrev (vl-maybe-expr-allexprs-nrev x.initval nrev))
+       (nrev (vl-maybe-gatedelay-allexprs-nrev x.delay nrev)))
+    nrev)
   :body
   (b* (((vl-vardecl x) x))
-    (append (vl-datatype-allexprs x.vartype)
+    (append (vl-datatype-allexprs x.type)
             (vl-packeddimensionlist-allexprs x.dims)
-            (vl-maybe-expr-allexprs x.initval))))
+            (vl-maybe-expr-allexprs x.initval)
+            (vl-maybe-gatedelay-allexprs x.delay))))
 
 (def-vl-allexprs-list
   :list vl-vardecllist
@@ -536,8 +526,8 @@ expressions within @('(* foo = bar *)')-style attributes.</p>")
 
 (def-vl-allexprs
   :type vl-portdecl
-  :nrev-body (vl-maybe-range-allexprs-nrev (vl-portdecl->range x) nrev)
-  :body (vl-maybe-range-allexprs (vl-portdecl->range x)))
+  :nrev-body (vl-datatype-allexprs-nrev (vl-portdecl->type x) nrev)
+  :body (vl-datatype-allexprs (vl-portdecl->type x)))
 
 (def-vl-allexprs-list
   :list vl-portdecllist
@@ -892,7 +882,6 @@ expressions within @('(* foo = bar *)')-style attributes.</p>")
        (nrev (vl-portlist-allexprs-nrev x.ports nrev))
        (nrev (vl-portdecllist-allexprs-nrev x.portdecls nrev))
        (nrev (vl-assignlist-allexprs-nrev x.assigns nrev))
-       (nrev (vl-netdecllist-allexprs-nrev x.netdecls nrev))
        (nrev (vl-vardecllist-allexprs-nrev x.vardecls nrev))
        (nrev (vl-paramdecllist-allexprs-nrev x.paramdecls nrev))
        (nrev (vl-fundecllist-allexprs-nrev x.fundecls nrev))
@@ -907,7 +896,6 @@ expressions within @('(* foo = bar *)')-style attributes.</p>")
       (append (vl-portlist-allexprs x.ports)
               (vl-portdecllist-allexprs x.portdecls)
               (vl-assignlist-allexprs x.assigns)
-              (vl-netdecllist-allexprs x.netdecls)
               (vl-vardecllist-allexprs x.vardecls)
               (vl-paramdecllist-allexprs x.paramdecls)
               (vl-fundecllist-allexprs x.fundecls)

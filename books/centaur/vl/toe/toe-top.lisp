@@ -99,11 +99,11 @@ field of each @(see vl-module-p).</p>")
 ;
 ; -----------------------------------------------------------------------------
 
-(define vl-has-any-hid-netdecls ((x vl-netdecllist-p))
+(define vl-has-any-hid-netdecls ((x vl-vardecllist-p))
   :parents (vl-module-check-e-ok)
   (cond ((atom x)
          nil)
-        ((assoc-equal "HID" (vl-netdecl->atts (car x)))
+        ((assoc-equal "HID" (vl-vardecl->atts (car x)))
          t)
         (t
          (vl-has-any-hid-netdecls (cdr x)))))
@@ -117,25 +117,6 @@ field of each @(see vl-module-p).</p>")
                          :hyp (force (vl-warninglist-p warnings))))
   (b* (((vl-module x) x)
        ;; Gather up a message about what unsupported constructs there are.
-
-       (warnings
-        ;; Unused variable declarations occasionally don't get eliminated by
-        ;; the unused-vars transform, because they might be things like
-        ;;   output reg o1;
-        ;; Which are never really unused because of ports.  Extra variable
-        ;; declarations seem less problematic than other sorts of things
-        ;; like assignments, so we'll just issue non-fatal warnings for
-        ;; these.
-        (if x.vardecls
-            (warn :type :vl-warn-vardecls
-                  :msg "During conversion to E modules, module ~a0 still has ~
-                        variable declarations: ~&1.  We generally expect that ~
-                        most variable declarations should be eliminated ~
-                        before now."
-                  :args (list x.name (vl-vardecllist->names x.vardecls)))
-          warnings))
-
-       ;; Some other kinds of constructs seem more problematic:
        (acc nil)
        (acc (if x.paramdecls
                 (cons (str::join (cons "parameter declarations: " (vl-paramdecllist->names x.paramdecls)) " ")
@@ -153,7 +134,7 @@ field of each @(see vl-module-p).</p>")
        (acc (if x.gateinsts  (cons "gate instances" acc) acc))
        (acc (if x.alwayses   (cons "always blocks" acc)  acc))
        ;; We'll allow but ignore initial statements
-       (acc (if (vl-has-any-hid-netdecls x.netdecls)
+       (acc (if (vl-has-any-hid-netdecls x.vardecls)
                 (cons "hierarchical identifiers" acc)
               acc))
        ;; BOZO BOZO BOZO !!!!!
@@ -212,9 +193,9 @@ field of each @(see vl-module-p).</p>")
                (wires vl-emodwirelist-p :hyp (vl-wirealist-p walist)))
   (b* (((when (atom x))
         (mv warnings nil))
-       (nets       (vl-module->netdecls x))
-       (dnets      (vl-gather-netdecls-with-attribute nets "VL_DESIGN_WIRE"))
-       (dnet-names (vl-netdecllist->names dnets)))
+       (vars       (vl-module->vardecls x))
+       (dnets      (vl-gather-vardecls-with-attribute vars "VL_DESIGN_WIRE"))
+       (dnet-names (vl-vardecllist->names dnets)))
     (vl-collect-msb-bits-for-wires dnet-names walist warnings)))
 
 

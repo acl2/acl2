@@ -141,7 +141,7 @@ formerly the \"location directive\" and printed a location.</p>")
      (if (vl-context-p x)
          (vl-pp-context-summary x)
        (vl-fmt-tilde-x x)))
-    ((:vl-port :vl-portdecl :vl-assign :vl-netdecl :vl-vardecl
+    ((:vl-port :vl-portdecl :vl-assign :vl-vardecl
       :vl-paramdecl :vl-fundecl :vl-taskdecl
       :vl-modinst :vl-gateinst :vl-always :vl-initial)
      (if (vl-modelement-p x)

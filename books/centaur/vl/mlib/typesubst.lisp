@@ -207,6 +207,11 @@ is not okay to replace @('foo_t') with, say, a tagged @('union').</p>")
          (elem     (vl-modelement-fix elem))
          (x        (vl-datatype-fix x)))
       (vl-datatype-case x
+
+        (:vl-nettype
+         ;; There aren't any user-defined types that can be substituted here.
+         (mv t warnings x))
+
         (:vl-coretype
          ;; These are just basic types like int, byte, etc., nothing here can
          ;; be substituted, nothing to do.
@@ -375,14 +380,31 @@ is not okay to replace @('foo_t') with, say, a tagged @('union').</p>")
   :type vl-vardecl-p
   :body
   (b* (((vl-vardecl x) (vl-vardecl-fix x))
-       ((mv okp warnings vartype)
-        (vl-datatype-typesubst x.vartype sigma x warnings))
-       (new-x (change-vl-vardecl x :vartype vartype)))
+       ((mv okp warnings type)
+        (vl-datatype-typesubst x.type sigma x warnings))
+       (new-x (change-vl-vardecl x :type type)))
     (mv okp warnings new-x)))
 
 (def-vl-typesubst-list vl-vardecllist-typesubst
   :type vl-vardecllist-p
   :element vl-vardecl-typesubst)
+
+
+
+(def-vl-typesubst vl-portdecl-typesubst
+  :type vl-portdecl-p
+  :body
+  (b* (((vl-portdecl x) (vl-portdecl-fix x))
+       ((mv okp warnings type)
+        (vl-datatype-typesubst x.type sigma x warnings))
+       (new-x (change-vl-portdecl x :type type)))
+    (mv okp warnings new-x)))
+
+(def-vl-typesubst-list vl-portdecllist-typesubst
+  :type vl-portdecllist-p
+  :element vl-portdecl-typesubst)
+
+
 
 (def-vl-typesubst vl-paramtype-typesubst
   :takes-elem t
@@ -563,16 +585,14 @@ is not okay to replace @('foo_t') with, say, a tagged @('union').</p>")
        ((mv okp5 warnings modinsts)   (vl-modinstlist-typesubst   x.modinsts   sigma warnings))
        ((mv okp6 warnings alwayses)   (vl-alwayslist-typesubst    x.alwayses   sigma warnings))
        ((mv okp7 warnings initials)   (vl-initiallist-typesubst   x.initials   sigma warnings))
-
+       ((mv okp8 warnings portdecls)  (vl-portdecllist-typesubst  x.portdecls  sigma warnings))
        ;; BOZO eventually more things may have datatypes:
        ;;  - params
        ;;  - ports
-       ;;  - portdecls
-       ;;  - netdecls
        ;;  - assigns
        ;;  - gateinsts
 
-       (okp (and okp1 okp2 okp3 okp4 okp5 okp6 okp7))
+       (okp (and okp1 okp2 okp3 okp4 okp5 okp6 okp7 okp8))
        ((unless okp)
         (mv nil (change-vl-module x :warnings warnings)))
 
@@ -583,5 +603,6 @@ is not okay to replace @('foo_t') with, say, a tagged @('union').</p>")
                                 :taskdecls  taskdecls
                                 :modinsts   modinsts
                                 :alwayses   alwayses
-                                :initials   initials)))
+                                :initials   initials
+                                :portdecls  portdecls)))
     (mv t new-x)))

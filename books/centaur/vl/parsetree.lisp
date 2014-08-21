@@ -57,7 +57,7 @@ annotated with a @('version') field that must match exactly this string.</p>"
 
   ;; Current syntax version: generally a string like
   ;; "VL Syntax [date of modification]"
-  "VL Syntax 2014-08-14")
+  "VL Syntax 2014-08-15")
 
 (define vl-syntaxversion-p (x)
   :parents (syntax)
@@ -103,9 +103,6 @@ regular view of the source code.</p>")
   :parents nil
   :fix maybe-string-fix
   :equiv maybe-string-equiv)
-
-
-
 
 (defprod vl-range
   :short "Representation of ranges on wire declarations, instance array
@@ -175,8 +172,31 @@ try to support the use of both ascending and descending ranges.</p>")
    :vl-randc)
   :short "Random qualifiers that can be put on struct or union members.")
 
+(defenum vl-nettypename-p
+  (:vl-wire ;; Most common so it goes first.
+   :vl-tri
+   :vl-supply0
+   :vl-supply1
+   :vl-triand
+   :vl-trior
+   :vl-tri0
+   :vl-tri1
+   :vl-trireg
+   :vl-uwire
+   :vl-wand
+   :vl-wor)
+  :parents (vl-nettype)
+  :short "Representation of wire types."
+
+  :long "<p>Wires in Verilog can be given certain types.  We
+represent these types using certain keyword symbols, whose names
+correspond to the possible types.</p>")
+
 (defenum vl-coretypename-p
-  (:vl-void
+  (;; integer vector types, i put these first since they're common
+   :vl-logic
+   :vl-reg
+   :vl-bit
    ;; integer atom types:
    :vl-byte
    :vl-shortint
@@ -184,10 +204,6 @@ try to support the use of both ascending and descending ranges.</p>")
    :vl-longint
    :vl-integer
    :vl-time
-   ;; integer vector types
-   :vl-bit
-   :vl-logic
-   :vl-reg
    ;; non integer types:
    :vl-shortreal
    :vl-real
@@ -195,7 +211,11 @@ try to support the use of both ascending and descending ranges.</p>")
    ;; misc core data types
    :vl-string
    :vl-chandle
-   :vl-event)
+   :vl-event
+   ;; it's convenient to include void here even though it's not part
+   ;; of the grammar for data_type
+   :vl-void
+   )
   :short "Basic kinds of data types."
   :long "<p>Our <i>core types</i> basically correspond to the following small
 subset of the valid @('data_type')s:</p>
@@ -213,8 +233,6 @@ subset of the valid @('data_type')s:</p>
 })
 
 <p>We include @('void') here only because it's convenient to do so.</p>")
-
-
 
 (define vl-packeddimension-p (x)
   :short "Recognizes ranges and unsized dimensions."
@@ -405,6 +423,21 @@ unsized dimensions.</p>")
       (dims    vl-packeddimensionlist-p
                "Only valid for integer vector types (bit, logic, reg).")))
 
+    (:vl-nettype
+     :layout :tree
+     :base-name vl-nettype
+     :short "Representation of net types like @('wire'), @('tri'), @('wor'), etc.,
+             and their associated ranges."
+     ((name    vl-nettypename-p
+               "Kind of net this is, e.g., @('wire'), @('wor'), etc.")
+
+      (signedp booleanp :rule-classes :type-prescription
+               "Signedness of this wire.")
+
+      (range   vl-maybe-range-p
+               "A single, optional range that preceeds the wire name; this
+                ordinarily governs the \"size\" of a wire.")))
+
     (:vl-struct
      :layout :tree
      :base-name vl-struct
@@ -557,6 +590,47 @@ kinds of assignments like @('+=') and @('*='), so maybe this could become a
 away with them as alternate kinds of assignments.</p>"))
 
 (defoption vl-maybe-datatype-p vl-datatype-p)
+
+
+(defval *vl-plain-old-integer-type*
+  :parents (vl-datatype)
+  (hons-copy (make-vl-coretype :name    :vl-integer
+                               :signedp t   ;; integer type is signed
+                               :dims    nil ;; Not applicable to integers
+                               )))
+
+(defval *vl-plain-old-real-type*
+  :parents (vl-datatype)
+  (hons-copy (make-vl-coretype :name    :vl-real
+                               :signedp nil ;; Not applicable to reals
+                               :dims    nil ;; Not applicable to reals
+                               )))
+
+(defval *vl-plain-old-time-type*
+  :parents (vl-datatype)
+  (hons-copy (make-vl-coretype :name    :vl-time
+                               :signedp nil ;; Not applicable to times
+                               :dims    nil ;; Not applicable to times
+                               )))
+
+(defval *vl-plain-old-realtime-type*
+  :parents (vl-datatype)
+  (hons-copy (make-vl-coretype :name    :vl-realtime
+                               :signedp nil ;; Not applicable to realtimes
+                               :dims    nil ;; Not applicable to realtimes
+                               )))
+
+(defval *vl-plain-old-wire-type*
+  :parents (vl-datatype)
+  (hons-copy (make-vl-nettype :name    :vl-wire
+                              :signedp nil
+                              :range   nil)))
+
+(defval *vl-plain-old-reg-type*
+  :parents (vl-datatype)
+  (hons-copy (make-vl-coretype :name    :vl-reg
+                               :signedp nil
+                               :dims    nil)))
 
 
 (defprod vl-port
@@ -718,22 +792,16 @@ arguments of gate instances and most arguments of module instances.  See our
              "Says whether this port is an input, output, or bidirectional
               (inout) port.")
 
-   (signedp  booleanp
-             :rule-classes :type-prescription
-             "Whether the @('signed') keyword was present in the declaration;
-              but <b>warning</b>: per page 175, port declarations and net/reg
-              declarations must be checked against one another: if either
-              declaration includes the @('signed') keyword, then both are to be
-              considered signed.  The @(see loader) DOES NOT do this
-              cross-referencing automatically; instead the @(see portdecl-sign)
-              transformation needs to be run.")
-
-   (range    vl-maybe-range-p
-             "Indicates whether the input is a vector and, if so, how large the
-              input is.  Per page 174, if there is also a net declaration, then
-              the range must agree.  This is checked in @(see
-              vl-portdecl-and-moduleitem-compatible-p) as part of our notion of
-              @(see reasonable) modules.")
+   (type     vl-datatype-p
+             "The type and size information for this port.  Could be a net or
+              variable type.  <b>Warning</b>: per Verilog-2005 page 175, port
+              declarations and net/reg declarations must be checked against one
+              another: if either declaration includes the @('signed') keyword,
+              then both are to be considered signed.  The @(see loader) DOES
+              NOT do this cross-referencing automatically; instead the @(see
+              portdecl-sign) transformation needs to be run.  See also @(see
+              vl-portdecl-and-moduleitem-compatible-p) which is part of our
+              notion of @(see reasonable) modules.")
 
    (atts     vl-atts-p
              "Any attributes associated with this declaration.")
@@ -770,7 +838,7 @@ input supply0 b;
 <p>And so on.  For some time, our @('vl-port-p') structures included a
 @('type') field.  However, upon a closer reading of the Verilog-2005 standard,
 we have learned that the proper way to handle these is to simultaneously
-introduce a @(see vl-netdecl-p) alongside the @('vl-portdecl-p') that we would
+introduce a @(see vl-vardecl) alongside the @('vl-portdecl-p') that we would
 ordinarily create for a port declaration.  See, e.g., the second paragraph from
 the bottom on Page 174.</p>")
 
@@ -821,7 +889,6 @@ review the rules for correctly computing these delays.</p>")
              (or (not x)
                  (consp x)))
     :rule-classes :compound-recognizer))
-
 
 (defenum vl-dstrength-p
   (:vl-supply
@@ -978,7 +1045,7 @@ assignment statement, e.g., </p>
 
 <p>that the delay is to be associated with each assignment, and NOT with the
 net declaration for @('a').  Net delays are different than assignment delays;
-see @(see vl-netdecl-p) for additional discussion.</p>
+see @(see vl-vardecl) for additional discussion.</p>
 
 <p><b>Warning:</b> Although the parser is careful to handle the delay
 correctly, we are generally uninterested in delays and our transforms may not
@@ -1016,78 +1083,86 @@ properly preserve them.</p>")
 ;;   :nil-preservingp t)
 
 
-(defenum vl-netdecltype-p
-  (:vl-wire ;; Most common so it goes first.
-   :vl-supply0
-   :vl-supply1
-   :vl-tri
-   :vl-triand
-   :vl-trior
-   :vl-tri0
-   :vl-tri1
-   :vl-trireg
-   :vl-uwire
-   :vl-wand
-   :vl-wor)
-  :parents (vl-netdecl-p)
-  :short "Representation of wire types."
+(defenum vl-lifetime-p
+  (nil
+   :vl-static
+   :vl-automatic)
+  :short "Representation of the lifetime of a variable.")
 
-  :long "<p>Wires in Verilog can be given certain types.  We
-represent these types using certain keyword symbols, whose names
-correspond to the possible types.</p>")
-
-(defoption vl-maybe-netdecltype-p vl-netdecltype-p
-  ///
-  (defthm type-when-vl-maybe-netdecltype-p
-    (implies (vl-netdecltype-p x)
-             (and (symbolp x)
-                  (not (equal x t))))
-    :rule-classes :compound-recognizer))
-
-(defprod vl-netdecl
-  :short "Representation of net (wire) declarations."
-  :tag :vl-netdecl
+(defprod vl-vardecl
+  :short "Representation of a single variable or net (e.g., wire) declaration."
+  :tag :vl-vardecl
   :layout :tree
-  ((name       stringp
-               :rule-classes :type-prescription
-               "Name of the wire being declared.")
 
-   (type       vl-netdecltype-p
-               "Wire type, e.g., @('wire'), @('supply1'), etc.")
+  ((name    stringp
+            :rule-classes :type-prescription
+            "Name of the variable being declared.")
 
-   (range      vl-maybe-range-p
-               "A single, optional range that preceeds the wire name; this
-                ordinarily governs the \"size\" of a wire.")
+   (type    vl-datatype-p
+            "Kind of net or variable, e.g., wire, logic, reg, integer, real,
+             etc.  Also contains sizing information.")
 
-   (arrdims    vl-rangelist-p
-               "Used for arrays like memories; see below.")
+   (dims    vl-packeddimensionlist-p
+            "A list of array dimensions; empty unless this is an array or
+             multi-dimensional array of nets/variables.")
+
+   (constp   booleanp
+             :rule-classes :type-prescription
+             "(Variables only).  Indicates whether the @('const') keyword was
+             provided.")
+
+   (varp     booleanp
+             :rule-classes :type-prescription
+             "(Variables only).  Indicates whether the @('var') keyword was
+             provided.")
+
+   (lifetime vl-lifetime-p
+             "(Variables only).  See SystemVerilog-2012 Section 6.21.  There
+              are pretty complex rules for variable lifetimes.  BOZO we don't
+              really support this yet in any meaningful way, and the
+              @('lifetime') field is currently just used to record whether a
+              @('static') or @('automatic') keyword was found during parsing.")
+
+   (initval vl-maybe-expr-p
+            "(Variables only).  BOZO.  When present, indicates the initial
+             value for the variable, e.g., if one writes @('integer i = 3;'),
+             then the @('initval') will be the @(see vl-expr-p) for @('3').
+             When wire declarations have initial values, the parser turns them
+             into separate continuous assignment statements, instead.  It
+             should turn these into separate initial blocks, I think.")
 
    (vectoredp  booleanp
                :rule-classes :type-prescription
-               "True if the @('vectored') keyword was explicitly provided.")
+               "(Nets only) True if the @('vectored') keyword was explicitly
+                provided.")
 
    (scalaredp  booleanp
                :rule-classes :type-prescription
-               "True if the @('scalared') keyword was explicitly provided.")
+               "(Nets only) True if the @('scalared') keyword was explicitly
+                provided.")
 
-   (signedp    booleanp
-               :rule-classes :type-prescription
-               "Indicates whether the @('signed') keyword was supplied on this
-                declaration.  But <b>warning</b>: per page 175, port
-                declarations and net/reg declarations must be checked against
-                one another: if either declaration includes the @('signed')
-                keyword, then both are to be considered signed.  The parser
-                DOES NOT do this cross-referencing automatically; instead the
-                @(see portdecl-sign) transformation needs to be run.")
+   (delay      vl-maybe-gatedelay-p
+               "(Nets only) The delay associated with this wire, if any.
+                For instance, @('wire #1 foo').")
 
-   (delay      vl-maybe-gatedelay-p)
-   (cstrength  vl-maybe-cstrength-p)
-   (atts       vl-atts-p
-               "Any attributes associated with this declaration.")
-   (loc        vl-location-p
-               "Where the declaration was found in the source code."))
+   (cstrength  vl-maybe-cstrength-p
+               "(Trireg nets only).  The charge strength associated with the
+                net, if any.  For instance, @('trireg medium foo').")
 
-  :long "<p>Net declarations introduce new wires with certain properties (type,
+   (atts    vl-atts-p
+            "Any attributes associated with this declaration.")
+
+   (loc     vl-location-p
+            "Where the declaration was found in the source code."))
+
+  :long "<p>Verilog-2005 and SystemVerilog-2012 distinguish between variables
+and nets.  Historically, VL also separated these concepts in its basic
+syntactic representation.  However, we eventually decided that merging together
+the two concepts into a single syntactic representation would be simpler.  So,
+today, @('vl-vardecl-p') objects are used for both @('net') declarations and
+for @('reg')/variable declarations.</p>
+
+<p>Net declarations introduce new wires with certain properties (type,
 signedness, size, and so on).  Here are some examples of basic net
 declarations.</p>
 
@@ -1110,47 +1185,40 @@ endmodule
 })
 
 <p>You can also string together net declarations, e.g., by writing @('wire w1,
-w2;').</p>
-
-<p>In all of these cases, our parser generates a @('vl-netdecl-p') object for
-each declared wire.  That is, each @('vl-netdecl-p') is a declaration of a
-single wire.</p>
-
-<p>Note that when an assignment is also present, the parser creates a
-corresponding, separate @(see vl-assign-p) object to contain the assignment.
-Similarly, when using the combined net/port declaration format, a separate
-@(see vl-portdecl-p) object is generated.  Hence, each @('vl-netdecl-p') really
-and truly only represents a declaration.</p>
-
+w2;').  In all of these cases, our parser generates a separate
+@('vl-vardecl-p') object for each declared wire.  When an assignment is also
+present, the parser creates a corresponding, separate @(see vl-assign-p) object
+to contain the assignment.  Hence, each @('vl-vardecl-p') really and truly only
+represents a declaration.  Similarly, combined variable declarations such as
+\"integer a, b\" are split apart into multiple, individual declarations.</p>
 
 <h4>Arrays</h4>
 
-<p>The @('arrdims') fields is for arrays.  Normally, you do not encounter
-these.  For instance, a wide wire declaration like this is <b>not</b> an
-array:</p>
+<p>The @('dims') fields is for arrays.  Normally, you do not encounter these.
+For instance, a wide wire declaration like this is <b>not</b> an array:</p>
 
 @({
   wire [4:0] w;
 })
 
 <p>Instead, the @('[4:0]') part here is the @('range') of the wire and its
-@('arrdims') are just @('nil').</p>
+@('dims') are just @('nil').</p>
 
-<p>In contrast, the @('arrdims') are a list of ranges, also optional, which
-follow the wire name.  For instance, the arrdims of @('v') below is a singleton
-list with the range @('[4:0]').</p>
+<p>In contrast, the @('dims') are a list of ranges, also optional, which follow
+the wire name.  For instance, the arrdims of @('v') below is a singleton list
+with the range @('[4:0]').</p>
 
 @({
   wire v [4:0];
 })
 
-<p>Be aware that range and arrdims really are <b>different</b> things; @('w')
+<p>Be aware that range and dims really are <b>different</b> things; @('w')
 and @('v') are <i>not</i> equivalent except for their names.  In particular,
 @('w') is a single, 5-bit wire, while @('v') is an array of five one-bit
 wires.</p>
 
 <p>Things are more complicated when a declaration includes both a range and
-arrdims.  For instance</p>
+dims.  For instance</p>
 
 @({
 wire [4:0] a [10:0];
@@ -1215,14 +1283,14 @@ for net declarations.</p>
 <p>The @('cstrength') field is only applicable to @('trireg')-type nets.  It
 will be @('nil') for all other nets, and will also be @('nil') on @('trireg')
 nets that do not explicitly give a charge strength.  Note that
-@('vl-netdecl-p') does not enforce the requirement that only triregs have
+@('vl-vardecl-p') does not enforce the requirement that only triregs have
 charge strengths, but the parser does.</p>
 
 <p><b>Warning:</b> we have not really paid attention to charge strengths, and
 our transformations may not preserve it correctly.</p>")
 
-(fty::deflist vl-netdecllist
-              :elt-type vl-netdecl-p
+(fty::deflist vl-vardecllist
+              :elt-type vl-vardecl-p
               :true-listp nil
               :elementp-of-nil nil)
 
@@ -1770,97 +1838,6 @@ enforces these restrictions, we do not encode them into the definition of
               :elementp-of-nil nil)
 
 
-;; (defenum vl-vardecltype-p
-;;   (:vl-reg
-;;    :vl-integer
-;;    :vl-real
-;;    :vl-time
-;;    :vl-realtime)
-;;   :short "Representation of @('reg') and other variable types."
-;;   :long "<p>We represent Verilog's variable types with the keyword symbols
-;; recognized by @(call vl-vardecltype-p).</p>")
-
-(defenum vl-lifetime-p
-  (nil
-   :vl-static
-   :vl-automatic)
-  :short "Representation of the lifetime of a variable.")
-
-(defprod vl-vardecl
-  :short "Representation of a single variable declaration."
-  :tag :vl-vardecl
-  :layout :tree
-
-  ((name    stringp
-            :rule-classes :type-prescription
-            "Name of the variable being declared.")
-
-   (constp   booleanp
-             :rule-classes :type-prescription
-             "Indicates whether the @('const') keyword was provided.")
-
-   (varp     booleanp
-             :rule-classes :type-prescription
-             "Indicates whether the @('var') keyword was provided.")
-
-   (lifetime vl-lifetime-p
-             "See SystemVerilog-2012 Section 6.21.  There are pretty complex rules
-              for variable lifetimes.  BOZO we don't really support this yet in any
-              meaningful way, and the @('lifetime') field is currently just used
-              to record whether a @('static') or @('automatic') keyword was found
-              during parsing.")
-
-; For SystemVerilog, signedp and range become part of the data type itself.
-; BOZO we probably also want to merge event declarations into here.  But
-; this can probably wait awhile.
-
-   ;; (signedp booleanp
-   ;;          :rule-classes :type-prescription
-   ;;          "Indicates whether they keyword @('signed') was used in the
-   ;;           declaration of the register.  By default, registers are unsigned.
-   ;;           Not applicable for some kinds of variables like @('real') or
-   ;;           @('realtime') variables.")
-
-   ;; (range   vl-maybe-range-p
-   ;;          "Size for wide registers; see also @(see vl-netdecl-p) for
-   ;;           more discussion of @('range') versus @('arrdims').")
-
-   (vartype vl-datatype-p
-            ;; BOZO eventually rename this to just "type".  It used to be named
-            ;; "type", back when it was a vardecltype-p.  I'm renaming it so
-            ;; that all existing code based on vardecltype-p will break, so I
-            ;; can fix it up.
-            "Kind of variable, e.g., logic, reg, integer, real, etc.")
-
-   (dims    vl-packeddimensionlist-p
-            "A list of array dimensions; empty unless this is an array or
-             multi-dimensional array of variables.")
-
-; BOZO.  initial values can also be things like 'new' calls.  This will need to
-; change to accommodate that.  When we change this we'll also want to change
-; struct members.  In fact, we might want to just merge the dims and initval
-; stuff between structmembers and here, into some kind of other structure (or
-; maybe not).
-
-   (initval vl-maybe-expr-p
-            "When present, indicates the initial value for the variable, e.g.,
-             if one writes @('integer i = 3;'), then the @('initval') will be
-             the @(see vl-expr-p) for @('3').")
-
-   (atts    vl-atts-p
-            "Any attributes associated with this declaration.")
-
-   (loc     vl-location-p
-            "Where the declaration was found in the source code."))
-
-  :long "<p>For Verilog-2005, we use @('vl-vardecl-p')s to represent @('reg'),
-@('integer'), @('real'), @('time'), and @('realtime') variable declarations.
-For SystemVerilog-2012, these can also be used to represent many other kinds of
-types.</p>
-
-<p>As with nets and ports, our parser splits up combined declarations such as
-\"integer a, b\" into multiple, individual declarations, so each
-@('vl-vardecl-p') represents only one declaration.</p>")
 
 
 (deftagsum vl-paramtype
@@ -2980,14 +2957,9 @@ include delays, etc.</p>")
                "The input, output, and inout declarations for this module,
                 e.g., @('input [3:0] a;').")
 
-   (netdecls   vl-netdecllist-p
-               "Wire declarations like @('wire [3:0] w;') and @('tri v;').
-                Does not include registers and variables (integer, real,
-                ...).")
-
    (vardecls   vl-vardecllist-p
-               "Variable declarations like @('reg [3:0] r;'), @('integer i;'),
-                @('real foo;'), and so forth.")
+               "Wire and variable declarations like @('wire [3:0] w'), @('tri v'),
+                @('reg [3:0] r;'), @('integer i;'), @('real foo;'), and so forth.")
 
    (paramdecls vl-paramdecllist-p
                "The parameter declarations for this module, e.g., @('parameter
@@ -3346,7 +3318,7 @@ resulting from parsing some Verilog source code."
    (programs   vl-programlist-p   "List of all programs.")
    (packages   vl-packagelist-p   "List of all packages.")
    (configs    vl-configlist-p    "List of configurations.")
-   (netdecls   vl-netdecllist-p   "Top-level net declarations.")
+   (vardecls   vl-vardecllist-p   "Top-level variable declarations.")
    (taskdecls  vl-taskdecllist-p  "Top-level task declarations.")
    (fundecls   vl-fundecllist-p   "Top-level function declarations.")
    (paramdecls vl-paramdecllist-p "Top-level (local and non-local) parameter declarations.")

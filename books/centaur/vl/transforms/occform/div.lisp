@@ -54,14 +54,14 @@ matched the Verilog semantics.</p>"
 
   (b* ((name (hons-copy "VL_1_BIT_DIV_REM"))
 
-       ((mv q-expr q-port q-portdecl q-netdecl) (vl-primitive-mkport "quotient"  :vl-output))
-       ((mv r-expr r-port r-portdecl r-netdecl) (vl-primitive-mkport "remainder" :vl-output))
-       ((mv e-expr e-port e-portdecl e-netdecl) (vl-primitive-mkport "dividend"  :vl-input))
-       ((mv d-expr d-port d-portdecl d-netdecl) (vl-primitive-mkport "divisor"   :vl-input))
+       ((mv q-expr q-port q-portdecl q-vardecl) (vl-primitive-mkport "quotient"  :vl-output))
+       ((mv r-expr r-port r-portdecl r-vardecl) (vl-primitive-mkport "remainder" :vl-output))
+       ((mv e-expr e-port e-portdecl e-vardecl) (vl-primitive-mkport "dividend"  :vl-input))
+       ((mv d-expr d-port d-portdecl d-vardecl) (vl-primitive-mkport "divisor"   :vl-input))
 
        ;; wire 	 xwire;
        ;; VL_1_BIT_X xdriver (xwire);
-       ((mv xwire-expr xwire-netdecl) (vl-primitive-mkwire "xwire"))
+       ((mv xwire-expr xwire-vardecl) (vl-primitive-mkwire "xwire"))
        (xwire-inst (vl-simple-inst *vl-1-bit-x* "xdriver" xwire-expr))
 
        ;; To treat divides by zero, x, and z in the same way, the basic idea is to let
@@ -72,9 +72,9 @@ matched the Verilog semantics.</p>"
        ;;   VL_1_BIT_NOT dx1 (divisor_bar, divisor);
        ;;   VL_1_BIT_AND dx2 (divisor_x, divisor_bar, xwire);
        ;;   VL_1_BIT_OR  dx3 (divisor_fix, divisor, divisor_x) ;
-       ((mv d~-expr d~-netdecl) (vl-primitive-mkwire "divisor_bar"))
-       ((mv dx-expr dx-netdecl) (vl-primitive-mkwire "divisor_x"))
-       ((mv df-expr df-netdecl) (vl-primitive-mkwire "divisor_fix"))
+       ((mv d~-expr d~-vardecl) (vl-primitive-mkwire "divisor_bar"))
+       ((mv dx-expr dx-vardecl) (vl-primitive-mkwire "divisor_x"))
+       ((mv df-expr df-vardecl) (vl-primitive-mkwire "divisor_fix"))
        (d~-inst (vl-simple-inst *vl-1-bit-not* "dx1" d~-expr d-expr))
        (dx-inst (vl-simple-inst *vl-1-bit-and* "dx2" dx-expr d~-expr xwire-expr))
        (df-inst (vl-simple-inst *vl-1-bit-or*  "dx3" df-expr d-expr dx-expr))
@@ -88,8 +88,8 @@ matched the Verilog semantics.</p>"
        ;;  VL_1_BIT_XOR x1 (xa, dividend, dividend);
        ;;  VL_1_BIT_XOR x2 (xb, divisor_fix, divisor_fix);
        ;;  VL_1_BIT_XOR x3 (remainder, xa, xb);
-       ((mv xa-expr xa-netdecl) (vl-primitive-mkwire "xa"))
-       ((mv xb-expr xb-netdecl) (vl-primitive-mkwire "xb"))
+       ((mv xa-expr xa-vardecl) (vl-primitive-mkwire "xa"))
+       ((mv xb-expr xb-vardecl) (vl-primitive-mkwire "xb"))
        (xa-inst (vl-simple-inst *vl-1-bit-xor* "x1" xa-expr e-expr e-expr))
        (xb-inst (vl-simple-inst *vl-1-bit-xor* "x2" xb-expr df-expr df-expr))
        (r-inst  (vl-simple-inst *vl-1-bit-xor* "x3" r-expr xa-expr xb-expr))
@@ -102,7 +102,7 @@ matched the Verilog semantics.</p>"
        ;;  wire qmain;
        ;;  VL_1_BIT_AND q1 (qmain, dividend, divisor_fix);
        ;;  VL_1_BIT_XOR q2 (quotient, remainder, qmain);
-       ((mv qm-expr qm-netdecl) (vl-primitive-mkwire "qmain"))
+       ((mv qm-expr qm-vardecl) (vl-primitive-mkwire "qmain"))
        (qm-inst (vl-simple-inst *vl-1-bit-and* "q1" qm-expr e-expr df-expr))
        (q-inst  (vl-simple-inst *vl-1-bit-xor* "q2" q-expr r-expr qm-expr)))
 
@@ -111,9 +111,9 @@ matched the Verilog semantics.</p>"
                      :origname  name
                      :ports     (list q-port r-port e-port d-port)
                      :portdecls (list q-portdecl r-portdecl e-portdecl d-portdecl)
-                     :netdecls  (list q-netdecl r-netdecl e-netdecl d-netdecl
-                                      xwire-netdecl d~-netdecl dx-netdecl df-netdecl
-                                      xa-netdecl xb-netdecl qm-netdecl)
+                     :vardecls  (list q-vardecl r-vardecl e-vardecl d-vardecl
+                                      xwire-vardecl d~-vardecl dx-vardecl df-vardecl
+                                      xa-vardecl xb-vardecl qm-vardecl)
                      :modinsts  (list xwire-inst d~-inst dx-inst df-inst
                                       xa-inst xb-inst r-inst
                                       qm-inst q-inst)
@@ -213,17 +213,17 @@ wrapper.</p>"
   (b* ((n     (lnfix n))
        (name  (hons-copy (cat "VL_" (natstr n) "_BIT_DIV_STEP")))
 
-       ((mv an-expr an-port an-portdecl an-netdecl) (vl-occform-mkport "a_next"      :vl-output n))
-       ((mv qn-expr qn-port qn-portdecl qn-netdecl) (vl-occform-mkport "q_next"      :vl-output n))
-       ((mv ap-expr ap-port ap-portdecl ap-netdecl) (vl-occform-mkport "a_prev"      :vl-input n))
-       ((mv qp-expr qp-port qp-portdecl qp-netdecl) (vl-occform-mkport "q_prev"      :vl-input n))
-       ((mv d~-expr d~-port d~-portdecl d~-netdecl) (vl-occform-mkport "divisor_bar" :vl-input n))
+       ((mv an-expr an-port an-portdecl an-vardecl) (vl-occform-mkport "a_next"      :vl-output n))
+       ((mv qn-expr qn-port qn-portdecl qn-vardecl) (vl-occform-mkport "q_next"      :vl-output n))
+       ((mv ap-expr ap-port ap-portdecl ap-vardecl) (vl-occform-mkport "a_prev"      :vl-input n))
+       ((mv qp-expr qp-port qp-portdecl qp-vardecl) (vl-occform-mkport "q_prev"      :vl-input n))
+       ((mv d~-expr d~-port d~-portdecl d~-vardecl) (vl-occform-mkport "divisor_bar" :vl-input n))
 
        ;; wire [n-1:0]   a, q, diff;
        ;; wire 	         fits;
-       ((mv a-expr    a-netdecl)    (vl-occform-mkwire "a"    n))
-       ((mv diff-expr diff-netdecl) (vl-occform-mkwire "diff" n))
-       ((mv fits-expr fits-netdecl) (vl-occform-mkwire "fits" 1))
+       ((mv a-expr    a-vardecl)    (vl-occform-mkwire "a"    n))
+       ((mv diff-expr diff-vardecl) (vl-occform-mkwire "diff" n))
+       ((mv fits-expr fits-vardecl) (vl-occform-mkwire "fits" 1))
 
 
        ;; VL_4_BIT_ASSIGN     init (a, {a_prev[n-2:0], q_prev[n-1]});
@@ -258,8 +258,8 @@ wrapper.</p>"
                           :origname  name
                           :ports     (list an-port qn-port ap-port qp-port d~-port)
                           :portdecls (list an-portdecl qn-portdecl ap-portdecl qp-portdecl d~-portdecl)
-                          :netdecls  (list an-netdecl qn-netdecl ap-netdecl qp-netdecl d~-netdecl
-                                           a-netdecl diff-netdecl fits-netdecl)
+                          :vardecls  (list an-vardecl qn-vardecl ap-vardecl qp-vardecl d~-vardecl
+                                           a-vardecl diff-vardecl fits-vardecl)
                           :modinsts  (list init-inst core-inst amux-inst qout-inst)
                           :minloc    *vl-fakeloc*
                           :maxloc    *vl-fakeloc*)
@@ -312,10 +312,10 @@ endmodule
   (b* ((n    (lnfix n))
        (name (hons-copy (cat "VL_" (natstr n) "_BIT_DIV_CORE")))
 
-       ((mv q-expr q-port q-portdecl q-netdecl) (vl-occform-mkport "quotient"  :vl-output n))
-       ((mv r-expr r-port r-portdecl r-netdecl) (vl-occform-mkport "remainder" :vl-output n))
-       ((mv e-expr e-port e-portdecl e-netdecl) (vl-occform-mkport "dividend"  :vl-input n))
-       ((mv d-expr d-port d-portdecl d-netdecl) (vl-occform-mkport "divisor"   :vl-input n))
+       ((mv q-expr q-port q-portdecl q-vardecl) (vl-occform-mkport "quotient"  :vl-output n))
+       ((mv r-expr r-port r-portdecl r-vardecl) (vl-occform-mkport "remainder" :vl-output n))
+       ((mv e-expr e-port e-portdecl e-vardecl) (vl-occform-mkport "dividend"  :vl-input n))
+       ((mv d-expr d-port d-portdecl d-vardecl) (vl-occform-mkport "divisor"   :vl-input n))
 
        (neg-mods  (vl-make-n-bit-not n))
        (step-mods (vl-make-n-bit-div-step n))
@@ -324,13 +324,13 @@ endmodule
        (support   (append neg-mods step-mods))
 
        ; wire [n-1:0] divisor_bar;
-       ((mv d~-expr d~-netdecl) (vl-occform-mkwire "divisor_bar" n))
+       ((mv d~-expr d~-vardecl) (vl-occform-mkwire "divisor_bar" n))
        (d~-inst (vl-simple-inst neg-mod "divbar" d~-expr d-expr))
 
        ; wire [n-1:0] a1, a2, ... a{n-1};
        ; wire [n-1:0] q1, q2, ..., q{n-1};
-       ((mv a-exprs a-netdecls) (vl-occform-mkwires "a" 1 n :width n))
-       ((mv q-exprs q-netdecls) (vl-occform-mkwires "q" 1 n :width n))
+       ((mv a-exprs a-vardecls) (vl-occform-mkwires "a" 1 n :width n))
+       ((mv q-exprs q-vardecls) (vl-occform-mkwires "q" 1 n :width n))
 
        (|n'b0| (make-vl-atom :guts (make-vl-constint :value 0
                                                      :origwidth n
@@ -348,9 +348,9 @@ endmodule
                           :origname  name
                           :portdecls (list q-portdecl r-portdecl e-portdecl d-portdecl)
                           :ports     (list q-port r-port e-port d-port)
-                          :netdecls  (list* q-netdecl r-netdecl e-netdecl d-netdecl
-                                            d~-netdecl
-                                            (append a-netdecls q-netdecls))
+                          :vardecls  (list* q-vardecl r-vardecl e-vardecl d-vardecl
+                                            d~-vardecl
+                                            (append a-vardecls q-vardecls))
                           :modinsts  (cons d~-inst steps)
                           :minloc    *vl-fakeloc*
                           :maxloc    *vl-fakeloc*)
@@ -382,10 +382,10 @@ circuitry to achieve the desired behavior.</p>"
 
        (name (hons-copy (cat "VL_" (natstr n) "_BIT_DIV_REM")))
 
-       ((mv q-expr q-port q-portdecl q-netdecl) (vl-occform-mkport "quotient"  :vl-output n))
-       ((mv r-expr r-port r-portdecl r-netdecl) (vl-occform-mkport "remainder" :vl-output n))
-       ((mv e-expr e-port e-portdecl e-netdecl) (vl-occform-mkport "dividend"  :vl-input n))
-       ((mv d-expr d-port d-portdecl d-netdecl) (vl-occform-mkport "divisor"   :vl-input n))
+       ((mv q-expr q-port q-portdecl q-vardecl) (vl-occform-mkport "quotient"  :vl-output n))
+       ((mv r-expr r-port r-portdecl r-vardecl) (vl-occform-mkport "remainder" :vl-output n))
+       ((mv e-expr e-port e-portdecl e-vardecl) (vl-occform-mkport "dividend"  :vl-input n))
+       ((mv d-expr d-port d-portdecl d-vardecl) (vl-occform-mkport "divisor"   :vl-input n))
 
        ;; Main divider.  May not produce the right answer when there are X bits
        ;; or when the divisor is zero.
@@ -393,8 +393,8 @@ circuitry to achieve the desired behavior.</p>"
        ;;   wire [n-1:0]  qmain, rmain;
        ;;   VL_N_BIT_DIV_CORE core (qmain, rmain, dividend, divisor);
 
-       ((mv qm-expr qm-netdecl) (vl-occform-mkwire "qmain" n))
-       ((mv rm-expr rm-netdecl) (vl-occform-mkwire "rmain" n))
+       ((mv qm-expr qm-vardecl) (vl-occform-mkwire "qmain" n))
+       ((mv rm-expr rm-vardecl) (vl-occform-mkwire "rmain" n))
 
        (core-mods (vl-make-n-bit-div-core n))
        (core-mod  (car core-mods))
@@ -405,7 +405,7 @@ circuitry to achieve the desired behavior.</p>"
        ;; wire nonzero;
        ;; VL_4_BIT_REDUCTION_OR check0 (nonzero, divisor);
 
-       ((mv nz-expr nz-netdecl) (vl-occform-mkwire "nonzero" 1))
+       ((mv nz-expr nz-vardecl) (vl-occform-mkwire "nonzero" 1))
 
        (nz-mods (vl-make-n-bit-reduction-op :vl-unary-bitor n))
        (nz-mod  (car nz-mods))
@@ -422,9 +422,9 @@ circuitry to achieve the desired behavior.</p>"
        ;;   VL_4_BIT_APPROX_MUX q_zero_fix (qfix, nonzero, qmain, xwire);
        ;;   VL_4_BIT_APPROX_MUX r_zero_fix (rfix, nonzero, rmain, xwire);
 
-       ((mv x-expr x-netdecl)   (vl-occform-mkwire "xwire" n))
-       ((mv qf-expr qf-netdecl) (vl-occform-mkwire "qfix" n))
-       ((mv rf-expr rf-netdecl) (vl-occform-mkwire "rfix" n))
+       ((mv x-expr x-vardecl)   (vl-occform-mkwire "xwire" n))
+       ((mv qf-expr qf-vardecl) (vl-occform-mkwire "qfix" n))
+       ((mv rf-expr rf-vardecl) (vl-occform-mkwire "rfix" n))
 
        (x-mods   (vl-make-n-bit-x n))
        (x-mod    (car x-mods))
@@ -450,10 +450,10 @@ circuitry to achieve the desired behavior.</p>"
                           :origname  name
                           :ports     (list q-port r-port e-port d-port)
                           :portdecls (list q-portdecl r-portdecl e-portdecl d-portdecl)
-                          :netdecls  (list q-netdecl r-netdecl e-netdecl d-netdecl
-                                           qm-netdecl rm-netdecl
-                                           nz-netdecl
-                                           x-netdecl qf-netdecl rf-netdecl)
+                          :vardecls  (list q-vardecl r-vardecl e-vardecl d-vardecl
+                                           qm-vardecl rm-vardecl
+                                           nz-vardecl
+                                           x-vardecl qf-vardecl rf-vardecl)
                           :modinsts  (list core-inst nz-inst x-inst qf-inst rf-inst
                                            q-inst r-inst)
                           :minloc    *vl-fakeloc*
@@ -488,13 +488,13 @@ N-step restoring division algorithm.</p>"
   (b* ((n    (lposfix n))
        (name (hons-copy (cat "VL_" (natstr n) "_BIT_UNSIGNED_DIV")))
 
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output n))
-       ((mv a-expr   a-port   a-portdecl   a-netdecl)   (vl-occform-mkport "a"   :vl-input n))
-       ((mv b-expr   b-port   b-portdecl   b-netdecl)   (vl-occform-mkport "b"   :vl-input n))
+       ((mv out-expr out-port out-portdecl out-vardecl) (vl-occform-mkport "out" :vl-output n))
+       ((mv a-expr   a-port   a-portdecl   a-vardecl)   (vl-occform-mkport "a"   :vl-input n))
+       ((mv b-expr   b-port   b-portdecl   b-vardecl)   (vl-occform-mkport "b"   :vl-input n))
 
        ;; wire [n-1:0] unused;
        ;; VL_1_BIT_DIV_REM core (out, unused, a, b);
-       ((mv u-expr u-netdecl) (vl-occform-mkwire "unused" n))
+       ((mv u-expr u-vardecl) (vl-occform-mkwire "unused" n))
        (core-mods (vl-make-n-bit-div-rem n))
        (core-mod  (car core-mods))
        (core-inst (vl-simple-inst core-mod "core" out-expr u-expr a-expr b-expr)))
@@ -502,7 +502,7 @@ N-step restoring division algorithm.</p>"
                           :origname  name
                           :ports     (list out-port a-port b-port)
                           :portdecls (list out-portdecl a-portdecl b-portdecl)
-                          :netdecls  (list out-netdecl a-netdecl b-netdecl u-netdecl)
+                          :vardecls  (list out-vardecl a-vardecl b-vardecl u-vardecl)
                           :modinsts  (list core-inst)
                           :minloc    *vl-fakeloc*
                           :maxloc    *vl-fakeloc*)
@@ -531,13 +531,13 @@ N-step restoring division algorithm.</p>"
   (b* ((n    (lposfix n))
        (name (hons-copy (cat "VL_" (natstr n) "_BIT_UNSIGNED_REM")))
 
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output n))
-       ((mv a-expr   a-port   a-portdecl   a-netdecl)   (vl-occform-mkport "a"   :vl-input n))
-       ((mv b-expr   b-port   b-portdecl   b-netdecl)   (vl-occform-mkport "b"   :vl-input n))
+       ((mv out-expr out-port out-portdecl out-vardecl) (vl-occform-mkport "out" :vl-output n))
+       ((mv a-expr   a-port   a-portdecl   a-vardecl)   (vl-occform-mkport "a"   :vl-input n))
+       ((mv b-expr   b-port   b-portdecl   b-vardecl)   (vl-occform-mkport "b"   :vl-input n))
 
        ;; wire [n-1:0] unused;
        ;; VL_1_BIT_DIV_REM core (unused, out, a, b);
-       ((mv u-expr u-netdecl) (vl-occform-mkwire "unused" n))
+       ((mv u-expr u-vardecl) (vl-occform-mkwire "unused" n))
        (core-mods (vl-make-n-bit-div-rem n))
        (core-mod  (car core-mods))
        (core-inst (vl-simple-inst core-mod "core" u-expr out-expr a-expr b-expr)))
@@ -545,7 +545,7 @@ N-step restoring division algorithm.</p>"
                           :origname  name
                           :ports     (list out-port a-port b-port)
                           :portdecls (list out-portdecl a-portdecl b-portdecl)
-                          :netdecls  (list out-netdecl a-netdecl b-netdecl u-netdecl)
+                          :vardecls  (list out-vardecl a-vardecl b-vardecl u-vardecl)
                           :modinsts  (list core-inst)
                           :minloc    *vl-fakeloc*
                           :maxloc    *vl-fakeloc*)

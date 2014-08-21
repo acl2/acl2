@@ -103,32 +103,29 @@ want to add additional kinds of information here.</p>")
 
 (local (xdoc::set-default-parents use-set))
 
-(define vl-netdecllist-impexp-names ((decls vl-netdecllist-p) implicit explicit)
+(define vl-vardecllist-impexp-names ((decls vl-vardecllist-p) implicit explicit)
   :short "Split a list of net declarations into those which are implicit and
           those which are explicit.  Note that this only works if
           vl-modulelist-make-implicit-wires has been run!"
   :returns (mv (implicit string-listp
-                         :hyp (and (force (vl-netdecllist-p decls))
-                                   (force (string-listp implicit))))
+                         :hyp (force (string-listp implicit)))
                (explicit string-listp
-                         :hyp (and (force (vl-netdecllist-p decls))
-                                   (force (string-listp explicit)))))
-  (cond
-   ((atom decls)
-    (mv implicit explicit))
-   ((assoc-equal "VL_IMPLICIT" (vl-netdecl->atts (car decls)))
-    (vl-netdecllist-impexp-names (cdr decls)
-                                 (cons (vl-netdecl->name (car decls)) implicit)
-                                 explicit))
-   (t
-    (vl-netdecllist-impexp-names (cdr decls)
+                         :hyp (force (string-listp explicit))))
+  (b* (((when (atom decls))
+        (mv implicit explicit))
+       ((vl-vardecl x1) (vl-vardecl-fix (car decls)))
+       ((when (assoc-equal "VL_IMPLICIT" x1.atts))
+        (vl-vardecllist-impexp-names (cdr decls)
+                                     (cons x1.name implicit)
+                                     explicit)))
+    (vl-vardecllist-impexp-names (cdr decls)
                                  implicit
-                                 (cons (vl-netdecl->name (car decls)) explicit)))))
+                                 (cons x1.name explicit))))
 
 (define vl-module-impexp-names ((x vl-module-p))
   :returns (mv (implicit string-listp :hyp :fguard)
                (explicit string-listp :hyp :fguard))
-  (vl-netdecllist-impexp-names (vl-module->netdecls x) nil nil))
+  (vl-vardecllist-impexp-names (vl-module->vardecls x) nil nil))
 
 (defaggregate vl-wireinfo
   ((usedp booleanp :rule-classes :type-prescription)
@@ -420,12 +417,12 @@ unused.  The other wires are thrown away.</p>"
     (vl-clean-up-warning-wires (cdr wires) alist)))
 
 
-(define vl-annotate-netdecl-with-wireinfo
-  :short "Annotate netdecls with the results of use-set analysis."
-  ((x      vl-netdecl-p       "A net declaration.")
+(define vl-annotate-vardecl-with-wireinfo
+  :short "Annotate vardecls with the results of use-set analysis."
+  ((x      vl-vardecl-p       "A net declaration.")
    (alist  vl-wireinfo-alistp "The wireinfo alist we collected for this module.")
    (wwires string-listp       "The warning wires we're unsure about."))
-  :returns (new-x vl-netdecl-p :hyp (force (vl-netdecl-p x))
+  :returns (new-x vl-vardecl-p :hyp (force (vl-vardecl-p x))
                   "A copy of X, possibly extended with some attributes.")
 
   :long "<p>We add as many as two annotations to X.  The possible annotations
@@ -438,7 +435,7 @@ we add are</p>
 <li>@('VL_MAYBE_UNSET') - Appears to be unset, but is a warning wire</li>
 </ul>"
 
-  (b* ((name         (vl-netdecl->name x))
+  (b* ((name         (vl-vardecl->name x))
        (info         (cdr (hons-get name alist)))
        ((unless info)
         (raise "No wireinfo entry for ~s0." name)
@@ -448,7 +445,7 @@ we add are</p>
        ((when (and usedp setp))
         ;; No annotations to make, so just return x unchanged right away.
         x)
-       (atts         (vl-netdecl->atts x))
+       (atts         (vl-vardecl->atts x))
        (warnp        (member-equal name wwires))
        (atts         (cond (usedp atts)
                            (warnp (cons (list "VL_MAYBE_UNUSED") atts))
@@ -456,23 +453,23 @@ we add are</p>
        (atts         (cond (setp  atts)
                            (warnp (cons (list "VL_MAYBE_UNSET") atts))
                            (t     (cons (list "VL_UNSET") atts)))))
-    (change-vl-netdecl x :atts atts)))
+    (change-vl-vardecl x :atts atts)))
 
-(defprojection vl-annotate-netdecllist-with-wireinfo (x alist wwires)
-  (vl-annotate-netdecl-with-wireinfo x alist wwires)
-  :guard (and (vl-netdecllist-p x)
+(defprojection vl-annotate-vardecllist-with-wireinfo (x alist wwires)
+  (vl-annotate-vardecl-with-wireinfo x alist wwires)
+  :guard (and (vl-vardecllist-p x)
               (vl-wireinfo-alistp alist)
               (string-listp wwires))
   ///
-  (defthm vl-netdecllist-p-of-vl-annotate-netdecllist-with-wireinfo
-    (implies (force (vl-netdecllist-p x))
-             (vl-netdecllist-p
-              (vl-annotate-netdecllist-with-wireinfo x alist wwires)))))
+  (defthm vl-vardecllist-p-of-vl-annotate-vardecllist-with-wireinfo
+    (implies (force (vl-vardecllist-p x))
+             (vl-vardecllist-p
+              (vl-annotate-vardecllist-with-wireinfo x alist wwires)))))
 
 (define vl-mark-wires-for-module
   :short "Main function that performs the use-set analysis.  We figure out
           which wires appear to be used and unused in the module X.  We
-          annotate the netdecls for the module with these attributes, and also
+          annotate the vardecls for the module with these attributes, and also
           generate a more concise vl-useset-report-entry object describing the
           status of this module."
   ((x    vl-module-p  "Module to analyze.")
@@ -500,8 +497,7 @@ we add are</p>
 ; outputs and inouts are regarded as "used above."
 
 
-       (declared-wires      (vl-netdecllist->names-exec x.netdecls nil))
-       (declared-wires      (vl-vardecllist->names-exec x.vardecls declared-wires))
+       (declared-wires      (vl-vardecllist->names-exec x.vardecls nil))
 
        (params              (vl-paramdecllist->names-exec x.paramdecls nil))
        ((mv in out inout)   (vl-portdecllist-names-by-direction x.portdecls nil nil nil))
@@ -529,7 +525,6 @@ we add are</p>
 ; declarations.
 
        (alist (vl-mark-wires-used (vl-exprlist-names (vl-portdecllist-allexprs x.portdecls)) t alist))
-       (alist (vl-mark-wires-used (vl-exprlist-names (vl-netdecllist-allexprs x.netdecls)) t alist))
        (alist (vl-mark-wires-used (vl-exprlist-names (vl-vardecllist-allexprs x.vardecls)) t alist))
        (alist (vl-mark-wires-used (vl-exprlist-names (vl-paramdecllist-allexprs x.paramdecls)) t alist))
 
@@ -564,7 +559,7 @@ we add are</p>
                              (mergesort (append warning-wires1 warning-wires2))
                              alist))
 
-; Now gather up the info out of the alist, make the new list of netdecls, and
+; Now gather up the info out of the alist, make the new list of vardecls, and
 ; update the module.
 
        (-                   (fast-alist-free alist))
@@ -573,11 +568,11 @@ we add are</p>
        (unused              (mergesort unused))
        (unset               (mergesort unset))
 
-       (new-netdecls        (if (or unused unset)
-                                (vl-annotate-netdecllist-with-wireinfo x.netdecls alist warning-wires)
-                              x.netdecls))
+       (new-vardecls        (if (or unused unset)
+                                (vl-annotate-vardecllist-with-wireinfo x.vardecls alist warning-wires)
+                              x.vardecls))
        (x-prime             (change-vl-module x
-                                              :netdecls new-netdecls
+                                              :vardecls new-vardecls
                                               :warnings warnings))
 
 ; For typo detection, figure out which wires are implicit.  The wires we

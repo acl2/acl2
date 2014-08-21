@@ -165,18 +165,20 @@ Otherwise @('x'') will be the name of a newly generated, equivalent wire.</p>"
          ((mv tmp-name nf) (vl-namefactory-indexed-name "temp" delta.nf))
          (rhs-expr   (change-vl-nonatom x :args new-args))
          (tmp-expr   (vl-idexpr tmp-name width type))
-         (tmp-decl   (make-vl-netdecl :loc     (vl-modelement-loc elem)
-                                      :name    tmp-name
-                                      :type    :vl-wire
+         (tmp-type   (make-vl-nettype :name    :vl-wire
                                       :signedp (eq type :vl-signed)
-                                      :range   (vl-make-n-bit-range width)
+                                      :range   (vl-make-n-bit-range width)))
+
+         (tmp-decl   (make-vl-vardecl :loc     (vl-modelement-loc elem)
+                                      :name    tmp-name
+                                      :type    tmp-type
                                       :atts    *vl-tmp-wire-atts*))
          (tmp-assign (make-vl-assign :loc (vl-modelement-loc elem)
                                      :lvalue tmp-expr
                                      :expr rhs-expr))
          (delta      (change-vl-delta delta
                                       :nf nf
-                                      :netdecls (cons tmp-decl delta.netdecls)
+                                      :vardecls (cons tmp-decl delta.vardecls)
                                       :assigns  (cons tmp-assign delta.assigns))))
       (mv tmp-expr delta)))
 
@@ -369,7 +371,7 @@ module instances, and gate instances."
        ((when (vl-module->hands-offp x))
         x)
        (delta                (vl-starting-delta x))
-       (delta                (change-vl-delta delta :netdecls x.netdecls))
+       (delta                (change-vl-delta delta :vardecls x.vardecls))
        ((mv assigns delta)   (vl-assignlist-split x.assigns delta))
        ((mv modinsts delta)  (vl-modinstlist-split x.modinsts delta))
        ((mv gateinsts delta) (vl-gateinstlist-split x.gateinsts delta))
@@ -377,9 +379,9 @@ module instances, and gate instances."
 
     (change-vl-module
      x
-     ;; We started out with the netdecls and extended them, so the delta has
-     ;; the new netdecls we want.
-     :netdecls delta.netdecls
+     ;; We started out with the vardecls and extended them, so the delta has
+     ;; the new vardecls we want.
+     :vardecls delta.vardecls
      ;; We rewrote all of our own assigns, but there are also assigns in the
      ;; delta, so merge them.
      :assigns (revappend-without-guard delta.assigns assigns)

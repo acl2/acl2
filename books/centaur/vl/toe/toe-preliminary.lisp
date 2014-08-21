@@ -169,14 +169,20 @@ The main function that does all of this is @(see vl-modinst-to-eocc).</p>")
 ;
 ; ----------------------------------------------------------------------------
 
-(defsection vl-portdecls-to-i/o
+(define vl-portdecls-to-i/o
   :parents (modinsts-to-eoccs)
   :short "Compute the @(':i') and @(':o') fields for a module."
 
-  :long "<p><b>Signature:</b> @(call vl-portdecls-to-i/o) returns @('(mv
-successp warnings in-wires out-wires)').</p>
+  ((portdecls vl-portdecllist-p)
+   (walist    vl-wirealist-p))
+  :returns
+  (mv (successp  booleanp :rule-classes :type-prescription)
+      (warnings  vl-warninglist-p)
+      (in-wires  vl-emodwirelistlist-p)
+      (out-wires vl-emodwirelistlist-p))
 
-<p>We don't take a warnings accumulator because we memoize this function.</p>
+  :long "<p>We don't take a warnings accumulator because we memoize this
+function.</p>
 
 <p>See @(see vl-emodwirelistlist-p) for some discussion about the kinds of
 patterns we generate.</p>
@@ -187,92 +193,80 @@ declarations.  This is particularly nice for ports whose expressions are
 concatenations such as @('{foo, bar, baz}'), since the individual components
 might not even have the same direction.</p>"
 
-  (defund vl-portdecls-to-i/o (portdecls walist)
-    "Returns (MV SUCCESSP WARNINGS IN-WIRES OUT-WIRES)"
-    (declare (xargs :guard (and (vl-portdecllist-p portdecls)
-                                (vl-wirealist-p walist))))
-    (b* (((when (atom portdecls))
-          (mv t nil nil nil))
+  (b* (((when (atom portdecls))
+        (mv t nil nil nil))
 
-         (decl1 (car portdecls))
-         ((vl-portdecl decl1) decl1)
+       (warnings nil)
+       (decl1 (car portdecls))
+       ((vl-portdecl decl1) decl1)
 
-         ((unless (or (eq decl1.dir :vl-input)
-                      (eq decl1.dir :vl-output)))
-          (b* ((w (make-vl-warning
-                     :type :vl-bad-portdecl
-                     :msg "~a0: port declaration has unsupported direction ~x1."
-                     :args (list decl1 decl1.dir)
-                     :fatalp t
-                     :fn 'vl-portdecls-to-i/o)))
-            (mv nil (list w) nil nil)))
+       ((unless (or (eq decl1.dir :vl-input)
+                    (eq decl1.dir :vl-output)))
+        (mv nil
+            (fatal :type :vl-bad-portdecl
+                   :msg  "~a0: port declaration has unsupported direction ~x1."
+                   :args (list decl1 decl1.dir))
+            nil nil))
 
-         (entry (hons-get decl1.name walist))
-         ((unless entry)
-          (b* ((w (make-vl-warning
-                     :type :vl-bad-portdecl
-                     :msg "~a0: no wire alist entry for ~w1."
-                     :args (list decl1 decl1.name)
-                     :fatalp t
-                     :fn 'vl-portdecls-to-i/o)))
-            (mv nil (list w) nil nil)))
+       (entry (hons-get decl1.name walist))
+       ((unless (and entry
+                     (mbt (vl-emodwirelist-p (cdr entry)))))
+        (mv nil
+            (fatal :type :vl-bad-portdecl
+                   :msg "~a0: no wire alist entry for ~w1."
+                   :args (list decl1 decl1.name))
+            nil nil))
 
-         (msb-wires (mbe :logic (list-fix (cdr entry)) :exec (cdr entry)))
-         (lsb-wires (reverse msb-wires))
+       (msb-wires (mbe :logic (list-fix (cdr entry)) :exec (cdr entry)))
+       (lsb-wires (reverse msb-wires))
 
-         ;; Sanity check: make sure that we found the right number of wires.
-         ;; This shouldn't happen if the ports and the net/reg decls agree on
-         ;; their range, which presumably we should have checked for earlier,
-         ;; right?  Well, it seems safest to check it here, "too."
-         ((unless (and (vl-maybe-range-resolved-p decl1.range)
-                       (= (length lsb-wires)
-                          (vl-maybe-range-size decl1.range))))
-          (b* ((w (make-vl-warning
-                   :type :vl-programming-error
-                   :msg "~a0: wire-alist has ~x1 wires for ~w2, but its range ~
-                         is ~a3."
-                   :args (list decl1 (length lsb-wires) decl1.name decl1.range)
-                   :fatalp t
-                   :fn 'vl-portdecls-to-i/o)))
-            (mv nil (list w) nil nil)))
+;; BOZO eventually it would be good to restore this kind of sanity checking,
+;; but it's kind of broken because of the new, rich types that port
+;; declarations can have.
 
-         ;; Process all the other port declarations.
-         ((mv successp warnings in-wires out-wires)
-          (vl-portdecls-to-i/o (cdr portdecls) walist))
+       ;; ;; Sanity check: make sure that we found the right number of wires.
+       ;; ;; This shouldn't happen if the ports and the net/reg decls agree on
+       ;; ;; their range, which presumably we should have checked for earlier,
+       ;; ;; right?  Well, it seems safest to check it here, "too."
+       ;; ((unless (and (vl-maybe-range-resolved-p decl1.range)
+       ;;               (= (length lsb-wires)
+       ;;                  (vl-maybe-range-size decl1.range))))
+       ;;  (b* ((w (make-vl-warning
+       ;;           :type :vl-programming-error
+       ;;           :msg "~a0: wire-alist has ~x1 wires for ~w2, but its range ~
+       ;;                 is ~a3."
+       ;;           :args (list decl1 (length lsb-wires) decl1.name decl1.range)
+       ;;           :fatalp t
+       ;;           :fn 'vl-portdecls-to-i/o)))
+       ;;    (mv nil (list w) nil nil)))
 
-         ((unless successp)
-          (mv nil warnings in-wires out-wires))
+       ;; Process all the other port declarations.
+       ((mv successp warnings in-wires out-wires)
+        (vl-portdecls-to-i/o (cdr portdecls) walist))
 
-         ((mv in-wires out-wires)
-          (case decl1.dir
-            (:vl-input  (mv (cons lsb-wires in-wires) out-wires))
-            (:vl-output (mv in-wires (cons lsb-wires out-wires)))
-            (otherwise
-             (prog2$ (er hard? 'vl-portdecls-to-i/o "Provably impossible.")
-                     (mv in-wires out-wires))))))
+       ((unless successp)
+        (mv nil warnings in-wires out-wires))
 
-      (mv t warnings in-wires out-wires)))
+       ((mv in-wires out-wires)
+        (case decl1.dir
+          (:vl-input  (mv (cons lsb-wires in-wires) out-wires))
+          (:vl-output (mv in-wires (cons lsb-wires out-wires)))
+          (otherwise
+           (prog2$ (impossible)
+                   (mv in-wires out-wires))))))
 
+    (mv t warnings in-wires out-wires))
+
+  ///
   ;; We want to memoize top-level calls because this will be invoked repeatedly
   ;; from other modules when we're trying to build the E occurrences for module
   ;; instances.
   (memoize 'vl-portdecls-to-i/o :recursive nil)
 
-  (defmvtypes vl-portdecls-to-i/o (booleanp true-listp true-listp true-listp))
-
-  (local (in-theory (enable vl-portdecls-to-i/o)))
-
-  (defthm vl-warninglist-p-of-vl-portdecls-to-i/o
-    (vl-warninglist-p (mv-nth 1 (vl-portdecls-to-i/o portdecls walist))))
-
-  (defthm vl-portdecls-to-i/o-basics
-    (implies (and (force (vl-portdecllist-p portdecls))
-                  (force (vl-wirealist-p walist)))
-             (let ((ret (vl-portdecls-to-i/o portdecls walist)))
-               (and (vl-emodwirelistlist-p (mv-nth 2 ret))
-                    (vl-emodwirelistlist-p (mv-nth 3 ret)))))))
-
-
+  (more-returns
+   (warnings true-listp :rule-classes :type-prescription)
+   (in-wires true-listp :rule-classes :type-prescription)
+   (out-wires true-listp :rule-classes :type-prescription)))
 
 
 ; ----------------------------------------------------------------------------
@@ -283,95 +277,68 @@ might not even have the same direction.</p>"
 ;
 ; ----------------------------------------------------------------------------
 
-(defsection vl-port-msb-bits
+(define vl-port-msb-bits
   :parents (modinsts-to-eoccs)
   :short "Compute the port pattern for a single port."
+  ((x      vl-port-p)
+   (walist vl-wirealist-p))
+  :returns
+  (mv (successp booleanp :rule-classes :type-prescription)
+      (warnings vl-warninglist-p)
+      (msb-bits vl-emodwirelist-p))
 
-  :long "<p><b>Signature:</b> @(call vl-port-msb-bits) returns @('(mv successp
-warnings msb-bits)').</p>"
+  (b* ((warnings nil)
+       (expr (vl-port->expr x))
 
-  (defund vl-port-msb-bits (x walist)
-    "Returns (MV SUCCESSP WARNINGS MSB-BITS)"
-    (declare (xargs :guard (and (vl-port-p x)
-                                (vl-wirealist-p walist))))
-    (b* ((expr (vl-port->expr x))
-         ((unless expr)
-          (b* ((w (make-vl-warning
-                   :type :vl-bad-port
+       ((unless expr)
+        (mv nil
+            (fatal :type :vl-bad-port
                    :msg "~a0: expected no blank ports."
-                   :args (list x)
-                   :fatalp t
-                   :fn 'vl-port-msb-bits)))
-            (mv nil (list w) nil)))
+                   :args (list x))
+            nil))
 
-         ((mv successp warnings msb-bits)
-          (vl-msb-expr-bitlist expr walist nil))
+       ((mv successp warnings msb-bits)
+        (vl-msb-expr-bitlist expr walist warnings))
 
-         ((unless successp)
-          (b* ((w (make-vl-warning
-                   :type :vl-bad-port
+       ((unless successp)
+        (mv nil
+            (fatal :type :vl-bad-port
                    :msg "~a0: failed to generate wires for this port."
-                   :args (list x)
-                   :fatalp t
-                   :fn 'vl-port-msb-bits)))
-            (mv nil (cons w warnings) nil))))
+                   :args (list x))
+            nil)))
 
-      (mv t warnings msb-bits)))
-
-  (defmvtypes vl-port-msb-bits (booleanp true-listp true-listp))
-
-  (local (in-theory (enable vl-port-msb-bits)))
-
-  (defthm vl-warninglist-p-of-vl-port-msb-bits
-    (vl-warninglist-p (mv-nth 1 (vl-port-msb-bits x walist))))
-
-  (defthm vl-emodwirelist-p-of-vl-port-msb-bits
-    (implies (and (force (vl-port-p x))
-                  (force (vl-wirealist-p walist)))
-             (vl-emodwirelist-p (mv-nth 2 (vl-port-msb-bits x walist))))))
+    (mv t warnings msb-bits))
+  ///
+  (more-returns
+   (msb-bits true-listp :rule-classes :type-prescription)))
 
 
-
-(defsection vl-portlist-msb-bit-pattern
+(define vl-portlist-msb-bit-pattern
   :parents (modinsts-to-eoccs)
   :short "Compute the port pattern for a module."
+  ((x      vl-portlist-p)
+   (walist vl-wirealist-p))
+  :returns
+  (mv (successp booleanp :rule-classes :type-prescription)
+      (warnings vl-warninglist-p)
+      (pattern  vl-emodwirelistlist-p))
+  :long "<p>We don't take a warnings accumulator because we memoize this
+         function.</p>"
 
-  :long "<p><b>Signature:</b> @(call vl-portlist-msb-bit-pattern) returns
-@('(mv successp warnings pattern)').</p>
+  (b* (((when (atom x))
+        (mv t nil nil))
+       ((mv successp1 warnings1 wires1) (vl-port-msb-bits (car x) walist))
+       ((mv successp2 warnings2 wires2) (vl-portlist-msb-bit-pattern (cdr x) walist)))
+    (mv (and successp1 successp2)
+        (append-without-guard warnings1 warnings2)
+        (cons wires1 wires2)))
 
-<p>We don't take a warnings accumulator because we memoize this function.</p>"
+  ///
+  (memoize 'vl-portlist-msb-bit-pattern :recursive nil)
 
-  (defund vl-portlist-msb-bit-pattern (x walist)
-    "Returns (MV SUCCESSP WARNINGS PATTERN)"
-    (declare (xargs :guard (and (vl-portlist-p x)
-                                (vl-wirealist-p walist))))
-    (b* (((when (atom x))
-          (mv t nil nil))
-         ((mv successp1 warnings1 wires1) (vl-port-msb-bits (car x) walist))
-         ((mv successp2 warnings2 wires2) (vl-portlist-msb-bit-pattern (cdr x) walist)))
-      (mv (and successp1 successp2)
-          (append warnings1 warnings2)
-          (cons wires1 wires2))))
-
-  (memoize 'vl-portlist-msb-bit-pattern
-           :recursive nil)
-
-  (local (in-theory (enable vl-portlist-msb-bit-pattern)))
-
-  (defmvtypes vl-portlist-msb-bit-pattern (booleanp true-listp true-listp))
-
-  (defthm vl-warninglist-p-of-vl-portlist-msb-bit-pattern
-    (vl-warninglist-p (mv-nth 1 (vl-portlist-msb-bit-pattern x walist))))
-
-  (defthm true-list-listp-of-vl-portlist-msb-bit-pattern
-    (true-list-listp (mv-nth 2 (vl-portlist-msb-bit-pattern x walist))))
-
-  (defthm vl-emodwirelistlist-p-of-vl-portlist-msb-bit-pattern
-    (implies (and (force (vl-portlist-p x))
-                  (force (vl-wirealist-p walist)))
-             (vl-emodwirelistlist-p (mv-nth 2 (vl-portlist-msb-bit-pattern x walist))))))
-
-
+  (more-returns
+   (pattern  true-listp :rule-classes :type-prescription)
+   (pattern  true-list-listp)))
 
 
 
@@ -392,188 +359,163 @@ agree, and are simple enough for E conversion."
 list and make sure that we can generate the port pattern for each module
 appropriately.</p>")
 
-(defsection vl-module-check-port-bits
+(define vl-module-check-port-bits
   :parents (port-bit-checking)
   :short "Ensure the port pattern for a module is reasonable."
+  ((x vl-module-p))
+  :returns (new-x (and (vl-module-p new-x)
+                       (equal (vl-module->name new-x)
+                              (vl-module->name x))))
 
   :long "<p>@(call vl-module-check-port-bits) separately builds up the bit
 patterns for ports and the port declarations of the module @('x'), then makes
 sure that there is exactly one port bit for every port declaration bit and vice
 versa.  We extend @('X') with a fatal warning if this doesn't hold.</p>"
 
-  (local
-   (encapsulate
-     ()
-     (local (defthm insert-under-iff
-              (iff (insert a x)
-                   t)
-              :hints(("Goal" :in-theory (enable (:ruleset set::primitive-rules))))))
+  (b* (((vl-module x) (vl-module-fix x))
+       (warnings x.warnings)
 
-     (local (defthm demote-in-to-member-equal
-              (implies (setp x)
-                       (equal (in a x)
-                              (if (member-equal a x)
-                                  t
-                                nil)))
-              :hints(("Goal" :in-theory (enable (:ruleset set::primitive-rules))))))
+       ;; Construct the wire alist
+       ((mv successp warnings walist)
+        (vl-module-wirealist x warnings))
+       ((unless successp)
+        (change-vl-module x :warnings warnings))
+       ((with-fast walist))
 
-     (defthm empty-intersect-to-intersectp-equal
-       (implies (and (setp x)
-                     (setp y))
-                (equal (empty (set::intersect x y))
-                       (not (intersectp-equal x y))))
-       :hints(("Goal"
-               :induct (set::intersect x y)
-               :in-theory (e/d ((:ruleset set::primitive-rules))
-                               ;; speed hint
-                               (promote-member-equal-to-membership
-                                set::insert-identity
-                                set::intersect-symmetric
-                                set::double-containment
-                                set::setp)))))))
+       ;; Get bit lists for ports and port declarations
+       ((mv okp1 warnings1 port-bits)
+        (vl-portlist-msb-bit-pattern x.ports walist))
+       ((mv okp2 warnings2 in-wires out-wires)
+        (vl-portdecls-to-i/o x.portdecls walist))
+       (warnings (append-without-guard warnings1 warnings2 x.warnings))
+       ((unless (and okp1 okp2))
+        (change-vl-module x :warnings warnings))
 
-  ;; Speed hint
-  (local (in-theory (disable no-duplicatesp-equal
-                             union
-                             intersect
-                             mergesort
-                             difference
-                             intersectp-equal
-                             hons-assoc-equal
-                             acl2::consp-under-iff-when-true-listp
-                             subsetp-equal-when-first-two-same-yada-yada
-                             set::double-containment)))
+       ;; Turn everything into sets so we can compare them efficiently
+       (flat-ports   (flatten port-bits))
+       (flat-ports-s (mergesort flat-ports))
 
-  (defund vl-module-check-port-bits (x)
-    (declare (xargs :guard (vl-module-p x)))
-    (b* (((vl-module x) x)
-         (warnings x.warnings)
+       (flat-ins     (flatten in-wires))
+       (flat-outs    (flatten out-wires))
+       (flat-ins-s   (mergesort flat-ins))
+       (flat-outs-s  (mergesort flat-outs))
+       (flat-decls-s (union flat-ins-s flat-outs-s))
 
-         ;; Construct the wire alist
-         ((mv successp warnings walist)
-          (vl-module-wirealist x warnings))
-         ((unless successp)
-          (change-vl-module x :warnings warnings))
-         ((with-fast walist))
+       ;; Check: unique bits for all port declarations.
+       (warnings
+        (b* (((when (mbe :logic (uniquep (append flat-ins flat-outs))
+                         :exec (and (mbe :logic (uniquep flat-ins)
+                                         :exec  (same-lengthp flat-ins-s flat-ins))
+                                    (mbe :logic (uniquep flat-outs)
+                                         :exec  (same-lengthp flat-outs-s flat-outs))
+                                    (mbe :logic (not (intersectp-equal flat-ins flat-outs))
+                                         :exec  (not (set::intersectp flat-ins-s flat-outs-s))))))
+              warnings)
+             ;; Else, there are duplicated port names!
+             (dupe-names (duplicated-members (vl-portdecllist->names x.portdecls)))
+             ((when dupe-names)
+              (fatal :type :vl-bad-portdecls
+                     :msg "The following ports are illegally declared more ~
+                           than once: ~&0."
+                     :args (list dupe-names)))
+             (dupe-bits (duplicated-members (append flat-ins flat-outs))))
+          (fatal :type :vl-programming-error
+                 :msg "Failed to generate unique port bit names even though ~
+                       the port decls have unique names.  Jared thinks this ~
+                       should be impossible unless the wire alist is invalid. ~
+                       Duplicate bits: ~&0."
+                 :args (list (vl-verilogify-emodwirelist dupe-bits)))))
 
-         ;; Get bit lists for ports and port declarations
-         ((mv okp1 warnings1 port-bits)
-          (vl-portlist-msb-bit-pattern x.ports walist))
-         ((mv okp2 warnings2 in-wires out-wires)
-          (vl-portdecls-to-i/o x.portdecls walist))
-         (warnings (append warnings1 warnings2 x.warnings))
-         ((unless (and okp1 okp2))
-          (change-vl-module x :warnings warnings))
+       ;; Check: unique bits for all ports.
+       (warnings
+        (b* (((when (mbe :logic (uniquep flat-ports)
+                         :exec (same-lengthp flat-ports-s flat-ports)))
+              warnings)
+             (dupe-bits (duplicated-members flat-ports)))
+          (fatal :type :vl-bad-ports
+                 :msg "The following wires are directly connected to multiple ~
+                       ports: ~&0."
+                 :args (list (vl-verilogify-emodwirelist dupe-bits)))))
 
-         ;; Turn everything into sets so we can compare them efficiently
-         (flat-ports   (flatten port-bits))
-         (flat-ports-s (mergesort flat-ports))
+       ;; Check: every declared bit is in a port, and vice versa.
+       (warnings
+        (b* (((when (equal flat-decls-s flat-ports-s))
+              warnings)
+             (extra-port-bits (difference flat-ports-s flat-decls-s))
+             (extra-decl-bits (difference flat-decls-s flat-ports-s)))
+          (fatal :type :vl-bad-ports
+                 :msg "Mismatch between the ports and port declarations:~%  ~
+                        - Bits only in ports: ~&0~%  ~
+                        - Bits only in port declarations: ~&1"
+                 :args (list (vl-verilogify-emodwirelist extra-port-bits)
+                             (vl-verilogify-emodwirelist extra-decl-bits)))))
 
-         (flat-ins     (flatten in-wires))
-         (flat-outs    (flatten out-wires))
-         (flat-ins-s   (mergesort flat-ins))
-         (flat-outs-s  (mergesort flat-outs))
-         (flat-decls-s (union flat-ins-s flat-outs-s))
+       ((when (equal x.warnings warnings))
+        ;; Optimization: don't change the module if the warnings haven't
+        ;; changed.  This is actually very useful: it lets us reuse the
+        ;; memoized wirealist and portpat stuff for modules that don't have any
+        ;; problems.
+        x))
+    (change-vl-module x :warnings warnings))
 
-         ;; Check: unique bits for all port declarations.
-         (warnings
-          (if (mbe :logic (uniquep (append flat-ins flat-outs))
-                   :exec (and (mbe :logic (uniquep flat-ins)
-                                   :exec  (same-lengthp flat-ins-s flat-ins))
-                              (mbe :logic (uniquep flat-outs)
-                                   :exec  (same-lengthp flat-outs-s flat-outs))
-                              (mbe :logic (not (intersectp-equal flat-ins flat-outs))
-                                   :exec  (not (set::intersectp flat-ins-s flat-outs-s)))))
-              warnings
-            ;; Else, there are duplicated port names!
-            (b* ((dupe-names (duplicated-members (vl-portdecllist->names x.portdecls)))
-                 (dupe-bits  (duplicated-members (append flat-ins flat-outs)))
-                 (w (if dupe-names
-                        (make-vl-warning
-                         :type :vl-bad-portdecls
-                         :msg "The following ports are illegally declared ~
-                               more than once: ~&0."
-                         :args (list dupe-names)
-                         :fatalp t
-                         :fn 'vl-module-check-port-bits)
-                      (make-vl-warning
-                       :type :vl-programming-error
-                       :msg "Failed to generate unique port bit names even ~
-                             though the port decls have unique names.  Jared ~
-                             thinks this should be impossible unless the wire ~
-                             alist is invalid. Duplicate bits: ~&0."
-                       :args (list (vl-verilogify-emodwirelist dupe-bits))
-                       :fatalp t
-                       :fn 'vl-module-check-port-bits))))
-              (cons w warnings))))
+  :prepwork
+  ((local
+    (encapsulate
+      ()
+      (local (defthm insert-under-iff
+               (iff (insert a x)
+                    t)
+               :hints(("Goal" :in-theory (enable (:ruleset set::primitive-rules))))))
 
-         ;; Check: unique bits for all ports.
-         (warnings
-          (if (mbe :logic (uniquep flat-ports)
-                   :exec (same-lengthp flat-ports-s flat-ports))
-              warnings
-            (b* ((dupe-bits (duplicated-members flat-ports))
-                 (w (make-vl-warning
-                     :type :vl-bad-ports
-                     :msg "The following wires are directly connected to ~
-                           multiple ports: ~&0."
-                     :args (list (vl-verilogify-emodwirelist dupe-bits))
-                     :fatalp t
-                     :fn 'vl-module-check-port-bits)))
-              (cons w warnings))))
+      (local (defthm demote-in-to-member-equal
+               (implies (setp x)
+                        (equal (in a x)
+                               (if (member-equal a x)
+                                   t
+                                 nil)))
+               :hints(("Goal" :in-theory (enable (:ruleset set::primitive-rules))))))
 
-         ;; Check: every declared bit is in a port, and vice versa.
-         (warnings
-          (if (equal flat-decls-s flat-ports-s)
-              warnings
-            (b* ((extra-port-bits (difference flat-ports-s flat-decls-s))
-                 (extra-decl-bits (difference flat-decls-s flat-ports-s))
-                 (w (make-vl-warning
-                     :type :vl-bad-ports
-                     :msg "Mismatch between the ports and port declarations:~%  ~
-                            - Bits only in ports: ~&0~%  ~
-                            - Bits only in port declarations: ~&1"
-                     :args (list (vl-verilogify-emodwirelist extra-port-bits)
-                                 (vl-verilogify-emodwirelist extra-decl-bits))
-                     :fatalp t
-                     :fn 'vl-module-check-port-bits)))
-              (cons w warnings)))))
+      (defthm empty-intersect-to-intersectp-equal
+        (implies (and (setp x)
+                      (setp y))
+                 (equal (empty (set::intersect x y))
+                        (not (intersectp-equal x y))))
+        :hints(("Goal"
+                :induct (set::intersect x y)
+                :in-theory (e/d ((:ruleset set::primitive-rules))
+                                ;; speed hint
+                                (promote-member-equal-to-membership
+                                 set::insert-identity
+                                 set::intersect-symmetric
+                                 set::double-containment
+                                 set::setp)))))))
 
-      ;; Optimization: don't change the module if the warnings haven't changed.
-      ;; This is actually very useful: it lets us reuse the memoized wirealist
-      ;; and portpat stuff for modules that don't have any problems.
-      (if (equal x.warnings warnings)
-          x
-        (change-vl-module x :warnings warnings))))
-
-  (local (in-theory (enable vl-module-check-port-bits)))
-
-  (defthm vl-module-p-of-vl-module-check-port-bits
-    (implies (force (vl-module-p x))
-             (vl-module-p (vl-module-check-port-bits x))))
-
-  (defthm vl-module->name-of-vl-module-check-port-bits
-    (equal (vl-module->name (vl-module-check-port-bits x))
-           (vl-module->name x))))
+   ;; Speed hint
+   (local (in-theory (disable no-duplicatesp-equal
+                              union
+                              intersect
+                              mergesort
+                              difference
+                              intersectp-equal
+                              hons-assoc-equal
+                              acl2::consp-under-iff-when-true-listp
+                              subsetp-equal-when-first-two-same-yada-yada
+                              set::double-containment)))))
 
 
-
-(defprojection vl-modulelist-check-port-bits (x)
-  (vl-module-check-port-bits x)
-  :guard (vl-modulelist-p x)
-  :result-type vl-modulelist-p
+(defprojection vl-modulelist-check-port-bits ((x vl-modulelist-p))
+  :returns (new-x vl-modulelist-p)
   :parents (port-bit-checking)
-
   :long "<p>Performance note.  This will look expensive because it calls @(see
 vl-module-wirealist), @(see vl-portdecls-to-i/o) and @(see
 vl-portlist-msb-bit-pattern) on all modules.  But since these are memoized, we
 get to reuse this work when we generate the eoccs for module instances and need
 to look up these patterns.</p>"
-
-  :rest
-  ((defthm vl-modulelist->names-of-vl-modulelist-check-port-bits
-     (equal (vl-modulelist->names (vl-modulelist-check-port-bits x))
-            (vl-modulelist->names x)))))
+  (vl-module-check-port-bits x)
+  ///
+  (defthm vl-modulelist->names-of-vl-modulelist-check-port-bits
+    (equal (vl-modulelist->names (vl-modulelist-check-port-bits x))
+           (vl-modulelist->names x))))
 
 
 
@@ -583,231 +525,151 @@ to look up these patterns.</p>"
 ;
 ; ----------------------------------------------------------------------------
 
-(defsection vl-plainarg-lsb-bits
+(define vl-plainarg-lsb-bits
   :parents (modinsts-to-eoccs)
   :short "Build the list of @(see vl-emodwire-p)s for a @(see vl-plainarg-p),
 in <b>LSB-first</b> order."
+  ((x        vl-plainarg-p)
+   (walist   vl-wirealist-p)
+   (warnings vl-warninglist-p))
+  :returns (mv (successp)
+               (warnings vl-warninglist-p)
+               (lsb-bits vl-emodwirelist-p))
 
-  :long "<p><b>Signature:</b> @(call vl-plainarg-lsb-bits) returns @('(mv
-successp warnings lsb-bits)').</p>
+  :long "<p>See @(see vl-msb-expr-bitlist).  This function just makes sure a
+@(see vl-plainarg-p) isn't blank and then calls @('vl-msb-expr-bitlist') to do
+the work.  We return the bits in LSB-first order to match the convention
+throughout E.</p>"
 
-<p>See @(see vl-msb-expr-bitlist).  This function just makes sure a @(see
-vl-plainarg-p) isn't blank and then calls @('vl-msb-expr-bitlist') to do the
-work.  We return the bits in LSB-first order to match the convention throughout
-E.</p>"
+    (b* ((warnings (vl-warninglist-fix warnings)) ;; BOZO shouldn't need this
+         (expr (vl-plainarg->expr x))
 
-  (defund vl-plainarg-lsb-bits (x walist warnings)
-    "Returns (MV SUCCESSP WARNINGS LSB-BITS)"
-    (declare (xargs :guard (and (vl-plainarg-p x)
-                                (vl-wirealist-p walist)
-                                (vl-warninglist-p warnings))))
-    (b* ((expr (vl-plainarg->expr x))
          ((unless expr)
-          (b* ((w (make-vl-warning
-                   :type :vl-unsupported
-                   :msg "In vl-plainarg-lsb-bits, expected no blank ports."
-                   :fatalp t
-                   :fn 'vl-plainarg-lsb-bits)))
-            (mv nil (cons w warnings) nil)))
+          (mv nil
+              (fatal :type :vl-unsupported
+                     :msg "In vl-plainarg-lsb-bits, expected no blank ports.")
+              nil))
          ((mv successp warnings bits)
           (vl-msb-expr-bitlist expr walist warnings)))
-        (mv successp warnings (reverse bits))))
-
-  (local (in-theory (enable vl-plainarg-lsb-bits)))
-
-  (defmvtypes vl-plainarg-lsb-bits (nil nil true-listp))
-
-  (defthm true-listp-of-vl-plainarg-lsb-bits-1
-    (implies (true-listp warnings)
-             (true-listp (mv-nth 1 (vl-plainarg-lsb-bits x walist warnings))))
-    :rule-classes :type-prescription)
-
-  (defthm vl-warninglist-p-of-vl-plainarg-lsb-bits
-    (implies (force (vl-warninglist-p warnings))
-             (vl-warninglist-p
-              (mv-nth 1 (vl-plainarg-lsb-bits x walist warnings)))))
-
-  (defthm vl-emodwirelist-p-of-vl-plainarg-lsb-bits
-    (implies (and (force (vl-plainarg-p x))
-                  (force (vl-wirealist-p walist)))
-             (vl-emodwirelist-p (mv-nth 2 (vl-plainarg-lsb-bits x walist warnings))))))
+        (mv successp warnings (reverse bits)))
+    ///
+    (more-returns
+     (lsb-bits true-listp :rule-classes :type-prescription)))
 
 
-(defsection vl-plainarglist-lsb-pattern
+(define vl-plainarglist-lsb-pattern
   :parents (modinsts-to-eoccs)
   :short "Build lists of @(see vl-emodwire-p)s for a @(see vl-plainarglist-p)."
+  ((x        vl-plainarglist-p)
+   (walist   vl-wirealist-p)
+   (warnings vl-warninglist-p))
+  :returns
+  (mv (successp booleanp :rule-classes :type-prescription)
+      (warnings vl-warninglist-p)
+      (pattern  vl-emodwirelistlist-p))
 
-  :long "<p><b>Signature:</b> @(call vl-plainarglist-lsb-pattern) returns
-@('(mv successp warnings pattern)').</p>
+  :long "<p>We project @(see vl-plainarg-lsb-bits) across a list of arguments,
+and cons together the resulting bits to produce an @(see vl-emodwirelistlist-p)
+where each sub-list is in LSB-order.</p>"
 
-<p>We project @(see vl-plainarg-lsb-bits) across a list of arguments, and cons
-together the resulting bits to produce an @(see vl-emodwirelistlist-p) where
-each sub-list is in LSB-order.</p>"
-
-  (defund vl-plainarglist-lsb-pattern (x walist warnings)
-    "Returns (MV SUCCESSP WARNINGS PATTERN)"
-    (declare (xargs :guard (and (vl-plainarglist-p x)
-                                (vl-wirealist-p walist)
-                                (vl-warninglist-p warnings))))
-    (b* (((when (atom x))
-          (mv t warnings nil))
-         ((mv car-successp warnings car-lsb-bits)
-          (vl-plainarg-lsb-bits (car x) walist warnings))
-         ((mv cdr-successp warnings cdr-lsb-pattern)
-          (vl-plainarglist-lsb-pattern (cdr x) walist warnings)))
-      (mv (and car-successp cdr-successp)
-          warnings
-          (cons car-lsb-bits cdr-lsb-pattern))))
-
-  (defmvtypes vl-plainarglist-lsb-pattern (booleanp nil true-listp))
-
-  (local (in-theory (enable vl-plainarglist-lsb-pattern)))
-
-  (defthm true-listp-of-vl-plainarglist-lsb-pattern-1
-    (implies (true-listp warnings)
-             (true-listp (mv-nth 1 (vl-plainarglist-lsb-pattern x walist warnings))))
-    :rule-classes :type-prescription)
-
-  (defthm vl-warninglist-p-of-vl-plainarglist-lsb-pattern
-    (implies (force (vl-warninglist-p warnings))
-             (vl-warninglist-p
-              (mv-nth 1
-               (vl-plainarglist-lsb-pattern x walist warnings)))))
-
-  (defthm true-list-listp-of-vl-plainarglist-lsb-pattern
-    (true-list-listp
-     (mv-nth 2 (vl-plainarglist-lsb-pattern x walist warnings))))
-
-  (defthm vl-emodwirelistlist-p-of-vl-plainarglist-lsb-pattern
-    (implies (and (force (vl-plainarglist-p x))
-                  (force (vl-wirealist-p walist)))
-             (vl-emodwirelistlist-p
-              (mv-nth 2 (vl-plainarglist-lsb-pattern x walist warnings))))))
+  (b* (((when (atom x))
+        (mv t (ok) nil))
+       ((mv car-successp warnings car-lsb-bits)
+        (vl-plainarg-lsb-bits (car x) walist warnings))
+       ((mv cdr-successp warnings cdr-lsb-pattern)
+        (vl-plainarglist-lsb-pattern (cdr x) walist warnings)))
+    (mv (and car-successp cdr-successp)
+        warnings
+        (cons car-lsb-bits cdr-lsb-pattern)))
+  ///
+  (more-returns
+   (pattern true-listp :rule-classes :type-prescription)
+   (pattern true-list-listp)))
 
 
-(defsection vl-modinst-eocc-bindings
+(define vl-modinst-eocc-bindings
   :parents (modinsts-to-eoccs)
   :short "Build a (slow) alist binding the \"formals\" for a module to the
 \"actuals\" from an instance."
 
-  :long "<p><b>Signature:</b> @(call vl-modinst-eocc-bindings) returns @('(mv
-successp warnings binding-alist)').</p>
+  ((actuals  vl-plainarglist-p "Arguments in the module instance.")
 
-<ul>
+   (portpat  vl-emodwirelistlist-p
+             "Port pattern for the module being instanced; see @(see modinsts-to-eoccs).
+              We assume (in the guard) that it is the same length as the
+              actuals (i.e., the module instance has the proper arity), but we
+              still have to check the lengths on the sub-lists.")
 
-<li>@('actuals') are the arguments in the module instance.</li>
+   (walist   vl-wirealist-p
+             "Wire alist for the superior module.  Used to generate the E wires
+              for the actuals.")
 
-<li>@('portpat') is the port pattern for the module being instanced; see @(see
-modinsts-to-eoccs).  We assume (in the guard) that it is the same length as the
-actuals (i.e., the module instance has the proper arity), but we still have to
-check the lengths on the sub-lists.</li>
+   (warnings vl-warninglist-p "Warnings accumulator for the superior module.")
+   (inst     vl-modinst-p     "Context for warnings, semantically irrelevant."))
 
-<li>@('walist') is the wire alist for the superior module.  It is used to
-generate the E wires for the actuals.</li>
+  :guard (and (true-list-listp portpat)
+              (same-lengthp actuals portpat))
+  :returns
+  (mv (successp      booleanp :rule-classes :type-prescription)
+      (warnings      vl-warninglist-p)
+      (binding-alist (and (alistp binding-alist)
+                          (vl-emodwirelist-p (alist-keys binding-alist))
+                          (vl-emodwirelist-p (alist-vals binding-alist)))))
 
-<li>@('warnings') is a @(see warnings) accumulator for the superior
-module.</li>
+  (b* (((when (atom actuals))
+        (mv t (ok) nil))
 
-<li>The @('inst') is the module instance we're processing.  It is semantically
-irrelevant and is only used as a context for warnings.</li>
+       ((vl-modinst inst) inst)
+       (expr1 (vl-plainarg->expr (car actuals)))
 
-</ul>"
-
-  (defund vl-modinst-eocc-bindings (actuals portpat walist warnings inst)
-    "Returns (MV SUCCESSP WARNINGS BINDING-ALIST)"
-    (declare (xargs :guard (and (vl-plainarglist-p actuals)
-                                (true-list-listp portpat)
-                                (vl-emodwirelistlist-p portpat)
-                                (same-lengthp actuals portpat)
-                                (vl-wirealist-p walist)
-                                (vl-warninglist-p warnings)
-                                (vl-modinst-p inst))))
-    (b* (((when (atom actuals))
-          (mv t warnings nil))
-
-         ((vl-modinst inst) inst)
-         (expr1 (vl-plainarg->expr (car actuals)))
-
-         ((unless expr1)
-          ;; Shouldn't happen if we've properly converted blanks to Zs.
-          (b* ((w (make-vl-warning
-                   :type :vl-programming-error
+       ((unless expr1)
+        ;; Shouldn't happen if we've properly converted blanks to Zs.
+        (mv nil
+            (fatal :type :vl-programming-error
                    :msg "~a0: expected all arguments to be non-blank."
-                   :args (list inst)
-                   :fatalp t
-                   :fn 'vl-modinst-eocc-bindings)))
-            (mv nil (cons w warnings) nil)))
+                   :args (list inst))
+            nil))
 
-         ((mv successp warnings expr1-msb-bits)
-          (vl-msb-expr-bitlist expr1 walist warnings))
+       ((mv successp warnings expr1-msb-bits)
+        (vl-msb-expr-bitlist expr1 walist warnings))
 
-         ((unless successp)
-          (b* ((w (make-vl-warning
-                   :type :vl-bad-instance
+       ((unless successp)
+        (mv nil
+            (fatal :type :vl-bad-instance
                    :msg "~a0: error generating wires for ~a1."
-                   :args (list inst.loc expr1)
-                   :fatalp t
-                   :fn 'vl-modinst-eocc-bindings)))
-            (mv nil (cons w warnings) nil)))
+                   :args (list inst.loc expr1))
+            nil))
 
-         (formal1-msb-bits (car portpat))
+       (formal1-msb-bits (car portpat))
 
-         ((unless (same-lengthp expr1-msb-bits formal1-msb-bits))
-          (b* ((nactuals (length expr1-msb-bits))
-               (nformals (length formal1-msb-bits))
-               (w (make-vl-warning
-                   :type :vl-bad-instance
-                   :msg "~a0: we produced ~x1 wires~s2 for an argument whose ~
-                         corresponding port has ~x3 wire~s4.  ~
-                          - Argument wires: ~x5;  ~
-                          - Port wires: ~x6."
-                   :args (list inst
-                               nactuals (if (= nactuals 1) "" "s")
-                               nformals (if (= nformals 1) "" "s")
-                               (symbol-list-names expr1-msb-bits)
-                               (symbol-list-names formal1-msb-bits))
-                   :fatalp t
-                   :fn 'vl-modinst-eocc-bindings)))
-            (mv nil (cons w warnings) nil)))
+       ((unless (and (same-lengthp expr1-msb-bits formal1-msb-bits)
+                     (mbt (vl-emodwirelist-p formal1-msb-bits))))
+        (b* ((nactuals (length expr1-msb-bits))
+             (nformals (length formal1-msb-bits)))
+          (mv nil
+              (fatal :type :vl-bad-instance
+                     :msg "~a0: we produced ~x1 wires~s2 for an argument whose ~
+                           corresponding port has ~x3 wire~s4.  ~
+                            - Argument wires: ~x5;  ~
+                            - Port wires: ~x6."
+                     :args (list inst
+                                 nactuals (if (= nactuals 1) "" "s")
+                                 nformals (if (= nformals 1) "" "s")
+                                 (symbol-list-names expr1-msb-bits)
+                                 (symbol-list-names formal1-msb-bits)))
+              nil)))
 
-         ((mv successp warnings binding-alist)
-          (vl-modinst-eocc-bindings (cdr actuals) (cdr portpat)
-                                    walist warnings inst))
+       ((mv successp warnings binding-alist)
+        (vl-modinst-eocc-bindings (cdr actuals) (cdr portpat)
+                                  walist warnings inst))
 
-         (binding-alist (append (pairlis$ formal1-msb-bits expr1-msb-bits)
-                                binding-alist)))
+       (binding-alist (append (pairlis$ formal1-msb-bits expr1-msb-bits)
+                              binding-alist)))
 
-      (mv successp warnings binding-alist)))
-
-  (defmvtypes vl-modinst-eocc-bindings (booleanp nil true-listp))
-
-  (local (in-theory (enable vl-modinst-eocc-bindings)))
-
-  (defthm vl-warninglist-p-of-vl-modinst-eocc-bindings
-    (let ((ret (vl-modinst-eocc-bindings actuals portpat walist warnings inst)))
-      (implies (vl-warninglist-p warnings)
-               (vl-warninglist-p (mv-nth 1 ret)))))
-
-  (defthm alistp-of-vl-modinst-eocc-bindings
-    (let ((ret (vl-modinst-eocc-bindings actuals portpat walist warnings inst)))
-      (alistp (mv-nth 2 ret))))
-
-  (local (defthm alist-keys-pairlis$
-           (equal (alist-keys (pairlis$ a b))
-                  (list-fix a))
-           :hints(("Goal" :in-theory (enable alist-keys pairlis$)))))
-
-  (defthm vl-emodwirelist-p-alist-keys-eocc-bindings
-    (let ((ret (vl-modinst-eocc-bindings actuals portpat walist warnings inst)))
-      (implies (vl-emodwirelistlist-p portpat)
-               (vl-emodwirelist-p (alist-keys (mv-nth 2 ret))))))
-
-  (defthm vl-emodwirelist-p-alist-vals-eocc-bindings
-    (let ((ret (vl-modinst-eocc-bindings actuals portpat walist warnings inst)))
-      (implies (vl-wirealist-p walist)
-               (vl-emodwirelist-p (alist-vals (mv-nth 2 ret)))))))
-
-
+    (mv successp warnings binding-alist))
+  ///
+  (more-returns
+   (binding-alist true-listp :rule-classes :type-prescription)))
 
 
 ; ----------------------------------------------------------------------------
@@ -832,198 +694,166 @@ have generated for them.  We use it to look up the definitions for submodules.
 To make lookups fast, we generally expect it to be a fast alist.</p>")
 
 
-(defsection vl-modinst-to-eocc
+(define vl-modinst-to-eocc
   :parents (modinsts-to-eoccs)
   :short "Main function for transforming a Verilog module instance into
 an (preliminary) E language occurrence."
 
-  :long "<p><b>Signature:</b> @(call vl-modinst-to-eocc) returns @('(mv
-successp warnings eocc).')</p>
+  ((x        vl-modinst-p
+             "The module instance that we want to convert into an E occurrence.")
+   (walist   vl-wirealist-p
+             "The wire alist for the superior module.  We use it to build the
+              wire lists for the actuals.")
+   (mods     vl-modulelist-p
+             "The list of all modules.  Needed so we can look up the submodule
+              being instantiated, so we can compute its port pattern.")
+   (modalist (equal modalist (vl-modalist mods))
+             "For fast submodule lookups.")
+   (eal      vl-ealist-p
+             "The already-processed @(see vl-ealist-p) that binds module names
+              to the E modules we've built for them so far.  We use this to
+              look up the definiton of the submodule for the @(':op') field of
+              the E occurrence.")
+   (warnings vl-warninglist-p
+             "Warnings accumulator for the superior module."))
+  :returns
+  (mv (successp booleanp :rule-classes :type-prescription)
+      (warnings vl-warninglist-p)
+      (eocc))
 
-<ul>
-
-<li>@('x') is the module instance that we want to convert into an E
-occurrence.</li>
-
-<li>@('walist') is the wire alist for the superior module.  We use it to build
-the wire lists for the actuals.</li>
-
-<li>@('mods') is the list of all modules; @('modalist') is its corresponding
-@(see vl-modalist) for fast module lookups.  We use these to look up the
-submodule being instantiated, so we can compute its port pattern.</li>
-
-<li>@('eal') is the already-processed @(see vl-ealist-p) that binds module
-names to the E modules we've built for them so far.  We use this to look up the
-definiton of the submodule for the @(':op') field of the E occurrence.</li>
-
-<li>@('warnings') is the @(see warnings) accumulator for the superior
-module.</li>
-
-</ul>
-
-<p>We do a lot of sanity checking to make sure the module instance is simple
-enough to transform, that the submodule exists and was translated into an E
-module successfully, etc.  Then, we figure out the bindings to use for the
+  :long "<p>We do a lot of sanity checking to make sure the module instance is
+simple enough to transform, that the submodule exists and was translated into
+an E module successfully, etc.  Then, we figure out the bindings to use for the
 @(':i') and @(':o') fields of the occurrence, as described in @(see
 modinsts-to-eoccs).</p>"
 
-  (defund vl-modinst-to-eocc (x walist mods modalist eal warnings)
-    "Returns (MV SUCCESSP WARNINGS EOCC)"
-    (declare (xargs :guard (and (vl-modinst-p x)
-                                (vl-wirealist-p walist)
-                                (vl-modulelist-p mods)
-                                (equal modalist (vl-modalist mods))
-                                (vl-ealist-p eal)
-                                (vl-warninglist-p warnings))))
-    (b* (((vl-modinst x) x)
+  (b* (((vl-modinst x) x)
 
-         ;; Preliminary sanity checks to make sure this instance is
-         ;; reasonable.
+       ;; Preliminary sanity checks to make sure this instance is
+       ;; reasonable.
 
-         ((unless x.instname)
-          (b* ((w (make-vl-warning
-                   :type :vl-bad-instance
+       ((unless x.instname)
+        (mv nil
+            (fatal :type :vl-bad-instance
                    :msg "~a0: expected all module instances to be named.  Did ~
                          you run the addinstnames transform?"
-                   :args (list x)
-                   :fatalp t
-                   :fn 'vl-modinst-to-eocc)))
-            (mv nil (cons w warnings) nil)))
+                   :args (list x))
+            nil))
 
-         ((when x.range)
-          (b* ((w (make-vl-warning
-                   :type :vl-bad-instance
+       ((when x.range)
+        (mv nil
+            (fatal :type :vl-bad-instance
                    :msg "~a0: expected only simple module instances, but ~s1 ~
                          is an array of module instances.  Did you run the ~
                          replicate transform?"
-                   :args (list x x.instname)
-                   :fatalp t
-                   :fn 'vl-modinst-to-eocc)))
-            (mv nil (cons w warnings) nil)))
+                   :args (list x x.instname))
+            nil))
 
-         ((unless (vl-paramargs-empty-p x.paramargs))
-          (b* ((w (make-vl-warning
-                   :type :vl-bad-instance
+       ((unless (vl-paramargs-empty-p x.paramargs))
+        (mv nil
+            (fatal :type :vl-bad-instance
                    :msg "~a0: expected only simple module instances, but ~s1 ~
                          still has parameters.  Did you run the ~
                          unparameterization transform?"
-                   :args (list x x.instname)
-                   :fatalp t
-                   :fn 'vl-modinst-to-eocc)))
-            (mv nil (cons w warnings) nil)))
+                   :args (list x x.instname))
+            nil))
 
-         ((when (eq (vl-arguments-kind x.portargs) :vl-arguments-named))
-          (b* ((w (make-vl-warning
-                   :type :vl-bad-instance
+       ((when (eq (vl-arguments-kind x.portargs) :vl-arguments-named))
+        (mv nil
+            (fatal :type :vl-bad-instance
                    :msg "~a0: expected only resolved module instances, but ~
                          ~s1 still has named arguments.  Did you run the ~
                          argresolve transform?"
-                   :args (list x x.instname)
-                   :fatalp t
-                   :fn 'vl-modinst-to-eocc)))
-            (mv nil (cons w warnings) nil)))
+                   :args (list x x.instname))
+            nil))
 
+       ;; Look up the submodule, its esim, etc.
 
-         ;; Look up the submodule, its esim, etc.
-
-         (sub      (vl-fast-find-module x.modname mods modalist))
-         ((unless sub)
-          (b* ((w (make-vl-warning
-                   :type :vl-bad-instance
+       (sub      (vl-fast-find-module x.modname mods modalist))
+       ((unless sub)
+        (mv nil
+            (fatal :type :vl-bad-instance
                    :msg "~a0 refers to undefined module ~m1."
-                   :args (list x x.modname)
-                   :fatalp t
-                   :fn 'vl-modinst-to-eocc)))
-            (mv nil (cons w warnings) nil)))
+                   :args (list x x.modname))
+            nil))
 
-         (sub-esim (cdr (hons-get x.modname eal)))
-         ((unless sub-esim)
-          (b* ((w (make-vl-warning
-                   :type :vl-bad-submodule
+       (sub-esim (cdr (hons-get x.modname eal)))
+       ((unless sub-esim)
+        (mv nil
+            (fatal :type :vl-bad-submodule
                    :msg "~a0 refers to module ~m1, but we failed to build an ~
                          E module for ~m1."
-                   :args (list x x.modname)
-                   :fatalp t
-                   :fn 'vl-modinst-to-eocc)))
-            (mv nil (cons w warnings) nil)))
+                   :args (list x x.modname))
+            nil))
 
-         ((mv okp & sub-walist) (vl-module-wirealist sub nil))
-         ((unless okp)
-          (b* ((w (make-vl-warning
-                   :type :vl-programming-error
+       ((mv okp & sub-walist) (vl-module-wirealist sub nil))
+       ((unless okp)
+        (mv nil
+            (fatal :type :vl-programming-error
                    :msg "~a0: failed to build a wire alist for ~x0?  Jared ~
                          thinks this should never happen since we were able ~
                          to build the ESIM module for it."
-                   :args (list x.modname)
-                   :fatalp t
-                   :fn 'vl-modinst-to-eocc)))
-            (mv nil (cons w warnings) nil)))
+                   :args (list x.modname))
+            nil))
 
+       ;; Now compute the port pattern for the submodule.
 
-         ;; Now compute the port pattern for the submodule.
-
-         ((mv successp & portpat)
-          ;; We ignore the warnings here, because (1) there shouldn't be any
-          ;; and (2) if there are, it's a problem with the submodule, not with
-          ;; the superior module.
-          (vl-portlist-msb-bit-pattern (vl-module->ports sub) sub-walist))
-         ((unless successp)
-          (b* ((w (make-vl-warning
-                   :type :vl-programming-error
+       ((mv successp & portpat)
+        ;; We ignore the warnings here, because (1) there shouldn't be any
+        ;; and (2) if there are, it's a problem with the submodule, not with
+        ;; the superior module.
+        (vl-portlist-msb-bit-pattern (vl-module->ports sub) sub-walist))
+       ((unless successp)
+        (mv nil
+            (fatal :type :vl-programming-error
                    :msg "~a0: failed to build a portlist pattern for module ~
                          ~m1. Jared thinks this should never happen because ~
                          we check that these lists can be built before trying ~
                          to make E occurrences from module instances."
-                   :args (list x x.modname)
-                   :fatalp t
-                   :fn 'vl-modinst-to-eocc)))
-            (mv nil (cons w warnings) nil)))
+                   :args (list x x.modname))
+            nil))
 
+       ;; Build the alist binding formals to actuals...
 
-         ;; Build the alist binding formals to actuals...
-
-         (actuals (vl-arguments-plain->args x.portargs))
-         ((unless (same-lengthp actuals portpat))
-          (b* ((w (make-vl-warning
-                   :type :vl-bad-instance
+       (actuals (vl-arguments-plain->args x.portargs))
+       ((unless (same-lengthp actuals portpat))
+        (mv nil
+            (fatal :type :vl-bad-instance
                    :msg "~a0: wrong arity.  Expected ~x1 arguments but found ~x2."
-                   :args (list x (len portpat) (len actuals))
-                   :fatalp t
-                   :fn 'vl-modinst-to-eocc)))
-            (mv nil (cons w warnings) nil)))
-         ((mv successp warnings binding-alist)
-          (vl-modinst-eocc-bindings actuals portpat walist warnings x))
-         ((unless successp)
-          ;; Already explained why.
-          (mv nil warnings nil))
+                   :args (list x (len portpat) (len actuals)))
+            nil))
+
+       ((mv successp warnings binding-alist)
+        (vl-modinst-eocc-bindings actuals portpat walist warnings x))
+       ((unless successp)
+        ;; Already explained why.
+        (mv nil warnings nil))
 
 
-         ;; Get the :i and :o patterns to instantiate.  It would probably be
-         ;; reasonable to just look these up from sub-esim.  But as an extra
-         ;; sanity check, we'll go ahead and recompute them, and make sure
-         ;; everything agrees.  Note that vl-portdecls-to-i/o is memoized, so
-         ;; this should be pretty cheap.
+       ;; Get the :i and :o patterns to instantiate.  It would probably be
+       ;; reasonable to just look these up from sub-esim.  But as an extra
+       ;; sanity check, we'll go ahead and recompute them, and make sure
+       ;; everything agrees.  Note that vl-portdecls-to-i/o is memoized, so
+       ;; this should be pretty cheap.
 
-         ((mv successp & in-pat out-pat)
-          ;; We ignore the warnings here because if there's any problem, it's
-          ;; a problem with the submodule.
-          (vl-portdecls-to-i/o (vl-module->portdecls sub) sub-walist))
-         ((unless successp)
-          (b* ((w (make-vl-warning
-                   :type :vl-programming-error
+       ((mv successp & in-pat out-pat)
+        ;; We ignore the warnings here because if there's any problem, it's
+        ;; a problem with the submodule.
+        (vl-portdecls-to-i/o (vl-module->portdecls sub) sub-walist))
+       ((unless successp)
+        (mv nil
+            (fatal :type :vl-programming-error
                    :msg "~a0: failed to build :i and :o patterns for module ~
                          ~m1.  Jared thinks this should never happen because ~
                          we already built its esim and should have checked ~
                          that this was all okay due to port-bit-checking."
-                   :args (list x x.modname)
-                   :fatalp t
-                   :fn 'vl-modinst-to-eocc)))
-            (mv nil (cons w warnings) nil)))
+                   :args (list x x.modname))
+            nil))
 
-         ((unless (and (equal in-pat (gpl :i sub-esim))
-                       (equal out-pat (gpl :o sub-esim))))
-          (b* ((w (make-vl-warning
-                   :type :vl-programming-error
+       ((unless (and (equal in-pat (gpl :i sub-esim))
+                     (equal out-pat (gpl :o sub-esim))))
+        (mv nil
+            (fatal :type :vl-programming-error
                    :msg "~a0: the :i and :o patterns we built for ~m1 do ~
                          not agree with the :i and :o patterns of its ESIM? ~
                          Jared thinks this should never happen because the ~
@@ -1033,57 +863,46 @@ modinsts-to-eoccs).</p>"
                           - out-pat: ~x4~%  ~
                           - found:   ~x5~%"
                    :args (list x x.modname in-pat (gpl :i sub-esim)
-                               out-pat (gpl :o sub-esim))
-                   :fatalp t
-                   :fn 'vl-modinst-to-eocc)))
-            (mv nil (cons w warnings) nil)))
+                               out-pat (gpl :o sub-esim)))
+            nil))
 
-         ;; Instantiate the :i and :o patterns to get the actuals for this
-         ;; occurrence.
+       ;; Instantiate the :i and :o patterns to get the actuals for this
+       ;; occurrence.
 
-         ((with-fast binding-alist))
+       ((with-fast binding-alist))
 
-         ;; Extra sanity check, so that we can prove this always builds a good
-         ;; esim occ.
-         (all-formal-bits (pat-flatten out-pat (pat-flatten1 in-pat)))
-         (all-actual-bits (alist-keys binding-alist))
-         ((unless (equal (mergesort all-formal-bits)
-                         (mergesort all-actual-bits)))
-          (b* ((w (make-vl-warning
-                   :type :vl-programming-error
+       ;; Extra sanity check, so that we can prove this always builds a good
+       ;; esim occ.
+       (all-formal-bits (pat-flatten out-pat (pat-flatten1 in-pat)))
+       (all-actual-bits (alist-keys binding-alist))
+       ((unless (equal (mergesort all-formal-bits)
+                       (mergesort all-actual-bits)))
+        (mv nil
+            (fatal :type :vl-programming-error
                    :msg "~a0: the binding alist we produced doesn't contain ~
                          bindings for exactly the right bits.  Jared thinks ~
                          vl-modinst-to-eocc-bindings should ensure that this ~
                          never happens."
-                   :args (list x)
-                   :fatalp t
-                   :fn 'vl-modinst-to-eocc)))
-            (mv nil (cons w warnings) nil)))
+                   :args (list x))
+            nil))
 
-         (inputs   (acl2::al->pat in-pat binding-alist nil))
-         (outputs  (acl2::al->pat out-pat binding-alist nil))
+       (inputs   (acl2::al->pat in-pat binding-alist nil))
+       (outputs  (acl2::al->pat out-pat binding-alist nil))
 
-         ;; Goofy hack to make sure the instance names are unique:
+       ;; Goofy hack to make sure the instance names are unique:
 
-         (instname (vl-plain-wire-name x.instname))
+       (instname (vl-plain-wire-name x.instname))
 
-         (eocc (list* :u instname
-                      :op sub-esim
-                      :o outputs
-                      :i inputs
-                      (if x.atts
-                          (list :a x.atts)
-                        nil))))
+       (eocc (list* :u instname
+                    :op sub-esim
+                    :o outputs
+                    :i inputs
+                    (if x.atts
+                        (list :a x.atts)
+                      nil))))
 
-      (mv t warnings eocc)))
-
-  (local (in-theory (enable vl-modinst-to-eocc)))
-
-  (defthm vl-warninglist-p-of-vl-modinst-to-eocc
-    (let ((ret (vl-modinst-to-eocc x walist mods modalist eal warnings)))
-      (implies (force (vl-warninglist-p warnings))
-               (vl-warninglist-p (mv-nth 1 ret)))))
-
+    (mv t (ok) eocc))
+  ///
   (local (defthm l0
            (implies (vl-emodwirelist-p x)
                     (equal (atom-listp x)
@@ -1112,41 +931,33 @@ modinsts-to-eoccs).</p>"
 
 
 
-
-
-(defsection vl-modinstlist-to-eoccs
+(define vl-modinstlist-to-eoccs
   :parents (modinsts-to-eoccs)
   :short "Build the preliminary E-language occurrences for a list of module
 instances."
 
+  ((x        vl-modinstlist-p)
+   (walist   vl-wirealist-p)
+   (mods     vl-modulelist-p)
+   (modalist (equal modalist (vl-modalist mods)))
+   (eal      vl-ealist-p)
+   (warnings vl-warninglist-p))
+  :returns (mv (successp booleanp :rule-classes :type-prescription)
+               (warnings vl-warninglist-p)
+               (eoccs))
   :long "<p>We just extend @(see vl-modinst-to-eocc) across a list.</p>"
-
-  (defund vl-modinstlist-to-eoccs (x walist mods modalist eal warnings)
-    "Returns (MV SUCCESSP WARNINGS EOCCS)"
-    (declare (xargs :guard (and (vl-modinstlist-p x)
-                                (vl-wirealist-p walist)
-                                (vl-modulelist-p mods)
-                                (equal modalist (vl-modalist mods))
-                                (vl-ealist-p eal)
-                                (vl-warninglist-p warnings))))
-    (b* (((when (atom x))
-          (mv t warnings nil))
-         ((mv car-successp warnings car-eocc)
-          (vl-modinst-to-eocc (car x) walist mods modalist eal warnings))
-         ((mv cdr-successp warnings cdr-eoccs)
-          (vl-modinstlist-to-eoccs (cdr x) walist mods modalist eal warnings)))
-      (mv (and car-successp cdr-successp)
-          warnings
-          (cons car-eocc cdr-eoccs))))
-
-  (defmvtypes vl-modinstlist-to-eoccs (booleanp nil true-listp))
-
-  (local (in-theory (enable vl-modinstlist-to-eoccs)))
-
-  (defthm vl-warninglist-p-of-vl-modinstlist-to-eoccs
-    (let ((ret (vl-modinstlist-to-eoccs x walist mods modalist all-walists warnings)))
-      (implies (force (vl-warninglist-p warnings))
-               (vl-warninglist-p (mv-nth 1 ret)))))
+  (b* (((when (atom x))
+        (mv t (ok) nil))
+       ((mv car-successp warnings car-eocc)
+        (vl-modinst-to-eocc (car x) walist mods modalist eal warnings))
+       ((mv cdr-successp warnings cdr-eoccs)
+        (vl-modinstlist-to-eoccs (cdr x) walist mods modalist eal warnings)))
+    (mv (and car-successp cdr-successp)
+        warnings
+        (cons car-eocc cdr-eoccs)))
+  ///
+  (more-returns
+   (eoccs true-listp :rule-classes :type-prescription))
 
   (defthm good-esim-occsp-of-vl-modinstlist-to-eoccs
     (let ((ret (vl-modinstlist-to-eoccs x walist mods modalist eal warnings)))
@@ -1158,8 +969,4 @@ instances."
                     (force (vl-ealist-p eal)))
                (good-esim-occsp (mv-nth 2 ret))))
     :hints(("Goal" :in-theory (enable good-esim-occsp)))))
-
-
-
-
 

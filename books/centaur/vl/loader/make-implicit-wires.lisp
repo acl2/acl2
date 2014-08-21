@@ -33,6 +33,7 @@
 (include-book "../mlib/context")
 (include-book "../mlib/modnamespace")
 (include-book "../mlib/stmt-tools")
+(include-book "../mlib/expr-building")
 (local (include-book "../util/arithmetic"))
 (local (include-book "../util/osets"))
 (local (std::add-default-post-define-hook :fix))
@@ -317,23 +318,23 @@ declared, and mark them with the @('VL_IMPLICIT') attribute, which is useful in
   :short "Generate net declarations for one-bit implicit wires."
   ((loc   vl-location-p)
    (names string-listp))
-  :returns (nets vl-netdecllist-p)
+  :returns (nets vl-vardecllist-p)
   :long "<p>We are given @('x'), a string list that should initially contain
 the names of some implicit wires that we are supposed to introduce, and
 @('loc'), a @(see vl-location-p) that should be the @('minloc') for the module.
-We produce a list of one-bit @(see vl-netdecl-p)s, one for each name in
+We produce a list of one-bit @(see vl-vardecl-p)s, one for each name in
 @('x').</p>"
 
   (if (consp names)
-      (cons (make-vl-netdecl :name (car names)
-                             :type :vl-wire
+      (cons (make-vl-vardecl :name (car names)
+                             :type *vl-plain-old-wire-type*
                              :loc loc
                              :atts (list (cons "VL_IMPLICIT" nil)))
             (vl-make-ordinary-implicit-wires loc (cdr names)))
     nil)
   ///
-  (defthm vl-netdecllist->names-of-vl-make-ordinary-implicit-wires
-    (equal (vl-netdecllist->names (vl-make-ordinary-implicit-wires loc names))
+  (defthm vl-vardecllist->names-of-vl-make-ordinary-implicit-wires
+    (equal (vl-vardecllist->names (vl-make-ordinary-implicit-wires loc names))
            (string-list-fix names))))
 
 
@@ -752,14 +753,6 @@ later on.  We handle that in @(see vl-make-implicit-wires).</p>"
              (acc (cons elem acc)))
           (vl-make-implicit-wires-aux (cdr x) portdecls decls acc warnings)))
 
-       ((when (eq tag :vl-netdecl))
-        ;; Same as block items, really.
-        (b* ((names     (vl-exprlist-names (vl-netdecl-allexprs elem)))
-             (warnings  (vl-warn-about-undeclared-wires elem names portdecls decls warnings))
-             (decls     (hons-acons (vl-netdecl->name elem) nil decls))
-             (acc       (cons elem acc)))
-          (vl-make-implicit-wires-aux (cdr x) portdecls decls acc warnings)))
-
        ;; Module and gate instances are relatively simple.  First, make sure
        ;; all the identifiers in their non-port expressions (like ranges and
        ;; parameter arguments) are declared.  Then, gather all identifiers
@@ -874,8 +867,8 @@ later on.  We handle that in @(see vl-make-implicit-wires).</p>"
 
 (define vl-make-port-implicit-wires
   :parents (make-implicit-wires)
-  :short "@(call vl-make-port-implicit-wires) generates net declarations for
-ports that don't have corresponding net declarations."
+  :short "@(call vl-make-port-implicit-wires) generates variable declarations
+for ports that don't have corresponding variable declarations."
 
   ((portdecls "Alist binding names to port declarations."
               (vl-portdecllist-p (alist-vals portdecls)))
@@ -885,8 +878,8 @@ ports that don't have corresponding net declarations."
   :verbosep t
 
   :returns
-  (implicit vl-netdecllist-p
-            "A list of new net declarations, one for each port declaration
+  (implicit vl-vardecllist-p
+            "A list of new variable declarations, one for each port declaration
              without a corresponding ordinary declaration.")
 
   :long "<p>BOZO what about scalaredp, vectoredp, cstrength, delay?  I think we
@@ -904,11 +897,9 @@ don't care, but it might be good to look into this again.</p>"
         ;; Already declared, nothing to add.
         (vl-make-port-implicit-wires (cdr portdecls) decls))
 
-       (new-decl (make-vl-netdecl :name    portdecl.name
-                                  :type    :vl-wire
-                                  :range   portdecl.range
+       (new-decl (make-vl-vardecl :name    portdecl.name
+                                  :type    portdecl.type
                                   :atts    (cons (cons "VL_PORT_IMPLICIT" nil) portdecl.atts)
-                                  :signedp portdecl.signedp
                                   :loc     portdecl.loc)))
     (cons new-decl
           (vl-make-port-implicit-wires (cdr portdecls) decls))))

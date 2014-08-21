@@ -100,12 +100,6 @@ events.</p>")
   :returns (names string-listp)
   (vl-portdecl->name x))
 
-(defprojection vl-netdecllist->names ((x vl-netdecllist-p))
-  :parents (vl-netdecllist-p modnamespace)
-  :short "Collect all names declared in a @(see vl-netdecllist-p)."
-  :returns (names string-listp)
-  (vl-netdecl->name x))
-
 (defprojection vl-vardecllist->names ((x vl-vardecllist-p))
   :parents (vl-vardecllist-p modnamespace)
   :short "Collect all names declared in a @(see vl-vardecllist-p)."
@@ -260,7 +254,6 @@ instances.</p>"
 to perform a cons for every object in the module.  But we can at least do
 everything tail recursively, etc.</p>"
   (b* (((vl-module x) x)
-       (nrev (vl-netdecllist->names-nrev     x.netdecls   nrev))
        (nrev (vl-vardecllist->names-nrev     x.vardecls   nrev))
        (nrev (vl-paramdecllist->names-nrev   x.paramdecls nrev))
        (nrev (vl-fundecllist->names-nrev     x.fundecls   nrev))
@@ -287,8 +280,7 @@ module illegally declares those duplicated names more than once.</p>
   :verify-guards nil
   (mbe :logic
        (b* (((vl-module x) x))
-         (append (vl-netdecllist->names     x.netdecls)
-                 (vl-vardecllist->names     x.vardecls)
+         (append (vl-vardecllist->names     x.vardecls)
                  (vl-paramdecllist->names   x.paramdecls)
                  (vl-fundecllist->names     x.fundecls)
                  (vl-taskdecllist->names    x.taskdecls)

@@ -46,7 +46,6 @@
    ;; bozo add bind directives
 
    ;; package items
-   vl-netdecl
    vl-taskdecl
    vl-fundecl
    vl-paramdecl
@@ -73,7 +72,6 @@ process, we convert all of the descriptions into a @(see vl-design-p).</p>")
                (equal (tag x) :vl-package)
                (equal (tag x) :vl-program)
                (equal (tag x) :vl-config)
-               (equal (tag x) :vl-netdecl)
                (equal (tag x) :vl-taskdecl)
                (equal (tag x) :vl-fundecl)
                (equal (tag x) :vl-paramdecl)
@@ -103,7 +101,6 @@ process, we convert all of the descriptions into a @(see vl-design-p).</p>")
        (implies (vl-packagelist-p x) (vl-descriptionlist-p x))
        (implies (vl-programlist-p x) (vl-descriptionlist-p x))
        (implies (vl-configlist-p x) (vl-descriptionlist-p x))
-       (implies (vl-netdecllist-p x) (vl-descriptionlist-p x))
        (implies (vl-taskdecllist-p x) (vl-descriptionlist-p x))
        (implies (vl-fundecllist-p x) (vl-descriptionlist-p x))
        (implies (vl-paramdecllist-p x) (vl-descriptionlist-p x))
@@ -126,7 +123,6 @@ doesn't introduce a name (e.g., an @('import') statement."
       (:vl-package    (vl-package->name x))
       (:vl-program    (vl-program->name x))
       (:vl-config     (vl-config->name x))
-      (:vl-netdecl    (vl-netdecl->name x))
       (:vl-taskdecl   (vl-taskdecl->name x))
       (:vl-fundecl    (vl-fundecl->name x))
       (:vl-paramdecl  (vl-paramdecl->name x))
@@ -310,7 +306,6 @@ descriptions.  See @(see vl-fast-find-description) for a faster alternative.</p>
                               (programs    vl-programlist-p)
                               (packages    vl-packagelist-p)
                               (configs     vl-configlist-p)
-                              (netdecls    vl-netdecllist-p)
                               (taskdecls   vl-taskdecllist-p)
                               (fundecls    vl-fundecllist-p)
                               (paramdecls  vl-paramdecllist-p)
@@ -323,7 +318,6 @@ descriptions.  See @(see vl-fast-find-description) for a faster alternative.</p>
                (programs    vl-programlist-p)
                (packages    vl-packagelist-p)
                (configs     vl-configlist-p)
-               (netdecls    vl-netdecllist-p)
                (taskdecls   vl-taskdecllist-p)
                (fundecls    vl-fundecllist-p)
                (paramdecls  vl-paramdecllist-p)
@@ -337,7 +331,6 @@ descriptions.  See @(see vl-fast-find-description) for a faster alternative.</p>
             (vl-programlist-fix programs)
             (vl-packagelist-fix packages)
             (vl-configlist-fix configs)
-            (vl-netdecllist-fix netdecls)
             (vl-taskdecllist-fix taskdecls)
             (vl-fundecllist-fix fundecls)
             (vl-paramdecllist-fix paramdecls)
@@ -354,7 +347,6 @@ descriptions.  See @(see vl-fast-find-description) for a faster alternative.</p>
      :programs    (if (eq tag :vl-program)    (cons x1 programs)    programs)
      :packages    (if (eq tag :vl-package)    (cons x1 packages)    packages)
      :configs     (if (eq tag :vl-config)     (cons x1 configs)     configs)
-     :netdecls    (if (eq tag :vl-netdecl)    (cons x1 netdecls)    netdecls)
      :taskdecls   (if (eq tag :vl-taskdecl)   (cons x1 taskdecls)   taskdecls)
      :fundecls    (if (eq tag :vl-fundecl)    (cons x1 fundecls)    fundecls)
      :paramdecls  (if (eq tag :vl-paramdecl)  (cons x1 paramdecls)  paramdecls)
@@ -370,7 +362,6 @@ descriptions.  See @(see vl-fast-find-description) for a faster alternative.</p>
             programs
             packages
             configs
-            netdecls
             taskdecls
             fundecls
             paramdecls
@@ -384,7 +375,6 @@ descriptions.  See @(see vl-fast-find-description) for a faster alternative.</p>
                     :programs    programs
                     :packages    packages
                     :configs     configs
-                    :netdecls    netdecls
                     :taskdecls   taskdecls
                     :fundecls    fundecls
                     :paramdecls  paramdecls

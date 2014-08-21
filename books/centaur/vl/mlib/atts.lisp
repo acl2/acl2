@@ -44,17 +44,6 @@
         (t
          (vl-gather-portdecls-with-attribute (cdr x) att))))
 
-(define vl-gather-netdecls-with-attribute ((x vl-netdecllist-p)
-                                           (att stringp))
-  :returns (sub-x vl-netdecllist-p)
-  (cond ((atom x)
-         nil)
-        ((assoc-equal (string-fix att) (vl-netdecl->atts (car x)))
-         (cons (vl-netdecl-fix (car x))
-               (vl-gather-netdecls-with-attribute (cdr x) att)))
-        (t
-         (vl-gather-netdecls-with-attribute (cdr x) att))))
-
 (define vl-gather-vardecls-with-attribute ((x vl-vardecllist-p)
                                            (att stringp))
   :returns (sub-x vl-vardecllist-p)

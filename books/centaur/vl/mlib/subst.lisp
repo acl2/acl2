@@ -225,6 +225,8 @@ attributes is left up to the implementation.</p>"
     :measure (vl-datatype-count x)
     :returns (new-x vl-datatype-p)
     (vl-datatype-case x
+      (:vl-nettype
+       (change-vl-nettype x :range (vl-maybe-range-subst x.range sigma)))
       (:vl-coretype
        (change-vl-coretype x :dims (vl-packeddimensionlist-subst x.dims sigma)))
       (:vl-struct
@@ -285,8 +287,9 @@ attributes is left up to the implementation.</p>"
 
 (def-vl-subst vl-portdecl-subst
   :type vl-portdecl-p
-  :body (change-vl-portdecl x
-                            :range (vl-maybe-range-subst (vl-portdecl->range x) sigma)))
+  :body (b* (((vl-portdecl x) x))
+          (change-vl-portdecl x
+                              :type (vl-datatype-subst x.type sigma))))
 
 (def-vl-subst-list vl-portdecllist-subst
   :type vl-portdecllist-p
@@ -304,26 +307,14 @@ attributes is left up to the implementation.</p>"
   :type vl-assignlist-p
   :element vl-assign-subst)
 
-
-
-(def-vl-subst vl-netdecl-subst
-  :type vl-netdecl-p
-  :body (change-vl-netdecl x
-                           :range (vl-maybe-range-subst (vl-netdecl->range x) sigma)
-                           :arrdims (vl-rangelist-subst (vl-netdecl->arrdims x) sigma)
-                           :delay (vl-maybe-gatedelay-subst (vl-netdecl->delay x) sigma)))
-
-(def-vl-subst-list vl-netdecllist-subst
-  :type vl-netdecllist-p
-  :element vl-netdecl-subst)
-
 (def-vl-subst vl-vardecl-subst
   :type vl-vardecl-p
   :body (b* (((vl-vardecl x) x))
           (change-vl-vardecl x
-                             :vartype (vl-datatype-subst x.vartype sigma)
+                             :type    (vl-datatype-subst x.type sigma)
                              :dims    (vl-packeddimensionlist-subst x.dims sigma)
-                             :initval (vl-maybe-expr-subst x.initval sigma))))
+                             :initval (vl-maybe-expr-subst x.initval sigma)
+                             :delay   (vl-maybe-gatedelay-subst x.delay sigma))))
 
 (def-vl-subst-list vl-vardecllist-subst
   :type vl-vardecllist-p
@@ -612,7 +603,6 @@ attributes is left up to the implementation.</p>"
                             :ports      (vl-portlist-subst      x.ports      sigma)
                             :portdecls  (vl-portdecllist-subst  x.portdecls  sigma)
                             :assigns    (vl-assignlist-subst    x.assigns    sigma)
-                            :netdecls   (vl-netdecllist-subst   x.netdecls   sigma)
                             :vardecls   (vl-vardecllist-subst   x.vardecls   sigma)
                             :fundecls   (vl-fundecllist-subst   x.fundecls   sigma)
                             :paramdecls (vl-paramdecllist-subst x.paramdecls sigma)

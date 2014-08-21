@@ -126,8 +126,7 @@ warnings.  We also use it to suppress warnings in certain cases.</p>"
          (args (vl-nonatom->args x))
 
          ((when (and (eq op :vl-binary-minus)
-                     (member (tag (vl-context->elem ctx))
-                             '(:vl-netdecl :vl-vardecl))
+                     (member (tag (vl-context->elem ctx)) '(:vl-vardecl))
                      (equal (vl-expr-strip (first args))
                             (vl-expr-strip (second args)))
                      (vl-expr-resolved-p (first args))))

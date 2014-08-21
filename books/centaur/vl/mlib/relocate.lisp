@@ -59,12 +59,6 @@ These are just some utilities to perform such relocations.</p>")
   :returns (new-x vl-gateinstlist-p)
   (change-vl-gateinst x :loc loc))
 
-(defprojection vl-relocate-netdecls ((loc vl-location-p)
-                                     (x   vl-netdecllist-p))
-  :parents (relocate vl-netdecllist-p)
-  :returns (new-x vl-netdecllist-p)
-  (change-vl-netdecl x :loc loc))
-
 (defprojection vl-relocate-vardecls ((loc vl-location-p)
                                      (x   vl-vardecllist-p))
   :parents (relocate vl-vardecllist-p)

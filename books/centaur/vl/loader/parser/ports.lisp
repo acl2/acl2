@@ -219,10 +219,8 @@
 ;
 ; output_declaration ::=
 ;    'output' [net_type] ['signed'] [range] list_of_port_identifiers
-; ------NOT SUPPORTED------
 ;  | 'output' 'reg' ['signed'] [range] list_of_variable_port_identifiers
 ;  | 'output' output_variable_type list_of_variable_port_identifiers
-; ------/NOT SUPPORTED------
 ;
 ; net_type ::= 'supply0' | 'supply1' | 'tri' | 'triand' | 'trior' | 'tri0' | 'tri1'
 ;            | 'uwire' | 'wire' | 'wand' | 'wor'
@@ -261,69 +259,44 @@
         (return (cons first rest))))
 
 
+(define vl-build-portdecls (&key (ids vl-idtoken-list-p)
+                                 (dir vl-direction-p)
+                                 (type vl-datatype-p)
+                                 (atts vl-atts-p))
+  :returns (portdecls vl-portdecllist-p)
+  (if (atom ids)
+      nil
+    (cons (make-vl-portdecl :name (vl-idtoken->name (car ids))
+                            :loc  (vl-token->loc (car ids))
+                            :dir  dir
+                            :type type
+                            :atts atts)
+          (vl-build-portdecls :ids  (cdr ids)
+                              :dir  dir
+                              :type type
+                              :atts atts))))
 
-(defund vl-build-portdecls (loc ids dir signedp range atts)
-  (declare (xargs :guard (and (vl-location-p loc)
-                              (vl-idtoken-list-p ids)
-                              (vl-direction-p dir)
-                              (booleanp signedp)
-                              (vl-maybe-range-p range)
-                              (vl-atts-p atts))))
-  (if (consp ids)
-      (cons (make-vl-portdecl :loc loc
-                              :name (vl-idtoken->name (car ids))
-                              :dir dir
-                              :signedp signedp
-                              :range range
-                              :atts atts)
-            (vl-build-portdecls loc (cdr ids) dir signedp range atts))
-    nil))
-
-(defthm vl-portdecllist-p-of-vl-build-portdecls
-  (implies (and (force (vl-location-p loc))
-                (force (vl-idtoken-list-p ids))
-                (force (vl-direction-p dir))
-                (force (booleanp signedp))
-                (force (vl-maybe-range-p range))
-                (force (vl-atts-p atts)))
-           (vl-portdecllist-p
-            (vl-build-portdecls loc ids dir signedp range atts)))
-  :hints(("Goal" :in-theory (enable vl-build-portdecls))))
-
-
-(defun vl-build-netdecls-for-ports (loc ids type signedp range atts)
-  (declare (xargs :guard (and (vl-location-p loc)
-                              (vl-idtoken-list-p ids)
-                              (vl-netdecltype-p type)
-                              (booleanp signedp)
-                              (vl-maybe-range-p range)
-                              (vl-atts-p atts))))
-  (if (consp ids)
-      (cons (make-vl-netdecl :loc loc
-                             :name (vl-idtoken->name (car ids))
-                             :type type
-                             :range range
-                             :signedp signedp
-                             :atts atts
-                             ;; BOZO are these right?
-                             :vectoredp nil
-                             :scalaredp nil
-                             :arrdims nil
-                             :delay nil
-                             :cstrength nil)
-            (vl-build-netdecls-for-ports loc (cdr ids) type signedp range atts))
-    nil))
-
-(defthm vl-netdecllist-p-of-vl-build-netdecls-for-ports
-  (implies (and (force (vl-location-p loc))
-                (force (vl-idtoken-list-p ids))
-                (force (vl-netdecltype-p type))
-                (force (booleanp signedp))
-                (force (vl-maybe-range-p range))
-                (force (vl-atts-p atts)))
-           (vl-netdecllist-p
-            (vl-build-netdecls-for-ports loc ids type signedp range atts)))
-  :hints(("Goal" :in-theory (enable vl-build-netdecls-for-ports))))
+(define vl-build-netdecls-for-ports (&key (ids vl-idtoken-list-p)
+                                          (type vl-datatype-p)
+                                          (atts vl-atts-p))
+  :returns (netdecls vl-vardecllist-p)
+  (if (atom ids)
+      nil
+    (cons (make-vl-vardecl :name (vl-idtoken->name (car ids))
+                           :loc  (vl-token->loc (car ids))
+                           :type type
+                           :atts atts
+                           ;; BOZO are these right?  I think so?  I think
+                           ;; there isn't a way to declare these in a port,
+                           ;; at least in Verilog-2005?
+                           :vectoredp nil
+                           :scalaredp nil
+                           :dims nil
+                           :delay nil
+                           :cstrength nil)
+          (vl-build-netdecls-for-ports :ids (cdr ids)
+                                       :type type
+                                       :atts atts))))
 
 
 (defconst *vl-directions-kwd-alist*
@@ -331,81 +304,213 @@
     (:vl-kwd-output . :vl-output)
     (:vl-kwd-inout . :vl-inout)))
 
-
 (defconst *vl-directions-kwds*
   (strip-cars *vl-directions-kwd-alist*))
 
 
-; BOZO think about maybe just having this function return a module item list
-; directly.  We end up not distinguishing in parse-modules anyway.
 
-(with-output
- :off prove :gag-mode :goals
+(defparser vl-parse-basic-port-declaration-tail (dir atts)
+  ;; Matches [net_type] ['signed'] [range] list_of_port_identifiers
+  :guard (and (vl-direction-p dir)
+              (vl-atts-p atts))
+  ;; Returns (portdecls . vardecls)
+  :result (consp val)
+  :resultp-of-nil nil
+  :true-listp nil
+  :fails gracefully
+  :count strong
+  (seqw tokens warnings
+        (nettype := (vl-parse-optional-nettype))
+        (when (vl-is-token? :vl-kwd-signed)
+          (signed := (vl-match)))
+        (when (vl-is-token? :vl-lbrack)
+          (range := (vl-parse-range)))
+        (ids := (vl-parse-1+-identifiers-separated-by-commas))
+        (return
+         ;; What happens next is very subtle.  See also portdecl-sign and
+         ;; make-implicit-wires.
+         ;;
+         ;; From Verilog-2005, page 174:
+         ;;
+         ;;  - "If a port declaration includes a net or variable type, then the
+         ;;     port is considered completely declared and it is an error for
+         ;;     the port to be declared again in a variable or net data type
+         ;;     declaration..."
+         ;;
+         ;;  - "If the port declaration does NOT include a net or variable
+         ;;     type, then the port can be declared again in a net or variable
+         ;;     declaration.  If the net or variable is declared as a vector,
+         ;;     the range specification between the two declarations shall be
+         ;;     identical."
+         ;;
+         ;; So if we have a net type, then this is completely declared and we
+         ;; are going to generate both (1) a port declaration and (2) the
+         ;; corresponding net declaration.
+         ;;
+         ;; If we have no net type, then we'll instead only add the port
+         ;; declaration, which we will mark with the attribute
+         ;; VL_INCOMPLETE_DECLARATION.  The corresponding net will either be
+         ;; found later in the module, or will be added automatically with the
+         ;; make-implicit-wires transform.  Signedness is handled last, by
+         ;; portdecl-sign.
+         (b* ((atts (if nettype
+                        atts
+                      (acons "VL_INCOMPLETE_DECLARATION" nil atts)))
+              ;; See portdecl-sign.  The datatype here is not necessarily
+              ;; correct, e.g., because the corresponding variable declaration
+              ;; might have some other type (e.g., WOR or REG).  However, due
+              ;; to the VL_INCOMPLETE_DECLARATION attribute, we'll correct for
+              ;; this before creating the module.
+              (datatype (make-vl-nettype :name (or nettype :vl-wire)
+                                         :signedp (if signed t nil)
+                                         :range range))
+              (portdecls
+               (vl-build-portdecls :dir dir
+                                   :ids ids
+                                   :type datatype
+                                   :atts atts))
+              (netdecls (if nettype
+                            (vl-build-netdecls-for-ports :ids ids
+                                                         :type datatype
+                                                         :atts
+                                                         ;; Make sure the variables are marked as implicit
+                                                         ;; to avoid pretty-printing them.
+                                                         (acons "VL_PORT_IMPLICIT" nil atts))
+                          ;; No netdecls since we're incomplete
+                          nil)))
+           (cons portdecls netdecls))))
+  ///
+  (defthm true-listp-of-vl-parse-basic-port-declaration-tail-1
+    (true-listp (car (mv-nth 1 (vl-parse-basic-port-declaration-tail dir atts))))
+    :rule-classes :type-prescription)
 
- (defparser vl-parse-port-declaration-noatts (atts)
+  (defthm true-listp-of-vl-parse-basic-port-declaration-tail-2
+    (true-listp (cdr (mv-nth 1 (vl-parse-basic-port-declaration-tail dir atts))))
+    :rule-classes :type-prescription)
 
-; We may need to change what this returns if we add support for the "output"
-; types, because those can have assignments.
+  (defthm vl-parse-basic-port-declaration-tail-basics
+    (and (vl-portdecllist-p (car (mv-nth 1 (vl-parse-basic-port-declaration-tail dir atts))))
+         (vl-vardecllist-p (cdr (mv-nth 1 (vl-parse-basic-port-declaration-tail dir atts)))))))
 
-   :guard (vl-atts-p atts)
+(defparser vl-parse-output-reg-port-tail (atts)
+  ;; We've just matched 'output reg'.
+  ;; Now match ['signed'] [range] list_of_variable_port_identifiers
+  :guard (vl-atts-p atts)
+  ;; Returns (portdecls . vardecls)
+  :result (consp val)
+  :resultp-of-nil nil
+  :true-listp nil
+  :fails gracefully
+  :count strong
+  (seqw tokens warnings
+        (when (vl-is-token? :vl-kwd-signed)
+          (signed := (vl-match)))
+        (when (vl-is-token? :vl-lbrack)
+          (range := (vl-parse-range)))
+        (ids := (vl-parse-1+-identifiers-separated-by-commas))
+        (return
+         ;; We have a reg type, so this is completely declared.
+         (b* ((datatype (make-vl-coretype :name :vl-reg
+                                          :signedp (if signed t nil)
+                                          :dims (and range
+                                                     (list range))))
+              (portdecls (vl-build-portdecls :dir :vl-output
+                                             :ids ids
+                                             :type datatype
+                                             :atts atts))
+              (netdecls (vl-build-netdecls-for-ports :ids ids
+                                                     :type datatype
+                                                     :atts (acons "VL_PORT_IMPLICIT" nil atts))))
+           (cons portdecls netdecls))))
+  ///
+  (defthm true-listp-of-vl-parse-output-reg-port-tail-1
+    (true-listp (car (mv-nth 1 (vl-parse-output-reg-port-tail atts))))
+    :rule-classes :type-prescription)
+
+  (defthm true-listp-of-vl-parse-output-reg-port-tail-2
+    (true-listp (cdr (mv-nth 1 (vl-parse-output-reg-port-tail atts))))
+    :rule-classes :type-prescription)
+
+  (defthm vl-parse-output-reg-port-tail-basics
+    (and (vl-portdecllist-p (car (mv-nth 1 (vl-parse-output-reg-port-tail atts))))
+         (vl-vardecllist-p (cdr (mv-nth 1 (vl-parse-output-reg-port-tail atts)))))))
+
+
+(defparser vl-parse-port-declaration-noatts (atts)
+  ;; Matches inout_declaration | input_declaration | output_declaration
+  :guard (vl-atts-p atts)
    ;; Returns (portdecls . netdecls)
    :result (consp val)
    :resultp-of-nil nil
    :true-listp nil
    :fails gracefully
    :count strong
-
    (seqw tokens warnings
-         (dir := (vl-match-some-token *vl-directions-kwds*))
-         (when (and (eq (vl-token->type dir) :vl-kwd-output)
-                    (vl-is-some-token? '(:vl-kwd-reg :vl-kwd-time :vl-kwd-integer)))
-           (return-raw (vl-parse-error "Output reg, output integer, and output time ~
-                                        are not supported.")))
-         (type := (vl-parse-optional-nettype))
-         (when (vl-is-token? :vl-kwd-signed)
-           (signed := (vl-match)))
-         (when (vl-is-token? :vl-lbrack)
-           (range := (vl-parse-range)))
-         (ids := (vl-parse-1+-identifiers-separated-by-commas))
-         (return
-          (let ((portdecls
-                 (vl-build-portdecls (vl-token->loc dir)
-                                     ids
-                                     (cdr (assoc-eq (vl-token->type dir)
-                                                    *vl-directions-kwd-alist*))
-                                     (if signed t nil)
-                                     range atts))
-                (netdecls
-                 (and type
-                      (vl-build-netdecls-for-ports (vl-token->loc dir)
-                                                   ids
-                                                   type
-                                                   (if signed t nil)
-                                                   range atts))))
-            (cons portdecls netdecls))))))
 
-(defthm true-listp-of-vl-parse-port-declaration-noatts-1
-  (true-listp (car (mv-nth 1 (vl-parse-port-declaration-noatts atts))))
-  :rule-classes :type-prescription
-  :hints(("Goal" :in-theory (enable vl-parse-port-declaration-noatts))))
+         (when (vl-is-token? :vl-kwd-input)
+           (:= (vl-match))
+           (ans := (vl-parse-basic-port-declaration-tail :vl-input atts))
+           ;; input_declaration ::= 'input' [net_type] ['signed'] [range] list_of_port_identifiers
+           (return ans))
 
-(defthm true-listp-of-vl-parse-port-declaration-noatts-2
-  (true-listp (cdr (mv-nth 1 (vl-parse-port-declaration-noatts atts))))
-  :rule-classes :type-prescription
-  :hints(("Goal" :in-theory (enable vl-parse-port-declaration-noatts))))
+         (when (vl-is-token? :vl-kwd-inout)
+           (:= (vl-match))
+           ;; inout_declaration ::= 'inout' [net_type] ['signed'] [range] list_of_port_identifiers
+           (ans := (vl-parse-basic-port-declaration-tail :vl-inout atts))
+           (return ans))
 
-(defthm vl-parse-port-declaration-noatts-basics
-  (implies (force (vl-atts-p atts))
-           (and (vl-portdecllist-p (car (mv-nth 1 (vl-parse-port-declaration-noatts atts))))
-                (vl-netdecllist-p (cdr (mv-nth 1 (vl-parse-port-declaration-noatts atts))))))
-  :hints(("Goal" :in-theory (enable vl-parse-port-declaration-noatts))))
+         ;; Outputs are more complex:
+         ;;
+         ;; output_declaration ::=
+         ;;    'output' [net_type] ['signed'] [range] list_of_port_identifiers
+         ;;  | 'output' 'reg' ['signed'] [range] list_of_variable_port_identifiers
+         ;;  | 'output' output_variable_type list_of_variable_port_identifiers
+         (:= (vl-match-token :vl-kwd-output))
+
+         (when (vl-is-token? :vl-kwd-reg)
+           (ans := (vl-parse-output-reg-port-tail atts))
+           (return ans))
+
+         ;; output_variable_type ::= 'integer' | 'time'
+         ;; 'output' output_variable_type list_of_variable_port_identifiers
+         (when (vl-is-some-token? '(:vl-kwd-integer :vl-kwd-time))
+           (type := (vl-match))
+           (ids := (vl-parse-1+-identifiers-separated-by-commas))
+           (return
+            (b* ((datatype (if (eq (vl-token->type type) :vl-kwd-integer)
+                               *vl-plain-old-integer-type*
+                             *vl-plain-old-time-type*))
+                 (portdecls (vl-build-portdecls :dir :vl-output
+                                                :ids ids
+                                                :type datatype
+                                                :atts atts))
+                 (netdecls (vl-build-netdecls-for-ports :ids ids
+                                                        :type datatype
+                                                        :atts (acons "VL_PORT_IMPLICIT" nil atts))))
+              (cons portdecls netdecls))))
+
+         ;; 'output' [net_type] ['signed'] [range] list_of_port_identifiers
+         (ans := (vl-parse-basic-port-declaration-tail :vl-output atts))
+         (return ans))
+   ///
+   (defthm true-listp-of-vl-parse-port-declaration-noatts-1
+     (true-listp (car (mv-nth 1 (vl-parse-port-declaration-noatts atts))))
+     :rule-classes :type-prescription)
+
+   (defthm true-listp-of-vl-parse-port-declaration-noatts-2
+     (true-listp (cdr (mv-nth 1 (vl-parse-port-declaration-noatts atts))))
+     :rule-classes :type-prescription)
+
+   (defthm vl-parse-port-declaration-noatts-basics
+     (and (vl-portdecllist-p (car (mv-nth 1 (vl-parse-port-declaration-noatts atts))))
+          (vl-vardecllist-p (cdr (mv-nth 1 (vl-parse-port-declaration-noatts atts)))))))
 
 
 
 (defparser vl-parse-port-declaration-atts ()
   ;; BOZO this appears to be unused??  Ah, it's in support of the alternate form of module definition
   ;; that is currently unsupported.
-  ;; Returns (portdecls . netdecls)
+  ;; Returns (portdecls . vardecls)
   :result (consp val)
   :resultp-of-nil nil
   :true-listp nil
@@ -414,29 +519,24 @@
   (seqw tokens warnings
         (atts := (vl-parse-0+-attribute-instances))
         (result := (vl-parse-port-declaration-noatts atts))
-        (return result)))
-
-(defthm true-listp-of-vl-parse-port-declaration-atts-1
-  (true-listp (car (mv-nth 1 (vl-parse-port-declaration-atts))))
-  :rule-classes :type-prescription
-  :hints(("Goal" :in-theory (enable vl-parse-port-declaration-atts))))
-
-(defthm true-listp-of-vl-parse-port-declaration-atts-2
-  (true-listp (cdr (mv-nth 1 (vl-parse-port-declaration-atts))))
-  :rule-classes :type-prescription
-  :hints(("Goal" :in-theory (enable vl-parse-port-declaration-atts))))
-
-(defthm vl-parse-port-declaration-atts-basics
-  (and (vl-portdecllist-p (car (mv-nth 1 (vl-parse-port-declaration-atts))))
-       (vl-netdecllist-p (cdr (mv-nth 1 (vl-parse-port-declaration-atts)))))
-  :hints(("Goal" :in-theory (enable vl-parse-port-declaration-atts))))
+        (return result))
+  ///
+  (defthm true-listp-of-vl-parse-port-declaration-atts-1
+    (true-listp (car (mv-nth 1 (vl-parse-port-declaration-atts))))
+    :rule-classes :type-prescription)
+  (defthm true-listp-of-vl-parse-port-declaration-atts-2
+    (true-listp (cdr (mv-nth 1 (vl-parse-port-declaration-atts))))
+    :rule-classes :type-prescription)
+  (defthm vl-parse-port-declaration-atts-basics
+    (and (vl-portdecllist-p (car (mv-nth 1 (vl-parse-port-declaration-atts))))
+         (vl-vardecllist-p (cdr (mv-nth 1 (vl-parse-port-declaration-atts)))))))
 
 
 
 (defparser vl-parse-1+-port-declarations-separated-by-commas ()
   ;; BOZO this appears to be unused??  Ah, it's in support of the alternate form of module definition
   ;; that is currently unsupported.
-  ;; Returns (portdecls . netdecls)
+  ;; Returns (portdecls . vardecls)
   :result (consp val)
   :resultp-of-nil nil
   :true-listp nil
@@ -444,36 +544,33 @@
   :verify-guards nil
   :count strong
   (seqw tokens warnings
-        ((portdecls1 . netdecls1) := (vl-parse-port-declaration-atts))
+        ((portdecls1 . vardecls1) := (vl-parse-port-declaration-atts))
         (when (vl-is-token? :vl-comma)
           (:= (vl-match))
-          ((portdecls2 . netdecls2) := (vl-parse-1+-port-declarations-separated-by-commas)))
+          ((portdecls2 . vardecls2) := (vl-parse-1+-port-declarations-separated-by-commas)))
         (return (cons (append portdecls1 portdecls2)
-                      (append netdecls1 netdecls2)))))
+                      (append vardecls1 vardecls2))))
+  ///
+  (defthm true-listp-of-vl-parse-1+-port-declarations-separated-by-commas-1
+    (true-listp (car (mv-nth 1 (vl-parse-1+-port-declarations-separated-by-commas))))
+    :rule-classes :type-prescription)
 
-(defthm true-listp-of-vl-parse-1+-port-declarations-separated-by-commas-1
-  (true-listp (car (mv-nth 1 (vl-parse-1+-port-declarations-separated-by-commas))))
-  :rule-classes :type-prescription
-  :hints(("Goal" :in-theory (enable vl-parse-1+-port-declarations-separated-by-commas))))
+  (defthm true-listp-of-vl-parse-1+-port-declarations-separated-by-commas-2
+    (true-listp (cdr (mv-nth 1 (vl-parse-1+-port-declarations-separated-by-commas))))
+    :rule-classes :type-prescription)
 
-(defthm true-listp-of-vl-parse-1+-port-declarations-separated-by-commas-2
-  (true-listp (cdr (mv-nth 1 (vl-parse-1+-port-declarations-separated-by-commas))))
-  :rule-classes :type-prescription
-  :hints(("Goal" :in-theory (enable vl-parse-1+-port-declarations-separated-by-commas))))
+  (defthm vl-parse-1+-port-declarations-separated-by-commas-basics
+    (and (vl-portdecllist-p (car (mv-nth 1 (vl-parse-1+-port-declarations-separated-by-commas))))
+         (vl-vardecllist-p (cdr (mv-nth 1 (vl-parse-1+-port-declarations-separated-by-commas))))))
 
-(defthm vl-parse-1+-port-declarations-separated-by-commas-basics
-  (and (vl-portdecllist-p (car (mv-nth 1 (vl-parse-1+-port-declarations-separated-by-commas))))
-       (vl-netdecllist-p (cdr (mv-nth 1 (vl-parse-1+-port-declarations-separated-by-commas)))))
-  :hints(("Goal" :in-theory (enable vl-parse-1+-port-declarations-separated-by-commas))))
-
-(verify-guards vl-parse-1+-port-declarations-separated-by-commas-fn)
+  (verify-guards vl-parse-1+-port-declarations-separated-by-commas-fn))
 
 
 
 (defparser vl-parse-list-of-port-declarations ()
   ;; BOZO this appears to be unused??  Ah, it's in support of the alternate form of module definition
   ;; that is currently unsupported.
-  ;; Returns (portdecls . netdecls)
+  ;; Returns (portdecls . vardecls)
   :result (consp val)
   :resultp-of-nil nil
   :true-listp nil
@@ -483,19 +580,16 @@
         (:= (vl-match-token :vl-lparen))
         (decls := (vl-parse-1+-port-declarations-separated-by-commas))
         (:= (vl-match-token :vl-rparen))
-        (return decls)))
+        (return decls))
+  ///
+  (defthm true-listp-of-vl-parse-list-of-port-declarations-1
+    (true-listp (car (mv-nth 1 (vl-parse-list-of-port-declarations))))
+    :rule-classes :type-prescription)
 
-(defthm true-listp-of-vl-parse-list-of-port-declarations-1
-  (true-listp (car (mv-nth 1 (vl-parse-list-of-port-declarations))))
-  :rule-classes :type-prescription
-  :hints(("Goal" :in-theory (enable vl-parse-list-of-port-declarations))))
+  (defthm true-listp-of-vl-parse-list-of-port-declarations-2
+    (true-listp (cdr (mv-nth 1 (vl-parse-list-of-port-declarations))))
+    :rule-classes :type-prescription)
 
-(defthm true-listp-of-vl-parse-list-of-port-declarations-2
-  (true-listp (cdr (mv-nth 1 (vl-parse-list-of-port-declarations))))
-  :rule-classes :type-prescription
-  :hints(("Goal" :in-theory (enable vl-parse-list-of-port-declarations))))
-
-(defthm vl-parse-list-of-port-declarations-basics
-  (and (vl-portdecllist-p (car (mv-nth 1 (vl-parse-list-of-port-declarations))))
-       (vl-netdecllist-p (cdr (mv-nth 1 (vl-parse-list-of-port-declarations)))))
-  :hints(("Goal" :in-theory (enable vl-parse-list-of-port-declarations))))
+  (defthm vl-parse-list-of-port-declarations-basics
+    (and (vl-portdecllist-p (car (mv-nth 1 (vl-parse-list-of-port-declarations))))
+         (vl-vardecllist-p (cdr (mv-nth 1 (vl-parse-list-of-port-declarations)))))))

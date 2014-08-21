@@ -184,7 +184,6 @@ the whole @(see vl-portdecl-p) object."
 
 
 (def-vl-find-moditem vardecl)
-(def-vl-find-moditem netdecl)
 (def-vl-find-moditem paramdecl)
 (def-vl-find-moditem fundecl)
 (def-vl-find-moditem taskdecl)
@@ -217,8 +216,7 @@ up multiple items.</p>"
   :hooks ((:fix :args ((x vl-module-p))))
 
   (b* (((vl-module x) x))
-    (or (vl-find-netdecl   name x.netdecls)
-        (vl-find-vardecl   name x.vardecls)
+    (or (vl-find-vardecl   name x.vardecls)
         (vl-find-paramdecl name x.paramdecls)
         (vl-find-fundecl   name x.fundecls)
         (vl-find-taskdecl  name x.taskdecls)
@@ -229,7 +227,6 @@ up multiple items.</p>"
 
   (defthm vl-find-moduleitem-type-when-nothing-else
     (implies (and (vl-find-moduleitem name x)
-                  (not (vl-netdecl-p   (vl-find-moduleitem name x)))
                   (not (vl-vardecl-p   (vl-find-moduleitem name x)))
                   (not (vl-paramdecl-p (vl-find-moduleitem name x)))
                   (not (vl-fundecl-p   (vl-find-moduleitem name x)))
@@ -241,10 +238,7 @@ up multiple items.</p>"
 
   (defthm type-of-vl-find-moduleitem
     ;; This is gross, but I'm not sure of a better approach.
-    (and (equal (equal (tag (vl-find-moduleitem name x)) :vl-netdecl)
-                (vl-netdecl-p (vl-find-moduleitem name x)))
-
-         (equal (equal (tag (vl-find-moduleitem name x)) :vl-vardecl)
+    (and (equal (equal (tag (vl-find-moduleitem name x)) :vl-vardecl)
                 (vl-vardecl-p (vl-find-moduleitem name x)))
 
          (equal (equal (tag (vl-find-moduleitem name x)) :vl-paramdecl)
@@ -289,8 +283,7 @@ up multiple items.</p>"
 (deftranssum vl-moditem
   :short "Module items are basically any named object that can occur within a
 module (except that we don't support, e.g., named blocks.)"
-  (vl-netdecl
-   vl-vardecl
+  (vl-vardecl
    vl-paramdecl
    vl-fundecl
    vl-taskdecl
@@ -387,7 +380,6 @@ module (except that we don't support, e.g., named blocks.)"
 
          (verify-guards ,fn)))))
 
-(vl-def-moditemlist-alist netdecl)
 (vl-def-moditemlist-alist vardecl)
 (vl-def-moditemlist-alist paramdecl)
 (vl-def-moditemlist-alist fundecl)
@@ -407,8 +399,7 @@ alist can be constructed in a one pass, using our fast builder functions.</p>"
 
   (b* (((vl-module x) x))
     (mbe :logic
-         (append (vl-netdecllist-alist x.netdecls)
-                 (vl-vardecllist-alist x.vardecls)
+         (append (vl-vardecllist-alist x.vardecls)
                  (vl-paramdecllist-alist x.paramdecls)
                  (vl-fundecllist-alist x.fundecls)
                  (vl-taskdecllist-alist x.taskdecls)
@@ -422,7 +413,7 @@ alist can be constructed in a one pass, using our fast builder functions.</p>"
               (acc (vl-fast-fundecllist-alist x.fundecls acc))
               (acc (vl-fast-paramdecllist-alist x.paramdecls acc))
               (acc (vl-fast-vardecllist-alist x.vardecls acc)))
-           (vl-fast-netdecllist-alist x.netdecls acc))))
+           acc)))
   ///
   (defthm vl-moditem-alist-p-of-vl-moditem-alist
     (vl-moditem-alist-p (vl-moditem-alist x)))

@@ -70,12 +70,8 @@
                        (vl-print "... at ")
                        (vl-print-loc (vl-assign->loc x)))))))
 
-      (:vl-netdecl
-       (vl-ps-seq (vl-basic-cw "Net declaration of ")
-                  (vl-print-wirename (vl-netdecl->name x))))
-
       (:vl-vardecl
-       (vl-ps-seq (vl-basic-cw "Var declaration of ")
+       (vl-ps-seq (vl-basic-cw "Declaration of ")
                   (vl-print-wirename (vl-vardecl->name x))))
 
       (:vl-paramdecl
@@ -154,7 +150,6 @@ quick summary instead, see @(see vl-pp-modelement-summary).</p>"
       (:vl-port      (vl-pp-port x))
       (:vl-portdecl  (vl-pp-portdecl x))
       (:vl-assign    (vl-pp-assign x))
-      (:vl-netdecl   (vl-pp-netdecl x))
       (:vl-vardecl   (vl-pp-vardecl x))
       (:vl-eventdecl (vl-print "// BOZO implement vl-pp-eventdecl in vl-pp-modelement-full"))
       (:vl-paramdecl (vl-pp-paramdecl x))

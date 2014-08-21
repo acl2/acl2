@@ -30,7 +30,7 @@
 
 (in-package "VL")
 (include-book "../toe/toe-preliminary")
-(include-book "../wf-reasonable-p")
+;; (include-book "../wf-reasonable-p")
 (include-book "disconnected")
 (include-book "../mlib/hierarchy")
 (include-book "../mlib/allexprs")
@@ -878,26 +878,26 @@ warnings."
       (mv warnings db))))
 
 
-(defsection us-mark-wires-for-netdecllist
+(defsection us-mark-wires-for-vardecllist
 
-  (define us-mark-wires-for-netdecl
+  (define us-mark-wires-for-vardecl
     :short "If a net is declared to be a supply0 or a supply1, then we want to
-          think about it as being driven."
-    ((x        vl-netdecl-p)
+            think of it as driven."
+    ((x        vl-vardecl-p)
      (walist   vl-wirealist-p)
      (db       us-db-p)
      (warnings vl-warninglist-p))
     :returns (mv (warnings vl-warninglist-p)
                  (db       us-db-p :hyp :fguard))
-    (b* (((vl-netdecl x) x)
-         ((unless (or (eq x.type :vl-supply0)
-                      (eq x.type :vl-supply1)))
+    (b* (((vl-vardecl x) x)
+         ((unless (and (eq (vl-datatype-kind x.type) :vl-nettype)
+                       (member (vl-nettype->name x.type) '(:vl-supply0 :vl-supply1))))
           (mv (ok) db))
 
          (entry (hons-get x.name walist))
          (wires (cdr entry))
          ((unless entry)
-          (mv (fatal :type :vl-bad-netdecl
+          (mv (fatal :type :vl-bad-vardecl
                      :msg "~a0: no corresponding wires."
                      :args (list (car x)))
               db))
@@ -905,7 +905,7 @@ warnings."
          ((mv warnings db) (us-mark-wires-truly-set wires db warnings x)))
       (mv warnings db)))
 
-  (define us-mark-wires-for-netdecllist ((x        vl-netdecllist-p)
+  (define us-mark-wires-for-vardecllist ((x        vl-vardecllist-p)
                                          (walist   vl-wirealist-p)
                                          (db       us-db-p)
                                          (warnings vl-warninglist-p))
@@ -913,8 +913,8 @@ warnings."
                  (db       us-db-p :hyp :fguard))
     (b* (((when (atom x))
           (mv (ok) db))
-         ((mv warnings db) (us-mark-wires-for-netdecl (car x) walist db warnings))
-         ((mv warnings db) (us-mark-wires-for-netdecllist (cdr x) walist db warnings)))
+         ((mv warnings db) (us-mark-wires-for-vardecl (car x) walist db warnings))
+         ((mv warnings db) (us-mark-wires-for-vardecllist (cdr x) walist db warnings)))
       (mv warnings db))))
 
 
@@ -2255,17 +2255,17 @@ warnings."
     (vl-warninglist-p (us-warn-nonport-results modname x))
     :hints(("Goal" :in-theory (enable us-warn-nonport-results)))))
 
-(define vl-netdecls-for-flattened-hids ((x vl-netdecllist-p))
-  :returns (flattened-decls vl-netdecllist-p :hyp :fguard)
+(define vl-vardecls-for-flattened-hids ((x vl-vardecllist-p))
+  :returns (flattened-decls vl-vardecllist-p :hyp :fguard)
   (cond ((atom x)
          nil)
-        ((assoc-equal "VL_HID_RESOLVED_MODULE_NAME" (vl-netdecl->atts (car x)))
-         (cons (car x) (vl-netdecls-for-flattened-hids (cdr x))))
+        ((assoc-equal "VL_HID_RESOLVED_MODULE_NAME" (vl-vardecl->atts (car x)))
+         (cons (car x) (vl-vardecls-for-flattened-hids (cdr x))))
         (t
-         (vl-netdecls-for-flattened-hids (cdr x)))))
+         (vl-vardecls-for-flattened-hids (cdr x)))))
 
-(define vl-netdecllist-wires
-  ((x        vl-netdecllist-p)
+(define vl-vardecllist-wires
+  ((x        vl-vardecllist-p)
    (walist   vl-wirealist-p)
    (warnings vl-warninglist-p))
   :returns (mv (successp booleanp :rule-classes :type-prescription)
@@ -2273,15 +2273,16 @@ warnings."
                (wires    vl-emodwirelist-p :hyp :fguard))
   (b* (((when (atom x))
         (mv t (ok) nil))
-       (car-look     (hons-get (vl-netdecl->name (car x)) walist))
+       ((vl-vardecl x1) (car x))
+       (car-look     (hons-get x1.name walist))
        (car-wires    (cdr car-look))
        (warnings     (if car-look
                          (ok)
                        (warn :type :use-set-fudging
-                             :msg "~a0: No wires for this net?"
+                             :msg "~a0: No wires for this variable?"
                              :args (list (car x)))))
        ((mv cdr-successp warnings cdr-wires)
-        (vl-netdecllist-wires (cdr x) walist warnings)))
+        (vl-vardecllist-wires (cdr x) walist warnings)))
     (mv (and car-look cdr-successp)
         warnings
         (append car-wires cdr-wires))))
@@ -2324,9 +2325,9 @@ warnings."
          db))
 
        ;; ignore hids since they'll look undriven
-       (hids (vl-netdecls-for-flattened-hids x.netdecls))
+       (hids (vl-vardecls-for-flattened-hids x.vardecls))
        ((mv ?hidnames-okp warnings hidwires)
-        (vl-netdecllist-wires hids walist warnings))
+        (vl-vardecllist-wires hids walist warnings))
        ((mv ?ignore-db2 db)
         (us-filter-db-by-names hidwires db))
 
@@ -2410,7 +2411,7 @@ warnings."
               (us-mark-toplevel-port-bits x.portdecls walist db warnings)
             (mv warnings db)))
 
-         ((mv warnings db) (cwtime (us-mark-wires-for-netdecllist x.netdecls walist db warnings)
+         ((mv warnings db) (cwtime (us-mark-wires-for-vardecllist x.vardecls walist db warnings)
                                    :mintime 1/2))
          ((mv warnings db) (cwtime (us-mark-wires-for-assignlist x.assigns walist db warnings)
                                    :mintime 1/2))

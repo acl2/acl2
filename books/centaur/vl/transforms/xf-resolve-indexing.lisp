@@ -68,29 +68,39 @@ able to handle more cases.</p>")
   (b* (((vl-vardecl x) x)
        ((when (consp x.dims))
         ;; Has array dimensions, doesn't seem like a bit-select.
-        nil)
-       ((unless (eq (vl-datatype-kind x.vartype) :vl-coretype))
-        ;; Struct or enum or user defined type of some kind.  Don't try to
-        ;; handle it yet.  BOZO eventually handle this sort of thing
-        nil)
-       ((vl-coretype x.vartype) x.vartype))
-    (or
-     ;; Vector integer types.  These may have an associated packed dimension list
-     ;; directly within the type, e.g., we might have `reg foo` or `reg [3:0] foo;`
-     (and (member x.vartype.name '(:vl-reg :vl-logic :vl-bit))
-          (or (atom x.vartype.dims)        ;; Selecting from reg foo; -- weird but we'll call it good
-              (atom (cdr x.vartype.dims))  ;; Selecting from reg [3:0] foo; -- fine
-              ;; Otherwise something like reg [3:0][4:0] foo -- doesn't seem like a bitselect
-              ))
-     ;; Atomic integer types.  It seems okay to bit-select from these.  They
-     ;; should never have associated dimensions.
-     (and (member x.vartype.name '(:vl-byte :vl-shortint :vl-int :vl-longint :vl-integer))
-          ;; dims should never happen here
-          (or (atom x.vartype.dims)
-              (raise "integer atom type with dimensions? ~x0." x)))
-     ;; Anything else is just too hard and we're not going to think about it.
-     ;; This includes, e.g.,: real, string, chandle, void, event
-     )))
+        nil))
+    (vl-datatype-case x.type
+      (:vl-nettype
+       ;; Something like a wire or supply.  Whether or not it has a range, this
+       ;; is definitely just a bit select, not an array index or something
+       ;; crazy.
+       t)
+
+      (:vl-coretype
+       (or
+        ;; Vector integer types.  These may have an associated packed dimension
+        ;; list directly within the type, e.g., we might have `reg foo` or `reg
+        ;; [3:0] foo;`
+        (and (member x.type.name '(:vl-reg :vl-logic :vl-bit))
+             (or (atom x.type.dims)        ;; Selecting from reg foo; -- weird but we'll call it good
+                 (atom (cdr x.type.dims))  ;; Selecting from reg [3:0] foo; -- fine
+                 ;; Otherwise something like reg [3:0][4:0] foo -- doesn't seem like a bitselect
+                 ))
+        ;; Atomic integer types.  It seems okay to bit-select from these.  They
+        ;; should never have associated dimensions.
+        (and (member x.type.name '(:vl-byte :vl-shortint :vl-int :vl-longint :vl-integer))
+             ;; dims should never happen here
+             (or (atom x.type.dims)
+                 (raise "integer atom type with dimensions? ~x0." x)))
+        ;; Anything else is just too hard and we're not going to think about
+        ;; it.  This includes, e.g.,: real, string, chandle, void, event
+        ))
+
+      ;; BOZO maybe we want to support packed structures and/or enums?
+      (:vl-enum nil)
+      (:vl-struct nil)
+      (:vl-union nil)
+      (:vl-usertype nil))))
 
 (define vl-vardecllist-filter-arrays
   :short "Filter variable declarations into those for which @('foo[i]') is a
@@ -120,23 +130,7 @@ able to handle more cases.</p>")
     ;; Otherwise, too hard, not sure what this is yet.
     (vl-vardecllist-filter-arrays (cdr x) bitselects arrays (cons x1 others))))
 
-(define vl-netdecllist-filter-arrays
-  :short "Filter register declarations into arrays and non-arrays."
-  ((x          vl-netdecllist-p "Decls we're filtering.")
-   (arrays     vl-netdecllist-p "Accumulator for the arrays.")
-   (non-arrays vl-netdecllist-p "Accumulator for the non-arrays."))
-  :returns
-  (mv (arrays vl-netdecllist-p)
-      (non-arrays vl-netdecllist-p))
-  (b* (((when (atom x))
-        (mv (vl-netdecllist-fix arrays)
-            (vl-netdecllist-fix non-arrays)))
-       (x1 (vl-netdecl-fix (car x)))
-       ((when (consp (vl-netdecl->arrdims x1)))
-        (vl-netdecllist-filter-arrays (cdr x) (cons x1 arrays) non-arrays)))
-    (vl-netdecllist-filter-arrays (cdr x) arrays (cons x1 non-arrays))))
-
-;; BOZO maybe we can also have arrays of variables, events, etc.?
+;; BOZO maybe we can also have arrays of events, etc.?
 
 (defines vl-expr-resolve-indexing-aux
   :short "Core routine for introducing @(':vl-array-index') and
@@ -595,13 +589,9 @@ able to handle more cases.</p>")
 
        ((mv var-bitselects var-arrays ?var-others)
         (vl-vardecllist-filter-arrays x.vardecls nil nil nil))
-       ((mv net-arrays net-wires)
-        (vl-netdecllist-filter-arrays x.netdecls nil nil))
 
-       (arr-names (append (vl-vardecllist->names var-arrays)
-                          (vl-netdecllist->names net-arrays)))
-       (wire-names (append (vl-vardecllist->names var-bitselects)
-                           (vl-netdecllist->names net-wires)))
+       (arr-names  (vl-vardecllist->names var-arrays))
+       (wire-names (vl-vardecllist->names var-bitselects))
 
        (arrfal  (make-lookup-alist arr-names))
        (wirefal (make-lookup-alist wire-names))

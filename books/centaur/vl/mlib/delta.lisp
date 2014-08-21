@@ -39,7 +39,7 @@
   :tag nil
   :layout :tree
   ((nf        vl-namefactory-p)
-   (netdecls  vl-netdecllist-p)
+   (vardecls  vl-vardecllist-p)
    (assigns   vl-assignlist-p)
    (modinsts  vl-modinstlist-p)
    (gateinsts vl-gateinstlist-p)
@@ -130,7 +130,7 @@ accumulators are all empty to begin with.</p>"
   :enabled t
   (make-vl-delta :nf       (vl-starting-namefactory x)
                  :warnings (vl-module->warnings x)
-                 :netdecls nil
+                 :vardecls nil
                  :assigns  nil
                  :modinsts nil
                  :addmods  nil))

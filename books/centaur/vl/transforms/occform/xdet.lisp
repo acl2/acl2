@@ -64,8 +64,8 @@ original answer.  But if it is X, then the resulting bits are all X.</p>"
   (b* ((n    (lposfix n))
        (name (hons-copy (cat "VL_" (natstr n) "_BIT_X_DETECT")))
 
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output 1))
-       ((mv in-expr in-port in-portdecl in-netdecl)     (vl-occform-mkport "in" :vl-input n))
+       ((mv out-expr out-port out-portdecl out-vardecl) (vl-occform-mkport "out" :vl-output 1))
+       ((mv in-expr in-port in-portdecl in-vardecl)     (vl-occform-mkport "in" :vl-input n))
 
 ;; BOZO might we get rid of this special case?
 
@@ -76,14 +76,14 @@ original answer.  But if it is X, then the resulting bits are all X.</p>"
                                 :origname  name
                                 :ports     (list out-port in-port)
                                 :portdecls (list out-portdecl in-portdecl)
-                                :netdecls  (list out-netdecl in-netdecl)
+                                :vardecls  (list out-vardecl in-vardecl)
                                 :modinsts  (list out-inst)
                                 :minloc    *vl-fakeloc*
                                 :maxloc    *vl-fakeloc*)
                 *vl-1-bit-xor*)))
 
        ;; wire temp = ^in;
-       ((mv temp-expr temp-netdecl)  (vl-occform-mkwire "temp" 1))
+       ((mv temp-expr temp-vardecl)  (vl-occform-mkwire "temp" 1))
        ((cons temp-mod temp-support) (vl-make-n-bit-reduction-op :vl-unary-xor n))
        (temp-inst                    (vl-simple-inst temp-mod "mk_temp" temp-expr in-expr))
 
@@ -94,7 +94,7 @@ original answer.  But if it is X, then the resulting bits are all X.</p>"
                            :origname  name
                            :ports     (list out-port in-port)
                            :portdecls (list out-portdecl in-portdecl)
-                           :netdecls  (list out-netdecl in-netdecl temp-netdecl)
+                           :vardecls  (list out-vardecl in-vardecl temp-vardecl)
                            :modinsts  (list temp-inst out-inst)
                            :minloc    *vl-fakeloc*
                            :maxloc    *vl-fakeloc*)
@@ -133,9 +133,9 @@ vector.</p>"
   (b* ((n     (lposfix n))
        (name  (hons-copy (cat "VL_" (natstr n) "_BIT_XOR_EACH")))
 
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output n))
-       ((mv a-expr a-port a-portdecl a-netdecl)         (vl-occform-mkport "a" :vl-input 1))
-       ((mv b-expr b-port b-portdecl b-netdecl)         (vl-occform-mkport "b" :vl-input n))
+       ((mv out-expr out-port out-portdecl out-vardecl) (vl-occform-mkport "out" :vl-output n))
+       ((mv a-expr a-port a-portdecl a-vardecl)         (vl-occform-mkport "a" :vl-input 1))
+       ((mv b-expr b-port b-portdecl b-vardecl)         (vl-occform-mkport "b" :vl-input n))
 
        (a-wires   (replicate n a-expr))
        (b-wires   (vl-make-list-of-bitselects b-expr 0 (- n 1)))
@@ -146,7 +146,7 @@ vector.</p>"
                           :origname  name
                           :ports     (list out-port a-port b-port)
                           :portdecls (list out-portdecl a-portdecl b-portdecl)
-                          :netdecls  (list out-netdecl a-netdecl b-netdecl)
+                          :vardecls  (list out-vardecl a-vardecl b-vardecl)
                           :modinsts  insts
                           :minloc    *vl-fakeloc*
                           :maxloc    *vl-fakeloc*))))
@@ -182,14 +182,14 @@ is X/Z, then @('out') will be all X bits.  Otherwise @('out') is just a copy of
        (m    (lposfix m))
        (name (hons-copy (cat "VL_" (natstr n) "_BY_" (natstr m) "_XPROP")))
 
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output m))
-       ((mv ans-expr ans-port ans-portdecl ans-netdecl) (vl-occform-mkport "ans" :vl-input m))
-       ((mv a-expr a-port a-portdecl a-netdecl)         (vl-occform-mkport "a" :vl-input n))
-       ((mv b-expr b-port b-portdecl b-netdecl)         (vl-occform-mkport "b" :vl-input n))
+       ((mv out-expr out-port out-portdecl out-vardecl) (vl-occform-mkport "out" :vl-output m))
+       ((mv ans-expr ans-port ans-portdecl ans-vardecl) (vl-occform-mkport "ans" :vl-input m))
+       ((mv a-expr a-port a-portdecl a-vardecl)         (vl-occform-mkport "a" :vl-input n))
+       ((mv b-expr b-port b-portdecl b-vardecl)         (vl-occform-mkport "b" :vl-input n))
 
-       ((mv xdeta-expr xdeta-netdecl) (vl-occform-mkwire "xdet_a" 1))
-       ((mv xdetb-expr xdetb-netdecl) (vl-occform-mkwire "xdet_b" 1))
-       ((mv xdet-expr xdet-netdecl)   (vl-occform-mkwire "xdet_ab" 1))
+       ((mv xdeta-expr xdeta-vardecl) (vl-occform-mkwire "xdet_a" 1))
+       ((mv xdetb-expr xdetb-vardecl) (vl-occform-mkwire "xdet_b" 1))
+       ((mv xdet-expr xdet-vardecl)   (vl-occform-mkwire "xdet_ab" 1))
 
        ((cons xdet-mod xdet-support)   (vl-make-n-bit-xdetect n))
        ((cons xeach-mod xeach-support) (vl-make-n-bit-xor-each m))
@@ -212,7 +212,7 @@ is X/Z, then @('out') will be all X bits.  Otherwise @('out') is just a copy of
                              :origname  name
                              :ports     (list out-port ans-port a-port b-port)
                              :portdecls (list out-portdecl ans-portdecl a-portdecl b-portdecl)
-                             :netdecls  (list out-netdecl ans-netdecl a-netdecl b-netdecl xdeta-netdecl xdetb-netdecl xdet-netdecl)
+                             :vardecls  (list out-vardecl ans-vardecl a-vardecl b-vardecl xdeta-vardecl xdetb-vardecl xdet-vardecl)
                              :modinsts  (list xdeta-inst xdetb-inst xdet-inst xeach-inst)
                              :minloc    *vl-fakeloc*
                              :maxloc    *vl-fakeloc*)

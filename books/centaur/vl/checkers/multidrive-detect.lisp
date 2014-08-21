@@ -130,30 +130,26 @@ might indicate that the submodule is a transistor-level construct.</li>
 (define vl-multidrive-collect-exotic-netdecls
   :short "Filter out wires that have types like TRI and WOR, since they
           typically ought to have multiple drivers."
-  ((x vl-netdecllist-p))
-  :returns (exotic vl-netdecllist-p :hyp :fguard)
+  ((x vl-vardecllist-p))
+  :returns (exotic vl-vardecllist-p)
   (b* (((when (atom x))
         nil)
-       (type1 (vl-netdecl->type (car x)))
-       ((when (or (eq type1 :vl-tri)
-                  (eq type1 :vl-triand)
-                  (eq type1 :vl-trior)
-                  (eq type1 :vl-tri0)
-                  (eq type1 :vl-tri0)
-                  (eq type1 :vl-trireg)
-                  (eq type1 :vl-wand)
-                  (eq type1 :vl-wor)))
-        (cons (car x)
+       ((vl-vardecl x1) (vl-vardecl-fix (car x)))
+       ((when (and (eq (vl-datatype-kind x1.type) :vl-nettype)
+                   (member (vl-nettype->name x1.type)
+                           '(:vl-tri :vl-triand :vl-trior :vl-tri0 :vl-tri1
+                             :vl-trireg :vl-wand :vl-wor))))
+        (cons x1
               (vl-multidrive-collect-exotic-netdecls (cdr x)))))
     (vl-multidrive-collect-exotic-netdecls (cdr x))))
 
 (define vl-multidrive-exotic-bits
   :short "Build the set of all bits from exotic wires."
-  ((netdecls vl-netdecllist-p "The exotic wires.")
+  ((vardecls vl-vardecllist-p "The exotic wires.")
    (walist   vl-wirealist-p))
   :returns bits
-  (b* ((exotic-decls (vl-multidrive-collect-exotic-netdecls netdecls))
-       (exotic-names (vl-netdecllist->names exotic-decls))
+  (b* ((exotic-decls (vl-multidrive-collect-exotic-netdecls vardecls))
+       (exotic-names (vl-vardecllist->names exotic-decls))
        (exotic-fal   (acl2::fal-extract exotic-names walist))
        (exotic-bits  (append-alist-vals exotic-fal)))
     exotic-bits))
@@ -488,7 +484,7 @@ might indicate that the submodule is a transistor-level construct.</li>
 
        ;; Throw away bits that probably ought to be multiply driven due to
        ;; having types like wor/wand
-       (exotic  (vl-multidrive-exotic-bits x.netdecls walist))
+       (exotic  (vl-multidrive-exotic-bits x.vardecls walist))
        (badbits (if exotic
                     (difference (redundant-mergesort badbits)
                                 (mergesort exotic))
@@ -551,8 +547,7 @@ might indicate that the submodule is a transistor-level construct.</li>
   :short "Top-level @(see multidrive) check."
   ((x vl-design-p))
   :returns (new-x vl-design-p)
-  (b* ((x (vl-design-fix x))
-       ((vl-design x) x))
+  (b* (((vl-design x) x))
     (change-vl-design x
                       :mods (vl-modulelist-multidrive-detect x.mods))))
 

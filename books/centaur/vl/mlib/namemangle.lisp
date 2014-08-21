@@ -95,39 +95,39 @@ they are given fresh names.</p>")
              (len gateinsts)))))
 
 
-(define vl-namemangle-netdecls
-  :short "Safely try to give these netdecls new names of the form
+(define vl-namemangle-vardecls
+  :short "Safely try to give these vardecls new names of the form
 @('prefix_{current-name}.')"
 
   ((prefix   stringp)
-   (netdecls vl-netdecllist-p)
+   (vardecls vl-vardecllist-p)
    (nf       vl-namefactory-p))
-  :returns (mv (new-nets vl-netdecllist-p)
+  :returns (mv (new-vars vl-vardecllist-p)
                (new-nf   vl-namefactory-p))
 
   :long "<p>You'll generally want to do something like:</p>
 
 @({
-   (pairlis$ (vl-netdecllist->names old-netdecls)
-             (vl-netdecllist->names renamed-netdecls))
+   (pairlis$ (vl-vardecllist->names old-vardecls)
+             (vl-vardecllist->names renamed-vardecls))
 })
 
 <p>And then use this as a substitution.</p>"
 
-  (b* (((when (atom netdecls))
+  (b* (((when (atom vardecls))
         (mv nil (vl-namefactory-fix nf)))
-       (name1          (vl-netdecl->name (car netdecls)))
+       (name1          (vl-vardecl->name (car vardecls)))
        (want1          (str::cat prefix "_" name1))
        ((mv fresh1 nf) (vl-namefactory-plain-name want1 nf))
-       (inst1          (change-vl-netdecl (car netdecls) :name fresh1))
-       ((mv insts2 nf) (vl-namemangle-netdecls prefix (cdr netdecls) nf)))
+       (inst1          (change-vl-vardecl (car vardecls) :name fresh1))
+       ((mv insts2 nf) (vl-namemangle-vardecls prefix (cdr vardecls) nf)))
     (mv (cons inst1 insts2) nf))
   ///
-  (defmvtypes vl-namemangle-netdecls (true-listp nil))
+  (defmvtypes vl-namemangle-vardecls (true-listp nil))
 
-  (defthm len-of-vl-namemangle-netdecls
-    (b* (((mv new-netdecls ?new-nf)
-          (vl-namemangle-netdecls loc netdecls nf)))
-      (equal (len new-netdecls)
-             (len netdecls)))))
+  (defthm len-of-vl-namemangle-vardecls
+    (b* (((mv new-vardecls ?new-nf)
+          (vl-namemangle-vardecls loc vardecls nf)))
+      (equal (len new-vardecls)
+             (len vardecls)))))
 

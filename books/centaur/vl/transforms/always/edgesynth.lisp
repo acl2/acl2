@@ -1260,7 +1260,7 @@ are evaluated.</p>"
                       (vl-edgesynth-stmt-p false-branch))
                  "Should be @('q <= d2') or a null statement.")
    (nf           vl-namefactory-p)
-   (netdecls     vl-netdecllist-p)
+   (vardecls     vl-vardecllist-p)
    (assigns      vl-assignlist-p))
   :returns
   (mv (new-stmt vl-edgesynth-stmt-p
@@ -1271,13 +1271,13 @@ are evaluated.</p>"
                           (force (vl-atomicstmt-p false-branch))))
       (nf       vl-namefactory-p
                 :hyp (force (vl-namefactory-p nf)))
-      (netdecls vl-netdecllist-p :hyp :fguard)
+      (vardecls vl-vardecllist-p :hyp :fguard)
       (assigns  vl-assignlist-p :hyp :fguard))
   :long "<p>Assumption: any assignments are to the same register.</p>"
   (b* (((when (and (vl-nullstmt-p true-branch)
                    (vl-nullstmt-p false-branch)))
         ;; Probably silly: if (condition) null null --> null
-        (mv true-branch nf netdecls assigns))
+        (mv true-branch nf vardecls assigns))
 
        ;; At least one of true-branch or false-branch is an assignment.  If
        ;; they aren't both assignments, the null statement can become Q <= Q.
@@ -1308,11 +1308,11 @@ are evaluated.</p>"
        (false-assign               (make-vl-assign :lvalue false-expr
                                                    :expr   false-rhs
                                                    :loc    loc))
-       (netdecls (list* true-decl false-decl netdecls))
+       (vardecls (list* true-decl false-decl vardecls))
        (assigns  (list* true-assign false-assign assigns))
        (new-rhs  (vl-safe-qmark-expr condition true-expr false-expr))
        (new-stmt (change-vl-assignstmt base-assign :expr new-rhs)))
-    (mv new-stmt nf netdecls assigns)))
+    (mv new-stmt nf vardecls assigns)))
 
 (define vl-edgesynth-flatten-data-ifs
   :short "Flatten out bottom-level if tests about data signals, such as
@@ -1323,7 +1323,7 @@ are evaluated.</p>"
                    (vl-edgesynth-stmt-p x)))
    (edgetable vl-edgetable-p)
    (nf        vl-namefactory-p)
-   (netdecls  vl-netdecllist-p)
+   (vardecls  vl-vardecllist-p)
    (assigns   vl-assignlist-p))
   :returns
   (mv (new-stmt vl-edgesynth-stmt-p
@@ -1331,7 +1331,7 @@ are evaluated.</p>"
       (nf       vl-namefactory-p
                 :hyp (and (force (vl-edgesynth-stmt-p x))
                           (force (vl-namefactory-p nf))))
-      (netdecls)
+      (vardecls)
       (assigns))
   :measure (vl-stmt-count x)
   :hints(("Goal" :in-theory (disable (force))))
@@ -1356,16 +1356,16 @@ part of this is that we can't really extend the @(see vl-delta-p), since we're
 not sure everything's going to work out yet.</p>"
 
   (b* (((when (vl-atomicstmt-p x))
-        (mv x nf netdecls assigns))
+        (mv x nf vardecls assigns))
        ((when (vl-ifstmt-p x))
         (b* (((vl-ifstmt x) x)
              ((mv type ?guts) (vl-edgesynth-classify-iftest x.condition edgetable))
-             ((mv true nf netdecls assigns)
+             ((mv true nf vardecls assigns)
               (vl-edgesynth-flatten-data-ifs x.truebranch edgetable
-                                             nf netdecls assigns))
-             ((mv false nf netdecls assigns)
+                                             nf vardecls assigns))
+             ((mv false nf vardecls assigns)
               (vl-edgesynth-flatten-data-ifs x.falsebranch edgetable
-                                             nf netdecls assigns))
+                                             nf vardecls assigns))
 
              ((unless (and (equal type :data)
                            (vl-atomicstmt-p true)
@@ -1377,26 +1377,26 @@ not sure everything's going to work out yet.</p>"
               (mv (change-vl-ifstmt x
                                     :truebranch true
                                     :falsebranch false)
-                  nf netdecls assigns)))
+                  nf vardecls assigns)))
           (vl-edgesynth-merge-data-ifs x.condition true false
-                                       nf netdecls assigns)))
+                                       nf vardecls assigns)))
        ((when (vl-blockstmt-p x))
         (raise "Thought we already got rid of block statements!")
-        (mv x nf netdecls assigns)))
+        (mv x nf vardecls assigns)))
     ;; No other expressions are supported.
     (raise "Should be impossible.")
-    (mv x nf netdecls assigns))
+    (mv x nf vardecls assigns))
 
   ///
   ;; Nasty because we have to prove them together
   (defthm vl-edgesynth-flatten-data-ifs-basics
     (implies (and (force (vl-edgesynth-stmt-p x))
                   (force (vl-namefactory-p nf))
-                  (force (vl-netdecllist-p netdecls))
+                  (force (vl-vardecllist-p vardecls))
                   (force (vl-assignlist-p assigns)))
-             (b* (((mv ?new-x ?nf ?netdecls ?assigns)
-                   (vl-edgesynth-flatten-data-ifs x edgetable nf netdecls assigns)))
-               (and (vl-netdecllist-p netdecls)
+             (b* (((mv ?new-x ?nf ?vardecls ?assigns)
+                   (vl-edgesynth-flatten-data-ifs x edgetable nf vardecls assigns)))
+               (and (vl-vardecllist-p vardecls)
                     (vl-assignlist-p assigns)))))
 
   (verify-guards vl-edgesynth-flatten-data-ifs))
@@ -1648,7 +1648,7 @@ corresponding edges.</p>"
                                                   :loc loc))
        (delta (change-vl-delta delta
                                :nf nf
-                               :netdecls (cons temp-decl delta.netdecls)
+                               :vardecls (cons temp-decl delta.vardecls)
                                :assigns  (cons temp-assign delta.assigns))))
     (mv (cons temp-expr rest) delta))
   ///
@@ -1690,7 +1690,7 @@ where we convert any negedge signals into posedge signals.</p>"
                                   :loc loc))
        (delta (change-vl-delta delta
                                :nf nf
-                               :netdecls (cons temp-decl delta.netdecls)
+                               :vardecls (cons temp-decl delta.vardecls)
                                :assigns (cons temp-assign delta.assigns))))
     (mv (cons temp-expr rest) delta))
   ///
@@ -1766,7 +1766,7 @@ where we convert any negedge signals into posedge signals.</p>"
     (change-vl-delta delta
                      :nf nf
                      :assigns  (cons main-ass delta.assigns)
-                     :netdecls (cons delfree-decl delta.netdecls)
+                     :vardecls (cons delfree-decl delta.vardecls)
                      :modinsts (cons inst delta.modinsts)
                      :addmods  (append addmods delta.addmods)))
 
@@ -1935,10 +1935,10 @@ where we convert any negedge signals into posedge signals.</p>"
        ;; some last minute rewriting to try to support additional blocks.
 
 
-       ((mv body new-nf new-netdecls new-assigns)
+       ((mv body new-nf new-vardecls new-assigns)
         (vl-edgesynth-flatten-data-ifs body edgetable
                                        (vl-delta->nf delta)
-                                       (vl-delta->netdecls delta)
+                                       (vl-delta->vardecls delta)
                                        (vl-delta->assigns delta)))
 
        ;; Subtle: if we fail we don't want to change the delta.  But we have
@@ -1947,7 +1947,7 @@ where we convert any negedge signals into posedge signals.</p>"
        (delta     (change-vl-delta delta :nf new-nf))
        (new-delta (change-vl-delta delta
                                    :nf       new-nf
-                                   :netdecls new-netdecls
+                                   :vardecls new-vardecls
                                    :assigns  new-assigns))
 
        (- (and *edgesynth-debug*
@@ -2108,9 +2108,8 @@ where we convert any negedge signals into posedge signals.</p>"
 
        (delta      (vl-starting-delta x))
        (delta      (change-vl-delta delta
-                                    ;; We'll strictly add netdecls, modinsts,
-                                    ;; and assigns, so pre-populate them.
-                                    :netdecls x.netdecls
+                                    ;; We'll strictly add modinsts and assigns,
+                                    ;; so pre-populate them.
                                     :modinsts x.modinsts
                                     :assigns  x.assigns))
        (scary-regs (vl-always-scary-regs x.alwayses))
@@ -2122,18 +2121,14 @@ where we convert any negedge signals into posedge signals.</p>"
 
        ((vl-delta delta) (vl-free-delta delta))
 
-       ((mv vardecls-to-convert new-vardecls)
-        ;; We already know all of the cvtregs are among the vardecls and have
-        ;; no arrdims.  So, we can just freely convert look them up and convert
-        ;; them here.
-        (vl-filter-vardecls cvtregs x.vardecls))
+       ((mv fixed-vardecls fixed-portdecls)
+        (vl-convert-regs cvtregs x.vardecls x.portdecls))
 
-       (new-netdecls (append (vl-always-convert-regs vardecls-to-convert)
-                             delta.netdecls))
+       (final-vardecls (append-without-guard delta.vardecls fixed-vardecls))
 
        (new-x (change-vl-module x
-                                :netdecls new-netdecls
-                                :vardecls new-vardecls
+                                :vardecls final-vardecls
+                                :portdecls fixed-portdecls
                                 :assigns  delta.assigns
                                 :modinsts delta.modinsts
                                 :alwayses new-alwayses

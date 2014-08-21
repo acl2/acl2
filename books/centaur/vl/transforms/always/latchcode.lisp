@@ -536,8 +536,8 @@ sanity checking."
        ((mv next-expr    next-decl)    (vl-occform-mkwire next-name    width :loc x.loc))
        ((mv delfree-expr delfree-decl) (vl-occform-mkwire delfree-name width :loc x.loc))
        (delfree-decl
-        (change-vl-netdecl delfree-decl
-                           :atts (acons "VL_TARGET_REG" lhs (vl-netdecl->atts delfree-decl))))
+        (change-vl-vardecl delfree-decl
+                           :atts (acons "VL_TARGET_REG" lhs (vl-vardecl->atts delfree-decl))))
 
        ;; assign lhs_next = rhs;
        (next-ass  (make-vl-assign :lvalue next-expr :expr rhs :loc x.loc))
@@ -561,7 +561,7 @@ sanity checking."
        (cvtregs   (append lhs-names cvtregs))
        (delta     (change-vl-delta delta
                                    :nf       nf
-                                   :netdecls (list* next-decl delfree-decl delta.netdecls)
+                                   :vardecls (list* next-decl delfree-decl delta.vardecls)
                                    :assigns  (list* next-ass  main-ass     delta.assigns)
                                    :modinsts (cons inst delta.modinsts)
                                    :addmods  (append-without-guard addmods

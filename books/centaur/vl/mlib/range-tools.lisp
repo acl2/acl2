@@ -125,7 +125,6 @@ handle both cases.</p>"
                    :lsb (vl-make-index 0))))
 
 
-
 (define vl-simplereg-p ((x vl-vardecl-p))
   ;; Horrible hack to try to help with porting existing code.
   ;;
@@ -137,14 +136,14 @@ handle both cases.</p>"
          (not x.varp)
          (not x.lifetime)
          (not x.dims)
-         (eq (vl-datatype-kind x.vartype) :vl-coretype)
-         (b* (((vl-coretype x.vartype) x.vartype))
-           (and (or (eq x.vartype.name :vl-reg)
-                    (eq x.vartype.name :vl-logic))
-                (or (atom x.vartype.dims)
-                    (and (atom (cdr x.vartype.dims))
-                         (mbe :logic (vl-range-p (car x.vartype.dims))
-                              :exec (not (eq (car x.vartype.dims) :vl-unsized-dimension))))))))))
+         (eq (vl-datatype-kind x.type) :vl-coretype)
+         (b* (((vl-coretype x.type) x.type))
+           (and (or (eq x.type.name :vl-reg)
+                    (eq x.type.name :vl-logic))
+                (or (atom x.type.dims)
+                    (and (atom (cdr x.type.dims))
+                         (mbe :logic (vl-range-p (car x.type.dims))
+                              :exec (not (eq (car x.type.dims) :vl-unsized-dimension))))))))))
 
 (deflist vl-simplereglist-p (x)
   :guard (vl-vardecllist-p x)
@@ -155,21 +154,90 @@ handle both cases.</p>"
   :guard (vl-simplereg-p x)
   :guard-hints (("Goal" :in-theory (enable vl-simplereg-p)))
   (b* (((vl-vardecl x) x)
-       ((vl-coretype x.vartype) x.vartype))
-    x.vartype.signedp))
+       ((vl-coretype x.type) x.type))
+    x.type.signedp))
 
 (define vl-simplereg->range ((x vl-vardecl-p))
   :returns (range vl-maybe-range-p)
   :guard (vl-simplereg-p x)
   :prepwork ((local (in-theory (enable vl-simplereg-p vl-maybe-range-p))))
   (b* (((vl-vardecl x) x)
-       ((vl-coretype x.vartype) x.vartype))
-    (and (consp x.vartype.dims)
-         (vl-range-fix (car x.vartype.dims))))
+       ((vl-coretype x.type) x.type))
+    (and (consp x.type.dims)
+         (vl-range-fix (car x.type.dims))))
   ///
   (more-returns
    (range (equal (vl-range-p range) (if range t nil))
           :name vl-range-p-of-vl-simplereg->range)))
+
+
+
+(define vl-simplenet-p ((x vl-vardecl-p))
+  ;; Horrible hack to try to help with porting existing code.
+  ;;
+  ;; This will recognize only variables that are nets: signed or unsigned, of
+  ;; any type, perhaps with a single range, but not with any more complex
+  ;; dimensions.
+  (b* (((vl-vardecl x) x))
+    (and (atom x.dims)
+         (eq (vl-datatype-kind x.type) :vl-nettype))))
+
+(define vl-simplenet->range ((x vl-vardecl-p))
+  :returns (range vl-maybe-range-p)
+  :guard (vl-simplenet-p x)
+  :prepwork ((local (in-theory (enable vl-simplenet-p vl-maybe-range-p))))
+  (b* (((vl-vardecl x) x)
+       ((vl-nettype x.type) x.type))
+    x.type.range)
+  ///
+  (more-returns
+   (range (equal (vl-range-p range) (if range t nil))
+          :name vl-range-p-of-vl-simplenet->range)))
+
+(define vl-simplenet->signedp ((x vl-vardecl-p))
+  :returns (signedp booleanp :rule-classes :type-prescription)
+  :guard (vl-simplenet-p x)
+  :prepwork ((local (in-theory (enable vl-simplenet-p vl-maybe-range-p))))
+  (b* (((vl-vardecl x) x)
+       ((vl-nettype x.type) x.type))
+    x.type.signedp))
+
+(define vl-simplenet->nettype ((x vl-vardecl-p))
+  :returns (nettype vl-nettypename-p)
+  :guard (vl-simplenet-p x)
+  :prepwork ((local (in-theory (enable vl-simplenet-p vl-maybe-range-p))))
+  (b* (((vl-vardecl x) x)
+       ((vl-nettype x.type) x.type))
+    x.type.name))
+
+
+
+(define vl-simplevar-p ((x vl-vardecl-p))
+  :returns (bool)
+  (or (vl-simplenet-p x)
+      (vl-simplereg-p x)))
+
+(define vl-simplevar->signedp ((x vl-vardecl-p))
+  :returns (signedp booleanp :rule-classes :type-prescription)
+  :guard (vl-simplevar-p x)
+  :prepwork ((local (in-theory (enable vl-simplevar-p))))
+  (if (vl-simplenet-p x)
+      (vl-simplenet->signedp x)
+    (vl-simplereg->signedp x)))
+
+(define vl-simplevar->range ((x vl-vardecl-p))
+  :returns (range vl-maybe-range-p)
+  :guard (vl-simplevar-p x)
+  :prepwork ((local (in-theory (enable vl-simplevar-p))))
+  (if (vl-simplenet-p x)
+      (vl-simplenet->range x)
+    (vl-simplereg->range x))
+  ///
+  (more-returns
+   (range (equal (vl-range-p range) (if range t nil))
+          :name vl-range-p-of-vl-simplevar->range)))
+
+
 
 ;; BOZO horrible hack.  For now, we'll make find-net/reg-range only succeed for
 ;; simple regs, not for other kinds of variables.  Eventually we will want to
@@ -184,17 +252,11 @@ handle both cases.</p>"
                (maybe-range vl-maybe-range-p
                             "The range of the wire, on success."))
   :hooks ((:fix :args ((mod vl-module-p))))
-  (b* ((find (or (vl-find-netdecl name (vl-module->netdecls mod))
-                 (vl-find-vardecl name (vl-module->vardecls mod))))
-       ((when (not find))
-        (mv nil nil))
-       (tag (tag find))
-       ((when (eq tag :vl-netdecl))
-        (mv t (vl-netdecl->range find)))
-       ((when (and (eq tag :vl-vardecl)
-                   (vl-simplereg-p find)))
-        (mv t (vl-simplereg->range find))))
-    (mv nil nil))
+  (b* ((find (vl-find-vardecl name (vl-module->vardecls mod)))
+       ((unless (and find
+                     (vl-simplevar-p find)))
+        (mv nil nil)))
+    (mv t (vl-simplevar->range find)))
   ///
   (more-returns
    (maybe-range (equal (vl-range-p maybe-range) (if maybe-range t nil))
@@ -211,15 +273,11 @@ handle both cases.</p>"
   (mbe :logic (vl-slow-find-net/reg-range name mod)
        :exec
        (b* ((find (vl-fast-find-moduleitem name mod ialist))
-            ((when (not find))
-             (mv nil nil))
-            (tag (tag find))
-            ((when (eq tag :vl-netdecl))
-             (mv t (vl-netdecl->range find)))
-            ((when (and (eq tag :vl-vardecl)
-                        (vl-simplereg-p find)))
-             (mv t (vl-simplereg->range find))))
-         (mv nil nil))))
+            ((unless (and find
+                          (eq (tag find) :vl-vardecl)
+                          (vl-simplevar-p find)))
+             (mv nil nil)))
+         (mv t (vl-simplevar->range find)))))
 
 (define vl-range-size ((x vl-range-p))
   :guard (vl-range-resolved-p x)

@@ -259,11 +259,11 @@ are returned in a nonsensical order.</p>"
 
   (verify-guards vl-expr-allwires))
 
-(define vl-collect-flattened-hids ((x vl-netdecllist-p))
-  :returns (netdecls vl-netdecllist-p :hyp :fguard)
+(define vl-collect-flattened-hids ((x vl-vardecllist-p))
+  :returns (vardecls vl-vardecllist-p :hyp :fguard)
   (if (atom x)
       nil
-    (let ((atts (vl-netdecl->atts (car x))))
+    (let ((atts (vl-vardecl->atts (car x))))
       (if (or (assoc-equal "VL_HID_LOCAL_P" atts)
               (assoc-equal "VL_HID_GLOBAL_P" atts))
           (cons (car x)
@@ -366,8 +366,8 @@ are returned in a nonsensical order.</p>"
        ;; Originally we reported the disconnected-wires, but that was stupid
        ;; because we don't care if this particular module uses all of the bits
        ;; of a HID it refers to.  So, suppress any disconnected hids.
-       (hid-netdecls       (vl-collect-flattened-hids x.netdecls))
-       (hid-names          (vl-netdecllist->names hid-netdecls))
+       (hid-vardecls       (vl-collect-flattened-hids x.vardecls))
+       (hid-names          (vl-vardecllist->names hid-vardecls))
        (hid-names-fal      (make-lookup-alist hid-names))
        (disconnected-wires (redundant-mergesort
                             (vl-delete-emodwires-with-basenames hid-names hid-names-fal

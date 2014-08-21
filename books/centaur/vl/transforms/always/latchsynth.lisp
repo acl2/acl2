@@ -112,9 +112,8 @@ supported.</li>
 
        (delta      (vl-starting-delta x))
        (delta      (change-vl-delta delta
-                                    ;; We'll strictly add netdecls, modinsts,
-                                    ;; and assigns, so pre-populate them.
-                                    :netdecls x.netdecls
+                                    ;; We'll strictly add modinsts, and
+                                    ;; assigns, so pre-populate them.
                                     :modinsts x.modinsts
                                     :assigns  x.assigns))
        (scary-regs (vl-always-scary-regs x.alwayses))
@@ -126,18 +125,14 @@ supported.</li>
 
        ((vl-delta delta) (vl-free-delta delta))
 
-       ((mv vardecls-to-convert new-vardecls)
-        ;; We already know all of the cvtregs are among the vardecls and have
-        ;; no arrdims.  So, we can just freely convert look them up and convert
-        ;; them here.
-        (vl-filter-vardecls cvtregs x.vardecls))
+       ((mv fixed-vardecls fixed-portdecls)
+        (vl-convert-regs cvtregs x.vardecls x.portdecls))
 
-       (new-netdecls (append (vl-always-convert-regs vardecls-to-convert)
-                             delta.netdecls))
+       (final-vardecls (append-without-guard delta.vardecls fixed-vardecls))
 
        (new-x (change-vl-module x
-                                :netdecls new-netdecls
-                                :vardecls new-vardecls
+                                :vardecls final-vardecls
+                                :portdecls fixed-portdecls
                                 :assigns  delta.assigns
                                 :modinsts delta.modinsts
                                 :alwayses new-alwayses

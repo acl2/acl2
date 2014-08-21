@@ -66,13 +66,13 @@ endmodule
 
   (b* ((name (hons-copy "VL_1_BIT_MULT"))
 
-       ((mv o-expr o-port o-portdecl o-netdecl) (vl-primitive-mkport "o" :vl-output))
-       ((mv a-expr a-port a-portdecl a-netdecl) (vl-primitive-mkport "a" :vl-input))
-       ((mv b-expr b-port b-portdecl b-netdecl) (vl-primitive-mkport "b" :vl-input))
+       ((mv o-expr o-port o-portdecl o-vardecl) (vl-primitive-mkport "o" :vl-output))
+       ((mv a-expr a-port a-portdecl a-vardecl) (vl-primitive-mkport "a" :vl-input))
+       ((mv b-expr b-port b-portdecl b-vardecl) (vl-primitive-mkport "b" :vl-input))
 
-       ((mv p0-expr p0-netdecl) (vl-primitive-mkwire "p0"))
-       ((mv x0-expr x0-netdecl) (vl-primitive-mkwire "x0"))
-       ((mv x1-expr x1-netdecl) (vl-primitive-mkwire "x1"))
+       ((mv p0-expr p0-vardecl) (vl-primitive-mkwire "p0"))
+       ((mv x0-expr x0-vardecl) (vl-primitive-mkwire "x0"))
+       ((mv x1-expr x1-vardecl) (vl-primitive-mkwire "x1"))
 
        (p0-inst (vl-simple-inst *vl-1-bit-and* "mk_p0" p0-expr a-expr  b-expr))
        (x0-inst (vl-simple-inst *vl-1-bit-xor* "mk_x0" x0-expr a-expr  b-expr))
@@ -84,7 +84,7 @@ endmodule
                      :origname  name
                      :ports     (list o-port a-port b-port)
                      :portdecls (list o-portdecl a-portdecl b-portdecl)
-                     :netdecls  (list o-netdecl a-netdecl b-netdecl p0-netdecl x0-netdecl x1-netdecl)
+                     :vardecls  (list o-vardecl a-vardecl b-vardecl p0-vardecl x0-vardecl x1-vardecl)
                      :modinsts  (list p0-inst x0-inst x1-inst o-inst)
                      :minloc    *vl-fakeloc*
                      :maxloc    *vl-fakeloc*))))
@@ -171,17 +171,17 @@ explicitly, which adds a layer of X-detection around the core circuitry.</p>"
         (list *vl-1-bit-mult* *vl-1-bit-and* *vl-1-bit-xor*))
        (name  (hons-copy (cat "VL_" (natstr n) "_BIT_MULT")))
 
-       ((mv o-expr o-port o-portdecl o-netdecl) (vl-occform-mkport "o" :vl-output n))
-       ((mv a-expr a-port a-portdecl a-netdecl) (vl-occform-mkport "a" :vl-input n))
-       ((mv b-expr b-port b-portdecl b-netdecl) (vl-occform-mkport "b" :vl-input n))
+       ((mv o-expr o-port o-portdecl o-vardecl) (vl-occform-mkport "o" :vl-output n))
+       ((mv a-expr a-port a-portdecl a-vardecl) (vl-occform-mkport "a" :vl-input n))
+       ((mv b-expr b-port b-portdecl b-vardecl) (vl-occform-mkport "b" :vl-input n))
 
        ;; wire [n-1] p0, p1, ...;  // partial products
        ;; wire [n-1] s0, s1, ...;  // sums
        ;; wire c0, c1, ...;        // carry-outs
 
-       ((mv p-exprs p-netdecls) (vl-occform-mkwires "p" 0 n :width n))
-       ((mv s-exprs s-netdecls) (vl-occform-mkwires "s" 0 (- n 1) :width n))
-       ((mv c-exprs c-netdecls) (vl-occform-mkwires "c" 0 (- n 1) :width 1))
+       ((mv p-exprs p-vardecls) (vl-occform-mkwires "p" 0 n :width n))
+       ((mv s-exprs s-vardecls) (vl-occform-mkwires "s" 0 (- n 1) :width n))
+       ((mv c-exprs c-vardecls) (vl-occform-mkwires "c" 0 (- n 1) :width 1))
 
        ;; instances that generate the partial products
        (p-insts    (vl-partprod-insts 0 n))
@@ -235,8 +235,8 @@ explicitly, which adds a layer of X-detection around the core circuitry.</p>"
                             :origname  name
                             :ports     (list o-port a-port b-port)
                             :portdecls (list o-portdecl a-portdecl b-portdecl)
-                            :netdecls  (list* o-netdecl a-netdecl b-netdecl
-                                              (append p-netdecls s-netdecls c-netdecls))
+                            :vardecls  (list* o-vardecl a-vardecl b-vardecl
+                                              (append p-vardecls s-vardecls c-vardecls))
                             :modinsts  (append p-insts adders (list xprop-inst))
                             :minloc    *vl-fakeloc*
                             :maxloc    *vl-fakeloc*)))

@@ -738,37 +738,3 @@ dimensions.</p>
  :gag-mode :goals
  (verify-guards vl-parse-datatype-fn))
 
-
-
-
-(defval *vl-plain-old-integer-type*
-  :parents (vl-parse-integer-declaration)
-  (hons-copy
-   (make-vl-coretype :name    :vl-integer
-                     :signedp t   ;; integer type is signed
-                     :dims    nil ;; Not applicable to integers
-                     )))
-
-(defval *vl-plain-old-real-type*
-  :parents (vl-parse-real-declaration)
-  (hons-copy
-   (make-vl-coretype :name    :vl-real
-                     :signedp nil ;; Not applicable to reals
-                     :dims    nil ;; Not applicable to reals
-                     )))
-
-(defval *vl-plain-old-time-type*
-  :parents (vl-parse-time-declaration)
-  (hons-copy
-   (make-vl-coretype :name    :vl-time
-                     :signedp nil ;; Not applicable to times
-                     :dims    nil ;; Not applicable to times
-                     )))
-
-(defval *vl-plain-old-realtime-type*
-  :parents (vl-parse-time-declaration)
-  (hons-copy
-   (make-vl-coretype :name    :vl-realtime
-                     :signedp nil ;; Not applicable to realtimes
-                     :dims    nil ;; Not applicable to realtimes
-                     )))

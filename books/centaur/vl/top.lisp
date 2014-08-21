@@ -57,7 +57,6 @@
 (include-book "transforms/xf-oprewrite")
 (include-book "transforms/xf-optimize-rw")
 (include-book "transforms/xf-orig")
-(include-book "transforms/xf-portdecl-sign")
 (include-book "transforms/xf-problem-mods")
 (include-book "transforms/xf-replicate-insts")
 (include-book "transforms/xf-resolve-ranges")

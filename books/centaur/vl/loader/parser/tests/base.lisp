@@ -185,6 +185,12 @@
   (define vl-pretty-datatype ((x vl-datatype-p))
     :measure (vl-datatype-count x)
     (vl-datatype-case x
+
+      (:vl-nettype
+       (append (list x.name)
+               (if x.signedp '(signed) nil)
+               (if x.range (list (vl-pretty-range x.range)) nil)))
+
       (:vl-coretype
        (list* x.name
               (if x.signedp 'signed 'unsigned)

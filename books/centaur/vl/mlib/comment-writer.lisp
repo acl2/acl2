@@ -143,7 +143,6 @@ we ignore file names.</p>"
 
 (def-vl-ppmap :list portdecllist :elem portdecl)
 (def-vl-ppmap :list assignlist :elem assign)
-(def-vl-ppmap :list netdecllist :elem netdecl)
 (def-vl-ppmap :list vardecllist :elem vardecl)
 (def-vl-ppmap :list gateinstlist :elem gateinst)
 (def-vl-ppmap :list alwayslist :elem always)
@@ -252,16 +251,15 @@ we ignore file names.</p>"
 
        (imap nil)
 
-       ;; Note: portdecls need to come before netdecls, so that after stable
+       ;; Note: portdecls need to come before vardecls, so that after stable
        ;; sorting any implicit portdecls are still listed before their
-       ;; correspondign netdecl; Verilog-XL won't tolerate it the other way;
-       ;; see make-implicit-wires for more details.  The netdecls should come
+       ;; correspondign vardecl; Verilog-XL won't tolerate it the other way;
+       ;; see make-implicit-wires for more details.  The vardecls should come
        ;; before any instances/assignments, so that things are declared before
        ;; use.
        ((mv imap ps) (vl-paramdecllist-ppmap x.paramdecls imap))
        ((mv imap ps) (vl-portdecllist-ppmap x.portdecls imap))
        ((mv imap ps) (vl-vardecllist-ppmap x.vardecls imap))
-       ((mv imap ps) (vl-netdecllist-ppmap x.netdecls imap))
        ((mv imap ps) (vl-fundecllist-ppmap x.fundecls imap))
        ((mv imap ps) (vl-taskdecllist-ppmap x.taskdecls imap))
        ((mv imap ps) (vl-assignlist-ppmap x.assigns imap))

@@ -779,6 +779,10 @@ is just a constant integer.  So this is just:</p>
                  (new-x    vl-datatype-p))
     :measure (vl-datatype-count x)
     (vl-datatype-case x
+      (:vl-nettype
+       (b* (((mv warnings new-range) (vl-maybe-range-wildelim x.range elem warnings))
+            (new-x (change-vl-nettype x :range new-range)))
+         (mv warnings new-x)))
       (:vl-coretype
        (b* (((mv warnings new-dims) (vl-packeddimensionlist-wildelim x.dims elem warnings))
             (new-x (change-vl-coretype x :dims new-dims)))
@@ -1013,38 +1017,25 @@ is just a constant integer.  So this is just:</p>
 (def-vl-wildelim vl-portdecl
   :body (b* (((vl-portdecl x) x)
              (elem x)
-             ((mv warnings range-prime) (vl-maybe-range-wildelim x.range elem warnings))
-             (x-prime (change-vl-portdecl x :range range-prime)))
+             ((mv warnings type-prime) (vl-datatype-wildelim x.type elem warnings))
+             (x-prime (change-vl-portdecl x :type type-prime)))
           (mv warnings x-prime)))
 
 (def-vl-wildelim-list vl-portdecllist :element vl-portdecl)
-
-(def-vl-wildelim vl-netdecl
-  :body
-  (b* (((vl-netdecl x) x)
-       (elem x)
-       ((mv warnings range-prime)   (vl-maybe-range-wildelim x.range elem warnings))
-       ((mv warnings arrdims-prime) (vl-rangelist-wildelim x.arrdims elem warnings))
-       ((mv warnings delay-prime)   (vl-maybe-gatedelay-wildelim x.delay elem warnings))
-       (x-prime  (change-vl-netdecl x
-                                    :range range-prime
-                                    :arrdims arrdims-prime
-                                    :delay delay-prime)))
-    (mv warnings x-prime)))
-
-(def-vl-wildelim-list vl-netdecllist :element vl-netdecl)
 
 (def-vl-wildelim vl-vardecl
   :body
   (b* (((vl-vardecl x) x)
        (elem x)
-       ((mv warnings vartype-prime) (vl-datatype-wildelim x.vartype elem warnings))
+       ((mv warnings type-prime)    (vl-datatype-wildelim x.type elem warnings))
        ((mv warnings dims-prime)    (vl-packeddimensionlist-wildelim x.dims elem warnings))
        ((mv warnings initval-prime) (vl-maybe-expr-wildelim x.initval elem warnings))
+       ((mv warnings delay-prime)   (vl-maybe-gatedelay-wildelim x.delay elem warnings))
        (x-prime (change-vl-vardecl x
-                                   :vartype vartype-prime
+                                   :type    type-prime
                                    :dims    dims-prime
-                                   :initval initval-prime)))
+                                   :initval initval-prime
+                                   :delay   delay-prime)))
     (mv warnings x-prime)))
 
 (def-vl-wildelim-list vl-vardecllist :element vl-vardecl)
@@ -1268,7 +1259,6 @@ is just a constant integer.  So this is just:</p>
        ((mv warnings ports)      (vl-portlist-wildelim      x.ports      warnings))
        ((mv warnings portdecls)  (vl-portdecllist-wildelim  x.portdecls  warnings))
        ((mv warnings paramdecls) (vl-paramdecllist-wildelim x.paramdecls warnings))
-       ((mv warnings netdecls)   (vl-netdecllist-wildelim   x.netdecls   warnings))
        ((mv warnings vardecls)   (vl-vardecllist-wildelim   x.vardecls   warnings)))
     (change-vl-module x
                       :assigns assigns
@@ -1279,7 +1269,6 @@ is just a constant integer.  So this is just:</p>
                       :ports ports
                       :portdecls portdecls
                       :paramdecls paramdecls
-                      :netdecls netdecls
                       :vardecls vardecls
                       :warnings warnings)))
 

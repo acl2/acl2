@@ -167,6 +167,9 @@ these expressions.</p>")
     :returns (mv (warnings vl-warninglist-p)
                  (new-x vl-datatype-p))
     (vl-datatype-case x
+      (:vl-nettype
+       (b* (((mv warnings range) (vl-maybe-rangeresolve x.range warnings)))
+         (mv warnings (change-vl-nettype x :range range))))
       (:vl-coretype
        (b* (((mv warnings dims) (vl-packeddimensionlist-rangeresolve x.dims warnings)))
          (mv warnings (change-vl-coretype x :dims dims))))
@@ -228,27 +231,17 @@ these expressions.</p>")
 
 (def-vl-rangeresolve vl-portdecl
   :body (b* (((vl-portdecl x) x)
-             ((mv warnings range) (vl-maybe-rangeresolve x.range warnings)))
-            (mv warnings (change-vl-portdecl x :range range))))
+             ((mv warnings type) (vl-datatype-rangeresolve x.type warnings)))
+            (mv warnings (change-vl-portdecl x :type type))))
 
 (def-vl-rangeresolve-list vl-portdecllist :element vl-portdecl)
 
-(def-vl-rangeresolve vl-netdecl
-  :body (b* (((vl-netdecl x) x)
-             ((mv warnings range)   (vl-maybe-rangeresolve x.range warnings))
-             ((mv warnings arrdims) (vl-rangelist-rangeresolve x.arrdims warnings)))
-          (mv warnings (change-vl-netdecl x
-                                          :range   range
-                                          :arrdims arrdims))))
-
-(def-vl-rangeresolve-list vl-netdecllist :element vl-netdecl)
-
 (def-vl-rangeresolve vl-vardecl
   :body (b* (((vl-vardecl x) x)
-             ((mv warnings vartype) (vl-datatype-rangeresolve x.vartype warnings))
-             ((mv warnings dims)    (vl-packeddimensionlist-rangeresolve x.dims warnings)))
+             ((mv warnings type) (vl-datatype-rangeresolve x.type warnings))
+             ((mv warnings dims) (vl-packeddimensionlist-rangeresolve x.dims warnings)))
           (mv warnings (change-vl-vardecl x
-                                          :vartype vartype
+                                          :type type
                                           :dims dims))))
 
 (def-vl-rangeresolve-list vl-vardecllist :element vl-vardecl)
@@ -323,7 +316,6 @@ these expressions.</p>")
         (vl-module-fix x))
        (warnings                 x.warnings)
        ((mv warnings portdecls)  (vl-portdecllist-rangeresolve  x.portdecls  warnings))
-       ((mv warnings netdecls)   (vl-netdecllist-rangeresolve   x.netdecls   warnings))
        ((mv warnings vardecls)   (vl-vardecllist-rangeresolve   x.vardecls   warnings))
        ((mv warnings modinsts)   (vl-modinstlist-rangeresolve   x.modinsts   warnings))
        ((mv warnings gateinsts)  (vl-gateinstlist-rangeresolve  x.gateinsts  warnings))
@@ -333,7 +325,6 @@ these expressions.</p>")
       (change-vl-module x
                         :warnings   warnings
                         :portdecls  portdecls
-                        :netdecls   netdecls
                         :vardecls   vardecls
                         :modinsts   modinsts
                         :gateinsts  gateinsts

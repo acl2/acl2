@@ -522,11 +522,6 @@ encoding.</p>"
   :inline t
   (jp-sym x))
 
-(define vl-jp-netdecltype ((x vl-netdecltype-p) &key (ps 'ps))
-  :parents (json-encoders)
-  :inline t
-  (jp-sym x))
-
 (define vl-jp-taskporttype ((x vl-taskporttype-p) &key (ps 'ps))
   :parents (json-encoders)
   :inline t
@@ -547,7 +542,6 @@ encoding.</p>"
 (add-json-encoder vl-deassign-type-p    vl-jp-deassign-type)
 (add-json-encoder vl-casetype-p         vl-jp-casetype)
 (add-json-encoder vl-casecheck-p        vl-jp-casecheck)
-(add-json-encoder vl-netdecltype-p      vl-jp-netdecltype)
 (add-json-encoder vl-taskporttype-p     vl-jp-taskporttype)
 (add-json-encoder vl-alwaystype-p       vl-jp-alwaystype)
 
@@ -757,9 +751,6 @@ which could not hold such large values.</p>")
 
 (add-json-encoder vl-maybe-gatedelay-p vl-jp-maybe-gatedelay)
 
-(def-vl-jp-aggregate netdecl)
-(def-vl-jp-list netdecl :newlines 4)
-
 (def-vl-jp-aggregate plainarg)
 (def-vl-jp-list plainarg :newlines 4)
 
@@ -778,6 +769,11 @@ which could not hold such large values.</p>")
   :inline t
   (jp-sym x))
 
+(define vl-jp-nettypename ((x vl-nettypename-p) &key (ps 'ps))
+  :parents (json-encoders)
+  :inline t
+  (jp-sym x))
+
 (define vl-jp-coretypename ((x vl-coretypename-p) &key (ps 'ps))
   :parents (json-encoders)
   :inline t
@@ -785,6 +781,7 @@ which could not hold such large values.</p>")
 
 (add-json-encoder vl-lifetime-p         vl-jp-lifetime)
 (add-json-encoder vl-randomqualifier-p  vl-jp-randomqualifier)
+(add-json-encoder vl-nettypename-p      vl-jp-nettypename)
 (add-json-encoder vl-coretypename-p     vl-jp-coretypename)
 
 (define vl-jp-packeddimension ((x vl-packeddimension-p) &key (ps 'ps))
@@ -823,6 +820,11 @@ which could not hold such large values.</p>")
  (define vl-jp-datatype ((x vl-datatype-p) &key (ps 'ps))
    :measure (two-nats-measure (vl-datatype-count x) 0)
    (vl-datatype-case x
+     :vl-nettype
+     (jp-object :tag     (jp-sym :vl-nettype)
+                :name    (vl-jp-nettypename x.name)
+                :signedp (jp-bool x.signedp)
+                :range   (vl-jp-maybe-range x.range))
      :vl-coretype
      (jp-object :tag     (jp-sym :vl-coretype)
                 :name    (vl-jp-coretypename x.name)

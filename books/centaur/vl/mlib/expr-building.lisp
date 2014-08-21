@@ -346,6 +346,3 @@ garbage out.</p>"
     (equal (len (vl-make-binary-gateinstlist type outs as bs :atts atts :loc loc))
            (len outs))))
 
-
-
-

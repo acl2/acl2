@@ -877,7 +877,6 @@ are well-typed and have compatible widths.</p>")
        ((mv delta cvtregs2) (vl-cblocks-synth (cdr x) vars delta)))
     (mv delta (append cvtregs1 cvtregs2))))
 
-
 (define vl-module-combinational-elim ((x vl-module-p))
   :returns (new-x vl-module-p :hyp :fguard)
   (b* (((vl-module x) x)
@@ -906,29 +905,28 @@ are well-typed and have compatible widths.</p>")
 
        ;; Found blocks to convert.  Convert them into assigns.
        (delta (vl-starting-delta x))
-       (delta (change-vl-delta delta
-                               :netdecls x.netdecls
-                               :assigns x.assigns))
+       (delta (change-vl-delta delta :assigns x.assigns))
        ((mv delta cvtregs) (vl-cblocks-synth cblocks x.vardecls delta))
-       ;; The delta may have assigns, netdecls, and warnings for us.
+       ;; The delta may have assigns, new vardecls, and new warnings for us.
        ((vl-delta delta) delta)
 
-       (non-regs (difference (mergesort cvtregs)
-                             (mergesort (vl-vardecllist->names x.vardecls))))
-       ((when non-regs)
-        ;; Should be impossible
-        (raise "Trying to convert non-registers: ~x0.~%" non-regs)
+       ((mv fixed-vardecls fixed-portdecls)
+        (vl-convert-regs cvtregs x.vardecls x.portdecls))
+
+       (final-vardecls (append-without-guard
+                        fixed-vardecls
+                        delta.vardecls))
+
+       ;; Extra sanity check: final vardecls had better all be unique
+       ((unless (uniquep (vl-vardecllist->names final-vardecls)))
+        (raise "Name clash when converting combinational blocks!  ~x0."
+               (duplicated-members (vl-vardecllist->names final-vardecls)))
         x)
 
-       ((mv vardecls-to-convert new-vardecls)
-        (vl-filter-vardecls cvtregs x.vardecls))
-
-       (new-netdecls (append (vl-always-convert-regs vardecls-to-convert)
-                             delta.netdecls))
        (new-x (change-vl-module x
                                 :alwayses others
-                                :netdecls new-netdecls
-                                :vardecls new-vardecls
+                                :vardecls final-vardecls
+                                :portdecls fixed-portdecls
                                 :assigns  delta.assigns
                                 :warnings delta.warnings)))
     new-x))

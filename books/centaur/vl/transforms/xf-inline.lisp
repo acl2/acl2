@@ -107,8 +107,6 @@ clever.</p>")
              (cw "no: inout ports~%"))
          (or (not x.alwayses)
              (cw "no: always blocks~%"))
-         (or (not x.vardecls)
-             (cw "no: var declarations~%"))
          (or (not x.paramdecls)
              (cw "no: parameter declarations~%"))
          (or (not x.fundecls)
@@ -228,7 +226,7 @@ clever.</p>")
       (modinsts  vl-modinstlist-p  :hyp :fguard)
       (gateinsts vl-gateinstlist-p :hyp :fguard)
       (assigns   vl-assignlist-p   :hyp :fguard)
-      (netdecls  vl-netdecllist-p  :hyp :fguard)
+      (vardecls  vl-vardecllist-p  :hyp :fguard)
       (warnings  vl-warninglist-p))
 
   (b* (((vl-modinst x) x)
@@ -261,17 +259,17 @@ clever.</p>")
        ;; location of the instance, all the names are fresh, and all the
        ;; expressions have been updated to the new names.
        (prefix           (or x.instname "inst"))
-       ((mv netdecls nf) (vl-namemangle-netdecls prefix sub.netdecls nf))
-       (netdecls         (vl-relocate-netdecls
+       ((mv vardecls nf) (vl-namemangle-vardecls prefix sub.vardecls nf))
+       (vardecls         (vl-relocate-vardecls
                           ;; Dumb hack: try to make sure that newly introduced net
                           ;; declarations come BEFORE any uses of them.
                           (change-vl-location
                            x.loc
                            :line (max 1 (- (vl-location->line x.loc) 1))
                            :col 0)
-                          netdecls))
-       (old-names        (vl-netdecllist->names sub.netdecls))
-       (new-names        (vl-netdecllist->names netdecls))
+                          vardecls))
+       (old-names        (vl-vardecllist->names sub.vardecls))
+       (new-names        (vl-vardecllist->names vardecls))
        (new-exprs        (vl-make-idexpr-list new-names nil nil))
        (sigma            (pairlis$ old-names new-exprs))
 
@@ -310,7 +308,7 @@ clever.</p>")
        ;; If we get this far, then the port-assigns are already set and everything
        ;; else is looking good, too.
        )
-    (mv nf modinsts gateinsts (append port-assigns assigns) netdecls warnings))
+    (mv nf modinsts gateinsts (append port-assigns assigns) vardecls warnings))
   ///
   (defmvtypes vl-inline-mod-in-modinst
     (nil true-listp true-listp true-listp true-listp nil)))
@@ -328,19 +326,19 @@ clever.</p>")
       (modinsts  vl-modinstlist-p  :hyp :fguard)
       (gateinsts vl-gateinstlist-p :hyp :fguard)
       (assigns   vl-assignlist-p   :hyp :fguard)
-      (netdecls  vl-netdecllist-p  :hyp :fguard)
+      (vardecls  vl-vardecllist-p  :hyp :fguard)
       (warnings  vl-warninglist-p))
   (b* (((when (atom x))
         (mv nf nil nil nil nil (ok)))
-       ((mv nf modinsts1 gateinsts1 assigns1 netdecls1 warnings)
+       ((mv nf modinsts1 gateinsts1 assigns1 vardecls1 warnings)
         (vl-inline-mod-in-modinst sub (car x) nf warnings))
-       ((mv nf modinsts2 gateinsts2 assigns2 netdecls2 warnings)
+       ((mv nf modinsts2 gateinsts2 assigns2 vardecls2 warnings)
         (vl-inline-mod-in-modinsts sub (cdr x) nf warnings)))
     (mv nf
         (append modinsts1 modinsts2)
         (append gateinsts1 gateinsts2)
         (append assigns1 assigns2)
-        (append netdecls1 netdecls2)
+        (append vardecls1 vardecls2)
         warnings))
   ///
   (defmvtypes vl-inline-mod-in-modinsts
@@ -359,14 +357,14 @@ clever.</p>")
        ((when (vl-module->hands-offp x))
         x)
        (nf (vl-starting-namefactory x))
-       ((mv nf modinsts gateinsts assigns netdecls warnings)
+       ((mv nf modinsts gateinsts assigns vardecls warnings)
         (vl-inline-mod-in-modinsts sub x.modinsts nf x.warnings)))
     (vl-free-namefactory nf)
     (change-vl-module x
                       :modinsts  modinsts
                       :gateinsts (append gateinsts x.gateinsts)
                       :assigns   (append assigns x.assigns)
-                      :netdecls  (append netdecls x.netdecls)
+                      :vardecls  (append vardecls x.vardecls)
                       :warnings  warnings)))
 
 (defprojection vl-inline-mod-in-mods-aux (sub x)

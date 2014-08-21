@@ -108,9 +108,9 @@ endmodule
                                (:vl-xor "XOR")
                                (:vl-xnor "XNOR")))))
 
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output n))
-       ((mv a-expr a-port a-portdecl a-netdecl)         (vl-occform-mkport "a" :vl-input n))
-       ((mv b-expr b-port b-portdecl b-netdecl)         (vl-occform-mkport "b" :vl-input n))
+       ((mv out-expr out-port out-portdecl out-vardecl) (vl-occform-mkport "out" :vl-output n))
+       ((mv a-expr a-port a-portdecl a-vardecl)         (vl-occform-mkport "a" :vl-input n))
+       ((mv b-expr b-port b-portdecl b-vardecl)         (vl-occform-mkport "b" :vl-input n))
        (out-wires (vl-make-list-of-bitselects out-expr 0 (- n 1)))
        (a-wires   (vl-make-list-of-bitselects a-expr   0 (- n 1)))
        (b-wires   (vl-make-list-of-bitselects b-expr   0 (- n 1)))
@@ -120,7 +120,7 @@ endmodule
                           :origname  name
                           :ports     (list out-port a-port b-port)
                           :portdecls (list out-portdecl a-portdecl b-portdecl)
-                          :netdecls  (list out-netdecl a-netdecl b-netdecl)
+                          :vardecls  (list out-vardecl a-vardecl b-vardecl)
                           :modinsts  insts
                           :minloc    *vl-fakeloc*
                           :maxloc    *vl-fakeloc*)
@@ -169,8 +169,8 @@ endmodule
 
        (name (hons-copy (cat "VL_" (natstr n) "_BIT_ASSIGN")))
 
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output n))
-       ((mv in-expr in-port in-portdecl in-netdecl)     (vl-occform-mkport "in" :vl-input n))
+       ((mv out-expr out-port out-portdecl out-vardecl) (vl-occform-mkport "out" :vl-output n))
+       ((mv in-expr in-port in-portdecl in-vardecl)     (vl-occform-mkport "in" :vl-input n))
 
        (out-wires (vl-make-list-of-bitselects out-expr 0 (- n 1)))
        (in-wires  (vl-make-list-of-bitselects in-expr  0 (- n 1)))
@@ -180,7 +180,7 @@ endmodule
                           :origname  name
                           :ports     (list out-port in-port)
                           :portdecls (list out-portdecl in-portdecl)
-                          :netdecls  (list out-netdecl in-netdecl)
+                          :vardecls  (list out-vardecl in-vardecl)
                           :modinsts  modinsts
                           :minloc    *vl-fakeloc*
                           :maxloc    *vl-fakeloc*)
@@ -224,8 +224,8 @@ above we would have:</p>
 
        (name (hons-copy (cat "VL_" (natstr n) "_BIT_NOT")))
 
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output n))
-       ((mv in-expr in-port in-portdecl in-netdecl)     (vl-occform-mkport "in" :vl-input n))
+       ((mv out-expr out-port out-portdecl out-vardecl) (vl-occform-mkport "out" :vl-output n))
+       ((mv in-expr in-port in-portdecl in-vardecl)     (vl-occform-mkport "in" :vl-input n))
 
        (out-wires (vl-make-list-of-bitselects out-expr 0 (- n 1)))
        (in-wires  (vl-make-list-of-bitselects in-expr 0 (- n 1)))
@@ -235,7 +235,7 @@ above we would have:</p>
                           :origname  name
                           :ports     (list out-port in-port)
                           :portdecls (list out-portdecl in-portdecl)
-                          :netdecls  (list out-netdecl in-netdecl)
+                          :vardecls  (list out-vardecl in-vardecl)
                           :modinsts  insts
                           :minloc    *vl-fakeloc*
                           :maxloc    *vl-fakeloc*)
@@ -291,8 +291,8 @@ endmodule
                                (:vl-unary-bitor  "OR")
                                (otherwise        "XOR")))))
 
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output 1))
-       ((mv in-expr in-port in-portdecl in-netdecl)     (vl-occform-mkport "in" :vl-input n))
+       ((mv out-expr out-port out-portdecl out-vardecl) (vl-occform-mkport "out" :vl-output 1))
+       ((mv in-expr in-port in-portdecl in-vardecl)     (vl-occform-mkport "in" :vl-input n))
        (ports     (list out-port in-port))
        (portdecls (list out-portdecl in-portdecl))
        (prim      (case type
@@ -316,7 +316,7 @@ endmodule
                                 :origname  name
                                 :ports     ports
                                 :portdecls portdecls
-                                :netdecls  (list in-netdecl out-netdecl)
+                                :vardecls  (list in-vardecl out-vardecl)
                                 :modinsts  (list inst)
                                 :minloc    *vl-fakeloc*
                                 :maxloc    *vl-fakeloc*)
@@ -325,7 +325,7 @@ endmodule
        ;; Otherwise, n >= 3 and we use a temporary wire.
 
        ;; wire [n-3:0] temp;
-       ((mv temp-expr temp-netdecl) (vl-occform-mkwire "temp" (- n 2)))
+       ((mv temp-expr temp-vardecl) (vl-occform-mkwire "temp" (- n 2)))
 
        (out-wires  (append (vl-make-list-of-bitselects temp-expr 0 (- n 3)) (list out-expr)))
        (lhs-wires  (vl-make-list-of-bitselects in-expr 1 (- n 1)))
@@ -336,7 +336,7 @@ endmodule
                           :origname  name
                           :ports     ports
                           :portdecls portdecls
-                          :netdecls  (list in-netdecl out-netdecl temp-netdecl)
+                          :vardecls  (list in-vardecl out-vardecl temp-vardecl)
                           :modinsts  insts
                           :minloc    *vl-fakeloc*
                           :maxloc    *vl-fakeloc*)
@@ -420,10 +420,10 @@ when the select is X.  So, we generally set @('approxp') to T.</p>"
 
        (name (cat "VL_" (natstr n) "_BIT_" (if approxp "APPROX_MUX" "MUX")))
 
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output n))
-       ((mv sel-expr sel-port sel-portdecl sel-netdecl) (vl-primitive-mkport "sel" :vl-input))
-       ((mv a-expr a-port a-portdecl a-netdecl)         (vl-occform-mkport "a"   :vl-input n))
-       ((mv b-expr b-port b-portdecl b-netdecl)         (vl-occform-mkport "b"   :vl-input n))
+       ((mv out-expr out-port out-portdecl out-vardecl) (vl-occform-mkport "out" :vl-output n))
+       ((mv sel-expr sel-port sel-portdecl sel-vardecl) (vl-primitive-mkport "sel" :vl-input))
+       ((mv a-expr a-port a-portdecl a-vardecl)         (vl-occform-mkport "a"   :vl-input n))
+       ((mv b-expr b-port b-portdecl b-vardecl)         (vl-occform-mkport "b"   :vl-input n))
 
        (out-wires (vl-make-list-of-bitselects out-expr 0 (- n 1)))
        (a-wires   (vl-make-list-of-bitselects a-expr 0 (- n 1)))
@@ -435,7 +435,7 @@ when the select is X.  So, we generally set @('approxp') to T.</p>"
                              :origname  name
                              :ports     (list out-port sel-port a-port b-port)
                              :portdecls (list out-portdecl sel-portdecl a-portdecl b-portdecl)
-                             :netdecls  (list out-netdecl sel-netdecl a-netdecl b-netdecl)
+                             :vardecls  (list out-vardecl sel-vardecl a-vardecl b-vardecl)
                              :modinsts  insts
                              :minloc    *vl-fakeloc*
                              :maxloc    *vl-fakeloc*)))
@@ -477,9 +477,9 @@ actually handles both cases.</p>"
 
        (name (hons-copy (cat "VL_" (natstr n) "_BIT_ZMUX")))
 
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output n))
-       ((mv sel-expr sel-port sel-portdecl sel-netdecl) (vl-primitive-mkport "sel" :vl-input))
-       ((mv a-expr a-port a-portdecl a-netdecl)         (vl-occform-mkport "a"   :vl-input n))
+       ((mv out-expr out-port out-portdecl out-vardecl) (vl-occform-mkport "out" :vl-output n))
+       ((mv sel-expr sel-port sel-portdecl sel-vardecl) (vl-primitive-mkport "sel" :vl-input))
+       ((mv a-expr a-port a-portdecl a-vardecl)         (vl-occform-mkport "a"   :vl-input n))
 
        (out-wires        (vl-make-list-of-bitselects out-expr 0 (- n 1)))
        (a-wires          (vl-make-list-of-bitselects a-expr 0 (- n 1)))
@@ -489,7 +489,7 @@ actually handles both cases.</p>"
                             :origname  name
                             :ports     (list out-port sel-port a-port)
                             :portdecls (list out-portdecl sel-portdecl a-portdecl)
-                            :netdecls  (list out-netdecl sel-netdecl a-netdecl)
+                            :vardecls  (list out-vardecl sel-vardecl a-vardecl)
                             :modinsts  insts
                             :minloc    *vl-fakeloc*
                             :maxloc    *vl-fakeloc*)))
@@ -528,10 +528,10 @@ reduction-and the results.</p> "
 
        (name (hons-copy (cat "VL_" (natstr n) "_BIT_CEQ")))
 
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output 1))
-       ((mv a-expr   a-port   a-portdecl   a-netdecl)   (vl-occform-mkport "a" :vl-input n))
-       ((mv b-expr   b-port   b-portdecl   b-netdecl)   (vl-occform-mkport "b" :vl-input n))
-       ((mv tmp-expr tmp-netdecl)                       (vl-occform-mkwire "tmp" n))
+       ((mv out-expr out-port out-portdecl out-vardecl) (vl-occform-mkport "out" :vl-output 1))
+       ((mv a-expr   a-port   a-portdecl   a-vardecl)   (vl-occform-mkport "a" :vl-input n))
+       ((mv b-expr   b-port   b-portdecl   b-vardecl)   (vl-occform-mkport "b" :vl-input n))
+       ((mv tmp-expr tmp-vardecl)                       (vl-occform-mkwire "tmp" n))
 
        ;; A bunch of instances: VL_1_BIT_CEQ bit_i (tmp[i], a[i], b[i]);
        (tmp-wires (vl-make-list-of-bitselects tmp-expr 0 (- n 1)))
@@ -548,7 +548,7 @@ reduction-and the results.</p> "
                            :origname  name
                            :ports     (list out-port a-port b-port)
                            :portdecls (list out-portdecl a-portdecl b-portdecl)
-                           :netdecls  (list out-netdecl a-netdecl b-netdecl tmp-netdecl)
+                           :vardecls  (list out-vardecl a-vardecl b-vardecl tmp-vardecl)
                            :modinsts  (append insts (list and-inst))
                            :minloc    *vl-fakeloc*
                            :maxloc    *vl-fakeloc*)
@@ -599,9 +599,9 @@ endmodule
 
        (name (hons-copy (cat "VL_" (natstr n) "_BIT_X")))
 
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output n))
+       ((mv out-expr out-port out-portdecl out-vardecl) (vl-occform-mkport "out" :vl-output n))
 
-       ((mv x-expr x-netdecl) (vl-occform-mkwire "xwire" 1))
+       ((mv x-expr x-vardecl) (vl-occform-mkwire "xwire" 1))
        (x-inst (vl-simple-inst *vl-1-bit-x* "xdriver" x-expr))
 
        (out-wires (vl-make-list-of-bitselects out-expr 0 (- n 1)))
@@ -612,7 +612,7 @@ endmodule
                           :origname  name
                           :ports     (list out-port)
                           :portdecls (list out-portdecl)
-                          :netdecls  (list out-netdecl x-netdecl)
+                          :vardecls  (list out-vardecl x-vardecl)
                           :modinsts  (cons x-inst out-insts)
                           :minloc    *vl-fakeloc*
                           :maxloc    *vl-fakeloc*)

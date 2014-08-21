@@ -1190,3 +1190,5 @@ when all arguments are signed."
            (vl-exprtype-max x (vl-exprtype-max y z))))
 
   (deffixequiv vl-exprtype-max-fn :args ((x vl-exprtype-p) (y vl-exprtype-p))))
+
+

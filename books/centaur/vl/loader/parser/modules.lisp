@@ -37,6 +37,7 @@
 (include-book "gates")      ;; vl-gateinstlist-p
 (include-book "functions")  ;; vl-fundecllist-p
 (include-book "../make-implicit-wires")
+(include-book "../portdecl-sign")
 (include-book "../../mlib/context")  ;; vl-modelement-p, sorting modelements
 (include-book "../../mlib/port-tools")  ;; vl-ports-from-portdecls
 (local (include-book "../../util/arithmetic"))
@@ -58,9 +59,11 @@
    (warnings vl-warninglist-p))
   :returns (mod vl-module-p)
   (b* (((mv items warnings) (vl-make-implicit-wires items warnings))
-       ((mv item-ports portdecls assigns netdecls vardecls paramdecls
+       ((mv item-ports portdecls assigns vardecls paramdecls
             fundecls taskdecls modinsts gateinsts alwayses initials)
-        (vl-sort-modelements items nil nil nil nil nil nil nil nil nil nil nil nil)))
+        (vl-sort-modelements items nil nil nil nil nil nil nil nil nil nil nil))
+       ((mv warnings portdecls vardecls)
+        (vl-portdecl-sign portdecls vardecls warnings)))
     (or (not item-ports)
         (raise "There shouldn't be any ports in the items."))
     (make-vl-module :name       name
@@ -68,7 +71,6 @@
                     :ports      ports
                     :portdecls  portdecls
                     :assigns    assigns
-                    :netdecls   netdecls
                     :vardecls   vardecls
                     :paramdecls paramdecls
                     :fundecls   fundecls

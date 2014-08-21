@@ -581,10 +581,10 @@ some special handling.</p>"
   :parents (vl-fundecl-expand-params)
   :short "Bind a function's parameter names to their values."
   ((x vl-paramdecllist-p))
-  :returns (sigma vl-sigma-p :hyp :fguard)
+  :returns (sigma vl-sigma-p)
   (b* (((when (atom x))
         nil)
-       ((vl-paramdecl x1) (car x))
+       ((vl-paramdecl x1) (vl-paramdecl-fix (car x)))
        ((unless (and (eq (vl-paramtype-kind x1.type) :vl-implicitvalueparam)
                      (vl-implicitvalueparam->default x1.type)))
         ;; Checking paramdecllist-types-okp should prevent this
@@ -1224,12 +1224,10 @@ generated list of assignments.  Otherwise we fail with fatal warnings.</p>"
 functions we use while inlining function calls."
   :tag :vl-funtemplate
   :layout :tree
-
-
   ((name    stringp :rule-classes :type-prescription)
-   (inputs  vl-netdecllist-p)
-   (locals  vl-netdecllist-p)
-   (out     vl-netdecl-p)
+   (inputs  vl-vardecllist-p)
+   (locals  vl-vardecllist-p)
+   (out     vl-vardecl-p)
    (assigns vl-assignlist-p))
 
   :long "<p>For each of the module's functions, we generate a template that
@@ -1292,28 +1290,29 @@ throughout the rest of the module we only need one pass.</p>")
                        :args (list function x1.name x1.type)))))
     (vl-taskportlist-types-okp (cdr x) warnings function)))
 
-(define vl-funinput-to-netdecl
+(define vl-funinput-to-vardecl
   :parents (vl-funtemplate-p)
   :short "Convert a function's input declaration into a net declaration for its
 funtemplate."
   ((x vl-taskport-p))
-  :returns (netdecl vl-netdecl-p)
+  :returns (vardecl vl-vardecl-p)
   :long "<p>We assume the input is okay in the sense of @(see
 vl-taskportlist-types-okp).</p>"
   (b* (((vl-taskport x) x)
-       (name-atom (make-vl-atom :guts (make-vl-string :value x.name))))
-    (make-vl-netdecl :name    x.name
-                     :type    :vl-wire
-                     :range   x.range
-                     :arrdims nil
-                     :atts    (acons "VL_FUNCTION_INPUT" name-atom x.atts)
-                     :signedp (eq x.type :vl-signed)
-                     :loc     x.loc)))
+       (name-atom (make-vl-atom :guts (make-vl-string :value x.name)))
+       (type (make-vl-nettype :name :vl-wire
+                              :range x.range
+                              :signedp (eq x.type :vl-signed))))
+    (make-vl-vardecl :name  x.name
+                     :type  type
+                     :dims  nil
+                     :atts  (acons "VL_FUNCTION_INPUT" name-atom x.atts)
+                     :loc   x.loc)))
 
-(defprojection vl-funinputlist-to-netdecls ((x vl-taskportlist-p))
+(defprojection vl-funinputlist-to-vardecls ((x vl-taskportlist-p))
   :parents (vl-funtemplate-p)
-  :returns (nets vl-netdecllist-p)
-  (vl-funinput-to-netdecl x))
+  :returns (nets vl-vardecllist-p)
+  (vl-funinput-to-vardecl x))
 
 (define vl-fun-vardecllist-types-okp
   :parents (vl-funtemplate-p)
@@ -1352,30 +1351,31 @@ vl-taskportlist-types-okp).</p>"
       (implies okp
                (vl-simplereglist-p x)))))
 
-(define vl-fun-vardecl-to-netdecl
+(define vl-fun-vardecl-to-vardecl
   :parents (vl-funtemplate-p)
   :short "Convert a function's var declaration into a net declaration for its
 funtemplate."
   ((x vl-vardecl-p))
   :guard (vl-simplereg-p x)
-  :returns (netdecl vl-netdecl-p)
+  :returns (vardecl vl-vardecl-p)
   :long "<p>We assume the input is okay in the sense of @(see
 vl-fun-vardecllist-types-okp).</p>"
   (b* (((vl-vardecl x) x)
-       (name-atom (make-vl-atom :guts (make-vl-string :value x.name))))
-    (make-vl-netdecl :name    x.name
-                     :type    :vl-wire
-                     :range   (vl-simplereg->range x)
-                     :arrdims nil
-                     :atts    (acons "VL_FUNCTION_VAR" name-atom x.atts)
-                     :signedp (vl-simplereg->signedp x)
-                     :loc     x.loc)))
+       (name-atom (make-vl-atom :guts (make-vl-string :value x.name)))
+       (type      (make-vl-nettype :name :vl-wire
+                                   :range   (vl-simplereg->range x)
+                                   :signedp (vl-simplereg->signedp x))))
+    (make-vl-vardecl :name  x.name
+                     :type  type
+                     :dims  nil
+                     :atts  (acons "VL_FUNCTION_VAR" name-atom x.atts)
+                     :loc   x.loc)))
 
-(defprojection vl-fun-vardecllist-to-netdecls ((x vl-vardecllist-p))
+(defprojection vl-fun-vardecllist-to-vardecls ((x vl-vardecllist-p))
   :parents (vl-funtemplate-p)
-  :returns (nets vl-netdecllist-p)
+  :returns (nets vl-vardecllist-p)
   :guard (vl-simplereglist-p x)
-  (vl-fun-vardecl-to-netdecl x))
+  (vl-fun-vardecl-to-vardecl x))
 
 
 (define vl-fundecl-expansion-template
@@ -1427,17 +1427,17 @@ unsupported constructs or doesn't meet our other sanity criteria.</p>"
        ((unless okp) (mv nil warnings)) ;; already warned
 
        (funname-atom (make-vl-atom :guts (make-vl-funname :name x.name)))
-       (result-net   (make-vl-netdecl
-                      :name    x.name
-                      :range   x.rrange
-                      :type    :vl-wire
-                      :atts    (list (cons "VL_FUNCTION_RETURN" funname-atom))
-                      :signedp (eq x.rtype :vl-signed)
-                      :loc     x.loc))
+       (result-type  (make-vl-nettype :name :vl-wire
+                                      :range x.rrange
+                                      :signedp (eq x.rtype :vl-signed)))
+       (result-net   (make-vl-vardecl :name    x.name
+                                      :type    result-type
+                                      :atts    (list (cons "VL_FUNCTION_RETURN" funname-atom))
+                                      :loc     x.loc))
        (template     (make-vl-funtemplate
                       :name    x.name
-                      :inputs  (vl-funinputlist-to-netdecls x.inputs)
-                      :locals  (vl-fun-vardecllist-to-netdecls vardecls)
+                      :inputs  (vl-funinputlist-to-vardecls x.inputs)
+                      :locals  (vl-fun-vardecllist-to-vardecls vardecls)
                       :out     result-net
                       :assigns assigns)))
 
@@ -1496,40 +1496,40 @@ unsupported constructs or doesn't meet our other sanity criteria.</p>"
     (cons (change-vl-assign (car x) :loc loc)
           (vl-relocate-assignments (cdr x) loc))))
 
-(define vl-funexpand-rename-netdecls
+(define vl-funexpand-rename-vardecls
   :parents (vl-expand-function-call)
   :short "Generate new names for a list of net declarations and change their
 locations; this is used to give new names to the wires in a function call."
-  ((x   vl-netdecllist-p "Net declarations from a @(see vl-funtemplate-p).  We
+  ((x   vl-vardecllist-p "Var declarations from a @(see vl-funtemplate-p).  We
                           use this to try to generate names that correspond to
                           the original names being used in the function.")
    (nf  vl-namefactory-p "Name factory for fresh name generation.")
    (loc vl-location-p    "Location of the function call, so we can generate the
                           new wires near the site of their use."))
   :returns
-  (mv (new-x vl-netdecllist-p)
+  (mv (new-x vl-vardecllist-p)
       (nf    vl-namefactory-p))
   (b* (((when (atom x))
         (mv nil (vl-namefactory-fix nf)))
        ((mv new-name nf)
-        (vl-namefactory-indexed-name (vl-netdecl->name (car x)) nf))
-       (car-renamed (change-vl-netdecl (car x)
+        (vl-namefactory-indexed-name (vl-vardecl->name (car x)) nf))
+       (car-renamed (change-vl-vardecl (car x)
                                        :name new-name
                                        :loc loc))
        ((mv cdr-renamed nf)
-        (vl-funexpand-rename-netdecls (cdr x) nf loc)))
+        (vl-funexpand-rename-vardecls (cdr x) nf loc)))
     (mv (cons car-renamed cdr-renamed) nf))
   ///
-  (defthm consp-of-vl-funexpand-rename-netdecls
-    (equal (consp (mv-nth 0 (vl-funexpand-rename-netdecls x nf loc)))
+  (defthm consp-of-vl-funexpand-rename-vardecls
+    (equal (consp (mv-nth 0 (vl-funexpand-rename-vardecls x nf loc)))
            (consp x)))
 
-  (defthm len-of-vl-funexpand-rename-netdecls
-    (equal (len (mv-nth 0 (vl-funexpand-rename-netdecls x nf loc)))
+  (defthm len-of-vl-funexpand-rename-vardecls
+    (equal (len (mv-nth 0 (vl-funexpand-rename-vardecls x nf loc)))
            (len x)))
 
-  (defthm true-listp-of-vl-funexpand-rename-netdecls
-    (true-listp (mv-nth 0 (vl-funexpand-rename-netdecls x nf loc)))
+  (defthm true-listp-of-vl-funexpand-rename-vardecls
+    (true-listp (mv-nth 0 (vl-funexpand-rename-vardecls x nf loc)))
     :rule-classes :type-prescription))
 
 (define vl-expand-function-call
@@ -1538,7 +1538,7 @@ locations; this is used to give new names to the wires in a function call."
   ((x        vl-funtemplate-p "Template for the function we want to expand.")
    (actuals  vl-exprlist-p    "Actuals for a particular call of this function.")
    (nf       vl-namefactory-p "For fresh name generation.")
-   (netdecls vl-netdecllist-p "Accumulator: wire declarations to add to the module.")
+   (vardecls vl-vardecllist-p "Accumulator: wire declarations to add to the module.")
    (assigns  vl-assignlist-p  "Accumulator: assignments to add to the module.")
    (warnings vl-warninglist-p "Ordinary @(see warnings) accumulator.")
    (ctx      vl-modelement-p  "Where the function call occurs; used as a context
@@ -1553,7 +1553,7 @@ locations; this is used to give new names to the wires in a function call."
                 "A simple identifier atom for the generated return-value wire.
                  The idea is to replace the function-call expression with this
                  @('expr').")
-      (netdecls vl-netdecllist-p)
+      (vardecls vl-vardecllist-p)
       (assigns  vl-assignlist-p))
 
   :long "<p>We might fail if there is an arity problem.  But if everything
@@ -1563,7 +1563,7 @@ lines up,</p>
 
 <li>We generate fresh wire names that will serve as the inputs, locals, and the
 return value wire for this function call; the corresponding declarations are
-added to the @('netdecls') accumulator.</li>
+added to the @('vardecls') accumulator.</li>
 
 <li>We generate new assignments that initialize the generated input wire names
 with the actuals; these assignments are added to the @('assigns')
@@ -1576,7 +1576,7 @@ to the @('assigns') accumulator.</li>
 </ul>"
 
   (b* ((nf       (vl-namefactory-fix nf))
-       (netdecls (vl-netdecllist-fix netdecls))
+       (vardecls (vl-vardecllist-fix vardecls))
        (assigns  (vl-assignlist-fix assigns))
        ((vl-funtemplate x) x)
 
@@ -1597,18 +1597,18 @@ to the @('assigns') accumulator.</li>
                                  (len x.inputs)
                                  (if (vl-plural-p x.inputs) "s" "")
                                  this-call))
-              nf nil netdecls assigns)))
+              nf nil vardecls assigns)))
 
        ;; Generate fresh wires for everything
        (loc                 (vl-modelement-loc ctx))
-       ((mv input-nets nf)  (vl-funexpand-rename-netdecls x.inputs nf loc))
-       ((mv local-nets nf)  (vl-funexpand-rename-netdecls x.locals nf loc))
-       ((mv ret-nets nf)    (vl-funexpand-rename-netdecls (list x.out) nf loc))
-       (ret-net             (car ret-nets))
+       ((mv input-vars nf)  (vl-funexpand-rename-vardecls x.inputs nf loc))
+       ((mv local-vars nf)  (vl-funexpand-rename-vardecls x.locals nf loc))
+       ((mv ret-vars nf)    (vl-funexpand-rename-vardecls (list x.out) nf loc))
+       (ret-var             (car ret-vars))
 
-       (gen-input-names     (vl-netdecllist->names input-nets))
-       (gen-local-names     (vl-netdecllist->names local-nets))
-       (gen-ret-name        (vl-netdecl->name ret-net))
+       (gen-input-names     (vl-vardecllist->names input-vars))
+       (gen-local-names     (vl-vardecllist->names local-vars))
+       (gen-ret-name        (vl-vardecl->name ret-var))
 
        (gen-input-wires     (vl-make-idexpr-list gen-input-names nil nil))
        (gen-local-wires     (vl-make-idexpr-list gen-local-names nil nil))
@@ -1617,9 +1617,9 @@ to the @('assigns') accumulator.</li>
        (sigma
         ;; Big renaming alist that we can use to rewrite all of the assignments
         ;; to be in terms of our newly generated variables.
-        (cons (cons (vl-netdecl->name x.out) gen-ret-wire)
-              (append (pairlis$ (vl-netdecllist->names x.inputs) gen-input-wires)
-                      (pairlis$ (vl-netdecllist->names x.locals) gen-local-wires))))
+        (cons (cons (vl-vardecl->name x.out) gen-ret-wire)
+              (append (pairlis$ (vl-vardecllist->names x.inputs) gen-input-wires)
+                      (pairlis$ (vl-vardecllist->names x.locals) gen-local-wires))))
        ((with-fast sigma))
 
        (body-assigns  (vl-assignlist-subst x.assigns sigma))
@@ -1628,10 +1628,10 @@ to the @('assigns') accumulator.</li>
        ;; Assignments to drive the generated input wires with the actuals
        (input-assigns (vl-fun-make-assignments-to-inputs gen-input-names actuals loc))
 
-       (netdecls (append input-nets local-nets ret-nets netdecls))
+       (vardecls (append input-vars local-vars ret-vars vardecls))
        (assigns  (append input-assigns body-assigns assigns)))
 
-    (mv t (ok) nf gen-ret-wire netdecls assigns)))
+    (mv t (ok) nf gen-ret-wire vardecls assigns)))
 
 (define vl-check-bad-funcalls
   :short "Cause fatal warnings if function calls are in unacceptable places."
@@ -1722,14 +1722,14 @@ since it will be so tricky to get right.</p>"
 
   :long "<p>We recursively try to expand function calls throughout an
 expression (list).  We return a new expression (list) that is equivalent,
-assuming that the generated netdecls and assigns are added to the module, and
+assuming that the generated variables and assigns are added to the module, and
 which is free of function calls on success.</p>"
 
   (define vl-expr-expand-function-calls
     ((x         vl-expr-p)
      (templates vl-funtemplatelist-p)
      (nf        vl-namefactory-p)
-     (netdecls  vl-netdecllist-p)
+     (vardecls  vl-vardecllist-p)
      (assigns   vl-assignlist-p)
      (warnings  vl-warninglist-p)
      (ctx       vl-modelement-p))
@@ -1737,20 +1737,20 @@ which is free of function calls on success.</p>"
                  (warnings vl-warninglist-p)
                  (nf       vl-namefactory-p)
                  (new-x    vl-expr-p)
-                 (netdecls vl-netdecllist-p)
+                 (vardecls vl-vardecllist-p)
                  (assigns  vl-assignlist-p))
     :measure (vl-expr-count x)
     :verify-guards nil
     :flag :expr
     (b* ((x        (vl-expr-fix x))
          (nf       (vl-namefactory-fix nf))
-         (netdecls (vl-netdecllist-fix netdecls))
+         (vardecls (vl-vardecllist-fix vardecls))
          (assigns  (vl-assignlist-fix assigns))
          (warnings (vl-warninglist-fix warnings))
 
          ((when (vl-atom-p x))
           ;; Not a function call, nothing to do
-          (mv t (ok) nf x netdecls assigns))
+          (mv t (ok) nf x vardecls assigns))
 
          (op   (vl-nonatom->op x))
          (args (vl-nonatom->args x))
@@ -1786,17 +1786,17 @@ which is free of function calls on success.</p>"
              (mv t warnings))))
 
          ((unless okp)
-          (mv nil warnings nf x netdecls assigns))
+          (mv nil warnings nf x vardecls assigns))
 
-         ((mv okp warnings nf args-prime netdecls assigns)
+         ((mv okp warnings nf args-prime vardecls assigns)
           (vl-exprlist-expand-function-calls args templates
-                                             nf netdecls assigns warnings ctx))
+                                             nf vardecls assigns warnings ctx))
          ((unless okp)
-          (mv nil warnings nf x netdecls assigns))
+          (mv nil warnings nf x vardecls assigns))
 
          ((unless (eq op :vl-funcall))
           ;; Nothing more to do
-          (mv t warnings nf (change-vl-nonatom x :args args-prime) netdecls assigns))
+          (mv t warnings nf (change-vl-nonatom x :args args-prime) vardecls assigns))
 
          (funname (and (consp args-prime)
                        (vl-atom-p (car args-prime))
@@ -1810,7 +1810,7 @@ which is free of function calls on success.</p>"
                            this is seriously malformed.  Internal ~
                            representation: ~x1."
                      :args (list ctx x))
-              nf x netdecls assigns))
+              nf x vardecls assigns))
 
          (template (vl-find-funtemplate funname templates))
          ((unless template)
@@ -1819,21 +1819,21 @@ which is free of function calls on success.</p>"
                      :msg "In ~a0, there is a call to function ~w1, which is ~
                            not defined: ~a2."
                      :args (list ctx funname x))
-              nf x netdecls assigns))
+              nf x vardecls assigns))
 
-         ((mv okp warnings nf x-prime netdecls assigns)
+         ((mv okp warnings nf x-prime vardecls assigns)
           (vl-expand-function-call template (cdr args-prime)
-                                   nf netdecls assigns warnings ctx))
+                                   nf vardecls assigns warnings ctx))
          ((unless okp)
-          (mv nil warnings nf x netdecls assigns)))
+          (mv nil warnings nf x vardecls assigns)))
 
-      (mv t warnings nf x-prime netdecls assigns)))
+      (mv t warnings nf x-prime vardecls assigns)))
 
   (define vl-exprlist-expand-function-calls
     ((x         vl-exprlist-p)
      (templates vl-funtemplatelist-p)
      (nf        vl-namefactory-p)
-     (netdecls  vl-netdecllist-p)
+     (vardecls  vl-vardecllist-p)
      (assigns   vl-assignlist-p)
      (warnings  vl-warninglist-p)
      (ctx       vl-modelement-p))
@@ -1842,20 +1842,20 @@ which is free of function calls on success.</p>"
                  (nf       vl-namefactory-p)
                  (new-x    (and (vl-exprlist-p new-x)
                                 (equal (len new-x) (len x))))
-                 (netdecls vl-netdecllist-p)
+                 (vardecls vl-vardecllist-p)
                  (assigns  vl-assignlist-p))
     :measure (vl-exprlist-count x)
     :flag :list
     (b* ((nf       (vl-namefactory-fix nf))
-         (netdecls (vl-netdecllist-fix netdecls))
+         (vardecls (vl-vardecllist-fix vardecls))
          (assigns  (vl-assignlist-fix assigns))
          ((when (atom x))
-          (mv t (ok) nf nil netdecls assigns))
-         ((mv okp1 warnings nf car-prime netdecls assigns)
-          (vl-expr-expand-function-calls (car x) templates nf netdecls assigns warnings ctx))
-         ((mv okp2 warnings nf cdr-prime netdecls assigns)
-          (vl-exprlist-expand-function-calls (cdr x) templates nf netdecls assigns warnings ctx)))
-      (mv (and okp1 okp2) warnings nf (cons car-prime cdr-prime) netdecls assigns)))
+          (mv t (ok) nf nil vardecls assigns))
+         ((mv okp1 warnings nf car-prime vardecls assigns)
+          (vl-expr-expand-function-calls (car x) templates nf vardecls assigns warnings ctx))
+         ((mv okp2 warnings nf cdr-prime vardecls assigns)
+          (vl-exprlist-expand-function-calls (cdr x) templates nf vardecls assigns warnings ctx)))
+      (mv (and okp1 okp2) warnings nf (cons car-prime cdr-prime) vardecls assigns)))
   ///
   (verify-guards vl-expr-expand-function-calls))
 
@@ -1873,7 +1873,7 @@ which is free of function calls on success.</p>"
      ((x         ,type)
       (templates vl-funtemplatelist-p)
       (nf        vl-namefactory-p)
-      (netdecls  vl-netdecllist-p)
+      (vardecls  vl-vardecllist-p)
       (assigns   vl-assignlist-p)
       (warnings  vl-warninglist-p)
       . ,(and ctxp '((ctx vl-modelement-p))))
@@ -1881,11 +1881,11 @@ which is free of function calls on success.</p>"
                   (warnings vl-warninglist-p)
                   (nf       vl-namefactory-p)
                   (x-prime  ,type)
-                  (netdecls vl-netdecllist-p)
+                  (vardecls vl-vardecllist-p)
                   (assigns  vl-assignlist-p))
      (b* ((nf       (vl-namefactory-fix nf))
           (assigns  (vl-assignlist-fix assigns))
-          (netdecls (vl-netdecllist-fix netdecls)))
+          (vardecls (vl-vardecllist-fix vardecls)))
        ,body)))
 
 (defmacro def-vl-expand-function-calls-list (name &key type element ctxp)
@@ -1895,7 +1895,7 @@ which is free of function calls on success.</p>"
      ((x         ,type)
       (templates vl-funtemplatelist-p)
       (nf        vl-namefactory-p)
-      (netdecls  vl-netdecllist-p)
+      (vardecls  vl-vardecllist-p)
       (assigns   vl-assignlist-p)
       (warnings  vl-warninglist-p)
       . ,(and ctxp '((ctx vl-modelement-p))))
@@ -1904,21 +1904,21 @@ which is free of function calls on success.</p>"
          (warnings vl-warninglist-p)
          (nf       vl-namefactory-p)
          (x-prime  ,type)
-         (netdecls vl-netdecllist-p)
+         (vardecls vl-vardecllist-p)
          (assigns  vl-assignlist-p))
      (b* (((when (atom x))
-           (mv t (ok) (vl-namefactory-fix nf) nil (vl-netdecllist-fix netdecls) (vl-assignlist-fix assigns)))
-          ((mv successp warnings nf car-prime netdecls assigns)
-           (,element (car x) templates nf netdecls assigns warnings
+           (mv t (ok) (vl-namefactory-fix nf) nil (vl-vardecllist-fix vardecls) (vl-assignlist-fix assigns)))
+          ((mv successp warnings nf car-prime vardecls assigns)
+           (,element (car x) templates nf vardecls assigns warnings
                      . ,(and ctxp '(ctx))))
           ((unless successp)
-           (mv nil warnings nf nil netdecls assigns))
-          ((mv successp warnings nf cdr-prime netdecls assigns)
-           (,name (cdr x) templates nf netdecls assigns warnings
+           (mv nil warnings nf nil vardecls assigns))
+          ((mv successp warnings nf cdr-prime vardecls assigns)
+           (,name (cdr x) templates nf vardecls assigns warnings
                   . ,(and ctxp '(ctx))))
           ((unless successp)
-           (mv nil warnings nf nil netdecls assigns)))
-       (mv t warnings nf (cons car-prime cdr-prime) netdecls assigns))
+           (mv nil warnings nf nil vardecls assigns)))
+       (mv t warnings nf (cons car-prime cdr-prime) vardecls assigns))
      ///
      (defmvtypes ,name (nil nil nil true-listp nil nil))))
 
@@ -1933,12 +1933,12 @@ which is free of function calls on success.</p>"
        ((mv okp2 warnings)
         (vl-check-bad-funcalls x (vl-maybe-gatedelay-allexprs x.delay)
                                "delay expressions" warnings))
-       ((mv okp3 warnings nf rhs-prime netdecls assigns)
-        (vl-expr-expand-function-calls x.expr templates nf netdecls
+       ((mv okp3 warnings nf rhs-prime vardecls assigns)
+        (vl-expr-expand-function-calls x.expr templates nf vardecls
                                        assigns warnings x))
        (okp     (and okp1 okp2 okp3))
        (x-prime (change-vl-assign x :expr rhs-prime)))
-    (mv okp warnings nf x-prime netdecls assigns)))
+    (mv okp warnings nf x-prime vardecls assigns)))
 
 (def-vl-expand-function-calls-list vl-assignlist-expand-function-calls
   :type vl-assignlist-p
@@ -1954,13 +1954,13 @@ which is free of function calls on success.</p>"
 
        ((unless x.expr)
         ;; Blanks are fine, nothing to do
-        (mv t (ok) nf x netdecls assigns))
+        (mv t (ok) nf x vardecls assigns))
 
        ((unless (vl-expr-has-funcalls x.expr))
         ;; Most of the time there aren't any function calls, so we don't really
         ;; need to be adding fatal warnings everywhere if a module instance
         ;; isn't resolved, and we don't need to do any re-consing.
-        (mv t (ok) nf x netdecls assigns))
+        (mv t (ok) nf x vardecls assigns))
 
        ;; Else, double-check the direction.  We definitely don't want to expand
        ;; a function call unless this is an input port, because it doesn't make
@@ -1972,7 +1972,7 @@ which is free of function calls on success.</p>"
                    :msg "In ~a0, expected all arguments to be resolved before ~
                          function expansion."
                    :args (list ctx))
-            nf x netdecls assigns))
+            nf x vardecls assigns))
 
        ((unless (eq x.dir :vl-input))
         (mv nil
@@ -1981,15 +1981,15 @@ which is free of function calls on success.</p>"
                          connection, ~a2, but we only allow function calls in ~
                          input-port connections."
                    :args (list ctx x.dir x))
-            nf x netdecls assigns))
+            nf x vardecls assigns))
 
        ;; Else, seems okay to expand the function calls here.
-       ((mv okp warnings nf expr-prime netdecls assigns)
-        (vl-expr-expand-function-calls x.expr templates nf netdecls
+       ((mv okp warnings nf expr-prime vardecls assigns)
+        (vl-expr-expand-function-calls x.expr templates nf vardecls
                                        assigns warnings ctx))
 
        (x-prime (change-vl-plainarg x :expr expr-prime)))
-    (mv okp warnings nf x-prime netdecls assigns)))
+    (mv okp warnings nf x-prime vardecls assigns)))
 
 (def-vl-expand-function-calls-list vl-plainarglist-expand-function-calls
   :type vl-plainarglist-p
@@ -2004,21 +2004,21 @@ which is free of function calls on success.</p>"
        ((unless (vl-exprlist-has-funcalls (vl-arguments-allexprs x)))
         ;; Common case of no function calls, nothing to do, don't need to
         ;; be adding fatal warnings everywhere in case of unresolved args.
-        (mv t (ok) nf x netdecls assigns))
+        (mv t (ok) nf x vardecls assigns))
        ((when (eq (vl-arguments-kind x) :vl-arguments-named))
         (mv nil
             (fatal :type :vl-bad-instance
                    :msg "In ~a0, we expected all arguments to be resolved ~
                          before function expansion."
                    :args (list ctx))
-            nf x netdecls assigns))
+            nf x vardecls assigns))
        ;; Else, seems okay to expand the function calls here.
-       ((mv okp warnings nf args-prime netdecls assigns)
+       ((mv okp warnings nf args-prime vardecls assigns)
         (vl-plainarglist-expand-function-calls (vl-arguments-plain->args x)
-                                               templates nf netdecls assigns
+                                               templates nf vardecls assigns
                                                warnings ctx))
        (x-prime (make-vl-arguments-plain :args args-prime)))
-    (mv okp warnings nf x-prime netdecls assigns)))
+    (mv okp warnings nf x-prime vardecls assigns)))
 
 (def-vl-expand-function-calls vl-modinst-expand-function-calls
   :type vl-modinst-p
@@ -2033,12 +2033,12 @@ which is free of function calls on success.</p>"
        ((mv okp3 warnings)
         (vl-check-bad-funcalls x (vl-paramargs-allexprs x.paramargs)
                                "module instance parameter-lists" warnings))
-       ((mv okp4 warnings nf portargs-prime netdecls assigns)
+       ((mv okp4 warnings nf portargs-prime vardecls assigns)
         (vl-arguments-expand-function-calls x.portargs templates nf
-                                            netdecls assigns warnings x))
+                                            vardecls assigns warnings x))
        (okp (and okp1 okp2 okp3 okp4))
        (x-prime (change-vl-modinst x :portargs portargs-prime)))
-    (mv okp warnings nf x-prime netdecls assigns)))
+    (mv okp warnings nf x-prime vardecls assigns)))
 
 (def-vl-expand-function-calls-list vl-modinstlist-expand-function-calls
   :type vl-modinstlist-p
@@ -2056,12 +2056,12 @@ which is free of function calls on success.</p>"
        ((mv okp2 warnings)
         (vl-check-bad-funcalls x (vl-maybe-gatedelay-allexprs x.delay)
                                "delay expressions" warnings))
-       ((mv okp3 warnings nf args-prime netdecls assigns)
-        (vl-plainarglist-expand-function-calls x.args templates nf netdecls
+       ((mv okp3 warnings nf args-prime vardecls assigns)
+        (vl-plainarglist-expand-function-calls x.args templates nf vardecls
                                                assigns warnings x))
        (okp     (and okp1 okp2 okp3))
        (x-prime (change-vl-gateinst x :args args-prime)))
-    (mv okp warnings nf x-prime netdecls assigns)))
+    (mv okp warnings nf x-prime vardecls assigns)))
 
 (def-vl-expand-function-calls-list vl-gateinstlist-expand-function-calls
   :type vl-gateinstlist-p
@@ -2074,7 +2074,7 @@ which is free of function calls on success.</p>"
   (define vl-stmt-expand-function-calls ((x         vl-stmt-p)
                                          (templates vl-funtemplatelist-p)
                                          (nf        vl-namefactory-p)
-                                         (netdecls  vl-netdecllist-p)
+                                         (vardecls  vl-vardecllist-p)
                                          (assigns   vl-assignlist-p)
                                          (warnings  vl-warninglist-p)
                                          (ctx       vl-modelement-p))
@@ -2082,14 +2082,14 @@ which is free of function calls on success.</p>"
                  (warnings vl-warninglist-p)
                  (nf       vl-namefactory-p)
                  (new-x    vl-stmt-p)
-                 (netdecls vl-netdecllist-p)
+                 (vardecls vl-vardecllist-p)
                  (assigns  vl-assignlist-p))
     :verify-guards nil
     :measure (vl-stmt-count x)
     :flag :stmt
     (b* ((x        (vl-stmt-fix x))
          (nf       (vl-namefactory-fix nf))
-         (netdecls (vl-netdecllist-fix netdecls))
+         (vardecls (vl-vardecllist-fix vardecls))
          (assigns  (vl-assignlist-fix assigns))
          (warnings (vl-warninglist-fix warnings))
 
@@ -2097,7 +2097,7 @@ which is free of function calls on success.</p>"
 
           (case (vl-stmt-kind x)
             (:vl-nullstmt
-             (mv t (ok) nf x netdecls assigns))
+             (mv t (ok) nf x vardecls assigns))
 
             (:vl-assignstmt
              (b* (((vl-assignstmt x) x)
@@ -2107,17 +2107,17 @@ which is free of function calls on success.</p>"
                   ((mv okp2 warnings)
                    (vl-check-bad-funcalls ctx (vl-maybe-delayoreventcontrol-allexprs x.ctrl)
                                           "delay/event controls" warnings))
-                  ((mv okp3 warnings nf expr-prime netdecls assigns)
-                   (vl-expr-expand-function-calls x.expr templates nf netdecls
+                  ((mv okp3 warnings nf expr-prime vardecls assigns)
+                   (vl-expr-expand-function-calls x.expr templates nf vardecls
                                                   assigns warnings ctx))
                   (okp     (and okp1 okp2 okp3))
                   (x-prime (change-vl-assignstmt x :expr expr-prime)))
-               (mv okp warnings nf x-prime netdecls assigns)))
+               (mv okp warnings nf x-prime vardecls assigns)))
 
             (:vl-deassignstmt
              (b* (((vl-deassignstmt x) x)
                   ((mv okp warnings) (vl-check-bad-funcalls ctx (list x.lvalue) "deassign statements" warnings)))
-               (mv okp warnings nf x netdecls assigns)))
+               (mv okp warnings nf x vardecls assigns)))
 
             (:vl-enablestmt
              (b* (((vl-enablestmt x) x)
@@ -2126,24 +2126,24 @@ which is free of function calls on success.</p>"
                                           "enable statement identifiers" warnings))
                   ;; BOZO we probably need to be making input/output distinctions here to
                   ;; prevent function calls on task outputs.
-                  ((mv okp2 warnings nf args-prime netdecls assigns)
-                   (vl-exprlist-expand-function-calls x.args templates nf netdecls
+                  ((mv okp2 warnings nf args-prime vardecls assigns)
+                   (vl-exprlist-expand-function-calls x.args templates nf vardecls
                                                       assigns warnings ctx))
                   (okp     (and okp1 okp2))
                   (x-prime (change-vl-enablestmt x :args args-prime)))
-               (mv okp warnings nf x-prime netdecls assigns)))
+               (mv okp warnings nf x-prime vardecls assigns)))
 
             (:vl-disablestmt
              (b* (((vl-disablestmt x) x)
                   ((mv okp warnings)
                    (vl-check-bad-funcalls ctx (list x.id) "disable statements" warnings)))
-               (mv okp warnings nf x netdecls assigns)))
+               (mv okp warnings nf x vardecls assigns)))
 
             (otherwise
              (b* (((vl-eventtriggerstmt x) x)
                   ((mv okp warnings)
                    (vl-check-bad-funcalls ctx (list x.id) "event trigger statements" warnings)))
-               (mv okp warnings nf x netdecls assigns)))))
+               (mv okp warnings nf x vardecls assigns)))))
 
          (x.exprs (vl-compoundstmt->exprs x))
          (x.stmts (vl-compoundstmt->stmts x))
@@ -2170,21 +2170,21 @@ which is free of function calls on success.</p>"
                 (t
                  (mv t warnings))))
 
-         ((mv okp4 warnings nf exprs-prime netdecls assigns)
-          (vl-exprlist-expand-function-calls x.exprs templates nf netdecls assigns warnings ctx))
-         ((mv okp5 warnings nf stmts-prime netdecls assigns)
-          (vl-stmtlist-expand-function-calls x.stmts templates nf netdecls assigns warnings ctx))
+         ((mv okp4 warnings nf exprs-prime vardecls assigns)
+          (vl-exprlist-expand-function-calls x.exprs templates nf vardecls assigns warnings ctx))
+         ((mv okp5 warnings nf stmts-prime vardecls assigns)
+          (vl-stmtlist-expand-function-calls x.stmts templates nf vardecls assigns warnings ctx))
          ((unless (and okp1 okp2 okp3 okp4 okp5))
-          (mv nil warnings nf x netdecls assigns))
+          (mv nil warnings nf x vardecls assigns))
          (x-prime (change-vl-compoundstmt x
                                           :exprs exprs-prime
                                           :stmts stmts-prime)))
-       (mv t warnings nf x-prime netdecls assigns)))
+       (mv t warnings nf x-prime vardecls assigns)))
 
   (define vl-stmtlist-expand-function-calls ((x         vl-stmtlist-p)
                                              (templates vl-funtemplatelist-p)
                                              (nf        vl-namefactory-p)
-                                             (netdecls  vl-netdecllist-p)
+                                             (vardecls  vl-vardecllist-p)
                                              (assigns   vl-assignlist-p)
                                              (warnings  vl-warninglist-p)
                                              (ctx       vl-modelement-p))
@@ -2193,25 +2193,25 @@ which is free of function calls on success.</p>"
                  (nf       vl-namefactory-p)
                  (new-x    (and (equal (len new-x) (len x))
                                 (vl-stmtlist-p new-x)))
-                 (netdecls vl-netdecllist-p)
+                 (vardecls vl-vardecllist-p)
                  (assigns  vl-assignlist-p))
     :measure (vl-stmtlist-count x)
     :flag :list
     (b* ((nf       (vl-namefactory-fix nf))
-         (netdecls (vl-netdecllist-fix netdecls))
+         (vardecls (vl-vardecllist-fix vardecls))
          (assigns  (vl-assignlist-fix assigns))
          ((when (atom x))
-          (mv t (ok) nf nil netdecls assigns))
-         ((mv car-successp warnings nf car-prime netdecls assigns)
-          (vl-stmt-expand-function-calls (car x) templates nf netdecls
+          (mv t (ok) nf nil vardecls assigns))
+         ((mv car-successp warnings nf car-prime vardecls assigns)
+          (vl-stmt-expand-function-calls (car x) templates nf vardecls
                                          assigns warnings ctx))
-         ((mv cdr-successp warnings nf cdr-prime netdecls assigns)
-          (vl-stmtlist-expand-function-calls (cdr x) templates nf netdecls
+         ((mv cdr-successp warnings nf cdr-prime vardecls assigns)
+          (vl-stmtlist-expand-function-calls (cdr x) templates nf vardecls
                                              assigns warnings ctx)))
       (mv (and car-successp cdr-successp)
           warnings nf
           (cons car-prime cdr-prime)
-          netdecls assigns)))
+          vardecls assigns)))
   ///
   (verify-guards vl-stmt-expand-function-calls))
 
@@ -2220,10 +2220,10 @@ which is free of function calls on success.</p>"
   :type vl-always-p
   :body
   (b* (((vl-always x) x)
-       ((mv okp warnings nf stmt-prime netdecls assigns)
-        (vl-stmt-expand-function-calls x.stmt templates nf netdecls assigns warnings x))
+       ((mv okp warnings nf stmt-prime vardecls assigns)
+        (vl-stmt-expand-function-calls x.stmt templates nf vardecls assigns warnings x))
        (x-prime (change-vl-always x :stmt stmt-prime)))
-    (mv okp warnings nf x-prime netdecls assigns)))
+    (mv okp warnings nf x-prime vardecls assigns)))
 
 (def-vl-expand-function-calls-list vl-alwayslist-expand-function-calls
   :type vl-alwayslist-p
@@ -2234,10 +2234,10 @@ which is free of function calls on success.</p>"
   :type vl-initial-p
   :body
   (b* (((vl-initial x) x)
-       ((mv okp warnings nf stmt-prime netdecls assigns)
-        (vl-stmt-expand-function-calls x.stmt templates nf netdecls assigns warnings x))
+       ((mv okp warnings nf stmt-prime vardecls assigns)
+        (vl-stmt-expand-function-calls x.stmt templates nf vardecls assigns warnings x))
        (x-prime (change-vl-initial x :stmt stmt-prime)))
-    (mv okp warnings nf x-prime netdecls assigns)))
+    (mv okp warnings nf x-prime vardecls assigns)))
 
 (def-vl-expand-function-calls-list vl-initiallist-expand-function-calls
   :type vl-initiallist-p
@@ -2257,7 +2257,7 @@ which is free of function calls on success.</p>"
   (b* ((x (vl-port-fix x))
        ((mv okp warnings)
         (vl-check-bad-funcalls x (vl-port-allexprs x) "ports" warnings)))
-    (mv okp warnings nf x netdecls assigns)))
+    (mv okp warnings nf x vardecls assigns)))
 
 (def-vl-expand-function-calls-list vl-portlist-expand-function-calls
   :type vl-portlist-p
@@ -2270,27 +2270,11 @@ which is free of function calls on success.</p>"
        ((mv okp warnings)
         (vl-check-bad-funcalls x (vl-portdecl-allexprs x)
                                "port declarations" warnings)))
-    (mv okp warnings nf x netdecls assigns)))
+    (mv okp warnings nf x vardecls assigns)))
 
 (def-vl-expand-function-calls-list vl-portdecllist-expand-function-calls
   :type vl-portdecllist-p
   :element vl-portdecl-expand-function-calls)
-
-
-(def-vl-expand-function-calls vl-netdecl-expand-function-calls
-  :type vl-netdecl-p
-  :body
-  (b* ((x (vl-netdecl-fix x))
-       ((mv okp warnings)
-        (vl-check-bad-funcalls x (vl-netdecl-allexprs x)
-                               "wire declarations" warnings)))
-    (mv okp warnings nf x netdecls assigns)))
-
-(def-vl-expand-function-calls-list vl-netdecllist-expand-function-calls
-  :type vl-netdecllist-p
-  :element vl-netdecl-expand-function-calls)
-
-
 
 (def-vl-expand-function-calls vl-vardecl-expand-function-calls
   :type vl-vardecl-p
@@ -2299,7 +2283,7 @@ which is free of function calls on success.</p>"
        ((mv okp warnings)
         (vl-check-bad-funcalls x (vl-vardecl-allexprs x)
                                "variable declarations" warnings)))
-    (mv okp warnings nf x netdecls assigns)))
+    (mv okp warnings nf x vardecls assigns)))
 
 (def-vl-expand-function-calls-list vl-vardecllist-expand-function-calls
   :type vl-vardecllist-p
@@ -2313,7 +2297,7 @@ which is free of function calls on success.</p>"
        ((mv okp warnings)
         (vl-check-bad-funcalls x (vl-paramdecl-allexprs x)
                                "parameter declarations" warnings)))
-    (mv okp warnings nf x netdecls assigns)))
+    (mv okp warnings nf x vardecls assigns)))
 
 (def-vl-expand-function-calls-list vl-paramdecllist-expand-function-calls
   :type vl-paramdecllist-p
@@ -2422,16 +2406,16 @@ doublebuf_template.</p>"
        (t1 (car todo))
        ((vl-funtemplate t1) t1)
 
-       ;; Subtle: we seed the netdecls accumulator with t1.locals so the
+       ;; Subtle: we seed the vardecls accumulator with t1.locals so the
        ;; current local wires just get extended with whatever new wires are
        ;; necessary.  But, the initial assigns accumulator must be NIL,
        ;; rather than t1.assigns, because the whole point is to rewrite the
        ;; current assigns, not to keep their old versions (that may have
        ;; function calls).
 
-       ((mv successp warnings nf rw-assigns netdecls add-assigns)
+       ((mv successp warnings nf rw-assigns vardecls add-assigns)
         (vl-assignlist-expand-function-calls t1.assigns done nf
-                                             t1.locals ;; netdecl acc
+                                             t1.locals ;; vardecl acc
                                              nil       ;; assigns acc
                                              warnings))
        ((unless successp)
@@ -2453,7 +2437,7 @@ doublebuf_template.</p>"
             nf nil))
 
        (new-t1 (change-vl-funtemplate t1
-                                      :locals netdecls
+                                      :locals vardecls
                                       :assigns assigns)))
     (vl-flatten-funtemplates (cdr todo)
                              (cons new-t1 done)
@@ -2469,7 +2453,6 @@ doublebuf_template.</p>"
 ;; Ugh, all of these accumulators slow ACL2 to a crawl.
 
 (local (in-theory (disable VL-ASSIGNLIST-P-WHEN-SUBSETP-EQUAL
-                           VL-NETDECLLIST-P-WHEN-SUBSETP-EQUAL
                            VL-PARAMDECLLIST-P-WHEN-SUBSETP-EQUAL
                            VL-VARDECLLIST-P-WHEN-SUBSETP-EQUAL
                            VL-FUNTEMPLATELIST-P-WHEN-SUBSETP-EQUAL
@@ -2519,33 +2502,30 @@ doublebuf_template.</p>"
   :parents (vl-module-expand-functions)
   ((ports vl-portlist-p)
    (portdecls vl-portdecllist-p)
-   (netdecls vl-netdecllist-p)
    (vardecls vl-vardecllist-p)
    (paramdecls vl-paramdecllist-p)
    (templates vl-funtemplatelist-p)
    (nf vl-namefactory-p)
-   (nacc vl-netdecllist-p)
+   (vacc vl-vardecllist-p)
    (aacc vl-assignlist-p)
    (warnings vl-warninglist-p))
   :returns (mv (okp        booleanp :rule-classes :type-prescription)
                (warnings   vl-warninglist-p   :hyp :fguard)
                (nf         vl-namefactory-p   :hyp :fguard)
-               (nacc       vl-netdecllist-p   :hyp :fguard)
+               (vacc       vl-vardecllist-p   :hyp :fguard)
                (aacc       vl-assignlist-p    :hyp :fguard)
                (ports      vl-portlist-p      :hyp :fguard)
                (portdecls  vl-portdecllist-p  :hyp :fguard)
-               (netdecls   vl-netdecllist-p   :hyp :fguard)
                (vardecls   vl-vardecllist-p   :hyp :fguard)
                (paramdecls vl-paramdecllist-p :hyp :fguard))
-  (b* (((mv okp1  warnings nf ports      nacc aacc) (vl-portlist-expand-function-calls      ports      templates nf nacc aacc warnings))
-       ((mv okp2  warnings nf portdecls  nacc aacc) (vl-portdecllist-expand-function-calls  portdecls  templates nf nacc aacc warnings))
-       ((mv okp3  warnings nf netdecls   nacc aacc) (vl-netdecllist-expand-function-calls   netdecls   templates nf nacc aacc warnings))
-       ((mv okp4  warnings nf vardecls   nacc aacc) (vl-vardecllist-expand-function-calls   vardecls   templates nf nacc aacc warnings))
-       ((mv okp5  warnings nf paramdecls nacc aacc) (vl-paramdecllist-expand-function-calls paramdecls templates nf nacc aacc warnings)))
+  (b* (((mv okp1  warnings nf ports      vacc aacc) (vl-portlist-expand-function-calls      ports      templates nf vacc aacc warnings))
+       ((mv okp2  warnings nf portdecls  vacc aacc) (vl-portdecllist-expand-function-calls  portdecls  templates nf vacc aacc warnings))
+       ((mv okp3  warnings nf vardecls   vacc aacc) (vl-vardecllist-expand-function-calls   vardecls   templates nf vacc aacc warnings))
+       ((mv okp4  warnings nf paramdecls vacc aacc) (vl-paramdecllist-expand-function-calls paramdecls templates nf vacc aacc warnings)))
     ;; Using and* here cuts the proof time for the next proof by about 10x.
-    (mv (and* okp1 okp2 okp3 okp4 okp5)
-        warnings nf nacc aacc
-        ports portdecls netdecls vardecls paramdecls)))
+    (mv (and* okp1 okp2 okp3 okp4)
+        warnings nf vacc aacc
+        ports portdecls vardecls paramdecls)))
 
 
 (define vl-module-expand-calls-in-nondecls
@@ -2557,27 +2537,27 @@ doublebuf_template.</p>"
    (initials  vl-initiallist-p)
    (templates vl-funtemplatelist-p)
    (nf        vl-namefactory-p)
-   (nacc      vl-netdecllist-p)
+   (vacc      vl-vardecllist-p)
    (aacc      vl-assignlist-p)
    (warnings  vl-warninglist-p))
   :returns
   (mv (okp booleanp :rule-classes :type-prescription)
       (warnings  vl-warninglist-p)
       (nf        vl-namefactory-p  :hyp :fguard)
-      (nacc      vl-netdecllist-p  :hyp :fguard)
+      (vacc      vl-vardecllist-p  :hyp :fguard)
       (aacc      vl-assignlist-p   :hyp :fguard)
       (assigns   vl-assignlist-p   :hyp :fguard)
       (modinsts  vl-modinstlist-p  :hyp :fguard)
       (gateinsts vl-gateinstlist-p :hyp :fguard)
       (alwayses  vl-alwayslist-p   :hyp :fguard)
       (initials  vl-initiallist-p  :hyp :fguard))
-  (b* (((mv okp1 warnings nf assigns    nacc aacc) (vl-assignlist-expand-function-calls    assigns    templates nf nacc aacc warnings))
-       ((mv okp2 warnings nf modinsts   nacc aacc) (vl-modinstlist-expand-function-calls   modinsts   templates nf nacc aacc warnings))
-       ((mv okp3 warnings nf gateinsts  nacc aacc) (vl-gateinstlist-expand-function-calls  gateinsts  templates nf nacc aacc warnings))
-       ((mv okp4 warnings nf alwayses   nacc aacc) (vl-alwayslist-expand-function-calls    alwayses   templates nf nacc aacc warnings))
-       ((mv okp5 warnings nf initials   nacc aacc) (vl-initiallist-expand-function-calls   initials   templates nf nacc aacc warnings)))
+  (b* (((mv okp1 warnings nf assigns    vacc aacc) (vl-assignlist-expand-function-calls    assigns    templates nf vacc aacc warnings))
+       ((mv okp2 warnings nf modinsts   vacc aacc) (vl-modinstlist-expand-function-calls   modinsts   templates nf vacc aacc warnings))
+       ((mv okp3 warnings nf gateinsts  vacc aacc) (vl-gateinstlist-expand-function-calls  gateinsts  templates nf vacc aacc warnings))
+       ((mv okp4 warnings nf alwayses   vacc aacc) (vl-alwayslist-expand-function-calls    alwayses   templates nf vacc aacc warnings))
+       ((mv okp5 warnings nf initials   vacc aacc) (vl-initiallist-expand-function-calls   initials   templates nf vacc aacc warnings)))
     (mv (and* okp1 okp2 okp3 okp4 okp5)
-        warnings nf nacc aacc
+        warnings nf vacc aacc
         assigns modinsts gateinsts alwayses initials)))
 
 
@@ -2626,24 +2606,24 @@ and assignments that need to be added to the module.</li>
        ;; Apply the templates to expand function calls everywhere throughout
        ;; the module.
        ;;
-       ;; We start with empty netdecls and assigns for our accumulators, rather
-       ;; than the module's netdecls and assigns, because (especially for
+       ;; We start with empty vardecls and assigns for our accumulators, rather
+       ;; than the module's vardecls and assigns, because (especially for
        ;; assigns) as we inline function calls we're going to potentially be
        ;; rewriting assignments, and we don't want to have the old assigns
        ;; sitting in the accumulator.
 
-       (nacc nil)   ;; accumulator for new netdecls
+       (vacc nil)   ;; accumulator for new vardecls
        (aacc nil)   ;; accumulator for new assignments
 
-       ((mv okp1 warnings nf nacc aacc
-            ports portdecls netdecls vardecls paramdecls)
-        (vl-module-expand-calls-in-decls x.ports x.portdecls x.netdecls x.vardecls
-                                         x.paramdecls templates nf nacc aacc warnings))
-       ((mv okp2 warnings nf nacc aacc
+       ((mv okp1 warnings nf vacc aacc
+            ports portdecls vardecls paramdecls)
+        (vl-module-expand-calls-in-decls x.ports x.portdecls x.vardecls
+                                         x.paramdecls templates nf vacc aacc warnings))
+       ((mv okp2 warnings nf vacc aacc
             assigns modinsts gateinsts alwayses initials)
         (vl-module-expand-calls-in-nondecls x.assigns x.modinsts x.gateinsts
                                             x.alwayses x.initials
-                                            templates nf nacc aacc warnings))
+                                            templates nf vacc aacc warnings))
        (- (vl-free-namefactory nf))
 
        (okp (and okp1 okp2))
@@ -2655,8 +2635,7 @@ and assignments that need to be added to the module.</li>
        (x-prime (change-vl-module x
                                   :ports      ports
                                   :portdecls  portdecls
-                                  :netdecls   (append-without-guard nacc netdecls)
-                                  :vardecls   vardecls
+                                  :vardecls   (append-without-guard vacc vardecls)
                                   :paramdecls paramdecls
                                   :fundecls   nil
                                   :assigns    (append-without-guard aacc assigns)
