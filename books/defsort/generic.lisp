@@ -73,7 +73,7 @@
   (if (consp x)
       (and (comparablep (car x))
            (comparable-listp (cdr x)))
-    t))
+    (element-list-final-cdr-p x)))
 
 
 (defund comparable-orderedp (x)

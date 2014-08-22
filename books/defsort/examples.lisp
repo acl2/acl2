@@ -159,6 +159,76 @@
                 '((2 . "a") (2 . "b") (1 . "y") (1 . "z"))))
 
 
+(local
+ (encapsulate
+   (((sortelt-p *) => *
+     :formals (x)
+     :guard t))
+
+   (local (defun sortelt-p (x) (and x t)))
+
+   (defthm type-of-sortelt-p
+     (booleanp (sortelt-p x))
+     :rule-classes :type-prescription)))
+
+(local
+ (encapsulate
+   (((sortcmp * *) => *
+     :formals (x y)
+     :guard (and (sortelt-p x)
+                 (sortelt-p y))))
+
+   (local (defun sortcmp (x y) (< (nfix x) (nfix y))))
+
+   (defthm type-of-sortcmp
+     (booleanp (sortcmp x y))
+     :rule-classes :type-prescription)
+
+   (defthm sortcmp-transitive
+     (implies (and (sortcmp x y)
+                   (sortcmp y z))
+              (sortcmp x z)))))
+
+
+(local
+ (encapsulate ()
+   (local (defsort :prefix gensort
+            :comparablep sortelt-p
+            :compare< sortcmp
+            :true-listp nil))
+   (value-triple :test-true-listp-t-without-listp)))
+
+(local
+ (encapsulate ()
+   (local (defun sorteltlist-p (x)
+            (declare (xargs :guard t)) 
+            (if (atom x)
+                (not x)
+              (and (sortelt-p (car x))
+                   (sorteltlist-p (cdr x))))))
+   (local (defsort :prefix gensort
+            :comparablep sortelt-p
+            :compare< sortcmp
+            :true-listp t))
+
+   (value-triple :test-true-listp-t-with-listp)))
+
+(local
+ (encapsulate ()
+   (local (defun sorteltlist-p (x)
+            (declare (xargs :guard t)) 
+            (if (atom x)
+                t
+              (and (sortelt-p (car x))
+                   (sorteltlist-p (cdr x))))))
+
+   (local (defsort :prefix gensort
+            :comparablep sortelt-p
+            :compare< sortcmp))
+
+   (value-triple :test-true-listp-nil-with-listp)))
+
+
 
 #||
 

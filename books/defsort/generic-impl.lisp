@@ -78,12 +78,12 @@
   (if (consp x)
       (and (comparablep (car x))
            (comparable-listp (cdr x)))
-    t))
+    (element-list-final-cdr-p x)))
 
 (defthm comparable-listp-when-not-consp
   (implies (not (consp x))
            (equal (comparable-listp x)
-                  t))
+                  (element-list-final-cdr-p x)))
   :hints(("Goal" :in-theory (enable comparable-listp))))
 
 (defthm comparable-listp-of-cons
@@ -109,7 +109,8 @@
 
 (defthm comparable-listp-of-cdr
   (implies (comparable-listp x)
-           (comparable-listp (cdr x))))
+           (comparable-listp (cdr x)))
+  :hints(("Goal" :in-theory (disable (comparable-listp)))))
 
 (defthm comparablep-of-car
   (implies (comparable-listp x)
@@ -386,7 +387,8 @@
 (defthm comparable-listp-of-comparable-mergesort-spec2
   (implies (force (comparable-listp x))
            (comparable-listp (comparable-mergesort-spec2 x)))
-  :hints(("Goal" :in-theory (enable comparable-mergesort-spec2))))
+  :hints(("Goal" :in-theory (e/d (comparable-mergesort-spec2)
+                                 ((comparable-listp))))))
 
 (defthm comparable-listp-of-comparable-mergesort-spec
   (implies (force (comparable-listp x))

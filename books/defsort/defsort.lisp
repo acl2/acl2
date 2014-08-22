@@ -47,7 +47,9 @@
 
 (defmacro defsort (&key comparablep
                         compare<
-                        prefix)
+                        prefix
+                        comparable-listp
+                        true-listp)
   (flet ((mksym (prefix x)
                 (intern-in-package-of-symbol (concatenate 'string (symbol-name prefix) x)
                                              ;; We can't create symbols in the COMMON-LISP package,
@@ -56,7 +58,9 @@
                                              (if (equal (symbol-package-name prefix) "COMMON-LISP")
                                                  'ACL2::foo
                                                prefix))))
-    (let* ((comparable-listp (mksym prefix "-LIST-P"))
+    (let* ((definedp         comparable-listp)
+           (comparable-listp (or comparable-listp
+                                 (mksym prefix "-LIST-P")))
            (orderedp         (mksym prefix "-ORDERED-P"))
            (merge            (mksym prefix "-MERGE"))
            (merge-tr         (mksym prefix "-MERGE-TR"))
@@ -64,7 +68,10 @@
            (integer          (mksym prefix "-MERGESORT-INTEGERS"))
            (sort             (mksym prefix "-SORT"))
            (comparable-inst  (if comparablep comparablep `(lambda (x) t)))
-           (comparable-listp-inst (if comparablep comparable-listp `(lambda (x) t))))
+           (comparable-listp-inst (if comparablep comparable-listp `(lambda (x) t)))
+           (element-list-final-cdr-inst (if true-listp
+                                            `(lambda (x) (not x))
+                                          `(lambda (x) t))))
       `(encapsulate
         ()
         (local (defthm ,(mksym prefix "-TYPE-OF-COMPARE<")
@@ -86,6 +93,7 @@
                                (,compare< x y)
                                (,compare< y z))
                           (,compare< x z))))
+                          
 
         (local (in-theory (theory 'minimal-theory)))
         (local (in-theory (enable ,(mksym prefix "-TYPE-OF-COMPARE<")
@@ -93,6 +101,28 @@
         ,@(and comparablep
                `((local (in-theory (enable ,(mksym prefix "-TYPE-OF-COMPARABLEP"))))))
 
+        ,@(and definedp comparablep
+               `((local
+                  (make-event
+                   '(:or (defthm defsort-comparable-list-check
+                           t
+                           :hints (("goal" :use
+                                    ((:functional-instance 
+                                      comparable-listp
+                                      (comparable-listp ,comparable-listp)
+                                      (comparablep      ,comparablep)
+                                      (compare<         ,compare<)
+                                      (element-list-final-cdr-p
+                                       ,element-list-final-cdr-inst)))
+                                    :in-theory (enable ,comparable-listp)))
+                           :rule-classes nil)
+                     (value-triple
+                      (er hard 'defsort
+                          "The provided value of comparable-listp, ~x0, ~
+                           failed consistency checks: either it is not ~
+                           defined, or the :true-listp setting was incorrect, ~
+                           or the definition doesn't match what we expected."
+                          ',comparable-listp)))))))
 
         ;; The following is a pretty gross hack.  But sometimes the guard for
         ;; compare< might not perfectly line up with comparablep.  For
@@ -111,13 +141,13 @@
 
         (set-default-hints '((stupid-hint stable-under-simplificationp)))
 
-        ,@(and comparablep
+        ,@(and comparablep (not definedp)
                `((defund ,comparable-listp (x)
                    (declare (xargs :guard t))
                    (if (consp x)
                        (and (,comparablep (car x))
                             (,comparable-listp (cdr x)))
-                     t))))
+                     ,(if true-listp `(eq x nil) t)))))
 
         (defund ,orderedp (x)
           (declare (xargs :guard ,(if comparablep
@@ -143,7 +173,9 @@
                                 :use ((:functional-instance comparable-orderedp-guard
                                                             (compare< ,compare<)
                                                             (comparablep ,comparable-inst)
-                                                            (comparable-listp ,comparable-listp-inst))))))
+                                                            (comparable-listp ,comparable-listp-inst)
+                                                            (element-list-final-cdr-p
+                                                             ,element-list-final-cdr-inst))))))
 
 
         (defund ,merge (x y)
@@ -173,7 +205,9 @@
                                                            (compare< ,compare<)
                                                            (comparablep ,comparable-inst)
                                                            (comparable-listp ,comparable-listp-inst)
-                                                           (comparable-merge ,merge))))))
+                                                           (comparable-merge ,merge)
+                                                           (element-list-final-cdr-p
+                                                             ,element-list-final-cdr-inst))))))
 
         (defund ,merge-tr (x y acc)
           (declare (xargs :measure (+ (acl2-count x)
@@ -205,7 +239,9 @@
                                                            (compare< ,compare<)
                                                            (comparablep ,comparable-inst)
                                                            (comparable-listp ,comparable-listp-inst)
-                                                           (comparable-merge-tr ,merge-tr))))))
+                                                           (comparable-merge-tr ,merge-tr)
+                                                           (element-list-final-cdr-p
+                                                             ,element-list-final-cdr-inst))))))
 
         (defund ,fixnum (x len)
           (declare (xargs :measure (nfix len)
@@ -216,6 +252,8 @@
                                                 (comparable-listp ,comparable-listp-inst)
                                                 (comparable-merge ,merge)
                                                 (comparable-merge-tr ,merge-tr)
+                                                (element-list-final-cdr-p
+                                                 ,element-list-final-cdr-inst)
                                                 ))))
                           :guard (and ,(if comparablep
                                            `(,comparable-listp x)
@@ -251,7 +289,9 @@
                                                            (comparable-listp ,comparable-listp-inst)
                                                            (comparable-merge ,merge)
                                                            (comparable-merge-tr ,merge-tr)
-                                                           (fast-comparable-mergesort-fixnums ,fixnum))))))
+                                                           (fast-comparable-mergesort-fixnums ,fixnum)
+                                                           (element-list-final-cdr-p
+                                                             ,element-list-final-cdr-inst))))))
 
         (defund ,integer (x len)
           (declare (xargs :measure (nfix len)
@@ -263,6 +303,8 @@
                                                 (comparable-merge ,merge)
                                                 (comparable-merge-tr ,merge-tr)
                                                 (fast-comparable-mergesort-fixnums ,fixnum)
+                                                (element-list-final-cdr-p
+                                                 ,element-list-final-cdr-inst)
                                                 ))))
                           :guard (and ,(if comparablep
                                            `(,comparable-listp x)
@@ -296,6 +338,8 @@
                                                            (compare< ,compare<)
                                                            (comparablep ,comparable-inst)
                                                            (comparable-listp ,comparable-listp-inst)
+                                                           (element-list-final-cdr-p
+                                                             ,element-list-final-cdr-inst)
                                                            (comparable-merge ,merge)
                                                            (comparable-merge-tr ,merge-tr)
                                                            (fast-comparable-mergesort-fixnums ,fixnum)
@@ -326,6 +370,8 @@
                                               (compare< ,compare<)
                                               (comparablep ,comparable-inst)
                                               (comparable-listp ,comparable-listp-inst)
+                                              (element-list-final-cdr-p
+                                               ,element-list-final-cdr-inst)
                                               (comparable-merge ,merge)
                                               (comparable-merge-tr ,merge-tr)
                                               (fast-comparable-mergesort-fixnums ,fixnum)
@@ -341,6 +387,9 @@
                                                        (compare< ,compare<)
                                                        (comparablep ,comparable-inst)
                                                        (comparable-listp ,comparable-listp-inst)
+
+                                                       (element-list-final-cdr-p
+                                                        ,element-list-final-cdr-inst)
                                                        (comparable-merge ,merge)
                                                        (comparable-merge-tr ,merge-tr)
                                                        (fast-comparable-mergesort-fixnums ,fixnum)
@@ -355,6 +404,8 @@
                                               (compare< ,compare<)
                                               (comparablep ,comparable-inst)
                                               (comparable-listp ,comparable-listp-inst)
+                                              (element-list-final-cdr-p
+                                               ,element-list-final-cdr-inst)
                                               (comparable-merge ,merge)
                                               (comparable-merge-tr ,merge-tr)
                                               (comparable-orderedp ,orderedp)
@@ -370,6 +421,8 @@
                                               (compare< ,compare<)
                                               (comparablep ,comparable-inst)
                                               (comparable-listp ,comparable-listp-inst)
+                                              (element-list-final-cdr-p
+                                               ,element-list-final-cdr-inst)
                                               (comparable-merge ,merge)
                                               (comparable-merge-tr ,merge-tr)
                                               (comparable-orderedp ,orderedp)
@@ -385,6 +438,8 @@
                                               (compare< ,compare<)
                                               (comparablep ,comparable-inst)
                                               (comparable-listp ,comparable-listp-inst)
+                                              (element-list-final-cdr-p
+                                               ,element-list-final-cdr-inst)
                                               (comparable-merge ,merge)
                                               (comparable-merge-tr ,merge-tr)
                                               (comparable-orderedp ,orderedp)
