@@ -670,6 +670,12 @@ reasoning about @('car') in general.</p>"
 (defun da-patbind-fn (name fields-accs args forms rest-expr)
   (b* (((mv kwd-alist args)
         (extract-keywords `(da-patbind-fn ',name) '(:quietp) args nil))
+       ;; allow ((binder name)) abbrev for ((binder name) name)
+       (forms (if (and (not forms)
+                       (tuplep 1 args)
+                       (symbolp (car args)))
+                  args
+                forms))
        (- (or (and (tuplep 1 args)
                    (tuplep 1 forms)
                    (symbolp (car args))
@@ -679,7 +685,8 @@ reasoning about @('car') in general.</p>"
                   "B* bindings for ~x0 aggregates must have the form ((~x0 ~
                    <name>) <expr>), where <name> is a symbol and <expr> is a ~
                    single term.  The attempted binding of~|~% ~p1~%~%is not ~
-                   of this form."
+                   of this form.~%(Exception:  ((~x0 <name>)) is allowed as ~
+                   an abbreviation for ((~x0 <name>) <name>).)"
                   name (cons (cons name args) forms))))
 
        (var             (car args))

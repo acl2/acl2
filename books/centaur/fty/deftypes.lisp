@@ -982,6 +982,12 @@
     (cons (flexprod-field->name (car fields))
           (flexprod-fields->names (cdr fields)))))
 
+(defun flexprod-fields->defaults (fields)
+  (if (atom fields)
+      nil
+    (cons (flexprod-field->default (car fields))
+          (flexprod-fields->defaults (cdr fields)))))
+
 (defun defprod-tag-events (pred xvar tag name formals)
   (b* ((foop pred)
        (x xvar))
@@ -2463,15 +2469,15 @@
         ;;                                                                       (symbol-name prod.kind))
         ;;                                                          sum.fix))))))))
 
-        (defmacro ,prod.ctor-macro (&key . ,(flexprod-fields-macro-args prod.fields))
-          (list ',prod.ctor-name
-                . , (flexprod-fields->names prod.fields)))
-
         (acl2::def-b*-binder ,prod.ctor-name
           :body
           (std::da-patbind-fn ',prod.ctor-name
                               ',field-accs
                               acl2::args acl2::forms acl2::rest-expr))
+
+        ,(std::da-make-maker-fn prod.ctor-name fieldnames
+                                (flexprod-fields->defaults prod.fields))
+        ,(std::da-make-maker prod.ctor-name fieldnames)
 
         ,(std::da-make-changer-fn-gen prod.ctor-name field-accs)
         ,(std::da-make-changer prod.ctor-name fieldnames))

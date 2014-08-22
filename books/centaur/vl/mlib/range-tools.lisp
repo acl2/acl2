@@ -124,6 +124,45 @@ handle both cases.</p>"
     (make-vl-range :msb (vl-make-index (- n 1))
                    :lsb (vl-make-index 0))))
 
+(define vl-simpletype-p ((x vl-datatype-p))
+  (vl-datatype-case x
+    :vl-coretype
+    (and (or (eq x.name :vl-reg)
+             (eq x.name :vl-logic))
+         (or (atom x.dims)
+             (and (atom (cdr x.dims))
+                  (mbe :logic (vl-range-p (car x.dims))
+                       :exec (not (eq (car x.dims) :vl-unsized-dimension))))))
+    :vl-nettype t
+    :otherwise nil))
+
+(define vl-simpletype->range ((x vl-datatype-p))
+  :guard (vl-simpletype-p x)
+  :returns (range vl-maybe-range-p)
+  :guard-hints (("Goal" :in-theory (enable vl-simpletype-p)))
+  (vl-datatype-case x
+    :vl-coretype (and (consp x.dims)
+                      (mbt (vl-range-p (car x.dims)))
+                      (car x.dims))
+    :otherwise ;; nettype
+    (vl-nettype->range x)))
+
+(define vl-simpletype->signedp ((x vl-datatype-p))
+  :guard (vl-simpletype-p x)
+  :returns (signedp booleanp :rule-classes :type-prescription)
+  :guard-hints (("Goal" :in-theory (enable vl-simpletype-p)))
+  (vl-datatype-case x
+    :vl-coretype x.signedp
+    :otherwise ;; nettype
+    (vl-nettype->signedp x)))
+
+(acl2::def-b*-binder vl-simpletype
+  :body
+  (std::da-patbind-fn 'vl-simpletype
+                      '((range . vl-simpletype->range)
+                        (signedp . vl-simpletype->signedp))
+                      acl2::args acl2::forms acl2::rest-expr))
+
 
 (define vl-simplereg-p ((x vl-vardecl-p))
   ;; Horrible hack to try to help with porting existing code.
@@ -170,6 +209,13 @@ handle both cases.</p>"
    (range (equal (vl-range-p range) (if range t nil))
           :name vl-range-p-of-vl-simplereg->range)))
 
+(acl2::def-b*-binder vl-simplereg
+  :body
+  (std::da-patbind-fn 'vl-simplereg
+                      '((range . vl-simplereg->range)
+                        (signedp . vl-simplereg->signedp))
+                      acl2::args acl2::forms acl2::rest-expr))
+
 
 
 (define vl-simplenet-p ((x vl-vardecl-p))
@@ -210,32 +256,51 @@ handle both cases.</p>"
        ((vl-nettype x.type) x.type))
     x.type.name))
 
+(acl2::def-b*-binder vl-simplenet
+  :body
+  (std::da-patbind-fn 'vl-simplenet
+                      '((range . vl-simplenet->range)
+                        (signedp . vl-simplenet->signedp)
+                        (nettype . vl-simplenet->nettype))
+                      acl2::args acl2::forms acl2::rest-expr))
+
 
 
 (define vl-simplevar-p ((x vl-vardecl-p))
   :returns (bool)
   (or (vl-simplenet-p x)
-      (vl-simplereg-p x)))
+      (vl-simplereg-p x))
+  ///
+  (defthm vl-simpletype-p-of-simplevar-type
+    (implies (vl-simplevar-p x)
+             (vl-simpletype-p (vl-vardecl->type x)))
+    :hints(("Goal" :in-theory (enable vl-simpletype-p
+                                      vl-simplevar-p
+                                      vl-simplenet-p
+                                      vl-simplereg-p)))))
 
 (define vl-simplevar->signedp ((x vl-vardecl-p))
   :returns (signedp booleanp :rule-classes :type-prescription)
   :guard (vl-simplevar-p x)
   :prepwork ((local (in-theory (enable vl-simplevar-p))))
-  (if (vl-simplenet-p x)
-      (vl-simplenet->signedp x)
-    (vl-simplereg->signedp x)))
+  (vl-simpletype->signedp (vl-vardecl->type x)))
 
 (define vl-simplevar->range ((x vl-vardecl-p))
   :returns (range vl-maybe-range-p)
   :guard (vl-simplevar-p x)
   :prepwork ((local (in-theory (enable vl-simplevar-p))))
-  (if (vl-simplenet-p x)
-      (vl-simplenet->range x)
-    (vl-simplereg->range x))
+  (vl-simpletype->range (vl-vardecl->type x))
   ///
   (more-returns
    (range (equal (vl-range-p range) (if range t nil))
           :name vl-range-p-of-vl-simplevar->range)))
+
+(acl2::def-b*-binder vl-simplevar
+  :body
+  (std::da-patbind-fn 'vl-simplevar
+                      '((range . vl-simplevar->range)
+                        (signedp . vl-simplevar->signedp))
+                      acl2::args acl2::forms acl2::rest-expr))
 
 
 
