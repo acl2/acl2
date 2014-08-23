@@ -1642,13 +1642,14 @@ notation causes an error and (b) the use of ,. is not permitted."
 
 (defmacro defv (&rest r)
 
-  "DEFV is a short name for DEFVAR.  However, in Clozure Common Lisp
-  (CCL) its use includes two promises: (1) never to locally bind the
-  variable, e.g., with LET or LAMBDA, and (2) never to call MAKUNBOUND
-  on the variable.  CCL uses fewer machine instructions to reference
-  such a variable than an ordinary special, which may have a
-  per-thread binding that needs to be locked up.  Unlike for DEFVAR,
-  the second argument of DEFV is not optional."
+  "DEFV is a short name for DEFVAR.  However, in Clozure Common Lisp (CCL) its
+  use includes two promises: (1) never to locally bind the variable, e.g., with
+  LET or LAMBDA, and (2) never to call MAKUNBOUND on the variable.  CCL uses
+  fewer machine instructions to reference such a variable than an ordinary
+  special, which may have a per-thread binding that needs to be locked up.
+  Unlike for DEFVAR, the second argument of DEFV is not optional.  But quoting
+  the CCL documentation string for DEFSTATICVAR: ``Like DEFVAR, the initial
+  value form is not evaluated if the variable is already BOUNDP.''"
 
   #-Clozure
   `(defparameter ,@r)

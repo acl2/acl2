@@ -3728,14 +3728,6 @@
 (defmacro gag-mode ()
   '(f-get-global 'gag-mode state))
 
-(defun default-evisc-tuple (state)
-  (prog2$ (cw "NOTE: default-evisc-tuple has been deprecated.  Please use ~
-               abbrev-evisc-tuple instead.  If you are seeing this message ~
-               then you are probably using the acl2-books google repository; ~
-               please email Matt Kaufmann to find out how to eliminate this ~
-               message.~|~%")
-          (abbrev-evisc-tuple state)))
-
 (defun term-evisc-tuple (flg state)
 
 ; This evisceration tuple is used when we are printing terms or lists of terms.
