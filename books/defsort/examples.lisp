@@ -65,7 +65,16 @@
 
 (assert! (equal (>-sort '(5 5 3 4 4)) '(5 5 4 4 3)))
 
+;; new syntax with sort function name first
+(defsort bigger-sort
+  :comparablep rationalp
+  :compare< (lambda (x y) (< y x))
+  :prefix bigger)
 
+;; new syntax with sort function name and no prefix
+(defsort littler-sort
+  :comparablep rationalp
+  :compare< (lambda (x y) (< x y)))
 
 ;; We can define an arbitrary sort using <<.  This is almost the same as
 ;; SET::mergesort in the ordered sets library, except that defsorts are

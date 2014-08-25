@@ -30,7 +30,77 @@
 
 (in-package "ACL2")
 (include-book "generic")
+(include-book "std/util/support" :dir :system)
 
+(defxdoc defsort
+  ;; Note (Sol): I think this library should probably be moved into std/lists,
+  ;; and its xdoc filed under there, maybe once the UI is made a bit nicer.
+  :parents (std/lists)
+  :short "Define a sorting function for a given comparator."
+  :long "<h5>NOTE: Defsort's interface has a greater than average likelihood of
+changing incompatibly in the future.</h5>
+
+<p>Defsort creates a relatively-high-performance sorting function for a given
+comparison function, and proves that its output is an ordered (with respect to
+the comparison function) permutation of the input list.  It is currently
+implemented as a mergesort on lists with some fixnum optimizations.</p>
+
+<h3>Usage</h3>
+
+<p>These two forms show two ways of invoking defsort:</p>
+@({
+  (defsort sort-by-foo<
+           :prefix foosort
+           :compare< foo<
+           :comparablep foo-p
+           :comparable-listp foolist-p
+           :true-listp nil)           
+ 
+  (defsort :comparablep rationalp
+           :compare< <
+           :prefix <
+           :comparable-listp rational-listp
+           :true-listp t)
+})
+
+<p>The first form is a new syntax that gives the name of the sorting function
+explicitly; it is also good for etags generation since it is of the form
+@('(def... name ...)').  In the first form, the prefix is optional; if it is
+not provided, the sort name will be used as the prefix for generating other
+function names.</p>
+
+<p>The second form shows an older syntax in which the sort name is omitted and
+every function name is generated from the prefix, so the name of the sorting
+function will in this case be @('<-sort').</p>
+
+<h4>Keyword Arguments</h4>
+<ul>
+
+<li>@(':compare<') gives the function to use to compare elements; this may be a
+binary function name or a lambda such as @('(lambda (x y) (< y x))').</li>
+
+<li>@(':prefix') defaults to the sort name when it is provided, but otherwise
+is required.  It is used to generate function and theorem names.</li>
+
+<li>@(':comparablep') gives the type of element to be compared.  The comparison
+function's guards should be satisfied by any two elements that both satisfy
+this predicate.  This may be a unary function symbol or lambda.  If it is
+omitted, then it is treated as @('(lambda (x) t)'), i.e. all objects are
+comparable.</li>
+
+<li>@(':comparable-listp') gives the name of a function that recognizes a list
+of comparable elements.  This may be omitted, in which case such a function
+will be defined (named @('<prefix>-list-p')).</li>
+
+<li>@(':true-listp') defaults to NIL and determines whether the
+comparable-listp function requires the final cdr to be NIL.  If an existing
+@(':comparable-listp') function name is provided, then the value of
+@(':true-listp') must correspond to that function; i.e. true-listp must be true
+iff the comparable-listp function requires the final cdr to be nil.  If
+@(':comparable-listp') is not provided, then the comparable-listp function will
+be generated so that this is true.</li>
+
+</ul>")
 
 ; Inputs are as follows.
 ;
@@ -45,33 +115,58 @@
 ; Prefix is a symbol which will be used to create the names of all the
 ; functions and theorems we generate.
 
-(defmacro defsort (&key comparablep
-                        compare<
-                        prefix
-                        comparable-listp
-                        true-listp)
-  (flet ((mksym (prefix x)
-                (intern-in-package-of-symbol (concatenate 'string (symbol-name prefix) x)
-                                             ;; We can't create symbols in the COMMON-LISP package,
-                                             ;; so if something like < is used, switch it to the ACL2
-                                             ;; package.
-                                             (if (equal (symbol-package-name prefix) "COMMON-LISP")
-                                                 'ACL2::foo
-                                               prefix))))
-    (let* ((definedp         comparable-listp)
-           (comparable-listp (or comparable-listp
-                                 (mksym prefix "-LIST-P")))
-           (orderedp         (mksym prefix "-ORDERED-P"))
-           (merge            (mksym prefix "-MERGE"))
-           (merge-tr         (mksym prefix "-MERGE-TR"))
-           (fixnum           (mksym prefix "-MERGESORT-FIXNUM"))
-           (integer          (mksym prefix "-MERGESORT-INTEGERS"))
-           (sort             (mksym prefix "-SORT"))
-           (comparable-inst  (if comparablep comparablep `(lambda (x) t)))
-           (comparable-listp-inst (if comparablep comparable-listp `(lambda (x) t)))
-           (element-list-final-cdr-inst (if true-listp
-                                            `(lambda (x) (not x))
-                                          `(lambda (x) t))))
+(defconst *defsort-keywords*
+  '(:comparablep :compare< :prefix :comparable-listp :true-listp))
+
+(defun defsort-fn (args)
+  (declare (xargs :mode :program))
+  (b* (((mv sort args) (if (keywordp (car args))
+                             (mv nil args)
+                           (mv (car args) (cdr args))))
+         ((mv kwd-alist args)
+          (std::extract-keywords 'defsort *defsort-keywords* args nil))
+
+         ((when args)
+          (er hard? 'defsort-fn "Defsort: extra arguments"))
+
+         (prefix           (std::getarg :prefix sort kwd-alist))
+         ((unless (and prefix (symbolp prefix) (not (keywordp prefix))))
+          (er hard? 'defsort
+              "Defsort requires either a sort name (non-keyword symbol as the ~
+               first argument) or a :prefix argument, also a non-keyword ~
+               symbol."))
+         ((fun (mksym prefix x))
+          (intern-in-package-of-symbol (concatenate 'string (symbol-name prefix) x)
+                                       ;; We can't create symbols in the COMMON-LISP package,
+                                       ;; so if something like < is used, switch it to the ACL2
+                                       ;; package.
+                                       (if (equal (symbol-package-name prefix) "COMMON-LISP")
+                                           'ACL2::foo
+                                         prefix)))
+         (sort             (or sort (mksym prefix "-SORT")))
+         
+
+         (comparable-listp (std::getarg :comparable-listp nil kwd-alist))
+         (compare<         (std::getarg :compare< nil kwd-alist))
+         (comparablep      (std::getarg :comparablep nil kwd-alist))
+         (true-listp       (std::getarg :true-listp nil kwd-alist))
+
+         ((unless compare<)
+          (er hard? 'defsort "Defsort requires :compare< to be specified"))
+
+         (definedp         comparable-listp)
+         (comparable-listp (or comparable-listp
+                               (mksym prefix "-LIST-P")))
+         (orderedp         (mksym prefix "-ORDERED-P"))
+         (merge            (mksym prefix "-MERGE"))
+         (merge-tr         (mksym prefix "-MERGE-TR"))
+         (fixnum           (mksym prefix "-MERGESORT-FIXNUM"))
+         (integer          (mksym prefix "-MERGESORT-INTEGERS"))
+         (comparable-inst  (if comparablep comparablep `(lambda (x) t)))
+         (comparable-listp-inst (if comparablep comparable-listp `(lambda (x) t)))
+         (element-list-final-cdr-inst (if true-listp
+                                          `(lambda (x) (not x))
+                                        `(lambda (x) t))))
       `(encapsulate
         ()
         (local (defthm ,(mksym prefix "-TYPE-OF-COMPARE<")
@@ -448,5 +543,8 @@
                                               (comparable-mergesort ,sort))))))
 
 
-        ))))
+        )))
+
+(defmacro defsort (&rest args)
+  (defsort-fn args))
 
