@@ -2047,7 +2047,24 @@
                        (cons (cons a ,(if x.val-fix `(,x.val-fix b) 'b))
                              (,x.fix ,stdx))
                      (,x.fix ,stdx))))
-        :hints (("goal" :Expand ((:free (a b) (,x.fix (cons a b))))))))))
+        :hints (("goal" :Expand ((:free (a b) (,x.fix (cons a b)))))))
+
+      ,@(and (not (eq x.strategy :fix-keys))
+             `((defthm ,(intern-in-package-of-symbol
+                         (cat "HONS-ASSOC-EQUAL-OF-" (symbol-name x.fix))
+                         x.fix)
+                 (equal (hons-assoc-equal k (,x.fix x))
+                        (let ((pair (hons-assoc-equal k x)))
+                          (and ,@(and x.key-fix `((,x.key-type k)))
+                               pair
+                               (cons k ,(if x.val-fix
+                                            `(,x.val-fix (cdr pair))
+                                          `(cdr pair))))))
+                 :hints (("goal" :induct (len x)
+                          :in-theory (enable (:i len))
+                          :expand ((,x.fix x)
+                                   (hons-assoc-equal k x)
+                                   (:free (a b) (hons-assoc-equal k (cons a b))))))))))))
 
 (defun flextypelist-fix-postevents (types)
   (if (atom types)

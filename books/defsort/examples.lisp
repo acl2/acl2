@@ -45,7 +45,8 @@
 
 (defsort :comparablep rationalp
          :compare< <
-         :prefix <)
+         :prefix <
+         :weak nil)
 
 (assert! (equal (<-sort '(5 5 3 4 4)) '(3 4 4 5 5)))
 
@@ -61,7 +62,8 @@
 
 (defsort :comparablep rationalp
          :compare< greater-p
-         :prefix >)
+         :prefix >
+         :weak nil)
 
 (assert! (equal (>-sort '(5 5 3 4 4)) '(5 5 4 4 3)))
 
@@ -69,12 +71,14 @@
 (defsort bigger-sort
   :comparablep rationalp
   :compare< (lambda (x y) (< y x))
-  :prefix bigger)
+  :prefix bigger
+  :weak nil)
 
 ;; new syntax with sort function name and no prefix
 (defsort littler-sort
   :comparablep rationalp
-  :compare< (lambda (x y) (< x y)))
+  :compare< (lambda (x y) (< x y))
+  :weak nil)
 
 ;; We can define an arbitrary sort using <<.  This is almost the same as
 ;; SET::mergesort in the ordered sets library, except that defsorts are
@@ -82,7 +86,23 @@
 ;; elements.
 
 (defsort :compare< <<
-         :prefix <<)
+         :prefix <<w)
+
+
+;; If we prove that the negation of << is transitive, we can do this without
+;; the :weak:
+
+(defthm <<-negation-transitive
+  (implies (and (not (<< x y))
+                (not (<< y z)))
+           (not (<< x z)))
+  :hints (("goal" :use ((:instance <<-trichotomy
+                         (x y) (y x)))
+           :in-theory (disable <<-trichotomy))))
+
+(defsort :compare< <<
+         :prefix <<
+         :weak nil)
 
 (assert! (equal (<<-sort '(a c b 1 3 2 1/3 1/2 (1 . 2)))
                 '(1/3 1/2 1 2 3 a b c (1 . 2))))

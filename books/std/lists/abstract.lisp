@@ -806,3 +806,4 @@ about elementlist-mapappend."
                    (elementlist-mapappend b)))))
 
 
+(in-theory (disable true-listp-when-element-list-p-rewrite))
