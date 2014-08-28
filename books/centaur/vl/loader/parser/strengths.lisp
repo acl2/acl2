@@ -98,7 +98,7 @@
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (:= (vl-match-token :vl-lparen))
         (first := (vl-match-some-token *vl-ds0/1-keywords*))
         (:= (vl-match-token :vl-comma))
@@ -122,7 +122,7 @@
                    (make-vl-gatestrength
                     :zero (cdr (assoc-eq s-zero *vl-ds0-alist*))
                     :one (cdr (assoc-eq s-one *vl-ds1-alist*)))
-                   tokens warnings)))
+                   tokens pstate)))
            (vl-parse-error "Invalid drive strength.")))))
 
 (defparser vl-parse-optional-drive-strength ()
@@ -133,11 +133,11 @@ token list and just return nil."
   :resultp-of-nil t
   :fails never
   :count strong-on-value
-  (b* (((mv erp val explore new-warnings)
+  (b* (((mv erp val explore new-pstate)
         (vl-parse-drive-strength))
        ((when erp)
-        (mv nil nil tokens warnings)))
-    (mv nil val explore new-warnings)))
+        (mv nil nil tokens pstate)))
+    (mv nil val explore new-pstate)))
 
 (defval *vl-charge-strengths-alist*
   :showval t
@@ -155,7 +155,7 @@ token list and just return nil."
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (:= (vl-match-token :vl-lparen))
         (cstr := (vl-match-some-token *vl-charge-strengths-keywords*))
         (:= (vl-match-token :vl-rparen))
@@ -168,9 +168,9 @@ a @(see vl-gatestrength-p) or a @(see vl-cstrength-p)."
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (b* (((mv ?erp val tokens warnings) (vl-parse-optional-drive-strength))
+  (b* (((mv ?erp val tokens pstate) (vl-parse-optional-drive-strength))
        ((when val)
-        (mv nil val tokens warnings)))
+        (mv nil val tokens pstate)))
     (vl-parse-charge-strength))
   ///
   (defthm vl-parse-drive-strength-or-charge-strength-forward

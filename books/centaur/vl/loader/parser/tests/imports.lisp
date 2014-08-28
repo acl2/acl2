@@ -42,22 +42,18 @@
   (vl-pretty-import x))
 
 (defmacro test-import (&key input expect (successp 't) atts)
-  `(assert! (let ((tokens (make-test-tokens ,input))
-                  (warnings nil)
-                  (config *vl-default-loadconfig*))
-              (mv-let (erp val tokens warnings)
-                (vl-parse-package-import-declaration ,atts)
-                (declare (ignore tokens))
-                (if erp
-                    (prog2$
-                     (cw "ERP is ~x0.~%" erp)
-                     (not ,successp))
-                  (prog2$
-                   (cw "VAL is ~x0.~%" val)
-                   (debuggable-and ,successp
-                                   (equal (vl-pretty-imports val) ,expect)
-                                   (not warnings))))))))
-
+  `(assert! (b* ((tokens (make-test-tokens ,input))
+                 (pstate (make-vl-parsestate :warnings nil))
+                 (config *vl-default-loadconfig*)
+                 ((mv erp val ?tokens (vl-parsestate pstate))
+                  (vl-parse-package-import-declaration ,atts))
+                 ((when erp)
+                  (cw "ERP is ~x0.~%" erp)
+                  (not ,successp)))
+              (cw "VAL is ~x0.~%" val)
+              (debuggable-and ,successp
+                              (equal (vl-pretty-imports val) ,expect)
+                              (not pstate.warnings)))))
 
 (test-import :input "import foo::*;"
              :expect '((import "foo" :vl-import* nil)))

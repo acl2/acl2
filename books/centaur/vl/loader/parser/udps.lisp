@@ -61,7 +61,7 @@
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (unless (vl-is-token? :vl-kwd-endprimitive)
           (:s= (vl-match-any))
           (info := (vl-parse-udp-declaration-aux))
@@ -82,7 +82,7 @@
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (:= (vl-match-token :vl-kwd-primitive))
         (name := (vl-match-token :vl-idtoken))
         (endinfo := (vl-parse-udp-declaration-aux))

@@ -234,7 +234,7 @@
   ;; Note that even though this is "optional", it can fail, because we assume
   ;; that if there is a bracket after the identifier, then there is supposed to
   ;; be a range.
-  (seqw tokens warnings
+  (seqw tokens pstate
         (when (vl-is-token? :vl-idtoken)
           (id := (vl-match))
           (when (vl-is-token? :vl-lbrack)
@@ -256,7 +256,7 @@
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         ((name . range) := (vl-parse-optional-name-of-gate-instance))
         (:= (vl-match-token :vl-lparen))
         (arg1 := (vl-parse-lvalue))
@@ -276,7 +276,7 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (first := (vl-parse-cmos-switch-instance))
         (when (vl-is-token? :vl-comma)
           (:= (vl-match))
@@ -294,7 +294,7 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (typekwd := (vl-match))
         ;; No strength on cmos gates.
         (when (vl-is-token? :vl-pound)
@@ -329,7 +329,7 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         ((name . range) := (vl-parse-optional-name-of-gate-instance))
         (:= (vl-match-token :vl-lparen))
         (arg1 := (vl-parse-lvalue))
@@ -347,7 +347,7 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (first := (vl-parse-enable-or-mos-instance))
         (when (vl-is-token? :vl-comma)
           (:= (vl-match-token :vl-comma))
@@ -364,7 +364,7 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (typekwd := (vl-match))
         (strength := (vl-parse-optional-drive-strength))
         (when (vl-is-token? :vl-pound)
@@ -386,7 +386,7 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
        (typekwd := (vl-match))
        ;; No strength on mos gates.
        (when (vl-is-token? :vl-pound)
@@ -414,7 +414,7 @@
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         ((name . range) := (vl-parse-optional-name-of-gate-instance))
         (:= (vl-match-token :vl-lparen))
         (arg1 := (vl-parse-lvalue))
@@ -430,7 +430,7 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (first := (vl-parse-n-input-gate-instance))
         (when (vl-is-token? :vl-comma)
           (:= (vl-match-token :vl-comma))
@@ -447,7 +447,7 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (typekwd := (vl-match))
         (strength := (vl-parse-optional-drive-strength))
         (when (vl-is-token? :vl-pound)
@@ -505,12 +505,12 @@
   :true-listp t
   :fails never
   :count strong-on-value
-  (b* (((mv erp first explore new-warnings) (vl-parse-lvalue))
+  (b* (((mv erp first explore new-pstate) (vl-parse-lvalue))
 
        ((when erp)
         ;; Failed to eat even a single lvalue, go back to where you were before
         ;; you tried.
-        (mv nil nil tokens warnings))
+        (mv nil nil tokens pstate))
 
        ((unless (mbt (< (len explore) (len tokens))))
         (impossible)
@@ -523,13 +523,13 @@
         ;; happened is we have just eaten part of an expression that looks like
         ;; an lvalue, e.g., "foo" from "foo & bar".  So, we need to backtrack
         ;; and NOT eat this lvalue.
-        (mv nil nil tokens warnings))
+        (mv nil nil tokens pstate))
 
        ;; Otherwise, we successfully ate an lvalue and arrived at a comma or
        ;; rparen as expected.  Commit to eating this lvalue.
        (tokens explore)
-       (warnings new-warnings))
-    (seqw tokens warnings
+       (pstate new-pstate))
+    (seqw tokens pstate
           (when (vl-is-token? :vl-rparen)
             ;; Nothing more to eat.
             (return (list first)))
@@ -543,7 +543,7 @@
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         ((name . range) := (vl-parse-optional-name-of-gate-instance))
         (:= (vl-match-token :vl-lparen))
         ;; First try to eat all the lvalues you see.  This might eat the final
@@ -561,7 +561,7 @@
                        lvalues)))
            (if (< (len args) 2)
                (vl-parse-error "Expected at least two arguments.")
-             (mv nil (list name range args) tokens warnings))))))
+             (mv nil (list name range args) tokens pstate))))))
 
 ;(vl-parse-n-output-gate-instance (make-test-tokens "my_buf (foo, bar)") nil)
 ;(vl-parse-n-output-gate-instance (make-test-tokens "my_buf (foo, bar, baz)") nil)
@@ -576,7 +576,7 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (first := (vl-parse-n-output-gate-instance))
         (when (vl-is-token? :vl-comma)
           (:= (vl-match))
@@ -593,7 +593,7 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (typekwd := (vl-match))
         (strength := (vl-parse-optional-drive-strength))
         (when (vl-is-token? :vl-pound)
@@ -623,7 +623,7 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         ((name . range) := (vl-parse-optional-name-of-gate-instance))
         (:= (vl-match-token :vl-lparen))
         (arg1 := (vl-parse-lvalue))
@@ -641,7 +641,7 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (first := (vl-parse-pass-enable-switch-instance))
         (when (vl-is-token? :vl-comma)
           (:= (vl-match))
@@ -658,7 +658,7 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (typekwd := (vl-match))
         ;; No strength.
         (when (vl-is-token? :vl-pound)
@@ -688,7 +688,7 @@
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         ((name . range) := (vl-parse-optional-name-of-gate-instance))
         (:= (vl-match-token :vl-lparen))
         (arg1 := (vl-parse-lvalue))
@@ -704,7 +704,7 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (first := (vl-parse-pass-switch-instance))
         (when (vl-is-token? :vl-comma)
           (:= (vl-match))
@@ -721,7 +721,7 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (typekwd := (vl-match))
         ;; No strength.
         ;; No delay.
@@ -791,7 +791,7 @@
     :count strong
     (let ((strength0s *strength0s-for-vl-parse-pull-strength*)
           (strength1s *strength1s-for-vl-parse-pull-strength*))
-      (seqw tokens warnings
+      (seqw tokens pstate
             (:= (vl-match-token :vl-lparen))
 
             ;; (strength0, strength1)
@@ -842,18 +842,18 @@
   :resultp-of-nil t
   :fails never
   :count strong-on-value
-  (mv-let (erp val explore new-warnings)
+  (mv-let (erp val explore new-pstate)
           (vl-parse-pull-strength downp)
           (if erp
-              (mv nil nil tokens warnings)
-            (mv nil val explore new-warnings))))
+              (mv nil nil tokens pstate)
+            (mv nil val explore new-pstate))))
 
 (defparser vl-parse-pull-gate-instance ()
   :result (vl-gatebldr-tuple-p val)
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
        ((name . range) := (vl-parse-optional-name-of-gate-instance))
        (:= (vl-match-token :vl-lparen))
        (arg1 := (vl-parse-lvalue))
@@ -867,7 +867,7 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (first := (vl-parse-pull-gate-instance))
         (when (vl-is-token? :vl-comma)
           (:= (vl-match))
@@ -884,7 +884,7 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (typekwd := (vl-match))
         (strength := (vl-parse-optional-pull-strength
                       (eq (vl-token->type typekwd) :vl-kwd-pulldown)))

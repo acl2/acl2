@@ -158,7 +158,7 @@ import_export ::= import | export
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (loc := (vl-current-loc))
         (unless (vl-is-token? :vl-dot)
           (name := (vl-match-token :vl-idtoken))
@@ -192,14 +192,14 @@ import_export ::= import | export
   :resultp-of-nil t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (port1 := (vl-parse-simple-modport-port dir atts))
         (unless (vl-is-token? :vl-comma)
           (return (list port1)))
         ;; use backtracking to know when to stop, i.e. we see a keyword instead of
         ;; an identifier or .identifier(expr)
         (return-raw
-         (seqw-backtrack tokens warnings
+         (seqw-backtrack tokens pstate
                          ((:= (vl-match))
                           (ports2 := (vl-parse-1+-simple-modport-ports dir atts))
                           (return (cons port1 ports2)))
@@ -210,7 +210,7 @@ import_export ::= import | export
   :resultp-of-nil t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (:= (vl-match-token :vl-kwd-function))
         (:= (vl-parse-datatype-or-void))
         (:= (vl-match-token :vl-idtoken))
@@ -224,7 +224,7 @@ import_export ::= import | export
   :resultp-of-nil t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (:= (vl-match-token :vl-kwd-task))
         (:= (vl-match-token :vl-idtoken))
         (when (vl-is-token? :vl-lparen)
@@ -238,7 +238,7 @@ import_export ::= import | export
   :resultp-of-nil t
   :fails :gracefully
   :count strong
-  (seqw-backtrack tokens warnings
+  (seqw-backtrack tokens pstate
                   ((return-raw (vl-parse-function-prototype)))
                   ((return-raw (vl-parse-task-prototype)))))
 
@@ -246,7 +246,7 @@ import_export ::= import | export
   :resultp-of-nil t
   :fails :gracefully
   :count strong
-  (seqw-backtrack tokens warnings
+  (seqw-backtrack tokens pstate
                   ((return-raw (vl-parse-method-prototype)))
                   ((:= (vl-match-token :vl-idtoken))
                    (return nil))))
@@ -257,7 +257,7 @@ import_export ::= import | export
   :resultp-of-nil t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (atts := (vl-parse-0+-attribute-instances))
         (when (vl-is-some-token? *vl-directions-kwds*)
           (dir := (vl-match-some-token *vl-directions-kwds*))
@@ -288,7 +288,7 @@ import_export ::= import | export
   :resultp-of-nil t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (ports1 := (vl-parse-modport-port))
         (when (vl-is-token? :vl-comma)
           (:= (vl-match))
@@ -305,7 +305,7 @@ import_export ::= import | export
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (loc := (vl-current-loc))
         (name := (vl-match-token :vl-idtoken))
         (:= (vl-match-token :vl-lparen))
@@ -323,7 +323,7 @@ import_export ::= import | export
   :resultp-of-nil t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (port1 := (vl-parse-modport-item))
         (when (vl-is-token? :vl-comma)
           (:= (vl-match))
@@ -337,7 +337,7 @@ import_export ::= import | export
   :resultp-of-nil t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (:= (vl-match-token :vl-kwd-modport))
         (modports := (vl-parse-1+-modport-items))
         (return modports)))
@@ -376,7 +376,7 @@ import_export ::= import | export
   :count strong
   ;; Similar to UDPs, but we don't have to check for Verilog-2005 because
   ;; interfaces only exist in SystemVerilog-2012.
-  (seqw tokens warnings
+  (seqw tokens pstate
         (unless (vl-is-token? :vl-kwd-endinterface)
           (:s= (vl-match-any))
           (info := (vl-parse-interface-declaration-aux))
@@ -396,7 +396,7 @@ import_export ::= import | export
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (:= (vl-match-token :vl-kwd-interface))
         (name := (vl-match-token :vl-idtoken))
         (endinfo := (vl-parse-interface-declaration-aux))

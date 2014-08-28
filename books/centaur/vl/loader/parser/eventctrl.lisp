@@ -42,7 +42,7 @@
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (:= (vl-match-token :vl-pound))
         (when (vl-is-token? :vl-lparen)
           (:= (vl-match))
@@ -67,7 +67,7 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (when (vl-is-some-token? '(:vl-kwd-posedge :vl-kwd-negedge))
           (edge := (vl-match)))
         (expr := (vl-parse-expression))
@@ -96,7 +96,7 @@
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (:= (vl-match-token :vl-atsign))
 
         (when (vl-is-token? :vl-times)
@@ -147,7 +147,7 @@
    :resultp-of-nil nil
    :fails gracefully
    :count strong
-   (seqw tokens warnings
+   (seqw tokens pstate
          (when (vl-is-token? :vl-pound)
            (ret := (vl-parse-delay-control))
            (return ret))

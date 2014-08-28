@@ -28,90 +28,88 @@
 //
 // Original author: Jared Davis <jared@centtech.com>
 
-// basic tests of port handling
+// more tests of port handling
 
-module MA (out, in1, in2);    // Non-ANSI style, extremely basic
+module MA (out, in1, in2);    // Non-ANSI style, output reg
   parameter foo = 1;
   wire make_foo_matter = foo;
   output [3:0] out;
   input [3:0]  in1;
   input [3:0]  in2;
-  assign out = in1[1] ? (in1 ^ in2) : (in1 & in2);
+  reg [3:0]    out;
+
+  always @(in1 or in2)
+  begin
+    out = in1[1] ? (in1 ^ in2) : (in1 & in2);
+  end
 endmodule
 
-module MB (out, in1, in2);    // Non-ANSI style, combine inputs onto a single line
+module MB (out, in1, in2);    // Non-ANSI style, combine inputs onto a single line, output reg
   parameter foo = 1;
   wire make_foo_matter = foo;
   output [3:0] out;
   input [3:0]  in1, in2;
-  assign out = in1[0] ? (in1 | in2) : (in1 & in2);
+  reg [3:0]    out;
+  always @(in1 or in2) out = in1[0] ? (in1 | in2) : (in1 & in2);
 endmodule
 
-module MC (out1, out2, in1, in2);  // Non-ANSI style, combine outputs into a single line
+module MC (out1, out2, in1, in2);  // Non-ANSI style, combine outputs into a single line, one output reg, one net
   parameter foo = 1;
   wire make_foo_matter = foo;
   output [3:0] out2, out1;
   input [3:0]  in2, in1;
-  assign out1 = in1[2] ? (in1 ^ in2) : (in1 & in2);
+  reg [3:0]    out1;
+  always @(in1 or in2) out1 = in1[2] ? (in1 ^ in2) : (in1 & in2);
   assign out2 = ~out1;
 endmodule
 
-module MD (out, in1, in2);    // Non-ANSI style, separate net declarations
+module MD (out, in1, in2);    // Non-ANSI style, reg directly in the output decl
   parameter foo = 1;
   wire make_foo_matter = foo;
-  output [3:0] out;
+  output reg [3:0] out;
   input [3:0]  in1;
   input [3:0]  in2;
   wire [3:0]   in1;
   wire [3:0]   in2;
-  wire [3:0]   out;
-  assign out = in1[1] ? (in1 ^ in2) : (in1 & in2);
+  always @(in1 or in2) out = in1[1] ? (in1 ^ in2) : (in1 & in2);
 endmodule
 
-module ME (out, in1, in2);    // Non-ANSI style, separate net declarations, signed net declarations
+module ME (out, in1, in2);  // Non-ANSI style, input wire signed
   parameter foo = 1;
   wire make_foo_matter = foo;
   output [3:0] out;
-  input [3:0]  in1;
+  input wire signed [3:0]  in1;
   input [3:0]  in2;
-  wire signed [3:0]   in1;
   wire signed [3:0]   in2;
-  wire [3:0]   out;
-  assign out = in1[1] ? (in1 < in2) : (in1 * in2);
+  reg [3:0]   out;
+  always @(in1 or in2) out = in1[1] ? (in1 < in2) : (in1 * in2);
 endmodule
 
-module MF (out, in1, in2);    // Non-ANSI style, separate net declarations, signed portdecls
+module MF (out, in1, in2); // Non-ANSI style, input wires
   parameter foo = 1;
   wire make_foo_matter = foo;
-  output [3:0] out;
+  output reg [3:0] out;
+  input wire signed [3:0]  in1;
+  input signed [3:0]  in2;
+  always @(in1 or in2) out = in1[1] ? (in1 < in2) : (in1 % in2);
+endmodule
+
+module MG (out, in1, in2); // Non-ANSI style, output wire
+  parameter foo = 1;
+  wire make_foo_matter = foo;
+  output wire [3:0] out;
   input signed [3:0]  in1;
   input signed [3:0]  in2;
-  wire [3:0]   out;
   assign out = in1[1] ? (in1 < in2) : (in1 % in2);
 endmodule
 
-module MG (out, in1, in2);    // Non-ANSI style, no separate net declarations, signed portdecls
+module MH (out, in1, in2);  // Non-ANSI style, combined input wire declarations.
   parameter foo = 1;
   wire make_foo_matter = foo;
   output [3:0] out;
-  input signed [3:0]  in1;
-  input signed [3:0]  in2;
-  wire [3:0]   out;
-  assign out = in1[1] ? (in1 < in2) : (in1 % in2);
-endmodule
-
-module MH (out, in1, in2);    // Non-ANSI style, no separate net declarations, signed net and portdecls
-  parameter foo = 1;
-  wire make_foo_matter = foo;
-  output [3:0] out;
-  input signed [3:0]  in1;
-  input signed [3:0]  in2;
-  wire [3:0]   out;
-  wire signed [3:0] in1;
-  wire signed [3:0] in2;
+  input wire signed [3:0] in1, in2;
   assign out = in1[1] ? (in1 < in2) : (in1 / in2);
 endmodule
-
 
 
 module dut (

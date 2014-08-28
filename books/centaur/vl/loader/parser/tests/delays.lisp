@@ -34,30 +34,28 @@
 
 (defmacro test-delay3 (&key input rise fall high (successp 't))
   `(assert!
-    (let ((tokens (make-test-tokens ,input))
-          (warnings 'blah-warnings)
-          (config   *vl-default-loadconfig*))
-      (mv-let (erp val tokens warnings)
-        (vl-parse-delay3)
-        (declare (ignore tokens))
-        (if erp
-            (prog2$ (cw "ERP is ~x0.~%" erp)
-                    (and (equal warnings 'blah-warnings)
-                         (not ,successp)))
-          (prog2$ (cw "VAL is ~x0.~%" val)
-                  (and ,successp
-                       (equal warnings 'blah-warnings)
-                       (vl-gatedelay-p val)
-                       (prog2$ (cw "Rise = ~x0.~%" (vl-pretty-expr (vl-gatedelay->rise val)))
-                               (equal (vl-pretty-expr (vl-gatedelay->rise val)) ',rise))
-                       (prog2$ (cw "Fall = ~x0.~%" (vl-pretty-expr (vl-gatedelay->fall val)))
-                               (equal (vl-pretty-expr (vl-gatedelay->fall val)) ',fall))
-                       (prog2$ (cw "High = ~x0.~%"
-                                   (and (vl-gatedelay->high val)
-                                        (vl-pretty-expr (vl-gatedelay->high val))))
-                               (if (vl-gatedelay->high val)
-                                   (equal (vl-pretty-expr (vl-gatedelay->high val)) ',high)
-                                 (not ',high))))))))))
+    (b* ((config *vl-default-loadconfig*)
+         (tokens (make-test-tokens ,input))
+         (pstate (make-vl-parsestate :warnings 'blah-warnings))
+         ((mv erp val ?tokens (vl-parsestate pstate)) (vl-parse-delay3))
+         ((when erp)
+          (cw "ERP is ~x0.~%" erp)
+          (and (equal pstate.warnings 'blah-warnings)
+               (not ,successp))))
+      (cw "VAL is ~x0.~%" val)
+      (and ,successp
+           (equal pstate.warnings 'blah-warnings)
+           (vl-gatedelay-p val)
+           (prog2$ (cw "Rise = ~x0.~%" (vl-pretty-expr (vl-gatedelay->rise val)))
+                   (equal (vl-pretty-expr (vl-gatedelay->rise val)) ',rise))
+           (prog2$ (cw "Fall = ~x0.~%" (vl-pretty-expr (vl-gatedelay->fall val)))
+                   (equal (vl-pretty-expr (vl-gatedelay->fall val)) ',fall))
+           (prog2$ (cw "High = ~x0.~%"
+                       (and (vl-gatedelay->high val)
+                            (vl-pretty-expr (vl-gatedelay->high val))))
+                   (if (vl-gatedelay->high val)
+                       (equal (vl-pretty-expr (vl-gatedelay->high val)) ',high)
+                     (not ',high)))))))
 
 (test-delay3 :input "#5"
              :rise 5

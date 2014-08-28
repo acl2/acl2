@@ -48,7 +48,7 @@
   :resultp-of-nil nil
   :fails :gracefully
   :count :strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (pkgid := (vl-match-token :vl-idtoken))
         (:=       (vl-match-token :vl-scope))
         (when (vl-is-token? :vl-times)
@@ -73,7 +73,7 @@
   :true-listp t
   :fails :gracefully
   :count :strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (first := (vl-parse-package-import-item atts))
         (when (vl-is-token? :vl-comma)
           (:= (vl-match))
@@ -88,7 +88,7 @@
   :true-listp t
   :fails :gracefully
   :count :strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (:= (vl-match))
         (elems := (vl-parse-1+-package-import-items-separated-by-commas atts))
         (:= (vl-match-token :vl-semi))

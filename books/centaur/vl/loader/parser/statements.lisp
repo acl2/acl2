@@ -61,7 +61,7 @@
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
        (loc := (vl-current-loc))
        (lvalue := (vl-parse-lvalue))
        (type := (vl-match-some-token '(:vl-equalsign :vl-lte)))
@@ -91,7 +91,7 @@
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (when (vl-is-some-token? '(:vl-kwd-assign :vl-kwd-force))
           (type := (vl-match))
           ((lvalue . expr) := (vl-parse-assignment))
@@ -117,7 +117,7 @@
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (hid := (vl-parse-hierarchical-identifier nil))
         (when (vl-is-token? :vl-lparen)
           (:= (vl-match))
@@ -136,7 +136,7 @@
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (id := (vl-match-token :vl-sysidtoken))
         (when (vl-is-token? :vl-lparen)
           (:= (vl-match))
@@ -159,7 +159,7 @@
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (:= (vl-match-token :vl-kwd-disable))
         (id := (vl-parse-hierarchical-identifier nil))
         (:= (vl-match-token :vl-semi))
@@ -175,7 +175,7 @@
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (:= (vl-match-token :vl-arrow))
         (hid := (vl-parse-hierarchical-identifier nil))
         (bexprs := (vl-parse-0+-bracketed-expressions))
@@ -225,7 +225,7 @@
   :resultp-of-nil nil
   :fails gracefully
   :count strong-on-value
-  (seqw tokens warnings
+  (seqw tokens pstate
         (when (eq (vl-loadconfig->edition config) :verilog-2005)
           ;; Verilog-2005 doesn't support using "priority", "unique", or
           ;; "unique0" checks on case statements.
@@ -243,7 +243,7 @@
   :resultp-of-nil t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (type := (vl-match-some-token '(:vl-kwd-case :vl-kwd-casez :vl-kwd-casex)))
         (return (case (vl-token->type type)
                   (:vl-kwd-case  nil) ;; if you change this, update resultp-of-nil
@@ -361,7 +361,7 @@
    ;; Returns a vl-caselist-p
    :measure (two-nats-measure (len tokens) 0)
    :verify-guards nil
-   (seqw tokens warnings
+   (seqw tokens pstate
          (when (vl-is-token? :vl-kwd-default)
            (:= (vl-match))
            (when (vl-is-token? :vl-colon)
@@ -377,7 +377,7 @@
    :measure (two-nats-measure (len tokens) 1)
    ;; Returns a vl-caselist-p
    ;; We keep reading until 'endcase' is encountered
-   (seqw tokens warnings
+   (seqw tokens pstate
          (first :s= (vl-parse-case-item))
          (when (vl-is-token? :vl-kwd-endcase)
            (return first))
@@ -388,7 +388,7 @@
    ;; Returns a vl-stmt-p
    :guard (vl-atts-p atts)
    :measure (two-nats-measure (len tokens) 0)
-   (seqw tokens warnings
+   (seqw tokens pstate
          (check := (vl-parse-unique-priority))
          (type := (vl-parse-case-type))
          (:= (vl-match-token :vl-lparen))
@@ -400,7 +400,7 @@
           (let ((stmt (vl-make-case-statement check type test items atts)))
             (if (not stmt)
                 (vl-parse-error "Multiple defaults cases in case statement.")
-              (mv nil stmt tokens warnings))))))
+              (mv nil stmt tokens pstate))))))
 
 
 ; conditional_statement ::=
@@ -418,7 +418,7 @@
    ;; Returns a vl-stmt-p
    :guard (vl-atts-p atts)
    :measure (two-nats-measure (len tokens) 0)
-   (seqw tokens warnings
+   (seqw tokens pstate
          (iftok := (vl-match-token :vl-kwd-if))
          (:= (vl-match-token :vl-lparen))
          (expr :s= (vl-parse-expression))
@@ -444,7 +444,7 @@
    ;; Returns a vl-foreverstmt-p, vl-repeatstmt-p, vl-whilestmt-p, or vl-forstmt-p
    :guard (vl-atts-p atts)
    :measure (two-nats-measure (len tokens) 0)
-   (seqw tokens warnings
+   (seqw tokens pstate
 
          (when (vl-is-token? :vl-kwd-forever)
            (:= (vl-match-token :vl-kwd-forever))
@@ -492,7 +492,7 @@
  (defparser vl-parse-par-block (atts)
    :guard (vl-atts-p atts)
    :measure (two-nats-measure (len tokens) 0)
-   (seqw tokens warnings
+   (seqw tokens pstate
          (:= (vl-match-token :vl-kwd-fork))
          (when (vl-is-token? :vl-colon)
            (:= (vl-match))
@@ -515,7 +515,7 @@
  (defparser vl-parse-seq-block (atts)
    :guard (vl-atts-p atts)
    :measure (two-nats-measure (len tokens) 0)
-   (seqw tokens warnings
+   (seqw tokens pstate
          (:= (vl-match-token :vl-kwd-begin))
          (when (vl-is-token? :vl-colon)
            (:= (vl-match))
@@ -540,7 +540,7 @@
  (defparser vl-parse-procedural-timing-control-statement (atts)
    :guard (vl-atts-p atts)
    :measure (two-nats-measure (len tokens) 0)
-   (seqw tokens warnings
+   (seqw tokens pstate
          (ctrl :s= (if (vl-is-token? :vl-atsign)
                        (vl-parse-event-control)
                      (vl-parse-delay-control)))
@@ -557,7 +557,7 @@
  (defparser vl-parse-wait-statement (atts)
    :guard (vl-atts-p atts)
    :measure (two-nats-measure (len tokens) 0)
-   (seqw tokens warnings
+   (seqw tokens pstate
          (:= (vl-match-token :vl-kwd-wait))
          (:= (vl-match-token :vl-lparen))
          (expr :s= (vl-parse-expression))
@@ -610,7 +610,7 @@
        (:vl-kwd-fork
         (vl-parse-par-block atts))
        ((:vl-kwd-assign :vl-kwd-deassign :vl-kwd-force :vl-kwd-release)
-        (seqw tokens warnings
+        (seqw tokens pstate
               (ret := (vl-parse-procedural-continuous-assignments atts))
               (:= (vl-match-token :vl-semi))
               (return ret)))
@@ -630,19 +630,19 @@
         ;; is successful when it sees an equal sign after the lvalue, while the
         ;; enable looks for a semicolon after the identifier, so there are no
         ;; inputs for which they both believe they are successful.
-        (mv-let (erp val explore new-warnings)
-                (seqw tokens warnings
+        (mv-let (erp val explore new-pstate)
+                (seqw tokens pstate
                      (ret := (vl-parse-blocking-or-nonblocking-assignment atts))
                      (:= (vl-match-token :vl-semi))
                      (return ret))
                 (if erp
                     (vl-parse-task-enable atts)
-                  (mv erp val explore new-warnings)))))))
+                  (mv erp val explore new-pstate)))))))
 
  (defparser vl-parse-statement ()
    :measure (two-nats-measure (len tokens) 2)
    ;; Returns a vl-stmt-p.
-   (seqw tokens warnings
+   (seqw tokens pstate
          (atts :w= (vl-parse-0+-attribute-instances))
          (ret := (vl-parse-statement-aux atts))
          (return ret)))
@@ -651,7 +651,7 @@
    ;; Returns a vl-stmt-p.  (This is possible because we allow nullstmt as a
    ;; valid vl-stmt-p.)
    :measure (two-nats-measure (len tokens) 2)
-   (seqw tokens warnings
+   (seqw tokens pstate
          (atts :w= (vl-parse-0+-attribute-instances))
          (when (vl-is-token? :vl-semi)
            (:= (vl-match-token :vl-semi))
@@ -663,7 +663,7 @@
    :measure (two-nats-measure (len tokens) 3)
    ;; Returns a list of vl-stmt-p's.
    ;; Tries to read until the keyword "join"
-   (seqw tokens warnings
+   (seqw tokens pstate
          (when (vl-is-token? :vl-kwd-join)
            (return nil))
          (first :s= (vl-parse-statement))
@@ -674,7 +674,7 @@
    :measure (two-nats-measure (len tokens) 3)
    ;; Returns a list of vl-stmt-p's.
    ;; Tries to read until the keyword "end"
-   (seqw tokens warnings
+   (seqw tokens pstate
          (when (vl-is-token? :vl-kwd-end)
            (return nil))
          (first :s= (vl-parse-statement))
@@ -787,26 +787,26 @@
                      ',(flag::get-clique-members 'vl-parse-statement-fn (w state)))))))))
 
 
-(defsection warninglist
+(defsection parsestate
 
   (with-output
     :off prove :gag-mode :goals
     (make-event
-     `(defthm-parse-statements-flag vl-parse-statement-warninglist
-        ,(vl-warninglist-claim vl-parse-case-item)
-        ,(vl-warninglist-claim vl-parse-1+-case-items)
-        ,(vl-warninglist-claim vl-parse-case-statement :args (atts))
-        ,(vl-warninglist-claim vl-parse-conditional-statement :args (atts))
-        ,(vl-warninglist-claim vl-parse-loop-statement :args (atts))
-        ,(vl-warninglist-claim vl-parse-par-block :args (atts))
-        ,(vl-warninglist-claim vl-parse-seq-block :args (atts))
-        ,(vl-warninglist-claim vl-parse-procedural-timing-control-statement :args (atts))
-        ,(vl-warninglist-claim vl-parse-wait-statement :args (atts))
-        ,(vl-warninglist-claim vl-parse-statement-aux :args (atts))
-        ,(vl-warninglist-claim vl-parse-statement)
-        ,(vl-warninglist-claim vl-parse-statement-or-null)
-        ,(vl-warninglist-claim vl-parse-statements-until-end)
-        ,(vl-warninglist-claim vl-parse-statements-until-join)
+     `(defthm-parse-statements-flag vl-parse-statement-parsestate
+        ,(vl-parsestate-claim vl-parse-case-item)
+        ,(vl-parsestate-claim vl-parse-1+-case-items)
+        ,(vl-parsestate-claim vl-parse-case-statement :args (atts))
+        ,(vl-parsestate-claim vl-parse-conditional-statement :args (atts))
+        ,(vl-parsestate-claim vl-parse-loop-statement :args (atts))
+        ,(vl-parsestate-claim vl-parse-par-block :args (atts))
+        ,(vl-parsestate-claim vl-parse-seq-block :args (atts))
+        ,(vl-parsestate-claim vl-parse-procedural-timing-control-statement :args (atts))
+        ,(vl-parsestate-claim vl-parse-wait-statement :args (atts))
+        ,(vl-parsestate-claim vl-parse-statement-aux :args (atts))
+        ,(vl-parsestate-claim vl-parse-statement)
+        ,(vl-parsestate-claim vl-parse-statement-or-null)
+        ,(vl-parsestate-claim vl-parse-statements-until-end)
+        ,(vl-parsestate-claim vl-parse-statements-until-join)
         :hints((and acl2::stable-under-simplificationp
                     (flag::expand-calls-computed-hint
                      acl2::clause

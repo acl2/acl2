@@ -32,7 +32,6 @@
 (include-book "base")
 (include-book "../paramdecls")
 
-
 (define vl-pretty-paramtype ((x vl-paramtype-p))
   (vl-paramtype-case x
     (:vl-implicitvalueparam
@@ -69,7 +68,8 @@
 (defaggregate vl-paramdecltest
   ((input   stringp)
    (expect  "pretty paramdecls that we expect.")
-   (successp booleanp :default t)))
+   (successp booleanp :default t)
+   (pre-usertypes string-listp "pre-defined user types")))
 
 (deflist vl-paramdecltestlist-p (x)
   (vl-paramdecltest-p x))
@@ -80,27 +80,34 @@
     (cons (change-vl-paramdecltest (car x) :successp nil)
           (make-paramdecltests-fail (cdr x)))))
 
+(local (defthm crock
+         (implies (string-listp x)
+                  (vl-usertypes-p (make-lookup-alist x)))
+         :hints(("Goal" :in-theory (enable make-lookup-alist)))))
+
 (define vl-run-paramdecltest ((test vl-paramdecltest-p)
                               (config vl-loadconfig-p))
   (b* (((vl-paramdecltest test) test)
        (tokens   (make-test-tokens test.input))
-       (warnings 'blah-warnings)
+       (pstate   (make-vl-parsestate :warnings 'blah-warnings
+                                     :usertypes (make-lookup-alist test.pre-usertypes)))
        (atts     '(("blah")))
        (- (cw "~|-----~%Parsing as ~x0: ~s1~%" (vl-loadconfig->edition config) test.input))
-       ((mv err val ?tokens warnings)
+       ((mv err val ?tokens (vl-parsestate pstate))
         (vl-parse-param-or-localparam-declaration atts '(:vl-kwd-parameter :vl-kwd-localparam)))
+       (- (vl-parsestate-free pstate))
        (pretty (vl-pretty-paramdecls val))
        (- (cw "ERR: ~x0.~%" err))
        (- (cw "VAL: ~x0.~%" val))
        (- (cw "Pretty value: ~x0.~%" pretty))
        (- (cw "Expected:     ~x0.~%" test.expect))
-       (- (or (equal warnings 'blah-warnings)
+       (- (or (equal pstate.warnings 'blah-warnings)
               (raise "warnings aren't right?")))
        ((unless test.successp)
         (or err
-            (cw "Expected failure, but no error.~%"))))
+            (raise "Expected failure, but no error.~%"))))
     (or (equal pretty test.expect)
-        (cw "Pretty value not as expected."))))
+        (raise "Pretty value not as expected."))))
 
 (define vl-run-paramdecltests ((tests vl-paramdecltestlist-p)
                                (config vl-loadconfig-p))
@@ -242,6 +249,10 @@
                             :successp nil)
 
 
+    (make-vl-paramdecltest :input "parameter foo_t = 1"
+                            :pre-usertypes nil
+                            :expect '(("foo_t" :implicit = 1)))
+
      ))
 
   (assert! (vl-run-paramdecltests *basic-tests* (make-vl-loadconfig :edition :system-verilog-2012)))
@@ -311,12 +322,18 @@
 
      ;; In SystemVerilog the parameters can be of arbitrary data types.
 
+     (make-vl-paramdecltest :input "parameter foo_t = 1"  ;; don't allow shadowed params to avoid ambiguity
+                            :pre-usertypes '("foo_t")
+                            :successp nil)
+
      (make-vl-paramdecltest :input "parameter foo_t a = 1"
-                            :expect '(("a" :explicit (:vl-usertype (id "foo_t")) = 1)))
+                            :expect '(("a" :explicit (:vl-usertype (id "foo_t")) = 1))
+                            :pre-usertypes '("foo_t"))
 
      (make-vl-paramdecltest :input "parameter foo_t a = 1, b"
                             :expect '(("a" :explicit (:vl-usertype (id "foo_t")) = 1)
-                                      ("b" :explicit (:vl-usertype (id "foo_t")))))
+                                      ("b" :explicit (:vl-usertype (id "foo_t"))))
+                            :pre-usertypes '("foo_t"))
 
      (make-vl-paramdecltest :input "parameter struct { int field; } a = 1"
                             :expect '(("a" :explicit (:vl-struct ("field" :vl-int signed)) = 1)))
@@ -335,5 +352,27 @@
   (assert! (vl-run-paramdecltests (make-paramdecltests-fail *sysv-only-tests*)
                                   (make-vl-loadconfig :edition :verilog-2005))))
 
+#||
+(defmacro trace-parser (fn)
+  `(trace$ (,fn
+            :entry (list ',fn
+                         :tokens (vl-tokenlist->string-with-spaces tokens)
+                         :pstate pstate)
+            :exit (list :errmsg (first values)
+                        :val (second values)
+                        :remainder (vl-tokenlist->string-with-spaces
+                                    (third values))
+                        :next-token (and (consp (third values))
+                                         (vl-token->type (car (third values))))
+                        :pstate (fourth values)))))
+
+(trace-parser vl-parse-param-or-localparam-declaration-fn)
+(trace-parser vl-parse-param-assignment-fn)
+(trace-parser vl-parse-type-assignment-fn)
+(trace-parser vl-parse-datatype-fn)
+(trace-parser vl-parse-simple-type-fn)
+
+
+||#
 
 

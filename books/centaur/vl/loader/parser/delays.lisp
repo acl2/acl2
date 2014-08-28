@@ -88,7 +88,7 @@
               (make-vl-atom
                :guts (make-vl-id :name  (vl-idtoken->name (car tokens))))
               (cdr tokens)
-              warnings))
+              pstate))
 
          (t
           (vl-parse-error "Illegal delay value.")))))
@@ -104,7 +104,7 @@
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (:= (vl-match-token :vl-pound))
         (unless (vl-is-token? :vl-lparen)
           (delay := (vl-parse-delay-value))
@@ -135,7 +135,7 @@
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (:= (vl-match-token :vl-pound))
         (unless (vl-is-token? :vl-lparen)
           (delay := (vl-parse-delay-value))

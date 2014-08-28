@@ -29,6 +29,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
+(include-book "parsestate")
 (include-book "../config")
 (include-book "../lexer/tokens")
 (include-book "../../util/warnings")
@@ -108,22 +109,22 @@ VL's parsing routines."
 
         [(declare ...)]
         [(declare ...)]
-        <body>             ;; usually (seqw tokens warnings ...)
+        <body>             ;; usually (seqw tokens pstate ...)
         )
 
 <p>Such an event always introduces:</p>
 
 <ul>
-<li>A macro, (foo x y), that just calls (foo-fn x y tokens warnings).</li>
+<li>A macro, (foo x y), that just calls (foo-fn x y tokens pstate).</li>
 
-<li>A function, (foo-fn x y tokens warnings), that implicitly binds the variable
+<li>A function, (foo-fn x y tokens pstate), that implicitly binds the variable
     __function__ to 'foo and otherwise has the given bodies and declares, with
     the :guard thrown in if that is provided.</li>
 
 <li>An add-macro-alias so foo can be used in place of foo-fn in enables and
     disables.</li>
 
-<li>An untranslate-pattern so that (foo-fn x y tokens warnings) is displayed as
+<li>An untranslate-pattern so that (foo-fn x y tokens pstate) is displayed as
     (foo x y) during theorems.</li.
 
 </ul>
@@ -185,7 +186,7 @@ frequently.</p>")
               ;; loops due to (vl-warninglist-fix warnings) and
               ;; (vl-tokenlist-fix tokens) being around.  To try to avoid this,
               ;; I no longer let warnings be free, either.
-              (frees (set-difference-eq (cdr fncall) '(tokens warnings)))
+              (frees (set-difference-eq (cdr fncall) '(tokens pstate)))
               (recursivep (acl2::getprop
                            fn
                            'acl2::recursivep nil
@@ -213,17 +214,17 @@ frequently.</p>")
 (defun defparser-fn (name formals args)
   (declare (xargs :guard (and (symbolp name)
                               (true-listp formals)
-                              ;; Tokens, warnings, and config will be provided
+                              ;; Tokens, pstate, and config will be provided
                               ;; automatically
                               (not (member 'tokens formals))
-                              (not (member 'warnings formals))
+                              (not (member 'pstate formals))
                               (not (member 'config formals)))
                   :mode :program))
   (b* ((fn-name
         ;; BOZO want to use defguts or something instead
         (intern-in-package-of-symbol (cat (symbol-name name) "-FN") name))
        (fn-formals
-        (append formals '(tokens warnings config)))
+        (append formals '(tokens pstate config)))
 
        ((mv args rest-events) (std::split-/// name args))
 
@@ -237,6 +238,7 @@ frequently.</p>")
        (true-listp     (cdr (extract-keyword-from-args :true-listp args)))
        (fails          (cdr (extract-keyword-from-args :fails args)))
        (guard          (extract-keyword-from-args :guard args))
+       (guard-debug    (extract-keyword-from-args :guard-debug args))
 
        (parents        (extract-keyword-from-args :parents args))
        (short          (extract-keyword-from-args :short args))
@@ -256,23 +258,24 @@ frequently.</p>")
        ,(append formals
                 '(&key
                   ((tokens   vl-tokenlist-p)   'tokens)
-                  ((warnings vl-warninglist-p) 'warnings)
+                  ((pstate vl-parsestate-p) 'pstate)
                   ((config   vl-loadconfig-p)  'config)
                   ))
        :returns (mv (errmsg?)
                     (value)
                     (tokens)
-                    (warnings))
+                    (pstate))
        ,@(and parents       `(:parents ,(cdr parents)))
        ,@(and short         `(:short ,(cdr short)))
        ,@(and long          `(:long ,(cdr long)))
        ,@(and guard         `(:guard ,(cdr guard)))
+       ,@(and guard-debug   `(:guard-debug ,(cdr guard-debug)))
        ,@(and verify-guards `(:verify-guards ,(cdr verify-guards)))
        :measure ,measure
        ,@decls
        (declare (ignorable config))
-       (b* ((warnings (mbe :logic (vl-warninglist-fix warnings)
-                           :exec warnings))
+       (b* ((pstate (mbe :logic (vl-parsestate-fix pstate)
+                           :exec pstate))
             (tokens   (mbe :logic (vl-tokenlist-fix tokens)
                            :exec tokens)))
          ,body)
@@ -290,14 +293,14 @@ frequently.</p>")
                           (,fn-name . ,fn-formals)))))
 
        (defthm ,(intern-in-package-of-symbol
-                 (cat (symbol-name name) "-OF-VL-WARNINGLIST-FIX")
+                 (cat (symbol-name name) "-OF-VL-PARSESTATE-FIX")
                  name)
-         (equal (,fn-name . ,(subst '(vl-warninglist-fix warnings)
-                                    'warnings fn-formals))
+         (equal (,fn-name . ,(subst '(vl-parsestate-fix pstate)
+                                    'pstate fn-formals))
                 (,fn-name . ,fn-formals))
          :hints(("Goal"
-                 :expand ((,fn-name . ,(subst '(vl-warninglist-fix warnings)
-                                              'warnings fn-formals))
+                 :expand ((,fn-name . ,(subst '(vl-parsestate-fix pstate)
+                                              'pstate fn-formals))
                           (,fn-name . ,fn-formals)))))
 
        ,@(if (not (or count result resultp-of-nil result-hints true-listp fails))
@@ -312,9 +315,9 @@ frequently.</p>")
                               '(,fn-name . ,fn-formals))))))
 
              (defthm ,(intern-in-package-of-symbol
-                       (cat "VL-WARNINGLIST-P-OF-" (symbol-name name))
+                       (cat "VL-PARSESTATE-P-OF-" (symbol-name name))
                        name)
-               (vl-warninglist-p (mv-nth 3 (,name . ,formals)))
+               (vl-parsestate-p (mv-nth 3 (,name . ,formals)))
                :hints (,@(if hint-chicken-switch
                              nil
                            `((expand-and-maybe-induct-hint
@@ -508,7 +511,10 @@ frequently.</p>")
   (defthm vl-is-token?-fn-when-atom-of-tokens
     (implies (atom tokens)
              (equal (vl-is-token? type)
-                    nil))))
+                    nil))
+    ;; I found this rule to be expensive as a rewrite, so making it a
+    ;; type-prescription instead
+    :rule-classes :type-prescription))
 
 
 (define vl-is-some-token?
@@ -547,44 +553,44 @@ frequently.</p>")
 execution) that includes the current location."
   ((description stringp "Short description of what went wrong.")
    &key
-   ((function symbolp)          '__function__)
-   ((tokens   vl-tokenlist-p)   'tokens)
-   ((warnings vl-warninglist-p) 'warnings))
+   ((function symbolp)         '__function__)
+   ((tokens   vl-tokenlist-p)  'tokens)
+   ((pstate   vl-parsestate-p) 'pstate))
   :returns
   (mv (errmsg   "An error message suitable for @(see vl-cw-obj)." (iff errmsg t))
       (value    "Always just @('nil')." (equal value nil))
-      (remainder     (equal remainder (vl-tokenlist-fix tokens)))
-      (new-warnings  (equal new-warnings (vl-warninglist-fix warnings))))
-  (b* ((tokens   (vl-tokenlist-fix tokens))
-       (warnings (vl-warninglist-fix warnings)))
+      (remainder   (equal remainder (vl-tokenlist-fix tokens)))
+      (new-pstate  (equal new-pstate (vl-parsestate-fix pstate))))
+  (b* ((tokens (vl-tokenlist-fix tokens))
+       (pstate (vl-parsestate-fix pstate)))
     (mv (if (consp tokens)
             (list (cat "Parse error in ~s0 (at ~l1): " description)
                   function (vl-token->loc (car tokens)))
           (list (cat "Parser error in ~s0 (at EOF): " description)
                 function))
-        nil tokens warnings))
+        nil tokens pstate))
   ///
   (add-macro-alias vl-parse-error vl-parse-error-fn)
   (add-untranslate-pattern
-   (vl-parse-error-fn ?function ?description tokens warnings)
+   (vl-parse-error-fn ?function ?description tokens pstate)
    (vl-parse-error ?function ?description)))
 
 (define vl-parse-warning
   :short "Compatible with @(see seqw).  Produce a warning (not an error,
 doesn't stop execution) that includes the current location."
-  ((type        symbolp "Type for this @(see warnings).")
+  ((type        symbolp "Type for this @(see pstate).")
    (description stringp "Short message about what happened.")
    &key
    ((function symbolp) '__function__)
-   ((tokens   vl-tokenlist-p) 'tokens)
-   ((warnings vl-warninglist-p) 'warnings))
+   ((tokens vl-tokenlist-p)  'tokens)
+   ((pstate vl-parsestate-p) 'pstate))
   :returns
   (mv (errmsg (not errmsg) "Never produces an error.")
       (value  (not value) "Value is always @('nil').")
       (new-tokens (equal new-tokens (vl-tokenlist-fix tokens)))
-      (warnings   vl-warninglist-p))
-  (b* ((tokens   (vl-tokenlist-fix tokens))
-       (warnings (vl-warninglist-fix warnings))
+      (pstate   vl-parsestate-p))
+  (b* ((tokens (vl-tokenlist-fix tokens))
+       (pstate (vl-parsestate-fix pstate))
        (msg (if (atom tokens)
                 (cat "Warning in ~s0 (at EOF): " description)
               (cat "Warning in ~s0 (at ~l1): " description)))
@@ -598,12 +604,12 @@ doesn't stop execution) that includes the current location."
                          :args args
                          :fn (mbe :logic (and (symbolp function) function)
                                   :exec function)))
-       (warnings (cons warning warnings)))
-    (mv nil nil tokens warnings))
+       (pstate (vl-parsestate-add-warning warning pstate)))
+    (mv nil nil tokens pstate))
   ///
   (add-macro-alias vl-parse-warning vl-parse-warning-fn)
   (add-untranslate-pattern
-   (vl-parse-warning-fn ?function ?description tokens warnings)
+   (vl-parse-warning-fn ?function ?description tokens pstate)
    (vl-parse-warning ?function ?description)))
 
 
@@ -619,16 +625,16 @@ the start of the input stream."
    &key
    ((function symbolp) '__function__)
    ((tokens   vl-tokenlist-p) 'tokens)
-   ((warnings vl-warninglist-p) 'warnings))
+   ((pstate   vl-parsestate-p) 'pstate))
 
   :returns
   (mv (errmsg?   (iff errmsg? (not (vl-is-token? type))))
       (token     vl-token-p :hyp (vl-is-token? type))
       (remainder vl-tokenlist-p)
-      (warnings  vl-warninglist-p))
+      (pstate    vl-parsestate-p))
 
-  (b* ((warnings (vl-warninglist-fix warnings))
-       (tokens   (vl-tokenlist-fix tokens))
+  (b* ((pstate (vl-parsestate-fix pstate))
+       (tokens (vl-tokenlist-fix tokens))
        ((when (atom tokens))
         (vl-parse-error "Unexpected EOF." :function function))
        (token1 (car tokens))
@@ -636,13 +642,13 @@ the start of the input stream."
         ;; We want a custom error message, so we don't use vl-parse-error-fn.
         (mv (list "Parse error in ~s0 (at ~l1): expected ~s2, but found ~s3."
                   function (vl-token->loc token1) type (vl-token->type token1))
-            nil tokens warnings)))
-    (mv nil token1 (cdr tokens) warnings))
+            nil tokens pstate)))
+    (mv nil token1 (cdr tokens) pstate))
 
   :prepwork
   ((local (in-theory (enable vl-is-token?))))
   ///
-  (add-untranslate-pattern (vl-match-token-fn ?type ?function tokens warnings)
+  (add-untranslate-pattern (vl-match-token-fn ?type ?function tokens pstate)
                            (vl-match-token ?type))
 
   (defthm vl-match-token-of-vl-tokenlist-fix
@@ -681,30 +687,30 @@ acceptable types."
   ((types true-listp) ;; BOZO why not a stronger guard?
    &key
    ((function symbolp) '__function__)
-   ((tokens   vl-tokenlist-p) 'tokens)
-   ((warnings vl-warninglist-p) 'warnings))
+   ((tokens vl-tokenlist-p)  'tokens)
+   ((pstate vl-parsestate-p) 'pstate))
   :returns
-  (mv (errmsg?  (iff errmsg? (not (vl-is-some-token? types))))
+  (mv (errmsg?   (iff errmsg? (not (vl-is-some-token? types))))
       (token     vl-token-p :hyp (vl-is-some-token? types))
       (remainder vl-tokenlist-p)
-      (warnings  vl-warninglist-p))
+      (pstate    vl-parsestate-p))
 
   (b* ((tokens (vl-tokenlist-fix tokens))
-       (warnings (vl-warninglist-fix warnings))
+       (pstate (vl-parsestate-fix pstate))
        ((when (atom tokens))
         (vl-parse-error "Unexpected EOF." :function function))
        (token1 (car tokens))
        ((unless (member-eq (vl-token->type token1) types))
         (mv (list "Parse error in ~s0 (at ~l1): expected one of ~x2, but found ~s3."
                   function (vl-token->loc token1) types (vl-token->type token1))
-            nil tokens warnings)))
-    (mv nil token1 (cdr tokens) warnings))
+            nil tokens pstate)))
+    (mv nil token1 (cdr tokens) pstate))
 
   :prepwork
   ((local (in-theory (enable vl-is-some-token?))))
 
   ///
-  (add-untranslate-pattern (vl-match-some-token-fn ?types ?function tokens warnings)
+  (add-untranslate-pattern (vl-match-some-token-fn ?types ?function tokens pstate)
                            (vl-match-some-token ?types))
 
   (defthm vl-match-some-token-fails-gracefully
@@ -846,13 +852,11 @@ the @('member') term never arose.</p>
 (define vl-current-loc
   :short "Compatible with @(see seqw).  Get the current location."
   (&key ((tokens vl-tokenlist-p) 'tokens)
-        ((warnings vl-warninglist-p) 'warnings))
-  :returns (mv (errmsg    (not errmsg))
-               (loc       vl-location-p
-                          ;; BOZO bad hyp
-                          :hyp (force (vl-tokenlist-p tokens)))
-               (new-tokens    (equal new-tokens (vl-tokenlist-fix tokens)))
-               (new-warnings  (equal new-warnings warnings)))
+        ((pstate vl-parsestate-p) 'pstate))
+  :returns (mv (errmsg     (not errmsg))
+               (loc        vl-location-p)
+               (new-tokens (equal new-tokens (vl-tokenlist-fix tokens)))
+               (new-pstate (equal new-pstate pstate)))
   :long "<p>We just return the location of the first token, if there is one.
 Or, if the token stream is empty, we just return @(see *vl-fakeloc*)</p>"
   (b* ((tokens (vl-tokenlist-fix tokens)))
@@ -861,23 +865,23 @@ Or, if the token stream is empty, we just return @(see *vl-fakeloc*)</p>"
             (vl-token->loc (car tokens))
           *vl-fakeloc*)
         tokens
-        warnings))
+        pstate))
   ///
-  (add-untranslate-pattern (vl-current-loc tokens warnings)
+  (add-untranslate-pattern (vl-current-loc tokens pstate)
                            (vl-current-loc)))
 
 
-(defmacro vl-copy-tokens (&key (tokens 'tokens) (warnings 'warnings))
-  "Returns (MV ERROR TOKENS TOKENS WARNINGS) for SEQW compatibility."
+(defmacro vl-copy-tokens (&key (tokens 'tokens) (pstate 'pstate))
+  "Returns (MV ERROR TOKENS TOKENS PSTATE) for SEQW compatibility."
   (declare (xargs :guard t))
   `(let ((tokens ,tokens)
-         (warnings ,warnings))
-     (mv nil tokens tokens warnings)))
+         (pstate ,pstate))
+     (mv nil tokens tokens pstate)))
 
 
 (define vl-match (&key
                   ((tokens vl-tokenlist-p) 'tokens)
-                  ((warnings vl-warninglist-p) 'warnings))
+                  ((pstate vl-parsestate-p) 'pstate))
   :guard (consp tokens)
   :short "Compatible with @(see seqw).  Get the first token, no matter what
 kind of token it is.  Only usable when you know there is a token there (via the
@@ -887,20 +891,20 @@ guard)."
                (token     (equal (vl-token-p token)
                                  (consp (vl-tokenlist-fix tokens))))
                (remainder vl-tokenlist-p)
-               (warnings  vl-warninglist-p))
+               (pstate  vl-parsestate-p))
   (mbe :logic
        (b* ((tokens (vl-tokenlist-fix tokens))
-            (warnings (vl-warninglist-fix warnings)))
-         (mv nil (car tokens) (cdr tokens) warnings))
+            (pstate (vl-parsestate-fix pstate)))
+         (mv nil (car tokens) (cdr tokens) pstate))
        :exec
-       (mv nil (car tokens) (cdr tokens) warnings))
+       (mv nil (car tokens) (cdr tokens) pstate))
   ///
   (defthm vl-match-of-vl-tokenlist-fix
     (equal (vl-match :tokens (vl-tokenlist-fix tokens))
            (vl-match)))
 
-  (defthm vl-match-of-vl-warninglist-fix
-    (equal (vl-match :warnings (vl-warninglist-fix warnings))
+  (defthm vl-match-of-vl-parsestate-fix
+    (equal (vl-match :pstate (vl-parsestate-fix pstate))
            (vl-match)))
 
   (defthm vl-match-count-strong-on-value
@@ -930,36 +934,35 @@ guard)."
                                       vl-is-some-token?)))))
 
 
-
 (define vl-match-any
   :short "Compatible with @(see seqw).  Get the first token, no matter what
 kind of token it is.  Causes an error on EOF."
   (&key
-   ((function symbolp)          '__function__)
-   ((tokens  vl-tokenlist-p)    'tokens)
-   ((warnings vl-warninglist-p) 'warnings))
+   ((function symbolp)       '__function__)
+   ((tokens vl-tokenlist-p)  'tokens)
+   ((pstate vl-parsestate-p) 'pstate))
   :inline t
   :returns
   (mv (errmsg?)
       (token)
       (new-tokens   vl-tokenlist-p)
-      (new-warnings vl-warninglist-p))
+      (new-pstate vl-parsestate-p))
   (b* ((tokens (vl-tokenlist-fix tokens))
-       (warnings (vl-warninglist-fix warnings))
+       (pstate (vl-parsestate-fix pstate))
        ((when (atom tokens))
         (vl-parse-error "Unexpected EOF." :function function)))
-    (mv nil (car tokens) (cdr tokens) warnings))
+    (mv nil (car tokens) (cdr tokens) pstate))
   ///
   (add-macro-alias vl-match-any vl-match-any$inline)
-  (add-untranslate-pattern (vl-match-any$inline ?function tokens warnings)
+  (add-untranslate-pattern (vl-match-any$inline ?function tokens pstate)
                            (vl-match-any :function ?function))
 
   (defthm vl-match-any-of-vl-tokenlist-fix
     (equal (vl-match-any :tokens (vl-tokenlist-fix tokens))
            (vl-match-any)))
 
-  (defthm vl-match-any-of-vl-warninglist-fix
-    (equal (vl-match-any :warnings (vl-warninglist-fix warnings))
+  (defthm vl-match-any-of-vl-parsestate-fix
+    (equal (vl-match-any :pstate (vl-parsestate-fix pstate))
            (vl-match-any)))
 
   (defthm vl-match-any-fails-gracefully
@@ -986,33 +989,32 @@ kind of token it is.  Causes an error on EOF."
                t
              nil))))
 
-
 (define vl-match-any-except
   :short "Compatible with @(see seqw).  Match any token that is not of the
 listed types.  Causes an error on EOF."
   ((types true-listp) ;; BOZO stronger guard?
    &key
-   ((function symbolp) '__function__)
-   ((tokens   vl-tokenlist-p) 'tokens)
-   ((warnings vl-warninglist-p) 'warnings))
+   ((function symbolp)       '__function__)
+   ((tokens vl-tokenlist-p)  'tokens)
+   ((pstate vl-parsestate-p) 'pstate))
   :returns
   (mv (errmsg?)
       (token)
       (new-tokens   vl-tokenlist-p)
-      (new-warnings (equal new-warnings (vl-warninglist-fix warnings))))
-  (b* ((tokens   (vl-tokenlist-fix tokens))
-       (warnings (vl-warninglist-fix warnings))
+      (new-pstate (equal new-pstate (vl-parsestate-fix pstate))))
+  (b* ((tokens (vl-tokenlist-fix tokens))
+       (pstate (vl-parsestate-fix pstate))
        ((when (atom tokens))
         (vl-parse-error "Unexpected EOF." :function function))
        (token1 (car tokens))
        ((when (member-eq (vl-token->type token1) types))
         (mv (list "Parse error in ~s0 (at ~l1): unexpected ~s2."
                   function (vl-token->loc token1) (vl-token->type token1))
-            nil tokens warnings)))
-    (mv nil token1 (cdr tokens) warnings))
+            nil tokens pstate)))
+    (mv nil token1 (cdr tokens) pstate))
   ///
   (add-macro-alias vl-match-any-except vl-match-any-except-fn)
-  (add-untranslate-pattern (vl-match-any-except-fn ?types ?function tokens warnings)
+  (add-untranslate-pattern (vl-match-any-except-fn ?types ?function tokens pstate)
                            (vl-match-any-except ?types :function ?function))
   (local (in-theory (enable vl-is-some-token?)))
 
@@ -1020,8 +1022,8 @@ listed types.  Causes an error on EOF."
     (equal (vl-match-any-except types :tokens (vl-tokenlist-fix tokens))
            (vl-match-any-except types)))
 
-  (defthm vl-match-any-except-of-vl-warninglist-fix
-    (equal (vl-match-any-except types :warnings (vl-warninglist-fix warnings))
+  (defthm vl-match-any-except-of-vl-parsestate-fix
+    (equal (vl-match-any-except types :pstate (vl-parsestate-fix pstate))
            (vl-match-any-except types)))
 
   (defthm vl-match-any-except-fails-when-vl-is-some-token?

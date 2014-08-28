@@ -25,22 +25,22 @@
 
 (trace-parser vl-parse-port-declaration-noatts-fn)
 (trace-parser vl-parse-port-declaration-atts-fn)
-(trace-parser vl-parse-basic-port-declaration-tail)
-
+;(trace-parser vl-parse-basic-port-declaration-tail)
+(trace-parser vl-parse-output-reg-port-tail-fn)
 
 (defconst *edgesynth-debug* t)
 (defconst *vl-unparam-debug* t)
 
 (defconst *loadconfig*
   (make-vl-loadconfig
-   :start-files (list "param2/spec.v")
-   :search-path (list "param2/")
+   :start-files (list "ports2/spec.v")
+   :search-path (list "ports2/")
    ))
 
-(defconst *loadconfig*
-  (make-vl-loadconfig
-   :start-files (list "gates/spec.v")
-   ))
+;; (defconst *loadconfig*
+;;   (make-vl-loadconfig
+;;    :start-files (list "gates/spec.v")
+;;    ))
 
 (defconsts (*loadresult* state)
   (vl-load *loadconfig*))

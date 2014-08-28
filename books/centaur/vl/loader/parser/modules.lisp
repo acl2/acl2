@@ -94,7 +94,7 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (kwd := (vl-match-token :vl-kwd-initial))
         (stmt := (vl-parse-statement))
         (return (list (make-vl-initial :loc (vl-token->loc kwd)
@@ -106,7 +106,7 @@
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (when (eq (vl-loadconfig->edition config) :verilog-2005)
           (:= (vl-match-token :vl-kwd-always))
           (return :vl-always))
@@ -127,7 +127,7 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (loc  := (vl-current-loc))
         (type := (vl-parse-alwaystype))
         (stmt := (vl-parse-statement))
@@ -156,7 +156,7 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (when (vl-is-token? :vl-kwd-endspecify)
           (:= (vl-match))
           (return nil))
@@ -172,7 +172,7 @@
   :count strong
   (if (not (consp tokens))
       (vl-parse-error "Unexpected EOF.")
-    (seqw tokens warnings
+    (seqw tokens pstate
           (:= (vl-parse-warning :vl-warn-specify
                                 (cat "Specify blocks are not yet implemented.  "
                                      "Instead, we are simply ignoring everything "
@@ -189,7 +189,7 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (when (vl-is-token? :vl-kwd-endgenerate)
           (:= (vl-match))
           (return nil))
@@ -205,7 +205,7 @@
   :count strong
   (if (not (consp tokens))
       (vl-parse-error "Unexpected EOF.")
-    (seqw tokens warnings
+    (seqw tokens pstate
           (:= (vl-parse-warning :vl-warn-generate
                                 (cat "Generate regions are not yet implemented.  "
                                      "Instead, we are simply ignoring everything "
@@ -231,7 +231,7 @@
   :fails gracefully
   :count strong
   (declare (ignore atts))
-  (seqw tokens warnings
+  (seqw tokens pstate
         (:= (vl-parse-warning :vl-warn-genvar
                               (cat "Genvar declarations are not implemented, we are just skipping this genvar.")))
         (:= (vl-match-token :vl-kwd-genvar))
@@ -343,7 +343,7 @@
         (vl-parse-error "Unexpected EOF."))
        (type1 (vl-token->type (car tokens)))
        ((when (member type1 *vl-netdecltypes-kwds*))
-        (seqw tokens warnings
+        (seqw tokens pstate
               ((assigns . decls) := (vl-parse-net-declaration atts))
               ;; Note: this order is important, the decls have to come first
               ;; or we'll try to infer implicit nets from the assigns.
@@ -353,15 +353,15 @@
        ((when (eq type1 :vl-kwd-genvar))
         (vl-parse-genvar-declaration atts))
        ((when (eq type1 :vl-kwd-task))
-        (seqw tokens warnings
+        (seqw tokens pstate
               (task := (vl-parse-task-declaration atts))
               (return (list task))))
        ((when (eq type1 :vl-kwd-function))
-        (seqw tokens warnings
+        (seqw tokens pstate
               (fun := (vl-parse-function-declaration atts))
               (return (list fun))))
        ((when (eq type1 :vl-kwd-localparam))
-        (seqw tokens warnings
+        (seqw tokens pstate
               ;; Note: non-local parameters not allowed
               (ret := (vl-parse-param-or-localparam-declaration atts '(:vl-kwd-localparam)))
               (:= (vl-match-token :vl-semi))
@@ -420,7 +420,7 @@
              (vl-parse-error "'specify' is not allowed to have attributes.")
            (vl-parse-specify-block)))
         ((vl-is-token? :vl-kwd-parameter)
-         (seqw tokens warnings
+         (seqw tokens pstate
                ;; localparams are handled in parse-module-or-generate-item
                (ret := (vl-parse-param-or-localparam-declaration atts '(:vl-kwd-parameter)))
                (:= (vl-match-token :vl-semi))
@@ -436,7 +436,7 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (atts := (vl-parse-0+-attribute-instances))
         (when (vl-is-some-token? *vl-directions-kwds*)
           ((portdecls . netdecls) := (vl-parse-port-declaration-noatts atts))
@@ -458,7 +458,7 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         ;; No attributes, no localparams allowed.
         (first := (vl-parse-param-or-localparam-declaration nil nil))
         (when (vl-is-token? :vl-comma)
@@ -472,7 +472,7 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (:= (vl-match-token :vl-pound))
         (:= (vl-match-token :vl-lparen))
         (params := (vl-parse-module-parameter-port-list-aux))
@@ -510,7 +510,7 @@
   :true-listp t
   :fails gracefully
   :count strong-on-value
-  (seqw tokens warnings
+  (seqw tokens pstate
         (when (vl-is-token? :vl-kwd-endmodule)
           (return nil))
         (first := (vl-parse-module-item))
@@ -525,7 +525,7 @@
   :true-listp t
   :fails gracefully
   :count strong-on-value
-  (seqw tokens warnings
+  (seqw tokens pstate
         (when (vl-is-token? :vl-kwd-endmodule)
           (return nil))
         (atts := (vl-parse-0+-attribute-instances))
@@ -558,7 +558,7 @@
 ;   (2) the warnings we're given are initially NIL, so all warnings we come up
 ;       with until the end of the module 'belong' to this module.
 
-  (seqw tokens warnings
+  (seqw tokens pstate
         (when (vl-is-token? :vl-pound)
           (params := (vl-parse-module-parameter-port-list)))
         (when (vl-is-token? :vl-lparen)
@@ -586,7 +586,7 @@
                                          params ports items atts
                                          (vl-token->loc module_keyword)
                                          (vl-token->loc endkwd)
-                                         warnings))))
+                                         (vl-parsestate->warnings pstate)))))
 
 
 (defparser vl-parse-module-declaration-ansi (atts module_keyword id)
@@ -604,7 +604,7 @@
 ;        [list_of_port_declarations] ';' {non_port_module_item}
 ;        'endmodule'
 
-  (seqw tokens warnings
+  (seqw tokens pstate
         (when (vl-is-token? :vl-pound)
           (params := (vl-parse-module-parameter-port-list)))
         (when (vl-is-token? :vl-lparen)
@@ -634,7 +634,7 @@
                                          atts
                                          (vl-token->loc module_keyword)
                                          (vl-token->loc endkwd)
-                                         warnings))))
+                                         (vl-parsestate->warnings pstate)))))
 
 
 
@@ -647,29 +647,33 @@
   :fails gracefully
   :count strong
   ;; Main function to try to parse a module either way.
-  (b* (((mv err1 mod v1-tokens &)
+  (b* ((orig-warnings (vl-parsestate->warnings pstate))
+
+       ((mv err1 mod v1-tokens ?v1-pstate)
         ;; A weird twist is that we want to associate all warnings encountered
         ;; during the parsing of a module with that module as it is created,
         ;; and NOT return them in the global list of warnings.  Because of
         ;; this, we use a fresh warnings accumulator here.
         (vl-parse-module-declaration-nonansi atts module_keyword id
                                              :tokens tokens
-                                             :warnings nil))
+                                             :pstate (change-vl-parsestate pstate :warnings nil)))
+       ;; Any warnings get associated with the module, so now throw out
+       ;; any warnings that are returned.
+       (v1-pstate (change-vl-parsestate v1-pstate :warnings orig-warnings))
        ((unless err1)
-        ;; Successfully parsed the module using the nonansi variant.  We return
-        ;; the results, except that we've already trapped the warnings and
-        ;; associated them with mod, so we can just restore the previously
-        ;; encountered warnings.
-        (mv err1 mod v1-tokens warnings))
+        ;; Successfully parsed the module using the nonansi variant.  Return
+        ;; the result.
+        (mv err1 mod v1-tokens v1-pstate))
 
-       ((mv err2 mod v2-tokens &)
+       ((mv err2 mod v2-tokens ?v2-pstate)
         ;; Similar handling for warnings
         (vl-parse-module-declaration-ansi atts module_keyword id
                                           :tokens tokens
-                                          :warnings nil))
+                                          :pstate (change-vl-parsestate pstate :warnings nil)))
+       (v2-pstate (change-vl-parsestate v2-pstate :warnings orig-warnings))
        ((unless err2)
         ;; Successfully parsed using ansi variant.  Similar deal.
-        (mv err2 mod v2-tokens warnings))
+        (mv err2 mod v2-tokens v2-pstate))
 
        ;; If we get this far, we saw "module foo" but were not able to parse
        ;; the rest of this module definiton using either variant.  We need to
@@ -696,9 +700,10 @@
        ;; backtracking so aggressively.
        ((when (<= (len v1-tokens) (len v2-tokens)))
         ;; nonansi variant got farther (or as far), so use it.
-        (mv err1 nil v1-tokens warnings)))
+        (mv err1 nil v1-tokens v1-pstate)))
+
     ;; ansi variant got farther
-    (mv err2 nil v2-tokens warnings)))
+    (mv err2 nil v2-tokens v2-pstate)))
 
 
 (defparser vl-skip-through-endmodule ()

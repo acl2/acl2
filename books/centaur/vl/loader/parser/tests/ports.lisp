@@ -37,29 +37,28 @@
 (defmacro test-parse-port (&key input (successp 't) name expr)
   `(with-output
      :off summary
-     (assert! (mv-let (erp val tokens warnings)
-                (vl-parse-nonnull-port
-                 :tokens (make-test-tokens ,input)
-                 :warnings 'blah-warnings
-                 :config *vl-default-loadconfig*)
-                (if ,successp
-                    (and (prog2$ (cw "Erp: ~x0.~%" erp)
-                                 (not erp))
-                         (prog2$ (cw "Val: ~x0.~%" val)
-                                 (vl-port-p val))
-                         (prog2$ (cw "Name: ~x0.~%" (vl-port->name val))
-                                 (equal (vl-port->name val) ',name))
-                         (prog2$ (cw "Expr: ~x0.~%"
-                                     (vl-pretty-expr (vl-port->expr val)))
-                                 (equal (vl-pretty-expr (vl-port->expr val))
-                                        ',expr))
-                         (prog2$ (cw "Tokens: ~x0.~%" tokens)
-                                 (not tokens))
-                         (prog2$ (cw "Warnings: ~x0.~%" warnings)
-                                 (equal warnings 'blah-warnings)))
-                  ;; Otherwise, we expect it to fail.
-                  (prog2$ (cw "Erp: ~x0.~%" erp)
-                          erp))))))
+     (assert! (b* ((tokens (make-test-tokens ,input))
+                   (config *vl-default-loadconfig*)
+                   (pstate (make-vl-parsestate :warnings 'blah-warnings))
+                   ((mv erp val tokens (vl-parsestate pstate))
+                    (vl-parse-nonnull-port))
+                   ((unless ,successp)
+                    (cw "Expect error.  Actual error: ~x0.~%" erp)
+                    erp))
+                (and (prog2$ (cw "Erp: ~x0.~%" erp)
+                             (not erp))
+                     (prog2$ (cw "Val: ~x0.~%" val)
+                             (vl-port-p val))
+                     (prog2$ (cw "Name: ~x0.~%" (vl-port->name val))
+                             (equal (vl-port->name val) ',name))
+                     (prog2$ (cw "Expr: ~x0.~%"
+                                 (vl-pretty-expr (vl-port->expr val)))
+                             (equal (vl-pretty-expr (vl-port->expr val))
+                                    ',expr))
+                     (prog2$ (cw "Tokens: ~x0.~%" tokens)
+                             (not tokens))
+                     (prog2$ (cw "Warnings: ~x0.~%" pstate.warnings)
+                             (equal pstate.warnings 'blah-warnings)))))))
 
 (test-parse-port :input "a"
                  :name "a"
@@ -124,34 +123,31 @@
 
 
 
-
-
 (defmacro test-parse-portlist (&key input (successp 't) names exprs)
   `(with-output
      :off summary
-     (assert! (mv-let (erp val tokens warnings)
-                (vl-parse-list-of-ports
-                 :tokens (make-test-tokens ,input)
-                 :warnings 'blah-warnings
-                 :config *vl-default-loadconfig*)
-                (if ,successp
-                    (and (prog2$ (cw "Erp: ~x0.~%" erp)
-                                 (not erp))
-                         (prog2$ (cw "Val: ~x0.~%" val)
-                                 (vl-portlist-p val))
-                         (prog2$ (cw "Names: ~x0.~%" (vl-portlist->names val))
-                                 (equal (vl-portlist->names val) ',names))
-                         (prog2$ (cw "Exprs: ~x0.~%"
-                                     (vl-pretty-maybe-exprlist (vl-portlist->exprs val)))
-                                 (equal (vl-pretty-maybe-exprlist (vl-portlist->exprs val))
-                                        ',exprs))
-                         (prog2$ (cw "Tokens: ~x0.~%" tokens)
-                                 (not tokens))
-                         (prog2$ (cw "Warnings: ~x0.~%" warnings)
-                                 (equal warnings 'blah-warnings)))
-                  ;; Otherwise, we expect it to fail.
-                  (prog2$ (cw "Erp: ~x0.~%" erp)
-                          erp))))))
+     (assert! (b* ((tokens (make-test-tokens ,input))
+                   (config *vl-default-loadconfig*)
+                   (pstate (make-vl-parsestate :warnings 'blah-warnings))
+                   ((mv erp val tokens (vl-parsestate pstate))
+                    (vl-parse-list-of-ports))
+                   ((unless ,successp)
+                    (cw "Expect failure.  Actual Erp: ~x0.~%" erp)
+                    erp))
+                (and (prog2$ (cw "Erp: ~x0.~%" erp)
+                             (not erp))
+                     (prog2$ (cw "Val: ~x0.~%" val)
+                             (vl-portlist-p val))
+                     (prog2$ (cw "Names: ~x0.~%" (vl-portlist->names val))
+                             (equal (vl-portlist->names val) ',names))
+                     (prog2$ (cw "Exprs: ~x0.~%"
+                                 (vl-pretty-maybe-exprlist (vl-portlist->exprs val)))
+                             (equal (vl-pretty-maybe-exprlist (vl-portlist->exprs val))
+                                    ',exprs))
+                     (prog2$ (cw "Tokens: ~x0.~%" tokens)
+                             (not tokens))
+                     (prog2$ (cw "Warnings: ~x0.~%" pstate.warnings)
+                             (equal pstate.warnings 'blah-warnings)))))))
 
 (test-parse-portlist :input "()"
                      :names nil

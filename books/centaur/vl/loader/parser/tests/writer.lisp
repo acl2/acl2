@@ -55,9 +55,10 @@
         t)
 
        ((mv tokens ?cmap) (vl-kill-whitespace-and-comments tokens))
+       (pstate            (make-vl-parsestate :warnings warnings))
        ((mv errmsg? val & &)
         (vl-parse-expression :tokens tokens
-                             :warnings warnings
+                             :pstate pstate
                              :config config))
        ((when errmsg?)
         ;; Fine, don't care
@@ -76,9 +77,10 @@
         (raise "Failed to successfully lex val-pp: ~x0.~%" val-pp))
 
        ((mv tokens ?cmap) (vl-kill-whitespace-and-comments tokens))
+       (pstate            (make-vl-parsestate :warnings warnings))
        ((mv errmsg? new-val & &)
         (vl-parse-expression :tokens tokens
-                             :warnings warnings
+                             :pstate pstate
                              :config config))
        ((when errmsg?)
         (raise "Parsing failed for val-pp: ~x0.  ~x1" val-pp errmsg?))

@@ -70,7 +70,7 @@
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (:= (vl-match-token :vl-lbrack))
         (when (vl-is-token? :vl-rbrack)
           (:= (vl-match))
@@ -88,13 +88,12 @@
   :true-listp t
   :fails gracefully
   :count strong-on-value
-  (seqw tokens warnings
+  (seqw tokens pstate
         (unless (vl-is-token? :vl-lbrack)
           (return nil))
         (first := (vl-parse-packeddimension))
         (rest  := (vl-parse-0+-packed-dimensions))
         (return (cons first rest))))
-
 
 (defaggregate vl-coredatatype-info
   :parents (vl-parse-core-data-type)
@@ -154,7 +153,7 @@
     :count strong
     (b* ((entry (cdr (assoc (vl-token->type (car tokens)) *vl-core-data-type-table*)))
          ((vl-coredatatype-info entry) entry))
-      (seqw tokens warnings
+      (seqw tokens pstate
             (:= (vl-match-any)) ;; guard ensures there's at least one token
             (when (and entry.takes-signingp
                        (vl-is-some-token? '(:vl-kwd-signed :vl-kwd-unsigned)))
@@ -188,11 +187,14 @@
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
 
         (when (vl-is-token? :vl-idtoken)
           ;; type_identifier [packed_dimension]
           (name := (vl-match))
+          (unless (vl-parsestate-is-user-defined-type-p (vl-idtoken->name name) pstate)
+            (return-raw
+             (vl-parse-error (cat "Not a known type: " (vl-idtoken->name name)))))
           (when (vl-is-token? :vl-lbrack)
             (dim := (vl-parse-packeddimension)))
           (return (make-vl-enumbasetype :kind (vl-idtoken->name name)
@@ -260,7 +262,7 @@
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (name := (vl-match-token :vl-idtoken))
 
         (when (vl-is-token? :vl-lbrack)
@@ -304,7 +306,7 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (first := (vl-parse-enum-name-declaration))
         (when (vl-is-token? :vl-comma)
           (:= (vl-match))
@@ -363,7 +365,7 @@ dimensions.</p>
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (id := (vl-match-token :vl-idtoken))
         (when (vl-is-token? :vl-lbrack)
           ;; BOZO this doesn't yet support all the possible variable_dimension things, but
@@ -392,7 +394,7 @@ dimensions.</p>
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (first := (vl-parse-variable-decl-assignment))
         (when (vl-is-token? :vl-comma)
           (:= (vl-match))
@@ -437,7 +439,7 @@ dimensions.</p>
     ;; data_type_or_void ::= data_type | 'void'
     ;; We represent 'void' as just another kind of vl-datatype-p
     :measure (two-nats-measure (len tokens) 1)
-    (seqw tokens warnings
+    (seqw tokens pstate
           (when (vl-is-token? :vl-kwd-void)
             (:= (vl-match-any))
             (return (make-vl-coretype :name :vl-void)))
@@ -447,7 +449,7 @@ dimensions.</p>
   (defparser vl-parse-datatype ()
     :measure (two-nats-measure (len tokens) 0)
     :verify-guards nil
-    (seqw tokens warnings
+    (seqw tokens pstate
 
           (when (vl-is-token? :vl-kwd-type)
             ;; data_type ::= ... | type_reference
@@ -563,7 +565,7 @@ dimensions.</p>
   (defparser vl-parse-structmembers ()
     ;; matches struct_union_member { struct_union_member }
     :measure (two-nats-measure (len tokens) 3)
-    (seqw tokens warnings
+    (seqw tokens pstate
           (first :s= (vl-parse-structmember))
           (when (vl-is-token? :vl-rcurly)
             (return first))
@@ -575,7 +577,7 @@ dimensions.</p>
     ;; struct_union_member ::=  { attribute_instance } [random_qualifier]
     ;;                          data_type_or_void
     ;;                          list_of_variable_decl_assignments ';'
-    (seqw tokens warnings
+    (seqw tokens pstate
           (atts := (vl-parse-0+-attribute-instances))
           (when (vl-is-some-token? '(:vl-kwd-rand :vl-kwd-randc))
             (rand := (vl-match)))
@@ -587,6 +589,9 @@ dimensions.</p>
                                    (:vl-kwd-rand  :vl-rand)
                                    (:vl-kwd-randc :vl-randc)))))
              (vl-make-structmembers atts rand type decls))))))
+
+
+
 
 (defsection val-when-error
   (with-output
@@ -618,16 +623,16 @@ dimensions.</p>
                      acl2::clause
                      ',(flag::get-clique-members 'vl-parse-datatype-fn (w state)))))))))
 
-(defsection warninglist
+(defsection parsestate
   (with-output
     :off prove
     :gag-mode :goals
     (make-event
-     `(defthm-parse-datatype-flag vl-parse-datatype-warninglist
-        ,(vl-warninglist-claim vl-parse-datatype-or-void)
-        ,(vl-warninglist-claim vl-parse-datatype)
-        ,(vl-warninglist-claim vl-parse-structmembers)
-        ,(vl-warninglist-claim vl-parse-structmember)
+     `(defthm-parse-datatype-flag vl-parse-datatype-parsestate
+        ,(vl-parsestate-claim vl-parse-datatype-or-void)
+        ,(vl-parsestate-claim vl-parse-datatype)
+        ,(vl-parsestate-claim vl-parse-structmembers)
+        ,(vl-parsestate-claim vl-parse-structmember)
         :hints((and acl2::stable-under-simplificationp
                     (flag::expand-calls-computed-hint
                      acl2::clause

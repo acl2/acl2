@@ -32,115 +32,91 @@
 (include-book "base")
 (include-book "../eventctrl")
 
-(assert!
- (b* ((tokens (make-test-tokens "@(foo or bar or baz)"))
-      (warnings 'blah-warnings)
-      (config   *vl-default-loadconfig*)
-      ((mv err val tokens warnings)
-       (vl-parse-delay-or-event-control)))
-   (and (not err)
-        (not tokens)
-        (equal warnings 'blah-warnings)
-        (equal val (make-vl-eventcontrol
-                    :starp nil
-                    :atoms
-                    (list (make-vl-evatom
-                           :type :vl-noedge
-                           :expr (make-vl-atom :guts (vl-id "foo")))
-                          (make-vl-evatom
-                           :type :vl-noedge
-                           :expr (make-vl-atom :guts (vl-id "bar")))
-                          (make-vl-evatom
-                           :type :vl-noedge
-                           :expr (make-vl-atom :guts (vl-id "baz")))))))))
+(defmacro test-vl-parse-delay-or-eventcontrol (&key input expect (successp 't))
+  `(assert!
+    (b* ((tokens (make-test-tokens ,input))
+         (pstate (make-vl-parsestate :warnings 'blah-warnings))
+         (config *vl-default-loadconfig*)
+         ((mv err val tokens (vl-parsestate pstate))
+          (vl-parse-delay-or-event-control))
+         ((when err)
+          (not ,successp)))
+      (debuggable-and ,successp
+                      (not tokens)
+                      (equal pstate.warnings 'blah-warnings)
+                      (equal val ,expect)))))
 
-(assert!
- (b* ((tokens (make-test-tokens "@(posedge foo)"))
-      (warnings 'blah-warnings)
-      (config   *vl-default-loadconfig*)
-      ((mv err val tokens warnings)
-       (vl-parse-delay-or-event-control)))
-   (and (not err)
-        (not tokens)
-        (equal warnings 'blah-warnings)
-        (equal val (make-vl-eventcontrol
-                    :starp nil
-                    :atoms (list (make-vl-evatom
-                                  :type :vl-posedge
-                                  :expr (make-vl-atom :guts (vl-id "foo")))))))))
+(test-vl-parse-delay-or-eventcontrol :input "@(foo or bar or baz)"
+                                     :expect
+                                     (make-vl-eventcontrol
+                                      :starp nil
+                                      :atoms
+                                      (list (make-vl-evatom
+                                             :type :vl-noedge
+                                             :expr (make-vl-atom :guts (vl-id "foo")))
+                                            (make-vl-evatom
+                                             :type :vl-noedge
+                                             :expr (make-vl-atom :guts (vl-id "bar")))
+                                            (make-vl-evatom
+                                             :type :vl-noedge
+                                             :expr (make-vl-atom :guts (vl-id "baz"))))))
 
-(assert!
- (b* ((tokens   (make-test-tokens "@(negedge foo)"))
-      (warnings 'blah-warnings)
-      (config   *vl-default-loadconfig*)
-      ((mv err val tokens warnings)
-       (vl-parse-delay-or-event-control)))
-   (and (not err)
-        (not tokens)
-        (equal warnings 'blah-warnings)
-        (equal val (make-vl-eventcontrol
-                    :starp nil
-                    :atoms (list (make-vl-evatom
-                                  :type :vl-negedge
-                                  :expr (make-vl-atom :guts (vl-id "foo")))))))))
+(test-vl-parse-delay-or-eventcontrol :input "@(posedge foo)"
+                                     :expect
+                                     (make-vl-eventcontrol
+                                      :starp nil
+                                      :atoms (list (make-vl-evatom
+                                                    :type :vl-posedge
+                                                    :expr (make-vl-atom :guts (vl-id "foo"))))))
 
-(assert! (b* ((tokens   (make-test-tokens "@*"))
-              (warnings 'blah-warnings)
-              (config   *vl-default-loadconfig*)
-              ((mv err val tokens warnings)
-               (vl-parse-delay-or-event-control)))
-           (and (not err)
-                (not tokens)
-                (equal warnings 'blah-warnings)
-                (equal val (make-vl-eventcontrol
-                            :starp t
-                            :atoms nil)))))
+(test-vl-parse-delay-or-eventcontrol :input "@(negedge foo)"
+                                     :expect
+                                     (make-vl-eventcontrol
+                                      :starp nil
+                                      :atoms (list (make-vl-evatom
+                                                    :type :vl-negedge
+                                                    :expr (make-vl-atom :guts (vl-id "foo"))))))
 
-(assert! (b* ((tokens   (make-test-tokens "@(*)"))
-              (warnings 'blah-warnings)
-              (config   *vl-default-loadconfig*)
-              ((mv err val tokens warnings)
-               (vl-parse-delay-or-event-control)))
-           (and (not err)
-                (not tokens)
-                (equal warnings 'blah-warnings)
-                (equal val (make-vl-eventcontrol
-                            :starp t
-                            :atoms nil)))))
+(test-vl-parse-delay-or-eventcontrol :input "@*"
+                                     :expect (make-vl-eventcontrol :starp t :atoms nil))
 
-(assert! (b* (((mv err val tokens warnings)
-               (vl-parse-delay-or-event-control
-                :tokens (make-test-tokens "@( *)")
-                :warnings 'blah-warnings
-                :config *vl-default-loadconfig*)))
-           (and (not err)
-                (not tokens)
-                (equal warnings 'blah-warnings)
-                (equal val (make-vl-eventcontrol
-                            :starp t
-                            :atoms nil)))))
+(test-vl-parse-delay-or-eventcontrol :input "@(*)"
+                                     :expect (make-vl-eventcontrol :starp t :atoms nil))
 
-(assert! (b* (((mv err val tokens warnings)
-               (vl-parse-delay-or-event-control
-                :tokens (make-test-tokens "@(* )")
-                :warnings 'blah-warnings
-                :config *vl-default-loadconfig*)))
-           (and (not err)
-                (not tokens)
-                (equal warnings 'blah-warnings)
-                (equal val (make-vl-eventcontrol
-                            :starp t
-                            :atoms nil)))))
+(test-vl-parse-delay-or-eventcontrol :input "@( *)"
+                                     :expect (make-vl-eventcontrol :starp t :atoms nil))
 
-(assert! (b* (((mv err val tokens warnings)
-               (vl-parse-delay-or-event-control
-                :tokens (make-test-tokens "@( * )")
-                :warnings 'blah-warnings
-                :config *vl-default-loadconfig*)))
-           (and (not err)
-                (not tokens)
-                (equal warnings 'blah-warnings)
-                (equal val (make-vl-eventcontrol
-                            :starp t
-                            :atoms nil)))))
+(test-vl-parse-delay-or-eventcontrol :input "@(* )"
+                                     :expect (make-vl-eventcontrol :starp t :atoms nil))
 
+(test-vl-parse-delay-or-eventcontrol :input "@( * )"
+                                     :expect (make-vl-eventcontrol :starp t :atoms nil))
+
+(test-vl-parse-delay-or-eventcontrol :input "@(foo or bar or baz or *)"
+                                     :successp nil)
+
+(test-vl-parse-delay-or-eventcontrol :input "@(foo or bar or)"
+                                     :successp nil)
+
+(test-vl-parse-delay-or-eventcontrol :input "@(* or foo)"
+                                     :successp nil)
+
+(test-vl-parse-delay-or-eventcontrol :input "@(foo or posedge bar)"
+                                     :expect
+                                     (make-vl-eventcontrol
+                                      :starp nil
+                                      :atoms (list (make-vl-evatom
+                                                    :type :vl-noedge
+                                                    :expr (make-vl-atom :guts (vl-id "foo")))
+                                                   (make-vl-evatom
+                                                    :type :vl-posedge
+                                                    :expr (make-vl-atom :guts (vl-id "bar"))))))
+
+(test-vl-parse-delay-or-eventcontrol :input "@(* or posedge bar)"
+                                     :successp nil)
+
+(test-vl-parse-delay-or-eventcontrol :input "@(posedge bar or *)"
+                                     :successp nil)
+
+(test-vl-parse-delay-or-eventcontrol :input "@(posedge bar or)"
+                                     :successp nil)

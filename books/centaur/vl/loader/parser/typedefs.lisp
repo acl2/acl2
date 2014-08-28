@@ -56,27 +56,32 @@
           (:= (vl-match-token :vl-kwd-class))
           (name := (vl-match-token :vl-idtoken))
           (:= (vl-match-token :vl-semi))
-          (return (make-vl-fwdtypedef :kind :vl-interfaceclass
-                                      :name (vl-idtoken->name name)
-                                      :loc (vl-token->loc typedef)
-                                      :atts atts)))
+          (return-raw
+           (b* ((val    (make-vl-fwdtypedef :kind :vl-interfaceclass
+                                            :name (vl-idtoken->name name)
+                                            :loc (vl-token->loc typedef)
+                                            :atts atts))
+                (pstate (vl-parsestate-add-user-defined-type (vl-idtoken->name name) pstate)))
+             (mv nil val tokens pstate))))
 
         (when (vl-is-some-token? '(:vl-kwd-enum :vl-kwd-struct :vl-kwd-union :vl-kwd-class))
           (type := (vl-match))
           (name := (vl-match-token :vl-idtoken))
           (:= (vl-match-token :vl-semi))
-          (return (make-vl-fwdtypedef :kind (case (vl-token->type type)
-                                              (:vl-kwd-enum   :vl-enum)
-                                              (:vl-kwd-struct :vl-struct)
-                                              (:vl-kwd-union  :vl-union)
-                                              (:vl-kwd-class  :vl-class))
-                                      :name (vl-idtoken->name name)
-                                      :loc (vl-token->loc typedef)
-                                      :atts atts)))
+          (return-raw
+           (b* ((val   (make-vl-fwdtypedef :kind (case (vl-token->type type)
+                                                   (:vl-kwd-enum   :vl-enum)
+                                                   (:vl-kwd-struct :vl-struct)
+                                                   (:vl-kwd-union  :vl-union)
+                                                   (:vl-kwd-class  :vl-class))
+                                           :name (vl-idtoken->name name)
+                                           :loc (vl-token->loc typedef)
+                                           :atts atts))
+                (pstate (vl-parsestate-add-user-defined-type (vl-idtoken->name name) pstate)))
+             (mv nil val tokens pstate))))
 
         (return-raw
          (vl-parse-error "Not a valid forward typedef."))))
-
 
 (defparser vl-parse-type-declaration (atts)
   :guard (and (vl-atts-p atts)
@@ -106,11 +111,13 @@
             (return-raw
              (vl-parse-error "BOZO need to add support for dimensions on typedefs.")))
           (semi := (vl-match-token :vl-semi))
-          (return
-           (make-vl-typedef :name (vl-idtoken->name id)
-                            :type datatype
-                            :dims nil ;; BOZO add dimensions
-                            :minloc (vl-token->loc typedef)
-                            :maxloc (vl-token->loc semi)
-                            :atts atts)))))
+          (return-raw
+           (b* ((val (make-vl-typedef :name (vl-idtoken->name id)
+                                      :type datatype
+                                      :dims nil ;; BOZO add dimensions
+                                      :minloc (vl-token->loc typedef)
+                                      :maxloc (vl-token->loc semi)
+                                      :atts atts))
+                (pstate (vl-parsestate-add-user-defined-type (vl-idtoken->name id) pstate)))
+             (mv nil val tokens pstate))))))
 

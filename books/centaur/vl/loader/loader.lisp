@@ -126,11 +126,13 @@ assign foo = bar;
                 loading, these warnings get injected into the actual
                 descriptions they pertain to.")
 
-   (warnings  vl-warninglist-p
-              "This holds any \"floating\" warnings that aren't associated with
-               any description.  Few warnings get put here. Instead, most
-               warnings get associated with particular descriptions. But some
-               warnings from the early stages of file loading (like
+   (pstate    vl-parsestate-p
+              "State that the parser needs.  BOZO probably we should consider
+               moving some of the loadstate into the pstate.  This holds, among
+               other things, any \"floating\" warnings that aren't associated
+               with any description.  But few warnings get put here. Instead,
+               most warnings get associated with particular descriptions. But
+               some warnings from the early stages of file loading (like
                preprocessing and lexing), or warnings about malformed syntax
                that occurs <i>between</i> descriptions, can end up here.")
 
@@ -143,6 +145,38 @@ assign foo = bar;
 
   :require
   (equal descalist (vl-descalist descs)))
+
+(define vl-loadstate-warn (&key
+                           (type   symbolp)
+                           (msg    stringp)
+                           (args   true-listp)
+                           ((fn    symbolp) '__function__)
+                           (fatalp booleanp)
+                           ((st    vl-loadstate-p) 'st))
+  :returns (new-st vl-loadstate-p)
+  :parents (vl-loadstate-p)
+  (b* (((vl-loadstate st) st)
+       ((vl-parsestate st.pstate) st.pstate)
+       (w          (make-vl-warning :type type
+                                    :msg msg
+                                    :args args
+                                    :fn fn
+                                    :fatalp fatalp))
+       (new-pstate (change-vl-parsestate st.pstate
+                                         :warnings (cons w st.pstate.warnings))))
+    (change-vl-loadstate st :pstate new-pstate)))
+
+(define vl-loadstate-set-warnings ((warnings vl-warninglist-p)
+                                   &key
+                                   ((st vl-loadstate-p) 'st))
+  :parents (vl-loadstate-p)
+  :returns (new-st vl-loadstate-p)
+  (b* (((vl-loadstate st) st)
+       (new-pstate (change-vl-parsestate st.pstate :warnings warnings)))
+    (change-vl-loadstate st :pstate new-pstate)))
+
+(local (in-theory (enable vl-loadstate-set-warnings)))
+
 
 (defsection scope-of-defines
   :short "How VL and other tools handle the scope of @('`defines')."
@@ -290,7 +324,7 @@ descriptions.</li>
   (b* (((vl-loadstate st) st)
        ((vl-loadconfig st.config) st.config)
 
-       (warnings st.warnings)
+       (warnings (vl-parsestate->warnings st.pstate))
 
        ;; BOZO we should switch this to use some more subtle b* structure that
        ;; lets contents become unreachable.
@@ -303,9 +337,9 @@ descriptions.</li>
        ((unless okp)
         (b* ((warnings (warn :type :vl-read-failed
                              :msg  "Error reading file ~s0."
-                             :args (list filename)))
-             (st       (change-vl-loadstate st :warnings warnings)))
-          (mv st state)))
+                             :args (list filename))))
+          (mv (vl-loadstate-set-warnings warnings)
+              state)))
 
        (filemap
         (time$ (and st.config.filemapp
@@ -339,9 +373,9 @@ descriptions.</li>
        ((unless successp)
         (b* ((warnings (warn :type :vl-preprocess-failed
                              :msg "Preprocessing failed for ~s0."
-                             :args (list filename)))
-             (st       (change-vl-loadstate st :warnings warnings)))
-          (mv st state)))
+                             :args (list filename))))
+          (mv (vl-loadstate-set-warnings warnings)
+              state)))
 
        ((mv successp lexed warnings)
         (time$ (vl-lex preprocessed
@@ -353,9 +387,9 @@ descriptions.</li>
        ((unless successp)
         (b* ((warnings (warn :type :vl-lex-failed
                              :msg "Lexing failed for ~s0."
-                             :args (list filename)))
-             (st       (change-vl-loadstate st :warnings warnings)))
-          (mv st state)))
+                             :args (list filename))))
+          (mv (vl-loadstate-set-warnings warnings)
+              state)))
 
        ((mv cleaned comment-map)
         (time$ (vl-kill-whitespace-and-comments lexed)
@@ -363,20 +397,37 @@ descriptions.</li>
                :args (list filename)
                :mintime st.config.mintime))
 
-       ((mv successp descs warnings)
-        (time$ (vl-parse cleaned warnings st.config)
+       ;; Subtle, horrible nonsense.  Install all warnings into the pstate.
+
+       (pstate        (change-vl-parsestate st.pstate :warnings warnings))
+       (pstate-backup pstate)
+
+       ((mv successp descs pstate)
+        (time$ (vl-parse cleaned pstate st.config)
                :msg "; ~s0: parse: ~st sec, ~sa bytes~%"
                :args (list filename)
                :mintime st.config.mintime))
+
        ((unless successp)
         ;; In practice this should be rare.  See vl-parse-module-declaration:
         ;; We work hard to make sure that parse errors that occur within a
         ;; module only kill that particular module.
-        (b* ((warnings (warn :type :vl-parse-failed
-                             :msg "Parsing failed for ~s0."
-                             :args (list filename)))
-             (st       (change-vl-loadstate st :warnings warnings)))
+
+        ;; At any rate, following our convention, we want to add nothing but
+        ;; warnings to the parse state.  That means unwinding and restoring
+        ;; the pstate-backup that we had.
+        (b* ((-      (vl-parsestate-free pstate))
+             (pstate (vl-parsestate-restore pstate-backup))
+             (w      (make-vl-warning :type :vl-parse-failed
+                                      :msg "Parsing failed for ~s0."
+                                      :args (list filename)
+                                      :fn __function__))
+             (pstate (vl-parsestate-add-warning w pstate))
+             (st     (change-vl-loadstate st :pstate pstate)))
           (mv st state)))
+
+       ;; If we get here, parsing was successful, pstate has already been
+       ;; extended, etc.
 
        (descs
         (time$ (vl-descriptionlist-inject-comments descs comment-map)
@@ -392,7 +443,7 @@ descriptions.</li>
                :mintime st.config.mintime))
 
        (st    (change-vl-loadstate st
-                                   :warnings   warnings
+                                   :pstate     pstate
                                    :defines    defines
                                    :filemap    filemap
                                    :descs      descs
@@ -437,7 +488,7 @@ descriptions.</li>
 
   (b* (((vl-loadstate st) st)
        ((vl-loadconfig config) st.config)
-       (warnings st.warnings)
+       (warnings (vl-parsestate->warnings st.pstate))
 
        ((mv filename warnings state)
         (vl-find-basename/extension name config.search-exts config.search-path
@@ -445,11 +496,11 @@ descriptions.</li>
        ((unless filename)
         (b* ((warnings (warn :type :vl-warn-find-failed
                              :msg "Unable to find a file for ~s0."
-                             :args (list name)))
-             (st (change-vl-loadstate st :warnings warnings)))
-          (mv st state)))
+                             :args (list name))))
+          (mv (vl-loadstate-set-warnings warnings)
+              state)))
 
-       (st (change-vl-loadstate st :warnings warnings)))
+       (st (vl-loadstate-set-warnings warnings)))
 
     (vl-load-file filename st state))
   ///
@@ -564,14 +615,13 @@ will look for new modules.</p>"
 
        ((when (zp n))
         ;; (cw "Ran out of steps in vl-flush-out-descriptions.~%")
-        (b* ((warnings (vl-loadstate->warnings st))
-             (warnings (warn :type :vl-flush-failed
-                             :msg "Failed to load description~s0 ~&1 because we ~
-                                   reached the maximum number of tries."
-                             :args (list (if (vl-plural-p missing) "s" "")
-                                         missing)))
-             (st (change-vl-loadstate st :warnings warnings)))
-          (mv st state)))
+        (mv (vl-loadstate-warn :type :vl-flush-failed
+                               :msg "Failed to load description~s0 ~&1 ~
+                                     because we reached the maximum number of ~
+                                     tries."
+                               :args (list (if (vl-plural-p missing) "s" "")
+                                           missing))
+            state))
 
        ;; (- (cw "Searching for ~x0 missing modules (~x1 tries left).~%" (length missing) n))
 
@@ -581,14 +631,12 @@ will look for new modules.</p>"
 
        ((when (equal num-prev num-new))
         ;; Failed to load anything new, so we've loaded as much as we can.
-        (b* ((warnings (vl-loadstate->warnings st))
-             (warnings (warn :type :vl-search-failed
-                             :msg  "Failed to find ~x0 description~s1: ~&2."
-                             :args (list (length missing)
-                                         (if (vl-plural-p missing) "s" "")
-                                         (mergesort missing))))
-             (st       (change-vl-loadstate st :warnings warnings)))
-          (mv st state))))
+        (mv (vl-loadstate-warn :type :vl-search-failed
+                               :msg  "Failed to find ~x0 description~s1: ~&2."
+                               :args (list (length missing)
+                                           (if (vl-plural-p missing) "s" "")
+                                           (mergesort missing)))
+            state)))
 
     ;; Else, got at least some modules.  But remember: just because we
     ;; loaded N modules doesn't mean we loaded the ones we needed, and it
@@ -642,13 +690,16 @@ will look for new modules.</p>"
 
        ((vl-loadconfig config) config)
 
-       (st (make-vl-loadstate :config     config
-                              :descs      nil
-                              :descalist  nil
-                              :defines    config.defines
-                              :reportcard nil
-                              :warnings   nil
-                              :filemap    nil))
+       (pstate (make-vl-parsestate :warnings nil
+                                   :usertypes nil))
+
+       (st     (make-vl-loadstate :config     config
+                                  :descs      nil
+                                  :descalist  nil
+                                  :defines    config.defines
+                                  :reportcard nil
+                                  :pstate     pstate
+                                  :filemap    nil))
 
        ((mv st state)
         (time$ (vl-load-files config.start-files st state)
@@ -667,12 +718,12 @@ will look for new modules.</p>"
        (design (vl-design-from-descriptions st.descs))
        (design (vl-apply-reportcard design st.reportcard))
        (design (change-vl-design design
-                                 :warnings (append-without-guard st.warnings
+                                 :warnings (append-without-guard (vl-parsestate->warnings st.pstate)
                                                                  (vl-design->warnings design))))
        (result (make-vl-loadresult :design   design
                                    :filemap  st.filemap
                                    :defines  st.defines)))
-
+    (vl-parsestate-free st.pstate)
     (fast-alist-free st.descalist)
     (mv result state)))
 

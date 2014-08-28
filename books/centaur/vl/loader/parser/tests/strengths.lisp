@@ -34,9 +34,9 @@
 
 (defmacro test-drive/charge-strength (&key input expect (successp 't))
   `(assert! (let ((tokens (make-test-tokens ,input))
-                  (warnings nil)
+                  (pstate (make-vl-parsestate))
                   (config *vl-default-loadconfig*))
-              (mv-let (erp val tokens warnings)
+              (mv-let (erp val tokens pstate)
                 (vl-parse-drive-strength-or-charge-strength)
                 (declare (ignore tokens))
                 (if erp
@@ -47,7 +47,7 @@
                    (cw "VAL is ~x0.~%" val)
                    (debuggable-and ,successp
                                    (equal val ,expect)
-                                   (not warnings))))))))
+                                   (not (vl-parsestate->warnings pstate)))))))))
 
 (test-drive/charge-strength :input "(supply0, pull1)"
                             :expect (make-vl-gatestrength

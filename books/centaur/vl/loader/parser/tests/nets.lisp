@@ -64,19 +64,17 @@
 (defmacro test-assign
   (&key input lvalues exprs str rise fall high atts (successp 't))
   `(assert!
-    (let ((tokens (make-test-tokens ,input))
-          (warnings 'blah-warnings)
-          (config   *vl-default-loadconfig*))
-      (mv-let (erp val tokens warnings)
-        (vl-parse-continuous-assign ',atts)
-        (declare (ignorable tokens warnings))
-        (if erp
-            (prog2$ (cw "ERP: ~x0.~%" erp)
-                    (not ,successp))
-          (debuggable-and
-           ,successp
-           (test-assign-aux val ',lvalues ',exprs ,str
-                            ',rise ',fall ',high ',atts)))))))
+    (b* ((config   *vl-default-loadconfig*)
+         (tokens   (make-test-tokens ,input))
+         (pstate   (make-vl-parsestate :warnings 'blah-warnings))
+         ((mv erp val ?tokens ?pstate) (vl-parse-continuous-assign ',atts))
+         ((when erp)
+          (cw "ERP: ~x0.~%" erp)
+          (not ,successp)))
+      (debuggable-and
+       ,successp
+       (test-assign-aux val ',lvalues ',exprs ,str
+                        ',rise ',fall ',high ',atts)))))
 
 (test-assign :input "assign w = 1 ; "
              :lvalues ((id "w"))
@@ -181,25 +179,22 @@
                              ids type range arrdims vectoredp scalaredp signedp decl-rise decl-fall decl-high cstrength
                              (successp 't))
   `(assert!
-    (let ((tokens (make-test-tokens ,input)))
-      (mv-let (erp val tokens warnings)
-        (vl-parse-net-declaration ',atts
-                                  :tokens tokens
-                                  :warnings nil
-                                  :config *vl-default-loadconfig*)
-        (declare (ignorable tokens warnings))
-        (if erp
-            (prog2$ (cw "ERP: ~x0.~%" erp)
-                    (not ,successp))
-          (debuggable-and
-           ,successp
-           (implies (not (car val))
-                    (debuggable-and (not ',lvalues)
-                                    (not ',exprs)))
-           (test-assign-aux (car val) ',lvalues ',exprs ,str ',assign-rise ',assign-fall ',assign-high ',atts)
-           (test-decls-aux (cdr val) ',ids ',type ',range ',arrdims ',vectoredp
-                           ',scalaredp ',signedp ',decl-rise ',decl-fall ',decl-high
-                           ',cstrength)))))))
+    (b* ((config *vl-default-loadconfig*)
+         (tokens (make-test-tokens ,input))
+         (pstate (make-vl-parsestate :warnings nil))
+         ((mv erp val ?tokens ?pstate) (vl-parse-net-declaration ',atts))
+         ((when erp)
+          (cw "ERP: ~x0.~%" erp)
+          (not ,successp)))
+      (debuggable-and
+       ,successp
+       (implies (not (car val))
+                (debuggable-and (not ',lvalues)
+                                (not ',exprs)))
+       (test-assign-aux (car val) ',lvalues ',exprs ,str ',assign-rise ',assign-fall ',assign-high ',atts)
+       (test-decls-aux (cdr val) ',ids ',type ',range ',arrdims ',vectoredp
+                       ',scalaredp ',signedp ',decl-rise ',decl-fall ',decl-high
+                       ',cstrength)))))
 
 (test-netdecl :input "wire w ; "
               :ids ("w")

@@ -111,7 +111,7 @@
   ;; means returning a blank port!  Note that this leads to an unusually weak
   ;; count theorem.
 
-  (seqw tokens warnings
+  (seqw tokens pstate
 
         (atts := (vl-parse-0+-attribute-instances))
 
@@ -138,7 +138,7 @@
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (atts := (vl-parse-0+-attribute-instances))
         (:= (vl-match-token :vl-dot))
         (id := (vl-match-token :vl-idtoken))
@@ -156,7 +156,7 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (first := (vl-parse-named-port-connection))
         (when (vl-is-token? :vl-comma)
           (:= (vl-match-token :vl-comma))
@@ -173,15 +173,15 @@
   ;; on success.  The modinst production must explicitly handle the empty
   ;; case and NOT call this function if it sees "()".
 
-  (mv-let (erp val explore new-warnings)
-          (seqw tokens warnings
+  (mv-let (erp val explore new-pstate)
+          (seqw tokens pstate
                 (args := (vl-parse-list-of-ordered-port-connections))
                 (return (make-vl-arguments-plain :args args)))
           (if erp
-              (seqw tokens warnings
+              (seqw tokens pstate
                     (args := (vl-parse-list-of-named-port-connections))
                     (return (make-vl-arguments-named :args args)))
-            (mv erp val explore new-warnings))))
+            (mv erp val explore new-pstate))))
 
 
 
@@ -243,7 +243,7 @@
   ;; are, etc.
   ;;
   ;; Even though this will be a big change, it probably won't be too hard: via
-  ;; SEQW we're already passing around a warnings structure everywhere, so
+  ;; SEQW we're already passing around a pstate structure everywhere, so
   ;; basically we can just change this structure to be more of a parse-state
   ;; structure instead.  (In fact we could consider extending the loadstate
   ;; objects from the loader.)
@@ -255,7 +255,7 @@
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (ans := (vl-parse-mintypmax-expression))
         (return ans)))
 
@@ -264,7 +264,7 @@
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (:= (vl-match-token :vl-dot))
         (id := (vl-match-token :vl-idtoken))
         (:= (vl-match-token :vl-lparen))
@@ -280,7 +280,7 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (first := (vl-parse-named-parameter-assignment))
         (when (vl-is-token? :vl-comma)
           (:= (vl-match-token :vl-comma))
@@ -293,7 +293,7 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (first := (vl-parse-param-expression))
         (when (vl-is-token? :vl-comma)
           (:= (vl-match-token :vl-comma))
@@ -305,7 +305,7 @@
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (when (vl-is-token? :vl-dot)
           (args := (vl-parse-list-of-named-parameter-assignments))
           (return (make-vl-paramargs-named :args args)))
@@ -321,7 +321,7 @@
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (:= (vl-match-token :vl-pound))
         (:= (vl-match-token :vl-lparen))
 
@@ -353,7 +353,7 @@
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
        (instname := (vl-match-token :vl-idtoken))
        (when (vl-is-token? :vl-lbrack)
          (range := (vl-parse-range)))
@@ -379,7 +379,7 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (first := (vl-parse-module-instance modname paramargs atts))
         (when (vl-is-token? :vl-comma)
           (:= (vl-match-token :vl-comma))
@@ -393,7 +393,7 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (modid := (vl-match-token :vl-idtoken))
         (when (vl-is-token? :vl-pound)
           (paramargs := (vl-parse-parameter-value-assignment)))
@@ -426,7 +426,7 @@
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (when (vl-is-token? :vl-idtoken)
           (inst-id := (vl-match-token :vl-idtoken))
           (when (vl-is-token? :vl-lbrack)
@@ -459,7 +459,7 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (first := (vl-parse-udp-instance loc modname str delay atts))
         (when (vl-is-token? :vl-comma)
           (:= (vl-match-token :vl-comma))
@@ -479,7 +479,7 @@
    :true-listp t
    :fails gracefully
    :count strong
-   (seqw tokens warnings
+   (seqw tokens pstate
         (modname := (vl-match-token :vl-idtoken))
         (when (and (vl-is-token? :vl-lparen)
                    (vl-is-some-token? *vl-all-drivestr-kwds*
@@ -538,13 +538,13 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (b* (((mv m-err val explore new-warnings) (vl-parse-module-instantiation atts))
+  (b* (((mv m-err val explore new-pstate) (vl-parse-module-instantiation atts))
        ((unless m-err)
-        (mv m-err val explore new-warnings))
-       ((mv u-err val explore new-warnings) (vl-parse-udp-instantiation atts))
+        (mv m-err val explore new-pstate))
+       ((mv u-err val explore new-pstate) (vl-parse-udp-instantiation atts))
        ((unless u-err)
-        (mv u-err val explore new-warnings)))
+        (mv u-err val explore new-pstate)))
     (mv (vl-udp/modinst-pick-error-to-report m-err u-err)
-        nil tokens warnings)))
+        nil tokens pstate)))
 
 

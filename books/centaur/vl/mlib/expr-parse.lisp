@@ -77,17 +77,18 @@ won't be sized, may refer to invalid wires, etc.</p>"
           (cw "; vl-parse-expr-from-str: Lexer warnings for ~s0.~%" str))
 
          ((mv tokens ?cmap) (vl-kill-whitespace-and-comments tokens))
-         ((mv err val tokens warnings)
+         (pstate (make-vl-parsestate :warnings nil))
+         ((mv err val tokens (vl-parsestate pstate))
           (vl-parse-expression :tokens tokens
-                               :warnings nil
+                               :pstate pstate
                                :config *vl-default-loadconfig*))
          ((when err)
           (vl-report-parse-error err tokens)
           (cw "; vl-parse-expr-from-str: Parsing failed for ~s0.~%" str))
-         ((when warnings)
+         ((when pstate.warnings)
           (vl-cw-ps-seq
            (vl-println "Warnings from VL-PARSE-EXPR-FROM-STR:")
-           (vl-print-warnings warnings))
+           (vl-print-warnings pstate.warnings))
           (cw "; vl-parse-expr-from-str: Parser warnings for ~s0." str))
          ((when tokens)
           (cw "; vl-parse-expr-from-str: Content remains after parsing an ~

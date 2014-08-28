@@ -71,9 +71,9 @@
   `(with-output
      :off summary
      (assert! (b* ((tokens (make-test-tokens ,input))
-                   (warnings nil)
+                   (pstate (make-vl-parsestate :warnings nil))
                    (config *vl-default-loadconfig*)
-                   ((mv erp val ?tokens ?warnings) (vl-parse-gate-instantiation ,atts))
+                   ((mv erp val ?tokens ?pstate) (vl-parse-gate-instantiation ,atts))
                    (- (cw "ERP ~x0.~%" erp))
                    (- (cw "VAL ~x0.~%" val))
                    (- (cw "Pretty val: ~x0.~%" (vl-pretty-gateinstlist val)))

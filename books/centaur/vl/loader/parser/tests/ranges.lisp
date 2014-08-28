@@ -33,20 +33,18 @@
 (include-book "../ranges")
 
 (defmacro test-range (&key input range (successp 't))
-  `(assert! (let ((tokens (make-test-tokens ,input)))
-              (mv-let (erp val tokens warnings)
-                (vl-parse-range :tokens tokens
-                                :warnings nil
-                                :config *vl-default-loadconfig*)
-                (declare (ignore tokens))
-                (if erp
-                    (prog2$ (cw "ERP is ~x0.~%" erp)
-                            (not ,successp))
-                  (prog2$ (cw "VAL is ~x0.~%" val)
-                          (and ,successp
-                               (vl-range-p val)
-                               (not warnings)
-                               (equal ',range (vl-pretty-range val)))))))))
+  `(assert! (b* ((config *vl-default-loadconfig*)
+                 (tokens (make-test-tokens ,input))
+                 (pstate (make-vl-parsestate))
+                 ((mv erp val ?tokens (vl-parsestate pstate)) (vl-parse-range))
+                 ((when erp)
+                  (cw "ERP is ~x0.~%" erp)
+                  (not ,successp)))
+              (cw "VAL is ~x0.~%" val)
+              (and ,successp
+                   (vl-range-p val)
+                   (not pstate.warnings)
+                   (equal ',range (vl-pretty-range val))))))
 
 (test-range :input "[7:0]"
             :range (range 7 0))

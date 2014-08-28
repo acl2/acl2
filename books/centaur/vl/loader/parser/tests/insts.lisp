@@ -35,32 +35,33 @@
 (defmacro test-parse-modinst-args (&key input (successp 't) expect remainder)
   `(with-output
      :off summary
-     (assert! (mv-let (erp val tokens warnings)
-                (vl-parse-udp-or-module-instantiation
-                 nil
-                 :tokens (make-test-tokens ,input)
-                 :warnings 'warnings
-                 :config *vl-default-loadconfig*)
-                (if ,successp
-                    (and (prog2$ (cw "Erp: ~x0.~%" erp)
-                                 (not erp))
-                         (prog2$ (cw "VAL: ~x0.~%" val)
-                                 (and (vl-modinstlist-p val)
-                                      (equal (len val) 1)))
-                         (let* ((inst (first val))
-                                (args (vl-modinst->portargs inst)))
-                           (and
-                            (prog2$ (cw "ARGS: ~x0.~%" (vl-pretty-arguments args))
-                                    (equal (vl-pretty-arguments args) ',expect))
-                            (prog2$ (cw "Atts: ~x0.~%" (vl-modinst->atts inst))
-                                    (equal (vl-modinst->atts inst) nil))
-                            (prog2$ (cw "Tokens: ~x0.~%" tokens)
-                                    (equal tokens ,remainder))
-                            (prog2$ (cw "Warnings: ~x0.~%" warnings)
-                                    (equal warnings 'warnings)))))
-                  ;; Otherwise, we expect it to fail.
-                  (prog2$ (cw "Erp: ~x0.~%" erp)
-                          erp))))))
+     (assert! (b* ((config *vl-default-loadconfig*)
+                   (tokens (make-test-tokens ,input))
+                   (pstate (make-vl-parsestate :warnings 'warnings))
+                   (atts   nil)
+                   ((mv erp val ?tokens (vl-parsestate pstate))
+                    (vl-parse-udp-or-module-instantiation atts))
+                   ((unless ,successp)
+                    ;; We expect it to fail
+                    (cw "Expect an error.  Error is: ~x0.~%" erp)
+                    erp))
+                ;; Expect success.
+                (and (prog2$ (cw "Erp: ~x0.~%" erp)
+                             (not erp))
+                     (prog2$ (cw "VAL: ~x0.~%" val)
+                             (and (vl-modinstlist-p val)
+                                  (equal (len val) 1)))
+                     (let* ((inst (first val))
+                            (args (vl-modinst->portargs inst)))
+                       (and
+                        (prog2$ (cw "ARGS: ~x0.~%" (vl-pretty-arguments args))
+                                (equal (vl-pretty-arguments args) ',expect))
+                        (prog2$ (cw "Atts: ~x0.~%" (vl-modinst->atts inst))
+                                (equal (vl-modinst->atts inst) nil))
+                        (prog2$ (cw "Tokens: ~x0.~%" tokens)
+                                (equal tokens ,remainder))
+                        (prog2$ (cw "Warnings: ~x0.~%" pstate.warnings)
+                                (equal pstate.warnings 'warnings)))))))))
 
 (test-parse-modinst-args
  :input "foo inst (a, b, c);"

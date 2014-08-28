@@ -143,8 +143,15 @@ data type for a local type parameter.  We enforce this in the parser.</p>")
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (id := (vl-match-token :vl-idtoken))
+
+        (when (vl-parsestate-is-user-defined-type-p (vl-idtoken->name id) pstate)
+          ;; We make this very strict because otherwise it seems that ambiguities
+          ;; can arise.
+          (return-raw
+           (vl-parse-error (cat "Parameter names that shadow types are not supported: " (vl-idtoken->name id)))))
+
         ;; For SystemVerilog-2012, there's an optional {unpacked_dimension} part here.  But we don't
         ;; support it because we don't know what it's supposed to mean.
 
@@ -191,7 +198,7 @@ data type for a local type parameter.  We enforce this in the parser.</p>")
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (first := (vl-parse-param-assignment atts localp type))
         (when (vl-is-token? :vl-comma)
           (:= (vl-match))
@@ -210,8 +217,15 @@ data type for a local type parameter.  We enforce this in the parser.</p>")
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (id := (vl-match-token :vl-idtoken))
+
+        (when (vl-parsestate-is-user-defined-type-p (vl-idtoken->name id) pstate)
+          ;; We make this very strict because otherwise it seems that ambiguities
+          ;; can arise.
+          (return-raw
+           (vl-parse-error (cat "Parameter names that shadow types are not supported: " (vl-idtoken->name id)))))
+
         (:= (vl-match-token :vl-equalsign))
         (type := (vl-parse-datatype))
         (return (make-vl-paramdecl
@@ -231,7 +245,7 @@ data type for a local type parameter.  We enforce this in the parser.</p>")
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (first := (vl-parse-type-assignment atts localp))
         (when (vl-is-token? :vl-comma)
           (:= (vl-match))
@@ -252,7 +266,7 @@ data type for a local type parameter.  We enforce this in the parser.</p>")
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         ;; Verilog-2005 rules:
         ;;
         ;; local_parameter_declaration ::=
@@ -346,7 +360,7 @@ data type for a local type parameter.  We enforce this in the parser.</p>")
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (start := (vl-match-some-token types)) ;; localparam or parameter
 
         (when (vl-is-token? :vl-kwd-type)
@@ -415,8 +429,8 @@ data type for a local type parameter.  We enforce this in the parser.</p>")
               (emptytype (make-vl-implicitvalueparam :range nil :sign nil))
 
               ;; Case 1: maybe there's some data_type there.
-              ((mv some-err some-decls some-tokens some-warnings)
-               (seqw tokens warnings
+              ((mv some-err some-decls some-tokens some-pstate)
+               (seqw tokens pstate
                      (type := (vl-parse-datatype))
                      (decls := (vl-parse-list-of-param-assignments
                                 atts localp
@@ -424,25 +438,25 @@ data type for a local type parameter.  We enforce this in the parser.</p>")
                      (return decls)))
               ((unless some-err)
                ;; It worked, so that's great and we're done.
-               (mv some-err some-decls some-tokens some-warnings))
+               (mv some-err some-decls some-tokens some-pstate))
 
               ;; Case 2: suppose there is no data_type.  Then we should be able
               ;; to just parse the param assignments.
-              ((mv empty-err empty-decls empty-tokens empty-warnings)
+              ((mv empty-err empty-decls empty-tokens empty-pstate)
                (vl-parse-list-of-param-assignments atts localp emptytype))
               ((unless empty-err)
                ;; It worked.  So there can't be a data type because the second
                ;; token has to be an = sign.  We win and we're done.
-               (mv empty-err empty-decls empty-tokens empty-warnings)))
+               (mv empty-err empty-decls empty-tokens empty-pstate)))
 
            ;; Final cleanup case.  What if neither one works?  We have two
            ;; errors now.  Do the usual thing and choose whichever path got
            ;; farther.
            (if (< (len empty-tokens) (len some-tokens))
                ;; Case 2 got farther.  (it has fewer tokens left)
-               (mv empty-err empty-decls empty-tokens empty-warnings)
+               (mv empty-err empty-decls empty-tokens empty-pstate)
              ;; Case 1 got farther.
-             (mv some-err some-decls some-tokens some-warnings))))))
+             (mv some-err some-decls some-tokens some-pstate))))))
 
 
 (defparser vl-parse-param-or-localparam-declaration (atts types)

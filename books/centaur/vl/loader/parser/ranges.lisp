@@ -52,7 +52,7 @@
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (:= (vl-match-token :vl-lbrack))
         (msb := (vl-parse-expression))
         (:= (vl-match-token :vl-colon))
@@ -69,7 +69,7 @@
   :true-listp t
   :fails gracefully
   :count strong-on-value
-  (seqw tokens warnings
+  (seqw tokens pstate
         (unless (vl-is-token? :vl-lbrack)
           (return nil))
         (first := (vl-parse-range))

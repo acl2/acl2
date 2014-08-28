@@ -151,7 +151,7 @@ therefore also somewhat unreliable!</p>"
   :resultp-of-nil t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (kwd := (vl-match-token :vl-idtoken))
         (unless (equal (vl-idtoken->name kwd) "use_set_ignore")
           (return-raw
@@ -210,7 +210,7 @@ therefore also somewhat unreliable!</p>"
        ((mv tokens ?cmap) (vl-kill-whitespace-and-comments tokens))
        ((mv err exprs tokens ?pwarnings)
         (us-parse-comment :tokens tokens
-                          :warnings nil
+                          :pstate (make-vl-parsestate :warnings nil)
                           :config *vl-default-loadconfig*))
        ((when err)
         (b* ((details (with-local-ps (if (and (consp err)

@@ -44,20 +44,17 @@
 (defmacro test-parse-taskports (&key input (successp 't) summary)
   `(with-output
      :off summary
-     (assert! (b* (((mv erp val tokens warnings)
-                    (vl-parse-taskport-list
-                     :tokens (make-test-tokens ,input)
-                     :warnings 'blah-warnings
-                     :config *vl-default-loadconfig*))
-
+     (assert! (b* ((tokens (make-test-tokens ,input))
+                   (config *vl-default-loadconfig*)
+                   (pstate (make-vl-parsestate :warnings 'blah-warnings))
+                   ((mv erp val tokens (vl-parsestate pstate))
+                    (vl-parse-taskport-list))
                    ((unless ,successp)
                     (cw "Expected failure.~%")
                     (cw "Actual erp: ~x0.~%" erp)
                     erp)
-
                    ((when erp)
                     (cw "Expected success, but ERP is ~x0~%" erp))
-
                    (spec-summary ',summary)
                    (impl-summary (taskportlist-summary val)))
                 (and (progn$
@@ -68,8 +65,8 @@
                       (cw "Tokens: ~x0~%" tokens)
                       (not tokens))
                      (progn$
-                      (cw "Warnings: ~x0~%" warnings)
-                      (equal warnings 'blah-warnings)))))))
+                      (cw "Warnings: ~x0~%" pstate.warnings)
+                      (equal pstate.warnings 'blah-warnings)))))))
 
 
 (test-parse-taskports :input ""

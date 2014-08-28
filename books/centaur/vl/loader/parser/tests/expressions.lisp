@@ -76,9 +76,10 @@
             (raise "FAILURE: didn't even lex the input successfully.")))
 
        ((mv tokens ?cmap) (vl-kill-whitespace-and-comments tokens))
-       ((mv errmsg? val tokens warnings)
+       (pstate            (make-vl-parsestate :warnings warnings))
+       ((mv errmsg? val tokens pstate)
         (vl-parse-expression :tokens tokens
-                             :warnings warnings
+                             :pstate pstate
                              :config config))
        (remainder (vl-tokenlist->string-with-spaces tokens))
        (pretty (and val (vl-pretty-expr val)))
@@ -94,9 +95,10 @@
              (cw "FAILURE: Expected parsing to fail, but no error was produced.~%"))
 
          (or (equal (mergesort test.warnings)
-                    (mergesort (vl-warninglist->types warnings)))
+                    (mergesort (vl-warninglist->types (vl-parsestate->warnings pstate))))
              (cw "FAILURE: Expected warnings ~x0, found warnings ~x1.~%"
-                 test.warnings warnings))
+                 test.warnings
+                 (vl-parsestate->warnings pstate)))
 
          (or (not test.successp)
              (equal test.remainder remainder)
@@ -111,11 +113,11 @@
        ((unless test-okp)
         (cw "*** Test failed: ~x0. ~%" test)
         (cw "*** Results from vl-parse-expression: ~x0.~%"
-            (list :errmsg errmsg?
-                  :val val
-                  :pretty pretty
+            (list :errmsg    errmsg?
+                  :val       val
+                  :pretty    pretty
                   :remainder remainder
-                  :warnings warnings))
+                  :pstate    pstate))
         (raise "Test failed")))
     t))
 

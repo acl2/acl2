@@ -152,7 +152,7 @@ out some duplication and indirection:</p>
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (id := (vl-match-token :vl-idtoken))
         (when (vl-is-token? :vl-equalsign)
           (:= (vl-match))
@@ -174,7 +174,7 @@ out some duplication and indirection:</p>
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (first := (vl-parse-variable-type))
         (when (vl-is-token? :vl-comma)
           (:= (vl-match))
@@ -192,7 +192,7 @@ out some duplication and indirection:</p>
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (kwd := (vl-match-token :vl-kwd-integer))
         (temps := (vl-parse-list-of-variable-identifiers))
         (semi := (vl-match-token :vl-semi))
@@ -214,7 +214,7 @@ out some duplication and indirection:</p>
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (kwd := (vl-match-token :vl-kwd-real))
         (temps := (vl-parse-list-of-variable-identifiers))
         (semi := (vl-match-token :vl-semi))
@@ -237,7 +237,7 @@ out some duplication and indirection:</p>
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (kwd    := (vl-match-token :vl-kwd-time))
         (temps  := (vl-parse-list-of-variable-identifiers))
         (semi   := (vl-match-token :vl-semi))
@@ -259,7 +259,7 @@ out some duplication and indirection:</p>
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (kwd   := (vl-match-token :vl-kwd-realtime))
         (temps := (vl-parse-list-of-variable-identifiers))
         (semi  := (vl-match-token :vl-semi))
@@ -281,11 +281,11 @@ out some duplication and indirection:</p>
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (kwd := (vl-match-token :vl-kwd-reg))
         (when (vl-is-token? :vl-kwd-signed)
           (:= (vl-match))
-          (signedp := (mv nil t tokens warnings)))
+          (signedp := (mv nil t tokens pstate)))
         (when (vl-is-token? :vl-lbrack)
           (range := (vl-parse-range)))
         (temps := (vl-parse-list-of-variable-identifiers))
@@ -314,7 +314,7 @@ out some duplication and indirection:</p>
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (id := (vl-match-token :vl-idtoken))
         (arrdims := (vl-parse-0+-ranges))
         (when (vl-is-token? :vl-comma)
@@ -338,7 +338,7 @@ out some duplication and indirection:</p>
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (kwd := (vl-match-token :vl-kwd-event))
         (ret := (vl-parse-list-of-event-identifiers atts))
         (semi := (vl-match-token :vl-semi))
@@ -369,7 +369,7 @@ out some duplication and indirection:</p>
   :resultp-of-nil t
   :fails gracefully
   :count strong-on-value
-  (seqw tokens warnings
+  (seqw tokens pstate
         (when (vl-is-token? :vl-kwd-static)
           (:= (vl-match))
           (return :vl-static))
@@ -392,7 +392,7 @@ out some duplication and indirection:</p>
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (loc := (vl-current-loc))
         (when (vl-is-token? :vl-kwd-const)
           (const := (vl-match)))
@@ -408,8 +408,8 @@ out some duplication and indirection:</p>
         ;; really not going to know which one we're dealing with until we read the whole
         ;; data type and then see if there are any variables that come afterward.
         (return-raw
-         (b* (((mv explicit-err explicit-val explicit-tokens explicit-warnings)
-               (seqw tokens warnings
+         (b* (((mv explicit-err explicit-val explicit-tokens explicit-pstate)
+               (seqw tokens pstate
                      ;; Try to match the explicit data type case.
                      (datatype := (vl-parse-datatype))
                      (assigns := (vl-parse-1+-variable-decl-assignments-separated-by-commas))
@@ -424,15 +424,15 @@ out some duplication and indirection:</p>
                                          :loc      loc))))
               ((unless explicit-err)
                ;; Successfully matched explicit data type case, return answer
-               (mv explicit-err explicit-val explicit-tokens explicit-warnings))
+               (mv explicit-err explicit-val explicit-tokens explicit-pstate))
               ((unless var)
                ;; Not allowed to have implicit data type because didn't say 'var'.
                ;; Just return the failure from the explicit case.
-               (mv explicit-err explicit-val explicit-tokens explicit-warnings))
+               (mv explicit-err explicit-val explicit-tokens explicit-pstate))
 
               ;; Try to handle the implicit case.
-              ((mv implicit-err implicit-val implicit-tokens implicit-warnings)
-               (seqw tokens warnings
+              ((mv implicit-err implicit-val implicit-tokens implicit-pstate)
+               (seqw tokens pstate
                      ;; Try to match the implicit data type case.
                      ;;    implicit_data_type ::= [ signing ] { packed_dimension }
                      (when (vl-is-some-token? '(:vl-kwd-signed :vl-kwd-unsigned))
@@ -460,14 +460,14 @@ out some duplication and indirection:</p>
                                          :atts atts
                                          :loc loc))))
               ((unless implicit-err)
-               (mv implicit-err implicit-val implicit-tokens implicit-warnings)))
+               (mv implicit-err implicit-val implicit-tokens implicit-pstate)))
 
            ;; Blah, tricky case.  We have errors for both the explicit and
            ;; implicit attempts.  It's not clear that one error is better than
            ;; the other.  In module parsing we run into a similar thing and try
            ;; to take "whichever got farther."  I think, here, it's probably
            ;; not so bad to just go with the explicit error.
-           (mv explicit-err explicit-val explicit-tokens explicit-warnings)))))
+           (mv explicit-err explicit-val explicit-tokens explicit-pstate)))))
 
 ;; BOZO eventually support other allowed data declarations: type declarations,
 ;; package import declarations, and net type declarations.  But to do this
@@ -525,10 +525,10 @@ out some duplication and indirection:</p>
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (type := (mv nil
                      (and (consp tokens) (vl-token->type (car tokens)))
-                     tokens warnings))
+                     tokens pstate))
         (elements := (case type
                        (:vl-kwd-reg      (vl-parse-reg-declaration atts))
                        (:vl-kwd-integer  (vl-parse-integer-declaration atts))
@@ -543,7 +543,7 @@ out some duplication and indirection:</p>
                         ;; but we don't want the param parser to eat the semi
                         ;; because, e.g., a module_parameter_port_list has
                         ;; parameter declarations separated by commas instead.
-                        (seqw tokens warnings
+                        (seqw tokens pstate
                               (elems := (vl-parse-param-or-localparam-declaration
                                          atts
                                          '(:vl-kwd-localparam
@@ -562,7 +562,7 @@ out some duplication and indirection:</p>
            (if search
                (vl-parse-error "Block item declarations are not allowed to have ~
                                initial values.")
-             (mv nil elements tokens warnings))))))
+             (mv nil elements tokens pstate))))))
 
 ; SystemVerilog-2012 version:
 ;
@@ -593,7 +593,7 @@ out some duplication and indirection:</p>
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (when (vl-is-token? :vl-kwd-bind)
           (return-raw (vl-parse-error "overload declarations (\"bind ...\") are not yet supported")))
         (when (vl-is-token? :vl-kwd-let)
@@ -627,7 +627,7 @@ out some duplication and indirection:</p>
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (atts := (vl-parse-0+-attribute-instances))
         (decls := (vl-parse-block-item-declaration-noatts atts))
         (return decls)))
@@ -642,11 +642,11 @@ out some duplication and indirection:</p>
   :true-listp t
   :fails never
   :count strong-on-value
-  (b* (((mv erp first explore new-warnings) (vl-parse-block-item-declaration))
+  (b* (((mv erp first explore new-pstate) (vl-parse-block-item-declaration))
        ((when erp)
-        (mv nil nil tokens warnings))
-       ((mv ?erp rest tokens warnings)
+        (mv nil nil tokens pstate))
+       ((mv ?erp rest tokens pstate)
         (vl-parse-0+-block-item-declarations :tokens explore
-                                             :warnings new-warnings)))
-    (mv nil (append first rest) tokens warnings)))
+                                             :pstate new-pstate)))
+    (mv nil (append first rest) tokens pstate)))
 

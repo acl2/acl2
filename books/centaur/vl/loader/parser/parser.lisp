@@ -107,7 +107,7 @@ VL to correctly handle any interesting fragment of SystemVerilog.</p>")
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (atts := (vl-parse-0+-attribute-instances))
         (when (atom tokens)
           (return-raw (vl-parse-error "Unexpected EOF.")))
@@ -181,7 +181,7 @@ VL to correctly handle any interesting fragment of SystemVerilog.</p>")
   :true-listp t
   :fails gracefully
   :count strong-on-value
-  (seqw tokens warnings
+  (seqw tokens pstate
         (when (atom tokens)
           (return nil))
         (first := (vl-parse-description))
@@ -193,15 +193,15 @@ VL to correctly handle any interesting fragment of SystemVerilog.</p>")
   :parents (parser)
   :short "Top level parsing function."
   ((tokens   vl-tokenlist-p)
-   (warnings vl-warninglist-p)
+   (pstate   vl-parsestate-p)
    (config   vl-loadconfig-p))
   :returns
   (mv (successp)
-      (items    vl-descriptionlist-p :hyp :fguard)
-      (warnings vl-warninglist-p))
-  (b* (((mv err val tokens warnings)
+      (items  vl-descriptionlist-p :hyp :fguard)
+      (pstate vl-parsestate-p))
+  (b* (((mv err val tokens pstate)
         (vl-parse-source-text))
        ((when err)
         (vl-report-parse-error err tokens)
-        (mv nil nil warnings)))
-    (mv t val warnings)))
+        (mv nil nil pstate)))
+    (mv t val pstate)))

@@ -28,90 +28,90 @@
 //
 // Original author: Jared Davis <jared@centtech.com>
 
-// basic tests of port handling
+// more tests of port handling
 
-module MA (out, in1, in2);    // Non-ANSI style, extremely basic
+`ifdef SYSTEM_VERILOG_MODE
+
+module MA (out, in1, in2);
+  parameter foo = 1;
+  wire make_foo_matter = foo;
+  output logic [3:0] out;
+  input wire [3:0]  in1;
+  input logic [3:0]  in2;
+
+  always @(in1 or in2)
+  begin
+    out = in1[1] ? (in1 ^ in2) : (in1 & in2);
+  end
+endmodule
+
+module MB (out, in1, in2);
   parameter foo = 1;
   wire make_foo_matter = foo;
   output [3:0] out;
-  input [3:0]  in1;
-  input [3:0]  in2;
-  assign out = in1[1] ? (in1 ^ in2) : (in1 & in2);
+  input var [3:0]  in1, in2;
+  logic [3:0] out;
+
+  always @(in1 or in2) out = in1[0] ? (in1 | in2) : (in1 & in2);
 endmodule
 
-module MB (out, in1, in2);    // Non-ANSI style, combine inputs onto a single line
+module MC (out1, out2, in1, in2);
   parameter foo = 1;
   wire make_foo_matter = foo;
-  output [3:0] out;
-  input [3:0]  in1, in2;
-  assign out = in1[0] ? (in1 | in2) : (in1 & in2);
-endmodule
-
-module MC (out1, out2, in1, in2);  // Non-ANSI style, combine outputs into a single line
-  parameter foo = 1;
-  wire make_foo_matter = foo;
-  output [3:0] out2, out1;
-  input [3:0]  in2, in1;
-  assign out1 = in1[2] ? (in1 ^ in2) : (in1 & in2);
+  output var logic [3:0] out2, out1;
+  input logic [3:0]  in2, in1;
+  always @(in1 or in2) out1 = in1[2] ? (in1 ^ in2) : (in1 & in2);
   assign out2 = ~out1;
 endmodule
 
-module MD (out, in1, in2);    // Non-ANSI style, separate net declarations
+module MD (out, in1, in2);
   parameter foo = 1;
   wire make_foo_matter = foo;
-  output [3:0] out;
+  output var reg [3:0] out;
   input [3:0]  in1;
-  input [3:0]  in2;
-  wire [3:0]   in1;
-  wire [3:0]   in2;
-  wire [3:0]   out;
-  assign out = in1[1] ? (in1 ^ in2) : (in1 & in2);
+  input logic [3:0]  in2;
+  logic [3:0]  in1;
+  always @(in1 or in2) out = in1[1] ? (in1 ^ in2) : (in1 & in2);
 endmodule
 
-module ME (out, in1, in2);    // Non-ANSI style, separate net declarations, signed net declarations
+module ME (out, in1, in2);
   parameter foo = 1;
   wire make_foo_matter = foo;
-  output [3:0] out;
-  input [3:0]  in1;
-  input [3:0]  in2;
-  wire signed [3:0]   in1;
-  wire signed [3:0]   in2;
-  wire [3:0]   out;
-  assign out = in1[1] ? (in1 < in2) : (in1 * in2);
+  output logic [3:0] out;
+  input logic [3:0] in1;
+  input [3:0] 	     in2;
+  wire [3:0] 	     in2;
+
+  always @(in1 or in2) out = in1[1] ? (in1 < in2) : (in1 * in2);
 endmodule
 
-module MF (out, in1, in2);    // Non-ANSI style, separate net declarations, signed portdecls
+module MF (out, in1, in2);
   parameter foo = 1;
   wire make_foo_matter = foo;
-  output [3:0] out;
-  input signed [3:0]  in1;
+  output reg [3:0] out;
+  input logic signed [3:0]  in1;
   input signed [3:0]  in2;
-  wire [3:0]   out;
+  logic [3:0] 	      in2;
+
+  always @(in1 or in2) out = in1[1] ? (in1 < in2) : (in1 % in2);
+endmodule
+
+module MG (out, in1, in2); // Non-ANSI style, output wire
+  parameter foo = 1;
+  wire make_foo_matter = foo;
+  output wire [3:0] out;
+  input var logic signed [3:0]  in1;
+  input signed [3:0]  in2;
   assign out = in1[1] ? (in1 < in2) : (in1 % in2);
 endmodule
 
-module MG (out, in1, in2);    // Non-ANSI style, no separate net declarations, signed portdecls
+module MH (out, in1, in2);  // Non-ANSI style, combined input wire declarations.
   parameter foo = 1;
   wire make_foo_matter = foo;
   output [3:0] out;
-  input signed [3:0]  in1;
-  input signed [3:0]  in2;
-  wire [3:0]   out;
-  assign out = in1[1] ? (in1 < in2) : (in1 % in2);
-endmodule
-
-module MH (out, in1, in2);    // Non-ANSI style, no separate net declarations, signed net and portdecls
-  parameter foo = 1;
-  wire make_foo_matter = foo;
-  output [3:0] out;
-  input signed [3:0]  in1;
-  input signed [3:0]  in2;
-  wire [3:0]   out;
-  wire signed [3:0] in1;
-  wire signed [3:0] in2;
+  input logic signed [3:0] in1, in2;
   assign out = in1[1] ? (in1 < in2) : (in1 / in2);
 endmodule
-
 
 
 module dut (
@@ -245,3 +245,5 @@ wire [3:0] in1, in2,
 endmodule
 
 */
+
+`endif

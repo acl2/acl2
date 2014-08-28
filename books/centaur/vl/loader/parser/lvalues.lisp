@@ -63,7 +63,7 @@
    :verify-guards nil
    (if (not (vl-is-token? :vl-lcurly))
        (vl-parse-indexed-id)
-     (seqw tokens warnings
+     (seqw tokens pstate
            (:= (vl-match-token :vl-lcurly))
            (args := (vl-parse-1+-lvalues-separated-by-commas))
            (:= (vl-match-token :vl-rcurly))
@@ -72,7 +72,7 @@
 
  (defparser vl-parse-1+-lvalues-separated-by-commas ()
    :measure (two-nats-measure (len tokens) 1)
-   (seqw tokens warnings
+   (seqw tokens pstate
          (first :s= (vl-parse-lvalue))
          (when (vl-is-token? :vl-comma)
            (:= (vl-match))
@@ -141,11 +141,11 @@
                  acl2::clause
                  (flag::get-clique-members 'vl-parse-lvalue-fn (w state))))))
 
-  (defthm-parse-lvalues-flag warnings
+  (defthm-parse-lvalues-flag pstate
     (vl-parse-lvalue
-     (vl-warninglist-p (mv-nth 3 (vl-parse-lvalue))))
+     (vl-parsestate-p (mv-nth 3 (vl-parse-lvalue))))
     (vl-parse-1+-lvalues-separated-by-commas
-     (vl-warninglist-p (mv-nth 3 (vl-parse-1+-lvalues-separated-by-commas))))
+     (vl-parsestate-p (mv-nth 3 (vl-parse-1+-lvalues-separated-by-commas))))
     :hints(("Goal" :do-not '(generalize fertilize))
            (and acl2::stable-under-simplificationp
                 (flag::expand-calls-computed-hint
@@ -189,7 +189,7 @@
                (vl-expr-p (cdr val)))
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (lvalue := (vl-parse-lvalue))
         (:= (vl-match-token :vl-equalsign))
         (expr := (vl-parse-expression))

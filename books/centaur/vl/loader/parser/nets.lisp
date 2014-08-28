@@ -46,6 +46,10 @@
 ; net_type ::= supply0 | supply1 | tri | triand | trior | tri0 | tri1
 ;            | uwire | wire | wand | wor
 
+
+;; BOZO SystemVerilog adds trireg as a valid net_type.  We aren't accounting
+;; for this correctly.
+
 (defconst *vl-nettypes-kwd-alist*
   '((:vl-kwd-wire    . :vl-wire)    ; we put wire first since it's most common
     (:vl-kwd-supply0 . :vl-supply0)
@@ -69,7 +73,7 @@
   :resultp-of-nil t
   :fails never
   :count strong-on-value
-  (seqw tokens warnings
+  (seqw tokens pstate
         (when (vl-is-some-token? *vl-nettypes-kwds*)
           (type := (vl-match)))
         (return (and type
@@ -97,7 +101,7 @@
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (ret := (vl-match-some-token *vl-netdecltype-kwd-types*))
         (return (cons (cdr (assoc-eq (vl-token->type ret) *vl-netdecltypes-kwd-alist*))
                       (vl-token->loc ret)))))
@@ -136,7 +140,7 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (first := (vl-parse-assignment))
         (when (vl-is-token? :vl-comma)
           (:= (vl-match))
@@ -172,7 +176,7 @@
    :resultp-of-nil t
    :fails gracefully
    :count strong
-   (seqw tokens warnings
+   (seqw tokens pstate
          (assignkwd := (vl-match-token :vl-kwd-assign))
          (when (vl-is-token? :vl-lparen)
            (strength := (vl-parse-drive-strength-or-charge-strength)))
@@ -221,7 +225,7 @@
   :resultp-of-nil t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (id := (vl-match-token :vl-idtoken))
         (:= (vl-match-token :vl-equalsign))
         (expr := (vl-parse-expression))
@@ -240,7 +244,7 @@
   :resultp-of-nil t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (id := (vl-match-token :vl-idtoken))
         (ranges := (vl-parse-0+-ranges))
         (when (vl-is-token? :vl-comma)
@@ -375,15 +379,15 @@
                  (vl-rangelist-list-p (strip-cdrs (cdr val))))
     :fails gracefully
     :count strong
-    (seqw tokens warnings
+    (seqw tokens pstate
           ;; Assignsp is t when this is a list_of_net_decl_assignments.  We detect
           ;; this by looking ahead to see if an equalsign follows the first
           ;; identifier in the list.
           (assignsp := (if (and (consp tokens)
                                 (vl-is-token? :vl-equalsign
                                               :tokens (cdr tokens)))
-                           (mv nil t tokens warnings)
-                         (mv nil nil tokens warnings)))
+                           (mv nil t tokens pstate)
+                         (mv nil nil tokens pstate)))
           (pairs := (if assignsp
                         (vl-parse-list-of-net-decl-assignments)
                       (vl-parse-list-of-net-identifiers)))
@@ -470,7 +474,7 @@
 ; We also disabled the functions above to hide additional ifs.  Finally the
 ; proofs are getting down to a reasonable time.
 
-   (seqw tokens warnings
+   (seqw tokens pstate
          ((type . loc) := (vl-parse-netdecltype))
          (when (vl-is-token? :vl-lparen)
            (strength := (vl-parse-drive-strength-or-charge-strength)))
@@ -506,7 +510,7 @@
                                                  assignpairs)))
             (if errorstr
                 (vl-parse-error errorstr)
-              (mv nil (cons assigns decls) tokens warnings))))))
+              (mv nil (cons assigns decls) tokens pstate))))))
 
 (with-output
  :gag-mode :goals

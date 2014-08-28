@@ -42,7 +42,7 @@
   :count strong
   ;; Similar to UDPs, but we don't have to check for Verilog-2005 because
   ;; programs only exist in SystemVerilog-2012.
-  (seqw tokens warnings
+  (seqw tokens pstate
         (unless (vl-is-token? :vl-kwd-endprogram)
           (:s= (vl-match-any))
           (info := (vl-parse-program-declaration-aux))
@@ -62,7 +62,7 @@
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (:= (vl-match-token :vl-kwd-program))
         (name := (vl-match-token :vl-idtoken))
         (endinfo := (vl-parse-program-declaration-aux))
