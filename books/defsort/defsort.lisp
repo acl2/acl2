@@ -175,18 +175,21 @@ everything to be a simple function call.</p>
 
 (defun defsort-functional-inst-subst (func-subst wrld)
   ;; this is a bit weak; it removes substitutions in which the substituted
-  ;; function is not yet defined.  It ignores lambdas.  Not smart enough for
-  ;; general use.
+  ;; function is not yet defined.  For lambdas, it checks only the leading
+  ;; function symbol in the body.  Not smart enough for general use.
   (b* (((when (atom func-subst)) nil)
        (pair (car func-subst))
        (sub (cadr pair))
-       ((when (or (and (symbolp sub)
-                       (eq (fgetprop sub 'formals :none wrld) :none))
-                  (and (consp sub)
-                       (eq (car sub) 'lambda)
-                       (consp (caddr sub))
-                       (symbolp (car (caddr sub)))
-                       (eq (fgetprop (car (caddr sub)) 'formals :none wrld) :none))))
+       (sym (or (and (symbolp sub) sub)
+                (and (consp sub)
+                     (eq (car sub) 'lambda)
+                     (consp (caddr sub))
+                     (symbolp (car (caddr sub)))
+                     (car (caddr sub)))))
+       (real-sym (or (cdr (assoc sym (macro-aliases wrld)))
+                     sym))
+       ((when (and real-sym
+                   (eq (fgetprop real-sym 'formals :none wrld) :none)))
         (defsort-functional-inst-subst (cdr func-subst) wrld)))
     (cons pair
           (defsort-functional-inst-subst (cdr func-subst) wrld))))
