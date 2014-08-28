@@ -87,7 +87,9 @@
          (subsetp-equal (intersection-equal x y) y)))
 
   (defthmd deflist-lemma-subsetp-equal-of-duplicated-members
-    (subsetp-equal (duplicated-members x) x))
+    (subsetp-equal (duplicated-members x) x)
+    :hints(("Goal" :in-theory (enable acl2::duplicity)))
+    :otf-flg t)
 
   (defthmd deflist-lemma-subsetp-of-nthcdr
     (subsetp-equal (nthcdr n x) x))

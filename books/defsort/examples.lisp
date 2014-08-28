@@ -108,7 +108,63 @@
                 '(1/3 1/2 1 2 3 a b c (1 . 2))))
 
 
+;; Sort with respect to an alist that maps each key to an integer.
+(defun intval-alistp (x)
+  (declare (xargs :guard t))
+  (if (atom x)
+      (eq x nil)
+    (and (consp (car x))
+         (integerp (cdar x))
+         (intval-alistp (cdr x)))))
 
+(encapsulate nil
+  (local (defthm alistp-when-intval-alistp
+           (implies (intval-alistp x)
+                    (alistp x))))
+  (local
+   (defthm assoc-in-intval-alistp
+     (implies (and (assoc k alist)
+                   (intval-alistp alist))
+              (and (consp (assoc k alist))
+                   (integerp (cdr (assoc k alist)))
+                   (rationalp (cdr (assoc k alist)))))))
+
+  (defun intval-alist-< (x y alist)
+    (Declare (xargs :guard (and (intval-alistp alist)
+                                (assoc-equal x alist)
+                                (assoc-equal y alist))))
+    (< (cdr (assoc-equal x alist))
+       (cdr (assoc-equal y alist))))
+
+  (defsort intval-alist-sort
+    :extra-args (alist)
+    :extra-args-guard (intval-alistp alist)
+    :comparablep (lambda (x alist) (consp (assoc-equal x alist)))
+    :compare< intval-alist-<))
+
+(encapsulate nil
+  (local (defthm alistp-when-intval-alistp
+           (implies (intval-alistp x)
+                    (alistp x))))
+  (local
+   (defthm assoc-in-intval-alistp
+     (implies (and (assoc k alist)
+                   (intval-alistp alist))
+              (consp (assoc k alist)))))
+
+  (defun intval-alist-<2 (x y alist)
+    (Declare (xargs :guard (and (intval-alistp alist)
+                                ;; for demo purposes
+                                (stringp x) (stringp y))))
+    (< (ifix (cdr (assoc-equal x alist)))
+       (ifix (cdr (assoc-equal y alist)))))
+
+  ;; Testing both the new syntax, and a comparablep that ignores the extra-args
+  (defsort intval-alist-sort2 (x alist)
+    :extra-args-guard (intval-alistp alist)
+    :comparablep (lambda (x alist) (stringp x))
+    :compare< intval-alist-<2))
+  
 
 
 

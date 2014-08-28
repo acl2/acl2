@@ -42,7 +42,7 @@
 (local (include-book "ihs/quotient-remainder-lemmas" :dir :system)) ;; floor stuff
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 
-(defsort  :comparablep atom :compare< alphorder :prefix alphorder)
+(defsort  :comparablep (lambda (x) (not (consp x))) :compare< alphorder :prefix alphorder)
 
 ;; Accumulates the AIG vars of X into acc, excluding those that are only found
 ;; within x inside subtrees that are bound in nodetable.  Accumulates into

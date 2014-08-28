@@ -253,6 +253,7 @@
     ;; isort.lisp
     acl2::mergesort-fixnum-threshold
     istr-list-p
+    istr-merge
     istr-merge-tr
     istr-mergesort-fixnum
     istr-mergesort-integers

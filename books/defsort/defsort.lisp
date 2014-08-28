@@ -51,7 +51,7 @@ comparison function beforehand; see the discussion of @(':weak') below.</p>
 
 <h3>Usage</h3>
 
-<p>These two forms show two ways of invoking defsort:</p>
+<p>These forms show various ways of invoking defsort:</p>
 @({
   (defsort sort-by-foo<
            :prefix foosort
@@ -67,6 +67,19 @@ comparison function beforehand; see the discussion of @(':weak') below.</p>
            :comparable-listp rational-listp
            :true-listp t
            :weak nil)
+
+  (defsort intalist-sort
+           :extra-args (alist)
+           :extra-args-guard (intalistp alist)
+           :compare< intalist-<
+           :comparablep (lambda (x alist) (consp (assoc-equal x alist))))
+
+  (defsort intalist-sort2 (x alist)
+           :extra-args-guard (intalistp alist)
+           :compare< intalist2-<
+           :comparablep (lambda (x alist) (stringp x)))
+
+ 
 })
 
 <p>The first form is a new syntax that gives the name of the sorting function
@@ -78,6 +91,15 @@ function names.</p>
 <p>The second form shows an older syntax in which the sort name is omitted and
 every function name is generated from the prefix, so the name of the sorting
 function will in this case be @('<-sort').</p>
+
+<p>The third form shows the use of @(':extra-args') to define a parameterized
+sort.</p>
+
+<p>The fourth form shows a different syntax for specifying extra-args by giving
+a formals list before the keyword arguments, which looks a bit nicer.  (Note:
+In this syntax the first formal must be the symbol X, although it can be in any
+package.)  Additionally, it shows how to use extra-args in conjunction with a
+comparablep predicate that doesn't use them.</p>
 
 <h4>Keyword Arguments</h4>
 <ul>
@@ -115,7 +137,25 @@ comparison function, in addition to its transitivity: its negation must also be
 a transitive relation, and it must be strict, i.e.,
 @('(not (compare< x x))').</li>
 
-</ul>")
+<li>@(':extra-args') may be a list of variables that are used as extra
+parameters to all the functions involved.  (If some of your functions don't
+require all the arguments, you must wrap them in a lambda in order to accept
+the right arguments.)  When using the new syntax with a formals list,
+extra-args is not accepted since the formals list already specifies them.</li>
+
+<li>@(':extra-args-guard') may be a term giving a guard that will be required
+of the extra-args.</li>
+
+</ul>
+
+<h5>Troubleshooting</h5>
+
+<p>Defsort allows you to specify a lambda rather than a function for most
+arguments, and doesn't require that (e.g.) the @(':extra-args-guard') be just a
+function call.  But things may break if you use, e.g., a lambda containing an
+IF (or AND or OR) as, say, the comparablep predicate.  It is best for
+everything to be a simple function call.</p>
+")
 
 ; Inputs are as follows.
 ;
@@ -131,7 +171,7 @@ a transitive relation, and it must be strict, i.e.,
 ; functions and theorems we generate.
 
 (defconst *defsort-keywords*
-  '(:comparablep :compare< :prefix :comparable-listp :true-listp :weak))
+  '(:comparablep :compare< :prefix :comparable-listp :true-listp :weak :extra-args :extra-args-guard))
 
 (defun defsort-functional-inst-subst (func-subst wrld)
   ;; this is a bit weak; it removes substitutions in which the substituted
@@ -247,6 +287,18 @@ a transitive relation, and it must be strict, i.e.,
        ((mv sort args) (if new-syntaxp
                            (mv (car args) (cdr args))
                          (mv nil args)))
+       (formalsp (and new-syntaxp (consp (car args))))
+       ((mv formals args) (if formalsp
+                              (mv (car args) (cdr args))
+                            (mv nil args)))
+       ((when (and formalsp
+                   (not (and (symbol-listp formals)
+                             (consp formals)
+                             (equal (symbol-name (car formals)) "X")))))
+        (er soft 'defsort-fn
+            "Defsort: The formals, if provided, must be a symbol-list whose ~
+             first element is named X (standing for the list to be sorted)."))
+                       
        ((mv kwd-alist args)
         (std::extract-keywords 'defsort *defsort-keywords* args nil))
 
@@ -275,7 +327,17 @@ a transitive relation, and it must be strict, i.e.,
        (comparablep      (std::getarg :comparablep nil kwd-alist))
        (true-listp       (std::getarg :true-listp nil kwd-alist))
        (weak             (std::getarg :weak (not new-syntaxp) kwd-alist))
-
+       ((when (and formalsp (assoc :extra-args kwd-alist)))
+        (er soft 'defsort "Don't use both formals and an :extra-args keyword."))
+       (extra-args       (if formalsp
+                             (cdr formals)
+                           (std::getarg :extra-args nil kwd-alist)))
+       (extra-args-guard (std::getarg :extra-args-guard t kwd-alist))
+       
+       ((unless (and (symbol-listp extra-args)
+                     (not (intersectp-eq '(x y z) extra-args))))
+        (er soft 'defsort ":extra-args must be a symbol list not containing ~x0, ~x1, or ~x2.~%"
+            'x 'y 'z))
        ((unless compare<)
         (er soft 'defsort "Defsort requires :compare< to be specified"))
 
@@ -287,62 +349,73 @@ a transitive relation, and it must be strict, i.e.,
        (merge-tr         (mksym prefix "-MERGE-TR"))
        (fixnum           (mksym prefix "-MERGESORT-FIXNUM"))
        (integer          (mksym prefix "-MERGESORT-INTEGERS"))
-       (comparable-inst  (if comparablep comparablep `(lambda (x) t)))
-       (comparable-listp-inst (if comparablep comparable-listp `(lambda (x) t)))
+       (comparable-inst  (if comparablep
+                             `(lambda (x) (,comparablep x . ,extra-args))
+                           `(lambda (x) t)))
+       (comparable-listp-inst (if comparablep
+                                  `(lambda (x) (,comparable-listp x . ,extra-args))
+                                `(lambda (x) t)))
        (element-list-final-cdr-inst (if true-listp
                                         `(lambda (x) (not x))
                                       `(lambda (x) t)))
 
-       ((mv compare-guard state) (defsort-guard-for-term `(,compare< x x) state))
+       ((mv compare-guard state) (defsort-guard-for-term `(,compare< x x . ,extra-args) state))
+       ((mv comparablep-guard state)
+        (if comparablep
+            (defsort-guard-for-term `(,comparablep x . ,extra-args) state)
+          (mv t state)))
 
-       (subst1          `((compare< ,compare<)
+       (subst1          `((compare<  (lambda (x y) (,compare< x y . ,extra-args)))
                           (comparablep ,comparable-inst)
                           (comparable-listp ,comparable-listp-inst)
                           (element-list-final-cdr-p
                            ,element-list-final-cdr-inst)
-                          (comparable-merge ,merge)
-                          (comparable-orderedp ,orderedp)
-                          (comparable-merge-tr ,merge-tr)
-                          (fast-comparable-mergesort-fixnums ,fixnum)
-                          (fast-comparable-mergesort-integers ,integer)
-                          (comparable-mergesort ,sort)))
+                          (comparable-merge (lambda (x y) (,merge x y . ,extra-args)))
+                          (comparable-orderedp (lambda (x) (,orderedp x . ,extra-args)))
+                          (comparable-merge-tr (lambda (x y acc) (,merge-tr x y ,@extra-args acc)))
+                          (fast-comparable-mergesort-fixnums (lambda (x len) (,fixnum x ,@extra-args len)))
+                          (fast-comparable-mergesort-integers (lambda (x len) (,integer x ,@extra-args len)))
+                          (comparable-mergesort (lambda (x) (,sort x . ,extra-args)))))
+
        (events1
         `(encapsulate
            ()
+           (set-ignore-ok t)
+
            (local (defthm ,(mksym prefix "-TYPE-OF-COMPARE<")
-                    (or (equal (,compare< x y) t)
-                        (equal (,compare< x y) nil))
+                    (or (equal (,compare< x y . ,extra-args) t)
+                        (equal (,compare< x y . ,extra-args) nil))
                     :rule-classes :type-prescription))
 
            ,@(and comparablep
                   `((local (defthm ,(mksym prefix "-TYPE-OF-COMPARABLEP")
-                             (or (equal (,comparablep x) t)
-                                 (equal (,comparablep x) nil))
+                             (or (equal (,comparablep x . ,extra-args) t)
+                                 (equal (,comparablep x . ,extra-args) nil))
                              :rule-classes :type-prescription))))
 
            (local (defthm ,(mksym prefix "-COMPARE<-TRANSITIVE")
-                    (implies (and (,compare< x y)
-                                  (,compare< y z)
+                    (implies (and (,compare< x y . ,extra-args)
+                                  (,compare< y z . ,extra-args)
                                   ,@(and comparablep
-                                         `((,comparablep x)
-                                           (,comparablep y)
-                                           (,comparablep z))))
-                             (,compare< x z))))
+                                         `((,comparablep x . ,extra-args)
+                                           (,comparablep y . ,extra-args)
+                                           (,comparablep z . ,extra-args))))
+                             (,compare< x z . ,extra-args))))
 
            ,@(and (not weak)
                   `((local (defthm ,(mksym prefix "-COMPARE<-NEGATION-TRANSITIVE")
-                             (implies (and (not (,compare< x y))
-                                           (not (,compare< y z))
+                             (implies (and (not (,compare< x y . ,extra-args))
+                                           (not (,compare< y z . ,extra-args))
                                            ,@(and comparablep
-                                                  `((,comparablep x)
-                                                    (,comparablep y)
-                                                    (,comparablep z))))
-                                      (not (,compare< x z)))))
+                                                  `((,comparablep x . ,extra-args)
+                                                    (,comparablep y . ,extra-args)
+                                                    (,comparablep z . ,extra-args))))
+                                      (not (,compare< x z . ,extra-args)))))
                     (local (defthm ,(mksym prefix "-COMPARE<-STRICT")
                              ,(if comparablep
-                                  `(implies (,comparablep x)
-                                            (not (,compare< x x)))
-                                `(not (,compare< x x)))))))
+                                  `(implies (,comparablep x . ,extra-args)
+                                            (not (,compare< x x . ,extra-args)))
+                                `(not (,compare< x x . ,extra-args)))))))
 
            ,@(and comparablep
                   (not (eq compare-guard t))
@@ -350,9 +423,10 @@ a transitive relation, and it must be strict, i.e.,
                   `((local
                      (make-event
                       '(:or (defthm defsort-comparablep-sufficient
-                              (implies (,comparablep x)
+                              (implies (and (,comparablep x . ,extra-args)
+                                            ,extra-args-guard)
                                        ,compare-guard)
-                              :rule-classes :forward-chaining)
+                              :rule-classes (:rewrite :forward-chaining))
                         (value-triple
                          (er hard 'defsort
                              "Couldn't prove that given setting of ~
@@ -360,10 +434,35 @@ a transitive relation, and it must be strict, i.e.,
                               comparison function ~x1, which is:~%~x2"
                              ',comparablep ',compare< ',compare-guard)))))))
 
+           ,@(and comparablep
+                  (not (eq comparablep-guard t))
+                  (not (equal extra-args-guard comparablep-guard))
+                  `((local
+                     (make-event
+                      '(:or (defthm defsort-extra-args-guard-sufficient
+                              (implies ,extra-args-guard
+                                       ,comparablep-guard)
+                              :rule-classes (:rewrite :forward-chaining))
+                        (value-triple
+                         (er hard 'defsort
+                             "Couldn't prove that the guard for the extra-args, ~x0,
+                              implies the guard of comparablep (~x1), which is:~%~x2"
+                             ',extra-args-guard ',comparablep ',comparablep-guard)))))))
+
            (local (in-theory (theory 'minimal-theory)))
            (local (in-theory (enable ,(mksym prefix "-TYPE-OF-COMPARE<")
                                      ,(mksym prefix "-COMPARE<-TRANSITIVE")
                                      defsort-theory)))
+
+           ,@(and comparablep
+                  (not (eq compare-guard t))
+                  (not (equal compare-guard `(,comparablep x)))
+                  `((local (in-theory (enable defsort-comparablep-sufficient)))))
+
+           ,@(and comparablep
+                  (not (eq comparablep-guard t))
+                  (not (equal extra-args-guard comparablep-guard))
+                  `((local (in-theory (enable defsort-extra-args-guard-sufficient)))))
 
            ,@(and comparablep
                   `((local (in-theory (enable ,(mksym prefix "-TYPE-OF-COMPARABLEP"))))))
@@ -409,80 +508,98 @@ a transitive relation, and it must be strict, i.e.,
            ;; (local (in-theory '(natp-compound-recognizer)))
 
            ,@(and comparablep (not definedp)
-                  `((defund ,comparable-listp (x)
-                      (declare (xargs :guard t))
+                  `((defund ,comparable-listp (x . ,extra-args)
+                      (declare (xargs :guard ,extra-args-guard))
                       (if (consp x)
-                          (and (,comparablep (car x))
-                               (,comparable-listp (cdr x)))
+                          (and (,comparablep (car x) . ,extra-args)
+                               (,comparable-listp (cdr x) . ,extra-args))
                         ,(if true-listp `(eq x nil) t)))))
 
            ,@(and comparablep
                   `((local (defthm defsort-comparablep-of-car
-                             (implies (and (,comparable-listp x)
+                             (implies (and (,comparable-listp x . ,extra-args)
                                            (consp x))
-                                      (,comparablep (car x)))
+                                      (,comparablep (car x) . ,extra-args))
                              :hints(("Goal" :in-theory nil
-                                     :expand ((,comparable-listp x))))))
+                                     :expand ((,comparable-listp x . ,extra-args))))))
 
                     (local (defthm defsort-comparable-listp-of-cdr
-                             (implies (,comparable-listp x)
-                                      (,comparable-listp (cdr x)))
+                             (implies (,comparable-listp x . ,extra-args)
+                                      (,comparable-listp (cdr x) . ,extra-args))
                              :hints(("Goal" :in-theory '(default-cdr)
-                                     :expand ((,comparable-listp x)
-                                              (,comparable-listp nil))))))))
+                                     :expand ((,comparable-listp x . ,extra-args)
+                                              (,comparable-listp nil . ,extra-args))))))
 
-           (defund ,orderedp (x)
+                    ;; This follows from the above two but is sometimes
+                    ;; necessary if comparablep is e.g. (lambda (x extra-args)
+                    ;; (foo x)), because then it needs to match extra-args as a
+                    ;; free variable.  We only need to do this when comparablep is a lambda.
+                    ,@(and (consp comparablep) 
+                           `((local (defthm defsort-comparablep-of-cadr
+                                      (implies (and (,comparable-listp x . ,extra-args)
+                                                    (consp x)
+                                                    (consp (cdr x)))
+                                               (,comparablep (cadr x) . ,extra-args))
+                                      :hints(("Goal" :in-theory nil
+                                              :expand ((,comparable-listp x . ,extra-args)
+                                                       (,comparable-listp (cdr x) . ,extra-args))))))))))
+
+           (defund ,orderedp (x . ,extra-args)
              (declare (xargs :guard ,(if comparablep
-                                         `(,comparable-listp x)
-                                       t)
+                                         `(and ,extra-args-guard
+                                               (,comparable-listp x . ,extra-args))
+                                       extra-args-guard)
                              :measure (len x)))
              (cond ((atom x)
                     t)
                    ((atom (cdr x))
                     t)
-                   ((,compare< (first x) (second x))
-                    (,orderedp (cdr x)))
+                   ((,compare< (first x) (second x) . ,extra-args)
+                    (,orderedp (cdr x) . ,extra-args))
                    (t
-                    (and (not (,compare< (second x) (first x)))
-                         (,orderedp (cdr x))))))
+                    (and (not (,compare< (second x) (first x) . ,extra-args))
+                         (,orderedp (cdr x) . ,extra-args)))))
 
 
-           (defund ,merge (x y)
+           (defund ,merge (x y . ,extra-args)
              (declare (xargs :measure (+ (len x)
                                          (len y))
                              :guard ,(if comparablep
-                                         `(and (,comparable-listp x)
-                                               (,comparable-listp y))
-                                       t)))
+                                         `(and ,extra-args-guard
+                                               (,comparable-listp x . ,extra-args)
+                                               (,comparable-listp y . ,extra-args))
+                                       extra-args-guard)))
              (cond ((atom x)
                     y)
                    ((atom y)
                     x)
-                   ((,compare< (car y) (car x))
-                    (cons (car y) (,merge x (cdr y))))
+                   ((,compare< (car y) (car x) . ,extra-args)
+                    (cons (car y) (,merge x (cdr y) . ,extra-args)))
                    (t
-                    (cons (car x) (,merge (cdr x) y)))))
+                    (cons (car x) (,merge (cdr x) y . ,extra-args)))))
 
-           (defund ,merge-tr (x y acc)
+           (defund ,merge-tr (x y ,@extra-args acc)
              (declare (xargs :measure (+ (len x)
                                          (len y))
                              :guard ,(if comparablep
-                                         `(and (,comparable-listp x)
-                                               (,comparable-listp y))
-                                       t)))
+                                         `(and ,extra-args-guard
+                                               (,comparable-listp x . ,extra-args)
+                                               (,comparable-listp y . ,extra-args))
+                                       extra-args-guard)))
              (cond ((atom x)
                     (revappend-without-guard acc y))
                    ((atom y)
                     (revappend-without-guard acc x))
-                   ((,compare< (car y) (car x))
-                    (,merge-tr x (cdr y) (cons (car y) acc)))
+                   ((,compare< (car y) (car x) . ,extra-args)
+                    (,merge-tr x (cdr y) ,@extra-args (cons (car y) acc)))
                    (t
-                    (,merge-tr (cdr x) y (cons (car x) acc)))))
+                    (,merge-tr (cdr x) y ,@extra-args (cons (car x) acc)))))
 
-           (defund ,fixnum (x len)
+           (defund ,fixnum (x ,@extra-args len)
              (declare (xargs :measure (nfix len)
-                             :guard (and ,(if comparablep
-                                              `(,comparable-listp x)
+                             :guard (and ,extra-args-guard
+                                         ,(if comparablep
+                                              `(,comparable-listp x . ,extra-args)
                                             t)
                                          (natp len)
                                          (<= len (len x)))
@@ -501,14 +618,15 @@ a transitive relation, and it must be strict, i.e.,
                            (len2  (the (signed-byte 30)
                                     (- (the (signed-byte 30) len)
                                        (the (signed-byte 30) len1))))
-                           (part1 (,fixnum x len1))
-                           (part2 (,fixnum (rest-n len1 x) len2)))
-                      (,merge-tr part1 part2 nil)))))
+                           (part1 (,fixnum x ,@extra-args len1))
+                           (part2 (,fixnum (rest-n len1 x) ,@extra-args len2)))
+                      (,merge-tr part1 part2 ,@extra-args nil)))))
 
-           (defund ,integer (x len)
+           (defund ,integer (x ,@extra-args len)
              (declare (xargs :measure (nfix len)
-                             :guard (and ,(if comparablep
-                                              `(,comparable-listp x)
+                             :guard (and ,extra-args-guard
+                                         ,(if comparablep
+                                              `(,comparable-listp x . ,extra-args)
                                             t)
                                          (natp len)
                                          (<= len (len x)))
@@ -525,17 +643,18 @@ a transitive relation, and it must be strict, i.e.,
                                     (- (the integer len)
                                        (the integer len1))))
                            (part1 (if (< (the integer len1) (mergesort-fixnum-threshold))
-                                      (,fixnum x len1)
-                                    (,integer x len1)))
+                                      (,fixnum x ,@extra-args len1)
+                                    (,integer x ,@extra-args len1)))
                            (part2 (if (< (the integer len2) (mergesort-fixnum-threshold))
-                                      (,fixnum (rest-n len1 x) len2)
-                                    (,integer (rest-n len1 x) len2))))
-                      (,merge-tr part1 part2 nil)))))
+                                      (,fixnum (rest-n len1 x) ,@extra-args len2)
+                                    (,integer (rest-n len1 x) ,@extra-args len2))))
+                      (,merge-tr part1 part2 ,@extra-args nil)))))
 
-           (defund ,sort (x)
+           (defund ,sort (x . ,extra-args)
              (declare (xargs :guard ,(if comparablep
-                                         `(,comparable-listp x)
-                                       t)
+                                         `(and ,extra-args-guard
+                                               (,comparable-listp x . ,extra-args))
+                                       extra-args-guard)
                              :measure (len x)
                              :verify-guards nil))
              (mbe :logic
@@ -546,14 +665,15 @@ a transitive relation, and it must be strict, i.e.,
                         (t
                          (let ((half (floor (len x) 2)))
                            (,merge
-                            (,sort (take half x))
-                            (,sort (nthcdr half x))))))
+                            (,sort (take half x) . ,extra-args)
+                            (,sort (nthcdr half x) . ,extra-args)
+                            . ,extra-args))))
 
                   :exec
                   (let ((len (len x)))
                     (if (< len (mergesort-fixnum-threshold))
-                        (,fixnum x len)
-                      (,integer x len)))))
+                        (,fixnum x ,@extra-args len)
+                      (,integer x ,@extra-args len)))))
 
            ;; Prove our functional substitution ok once and for all
            (local (defthm defsort-subst1-ok
@@ -567,14 +687,14 @@ a transitive relation, and it must be strict, i.e.,
                                              (equal (comparable-listp x)
                                                     (comparable-listp x))))
                               ,subst1
-                              :expand ((,sort x)
-                                       (,merge x y)
-                                       (,integer x len)
-                                       (,fixnum x len)
-                                       (,merge-tr x y acc)
-                                       (,orderedp x)
+                              :expand ((,sort x . ,extra-args)
+                                       (,merge x y . ,extra-args)
+                                       (,integer x ,@extra-args len)
+                                       (,fixnum x ,@extra-args len)
+                                       (,merge-tr x y ,@extra-args acc)
+                                       (,orderedp x . ,extra-args)
                                        ,@(and comparablep
-                                              `((,comparable-listp x))))))))
+                                              `((,comparable-listp x . ,extra-args))))))))
 
            (verify-guards ,fixnum
              :hints ((defsort-functional-inst
@@ -606,50 +726,49 @@ a transitive relation, and it must be strict, i.e.,
                        ,subst1)))
 
            (defthm ,(mksym prefix "-SORT-PRESERVES-DUPLICITY")
-             (equal (duplicity a (,sort x))
+             (equal (duplicity a (,sort x . ,extra-args))
                     (duplicity a x))
              :hints((defsort-functional-inst
                       duplicity-of-comparable-mergesort
-                      ,subst1
-                      :in-theory (enable ,sort))))
+                      ,subst1)))
 
            ,@(and comparablep
                   `((defthm ,(mksym prefix "-SORT-CREATES-COMPARABLE-LISTP")
-                      (implies (force (,comparable-listp x))
-                               (,comparable-listp (,sort x)))
+                      (implies (force (,comparable-listp x . ,extra-args))
+                               (,comparable-listp (,sort x . ,extra-args) . ,extra-args))
                       :hints((defsort-functional-inst
                                comparable-listp-of-comparable-mergesort ,subst1)))))
 
            (defthm ,(mksym prefix "-SORT-SORTS")
-             (,orderedp (,sort x))
+             (,orderedp (,sort x . ,extra-args) . ,extra-args)
              :hints((defsort-functional-inst
                       comparable-orderedp-of-comparable-mergesort
                       ,subst1
                       :in-theory (enable ,orderedp))))
 
            (defthm ,(mksym prefix "-NO-DUPLICATESP-EQUAL")
-             (equal (no-duplicatesp-equal (,sort x))
+             (equal (no-duplicatesp-equal (,sort x . ,extra-args))
                     (no-duplicatesp-equal x))
              :hints((defsort-functional-inst
                       no-duplicatesp-equal-of-comparable-mergesort
                       ,subst1)))
 
            (defthm ,(mksym prefix "-TRUE-LISTP")
-             (true-listp (,sort x))
+             (true-listp (,sort x . ,extra-args))
              :rule-classes :type-prescription
              :hints((defsort-functional-inst
                       true-listp-of-comparable-mergesort
                       ,subst1)))
 
            (defthm ,(mksym prefix "-LEN")
-             (equal (len (,sort x))
+             (equal (len (,sort x . ,extra-args))
                     (len x))
              :hints ((defsort-functional-inst
                        len-of-comparable-mergesort
                        ,subst1)))
 
            (defthm ,(mksym prefix "-CONSP")
-             (equal (consp (,sort x))
+             (equal (consp (,sort x . ,extra-args))
                     (consp x))
              :hints ((defsort-functional-inst
                        consp-of-comparable-mergesort
@@ -662,32 +781,34 @@ a transitive relation, and it must be strict, i.e.,
 
        (subst2          `((compare<-negation-transitive (lambda () t))
                           (compare<-strict              (lambda () t))
-                          (comparable-insert            ,insert)
-                          (comparable-insertsort        ,insertsort)
+                          (comparable-insert            (lambda (elt x) (,insert elt x . ,extra-args)))
+                          (comparable-insertsort        (lambda (x) (,insertsort x . ,extra-args)))
                           . ,subst1))
 
        (events2
-        `((defund ,insert (elt x)
+        `((defund ,insert (elt x . ,extra-args)
             (declare (xargs :guard ,(if comparablep
-                                        `(and (,comparablep elt)
-                                              (,comparable-listp x))
-                                      t)
+                                        `(and ,extra-args-guard
+                                              (,comparablep elt . ,extra-args)
+                                              (,comparable-listp x . ,extra-args))
+                                      extra-args-guard)
                             :measure (len x)))
             (if (atom x)
                 (list elt)
-              (if (,compare< (car x) elt)
-                  (cons (car x) (,insert elt (cdr x)))
+              (if (,compare< (car x) elt . ,extra-args)
+                  (cons (car x) (,insert elt (cdr x) . ,extra-args))
                 (cons elt x))))
 
-          (defund ,insertsort (x)
+          (defund ,insertsort (x . ,extra-args)
             (declare (xargs :guard ,(if comparablep
-                                        `(,comparable-listp x)
-                                      t)
+                                        `(and ,extra-args-guard
+                                              (,comparable-listp x . ,extra-args))
+                                      extra-args-guard)
                             :verify-guards nil
                             :measure (len x)))
             (if (atom x)
                 nil
-              (,insert (car x) (,insertsort (cdr x)))))
+              (,insert (car x) (,insertsort (cdr x) . ,extra-args) . ,extra-args)))
 
           (local (defthm defsort-subst2-ok
                    t
@@ -696,8 +817,8 @@ a transitive relation, and it must be strict, i.e.,
                              (:theorem (equal (comparable-insertsort x)
                                               (comparable-insertsort x)))
                              ,subst2
-                             :expand ((,insert elt x)
-                                      (,insertsort x))))))
+                             :expand ((,insert elt x . ,extra-args)
+                                      (,insertsort x . ,extra-args))))))
 
           (verify-guards ,insertsort
             :hints ((defsort-functional-inst
@@ -706,11 +827,11 @@ a transitive relation, and it must be strict, i.e.,
 
           (defthm ,(mksym prefix "-MERGESORT-EQUALS-INSERTSORT")
             ,(if comparablep
-                 `(implies (,comparable-listp x)
-                           (equal (,sort x)
-                                  (,insertsort x)))
-               `(equal (,sort x)
-                       (,insertsort x)))
+                 `(implies (,comparable-listp x . ,extra-args)
+                           (equal (,sort x . ,extra-args)
+                                  (,insertsort x . ,extra-args)))
+               `(equal (,sort x . ,extra-args)
+                       (,insertsort x . ,extra-args)))
             :hints ((defsort-functional-inst
                       comparable-mergesort-equals-comparable-insertsort
                       ,subst2))))))

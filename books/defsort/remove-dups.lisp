@@ -83,7 +83,8 @@
  ()
  (local (defthm member-equal-is-duplicity
           (iff (member-equal a x)
-               (< 0 (duplicity a x)))))
+               (< 0 (duplicity a x)))
+          :hints(("Goal" :in-theory (enable duplicity)))))
 
  (defthm member-equal-of-<<-sort
    (iff (member-equal a (<<-sort x))
