@@ -205,6 +205,12 @@
          :compare< string-less-p
          :prefix string)
 
+(defsort :comparablep stringp
+         :compare< string-less-p
+         :prefix string2
+         :comparable-listp string-listp
+         :true-listp t)
+
 (assert! (equal (string-sort '("z" "b" "foo" "bar" "aaa" "aaa"))
                 '("aaa" "aaa" "b" "bar" "foo" "z")))
 

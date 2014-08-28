@@ -180,8 +180,13 @@ everything to be a simple function call.</p>
   (b* (((when (atom func-subst)) nil)
        (pair (car func-subst))
        (sub (cadr pair))
-       ((when (and (symbolp sub)
-                   (eq (fgetprop sub 'formals :none wrld) :none)))
+       ((when (or (and (symbolp sub)
+                       (eq (fgetprop sub 'formals :none wrld) :none))
+                  (and (consp sub)
+                       (eq (car sub) 'lambda)
+                       (consp (caddr sub))
+                       (symbolp (car (caddr sub)))
+                       (eq (fgetprop (car (caddr sub)) 'formals :none wrld) :none))))
         (defsort-functional-inst-subst (cdr func-subst) wrld)))
     (cons pair
           (defsort-functional-inst-subst (cdr func-subst) wrld))))
@@ -478,15 +483,15 @@ everything to be a simple function call.</p>
                               t
                               :hints ((defsort-functional-inst
                                         comparable-listp ,subst1
-                                        :in-theory (enable ,comparable-listp))))
-                        :rule-classes nil)
-                      (value-triple
-                       (er hard 'defsort
-                           "The provided value of comparable-listp, ~x0, ~
+                                        :in-theory (enable ,comparable-listp)))
+                              :rule-classes nil)
+                        (value-triple
+                         (er hard 'defsort
+                             "The provided value of comparable-listp, ~x0, ~
                            failed consistency checks: either it is not ~
                            defined, or the :true-listp setting was incorrect, ~
                            or the definition doesn't match what we expected."
-                           ',comparable-listp))))))
+                             ',comparable-listp)))))))
 
            ;; The following is a pretty gross hack.  But sometimes the guard for
            ;; compare< might not perfectly line up with comparablep.  For
