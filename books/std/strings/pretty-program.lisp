@@ -32,21 +32,44 @@
 (local (include-book "std/util/defredundant" :dir :system))
 (local (include-book "make-event/acl2x-help" :dir :system))
 (local (include-book "pretty-defs-aux"))
-(program)
 
 ; cert_param (acl2x)
 ; cert_param (acl2xskip)
 ; (depends-rec "pretty")
-(acl2::acl2x-replace (include-book
-                      "pretty")
-                     (value-triple :invisible)
-                     :outside-certification
-                     (include-book
-                      "pretty"))
+(make-event
+ '(:or
+   (acl2::acl2x-replace (include-book
+                         "pretty")
+                        (value-triple :invisible)
+                        :outside-certification
+                        (include-book
+                         "pretty"))
+   (make-event
+    (er hard? 'pretty-program
+        "~%************************ PRETTY-PROGRAM FAILURE ************************~% ~
+         Failed to include std/strings/pretty.  It may be that something has ~
+         changed in this book or one of the books it includes that makes it ~
+         impossible to include uncertified.  Please check this by running ~
+         \"make clean\" followed by \"make std/strings/pretty-program.cert\".~%~
+         ************************************************************************"))))
 
 (include-book "defs-program")
+
+(program)
 (make-event
- (b* ((events (std::defredundant-fn *pretty-defs* t state)))
-   (acl2::value events)))
+ '(:or (make-event
+        (b* ((events (std::defredundant-fn *pretty-defs* t state)))
+          (acl2::value events)))
+   (make-event
+    (er hard? 'pretty-program
+        "~%************************ PRETTY-PROGRAM FAILURE ************************~%~
+         Failed to redundantly define the required events.  If you haven't ~
+         done anything to break files that this book depends on, this may be ~
+         a symptom that make-event expansions from stale certificates are ~
+         being loaded.  The simplest way to fix this is to run \"make ~
+         clean\".  Otherwise, you can try to locate and delete the ~
+         certificate containing the bad expansion, but you're on your own for ~
+         that.~%~
+         ************************************************************************"))))
 
 
