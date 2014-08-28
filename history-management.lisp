@@ -13975,12 +13975,12 @@
                                  'current-acl2-world wrld)
                         runic-value)))
              (warning$ ctx ("Theory")
-                       "The :DEFINITION rule~#0~[ for ~v0 is~/s for ~v0 are~] ~
+                       "The :DEFINITION rule~#0~[ for ~&0 is~/s for ~&0 are~] ~
                         left disabled by the theory expression ~x1, but ~
-                        because ~#0~[this function is~/these functions are~] ~
-                        built-in in some way, some expansions of ~
-                        ~#0~[its~/their~] calls may still occur.  See :DOC ~
-                        theories-and-primitives."
+                        because ~#0~[this built-in function is~/these ~
+                        built-in functions are~] given certain special ~
+                        handling, some expansions of ~#0~[its~/their~] calls ~
+                        may still occur.  See :DOC theories-and-primitives."
                        (strip-base-symbols
                         (set-difference-equal
                          (getprop 'definition-minimal-theory 'theory nil
@@ -14003,12 +14003,13 @@
                                   'current-acl2-world wrld)
                          runic-value)))
               (warning$ ctx ("Theory")
-                       "The :EXECUTABLE-COUNTERPART rule~#0~[ for ~v0 is~/s ~
-                        for ~v0 are~] left disabled by the theory expression ~
-                        ~x1, but because ~#0~[this funcction is~/these ~
-                        functions are~] built-in in some way, some ~
-                        evaluations of ~#0~[its~/their~] calls may still ~
-                        occur.  See :DOC theories-and-primitives."
+                       "The :EXECUTABLE-COUNTERPART rule~#0~[ for ~&0 is~/s ~
+                        for ~&0 are~] left disabled by the theory expression ~
+                        ~x1, but because ~#0~[this built-in function ~
+                        is~/these built-in functions are~] given certain ~
+                        special handling, some evaluations of ~
+                        ~#0~[its~/their~] calls may still occur.  See :DOC ~
+                        theories-and-primitives."
                         (strip-base-symbols
                          (set-difference-equal
                           (getprop 'executable-counterpart-minimal-theory

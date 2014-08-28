@@ -2542,6 +2542,10 @@ which is saved just in case it's needed later.")
 ; As of CCL revision 15972 (and probably many earlier revisions), CCL treats
 ; "~user/" as "~/".  (See CCL bug 1121,
 ; http://trac.clozure.com/ccl/ticket/1121.)  The following workaround was
-; suggested by Gary Byers.
+; suggested by Gary Byers.  We modify it by avoiding this setting once the
+; version exceeds 1.10 (as the bug was fixed in a 1.10 svn version).
 #+ccl
-(setq ccl:*trust-paths-from-environment* nil)
+(unless (or (> ccl::*openmcl-major-version* 1)
+            (and (eql ccl::*openmcl-major-version* 1)
+                 (> ccl::*openmcl-minor-version* 10)))
+  (setq ccl:*trust-paths-from-environment* nil))

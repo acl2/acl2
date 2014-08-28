@@ -1449,7 +1449,7 @@
 ; look it up and return it.  Otherwise, we must allocate an address for S and
 ; return it.
 ;
-; We store the addresses of symbols on the symbol's propertly list.  This could
+; We store the addresses of symbols on the symbol's property list.  This could
 ; cause problems in multi-threaded code if two threads were simultaneously
 ; trying to generate a 'hl-static-address entry for the same symbol.  In
 ; particular, each thread would generate its own static cons and try to use its
