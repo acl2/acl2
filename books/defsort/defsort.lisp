@@ -155,6 +155,11 @@ arguments, and doesn't require that (e.g.) the @(':extra-args-guard') be just a
 function call.  But things may break if you use, e.g., a lambda containing an
 IF (or AND or OR) as, say, the comparablep predicate.  It is best for
 everything to be a simple function call.</p>
+
+<p>There may also be some bad cases when the setting of @(':comparablep') is a
+built-in function that ACL2 treats specially or that is in @('minimal-theory').
+For example, @(':comparablep atom') used to cause defsort to fail, though now
+it has a special hack for that particular case.</p>
 ")
 
 ; Inputs are as follows.
@@ -226,6 +231,14 @@ everything to be a simple function call.</p>
         :array-length 1
         :array-name-root 'ens
         :array-name-suffix 0))
+
+(defun fix-comparablep (comparablep)
+  ;; Hack to fix the given comparablep function for some exceptional situations...
+  (cond ((eq comparablep 'atom)
+         ;; Atom isn't a good target for rewriting so change this to (not (consp ...))
+         '(lambda (x) (not (consp x))))
+        (t comparablep)))
+
 
 (defun defsort-guard-for-term (term state)
   (declare (Xargs :mode :program :stobjs state))
@@ -357,6 +370,8 @@ everything to be a simple function call.</p>
        (merge-tr         (mksym prefix "-MERGE-TR"))
        (fixnum           (mksym prefix "-MERGESORT-FIXNUM"))
        (integer          (mksym prefix "-MERGESORT-INTEGERS"))
+
+       (comparablep      (fix-comparablep comparablep))
        (comparable-inst  (if comparablep
                              `(lambda (x) (,comparablep x . ,extra-args))
                            `(lambda (x) t)))
@@ -842,7 +857,49 @@ everything to be a simple function call.</p>
                        (,insertsort x . ,extra-args)))
             :hints ((defsort-functional-inst
                       comparable-mergesort-equals-comparable-insertsort
-                      ,subst2))))))
+                      ,subst2)))
+
+          (defthm ,(mksym prefix "-INSERTSORT-PRESERVES-DUPLICITY")
+             (equal (duplicity a (,sort x . ,extra-args))
+                    (duplicity a x))
+             :hints(("goal" :use ,(mksym prefix "-SORT-PRESERVES-DUPLICITY")
+                     :in-theory (disable ,(mksym prefix "-SORT-PRESERVES-DUPLICITY")))))
+
+           ,@(and comparablep
+                  `((defthm ,(mksym prefix "-INSERTSORT-CREATES-COMPARABLE-LISTP")
+                      (implies (force (,comparable-listp x . ,extra-args))
+                               (,comparable-listp (,sort x . ,extra-args) . ,extra-args))
+                      :hints(("goal" :use ,(mksym prefix "-SORT-CREATES-COMPARABLE-LISTP")
+                              :in-theory (disable ,(mksym prefix "-SORT-CREATES-COMPARABLE-LISTP")))))))
+
+           (defthm ,(mksym prefix "-INSERTSORT-SORTS")
+             (,orderedp (,sort x . ,extra-args) . ,extra-args)
+             :hints(("goal" :use ,(mksym prefix "-SORT-SORTS")
+                     :in-theory (disable ,(mksym prefix "-SORT-SORTS")))))
+
+           (defthm ,(mksym prefix "-INSERTSORT-NO-DUPLICATESP-EQUAL")
+             (equal (no-duplicatesp-equal (,sort x . ,extra-args))
+                    (no-duplicatesp-equal x))
+             :hints(("goal" :use ,(mksym prefix "-NO-DUPLICATESP-EQUAL")
+                     :in-theory (disable ,(mksym prefix "-NO-DUPLICATESP-EQUAL")))))
+
+           (defthm ,(mksym prefix "-INSERTSORT-TRUE-LISTP")
+             (true-listp (,sort x . ,extra-args))
+             :rule-classes :type-prescription
+             :hints(("goal" :use ,(mksym prefix "-TRUE-LISTP")
+                     :in-theory (disable ,(mksym prefix "-TRUE-LISTP")))))
+
+           (defthm ,(mksym prefix "-INSERTSORT-LEN")
+             (equal (len (,sort x . ,extra-args))
+                    (len x))
+             :hints (("goal" :use ,(mksym prefix "-LEN")
+                     :in-theory (disable ,(mksym prefix "-LEN")))))
+
+           (defthm ,(mksym prefix "-INSERTSORT-CONSP")
+             (equal (consp (,sort x . ,extra-args))
+                    (consp x))
+             :hints (("goal" :use ,(mksym prefix "-CONSP")
+                      :in-theory (disable ,(mksym prefix "-CONSP"))))))))
     (value (append events1 events2))))
 
 (defmacro defsort (&rest args)
