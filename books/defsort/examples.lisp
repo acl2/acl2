@@ -127,7 +127,7 @@
                    (intval-alistp alist))
               (and (consp (assoc k alist))
                    (integerp (cdr (assoc k alist)))
-                   (rationalp (cdr (assoc k alist)))))))
+                   (real/rationalp (cdr (assoc k alist)))))))
 
   (defun intval-alist-< (x y alist)
     (Declare (xargs :guard (and (intval-alistp alist)
