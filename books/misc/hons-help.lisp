@@ -25,35 +25,38 @@
 
 ; FAST ALIST UTILITIES -----------------------------------------------------
 
-(defn make-fal (al name)
-  ":Doc-Section Hons-and-Memoization
-  Make a fast alist out of an alist~/
+(defsection make-fal
+  :parents (hons-and-memoization)
+  :short "Make a fast alist out of an alist."
+  :long "<p>Note: it is usually better to use @(see make-fast-alist).</p>
 
-  ~c[(MAKE-FAL al name)] copies the alist AL with ~l[hons-acons] to make a fast
-  alist that ends with NAME.~/
+<p>@('(make-fal al name)') copies the alist AL with @(see hons-acons) to make a
+fast alist that ends with NAME.</p>
 
-  Typically ~c[name] is an atom, and it becomes the final ~l[cdr] of the new
-  fast alist.  Some atoms have special meanings, e.g., they act as size hints;
-  see ~l[hons-acons] for details.
+<p>Typically @('name') is an atom, and it becomes the final @(see cdr) of the
+new fast alist.  Some atoms have special meanings, e.g., they act as size
+hints; see @(see hons-acons) for details.</p>
 
-  However, ~c[name] can also be an existing fast alist.  In this case, this
-  fast alist is extended with the new pairs from ~c[al], using ~l[hons-acons].
-  Note that ~c[name] will no longer be fast after the call of ~c[make-fal].
+<p>However, @('name') can also be an existing fast alist.  In this case, this
+fast alist is extended with the new pairs from @('al'), using @(see
+hons-acons).  Note that @('name') will no longer be fast after the call of
+@('make-fal').</p>
 
-  There's nothing under-the-hood about ~c[make-fal]; it just repeatedly calls
-  ~c[hons-acons].  The built-in function ~l[make-fast-alist] is generally more
-  efficient and can be nicer to reason about because logically it is just the
-  identity.  On the other hand, ~c[make-fast-alist] can't be used to extend an
-  existing fast alist like ~c[make-fal].~/"
+<p>There's nothing under-the-hood about @('make-fal'); it just repeatedly calls
+@('hons-acons').  The built-in function @(see make-fast-alist) is generally
+more efficient and can be nicer to reason about because logically it is just
+the identity.  On the other hand, @('make-fast-alist') can't be used to extend
+an existing fast alist like @('make-fal').</p>"
 
-  (cond ((atom al)
-         name)
-        ((atom (car al))
-         (make-fal (cdr al) name))
-        (t
-         (hons-acons (caar al)
-                     (cdar al)
-                     (make-fal (cdr al) name)))))
+  (defn make-fal (al name)
+    (cond ((atom al)
+           name)
+          ((atom (car al))
+           (make-fal (cdr al) name))
+          (t
+           (hons-acons (caar al)
+                       (cdar al)
+                       (make-fal (cdr al) name))))))
 
 (defmacro ansfl (x y)
 
@@ -224,23 +227,18 @@
         (t
          (list 'hons (car x) (cons 'hons-list* (cdr x))))))
 
-(defn hons-make-list-acc (n val ac)
-  ":Doc-Section Hons-and-Memoization
+(defsection hons-make-list
+  :parents (hons-and-memoization make-list)
+  :short "Like @(see make-list), but produces honses."
 
-  ~c[(HONS-MAKE-LIST-ACC n obj acc)] honses obj onto acc N times.
-  Equal to (hons-append (make-list n :initial-element n) e).~/~/~/"
+  (defn hons-make-list-acc (n val ac)
+    (mbe :logic (make-list-ac n val ac)
+         :exec (if (not (posp n))
+                   ac
+                 (hons-make-list-acc (1- n) val (hons val ac)))))
 
-  (mbe :logic (make-list-ac n val ac)
-       :exec (if (not (posp n))
-                 ac
-               (hons-make-list-acc (1- n) val (hons val ac)))))
-
-(defmacro hons-make-list (size &key initial-element)
-  ":Doc-Section Hons-and-Memoization
-  Like ~ilc[make-list], but produces honses.~/~/~/"
-
-  `(hons-make-list-acc ,size ,initial-element nil))
-
+  (defmacro hons-make-list (size &key initial-element)
+    `(hons-make-list-acc ,size ,initial-element nil)))
 
 
 
@@ -371,58 +369,65 @@
 
 ; SUBLIS WITH FAST ALISTS AND MEMOIZATION ----------------------------------
 
-(defun hons-sublis-aux (fal x)
-  (declare (xargs :guard t))
-  (if (atom x)
-      (let ((pair (hons-get x fal)))
-        (if pair (cdr pair) x))
-    (cons (hons-sublis-aux fal (car x))
-          (hons-sublis-aux fal (cdr x)))))
+(defsection hons-sublis-aux
+  :parents (hons-sublis)
+  :short "Memoized core of @(see hons-sublis)."
 
-(encapsulate
- ()
- (local (defthm lemma
-          (implies (alistp x)
-                   (equal (hons-assoc-equal a x)
-                          (assoc a x)))
-          :hints(("Goal" :induct (len x)))))
+  (defun hons-sublis-aux (fal x)
+    (declare (xargs :guard t))
+    (if (atom x)
+        (let ((pair (hons-get x fal)))
+          (if pair (cdr pair) x))
+      (cons (hons-sublis-aux fal (car x))
+            (hons-sublis-aux fal (cdr x)))))
 
- (defthm hons-sublis-aux-removal
-   (implies (alistp fal)
-            (equal (hons-sublis-aux fal x)
-                   (sublis fal x)))))
+  (encapsulate
+    ()
+    (local (defthm lemma
+             (implies (alistp x)
+                      (equal (hons-assoc-equal a x)
+                             (assoc a x)))
+             :hints(("Goal" :induct (len x)))))
 
-(make-event
- (if (hons-enabledp state)
-     '(memoize 'hons-sublis-aux :condition '(consp x))
-   '(value-triple :skipping-memoization)))
+    (defthm hons-sublis-aux-removal
+      (implies (alistp fal)
+               (equal (hons-sublis-aux fal x)
+                      (sublis fal x)))))
 
-(defun hons-sublis (fal x)
+  (make-event
+   (if (hons-enabledp state)
+       '(memoize 'hons-sublis-aux :condition '(consp x))
+     '(value-triple :skipping-memoization))))
 
-  ":Doc-Section Hons-and-Memoization
-   Memoized version of SUBLIS which uses fast-alists.~/~/
+(defsection hons-sublis
+  :parents (hons-and-memoization sublis)
+  :short "Memoized version of SUBLIS which uses fast-alists."
+  :long "<p>@('(hons-sublis fal x)') is like @(see sublis), but may be faster
+in two ways.</p>
 
-   ~c[(hons-sublis fal x)] is like ~il[sublis], but may be faster in two
-   ways.
+<ol>
 
-   1. It uses ~il[hons-get] instead of ~il[assoc], which may provide a speedup
-   when the alist in question is very long.  Note that for good performance, the
-   fast-alist argument, ~c[fal], must be a valid fast-alist.
+<li>It uses @(see hons-get) instead of @(see assoc), which may provide a
+speedup when the alist in question is very long.  Note that for good
+performance, the fast-alist argument, @('fal'), must be a valid
+fast-alist.</li>
 
-   2. It uses a memoized auxiliary function, which may provide a speedup when
-   the tree argument, ~c[x], contains large, shared structures.
-   ~/"
+<li>It uses a memoized auxiliary function, which may provide a speedup when the
+tree argument, @('x'), contains large, shared structures.</li>
 
-  (declare (xargs :guard t))
-  (let ((ret (hons-sublis-aux fal x)))
-    (prog2$
-     (clear-memoize-table 'hons-sublis-aux)
-     ret)))
+</ol>"
 
-(defthm hons-sublis-removal
-  (implies (alistp fal)
-           (equal (hons-sublis fal x)
-                  (sublis fal x))))
+  (defun hons-sublis (fal x)
+    (declare (xargs :guard t))
+    (let ((ret (hons-sublis-aux fal x)))
+      (prog2$
+       (clear-memoize-table 'hons-sublis-aux)
+       ret)))
+
+  (defthm hons-sublis-removal
+    (implies (alistp fal)
+             (equal (hons-sublis fal x)
+                    (sublis fal x)))))
 
 
 
@@ -436,9 +441,7 @@
 
   18
 
-  ":Doc-Section Hons-and-Memoization
-
-  Assoc is sometimes faster than gethash.~/
+  "Assoc is sometimes faster than gethash.~/
 
   Lisp folklore says it is faster to use ASSOC than GETHASH on a list
   if the list has length 18 or less.~/~/")
@@ -491,7 +494,7 @@
 
 
 (defn hons-intersect-p1 (l1 al2)
-  (cond ((atom l1) 
+  (cond ((atom l1)
          nil)
         ((hons-get (car l1) al2)
          t)
@@ -812,319 +815,28 @@
 ; [Jared]: moved plev stuff to tools/plev.lisp
 
 
-(defstub fail (x y) t :doc
+; [Jared] removing FAIL from the manual to discourage its use.  I generally
+; think we should encourage the use of ER or IMPOSSIBLE instead.
 
+  ;; "There are no axioms about FAIL except the equality axioms.
+
+  ;;  One can prove:
+
+  ;;         (thm (implies (and (equal x1 x2) (equal y1 y2))
+  ;;                       (equal (fail x1 y1) (fail x2 y2))))
+
+  ;;  However, if FAIL is called at run-time, an error occurs.
+
+  ;;  FAIL can perhaps be understood in analogy with the notion of a
+  ;;  'resource error'.  Though one can prove:
+
+  ;;     (thm (implies (posp n) (consp (make-list n))))
+
+  ;;  what will happen if one invokes (make-list (expt 2 2000))?  It is
+  ;;  hard to predict, but eventually, something like an error will
+  ;;  occur."
+
+(defstub fail (x y)
 ; [Jared]: find a better place for this?
+  t)
 
-  ":Doc-Section Miscellaneous
-     There are no axioms about FAIL except the equality axioms.~/~/
-
-   One can prove:
-
-          (thm (implies (and (equal x1 x2) (equal y1 y2))
-                        (equal (fail x1 y1) (fail x2 y2))))
-
-   However, if FAIL is called at run-time, an error occurs.
-
-   FAIL can perhaps be understood in analogy with the notion of a
-   'resource error'.  Though one can prove:
-
-      (thm (implies (posp n) (consp (make-list n))))
-
-   what will happen if one invokes (make-list (expt 2 2000))?  It is
-   hard to predict, but eventually, something like an error will
-   occur.~/")
-
-
-
-
-
-
-; STUFF I REMOVED ----------------------------------------------------------
-
-
-; [Jared]: Removing this because the MBE I added is better.
-
-; (defthm symbol-listp-hons-copy-list-r
-;   (implies (symbol-listp x)
-;            (symbol-listp (hons-copy-list-r x))))
-
-
-; [Jared]: Removing hons-len1 and hons-len.  New ACL2 versions appear to
-; optimize len anyway, and make it tail recursive.  And, at any rate, it
-; doesn't appear that this is being used.
-
-;; (defun hons-len1 (x acc)
-;;   (declare (xargs :guard (and (integerp acc) (<= 0 acc))))
-;;   (mbe :logic (+ (len x) acc)
-;;        :exec (if (atom x)
-;;                  acc
-;;                (hons-len1 (cdr x) (+ 1 acc)))))
-;;
-;; (defn hons-len (x)
-;;   (mbe :logic (len x)
-;;        :exec (hons-len1 x 0)))
-;;
-;; (defthm natp-hons-len
-;;   (implies (integerp n)
-;;            (and (integerp (hons-len1 x n))
-;;                 (>= (hons-len1 x n) n))))
-
-
-
-
-; [Jared]: I'm removing this.  It may actually be kind of a nice idea, but this
-; function is clearly defective.  For instance,
-;
-; (alist-subsetp
-;  (hons-acons 'a 3 (hons-acons 'b 2 nil))
-;  (hons-acons 'b 2 (hons-acons 'a 1 nil)))
-;
-; Returns T.  The problem is that we should be double-car'ing el, if we're
-; going to pass in al1 as its value.  Also, I think we should not name this
-; function alist-equal, something like fast-alist-equal would be more
-; appropriate.
-
-;; (defn alist-subsetp1 (l1 l2 el)
-;;   (cond ((atom el) t)
-;;         (t (and (equal (hons-get (car el) l1)
-;;                        (hons-get (car el) l2))
-;;                 (alist-subsetp1 l1 l2 (cdr el))))))
-;;
-;; (defn alist-subsetp (al1 al2)
-;;   (alist-subsetp1 al1 al2 al1))
-;;
-;; (defn alist-equal (al1 al2)
-;;   ":Doc-Section Hons-and-Memoization
-;;
-;;   (ALIST-EQUAL al1 al2) returns T or NIL according to whether for all
-;;   x, (equal (hons-get x AL1) (hons-get x AL2)).~/
-;;
-;;   ALIST-EQUAL sometimes runs rather fast on fast alists. ~/~/"
-;;
-;;   (and (equal (fast-alist-len al1)
-;;               (fast-alist-len al2))
-;;        (alist-subsetp al1 al2)))
-
-
-
-;; [Jared]: I think these are not used, and would prefer to get rid of them.
-
-;; ; The functions HONS-GETPROP and HONS-PUTPROP support fast property
-;; ; lists for any type of keys, not just symbols.  With HONS-PUTPROP you
-;; ; can cause X to have the value VAL under the key Y, and with
-;; ; HONS-GETPROP you can later ask for the value of X under the key Y
-;; ; and get back VAL.  As usual in Lisp, there is potential confusion
-;; ; over whether NIL is a value of an indication of no value.
-
-;; ; [Jared]: BOZO are these useful?  Can we get rid of them?
-
-;; (defn hons-getprop (x y al)
-;;   (cdr (hons-get (hons x y) al)))
-
-;; (defn hons-putprop (x y val al)
-;;   (hons-acons (hons x y) val al))
-
-;; (defthm hons-getprop-of-hons-putprop
-;;   (equal (hons-getprop x1 y1 (hons-putprop x2 y2 val al))
-;; 	 (if (and (equal x1 x2)
-;; 		  (equal y1 y2))
-;; 	     val
-;; 	   (hons-getprop x1 y1 al))))
-
-
-
-
-;; [Jared]: Removing this; it seems like you usually don't want to have the
-;; spine honsed anyway.
-;;
-;; (defn make-fal! (al name)
-;;   (cond ((atom al)
-;;          name)
-;;         ((atom (car al))
-;;          (make-fal (cdr al) name))
-;;         (t
-;;          (hons-acons! (caar al)
-;;                       (cdar al)
-;;                       (make-fal (cdr al) name)))))
-
-
-
-;; (defn make-list-of-numbers (n)
-
-;; ; [Jared]: Seems like fluff, why include it here?  Why use hons?  If there's a
-;; ; good reason, then why not hons in the base case?  Could do better to return
-;; ; (list 0)?  I moved it to hons-tests.lisp
-
-;;   (declare (xargs :guard (natp n)))
-;;   (if (zp n)
-;;       (list n)
-;;     (hons n (make-list-of-numbers (1- n)))))
-
-
-
-
-
-;; [Jared]: removing the mergesort since I don't think it's really used.
-
-;; (defn odds1 (x ans)
-;;   (cond ((atom x) ans)
-;;         ((atom (cdr x)) (cons (car x) ans))
-;;         (t (odds1 (cddr x) (cons (car x) ans)))))
-
-;; (defn evens1 (x ans)
-;;   (cond ((atom x) ans)
-;;         ((atom (cdr x)) ans)
-;;         (t (evens1 (cddr x) (cons (cadr x) ans)))))
-
-;; (defthm odds1-length
-;;   (implies (and (not (atom x))
-;;                 (not (atom (cdr x))))
-;;            (< (len (odds1 x ans))
-;;               (+ (len x)
-;;                  (len ans))))
-;;   :rule-classes :linear)
-
-;; (defthm evens1-length
-;;   (implies (and (not (atom x))
-;;                 (not (atom (cdr x))))
-;;            (< (len (evens1 x ans))
-;;               (+ (len x)
-;;                  (len ans))))
-;;   :rule-classes :linear)
-
-;; (defun ms-merge (l1 l2 h)
-
-;; ; If (1) both L1 and and L2 are alists,
-;; ;    (2) H is an alist that maps the car of each member of L1 and L2
-;; ;        to an ACL2 ordinal, cf. O-P, and
-;; ;    (3) both L1 and L2 are weakly O-P increasing with respect
-;; ;        to the H values of their cars,
-;; ; then (MS-MERGE L1 L2 H) is a permutation of (APPEND L1 L2)
-;; ; that is weakly increasing with respect to the H value
-;; ; of the cars of its members.
-
-;;   (declare (xargs :guard t
-;;                   :measure (+ (len l1) (len l2))))
-;;   (cond ((atom l1) l2)
-;;         ((atom l2) l1)
-;;         ((atom (car l1)) nil) ; to help with guards
-;;         ((atom (car l2)) nil)
-;;         (t (let ((m1 (cdr (hons-get (caar l1) h)))
-;;                  (m2 (cdr (hons-get (caar l2) h))))
-;;              (cond ((and (o-p m1)
-;;                          (o-p m2)
-;;                          (o< m1 m2))
-;;                     (cons (car l1) (ms-merge (cdr l1) l2 h)))
-;;                    (t (cons (car l2) (ms-merge l1 (cdr l2) h))))))))
-
-;; (defun merge-sort (a h)
-
-;; ; If both A and H are alists and H maps the car of each member of A to
-;; ;    an ACL2 ordinal, cf. O-P,
-;; ; then (MERGE-SORT A H) is a permutation of A whose cars are
-;; ;    weakly O-<-increasing under H.
-
-;; ; For efficiency, H should be a fast alist, but there is no reason for
-;; ; A to be.
-
-;;   (declare (xargs :guard t
-;;                   :verify-guards nil
-;;                   :measure (len a)))
-;;   (if (or (atom a) (atom (cdr a))) a
-;;     (ms-merge (merge-sort (odds1 a nil) h)
-;;               (merge-sort (evens1 a nil) h)
-;;               h)))
-
-;; (verify-guards merge-sort)
-
-;; (defn hons-merge-sort (a h)
-;; ; BOZO Jared thinks this is never used.
-;;   (hons-copy (merge-sort a h)))
-
-
-
-
-;; (defn hons-take (n l)
-;;   ":Doc-Section Hons-and-Memoization
-
-;;  First n elements of l~/
-
-;;  (HONS-TAKE n l) returns a honsed list of the first N elements of L.
-;;  To always return a list of n elements, HONS-TAKE fills at the end
-;;  with NIL, if necessary.~/~/"
-
-;; ; [Jared]: Changed this to use hons-make-list.  The current definition agrees
-;; ; with gentle-take, but not with take.  BOZO is there a good reason to have
-;; ; this nil behavior?  It seems nicer to make it agree with take instead.
-
-;;  (cond ((not (posp n))
-;;         nil)
-;;        ((atom l)
-;;         (hons-make-list-acc n nil nil))
-;;        (t
-;;         (hons (car l)
-;;               (hons-take (1- n) (cdr l))))))
-
-
-;; (defn nil-list (n)
-;;   (mbe :logic (make-list n :initial-element nil)
-;;        :exec (hons-make-list-acc n nil nil)))
-
-
-
-
-;;; [Jared]: hons-copy-r and hons-copy-list-r are not needed in the new hons
-;;; system; just use hons-copy instead.
-
-;; (defn hons-copy-r (x)
-
-;; ; [Jared]: I don't understand this comment or why hons-copy-r is
-;; ; better than hons-copy.
-
-;; ; This is an "under the hood" remark.  If the system is built with
-;; ; *break-honsp* non-NIL, then one will be rudely interrupted whenever
-;; ; HONSP returns NIL.  So if you wish to copy a CONS structure into a
-;; ; HONS structure, use HONS-COPY-R instead of HONS-COPY.
-
-;;   ;; r stands for recursive
-;;   (mbe :logic x
-;;        :exec (if (atom x) 
-;;                  x
-;;                (hons (hons-copy-r (car x))
-;;                      (hons-copy-r (cdr x))))))
-
-;; (defn hons-copy-list-r (x)
-;;   ;; r stands for recursive
-;;   (mbe :logic x
-;;        :exec (if (atom x)
-;;                  x
-;;                (hons (car x)
-;;                      (hons-copy-list-r (cdr x))))))
-
-
-
-;;; [Jared]: this doesn't seem to be used
-
-;; (defn hons-remove-equal-cons (x y)
-;;   "REMOVE-EQUAL using HONS-EQUAL for each equality check, produces CONSES"
-
-;; ; [Jared]: BOZO. It would be really nice to change this to return nil in the
-;; ; base case, so that it could be MBE equal to remove-equal, and hence we would
-;; ; not be introducing yet another function symbol.
-
-;;   (cond ((atom y) y)
-;;         ((hons-equal x (car y))
-;;          (hons-remove-equal-cons x (cdr y)))
-;;         (t (cons (car y) (hons-remove-equal-cons x (cdr y))))))
-
-
-
-
-
-;; [Jared and Sol] deleting this because it's never used and we have a new fancy
-;; thing called with-fast-alist that is better
-
-;; (defmacro with-fast-alist (var l1 l2 name form)
-;;   `(let ((,var (hons-put-list ,l1 ,l2 ,name)))
-;;      (ansfl ,form ,var)))

@@ -305,3 +305,33 @@
     `(intern-in-package-of-symbol
       (concatenate-symbol-names (list ,@args))
       mksym-package-symbol)))
+
+; Moved from acl2-doc.lisp to make it more widely available
+(defmacro defpointer (from to &optional keyword-p)
+
+; Examples:
+
+; (defpointer &allow-other-keys macro-args) expands to:
+
+; (defxdoc &allow-other-keys
+;   :parents (pointers)
+;   :short "See @(see macro-args).")
+
+; (defpointer guard-hints xargs t) expands to:
+
+; (defxdoc &allow-other-keys
+;   :parents (pointers)
+;   :short "See @(see xargs) for keyword :guard-hints.")
+
+  `(defxdoc ,from
+     :parents (pointers)
+     :short ,(concatenate 'string
+                          "See @(see "
+                          (acl2::string-downcase (symbol-name to))
+                          ")"
+                          (if keyword-p
+                              (concatenate 'string
+                                           " for keyword @(':"
+                                           (acl2::string-downcase (symbol-name from))
+                                           ".)")
+                            "."))))

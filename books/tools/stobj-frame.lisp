@@ -1,3 +1,4 @@
+; stobj-frame.lisp - Automatically compute frame theorems for stobj accessor/updater functions
 ; Copyright (C) 2012 Centaur Technology
 ;
 ; Contact:
@@ -24,10 +25,8 @@
 ;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 ;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ;   DEALINGS IN THE SOFTWARE.
-
+;
 ; Original author: Sol Swords
-
-; Automatically compute frame theorems for stobj accessor/updater functions
 
 (in-package "ACL2")
 
@@ -36,6 +35,80 @@
 (program)
 (set-state-ok t)
 
+(defxdoc def-stobj-frame
+  :parents (stobj)
+  :short "Automatically, opportunistically generate @(see nth)/@(see
+update-nth) frame theorems for a function that accesses or updates a @(see
+stobj)."
+  :long "<p>Example:</p>
+
+@({
+   (defstobj foo bar baz biz)
+
+   (defun baz-to-bar (foo)
+     (declare (xargs :stobjs foo))
+     (update-bar (baz foo) foo))
+
+   (include-book \"data-structures/list-defthms\" :dir :system)
+
+   (in-theory (disable nth update-nth))
+
+   (def-stobj-frame baz-to-bar foo
+     :hints ('(:in-theory (disable nth update-nth)))
+     :ruleset foo-frame-thms)
+})
+
+<p>This last event generates the following events:</p>
+
+@({
+ (DEFTHMD NTH-FOO-OF-BAZ-TO-BAR
+   (IMPLIES (AND (NOT (EQUAL (NFIX N) *BAR*)))
+            (EQUAL (NTH N (BAZ-TO-BAR FOO))
+                   (NTH N FOO))))
+
+ (ADD-TO-RULESET FOO-FRAME-THMS NTH-FOO-OF-BAZ-TO-BAR)
+
+ (DEFTHM BAZ-TO-BAR-FOO-FRAME
+   (IMPLIES (OR (EQUAL (NFIX N) *BIZ*))
+            (EQUAL (BAZ-TO-BAR (UPDATE-NTH N V FOO))
+                   (UPDATE-NTH N V (BAZ-TO-BAR FOO)))))
+
+ (ADD-TO-RULESET FOO-FRAME-THMS BAZ-TO-BAR-FOO-FRAME)
+})
+
+<p>The <b>def-stobj-frame</b> macro attempts to prove the following lemmas for
+each field of the stobj:</p>
+
+<ul>
+<li>If the function returns the stobj:
+    @({
+     (equal (nth *field* (fn stobj))            ;; type 1
+            (nth *field* stobj))
+    })
+    and
+    @({
+     (equal (fn (update-nth *field* val stobj)) ;; type 2
+            (update-nth *field val (fn stobj)))
+    })</li>
+
+<li>Otherwise,
+    @({
+     (equal (fn (update-nth *field* val stobj)) ;; type 3
+            (fn stobj))
+    })</li>
+</ul>
+
+<p>It then generates @(see defthm) events based on which of these were
+successful.</p>
+
+<p>It is probably important that @(see nth) and @(see update-nth) be disabled
+and suitable rules about them, such as the ones in
+@('data-structures/list-defthms'), exist.</p>
+
+<p>These proof attempts are done only with simplification and an expand hints.
+You may supply an additional hints, but only simplification is used.  In
+particular, this utility won't work well on recursive functions, because
+generally they'll need induction to do the proofs (future work).</p>")
 
 (defun stobj-length (stobj state)
   (declare (xargs :mode :program :stobjs state))
@@ -264,69 +337,6 @@
     (value `(progn ,@nthforms . ,frameforms))))
 
 (defmacro def-stobj-frame (fn stobj &key hints (ruleset 'stobj-frame-rules))
-  ":doc-section defstobj
-Automatically generate nth/update-nth frame theorems for a function that
-accesses/updates a stobj.~/
-
-For example:
-~bv[]
-   (defstobj foo bar baz biz)
-
-   (defun baz-to-bar (foo)
-     (declare (xargs :stobjs foo))
-     (update-bar (baz foo) foo))
-
-   (include-book \"data-structures/list-defthms\" :dir :system)
-
-   (in-theory (disable nth update-nth))
-
-   (def-stobj-frame baz-to-bar foo
-     :hints ('(:in-theory (disable nth update-nth)))
-     :ruleset foo-frame-thms)
-~ev[]
-This last event generates the following generates the following events:
-~bv[]
- (DEFTHMD NTH-FOO-OF-BAZ-TO-BAR
-   (IMPLIES (AND (NOT (EQUAL (NFIX N) *BAR*)))
-            (EQUAL (NTH N (BAZ-TO-BAR FOO))
-                   (NTH N FOO))))
-
- (ADD-TO-RULESET FOO-FRAME-THMS NTH-FOO-OF-BAZ-TO-BAR)
-
- (DEFTHM BAZ-TO-BAR-FOO-FRAME
-   (IMPLIES (OR (EQUAL (NFIX N) *BIZ*))
-            (EQUAL (BAZ-TO-BAR (UPDATE-NTH N V FOO))
-                   (UPDATE-NTH N V (BAZ-TO-BAR FOO)))))
-
- (ADD-TO-RULESET FOO-FRAME-THMS BAZ-TO-BAR-FOO-FRAME)
-~ev[]
-~/
-
-This utility attempts to prove the following lemmas for each field of the
-stobj:
-
-  -- if the function returns the stobj
-     (equal (nth *field* (fn stobj))            ;; type 1
-            (nth *field* stobj))
-    and
-     (equal (fn (update-nth *field* val stobj)) ;; type 2
-            (update-nth *field val (fn stobj)))
-
-  -- otherwise,
-     (equal (fn (update-nth *field* val stobj)) ;; type 3
-            (fn stobj))
-
-It then generates defthm events based on which of these were successful.
-
-It is probably important that NTH and UPDATE-NTH be disabled and suitable rules
-about them, such as the ones in data-structures/list-defthms, exist.
-
-These proof attempts are done only with simplification and an expand hints.  You
-may supply an additional hints, but only simplification is used.  In particular,
-this utility won't work well on recursive functions, because generally they'll
-need induction to do the proofs (future work).
-~/
-"
   `(make-event
     (def-stobj-frame-fn ',fn ',stobj ',hints ',ruleset state)))
 

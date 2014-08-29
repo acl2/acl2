@@ -36,6 +36,7 @@
 
 (in-package "ACL2")
 (include-book "bstar")
+(include-book "xdoc/top" :dir :system)
 
 (defun strip-quotes-for-do-not (x)
   ;; Turn any quoted arguments into unquoted args, so that
@@ -87,86 +88,81 @@
           (table do-not-table 'things-not-to-be-done ',others)))))
 
 
+(defsection do-not-hint
+  :parents (hints)
+  :short "Give @(':do-not') hints automatically."
+  :long "<p>@('Do-not-hint') is a computed hint (~l[computed-hints]) that gives
+@(':do-not') and perhaps @(':do-not-induct') hints automatically.  For
+instance:</p>
 
-(defun do-not-hint (world stable-under-simplificationp state)
-  ":Doc-Section Miscellaneous
-Give :do-not hints automatically.~/
-
-~c[Do-not-hint] is a computed hint (~l[computed-hints]) that gives ~c[:do-not]
-and perhaps ~c[:do-not-induct] hints automatically.  For instance:
-
-~bv[]
- (encapsulate
-  ()
+@({
   (local (do-not generalize fertilize))
   (defthm thm1 ...)
   (defthm thm2 ...)
-  ...)
-~ev[]
+  ...
+})
 
-is roughly equivalent to:
+<p>is roughly equivalent to:</p>
 
-~bv[]
- (encapsulate
-  ()
-  (defthm thm1 ... :hints((\"Goal\" :do-not '(generalize fertilize))))
-  (defthm thm2 ... :hints((\"Goal\" :do-not '(generalize fertilize))))
-  ...)
-~ev[]
+@({
+  (defthm thm1 ... :hints ((\"Goal\" :do-not '(generalize fertilize))))
+  (defthm thm2 ... :hints ((\"Goal\" :do-not '(generalize fertilize))))
+})
 
-Except that the ~c[:do-not] hints are actually given at
-stable-under-simplificationp checkpoints.  This is kind of useful: the hints
-will apply to forced subgoals in addition to regular subgoals, and won't
-clutter proofs that never hit a stable-under-simplification checkpoint.
+<p>except that the @(':do-not') hints are actually given at
+@('stable-under-simplificationp') checkpoints.  This is kind of useful: the
+hints will apply to forced subgoals in addition to regular subgoals, and won't
+clutter proofs that never hit a @('stable-under-simplificationp')
+checkpoint.</p>
 
-The ~c[do-not] macro expands to some ~ilc[table] events that update the
-~c[do-not-table].  It should typically be made local to a book or encapsulate
+<p>The @('do-not') macro expands to some @(see table) events that update the
+@('do-not-table').  It should typically be made local to a book or encapsulate
 since globally disabling these proof engines is likely to be particularly
-disruptive to other proofs.
+disruptive to other proofs.</p>
 
-The arguments to ~c[do-not] can be any of the keywords used for ~c[:do-not]
-hints, and may also include ~c[induct] which results in ~c[:do-not-induct t]
-hints.~/~/"
+<p>The arguments to @('do-not') can be any of the keywords used for
+@(':do-not') hints, and may also include @('induct') which results in
+@(':do-not-induct t') hints.</p>"
 
-  (declare (xargs :mode :program :stobjs state))
+  (defun do-not-hint (world stable-under-simplificationp state)
+    (declare (xargs :mode :program :stobjs state))
+    (b* (((unless stable-under-simplificationp)
+          ;; No reason to give a hint until stable-under-simplificationp.
+          nil)
 
-  (b* (((unless stable-under-simplificationp)
-        ;; No reason to give a hint until stable-under-simplificationp.
-        nil)
+         (tbl     (table-alist 'do-not-table world))
+         (things  (cdr (assoc 'things-not-to-be-done tbl)))
+         (inductp (cdr (assoc 'do-not-inductp tbl)))
 
-       (tbl     (table-alist 'do-not-table world))
-       (things  (cdr (assoc 'things-not-to-be-done tbl)))
-       (inductp (cdr (assoc 'do-not-inductp tbl)))
+         ((when (and (atom things)
+                     (not inductp)))
+          ;; Nothing is prohibited, so give no hint.
+          nil)
 
-       ((when (and (atom things)
-                   (not inductp)))
-        ;; Nothing is prohibited, so give no hint.
-        nil)
+         (- (or (gag-mode)
+                (cw "~%;; do-not-hint: prohibiting ~x0.~|"
+                    (if inductp
+                        (cons 'induct things)
+                      things))))
 
-       (- (or (gag-mode)
-              (cw "~%;; do-not-hint: prohibiting ~x0.~|"
-                  (if inductp
-                      (cons 'induct things)
-                    things))))
-
-       (hint (if inductp
-                 '(:do-not-induct t)
-               nil))
-       (hint (if (consp things)
-                 (append `(:do-not ',things) hint)
-               hint)))
+         (hint (if inductp
+                   '(:do-not-induct t)
+                 nil))
+         (hint (if (consp things)
+                   (append `(:do-not ',things) hint)
+                 hint)))
       hint))
 
-(add-default-hints!
- '((do-not-hint world stable-under-simplificationp state)))
+  (add-default-hints!
+   '((do-not-hint world stable-under-simplificationp state))))
 
 
-(defdoc do-not
-  ":doc-section Miscellaneous
-hints keyword ~c[:do-not]~/
+(defxdoc do-not
+  :parents (hints)
+  :short "hints keyword @(':do-not')"
+  :long "<p>See @(see hints) for documentation about the @(':do-not') keyword
+for theorem hints.</p>
 
-~l[hints] for documentation about the ~c[:do-not] keyword for theorem
-hints.
-
-~l[do-not-hint] for documentation about the ~c[do-not] macro that controls the
-behavior of the ~c[do-not-hint].~/~/")
+<p>See @(see do-not-hint) for documentation about the @('do-not') macro that
+controls the behavior of the @('do-not-hint'), a mechanism for automatically
+suggesting @(':do-not') hints.</p>")

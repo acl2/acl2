@@ -1,6 +1,4 @@
-
 ; Oracle-eval:  Term evaluation in logic mode via the oracle.
-
 ; Copyright (C) 2010 Centaur Technology
 ;
 ; Contact:

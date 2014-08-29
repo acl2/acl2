@@ -380,7 +380,6 @@ of proofs.")
 (xdoc::change-parents how-many-lt (leftist-trees))
 
 (xdoc::change-parents consideration (hints))
-(xdoc::change-parents do-not-hint (hints))
 (xdoc::change-parents untranslate-patterns (macros user-defined-functions-table))
 
 #!XDOC
@@ -479,6 +478,8 @@ also want to import many symbols from ACL2; see @(see *acl2-exports*).</p>
 
      (xdoc::change-parents sharp-comma-reader (defconst))
      (xdoc::change-parents sharp-dot-reader (defconst))
+
+     (xdoc::change-parents computed-hints (hints))
 
 
 ;; stuff from acl2-built-ins

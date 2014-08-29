@@ -149,6 +149,7 @@
   (union-eq-exec set::*sets-exports*
    (union-eq-exec
     '(b* value defxdoc defxdoc-raw macro-args
+         defpointer
          xdoc-extend defsection defsection-progn lnfix
          set-default-parents
          getprop formals justification def-bodies current-acl2-world def-body

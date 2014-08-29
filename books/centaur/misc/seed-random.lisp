@@ -29,6 +29,104 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
+(include-book "xdoc/top" :dir :system)
+
+(defxdoc seed-random$
+  :parents (random$)
+  :short "Influence the random numbers produced by @(see random$)."
+  :long "<p>General form:</p>
+
+@({
+     (include-book \"centaur/misc/seed-random\" :dir :system)
+     (seed-random name
+                  [:freshp t/nil]  ;; default t
+                  )
+})
+
+<p>Hypothetical example:</p>
+
+@({
+   (seed-random 'foo) ;; randomly seed the generator, name this seed 'foo
+   (random$ 50 state) --> (mv 31 state)
+   (random$ 50 state) --> (mv 49 state)
+   (random$ 50 state) --> (mv 2 state)
+   (random$ 50 state) --> (mv 23 state)
+   (random$ 50 state) --> (mv 15 state)
+
+   (seed-random 'foo) ;; return to the seed named 'foo
+   (random$ 50 state) --> (mv 31 state)
+   (random$ 50 state) --> (mv 49 state)
+   (random$ 50 state) --> (mv 2 state)
+
+   (seed-random 'bar :freshp nil) ;; copy current seed, name it 'bar
+   (random$ 50 state) --> (mv 23 state)
+   (random$ 50 state) --> (mv 15 state)
+
+   (seed-random 'foo) ;; return to 'foo
+   (random$ 50 state) --> (mv 31 state)
+
+   (seed-random 'bar) ;; return to 'bar
+   (random$ 50 state) --> (mv 23 state)
+   (random$ 50 state) --> (mv 15 state)
+})
+
+<p>Logically, @('seed-random$') ignores its arguments and just returns
+@('nil').  We leave it enabled and would think it odd to ever prove a theorem
+about it.</p>
+
+<p>Under the hood, @('seed-random$') influences the behavior of @(see random$).
+Note that in its implementation, the ACL2 function @('(random$ limit state)')
+basically just calls @('(random limit)') to produce its result.  To understand
+@('seed-random$'), it is useful to recall some features of Common Lisp:</p>
+
+<ul>
+
+<li>A @('random-state') is an implementation-defined data type that is used by
+the @('random') function to produce random numbers.</li>
+
+<li>In particular, @('(random limit &optional random-state)') can use some
+particular @('random-state') or, by default, uses whatever @('random-state') is
+currently bound to the special variable @('*random-state*').</li>
+
+<li>A fresh, \"randomly initialized\" @('random-state') can be produced with
+@('(make-random-state t)').</li>
+
+<li>The current @('*random-state*') can be copied with @('(make-random-state
+nil)').</li>
+
+</ul>
+
+<p>So, what does @('seed-random$') do?</p>
+
+<p>We maintain a hidden association list that maps names to random-states.
+These names can be any ACL2 objects, but we typically use symbols.</p>
+
+<p>When @('seed-random$') is called with a name that is already bound to some
+state, we just restore @('*random-state*') to this state.  This effectively
+resets the random number generator so that it produces the same random numbers
+as before.</p>
+
+<p>When @('seed-random$') is called with a name that has not been bound yet,
+its behavior depends on the optional @('freshp') keyword-argument.</p>
+
+<p>When @('freshp') is @('t') (the default), we construct a \"randomly
+initialized\" @('random-state'), bind @('name') to it, and install it as
+@('*random-state*').  In other words, when @('foo') has never been used as a
+name before, @('(seed-random$ 'foo)') effectively initializes the random number
+generator to a truly random state.</p>
+
+<p>On the other hand, when @('freshp') is @('nil') we simply copy and name the
+current @('*random-state*').  It appears that, at least on CCL, the
+@('*random-state*') starts the same upon every invocation of ACL2.  Hence, if
+you launch ACL2 and then immediately invoke</p>
+
+@({
+    (seed-random 'seed :freshp nil)
+})
+
+<p>you can obtain a sequence of random numbers that you can return to even
+after restarting ACL2, and which can be returned to at any time during the
+session by just calling @('(seed-random 'seed)').</p>")
 
 (defun seed-random$-fn (name freshp)
   (declare (xargs :guard t)
@@ -36,95 +134,6 @@
   nil)
 
 (defmacro seed-random$ (name &key (freshp 't))
-  ":Doc-Section random$
-Influence the random numbers produced by ~ilc[random$]~/
-
-General form:
-~bv[]
- (seed-random name
-              [:freshp t/nil]  ;; default t
-              )
-~ev[]
-
-Hypothetical example:
-~bv[]
-  (seed-random 'foo) ;; randomly seed the generator, name this seed 'foo
-  (random$ 50 state) --> (mv 31 state)
-  (random$ 50 state) --> (mv 49 state)
-  (random$ 50 state) --> (mv 2 state)
-  (random$ 50 state) --> (mv 23 state)
-  (random$ 50 state) --> (mv 15 state)
-
-  (seed-random 'foo) ;; return to the seed named 'foo
-  (random$ 50 state) --> (mv 31 state)
-  (random$ 50 state) --> (mv 49 state)
-  (random$ 50 state) --> (mv 2 state)
-
-  (seed-random 'bar :freshp nil) ;; copy current seed, name it 'bar
-  (random$ 50 state) --> (mv 23 state)
-  (random$ 50 state) --> (mv 15 state)
-
-  (seed-random 'foo) ;; return to 'foo
-  (random$ 50 state) --> (mv 31 state)
-
-  (seed-random 'bar) ;; return to 'bar
-  (random$ 50 state) --> (mv 23 state)
-  (random$ 50 state) --> (mv 15 state)
-~ev[]
-
-Logically, ~c[seed-random$] ignores its arguments and just returns ~c[nil]; we
-leave it enabled and would think it odd to ever prove a theorem about it.
-
-Under the hood, ~c[seed-random$] influences the behavior of ~ilc[random$].
-Note that in its implementation, the ACL2 function ~c[(random$ limit state)]
-basically just calls ~c[(random limit)] to produce its result.
-
-To understand ~c[seed-random$], it is useful to recall some features of Common
-Lisp:
-
- - A ~c[random-state] is an implementation-defined data type that is used by
-   the ~c[random] function to produce random numbers.
-
- - In particular, ~c[(random limit &optional random-state)] can use some
-   particular ~c[random-state] or, by default, uses whatever ~c[random-state]
-   is currently bound to the special variable ~c[*random-state*].
-
- - A fresh, \"randomly initialized\" ~c[random-state] can be produced with
-   ~c[(make-random-state t)].
-
- - The current ~c[*random-state*] can be copied with
-   ~c[(make-random-state nil)].
-
-So, what does ~c[seed-random$] do?
-
-We maintain a hidden association list that maps names to random-states.  These
-names can be any ACL2 objects, but we typically use symbols.
-
-When ~c[seed-random$] is called with a name that is already bound to some
-state, we just restore ~c[*random-state*] to this state.  This effectively
-resets the random number generator so that it produces the same random numbers
-as before.
-
-When ~c[seed-random$] is called with a name that has not been bound yet, its
-behavior depends on the optional ~c[freshp] keyword-argument.
-
-When ~c[freshp] is ~c[t] (the default), we construct a \"randomly initialized\"
-~c[random-state], bind ~c[name] to it, and install it as ~c[*random-state*].
-In other words, when ~c[foo] has never been used as a name before,
-~c[(seed-random$ 'foo)] effectively initializes the random number generator to
-a truly random state.
-
-On the other hand, when ~c[freshp] is ~c[nil] we simply copy and name the
-current ~c[*random-state*].  It appears that, at least on CCL, the
-~c[*random-state*] starts the same upon every invocation of ACL2.  Hence, if
-you launch ACL2 and then immediately invoke
-~bv[]
- (seed-random 'seed :freshp nil)
-~ev[]
-you can obtain a sequence of random numbers that you can return to even
-after restarting ACL2, and which can be returned to at any time during the
-session by just calling ~c[(seed-random 'seed)].~/~/"
-
   `(seed-random$-fn ,name ,freshp))
 
 (defttag seed-random$)

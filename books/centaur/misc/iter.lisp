@@ -398,33 +398,35 @@
        (in-theory (enable (:induction ,iter))))))
 
 
+(defxdoc defiteration
+  :parents (programming)
+  :short "Define a simple for-loop-style iteration, counting up over some
+range."
+  :long "<p>This macro defines the logic version of this loop as a
+non-tail-recursive function that counts down from the maximum value to the
+minimum value.  This is often better for reasoning with.  The executable
+version is a function that counts up from the minimum to the maximum value and
+is tail-recursive, which may be better for execution, especially in terms of
+avoiding stack overflows.</p>
+
+<p>Syntax:</p>
+
+@({
+    (defiteration function-name (a b c)
+      \"optional doc string\"
+      (declare ...)        ;; optional declare forms
+      (body idx-var a b c) ;; one step of the iteration
+      :returns (mv b c)    ;; or a single variable, must be from the formals
+      :index idx-var       ;; counter variable
+      :first (foo a b)     ;; starting index, default 0
+      :last  (bar a c)     ;; final index
+      :hints ...           ;; optional, for proving that tailrec and non-tailrec
+                           ;; are the same
+      :guard-hints ...     ;; for defining the step function
+      :package foo)        ;; package witness symbol, default is function-name
+})")
+
 (defmacro defiteration (name formals &rest args)
-  ":doc-section programming
-Define a simple for-loop-style iteration, counting up over some range.~/
-
-This macro defines the logic version of this loop as a non-tail-recursive
-function that counts down from the maximum value to the minimum value.  This is
-often better for reasoning with.  The executable version is a function that
-counts up from the minimum to the maximum value and is tail-recursive, which
-may be better for execution, especially in terms of avoiding stack overflows.
-
-Syntax:
-~bv[]
- (defiteration function-name (a b c)
-     \"optional doc string\"
-     (declare ...)        ;; optional declare forms
-     (body idx-var a b c) ;; one step of the iteration
-     :returns (mv b c)    ;; or a single variable, must be from the formals
-     :index idx-var       ;; counter variable
-     :first (foo a b)     ;; starting index, default 0
-     :last  (bar a c)     ;; final index
-     :hints ...           ;; optional, for proving that tailrec and non-tailrec
-                          ;; are the same
-     :guard-hints ...     ;; for defining the step function
-     :package foo)        ;; package witness symbol, default is function-name
-~ev[]
-~/~/
-"
   ;; args contains:
   ;; (optional) declarations/doc string
   ;; body
@@ -672,39 +674,43 @@ Syntax:
          :rule-classes (:rewrite :type-prescription)))))
 
 
+(defxdoc def-list-constructor
+  :parents (programming)
+  :short "Define function that constructs a list, just by giving the length and
+how to compute the Nth element in terms of the formals and index."
+  :long
+  "<p>This takes many of the same arguments as @(see defiteration), and in fact
+it uses defiteration.  But instead of giving the step function for the
+iteration, you give the value of the Nth element of the list.  You must also
+provide the keyword :last, giving the length of the list.</p>
+
+<p>What you end up with is your top-level function, definition disabled, and
+four rules:</p>
+
+<ul>
+<li>@('nth-of-fnname') tells what the Nth element is, for N in bounds</li>
+<li>@('nth-of-fnname-split') (disabled), tells what the Nth element is,
+    causing a case-split on whether it's in bounds or not</li>
+<li>@('len-of-fnname'): gives the length of the list</li>
+<li>@('true-listp-of-fnname') shows that the list is true-listp.</li>
+</ul>
+
+<p>See @('centaur/misc/equal-by-nths') for a strategy that proves equivalences
+between lists based on length and Nth value.</p>
+
+<p>Syntax:</p>
+
+@({
+    (def-list-constructor foo (x y)
+      \"optional doc string\"
+      (declare (xargs ...))   ;; optional declare forms
+      (+ idx-var x y)         ;; value of the IDX-VARth element
+      :length  (bar x y)      ;; final index
+      :index idx-var          ;; counter variable, default N
+      ... defiteration args ...)
+})")
+
 (defmacro def-list-constructor (name formals &rest args)
-  ":doc-section programming
-Define function that constructs a list, just by giving the length and how to
-compute the Nth element in terms of the formals and index.~/
-
-This takes many of the same arguments as defiteration, and in fact it uses
-defiteration.  But instead of giving the step function for the iteration, you
-give the value of the Nth element of the list.  You must also provide the
-keyword :last, giving the length of the list 
-
-What you end up with is your top-level function, definition disabled, and four
-rules:
- - nth-of-fnname: tells what the Nth element is, for N in bounds
- - nth-of-fnname-split: (disabled), tells what the Nth element is,
-                        causing a case-split on whether it's in bounds or not
- - len-of-fnname: gives the length of the list
- - true-listp-of-fnname: shows that the list is true-listp.
-
-See centaur/misc/equal-by-nths for a strategy that proves equivalences between
-lists based on length and Nth value.
-
-Syntax:
-~bv[]
- (def-list-constructor foo (x y)
-     \"optional doc string\"
-     (declare (xargs :guard (and (natp x) (natp y)))) ;; optional declare forms
-     (+ idx-var x y)      ;; value of the IDX-VARth element
-     :length  (bar x y)     ;; final index
-     :index idx-var       ;; counter variable, default N
-    ... defiteration args ...)
-~ev[]
-~/~/
-"
   ;; args contains:
   ;; (optional) declarations/doc string
   ;; body
