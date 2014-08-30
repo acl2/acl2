@@ -3567,6 +3567,14 @@ To avoid the following break and get only the above warning:~%  ~a~%"
       (setf (hl-hspace-faltable hs) faltable)
       (hl-make-addr-limit-current hs)))
 
+; For static honsing, it is also necessary to clear the memoize tables, because
+; indices of static conses might be stale.  See the soundness bug example in
+; :xdoc topic note-7-0, in community book books/system/doc/acl2-doc.lisp, and
+; see the comment about hons-wash in pons-addr-of-argument.
+
+  #+static-hons
+  (clear-memoize-tables)
+
   nil)
 
 
@@ -3883,7 +3891,8 @@ To avoid the following break and get only the above warning:~%  ~a~%"
 (defun hons-wash ()
   ;; no need to inline
   (hl-maybe-initialize-default-hs)
-  (hl-hspace-hons-wash *default-hs*))
+  (hl-hspace-hons-wash *default-hs*)
+  nil)
 
 (defun hons-resize-fn (str-ht nil-ht cdr-ht cdr-ht-eql
                                  addr-ht other-ht sbits
