@@ -333,5 +333,5 @@
                               (concatenate 'string
                                            " for keyword @(':"
                                            (acl2::string-downcase (symbol-name from))
-                                           ".)")
+                                           "').")
                             "."))))
