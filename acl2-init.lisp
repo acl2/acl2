@@ -671,44 +671,17 @@ implementations.")
 (defvar *saved-build-date-lst*)
 (defvar *saved-mode*)
 
-(defun svn-revision-from-line (s)
-
-; S is a string such as "$Revision: 1053 $" (as in acl2-startup-info.txt) or
-; "Revision: 1998" (as printed by "svn info").  In general, it is a string for
-; which we want the object that is read immediately after the first #\: .  If
-; there is none, then we return nil.
-
-  (let ((p (position #\: s)))
-    (and p
-         (read-from-string s nil nil :start (1+ p)))))
-
-(defconstant *acl2-svn-revision-string*
-  (let ((file "acl2-startup-info.txt"))
-    (cond ((probe-file file)
-           (let ((val (with-open-file
-                       (str file :direction :input)
-                       (read str))))
-             (cond ((eq val :release)
-                    nil)
-                   ((stringp val)
-                    (let ((n (svn-revision-from-line val)))
-                      (or n (error "Unexpected error in getting svn revision ~
-                                    from string:~%~s~%"
-                                   val))
-                      (format nil
-                              "
- ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- + WARNING: This is NOT an ACL2 release; it is svn revision ~a.     +
- + The authors of ACL2 consider svn distributions to be experimental; +
- + they may be incomplete, fragile, and unable to pass our own        +
- + regression tests.  Bug reports should include the following line:  +
- +   ACL2 svn revision ~a; community books svn revision ~a        +
- ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-"
-                              n n "~a")))
-                   (t (error "Illegal value in file ~s: ~s"
-                             file val)))))
-          (t (error "File ~s appears not to exist." file)))))
+(defconstant *acl2-snapshot-string*
+  (if (getenv$-raw "ACL2_RELEASE_P")
+      ""
+    "
+ +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ + WARNING: This is NOT an ACL2 release; it is a development snapshot. +
+ + The authors of ACL2 consider such distributions to be experimental; +
+ + they may be incomplete, fragile, and unable to pass our own         +
+ + regression tests.                                                   +
+ +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+"))
 
 (defvar *saved-string*
   (concatenate
@@ -719,13 +692,7 @@ implementations.")
     ~% are welcome to redistribute it under certain conditions.  For details,~
     ~% see the LICENSE file distributed with ACL2.~%"
 
-   (or *acl2-svn-revision-string*
-
-; If acl2-startup-info.txt begins with the symbol :release, then
-; *acl2-svn-revision-string* is a string with ~a expecting to be bound to the
-; svn revision of the books.  Otherwise we put "~a" here to be bound to "".
-
-       "~a")
+   *acl2-snapshot-string*
 
    "~a"
    #+hons
@@ -1262,9 +1229,6 @@ implementations.")
             *saved-string*
             *copy-of-acl2-version*
             (saved-build-dates :terminal)
-            (if (null *acl2-svn-revision-string*)
-                ""
-              (qfuncall acl2-books-revision))
             (cond (*saved-mode*
                    (format nil "~% Initialized with ~a." *saved-mode*))
                   (t ""))

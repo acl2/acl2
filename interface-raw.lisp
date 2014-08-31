@@ -9046,24 +9046,3 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
       (eval `(untrace$ ,@to-untrace)))
     (when to-retrace
       (eval `(trace$ ,@to-retrace)))))
-
-; We define acl2-books-revision here rather than in acl2-init.lisp, so that
-; f-get-global is already defined.
-
-(defun acl2-books-revision ()
-
-; We define acl2-books-revision here in interface-raw.lisp rather than in
-; acl2-init.lisp, so that f-get-global is already defined.
-
-  (multiple-value-bind
-      (exit-code line)
-      (system-call+
-       (concatenate
-        'string
-        (f-get-global 'acl2-sources-dir *the-live-state*)
-        "bin/svn-info-books")
-       (list (f-get-global 'system-books-dir *the-live-state*)))
-    (cond ((or (not (eql exit-code 0))
-               (equal line ""))
-           "????")
-          (t (svn-revision-from-line line)))))
