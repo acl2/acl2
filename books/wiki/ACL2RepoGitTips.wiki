@@ -1,0 +1,22 @@
+#summary Intro to Git for ACL2
+
+= Introduction =
+
+This isn't intended to be comprehensive, as there are a LOT of resources out there on the web.  That being said, there are some questions that we've found hard to easily answer.  We partly address those here.  Feel free to improve this topic.
+
+Also, the target audience for this topic is the ACL2 community.  We predict the ACL2 System authors will have their own cheat sheets with additional ideas.
+
+= Introductory Links =
+
+Placeholder for links people like
+
+= FAQ =
+
+  # What should I put as my git "user name?"  What about my git email address?
+
+  We recommend putting your normal name (e.g., "David L Rager") as your "git" user name.  Note that this is intentionally different than your github user name.  Github will use your email address to determine the github username associated with the commit, so you'll want to use your github email address as your git email address.
+
+{{{
+git config --global user.email you@gmail.com
+git config --global user.name "First M Last"
+}}}
