@@ -1,5 +1,0 @@
-(ld "hacker-pkg.lsp")
-
-
-
-(ACL2::CERTIFY-BOOK "dynamic-make-event-test" ACL2::? T :TTAGS ((DEFCODE) (DYNAMIC-MAKE-EVENT-TEST)))

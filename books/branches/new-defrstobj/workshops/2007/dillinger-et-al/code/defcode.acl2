@@ -1,4 +1,0 @@
-(in-package "ACL2")
-(include-book "hacker")
-; cert-flags: ? t :ttags ((defcode))
-(certify-book "defcode" ? t :ttags ((defcode)))

@@ -1,5 +1,0 @@
-(ld "hacker-pkg.lsp")
-
-
-
-(ACL2::CERTIFY-BOOK "defcode" ACL2::? T :TTAGS ((DEFCODE)))

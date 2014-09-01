@@ -1,4 +1,0 @@
-<S> ::= <NP> <VP>
-<NP> ::= <NP> <PP> | <Noun>
-<VP> ::= <Verb> <NP> | <VP> <PP>
-<PP> ::= <Prep> <NP>

@@ -1,4 +1,0 @@
-(in-package "ACL2")
-(ld "test-pkg1.lsp")
-; cert-flags: ? t :ttags :all
-(certify-book "test1pb" ? t :ttags :all)

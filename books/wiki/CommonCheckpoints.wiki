@@ -1,7 +1,0 @@
-#summary Some common checkpoints and what they mean
-
-= Checkpoints =
-
-  # `(implies (not (consp x)) (not x))`
-
-  Add `(true-listp x)` to your hypotheses.

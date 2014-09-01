@@ -1,2 +1,0 @@
-; cert-flags: ? t :ttags :all
-(certify-book "oracle-eval-real" ? t :ttags :all)

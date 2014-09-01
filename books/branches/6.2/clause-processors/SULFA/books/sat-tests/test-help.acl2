@@ -1,4 +1,0 @@
-(in-package "ACL2")
-(ld "../sat/sat-package.acl2")
-; cert-flags: ? t :ttags (sat sat-cl)
-(certify-book "test-help" ? t :ttags (sat sat-cl))

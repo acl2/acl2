@@ -1,1 +1,0 @@
-(certify-book "in-raw-mode" ? t :ttags :all)

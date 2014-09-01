@@ -1,7 +1,0 @@
-(value :q)
-
-(lp)
-
-(include-book "m5")
-
-(certify-book "utilities" ? t)

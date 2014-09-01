@@ -1,8 +1,0 @@
-(in-package "ACL2")
-
-#+acl2-par
-; custom keyword hint that modifies state
-(set-waterfall-parallelism nil)
-
-; cert-flags: ? t :skip-proofs-okp t
-(certify-book "consider-hint-tests" ? t :skip-proofs-okp t)

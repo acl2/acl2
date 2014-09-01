@@ -1,5 +1,0 @@
-On a Unix system in which this directory sits in an ACL2 distribution in a
-subdirectory of books/case-studies/, you can type "make" to certify the books.
-You can certify all books in any system as follows.
-
-	acl2 < certify.lsp > certify.log

@@ -1,2 +1,0 @@
-(ld "../tools/flag-package.lsp")
-(certify-book "autohide" ? t)

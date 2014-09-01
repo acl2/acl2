@@ -1,7 +1,0 @@
-; Defabsstobj Example 4
-; Copyright (C) 2012, Regents of the University of Texas
-; Written by Matt Kaufmann, Dec., 2012
-; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
-
-; cert-flags: ? t :ttags (:restore-state)
-(certify-book "defabsstobj-example-4" ? t :ttags (:restore-state))

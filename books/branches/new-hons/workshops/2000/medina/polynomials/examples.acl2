@@ -1,4 +1,0 @@
-(value :q)
-(LP)
-(ld "certification.acl2")
-(certify-book "examples" 5)

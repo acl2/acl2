@@ -1,6 +1,0 @@
-#!/bin/sh
-# This script is just a shortcut for `make -f Makelibs status`.  You can just
-# invoke it using ./status
-
-make -f Makelibs status
-

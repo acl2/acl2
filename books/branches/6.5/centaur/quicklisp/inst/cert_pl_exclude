@@ -1,3 +1,0 @@
-This file tells cert.pl not to try to build the lisp files
-in this directory.  This directory is populated by Quicklisp
-with raw Lisp files, not certifiable books.

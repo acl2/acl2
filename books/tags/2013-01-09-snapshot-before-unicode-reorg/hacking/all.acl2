@@ -1,5 +1,0 @@
-(ld "hacker-pkg.lsp")
-(ld "rewrite-code-pkg.lsp")
-
-
-(ACL2::CERTIFY-BOOK "all" ACL2::? T :TTAGS ((DEFCODE) (TABLE-GUARD)))

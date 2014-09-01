@@ -1,2 +1,0 @@
-(include-book "models/jvm/m1/m1" :dir :system)
-(certify-book "m1-half-via-inductive-assertions" 1)

@@ -1,8 +1,0 @@
-cert_pl_exclude
-
-The presence of this file tells cert.pl not to try to build any of the books in
-this directory.
-
-According to workshops/2004/manolios-srinivasan/support/REAMDE, the fastest book
-here takes 15 days to certify, and the others are much harder.
-

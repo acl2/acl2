@@ -1,2 +1,0 @@
-(certify-book "quantum")
-:u

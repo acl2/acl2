@@ -1,8 +1,0 @@
-; Arithmetic-5 Library
-; Written by Robert Krug
-; Copyright/License:
-; See the LICENSE file at the top level of the arithmetic-5 library.
-
-(in-package "ACL2")
-; cert-flags: ? t :ttags (the-ultimate-clause-processor-ttag)
-(certify-book "elim-hint" ? t :ttags (the-ultimate-clause-processor-ttag))

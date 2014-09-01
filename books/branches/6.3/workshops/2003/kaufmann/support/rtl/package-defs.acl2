@@ -1,3 +1,0 @@
-(acl2::value :q)
-(acl2::lp)
-(certify-book "package-defs" ? t)

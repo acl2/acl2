@@ -1,9 +1,0 @@
-(value :q)
-
-(LP)
-
-(include-book "defs-in")
-
-(include-book "defs-out")
-
-(certify-book "defs-eq" ? t)

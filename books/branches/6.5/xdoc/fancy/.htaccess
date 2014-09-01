@@ -1,5 +1,0 @@
-<IfModule mod_deflate.c>
-    <filesMatch "\.(js|css|html)$">
-        SetOutputFilter DEFLATE
-    </filesMatch>
-</IfModule>

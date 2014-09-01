@@ -1,4 +1,0 @@
-rendered-doc.lsp
-rendered-doc-combined.lsp
-manual
-TAGS

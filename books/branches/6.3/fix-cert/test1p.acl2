@@ -1,4 +1,0 @@
-(in-package "ACL2")
-(include-book "test1pp" :ttags :all)
-; cert-flags: ? t :ttags :all
-(certify-book "test1p" ? t :ttags :all)

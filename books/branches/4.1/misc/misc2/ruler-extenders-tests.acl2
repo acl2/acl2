@@ -1,1 +1,0 @@
-(certify-book "ruler-extenders-tests" 0 t :skip-proofs-okp t)

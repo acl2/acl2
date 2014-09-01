@@ -1,2 +1,0 @@
-
-(ACL2::CERTIFY-BOOK "progn-bang-enh" ACL2::? T :TTAGS ((DEFCODE)))

@@ -1,3 +1,0 @@
-(include-book "symbol-fns-exports")
-
-(certify-book "symbol-fns" ? t)

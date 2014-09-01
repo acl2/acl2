@@ -1,2 +1,0 @@
-; cert-flags: ? t :defaxioms-okp t
-(certify-book "dft-ex" ? t :defaxioms-okp t)

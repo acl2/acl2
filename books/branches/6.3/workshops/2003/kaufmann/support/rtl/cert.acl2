@@ -1,3 +1,0 @@
-(acl2::value :q)
-(acl2::lp)
-(ld "pkgs.lsp")

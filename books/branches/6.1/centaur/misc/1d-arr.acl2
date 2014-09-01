@@ -1,3 +1,0 @@
-
-(include-book "xdoc/portcullis" :dir :system)
-(certify-book "1d-arr" ? t :ttags :all)

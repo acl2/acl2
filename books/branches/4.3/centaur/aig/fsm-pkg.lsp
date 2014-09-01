@@ -1,2 +1,0 @@
-
-(defpkg "FSM" nil)

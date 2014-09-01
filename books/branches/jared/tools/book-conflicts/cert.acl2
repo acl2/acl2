@@ -1,2 +1,0 @@
-(ld "coi/util/def-defpkg.lsp" :dir :system)
-(ld "std/package.lsp" :dir :system)

@@ -1,3 +1,0 @@
-(ld "../powerlists/defpkg.lsp")
-
-(certify-book "fft-omega" ? t)

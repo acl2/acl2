@@ -1,4 +1,0 @@
-minisat-output-formater
-sat-input-formater
-smt-prep
-zchaff-output-formater
