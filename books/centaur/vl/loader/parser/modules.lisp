@@ -58,27 +58,27 @@
    (maxloc   vl-location-p)
    (warnings vl-warninglist-p))
   :returns (mod vl-module-p)
-  (b* (((mv items warnings) (vl-make-implicit-wires (append-without-guard params items) warnings))
-       ((mv item-ports portdecls assigns vardecls paramdecls
-            fundecls taskdecls modinsts gateinsts alwayses initials)
-        (vl-sort-modelements items nil nil nil nil nil nil nil nil nil nil nil))
-       ((mv warnings portdecls vardecls)
-        (vl-portdecl-sign portdecls vardecls warnings)))
-    (or (not item-ports)
+  (b* (((mv items warnings) (vl-make-implicit-wires (append-without-guard params items)
+                                                    warnings))
+       ((vl-modelement-collection c) (vl-sort-modelements items))
+       ((mv warnings c.portdecls c.vardecls)
+        (vl-portdecl-sign c.portdecls c.vardecls warnings)))
+    (or (not c.ports)
         (raise "There shouldn't be any ports in the items."))
+    ;; BOZO: Warn about other bad elements in c?
     (make-vl-module :name       name
                     :params     params
                     :ports      ports
-                    :portdecls  portdecls
-                    :assigns    assigns
-                    :vardecls   vardecls
-                    :paramdecls paramdecls
-                    :fundecls   fundecls
-                    :taskdecls  taskdecls
-                    :modinsts   modinsts
-                    :gateinsts  gateinsts
-                    :alwayses   alwayses
-                    :initials   initials
+                    :portdecls  c.portdecls
+                    :assigns    c.assigns
+                    :vardecls   c.vardecls
+                    :paramdecls c.paramdecls
+                    :fundecls   c.fundecls
+                    :taskdecls  c.taskdecls
+                    :modinsts   c.modinsts
+                    :gateinsts  c.gateinsts
+                    :alwayses   c.alwayss
+                    :initials   c.initials
                     :atts       atts
                     :minloc     minloc
                     :maxloc     maxloc

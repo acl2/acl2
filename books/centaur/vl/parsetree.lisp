@@ -1074,6 +1074,8 @@ properly preserve them.</p>")
   :parents (vl-assignlist-p)
   (vl-assign->lvalue x))
 
+
+
 ; BOZO I'm not going to introduce this yet.  I think we should rename the expr
 ; field to rhs first, to prevent confusion between this and allexprs.
 
@@ -1082,6 +1084,23 @@ properly preserve them.</p>")
 ;;   :guard (vl-assignlist-p x)
 ;;   :nil-preservingp t)
 
+
+(defprod vl-alias
+  :short "Representation of an alias declaration."
+  :tag :vl-alias
+  :layout :tree
+
+  ((lhs     vl-expr-p "The left-hand side.")
+   (rhs     vl-expr-p "The right-hand side.")
+   (atts     vl-atts-p
+             "Any attributes associated with this alias.")
+   (loc      vl-location-p
+             "Where the assignment was found in the source code.")))
+
+(fty::deflist vl-aliaslist
+  :elt-type vl-alias-p
+  :true-listp nil
+  :elementp-of-nil nil)
 
 (defenum vl-lifetime-p
   (nil
@@ -2935,6 +2954,381 @@ include delays, etc.</p>")
 (fty::deflist vl-importlist :elt-type vl-import-p
   :elementp-of-nil nil)
 
+(defprod vl-modport-port
+  :parents (vl-interface)
+  :short "A single port from a modport declaration."
+  :long  "<p>The syntax for this is:</p>
+@({
+ modport_simple_ports_declaration ::=
+ port_direction modport_simple_port { , modport_simple_port }
+ 
+ modport_simple_port ::=
+ port_identifier
+ | . port_identifier ( [ expression ] )
+ })
+
+<p>As with regular ports, if the expression is not provided then the port
+identifier is turned into an expression.  The variables used in the expression
+must be declared in the interface, but it is permissible for the expression to
+be non-sliceable, at least if it's an input.</p>"
+ 
+  ((name stringp         "Name of the port; often the same as the expr")
+   (dir  vl-direction-p  "Port direction")
+   (expr vl-maybe-expr-p "Expression in terms of the declared variables of the interface.")
+   (atts vl-atts-p       "attributes")
+   (loc  vl-location-p :default *vl-fakeloc*)))
+
+(fty::deflist vl-modport-portlist
+  :elt-type vl-modport-port
+  :elementp-of-nil nil
+  :true-listp nil)
+
+(defprod vl-modport
+  :parents (vl-interface)
+  :short "A modport declaration within an interface"
+  :long "<p>Missing task/function import/exports and clocking blocks.</p>"
+  ((name      stringp                "the name of the modport declaration; often master or slave")
+   (ports     vl-modport-portlist-p  "the ports; names must be declared in the interface")
+   (atts      vl-atts-p              "attributes")
+   (loc       vl-location-p :default *vl-fakeloc*))
+  :tag :vl-modport)
+
+(fty::deflist vl-modportlist :elt-type vl-modport
+  :elementp-of-nil nil
+  :true-listp t)
+
+
+(defenum vl-fwdtypedefkind-p
+  (:vl-enum
+   :vl-struct
+   :vl-union
+   :vl-class
+   :vl-interfaceclass)
+  :parents (vl-fwdtypedef-p)
+  :short "Kinds of forward type declarations.")
+
+(defprod vl-fwdtypedef
+  :tag :vl-fwdtypedef
+  :short "Representation of a forward typedef like @('typedef struct foo_t;')."
+  ((atts vl-atts-p)
+   (kind vl-fwdtypedefkind-p)
+   (name stringp)
+   (loc  vl-location-p)))
+
+(fty::deflist vl-fwdtypedeflist
+  :elt-type vl-fwdtypedef-p
+  :elementp-of-nil nil)
+
+(defprod vl-typedef
+  :tag :vl-typedef
+  :short "Representation of a basic type declaration like @('typedef struct ... foo_t;')."
+  ((name stringp)
+   (type vl-datatype-p)
+   (dims t "BOZO add dimensions")
+   (atts vl-atts-p)
+   (minloc vl-location-p)
+   (maxloc vl-location-p)
+   (warnings vl-warninglist-p)
+   (comments vl-commentmap-p)))
+
+(defmacro vl-typedef->loc (x)
+  `(vl-typedef->minloc ,x))
+
+(fty::deflist vl-typedeflist
+  :elt-type vl-typedef-p
+  :elementp-of-nil nil)
+
+(defprojection vl-typedeflist->names ((x vl-typedeflist-p))
+  :parents (vl-typedeflist-p)
+  :returns (names string-listp)
+  (vl-typedef->name x))
+
+
+(encapsulate nil
+  (local (include-book "tools/templates" :dir :system))
+
+  (local (defconst *vl-genitem-typenames*
+           '(port
+             portdecl
+             assign
+             alias
+             vardecl
+             paramdecl
+             fundecl
+             taskdecl
+             modinst
+             gateinst
+             always
+             initial
+             typedef
+             fwdtypedef
+             modport)))
+
+  (local (defun types-mk-strsubst-alists (types)
+           (if (atom types)
+               nil
+             (cons `(("__TYPE__" ,(symbol-name (car types)) . vl-package))
+                   (types-mk-strsubst-alists (cdr types))))))
+
+  (local (defconst *strsubst-alists*
+           (types-mk-strsubst-alists *vl-genitem-typenames*)))
+
+  ;; (local (defun types-mk-atom-alists (types)
+  ;;          (if (atom types)
+  ;;              nil
+  ;;            (cons `((vl-type . ,(intern-in-package-of-symbol(car types)))
+  ;;                  (types-mk-atom-alists (cdr types)))))))
+
+  ;; (local (defconst *atom-alists*
+  ;;          (types-mk-atom-alists *vl-genitem-typenames*)))
+
+  (local (defun project-over-types-rec (template strsubst-alists)
+           (declare (xargs :mode :program))
+           (if (atom strsubst-alists)
+               nil
+             (cons (b* (((mv & val)
+                         (acl2::template-subst-rec nil nil nil (car strsubst-alists)
+                                                   template 'vl-package)))
+                     val)
+                   (project-over-types-rec template (cdr strsubst-alists))))))
+
+  (local (defun project-over-types (template)
+           (declare (xargs :mode :program))
+           (project-over-types-rec template *strsubst-alists*)))
+
+  (local (defun append-over-types-rec (template strsubst-alists)
+           (declare (xargs :mode :program))
+           (if (atom strsubst-alists)
+               nil
+             (append (b* (((mv & val)
+                           (acl2::template-subst-rec nil nil nil (car strsubst-alists)
+                                                     template 'vl-package)))
+                       val)
+                     (append-over-types-rec template (cdr strsubst-alists))))))
+
+  (local (defun append-over-types (template)
+           (declare (xargs :mode :program))
+           (append-over-types-rec template *strsubst-alists*)))
+
+
+  (make-event
+   `(progn
+      (deftranssum vl-genitem
+        :short "Recognizer for an arbitrary module element."
+
+        :long "<p>It is sometimes useful to be able to deal with module elements of
+arbitrary types.  For instance, we often use this in error messages, along with
+@(see vl-context-p), to describe where expressions occur.  We also use it in
+our @(see parser), where before module formation, the module elements are
+initially kept in a big, mixed list.</p>"
+        ,(project-over-types 'vl-__type__))
+
+      (fty::deflist vl-genitemlist
+        :elt-type vl-genitem-p
+        :elementp-of-nil nil
+        ///
+        (local (in-theory (enable vl-genitemlist-p)))
+        . ,(project-over-types
+            '(defthm vl-genitemlist-p-when-vl-__type__list-p
+               (implies (vl-__type__list-p x)
+                        (vl-genitemlist-p x)))))))
+
+  (deftypes vl-genelement
+    (deftagsum vl-genelement
+
+      ;; NOTE: According to the SystemVerilog spec, generate/endgenerate just
+      ;; defines a textual region, which makes "no semantic difference" in the module.
+      ;; So (for now at least) we'll ignore them.
+
+      ;; (:vl-genregion
+      ;;  :base-name vl-genregion
+      ;;  :layout :tree
+      ;;  :short "A generate/endgenerate region"
+      ;;  ((items vl-genelementlist     "the items contained in the region")
+      ;;   (loc   vl-location)))
+
+      (:vl-genloop
+       :base-name vl-genloop
+       :layout :tree
+       :short "A loop generate construct"
+       ((var        vl-id            "the iterator variable")
+        (initval    vl-expr-p        "initial value of the iterator")
+        (continue   vl-expr-p        "continue the loop until this is false")
+        (nextval    vl-expr-p        "next value of the iterator")
+        (genblock   vl-generateblock "body of the loop")
+        (loc   vl-location)))
+
+      (:vl-genif
+       :base-name vl-genif
+       :layout :tree
+       :short "An if generate construct"
+       ((test       vl-expr-p        "the test of the IF")
+        (then       vl-generateblock "the block for the THEN case")
+        (else       vl-generateblock "the block for the ELSE case; empty if not provided")
+        (loc   vl-location)))
+
+      (:vl-gencase
+       :base-name vl-gencase
+       :layout :tree
+       :short "A case generate construct"
+       ((test      vl-expr-p         "the expression to test against the cases")
+        (cases     vl-gencaselist    "the case generate items, except the default")
+        (default   vl-generateblock  "the default, which may be an empty generateblock if not provided")
+        (loc   vl-location)))
+
+      (:vl-genbase
+       :base-name vl-genbase
+       :layout :tree
+       :short "A basic module/generate item"
+       ((item      vl-genitem        "a generate item")))
+
+      :measure (two-nats-measure (acl2-count x) 1))
+
+    (fty::deflist vl-genelementlist :elt-type vl-genelement
+      :true-listp t
+      :elementp-of-nil nil
+      :measure (two-nats-measure (acl2-count x) 1))
+
+    (fty::defalist vl-gencaselist :key-type vl-exprlist :val-type vl-generateblock
+      :true-listp t
+      :measure (two-nats-measure (acl2-count x) 5))
+
+    (defprod vl-generateblock
+      ((name     maybe-stringp      "name of the generate block if provided")
+       (elems   vl-genelementlist   "elements of the block"))
+      :measure (two-nats-measure (acl2-count x) 3))
+    :enable-rules (acl2::o-p-of-two-nats-measure
+                   acl2::o<-of-two-nats-measure
+                   acl2-count-of-car
+                   acl2-count-of-cdr
+                   acl2-count-of-cdr-same-fc
+                   cons-equal
+                   default-car default-cdr
+                   nfix))
+
+
+  (make-event
+   `(progn
+      (defprod vl-genelement-collection
+        :short "A sorted collection of module elements (see @(see vl-genitem))."
+        :long "<p>A vl-genitem-collection can be made from a @(see
+vl-genitemlist) by sorting the elements by type.  Its fields each contain
+the list of elements of the given type.</p>"
+        (,@(project-over-types
+            '(__type__s vl-__type__list-p))
+           (generates vl-genelementlist-p))
+        
+        
+        :layout :tree)
+
+
+      (define vl-genitem-loc ((x vl-genitem-p))
+        :short "Get the location of any @(see vl-genitem-p)."
+        :returns (loc vl-location-p
+                      :hints(("Goal" :in-theory (enable vl-genitem-fix))))
+        (b* ((x (vl-genitem-fix x)))
+          
+          (case (tag x)
+            . ,(project-over-types
+                '(:vl-__type__       (vl-__type__->loc x))))))
+
+      (define vl-genelement-loc ((x vl-genelement-p))
+        :short "Get the location of any @(see vl-genelement-p)."
+        :returns (loc vl-location-p
+                      :hints(("Goal" :in-theory (enable vl-genelement-fix))))
+        (vl-genelement-case x
+          :vl-genbase (vl-genitem-loc x.item)
+          :vl-genloop   x.loc
+          :vl-genif     x.loc
+          :vl-gencase   x.loc))
+
+      (define vl-sort-genelements-aux
+        ((x           vl-genelementlist-p)
+         ,@(project-over-types
+            '(__type__s       vl-__type__list-p))
+         (generates   vl-genelementlist-p))
+        :returns (mv ,@(project-over-types
+                        `(__type__s
+                          vl-__type__list-p
+                          :hints (("goal" :in-theory (disable (:d vl-sort-genelements-aux))
+                                   :induct (vl-sort-genelements-aux
+                                            x ,@(project-over-types '__type__s) generates)
+                                   :expand ((vl-sort-genelements-aux
+                                             x ,@(project-over-types '__type__s) generates))))))
+                     (generates vl-genelementlist-p
+                                :hints (("goal" :in-theory (disable (:d vl-sort-genelements-aux))
+                                         :induct (vl-sort-genelements-aux
+                                                  x ,@(project-over-types '__type__s) generates)
+                                         :expand ((vl-sort-genelements-aux
+                                                   x ,@(project-over-types '__type__s) generates))))))
+        :hooks ((:fix :hints (("goal" :in-theory (disable (:d vl-sort-genelements-aux))
+                               :induct (vl-sort-genelements-aux
+                                        x ,@(project-over-types '__type__s) generates)
+                               :expand ((:free (,@(project-over-types '__type__s) generates)
+                                         (vl-sort-genelements-aux
+                                          x ,@(project-over-types '__type__s) generates))
+                                        (vl-sort-genelements-aux
+                                         (vl-genelementlist-fix x)
+                                         ,@(project-over-types '__type__s) generates))))))
+        (b* (((when (atom x))
+              (mv ,@(project-over-types
+                     '(rev (vl-__type__list-fix        __type__s)))
+                  (vl-genelementlist-fix generates))))
+          (vl-genelement-case (xf (car x))
+            :vl-genbase 
+            (b* ((x1  xf.item)
+                 (tag (tag x1)))
+              (vl-sort-genelements-aux
+               (cdr x)
+               ,@(project-over-types
+                  '(if (eq tag :vl-__type__)       (cons x1 __type__s)       __type__s))
+               generates))
+            :otherwise
+            (vl-sort-genelements-aux
+             (cdr x) ,@(project-over-types '__type__s)
+             (cons (vl-genelement-fix (car x)) generates))))
+        :prepwork
+        ((local (in-theory (disable
+                            ;; just a speed hint
+                            double-containment
+                            set::nonempty-means-set
+                            acl2::consp-under-iff-when-true-listp
+                            acl2::consp-by-len
+                            acl2::true-listp-when-character-listp
+                            acl2::true-listp-when-atom
+                            set::sets-are-true-lists
+                            consp-when-member-equal-of-cons-listp
+                            consp-when-member-equal-of-cons-listp
+                            acl2::rev-when-not-consp
+                            default-car
+                            default-cdr
+                            pick-a-point-subset-strategy
+                            vl-genelement-p-when-member-equal-of-vl-genelementlist-p
+                            ,@(project-over-types
+                               'vl-__type__list-p-when-subsetp-equal)
+                            ,@(project-over-types
+                               'vl-genitemlist-p-when-vl-__type__list-p)
+                            (:rules-of-class :type-prescription :here)
+                            (:ruleset tag-reasoning))))))
+
+      (define vl-sort-genelements ((x vl-genelementlist-p))
+        :returns (collection vl-genelement-collection-p)
+        (b* (((mv ,@(project-over-types '__type__s) generates)
+              (vl-sort-genelements-aux x ,@(project-over-types nil) nil)))
+          (make-vl-genelement-collection
+           ,@(append-over-types '(:__type__s __type__s))
+           :generates generates))))))
+
+
+(defprod vl-context
+  :short "Description of where an expression occurs."
+  :tag :vl-context
+  :layout :tree
+  ((mod  stringp :rule-classes :type-prescription
+         "The module where this module element was taken from.")
+   (elem vl-genitem-p
+         "Some element from the module.")))
+
 
 (defprod vl-module
   :short "Representation of a single module."
@@ -3001,6 +3395,9 @@ include delays, etc.</p>")
 
    (initials   vl-initiallist-p
                "Initial blocks like @('initial begin ...').")
+
+   (generates vl-genelementlist-p
+              "Generate blocks including generate regions and for/if/case blocks.")
 
    (atts       vl-atts-p
                "Any attributes associated with this top-level module.")
@@ -3182,48 +3579,6 @@ transforms to not modules with this attribute.</p>"
 
 
 
-(defprod vl-modport-port
-  :parents (vl-interface)
-  :short "A single port from a modport declaration."
-  :long  "<p>The syntax for this is:</p>
-@({
- modport_simple_ports_declaration ::=
- port_direction modport_simple_port { , modport_simple_port }
- 
- modport_simple_port ::=
- port_identifier
- | . port_identifier ( [ expression ] )
- })
-
-<p>As with regular ports, if the expression is not provided then the port
-identifier is turned into an expression.  The variables used in the expression
-must be declared in the interface, but it is permissible for the expression to
-be non-sliceable, at least if it's an input.</p>"
- 
-  ((name stringp         "Name of the port; often the same as the expr")
-   (dir  vl-direction-p  "Port direction")
-   (expr vl-maybe-expr-p "Expression in terms of the declared variables of the interface.")
-   (atts vl-atts-p       "attributes")
-   (loc  vl-location-p :default *vl-fakeloc*)))
-
-(fty::deflist vl-modport-portlist
-  :elt-type vl-modport-port
-  :elementp-of-nil nil
-  :true-listp nil)
-
-(defprod vl-modport
-  :parents (vl-interface)
-  :short "A modport declaration within an interface"
-  :long "<p>Missing task/function import/exports and clocking blocks.</p>"
-  ((name      stringp                "the name of the modport declaration; often master or slave")
-   (ports     vl-modport-portlist-p  "the ports; names must be declared in the interface")
-   (loc       vl-location-p :default *vl-fakeloc*))
-  :tag :vl-modport)
-
-(fty::deflist vl-modportlist :elt-type vl-modport
-  :elementp-of-nil nil
-  :true-listp t)
-
 
 (defprod vl-interface
   :short "Representation of a single @('interface')."
@@ -3232,8 +3587,11 @@ be non-sliceable, at least if it's an input.</p>"
   ((name stringp
          :rule-classes :type-prescription
          "The name of this interface as a string.")
+   (ports    vl-portlist-p)
+   (portdecls vl-portdecllist-p)
    (vardecls vl-vardecllist-p)
    (modports vl-modportlist-p)
+   (generates vl-genelementlist-p)
    ;; ...
    (warnings vl-warninglist-p)
    (minloc   vl-location-p)
@@ -3278,47 +3636,6 @@ be non-sliceable, at least if it's an input.</p>"
 
 
 
-(defenum vl-fwdtypedefkind-p
-  (:vl-enum
-   :vl-struct
-   :vl-union
-   :vl-class
-   :vl-interfaceclass)
-  :parents (vl-fwdtypedef-p)
-  :short "Kinds of forward type declarations.")
-
-(defprod vl-fwdtypedef
-  :tag :vl-fwdtypedef
-  :short "Representation of a forward typedef like @('typedef struct foo_t;')."
-  ((atts vl-atts-p)
-   (kind vl-fwdtypedefkind-p)
-   (name stringp)
-   (loc  vl-location-p)))
-
-(fty::deflist vl-fwdtypedeflist
-  :elt-type vl-fwdtypedef-p
-  :elementp-of-nil nil)
-
-(defprod vl-typedef
-  :tag :vl-typedef
-  :short "Representation of a basic type declaration like @('typedef struct ... foo_t;')."
-  ((name stringp)
-   (type vl-datatype-p)
-   (dims t "BOZO add dimensions")
-   (atts vl-atts-p)
-   (minloc vl-location-p)
-   (maxloc vl-location-p)
-   (warnings vl-warninglist-p)
-   (comments vl-commentmap-p)))
-
-(fty::deflist vl-typedeflist
-  :elt-type vl-typedef-p
-  :elementp-of-nil nil)
-
-(defprojection vl-typedeflist->names ((x vl-typedeflist-p))
-  :parents (vl-typedeflist-p)
-  :returns (names string-listp)
-  (vl-typedef->name x))
 
 (defprod vl-design
   :short "Top level representation of all modules, interfaces, programs, etc.,
@@ -3345,5 +3662,8 @@ resulting from parsing some Verilog source code."
    (comments   vl-commentmap-p    "So-called \"floating\" comments.")
 
    ))
+
+
+
 
 
