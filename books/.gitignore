@@ -4,6 +4,7 @@ workxxx*
 *.date
 *.cert
 *.cert.temp
+*.time
 *.pcert0
 *.pcert1
 *.pcert0.temp
