@@ -43,10 +43,9 @@
 (setenv$ "XDG_CACHE_HOME"  (concatenate 'string *cbd* "asdf-home/cache"))
 
 (make-event
- (mv-let (erp proxy state)
-   (getenv$ "HTTP_PROXY_WITH_PORT" state) ; for example proxy.nbc.com:80
-   (declare (ignore erp))
-   (value `(defconst *proxy* ,proxy))))
+ ; HTTP_PROXY_WITH_PORT can be, for example, proxy.nbc.com:80
+ (er-let* ((proxy (getenv$ "HTTP_PROXY_WITH_PORT" state)))
+          (value `(defconst *proxy* ,proxy))))
 
 :q
 (in-package "CL-USER")
