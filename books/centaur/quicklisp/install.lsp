@@ -42,14 +42,23 @@
 (setenv$ "XDG_DATA_HOME"   (concatenate 'string *cbd* "asdf-home/data"))
 (setenv$ "XDG_CACHE_HOME"  (concatenate 'string *cbd* "asdf-home/cache"))
 
+(make-event
+ (mv-let (erp proxy state)
+   (getenv$ "HTTP_PROXY_WITH_PORT" state) ; for example proxy.nbc.com:80
+   (declare (ignore erp))
+   (value `(defconst *proxy* ,proxy))))
+
 :q
 (in-package "CL-USER")
 (load "quicklisp.lsp")
 
-(quicklisp-quickstart:install :path (concatenate 'string acl2::*cbd* "inst"))
+(if ACL2::*proxy*
+    (quicklisp-quickstart:install :path (concatenate 'string acl2::*cbd* "inst")
+                                  :proxy ACL2::*proxy*)
+  (quicklisp-quickstart:install :path (concatenate 'string acl2::*cbd* "inst")))
 
 
-#|| 
+#||
 ;; Seeing available versions, instructions up at
 ;;   http://blog.quicklisp.org/2011/08/going-back-in-dist-time.html
 
