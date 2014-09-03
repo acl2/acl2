@@ -99,6 +99,27 @@
 ; named_port_connection ::=
 ;   {attribute_instance} '.' identifier '(' [expression] ')'
 
+
+
+
+
+; SystemVerilog-2012 --------
+;
+; The only changed rule here is:
+;
+;    named_port_connection ::=
+;       { attribute_instance } '.' identifier [ '(' [ expression ] ')' ]
+;     | { attribute_instance } '.*'
+;
+; The differences are:
+;
+;  1. The named port list can now contain .*.  We are told in a footnote that
+;     the .* must occur at most once in the list_of_port_connections.
+;
+;  2. The named port connection can now be just a mere .name, without even any
+;     parens.  This is mostly equivalent to .name(name), but there are a few
+;     differences: see SystemVerilog-2012 section 23.3.2.3 for details.
+
 (defparser vl-parse-list-of-ordered-port-connections ()
   :result (vl-plainarglist-p val)
   :resultp-of-nil t
@@ -118,7 +139,7 @@
         ;; If we see a comma to begin with, then we have a blank port at the
         ;; front of the list.
         (when (vl-is-token? :vl-comma)
-          (:= (vl-match-token :vl-comma))
+          (:= (vl-match))
           (rest := (vl-parse-list-of-ordered-port-connections))
           (return (cons (make-vl-plainarg :expr nil :atts atts) rest)))
 
@@ -129,11 +150,13 @@
         ;; Otherwise, there should be an expression here.
         (expr := (vl-parse-expression))
         (when (vl-is-token? :vl-comma)
-          (:= (vl-match-token :vl-comma))
+          (:= (vl-match))
           (rest := (vl-parse-list-of-ordered-port-connections)))
         (return (cons (make-vl-plainarg :expr expr :atts atts) rest))))
 
 (defparser vl-parse-named-port-connection ()
+  ;; Verilog-2005 or SystemVerilog-2012.  But note: SystemVerilog-2012: does not
+  ;; handle .* style ports.
   :result (vl-namedarg-p val)
   :resultp-of-nil nil
   :fails gracefully
@@ -142,15 +165,24 @@
         (atts := (vl-parse-0+-attribute-instances))
         (:= (vl-match-token :vl-dot))
         (id := (vl-match-token :vl-idtoken))
-        (:= (vl-match-token :vl-lparen))
-        (unless (vl-is-token? :vl-rparen)
-          (expr := (vl-parse-expression)))
-        (:= (vl-match-token :vl-rparen))
+        (when (vl-is-token? :vl-lparen)
+          (:= (vl-match))
+          (unless (vl-is-token? :vl-rparen)
+            (expr := (vl-parse-expression)))
+          (:= (vl-match-token :vl-rparen))
+          (return (make-vl-namedarg :name (vl-idtoken->name id)
+                                    :expr expr
+                                    :nameonly-p nil
+                                    :atts atts)))
+        (when (eq (vl-loadconfig->edition config) :verilog-2005)
+          (return-raw (vl-parse-error "Expected argument to named port connect.")))
+        ;; SystemVerilog-2012: no port argument is okay, this is a .name style port.
         (return (make-vl-namedarg :name (vl-idtoken->name id)
-                                  :expr expr
+                                  :expr (vl-idexpr (vl-idtoken->name id) nil nil)
+                                  :nameonly-p t
                                   :atts atts))))
 
-(defparser vl-parse-list-of-named-port-connections ()
+(defparser vl-parse-list-of-named-port-connections-2005 ()
   :result (vl-namedarglist-p val)
   :resultp-of-nil t
   :true-listp t
@@ -160,8 +192,57 @@
         (first := (vl-parse-named-port-connection))
         (when (vl-is-token? :vl-comma)
           (:= (vl-match-token :vl-comma))
-          (rest := (vl-parse-list-of-named-port-connections)))
+          (rest := (vl-parse-list-of-named-port-connections-2005)))
         (return (cons first rest))))
+
+(defparser vl-parse-list-of-named-port-connections-2012 ()
+  ;; Returns (args . saw-dot-star)
+  :result (consp val)
+  :resultp-of-nil nil
+  :true-listp nil
+  :fails gracefully
+  :count strong
+  :verify-guards nil
+  (seqw tokens pstate
+        (when (vl-is-token? :vl-dotstar)
+          (dotstar := (vl-match)))
+
+        (unless dotstar
+          (first := (vl-parse-named-port-connection)))
+
+        (when (vl-is-token? :vl-comma)
+          (:= (vl-match))
+          ((rest . saw-dot-star-in-tail) := (vl-parse-list-of-named-port-connections-2012)))
+
+        (when (and dotstar saw-dot-star-in-tail)
+          (return-raw (vl-parse-error "Multiple occurrences of .* in port list.")))
+
+        (when dotstar
+          (return (cons rest t)))
+
+        (return (cons (cons first rest)
+                      saw-dot-star-in-tail)))
+  ///
+  (defthm vl-namedarglist-p-of-vl-parse-list-of-named-port-connections-2012
+    (vl-namedarglist-p (car (mv-nth 1 (vl-parse-list-of-named-port-connections-2012)))))
+  (local (defthm booleanp-of-vl-parse-list-of-named-port-connections-2012
+           (booleanp (cdr (mv-nth 1 (vl-parse-list-of-named-port-connections-2012))))))
+  (verify-guards vl-parse-list-of-named-port-connections-2012-fn))
+
+(defparser vl-parse-list-of-named-port-connections ()
+  :result (vl-arguments-p val)
+  :resultp-of-nil nil
+  :true-listp nil
+  :fails gracefully
+  :count strong
+  (seqw tokens pstate
+        (when (eq (vl-loadconfig->edition config) :verilog-2005)
+          (args := (vl-parse-list-of-named-port-connections-2005))
+          (return (make-vl-arguments-named :args args
+                                           :starp nil)))
+        ((args . saw-dot-star) := (vl-parse-list-of-named-port-connections-2012))
+        (return (make-vl-arguments-named :args args
+                                         :starp (if saw-dot-star t nil)))))
 
 (defparser vl-parse-list-of-port-connections ()
   :result (vl-arguments-p val)
@@ -173,16 +254,13 @@
   ;; on success.  The modinst production must explicitly handle the empty
   ;; case and NOT call this function if it sees "()".
 
-  (mv-let (erp val explore new-pstate)
-          (seqw tokens pstate
-                (args := (vl-parse-list-of-ordered-port-connections))
-                (return (make-vl-arguments-plain :args args)))
-          (if erp
-              (seqw tokens pstate
-                    (args := (vl-parse-list-of-named-port-connections))
-                    (return (make-vl-arguments-named :args args)))
-            (mv erp val explore new-pstate))))
-
+  (b* (((mv erp val explore new-pstate)
+        (seqw tokens pstate
+              (args := (vl-parse-list-of-ordered-port-connections))
+              (return (make-vl-arguments-plain :args args))))
+       ((unless erp)
+        (mv erp val explore new-pstate)))
+    (vl-parse-list-of-named-port-connections)))
 
 
 ; Verilog-2005:
@@ -218,6 +296,13 @@
 ;   - Permitting datatypes instead of just expressions as values
 ;   - Allowing mintypmax expressions in plain lists
 
+(local
+ (defthm crock-idtoken-of-car
+   (implies (and (vl-is-token? :vl-idtoken)
+                 (force (vl-tokenlist-p tokens)))
+            (vl-idtoken-p (car tokens)))
+   :hints(("Goal" :in-theory (enable vl-is-token?)))))
+
 (defparser vl-parse-param-expression ()
   ;; Verilog-2005:       Matches mintypmax_expression
   ;; SystemVerilog-2012: Matches mintypmax_expression | data_type | $
@@ -226,38 +311,28 @@
   ;; expression, so we really just match:
   ;;
   ;; param_expression ::= mintypmax_expression | data_type
-  ;;
-  ;; But BOZO BOZO BOZO ----- This is impossible!
-  ;;
-  ;; Problem: data types and expressions are ambiguous.  In particular, we
-  ;; have:
-  ;;
-  ;;   data_type ::= [optional stuff] type_identifier [optional_stuff]
-  ;;
-  ;; But type_identifier is just an identifier.  So if we see a plain old
-  ;; identifier, it's unclear whether it's a type or an expression.  Arrrgh.
-  ;;
-  ;; I think to actually deal with this, I'm going to have to rework the parser
-  ;; to not be context-insensitive.  Instead, I'll need to pass around some
-  ;; kind of symbol table that records, e.g., what the names of the data types
-  ;; are, etc.
-  ;;
-  ;; Even though this will be a big change, it probably won't be too hard: via
-  ;; SEQW we're already passing around a pstate structure everywhere, so
-  ;; basically we can just change this structure to be more of a parse-state
-  ;; structure instead.  (In fact we could consider extending the loadstate
-  ;; objects from the loader.)
-  ;;
-  ;; Well, I don't want to completely rework the parser while I'm in the middle
-  ;; of implementing the new parameter handling.  So, for now, I'm just going
-  ;; to have this function parse expressions.
   :result (vl-paramvalue-p val)
   :resultp-of-nil nil
   :fails gracefully
   :count strong
   (seqw tokens pstate
-        (ans := (vl-parse-mintypmax-expression))
-        (return ans)))
+        ;; Datatype and expression are ambiguous when we just have an identifier, so
+        ;; check for this case first.
+        (when (and (vl-is-token? :vl-idtoken)
+                   (not (vl-parsestate-is-user-defined-type-p (vl-idtoken->name (car tokens)) pstate)))
+          ;; Non-type identifier.
+          (ans := (vl-parse-mintypmax-expression))
+          (return ans))
+        (return-raw
+         ;; Otherwise, use backtracking: arbitrarily try to get a datatype
+         ;; first, then try to get an expr.
+         (b* (((mv dt-err dt-val dt-tokens dt-pstate)
+               (vl-parse-datatype))
+              ((unless dt-err)
+               (mv dt-err dt-val dt-tokens dt-pstate)))
+           (seqw tokens pstate
+                 (ans := (vl-parse-mintypmax-expression))
+                 (return ans))))))
 
 (defparser vl-parse-named-parameter-assignment ()
   :result (vl-namedparamvalue-p val)

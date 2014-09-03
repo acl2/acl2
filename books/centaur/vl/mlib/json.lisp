@@ -934,6 +934,7 @@ which could not hold such large values.</p>")
     :vl-arguments-named
     (jp-object :tag    (jp-sym :vl-arguments)
                :namedp (jp-bool t)
+               :starp  (jp-bool x.starp)
                :args   (vl-jp-namedarglist x.args))
     :vl-arguments-plain
     (jp-object :tag    (jp-sym :vl-arguments)

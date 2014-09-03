@@ -1867,18 +1867,22 @@ expression into a string."
                     (vl-pp-plainarglist (cdr x) force-newlinesp)))))
 
 (define vl-pp-namedarg ((x vl-namedarg-p) &key (ps 'ps))
-  (let ((name (vl-namedarg->name x))
-        (expr (vl-namedarg->expr x))
-        (atts (vl-namedarg->atts x)))
-    (vl-ps-seq (if atts (vl-pp-atts atts) ps)
+  (b* (((vl-namedarg x)))
+    (vl-ps-seq (if x.atts (vl-pp-atts x.atts) ps)
                (vl-print ".")
                (vl-ps-span "vl_id"
-                           (vl-print (vl-maybe-escape-identifier name)))
-               (vl-print "(")
-               (if expr
-                   (vl-pp-expr expr)
-                 ps)
-               (vl-print ")"))))
+                           (vl-print (vl-maybe-escape-identifier x.name)))
+               (if (and x.nameonly-p
+                        x.expr
+                        (vl-idexpr-p x.expr)
+                        (equal (vl-idexpr->name x.expr) x.name))
+                   ;; Seems reasonable to keep it in .foo format instead of using .foo(foo)
+                   ps
+                 (vl-ps-seq (vl-print "(")
+                            (if x.expr
+                                (vl-pp-expr x.expr)
+                              ps)
+                            (vl-print ")"))))))
 
 (define vl-pp-namedarglist ((x vl-namedarglist-p) force-newlinesp &key (ps 'ps))
   (cond ((atom x)
@@ -1900,7 +1904,15 @@ expression into a string."
                          :vl-arguments-plain (vl-arguments-plain->args x)))
        (force-newlinep (longer-than-p 5 args))
        ((when namedp)
-        (vl-pp-namedarglist args force-newlinep))
+        (vl-ps-seq
+         ;; We'll arbitrarily put the .* at the beginning of the list.
+         (if (vl-arguments-named->starp x)
+             (vl-ps-seq (vl-print ".*")
+                        (cond ((atom args)          ps)
+                              ((not force-newlinep) (vl-println? ", "))
+                              (t                    (vl-println ","))))
+           ps)
+         (vl-pp-namedarglist args force-newlinep)))
        ((when (and (consp args)
                    (not (consp (cdr args)))
                    (not (vl-plainarg->expr (car args)))))

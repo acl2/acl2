@@ -176,10 +176,19 @@ named arguments with missing ports, and only issue non-fatal warnings.</p>"
         (mv t (ok) x))
 
        (x.args         (vl-arguments-named->args x))
+       (x.starp        (vl-arguments-named->starp x))
        (formal-names   (vl-portlist->names ports))
        (actual-names   (vl-namedarglist->names x.args))
        (sorted-formals (mergesort formal-names))
        (sorted-actuals (mergesort actual-names))
+
+       ((when x.starp)
+        (mv nil
+            (fatal :type :vl-bozo-dot-star
+                   :msg "~a0 uses .* style port connections, which are not ~
+                         quite yet implemented."
+                   :args (list inst))
+            x))
 
        ((when (member nil (vl-portlist->names ports)))
         ;; BOZO do other Verilog tools tolerate this and just supply Zs

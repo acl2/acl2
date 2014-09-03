@@ -369,8 +369,8 @@ attributes is left up to the implementation.</p>"
   :type vl-arguments-p
   :body
   (vl-arguments-case x
-    :vl-arguments-named (make-vl-arguments-named :args (vl-namedarglist-subst x.args sigma))
-    :vl-arguments-plain (make-vl-arguments-plain :args (vl-plainarglist-subst x.args sigma))))
+    :vl-arguments-named (change-vl-arguments-named x :args (vl-namedarglist-subst x.args sigma))
+    :vl-arguments-plain (change-vl-arguments-plain x :args (vl-plainarglist-subst x.args sigma))))
 
 (def-vl-subst vl-paramvalue-subst
   :type vl-paramvalue-p

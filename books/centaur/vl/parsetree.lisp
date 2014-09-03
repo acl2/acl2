@@ -57,7 +57,7 @@ annotated with a @('version') field that must match exactly this string.</p>"
 
   ;; Current syntax version: generally a string like
   ;; "VL Syntax [date of modification]"
-  "VL Syntax 2014-08-15")
+  "VL Syntax 2014-09-02")
 
 (define vl-syntaxversion-p (x)
   :parents (syntax)
@@ -1406,6 +1406,16 @@ portnames.</p>")
          "The <i>actual</i> being connected to this port; may be
           @('nil') for blank ports.")
 
+   (nameonly-p booleanp
+               "Indicates that this argument is an implicit named port
+                connection, i.e., of the form @('.name').  SystemVerilog allows
+                ports connections such as @('.foo, .bar, .baz').  This syntax
+                is equivalent to @('.foo(foo), .bar(bar), .baz(baz)'), except
+                that the names of these wires are required to exist in the
+                instantiating module, i.e., no implicit nets are to be created.
+                Note: the @('expr') for such a port should just be a simple
+                idexpr.")
+
    (atts vl-atts-p
          "Any attributes associated with this argument."))
 
@@ -1439,12 +1449,17 @@ instantiations, which we call <i>plain</i> and <i>named</i> arguments.</p>
 <p>A @('vl-arguments-p') structure represents an argument list of either
 variety.</p>"
 
-  (:vl-arguments-named
-   :base-name vl-arguments-named
-   ((args vl-namedarglist-p)))
   (:vl-arguments-plain
    :base-name vl-arguments-plain
-   ((args vl-plainarglist-p))))
+   ((args vl-plainarglist-p
+          "The actuals to the instance in order, e.g., @('1, 2, 3').")))
+
+  (:vl-arguments-named
+   :base-name vl-arguments-named
+   ((args vl-namedarglist-p
+          "The actuals to the instance and their names, e.g., @('.a(1), .b(2), .c(3)').")
+    (starp booleanp
+           "Indicates whether the @('.*') token was present."))))
 
 (define vl-arguments->args ((x vl-arguments-p))
   :inline t

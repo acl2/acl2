@@ -115,9 +115,9 @@ where we expect to see wires.</p>")
   :type vl-arguments-p
   :body (vl-arguments-case x
           :vl-arguments-named
-          (make-vl-arguments-named :args (vl-namedarglist-clean-selects x.args mod ialist))
+          (change-vl-arguments-named x :args (vl-namedarglist-clean-selects x.args mod ialist))
           :vl-arguments-plain
-          (make-vl-arguments-plain :args (vl-plainarglist-clean-selects x.args mod ialist))))
+          (change-vl-arguments-plain x :args (vl-plainarglist-clean-selects x.args mod ialist))))
 
 (def-vl-clean-selects vl-modinst-clean-selects
   :type vl-modinst-p

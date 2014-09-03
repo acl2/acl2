@@ -165,8 +165,8 @@ expression."
 (define vl-arguments-strip ((x vl-arguments-p))
   :returns (x-strip vl-arguments-p)
   (vl-arguments-case x
-    :vl-arguments-named (make-vl-arguments-named :args (vl-namedarglist-strip x.args))
-    :vl-arguments-plain (make-vl-arguments-plain :args (vl-plainarglist-strip x.args))))
+    :vl-arguments-named (change-vl-arguments-named x :args (vl-namedarglist-strip x.args))
+    :vl-arguments-plain (change-vl-arguments-plain x :args (vl-plainarglist-strip x.args))))
 
 
 (define vl-modinst-strip ((x vl-modinst-p))
