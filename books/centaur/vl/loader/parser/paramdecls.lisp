@@ -143,10 +143,11 @@ data type for a local type parameter.  We enforce this in the parser.</p>")
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens pstate
+  (seq tokstream
         (id := (vl-match-token :vl-idtoken))
 
-        (when (vl-parsestate-is-user-defined-type-p (vl-idtoken->name id) pstate)
+        (when (vl-parsestate-is-user-defined-type-p (vl-idtoken->name id)
+                                                    (vl-tokstream->pstate))
           ;; We make this very strict because otherwise it seems that ambiguities
           ;; can arise.
           (return-raw
@@ -198,7 +199,7 @@ data type for a local type parameter.  We enforce this in the parser.</p>")
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens pstate
+  (seq tokstream
         (first := (vl-parse-param-assignment atts localp type))
         (when (vl-is-token? :vl-comma)
           (:= (vl-match))
@@ -217,10 +218,11 @@ data type for a local type parameter.  We enforce this in the parser.</p>")
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens pstate
+  (seq tokstream
         (id := (vl-match-token :vl-idtoken))
 
-        (when (vl-parsestate-is-user-defined-type-p (vl-idtoken->name id) pstate)
+        (when (vl-parsestate-is-user-defined-type-p (vl-idtoken->name id)
+                                                    (vl-tokstream->pstate))
           ;; We make this very strict because otherwise it seems that ambiguities
           ;; can arise.
           (return-raw
@@ -245,7 +247,7 @@ data type for a local type parameter.  We enforce this in the parser.</p>")
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens pstate
+  (seq tokstream
         (first := (vl-parse-type-assignment atts localp))
         (when (vl-is-token? :vl-comma)
           (:= (vl-match))
@@ -266,7 +268,7 @@ data type for a local type parameter.  We enforce this in the parser.</p>")
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens pstate
+  (seq tokstream
         ;; Verilog-2005 rules:
         ;;
         ;; local_parameter_declaration ::=
@@ -360,7 +362,7 @@ data type for a local type parameter.  We enforce this in the parser.</p>")
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens pstate
+  (seq tokstream
         (start := (vl-match-some-token types)) ;; localparam or parameter
 
         (when (vl-is-token? :vl-kwd-type)
@@ -429,8 +431,9 @@ data type for a local type parameter.  We enforce this in the parser.</p>")
               (emptytype (make-vl-implicitvalueparam :range nil :sign nil))
 
               ;; Case 1: maybe there's some data_type there.
-              ((mv some-err some-decls some-tokens some-pstate)
-               (seqw tokens pstate
+              (backup (vl-tokstream-save))
+              ((mv some-err some-decls tokstream)
+               (seq tokstream
                      (type := (vl-parse-datatype))
                      (decls := (vl-parse-list-of-param-assignments
                                 atts localp
@@ -438,26 +441,29 @@ data type for a local type parameter.  We enforce this in the parser.</p>")
                      (return decls)))
               ((unless some-err)
                ;; It worked, so that's great and we're done.
-               (mv some-err some-decls some-tokens some-pstate))
+               (mv some-err some-decls tokstream))
+              (some-tokens (vl-tokstream->tokens))
+              (tokstream (vl-tokstream-restore backup))
 
               ;; Case 2: suppose there is no data_type.  Then we should be able
               ;; to just parse the param assignments.
-              ((mv empty-err empty-decls empty-tokens empty-pstate)
+              ((mv empty-err empty-decls tokstream)
                (vl-parse-list-of-param-assignments atts localp emptytype))
               ((unless empty-err)
                ;; It worked.  So there can't be a data type because the second
                ;; token has to be an = sign.  We win and we're done.
-               (mv empty-err empty-decls empty-tokens empty-pstate)))
+               (mv empty-err empty-decls tokstream))
+              (empty-tokens (vl-tokstream->tokens))
+              (tokstream (vl-tokstream-restore backup)))
 
            ;; Final cleanup case.  What if neither one works?  We have two
            ;; errors now.  Do the usual thing and choose whichever path got
            ;; farther.
            (if (< (len empty-tokens) (len some-tokens))
                ;; Case 2 got farther.  (it has fewer tokens left)
-               (mv empty-err empty-decls empty-tokens empty-pstate)
+               (mv empty-err empty-decls tokstream)
              ;; Case 1 got farther.
-             (mv some-err some-decls some-tokens some-pstate))))))
-
+             (mv some-err some-decls tokstream))))))
 
 (defparser vl-parse-param-or-localparam-declaration (atts types)
   :guard (and (vl-atts-p atts)

@@ -147,10 +147,6 @@
       definline
       definlined
 
-      seq
-      seq-backtrack
-      seqw
-      seqw-backtrack
       cw-obj
       return-raw
 

@@ -128,7 +128,7 @@ attributes.</p>"
 
 
 (defparser vl-parse-op (arity alist)
-  :short "Compatible with seqw.  Match any of the tokens specified in this
+  :short "Compatible with seq.  Match any of the tokens specified in this
 alist, and return the corresponding @(see vl-op-p) for it."
   :long "<p>This helps to avoid many case splits throughout our operator
 parsing functions.</p>"
@@ -141,18 +141,18 @@ parsing functions.</p>"
   :count strong-on-value
   :measure (len alist)
   :hint-chicken-switch t
-  (seqw tokens pstate
-        (when (or (atom tokens)
-                  (atom alist))
-          (return nil))
-        (when (vl-is-token? (caar alist))
-          (:= (vl-match))
-          (return (cdar alist)))
-        (return-raw
-         (vl-parse-op arity (cdr alist))))
+  (seq tokstream
+       (when (or (atom (vl-tokstream->tokens))
+                 (atom alist))
+         (return nil))
+       (when (vl-is-token? (caar alist))
+         (:= (vl-match))
+         (return (cdar alist)))
+       (return-raw
+        (vl-parse-op arity (cdr alist))))
   ///
   (defthm vl-parse-op-when-atom
-    (implies (atom tokens)
+    (implies (atom (vl-tokstream->tokens))
              (not (mv-nth 1 (vl-parse-op arity alist))))))
 
 
@@ -474,62 +474,62 @@ literals, unbased unsized literals, @('this'), @('$'), and @('null').</p>"
   :resultp-of-nil t
   :fails never
   :count strong-on-value
-  (seqw tokens pstate
-        (when (vl-is-token? :vl-inttoken)
-          (int := (vl-match))
-          (return (make-vl-atom :guts (vl-make-guts-from-inttoken int))))
+  (seq tokstream
+       (when (vl-is-token? :vl-inttoken)
+         (int := (vl-match))
+         (return (make-vl-atom :guts (vl-make-guts-from-inttoken int))))
 
-        (when (vl-is-token? :vl-realtoken)
-          (real := (vl-match))
-          (return
-           (b* ((value (vl-echarlist->string (vl-realtoken->etext real))))
-             (make-vl-atom :guts (make-vl-real :value value)))))
+       (when (vl-is-token? :vl-realtoken)
+         (real := (vl-match))
+         (return
+          (b* ((value (vl-echarlist->string (vl-realtoken->etext real))))
+            (make-vl-atom :guts (make-vl-real :value value)))))
 
-        (when (vl-is-token? :vl-stringtoken)
-          (str := (vl-match))
-          (return
-           (b* ((value (vl-stringtoken->expansion str)))
-             (make-vl-atom :guts (make-vl-string :value value)))))
+       (when (vl-is-token? :vl-stringtoken)
+         (str := (vl-match))
+         (return
+          (b* ((value (vl-stringtoken->expansion str)))
+            (make-vl-atom :guts (make-vl-string :value value)))))
 
-        (when (eq (vl-loadconfig->edition config) :verilog-2005)
-          ;; That's it for regular Verilog.
-          (return nil))
+       (when (eq (vl-loadconfig->edition config) :verilog-2005)
+         ;; That's it for regular Verilog.
+         (return nil))
 
-        ;; New things for SystemVerilog-2012:
-        (when (vl-is-token? :vl-extinttoken)
-          (ext := (vl-match))
-          (return
-           (b* ((value (vl-extinttoken->value ext)))
-             (make-vl-atom :guts (make-vl-extint :value value)))))
+       ;; New things for SystemVerilog-2012:
+       (when (vl-is-token? :vl-extinttoken)
+         (ext := (vl-match))
+         (return
+          (b* ((value (vl-extinttoken->value ext)))
+            (make-vl-atom :guts (make-vl-extint :value value)))))
 
-        (when (vl-is-token? :vl-timetoken)
-          (time := (vl-match))
-          (return
-           (b* (((vl-timetoken time) time))
-             (make-vl-atom :guts (make-vl-time :quantity time.quantity
-                                               :units time.units)))))
+       (when (vl-is-token? :vl-timetoken)
+         (time := (vl-match))
+         (return
+          (b* (((vl-timetoken time) time))
+            (make-vl-atom :guts (make-vl-time :quantity time.quantity
+                                              :units time.units)))))
 
-        (when (vl-is-token? :vl-kwd-null)
-          (:= (vl-match))
-          (return (hons-copy (make-vl-atom
-                              :guts (make-vl-keyguts :type :vl-null)))))
+       (when (vl-is-token? :vl-kwd-null)
+         (:= (vl-match))
+         (return (hons-copy (make-vl-atom
+                             :guts (make-vl-keyguts :type :vl-null)))))
 
-        (when (vl-is-token? :vl-kwd-this)
-          (:= (vl-match))
-          (return (hons-copy (make-vl-atom
-                              :guts (make-vl-keyguts :type :vl-this)))))
+       (when (vl-is-token? :vl-kwd-this)
+         (:= (vl-match))
+         (return (hons-copy (make-vl-atom
+                             :guts (make-vl-keyguts :type :vl-this)))))
 
-        (when (vl-is-token? :vl-$)
-          (:= (vl-match))
-          (return (hons-copy (make-vl-atom
-                              :guts (make-vl-keyguts :type :vl-$)))))
+       (when (vl-is-token? :vl-$)
+         (:= (vl-match))
+         (return (hons-copy (make-vl-atom
+                             :guts (make-vl-keyguts :type :vl-$)))))
 
-        (return nil))
+       (return nil))
   ///
   (defthm tokens-nonempty-when-vl-maybe-parse-base-primary
-    (b* (((mv ?errmsg val ?new-tokens ?new-pstate)
+    (b* (((mv ?errmsg val ?new-tokstream)
           (vl-maybe-parse-base-primary)))
-      (implies val (consp tokens)))))
+      (implies val (consp (vl-tokstream->tokens))))))
 
 
 
@@ -585,15 +585,15 @@ trivial:</p>
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens pstate
-        (type := (vl-match-some-token *vl-very-simple-type-tokens*))
-        (return (cdr (assoc (vl-token->type type)
-                            *vl-very-simple-type-table*))))
+  (seq tokstream
+       (type := (vl-match-some-token *vl-very-simple-type-tokens*))
+       (return (cdr (assoc (vl-token->type type)
+                           *vl-very-simple-type-table*))))
   ///
   (defthm vl-parse-very-simple-type-when-eof
-    (b* (((mv errmsg ?val ?new-tokens ?new-pstate)
+    (b* (((mv errmsg ?val ?new-tokstream)
           (vl-parse-very-simple-type)))
-      (implies (atom tokens)
+      (implies (atom (vl-tokstream->tokens))
                errmsg))))
 
 (defparser vl-parse-parameter-value-assignment-hack ()
@@ -615,12 +615,12 @@ expressions.</p>"
   :resultp-of-nil t
   :fails gracefully
   :count strong
-  (seqw tokens pstate
-        (:= (vl-match-token :vl-pound))
-        (:= (vl-match-token :vl-lparen))
-        (return-raw
-         (vl-parse-error
-          "Embedded parameter value assignments #(...) aren't implemented yet."))))
+  (seq tokstream
+       (:= (vl-match-token :vl-pound))
+       (:= (vl-match-token :vl-lparen))
+       (return-raw
+        (vl-parse-error
+         "Embedded parameter value assignments #(...) aren't implemented yet."))))
 
 (defparser vl-parse-pva-tail ()
   :short "Match @(' { '::' identifier [parameter_value_assignment] } '::'
@@ -637,27 +637,27 @@ yet; they'll just cause a parse error.</p>"
   :fails gracefully
   :count strong
   :verify-guards nil
-  (seqw tokens pstate
-        (:= (vl-match-token :vl-scope))
-        (head := (vl-match-token :vl-idtoken))
-        (when (vl-is-token? :vl-pound)
-          (:= (vl-parse-parameter-value-assignment-hack))
-          (return-raw
-           ;; Should never actually get here until we implement PVAs.
-           (vl-parse-error "Implement PVAs.")))
+  (seq tokstream
+       (:= (vl-match-token :vl-scope))
+       (head := (vl-match-token :vl-idtoken))
+       (when (vl-is-token? :vl-pound)
+         (:= (vl-parse-parameter-value-assignment-hack))
+         (return-raw
+          ;; Should never actually get here until we implement PVAs.
+          (vl-parse-error "Implement PVAs.")))
 
-        (unless (vl-is-token? :vl-scope)
-          (return
-           (make-vl-atom
-            :guts (make-vl-hidpiece :name (vl-idtoken->name head)))))
+       (unless (vl-is-token? :vl-scope)
+         (return
+          (make-vl-atom
+           :guts (make-vl-hidpiece :name (vl-idtoken->name head)))))
 
-        (tail := (vl-parse-pva-tail))
-        (return
-         (make-vl-nonatom
-          :op :vl-scope
-          :args (list (make-vl-atom
-                       :guts (make-vl-hidpiece :name (vl-idtoken->name head)))
-                      tail)))))
+       (tail := (vl-parse-pva-tail))
+       (return
+        (make-vl-nonatom
+         :op :vl-scope
+         :args (list (make-vl-atom
+                      :guts (make-vl-hidpiece :name (vl-idtoken->name head)))
+                     tail)))))
 
 (verify-guards vl-parse-pva-tail-fn)
 
@@ -710,9 +710,9 @@ definition of @('attr_spec'):</p>
 attr_spec ::= attr_name [ '=' constant_expression ]
 attr_name ::= identifier
 })"
-    :measure (two-nats-measure (len tokens) 0)
+    :measure (two-nats-measure (vl-tokstream-measure) 0)
     :verify-guards nil
-    (seqw tokens pstate
+    (seq tokstream
           (id := (vl-match-token :vl-idtoken))
           (when (vl-is-token? :vl-equalsign)
             (:= (vl-match))
@@ -725,8 +725,8 @@ attr_name ::= identifier
   (defparser vl-parse-attribute-instance-aux ()
     :parents (vl-parse-0+-attribute-instances)
     :short "Match @(' attr_spec { ',' attr_spec' } '), return a @(see vl-atts-p)."
-    :measure (two-nats-measure (len tokens) 1)
-    (seqw tokens pstate
+    :measure (two-nats-measure (vl-tokstream-measure) 1)
+    (seq tokstream
           (first :s= (vl-parse-attr-spec))
           (when (vl-is-token? :vl-comma)
             (:= (vl-match))
@@ -742,8 +742,8 @@ definition of @('attribute_instance'):</p>
 @({
     attribute_instance ::= '(*' attr_spec { ',' attr_spec } '*)'
 })"
-    :measure (two-nats-measure (len tokens) 0)
-    (seqw tokens pstate
+    :measure (two-nats-measure (vl-tokstream-measure) 0)
+    (seq tokstream
           (:= (vl-match-token :vl-beginattr))
           (data := (vl-parse-attribute-instance-aux))
           (:= (vl-match-token :vl-endattr))
@@ -766,8 +766,8 @@ that for instance:</p>
 @({
      (* foo, bar *)
 })"
-    :measure (two-nats-measure (len tokens) 1)
-    (seqw tokens pstate
+    :measure (two-nats-measure (vl-tokstream-measure) 1)
+    (seq tokstream
           (when (not (vl-is-token? :vl-beginattr))
             (return nil))
           (first :s= (vl-parse-attribute-instance))
@@ -796,8 +796,8 @@ attributes, and we want to warn about any attributes like \"foo\" that occur
 multiple times.  So, in this wrapper, we check for duplicates and issue
 warnings, and we fix up the alists to get unique keys bound to the right
 values.</p>"
-    :measure (two-nats-measure (len tokens) 2)
-    (seqw tokens pstate
+    :measure (two-nats-measure (vl-tokstream-measure) 2)
+    (seq tokstream
           (when (not (vl-is-token? :vl-beginattr))
             ;; Stupid hack for performance.  Usually there are no attributes,
             ;; so we don't need to do anything more.
@@ -814,7 +814,7 @@ values.</p>"
                  (fast-alist-free (hons-shrink-alist (rev original-atts) nil)))
                 ((when (same-lengthp atts original-atts))
                  ;; No dupes, nothing to warn about
-                 (mv nil atts tokens pstate))
+                 (mv nil atts tokstream))
                 (w (make-vl-warning
                     :type :vl-warn-shadowed-atts
                     :msg "~l0: Found multiple occurrences of ~&1 in ~
@@ -824,8 +824,8 @@ values.</p>"
                                  (alist-keys original-atts)))
                     :fatalp nil
                     :fn __function__))
-                (pstate (vl-parsestate-add-warning w pstate)))
-             (mv nil atts tokens pstate)))))
+                (tokstream (vl-tokstream-add-warning w)))
+             (mv nil atts tokstream)))))
 
 
 ; system_function_call ::=
@@ -835,8 +835,8 @@ values.</p>"
 ; regular function calls are allowed to.
 
   (defparser vl-parse-1+-expressions-separated-by-commas ()
-    :measure (two-nats-measure (len tokens) 31)
-    (seqw tokens pstate
+    :measure (two-nats-measure (vl-tokstream-measure) 31)
+    (seq tokstream
           (first :s= (vl-parse-expression))
           (when (vl-is-token? :vl-comma)
             (:= (vl-match))
@@ -844,8 +844,8 @@ values.</p>"
           (return (cons first rest))))
 
   (defparser vl-parse-system-function-call ()
-    :measure (two-nats-measure (len tokens) 0)
-    (seqw tokens pstate
+    :measure (two-nats-measure (vl-tokstream-measure) 0)
+    (seq tokstream
           (fn := (vl-match-token :vl-sysidtoken))
           (when (vl-is-token? :vl-lparen)
             (:= (vl-match))
@@ -862,8 +862,8 @@ values.</p>"
 ;  | expression ':' expression ':' expression
 
   (defparser vl-parse-mintypmax-expression ()
-    :measure (two-nats-measure (len tokens) 31)
-    (seqw tokens pstate
+    :measure (two-nats-measure (vl-tokstream-measure) 31)
+    (seq tokstream
           (min :s= (vl-parse-expression))
           (unless (vl-is-token? :vl-colon)
             (return min))
@@ -901,8 +901,8 @@ several additional productions.</p>
                     | expression '-:' expression
 })"
 
-    :measure (two-nats-measure (len tokens) 31)
-    (seqw tokens pstate
+    :measure (two-nats-measure (vl-tokstream-measure) 31)
+    (seq tokstream
           (e1 :s= (vl-parse-expression))
           (unless (vl-is-some-token? '(:vl-colon :vl-pluscolon :vl-minuscolon))
             (return (vl-erange :vl-index e1 e1)))
@@ -917,8 +917,8 @@ and return a single @(':vl-concat') expression."
 
     :long "<p>Both Verilog-2005 and SystemVerilog-2012 agree exactly on the
 syntax of a concatenation.</p>"
-    :measure (two-nats-measure (len tokens) 0)
-    (seqw tokens pstate
+    :measure (two-nats-measure (vl-tokstream-measure) 0)
+    (seq tokstream
           (:= (vl-match-token :vl-lcurly))
           (args := (vl-parse-1+-expressions-separated-by-commas))
           (:= (vl-match-token :vl-rcurly))
@@ -935,8 +935,8 @@ syntax of a concatenation.</p>"
 <p>Where @('array_range_expression') is identical to
 @('range_expression').</p>"
 
-    :measure (two-nats-measure (len tokens) 31)
-    (seqw tokens pstate
+    :measure (two-nats-measure (vl-tokstream-measure) 31)
+    (seq tokstream
           (expr :s= (vl-parse-expression))
           (unless (vl-is-token? :vl-kwd-with)
             (return expr))
@@ -949,8 +949,8 @@ syntax of a concatenation.</p>"
   (defparser vl-parse-1+-stream-expressions-separated-by-commas ()
     :short "Match at least one (but perhaps more) stream expressions, return them
             as an expression list."
-    :measure (two-nats-measure (len tokens) 32)
-    (seqw tokens pstate
+    :measure (two-nats-measure (vl-tokstream-measure) 32)
+    (seq tokstream
           (first :s= (vl-parse-stream-expression))
           (when (vl-is-token? :vl-comma)
             (:= (vl-match))
@@ -959,8 +959,8 @@ syntax of a concatenation.</p>"
 
   (defparser vl-parse-stream-concatenation ()
     :short "Match stream_concatenation, return an expression list."
-    :measure (two-nats-measure (len tokens) 0)
-    (seqw tokens pstate
+    :measure (two-nats-measure (vl-tokstream-measure) 0)
+    (seq tokstream
           (:= (vl-match-token :vl-lcurly))
           (args := (vl-parse-1+-stream-expressions-separated-by-commas))
           (:= (vl-match-token :vl-rcurly))
@@ -995,8 +995,8 @@ with these grammar rules, I believe simple_type is equivalent to:</p>
       | identifier [ pva ] pva_tail
       | identifier { [ '[' expression ']' ] '.' identifier }
 })"
-    :measure (two-nats-measure (len tokens) 1)
-    (seqw tokens pstate
+    :measure (two-nats-measure (vl-tokstream-measure) 1)
+    (seq tokstream
 
           (when (vl-is-token? :vl-kwd-local)
             ;; 'local' '::' identifier
@@ -1025,14 +1025,14 @@ with these grammar rules, I believe simple_type is equivalent to:</p>
           (unless (vl-is-token? :vl-idtoken)
             (return-raw (vl-parse-very-simple-type)))
 
-          (when (vl-is-token? :vl-pound :tokens (cdr tokens))
+          (when (vl-lookahead-is-token? :vl-pound (cdr (vl-tokstream->tokens)))
             ;; identifier pva pva_tail
-            (head := (vl-match))
+            (:= (vl-match))
             (:= (vl-parse-parameter-value-assignment-hack))
             (return-raw
              (vl-parse-error "Implement PVAs.")))
 
-          (when (vl-is-token? :vl-scope :tokens (cdr tokens))
+          (when (vl-lookahead-is-token? :vl-scope (cdr (vl-tokstream->tokens)))
             ;; identifier [pva] pva_tail with no pva
             (head := (vl-match))
             (tail := (vl-parse-pva-tail))
@@ -1049,7 +1049,8 @@ with these grammar rules, I believe simple_type is equivalent to:</p>
           ;; we know we have an ID, so it can't be root.
           (id := (vl-parse-hierarchical-identifier nil))
           (when (and (vl-idexpr-p id)
-                     (not (vl-parsestate-is-user-defined-type-p (vl-idexpr->name id) pstate)))
+                     (not (vl-parsestate-is-user-defined-type-p (vl-idexpr->name id)
+                                                                (vl-tokstream->pstate))))
             (return-raw
              (vl-parse-error (cat "Not a known type: " (vl-idexpr->name id)))))
           (return id)))
@@ -1065,11 +1066,12 @@ which are used streaming concatenations.</p>
      slice_size ::= simple_type | expression
 })"
 
-    :measure (two-nats-measure (len tokens) 31)
-    (b* (((mv err expr new-tokens new-pstate)
-          (vl-parse-simple-type))
+    :measure (two-nats-measure (vl-tokstream-measure) 31)
+    (b* ((backup (vl-tokstream-save))
+         ((mv err expr tokstream) (vl-parse-simple-type))
          ((unless err)
-          (mv err expr new-tokens new-pstate)))
+          (mv err expr tokstream))
+         (tokstream (vl-tokstream-restore backup)))
       (vl-parse-expression)))
 
   (defparser vl-parse-any-sort-of-concatenation ()
@@ -1108,8 +1110,8 @@ always start with one of these @('stream_operators').</p>
      empty_queue ::= '{' '}'
 })"
 
-    :measure (two-nats-measure (len tokens) 0)
-    (seqw tokens pstate
+    :measure (two-nats-measure (vl-tokstream-measure) 0)
+    (seq tokstream
           (:= (vl-match-token :vl-lcurly))
 
           (when (and (vl-is-token? :vl-rcurly) ;; {}
@@ -1163,7 +1165,7 @@ always start with one of these @('stream_operators').</p>
 
   (defparser vl-parse-hierarchical-identifier (recursivep)
     :short "Match a @('hierarchical_identifier')."
-    :measure (two-nats-measure (len tokens) 0)
+    :measure (two-nats-measure (vl-tokstream-measure) 0)
     :long "<p>In Verilog-2005, the rule is:</p>
 
 @({
@@ -1198,12 +1200,12 @@ a regular id token.  But otherwise, this id is just part of a hierarchical
 identifier, so we convert it into a hidpiece.</p>"
 
     (b* ((sys-p (not (eq (vl-loadconfig->edition config) :verilog-2005))))
-      (seqw tokens pstate
+      (seq tokstream
 
             (when (and sys-p
                        (not recursivep)
                        (vl-is-token? :vl-$root))
-              (root := (vl-match))
+              (:= (vl-match))
               (:= (vl-match-token :vl-dot))
               (tail := (vl-parse-hierarchical-identifier t))
               (return
@@ -1228,18 +1230,20 @@ identifier, so we convert it into a hidpiece.</p>"
               ;; if it is followed by a dot.
 
               (when (vl-is-token? :vl-lbrack)
-                (expr := (b* (((mv err expr explore new-pstate)
-                               (seqw tokens pstate
-                                     (:= (vl-match))
-                                     (expr :s= (vl-parse-expression))
-                                     (:= (vl-match-token :vl-rbrack))
-                                     (:= (vl-match-token :vl-dot))
-                                     (return expr)))
-                              ((when err)
-                               ;; Suppress the error, the [ may just not belong
-                               ;; to us.
-                               (mv nil nil tokens pstate)))
-                           (mv nil expr explore new-pstate))))
+                (expr := (b* ((backup (vl-tokstream-save))
+                              ((mv err expr tokstream)
+                               (seq tokstream
+                                    (:= (vl-match))
+                                    (expr :s= (vl-parse-expression))
+                                    (:= (vl-match-token :vl-rbrack))
+                                    (:= (vl-match-token :vl-dot))
+                                    (return expr)))
+                              ((unless err)
+                               (mv nil expr tokstream))
+                              (tokstream (vl-tokstream-restore backup)))
+                           ;; Suppress the error, the [ may just not belong
+                           ;; to us.
+                           (mv nil nil tokstream))))
 
               (when expr
                 ;; Found [expr] and a dot, so we should have a tail, too.
@@ -1261,16 +1265,18 @@ identifier, so we convert it into a hidpiece.</p>"
             ;; For SystemVerilog we can match any number of bracketed exprs
             ;; here, but again only if they're followed by a dot.
             (when (vl-is-token? :vl-lbrack)
-              (exprs :w= (b* (((mv err exprs explore new-pstate)
-                               (seqw tokens pstate
-                                     (exprs := (vl-parse-0+-bracketed-expressions))
-                                     (:= (vl-match-token :vl-dot))
-                                     (return exprs)))
-                              ((when err)
-                               ;; Suppress the error, the [ may just not belong
-                               ;; to us.
-                               (mv nil nil tokens pstate)))
-                           (mv nil exprs explore new-pstate))))
+              (exprs :w= (b* ((backup (vl-tokstream-save))
+                              ((mv err exprs tokstream)
+                               (seq tokstream
+                                    (exprs := (vl-parse-0+-bracketed-expressions))
+                                    (:= (vl-match-token :vl-dot))
+                                    (return exprs)))
+                              ((unless err)
+                               (mv nil exprs tokstream))
+                              (tokstream (vl-tokstream-restore backup)))
+                           ;; Suppress the error, the [ may just not belong to
+                           ;; us.
+                           (mv nil nil tokstream))))
 
             (when exprs
               ;; Found [expr][expr][expr] and a dot, so we should have a tail
@@ -1294,8 +1300,8 @@ identifier, so we convert it into a hidpiece.</p>"
 ;      '(' expression { ',' expression } ')'
 
   (defparser vl-parse-function-call ()
-    :measure (two-nats-measure (len tokens) 1)
-    (seqw tokens pstate
+    :measure (two-nats-measure (vl-tokstream-measure) 1)
+    (seq tokstream
           (id :s= (vl-parse-hierarchical-identifier nil))
           (atts :w= (vl-parse-0+-attribute-instances))
           (:= (vl-match-token :vl-lparen))
@@ -1332,37 +1338,39 @@ identifier, so we convert it into a hidpiece.</p>"
 
   (defparser vl-parse-0+-bracketed-expressions ()
     :short "Match @('{ '[' expression ']') }'), return an expression list."
-    :measure (two-nats-measure (len tokens) 1)
+    :measure (two-nats-measure (vl-tokstream-measure) 1)
     (b* (((unless (vl-is-token? :vl-lbrack))
           ;; For termination, this needs to be a ruler.
-          (mv nil nil tokens pstate))
+          (mv nil nil tokstream))
 
-         ((mv err first explore new-pstate)
-          (seqw tokens pstate
+         (backup (vl-tokstream-save))
+         ((mv err first tokstream)
+          (seq tokstream
                 (:= (vl-match))
                 (expr := (vl-parse-expression))
                 (:= (vl-match-token :vl-rbrack))
                 (return expr)))
 
          ((when (or err (not first)))
-          ;; No initial expression; okay.
-          (mv nil nil tokens pstate))
-         ((unless (mbt (< (len explore) (len tokens))))
+          ;; No initial expression; okay.  Restore the backup and return.
+          (b* ((tokstream (vl-tokstream-restore backup)))
+            (mv nil nil tokstream)))
+
+         ((unless (mbt (< (vl-tokstream-measure)
+                          (len (vl-tokstream-backup->tokens backup)))))
           (raise "termination failure")
           (vl-parse-error "termination failure"))
-         ((mv erp rest tokens pstate)
-          (vl-parse-0+-bracketed-expressions
-           :tokens explore
-           :pstate new-pstate))
+
+         ((mv erp rest tokstream) (vl-parse-0+-bracketed-expressions))
          ((when erp)
-          (mv erp rest tokens pstate)))
-      (mv nil (cons first rest) tokens pstate)))
+          (mv erp rest tokstream)))
+      (mv nil (cons first rest) tokstream)))
 
   (defparser vl-parse-indexed-id ()
-    :measure (two-nats-measure (len tokens) 1)
+    :measure (two-nats-measure (vl-tokstream-measure) 1)
     ;; This is for:
     ;;   hierarchical_identifier [ { '[' expression ']' } '[' range_expression ']' ]
-    (seqw tokens pstate
+    (seq tokstream
           (hid :s= (vl-parse-hierarchical-identifier nil))
           (bexprs :w= (vl-parse-0+-bracketed-expressions))
           (when (vl-is-token? :vl-lbrack)
@@ -1375,18 +1383,25 @@ identifier, so we convert it into a hidpiece.</p>"
                       main)))))
 
   (defparser vl-parse-primary-main ()
-    :measure (two-nats-measure (len tokens) 2)
+    :measure (two-nats-measure (vl-tokstream-measure) 2)
     ;; This handles most primaries, but does not deal with casting.
-    (b* (((mv errmsg? expr new-tokens new-pstate)
+    (b* ((backup (vl-tokstream-save))
+
+         ((mv errmsg? expr tokstream)
           ;; Base primary handles things like numbers, 'this', 'null', '$'.
           ;; It doesn't deal with identifiers (which might be followed by dots/scopes)
           ;; It doens't match anything that can be used in a cast.
           (vl-maybe-parse-base-primary))
-         ((when (or errmsg? expr))
-          (mv errmsg? expr new-tokens new-pstate))
+
+         ((when (or errmsg? ;; BOZO it never fails, so this could perhaps be simplified to just expr.
+                    expr))
+          (mv errmsg? expr tokstream))
+
+         (tokstream (vl-tokstream-restore backup))
 
          ;; BOZO this isn't really finished at all, yet.
 
+         (tokens (vl-tokstream->tokens))
          ((when (atom tokens))
           (vl-parse-error "Unexpected EOF."))
 
@@ -1397,10 +1412,11 @@ identifier, so we convert it into a hidpiece.</p>"
           ;; Its either an hindex or a function call.  We need to check for
           ;; function call first, since, e.g.,our hindex would accept just the
           ;; hierarchical identifier, "foo", if given "foo(x, y, z)."
-          (b* (((mv err funcall explore new-pstate)
-                (vl-parse-function-call))
+          (b* (;; Subtle: our backup is still valid
+               ((mv err funcall tokstream) (vl-parse-function-call))
                ((unless err)
-                (mv err funcall explore new-pstate)))
+                (mv err funcall tokstream))
+               (tokstream (vl-tokstream-restore backup)))
             (vl-parse-indexed-id)))
 
          ((when (eq type :vl-lcurly))
@@ -1414,7 +1430,7 @@ identifier, so we convert it into a hidpiece.</p>"
 
          ((when (eq type :vl-lparen))
           ;; '(' mintypmax_expression ')'
-          (seqw tokens pstate
+          (seq tokstream
                 (:= (vl-match))
                 (expr := (vl-parse-mintypmax-expression))
                 (:= (vl-match-token :vl-rparen))
@@ -1423,7 +1439,7 @@ identifier, so we convert it into a hidpiece.</p>"
       (vl-parse-error "Failed to match a primary expression.")))
 
   (defparser vl-parse-primary-cast ()
-    :measure (two-nats-measure (len tokens) 3)
+    :measure (two-nats-measure (vl-tokstream-measure) 3)
     ;; SystemVerilog Only.
     ;;
     ;; Matches main (cast-free) primaries and also primaries with casts.
@@ -1436,7 +1452,7 @@ identifier, so we convert it into a hidpiece.</p>"
     ;; and in fact both NCVerilog and VCS seem to allow this.  But this makes
     ;; no sense and causes problems for termination, so, we'll insist that the
     ;; left-hand side of a cast is not itself a cast.
-    (seqw tokens pstate
+    (seq tokstream
           (primary :s= (vl-parse-primary-main))
           (when (vl-is-token? :vl-quote)
             ;; Primary followed by a cast.
@@ -1449,12 +1465,12 @@ identifier, so we convert it into a hidpiece.</p>"
           (return primary)))
 
   (defparser vl-parse-nonprimary-cast ()
-    :measure (two-nats-measure (len tokens) 3)
+    :measure (two-nats-measure (vl-tokstream-measure) 3)
     ;; SystemVerilog Only.
     ;;
     ;; The other (non-primary) casting types are:
     ;;   simple_type, 'signed', 'unsigned', 'string', 'const'
-    (seqw tokens pstate
+    (seq tokstream
           (when (vl-is-some-token? '(:vl-kwd-signed :vl-kwd-unsigned :vl-kwd-string :vl-kwd-const))
             (type := (vl-match))
             (:= (vl-match-token :vl-quote))
@@ -1481,20 +1497,23 @@ identifier, so we convert it into a hidpiece.</p>"
                                    :args (list type arg)))))
 
  (defparser vl-parse-primary ()
-    :measure (two-nats-measure (len tokens) 4)
+    :measure (two-nats-measure (vl-tokstream-measure) 4)
     ;; Deals with casting and also other primaries.
     (b* (((when (eq (vl-loadconfig->edition config) :verilog-2005))
           (vl-parse-primary-main))
 
          ;; Try to parse basic primaries with or without casts
-         ((mv errmsg expr new-tokens new-pstate) (vl-parse-primary-cast))
+         (backup (vl-tokstream-save))
+         ((mv errmsg expr tokstream) (vl-parse-primary-cast))
          ((unless errmsg)
-          (mv errmsg expr new-tokens new-pstate))
+          (mv errmsg expr tokstream))
+         (tokstream (vl-tokstream-restore backup))
 
          ;; Try to parse other kinds of casts
-         ((mv errmsg expr new-tokens new-pstate) (vl-parse-nonprimary-cast))
+         ((mv errmsg expr tokstream) (vl-parse-nonprimary-cast))
          ((unless errmsg)
-          (mv errmsg expr new-tokens new-pstate)))
+          (mv errmsg expr tokstream))
+         (tokstream (vl-tokstream-restore backup)))
 
       (vl-parse-error "Failed to match a primary expression.")))
 
@@ -1605,8 +1624,8 @@ identifier, so we convert it into a hidpiece.</p>"
 ; expression ::= impl_expression
 
   (defparser vl-parse-unary-expression ()
-    :measure (two-nats-measure (len tokens) 5)
-    (seqw tokens pstate
+    :measure (two-nats-measure (vl-tokstream-measure) 5)
+    (seq tokstream
           (op := (vl-parse-op 1 '((:vl-plus   . :vl-unary-plus)   ;;; +
                                   (:vl-minus  . :vl-unary-minus)  ;;; -
                                   (:vl-lognot . :vl-unary-lognot) ;;; !
@@ -1633,8 +1652,8 @@ identifier, so we convert it into a hidpiece.</p>"
 ;    unary_expression { '**' { attribute_instance } unary_expression }
 
   (defparser vl-parse-power-expression-aux ()
-    :measure (two-nats-measure (len tokens) 6)
-    (seqw tokens pstate
+    :measure (two-nats-measure (vl-tokstream-measure) 6)
+    (seq tokstream
           (first :s= (vl-parse-unary-expression))
           (unless (vl-is-token? :vl-power)
             (return (list first)))
@@ -1644,8 +1663,8 @@ identifier, so we convert it into a hidpiece.</p>"
           (return (list* first :vl-binary-power atts tail))))
 
   (defparser vl-parse-power-expression ()
-    :measure (two-nats-measure (len tokens) 7)
-    (seqw tokens pstate
+    :measure (two-nats-measure (vl-tokstream-measure) 7)
+    (seq tokstream
           (mixed := (vl-parse-power-expression-aux))
           (return (vl-left-associate-mixed-binop-list mixed))))
 
@@ -1657,8 +1676,8 @@ identifier, so we convert it into a hidpiece.</p>"
 ;    power_expression { mult_op { attribute_instance } power_expression }
 
   (defparser vl-parse-mult-expression-aux ()
-    :measure (two-nats-measure (len tokens) 8)
-    (seqw tokens pstate
+    :measure (two-nats-measure (vl-tokstream-measure) 8)
+    (seq tokstream
           (first :s= (vl-parse-power-expression))
           (op := (vl-parse-op 2 '((:vl-times . :vl-binary-times)
                                   (:vl-div   . :vl-binary-div)
@@ -1670,8 +1689,8 @@ identifier, so we convert it into a hidpiece.</p>"
           (return (list* first op atts tail))))
 
   (defparser vl-parse-mult-expression ()
-    :measure (two-nats-measure (len tokens) 9)
-    (seqw tokens pstate
+    :measure (two-nats-measure (vl-tokstream-measure) 9)
+    (seq tokstream
           (mixed := (vl-parse-mult-expression-aux))
           (return (vl-left-associate-mixed-binop-list mixed))))
 
@@ -1682,8 +1701,8 @@ identifier, so we convert it into a hidpiece.</p>"
 ;    mult_expression { add_op { attribute_instance } mult_expression }
 
   (defparser vl-parse-add-expression-aux ()
-    :measure (two-nats-measure (len tokens) 10)
-    (seqw tokens pstate
+    :measure (two-nats-measure (vl-tokstream-measure) 10)
+    (seq tokstream
           (first :s= (vl-parse-mult-expression))
           (op := (vl-parse-op 2 '((:vl-plus  . :vl-binary-plus)
                                   (:vl-minus . :vl-binary-minus))))
@@ -1694,8 +1713,8 @@ identifier, so we convert it into a hidpiece.</p>"
           (return (list* first op atts tail))))
 
   (defparser vl-parse-add-expression ()
-    :measure (two-nats-measure (len tokens) 11)
-    (seqw tokens pstate
+    :measure (two-nats-measure (vl-tokstream-measure) 11)
+    (seq tokstream
           (mixed := (vl-parse-add-expression-aux))
           (return (vl-left-associate-mixed-binop-list mixed))))
 
@@ -1706,8 +1725,8 @@ identifier, so we convert it into a hidpiece.</p>"
 ;    add_expression { shift_op { attribute_instance } add_expression }
 
   (defparser vl-parse-shift-expression-aux ()
-    :measure (two-nats-measure (len tokens) 12)
-    (seqw tokens pstate
+    :measure (two-nats-measure (vl-tokstream-measure) 12)
+    (seq tokstream
           (first :s= (vl-parse-add-expression))
           (op := (vl-parse-op 2 '((:vl-shl  . :vl-binary-shl)
                                   (:vl-shr  . :vl-binary-shr)
@@ -1720,8 +1739,8 @@ identifier, so we convert it into a hidpiece.</p>"
           (return (list* first op atts tail))))
 
   (defparser vl-parse-shift-expression ()
-    :measure (two-nats-measure (len tokens) 13)
-    (seqw tokens pstate
+    :measure (two-nats-measure (vl-tokstream-measure) 13)
+    (seq tokstream
           (mixed := (vl-parse-shift-expression-aux))
           (return (vl-left-associate-mixed-binop-list mixed))))
 
@@ -1732,8 +1751,8 @@ identifier, so we convert it into a hidpiece.</p>"
 ;    shift_expression { compare_op { attribute_instance } shift_expression }
 
   (defparser vl-parse-compare-expression-aux ()
-    :measure (two-nats-measure (len tokens) 14)
-    (seqw tokens pstate
+    :measure (two-nats-measure (vl-tokstream-measure) 14)
+    (seq tokstream
           (first :s= (vl-parse-shift-expression))
           (op := (vl-parse-op 2 '((:vl-lt  . :vl-binary-lt)
                                   (:vl-lte . :vl-binary-lte)
@@ -1746,8 +1765,8 @@ identifier, so we convert it into a hidpiece.</p>"
           (return (list* first op atts tail))))
 
   (defparser vl-parse-compare-expression ()
-    :measure (two-nats-measure (len tokens) 15)
-    (seqw tokens pstate
+    :measure (two-nats-measure (vl-tokstream-measure) 15)
+    (seq tokstream
           (mixed := (vl-parse-compare-expression-aux))
           (return (vl-left-associate-mixed-binop-list mixed))))
 
@@ -1758,8 +1777,8 @@ identifier, so we convert it into a hidpiece.</p>"
 ;    compare_expression { equality_op { attribute_instance } compare_expression }
 
   (defparser vl-parse-equality-expression-aux ()
-    :measure (two-nats-measure (len tokens) 16)
-    (seqw tokens pstate
+    :measure (two-nats-measure (vl-tokstream-measure) 16)
+    (seq tokstream
           (first :s= (vl-parse-compare-expression))
           (op := (vl-parse-op 2 '((:vl-eq      . :vl-binary-eq)
                                   (:vl-neq     . :vl-binary-neq)
@@ -1774,8 +1793,8 @@ identifier, so we convert it into a hidpiece.</p>"
           (return (list* first op atts tail))))
 
   (defparser vl-parse-equality-expression ()
-    :measure (two-nats-measure (len tokens) 17)
-    (seqw tokens pstate
+    :measure (two-nats-measure (vl-tokstream-measure) 17)
+    (seq tokstream
           (mixed := (vl-parse-equality-expression-aux))
           (return (vl-left-associate-mixed-binop-list mixed))))
 
@@ -1785,8 +1804,8 @@ identifier, so we convert it into a hidpiece.</p>"
 ;     equality_expression { '&' { attribute_instance } equality_expression }
 
   (defparser vl-parse-bitand-expression-aux ()
-    :measure (two-nats-measure (len tokens) 18)
-    (seqw tokens pstate
+    :measure (two-nats-measure (vl-tokstream-measure) 18)
+    (seq tokstream
           (first :s= (vl-parse-equality-expression))
           (unless (vl-is-token? :vl-bitand)
             (return (list first)))
@@ -1796,8 +1815,8 @@ identifier, so we convert it into a hidpiece.</p>"
           (return (list* first :vl-binary-bitand atts tail))))
 
   (defparser vl-parse-bitand-expression ()
-    :measure (two-nats-measure (len tokens) 19)
-    (seqw tokens pstate
+    :measure (two-nats-measure (vl-tokstream-measure) 19)
+    (seq tokstream
           (mixed := (vl-parse-bitand-expression-aux))
           (return (vl-left-associate-mixed-binop-list mixed))))
 
@@ -1808,8 +1827,8 @@ identifier, so we convert it into a hidpiece.</p>"
 ;    bitand_expression { bitxor_op { attribute_instance } bitand_expression }
 
   (defparser vl-parse-bitxor-expression-aux ()
-    :measure (two-nats-measure (len tokens) 20)
-    (seqw tokens pstate
+    :measure (two-nats-measure (vl-tokstream-measure) 20)
+    (seq tokstream
           (first :s= (vl-parse-bitand-expression))
           (op := (vl-parse-op 2 '((:vl-xor . :vl-binary-xor)
                                   (:vl-xnor . :vl-binary-xnor))))
@@ -1820,8 +1839,8 @@ identifier, so we convert it into a hidpiece.</p>"
           (return (list* first op atts tail))))
 
   (defparser vl-parse-bitxor-expression ()
-    :measure (two-nats-measure (len tokens) 21)
-    (seqw tokens pstate
+    :measure (two-nats-measure (vl-tokstream-measure) 21)
+    (seq tokstream
           (mixed := (vl-parse-bitxor-expression-aux))
           (return (vl-left-associate-mixed-binop-list mixed))))
 
@@ -1831,8 +1850,8 @@ identifier, so we convert it into a hidpiece.</p>"
 ;    bitxor_expression { '|' { attribute_instance } bitxor_expression }
 
   (defparser vl-parse-bitor-expression-aux ()
-    :measure (two-nats-measure (len tokens) 22)
-    (seqw tokens pstate
+    :measure (two-nats-measure (vl-tokstream-measure) 22)
+    (seq tokstream
           (first :s= (vl-parse-bitxor-expression))
           (unless (vl-is-token? :vl-bitor)
             (return (list first)))
@@ -1842,8 +1861,8 @@ identifier, so we convert it into a hidpiece.</p>"
           (return (list* first :vl-binary-bitor atts tail))))
 
   (defparser vl-parse-bitor-expression ()
-    :measure (two-nats-measure (len tokens) 23)
-    (seqw tokens pstate
+    :measure (two-nats-measure (vl-tokstream-measure) 23)
+    (seq tokstream
           (mixed := (vl-parse-bitor-expression-aux))
           (return (vl-left-associate-mixed-binop-list mixed))))
 
@@ -1853,8 +1872,8 @@ identifier, so we convert it into a hidpiece.</p>"
 ;    bitor_expression { '&&' { attribute_instance } bitor_expression }
 
   (defparser vl-parse-logand-expression-aux ()
-    :measure (two-nats-measure (len tokens) 24)
-    (seqw tokens pstate
+    :measure (two-nats-measure (vl-tokstream-measure) 24)
+    (seq tokstream
           (first :s= (vl-parse-bitor-expression))
           (unless (vl-is-token? :vl-logand)
             (return (list first)))
@@ -1864,8 +1883,8 @@ identifier, so we convert it into a hidpiece.</p>"
           (return (list* first :vl-binary-logand atts tail))))
 
   (defparser vl-parse-logand-expression ()
-    :measure (two-nats-measure (len tokens) 25)
-    (seqw tokens pstate
+    :measure (two-nats-measure (vl-tokstream-measure) 25)
+    (seq tokstream
           (mixed := (vl-parse-logand-expression-aux))
           (return (vl-left-associate-mixed-binop-list mixed))))
 
@@ -1875,8 +1894,8 @@ identifier, so we convert it into a hidpiece.</p>"
 ;    logand_expression { '||' { attribute_instance } logand_expression }
 
   (defparser vl-parse-logor-expression-aux ()
-    :measure (two-nats-measure (len tokens) 26)
-    (seqw tokens pstate
+    :measure (two-nats-measure (vl-tokstream-measure) 26)
+    (seq tokstream
           (first :s= (vl-parse-logand-expression))
           (unless (vl-is-token? :vl-logor)
             (return (list first)))
@@ -1886,8 +1905,8 @@ identifier, so we convert it into a hidpiece.</p>"
           (return (list* first :vl-binary-logor atts tail))))
 
   (defparser vl-parse-logor-expression ()
-    :measure (two-nats-measure (len tokens) 27)
-    (seqw tokens pstate
+    :measure (two-nats-measure (vl-tokstream-measure) 27)
+    (seq tokstream
           (mixed := (vl-parse-logor-expression-aux))
           (return (vl-left-associate-mixed-binop-list mixed))))
 
@@ -1904,8 +1923,8 @@ identifier, so we convert it into a hidpiece.</p>"
 ; Rather than as:            (1 ? 2 : 3) ? 4 : 5   =  4
 
   (defparser vl-parse-qmark-expression ()
-    :measure (two-nats-measure (len tokens) 28)
-    (seqw tokens pstate
+    :measure (two-nats-measure (vl-tokstream-measure) 28)
+    (seq tokstream
           (first :s= (vl-parse-logor-expression))
           (unless (vl-is-token? :vl-qmark)
             (return first))
@@ -1937,8 +1956,8 @@ identifier, so we convert it into a hidpiece.</p>"
 ; Hence we don't need to do any mixed-binop-list nonsense.
 
   (defparser vl-parse-impl-expression ()
-    :measure (two-nats-measure (len tokens) 29)
-    (seqw tokens pstate
+    :measure (two-nats-measure (vl-tokstream-measure) 29)
+    (seq tokstream
           (first :s= (vl-parse-qmark-expression))
           (when (eq (vl-loadconfig->edition config) :verilog-2005)
             ;; Implies/equiv aren't supported in Verilog-2005.
@@ -1949,12 +1968,14 @@ identifier, so we convert it into a hidpiece.</p>"
             (return first))
           (atts :w= (vl-parse-0+-attribute-instances))
           (second :s= (vl-parse-impl-expression))
-          (return (make-vl-nonatom :op op :args (list first second)))))
+          (return (make-vl-nonatom :op op
+                                   :args (list first second)
+                                   :atts atts))))
 
 
   (defparser vl-parse-expression ()
-    :measure (two-nats-measure (len tokens) 30)
-    (seqw tokens pstate
+    :measure (two-nats-measure (vl-tokstream-measure) 30)
+    (seq tokstream
           (unless (and (vl-is-token? :vl-kwd-tagged)
                        (not (eq (vl-loadconfig->edition config) :verilog-2005)))
             (expr :s= (vl-parse-impl-expression))
@@ -1964,16 +1985,17 @@ identifier, so we convert it into a hidpiece.</p>"
           (:= (vl-match))
           (id := (vl-match-token :vl-idtoken))
           (return-raw
-           (b* ((tagexpr (make-vl-atom :guts (make-vl-tagname
-                                              :name (vl-idtoken->name id))))
-                ((mv err expr new-tokens new-pstate)
-                 (seqw tokens pstate
+           (b* ((tagexpr (make-vl-atom :guts (make-vl-tagname :name (vl-idtoken->name id))))
+                (backup  (vl-tokstream-save))
+                ((mv err expr tokstream)
+                 (seq tokstream
                        (expr :s= (vl-parse-expression))
                        (return expr)))
                 ((when err)
                  ;; No subsequent expression is fine.
-                 (mv nil (make-vl-nonatom :op :vl-tagged :args (list tagexpr))
-                     tokens pstate))
+                 (b* ((tokstream (vl-tokstream-restore backup)))
+                   (mv nil (make-vl-nonatom :op :vl-tagged :args (list tagexpr))
+                       tokstream)))
 
                 ;; Well, what a nightmare.  This is completely ambiguous, and
                 ;; VCS/NCVerilog don't implement it yet, so there's no way to
@@ -1991,7 +2013,7 @@ identifier, so we convert it into a hidpiece.</p>"
 
                 (ans (make-vl-nonatom :op :vl-tagged
                                       :args (list tagexpr expr))))
-             (mv nil ans new-tokens new-pstate))))))
+             (mv nil ans tokstream))))))
 
 
 (defun vl-val-when-error-claim-fn (name args)
@@ -2065,146 +2087,146 @@ identifier, so we convert it into a hidpiece.</p>"
                    ',(flag::get-clique-members 'vl-parse-expression-fn (w state)))))))))
 
 
-(defun vl-tokenlist-claim-fn (name args)
-  `'(,name (vl-tokenlist-p (mv-nth 2 (,name . ,args)))))
+;; (defun vl-tokenlist-claim-fn (name args)
+;;   `'(,name (vl-tokenlist-p (mv-nth 2 (,name . ,args)))))
 
-(defmacro vl-tokenlist-claim (name &key args)
-  (vl-tokenlist-claim-fn name args))
+;; (defmacro vl-tokenlist-claim (name &key args)
+;;   (vl-tokenlist-claim-fn name args))
 
-(with-output
-  :off prove
-  :gag-mode :goals
- (make-event
-  `(defthm-parse-expressions-flag vl-parse-expression-tokenlist
-     ,(vl-tokenlist-claim vl-parse-attr-spec)
-     ,(vl-tokenlist-claim vl-parse-attribute-instance-aux)
-     ,(vl-tokenlist-claim vl-parse-attribute-instance)
-     ,(vl-tokenlist-claim vl-parse-0+-attribute-instances-aux)
-     ,(vl-tokenlist-claim vl-parse-0+-attribute-instances)
-     ,(vl-tokenlist-claim vl-parse-1+-expressions-separated-by-commas)
-     ,(vl-tokenlist-claim vl-parse-system-function-call)
-     ,(vl-tokenlist-claim vl-parse-mintypmax-expression)
-     ,(vl-tokenlist-claim vl-parse-range-expression)
-     ,(vl-tokenlist-claim vl-parse-concatenation)
-     ,(vl-tokenlist-claim vl-parse-stream-expression)
-     ,(vl-tokenlist-claim vl-parse-stream-concatenation)
-     ,(vl-tokenlist-claim vl-parse-1+-stream-expressions-separated-by-commas)
-     ,(vl-tokenlist-claim vl-parse-simple-type)
-     ,(vl-tokenlist-claim vl-parse-slice-size)
-     ,(vl-tokenlist-claim vl-parse-any-sort-of-concatenation)
-     ,(vl-tokenlist-claim vl-parse-hierarchical-identifier :args (recursivep))
-     ,(vl-tokenlist-claim vl-parse-function-call)
-     ,(vl-tokenlist-claim vl-parse-0+-bracketed-expressions)
-     ,(vl-tokenlist-claim vl-parse-indexed-id)
-     ,(vl-tokenlist-claim vl-parse-primary-main)
-     ,(vl-tokenlist-claim vl-parse-primary-cast)
-     ,(vl-tokenlist-claim vl-parse-nonprimary-cast)
-     ,(vl-tokenlist-claim vl-parse-primary)
-     ,(vl-tokenlist-claim vl-parse-unary-expression)
-     ,(vl-tokenlist-claim vl-parse-power-expression-aux)
-     ,(vl-tokenlist-claim vl-parse-power-expression)
-     ,(vl-tokenlist-claim vl-parse-mult-expression-aux)
-     ,(vl-tokenlist-claim vl-parse-mult-expression)
-     ,(vl-tokenlist-claim vl-parse-add-expression-aux)
-     ,(vl-tokenlist-claim vl-parse-add-expression)
-     ,(vl-tokenlist-claim vl-parse-shift-expression-aux)
-     ,(vl-tokenlist-claim vl-parse-shift-expression)
-     ,(vl-tokenlist-claim vl-parse-compare-expression-aux)
-     ,(vl-tokenlist-claim vl-parse-compare-expression)
-     ,(vl-tokenlist-claim vl-parse-equality-expression-aux)
-     ,(vl-tokenlist-claim vl-parse-equality-expression)
-     ,(vl-tokenlist-claim vl-parse-bitand-expression-aux)
-     ,(vl-tokenlist-claim vl-parse-bitand-expression)
-     ,(vl-tokenlist-claim vl-parse-bitxor-expression-aux)
-     ,(vl-tokenlist-claim vl-parse-bitxor-expression)
-     ,(vl-tokenlist-claim vl-parse-bitor-expression-aux)
-     ,(vl-tokenlist-claim vl-parse-bitor-expression)
-     ,(vl-tokenlist-claim vl-parse-logand-expression-aux)
-     ,(vl-tokenlist-claim vl-parse-logand-expression)
-     ,(vl-tokenlist-claim vl-parse-logor-expression-aux)
-     ,(vl-tokenlist-claim vl-parse-logor-expression)
-     ,(vl-tokenlist-claim vl-parse-qmark-expression)
-     ,(vl-tokenlist-claim vl-parse-impl-expression)
-     ,(vl-tokenlist-claim vl-parse-expression)
-     :hints((and acl2::stable-under-simplificationp
-                 (flag::expand-calls-computed-hint
-                  acl2::clause
-                  ',(flag::get-clique-members 'vl-parse-expression-fn (w state))))))))
+;; (with-output
+;;   :off prove
+;;   :gag-mode :goals
+;;  (make-event
+;;   `(defthm-parse-expressions-flag vl-parse-expression-tokenlist
+;;      ,(vl-tokenlist-claim vl-parse-attr-spec)
+;;      ,(vl-tokenlist-claim vl-parse-attribute-instance-aux)
+;;      ,(vl-tokenlist-claim vl-parse-attribute-instance)
+;;      ,(vl-tokenlist-claim vl-parse-0+-attribute-instances-aux)
+;;      ,(vl-tokenlist-claim vl-parse-0+-attribute-instances)
+;;      ,(vl-tokenlist-claim vl-parse-1+-expressions-separated-by-commas)
+;;      ,(vl-tokenlist-claim vl-parse-system-function-call)
+;;      ,(vl-tokenlist-claim vl-parse-mintypmax-expression)
+;;      ,(vl-tokenlist-claim vl-parse-range-expression)
+;;      ,(vl-tokenlist-claim vl-parse-concatenation)
+;;      ,(vl-tokenlist-claim vl-parse-stream-expression)
+;;      ,(vl-tokenlist-claim vl-parse-stream-concatenation)
+;;      ,(vl-tokenlist-claim vl-parse-1+-stream-expressions-separated-by-commas)
+;;      ,(vl-tokenlist-claim vl-parse-simple-type)
+;;      ,(vl-tokenlist-claim vl-parse-slice-size)
+;;      ,(vl-tokenlist-claim vl-parse-any-sort-of-concatenation)
+;;      ,(vl-tokenlist-claim vl-parse-hierarchical-identifier :args (recursivep))
+;;      ,(vl-tokenlist-claim vl-parse-function-call)
+;;      ,(vl-tokenlist-claim vl-parse-0+-bracketed-expressions)
+;;      ,(vl-tokenlist-claim vl-parse-indexed-id)
+;;      ,(vl-tokenlist-claim vl-parse-primary-main)
+;;      ,(vl-tokenlist-claim vl-parse-primary-cast)
+;;      ,(vl-tokenlist-claim vl-parse-nonprimary-cast)
+;;      ,(vl-tokenlist-claim vl-parse-primary)
+;;      ,(vl-tokenlist-claim vl-parse-unary-expression)
+;;      ,(vl-tokenlist-claim vl-parse-power-expression-aux)
+;;      ,(vl-tokenlist-claim vl-parse-power-expression)
+;;      ,(vl-tokenlist-claim vl-parse-mult-expression-aux)
+;;      ,(vl-tokenlist-claim vl-parse-mult-expression)
+;;      ,(vl-tokenlist-claim vl-parse-add-expression-aux)
+;;      ,(vl-tokenlist-claim vl-parse-add-expression)
+;;      ,(vl-tokenlist-claim vl-parse-shift-expression-aux)
+;;      ,(vl-tokenlist-claim vl-parse-shift-expression)
+;;      ,(vl-tokenlist-claim vl-parse-compare-expression-aux)
+;;      ,(vl-tokenlist-claim vl-parse-compare-expression)
+;;      ,(vl-tokenlist-claim vl-parse-equality-expression-aux)
+;;      ,(vl-tokenlist-claim vl-parse-equality-expression)
+;;      ,(vl-tokenlist-claim vl-parse-bitand-expression-aux)
+;;      ,(vl-tokenlist-claim vl-parse-bitand-expression)
+;;      ,(vl-tokenlist-claim vl-parse-bitxor-expression-aux)
+;;      ,(vl-tokenlist-claim vl-parse-bitxor-expression)
+;;      ,(vl-tokenlist-claim vl-parse-bitor-expression-aux)
+;;      ,(vl-tokenlist-claim vl-parse-bitor-expression)
+;;      ,(vl-tokenlist-claim vl-parse-logand-expression-aux)
+;;      ,(vl-tokenlist-claim vl-parse-logand-expression)
+;;      ,(vl-tokenlist-claim vl-parse-logor-expression-aux)
+;;      ,(vl-tokenlist-claim vl-parse-logor-expression)
+;;      ,(vl-tokenlist-claim vl-parse-qmark-expression)
+;;      ,(vl-tokenlist-claim vl-parse-impl-expression)
+;;      ,(vl-tokenlist-claim vl-parse-expression)
+;;      :hints((and acl2::stable-under-simplificationp
+;;                  (flag::expand-calls-computed-hint
+;;                   acl2::clause
+;;                   ',(flag::get-clique-members 'vl-parse-expression-fn (w state))))))))
 
-(defun vl-parsestate-claim-fn (name args)
-  `'(,name (vl-parsestate-p (mv-nth 3 (,name . ,args)))))
+;; (defun vl-parsestate-claim-fn (name args)
+;;   `'(,name (vl-parsestate-p (mv-nth 3 (,name . ,args)))))
 
-(defmacro vl-parsestate-claim (name &key args)
-  (vl-parsestate-claim-fn name args))
+;; (defmacro vl-parsestate-claim (name &key args)
+;;   (vl-parsestate-claim-fn name args))
 
-(with-output
-  :off prove
-  :gag-mode :goals
-  (make-event
-   `(defthm-parse-expressions-flag vl-parse-expression-parsestate
-      ,(vl-parsestate-claim vl-parse-attr-spec)
-      ,(vl-parsestate-claim vl-parse-attribute-instance-aux)
-      ,(vl-parsestate-claim vl-parse-attribute-instance)
-      ,(vl-parsestate-claim vl-parse-0+-attribute-instances-aux)
-      ,(vl-parsestate-claim vl-parse-0+-attribute-instances)
-      ,(vl-parsestate-claim vl-parse-1+-expressions-separated-by-commas)
-      ,(vl-parsestate-claim vl-parse-system-function-call)
-      ,(vl-parsestate-claim vl-parse-mintypmax-expression)
-      ,(vl-parsestate-claim vl-parse-range-expression)
-      ,(vl-parsestate-claim vl-parse-concatenation)
-      ,(vl-parsestate-claim vl-parse-stream-expression)
-      ,(vl-parsestate-claim vl-parse-stream-concatenation)
-      ,(vl-parsestate-claim vl-parse-1+-stream-expressions-separated-by-commas)
-      ,(vl-parsestate-claim vl-parse-simple-type)
-      ,(vl-parsestate-claim vl-parse-slice-size)
-      ,(vl-parsestate-claim vl-parse-any-sort-of-concatenation)
-      ,(vl-parsestate-claim vl-parse-hierarchical-identifier :args (recursivep))
-      ,(vl-parsestate-claim vl-parse-function-call)
-      ,(vl-parsestate-claim vl-parse-0+-bracketed-expressions)
-      ,(vl-parsestate-claim vl-parse-indexed-id)
-      ,(vl-parsestate-claim vl-parse-primary-main)
-      ,(vl-parsestate-claim vl-parse-primary-cast)
-      ,(vl-parsestate-claim vl-parse-nonprimary-cast)
-      ,(vl-parsestate-claim vl-parse-primary)
-      ,(vl-parsestate-claim vl-parse-unary-expression)
-      ,(vl-parsestate-claim vl-parse-power-expression-aux)
-      ,(vl-parsestate-claim vl-parse-power-expression)
-      ,(vl-parsestate-claim vl-parse-mult-expression-aux)
-      ,(vl-parsestate-claim vl-parse-mult-expression)
-      ,(vl-parsestate-claim vl-parse-add-expression-aux)
-      ,(vl-parsestate-claim vl-parse-add-expression)
-      ,(vl-parsestate-claim vl-parse-shift-expression-aux)
-      ,(vl-parsestate-claim vl-parse-shift-expression)
-      ,(vl-parsestate-claim vl-parse-compare-expression-aux)
-      ,(vl-parsestate-claim vl-parse-compare-expression)
-      ,(vl-parsestate-claim vl-parse-equality-expression-aux)
-      ,(vl-parsestate-claim vl-parse-equality-expression)
-      ,(vl-parsestate-claim vl-parse-bitand-expression-aux)
-      ,(vl-parsestate-claim vl-parse-bitand-expression)
-      ,(vl-parsestate-claim vl-parse-bitxor-expression-aux)
-      ,(vl-parsestate-claim vl-parse-bitxor-expression)
-      ,(vl-parsestate-claim vl-parse-bitor-expression-aux)
-      ,(vl-parsestate-claim vl-parse-bitor-expression)
-      ,(vl-parsestate-claim vl-parse-logand-expression-aux)
-      ,(vl-parsestate-claim vl-parse-logand-expression)
-      ,(vl-parsestate-claim vl-parse-logor-expression-aux)
-      ,(vl-parsestate-claim vl-parse-logor-expression)
-      ,(vl-parsestate-claim vl-parse-qmark-expression)
-      ,(vl-parsestate-claim vl-parse-impl-expression)
-      ,(vl-parsestate-claim vl-parse-expression)
-      :hints(("Goal" :in-theory (disable (force)))
-             (and acl2::stable-under-simplificationp
-                  (flag::expand-calls-computed-hint
-                   acl2::clause
-                   ',(flag::get-clique-members 'vl-parse-expression-fn (w state))))))))
+;; (with-output
+;;   :off prove
+;;   :gag-mode :goals
+;;   (make-event
+;;    `(defthm-parse-expressions-flag vl-parse-expression-parsestate
+;;       ,(vl-parsestate-claim vl-parse-attr-spec)
+;;       ,(vl-parsestate-claim vl-parse-attribute-instance-aux)
+;;       ,(vl-parsestate-claim vl-parse-attribute-instance)
+;;       ,(vl-parsestate-claim vl-parse-0+-attribute-instances-aux)
+;;       ,(vl-parsestate-claim vl-parse-0+-attribute-instances)
+;;       ,(vl-parsestate-claim vl-parse-1+-expressions-separated-by-commas)
+;;       ,(vl-parsestate-claim vl-parse-system-function-call)
+;;       ,(vl-parsestate-claim vl-parse-mintypmax-expression)
+;;       ,(vl-parsestate-claim vl-parse-range-expression)
+;;       ,(vl-parsestate-claim vl-parse-concatenation)
+;;       ,(vl-parsestate-claim vl-parse-stream-expression)
+;;       ,(vl-parsestate-claim vl-parse-stream-concatenation)
+;;       ,(vl-parsestate-claim vl-parse-1+-stream-expressions-separated-by-commas)
+;;       ,(vl-parsestate-claim vl-parse-simple-type)
+;;       ,(vl-parsestate-claim vl-parse-slice-size)
+;;       ,(vl-parsestate-claim vl-parse-any-sort-of-concatenation)
+;;       ,(vl-parsestate-claim vl-parse-hierarchical-identifier :args (recursivep))
+;;       ,(vl-parsestate-claim vl-parse-function-call)
+;;       ,(vl-parsestate-claim vl-parse-0+-bracketed-expressions)
+;;       ,(vl-parsestate-claim vl-parse-indexed-id)
+;;       ,(vl-parsestate-claim vl-parse-primary-main)
+;;       ,(vl-parsestate-claim vl-parse-primary-cast)
+;;       ,(vl-parsestate-claim vl-parse-nonprimary-cast)
+;;       ,(vl-parsestate-claim vl-parse-primary)
+;;       ,(vl-parsestate-claim vl-parse-unary-expression)
+;;       ,(vl-parsestate-claim vl-parse-power-expression-aux)
+;;       ,(vl-parsestate-claim vl-parse-power-expression)
+;;       ,(vl-parsestate-claim vl-parse-mult-expression-aux)
+;;       ,(vl-parsestate-claim vl-parse-mult-expression)
+;;       ,(vl-parsestate-claim vl-parse-add-expression-aux)
+;;       ,(vl-parsestate-claim vl-parse-add-expression)
+;;       ,(vl-parsestate-claim vl-parse-shift-expression-aux)
+;;       ,(vl-parsestate-claim vl-parse-shift-expression)
+;;       ,(vl-parsestate-claim vl-parse-compare-expression-aux)
+;;       ,(vl-parsestate-claim vl-parse-compare-expression)
+;;       ,(vl-parsestate-claim vl-parse-equality-expression-aux)
+;;       ,(vl-parsestate-claim vl-parse-equality-expression)
+;;       ,(vl-parsestate-claim vl-parse-bitand-expression-aux)
+;;       ,(vl-parsestate-claim vl-parse-bitand-expression)
+;;       ,(vl-parsestate-claim vl-parse-bitxor-expression-aux)
+;;       ,(vl-parsestate-claim vl-parse-bitxor-expression)
+;;       ,(vl-parsestate-claim vl-parse-bitor-expression-aux)
+;;       ,(vl-parsestate-claim vl-parse-bitor-expression)
+;;       ,(vl-parsestate-claim vl-parse-logand-expression-aux)
+;;       ,(vl-parsestate-claim vl-parse-logand-expression)
+;;       ,(vl-parsestate-claim vl-parse-logor-expression-aux)
+;;       ,(vl-parsestate-claim vl-parse-logor-expression)
+;;       ,(vl-parsestate-claim vl-parse-qmark-expression)
+;;       ,(vl-parsestate-claim vl-parse-impl-expression)
+;;       ,(vl-parsestate-claim vl-parse-expression)
+;;       :hints(("Goal" :in-theory (disable (force)))
+;;              (and acl2::stable-under-simplificationp
+;;                   (flag::expand-calls-computed-hint
+;;                    acl2::clause
+;;                    ',(flag::get-clique-members 'vl-parse-expression-fn (w state))))))))
 
 (defun vl-progress-claim-fn (name strongp args)
-  `'(,name (and (<= (len (mv-nth 2 (,name . ,args)))
-                    (len tokens))
+  `'(,name (and (<= (vl-tokstream-measure :tokstream (mv-nth 2 (,name . ,args)))
+                    (vl-tokstream-measure))
                 ,@(if strongp
                       `((implies (not (mv-nth 0 (,name . ,args)))
-                                 (< (len (mv-nth 2 (,name . ,args)))
-                                    (len tokens))))
+                                 (< (vl-tokstream-measure :tokstream (mv-nth 2 (,name . ,args)))
+                                    (vl-tokstream-measure))))
                     nil))
            :rule-classes ((:rewrite) (:linear))))
 
@@ -2276,7 +2298,7 @@ identifier, so we convert it into a hidpiece.</p>"
                    ',(flag::get-clique-members 'vl-parse-expression-fn (w state)))))))))
 
 (defun vl-eof-claim-fn (name args type)
-  `'(,name (implies (not (consp tokens))
+  `'(,name (implies (atom (vl-tokstream->tokens))
                     ,(cond ((eq type :error)
                             `(mv-nth 0 (,name . ,args)))
                            ((eq type nil)
@@ -2445,7 +2467,6 @@ identifier, so we convert it into a hidpiece.</p>"
                    ',(flag::get-clique-members 'vl-parse-expression-fn (w state))))
              )))))
 
-
 (local (defthm true-listp-when-alistp
          (implies (alistp x)
                   (true-listp x))))
@@ -2472,7 +2493,7 @@ identifier, so we convert it into a hidpiece.</p>"
 ;;   :resultp-of-nil nil
 ;;   :fails gracefully
 ;;   :count strong
-;;   (seqw tokens pstate
+;;   (seq tokstream
 ;;         (when (vl-is-token? :vl-$unit)
 ;;           (:= (vl-match))
 ;;           (:= (vl-match-token :vl-scope))
@@ -2521,7 +2542,7 @@ identifier, so we convert it into a hidpiece.</p>"
 ;;   :resultp-of-nil nil
 ;;   :fails gracefully
 ;;   :count strong
-;;   (seqw tokens pstate
+;;   (seq tokstream
 ;;         (when (vl-is-token? :vl-kwd-local)
 ;;           (:= (vl-match))
 ;;           (:= (vl-match-token :vl-scope))
