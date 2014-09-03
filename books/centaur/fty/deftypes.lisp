@@ -2005,6 +2005,13 @@
                (consp x))
         :hints (("goal" :expand ((,x.fix x)))))
 
+      ,@(and x.true-listp
+             `((defthm ,(intern-in-package-of-symbol (cat (symbol-name x.fix) "-UNDER-IFF")
+                                                     x.fix)
+                 (iff (,x.fix x)
+                      (consp x))
+                 :hints (("goal" :expand ((,x.fix x)))))))
+
       (defthm ,(intern-in-package-of-symbol (cat (symbol-name x.fix) "-OF-CONS")
                                             x.fix)
         ;; bozo make sure this is compatible with defprojection
@@ -2017,7 +2024,8 @@
                                             x.fix)
         (equal (len (,x.fix x))
                (len x))
-        :hints (("goal" :expand ((,x.fix x))
+        :hints (("goal" :induct (len x)
+                 :expand ((,x.fix x))
                  :in-theory (enable len)))))))
 
 (defun flexalist-fix-postevents (x)
@@ -2992,6 +3000,7 @@
   (if (atom types)
       nil
     (append (and (eq (caar types) :sum)
+                 (consp (cdr (flexsum->prods (car types))))
                  (flexprods-fix-when-kind-thms (flexsum->prods (car types)) (car types)))
             (flextypes-fix-when-kind-thms (cdr types)))))
 
