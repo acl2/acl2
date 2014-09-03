@@ -162,8 +162,8 @@ iout1, iout2, iout3, iout4, iout5, iout6, iout7
   MF finst3 (.in1(in1), .in2(in2), .out(fout3));
   MF finst4 (.in1(in1 + 1'd1), .in2(in2), .out(fout4));
   MF finst5 (.in1(in1 + 1'sd1), .in2(in2), .out(fout5));
-  assign fout6 = 0;
-  assign fout7 = 0;
+  MF finst6 (.out(fout6), .*);
+  MF finst7 (.out(fout7), .in1, .*);
 
   output [3:0] 	   gout1, gout2, gout3, gout4, gout5, gout6, gout7;
   MG ginst1 (gout1, in1, in2);
