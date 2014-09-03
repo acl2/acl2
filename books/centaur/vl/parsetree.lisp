@@ -3320,6 +3320,13 @@ the list of elements of the given type.</p>"
            :generates generates))))))
 
 
+(define vl-genitemlist->genelements ((x vl-genitemlist-p))
+  :returns (xx vl-genelementlist-p)
+  (if (atom x)
+      nil
+    (cons (make-vl-genbase :item (car x))
+          (vl-genitemlist->genelements (cdr x)))))
+
 (defprod vl-context
   :short "Description of where an expression occurs."
   :tag :vl-context

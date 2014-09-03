@@ -148,7 +148,7 @@
 (defparser vl-parse-specify-block-aux ()
   ;; BOZO this is really not implemented.  We just read until endspecify,
   ;; throwing away any tokens we encounter until it.
-  :result (vl-modelementlist-p val)
+  :result (vl-genitemlist-p val)
   :resultp-of-nil t
   :true-listp t
   :fails gracefully
@@ -162,7 +162,7 @@
         (return nil)))
 
 (defparser vl-parse-specify-block ()
-  :result (vl-modelementlist-p val)
+  :result (vl-genitemlist-p val)
   :resultp-of-nil t
   :true-listp t
   :fails gracefully
@@ -180,7 +180,7 @@
 
 (defparser vl-parse-specparam-declaration (atts)
   :guard (vl-atts-p atts)
-  :result (vl-modelementlist-p val)
+  :result (vl-genitemlist-p val)
   :resultp-of-nil t
   :true-listp t
   :fails gracefully
@@ -190,7 +190,7 @@
 
 (defparser vl-parse-genvar-declaration (atts)
   :guard (vl-atts-p atts)
-  :result (vl-modelementlist-p val)
+  :result (vl-genitemlist-p val)
   :resultp-of-nil t
   :true-listp t
   :fails gracefully
@@ -206,7 +206,7 @@
 
 (defparser vl-parse-parameter-override (atts)
   :guard (vl-atts-p atts)
-  :result (vl-modelementlist-p val)
+  :result (vl-genitemlist-p val)
   :resultp-of-nil t
   :true-listp t
   :fails gracefully
@@ -214,9 +214,353 @@
   (declare (ignore atts))
   (vl-unimplemented))
 
+
+
+(defconst *vl-netdecltypes-kwds*
+  (strip-cars *vl-netdecltypes-kwd-alist*))
+
+
+(defthm vl-genitem-p-of-vl-parse-fwd-typedef
+  (implies (and (force (vl-atts-p atts))
+                (force (vl-is-token? :vl-kwd-typedef)))
+           (b* (((mv err res) (vl-parse-fwd-typedef atts)))
+             (equal (vl-genitem-p res)
+                    (not err))))
+  :hints(("Goal" :in-theory (enable vl-parse-fwd-typedef))))
+
+(defthm vl-genitem-p-of-vl-parse-type-declaration
+  (implies (and (force (vl-atts-p atts))
+                (force (vl-is-token? :vl-kwd-typedef)))
+           (b* (((mv err res) (vl-parse-type-declaration atts)))
+             (equal (vl-genitem-p res)
+                    (not err))))
+  :hints(("Goal" :in-theory (enable vl-parse-type-declaration))))
+
+
+(encapsulate nil
+  (local (in-theory (enable vl-is-token?)))
+  (local (in-theory (disable MEMBER-EQUAL-WHEN-MEMBER-EQUAL-OF-CDR-UNDER-IFF
+                             VL-PARSE-EXPRESSION-EOF-VL-PARSE-0+-ATTRIBUTE-INSTANCES
+                             double-containment
+                             acl2::subsetp-when-atom-left
+                             acl2::subsetp-when-atom-right
+                             acl2::lower-bound-of-len-when-sublistp
+                             acl2::len-when-prefixp
+                             acl2::len-when-atom
+                             default-car)))
+
+  (local (defthm vl-genitem-p-when-vl-blockitem-p
+           (implies (vl-blockitem-p x)
+                    (vl-genitem-p x))
+           :hints(("Goal" :in-theory (enable vl-blockitem-p vl-genitem-p)))))
+
+  (local (defthm vl-genitemlist-p-when-vl-blockitemlist-p
+           (implies (vl-blockitemlist-p x)
+                    (vl-genitemlist-p x))
+           :hints(("Goal" :induct (len x)))))
+
+  (defparser vl-parse-genitem-aux (atts)
+    :guard (vl-atts-p atts)
+    :result (vl-genitemlist-p val)
+    :resultp-of-nil t
+    :true-listp t
+    :fails gracefully
+    :count strong
+    (b* (((when (atom tokens))
+          (vl-parse-error "Unexpected EOF."))
+         (type1 (vl-token->type (car tokens)))
+         ((when (member-eq type1 *vl-directions-kwds*))
+          (seqw tokens pstate
+                ((portdecls . netdecls) := (vl-parse-port-declaration-noatts atts))
+                (:= (vl-match-token :vl-semi))
+                ;; Should be fewer netdecls so this is the better order for the append.
+                (return (append netdecls portdecls))))
+         ((when (eq type1 :vl-kwd-specify))
+          (if atts
+              (vl-parse-error "'specify' is not allowed to have attributes.")
+            (vl-parse-specify-block)))
+         ((when (eq type1 :vl-kwd-parameter))
+          (seqw tokens pstate
+                ;; localparams are handled in parse-module-or-generate-item
+                (ret := (vl-parse-param-or-localparam-declaration atts '(:vl-kwd-parameter)))
+                (:= (vl-match-token :vl-semi))
+                (return ret)))
+         ((when (eq type1 :vl-kwd-specparam))
+          (vl-parse-specparam-declaration atts))
+         ((when (member type1 *vl-netdecltypes-kwds*))
+          (seqw tokens pstate
+                ((assigns . decls) := (vl-parse-net-declaration atts))
+                ;; Note: this order is important, the decls have to come first
+                ;; or we'll try to infer implicit nets from the assigns.
+                (return (append decls assigns))))
+         ((when (member type1 *vl-gate-type-keywords*))
+          (vl-parse-gate-instantiation atts))
+         ((when (eq type1 :vl-kwd-genvar))
+          (vl-parse-genvar-declaration atts))
+         ((when (eq type1 :vl-kwd-task))
+          (seqw tokens pstate
+                (task := (vl-parse-task-declaration atts))
+                (return (list task))))
+         ((when (eq type1 :vl-kwd-function))
+          (seqw tokens pstate
+                (fun := (vl-parse-function-declaration atts))
+                (return (list fun))))
+         ((when (eq type1 :vl-kwd-localparam))
+          (seqw tokens pstate
+                ;; Note: non-local parameters not allowed
+                (ret := (vl-parse-param-or-localparam-declaration atts '(:vl-kwd-localparam)))
+                (:= (vl-match-token :vl-semi))
+                (return ret)))
+         ((when (eq type1 :vl-kwd-defparam))
+          (vl-parse-parameter-override atts))
+         ((when (eq type1 :vl-kwd-assign))
+          (vl-parse-continuous-assign atts))
+         ((when (eq type1 :vl-idtoken))
+          (vl-parse-udp-or-module-instantiation atts))
+         ((when (eq type1 :vl-kwd-initial))
+          (vl-parse-initial-construct atts))
+         ((when (eq type1 :vl-kwd-always))
+          (vl-parse-always-construct atts))
+
+         ((when (eq (vl-loadconfig->edition config) :verilog-2005))
+          (case type1
+            (:vl-kwd-reg        (vl-parse-reg-declaration atts))
+            (:vl-kwd-integer    (vl-parse-integer-declaration atts))
+            (:vl-kwd-real       (vl-parse-real-declaration atts))
+            (:vl-kwd-time       (vl-parse-time-declaration atts))
+            (:vl-kwd-realtime   (vl-parse-realtime-declaration atts))
+            (:vl-kwd-event      (vl-parse-event-declaration atts))
+            (t (vl-parse-error "Invalid module or generate item."))))
+
+         ;; SystemVerilog extensions ----
+         ((when (eq type1 :vl-kwd-typedef))
+          (seqw tokens pstate
+                (typedef := (vl-parse-type-declaration atts))
+                (return (list typedef))))
+
+         ((when (eq type1 :vl-kwd-modport))
+          (seqw tokens pstate
+                (modports := (vl-parse-modport-decl atts))
+                (return modports)))
+
+         ((when (eq type1 :vl-kwd-alias))
+          (seqw tokens pstate
+                (aliases := (vl-parse-alias atts))
+                (return aliases)))
+
+         ((when (or (eq type1 :vl-kwd-always_ff)
+                    (eq type1 :vl-kwd-always_latch)
+                    (eq type1 :vl-kwd-always_comb)))
+          (vl-parse-always-construct atts)))
+
+      ;; SystemVerilog -- BOZO haven't thought this through very thoroughly, but it's
+      ;; probably a fine starting place.
+      (vl-parse-block-item-declaration-noatts atts))))
+
+
+(defparser vl-parse-genitem ()
+  :result (vl-genitemlist-p val)
+  :resultp-of-nil t
+  :true-listp t
+  :fails gracefully
+  :count strong
+  (seqw tokens warnings
+        (atts := (vl-parse-0+-attribute-instances))
+        (return-raw
+         (vl-parse-genitem-aux atts))))
+
+
+(with-output :off (prove)
+  (defparsers vl-genelements
+    :parents (parser)
+    :short "Parser for elements contained within modules, interfaces, etc., including generate constructs."
+
+    (defparser vl-parse-genelement ()
+      :result (vl-genelementlist-p val)
+      :resultp-of-nil t
+      :true-listp t
+      :fails gracefully
+      :count strong
+      :measure (two-nats-measure (len tokens) 5)
+      (seqw tokens pstate
+            (when (vl-is-token? :vl-for)
+              (loopblk := (vl-parse-genloop))
+              (return (list loopblk)))
+            (when (vl-is-token? :vl-if)
+              (ifblk := (vl-parse-genif))
+              (return (list ifblk)))
+            (when (vl-is-token? :vl-case)
+              (caseblk := (vl-parse-gencase))
+              (return (list caseblk)))
+            (when (vl-is-token? :vl-generate)
+              (:= (vl-match))
+              (elems := (vl-parse-0+-genelements))
+              (:= (vl-match-token :vl-endgenerate))
+              (return elems))
+            (items := (vl-parse-genitem))
+            (return (vl-genitemlist->genelements items)) ))
+
+    (defparser vl-parse-0+-genelements ()
+      :result (vl-genelementlist-p val)
+      :resultp-of-nil t
+      :true-listp t
+      :fails gracefully
+      :count weak
+      :measure (two-nats-measure (len tokens) 3)
+      (seqw-backtrack tokens pstate
+                      ((first := (vl-parse-genelement))
+                       (rest := (vl-parse-0+-genelements))
+                       (return (append first rest)))
+                      ((return nil))))
+
+    (defparser vl-parse-generate-block ()
+      :result (vl-generateblock-p val)
+      :resultp-of-nil nil
+      :fails gracefully
+      :count strong
+      :measure (two-nats-measure (len tokens) 5)
+      (seqw tokens pstate
+            (when (vl-is-token? :vl-begin)
+              (:= (vl-match))
+              (when (vl-is-token? :vl-colon)
+                (:= (vl-match))
+                (blkname := (vl-match-token :vl-idtoken)))
+              (elts := (vl-parse-0+-genelements))
+              (return (make-vl-generateblock :name (and blkname
+                                                        (vl-idtoken->name blkname))
+                                             :elems elts)))
+            (elts := (vl-parse-genelement))
+            (return (make-vl-generateblock :elems elts))))
+
+    (defparser vl-parse-genloop ()
+      :guard (and (consp tokens) (vl-is-token? :vl-for))
+      :result (vl-genelement-p val)
+      :resultp-of-nil nil
+      :fails gracefully
+      :count strong
+      :measure (two-nats-measure (len tokens) 4)
+
+      ;; loop_generate_construct ::=
+      ;;   for ( genvar_initialization ; genvar_expression ; genvar_iteration )
+      ;;      generate_block
+      ;; genvar_initialization ::=
+      ;;    [ genvar ] genvar_identifier = constant_expression
+      ;; genvar_iteration ::=
+      ;;    genvar_identifier assignment_operator genvar_expression
+      ;;    | inc_or_dec_operator genvar_identifier
+      ;;    | genvar_identifier inc_or_dec_operator
+      (seqw tokens pstate
+            (loc := (vl-current-loc))
+            (:= (vl-match))
+            (:= (vl-match-token :vl-lparen))
+            (when (vl-is-token? :vl-genvar) (:= (vl-match))) ;; skip genvar
+            (id := (vl-match-token :vl-idtoken))
+            (:= (vl-match-token :vl-equalsign))
+            (init := (vl-parse-expression))
+            (:= (vl-match-token :vl-semi))
+            (continue := (vl-parse-expression))
+            (:= (vl-match-token :vl-semi))
+            ;; BOZO right now only supporting genvar = expr;
+            ;; need to support other cases
+            (id2 := (vl-match-token :vl-idtoken))
+            (:= (vl-match-token :vl-equalsign))
+            (next := (vl-parse-expression))
+            (when (not (equal (vl-idtoken->name id)
+                              (vl-idtoken->name id2)))
+              (return-raw
+               (vl-parse-error "For loop: the initialized variable differed ~
+                              from the incremented variable.")))
+            (:= (vl-match-token :vl-rparen))
+            (genblock := (vl-parse-generate-block))
+            (return (make-vl-genloop :var (make-vl-id :name (vl-idtoken->name id))
+                                     :initval init
+                                     :continue continue
+                                     :nextval next
+                                     :genblock genblock
+                                     :loc loc))))
+
+    (defparser vl-parse-genif ()
+      :guard (and (consp tokens) (vl-is-token? :vl-if))
+      :result (vl-genelement-p val)
+      :resultp-of-nil nil
+      :fails gracefully
+      :count strong
+      :measure (two-nats-measure (len tokens) 4)
+      ;; if_generate_construct ::=
+      ;;   if ( constant_expression ) generate_block [ else generate_block ]
+      (seqw tokens pstate
+            (loc := (vl-current-loc))
+            (:= (vl-match))
+            (:= (vl-match-token :vl-lparen))
+            (test := (vl-parse-expression))
+            (:= (vl-match-token :vl-rparen))
+            (then := (vl-parse-generate-block))
+            (when (and (consp tokens)
+                       (vl-is-token? :vl-else))
+              (:= (vl-match))
+              (else := (vl-parse-generate-block)))
+            (return (make-vl-genif
+                     :test test
+                     :then then
+                     :else (or else
+                               (make-vl-generateblock))
+                     :loc loc))))
+
+    (defparser vl-parse-gencase ()
+      :guard (and (consp tokens) (vl-is-token? :vl-case))
+      :result (vl-genelement-p val)
+      :resultp-of-nil nil
+      :fails gracefully
+      :count strong
+      :measure (two-nats-measure (len tokens) 4)
+      ;; case_generate_construct ::=
+      ;;    case ( constant_expression ) case_generate_item { case_generate_item } endcase
+      ;; case_generate_item ::=
+      ;;    constant_expression { , constant_expression } : generate_block
+      ;;    | default [ : ] generate_block
+      (seqw tokens pstate
+            (loc := (vl-current-loc))
+            (:= (vl-match))
+            (:= (vl-match-token :vl-lparen))
+            (test := (vl-parse-expression))
+            (:= (vl-match-token :vl-rparen))
+            ((caselist . default) := (vl-parse-gencaselist))
+            (return (make-vl-gencase
+                      :test test
+                      :cases caselist
+                      :default (or default (make-vl-generateblock))
+                      :loc loc))))
+
+    (defparser vl-parse-gencaselist ()
+      :result (and (consp val)
+                   (vl-gencaselist-p (car val))
+                   (iff (vl-generateblock-p (cdr val))
+                        (cdr val)))
+      :measure (two-nats-measure (len tokens) 5)
+      (seqw tokens pstate
+            (loc := (vl-current-loc))
+            (when (vl-is-token? :vl-default)
+              (:= (vl-match))
+              (:= (vl-match-token :vl-colon))
+              (blk := (vl-parse-generate-block))
+              ((rest . rdefault) := (vl-parse-gencaselist))
+              (when rdefault
+                (return-raw (vl-parse-error "Multiple default cases in generate case")))
+              (return (cons rest blk)))
+            (exprs := (vl-parse-1+-expressions-separated-by-commas))
+            (:= (vl-match-token :vl-colon))
+            (blk := (vl-parse-generate-block))
+            ((rest . default) := (vl-parse-gencaselist))
+            (return (cons (cons (cons exprs blk) rest) default))))))
+          
+          
+                    
+
+
+
 (defparser vl-parse-loop-generate-construct (atts)
   :guard (vl-atts-p atts)
-  :result (vl-modelementlist-p val)
+  :result (vl-genitemlist-p val)
   :resultp-of-nil t
   :true-listp t
   :fails gracefully
@@ -235,8 +579,7 @@
   (vl-unimplemented))
 
 
-(defconst *vl-netdecltypes-kwds*
-  (strip-cars *vl-netdecltypes-kwd-alist*))
+
 
 (local (defthm vl-modelement-p-when-vl-blockitem-p
          (implies (vl-blockitem-p x)
@@ -249,21 +592,6 @@
          :hints(("Goal" :induct (len x)))))
 
 
-(defthm vl-modelement-p-of-vl-parse-fwd-typedef
-  (implies (and (force (vl-atts-p atts))
-                (force (vl-is-token? :vl-kwd-typedef)))
-           (b* (((mv err res) (vl-parse-fwd-typedef atts)))
-             (equal (vl-modelement-p res)
-                    (not err))))
-  :hints(("Goal" :in-theory (enable vl-parse-fwd-typedef))))
-
-(defthm vl-modelement-p-of-vl-parse-type-declaration
-  (implies (and (force (vl-atts-p atts))
-                (force (vl-is-token? :vl-kwd-typedef)))
-           (b* (((mv err res) (vl-parse-type-declaration atts)))
-             (equal (vl-modelement-p res)
-                    (not err))))
-  :hints(("Goal" :in-theory (enable vl-parse-type-declaration))))
          
 (encapsulate nil
   (local (in-theory (enable vl-is-token?)))
@@ -381,7 +709,7 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seqw tokens pstate
         (atts := (vl-parse-0+-attribute-instances))
         (return-raw
          (vl-parse-modelement-aux atts))))
