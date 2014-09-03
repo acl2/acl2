@@ -807,7 +807,17 @@ the start of the input stream."
 
   (defthm vl-match-token-fails-gracefully
     (implies (not (vl-is-token? type))
-             (not (mv-nth 1 (vl-match-token type)))))
+             (equal (mv-nth 1 (vl-match-token type)) nil)))
+
+  (local (defthmd car-of-vl-tokenlist-under-iff
+           (implies (vl-tokenlist-p x)
+                    (iff (car x) (consp x)))
+           :hints(("Goal" :in-theory (enable vl-tokenlist-p)))))
+
+  (defthm vl-match-token-under-iff
+    (iff (mv-nth 1 (vl-match-token type))
+         (vl-is-token? type))
+    :hints(("Goal" :in-theory (enable car-of-vl-tokenlist-under-iff))))
 
   (defthm vl-token->type-of-vl-match-token
     (implies (vl-is-token? type)

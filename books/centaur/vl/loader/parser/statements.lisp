@@ -61,7 +61,7 @@
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens pstate
+  (seq tokstream
        (loc := (vl-current-loc))
        (lvalue := (vl-parse-lvalue))
        (type := (vl-match-some-token '(:vl-equalsign :vl-lte)))
@@ -91,7 +91,7 @@
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens pstate
+  (seq tokstream
         (when (vl-is-some-token? '(:vl-kwd-assign :vl-kwd-force))
           (type := (vl-match))
           ((lvalue . expr) := (vl-parse-assignment))
@@ -117,7 +117,7 @@
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens pstate
+  (seq tokstream
         (hid := (vl-parse-hierarchical-identifier nil))
         (when (vl-is-token? :vl-lparen)
           (:= (vl-match))
@@ -136,7 +136,7 @@
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens pstate
+  (seq tokstream
         (id := (vl-match-token :vl-sysidtoken))
         (when (vl-is-token? :vl-lparen)
           (:= (vl-match))
@@ -159,7 +159,7 @@
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens pstate
+  (seq tokstream
         (:= (vl-match-token :vl-kwd-disable))
         (id := (vl-parse-hierarchical-identifier nil))
         (:= (vl-match-token :vl-semi))
@@ -175,7 +175,7 @@
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens pstate
+  (seq tokstream
         (:= (vl-match-token :vl-arrow))
         (hid := (vl-parse-hierarchical-identifier nil))
         (bexprs := (vl-parse-0+-bracketed-expressions))
@@ -225,7 +225,7 @@
   :resultp-of-nil nil
   :fails gracefully
   :count strong-on-value
-  (seqw tokens pstate
+  (seq tokstream
         (when (eq (vl-loadconfig->edition config) :verilog-2005)
           ;; Verilog-2005 doesn't support using "priority", "unique", or
           ;; "unique0" checks on case statements.
@@ -243,7 +243,7 @@
   :resultp-of-nil t
   :fails gracefully
   :count strong
-  (seqw tokens pstate
+  (seq tokstream
         (type := (vl-match-some-token '(:vl-kwd-case :vl-kwd-casez :vl-kwd-casex)))
         (return (case (vl-token->type type)
                   (:vl-kwd-case  nil) ;; if you change this, update resultp-of-nil
@@ -359,9 +359,9 @@
   :flag-local nil
  (defparser vl-parse-case-item ()
    ;; Returns a vl-caselist-p
-   :measure (two-nats-measure (len tokens) 0)
+   :measure (two-nats-measure (vl-tokstream-measure) 0)
    :verify-guards nil
-   (seqw tokens pstate
+   (seq tokstream
          (when (vl-is-token? :vl-kwd-default)
            (:= (vl-match))
            (when (vl-is-token? :vl-colon)
@@ -374,10 +374,10 @@
          (return (list (cons exprs stmt)))))
 
  (defparser vl-parse-1+-case-items ()
-   :measure (two-nats-measure (len tokens) 1)
+   :measure (two-nats-measure (vl-tokstream-measure) 1)
    ;; Returns a vl-caselist-p
    ;; We keep reading until 'endcase' is encountered
-   (seqw tokens pstate
+   (seq tokstream
          (first :s= (vl-parse-case-item))
          (when (vl-is-token? :vl-kwd-endcase)
            (return first))
@@ -387,8 +387,8 @@
  (defparser vl-parse-case-statement (atts)
    ;; Returns a vl-stmt-p
    :guard (vl-atts-p atts)
-   :measure (two-nats-measure (len tokens) 0)
-   (seqw tokens pstate
+   :measure (two-nats-measure (vl-tokstream-measure) 0)
+   (seq tokstream
          (check := (vl-parse-unique-priority))
          (type := (vl-parse-case-type))
          (:= (vl-match-token :vl-lparen))
@@ -400,7 +400,7 @@
           (let ((stmt (vl-make-case-statement check type test items atts)))
             (if (not stmt)
                 (vl-parse-error "Multiple defaults cases in case statement.")
-              (mv nil stmt tokens pstate))))))
+              (mv nil stmt tokstream))))))
 
 
 ; conditional_statement ::=
@@ -417,20 +417,20 @@
  (defparser vl-parse-conditional-statement (atts)
    ;; Returns a vl-stmt-p
    :guard (vl-atts-p atts)
-   :measure (two-nats-measure (len tokens) 0)
-   (seqw tokens pstate
-         (iftok := (vl-match-token :vl-kwd-if))
-         (:= (vl-match-token :vl-lparen))
-         (expr :s= (vl-parse-expression))
-         (:= (vl-match-token :vl-rparen))
-         (then :s= (vl-parse-statement-or-null))
-         (when (vl-is-token? :vl-kwd-else)
-           (:= (vl-match))
-           (else := (vl-parse-statement-or-null)))
-         (return (make-vl-ifstmt :condition expr
-                                 :truebranch then
-                                 :falsebranch (or else (vl-nullstmt nil))
-                                 :atts atts))))
+   :measure (two-nats-measure (vl-tokstream-measure) 0)
+   (seq tokstream
+        (:= (vl-match-token :vl-kwd-if))
+        (:= (vl-match-token :vl-lparen))
+        (expr :s= (vl-parse-expression))
+        (:= (vl-match-token :vl-rparen))
+        (then :s= (vl-parse-statement-or-null))
+        (when (vl-is-token? :vl-kwd-else)
+          (:= (vl-match))
+          (else := (vl-parse-statement-or-null)))
+        (return (make-vl-ifstmt :condition expr
+                                :truebranch then
+                                :falsebranch (or else (vl-nullstmt nil))
+                                :atts atts))))
 
 
 ; loop_statement ::=
@@ -443,8 +443,8 @@
  (defparser vl-parse-loop-statement (atts)
    ;; Returns a vl-foreverstmt-p, vl-repeatstmt-p, vl-whilestmt-p, or vl-forstmt-p
    :guard (vl-atts-p atts)
-   :measure (two-nats-measure (len tokens) 0)
-   (seqw tokens pstate
+   :measure (two-nats-measure (vl-tokstream-measure) 0)
+   (seq tokstream
 
          (when (vl-is-token? :vl-kwd-forever)
            (:= (vl-match-token :vl-kwd-forever))
@@ -491,8 +491,8 @@
 
  (defparser vl-parse-par-block (atts)
    :guard (vl-atts-p atts)
-   :measure (two-nats-measure (len tokens) 0)
-   (seqw tokens pstate
+   :measure (two-nats-measure (vl-tokstream-measure) 0)
+   (seq tokstream
          (:= (vl-match-token :vl-kwd-fork))
          (when (vl-is-token? :vl-colon)
            (:= (vl-match))
@@ -514,8 +514,8 @@
 
  (defparser vl-parse-seq-block (atts)
    :guard (vl-atts-p atts)
-   :measure (two-nats-measure (len tokens) 0)
-   (seqw tokens pstate
+   :measure (two-nats-measure (vl-tokstream-measure) 0)
+   (seq tokstream
          (:= (vl-match-token :vl-kwd-begin))
          (when (vl-is-token? :vl-colon)
            (:= (vl-match))
@@ -539,8 +539,8 @@
 
  (defparser vl-parse-procedural-timing-control-statement (atts)
    :guard (vl-atts-p atts)
-   :measure (two-nats-measure (len tokens) 0)
-   (seqw tokens pstate
+   :measure (two-nats-measure (vl-tokstream-measure) 0)
+   (seq tokstream
          (ctrl :s= (if (vl-is-token? :vl-atsign)
                        (vl-parse-event-control)
                      (vl-parse-delay-control)))
@@ -556,8 +556,8 @@
 
  (defparser vl-parse-wait-statement (atts)
    :guard (vl-atts-p atts)
-   :measure (two-nats-measure (len tokens) 0)
-   (seqw tokens pstate
+   :measure (two-nats-measure (vl-tokstream-measure) 0)
+   (seq tokstream
          (:= (vl-match-token :vl-kwd-wait))
          (:= (vl-match-token :vl-lparen))
          (expr :s= (vl-parse-expression))
@@ -590,10 +590,10 @@
 
  (defparser vl-parse-statement-aux (atts)
    :guard (vl-atts-p atts)
-   :measure (two-nats-measure (len tokens) 1)
-   (if (not (consp tokens))
+   :measure (two-nats-measure (vl-tokstream-measure) 1)
+   (if (not (consp (vl-tokstream->tokens)))
        (vl-parse-error "Unexpected EOF.")
-     (case (vl-token->type (car tokens))
+     (case (vl-token->type (car (vl-tokstream->tokens)))
        ;; Blocking assignment handled below.
        ((:vl-kwd-case :vl-kwd-casez :vl-kwd-casex
          :vl-kwd-unique :vl-kwd-unique0 :vl-kwd-priority)
@@ -610,7 +610,7 @@
        (:vl-kwd-fork
         (vl-parse-par-block atts))
        ((:vl-kwd-assign :vl-kwd-deassign :vl-kwd-force :vl-kwd-release)
-        (seqw tokens pstate
+        (seq tokstream
               (ret := (vl-parse-procedural-continuous-assignments atts))
               (:= (vl-match-token :vl-semi))
               (return ret)))
@@ -630,19 +630,21 @@
         ;; is successful when it sees an equal sign after the lvalue, while the
         ;; enable looks for a semicolon after the identifier, so there are no
         ;; inputs for which they both believe they are successful.
-        (mv-let (erp val explore new-pstate)
-                (seqw tokens pstate
-                     (ret := (vl-parse-blocking-or-nonblocking-assignment atts))
-                     (:= (vl-match-token :vl-semi))
-                     (return ret))
-                (if erp
-                    (vl-parse-task-enable atts)
-                  (mv erp val explore new-pstate)))))))
+        (b* ((backup (vl-tokstream-save))
+             ((mv erp val tokstream)
+              (seq tokstream
+                   (ret := (vl-parse-blocking-or-nonblocking-assignment atts))
+                   (:= (vl-match-token :vl-semi))
+                   (return ret)))
+             ((unless erp)
+              (mv erp val tokstream))
+             (tokstream (vl-tokstream-restore backup)))
+          (vl-parse-task-enable atts))))))
 
  (defparser vl-parse-statement ()
-   :measure (two-nats-measure (len tokens) 2)
+   :measure (two-nats-measure (vl-tokstream-measure) 2)
    ;; Returns a vl-stmt-p.
-   (seqw tokens pstate
+   (seq tokstream
          (atts :w= (vl-parse-0+-attribute-instances))
          (ret := (vl-parse-statement-aux atts))
          (return ret)))
@@ -650,8 +652,8 @@
  (defparser vl-parse-statement-or-null ()
    ;; Returns a vl-stmt-p.  (This is possible because we allow nullstmt as a
    ;; valid vl-stmt-p.)
-   :measure (two-nats-measure (len tokens) 2)
-   (seqw tokens pstate
+   :measure (two-nats-measure (vl-tokstream-measure) 2)
+   (seq tokstream
          (atts :w= (vl-parse-0+-attribute-instances))
          (when (vl-is-token? :vl-semi)
            (:= (vl-match-token :vl-semi))
@@ -660,10 +662,10 @@
          (return ret)))
 
  (defparser vl-parse-statements-until-join ()
-   :measure (two-nats-measure (len tokens) 3)
+   :measure (two-nats-measure (vl-tokstream-measure) 3)
    ;; Returns a list of vl-stmt-p's.
    ;; Tries to read until the keyword "join"
-   (seqw tokens pstate
+   (seq tokstream
          (when (vl-is-token? :vl-kwd-join)
            (return nil))
          (first :s= (vl-parse-statement))
@@ -671,10 +673,10 @@
          (return (cons first rest))))
 
  (defparser vl-parse-statements-until-end ()
-   :measure (two-nats-measure (len tokens) 3)
+   :measure (two-nats-measure (vl-tokstream-measure) 3)
    ;; Returns a list of vl-stmt-p's.
    ;; Tries to read until the keyword "end"
-   (seqw tokens pstate
+   (seq tokstream
          (when (vl-is-token? :vl-kwd-end)
            (return nil))
          (first :s= (vl-parse-statement))
@@ -739,21 +741,21 @@
         ,(vl-progress-claim vl-parse-statement-or-null)
 
         (vl-parse-statements-until-end
-         (and (<= (len (mv-nth 2 (vl-parse-statements-until-end)))
-                  (len tokens))
+         (and (<= (vl-tokstream-measure :tokstream (mv-nth 2 (vl-parse-statements-until-end)))
+                  (vl-tokstream-measure))
               (implies (and (not (mv-nth 0 (vl-parse-statements-until-end)))
                             (mv-nth 1 (vl-parse-statements-until-end)))
-                       (< (len (mv-nth 2 (vl-parse-statements-until-end)))
-                          (len tokens))))
+                       (< (vl-tokstream-measure :tokstream (mv-nth 2 (vl-parse-statements-until-end)))
+                          (vl-tokstream-measure))))
          :rule-classes ((:rewrite) (:linear)))
 
         (vl-parse-statements-until-join
-         (and (<= (len (mv-nth 2 (vl-parse-statements-until-join)))
-                  (len tokens))
+         (and (<= (vl-tokstream-measure :tokstream (mv-nth 2 (vl-parse-statements-until-join)))
+                  (vl-tokstream-measure))
               (implies (and (not (mv-nth 0 (vl-parse-statements-until-join)))
                             (mv-nth 1 (vl-parse-statements-until-join)))
-                       (< (len (mv-nth 2 (vl-parse-statements-until-join)))
-                          (len tokens))))
+                       (< (vl-tokstream-measure :tokstream (mv-nth 2 (vl-parse-statements-until-join)))
+                          (vl-tokstream-measure))))
          :rule-classes ((:rewrite) (:linear)))
 
         :hints((flag::expand-calls-computed-hint
@@ -761,56 +763,56 @@
                 ',(flag::get-clique-members 'vl-parse-statement-fn (w state))))))))
 
 
-(defsection tokenlist
+;; (defsection tokenlist
 
-  (with-output
-    :off prove :gag-mode :goals
-    (make-event
-     `(defthm-parse-statements-flag vl-parse-statement-tokenlist
-        ,(vl-tokenlist-claim vl-parse-case-item)
-        ,(vl-tokenlist-claim vl-parse-1+-case-items)
-        ,(vl-tokenlist-claim vl-parse-case-statement :args (atts))
-        ,(vl-tokenlist-claim vl-parse-conditional-statement :args (atts))
-        ,(vl-tokenlist-claim vl-parse-loop-statement :args (atts))
-        ,(vl-tokenlist-claim vl-parse-par-block :args (atts))
-        ,(vl-tokenlist-claim vl-parse-seq-block :args (atts))
-        ,(vl-tokenlist-claim vl-parse-procedural-timing-control-statement :args (atts))
-        ,(vl-tokenlist-claim vl-parse-wait-statement :args (atts))
-        ,(vl-tokenlist-claim vl-parse-statement-aux :args (atts))
-        ,(vl-tokenlist-claim vl-parse-statement)
-        ,(vl-tokenlist-claim vl-parse-statement-or-null)
-        ,(vl-tokenlist-claim vl-parse-statements-until-end)
-        ,(vl-tokenlist-claim vl-parse-statements-until-join)
-        :hints((and acl2::stable-under-simplificationp
-                    (flag::expand-calls-computed-hint
-                     acl2::clause
-                     ',(flag::get-clique-members 'vl-parse-statement-fn (w state)))))))))
+;;   (with-output
+;;     :off prove :gag-mode :goals
+;;     (make-event
+;;      `(defthm-parse-statements-flag vl-parse-statement-tokenlist
+;;         ,(vl-tokenlist-claim vl-parse-case-item)
+;;         ,(vl-tokenlist-claim vl-parse-1+-case-items)
+;;         ,(vl-tokenlist-claim vl-parse-case-statement :args (atts))
+;;         ,(vl-tokenlist-claim vl-parse-conditional-statement :args (atts))
+;;         ,(vl-tokenlist-claim vl-parse-loop-statement :args (atts))
+;;         ,(vl-tokenlist-claim vl-parse-par-block :args (atts))
+;;         ,(vl-tokenlist-claim vl-parse-seq-block :args (atts))
+;;         ,(vl-tokenlist-claim vl-parse-procedural-timing-control-statement :args (atts))
+;;         ,(vl-tokenlist-claim vl-parse-wait-statement :args (atts))
+;;         ,(vl-tokenlist-claim vl-parse-statement-aux :args (atts))
+;;         ,(vl-tokenlist-claim vl-parse-statement)
+;;         ,(vl-tokenlist-claim vl-parse-statement-or-null)
+;;         ,(vl-tokenlist-claim vl-parse-statements-until-end)
+;;         ,(vl-tokenlist-claim vl-parse-statements-until-join)
+;;         :hints((and acl2::stable-under-simplificationp
+;;                     (flag::expand-calls-computed-hint
+;;                      acl2::clause
+;;                      ',(flag::get-clique-members 'vl-parse-statement-fn (w state)))))))))
 
 
-(defsection parsestate
+;; (defsection parsestate
 
-  (with-output
-    :off prove :gag-mode :goals
-    (make-event
-     `(defthm-parse-statements-flag vl-parse-statement-parsestate
-        ,(vl-parsestate-claim vl-parse-case-item)
-        ,(vl-parsestate-claim vl-parse-1+-case-items)
-        ,(vl-parsestate-claim vl-parse-case-statement :args (atts))
-        ,(vl-parsestate-claim vl-parse-conditional-statement :args (atts))
-        ,(vl-parsestate-claim vl-parse-loop-statement :args (atts))
-        ,(vl-parsestate-claim vl-parse-par-block :args (atts))
-        ,(vl-parsestate-claim vl-parse-seq-block :args (atts))
-        ,(vl-parsestate-claim vl-parse-procedural-timing-control-statement :args (atts))
-        ,(vl-parsestate-claim vl-parse-wait-statement :args (atts))
-        ,(vl-parsestate-claim vl-parse-statement-aux :args (atts))
-        ,(vl-parsestate-claim vl-parse-statement)
-        ,(vl-parsestate-claim vl-parse-statement-or-null)
-        ,(vl-parsestate-claim vl-parse-statements-until-end)
-        ,(vl-parsestate-claim vl-parse-statements-until-join)
-        :hints((and acl2::stable-under-simplificationp
-                    (flag::expand-calls-computed-hint
-                     acl2::clause
-                     ',(flag::get-clique-members 'vl-parse-statement-fn (w state)))))))))
+;;   (with-output
+;;     :off prove :gag-mode :goals
+;;     (make-event
+;;      `(defthm-parse-statements-flag vl-parse-statement-parsestate
+;;         ,(vl-parsestate-claim vl-parse-case-item)
+;;         ,(vl-parsestate-claim vl-parse-1+-case-items)
+;;         ,(vl-parsestate-claim vl-parse-case-statement :args (atts))
+;;         ,(vl-parsestate-claim vl-parse-conditional-statement :args (atts))
+;;         ,(vl-parsestate-claim vl-parse-loop-statement :args (atts))
+;;         ,(vl-parsestate-claim vl-parse-par-block :args (atts))
+;;         ,(vl-parsestate-claim vl-parse-seq-block :args (atts))
+;;         ,(vl-parsestate-claim vl-parse-procedural-timing-control-statement :args (atts))
+;;         ,(vl-parsestate-claim vl-parse-wait-statement :args (atts))
+;;         ,(vl-parsestate-claim vl-parse-statement-aux :args (atts))
+;;         ,(vl-parsestate-claim vl-parse-statement)
+;;         ,(vl-parsestate-claim vl-parse-statement-or-null)
+;;         ,(vl-parsestate-claim vl-parse-statements-until-end)
+;;         ,(vl-parsestate-claim vl-parse-statements-until-join)
+;;         :hints((and acl2::stable-under-simplificationp
+;;                     (flag::expand-calls-computed-hint
+;;                      acl2::clause
+;;                      ',(flag::get-clique-members 'vl-parse-statement-fn (w state)))))))))
 
 
 (defsection result

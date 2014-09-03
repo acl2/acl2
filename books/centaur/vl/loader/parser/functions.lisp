@@ -43,7 +43,7 @@
                (vl-maybe-range-p (cdr val)))
   :fails gracefully
   :count weak
-  (seqw tokens pstate
+  (seq tokstream
         (when (vl-is-some-token? '(:vl-kwd-integer
                                    :vl-kwd-real
                                    :vl-kwd-realtime
@@ -114,7 +114,7 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens pstate
+  (seq tokstream
         (dir := (vl-match-some-token '(:vl-kwd-input :vl-kwd-output :vl-kwd-inout)))
         (when (vl-is-token? :vl-kwd-reg)
           (reg := (vl-match-token :vl-kwd-reg)))
@@ -150,7 +150,7 @@
                           :vl-signed
                         :vl-unsigned)))
               (ret (vl-build-taskports atts dir type range names)))
-           (mv nil ret tokens pstate)))))
+           (mv nil ret tokstream)))))
 
 
 ; task_port_item ::= { attribute_instance } tf_input_declaration
@@ -174,7 +174,7 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens pstate
+  (seq tokstream
         (atts := (vl-parse-0+-attribute-instances))
         (ins1 := (vl-parse-taskport-declaration atts))
         (unless (vl-is-token? :vl-comma)
@@ -256,7 +256,7 @@
   :resultp-of-nil t
   :fails gracefully
   :count strong
-  (seqw tokens pstate
+  (seq tokstream
         (when (vl-is-some-token? '(:vl-kwd-input :vl-kwd-output :vl-kwd-inout))
           (decls := (vl-parse-taskport-declaration atts))
           (:= (vl-match-token :vl-semi))
@@ -270,7 +270,7 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens pstate
+  (seq tokstream
         (atts  := (vl-parse-0+-attribute-instances))
         (decls := (vl-parse-task-item-declaration-noatts atts))
         (return decls)))
@@ -285,17 +285,13 @@
   :true-listp t
   :fails never
   :count strong-on-value
-  (mv-let (erp first explore new-pstate)
-    (vl-parse-task-item-declaration)
-    (cond (erp
-           (mv nil nil tokens pstate))
-          (t
-           (mv-let (erp rest tokens pstate)
-             (vl-parse-0+-task-item-declarations :tokens explore
-                                                 :pstate new-pstate)
-             (declare (ignore erp))
-             (mv nil (append first rest) tokens pstate))))))
-
+  (b* ((backup (vl-tokstream-save))
+       ((mv erp first tokstream) (vl-parse-task-item-declaration))
+       ((when erp)
+        (b* ((tokstream (vl-tokstream-restore backup)))
+          (mv nil nil tokstream)))
+       ((mv ?erp rest tokstream) (vl-parse-0+-task-item-declarations)))
+    (mv nil (append first rest) tokstream)))
 
 
 ; function_declaration ::=
@@ -340,7 +336,7 @@
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens pstate
+  (seq tokstream
 
         (function := (vl-match-token :vl-kwd-function))
         (when (vl-is-token? :vl-kwd-automatic)
@@ -374,7 +370,7 @@
                                       :body       stmt
                                       :atts       atts
                                       :loc        (vl-token->loc function))))
-             (mv nil ret tokens pstate))))
+             (mv nil ret tokstream))))
 
         ;; Variant 2.
         (:= (vl-match-token :vl-lparen))
@@ -401,7 +397,7 @@
                                     :body       stmt
                                     :atts       atts
                                     :loc        (vl-token->loc function))))
-           (mv nil ret tokens pstate)))))
+           (mv nil ret tokstream)))))
 
 
 
@@ -425,7 +421,7 @@
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens pstate
+  (seq tokstream
 
         (task := (vl-match-token :vl-kwd-task))
         (when (vl-is-token? :vl-kwd-automatic)

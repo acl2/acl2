@@ -132,7 +132,7 @@
   ;; means returning a blank port!  Note that this leads to an unusually weak
   ;; count theorem.
 
-  (seqw tokens pstate
+  (seq tokstream
 
         (atts := (vl-parse-0+-attribute-instances))
 
@@ -161,7 +161,7 @@
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens pstate
+  (seq tokstream
         (atts := (vl-parse-0+-attribute-instances))
         (:= (vl-match-token :vl-dot))
         (id := (vl-match-token :vl-idtoken))
@@ -188,7 +188,7 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens pstate
+  (seq tokstream
         (first := (vl-parse-named-port-connection))
         (when (vl-is-token? :vl-comma)
           (:= (vl-match-token :vl-comma))
@@ -203,7 +203,7 @@
   :fails gracefully
   :count strong
   :verify-guards nil
-  (seqw tokens pstate
+  (seq tokstream
         (when (vl-is-token? :vl-dotstar)
           (dotstar := (vl-match)))
 
@@ -235,7 +235,7 @@
   :true-listp nil
   :fails gracefully
   :count strong
-  (seqw tokens pstate
+  (seq tokstream
         (when (eq (vl-loadconfig->edition config) :verilog-2005)
           (args := (vl-parse-list-of-named-port-connections-2005))
           (return (make-vl-arguments-named :args args
@@ -254,12 +254,14 @@
   ;; on success.  The modinst production must explicitly handle the empty
   ;; case and NOT call this function if it sees "()".
 
-  (b* (((mv erp val explore new-pstate)
-        (seqw tokens pstate
+  (b* ((backup (vl-tokstream-save))
+       ((mv erp val tokstream)
+        (seq tokstream
               (args := (vl-parse-list-of-ordered-port-connections))
               (return (make-vl-arguments-plain :args args))))
        ((unless erp)
-        (mv erp val explore new-pstate)))
+        (mv erp val tokstream))
+       (tokstream (vl-tokstream-restore backup)))
     (vl-parse-list-of-named-port-connections)))
 
 
@@ -298,9 +300,8 @@
 
 (local
  (defthm crock-idtoken-of-car
-   (implies (and (vl-is-token? :vl-idtoken)
-                 (force (vl-tokenlist-p tokens)))
-            (vl-idtoken-p (car tokens)))
+   (implies (vl-is-token? :vl-idtoken)
+            (vl-idtoken-p (car (vl-tokstream->tokens))))
    :hints(("Goal" :in-theory (enable vl-is-token?)))))
 
 (defparser vl-parse-param-expression ()
@@ -315,22 +316,26 @@
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens pstate
+  (seq tokstream
         ;; Datatype and expression are ambiguous when we just have an identifier, so
         ;; check for this case first.
         (when (and (vl-is-token? :vl-idtoken)
-                   (not (vl-parsestate-is-user-defined-type-p (vl-idtoken->name (car tokens)) pstate)))
+                   (not (vl-parsestate-is-user-defined-type-p
+                         (vl-idtoken->name (car (vl-tokstream->tokens)))
+                         (vl-tokstream->pstate))))
           ;; Non-type identifier.
           (ans := (vl-parse-mintypmax-expression))
           (return ans))
         (return-raw
          ;; Otherwise, use backtracking: arbitrarily try to get a datatype
          ;; first, then try to get an expr.
-         (b* (((mv dt-err dt-val dt-tokens dt-pstate)
+         (b* ((backup (vl-tokstream-save))
+              ((mv dt-err dt-val tokstream)
                (vl-parse-datatype))
               ((unless dt-err)
-               (mv dt-err dt-val dt-tokens dt-pstate)))
-           (seqw tokens pstate
+               (mv dt-err dt-val tokstream))
+              (tokstream (vl-tokstream-restore backup)))
+           (seq tokstream
                  (ans := (vl-parse-mintypmax-expression))
                  (return ans))))))
 
@@ -339,7 +344,7 @@
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens pstate
+  (seq tokstream
         (:= (vl-match-token :vl-dot))
         (id := (vl-match-token :vl-idtoken))
         (:= (vl-match-token :vl-lparen))
@@ -355,7 +360,7 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens pstate
+  (seq tokstream
         (first := (vl-parse-named-parameter-assignment))
         (when (vl-is-token? :vl-comma)
           (:= (vl-match-token :vl-comma))
@@ -368,7 +373,7 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens pstate
+  (seq tokstream
         (first := (vl-parse-param-expression))
         (when (vl-is-token? :vl-comma)
           (:= (vl-match-token :vl-comma))
@@ -380,7 +385,7 @@
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens pstate
+  (seq tokstream
         (when (vl-is-token? :vl-dot)
           (args := (vl-parse-list-of-named-parameter-assignments))
           (return (make-vl-paramargs-named :args args)))
@@ -396,7 +401,7 @@
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens pstate
+  (seq tokstream
         (:= (vl-match-token :vl-pound))
         (:= (vl-match-token :vl-lparen))
 
@@ -428,7 +433,7 @@
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens pstate
+  (seq tokstream
        (instname := (vl-match-token :vl-idtoken))
        (when (vl-is-token? :vl-lbrack)
          (range := (vl-parse-range)))
@@ -436,7 +441,7 @@
        ;; Note special avoidance of actually parsing () lists.
        (unless (vl-is-token? :vl-rparen)
          (portargs := (vl-parse-list-of-port-connections)))
-       (rparen := (vl-match-token :vl-rparen))
+       (:= (vl-match-token :vl-rparen))
        (return (make-vl-modinst :loc (vl-token->loc instname)
                                 :instname (vl-idtoken->name instname)
                                 :modname modname
@@ -454,7 +459,7 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens pstate
+  (seq tokstream
         (first := (vl-parse-module-instance modname paramargs atts))
         (when (vl-is-token? :vl-comma)
           (:= (vl-match-token :vl-comma))
@@ -468,7 +473,7 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens pstate
+  (seq tokstream
         (modid := (vl-match-token :vl-idtoken))
         (when (vl-is-token? :vl-pound)
           (paramargs := (vl-parse-parameter-value-assignment)))
@@ -476,7 +481,7 @@
                                                 (or paramargs
                                                     (make-vl-paramargs-plain :args nil))
                                                 atts))
-        (semi := (vl-match-token :vl-semi))
+        (:= (vl-match-token :vl-semi))
         (return insts)))
 
 
@@ -501,7 +506,7 @@
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens pstate
+  (seq tokstream
         (when (vl-is-token? :vl-idtoken)
           (inst-id := (vl-match-token :vl-idtoken))
           (when (vl-is-token? :vl-lbrack)
@@ -534,7 +539,7 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens pstate
+  (seq tokstream
         (first := (vl-parse-udp-instance loc modname str delay atts))
         (when (vl-is-token? :vl-comma)
           (:= (vl-match-token :vl-comma))
@@ -554,11 +559,11 @@
    :true-listp t
    :fails gracefully
    :count strong
-   (seqw tokens pstate
+   (seq tokstream
         (modname := (vl-match-token :vl-idtoken))
         (when (and (vl-is-token? :vl-lparen)
-                   (vl-is-some-token? *vl-all-drivestr-kwds*
-                                      :tokens (cdr tokens)))
+                   (vl-lookahead-is-some-token?
+                    *vl-all-drivestr-kwds* (cdr (vl-tokstream->tokens))))
           (str := (vl-parse-drive-strength)))
         (when (vl-is-token? :vl-pound)
           (delay := (vl-parse-delay2)))
@@ -613,13 +618,16 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (b* (((mv m-err val explore new-pstate) (vl-parse-module-instantiation atts))
+  (b* ((backup (vl-tokstream-save))
+       ((mv m-err val tokstream) (vl-parse-module-instantiation atts))
        ((unless m-err)
-        (mv m-err val explore new-pstate))
-       ((mv u-err val explore new-pstate) (vl-parse-udp-instantiation atts))
+        (mv m-err val tokstream))
+       (tokstream (vl-tokstream-restore backup))
+       ((mv u-err val tokstream) (vl-parse-udp-instantiation atts))
        ((unless u-err)
-        (mv u-err val explore new-pstate)))
+        (mv u-err val tokstream))
+       (tokstream (vl-tokstream-restore backup)))
     (mv (vl-udp/modinst-pick-error-to-report m-err u-err)
-        nil tokens pstate)))
+        nil tokstream)))
 
 

@@ -107,9 +107,9 @@ VL to correctly handle any interesting fragment of SystemVerilog.</p>")
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens pstate
+  (seq tokstream
         (atts := (vl-parse-0+-attribute-instances))
-        (when (atom tokens)
+        (when (atom (vl-tokstream->tokens))
           (return-raw (vl-parse-error "Unexpected EOF.")))
         (when (vl-is-token? :vl-kwd-config)
           (cfg := (vl-parse-config-declaration atts))
@@ -181,8 +181,8 @@ VL to correctly handle any interesting fragment of SystemVerilog.</p>")
   :true-listp t
   :fails gracefully
   :count strong-on-value
-  (seqw tokens pstate
-        (when (atom tokens)
+  (seq tokstream
+        (when (atom (vl-tokstream->tokens))
           (return nil))
         (first := (vl-parse-description))
         (rest := (vl-parse-source-text))
@@ -199,9 +199,14 @@ VL to correctly handle any interesting fragment of SystemVerilog.</p>")
   (mv (successp)
       (items  vl-descriptionlist-p :hyp :fguard)
       (pstate vl-parsestate-p))
-  (b* (((mv err val tokens pstate)
+  (b* (((acl2::local-stobjs tokstream)
+        (mv okp val pstate tokstream))
+       (tokstream (vl-tokstream-update-tokens tokens))
+       (tokstream (vl-tokstream-update-pstate pstate))
+       ((mv err val tokstream)
         (vl-parse-source-text))
+       (pstate (vl-tokstream->pstate))
        ((when err)
         (vl-report-parse-error err tokens)
-        (mv nil nil pstate)))
-    (mv t val pstate)))
+        (mv nil nil pstate tokstream)))
+    (mv t val pstate tokstream)))

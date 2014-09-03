@@ -41,6 +41,26 @@
 
 (local (xdoc::set-default-parents parse-datatypes))
 
+;; accumulated persistence hacking
+(local (in-theory (disable acl2::prefixp-when-equal-lengths
+                           acl2::lower-bound-of-len-when-sublistp
+                           consp-when-member-equal-of-cons-listp
+                           acl2::consp-when-member-equal-of-atom-listp
+                           acl2::len-when-prefixp
+                           acl2::consp-under-iff-when-true-listp
+                           consp-when-member-equal-of-vl-atts-p
+                           consp-when-member-equal-of-vl-commentmap-p
+                           consp-when-member-equal-of-vl-caselist-p
+                           consp-when-member-equal-of-vl-usertypes-p
+                           consp-when-member-equal-of-vl-defines-p
+                           acl2::consp-when-member-equal-of-keyval-alist-p
+                           vl-tokenlist-p-when-not-consp
+                           not
+                           acl2::consp-by-len
+                           acl2::listpos-upper-bound-strong-2
+                           double-containment
+                           member-equal-when-member-equal-of-cdr-under-iff)))
+
 
 ; BOZO eventually need variable_dimension stuff
 

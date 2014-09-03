@@ -48,40 +48,46 @@
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens warnings
-        (typedef := (vl-match))  ;; guard ensures it starts with 'typedef'
+  (seq tokstream
+       (typedef := (vl-match))  ;; guard ensures it starts with 'typedef'
 
-        (when (vl-is-token? :vl-kwd-interface)
-          (:= (vl-match))
-          (:= (vl-match-token :vl-kwd-class))
-          (name := (vl-match-token :vl-idtoken))
-          (:= (vl-match-token :vl-semi))
-          (return-raw
-           (b* ((val    (make-vl-fwdtypedef :kind :vl-interfaceclass
-                                            :name (vl-idtoken->name name)
-                                            :loc (vl-token->loc typedef)
-                                            :atts atts))
-                (pstate (vl-parsestate-add-user-defined-type (vl-idtoken->name name) pstate)))
-             (mv nil val tokens pstate))))
-
-        (when (vl-is-some-token? '(:vl-kwd-enum :vl-kwd-struct :vl-kwd-union :vl-kwd-class))
-          (type := (vl-match))
-          (name := (vl-match-token :vl-idtoken))
-          (:= (vl-match-token :vl-semi))
-          (return-raw
-           (b* ((val   (make-vl-fwdtypedef :kind (case (vl-token->type type)
-                                                   (:vl-kwd-enum   :vl-enum)
-                                                   (:vl-kwd-struct :vl-struct)
-                                                   (:vl-kwd-union  :vl-union)
-                                                   (:vl-kwd-class  :vl-class))
+       (when (vl-is-token? :vl-kwd-interface)
+         (:= (vl-match))
+         (:= (vl-match-token :vl-kwd-class))
+         (name := (vl-match-token :vl-idtoken))
+         (:= (vl-match-token :vl-semi))
+         (return-raw
+          (b* ((val    (make-vl-fwdtypedef :kind :vl-interfaceclass
                                            :name (vl-idtoken->name name)
                                            :loc (vl-token->loc typedef)
                                            :atts atts))
-                (pstate (vl-parsestate-add-user-defined-type (vl-idtoken->name name) pstate)))
-             (mv nil val tokens pstate))))
+               (tokstream
+                (vl-tokstream-update-pstate
+                 (vl-parsestate-add-user-defined-type
+                  (vl-idtoken->name name) (vl-tokstream->pstate)))))
+            (mv nil val tokstream))))
 
-        (return-raw
-         (vl-parse-error "Not a valid forward typedef."))))
+       (when (vl-is-some-token? '(:vl-kwd-enum :vl-kwd-struct :vl-kwd-union :vl-kwd-class))
+         (type := (vl-match))
+         (name := (vl-match-token :vl-idtoken))
+         (:= (vl-match-token :vl-semi))
+         (return-raw
+          (b* ((val   (make-vl-fwdtypedef :kind (case (vl-token->type type)
+                                                  (:vl-kwd-enum   :vl-enum)
+                                                  (:vl-kwd-struct :vl-struct)
+                                                  (:vl-kwd-union  :vl-union)
+                                                  (:vl-kwd-class  :vl-class))
+                                          :name (vl-idtoken->name name)
+                                          :loc (vl-token->loc typedef)
+                                          :atts atts))
+               (tokstream
+                (vl-tokstream-update-pstate
+                 (vl-parsestate-add-user-defined-type
+                  (vl-idtoken->name name) (vl-tokstream->pstate)))))
+            (mv nil val tokstream))))
+
+       (return-raw
+        (vl-parse-error "Not a valid forward typedef."))))
 
 (defparser vl-parse-type-declaration (atts)
   :guard (and (vl-atts-p atts)
@@ -94,14 +100,17 @@
   ;; declaration.  We try forward declarations first because they're less
   ;; likely to have problems, and we'd probably rather see errors about
   ;; full type declarations.
-  (b* (((mv erp fwd fwd-tokens fwd-warnings)
+  (b* ((backup (vl-tokstream-save))
+       ((mv erp fwd tokstream)
         (vl-parse-fwd-typedef atts))
        ((unless erp)
         ;; Got a valid fwd typedef, so return it.
-        (mv erp fwd fwd-tokens fwd-warnings)))
+        (mv erp fwd tokstream))
+
+       (tokstream (vl-tokstream-restore backup)))
 
     ;; Else, not a fwd typedef, so try to match a full one.
-    (seqw tokens warnings
+    (seq tokstream
           (typedef := (vl-match))  ;; guard ensures it starts with 'typedef'
 
           ;; BOZO the following probably isn't right for the 2nd production.
@@ -118,6 +127,9 @@
                                       :minloc (vl-token->loc typedef)
                                       :maxloc (vl-token->loc semi)
                                       :atts atts))
-                (pstate (vl-parsestate-add-user-defined-type (vl-idtoken->name id) pstate)))
-             (mv nil val tokens pstate))))))
+                (tokstream
+                (vl-tokstream-update-pstate
+                 (vl-parsestate-add-user-defined-type
+                  (vl-idtoken->name id) (vl-tokstream->pstate)))))
+             (mv nil val tokstream))))))
 

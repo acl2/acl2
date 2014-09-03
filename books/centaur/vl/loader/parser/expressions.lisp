@@ -35,6 +35,7 @@
 (local (include-book "../../util/arithmetic"))
 (local (non-parallel-book))
 
+
 ; BOZO we can probably speed this up quite a bit by getting rid of the big
 ; case-splits in parse-unary-expression and the smaller, similar case splits in
 ; the other functions that deal with several operators.
@@ -75,7 +76,15 @@
                            ;(:rules-of-class :type-prescription :here)
                            (:t vl-warninglist-fix)
                            (:t vl-tokenlist-fix)
-                           CONSP-WHEN-MEMBER-EQUAL-OF-VL-ATTS-P)))
+                           CONSP-WHEN-MEMBER-EQUAL-OF-VL-ATTS-P
+                           ACL2::CONSP-WHEN-MEMBER-EQUAL-OF-ATOM-LISTP
+                           consp-when-member-equal-of-vl-usertypes-p
+                           acl2::consp-when-member-equal-of-keyval-alist-p
+                           (:t atom)
+                           not
+                           vl-expr-p-when-member-equal-of-vl-exprlist-p
+                           acl2::keyval-alist-p
+                           stringp-when-true-listp)))
 
 (defines vl-expr-has-any-atts-p
   :short "Check whether an expression has any attributes."
@@ -526,7 +535,7 @@ literals, unbased unsized literals, @('this'), @('$'), and @('null').</p>"
 
        (return nil))
   ///
-  (defthm tokens-nonempty-when-vl-maybe-parse-base-primary
+  (defthmd tokens-nonempty-when-vl-maybe-parse-base-primary
     (b* (((mv ?errmsg val ?new-tokstream)
           (vl-maybe-parse-base-primary)))
       (implies val (consp (vl-tokstream->tokens))))))
@@ -622,48 +631,54 @@ expressions.</p>"
         (vl-parse-error
          "Embedded parameter value assignments #(...) aren't implemented yet."))))
 
-(defparser vl-parse-pva-tail ()
-  :short "Match @(' { '::' identifier [parameter_value_assignment] } '::'
+(encapsulate nil
+  (local (defthm not-vl-expr-p-when-not-x
+           (implies (not x)
+                    (not (vl-expr-p x)))))
+
+  (defparser vl-parse-pva-tail ()
+    :short "Match @(' { '::' identifier [parameter_value_assignment] } '::'
 identifier ') and return an expression."
 
-  :long "<p>Since we start by matching a @('::'), we always turn the
+    :long "<p>Since we start by matching a @('::'), we always turn the
 identifiers into hid pieces instead of ordinary id atoms.</p>
 
 <p>We don't actually support parameter value assignments within expressions
 yet; they'll just cause a parse error.</p>"
 
-  :result (vl-expr-p val)
-  :resultp-of-nil nil
-  :fails gracefully
-  :count strong
-  :verify-guards nil
-  (seq tokstream
-       (:= (vl-match-token :vl-scope))
-       (head := (vl-match-token :vl-idtoken))
-       (when (vl-is-token? :vl-pound)
-         (:= (vl-parse-parameter-value-assignment-hack))
-         (return-raw
-          ;; Should never actually get here until we implement PVAs.
-          (vl-parse-error "Implement PVAs.")))
+    :result (vl-expr-p val)
+    :resultp-of-nil nil
+    :fails gracefully
+    :count strong
+    :verify-guards nil
+    (seq tokstream
+         (:= (vl-match-token :vl-scope))
+         (head := (vl-match-token :vl-idtoken))
+         (when (vl-is-token? :vl-pound)
+           (:= (vl-parse-parameter-value-assignment-hack))
+           (return-raw
+            ;; Should never actually get here until we implement PVAs.
+            (vl-parse-error "Implement PVAs.")))
 
-       (unless (vl-is-token? :vl-scope)
+         (unless (vl-is-token? :vl-scope)
+           (return
+            (make-vl-atom
+             :guts (make-vl-hidpiece :name (vl-idtoken->name head)))))
+
+         (tail := (vl-parse-pva-tail))
          (return
-          (make-vl-atom
-           :guts (make-vl-hidpiece :name (vl-idtoken->name head)))))
-
-       (tail := (vl-parse-pva-tail))
-       (return
-        (make-vl-nonatom
-         :op :vl-scope
-         :args (list (make-vl-atom
-                      :guts (make-vl-hidpiece :name (vl-idtoken->name head)))
-                     tail)))))
+          (make-vl-nonatom
+           :op :vl-scope
+           :args (list (make-vl-atom
+                        :guts (make-vl-hidpiece :name (vl-idtoken->name head)))
+                       tail))))))
 
 (verify-guards vl-parse-pva-tail-fn)
 
 
 ;; For debugging you may want to comment out functions and add, as a temporary hack:
 ;; (set-bogus-mutual-recursion-ok t)
+
 
 (defparsers parse-expressions
   :parents (parser)
@@ -2317,6 +2332,7 @@ identifier, so we convert it into a hidpiece.</p>"
   (encapsulate
     ()
     (local (in-theory (disable (force))))
+    (local (in-theory (enable tokens-nonempty-when-vl-maybe-parse-base-primary)))
     (make-event
      `(defthm-parse-expressions-flag vl-parse-expression-eof
         ,(vl-eof-claim vl-parse-attr-spec :error)
@@ -2406,7 +2422,7 @@ identifier, so we convert it into a hidpiece.</p>"
  :off prove :gag-mode :goals
  (encapsulate
   ()
-  (local (in-theory (enable vl-maybe-expr-p)))
+  ; (local (in-theory (enable vl-maybe-expr-p)))
   (make-event
    `(defthm-parse-expressions-flag vl-parse-expression-value
       ,(vl-expression-claim vl-parse-attr-spec :atts)
