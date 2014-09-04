@@ -96,6 +96,33 @@ module MH (output [3:0] out,
 endmodule
 
 
+/*+VL
+
+// Silly checks, these should fail because in2 is not declared.
+module ShouldFail1(output [3:0] out);
+  wire [1:0] in1;
+  MA ainst(.*);
+endmodule
+
+module ShouldFail2(output [3:0] out);
+  wire [1:0] in1;
+  MA ainst(.out, .in1, .in2);
+endmodule
+
+module ShouldFail4(output [3:0] out);
+  wire [1:0] in1;
+  MA ainst(.out, .in1, .*);
+endmodule
+
+// This one isn't fatal.
+module ShouldWarn(output [3:0] out);
+  wire [3:0] in1;
+  MA ainst(.out, .in1);
+endmodule
+
+*/
+
+
 module dut (
 
 in1, in2,
