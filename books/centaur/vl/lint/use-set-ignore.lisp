@@ -151,16 +151,16 @@ therefore also somewhat unreliable!</p>"
   :resultp-of-nil t
   :fails gracefully
   :count strong
-  (seqw tokens pstate
-        (kwd := (vl-match-token :vl-idtoken))
-        (unless (equal (vl-idtoken->name kwd) "use_set_ignore")
-          (return-raw
-           (vl-parse-error "Expected use_set_ignore keyword.")))
-        (:= (vl-match-token :vl-lparen))
-        (exprs := (vl-parse-1+-lvalues-separated-by-commas))
-        (:= (vl-match-token :vl-rparen))
-        (:= (vl-match-token :vl-semi))
-        (return exprs)))
+  (seq tokstream
+       (kwd := (vl-match-token :vl-idtoken))
+       (unless (equal (vl-idtoken->name kwd) "use_set_ignore")
+         (return-raw
+          (vl-parse-error "Expected use_set_ignore keyword.")))
+       (:= (vl-match-token :vl-lparen))
+       (exprs := (vl-parse-1+-lvalues-separated-by-commas))
+       (:= (vl-match-token :vl-rparen))
+       (:= (vl-match-token :vl-semi))
+       (return exprs)))
 
 (define us-analyze-comment
 ; Ugh, this thing has just grown to require everything...
@@ -208,10 +208,11 @@ therefore also somewhat unreliable!</p>"
 
        ;; Parsing...
        ((mv tokens ?cmap) (vl-kill-whitespace-and-comments tokens))
-       ((mv err exprs tokens ?pwarnings)
-        (us-parse-comment :tokens tokens
-                          :pstate (make-vl-parsestate :warnings nil)
-                          :config *vl-default-loadconfig*))
+       ((local-stobjs tokstream) (mv warn res tokstream))
+       (tokstream (vl-tokstream-update-tokens tokens))
+       ((mv err exprs tokstream)
+        (us-parse-comment :config *vl-default-loadconfig*))
+       (tokens (vl-tokstream->tokens))
        ((when err)
         (b* ((details (with-local-ps (if (and (consp err)
                                               (stringp (car err)))
@@ -221,7 +222,7 @@ therefore also somewhat unreliable!</p>"
                     :msg (cat "Parsing error in comment at " locstr
                               ", which mentions use_set_ignore.  " details)
                     :args nil)
-              nil)))
+              nil tokstream)))
        (warnings
         (if (atom tokens)
             (ok)
@@ -252,7 +253,7 @@ therefore also somewhat unreliable!</p>"
                       bit-warnings))
        (warnings (append bit-warnings (vl-warninglist-fix warnings))))
 
-    (mv warnings bits))
+    (mv warnings bits tokstream))
   ///
   (defmvtypes us-analyze-comment (nil true-listp))
 
