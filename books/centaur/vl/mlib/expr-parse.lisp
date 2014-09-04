@@ -78,19 +78,23 @@ won't be sized, may refer to invalid wires, etc.</p>"
 
          ((mv tokens ?cmap) (vl-kill-whitespace-and-comments tokens))
          (pstate (make-vl-parsestate :warnings nil))
-         ((mv err val tokens (vl-parsestate pstate))
-          (vl-parse-expression :tokens tokens
-                               :pstate pstate
-                               :config *vl-default-loadconfig*))
+         ((acl2::local-stobjs tokstream) (mv val tokstream))
+         (tokstream (vl-tokstream-update-tokens tokens))
+         (tokstream (vl-tokstream-update-pstate pstate))
+         ((mv err val tokstream)
+          (vl-parse-expression :config *vl-default-loadconfig*))
          ((when err)
           (vl-report-parse-error err tokens)
-          (cw "; vl-parse-expr-from-str: Parsing failed for ~s0.~%" str))
+          (cw "; vl-parse-expr-from-str: Parsing failed for ~s0.~%" str)
+          (mv nil tokstream))
+         ((vl-parsestate pstate) (vl-tokstream->pstate))
          ((when pstate.warnings)
           (vl-cw-ps-seq
            (vl-println "Warnings from VL-PARSE-EXPR-FROM-STR:")
            (vl-print-warnings pstate.warnings))
-          (cw "; vl-parse-expr-from-str: Parser warnings for ~s0." str))
-         ((when tokens)
+          (cw "; vl-parse-expr-from-str: Parser warnings for ~s0." str)
+          (mv nil tokstream))
+         ((when (vl-tokstream->tokens))
           (cw "; vl-parse-expr-from-str: Content remains after parsing an ~
                  expression from the string.~% ~
                  - Original string: ~s0~% ~
@@ -98,8 +102,9 @@ won't be sized, may refer to invalid wires, etc.</p>"
                  - Remaining after parse: ~s2~%"
               str
               (vl-pps-expr val)
-              (vl-tokenlist->string-with-spaces tokens))))
-      val))
+              (vl-tokenlist->string-with-spaces (vl-tokstream->tokens)))
+          (mv nil tokstream)))
+      (mv val tokstream)))
 
   (local (in-theory (enable vl-parse-expr-from-str)))
 
