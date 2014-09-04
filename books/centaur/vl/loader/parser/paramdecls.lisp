@@ -201,7 +201,13 @@ data type for a local type parameter.  We enforce this in the parser.</p>")
   :count strong
   (seq tokstream
         (first := (vl-parse-param-assignment atts localp type))
-        (when (vl-is-token? :vl-comma)
+        ;; We have to be careful here.  The comma may not belong to us.  For
+        ;; instance, we may have something like: module foo #(parameter foo =
+        ;; 1, parameter bar = 2), in which case the comma is separating
+        ;; parameters, not identifiers.  So, only eat the comma if we see an
+        ;; identifier afterward.
+        (when (and (vl-is-token? :vl-comma)
+                   (vl-lookahead-is-token? :vl-idtoken (cdr (vl-tokstream->tokens))))
           (:= (vl-match))
           (rest := (vl-parse-list-of-param-assignments atts localp type)))
         (return (cons first rest))))

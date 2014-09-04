@@ -49,16 +49,16 @@
 ; kinds of items as a big list.  Then, here, we sort it into buckets by type,
 ; and turn it into a module.
 
-  ((name     stringp)
-   (params   ) ;; BOZO guards and such
-   (ports    vl-portlist-p)
-   (items    vl-modelementlist-p)
+  ((name     stringp               "Name of the module.")
+   (params   vl-paramdecllist-p    "Parameters declarations from the #(...) list, if any.")
+   (ports    vl-portlist-p         "Ports like (o, a, b).")
+   (items    vl-modelementlist-p   "Items from the module's body, i.e., until endmodule.")
    (atts     vl-atts-p)
    (minloc   vl-location-p)
    (maxloc   vl-location-p)
    (warnings vl-warninglist-p))
   :returns (mod vl-module-p)
-  (b* (((mv items warnings) (vl-make-implicit-wires items warnings))
+  (b* (((mv items warnings) (vl-make-implicit-wires (append-without-guard params items) warnings))
        ((mv item-ports portdecls assigns vardecls paramdecls
             fundecls taskdecls modinsts gateinsts alwayses initials)
         (vl-sort-modelements items nil nil nil nil nil nil nil nil nil nil nil))
@@ -460,7 +460,7 @@
   :count strong
   (seq tokstream
         ;; No attributes, no localparams allowed.
-        (first := (vl-parse-param-or-localparam-declaration nil nil))
+        (first := (vl-parse-param-or-localparam-declaration nil '(:vl-kwd-parameter)))
         (when (vl-is-token? :vl-comma)
           (:= (vl-match))
           (rest := (vl-parse-module-parameter-port-list-aux)))
