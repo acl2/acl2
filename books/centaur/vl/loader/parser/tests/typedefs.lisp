@@ -32,6 +32,13 @@
 (include-book "base")
 (include-book "../typedefs")
 
+(encapsulate nil
+  (local (in-theory (enable vl-lookahead-is-token?
+                            vl-is-token?)))
+  (defparser-top vl-parse-type-declaration
+    :guard (and (vl-atts-p atts)
+                (vl-lookahead-is-token? :vl-kwd-typedef tokens))))
+
 (defmacro test-parse-typedef (&key input (successp 't)
                                    atts
                                    expect
@@ -44,7 +51,7 @@
                    (pstate (make-vl-parsestate :warnings nil
                                                :usertypes (make-lookup-alist ',pre-usertypes)))
                    (config *vl-default-loadconfig*)
-                   ((mv erp val ?tokens ?pstate) (vl-parse-type-declaration ,atts))
+                   ((mv erp val ?tokens ?pstate) (vl-parse-type-declaration-top ,atts))
                    (- (vl-parsestate-free pstate))
                    (pretty    (and (not erp)
                                    (vl-pretty-type-declaration val)))

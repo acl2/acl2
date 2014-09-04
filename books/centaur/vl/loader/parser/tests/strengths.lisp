@@ -32,12 +32,14 @@
 (include-book "base")
 (include-book "../strengths")
 
+(defparser-top vl-parse-drive-strength-or-charge-strength)
+
 (defmacro test-drive/charge-strength (&key input expect (successp 't))
   `(assert! (let ((tokens (make-test-tokens ,input))
                   (pstate (make-vl-parsestate))
                   (config *vl-default-loadconfig*))
               (mv-let (erp val tokens pstate)
-                (vl-parse-drive-strength-or-charge-strength)
+                (vl-parse-drive-strength-or-charge-strength-top)
                 (declare (ignore tokens))
                 (if erp
                     (prog2$

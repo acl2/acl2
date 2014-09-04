@@ -909,3 +909,4 @@
  :gag-mode :goals
  (verify-guards vl-parse-statement-fn))
 
+(defparser-top vl-parse-statement)

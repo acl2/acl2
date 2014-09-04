@@ -41,12 +41,18 @@
 (defprojection vl-pretty-imports ((x vl-importlist-p))
   (vl-pretty-import x))
 
+(encapsulate nil
+  (local (in-theory (enable vl-is-token? vl-lookahead-is-token?)))
+  (defparser-top vl-parse-package-import-declaration
+    :guard (and (vl-lookahead-is-token? :vl-kwd-import tokens)
+                (vl-atts-p atts))))
+
 (defmacro test-import (&key input expect (successp 't) atts)
   `(assert! (b* ((tokens (make-test-tokens ,input))
                  (pstate (make-vl-parsestate :warnings nil))
                  (config *vl-default-loadconfig*)
                  ((mv erp val ?tokens (vl-parsestate pstate))
-                  (vl-parse-package-import-declaration ,atts))
+                  (vl-parse-package-import-declaration-top ,atts))
                  ((when erp)
                   (cw "ERP is ~x0.~%" erp)
                   (not ,successp)))

@@ -32,13 +32,15 @@
 (include-book "base")
 (include-book "../eventctrl")
 
+(defparser-top vl-parse-delay-or-event-control)
+
 (defmacro test-vl-parse-delay-or-eventcontrol (&key input expect (successp 't))
   `(assert!
     (b* ((tokens (make-test-tokens ,input))
          (pstate (make-vl-parsestate :warnings 'blah-warnings))
          (config *vl-default-loadconfig*)
          ((mv err val tokens (vl-parsestate pstate))
-          (vl-parse-delay-or-event-control))
+          (vl-parse-delay-or-event-control-top))
          ((when err)
           (not ,successp)))
       (debuggable-and ,successp

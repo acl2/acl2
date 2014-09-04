@@ -36,6 +36,8 @@
 
 #||
 
+(defparser-top vl-parse-state)
+
 (let ((tokens (make-test-tokens "foo = bar ;")))
   (mv-let (erp val tokens)
           (vl-parse-statement tokens)

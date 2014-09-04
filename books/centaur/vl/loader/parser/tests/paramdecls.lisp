@@ -85,6 +85,13 @@
                   (vl-usertypes-p (make-lookup-alist x)))
          :hints(("Goal" :in-theory (enable make-lookup-alist)))))
 
+(defparser-top vl-parse-param-or-localparam-declaration
+  :guard (and (vl-atts-p atts)
+              ;; Types says what kinds (local or nonlocal) of parameters we permit
+              (true-listp types)
+              (subsetp types '(:vl-kwd-parameter :vl-kwd-localparam)))
+  :resulttype vl-paramdecllist-p)
+
 (define vl-run-paramdecltest ((test vl-paramdecltest-p)
                               (config vl-loadconfig-p))
   (b* (((vl-paramdecltest test) test)
@@ -94,10 +101,13 @@
        (atts     '(("blah")))
        (- (cw "~|-----~%Parsing as ~x0: ~s1~%" (vl-loadconfig->edition config) test.input))
        ((mv err val ?tokens (vl-parsestate pstate))
-        (vl-parse-param-or-localparam-declaration atts '(:vl-kwd-parameter :vl-kwd-localparam)))
+        (vl-parse-param-or-localparam-declaration-top atts '(:vl-kwd-parameter :vl-kwd-localparam)))
        (- (vl-parsestate-free pstate))
+       ((when err)
+        (if test.successp
+            (raise "Expected successful test but got error: ~s0" err)
+          (prog2$ (cw "ERR: ~x0.~%" err) t)))
        (pretty (vl-pretty-paramdecls val))
-       (- (cw "ERR: ~x0.~%" err))
        (- (cw "VAL: ~x0.~%" val))
        (- (cw "Pretty value: ~x0.~%" pretty))
        (- (cw "Expected:     ~x0.~%" test.expect))

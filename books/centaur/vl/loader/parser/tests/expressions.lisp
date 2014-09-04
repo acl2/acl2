@@ -58,6 +58,8 @@
   (make-exprtest-fail x)
   :guard (exprtestlist-p x))
 
+(defparser-top vl-parse-expression :resulttype vl-expr-p)
+
 (define run-exprtest ((test exprtest-p)
                       &key
                       ((config vl-loadconfig-p) '*vl-default-loadconfig*))
@@ -78,11 +80,11 @@
        ((mv tokens ?cmap) (vl-kill-whitespace-and-comments tokens))
        (pstate            (make-vl-parsestate :warnings warnings))
        ((mv errmsg? val tokens pstate)
-        (vl-parse-expression :tokens tokens
-                             :pstate pstate
-                             :config config))
+        (vl-parse-expression-top :tokens tokens
+                                 :pstate pstate
+                                 :config config))
        (remainder (vl-tokenlist->string-with-spaces tokens))
-       (pretty (and val (vl-pretty-expr val)))
+       (pretty (and (not errmsg?) (vl-pretty-expr val)))
 
        (test-okp
 

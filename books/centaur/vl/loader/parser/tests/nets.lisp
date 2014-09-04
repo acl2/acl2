@@ -61,13 +61,15 @@
      (test-assign-aux (cdr assigns) (cdr lvalues) (cdr exprs)
                       str rise fall high atts))))
 
+(defparser-top vl-parse-continuous-assign)
+
 (defmacro test-assign
   (&key input lvalues exprs str rise fall high atts (successp 't))
   `(assert!
     (b* ((config   *vl-default-loadconfig*)
          (tokens   (make-test-tokens ,input))
          (pstate   (make-vl-parsestate :warnings 'blah-warnings))
-         ((mv erp val ?tokens ?pstate) (vl-parse-continuous-assign ',atts))
+         ((mv erp val ?tokens ?pstate) (vl-parse-continuous-assign-top ',atts))
          ((when erp)
           (cw "ERP: ~x0.~%" erp)
           (not ,successp)))
@@ -172,6 +174,8 @@
         (test-decls-aux (cdr decls) (cdr ids)  type range (cdr arrdims) vectoredp scalaredp
                         signedp rise fall high cstrength))))))
 
+(defparser-top vl-parse-net-declaration)
+
 (defmacro test-netdecl (&key input atts
                              ;; stuff for assignments
                              lvalues exprs str assign-rise assign-fall assign-high
@@ -182,7 +186,7 @@
     (b* ((config *vl-default-loadconfig*)
          (tokens (make-test-tokens ,input))
          (pstate (make-vl-parsestate :warnings nil))
-         ((mv erp val ?tokens ?pstate) (vl-parse-net-declaration ',atts))
+         ((mv erp val ?tokens ?pstate) (vl-parse-net-declaration-top ',atts))
          ((when erp)
           (cw "ERP: ~x0.~%" erp)
           (not ,successp)))

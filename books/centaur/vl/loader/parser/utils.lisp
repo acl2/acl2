@@ -411,6 +411,7 @@ frequently.</p>")
        ;;   ,body)
        ,body
        ///
+
        (ACL2::add-to-ruleset defparser-type-prescriptions '((:t ,name)))
 
        ;; (defthm ,(intern-in-package-of-symbol
@@ -588,6 +589,32 @@ frequently.</p>")
 
 (defmacro defparser (name formals &rest args)
   (defparser-fn name formals args))
+
+(defun defparser-top-fn (name guard resulttype state)
+  (declare (xargs :mode :program :stobjs state))
+  (b* ((wrld (w state))
+       (fnname (acl2::deref-macro-name name (acl2::macro-aliases wrld)))
+       (formals (acl2::formals fnname wrld))
+       (formals (set-difference-eq formals '(tokstream config))))
+    `(define ,(intern-in-package-of-symbol (cat (symbol-name name) "-TOP") name)
+       ,(append formals '(&key ((tokens vl-tokenlist-p) 'tokens)
+                               ((pstate vl-parsestate-p) 'pstate)
+                               ((config vl-loadconfig-p) 'config)))
+       :guard ,guard
+       :returns (mv erp
+                    (result . ,(and resulttype `((implies (and (not erp) ,guard)
+                                                          (,resulttype result)))))
+                    (tokens vl-tokenlist-p)
+                    (pstate vl-parsestate-p))
+       (b* (((acl2::local-stobjs tokstream)
+             (mv erp result tokens pstate tokstream))
+            (tokstream (vl-tokstream-update-tokens tokens))
+            (tokstream (vl-tokstream-update-pstate pstate))
+            ((mv erp result tokstream) (,name . ,formals)))
+         (mv erp result (vl-tokstream->tokens) (vl-tokstream->pstate) tokstream)))))
+
+(defmacro defparser-top (name &key (guard 't) resulttype)
+  `(make-event (defparser-top-fn ',name ',guard ',resulttype state)))
 
 (define expand-defparsers (forms)
   ;; For mutually recursive parsers.  FORMS should be a list of defparser

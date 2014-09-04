@@ -2493,6 +2493,8 @@ identifier, so we convert it into a hidpiece.</p>"
  :off prove :gag-mode :goals
  (verify-guards vl-parse-expression-fn))
 
+(defparser-top vl-parse-expression :resulttype vl-expr-p)
+
 
 
 

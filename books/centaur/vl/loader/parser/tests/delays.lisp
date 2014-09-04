@@ -32,12 +32,14 @@
 (include-book "base")
 (include-book "../delays")
 
+(defparser-top vl-parse-delay3)
+
 (defmacro test-delay3 (&key input rise fall high (successp 't))
   `(assert!
     (b* ((config *vl-default-loadconfig*)
          (tokens (make-test-tokens ,input))
          (pstate (make-vl-parsestate :warnings 'blah-warnings))
-         ((mv erp val ?tokens (vl-parsestate pstate)) (vl-parse-delay3))
+         ((mv erp val ?tokens (vl-parsestate pstate)) (vl-parse-delay3-top))
          ((when erp)
           (cw "ERP is ~x0.~%" erp)
           (and (equal pstate.warnings 'blah-warnings)
