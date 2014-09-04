@@ -337,6 +337,90 @@ We produce a list of one-bit @(see vl-vardecl-p)s, one for each name in
     (equal (vl-vardecllist->names (vl-make-ordinary-implicit-wires loc names))
            (string-list-fix names))))
 
+(define vl-collect-exprs-for-implicit-wires-from-namedarg
+  :parents (vl-modinst-exprs-for-implicit-wires)
+  ((x vl-namedarg-p))
+  :returns
+  (mv (main vl-exprlist-p "Expressions where implicit wires are allowed.")
+      (other vl-exprlist-p "Expressions where implicit wires are not allowed."))
+  (b* (((vl-namedarg x))
+       ((when x.nameonly-p)
+        ;; SystemVerilog name-only style arguments like .foo are not allowed to
+        ;; introduce implicit wires, so put them into the "other" wires.
+        (mv nil (vl-maybe-expr-allexprs x.expr))))
+    (mv (vl-maybe-expr-allexprs x.expr) nil))
+  ///
+  (defmvtypes vl-collect-exprs-for-implicit-wires-from-namedarg (true-listp true-listp))
+
+  (defthm vl-collect-exprs-for-implicit-wires-from-namedarg-complete
+    ;; Just to make sure we keep this up to date if we ever change
+    ;; vl-namedarg-allexprs
+    (b* (((mv main other)
+          (vl-collect-exprs-for-implicit-wires-from-namedarg x)))
+      (set-equiv (append main other)
+                 (vl-namedarg-allexprs x)))
+    :hints(("Goal" :in-theory (enable set-equiv vl-namedarg-allexprs)))))
+
+(define vl-collect-exprs-for-implicit-wires-from-namedargs
+  :parents (vl-modinst-exprs-for-implicit-wires)
+  ((x vl-namedarglist-p))
+  :returns
+  (mv (main vl-exprlist-p "Expressions where implicit wires are allowed.")
+      (other vl-exprlist-p "Expressions where implicit wires are not allowed."))
+  (b* (((when (atom x))
+        (mv nil nil))
+       ((mv main1 other1) (vl-collect-exprs-for-implicit-wires-from-namedarg (car x)))
+       ((mv main2 other2) (vl-collect-exprs-for-implicit-wires-from-namedargs (cdr x))))
+    (mv (append main1 main2)
+        (append other1 other2)))
+  ///
+  (defmvtypes vl-collect-exprs-for-implicit-wires-from-namedargs (true-listp true-listp))
+
+  (local (defthm l1
+           (b* (((mv main other)
+                 (vl-collect-exprs-for-implicit-wires-from-namedarg x)))
+             (set-equiv (vl-namedarg-allexprs x)
+                        (append main other)))))
+
+  (local (in-theory (disable vl-collect-exprs-for-implicit-wires-from-namedarg-complete)))
+
+  (defthm vl-collect-exprs-for-implicit-wires-from-namedargs-complete
+    ;; Just to make sure we keep this up to date if we ever change
+    ;; vl-namedarglist-allexprs
+    (b* (((mv main other)
+          (vl-collect-exprs-for-implicit-wires-from-namedargs x)))
+      (set-equiv (append main other)
+                 (vl-namedarglist-allexprs x)))
+    :hints(("Goal"
+            :induct (len x)
+            :in-theory (enable set-equiv vl-namedarglist-allexprs)))))
+
+(define vl-collect-exprs-for-implicit-wires-from-portargs
+  :parents (vl-modinst-exprs-for-implicit-wires)
+  ((x vl-arguments-p))
+  :returns
+  (mv (main vl-exprlist-p "Expressions where implicit wires are allowed.")
+      (other vl-exprlist-p "Expressions where implicit wires are not allowed."))
+  (vl-arguments-case x
+    (:vl-arguments-named
+     (vl-collect-exprs-for-implicit-wires-from-namedargs x.args))
+    (:vl-arguments-plain
+     ;; If using plain arguments, there are no .name style arguments, so
+     ;; everything is allowed to have implicit wires.
+     (mv (vl-plainarglist-allexprs x.args)
+         nil)))
+  ///
+  (defmvtypes vl-collect-exprs-for-implicit-wires-from-portargs (true-listp true-listp))
+
+  (defthm vl-collect-exprs-for-implicit-wires-from-portargs-complete
+    ;; Just to make sure we keep this up to date if we ever change
+    ;; vl-arguments-allexprs
+    (b* (((mv main other)
+          (vl-collect-exprs-for-implicit-wires-from-portargs x)))
+      (set-equiv (append main other)
+                 (vl-arguments-allexprs x)))
+    :hints(("Goal"
+            :in-theory (enable set-equiv vl-arguments-allexprs)))))
 
 (define vl-modinst-exprs-for-implicit-wires
   :parents (make-implicit-wires)
@@ -349,11 +433,13 @@ We produce a list of one-bit @(see vl-vardecl-p)s, one for each name in
       (other vl-exprlist-p
              "The other expressions in the module instance (its range,
               parameter list, etc.) where implicit wires aren't allowed."))
-  (b* (((vl-modinst x) x))
-    (mv (vl-arguments-allexprs x.portargs)
-        (append (vl-maybe-range-allexprs x.range)
-                (vl-paramargs-allexprs x.paramargs)
-                (vl-maybe-gatedelay-allexprs x.delay))))
+  (b* (((vl-modinst x) x)
+       ((mv main other)
+        (vl-collect-exprs-for-implicit-wires-from-portargs x.portargs)))
+    (mv main (append other
+                     (vl-maybe-range-allexprs x.range)
+                     (vl-paramargs-allexprs x.paramargs)
+                     (vl-maybe-gatedelay-allexprs x.delay))))
   ///
   (defmvtypes vl-modinst-exprs-for-implicit-wires (true-listp true-listp))
 
@@ -365,7 +451,6 @@ We produce a list of one-bit @(see vl-vardecl-p)s, one for each name in
                          (mv-nth 1 ret))
                  (vl-modinst-allexprs x)))
     :hints(("Goal" :in-theory (enable set-equiv vl-modinst-allexprs)))))
-
 
 
 (define vl-gateinst-exprs-for-implicit-wires
