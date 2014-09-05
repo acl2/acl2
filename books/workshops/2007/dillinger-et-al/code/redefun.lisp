@@ -14,7 +14,7 @@
   (er-let*
    ((tuple (chk-acceptable-defuns (list def) ctx wrld state)))
    (assert$
-    (equal (length tuple) 22)
+    (equal (length tuple) 23)
     (let* ((name (car def))
            (new-wrld (nth 18 tuple))
            (old-symbol-class
