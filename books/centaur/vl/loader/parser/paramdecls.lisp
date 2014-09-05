@@ -638,3 +638,19 @@ data type for a local type parameter.  We enforce this in the parser.</p>")
          (return ans))
        (ans := (vl-parse-module-parameter-port-list-2012))
        (return ans)))
+
+(defparser vl-maybe-parse-parameter-port-list ()
+  ;; parses the parameter port list if the next token is #
+  :result (vl-paramdecllist-p val)
+  :resultp-of-nil t
+  :true-listp t
+  :fails gracefully
+  :count weak
+  (seq tokstream
+       (when (vl-is-token? :vl-pound)
+         (:= (vl-match))
+         (:= (vl-match-token :vl-lparen))
+         (res := (vl-parse-module-parameter-port-list))
+         (:= (vl-match-token :vl-rparen))
+         (return res))
+       (return nil)))

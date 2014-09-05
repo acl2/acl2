@@ -470,12 +470,6 @@ A very useful tracing mechanism for debugging:
    (make-exprtest :input "-1 ** +2"
                   :expect '(:vl-binary-power nil (:vl-unary-minus nil 1) (:vl-unary-plus nil 2)))
 
-   ;; BOZO wtf ?? can this be right?
-   (make-exprtest :input "1--2"
-                  :expect '(:vl-binary-minus nil 1 (:vl-unary-minus nil 2)))
-
-   (make-exprtest :input "1++2"
-                  :expect '(:vl-binary-plus nil 1 (:vl-unary-plus nil 2)))
 
 
    (make-exprtest :input "3 < (1 << 2)"
@@ -486,6 +480,24 @@ A very useful tracing mechanism for debugging:
                   :expect '(:vl-binary-plus nil (:vl-binary-shl ("VL_EXPLICIT_PARENS") 3 1) 2))
 
    ))
+
+(defconst *basic-precedence-tests-2005*
+  (list 
+   ;; BOZO wtf ?? can this be right?
+   (make-exprtest :input "1--2"
+                  :expect '(:vl-binary-minus nil 1 (:vl-unary-minus nil 2)))
+
+   (make-exprtest :input "1++2"
+                  :expect '(:vl-binary-plus nil 1 (:vl-unary-plus nil 2)))))
+
+(defconst *basic-precedence-tests-2012*
+  (list 
+   (make-exprtest :input "1--2" :expect 1
+                  :remainder "-- 2")
+
+   (make-exprtest :input "1++2" :expect 1
+                  :remainder "++ 2")))
+
 
 (defconst *basic-atts-tests*
   (list
@@ -570,6 +582,14 @@ A very useful tracing mechanism for debugging:
   (run-exprtests *all-basic-tests*
                  :config (make-vl-loadconfig :edition :system-verilog-2012
                                              :strictp t))
+  (run-exprtests *basic-precedence-tests-2005*
+                 :config (make-vl-loadconfig :edition :verilog-2005 :strictp t))
+  (run-exprtests *basic-precedence-tests-2005*
+                 :config (make-vl-loadconfig :edition :verilog-2005 :strictp nil))
+  (run-exprtests *basic-precedence-tests-2012*
+                 :config (make-vl-loadconfig :edition :system-verilog-2012 :strictp t))
+  (run-exprtests *basic-precedence-tests-2012*
+                 :config (make-vl-loadconfig :edition :system-verilog-2012 :strictp nil))
   '(value-triple :success)))
 
 

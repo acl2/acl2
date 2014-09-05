@@ -3047,7 +3047,7 @@ be non-sliceable, at least if it's an input.</p>"
 (encapsulate nil
   (local (include-book "tools/templates" :dir :system))
 
-  (local (defconst *vl-genitem-typenames*
+  (local (defconst *vl-modelement-typenames*
            '(port
              portdecl
              assign
@@ -3071,7 +3071,7 @@ be non-sliceable, at least if it's an input.</p>"
                    (types-mk-strsubst-alists (cdr types))))))
 
   (local (defconst *strsubst-alists*
-           (types-mk-strsubst-alists *vl-genitem-typenames*)))
+           (types-mk-strsubst-alists *vl-modelement-typenames*)))
 
   ;; (local (defun types-mk-atom-alists (types)
   ;;          (if (atom types)
@@ -3080,7 +3080,7 @@ be non-sliceable, at least if it's an input.</p>"
   ;;                  (types-mk-atom-alists (cdr types)))))))
 
   ;; (local (defconst *atom-alists*
-  ;;          (types-mk-atom-alists *vl-genitem-typenames*)))
+  ;;          (types-mk-atom-alists *vl-modelement-typenames*)))
 
   (local (defun project-over-types-rec (template strsubst-alists)
            (declare (xargs :mode :program))
@@ -3113,7 +3113,7 @@ be non-sliceable, at least if it's an input.</p>"
 
   (make-event
    `(progn
-      (deftranssum vl-genitem
+      (deftranssum vl-modelement
         :short "Recognizer for an arbitrary module element."
 
         :long "<p>It is sometimes useful to be able to deal with module elements of
@@ -3123,15 +3123,15 @@ our @(see parser), where before module formation, the module elements are
 initially kept in a big, mixed list.</p>"
         ,(project-over-types 'vl-__type__))
 
-      (fty::deflist vl-genitemlist
-        :elt-type vl-genitem-p
+      (fty::deflist vl-modelementlist
+        :elt-type vl-modelement-p
         :elementp-of-nil nil
         ///
-        (local (in-theory (enable vl-genitemlist-p)))
+        (local (in-theory (enable vl-modelementlist-p)))
         . ,(project-over-types
-            '(defthm vl-genitemlist-p-when-vl-__type__list-p
+            '(defthm vl-modelementlist-p-when-vl-__type__list-p
                (implies (vl-__type__list-p x)
-                        (vl-genitemlist-p x)))))))
+                        (vl-modelementlist-p x)))))))
 
   (deftypes vl-genelement
     (deftagsum vl-genelement
@@ -3180,7 +3180,7 @@ initially kept in a big, mixed list.</p>"
        :base-name vl-genbase
        :layout :tree
        :short "A basic module/generate item"
-       ((item      vl-genitem        "a generate item")))
+       ((item      vl-modelement        "a generate item")))
 
       :measure (two-nats-measure (acl2-count x) 1))
 
@@ -3210,9 +3210,9 @@ initially kept in a big, mixed list.</p>"
   (make-event
    `(progn
       (defprod vl-genelement-collection
-        :short "A sorted collection of module elements (see @(see vl-genitem))."
-        :long "<p>A vl-genitem-collection can be made from a @(see
-vl-genitemlist) by sorting the elements by type.  Its fields each contain
+        :short "A sorted collection of module elements (see @(see vl-modelement))."
+        :long "<p>A vl-modelement-collection can be made from a @(see
+vl-modelementlist) by sorting the elements by type.  Its fields each contain
 the list of elements of the given type.</p>"
         (,@(project-over-types
             '(__type__s vl-__type__list-p))
@@ -3222,11 +3222,11 @@ the list of elements of the given type.</p>"
         :layout :tree)
 
 
-      (define vl-genitem-loc ((x vl-genitem-p))
-        :short "Get the location of any @(see vl-genitem-p)."
+      (define vl-modelement-loc ((x vl-modelement-p))
+        :short "Get the location of any @(see vl-modelement-p)."
         :returns (loc vl-location-p
-                      :hints(("Goal" :in-theory (enable vl-genitem-fix))))
-        (b* ((x (vl-genitem-fix x)))
+                      :hints(("Goal" :in-theory (enable vl-modelement-fix))))
+        (b* ((x (vl-modelement-fix x)))
           
           (case (tag x)
             . ,(project-over-types
@@ -3237,7 +3237,7 @@ the list of elements of the given type.</p>"
         :returns (loc vl-location-p
                       :hints(("Goal" :in-theory (enable vl-genelement-fix))))
         (vl-genelement-case x
-          :vl-genbase (vl-genitem-loc x.item)
+          :vl-genbase (vl-modelement-loc x.item)
           :vl-genloop   x.loc
           :vl-genif     x.loc
           :vl-gencase   x.loc))
@@ -3307,7 +3307,7 @@ the list of elements of the given type.</p>"
                             ,@(project-over-types
                                'vl-__type__list-p-when-subsetp-equal)
                             ,@(project-over-types
-                               'vl-genitemlist-p-when-vl-__type__list-p)
+                               'vl-modelementlist-p-when-vl-__type__list-p)
                             (:rules-of-class :type-prescription :here)
                             (:ruleset tag-reasoning))))))
 
@@ -3320,12 +3320,12 @@ the list of elements of the given type.</p>"
            :generates generates))))))
 
 
-(define vl-genitemlist->genelements ((x vl-genitemlist-p))
+(define vl-modelementlist->genelements ((x vl-modelementlist-p))
   :returns (xx vl-genelementlist-p)
   (if (atom x)
       nil
     (cons (make-vl-genbase :item (car x))
-          (vl-genitemlist->genelements (cdr x)))))
+          (vl-modelementlist->genelements (cdr x)))))
 
 (defprod vl-context
   :short "Description of where an expression occurs."
@@ -3333,7 +3333,7 @@ the list of elements of the given type.</p>"
   :layout :tree
   ((mod  stringp :rule-classes :type-prescription
          "The module where this module element was taken from.")
-   (elem vl-genitem-p
+   (elem vl-modelement-p
          "Some element from the module.")))
 
 

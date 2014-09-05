@@ -1311,3 +1311,19 @@ parser when we encounter such an ending.</p>"
 
    (loc  vl-location-p
          "The location of this name, for mismatch reporting.")))
+
+(defparser vl-parse-endblock-name (name blktype)
+  :guard (and (stringp name) (stringp blktype))
+  :count weak
+  :fails :gracefully
+  (seq tokstream
+       (unless (and (not (eq (vl-loadconfig->edition config) :verilog-2005))
+                    (vl-is-token? :vl-colon))
+         (return nil))
+       (:= (vl-match))
+       (endname := (vl-match-token :vl-idtoken))
+       (when (equal name (vl-idtoken->name endname))
+         (return name))
+       (return-raw
+        (vl-parse-error
+         (cat "Mismatched " blktype " names: " name (vl-idtoken->name endname))))))

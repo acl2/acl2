@@ -54,7 +54,7 @@
    (warnings vl-warninglist-p))
   :returns (mod vl-module-p)
   (b* (((mv items warnings) (vl-make-implicit-wires
-                             (append-without-guard (vl-genitemlist->genelements params)
+                             (append-without-guard (vl-modelementlist->genelements params)
                                                    items)
                              warnings))
        ((vl-genelement-collection c) (vl-sort-genelements items))
@@ -134,45 +134,21 @@
 ;       with until the end of the module 'belong' to this module.
 
   (seq tokstream
-        (when (vl-is-token? :vl-pound)
-          (params := (vl-parse-module-parameter-port-list)))
-        (when (vl-is-token? :vl-lparen)
-          (ports := (vl-parse-list-of-ports)))
-        (:= (vl-match-token :vl-semi))
-        (items := (vl-parse-0+-genelements))
-        (endkwd := (vl-match-token :vl-kwd-endmodule))
+       (params := (vl-maybe-parse-parameter-port-list))
+       (ports := (vl-maybe-parse-list-of-ports))
+       (:= (vl-match-token :vl-semi))
+       (items := (vl-parse-0+-genelements))
+       (endkwd := (vl-match-token :vl-kwd-endmodule))
 
-        ;; BOZO SystemVerilog adds various things we don't support yet, but it
-        ;; definitely adds "endmodule : name" style endings.
-        (when (and (vl-is-token? :vl-colon)
-                   (not (eq (vl-loadconfig->edition config) :verilog-2005)))
-          (:= (vl-match-token :vl-colon))
-          (endname := (vl-match-token :vl-idtoken)))
+       (:= (vl-parse-endblock-name (vl-idtoken->name id) "module/endmodule"))
 
-        (when (and endname
-                   (not (equal (vl-idtoken->name id) (vl-idtoken->name endname))))
-          (return-raw
-           (vl-parse-error
-            (cat "Mismatched module/endmodule pair: expected "
-                 (vl-idtoken->name id) " but found "
-                 (vl-idtoken->name endname)))))
-
-        (return (vl-make-module-by-items (vl-idtoken->name id)
-                                         params ports items atts
-                                         (vl-token->loc module_keyword)
-                                         (vl-token->loc endkwd)
-                                         (vl-parsestate->warnings (vl-tokstream->pstate))))))
+       (return (vl-make-module-by-items (vl-idtoken->name id)
+                                        params ports items atts
+                                        (vl-token->loc module_keyword)
+                                        (vl-token->loc endkwd)
+                                        (vl-parsestate->warnings (vl-tokstream->pstate))))))
 
 
-(define vl-genelementlist->portdecls ((x vl-genelementlist-p))
-  :returns (portdecls vl-portdecllist-p)
-  (if (atom x)
-      nil
-    (if (and (eq (vl-genelement-kind (car x)) :vl-genbase)
-             (eq (tag (vl-genbase->item (car x))) :vl-portdecl))
-        (cons (vl-genbase->item (car x))
-              (vl-genelementlist->portdecls (cdr x)))
-      (vl-genelementlist->portdecls (cdr x)))))
 
 (defparser vl-parse-module-declaration-ansi (atts module_keyword id)
   :guard (and (vl-atts-p atts)
@@ -190,43 +166,29 @@
 ;        'endmodule'
 
   (seq tokstream
-        (when (vl-is-token? :vl-pound)
-          (params := (vl-parse-module-parameter-port-list)))
-        (when (vl-is-token? :vl-lparen)
-          ((portdecls . netdecls) := (vl-parse-list-of-port-declarations)))
-        (:= (vl-match-token :vl-semi))
-        (items := (vl-parse-0+-genelements))
-        (endkwd := (vl-match-token :vl-kwd-endmodule))
+       (params := (vl-maybe-parse-parameter-port-list))
+       ((portdecls . netdecls) := (vl-maybe-parse-list-of-port-declarations))
+       (:= (vl-match-token :vl-semi))
+       (items := (vl-parse-0+-genelements))
+       (endkwd := (vl-match-token :vl-kwd-endmodule))
 
-        ;; BOZO SystemVerilog adds various things we don't support yet, but it
-        ;; definitely adds ": name" endings:
-        (when (and (vl-is-token? :vl-colon)
-                   (not (eq (vl-loadconfig->edition config) :verilog-2005)))
-          (:= (vl-match-token :vl-colon))
-          (endname := (vl-match-token :vl-idtoken)))
-        (when (and endname
-                   (not (equal (vl-idtoken->name id) (vl-idtoken->name endname))))
-          (return-raw
-           (vl-parse-error
-            (cat "Mismatched module/endmodule pair: expected "
-                 (vl-idtoken->name id) " but found "
-                 (vl-idtoken->name endname)))))
+       (:= (vl-parse-endblock-name (vl-idtoken->name id) "module/endmodule"))
 
-        (return-raw
-         (b* ((item-portdecls (vl-genelementlist->portdecls items))
-              ((when item-portdecls)
-               (vl-parse-error "ANSI module contained internal portdecls"))
-              (module (vl-make-module-by-items (vl-idtoken->name id)
-                                               params
-                                               (vl-ports-from-portdecls portdecls)
-                                               (append (vl-genitemlist->genelements netdecls)
-                                                       (vl-genitemlist->genelements portdecls)
-                                                       items)
-                                               atts
-                                               (vl-token->loc module_keyword)
-                                               (vl-token->loc endkwd)
-                                               (vl-parsestate->warnings (vl-tokstream->pstate)))))
-           (mv nil module tokstream)))))
+       (return-raw
+        (b* ((item-portdecls (vl-genelementlist->portdecls items))
+             ((when item-portdecls)
+              (vl-parse-error "ANSI module contained internal portdecls"))
+             (module (vl-make-module-by-items (vl-idtoken->name id)
+                                              params
+                                              (vl-ports-from-portdecls portdecls)
+                                              (append (vl-modelementlist->genelements netdecls)
+                                                      (vl-modelementlist->genelements portdecls)
+                                                      items)
+                                              atts
+                                              (vl-token->loc module_keyword)
+                                              (vl-token->loc endkwd)
+                                              (vl-parsestate->warnings (vl-tokstream->pstate)))))
+          (mv nil module tokstream)))))
 
 
 (defparser vl-parse-module-main (atts module_keyword id)

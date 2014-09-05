@@ -148,7 +148,7 @@
 (defparser vl-parse-specify-block-aux ()
   ;; BOZO this is really not implemented.  We just read until endspecify,
   ;; throwing away any tokens we encounter until it.
-  :result (vl-genitemlist-p val)
+  :result (vl-modelementlist-p val)
   :resultp-of-nil t
   :true-listp t
   :fails gracefully
@@ -162,7 +162,7 @@
         (return nil)))
 
 (defparser vl-parse-specify-block ()
-  :result (vl-genitemlist-p val)
+  :result (vl-modelementlist-p val)
   :resultp-of-nil t
   :true-listp t
   :fails gracefully
@@ -180,7 +180,7 @@
 
 (defparser vl-parse-specparam-declaration (atts)
   :guard (vl-atts-p atts)
-  :result (vl-genitemlist-p val)
+  :result (vl-modelementlist-p val)
   :resultp-of-nil t
   :true-listp t
   :fails gracefully
@@ -190,7 +190,7 @@
 
 (defparser vl-parse-genvar-declaration (atts)
   :guard (vl-atts-p atts)
-  :result (vl-genitemlist-p val)
+  :result (vl-modelementlist-p val)
   :resultp-of-nil t
   :true-listp t
   :fails gracefully
@@ -206,7 +206,7 @@
 
 (defparser vl-parse-parameter-override (atts)
   :guard (vl-atts-p atts)
-  :result (vl-genitemlist-p val)
+  :result (vl-modelementlist-p val)
   :resultp-of-nil t
   :true-listp t
   :fails gracefully
@@ -220,19 +220,19 @@
   (strip-cars *vl-netdecltypes-kwd-alist*))
 
 
-(defthm vl-genitem-p-of-vl-parse-fwd-typedef
+(defthm vl-modelement-p-of-vl-parse-fwd-typedef
   (implies (and (force (vl-atts-p atts))
                 (force (vl-is-token? :vl-kwd-typedef)))
            (b* (((mv err res) (vl-parse-fwd-typedef atts)))
-             (equal (vl-genitem-p res)
+             (equal (vl-modelement-p res)
                     (not err))))
   :hints(("Goal" :in-theory (enable vl-parse-fwd-typedef))))
 
-(defthm vl-genitem-p-of-vl-parse-type-declaration
+(defthm vl-modelement-p-of-vl-parse-type-declaration
   (implies (and (force (vl-atts-p atts))
                 (force (vl-is-token? :vl-kwd-typedef)))
            (b* (((mv err res) (vl-parse-type-declaration atts)))
-             (equal (vl-genitem-p res)
+             (equal (vl-modelement-p res)
                     (not err))))
   :hints(("Goal" :in-theory (enable vl-parse-type-declaration))))
 
@@ -249,19 +249,19 @@
                              acl2::len-when-atom
                              default-car)))
 
-  (local (defthm vl-genitem-p-when-vl-blockitem-p
+  (local (defthm vl-modelement-p-when-vl-blockitem-p
            (implies (vl-blockitem-p x)
-                    (vl-genitem-p x))
-           :hints(("Goal" :in-theory (enable vl-blockitem-p vl-genitem-p)))))
+                    (vl-modelement-p x))
+           :hints(("Goal" :in-theory (enable vl-blockitem-p vl-modelement-p)))))
 
-  (local (defthm vl-genitemlist-p-when-vl-blockitemlist-p
+  (local (defthm vl-modelementlist-p-when-vl-blockitemlist-p
            (implies (vl-blockitemlist-p x)
-                    (vl-genitemlist-p x))
+                    (vl-modelementlist-p x))
            :hints(("Goal" :induct (len x)))))
 
-  (defparser vl-parse-genitem-aux (atts)
+  (defparser vl-parse-modelement-aux (atts)
     :guard (vl-atts-p atts)
-    :result (vl-genitemlist-p val)
+    :result (vl-modelementlist-p val)
     :resultp-of-nil t
     :true-listp t
     :fails gracefully
@@ -359,8 +359,8 @@
       (vl-parse-block-item-declaration-noatts atts))))
 
 
-(defparser vl-parse-genitem ()
-  :result (vl-genitemlist-p val)
+(defparser vl-parse-modelement ()
+  :result (vl-modelementlist-p val)
   :resultp-of-nil t
   :true-listp t
   :fails gracefully
@@ -368,7 +368,7 @@
   (seq tokstream
         (atts := (vl-parse-0+-attribute-instances))
         (return-raw
-         (vl-parse-genitem-aux atts))))
+         (vl-parse-modelement-aux atts))))
 
 (define vl-inc-or-dec-expr ((var stringp) (op (member op '(:vl-plusplus :vl-minusminus))))
   :returns (expr vl-expr-p)
@@ -551,8 +551,8 @@
                (elems := (vl-parse-0+-genelements))
                (:= (vl-match-token :vl-kwd-endgenerate))
                (return elems))
-             (items := (vl-parse-genitem))
-             (return (vl-genitemlist->genelements items)) ))
+             (items := (vl-parse-modelement))
+             (return (vl-modelementlist->genelements items)) ))
 
       (defparser vl-parse-0+-genelements ()
         ;;:result (vl-genelementlist-p val)
