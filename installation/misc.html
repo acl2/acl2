@@ -36,15 +36,10 @@ installing GNU make version 3.80</a>.
 
 <P>
 
-Building ACL2 may fail with 32-bit SBCL because of insufficient heap
-memory.  Harsh Raju Chamarthi points out that a fix is to run SBCL
-with an increased heap size limit, like this:
-<pre>
-make LISP="<sbcl-path>/sbcl --core <core-path>/sbcl.core --dynamic-space-size 1024"
-</pre>
-He adds that this issue occurred while building ACL2 4.0 with SBCL v1.0.40 on linux,
-and the default heap size for SBCL on a standard 32-bit linux is 512MB,
-while for SBCL (64-bit executable) on a 64-bit linux, the default is usually 8GB.
+Building ACL2 with SBCL may require the use
+of <code>--dynamic-space-size</code>.  This is explained in the
+section on <a href="requirements.html#Obtaining-SBCL">Obtaining
+SBCL</a>.
 
 <BR><HR><BR>
 <H3><A NAME="ACL2r">Reasoning about the Real Numbers</H3>
