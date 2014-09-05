@@ -88,37 +88,6 @@
 
 
 
-; module_parameter_port_list ::= '#' '(' parameter_declaration { ',' parameter_declaration } ')'
-
-(defparser vl-parse-module-parameter-port-list-aux ()
-  ;; parameter_declaration { ',' parameter_declaration }
-  :result (vl-paramdecllist-p val)
-  :resultp-of-nil t
-  :true-listp t
-  :fails gracefully
-  :count strong
-  (seq tokstream
-        ;; No attributes, no localparams allowed.
-        (first := (vl-parse-param-or-localparam-declaration nil '(:vl-kwd-parameter)))
-        (when (vl-is-token? :vl-comma)
-          (:= (vl-match))
-          (rest := (vl-parse-module-parameter-port-list-aux)))
-        (return (append first rest))))
-
-(defparser vl-parse-module-parameter-port-list ()
-  :result (vl-paramdecllist-p val)
-  :resultp-of-nil t
-  :true-listp t
-  :fails gracefully
-  :count strong
-  (seq tokstream
-        (:= (vl-match-token :vl-pound))
-        (:= (vl-match-token :vl-lparen))
-        (params := (vl-parse-module-parameter-port-list-aux))
-        (:= (vl-match-token :vl-rparen))
-        (return params)))
-
-
 
 ;                                    MODULES
 ;

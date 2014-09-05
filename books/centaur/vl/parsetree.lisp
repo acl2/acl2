@@ -57,7 +57,7 @@ annotated with a @('version') field that must match exactly this string.</p>"
 
   ;; Current syntax version: generally a string like
   ;; "VL Syntax [date of modification]"
-  "VL Syntax 2014-09-02")
+  "VL Syntax 2014-09-05")
 
 (define vl-syntaxversion-p (x)
   :parents (syntax)
@@ -3594,16 +3594,18 @@ transforms to not modules with this attribute.</p>"
   ((name stringp
          :rule-classes :type-prescription
          "The name of this interface as a string.")
-   (ports    vl-portlist-p)
-   (portdecls vl-portdecllist-p)
-   (vardecls vl-vardecllist-p)
-   (modports vl-modportlist-p)
-   (generates vl-genelementlist-p)
+   (ports      vl-portlist-p)
+   (portdecls  vl-portdecllist-p)
+   (paramdecls vl-paramdecllist-p)
+   (vardecls   vl-vardecllist-p)
+   (modports   vl-modportlist-p)
+   (generates  vl-genelementlist-p)
    ;; ...
    (warnings vl-warninglist-p)
    (minloc   vl-location-p)
    (maxloc   vl-location-p)
    (atts     vl-atts-p)
+   (origname stringp :rule-classes :type-prescription)
    (comments vl-commentmap-p))
   :long "BOZO incomplete stub -- we don't really support interfaces yet.")
 
