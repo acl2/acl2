@@ -371,6 +371,7 @@ frequently.</p>")
        (fails          (cdr (extract-keyword-from-args :fails args)))
        (guard          (extract-keyword-from-args :guard args))
        (guard-debug    (extract-keyword-from-args :guard-debug args))
+       (prepwork       (extract-keyword-from-args :prepwork args))
 
        (parents        (extract-keyword-from-args :parents args))
        (short          (extract-keyword-from-args :short args))
@@ -401,6 +402,7 @@ frequently.</p>")
        ,@(and guard         `(:guard ,(cdr guard)))
        ,@(and guard-debug   `(:guard-debug ,(cdr guard-debug)))
        ,@(and verify-guards `(:verify-guards ,(cdr verify-guards)))
+       ,@(and prepwork      `(:prepwork ,(cdr prepwork)))
        :measure ,measure
        ,@decls
        (declare (ignorable config))
