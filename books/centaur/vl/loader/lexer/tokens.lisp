@@ -127,6 +127,8 @@ SystemVerilog 2012 source code."
             :vl-pounddash  ;;; #-#
             :vl-poundequal ;;; #=#
             :vl-poundpound ;;; ##
+            :vl-plusplus   ;;; ++
+            :vl-minusminus ;;; --
             :vl-pluseq     ;;; +=
             :vl-minuseq    ;;; -=
             :vl-timeseq    ;;; *=

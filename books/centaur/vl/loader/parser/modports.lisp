@@ -47,7 +47,7 @@
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens pstate
+  (seq tokstream
         (loc := (vl-current-loc))
         (unless (vl-is-token? :vl-dot)
           (name := (vl-match-token :vl-idtoken))
@@ -81,14 +81,14 @@
   :resultp-of-nil t
   :fails gracefully
   :count strong
-  (seqw tokens pstate
+  (seq tokstream
         (port1 := (vl-parse-simple-modport-port dir atts))
         (unless (vl-is-token? :vl-comma)
           (return (list port1)))
         ;; use backtracking to know when to stop, i.e. we see a keyword instead of
         ;; an identifier or .identifier(expr)
         (return-raw
-         (seqw-backtrack tokens pstate
+         (seq-backtrack tokstream
                          ((:= (vl-match))
                           (ports2 := (vl-parse-1+-simple-modport-ports dir atts))
                           (return (cons port1 ports2)))
@@ -99,7 +99,7 @@
   :resultp-of-nil t
   :fails gracefully
   :count strong
-  (seqw tokens pstate
+  (seq tokstream
         (:= (vl-match-token :vl-kwd-function))
         (:= (vl-parse-datatype-or-void))
         (:= (vl-match-token :vl-idtoken))
@@ -113,7 +113,7 @@
   :resultp-of-nil t
   :fails gracefully
   :count strong
-  (seqw tokens pstate
+  (seq tokstream
         (:= (vl-match-token :vl-kwd-task))
         (:= (vl-match-token :vl-idtoken))
         (when (vl-is-token? :vl-lparen)
@@ -127,7 +127,7 @@
   :resultp-of-nil t
   :fails :gracefully
   :count strong
-  (seqw-backtrack tokens pstate
+  (seq-backtrack tokstream
                   ((return-raw (vl-parse-function-prototype)))
                   ((return-raw (vl-parse-task-prototype)))))
 
@@ -135,7 +135,7 @@
   :resultp-of-nil t
   :fails :gracefully
   :count strong
-  (seqw-backtrack tokens pstate
+  (seq-backtrack tokstream
                   ((return-raw (vl-parse-method-prototype)))
                   ((:= (vl-match-token :vl-idtoken))
                    (return nil))))
@@ -146,7 +146,7 @@
   :resultp-of-nil t
   :fails gracefully
   :count strong
-  (seqw tokens pstate
+  (seq tokstream
         (atts := (vl-parse-0+-attribute-instances))
         (when (vl-is-some-token? *vl-directions-kwds*)
           (dir := (vl-match-some-token *vl-directions-kwds*))
@@ -177,7 +177,7 @@
   :resultp-of-nil t
   :fails gracefully
   :count strong
-  (seqw tokens pstate
+  (seq tokstream
         (ports1 := (vl-parse-modport-port))
         (when (vl-is-token? :vl-comma)
           (:= (vl-match))
@@ -195,7 +195,7 @@
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens pstate
+  (seq tokstream
         (loc := (vl-current-loc))
         (name := (vl-match-token :vl-idtoken))
         (:= (vl-match-token :vl-lparen))
@@ -216,7 +216,7 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens pstate
+  (seq tokstream
         (port1 := (vl-parse-modport-item atts))
         (when (vl-is-token? :vl-comma)
           (:= (vl-match))
@@ -232,7 +232,7 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens pstate
+  (seq tokstream
         (:= (vl-match-token :vl-kwd-modport))
         (modports := (vl-parse-1+-modport-items atts))
         (return modports)))
