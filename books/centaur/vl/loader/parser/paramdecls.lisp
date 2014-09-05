@@ -487,10 +487,14 @@ data type for a local type parameter.  We enforce this in the parser.</p>")
 
 
 
+; #(...) style module parameters:
+;
+;
+; Verilog-2005 syntax:
+;
+;    module_parameter_port_list ::= '#' '(' parameter_declaration { ',' parameter_declaration } ')'
 
-; module_parameter_port_list ::= '#' '(' parameter_declaration { ',' parameter_declaration } ')'
-
-(defparser vl-parse-module-parameter-port-list-aux ()
+(defparser vl-parse-module-parameter-port-list-aux-2005 ()
   ;; parameter_declaration { ',' parameter_declaration }
   :result (vl-paramdecllist-p val)
   :resultp-of-nil t
@@ -502,10 +506,10 @@ data type for a local type parameter.  We enforce this in the parser.</p>")
         (first := (vl-parse-param-or-localparam-declaration nil '(:vl-kwd-parameter)))
         (when (vl-is-token? :vl-comma)
           (:= (vl-match))
-          (rest := (vl-parse-module-parameter-port-list-aux)))
+          (rest := (vl-parse-module-parameter-port-list-aux-2005)))
         (return (append first rest))))
 
-(defparser vl-parse-module-parameter-port-list ()
+(defparser vl-parse-module-parameter-port-list-2005 ()
   :result (vl-paramdecllist-p val)
   :resultp-of-nil t
   :true-listp t
@@ -514,7 +518,123 @@ data type for a local type parameter.  We enforce this in the parser.</p>")
   (seq tokstream
         (:= (vl-match-token :vl-pound))
         (:= (vl-match-token :vl-lparen))
-        (params := (vl-parse-module-parameter-port-list-aux))
+        (params := (vl-parse-module-parameter-port-list-aux-2005))
         (:= (vl-match-token :vl-rparen))
         (return params)))
 
+; SystemVerilog-2012 extends this considerably:
+;
+;       parameter_port_list ::= '#' '(' list_of_param_assignments { ',' parameter_port_declaration } ')'
+;                             | '#' '(' parameter_port_declaration { ',' parameter_port_declaration } ')'
+;                             | '#' '(' ')'
+;
+;       parameter_port_declaration ::= parameter_declaration
+;                                    | local_parameter_declaration
+;                                    | data_type list_of_param_assignments
+;                                    | 'type' list_of_type_assignments
+
+(defparser vl-parse-parameter-port-declaration-2012 ()
+  ;; SystemVerilog-2012 only.
+  :result (vl-paramdecllist-p val)
+  :resultp-of-nil t
+  :true-listp t
+  :fails gracefully
+  :count strong
+  (seq tokstream
+       (when (vl-is-some-token? '(:vl-kwd-parameter :vl-kwd-localparameter))
+         (decls := (vl-parse-param-or-localparam-declaration-2012
+                    nil ;; no attributes
+                    '(:vl-kwd-parameter :vl-kwd-localparam) ;; allowed to be local or non-local
+                    ))
+         (return decls))
+
+       (when (vl-is-token? :vl-kwd-type)
+         (:= (vl-match))
+         (decls := (vl-parse-list-of-type-assignments nil ;; no attributes
+                                                      nil ;; not local
+                                                      ))
+         (return decls))
+
+       ;; Otherwise, it had better be a data_type.
+       (type := (vl-parse-datatype))
+       (decls := (vl-parse-list-of-param-assignments nil ;; no attributes
+                                                     nil ;; not local
+                                                     (make-vl-explicitvalueparam :type type)))
+       (return decls)))
+
+(defparser vl-parse-1+-parameter-port-declarations-2012 ()
+  ;; SystemVerilog-2012 only.
+  :result (vl-paramdecllist-p val)
+  :resultp-of-nil t
+  :true-listp t
+  :fails gracefully
+  :count strong
+  (seq tokstream
+       (first := (vl-parse-parameter-port-declaration-2012))
+       (when (vl-is-token? :vl-comma)
+         (:= (vl-match))
+         (rest := (vl-parse-1+-parameter-port-declarations-2012)))
+       (return (append first rest))))
+
+(defparser vl-parse-module-parameter-port-list-2012 ()
+  :result (vl-paramdecllist-p val)
+  :resultp-of-nil t
+  :true-listp t
+  :fails gracefully
+  :count strong
+  :prepwork ((local (defthm l0
+                      (implies (vl-is-token? :vl-idtoken)
+                               (vl-idtoken-p (car (vl-tokstream->tokens))))
+                      :hints(("Goal" :in-theory (enable vl-is-token?))))))
+  (seq tokstream
+        (:= (vl-match-token :vl-pound))
+        (:= (vl-match-token :vl-lparen))
+
+        (when (and (vl-is-token? :vl-idtoken)
+                   (not (vl-parsestate-is-user-defined-type-p (vl-idtoken->name (car (vl-tokstream->tokens)))
+                                                              (vl-tokstream->pstate))))
+          ;; Identifier that is not a type.  Seems like a list_of_param_assignments.
+          ;; Some notes:
+          ;;  - The parser for list-of-param-assignments is careful not to eat the comma afterward
+          ;;    unless things continue to look like additional param-assignments.
+          ;;  - I'm not at all clear what the type of these parameter assignments should be, but
+          ;;    it seems most reasonable to treat them as plain-Jane, implicit value parameters,
+          ;;    as we would do if someone had written "parameter" first.
+          (decls1 := (vl-parse-list-of-param-assignments nil ;; no attributes
+                                                         nil ;; not local
+                                                         (make-vl-implicitvalueparam :range nil :sign nil)))
+
+          ;; At this point we should have eaten everything except for the { , parameter_port_declaration }
+          ;; section.  Eat the comma so that we can handle these parameter_port_declarations uniformly
+          ;; with the other cases.
+          (when (vl-is-token? :vl-comma)
+            (:= (vl-match))))
+
+        ;; Now either we had a list_of_param_assignments first or we didn't.
+        ;; Either way, we ate the commas and now we should be looking at a list
+        ;; of 0+ parameter_port_declarations.
+
+        (when (vl-is-token? :vl-rparen)
+          ;; Fine, no parameter port declarations, but #() is allowed in
+          ;; SystemVerilog and it is also fine if we had any decls1 to not have
+          ;; any subsequent, more explicit parameter declarations.
+          (:= (vl-match))
+          (return decls1))
+
+        ;; Otherwise, there should be some parameter_port_declarations.
+        (decls2 := (vl-parse-1+-parameter-port-declarations-2012))
+        (:= (vl-match-token :vl-rparen))
+        (return (append decls1 decls2))))
+
+(defparser vl-parse-module-parameter-port-list ()
+  :result (vl-paramdecllist-p val)
+  :resultp-of-nil t
+  :true-listp t
+  :fails gracefully
+  :count strong
+  (seq tokstream
+       (when (eq (vl-loadconfig->edition config) :verilog-2005)
+         (ans := (vl-parse-module-parameter-port-list-2005))
+         (return ans))
+       (ans := (vl-parse-module-parameter-port-list-2012))
+       (return ans)))

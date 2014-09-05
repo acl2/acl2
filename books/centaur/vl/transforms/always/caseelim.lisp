@@ -546,17 +546,40 @@ for handling @('case(foo) ... 3'b110, 3'b111: ... endcase')."
                               :caselist caselist
                               :default  default
                               :atts     atts)))
-       ((when check)
-        (mv (fatal :type :vl-case-unsupported
-                   :msg "~a0: we don't yet implement priority, unique, or
-                         unique0 checking for case statements."
-                   :args (list (vl-modelement-fix ctx)))
-            (make-vl-casestmt :casetype nil
-                              :check    check
-                              :test     test
-                              :caselist caselist
-                              :default  default
-                              :atts     atts))))
+       (warnings
+        ;; See SystemVerilog-2012 Section 12.5.3 for information about priority,
+        ;; unique, and unique0 case statements.
+        ;;
+        ;; It appears that 'priority' basically just means: it is an error for
+        ;; no case item to match and the case statement does not need a default
+        ;; value.  We won't handle a missing default branch correctly yet, but
+        ;; if there is a default, we'll still do the right thing.
+        ;;
+        ;; For 'unique' or 'unique0', it's supposed to be safe to evaluate the
+        ;; items in any order, and it's a runtime error for multiple cases to
+        ;; simultaneously match.
+        ;;
+        ;;   - As with 'priority', a 'unique' case doesn't need a default, and
+        ;;     we currently won't be able to handle it correctly.
+        ;;
+        ;;   - In case of a violation, the spec says: "the implementation shall
+        ;;     issue a violation report and ___execute the statement associated
+        ;;     with the matching case_item that appears ***FIRST*** in the case
+        ;;     statement, but ***NOT*** the statements associated with other
+        ;;     matching case_items.___" So, creating an ordinary, if-then-else
+        ;;     style structure still gives the correct semantics, even in case
+        ;;     of a violation.
+        ;;
+        ;; It would probably be nicer to do something smarter to handle these,
+        ;; forcing the output to X in case of a violation, etc.  We'll at least
+        ;; issue a warning.
+        (if check
+            (warn :type :vl-case-check
+                  :msg "~a0: we don't yet implement priority, unique, or ~
+                         unique0 checking for case statements.  We will ~
+                         treat this as an ordinary case statement."
+                  :args (list (vl-modelement-fix ctx)))
+          (ok))))
     ;; Else, all sizes are good enough, we can turn it into ifs.  BOZO we're
     ;; going to lose any attributes associated with the case statement.
     ;; Maybe that's okay?
@@ -921,9 +944,10 @@ the same body."
                 :acc new-warnings)))
        (new-warnings
         (if check
-            (warn :type :vl-casezx-unsupported
-                  :msg "~a0: we don't yet implement priority, unique, or
-                         unique0 checking for casez/casex statements."
+            (warn :type :vl-casezx-check
+                  :msg "~a0: we don't yet implement priority, unique, or ~
+                         unique0 checking for casez/x statements.  We will ~
+                         treat this as an ordinary casez/x statement."
                   :args (list (vl-modelement-fix ctx))
                   :acc new-warnings)
           new-warnings))
