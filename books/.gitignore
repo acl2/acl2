@@ -47,3 +47,5 @@ Makefile-tmp
 TMP*.*
 temp-emacs-file.lsp
 *~
+Makefile-certs
+Makefile-sources
