@@ -21,7 +21,7 @@ echo "Making ACL2(h)"
 # need to use single-quote to prevent interpolation of the double
 # quotes in the calling shell.  If your startjob is just a wrapper for
 # bash, you'll want to use $* to pass in the arguments to startjob
-make ACL2_HONS=t LISP=$LISP &> make.log #\
+make acl2h -f books/build/jenkins/Makefile LISP=$LISP &> make.log #\
 #  --name "J_CCL_ACL2H" \
 #  --limits "pmem=4gb,nodes=1:ppn=1,walltime=10:00"
 
