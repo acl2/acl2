@@ -1,5 +1,5 @@
 ; -*- fill-column: 79 -*-
-(force ;
+;
 ; tours.lisp - The Tours
 ;
 ; ACL2 Version 6.5 -- A Computational Logic for Applicative Common Lisp
@@ -32,7 +32,10 @@
 
 (defxdoc |The Tours|
   :parents (acl2-tutorial)
-  :short "The Tours"
+  :short "The tours give an introduction to ACL2.  They describe what ACL2 is
+for, and explain a bit about the ACL2 logic, the theorem prover, and the user
+interface."
+
   :long "<p>@(see ACL2) is a very large, multipurpose system.  You can use it
  as a programming language, a specification language, a modeling language, a
  formal mathematical logic, or a semi-automatic theorem prover, just to name
@@ -41,56 +44,47 @@
  as to whether your project is appropriate for ACL2 we urge you to look over
  this list or contact the ACL2 developers.</p>
 
- <p>ACL2's @(see documentation) is quite extensive (over 4 megabytes)!  To help
- ease your introduction to ACL2, we have built two tours through this
- documentation.  If you are familiar with at least some of ACL2's industrial
- applications, then you will understand the distance between the simple
- examples we talk about in these tours and the kinds of things ACL2 users do
- with the system.</p>
+ <p>ACL2's documentation is quite extensive (over 4 megabytes)!  To help ease
+ your introduction to ACL2, we have built two tours through this documentation.
+ If you are familiar with at least some of ACL2's industrial applications, then
+ you will understand the distance between the simple examples we talk about in
+ these tours and the kinds of things ACL2 users do with the system.</p>
 
- <p>Newcomers to ACL2 should first take the <b>Flying Tour</b>.  Then, if you
- want to know more, take the <b>Walking Tour</b>.  On your first reading,
- follow the two Tours linearly, clicking only on the icon of the Tour you're
- on.  Beware of other links, which might jump you from one tour to the other or
- into the ACL2 User's Manual!  Once you've had a coherent overview of the
- system, you might quickly repeat both Tours to see if there are unvisited
- links you're interested in.</p>
+ <p>Newcomers to ACL2 should first take:</p>
 
- <p>If after all this you want to learn how to use the theorem prover (!), see
- @(see acl2-tutorial).</p>
+ <blockquote><sf><see topic='@(url |A Flying Tour of ACL2|)'><icon
+ src='flying.gif'></icon> The Flying Tour</see></sf></blockquote>
 
- <p>To start a tour, click on the appropriate icon below.</p>
+ <p>Then, if you want to know more, take:</p>
 
- <p><see topic='@(url |A Flying Tour of ACL2|)'><img
- src='flying.gif'></img></see> <see topic='@(url
- |A Walking Tour of ACL2|)'><img src='walking.gif'></img></see></p>
+ <blockquote><sf><see topic='@(url |A Walking Tour of ACL2|)'><icon
+ src='walking.gif'></icon> The Walking Tour</see></sf></blockquote>
 
- <p>If you take the tours in a text-based format (such as using the :DOC
- command in Emacs), they will probably be unsatisfying because we use gif files
- and assume you can navigate ``back.''</p>")
+ <p>On your first reading, follow the two tours linearly, clicking only on the
+ icon of the tour you're on.  Beware of other links, which might jump you from
+ one tour to the other or into the ACL2 User's Manual!  Once you have a
+ coherent overview of the system, you might quickly repeat both Tours to see if
+ there are unvisited links you're interested in.</p>
+
+ <p>After the tours, if you want to learn how to use the theorem prover, see
+ @(see acl2-tutorial).</p>"
+
+ ;; I think this isn't really necessary.  What new user would know how to use
+ ;; :doc or the Emacs documentation without having ever even seen the tours?
+  ;;
+ ;;<p>If you take the tours in a text-based format (such as using the :DOC
+ ;;command in Emacs), they will probably be unsatisfying because we use gif files
+ ;;and assume you can navigate ``back.''</p>
+
+ )
 
 (defxdoc |Pages Written Especially for the Tours|
-  :parents (acl2-tutorial)
-  :short "Placeholder parent for tour pages."
-  :long "<p>To avoid cluttering up the @(see The ACL2 Home Page is generated from ACL2's online documentation
- strings.
- (How else could we achieve the total integration of ACL2's online
- documentation with the home page?)  This page is just an artifact of the
- structure of our documentation strings: each string must belong to a ``major
- section'' of the documentation database.  This page is not structured to be
- used by a person browsing via the Web.  It contains, in an arbitrary order,
- the pages written specificially for the Web user.</p>
-
- <p>Furthermore, browsing the pages below as text, in particular using the
- ACL2 :DOC command, is often unsatisfying because because of the lack of
- support for displaying gif files or for going ``back'' to a node just visited.
- If you wish to look at the pages below, we strongly recommend that you do so
- via a HTML-based Web browser.  Indeed, you should simply visit ACL2's Home
- Page and take one of the Tours.</p>
-
- <p>Generally, the topics listed above will not be of use to the ACL2
- user.</p>")
-
+  :parents (|The Tours|)
+  :short "Placeholder parent for topics within @(see |The Tours|)."
+  ;; BOZO it might be better to use parents and order-subtopics to provide
+  ;; actual table-of-contents style navigation of the tours.  But for now
+  ;; I'll just leave this as a small placeholder.
+  )
 
 (defxdoc |A Flying Tour of ACL2|
   :parents (|Pages Written Especially for the Tours|)

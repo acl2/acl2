@@ -34,4 +34,9 @@
 (defpkg "TOURS"
   (union-eq acl2::*standard-acl2-imports*
             std::*std-exports*
-            '(defxdoc defsection)))
+            '(defxdoc defsection
+               ;; for nicer documentation without extra package nonsense
+               acl2
+               acl2-tutorial
+               interesting-applications
+               )))
