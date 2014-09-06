@@ -28,10 +28,11 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
+#!ACL2 (in-package "ACL2")
 (set-deferred-ttag-notes t state)
-(include-book "std/portcullis" :dir :system)
+(include-book "portcullis")
 (include-book "oslib/portcullis" :dir :system)
 (include-book "centaur/bridge/portcullis" :dir :system)
 (include-book "centaur/satlink/portcullis" :dir :system)
-(ld "centaur/fty/package.lsp" :dir :system)
+(include-book "centaur/fty/portcullis" :dir :system)
 ; cert-flags: ? t :ttags :all :skip-proofs-okp t
