@@ -35,69 +35,74 @@
 (local (include-book "equality"))
 (local (do-not generalize fertilize))
 
-(defdoc autohide
-  ":Doc-Section Miscellaneous
-Tell ACL2 to automatically ~ilc[hide] some terms.~/
+(defxdoc autohide
+  :parents (hide computed-hints)
+  :short "Tell ACL2 to automatically @(see hide) some terms."
+  :long "<p>Autohide is a computed hint (see @(see computed-hints)) that scans
+your proof goals for any uses of certain functions, and instructs ACL2 to wrap
+these calls in @(see hide).  This can be used as a way to tell ACL2 to ignore
+certain irrelevant terms so that proofs can be completed faster.</p>
 
-Autohide is a computed hint (~l[computed-hints]) that scans your proof goals
-for any uses of certain functions, and instructs ACL2 to wrap these calls in
-~ilc[hide].  This can be used as a way to tell ACL2 to ignore certain
-irrelevant terms so that proofs can be completed faster.
-
-In particular, when I want to speed up a proof, I usually start by using
-~ilc[accumulated-persistence] to see if there are expensive rules that do not
+<p>In particular, when I want to speed up a proof, I usually start by using
+@(see accumulated-persistence) to see if there are expensive rules that do not
 seem to be necessary.  Often there are just a couple of expensive rules that
-can be disabled to achieve the bulk of the speedup.
+can be disabled to achieve the bulk of the speedup.</p>
 
-But sometimes the list of rules to disable can get pretty long.  Also, as the
-books you are relying upon are updated and extended with new rules, you might
-need to go back and additionally disable those rules to keep the proof fast.
-These are cases where autohide may be useful.
+<p>But sometimes the list of rules to disable can get pretty long.  Also, as
+the books you are relying upon are updated and extended with new rules, you
+might need to go back and additionally disable those rules to keep the proof
+fast.  These are cases where autohide may be useful.</p>
 
-Instead of disabling specific rules, autohide tells ACL2 to wrap calls of
-certain functions in ~ilc[hide], effectively telling the prover to ignore those
-terms.  If you know that, say, the ~ilc[member-equal] terms you are going to
-encounter are really irrelevant to what you're trying to prove, then you might
-just autohide ~c[member-equal] instead of trying to disable ten rules about
-it.~/
+<p>Instead of disabling specific rules, autohide tells ACL2 to wrap calls of
+certain functions in @(see hide), effectively telling the prover to ignore
+those terms.  If you know that, say, the @(see member-equal) terms you are
+going to encounter are really irrelevant to what you're trying to prove, then
+you might just autohide @('member-equal') instead of trying to disable ten
+rules about it.</p>
 
-~st[Basic Usage]
-~bv[]
- (include-book \"clause-processors/autohide\" :dir :system)
- (local (autohide member-equal subsep-equal))
- (defthm my-thm1 ...)
- (defthm my-thm2 ...)
-~ev[]
+<h3>Basic Usage</h3>
 
-The ~c[(autohide fn1 fn2 ...)] macro expands to a ~ilc[table] event and just
-records the names of the functions you want to autohide.
+@({
+    (include-book \"clause-processors/autohide\" :dir :system)
+    (local (autohide member-equal subsep-equal))
+    (defthm my-thm1 ...)
+    (defthm my-thm2 ...)
+})
 
-Advice: always localize ~c[autohide] to avoid inadvertently hiding terms in
-other theorems.
+<p>The @('(autohide fn1 fn2 ...)') macro expands to a @(see table) event and
+just records the names of the functions you want to autohide.</p>
 
-Note that ~c[autohide] is cumulative, so the above is equivalent to:
-~bv[]
- (local (autohide member-equal))
- (local (autohide subsetp-equal))
- (defthm my-thm1 ...)
- (defthm my-thm2 ...)
-~ev[]
+<p>Advice: always localize @('autohide') to avoid inadvertently hiding terms in
+other theorems.</p>
 
-~st[Additional Functions]
+<p>Note that @('autohide') is cumulative, so the above is equivalent to:</p>
 
-  ~c[(autohide-summary)] will tell you which functions are currently
-     being automatically hidden;
+@({
+    (local (autohide member-equal))
+    (local (autohide subsetp-equal))
+    (defthm my-thm1 ...)
+    (defthm my-thm2 ...)
+})
 
-  ~c[(autohide-delete fn1 fn2)] will remove specific functions from
-     the autohide table.
+<h3>Additional Functions</h3>
 
-   ~c[(autohide-clear)] will clear the table, basically turning off
-      autohiding.
+<ul>
 
-The autohide hint makes use of a verified clause processor.  If you need
-finer-grained control, e.g., you want to autohide certain functions only in
-specific subgoals, you may wish to disable the autohide hint and manually use
-the clause-processor.")
+<li>@('(autohide-summary)') will tell you which functions are currently
+     being automatically hidden;</li>
+
+<li>@('(autohide-delete fn1 fn2)') will remove specific functions from
+     the autohide table.</li>
+
+<li>@('(autohide-clear)') will clear the table, basically turning off
+     autohiding.</li>
+
+</ul>
+
+<p>The autohide hint makes use of a verified @(see clause-processor).  If you
+need finer-grained control, e.g., you want to autohide certain functions only
+in specific subgoals, you may wish to disable the autohide hint and manually
+use the clause processor.</p>")
 
 
 ; -----------------------------------------------------------------------------

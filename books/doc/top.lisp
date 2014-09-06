@@ -169,6 +169,9 @@
 
 (include-book "hacking/all" :dir :system)
 (include-book "hints/consider-hint" :dir :system)
+
+(include-book "ordinals/e0-ordinal" :dir :system)
+
 (include-book "tools/do-not" :dir :system)
 (include-book "tools/plev" :dir :system)
 (include-book "tools/plev-ccl" :dir :system)
@@ -1123,8 +1126,7 @@ See @(see arithmetic) for libraries for arithmetic reasoning.</p>")
       "new-doc.lsp")
      (xdoc::save "./manual"
                  :import nil
-                 :redef-okp t
-                 :expand-level 2)
+                 :redef-okp t)
      (value `(value-triple :manual)))))
 
 
