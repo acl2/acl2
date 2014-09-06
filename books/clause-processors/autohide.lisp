@@ -29,6 +29,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
+(include-book "xdoc/top" :dir :system)
 (local (include-book "join-thms"))
 (local (include-book "../tools/flag"))
 (local (include-book "../tools/do-not"))
