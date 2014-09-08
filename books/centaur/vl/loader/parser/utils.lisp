@@ -922,6 +922,57 @@ acceptable types."
   ;;          (vl-match-some-token types)))
   )
 
+(define vl-maybe-match-token
+  :short "Compatible with @(see seq).  Consume and return a token if it is of
+the given type, but if not, don't consume anything and return nil."
+  ((type "Kind of token to match.") ;; BOZO why not a stronger guard?
+   &key
+   (tokstream 'tokstream))
+
+  :returns
+  (mv (errmsg?   (equal errmsg? nil))
+      (token     (and (iff (vl-token-p token)
+                           (vl-is-token? type))
+                      (iff token (vl-is-token? type)))
+                 :hints(("Goal" :in-theory (enable car-of-vl-tokenlist-under-iff))))
+      (new-tokstream))
+
+  (b* ((tokens (vl-tokstream->tokens))
+       ((when (atom tokens)) (mv nil nil tokstream))
+       (token1 (car tokens))
+       ((unless (eq type (vl-token->type token1)))
+        (mv nil nil tokstream))
+       (tokstream (vl-tokstream-update-tokens (cdr tokens))))
+    (mv nil token1 tokstream))
+
+  :prepwork
+  ((local (in-theory (enable vl-is-token?)))
+   (local (defthmd car-of-vl-tokenlist-under-iff
+            (implies (vl-tokenlist-p x)
+                     (iff (car x) (consp x)))
+            :hints(("Goal" :in-theory (enable vl-tokenlist-p))))))
+  ///
+  ;; (defthm vl-match-token-of-vl-tokenlist-fix
+  ;;   (equal (vl-match-token type :tokens (vl-tokenlist-fix tokens))
+  ;;          (vl-match-token type)))
+
+  (defthm vl-maybe-match-token-fails-gracefully
+    (implies (not (vl-is-token? type))
+             (equal (mv-nth 1 (vl-maybe-match-token type)) nil)))
+
+  (defthm vl-token->type-of-vl-maybe-match-token
+    (implies (vl-is-token? type)
+             (equal (vl-token->type (mv-nth 1 (vl-maybe-match-token type)))
+                    type)))
+
+  (defthm vl-maybe-match-token-count-strong-on-value
+    (and (<= (vl-tokstream-measure :tokstream (mv-nth 2 (vl-maybe-match-token type)))
+             (vl-tokstream-measure))
+         (implies (mv-nth 1 (vl-maybe-match-token type))
+                  (< (vl-tokstream-measure :tokstream (mv-nth 2 (vl-maybe-match-token type)))
+                     (vl-tokstream-measure))))
+    :rule-classes ((:rewrite) (:linear))))
+
 
 
 (define vl-type-of-matched-token
@@ -1260,3 +1311,19 @@ parser when we encounter such an ending.</p>"
 
    (loc  vl-location-p
          "The location of this name, for mismatch reporting.")))
+
+(defparser vl-parse-endblock-name (name blktype)
+  :guard (and (stringp name) (stringp blktype))
+  :count weak
+  :fails :gracefully
+  (seq tokstream
+       (unless (and (not (eq (vl-loadconfig->edition config) :verilog-2005))
+                    (vl-is-token? :vl-colon))
+         (return nil))
+       (:= (vl-match))
+       (endname := (vl-match-token :vl-idtoken))
+       (when (equal name (vl-idtoken->name endname))
+         (return name))
+       (return-raw
+        (vl-parse-error
+         (cat "Mismatched " blktype " names: " name (vl-idtoken->name endname))))))

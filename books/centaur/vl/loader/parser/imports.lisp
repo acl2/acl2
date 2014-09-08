@@ -93,3 +93,16 @@
         (elems := (vl-parse-1+-package-import-items-separated-by-commas atts))
         (:= (vl-match-token :vl-semi))
         (return elems)))
+
+(defparser vl-parse-0+-package-import-declarations ()
+  :result (vl-importlist-p val)
+  :resultp-of-nil t
+  :true-listp t
+  :fails :gracefully
+  :count :weak
+  (seq tokstream
+       (unless (vl-is-token? :vl-kwd-import)
+         (return nil))
+       (first := (vl-parse-package-import-declaration nil))
+       (rest := (vl-parse-0+-package-import-declarations))
+       (return (append first rest))))

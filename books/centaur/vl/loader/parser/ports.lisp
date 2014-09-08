@@ -204,6 +204,18 @@
         (:= (vl-match-token :vl-rparen))
         (return ports)))
 
+(defparser vl-maybe-parse-list-of-ports ()
+  ;; Parses the ports if the next token is lparen.
+  :result (vl-portlist-p val)
+  :resultp-of-nil t
+  :fails gracefully
+  :count weak
+  (seq tokstream
+       (when (vl-is-token? :vl-lparen)
+         (res := (vl-parse-list-of-ports))
+         (return res))
+       (return nil)))
+
 
 
 
@@ -927,8 +939,6 @@
 
 
 (defparser vl-parse-list-of-port-declarations ()
-  ;; BOZO this appears to be unused??  Ah, it's in support of the alternate form of module definition
-  ;; that is currently unsupported.
   ;; Returns (portdecls . vardecls)
   :result (consp val)
   :resultp-of-nil nil
@@ -952,3 +962,29 @@
   (defthm vl-parse-list-of-port-declarations-basics
     (and (vl-portdecllist-p (car (mv-nth 1 (vl-parse-list-of-port-declarations))))
          (vl-vardecllist-p (cdr (mv-nth 1 (vl-parse-list-of-port-declarations)))))))
+
+
+(defparser vl-maybe-parse-list-of-port-declarations ()
+  ;; Parses the port declarations if the next token is lparen.
+  :result (and (consp val)
+               (vl-portdecllist-p (car val))
+               (vl-vardecllist-p (cdr val)))
+  :fails gracefully
+  :count weak
+  (seq tokstream
+       (when (vl-is-token? :vl-lparen)
+         (res := (vl-parse-list-of-port-declarations))
+         (return res))
+       (return '(nil))))
+
+
+
+(define vl-genelementlist->portdecls ((x vl-genelementlist-p))
+  :returns (portdecls vl-portdecllist-p)
+  (if (atom x)
+      nil
+    (if (and (eq (vl-genelement-kind (car x)) :vl-genbase)
+             (eq (tag (vl-genbase->item (car x))) :vl-portdecl))
+        (cons (vl-genbase->item (car x))
+              (vl-genelementlist->portdecls (cdr x)))
+      (vl-genelementlist->portdecls (cdr x)))))

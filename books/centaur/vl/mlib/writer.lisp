@@ -1808,6 +1808,20 @@ expression into a string."
     (vl-ps-seq (vl-pp-assign (car x))
                (vl-pp-assignlist (cdr x)))))
 
+(define vl-pp-alias ((x vl-alias-p) &key (ps 'ps))
+  (b* (((vl-alias x) x))
+    (vl-ps-seq
+     (if x.atts
+         (vl-ps-seq (vl-println "")
+                    (vl-pp-atts x.atts)
+                    (vl-println ""))
+       ps)
+     (vl-ps-span "vl_key" (vl-print "  alias "))
+     (vl-pp-expr x.lhs)
+     (vl-println? " = ")
+     (vl-pp-expr x.rhs)
+     (vl-println " ;"))))
+
 
 (define vl-pp-plainarg ((x vl-plainarg-p) &key (ps 'ps))
   (b* (((vl-plainarg x) x)
@@ -2911,6 +2925,8 @@ module elements and its comments.</p>"
                (vl-ps-span "vl_key"
                            (vl-print "typedef "))
                (vl-pp-datatype x.type)
+               (vl-print " ")
+               (vl-print-wirename x.name)
                ;; BOZO add dimensions
                (vl-println " ;"))))
 
@@ -2920,3 +2936,37 @@ module elements and its comments.</p>"
     (vl-ps-seq (vl-pp-typedef (car x))
                (vl-pp-typedeflist (cdr x)))))
 
+
+
+
+(define vl-pp-modport-port ((x vl-modport-port-p) &key (ps 'ps))
+  (b* (((vl-modport-port x)))
+    (vl-ps-seq
+     (if x.atts (vl-pp-atts x.atts) ps)
+     (vl-ps-span "vl_key" (vl-print-str (vl-direction-string x.dir)))
+     (vl-print " ")
+     (if x.expr
+         (vl-ps-seq
+          (vl-print ".")
+          (vl-print-wirename x.name)
+          (vl-print "(")
+          (vl-pp-expr x.expr)
+          (vl-print ")"))
+       (vl-print-wirename x.name))
+     (vl-println " ;"))))
+
+(define vl-pp-modport-portlist ((x vl-modport-portlist-p) &key (ps 'ps))
+  (if (atom x)
+      ps
+    (vl-ps-seq (vl-pp-modport-port (car x))
+               (vl-pp-modport-portlist (cdr x)))))
+
+(define vl-pp-modport ((x vl-modport-p) &key (ps 'ps))
+  (b* (((vl-modport x)))
+    (vl-ps-seq
+     (if x.atts (vl-pp-atts x.atts) ps)
+     (vl-ps-span "vl_key" (vl-print "  modport "))
+     (vl-print-wirename x.name)
+     (vl-print " ( ")
+     (vl-pp-modport-portlist x.ports)
+     (vl-println " );"))))

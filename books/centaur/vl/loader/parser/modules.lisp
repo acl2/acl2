@@ -29,13 +29,8 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "statements")
 (include-book "ports")      ;; vl-portdecllist-p, vl-portlist-p
-(include-book "nets")       ;; vl-assignlist-p, vl-netdecllist-p
-(include-book "blockitems") ;; vl-vardecllist-p, vl-paramdecllist-p
-(include-book "insts")      ;; vl-modinstlist-p
-(include-book "gates")      ;; vl-gateinstlist-p
-(include-book "functions")  ;; vl-fundecllist-p
+(include-book "elements")
 (include-book "../make-implicit-wires")
 (include-book "../portdecl-sign")
 (include-book "../../mlib/context")  ;; vl-modelement-p, sorting modelements
@@ -52,33 +47,36 @@
   ((name     stringp               "Name of the module.")
    (params   vl-paramdecllist-p    "Parameters declarations from the #(...) list, if any.")
    (ports    vl-portlist-p         "Ports like (o, a, b).")
-   (items    vl-modelementlist-p   "Items from the module's body, i.e., until endmodule.")
+   (items    vl-genelementlist-p   "Items from the module's body, i.e., until endmodule.")
    (atts     vl-atts-p)
    (minloc   vl-location-p)
    (maxloc   vl-location-p)
    (warnings vl-warninglist-p))
   :returns (mod vl-module-p)
-  (b* (((mv items warnings) (vl-make-implicit-wires (append-without-guard params items) warnings))
-       ((mv item-ports portdecls assigns vardecls paramdecls
-            fundecls taskdecls modinsts gateinsts alwayses initials)
-        (vl-sort-modelements items nil nil nil nil nil nil nil nil nil nil nil))
-       ((mv warnings portdecls vardecls)
-        (vl-portdecl-sign portdecls vardecls warnings)))
-    (or (not item-ports)
+  (b* (((mv items warnings) (vl-make-implicit-wires
+                             (append-without-guard (vl-modelementlist->genelements params)
+                                                   items)
+                             warnings))
+       ((vl-genelement-collection c) (vl-sort-genelements items))
+       ((mv warnings c.portdecls c.vardecls)
+        (vl-portdecl-sign c.portdecls c.vardecls warnings)))
+    (or (not c.ports)
         (raise "There shouldn't be any ports in the items."))
+    ;; BOZO: Warn about other bad elements in c?
     (make-vl-module :name       name
                     :params     params
                     :ports      ports
-                    :portdecls  portdecls
-                    :assigns    assigns
-                    :vardecls   vardecls
-                    :paramdecls paramdecls
-                    :fundecls   fundecls
-                    :taskdecls  taskdecls
-                    :modinsts   modinsts
-                    :gateinsts  gateinsts
-                    :alwayses   alwayses
-                    :initials   initials
+                    :portdecls  c.portdecls
+                    :assigns    c.assigns
+                    :vardecls   c.vardecls
+                    :paramdecls c.paramdecls
+                    :fundecls   c.fundecls
+                    :taskdecls  c.taskdecls
+                    :modinsts   c.modinsts
+                    :gateinsts  c.gateinsts
+                    :alwayses   c.alwayss
+                    :initials   c.initials
+                    :generates  c.generates
                     :atts       atts
                     :minloc     minloc
                     :maxloc     maxloc
@@ -86,520 +84,6 @@
                     :origname   name
                     :comments   nil
                     )))
-
-(defparser vl-parse-initial-construct (atts)
-  :guard (vl-atts-p atts)
-  :result (vl-initiallist-p val)
-  :resultp-of-nil t
-  :true-listp t
-  :fails gracefully
-  :count strong
-  (seq tokstream
-        (kwd := (vl-match-token :vl-kwd-initial))
-        (stmt := (vl-parse-statement))
-        (return (list (make-vl-initial :loc (vl-token->loc kwd)
-                                       :stmt stmt
-                                       :atts atts)))))
-
-(defparser vl-parse-alwaystype ()
-  :result (vl-alwaystype-p val)
-  :resultp-of-nil nil
-  :fails gracefully
-  :count strong
-  (seq tokstream
-        (when (eq (vl-loadconfig->edition config) :verilog-2005)
-          (:= (vl-match-token :vl-kwd-always))
-          (return :vl-always))
-        (kwd := (vl-match-some-token '(:vl-kwd-always
-                                       :vl-kwd-always_comb
-                                       :vl-kwd-always_latch
-                                       :vl-kwd-always_ff)))
-        (return (case (vl-token->type kwd)
-                  (:vl-kwd-always       :vl-always)
-                  (:vl-kwd-always_comb  :vl-always-comb)
-                  (:vl-kwd-always_latch :vl-always-latch)
-                  (:vl-kwd-always_ff    :vl-always-ff)))))
-
-(defparser vl-parse-always-construct (atts)
-  :guard (vl-atts-p atts)
-  :result (vl-alwayslist-p val)
-  :resultp-of-nil t
-  :true-listp t
-  :fails gracefully
-  :count strong
-  (seq tokstream
-        (loc  := (vl-current-loc))
-        (type := (vl-parse-alwaystype))
-        (stmt := (vl-parse-statement))
-        (return (list (make-vl-always :loc  loc
-                                      :type type
-                                      :stmt stmt
-                                      :atts atts)))))
-
-
-
-
-;                           UNIMPLEMENTED PRODUCTIONS
-;
-; Eventually we may implement some more of these.  For now, we just cause
-; an error if any of them is used.
-;
-; BOZO consider changing some of these to skip tokens until 'endfoo' and issue
-; a warning.
-;
-
-(defparser vl-parse-specify-block-aux ()
-  ;; BOZO this is really not implemented.  We just read until endspecify,
-  ;; throwing away any tokens we encounter until it.
-  :result (vl-modelementlist-p val)
-  :resultp-of-nil t
-  :true-listp t
-  :fails gracefully
-  :count strong
-  (seq tokstream
-        (when (vl-is-token? :vl-kwd-endspecify)
-          (:= (vl-match))
-          (return nil))
-        (:s= (vl-match-any))
-        (:= (vl-parse-specify-block-aux))
-        (return nil)))
-
-(defparser vl-parse-specify-block ()
-  :result (vl-modelementlist-p val)
-  :resultp-of-nil t
-  :true-listp t
-  :fails gracefully
-  :count strong
-  (if (not (consp (vl-tokstream->tokens)))
-      (vl-parse-error "Unexpected EOF.")
-    (seq tokstream
-          (:= (vl-parse-warning :vl-warn-specify
-                                (cat "Specify blocks are not yet implemented.  "
-                                     "Instead, we are simply ignoring everything "
-                                     "until 'endspecify'.")))
-          (ret := (vl-parse-specify-block-aux))
-          (return ret))))
-
-
-(defparser vl-parse-generate-region-aux ()
-  ;; BOZO this is really not implemented.  We just read until endgenerate,
-  ;; throwing away any tokens we encounter until it.
-  :result (vl-modelementlist-p val)
-  :resultp-of-nil t
-  :true-listp t
-  :fails gracefully
-  :count strong
-  (seq tokstream
-        (when (vl-is-token? :vl-kwd-endgenerate)
-          (:= (vl-match))
-          (return nil))
-        (:s= (vl-match-any))
-        (:= (vl-parse-generate-region-aux))
-        (return nil)))
-
-(defparser vl-parse-generate-region ()
-  :result (vl-modelementlist-p val)
-  :resultp-of-nil t
-  :true-listp t
-  :fails gracefully
-  :count strong
-  (if (not (consp (vl-tokstream->tokens)))
-      (vl-parse-error "Unexpected EOF.")
-    (seq tokstream
-          (:= (vl-parse-warning :vl-warn-generate
-                                (cat "Generate regions are not yet implemented.  "
-                                     "Instead, we are simply ignoring everything "
-                                     "until 'endgenerate'.")))
-          (ret := (vl-parse-generate-region-aux))
-          (return ret))))
-
-(defparser vl-parse-specparam-declaration (atts)
-  :guard (vl-atts-p atts)
-  :result (vl-modelementlist-p val)
-  :resultp-of-nil t
-  :true-listp t
-  :fails gracefully
-  :count strong
-  (declare (ignore atts))
-  (vl-unimplemented))
-
-(defparser vl-parse-genvar-declaration (atts)
-  :guard (vl-atts-p atts)
-  :result (vl-modelementlist-p val)
-  :resultp-of-nil t
-  :true-listp t
-  :fails gracefully
-  :count strong
-  (declare (ignore atts))
-  (seq tokstream
-        (:= (vl-parse-warning :vl-warn-genvar
-                              (cat "Genvar declarations are not implemented, we are just skipping this genvar.")))
-        (:= (vl-match-token :vl-kwd-genvar))
-        (:= (vl-parse-1+-identifiers-separated-by-commas))
-        (:= (vl-match-token :vl-semi))
-        (return nil)))
-
-(defparser vl-parse-parameter-override (atts)
-  :guard (vl-atts-p atts)
-  :result (vl-modelementlist-p val)
-  :resultp-of-nil t
-  :true-listp t
-  :fails gracefully
-  :count strong
-  (declare (ignore atts))
-  (vl-unimplemented))
-
-(defparser vl-parse-loop-generate-construct (atts)
-  :guard (vl-atts-p atts)
-  :result (vl-modelementlist-p val)
-  :resultp-of-nil t
-  :true-listp t
-  :fails gracefully
-  :count strong
-  (declare (ignore atts))
-  (vl-unimplemented))
-
-(defparser vl-parse-conditional-generate-construct (atts)
-  :guard (vl-atts-p atts)
-  :result (vl-modelementlist-p val)
-  :resultp-of-nil t
-  :true-listp t
-  :fails gracefully
-  :count strong
-  (declare (ignore atts))
-  (vl-unimplemented))
-
-
-
-
-
-
-
-;                                 MODULE ITEMS
-;
-; Note below that I have flattened out module_or_generate_item_declaration
-; below.  Also note that port_declarations also begin with
-; {attribute_instance}, so really the only module items that can't have
-; attributes are generate_region and specify_block.
-;
-; module_item ::=                                             ;; STARTS WITH
-;    port_declaration ';'                                     ;; a direction
-;  | non_port_module_item                                     ;;
-;                                                             ;;
-; non_port_module_item ::=                                    ;;
-;    module_or_generate_item                                  ;;
-;  | generate_region                                          ;; 'generate'
-;  | specify_block                                            ;; 'specify'
-;  | {attribute_instance} parameter_declaration ';'           ;; 'parameter'
-;  | {attribute_instance} specparam_declaration               ;; 'specparam'
-;                                                             ;;
-; module_or_generate_item ::=                                 ;;
-;    {attribute_instance} net_declaration                     ;; [see below]
-;  | {attribute_instance} reg_declaration                     ;; 'reg'
-;  | {attribute_instance} integer_declaration                 ;; 'integer'
-;  | {attribute_instance} real_declaration                    ;; 'real'
-;  | {attribute_instance} time_declaration                    ;; 'time'
-;  | {attribute_instance} realtime_declaration                ;; 'realtime'
-;  | {attribute_instance} event_declaration                   ;; 'event'
-;  | {attribute_instance} genvar_declaration                  ;; 'genvar'
-;  | {attribute_instance} task_declaration                    ;; 'task'
-;  | {attribute_instance} function_declaration                ;; 'function'
-;  | {attribute_instance} local_parameter_declaration ';'     ;; 'localparam'
-;  | {attribute_instance} parameter_override                  ;; 'defparam'
-;  | {attribute_instance} continuous_assign                   ;; 'assign'
-;  | {attribute_instance} gate_instantiation                  ;; [see below]
-;  | {attribute_instance} udp_instantiation                   ;; identifier
-;  | {attribute_instance} module_instantiation                ;; identifier
-;  | {attribute_instance} initial_construct                   ;; 'initial'
-;  | {attribute_instance} always_construct                    ;; 'always'  (sysv adds 'always_comb' 'always_ff' 'always_latch')
-;  | {attribute_instance} loop_generate_construct             ;; 'for'
-;  | {attribute_instance} conditional_generate_construct      ;; 'if' or 'case'
-;
-; Net declarations begin with a net_type or a trireg.
-;
-; Gate instantiations begin with one of the many *vl-gate-type-keywords*.
-
-(defconst *vl-netdecltypes-kwds*
-  (strip-cars *vl-netdecltypes-kwd-alist*))
-
-(local (defthm vl-modelement-p-when-vl-blockitem-p
-         (implies (vl-blockitem-p x)
-                  (vl-modelement-p x))
-         :hints(("Goal" :in-theory (enable vl-blockitem-p)))))
-
-(local (defthm vl-modelementlist-p-when-vl-blockitemlist-p
-         (implies (vl-blockitemlist-p x)
-                  (vl-modelementlist-p x))
-         :hints(("Goal" :induct (len x)))))
-
-(defparser vl-parse-module-or-generate-item (atts)
-  :guard (vl-atts-p atts)
-  :result (vl-modelementlist-p val)
-  :resultp-of-nil t
-  :true-listp t
-  :fails gracefully
-  :count strong
-  (b* (((when (atom (vl-tokstream->tokens)))
-        (vl-parse-error "Unexpected EOF."))
-       (type1 (vl-token->type (car (vl-tokstream->tokens))))
-       ((when (member type1 *vl-netdecltypes-kwds*))
-        (seq tokstream
-              ((assigns . decls) := (vl-parse-net-declaration atts))
-              ;; Note: this order is important, the decls have to come first
-              ;; or we'll try to infer implicit nets from the assigns.
-              (return (append decls assigns))))
-       ((when (member type1 *vl-gate-type-keywords*))
-        (vl-parse-gate-instantiation atts))
-       ((when (eq type1 :vl-kwd-genvar))
-        (vl-parse-genvar-declaration atts))
-       ((when (eq type1 :vl-kwd-task))
-        (seq tokstream
-              (task := (vl-parse-task-declaration atts))
-              (return (list task))))
-       ((when (eq type1 :vl-kwd-function))
-        (seq tokstream
-              (fun := (vl-parse-function-declaration atts))
-              (return (list fun))))
-       ((when (eq type1 :vl-kwd-localparam))
-        (seq tokstream
-              ;; Note: non-local parameters not allowed
-              (ret := (vl-parse-param-or-localparam-declaration atts '(:vl-kwd-localparam)))
-              (:= (vl-match-token :vl-semi))
-              (return ret)))
-       ((when (eq type1 :vl-kwd-defparam))
-        (vl-parse-parameter-override atts))
-       ((when (eq type1 :vl-kwd-assign))
-        (vl-parse-continuous-assign atts))
-       ((when (eq type1 :vl-idtoken))
-        (vl-parse-udp-or-module-instantiation atts))
-       ((when (eq type1 :vl-kwd-initial))
-        (vl-parse-initial-construct atts))
-       ((when (eq type1 :vl-kwd-always))
-        (vl-parse-always-construct atts))
-       ((when (eq type1 :vl-kwd-for))
-        (vl-parse-loop-generate-construct atts))
-       ((when (or (eq type1 :vl-kwd-if)
-                  (eq type1 :vl-kwd-case)))
-        (vl-parse-conditional-generate-construct atts))
-
-       ((when (eq (vl-loadconfig->edition config) :verilog-2005))
-        (case type1
-          (:vl-kwd-reg        (vl-parse-reg-declaration atts))
-          (:vl-kwd-integer    (vl-parse-integer-declaration atts))
-          (:vl-kwd-real       (vl-parse-real-declaration atts))
-          (:vl-kwd-time       (vl-parse-time-declaration atts))
-          (:vl-kwd-realtime   (vl-parse-realtime-declaration atts))
-          (:vl-kwd-event      (vl-parse-event-declaration atts))
-          (t (vl-parse-error "Invalid module or generate item."))))
-
-       ;; SystemVerilog extensions ----
-
-       ((when (or (eq type1 :vl-kwd-always_ff)
-                  (eq type1 :vl-kwd-always_latch)
-                  (eq type1 :vl-kwd-always_comb)))
-        (vl-parse-always-construct atts)))
-
-    ;; SystemVerilog -- BOZO haven't thought this through very thoroughly, but it's
-    ;; probably a fine starting place.
-    (vl-parse-block-item-declaration-noatts atts)))
-
-(defparser vl-parse-non-port-module-item (atts)
-  :guard (vl-atts-p atts)
-  :result (vl-modelementlist-p val)
-  :resultp-of-nil t
-  :true-listp t
-  :fails gracefully
-  :count strong
-  :hint-chicken-switch t
-  (cond ((vl-is-token? :vl-kwd-generate)
-         (if atts
-             (vl-parse-error "'generate' is not allowed to have attributes.")
-           (vl-parse-generate-region)))
-        ((vl-is-token? :vl-kwd-specify)
-         (if atts
-             (vl-parse-error "'specify' is not allowed to have attributes.")
-           (vl-parse-specify-block)))
-        ((vl-is-token? :vl-kwd-parameter)
-         (seq tokstream
-               ;; localparams are handled in parse-module-or-generate-item
-               (ret := (vl-parse-param-or-localparam-declaration atts '(:vl-kwd-parameter)))
-               (:= (vl-match-token :vl-semi))
-               (return ret)))
-        ((vl-is-token? :vl-kwd-specparam)
-         (vl-parse-specparam-declaration atts))
-        (t
-         (vl-parse-module-or-generate-item atts))))
-
-(defparser vl-parse-module-item ()
-  :result (vl-modelementlist-p val)
-  :resultp-of-nil t
-  :true-listp t
-  :fails gracefully
-  :count strong
-  (seq tokstream
-        (atts := (vl-parse-0+-attribute-instances))
-        (when (vl-is-some-token? *vl-directions-kwds*)
-          ((portdecls . netdecls) := (vl-parse-port-declaration-noatts atts))
-          (:= (vl-match-token :vl-semi))
-          ;; Should be fewer netdecls so this is the better order for the append.
-          (return (append netdecls portdecls)))
-        (ret := (vl-parse-non-port-module-item atts))
-        (return ret)))
-
-
-
-; #(...) style module parameters:
-;
-;
-; Verilog-2005 syntax:
-;
-;    module_parameter_port_list ::= '#' '(' parameter_declaration { ',' parameter_declaration } ')'
-
-(defparser vl-parse-module-parameter-port-list-aux-2005 ()
-  ;; parameter_declaration { ',' parameter_declaration }
-  :result (vl-paramdecllist-p val)
-  :resultp-of-nil t
-  :true-listp t
-  :fails gracefully
-  :count strong
-  (seq tokstream
-        ;; No attributes, no localparams allowed.
-        (first := (vl-parse-param-or-localparam-declaration nil '(:vl-kwd-parameter)))
-        (when (vl-is-token? :vl-comma)
-          (:= (vl-match))
-          (rest := (vl-parse-module-parameter-port-list-aux-2005)))
-        (return (append first rest))))
-
-(defparser vl-parse-module-parameter-port-list-2005 ()
-  :result (vl-paramdecllist-p val)
-  :resultp-of-nil t
-  :true-listp t
-  :fails gracefully
-  :count strong
-  (seq tokstream
-        (:= (vl-match-token :vl-pound))
-        (:= (vl-match-token :vl-lparen))
-        (params := (vl-parse-module-parameter-port-list-aux-2005))
-        (:= (vl-match-token :vl-rparen))
-        (return params)))
-
-
-; SystemVerilog-2012 extends this considerably:
-;
-;       parameter_port_list ::= '#' '(' list_of_param_assignments { ',' parameter_port_declaration } ')'
-;                             | '#' '(' parameter_port_declaration { ',' parameter_port_declaration } ')'
-;                             | '#' '(' ')'
-;
-;       parameter_port_declaration ::= parameter_declaration
-;                                    | local_parameter_declaration
-;                                    | data_type list_of_param_assignments
-;                                    | 'type' list_of_type_assignments
-
-(defparser vl-parse-parameter-port-declaration-2012 ()
-  ;; SystemVerilog-2012 only.
-  :result (vl-paramdecllist-p val)
-  :resultp-of-nil t
-  :true-listp t
-  :fails gracefully
-  :count strong
-  (seq tokstream
-       (when (vl-is-some-token? '(:vl-kwd-parameter :vl-kwd-localparameter))
-         (decls := (vl-parse-param-or-localparam-declaration-2012
-                    nil ;; no attributes
-                    '(:vl-kwd-parameter :vl-kwd-localparam) ;; allowed to be local or non-local
-                    ))
-         (return decls))
-
-       (when (vl-is-token? :vl-kwd-type)
-         (:= (vl-match))
-         (decls := (vl-parse-list-of-type-assignments nil ;; no attributes
-                                                      nil ;; not local
-                                                      ))
-         (return decls))
-
-       ;; Otherwise, it had better be a data_type.
-       (type := (vl-parse-datatype))
-       (decls := (vl-parse-list-of-param-assignments nil ;; no attributes
-                                                     nil ;; not local
-                                                     (make-vl-explicitvalueparam :type type)))
-       (return decls)))
-
-(defparser vl-parse-1+-parameter-port-declarations-2012 ()
-  ;; SystemVerilog-2012 only.
-  :result (vl-paramdecllist-p val)
-  :resultp-of-nil t
-  :true-listp t
-  :fails gracefully
-  :count strong
-  (seq tokstream
-       (first := (vl-parse-parameter-port-declaration-2012))
-       (when (vl-is-token? :vl-comma)
-         (:= (vl-match))
-         (rest := (vl-parse-1+-parameter-port-declarations-2012)))
-       (return (append first rest))))
-
-(defparser vl-parse-module-parameter-port-list-2012 ()
-  :result (vl-paramdecllist-p val)
-  :resultp-of-nil t
-  :true-listp t
-  :fails gracefully
-  :count strong
-  :prepwork ((local (defthm l0
-                      (implies (vl-is-token? :vl-idtoken)
-                               (vl-idtoken-p (car (vl-tokstream->tokens))))
-                      :hints(("Goal" :in-theory (enable vl-is-token?))))))
-  (seq tokstream
-        (:= (vl-match-token :vl-pound))
-        (:= (vl-match-token :vl-lparen))
-
-        (when (and (vl-is-token? :vl-idtoken)
-                   (not (vl-parsestate-is-user-defined-type-p (vl-idtoken->name (car (vl-tokstream->tokens)))
-                                                              (vl-tokstream->pstate))))
-          ;; Identifier that is not a type.  Seems like a list_of_param_assignments.
-          ;; Some notes:
-          ;;  - The parser for list-of-param-assignments is careful not to eat the comma afterward
-          ;;    unless things continue to look like additional param-assignments.
-          ;;  - I'm not at all clear what the type of these parameter assignments should be, but
-          ;;    it seems most reasonable to treat them as plain-Jane, implicit value parameters,
-          ;;    as we would do if someone had written "parameter" first.
-          (decls1 := (vl-parse-list-of-param-assignments nil ;; no attributes
-                                                         nil ;; not local
-                                                         (make-vl-implicitvalueparam :range nil :sign nil)))
-
-          ;; At this point we should have eaten everything except for the { , parameter_port_declaration }
-          ;; section.  Eat the comma so that we can handle these parameter_port_declarations uniformly
-          ;; with the other cases.
-          (when (vl-is-token? :vl-comma)
-            (:= (vl-match))))
-
-        ;; Now either we had a list_of_param_assignments first or we didn't.
-        ;; Either way, we ate the commas and now we should be looking at a list
-        ;; of 0+ parameter_port_declarations.
-
-        (when (vl-is-token? :vl-rparen)
-          ;; Fine, no parameter port declarations, but #() is allowed in
-          ;; SystemVerilog and it is also fine if we had any decls1 to not have
-          ;; any subsequent, more explicit parameter declarations.
-          (:= (vl-match))
-          (return decls1))
-
-        ;; Otherwise, there should be some parameter_port_declarations.
-        (decls2 := (vl-parse-1+-parameter-port-declarations-2012))
-        (:= (vl-match-token :vl-rparen))
-        (return (append decls1 decls2))))
-
-(defparser vl-parse-module-parameter-port-list ()
-  :result (vl-paramdecllist-p val)
-  :resultp-of-nil t
-  :true-listp t
-  :fails gracefully
-  :count strong
-  (seq tokstream
-       (when (eq (vl-loadconfig->edition config) :verilog-2005)
-         (ans := (vl-parse-module-parameter-port-list-2005))
-         (return ans))
-       (ans := (vl-parse-module-parameter-port-list-2012))
-       (return ans)))
 
 
 
@@ -623,37 +107,6 @@
 ;        'endmodule'
 ;
 ; module_keyword ::= 'module' | 'macromodule'
-
-(defparser vl-parse-module-items-until-endmodule ()
-  ;; Look for module items until :vl-kwd-endmodule is encountered.
-  ;; Does NOT eat the :vl-kwd-endmodule
-  :result (vl-modelementlist-p val)
-  :resultp-of-nil t
-  :true-listp t
-  :fails gracefully
-  :count strong-on-value
-  (seq tokstream
-        (when (vl-is-token? :vl-kwd-endmodule)
-          (return nil))
-        (first := (vl-parse-module-item))
-        (rest := (vl-parse-module-items-until-endmodule))
-        (return (append first rest))))
-
-(defparser vl-parse-non-port-module-items-until-endmodule ()
-  ;; Look for non-port module items until :vl-kwd-endmodule is encountered.
-  ;; Does NOT eat the :vl-kwd-endmodule
-  :result (vl-modelementlist-p val)
-  :resultp-of-nil t
-  :true-listp t
-  :fails gracefully
-  :count strong-on-value
-  (seq tokstream
-        (when (vl-is-token? :vl-kwd-endmodule)
-          (return nil))
-        (atts := (vl-parse-0+-attribute-instances))
-        (first := (vl-parse-non-port-module-item atts))
-        (rest := (vl-parse-non-port-module-items-until-endmodule))
-        (return (append first rest))))
 
 
 
@@ -681,34 +134,20 @@
 ;       with until the end of the module 'belong' to this module.
 
   (seq tokstream
-        (when (vl-is-token? :vl-pound)
-          (params := (vl-parse-module-parameter-port-list)))
-        (when (vl-is-token? :vl-lparen)
-          (ports := (vl-parse-list-of-ports)))
-        (:= (vl-match-token :vl-semi))
-        (items := (vl-parse-module-items-until-endmodule))
-        (endkwd := (vl-match-token :vl-kwd-endmodule))
+       (params := (vl-maybe-parse-parameter-port-list))
+       (ports := (vl-maybe-parse-list-of-ports))
+       (:= (vl-match-token :vl-semi))
+       (items := (vl-parse-0+-genelements))
+       (endkwd := (vl-match-token :vl-kwd-endmodule))
 
-        ;; BOZO SystemVerilog adds various things we don't support yet, but it
-        ;; definitely adds "endmodule : name" style endings.
-        (when (and (vl-is-token? :vl-colon)
-                   (not (eq (vl-loadconfig->edition config) :verilog-2005)))
-          (:= (vl-match-token :vl-colon))
-          (endname := (vl-match-token :vl-idtoken)))
+       (:= (vl-parse-endblock-name (vl-idtoken->name id) "module/endmodule"))
 
-        (when (and endname
-                   (not (equal (vl-idtoken->name id) (vl-idtoken->name endname))))
-          (return-raw
-           (vl-parse-error
-            (cat "Mismatched module/endmodule pair: expected "
-                 (vl-idtoken->name id) " but found "
-                 (vl-idtoken->name endname)))))
+       (return (vl-make-module-by-items (vl-idtoken->name id)
+                                        params ports items atts
+                                        (vl-token->loc module_keyword)
+                                        (vl-token->loc endkwd)
+                                        (vl-parsestate->warnings (vl-tokstream->pstate))))))
 
-        (return (vl-make-module-by-items (vl-idtoken->name id)
-                                         params ports items atts
-                                         (vl-token->loc module_keyword)
-                                         (vl-token->loc endkwd)
-                                         (vl-parsestate->warnings (vl-tokstream->pstate))))))
 
 
 (defparser vl-parse-module-declaration-ansi (atts module_keyword id)
@@ -727,36 +166,29 @@
 ;        'endmodule'
 
   (seq tokstream
-        (when (vl-is-token? :vl-pound)
-          (params := (vl-parse-module-parameter-port-list)))
-        (when (vl-is-token? :vl-lparen)
-          ((portdecls . netdecls) := (vl-parse-list-of-port-declarations)))
-        (:= (vl-match-token :vl-semi))
-        (items := (vl-parse-non-port-module-items-until-endmodule))
-        (endkwd := (vl-match-token :vl-kwd-endmodule))
+       (params := (vl-maybe-parse-parameter-port-list))
+       ((portdecls . netdecls) := (vl-maybe-parse-list-of-port-declarations))
+       (:= (vl-match-token :vl-semi))
+       (items := (vl-parse-0+-genelements))
+       (endkwd := (vl-match-token :vl-kwd-endmodule))
 
-        ;; BOZO SystemVerilog adds various things we don't support yet, but it
-        ;; definitely adds ": name" endings:
-        (when (and (vl-is-token? :vl-colon)
-                   (not (eq (vl-loadconfig->edition config) :verilog-2005)))
-          (:= (vl-match-token :vl-colon))
-          (endname := (vl-match-token :vl-idtoken)))
-        (when (and endname
-                   (not (equal (vl-idtoken->name id) (vl-idtoken->name endname))))
-          (return-raw
-           (vl-parse-error
-            (cat "Mismatched module/endmodule pair: expected "
-                 (vl-idtoken->name id) " but found "
-                 (vl-idtoken->name endname)))))
+       (:= (vl-parse-endblock-name (vl-idtoken->name id) "module/endmodule"))
 
-        (return (vl-make-module-by-items (vl-idtoken->name id)
-                                         params
-                                         (vl-ports-from-portdecls portdecls)
-                                         (append netdecls portdecls items)
-                                         atts
-                                         (vl-token->loc module_keyword)
-                                         (vl-token->loc endkwd)
-                                         (vl-parsestate->warnings (vl-tokstream->pstate))))))
+       (return-raw
+        (b* ((item-portdecls (vl-genelementlist->portdecls items))
+             ((when item-portdecls)
+              (vl-parse-error "ANSI module contained internal portdecls"))
+             (module (vl-make-module-by-items (vl-idtoken->name id)
+                                              params
+                                              (vl-ports-from-portdecls portdecls)
+                                              (append (vl-modelementlist->genelements netdecls)
+                                                      (vl-modelementlist->genelements portdecls)
+                                                      items)
+                                              atts
+                                              (vl-token->loc module_keyword)
+                                              (vl-token->loc endkwd)
+                                              (vl-parsestate->warnings (vl-tokstream->pstate)))))
+          (mv nil module tokstream)))))
 
 
 (defparser vl-parse-module-main (atts module_keyword id)
