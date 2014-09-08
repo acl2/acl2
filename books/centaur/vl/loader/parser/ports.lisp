@@ -212,9 +212,7 @@
   :count weak
   (seq tokstream
        (when (vl-is-token? :vl-lparen)
-         (:= (vl-match))
          (res := (vl-parse-list-of-ports))
-         (:= (vl-match-token :vl-rparen))
          (return res))
        (return nil)))
 
@@ -975,9 +973,7 @@
   :count weak
   (seq tokstream
        (when (vl-is-token? :vl-lparen)
-         (:= (vl-match))
          (res := (vl-parse-list-of-port-declarations))
-         (:= (vl-match-token :vl-rparen))
          (return res))
        (return '(nil))))
 

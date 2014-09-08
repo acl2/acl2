@@ -648,9 +648,6 @@ data type for a local type parameter.  We enforce this in the parser.</p>")
   :count weak
   (seq tokstream
        (when (vl-is-token? :vl-pound)
-         (:= (vl-match))
-         (:= (vl-match-token :vl-lparen))
          (res := (vl-parse-module-parameter-port-list))
-         (:= (vl-match-token :vl-rparen))
          (return res))
        (return nil)))
