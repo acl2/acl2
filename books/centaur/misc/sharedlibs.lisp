@@ -62,6 +62,13 @@
 ;
 ; If anyone knows how to do this better, we would very much like to print this
 ; code out, mush it up, and throw it in a fire.  So please let us know.
+;
+; For a working example of this mechanism, see:
+;
+;    centaur/misc/sharedlibstest
+;
+; and specifically see test.sh.  (Note that running test.sh will delete your
+; Quicklisp files and you'll potentially need to rebuild!)
 
 (defun filename-part (abs-path)
   (declare (xargs :guard (and (stringp abs-path)
