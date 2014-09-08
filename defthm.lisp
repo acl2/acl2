@@ -9333,9 +9333,7 @@
 (defun disabledp-fn (name ens wrld)
   (declare (xargs :guard t))
   (cond ((symbolp name)
-         (let ((name2 (if (symbolp name)
-                          (deref-macro-name name (macro-aliases wrld))
-                        name)))
+         (let ((name2 (deref-macro-name name (macro-aliases wrld))))
            (cond ((and (not (eq name2 :here))
                        name2
                        (logical-namep name2 wrld))
@@ -9346,12 +9344,14 @@
                         "Illegal call of disabledp on symbolp argument ~x0.  ~
                          See :DOC disabledp."
                         name)))))
-        ((runep name wrld)
-         (not (enabled-runep name ens wrld)))
-        (t (er hard 'disabledp
-               "Illegal call of disabledp on non-symbol, non-rune argument ~
-                ~x0.  See :DOC disabledp."
-               name))))
+        (t (let* ((rune (translate-abbrev-rune name (macro-aliases wrld))))
+             (cond
+              ((runep rune wrld)
+               (not (enabled-runep rune ens wrld)))
+              (t (er hard 'disabledp
+                     "Illegal call of disabledp: ~x0 does not designate a ~
+                      rune or a list of runes.  See :DOC disabledp."
+                     name)))))))
 
 (defmacro disabledp (name)
   `(disabledp-fn ,name (ens state) (w state)))

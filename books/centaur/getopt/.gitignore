@@ -1,4 +1,7 @@
 demo2
-demo2.ccl
 demo2-test.ok
+# The following are executables.  Feel free to add executables
+# for additional platforms.
+demo2.ccl
+demo2.lx86cl64
 
