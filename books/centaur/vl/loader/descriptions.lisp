@@ -381,3 +381,33 @@ descriptions.  See @(see vl-fast-find-description) for a faster alternative.</p>
                     :imports     imports
                     :fwdtypes    fwdtypedefs
                     :typedefs    typedefs)))
+
+(local (in-theory (disable acl2::true-listp-append
+                           acl2::consp-append
+                           acl2::consp-of-append
+                           )))
+
+(define vl-design-descriptions ((x vl-design-p))
+  :returns (descriptions vl-descriptionlist-p)
+  (b* (((vl-design x)))
+    (append-without-guard x.mods
+                          x.udps
+                          x.interfaces
+                          x.programs
+                          x.packages
+                          x.configs
+                          x.taskdecls
+                          x.fundecls
+                          x.paramdecls
+                          x.imports
+                          x.fwdtypes
+                          x.typedefs)))
+
+;; BOZO could probably prove something like this, some day...
+;; (defthm vl-design-descriptions-identity
+;;   (equal (vl-design-from-descriptions (vl-design-descriptions x))
+;;          (vl-design-fix x))
+;;   :hints(("Goal" :in-theory (enable vl-design-from-descriptions
+;;                                     vl-design-descriptions))))
+
+
