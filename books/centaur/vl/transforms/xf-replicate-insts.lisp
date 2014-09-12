@@ -33,7 +33,6 @@
 (include-book "../mlib/port-tools")
 (include-book "../mlib/namefactory")
 (include-book "../mlib/find-module")
-(include-book "../mlib/context")
 (local (include-book "../util/arithmetic"))
 (local (in-theory (enable tag-reasoning)))
 (local (std::add-default-post-define-hook :fix))

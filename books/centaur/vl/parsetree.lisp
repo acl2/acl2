@@ -57,7 +57,7 @@ annotated with a @('version') field that must match exactly this string.</p>"
 
   ;; Current syntax version: generally a string like
   ;; "VL Syntax [date of modification]"
-  "VL Syntax 2014-09-05")
+  "VL Syntax 2014-09-11")
 
 (define vl-syntaxversion-p (x)
   :parents (syntax)
@@ -2961,7 +2961,7 @@ include delays, etc.</p>")
 @({
  modport_simple_ports_declaration ::=
  port_direction modport_simple_port { , modport_simple_port }
- 
+
  modport_simple_port ::=
  port_identifier
  | . port_identifier ( [ expression ] )
@@ -2971,7 +2971,7 @@ include delays, etc.</p>")
 identifier is turned into an expression.  The variables used in the expression
 must be declared in the interface, but it is permissible for the expression to
 be non-sliceable, at least if it's an input.</p>"
- 
+
   ((name stringp         "Name of the port; often the same as the expr")
    (dir  vl-direction-p  "Port direction")
    (expr vl-maybe-expr-p "Expression in terms of the declared variables of the interface.")
@@ -3217,8 +3217,8 @@ the list of elements of the given type.</p>"
         (,@(project-over-types
             '(__type__s vl-__type__list-p))
            (generates vl-genelementlist-p))
-        
-        
+
+
         :layout :tree)
 
 
@@ -3227,7 +3227,7 @@ the list of elements of the given type.</p>"
         :returns (loc vl-location-p
                       :hints(("Goal" :in-theory (enable vl-modelement-fix))))
         (b* ((x (vl-modelement-fix x)))
-          
+
           (case (tag x)
             . ,(project-over-types
                 '(:vl-__type__       (vl-__type__->loc x))))))
@@ -3275,7 +3275,7 @@ the list of elements of the given type.</p>"
                      '(rev (vl-__type__list-fix        __type__s)))
                   (vl-genelementlist-fix generates))))
           (vl-genelement-case (xf (car x))
-            :vl-genbase 
+            :vl-genbase
             (b* ((x1  xf.item)
                  (tag (tag x1)))
               (vl-sort-genelements-aux
@@ -3511,21 +3511,148 @@ transforms to not modules with this attribute.</p>"
     :rule-classes :compound-recognizer))
 
 
+(defenum vl-udpsymbol-p
+  (:vl-udp-0
+   :vl-udp-1
+   :vl-udp-x
+   :vl-udp-?
+   :vl-udp-b
+   :vl-udp--
+   :vl-udp-*
+   :vl-udp-r
+   :vl-udp-f
+   :vl-udp-p
+   :vl-udp-n)
+  :short "Symbols that can occur in a UDP table"
+  :long "<p>These are basically taken from Verilog-2005 Table 8-1.</p>
+
+<ul>
+
+<li>@(':vl-udp-0') &mdash; logic 0.</li>
+
+<li>@(':vl-udp-1') &mdash; logic 1.</li>
+
+<li>@(':vl-udp-x') &mdash; unknown.  Permitted in input/outputs of all UDPs and
+current state of sequential UDPs.</li>
+
+<li>@(':vl-udp-?') &mdash; iteration of 0, 1, and X.  Not permitted in outputs.</li>
+
+<li>@(':vl-udp-b') &mdash; iteration of 0 and 1.  Permitted in inputs of all
+udps and current state of sequential udps, not in outputs.</li>
+
+<li>@(':vl-udp--') &mdash; no change.  Permitted only in the output field of a
+sequential UDP.</li>
+
+<li>@(':vl-udp-*') &mdash; any value change on input, same as @('(??)').</li>
+
+<li>@(':vl-udp-r') &mdash; rising edge on input, same as @('(01)').</li>
+
+<li>@(':vl-udp-f') &mdash; falling edge on input, same as @('(10)').</li>
+
+<li>@(':vl-udp-p') &mdash; any potential positive edge on the input, iteration of
+                           @('(01)'), @('(0x)'), @('(x1)').</li>
+
+<li>@(':vl-udp-n') &mdash; any potential negative edge on the input, iteration of
+                           @('(10)'), @('(1x)'), @('(x0)').</li>
+
+</ul>")
+
+(defoption vl-maybe-udpsymbol-p
+  vl-udpsymbol-p)
+
+(defprod vl-udpedge
+  :tag :vl-udplevel
+  :layout :tree
+  :short "Representation of an explicit edge that can occur in a UDP table,
+e.g., @('(01)') or @('(1?)')."
+  ((prev vl-udpsymbol-p)
+   (next vl-udpsymbol-p)))
+
+(define vl-udpentry-p (x)
+  :short "Representation of any entry in a UDP table."
+  :returns bool
+  (mbe :logic
+       (or (vl-udpsymbol-p x)
+           (vl-udpedge-p x))
+       :exec
+       (if (consp x)
+           (vl-udpedge-p x)
+         (vl-udpsymbol-p x)))
+  ///
+  (defthm vl-udpentry-p-when-vl-udpsymbol-p
+    (implies (vl-udpsymbol-p x)
+             (vl-udpentry-p x)))
+  (defthm vl-udpentry-p-when-vl-udpedge-p
+    (implies (vl-udpedge-p x)
+             (vl-udpentry-p x))))
+
+(define vl-udpentry-fix (x)
+  :parents (vl-udpentry-p)
+  :returns (entry vl-udpentry-p)
+  :inline t
+  (if (vl-udpentry-p x)
+      x
+    :vl-udp-0)
+  ///
+  (defthm vl-udpentry-fix-when-vl-udpentry-p
+    (implies (vl-udpentry-p x)
+             (equal (vl-udpentry-fix x)
+                    x))))
+
+(deffixtype vl-udpentry
+  :pred vl-udpentry-p
+  :fix vl-udpentry-fix
+  :equiv vl-udpentry-equiv
+  :define t
+  :forward t)
+
+(fty::deflist vl-udpentrylist
+  :elt-type vl-udpentry-p
+  :elementp-of-nil nil)
+
+(defprod vl-udpline
+  :short "Representation of one line of a UDP table."
+  :tag    :vl-udpline
+  :layout :tree
+  ((inputs  vl-udpentrylist-p
+            "The input entries, i.e., whatever occurs before the first colon.")
+   (output  vl-udpsymbol-p
+            "The output value.")
+   (current vl-maybe-udpsymbol-p
+            "For sequential UDPs only: the current state.")))
+
+(fty::deflist vl-udptable
+  :elt-type vl-udpline-p
+  :elementp-of-nil nil)
+
 (defprod vl-udp
   :short "Representation of a user defined @('primitive')."
   :tag :vl-udp
   :layout :tree
-  ((name stringp
-         :rule-classes :type-prescription
-         "The name of this udp as a string.")
-   ;; ...
-   (warnings vl-warninglist-p)
-   (minloc   vl-location-p)
-   (maxloc   vl-location-p)
-   (atts     vl-atts-p)
-   (comments vl-commentmap-p))
-  :long "BOZO incomplete stub -- we don't really support user-defined
-  primitives yet.")
+
+  ((name        stringp :rule-classes :type-prescription
+                "The name of this udp as a string.")
+
+   (output      vl-portdecl-p
+                "Declaration of the output port, which always comes first.")
+
+   (inputs      vl-portdecllist-p
+                "Port declarations for the input ports, in order.")
+
+   (sequentialp booleanp
+                "True when this is a sequential (instead of combinational) UDP.")
+
+   (table       vl-udptable-p
+                "The UDP state table.")
+
+   (initval     vl-maybe-expr-p
+                "For sequential UDPs, the initial value for the register, if specified.")
+
+   (warnings    vl-warninglist-p)
+   (minloc      vl-location-p)
+   (maxloc      vl-location-p)
+   (atts        vl-atts-p)
+   (comments    vl-commentmap-p)))
 
 (fty::deflist vl-udplist
   :elt-type vl-udp-p

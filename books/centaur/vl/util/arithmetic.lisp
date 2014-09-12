@@ -669,3 +669,10 @@
           :use ((:instance acl2::NAT-EQUIV-IMPLIES-EQUAL-NATSTR-1
                  (n 0)
                  (acl2::n-equiv n))))))
+
+
+(defthm len-of-cdr-strong
+  (implies (consp x)
+           (< (len (cdr x))
+              (len x)))
+  :rule-classes ((:rewrite) (:linear)))

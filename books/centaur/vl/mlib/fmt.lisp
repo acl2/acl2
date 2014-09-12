@@ -30,7 +30,6 @@
 
 (in-package "VL")
 (include-book "writer")
-(include-book "context")
 (include-book "print-context")
 (local (include-book "../util/arithmetic"))
 (local (include-book "centaur/misc/arith-equivs" :dir :system))

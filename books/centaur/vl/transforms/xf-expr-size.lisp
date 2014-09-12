@@ -31,7 +31,6 @@
 (in-package "VL")
 (include-book "../mlib/range-tools")
 (include-book "../util/sum-nats")
-(include-book "../mlib/context")
 (include-book "../mlib/welltyped")
 (include-book "../mlib/lvalues")
 (include-book "centaur/misc/arith-equivs" :dir :system)

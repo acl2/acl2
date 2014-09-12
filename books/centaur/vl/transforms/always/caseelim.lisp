@@ -30,7 +30,6 @@
 
 (in-package "VL")
 (include-book "../../mlib/stmt-tools")
-(include-book "../../mlib/context")
 (include-book "../../mlib/welltyped")
 (include-book "../../mlib/constint-bits")
 (include-book "../../mlib/expr-slice")

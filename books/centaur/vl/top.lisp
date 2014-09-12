@@ -145,6 +145,7 @@
        (good          (xf-cwtime (vl-design-problem-mods good config.problem-mods)))
        ((mv good bad) (xf-cwtime (vl-design-propagate-errors* good bad)))
 
+
        ;; Optional use-set analysis.
        ((mv good use-set-report) (vl-simplify-maybe-use-set good config))
 

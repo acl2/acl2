@@ -29,7 +29,6 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "context")
 (include-book "expr-tools")
 (include-book "stmt-tools")
 (local (include-book "../util/arithmetic"))

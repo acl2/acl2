@@ -720,6 +720,42 @@
                (and stable-under-simplificationp
                     '(:do-not nil)))))))
 
+(defsection error
+
+  (with-output
+    :off prove :gag-mode :goals
+    (make-event
+     `(defthm-parse-statements-flag vl-parse-statement-warning
+        ,(vl-warning-claim vl-parse-case-item)
+        ,(vl-warning-claim vl-parse-1+-case-items)
+        ,(vl-warning-claim vl-parse-case-statement
+                                  :args (atts))
+        ,(vl-warning-claim vl-parse-conditional-statement
+                                  :args (atts))
+        ,(vl-warning-claim vl-parse-loop-statement
+                                  :args (atts))
+        ,(vl-warning-claim vl-parse-par-block
+                                  :args (atts))
+        ,(vl-warning-claim vl-parse-seq-block
+                                  :args (atts))
+        ,(vl-warning-claim vl-parse-procedural-timing-control-statement
+                                  :args (atts))
+        ,(vl-warning-claim vl-parse-wait-statement
+                                  :args (atts))
+        ,(vl-warning-claim vl-parse-statement-aux
+                                  :args (atts))
+        ,(vl-warning-claim vl-parse-statement)
+        ,(vl-warning-claim vl-parse-statement-or-null)
+        ,(vl-warning-claim vl-parse-statements-until-end)
+        ,(vl-warning-claim vl-parse-statements-until-join)
+        :hints('(:do-not '(simplify))
+               (flag::expand-calls-computed-hint
+                acl2::clause
+                ',(flag::get-clique-members 'vl-parse-statement-fn (w state)))
+               (and stable-under-simplificationp
+                    '(:do-not nil)))))))
+
+
 
 (defsection progress
 

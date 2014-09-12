@@ -32,7 +32,6 @@
 (include-book "always/stmtrewrite") ;; bozo
 (include-book "../mlib/range-tools")
 (include-book "../mlib/subst")
-(include-book "../mlib/context")
 (include-book "../mlib/allexprs")
 (include-book "../mlib/namefactory")
 (include-book "../util/toposort")

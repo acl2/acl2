@@ -33,7 +33,6 @@
 (include-book "elements")
 (include-book "../make-implicit-wires")
 (include-book "../portdecl-sign")
-(include-book "../../mlib/context")  ;; vl-modelement-p, sorting modelements
 (include-book "../../mlib/port-tools")  ;; vl-ports-from-portdecls
 (local (include-book "../../util/arithmetic"))
 
@@ -297,30 +296,18 @@
                                  :loc (vl-token->loc id)))))
 
 
-(define vl-make-module-with-parse-error ((name stringp)
+(define vl-make-module-with-parse-error ((name   stringp)
                                          (minloc vl-location-p)
                                          (maxloc vl-location-p)
-                                         (err)
+                                         (err    vl-warning-p)
                                          (tokens vl-tokenlist-p))
   :returns (mod vl-module-p)
-  (b* (;; We expect that ERR should be an object suitable for cw-obj, i.e.,
-       ;; each should be a cons of a string onto some arguments.  But if this
-       ;; is not the case, we handle it here by just making a generic error.
-       ((mv msg args)
-        (if (and (consp err)
-                 (stringp (car err)))
-            (mv (car err) (list-fix (cdr err)))
-          (mv "Generic error message for modules with parse errors. ~% ~
-               Details: ~x0.~%" (list err))))
-
-       (warn1 (make-vl-warning :type :vl-parse-error
-                               :msg msg
-                               :args args
-                               :fatalp t
-                               :fn 'vl-make-module-with-parse-error))
-
-       ;; We also generate a second error message to show the remaining part of
-       ;; the token stream in each case:
+  (b* (;; We also generate a second error message.
+       ;;  - This lets us always show the remaining part of the token stream
+       ;;    in each case.
+       ;;  - It ensures that any module with a parse error always, absolutely,
+       ;;    certainly has a fatal warning, even if somehow the real warning
+       ;;    isn't marked as fatal.
        (warn2 (make-vl-warning :type :vl-parse-error
                                :msg "[[ Remaining ]]: ~s0 ~s1.~%"
                                :args (list (vl-tokenlist->string-with-spaces
@@ -328,13 +315,12 @@
                                                   (redundant-list-fix tokens)))
                                            (if (> (len tokens) 4) "..." ""))
                                :fatalp t
-                               :fn 'vl-make-module-with-parse-error)))
-
+                               :fn __function__)))
     (make-vl-module :name name
                     :origname name
                     :minloc minloc
                     :maxloc maxloc
-                    :warnings (list warn1 warn2))))
+                    :warnings (list err warn2))))
 
 
 (defparser vl-parse-module-declaration (atts)

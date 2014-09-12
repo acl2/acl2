@@ -38,7 +38,6 @@
 (include-book "functions")  ;; vl-fundecllist-p
 (include-book "modports")
 (include-book "typedefs")
-(include-book "../../mlib/context")  ;; vl-modelement-p, sorting modelements
 (include-book "../../mlib/port-tools")  ;; vl-ports-from-portdecls
 (local (include-book "../../util/arithmetic"))
 
@@ -79,7 +78,7 @@
         (lhs := (vl-parse-lvalue))
         (aliases := (vl-parse-1+-alias-rhses atts lhs loc))
         (return aliases)))
-        
+
 
 
 
@@ -170,12 +169,10 @@
   (if (not (consp (vl-tokstream->tokens)))
       (vl-parse-error "Unexpected EOF.")
     (seq tokstream
-          (:= (vl-parse-warning :vl-warn-specify
-                                (cat "Specify blocks are not yet implemented.  "
-                                     "Instead, we are simply ignoring everything "
-                                     "until 'endspecify'.")))
-          (ret := (vl-parse-specify-block-aux))
-          (return ret))))
+         (:= (vl-parse-warning :vl-warn-specify
+                               "Specify blocks are not yet implemented.  Ignoring everything until 'endspecify'."))
+         (ret := (vl-parse-specify-block-aux))
+         (return ret))))
 
 
 (defparser vl-parse-specparam-declaration (atts)
@@ -197,8 +194,7 @@
   :count strong
   (declare (ignore atts))
   (seq tokstream
-        (:= (vl-parse-warning :vl-warn-genvar
-                              (cat "Genvar declarations are not implemented, we are just skipping this genvar.")))
+        (:= (vl-parse-warning :vl-warn-genvar "Genvar declarations are not implemented, we are just skipping this genvar."))
         (:= (vl-match-token :vl-kwd-genvar))
         (:= (vl-parse-1+-identifiers-separated-by-commas))
         (:= (vl-match-token :vl-semi))
@@ -460,8 +456,8 @@
                      (vl-assign-op-expr (vl-idtoken->name id)
                                         (vl-token->type eq)
                                         rhs)))))
-       
-                                     
+
+
 
 
 (encapsulate nil
@@ -501,8 +497,7 @@
          ((id2 . next) := (vl-parse-genvar-iteration))
          (when (not (equal (vl-idtoken->name id) id2))
            (return-raw
-            (vl-parse-error "For loop: the initialized variable differed ~
-                              from the incremented variable.")))
+            (vl-parse-error "For loop: the initialized variable differed from the incremented variable.")))
          (:= (vl-match-token :vl-rparen))
          (return (make-vl-genloop :var (make-vl-id :name (vl-idtoken->name id))
                                   :initval init
@@ -708,6 +703,22 @@
       ,(vl-val-when-error-claim vl-parse-genif)
       ,(vl-val-when-error-claim vl-parse-gencase)
       ,(vl-val-when-error-claim vl-parse-gencaselist)
+      :hints ('(:do-not '(preprocess))
+              (flag::expand-calls-computed-hint
+               acl2::clause
+               ',(flag::get-clique-members 'vl-parse-genelement-fn (w state)))
+              (and stable-under-simplificationp
+                   '(:do-not nil)))))
+
+  (make-event
+   `(defthm-vl-genelements-flag vl-parse-genelement-warning
+      ,(vl-warning-claim vl-parse-genelement)
+      ,(vl-warning-claim vl-parse-0+-genelements)
+      ,(vl-warning-claim vl-parse-generate-block)
+      ,(vl-warning-claim vl-parse-genloop)
+      ,(vl-warning-claim vl-parse-genif)
+      ,(vl-warning-claim vl-parse-gencase)
+      ,(vl-warning-claim vl-parse-gencaselist)
       :hints ('(:do-not '(preprocess))
               (flag::expand-calls-computed-hint
                acl2::clause
