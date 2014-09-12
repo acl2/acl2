@@ -45,8 +45,7 @@
        (fix  (mksym name '-fix))
        (type (mksym name '-p)))
     `(define ,fn ((x      ,type)
-                  (mod    vl-module-p)
-                  (ialist (equal ialist (vl-moditem-alist mod)))
+                  (ss vl-scopestack-p)
                   ,@(and takes-elem '((elem vl-modelement-p)))
                   (warnings vl-warninglist-p))
        :parents (expression-sizing)
@@ -64,12 +63,11 @@
        (fn      (mksym name '-exprsize))
        (elem-fn (mksym element '-exprsize))
        (type    (mksym name '-p))
-       (formals (append '(x mod ialist)
+       (formals (append '(x ss)
                         (if takes-elem '(elem) nil)
                         '(warnings))))
     `(define ,fn ((x      ,type)
-                  (mod    vl-module-p)
-                  (ialist (equal ialist (vl-moditem-alist mod)))
+                  (ss vl-scopestack-p)
                   ,@(and takes-elem '((elem vl-modelement-p)))
                   (warnings vl-warninglist-p))
        :returns (mv (successp booleanp :rule-classes :type-prescription)
@@ -94,16 +92,16 @@
   :fn vl-maybe-expr-size
   :takes-elem t
   :body (if x
-            (vl-expr-size nil x mod ialist elem warnings)
+            (vl-expr-size nil x ss elem warnings)
           (mv t warnings x)))
 
 (def-vl-exprsize vl-range
   :takes-elem t
   :body (b* (((vl-range x) x)
              ((mv msb-successp warnings msb-prime)
-              (vl-expr-size nil x.msb mod ialist elem warnings))
+              (vl-expr-size nil x.msb ss elem warnings))
              ((mv lsb-successp warnings lsb-prime)
-              (vl-expr-size nil x.lsb mod ialist elem warnings))
+              (vl-expr-size nil x.lsb ss elem warnings))
              (successp (and msb-successp lsb-successp))
              (x-prime  (change-vl-range x
                                         :msb msb-prime
@@ -113,7 +111,7 @@
 (def-vl-exprsize vl-maybe-range
   :takes-elem t
   :body (if x
-            (vl-range-exprsize x mod ialist elem warnings)
+            (vl-range-exprsize x ss elem warnings)
           (mv t warnings x)))
 
 (def-vl-exprsize-list vl-rangelist
@@ -126,13 +124,13 @@
   (b* ((x (vl-packeddimension-fix x)))
     (if (eq x :vl-unsized-dimension)
         (mv t warnings x)
-      (vl-range-exprsize x mod ialist elem warnings))))
+      (vl-range-exprsize x ss elem warnings))))
 
 (def-vl-exprsize vl-maybe-packeddimension
   :takes-elem t
   :body
   (if x
-      (vl-packeddimension-exprsize x mod ialist elem warnings)
+      (vl-packeddimension-exprsize x ss elem warnings)
     (mv t warnings x)))
 
 (def-vl-exprsize-list vl-packeddimensionlist
@@ -143,7 +141,7 @@
   :takes-elem t
   :body (b* (((vl-enumbasetype x) x)
              ((mv successp warnings dim)
-              (vl-maybe-packeddimension-exprsize x.dim mod ialist elem warnings)))
+              (vl-maybe-packeddimension-exprsize x.dim ss elem warnings)))
           (mv successp warnings (change-vl-enumbasetype x :dim dim))))
 
 (def-vl-exprsize vl-enumitem
@@ -151,9 +149,9 @@
   :body
   (b* (((vl-enumitem x) x)
        ((mv range-successp warnings new-range)
-        (vl-maybe-range-exprsize x.range mod ialist elem warnings))
+        (vl-maybe-range-exprsize x.range ss elem warnings))
        ((mv value-successp warnings new-value)
-        (vl-maybe-expr-size x.value mod ialist elem warnings))
+        (vl-maybe-expr-size x.value ss elem warnings))
        (successp (and range-successp value-successp))
        (new-x    (change-vl-enumitem x
                                      :range new-range
@@ -169,8 +167,7 @@
   :verify-guards nil
 
   (define vl-datatype-exprsize ((x        vl-datatype-p)
-                                (mod      vl-module-p)
-                                (ialist   (equal ialist (vl-moditem-alist mod)))
+                                (ss vl-scopestack-p)
                                 (elem     vl-modelement-p)
                                 (warnings vl-warninglist-p))
     :returns (mv (successp booleanp :rule-classes :type-prescription)
@@ -180,37 +177,37 @@
     (vl-datatype-case x
       (:vl-nettype
        (b* (((mv range-successp warnings new-range)
-             (vl-maybe-range-exprsize x.range mod ialist elem warnings))
+             (vl-maybe-range-exprsize x.range ss elem warnings))
             (new-x (change-vl-nettype x :range new-range)))
          (mv range-successp warnings new-x)))
       (:vl-coretype
        (b* (((mv dims-successp warnings new-dims)
-             (vl-packeddimensionlist-exprsize x.dims mod ialist elem warnings))
+             (vl-packeddimensionlist-exprsize x.dims ss elem warnings))
             (new-x (change-vl-coretype x :dims new-dims)))
          (mv dims-successp warnings new-x)))
       (:vl-struct
        (b* (((mv members-successp warnings new-members)
-             (vl-structmemberlist-exprsize x.members mod ialist elem warnings))
+             (vl-structmemberlist-exprsize x.members ss elem warnings))
             ((mv dims-successp warnings new-dims)
-             (vl-packeddimensionlist-exprsize x.dims mod ialist elem warnings))
+             (vl-packeddimensionlist-exprsize x.dims ss elem warnings))
             (successp (and members-successp dims-successp))
             (new-x    (change-vl-struct x :members new-members :dims new-dims)))
          (mv successp warnings new-x)))
       (:vl-union
        (b* (((mv members-successp warnings new-members)
-             (vl-structmemberlist-exprsize x.members mod ialist elem warnings))
+             (vl-structmemberlist-exprsize x.members ss elem warnings))
             ((mv dims-successp warnings new-dims)
-             (vl-packeddimensionlist-exprsize x.dims mod ialist elem warnings))
+             (vl-packeddimensionlist-exprsize x.dims ss elem warnings))
             (successp (and members-successp dims-successp))
             (new-x    (change-vl-union x :members new-members :dims new-dims)))
          (mv successp warnings new-x)))
       (:vl-enum
        (b* (((mv basetype-successp warnings new-basetype)
-             (vl-enumbasetype-exprsize x.basetype mod ialist elem warnings))
+             (vl-enumbasetype-exprsize x.basetype ss elem warnings))
             ((mv items-successp warnings new-items)
-             (vl-enumitemlist-exprsize x.items mod ialist elem warnings))
+             (vl-enumitemlist-exprsize x.items ss elem warnings))
             ((mv dims-successp warnings new-dims)
-             (vl-packeddimensionlist-exprsize x.dims mod ialist elem warnings))
+             (vl-packeddimensionlist-exprsize x.dims ss elem warnings))
             (successp (and basetype-successp items-successp dims-successp))
             (new-x    (change-vl-enum x
                                       :basetype new-basetype
@@ -219,16 +216,15 @@
          (mv successp warnings new-x)))
       (:vl-usertype
        (b* (((mv kind-successp warnings new-kind)
-             (vl-expr-size nil x.kind mod ialist elem warnings))
+             (vl-expr-size nil x.kind ss elem warnings))
             ((mv dims-successp warnings new-dims)
-             (vl-packeddimensionlist-exprsize x.dims mod ialist elem warnings))
+             (vl-packeddimensionlist-exprsize x.dims ss elem warnings))
             (successp (and kind-successp dims-successp))
             (new-x    (change-vl-usertype x :kind new-kind :dims new-dims)))
          (mv successp warnings new-x)))))
 
   (define vl-structmemberlist-exprsize ((x        vl-structmemberlist-p)
-                                        (mod      vl-module-p)
-                                        (ialist   (equal ialist (vl-moditem-alist mod)))
+                                        (ss vl-scopestack-p)
                                         (elem     vl-modelement-p)
                                         (warnings vl-warninglist-p))
     :returns (mv (successp booleanp :rule-classes :type-prescription)
@@ -237,15 +233,14 @@
     :measure (vl-structmemberlist-count x)
     (b* (((when (atom x))
           (mv t (ok) nil))
-         ((mv car-successp warnings new-car) (vl-structmember-exprsize (car x) mod ialist elem warnings))
-         ((mv cdr-successp warnings new-cdr) (vl-structmemberlist-exprsize (cdr x) mod ialist elem warnings))
+         ((mv car-successp warnings new-car) (vl-structmember-exprsize (car x) ss elem warnings))
+         ((mv cdr-successp warnings new-cdr) (vl-structmemberlist-exprsize (cdr x) ss elem warnings))
          (successp (and car-successp cdr-successp))
          (new-x    (cons new-car new-cdr)))
       (mv successp warnings new-x)))
 
   (define vl-structmember-exprsize ((x        vl-structmember-p)
-                                    (mod      vl-module-p)
-                                    (ialist   (equal ialist (vl-moditem-alist mod)))
+                                    (ss vl-scopestack-p)
                                     (elem     vl-modelement-p)
                                     (warnings vl-warninglist-p))
     :returns (mv (successp booleanp :rule-classes :type-prescription)
@@ -254,11 +249,11 @@
     :measure (vl-structmember-count x)
     (b* (((vl-structmember x) x)
          ((mv type-successp warnings new-type)
-          (vl-datatype-exprsize x.type mod ialist elem warnings))
+          (vl-datatype-exprsize x.type ss elem warnings))
          ((mv dims-successp warnings new-dims)
-          (vl-packeddimensionlist-exprsize x.dims mod ialist elem warnings))
+          (vl-packeddimensionlist-exprsize x.dims ss elem warnings))
          ((mv rhs-successp warnings new-rhs)
-          (vl-maybe-expr-size x.rhs mod ialist elem warnings))
+          (vl-maybe-expr-size x.rhs ss elem warnings))
          (successp (and type-successp dims-successp rhs-successp))
          (new-x    (change-vl-structmember x
                                            :type new-type
@@ -273,11 +268,11 @@
   :takes-elem t
   :body (b* (((vl-gatedelay x) x)
              ((mv rise-okp warnings rise-prime)
-              (vl-expr-size nil x.rise mod ialist elem warnings))
+              (vl-expr-size nil x.rise ss elem warnings))
              ((mv fall-okp warnings fall-prime)
-              (vl-expr-size nil x.fall mod ialist elem warnings))
+              (vl-expr-size nil x.fall ss elem warnings))
              ((mv high-okp warnings high-prime)
-              (vl-maybe-expr-size x.high mod ialist elem warnings))
+              (vl-maybe-expr-size x.high ss elem warnings))
              (successp (and rise-okp fall-okp high-okp))
              (x-prime  (change-vl-gatedelay x
                                             :rise rise-prime
@@ -288,7 +283,7 @@
 (def-vl-exprsize vl-maybe-gatedelay
   :takes-elem t
   :body (if x
-            (vl-gatedelay-exprsize x mod ialist elem warnings)
+            (vl-gatedelay-exprsize x ss elem warnings)
           (mv t warnings x)))
 
 ; Truncation warnings are really, really good to have, and have found many
@@ -441,7 +436,7 @@
             x))
 
        ((mv lhs-successp warnings lhs-prime)
-        (vl-expr-size nil x.lvalue mod ialist elem warnings))
+        (vl-expr-size nil x.lvalue ss elem warnings))
        ((unless lhs-successp)
         (mv nil warnings x))
 
@@ -455,7 +450,7 @@
             x))
 
        ((mv rhs-successp warnings rhs-prime)
-        (vl-expr-size lhs-size x.expr mod ialist elem warnings))
+        (vl-expr-size lhs-size x.expr ss elem warnings))
 
        (warnings
         ;; By vl-expr->finalwidth-of-vl-expr-size-when-lhs-size, we know
@@ -468,7 +463,7 @@
           warnings))
 
        ((mv delay-successp warnings delay-prime)
-        (vl-maybe-gatedelay-exprsize x.delay mod ialist elem warnings))
+        (vl-maybe-gatedelay-exprsize x.delay ss elem warnings))
 
        ((unless (and rhs-successp delay-successp))
         (mv nil warnings x))
@@ -505,7 +500,7 @@ the expression.</p>"
              ((unless x.expr)
               (mv t warnings x))
              ((mv successp warnings expr-prime)
-              (vl-expr-size nil x.expr mod ialist elem warnings))
+              (vl-expr-size nil x.expr ss elem warnings))
              (x-prime
               (change-vl-plainarg x :expr expr-prime)))
           (mv successp warnings x-prime)))
@@ -521,7 +516,7 @@ the expression.</p>"
              ((unless x.expr)
               (mv t warnings x))
              ((mv successp warnings expr-prime)
-              (vl-expr-size nil x.expr mod ialist elem warnings))
+              (vl-expr-size nil x.expr ss elem warnings))
              (x-prime
               (change-vl-namedarg x :expr expr-prime)))
           (mv successp warnings x-prime)))
@@ -536,12 +531,12 @@ the expression.</p>"
   (vl-arguments-case x
     :vl-arguments-named
     (b* (((mv successp warnings args-prime)
-          (vl-namedarglist-exprsize x.args mod ialist elem warnings))
+          (vl-namedarglist-exprsize x.args ss elem warnings))
          (x-prime (change-vl-arguments-named x :args args-prime)))
       (mv successp warnings x-prime))
     :vl-arguments-plain
     (b* (((mv successp warnings args-prime)
-          (vl-plainarglist-exprsize x.args mod ialist elem warnings))
+          (vl-plainarglist-exprsize x.args ss elem warnings))
          (x-prime (change-vl-arguments-plain x :args args-prime)))
       (mv successp warnings x-prime))))
 
@@ -551,8 +546,8 @@ the expression.</p>"
   :body
   (b* ((x (vl-paramvalue-fix x)))
     (vl-paramvalue-case x
-      :expr (vl-expr-size nil x mod ialist elem warnings)
-      :datatype (vl-datatype-exprsize x mod ialist elem warnings))))
+      :expr (vl-expr-size nil x ss elem warnings)
+      :datatype (vl-datatype-exprsize x ss elem warnings))))
 
 (def-vl-exprsize-list vl-paramvaluelist
   :takes-elem t
@@ -562,7 +557,7 @@ the expression.</p>"
   :takes-elem t
   :body
   (if x
-      (vl-paramvalue-exprsize x mod ialist elem warnings)
+      (vl-paramvalue-exprsize x ss elem warnings)
     (mv t warnings nil)))
 
 (def-vl-exprsize vl-namedparamvalue
@@ -570,7 +565,7 @@ the expression.</p>"
   :body
   (b* (((vl-namedparamvalue x) x)
        ((mv successp warnings value)
-        (vl-maybe-paramvalue-exprsize x.value mod ialist elem warnings))
+        (vl-maybe-paramvalue-exprsize x.value ss elem warnings))
        (x-prime (change-vl-namedparamvalue x :value value)))
     (mv successp warnings x-prime)))
 
@@ -584,12 +579,12 @@ the expression.</p>"
   (vl-paramargs-case x
     :vl-paramargs-named
     (b* (((mv successp warnings args)
-          (vl-namedparamvaluelist-exprsize x.args mod ialist elem warnings))
+          (vl-namedparamvaluelist-exprsize x.args ss elem warnings))
          (x-prime (change-vl-paramargs-named x :args args)))
       (mv successp warnings x-prime))
     :vl-paramargs-plain
     (b* (((mv successp warnings args)
-          (vl-paramvaluelist-exprsize x.args mod ialist elem warnings))
+          (vl-paramvaluelist-exprsize x.args ss elem warnings))
          (x-prime (change-vl-paramargs-plain x :args args)))
       (mv successp warnings x-prime))))
 
@@ -599,13 +594,13 @@ the expression.</p>"
   (b* (((vl-modinst x) x)
        (elem x)
        ((mv successp1 warnings portargs-prime)
-        (vl-arguments-exprsize x.portargs mod ialist elem warnings))
+        (vl-arguments-exprsize x.portargs ss elem warnings))
        ((mv successp2 warnings paramargs-prime)
-        (vl-paramargs-exprsize x.paramargs mod ialist elem warnings))
+        (vl-paramargs-exprsize x.paramargs ss elem warnings))
        ((mv successp3 warnings range-prime)
-        (vl-maybe-range-exprsize x.range mod ialist elem warnings))
+        (vl-maybe-range-exprsize x.range ss elem warnings))
        ((mv successp4 warnings delay-prime)
-        (vl-maybe-gatedelay-exprsize x.delay mod ialist elem warnings))
+        (vl-maybe-gatedelay-exprsize x.delay ss elem warnings))
        (successp
         (and successp1 successp2 successp3 successp4))
        (x-prime
@@ -624,11 +619,11 @@ the expression.</p>"
   (b* (((vl-gateinst x) x)
        (elem x)
        ((mv successp1 warnings args-prime)
-        (vl-plainarglist-exprsize x.args mod ialist elem warnings))
+        (vl-plainarglist-exprsize x.args ss elem warnings))
        ((mv successp2 warnings range-prime)
-        (vl-maybe-range-exprsize x.range mod ialist elem warnings))
+        (vl-maybe-range-exprsize x.range ss elem warnings))
        ((mv successp3 warnings delay-prime)
-        (vl-maybe-gatedelay-exprsize x.delay mod ialist elem warnings))
+        (vl-maybe-gatedelay-exprsize x.delay ss elem warnings))
        (successp
         (and successp1 successp2 successp3))
        (x-prime
@@ -646,7 +641,7 @@ the expression.</p>"
   :takes-elem t
   :body (b* (((vl-delaycontrol x) x)
              ((mv successp warnings value-prime)
-              (vl-expr-size nil x.value mod ialist elem warnings))
+              (vl-expr-size nil x.value ss elem warnings))
              (x-prime
               (change-vl-delaycontrol x :value value-prime)))
             (mv successp warnings x-prime)))
@@ -655,7 +650,7 @@ the expression.</p>"
   :takes-elem t
   :body (b* (((vl-evatom x) x)
              ((mv successp warnings expr-prime)
-              (vl-expr-size nil x.expr mod ialist elem warnings))
+              (vl-expr-size nil x.expr ss elem warnings))
              (x-prime
               (change-vl-evatom x :expr expr-prime)))
             (mv successp warnings x-prime)))
@@ -668,7 +663,7 @@ the expression.</p>"
   :takes-elem t
   :body (b* (((vl-eventcontrol x) x)
              ((mv successp warnings atoms-prime)
-              (vl-evatomlist-exprsize x.atoms mod ialist elem warnings))
+              (vl-evatomlist-exprsize x.atoms ss elem warnings))
              (x-prime
               (change-vl-eventcontrol x :atoms atoms-prime)))
           (mv successp warnings x-prime)))
@@ -677,9 +672,9 @@ the expression.</p>"
   :takes-elem t
   :body (b* (((vl-repeateventcontrol x) x)
              ((mv successp1 warnings expr-prime)
-              (vl-expr-size nil x.expr mod ialist elem warnings))
+              (vl-expr-size nil x.expr ss elem warnings))
              ((mv successp2 warnings ctrl-prime)
-              (vl-eventcontrol-exprsize x.ctrl mod ialist elem warnings))
+              (vl-eventcontrol-exprsize x.ctrl ss elem warnings))
              (successp
               (and successp1 successp2))
              (x-prime
@@ -691,18 +686,18 @@ the expression.</p>"
 (def-vl-exprsize vl-delayoreventcontrol
   :takes-elem t
   :body (case (tag x)
-          (:vl-delaycontrol (vl-delaycontrol-exprsize x mod ialist elem warnings))
-          (:vl-eventcontrol (vl-eventcontrol-exprsize x mod ialist elem warnings))
-          (otherwise        (vl-repeateventcontrol-exprsize x mod ialist elem warnings))))
+          (:vl-delaycontrol (vl-delaycontrol-exprsize x ss elem warnings))
+          (:vl-eventcontrol (vl-eventcontrol-exprsize x ss elem warnings))
+          (otherwise        (vl-repeateventcontrol-exprsize x ss elem warnings))))
 
 (def-vl-exprsize vl-maybe-delayoreventcontrol
   :takes-elem t
   :body (if x
-            (vl-delayoreventcontrol-exprsize x mod ialist elem warnings)
+            (vl-delayoreventcontrol-exprsize x ss elem warnings)
           (mv t warnings nil)))
 
 (defthm vl-maybe-delayoreventcontrol-exprsize-under-iff
-  (iff (mv-nth 2 (vl-maybe-delayoreventcontrol-exprsize x mod ialist elem warnings))
+  (iff (mv-nth 2 (vl-maybe-delayoreventcontrol-exprsize x ss elem warnings))
        x)
   :hints(("Goal" :in-theory (enable vl-maybe-delayoreventcontrol-exprsize))))
 
@@ -710,8 +705,7 @@ the expression.</p>"
 
   (define vl-stmt-exprsize
     ((x        vl-stmt-p)
-     (mod      vl-module-p)
-     (ialist   (equal ialist (vl-moditem-alist mod)))
+     (ss vl-scopestack-p)
      (elem     vl-modelement-p)
      (warnings vl-warninglist-p))
     :verify-guards nil
@@ -739,7 +733,7 @@ the expression.</p>"
                               :args (list elem x.lvalue))
                        x))
 
-                  ((mv lhs-successp warnings lhs-prime) (vl-expr-size nil x.lvalue mod ialist elem warnings))
+                  ((mv lhs-successp warnings lhs-prime) (vl-expr-size nil x.lvalue ss elem warnings))
                   ((unless lhs-successp)
                    (mv nil warnings x))
                   (lhs-size (vl-expr->finalwidth lhs-prime))
@@ -751,7 +745,7 @@ the expression.</p>"
                               :args (list elem x.lvalue))
                        x))
 
-                  ((mv rhs-successp warnings rhs-prime) (vl-expr-size lhs-size x.expr mod ialist elem warnings))
+                  ((mv rhs-successp warnings rhs-prime) (vl-expr-size lhs-size x.expr ss elem warnings))
                   (warnings
                    ;; By vl-expr->finalwidth-of-vl-expr-size-when-lhs-size, we know
                    ;; that rhs-prime is at least as wide as lhs-size.  But it can be
@@ -763,7 +757,7 @@ the expression.</p>"
                      warnings))
 
                   ((mv delay-successp warnings ctrl-prime)
-                   (vl-maybe-delayoreventcontrol-exprsize x.ctrl mod ialist elem warnings))
+                   (vl-maybe-delayoreventcontrol-exprsize x.ctrl ss elem warnings))
                   (successp (and rhs-successp delay-successp))
                   (x-prime (change-vl-assignstmt x
                                                  :lvalue lhs-prime
@@ -773,14 +767,14 @@ the expression.</p>"
 
             (:vl-deassignstmt
              (b* (((vl-deassignstmt x) x)
-                  ((mv successp warnings lvalue-prime) (vl-expr-size nil x.lvalue mod ialist elem warnings))
+                  ((mv successp warnings lvalue-prime) (vl-expr-size nil x.lvalue ss elem warnings))
                   (x-prime (change-vl-deassignstmt x :lvalue lvalue-prime)))
                (mv successp warnings x-prime)))
 
             (:vl-enablestmt
              (b* (((vl-enablestmt x) x)
-                  ((mv successp1 warnings id-prime) (vl-expr-size nil x.id mod ialist elem warnings))
-                  ((mv successp2 warnings args-prime) (vl-exprlist-size x.args mod ialist elem warnings))
+                  ((mv successp1 warnings id-prime) (vl-expr-size nil x.id ss elem warnings))
+                  ((mv successp2 warnings args-prime) (vl-exprlist-size x.args ss elem warnings))
                   (successp (and successp1 successp2))
                   (x-prime (change-vl-enablestmt x
                                                  :id id-prime
@@ -789,13 +783,13 @@ the expression.</p>"
 
             (:vl-disablestmt
              (b* (((vl-disablestmt x) x)
-                  ((mv successp warnings id-prime) (vl-expr-size nil x.id mod ialist elem warnings))
+                  ((mv successp warnings id-prime) (vl-expr-size nil x.id ss elem warnings))
                   (x-prime (change-vl-disablestmt x :id id-prime)))
                (mv successp warnings x-prime)))
 
             (otherwise
              (b* (((vl-eventtriggerstmt x) x)
-                  ((mv successp warnings id-prime) (vl-expr-size nil x.id mod ialist elem warnings))
+                  ((mv successp warnings id-prime) (vl-expr-size nil x.id ss elem warnings))
                   (x-prime (change-vl-eventtriggerstmt x :id id-prime)))
                (mv successp warnings x-prime)))))
 
@@ -803,9 +797,9 @@ the expression.</p>"
          (x.stmts (vl-compoundstmt->stmts x))
          (x.ctrl  (vl-compoundstmt->ctrl x))
          (x.decls (vl-compoundstmt->decls x))
-         ((mv successp1 warnings exprs-prime) (vl-exprlist-size x.exprs mod ialist elem warnings))
-         ((mv successp2 warnings stmts-prime) (vl-stmtlist-exprsize x.stmts mod ialist elem warnings))
-         ((mv successp3 warnings ctrl-prime)  (vl-maybe-delayoreventcontrol-exprsize x.ctrl mod ialist elem warnings))
+         ((mv successp1 warnings exprs-prime) (vl-exprlist-size x.exprs ss elem warnings))
+         ((mv successp2 warnings stmts-prime) (vl-stmtlist-exprsize x.stmts ss elem warnings))
+         ((mv successp3 warnings ctrl-prime)  (vl-maybe-delayoreventcontrol-exprsize x.ctrl ss elem warnings))
          (warnings
           (if (atom x.decls)
               warnings
@@ -822,8 +816,7 @@ the expression.</p>"
 
   (define vl-stmtlist-exprsize
     ((x        vl-stmtlist-p)
-     (mod      vl-module-p)
-     (ialist   (equal ialist (vl-moditem-alist mod)))
+     (ss vl-scopestack-p)
      (elem     vl-modelement-p)
      (warnings vl-warninglist-p))
     :measure (vl-stmtlist-count x)
@@ -833,8 +826,8 @@ the expression.</p>"
                                 (equal (len new-x) (len x)))))
     (b* (((when (atom x))
           (mv t (ok) nil))
-         ((mv car-successp warnings car-prime) (vl-stmt-exprsize (car x) mod ialist elem warnings))
-         ((mv cdr-successp warnings cdr-prime) (vl-stmtlist-exprsize (cdr x) mod ialist elem warnings))
+         ((mv car-successp warnings car-prime) (vl-stmt-exprsize (car x) ss elem warnings))
+         ((mv cdr-successp warnings cdr-prime) (vl-stmtlist-exprsize (cdr x) ss elem warnings))
          (successp (and car-successp cdr-successp))
          (x-prime  (cons car-prime cdr-prime)))
       (mv successp warnings x-prime)))
@@ -847,7 +840,7 @@ the expression.</p>"
   :body (b* (((vl-always x) x)
              (elem x)
              ((mv successp warnings stmt-prime)
-              (vl-stmt-exprsize x.stmt mod ialist elem warnings))
+              (vl-stmt-exprsize x.stmt ss elem warnings))
              (x-prime (change-vl-always x :stmt stmt-prime)))
             (mv successp warnings x-prime)))
 
@@ -858,7 +851,7 @@ the expression.</p>"
   :body (b* (((vl-initial x) x)
              (elem x)
              ((mv successp warnings stmt-prime)
-              (vl-stmt-exprsize x.stmt mod ialist elem warnings))
+              (vl-stmt-exprsize x.stmt ss elem warnings))
              (x-prime (change-vl-initial x :stmt stmt-prime)))
             (mv successp warnings x-prime)))
 
@@ -869,7 +862,7 @@ the expression.</p>"
   :body (b* (((vl-port x) x)
              (elem x)
              ((mv successp warnings expr-prime)
-              (vl-maybe-expr-size x.expr mod ialist elem warnings))
+              (vl-maybe-expr-size x.expr ss elem warnings))
              (x-prime (change-vl-port x :expr expr-prime)))
           (mv successp warnings x-prime)))
 
@@ -884,7 +877,7 @@ the expression.</p>"
   :body (b* (((vl-portdecl x) x)
              (elem x)
              ((mv successp warnings type-prime)
-              (vl-datatype-exprsize x.type mod ialist elem warnings))
+              (vl-datatype-exprsize x.type ss elem warnings))
              (x-prime (change-vl-portdecl x :type type-prime)))
           (mv successp warnings x-prime)))
 
@@ -896,10 +889,10 @@ the expression.</p>"
   :body
   (b* (((vl-vardecl x) x)
        (elem x)
-       ((mv successp1 warnings type-prime)    (vl-datatype-exprsize x.type mod ialist elem warnings))
-       ((mv successp2 warnings dims-prime)    (vl-packeddimensionlist-exprsize x.dims mod ialist elem warnings))
-       ((mv successp3 warnings initval-prime) (vl-maybe-expr-size x.initval mod ialist elem warnings))
-       ((mv successp4 warnings delay-prime)   (vl-maybe-gatedelay-exprsize x.delay mod ialist elem warnings))
+       ((mv successp1 warnings type-prime)    (vl-datatype-exprsize x.type ss elem warnings))
+       ((mv successp2 warnings dims-prime)    (vl-packeddimensionlist-exprsize x.dims ss elem warnings))
+       ((mv successp3 warnings initval-prime) (vl-maybe-expr-size x.initval ss elem warnings))
+       ((mv successp4 warnings delay-prime)   (vl-maybe-gatedelay-exprsize x.delay ss elem warnings))
        (successp (and successp1 successp2 successp3 successp4))
        (x-prime (change-vl-vardecl x
                                    :type    type-prime
@@ -911,12 +904,13 @@ the expression.</p>"
 (def-vl-exprsize-list vl-vardecllist :element vl-vardecl)
 
 
-(define vl-module-exprsize ((x vl-module-p))
+(define vl-module-exprsize ((x vl-module-p) (ss vl-scopestack-p))
   :parents (expression-sizing)
   :returns (new-x vl-module-p)
   (b* ((x (vl-module-fix x))
        ((when (vl-module->hands-offp x))
         x)
+       (ss (vl-scopestack-push x ss))
 
        ((vl-module x) x)
        (warnings  x.warnings)
@@ -927,18 +921,15 @@ the expression.</p>"
                                  :msg "Trying to size module ~m0, which has parameters."
                                  :args (list x.name))))
 
-       (ialist (vl-moditem-alist x))
-
-       ((mv & warnings assigns)    (vl-assignlist-exprsize    x.assigns    x ialist warnings))
-       ((mv & warnings modinsts)   (vl-modinstlist-exprsize   x.modinsts   x ialist warnings))
-       ((mv & warnings gateinsts)  (vl-gateinstlist-exprsize  x.gateinsts  x ialist warnings))
-       ((mv & warnings alwayses)   (vl-alwayslist-exprsize    x.alwayses   x ialist warnings))
-       ((mv & warnings initials)   (vl-initiallist-exprsize   x.initials   x ialist warnings))
-       ((mv & warnings ports)      (vl-portlist-exprsize      x.ports      x ialist warnings))
-       ((mv & warnings portdecls)  (vl-portdecllist-exprsize  x.portdecls  x ialist warnings))
-       ((mv & warnings vardecls)   (vl-vardecllist-exprsize   x.vardecls   x ialist warnings))
+       ((mv & warnings assigns)    (vl-assignlist-exprsize    x.assigns    ss warnings))
+       ((mv & warnings modinsts)   (vl-modinstlist-exprsize   x.modinsts   ss warnings))
+       ((mv & warnings gateinsts)  (vl-gateinstlist-exprsize  x.gateinsts  ss warnings))
+       ((mv & warnings alwayses)   (vl-alwayslist-exprsize    x.alwayses   ss warnings))
+       ((mv & warnings initials)   (vl-initiallist-exprsize   x.initials   ss warnings))
+       ((mv & warnings ports)      (vl-portlist-exprsize      x.ports      ss warnings))
+       ((mv & warnings portdecls)  (vl-portdecllist-exprsize  x.portdecls  ss warnings))
+       ((mv & warnings vardecls)   (vl-vardecllist-exprsize   x.vardecls   ss warnings))
        )
-    (fast-alist-free ialist)
     (change-vl-module x
                       :assigns assigns
                       :modinsts modinsts
@@ -950,16 +941,19 @@ the expression.</p>"
                       :vardecls vardecls
                       :warnings warnings)))
 
-(defprojection vl-modulelist-exprsize ((x vl-modulelist-p))
+(defprojection vl-modulelist-exprsize ((x vl-modulelist-p) (ss vl-scopestack-p))
   :parents (expression-sizing)
   :returns (new-x vl-modulelist-p)
-  (vl-module-exprsize x))
+  (vl-module-exprsize x ss))
 
 (define vl-design-exprsize
   :parents (expression-sizing)
   :short "Top-level @(see expression-sizing) transform."
   ((x vl-design-p))
   :returns (new-x vl-design-p)
-  (b* (((vl-design x) x))
-    (change-vl-design x :mods (vl-modulelist-exprsize x.mods))))
+  (b* (((vl-design x) x)
+       (ss (vl-scopestack-init x))
+       (mods (vl-modulelist-exprsize x.mods ss)))
+    (vl-scopestacks-free)
+    (change-vl-design x :mods mods)))
 

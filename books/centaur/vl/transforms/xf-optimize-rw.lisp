@@ -54,10 +54,7 @@ rewritten, split up, simplified tree.</p>
   ((op     "Some operator being applied to @('args')."
            vl-op-p)
    (args   vl-exprlist-p)
-   (mod    "Module where this expression takes place."
-           vl-module-p)
-   (ialist "For fast lookups within @('mod')."
-           (equal ialist (vl-moditem-alist mod)) ))
+   (ss     vl-scopestack-p "Stack of scopes in which this occurs."))
   :guard (or (not (vl-op-arity op))
              (eql (len args) (vl-op-arity op)))
   :returns (new-expr?
@@ -69,8 +66,7 @@ rewritten, split up, simplified tree.</p>
   :guard-hints (("Goal" :in-theory (enable vl-op-p vl-op-arity)))
 
   (b* ((op   (vl-op-fix op))
-       (args (vl-exprlist-fix args))
-       (mod  (vl-module-fix mod)))
+       (args (vl-exprlist-fix args)))
     (case op
 
 ; Hrmn, no, this optimization does not seem valid.  I think the testing code I
@@ -96,7 +92,7 @@ rewritten, split up, simplified tree.</p>
             (name  (vl-idexpr->name from))
             (index (vl-resolved->val what))
             ((mv successp range)
-             (vl-find-net/reg-range name mod ialist)))
+             (vl-ss-find-range name ss)))
          (cond ((not successp)
                 nil)
 
@@ -125,7 +121,7 @@ rewritten, split up, simplified tree.</p>
             (name    (vl-idexpr->name from))
             (l-index (vl-resolved->val left))
             (r-index (vl-resolved->val right))
-            ((mv successp range) (vl-find-net/reg-range name mod ialist)))
+            ((mv successp range) (vl-ss-find-range name ss)))
 
          (cond ((not successp)
                 nil)
@@ -161,9 +157,7 @@ rewritten, split up, simplified tree.</p>
   that aren't being optimized.</p>"
 
   (define vl-expr-optimize
-    ((x      vl-expr-p)
-     (mod    vl-module-p)
-     (ialist (equal ialist (vl-moditem-alist mod))))
+    ((x      vl-expr-p) (ss vl-scopestack-p))
     :returns (mv (changedp booleanp :rule-classes :type-prescription)
                  (new-x    vl-expr-p))
     :verify-guards nil
@@ -173,8 +167,8 @@ rewritten, split up, simplified tree.</p>
           (mv nil x))
          (op                            (vl-nonatom->op x))
          (args                          (vl-nonatom->args x))
-         ((mv args-changedp args-prime) (vl-exprlist-optimize args mod ialist))
-         (candidate                     (vl-op-optimize op args-prime mod ialist))
+         ((mv args-changedp args-prime) (vl-exprlist-optimize args ss))
+         (candidate                     (vl-op-optimize op args-prime ss))
          ((when candidate)
           (mv t candidate))
          ((when args-changedp)
@@ -182,9 +176,7 @@ rewritten, split up, simplified tree.</p>
       (mv nil x)))
 
   (define vl-exprlist-optimize
-    ((x      vl-exprlist-p)
-     (mod    vl-module-p)
-     (ialist (equal ialist (vl-moditem-alist mod))))
+    ((x      vl-exprlist-p) (ss vl-scopestack-p))
     :returns
     (mv (changedp booleanp :rule-classes :type-prescription)
         (new-x    (and (vl-exprlist-p new-x)
@@ -192,8 +184,8 @@ rewritten, split up, simplified tree.</p>
     :measure (vl-exprlist-count x)
     (b* (((when (atom x))
           (mv nil nil))
-         ((mv car-changedp car-prime) (vl-expr-optimize (car x) mod ialist))
-         ((mv cdr-changedp cdr-prime) (vl-exprlist-optimize (cdr x) mod ialist)))
+         ((mv car-changedp car-prime) (vl-expr-optimize (car x) ss))
+         ((mv cdr-changedp cdr-prime) (vl-exprlist-optimize (cdr x) ss)))
       (mv (or car-changedp cdr-changedp)
           (cons car-prime cdr-prime))))
   ///
@@ -208,8 +200,7 @@ rewritten, split up, simplified tree.</p>
     `(define ,fn
        :short ,(cat "Optimize expressions throughout a @(see " (symbol-name type) ").")
        ((x      ,type)
-        (mod    vl-module-p)
-        (ialist (equal ialist (vl-moditem-alist mod))))
+        (ss     vl-scopestack-p))
        :returns
        (mv (changedp booleanp :rule-classes :type-prescription)
            (new-x    ,type))
@@ -224,15 +215,14 @@ rewritten, split up, simplified tree.</p>
     `(define ,fn
        :short ,(cat "Optimize expressions throughout a @(see " (symbol-name type) ").")
        ((x      ,type)
-        (mod    vl-module-p)
-        (ialist (equal ialist (vl-moditem-alist mod))))
+        (ss     vl-scopestack-p))
        :returns
        (mv (changedp booleanp :rule-classes :type-prescription)
            (new-x    ,type))
        (b* (((when (atom x))
              (mv nil nil))
-            ((mv car-changedp car-prime) (,elem-fn (car x) mod ialist))
-            ((mv cdr-changedp cdr-prime) (,fn (cdr x) mod ialist)))
+            ((mv car-changedp car-prime) (,elem-fn (car x) ss))
+            ((mv cdr-changedp cdr-prime) (,fn (cdr x) ss)))
          (mv (or car-changedp cdr-changedp)
              (cons car-prime cdr-prime)))
      ///
@@ -240,9 +230,9 @@ rewritten, split up, simplified tree.</p>
 
 (def-vl-optimize vl-assign
   (b* (((mv lvalue-changedp lvalue-prime)
-        (vl-expr-optimize (vl-assign->lvalue x) mod ialist))
+        (vl-expr-optimize (vl-assign->lvalue x) ss))
        ((mv expr-changedp expr-prime)
-        (vl-expr-optimize (vl-assign->expr x) mod ialist))
+        (vl-expr-optimize (vl-assign->expr x) ss))
        ((when (or lvalue-changedp expr-changedp))
         (mv t (change-vl-assign x :lvalue lvalue-prime :expr expr-prime))))
     (mv nil x)))
@@ -254,7 +244,7 @@ rewritten, split up, simplified tree.</p>
        ((unless expr)
         (mv nil x))
        ((mv changedp expr-prime)
-        (vl-expr-optimize expr mod ialist))
+        (vl-expr-optimize expr ss))
        ((unless changedp)
         (mv nil x)))
     (mv t (change-vl-plainarg x :expr expr-prime))))
@@ -266,7 +256,7 @@ rewritten, split up, simplified tree.</p>
        ((unless expr)
         (mv nil x))
        ((mv changedp expr-prime)
-        (vl-expr-optimize expr mod ialist))
+        (vl-expr-optimize expr ss))
        ((unless changedp)
         (mv nil x)))
     (mv t (change-vl-namedarg x :expr expr-prime))))
@@ -276,19 +266,19 @@ rewritten, split up, simplified tree.</p>
 (def-vl-optimize vl-arguments
   (vl-arguments-case x
     :vl-arguments-named
-    (b* (((mv changedp args-prime) (vl-namedarglist-optimize x.args mod ialist)))
+    (b* (((mv changedp args-prime) (vl-namedarglist-optimize x.args ss)))
       (if (not changedp)
           (mv nil x)
         (mv t (change-vl-arguments-named x :args args-prime))))
     :vl-arguments-plain
-    (b* (((mv changedp args-prime) (vl-plainarglist-optimize x.args mod ialist)))
+    (b* (((mv changedp args-prime) (vl-plainarglist-optimize x.args ss)))
       (if (not changedp)
           (mv nil x)
         (mv t (change-vl-arguments-plain x :args args-prime))))))
 
 (def-vl-optimize vl-modinst
   (b* (((mv changedp args-prime)
-        (vl-arguments-optimize (vl-modinst->portargs x) mod ialist)))
+        (vl-arguments-optimize (vl-modinst->portargs x) ss)))
       (if (not changedp)
           (mv nil x)
         (mv t (change-vl-modinst x :portargs args-prime)))))
@@ -297,24 +287,23 @@ rewritten, split up, simplified tree.</p>
 
 (def-vl-optimize vl-gateinst
   (b* (((mv changedp args-prime)
-        (vl-plainarglist-optimize (vl-gateinst->args x) mod ialist))
+        (vl-plainarglist-optimize (vl-gateinst->args x) ss))
        ((unless changedp)
         (mv nil x)))
     (mv t (change-vl-gateinst x :args args-prime))))
 
 (def-vl-optimize-list vl-gateinstlist vl-gateinst)
 
-(define vl-module-optimize ((x vl-module-p))
+(define vl-module-optimize ((x vl-module-p) (ss vl-scopestack-p))
   :short "Optimize expressions throughout a module."
   :returns (new-x vl-module-p)
   (b* ((x (vl-module-fix x))
+       (ss (vl-scopestack-push x ss))
        ((when (vl-module->hands-offp x))
         x)
-       (ialist                            (vl-moditem-alist x))
-       ((mv modinsts-changedp modinsts)   (vl-modinstlist-optimize (vl-module->modinsts x) x ialist))
-       ((mv gateinsts-changedp gateinsts) (vl-gateinstlist-optimize (vl-module->gateinsts x) x ialist))
-       ((mv assigns-changedp assigns)     (vl-assignlist-optimize (vl-module->assigns x) x ialist))
-       (-                                 (flush-hons-get-hash-table-link ialist)))
+       ((mv modinsts-changedp modinsts)   (vl-modinstlist-optimize (vl-module->modinsts x) ss))
+       ((mv gateinsts-changedp gateinsts) (vl-gateinstlist-optimize (vl-module->gateinsts x) ss))
+       ((mv assigns-changedp assigns)     (vl-assignlist-optimize (vl-module->assigns x) ss)))
     (if (or modinsts-changedp gateinsts-changedp assigns-changedp)
         (change-vl-module x
                           :modinsts modinsts
@@ -322,13 +311,16 @@ rewritten, split up, simplified tree.</p>
                           :assigns assigns)
       x)))
 
-(defprojection vl-modulelist-optimize ((x vl-modulelist-p))
+(defprojection vl-modulelist-optimize ((x vl-modulelist-p) (ss vl-scopestack-p))
   :returns (new-x vl-modulelist-p)
-  (vl-module-optimize x))
+  (vl-module-optimize x ss))
 
 (define vl-design-optimize
   :short "Top-level @(see optimize) transform."
   ((x vl-design-p))
   :returns (new-x vl-design-p)
-  (b* (((vl-design x) x))
-    (change-vl-design x :mods (vl-modulelist-optimize x.mods))))
+  (b* (((vl-design x) x)
+       (ss (vl-scopestack-init x))
+       (mods (vl-modulelist-optimize x.mods ss)))
+    (vl-scopestacks-free)
+    (change-vl-design x :mods mods)))

@@ -31,6 +31,7 @@
 (in-package "VL")
 (include-book "expr-tools")
 (include-book "range-tools")
+(include-book "scopestack")
 (local (include-book "../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
 
@@ -200,10 +201,20 @@ we return</p>
 prettier expressions like @('foo[3:1]')."
 
   ((x      vl-exprlist-p)
-   (mod    vl-module-p)
-   (ialist (equal ialist (vl-moditem-alist mod))))
-  :returns (new-x vl-exprlist-p)
-
+   (ss     vl-scopestack-p))
+  :returns (new-x vl-exprlist-p
+                  :hints(("Goal" :in-theory (disable (:d vl-maybe-merge-selects))
+                          :induct (vl-maybe-merge-selects x ss)
+                          :expand ((vl-maybe-merge-selects x ss)))))
+  :hooks ((:fix :hints(("Goal" :in-theory (disable (:d vl-maybe-merge-selects))
+                          :induct (vl-maybe-merge-selects x ss)
+                          :expand ((:free (ss) (vl-maybe-merge-selects x ss))
+                                   (:free (ss) (vl-maybe-merge-selects (vl-exprlist-fix x) ss)))))))
+  :guard-hints (("goal" :in-theory (disable vl-maybe-merge-selects
+                                            (tau-system))))
+  :prepwork ((local (in-theory (disable vl-expr-resolved-p-of-car-when-vl-exprlist-resolved-p
+                                        vl-idexpr-p-of-car-when-vl-idexprlist-p
+                                        default-car default-cdr))))
   :long "<p>Here, @('x') is a list of expressions which we assume is found
 within either a concatenation or a multiple concatenation.  The @('mod') and
 @('ialist') are the module and its @(see vl-moditem-alist) so we can look up
@@ -223,12 +234,12 @@ together.  For instance, @('foo[3:1], foo[0]') could generally be merged into
 
        (expr1 (vl-expr-fix (car x)))
        ((when (vl-fast-atom-p expr1))
-        (cons expr1 (vl-maybe-merge-selects (cdr x) mod ialist)))
+        (cons expr1 (vl-maybe-merge-selects (cdr x) ss)))
 
        (expr1-op (vl-nonatom->op expr1))
        ((unless (or (eq expr1-op :vl-bitselect)
                     (eq expr1-op :vl-partselect-colon)))
-        (cons expr1 (vl-maybe-merge-selects (cdr x) mod ialist)))
+        (cons expr1 (vl-maybe-merge-selects (cdr x) ss)))
 
        ;; Else, expr is a bit or part select from some wire.  Let's see if it
        ;; is the start of a descending range.
@@ -242,14 +253,14 @@ together.  For instance, @('foo[3:1], foo[0]') could generally be merged into
        ((unless (and (vl-idexpr-p expr1-from)
                      (vl-expr-resolved-p expr1-high)
                      (vl-expr-resolved-p expr1-low)))
-        (cons expr1 (vl-maybe-merge-selects (cdr x) mod ialist)))
+        (cons expr1 (vl-maybe-merge-selects (cdr x) ss)))
 
        (high-val (vl-resolved->val expr1-high))
        (low-val  (vl-resolved->val expr1-low))
        ((unless (<= low-val high-val))
         ;; We could extend this to tolerate [low:high] ranges, but for now
         ;; we'll not bother.  It's always safe to do nothing.
-        (cons expr1 (vl-maybe-merge-selects (cdr x) mod ialist)))
+        (cons expr1 (vl-maybe-merge-selects (cdr x) ss)))
 
        ;; Looking good: we have a bit or part select with good indicies.  Lets
        ;; see if there's anything to merge it with.
@@ -258,7 +269,7 @@ together.  For instance, @('foo[3:1], foo[0]') could generally be merged into
 
        ((when (= min low-val))
         ;; There wasn't anything to merge with.
-        (cons expr1 (vl-maybe-merge-selects (cdr x) mod ialist)))
+        (cons expr1 (vl-maybe-merge-selects (cdr x) ss)))
 
        ;; If we get this far, we found something to merge.  But, to make sure
        ;; that merging is safe, we need to look at the net declaration for
@@ -267,10 +278,10 @@ together.  For instance, @('foo[3:1], foo[0]') could generally be merged into
        ;; foo[2]} if foo is declared as: wire [0:5] foo.  (Verilog simulators
        ;; would complain at the syntax foo[3:2] in such a case).
        ((mv okp range)
-        (vl-find-net/reg-range (vl-idexpr->name expr1-from) mod ialist))
+        (vl-ss-find-range (vl-idexpr->name expr1-from) ss))
        ((unless okp)
         ;; Something is fubar.  Chicken out and don't change anything.
-        (cons expr1 (vl-maybe-merge-selects (cdr x) mod ialist)))
+        (cons expr1 (vl-maybe-merge-selects (cdr x) ss)))
 
        ((unless (and range
                      (vl-range-resolved-p range)
@@ -283,7 +294,7 @@ together.  For instance, @('foo[3:1], foo[0]') could generally be merged into
         ;; Hrmn.  Maybe the wire has a "backwards" range like [0:5], or
         ;; maybe something is just totally screwed up with the input
         ;; expression.  Let's not change anything.
-        (cons expr1 (vl-maybe-merge-selects (cdr x) mod ialist)))
+        (cons expr1 (vl-maybe-merge-selects (cdr x) ss)))
 
        ;; Else, everything seems okay.  We know it's a foo[3:0] style wire
        ;; and we've found entries from high down to min, so we'll just
@@ -303,7 +314,7 @@ together.  For instance, @('foo[3:1], foo[0]') could generally be merged into
                                    :finalwidth (+ 1 (- high-val low-val))
                                    :finaltype :vl-unsigned
                                    :atts nil)))
-    (cons new-expr1 (vl-maybe-merge-selects rest mod ialist))))
+    (cons new-expr1 (vl-maybe-merge-selects rest ss))))
 
 
 
@@ -342,8 +353,13 @@ vl-merge-consts-aux on this yields</p>
                       ;; remaining exprs, constants consolidated
 })"
 
+  :prepwork ((local (include-book "centaur/bitops/ihsext-basics" :dir :system))
+             (local (in-theory (disable cons-equal))))
   (define vl-merge-consts ((x vl-exprlist-p))
-    :returns (new-x vl-exprlist-p)
+    :returns (new-x vl-exprlist-p
+                    :hints ('(:in-theory (disable vl-merge-consts
+                                                  vl-merge-consts-aux)
+                              :expand ((vl-merge-consts x)))))
     :measure (two-nats-measure (vl-exprlist-count x) 1)
     :verify-guards nil
     :flag :main
@@ -375,7 +391,10 @@ vl-merge-consts-aux on this yields</p>
     :returns (mv (startwidth natp :rule-classes :type-prescription)
                  (startval   maybe-natp :rule-classes :type-prescription)
                  (weirdval   vl-bitlist-p)
-                 (rest       vl-exprlist-p))
+                 (rest       vl-exprlist-p
+                    :hints ('(:in-theory (disable vl-merge-consts
+                                                  vl-merge-consts-aux)
+                              :expand ((vl-merge-consts-aux x))))))
     :measure (two-nats-measure (vl-exprlist-count x) 0)
     :flag :aux
     (b* (((when (atom x))
@@ -426,15 +445,17 @@ vl-merge-consts-aux on this yields</p>
           (append-without-guard guts.bits rest-weird)
           rest-exprs)))
   ///
+  (local (in-theory (disable vl-merge-consts-aux
+                             vl-merge-consts)))
   (defthm-vl-merge-consts-flag
     (defthm true-listp-of-vl-merge-consts-aux->exprs
       (true-listp (mv-nth 3 (vl-merge-consts-aux x)))
       :rule-classes :type-prescription
-      ;:hints ('(:expand ((vl-merge-consts-aux x))))
+      :hints ('(:expand ((vl-merge-consts-aux x))))
       :flag :aux)
     (defthm true-listp-of-vl-merge-consts->exprs
       (true-listp (vl-merge-consts x))
-      ;:hints ('(:expand ((vl-merge-consts x))))
+      :hints ('(:expand ((vl-merge-consts x))))
       :rule-classes :type-prescription
       :flag :main))
 
@@ -450,6 +471,7 @@ vl-merge-consts-aux on this yields</p>
            :hints ((and stable-under-simplificationp
                         '(:nonlinearp t)))))
 
+
   (defthm-vl-merge-consts-flag
     (defthm vl-merge-consts-aux-invar
       (b* (((mv width val bits ?exprs) (vl-merge-consts-aux x)))
@@ -458,13 +480,20 @@ vl-merge-consts-aux on this yields</p>
                       (equal (len bits) width))
              (implies val
                       (< val (expt 2 width)))))
-      :hints ('(:expand ((vl-merge-consts-aux x))))
+      :hints ('(:expand ((vl-merge-consts-aux x)))
+              (and stable-under-simplificationp
+                   '(:in-theory (enable ash floor))))
       :flag :aux)
     :skip-others t)
 
   (verify-guards vl-merge-consts)
 
-  (deffixequiv-mutual vl-merge-consts))
+  (deffixequiv-mutual vl-merge-consts
+    :hints ((and stable-under-simplificationp
+                 '( :expand ((vl-merge-consts-aux x)
+                             (vl-merge-consts-aux (vl-exprlist-fix x))
+                             (vl-merge-consts x)
+                             (vl-merge-consts (vl-exprlist-fix x))))))))
 
 
 (define vl-spurious-concatenation-p
@@ -472,8 +501,7 @@ vl-merge-consts-aux on this yields</p>
   :short "Determine if a concatenation such as @('{foo}') can be safely
 rewritten to just @('foo')."
   ((arg vl-expr-p "The argument to the concatenation.")
-   (mod vl-module-p "Module where this expression resides.")
-   (ialist (equal ialist (vl-moditem-alist mod))))
+   (ss  vl-scopestack-p "the scope stack we're in"))
   :returns (spurious-p booleanp :rule-classes :type-prescription)
 
   :long "<p>In early implementations of @(see vl-expr-clean-concats), we
@@ -504,7 +532,7 @@ atom (if it is the name of an unsigned net or register.)</p>"
            ((unless (vl-fast-id-p guts))
             ;; Other things might be okay too, but for now we don't care.
             nil)
-           (look (vl-fast-find-moduleitem (vl-id->name guts) mod ialist))
+           (look (vl-scopestack-find-item (vl-id->name guts) ss))
            ((unless (and look
                          (eq (tag look) :vl-vardecl)
                          (vl-simplevar-p look)))
@@ -524,8 +552,7 @@ atom (if it is the name of an unsigned net or register.)</p>"
 within them into larger part-selects."
 
     ((x   vl-expr-p   "Any expression that occurs in the module @('mod')")
-     (mod vl-module-p "Containing module.")
-     (ialist (equal ialist (vl-moditem-alist mod)) "For fast wire lookups."))
+     (ss  vl-scopestack-p "Containing scope stack."))
     :returns (new-x vl-expr-p "Perhaps simplified version of X.")
 
     :long "<p>We try to simplify the concatenations within @('x'), by
@@ -541,147 +568,155 @@ flattening out nested concatenations and merging concatenations like
 
          ((unless (eq op :vl-concat))
           ;; Not a concat, just recursively clean its args.
-          (change-vl-nonatom x :args (vl-exprlist-clean-concats args mod ialist)))
+          (change-vl-nonatom x :args (vl-exprlist-clean-concats args ss)))
 
          ;; Else, it is a concat.
-         (args (vl-exprlist-clean-concats args mod ialist)) ;; do this first for easy termination argument
+         (args (vl-exprlist-clean-concats args ss)) ;; do this first for easy termination argument
          (args (vl-elim-nested-concats args))
-         (args (vl-maybe-merge-selects args mod ialist))
+         (args (vl-maybe-merge-selects args ss))
          (args (vl-merge-consts args))
 
          ((when (and (eql (length args) 1)
-                     (vl-spurious-concatenation-p (car args) mod ialist)))
+                     (vl-spurious-concatenation-p (car args) ss)))
           ;; Safe to rewrite this singleton concatenation from {arg} --> arg
           (car args)))
       (change-vl-nonatom x :args args)))
 
   (define vl-exprlist-clean-concats ((x      vl-exprlist-p)
-                                     (mod    vl-module-p)
-                                     (ialist (equal ialist (vl-moditem-alist mod))))
+                                     (ss     vl-scopestack-p))
     :measure (vl-exprlist-count x)
     :returns (new-x (and (vl-exprlist-p new-x)
                          (equal (len new-x) (len x))))
      (if (atom x)
          nil
-       (cons (vl-expr-clean-concats (car x) mod ialist)
-             (vl-exprlist-clean-concats (cdr x) mod ialist))))
+       (cons (vl-expr-clean-concats (car x) ss)
+             (vl-exprlist-clean-concats (cdr x) ss))))
   ///
-  (defprojection vl-exprlist-clean-concats (x mod ialist)
-    (vl-expr-clean-concats x mod ialist)
+  (defprojection vl-exprlist-clean-concats (x ss)
+    (vl-expr-clean-concats x ss)
     :already-definedp t)
 
   (verify-guards vl-expr-clean-concats)
   (deffixequiv-mutual vl-expr-clean-concats))
 
 
-(defines vl-expr-clean-selects1
-  :short "Core routine behind @(see vl-expr-clean-selects)."
+(with-output :off (prove)
+  (defines vl-expr-clean-selects1
+    :short "Core routine behind @(see vl-expr-clean-selects)."
+    :prepwork ((local (in-theory (disable default-car default-cdr not))))
+    (define vl-expr-clean-selects1 ((x      vl-expr-p)
+                                    (ss     vl-scopestack-p))
+      :returns (new-x vl-expr-p
+                      :hints ('(:in-theory (disable vl-expr-clean-selects1
+                                                    vl-exprlist-clean-selects1)
+                                :expand ((vl-expr-clean-selects1 x ss)))))
+      :measure (vl-expr-count x)
+      :verify-guards nil
+      :flag :expr
+      (b* (((when (vl-fast-atom-p x))
+            (vl-expr-fix x))
 
-  (define vl-expr-clean-selects1 ((x      vl-expr-p)
-                                  (mod    vl-module-p)
-                                  (ialist (equal ialist (vl-moditem-alist mod))))
-    :returns (new-x vl-expr-p)
-    :measure (vl-expr-count x)
-    :verify-guards nil
-    :flag :expr
-    (b* (((when (vl-fast-atom-p x))
-          (vl-expr-fix x))
+           ((vl-nonatom x) x)
+           (args (vl-exprlist-clean-selects1 x.args ss))
 
-         ((vl-nonatom x) x)
-         (args (vl-exprlist-clean-selects1 x.args mod ialist))
+           ;; To handle bit- and part-selects in the same way, we now treat
+           ;; bit-selects like foo[3] as foo[3:3] and extract the name (as a
+           ;; string), and the msb/lsb (as naturals).
 
-         ;; To handle bit- and part-selects in the same way, we now treat
-         ;; bit-selects like foo[3] as foo[3:3] and extract the name (as a
-         ;; string), and the msb/lsb (as naturals).
+           ((mv name sel-msb sel-lsb)
+            (cond ((eq x.op :vl-bitselect)
+                   (b* (((list from bit) args))
+                     (if (and (vl-idexpr-p from)
+                              (vl-expr-resolved-p bit))
+                         (mv (vl-idexpr->name from)
+                             (vl-resolved->val bit)
+                             (vl-resolved->val bit))
+                       (mv nil nil nil))))
+                  ((eq x.op :vl-partselect-colon)
+                   (b* (((list from msb lsb) args))
+                     (if (and (vl-idexpr-p from)
+                              (vl-expr-resolved-p msb)
+                              (vl-expr-resolved-p lsb))
+                         (mv (vl-idexpr->name from)
+                             (vl-resolved->val msb)
+                             (vl-resolved->val lsb))
+                       (mv nil nil nil))))
+                  (t
+                   (mv nil nil nil))))
 
-         ((mv name sel-msb sel-lsb)
-          (cond ((eq x.op :vl-bitselect)
-                 (b* (((list from bit) args))
-                   (if (and (vl-idexpr-p from)
-                            (vl-expr-resolved-p bit))
-                       (mv (vl-idexpr->name from)
-                           (vl-resolved->val bit)
-                           (vl-resolved->val bit))
-                     (mv nil nil nil))))
-                ((eq x.op :vl-partselect-colon)
-                 (b* (((list from msb lsb) args))
-                   (if (and (vl-idexpr-p from)
-                            (vl-expr-resolved-p msb)
-                            (vl-expr-resolved-p lsb))
-                       (mv (vl-idexpr->name from)
-                           (vl-resolved->val msb)
-                           (vl-resolved->val lsb))
-                     (mv nil nil nil))))
-                (t
-                 (mv nil nil nil))))
+           ((unless name)
+            ;; Not something we can simplify further, just update the args.
+            (change-vl-nonatom x :args args))
 
-         ((unless name)
-          ;; Not something we can simplify further, just update the args.
-          (change-vl-nonatom x :args args))
+           ;; It's important that the declaration is of an unsigned wire.  Note
+           ;; that in Verilog, foo[3:0] is always unsigned.  So it's not
+           ;; generally sound to replace foo[3:0] with foo when we have "wire
+           ;; signed [3:0] foo", because the replacement expression "foo" would
+           ;; now be signed, whereas the original was unsigned.
+           (decl (vl-scopestack-find-item name ss))
+           ((mv decl-okp range)
+            (if (and decl
+                     (eq (tag decl) :vl-vardecl)
+                     (vl-simplevar-p decl)
+                     (not (vl-simplevar->signedp decl)))
+                (mv t (vl-simplevar->range decl))
+              (mv nil nil)))
 
-         ;; It's important that the declaration is of an unsigned wire.  Note
-         ;; that in Verilog, foo[3:0] is always unsigned.  So it's not
-         ;; generally sound to replace foo[3:0] with foo when we have "wire
-         ;; signed [3:0] foo", because the replacement expression "foo" would
-         ;; now be signed, whereas the original was unsigned.
-         (decl (vl-fast-find-moduleitem name mod ialist))
-         ((mv decl-okp range)
-          (if (and decl
-                   (eq (tag decl) :vl-vardecl)
-                   (vl-simplevar-p decl)
-                   (not (vl-simplevar->signedp decl)))
-              (mv t (vl-simplevar->range decl))
-            (mv nil nil)))
+           ((unless (and decl-okp (vl-maybe-range-resolved-p range)))
+            ;; The declaration is too complex for us to really try to simplify any
+            ;; selects to it, so don't try to simplify, just update the args.
+            (change-vl-nonatom x :args args))
 
-         ((unless (and decl-okp (vl-maybe-range-resolved-p range)))
-          ;; The declaration is too complex for us to really try to simplify any
-          ;; selects to it, so don't try to simplify, just update the args.
-          (change-vl-nonatom x :args args))
+           (range-msb (if range (vl-resolved->val (vl-range->msb range)) 0))
+           (range-lsb (if range (vl-resolved->val (vl-range->lsb range)) 0))
+           ((when (and (eql sel-msb range-msb)
+                       (eql sel-lsb range-lsb)))
+            ;; Success: we have just found foo[msb:lsb] where the wire's declaration is
+            ;; of foo[msb:lsb].  Drop the select.
+            (first args)))
 
-         (range-msb (if range (vl-resolved->val (vl-range->msb range)) 0))
-         (range-lsb (if range (vl-resolved->val (vl-range->lsb range)) 0))
-         ((when (and (eql sel-msb range-msb)
-                     (eql sel-lsb range-lsb)))
-          ;; Success: we have just found foo[msb:lsb] where the wire's declaration is
-          ;; of foo[msb:lsb].  Drop the select.
-          (first args)))
+        ;; Else, we found some other kind of select, e.g., maybe we found foo[3:0] but
+        ;; the declaration is foo[5:0].  Don't simplify anything.
+        (change-vl-nonatom x :args args)))
 
-      ;; Else, we found some other kind of select, e.g., maybe we found foo[3:0] but
-      ;; the declaration is foo[5:0].  Don't simplify anything.
-      (change-vl-nonatom x :args args)))
+    (define vl-exprlist-clean-selects1 ((x      vl-exprlist-p)
+                                        (ss     vl-scopestack-p))
+      :returns (new-x (and (vl-exprlist-p new-x)
+                           (equal (len new-x) (len x)))
+                      :hints ('(:in-theory (disable vl-expr-clean-selects1
+                                                    vl-exprlist-clean-selects1)
+                                :expand ((vl-exprlist-clean-selects1 x ss)))))
+      :measure (vl-exprlist-count x)
+      :flag :list
+      (if (atom x)
+          nil
+        (cons (vl-expr-clean-selects1 (car x) ss)
+              (vl-exprlist-clean-selects1 (cdr x) ss))))
+    ///
 
-  (define vl-exprlist-clean-selects1 ((x      vl-exprlist-p)
-                                      (mod    vl-module-p)
-                                      (ialist (equal ialist (vl-moditem-alist mod))))
-    :returns (new-x (and (vl-exprlist-p new-x)
-                         (equal (len new-x) (len x))))
-    :measure (vl-exprlist-count x)
-    :flag :list
-    (if (atom x)
-        nil
-      (cons (vl-expr-clean-selects1 (car x) mod ialist)
-            (vl-exprlist-clean-selects1 (cdr x) mod ialist))))
-  ///
+    (defprojection vl-exprlist-clean-selects1 (x ss)
+      (vl-expr-clean-selects1 x ss)
+      :already-definedp t)
 
-  (defprojection vl-exprlist-clean-selects1 (x mod ialist)
-    (vl-expr-clean-selects1 x mod ialist)
-    :already-definedp t)
+    ;; BOZO I don't really understand why these cause problems for the guard proof.
+    (local (in-theory (disable vl-expr-clean-selects1
+                               vl-exprlist-clean-selects1)))
 
-  (deffixequiv-mutual vl-expr-clean-selects1)
+    (deffixequiv-mutual vl-expr-clean-selects1
+      :hints ((and stable-under-simplificationp
+                   '(:expand ((:free (ss) (vl-expr-clean-selects1 x ss))
+                              (:free (ss) (vl-expr-clean-selects1 (vl-expr-fix x) ss))
+                              (:free (ss) (vl-exprlist-clean-selects1 x ss))
+                              (:free (ss) (vl-exprlist-clean-selects1 (vl-exprlist-fix x) ss)))))))
 
-  ;; BOZO I don't really understand why these cause problems for the guard proof.
-  (local (in-theory (disable vl-expr-clean-selects1
-                             vl-exprlist-clean-selects1)))
-
-  (verify-guards vl-exprlist-clean-selects1))
+    (verify-guards vl-exprlist-clean-selects1)))
 
 
 (define vl-expr-clean-selects
   :short "Simplify concatenations and selects in an expression."
 
   ((x      vl-expr-p        "An expression that occurs somewhere in @('mod').")
-   (mod    vl-module-p      "Some module.")
-   (ialist (equal ialist (vl-moditem-alist mod)) "For fast lookups."))
+   (ss     vl-scopestack-p  "Containing scope stack."))
   :returns
   (new-x vl-expr-p "Simplified version of @('x').")
 
@@ -700,15 +735,14 @@ of @('w[3:0]') with just @('w').</li>
 
 </ul>"
 
-  (vl-expr-clean-selects1 (vl-expr-clean-concats x mod ialist)
-                          mod ialist))
+  (vl-expr-clean-selects1 (vl-expr-clean-concats x ss)
+                          ss))
 
 (defprojection vl-exprlist-clean-selects ((x      vl-exprlist-p)
-                                          (mod    vl-module-p)
-                                          (ialist (equal ialist (vl-moditem-alist mod))))
+                                          (ss     vl-scopestack-p))
   :returns (new-x (and (vl-exprlist-p new-x)
                        (equal (len new-x) (len x))))
-  (vl-expr-clean-selects x mod ialist))
+  (vl-expr-clean-selects x ss))
 
 
 #||

@@ -29,7 +29,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "find-item")
+(include-book "scopestack")
 (include-book "expr-tools")
 (local (include-book "../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
@@ -343,6 +343,25 @@ handle both cases.</p>"
                           (vl-simplevar-p find)))
              (mv nil nil)))
          (mv t (vl-simplevar->range find)))))
+
+;; Eventually maybe we'll only use scopestacks and obsolete moditem-alists.
+;; For now we keep both versions.
+(define vl-ss-find-range ((name   stringp) (ss vl-scopestack-p))
+  :returns (mv successp
+               (maybe-range vl-maybe-range-p))
+  :enabled t
+  :guard-hints(("Goal" :in-theory (enable vl-slow-find-net/reg-range
+                                          vl-find-moduleitem)))
+  (b* ((find (vl-scopestack-find-item name ss))
+       ((unless (and find
+                     (eq (tag find) :vl-vardecl)
+                     (vl-simplevar-p find)))
+        (mv nil nil)))
+    (mv t (vl-simplevar->range find)))
+  ///
+  (more-returns
+   (maybe-range (iff (vl-range-p maybe-range) maybe-range)
+                :name vl-range-p-of-vl-ss-find-range)))
 
 (define vl-range-size ((x vl-range-p))
   :guard (vl-range-resolved-p x)

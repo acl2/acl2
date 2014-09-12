@@ -606,3 +606,13 @@ that may have been installed by @(see vl-expr-follow-hids)."
         (vl-find-net/reg-range (vl-idexpr->name x) mod ialist)))
     (vl-hid-range x)))
 
+(define vl-ss-find-hid/id-range ((x vl-expr-p)
+                                 (ss vl-scopestack-p))
+  :guard (vl-hid/id-p x)
+  :prepwork ((local (in-theory (enable vl-hid/id-p))))
+  :returns (mv (successp booleanp :rule-classes :type-prescription)
+               (range    vl-maybe-range-p))
+  (b* (((when (vl-idexpr-p x))
+        (vl-ss-find-range (vl-idexpr->name x) ss)))
+    (vl-hid-range x)))
+
