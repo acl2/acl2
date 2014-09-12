@@ -546,7 +546,8 @@ clean_books:
 clean: clean_books
 	@echo "Removing extra, explicitly temporary files."
 	rm -rf $(CLEAN_FILES_EXPLICIT)
-	for dir in $(dir $(ACL2_CUSTOM_TARGETS)) ; \
+	for dir in $(dir $(ACL2_CUSTOM_TARGETS)) \
+	  workshops/2003/kaufmann/support/rtl ; \
 	do \
 	if [ -f $$dir/Makefile ] ; then \
 	(cd $$dir ; $(MAKE) clean) ; \
