@@ -30,6 +30,7 @@ echo "Using LISP = $LISP"
 echo "Using ACL2_HONS = $ACL2_HONS"
 echo "Using ACL2_PAR  = $ACL2_PAR"
 echo "Using NONSTD    = $NONSTD"
+echo "Making TARGET   = $TARGET"
 
 set ACL2_SUFFIX=""
 if [ "$ACL2_HONS" != "" ]; then
@@ -58,7 +59,7 @@ make acl2${ACL2_SUFFIX} -f books/build/jenkins/Makefile LISP=$LISP &> make.log #
 
 echo "Building the books."
 cd books
-nice time make arithmetic-2 ACL2=$WORKSPACE/saved_acl2$ACL2_SUFFIX -j3 $MAKEOPTS USE_QUICKLISP=1
+nice time make $TARGET ACL2=$WORKSPACE/saved_acl2$ACL2_SUFFIX -j3 $MAKEOPTS USE_QUICKLISP=1
 
 #cd acl2-devel/books
 #make ACL2=$ACL2DIR/acl2-devel/saved_acl2h all $MAKEOPTS USE_QUICKLISP=1
