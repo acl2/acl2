@@ -13,6 +13,11 @@ source $JENKINS_HOME/env.sh
 ACL2DIR=`pwd`
 #alias startjob='bash'
 
+if [ -z "$TARGET" ]; then
+  echo "Setting TARGET automatically";
+  TARGET='manual';
+fi
+
 LISP=`which ccl`
 echo "Using LISP = $LISP"
 echo "Making TARGET   = $TARGET"
