@@ -13,8 +13,14 @@ source $JENKINS_HOME/env.sh
 ACL2DIR=`pwd`
 #alias startjob='bash'
 
+if [ -z "$TARGET" ]; then
+  echo "Setting TARGET automatically";
+  TARGET='manual';
+fi
+
 LISP=`which ccl`
 echo "Using LISP = $LISP"
+echo "Making TARGET   = $TARGET"
 #echo "Using STARTJOB = `which startjob`"
 
 echo "Making ACL2(h)"
@@ -27,7 +33,7 @@ make acl2h -f books/build/jenkins/Makefile LISP=$LISP &> make.log #\
 
 echo "Building the books."
 cd books
-make std ACL2=$WORKSPACE/saved_acl2h -j1 $MAKEOPTS USE_QUICKLISP=1
+make $TARGET ACL2=$WORKSPACE/saved_acl2h -j1 $MAKEOPTS USE_QUICKLISP=1
 
 #cd acl2-devel/books
 #make ACL2=$ACL2DIR/acl2-devel/saved_acl2h all $MAKEOPTS USE_QUICKLISP=1

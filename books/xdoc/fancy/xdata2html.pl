@@ -175,36 +175,38 @@ while(my ($key,$val) = each %$xdata)
 	$pagehtml .= "<meta name=\"description\" content=\"$short_output\">\n";
 	$pagehtml .= "<link rel=\"stylesheet\" type=\"text/css\" href=\"../style.css\"/>\n";
 
-	# To debug this script, you may wish to comment out the
-	# javascript, since it causes the browser to redirect.  It appears
-	# that Googlebot crawls the static page so long as the timout is
-	# at least 5 seconds (it could be 4 seconds, but I didn't test it
-	# -- 3 seconds results in google crawling the redirected page
-	# [index.html], which isn't our goal [because it will fail to do
-	# so in a productive way]).
+	# The below javascript causes the client to redirect.  In a
+	# move of desperation to be re-indexed by search engines, we
+	# are removing the redirect.  It appears that Googlebot crawls
+	# the static page so long as the timout is at least 5 seconds
+	# (it could be 4 seconds, but I didn't test it -- 3 seconds
+	# results in google crawling the redirected page [index.html],
+	# which isn't our goal [because it will fail to do so in a
+	# productive way]).  But, search results didn't reinforce this
+	# idea, so we are just removing the redirect.
 
-	$pagehtml .= "<script language=\"javascript\">\n";
-	$pagehtml .= "<!--\n";
-	$pagehtml .= "  setTimeout(function () {
-                      window.location = \"../index.html?topic=$key\";
-                    }, 5000);\n";
-	$pagehtml .= "//-->\n";
-	$pagehtml .= "</script>\n";
+	# $pagehtml .= "<script language=\"javascript\">\n";
+	# $pagehtml .= "<!--\n";
+	# $pagehtml .= "  setTimeout(function () {
+        #               window.location = \"../index.html?topic=$key\";
+        #             }, 5000);\n";
+	# $pagehtml .= "//-->\n";
+	# $pagehtml .= "</script>\n";
 
 # One can instead call the following to prevent the redirect from
 # showing up in the history.
 # window.location.replace(\"../index.html?topic=$key\");
 
-    $pagehtml .= "</head>\n<body>\n\n";
-	$pagehtml .= "<h3>Redirecting to $human_readable_name ";
-	$pagehtml .= "in the <a href=\"../index.html?topic=$key\">Full Manual</a></h3>\n\n";
+	$pagehtml .= "</head>\n<body>\n\n";
+	# $pagehtml .= "<h3>Redirecting to $human_readable_name ";
+	# $pagehtml .= "in the <a href=\"../index.html?topic=$key\">Full Manual</a></h3>\n\n";
 
-# If we can't get Google to search the static pages with redirecting
-# enabled, we will need to fall back to having no redirect.
+# Since we can't get Google to search the static pages with
+# redirecting enabled, we have fallen back to having no redirect.
 
-	# $pagehtml .= "<h3><a href=\"../index.html?topic=$key\">Click for ";
-    # $pagehtml .= "$human_readable_name";
-	# $pagehtml .= " in the Full Manual</a></h3>\n\n"
+	$pagehtml .= "<h3><a href=\"../index.html?topic=$key\">Click for ";
+	$pagehtml .= "$human_readable_name";
+	$pagehtml .= " in the Full Manual</a></h3>\n\n";
 
 	$pagehtml .= "$both_output";
 	$pagehtml .= "</body>\n</html>\n";
