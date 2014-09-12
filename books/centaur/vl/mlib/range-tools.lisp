@@ -309,49 +309,10 @@ handle both cases.</p>"
 ;; extend this code to deal with other kinds of variables, but for now, e.g.,
 ;; we don't want any confusion w.r.t. the range of integers, reals, etc.
 
-(define vl-slow-find-net/reg-range ((name stringp)
-                                    (mod vl-module-p))
-  :short "Look up the range for a wire or variable declaration."
-  :returns (mv (successp    booleanp :rule-classes :type-prescription
-                            "True when @('name') is the name of a wire or variable.")
-               (maybe-range vl-maybe-range-p
-                            "The range of the wire, on success."))
-  :hooks ((:fix :args ((mod vl-module-p))))
-  (b* ((find (vl-find-vardecl name (vl-module->vardecls mod)))
-       ((unless (and find
-                     (vl-simplevar-p find)))
-        (mv nil nil)))
-    (mv t (vl-simplevar->range find)))
-  ///
-  (more-returns
-   (maybe-range (equal (vl-range-p maybe-range) (if maybe-range t nil))
-                :name vl-range-p-of-vl-slow-find-net/reg-range)))
-
-(define vl-find-net/reg-range ((name   stringp)
-                               (mod    vl-module-p)
-                               (ialist (equal ialist (vl-moditem-alist mod))))
-  :returns (mv successp maybe-range)
-  :enabled t
-  :hooks ((:fix :args ((mod vl-module-p))))
-  :guard-hints(("Goal" :in-theory (enable vl-slow-find-net/reg-range
-                                          vl-find-moduleitem)))
-  (mbe :logic (vl-slow-find-net/reg-range name mod)
-       :exec
-       (b* ((find (vl-fast-find-moduleitem name mod ialist))
-            ((unless (and find
-                          (eq (tag find) :vl-vardecl)
-                          (vl-simplevar-p find)))
-             (mv nil nil)))
-         (mv t (vl-simplevar->range find)))))
-
-;; Eventually maybe we'll only use scopestacks and obsolete moditem-alists.
-;; For now we keep both versions.
 (define vl-ss-find-range ((name   stringp) (ss vl-scopestack-p))
   :returns (mv successp
                (maybe-range vl-maybe-range-p))
   :enabled t
-  :guard-hints(("Goal" :in-theory (enable vl-slow-find-net/reg-range
-                                          vl-find-moduleitem)))
   (b* ((find (vl-scopestack-find-item name ss))
        ((unless (and find
                      (eq (tag find) :vl-vardecl)

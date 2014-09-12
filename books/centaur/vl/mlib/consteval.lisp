@@ -57,22 +57,13 @@
          :hints(("Goal" :in-theory (enable vl-expr->finaltype)))))
 
 
-(defval *vl-fake-module-for-vl-consteval*
-  (make-vl-module :name "VL_FAKE_MODULE_FOR_VL_CONSTEVAL"
-                  :origname "VL_FAKE_MODULE_FOR_VL_CONSTEVAL"
-                  :minloc *vl-fakeloc*
-                  :maxloc *vl-fakeloc*))
 
-(defval *vl-fake-ialist-for-vl-consteval*
-  nil)
+
 
 (defval *vl-fake-elem-for-vl-consteval*
   (make-vl-vardecl :name "VL_FAKE_ELEM_FOR_VL_CONSTEVAL"
                    :type *vl-plain-old-wire-type*
                    :loc *vl-fakeloc*))
-
-(local (assert! (equal (vl-moditem-alist *vl-fake-module-for-vl-consteval*)
-                       *vl-fake-ialist-for-vl-consteval*)))
 
 (define vl-consteval-ans (&key (value natp)
                                (width posp)
@@ -268,9 +259,17 @@
       (:vl-binary-power (expt ainterp bval))
       (otherwise        (progn$ (impossible) 0)))))
 
+
+
 (define vl-consteval-main ((x vl-expr-p))
-  :returns (mv (successp booleanp :rule-classes :type-prescription)
-               (ans      vl-expr-p))
+  :returns (mv (successp booleanp :rule-classes :type-prescription
+                         :hints (("goal" :in-theory (disable (:d vl-consteval-main))
+                                  :induct (vl-consteval-main x)
+                                  :expand ((vl-consteval-main x)))))
+               (ans      vl-expr-p
+                         :hints (("goal" :in-theory (disable (:d vl-consteval-main))
+                                  :induct (vl-consteval-main x)
+                                  :expand ((vl-consteval-main x))))))
   :guard (vl-expr-welltyped-p x)
   :measure (vl-expr-count x)
   :verify-guards nil
@@ -425,15 +424,37 @@
    ;;           :in-theory (enable acl2::member-of-cons)))))
 
    ;; This seems a bit better, still pretty slow, ~60s for all the proofs.
-   (add-default-hints
-    '((and stable-under-simplificationp
-           '(:expand (vl-expr-welltyped-p x)))
-      (and stable-under-simplificationp
-           '(:in-theory (enable acl2::member-of-cons
-                                acl2::member-when-atom))))))
+   ;; (add-default-hints
+   ;;  '((and stable-under-simplificationp
+   ;;         '(:expand (vl-expr-welltyped-p x)))
+   ;;    (and stable-under-simplificationp
+   ;;         '(:in-theory (enable acl2::member-of-cons
+   ;;                              acl2::member-when-atom)))))
+  (local (in-theory (disable acl2::consp-of-car-when-alistp
+                             acl2::alistp-when-keyval-alist-p-rewrite
+                             vl-exprlist-p-when-not-consp
+                             acl2::alistp-of-cdr
+                             alistp-when-vl-atts-p-rewrite
+                             natp-of-car-when-nat-listp
+                             acl2::natp-of-car-when-nat-listp
+                             acl2::natp-rw
+                             acl2::natp-when-maybe-natp
+                             acl2::maybe-natp-when-natp
+                             maybe-natp-of-car-when-vl-maybe-nat-listp
+                             acl2::consp-when-member-equal-of-atom-listp
+                             (tau-system))))
+   )
 
   ///
-
+  (local (in-theory (disable (:d vl-consteval-main))))
+  (local (set-default-hints
+          '((and (equal (car id) '(0))
+                 '(:induct (vl-consteval-main x)
+                   :expand ((vl-consteval-main x))))
+            (and stable-under-simplificationp
+                 '(:expand ((vl-expr-welltyped-p x)
+                            (vl-hidexpr-p x)
+                            (vl-hidindex-p x)))))))
   (more-returns
    (ans (vl-expr-welltyped-p ans)
         :hyp (vl-expr-welltyped-p x)
@@ -451,7 +472,16 @@
         :hyp (vl-expr-welltyped-p x)
         :name vl-expr-resolved-p-of-vl-consteval-main))
 
-  (verify-guards vl-consteval-main))
+  (local (set-default-hints nil))
+  (local (defthm <-2-when-bitp
+           (implies (acl2::bitp x)
+                    (< x 2))))
+  (verify-guards vl-consteval-main
+    :hints (("goal" :do-not-induct t
+             :expand ((vl-expr-p x)
+                      (vl-expr-welltyped-p x)))
+            (and stable-under-simplificationp
+                 '(:in-theory (enable acl2::member-of-cons))))))
 
 
 
@@ -500,8 +530,7 @@ supported by @(see vl-consteval-main), and the evaluation must proceed without
        ((mv successp ?warnings sized-x)
         (vl-expr-size nil ;; we assume there's no left-hand side context
                       x
-                      *vl-fake-module-for-vl-consteval*
-                      *vl-fake-ialist-for-vl-consteval*
+                      nil ;; empty scope stack
                       *vl-fake-elem-for-vl-consteval*
                       nil ;; don't care about warnings
                       ))

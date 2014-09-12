@@ -362,10 +362,7 @@ to report this information as well.</p>"
                   (vl-hidexpr-p x))
              "A hierarchical identifier that occurs somewhere in @('mod').")
    (mod      vl-module-p)
-   (mods     vl-modulelist-p
-             "List of all modules, so we can look up submodules.")
-   (modalist (equal modalist (vl-modalist mods))
-             "For fast lookups.")
+   (ss       vl-scopestack-p)
    (toplev   (equal toplev (vl-modulelist-toplevel mods))
              "Names of all top level modules, so we can tell which HIDs are
               local versus global.")
@@ -1001,8 +998,7 @@ identifier.</p>"
 
   (define vl-stmt-follow-hids ((x        vl-stmt-p)
                                (mod      vl-module-p)
-                               (mods     vl-modulelist-p)
-                               (modalist (equal modalist (vl-modalist mods)))
+                               (ss       vl-scopestack-p)
                                (toplev   (equal toplev (vl-modulelist-toplevel mods)))
                                (warnings vl-warninglist-p))
     :measure (vl-stmt-count x)
@@ -1077,8 +1073,7 @@ identifier.</p>"
 
    (define vl-stmtlist-follow-hids ((x        vl-stmtlist-p)
                                     (mod      vl-module-p)
-                                    (mods     vl-modulelist-p)
-                                    (modalist (equal modalist (vl-modalist mods)))
+                                    (ss       vl-scopestack-p)
                                     (toplev   (equal toplev (vl-modulelist-toplevel mods)))
                                     (warnings vl-warninglist-p))
      :measure (vl-stmtlist-count x)
@@ -1128,8 +1123,7 @@ identifier.</p>"
 
 (define vl-module-follow-hids
   ((x        vl-module-p)
-   (mods     vl-modulelist-p)
-   (modalist (equal modalist (vl-modalist mods)))
+   (ss       vl-scopestack-p)
    (toplev   (equal toplev (vl-modulelist-toplevel mods))))
   :returns (new-x vl-module-p :hyp :fguard)
   (b* (((when (vl-module->hands-offp x))

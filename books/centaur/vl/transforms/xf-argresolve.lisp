@@ -29,9 +29,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "../mlib/find-item")
 (include-book "../mlib/port-tools")
-(include-book "../mlib/find-module")
 (local (include-book "../util/arithmetic"))
 (local (include-book "../util/osets"))
 (local (std::add-default-post-define-hook :fix))
@@ -370,7 +368,7 @@ is no argument to that port and we're to infer a blank connection.</p>"
   :parents (vl-expand-dotstar-arguments)
   :short "Create a single missing argument for a @('.*') connection."
   ((name     stringp           "Name of the submodule port that is implicitly connected by @('.*').")
-   (super    vl-module-p       "Module where the instance occurs.")
+   (ss       vl-scopestack-p)
    (warnings vl-warninglist-p  "Warnings accumulator.")
    (inst     vl-modinst-p      "Context for warnings."))
   :returns (mv (successp booleanp :rule-classes :type-prescription)
@@ -380,8 +378,7 @@ is no argument to that port and we're to infer a blank connection.</p>"
   (b* ((name              (string-fix name))
        ((vl-modinst inst) (vl-modinst-fix inst))
 
-       ;; BOZO this is possibly slow.
-       (look (vl-find-moduleitem name super))
+       (look (vl-scopestack-find-item name ss))
        ((unless look)
         (mv nil
             (fatal :type :vl-bad-instance
@@ -423,7 +420,7 @@ is no argument to that port and we're to infer a blank connection.</p>"
   :parents (vl-expand-dotstar-arguments)
   :short "Create the arguments that @('.*') expands to."
   ((missing  string-listp      "Names of submodule ports that aren't explicitly connected.")
-   (super    vl-module-p       "Module where the instance occurs.")
+   (ss       vl-scopestack-p)
    (warnings vl-warninglist-p  "Warnings accumulator.")
    (inst     vl-modinst-p      "Context for warnings."))
   :returns (mv (successp booleanp :rule-classes :type-prescription)
@@ -431,8 +428,8 @@ is no argument to that port and we're to infer a blank connection.</p>"
                (new-args vl-namedarglist-p))
   (b* (((when (atom missing))
         (mv t (ok) nil))
-       ((mv okp1 warnings args1) (vl-create-namedarg-for-dotstar (car missing) super warnings inst))
-       ((mv okp2 warnings args2) (vl-create-namedargs-for-dotstar (cdr missing) super warnings inst)))
+       ((mv okp1 warnings args1) (vl-create-namedarg-for-dotstar (car missing) ss warnings inst))
+       ((mv okp2 warnings args2) (vl-create-namedargs-for-dotstar (cdr missing) ss warnings inst)))
     (mv (and okp1 okp2)
         warnings
         (append args1 args2)))
@@ -444,7 +441,7 @@ is no argument to that port and we're to infer a blank connection.</p>"
   :parents (vl-convert-namedargs)
   :short "Expand @('.*') style arguments into explicit .foo(foo) format."
   ((args     vl-namedarglist-p "The explicit arguments besides the @('.*'), i.e., @('.foo(1), .bar(2), ...').")
-   (super    vl-module-p       "The module containing this instance.")
+   (ss       vl-scopestack-p)
    (ports    vl-portlist-p     "Ports of the submodule.")
    (warnings vl-warninglist-p  "Warnings accumulator.")
    (inst     vl-modinst-p      "Just a context for warnings."))
@@ -473,7 +470,7 @@ is no argument to that port and we're to infer a blank connection.</p>"
                          :args (list inst inst.modname))))
 
        ((mv okp warnings inferred-args)
-        (vl-create-namedargs-for-dotstar missing super warnings inst))
+        (vl-create-namedargs-for-dotstar missing ss warnings inst))
        ((unless okp)
         ;; Already warned
         (mv nil warnings args))
@@ -484,7 +481,7 @@ is no argument to that port and we're to infer a blank connection.</p>"
 
 (define vl-convert-namedargs
   ((x        "arguments of a module instance, named or plain" vl-arguments-p)
-   (super    "module containing this instance."               vl-module-p)
+   (ss       "current scope stack"                            vl-scopestack-p)
    (ports    "ports of the submodule"                         vl-portlist-p)
    (warnings "warnings accumulator"                           vl-warninglist-p)
    (inst     "just a context for warnings"                    vl-modinst-p))
@@ -504,7 +501,7 @@ warn about the situation and then simply treat the port as unconnected.</p>
 <p>To be able to handle designs that do this bad thing, we now also tolerate
 named arguments with missing ports, and only issue non-fatal warnings.</p>"
 
-  (declare (ignorable super))
+  (declare (ignorable ss))
 
   (b* ((x    (vl-arguments-fix x))
        (inst (vl-modinst-fix inst))
@@ -517,7 +514,7 @@ named arguments with missing ports, and only issue non-fatal warnings.</p>"
        ((mv okp warnings args)
         ;; Expand out .* syntax into explicit arguments, if necessary
         (if (vl-arguments-named->starp x)
-            (vl-expand-dotstar-arguments (vl-arguments-named->args x) super ports warnings inst)
+            (vl-expand-dotstar-arguments (vl-arguments-named->args x) ss ports warnings inst)
           ;; No .* is present, nothing to do
           (mv t (ok) (vl-arguments-named->args x))))
        ((unless okp)
@@ -597,10 +594,7 @@ named arguments with missing ports, and only issue non-fatal warnings.</p>"
          vl-plainarglist-p)
    (ports "corresponding ports for the submodule"
           vl-portlist-p)
-   (portdecls "port declarations for the submodule"
-              vl-portdecllist-p)
-   (palist "precomputed for fast lookups"
-           (equal palist (vl-portdecl-alist portdecls))))
+   (scope vl-scope-p))
   :guard (same-lengthp args ports)
   :returns
   (annotated-args "annotated version of @('args'), semantically equivalent
@@ -628,14 +622,14 @@ for every port.</li>
         ;; Our direction inference is pretty sophisticated, and handles even
         ;; compound ports as long as their directions are all the same.  But it
         ;; could also fail and leave dir as NIL.
-        (vl-port-direction (car ports) portdecls palist nil))
+        (vl-port-direction (car ports) scope nil))
 
        (arg-prime  (change-vl-plainarg (car args)
                                        :dir dir         ;; could be nil
                                        :portname name   ;; could be nil
                                        )))
     (cons arg-prime
-          (vl-annotate-plainargs (cdr args) (cdr ports) portdecls palist))))
+          (vl-annotate-plainargs (cdr args) (cdr ports) scope))))
 
 (define vl-check-blankargs
   :short "Warn about expressions connected to blank ports and for blanks
@@ -676,11 +670,9 @@ problem.</p>"
 
 (define vl-arguments-argresolve
   ((x         "arguments of a module instance, named or plain" vl-arguments-p)
-   (super     "the module that contains this instance" vl-module-p)
+   (ss        vl-scopestack-p)
    (ports     "ports of the submodule" vl-portlist-p)
-   (portdecls "portdecls of the submodule" vl-portdecllist-p)
-   (palist    "precomputed for fast lookups"
-              (equal palist (vl-portdecl-alist portdecls)))
+   (scope     "instantiated module or interface" vl-scope-p)
    (warnings  "warnings accumulator" vl-warninglist-p)
    (inst      "just a context for error messages" vl-modinst-p))
   :returns
@@ -692,7 +684,7 @@ transform.  We convert @('x') into a plain argument list, do basic arity/blank
 checking, and add direction/name annotations.</p>"
 
   (b* (((mv successp warnings x)
-        (vl-convert-namedargs x super ports warnings inst))
+        (vl-convert-namedargs x ss ports warnings inst))
        ((unless successp)
         (mv (ok) x))
        (inst      (vl-modinst-fix inst))
@@ -714,60 +706,40 @@ checking, and add direction/name annotations.</p>"
                                  (if (= nports 1) "port" "ports")))
               x)))
        (warnings  (vl-check-blankargs plainargs ports inst warnings))
-       (plainargs (vl-annotate-plainargs plainargs ports portdecls palist))
+       (plainargs (vl-annotate-plainargs plainargs ports scope))
        (new-x     (make-vl-arguments-plain :args plainargs)))
     (mv (ok) new-x)))
 
-(define vl-modulelist-portdecl-alists ((x vl-modulelist-p))
-  :short "Computes the @(see vl-portdecl-alist)s for a list of modules."
-  :long "<p>@(call vl-modulelist-portdecl-alists) builds a fast alist
-associating each module name to its corresponding @(see vl-portdecl-alist).</p>"
-  (if (atom x)
-      nil
-    (hons-acons (vl-module->name (car x))
-                (vl-portdecl-alist (vl-module->portdecls (car x)))
-                (vl-modulelist-portdecl-alists (cdr x))))
-  ///
-  (defthm hons-assoc-equal-of-vl-modulelist-portdecl-alists
-    (equal (hons-assoc-equal name (vl-modulelist-portdecl-alists x))
-           (let ((mod (vl-find-module name x)))
-             (and mod
-                  (cons name (vl-portdecl-alist (vl-module->portdecls mod))))))))
 
 (define vl-modinst-argresolve
   :short "Resolve arguments in a @(see vl-modinst-p)."
   ((x        vl-modinst-p)
-   (super    vl-module-p      "Module where x occurs.")
-   (mods     vl-modulelist-p)
-   (modalist (equal modalist (vl-modalist mods)))
-   (mpalists (equal mpalists (vl-modulelist-portdecl-alists mods)))
+   (ss       vl-scopestack-p)
    (warnings vl-warninglist-p))
   :returns
   (mv (warnings vl-warninglist-p)
       (new-x    vl-modinst-p))
+  :prepwork ((local (in-theory (disable std::tag-forward-to-consp)))
+             (local (defthm vl-scope-p-when-vl-module-p-strong
+                      (implies (vl-module-p x) (vl-scope-p x)))))
   (b* ((x (vl-modinst-fix x))
        ((vl-modinst x) x)
-       (submod (vl-fast-find-module x.modname mods modalist))
-       ((unless submod)
+       (submod (vl-scopestack-find-definition x.modname ss))
+       ((unless (and submod (eq (tag submod) :vl-module)))
         (mv (fatal :type :vl-bad-instance
                    :msg "~a0 refers to undefined module ~m1."
                    :args (list x x.modname))
             x))
        ((vl-module submod) submod)
-       (palist    (cdr (hons-get x.modname mpalists)))
        ((mv warnings new-args)
-        (vl-arguments-argresolve x.portargs super
-                                 submod.ports submod.portdecls
-                                 palist warnings x))
+        (vl-arguments-argresolve x.portargs ss
+                                 submod.ports submod warnings x))
        (new-x (change-vl-modinst x :portargs new-args)))
     (mv (ok) new-x)))
 
 (define vl-modinstlist-argresolve
   ((x        vl-modinstlist-p)
-   (super    vl-module-p       "Module containing these instances.")
-   (mods     vl-modulelist-p)
-   (modalist (equal modalist (vl-modalist mods)))
-   (mpalists (equal mpalists (vl-modulelist-portdecl-alists mods)))
+   (ss       vl-scopestack-p)
    (warnings vl-warninglist-p))
   :returns
   (mv (warnings vl-warninglist-p)
@@ -776,9 +748,9 @@ associating each module name to its corresponding @(see vl-portdecl-alist).</p>"
   (b* (((when (atom x))
         (mv (ok) nil))
        ((mv warnings car)
-        (vl-modinst-argresolve (car x) super mods modalist mpalists warnings))
+        (vl-modinst-argresolve (car x) ss warnings))
        ((mv warnings cdr)
-        (vl-modinstlist-argresolve (cdr x) super mods modalist mpalists warnings)))
+        (vl-modinstlist-argresolve (cdr x) ss warnings)))
     (mv warnings (cons car cdr))))
 
 (define vl-module-argresolve
@@ -786,16 +758,14 @@ associating each module name to its corresponding @(see vl-portdecl-alist).</p>"
   :long "<p>This is just glue-code to apply @(see vl-modinst-argresolve) to all
 of the module instances, and @(see vl-gateinst-dirassign) to all of the gate
 instances in the module.</p>"
-  ((x        vl-module-p)
-   (mods     vl-modulelist-p)
-   (modalist (equal modalist (vl-modalist mods)))
-   (mpalists (equal mpalists (vl-modulelist-portdecl-alists mods))))
+  ((x        vl-module-p) (ss vl-scopestack-p))
   :returns (new-x vl-module-p)
   (b* (((when (vl-module->hands-offp x))
         (vl-module-fix x))
        (warnings (vl-module->warnings x))
+       (ss (vl-scopestack-push (vl-module-fix x) ss))
        ((mv warnings modinsts)
-        (vl-modinstlist-argresolve (vl-module->modinsts x) x mods modalist mpalists warnings))
+        (vl-modinstlist-argresolve (vl-module->modinsts x) ss warnings))
        ((mv warnings gateinsts)
         (vl-gateinstlist-dirassign (vl-module->gateinsts x) warnings)))
     (change-vl-module x
@@ -803,33 +773,18 @@ instances in the module.</p>"
                       :modinsts modinsts
                       :gateinsts gateinsts)))
 
-(defprojection vl-modulelist-argresolve-aux ((x    vl-modulelist-p)
-                                             (mods vl-modulelist-p)
-                                             (modalist (equal modalist (vl-modalist mods)))
-                                             (mpalists (equal mpalists (vl-modulelist-portdecl-alists mods))))
+(defprojection vl-modulelist-argresolve ((x    vl-modulelist-p)
+                                         (ss   vl-scopestack-p))
   :returns (new-x vl-modulelist-p)
-  (vl-module-argresolve x mods modalist mpalists))
+  (vl-module-argresolve x ss))
 
-(define vl-modulelist-argresolve
-  :short "Apply @(see argresolve) to a list of modules."
-  ((x vl-modulelist-p))
-  :returns (new-x vl-modulelist-p)
-  :long "<p>The real work is done by @(see vl-modulelist-argresolve-aux).  This
-function is just a wrapper that builds a @(see vl-modalist) for fast module
-lookups and also pre-compute the @(see vl-portdecl-alist)s for all modules
-using @(see vl-modulelist-portdecl-alists).</p>"
-
-  (b* ((modalist (vl-modalist x))
-       (mpalists (vl-modulelist-portdecl-alists x))
-       (result   (vl-modulelist-argresolve-aux x x modalist mpalists)))
-    (fast-alist-free modalist)
-    (fast-alist-free mpalists)
-    (fast-alist-free-each-alist-val mpalists)
-    result))
 
 (define vl-design-argresolve
   :short "Top-level @(see argresolve) transform."
   ((x vl-design-p))
   :returns (new-x vl-design-p)
-  (b* (((vl-design x) x))
-    (change-vl-design x :mods (vl-modulelist-argresolve x.mods))))
+  (b* (((vl-design x) x)
+       (ss (vl-scopestack-init x))
+       (mods (vl-modulelist-argresolve x.mods ss)))
+    (vl-scopestacks-free)
+    (change-vl-design x :mods mods)))

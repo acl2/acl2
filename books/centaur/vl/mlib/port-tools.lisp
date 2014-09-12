@@ -31,7 +31,7 @@
 (in-package "VL")
 (include-book "expr-tools")
 (include-book "range-tools")
-(include-book "find-item")
+(include-book "scopestack")
 (local (include-book "../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
 
@@ -283,11 +283,11 @@ return a list of strings.</p>"
     (vl-port->expr x))))
 
 
+
 (define vl-port-direction-aux
   :parents (vl-port-direction)
   ((names     string-listp)
-   (portdecls vl-portdecllist-p)
-   (palist    (equal palist (vl-portdecl-alist portdecls)))
+   (scope     vl-scope-p)
    (warnings  vl-warninglist-p)
    (port      vl-port-p))
   :returns
@@ -298,9 +298,9 @@ return a list of strings.</p>"
   (b* (((when (atom names))
         (mv t (ok) nil))
        (name1 (string-fix (car names)))
-       (decl (vl-fast-find-portdecl name1 portdecls palist))
+       (decl (vl-scope-find-portdecl-fast name1 scope))
        ((mv successp warnings directions)
-        (vl-port-direction-aux (cdr names) portdecls palist warnings port))
+        (vl-port-direction-aux (cdr names) scope warnings port))
        ((when decl)
         (mv successp warnings (cons (vl-portdecl->dir decl) directions))))
     (mv nil
@@ -316,10 +316,8 @@ return a list of strings.</p>"
   :short "Attempt to determine the direction for a port."
   ((port      "The port whose direction is being decided."
               vl-port-p)
-   (portdecls "The list of all portdecls for this module."
-              vl-portdecllist-p)
-   (palist    "Precomputed fast alist for these portdecls."
-              (equal palist (vl-portdecl-alist portdecls)))
+   (scope     "The module or interface containing the port."
+              vl-scope-p)
    (warnings  "Ordinary warnings accumulator, may be extended with non-fatal
                warnings."
               vl-warninglist-p))
@@ -350,7 +348,7 @@ and add a warning that this case is very unusual.</p>"
 
        (names (vl-port-internal-wirenames port))
        ((mv successp warnings dirs)
-        (vl-port-direction-aux names portdecls palist warnings port))
+        (vl-port-direction-aux names scope warnings port))
        ((unless successp)
         (mv (ok) nil))
 
@@ -367,8 +365,8 @@ and add a warning that this case is very unusual.</p>"
   ///
   (defthm vl-direction-p-of-vl-port-direction
     (equal (vl-direction-p
-            (mv-nth 1 (vl-port-direction port portdecls palist warnings)))
-           (if (mv-nth 1 (vl-port-direction port portdecls palist warnings))
+            (mv-nth 1 (vl-port-direction port scope warnings)))
+           (if (mv-nth 1 (vl-port-direction port scope warnings))
                t
              nil))))
 
