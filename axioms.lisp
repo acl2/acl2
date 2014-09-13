@@ -25966,7 +25966,7 @@ Lisp definition."
   #-acl2-loop-only
   (when (live-state-p state)
     (return-from oracle-apply-raw
-                 (mv (funcall fn args) state)))
+                 (mv (apply fn args) state)))
   #+acl2-loop-only
   (ec-call (oracle-apply fn args state)))
 
