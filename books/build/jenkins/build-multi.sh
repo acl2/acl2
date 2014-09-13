@@ -31,7 +31,7 @@ fi
 
 LISP=`which $LISP`
 echo "Using LISP = $LISP"
-#echo "Using STARTJOB = `which startjob`"
+echo "Using STARTJOB = `which startjob`"
 echo "Using ACL2_HONS = $ACL2_HONS"
 echo "Using ACL2_PAR  = $ACL2_PAR"
 echo "Using NONSTD    = $NONSTD"
@@ -63,14 +63,14 @@ echo "Making ACL2(${ACL2_SUFFIX})"
 # need to use single-quote to prevent interpolation of the double
 # quotes in the calling shell.  If your startjob is just a wrapper for
 # bash, you'll want to use $* to pass in the arguments to startjob
-make acl2${ACL2_SUFFIX} -f books/build/jenkins/Makefile LISP=$LISP &> make.log #\
-#  --name "J_CCL_ACL2H" \
-#  --limits "pmem=4gb,nodes=1:ppn=1,walltime=10:00"
-#make LISP=$LISP &> make.log 
+startjob -c "make acl2${ACL2_SUFFIX} -f books/build/jenkins/Makefile LISP=$LISP &> make.log" \
+  --name "J_CCL_ACL2H" \
+  --limits "pmem=4gb,nodes=1:ppn=1,walltime=10:00"
 
 echo "Building the books."
 cd books
-nice time make $TARGET ACL2=$WORKSPACE/saved_acl2$ACL2_SUFFIX -j3 $MAKEOPTS # inherit USE_QUICKLISP
+ # inherit USE_QUICKLISP for the following make call
+startjob -c "nice time make $TARGET ACL2=$WORKSPACE/saved_acl2$ACL2_SUFFIX -j3 $MAKEOPTS"
 
 echo "Build was successful."
 
