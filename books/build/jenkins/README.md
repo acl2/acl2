@@ -1,7 +1,6 @@
 ACL2 Books Jenkins Build Scripts
 
-Original authors: Jared Davis <jared@centtech.com>, David Rager
-<ragerdl@gmail.com>
+Authors: Jared Davis <jared@centtech.com>, David Rager <ragerdl@defthm.com>
 
 ##Introduction
 
@@ -41,11 +40,11 @@ script starts with:
 
    source $JENKINS_HOME/env.sh
 
-So you should be able ot easily set up a suitable env.sh that
-configures your PATH to contain ccl, sbcl, etc.  
+So you should be able to easily set up a suitable env.sh that
+configures your PATH to contain ccl, sbcl, etc.
 
 You'll first want to setup a single configuration Jenkins project that
-runs build-ccl-acl2h-target.sh.  If you don't pass in a $TARGET
+runs build-single.sh.  If you don't pass in a $TARGET
 parameter, it will build the "manual" target.  This will build the
 manual on CCL for ACL2(h).
 
@@ -58,6 +57,10 @@ options of `"" t`.
 
 Your `gcl` executable name must start with `gcl` to avoid building
 with quicklisp.
+
+The scripts use `startjob`, a which in its simplest form is just a
+wrapper for `bash`.  In more complicated scenarios, `startjob` can be
+used to build the books using a cluster.
 
 Please contact Jared or David with any questions or feedback.
 
