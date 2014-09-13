@@ -157,7 +157,7 @@ while(my ($key,$val) = each %$xdata)
 	$shortxml = "<p>$short</p>";
 	$shortxml = wrap_xdoc_fragment($shortxml);
 	$shortxml = $xml_parser->parse_string($shortxml);
-    $results = $stylesheet->transform($shortxml);
+	$results = $stylesheet->transform($shortxml);
 	my $short_output = $stylesheet->output_string($results);
 
 	my $bothxml = "";
@@ -165,14 +165,17 @@ while(my ($key,$val) = each %$xdata)
 	$bothxml = wrap_xdoc_fragment($bothxml);
 
 	$bothxml = $xml_parser->parse_string($bothxml);
-    $results = $stylesheet->transform($bothxml);
+	$results = $stylesheet->transform($bothxml);
 	my $both_output = $stylesheet->output_string($results);
 
 
 	my $pagehtml .= "<html>\n<head>\n";
 	$pagehtml .= "<meta charset=\"UTF-8\">\n";
 	$pagehtml .= "<title>$human_readable_name</title>\n";
-	$pagehtml .= "<meta name=\"description\" content=\"$short_output\">\n";
+	# I thought it would be nice to include a description, but
+	# topics like BOOKS_CERTIFICATION need their links escaped.
+	# Too hard for now.
+	# $pagehtml .= "<meta name=\"description\" content=\"$short_output\">\n";
 	$pagehtml .= "<link rel=\"stylesheet\" type=\"text/css\" href=\"../style.css\"/>\n";
 
 	# The below javascript causes the client to redirect.  In a
