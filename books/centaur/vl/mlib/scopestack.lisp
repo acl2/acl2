@@ -31,10 +31,12 @@
 
 (in-package "VL")
 (include-book "../parsetree")
-(include-book "modnamespace")
+;; (include-book "modnamespace")
 ;; (include-book "find-item")
 ;; (local (include-book "../util/arithmetic"))
 (local (include-book "tools/templates" :dir :system))
+(local (include-book "std/lists/acl2-count" :dir :system))
+(local (in-theory (disable acl2-count)))
 (local (std::add-default-post-define-hook :fix))
 
 
@@ -84,6 +86,78 @@
            (package          ))))
 
 
+(define vl-modinstlist->instnames-nrev ((x vl-modinstlist-p) nrev)
+  :parents (vl-modinstlist->instnames)
+  (b* (((when (atom x))
+        (nrev-fix nrev))
+       (name (vl-modinst->instname (car x)))
+       (nrev (if name
+                 (nrev-push name nrev)
+               nrev)))
+    (vl-modinstlist->instnames-nrev (cdr x) nrev)))
+
+
+(define vl-modinstlist->instnames ((x vl-modinstlist-p))
+  :parents (vl-modinstlist-p modnamespace)
+  :short "Collect all instance names (not module names!) from a @(see
+vl-modinstlist-p)."
+  :long "<p>The Verilog-2005 Standard requires that module instances be named,
+but we relaxed that restriction in our definition of @(see vl-modinst-p)
+because of user-defined primitives, which may be unnamed.  So, as with @(see
+vl-gateinstlist->names), here we simply skip past any unnamed module
+instances.</p>"
+  :verify-guards nil
+  (mbe :logic (if (consp x)
+                  (if (vl-modinst->instname (car x))
+                      (cons (vl-modinst->instname (car x))
+                            (vl-modinstlist->instnames (cdr x)))
+                    (vl-modinstlist->instnames (cdr x)))
+                nil)
+       :exec (with-local-nrev (vl-modinstlist->instnames-nrev x nrev)))
+  ///
+  (defthm vl-modinstlist->instnames-exec-removal
+    (equal (vl-modinstlist->instnames-nrev x nrev)
+           (append nrev (vl-modinstlist->instnames x)))
+    :hints(("Goal" :in-theory (enable vl-modinstlist->instnames-nrev))))
+
+  (verify-guards vl-modinstlist->instnames)
+
+  (defthm vl-modinstlist->instnames-when-not-consp
+    (implies (not (consp x))
+             (equal (vl-modinstlist->instnames x)
+                    nil)))
+
+  (defthm vl-modinstlist->instnames-of-cons
+    (equal (vl-modinstlist->instnames (cons a x))
+           (if (vl-modinst->instname a)
+               (cons (vl-modinst->instname a)
+                     (vl-modinstlist->instnames x))
+             (vl-modinstlist->instnames x))))
+
+  (defthm vl-modinstlist->instnames-of-list-fix
+    (equal (vl-modinstlist->instnames (list-fix x))
+           (vl-modinstlist->instnames x)))
+
+  (defcong list-equiv equal (vl-modinstlist->instnames x) 1
+    :hints(("Goal"
+            :in-theory (e/d (list-equiv)
+                            (vl-modinstlist->instnames-of-list-fix))
+            :use ((:instance vl-modinstlist->instnames-of-list-fix
+                   (x x))
+                  (:instance vl-modinstlist->instnames-of-list-fix
+                   (x acl2::x-equiv))))))
+
+  (defthm vl-modinstlist->instnames-of-append
+    (equal (vl-modinstlist->instnames (append x y))
+           (append (vl-modinstlist->instnames x)
+                   (vl-modinstlist->instnames y))))
+
+  (defthm vl-modinstlist->instnames-of-rev
+    (equal (vl-modinstlist->instnames (rev x))
+           (rev (vl-modinstlist->instnames x))))
+
+  (defthm string-listp-of-vl-modinstlist->instnames
+    (string-listp (vl-modinstlist->instnames x))))
 
 
 
@@ -283,11 +357,14 @@
         :elt-type vl-scopeitem-p
         :elementp-of-nil nil
         ///
-        (local (in-theory (enable vl-scopeitemlist-p)))
         . ,(template-proj
             '(defthm vl-scopeitemlist-p-when-vl-__type__list-p
                (implies (vl-__type__list-p x)
-                        (vl-scopeitemlist-p x)))
+                        (vl-scopeitemlist-p x))
+               :hints (("goal" :induct (vl-scopeitemlist-p x)
+                        :expand ((vl-__type__list-p x)
+                                 (vl-scopeitemlist-p x))
+                        :in-theory (enable (:i vl-scopeitemlist-p)))))
             substs)))))
 
 (make-event ;; Definition of vl-scopedef type
@@ -301,11 +378,14 @@
         :elt-type vl-scopedef-p
         :elementp-of-nil nil
         ///
-        (local (in-theory (enable vl-scopedeflist-p)))
         . ,(template-proj
             '(defthm vl-scopedeflist-p-when-vl-__type__list-p
                (implies (vl-__type__list-p x)
-                        (vl-scopedeflist-p x)))
+                        (vl-scopedeflist-p x))
+               :hints (("goal" :induct (vl-scopedeflist-p x)
+                        :expand ((vl-__type__list-p x)
+                                 (vl-scopedeflist-p x))
+                        :in-theory (enable (:i vl-scopedeflist-p)))))
             substs)))))
 
 
@@ -367,11 +447,12 @@
                '((and (equal (car id) '(0))
                       '(:induct (,fn name x) :expand ((:free (name) (,fn name x))))))))
        (defthm ,(mksym fn '-under-iff)
-         (implies ,(if names-may-be-nil
-                       '(force (stringp name))
-                     t)
-                  (iff (,fn name x)
-                       (member-equal name (,list->names x)))))
+         ,(if names-may-be-nil
+              `(implies (force (stringp name))
+                        (iff (,fn name x)
+                             (member-equal name (,list->names x))))
+            `(iff (,fn name x)
+                  (member-equal name (,list->names x)))))
 
        (defthm ,(mksym element->name '-of- fn)
          (implies (,fn name x)
@@ -401,7 +482,10 @@
    '(progn
       (:@ (not :names-defined)
        (defprojection vl-__type__list->__name__s ((x vl-__type__list-p))
-         :returns (names string-listp)
+         :returns (names string-listp
+                         :hints (("goal" :in-theory (disable (:d vl-__type__list->__name__s))
+                                  :induct (vl-__type__list->__name__s x)
+                                  :expand ((vl-__type__list->__name__s x)))))
          :parents (vl-__type__list-p)
          (vl-__type__->__name__ x)))
 
@@ -436,12 +520,25 @@
                             (if val
                                 (cons name val)
                               (hons-assoc-equal name acc)))))
-          :hints(("Goal" :in-theory (enable vl-find-__type__))))))))
+          :hints(("Goal" :in-theory (disable (:d vl-fast-__type__list-alist))
+                  :induct (vl-fast-__type__list-alist x acc)
+                  :expand ((vl-fast-__type__list-alist x acc)
+                           (vl-find-__type__ name x)))))))))
 
 ;; (local (defthm member-nil
 ;;          (not (member x nil))))
 
+;; prevent defalist from making a few expensive rules
 (local (acl2::ruletable-delete-tags! acl2::alistp-rules (:cons-member)))
+(local (table acl2::listp-rules
+              nil 
+              (let ((alist (table-alist 'acl2::listp-rules acl2::world)))
+                (set-difference-equal
+                 alist
+                 (list (assoc 'ACL2::ELEMENT-LIST-P-WHEN-SUBSETP-EQUAL-NON-TRUE-LIST alist)
+                       (assoc 'ACL2::ELEMENT-LIST-P-WHEN-SUBSETP-EQUAL-TRUE-LIST alist))))
+              :clear))
+
 
 (local (in-theory (disable alistp acl2::alistp-when-keyval-alist-p-rewrite
                            ;;acl2::consp-under-iff-when-true-listp
@@ -626,9 +723,9 @@
                               :short "Look up a plain identifier in the current scope stack."
                               ((name stringp)
                                (ss   vl-scopestack-p))
+                              :hints (("goal" :expand ((vl-scopestack-fix ss))))
+                              :guard-hints (("goal" :expand ((vl-scopestack-p ss))))
                               :returns (__result__ (iff (__resulttype__ __result__) __result__))
-                              :prepwork ((local (in-theory (enable vl-scopestack-p
-                                                                   vl-scopestack-fix))))
                               (b* ((ss (vl-scopestack-fix ss)))
                                 (if (atom ss)
                                     nil

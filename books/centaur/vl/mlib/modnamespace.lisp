@@ -29,7 +29,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "../parsetree")
+(include-book "scopestack")
 (include-book "stmt-tools")
 (local (include-book "../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
@@ -174,77 +174,8 @@ the number of gate instances in the list.</p>"
     (string-listp (vl-gateinstlist->names x))))
 
 
-(define vl-modinstlist->instnames-nrev ((x vl-modinstlist-p) nrev)
-  :parents (vl-modinstlist->instnames)
-  (b* (((when (atom x))
-        (nrev-fix nrev))
-       (name (vl-modinst->instname (car x)))
-       (nrev (if name
-                 (nrev-push name nrev)
-               nrev)))
-    (vl-modinstlist->instnames-nrev (cdr x) nrev)))
 
-(define vl-modinstlist->instnames ((x vl-modinstlist-p))
-  :parents (vl-modinstlist-p modnamespace)
-  :short "Collect all instance names (not module names!) from a @(see
-vl-modinstlist-p)."
-  :long "<p>The Verilog-2005 Standard requires that module instances be named,
-but we relaxed that restriction in our definition of @(see vl-modinst-p)
-because of user-defined primitives, which may be unnamed.  So, as with @(see
-vl-gateinstlist->names), here we simply skip past any unnamed module
-instances.</p>"
-  :verify-guards nil
-  (mbe :logic (if (consp x)
-                  (if (vl-modinst->instname (car x))
-                      (cons (vl-modinst->instname (car x))
-                            (vl-modinstlist->instnames (cdr x)))
-                    (vl-modinstlist->instnames (cdr x)))
-                nil)
-       :exec (with-local-nrev (vl-modinstlist->instnames-nrev x nrev)))
-  ///
-  (defthm vl-modinstlist->instnames-exec-removal
-    (equal (vl-modinstlist->instnames-nrev x nrev)
-           (append nrev (vl-modinstlist->instnames x)))
-    :hints(("Goal" :in-theory (enable vl-modinstlist->instnames-nrev))))
 
-  (verify-guards vl-modinstlist->instnames)
-
-  (defthm vl-modinstlist->instnames-when-not-consp
-    (implies (not (consp x))
-             (equal (vl-modinstlist->instnames x)
-                    nil)))
-
-  (defthm vl-modinstlist->instnames-of-cons
-    (equal (vl-modinstlist->instnames (cons a x))
-           (if (vl-modinst->instname a)
-               (cons (vl-modinst->instname a)
-                     (vl-modinstlist->instnames x))
-             (vl-modinstlist->instnames x))))
-
-  (defthm vl-modinstlist->instnames-of-list-fix
-    (equal (vl-modinstlist->instnames (list-fix x))
-           (vl-modinstlist->instnames x)))
-
-  (defcong list-equiv equal (vl-modinstlist->instnames x) 1
-    :hints(("Goal"
-            :in-theory (e/d (list-equiv)
-                            (vl-modinstlist->instnames-of-list-fix))
-            :use ((:instance vl-modinstlist->instnames-of-list-fix
-                             (x x))
-                  (:instance vl-modinstlist->instnames-of-list-fix
-                             (x acl2::x-equiv))))))
-
-  (defthm vl-modinstlist->instnames-of-append
-    (equal (vl-modinstlist->instnames (append x y))
-           (append (vl-modinstlist->instnames x)
-                   (vl-modinstlist->instnames y))))
-
-  (defthm vl-modinstlist->instnames-of-rev
-    (equal (vl-modinstlist->instnames (rev x))
-           (rev (vl-modinstlist->instnames x))))
-
-  (defthm string-listp-of-vl-modinstlist->instnames
-    (string-listp (vl-modinstlist->instnames x))))
 
 
 (define vl-module->modnamespace-nrev ((x vl-module-p) nrev)
