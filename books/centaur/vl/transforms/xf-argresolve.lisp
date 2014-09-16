@@ -30,6 +30,7 @@
 
 (in-package "VL")
 (include-book "../mlib/port-tools")
+(include-book "../mlib/modnamespace")
 (local (include-book "../util/arithmetic"))
 (local (include-book "../util/osets"))
 (local (std::add-default-post-define-hook :fix))
