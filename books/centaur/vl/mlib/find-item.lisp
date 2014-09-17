@@ -54,78 +54,72 @@ equivalent to the naive method of doing lookups.</p>")
 
 (local (xdoc::set-default-parents find-item))
 
-(defmacro def-vl-find-moditem (type
-                               &key
-                               element->name
-                               list->names
-                               names-may-be-nil)
+;; (defmacro def-vl-find-moditem (type
+;;                                &key
+;;                                element->name
+;;                                list->names
+;;                                names-may-be-nil)
 
-  (let* ((mksym-package-symbol 'vl::foo)
-         (fn            (mksym 'vl-find- type))
-         (element-p     (mksym 'vl- type '-p))
-         (fix           (mksym 'vl- type '-fix))
-         (type?         (mksym type '?))
-         (tag           (intern (cat "VL-" (symbol-name type)) "KEYWORD"))
-         (list-p        (mksym 'vl- type 'list-p))
-         (element->name (or element->name
-                            (mksym 'vl- type '->name)))
-         (list->names   (or list->names
-                            (mksym 'vl- type 'list->names))))
+;;   (let* ((mksym-package-symbol 'vl::foo)
+;;          (fn            (mksym 'vl-find- type))
+;;          (element-p     (mksym 'vl- type '-p))
+;;          (fix           (mksym 'vl- type '-fix))
+;;          (type?         (mksym type '?))
+;;          (tag           (intern (cat "VL-" (symbol-name type)) "KEYWORD"))
+;;          (list-p        (mksym 'vl- type 'list-p))
+;;          (element->name (or element->name
+;;                             (mksym 'vl- type '->name)))
+;;          (list->names   (or list->names
+;;                             (mksym 'vl- type 'list->names))))
 
-    `(define ,fn
-       :short ,(cat "Look up a " (symbol-name type) " in a list, by its name.")
-       ((name stringp)
-        (x    ,list-p))
-       :hooks ((:fix :args ((x ,list-p))))
-       :returns (,type? (equal (,element-p ,type?)
-                               (if ,type?
-                                   t
-                                 nil)))
-       (cond ((atom x)
-              nil)
-             ((equal name (,element->name (car x)))
-              (,fix (car x)))
-             (t
-              (,fn name (cdr x))))
-       ///
-       (local (in-theory (disable (force))))
+;;     `(define ,fn
+;;        :short ,(cat "Look up a " (symbol-name type) " in a list, by its name.")
+;;        ((name stringp)
+;;         (x    ,list-p))
+;;        :hooks ((:fix :args ((x ,list-p))))
+;;        :returns (,type? (equal (,element-p ,type?)
+;;                                (if ,type?
+;;                                    t
+;;                                  nil)))
+;;        (cond ((atom x)
+;;               nil)
+;;              ((equal name (,element->name (car x)))
+;;               (,fix (car x)))
+;;              (t
+;;               (,fn name (cdr x))))
+;;        ///
+;;        (local (in-theory (disable (force))))
 
-       (defthm ,(mksym fn '-under-iff)
-         (implies ,(if names-may-be-nil
-                       '(force (stringp name))
-                     t)
-                  (iff (,fn name x)
-                       (member-equal name (,list->names x)))))
+;;        (defthm ,(mksym fn '-under-iff)
+;;          (implies ,(if names-may-be-nil
+;;                        '(force (stringp name))
+;;                      t)
+;;                   (iff (,fn name x)
+;;                        (member-equal name (,list->names x)))))
 
-       (defthm ,(mksym element->name '-of- fn)
-         (implies (,fn name x)
-                  (equal (,element->name (,fn name x))
-                         name)))
+;;        (defthm ,(mksym element->name '-of- fn)
+;;          (implies (,fn name x)
+;;                   (equal (,element->name (,fn name x))
+;;                          name)))
 
-       (defthm ,(mksym 'tag-of- fn)
-         (equal (tag (,fn name x))
-                (if (,fn name x)
-                    ,tag
-                  nil)))
+;;        (defthm ,(mksym 'tag-of- fn)
+;;          (equal (tag (,fn name x))
+;;                 (if (,fn name x)
+;;                     ,tag
+;;                   nil)))
 
-       (defthm ,(mksym 'member-equal-of- fn)
-         (implies (force (,list-p x))
-                  (iff (member-equal (,fn name x) x)
-                       (,fn name x))))
+;;        (defthm ,(mksym 'member-equal-of- fn)
+;;          (implies (force (,list-p x))
+;;                   (iff (member-equal (,fn name x) x)
+;;                        (,fn name x))))
 
-       (defthm ,(mksym 'consp-of- fn '-when-member-equal)
-         (implies (and (member-equal name (,list->names x))
-                       (force (stringp name)))
-                  (consp (,fn name x)))))))
+;;        (defthm ,(mksym 'consp-of- fn '-when-member-equal)
+;;          (implies (and (member-equal name (,list->names x))
+;;                        (force (stringp name)))
+;;                   (consp (,fn name x)))))))
 
 (def-vl-find-moditem portdecl)
 
-
-(defalist vl-portdecl-alist-p (x)
-  :key (stringp x)
-  :val (vl-portdecl-p x)
-  :keyp-of-nil nil
-  :valp-of-nil nil)
 
 (define vl-portdecl-alist ((x vl-portdecllist-p))
   :returns (palist vl-portdecl-alist-p :hyp :guard)

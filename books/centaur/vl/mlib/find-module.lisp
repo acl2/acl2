@@ -29,7 +29,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "../parsetree")
+(include-book "scopestack")
 (local (include-book "../util/arithmetic"))
 (local (xdoc::set-default-parents hierarchy))
 
@@ -62,53 +62,6 @@ modules.  See @(see vl-fast-has-module) for a faster alternative.</p>"
   (deffixequiv vl-has-module :args ((mods vl-modulelist-p))))
 
 
-(define vl-find-module
-  :short "@(call vl-find-module) retrieves the first module named @('x') from
-@('mods')."
-  ((name stringp)
-   (mods vl-modulelist-p))
-  :long "<p>This is the logically simplest expression of looking up a module,
-and is our preferred normal form for rewriting.</p>
-
-<p>This function is not efficient.  It carries out an @('O(n)') search of the
-modules.  See @(see vl-fast-find-module) for a faster alternative.</p>"
-  (cond ((atom mods)
-         nil)
-        ((equal name (vl-module->name (car mods)))
-         (vl-module-fix (car mods)))
-        (t
-         (vl-find-module name (cdr mods))))
-  ///
-  (defthm vl-find-module-when-not-consp
-    (implies (not (consp mods))
-             (equal (vl-find-module name mods)
-                    nil)))
-
-  (defthm vl-find-module-of-cons
-    (equal (vl-find-module name (cons a x))
-           (if (equal name (vl-module->name a))
-               (vl-module-fix a)
-             (vl-find-module name x))))
-
-  (defthm vl-module-p-of-vl-find-module
-    (equal (vl-module-p (vl-find-module name mods))
-           (vl-has-module name mods)))
-
-  (defthm vl-find-module-under-iff
-    (iff (vl-find-module name mods)
-         (vl-has-module name mods)))
-
-  (defthm vl-module->name-of-vl-find-module
-    (implies (vl-has-module name mods)
-             (equal (vl-module->name (vl-find-module name mods))
-                    (string-fix name))))
-
-  (defthm member-equal-of-vl-find-module-of-self
-    (implies (force (vl-modulelist-p mods))
-             (iff (member-equal (vl-find-module name mods) mods)
-                  (vl-has-module name mods))))
-
-  (deffixequiv vl-find-module :args ((mods vl-modulelist-p))))
 
 (fty::defalist vl-modalist
   :key-type stringp
@@ -160,7 +113,11 @@ module lookups.</p>"
     (equal (hons-assoc-equal name (vl-modalist x))
            (if (vl-has-module name x)
                (cons name (vl-find-module name x))
-             nil)))
+             nil))
+    :hints (("goal" :induct (vl-modalist x)
+             :expand ((vl-modalist x)
+                      (vl-modulelist->names x)
+                      (vl-find-module name x)))))
 
   (deffixequiv vl-modalist))
 

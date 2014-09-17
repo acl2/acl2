@@ -127,6 +127,10 @@ not be complete.</p>"
 
 
 
+
+
+
+
 (define vl-module-complete-p ((x vl-module-p)
                               (mods vl-modulelist-p))
   :parents (hierarchy completeness)
@@ -501,7 +505,9 @@ report.\" It may not be in use any more.</p>"
                                        (vl-modinstlist->modnames
                                         (vl-module->modinsts
                                          (vl-find-module par x)))))
-                    (member-equal par (cdr (hons-assoc-equal child (vl-depalist-core x alist)))))))
+                    (member-equal par (cdr (hons-assoc-equal child (vl-depalist-core x alist)))))
+           :hints (("goal" :induct (vl-depalist-core x alist)
+                    :expand ((vl-find-module par x))))))
 
   (local (defthm lemma3
            (implies (not (member-equal name (vl-modulelist->names x)))
@@ -516,7 +522,9 @@ report.\" It may not be in use any more.</p>"
                       (member-equal child
                                     (vl-modinstlist->modnames
                                      (vl-module->modinsts
-                                      (vl-find-module par x)))))))))
+                                      (vl-find-module par x)))))))
+    :hints (("goal" :induct (vl-depalist-core x alist)
+             :expand ((:free (name) (vl-find-module name x)))))))
 
 (define vl-depalist
   :parents (hierarchy)

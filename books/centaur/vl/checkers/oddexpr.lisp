@@ -59,8 +59,7 @@ it might not have the expected precedence.</p>
 (define vl-expr-probable-selfsize
   :short "Heuristically estimate an expression's size."
   ((x      vl-expr-p)
-   (mod    vl-module-p)
-   (ialist (equal ialist (vl-moditem-alist mod))))
+   (ss     vl-scopestack-p))
   :returns (size maybe-natp :rule-classes :type-prescription
                  "The probable size of this expression, or @('nil') for
                   failure.")
@@ -77,7 +76,7 @@ non-@('nil') value.  And we can use this before resolving ranges, etc., which
 makes it useful for simple linting.</p>"
 
   (b* (((mv & size)
-        (vl-expr-selfsize x mod ialist *fake-modelement* nil)))
+        (vl-expr-selfsize x ss *fake-modelement* nil)))
     size))
 
 (define vl-odd-binop-class
@@ -404,8 +403,7 @@ giving motivation for these actions, etc.</p>
    (a       vl-expr-p)
    (x       vl-expr-p)
    (flipped booleanp)
-   (mod     vl-module-p)
-   (ialist  (equal ialist (vl-moditem-alist mod))))
+   (ss      vl-scopestack-p))
   (declare (ignorable a flipped))
 
   :long "<p>Note that any particular binary expression, say @('P OP Q'), might
@@ -451,8 +449,8 @@ we see if we think the sequence @('A op (B op2 C)') seems reasonable.</p>"
       (:check-type-unless-topargs-boolean
        (b* (((when (assoc-equal "VL_EXPLICIT_PARENS" (vl-nonatom->atts x)))
              nil)
-            (asize (vl-expr-probable-selfsize a mod ialist))
-            (xsize (vl-expr-probable-selfsize x mod ialist))
+            (asize (vl-expr-probable-selfsize a ss))
+            (xsize (vl-expr-probable-selfsize x ss))
             ((when (and (or (not asize) (eql asize 1))
                         (or (not xsize) (eql xsize 1))))
              ;; Skip it since args are boolean or there was some error determining
@@ -487,8 +485,7 @@ we see if we think the sequence @('A op (B op2 C)') seems reasonable.</p>"
 
   (define vl-warn-odd-binary-expression
     ((x      vl-expr-p)
-     (mod    vl-module-p)
-     (ialist (equal ialist (vl-moditem-alist mod))))
+     (ss     vl-scopestack-p))
     :measure (vl-expr-count x)
     (b* (((when (vl-fast-atom-p x))
           nil)
@@ -496,30 +493,29 @@ we see if we think the sequence @('A op (B op2 C)') seems reasonable.</p>"
          (arity (vl-op-arity op))
          (args  (vl-nonatom->args x))
          ((unless (eql arity 2))
-          (vl-warn-odd-binary-expression-list args mod ialist))
+          (vl-warn-odd-binary-expression-list args ss))
          ((list a b) args)
-         (msg1 (vl-warn-odd-binary-expression-main op a b nil mod ialist))
-         (msg2 (vl-warn-odd-binary-expression-main op b a t   mod ialist)))
+         (msg1 (vl-warn-odd-binary-expression-main op a b nil ss))
+         (msg2 (vl-warn-odd-binary-expression-main op b a t   ss)))
       (append (if msg1 (list (cons msg1 x)) nil)
               (if msg2 (list (cons msg2 x)) nil)
-              (vl-warn-odd-binary-expression-list args mod ialist))))
+              (vl-warn-odd-binary-expression-list args ss))))
 
   (define vl-warn-odd-binary-expression-list
     ((x      vl-exprlist-p)
-     (mod    vl-module-p)
-     (ialist (equal ialist (vl-moditem-alist mod))))
+     (ss     vl-scopestack-p))
     :measure (vl-exprlist-count x)
     (if (atom x)
         nil
-      (append (vl-warn-odd-binary-expression (car x) mod ialist)
-              (vl-warn-odd-binary-expression-list (cdr x) mod ialist)))))
+      (append (vl-warn-odd-binary-expression (car x) ss)
+              (vl-warn-odd-binary-expression-list (cdr x) ss)))))
 
 
 ; Bleh, this doesn't really seem to do anything useful:
 
 ;; (mutual-recursion
 
-;;  (defund vl-expr-find-oddsizes (x mod ialist)
+;;  (defund vl-expr-find-oddsizes (x ss)
 ;;    (declare (xargs :guard (and (vl-expr-p x)
 ;;                                (vl-module-p mod)
 ;;                                (equal ialist (vl-moditem-alist mod)))
@@ -528,7 +524,7 @@ we see if we think the sequence @('A op (B op2 C)') seems reasonable.</p>"
 ;;          nil)
 ;;         (op   (vl-nonatom->op x))
 ;;         (args (vl-nonatom->args x))
-;;         (others (vl-exprlist-find-oddsizes args mod ialist))
+;;         (others (vl-exprlist-find-oddsizes args ss))
 
 ;;         ((when (eq op :vl-unary-plus))
 ;;          ;; Unary plus is always weird.
@@ -547,7 +543,7 @@ we see if we think the sequence @('A op (B op2 C)') seems reasonable.</p>"
 ;;                             :vl-unary-xnor)))
 ;;          ;; Reduction operators.  It'd be weird to apply these to 1-bit operands.
 ;;          ;; It'd be kind of weird to apply these to 1-bit arguments.
-;;          (b* ((arg-size (vl-expr-probable-selfsize (first args) mod ialist)))
+;;          (b* ((arg-size (vl-expr-probable-selfsize (first args) ss)))
 ;;            (if (eql arg-size 1)
 ;;                (cons (cons :check-size x) others)
 ;;              others)))
@@ -558,8 +554,8 @@ we see if we think the sequence @('A op (B op2 C)') seems reasonable.</p>"
 ;;          ;; Weird to do a relational comparison on a 1-bit argument.
 ;;          ;; BOZO maybe also compare whether the sizes are the same?
 ;;          (b* (((list a b) args)
-;;               (a-size (vl-expr-probable-selfsize a mod ialist))
-;;               (b-size (vl-expr-probable-selfsize b mod ialist)))
+;;               (a-size (vl-expr-probable-selfsize a ss))
+;;               (b-size (vl-expr-probable-selfsize b ss)))
 ;;            ;; Originally I just tested (OR (eql a-size 1) (eql b-size 1)) here, but that
 ;;            ;; didn't seem right because we can get into situations where A is the sum of
 ;;            ;; a bunch of one-bit things, e.g., (a1 + a2 + a3 > 1), so the self-size looks
@@ -573,7 +569,7 @@ we see if we think the sequence @('A op (B op2 C)') seems reasonable.</p>"
 ;;         ((when (member op '(:vl-binary-shr :vl-binary-shl :vl-binary-ashl :vl-binary-ashr)))
 ;;          ;; Weird to shift a one-bit bus left or right.
 ;;          (b* (((list a ?b) args)
-;;               (a-size (vl-expr-probable-selfsize a mod ialist)))
+;;               (a-size (vl-expr-probable-selfsize a ss)))
 ;;            (if (eql a-size 1)
 ;;                (cons (cons :check-size x) others)
 ;;              others)))
@@ -584,15 +580,15 @@ we see if we think the sequence @('A op (B op2 C)') seems reasonable.</p>"
 ;;         )
 ;;      others))
 
-;;  (defund vl-exprlist-find-oddsizes (x mod ialist)
+;;  (defund vl-exprlist-find-oddsizes (x ss)
 ;;    (declare (xargs :guard (and (vl-exprlist-p x)
 ;;                                (vl-module-p mod)
 ;;                                (equal ialist (vl-moditem-alist mod)))
 ;;                    :measure (vl-exprlist-count x)))
 ;;    (if (atom x)
 ;;        nil
-;;      (append (vl-expr-find-oddsizes (car x) mod ialist)
-;;              (vl-exprlist-find-oddsizes (cdr x) mod ialist)))))
+;;      (append (vl-expr-find-oddsizes (car x) ss)
+;;              (vl-exprlist-find-oddsizes (cdr x) ss)))))
 
 
 (define vl-pp-oddexpr-details (x &key (ps 'ps))
@@ -609,11 +605,10 @@ we see if we think the sequence @('A op (B op2 C)') seems reasonable.</p>"
 
 (define vl-oddexpr-check ((x      vl-expr-p)
                           (ctx    vl-context-p)
-                          (mod    vl-module-p)
-                          (ialist (equal ialist (vl-moditem-alist mod))))
+                          (ss     vl-scopestack-p))
   :returns (warnings vl-warninglist-p)
-  (b* ((details (append (vl-warn-odd-binary-expression x mod ialist)
-                        ;;(vl-expr-find-oddsizes x mod ialist)
+  (b* ((details (append (vl-warn-odd-binary-expression x ss)
+                        ;;(vl-expr-find-oddsizes x ss)
                         ))
        ((unless details)
         nil))
@@ -628,38 +623,41 @@ we see if we think the sequence @('A op (B op2 C)') seems reasonable.</p>"
                          "a subexpression"))))))
 
 (define vl-exprctxalist-oddexpr-check ((x      vl-exprctxalist-p)
-                                       (mod    vl-module-p)
-                                       (ialist (equal ialist (vl-moditem-alist mod))))
+                                       (ss     vl-scopestack-p))
   :returns (warnings vl-warninglist-p)
   (if (atom x)
       nil
-    (append (vl-oddexpr-check (caar x) (cdar x) mod ialist)
-            (vl-exprctxalist-oddexpr-check (cdr x) mod ialist))))
+    (append (vl-oddexpr-check (caar x) (cdar x) ss)
+            (vl-exprctxalist-oddexpr-check (cdr x) ss))))
 
 (define vl-module-oddexpr-check
   :short "@(call vl-module-oddexpr-check) carries our our @(see oddexpr-check)
 on all the expressions in a module, and adds any resulting warnings to the
 module."
-  ((x vl-module-p))
-  :returns (new-x vl-module-p :hyp :fguard)
+  ((x vl-module-p)
+   (ss vl-scopestack-p))
+  :returns (new-x vl-module-p)
 
-  (b* (((when (vl-module->hands-offp x))
+  (b* ((x (vl-module-fix x))
+       ((when (vl-module->hands-offp x))
         ;; don't check things like vl_1_bit_latch if they're already defined somehow
         x)
-       (ialist       (vl-moditem-alist x))
+       (ss           (vl-scopestack-push (vl-module-fix x) ss))
        (ctxexprs     (vl-module-ctxexprs x))
-       (new-warnings (vl-exprctxalist-oddexpr-check ctxexprs x ialist))
-       (-            (fast-alist-free ialist)))
+       (new-warnings (vl-exprctxalist-oddexpr-check ctxexprs ss)))
     (change-vl-module x
                       :warnings (append new-warnings (vl-module->warnings x)))))
 
-(defprojection vl-modulelist-oddexpr-check (x)
-  (vl-module-oddexpr-check x)
-  :guard (vl-modulelist-p x)
-  :result-type vl-modulelist-p)
+(defprojection vl-modulelist-oddexpr-check ((x vl-modulelist-p)
+                                            (ss vl-scopestack-p))
+  :returns (new-x vl-modulelist-p)
+  (vl-module-oddexpr-check x ss))
 
 (define vl-design-oddexpr-check ((x vl-design-p))
   :returns (new-x vl-design-p)
   (b* ((x (vl-design-fix x))
-       ((vl-design x) x))
-    (change-vl-design x :mods (vl-modulelist-oddexpr-check x.mods))))
+       (ss (vl-scopestack-init x))
+       ((vl-design x) x)
+       (mods (vl-modulelist-oddexpr-check x.mods ss)))
+    (vl-scopestacks-free)
+    (change-vl-design x :mods mods)))

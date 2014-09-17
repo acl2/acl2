@@ -36,6 +36,7 @@
 (include-book "../mlib/fmt")
 (include-book "../mlib/hierarchy")
 (include-book "../mlib/remove-bad")
+(include-book "../mlib/scopestack")
 (local (include-book "../util/arithmetic"))
 (local (include-book "../mlib/modname-sets"))
 (local (include-book "../util/osets"))
@@ -179,7 +180,7 @@ with, we can safely remove @('plus') from our module list.</p>")
   ((decl     vl-paramdecl-p        "Some parameter from the submodule.")
    (datatype vl-datatype-p         "A new datatype to override this parameter with.")
    (warnings vl-warninglist-p      "Warnings accumulator for the submodule.")
-   (inst     vl-modinst-p          "Context for error messages."))
+   (ctx      vl-context-p          "Context for error messages."))
   :returns (mv (okp       booleanp :rule-classes :type-prescription)
                (warnings  vl-warninglist-p)
                (new-decl  vl-paramdecl-p
@@ -187,17 +188,17 @@ with, we can safely remove @('plus') from our module list.</p>")
                            specified by the submodule."))
   (b* ((decl     (vl-paramdecl-fix decl))
        (datatype (vl-datatype-fix datatype))
-       (inst     (vl-modinst-fix inst))
+       (ctx     (vl-context-fix ctx))
 
        ((vl-paramdecl decl) decl)
        ((unless (eq (vl-paramtype-kind decl.type) :vl-typeparam))
         (vl-unparam-debug "~a0: trying to override value parameter ~a1 with datatype ~a2.~%"
-                          inst decl datatype)
+                          ctx decl datatype)
         (mv nil
             (fatal :type :vl-bad-instance
                    :msg "~a0: can't override parameter ~s1 with datatype ~a2: ~
                          ~s1 is a value parameter, not a type parameter."
-                   :args (list inst decl.name datatype))
+                   :args (list ctx decl.name datatype))
             decl))
 
        ;; It seems like we might want to do some other kinds of sanity/error
@@ -223,7 +224,7 @@ with, we can safely remove @('plus') from our module list.</p>")
        ;; override time.
        (new-type (change-vl-typeparam decl.type :default datatype))
        (new-decl (change-vl-paramdecl decl :type new-type)))
-    (vl-unparam-debug "~a0: parameter ~a1 becomes ~a2.~%" inst decl new-decl)
+    (vl-unparam-debug "~a0: parameter ~a1 becomes ~a2.~%" ctx decl new-decl)
     (mv t (ok) new-decl)))
 
 (define vl-convert-parameter-value-to-explicit-type
@@ -232,7 +233,7 @@ with, we can safely remove @('plus') from our module list.</p>")
   ((type     vl-datatype-p    "The type of the parameter.")
    (expr     vl-expr-p        "The override expression given to this parameter.")
    (warnings vl-warninglist-p "Warnings accumulator for the submodule.")
-   (inst     vl-modinst-p     "Context for error messages.")
+   (ctx      vl-context-p     "Context for error messages.")
    (paramname stringp         "More context for error messages."))
 
   :returns (mv (okp      booleanp :rule-classes :type-prescription)
@@ -249,18 +250,18 @@ types.</p>"
 
   (b* ((type      (vl-datatype-fix type))
        (expr      (vl-expr-fix expr))
-       (inst      (vl-modinst-fix inst))
+       (ctx      (vl-context-fix ctx))
        (paramname (string-fix paramname))
 
        ((mv ok reduced-expr) (vl-consteval expr))
        ((unless ok)
         (vl-unparam-debug "~a0: only reduced ~a1 to ~a2 (not a constant).~%"
-                          inst expr reduced-expr)
+                          ctx expr reduced-expr)
         (mv nil
             (fatal :type :vl-bad-instance
                    :msg "~a0: can't override parameter ~s1: failed to reduce ~
                          expression ~a2 to a constant integer."
-                   :args (list inst paramname expr))
+                   :args (list ctx paramname expr))
             expr))
 
        ;; Otherwise, VAL is a resolved expression and we know its actual size
@@ -271,13 +272,13 @@ types.</p>"
        ((mv okp2 errmsg2 desired-type)  (vl-datatype-exprtype type))
        ((unless (and okp1 okp2 desired-width desired-type))
         (vl-unparam-debug "~a0: can't override ~a1: width or type unknown: width ~a2, type ~a3; ~s4/~s5."
-                          inst paramname desired-width desired-type
+                          ctx paramname desired-width desired-type
                           errmsg1 errmsg2)
         (mv nil
             (fatal :type :vl-bad-instance
                    :msg "~a0: can't override parameter ~s1: don't know the ~
                          correct width/signedness for type ~a2; ~s3/~s4."
-                   :args (list inst paramname type errmsg1 errmsg2))
+                   :args (list ctx paramname type errmsg1 errmsg2))
             expr))
 
        ;; Theory: correct way to do conversion is:
@@ -304,7 +305,7 @@ types.</p>"
                 :msg "~a0: overriding parameter ~s1 (~x2 bits) with ~
                        value ~x3 (~x4 bits).  It doesn't fit and has ~
                        to get truncated!"
-                :args (list inst paramname desired-width
+                :args (list ctx paramname desired-width
                             actual-val actual-width))))
 
        (new-value (cond ((<= desired-width actual-width)
@@ -323,7 +324,7 @@ types.</p>"
                                     :type desired-type)))
 
     (vl-unparam-debug "~a0: overriding parameter ~a1, new expr is ~a2: ~x2.~%"
-                      inst paramname new-expr)
+                      ctx paramname new-expr)
     (mv t warnings new-expr))
 
   :prepwork
@@ -349,7 +350,7 @@ types.</p>"
   ((decl     vl-paramdecl-p        "Some parameter from the submodule.")
    (expr     vl-expr-p             "The value expression to override this parameter with.")
    (warnings vl-warninglist-p      "Warnings accumulator for the submodule.")
-   (inst     vl-modinst-p          "Context for error messages."))
+   (ctx      vl-context-p          "Context for error messages."))
   :returns (mv (okp       booleanp :rule-classes :type-prescription)
                (warnings  vl-warninglist-p)
                (new-decl  vl-paramdecl-p
@@ -358,17 +359,17 @@ types.</p>"
 
   (b* (((vl-paramdecl decl) (vl-paramdecl-fix decl))
        (expr (vl-expr-fix expr))
-       (inst (vl-modinst-fix inst)))
+       (ctx (vl-context-fix ctx)))
 
     (vl-paramtype-case decl.type
       (:vl-typeparam
        (vl-unparam-debug "~a0: can't override type parameter ~a1 width expression ~a2.~%"
-                         inst decl expr)
+                         ctx decl expr)
        (mv nil
            (fatal :type :vl-bad-instance
                   :msg "~a0: can't override parameter ~s1 with expression, ~
                         ~a2: ~s1 is a type parameter, not a value parameter."
-                  :args (list inst decl.name expr))
+                  :args (list ctx decl.name expr))
            decl))
 
       (:vl-explicitvalueparam
@@ -380,7 +381,7 @@ types.</p>"
        ;; convert the override value (expr) so that it has the type and range
        ;; of this parameter.
        (b* (((mv okp warnings coerced-expr)
-             (vl-convert-parameter-value-to-explicit-type decl.type.type expr warnings inst decl.name))
+             (vl-convert-parameter-value-to-explicit-type decl.type.type expr warnings ctx decl.name))
             ((unless okp)
              ;; Already warned.
              (mv nil warnings decl))
@@ -390,7 +391,7 @@ types.</p>"
             (new-type (change-vl-explicitvalueparam decl.type :default coerced-expr))
             (new-decl (change-vl-paramdecl decl :type new-type)))
          (vl-unparam-debug "~a0: successfully overriding value parameter ~a1 with ~a2.~%"
-                           inst decl new-decl)
+                           ctx decl new-decl)
          (mv t (ok) new-decl)))
 
       (:vl-implicitvalueparam
@@ -398,12 +399,12 @@ types.</p>"
        (b* (((mv ok reduced-expr) (vl-consteval expr))
             ((unless ok)
              (vl-unparam-debug "~a0: can't override ~a1, only reduced expr ~a2 to ~a3 (not a constant)."
-                               inst decl expr reduced-expr)
+                               ctx decl expr reduced-expr)
              (mv nil
                  (fatal :type :vl-bad-instance
                         :msg "~a0: can't override parameter ~s1: failed to ~
                               reduce expression ~a2 to a constant integer."
-                        :args (list inst decl.name expr))
+                        :args (list ctx decl.name expr))
                  decl))
 
             (new-dims
@@ -443,7 +444,7 @@ types.</p>"
                                              :dims new-dims))
             ((mv okp warnings coerced-expr)
              ;; Do the conversion explicitly, which gives us all the nice warnings.
-             (vl-convert-parameter-value-to-explicit-type explicit-type reduced-expr warnings inst decl.name))
+             (vl-convert-parameter-value-to-explicit-type explicit-type reduced-expr warnings ctx decl.name))
             ((unless okp)
              ;; Already warned
              (mv nil warnings decl))
@@ -453,7 +454,7 @@ types.</p>"
             (new-type (make-vl-explicitvalueparam :type explicit-type :default coerced-expr))
             (new-decl (change-vl-paramdecl decl :type new-type)))
          (vl-unparam-debug "~a0: successfully overriding ~a1 with ~a2.~%"
-                           inst decl new-decl)
+                           ctx decl new-decl)
          (mv t (ok) new-decl))))))
 
 (define vl-override-parameter-value
@@ -462,7 +463,7 @@ types.</p>"
   ((decl     vl-paramdecl-p     "Some parameter from the submodule.")
    (value    vl-paramvalue-p    "Final value to override the parameter with.")
    (warnings vl-warninglist-p   "Warnings accumulator for the submodule.")
-   (inst     vl-modinst-p       "Context for error messages."))
+   (ctx      vl-context-p       "Context for error messages."))
   :returns (mv (okp       booleanp :rule-classes :type-prescription)
                (warnings  vl-warninglist-p)
                (new-decl  vl-paramdecl-p
@@ -472,8 +473,8 @@ types.</p>"
   (b* ((decl  (vl-paramdecl-fix decl))
        (value (vl-paramvalue-fix value))
        ((when (vl-paramvalue-datatype-p value))
-        (vl-override-parameter-with-type decl value warnings inst)))
-    (vl-override-parameter-with-expr decl value warnings inst)))
+        (vl-override-parameter-with-type decl value warnings ctx)))
+    (vl-override-parameter-with-expr decl value warnings ctx)))
 
 
 ; Lining Up Parameter Declarations with Override Values -----------------------
@@ -594,20 +595,20 @@ types.</p>"
   ((formals  vl-paramdecllist-p "In proper order, from the submodule.")
    (actuals  vl-paramargs-p     "From the instance.")
    (warnings vl-warninglist-p   "Warnings accumulator for the superior module.")
-   (inst     vl-modinst-p       "Context for error messages."))
+   (ctx     vl-context-p       "Context for error messages."))
   :returns
   (mv (successp  booleanp :rule-classes :type-prescription)
       (warnings  vl-warninglist-p)
       (overrides vl-paramdecloverridelist-p))
-  (b* (((vl-modinst inst) (vl-modinst-fix inst))
-       (formals           (vl-paramdecllist-fix formals))
+  (b* ((formals           (vl-paramdecllist-fix formals))
+       (ctx               (vl-context-fix ctx))
 
        ((unless (uniquep (vl-paramdecllist->names formals)))
         ;; Not a great place to check for this, but better safe than sorry.
         (mv nil
             (fatal :type :vl-bad-instance
-                   :msg "~a0: parameters of ~a1 are not unique: ~&2."
-                   :args (list inst inst.modname (duplicated-members (vl-paramdecllist->names formals))))
+                   :msg "~a0: parameters are not unique: ~&1."
+                   :args (list ctx (duplicated-members (vl-paramdecllist->names formals))))
             nil)))
 
     (vl-paramargs-case actuals
@@ -620,7 +621,7 @@ types.</p>"
              (mv nil
                  (fatal :type :vl-bad-instance
                         :msg "~a0: multiple occurrences of parameter arguments: ~&1."
-                        :args (list inst (duplicated-members actual-names)))
+                        :args (list ctx (duplicated-members actual-names)))
                  nil))
 
             (illegal-names
@@ -630,7 +631,7 @@ types.</p>"
              (mv nil
                  (fatal :type :vl-bad-instance
                         :msg "~a0: parameter~s1 ~&2 ~s2."
-                        :args (list (vl-modinst-fix inst)
+                        :args (list ctx
                                     (if (vl-plural-p illegal-names) "s" "")
                                     illegal-names
                                     (if (vl-plural-p illegal-names) "do not exist" "does not exist")))
@@ -647,10 +648,9 @@ types.</p>"
             ((unless (<= num-actuals num-formals))
              (mv nil
                  (fatal :type :vl-bad-instance
-                        :msg "~a0: too many parameter values: ~s1 has ~x2 (non-local) ~
-                              parameter~s3, but is given ~x4 parameter argument~s5."
-                        :args (list inst
-                                    inst.modname
+                        :msg "~a0: too many parameter values: ~x1 (non-local) ~
+                              parameter~s2, but is given ~x3 parameter argument~s5."
+                        :args (list ctx
                                     num-formals
                                     (if (eql num-formals 1) "" "s")
                                     num-actuals
@@ -749,19 +749,21 @@ types.</p>"
    (valsigma  vl-sigma-p        "Value substitution we've accumulated so far, fast alist.")
    (typesigma vl-typesigma-p    "Type substitution we've accumulated so far, fast alist.")
    (warnings  vl-warninglist-p  "Warnings accumulator for the submodule.")
-   (inst      vl-modinst-p      "Context for error messages."))
+   (ctx       vl-context-p      "Context for error messages."))
   :returns
   (mv (successp booleanp :rule-classes :type-prescription)
       (warnings vl-warninglist-p)
       (new-x    vl-paramdecl-p))
-  (b* ((inst (vl-modinst-fix inst))
+  (b* ((ctx (vl-context-fix ctx))
        ((vl-paramdecl x) x)
        ;; BOZO can the order of the substitutions possibly matter?  I don't
        ;; think it should be able to, at least if parameters are always defined
        ;; before use, but I haven't really thought it through very clearly yet.
        (type x.type)
        (type                   (vl-paramtype-subst type valsigma))
-       ((mv okp warnings type) (vl-paramtype-typesubst type typesigma inst warnings))
+       ((mv okp warnings type) (vl-paramtype-typesubst type typesigma
+                                                       (vl-context->elem ctx)
+                                                       warnings))
        (new-x (change-vl-paramdecl x :type type)))
     (mv okp warnings new-x)))
 
@@ -771,7 +773,7 @@ types.</p>"
    (valsigma  vl-sigma-p             "Value substitution we're accumulating.")
    (typesigma vl-typesigma-p         "Type substitution we're accumulating.")
    (warnings  vl-warninglist-p       "Warnings accumulator for the submodule.")
-   (inst      vl-modinst-p           "Context for error messages."))
+   (ctx       vl-context-p           "Context for error messages."))
   :returns
   (mv (successp  booleanp :rule-classes :type-prescription)
       (warnings  vl-warninglist-p)
@@ -779,17 +781,17 @@ types.</p>"
       (typesigma vl-typesigma-p    "Extended on success."))
   (b* ((valsigma  (vl-sigma-fix valsigma))
        (typesigma (vl-typesigma-fix typesigma))
-       (inst      (vl-modinst-fix inst))
+       (ctx      (vl-context-fix ctx))
 
        ;; Substitute the sigmas so far into the param decl, possibly fixing up
        ;; its datatype and default value.  Do NOT substitute them into the
        ;; override --- it comes from the submodule instance.
        ((mv okp warnings decl)
-        (vl-pre-substitute-param (vl-paramdecloverride->decl x) valsigma typesigma warnings inst))
+        (vl-pre-substitute-param (vl-paramdecloverride->decl x) valsigma typesigma warnings ctx))
        ((unless okp)
         ;; Already warned.
         (vl-unparam-debug "~a0: failed to pre-substitute into ~a1.~%"
-                          inst (vl-paramdecloverride->decl x))
+                          ctx (vl-paramdecloverride->decl x))
         (mv nil warnings valsigma typesigma))
 
        (name (vl-paramdecl->name decl))
@@ -802,37 +804,37 @@ types.</p>"
 
        ((unless override)
         ;; No default value and no value provided by the instance: whoops.
-        (vl-unparam-debug "~a0: no value for ~s1.~%" inst name)
+        (vl-unparam-debug "~a0: no value for ~s1.~%" ctx name)
         (mv nil
             (fatal :type :vl-bad-inst
                    :msg "~a0: no value for parameter ~s1."
-                   :args (list inst name))
+                   :args (list ctx name))
             valsigma
             typesigma))
 
        ;; Coerce the override value into the correct type.
        ((mv okp warnings decl)
-        (vl-override-parameter-value decl override warnings inst))
+        (vl-override-parameter-value decl override warnings ctx))
        ((unless okp)
-        (vl-unparam-debug "~a0: failed to override ~a1 with ~a2.~%" inst decl override)
+        (vl-unparam-debug "~a0: failed to override ~a1 with ~a2.~%" ctx decl override)
         ;; Already warned.
         (mv nil warnings valsigma typesigma))
 
        ;; Extend the appropriate sigma.
        (final (vl-paramtype->default (vl-paramdecl->type decl)))
        ((unless final)
-        (vl-unparam-debug "~a0: after overriding, no default value?? new, raw decl: ~x1" inst decl)
+        (vl-unparam-debug "~a0: after overriding, no default value?? new, raw decl: ~x1" ctx decl)
         (mv nil
             (fatal :type :vl-programming-error
                    :msg "~a0: paramdecl ~x1 somehow has no value?"
-                   :args (list inst name))
+                   :args (list ctx name))
             valsigma typesigma))
 
        ((when (vl-paramvalue-expr-p final))
-        (vl-unparam-debug "~a0: OK - extending valsigma: ~a1 --> ~a2.~%" inst name final)
+        (vl-unparam-debug "~a0: OK - extending valsigma: ~a1 --> ~a2.~%" ctx name final)
         (mv t (ok) (hons-acons! name final valsigma) typesigma)))
 
-    (vl-unparam-debug "~a0: OK - extending typesigma: ~a1 --> ~a2.~%" inst name final)
+    (vl-unparam-debug "~a0: OK - extending typesigma: ~a1 --> ~a2.~%" ctx name final)
     (mv t (ok) valsigma (hons-acons! name final typesigma))))
 
 (define vl-override-parameters
@@ -842,7 +844,7 @@ types.</p>"
    (valsigma  vl-sigma-p                 "Value substitution we're accumulating.")
    (typesigma vl-typesigma-p             "Type substitution we're accumulating.")
    (warnings  vl-warninglist-p           "Warnings accumulator for the submodule.")
-   (inst      vl-modinst-p               "Context for error messages."))
+   (ctx       vl-context-p               "Context for error messages."))
   :returns
   (mv (successp  booleanp :rule-classes :type-prescription)
       (warnings  vl-warninglist-p)
@@ -852,10 +854,10 @@ types.</p>"
         (mv t (ok) (vl-sigma-fix valsigma) (vl-typesigma-fix typesigma)))
 
        ((mv okp warnings valsigma typesigma)
-        (vl-override-parameter-1 (car x) valsigma typesigma warnings inst))
+        (vl-override-parameter-1 (car x) valsigma typesigma warnings ctx))
        ((unless okp)
         (mv nil warnings valsigma typesigma)))
-    (vl-override-parameters (cdr x) valsigma typesigma warnings inst)))
+    (vl-override-parameters (cdr x) valsigma typesigma warnings ctx)))
 
 
 
@@ -876,6 +878,11 @@ types.</p>"
 (define vl-unparam-valsigma-name ((sigma vl-sigma-p) &key (ps 'ps))
   :parents (vl-unparam-newname)
   :measure (vl-sigma-count sigma)
+  :hooks ((:fix :hints (("goal" :expand ((vl-unparam-valsigma-name sigma)
+                                         (vl-unparam-valsigma-name
+                                          (vl-sigma-fix sigma)))
+                         :induct (vl-unparam-valsigma-name sigma)
+                         :in-theory (disable (:d vl-unparam-valsigma-name))))))
   (b* ((sigma (vl-sigma-fix sigma))
        ((when (atom sigma))
         ps)
@@ -898,6 +905,11 @@ types.</p>"
 (define vl-unparam-typesigma-name ((sigma vl-typesigma-p) &key (ps 'ps))
   :parents (vl-unparam-newname)
   :measure (vl-typesigma-count sigma)
+  :hooks ((:fix :hints (("goal" :expand ((vl-unparam-typesigma-name sigma)
+                                         (vl-unparam-typesigma-name
+                                          (vl-typesigma-fix sigma)))
+                         :induct (vl-unparam-typesigma-name sigma)
+                         :in-theory (disable (:d vl-unparam-typesigma-name))))))
   (b* ((sigma (vl-typesigma-fix sigma))
        ((when (atom sigma))
         ps)
@@ -937,25 +949,36 @@ introduced.</p>"
        (mod  (change-vl-module mod :name name :paramdecls nil))
        (mod  (vl-module-subst mod valsigma))
        ((mv okp mod) (vl-module-typesubst mod typesigma)))
-    (mv okp mod))
-  ///
-  (memoize 'vl-create-unparameterized-module))
+    (mv okp mod)))
 
-(define vl-maybe-unparam-inst
+
+(defprod vl-unparam-signature
+  :parents (unparameterization)
+  :short "A unique object representing a complete assignment of parameters to a module."
+  ((name      stringp)
+   (valsigma  vl-sigma-p)
+   (typesigma vl-typesigma-p))
+  :layout :tree
+  :hons t)
+
+(fty::deflist vl-unparam-signaturelist :elt-type vl-unparam-signature
+  :elementp-of-nil nil)
+
+
+
+
+
+(define vl-unparam-inst
   :parents (unparameterization)
   :short "Try to unparameterize a single module instance."
 
   ((inst     vl-modinst-p
              "Instance of some module.  The module being instantiated may or
               may not have parameters.")
-   (unsafe   alistp
-             "Fast alist of modules we aren't to unparameterize.")
-   (mods     vl-modulelist-p
-             "List of all modules, for submodule lookups.")
-   (modalist (equal modalist (vl-modalist mods))
-             "For fast lookups.")
+   (ss       vl-scopestack-p)
    (warnings vl-warninglist-p
-             "Warnings accumulator for the submodule."))
+             "Warnings accumulator for the submodule.")
+   (modname  stringp "Containing module name, for context"))
 
   :returns
   (mv (successp booleanp :rule-classes :type-prescription)
@@ -963,19 +986,13 @@ introduced.</p>"
       (inst     vl-modinst-p
                 "Updated module instance, perhaps instantiating a new module
                  like @('my_adder$width=5') instead of @('my_adder').")
-      (new-mods vl-modulelist-p
-                "Any new modules to add to the module list, e.g., it should
-                 include definitions for modules like @('my_adder$width=5')."))
+      (needed-sigs (iff (vl-unparam-signature-p needed-sigs) needed-sigs)
+                   "An unparam-signature for the instantiated module, if needed."))
 
   (b* (((vl-modinst inst) (vl-modinst-fix inst))
 
-       ((when (hons-get inst.modname unsafe))
-        ;; Not safe to unparameterize this yet.  Don't do anything.
-        (vl-unparam-debug "~a0: unsafe to unparameterize, skipping for now.~%" inst)
-        (mv t (ok) inst nil))
-
-       (mod (vl-fast-find-module inst.modname mods modalist))
-       ((unless mod)
+       (mod (vl-scopestack-find-definition inst.modname ss))
+       ((unless (and mod (eq (tag mod) :vl-module)))
         (vl-unparam-debug "~a0: can't find module ~a1.~%" inst.modname)
         (mv nil
             (fatal :type :vl-bad-instance
@@ -990,7 +1007,8 @@ introduced.</p>"
         ;; declarations for the submodule.  In this case, all we need to do is
         ;; make sure the instance is also parameter-free.
         (if (vl-paramargs-empty-p inst.paramargs)
-            (mv t (ok) inst nil)
+            (mv t (ok) inst 
+                (make-vl-unparam-signature :name inst.modname))
           (mv nil
               (fatal :type :vl-bad-instance
                      :msg "~a0: parameter arguments given to ~s1, but ~s1 ~
@@ -998,9 +1016,10 @@ introduced.</p>"
                      :args (list inst inst.modname))
               inst nil)))
 
+       (ctx (make-vl-context :mod modname :elem inst))
        ;; Line up formals/actuals
        ((mv okp warnings overrides)
-        (vl-make-paramdecloverrides mod.paramdecls inst.paramargs warnings inst))
+        (vl-make-paramdecloverrides mod.paramdecls inst.paramargs warnings ctx))
        ((unless okp)
         ;; Already warned.
         (vl-unparam-debug "~a0: failed to line up formals/actuals.~%" inst)
@@ -1010,7 +1029,7 @@ introduced.</p>"
        (valsigma  nil)
        (typesigma nil)
        ((mv okp warnings valsigma typesigma)
-        (vl-override-parameters overrides valsigma typesigma warnings inst))
+        (vl-override-parameters overrides valsigma typesigma warnings ctx))
        ((acl2::free-on-exit valsigma typesigma))
 
        ((unless okp)
@@ -1021,393 +1040,202 @@ introduced.</p>"
        (- (vl-unparam-debug "~a0: raw value sigma: ~x1~%raw type sigma: ~x2~%"
                             inst valsigma typesigma))
 
-       ((mv okp new-mod) (vl-create-unparameterized-module mod valsigma typesigma))
-       (new-modname      (vl-module->name new-mod))
+       (new-modname      (vl-unparam-newname inst.modname valsigma typesigma))
 
-       ;; The above can fail if there's a problem substituting the sigmas into
-       ;; the module.  But even in that case, I'll still go ahead and change
-       ;; the instance.  (I'll also make sure to add a fatal warning).
-
-       ;; This seems nicer than not changing the instance, because we can at
-       ;; least get to see the problematic module, and we sort of make more
-       ;; progress, i.e., the superior module will be a zombie, but at least
-       ;; its instances won't have parameters.
        (new-inst (change-vl-modinst inst
                                     :modname new-modname
                                     :paramargs (make-vl-paramargs-plain :args nil)))
-       ((unless okp)
-        (vl-unparam-debug "~a0: creating unparameterized module failed.~%" inst)
-        (mv nil
-            (fatal :type :vl-unparam-fail
-                   :msg "~a0: unparameterizing ~s1 failed, see ~s2 for details."
-                   :args (list inst inst.modname new-modname))
-            new-inst
-            (list new-mod))))
+
+       (unparam-signature (make-vl-unparam-signature
+                           :name inst.modname
+                           :valsigma valsigma
+                           :typesigma typesigma)))
 
     (vl-unparam-debug "~a0: success, new instance is ~a1.~%" inst new-inst)
-    (mv t warnings new-inst (list new-mod)))
-
-  ///
-  (more-returns
-   (new-mods true-listp :rule-classes :type-prescription)))
+    (mv t warnings new-inst unparam-signature)))
 
 
 ; Unparameterizing throughout a module ----------------------------------------
 
 (local (xdoc::set-default-parents vl-unparameterize-module))
 
-(define vl-maybe-unparam-instlist
-  :short "Extension of @(see vl-maybe-unparam-inst) to a list of instances."
+(define vl-unparam-instlist
+  :short "Extension of @(see vl-unparam-inst) to a list of instances."
   ((insts    vl-modinstlist-p "List of instances to unparameterize.")
-   (unsafe   alistp           "Fast alist of modules we aren't to unparameterize.")
-   (mods     vl-modulelist-p  "List of all modules, for submodule lookups.")
-   (modalist (equal modalist (vl-modalist mods)) "For fast lookups.")
-   (warnings vl-warninglist-p))
+   (ss       vl-scopestack-p)
+   (warnings vl-warninglist-p)
+   (modname  stringp "containing module, for context"))
   :returns
   (mv (successp  booleanp :rule-classes :type-prescription)
       (warnings  vl-warninglist-p)
       (new-insts vl-modinstlist-p)
-      (new-mods  vl-modulelist-p))
+      (needed-sigs vl-unparam-signaturelist-p))
+  :hooks ((:fix :hints (("goal" :induct (vl-unparam-instlist insts ss warnings modname)
+                         :in-theory (disable (:d vl-unparam-instlist) cons-equal)
+                         :expand ((:free (ss warnings modname)
+                                   (vl-unparam-instlist insts ss warnings modname))
+                                  (vl-unparam-instlist (vl-modinstlist-fix insts) ss warnings modname))))))
   (b* (((when (atom insts))
         (mv t (ok) nil nil))
-       ((mv okp1 warnings car-prime car-newmods)
-        (vl-maybe-unparam-inst (car insts) unsafe mods modalist warnings))
-       ((mv okp2 warnings cdr-prime cdr-newmods)
-        (vl-maybe-unparam-instlist (cdr insts) unsafe mods modalist warnings)))
+       ((mv okp1 warnings car-prime car-neededsigs)
+        (vl-unparam-inst (car insts) ss warnings modname))
+       ((mv okp2 warnings cdr-prime cdr-neededsigs)
+        (vl-unparam-instlist (cdr insts) ss warnings modname)))
     (mv (and okp1 okp2)
         warnings
         (cons car-prime cdr-prime)
-        (append car-newmods cdr-newmods)))
+        (if car-neededsigs (cons car-neededsigs cdr-neededsigs) cdr-neededsigs))))
+
+(defines vl-unparameterize-main
+  (define vl-unparameterize-main ((sig vl-unparam-signature-p)
+                                  (donelist "fast alist of previously-seen signatures")
+                                  (depthlimit natp "termination counter")
+                                  (ss vl-scopestack-p))
+    :measure (two-nats-measure depthlimit 0)
+    :verify-guards nil
+    :returns (mv (successp booleanp :rule-classes :type-prescription)
+                 (warnings vl-warninglist-p)
+                 (new-mods vl-modulelist-p
+                  :hints ('(:in-theory (disable vl-unparameterize-main-list
+                                                vl-unparameterize-main)
+                            :expand ((vl-unparameterize-main sig donelist depthlimit ss)))))
+                 (donelist))
+    (b* (((when (hons-get sig donelist)) (mv t nil nil donelist))
+         (warnings nil)
+         ((when (zp depthlimit))
+          (mv nil
+              (fatal :type :vl-unparameterize-loop
+                     :msg "Recursion depth ran out in unparameterize -- loop in the hierarchy?") 
+              nil donelist))
+
+         (donelist (hons-acons sig t donelist))
+
+         ((vl-unparam-signature sig))
+         (mod (vl-scopestack-find-definition sig.name ss))
+         ((unless (and mod (eq (tag mod) :vl-module)))
+          (mv nil
+              (fatal :type :vl-unparameterize-programming-error
+                     :msg "Couldn't find module ~s0"
+                     :args (list sig.name))
+              nil donelist))
+
+         ((mv mod-okp new-mod)
+          (if (and (atom sig.valsigma) (atom sig.typesigma))
+              ;; No unparameterization neede
+              (mv t mod)
+            (vl-create-unparameterized-module mod sig.valsigma sig.typesigma)))
+
+         ((vl-module new-mod))
+         (warnings new-mod.warnings)
+         (warnings (if mod-okp
+                       warnings
+                     (fatal :type :vl-unparam-fail
+                            :msg "Unparameterizing ~s0 failed; see ~s1 for details."
+                            :args (list sig.name (vl-module->name new-mod)))))
+
+         ((mv insts-okp warnings new-insts need-sigs)
+          (vl-unparam-instlist new-mod.modinsts ss warnings sig.name))
+
+         (new-mod (change-vl-module new-mod :warnings warnings :modinsts new-insts))
+
+         ((mv unparams-okp warnings new-mods donelist)
+          (vl-unparameterize-main-list need-sigs donelist (1- depthlimit) ss)))
+      (mv (and mod-okp insts-okp unparams-okp)
+          warnings (cons new-mod new-mods) donelist)))
+
+  (define vl-unparameterize-main-list ((sigs vl-unparam-signaturelist-p)
+                                       (donelist)
+                                       (depthlimit natp)
+                                       (ss vl-scopestack-p))
+    :measure (two-nats-measure depthlimit (len sigs))
+    :returns (mv (successp booleanp :rule-classes :type-prescription)
+                 (warnings vl-warninglist-p)
+                 (new-mods vl-modulelist-p
+                  :hints ('(:in-theory (disable vl-unparameterize-main-list
+                                                vl-unparameterize-main)
+                            :expand ((vl-unparameterize-main-list sigs donelist depthlimit ss)))))
+                 (donelist))
+    (b* (((when (atom sigs)) (mv t nil nil donelist))
+         ((mv ok1 warnings1 new-mods1 donelist)
+          (vl-unparameterize-main (car sigs) donelist depthlimit ss))
+         ((mv ok2 warnings2 new-mods2 donelist)
+          (vl-unparameterize-main-list (cdr sigs) donelist depthlimit ss)))
+      (mv (and ok1 ok2)
+          (append warnings1 warnings2)
+          (append new-mods1 new-mods2)
+          donelist)))
   ///
-  (more-returns
-   (new-mods true-listp :rule-classes :type-prescription)))
+  (local (in-theory (disable vl-unparameterize-main
+                             vl-unparameterize-main-list)))
+  (defthm-vl-unparameterize-main-flag
+    (defthm true-listp-of-vl-unparameterize-main-warnings
+      (true-listp (mv-nth 1 (vl-unparameterize-main sig donelist depthlimit ss)))
+      :hints ('(:expand ((vl-unparameterize-main sig donelist depthlimit ss))))
+      :rule-classes :type-prescription
+      :flag vl-unparameterize-main)
+    (defthm true-listp-of-vl-unparameterize-main-list-warnings
+      (true-listp (mv-nth 1 (vl-unparameterize-main-list sigs donelist depthlimit ss)))
+      :hints ('(:expand ((vl-unparameterize-main-list sigs donelist depthlimit ss))))
+      :rule-classes :type-prescription
+      :flag vl-unparameterize-main-list))
 
-(define vl-unparameterize-module
-  :parents (unparameterization)
-  :short "Unparameterize module instances throughout a module."
+  (defthm-vl-unparameterize-main-flag
+    (defthm true-listp-of-vl-unparameterize-main-mods
+      (true-listp (mv-nth 2 (vl-unparameterize-main sig donelist depthlimit ss)))
+      :hints ('(:expand ((vl-unparameterize-main sig donelist depthlimit ss))))
+      :rule-classes :type-prescription
+      :flag vl-unparameterize-main)
+    (defthm true-listp-of-vl-unparameterize-main-list-mods
+      (true-listp (mv-nth 2 (vl-unparameterize-main-list sigs donelist depthlimit ss)))
+      :hints ('(:expand ((vl-unparameterize-main-list sigs donelist depthlimit ss))))
+      :rule-classes :type-prescription
+      :flag vl-unparameterize-main-list))
 
-  ((mod      vl-module-p     "Superior module, whose instances will be rewritten.")
-   (unsafe   alistp          "Fast alist of modules we aren't to unparameterize.")
-   (mods     vl-modulelist-p "All modules, for submodule lookups.")
-   (modalist (equal modalist (vl-modalist mods)) "For fast lookups."))
-
-  :returns (mv (successp booleanp :rule-classes :type-prescription
-                         "<b>NOTE</b> Success does <b>NOT</b> mean that the instances
-                          in new-mod are parameter-free.  It only says that there
-                          were no errors during the course of unparameterization.
-                          There can still be parameterized instances of the modules
-                          listed in @('unsafe'), for instance.")
-               (new-mod  vl-module-p)
-               (new-mods vl-modulelist-p))
-
-  (b* (((vl-module mod) mod)
-       (- (vl-unparam-debug "Starting on module ~x0.~%" mod.name))
-
-       ((mv successp warnings new-insts new-mods)
-        (vl-maybe-unparam-instlist mod.modinsts unsafe mods modalist mod.warnings))
-
-       (new-mod (change-vl-module mod
-                                  :warnings warnings
-                                  :modinsts new-insts)))
-    (mv successp new-mod new-mods))
-  ///
-  (more-returns
-   (new-mods true-listp :rule-classes :type-prescription)))
+  (verify-guards vl-unparameterize-main))
 
 
-; Unparameterizing until a fixed point is reached -----------------------------
 
-(local (xdoc::set-default-parents vl-modulelist-unparameterize))
+(define vl-module-default-signature ((modname stringp)
+                                     (ss       vl-scopestack-p)
+                                     (warnings vl-warninglist-p))
+  :returns (mv (sig vl-unparam-signature-p)
+               (warnings vl-warninglist-p))
+  (b* ((modname (string-fix modname))
+       (x (vl-scopestack-find-definition modname ss))
+       ((unless (and x (eq (tag x) :vl-module)))
+        (mv (make-vl-unparam-signature :name modname)
+            (fatal :type :vl-unparam-fail
+                   :msg "Programming error: top-level module ~s0 not found"
+                   :args (list modname))))
+       ((vl-module x))
+       (ctx (make-vl-context :mod x.name :elem (make-vl-modinst :instname "top-level"
+                                                                :modname x.name
+                                                                :paramargs (make-vl-paramargs-named)
+                                                                :portargs (make-vl-arguments-named)
+                                                                :loc *vl-fakeloc*)))
+       ((mv ?ok warnings overrides)
+        (vl-make-paramdecloverrides x.paramdecls (make-vl-paramargs-named)
+                                    warnings ctx))
+       (valsigma  nil)
+       (typesigma nil)
+       ((mv ?okp warnings valsigma typesigma)
+        (vl-override-parameters overrides valsigma typesigma warnings ctx))
+       ((acl2::free-on-exit valsigma typesigma)))
+    (mv (make-vl-unparam-signature :name x.name :valsigma valsigma :typesigma typesigma)
+        warnings)))
 
-(define vl-modules-with-params
-  :short "Collect modules that have any parameters."
-  ((mods vl-modulelist-p))
-  :returns (mods-with-params vl-modulelist-p :hyp :fguard)
-  :hooks nil
-  (cond ((atom mods)
-         nil)
-        ((consp (vl-module->paramdecls (car mods)))
-         (cons (car mods) (vl-modules-with-params (cdr mods))))
-        (t
-         (vl-modules-with-params (cdr mods))))
-  ///
-  (defthm subsetp-equal-of-vl-modules-with-params
-    (subsetp-equal (vl-modules-with-params mods) mods))
-  (defthm uniquep-of-vl-modulelist->names-of-vl-modules-with-params
-    (implies (uniquep (vl-modulelist->names mods))
-             (no-duplicatesp (vl-modulelist->names (vl-modules-with-params mods))))))
+(define vl-modulelist-default-signatures ((names string-listp)
+                                          (ss    vl-scopestack-p)
+                                          (warnings vl-warninglist-p))
+  :returns (mv (sigs vl-unparam-signaturelist-p)
+               (warnings vl-warninglist-p))
+  (if (atom names)
+      (mv nil (vl-warninglist-fix warnings))
+    (b* (((mv sig warnings) (vl-module-default-signature (car names) ss warnings))
+         ((mv sigs warnings) (vl-modulelist-default-signatures (cdr names) ss warnings)))
+      (mv (cons sig sigs) warnings))))
+  
 
-(define vl-delete-top-level-modules-with-params
-  :short "Delete parameterized modules that are no longer used."
-  ((mods vl-modulelist-p))
-  :returns (new-mods vl-modulelist-p)
-  :hooks nil
-  :long "<p>Basic idea: once we've replaced all occurrences of @('plus') with
-instances of replacement modules like @('plus$size=16'), we need to eliminate
-the generic @('plus') from the list of modules in order to finally arrive at a
-list of modules which are parameter-free.</p>"
-  (b* ((topnames   (vl-modulelist-toplevel mods))
-       (modalist   (vl-modalist mods))
-       (topmods    (vl-fast-find-modules topnames mods modalist))
-       (-          (fast-alist-free modalist))
-       (withparams (vl-modules-with-params topmods))
-       (delmods    (vl-modulelist->names withparams)))
-    (vl-unparam-debug "Removing now-unnecessary modules: ~&0.~%" delmods)
-    (vl-delete-modules delmods mods))
-
-  :prepwork
-  ((local (defthm l0
-            (subsetp-equal (set-difference-equal x y) x)
-            :hints((set-reasoning))))
-
-   (local (defthm l1
-            (subsetp-equal (vl-modulelist-toplevel mods)
-                           (vl-modulelist->names mods))
-            :hints(("Goal" :in-theory (enable vl-modulelist-toplevel)))))))
-
-
-(define vl-unsafe-to-unparameterize-modules
-  :short "Identify modules that might not be safe to unparameterize."
-  ((mods (and (vl-modulelist-p mods)
-              (uniquep (vl-modulelist->names mods)))))
-  :returns (unsafe string-listp)
-  :hooks nil
-
-  :long "<p>During unparameterization, we want to ensure that at no point are
-conflicting versions of any module ever generated.  However, if in every pass
-we blindly try to unparameterize every module instance whose parameters are
-resolved, we can violate this property.</p>
-
-<p>Illustrating the problem takes some setup.  In particular, suppose we have
-the following modules hierarchy:</p>
-
-@({
-outer
- |
- |------ foo #(6) inst1 ;
- |        |
- |        mid #(width) foo_mid ;
- |         |
- |         bot #(width) mid_bot ;
- |
- |------ mid #(6) inst2 ;
-          |
-          bot #(width) mid_bot ;
-})
-
-<p>If we blindly start unparameterizing every module we see, then after one
-round of unparameterization we have:</p>
-
-@({
-outer
- |
- |------ foo$size=6 inst1 ;
- |        |
- |        mid #(6) foo_mid ;
- |         |
- |         bot #(width) mid_bot ;
- |
- |------ mid$size=6 inst2 ;
-          |
-          bot #(6) mid_bot ;
-})
-
-<p>Then, in the next round:</p>
-
-@({
-outer
- |
- |------ foo$size=6 inst1 ;
- |        |
- |        mid$size=6 foo_mid ;
- |         |
- |         bot #(6) mid_bot ;
- |
- |------ mid$size=6 inst2 ;
-          |
-          bot$size=6 mid_bot ;
-})
-
-<p>And now we're hosed, because we now have two different versions of
-@('mid$size=6'), one where the @('bot') instance has already been
-unparameterized, and one where it has not.  These eventually will converge, but
-we think it seems better to never let them diverge in the first place.</p>
-
-<p>Toward this end, we say that certain modules are unsafe to unparameterize.
-In particular, we don't want to unparameterize instances of any module @('foo')
-that is ever instantiated by another parameterized module @('bar').  In the
-above example, this means we want to consider both @('mid') and @('bot') to be
-initially off-limits, and only unparameterize @('foo') in the first round.
-After that, mid will become okay to unparameterize, etc.</p>
-
-<p>This is also a convenient mechanism to prevent ourselves from trying to
-unparameterize instances of any modules that have errors.</p>"
-
-  (b* ((mods          (mergesort (vl-modulelist-fix mods)))
-       (modalist      (vl-modalist mods))
-       (parameterized (vl-modules-with-params mods))
-       (instanced     (vl-modulelist-everinstanced parameterized))
-       ;; It might be that instanced might be enough, but it seems
-       ;; safer to also exclude all transitively instanced modules.
-       (necessary     (vl-necessary-modules instanced mods modalist))
-       ;; We will also exclude all modules that happen to be zombies.
-       (zombies       (vl-modulelist-zombies mods)))
-    (append zombies necessary)))
-
-(define vl-unparameterize-pass-main
-  :short "Main loop to unparameterize a list of modules."
-  ((x        vl-modulelist-p "Modules to unparameterize, which are being recurred through.")
-   (unsafe   alistp          "Fast alist of modules we aren't to unparameterize.")
-   (mods     vl-modulelist-p "All modules, for submodule lookups.")
-   (modalist (equal modalist (vl-modalist mods)) "For fast lookups."))
-  :returns
-  (new-x vl-modulelist-p "Contains rewritten modules from @('x') and also new
-                          definitions of modules like @('myadder$size=5').")
-
-  :long "<p>This is almost a full pass of unparameterization, except that it
-doesn't do much in the way of error checking and throwing away bad modules.  We
-try to apply @(see vl-unparameterize-module) to every module in the list.</p>"
-
-  (b* (((when (atom x))
-        nil)
-       ((mv ?successp car-prime car-newmods)
-        (vl-unparameterize-module (car x) unsafe mods modalist))
-       (rest (vl-unparameterize-pass-main (cdr x) unsafe mods modalist)))
-    (cons car-prime (append car-newmods rest)))
-  ///
-  (more-returns
-   (new-x true-listp :rule-classes :type-prescription)))
-
-(define vl-unparameterize-pass
-  :short "One full pass of unparameterization over a module list."
-  ((mods vl-modulelist-p))
-  :guard (uniquep (vl-modulelist->names mods))
-  :returns (new-mods vl-modulelist-p)
-  (b* ((mods     (vl-modulelist-fix mods))
-       (modalist (vl-modalist mods))
-
-       ;; Figure out which modules can't be safely unparameterized because
-       ;; they're zombies or are instanced by other modules that still have
-       ;; parameters.
-       (unsafe   (make-lookup-alist (vl-unsafe-to-unparameterize-modules mods)))
-       (- (vl-unparam-debug "Currently unsafe to unparameterize: ~x0.~%" (alist-keys unsafe)))
-
-       ;; Eliminate parameters everywhere that we can safely do so.
-       (new-mods (vl-unparameterize-pass-main mods unsafe mods modalist))
-       (- (fast-alist-free modalist))
-       (- (fast-alist-free unsafe))
-
-       ;; Make sure there are no name clashes.  It's okay to have true
-       ;; duplicates since, e.g., separate occurrences of my_adder #(.size(4))
-       ;; will produces duplicate modules like my_adder$size=4.  So, sort
-       ;; first.
-       (new-mods (mergesort new-mods))
-       ((unless (uniquep (vl-modulelist->names new-mods)))
-        (raise "Unparameterization caused a name conflict: ~x0."
-               (duplicated-members (vl-modulelist->names new-mods))))
-
-       ;; We may no longer need instances of, e.g., my_adder because we turned
-       ;; them all into my_adder$width=5 and my_adder$width=10 and so forth.
-       ;; So, delete top level modules (modules that are never instanced) that
-       ;; still have parameters.
-       (new-mods (vl-delete-top-level-modules-with-params new-mods))
-       ((unless (uniquep (vl-modulelist->names new-mods)))
-        (raise "Deleting top level mods with params caused a name conflict?"))
-
-       ;; We may have failed to unparameterize some module instances due to
-       ;; real errors.  So, propagate any errors.  This will turn the superior
-       ;; modules into zombies, which will prevent us from trying to
-       ;; unparameterize them later.
-       ((mv survivors victims) (vl-modulelist-propagate-errors new-mods))
-       (new-mods (append survivors victims)))
-    new-mods)
-  ///
-  (defthm unique-names-after-vl-unparameterize-pass
-    (implies (uniquep (vl-modulelist->names mods))
-             (no-duplicatesp-equal (vl-modulelist->names (vl-unparameterize-pass mods))))))
-
-(define vl-handle-unparam-fail-aux
-  :short "Annotate each module in mods with a warning saying we failed to
-          unparameterize it."
-  ((mods      vl-modulelist-p)
-   (bad-names string-listp))
-  :returns (new-mods vl-modulelist-p)
-  :hooks nil
-  (b* (((when (atom mods))
-        nil)
-       (mod1 (vl-module-fix (car mods)))
-       ((unless (member-equal (vl-module->name mod1) bad-names))
-        (cons mod1 (vl-handle-unparam-fail-aux (cdr mods) bad-names)))
-       (warnings (fatal :type :vl-unparameterize-fail
-                        :msg "Unable to eliminate remaining parameters, ~&0."
-                        :args (list (vl-paramdecllist->names (vl-module->paramdecls mod1)))
-                        :acc (vl-module->warnings mod1))))
-    (cons (change-vl-module mod1 :warnings warnings)
-          (vl-handle-unparam-fail-aux (cdr mods) bad-names)))
-  ///
-  (defthm vl-modulelist->names-of-vl-handle-unparam-fail-aux
-    (equal (vl-modulelist->names (vl-handle-unparam-fail-aux mods bad-names))
-           (vl-modulelist->names mods))))
-
-(define vl-handle-unparam-fail
-  :short "Throw away all modules that still have parameters and all modules
-          that depend on them."
-  ((mods (and (vl-modulelist-p mods)
-              (uniquep (vl-modulelist->names mods)))))
-  :returns (new-mods vl-modulelist-p)
-  (b* ((withparams (vl-modules-with-params mods))
-       (bad-names  (vl-modulelist->names withparams))
-       (mods       (vl-handle-unparam-fail-aux mods bad-names))
-       ((mv survivors victims) (vl-remove-bad-modules bad-names mods)))
-    (append survivors victims))
-  ///
-  (defthm vl-handle-unparam-fail-does-not-cause-name-conflict
-    (implies (force (uniquep (vl-modulelist->names mods)))
-             (no-duplicatesp-equal (vl-modulelist->names (vl-handle-unparam-fail mods))))))
-
-(define vl-modulelist-unparameterize
-  :parents (unparameterization)
-  :short "Main unparamterization routine."
-  ((mods vl-modulelist-p   "Modules to unparameterize.")
-   (n    natp              "How many passes of unparameterization to try."))
-  :guard
-  (uniquep (vl-modulelist->names mods))
-  :returns (new-mods vl-modulelist-p)
-  :verify-guards nil
-  :measure (nfix n)
-  (b* ((mods       (vl-modulelist-fix mods))
-       (withparams (mergesort (vl-modules-with-params mods)))
-       (zombies    (mergesort (vl-modulelist-zombies mods)))
-       (todo       (difference withparams zombies))
-
-       ((when (atom todo))
-        ;; Success, all modules are parameter-free.
-        (cw "; unparameterize: all remaining modules are parameter-free.~%")
-        mods)
-
-       ((when (zp n))
-        ;; Ran out of steps.  Throw away all modules with params and everything
-        ;; that depends on them.
-        (cw "; unparameterize: out of tries and modules still have parameters: ~&0"
-            (vl-modulelist->names withparams))
-        (vl-handle-unparam-fail mods))
-
-       (- (cw "; unparameterize: starting round ~x0: ~x1 mods total, ~x2 to go.~%"
-              n (len mods) (len todo)))
-
-       (new-mods (vl-unparameterize-pass mods))
-
-       ((when (equal (mergesort new-mods) (mergesort mods)))
-        (cw "; unparameterize: no progress, but modules still have parameters: ~&1~%"
-            n (vl-modulelist->names todo))
-        (vl-handle-unparam-fail new-mods)))
-
-    (vl-modulelist-unparameterize new-mods (- n 1)))
-  ///
-  (defthm no-duplicatesp-of-vl-modulelist->names-of-vl-modulelist-unparameterize
-    (implies (uniquep (vl-modulelist->names mods))
-             (no-duplicatesp (vl-modulelist->names (vl-modulelist-unparameterize mods n)))))
-  (verify-guards vl-modulelist-unparameterize))
 
 (define vl-design-unparameterize
   :short "Top-level @(see unparameterization) transform."
@@ -1415,16 +1243,13 @@ try to apply @(see vl-unparameterize-module) to every module in the list.</p>"
   :returns (new-x vl-design-p)
   (b* (;; Throw out modules that have problems with shadowed parameters.
        ((vl-design x) (vl-design-unparam-check x))
-       ((unless (uniquep (vl-modulelist->names x.mods)))
-        (raise "Programming error: module names are not unique.")
-        x)
-       (new-mods (vl-modulelist-unparameterize x.mods 1000))
+       (ss (vl-scopestack-init x))
+       (topmods (vl-modulelist-toplevel x.mods))
+       ((mv top-sigs warnings) (vl-modulelist-default-signatures topmods ss x.warnings))
 
-       ;; Just to be absolutely certain this can't happen:
-       ((unless (mbt (uniquep (vl-modulelist->names new-mods))))
-        (impossible)
-        x))
+       ((mv ?ok warnings1 new-mods donelist)
+        (vl-unparameterize-main-list top-sigs nil 1000 ss))
 
-    (clear-memoize-table 'vl-create-unparameterized-module)
-    (cw "; unparameterize: ~x0 => ~x1 modules.~%" (len x.mods) (len new-mods))
-    (change-vl-design x :mods new-mods)))
+       (warnings (append warnings1 warnings)))
+    (fast-alist-free donelist)
+    (change-vl-design x :warnings warnings :mods new-mods)))
