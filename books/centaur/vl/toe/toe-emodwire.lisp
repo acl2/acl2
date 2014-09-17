@@ -30,6 +30,7 @@
 
 (in-package "VL")
 (include-book "../util/defs")
+(include-book "centaur/fty/deftypes" :dir :system)
 (local (include-book "misc/assert" :dir :system))
 (local (include-book "../util/arithmetic"))
 (local (include-book "../util/position"))
@@ -829,25 +830,37 @@ details.</p>"
      (assert! (not (vl-emodwire-p 'vl::foo))))))
 
 
+(define vl-emodwire-fix ((x vl-emodwire-p))
+  :returns (x-prime vl-emodwire-p)
+  :inline t
+  :hooks nil
+  (mbe :logic (if (vl-emodwire-p x) x 'acl2::bad-default-emodwire)
+       :exec x)
+  ///
+  (defthm vl-emodwire-fix-when-vl-emodwire-p
+    (implies (vl-emodwire-p x)
+             (equal (vl-emodwire-fix x) x)))
 
-(deflist vl-emodwirelist-p (x)
-  (vl-emodwire-p x)
+  (fty::deffixtype vl-emodwire :pred vl-emodwire-p :fix vl-emodwire-fix
+    :equiv vl-emodwire-equiv :define t))
+
+
+(fty::deflist vl-emodwirelist :elt-type vl-emodwire
   :elementp-of-nil nil
   :parents (exploding-vectors)
-  :rest
-  ((defthm symbol-listp-when-vl-emodwirelist-p
-     (implies (vl-emodwirelist-p x)
-              (equal (symbol-listp x)
-                     (true-listp x))))
+  ///
+  (local (in-theory (enable vl-emodwirelist-p)))
+  (defthm symbol-listp-when-vl-emodwirelist-p
+    (implies (vl-emodwirelist-p x)
+             (equal (symbol-listp x)
+                    (true-listp x))))
 
-   (defthm member-of-nil-when-vl-emodwirelist-p
-     (implies (vl-emodwirelist-p x)
-              (not (member-equal nil x))))))
+  (defthm member-of-nil-when-vl-emodwirelist-p
+    (implies (vl-emodwirelist-p x)
+             (not (member-equal nil x)))))
 
 
-(deflist vl-emodwirelistlist-p (x)
-  (vl-emodwirelist-p x)
-  :guard t
+(fty::deflist vl-emodwirelistlist :elt-type vl-emodwirelist
   :elementp-of-nil t
   :parents (exploding-vectors)
   :short "A list of @(see vl-emodwire-p) lists."
@@ -855,10 +868,11 @@ details.</p>"
   :long "<p>These are notably used as the @(':i') and @(':o') patterns for
 modules; see @(see modinsts-to-eoccs) for details.</p>"
 
-  :rest
-  ((defthm vl-emodwirelist-p-of-flatten
-     (implies (vl-emodwirelistlist-p x)
-              (vl-emodwirelist-p (flatten x))))))
+  ///
+  (local (in-theory (enable vl-emodwirelistlist-p)))
+  (defthm vl-emodwirelist-p-of-flatten
+    (implies (vl-emodwirelistlist-p x)
+             (vl-emodwirelist-p (flatten x)))))
 
 
 (defsection vl-emodwire
