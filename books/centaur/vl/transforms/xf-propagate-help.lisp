@@ -90,7 +90,7 @@ out exactly.</p>")
    (loc       vl-location-p))
   :guard (equal (sum-nats (vl-exprlist->finalwidths lhs-wires))
                 (len rhs-bits))
-  :returns (assigns vl-assignlist-p :hyp :fguard)
+  :returns (assigns vl-assignlist-p)
   :short "Create an assignment for each individual wire on the left-hand side
 to its associated bits from the right-hand side."
 
@@ -119,25 +119,23 @@ to its associated bits from the right-hand side."
 (define vl-assign-prophelp
   ((x        "assignment to be split up, if it has the right form."
              vl-assign-p)
-   (mod      "module the assignment occurs in, so we can slice up the rhs."
-             vl-module-p)
-   (ialist   (equal ialist (vl-moditem-alist mod)))
+   (ss       vl-scopestack-p)
    (warnings vl-warninglist-p))
-  :returns (mv (warnings vl-warninglist-p :hyp :fguard)
-               (new-x vl-assignlist-p :hyp :fguard))
+  :returns (mv (warnings vl-warninglist-p)
+               (new-x vl-assignlist-p))
   :short "Maybe split up an assignment."
-  (b* (((vl-assign x) x)
+  (b* (((vl-assign x) (vl-assign-fix x))
 
        ((when (vl-fast-atom-p x.lvalue))
         ;; Not applicable (assigning to an atom, not a concat)
-        (mv warnings (list x)))
+        (mv (ok) (list x)))
 
        ((vl-nonatom x.lvalue) x.lvalue)
        ((unless (and (eq x.lvalue.op :vl-concat)
                      (vl-idexprlist-p x.lvalue.args)
                      (vl-expr-sliceable-p x.expr)))
         ;; Not applicable (not a concat, or too hard)
-        (mv warnings (list x)))
+        (mv (ok) (list x)))
 
        (widths (vl-exprlist->finalwidths x.lvalue.args))
        ((unless (pos-listp widths))
@@ -169,7 +167,7 @@ to its associated bits from the right-hand side."
             (list x)))
 
        ((mv okp warnings rhs-bits)
-        (vl-msb-bitslice-expr x.expr mod ialist warnings))
+        (vl-msb-bitslice-expr x.expr ss warnings))
        ((unless okp)
         ;; Somehow failed to split up RHS?  Don't do anything.
         (mv (warn :type :vl-prophelp-fail
@@ -180,54 +178,55 @@ to its associated bits from the right-hand side."
 
        ;; Otherwise, this is looking good.
        (new-assigns (vl-prophelp-split x.lvalue.args rhs-bits x.loc)))
-    (mv warnings new-assigns))
+    (mv (ok) new-assigns))
   ///
   (defmvtypes vl-assign-prophelp (nil true-listp)))
 
 
 (define vl-assignlist-prophelp
   ((x        vl-assignlist-p)
-   (mod      vl-module-p)
-   (ialist   (equal ialist (vl-moditem-alist mod)))
+   (ss       vl-scopestack-p)
    (warnings vl-warninglist-p))
-  :returns (mv (warnings vl-warninglist-p :hyp :fguard)
-               (new-x vl-assignlist-p :hyp :fguard))
+  :returns (mv (warnings vl-warninglist-p)
+               (new-x vl-assignlist-p))
   (b* (((when (atom x))
-        (mv warnings nil))
-       ((mv warnings car) (vl-assign-prophelp (car x) mod ialist warnings))
-       ((mv warnings cdr) (vl-assignlist-prophelp (cdr x) mod ialist warnings)))
+        (mv (ok) nil))
+       ((mv warnings car) (vl-assign-prophelp (car x) ss warnings))
+       ((mv warnings cdr) (vl-assignlist-prophelp (cdr x) ss warnings)))
     (mv warnings (append car cdr)))
   ///
   (defmvtypes vl-assign-prophelp (nil true-listp)))
 
 
-(define vl-module-prophelp ((x vl-module-p))
-  :returns (new-x vl-module-p :hyp :fguard)
-  (b* (((vl-module x) x)
+(define vl-module-prophelp ((x vl-module-p) (ss vl-scopestack-p))
+  :returns (new-x vl-module-p)
+  (b* (((vl-module x) (vl-module-fix x))
        ((when (vl-module->hands-offp x))
         x)
+       (ss (vl-scopestack-push x ss))
        ((unless x.assigns)
         ;; Optimization: don't even build the moditem alist unless there are
         ;; assignments.  We could do better here, i.e., check for an assignment
         ;; with a concatenation on the lhs, but this is probably good enough.
         x)
-       (ialist (vl-moditem-alist x))
        ((mv warnings assigns)
-        (vl-assignlist-prophelp x.assigns x ialist x.warnings)))
-    (fast-alist-free ialist)
+        (vl-assignlist-prophelp x.assigns ss x.warnings)))
     (change-vl-module x
                       :assigns assigns
                       :warnings warnings)))
 
-(defprojection vl-modulelist-prophelp (x)
-  (vl-module-prophelp x)
-  :guard (vl-modulelist-p x)
-  :result-type vl-modulelist-p)
+(defprojection vl-modulelist-prophelp ((x vl-modulelist-p)
+                                       (ss vl-scopestack-p))
+  :returns (new-x vl-modulelist-p)
+  (vl-module-prophelp x ss))
 
 (define vl-design-prophelp
   :short "Top-level @(see prophelp) transform."
   ((x vl-design-p))
   :returns (new-x vl-design-p)
   (b* ((x (vl-design-fix x))
-       ((vl-design x) x))
-    (change-vl-design x :mods (vl-modulelist-prophelp x.mods))))
+       (ss (vl-scopestack-init x))
+       ((vl-design x) x)
+       (mods (vl-modulelist-prophelp x.mods ss)))
+    (vl-scopestacks-free)
+    (change-vl-design x :mods mods)))
