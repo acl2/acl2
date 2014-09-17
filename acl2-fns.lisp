@@ -1170,6 +1170,58 @@ notation causes an error and (b) the use of ,. is not permitted."
           (t (qfuncall iprint-ar-aref1 index *the-live-state*)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;                            SUPPORT FOR #{"""
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun fancy-string-reader-macro-aux (stream acc)
+
+; See fancy-string-reader-macro.
+
+  (let ((char ; error on EOF is appropriate here
+         (read-char stream)))
+    (if (and (eql char #\})
+             (eql (first acc) #\")
+             (eql (second acc) #\")
+             (eql (third acc) #\"))
+
+; Just saw """} -- we're at the end of the fancy string.  We haven't
+; accumulated the } yet, but throw away the """ since those end the string and
+; aren't part of its content.
+
+        (cdddr acc)
+      (fancy-string-reader-macro-aux stream (cons char acc)))))
+
+(defun fancy-string-reader-macro (stream subchar arg)
+
+; Initial implementation contributed by Jared Davis.  See community book
+; books/system/fancy-string-reader-test.lisp for how this is used.
+
+  (declare (ignorable subchar arg))
+
+; This is the reader macro for #{.  When it is called the #{ part has already
+; been read.
+
+; First, require that there are three starting quotes.  This is intended to
+; leave room to grow, i.e., if someone else wants to add some other kind of
+; special #{... syntax, they can do so as long as it's not """.
+
+  (let ((quote1 (read-char stream)))
+    (unless (eql quote1 #\")
+      (error "Undefined reader macro: #{~c" quote1)))
+  (let ((quote2 (read-char stream)))
+    (unless (eql quote2 #\")
+      (error "Undefined reader macro: #{\"~c" quote2)))
+  (let ((quote3 (read-char stream)))
+    (unless (eql quote3 #\")
+      (error "Undefined reader macro: #{\"\"~c" quote3)))
+
+; Now read all the characters until """}, reverse them, and turn them into a
+; string.
+
+  (let ((rchars (fancy-string-reader-macro-aux stream nil)))
+    (nreverse (coerce rchars 'string))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                            SUPPORT FOR FAST #n= and #n#
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
