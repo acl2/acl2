@@ -5434,6 +5434,7 @@
 
   (assert (and (symbolp fn) (symbolp sym))) ; else we should use defabbrev
   `(or (eq ,fn (symbol-function ,sym))
+       #+hons
        (let ((entry (gethash ,sym *memoize-info-ht*)))
          (and entry
               (eq ,fn
