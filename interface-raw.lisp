@@ -5423,6 +5423,22 @@
           ))))
   (value nil))
 
+(defmacro eq-symbol-function-possibly-unmemoized (fn sym)
+
+; Suppose that a book defines a function symbol sym, which associates sym with
+; its symbol-function, fn, in the *hcomp-fn-ht*.  Now suppose that the book
+; later memoizes sym.  The expansion file will write out the unmemoized
+; definition of sym, which is the correct one to look up when we later include
+; the book; so we return t in that case, to indicate that it's fine to use this
+; saved definition during a later include-book when defining fn.
+
+  (assert (and (symbolp fn) (symbolp sym))) ; else we should use defabbrev
+  `(or (eq ,fn (symbol-function ,sym))
+       (let ((entry (gethash ,sym *memoize-info-ht*)))
+         (and entry
+              (eq ,fn
+                  (access memoize-info-ht-entry entry :old-fn))))))
+
 (defun hcomp-alists-from-hts ()
   (let ((fn-alist nil)
         (const-alist nil)
@@ -5434,12 +5450,12 @@
                                  ((not (fboundp k))
                                   nil)
                                  ((reclassifying-value-p val)
-                                  (and (eq (unmake-reclassifying-value val)
-                                           (symbol-function k))
-                                       'semi))
-                                 ((eq val (symbol-function k))
-                                  t)
-                                 (t nil)))
+                                  (let ((fn (unmake-reclassifying-value val)))
+                                    (and (eq-symbol-function-possibly-unmemoized
+                                          fn k)
+                                         'semi)))
+                                 (t (eq-symbol-function-possibly-unmemoized
+                                     val k))))
                      fn-alist))
              *hcomp-fn-ht*)
     (maphash (lambda (k val)

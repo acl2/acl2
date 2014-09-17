@@ -1632,13 +1632,20 @@ the calls took.")
 
 
 
-(defun-one-output memoize-eval-compile (def)
+(defun-one-output memoize-eval-compile (def old-fn)
+  #+(or ccl sbcl) ; all functions are compiled
+  (declare (ignore old-fn))
   (unless (and (consp def)
                (eq 'defun (car def))
                (consp (cdr def))
                (symbolp (cadr def)))
     (error "MEMOIZE-EVAL-COMPILE:  Bad input:~%~s." def))
-  (compile (eval def))
+  #+(or ccl sbcl)
+  (compile (eval def)) ; probably the compile isn't necessary
+  #-(or ccl sbcl)
+  (if (and old-fn (compiled-function-p old-fn))
+      (compile (eval def))
+    (eval def))
   nil)
 
 (defun-one-output memoizedp-raw (fn)
@@ -1817,27 +1824,27 @@ the calls took.")
 
 
 (defun-one-output mis-ordered-commutative-args (x y)
-  #-Clozure
-  ;; [Jared]: Lisps besides Clozure don't have static conses so we can't
+  #-static-hons
+  ;; [Jared]: Lisps besides Clozure [and GCL] don't have static conses so we can't
   ;; reorder arguments based on their indices.  It's possible we could do
   ;; something like sort based on address, maybe, but I haven't thought about
   ;; it.
   (declare (ignore x y))
-  #-Clozure
+  #-static-hons
   nil
-  #+Clozure
+  #+static-hons
   (cond ((eql x y) nil)
-        (t (let ((idx (or (ccl::%staticp x)
+        (t (let ((idx (or (hl-staticp x)
                           (and (typep x 'fixnum) x))))
              (cond (idx
-                    (let ((idy (or (ccl::%staticp y)
+                    (let ((idy (or (hl-staticp y)
                                    (and (typep y 'fixnum) y))))
                       (cond (idy (< (the fixnum idy)
                                     (the fixnum idx)))
                             ((rationalp y)
                              (< y (the fixnum idx))))))
                    ((rationalp x)
-                    (let ((idy (or (ccl::%staticp y)
+                    (let ((idy (or (hl-staticp y)
                                    (and (typep y 'fixnum) y))))
                       (cond (idy (< (the fixnum idy)
                                     x))
@@ -2526,7 +2533,7 @@ the calls took.")
                      below (the fixnum (+ 2mfnn *2max-memoize-fns*))
                      unless (eql (aref ma i) 0)
                      do (setf (aref ma i) 0)))
-             (memoize-eval-compile def)
+             (memoize-eval-compile def old-fn)
              (setf (gethash fn *memoize-info-ht*)
                    (make memoize-info-ht-entry
                          :fn fn

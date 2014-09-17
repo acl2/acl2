@@ -42,10 +42,6 @@
 
 (in-package "ACL2")
 
-;; We use the static honsing scheme on 64-bit CCL.
-#+(and Clozure x86_64)
-(push :static-hons *features*)
-
 ; NOTES ABOUT HL-HONS
 ;
 ; The "HL-" prefix was introduced when Jared Davis revised the Hons code, and
@@ -101,7 +97,9 @@
 
 #+static-hons
 (defmacro hl-without-interrupts (&rest forms)
-  `(ccl::without-interrupts . ,forms))
+  #+gcl `(let (si::*quit-tag*) ; Camm Maguire suggestion
+           ,@forms)
+  #-gcl `(ccl::without-interrupts . ,forms))
 
 
 ; CROSS-LISP COMPATIBILITY WRAPPERS
@@ -226,7 +224,8 @@
 
 #+static-hons
 (defmacro hl-static-cons (a b)
-  `(ccl::static-cons ,a ,b))
+  #+gcl `(cons ,a ,b)
+  #-gcl `(ccl::static-cons ,a ,b))
 
 #+static-hons
 (defmacro hl-staticp (x)
@@ -238,18 +237,31 @@
 
 ; Indeed, this function returns a fixnum (see also above) if x is a static
 ; cons.  More may be true, as follows, but we don't count on it: in mid-2014,
-; at least, we see that the value returned is 128 for the first static cons and
-; is incremented by 1 for each additional static cons -- and after a garbage
-; collection, this repeats except that values for remaining static conses are
-; skipped.
+; at least, we see that for CCL, the value returned is 128 for the first static
+; cons and is incremented by 1 for each additional static cons -- and after a
+; garbage collection, this repeats except that values for remaining static
+; conses are skipped.
 
 ; See also *hl-hspace-sbits-default-size*.
 
+  #+gcl
+
+; Camm Maguire tells us that conses are always 16-byte aligned in 64-bit GCL
+; and 8-bit aligned in 32-bit GCL.
+
+  `(the fixnum
+        (ash (the fixnum (si::address ,x))
+             #+x86_64 -4
+             #-x86_64 -3))
+  #-gcl
   `(ccl::%staticp ,x))
 
 #+static-hons
 (defmacro hl-static-inverse-cons (x)
-  `(ccl::%static-inverse-cons ,x))
+  #+gcl `(si::static-inverse-cons (the fixnum (ash (the fixnum ,x)
+                                                   #+x86_64 4
+                                                   #-x86_64 3)))
+  #-gcl `(ccl::%static-inverse-cons ,x))
 
 #+static-hons
 (defmacro hl-machine-hash (x)
@@ -269,13 +281,14 @@
 ; argument's address (it effectively does something like a right shift by 4
 ; bits....".
 ;
-; We right-shift the address by five places because smaller shifts led to worse
-; distributions.  Gary Byers has informed us (email, 6/16/2014) that in 64-bit
-; CCL, memory-allocated objects (like conses) are 16-byte aligned, and the
-; bottom 4 bits (all 0) are replaced by tag bits (where those tag bits are
-; always 3 for a cons).  So shifting by 4 bits might seem to suffice, but we
-; got a significantly better distribution shifting by 5 bits (see discussion of
-; experiments below, "However, in addition to fast execution speed....").
+; For CCL, we right-shift the address by five places because smaller shifts led
+; to worse distributions.  (GCL wart: We haven't really thought this efficiency
+; issue through for GCL.)  Gary Byers has informed us (email, 6/16/2014) that
+; in 64-bit CCL, memory-allocated objects (like conses) are 16-byte aligned,
+; and the bottom 4 bits (all 0) are replaced by tag bits (where those tag bits
+; are always 3 for a cons).  So shifting by 4 bits might seem to suffice, but
+; we got a significantly better distribution shifting by 5 bits (see discussion
+; of experiments below, "However, in addition to fast execution speed....").
 ;
 ; It should be easy to change this from 2^20 to other powers of 2.  We think
 ; 2^20 is a good number, since a 2^20 element array seems to require about 8 MB
@@ -284,7 +297,13 @@
 ;
   `(the fixnum (ash (the fixnum
                          (logand #x1FFFFF
-                                 (ccl::strip-tag-to-fixnum ,x)))
+				 #+gcl (ash (si::address ,x) -4)
+                                 #+ccl (ccl::strip-tag-to-fixnum ,x)
+                                 #-(or gcl ccl)
+                                 (error "~s is not implemented in this Lisp."
+                                        'hl-machine-hash)
+                                 #-(or gcl ccl)
+                                 0))
                     -1)))
 
 
@@ -971,6 +990,10 @@
 
   #+static-hons
   (sbits      (make-array *hl-hspace-sbits-default-size*
+
+; Note: GCL with #+static-hons grows this array in acl2-default-restart.  See
+; the comment there.
+
                           :element-type 'bit :initial-element 0)
               :type (simple-array bit (*)))
 
@@ -1435,10 +1458,21 @@
   ;; 256 characters + 2 special symbols.  We then count up from there.
   (+ 256 2 (- hl-minimum-static-int)))
 
-#+static-hons
+#+(and static-hons ccl)
 (ccl::defstatic *hl-symbol-addr-lock*
                 ;; lock for hl-symbol-addr; see below.
                 (ccl::make-lock '*hl-symbol-addr-lock*))
+
+#+static-hons
+(defmacro hl-with-lock-grabbed (lock-form &rest args)
+  #+ccl `(ccl::with-lock-grabbed ,lock-form ,@args)
+  #+gcl (declare (ignore lock-form))
+  #+gcl `(progn ,@args) ; GCL wart: We are assuming GCL is single-threaded.
+  #-(or ccl gcl)
+  #+gcl (declare (ignore lock-form args))
+  #-(or ccl gcl)
+  (error "~s is not implemented in this Lisp."
+         'hl-with-lock-grabbed))
 
 #+static-hons
 (defabbrev hl-symbol-addr (s)
@@ -1472,7 +1506,7 @@
         ;; return the TRUE-ADDR.
         (cdr addr-cons)
       ;; We need to assign an address.  Must lock!
-      (ccl::with-lock-grabbed
+      (hl-with-lock-grabbed
        (*hl-symbol-addr-lock*)
        ;; Some other thread might have assigned S an address before we
        ;; got the lock.  So, double-check and make sure that there still
@@ -1684,6 +1718,30 @@
     (setf (hl-hspace-addr-limit hs) (- cutoff count))))
 
 #+static-hons
+(defmacro our-hash-table-rehash-size (ht)
+
+; Hash-table-rehash-size is missing in some versions of ANSI GCL 2.6.11 as of
+; mid-Sept. 2014.
+
+  #+gcl (if (fboundp 'hash-table-rehash-size)
+            `(hash-table-rehash-size ,ht)
+; else use default from hl-mht-fn
+          1.5)
+  #-gcl `(hash-table-rehash-size ,ht))
+
+#+static-hons
+(defmacro our-hash-table-rehash-threshold (ht)
+
+; Hash-table-rehash-threshold is missing in some versions of ANSI GCL 2.6.11 as
+; of mid-Sept. 2014.
+
+  #+gcl (if (fboundp 'hash-table-rehash-threshold)
+            `(hash-table-rehash-threshold ,ht)
+; else use default from hl-mht-fn
+          0.7)
+  #-gcl `(hash-table-rehash-threshold ,ht))
+
+#+static-hons
 (defun hl-make-addr-limit-next (hs)
   (declare (type hl-hspace hs))
 
@@ -1696,7 +1754,7 @@
   (let* ((addr-ht       (hl-hspace-addr-ht hs))
          (count         (hash-table-count addr-ht))
          (size          (hash-table-size addr-ht))
-         (rehash-size   (hash-table-rehash-size addr-ht))
+         (rehash-size   (our-hash-table-rehash-size addr-ht))
          (future-cutoff (floor (* 0.995 rehash-size size))))
     (setf (hl-hspace-addr-limit hs)
           ;; Presumably the rehash-size is a fixnum, as required for the
@@ -3469,9 +3527,9 @@ To avoid the following break and get only the above warning:~%  ~a~%"
   (let* (;; Note: do not bind ADDR-HT here, we want it to get GC'd.
          (addr-ht-size             (hash-table-size (hl-hspace-addr-ht hs)))
          (addr-ht-count            (hash-table-count (hl-hspace-addr-ht hs)))
-         (addr-ht-rehash-size      (hash-table-rehash-size
+         (addr-ht-rehash-size      (our-hash-table-rehash-size
                                     (hl-hspace-addr-ht hs)))
-         (addr-ht-rehash-threshold (hash-table-rehash-threshold
+         (addr-ht-rehash-threshold (our-hash-table-rehash-threshold
                                     (hl-hspace-addr-ht hs)))
 
          (str-ht        (hl-hspace-str-ht hs))

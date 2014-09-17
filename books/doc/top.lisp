@@ -198,6 +198,8 @@
 
 (include-book "centaur/fty/deftypes" :dir :system)
 
+(include-book "misc/simp" :dir :system)
+
 #||
 
 ;; This is a nice place to put include-book scanner hacks that trick cert.pl
