@@ -237,7 +237,7 @@ if ($OPTIONS{'costs_file'}) {
     $basecosts = retrieve($OPTIONS{'costs_file'});
 } else {
     $basecosts = {};
-    read_costs($depdb, $basecosts, $warnings, $OPTIONS{'real'}, $OPTIONS{'pcert'});
+    read_costs($depdb, $basecosts, $warnings, $OPTIONS{'real'});
     print "done read_costs\n" if $debug;
 }
 
@@ -252,14 +252,14 @@ if ($OPTIONS{'write_costs'}) {
 }
 
 
-compute_cost_paths($depdb, $basecosts, $costs, $warnings, $OPTIONS{'pcert'});
+compute_cost_paths($depdb, $basecosts, $costs, $warnings);
 print "done compute_cost_paths\n" if $debug;
 
 print "costs: " .  $costs . "\n" if $debug;
 
 (my $topbook, my $topbook_cost) = find_most_expensive(\@targets, $costs);
 
-my $savings = compute_savings($costs, $basecosts, \@targets, $debug, $depdb, $OPTIONS{'pcert'}); 
+my $savings = compute_savings($costs, $basecosts, \@targets, $debug, $depdb); 
 
 
 	# ($costs, $warnings) = make_costs_table($target, $depdb, $costs, $warnings, $OPTIONS{"short"});
@@ -289,7 +289,7 @@ if (! $OPTIONS{"html"}) {
     print "Total time for all files: " . human_time($sum_parallel,0) . ".\n";
 }
 
-if ((! $OPTIONS{"html"}) && $OPTIONS{"pcert"}) {
+if (! $OPTIONS{"html"}) {
     my $acl2xtime = 0.0;
     my $pcert1time = 0.0;
     my $pcert0time = 0.0;
@@ -309,10 +309,18 @@ if ((! $OPTIONS{"html"}) && $OPTIONS{"pcert"}) {
     }
 
     print "\n";
-    print "Total acl2x build time: " . human_time($acl2xtime) . "\n";
-    print "Total pcert0 build time: " . human_time($pcert0time) . "\n";
-    print "Total pcert1 build time: " . human_time($pcert1time) . "\n";
-    print "Total cert build time: " . human_time($certtime) . "\n";
+    if ($acl2xtime != 0.0) {
+	print "Total acl2x build time: " . human_time($acl2xtime) . "\n";
+    }
+    if ($pcert0time != 0.0) {
+	print "Total pcert0 build time: " . human_time($pcert0time) . "\n";
+    }
+    if ($pcert1time != 0.0) {
+	print "Total pcert1 build time: " . human_time($pcert1time) . "\n";
+    }
+    if ($certtime != 0.0) {
+	print "Total cert build time: " . human_time($certtime) . "\n";
+    }
 }
 
 # print "\n\nBasecosts:\n";
