@@ -38,67 +38,10 @@
 (in-package "XDOC")
 (include-book "prepare-topic")
 (include-book "oslib/catpath" :dir :system)
-(include-book "oslib/logic-defs" :dir :system)
+(include-book "oslib/copy-logic" :dir :system)
+(include-book "oslib/rmtree-logic" :dir :system)
 (set-state-ok t)
-
 (program)
-
-(defconst *acl2-graphics*
-  ;; Blah, horrible
-  (list "acl2-logo-200-134.gif"
-        "acl2-logo-62-41.gif"
-        "acl2-system-architecture.gif"
-        "automatic-theorem-prover.gif"
-        "binary-trees-app-expl.gif"
-        "binary-trees-app.gif"
-        "binary-trees-x-y.gif"
-        "book04.gif"
-        "bridge-analysis.gif"
-        "bridge.gif"
-        "chem01.gif"
-        "common-lisp.gif"
-        "computing-machine-5x7.gif"
-        "computing-machine-5xy.gif"
-        "computing-machine-a.gif"
-        "computing-machine.gif"
-        "computing-machine-xxy.gif"
-        "concrete-proof.gif"
-        "doc03.gif"
-        "docbag2.gif"
-        "door02.gif"
-        "file03.gif"
-        "file04.gif"
-        "flying.gif"
-        "ftp2.gif"
-        "gift.gif"
-        "green-line.gif"
-        "index.gif"
-        "info04.gif"
-        "interactive-theorem-prover-a.gif"
-        "interactive-theorem-prover.gif"
-        "landing.gif"
-        "large-flying.gif"
-        "large-walking.gif"
-        "llogo.gif"
-        "logo.gif"
-        "mailbox1.gif"
-        "new04.gif"
-        "note02.gif"
-        "open-book.gif"
-        "pisa.gif"
-        "proof.gif"
-        "sitting.gif"
-        "stack.gif"
-        "state-object.gif"
-        "teacher1.gif"
-        "teacher2.gif"
-        "time-out.gif"
-        "tools3.gif"
-        "twarning.gif"
-        "uaa-rewrite.gif"
-        "walking.gif"
-        "warning.gif"
-        ))
 
 (defun clean-topics-aux (x seen-names-fal)
   ;; Remove topics we've already seen.
@@ -120,35 +63,35 @@
 
 ; --------------------- File Copying ----------------------------
 
-(defun stupid-copy-file-aux (in out state)
+;; (defun stupid-copy-file-aux (in out state)
 
-; In, out are channels.  Copy from in to out, one byte at a time.
+;; ; In, out are channels.  Copy from in to out, one byte at a time.
 
-  (b* (((mv byte state) (read-byte$ in state))
-       ((unless byte)
-        state)
-       (state (write-byte$ byte out state)))
-    (stupid-copy-file-aux in out state)))
+;;   (b* (((mv byte state) (read-byte$ in state))
+;;        ((unless byte)
+;;         state)
+;;        (state (write-byte$ byte out state)))
+;;     (stupid-copy-file-aux in out state)))
 
-(defun stupid-copy-file (src dest state)
+;; (defun stupid-copy-file (src dest state)
 
-; A stupid file copy routine, so we can copy our style files, etc.  We avoid
-; using "system" because of memory problems with forking on huge images.
+;; ; A stupid file copy routine, so we can copy our style files, etc.  We avoid
+;; ; using "system" because of memory problems with forking on huge images.
 
-  (b* (((mv in state)  (open-input-channel src :byte state))
-       ((mv out state) (open-output-channel dest :byte state))
-       (state          (stupid-copy-file-aux in out state))
-       (state          (close-input-channel in state))
-       (state          (close-output-channel out state)))
-      state))
+;;   (b* (((mv in state)  (open-input-channel src :byte state))
+;;        ((mv out state) (open-output-channel dest :byte state))
+;;        (state          (stupid-copy-file-aux in out state))
+;;        (state          (close-input-channel in state))
+;;        (state          (close-output-channel out state)))
+;;       state))
 
-(defun stupid-copy-files (srcdir filenames destdir state)
-  (b* (((when (atom filenames))
-        state)
-       (srcfile  (oslib::catpath srcdir (car filenames)))
-       (destfile (oslib::catpath destdir (car filenames)))
-       (state    (stupid-copy-file srcfile destfile state)))
-    (stupid-copy-files srcdir (cdr filenames) destdir state)))
+;; (defun stupid-copy-files (srcdir filenames destdir state)
+;;   (b* (((when (atom filenames))
+;;         state)
+;;        (srcfile  (oslib::catpath srcdir (car filenames)))
+;;        (destfile (oslib::catpath destdir (car filenames)))
+;;        (state    (stupid-copy-file srcfile destfile state)))
+;;     (stupid-copy-files srcdir (cdr filenames) destdir state)))
 
 
 

@@ -116,6 +116,57 @@ function please_wait() {
 }
 
 
+var KATEX_LOADED = 0;
+
+function onKatexLoaded()
+{
+    KATEX_LOADED = 1;
+    renderMathFragments();
+}
+
+function renderMathFragments ()
+{
+    // Need to call this whenever we potentially add new .mathfrag divs into
+    // the page.
+
+    if (! KATEX_LOADED) {
+	// just wait, it'll get loaded eventually
+	return;
+    }
+
+    // console.log("Rendering math fragments.");
+    $(".mathblock").each(function () {
+        var obj = $(this);
+    	var formula_text = obj.text();
+        var newdiv = jQuery("<span></span>");
+	try {
+	    katex.render(formula_text, newdiv.get(0));
+    	    obj.html(newdiv);
+	    obj.removeAttr("class");
+	    obj.attr("class", "mathblockrendered");
+	}
+	catch(e) {
+	    obj.html(htmlEncode("{{" + e.message + "}}"));
+	}
+    });
+
+    $(".mathfrag").each(function () {
+        var obj = $(this);
+    	var formula_text = obj.text();
+        var newdiv = jQuery("<span></span>");
+	try {
+	    katex.render(formula_text, newdiv.get(0));
+	    obj.html(newdiv);
+	    obj.removeAttr("class");
+	    obj.attr("class", "mathfragrendered");
+    	}
+	catch (e) {
+	    obj.html(htmlEncode("{{" + e.message + "}}"));
+	}
+    });
+}
+
+
 // --------------------------------------------------------------------------
 //
 //                          MAIN DATA STRUCTURES
@@ -550,6 +601,7 @@ function dat_expand(dat_id)
     });
 
     $(".basepkg").powerTip({placement:'sw',smartPlacement: true});
+    renderMathFragments();
 }
 
 function dat_collapse(dat_id)
@@ -650,7 +702,6 @@ function dat_load_key(key, scroll_to)
     // BOZO consider doing something to find the key in the navigation
     // hierarchy somewhere, to make the navigation follow along with you?
     var keys = [key];
-    //console.log("dat_load_key " + key + ", scroll to " + scroll_to);
 
     xdata_when_ready(keys,
     function() {
@@ -662,6 +713,7 @@ function dat_load_key(key, scroll_to)
         $("#data").append(dat_long_topic(key));
 	$(".basepkg").powerTip({placement:'sw',smartPlacement: true});
         $("title").html(key_title(key));
+	renderMathFragments();
 	setTimeout("dat_really_scroll_to(" + scroll_to + ")", 10);
     });
 }
@@ -951,6 +1003,9 @@ function onIndexLoaded()
 
     jump_init();
     search_init();
+
+    // Load katex after the other stuff is loaded.
+    LazyLoad.js('lib/katex/katex.min.js', onKatexLoaded);
 }
 
 function onDataLoaded()
@@ -1112,7 +1167,6 @@ function printer_friendly()
 {
     var w = window.open("", "Printer",
 			"height=600,width=640,toolbar=1,location=0,resizable=1,scrollbars=1,status=0");
-    
 
     var html = "<html>\n"
 	+ "<head>\n"

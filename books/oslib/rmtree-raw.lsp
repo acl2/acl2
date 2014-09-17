@@ -1,5 +1,5 @@
 ; OSLIB -- Operating System Utilities
-; Copyright (C) 2013 Centaur Technology
+; Copyright (C) 2013-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -29,6 +29,9 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "OSLIB")
+
+; BOZO could possibly rework this using uiop:delete-empty-directory,
+; uiop:delete-file-if-exists, etc., to avoid syscalls.
 
 (defun rmtree-fn (dir state)
 

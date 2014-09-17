@@ -93,6 +93,15 @@ Emacs-based manual.</p>
 
 <h3>Documenting your Books</h3>
 
+<box><p><b><color rgb='#ff0000'>NEW</color></b> (experimental): XDOC now
+supports @(see katex-integration) for writing LaTeX-like formulas like
+@($
+\\left( \\sum_{i=0}^{n} \\sqrt{f(i)} \\right) &lt; \\frac{n^2}{k}
+$)
+within your documentation.</p></box>
+
+<br/>
+
 <box><p><b><color rgb='#ff0000'>NEW</color></b> (experimental): When writing
 documentation, you can now optionally have XDOC topics automatically displayed
 as you submit new @(see defxdoc) forms&mdash;just add:</p>
@@ -105,6 +114,7 @@ as you submit new @(see defxdoc) forms&mdash;just add:</p>
 developing your book.  Afterward, each @(see defxdoc) form you submit will be
 immediately shown at the terminal, giving you a quick, text-mode preview that
 may help you to diagnose any markup problems.</p></box>
+
 
 <p>To use XDOC to document your own books, the first step is:</p>
 
@@ -290,6 +300,18 @@ links, e.g.,</p>
 
 <p>Produces a link to <a href=\"http://www.centtech.com/\">Centaur
 Technology</a>.</p>
+
+
+<h3>Typesetting Mathematics (Experimental)</h3>
+
+<p>XDOC's fancy web viewer now has some support for LaTeX-like mathematics.
+For instance, you can write formulas such as</p>
+
+@([
+     c = \\pm\\sqrt{b^2 + a^2}
+])
+
+<p>See @(see katex-integration) for details.</p>
 
 
 <h3>Structuring Documents</h3>
@@ -626,7 +648,7 @@ directory where the want the manual to go.  As might be expected:</p>
 
 <li>If the target directory does not exist, it will be created.</li>
 
-<li>Any existing files in the target directory <color rgb=\"#ff0000\">may be
+<li>If the target directory already exists, it <color rgb=\"#ff0000\">will be
 overwritten</color>.</li>
 
 </ul>
@@ -1397,4 +1419,90 @@ manual.</p>")
 (defxdoc order-test-r :short "R")
 (defxdoc order-test-o :short "O")
 (defxdoc order-test-k :short "K")
+
+
+
+(defxdoc katex-integration
+  :parents (xdoc)
+  :short "Support for LaTeX-like typesetting of mathematics in XDOC
+topics. (experimental)"
+
+  :long "<box><p><b>Experimental.</b> This whole thing is experimental.  Jared
+reserves the right to decide it is a bad idea and remove support for
+it.</p></box>
+
+<p>The <a href='https://www.khanacademy.org/'>Khan Academy</a> has developed a
+very nice Javascript library, <a
+href='https://github.com/Khan/KaTeX'>KaTeX</a>, for rendering mathematical
+formulas in the web browser.  We have now integrated KaTeX into XDOC's fancy
+web-based viewer, allowing you to typeset basic formulas.</p>
+
+
+<h3>Basic Usage</h3>
+
+<p>To typeset block-style formulas, you can use the @('@([...])') @(see
+preprocessor) directive, e.g.,:</p>
+
+@({
+    @([
+       c = \\pm\\sqrt{a^2 + b^2}
+    ])
+})
+
+<p>Produces an indented block of mathematics:</p>
+
+@([
+    c = \\pm\\sqrt{a^2 + b^2}
+])
+
+<p>You can also write inline math using @('@($...$)') directive, for
+instance:</p>
+
+@({
+     The product @($a \\times b$) is even.
+})
+
+<p>Produces text such as: the product @($a \\times b$).</p>
+
+
+<h3>Tips and Tricks</h3>
+
+<h5>Fast Preview.</h5>
+
+<p>The <a href='formula.html'>KaTeX Preview</a> page lets you interactively
+type in your formula and see how it will be typeset.  It may be especially
+helpful since KaTeX only supports a particular subset of LaTeX.</p>
+
+<h5>Escaping Help.</h5>
+
+<p>LaTeX-style formulas may be especially hard to type in ordinary ACL2 string
+literals because you have to escape all the backslashes.  For instance, you
+have to remember to write @('\\\\sqrt{x}') instead of @('\\sqrt{x}').  You can
+avoid this headache by using the @(see acl2::fancy-string-reader).</p>
+
+<h5>Invalid Formulas.</h5>
+
+<p>Invalid formulas will display as an ugly error message.  For instance, here
+is an invalid @('@([ ... ])') style formula:</p>
+
+@([
+      { there is no closing brace
+])
+
+<p>And here is an invalid @('@($...$)') style formula,
+@($
+      { there is no closing brace
+$), embedded in a paragraph.</p>
+
+<h3>Miscellaneous Notes</h3>
+
+<p>The preprocessor directives expand into @('<math>') and @('<mathfrag>')
+tags.  But you will probably want to stick to the preprocessor syntax, rather
+than directly using @('<math>') tags, because if you try to use raw @('<math>')
+tags then you have to remember to escape XML characters like @('<') with
+@('&lt;'), which just isn't very readable.</p>
+
+<p>All of this is fundamentally limited to the web-based viewer.  It seems very
+unlikely that @('<math>') formulas will ever look nice when shown at the
+terminal with @(':doc') or in the ACL2-Doc Emacs viewer.</p>")
 

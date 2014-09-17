@@ -1,5 +1,5 @@
 ; OSLIB -- Operating System Utilities
-; Copyright (C) 2013 Centaur Technology
+; Copyright (C) 2013-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -29,45 +29,22 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "OSLIB")
-
+(include-book "top-logic")
 (include-book "argv")
 (include-book "catpath")
+(include-book "copy")
 (include-book "date")
+(include-book "dirname")
+(include-book "file-types")
 (include-book "getpid")
 (include-book "lisptype")
 (include-book "ls")
 (include-book "mkdir")
-(include-book "file-types")
-(include-book "tempfile")
 (include-book "rmtree")
-
-(defxdoc oslib
-  :parents (acl2::interfacing-tools)
-  :short "Operating System Utilities Library"
-
-  :long "<p>This is a collection of ACL2 functions that allow you to do various
-basic operating-system related tasks, e.g., you can get the current PID or user
-name, file listings, etc.</p>
-
-<p>Almost everything here necessarily requires a trust tag, because it is
-implemented in raw Lisp.  We believe we have connected this functionality to
-ACL2 in a sound way, using @(see read-acl2-oracle).</p>
-
-<p>The library is far from complete since we tend to extend it only as the need
-arises.  Most functions are not implemented on all Lisp and operating system
-combinations, and will simply fail on unsupported Lisps.</p>
+(include-book "tempfile")
 
 
-<h3>Loading the library</h3>
 
-<p>You can load the full library with:</p>
-
-@({
- (include-book \"oslib/top\" :dir :system)
-})
-
-<p>But it is often better, in this case, to just pick and choose the specific
-books you want to load.</p>")
 
 
 

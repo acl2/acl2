@@ -37,6 +37,8 @@
 (include-book "defxdoc-raw")
 (include-book "save-fancy")
 (include-book "oslib/mkdir" :dir :system)
+(include-book "oslib/copy" :dir :system)
+(include-book "oslib/rmtree" :dir :system)
 (program)
 
 #|
