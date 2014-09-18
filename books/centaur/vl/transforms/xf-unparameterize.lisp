@@ -947,6 +947,7 @@ introduced.</p>"
                (new-mod vl-module-p))
   (b* ((name (vl-unparam-newname (vl-module->name mod) valsigma typesigma))
        (mod  (change-vl-module mod :name name :paramdecls nil))
+       ((with-fast valsigma typesigma))
        (mod  (vl-module-subst mod valsigma))
        ((mv okp mod) (vl-module-typesubst mod typesigma)))
     (mv okp mod)))

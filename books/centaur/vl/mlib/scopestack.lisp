@@ -730,7 +730,23 @@ instances.</p>"
                                 (if (atom ss)
                                     nil
                                   (or (vl-scope-find-__result__-fast name (car ss))
-                                      (vl-scopestack-find-__result__ name (cdr ss)))))))))))
+                                      (vl-scopestack-find-__result__ name (cdr ss))))))
+
+                            (define vl-scopestack-find-__result__/ss
+                              :short "Look up a plain identifier in the current scope stack."
+                              ((name stringp)
+                               (ss   vl-scopestack-p))
+                              :hints (("goal" :expand ((vl-scopestack-fix ss))))
+                              :guard-hints (("goal" :expand ((vl-scopestack-p ss))))
+                              :returns (mv (__result__ (iff (__resulttype__ __result__) __result__))
+                                           (ss vl-scopestack-p))
+                              (b* ((ss (vl-scopestack-fix ss)))
+                                (if (atom ss)
+                                    (mv nil nil)
+                                  (let ((res (vl-scope-find-__result__-fast name (car ss))))
+                                    (if res
+                                        (mv res ss)
+                                      (vl-scopestack-find-__result__/ss name (cdr ss))))))))))))
            (acl2::template-subst-fn template nil nil nil nil
                                     `(("__RESULT__" ,(symbol-name result) . vl-package)
                                       ("__RESULTTYPE__" ,(symbol-name resulttype) . vl-package))
