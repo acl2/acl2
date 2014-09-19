@@ -39,7 +39,27 @@
 -->
 
 <xsl:template match="see">
-  <a href="javascript:action_go_key('{@topic}')">
+  <!-- original: <a href="javascript:action_go_key('{@topic}')">
+        basically worked.
+        middle click didn't work. -->
+  <!-- try 2: <a href="javascript:void(0)" onClick="action_go_key('{@topic}')">
+        basically worked.
+        middle click didn't work -->
+  <!-- try 3: this broke the back button and generally seems stupid/fubar
+        <a href="#" onClick="action_go_key('{@topic}')"> -->
+  <!-- try 4: this seemed to totally screw up the entire page somehow
+        <a href="index.html?topic={@topic}" onClick="function(e){ e.preventDefault(); action_go_key('{@topic}'); }">
+       -->
+  <!-- try 5: <a onClick="action_go_key('{@topic}')">
+       links lose their color and mouse shape, but maybe we can fix that with css
+       back button seems to work
+       middle click still does nothing useful
+       -->
+   <!-- try 6: elaborate thing with makeSeeLinksWork() - victory but ugly
+      a href="index.html?topic={@topic}" class="seelink" data-topic="{@topic}"
+      -->
+  <!-- try 7: reasonably sensible and works!!! woohoo!!! -->
+  <a href="index.html?topic={@topic}" onclick="return dolink(event, '{@topic}');">
     <xsl:apply-templates/>
   </a>
 </xsl:template>

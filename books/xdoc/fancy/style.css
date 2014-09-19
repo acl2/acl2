@@ -183,7 +183,7 @@ h3, h4, h5, h3 .tt, h4 .tt, h5 .tt, h3 .v, h4 .v, h5 .v
 #parents li a       {  }
 #parents li a:hover { background-color: #00B74A; text-decoration: none; }
 
-.tt-is-under-cursor { background-color: #ffffa0; }
+.tt-cursor { background-color: #ffffa0; }
 
 #jumpmsg,#searchmsg { color: white; }
 
@@ -271,7 +271,12 @@ dt, .hindex, #flat, #still_loading, .xtable th {
     background-color: white;
     color: black;
     width: 450px;
+    max-height: 500px;
     font-size: 90%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    border: 1px black solid;
+    border-radius: 5px;
 }
 
 .tt-suggestion {
@@ -282,6 +287,8 @@ dt, .hindex, #flat, #still_loading, .xtable th {
 .tt-suggstion tt {
     font-size: 50%;
 }
+
+.tt-highlight { background-color: #ffffd0; }
 
 
 /* ------------------------ NAVIGATION MENU ---------------------- */

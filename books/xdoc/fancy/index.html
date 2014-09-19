@@ -74,11 +74,12 @@ if (!window.history || !window.history.replaceState) {
 </script>
 
 <!-- General Libraries -->
-<script src="lib/jquery-2.0.3.min.js"></script>
+<script src="lib/jquery-2.1.0.min.js"></script>
 <script src="lib/jquery.base64.js"></script>
 <script src="lib/jquery.powertip.min.js"></script>
 <link rel="stylesheet" type="text/css" href="lib/jquery.powertip.css"/>
-<script src="lib/typeahead.min.js"></script>
+<script src="lib/typeahead-bundle/bloodhound.js"></script>
+<script src="lib/typeahead-bundle/typeahead.jquery.min.js"></script>
 <script src="lib/lazyload.js"></script>
 <link rel="stylesheet" type="text/css" href="lib/katex/katex.min.css"/>
 
@@ -113,21 +114,16 @@ if (!window.history || !window.history.replaceState) {
       </th>
       <th id="letters"></th>
       <td>
-<!-- Come back to this after Typeahead 0.10.  There may be a way to get it to
-     autocomplete when the user hits enter, then. -->
- 	<form> 
+ 	<form id="jumpform">
 	<label id="jumpmsg" data-powertip="<p>If you know what topic you want, you
 					  can type its symbol-name here (without
                                           a package name), then choose the match
-                                          when it comes up.</p>
-
-					  <p>This is kind of buggy.  Start typing,
-					  then either click or use up/down to
-                                          choose what you want before hitting
-                                          Enter.</p>">
+                                          when it comes up.</p>">
 	  Jump to </label>
-	<input id="jump" type="text" size="20" placeholder="loading..."
+	<input id="jump" type="text" size="20" class="typeahead"  placeholder="loading..."
 	       disabled="disabled"/>
+	<input type="submit" style="position: absolute; left: -9999px; width: 1px; height: 1px;"
+	       hidefocus="true" tabindex="-1"/>
 	</form>
       </td>
       <td>
