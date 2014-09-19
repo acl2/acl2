@@ -1054,3 +1054,21 @@
 ;;                        error (and use the most recent version of each topic.)"))))
 ;;           (value '(value-triple :invisible)))))
         
+(deflist acl2::string-list :pred acl2::string-listp :elt-type string)
+
+(deflist nat-list :pred acl2::nat-listp :elt-type natp)
+(deflist integer-list :pred acl2::integer-listp :elt-type integerp)
+(deflist symbol-list :pred acl2::symbol-listp :elt-type symbolp)
+(deflist rational-list :pred acl2::rational-listp :elt-type rationalp)
+(defalist symbol-alist :pred acl2::symbol-alistp :key-type symbolp)
+(defmap symbol-alist2 :pred acl2::symbol-alistp :key-type symbolp)
+
+(defun natlistp (x)
+  (declare (xargs :guard t))
+  (if (consp x)
+      (and (natp (car x)) (natlistp (cdr x)))
+    t))
+
+(deflist natlist :pred natlistp :elt-type natp)
+
+(defalist timer-alist :pred timer-alistp :key-type symbolp :val-type rational-listp)
