@@ -983,6 +983,15 @@ criteria.</li>
 <p>We also take this opportunity to issue non-fatal warnings about unused
 variables and inputs.</p>"
 
+  :prepwork ((local (in-theory (disable not
+                                        union
+                                        subset
+                                        difference
+                                        mergesort
+                                        intersect
+                                        subsetp-equal-when-first-two-same-yada-yada
+                                        set::subset-difference))))
+
   (b* (((mv vardecls ?paramdecls)
         (vl-filter-blockitems (vl-fundecl->decls function)))
        (varnames (vl-vardecllist->names vardecls))
@@ -1737,7 +1746,11 @@ which is free of function calls on success.</p>"
                  (nf       vl-namefactory-p)
                  (new-x    vl-expr-p)
                  (vardecls vl-vardecllist-p)
-                 (assigns  vl-assignlist-p))
+                 (assigns  vl-assignlist-p
+                           :hints ('(:in-theory (disable (:d vl-expr-expand-function-calls)
+                                                         (:d vl-exprlist-expand-function-calls))
+                                     :expand ((vl-expr-expand-function-calls
+                                               x templates nf vardecls assigns warnings ctx))))))
     :measure (vl-expr-count x)
     :verify-guards nil
     :flag :expr
@@ -1842,7 +1855,11 @@ which is free of function calls on success.</p>"
                  (new-x    (and (vl-exprlist-p new-x)
                                 (equal (len new-x) (len x))))
                  (vardecls vl-vardecllist-p)
-                 (assigns  vl-assignlist-p))
+                 (assigns  vl-assignlist-p
+                           :hints ('(:in-theory (disable (:d vl-expr-expand-function-calls)
+                                                         (:d vl-exprlist-expand-function-calls))
+                                     :expand ((vl-exprlist-expand-function-calls
+                                               x templates nf vardecls assigns warnings ctx))))))
     :measure (vl-exprlist-count x)
     :flag :list
     (b* ((nf       (vl-namefactory-fix nf))
@@ -2082,7 +2099,11 @@ which is free of function calls on success.</p>"
                  (nf       vl-namefactory-p)
                  (new-x    vl-stmt-p)
                  (vardecls vl-vardecllist-p)
-                 (assigns  vl-assignlist-p))
+                 (assigns  vl-assignlist-p
+                           :hints ('(:in-theory (disable (:d vl-stmt-expand-function-calls)
+                                                         (:d vl-stmtlist-expand-function-calls))
+                                     :expand ((vl-stmt-expand-function-calls
+                                               x templates nf vardecls assigns warnings ctx))))))
     :verify-guards nil
     :measure (vl-stmt-count x)
     :flag :stmt
@@ -2193,7 +2214,11 @@ which is free of function calls on success.</p>"
                  (new-x    (and (equal (len new-x) (len x))
                                 (vl-stmtlist-p new-x)))
                  (vardecls vl-vardecllist-p)
-                 (assigns  vl-assignlist-p))
+                 (assigns  vl-assignlist-p
+                           :hints ('(:in-theory (disable (:d vl-stmt-expand-function-calls)
+                                                         (:d vl-stmtlist-expand-function-calls))
+                                     :expand ((vl-stmtlist-expand-function-calls
+                                               x templates nf vardecls assigns warnings ctx))))))
     :measure (vl-stmtlist-count x)
     :flag :list
     (b* ((nf       (vl-namefactory-fix nf))

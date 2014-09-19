@@ -655,9 +655,11 @@ instances.</p>"
 (define vl-scopestack-fix ((x vl-scopestack-p))
   :returns (new-x vl-scopestack-p)
   :hooks nil
-  (if (vl-scopestack-p x)
-      x
-    nil)
+  :inline t
+  (mbe :logic (if (vl-scopestack-p x)
+                  x
+                nil)
+       :exec x)
   ///
   (defthm vl-scopestack-fix-when-vl-scopestack-p
     (implies (vl-scopestack-p x)
