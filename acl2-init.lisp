@@ -32,6 +32,15 @@
 #+(or (and sbcl sb-thread) ccl lispworks hons)
 (push :acl2-mv-as-values *features*)
 
+; We use the static honsing scheme on 64-bit CCL.
+#+(and ccl x86_64)
+(push :static-hons *features*)
+
+; We use the static honsing scheme on 64-bit GCL when the support is there.
+#+(and gcl x86_64)
+(when (fboundp 'si::static-inverse-cons)
+  (pushnew :static-hons *features*))
+
 ; Essay on Parallelism, Parallelism Warts, Parallelism Blemishes, Parallelism
 ; No-fixes, Parallelism Hazards, and #+ACL2-PAR notes.
 
@@ -1205,6 +1214,8 @@ implementations.")
               (lisp-implementation-version)))
     (setq ccl::*inhibit-greeting* t))
 
+  #+hons (qfuncall acl2h-init)
+
   #+gcl
   (progn
 
@@ -1221,9 +1232,13 @@ implementations.")
       (makunbound 'si::*system-banner*)
       (when (boundp 'si::*tmp-dir*)
         (format t "Temporary directory for compiler files set to ~a~%"
-                si::*tmp-dir*))))
+                si::*tmp-dir*)))
+; Growing the sbits array just before si::save-system doesn't seem to avoid
+; triggering a call of hl-hspace-grow-sbits when the first static hons is
+; created.  So we do the grow here, i.e., after starting ACL2(h).
+    #+(and hons static-hons)
+    (hl-hspace-grow-sbits (hl-staticp (cons nil nil)) *default-hs*))
 
-  #+hons (qfuncall acl2h-init)
   (when *print-startup-banner*
     (format t
             *saved-string*

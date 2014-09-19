@@ -31,8 +31,10 @@
 (in-package "ACL2")
 (include-book "base")
 (include-book "bordeaux")
+(include-book "cl-fad")
 (include-book "hunchentoot")
 (include-book "osicat")
+(include-book "uiop")
 
 (defsection quicklisp
   :parents (acl2::interfacing-tools)
@@ -84,7 +86,9 @@ that you want to use Quicklisp&mdash;e.g.,</p>
 })
 
 <p>The @('base') book really is just a way to get Quicklisp itself loaded into
-an ACL2 session.  It doesn't load anything libraries.</p>
+an ACL2 session.  It also (locally) loads the libraries that we expect to use,
+which ensures everything gets downloaded at the same time, and avoids potential
+problems with loading Quicklisp libraries during parallel builds.</p>
 
 <p>Other files in the Quicklisp directory are named after the Common Lisp
 libraries they load, and the @('top') book loads all of the libraries that we

@@ -41,6 +41,8 @@
   (taskport-summary x)
   :guard (vl-taskportlist-p x))
 
+(defparser-top vl-parse-taskport-list)
+
 (defmacro test-parse-taskports (&key input (successp 't) summary)
   `(with-output
      :off summary
@@ -48,7 +50,7 @@
                    (config *vl-default-loadconfig*)
                    (pstate (make-vl-parsestate :warnings 'blah-warnings))
                    ((mv erp val tokens (vl-parsestate pstate))
-                    (vl-parse-taskport-list))
+                    (vl-parse-taskport-list-top))
                    ((unless ,successp)
                     (cw "Expected failure.~%")
                     (cw "Actual erp: ~x0.~%" erp)

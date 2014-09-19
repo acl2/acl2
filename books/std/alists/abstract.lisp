@@ -393,6 +393,9 @@ about keyval-alistp."
              (keyval-alist-p (hons-shrink-alist x y)))
     :name keyval-alist-p-of-hons-shrink-alist))
 
+
+;; expensive...
+(in-theory (disable alistp-when-keyval-alist-p-rewrite))
   
 ;; missing:
 ;; keyval-alist-p-of-make-fal

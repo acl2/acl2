@@ -1,5 +1,5 @@
 ; OSLIB -- Operating System Utilities
-; Copyright (C) 2013 Centaur Technology
+; Copyright (C) 2013-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -29,9 +29,10 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "OSLIB")
-(include-book "logic-defs")
+(include-book "date-logic")
 (include-book "std/strings/cat" :dir :system)
 (include-book "std/strings/decimal" :dir :system)
+(include-book "tools/include-raw" :dir :system)
 ; (depends-on "date-raw.lsp")
 
 (defttag oslib)

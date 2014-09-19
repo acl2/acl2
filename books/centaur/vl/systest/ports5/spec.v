@@ -96,6 +96,33 @@ module MH (output [3:0] out,
 endmodule
 
 
+/*+VL
+
+// Silly checks, these should fail because in2 is not declared.
+module ShouldFail1(output [3:0] out);
+  wire [1:0] in1;
+  MA ainst(.*);
+endmodule
+
+module ShouldFail2(output [3:0] out);
+  wire [1:0] in1;
+  MA ainst(.out, .in1, .in2);
+endmodule
+
+module ShouldFail4(output [3:0] out);
+  wire [1:0] in1;
+  MA ainst(.out, .in1, .*);
+endmodule
+
+// This one isn't fatal.
+module ShouldWarn(output [3:0] out);
+  wire [3:0] in1;
+  MA ainst(.out, .in1);
+endmodule
+
+*/
+
+
 module dut (
 
 in1, in2,
@@ -129,9 +156,8 @@ iout1, iout2, iout3, iout4, iout5, iout6, iout7
   MB binst3 (.in1(in2), .out(bout3), .in2(in1));           // reordered, named connections
   MB binst4 (.in1(4'b1100), .out(bout4), .in2(in1));       // fixed constant on input port
   MB binst5 (.in1(4'b1100 + in2), .out(bout5), .in2(in1)); // expression to input port
-  assign bout6 = 0;
-  assign bout7 = 0;
-
+  MB binst6 (.in1, .out(bout6), .in2);                     // name-only connections
+  MB binst7 (.out(bout7), .in1, .in2(in1));
 
   output [3:0] 	   cout1, cout2, cout3, cout4, cout5, cout6, cout7;
   MC cinst1 (cout1, cout2, in1, in2);
@@ -145,8 +171,8 @@ iout1, iout2, iout3, iout4, iout5, iout6, iout7
   MD dinst3 (.in1(in1), .in2(in2), .out(dout3));
   MD dinst4 (.in1(in1 + 1'd1), .in2(in2), .out(dout4));
   MD dinst5 (.in1(in1 + 1'sd1), .in2(in2), .out(dout5));
-  assign dout6 = 0;
-  assign dout7 = 0;
+  MD dinst6 (.in1(in1 + 1'sd1), .in2, .out(dout6));
+  MD dinst7 (.in1(in1 + 1'd1), .out(dout7), .in2);
 
   output [3:0] 	   eout1, eout2, eout3, eout4, eout5, eout6, eout7;
   ME einst1 (eout1, in1, in2);
@@ -163,8 +189,8 @@ iout1, iout2, iout3, iout4, iout5, iout6, iout7
   MF finst3 (.in1(in1), .in2(in2), .out(fout3));
   MF finst4 (.in1(in1 + 1'd1), .in2(in2), .out(fout4));
   MF finst5 (.in1(in1 + 1'sd1), .in2(in2), .out(fout5));
-  assign fout6 = 0;
-  assign fout7 = 0;
+  MF finst6 (.out(fout6), .*);
+  MF finst7 (.out(fout7), .in1, .*);
 
   output [3:0] 	   gout1, gout2, gout3, gout4, gout5, gout6, gout7;
   MG ginst1 (gout1, in1, in2);

@@ -32,6 +32,9 @@
 (include-book "base")
 (include-book "../insts")
 
+(defparser-top vl-parse-udp-or-module-instantiation
+  :guard (vl-atts-p atts))
+
 (defmacro test-parse-modinst-args (&key input (successp 't) expect remainder)
   `(with-output
      :off summary
@@ -40,7 +43,7 @@
                    (pstate (make-vl-parsestate :warnings 'warnings))
                    (atts   nil)
                    ((mv erp val ?tokens (vl-parsestate pstate))
-                    (vl-parse-udp-or-module-instantiation atts))
+                    (vl-parse-udp-or-module-instantiation-top atts))
                    ((unless ,successp)
                     ;; We expect it to fail
                     (cw "Expect an error.  Error is: ~x0.~%" erp)

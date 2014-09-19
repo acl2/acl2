@@ -30,7 +30,7 @@
 
 (in-package "VL")
 (include-book "../lexer/tokens")
-(include-book "../../mlib/fmt")
+(include-book "../../mlib/print-warnings")
 
 (defsection vl-report-parse-error
 
@@ -40,24 +40,22 @@
 ; We put this in its own file so that the rest of the parser doesn't have to
 ; depend on the writer.
 
-
   (defund vl-actually-report-parse-error (err context)
-    (declare (xargs :guard (stringp context)))
+    (declare (xargs :guard (and (vl-warning-p err)
+                                (stringp context))))
     (if (not err)
         nil
       (vl-cw-ps-seq
        (vl-ps-update-autowrap-col 68)
-       (if (and (consp err)
-                (stringp (car err)))
-           (vl-cw-obj (car err) (cdr err))
-         (vl-cw "Malformed error object: ~x0." err))
+       (vl-print-warning err)
        (vl-println context)
        (vl-println ""))))
 
   (memoize 'vl-actually-report-parse-error)
 
   (defund vl-report-parse-error (err tokens)
-    (declare (xargs :guard (vl-tokenlist-p tokens)))
+    (declare (xargs :guard (and (vl-warning-p err)
+                                (vl-tokenlist-p tokens))))
     (if (not err)
         nil
       (let ((context (cat "  Near: \""

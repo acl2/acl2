@@ -1,5 +1,5 @@
 ; OSLIB -- Operating System Utilities
-; Copyright (C) 2013 Centaur Technology
+; Copyright (C) 2013-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -29,7 +29,6 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "OSLIB")
-
 
 (defun argv-fn (state)
 
@@ -136,35 +135,32 @@
 
    #+gcl
    (let ((args si::*command-args*))
-     ;; BOZO.  This isn't going to work perfectly because GCL doesn't seem to
-     ;; have an equivalent of --.  For now I'm going to at least expect that the
-     ;; wrapper script uses -- anyway, e.g., a proper wrapper script is:
+     ;; For this to work, the proper way to invoke GCL is through a wrapper
+     ;; script along the lines of:
      ;;
      ;;   #!/bin/sh
      ;;   exec /blah/blah/blah.gcl -eval '(myprog::main)' -- "$@"
      ;;
-     ;; This way we can at least cut out the stuff that comes before --.  But
-     ;; it's not perfect because GCL will still try to process options like
-     ;; -eval, -f, etc., that happen to come in $@.
-     (cond ((atom args)
-            (error "ARGV expected GCL to have at least the program name.")
-            (mv nil state))
-           ((string-listp args)
-            (mv (cdr (member-equal "--" args)) state))
+     ;; Note: This requires a version of GCL >= 2.6.10.  In previous versions
+     ;; the -- flag wasn't understood.
+     (cond ((string-listp args)
+            (mv args state))
            (t
             (error "ARGV found non string-listp arguments? ~a" args)
             (mv nil state))))
 
    #+lispworks
    (let ((args sys:*line-arguments-list*))
-     ;; BOZO this is very similar to GCL.  There's apparently no proper support
-     ;; for --, so do the smae hack as for GCL, which sort of works.  A proper
-     ;; wrapper script is, e.g.,
+     ;; BOZO.  This isn't going to work perfectly because Lispworks doesn't
+     ;; seem to have an equivalent of --.  As a hack, we'll assume that a
+     ;; proper wrapper script looks like:
      ;;
      ;;   #/bin/sh
      ;;   exec /blah/blah/image.lw -init - -siteinit - -- "$@"
      ;;
-     ;; Again this isn't perfect.
+     ;; We'll just grab whatever comes after --.  Of course, this isn't
+     ;; perfect because Lispworks will still try to process options like
+     ;; -eval, -f, etc., that happen to come in $@.
      (cond ((atom args)
             (error "ARGV expected Lispworks to have at least the program name."))
            ((string-listp args)

@@ -126,8 +126,7 @@ clever.</p>")
   ((ports     vl-portlist-p)
    (plainargs (and (vl-plainarglist-p plainargs)
                    (same-lengthp ports plainargs)))
-   (portdecls vl-portdecllist-p)
-   (palist    (equal palist (vl-portdecl-alist portdecls)))
+   (scope     vl-scope-p)
    (loc       vl-location-p)
    (warnings  vl-warninglist-p))
   :returns
@@ -142,7 +141,7 @@ clever.</p>")
        (outside (vl-plainarg->expr (car plainargs)))
 
        ((mv warnings dir)
-        (vl-port-direction (car ports) portdecls palist nil))
+        (vl-port-direction (car ports) scope nil))
        ((unless dir)
         ;; Already warned
         (mv nil warnings nil))
@@ -186,7 +185,7 @@ clever.</p>")
 
        ((mv okp warnings assigns2)
         (vl-make-inlining-assigns (cdr ports) (cdr plainargs)
-                                  portdecls palist loc warnings)))
+                                  scope loc warnings)))
     (mv okp warnings (append assigns1 assigns2)))
 
   ///
@@ -295,10 +294,9 @@ clever.</p>")
        (renaming-alist (pairlis$ old-names new-names))
        (portdecls      (with-fast-alist renaming-alist
                          (vl-inline-rename-portdecls sub.portdecls renaming-alist)))
-       (palist         (vl-portdecl-alist portdecls))
+       (scope          (change-vl-module sub :portdecls portdecls))
        ((mv okp warnings port-assigns)
-        (vl-make-inlining-assigns ports plainargs portdecls palist x.loc warnings))
-       (- (fast-alist-free palist))
+        (vl-make-inlining-assigns ports plainargs scope x.loc warnings))
        ((unless okp)
         (mv nf (list x) nil nil nil
             (fatal :type :vl-inline-fail

@@ -52,14 +52,14 @@
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens pstate
-        (:= (vl-match-token :vl-lbrack))
-        (msb := (vl-parse-expression))
-        (:= (vl-match-token :vl-colon))
-        (lsb := (vl-parse-expression))
-        (:= (vl-match-token :vl-rbrack))
-        (return (make-vl-range :msb msb
-                               :lsb lsb))))
+  (seq tokstream
+       (:= (vl-match-token :vl-lbrack))
+       (msb := (vl-parse-expression))
+       (:= (vl-match-token :vl-colon))
+       (lsb := (vl-parse-expression))
+       (:= (vl-match-token :vl-rbrack))
+       (return (make-vl-range :msb msb
+                              :lsb lsb))))
 
 (defparser vl-parse-0+-ranges ()
   ;; Note: assumes brackets denote subsequent ranges to be matched, and as a
@@ -69,10 +69,10 @@
   :true-listp t
   :fails gracefully
   :count strong-on-value
-  (seqw tokens pstate
-        (unless (vl-is-token? :vl-lbrack)
-          (return nil))
-        (first := (vl-parse-range))
-        (rest := (vl-parse-0+-ranges))
-        (return (cons first rest))))
+  (seq tokstream
+       (unless (vl-is-token? :vl-lbrack)
+         (return nil))
+       (first := (vl-parse-range))
+       (rest := (vl-parse-0+-ranges))
+       (return (cons first rest))))
 

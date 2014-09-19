@@ -60,14 +60,11 @@
 ;  | real_number
 ;  | identifier
 
-(encapsulate
- ()
- (local (in-theory (enable vl-is-token?)))
- (defparser vl-parse-delay-value ()
-   :result (vl-expr-p val)
-   :resultp-of-nil nil
-   :fails gracefully
-   :count strong
+(defparser vl-parse-delay-value ()
+  :result (vl-expr-p val)
+  :resultp-of-nil nil
+  :fails gracefully
+  :count strong
 
 ; Well, this is gross.  We are only supposed to permit unsigned numbers, not
 ; arbitrary integers.  But that's a lexer concept, not a parser one.  So we
@@ -75,23 +72,23 @@
 ; that's the character that starts every base.  Maybe we should just be more
 ; flexible than the spec says, instead.
 
-   (cond ((vl-is-token? :vl-inttoken)
-          (if (member #\' (vl-echarlist->chars (vl-inttoken->etext (car tokens))))
-              (vl-parse-error "Illegal delay value.")
-            (vl-parse-primary)))
+  (seq tokstream
+       (when (vl-is-token? :vl-inttoken)
+         (int := (vl-match))
+         (when (member #\' (vl-echarlist->chars (vl-token->etext int)))
+           (return-raw (vl-parse-error "Illegal delay value.")))
+         (return (make-vl-atom :guts (vl-make-guts-from-inttoken int))))
 
-         ((vl-is-token? :vl-realtoken)
-          (vl-parse-primary))
+       (when (vl-is-token? :vl-realtoken)
+         (ans := (vl-parse-primary))
+         (return ans))
 
-         ((vl-is-token? :vl-idtoken)
-          (mv nil
-              (make-vl-atom
-               :guts (make-vl-id :name  (vl-idtoken->name (car tokens))))
-              (cdr tokens)
-              pstate))
+       (when (vl-is-token? :vl-idtoken)
+         (id := (vl-match))
+         (return (make-vl-atom :guts (make-vl-id :name (vl-idtoken->name id)))))
 
-         (t
-          (vl-parse-error "Illegal delay value.")))))
+       (return-raw
+        (vl-parse-error "Illegal delay value."))))
 
 
 
@@ -104,7 +101,7 @@
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens pstate
+  (seq tokstream
         (:= (vl-match-token :vl-pound))
         (unless (vl-is-token? :vl-lparen)
           (delay := (vl-parse-delay-value))
@@ -135,32 +132,32 @@
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens pstate
-        (:= (vl-match-token :vl-pound))
-        (unless (vl-is-token? :vl-lparen)
-          (delay := (vl-parse-delay-value))
-          (return (make-vl-gatedelay :rise delay
-                                     :fall delay
-                                     :high delay)))
-        (:= (vl-match))
-        (first := (vl-parse-mintypmax-expression))
-        (when (vl-is-token? :vl-rparen)
-          (:= (vl-match))
-          (return (make-vl-gatedelay :rise first
-                                     :fall first
-                                     :high first)))
-        (:= (vl-match-token :vl-comma))
-        (second := (vl-parse-mintypmax-expression))
-        (when (vl-is-token? :vl-rparen)
-          (:= (vl-match))
-          (return (make-vl-gatedelay :rise first
-                                     :fall second
-                                     :high nil)))
-        (:= (vl-match-token :vl-comma))
-        (third := (vl-parse-mintypmax-expression))
-        (:= (vl-match-token :vl-rparen))
-        (return (make-vl-gatedelay :rise first
-                                   :fall second
-                                   :high third))))
+  (seq tokstream
+       (:= (vl-match-token :vl-pound))
+       (unless (vl-is-token? :vl-lparen)
+         (delay := (vl-parse-delay-value))
+         (return (make-vl-gatedelay :rise delay
+                                    :fall delay
+                                    :high delay)))
+       (:= (vl-match))
+       (first := (vl-parse-mintypmax-expression))
+       (when (vl-is-token? :vl-rparen)
+         (:= (vl-match))
+         (return (make-vl-gatedelay :rise first
+                                    :fall first
+                                    :high first)))
+       (:= (vl-match-token :vl-comma))
+       (second := (vl-parse-mintypmax-expression))
+       (when (vl-is-token? :vl-rparen)
+         (:= (vl-match))
+         (return (make-vl-gatedelay :rise first
+                                    :fall second
+                                    :high nil)))
+       (:= (vl-match-token :vl-comma))
+       (third := (vl-parse-mintypmax-expression))
+       (:= (vl-match-token :vl-rparen))
+       (return (make-vl-gatedelay :rise first
+                                  :fall second
+                                  :high third))))
 
 

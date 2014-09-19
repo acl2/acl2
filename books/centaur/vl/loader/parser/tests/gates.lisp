@@ -67,13 +67,16 @@
 (defprojection vl-pretty-gateinstlist ((x vl-gateinstlist-p))
   (vl-pretty-gateinst x))
 
+(defparser-top vl-parse-gate-instantiation
+  :guard (vl-atts-p atts))
+
 (defmacro test-parse-gateinst (&key input (successp 't) atts expect)
   `(with-output
      :off summary
      (assert! (b* ((tokens (make-test-tokens ,input))
                    (pstate (make-vl-parsestate :warnings nil))
                    (config *vl-default-loadconfig*)
-                   ((mv erp val ?tokens ?pstate) (vl-parse-gate-instantiation ,atts))
+                   ((mv erp val ?tokens ?pstate) (vl-parse-gate-instantiation-top ,atts))
                    (- (cw "ERP ~x0.~%" erp))
                    (- (cw "VAL ~x0.~%" val))
                    (- (cw "Pretty val: ~x0.~%" (vl-pretty-gateinstlist val)))

@@ -29,7 +29,6 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "context")
 (include-book "writer")
 (local (include-book "../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
@@ -117,6 +116,22 @@
        (vl-ps-seq (vl-basic-cw "Initial statement at ")
                   (vl-print-loc (vl-initial->loc x))))
 
+      (:vl-typedef
+       (vl-ps-seq (vl-basic-cw "Typedef at ")
+                  (vl-print-loc (vl-typedef->loc x))))
+
+      (:vl-fwdtypedef
+       (vl-ps-seq (vl-basic-cw "Fwdtypedef at ")
+                  (vl-print-loc (vl-fwdtypedef->loc x))))
+
+      (:vl-modport
+       (vl-ps-seq (vl-basic-cw "Modport at ")
+                  (vl-print-loc (vl-modport->loc x))))
+
+      (:vl-alias
+       (vl-ps-seq (vl-basic-cw "Alias at ")
+                  (vl-print-loc (vl-alias->loc x))))
+
       (otherwise
        (prog2$ (impossible) ps)))))
 
@@ -159,6 +174,10 @@ quick summary instead, see @(see vl-pp-modelement-summary).</p>"
       (:vl-gateinst  (vl-pp-gateinst x))
       (:vl-always    (vl-pp-always x))
       (:vl-initial   (vl-pp-initial x))
+      (:vl-alias     (vl-pp-alias x))
+      (:vl-typedef   (vl-pp-typedef x))
+      (:vl-fwdtypedef (vl-pp-fwdtypedef x))
+      (:vl-modport    (vl-pp-modport x))
       (otherwise (prog2$ (impossible) ps)))))
 
 (define vl-pp-context-full ((x vl-context-p) &key (ps 'ps))

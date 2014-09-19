@@ -59,7 +59,10 @@
   ;; We leave "img" and "icon" in this list even thouggh we process them in
   ;; merge-text below, because we don't want to process </img> or </icon>.
   (list "b" "i" "u" "tt" "v" "color" "sf" "box" "img" "icon"
-        "page"))
+        "page"
+        ;; We'll just render mathfrag formulas without any special marks
+        "mathfrag"
+        ))
 
 (defun merge-text (x acc codes href)
   ;; CODES is number of open <code> tags -- we don't normalize whitespace
@@ -157,6 +160,8 @@
        ((when (equal name "dd"))
         (+ 6 (get-indent-level (cdr open-tags))))
        ((when (equal name "code"))
+        (+ 4 (get-indent-level (cdr open-tags))))
+       ((when (equal name "math"))
         (+ 4 (get-indent-level (cdr open-tags))))
        ((when (equal name "blockquote"))
         (+ 4 (get-indent-level (cdr open-tags))))
@@ -288,7 +293,7 @@
                     ;; This kind of tag has some level of indenting associated
                     ;; with it, so make sure we indent over to the right level.
                     (auto-indent (maybe-newline acc) open-tags))
-                   ((member-equal name '("code" "short" "long"))
+                   ((member-equal name '("code" "math" "short" "long"))
                     (auto-indent (maybe-doublespace acc) open-tags))
                    ((member-equal name '("h1" "h2" "h3"))
                     (auto-indent (maybe-triplespace acc) open-tags))
@@ -314,7 +319,7 @@
                           list-nums))
              (acc (cond
                    ((member-equal name '("h1" "h2" "h3" "h4" "h5" "p" "dl" "ul" "ol"
-                                         "short" "code" "index" "index_body"
+                                         "short" "code" "math" "index" "index_body"
                                          "blockquote" "table"))
                     (auto-indent (maybe-doublespace acc) open-tags))
                    ((member-equal name '("li" "dd" "dt" "index_head" "tr"))

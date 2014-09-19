@@ -33,7 +33,7 @@
 (include-book "../config")
 (include-book "../lexer/tokens")
 (include-book "../../util/warnings")
-(include-book "misc/seqw" :dir :system)
+(include-book "seq")
 (include-book "misc/untranslate-patterns" :dir :system)
 (include-book "tools/flag" :dir :system)
 (include-book "tools/rulesets" :dir :system)
@@ -88,6 +88,137 @@
 
 
 
+(make-event
+ `(defstobj tokstream
+    (tokens :type (satisfies vl-tokenlist-p)
+            :initially nil)
+    (pstate :type (satisfies vl-parsestate-p)
+            :initially ,(make-vl-parsestate))
+    :inline t
+    :non-memoizable t
+    :renaming
+    ((tokens        vl-tokstream->tokens-raw)
+     (pstate        vl-tokstream->pstate-raw)
+     (update-tokens vl-tokstream-update-tokens-fn)
+     (update-pstate vl-tokstream-update-pstate-fn))))
+
+(define vl-tokstream->tokens (&key (tokstream 'tokstream))
+  :returns (tokens vl-tokenlist-p)
+  :inline t
+  (mbe :logic (vl-tokenlist-fix (vl-tokstream->tokens-raw tokstream))
+       :exec (vl-tokstream->tokens-raw tokstream)))
+
+(define vl-tokstream->pstate (&key (tokstream 'tokstream))
+  :returns (pstate vl-parsestate-p)
+  :inline t
+  (mbe :logic (vl-parsestate-fix (vl-tokstream->pstate-raw tokstream))
+       :exec (vl-tokstream->pstate-raw tokstream)))
+
+(defmacro vl-tokstream-update-tokens (tokens &key (tokstream 'tokstream))
+  `(vl-tokstream-update-tokens-fn ,tokens ,tokstream))
+
+(defmacro vl-tokstream-update-pstate (pstate &key (tokstream 'tokstream))
+  `(vl-tokstream-update-pstate-fn ,pstate ,tokstream))
+
+(add-macro-alias vl-tokstream-update-tokens vl-tokstream-update-tokens-fn)
+(add-macro-alias vl-tokstream-update-pstate vl-tokstream-update-pstate-fn)
+
+(in-theory (disable vl-tokstream-update-tokens
+                    vl-tokstream-update-pstate))
+
+(encapsulate
+  ()
+  (local (in-theory (enable vl-tokstream->tokens
+                            vl-tokstream->pstate
+                            vl-tokstream-update-tokens
+                            vl-tokstream-update-pstate)))
+
+  (defthm vl-tokstream->tokens-of-vl-tokstream-update-tokens
+    (equal (vl-tokstream->tokens :tokstream (vl-tokstream-update-tokens new-tokens))
+           (vl-tokenlist-fix new-tokens)))
+
+  (defthm vl-tokstream->pstate-of-vl-tokstream-update-tokens
+    (equal (vl-tokstream->pstate :tokstream (vl-tokstream-update-tokens new-tokens))
+           (vl-tokstream->pstate :tokstream tokstream)))
+
+  (defthm vl-tokstream->tokens-of-vl-tokstream-update-pstate
+    (equal (vl-tokstream->tokens :tokstream (vl-tokstream-update-pstate new-pstate))
+           (vl-tokstream->tokens :tokstream tokstream)))
+
+  (defthm vl-tokstream->pstate-of-vl-tokstream-update-pstate
+    (equal (vl-tokstream->pstate :tokstream (vl-tokstream-update-pstate new-pstate))
+           (vl-parsestate-fix new-pstate))))
+
+(defmacro vl-tokstream-measure (&key (tokstream 'tokstream))
+  `(len (vl-tokstream->tokens :tokstream ,tokstream)))
+
+(define vl-tokstream-fix (&key (tokstream 'tokstream))
+  (mbe :logic (b* ((tokens (vl-tokstream->tokens))
+                   (pstate (vl-tokstream->pstate)))
+                (non-exec
+                 (list tokens pstate)))
+       :exec tokstream)
+  :prepwork
+  ((local (in-theory (enable vl-tokstream->pstate
+                             vl-tokstream->tokens))))
+  ///
+  (defthm vl-tokstream->pstate-of-vl-tokstream-fix
+    (equal (vl-tokstream->pstate :tokstream (vl-tokstream-fix))
+           (vl-tokstream->pstate)))
+
+  (defthm vl-tokstream->tokens-of-vl-tokstream-fix
+    (equal (vl-tokstream->tokens :tokstream (vl-tokstream-fix))
+           (vl-tokstream->tokens)))
+
+  (defthm vl-tokstream-measure-of-vl-tokstream-fix
+    (equal (vl-tokstream-measure :tokstream (vl-tokstream-fix))
+           (vl-tokstream-measure))))
+
+
+(defaggregate vl-tokstream-backup
+  :tag nil
+  ((tokens vl-tokenlist-p)
+   (pstate vl-parsestate-p)))
+
+(define vl-tokstream-save (&key (tokstream 'tokstream))
+  :returns (backup vl-tokstream-backup-p)
+  (make-vl-tokstream-backup :tokens (vl-tokstream->tokens)
+                            :pstate (vl-tokstream->pstate))
+  ///
+  (defthm vl-tokstream-backup->tokens-of-vl-tokstream-save
+    (equal (vl-tokstream-backup->tokens (vl-tokstream-save))
+           (vl-tokstream->tokens))))
+
+(define vl-tokstream-restore ((backup vl-tokstream-backup-p) &key (tokstream 'tokstream))
+  (b* (((vl-tokstream-backup backup))
+       (tokstream (vl-tokstream-update-pstate backup.pstate))
+       (tokstream (vl-tokstream-update-tokens backup.tokens)))
+    (vl-tokstream-fix))
+  ///
+  (local (in-theory (enable vl-tokstream->tokens
+                            vl-tokstream->pstate
+                            vl-tokstream-update-tokens
+                            vl-tokstream-update-pstate
+                            vl-tokstream-fix
+                            vl-tokstream-save)))
+  (defthm vl-tokstream-restore-of-vl-tokstream-save
+    (equal (vl-tokstream-restore (vl-tokstream-save) :tokstream anything)
+           (vl-tokstream-fix))))
+
+
+(define vl-tokstream-add-warning ((warning vl-warning-p)
+                                  &key (tokstream 'tokstream))
+  :returns (new-tokstream)
+  (b* ((pstate (vl-tokstream->pstate))
+       (pstate (vl-parsestate-add-warning warning pstate))
+       (tokstream (vl-tokstream-update-pstate pstate)))
+    tokstream)
+  ///
+  (defthm vl-tokstream->tokens-of-vl-tokstream-add-warning
+    (equal (vl-tokstream->tokens :tokstream (vl-tokstream-add-warning warning))
+           (vl-tokstream->tokens))))
+
+
 (defxdoc defparser
   :short "Core macro for writing recursive-descent parsers, used throughout
 VL's parsing routines."
@@ -109,22 +240,22 @@ VL's parsing routines."
 
         [(declare ...)]
         [(declare ...)]
-        <body>             ;; usually (seqw tokens pstate ...)
+        <body>             ;; usually (seq tokens pstate ...)
         )
 
 <p>Such an event always introduces:</p>
 
 <ul>
-<li>A macro, (foo x y), that just calls (foo-fn x y tokens pstate).</li>
+<li>A macro, (foo x y), that just calls (foo-fn x y tokstream).</li>
 
-<li>A function, (foo-fn x y tokens pstate), that implicitly binds the variable
+<li>A function, (foo-fn x y tokstream), that implicitly binds the variable
     __function__ to 'foo and otherwise has the given bodies and declares, with
     the :guard thrown in if that is provided.</li>
 
 <li>An add-macro-alias so foo can be used in place of foo-fn in enables and
     disables.</li>
 
-<li>An untranslate-pattern so that (foo-fn x y tokens pstate) is displayed as
+<li>An untranslate-pattern so that (foo-fn x y tokstream) is displayed as
     (foo x y) during theorems.</li.
 
 </ul>
@@ -186,7 +317,7 @@ frequently.</p>")
               ;; loops due to (vl-warninglist-fix warnings) and
               ;; (vl-tokenlist-fix tokens) being around.  To try to avoid this,
               ;; I no longer let warnings be free, either.
-              (frees (set-difference-eq (cdr fncall) '(tokens pstate)))
+              (frees (set-difference-eq (cdr fncall) '(tokstream)))
               (recursivep (acl2::getprop
                            fn
                            'acl2::recursivep nil
@@ -214,17 +345,18 @@ frequently.</p>")
 (defun defparser-fn (name formals args)
   (declare (xargs :guard (and (symbolp name)
                               (true-listp formals)
-                              ;; Tokens, pstate, and config will be provided
-                              ;; automatically
+                              ;; Tokstream and config will be provided automatically
+                              ;; We also prohibit tokens and pstate for historic reasons
                               (not (member 'tokens formals))
                               (not (member 'pstate formals))
-                              (not (member 'config formals)))
+                              (not (member 'config formals))
+                              (not (member 'tokstream formals)))
                   :mode :program))
   (b* ((fn-name
         ;; BOZO want to use defguts or something instead
         (intern-in-package-of-symbol (cat (symbol-name name) "-FN") name))
        (fn-formals
-        (append formals '(tokens pstate config)))
+        (append formals '(tokstream config)))
 
        ((mv args rest-events) (std::split-/// name args))
 
@@ -239,13 +371,14 @@ frequently.</p>")
        (fails          (cdr (extract-keyword-from-args :fails args)))
        (guard          (extract-keyword-from-args :guard args))
        (guard-debug    (extract-keyword-from-args :guard-debug args))
+       (prepwork       (extract-keyword-from-args :prepwork args))
 
        (parents        (extract-keyword-from-args :parents args))
        (short          (extract-keyword-from-args :short args))
        (long           (extract-keyword-from-args :long args))
 
        (measure        (or (cdr (extract-keyword-from-args :measure args))
-                           '(len tokens)))
+                           '(vl-tokstream-measure :tokstream tokstream)))
        (hint-chicken-switch (cdr (extract-keyword-from-args
                                   :hint-chicken-switch args)))
        (verify-guards  (extract-keyword-from-args :verify-guards args))
@@ -257,71 +390,72 @@ frequently.</p>")
     `(define ,name
        ,(append formals
                 '(&key
-                  ((tokens   vl-tokenlist-p)   'tokens)
-                  ((pstate vl-parsestate-p) 'pstate)
-                  ((config   vl-loadconfig-p)  'config)
+                  (tokstream 'tokstream)
+                  ((config vl-loadconfig-p) 'config)
                   ))
        :returns (mv (errmsg?)
                     (value)
-                    (tokens)
-                    (pstate))
+                    (new-tokstream))
        ,@(and parents       `(:parents ,(cdr parents)))
        ,@(and short         `(:short ,(cdr short)))
        ,@(and long          `(:long ,(cdr long)))
        ,@(and guard         `(:guard ,(cdr guard)))
        ,@(and guard-debug   `(:guard-debug ,(cdr guard-debug)))
        ,@(and verify-guards `(:verify-guards ,(cdr verify-guards)))
+       ,@(and prepwork      `(:prepwork ,(cdr prepwork)))
        :measure ,measure
        ,@decls
        (declare (ignorable config))
-       (b* ((pstate (mbe :logic (vl-parsestate-fix pstate)
-                           :exec pstate))
-            (tokens   (mbe :logic (vl-tokenlist-fix tokens)
-                           :exec tokens)))
-         ,body)
+       ;; (b* ((pstate (mbe :logic (vl-parsestate-fix pstate)
+       ;;                   :exec pstate))
+       ;;      (tokens   (mbe :logic (vl-tokenlist-fix tokens)
+       ;;                     :exec tokens)))
+       ;;   ,body)
+       ,body
        ///
+
        (ACL2::add-to-ruleset defparser-type-prescriptions '((:t ,name)))
 
-       (defthm ,(intern-in-package-of-symbol
-                 (cat (symbol-name name) "-OF-VL-TOKENLIST-FIX")
-                 name)
-         (equal (,fn-name . ,(subst '(vl-tokenlist-fix tokens) 'tokens fn-formals))
-                (,fn-name . ,fn-formals))
-         :hints(("Goal"
-                 :expand ((,fn-name . ,(subst '(vl-tokenlist-fix tokens)
-                                              'tokens fn-formals))
-                          (,fn-name . ,fn-formals)))))
+       ;; (defthm ,(intern-in-package-of-symbol
+       ;;           (cat (symbol-name name) "-OF-VL-TOKENLIST-FIX")
+       ;;           name)
+       ;;   (equal (,fn-name . ,(subst '(vl-tokenlist-fix tokens) 'tokens fn-formals))
+       ;;          (,fn-name . ,fn-formals))
+       ;;   :hints(("Goal"
+       ;;           :expand ((,fn-name . ,(subst '(vl-tokenlist-fix tokens)
+       ;;                                        'tokens fn-formals))
+       ;;                    (,fn-name . ,fn-formals)))))
 
-       (defthm ,(intern-in-package-of-symbol
-                 (cat (symbol-name name) "-OF-VL-PARSESTATE-FIX")
-                 name)
-         (equal (,fn-name . ,(subst '(vl-parsestate-fix pstate)
-                                    'pstate fn-formals))
-                (,fn-name . ,fn-formals))
-         :hints(("Goal"
-                 :expand ((,fn-name . ,(subst '(vl-parsestate-fix pstate)
-                                              'pstate fn-formals))
-                          (,fn-name . ,fn-formals)))))
+       ;; (defthm ,(intern-in-package-of-symbol
+       ;;           (cat (symbol-name name) "-OF-VL-PARSESTATE-FIX")
+       ;;           name)
+       ;;   (equal (,fn-name . ,(subst '(vl-parsestate-fix pstate)
+       ;;                              'pstate fn-formals))
+       ;;          (,fn-name . ,fn-formals))
+       ;;   :hints(("Goal"
+       ;;           :expand ((,fn-name . ,(subst '(vl-parsestate-fix pstate)
+       ;;                                        'pstate fn-formals))
+       ;;                    (,fn-name . ,fn-formals)))))
 
-       ,@(if (not (or count result resultp-of-nil result-hints true-listp fails))
-             nil
-           `((defthm ,(intern-in-package-of-symbol
-                       (cat "VL-TOKENLIST-P-OF-" (symbol-name name))
-                       name)
-               (vl-tokenlist-p (mv-nth 2 (,name . ,formals)))
-               :hints (,@(if hint-chicken-switch
-                             nil
-                           `((expand-and-maybe-induct-hint
-                              '(,fn-name . ,fn-formals))))))
+       ;; ,@(if (not (or count result resultp-of-nil result-hints true-listp fails))
+       ;;       nil
+       ;;     `((defthm ,(intern-in-package-of-symbol
+       ;;                 (cat "VL-TOKENLIST-P-OF-" (symbol-name name))
+       ;;                 name)
+       ;;         (vl-tokenlist-p (mv-nth 2 (,name . ,formals)))
+       ;;         :hints (,@(if hint-chicken-switch
+       ;;                       nil
+       ;;                     `((expand-and-maybe-induct-hint
+       ;;                        '(,fn-name . ,fn-formals))))))
 
-             (defthm ,(intern-in-package-of-symbol
-                       (cat "VL-PARSESTATE-P-OF-" (symbol-name name))
-                       name)
-               (vl-parsestate-p (mv-nth 3 (,name . ,formals)))
-               :hints (,@(if hint-chicken-switch
-                             nil
-                           `((expand-and-maybe-induct-hint
-                              '(,fn-name . ,fn-formals))))))))
+       ;;       (defthm ,(intern-in-package-of-symbol
+       ;;                 (cat "VL-PARSESTATE-P-OF-" (symbol-name name))
+       ;;                 name)
+       ;;         (vl-parsestate-p (mv-nth 3 (,name . ,formals)))
+       ;;         :hints (,@(if hint-chicken-switch
+       ;;                       nil
+       ;;                     `((expand-and-maybe-induct-hint
+       ;;                        '(,fn-name . ,fn-formals))))))))
 
        ,@(cond ((not fails)
                 nil)
@@ -340,6 +474,15 @@ frequently.</p>")
                             name)
                     (implies (mv-nth 0 (,name . ,formals))
                              (not (mv-nth 1 (,name . ,formals))))
+                    :hints(,@(if hint-chicken-switch
+                                 '(("Goal" :in-theory (disable (force))))
+                               `((expand-and-maybe-induct-hint
+                                  '(,fn-name . ,fn-formals) :disable '((force)))))))
+                  (defthm ,(intern-in-package-of-symbol
+                            (cat "VL-WARNING-P-OF-" (symbol-name name))
+                            name)
+                    (iff (vl-warning-p (mv-nth 0 (,name . ,formals)))
+                         (mv-nth 0 (,name . ,formals)))
                     :hints(,@(if hint-chicken-switch
                                  '(("Goal" :in-theory (disable (force))))
                                `((expand-and-maybe-induct-hint
@@ -409,8 +552,8 @@ frequently.</p>")
                 `((defthm ,(intern-in-package-of-symbol
                             (cat (symbol-name name) "-COUNT-WEAK")
                             name)
-                    (<= (len (mv-nth 2 (,name . ,formals)))
-                        (len tokens))
+                    (<= (vl-tokstream-measure :tokstream (mv-nth 2 (,name . ,formals)))
+                        (vl-tokstream-measure))
                     :rule-classes ((:rewrite) (:linear))
                     :hints(,@(if hint-chicken-switch
                                  '(("Goal" :in-theory (disable (force))))
@@ -422,11 +565,11 @@ frequently.</p>")
                 `((defthm ,(intern-in-package-of-symbol
                             (cat (symbol-name name) "-COUNT-STRONG")
                             name)
-                    (and (<= (len (mv-nth 2 (,name . ,formals)))
-                             (len tokens))
+                    (and (<= (vl-tokstream-measure :tokstream (mv-nth 2 (,name . ,formals)))
+                             (vl-tokstream-measure))
                          (implies (not (mv-nth 0 (,name . ,formals)))
-                                  (< (len (mv-nth 2 (,name . ,formals)))
-                                     (len tokens))))
+                                  (< (vl-tokstream-measure :tokstream (mv-nth 2 (,name . ,formals)))
+                                     (vl-tokstream-measure))))
                     :rule-classes ((:rewrite) (:linear))
                     :hints(,@(if hint-chicken-switch
                                  '(("Goal" :in-theory (disable (force))))
@@ -438,11 +581,11 @@ frequently.</p>")
                 `((defthm ,(intern-in-package-of-symbol
                             (cat (symbol-name name) "-COUNT-STRONG-ON-VALUE")
                             name)
-                    (and (<= (len (mv-nth 2 (,name . ,formals)))
-                             (len tokens))
+                    (and (<= (vl-tokstream-measure :tokstream (mv-nth 2 (,name . ,formals)))
+                             (vl-tokstream-measure))
                          (implies (mv-nth 1 (,name . ,formals))
-                                  (< (len (mv-nth 2 (,name . ,formals)))
-                                     (len tokens))))
+                                  (< (vl-tokstream-measure :tokstream (mv-nth 2 (,name . ,formals)))
+                                     (vl-tokstream-measure))))
                     :rule-classes ((:rewrite) (:linear))
                     :hints(,@(if hint-chicken-switch
                                  '(("Goal" :in-theory (disable (force))))
@@ -457,6 +600,32 @@ frequently.</p>")
 
 (defmacro defparser (name formals &rest args)
   (defparser-fn name formals args))
+
+(defun defparser-top-fn (name guard resulttype state)
+  (declare (xargs :mode :program :stobjs state))
+  (b* ((wrld (w state))
+       (fnname (acl2::deref-macro-name name (acl2::macro-aliases wrld)))
+       (formals (acl2::formals fnname wrld))
+       (formals (set-difference-eq formals '(tokstream config))))
+    `(define ,(intern-in-package-of-symbol (cat (symbol-name name) "-TOP") name)
+       ,(append formals '(&key ((tokens vl-tokenlist-p) 'tokens)
+                               ((pstate vl-parsestate-p) 'pstate)
+                               ((config vl-loadconfig-p) 'config)))
+       :guard ,guard
+       :returns (mv erp
+                    (result . ,(and resulttype `((implies (and (not erp) ,guard)
+                                                          (,resulttype result)))))
+                    (tokens vl-tokenlist-p)
+                    (pstate vl-parsestate-p))
+       (b* (((acl2::local-stobjs tokstream)
+             (mv erp result tokens pstate tokstream))
+            (tokstream (vl-tokstream-update-tokens tokens))
+            (tokstream (vl-tokstream-update-pstate pstate))
+            ((mv erp result tokstream) (,name . ,formals)))
+         (mv erp result (vl-tokstream->tokens) (vl-tokstream->pstate) tokstream)))))
+
+(defmacro defparser-top (name &key (guard 't) resulttype)
+  `(make-event (defparser-top-fn ',name ',guard ',resulttype state)))
 
 (define expand-defparsers (forms)
   ;; For mutually recursive parsers.  FORMS should be a list of defparser
@@ -491,25 +660,19 @@ frequently.</p>")
 (define vl-is-token?
   :short "Check whether the current token has a particular type."
   ((type "Type of token to match.")
-   &key ((tokens vl-tokenlist-p) 'tokens))
+   &key (tokstream 'tokstream))
   :returns bool
   :inline t
-  (mbe :logic
-       (b* ((tokens (vl-tokenlist-fix tokens)))
-         (and (consp tokens)
-              (eq (vl-token->type (car tokens)) type)))
-       :exec
-       (and (consp tokens)
-            (eq (vl-token->type (car tokens)) type)))
+  (b* ((tokens (vl-tokstream->tokens)))
+    (and (consp tokens)
+         (eq (vl-token->type (car tokens)) type)))
   ///
-  (add-untranslate-pattern (vl-is-token?-fn ?type tokens) (vl-is-token? ?type))
-
-  (defthm vl-is-token?-of-vl-tokenlist-fix
-    (equal (vl-is-token? type :tokens (vl-tokenlist-fix tokens))
-           (vl-is-token? type)))
+  ;; (defthm vl-is-token?-of-vl-tokenlist-fix
+  ;;   (equal (vl-is-token? type :tokens (vl-tokenlist-fix tokens))
+  ;;          (vl-is-token? type)))
 
   (defthm vl-is-token?-fn-when-atom-of-tokens
-    (implies (atom tokens)
+    (implies (atom (vl-tokstream->tokens))
              (equal (vl-is-token? type)
                     nil))
     ;; I found this rule to be expensive as a rewrite, so making it a
@@ -520,144 +683,178 @@ frequently.</p>")
 (define vl-is-some-token?
   :short "Check whether the current token is one of some particular types."
   ((types true-listp)
-   &key
-   ((tokens vl-tokenlist-p) 'tokens))
+   &key (tokstream 'tokstream))
   :returns bool
   :inline t
-  (b* ((tokens (vl-tokenlist-fix tokens)))
+  (b* ((tokens (vl-tokstream->tokens)))
     (and (consp tokens)
          (member-eq (vl-token->type (car tokens)) types)
          t))
   ///
-  (add-untranslate-pattern (vl-is-some-token?$inline ?types tokens)
-                           (vl-is-some-token? ?types))
-
   (defthm vl-is-some-token?-when-atom-of-tokens
-    (implies (atom tokens)
-             (equal (vl-is-some-token? type :tokens tokens)
+    (implies (atom (vl-tokstream->tokens))
+             (equal (vl-is-some-token? type)
                     nil)))
 
   (defthm vl-is-some-token?-when-atom-of-types
     (implies (atom types)
-             (equal (vl-is-some-token? types :tokens tokens)
+             (equal (vl-is-some-token? types)
                     nil)))
 
-  (defthm vl-is-some-token?-of-vl-tokenlist-fix
-    (equal (vl-is-some-token? types :tokens (vl-tokenlist-fix tokens))
-           (vl-is-some-token? types))))
+  ;; (defthm vl-is-some-token?-of-vl-tokenlist-fix
+  ;;   (equal (vl-is-some-token? types :tokens (vl-tokenlist-fix tokens))
+  ;;          (vl-is-some-token? types)))
+  )
 
+
+(define vl-lookahead-is-token?
+  :short "Check whether the current token has a particular type."
+  ((type   "Type of token to match.")
+   (tokens vl-tokenlist-p))
+  :returns bool
+  :inline t
+  (and (consp tokens)
+       (eq (vl-token->type (car tokens)) type))
+  ///
+  (defthm vl-lookahead-is-token?-fn-when-atom-of-tokens
+    (implies (atom tokens)
+             (equal (vl-lookahead-is-token? type tokens)
+                    nil))
+    ;; I found this rule to be expensive as a rewrite, so making it a
+    ;; type-prescription instead
+    :rule-classes :type-prescription))
+
+
+(define vl-lookahead-is-some-token?
+  :short "Check whether the current token is one of some particular types."
+  ((types  true-listp)
+   (tokens vl-tokenlist-p))
+  :returns bool
+  :inline t
+  (and (consp tokens)
+       (member-eq (vl-token->type (car tokens)) types)
+       t)
+  ///
+  (defthm vl-lookahead-is-some-token?-when-atom-of-tokens
+    (implies (atom tokens)
+             (equal (vl-lookahead-is-some-token? type tokens)
+                    nil)))
+
+  (defthm vl-lookahead-is-some-token?-when-atom-of-types
+    (implies (atom types)
+             (equal (vl-lookahead-is-some-token? types tokens)
+                    nil))))
 
 
 (define vl-parse-error
-  :short "Compatible with @(see seqw).  Produce an error message (stopping
+  :short "Compatible with @(see seq).  Produce an error message (stopping
 execution) that includes the current location."
   ((description stringp "Short description of what went wrong.")
    &key
-   ((function symbolp)         '__function__)
-   ((tokens   vl-tokenlist-p)  'tokens)
-   ((pstate   vl-parsestate-p) 'pstate))
+   ((function symbolp) '__function__)
+   (tokstream 'tokstream))
   :returns
-  (mv (errmsg   "An error message suitable for @(see vl-cw-obj)." (iff errmsg t))
+  (mv (errmsg   vl-warning-p)
       (value    "Always just @('nil')." (equal value nil))
-      (remainder   (equal remainder (vl-tokenlist-fix tokens)))
-      (new-pstate  (equal new-pstate (vl-parsestate-fix pstate))))
-  (b* ((tokens (vl-tokenlist-fix tokens))
-       (pstate (vl-parsestate-fix pstate)))
-    (mv (if (consp tokens)
-            (list (cat "Parse error in ~s0 (at ~l1): " description)
-                  function (vl-token->loc (car tokens)))
-          (list (cat "Parser error in ~s0 (at EOF): " description)
-                function))
-        nil tokens pstate))
+      (new-tokstream (equal new-tokstream tokstream)))
+  (b* ((tokens (vl-tokstream->tokens)))
+    (mv (make-vl-warning :type :vl-parse-error
+                         :msg "Parse error at ~a0: ~s1"
+                         :args (list (if (consp tokens)
+                                         (vl-token->loc (car tokens))
+                                       "EOF")
+                                     description)
+                         :fn function
+                         :fatalp t)
+        nil tokstream))
   ///
-  (add-macro-alias vl-parse-error vl-parse-error-fn)
-  (add-untranslate-pattern
-   (vl-parse-error-fn ?function ?description tokens pstate)
-   (vl-parse-error ?function ?description)))
+  (more-returns (errmsg (iff errmsg t)
+                        :name vl-parse-error-0-under-iff)))
 
 (define vl-parse-warning
-  :short "Compatible with @(see seqw).  Produce a warning (not an error,
-doesn't stop execution) that includes the current location."
+  :short "Compatible with @(see seq).  Produce a non-fatal warning (not an
+error, doesn't stop execution) that includes the current location."
   ((type        symbolp "Type for this @(see pstate).")
    (description stringp "Short message about what happened.")
    &key
    ((function symbolp) '__function__)
-   ((tokens vl-tokenlist-p)  'tokens)
-   ((pstate vl-parsestate-p) 'pstate))
+   (tokstream 'tokstream))
   :returns
   (mv (errmsg (not errmsg) "Never produces an error.")
-      (value  (not value) "Value is always @('nil').")
-      (new-tokens (equal new-tokens (vl-tokenlist-fix tokens)))
-      (pstate   vl-parsestate-p))
-  (b* ((tokens (vl-tokenlist-fix tokens))
-       (pstate (vl-parsestate-fix pstate))
-       (msg (if (atom tokens)
-                (cat "Warning in ~s0 (at EOF): " description)
-              (cat "Warning in ~s0 (at ~l1): " description)))
-       (args (if (atom tokens)
-                 (list function)
-               (list function (vl-token->loc (car tokens)))))
-       (warning
-        (make-vl-warning :type (mbe :logic (and (symbolp type) type)
-                                    :exec type)
-                         :msg msg
-                         :args args
-                         :fn (mbe :logic (and (symbolp function) function)
-                                  :exec function)))
-       (pstate (vl-parsestate-add-warning warning pstate)))
-    (mv nil nil tokens pstate))
+      (value  (not value)  "Value is always @('nil').")
+      (new-tokstream))
+  (b* ((tokens  (vl-tokstream->tokens))
+       (warning (make-vl-warning :type type
+                                 :msg "At ~a0: ~s1"
+                                 :args (list (if (consp tokens)
+                                                 (vl-token->loc (car tokens))
+                                               "EOF")
+                                             description)
+                                 :fn function
+                                 :fatalp nil))
+       (tokstream (vl-tokstream-add-warning warning)))
+    (mv nil nil tokstream))
   ///
-  (add-macro-alias vl-parse-warning vl-parse-warning-fn)
-  (add-untranslate-pattern
-   (vl-parse-warning-fn ?function ?description tokens pstate)
-   (vl-parse-warning ?function ?description)))
+  (more-returns
+   (new-tokstream (equal (vl-tokstream->tokens :tokstream new-tokstream)
+                         (vl-tokstream->tokens))
+                  :name vl-tokstream->tokens-of-vl-parse-warning)))
 
 
 (defmacro vl-unimplemented ()
   `(vl-parse-error "Unimplemented Verilog production."))
 
-
 (define vl-match-token
-  :short "Compatible with @(see seqw).  Consume and return a token of exactly
+  :short "Compatible with @(see seq).  Consume and return a token of exactly
 some particular type, or cause an error if the desired kind of token is not at
 the start of the input stream."
   ((type "Kind of token to match.") ;; BOZO why not a stronger guard?
    &key
    ((function symbolp) '__function__)
-   ((tokens   vl-tokenlist-p) 'tokens)
-   ((pstate   vl-parsestate-p) 'pstate))
-
+   (tokstream 'tokstream))
   :returns
-  (mv (errmsg?   (iff errmsg? (not (vl-is-token? type))))
+  (mv (errmsg?   (and (iff errmsg? (not (vl-is-token? type)))
+                      (iff (vl-warning-p errmsg?) errmsg?)))
       (token     vl-token-p :hyp (vl-is-token? type))
-      (remainder vl-tokenlist-p)
-      (pstate    vl-parsestate-p))
+      (new-tokstream))
 
-  (b* ((pstate (vl-parsestate-fix pstate))
-       (tokens (vl-tokenlist-fix tokens))
+  (b* ((tokens (vl-tokstream->tokens))
        ((when (atom tokens))
         (vl-parse-error "Unexpected EOF." :function function))
        (token1 (car tokens))
        ((unless (eq type (vl-token->type token1)))
         ;; We want a custom error message, so we don't use vl-parse-error-fn.
-        (mv (list "Parse error in ~s0 (at ~l1): expected ~s2, but found ~s3."
-                  function (vl-token->loc token1) type (vl-token->type token1))
-            nil tokens pstate)))
-    (mv nil token1 (cdr tokens) pstate))
+        (mv (make-vl-warning :type :vl-parse-error
+                             :msg "Parse error at ~a0: expected ~s1 but found ~s2."
+                             :args (list (vl-token->loc (car tokens))
+                                         type
+                                         (vl-token->type token1))
+                             :fatalp t
+                             :fn function)
+            nil tokstream))
+       (tokstream (vl-tokstream-update-tokens (cdr tokens))))
+    (mv nil token1 tokstream))
 
   :prepwork
   ((local (in-theory (enable vl-is-token?))))
   ///
-  (add-untranslate-pattern (vl-match-token-fn ?type ?function tokens pstate)
-                           (vl-match-token ?type))
-
-  (defthm vl-match-token-of-vl-tokenlist-fix
-    (equal (vl-match-token type :tokens (vl-tokenlist-fix tokens))
-           (vl-match-token type)))
+  ;; (defthm vl-match-token-of-vl-tokenlist-fix
+  ;;   (equal (vl-match-token type :tokens (vl-tokenlist-fix tokens))
+  ;;          (vl-match-token type)))
 
   (defthm vl-match-token-fails-gracefully
     (implies (not (vl-is-token? type))
-             (not (mv-nth 1 (vl-match-token type)))))
+             (equal (mv-nth 1 (vl-match-token type)) nil)))
+
+  (local (defthmd car-of-vl-tokenlist-under-iff
+           (implies (vl-tokenlist-p x)
+                    (iff (car x) (consp x)))
+           :hints(("Goal" :in-theory (enable vl-tokenlist-p)))))
+
+  (defthm vl-match-token-under-iff
+    (iff (mv-nth 1 (vl-match-token type))
+         (vl-is-token? type))
+    :hints(("Goal" :in-theory (enable car-of-vl-tokenlist-under-iff))))
 
   (defthm vl-token->type-of-vl-match-token
     (implies (vl-is-token? type)
@@ -665,77 +862,130 @@ the start of the input stream."
                     type)))
 
   (defthm vl-match-token-count-strong-on-value
-    (and (<= (len (mv-nth 2 (vl-match-token type)))
-             (len tokens))
+    (and (<= (vl-tokstream-measure :tokstream (mv-nth 2 (vl-match-token type)))
+             (vl-tokstream-measure))
          (implies (mv-nth 1 (vl-match-token type))
-                  (< (len (mv-nth 2 (vl-match-token type)))
-                     (len tokens))))
+                  (< (vl-tokstream-measure :tokstream (mv-nth 2 (vl-match-token type)))
+                     (vl-tokstream-measure))))
     :rule-classes ((:rewrite) (:linear)))
 
   (defthm equal-of-vl-match-token-count
-    (equal (equal (len (mv-nth 2 (vl-match-token type)))
-                  (len tokens))
+    (equal (equal (vl-tokstream-measure :tokstream (mv-nth 2 (vl-match-token type)))
+                  (vl-tokstream-measure))
            (if (mv-nth 0 (vl-match-token type))
                t
              nil))))
 
 
 (define vl-match-some-token
-  :short "Compatible with @(see seqw).  Consume and return a token if it has
+  :short "Compatible with @(see seq).  Consume and return a token if it has
 one of several types.  Cause an error if the first token isn't one of the
 acceptable types."
   ((types true-listp) ;; BOZO why not a stronger guard?
    &key
    ((function symbolp) '__function__)
-   ((tokens vl-tokenlist-p)  'tokens)
-   ((pstate vl-parsestate-p) 'pstate))
+   (tokstream 'tokstream))
   :returns
-  (mv (errmsg?   (iff errmsg? (not (vl-is-some-token? types))))
+  (mv (errmsg?   (and (iff errmsg? (not (vl-is-some-token? types)))
+                      (iff (vl-warning-p errmsg?) errmsg?)))
       (token     vl-token-p :hyp (vl-is-some-token? types))
-      (remainder vl-tokenlist-p)
-      (pstate    vl-parsestate-p))
+      (new-tokstream))
 
-  (b* ((tokens (vl-tokenlist-fix tokens))
-       (pstate (vl-parsestate-fix pstate))
+  (b* ((tokens (vl-tokstream->tokens))
        ((when (atom tokens))
         (vl-parse-error "Unexpected EOF." :function function))
        (token1 (car tokens))
        ((unless (member-eq (vl-token->type token1) types))
-        (mv (list "Parse error in ~s0 (at ~l1): expected one of ~x2, but found ~s3."
-                  function (vl-token->loc token1) types (vl-token->type token1))
-            nil tokens pstate)))
-    (mv nil token1 (cdr tokens) pstate))
+        (mv (make-vl-warning :type :vl-parse-error
+                             :msg  "Parse error at ~a0: expected one of ~x1, but found ~s2."
+                             :args (list (vl-token->loc token1)
+                                         types
+                                         (vl-token->type token1))
+                             :fatalp t
+                             :fn function)
+            nil tokstream))
+       (tokstream (vl-tokstream-update-tokens (cdr tokens))))
+    (mv nil token1 tokstream))
 
   :prepwork
   ((local (in-theory (enable vl-is-some-token?))))
 
   ///
-  (add-untranslate-pattern (vl-match-some-token-fn ?types ?function tokens pstate)
-                           (vl-match-some-token ?types))
-
   (defthm vl-match-some-token-fails-gracefully
     (implies (not (vl-is-some-token? types))
              (equal (mv-nth 1 (vl-match-some-token types))
                     nil)))
 
   (defthm vl-match-some-token-count-strong-on-value
-    (and (<= (len (mv-nth 2 (vl-match-some-token types)))
-             (len tokens))
+    (and (<= (vl-tokstream-measure :tokstream (mv-nth 2 (vl-match-some-token types)))
+             (vl-tokstream-measure))
          (implies (mv-nth 1 (vl-match-some-token types))
-                  (< (len (mv-nth 2 (vl-match-some-token types)))
-                     (len tokens))))
+                  (< (vl-tokstream-measure :tokstream (mv-nth 2 (vl-match-some-token types)))
+                     (vl-tokstream-measure))))
     :rule-classes ((:rewrite) (:linear)))
 
   (defthm equal-of-vl-match-some-token-count
-    (equal (equal (len (mv-nth 2 (vl-match-some-token types)))
-                  (len tokens))
+    (equal (equal (vl-tokstream-measure :tokstream (mv-nth 2 (vl-match-some-token types)))
+                  (vl-tokstream-measure))
            (if (mv-nth 0 (vl-match-some-token types))
                t
              nil)))
 
-  (defthm vl-match-some-token-of-vl-tokenlist-fix
-    (equal (vl-match-some-token types :tokens (vl-tokenlist-fix tokens))
-           (vl-match-some-token types))))
+  ;; (defthm vl-match-some-token-of-vl-tokenlist-fix
+  ;;   (equal (vl-match-some-token types :tokens (vl-tokenlist-fix tokens))
+  ;;          (vl-match-some-token types)))
+  )
+
+(define vl-maybe-match-token
+  :short "Compatible with @(see seq).  Consume and return a token if it is of
+the given type, but if not, don't consume anything and return nil."
+  ((type "Kind of token to match.") ;; BOZO why not a stronger guard?
+   &key
+   (tokstream 'tokstream))
+
+  :returns
+  (mv (errmsg?   (equal errmsg? nil))
+      (token     (and (iff (vl-token-p token)
+                           (vl-is-token? type))
+                      (iff token (vl-is-token? type)))
+                 :hints(("Goal" :in-theory (enable car-of-vl-tokenlist-under-iff))))
+      (new-tokstream))
+
+  (b* ((tokens (vl-tokstream->tokens))
+       ((when (atom tokens)) (mv nil nil tokstream))
+       (token1 (car tokens))
+       ((unless (eq type (vl-token->type token1)))
+        (mv nil nil tokstream))
+       (tokstream (vl-tokstream-update-tokens (cdr tokens))))
+    (mv nil token1 tokstream))
+
+  :prepwork
+  ((local (in-theory (enable vl-is-token?)))
+   (local (defthmd car-of-vl-tokenlist-under-iff
+            (implies (vl-tokenlist-p x)
+                     (iff (car x) (consp x)))
+            :hints(("Goal" :in-theory (enable vl-tokenlist-p))))))
+  ///
+  ;; (defthm vl-match-token-of-vl-tokenlist-fix
+  ;;   (equal (vl-match-token type :tokens (vl-tokenlist-fix tokens))
+  ;;          (vl-match-token type)))
+
+  (defthm vl-maybe-match-token-fails-gracefully
+    (implies (not (vl-is-token? type))
+             (equal (mv-nth 1 (vl-maybe-match-token type)) nil)))
+
+  (defthm vl-token->type-of-vl-maybe-match-token
+    (implies (vl-is-token? type)
+             (equal (vl-token->type (mv-nth 1 (vl-maybe-match-token type)))
+                    type)))
+
+  (defthm vl-maybe-match-token-count-strong-on-value
+    (and (<= (vl-tokstream-measure :tokstream (mv-nth 2 (vl-maybe-match-token type)))
+             (vl-tokstream-measure))
+         (implies (mv-nth 1 (vl-maybe-match-token type))
+                  (< (vl-tokstream-measure :tokstream (mv-nth 2 (vl-maybe-match-token type)))
+                     (vl-tokstream-measure))))
+    :rule-classes ((:rewrite) (:linear))))
 
 
 
@@ -777,7 +1027,7 @@ the @('member') term never arose.</p>
 
   (defthm vl-token->type-of-vl-match-some-token
     (equal (vl-token->type (mv-nth 1 (vl-match-some-token types)))
-           (vl-type-of-matched-token types tokens)))
+           (vl-type-of-matched-token types (vl-tokstream->tokens))))
 
   (defthm vl-type-of-matched-token-when-atom-of-types
     (implies (atom types)
@@ -798,14 +1048,13 @@ the @('member') term never arose.</p>
 ;; Experimental rules to kick ass.
 
 (defthm magically-reduce-possible-types-from-vl-is-some-token?
-  (implies (and (not (equal (vl-type-of-matched-token types2 tokens) exclude))
+  (implies (and (not (equal (vl-type-of-matched-token types2 (vl-tokstream->tokens)) exclude))
                 (syntaxp (quotep types))
                 (syntaxp (quotep types2))
                 (member-equal exclude types)
                 (subsetp-equal types types2))
-           (equal (vl-is-some-token? types :tokens tokens)
-                  (vl-is-some-token? (remove-equal exclude types)
-                                     :tokens tokens)))
+           (equal (vl-is-some-token? types)
+                  (vl-is-some-token? (remove-equal exclude types))))
   :hints(("Goal" :in-theory (enable vl-type-of-matched-token
                                     vl-is-some-token?))))
 
@@ -817,14 +1066,13 @@ the @('member') term never arose.</p>
                 (subsetp-equal types types2))
            (equal (vl-type-of-matched-token types tokens)
                   (vl-type-of-matched-token (remove-equal exclude types) tokens)))
-  :hints(("Goal" :in-theory (enable vl-type-of-matched-token
-                                    vl-is-some-token?))))
+  :hints(("Goal" :in-theory (enable vl-type-of-matched-token))))
 
 (defthm magically-resolve-vl-is-some-token?
-  (implies (and (equal (vl-type-of-matched-token types2 tokens) value)
+  (implies (and (equal (vl-type-of-matched-token types2 (vl-tokstream->tokens)) value)
                 (member-equal value types)
                 value)
-           (equal (vl-is-some-token? types :tokens tokens)
+           (equal (vl-is-some-token? types)
                   t))
   :hints(("Goal" :in-theory (enable vl-is-some-token?
                                     vl-type-of-matched-token))))
@@ -835,90 +1083,86 @@ the @('member') term never arose.</p>
                 value)
            (equal (vl-type-of-matched-token types tokens)
                   value))
-  :hints(("Goal" :in-theory (enable vl-is-some-token?
-                                    vl-type-of-matched-token))))
+  :hints(("Goal" :in-theory (enable vl-type-of-matched-token))))
 
-(defthm vl-type-of-matched-token-under-iff
+(defthm vl-is-some-token?-under-iff
   (implies (not (member-equal nil types))
-           (iff (vl-type-of-matched-token types tokens)
-                (vl-is-some-token? types :tokens tokens)))
+           (iff (vl-is-some-token? types)
+                (vl-type-of-matched-token types (vl-tokstream->tokens))))
   :hints(("Goal" :in-theory (enable vl-type-of-matched-token
                                     vl-is-some-token?))))
 
 
 
 
-
 (define vl-current-loc
-  :short "Compatible with @(see seqw).  Get the current location."
-  (&key ((tokens vl-tokenlist-p) 'tokens)
-        ((pstate vl-parsestate-p) 'pstate))
-  :returns (mv (errmsg     (not errmsg))
-               (loc        vl-location-p)
-               (new-tokens (equal new-tokens (vl-tokenlist-fix tokens)))
-               (new-pstate (equal new-pstate pstate)))
+  :short "Compatible with @(see seq).  Get the current location."
+  (&key (tokstream 'tokstream))
+  :returns (mv (errmsg        (not errmsg))
+               (loc           vl-location-p)
+               (new-tokstream (equal new-tokstream tokstream)))
   :long "<p>We just return the location of the first token, if there is one.
 Or, if the token stream is empty, we just return @(see *vl-fakeloc*)</p>"
-  (b* ((tokens (vl-tokenlist-fix tokens)))
+  (b* ((tokens (vl-tokstream->tokens)))
     (mv nil
         (if (consp tokens)
             (vl-token->loc (car tokens))
           *vl-fakeloc*)
-        tokens
-        pstate))
-  ///
-  (add-untranslate-pattern (vl-current-loc tokens pstate)
-                           (vl-current-loc)))
+        tokstream)))
 
-
-(defmacro vl-copy-tokens (&key (tokens 'tokens) (pstate 'pstate))
-  "Returns (MV ERROR TOKENS TOKENS PSTATE) for SEQW compatibility."
-  (declare (xargs :guard t))
-  `(let ((tokens ,tokens)
-         (pstate ,pstate))
-     (mv nil tokens tokens pstate)))
+;; (defmacro vl-copy-tokens (&key (tokstream 'tokstream))
+;;   "Returns (MV ERROR TOKENS TOKENS PSTATE) for SEQ compatibility."
+;;   (declare (xargs :guard t))
+;;   `(let ((tokens ,tokens)
+;;          (pstate ,pstate))
+;;      (mv nil tokens tokens pstate)))
 
 
 (define vl-match (&key
-                  ((tokens vl-tokenlist-p) 'tokens)
-                  ((pstate vl-parsestate-p) 'pstate))
-  :guard (consp tokens)
-  :short "Compatible with @(see seqw).  Get the first token, no matter what
+                  (tokstream 'tokstream))
+  :guard (consp (vl-tokstream->tokens))
+  :short "Compatible with @(see seq).  Get the first token, no matter what
 kind of token it is.  Only usable when you know there is a token there (via the
 guard)."
   :inline t
   :returns (mv (errmsg?   (not errmsg?))
                (token     (equal (vl-token-p token)
-                                 (consp (vl-tokenlist-fix tokens))))
-               (remainder vl-tokenlist-p)
-               (pstate  vl-parsestate-p))
-  (mbe :logic
-       (b* ((tokens (vl-tokenlist-fix tokens))
-            (pstate (vl-parsestate-fix pstate)))
-         (mv nil (car tokens) (cdr tokens) pstate))
-       :exec
-       (mv nil (car tokens) (cdr tokens) pstate))
+                                 (consp (vl-tokstream->tokens))))
+               (new-tokstream))
+  (b* ((tokens    (vl-tokstream->tokens))
+       (tokstream (vl-tokstream-update-tokens (cdr tokens))))
+    (mv nil (car tokens) tokstream))
   ///
-  (defthm vl-match-of-vl-tokenlist-fix
-    (equal (vl-match :tokens (vl-tokenlist-fix tokens))
-           (vl-match)))
+  ;; (defthm vl-match-of-vl-tokenlist-fix
+  ;;   (equal (vl-match :tokens (vl-tokenlist-fix tokens))
+  ;;          (vl-match)))
 
-  (defthm vl-match-of-vl-parsestate-fix
-    (equal (vl-match :pstate (vl-parsestate-fix pstate))
-           (vl-match)))
+  ;; (defthm vl-match-of-vl-parsestate-fix
+  ;;   (equal (vl-match :pstate (vl-parsestate-fix pstate))
+  ;;          (vl-match)))
+
+  (local (defthm l0
+           (implies (vl-tokenlist-p x)
+                    (iff (consp x)
+                         (car x)))))
+
+  (defthm vl-match-under-iff
+    (iff (mv-nth 1 (vl-match))
+         (consp (vl-tokstream->tokens))))
 
   (defthm vl-match-count-strong-on-value
-    (and (<= (len (mv-nth 2 (vl-match)))
-             (len tokens))
+    (and (<= (vl-tokstream-measure :tokstream (mv-nth 2 (vl-match)))
+             (vl-tokstream-measure))
          (implies (mv-nth 1 (vl-match))
-                  (< (len (mv-nth 2 (vl-match)))
-                     (len tokens))))
-  :rule-classes ((:rewrite) (:linear)))
+                  (< (vl-tokstream-measure :tokstream (mv-nth 2 (vl-match)))
+                     (vl-tokstream-measure))))
+    :rule-classes ((:rewrite) (:linear))
+    :hints(("Goal" :expand (len (vl-tokstream->tokens)))))
 
   (defthm equal-of-vl-match-count
-    (equal (equal (len (mv-nth 2 (vl-match)))
-                  (len tokens))
-           (atom (vl-tokenlist-fix tokens))))
+    (equal (equal (vl-tokstream-measure :tokstream (mv-nth 2 (vl-match)))
+                  (vl-tokstream-measure))
+           (atom (vl-tokstream->tokens))))
 
   (defthm vl-token->type-of-vl-match-when-vl-is-token?
     (implies (vl-is-token? type)
@@ -927,137 +1171,134 @@ guard)."
     :hints(("Goal" :in-theory (enable vl-is-token?))))
 
   (defthm vl-token->type-of-vl-match-when-vl-is-some-token?
-    (implies (vl-is-some-token? types)
+    (implies (vl-type-of-matched-token types (vl-tokstream->tokens))
              (equal (vl-token->type (mv-nth 1 (vl-match)))
-                    (vl-type-of-matched-token types tokens)))
+                    (vl-type-of-matched-token types (vl-tokstream->tokens))))
     :hints(("Goal" :in-theory (enable vl-type-of-matched-token
                                       vl-is-some-token?)))))
 
 
 (define vl-match-any
-  :short "Compatible with @(see seqw).  Get the first token, no matter what
+  :short "Compatible with @(see seq).  Get the first token, no matter what
 kind of token it is.  Causes an error on EOF."
   (&key
    ((function symbolp)       '__function__)
-   ((tokens vl-tokenlist-p)  'tokens)
-   ((pstate vl-parsestate-p) 'pstate))
+   (tokstream 'tokstream))
   :inline t
   :returns
   (mv (errmsg?)
       (token)
-      (new-tokens   vl-tokenlist-p)
-      (new-pstate vl-parsestate-p))
-  (b* ((tokens (vl-tokenlist-fix tokens))
-       (pstate (vl-parsestate-fix pstate))
+      (new-tokstream))
+  (b* ((tokens (vl-tokstream->tokens))
        ((when (atom tokens))
-        (vl-parse-error "Unexpected EOF." :function function)))
-    (mv nil (car tokens) (cdr tokens) pstate))
+        (vl-parse-error "Unexpected EOF." :function function))
+       (tokstream (vl-tokstream-update-tokens (cdr tokens))))
+    (mv nil (car tokens) tokstream))
   ///
-  (add-macro-alias vl-match-any vl-match-any$inline)
-  (add-untranslate-pattern (vl-match-any$inline ?function tokens pstate)
-                           (vl-match-any :function ?function))
+  ;; (defthm vl-match-any-of-vl-tokenlist-fix
+  ;;   (equal (vl-match-any :tokens (vl-tokenlist-fix tokens))
+  ;;          (vl-match-any)))
 
-  (defthm vl-match-any-of-vl-tokenlist-fix
-    (equal (vl-match-any :tokens (vl-tokenlist-fix tokens))
-           (vl-match-any)))
-
-  (defthm vl-match-any-of-vl-parsestate-fix
-    (equal (vl-match-any :pstate (vl-parsestate-fix pstate))
-           (vl-match-any)))
+  ;; (defthm vl-match-any-of-vl-parsestate-fix
+  ;;   (equal (vl-match-any :pstate (vl-parsestate-fix pstate))
+  ;;          (vl-match-any)))
 
   (defthm vl-match-any-fails-gracefully
     (implies (mv-nth 0 (vl-match-any))
              (equal (mv-nth 1 (vl-match-any))
                     nil)))
 
+  (defthm vl-warning-p-of-vl-match-any
+    (iff (vl-warning-p (mv-nth 0 (vl-match-any)))
+         (mv-nth 0 (vl-match-any))))
+
   (defthm vl-token-p-of-vl-match-any
     (implies (not (mv-nth 0 (vl-match-any)))
              (vl-token-p (mv-nth 1 (vl-match-any)))))
 
   (defthm vl-match-any-fn-count-strong-on-value
-    (and (<= (len (mv-nth 2 (vl-match-any)))
-             (len tokens))
+    (and (<= (vl-tokstream-measure :tokstream (mv-nth 2 (vl-match-any)))
+             (vl-tokstream-measure))
          (implies (mv-nth 1 (vl-match-any))
-                  (< (len (mv-nth 2 (vl-match-any)))
-                     (len tokens))))
+                  (< (vl-tokstream-measure :tokstream (mv-nth 2 (vl-match-any)))
+                     (vl-tokstream-measure))))
   :rule-classes ((:rewrite) (:linear)))
 
   (defthm equal-of-vl-match-any-fn-count
-    (equal (equal (len (mv-nth 2 (vl-match-any)))
-                  (len tokens))
+    (equal (equal (vl-tokstream-measure :tokstream (mv-nth 2 (vl-match-any)))
+                  (vl-tokstream-measure))
            (if (mv-nth 0 (vl-match-any))
                t
              nil))))
 
 (define vl-match-any-except
-  :short "Compatible with @(see seqw).  Match any token that is not of the
+  :short "Compatible with @(see seq).  Match any token that is not of the
 listed types.  Causes an error on EOF."
   ((types true-listp) ;; BOZO stronger guard?
    &key
    ((function symbolp)       '__function__)
-   ((tokens vl-tokenlist-p)  'tokens)
-   ((pstate vl-parsestate-p) 'pstate))
+   (tokstream 'tokstream))
   :returns
-  (mv (errmsg?)
+  (mv (errmsg? (iff (vl-warning-p errmsg?) errmsg?))
       (token)
-      (new-tokens   vl-tokenlist-p)
-      (new-pstate (equal new-pstate (vl-parsestate-fix pstate))))
-  (b* ((tokens (vl-tokenlist-fix tokens))
-       (pstate (vl-parsestate-fix pstate))
+      (new-tokstream))
+  (b* ((tokens (vl-tokstream->tokens))
        ((when (atom tokens))
         (vl-parse-error "Unexpected EOF." :function function))
        (token1 (car tokens))
        ((when (member-eq (vl-token->type token1) types))
-        (mv (list "Parse error in ~s0 (at ~l1): unexpected ~s2."
-                  function (vl-token->loc token1) (vl-token->type token1))
-            nil tokens pstate)))
-    (mv nil token1 (cdr tokens) pstate))
+        (mv (make-vl-warning :type :vl-parse-error
+                             :msg "Parse error at ~a0: unexpected ~s1."
+                             :args (list (vl-token->loc token1)
+                                         (vl-token->type token1))
+                             :fn function
+                             :fatalp t)
+            nil tokstream))
+       (tokstream (vl-tokstream-update-tokens (cdr tokens))))
+    (mv nil token1 tokstream))
   ///
-  (add-macro-alias vl-match-any-except vl-match-any-except-fn)
-  (add-untranslate-pattern (vl-match-any-except-fn ?types ?function tokens pstate)
-                           (vl-match-any-except ?types :function ?function))
   (local (in-theory (enable vl-is-some-token?)))
 
-  (defthm vl-match-any-except-of-vl-tokenlist-fix
-    (equal (vl-match-any-except types :tokens (vl-tokenlist-fix tokens))
-           (vl-match-any-except types)))
+  ;; (defthm vl-match-any-except-of-vl-tokenlist-fix
+  ;;   (equal (vl-match-any-except types :tokens (vl-tokenlist-fix tokens))
+  ;;          (vl-match-any-except types)))
 
-  (defthm vl-match-any-except-of-vl-parsestate-fix
-    (equal (vl-match-any-except types :pstate (vl-parsestate-fix pstate))
-           (vl-match-any-except types)))
+  ;; (defthm vl-match-any-except-of-vl-parsestate-fix
+  ;;   (equal (vl-match-any-except types :pstate (vl-parsestate-fix pstate))
+  ;;          (vl-match-any-except types)))
 
   (defthm vl-match-any-except-fails-when-vl-is-some-token?
     (iff (mv-nth 0 (vl-match-any-except types))
-         (or (atom tokens)
+         (or (atom (vl-tokstream->tokens))
              (vl-is-some-token? types))))
 
   (defthm vl-match-any-except-fails-gracefully
-    (implies (or (atom tokens)
+    (implies (or (atom (vl-tokstream->tokens))
                  (vl-is-some-token? types))
              (equal (mv-nth 1 (vl-match-any-except types))
                     nil)))
 
   (defthm vl-match-any-except-when-atom-of-tokens
-    (implies (atom tokens)
+    (implies (atom (vl-tokstream->tokens))
              (equal (mv-nth 2 (vl-match-any-except types))
-                    tokens)))
+                    tokstream)))
 
   (defthm vl-token-p-of-vl-match-any-except
     (implies (and (not (vl-is-some-token? types))
-                  (consp tokens))
+                  (consp (vl-tokstream->tokens)))
              (vl-token-p (mv-nth 1 (vl-match-any-except types)))))
 
   (defthm vl-match-any-except-count-strong-on-value
-    (and (<= (len (mv-nth 2 (vl-match-any-except types)))
-             (len tokens))
+    (and (<= (vl-tokstream-measure :tokstream (mv-nth 2 (vl-match-any-except types)))
+             (vl-tokstream-measure))
          (implies (mv-nth 1 (vl-match-any-except types))
-                  (< (len (mv-nth 2 (vl-match-any-except types)))
-                     (len tokens))))
+                  (< (vl-tokstream-measure :tokstream (mv-nth 2 (vl-match-any-except types)))
+                     (vl-tokstream-measure))))
     :rule-classes ((:rewrite) (:linear)))
 
   (defthm equal-of-vl-match-any-except-fn-count
-    (equal (equal (len (mv-nth 2 (vl-match-any-except types)))
-                  (len tokens))
+    (equal (equal (vl-tokstream-measure :tokstream (mv-nth 2 (vl-match-any-except types)))
+                  (vl-tokstream-measure))
            (if (mv-nth 0 (vl-match-any-except types))
                t
              nil))))
@@ -1092,3 +1333,25 @@ parser when we encounter such an ending.</p>"
 
    (loc  vl-location-p
          "The location of this name, for mismatch reporting.")))
+
+(defparser vl-parse-endblock-name (name blktype)
+  :guard (and (stringp name) (stringp blktype))
+  :count weak
+  :fails :gracefully
+  (seq tokstream
+       (unless (and (not (eq (vl-loadconfig->edition config) :verilog-2005))
+                    (vl-is-token? :vl-colon))
+         (return nil))
+       (:= (vl-match))
+       (endname := (vl-match-token :vl-idtoken))
+       (when (equal name (vl-idtoken->name endname))
+         (return name))
+       (return-raw
+        (mv (make-vl-warning :type :vl-parse-error
+                             :msg "At ~a0: mismatched ~s1 names: ~s2 vs. ~s3."
+                             :args (list (vl-token->loc endname)
+                                         blktype
+                                         name
+                                         (vl-idtoken->name endname)))
+            nil
+            tokstream))))

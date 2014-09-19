@@ -17,6 +17,8 @@
        x
      (+ (fib (- x 1)) (fib (- x 2))))))
 
+(comp t) ; for other than CCL and SBCL
+
 #+hons
 (memoize 'fib)
 

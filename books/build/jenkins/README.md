@@ -1,5 +1,8 @@
 ACL2 Books Jenkins Build Scripts
-Original author: Jared Davis <jared@centtech.com>
+
+Authors: Jared Davis <jared@centtech.com>, David Rager <ragerdl@defthm.com>
+
+##Introduction
 
 Jenkins is a popular tool for implementing continuous integration servers.  Its
 homepage is here:
@@ -30,14 +33,35 @@ it generally takes care of mundane issues like:
     - keeping recent logs so you can review them later
     - (optional) emails/irc notifications whenever things fail
 
-To make it possible to use these scripts in other environments, I've written
-each script to start with:
+##Instructions
+
+To make it possible to use these scripts in other environments, each
+script starts with:
 
    source $JENKINS_HOME/env.sh
 
-So you should be able ot easily set up a suitable env.sh that configures your
-PATH and so forth.
+So you should be able to easily set up a suitable env.sh that
+configures your PATH to contain ccl, sbcl, etc.
 
-Please contact Jared with any questions or feedback.
+You'll first want to setup a single configuration Jenkins project that
+runs build-single.sh.  If you don't pass in a $TARGET
+parameter, it will build the "manual" target.  This will build the
+manual on CCL for ACL2(h).
+
+You should next be able to setup a Jenkins "multi-configuration"
+project that uses build-multi.sh.  You'll need to pass in a build target in
+the $TARGET environment variable, and you'll need to setup the LISP
+env variable as a Jenkins "Axis".  You'll also probably want to setup
+Axes for `ACL2_HONS`, `ACL2_PAR`, and `NONSTD`, where each axis has the
+options of `"" t`.
+
+Your `gcl` executable name must start with `gcl` to avoid building
+with quicklisp.
+
+The scripts use `startjob`, a which in its simplest form is just a
+wrapper for `bash`.  In more complicated scenarios, `startjob` can be
+used to build the books using a cluster.
+
+Please contact Jared or David with any questions or feedback.
 
 

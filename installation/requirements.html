@@ -185,7 +185,7 @@ reasons.
 <li>CLISP appears to run ACL2 much more slowly than the other supported
 Common Lisp implementations.</li>
 
-<li>Only minimal testing is done for ACL2 built on CLISP</li>
+<li>Only minimal testing is done for ACL2 built on CLISP.</li>
 
 <li>CLISP does not currently support building ACL2(h).</li>
 
@@ -260,24 +260,16 @@ href="http://sbcl.sourceforge.net/">http://sbcl.sourceforge.net/</a></code>.
 
 <p>
 
-<!-- I don't know that we need this comment any longer, since we write
-    a suitable --dynamic-space-size argument to saved_acl2 scripts.
-Note for 32-bit linux users: When building ACL2 with SBCL 1.0.18 and
-1.0.39 on 32-bit Linux, we ran out of memory with the SBCL message
-"Heap exhausted, game over."  We solved the problem by modifying our
-sbcl script to use <code>--dynamic-space-size 2000</code>, for example:
-
-<hr>
+Building ACL2 may initially fail with SBCL because of insufficient heap
+memory.  Harsh Raju Chamarthi points out that a fix is to run SBCL
+with an increased heap size limit.  As of 2014 we find that the
+the option <code>--dynamic-space-size 2000</code> following works well
+on 64-bit linux, for example using a script like the following for
+SBCL.
 <pre>
 #!/bin/sh
-export SBCL_HOME=/projects/acl2/lisps/sbcl/sbcl-1.0.39-x86-linux/output
-/projects/acl2/lisps/sbcl/sbcl-1.0.39-x86-linux/src/runtime/sbcl --dynamic-space-size 2000 $*
+&lt;sbcl-dir-path&gt;/src/runtime/sbcl --core &lt;sbcl-dir-path&gt;/output/sbcl.core --dynamic-space-size 2000 "$@"
 </pre>
-<hr>
-
-Your results may vary; one user has reported solving the problem with
-<code>--dynamic-space-size 2000000000</code>.
--->
 
 <p>
 

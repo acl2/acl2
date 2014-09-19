@@ -1,5 +1,5 @@
 ; OSLIB -- Operating System Utilities
-; Copyright (C) 2013 Centaur Technology
+; Copyright (C) 2013-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -43,7 +43,9 @@
 ; cert_param: (ccl-only)
 
 (in-package "OSLIB")
-(include-book "logic-defs")
+(include-book "ls-logic")
+(include-book "tools/include-raw" :dir :system)
+
 ; (depends-on "ls-raw.lsp")
 
 (defttag oslib)

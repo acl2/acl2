@@ -23,6 +23,12 @@
                         ))))
 (untrace$)
 
+(trace-parser vl-parse-udp-declaration-fn)
+(trace-parser vl-parse-integrated-udp-head-fn)
+(trace-parser vl-parse-udp-output-declaration-fn)
+
+
+
 (trace-parser vl-parse-port-declaration-noatts-fn)
 (trace-parser vl-parse-port-declaration-atts-fn)
 ;(trace-parser vl-parse-basic-port-declaration-tail)
@@ -33,8 +39,8 @@
 
 (defconst *loadconfig*
   (make-vl-loadconfig
-   :start-files (list "ports2/spec.v")
-   :search-path (list "ports2/")
+   :start-files (list "udp1/spec.v")
+   :search-path (list "udp1/")
    ))
 
 ;; (defconst *loadconfig*
@@ -44,7 +50,6 @@
 
 (defconsts (*loadresult* state)
   (vl-load *loadconfig*))
-
 
 
 (top-level

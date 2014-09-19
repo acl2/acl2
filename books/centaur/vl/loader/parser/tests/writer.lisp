@@ -33,6 +33,8 @@
 (include-book "expressions")
 (include-book "../../../mlib/writer")
 
+(defparser-top vl-parse-expression)
+
 (define run-writer-test ((test exprtest-p)
                          &key
                          ((config vl-loadconfig-p) '*vl-default-loadconfig*))
@@ -57,9 +59,9 @@
        ((mv tokens ?cmap) (vl-kill-whitespace-and-comments tokens))
        (pstate            (make-vl-parsestate :warnings warnings))
        ((mv errmsg? val & &)
-        (vl-parse-expression :tokens tokens
-                             :pstate pstate
-                             :config config))
+        (vl-parse-expression-top :tokens tokens
+                                 :pstate pstate
+                                 :config config))
        ((when errmsg?)
         ;; Fine, don't care
         t)
@@ -79,9 +81,9 @@
        ((mv tokens ?cmap) (vl-kill-whitespace-and-comments tokens))
        (pstate            (make-vl-parsestate :warnings warnings))
        ((mv errmsg? new-val & &)
-        (vl-parse-expression :tokens tokens
-                             :pstate pstate
-                             :config config))
+        (vl-parse-expression-top :tokens tokens
+                                 :pstate pstate
+                                 :config config))
        ((when errmsg?)
         (raise "Parsing failed for val-pp: ~x0.  ~x1" val-pp errmsg?))
 

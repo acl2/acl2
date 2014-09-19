@@ -30,7 +30,6 @@
 
 (in-package "VL")
 (include-book "../mlib/allexprs")
-(include-book "../mlib/context")
 (include-book "../mlib/modnamespace")
 (include-book "../mlib/stmt-tools")
 (include-book "../mlib/expr-building")
@@ -337,6 +336,98 @@ We produce a list of one-bit @(see vl-vardecl-p)s, one for each name in
     (equal (vl-vardecllist->names (vl-make-ordinary-implicit-wires loc names))
            (string-list-fix names))))
 
+(define vl-collect-exprs-for-implicit-wires-from-namedarg
+  :parents (vl-modinst-exprs-for-implicit-wires)
+  ((x vl-namedarg-p))
+  :returns
+  (mv (main vl-exprlist-p "Expressions where implicit wires are allowed.")
+      (other vl-exprlist-p "Expressions where implicit wires are not allowed."))
+  (b* (((vl-namedarg x))
+       ((when x.nameonly-p)
+        ;; SystemVerilog name-only style arguments like .foo are not allowed to
+        ;; introduce implicit wires, so put them into the "other" wires.
+        (mv nil (vl-maybe-expr-allexprs x.expr))))
+    (mv (vl-maybe-expr-allexprs x.expr) nil))
+  ///
+  (defmvtypes vl-collect-exprs-for-implicit-wires-from-namedarg (true-listp true-listp))
+
+  (defthm vl-collect-exprs-for-implicit-wires-from-namedarg-complete
+    ;; Just to make sure we keep this up to date if we ever change
+    ;; vl-namedarg-allexprs
+    (b* (((mv main other)
+          (vl-collect-exprs-for-implicit-wires-from-namedarg x)))
+      (set-equiv (append main other)
+                 (vl-namedarg-allexprs x)))
+    :hints(("Goal" :in-theory (enable set-equiv vl-namedarg-allexprs)))))
+
+(define vl-collect-exprs-for-implicit-wires-from-namedargs
+  :parents (vl-modinst-exprs-for-implicit-wires)
+  ((x vl-namedarglist-p))
+  :returns
+  (mv (main vl-exprlist-p "Expressions where implicit wires are allowed.")
+      (other vl-exprlist-p "Expressions where implicit wires are not allowed."))
+  (b* (((when (atom x))
+        (mv nil nil))
+       ((mv main1 other1) (vl-collect-exprs-for-implicit-wires-from-namedarg (car x)))
+       ((mv main2 other2) (vl-collect-exprs-for-implicit-wires-from-namedargs (cdr x))))
+    (mv (append main1 main2)
+        (append other1 other2)))
+  ///
+  (defmvtypes vl-collect-exprs-for-implicit-wires-from-namedargs (true-listp true-listp))
+
+  (local (defthm l1
+           (b* (((mv main other)
+                 (vl-collect-exprs-for-implicit-wires-from-namedarg x)))
+             (set-equiv (vl-namedarg-allexprs x)
+                        (append main other)))))
+
+  (local (in-theory (disable vl-collect-exprs-for-implicit-wires-from-namedarg-complete)))
+
+  (defthm vl-collect-exprs-for-implicit-wires-from-namedargs-complete
+    ;; Just to make sure we keep this up to date if we ever change
+    ;; vl-namedarglist-allexprs
+    (b* (((mv main other)
+          (vl-collect-exprs-for-implicit-wires-from-namedargs x)))
+      (set-equiv (append main other)
+                 (vl-namedarglist-allexprs x)))
+    :hints(("Goal"
+            :induct (len x)
+            :in-theory (enable set-equiv vl-namedarglist-allexprs)))))
+
+(define vl-collect-exprs-for-implicit-wires-from-portargs
+  :parents (vl-modinst-exprs-for-implicit-wires)
+  ((x vl-arguments-p))
+  :returns
+  (mv (main vl-exprlist-p "Expressions where implicit wires are allowed.")
+      (other vl-exprlist-p "Expressions where implicit wires are not allowed."))
+  (vl-arguments-case x
+    (:vl-arguments-named
+     (vl-collect-exprs-for-implicit-wires-from-namedargs x.args))
+    (:vl-arguments-plain
+     ;; If using plain arguments, there are no .name style arguments, so
+     ;; everything is allowed to have implicit wires.
+     (mv (vl-plainarglist-allexprs x.args)
+         nil)))
+  ///
+  (defmvtypes vl-collect-exprs-for-implicit-wires-from-portargs (true-listp true-listp))
+
+  (defthm vl-collect-exprs-for-implicit-wires-from-portargs-complete
+    ;; Just to make sure we keep this up to date if we ever change
+    ;; vl-arguments-allexprs
+    (b* (((mv main other)
+          (vl-collect-exprs-for-implicit-wires-from-portargs x)))
+      (set-equiv (append main other)
+                 (vl-arguments-allexprs x)))
+    :hints(("Goal"
+            :in-theory (enable set-equiv vl-arguments-allexprs)))))
+
+(define vl-modelementlist->genelements ((x vl-modelementlist-p))
+  :returns (xx vl-genelementlist-p)
+  (if (atom x)
+      nil
+    (cons (make-vl-genbase :item (car x))
+          (vl-modelementlist->genelements (cdr x)))))
+
 
 (define vl-modinst-exprs-for-implicit-wires
   :parents (make-implicit-wires)
@@ -349,11 +440,13 @@ We produce a list of one-bit @(see vl-vardecl-p)s, one for each name in
       (other vl-exprlist-p
              "The other expressions in the module instance (its range,
               parameter list, etc.) where implicit wires aren't allowed."))
-  (b* (((vl-modinst x) x))
-    (mv (vl-arguments-allexprs x.portargs)
-        (append (vl-maybe-range-allexprs x.range)
-                (vl-paramargs-allexprs x.paramargs)
-                (vl-maybe-gatedelay-allexprs x.delay))))
+  (b* (((vl-modinst x) x)
+       ((mv main other)
+        (vl-collect-exprs-for-implicit-wires-from-portargs x.portargs)))
+    (mv main (append other
+                     (vl-maybe-range-allexprs x.range)
+                     (vl-paramargs-allexprs x.paramargs)
+                     (vl-maybe-gatedelay-allexprs x.delay))))
   ///
   (defmvtypes vl-modinst-exprs-for-implicit-wires (true-listp true-listp))
 
@@ -365,7 +458,6 @@ We produce a list of one-bit @(see vl-vardecl-p)s, one for each name in
                          (mv-nth 1 ret))
                  (vl-modinst-allexprs x)))
     :hints(("Goal" :in-theory (enable set-equiv vl-modinst-allexprs)))))
-
 
 
 (define vl-gateinst-exprs-for-implicit-wires
@@ -677,8 +769,7 @@ it has the same problems with parameters.</p>"
 (define vl-make-implicit-wires-aux
   :parents (make-implicit-wires)
   :short "Main function for adding implicit wires."
-
-  ((x vl-modelementlist-p
+  ((x vl-genelementlist-p
       "Module elements to process, should be in the same order in which they
        were parsed.")
    (portdecls
@@ -692,7 +783,7 @@ it has the same problems with parameters.</p>"
     "An accumulator for module elements which starts out as @('nil') and
      essentially becomes a copy of @('x'), along with any implicit wire
      declarations that we've added.  Items are accumulated in reverse order."
-    vl-modelementlist-p)
+    vl-genelementlist-p)
    (warnings vl-warninglist-p
              "An ordinary @(see warnings) accumulator, which we may extend with
               fatal warnings (e.g., for undeclared identifiers) or non-fatal warnings
@@ -700,9 +791,15 @@ it has the same problems with parameters.</p>"
               infer an implicit wire here.</i>)."))
 
   :returns (mv (new-warnings vl-warninglist-p)
+
+                ;; :hints (("goal" :induct (vl-make-implicit-wires-aux x portdecls decls acc warnings)
+                ;;          :expand ((vl-make-implicit-wires-aux x portdecls decls acc warnings))
+                ;;          :do-not-induct t)
+                ;;         (and stable-under-simplificationp
+                ;;              '(:expand (vl-genelementlist-fix x))))
                (portdecls    "Extended fast alist.")
                (decls        "Extended fast alist.")
-               (acc          vl-modelementlist-p))
+               (acc          vl-genelementlist-p))
 
   :long "<p>Note that to keep this code simple, we don't try to defend against
 multiply declared names here.</p>
@@ -716,19 +813,39 @@ later on.  We handle that in @(see vl-make-implicit-wires).</p>"
   :hooks ((:fix
            :hints (("Goal"
                     :expand ((:free (portdecls decls acc warnings)
-                              (VL-MAKE-IMPLICIT-WIRES-AUX (VL-MODELEMENTLIST-FIX X) PORTDECLS DECLS ACC WARNINGS))
+                              (VL-MAKE-IMPLICIT-WIRES-AUX (VL-GENELEMENTLIST-FIX X) PORTDECLS DECLS ACC WARNINGS))
                              (:free (portdecls decls acc warnings)
                               (VL-MAKE-IMPLICIT-WIRES-AUX X PORTDECLS DECLS ACC WARNINGS)))))))
 
-  (b* ((x        (vl-modelementlist-fix x))
+  :prepwork ((local (defthm vl-blockitem-p-when-vl-vardecl-p-no-limit
+                      (implies (vl-vardecl-p x)
+                               (vl-blockitem-p x))))
+             (local (in-theory (disable vl-blockitem-p-when-vl-vardecl-p)))
+             (local (defthm vl-blockitem-p-when-vl-paramdecl-p-no-limit
+                      (implies (vl-paramdecl-p x)
+                               (vl-blockitem-p x))))
+             (local (in-theory (disable vl-blockitem-p-when-vl-paramdecl-p)))
+             (local (in-theory (disable acl2::consp-under-iff-when-true-listp))))
+
+  :guard-hints ((and stable-under-simplificationp
+                     '(:use ((:instance vl-modelement-p-when-invalid-tag
+                              (x (vl-genbase->item (car x)))))
+                       :in-theory (disable vl-modelement-p-when-invalid-tag))))
+  (b* ((x        (vl-genelementlist-fix x))
        (warnings (vl-warninglist-fix warnings))
-       (acc      (vl-modelementlist-fix acc))
+       (acc      (vl-genelementlist-fix acc))
 
        ((when (atom x))
         (mv warnings portdecls decls acc))
 
-       (elem (vl-modelement-fix (car x)))
-       (tag  (tag elem))
+
+       ((unless (eq (vl-genelement-kind (car x)) :vl-genbase))
+        ;; Ignore generate constructs until unparameterization
+        (vl-make-implicit-wires-aux (cdr x) portdecls decls acc warnings))
+
+       (elem (vl-genelement-fix (car x)))
+       (item (vl-genbase->item elem))
+       (tag  (tag item))
 
        ((when (eq tag :vl-port))
         ;; We shouldn't see any ports.
@@ -740,16 +857,16 @@ later on.  We handle that in @(see vl-make-implicit-wires).</p>"
         ;; identifiers being used in the range, then record that a
         ;; declaration was made.  Doing it in this order lets us catch
         ;; garbage like input [in:0] in;
-        (b* ((names     (vl-exprlist-names (vl-portdecl-allexprs elem)))
-             (warnings  (vl-warn-about-undeclared-wires elem names portdecls decls warnings))
-             (portdecls (hons-acons (vl-portdecl->name elem) elem portdecls))
+        (b* ((names     (vl-exprlist-names (vl-portdecl-allexprs item)))
+             (warnings  (vl-warn-about-undeclared-wires item names portdecls decls warnings))
+             (portdecls (hons-acons (vl-portdecl->name item) item portdecls))
              (acc       (cons elem acc)))
           (vl-make-implicit-wires-aux (cdr x) portdecls decls acc warnings)))
 
        ((when (or (eq tag :vl-vardecl)
                   (eq tag :vl-paramdecl)))
         (b* (((mv warnings decls)
-              (vl-blockitem-check-undeclared elem portdecls decls warnings))
+              (vl-blockitem-check-undeclared item portdecls decls warnings))
              (acc (cons elem acc)))
           (vl-make-implicit-wires-aux (cdr x) portdecls decls acc warnings)))
 
@@ -762,12 +879,12 @@ later on.  We handle that in @(see vl-make-implicit-wires).</p>"
        ((mv inst-p loc main-exprs other-exprs)
         (case tag
           (:vl-modinst
-           (b* ((loc  (vl-modinst->loc elem))
-                ((mv main other) (vl-modinst-exprs-for-implicit-wires elem)))
+           (b* ((loc  (vl-modinst->loc item))
+                ((mv main other) (vl-modinst-exprs-for-implicit-wires item)))
              (mv t loc main other)))
           (:vl-gateinst
-           (b* ((loc  (vl-gateinst->loc elem))
-                ((mv main other) (vl-gateinst-exprs-for-implicit-wires elem)))
+           (b* ((loc  (vl-gateinst->loc item))
+                ((mv main other) (vl-gateinst-exprs-for-implicit-wires item)))
              (mv t loc main other)))
           (otherwise
            (mv nil nil nil nil))))
@@ -775,11 +892,11 @@ later on.  We handle that in @(see vl-make-implicit-wires).</p>"
        ((when inst-p)
         (b* ((other-names (vl-exprlist-names other-exprs))
              (main-names  (vl-exprlist-names main-exprs))
-             (warnings    (vl-warn-about-undeclared-wires elem other-names portdecls decls warnings))
+             (warnings    (vl-warn-about-undeclared-wires item other-names portdecls decls warnings))
              (imp-names   (mergesort (vl-remove-declared-wires main-names portdecls decls)))
              (imp-nets    (vl-make-ordinary-implicit-wires loc imp-names))
              (decls       (make-fal (pairlis$ imp-names nil) decls))
-             (acc         (revappend imp-nets acc)) ;; revappend keeps them in mergesorted-name order
+             (acc         (revappend (vl-modelementlist->genelements imp-nets) acc)) ;; revappend keeps them in mergesorted-name order
              (acc         (cons elem acc)))
           (vl-make-implicit-wires-aux (cdr x) portdecls decls acc warnings)))
 
@@ -787,8 +904,8 @@ later on.  We handle that in @(see vl-make-implicit-wires).</p>"
        ;; warnings, but it still isn't too bad.
 
        ((when (eq tag :vl-assign))
-        (b* (((vl-assign elem) elem)
-             (lhs-names        (vl-expr-names elem.lvalue))
+        (b* (((vl-assign item) item)
+             (lhs-names        (vl-expr-names item.lvalue))
              (imp-lhs          (mergesort (vl-remove-declared-wires lhs-names portdecls decls)))
              (warnings
               (if (not imp-lhs)
@@ -801,7 +918,7 @@ later on.  We handle that in @(see vl-make-implicit-wires).</p>"
                                 standard, but some Verilog tools tools (like ~
                                 Verilog-XL) do not support it, so for better ~
                                 compatibility you may wish to add ~s4."
-                       :args (list elem
+                       :args (list item
                                    (if (vl-plural-p imp-lhs) "s" "")
                                    imp-lhs
                                    (if (vl-plural-p imp-lhs) "are" "is")
@@ -811,18 +928,43 @@ later on.  We handle that in @(see vl-make-implicit-wires).</p>"
                        :fatalp nil
                        :fn 'vl-make-implicit-wires-aux)
                       warnings)))
-             (imp-nets   (vl-make-ordinary-implicit-wires elem.loc imp-lhs))
+             (imp-nets   (vl-make-ordinary-implicit-wires item.loc imp-lhs))
              (decls      (make-fal (pairlis$ imp-lhs nil) decls))
-             (acc        (revappend imp-nets acc))
+             (acc        (revappend (vl-modelementlist->genelements imp-nets) acc))
 
              ;; Okay, all done adding implicit nets for the LHS.  Now make sure
              ;; all the other expressions are using declared ids.
-             (other-names (vl-exprlist-names (cons elem.expr (vl-maybe-gatedelay-allexprs elem.delay))))
-             (warnings    (vl-warn-about-undeclared-wires elem other-names portdecls decls warnings))
+             (other-names (vl-exprlist-names (cons item.expr (vl-maybe-gatedelay-allexprs item.delay))))
+             (warnings    (vl-warn-about-undeclared-wires item other-names portdecls decls warnings))
              (acc         (cons elem acc)))
           (vl-make-implicit-wires-aux (cdr x) portdecls decls acc warnings)))
 
 
+       ((when (eq tag :vl-alias))
+        (b* (((vl-alias item) item)
+             (lhs-names        (vl-expr-names item.lhs))
+             (rhs-names        (vl-expr-names item.rhs))
+             (implicit         (mergesort (vl-remove-declared-wires
+                                           (append lhs-names rhs-names) portdecls decls)))
+             (warnings
+              (if (not implicit)
+                  warnings
+                (cons (make-vl-warning
+                       :type :vl-tricky-implicit
+                       :msg "~a0: wire~s1 ~&2 ~s3 implicitly declared by ~
+                                this alias declaration."
+                       :args (list item
+                                   (if (vl-plural-p implicit) "s" "")
+                                   implicit
+                                   (if (vl-plural-p implicit) "are" "is"))
+                       :fatalp nil
+                       :fn 'vl-make-implicit-wires-aux)
+                      warnings)))
+             (imp-nets   (vl-make-ordinary-implicit-wires item.loc implicit))
+             (decls      (make-fal (pairlis$ implicit nil) decls))
+             (acc        (revappend (vl-modelementlist->genelements imp-nets) acc))
+             (acc        (cons elem acc)))
+          (vl-make-implicit-wires-aux (cdr x) portdecls decls acc warnings)))
 
        ((when (or (eq tag :vl-initial)
                   (eq tag :vl-always)))
@@ -830,9 +972,9 @@ later on.  We handle that in @(see vl-make-implicit-wires).</p>"
         ;; dealt with how to handle them, and they can't introduce any
         ;; implicit wires, so this is easy.
         (b* ((stmt     (if (eq tag :vl-initial)
-                           (vl-initial->stmt elem)
-                         (vl-always->stmt elem)))
-             (warnings (vl-stmt-check-undeclared elem stmt portdecls decls warnings))
+                           (vl-initial->stmt item)
+                         (vl-always->stmt item)))
+             (warnings (vl-stmt-check-undeclared item stmt portdecls decls warnings))
              (acc      (cons elem acc)))
           (vl-make-implicit-wires-aux (cdr x) portdecls decls acc warnings)))
 
@@ -840,8 +982,8 @@ later on.  We handle that in @(see vl-make-implicit-wires).</p>"
         ;; Functions are tricky because they have their own scope, but we've
         ;; already dealt with how to handle them, and they can't introduce
         ;; any implicit wires, so this is easy.
-        (b* ((warnings (vl-fundecl-check-undeclared elem portdecls decls warnings))
-             (decls    (hons-acons (vl-fundecl->name elem) nil decls))
+        (b* ((warnings (vl-fundecl-check-undeclared item portdecls decls warnings))
+             (decls    (hons-acons (vl-fundecl->name item) nil decls))
              (acc      (cons elem acc)))
           (vl-make-implicit-wires-aux (cdr x) portdecls decls acc warnings)))
 
@@ -849,12 +991,21 @@ later on.  We handle that in @(see vl-make-implicit-wires).</p>"
         ;; Tasks are tricky because they have their own scope, but we've
         ;; already dealt with how to handle them, and they can't introduce
         ;; any implicit wires, so this is easy.
-        (b* ((warnings (vl-taskdecl-check-undeclared elem portdecls decls warnings))
-             (decls    (hons-acons (vl-taskdecl->name elem) nil decls))
+        (b* ((warnings (vl-taskdecl-check-undeclared item portdecls decls warnings))
+             (decls    (hons-acons (vl-taskdecl->name item) nil decls))
              (acc      (cons elem acc)))
           (vl-make-implicit-wires-aux (cdr x) portdecls decls acc warnings)))
 
-       )
+       ((when (member tag '(:vl-modport :vl-typedef :vl-fwdtypedef)))
+        (b* ((warnings (cons (make-vl-warning
+                              :type :vl-unexpected-modelement
+                              :msg "~a0: unexpected kind of module item."
+                              :args (list item)
+                              :fatalp nil
+                              :fn 'vl-make-implicit-wires-aux)
+                             warnings)))
+          (vl-make-implicit-wires-aux (cdr x) portdecls decls
+                                      (cons elem acc) warnings))))
 
     (impossible)
     (mv warnings portdecls decls acc))
@@ -869,7 +1020,6 @@ later on.  We handle that in @(see vl-make-implicit-wires).</p>"
   :parents (make-implicit-wires)
   :short "@(call vl-make-port-implicit-wires) generates variable declarations
 for ports that don't have corresponding variable declarations."
-
   ((portdecls "Alist binding names to port declarations."
               (vl-portdecllist-p (alist-vals portdecls)))
    (decls     "Alist binding names declared in the module to @('nil')."))
@@ -910,14 +1060,14 @@ don't care, but it might be good to look into this again.</p>"
   :short "Augment a list of module elements with declarations for any implicit
 nets, and make sure that every identifier being used has a declaration."
 
-  ((elems vl-modelementlist-p
+  ((elems vl-genelementlist-p
           "All of the module elements from a single module, in the order they
            were parsed.")
    (warnings vl-warninglist-p
              "An ordinary @(see warnings) accumulator, which may be extended
               with fatal and/or nonfatal warnings."))
   :returns
-  (mv (new-elems vl-modelementlist-p
+  (mv (new-elems vl-genelementlist-p
                  "Extended version of @('elems'), perhaps with new declarations
                   for implicit wires.")
       (new-warnings vl-warninglist-p))
@@ -932,6 +1082,6 @@ all of its identifiers.</p>"
           (vl-make-port-implicit-wires portdecls decls))
          (- (fast-alist-free portdecls))
          (- (fast-alist-free decls))
-         (new-elems (revappend-without-guard acc implicit-port-decls)))
+         (new-elems (revappend-without-guard acc (vl-modelementlist->genelements implicit-port-decls))))
       (mv new-elems warnings)))
 

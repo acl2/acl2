@@ -30,7 +30,6 @@
 
 (in-package "VL")
 (include-book "../../mlib/stmt-tools")
-(include-book "../../mlib/context")
 (include-book "../../mlib/welltyped")
 (include-book "../../mlib/constint-bits")
 (include-book "../../mlib/expr-slice")
@@ -546,17 +545,40 @@ for handling @('case(foo) ... 3'b110, 3'b111: ... endcase')."
                               :caselist caselist
                               :default  default
                               :atts     atts)))
-       ((when check)
-        (mv (fatal :type :vl-case-unsupported
-                   :msg "~a0: we don't yet implement priority, unique, or
-                         unique0 checking for case statements."
-                   :args (list (vl-modelement-fix ctx)))
-            (make-vl-casestmt :casetype nil
-                              :check    check
-                              :test     test
-                              :caselist caselist
-                              :default  default
-                              :atts     atts))))
+       (warnings
+        ;; See SystemVerilog-2012 Section 12.5.3 for information about priority,
+        ;; unique, and unique0 case statements.
+        ;;
+        ;; It appears that 'priority' basically just means: it is an error for
+        ;; no case item to match and the case statement does not need a default
+        ;; value.  We won't handle a missing default branch correctly yet, but
+        ;; if there is a default, we'll still do the right thing.
+        ;;
+        ;; For 'unique' or 'unique0', it's supposed to be safe to evaluate the
+        ;; items in any order, and it's a runtime error for multiple cases to
+        ;; simultaneously match.
+        ;;
+        ;;   - As with 'priority', a 'unique' case doesn't need a default, and
+        ;;     we currently won't be able to handle it correctly.
+        ;;
+        ;;   - In case of a violation, the spec says: "the implementation shall
+        ;;     issue a violation report and ___execute the statement associated
+        ;;     with the matching case_item that appears ***FIRST*** in the case
+        ;;     statement, but ***NOT*** the statements associated with other
+        ;;     matching case_items.___" So, creating an ordinary, if-then-else
+        ;;     style structure still gives the correct semantics, even in case
+        ;;     of a violation.
+        ;;
+        ;; It would probably be nicer to do something smarter to handle these,
+        ;; forcing the output to X in case of a violation, etc.  We'll at least
+        ;; issue a warning.
+        (if check
+            (warn :type :vl-case-check
+                  :msg "~a0: we don't yet implement priority, unique, or ~
+                         unique0 checking for case statements.  We will ~
+                         treat this as an ordinary case statement."
+                  :args (list (vl-modelement-fix ctx)))
+          (ok))))
     ;; Else, all sizes are good enough, we can turn it into ifs.  BOZO we're
     ;; going to lose any attributes associated with the case statement.
     ;; Maybe that's okay?
@@ -888,8 +910,7 @@ the same body."
    (atts     vl-atts-p        "Any attributes on the whole case statement.")
    (ctx      vl-modelement-p  "Context for @(see warnings).")
    (warnings vl-warninglist-p "Ordinary warnings accumulator.")
-   (mod      vl-module-p      "Module for wire lookups, etc.")
-   (ialist   (equal ialist (vl-moditem-alist mod))))
+   (ss       vl-scopestack-p))
   :guard
   (member type '(:vl-casez :vl-casex))
   :returns
@@ -900,14 +921,14 @@ the same body."
        (check        (vl-casecheck-fix check))
        (test         (vl-expr-fix test))
        (ctx          (vl-modelement-fix ctx))
-       (mod          (vl-module-fix mod))
+       (ss           (vl-scopestack-fix ss))
        (warnings     (vl-warninglist-fix warnings))
 
        (new-warnings (vl-casestmt-size-warnings test cases ctx))
        ((mv okp new-warnings test-bits)
         (if (and (vl-expr-sliceable-p test)
                  (vl-expr-welltyped-p test))
-            (vl-msb-bitslice-expr test mod ialist new-warnings)
+            (vl-msb-bitslice-expr test ss new-warnings)
           (mv nil new-warnings nil)))
        (new-warnings
         (if okp
@@ -921,9 +942,10 @@ the same body."
                 :acc new-warnings)))
        (new-warnings
         (if check
-            (warn :type :vl-casezx-unsupported
-                  :msg "~a0: we don't yet implement priority, unique, or
-                         unique0 checking for casez/casex statements."
+            (warn :type :vl-casezx-check
+                  :msg "~a0: we don't yet implement priority, unique, or ~
+                         unique0 checking for casez/x statements.  We will ~
+                         treat this as an ordinary casez/x statement."
                   :args (list (vl-modelement-fix ctx))
                   :acc new-warnings)
           new-warnings))
@@ -960,8 +982,7 @@ statements within a statement."
   (define vl-stmt-caseelim ((x        vl-stmt-p)
                             (ctx      vl-modelement-p)
                             (warnings vl-warninglist-p)
-                            (mod      vl-module-p)
-                            (ialist   (equal ialist (vl-moditem-alist mod))))
+                            (ss       vl-scopestack-p))
     :returns (mv (warnings vl-warninglist-p)
                  (new-x    vl-stmt-p))
     :verify-guards nil
@@ -971,7 +992,7 @@ statements within a statement."
           (mv (ok) x))
 
          (substmts               (vl-compoundstmt->stmts x))
-         ((mv warnings substmts) (vl-stmtlist-caseelim substmts ctx warnings mod ialist))
+         ((mv warnings substmts) (vl-stmtlist-caseelim substmts ctx warnings ss))
          (x                      (change-vl-compoundstmt x :stmts substmts))
          ((unless (eq (vl-stmt-kind x) :vl-casestmt))
           (mv warnings x))
@@ -980,13 +1001,12 @@ statements within a statement."
          ((unless x.casetype)
           ;; Regular case statement, not casex/casez.
           (vl-casestmt-elim           x.check x.test x.caselist x.default x.atts ctx warnings)))
-      (vl-casezx-stmt-elim x.casetype x.check x.test x.caselist x.default x.atts ctx warnings mod ialist)))
+      (vl-casezx-stmt-elim x.casetype x.check x.test x.caselist x.default x.atts ctx warnings ss)))
 
   (define vl-stmtlist-caseelim ((x        vl-stmtlist-p)
                                 (ctx      vl-modelement-p)
                                 (warnings vl-warninglist-p)
-                                (mod      vl-module-p)
-                                (ialist   (equal ialist (vl-moditem-alist mod))))
+                                (ss       vl-scopestack-p))
     :returns
     (mv (warnings vl-warninglist-p)
         (new-x (and (vl-stmtlist-p new-x)
@@ -995,9 +1015,9 @@ statements within a statement."
     (b* (((when (atom x))
           (mv (ok) nil))
          ((mv warnings car)
-          (vl-stmt-caseelim (car x) ctx warnings mod ialist))
+          (vl-stmt-caseelim (car x) ctx warnings ss))
          ((mv warnings cdr)
-          (vl-stmtlist-caseelim (cdr x) ctx warnings mod ialist)))
+          (vl-stmtlist-caseelim (cdr x) ctx warnings ss)))
       (mv warnings (cons car cdr))))
   ///
   (verify-guards vl-stmt-caseelim)
@@ -1006,58 +1026,55 @@ statements within a statement."
 (define vl-always-caseelim
   ((x        vl-always-p)
    (warnings vl-warninglist-p)
-   (mod      vl-module-p)
-   (ialist   (equal ialist (vl-moditem-alist mod))))
+   (ss       vl-scopestack-p))
   :returns (mv (warnings vl-warninglist-p)
                (new-x    vl-always-p))
   (b* ((x (vl-always-fix x))
        ((mv warnings stmt)
-        (vl-stmt-caseelim (vl-always->stmt x) x warnings mod ialist))
+        (vl-stmt-caseelim (vl-always->stmt x) x warnings ss))
        (x-prime (change-vl-always x :stmt stmt)))
     (mv warnings x-prime)))
 
 (define vl-alwayslist-caseelim
   ((x        vl-alwayslist-p)
    (warnings vl-warninglist-p)
-   (mod      vl-module-p)
-   (ialist   (equal ialist (vl-moditem-alist mod))))
+   (ss       vl-scopestack-p))
   :returns (mv (warnings vl-warninglist-p)
                (new-x    vl-alwayslist-p))
   (b* (((when (atom x))
         (mv (ok) nil))
-       ((mv warnings car) (vl-always-caseelim (car x) warnings mod ialist))
-       ((mv warnings cdr) (vl-alwayslist-caseelim (cdr x) warnings mod ialist)))
+       ((mv warnings car) (vl-always-caseelim (car x) warnings ss))
+       ((mv warnings cdr) (vl-alwayslist-caseelim (cdr x) warnings ss)))
     (mv warnings (cons car cdr))))
 
 (define vl-initial-caseelim
   ((x        vl-initial-p)
    (warnings vl-warninglist-p)
-   (mod      vl-module-p)
-   (ialist   (equal ialist (vl-moditem-alist mod))))
+   (ss       vl-scopestack-p))
   :returns (mv (warnings vl-warninglist-p)
                (new-x    vl-initial-p))
   (b* ((x (vl-initial-fix x))
        ((mv warnings stmt)
-        (vl-stmt-caseelim (vl-initial->stmt x) x warnings mod ialist))
+        (vl-stmt-caseelim (vl-initial->stmt x) x warnings ss))
        (x-prime (change-vl-initial x :stmt stmt)))
     (mv warnings x-prime)))
 
 (define vl-initiallist-caseelim
   ((x        vl-initiallist-p)
    (warnings vl-warninglist-p)
-   (mod      vl-module-p)
-   (ialist   (equal ialist (vl-moditem-alist mod))))
+   (ss       vl-scopestack-p))
   :returns (mv (warnings vl-warninglist-p)
                (new-x    vl-initiallist-p))
   (b* (((when (atom x))
         (mv (ok) nil))
-       ((mv warnings car) (vl-initial-caseelim (car x) warnings mod ialist))
-       ((mv warnings cdr) (vl-initiallist-caseelim (cdr x) warnings mod ialist)))
+       ((mv warnings car) (vl-initial-caseelim (car x) warnings ss))
+       ((mv warnings cdr) (vl-initiallist-caseelim (cdr x) warnings ss)))
     (mv warnings (cons car cdr))))
 
-(define vl-module-caseelim ((x vl-module-p))
+(define vl-module-caseelim ((x vl-module-p) (ss vl-scopestack-p))
   :returns (new-x vl-module-p)
   (b* ((x (vl-module-fix x))
+       (ss (vl-scopestack-push x ss))
        ((vl-module x) x)
        ((when (vl-module->hands-offp x))
         x)
@@ -1069,20 +1086,23 @@ statements within a statement."
        (warnings x.warnings)
        (ialist (vl-moditem-alist x))
        ((mv warnings alwayses)
-        (vl-alwayslist-caseelim x.alwayses warnings x ialist))
+        (vl-alwayslist-caseelim x.alwayses warnings ss))
        ((mv warnings initials)
-        (vl-initiallist-caseelim x.initials warnings x ialist)))
+        (vl-initiallist-caseelim x.initials warnings ss)))
     (fast-alist-free ialist)
     (change-vl-module x
                       :warnings warnings
                       :alwayses alwayses
                       :initials initials)))
 
-(defprojection vl-modulelist-caseelim ((x vl-modulelist-p))
+(defprojection vl-modulelist-caseelim ((x vl-modulelist-p) (ss vl-scopestack-p))
   :returns (new-x vl-modulelist-p)
-  (vl-module-caseelim x))
+  (vl-module-caseelim x ss))
 
 (define vl-design-caseelim ((x vl-design-p))
   :returns (new-x vl-design-p)
-  (b* (((vl-design x) x))
-    (change-vl-design x :mods (vl-modulelist-caseelim x.mods))))
+  (b* (((vl-design x) x)
+       (ss (vl-scopestack-init x))
+       (mods (vl-modulelist-caseelim x.mods ss)))
+    (vl-scopestacks-free)
+    (change-vl-design x :mods mods)))

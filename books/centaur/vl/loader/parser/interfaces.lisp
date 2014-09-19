@@ -29,16 +29,11 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "utils")
-(include-book "../../parsetree")
-
-;; needed for generate regions -- maybe we can refactor to shrink the critical path.
-(include-book "modules")
-
+(include-book "elements")
+(include-book "imports")
+(include-book "../make-implicit-wires")
+(include-book "../portdecl-sign")
 (local (include-book "../../util/arithmetic"))
-
-;; BOZO we don't really implement interfaces yet.
-
 
 
 #||
@@ -62,333 +57,237 @@ interface_ansi_header ::=
 {attribute_instance } interface [ lifetime ] interface_identifier
 { package_import_declaration }1 [ parameter_port_list ] [ list_of_port_declarations ] ;
 
-interface_or_generate_item ::=
-{ attribute_instance } module_common_item
-| { attribute_instance } modport_declaration
-| { attribute_instance } extern_tf_declaration
-
-module_common_item ::=
-module_or_generate_item_declaration
-| interface_instantiation
-| program_instantiation
-| assertion_item
-| bind_directive
-| continuous_assign
-| net_alias
-| initial_construct
-| final_construct
-| always_construct
-| loop_generate_construct
-| conditional_generate_construct
-| elaboration_system_task
-
-module_or_generate_item_declaration ::=
-package_or_generate_item_declaration
-| genvar_declaration
-| clocking_declaration
-| default clocking clocking_identifier ;
-| default disable iff expression_or_dist ;
-
-package_or_generate_item_declaration ::=
-net_declaration
-| data_declaration
-| task_declaration
-| function_declaration
-| checker_declaration
-| dpi_import_export
-| extern_constraint_declaration
-| class_declaration
-| class_constructor_declaration
-| local_parameter_declaration ;
-| parameter_declaration ;
-| covergroup_declaration
-| overload_declaration
-| assertion_item_declaration
-| ;
-
-extern_tf_declaration ::=
-extern method_prototype ;
-| extern forkjoin task_prototype ;
-
-interface_item ::=
-port_declaration ;
-| non_port_interface_item
-
-non_port_interface_item ::=
-generate_region
-| interface_or_generate_item
-| program_declaration
-| interface_declaration
-| timeunits_declaration
-
-modport_declaration ::= modport modport_item { , modport_item } ;
-
-modport_item ::= modport_identifier ( modport_ports_declaration { , modport_ports_declaration } )
-
-modport_ports_declaration ::=
-{ attribute_instance } modport_simple_ports_declaration
-| { attribute_instance } modport_tf_ports_declaration
-| { attribute_instance } modport_clocking_declaration
-
-modport_clocking_declaration ::= clocking clocking_identifier
-
-modport_simple_ports_declaration ::=
-port_direction modport_simple_port { , modport_simple_port }
-
-modport_simple_port ::=
-port_identifier
-| . port_identifier ( [ expression ] )
-
-modport_tf_ports_declaration ::=
-import_export modport_tf_port { , modport_tf_port }
-
-import_export modport_tf_port { , modport_tf_port }
-modport_tf_port ::=
-method_prototype
-| tf_identifier
-import_export ::= import | export
-
 ||#
 
+(define vl-interface-warn-unsupported ((c vl-genelement-collection-p)
+                                       (warnings vl-warninglist-p))
+  :returns (warnings vl-warninglist-p)
+  (b* (((vl-genelement-collection c)))
+    (if (or* c.assigns
+             c.fundecls
+             c.taskdecls
+             c.modinsts
+             c.gateinsts
+             c.alwayss
+             c.initials
+             c.ports)
+        (warn :type :vl-unsupported-interface-item
+              :msg "Unsupported interface items: ~&0"
+              :args (list (append (and* c.assigns '("continuous assignments"))
+                                  (and* c.fundecls '("functions"))
+                                  (and* c.taskdecls '("tasks"))
+                                  (and* c.modinsts '("module instances"))
+                                  (and* c.gateinsts '("gate instances"))
+                                  (and* c.alwayss '("always blocks"))
+                                  (and* c.initials '("initial blocks"))
+                                  (and* c.ports    '("ports")))))
+      (vl-warninglist-fix warnings))))
 
-(defparser vl-parse-simple-modport-port (dir atts)
-  :guard (and (vl-direction-p dir)
-              (vl-atts-p atts))
-  :result (vl-modport-port-p val)
+(define vl-make-interface-by-items
+
+; Our various parsing functions for declarations, assignments, etc., return all
+; kinds of different interface items.  We initially get all of these different
+; kinds of items as a big list.  Then, here, we sort it into buckets by type,
+; and turn it into a interface.
+
+  ((name     stringp               "Name of the interface.")
+   (params   vl-paramdecllist-p    "Parameters declarations from the #(...) list, if any.")
+   (ports    vl-portlist-p         "Ports like (o, a, b).")
+   (items    vl-genelementlist-p   "Items from the interface's body, i.e., until endinterface.")
+   (atts     vl-atts-p)
+   (minloc   vl-location-p)
+   (maxloc   vl-location-p)
+   (warnings vl-warninglist-p))
+  :returns (mod vl-interface-p)
+  (b* (((mv items warnings) (vl-make-implicit-wires
+                             (append-without-guard (vl-modelementlist->genelements params)
+                                                   items)
+                             warnings))
+       ((vl-genelement-collection c) (vl-sort-genelements items))
+       ((mv warnings c.portdecls c.vardecls)
+        (vl-portdecl-sign c.portdecls c.vardecls warnings))
+       (warnings (vl-interface-warn-unsupported c warnings)))
+    ;; BOZO: Warn about other bad elements in c?
+    (make-vl-interface :name       name
+                       :ports      ports
+                       :portdecls  c.portdecls
+                       :vardecls   c.vardecls
+                       :paramdecls c.paramdecls
+                       :modports   c.modports
+                       :generates  c.generates
+                       :atts       atts
+                       :minloc     minloc
+                       :maxloc     maxloc
+                       :warnings   warnings
+                       :origname   name
+                       :comments   nil
+                       )))
+
+
+
+(defparser vl-parse-interface-declaration-ansi (atts interface-kwd name)
+  :guard (and (vl-atts-p atts)
+              (vl-token-p interface-kwd)
+              (vl-idtoken-p name))
+  :result (vl-interface-p val)
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens pstate
-        (loc := (vl-current-loc))
-        (unless (vl-is-token? :vl-dot)
-          (name := (vl-match-token :vl-idtoken))
-          (return (make-vl-modport-port :name (vl-idtoken->name name)
-                                        :dir dir
-                                        :expr (vl-idexpr (vl-idtoken->name name) nil nil)
-                                        :atts atts
-                                        :loc loc)))
-        (:= (vl-match))
-        (name := (vl-match-token :vl-idtoken))
-        (:= (vl-match-token :vl-lparen))
-        (unless (vl-is-token? :vl-rparen)
-          (expr := (vl-parse-expression)))
-        
-        (:= (vl-match-token :vl-rparen))
-        (return (make-vl-modport-port :name (vl-idtoken->name name)
-                                      :dir dir
-                                      :expr expr
-                                      :atts atts
-                                      :loc loc))))
+  (seq tokstream
+       (:= (vl-parse-0+-package-import-declarations)) ;; ignore
+       (params := (vl-maybe-parse-parameter-port-list))
+       ((portdecls . netdecls) := (vl-maybe-parse-list-of-port-declarations))
+       (:= (vl-match-token :vl-semi))
+       (items := (vl-parse-0+-genelements))
+       (endkwd := (vl-match-token :vl-kwd-endinterface))
+       (:= (vl-parse-endblock-name (vl-idtoken->name name)
+                                   "interface/endinterface"))
 
+       (return-raw
+        (b* ((item-portdecls (vl-genelementlist->portdecls items))
+             ((when item-portdecls)
+              (vl-parse-error "ANSI interface contained internal portdecls"))
+             (interface (vl-make-interface-by-items (vl-idtoken->name name)
+                                              params
+                                              (vl-ports-from-portdecls portdecls)
+                                              (append (vl-modelementlist->genelements netdecls)
+                                                      (vl-modelementlist->genelements portdecls)
+                                                      items)
+                                              atts
+                                              (vl-token->loc interface-kwd)
+                                              (vl-token->loc endkwd)
+                                              (vl-parsestate->warnings (vl-tokstream->pstate)))))
+          (mv nil interface tokstream)))))
 
-(local (defthm len-cdr
-         (<= (len (cdr x)) (len x))
-         :rule-classes :linear))
-
-(defparser vl-parse-1+-simple-modport-ports (dir atts)
-  :guard (and (vl-direction-p dir)
-              (vl-atts-p atts))
-  :result (vl-modport-portlist-p val)
-  :resultp-of-nil t
-  :fails gracefully
-  :count strong
-  (seqw tokens pstate
-        (port1 := (vl-parse-simple-modport-port dir atts))
-        (unless (vl-is-token? :vl-comma)
-          (return (list port1)))
-        ;; use backtracking to know when to stop, i.e. we see a keyword instead of
-        ;; an identifier or .identifier(expr)
-        (return-raw
-         (seqw-backtrack tokens pstate
-                         ((:= (vl-match))
-                          (ports2 := (vl-parse-1+-simple-modport-ports dir atts))
-                          (return (cons port1 ports2)))
-                         ((return (list port1)))))))
-
-;; function_prototype ::= function data_type_or_void function_identifier [ ( [ tf_port_list ] ) ]
-(defparser vl-parse-function-prototype ()
-  :resultp-of-nil t
-  :fails gracefully
-  :count strong
-  (seqw tokens pstate
-        (:= (vl-match-token :vl-kwd-function))
-        (:= (vl-parse-datatype-or-void))
-        (:= (vl-match-token :vl-idtoken))
-        (:= (vl-match-token :vl-lparen))
-        ;; should really be vl-parse-tf-port-list
-        (:= (vl-parse-taskport-list))
-        (:= (vl-match-token :vl-rparen))
-        (return nil)))
-
-(defparser vl-parse-task-prototype ()
-  :resultp-of-nil t
-  :fails gracefully
-  :count strong
-  (seqw tokens pstate
-        (:= (vl-match-token :vl-kwd-task))
-        (:= (vl-match-token :vl-idtoken))
-        (when (vl-is-token? :vl-lparen)
-          (:= (vl-match))
-          ;; should really be vl-parse-tf-port-list
-          (:= (vl-parse-taskport-list))
-          (:= (vl-match-token :vl-rparen)))
-        (return nil)))
-
-(defparser vl-parse-method-prototype ()
-  :resultp-of-nil t
-  :fails :gracefully
-  :count strong
-  (seqw-backtrack tokens pstate
-                  ((return-raw (vl-parse-function-prototype)))
-                  ((return-raw (vl-parse-task-prototype)))))
-
-(defparser vl-parse-modport-tf-port ()
-  :resultp-of-nil t
-  :fails :gracefully
-  :count strong
-  (seqw-backtrack tokens pstate
-                  ((return-raw (vl-parse-method-prototype)))
-                  ((:= (vl-match-token :vl-idtoken))
-                   (return nil))))
-  
-
-(defparser vl-parse-modport-port ()
-  :result (vl-modport-portlist-p val)
-  :resultp-of-nil t
-  :fails gracefully
-  :count strong
-  (seqw tokens pstate
-        (atts := (vl-parse-0+-attribute-instances))
-        (when (vl-is-some-token? *vl-directions-kwds*)
-          (dir := (vl-match-some-token *vl-directions-kwds*))
-          (ports := (vl-parse-1+-simple-modport-ports 
-                     (cdr (assoc-eq (vl-token->type dir)
-                                    *vl-directions-kwd-alist*))
-                     atts))
-          (return ports))
-        (when (vl-is-some-token? '(:vl-kwd-import :vl-kwd-export))
-          (:= (vl-match))
-          (:= (vl-parse-modport-tf-port))
-          (:= (vl-parse-warning
-               :vl-warn-modport-tf
-               "Tasks and functions in modports are not yet implemented."))
-          (return nil))
-        (when (vl-is-token? :vl-kwd-clocking)
-          (:= (vl-match))
-          (:= (vl-match-token :vl-idtoken))
-          (:= (vl-parse-warning
-               :vl-warn-modport-clocking
-               "Clocking in modports is not yet implemented."))
-          (return nil))
-        (return-raw
-         (vl-parse-error "Invalid modport port."))))
-
-(defparser vl-parse-1+-modport-ports ()
-  :result (vl-modport-portlist-p val)
-  :resultp-of-nil t
-  :fails gracefully
-  :count strong
-  (seqw tokens pstate
-        (ports1 := (vl-parse-modport-port))
-        (when (vl-is-token? :vl-comma)
-          (:= (vl-match))
-          (ports2 := (vl-parse-1+-modport-ports))
-          (return (append-without-guard ports1 ports2)))
-        (return ports1)))
-
-
-
-;; modport_item ::= modport_identifier ( modport_ports_declaration { , modport_ports_declaration } )
-
-(defparser vl-parse-modport-item ()
-  :result (vl-modport-p val)
+(defparser vl-parse-interface-declaration-nonansi (atts interface-kwd name)
+  :guard (and (vl-atts-p atts)
+              (vl-token-p interface-kwd)
+              (vl-idtoken-p name))
+  :result (vl-interface-p val)
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens pstate
-        (loc := (vl-current-loc))
-        (name := (vl-match-token :vl-idtoken))
-        (:= (vl-match-token :vl-lparen))
-        (ports := (vl-parse-1+-modport-ports))
-        (:= (vl-match-token :vl-rparen))
-        (return (make-vl-modport :name (vl-idtoken->name name)
-                                 :ports ports
-                                 :loc loc))))
+  (seq tokstream
+       (:= (vl-parse-0+-package-import-declarations)) ;; ignore
+       (params := (vl-maybe-parse-parameter-port-list))
+       (ports := (vl-maybe-parse-list-of-ports))
+       (:= (vl-match-token :vl-semi))
+       (items := (vl-parse-0+-genelements))
+       (endkwd := (vl-match-token :vl-kwd-endinterface))
+       (:= (vl-parse-endblock-name (vl-idtoken->name name)
+                                   "interface/endinterface"))
+
+       (return
+        (vl-make-interface-by-items (vl-idtoken->name name)
+                                    params ports items atts
+                                    (vl-token->loc interface-kwd)
+                                    (vl-token->loc endkwd)
+                                    (vl-parsestate->warnings (vl-tokstream->pstate))))))
 
 
-;; modport_declaration ::= modport modport_item { , modport_item } ;
-
-(defparser vl-parse-1+-modport-items ()
-  :result (vl-modportlist-p val)
-  :resultp-of-nil t
+(defparser vl-parse-interface-main(atts interface-kwd name)
+  :guard (and (vl-atts-p atts)
+              (vl-token-p interface-kwd)
+              (vl-idtoken-p name))
+  :result (vl-interface-p val)
+  :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens pstate
-        (port1 := (vl-parse-modport-item))
-        (when (vl-is-token? :vl-comma)
-          (:= (vl-match))
-          (ports2 := (vl-parse-1+-modport-items))
-          (return (cons port1 ports2)))
-        (:= (vl-match-token :vl-semi))
-        (return (list port1))))
+  ;; This is all just like vl-parse-module-main.
+  (b* ((orig-warnings (vl-parsestate->warnings (vl-tokstream->pstate)))
+       (tokstream (vl-tokstream-update-pstate
+                   (change-vl-parsestate (vl-tokstream->pstate) :warnings nil)))
+       (backup (vl-tokstream-save))
+       ((mv err1 res tokstream)
+        (vl-parse-interface-declaration-nonansi atts interface-kwd name))
+       ((unless err1)
+        ;; Successfully parsed the interface using the nonansi variant.  Return
+        ;; the result.
+        ;; Any warnings get associated with the interface, so now throw out
+        ;; any warnings that are returned.
+        (b* ((tokstream (vl-tokstream-update-pstate
+                         (change-vl-parsestate
+                          (vl-tokstream->pstate) :warnings orig-warnings))))
+          (mv err1 res tokstream)))
+       (v1-tokens (vl-tokstream->tokens))
 
-(defparser vl-parse-modport-decl ()
-  :result (vl-modportlist-p val)
-  :resultp-of-nil t
-  :fails gracefully
-  :count strong
-  (seqw tokens pstate
-        (:= (vl-match-token :vl-kwd-modport))
-        (modports := (vl-parse-1+-modport-items))
-        (return modports)))
+       (tokstream (vl-tokstream-restore backup))
+       ((mv err2 res tokstream)
+        ;; Similar handling for warnings
+        (vl-parse-interface-declaration-ansi atts interface-kwd name))
+       ((unless err2)
+        ;; Successfully parsed using ansi variant.  Similar deal.
+        (b* ((tokstream (vl-tokstream-update-pstate
+                         (change-vl-parsestate
+                          (vl-tokstream->pstate) :warnings orig-warnings))))
+          (mv err2 res tokstream)))
 
-#||
-(include-book
- "../lexer/lexer")
+       ;; Choose which parse error to use based on the tokens remaining.
+       (v2-tokens (vl-tokstream->tokens))
+       (tokstream (vl-tokstream-restore backup))
+       (tokstream (vl-tokstream-update-pstate
+                   (change-vl-parsestate
+                    (vl-tokstream->pstate) :warnings orig-warnings)))
 
-(vl-parse-modport-decl
- :tokens (make-test-tokens
-"
-     modport master ( output Foo, Bar, Baz,
-                      input  Valid,
-                      input  DValid,
-                      input  OnFire,
-                      output KillMeNow ),
-
-             slave  ( input Foo, Bar, Baz,
-                      output  Valid,
-                      output  DValid,
-                      output  OnFire,
-                      input KillMeNow );
-")
- :warnings nil
- :config (make-vl-loadconfig))
-
-||#
+       ((when (<= (len v1-tokens) (len v2-tokens)))
+        ;; nonansi variant got farther (or as far), so use it.
+        (mv err1 nil tokstream)))
+    (mv err2 nil tokstream)))
 
 
-
-;; NOTE: modports and other interface internals are not yet parsed by this function
-(defparser vl-parse-interface-declaration-aux ()
+(defparser vl-skip-through-endinterface ()
   :result (vl-endinfo-p val)
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  ;; Similar to UDPs, but we don't have to check for Verilog-2005 because
-  ;; interfaces only exist in SystemVerilog-2012.
-  (seqw tokens pstate
-        (unless (vl-is-token? :vl-kwd-endinterface)
-          (:s= (vl-match-any))
-          (info := (vl-parse-interface-declaration-aux))
-          (return info))
-        (end := (vl-match))
-        (unless (vl-is-token? :vl-colon)
-          (return (make-vl-endinfo :name nil
-                                   :loc (vl-token->loc end))))
-        (:= (vl-match))
-        (id := (vl-match-token :vl-idtoken))
-        (return (make-vl-endinfo :name (vl-idtoken->name id)
-                                 :loc (vl-token->loc id)))))
+
+; This is a special function which is used to provide more fault-tolerance in
+; interface parsing.  Historically, we just advanced the token stream until
+; :vl-kwd-endinterface was encountered.  For SystemVerilog, we also capture the
+; "endinterface : foo" part and return a proper vl-endinfo-p.
+
+  (seq tokstream
+       (unless (vl-is-token? :vl-kwd-endinterface)
+         (:s= (vl-match-any))
+         (info := (vl-skip-through-endinterface))
+         (return info))
+       ;; Now we're at endinterface
+       (end := (vl-match))
+       (unless (and (vl-is-token? :vl-colon)
+                    (not (eq (vl-loadconfig->edition config) :verilog-2005)))
+         (return (make-vl-endinfo :name nil
+                                  :loc (vl-token->loc end))))
+       (:= (vl-match))
+       (id := (vl-match-token :vl-idtoken))
+       (return (make-vl-endinfo :name (vl-idtoken->name id)
+                                :loc (vl-token->loc id)))))
+
+
+(define vl-make-interface-with-parse-error ((name   stringp)
+                                            (minloc vl-location-p)
+                                            (maxloc vl-location-p)
+                                            (err    vl-warning-p)
+                                            (tokens vl-tokenlist-p))
+  :returns (res vl-interface-p)
+  (b* (;; Like vl-make-module-with-parse-error.
+       (warn2 (make-vl-warning :type :vl-parse-error
+                               :msg "[[ Remaining ]]: ~s0 ~s1.~%"
+                               :args (list (vl-tokenlist->string-with-spaces
+                                            (take (min 4 (len tokens))
+                                                  (redundant-list-fix tokens)))
+                                           (if (> (len tokens) 4) "..." ""))
+                               :fatalp t
+                               :fn __function__)))
+
+    (make-vl-interface :name name
+                       :origname name
+                       :minloc minloc
+                       :maxloc maxloc
+                       :warnings (list err warn2))))
+
+
+
+
 
 (defparser vl-parse-interface-declaration (atts)
   :guard (vl-atts-p atts)
@@ -396,25 +295,44 @@ import_export ::= import | export
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens pstate
-        (:= (vl-match-token :vl-kwd-interface))
-        (name := (vl-match-token :vl-idtoken))
-        (endinfo := (vl-parse-interface-declaration-aux))
-        (when (and (vl-endinfo->name endinfo)
-                   (not (equal (vl-idtoken->name name)
-                               (vl-endinfo->name endinfo))))
-          (return-raw
-           (vl-parse-error
-            (cat "Mismatched interface/endinterface pair: expected "
-                 (vl-idtoken->name name) " but found "
-                 (vl-endinfo->name endinfo)))))
-        (return
-         (make-vl-interface
-          :name (vl-idtoken->name name)
-          :atts atts
-          :warnings (fatal :type :vl-warn-interface
-                           :msg "Interfaces are not supported."
-                           :args nil
-                           :acc nil)
-          :minloc (vl-token->loc name)
-          :maxloc (vl-endinfo->loc endinfo)))))
+  (seq tokstream
+       (kwd := (vl-match-token :vl-kwd-interface))
+       (id  := (vl-match-token :vl-idtoken))
+       (return-raw
+        (b* ((backup (vl-tokstream-save))
+             ((mv err res tokstream)
+              ;; We ignore the warnings because it traps them and associates
+              ;; them with the interface, anyway.
+              (vl-parse-interface-main atts kwd id))
+             ((unless err)
+              ;; Good deal, got the interface successfully.
+              (mv err res tokstream))
+             (new-tokens (vl-tokstream->tokens))
+             (tokstream (vl-tokstream-restore backup))
+             ;; We failed to parse a interface but we are going to try to be
+             ;; somewhat fault tolerant and "recover" from the error.  The
+             ;; general idea is that we should advance until "endinterface."
+             ((mv recover-err endinfo tokstream)
+              (vl-skip-through-endinterface))
+             ((when recover-err)
+              ;; Failed to even find endinterface, abandon recovery effort.
+              (mv err res tokstream))
+
+             ;; In the Verilog-2005 days, we could just look for endinterface.
+             ;; But now we have to look for endinterface : foo, too.  If the
+             ;; name doesn't line up, we'll abandon our recovery effort.
+             ((when (and (vl-endinfo->name endinfo)
+                         (not (equal (vl-idtoken->name id)
+                                     (vl-endinfo->name endinfo)))))
+              (mv err res tokstream))
+
+             ;; Else, we found endinterface and, if there's a name, it seems
+             ;; to line up, so it seems okay to keep going.
+             (phony-interface
+              (vl-make-interface-with-parse-error (vl-idtoken->name id)
+                                                  (vl-token->loc kwd)
+                                                  (vl-endinfo->loc endinfo)
+                                                  err new-tokens)))
+          ;; Subtle: we act like there's no error, because we're
+          ;; recovering from it.  Get it?
+          (mv nil phony-interface tokstream)))))

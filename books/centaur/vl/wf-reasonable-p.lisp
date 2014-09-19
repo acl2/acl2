@@ -473,6 +473,11 @@ reasonable).  Furthermore, if @('x') is unreasonable, a fatal warning to it."
                             (fatal :type :vl-mod-unreasonable
                                    :msg "Module ~m0 is unreasonable."
                                    :args (list (vl-module->name x)))))
+       (warnings          (if (vl-module->generates x)
+                              (fatal :type :vl-mod-has-generates
+                                     :msg "Module ~m0 has generate blocks."
+                                     :args (list (vl-module->name x)))
+                            warnings))
        (x-prime (change-vl-module x :warnings warnings)))
     x-prime))
 

@@ -1,5 +1,5 @@
 ; OSLIB -- Operating System Utilities
-; Copyright (C) 2013 Centaur Technology
+; Copyright (C) 2013-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -31,8 +31,10 @@
 
 (in-package "ACL2")
 (include-book "date")
+(include-book "dirname")
 (include-book "getpid")
 (include-book "file-types")
 (include-book "lisptype")
 (include-book "mkdir")
+(include-book "copy")
 

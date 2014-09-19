@@ -523,7 +523,6 @@ module.</p>"
     (equal (vl-descriptionlist->names (vl-descriptionlist-inject-comments-aux x fal all-descs))
            (vl-descriptionlist->names x))))
 
-
 (define vl-descriptionlist-inject-comments
   :parents (vl-commentmap-p)
   :short "Associate all comments with their modules/interfaces/etc."
@@ -531,7 +530,54 @@ module.</p>"
    (comment-map vl-commentmap-p      "Comments gathered before parsing."))
   :returns
   (new-x vl-descriptionlist-p "Parsed descriptions with their comments attached.")
-  (b* ((fal (vl-commentmap-fal comment-map))
+  (b* ((comment-map
+        ;; Subtle.  We sort all the comments.  This sorting isn't useful for
+        ;; the comment-injection algorithm, but is only meant to remove
+        ;; duplicates.
+        ;;
+        ;; You might wonder: why in the world would there be duplicate entries
+        ;; in the comment map?  After all, it's an alist that binds locations
+        ;; to strings.  So wouldn't there only be duplicates if we've read the
+        ;; same lines of code multiple times?  Yes.  So why would we be doing
+        ;; that???
+        ;;
+        ;; The problem is that files can be `included in multiple places.
+        ;;
+        ;; Recall how `include works: when we encounter `include "foo_if.sv",
+        ;; we are to grab the entire contents of foo_if.sv and essentially
+        ;; paste them down into the superior file.  This is an extremely dumb
+        ;; process that doesn't, e.g., remember what files it has already
+        ;; loaded.  Because of this, a widely `included "header" file ends up
+        ;; getting replicated every time it is used.
+        ;;
+        ;; Normally, such header files will have "include guards" to ensure
+        ;; that the real contents of such a header are only really included
+        ;; into the design once.  For instance, a typical header might look
+        ;; like this:
+        ;;
+        ;;    // foo_if.sv
+        ;;    // Copyright (C) 2014 Centaur Technology
+        ;;    // ... more copyright information, authorship, etc ...
+        ;;
+        ;;    `ifndef INCLUDED_FOO_INTERFACE
+        ;;    `define INCLUDED_FOO_INTERFACE
+        ;;
+        ;;    interface foo ...
+        ;;      ...
+        ;;    endinterface
+        ;;
+        ;;    `endif
+        ;;
+        ;; The `ifndef stuff ensures that the actual definition of "foo" will
+        ;; not be replicated.  However, since the copyright comments here are
+        ;; not put underneath the include guard, they are essentially going to
+        ;; be replicated every time that this header is included!
+        ;;
+        ;; So, to deal with this kind of replication, we sort the comments to
+        ;; remove the duplicates before attaching them to their associated
+        ;; modules, etc.
+        (mergesort comment-map))
+       (fal (vl-commentmap-fal comment-map))
        (ret (vl-descriptionlist-inject-comments-aux x fal x)))
     (fast-alist-free fal)
     ret)

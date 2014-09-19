@@ -171,6 +171,10 @@
   <td><xsl:apply-templates/></td>
 </xsl:template>
 
+<xsl:template match="math">
+  <div class="mathfrag"><xsl:value-of select="."/></div>
+</xsl:template>
+
 
 
 <!-- Extra stuff for Symbolic Test Vectors at Centaur -->

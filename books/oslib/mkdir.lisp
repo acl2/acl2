@@ -1,5 +1,5 @@
 ; OSLIB -- Operating System Utilities
-; Copyright (C) 2013 Centaur Technology
+; Copyright (C) 2013-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -29,9 +29,8 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "OSLIB")
-(include-book "logic-defs")
-(include-book "centaur/quicklisp/top" :dir :system)
-; (depends-on "mkdir-raw.lsp")
+(include-book "mkdir-logic")
+(include-book "centaur/quicklisp/cl-fad" :dir :system)
 
 (defttag oslib)
 (include-raw "mkdir-raw.lsp"

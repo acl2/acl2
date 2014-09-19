@@ -934,6 +934,7 @@ which could not hold such large values.</p>")
     :vl-arguments-named
     (jp-object :tag    (jp-sym :vl-arguments)
                :namedp (jp-bool t)
+               :starp  (jp-bool x.starp)
                :args   (vl-jp-namedarglist x.args))
     :vl-arguments-plain
     (jp-object :tag    (jp-sym :vl-arguments)
@@ -1244,7 +1245,54 @@ TEXT versions of the message.</p>"
 
 (add-json-encoder vl-commentmap-p vl-jp-commentmap)
 
+(def-vl-jp-aggregate modport-port)
+(def-vl-jp-list modport-port)
+(def-vl-jp-aggregate modport)
+(def-vl-jp-aggregate alias)
 
+(define vl-jp-fwdtypedefkind ((x vl-fwdtypedefkind-p) &key (ps 'ps))
+  (jp-str (case x
+            (:vl-enum "enum")
+            (:vl-struct "struct")
+            (:vl-union "union")
+            (:vl-class "class")
+            (:vl-interfaceclass "interfaceclass")))
+  ///
+  (add-json-encoder vl-fwdtypedefkind-p vl-jp-fwdtypedefkind))
+
+(def-vl-jp-aggregate fwdtypedef)
+
+(define vl-jp-modelement ((x vl-modelement-p) &key (ps 'ps))
+  :guard-hints (("goal" :in-theory (enable vl-modelement-p)))
+  (case (tag x)
+    (:VL-PORT (VL-jp-PORT X))
+    (:VL-PORTDECL (VL-jp-PORTDECL X))
+    (:VL-ASSIGN (VL-jp-ASSIGN X))
+    (:VL-ALIAS (VL-jp-ALIAS X))
+    (:VL-VARDECL (VL-jp-VARDECL X))
+    (:VL-PARAMDECL (VL-jp-PARAMDECL X))
+    (:VL-FUNDECL (VL-jp-FUNDECL X))
+    (:VL-TASKDECL (VL-jp-TASKDECL X))
+    (:VL-MODINST (VL-jp-MODINST X))
+    (:VL-GATEINST (VL-jp-GATEINST X))
+    (:VL-ALWAYS (VL-jp-ALWAYS X))
+    (:VL-INITIAL (VL-jp-INITIAL X))
+    ;; BOZO implement typedef
+    (:VL-TYPEDEF ps)
+    (:VL-FWDTYPEDEF (VL-jp-FWDTYPEDEF X))
+    (OTHERWISE (VL-jp-MODPORT X))))
+
+(def-vl-jp-list modelement)
+
+(define vl-jp-genelement ((x vl-genelement-p) &key (ps 'ps))
+  (vl-genelement-case x
+    :vl-genbase (vl-jp-modelement x.item)
+  ;; BOZO implement generates
+    :otherwise ps)
+  ///
+  (add-json-encoder vl-genelement-p vl-jp-genelement))
+
+(def-vl-jp-list genelement)
 
 (def-vl-jp-aggregate module
   :omit (params esim)

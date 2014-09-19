@@ -81,8 +81,8 @@
 (deftheory deftypes-theory
   '(equal-of-strip-cars
     car-cons cdr-cons
-    alistp strip-cars
-    strip-cars-under-iff
+    ;; alistp
+    strip-cars strip-cars-under-iff
     eqlablep (len) len-of-cons
     equal-of-len (zp)
     (:t acl2-count)

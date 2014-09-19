@@ -59,7 +59,7 @@
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens pstate
+  (seq tokstream
         (id := (vl-match-token :vl-idtoken))
         (unless (vl-is-token? :vl-lbrack)
           (return (make-vl-atom
@@ -83,7 +83,7 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens pstate
+  (seq tokstream
         (first := (vl-parse-port-reference))
         (when (vl-is-token? :vl-comma)
           (:= (vl-match))
@@ -95,7 +95,7 @@
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens pstate
+  (seq tokstream
         (when (vl-is-token? :vl-lcurly)
           ;; A concatenation.
           (:= (vl-match))
@@ -134,7 +134,7 @@
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens pstate
+  (seq tokstream
         (loc := (vl-current-loc))
         (unless (vl-is-token? :vl-dot)
           (pexpr := (vl-parse-port-expression))
@@ -169,7 +169,7 @@
   :true-listp t
   :fails gracefully
   :count weak
-  (seqw tokens pstate
+  (seq tokstream
         (when (vl-is-token? :vl-rparen)
           ;; Blank port at the end.
           (loc := (vl-current-loc))
@@ -194,7 +194,7 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens pstate
+  (seq tokstream
         ;; Special hack: if it's just (), just return NIL instead of a
         ;; list with a blank port.
         (:= (vl-match-token :vl-lparen))
@@ -203,6 +203,18 @@
         ;; BOZO why can't I use (vl-match) here?
         (:= (vl-match-token :vl-rparen))
         (return ports)))
+
+(defparser vl-maybe-parse-list-of-ports ()
+  ;; Parses the ports if the next token is lparen.
+  :result (vl-portlist-p val)
+  :resultp-of-nil t
+  :fails gracefully
+  :count weak
+  (seq tokstream
+       (when (vl-is-token? :vl-lparen)
+         (res := (vl-parse-list-of-ports))
+         (return res))
+       (return nil)))
 
 
 
@@ -246,7 +258,7 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens pstate
+  (seq tokstream
         (first := (vl-match-token :vl-idtoken))
 
 ; We have to take extra care here, because we can have situations like "input
@@ -256,7 +268,7 @@
 ; followed by another identifier"   We have to look for the identifier, too.
 
         (when (and (vl-is-token? :vl-comma)
-                   (vl-is-token? :vl-idtoken :tokens (cdr tokens)))
+                   (vl-lookahead-is-token? :vl-idtoken (cdr (vl-tokstream->tokens))))
           (:= (vl-match))
           (rest := (vl-parse-1+-identifiers-separated-by-commas)))
         (return (cons first rest))))
@@ -387,7 +399,7 @@
   :true-listp nil
   :fails gracefully
   :count strong
-  (seqw tokens pstate
+  (seq tokstream
         (nettype := (vl-parse-optional-nettype))
         (when (vl-is-token? :vl-kwd-signed)
           (signed := (vl-match)))
@@ -431,7 +443,7 @@
   :true-listp nil
   :fails gracefully
   :count strong
-  (seqw tokens pstate
+  (seq tokstream
         (when (vl-is-token? :vl-kwd-signed)
           (signed := (vl-match)))
         (when (vl-is-token? :vl-lbrack)
@@ -473,7 +485,7 @@
   :true-listp nil
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seq tokstream
 
         (when (vl-is-token? :vl-kwd-input)
           (:= (vl-match))
@@ -630,9 +642,8 @@
 
 (local
  (defthm crock-idtoken-of-car
-   (implies (and (vl-is-token? :vl-idtoken)
-                 (force (vl-tokenlist-p tokens)))
-            (vl-idtoken-p (car tokens)))
+   (implies (vl-is-token? :vl-idtoken)
+            (vl-idtoken-p (car (vl-tokstream->tokens))))
    :hints(("Goal" :in-theory (enable vl-is-token?)))))
 
 (defparser vl-parse-port-declaration-tail-2012 (dir atts)
@@ -646,7 +657,7 @@
   :true-listp nil
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seq tokstream
 
         (when (vl-is-token? :vl-kwd-interconnect)
           (return-raw
@@ -686,7 +697,9 @@
           ;; can do it, though, because the parser now keeps track of the data types
           ;; that the user has defined.
           (when (and (vl-is-token? :vl-idtoken)
-                     (not (vl-parsestate-is-user-defined-type-p (vl-idtoken->name (car tokens)) pstate)))
+                     (not (vl-parsestate-is-user-defined-type-p
+                           (vl-idtoken->name (car (vl-tokstream->tokens)))
+                           (vl-tokstream->pstate))))
             ;; var id1 ...
             (ids := (vl-parse-1+-identifiers-separated-by-commas))
             (return (vl-make-ports-and-maybe-nets :dir dir
@@ -743,7 +756,9 @@
         ;;  - [nothing] id1 ...
         ;; Use the same identifier lookup trick to figure out which we're in.
         (when (and (vl-is-token? :vl-idtoken)
-                   (not (vl-parsestate-is-user-defined-type-p (vl-idtoken->name (car tokens)) pstate)))
+                   (not (vl-parsestate-is-user-defined-type-p
+                         (vl-idtoken->name (car (vl-tokstream->tokens)))
+                         (vl-tokstream->pstate))))
           ;; Purely implicit case, no data type, not complete.
           (ids := (vl-parse-1+-identifiers-separated-by-commas))
           (return (vl-make-ports-and-maybe-nets :dir dir
@@ -787,7 +802,7 @@
   :true-listp nil
   :fails gracefully
   :count strong
-  (seqw tokens pstate
+  (seq tokstream
          (when (vl-is-token? :vl-kwd-inout)
            ;; port_declaration ::= {attribute_instance} inout_declaration
            (:= (vl-match))
@@ -842,7 +857,7 @@
    :true-listp nil
    :fails gracefully
    :count strong
-   (seqw tokens pstate
+   (seq tokstream
          (when (eq (vl-loadconfig->edition config) :verilog-2005)
            (ans := (vl-parse-port-declaration-noatts-2005 atts))
            (return ans))
@@ -872,7 +887,7 @@
   :true-listp nil
   :fails gracefully
   :count strong
-  (seqw tokens pstate
+  (seq tokstream
         (atts := (vl-parse-0+-attribute-instances))
         (result := (vl-parse-port-declaration-noatts atts))
         (return result))
@@ -899,7 +914,7 @@
   :fails gracefully
   :verify-guards nil
   :count strong
-  (seqw tokens pstate
+  (seq tokstream
         ((portdecls1 . vardecls1) := (vl-parse-port-declaration-atts))
         (when (vl-is-token? :vl-comma)
           (:= (vl-match))
@@ -924,15 +939,13 @@
 
 
 (defparser vl-parse-list-of-port-declarations ()
-  ;; BOZO this appears to be unused??  Ah, it's in support of the alternate form of module definition
-  ;; that is currently unsupported.
   ;; Returns (portdecls . vardecls)
   :result (consp val)
   :resultp-of-nil nil
   :true-listp nil
   :fails gracefully
   :count strong
-  (seqw tokens pstate
+  (seq tokstream
         (:= (vl-match-token :vl-lparen))
         (decls := (vl-parse-1+-port-declarations-separated-by-commas))
         (:= (vl-match-token :vl-rparen))
@@ -949,3 +962,29 @@
   (defthm vl-parse-list-of-port-declarations-basics
     (and (vl-portdecllist-p (car (mv-nth 1 (vl-parse-list-of-port-declarations))))
          (vl-vardecllist-p (cdr (mv-nth 1 (vl-parse-list-of-port-declarations)))))))
+
+
+(defparser vl-maybe-parse-list-of-port-declarations ()
+  ;; Parses the port declarations if the next token is lparen.
+  :result (and (consp val)
+               (vl-portdecllist-p (car val))
+               (vl-vardecllist-p (cdr val)))
+  :fails gracefully
+  :count weak
+  (seq tokstream
+       (when (vl-is-token? :vl-lparen)
+         (res := (vl-parse-list-of-port-declarations))
+         (return res))
+       (return '(nil))))
+
+
+
+(define vl-genelementlist->portdecls ((x vl-genelementlist-p))
+  :returns (portdecls vl-portdecllist-p)
+  (if (atom x)
+      nil
+    (if (and (eq (vl-genelement-kind (car x)) :vl-genbase)
+             (eq (tag (vl-genbase->item (car x))) :vl-portdecl))
+        (cons (vl-genbase->item (car x))
+              (vl-genelementlist->portdecls (cdr x)))
+      (vl-genelementlist->portdecls (cdr x)))))

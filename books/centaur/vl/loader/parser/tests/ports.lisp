@@ -34,6 +34,8 @@
 
 ;; BOZO more unit tests!
 
+(defparser-top vl-parse-nonnull-port)
+
 (defmacro test-parse-port (&key input (successp 't) name expr)
   `(with-output
      :off summary
@@ -41,7 +43,7 @@
                    (config *vl-default-loadconfig*)
                    (pstate (make-vl-parsestate :warnings 'blah-warnings))
                    ((mv erp val tokens (vl-parsestate pstate))
-                    (vl-parse-nonnull-port))
+                    (vl-parse-nonnull-port-top))
                    ((unless ,successp)
                     (cw "Expect error.  Actual error: ~x0.~%" erp)
                     erp))
@@ -123,6 +125,8 @@
 
 
 
+(defparser-top vl-parse-list-of-ports)
+
 (defmacro test-parse-portlist (&key input (successp 't) names exprs)
   `(with-output
      :off summary
@@ -130,7 +134,7 @@
                    (config *vl-default-loadconfig*)
                    (pstate (make-vl-parsestate :warnings 'blah-warnings))
                    ((mv erp val tokens (vl-parsestate pstate))
-                    (vl-parse-list-of-ports))
+                    (vl-parse-list-of-ports-top))
                    ((unless ,successp)
                     (cw "Expect failure.  Actual Erp: ~x0.~%" erp)
                     erp))

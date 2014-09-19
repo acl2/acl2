@@ -63,7 +63,14 @@ options, see @(see demo) instead.</p>
 </ul>
 
 <p>To see how to turn @('demo2-main') into an executable, see the file
-@('centaur/getopt/demo2-save.lsp').</p>")
+@('centaur/getopt/demo2-save.lsp').</p>
+
+<p>On some Lisps the program may also print out a Lisp banner.  Most Lisps can
+be instructed to suppress such a banner via additional command-line
+options (which vary from Lisp to Lisp).  A notable exception is Lispworks,
+where the banner cannot be suppressed.  So depending on your host Lisp, you may
+be able to edit the resulting shell script to disable the banner, but
+unfortunately ACL2's @(see save-exec) has no portable way to do this.</p>")
 
 (defoptions demo2-opts
   :parents (demo2)

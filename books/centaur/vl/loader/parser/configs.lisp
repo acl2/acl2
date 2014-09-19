@@ -57,7 +57,7 @@
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens pstate
+  (seq tokstream
         (unless (vl-is-token? :vl-kwd-endconfig)
           (:s= (vl-match-any))
           (info := (vl-parse-config-declaration-aux))
@@ -78,7 +78,7 @@
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens pstate
+  (seq tokstream
         (:= (vl-match-token :vl-kwd-config))
         (name := (vl-match-token :vl-idtoken))
         (endinfo := (vl-parse-config-declaration-aux))

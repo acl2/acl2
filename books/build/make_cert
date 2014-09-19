@@ -96,31 +96,18 @@ export MAKE_CERT_PL ?= $(ACL2_SYSTEM_BOOKS)/build/make_cert_help.pl
 # cert.pl independently, for files containing the phrase
 # "two-pass certification".
 
-ifneq ($(ACL2_PCERT),)
-
 %.cert : %.lisp
-	@$(MAKE_CERT_PL) "$*" "complete" "no_acl2x" $^
-	@echo "Done $*.cert"
+	@$(MAKE_CERT_PL) "$*" \
+                         $(if $(findstring 1,$(pcert)),"complete","certify") \
+                         $(if $(findstring 1,$(pcert)),"no_acl2x",$(if $(findstring 1,$(acl2x)),"yes","no")) \
+                         $^
 
-%.pcert1 :
+%.pcert1 : %.lisp
 	@$(MAKE_CERT_PL) "$*" $(if $(findstring 1,$(pcert)),"convert","pcertifyplus") \
                           $(if $(findstring 1,$(acl2x)),"yes","no") $^
-	@echo "Done $*.pcert1"
 
 %.pcert0 : %.lisp
 	@$(MAKE_CERT_PL) "$*" "pcertify" $(if $(findstring 1,$(acl2x)),"yes","no") $^
-	@echo "Done $*.pcert0"
 
 %.acl2x : %.lisp
 	@$(MAKE_CERT_PL) "$*" $(if $(findstring 1,$(acl2xskip)),"acl2xskip","acl2x") "yes" $^
-
-else
-
-%.cert : %.lisp
-	@$(MAKE_CERT_PL) "$*" "certify" $(if $(findstring 1,$(acl2x)),"yes","no") $^
-
-%.acl2x : %.lisp
-	@$(MAKE_CERT_PL) "$*" $(if $(findstring 1,$(acl2xskip)),"acl2xskip","acl2x") "yes" $^
-
-endif
-

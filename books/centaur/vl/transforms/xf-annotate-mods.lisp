@@ -35,6 +35,7 @@
 (include-book "xf-follow-hids")
 (include-book "xf-resolve-indexing")
 (include-book "xf-clean-warnings")
+(include-book "xf-udp-elim")
 (include-book "cn-hooks")
 (include-book "../checkers/duplicate-detect")
 (include-book "../checkers/portcheck")
@@ -47,7 +48,9 @@
   ((design vl-design-p))
   :returns (new-design vl-design-p)
 
-  (b* ((design (xf-cwtime (vl-design-duplicate-detect design)
+  (b* ((design (xf-cwtime (vl-design-udp-elim design)
+                          :name xf-udp-elim))
+       (design (xf-cwtime (vl-design-duplicate-detect design)
                           :name xf-duplicate-detect))
        (design (xf-cwtime (vl-design-portcheck design)
                           :name xf-portcheck))

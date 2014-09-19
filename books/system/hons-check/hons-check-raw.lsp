@@ -87,22 +87,22 @@
         (addr-ht  (hl-hspace-addr-ht hs))
         (acc      nil))
     (maphash (lambda (key val)
-               (when (equal index (ccl::%staticp val))
+               (when (equal index (hl-staticp val))
                  (push (list :HONS-STR key val) acc)))
              str-ht)
     (maphash (lambda (key val)
-               (when (equal index (ccl::%staticp val))
+               (when (equal index (hl-staticp val))
                  (push (list :HONS-OTHER key val) acc)))
              other-ht)
     (maphash (lambda (key val)
-               (when (equal index (ccl::%staticp val))
+               (when (equal index (hl-staticp val))
                  (push (list :HONS-CONS key val) acc)))
              addr-ht)
     acc))
 
 (defun hl-hspace-check-str-ht (hs iacc)
   ;; Ensure every entry in STR-HT is valid.  In static-honsing mode, we also
-  ;; accumulate the ccl::%staticp indexes of all STR-HT entries into iacc, so
+  ;; accumulate the hl-staticp indexes of all STR-HT entries into iacc, so
   ;; that we can later check that SBITS is correct.
   (declare (type hl-hspace hs))
   (format t "; Checking STR-HT~%")
@@ -126,7 +126,7 @@
        ;; for the normed version of X, NX is the normed version, and TRUE-ADDR
        ;; is the true address of X_C.
        #+static-hons
-       (let ((index (ccl::%staticp val)))
+       (let ((index (hl-staticp val)))
          (unless index
            (error "STR-HT val ~a not a static cons" val))
          (unless (equal key (car val))
@@ -211,7 +211,7 @@
 #+static-hons
 (defun hl-hspace-check-other-ht (hs iacc)
   ;; Static honsing only.  Ensure every entry in OTHER-HT is valid.  We also
-  ;; accumulate all ccl::%staticp indexes into iacc so we can later check that
+  ;; accumulate all hl-staticp indexes into iacc so we can later check that
   ;; SBITS is correct.
   (declare (type hl-hspace hs))
   (format t "; Checking OTHER-HT~%")
@@ -221,7 +221,7 @@
       (error "Expected OTHER-HT to be an EQL hash table"))
     (maphash
      (lambda (key val)
-       (let ((index (ccl::%staticp val)))
+       (let ((index (hl-staticp val)))
          (unless (and (numberp key)
                       (or (not (integerp key))
                           (< key hl-minimum-static-int)
@@ -241,7 +241,7 @@
 #+static-hons
 (defun hl-hspace-check-addr-ht (hs iacc)
   ;; Static honsing only.  Ensure every ADDR-HT entry is valid; accumulate all
-  ;; ccl::%staticp indexes into iacc.
+  ;; hl-staticp indexes into iacc.
   (declare (type hl-hspace hs))
   (format t "; Checking ADDR-HT~%")
   (let ((addr-ht  (hl-hspace-addr-ht hs))
@@ -252,7 +252,7 @@
       (error "ADDR-HT should be an EQL hash table"))
     (maphash
      (lambda (key val)
-       (let ((index (ccl::%staticp val)))
+       (let ((index (hl-staticp val)))
          (unless (integerp key)
            (error "ADDR-HT key ~a not an integer" key))
          (unless index
@@ -318,7 +318,7 @@
               (error "Index ~a too big for sbits" index))
             (unless (= (aref atombits index) 0)
               (error "Index ~a used as a cons and atom.  ~a" index
-                     (ccl::%static-inverse-cons index)))
+                     (hl-static-inverse-cons index)))
             (unless (= (aref consbits index) 0)
               (error "Index ~a used for multiple conses" index))
             (setf (aref consbits index) 1))

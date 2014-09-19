@@ -117,6 +117,8 @@
                          test.dims
                          test.initvals)))
 
+(defparser-top vl-parse-block-item-declaration)
+
 (define test-parse-block-item-declaration-1 ((test vl-vardecltest-p)
                                              (config vl-loadconfig-p))
   :returns (okp booleanp)
@@ -127,7 +129,7 @@
        (- (cw "Testing block item parsing, using edition ~s0.~%" (vl-loadconfig->edition config)))
        (- (cw "Input: ~s0~%" test.input))
        (- (cw "Expect ~s0.~%" (if test.successp "success" "failure")))
-       ((mv err vars ?tokens (vl-parsestate pstate)) (vl-parse-block-item-declaration))
+       ((mv err vars ?tokens (vl-parsestate pstate)) (vl-parse-block-item-declaration-top))
        ((when err)
         (cw "Parsing reports an error: ~x0.~%" err)
         (and (not test.successp)

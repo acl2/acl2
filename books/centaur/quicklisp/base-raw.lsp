@@ -37,6 +37,7 @@
 ; other's working space.
 
 ;; (ql:quickload "iolib.syscalls")
-(ql:quickload "osicat")
+(ql:quickload :osicat)
 (ql:quickload :bordeaux-threads)
 (ql:quickload :hunchentoot)
+(ql:quickload :uiop)

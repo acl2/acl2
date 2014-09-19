@@ -29,7 +29,6 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "../../mlib/context")
 (include-book "../../mlib/lvalues")
 (include-book "../../mlib/find-item")
 (include-book "../../mlib/filter")

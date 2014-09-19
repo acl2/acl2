@@ -30,7 +30,6 @@
 
 (in-package "VL")
 (include-book "allexprs")
-(include-book "context")
 (local (include-book "../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
 

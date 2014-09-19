@@ -32,11 +32,13 @@
 (include-book "base")
 (include-book "../ranges")
 
+(defparser-top vl-parse-range)
+
 (defmacro test-range (&key input range (successp 't))
   `(assert! (b* ((config *vl-default-loadconfig*)
                  (tokens (make-test-tokens ,input))
                  (pstate (make-vl-parsestate))
-                 ((mv erp val ?tokens (vl-parsestate pstate)) (vl-parse-range))
+                 ((mv erp val ?tokens (vl-parsestate pstate)) (vl-parse-range-top))
                  ((when erp)
                   (cw "ERP is ~x0.~%" erp)
                   (not ,successp)))

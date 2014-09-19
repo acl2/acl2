@@ -29,7 +29,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "../mlib/find-module")
+(include-book "../mlib/scopestack")
 (local (include-book "../util/arithmetic"))
 
 (defxdoc drop-blankports
@@ -62,11 +62,11 @@ ports because we expect @(see argresolve) to have done that.</p>")
    (ports "corresponding ports from the submodule" vl-portlist-p))
   :guard (same-lengthp args ports)
   :returns (new-args "copy of @('args') with blank ports removed"
-                     vl-plainarglist-p :hyp :fguard)
+                     vl-plainarglist-p)
   (cond ((atom args)
          nil)
         ((vl-port->expr (car ports))
-         (cons (car args)
+         (cons (vl-plainarg-fix (car args))
                (vl-plainarglist-drop-blankports (cdr args) (cdr ports))))
         (t
          (vl-plainarglist-drop-blankports (cdr args) (cdr ports)))))
@@ -74,15 +74,14 @@ ports because we expect @(see argresolve) to have done that.</p>")
 (define vl-modinst-drop-blankports
   :short "Drop arguments to blank ports from a module instance."
   ((x        "module instance to rewrite" vl-modinst-p)
-   (mods     "list of all modules" vl-modulelist-p)
-   (modalist (equal modalist (vl-modalist mods)))
+   (ss       vl-scopestack-p)
    (warnings vl-warninglist-p))
   :returns (mv (warnings vl-warninglist-p)
-               (new-x    vl-modinst-p     :hyp :fguard))
-  (b* (((vl-modinst x) x)
-
-       (target-mod (vl-fast-find-module x.modname mods modalist))
-       ((unless target-mod)
+               (new-x    vl-modinst-p    ))
+  (b* ((x (vl-modinst-fix x))
+       ((vl-modinst x) x)
+       (target-mod (vl-scopestack-find-definition x.modname ss))
+       ((unless (and target-mod (eq (tag target-mod) :vl-module)))
         (mv (fatal :type :vl-bad-instance
                    :msg "~a0 refers to undefined module ~m1."
                    :args (list x x.modname))
@@ -111,27 +110,27 @@ ports because we expect @(see argresolve) to have done that.</p>")
 (define vl-modinstlist-drop-blankports
   :short "Drop arguments to blank ports from module instances."
   ((x        "modinsts to rewrite" vl-modinstlist-p)
-   (mods     "list of all modules" vl-modulelist-p)
-   (modalist (equal modalist (vl-modalist mods)))
+   (ss       vl-scopestack-p)
    (warnings vl-warninglist-p))
   :returns (mv (warnings vl-warninglist-p)
-               (new-x    vl-modinstlist-p :hyp :fguard))
+               (new-x    vl-modinstlist-p))
   (b* (((when (atom x))
         (mv (ok) nil))
        ((mv warnings car)
-        (vl-modinst-drop-blankports (car x) mods modalist warnings))
+        (vl-modinst-drop-blankports (car x) ss warnings))
        ((mv warnings cdr)
-        (vl-modinstlist-drop-blankports (cdr x) mods modalist warnings)))
+        (vl-modinstlist-drop-blankports (cdr x) ss warnings)))
     (mv warnings (cons car cdr))))
 
 (define vl-portlist-drop-blankports
   :short "Drop any blank ports from a list of ports."
   ((x vl-portlist-p))
-  :returns (new-x vl-portlist-p :hyp :fguard)
+  :returns (new-x vl-portlist-p)
   (cond ((atom x)
          nil)
         ((vl-port->expr (car x))
-         (cons (car x) (vl-portlist-drop-blankports (cdr x))))
+         (cons (vl-port-fix (car x))
+               (vl-portlist-drop-blankports (cdr x))))
         (t
          (vl-portlist-drop-blankports (cdr x)))))
 
@@ -139,37 +138,30 @@ ports because we expect @(see argresolve) to have done that.</p>")
   :short "Drop any blank ports from a module, and simultaneously remove all
 arguments to blank ports from all module instances within the module."
   ((x    "module to rewrite"   vl-module-p)
-   (mods "list of all modules" vl-modulelist-p)
-   (modalist (equal modalist (vl-modalist mods))))
-  :returns (new-x vl-module-p :hyp :fguard)
+   (ss       vl-scopestack-p))
+  :returns (new-x vl-module-p)
   (b* (((vl-module x) x)
+       (ss (vl-scopestack-push (vl-module-fix x) ss))
        (ports (vl-portlist-drop-blankports x.ports))
        ((mv warnings modinsts)
-        (vl-modinstlist-drop-blankports x.modinsts mods modalist x.warnings)))
+        (vl-modinstlist-drop-blankports x.modinsts ss x.warnings)))
     (change-vl-module x
                       :ports ports
                       :modinsts modinsts
                       :warnings warnings)))
 
-(defprojection vl-modulelist-drop-blankports-aux (x mods modalist)
-  (vl-module-drop-blankports x mods modalist)
-  :guard (and (vl-modulelist-p x)
-              (vl-modulelist-p mods)
-              (equal modalist (vl-modalist mods)))
-  :result-type vl-modulelist-p)
-
-(define vl-modulelist-drop-blankports
-  ((x vl-modulelist-p))
-  :returns (new-x vl-modulelist-p :hyp :fguard)
-  (b* ((modalist (vl-modalist x))
-       (new-x    (vl-modulelist-drop-blankports-aux x x modalist)))
-    (fast-alist-free modalist)
-    new-x))
+(defprojection vl-modulelist-drop-blankports ((x vl-modulelist-p)
+                                                  (ss vl-scopestack-p))
+  :returns (new-x vl-modulelist-p)
+  (vl-module-drop-blankports x ss))
 
 (define vl-design-drop-blankports
   ((x vl-design-p))
   :returns (new-x vl-design-p)
   (b* ((x (vl-design-fix x))
-       ((vl-design x) x))
-    (change-vl-design x :mods (vl-modulelist-drop-blankports x.mods))))
+       ((vl-design x) x)
+       (ss (vl-scopestack-init x))
+       (mods (vl-modulelist-drop-blankports x.mods ss)))
+    (vl-scopestacks-free)
+    (change-vl-design x :mods mods)))
 

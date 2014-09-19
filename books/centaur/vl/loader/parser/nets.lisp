@@ -73,7 +73,7 @@
   :resultp-of-nil t
   :fails never
   :count strong-on-value
-  (seqw tokens pstate
+  (seq tokstream
         (when (vl-is-some-token? *vl-nettypes-kwds*)
           (type := (vl-match)))
         (return (and type
@@ -101,10 +101,10 @@
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens pstate
-        (ret := (vl-match-some-token *vl-netdecltype-kwd-types*))
-        (return (cons (cdr (assoc-eq (vl-token->type ret) *vl-netdecltypes-kwd-alist*))
-                      (vl-token->loc ret)))))
+  (seq tokstream
+       (ret := (vl-match-some-token *vl-netdecltype-kwd-types*))
+       (return (cons (cdr (assoc-eq (vl-token->type ret) *vl-netdecltypes-kwd-alist*))
+                     (vl-token->loc ret)))))
 
 (defthm vl-netdecltype-p-of-vl-parse-netdecltype
   (implies (not (mv-nth 0 (vl-parse-netdecltype)))
@@ -140,12 +140,12 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens pstate
-        (first := (vl-parse-assignment))
-        (when (vl-is-token? :vl-comma)
-          (:= (vl-match))
-          (rest := (vl-parse-list-of-net-assignments)))
-        (return (cons first rest))))
+  (seq tokstream
+       (first := (vl-parse-assignment))
+       (when (vl-is-token? :vl-comma)
+         (:= (vl-match))
+         (rest := (vl-parse-list-of-net-assignments)))
+       (return (cons first rest))))
 
 
 (define vl-build-assignments ((loc      vl-location-p)
@@ -167,16 +167,16 @@
           (vl-build-assignments loc (cdr pairs) strength delay atts))))
 
 (encapsulate
- ()
- (local (in-theory (enable vl-maybe-gatedelay-p vl-maybe-gatestrength-p)))
- (defparser vl-parse-continuous-assign (atts)
-   :guard (vl-atts-p atts)
-   :result (vl-assignlist-p val)
-   :true-listp t
-   :resultp-of-nil t
-   :fails gracefully
-   :count strong
-   (seqw tokens pstate
+  ()
+  (local (in-theory (enable vl-maybe-gatedelay-p vl-maybe-gatestrength-p)))
+  (defparser vl-parse-continuous-assign (atts)
+    :guard (vl-atts-p atts)
+    :result (vl-assignlist-p val)
+    :true-listp t
+    :resultp-of-nil t
+    :fails gracefully
+    :count strong
+    (seq tokstream
          (assignkwd := (vl-match-token :vl-kwd-assign))
          (when (vl-is-token? :vl-lparen)
            (strength := (vl-parse-drive-strength-or-charge-strength)))
@@ -186,7 +186,7 @@
          (when (vl-is-token? :vl-pound)
            (delay := (vl-parse-delay3)))
          (pairs := (vl-parse-list-of-net-assignments))
-         (semi := (vl-match-token :vl-semi))
+         (:= (vl-match-token :vl-semi))
          (return (vl-build-assignments (vl-token->loc assignkwd)
                                        pairs strength delay atts)))))
 
@@ -225,14 +225,14 @@
   :resultp-of-nil t
   :fails gracefully
   :count strong
-  (seqw tokens pstate
-        (id := (vl-match-token :vl-idtoken))
-        (:= (vl-match-token :vl-equalsign))
-        (expr := (vl-parse-expression))
-        (when (vl-is-token? :vl-comma)
-          (:= (vl-match))
-          (rest := (vl-parse-list-of-net-decl-assignments)))
-        (return (cons (cons id expr) rest))))
+  (seq tokstream
+       (id := (vl-match-token :vl-idtoken))
+       (:= (vl-match-token :vl-equalsign))
+       (expr := (vl-parse-expression))
+       (when (vl-is-token? :vl-comma)
+         (:= (vl-match))
+         (rest := (vl-parse-list-of-net-decl-assignments)))
+       (return (cons (cons id expr) rest))))
 
 (defparser vl-parse-list-of-net-identifiers ()
   ;; Matches: identifier { range } { ',' identifier { range } }
@@ -244,13 +244,13 @@
   :resultp-of-nil t
   :fails gracefully
   :count strong
-  (seqw tokens pstate
-        (id := (vl-match-token :vl-idtoken))
-        (ranges := (vl-parse-0+-ranges))
-        (when (vl-is-token? :vl-comma)
-          (:= (vl-match))
-          (rest := (vl-parse-list-of-net-identifiers)))
-        (return (cons (cons id ranges) rest))))
+  (seq tokstream
+       (id := (vl-match-token :vl-idtoken))
+       (ranges := (vl-parse-0+-ranges))
+       (when (vl-is-token? :vl-comma)
+         (:= (vl-match))
+         (rest := (vl-parse-list-of-net-identifiers)))
+       (return (cons (cons id ranges) rest))))
 
 (define vl-build-netdecls
   ((loc         vl-location-p)
@@ -355,14 +355,14 @@
   ;; bozo horrible gross what why??
   (local
    (defthm crock
-     (IMPLIES (NOT (CONSP TOKENS))
+     (IMPLIES (NOT (CONSP (VL-TOKSTREAM->TOKENS)))
               (MV-NTH 0 (VL-PARSE-LIST-OF-NET-IDENTIFIERS)))
      :hints(("Goal" :in-theory (enable vl-parse-list-of-net-identifiers)))))
 
   (local
    (defthm crock2
-     (IMPLIES (NOT (CONSP TOKENS))
-              (NOT (CONSP (MV-NTH 2 (VL-PARSE-LIST-OF-NET-IDENTIFIERS)))))
+     (IMPLIES (NOT (CONSP (VL-TOKSTREAM->TOKENS)))
+              (NOT (CONSP (vl-tokstream->tokens :tokstream (MV-NTH 2 (VL-PARSE-LIST-OF-NET-IDENTIFIERS))))))
      :hints(("Goal" :in-theory (enable vl-match-token
                                        vl-parse-list-of-net-identifiers)))))
 
@@ -379,21 +379,20 @@
                  (vl-rangelist-list-p (strip-cdrs (cdr val))))
     :fails gracefully
     :count strong
-    (seqw tokens pstate
-          ;; Assignsp is t when this is a list_of_net_decl_assignments.  We detect
-          ;; this by looking ahead to see if an equalsign follows the first
-          ;; identifier in the list.
-          (assignsp := (if (and (consp tokens)
-                                (vl-is-token? :vl-equalsign
-                                              :tokens (cdr tokens)))
-                           (mv nil t tokens pstate)
-                         (mv nil nil tokens pstate)))
-          (pairs := (if assignsp
-                        (vl-parse-list-of-net-decl-assignments)
-                      (vl-parse-list-of-net-identifiers)))
-          (return
-           (cons (vl-atomify-assignpairs (if assignsp pairs nil))
-                 (if assignsp (pairlis$ (strip-cars pairs) nil) pairs))))))
+    (seq tokstream
+         ;; Assignsp is t when this is a list_of_net_decl_assignments.  We detect
+         ;; this by looking ahead to see if an equalsign follows the first
+         ;; identifier in the list.
+         (assignsp := (if (and (consp (vl-tokstream->tokens))
+                               (vl-lookahead-is-token? :vl-equalsign (cdr (vl-tokstream->tokens))))
+                          (mv nil t tokstream)
+                        (mv nil nil tokstream)))
+         (pairs := (if assignsp
+                       (vl-parse-list-of-net-decl-assignments)
+                     (vl-parse-list-of-net-identifiers)))
+         (return
+          (cons (vl-atomify-assignpairs (if assignsp pairs nil))
+                (if assignsp (pairlis$ (strip-cars pairs) nil) pairs))))))
 
 
 
@@ -450,13 +449,13 @@
 ;  | 'trireg' [drive_strength]  ['vectored'|'scalared'] ['signed'] range [delay3] list_of_net_decl_assignments ';'
 ;
 
-   :verify-guards nil ;; takes too long, so we do it afterwards.
-   :guard (vl-atts-p atts)
-   :result (and (consp val)
-                (vl-assignlist-p (car val))
-                (vl-vardecllist-p (cdr val)))
-   :fails gracefully
-   :count strong
+  :verify-guards nil ;; takes too long, so we do it afterwards.
+  :guard (vl-atts-p atts)
+  :result (and (consp val)
+               (vl-assignlist-p (car val))
+               (vl-vardecllist-p (cdr val)))
+  :fails gracefully
+  :count strong
 
 ; Note.  Historically this function has caused a lot of problems for the
 ; proofs.  Generally accumulated-persistence has not been very helpful, and the
@@ -474,43 +473,43 @@
 ; We also disabled the functions above to hide additional ifs.  Finally the
 ; proofs are getting down to a reasonable time.
 
-   (seqw tokens pstate
-         ((type . loc) := (vl-parse-netdecltype))
-         (when (vl-is-token? :vl-lparen)
-           (strength := (vl-parse-drive-strength-or-charge-strength)))
-         (when (vl-is-some-token? '(:vl-kwd-vectored :vl-kwd-scalared))
-           (rtype := (vl-match)))
-         (when (vl-is-token? :vl-kwd-signed)
-           (signed := (vl-match)))
-         (when (vl-is-token? :vl-lbrack)
-           (range := (vl-parse-range)))
-         (when (vl-is-token? :vl-pound)
-           (delay := (vl-parse-delay3)))
-         ((assignpairs . declpairs) := (vl-parse-net-declaration-aux))
-         (semi := (vl-match-token :vl-semi))
-         (return-raw
-          (let* ((vectoredp   (vl-is-token-of-type-p rtype :vl-kwd-vectored))
-                 (scalaredp   (vl-is-token-of-type-p rtype :vl-kwd-scalared))
-                 (signedp     (if signed t nil))
-                 (gstrength   (vl-disabled-gstrength strength))
-                 (cstrength   (vl-disabled-cstrength strength))
+  (seq tokstream
+       ((type . loc) := (vl-parse-netdecltype))
+       (when (vl-is-token? :vl-lparen)
+         (strength := (vl-parse-drive-strength-or-charge-strength)))
+       (when (vl-is-some-token? '(:vl-kwd-vectored :vl-kwd-scalared))
+         (rtype := (vl-match)))
+       (when (vl-is-token? :vl-kwd-signed)
+         (signed := (vl-match)))
+       (when (vl-is-token? :vl-lbrack)
+         (range := (vl-parse-range)))
+       (when (vl-is-token? :vl-pound)
+         (delay := (vl-parse-delay3)))
+       ((assignpairs . declpairs) := (vl-parse-net-declaration-aux))
+       (:= (vl-match-token :vl-semi))
+       (return-raw
+        (let* ((vectoredp   (vl-is-token-of-type-p rtype :vl-kwd-vectored))
+               (scalaredp   (vl-is-token-of-type-p rtype :vl-kwd-scalared))
+               (signedp     (if signed t nil))
+               (gstrength   (vl-disabled-gstrength strength))
+               (cstrength   (vl-disabled-cstrength strength))
 
 ; Subtle!  See the documentation for vl-netdecl-p and vl-assign-p.  If there
 ; are assignments, then the delay is ONLY about the assignments and NOT to
 ; be given to the decls.
 
-                 (assigns     (vl-build-assignments loc assignpairs gstrength delay atts))
-                 (decls       (vl-build-netdecls loc declpairs type range atts vectoredp
-                                                 scalaredp signedp
-                                                 (if assignpairs nil delay)
-                                                 cstrength))
+               (assigns     (vl-build-assignments loc assignpairs gstrength delay atts))
+               (decls       (vl-build-netdecls loc declpairs type range atts vectoredp
+                                               scalaredp signedp
+                                               (if assignpairs nil delay)
+                                               cstrength))
 
-                 (errorstr    (vl-netdecls-error type cstrength gstrength
-                                                 vectoredp scalaredp range
-                                                 assignpairs)))
-            (if errorstr
-                (vl-parse-error errorstr)
-              (mv nil (cons assigns decls) tokens pstate))))))
+               (errorstr    (vl-netdecls-error type cstrength gstrength
+                                               vectoredp scalaredp range
+                                               assignpairs)))
+          (if errorstr
+              (vl-parse-error errorstr)
+            (mv nil (cons assigns decls) tokstream))))))
 
 (with-output
  :gag-mode :goals

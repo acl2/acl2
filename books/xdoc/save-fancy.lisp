@@ -37,6 +37,7 @@
 (include-book "importance")
 (include-book "linkcheck")
 (include-book "centaur/bridge/to-json" :dir :system)
+(include-book "oslib/copy" :dir :system)
 (set-state-ok t)
 (program)
 
@@ -454,73 +455,14 @@
         (prog2$ (er hard? 'prepare-fancy-dir
                     "Dir must be a string, but is: ~x0.~%" dir)
                 state))
-       (- (cw "; Preparing directory ~s0.~%" dir))
-
-       (dir/lib        (oslib::catpath dir "lib"))
-       (dir/images     (oslib::catpath dir "images"))
-       (dir/HTML       (oslib::catpath dir "HTML"))
-       (state          (oslib::mkdir! dir))
-       (state          (oslib::mkdir! dir/lib))
-       (state          (oslib::mkdir! dir/images))
-       (state          (oslib::mkdir! dir/HTML))
 
        (dir-system     (acl2::f-get-global 'acl2::system-books-dir state))
        (xdoc-dir       (oslib::catpath dir-system "xdoc"))
-       (xdoc/classic   (oslib::catpath xdoc-dir "classic"))
        (xdoc/fancy     (oslib::catpath xdoc-dir "fancy"))
-       (xdoc/fancy/lib (oslib::catpath xdoc/fancy "lib"))
 
-       (- (cw "Copying fancy viewer main files...~%"))
-       (state          (stupid-copy-files xdoc/fancy
-                                          (list "collapse_subtopics.png"
-                                                "download.png"
-                                                "expand_subtopics.png"
-                                                "favicon.png"
-                                                "Icon_External_Link.png"
-                                                "index.html"
-                                                "xdoc-home.png"
-                                                "xdoc-logo.png"
-                                                "leaf.png"
-                                                "LICENSE"
-                                                "minus.png"
-                                                "plus.png"
-                                                "print.css"
-                                                "print.html"
-                                                "printer.png"
-                                                "render.js"
-                                                "render-html.xsl"
-                                                "style.css"
-                                                "view_flat.png"
-                                                "view_tree.png"
-                                                "config.js"
-                                                "xdoc.js"
-                                                "xslt.js"
-                                                "xdoc_index.js"
-                                                "xdataget.pl"
-                                                "xdata2html.pl"
-                                                "xdata2sql.pl"
-                                                "zip.sh"
-                                                ".htaccess"
-                                                )
-                                          dir state))
-
-       (- (cw "Copying fancy viewer library files...~%"))
-       (state          (stupid-copy-files xdoc/fancy/lib
-                                          (list "jquery-2.0.3.js"
-                                                "jquery-2.0.3.min.js"
-                                                "jquery.base64.js"
-                                                "jquery.powertip.css"
-                                                "jquery.powertip.js"
-                                                "jquery.powertip.min.js"
-                                                "lazyload.js"
-                                                "typeahead.js"
-                                                "typeahead.min.js")
-                                          dir/lib state))
-
-       (- (cw "Copying ACL2 tour graphics...~%"))
-       (state          (stupid-copy-files xdoc/classic
-                                          *acl2-graphics*
-                                          dir/images state)))
+       (- (cw "; Preparing directory ~s0.~%" dir))
+       (state          (oslib::rmtree! dir))
+       (state          (oslib::copy! xdoc/fancy dir :recursive t)))
     state))
 
 (defttag :xdoc) ; for sys-call+ call below
