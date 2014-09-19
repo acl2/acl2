@@ -47,6 +47,7 @@
                            acl2::member-of-cons
                            integerp-when-natp
                            not nfix acl2::zp-open)))
+(local (in-theory (disable (tau-system))))
 
 (local (defun make-cases (ops)
          (if (atom ops)
@@ -62,6 +63,11 @@
            :enable (vl-op-p acl2::hons-assoc-equal-of-cons)
            :disable vl-op-p-of-vl-nonatom->op
            :use ((:instance vl-op-p-of-vl-nonatom->op)))))
+
+(local (defthm vl-expr-fix-nonnil
+         (vl-expr-fix x)
+         :hints(("Goal" :in-theory (enable (tau-system))))
+         :rule-classes :type-prescription))
 
 (defxdoc expression-sizing
   :parents (transforms)
@@ -821,6 +827,7 @@ numbers are used, such as:</p>
 
 <p>Over time I have added many additional tweaks, see the comments for
 details.</p>"
+  :prepwork ((local (in-theory (disable (tau-system)))))
   (b* ((type  (acl2::symbol-fix type))
        (op    (vl-op-fix op))
        (asize (lnfix asize))
@@ -916,10 +923,70 @@ expression.</p>
 <p>This function basically implements Verilog-2005 Table 5-22, or
 SystemVerilog-2012 Table 11-21. See @(see expression-sizing).</p>"
 
-  :prepwork ((local (in-theory (enable maybe-natp))))
-  :guard-hints (("Goal" :in-theory (e/d (vl-op-p vl-op-arity
-                                                 acl2::hons-assoc-equal-of-cons)
-                                        (nfix max (tau-system)))))
+  :prepwork (; (local (in-theory (enable maybe-natp)))
+             (local (in-theory (disable natp-when-posp
+                                        nat-listp-when-no-nils-in-vl-maybe-nat-listp
+                                        acl2::natp-when-maybe-natp
+                                        default-car default-cdr)))
+             (local (defthm member-of-singleton
+                      (iff (member a (cons x nil))
+                           (equal a x))
+                      :hints(("Goal" :in-theory (enable acl2::member-of-cons)))))
+             (local (defund none-bound-to (keys value alist)
+                      (if (atom keys)
+                          t
+                        (and (let ((look (hons-assoc-equal (car keys) alist)))
+                               (not (equal (cdr look) value)))
+                             (none-bound-to (cdr keys) value alist)))))
+             (local (defthm hons-assoc-equal-when-none-bound-to
+                      (implies (and (member x keys)
+                                    (none-bound-to keys val alist))
+                               (not (equal val (cdr (hons-assoc-equal x alist)))))
+                      :hints(("Goal" :in-theory (enable hons-assoc-equal
+                                                        none-bound-to
+                                                        member)))))
+             (local (defthm hons-assoc-equal-when-none-bound-to-iff
+                      (implies (and (member x keys)
+                                    (none-bound-to keys nil alist))
+                               (cdr (hons-assoc-equal x alist)))
+                      :hints(("Goal" :in-theory (enable hons-assoc-equal
+                                                        none-bound-to
+                                                        member)))))
+             (local (defthm member-equal-when-member-non-intersecting
+                      (implies (and (syntaxp (quotep x))
+                                    (member k y)
+                                    (syntaxp (quotep y))
+                                    (not (intersectp-equal x y)))
+                               (not (member k x)))
+                      :hints ((set-reasoning))))
+             (local (defthm reduce-member-equal-when-not-member
+                      (implies (and (syntaxp (quotep x))
+                                    (not (member k y))
+                                    (syntaxp (quotep y))
+                                    (intersectp-equal x y))
+                               (iff (member k x)
+                                    (member k (set-difference-equal x y))))
+                      :hints ((set-reasoning))))
+             (local (defthm equal-when-member-non-member
+                      (implies (and (syntaxp (quotep v))
+                                    (member k x)
+                                    (syntaxp (quotep x))
+                                    (not (member v x)))
+                               (not (equal k v)))))
+             (local (defthm reduce-member-equal-when-not-equal
+                      (implies (and (syntaxp (quotep x))
+                                    (not (equal k v))
+                                    (syntaxp (quotep v))
+                                    (member v x))
+                               (iff (member k x)
+                                    (member k (remove-equal v x))))
+                      :hints ((set-reasoning))))
+             )
+  :guard-hints (("Goal" :in-theory (e/d (ACL2::HONS-ASSOC-EQUAL-IFF-MEMBER-ALIST-KEYS
+                                         ;; acl2::hons-assoc-equal-of-cons
+                                         vl-op-p vl-op-arity)
+                                        (acl2::alist-keys-member-hons-assoc-equal
+                                         nfix max (tau-system)))))
 
   (b* ((op      (vl-op-fix op))
        (context (vl-expr-fix context))
@@ -1501,7 +1568,12 @@ produce unsigned values.</li>
     :returns (mv (warnings vl-warninglist-p)
                  (type     (and (vl-maybe-exprtype-p type)
                                 (equal (vl-exprtype-p type)
-                                       (if type t nil)))))
+                                       (if type t nil)))
+                           :hints ('(:in-theory (disable (:d vl-expr-typedecide-aux)
+                                                         (:d vl-exprlist-typedecide-aux))
+                                     :expand ((:free (mode)
+                                               (vl-expr-typedecide-aux
+                                                x ss elem warnings mode)))))))
     :measure (vl-expr-count x)
     :flag :expr
     (b* ((x        (vl-expr-fix x))
@@ -1650,7 +1722,11 @@ produce unsigned values.</li>
                                       (mode     (or (eq mode :probably-wrong)
                                                     (eq mode :probably-right))))
     :returns (mv (warnings vl-warninglist-p)
-                 (types    vl-maybe-exprtype-list-p))
+                 (types    vl-maybe-exprtype-list-p
+                           :hints ('(:in-theory (disable (:d vl-expr-typedecide-aux)
+                                                         (:d vl-exprlist-typedecide-aux))
+                                     :expand ((vl-exprlist-typedecide-aux
+                                               x ss elem warnings mode))))))
     :measure (vl-exprlist-count x)
     :flag :list
     (b* (((when (atom x))
@@ -1663,16 +1739,19 @@ produce unsigned values.</li>
 
   ///
   (local (in-theory (disable member-equal-when-member-equal-of-cdr-under-iff
-                            vl-warninglist-p-when-subsetp-equal
-                            set::double-containment
-                            arg1-exists-by-arity
-                            default-car
-                            default-cdr)))
+                             vl-warninglist-p-when-subsetp-equal
+                             set::double-containment
+                             arg1-exists-by-arity
+                             default-car
+                             default-cdr
+                             vl-exprlist-typedecide-aux
+                             vl-expr-typedecide-aux)))
 
   (defrule vl-exprlist-typedecide-aux-when-atom
     (implies (atom x)
              (equal (vl-exprlist-typedecide-aux x ss elem warnings mode)
-                    (mv (ok) nil))))
+                    (mv (ok) nil)))
+    :hints (("goal" :expand ((:free (mode) (vl-exprlist-typedecide-aux x ss elem warnings mode))))))
 
   (defrule vl-exprlist-typedecide-aux-of-cons
     (equal (vl-exprlist-typedecide-aux (cons a x) ss elem warnings mode)
@@ -1680,12 +1759,15 @@ produce unsigned values.</li>
                  (vl-expr-typedecide-aux a ss elem warnings mode))
                 ((mv warnings cdr-type)
                  (vl-exprlist-typedecide-aux x ss elem warnings mode)))
-             (mv warnings (cons car-type cdr-type)))))
+             (mv warnings (cons car-type cdr-type))))
+    :hints (("goal" :expand ((:free (mode) (vl-exprlist-typedecide-aux
+                                            (cons a x) ss elem warnings mode))))))
 
   (defthm-vl-expr-typedecide-aux-flag
     (defthm len-of-vl-exprlist-typedecide-aux
       (equal (len (mv-nth 1 (vl-exprlist-typedecide-aux x ss elem warnings mode)))
              (len x))
+      :hints ('(:expand ((:free (mode) (vl-exprlist-typedecide-aux x ss elem warnings mode)))))
       :flag :list)
     :skip-others t)
 
@@ -1693,12 +1775,53 @@ produce unsigned values.</li>
     (defthm true-listp-of-vl-exprlist-typedecide-aux
       (true-listp (mv-nth 1 (vl-exprlist-typedecide-aux x ss elem warnings mode)))
       :rule-classes :type-prescription
+      :hints ('(:expand ((:free (mode) (vl-exprlist-typedecide-aux x ss elem warnings mode)))))
       :flag :list)
     :skip-others t)
 
+
+  (local (defthm member-equal-when-member-non-intersecting
+           (implies (and (syntaxp (quotep x))
+                         (member k y)
+                         (syntaxp (quotep y))
+                         (not (intersectp-equal x y)))
+                    (not (member k x)))
+           :hints ((set-reasoning))))
+  (local (defthm reduce-member-equal-when-not-member
+           (implies (and (syntaxp (quotep x))
+                         (not (member k y))
+                         (syntaxp (quotep y))
+                         (intersectp-equal x y))
+                    (iff (member k x)
+                         (member k (set-difference-equal x y))))
+           :hints ((set-reasoning))))
+  (local (defthm equal-when-member-non-member
+           (implies (and (syntaxp (quotep v))
+                         (member k x)
+                         (syntaxp (quotep x))
+                         (not (member v x)))
+                    (not (equal k v)))))
+  (local (defthm member-of-singleton
+           (iff (member a (cons x nil))
+                (equal a x))
+           :hints(("Goal" :in-theory (enable acl2::member-of-cons)))))
+  (local (defthm reduce-member-equal-when-not-equal
+           (implies (and (syntaxp (quotep x))
+                         (not (equal k v))
+                         (syntaxp (quotep v))
+                         (member v x))
+                    (iff (member k x)
+                         (member k (remove-equal v x))))
+           :hints ((set-reasoning))))
+
   (verify-guards vl-expr-typedecide-aux
-    :hints(("Goal" :in-theory (enable vl-nonatom->op-forward
-                                      acl2::member-of-cons))))
+    :hints(("Goal" :in-theory (e/d (vl-nonatom->op-forward
+                                    acl2::hons-assoc-equal-iff-member-alist-keys
+                                    vl-op-p)
+                                   (vl-op-p-of-vl-nonatom->op
+                                    acl2::alist-keys-member-hons-assoc-equal
+                                    (tau-system)))
+            :use VL-OP-P-OF-VL-NONATOM->OP)))
 
   (local
    (defthm-vl-expr-typedecide-aux-flag
@@ -1727,7 +1850,9 @@ produce unsigned values.</li>
              :induct (and (vl-expr-typedecide-aux-flag flag x ss elem warnings1 mode)
                           (vl-expr-typedecide-aux-flag flag x ss elem warnings2 mode))
              :expand ((:free (mode) (vl-expr-typedecide-aux x ss elem warnings1 mode))
-                      (:free (mode) (vl-expr-typedecide-aux x ss elem warnings2 mode)))))))
+                      (:free (mode) (vl-expr-typedecide-aux x ss elem warnings2 mode))
+                      (:free (mode) (vl-exprlist-typedecide-aux x ss elem warnings1 mode))
+                      (:free (mode) (vl-exprlist-typedecide-aux x ss elem warnings2 mode)))))))
 
   (defrule warning-irrelevance-of-vl-expr-typedecide-aux
     (let ((ret1 (vl-expr-typedecide-aux x ss elem warnings mode))
@@ -1747,9 +1872,26 @@ produce unsigned values.</li>
 
   (defrule symbolp-of-vl-expr-typedecide-aux
     (symbolp (mv-nth 1 (vl-expr-typedecide-aux x ss elem warnings mode)))
+    :expand ((:free (warnings mode)
+              (vl-expr-typedecide-aux x ss elem warnings mode)))
+    :in-theory (enable (tau-system))
     :rule-classes :type-prescription)
 
-  (deffixequiv-mutual vl-expr-typedecide-aux))
+  (deffixequiv-mutual vl-expr-typedecide-aux
+    :hints ('(:in-theory (disable (:d vl-expr-typedecide-aux)
+                                  (:d vl-exprlist-typedecide-aux)
+                                  warning-irrelevance-of-vl-exprlist-typedecide-aux
+                                  warning-irrelevance-of-vl-expr-typedecide-aux)
+              :expand ((:free (ss elem warnings mode)
+                        (vl-expr-typedecide-aux x ss elem warnings mode))
+                       (:free (mode)
+                        (vl-expr-typedecide-aux (vl-expr-fix x) ss elem warnings mode))
+                       (:free (ss elem warnings mode)
+                        (vl-exprlist-typedecide-aux x ss elem warnings mode))
+                       (:free (mode)
+                        (vl-exprlist-typedecide-aux (vl-exprlist-fix x) ss elem warnings mode))))
+            (and stable-under-simplificationp
+                 '(:expand ((vl-exprlist-fix x)))))))
 
 
 
@@ -2090,6 +2232,7 @@ addition produces is done in 64 bits and produces @('1_0000_0000_0004'), which
 is then shifted to obtain @('8000_0000_0002').  On a 32-bit implementation, the
 addition is only done in 48 bits and the carry is lost, so the sum is @('4')
 and the final result is @('2').</p>"
+  :prepwork ((local (in-theory (disable (tau-system)))))
 
   ;; BOZO can we push the sanity checks into the guard?
 
@@ -2229,7 +2372,7 @@ and the final result is @('2').</p>"
   :parents (vl-expr-expandsizes)
   :short "Propagate the final width and type of an expression into a weird
 integer atom."
-
+  :prepwork ((local (in-theory (disable (tau-system)))))
   :verbosep t
   ((x          vl-expr-p)
    (finalwidth natp)
@@ -2388,7 +2531,7 @@ integer atom."
   :parents (vl-expr-expandsizes)
   :short "Propagate the final width and type of an expression into an
 identifier atom."
-
+  :prepwork ((local (in-theory (disable (tau-system)))))
   ((x           vl-expr-p)
    (finalwidth  natp)
    (finaltype   vl-exprtype-p)
@@ -2524,7 +2667,7 @@ identifier atom."
   :parents (vl-expr-expandsizes)
   :short "Propagate the final width and type of an expression into a weird
 integer atom."
-
+  
   ((x          vl-expr-p)
    (finalwidth natp)
    (finaltype  vl-exprtype-p)
@@ -3747,12 +3890,64 @@ minor warning for assignments where the rhs is a constant.</p>"
 
 (defsection vl-expr-welltyped-p-of-vl-expr-size
 
+    (local (defthm member-equal-when-member-non-intersecting
+           (implies (and (syntaxp (quotep x))
+                         (member k y)
+                         (syntaxp (quotep y))
+                         (not (intersectp-equal x y)))
+                    (not (member k x)))
+           :hints ((set-reasoning))))
+  (local (defthm reduce-member-equal-when-not-member
+           (implies (and (syntaxp (quotep x))
+                         (not (member k y))
+                         (syntaxp (quotep y))
+                         (intersectp-equal x y))
+                    (iff (member k x)
+                         (member k (set-difference-equal x y))))
+           :hints (("goal" :in-theory (enable acl2::member-of-set-difference-equal))
+                   (set-reasoning))))
+  (local (defthm equal-when-member-non-member
+           (implies (and (syntaxp (quotep v))
+                         (member k x)
+                         (syntaxp (quotep x))
+                         (not (member v x)))
+                    (not (equal k v)))))
+  (local (defthm member-of-singleton
+           (iff (member a (cons x nil))
+                (equal a x))
+           :hints(("Goal" :in-theory (enable member)))))
+  (local (defthm reduce-member-equal-when-not-equal
+           (implies (and (syntaxp (quotep x))
+                         (not (equal k v))
+                         (syntaxp (quotep v))
+                         (member v x))
+                    (iff (member k x)
+                         (member k (remove-equal v x))))
+           :hints ((set-reasoning))))
+
+  (local (defund check-op-arities (ops n)
+           (if (atom ops)
+               t
+             (and (let ((arity (vl-op-arity (car ops))))
+                    (equal arity n))
+                  (check-op-arities (cdr ops) n)))))
+
+  (local (defthm vl-arity-ok-p-when-member
+           (implies (and (member op ops)
+                         (syntaxp (quotep ops))
+                         (check-op-arities ops (len args)))
+                    (vl-arity-ok-p op args))
+           :hints(("Goal" :in-theory (enable member check-op-arities
+                                             vl-arity-ok-p)
+                   :induct (member op ops)))))
+
   (local (defthm all-equalp-nil
            (all-equalp x nil)
            :hints(("Goal" :in-theory (enable acl2::all-equalp-when-atom)))))
 
    (local (in-theory (e/d (acl2::all-equalp-of-cons)
                           (all-equalp
+                           acl2::member-of-cons
                            MEMBER-EQUAL-WHEN-MEMBER-EQUAL-OF-CDR-UNDER-IFF
                            ACL2::CONSP-UNDER-IFF-WHEN-TRUE-LISTP
                            default-car
@@ -3767,6 +3962,40 @@ minor warning for assignments where the rhs is a constant.</p>"
                            (tau-system)
                            ))))
 
+   (local (defthmd arity-by-member-when-check-op-arities
+            (implies (and (member op ops)
+                          (check-op-arities ops arity))
+                     (equal (vl-op-arity op) arity))
+            :hints(("Goal" :in-theory (enable check-op-arities member)))))
+
+   (local (defthm consp-of-args-by-member-class
+            (implies (and (member (vl-nonatom->op x) ops)
+                          (syntaxp (quotep ops))
+                          (consp ops)
+                          (bind-free `((arity . ',(vl-op-arity (car (acl2::unquote ops)))))
+                                     (arity))
+                          (< 0 arity)
+                          (check-op-arities ops arity))
+                     (consp (vl-nonatom->args x)))
+            :hints (("goal" :use ((:instance arity-by-member-when-check-op-arities
+                                   (op (vl-nonatom->op x)))
+                                  (:instance len-of-vl-nonatom->args))
+                     :in-theory (disable len-of-vl-nonatom->args)))))
+
+   (local (defthm consp-of-cdr-args-by-member-class
+            (implies (and (member (vl-nonatom->op x) ops)
+                          (syntaxp (quotep ops))
+                          (consp ops)
+                          (bind-free `((arity . ',(vl-op-arity (car (acl2::unquote ops)))))
+                                     (arity))
+                          (< 1 arity)
+                          (check-op-arities ops arity))
+                     (consp (cdr (vl-nonatom->args x))))
+            :hints (("goal" :use ((:instance arity-by-member-when-check-op-arities
+                                   (op (vl-nonatom->op x)))
+                                  (:instance len-of-vl-nonatom->args))
+                     :in-theory (disable len-of-vl-nonatom->args)))))
+                          
 
 
    (local (defthm posp-of-nfix
@@ -3797,6 +4026,29 @@ minor warning for assignments where the rhs is a constant.</p>"
                           (force (consp (cdr x))))
                      (equal (vl-expr->finalwidth (second x))
                             finalwidth))))
+
+
+   (local (defthm hidindex-p-of-reassemble
+            (implies (and (vl-hidindex-p x)
+                          (not (equal (vl-expr-kind x) :atom)))
+                     (vl-hidindex-p
+                      (make-vl-nonatom :op (vl-nonatom->op x)
+                                       :args (vl-nonatom->args x)
+                                       :atts atts :finalwidth fw :finaltype ft)))
+            :hints(("Goal" :in-theory (enable vl-hidindex-p)))))
+
+   (local (defthm hidexpr-p-of-reassemble
+            (implies (and (vl-hidexpr-p x)
+                          (not (equal (vl-expr-kind x) :atom)))
+                     (vl-hidexpr-p
+                      (make-vl-nonatom :op (vl-nonatom->op x)
+                                       :args (vl-nonatom->args x)
+                                       :atts atts :finalwidth fw :finaltype ft)))
+            :hints(("Goal" :in-theory (enable vl-hidexpr-p)))))
+
+   (local (in-theory (disable (force))))
+
+
 
    (defthm-vl-expr-size-flag
 
@@ -3833,7 +4085,10 @@ minor warning for assignments where the rhs is a constant.</p>"
                             (vl-nonatom op atts args finalwidth finaltype)))))
                (and stable-under-simplificationp
                     '(:expand ((:free (warnings)
-                                (vl-expr-selfsize x ss elem warnings))))))
+                                (vl-expr-selfsize x ss elem warnings))
+                               (:free (op atts args finalwidth finaltype)
+                                (vl-expr-welltyped-p
+                                 (vl-nonatom op atts args finalwidth finaltype)))))))
        :flag vl-expr-expandsizes)
 
      (defthm vl-exprlist-welltyped-p-of-vl-exprlist-expandsizes
@@ -3849,7 +4104,7 @@ minor warning for assignments where the rhs is a constant.</p>"
 
      :hints(("Goal"
              :in-theory (enable vl-nonatom->op-forward
-                                acl2::member-of-cons
+                                ;; acl2::member-of-cons
                                 ARG1-EXISTS-BY-ARITY
                                 acl2::member-when-atom)
              :do-not '(generalize fertilize)))))

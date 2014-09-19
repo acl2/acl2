@@ -1358,7 +1358,7 @@ centaur/getopt/demo2: centaur/getopt/demo2.cert
 	 ACL2_CUSTOMIZATION=NONE $(STARTJOB) -c "$(ACL2) < demo2-save.lsp &> demo2-save.out"
 	@ls -l centaur/getopt/demo2
 
-ifeq ($(filter GCL SBCL, $(ACL2_HOST_LISP)), )
+#ifeq ($(filter GCL, $(ACL2_HOST_LISP)), )
 
 centaur/getopt/demo2-test.ok: centaur/getopt/demo2 \
                               centaur/getopt/demo2-test.pl
@@ -1370,9 +1370,9 @@ centaur/getopt/demo2-test.ok: centaur/getopt/demo2 \
 
 all: centaur/getopt/demo2-test.ok
 
-else
-$(info Excluding centaur/getopt/demo2 test since host lisp is $(ACL2_HOST_LISP))
-endif
+#else
+#$(info Excluding centaur/getopt/demo2 test since host lisp is $(ACL2_HOST_LISP))
+#endif
 
 
 
