@@ -81,7 +81,7 @@
 (deftheory deftypes-theory
   '(equal-of-strip-cars
     car-cons cdr-cons
-    alistp strip-cars
+    strip-cars
     strip-cars-under-iff
     eqlablep (len) len-of-cons
     equal-of-len (zp)
@@ -1097,7 +1097,7 @@
    elementp-of-nil
    cheap            ;; passed to std::deflist
    recp       ;; elt-type is recursive
-   )
+   already-definedp)
   :tag :list)
 
 (defconst *flexlist-keywords*
@@ -1116,7 +1116,46 @@
     :post-events
     :enable-rules))
 
-(defun parse-flexlist (x xvar our-fixtypes fixtypes)
+
+(defun check-flexlist-already-defined (pred kwd-alist our-fixtypes ctx state)
+  (b* (((when (< 1 (len our-fixtypes)))
+        ;; Defining more than one fixtype.  We don't currently support this for
+        ;; already-defined lists/alists, so assume we're not already-defined.
+        (mv nil (getarg :true-listp nil kwd-alist)))
+       (existing-formals (fgetprop pred 'acl2::formals t (w state)))
+       (- (cw "existing formals: ~x0~%" existing-formals))
+       (already-defined (not (eq existing-formals t)))
+       (- (and already-defined
+               (cw "NOTE: Using existing definition of ~x0.~%" pred)))
+       (- (or (not already-defined)
+              (eql (len existing-formals) 1)
+              (er hard? ctx
+                  "~x0 is already defined in an incompatible manner: it ~
+                   should take exactly 1 input, but its formals are ~x1"
+                  pred existing-formals)))
+       (true-listp (if (not already-defined)
+                       (getarg :true-listp nil kwd-alist)
+                     (b* (((mv err res) (acl2::magic-ev-fncall
+                                         pred '(t) state t nil))
+                          ((when err)
+                           (er hard? ctx
+                               "Couldn't run ~x0 to figure out if it required true-listp: ~@1"
+                               pred res))
+                          (option (assoc :true-listp kwd-alist))
+                          ((unless (or (atom option) (eq (cdr option) (not res))))
+                           (er hard? ctx
+                               "The existing definition of ~x0 ~s1 its input ~
+                                to be a true-list, but the :true-listp option ~
+                                given was ~x2."
+                               pred (if res "does not require" "requires")
+                               (cdr option))))
+                       (not res)))))
+    (mv already-defined true-listp)))
+
+
+
+
+(defun parse-flexlist (x xvar our-fixtypes fixtypes state)
   (b* (((cons name args) x)
        ((unless (symbolp name))
         (er hard? 'parse-flexlist
@@ -1151,7 +1190,8 @@
                  (intern-in-package-of-symbol "X" name)))
        (measure (or (getarg :measure nil kwd-alist)
                     `(acl2-count ,xvar)))
-       (true-listp (getarg :true-listp nil kwd-alist)))
+       ((mv already-defined true-listp)
+        (check-flexlist-already-defined pred kwd-alist our-fixtypes 'deflist state)))
     (make-flexlist :name name
                   :pred pred
                   :fix fix
@@ -1169,7 +1209,8 @@
                                        kwd-alist)
                                kwd-alist)
                   :xvar xvar
-                  :recp recp)))
+                  :recp recp
+                  :already-definedp already-defined)))
 
 ;; ------------------------- Defalist Parsing -----------------------
 (def-primitive-aggregate flexalist
@@ -1194,7 +1235,7 @@
    ;; set set-fast
    true-listp
    recp
-   )
+   already-definedp)
   :tag :alist)
 
 (defconst *flexalist-keywords*
@@ -1213,9 +1254,10 @@
     :post-pred-events
     :post-fix-events
     :post-events
-    :enable-rules))
+    :enable-rules
+    :already-definedp))
 
-(defun parse-flexalist (x xvar our-fixtypes fixtypes)
+(defun parse-flexalist (x xvar our-fixtypes fixtypes state)
   (b* (((cons name args) x)
        ((unless (symbolp name))
         (er hard? 'parse-flexalist
@@ -1254,10 +1296,11 @@
                  (intern-in-package-of-symbol "X" name)))
        (measure (or (getarg :measure nil kwd-alist)
                     `(acl2-count ,xvar)))
-       (true-listp (getarg :true-listp nil kwd-alist))
        (strategy (getarg :strategy :fix-keys kwd-alist))
        (- (and (not (member strategy '(:fix-keys :drop-keys)))
-               (er hard? 'parse-flexalist "Invalid strategy: ~x0~%" strategy))))
+               (er hard? 'parse-flexalist "Invalid strategy: ~x0~%" strategy)))
+       ((mv already-defined true-listp)
+        (check-flexlist-already-defined pred kwd-alist our-fixtypes 'defalist state)))
     (make-flexalist :name name
                     :pred pred
                     :fix fix
@@ -1278,6 +1321,7 @@
                     :xvar xvar
                     :true-listp true-listp
                     :recp (or key-recp val-recp)
+                    :already-definedp already-defined
                     :keyp-of-nil (getarg :keyp-of-nil :unknown kwd-alist)
                     :valp-of-nil (getarg :valp-of-nil :unknown kwd-alist))))
 
@@ -1337,22 +1381,22 @@
 ;; ------------------------- Deftypes Parsing -----------------------
 (defconst *known-flextype-generators* '(defflexsum deflist deftagsum defprod defalist))
 
-(defun parse-flextypelist (x xvar our-fixtypes fixtypes)
+(defun parse-flextypelist (x xvar our-fixtypes fixtypes state)
   (if (atom x)
       nil
     (cons (case (caar x)
             (defflexsum (parse-flexsum (cdar x) xvar our-fixtypes fixtypes))
             (defprod   (parse-defprod (cdar x) xvar our-fixtypes fixtypes))
             (deftagsum (parse-tagsum (cdar x) xvar our-fixtypes fixtypes))
-            (deflist (parse-flexlist (cdar x) xvar our-fixtypes fixtypes))
-            (defalist (parse-flexalist (cdar x) xvar our-fixtypes fixtypes))
+            (deflist (parse-flexlist (cdar x) xvar our-fixtypes fixtypes state))
+            (defalist (parse-flexalist (cdar x) xvar our-fixtypes fixtypes state))
             (defmap   (change-flexalist
-                       (parse-flexalist (cdar x) xvar our-fixtypes fixtypes)
+                       (parse-flexalist (cdar x) xvar our-fixtypes fixtypes state)
                        :strategy :drop-keys))
             (otherwise (er hard? 'parse-flextypelist
                            "Recognized flextypes are ~x0, not ~x1~%"
                            *known-flextype-generators* (caar x))))
-          (parse-flextypelist (cdr x) xvar our-fixtypes fixtypes))))
+          (parse-flextypelist (cdr x) xvar our-fixtypes fixtypes state))))
 
 (defun flextype-form->fixtype (x)
   ;; This takes a whole deflist/defflexsum/?? form, gets the
@@ -1410,7 +1454,7 @@
     (or (with-flextype-bindings (x (car x)) x.recp)
         (flextypelist-recp (cdr x)))))
 
-(defun parse-flextypes (x wrld)
+(defun parse-flextypes (x state)
   (b* (((cons name x) x)
        ((unless (symbolp name))
         (er hard? 'parse-flextypes
@@ -1420,10 +1464,10 @@
         (extract-keywords 'parse-flextypes *flextypes-keywords* pre-/// nil))
        (our-fixtypes (collect-flextypelist-fixtypes typedecls))
        (fixtype-al (append our-fixtypes
-                           (get-fixtypes-alist wrld)))
+                           (get-fixtypes-alist (w state))))
        (xvar (getarg :xvar nil kwd-alist))
        (no-count (getarg :no-count nil kwd-alist))
-       (types (parse-flextypelist typedecls xvar our-fixtypes fixtype-al)))
+       (types (parse-flextypelist typedecls xvar our-fixtypes fixtype-al state)))
     (make-flextypes :name name
                     :types types
                     :no-count no-count
@@ -1512,20 +1556,22 @@
   (b* (((flexlist list) list)
        ;; std::deflist-compatible variable names
        (stdx (intern-in-package-of-symbol "X" list.pred))
-       ;; (stda (intern-in-package-of-symbol "A" 'acl2::foo))
+       ;; (stda (intern-in-package-of-symbol "A" 'acl2::foo)))
        )
-    `(define ,list.pred (,list.xvar)
-       ;; BOZO not exactly clear when/where to add docs for the predicate
-       :parents nil
-       :progn t
-       :measure ,list.measure
-       (if (atom ,list.xvar)
-           ,(if list.true-listp
-                `(eq ,list.xvar nil)
-              t)
-         (and (,list.elt-type (car ,list.xvar))
-              (,list.pred (cdr ,list.xvar))))
-       ///
+    `(,@(if list.already-definedp
+            '(progn)
+          `(define ,list.pred (,list.xvar)
+             ;; BOZO not exactly clear when/where to add docs for the predicate
+             :parents nil
+             :progn t
+             :measure ,list.measure
+             (if (atom ,list.xvar)
+                 ,(if list.true-listp
+                      `(eq ,list.xvar nil)
+                    t)
+               (and (,list.elt-type (car ,list.xvar))
+                    (,list.pred (cdr ,list.xvar))))
+             ///))
        (local (in-theory (disable ,list.pred)))
        (std::deflist ,list.pred (,stdx)
          (,list.elt-type ,stdx)
@@ -1577,31 +1623,33 @@
   (b* (((flexalist alist) alist)
        ;; std::deflist-compatible variable names
        (stdx (intern-in-package-of-symbol "X" alist.pred))
-       ;; (stda (intern-in-package-of-symbol "A" alist.pred))
+       ;; (stda (intern-in-package-of-symbol "A" alist.pred)))
        )
-    `(define ,alist.pred (,alist.xvar)
-       :parents nil ;; BOZO not clear when to add docs for this
-       :progn t
-       :measure ,alist.measure
-       (if (atom ,alist.xvar)
-           ,(if alist.true-listp
-                `(eq ,alist.xvar nil)
-              t)
-         (and (consp (car ,alist.xvar))
-              ,@(and alist.key-type
-                     `((,alist.key-type (caar ,alist.xvar))))
-              ,@(and alist.val-type
-                     `((,alist.val-type (cdar ,alist.xvar))))
-              (,alist.pred (cdr ,alist.xvar))))
-       ///
-       (local (in-theory (disable ,alist.pred)))
-       (std::defalist ,alist.pred (,stdx)
-         ,@(and alist.key-type `(:key (,alist.key-type ,stdx)))
-         ,@(and alist.val-type `(:val (,alist.val-type ,stdx)))
-         :true-listp ,alist.true-listp
-         :keyp-of-nil ,alist.keyp-of-nil
-         :valp-of-nil ,alist.valp-of-nil
-         :already-definedp t))))
+    `(,@(if alist.already-definedp
+            '(progn)
+          `(define ,alist.pred (,alist.xvar)
+             :parents nil ;; BOZO not clear when to add docs for this
+             :progn t
+             :measure ,alist.measure
+             (if (atom ,alist.xvar)
+                 ,(if alist.true-listp
+                      `(eq ,alist.xvar nil)
+                    t)
+               (and (consp (car ,alist.xvar))
+                    ,@(and alist.key-type
+                           `((,alist.key-type (caar ,alist.xvar))))
+                    ,@(and alist.val-type
+                           `((,alist.val-type (cdar ,alist.xvar))))
+                    (,alist.pred (cdr ,alist.xvar))))
+             ///))
+        (local (in-theory (disable ,alist.pred)))
+        (std::defalist ,alist.pred (,stdx)
+          ,@(and alist.key-type `(:key (,alist.key-type ,stdx)))
+          ,@(and alist.val-type `(:val (,alist.val-type ,stdx)))
+          :true-listp ,alist.true-listp
+          :keyp-of-nil ,alist.keyp-of-nil
+          :valp-of-nil ,alist.valp-of-nil
+          :already-definedp t))))
 
 
 ;; ------------------ Predicates: deftypes -----------------------
@@ -1988,7 +2036,8 @@
        (stdx (intern-in-package-of-symbol "X" x.pred))
        (stda (intern-in-package-of-symbol "A" x.pred)))
     `((deffixcong ,x.equiv ,x.elt-equiv (car x) x
-        :hints (("goal" :expand ((,x.fix x)))))
+        :hints (("goal" :expand ((,x.fix x))
+                 :in-theory (enable acl2::default-car))))
 
       (deffixcong ,x.equiv ,x.equiv (cdr x) x
         :hints (("goal" :expand ((,x.fix x)))))
@@ -3761,10 +3810,10 @@
 
 
 
-(defun deftypes-events (x world)
+(defun deftypes-events (x state)
   (b* (((flextypes x) x)
        (fix/pred-pairs (flextypes-collect-fix/pred-pairs x.types))
-       ((mv enable-rules temp-thms) (collect-fix/pred-enable-rules fix/pred-pairs world)))
+       ((mv enable-rules temp-thms) (collect-fix/pred-enable-rules fix/pred-pairs (w state))))
     `(with-output :off (prove event observation)
        :summary (acl2::form time)
        (encapsulate nil       ;; was: defsection ,x.name
@@ -3816,20 +3865,20 @@
 
              (table flextypes-table ',x.name ',x)
 
-             . ,(flextypes-defxdoc x world)))))))
+             . ,(flextypes-defxdoc x (w state))))))))
 
 ;; ------------------ Interface Macros -----------------------
-(defun deftypes-fn (args wrld)
-  (b* ((x (parse-flextypes args wrld)))
-    (deftypes-events x wrld)))
+(defun deftypes-fn (args state)
+  (b* ((x (parse-flextypes args state)))
+    (deftypes-events x state)))
 
 (defmacro deftypes (&rest args)
-  `(make-event (deftypes-fn ',args (w state))))
+  `(make-event (deftypes-fn ',args state)))
 
-(defun defflexsum-fn (whole wrld)
+(defun defflexsum-fn (whole state)
   (b* ((our-fixtypes (list (flextype-form->fixtype whole)))
        (fixtype-al (append our-fixtypes
-                           (get-fixtypes-alist wrld)))
+                           (get-fixtypes-alist (w state))))
        (x (parse-flexsum (cdr whole) nil our-fixtypes fixtype-al))
        (x (if (or (flexsum->recp x)
                   (member :count (cdr whole)))
@@ -3842,17 +3891,17 @@
                                   :no-count (not x.count)
                                   :kwd-alist nil
                                   :recp x.recp)))
-    (deftypes-events flextypes wrld)))
+    (deftypes-events flextypes state)))
 
 (defmacro defflexsum (&whole form &rest args)
   (declare (ignore args))
-  `(make-event (defflexsum-fn ',form (w state))))
+  `(make-event (defflexsum-fn ',form state)))
 
-(defun deflist-fn (whole wrld)
+(defun deflist-fn (whole state)
   (b* ((our-fixtypes (list (flextype-form->fixtype whole)))
        (fixtype-al (append our-fixtypes
-                           (get-fixtypes-alist wrld)))
-       (x (parse-flexlist (cdr whole) nil our-fixtypes fixtype-al))
+                           (get-fixtypes-alist (w state))))
+       (x (parse-flexlist (cdr whole) nil our-fixtypes fixtype-al state))
        (x (if (member :count (cdr whole))
               x
             (change-flexlist x :count nil)))
@@ -3862,17 +3911,17 @@
                                   :no-count (not x.count)
                                   :kwd-alist nil
                                   :recp x.recp)))
-    (deftypes-events flextypes wrld)))
+    (deftypes-events flextypes state)))
 
 (defmacro deflist (&whole form &rest args)
   (declare (ignore args))
-  `(make-event (deflist-fn ',form (w state))))
+  `(make-event (deflist-fn ',form state)))
 
-(defun defalist-fn (whole wrld)
+(defun defalist-fn (whole state)
   (b* ((our-fixtypes (list (flextype-form->fixtype whole)))
        (fixtype-al (append our-fixtypes
-                           (get-fixtypes-alist wrld)))
-       (x (parse-flexalist (cdr whole) nil our-fixtypes fixtype-al))
+                           (get-fixtypes-alist (w state))))
+       (x (parse-flexalist (cdr whole) nil our-fixtypes fixtype-al state))
        (x (if (member :count (cdr whole))
               x
             (change-flexalist x :count nil)))
@@ -3882,17 +3931,17 @@
                                   :no-count (not x.count)
                                   :kwd-alist nil
                                   :recp x.recp)))
-    (deftypes-events flextypes wrld)))
+    (deftypes-events flextypes state)))
 
 (defmacro defalist (&whole form &rest args)
   (declare (ignore args))
-  `(make-event (defalist-fn ',form (w state))))
+  `(make-event (defalist-fn ',form state)))
 
-(defun defmap-fn (whole wrld)
+(defun defmap-fn (whole state)
   (b* ((our-fixtypes (list (flextype-form->fixtype whole)))
        (fixtype-al (append our-fixtypes
-                           (get-fixtypes-alist wrld)))
-       (x (parse-flexalist (cdr whole) nil our-fixtypes fixtype-al))
+                           (get-fixtypes-alist (w state))))
+       (x (parse-flexalist (cdr whole) nil our-fixtypes fixtype-al state))
        (x (change-flexalist x :strategy :drop-keys))
        (x (if (member :count (cdr whole))
               x
@@ -3903,16 +3952,16 @@
                                   :no-count (not x.count)
                                   :kwd-alist nil
                                   :recp x.recp)))
-    (deftypes-events flextypes wrld)))
+    (deftypes-events flextypes state)))
 
 (defmacro defmap (&whole form &rest args)
   (declare (ignore args))
-  `(make-event (defmap-fn ',form (w state))))
+  `(make-event (defmap-fn ',form state)))
 
-(defun deftagsum-fn (whole wrld)
+(defun deftagsum-fn (whole state)
   (b* ((fixtype (flextype-form->fixtype whole))
        (fixtype-al (cons fixtype
-                         (get-fixtypes-alist wrld)))
+                         (get-fixtypes-alist (w state))))
        (x (parse-tagsum (cdr whole) nil (list fixtype) fixtype-al))
        (x (if (or (flexsum->recp x)
                   (member :count (cdr whole)))
@@ -3925,16 +3974,16 @@
                                   :no-count (not x.count)
                                   :kwd-alist nil
                                   :recp x.recp)))
-    (deftypes-events flextypes wrld)))
+    (deftypes-events flextypes state)))
 
 (defmacro deftagsum (&whole form &rest args)
   (declare (ignore args))
-  `(make-event (deftagsum-fn ',form (w state))))
+  `(make-event (deftagsum-fn ',form state)))
 
-(defun defprod-fn (whole wrld)
+(defun defprod-fn (whole state)
   (b* ((fixtype (flextype-form->fixtype whole))
        (fixtype-al (cons fixtype
-                         (get-fixtypes-alist wrld)))
+                         (get-fixtypes-alist (w state))))
        (x (parse-defprod (cdr whole) nil (list fixtype) fixtype-al))
        (x (if (member :count (cdr whole))
               x
@@ -3945,11 +3994,11 @@
 
                                   :no-count (not x.count)
                                   :recp x.recp)))
-    (deftypes-events flextypes wrld)))
+    (deftypes-events flextypes state)))
 
 (defmacro defprod (&whole form &rest args)
   (declare (ignore args))
-  `(make-event (defprod-fn ',form (w state))))
+  `(make-event (defprod-fn ',form state)))
 
 
 ;; ------------------ Documentation -----------------------
@@ -4057,25 +4106,15 @@ some base types with fixing functions.</p>
 
 <p>Only the name and the @(':elt-type') argument is required.</p>
 
-<p>@('Deflist') does not attempt to be as comprehensive in the theorems it
-proves as is @(see std::deflist).  However, it is compatible with
-@(see std::deflist) and @(see std::defprojection) using their
-@(':already-definedp') arguments.  For example: </p>
+<p>As part of the event, deflist calls @(see std::deflist) to produce several
+useful theorems about the introduced predicate.</p>
 
-@({
-  (fty::deflist symlist :elt-type symbol)
+<p>Deflist (by itself, not when part of mutually-recursive deftypes form) also
+allows previously defined list predicates.  For example, the following form
+produces a fixing function for ACL2's built-in @(see string-listp)
+predicate:</p>
 
-  (std::deflist symlist-p (x)
-    (symbolp x)
-    :true-listp t
-    :already-definedp t)
-
-  (std::defprojection symlist-fix (x)
-    (symbol-fix x)
-    :guard (symlist-p x)
-    :already-definedp t)
-
- })")
+@({ (deflist string-list :pred string-listp :elt-type stringp) })")
 
 (defxdoc defalist
   :parents (fty deftypes)
@@ -4123,19 +4162,18 @@ default, every pair in the alist is kept but its key and value are fixed.  With
 values are still fixed. @(See Defmap) is an abbreviation for @('defalist') with
 @(':strategy :drop-keys').</p>
 
-<p>@('Defalist') does not attempt to be as comprehensive in the theorems it
-proves as is @(see std::defalist).  However, it is compatible with
-@(see std::defalist) using its @(':already-definedp') and @(':true-listp')
-arguments.  For example: </p>
+<p>As part of the event, deflist calls @(see std::deflist) to produce several
+useful theorems about the introduced predicate.</p>
 
-@({
-  (fty::defalist symnatalist :key-type symbol :val-type nat)
+<p>Defalist (by itself, not when part of mutually-recursive deftypes form) also
+allows previously defined alist predicates.  For example, the following form
+produces a fixing function for ACL2's built-in @(see timer-alistp)
+predicate:</p>
 
-  (std::defalist symnatalist-p (x)
-    :key (symbolp x) :val (natp x)
-    :true-listp t
-    :already-definedp t)
-
+@({ 
+ (defalist timer-alist :pred timer-alistp
+                       :key-type symbolp
+                       :val-type rational-listp)
  })")
 
 (defxdoc defmap

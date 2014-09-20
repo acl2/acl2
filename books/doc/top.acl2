@@ -32,6 +32,7 @@
 (include-book "centaur/vl/portcullis" :dir :system)
 (include-book "centaur/gl/portcullis" :dir :system)
 (set-deferred-ttag-notes t state)
+(set-inhibit-warnings! "ttags")
 ; cert-flags: ? t :ttags :all :skip-proofs-okp t
 
 

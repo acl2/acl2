@@ -25258,12 +25258,14 @@ Lisp definition."
     (eval '(dbg::output-backtrace :verbose)))
   nil)
 
+(defmacro debugger-enabledp-val (val)
+  `(and (member-eq ,val '(t :break :break-bt :bt-break))
+        t))
+
 (defun debugger-enabledp (state)
   (declare (xargs :guard (and (state-p state)
                               (boundp-global 'debugger-enable state))))
-  (let ((val (f-get-global 'debugger-enable state)))
-    (and (member-eq val '(t :break :break-bt :bt-break))
-         t)))
+  (debugger-enabledp-val (f-get-global 'debugger-enable state)))
 
 (defun maybe-print-call-history (state)
   (declare (xargs :guard (and (state-p state)
@@ -25305,7 +25307,7 @@ Lisp definition."
   #+(and (not acl2-loop-only)
          (and gcl (not cltl2)))
   (when (live-state-p state)
-    (setq lisp::*break-enable* (debugger-enabledp state)))
+    (setq lisp::*break-enable* (debugger-enabledp-val val)))
   (pprogn
    (f-put-global 'debugger-enable val state)
    (if (consp (f-get-global 'dmrp state))
@@ -25966,7 +25968,7 @@ Lisp definition."
   #-acl2-loop-only
   (when (live-state-p state)
     (return-from oracle-apply-raw
-                 (mv (funcall fn args) state)))
+                 (mv (apply fn args) state)))
   #+acl2-loop-only
   (ec-call (oracle-apply fn args state)))
 

@@ -2102,6 +2102,77 @@ identifier, so we convert it into a hidpiece.</p>"
                    ',(flag::get-clique-members 'vl-parse-expression-fn (w state)))))))))
 
 
+(defun vl-warning-claim-fn (name args)
+  `'(,name (iff (vl-warning-p (mv-nth 0 (,name . ,args)))
+                (mv-nth 0 (,name . ,args)))))
+
+(defmacro vl-warning-claim (name &key args)
+  (vl-warning-claim-fn name args))
+
+(with-output
+ :off prove :gag-mode :goals
+ (encapsulate
+  ()
+  (local (in-theory (disable (force))))
+  (make-event
+   `(defthm-parse-expressions-flag vl-parse-expression-warning
+      ,(vl-warning-claim vl-parse-attr-spec)
+      ,(vl-warning-claim vl-parse-attribute-instance-aux)
+      ,(vl-warning-claim vl-parse-attribute-instance)
+      ,(vl-warning-claim vl-parse-0+-attribute-instances-aux)
+      ,(vl-warning-claim vl-parse-0+-attribute-instances)
+      ,(vl-warning-claim vl-parse-1+-expressions-separated-by-commas)
+      ,(vl-warning-claim vl-parse-system-function-call)
+      ,(vl-warning-claim vl-parse-mintypmax-expression)
+      ,(vl-warning-claim vl-parse-range-expression)
+      ,(vl-warning-claim vl-parse-concatenation)
+      ,(vl-warning-claim vl-parse-stream-expression)
+      ,(vl-warning-claim vl-parse-stream-concatenation)
+      ,(vl-warning-claim vl-parse-1+-stream-expressions-separated-by-commas)
+      ,(vl-warning-claim vl-parse-simple-type)
+      ,(vl-warning-claim vl-parse-slice-size)
+      ,(vl-warning-claim vl-parse-any-sort-of-concatenation)
+      ,(vl-warning-claim vl-parse-hierarchical-identifier :args (recursivep))
+      ,(vl-warning-claim vl-parse-function-call)
+      ,(vl-warning-claim vl-parse-0+-bracketed-expressions)
+      ,(vl-warning-claim vl-parse-indexed-id)
+      ,(vl-warning-claim vl-parse-primary-main)
+      ,(vl-warning-claim vl-parse-primary-cast)
+      ,(vl-warning-claim vl-parse-nonprimary-cast)
+      ,(vl-warning-claim vl-parse-primary)
+      ,(vl-warning-claim vl-parse-unary-expression)
+      ,(vl-warning-claim vl-parse-power-expression-aux)
+      ,(vl-warning-claim vl-parse-power-expression)
+      ,(vl-warning-claim vl-parse-mult-expression-aux)
+      ,(vl-warning-claim vl-parse-mult-expression)
+      ,(vl-warning-claim vl-parse-add-expression-aux)
+      ,(vl-warning-claim vl-parse-add-expression)
+      ,(vl-warning-claim vl-parse-shift-expression-aux)
+      ,(vl-warning-claim vl-parse-shift-expression)
+      ,(vl-warning-claim vl-parse-compare-expression-aux)
+      ,(vl-warning-claim vl-parse-compare-expression)
+      ,(vl-warning-claim vl-parse-equality-expression-aux)
+      ,(vl-warning-claim vl-parse-equality-expression)
+      ,(vl-warning-claim vl-parse-bitand-expression-aux)
+      ,(vl-warning-claim vl-parse-bitand-expression)
+      ,(vl-warning-claim vl-parse-bitxor-expression-aux)
+      ,(vl-warning-claim vl-parse-bitxor-expression)
+      ,(vl-warning-claim vl-parse-bitor-expression-aux)
+      ,(vl-warning-claim vl-parse-bitor-expression)
+      ,(vl-warning-claim vl-parse-logand-expression-aux)
+      ,(vl-warning-claim vl-parse-logand-expression)
+      ,(vl-warning-claim vl-parse-logor-expression-aux)
+      ,(vl-warning-claim vl-parse-logor-expression)
+      ,(vl-warning-claim vl-parse-qmark-expression)
+      ,(vl-warning-claim vl-parse-impl-expression)
+      ,(vl-warning-claim vl-parse-expression)
+      :hints((and acl2::stable-under-simplificationp
+                  (flag::expand-calls-computed-hint
+                   acl2::clause
+                   ',(flag::get-clique-members 'vl-parse-expression-fn (w state)))))))))
+
+
+
 ;; (defun vl-tokenlist-claim-fn (name args)
 ;;   `'(,name (vl-tokenlist-p (mv-nth 2 (,name . ,args)))))
 

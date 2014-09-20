@@ -335,3 +335,15 @@
                                            (acl2::string-downcase (symbol-name from))
                                            "').")
                             "."))))
+
+(defxdoc defpointer
+  :parents (xdoc documentation)
+  :short "Define an alias for a documentation topic"
+  :long "@({
+  Example Form:
+  (defpointer acl2 acl2-sedan)
+  (defpointer guard-hints xargs t)
+
+  General Form:
+  (defpointer alias target keyword-p)
+  })")

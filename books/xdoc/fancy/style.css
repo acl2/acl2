@@ -38,8 +38,8 @@
 /* ---------------------------- LAYOUT -------------------------------- */
 
 body {
-   margin: 0;
    background-color: white;
+   padding: 2em;
 }
 
 #top {
@@ -174,7 +174,7 @@ h3, h4, h5, h3 .tt, h4 .tt, h5 .tt, h3 .v, h4 .v, h5 .v
 
 .code,.v,.tt  { color: #306030;}
 .code a, .v a { color: #309030;}
-.code         { border-color: #3C9DD0; }
+.code, .mathblockrendered { border-color: #3C9DD0; }
 
 #nav a:hover, #flat a:hover { background-color: #FFAB73; }
 #data a:hover { background-color: #ffffa0; }
@@ -183,7 +183,7 @@ h3, h4, h5, h3 .tt, h4 .tt, h5 .tt, h3 .v, h4 .v, h5 .v
 #parents li a       {  }
 #parents li a:hover { background-color: #00B74A; text-decoration: none; }
 
-.tt-is-under-cursor { background-color: #ffffa0; }
+.tt-cursor { background-color: #ffffa0; }
 
 #jumpmsg,#searchmsg { color: white; }
 
@@ -271,7 +271,12 @@ dt, .hindex, #flat, #still_loading, .xtable th {
     background-color: white;
     color: black;
     width: 450px;
+    max-height: 500px;
     font-size: 90%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    border: 1px black solid;
+    border-radius: 5px;
 }
 
 .tt-suggestion {
@@ -282,6 +287,8 @@ dt, .hindex, #flat, #still_loading, .xtable th {
 .tt-suggstion tt {
     font-size: 50%;
 }
+
+.tt-highlight { background-color: #ffffd0; }
 
 
 /* ------------------------ NAVIGATION MENU ---------------------- */
@@ -349,7 +356,9 @@ dt {
   border-style: solid;
 }
 
-.code {
+/* math fragments don't need any special positioning */
+
+.code, .mathblock, .mathblockrendered {
   margin-left: 2.5em;
   margin-right: 1em;
   padding: .5em;
@@ -481,9 +490,6 @@ hr { margin-top: 2em; }
   border-right-color: #000000;
 }
 
-
-
-
 .stv_name {
     border-right: 2px;
     border-right-style: solid;
@@ -509,4 +515,13 @@ hr { margin-top: 2em; }
   padding: .5em;
 }
 
+.mathblock {
+  /* not rendered block, so put on a red border */
+  border-left-color: #ff6060;
+}
+
+.mathfrag {
+  /* not rendered snippet, so draw it in red */
+  color: #ff6060;
+}
 

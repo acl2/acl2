@@ -75,3 +75,7 @@
                   (keyval-alist-p y))
              (keyval-alist-p (make-fal x y)))))
 
+;; expensive
+#!acl2
+(in-theory (disable consp-when-member-equal-of-keyval-alist-p))
+

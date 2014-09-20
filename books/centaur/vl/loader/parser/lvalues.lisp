@@ -118,11 +118,15 @@
 
   (defthm-parse-lvalues-flag fails-gracefully
     (vl-parse-lvalue
-     (implies (mv-nth 0 (vl-parse-lvalue))
-              (not (mv-nth 1 (vl-parse-lvalue)))))
+     (and (implies (mv-nth 0 (vl-parse-lvalue))
+                   (not (mv-nth 1 (vl-parse-lvalue))))
+          (iff (vl-warning-p (mv-nth 0 (vl-parse-lvalue)))
+               (mv-nth 0 (vl-parse-lvalue)))))
     (vl-parse-1+-lvalues-separated-by-commas
-     (implies (mv-nth 0 (vl-parse-1+-lvalues-separated-by-commas))
-              (not (mv-nth 1 (vl-parse-1+-lvalues-separated-by-commas)))))
+     (and (implies (mv-nth 0 (vl-parse-1+-lvalues-separated-by-commas))
+                   (not (mv-nth 1 (vl-parse-1+-lvalues-separated-by-commas))))
+          (iff (vl-warning-p (mv-nth 0 (vl-parse-1+-lvalues-separated-by-commas)))
+               (mv-nth 0 (vl-parse-1+-lvalues-separated-by-commas)))))
     :hints(("Goal" :do-not '(generalize fertilize))
            (and acl2::stable-under-simplificationp
                 (flag::expand-calls-computed-hint

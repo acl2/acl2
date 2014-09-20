@@ -29,6 +29,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
+(include-book "scopestack")
 (include-book "find-item")
 (include-book "expr-tools")
 (local (include-book "../util/arithmetic"))
@@ -309,6 +310,52 @@ handle both cases.</p>"
 ;; extend this code to deal with other kinds of variables, but for now, e.g.,
 ;; we don't want any confusion w.r.t. the range of integers, reals, etc.
 
+(define vl-ss-find-range ((name   stringp) (ss vl-scopestack-p))
+  :returns (mv successp
+               (maybe-range vl-maybe-range-p))
+  :enabled t
+  (b* ((find (vl-scopestack-find-item name ss))
+       ((unless (and find
+                     (eq (tag find) :vl-vardecl)
+                     (vl-simplevar-p find)))
+        (mv nil nil)))
+    (mv t (vl-simplevar->range find)))
+  ///
+  (more-returns
+   (maybe-range (iff (vl-range-p maybe-range) maybe-range)
+                :name vl-range-p-of-vl-ss-find-range)))
+
+(define vl-range-size ((x vl-range-p))
+  :guard (vl-range-resolved-p x)
+  :returns (size posp :rule-classes :type-prescription)
+  :short "The size of a range is one more than the difference between its msb
+and lsb.  For example [3:0] has size 4."
+  :long "<p>Notice that this definition still works in the case of [1:1] and so
+on.</p>"
+  (b* (((vl-range x) x)
+       (left  (vl-resolved->val x.msb))
+       (right (vl-resolved->val x.lsb)))
+    (+ 1 (abs (- left right)))))
+
+(define vl-maybe-range-size ((x vl-maybe-range-p))
+  :guard (vl-maybe-range-resolved-p x)
+  :returns (size posp :rule-classes :type-prescription)
+  :short "Usual way to compute the width of a net/reg, given its range."
+  :long "<p>If @('x') is the range of a net declaration or register
+declaration, this function returns its width.  That is, if there is a range
+then the width of this wire or register is the size of the range.  And
+otherwise, it is a single-bit wide.</p>"
+  (if (not x)
+      1
+    (vl-range-size x)))
+
+
+
+;; BOZO horrible hack.  For now, we'll make find-net/reg-range only succeed for
+;; simple regs, not for other kinds of variables.  Eventually we will want to
+;; extend this code to deal with other kinds of variables, but for now, e.g.,
+;; we don't want any confusion w.r.t. the range of integers, reals, etc.
+
 (define vl-slow-find-net/reg-range ((name stringp)
                                     (mod vl-module-p))
   :short "Look up the range for a wire or variable declaration."
@@ -343,28 +390,3 @@ handle both cases.</p>"
                           (vl-simplevar-p find)))
              (mv nil nil)))
          (mv t (vl-simplevar->range find)))))
-
-(define vl-range-size ((x vl-range-p))
-  :guard (vl-range-resolved-p x)
-  :returns (size posp :rule-classes :type-prescription)
-  :short "The size of a range is one more than the difference between its msb
-and lsb.  For example [3:0] has size 4."
-  :long "<p>Notice that this definition still works in the case of [1:1] and so
-on.</p>"
-  (b* (((vl-range x) x)
-       (left  (vl-resolved->val x.msb))
-       (right (vl-resolved->val x.lsb)))
-    (+ 1 (abs (- left right)))))
-
-(define vl-maybe-range-size ((x vl-maybe-range-p))
-  :guard (vl-maybe-range-resolved-p x)
-  :returns (size posp :rule-classes :type-prescription)
-  :short "Usual way to compute the width of a net/reg, given its range."
-  :long "<p>If @('x') is the range of a net declaration or register
-declaration, this function returns its width.  That is, if there is a range
-then the width of this wire or register is the size of the range.  And
-otherwise, it is a single-bit wide.</p>"
-  (if (not x)
-      1
-    (vl-range-size x)))
-

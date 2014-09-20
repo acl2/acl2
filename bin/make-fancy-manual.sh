@@ -20,7 +20,7 @@
 # it is executed in destdirmain with destdirsub as the argument.
 
 if [ $# -lt 1 ] ; then
-    books=/projects/acl2/devel/books
+    books=/projects/acl2/acl2/books
 else
     books=$1
 fi
@@ -87,3 +87,8 @@ if [ -x update.sh ] ; then \
     echo "Running ./update.sh $destdirsub in directory $destdirmain"
     ./update.sh $destdirsub
 fi
+
+# Create HTML files (instructions from David Rager)
+cd $destdir/manual
+chmod u+x ./xdata2html.pl
+./xdata2html.pl

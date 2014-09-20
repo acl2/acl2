@@ -1554,6 +1554,13 @@ which is saved just in case it's needed later.")
 (defun modify-acl2-readtable (do-all-changes)
   (let ((*readtable* *acl2-readtable*))
 
+; Jared's new fancy string reader
+
+    (set-new-dispatch-macro-character
+     #\#
+     #\{
+     'fancy-string-reader-macro)
+
 ; Thanks to Jared Davis for contributing the code for #\Y and #\Z (see
 ; serialize-raw.lisp).  Note that p. 531 of CLtL2 specifies that #\Y and #\Z
 ; may be available to us (though we check this by using

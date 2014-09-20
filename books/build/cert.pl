@@ -61,6 +61,8 @@ my %reqparams = ("hons-only" => "HONS_ONLY",
 		 "uses-acl2r" => "USES_ACL2R",
 		 "non-acl2r" => "NON_ACL2R",
 		 "ccl-only" => "CCL_ONLY",
+		 'non-lispworks' => "NON_LISPWORKS",
+		 'non-allegro'   => "NON_ALLEGRO"
     );
 
 # use lib "/usr/lib64/perl5/5.8.8/x86_64-linux-thread-multi/Devel";
@@ -845,13 +847,15 @@ unless ($no_makefile) {
     }
 
     # Write dependencies for pcert mode.
-    print $mf "ifneq (\$(ACL2_PCERT),)\n\n";
+    # print $mf "ifneq (\$(ACL2_PCERT),)\n\n";
 
     foreach my $cert (@certs) {
 	my $useacl2x = cert_get_param($cert, $depdb, "acl2x") || 0;
 	# BOZO acl2x implies no pcert
 	my $pcert_ok = (! $useacl2x && cert_get_param($cert, $depdb, "pcert")) || 0;
-
+	if (! $pcert_ok) {
+	    next;
+	}
 	my $deps = cert_deps($cert, $depdb);
 	my $srcdeps = cert_srcdeps($cert, $depdb);
 	my $otherdeps = cert_otherdeps($cert, $depdb);
@@ -895,10 +899,14 @@ unless ($no_makefile) {
 	    print $mf "$encbase.pcert1 : $encbase.acl2x\n";
 	}
 	print $mf make_encode($cert) . " : $encbase.pcert1\n";
+	print $mf ".INTERMEDIATE: $encbase.pcert1\n";
+	print $mf ".PRECIOUS: $encbase.pcert1\n";
+	print $mf ".SECONDARY: $encbase.pcert0\n";
+	print $mf ".PRECIOUS: $encbase.pcert0\n";
 	print $mf "\n";
     }
 
-    print $mf "\nendif\n\n";
+    # print $mf "\nendif\n\n";
 
 
     foreach my $incl (@include_afters) {

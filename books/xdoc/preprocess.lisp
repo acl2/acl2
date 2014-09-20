@@ -1197,6 +1197,30 @@ baz
                        (preprocess-aux x (+ end 2) xl context topics-fal base-pkg kpa state acc)))
 
                     ((when (and (< (+ n 2) xl)
+                                (or (eql (char x (+ n 2)) #\[)
+                                    (eql (char x (+ n 2)) #\$))))
+                     ;; @([...]) directive -- turns into <math> block
+                     ;; @($...$) directive -- turns into a <mathfrag> block
+                     (b* ((fragp (eql (char x (+ n 2)) #\$))
+                          (end (str::strpos-fast (if fragp "$)" "])")
+                                                 x (+ n 3)
+                                                 2 ;; length of string we're looking for
+                                                 xl))
+                          ((unless end)
+                           (prog2$ (and (xdoc-verbose-p)
+                                        (if fragp
+                                            (cw "; xdoc error in ~x0: no closing $) found for @($ ...~%" context)
+                                          (cw "; xdoc error in ~x0: no closing ]) found for @([ ...~%" context)))
+                                   (mv acc state)))
+                          (sub (subseq x (+ n 3) end))
+                          (acc (str::revappend-chars (if fragp "<mathfrag>" "<math>") acc))
+                          ;; Unlike @('...') we don't want to try to automatically insert hyperlinks, as
+                          ;; that would very likely totally screw up katex.
+                          (acc (simple-html-encode-str sub 0 (length sub) acc))
+                          (acc (str::revappend-chars (if fragp "</mathfrag>" "</math>") acc)))
+                       (preprocess-aux x (+ end 2) xl context topics-fal base-pkg kpa state acc)))
+
+                    ((when (and (< (+ n 2) xl)
                                 (eql (char x (+ n 2)) #\`)))
                      ;; @(`...`) directive -- Lisp evaluation of the form.
                      (b* ((end (str::strpos-fast "`)" x (+ n 2) 2 xl))

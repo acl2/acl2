@@ -29,7 +29,6 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "context")
 (include-book "writer")
 (local (include-book "../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))

@@ -568,8 +568,7 @@ out some duplication and indirection:</p>
                          (t
                           nil))))
            (if search
-               (vl-parse-error "Block item declarations are not allowed to have ~
-                               initial values.")
+               (vl-parse-error "Block item declarations are not allowed to have initial values.")
              (mv nil elements tokstream))))))
 
 ; SystemVerilog-2012 version:

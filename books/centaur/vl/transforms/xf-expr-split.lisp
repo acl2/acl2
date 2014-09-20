@@ -31,7 +31,6 @@
 (in-package "VL")
 (include-book "../mlib/expr-slice")
 (include-book "../mlib/range-tools")
-(include-book "../mlib/context")
 (include-book "../mlib/delta")
 (local (include-book "../util/arithmetic"))
 

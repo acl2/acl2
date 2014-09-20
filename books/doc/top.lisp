@@ -29,7 +29,6 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
-(set-inhibit-warnings "ttags")
 
 (make-event
 
@@ -200,6 +199,8 @@
 (include-book "rtl/rel9/lib/mult" :dir :system)
 
 (include-book "centaur/fty/deftypes" :dir :system)
+
+(include-book "misc/simp" :dir :system)
 
 #||
 

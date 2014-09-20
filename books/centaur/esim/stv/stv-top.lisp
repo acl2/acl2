@@ -79,6 +79,7 @@ memoization issues.</li>
 understand more about how we process STVs, you can see @(see
 stv-implementation-details).</p>")
 
+(defpointer stv symbolic-test-vector)
 
 (defxdoc symbolic-test-vector-format
   :parents (symbolic-test-vectors)

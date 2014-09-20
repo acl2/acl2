@@ -31,7 +31,6 @@
 (in-package "VL")
 (include-book "conditions")
 (include-book "../../mlib/stmt-tools")
-(include-book "../../mlib/context")
 (local (include-book "../../util/arithmetic"))
 
 (defxdoc ifmerge

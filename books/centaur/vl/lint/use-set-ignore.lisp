@@ -166,8 +166,7 @@ therefore also somewhat unreliable!</p>"
 ; Ugh, this thing has just grown to require everything...
   ((x        stringp)
    (loc      vl-location-p)
-   (mod      vl-module-p)
-   (ialist   (equal ialist (vl-moditem-alist mod)))
+   (ss       vl-scopestack-p)
    (walist   vl-wirealist-p)
    (warnings vl-warninglist-p))
   :returns
@@ -235,7 +234,7 @@ therefore also somewhat unreliable!</p>"
        ;; sizes.  There's no context, and these should just be simple identifiers,
        ;; so just use exprlist-size.
        ((mv ?okp size-warnings exprs)
-        (vl-exprlist-size exprs mod ialist *fake-modelement* nil))
+        (vl-exprlist-size exprs ss *fake-modelement* nil))
        (size-warnings (vl-warninglist-change-types :use-set-syntax-error size-warnings))
        (size-warnings (vl-prefix-warnings
                        (cat "Error sizing wires for use_set_ignore directive at " locstr ".  ")
@@ -261,14 +260,13 @@ therefore also somewhat unreliable!</p>"
    (defthm us-analyze-comment-grows-warnings
      ;; Since the warning handling above is subtle, I want to prove this
      ;; to make sure I didn't drop warnings.
-     (let ((ret (us-analyze-comment x loc mod ialist walist warnings)))
+     (let ((ret (us-analyze-comment x loc ss walist warnings)))
        (subsetp-equal (vl-warninglist-fix warnings)
                       (mv-nth 0 ret))))))
 
 (define us-analyze-commentmap
   ((x        vl-commentmap-p)
-   (mod      vl-module-p)
-   (ialist   (equal ialist (vl-moditem-alist mod)))
+   (ss       vl-scopestack-p)
    (walist   vl-wirealist-p)
    (warnings vl-warninglist-p))
   :returns
@@ -278,9 +276,9 @@ therefore also somewhat unreliable!</p>"
         (mv (ok) nil))
        ((cons loc str) (car x))
        ((mv warnings ignore-bits1)
-        (us-analyze-comment str loc mod ialist walist warnings))
+        (us-analyze-comment str loc ss walist warnings))
        ((mv warnings ignore-bits2)
-        (us-analyze-commentmap (cdr x) mod ialist walist warnings)))
+        (us-analyze-commentmap (cdr x) ss walist warnings)))
     (mv warnings (append ignore-bits1 ignore-bits2)))
   ///
   (defmvtypes us-analyze-commentmap (nil true-listp)))

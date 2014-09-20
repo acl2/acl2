@@ -261,32 +261,15 @@ interface_ansi_header ::=
        (id := (vl-match-token :vl-idtoken))
        (return (make-vl-endinfo :name (vl-idtoken->name id)
                                 :loc (vl-token->loc id)))))
-  
 
-(define vl-make-interface-with-parse-error ((name stringp)
+
+(define vl-make-interface-with-parse-error ((name   stringp)
                                             (minloc vl-location-p)
                                             (maxloc vl-location-p)
-                                            (err)
+                                            (err    vl-warning-p)
                                             (tokens vl-tokenlist-p))
   :returns (res vl-interface-p)
-  (b* (;; We expect that ERR should be an object suitable for cw-obj, i.e.,
-       ;; each should be a cons of a string onto some arguments.  But if this
-       ;; is not the case, we handle it here by just making a generic error.
-       ((mv msg args)
-        (if (and (consp err)
-                 (stringp (car err)))
-            (mv (car err) (list-fix (cdr err)))
-          (mv "Generic error message for interfaces with parse errors. ~% ~
-               Details: ~x0.~%" (list err))))
-
-       (warn1 (make-vl-warning :type :vl-parse-error
-                               :msg msg
-                               :args args
-                               :fatalp t
-                               :fn 'vl-make-interface-with-parse-error))
-
-       ;; We also generate a second error message to show the remaining part of
-       ;; the token stream in each case:
+  (b* (;; Like vl-make-module-with-parse-error.
        (warn2 (make-vl-warning :type :vl-parse-error
                                :msg "[[ Remaining ]]: ~s0 ~s1.~%"
                                :args (list (vl-tokenlist->string-with-spaces
@@ -294,13 +277,13 @@ interface_ansi_header ::=
                                                   (redundant-list-fix tokens)))
                                            (if (> (len tokens) 4) "..." ""))
                                :fatalp t
-                               :fn 'vl-make-interface-with-parse-error)))
+                               :fn __function__)))
 
     (make-vl-interface :name name
                        :origname name
                        :minloc minloc
                        :maxloc maxloc
-                       :warnings (list warn1 warn2))))
+                       :warnings (list err warn2))))
 
 
 

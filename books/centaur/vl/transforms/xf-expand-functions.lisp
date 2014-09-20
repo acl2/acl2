@@ -32,7 +32,6 @@
 (include-book "always/stmtrewrite") ;; bozo
 (include-book "../mlib/range-tools")
 (include-book "../mlib/subst")
-(include-book "../mlib/context")
 (include-book "../mlib/allexprs")
 (include-book "../mlib/namefactory")
 (include-book "../util/toposort")
@@ -504,7 +503,7 @@ better come after the parameter is introduced.</p>"
   :short "Ensure that a function's parameters do not shadow other things in the
 module."
   ((x        vl-paramdecllist-p "Parameter declarations for the function.")
-   (mod      vl-module-p        "Module the function occurs in.")
+   (scope    vl-scope-p         "Scope in which the function occurs.")
    (warnings vl-warninglist-p   "Ordinary @(see warnings) accumulator.")
    (function vl-fundecl-p       "Context for error messages."))
   :returns
@@ -522,9 +521,9 @@ vl-moditem-alist).</p>"
   (b* (((when (atom x))
         (mv t (ok)))
        (name1 (vl-paramdecl->name (car x)))
-       (item1 (vl-find-moduleitem name1 mod))
+       (item1 (vl-scope-find-item-fast name1 scope))
        ((unless item1)
-        (vl-check-fun-params-no-overlap (cdr x) mod warnings function)))
+        (vl-check-fun-params-no-overlap (cdr x) scope warnings function)))
     (mv nil
         (fatal :type :vl-bad-function-parameter
                :msg "In ~a0, parameter ~s1 has the same name as ~a2; we don't ~
@@ -596,7 +595,7 @@ some special handling.</p>"
   :short "Eliminate parameters from a function."
   ((x        vl-fundecl-p     "A function that may have parameters.")
    (warnings vl-warninglist-p "Ordinary @(see warnings) accumulator.")
-   (mod      vl-module-p      "Module where @('x') resides."))
+   (scope    vl-scope-p       "Scope where @('x') resides."))
   :returns (mv (successp booleanp :rule-classes :type-prescription)
                (warnings vl-warninglist-p)
                (new-x vl-fundecl-p))
@@ -639,7 +638,7 @@ okay (since eliminating parameters changes the function's namespace).</p>"
 
        ;; Make sure these params don't overlap with other module items in a
        ;; tricky way.
-       ((mv okp warnings) (vl-check-fun-params-no-overlap paramdecls mod warnings x))
+       ((mv okp warnings) (vl-check-fun-params-no-overlap paramdecls scope warnings x))
        ((unless okp) (mv nil warnings x))
 
        ;; Make sure these params are only used after they are defined.  This
@@ -671,7 +670,7 @@ okay (since eliminating parameters changes the function's namespace).</p>"
   :short "Eliminate parameters from a list of functions."
   ((x        vl-fundecllist-p)
    (warnings vl-warninglist-p)
-   (mod      vl-module-p))
+   (scope    vl-scope-p))
   :returns (mv (okp      booleanp :rule-classes :type-prescription)
                (warnings vl-warninglist-p)
                (new-x    vl-fundecllist-p))
@@ -679,9 +678,9 @@ okay (since eliminating parameters changes the function's namespace).</p>"
   (b* (((when (atom x))
         (mv t (ok) nil))
        ((mv car-successp warnings car-prime)
-        (vl-fundecl-expand-params (car x) warnings mod))
+        (vl-fundecl-expand-params (car x) warnings scope))
        ((mv cdr-successp warnings cdr-prime)
-        (vl-fundecllist-expand-params (cdr x) warnings mod)))
+        (vl-fundecllist-expand-params (cdr x) warnings scope)))
     (mv (and car-successp cdr-successp)
         warnings
         (cons car-prime cdr-prime))))
@@ -983,6 +982,15 @@ criteria.</li>
 
 <p>We also take this opportunity to issue non-fatal warnings about unused
 variables and inputs.</p>"
+
+  :prepwork ((local (in-theory (disable not
+                                        union
+                                        subset
+                                        difference
+                                        mergesort
+                                        intersect
+                                        subsetp-equal-when-first-two-same-yada-yada
+                                        set::subset-difference))))
 
   (b* (((mv vardecls ?paramdecls)
         (vl-filter-blockitems (vl-fundecl->decls function)))
@@ -1738,7 +1746,11 @@ which is free of function calls on success.</p>"
                  (nf       vl-namefactory-p)
                  (new-x    vl-expr-p)
                  (vardecls vl-vardecllist-p)
-                 (assigns  vl-assignlist-p))
+                 (assigns  vl-assignlist-p
+                           :hints ('(:in-theory (disable (:d vl-expr-expand-function-calls)
+                                                         (:d vl-exprlist-expand-function-calls))
+                                     :expand ((vl-expr-expand-function-calls
+                                               x templates nf vardecls assigns warnings ctx))))))
     :measure (vl-expr-count x)
     :verify-guards nil
     :flag :expr
@@ -1843,7 +1855,11 @@ which is free of function calls on success.</p>"
                  (new-x    (and (vl-exprlist-p new-x)
                                 (equal (len new-x) (len x))))
                  (vardecls vl-vardecllist-p)
-                 (assigns  vl-assignlist-p))
+                 (assigns  vl-assignlist-p
+                           :hints ('(:in-theory (disable (:d vl-expr-expand-function-calls)
+                                                         (:d vl-exprlist-expand-function-calls))
+                                     :expand ((vl-exprlist-expand-function-calls
+                                               x templates nf vardecls assigns warnings ctx))))))
     :measure (vl-exprlist-count x)
     :flag :list
     (b* ((nf       (vl-namefactory-fix nf))
@@ -2083,7 +2099,11 @@ which is free of function calls on success.</p>"
                  (nf       vl-namefactory-p)
                  (new-x    vl-stmt-p)
                  (vardecls vl-vardecllist-p)
-                 (assigns  vl-assignlist-p))
+                 (assigns  vl-assignlist-p
+                           :hints ('(:in-theory (disable (:d vl-stmt-expand-function-calls)
+                                                         (:d vl-stmtlist-expand-function-calls))
+                                     :expand ((vl-stmt-expand-function-calls
+                                               x templates nf vardecls assigns warnings ctx))))))
     :verify-guards nil
     :measure (vl-stmt-count x)
     :flag :stmt
@@ -2194,7 +2214,11 @@ which is free of function calls on success.</p>"
                  (new-x    (and (equal (len new-x) (len x))
                                 (vl-stmtlist-p new-x)))
                  (vardecls vl-vardecllist-p)
-                 (assigns  vl-assignlist-p))
+                 (assigns  vl-assignlist-p
+                           :hints ('(:in-theory (disable (:d vl-stmt-expand-function-calls)
+                                                         (:d vl-stmtlist-expand-function-calls))
+                                     :expand ((vl-stmtlist-expand-function-calls
+                                               x templates nf vardecls assigns warnings ctx))))))
     :measure (vl-stmtlist-count x)
     :flag :list
     (b* ((nf       (vl-namefactory-fix nf))
@@ -2459,7 +2483,6 @@ doublebuf_template.</p>"
                            VL-PORTDECLLIST-P-WHEN-SUBSETP-EQUAL
                            TRUE-LISTP-WHEN-VL-ATTS-P
                            VL-ATTS-P-WHEN-NOT-CONSP
-                           CONSP-WHEN-MEMBER-EQUAL-OF-VL-MODITEM-ALIST-P
                            CONSP-WHEN-MEMBER-EQUAL-OF-CONS-LISTP
                            (:ruleset tag-reasoning))))
 

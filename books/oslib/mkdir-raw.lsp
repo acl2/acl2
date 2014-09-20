@@ -1,5 +1,5 @@
 ; OSLIB -- Operating System Utilities
-; Copyright (C) 2013 Centaur Technology
+; Copyright (C) 2013-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -29,7 +29,6 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "OSLIB")
-(ql:quickload "cl-fad")
 
 (defun mkdir-fn (dir state)
 
@@ -42,7 +41,7 @@
         (mv nil state)))
 
     (handler-case
-     (progn (ensure-directories-exist (cl-fad::pathname-as-directory (pathname dir)))
+     (progn (ensure-directories-exist (cl-fad:pathname-as-directory (pathname dir)))
             (mv t state))
      (error (condition)
             (progn

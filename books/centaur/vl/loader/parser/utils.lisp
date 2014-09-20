@@ -477,6 +477,15 @@ frequently.</p>")
                     :hints(,@(if hint-chicken-switch
                                  '(("Goal" :in-theory (disable (force))))
                                `((expand-and-maybe-induct-hint
+                                  '(,fn-name . ,fn-formals) :disable '((force)))))))
+                  (defthm ,(intern-in-package-of-symbol
+                            (cat "VL-WARNING-P-OF-" (symbol-name name))
+                            name)
+                    (iff (vl-warning-p (mv-nth 0 (,name . ,formals)))
+                         (mv-nth 0 (,name . ,formals)))
+                    :hints(,@(if hint-chicken-switch
+                                 '(("Goal" :in-theory (disable (force))))
+                               `((expand-and-maybe-induct-hint
                                   '(,fn-name . ,fn-formals) :disable '((force)))))))))
                (t
                 (er hard? 'defparser "Bad :fails: ~s0." fails)))
@@ -742,23 +751,29 @@ frequently.</p>")
 execution) that includes the current location."
   ((description stringp "Short description of what went wrong.")
    &key
-   ((function symbolp)         '__function__)
+   ((function symbolp) '__function__)
    (tokstream 'tokstream))
   :returns
-  (mv (errmsg   "An error message suitable for @(see vl-cw-obj)." (iff errmsg t))
+  (mv (errmsg   vl-warning-p)
       (value    "Always just @('nil')." (equal value nil))
       (new-tokstream (equal new-tokstream tokstream)))
   (b* ((tokens (vl-tokstream->tokens)))
-    (mv (if (consp tokens)
-            (list (cat "Parse error in ~s0 (at ~l1): " description)
-                  function (vl-token->loc (car tokens)))
-          (list (cat "Parser error in ~s0 (at EOF): " description)
-                function))
-        nil tokstream)))
+    (mv (make-vl-warning :type :vl-parse-error
+                         :msg "Parse error at ~a0: ~s1"
+                         :args (list (if (consp tokens)
+                                         (vl-token->loc (car tokens))
+                                       "EOF")
+                                     description)
+                         :fn function
+                         :fatalp t)
+        nil tokstream))
+  ///
+  (more-returns (errmsg (iff errmsg t)
+                        :name vl-parse-error-0-under-iff)))
 
 (define vl-parse-warning
-  :short "Compatible with @(see seq).  Produce a warning (not an error,
-doesn't stop execution) that includes the current location."
+  :short "Compatible with @(see seq).  Produce a non-fatal warning (not an
+error, doesn't stop execution) that includes the current location."
   ((type        symbolp "Type for this @(see pstate).")
    (description stringp "Short message about what happened.")
    &key
@@ -766,22 +781,17 @@ doesn't stop execution) that includes the current location."
    (tokstream 'tokstream))
   :returns
   (mv (errmsg (not errmsg) "Never produces an error.")
-      (value  (not value) "Value is always @('nil').")
+      (value  (not value)  "Value is always @('nil').")
       (new-tokstream))
-  (b* ((tokens (vl-tokstream->tokens))
-       (msg (if (atom tokens)
-                (cat "Warning in ~s0 (at EOF): " description)
-              (cat "Warning in ~s0 (at ~l1): " description)))
-       (args (if (atom tokens)
-                 (list function)
-               (list function (vl-token->loc (car tokens)))))
-       (warning
-        (make-vl-warning :type (mbe :logic (and (symbolp type) type)
-                                    :exec type)
-                         :msg msg
-                         :args args
-                         :fn (mbe :logic (and (symbolp function) function)
-                                  :exec function)))
+  (b* ((tokens  (vl-tokstream->tokens))
+       (warning (make-vl-warning :type type
+                                 :msg "At ~a0: ~s1"
+                                 :args (list (if (consp tokens)
+                                                 (vl-token->loc (car tokens))
+                                               "EOF")
+                                             description)
+                                 :fn function
+                                 :fatalp nil))
        (tokstream (vl-tokstream-add-warning warning)))
     (mv nil nil tokstream))
   ///
@@ -794,13 +804,6 @@ doesn't stop execution) that includes the current location."
 (defmacro vl-unimplemented ()
   `(vl-parse-error "Unimplemented Verilog production."))
 
-
-(defthm len-of-cdr-strong
-  (implies (consp x)
-           (< (len (cdr x))
-              (len x)))
-  :rule-classes ((:rewrite) (:linear)))
-
 (define vl-match-token
   :short "Compatible with @(see seq).  Consume and return a token of exactly
 some particular type, or cause an error if the desired kind of token is not at
@@ -809,9 +812,9 @@ the start of the input stream."
    &key
    ((function symbolp) '__function__)
    (tokstream 'tokstream))
-
   :returns
-  (mv (errmsg?   (iff errmsg? (not (vl-is-token? type))))
+  (mv (errmsg?   (and (iff errmsg? (not (vl-is-token? type)))
+                      (iff (vl-warning-p errmsg?) errmsg?)))
       (token     vl-token-p :hyp (vl-is-token? type))
       (new-tokstream))
 
@@ -821,8 +824,13 @@ the start of the input stream."
        (token1 (car tokens))
        ((unless (eq type (vl-token->type token1)))
         ;; We want a custom error message, so we don't use vl-parse-error-fn.
-        (mv (list "Parse error in ~s0 (at ~l1): expected ~s2, but found ~s3."
-                  function (vl-token->loc token1) type (vl-token->type token1))
+        (mv (make-vl-warning :type :vl-parse-error
+                             :msg "Parse error at ~a0: expected ~s1 but found ~s2."
+                             :args (list (vl-token->loc (car tokens))
+                                         type
+                                         (vl-token->type token1))
+                             :fatalp t
+                             :fn function)
             nil tokstream))
        (tokstream (vl-tokstream-update-tokens (cdr tokens))))
     (mv nil token1 tokstream))
@@ -878,7 +886,8 @@ acceptable types."
    ((function symbolp) '__function__)
    (tokstream 'tokstream))
   :returns
-  (mv (errmsg?   (iff errmsg? (not (vl-is-some-token? types))))
+  (mv (errmsg?   (and (iff errmsg? (not (vl-is-some-token? types)))
+                      (iff (vl-warning-p errmsg?) errmsg?)))
       (token     vl-token-p :hyp (vl-is-some-token? types))
       (new-tokstream))
 
@@ -887,8 +896,13 @@ acceptable types."
         (vl-parse-error "Unexpected EOF." :function function))
        (token1 (car tokens))
        ((unless (member-eq (vl-token->type token1) types))
-        (mv (list "Parse error in ~s0 (at ~l1): expected one of ~x2, but found ~s3."
-                  function (vl-token->loc token1) types (vl-token->type token1))
+        (mv (make-vl-warning :type :vl-parse-error
+                             :msg  "Parse error at ~a0: expected one of ~x1, but found ~s2."
+                             :args (list (vl-token->loc token1)
+                                         types
+                                         (vl-token->type token1))
+                             :fatalp t
+                             :fn function)
             nil tokstream))
        (tokstream (vl-tokstream-update-tokens (cdr tokens))))
     (mv nil token1 tokstream))
@@ -1194,6 +1208,10 @@ kind of token it is.  Causes an error on EOF."
              (equal (mv-nth 1 (vl-match-any))
                     nil)))
 
+  (defthm vl-warning-p-of-vl-match-any
+    (iff (vl-warning-p (mv-nth 0 (vl-match-any)))
+         (mv-nth 0 (vl-match-any))))
+
   (defthm vl-token-p-of-vl-match-any
     (implies (not (mv-nth 0 (vl-match-any)))
              (vl-token-p (mv-nth 1 (vl-match-any)))))
@@ -1221,7 +1239,7 @@ listed types.  Causes an error on EOF."
    ((function symbolp)       '__function__)
    (tokstream 'tokstream))
   :returns
-  (mv (errmsg?)
+  (mv (errmsg? (iff (vl-warning-p errmsg?) errmsg?))
       (token)
       (new-tokstream))
   (b* ((tokens (vl-tokstream->tokens))
@@ -1229,8 +1247,12 @@ listed types.  Causes an error on EOF."
         (vl-parse-error "Unexpected EOF." :function function))
        (token1 (car tokens))
        ((when (member-eq (vl-token->type token1) types))
-        (mv (list "Parse error in ~s0 (at ~l1): unexpected ~s2."
-                  function (vl-token->loc token1) (vl-token->type token1))
+        (mv (make-vl-warning :type :vl-parse-error
+                             :msg "Parse error at ~a0: unexpected ~s1."
+                             :args (list (vl-token->loc token1)
+                                         (vl-token->type token1))
+                             :fn function
+                             :fatalp t)
             nil tokstream))
        (tokstream (vl-tokstream-update-tokens (cdr tokens))))
     (mv nil token1 tokstream))
@@ -1325,5 +1347,11 @@ parser when we encounter such an ending.</p>"
        (when (equal name (vl-idtoken->name endname))
          (return name))
        (return-raw
-        (vl-parse-error
-         (cat "Mismatched " blktype " names: " name (vl-idtoken->name endname))))))
+        (mv (make-vl-warning :type :vl-parse-error
+                             :msg "At ~a0: mismatched ~s1 names: ~s2 vs. ~s3."
+                             :args (list (vl-token->loc endname)
+                                         blktype
+                                         name
+                                         (vl-idtoken->name endname)))
+            nil
+            tokstream))))

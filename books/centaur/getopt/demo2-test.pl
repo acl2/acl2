@@ -15,9 +15,25 @@ sub test
     my $out = `./demo2 $args`;
     my $code = $? >> 8;
 
+    # We originally required that $out was equal to $expected_out.  However,
+    # some Lisps print banners that we can't suppress.  So, I gave up on that
+    # and now just require that the end of the output is as expected.
+    chomp($expected_out);
     chomp($out);
-    if ($out ne $expected_out) {
+
+    my $expected_len = length($expected_out);
+    my $actual_len   = length($out);
+    # print "expected_length = $expected_len  and  actual_length = $actual_len\n";
+
+    if ($expected_len > $actual_len) {
         print "Fail: expected $expected_out but got $out\n";
+	exit(1);
+    }
+
+    my $actual_tail = substr($out, $actual_len - $expected_len);
+
+    if ($actual_tail ne $expected_out) {
+        print "Fail: expected:------------\n$expected_out\n---------but got-----\n$out\n---------\n";
 	exit(1);
     }
 
@@ -35,6 +51,7 @@ demo2: how to write a command line program in ACL2
     -v,--version          Print out a version message and exit with
                           status 0.
     -f,--fail             Print nothing and exit with status 1.
+
 END
 
 my $VERSION = "demo2: version 1.234";

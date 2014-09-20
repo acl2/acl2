@@ -4,4 +4,5 @@ demo2-test.ok
 # for additional platforms.
 demo2.ccl
 demo2.lx86cl64
-
+demo2.gcl
+demo2.core

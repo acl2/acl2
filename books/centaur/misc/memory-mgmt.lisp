@@ -39,7 +39,10 @@
 
 (defttag memory-mgmt)
 
-#+hons
+; Matt K.: Restricting to Clozure because, for example, hl-hash-table-bytes is
+; defined in hons-memory-mgmt.lsp but has "ccl::" without a #+Clozure
+; restriction.
+#+(and hons Clozure)
 (include-raw "hons-memory-mgmt.lsp")
 
 #+(and hons Clozure)

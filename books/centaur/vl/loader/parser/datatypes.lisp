@@ -631,6 +631,21 @@ dimensions.</p>
                      acl2::clause
                      ',(flag::get-clique-members 'vl-parse-datatype-fn (w state)))))))))
 
+(defsection warning
+  (with-output
+    :off prove
+    :gag-mode :goals
+    (make-event
+     `(defthm-parse-datatype-flag vl-parse-datatype-warning
+        ,(vl-warning-claim vl-parse-datatype-or-void)
+        ,(vl-warning-claim vl-parse-datatype)
+        ,(vl-warning-claim vl-parse-structmembers)
+        ,(vl-warning-claim vl-parse-structmember)
+        :hints((and acl2::stable-under-simplificationp
+                    (flag::expand-calls-computed-hint
+                     acl2::clause
+                     ',(flag::get-clique-members 'vl-parse-datatype-fn (w state)))))))))
+
 ;; (defsection tokenlist
 ;;   (with-output
 ;;     :off prove

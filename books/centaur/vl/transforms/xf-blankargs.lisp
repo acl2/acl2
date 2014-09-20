@@ -29,7 +29,6 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "../mlib/find-module")
 (include-book "../mlib/namefactory")
 (include-book "../mlib/range-tools")
 (include-book "../mlib/port-tools")
@@ -138,8 +137,7 @@ has been run to ensure that no instances have ranges.</p>")
 (define vl-modinst-blankargs
   :short "Apply the @(see blankargs) transform to a module instance."
   ((x        vl-modinst-p)
-   (mods     vl-modulelist-p)
-   (modalist (equal modalist (vl-modalist mods)))
+   (ss       vl-scopestack-p)
    (nf       vl-namefactory-p)
    (warnings vl-warninglist-p))
   :returns
@@ -180,8 +178,8 @@ that takes care of looking up the ports for the module being instanced.</p>"
 
        (plainargs (vl-arguments-plain->args x.portargs))
 
-       (target-mod (vl-fast-find-module x.modname mods modalist))
-       ((unless target-mod)
+       (target-mod (vl-scopestack-find-definition x.modname ss))
+       ((unless (and target-mod (eq (tag target-mod) :vl-module)))
         (mv (fatal :type :vl-bad-instance
                    :msg "~a0 refers to undefined module ~m1."
                    :args (list x x.modname))
@@ -207,8 +205,7 @@ that takes care of looking up the ports for the module being instanced.</p>"
 (define vl-modinstlist-blankargs
   :short "Extends @(see vl-modinst-blankargs) across a @(see vl-modinstlist-p)."
   ((x        vl-modinstlist-p)
-   (mods     vl-modulelist-p)
-   (modalist (equal modalist (vl-modalist mods)))
+   (ss       vl-scopestack-p)
    (nf       vl-namefactory-p)
    (warnings vl-warninglist-p))
   :returns
@@ -219,9 +216,9 @@ that takes care of looking up the ports for the module being instanced.</p>"
   (b* (((when (atom x))
         (mv (ok) nil nil (vl-namefactory-fix nf)))
        ((mv warnings car-prime car-vardecls nf)
-        (vl-modinst-blankargs (car x) mods modalist nf warnings))
+        (vl-modinst-blankargs (car x) ss nf warnings))
        ((mv warnings cdr-prime cdr-vardecls nf)
-        (vl-modinstlist-blankargs (cdr x) mods modalist nf warnings))
+        (vl-modinstlist-blankargs (cdr x) ss nf warnings))
        (x-prime (cons car-prime cdr-prime))
        (vardecls (append car-vardecls cdr-vardecls)))
     (mv warnings x-prime vardecls nf))
@@ -330,8 +327,7 @@ size 1.</p>"
 (define vl-module-blankargs
   :short "Fill in blank arguments throughout a @(see vl-module-p)."
   ((x        vl-module-p)
-   (mods     vl-modulelist-p)
-   (modalist (equal modalist (vl-modalist mods))))
+   (ss       vl-scopestack-p))
   :returns (new-x vl-module-p)
   :long "<p>We rewrite all module instances with @(see vl-modinst-blankargs)
 and all gate instances with @(see vl-gateinst-blankargs).</p>"
@@ -340,11 +336,12 @@ and all gate instances with @(see vl-gateinst-blankargs).</p>"
        ((when (vl-module->hands-offp x))
         x)
        ((vl-module x) x)
+       (ss  (vl-scopestack-push x ss))
        (warnings (vl-module->warnings x))
        (nf       (vl-starting-namefactory x))
 
        ((mv warnings modinsts vardecls1 nf)
-        (vl-modinstlist-blankargs x.modinsts mods modalist nf warnings))
+        (vl-modinstlist-blankargs x.modinsts ss nf warnings))
        ((mv warnings gateinsts vardecls2 nf)
         (vl-gateinstlist-blankargs x.gateinsts nf warnings))
 
@@ -357,21 +354,16 @@ and all gate instances with @(see vl-gateinst-blankargs).</p>"
                       :vardecls all-vardecls
                       :warnings warnings)))
 
-(defprojection vl-modulelist-blankargs-aux ((x        vl-modulelist-p)
-                                            (mods     vl-modulelist-p)
-                                            (modalist (equal modalist (vl-modalist mods))))
+(defprojection vl-modulelist-blankargs ((x        vl-modulelist-p)
+                                        (ss       vl-scopestack-p))
   :returns (new-x vl-modulelist-p)
-  (vl-module-blankargs x mods modalist))
-
-(define vl-modulelist-blankargs ((x vl-modulelist-p))
-  :returns (new-x vl-modulelist-p)
-  (b* ((modalist (vl-modalist x))
-       (x-prime  (vl-modulelist-blankargs-aux x x modalist)))
-    (fast-alist-free modalist)
-    x-prime))
+  (vl-module-blankargs x ss))
 
 (define vl-design-blankargs ((x vl-design-p))
   :short "Top-level @(see blankargs) transformation."
   :returns (new-x vl-design-p)
-  (b* (((vl-design x) x))
-    (change-vl-design x :mods (vl-modulelist-blankargs x.mods))))
+  (b* (((vl-design x) x)
+       (ss (vl-scopestack-init x))
+       (mods (vl-modulelist-blankargs x.mods ss)))
+    (vl-scopestacks-free)
+    (change-vl-design x :mods mods)))

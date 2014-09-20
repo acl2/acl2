@@ -377,6 +377,15 @@ ${info Excluding books that are CCL-only: [$(CERT_PL_CCL_ONLY)]}
 OK_CERTS := $(filter-out $(CERT_PL_CCL_ONLY), $(OK_CERTS))
 endif
 
+ifeq (ALLEGRO, $(ACL2_HOST_LISP))
+${info Excluding non-Allegro books: [$(CERT_PL_NON_ALLEGRO)]}
+OK_CERTS := $(filter-out $(CERT_PL_NON_ALLEGRO), $(OK_CERTS))
+endif
+
+ifeq (LISPWORKS, $(ACL2_HOST_LISP))
+${info Excluding non-Lispworks books: [$(CERT_PL_NON_LISPWORKS)]}
+OK_CERTS := $(filter-out $(CERT_PL_NON_LISPWORKS), $(OK_CERTS))
+endif
 
 ifeq ($(ACL2_HAS_ANSI), )
 
@@ -587,26 +596,23 @@ bdd/benchmarks.lisp: bdd/cbf.cert bdd/create-benchmarks.lsp
 
 # There are several directories that we can't easily work directly
 # into our general framework because they each have a custom Makefile.
-# We handle those next.  For example, two directories test provisional
-# certification: system/pcert, which was constructed explicitly to
-# test provisional certification; and workshops/2011/verbeek-schmaltz,
-# which is slow without provisional certification but is reasonably
-# fast using provisional certification.
+# We handle those next
 
 # Our perhaps gross hack is to use the old ACL2 Makefile-generic
 # system to invoke the custom makefiles, for example as follows for
-# verbeek-schmaltz.
+# workshops/2003/greve-wilding-vanfleet:
 
-#   - we tell cert.pl not to look at verbeek-schmaltz/sources, via a
+#   - we tell cert.pl not to look at greve-wilding-vanfleet/support, via a
 #     cert_pl_exclude file;
-#   - we add a verbeek-schmaltz/deps.lisp file with the prerequisites that
-#     we need before going into the verbeek-schmaltz directory;
-#   - we use an arbitrary top-level target to certify the actual
-#     verbeek-schmaltz books after certifying the deps, which need not
-#     be in any sense "the top-level book" for the directory -- but if
-#     not, then if a book B in any other directory comes to depend on
-#     a book other than the target that we picked, we will need to
-#     make it depend on that target.
+#   - we add a greve-wilding-vanfleet/deps.lisp file with the
+#     prerequisites that we need before going into the support
+#     directory;
+#   - we use an arbitrary top-level target to certify the actual books
+#     after certifying the deps, which need not be in any sense "the
+#     top-level book" for the directory -- but if not, then if a book
+#     B in any other directory comes to depend on a book other than
+#     the target that we picked, we will need to make it depend on
+#     that target.
 
 # In order to create a deps file, we connect to the directory (e.g.,
 # cd clause-processors/SULFA), and then use shell commands:
@@ -637,8 +643,7 @@ ACL2_CUSTOM_TARGETS := \
   workshops/1999/multiplier/proof.cert \
   workshops/2003/greve-wilding-vanfleet/support/firewallworks.cert \
   workshops/2003/kaufmann/support/input/defs-in.cert \
-  workshops/2004/sumners-ray/support/success.txt \
-  workshops/2011/verbeek-schmaltz/sources/correctness2.cert
+  workshops/2004/sumners-ray/support/success.txt
 
 # Warning!  For each target below, if there is a cert_pl_exclude file
 # in the directory or it is exluded explicitly by
@@ -687,17 +692,7 @@ workshops/2003/kaufmann/support/input/defs-in.cert: \
 workshops/2004/sumners-ray/support/success.txt:
 	cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
 
-workshops/2011/verbeek-schmaltz/sources/correctness2.cert: \
-  workshops/2011/verbeek-schmaltz/deps.cert
-	cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
-
 endif # ifeq ($(ACL2_HAS_REALS), )
-
-ACL2_CUSTOM_TARGETS += system/pcert/sub.cert
-
-system/pcert/sub.cert: \
-  system/deps-pcert.cert
-	cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
 
 endif # ifndef ACL2_COMP
 
@@ -1372,7 +1367,7 @@ centaur/getopt/demo2: centaur/getopt/demo2.cert
 	 ACL2_CUSTOMIZATION=NONE $(STARTJOB) -c "$(ACL2) < demo2-save.lsp &> demo2-save.out"
 	@ls -l centaur/getopt/demo2
 
-ifeq ($(filter GCL SBCL, $(ACL2_HOST_LISP)), )
+#ifeq ($(filter GCL, $(ACL2_HOST_LISP)), )
 
 centaur/getopt/demo2-test.ok: centaur/getopt/demo2 \
                               centaur/getopt/demo2-test.pl
@@ -1384,9 +1379,9 @@ centaur/getopt/demo2-test.ok: centaur/getopt/demo2 \
 
 all: centaur/getopt/demo2-test.ok
 
-else
-$(info Excluding centaur/getopt/demo2 test since host lisp is $(ACL2_HOST_LISP))
-endif
+#else
+#$(info Excluding centaur/getopt/demo2 test since host lisp is $(ACL2_HOST_LISP))
+#endif
 
 
 

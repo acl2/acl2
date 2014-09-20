@@ -775,9 +775,37 @@ input."
            (4v-sexpr-equiv (caar al) (cdar al))
            (4v-sexpr-rewritesp (cdr al))))))
 
+
 (defsection *sexpr-rewrites*
   :parents (sexpr-rewriting)
   :short "A useful set of 4v-s-expression rewrite rules, proven correct."
+
+;; If you want to add new rules, this loop (or some suitable modification of
+;; it) may be useful for making sure you've got it right, and showing you the
+;; cases where you've got it wrong:
+
+#||
+ (loop for a in '(t f x z) append
+      (loop for b in '(t f x z) append
+            (loop for c in '(t f x z) collect
+                  (let* ((lhs '(pullup (xdet a)))
+                         (rhs '(xdet a))
+                         (alist (make-fast-alist (list (cons 'a a)
+                                                       (cons 'b b)
+                                                       (cons 'c c))))
+                         (v1 (4v-sexpr-eval lhs alist))
+                         (v2 (4v-sexpr-eval rhs alist)))
+                    (list :a a :b b :c c '--> :lhs v1 :rhs v2
+                          (if (equal v1 v2) :OK :FAIL))))))
+||#
+
+;; But WARNING: you should probably not add rules to this list unless you
+;; understand issues related to structure sharing.  Things that look like good
+;; rewrite rules may not necessary be good if they create new terms that don't
+;; occur on the LHS, because these new terms may defeat structure sharing that
+;; was already originally present.  Best to verify that you're making progress
+;; empirically, e.g., by looking at measures like the (number-subtrees ...) of
+;; the resulting expressions.
 
   (defconst *sexpr-rewrites*
     (let ((rules 
@@ -829,7 +857,26 @@ input."
              ((res (tristate (not a) (t)) (tristate a (f))) . (not a))
              ((res (tristate a (t)) (tristate (not a) (f))) . (buf a))
 
+             ;; [Jared and Sol]: new tristate rules which we haven't thought
+             ;; very hard about yet, but which seem nice
+             ((res (tristate a b) (tristate (not a) b)) . (xor (xdet a) b))
+             ((res (tristate (not a) b) (tristate a b)) . (xor (xdet a) b))
+             ((res (tristate a b) (tristate (not a) (not b))) . (not (xor a b)))
+             ((res (tristate (not a) b) (tristate a (not b))) . (xor a b))
+             ((res (tristate a (not b)) (tristate (not a) b)) . (xor a b))
+             ((res (tristate (not a) (not b)) (tristate a b)) . (not (xor a b)))
 
+             ;; [Jared] actually we originally wrote worse right-hand sides for
+             ;; the tristate rules above, but then realized that since xor and
+             ;; iff depend on both their inputs, xdets of xor/iffs can be
+             ;; really nicely reduced:
+             ((xor (xdet a) (xor a b))    . (xor a b))
+             ((xor (xdet b) (xor a b))    . (xor a b))
+             ((xor (xdet a) (iff a b))    . (not (xor a b)))
+             ((xor (xdet b) (iff a b))    . (not (xor a b)))
+             ((xor (xdet a) (ite a b c))  . (ite* a b c))
+             ((xor (xdet a) (ite* a b c)) . (ite* a b c))
+             ((xor (xdet a) (pullup a))   . (buf a))
 
              ;; NOT: inputs are buffered
              ((not (buf a))         . (not a))
@@ -912,8 +959,6 @@ input."
              ((and (and b (and c a)) a) . (and a (and b c)))
              ((and (and (and c a) b) a) . (and a (and b c)))
 
-
-             
              ;; Buf is the identity on anything except z, and the following
              ;; operations never produce z.
              ((buf (buf a))         . (buf a))
@@ -928,6 +973,13 @@ input."
              ;; ((buf (iff a b))       . (iff a b))
              ((buf (pullup a))      . (pullup a))
 
+             ;; This seems nice:
+             ((buf (xdet a))        . (xdet a))
+
+             ;; BOZO consider a rule like this, but I don't know which way it
+             ;; should go or what the normal form sohuld be here.  Anyway it
+             ;; seems too scary to add without testing.
+             ;; ((not (xdet a)) . (xor a (not a)))
 
              ;; XOR constant propagation
              ((xor (t) b)           . (not b))
@@ -1040,6 +1092,9 @@ input."
              ;; ZIF select is buffered
              ((zif (buf c) a b)     . (zif c a b))
 
+             ;; BOZO maybe add something like this
+             ;;((zif (xdet a) b c)    . (zif (xdet a) (t) c))
+
              ;; ??? Normalize IFF to NOT of XOR.
              ;; If we decide not to do this normalization, maybe move IFF up in the
              ;; order.
@@ -1070,6 +1125,7 @@ input."
              ;; put this back in if we decide not to normalize iff to xor
              ;; ((pullup (iff a b))       . (iff a b))
              ((pullup (pullup a))      . (pullup a))
+             ((pullup (xdet a))        . (xdet a))
 
              ;; ID can always just go away.
              ((id a)                . a)

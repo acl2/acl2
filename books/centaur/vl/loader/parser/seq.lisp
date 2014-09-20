@@ -31,6 +31,7 @@
 (in-package "VL")
 (include-book "xdoc/top" :dir :system)
 (include-book "tools/bstar" :dir :system)
+(include-book "../../util/warnings")
 
 (defsection seq
   ;; BOZO not really a macro library, need somewhere better to put this
@@ -280,7 +281,11 @@
                              (len !!!tokens))))
                   (prog2$ (er hard? "SEQ count failed for (~x0 ~x1.)~%"
                               ',type ',action)
-                          (mv "SEQ count failure." nil ,stream)))
+                          (mv (make-vl-warning :type :vl-seq-fail
+                                               :msg "SEQ count failure."
+                                               :fatalp t)
+                              nil
+                              ,stream)))
                  (t ,body)))))))
 
 ;(seq-process-bind '(:= action) 'stream '<rest>)

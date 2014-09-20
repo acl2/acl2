@@ -30,7 +30,6 @@
 
 (in-package "VL")
 (include-book "../mlib/allexprs")
-(include-book "../mlib/context")
 (include-book "../mlib/modnamespace")
 (include-book "../mlib/stmt-tools")
 (include-book "../mlib/expr-building")
