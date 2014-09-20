@@ -377,6 +377,15 @@ ${info Excluding books that are CCL-only: [$(CERT_PL_CCL_ONLY)]}
 OK_CERTS := $(filter-out $(CERT_PL_CCL_ONLY), $(OK_CERTS))
 endif
 
+ifeq (ALLEGRO, $(ACL2_HOST_LISP))
+${info Excluding non-Allegro books: [$(CERT_PL_NON_ALLEGRO)]}
+OK_CERTS := $(filter-out $(CERT_PL_NON_ALLEGRO), $(OK_CERTS))
+endif
+
+ifeq (LISPWORKS, $(ACL2_HOST_LISP))
+${info Excluding non-Lispworks books: [$(CERT_PL_NON_LISPWORKS)]}
+OK_CERTS := $(filter-out $(CERT_PL_NON_LISPWORKS), $(OK_CERTS))
+endif
 
 ifeq ($(ACL2_HAS_ANSI), )
 

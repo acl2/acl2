@@ -61,6 +61,8 @@ my %reqparams = ("hons-only" => "HONS_ONLY",
 		 "uses-acl2r" => "USES_ACL2R",
 		 "non-acl2r" => "NON_ACL2R",
 		 "ccl-only" => "CCL_ONLY",
+		 'non-lispworks' => "NON_LISPWORKS",
+		 'non-allegro'   => "NON_ALLEGRO"
     );
 
 # use lib "/usr/lib64/perl5/5.8.8/x86_64-linux-thread-multi/Devel";

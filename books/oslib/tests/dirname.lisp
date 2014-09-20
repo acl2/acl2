@@ -31,6 +31,11 @@
 (in-package "OSLIB")
 (include-book "../dirname")
 
+; Matt Kaufmann reports that Allegro and Lispworks fail some of the tests here.
+;
+; cert_param: (non-allegro)
+; cert_param: (non-lispworks)
+
 (defmacro test-dirname (in expect)
   `(make-event
     (b* (((mv ans state) (dirname! ,in)))
