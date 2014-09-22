@@ -114,7 +114,13 @@ and equivalence relation."
 fixing function, and equivalence relation.  It stores this association in a
 table for later use by @(see deffixequiv) and @(see deffixequiv-mutual).</p>
 
-<p>Usage:</p>
+<p>Example usage:</p>
+
+@({
+  (fty::deffixtype nat :fix nfix :pred natp :equiv equal)
+})
+
+<p>General form:</p>
 @({
   (deffixtype widget
               :pred widget-p
