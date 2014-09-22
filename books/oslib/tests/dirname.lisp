@@ -35,6 +35,10 @@
 ;
 ; cert_param: (non-allegro)
 ; cert_param: (non-lispworks)
+;
+; And apparently so does SBCL.
+;
+; cert_param: (non-sbcl)
 
 (defmacro test-dirname (in expect)
   `(make-event
