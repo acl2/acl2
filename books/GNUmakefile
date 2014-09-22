@@ -165,7 +165,8 @@ endif # ifeq ($(ACL2),)
 basic:
 
 # Set environment variable HTTP_PROXY_WITH_PORT if your curl needs to
-# use a proxy.
+# use a proxy.  HTTP_PROXY_WITH_PORT can be, for example,
+# http://proxy.nbc.com:80
 ifneq ($(HTTP_PROXY_WITH_PORT), )
   HTTP_PROXY_FLAG=-x $(HTTP_PROXY_WITH_PORT)
 endif # HTTP_PROXY_WITH_PORT
