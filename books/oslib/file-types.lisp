@@ -33,6 +33,12 @@
 (include-book "centaur/quicklisp/osicat" :dir :system)
 ; (depends-on "file-types-raw.lsp")
 
+; Matt Kaufmann reports that some of the file-types tests fail on Allegro, so
+; disable it for now.  If someone cares about Allegro support, the right way
+; to fix this is probably to create a suitable patch for the OSICAT library.
+;
+; cert_param: (non-allegro)
+
 (defttag :oslib)
 (include-raw "file-types-raw.lsp")
 

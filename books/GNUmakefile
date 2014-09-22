@@ -387,6 +387,11 @@ ${info Excluding non-Lispworks books: [$(CERT_PL_NON_LISPWORKS)]}
 OK_CERTS := $(filter-out $(CERT_PL_NON_LISPWORKS), $(OK_CERTS))
 endif
 
+ifeq (SBCL, $(ACL2_HOST_LISP))
+${info Excluding non-SBCL books: [$(CERT_PL_NON_SBCL)]}
+OK_CERTS := $(filter-out $(CERT_PL_NON_SBCL), $(OK_CERTS))
+endif
+
 ifeq ($(ACL2_HAS_ANSI), )
 
 # We use "{...}" delimeters to avoid errors in version 3.80 of make.
