@@ -339,6 +339,9 @@ readability when the function names involved have their own hyphens.</li>
 <li>For rules about other equivalence relations, we add @('-under-equiv') to the
 name.</li>
 
+<li>For rules that specify the upper limit of function's numerical return
+value, we often add @('-limit').</li>
+
 </ol>
 
 <h5>Examples</h5>
