@@ -69,7 +69,7 @@ documentation for all of the libraries in Quicklisp.</li>
 
 <h3>The ACL2 Quicklisp Book</h3>
 
-<p>To make it easy to use Quicklisp from ACL2, we have wrapper book, which of
+<p>To make it easy to use Quicklisp from ACL2, we have a wrapper book, which of
 course requires a <see topic='@(url defttag)'>trust tag</see>:</p>
 
 @({
@@ -94,6 +94,9 @@ problems with loading Quicklisp libraries during parallel builds.</p>
 libraries they load, and the @('top') book loads all of the libraries that we
 have been currently using.</p>
 
+<h3>Installing Quicklisp Behind a Proxy</h3>
+
+<p>See Section @('Using a Proxy') in @(see books-certification).</p>
 
 <h3>Practical Howto</h3>
 
