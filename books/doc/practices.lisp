@@ -195,7 +195,11 @@ package commands to see if it is indeed the same.</p>
 
 <p>Having a customization file that starts ACL2 up in \"the right package\" is
 often very convenient while developing.  Loading the user's customization file
-first, if one exists, is nice for users who have their own macros.</p>")
+first, if one exists, is nice for users who have their own macros.</p>
+
+<p>It can also be good to pre-load packages like @('std') when your session
+starts.  See @('books/std/std-customization.lsp') for an @(see
+acl2-customization) file that does this.")
 
 
 (defxdoc theory-management

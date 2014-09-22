@@ -44,6 +44,8 @@
 ; custom acl2-customization.lsp files.  Instead we use the #!ACL2 syntax to try
 ; to make sure this file can be read from any package.
 
+; This file is mentioned in books/doc/practices.lisp.
+
 #!ACL2
 (set-deferred-ttag-notes t state)
 
