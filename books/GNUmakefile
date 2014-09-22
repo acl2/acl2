@@ -170,69 +170,6 @@ ifneq ($(HTTP_PROXY_WITH_PORT), )
   HTTP_PROXY_FLAG=-x $(HTTP_PROXY_WITH_PORT)
 endif # HTTP_PROXY_WITH_PORT
 
-QUICKLISP_DIR := centaur/quicklisp
-
-.PHONY: quicklisp
-
-ifeq ($(USE_QUICKLISP), )
-
-quicklisp:
-	$(MAKE) USE_QUICKLISP=1 $(QUICKLISP_DIR)/top.cert
-
-else
-
-$(QUICKLISP_DIR)/quicklisp.lsp:
-	@echo "Downloading Quicklisp"
-	@cd $(QUICKLISP_DIR); \
-	   curl http://beta.quicklisp.org/quicklisp.lisp \
-             -o quicklisp.lsp $(HTTP_PROXY_FLAG)
-	@$(BUILD_DIR)/wait.pl $(QUICKLISP_DIR)/quicklisp.lsp
-	@ls -l $(QUICKLISP_DIR)/quicklisp.lsp
-
-$(QUICKLISP_DIR)/inst/setup.lisp: $(QUICKLISP_DIR)/quicklisp.lsp \
-                                  $(QUICKLISP_DIR)/install.lsp
-	@echo "Setting up Quicklisp..."
-	@cd $(QUICKLISP_DIR); \
-           ($(STARTJOB) -c \
-              "ACL2_CUSTOMIZATION=NONE $(ACL2) < install.lsp &> install.out" ; \
-	    $(BUILD_DIR)/wait.pl inst/setup.lisp ;\
-	    ls -l inst/setup.lisp) \
-	   || (tail -300 install.out | sed 's/^/   | /'; false)
-
-$(QUICKLISP_DIR)/base.cert: $(QUICKLISP_DIR)/inst/setup.lisp
-
-quicklisp: $(QUICKLISP_DIR)/top.cert
-
-# I don't think we need this now
-# all: $(QUICKLISP_DIR)/top.cert
-
-endif # USE_QUICKLISP
-
-# [Jared]: I moved these out of the USE_QUICKLISP section so that "make clean"
-# will always remove the quicklisp files if you have ever built with
-# USE_QUICKLISP before.  The goal is to ensure that stale quicklisp files
-# aren't left around after a "make clean" by accident.
-
-.PHONY: quicklisp_clean
-
-quicklisp_clean:
-	echo "Removing downloaded quicklisp files (if any)" ; \
-	cd $(QUICKLISP_DIR); rm -rf quicklisp.lsp  inst/asdf.lisp inst/cache \
-	    inst/client-info.sexp inst/dists inst/local-projects \
-	    inst/quicklisp inst/setup.lisp inst/tmp install.out Makefile-tmp
-	cd $(QUICKLISP_DIR); $(BUILD_DIR)/clean.pl
-
-# The following hack was useful briefly in late January, 2014, when
-# there were issues with quicklisp that caused us not to want to clean
-# quicklisp files.  Rager likes this hack (because his company-wide
-# ACL2 installation isn't writable by those that use it and he doesn't
-# always want to clean quicklisp since proxies have to be configured
-# and because it's good to preserve the
-# quicklisp/inst/cache/asdf-installs directory), and so he prefers
-# that the "hack" be preserved.
-ifndef ACL2_SAVE_QUICKLISP
-clean: quicklisp_clean
-endif # ifndef ACL2_SAVE_QUICKLISP
 
 # Ensure that the following variable is simply expanded.
 ACL2_CUSTOM_TARGETS :=
@@ -446,6 +383,80 @@ nonstd/workshops/1999/calculus/book/tree/proof-outline: \
 
 
 endif # ifneq ($(ACL2_HAS_REALS), )
+
+
+# Stupid hack to avoid trying to set up Quicklisp on GCL.
+ifeq (GCL, $(ACL2_HOST_LISP))
+ifneq ($(USE_QUICKLISP), )
+$(info Note: Ignoring USE_QUICKLISP=1 since Quicklisp does not work on GCL!)
+USE_QUICKLISP :=
+endif
+endif
+
+
+QUICKLISP_DIR := centaur/quicklisp
+
+.PHONY: quicklisp
+
+ifeq ($(USE_QUICKLISP), )
+
+quicklisp:
+	$(MAKE) USE_QUICKLISP=1 $(QUICKLISP_DIR)/top.cert
+
+else
+
+$(QUICKLISP_DIR)/quicklisp.lsp:
+	@echo "Downloading Quicklisp"
+	@cd $(QUICKLISP_DIR); \
+	   curl http://beta.quicklisp.org/quicklisp.lisp \
+             -o quicklisp.lsp $(HTTP_PROXY_FLAG)
+	@$(BUILD_DIR)/wait.pl $(QUICKLISP_DIR)/quicklisp.lsp
+	@ls -l $(QUICKLISP_DIR)/quicklisp.lsp
+
+$(QUICKLISP_DIR)/inst/setup.lisp: $(QUICKLISP_DIR)/quicklisp.lsp \
+                                  $(QUICKLISP_DIR)/install.lsp
+	@echo "Setting up Quicklisp..."
+	@cd $(QUICKLISP_DIR); \
+           ($(STARTJOB) -c \
+              "ACL2_CUSTOMIZATION=NONE $(ACL2) < install.lsp &> install.out" ; \
+	    $(BUILD_DIR)/wait.pl inst/setup.lisp ;\
+	    ls -l inst/setup.lisp) \
+	   || (tail -300 install.out | sed 's/^/   | /'; false)
+
+$(QUICKLISP_DIR)/base.cert: $(QUICKLISP_DIR)/inst/setup.lisp
+
+quicklisp: $(QUICKLISP_DIR)/top.cert
+
+# I don't think we need this now
+# all: $(QUICKLISP_DIR)/top.cert
+
+endif # USE_QUICKLISP
+
+# [Jared]: I moved these out of the USE_QUICKLISP section so that "make clean"
+# will always remove the quicklisp files if you have ever built with
+# USE_QUICKLISP before.  The goal is to ensure that stale quicklisp files
+# aren't left around after a "make clean" by accident.
+
+.PHONY: quicklisp_clean
+
+quicklisp_clean:
+	echo "Removing downloaded quicklisp files (if any)" ; \
+	cd $(QUICKLISP_DIR); rm -rf quicklisp.lsp  inst/asdf.lisp inst/cache \
+	    inst/client-info.sexp inst/dists inst/local-projects \
+	    inst/quicklisp inst/setup.lisp inst/tmp install.out Makefile-tmp
+	cd $(QUICKLISP_DIR); $(BUILD_DIR)/clean.pl
+
+# The following hack was useful briefly in late January, 2014, when
+# there were issues with quicklisp that caused us not to want to clean
+# quicklisp files.  Rager likes this hack (because his company-wide
+# ACL2 installation isn't writable by those that use it and he doesn't
+# always want to clean quicklisp since proxies have to be configured
+# and because it's good to preserve the
+# quicklisp/inst/cache/asdf-installs directory), and so he prefers
+# that the "hack" be preserved.
+ifndef ACL2_SAVE_QUICKLISP
+clean: quicklisp_clean
+endif # ifndef ACL2_SAVE_QUICKLISP
 
 
 ifeq ($(USE_QUICKLISP), )
