@@ -39,10 +39,20 @@
 
 <p>This is a preliminary document.  Feedback is very much welcome and
 appreciated.  Please direct feedback to the acl2-books list or to Jared
-Davis.</p>")
+Davis.</p>
+
+<p>We recommend the use of the Standard Libraries (@(see std)) to ease your
+burden of modeling and reasoning in a formal sytem.  See other subtopics below
+for other best practices.")
 
 (local (xdoc::set-default-parents best-practices))
 
+(defxdoc finite-reasoning
+  :short "Use @(see gl) to reason about finitely bounded values."
+  :long "It is often convenient to use as much automation as possible when
+  performing proofs.  @(csee gl) provides the ability to automatically reason
+  about finite values, such as 32-bit integers.  As examples, this can be quite
+  useful when reasoning about cryptography algorithms or verifying hardware.")
 
 (defxdoc file-extensions
   :short "Conventions to follow for choosing file extensions like @('.lisp'),
@@ -130,6 +140,8 @@ of packages:</p>
 
 <dd>
 @({
+     ;; We need an \"in-package\" line to make this a valid book, but
+     ;; which package doesn't matter since the rest of the book is empty.
      (in-package \"FOO\")
 })
 </dd>
@@ -336,6 +348,9 @@ readability when the function names involved have their own hyphens.</li>
 
 <li>For rules about other equivalence relations, we add @('-under-equiv') to the
 name.</li>
+
+<li>For rules that specify the upper limit of function's numerical return
+value, we often add @('-limit').</li>
 
 </ol>
 
