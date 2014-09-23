@@ -103,6 +103,8 @@
 (include-book "centaur/satlink/top" :dir :system)
 (include-book "centaur/satlink/check-config" :dir :system)
 
+(include-book "centaur/quicklisp/top" :dir :system)
+
 (include-book "centaur/misc/top" :dir :system)
 (include-book "centaur/misc/smm" :dir :system)
 (include-book "centaur/misc/tailrec" :dir :system)
