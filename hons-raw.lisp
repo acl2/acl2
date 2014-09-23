@@ -97,8 +97,7 @@
 
 #+static-hons
 (defmacro hl-without-interrupts (&rest forms)
-  #+gcl `(let (si::*quit-tag*) ; Camm Maguire suggestion
-           ,@forms)
+  #+gcl `(si::without-interrupts . ,forms) ; Camm Maguire suggestion
   #-gcl `(ccl::without-interrupts . ,forms))
 
 

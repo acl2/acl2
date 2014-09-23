@@ -38,7 +38,8 @@
 
 ; We use the static honsing scheme on 64-bit GCL when the support is there.
 #+(and gcl x86_64)
-(when (fboundp 'si::static-inverse-cons)
+(when (and (fboundp 'si::static-inverse-cons)
+           (fboundp 'si::without-interrupts))
   (pushnew :static-hons *features*))
 
 ; Essay on Parallelism, Parallelism Warts, Parallelism Blemishes, Parallelism
