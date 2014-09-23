@@ -64,12 +64,19 @@
                   '(a b)))))
 
 ; The following requires that this book be certified in the initial
-; certification world.  It also succeeds at include-book time even if we
-; include the book after executing another command, because assert! uses
-; make-event with :check-expansion nil.  See assert-include.lisp.
-(local (assert! (equal (access-command-tuple-form
-                        (cddr (car (scan-to-command (w state)))))
-                       '(exit-boot-strap-mode))))
+; certification world, unless an acl2-customization file has been supplied.  It
+; also succeeds at include-book time even if we include the book after
+; executing another command, because assert! uses make-event with
+; :check-expansion nil.  See assert-include.lisp.
+(local (make-event
+        (er-let* ((c (getenv$ "ACL2_CUSTOMIZATION" state)))
+          (value
+           (if (and c (not (equal c "NONE")))
+               `(value-triple
+                 (cw "SKIPPING due to ACL2_CUSTOMIZATION=~x0~%" ,c))
+             '(assert! (equal (access-command-tuple-form
+                               (cddr (car (scan-to-command (w state)))))
+                              '(exit-boot-strap-mode))))))))
 
 ; We turn now to developing an extension of assert! that works with stobjs, in
 ; this case for assertions that return (mv val st) where val is an ordinary
