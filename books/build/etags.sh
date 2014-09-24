@@ -29,3 +29,11 @@
 #   DEALINGS IN THE SOFTWARE.
 
 etags --regex='/[ \t]+([ \t]*def[ \t]+(?[ \t]*\([^ \t]+\)/\1/' $@
+
+
+# The following find command excludes any directory named workshops,
+# and a few other which is useful for making books tags.  It also
+# includes .lsp files.
+
+# find . \( -path ./workshops -o -path ./del -o -path ./legacy -o -path ./output -o -path ./another/del  \) -prune -o -name '*.l*sp' | xargs ~/sw/acl2/books/build/etags.sh --append
+
