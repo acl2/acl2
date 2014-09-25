@@ -71,6 +71,8 @@
 (include-book "g-assert")
 (include-book "g-concretize")
 
+(include-book "def-gl-thm")
+
 (include-book "doc")
 (include-book "tutorial")
 
