@@ -46,7 +46,6 @@
             date-string
             reverse-strip-cars
             reverse-strip-cdrs
-            short-symbol-name
             hons-calls
             memoize-condition
             1-way-unify-top
@@ -104,7 +103,6 @@
             assoc-equiv
             assoc-equiv+
             assoc-keyword
-            assoc-no-error-at-end
             assoc-type-alist
             assume-true-false
             assume-true-false1
@@ -653,12 +651,13 @@
             nu-rewriter-mode
             num-0-to-9-to-char
             num-to-bits
-            number-of-arguments
+            mz-len-inputs
             number-of-calls
             number-of-hits
             number-of-memoized-entries
             number-of-mht-calls
-            number-of-return-values
+            mz-len-outputs
+            mz-note-arity
             number-of-strings
             obfb
             obj-table
@@ -952,7 +951,6 @@
             to
             to-be-ignoredp
             to-if-error-p
-            too-long
             total-time
             trans-alist
             trans-alist1
@@ -1149,6 +1147,15 @@
   (cond ((symbolp fn)
          (fgetprop fn 'absolute-event-number t (w *the-live-state*)))
         (t (error "EVENT-NUMBER: ** ~a is not a symbol." fn))))
+
+(defn memoize-here-come (n)
+  (let ((m (ceiling
+            (+ 100 (* 1.1 (- n (- (/ *2max-memoize-fns* 2)
+                                  (floor
+                                   (/ (hash-table-count
+                                       *memoize-info-ht*)
+                                      2)))))))))
+    (when (posp m) (memoize-call-array-grow (* 2 m)))))
 
 (defun profile-acl2 (&key (start 0)
                           trace

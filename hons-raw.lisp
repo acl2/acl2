@@ -95,12 +95,6 @@
 ; ensure that, e.g., (SETF (GETHASH ...)) does not leave a hash table in an
 ; internally inconsistent state.
 
-#+static-hons
-(defmacro hl-without-interrupts (&rest forms)
-  #+gcl `(si::without-interrupts . ,forms) ; Camm Maguire suggestion
-  #-gcl `(ccl::without-interrupts . ,forms))
-
-
 ; CROSS-LISP COMPATIBILITY WRAPPERS
 ;
 ; As groundwork toward porting the static honsing scheme to other Lisps that
@@ -228,6 +222,8 @@
 
 #+static-hons
 (defmacro hl-staticp (x)
+
+; This function always returns a fixnum.
 
 ; CCL::%STATICP always returns a fixnum or nil, as per Gary Byers email June
 ; 16, 2014.  That email also confirmed that if the value is not nil after a
@@ -524,7 +520,7 @@
   (let ((keydata (hl-cache-keydata cache))
         (valdata (hl-cache-valdata cache))
         (code    (hl-machine-hash key)))
-    (hl-without-interrupts
+    (without-interrupts
      (setf (svref keydata (the fixnum code)) key)
      (setf (svref valdata (the fixnum code)) val)))
 
@@ -830,12 +826,12 @@
 (defparameter *hl-hspace-sbits-default-size*
   ;; Static honsing sbits array; pretty cheap.  It seems pretty sensible to
   ;; just match the size of the address table, given how indices appear to be
-  ;; generated for static conses (see hl-staticp).  But we believe everything
-  ;; would work correctly even if this were a tiny value like 100.  For
-  ;; example, in hl-hspace-truly-static-honsp we do an explicit bounds check
-  ;; before accessing sbits[i], and in hl-hspace-hons-normed we do an explicit
-  ;; bounds check and call hl-hspace-grow-sbits if there isn't enough room
-  ;; before setting sbits[i] = 1.
+  ;; generated for static conses (see hl-staticp), at least for CCL.  But we
+  ;; believe everything would work correctly even if this were a tiny value
+  ;; like 100.  For example, in hl-hspace-truly-static-honsp we do an explicit
+  ;; bounds check before accessing sbits[i], and in hl-hspace-hons-normed we do
+  ;; an explicit bounds check and call hl-hspace-grow-sbits if there isn't
+  ;; enough room before setting sbits[i] = 1.
   *hl-hspace-addr-ht-default-size*)
 
 (defparameter *hl-hspace-other-ht-default-size*
@@ -1524,6 +1520,8 @@
 #+static-hons
 (defun hl-addr-of-unusual-atom (x str-ht other-ht)
 
+; Warning: Keep this in sync with pons-addr-of-argument.
+
 ; See hl-addr-of.  This function computes the address of any atom except for T
 ; and NIL.  Wrapping this in a function is mainly intended to avoid code blowup
 ; from inlining.
@@ -1571,6 +1569,8 @@
 
 #+static-hons
 (defmacro hl-addr-of (x str-ht other-ht)
+
+; Warning: Keep this in sync with pons-addr-of-argument.
 
 ; (HL-ADDR-OF X STR-HT OTHER-HT) --> NAT and destructively updates OTHER-HT
 ;
@@ -1978,7 +1978,7 @@
                            (the fixnum (length sbits)))
                    (hl-hspace-grow-sbits idx hs)
                    (setq sbits (hl-hspace-sbits hs)))
-                 (hl-without-interrupts
+                 (without-interrupts
                   ;; Since we must simultaneously update SBITS and ADDR-HT, the
                   ;; installation of PAIR must be protected by without-interrupts.
                   (setf (aref sbits idx) 1)
@@ -3307,7 +3307,7 @@ To avoid the following break and get only the above warning:~%  ~a~%"
     (hl-cache-clear norm-cache)
     (setf (hl-hspace-faltable hs) temp-faltable)
     (setf (hl-hspace-persist-ht hs) temp-persist-ht)
-    (hl-without-interrupts
+    (without-interrupts
      (setf (hl-hspace-addr-ht hs) temp-addr-ht)
      (setf (hl-hspace-sbits hs) temp-sbits))
 
@@ -3344,7 +3344,7 @@ To avoid the following break and get only the above warning:~%  ~a~%"
             (hash-table-count addr-ht))
 
     ;; Order matters, reinstall addr-ht and sbits before fal-ht and persist-ht!
-    (hl-without-interrupts
+    (without-interrupts
      (setf (hl-hspace-addr-ht hs) addr-ht)
      (setf (hl-hspace-sbits hs) sbits))
     (setf (hl-hspace-faltable hs) faltable)
@@ -3561,7 +3561,7 @@ To avoid the following break and get only the above warning:~%  ~a~%"
     ;; invalidates the STR-HT or OTHER-HT, so we leave them alone.
     (setf (hl-hspace-faltable hs) temp-faltable)
     (setf (hl-hspace-persist-ht hs) temp-persist-ht)
-    (hl-without-interrupts ;; These two must be done together or not at all.
+    (without-interrupts ;; These two must be done together or not at all.
      (setf (hl-hspace-addr-ht hs) temp-addr-ht)
      (setf (hl-hspace-sbits hs) temp-sbits))
 
@@ -3617,7 +3617,7 @@ To avoid the following break and get only the above warning:~%  ~a~%"
 
       ;; All objects restored.  The hons space should now be in a fine state
       ;; once again.  Restore it.
-      (hl-without-interrupts
+      (without-interrupts
        (setf (hl-hspace-addr-ht hs) addr-ht)
        (setf (hl-hspace-sbits hs) sbits))
       (setf (hl-hspace-persist-ht hs) persist-ht)
@@ -3633,7 +3633,6 @@ To avoid the following break and get only the above warning:~%  ~a~%"
   (clear-memoize-tables)
 
   nil)
-
 
 (defun hl-maybe-resize-ht (size src)
 

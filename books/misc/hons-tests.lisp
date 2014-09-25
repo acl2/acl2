@@ -98,7 +98,7 @@
 (defn lfoo (x) (if (atom x) 0 (+ 1 (lfoo (cdr x)))))
 
 #+hons
-(memoize 'lfoo :trace 'notinline)
+(memoize 'lfoo)
 
 (defthm l-thm (equal (lfoo (hons-copy '(a b c))) 3))
 

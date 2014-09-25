@@ -7351,6 +7351,9 @@
              (cond ((eq temp t) nil)
                    (t (length temp)))))))
 
+(defconst *stobjs-out-invalid*
+  '(if return-last))
+
 (defun stobjs-out (fn w)
 
 ; Warning: keep this in sync with get-stobjs-out-for-declare-form.
@@ -7360,7 +7363,7 @@
   (cond ((eq fn 'cons)
 ; We call this function on cons so often we optimize it.
          '(nil))
-        ((member-eq fn '(if return-last))
+        ((member-eq fn *stobjs-out-invalid*)
          (er hard! 'stobjs-out
              "Implementation error: Attempted to find stobjs-out for ~x0."
              fn))

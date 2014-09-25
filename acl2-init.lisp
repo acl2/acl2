@@ -742,6 +742,11 @@ implementations.")
     result))
 
 (defmacro our-with-standard-io-syntax (&rest args)
+
+; Note for GCL:
+; As of late May 2013, with-standard-io-syntax seems to work properly in ANSI
+; GCL.
+
   (cons #-cltl2 'progn
         #+cltl2 'with-standard-io-syntax
         args))

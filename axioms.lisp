@@ -25104,28 +25104,29 @@ Lisp definition."
   `(gc$-fn ',args))
 
 #-acl2-loop-only
-(defun-one-output gc-verbose-fn (arg)
+(defun-one-output gc-verbose-fn (arg1 arg2)
 
 ; For a related function, see gc$-fn.
 
-  (let ((arg (and arg t))) ; coerce to Boolean
-    (declare (ignorable arg))
-    #+ccl (ccl::gc-verbose arg arg)
-    #+cmu (setq ext:*gc-verbose* arg)
-    #+gcl (si:*notify-gbc* arg)
+  (declare (ignorable arg2))
+  (let ((arg1 (and arg1 t))) ; coerce to Boolean
+    (declare (ignorable arg1))
+    #+ccl (ccl::gc-verbose arg1 arg2)
+    #+cmu (setq ext:*gc-verbose* arg1)
+    #+gcl (setq si:*notify-gbc* arg1)
     #-(or ccl cmu gcl)
     (format t "GC-VERBOSE is not supported in this Common Lisp.~%Contact the ~
                ACL2 developers if you would like to help add such support.")
     nil))
 
 #+acl2-loop-only
-(defun gc-verbose-fn (arg)
-  (declare (ignore arg)
+(defun gc-verbose-fn (arg1 arg2)
+  (declare (ignore arg1 arg2)
            (xargs :guard t))
   nil)
 
-(defmacro gc-verbose (arg)
-  `(gc-verbose-fn ,arg))
+(defmacro gc-verbose (arg1 &optional arg2)
+  `(gc-verbose-fn ,arg1 ,arg2))
 
 (defun get-wormhole-status (name state)
    #+acl2-loop-only

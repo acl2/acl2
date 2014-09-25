@@ -27,8 +27,7 @@
             use defn1."
            f a))
   `(progn
-     (setf (gethash ',f *number-of-arguments-and-values-ht*)
-           (cons ,(length a) 1))
+     (mf-note-arity ,(length a) 1)
      (declaim (ftype (function ,(make-list (len a) :initial-element t)
                                (values t))
                      ,f))
@@ -1177,9 +1176,9 @@
 ;;         do
 ;;         (let ((n (namestring x)))
 ;;           (unless (or (eql #\/ (char n (1- (length n))))
-;;                       (looking-at "/dev/pts/" n)
-;;                       (looking-at "/scratch/" n)
-;;                       (looking-at "/proc/" n))
+;;                       (mf-looking-at "/dev/pts/" n)
+;;                       (mf-looking-at "/scratch/" n)
+;;                       (mf-looking-at "/proc/" n))
 ;;             (fresh-line)
 ;;             (princ n)))))
 

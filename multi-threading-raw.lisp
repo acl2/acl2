@@ -55,55 +55,9 @@
 ;---------------------------------------------------------------------
 ; Section:  Enabling and Disabling Interrupts
 
-; "Without-interrupts" means that there will be no interrupt from the Lisp
-; system, including ctrl+c from the user or an interrupt from another
-; thread/process.  For example, if *thread1* is running (progn
-; (without-interrupts (process0)) (process1)), then execution of
-; (interrupt-thread *thread1* (lambda () (break))) will not interrupt
-; (process0).
-
-; But note that "without-interrupts" does not guarantee atomicity; for example,
-; it does not mean "without-setq".
-
-(defmacro without-interrupts (&rest forms)
-
-; This macro prevents interrupting evaluation (including throws, e.g., as done
-; in support of por) of any of the indicated forms in a parallel lisp.  In a
-; non-parallel environment, we simply evaluate the forms.  This behavior takes
-; priority over any enclosing call of with-interrupts.  Since we do not have a
-; good use case for providing with-interrupts, we omit it from this interface.
-
-  #+ccl
-  `(ccl:without-interrupts ,@forms)
-  #+sb-thread
-  `(sb-sys:without-interrupts ,@forms)
-  #+lispworks
-
-; Lispworks decided to remove "without-interrupts" from their system, because
-; its use has changed from meaning "atomic" to meaning "can't be interrupted by
-; other threads or processes".  Thus, we use the new primitive,
-; "with-interrupts-blocked".
-
-  `(mp:with-interrupts-blocked ,@forms)
-  #-(or ccl sb-thread lispworks)
-  `(progn ,@forms))
-
-(defmacro unwind-protect-disable-interrupts-during-cleanup
-  (body-form &rest cleanup-forms)
-
-; As the name suggests, this is unwind-protect but with a guarantee that
-; cleanup-form cannot be interrupted.  Note that CCL's implementation already
-; disables interrupts during cleanup.
-
-  #+ccl
-  `(unwind-protect ,body-form ,@cleanup-forms)
-  #+sb-thread
-  `(unwind-protect ,body-form (without-interrupts ,@cleanup-forms))
-  #+lispworks
-  `(hcl:unwind-protect-blocking-interrupts-in-cleanups ,body-form
-                                                       ,@cleanup-forms)
-  #-(or ccl sb-thread lispworks)
-  `(unwind-protect ,body-form ,@cleanup-forms))
+; Without-interrupts and unwind-protect-disable-interrupts-during-cleanup were
+; originally defined here, but have been moved to acl2-fns.lisp in order to
+; support not only ACL2(p) but also ACL2(h).
 
 ;---------------------------------------------------------------------
 ; Section:  Threading Interface

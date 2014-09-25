@@ -391,9 +391,11 @@
 ; between the messages and the return value.  This "~%" is paired with the one
 ; at the end of the observation in print-set-waterfall-parallelism-notice.
 
-            "~%Unmemoizing the functions that are memoized by default as part ~
-             of ACL2(h) and all that have been memoized by calling memoize ~
-             (see :DOC unsupported-waterfall-parallelism-features).~%")
+            "~%Unmemoizing built-in function~#0~[ ~x0, which had been~/s ~&0, ~
+             which had been~] memoized by default, as well as all functions ~
+             that had been explicitly memoized.  See :DOC ~
+             unsupported-waterfall-parallelism-features.~%"
+             (strip-cars *thread-unsafe-builtin-memoizations*))
 
 ; The functions that are memoized by default as part of hons are
 ; memoized/unmemoized inside set-waterfall-parallelism-fn.  We do it there,
@@ -408,10 +410,10 @@
           (pprogn
            (observation
             'set-waterfall-parallelism
-            "~%Memoizing the functions that are memoized by default as part ~
-             of ACL2(h) and that were memoized before disabling ~
-             waterfall-parallelism (see :DOC ~
-             unsupported-waterfall-parallelism-features).~%")
+            "~%Rememoizing functions that had been memoized (either by ~
+             default or explicitly) but were later unmemoized when disabling ~
+             waterfall-parallelism.  See :DOC ~
+             unsupported-waterfall-parallelism-features.~%")
            (value'(restore-memoization-settings))))
          (t (value '(value-triple nil)))))))))
 

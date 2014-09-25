@@ -4390,7 +4390,6 @@
        untranslate
        untranslate-lst
        trace$-fn-general untrace$-fn-general untrace$-fn1 maybe-untrace$-fn
-       memoize-on memoize-off ; especially relevant for #+hons
        set-w acl2-unwind-protect
 
 ; We know that calls of mv-list in function bodies are checked syntactically to

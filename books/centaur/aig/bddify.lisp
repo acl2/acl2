@@ -275,13 +275,8 @@ from the ITP presentation are also available.</p>")
 
  ;; BOZO really profile this?
 
- #+Clozure
- ;; [Jared]: I had to add this #+Clozure here because otherwise SBCL can't
- ;; include-book this book.  It can still certify it, but I guess that somehow
- ;; at load-time it doesn't have the function compiled yet and hence can't
- ;; figure out how many arguments it has or something?  This might also be
- ;; somehow related to function-lambda-expression not working on SBCL.  BOZO
- ;; is this something we even need to do?
+ (mf-note-arity 'count-branches-to 2 1)
+
  (profile-fn 'count-branches-to)
 
  #+Clozure
