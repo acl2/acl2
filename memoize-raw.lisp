@@ -2744,7 +2744,7 @@
            (progn
              (let ((ma *memoize-call-array*))
                (declare (type (simple-array mfixnum (*)) ma))
-               (loop for i integer ; performance counting
+               (loop for i of-type integer ; performance counting
 
 ; Note: i is an mfixnum and hence likely a fixnum, though we don't insist on
 ; the latter.  Since this loop is executed only at memoize time, it's not
@@ -2849,9 +2849,9 @@
                 (assert old-fn)
                 (setf (symbol-function (the symbol fn))
                       old-fn)))
-            (loop for i integer
+            (loop for i of-type integer
 
-; not "i fixnum"; see comment for "loop for i integer" form in memoize-fn
+; not "i fixnum"; see comment for "loop for i of-type integer" form in memoize-fn
 
                   from col-base ; loop through col-base column
                   below (ma-index-from-col-base col-base *2max-memoize-fns*)
@@ -4045,7 +4045,7 @@
              (loop for i fixnum below len
                    do (setf (aref ma i) 0)))
             (t
-             (loop for i integer below len
+             (loop for i of-type integer below len
                    do (setf (aref ma i) 0)))))))
 
 (defun clear-memoize-statistics ()
