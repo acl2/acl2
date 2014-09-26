@@ -188,6 +188,8 @@
 
 (in-package "ACL2")
 
+; cert_param: (pcert=1)
+
 (local (include-book "arithmetic-5/top" :dir :system))
 
 (local (deftheory jared-disables
