@@ -4,8 +4,8 @@
 # The parameters are predictable, but here are some sample
 # invocations:
 #
-# build-multi.sh LISP=sbcl ACL2_HONS=t ACL2_PAR="" NONSTD=t TARGET=std
-# build-multi.sh LISP=ccl ACL2_HONS=t ACL2_PAR=t NONSTD="" TARGET=manual
+# build-multi.sh LISP=sbcl ACL2_HONS=t ACL2_PAR="" ACL2_REAL=t TARGET=std
+# build-multi.sh LISP=ccl ACL2_HONS=t ACL2_PAR=t ACL2_REAL="" TARGET=manual
 
 # TODO: make it work with startjob, where startjob is a wrapper for
 # bash (really, the challenge in this is getting the definition of
@@ -34,7 +34,7 @@ echo "Using LISP = $LISP"
 echo "Using STARTJOB = `which startjob`"
 echo "Using ACL2_HONS = $ACL2_HONS"
 echo "Using ACL2_PAR  = $ACL2_PAR"
-echo "Using NONSTD    = $NONSTD"
+echo "Using ACL2_REAL    = $ACL2_REAL"
 echo "Making TARGET   = $TARGET"
 
 if [ "${LISP:0:3}" == "gcl" ]; then
@@ -52,7 +52,7 @@ if [ "$ACL2_PAR" != "" ]; then
     ACL2_SUFFIX="${ACL2_SUFFIX}p"
 fi
 
-if [ "$NONSTD" != "" ]; then
+if [ "$ACL2_REAL" != "" ]; then
     ACL2_SUFFIX="${ACL2_SUFFIX}r"
 fi
 

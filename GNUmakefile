@@ -138,7 +138,7 @@ endif
 
 $(info ACL2_WD is $(ACL2_WD))
 
-# The variable NONSTD should be defined for the non-standard version and not
+# The variable ACL2_REAL should be defined for the non-standard version and not
 # for the standard version.  Non-standard ACL2 images will end in saved_acl2r
 # rather than saved_acl2.  ACL2_HONS, ACL2_PAR, ACL2_DEVEL, and ACL2_WAG (for
 # feature write-arithmetic-goals) are similar (with suffixes h,
@@ -161,7 +161,7 @@ endif
 ifdef ACL2_DEVEL
 	ACL2_SUFFIX := $(ACL2_SUFFIX)d
 endif
-ifdef NONSTD
+ifdef ACL2_REAL
 	ACL2_SUFFIX := $(ACL2_SUFFIX)r
 endif
 
@@ -268,7 +268,7 @@ acl2r.lisp:
 # sometimes on Unix.
 	rm -f acl2-fns.o
 	echo "" > acl2r.lisp
-	if [ "$(NONSTD)" != "" ] ; then \
+	if [ "$(ACL2_REAL)" != "" ] ; then \
 	echo '(or (member :non-standard-analysis *features*) (push :non-standard-analysis *features*))' >> acl2r.lisp ;\
 	fi
 	if [ "$(ACL2_HONS)" != "" ] ; then \
@@ -648,7 +648,7 @@ large: acl2r full init
 
 .PHONY: large-acl2r
 large-acl2r:
-	$(MAKE) large NONSTD=r
+	$(MAKE) large ACL2_REAL=r
 
 .PHONY: large-acl2h
 large-acl2h:

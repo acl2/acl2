@@ -52,7 +52,7 @@ You should next be able to setup a Jenkins "multi-configuration"
 project that uses build-multi.sh.  You'll need to pass in a build target in
 the $TARGET environment variable, and you'll need to setup the LISP
 env variable as a Jenkins "Axis".  You'll also probably want to setup
-Axes for `ACL2_HONS`, `ACL2_PAR`, and `NONSTD`, where each axis has the
+Axes for `ACL2_HONS`, `ACL2_PAR`, and `ACL2_REAL`, where each axis has the
 options of `"" t`.
 
 Your `gcl` executable name must start with `gcl` to avoid building
