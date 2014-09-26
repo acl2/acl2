@@ -92,13 +92,21 @@ in ACL2 6.5, so we've deleted them.</p>
    ---------------------------------------------------------------
 })
 
+<h3>Source Code Repository Change</h3>
+
+<p>The ACL2 Community Books and ACL2 System source code repositories have been
+merged into one repository and are now available at <a
+href=\"https://github.com/acl2/acl2\">https://github.com/acl2/acl2</a>.  See
+the Readme.md file found there for more details.</p>
+
 <h3>Build System Changes</h3>
 
 <p>The implementation of ``@('make everything')'' has been cleaned up.  In
 particular, it no longer sets @('USE_QUICKLISP=1'), which must now be provided
 explicitly in order for the command above to build the ACL2+Books Manual.</p>
 
-")
+<p>Installing Quicklisp now works from behind a proxy.  See Section `Using a
+Proxy` in @(see books-certification).")
 
 
 (defxdoc note-6-5-books
