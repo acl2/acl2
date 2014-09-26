@@ -19,7 +19,7 @@
 (defun weighted-split-nat-step (weights x old-results)
   (declare (xargs :guard (and (2+-listp weights)
                               (natp x)
-                              (naturals-listp old-results)
+                              (nat-listp old-results)
                               (= (len weights) (len old-results)))))
   (if (mbe :logic (or (endp weights)
                       (endp old-results))
@@ -42,11 +42,11 @@
                 (min (len w) (len r)))))
 
 (local (defthm weighted-split-nat-step--nat-listp
-         (implies (and (naturals-listp w)
+         (implies (and (nat-listp w)
                        (integerp x)
                        (<= 0 x)
-                       (naturals-listp r))
-                  (naturals-listp (weighted-split-nat-step w x r)))
+                       (nat-listp r))
+                  (nat-listp (weighted-split-nat-step w x r)))
          :rule-classes (:type-prescription :rewrite)))
 
 (local (defthm weighted-split-nat-step--consp
@@ -60,7 +60,7 @@
          (implies (and (2+-listp w)
                        (integerp x)
                        (<= 0 x)
-                       (naturals-listp r)
+                       (nat-listp r)
                        (equal (len w) (len r)))
                   (<=-lists (weighted-split-nat-step w x r)
                             (+-lists
@@ -84,7 +84,7 @@
                          (<= 0 v)
                          (rationalp w)
                          (<= v w)
-                         (naturals-listp l))
+                         (nat-listp l))
                     (<=-lists (scale l v)
                               (scale l w))))
 
@@ -95,15 +95,15 @@
                          (<= 0 v)
                          (rationalp w)
                          (<= v w)
-                         (naturals-listp l2))
+                         (nat-listp l2))
                     (<=-lists l1
                               (scale l2 w))))
 
   (defthm <=-lists--scale3
            (implies (and (rationalp v)
                          (<= 0 v)
-                         (naturals-listp l1)
-                         (naturals-listp l2)
+                         (nat-listp l1)
+                         (nat-listp l2)
                          (<=-lists l1 l2))
                     (<=-lists (scale l1 v)
                               (scale l2 v))))
@@ -113,8 +113,8 @@
                          (<= 0 v1)
                          (rationalp v2)
                          (<= 0 v2)
-                         (naturals-listp l1)
-                         (naturals-listp l2)
+                         (nat-listp l1)
+                         (nat-listp l2)
                          (<=-lists l1 l2)
                          (<= v1 v2))
                     (<=-lists (scale l1 v1)
@@ -168,7 +168,7 @@
          (implies (and (2+-listp w)
                        (integerp x)
                        (<= 0 x)
-                       (naturals-listp r)
+                       (nat-listp r)
                        (equal (len w) (len r)))
                   (<=-lists (weighted-split-nat-step w x r)
                             (shift
@@ -185,7 +185,7 @@
                                 acl2::PSPV))))
    
    (defthm weighted-split-nat-step--bound2--lemma
-     (implies (and (naturals-listp r)
+     (implies (and (nat-listp r)
                    (2+-listp w)
                    (equal (len r) (len w)))
               (<=-lists (*-lists r w)
@@ -205,8 +205,8 @@
                          (<= 0 v1)
                          (rationalp v2)
                          (<= 0 v2)
-                         (naturals-listp l1)
-                         (naturals-listp l2)
+                         (nat-listp l1)
+                         (nat-listp l2)
                          (force (<=-lists l1 l2))
                          (force (<= v1 v2)))
                     (<=-lists (scale l1 v1)
@@ -233,7 +233,7 @@
      (implies (and (2+-listp w)
                    (integerp x)
                    (<= 0 x)
-                   (naturals-listp r)
+                   (nat-listp r)
                    (equal (len w) (len r)))
               (<=-lists (weighted-split-nat-step w x r)
                         (shift
@@ -284,9 +284,9 @@
                    (len x)))))
 
 (local (defthm rot-list--nat-listp
-         (implies (and (naturals-listp x)
+         (implies (and (nat-listp x)
                        (consp x))
-                  (naturals-listp (rot-list x)))))
+                  (nat-listp (rot-list x)))))
 
 (local (defthm rot-list--2+-listp
          (implies (and (2+-listp x)
@@ -345,7 +345,7 @@
                  (equal weights-factor (product-list weights))
                  (integerp x)
                  (<= 0 x))
-            (naturals-listp (weighted-split-nat1 weights weights-factor x)))
+            (nat-listp (weighted-split-nat1 weights weights-factor x)))
    :rule-classes ((:rewrite)
                   (:rewrite :corollary
                    (implies (and (2+-listp weights)
@@ -530,7 +530,7 @@
 
 
  (defthm weighted-split-nat--nat-listp
-   (naturals-listp (weighted-split-nat weights x)))
+   (nat-listp (weighted-split-nat weights x)))
 
 (local (defthm scale--pos-listp--2+-listp
          (implies (pos-listp l)
@@ -546,7 +546,7 @@
 (local
  (defthm car--nat-list--integer
    (implies (and (consp x)
-                 (naturals-listp x))
+                 (nat-listp x))
             (integerp (car x)))))
 
 (local
@@ -556,7 +556,7 @@
 (local
  (defthm car--nat-list-->=0
    (implies (and (consp x)
-                 (naturals-listp x))
+                 (nat-listp x))
             (<= 0 (car x)))))
 
 (local
@@ -603,7 +603,7 @@
   :rule-classes (:rewrite :linear))
 
 (defthm nat-listp--nth--integerp
-         (implies (and (naturals-listp l)
+         (implies (and (nat-listp l)
                        (integerp i)
                        (<= 0 i)
                        (< i (len l)))
@@ -615,7 +615,7 @@
   :rule-classes (:rewrite :type-prescription))
 
 (defthm nat-listp--nth-->=0
-         (implies (and (naturals-listp l)
+         (implies (and (nat-listp l)
                        (integerp i)
                        (<= 0 i)
                        (< i (len l)))
@@ -670,13 +670,13 @@
                            (< i (max 1 (len weights))))))
 
 (local
- (defthm naturals-listp--nthcdr
-   (implies (naturals-listp l)
-            (naturals-listp (nthcdr i l)))
+ (defthm nat-listp--nthcdr
+   (implies (nat-listp l)
+            (nat-listp (nthcdr i l)))
    :rule-classes (:rewrite :type-prescription)))
 
-(defthm nthcdr-weighted-split-nat--naturals-listp
-  (naturals-listp (nthcdr-weighted-split-nat i weights x)))
+(defthm nthcdr-weighted-split-nat--nat-listp
+  (nat-listp (nthcdr-weighted-split-nat i weights x)))
 
 
 (defthm weighted-split-nat--to--nthcdr-weighted-split-nat
@@ -836,7 +836,7 @@
 ; alternative interface
 
 (defthm pos-listp--list-expt--2
-  (implies (naturals-listp l)
+  (implies (nat-listp l)
            (pos-listp (list-expt 2 l)))
   :rule-classes (:rewrite :type-prescription))
 
@@ -852,13 +852,13 @@
                               (natp x))))
   (weighted-split-nat (make-list nways :initial-element 1) x))
 
-(defthm split-nat--naturals-listp
-  (naturals-listp (split-nat nways x))
+(defthm split-nat--nat-listp
+  (nat-listp (split-nat nways x))
    :rule-classes :type-prescription)
 
 
-(defthm naturals-listp--true-listp
-  (implies (naturals-listp x)
+(defthm nat-listp--true-listp
+  (implies (nat-listp x)
            (true-listp x))
    :rule-classes (:rewrite :forward-chaining))#|ACL2s-ToDo-Line|#
 

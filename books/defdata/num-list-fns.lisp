@@ -29,20 +29,20 @@
            (pos-listp x))
   :rule-classes :forward-chaining)
 
-(defun naturals-listp (x)
-   (declare (xargs :guard t))
-  (if (atom x)
-    (null x)
-    (and (natp (car x))
-         (naturals-listp (cdr x)))))
+;; (defun naturals-listp (x)
+;;    (declare (xargs :guard t))
+;;   (if (atom x)
+;;     (null x)
+;;     (and (natp (car x))
+;;          (naturals-listp (cdr x)))))
 
-(defthm pos-listp-forward-to-naturals-listp
+(defthm pos-listp-forward-to-nat-listp
   (implies (pos-listp x)
-           (naturals-listp x))
+           (nat-listp x))
   :rule-classes :forward-chaining)
 
-(defthm naturals-listp-forward-to-integer-listp
-  (implies (naturals-listp x)
+(defthm nat-listp-forward-to-integer-listp
+  (implies (nat-listp x)
            (integer-listp x))
   :rule-classes :forward-chaining)
 
@@ -115,7 +115,7 @@
 
 (defun list-expt (base l)
   (declare (xargs :guard (and (acl2-numberp base)
-                              (naturals-listp l))))
+                              (nat-listp l))))
   (if (endp l)
     nil
     (cons (expt base (car l))

@@ -62,7 +62,7 @@
  "portcullis.lsp")
 (acl2::begin-book t);$ACL2s-Preamble$|#
 
-(in-package "DEFDATA")
+(in-package "CGEN")
 
 (include-book "tools/bstar" :dir :system)
 
@@ -128,8 +128,8 @@
 ; The table is populated at compile time, i.e at the time when def events
 ; are submitted to acl2. Once all def events have been submitted, this
 ; table is read-only.
-(table def-metadata-table nil nil :guard (and (symbolp key)
-                                              (def-metadata%-p val)))
+(table def-metadata-table nil nil :guard (and (symbolp acl2::key)
+                                              (def-metadata%-p acl2::val)))
 
 ;========================Function Metadata table >=======================
 
@@ -510,6 +510,32 @@ General form: ~
       (defs-fn (rest def-lst)
                (append ae aux-events.)
                (append defuns-tuples. (list def-tuple)) ctx wrld state))))
+
+
+
+
+;; #!ACL2  ;;copied from Sol Swords.
+;; (progn
+;;   (defun access-b*-bindings (recname var pairs)
+;;     (if (atom pairs)
+;;         nil
+;;       (cons
+;;        (if (atom (car pairs))
+;;            (list (car pairs) `(acl2::access ,recname ,var
+;;                                             ,(intern-in-package-of-symbol
+;;                                              (symbol-name (car pairs))
+;;                                              :keyword)))
+;;          (list (caar pairs) `(acl2::access ,recname ,var
+;;                                            ,(intern-in-package-of-symbol
+;;                                             (symbol-name (cadar pairs))
+;;                                             :keyword))))
+;;        (access-b*-bindings recname var (cdr pairs)))))
+
+;;   (def-b*-binder
+;;     access
+;;     `(b* ,(access-b*-bindings (car args) (car forms) (cdr args))
+;;        ,rest-expr)))
+
 
 
 

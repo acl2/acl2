@@ -8,6 +8,7 @@
 (set-verify-guards-eagerness 2)
 (include-book "tools/bstar" :dir :system)
 (local (include-book "arithmetic-3/floor-mod/floor-mod" :dir :system))
+;(local (include-book "arithmetic-5/top" :dir :system))
 
 (defconst *M31* 2147483647);1 less than 2^31
 (defconst *P1* 16807)
