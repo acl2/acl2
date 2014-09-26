@@ -1,37 +1,25 @@
 ((:FILES "
 .:
 acl2-customization.lsp
-acl2s-parameter.lisp
-base.lisp
-basis.lisp
-cert.acl2
-certify-book.sh
-data.lisp
-graph.lisp
-library-support.lisp
-main.lisp
-Makefile
-mv-proof.lisp
-num-list-fns.lisp
-num-list-thms.lisp
 package.lsp
-portcullis.acl2
 portcullis.lisp
-random.lisp
-random-state-basis1.lisp
-random-state.lisp
+Makefile
 Readme.lsp
-rem-and-floor.lisp
-scratchpad.lsp
-simple-graph-array.lisp
-splitnat.lisp
-switchnat.lisp
-testing-regression.lsp
-top.lisp
-type.lisp
+basis.lisp
 utilities.lisp
+acl2s-parameter.lisp
 with-timeout.lisp
 with-timeout-raw.lsp
+cert.acl2
+certify-book.sh
+type.lisp
+cgen-search.lisp
+build-enumcalls.lisp
+elim.lisp
+callback.lisp
+prove-cgen.lisp
+top.lisp
+testing-regression.lsp
 "
 )
  (:TITLE    "Counterexample Generation")
@@ -78,9 +66,11 @@ search. If not, we continue with the select, assign, propagate
 loop. Of course if propagating a value assignment results in a
 contradiction in the hypotheses (i.e inconsistency), we backtrack.
 
-Instructions for usage are in top.lisp.
+USAGE:
+ (include-book \"cgen/top\" :dir :system :ttags :all)
+ (acl2s-defaults :set testing-enabled t) ; default is :naive
 
-See the essay in main.lisp for high-level pseudocode of the test driver.
+
 ")
  (:PERMISSION ; author/s permission for distribution and copying:
 "Copyright (C) 2011 Harsh Raju Chamarthi, Peter C. Dillinger
@@ -102,78 +92,35 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
 02110-1301, USA."))
 #|
 
+EXAMPLES: See testing-regression.lsp
+
+USAGE:
+ (include-book "cgen/top" :dir :system :ttags :all)
+ (acl2s-defaults :set testing-enabled t) ; default is :naive
    
 
 
 These books were developed as part of ACL2s: "The ACL2 Sedan."
 
-To certify books, do the foll at the shell prompt (in the current directory):
-$ export ACL2=<path to your  saved_acl2>
-$ make
+To certify books, at the shell prompt (in the current directory) do:
+$ export ACL2=<path to your saved_acl2>
+$ ../build/cert.pl top.lisp
 
-Note: You need java to be installed on your machine and in PATH.
-      acl2-lib.jar automatically generates .acl2 files.
 
 Books:
 
-top.lisp 
-   top-level entry book with some customizations.
 
 acl2s-parameter.lisp
    All ACL2s testing/counterexample-generation related configuration parameters
    are set here. It provides a macro to add a new parameter, producing
    getters setters and doc items.
 
-base.lisp
-   Builds up the type metadata and type relationship data structures for base
-   ACL2 theory
 
 basis.lisp
    defines macros for defining functions that ease guard verification
    (type-checking), and provide facilities for writing concise code. Note that
    this book is in progress and some features I would like to
    incorporate in the future are yet unimplemented. 
-
-mv-proof.lisp
-rem-and-floor.lisp
-num-list-fns.lisp
-num-list-thms.lisp
-   Support books for defdata
-
-splitnat.lisp
-   Given a natural number seed s and another number n, it provides the
-   function split-nat returns an n-tuple which is bijective to s.
-   It is used to generate enumerators for product types.
-
-switchnat.lisp
-   Given a natural number seed s and another number n, it provides the
-   function switch-nat returns an pair (c,s') which is bijective to s.
-   This is used to generate enumerators for union types.
-
-data.lisp 
-   The previous books implement the data definition framework.
-   In particular, it provides the defdata macro which the user can use
-   to introduce 
-
-graph.lisp
-   Provides graph utility functions for DFS, SCC and transitive
-   closure. Possibly buggy, will be replaces by simple-graph-array book.
- 
-library-support.lisp
-   Some theorems for using misc/records book in our context.
-
-main.lisp
-   The top-level book which implements the main driver functions that
-   orchestrate the testing+theorem-proving synergistic combination.
-   It provides the test? macro and the test-checkpoint function which
-   is used as an override-hint to search for counterexamples at all
-   checkpoints. For more information on implementation look at the
-   essay headed "Main Idea".
-
-random-state-basis1.lisp
-   See below
-random-state.lisp
-   Provides pseudogeometric natural number distribution.
 
 testing-regression.lsp
    Examples, testcases and in general a book that you can refer to for
@@ -192,5 +139,21 @@ utilities.lisp
 with-timeout.lisp
    Nested timeouts.
 
+cgen-search.lisp
+   Main driver loop for cgen/testing.
+
+callback.lisp
+   Hook to call cgen/testing/search on checkpoint goals.
+   Implemented using override-hints + backtrack hints.
+
+
+build-enumcalls.lisp
+   Code generation for calling enumerators for the current type alist.
+
+cgen-prove.lisp
+   Main cgen api function which calls prove with the appropriate cgen context/state.
+
+top.lisp 
+   top-level entry book which provides test? macro and some initialization and customizations.
 
 |#
