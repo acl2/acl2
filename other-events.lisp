@@ -12826,9 +12826,10 @@
   (and (symbolp x)
        (equal (symbol-name x) str)))
 
-(defun chk-acceptable-certify-book1 (file dir k cmds cert-obj cbds names
-                                          cert-op suspect-book-action-alist
-                                          wrld ctx state)
+(defun chk-acceptable-certify-book1 (user-book-name file dir k cmds cert-obj
+                                                    cbds names cert-op
+                                                    suspect-book-action-alist
+                                                    wrld ctx state)
 
 ; This function is checking the appropriateness of the environment in which
 ; certify-book is called.
@@ -12878,10 +12879,11 @@
      ((and (not (symbol-name-equal k "?"))
            (not (eql k (length cmds))))
       (er soft ctx
-          "You indicated that the portcullis for ~x0 would be of length ~x1 ~
-           but it is actually of length ~x2.  Perhaps you had better inspect ~
-           the world and call certify-book again."
-          file k (length cmds)))
+          "Your certify-book command specifies a certification world of ~
+           length ~x0 but it is actually of length ~x1.  Perhaps you intended ~
+           to issue a command of the form: (certify-book ~x2 ~x1 ...).  See ~
+           :DOC certify-book."
+          k (length cmds) user-book-name))
      ((assoc-equal file pre-alist)
 
 ; Why do we do this?  By insuring that file is not in the include-book-alist
@@ -13186,7 +13188,8 @@
                                       t)) ; evalp = t, so world can change
                (cert-obj-cmds (value (and cert-obj
                                           (access cert-obj cert-obj :cmds)))))
-            (chk-acceptable-certify-book1 full-book-name
+            (chk-acceptable-certify-book1 book-name
+                                          full-book-name
                                           dir
                                           '? ; no check needed for k = t
                                           nil
@@ -13197,9 +13200,10 @@
                                           suspect-book-action-alist
                                           (w state) ; see evalp comment above
                                           ctx state)))))
-       (t (chk-acceptable-certify-book1 full-book-name dir k cmds nil cbds
-                                        names cert-op suspect-book-action-alist
-                                        wrld ctx state)))))))
+       (t (chk-acceptable-certify-book1 book-name full-book-name dir k cmds nil
+                                        cbds names cert-op
+                                        suspect-book-action-alist wrld ctx
+                                        state)))))))
 
 (defun print-objects (lst ch state)
   (cond ((null lst) state)
