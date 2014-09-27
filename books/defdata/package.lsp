@@ -35,7 +35,7 @@
      u::defloop def-ruleset
 
      ;polymorphic sig
-     sig
+     ; sig  ;;Clashing with sig in RTL library
 
      )
    
