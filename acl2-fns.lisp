@@ -1731,7 +1731,9 @@ notation causes an error and (b) the use of ,. is not permitted."
   #+sbcl
   `(sb-sys:without-interrupts ,@forms)
   #+gcl
-  `(si::without-interrupts . ,forms) ; Camm Maguire suggestion
+  (if (fboundp 'si::without-interrupts)
+      `(si::without-interrupts ,@forms) ; Camm Maguire suggestion
+    `(progn ,@forms))
   #+lispworks
 
 ; Lispworks decided to remove "without-interrupts" from their system, because
@@ -1740,7 +1742,7 @@ notation causes an error and (b) the use of ,. is not permitted."
 ; "with-interrupts-blocked".
 
   `(mp:with-interrupts-blocked ,@forms)
-  #-(or ccl sbcl lispworks)
+  #-(or ccl sbcl gcl lispworks)
   `(progn ,@forms))
 
 (defmacro with-interrupts (&rest forms)
