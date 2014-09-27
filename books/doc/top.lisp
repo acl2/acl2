@@ -376,7 +376,7 @@ of proofs.")
 (xdoc::change-parents data-structures (macro-libraries))
 (xdoc::change-parents hacker (interfacing-tools))
 (xdoc::change-parents witness-cp (proof-automation))
-(xdoc::change-parents testing (debugging))
+(xdoc::change-parents testing (cgen))
 
 (xdoc::change-parents leftist-trees (projects))
 (xdoc::change-parents ltree-sort (leftist-trees))
