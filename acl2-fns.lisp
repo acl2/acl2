@@ -1702,7 +1702,7 @@ notation causes an error and (b) the use of ,. is not permitted."
   value form is not evaluated if the variable is already BOUNDP.''"
 
   #-Clozure
-  `(defparameter ,@r)
+  `(defvar ,@r)
   #+Clozure
   `(ccl::defstaticvar ,@r))
 

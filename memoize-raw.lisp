@@ -49,6 +49,9 @@
 ;   - Update :doc for the pons/hons-wash soundness fix checked into git,
 ;     especially for hons-wash.
 
+; - Consider counting pons calls even when a number is returned; else make sure
+;   the :doc is clear about this.  (See the definition of pons.)
+
 ; - Perhaps write an essay summarizing how memoization works, including
 ;   discussion of *memoize-call-array* (or at least pointing to the comment
 ;   there).
@@ -269,7 +272,7 @@
 
 (defparameter *record-bytes*
 
-; If *record-byets* is not NIL at the time a function is memoized, we attempt
+; If *record-bytes* is not NIL at the time a function is memoized, we attempt
 ; to count all heap bytes allocated during calls of that function.
 
 ; It is quite possibly fine to replace the following form by T.  However, we
@@ -462,6 +465,8 @@
 ; Function exit-boot-strap-mode further populates this hash table by calling
 ; function initialize-never-memoize-ht.
 
+; Users can set this with never-memoize.
+
   (let ((ht (make-hash-table :test 'eq)))
     (loop for x in *stobjs-out-invalid*
           do (setf (gethash x ht) t))
@@ -484,7 +489,8 @@
 
 (defg *memoize-info-ht*
 
-; This hash table has two mappings in one (see setf forms in memoize-fn), that
+; This hash table associates memoized function symbols with various
+; information.  It has two mappings in one (see setf forms in memoize-fn), that
 ; is, two kinds of keys: symbols and numbers.
 ;
 ;   1. It maps each currently memoized function symbol, fn, to a DEFREC record
@@ -542,7 +548,8 @@
 ; memoized function, column 6 is for the second, and so on.
 
 ; ROWS.  In columns 5 and greater, row 0 is used to count 'bytes', row 1 counts
-; 'hits', row 2 counts mht calls, and row 4 counts pons calls.  (3 was formerly
+; 'hits', row 2 counts mht calls, and row 4 counts pons calls that don't simply
+; return a number (i.e., an address in the static-hons case).  (3 was formerly
 ; used to count hons calls, but that is no longer the case.)  The elements of
 ; an ma column starting at row 10 are for counting and timing info.  Suppose
 ; column 7 corresponds to the memoized function FOO and column 12 corresponds
@@ -600,7 +607,8 @@
 
 (defv *initial-2max-memoize-fns* 1000)
 
-(defg *2max-memoize-fns* *initial-2max-memoize-fns*)
+(defg *2max-memoize-fns* ; length of *memoize-call-array*
+  *initial-2max-memoize-fns*)
 
 (defg *max-mem-usage*
 
@@ -689,22 +697,6 @@
     (setq *print-right-margin*         ,*mf-print-right-margin*)
     (setq *print-miser-width*          100)
     ,@args))
-
-(defun-one-output mf-num-to-string (n) ; for forming numbers
-
-; Consider invoking this function in the context of our-syntax.
-
-  (check-type n number)
-  (if (= n 0) (setq n 0))
-  (cond ((typep n '(integer -99 999))
-         (format nil "~8d" n))
-        ((or (< -1000 n -1/100)
-             (< 1/100 n 1000))
-         (format nil "~8,2f" n))
-        (t (format nil "~8,2e" n))))
-
-(defmacro mf-make-symbol (&rest r) ; for forming symbols in package ACL2
-  `(our-syntax (intern (format nil ,@r) *acl2-package*)))
 
 ; SECTION: Number of Arguments
 
@@ -1053,7 +1045,7 @@
                     nil
                   (safe-incf-aux ,x ,incv ,where)))))))
 
-; SECTION: Ponsing
+; SECTION: Ponsing: Creating keys ("ponses") for memoization tables
 
 ; Pons differs from hons in that it does not honsify its arguments and in that
 ; it takes a hash table as a third argument.  We use pons in memoization.
@@ -1331,7 +1323,7 @@
                  (cons 'pist* (cons table (cdr x)))
                  table))))
 
-; SECTION: Identifying functions that are safe to memoize
+; SECTION: Identifying functions that are unsafe to memoize
 
 (defun initialize-never-memoize-ht ()
 
@@ -1374,6 +1366,9 @@
 ; SECTION: Preliminary memoization support
 
 (defrec memoize-info-ht-entry
+
+; The *memoize-info-ht* associates memoized function symbols with these
+; records.
 
 ; The fields are vaguely ordered by most frequently referenced first, but it's
 ; not clear that this is important for efficiency, except perhaps for
@@ -2049,11 +2044,15 @@
                        (/ ticks *float-ticks/second*) ctx)
                0)))))
 
-; SECTION: Memoize-fn, unmemoize-fn, etc.
+; SECTION: The main code for creating memoized function definitions:
+; memoize-fn, unmemoize-fn, etc.
 
 (defun-one-output memoizedp-raw (fn)
   (and (symbolp fn)
        (values (gethash fn *memoize-info-ht*))))
+
+(defmacro mf-make-symbol (&rest r) ; for forming symbols in package ACL2
+  `(our-syntax (intern (format nil ,@r) *acl2-package*)))
 
 (defun memoize-fn-init (fn inline wrld &aux (state *the-live-state*))
 
@@ -3041,6 +3040,19 @@
 
 ; SECTION: Statistics gathering and printing routines
 
+(defun-one-output mf-num-to-string (n) ; for forming numbers
+
+; Consider invoking this function in the context of our-syntax.
+
+  (check-type n number)
+  (if (= n 0) (setq n 0))
+  (cond ((typep n '(integer -99 999))
+         (format nil "~8d" n))
+        ((or (< -1000 n -1/100)
+             (< 1/100 n 1000))
+         (format nil "~8,2f" n))
+        (t (format nil "~8,2e" n))))
+
 (defun mf-shorten (x n)
 
 ; Consider invoking this function in the context of our-syntax.
@@ -3115,7 +3127,7 @@
 ; result is of mfixnum type.  We are guessing that the cost of being safe is
 ; small, so we are renaming this function as safe-incf-pons, since it has only
 ; been used for reporting statistics related to pons.  It would certainly be
-; fine to eliminae this extra layer altogether once we are confident that it
+; fine to eliminate this extra layer altogether once we are confident that it
 ; causes only negligible slowdown in statistics reporting.
 
   `(safe-incf ,x ,inc))
