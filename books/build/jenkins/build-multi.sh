@@ -64,7 +64,7 @@ echo "Making ACL2(${ACL2_SUFFIX})"
 # quotes in the calling shell.  If your startjob is just a wrapper for
 # bash, you'll want to use $* to pass in the arguments to startjob
 startjob -c "make acl2${ACL2_SUFFIX} -f books/build/jenkins/Makefile LISP=$LISP &> make.log" \
-  --name "J_CCL_ACL2H" \
+  --name "J_${LISP}_ACL2${ACL2_SUFFIX}" \
   --limits "pmem=4gb,nodes=1:ppn=1,walltime=10:00"
 
 echo "Building the books."
