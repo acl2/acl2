@@ -8,3 +8,9 @@
        (defun r2 (x) x))
 
 (include-book "mid")
+
+; Check for fix in late 9/2014 for pcert bug.
+
+(defun f1 (x) x)
+
+(verify-guards+ f1)

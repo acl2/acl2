@@ -9871,6 +9871,7 @@
       ((and (eq (cert-op state) :convert-pcert)
             (not (f-get-global 'in-local-flg state))
             (not (consp check-expansion))
+            (not expansion?)
 
 ; This case should not happen, because all make-event forms should already be
 ; expanded away when we do the Convert procedure of provisional certification,
@@ -9890,11 +9891,11 @@
            "Implementation error: You should not be seeing this message!  ~
             Please contact the ACL2 implementors.~|~%Make-event expansion is ~
             illegal during the Convert procedure of provisional certification ~
-            (unless :check-expansion is supplied a consp argument).  ~
-            Expansion for make-event of the form ~x0 is thus not allowed.  ~
-            The use of a .acl2x file can sometimes solve this problem.  See ~
-            :DOC provisional-certification."
-           form))
+            (unless :check-expansion is supplied a consp argument or ~
+            :expansion? is supplied a non-nil argument).  The form ~x0 is ~
+            thus illegal.  The use of a .acl2x file can sometimes solve this ~
+            problem.  See :DOC provisional-certification."
+           whole-form))
       ((not (or (eq check-expansion nil)
                 (eq check-expansion t)
                 (consp check-expansion)))
