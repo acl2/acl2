@@ -4,6 +4,20 @@
 (acl2::begin-book t);$ACL2s-Preamble$|#
 
 
+;; [Jared] Marking this book as non-acl2(r) because it attempts to prove:
+;;
+;; (DEFTHM COMMON-LISP::COMPLEX-CONSTRUCTOR-DESTRUCTORS
+;;          (IMPLIES (ACL2-NUMBERP X)
+;;                   (AND (RATIONALP (REALPART X))
+;;                        (RATIONALP (IMAGPART X))))
+;;          :HINTS NIL
+;;          :RULE-CLASSES NIL)
+;;
+;; which, I think, is not a theorem in ACL2(r).
+
+; cert_param: (non-acl2r)
+
+
 (in-package "ACL2")
 
 ;Data has separate package namespace 'defdata' and which implements
