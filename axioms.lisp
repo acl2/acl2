@@ -25040,9 +25040,12 @@ Lisp definition."
                                       #-(or ccl gcl)
                                       "; ~Xfe took~|; ~st seconds realtime, ~
                                        ~sc seconds runtime.~%")))
-                     (fmt-to-comment-window
-                      ,g-msg alist 0
-                      (abbrev-evisc-tuple *the-live-state*)))))))))))))
+                     (state-free-global-let*
+                      ((fmt-hard-right-margin 100000)
+                       (fmt-soft-right-margin 100000))
+                      (fmt-to-comment-window
+                       ,g-msg alist 0
+                       (abbrev-evisc-tuple *the-live-state*))))))))))))))
 
 (encapsulate
  ()

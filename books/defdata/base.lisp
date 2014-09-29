@@ -956,7 +956,7 @@
                :size t 
                :predicate character-listp
                :enumerator nth-character-list  
-               ::prettyified-def (listof character))
+               :prettyified-def (listof character))
                
 (register-type standard-char-list 
                :size t 
