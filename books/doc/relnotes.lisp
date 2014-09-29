@@ -106,7 +106,7 @@ particular, it no longer sets @('USE_QUICKLISP=1'), which must now be provided
 explicitly in order for the command above to build the ACL2+Books Manual.</p>
 
 <p>Installing Quicklisp now works from behind a proxy.  See Section `Using a
-Proxy` in @(see books-certification).")
+Proxy` in @(see books-certification).</p>")
 
 
 (defxdoc note-6-5-books
