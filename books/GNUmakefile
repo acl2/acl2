@@ -386,23 +386,32 @@ nonstd/workshops/1999/calculus/book/tree/proof-outline: \
 endif # ifneq ($(ACL2_HAS_REALS), )
 
 
-# Stupid hack to avoid trying to set up Quicklisp on GCL.
-ifeq (GCL, $(ACL2_HOST_LISP))
-ifneq ($(USE_QUICKLISP), )
-$(info Note: Ignoring USE_QUICKLISP=1 since Quicklisp does not work on GCL!)
-USE_QUICKLISP :=
-endif
-endif
 
+# Set up REALLY_USE_QUICKLISP to be 1 if we really want to use Quicklisp or 0
+# otherwise.  REALLY_USE_QUICKLISP is almost the same as USE_QUICKLISP.
+# However, Quicklisp doesn't work on GCL, so if we're running on GCL, then
+# ignore what the user said and don't try to build the Quicklisp books.
+#
+# I would much prefer to just reassign USE_QUICKLISP to 0 when we don't want
+# it, but I can't get that to work in Make for whatever reason.
+
+ifeq ($(USE_QUICKLISP), 1)
+  ifeq ($(ACL2_HOST_LISP), GCL)
+    $(info Note: Ignoring USE_QUICKLISP=1 since Quicklisp does not work on GCL!)
+    REALLY_USE_QUICKLISP := 0
+  else
+    REALLY_USE_QUICKLISP := 1
+  endif
+endif
 
 QUICKLISP_DIR := centaur/quicklisp
 
 .PHONY: quicklisp
 
-ifeq ($(USE_QUICKLISP), )
+ifeq ($(REALLY_USE_QUICKLISP), 0)
 
 quicklisp:
-	$(MAKE) USE_QUICKLISP=1 $(QUICKLISP_DIR)/top.cert
+	$(MAKE) REALLY_USE_QUICKLISP=1 $(QUICKLISP_DIR)/top.cert
 
 else
 
@@ -431,12 +440,13 @@ quicklisp: $(QUICKLISP_DIR)/top.cert
 # I don't think we need this now
 # all: $(QUICKLISP_DIR)/top.cert
 
-endif # USE_QUICKLISP
+endif # REALLY_USE_QUICKLISP
 
-# [Jared]: I moved these out of the USE_QUICKLISP section so that "make clean"
-# will always remove the quicklisp files if you have ever built with
-# USE_QUICKLISP before.  The goal is to ensure that stale quicklisp files
-# aren't left around after a "make clean" by accident.
+
+# [Jared]: I moved these out of the REALLY_USE_QUICKLISP section so that "make
+# clean" will always remove the quicklisp files if you have ever built with
+# REALLY_USE_QUICKLISP before.  The goal is to ensure that stale quicklisp
+# files aren't left around after a "make clean" by accident.
 
 .PHONY: quicklisp_clean
 
@@ -460,7 +470,7 @@ clean: quicklisp_clean
 endif # ifndef ACL2_SAVE_QUICKLISP
 
 
-ifeq ($(USE_QUICKLISP), )
+ifeq ($(REALLY_USE_QUICKLISP), 0)
 $(info Excluding books that depend on Quicklisp: [$(CERT_PL_USES_QUICKLISP)])
 OK_CERTS := $(filter-out $(CERT_PL_USES_QUICKLISP), $(OK_CERTS))
 endif
@@ -959,10 +969,9 @@ endif # ifeq ($(realpath workshops), )
 
 all: $(OK_CERTS)
 
-# Starting 8/15/2014, everything does not automatically set
-# USE_QUICKLISP=1, even in the HONS case.  In particular, "make
-# everything" no longer makes doc/manual/; for that, specify
-# USE_QUICKLISP=1.
+# Starting 8/15/2014, everything does not automatically set USE_QUICKLISP=1,
+# even in the HONS case.  In particular, "make everything" no longer makes
+# doc/manual/; for that, specify USE_QUICKLISP=1.
 .PHONY: everything
 everything:
 	$(MAKE) all $(ADDED_BOOKS) $(ADDED_BOOK_TARGETS)
@@ -1384,8 +1393,6 @@ centaur/getopt/demo2: centaur/getopt/demo2.cert
 	 ACL2_CUSTOMIZATION=NONE $(STARTJOB) -c "$(ACL2) < demo2-save.lsp &> demo2-save.out"
 	@ls -l centaur/getopt/demo2
 
-#ifeq ($(filter GCL, $(ACL2_HOST_LISP)), )
-
 centaur/getopt/demo2-test.ok: centaur/getopt/demo2 \
                               centaur/getopt/demo2-test.pl
 	@echo "Testing getopt demo executable"
@@ -1395,10 +1402,6 @@ centaur/getopt/demo2-test.ok: centaur/getopt/demo2 \
 	@ls -l centaur/getopt/demo2-test.ok
 
 all: centaur/getopt/demo2-test.ok
-
-#else
-#$(info Excluding centaur/getopt/demo2 test since host lisp is $(ACL2_HOST_LISP))
-#endif
 
 
 
