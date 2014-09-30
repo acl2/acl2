@@ -3283,6 +3283,10 @@ To avoid the following break and get only the above warning:~%  ~a~%"
 #+static-hons
 (defun hl-hspace-hons-clear (gc hs)
   (declare (type hl-hspace hs))
+
+  #+static-hons
+  (clear-memoize-tables) ; See comment about this in hl-hspace-hons-wash.
+
   (let* ((addr-ht         (hl-hspace-addr-ht hs))
          (sbits           (hl-hspace-sbits hs))
          (sbits-len       (length sbits))
@@ -3522,6 +3526,16 @@ To avoid the following break and get only the above warning:~%  ~a~%"
   #-static-hons
   (format t "; Hons-Note: washing is not available for classic honsing.~%")
 
+; For static honsing, it is also necessary to clear the memoize tables, because
+; indices of static conses might be stale.  See the soundness bug example in
+; :xdoc topic note-7-0, in community book books/system/doc/acl2-doc.lisp, and
+; see the comment about hons-wash in pons-addr-of-argument.  We clear the
+; memoize tables before doing anything else, in case a control-c leaves things
+; only partly done.
+
+  #+static-hons
+  (clear-memoize-tables)
+
   #+static-hons
   (let* (;; Note: do not bind ADDR-HT here, we want it to get GC'd.
          (addr-ht-size             (hash-table-size (hl-hspace-addr-ht hs)))
@@ -3623,15 +3637,6 @@ To avoid the following break and get only the above warning:~%  ~a~%"
       (setf (hl-hspace-persist-ht hs) persist-ht)
       (setf (hl-hspace-faltable hs) faltable)
       (hl-make-addr-limit-current hs)))
-
-; For static honsing, it is also necessary to clear the memoize tables, because
-; indices of static conses might be stale.  See the soundness bug example in
-; :xdoc topic note-7-0, in community book books/system/doc/acl2-doc.lisp, and
-; see the comment about hons-wash in pons-addr-of-argument.
-
-  #+static-hons
-  (clear-memoize-tables)
-
   nil)
 
 (defun hl-maybe-resize-ht (size src)
