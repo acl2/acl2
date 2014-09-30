@@ -2969,4 +2969,5 @@ module elements and its comments.</p>"
      (vl-print-wirename x.name)
      (vl-print " ( ")
      (vl-pp-modport-portlist x.ports)
-     (vl-println " );"))))
+     (vl-println " );")
+     (vl-println ""))))

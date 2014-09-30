@@ -274,6 +274,9 @@ acl2r.lisp:
 	if [ "$(ACL2_HONS)" != "" ] ; then \
 	echo '(or (member :hons *features*) (push :hons *features*))' >> acl2r.lisp ;\
 	fi
+	if [ "$(ACL2_MT_MEMO)" != "" ] ; then \
+	echo '(or (member :multithreaded-memoize *features*) (push :multithreaded-memoize *features*))' >> acl2r.lisp ;\
+	fi
 	if [ "$(ACL2_HONS)" = "h_hack" ] ; then \
 	echo '(or (member :memoize-hack *features*) (push :memoize-hack *features*))' >> acl2r.lisp ;\
 	fi
