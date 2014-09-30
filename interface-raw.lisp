@@ -6842,7 +6842,9 @@
   (move-current-acl2-world-key-to-front (w *the-live-state*))
   (checkpoint-world1 t (w *the-live-state*) *the-live-state*)
   #+hons
-  (initialize-never-memoize-ht))
+  (progn (memoize-init)
+         (initialize-never-memoize-ht)
+         (acl2h-init-memoizations)))
 
 (defun-one-output ld-alist-raw (standard-oi ld-skip-proofsp ld-error-action)
   `((standard-oi . ,standard-oi)

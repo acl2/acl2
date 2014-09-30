@@ -4415,8 +4415,6 @@
   #+ccl
   (start-sol-gc)
 
-  (acl2h-init-memoizations)
-
 ; It is can be helpful for the user to know what the garbage collector is doing
 ; when using HONS and MEMOIZE.  We leave full-gc messages on but turn EGC
 ; messages off.  We're disabling EGC anyway, but when we've experimented with
