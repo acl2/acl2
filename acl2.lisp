@@ -1660,23 +1660,6 @@ which is saved just in case it's needed later.")
      *old-character-reader*)
     *readtable*))
 
-(defvar *load-compiled-verbose* nil)
-
-(defun load-compiled (filename &optional verbose)
-
-; It may be useful to implement the maybe-verbose argument for Lisps that do
-; not print a "loading" message.  For now, we comment out code below that would
-; do this.
-
-  (when (and verbose
-             *load-compiled-verbose*)
-    (eval `(cw "~%Note: loading file ~s0.~|" ',filename)))
-  #+clisp
-  (let ((*readtable* *acl2-readtable-clisp-fas*))
-    (load filename))
-  #-clisp
-  (load filename))
-
 ;                       Remarks on *acl2-readtable*
 ;
 ;
