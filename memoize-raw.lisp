@@ -1318,8 +1318,9 @@
               (hl-hspace-truly-static-honsp x *default-hs*))
 
 ; Note that a honsp is not garbage collected unless it is first freed from its
-; addr-table.  So the following value will correspond to x until a hons-wash is
-; done, which is long enough since a hons-wash clears all pons tables.
+; addr-table.  So the following value will correspond to x until a hons-wash or
+; hons-clear is done, which is long enough since those operations clear all
+; pons tables (in the #+static-hons case, which is the case we are in here).
 
 ; [Jared] Is this OK for multithreaded memoize?  I think so.  The scenario here
 ; is:
