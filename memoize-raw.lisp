@@ -237,7 +237,12 @@
 ; variables are necessary...
 
 #+multithreaded-memoize
-(defg *enable-multithreaded-memoization* nil)
+(defg *enable-multithreaded-memoization*
+  ;; By default set up multithreaded memoization only if we are running on
+  ;; ACL2(p).  However, nothing here is really ACL2(p) specific, and users of
+  ;; plain ACL2(h) can change this in raw Lisp if they know what they're doing.
+  #+acl2-par t
+  #-acl2-par nil)
 
 #+multithreaded-memoize
 (defg *global-memoize-lock*
@@ -2160,6 +2165,8 @@
         (t
          cl-defun)))
 
+(defg *memoize-timing-bugs* 0)
+
 (defmacro fix-ticks (ticks ctx)
 
 ; Warning: If you make this a function and add a declaim form first such as
@@ -2178,9 +2185,14 @@
                   (< (the-mfixnum ticks)
                      (the-mfixnum *10-days*)))
              (the-mfixnum ticks))
-            (t (format t "Ignoring time increment of ~a sec for ~a~%"
+            (t
+             (incf *memoize-timing-bugs*)
+             (when (<= *memoize-timing-bugs* 10)
+               (format t "Ignoring time increment of ~a sec for ~a~%"
                        (/ ticks *float-ticks/second*) ctx)
-               0)))))
+               (when (eql *memoize-timing-bugs* 10)
+                 (format t "Timing is very dubious.  Suppressing further messages.~%")))
+             0)))))
 
 ; SECTION: The main code for creating memoized function definitions:
 ; memoize-fn, unmemoize-fn, etc.
