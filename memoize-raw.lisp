@@ -200,23 +200,6 @@
 
 ; Experimental: Multithreaded Memoization
 ;
-; Usage: build ACL2 like this:
-;
-;    $ make ACL2_HONS=h ACL2_MT_MEMO=1 ...
-;
-; This basically does a (pushnew :multithreaded-memoize *features*) during the
-; build.  The resulting ACL2 is then has the ability to support multi-threaded
-; memoization.
-;
-; Multi-threaded memoization is not enabled by default.  This is appropriate
-; for avoiding locking overhead on ordinary, single-threaded ACL2(h) code.  To
-; enable multi-threaded memoization (at some cost of locking), you can run:
-;
-;   (setq *enable-multithreaded-memoization* t)
-;
-; This activates locking that is intended to allow multiple threads to
-; simultaneously execute memoized functions.
-;
 ; The implementation is in many ways suboptimal because, for the most part, I
 ; just want to get something working.  To keep things simple, I have added a
 ; single, global memoize lock.  This lock needs to be acquired whenever a
@@ -236,7 +219,6 @@
 ; and let each thread have its own notion of *caller* or whatever other
 ; variables are necessary...
 
-#+multithreaded-memoize
 (defg *enable-multithreaded-memoization*
   ;; By default set up multithreaded memoization only if we are running on
   ;; ACL2(p).  However, nothing here is really ACL2(p) specific, and users of
@@ -244,7 +226,6 @@
   #+acl2-par t
   #-acl2-par nil)
 
-#+multithreaded-memoize
 (defg *global-memoize-lock*
   ;; BOZO this should probably be using DEFLOCK, but that doesn't seem to work
   ;; on non-ACL2(p) builds.
@@ -253,9 +234,6 @@
 (defmacro with-global-memoize-lock (&rest forms)
   ;; BOZO this should probably be introduced automatically by DEFLOCK, but
   ;; again that doesn't work on non-ACL2(p).
-  #-multithreaded-memoize
-  `(progn . ,forms)
-  #+multithreaded-memoize
   (let ((body (gensym)))
     ;; Avoid duplication of ,forms to avoid code blowup
     `(flet ((,body () . ,forms))
@@ -264,20 +242,6 @@
          (,body)))))
 
 (defmacro memo-mht (&rest args)
-
-  #-multithreaded-memoize
-  ;; For normal, non-multithreaded memoization, this just makes an ordinary
-  ;; hash table.  On CCL, attempts to access such a hash table from threads
-  ;; other than the thread that created the hash table result in errors.  This
-  ;; acts as a kind of simple safety net against multithreaded code mucking
-  ;; with a memoize-related hash table.
-  `(hl-mht . ,args)
-
-  #+multithreaded-memoize
-  ;; Otherwise, for multithreaded memoize, we need to allow all threads to
-  ;; access things like the memoize tables, pons tables, etc.  In this case
-  ;; we're assuming responsibility for locking.
-  ;;
   ;; I believe we could safely use either :shared t or :lock-free t here.  I
   ;; suspect :lock-free may give better performance, but it would be good to
   ;; back this up with experimental evidence.
