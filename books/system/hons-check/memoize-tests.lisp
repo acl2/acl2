@@ -233,34 +233,34 @@
 (unmemoize 'f6)
 
 
-(defun show-me-default-hons-space (from)
-  (declare (xargs :guard t)
-           (ignorable from))
-  (er hard? 'show-me-default-hons-space
-      "Raw lisp definition not installed"))
-(defttag :show-me-default-hons-space)
-(progn!
- (set-raw-mode t)
- (defun show-me-default-hons-space (from)
-   (format t "~S: Default-hs is ~S~%"
-           from
-           (funcall (intern "%ADDRESS-OF" "CCL") *default-hs*))
-   nil))
+;; (defun show-me-default-hons-space (from)
+;;   (declare (xargs :guard t)
+;;            (ignorable from))
+;;   (er hard? 'show-me-default-hons-space
+;;       "Raw lisp definition not installed"))
+;; (defttag :show-me-default-hons-space)
+;; (progn!
+;;  (set-raw-mode t)
+;;  (defun show-me-default-hons-space (from)
+;;    (format t "~S: Default-hs is ~S~%"
+;;            from
+;;            (funcall (intern "%ADDRESS-OF" "CCL") *default-hs*))
+;;    nil))
 
 (defun test-simultaneously-acons ()
   (pand (progn$
-         (show-me-default-hons-space 'thread-1-pre)
-         (hons-summary)
+         ;; (show-me-default-hons-space 'thread-1-pre)
+         ;; (hons-summary)
          (hons-acons 1 2 nil)
-         (show-me-default-hons-space 'thread-1-post)
-         (hons-summary)
+         ;; (show-me-default-hons-space 'thread-1-post)
+         ;; (hons-summary)
          t)
         (progn$
-         (show-me-default-hons-space 'thread-2-pre)
-         (hons-summary)
+         ;; (show-me-default-hons-space 'thread-2-pre)
+         ;; (hons-summary)
          (hons-acons 2 3 nil)
-         (show-me-default-hons-space 'thread-2-post)
-         (hons-summary)
+         ;; (show-me-default-hons-space 'thread-2-post)
+         ;; (hons-summary)
          t)))
 
 (assert! (test-simultaneously-acons))
@@ -271,19 +271,19 @@
 
 (assert! (test-simultaneously-hons))
 
+;; Basic check to try to see if threads will interfere with one another
 
-(defun add-some-honses (x)
-  ;; Try to get some honses in each thread to gum up the works
+(defun add-some-honses (x acc)
   (declare (xargs :guard t))
   (if (atom x)
-      nil
-    (list* (hons-copy (car x))
-           (hons (car x) (car x))
-           (add-some-honses (cdr x)))))
-
+      acc
+    (add-some-honses (cdr x)
+                     (list* (hons-copy (car x))
+                            (hons (car x) (car x))
+                            acc))))
 (defun thread1 (x)
   (declare (xargs :guard t))
-  (let ((x (append (add-some-honses x) x)))
+  (let ((x (add-some-honses x x)))
     (list (f1-list x)
           (f2-list x)
           (f3-list x)
@@ -293,7 +293,7 @@
 
 (defun thread2 (x)
   (declare (xargs :guard t))
-  (let ((x (append (add-some-honses x) x)))
+  (let ((x (add-some-honses x x)))
     (list (f2-list x)
           (f4-list x)
           (f6-list x)
@@ -323,7 +323,9 @@
   (pand (check-thread1 n)
         (check-thread2 n)))
 
-(assert! (time$ (check-both 100)))  ;; around 5.27 seconds on k3
+;; On compute-1-1 on ACL2(hp), before memoizing anything, this takes 12.33
+;; seconds, many gc messages
+(assert! (time$ (check-both 100)))
 
 (clear-memoize-tables)
 
@@ -334,5 +336,8 @@
 (memoize 'f5)
 (memoize 'f6 :condition '(not (equal x -1/3)))
 
-(assert! (time$ (check-both 100)))  ;; took around 180 seconds
+;; On compute-1-1 on ACL2(hp), after memoizing things, this takes 242 seconds.
+;; It takes so much longer because the threads fight over the global memoize
+;; lock.
+(assert! (time$ (check-both 100)))
 
