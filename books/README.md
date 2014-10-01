@@ -107,6 +107,6 @@ Davis](mailto:jared@centtech.com) or [David
 Rager](mailto:ragerdl@gmail.com) and ask them to add you to the project.
 Please note the [guidelines for book development][books guidelines].
 
-[wiki]: http://code.google.com/p/acl2-books/w/list
-[bugtracker]: http://code.google.com/p/acl2-books/issues/list
-[books guidelines]: http://code.google.com/p/acl2-books/wiki/CommittingCode
+[wiki]: https://github.com/acl2/acl2/wiki
+[bugtracker]: https://github.com/acl2/acl2/issues
+[books guidelines]: https://github.com/acl2/acl2/wiki/Committing-code
