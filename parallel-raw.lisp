@@ -491,7 +491,8 @@
            #+hons
            (*default-hs* nil))
       #+hons
-      (declare (ignorable *default-hs*)) ; not yet used
+      (declare (ignorable *default-hs*) ; not yet used
+               (special *default-hs*))
       (loop ; "forever" - really until :worker-thread-no-longer-needed thrown
 
 ; Wait until there are both a piece of work and an idle core.  In CCL, if
