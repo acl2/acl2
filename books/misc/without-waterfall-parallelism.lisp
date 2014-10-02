@@ -9,6 +9,8 @@
 
 (in-package "ACL2")
 
+(include-book "xdoc/top" :dir :system)
+
 (defun without-waterfall-parallelism-fn (events state)
 ; (declare (xargs :guard (state-p state) :stobjs state))
   (declare (xargs :mode :program :stobjs state))
@@ -33,3 +35,12 @@
 
 (defmacro without-waterfall-parallelism (&rest events)
   `(make-event (without-waterfall-parallelism-fn ',events state)))
+
+(defxdoc without-waterfall-parallelism
+  :parents (parallelism)
+  :short "Disable waterfall parallelism for an enclosed event"
+  :long "<p>Example usage:</p>
+  @({
+  (without-waterfall-parallelism
+    (defun foo (x) (* x 3)))
+  })")
