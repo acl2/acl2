@@ -32,7 +32,10 @@
 (include-book "std/util/define" :dir :system)
 (include-book "tools/include-raw" :dir :system)
 (local (include-book "oslib/read-acl2-oracle" :dir :system))
-       
+
+; avoid gcl-cltl1 because it doesn't have handler-case
+; cert_param: (ansi-only)
+
 (define unsound-eval
   :short "A somewhat robust evaluator."
   ((sexpr "An s-expression to evaluate, typically this should be a well-formed
