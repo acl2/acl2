@@ -34,6 +34,9 @@
 (include-book "tools/include-raw" :dir :system)
 (local (include-book "oslib/read-acl2-oracle" :dir :system))
 
+; Avoid problems because gcl-cltl1 doesn't know about loop-finish
+; cert_param: (ansi-only)
+
 (define read-string
   :parents (std/io)
   :short "Parse a string into s-expressions, by using Common Lisp's @('read')

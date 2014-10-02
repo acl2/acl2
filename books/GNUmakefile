@@ -402,6 +402,8 @@ ifeq ($(USE_QUICKLISP), 1)
   else
     REALLY_USE_QUICKLISP := 1
   endif
+else
+  REALLY_USE_QUICKLISP := 0
 endif
 
 QUICKLISP_DIR := centaur/quicklisp
