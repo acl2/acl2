@@ -27,3 +27,14 @@
 
 (defmacro with-waterfall-parallelism (&rest events)
   `(make-event (with-waterfall-parallelism-fn ',events state)))
+
+(defxdoc with-waterfall-parallelism
+  :parents (parallelism)
+  :short "Enable waterfall parallelism for an enclosed event"
+  :long "<p>Example usage:</p>
+  @({
+  (with-waterfall-parallelism
+    (defthm assoc-append
+     (equal (append x (append y z))
+            (append (append x y) z))))
+  })")
