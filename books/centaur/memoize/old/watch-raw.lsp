@@ -27,7 +27,7 @@
             use defn1."
            f a))
   `(progn
-     (mf-note-arity ,(length a) 1)
+     (mf-note-arity ',fn ,(length a) 1)
      (declaim (ftype (function ,(make-list (len a) :initial-element t)
                                (values t))
                      ,f))
