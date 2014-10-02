@@ -213,16 +213,29 @@
 ; memo table has its own separate lock.  On the other hand, that makes things
 ; like deadlock a lot trickier.  That sounds pretty horrifying, so I'm going to
 ; stick with the simple but possibly slow implementation for now.
-;
-; BOZO check out *caller*.  I'm not really worried about stats, but it might be
-; that if Matt understands this code, we could change it to, e.g., a defvar,
-; and let each thread have its own notion of *caller* or whatever other
-; variables are necessary...
 
 (defg *enable-multithreaded-memoization*
   ;; By default set up multithreaded memoization only if we are running on
   ;; ACL2(p).  However, nothing here is really ACL2(p) specific, and users of
   ;; plain ACL2(h) can change this in raw Lisp if they know what they're doing.
+  ;;
+  ;; Note for raw Lisp hackers.  We ordinarily consult this variable
+  ;; dynamically.  However, to make memoized functions execute more
+  ;; efficiently, we only consult its value AT MEMOIZE TIME when creating the
+  ;; memoized definitions.  Consequences of this:
+  ;;
+  ;;   - If you ever want to change this, e.g., because you are using ordinary
+  ;;     ACL2(h) instead of ACL2(hp), but you want to do something with raw
+  ;;     Lisp threads, then you really need to do something like this:
+  ;;
+  ;;        (setq *enable-multithreaded-memoization* t)
+  ;;        (rememoize-all)
+  ;;
+  ;;   - You need to be careful to do the rememoize-all AFTER you have already
+  ;;     loaded any books that might contain memoized functions.  For instance,
+  ;;     if you do the above and then include a book with a memoized F, then
+  ;;     the definition of F will not do appropriate locking until you again do
+  ;;     a rememoize-all.
   #+acl2-par t
   #-acl2-par nil)
 
@@ -232,14 +245,29 @@
   (ccl::make-lock '*global-memoize-lock*))
 
 (defmacro with-global-memoize-lock (&rest forms)
-  ;; BOZO this should probably be introduced automatically by DEFLOCK, but
-  ;; again that doesn't work on non-ACL2(p).
+  ;; Safer but possibly slower way to grab the lock, i.e., this version
+  ;; consults *enable-multithreaded-memoization* at runtime, but to avoid
+  ;; duplicating FORMS we end up using an FLET.
   (let ((body (gensym)))
     ;; Avoid duplication of ,forms to avoid code blowup
     `(flet ((,body () . ,forms))
        (if *enable-multithreaded-memoization*
+           ;; BOZO this should be using some suitable with-lock-grabbed wrapper
+           ;; for compatibility with other Lisps.
            (ccl::with-lock-grabbed (*global-memoize-lock*) (,body))
          (,body)))))
+
+(defmacro with-global-memoize-lock-static (&rest forms)
+  ;; Faster but less safe way to grab the lock, i.e., this version consults
+  ;; *enable-multithreaded-memoization* at macroexpansion time instead of at
+  ;; run time.  This is nothing more than a progn in the single-threaded case.
+  ;;
+  ;; NOTE: ONLY USE THIS WHEN CREATING MEMOIZED DEFINITIONS.  For everything
+  ;; else, the safer version should be plenty fast.
+  (if *enable-multithreaded-memoization*
+      ;; BOZO portability.  Switch to some wrapper for with-lock-grabbed
+      `(ccl::with-lock-grabbed (*global-memoize-lock*) . ,forms)
+    `(progn . ,forms)))
 
 (defmacro memo-mht (&rest args)
   ;; I believe we could safely use either :shared t or :lock-free t here.  I
@@ -2569,7 +2597,10 @@
   `(defun ,fn ,formals ,@dcls
      (declare (ignorable ,@formals ,@specials))
 
-     (with-global-memoize-lock ;; <--- [Jared]: protect ALL THE THINGS
+     (with-global-memoize-lock-static
+       ;; Special case.  This is the lock that will be grabbed when executing
+       ;; the memoized function.  For maximum performance in the single
+       ;; threaded case, use the less-safe, static version of lock grabbing.
 
        (let* ((,*mf-count-loc* ; performance counting
                ,(if (or *record-calls* *record-time*)
@@ -2699,9 +2730,9 @@
                       fn))
 
   (with-global-memoize-lock
-    ;; [Jared] this lock protects the operation of the memoize command, itself.
-    ;; The memoized function separately has its own locking, see
-    ;; memoize-fn-def.
+    ;; [Jared] note that this lock protects the operation of the memoize
+    ;; command, itself.  The definition of the newly memoized function has
+    ;; its own, separate lock.  See memoize-fn-def.
     (when (equal condition *nil*)
       (setq condition nil))
     (with-warnings-suppressed ; e.g., might avoid redefinition warnings
