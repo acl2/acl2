@@ -323,8 +323,10 @@
   (pand (check-thread1 n)
         (check-thread2 n)))
 
-;; On compute-1-1 on ACL2(hp), before memoizing anything, this takes 12.33
-;; seconds, many gc messages
+;; Timings on compute-1-1:
+;;  - ACL2(hp): no memoization: 12.33 seconds (many GC messages)
+;;  - ACL2(h):  no memoization: 15.54 seconds (many GC messages)
+
 (assert! (time$ (check-both 100)))
 
 (clear-memoize-tables)
@@ -336,8 +338,8 @@
 (memoize 'f5)
 (memoize 'f6 :condition '(not (equal x -1/3)))
 
-;; On compute-1-1 on ACL2(hp), after memoizing things, this takes 242 seconds.
-;; It takes so much longer because the threads fight over the global memoize
-;; lock.
+;; Timings on compute-1-1:
+;;  - ACL2(hp): memoization, lock contention:     242 seconds (many gc messages)
+;;  - ACL2(h):  memoization, no lock contention:   61 seconds (many gc messages)
 (assert! (time$ (check-both 100)))
 
