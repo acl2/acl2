@@ -9,6 +9,8 @@
 
 (in-package "ACL2")
 
+(include-book "xdoc/top" :dir :system)
+
 (defun with-waterfall-parallelism-fn (events state)
 ; (declare (xargs :guard (state-p state) :stobjs state))
   (declare (xargs :mode :program :stobjs state))
