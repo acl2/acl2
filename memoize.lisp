@@ -36,26 +36,34 @@
 
 #+(or acl2-loop-only (not hons))
 (defn clear-memoize-table (fn)
+
+; Warning: Keep the return values in sync for the logic and raw Lisp.
+
   fn)
 
 #+(or acl2-loop-only (not hons))
 (defn clear-memoize-tables ()
+
+; Warning: Keep the return values in sync for the logic and raw Lisp.
+
   nil)
 
 #+(or acl2-loop-only (not hons))
 (defn memoize-summary ()
+
+; Warning: Keep the return values in sync for the logic and raw Lisp.
+
   nil)
 
 #+(or acl2-loop-only (not hons))
 (defn clear-memoize-statistics ()
+
+; Warning: Keep the return values in sync for the logic and raw Lisp.
+
   nil)
 
 (defmacro memsum ()
   '(memoize-summary))
-
-; The macros MEMOIZE-ON and MEMOIZE-OFF typically cause "under the hood"
-; effects that, though not changing the semantics of what ACL2 returns, may
-; affect the speed and/or space utilization of the computation.
 
 ; The functions memoize and unmemoize have rather innocent looking
 ; semantics.  But under the hood, they enable and disable memoization.
@@ -98,8 +106,6 @@
             set-slow-alist-action
             memoize
             unmemoize
-            memoize-on
-            memoize-off
             memsum)
           *hons-primitive-fns*))
 
@@ -111,8 +117,7 @@
                      condition-fn
                      hints
                      otf-flg
-                     inline
-                     trace
+                     inline ; from :recursive argument
                      commutative
                      forget
                      memo-table-init-size
@@ -134,7 +139,6 @@
                      (deref-macro-name ,fn (macro-aliases world))
                      (list* (cons :condition-fn ,condition-fn)
                             (cons :inline ,inline)
-                            (cons :trace ,trace)
                             (cons :commutative ,commutative)
                             (cons :forget ,forget)
                             (cons :memo-table-init-size
@@ -169,7 +173,6 @@
                (hints ,hints)
                (otf-flg ,otf-flg)
                (inline ,inline)
-               (trace ,trace)
                (commutative ,commutative)
                (forget ,forget)
                (memo-table-init-size ,memo-table-init-size)
@@ -192,19 +195,19 @@
                       it cannot be memoized."
                      fn))
 
-; Certify-book seems to do things twice, so the following is commented out.
+; There seems to have been a time when the following had caused an error
+; because of double evaluation of memoize forms by certify-book (not sure).  So
+; the following is commented out.  That doesn't seem to cause a problem;
+; redundancy of memoize forms seems to be handled well.
 
-;             ((cdr (assoc-eq fn (table-alist 'memoize-table wrld)))
-;              (er hard 'memoize "~x0 is already memoized." fn))
+;               ((cdr (assoc-eq fn (table-alist 'memoize-table wrld)))
+;                (er hard 'memoize "~x0 is already memoized." fn))
 
                 ((not (member-eq inline '(t nil)))
                  (er hard 'memoize
-                     "The value ~x0 for inline is illegal (must be ~x1 or ~x2)."
+                     "The value ~x0 for inline is illegal (must be ~x1 or ~
+                      ~x2)."
                      inline t nil))
-                ((not (member-eq trace '(t nil)))
-                 (er hard 'memoize
-                     "The value ~x0 for trace is illegal (must be ~x1 or ~x2)."
-                     trace t nil))
                 (t
                  `(progn
                     (defun ,condition-fn ,formals
@@ -226,7 +229,6 @@
                            ',fn
                            (list* (cons :condition-fn ',condition-fn)
                                   (cons :inline ',inline)
-                                  (cons :trace ',trace)
                                   (cons :commutative ',commutative)
                                   (cons :forget ',forget)
                                   (cons :memo-table-init-size
@@ -240,7 +242,6 @@
                        (deref-macro-name ,fn (macro-aliases world))
                        (list* (cons :condition-fn ,condition) ; t or nil
                               (cons :inline ,inline)
-                              (cons :trace ,trace)
                               (cons :commutative ,commutative)
                               (cons :forget ,forget)
                               (cons :memo-table-init-size
@@ -257,7 +258,6 @@
                       (condition 't condition-p)
                       condition-fn hints otf-flg
                       (recursive 't)
-                      trace
                       commutative
                       forget
                       memo-table-init-size
@@ -281,7 +281,7 @@
 
   (declare (xargs :guard (booleanp recursive))
            (ignorable condition-p condition condition-fn hints otf-flg
-                      recursive trace commutative forget memo-table-init-size
+                      recursive commutative forget memo-table-init-size
                       aokp ideal-okp verbose))
 
   #-acl2-loop-only
@@ -312,6 +312,10 @@
                 (list ; use encapsulate so that each form is printed first
                  'encapsulate
                  ()
+                 (list 'value-triple ; avoid redundancy for the encapsulate
+                       (kwote (cons (max-absolute-event-number (w state))
+                                    (car (global-val 'include-book-path
+                                                     (w state))))))
                  (list 'defthm commutative
                        (list 'equal
                              (list fn 'x 'y)
@@ -319,14 +323,13 @@
                        :rule-classes nil)
                  (memoize-form (kwote fn) ',condition ',condition-p
                                ',condition-fn ',hints ',otf-flg ',inline
-                               ',trace
                                (kwote commutative)
                                ',forget
                                ',memo-table-init-size
                                ',aokp
                                ',ideal-okp)))))
            (t (memoize-form fn condition condition-p condition-fn
-                            hints otf-flg inline trace commutative forget
+                            hints otf-flg inline commutative forget
                             memo-table-init-size aokp ideal-okp)))))
     (cond (verbose form)
           (t `(with-output
@@ -361,37 +364,11 @@
                               (not (assoc-keyword :condition r))
                               (not (assoc-keyword :condition-fn r))
                               (not (assoc-keyword :recursive r)))))
+
+; Warning: See the comment in profiled-functions before eliminating :recursive
+; nil, which corresponds to :inline nil in profile-fn.
+
   `(memoize ,fn :condition nil :recursive nil ,@r))
-
-#-hons
-(defmacro memoize-on-raw (fn form)
-  (declare (ignore fn))
-  form)
-
-(defmacro memoize-on (fn form)
-
-; MEMOIZE-ON evaluates form.  During the evaluation the symbol fn has as
-; its symbol-function what it had immediately AFTER the memoization of
-; fn.  Hence, the values of calls of fn may be remembered during the
-; evaluation and later.  Warning: to use MEMOIZE-ON, fn must already
-; be memoized.
-
-  `(return-last 'memoize-on-raw ,fn ,form))
-
-#-hons
-(defmacro memoize-off-raw (fn form)
-  (declare (ignore fn))
-  form)
-
-(defmacro memoize-off (fn form)
-
-; MEMOIZE-OFF evaluates form.  During the evaluation the symbol fn has as
-; its symbol-function what it had immediately BEFORE the memoization
-; of fn.  Hence the values of calls of fn may not be remembered during
-; the evaluation.  Warning: to use MEMOIZE-OFF, fn must already be
-; memoized."
-
-  `(return-last 'memoize-off-raw ,fn ,form))
 
 (defmacro memoizedp-world (fn wrld)
   `(let ((fn ,fn)
@@ -418,9 +395,12 @@
 
 #+(or acl2-loop-only (not hons))
 (defun never-memoize-fn (fn)
-   (declare (xargs :guard (symbolp fn))
-            (ignore fn))
-   nil)
+
+; Warning: Keep the return values in sync for the logic and raw Lisp.
+
+  (declare (xargs :guard (symbolp fn))
+           (ignore fn))
+  nil)
 
 (defmacro never-memoize (fn)
   (declare (xargs :guard (symbolp fn)))
@@ -428,3 +408,14 @@
     (prog2$ (never-memoize-fn ',fn)
             '(value-triple :invisible))
     :check-expansion t))
+
+(defconst *thread-unsafe-builtin-memoizations*
+
+; See acl2h-init-memoizations and acl2h-init-unmemoizations.
+
+  '((worse-than-builtin :condition ; Sol Swords suggestion
+                        '(and (nvariablep term1)
+                              (not (fquotep term1))
+                              (nvariablep term2)
+                              (not (fquotep term2))))
+    (bad-lisp-objectp :forget t)))

@@ -103,6 +103,8 @@
 (include-book "centaur/satlink/top" :dir :system)
 (include-book "centaur/satlink/check-config" :dir :system)
 
+(include-book "centaur/quicklisp/top" :dir :system)
+
 (include-book "centaur/misc/top" :dir :system)
 (include-book "centaur/misc/smm" :dir :system)
 (include-book "centaur/misc/tailrec" :dir :system)
@@ -201,6 +203,9 @@
 (include-book "centaur/fty/deftypes" :dir :system)
 
 (include-book "misc/simp" :dir :system)
+(include-book "misc/without-waterfall-parallelism" :dir :system)
+(include-book "misc/with-waterfall-parallelism" :dir :system)
+
 
 #||
 
@@ -372,12 +377,15 @@ of proofs.")
 ; we'll do them globally, so they'll be included, e.g., in the Emacs version of
 ; the combined manual.
 (xdoc::change-parents ihs (arithmetic))
-(xdoc::change-parents data-definitions (macro-libraries projects debugging))
-(xdoc::change-parents with-timeout (data-definitions))
+; data-definitions went away.  It might be reasonable to place with-timeout
+; under defdata, if that still exists.
+;(xdoc::change-parents data-definitions (macro-libraries projects debugging))
+;(xdoc::change-parents with-timeout (data-definitions))
+;(xdoc::change-parents testing (cgen))
 (xdoc::change-parents data-structures (macro-libraries))
 (xdoc::change-parents hacker (interfacing-tools))
 (xdoc::change-parents witness-cp (proof-automation))
-(xdoc::change-parents testing (debugging))
+
 
 (xdoc::change-parents leftist-trees (projects))
 (xdoc::change-parents ltree-sort (leftist-trees))

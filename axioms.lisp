@@ -6037,12 +6037,14 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 #+acl2-loop-only
 (defmacro with-output (&rest args)
-  (let ((val (with-output-fn 'with-output
-                             args nil nil nil nil nil nil nil nil nil nil)))
-    (or val
-        (illegal 'with-output
-                 "Macroexpansion of ~q0 failed."
-                 (list (cons #\0 (cons 'with-output args)))))))
+  `(if (eq (ld-skip-proofsp state) 'include-book)
+       ,(car (last args))
+     ,(let ((val (with-output-fn 'with-output
+                                 args nil nil nil nil nil nil nil nil nil nil)))
+        (or val
+            (illegal 'with-output
+                     "Macroexpansion of ~q0 failed."
+                     (list (cons #\0 (cons 'with-output args))))))))
 
 ; Mutual Recursion
 
@@ -6643,6 +6645,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defmacro check-vars-not-free (vars form)
 
+; Warning: We actually handle this macro directly in translate11, in case that
+; is an effficiency win.  Keep this macro and that part of translate11 in sync.
+
 ; A typical use of this macro is (check-vars-not-free (my-erp my-val) ...)
 ; which just expands to the translation of ... provided my-erp and my-val do
 ; not occur freely in it.
@@ -6652,10 +6657,11 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; calls, especially since intersectp-eq expands to an mbe call.
 
   (declare (xargs :guard (symbol-listp vars)))
-  `(translate-and-test
-    (lambda (term)
-      (check-vars-not-free-test ',vars term))
-    ,form))
+  (cond ((null vars) form) ; optimization, perhaps needless
+        (t `(translate-and-test
+             (lambda (term)
+               (check-vars-not-free-test ',vars term))
+             ,form))))
 
 (defun er-progn-fn (lst)
 
@@ -7790,27 +7796,36 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; function not only knows the precise form of the expression generated below
 ; but even knows the variable names used!
 
+; We optimize a bit, only for #+acl2-loop-only (though we could do so for
+; both), to speed up translation of acl2-unwind-protect calls in the rather
+; common case that cleanup1 and cleanup2 are the same form.
+
   #+acl2-loop-only
   (declare (ignore expl))
   #+acl2-loop-only
-  `(mv-let (acl2-unwind-protect-erp acl2-unwind-protect-val state)
-           (check-vars-not-free
-            (acl2-unwind-protect-erp acl2-unwind-protect-val)
-            ,body)
-           (cond
-            (acl2-unwind-protect-erp
-             (pprogn (check-vars-not-free
-                      (acl2-unwind-protect-erp acl2-unwind-protect-val)
-                      ,cleanup1)
-                     (mv acl2-unwind-protect-erp
-                         acl2-unwind-protect-val
-                         state)))
-            (t (pprogn (check-vars-not-free
-                        (acl2-unwind-protect-erp acl2-unwind-protect-val)
-                        ,cleanup2)
-                       (mv acl2-unwind-protect-erp
-                           acl2-unwind-protect-val
-                           state)))))
+  (let ((cleanup1-form
+         `(pprogn (check-vars-not-free
+                   (acl2-unwind-protect-erp acl2-unwind-protect-val)
+                   ,cleanup1)
+                  (mv acl2-unwind-protect-erp
+                      acl2-unwind-protect-val
+                      state))))
+    `(mv-let (acl2-unwind-protect-erp acl2-unwind-protect-val state)
+             (check-vars-not-free
+              (acl2-unwind-protect-erp acl2-unwind-protect-val)
+              ,body)
+             ,(cond
+               ((equal cleanup1 cleanup2)
+                cleanup1-form)
+               (t `(cond
+                    (acl2-unwind-protect-erp
+                     ,cleanup1-form)
+                    (t (pprogn (check-vars-not-free
+                                (acl2-unwind-protect-erp acl2-unwind-protect-val)
+                                ,cleanup2)
+                               (mv acl2-unwind-protect-erp
+                                   acl2-unwind-protect-val
+                                   state))))))))
 
 ; The raw code is very similar.  But it starts out by pushing onto the undo
 ; stack the name of the cleanup function and the values of the arguments.  Note
@@ -14162,28 +14177,27 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (declare (xargs :guard (and (state-global-let*-bindings-p bindings)
                               (no-duplicatesp-equal (strip-cars bindings)))))
 
-  `(warn-about-parallelism-hazard
+  (let ((cleanup `(pprogn
+                   ,@(state-global-let*-cleanup bindings 0)
+                   state)))
+    `(warn-about-parallelism-hazard
 
 ; We call warn-about-parallelism-hazard, because use of this macro in a
 ; parallel environment is potentially dangerous.  It might work, because maybe
 ; no variables are rebound that are changed inside the waterfall, but we, the
 ; developers, want to know about any such rebinding.
 
-    '(state-global-let* ,bindings ,body)
-    (let ((state-global-let*-cleanup-lst
-           (list ,@(state-global-let*-get-globals bindings))))
-      ,@(and (null bindings)
-             '((declare (ignore state-global-let*-cleanup-lst))))
-      (acl2-unwind-protect
-       "state-global-let*"
-       (pprogn ,@(state-global-let*-put-globals bindings)
-               (check-vars-not-free (state-global-let*-cleanup-lst) ,body))
-       (pprogn
-        ,@(state-global-let*-cleanup bindings 0)
-        state)
-       (pprogn
-        ,@(state-global-let*-cleanup bindings 0)
-        state)))))
+      '(state-global-let* ,bindings ,body)
+      (let ((state-global-let*-cleanup-lst
+             (list ,@(state-global-let*-get-globals bindings))))
+        ,@(and (null bindings)
+               '((declare (ignore state-global-let*-cleanup-lst))))
+        (acl2-unwind-protect
+         "state-global-let*"
+         (pprogn ,@(state-global-let*-put-globals bindings)
+                 (check-vars-not-free (state-global-let*-cleanup-lst) ,body))
+         ,cleanup
+         ,cleanup)))))
 
 #-acl2-loop-only
 (defmacro state-free-global-let* (bindings body)
@@ -25040,9 +25054,12 @@ Lisp definition."
                                       #-(or ccl gcl)
                                       "; ~Xfe took~|; ~st seconds realtime, ~
                                        ~sc seconds runtime.~%")))
-                     (fmt-to-comment-window
-                      ,g-msg alist 0
-                      (abbrev-evisc-tuple *the-live-state*)))))))))))))
+                     (state-free-global-let*
+                      ((fmt-hard-right-margin 100000)
+                       (fmt-soft-right-margin 100000))
+                      (fmt-to-comment-window
+                       ,g-msg alist 0
+                       (abbrev-evisc-tuple *the-live-state*))))))))))))))
 
 (encapsulate
  ()
@@ -25104,28 +25121,29 @@ Lisp definition."
   `(gc$-fn ',args))
 
 #-acl2-loop-only
-(defun-one-output gc-verbose-fn (arg)
+(defun-one-output gc-verbose-fn (arg1 arg2)
 
 ; For a related function, see gc$-fn.
 
-  (let ((arg (and arg t))) ; coerce to Boolean
-    (declare (ignorable arg))
-    #+ccl (ccl::gc-verbose arg arg)
-    #+cmu (setq ext:*gc-verbose* arg)
-    #+gcl (si:*notify-gbc* arg)
+  (declare (ignorable arg2))
+  (let ((arg1 (and arg1 t))) ; coerce to Boolean
+    (declare (ignorable arg1))
+    #+ccl (ccl::gc-verbose arg1 arg2)
+    #+cmu (setq ext:*gc-verbose* arg1)
+    #+gcl (setq si:*notify-gbc* arg1)
     #-(or ccl cmu gcl)
     (format t "GC-VERBOSE is not supported in this Common Lisp.~%Contact the ~
                ACL2 developers if you would like to help add such support.")
     nil))
 
 #+acl2-loop-only
-(defun gc-verbose-fn (arg)
-  (declare (ignore arg)
+(defun gc-verbose-fn (arg1 arg2)
+  (declare (ignore arg1 arg2)
            (xargs :guard t))
   nil)
 
-(defmacro gc-verbose (arg)
-  `(gc-verbose-fn ,arg))
+(defmacro gc-verbose (arg1 &optional arg2)
+  `(gc-verbose-fn ,arg1 ,arg2))
 
 (defun get-wormhole-status (name state)
    #+acl2-loop-only

@@ -30,6 +30,8 @@
 
 (in-package "STR")
 (include-book "cat")
+(include-book "tools/include-raw" :dir :system)
+; (depends-on "fast-cat-raw.lsp")
 
 ; In CCL, the performance of str::cat is boosted by a factor of 6.6-9.5x by
 ; including this file, according to the stupid benchmarks at the end of this
@@ -42,66 +44,7 @@
 ; indication, it may be that some other Lisps will also benefit.
 
 (defttag fast-cat)
-
-(acl2::progn!
- (set-raw-mode t)
-
- (defun fast-string-append (x y)
-   (declare (type string x)
-            (type string y))
-   (let* ((xl  (length x))
-          (yl  (length y))
-          (rl  (the fixnum (+ (the fixnum xl) (the fixnum yl))))
-          (ret (make-array rl :element-type 'character))
-          (i 0)
-          (j 0))
-     (declare (type fixnum xl)
-              (type fixnum yl)
-              (type fixnum rl)
-              (type fixnum i)
-              (type fixnum j)
-              (type string ret))
-     (loop until (= i xl)
-           do
-           (setf (schar ret i) (schar x i))
-           (incf i))
-     (loop until (= i rl)
-           do
-           (setf (schar ret i) (schar y j))
-           (incf i)
-           (incf j))
-     ret))
-
- (defun fast-string-append-lst (x)
-   (when (atom x)
-     (return-from fast-string-append-lst ""))
-   (when (atom (cdr x))
-     (return-from fast-string-append-lst (car x)))
-   (let ((result-length 0))
-     (declare (type fixnum result-length))
-     (loop for str in x do
-           (incf result-length (length (the string str))))
-     (let ((ret (make-array result-length :element-type 'character))
-           (i   0)
-           (j   0))
-       (declare (type string ret)
-                (type fixnum i)
-                (type fixnum j))
-       (loop for str in x do
-             (let ((strlen (length str)))
-               (declare (type fixnum strlen))
-               (setq j 0)
-               (loop until (= j strlen)
-                     do
-                     (setf (schar ret i) (schar str j))
-                     (incf i)
-                     (incf j))))
-       ret)))
-
- (defun rchars-to-string (rchars)
-   (the string
-     (nreverse
-      (the string (coerce (the list rchars) 'string))))))
+(acl2::include-raw "fast-cat-raw.lsp")
 
 
 #|

@@ -20,7 +20,7 @@
   :rule-classes (:linear :rewrite))
 
 (defthm sum-list-nats-type
-  (implies (naturals-listp l)
+  (implies (nat-listp l)
            (<= 0 (sum-list l)))
   :rule-classes (:linear :rewrite))
 
@@ -35,7 +35,7 @@
   :rule-classes (:rewrite :type-prescription))
 
 (defthm sum-list>=element
-  (implies (and (naturals-listp l)
+  (implies (and (nat-listp l)
                 (consp l))
            (>= (sum-list l) (car l)))
   :rule-classes (:rewrite :linear))
@@ -59,7 +59,7 @@
     :rule-classes (:linear :rewrite))
   
   (defthm product-list-nats-type
-    (implies (naturals-listp l)
+    (implies (nat-listp l)
              (<= 0 (product-list l)))
     :rule-classes (:linear :rewrite))
   
@@ -85,23 +85,23 @@
 
 
 (defthm max-nat-list<=sum-list
-  (implies (naturals-listp l)
+  (implies (nat-listp l)
            (<= (max-nat-list l) (sum-list l)))
   :rule-classes (:linear :rewrite))
 
 (defthm max-nat-list>=element
-  (implies (and (naturals-listp l)
+  (implies (and (nat-listp l)
                 (consp l))
            (>= (max-nat-list l) (car l)))
   :rule-classes (:linear :rewrite))
 
-(defthm max-nat-list--naturals-listp
-  (implies (naturals-listp l)
+(defthm max-nat-list--nat-listp
+  (implies (nat-listp l)
            (integerp (max-nat-list l)))
   :rule-classes (:type-prescription :rewrite))
 
-(defthm max-nat-list--naturals-listp2
-  (implies (naturals-listp l)
+(defthm max-nat-list--nat-listp2
+  (implies (nat-listp l)
            (<= 0 (max-nat-list l)))
   :rule-classes (:linear :rewrite))
 
@@ -120,10 +120,10 @@
   :rule-classes (:type-prescription :rewrite))
 
 (defthm scale--nat-list
-  (implies (and (naturals-listp l)
+  (implies (and (nat-listp l)
                 (integerp x)
                 (<= 0 x))
-           (naturals-listp (scale l x)))
+           (nat-listp (scale l x)))
   :rule-classes (:type-prescription :rewrite))
 
 (defthm scale--integer-list
@@ -162,10 +162,10 @@
   :rule-classes (:type-prescription :rewrite))
 
 (defthm shift--nat-list
-  (implies (and (naturals-listp l)
+  (implies (and (nat-listp l)
                 (integerp x)
                 (<= 0 x))
-           (naturals-listp (shift l x)))
+           (nat-listp (shift l x)))
   :rule-classes (:type-prescription :rewrite))
 
 (defthm shift--integer-list
@@ -204,10 +204,10 @@
   :rule-classes (:type-prescription :rewrite))
 
 (defthm pow--nat-list
-  (implies (and (naturals-listp l)
+  (implies (and (nat-listp l)
                 (integerp x)
                 (<= 0 x))
-           (naturals-listp (pow l x)))
+           (nat-listp (pow l x)))
   :rule-classes (:type-prescription :rewrite))
 
 (defthm pow--integer-list
@@ -318,9 +318,9 @@
   :rule-classes (:type-prescription :rewrite))
 
 (defthm *-lists-nats-type
-  (implies (and (naturals-listp l1)
-                (naturals-listp l2))
-           (naturals-listp (*-lists l1 l2)))
+  (implies (and (nat-listp l1)
+                (nat-listp l2))
+           (nat-listp (*-lists l1 l2)))
   :rule-classes (:type-prescription :rewrite))
 
 (defthm *-lists-integers-type
@@ -346,9 +346,9 @@
   :rule-classes (:type-prescription :rewrite))
 
 (defthm +-lists-nats-type
-  (implies (and (naturals-listp l1)
-                (naturals-listp l2))
-           (naturals-listp (+-lists l1 l2)))
+  (implies (and (nat-listp l1)
+                (nat-listp l2))
+           (nat-listp (+-lists l1 l2)))
   :rule-classes (:type-prescription :rewrite))
 
 (defthm +-lists-integers-type
@@ -398,7 +398,7 @@
 (defthm make-list--nats
   (implies (and (integerp v)
                 (<= 0 v))
-           (naturals-listp (make-list-logic v n)))
+           (nat-listp (make-list-logic v n)))
   :rule-classes (:rewrite :type-prescription))
 
 (defthm make-list--pos
@@ -447,8 +447,8 @@
   (pos-listp (pos-list-fix x)))
 
 ;unfortunate
-(defthm pos-list-fix--naturals-listp
-  (naturals-listp (pos-list-fix x)))
+(defthm pos-list-fix--nat-listp
+  (nat-listp (pos-list-fix x)))
 
 ;unfortunate
 (defthm pos-list-fix--integer-listp

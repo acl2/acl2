@@ -2800,8 +2800,6 @@
 
 (defconst *initial-return-last-table*
   '((time$1-raw . time$1)
-    (memoize-on-raw . memoize-on)
-    (memoize-off-raw . memoize-off)
     (with-prover-time-limit1-raw . with-prover-time-limit1)
     (with-fast-alist-raw . with-fast-alist)
     (with-stolen-alist-raw . with-stolen-alist)
@@ -9873,6 +9871,7 @@
       ((and (eq (cert-op state) :convert-pcert)
             (not (f-get-global 'in-local-flg state))
             (not (consp check-expansion))
+            (not expansion?)
 
 ; This case should not happen, because all make-event forms should already be
 ; expanded away when we do the Convert procedure of provisional certification,
@@ -9892,11 +9891,11 @@
            "Implementation error: You should not be seeing this message!  ~
             Please contact the ACL2 implementors.~|~%Make-event expansion is ~
             illegal during the Convert procedure of provisional certification ~
-            (unless :check-expansion is supplied a consp argument).  ~
-            Expansion for make-event of the form ~x0 is thus not allowed.  ~
-            The use of a .acl2x file can sometimes solve this problem.  See ~
-            :DOC provisional-certification."
-           form))
+            (unless :check-expansion is supplied a consp argument or ~
+            :expansion? is supplied a non-nil argument).  The form ~x0 is ~
+            thus illegal.  The use of a .acl2x file can sometimes solve this ~
+            problem.  See :DOC provisional-certification."
+           whole-form))
       ((not (or (eq check-expansion nil)
                 (eq check-expansion t)
                 (consp check-expansion)))
@@ -12828,9 +12827,10 @@
   (and (symbolp x)
        (equal (symbol-name x) str)))
 
-(defun chk-acceptable-certify-book1 (file dir k cmds cert-obj cbds names
-                                          cert-op suspect-book-action-alist
-                                          wrld ctx state)
+(defun chk-acceptable-certify-book1 (user-book-name file dir k cmds cert-obj
+                                                    cbds names cert-op
+                                                    suspect-book-action-alist
+                                                    wrld ctx state)
 
 ; This function is checking the appropriateness of the environment in which
 ; certify-book is called.
@@ -12880,10 +12880,11 @@
      ((and (not (symbol-name-equal k "?"))
            (not (eql k (length cmds))))
       (er soft ctx
-          "You indicated that the portcullis for ~x0 would be of length ~x1 ~
-           but it is actually of length ~x2.  Perhaps you had better inspect ~
-           the world and call certify-book again."
-          file k (length cmds)))
+          "Your certify-book command specifies a certification world of ~
+           length ~x0 but it is actually of length ~x1.  Perhaps you intended ~
+           to issue a command of the form: (certify-book ~x2 ~x1 ...).  See ~
+           :DOC certify-book."
+          k (length cmds) user-book-name))
      ((assoc-equal file pre-alist)
 
 ; Why do we do this?  By insuring that file is not in the include-book-alist
@@ -13188,7 +13189,8 @@
                                       t)) ; evalp = t, so world can change
                (cert-obj-cmds (value (and cert-obj
                                           (access cert-obj cert-obj :cmds)))))
-            (chk-acceptable-certify-book1 full-book-name
+            (chk-acceptable-certify-book1 book-name
+                                          full-book-name
                                           dir
                                           '? ; no check needed for k = t
                                           nil
@@ -13199,9 +13201,10 @@
                                           suspect-book-action-alist
                                           (w state) ; see evalp comment above
                                           ctx state)))))
-       (t (chk-acceptable-certify-book1 full-book-name dir k cmds nil cbds
-                                        names cert-op suspect-book-action-alist
-                                        wrld ctx state)))))))
+       (t (chk-acceptable-certify-book1 book-name full-book-name dir k cmds nil
+                                        cbds names cert-op
+                                        suspect-book-action-alist wrld ctx
+                                        state)))))))
 
 (defun print-objects (lst ch state)
   (cond ((null lst) state)
@@ -15579,6 +15582,9 @@
 #+(and hons (not acl2-loop-only))
 (save-def
 (defun expansion-alist-pkg-names-memoize (x)
+
+; See expansion-alist-pkg-names.
+
   (cond ((consp x)
          (hons-union-ordered-string-lists
           (expansion-alist-pkg-names-memoize (car x))
@@ -15589,6 +15595,13 @@
 )
 
 (defun expansion-alist-pkg-names (x base-kpa)
+
+; Warning: With #+hons, there could be performance problems if this is put into
+; :logic mode without verifying guards.  That is because
+; expansion-alist-pkg-names-memoize is memoized by running acl2h-init, and for
+; memoization, we expect the raw Lisp function to be executed and call
+; expansion-alist-pkg-names; but :ideal mode functions are run without ever
+; slipping into raw Lisp.
 
 ; For an explanation of the point of this function, see the comment at the call
 ; of expansion-alist-pkg-names in certify-book-fn.
@@ -23491,7 +23504,7 @@
        symbol-function differs from the :MEMOIZED-FN field of its memoization ~
        hash-table entry.  Perhaps the trace or untrace request occurred in ~
        the context of ~x1; at any rate, it is illegal."
-      fn 'memoize-off))
+      fn ctx))
 
 (defun untrace$-fn1 (fn state)
   #-acl2-loop-only
@@ -23705,10 +23718,6 @@
 ; This is a strange state of affairs that we prefer not to try to support.  For
 ; example, it is not clear how things would work out after we installed the
 ; traced symbol-function as the :memoized-fn.
-
-; Note by the way that under memoize-off, tracing will be defeated.  If this
-; presents a big problem then we can reconsider the design of how tracing and
-; memoization interact.
 
       (memoize-off-trace-error fn ctx))
     `(defun ,fn
@@ -26153,7 +26162,8 @@
                          (getprop key 'formals t 'current-acl2-world wrld)
                        t))
         (key-class (symbol-class key wrld))
-        (condition (and val (cdr (assoc-eq :condition-fn val)))))
+        (condition (and val (cdr (assoc-eq :condition-fn val))))
+        (inline (and val (cdr (assoc-eq :inline val)))))
     (let ((result
            (cond
             ((eq key-formals t)
@@ -26210,12 +26220,13 @@
                  "~@0~x1 is constrained.  You may instead wish to memoize a ~
                   caller or to memoize its attachment (see :DOC defattach)."
                  str key))
-            ((if (eq key-class :program)
-                 (member-eq key *primitive-program-fns-with-raw-code*)
-               (member-eq key *primitive-logic-fns-with-raw-code*))
+            ((and inline
+                  (if (eq key-class :program)
+                      (member-eq key *primitive-program-fns-with-raw-code*)
+                    (member-eq key *primitive-logic-fns-with-raw-code*)))
              (er hard ctx
                  "~@0The built-in function symbol ~x1 has associated raw-Lisp ~
-                  code, hence is illegal to memoize."
+                  code, hence is illegal to memoize unless :RECURSIVE is nil."
                  str key))
             ((not (symbol-alistp val))
              (er hard ctx
@@ -29542,7 +29553,7 @@
 ; computation should now cause a guard violation error and thus we don't want
 ; to return such a value.
 
-; Let m a memoized function symbol.  If m was memoized with :aok nil (the
+; Let m be a memoized function symbol.  If m was memoized with :aok nil (the
 ; default), then the invariant maintained is simply that the
 ; :ext-anc-attachments field of the memoize-info-ht-entry record for m is nil.
 ; This implies the property we desire, that all stored entries for m are valid,
@@ -29566,22 +29577,20 @@
 
 ; For efficiency, we implement extend-world1, retract-world1, and recover-world
 ; so that they do not update such fields or clear memo-tables until all trips
-; have been processed.  At that point we see whether any defattach event has
-; been installed or undone, and then we see whether any memo-table's
-; :ext-anc-attachments field needs to be recalculated, and whether furthermore
-; the table needs to be invalidated, as discussed above.  For efficiency, we
-; set a variable to a list L of canonical siblings of all functions whose
-; attachment may have been installed, eliminated, or changed.  We then restrict
-; our check on :ext-anc-attachments fields to check attachments for siblings of
-; functions in L.  In particular, if L is empty then nothing needs to be done.
+; have been processed.  (This update is performed by
+; update-memo-entries-for-attachments, which is called at the end of the above
+; world updates, by update-wrld-structures.)  At that point we see whether any
+; defattach event has been installed or undone, and then we see whether any
+; memo-table's :ext-anc-attachments field needs to be recalculated, and whether
+; furthermore the table needs to be invalidated, as discussed above.  For
+; efficiency, we set a global variable, *defattach-fns*, to a list L of
+; canonical siblings of all functions whose attachment may have been installed,
+; eliminated, or changed.  We then restrict our check on :ext-anc-attachments
+; fields (in update-memo-entries-for-attachments) to check attachments for
+; siblings of functions in L.  In particular, if L is empty then nothing needs
+; to be done.
 
-;;; Going backward, when we see that an extended ancestor attachment has
-;;; changed or been added for the memo table of fn, then add fn to a list of
-;;; functions that will eventually have their memo tables strongly cleared when
-;;; we finish retract-world1.  (How about recover-world?  Perhaps just strongly
-;;; clear all memo tables unless I find a better idea.)
-
-; Start code supporting extended-ancestors.
+; Start code supporting ext-ancestors-attachments.
 
 (defun attachment-pairs (fns wrld acc)
 
@@ -29601,9 +29610,9 @@
 
   (attachment-pairs (siblings f wrld) wrld nil))
 
-(defun extended-ancestors4 (fns wrld fal)
+(defun ext-ancestors-attachments4 (fns wrld fal)
   (cond ((endp fns) fal)
-        (t (extended-ancestors4
+        (t (ext-ancestors-attachments4
             (cdr fns)
             wrld
             (cond ((hons-get (car fns) fal)
@@ -29612,14 +29621,14 @@
                                  (sibling-attachments (car fns) wrld)
                                  fal)))))))
 
-(defun extended-ancestors3 (components wrld fal)
+(defun ext-ancestors-attachments3 (components wrld fal)
   (cond ((endp components) fal)
-        (t (extended-ancestors3
+        (t (ext-ancestors-attachments3
             (cdr components)
             wrld
             (let ((anc (access attachment-component (car components) :ord-anc))
                   (path (access attachment-component (car components) :path)))
-              (extended-ancestors4
+              (ext-ancestors-attachments4
                (if path
                    (cons (car path) ; attachment-component-owner
                          anc)
@@ -29627,14 +29636,14 @@
                wrld
                fal))))))
 
-(defun extended-ancestors2 (canon-gs arfal wrld canon-gs-fal fal)
+(defun ext-ancestors-attachments2 (canon-gs arfal wrld canon-gs-fal fal)
   (cond ((endp canon-gs) fal)
         (t (let ((g (car canon-gs)))
              (cond ((hons-get g canon-gs-fal)
-                    (extended-ancestors2
+                    (ext-ancestors-attachments2
                      (cdr canon-gs) arfal wrld canon-gs-fal fal))
                    (t (let ((rec (cdr (hons-get g arfal))))
-                        (extended-ancestors2
+                        (ext-ancestors-attachments2
                          (cdr canon-gs) arfal wrld
                          (hons-acons g fal canon-gs-fal)
                          (let ((fal (hons-acons
@@ -29642,7 +29651,7 @@
                                      (sibling-attachments (car canon-gs)
                                                           wrld)
                                      fal)))
-                           (cond (rec (extended-ancestors3
+                           (cond (rec (ext-ancestors-attachments3
                                        (access attachment rec :components)
                                        wrld
                                        fal))
@@ -29656,7 +29665,7 @@
                            (cons (canonical-sibling (cdar alist) wrld)
                                  acc)))))
 
-(defun extended-ancestors1 (fns canon-gs arfal wrld fal)
+(defun ext-ancestors-attachments1 (fns canon-gs arfal wrld fal)
 
 ; Arfal is a fast alist mapping g-canonical function symbols to attachment
 ; records.  We accumulate ordinary ancestors of members of fns, including those
@@ -29665,15 +29674,16 @@
 ; ancestors of members of canon-gs (including those functions) into fal.
 
   (cond ((endp fns)
-         (extended-ancestors2 canon-gs arfal wrld 'extended-ancestors2 fal))
+         (ext-ancestors-attachments2
+          canon-gs arfal wrld 'ext-ancestors-attachments2 fal))
         ((hons-get (car fns) fal)
-         (extended-ancestors1 (cdr fns) canon-gs arfal wrld fal))
+         (ext-ancestors-attachments1 (cdr fns) canon-gs arfal wrld fal))
         (t (let* ((alist (sibling-attachments (car fns) wrld))
                   (canon-gs (cond ((null alist) ; optimization
                                    canon-gs)
                                   (t (append (canonical-cdrs alist wrld nil)
                                              canon-gs)))))
-             (extended-ancestors1
+             (ext-ancestors-attachments1
               (append (canonical-ancestors (car fns) wrld nil)
                       (cdr fns))
               canon-gs arfal wrld
@@ -29687,20 +29697,20 @@
                         (car attachment-records)
                         fal)))))
 
-(defun extended-ancestors (f wrld)
+(defun ext-ancestors-attachments (f wrld)
 
 ; The implementation of this function uses hons-acons, so might only be
 ; efficient when #+hons (which was its intended use when written).
 
   (let ((g (canonical-sibling f wrld)))
-    (extended-ancestors1 (cons g
-                               (canonical-ancestors g wrld nil))
-                         nil
-                         (attachment-records-fal
-                          (global-val 'attachment-records wrld)
-                          :attachment-records-fal)
-                         wrld
-                         f)))
+    (ext-ancestors-attachments1 (cons g
+                                      (canonical-ancestors g wrld nil))
+                                nil
+                                (attachment-records-fal
+                                 (global-val 'attachment-records wrld)
+                                 :attachment-records-fal)
+                                wrld
+                                f)))
 
 (defun ext-anc-attachment-missing (alist wrld)
 
@@ -29735,18 +29745,20 @@
 
 ; Acc is initially t, but is nil when we find that an alist needs to grow.
 
-  (cond ((endp fns) acc)
-        (t (let* ((f (car fns))
-                  (siblings (siblings f wrld))
-                  (alist (cdr (hons-get f ext-anc-attachments)))
-                  (missing (ext-anc-attachment-missing alist wrld)))
-             (or missing
-                 (ext-anc-attachments-valid-p
-                  (cdr fns)
-                  ext-anc-attachments
-                  wrld
-                  (and acc
-                       (ext-anc-attachments-valid-p-1 siblings alist wrld))))))))
+  (cond
+   ((endp fns) acc)
+   (t (let* ((f (car fns))
+             (alist (cdr (hons-get f ext-anc-attachments)))
+             (missing (ext-anc-attachment-missing alist wrld)))
+        (or missing
+            (ext-anc-attachments-valid-p
+             (cdr fns)
+             ext-anc-attachments
+             wrld
+             (and acc
+                  (ext-anc-attachments-valid-p-1 (siblings f wrld)
+                                                 alist
+                                                 wrld))))))))
 
 ; Start definitions related to defun-inline.
 

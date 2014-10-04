@@ -32,6 +32,7 @@
 (include-book "std/lists/list-defuns" :dir :system)
 (include-book "std/lists/abstract" :dir :system)
 (include-book "tools/save-obligs" :dir :system)
+(include-book "misc/without-waterfall-parallelism" :dir :system)
 (local (include-book "std/lists/take" :dir :system))
 (local (include-book "std/lists/nthcdr" :dir :system))
 (local (include-book "std/lists/list-fix" :dir :system))
@@ -500,10 +501,12 @@
             (comparable-listp (fast-comparable-mergesort-fixnums x len)))
    :hints(("Goal" :in-theory (enable fast-comparable-mergesort-fixnums)))))
 
+
+(without-waterfall-parallelism
 (def-saved-obligs fast-comparable-mergesort-fixnums-guards
   :proofs ((fast-comparable-mergesort-fixnums-guards))
   (verify-guards fast-comparable-mergesort-fixnums))
-
+)
 
 
 (defmacro mergesort-fixnum-threshold () 536870912)
@@ -547,6 +550,7 @@
                     (fast-comparable-mergesort-integers x 1))))))
 
 
+(without-waterfall-parallelism
 (encapsulate
   ()
   (local (defthm crock
@@ -555,11 +559,10 @@
            :hints(("Goal" :in-theory (e/d (fast-comparable-mergesort-integers
                                            fast-comparable-mergesort-fixnums))))))
 
-
   (def-saved-obligs fast-comparable-mergesort-integers-guards
     :proofs ((fast-comparable-mergesort-integers-guards))
     (verify-guards fast-comparable-mergesort-integers)))
-
+)
 
 
 (defund comparable-mergesort (x)
@@ -731,12 +734,13 @@
   (equal (fast-comparable-mergesort-integers x (len x))
          (comparable-mergesort x)))
 
+(without-waterfall-parallelism
 (def-saved-obligs comparable-mergesort-guard
   :proofs ((comparable-mergesort-guard
             :hints ((and stable-under-simplificationp
                          '(:expand ((comparable-mergesort x)))))))
   (verify-guards comparable-mergesort))
-
+)
 
 
 
@@ -1070,9 +1074,11 @@
   :hints(("Goal" :in-theory (e/d (comparable-insertsort)
                                  ((comparable-listp))))))
 
+(without-waterfall-parallelism
 (def-saved-obligs comparable-insertsort-guard
   :proofs ((comparable-insertsort-guard))
   (verify-guards comparable-insertsort))
+)
 
 (local
  (progn

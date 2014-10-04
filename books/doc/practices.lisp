@@ -39,10 +39,20 @@
 
 <p>This is a preliminary document.  Feedback is very much welcome and
 appreciated.  Please direct feedback to the acl2-books list or to Jared
-Davis.</p>")
+Davis.</p>
+
+<p>We recommend the use of the Standard Libraries (@(see std)) to ease your
+burden of modeling and reasoning in a formal sytem.  See other subtopics below
+for other best practices.")
 
 (local (xdoc::set-default-parents best-practices))
 
+(defxdoc finite-reasoning
+  :short "Use @(see gl) to reason about finitely bounded values."
+  :long "It is often convenient to use as much automation as possible when
+  performing proofs.  @(csee gl) provides the ability to automatically reason
+  about finite values, such as 32-bit integers.  As examples, this can be quite
+  useful when reasoning about cryptography algorithms or verifying hardware.")
 
 (defxdoc file-extensions
   :short "Conventions to follow for choosing file extensions like @('.lisp'),
@@ -130,6 +140,8 @@ of packages:</p>
 
 <dd>
 @({
+     ;; We need an \"in-package\" line to make this a valid book, but
+     ;; which package doesn't matter since the rest of the book is empty.
      (in-package \"FOO\")
 })
 </dd>
@@ -195,7 +207,11 @@ package commands to see if it is indeed the same.</p>
 
 <p>Having a customization file that starts ACL2 up in \"the right package\" is
 often very convenient while developing.  Loading the user's customization file
-first, if one exists, is nice for users who have their own macros.</p>")
+first, if one exists, is nice for users who have their own macros.</p>
+
+<p>It can also be good to pre-load packages like @('std') when your session
+starts.  See @('books/std/std-customization.lsp') for an @(see
+acl2-customization) file that does this.</p>")
 
 
 (defxdoc theory-management
@@ -332,6 +348,9 @@ readability when the function names involved have their own hyphens.</li>
 
 <li>For rules about other equivalence relations, we add @('-under-equiv') to the
 name.</li>
+
+<li>For rules that specify the upper limit of function's numerical return
+value, we often add @('-limit').</li>
 
 </ol>
 

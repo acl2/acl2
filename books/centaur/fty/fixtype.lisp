@@ -114,7 +114,13 @@ and equivalence relation."
 fixing function, and equivalence relation.  It stores this association in a
 table for later use by @(see deffixequiv) and @(see deffixequiv-mutual).</p>
 
-<p>Usage:</p>
+<p>Example usage:</p>
+
+@({
+  (fty::deffixtype nat :fix nfix :pred natp :equiv equal)
+})
+
+<p>General form:</p>
 @({
   (deffixtype widget
               :pred widget-p
@@ -156,7 +162,7 @@ defequiv)).</p>")
    ;; pred-of-fix         ;; (foo-p (foo-fix x))
    ;; fix-idempotent       ;; (implies (foo-p x) (equal (foo-fix x) x))
    equiv-means-fixes-equal ;; (implies (foo-equiv x y) (equal (foo-fix x) (foo-fix y)))  (or iff/equal)
-   
+
    ))
 
 (table fixtypes)
@@ -244,11 +250,14 @@ defequiv)).</p>")
 
 
 (defmacro deffixtype (name &key pred fix equiv (execp 't)
-                           ;; optional 
+                           ;; optional
                            define
                            verbosep
                            hints
                            forward)
+; We contemplated making "equal" the default equivalence relation but decided
+; against it.  See Github Issue 240 for relevant discussion.
+  (declare (xargs :guard (and pred fix equiv)))
   (deffixtype-fn name pred fix equiv execp define verbosep hints forward))
 
 (defun find-fixtype-for-pred (pred alist)
@@ -400,7 +409,7 @@ defequiv)).</p>")
 
        (with-output :stack :pop
          ,x.fix-thm)
-       
+
        ,@(and x.const-thm
               `((with-output :on (error)
                   ,x.const-thm)))
@@ -461,4 +470,4 @@ defequiv)).</p>")
 
 
 ||#
-    
+

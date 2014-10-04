@@ -54,15 +54,16 @@ use Getopt::Long qw(:config bundling_override);
 (do "$RealBin/certlib.pl") or die ("Error loading $RealBin/certlib.pl:\n!: $!\n\@: $@\n");
 (do "$RealBin/paths.pl") or die ("Error loading $RealBin/paths.pl:\n!: $!\n\@: $@\n");
 
-my %reqparams = ("hons-only" => "HONS_ONLY",
-		 "uses-glucose" => "USES_GLUCOSE",
+my %reqparams = ("hons-only"      => "HONS_ONLY",
+		 "uses-glucose"   => "USES_GLUCOSE",
 		 "uses-quicklisp" => "USES_QUICKLISP",
-		 "ansi-only" =>  "ANSI_ONLY",
-		 "uses-acl2r" => "USES_ACL2R",
-		 "non-acl2r" => "NON_ACL2R",
-		 "ccl-only" => "CCL_ONLY",
-		 'non-lispworks' => "NON_LISPWORKS",
-		 'non-allegro'   => "NON_ALLEGRO"
+		 "ansi-only"      => "ANSI_ONLY",
+		 "uses-acl2r"     => "USES_ACL2R",
+		 "non-acl2r"      => "NON_ACL2R",
+		 "ccl-only"       => "CCL_ONLY",
+		 'non-lispworks'  => "NON_LISPWORKS",
+		 'non-allegro'    => "NON_ALLEGRO",
+		 'non-sbcl'       => "NON_SBCL"
     );
 
 # use lib "/usr/lib64/perl5/5.8.8/x86_64-linux-thread-multi/Devel";

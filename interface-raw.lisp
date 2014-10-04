@@ -3118,7 +3118,6 @@
          (let* ((entry (gethash name *memoize-info-ht*))
                 (condition (access memoize-info-ht-entry entry :condition))
                 (inline (access memoize-info-ht-entry entry :inline))
-                (trace (access memoize-info-ht-entry entry :trace))
                 (commutative
                  (access memoize-info-ht-entry entry :commutative))
                 (forget
@@ -3132,7 +3131,6 @@
            (push `(memoize-fn ',name
                               :condition ',condition
                               :inline ',inline
-                              :trace ',trace
                               ,@(and commutative
                                      `(:commutative t))
                               ,@(and forget
@@ -6030,21 +6028,18 @@
         (memoize
          (maybe-push-undo-stack 'memoize (cadr (cddr trip)))
          (let* ((tuple (cddr trip))
-                (cl-defun (nth 5 tuple)))
-           (assert$
-            cl-defun
-            (memoize-fn (nth 1 tuple)
-                        :condition  (nth 2 tuple)
-                        :inline     (nth 3 tuple)
-                        :trace      (nth 4 tuple)
-                        :cl-defun   cl-defun
-                        :formals    (nth 6 tuple)
-                        :stobjs-in  (nth 7 tuple)
-                        :stobjs-out (nth 8 tuple)
-                        :commutative (nth 10 tuple)
-                        :forget     (nth 11 tuple)
-                        :memo-table-init-size (nth 12 tuple)
-                        :aokp       (nth 13 tuple)))))
+                (cl-defun (nth 4 tuple)))
+           (assert$ cl-defun (memoize-fn (nth 1 tuple)
+                                         :condition  (nth 2 tuple)
+                                         :inline     (nth 3 tuple)
+                                         :cl-defun   cl-defun
+                                         :formals    (nth 5 tuple)
+                                         :stobjs-in  (nth 6 tuple)
+                                         :stobjs-out (nth 7 tuple)
+                                         :commutative (nth 9 tuple)
+                                         :forget     (nth 10 tuple)
+                                         :memo-table-init-size (nth 11 tuple)
+                                         :aokp       (nth 12 tuple)))))
         #+hons
         (unmemoize
          (maybe-push-undo-stack 'unmemoize (cadr (cddr trip)))
@@ -6845,7 +6840,11 @@
   (stop-proof-tree-fn *the-live-state*)
   (f-put-global 'ld-skip-proofsp nil *the-live-state*)
   (move-current-acl2-world-key-to-front (w *the-live-state*))
-  (checkpoint-world1 t (w *the-live-state*) *the-live-state*))
+  (checkpoint-world1 t (w *the-live-state*) *the-live-state*)
+  #+hons
+  (progn (memoize-init)
+         (initialize-never-memoize-ht)
+         (acl2h-init-memoizations)))
 
 (defun-one-output ld-alist-raw (standard-oi ld-skip-proofsp ld-error-action)
   `((standard-oi . ,standard-oi)
@@ -6978,6 +6977,7 @@
            defun-*1*
            defv
            defvar
+           error
            eval ; presumably no ACL2 fn or macro underneath
            eval-when ; presumably no ACL2 fn or macro underneath
            f-put-global ; in axioms.lisp, before def. of set-ld-skip-proofsp
@@ -9030,7 +9030,7 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
   (cond ((eq fn 'cons)
 ; We call this function on cons so often we optimize it.
          '(nil))
-        ((member-eq fn '(if return-last))
+        ((member-eq fn *stobjs-out-invalid*)
          (interface-er "Implementation error in ~
                         get-stobjs-out-for-declare-form: Attempted to find ~
                         stobjs-out for ~x0."

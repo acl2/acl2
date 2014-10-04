@@ -562,7 +562,7 @@ Milawa.  But these instructions <b>do not cover</b> Magnus Myreen's work on
 @(see jitawa), and the HOL4 verification of Milawa's kernel.</p>
 
 <p>The Milawa source code is now included in the <a
-href='http://acl2-books.googlecode.com'>ACL2 Community Books</a> project.
+href='https://github.com/acl2/acl2'>ACL2 Community Books</a> project.
 However, Milawa is not built during the \"make\" of the ordinary ACL2 Community
 Books, because building it:</p>
 

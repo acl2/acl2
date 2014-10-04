@@ -58,7 +58,7 @@ saved_acl2p: $(ACL2_DEPS)
 
 saved_acl2r: $(ACL2_DEPS)
 	echo "Making ACL2(r) on $(LISP)"
-	time make --file=GNUmakefile LISP=$(LISP) NONSTD=r > make-acl2.log
+	time make --file=GNUmakefile LISP=$(LISP) ACL2_REAL=r > make-acl2.log
 	./books/build/wait.pl make-acl2.log
 	cat make-acl2.log
 	./books/build/wait.pl saved_acl2r
@@ -74,7 +74,7 @@ saved_acl2hp: $(ACL2_DEPS)
 
 saved_acl2hr: $(ACL2_DEPS)
 	echo "Making ACL2(hr) on $(LISP)"
-	time make --file=GNUmakefile LISP=$(LISP) ACL2_HONS=h NONSTD=r > make-acl2.log
+	time make --file=GNUmakefile LISP=$(LISP) ACL2_HONS=h ACL2_REAL=r > make-acl2.log
 	./books/build/wait.pl make-acl2.log
 	cat make-acl2.log
 	./books/build/wait.pl saved_acl2hr
@@ -82,7 +82,7 @@ saved_acl2hr: $(ACL2_DEPS)
 
 saved_acl2pr: $(ACL2_DEPS)
 	echo "Making ACL2(pr) on $(LISP)"
-	time make --file=GNUmakefile LISP=$(LISP) ACL2_PAR=p NONSTD=r > make-acl2.log
+	time make --file=GNUmakefile LISP=$(LISP) ACL2_PAR=p ACL2_REAL=r > make-acl2.log
 	./books/build/wait.pl make-acl2.log
 	cat make-acl2.log
 	./books/build/wait.pl saved_acl2pr
@@ -90,7 +90,7 @@ saved_acl2pr: $(ACL2_DEPS)
 
 saved_acl2hpr: $(ACL2_DEPS)
 	echo "Making ACL2(hpr) on $(LISP)"
-	time make --file=GNUmakefile LISP=$(LISP) ACL2_HONS=h ACL2_PAR=p NONSTD=r > make-acl2.log
+	time make --file=GNUmakefile LISP=$(LISP) ACL2_HONS=h ACL2_PAR=p ACL2_REAL=r > make-acl2.log
 	./books/build/wait.pl make-acl2.log
 	cat make-acl2.log
 	./books/build/wait.pl saved_acl2hpr

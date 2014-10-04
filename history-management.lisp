@@ -3864,7 +3864,7 @@
                                             state)))))))))
 
 #+(and (not acl2-loop-only) hons)
-(defvar *defattach-fns*)
+(defvar *defattach-fns*) ; see the Essay on Memoization with Attachments
 
 (defun set-w (flg wrld state)
 
@@ -16957,7 +16957,6 @@
                 `(memoize ,key ; fn
                           ,condition
                           ,(cdr (assoc-eq :inline val))
-                          ,(cdr (assoc-eq :trace val))
                           ,(cltl-def-from-name key wrld) ; cl-defun
                           ,(getprop key 'formals t 'current-acl2-world
                                     wrld) ; formals

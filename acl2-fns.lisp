@@ -1655,28 +1655,26 @@ notation causes an error and (b) the use of ,. is not permitted."
 
 (defmacro save-def (def-form)
 
-; For each definition (save-def (defun name formals ... body)), where defun
+; WARNING: We assume in function mf-len-outputs that the body of def-form (see
+; below) evaluates to a single value.
+
+; Consider a definition (save-def (defun name formals ... body)), where defun
 ; could be replaced by other macros that take the same arguments (like
-; defun-one-output or defn1), this macro executes the definition and for the
-; hons version, also saves (name formals ... body) as the 'acl2-saved-def
-; property of name.  We use this property to obtain the raw Lisp definition of
-; name for memoize-fn, for Lisps like SBCL where function-lambda-expression
-; doesn't seem to work for us.
+; defun-one-output or defn1), and where body evaluates to a single value.  Then
+; this macro executes the definition and for the hons version, also saves (name
+; formals ... body) as the 'acl2-saved-def property of name.  We use this
+; property to obtain the raw Lisp definition of name for memoize-fn.
 
 ; This macro is intended only for raw Lisp definitions.  For definitions in the
 ; loop, we expect that cltl-def-from-name will give us the definition.
 
   #+hons
-  (let* ((def (cdr def-form))
-         (name (car def)))
+  (let ((name (cadr def-form))) ; (defunxxx name ...)
     `(progn ,def-form
             (setf (get ',name 'acl2-saved-def)
                   ',def-form)))
   #-hons
   def-form)
-
-; [Comment from Jared]: We probably should work toward getting rid of
-; defg/defv's in favor of regular parameters...
 
 (defmacro defg (&rest r)
 
@@ -1704,7 +1702,104 @@ notation causes an error and (b) the use of ,. is not permitted."
   value form is not evaluated if the variable is already BOUNDP.''"
 
   #-Clozure
-  `(defparameter ,@r)
+  `(defvar ,@r)
   #+Clozure
   `(ccl::defstaticvar ,@r))
 
+(defmacro without-interrupts (&rest forms)
+
+; This macro prevents, in raw Lisp for underlying Common Lisp implementations
+; where we know how to do this, the interrupting of evaluation of any of the
+; given forms.  We expect this behavior to take priority over any enclosing
+; call of with-interrupts.
+
+; "Without-interrupts" typically means that there will be no interrupt from the
+; Lisp system, including ctrl+c from the user or an interrupt from another
+; thread/process.  (However, in GCL it may mean that one can still enter a
+; break, although :q is disabled and :r should be issued in order to continue.)
+; For an ACL2(p) example: if *thread1* is running (progn (without-interrupts
+; (process0)) (process1)), then execution of (interrupt-thread *thread1*
+; (lambda () (break))) will not interrupt (process0).
+
+; But note that "without-interrupts" does not guarantee atomicity; for example,
+; it does not mean "without-setq".
+
+; Thanks to David Rager for initially contributing this function.
+
+  #+ccl
+  `(ccl:without-interrupts ,@forms)
+  #+sbcl
+  `(sb-sys:without-interrupts ,@forms)
+  #+gcl
+  (if (fboundp 'si::without-interrupts)
+      `(si::without-interrupts ,@forms) ; Camm Maguire suggestion
+    `(progn ,@forms))
+  #+lispworks
+
+; Lispworks decided to remove "without-interrupts" from their system, because
+; its use has changed from meaning "atomic" to meaning "can't be interrupted by
+; other threads or processes".  Thus, we use the new primitive,
+; "with-interrupts-blocked".
+
+  `(mp:with-interrupts-blocked ,@forms)
+  #-(or ccl sbcl gcl lispworks)
+  `(progn ,@forms))
+
+(defmacro with-interrupts (&rest forms)
+
+; This macro allows, in raw Lisp for underlying Common Lisp implementations
+; where we know how to do this, the interrupting of evaluation of any of the
+; given forms.  We expect this behavior to take priority over any enclosing
+; call of without-interrupts.
+
+  #+ccl
+  `(ccl:with-interrupts-enabled ,@forms)
+  #+sbcl
+  `(sb-sys:with-interrupts ,@forms)
+  #-(or ccl sbcl)
+
+; Note that in GCL, si::without-interrupts (when implemented) disables :q but
+; does not disable control-c.  So although there is no si::with-interrupts,
+; probably no such utility is needed.
+
+  `(progn ,@forms))
+
+(defmacro unwind-protect-disable-interrupts-during-cleanup
+  (body-form &rest cleanup-forms)
+
+; As the name suggests, this is unwind-protect but with a guarantee that
+; cleanup-form cannot be interrupted.  Note that CCL's implementation already
+; disables interrupts during cleanup: here we quote CCL developer Gary Byers,
+; from
+; http://lists.clozure.com/pipermail/openmcl-devel/2013-September/010291.html.
+
+;   Since UNWIND-PROTECT cleanup forms are effectively run with interrupts
+;   disabled in CCL by default ....
+
+; Thanks to David Rager for initially contributing this function.
+
+  #+ccl
+  `(unwind-protect ,body-form ,@cleanup-forms)
+  #+lispworks
+  `(hcl:unwind-protect-blocking-interrupts-in-cleanups ,body-form
+                                                       ,@cleanup-forms)
+  #-(or ccl lispworks)
+  `(unwind-protect ,body-form (without-interrupts ,@cleanup-forms)))
+
+(defvar *load-compiled-verbose* nil)
+
+(defun load-compiled (filename &optional verbose)
+
+; It may be useful to implement the maybe-verbose argument for Lisps that do
+; not print a "loading" message.  For now, we comment out code below that would
+; do this.
+
+  (when (and verbose
+             *load-compiled-verbose*)
+    (eval `(cw "~%Note: loading file ~s0.~|" ',filename)))
+  #+clisp
+  (let ((*readtable* *acl2-readtable-clisp-fas*))
+    (declare (special *acl2-readtable-clisp-fas*))
+    (load filename))
+  #-clisp
+  (load filename))

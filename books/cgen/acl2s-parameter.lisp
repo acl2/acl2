@@ -4,7 +4,8 @@
 (acl2::begin-book t :ttags :all);$ACL2s-Preamble$|#
 
 (in-package "ACL2")
-(include-book "utilities")
+;(include-book "utilities")
+(include-book "tools/bstar" :dir :system)
 
 
 ;;; Keep the following defconst synced with all the acl2s parameters
@@ -17,8 +18,8 @@
                                backtrack-limit
                                search-strategy
                                testing-enabled
-                               stopping-condition
-                               subgoal-timeout
+                               cgen-timeout
+                               print-cgen-summary
                                ))
 
 ;All user-defined parameters are stored here
@@ -29,8 +30,9 @@
 (defmacro add-acl2s-parameter (name default
                                     &key 
                                     (setter 'nil)
-                                    (doc-string 'nil)
-                                    (guard 't))
+                                    (guard 't)
+                                    short
+                                    long)
   "Add a new user-defined parameter.
    Put it in the acl2s-defaults-table as a key,
    using the value of :default. 
@@ -43,8 +45,8 @@ embedded event form, this this is called from inside an make-event.
 You have to see the code in acl2s-defaults to understand whats going
 on with getter and setter, the situation is assymmetric and I am
 being lazy about documentation.
-:doc-string is a string that is used to specify the defdoc. 
-For internal flags dont use a doc-string"
+short and long are keyword arguments to defxdoc. 
+"
   
   (b* (((unless (symbolp name))
         (er hard 'add-acl2s-parameter
@@ -62,320 +64,227 @@ For internal flags dont use a doc-string"
                  :value default
                  :setter setter)
               :put)
-       ,@(and doc-string
-              `((defdoc ,name ,doc-string))))))
+       ,@(and short
+              `((defxdoc ,name :parents (cgen acl2s-defaults) :short ,short :long ,long))))))
 
 
-  
+(defxdoc acl2s-defaults
+  :short "Getting and setting defaults for various parameters in Cgen (ACL2 Sedan)"                                 
+  :long  
+  "
+<h3>Examples</h3>
+@({
+  (acl2s-defaults :set num-trials 1000)
+  (acl2s-defaults :get cgen-timeout)
+  (acl2s-defaults :get testing-enabled)
+  (acl2s-defaults :set num-counterexamples 3)
+})
 
+<p>
+The following parameters are available for control via @('acl2s-defaults').
+These are stored in the constant @('*acl2s-parameters*').
 
-(defdoc ACL2::TESTING
-  ":Doc-Section ACL2::TESTING
-  
-  A counterexample generation framework for ACL2 ~/
-                                 
-  Test formulas before and during a proof attempt, to find
-  counterexamples and witnesses potentially saving time and
-  effort and providing more intuition into the conjecture under
-  scrutiny.  The testing framework is tightly coupled with the
-  data definition (See ~ilc[DATA-DEFINITIONS]) framework.
-  
-  ~t[test?] guarantees printing counterexamples in
-  terms of the top goals variables. See ~ilc[test?]
-  for more details and examples.
-  
-  The framework can be configured via a bunch of parameters
-  whose documention you will find below. In particular, see
-  ~ilc[num-trials], ~ilc[verbosity-level], ~ilc[testing-enabled].~/ 
-  
-  To understand more about how testing works,
-  please refer to the following paper
-  ~url[http://www.ccs.neu.edu/home/harshrc/ITaITP.pdf]
-  ")
+@({
+                  num-trials
+                  verbosity-level
+                  num-counterexamples
+                  num-witnesses
+                  sampling-method
+                  backtrack-limit
+                  search-strategy
+                  testing-enabled
+                  cgen-timeout
+                  print-cgen-summary
 
-(defdoc ACL2::acl2s-defaults
-  ":Doc-Section ACL2::acl2-sedan
-  
-  Getting and setting defaults for various parameters in ACL2 Sedan~/
-                                 
-  ~/ 
-  
-  ")
+})
+</p>
+")
 
 (add-acl2s-parameter 
  num-trials 1000
- :doc-string 
- ":Doc-Section ACL2::TESTING
-  
-  Max number of tries to find counterexamples~/~/
-
-  Maximum number of tries (attempts) to construct 
+ :short "Max number of tries to find counterexamples"
+ :long
+" Maximum number of tries (attempts) to construct 
   counterexamples and witnesses.
   By default this parameter is set to 1000. Can be set to
-  any natural number ~t[n]. If set to 0, it has the same
-  effect as setting testing-enabled parameter to ~t[nil].
-  ~bv[]
+  any natural number <tt>n</tt>. If set to 0, it has the same
+  effect as setting testing-enabled parameter to @('nil').
+
+  <code>
    Usage:
    (acl2s-defaults :set num-trials 1000)
    (acl2s-defaults :get num-trials)
    :doc num-trials
-   ~ev[]"
+   </code>"
  :guard (and (natp value) 
              (< value 1000000000)))
 
 (add-acl2s-parameter 
  verbosity-level 1
- :doc-string 
- ":Doc-Section ACL2::TESTING
-  
- Control verbosity of Testing~/~/
+ :short "Control verbosity of Cgen"
+ :long "
+ <p>Control amount of output printed by Cgen.</p>
 
- Control amount of output printed by random-testing
-   Currently 3 verbosity levels are implemented:
-   0 - All testing output is turned off
-   1 - Normal verbosity level (default)
-   2 - More verbose.
-   3 - For Debug by normal users
-   4 and above - System level debug by developers
-  ~bv[]
+<dl>
+<dt>Levels</dt>
+<dd>   0 - All Cgen output is turned off      </dd> 
+<dd>   1 - Normal output (default)            </dd> 
+<dd>   2 - Verbose output                     </dd> 
+<dd>   3 - More verbose with Cgen statistics  </dd>  
+<dd>   4 - For Debug by normal users          </dd>  
+<dd>   5 and above - System level debug by developers </dd>
+</dl>
+
+  <code>
     Usage:
     (acl2s-defaults :set verbosity-level 1)
     (acl2s-defaults :get verbosity-level)
     :doc verbosity-level
-  ~ev[]"
+  </code>"
  :guard (natp value))
 
 
 (add-acl2s-parameter 
   num-counterexamples 3
- :doc-string 
- ":Doc-Section ACL2::TESTING
- 
-  Number of Counterexamples to be shown~/~/
- 
+ :short "Number of Counterexamples to be shown"
+ :long "
   Set the number of counterexamples desired to be shown
   By default this parameter is set to 3. Can be set to
   any natural number n. Setting this number to 0 implies
   the user is not interested in seeing counterexamples, and
   thus none will be printed in the testing output.
   
-  ~bv[]
+  <code>
   Usage:
   (acl2s-defaults :set num-counterexamples 3)
   (acl2s-defaults :get num-counterexamples)
   :doc num-counterexamples
-  ~ev[]"
+  </code>"
    :guard (natp value))
 
 
 (add-acl2s-parameter 
   num-witnesses 3
- :doc-string 
- ":Doc-Section ACL2::TESTING
-  
-  Number of Witnesses to be shown~/~/
-  
+ :short "Number of Witnesses to be shown"
+ :long "
   Set the number of witnesses desired to be shown
   By default this parameter is set to 3. Can be set to
   any natural number. Setting this number to 0 implies
   the user is not interested in seeing witnesses, and
   thus none will be printed in the testing output.
   
-  ~bv[]
+  <code>
   Usage:
   (acl2s-defaults :set num-witnesses 3)
   (acl2s-defaults :get num-witnesses)
   :doc num-witnesses
-  ~ev[]"
+  </code>"
    :guard (natp value))
 
-;DEPRECATED
-;; (add-acl2s-parameter 
-;;  show-top-level-counterexample t
-;;  :doc-string ":Doc-Section ACL2::TESTING
-;;  Show Counterexamples to the top-level <i>goal</i>" 
-;;  Show Counterexamples to the top-level <i>goal</i>
-;;    instead of to the <i>subgoals</i>.
-;;    By default this parameter is set to <tt>t</tt>. 
-;;    If set to <tt>nil</tt>, then counterexamples are simply
-;;    instances falsifying the respective subgoals.
-;;    ~bv[]
-;;    Usage:
-;;    (acl2s-defaults :set show-top-level-counterexample t)
-;;    (acl2s-defaults :get show-top-level-counterexample)
-;;    :doc show-top-level-counterexample 
-;;    ~ev[]
-;;    "
-;;  :guard (booleanp value))
 
-;; use test enumerator for user-level controlled testing
-(defconst *default-rt-use-test-enum* t)
-
-(defmacro set-acl2s-random-testing-use-test-enumerator (v)
-;:Doc-Section RANDOM-TESTING  
- "Set the flag to use test-enumerator if it exists~/
-  By default this parameter is set to nil.
-  ~bv[]
-  Usage:
-  (set-acl2s-random-testing-use-test-enumerator nil)
-  ~ev[]~/
-  "
- `(assign acl2s-rt-use-test-enum ,v))
-
-(defun get-acl2s-random-testing-use-test-enumerator-fn (state)
-  (declare (xargs :stobjs (state)))
-  (let ((nt (f-boundp-global 'acl2s-rt-use-test-enum state)))
-    (if nt
-     (f-get-global 'acl2s-rt-use-test-enum state)
-      *default-rt-use-test-enum*)))
-
-
-(defmacro get-acl2s-random-testing-use-test-enumerator ()
-;:Doc-Section RANDOM-TESTING  
- "Get the current setting for use of test-enumerator~/
-  ~bv[]
-  Usage:
-  (get-acl2s-random-testing-use-test-enumerator)
-  ~ev[]~/
-  "
- '(get-acl2s-random-testing-use-test-enumerator-fn state))
-
-
+(defconst *search-strategy-values* '(:simple :incremental :hybrid))
 (add-acl2s-parameter 
  search-strategy :simple
- :doc-string 
- ":Doc-Section ACL2::TESTING
-  
-  Specify the search strategy to be used ~/~/
- 
+ :short "Specify the search strategy to be used."
+ :long "
   Specify which of the following strategies to
   use for instantiating free variables of the conjecture
-  under test: ~t[:simple] or  ~t[:incremental]
-  or  ~t[:hybrid] (untested).
-  ~t[:incremental] uses a dpll-like algorithm to search
+  under test: @(':simple) or  @(':incremental)
+  or  @(':hybrid) (untested).
+  @(':incremental) uses a dpll-like algorithm to search
   for counterexamples.
-  By default this parameter is set to the symbol ~t[:simple].
-   ~bv[]
+  By default this parameter is set to the symbol @(':simple).
+   <code>
     Usage:
     (acl2s-defaults :set search-strategy :simple)
     (acl2s-defaults :get search-strategy)
     :doc search-strategy
-   ~ev[]
+   </code>
    "
- :guard (member-eq value '(:simple :incremental :hybrid)))
+ :guard (member-eq value *search-strategy-values*))
 ;; Use natural seeds or random tree of natural numbers 
+
+(defconst *sampling-method-values* '(:random :uniform-random :be :mixed))
 
 (add-acl2s-parameter 
  sampling-method :random
- :doc-string 
- ":Doc-Section ACL2::TESTING
- 
-  Specify sampling method to be used to instantiate variables ~/~/
- 
+ :short "Specify sampling method to be used to instantiate variables "
+ :long "
   Specify which of the following methods to
   use for instantiating free variables of the conjecture
-  under test: ~t[:be] or ~t[:random] or ~t[:uniform-random] or ~t[:mixed]
-  By default this parameter is set to the symbol ~t[:random]
-   ~bv[]
+  under test: @(':be) or @(':random) or @(':uniform-random) or @(':mixed)
+  By default this parameter is set to the symbol @(':random)
+   <code>
     Usage:
     (acl2s-defaults :set sampling-method :random)
     (acl2s-defaults :get sampling-method)
     :doc sampling-method
-   ~ev[]
+   </code>
    "
- :guard (member-eq value '(:be :uniform-random :random :mixed)))
+ :guard (member-eq value *sampling-method-values*))
 
-;; (add-acl2s-parameter 
-;;  flatten-defdata nil
-;;  :doc-string ":Doc-Section ACL2::TESTING
-;;  Flatten defdata instances during sampling"
-;;  Flatten defdata enumerator expressions which stand for
-;;    instances of the particular defdata type. Basically if you
-;;    have a type triple <tt>(defdata triple (list pos pos pos))</tt>,
-;;    then an instance of triple is generated (sampled) by a call to the 
-;;    enumerator expression <tt>(nth-triple n)</tt>, where <tt>n</tt>
-;;    is some natural number. Alternatively we could flatten the 
-;;    defdata instance by representing it with the enumerator 
-;;    expression <tt>(list (nth-pos n1) (nth-pos n2) (nth-pos n3))</tt>
-;;    which consists purely of instances of primitive and custom types. 
-;;    This has the nice property of distribution invariance, 
-;;    i.e. a field of a particular type has the same distribution, 
-;;    regardless of its position in the body of a complex defdata type.
-;;    By default the value of parameter is <tt>nil</tt>.
-;;    ~bv[]
-;;     Usage:
-;;     (acl2s-defaults :set flatten-defdata-instance nil)
-;;     (acl2s-defaults :get flatten-defdata-instance)
-;;     :doc flatten-defdata-instance
-;;    ~ev[]
-;;    "
-;;  :guard (booleanp value))
 
 (add-acl2s-parameter 
  backtrack-limit 3
- :doc-string 
- ":Doc-Section ACL2::TESTING
- 
-  Maximum number of backtracks allowed (per variable)~/~/
- 
-  Maximum number of backtracks allowed by a variable.
+ :short "Maximum number of backtracks allowed (per variable)"
+ :long "
+   Maximum number of backtracks allowed by a variable.
    The default backtrack limit is set to 3. Setting this 
    parameter to 0, means that backtracking is disabled.
-   ~bv[]
+   <code>
     Usage:
     (acl2s-defaults :set backtrack-limit 3)
     (acl2s-defaults :get backtrack-limit)
     :doc backtrack-limit
-   ~ev[]
+   </code>
    "
  :guard (natp value))
         
 
 (add-acl2s-parameter 
- subgoal-timeout 10
- :doc-string 
- ":Doc-Section ACL2::TESTING
- 
-  Testing timeout (in seconds) per subgoal~/~/
- 
-  Maximum allowed time (in seconds) to test any 
-  subgoal or top-level form.
+ cgen-timeout 10
+ :short "Cgen/Testing timeout (in seconds)"
+ :long
+  "Maximum allowed time (in seconds) for Cgen to
+  search for counterexamples to a particular form.
   The default timeout limit is set to 10 sec.
   Setting this parameter to 0 amounts to disabling
   the timeout mechanism, i.e. its a no-op.
-   ~bv[]
+  Guard : Timeout should be a rational.
+   <code>
     Usage:
-    (acl2s-defaults :set subgoal-timeout 10)
-    (acl2s-defaults :get subgoal-timeout)
-    :doc subgoal-timeout
-   ~ev[]
+    (acl2s-defaults :set cgen-timeout 10)
+    (acl2s-defaults :get cgen-timeout)
+    :doc cgen-timeout
+   </code>
    "
- :guard (natp value))
+ :guard (rationalp value))
+
+(defconst *testing-enabled-values* '(T NIL :naive))
 
 (add-acl2s-parameter 
  testing-enabled :naive
- :doc-string 
- ":Doc-Section ACL2::TESTING
- 
-  Testing enable/disable flag~/~/
- 
-  Testing can be enabled or disabled
-  using this parameter.
-  The default value is  ~t[:naive] (unless you are in
-  the usual ACL2 Sedan session modes, where default is ~t[t]).
-  Setting this parameter to ~t[nil] amounts to disabling
+ :short "Testing enable/disable flag"
+ :long
+" <p>Testing can be enabled or disabled using this parameter.
+  The default value is  <tt>:naive</tt> (unless you are in
+  the usual ACL2 Sedan session modes, where default is @('t')).
+  Setting this parameter to @('nil') amounts to disabling
   the testing mechanism. Setting this parameter
-  to ~t[:naive] leads to top-level testing without any
-  theorem prover support.
-  ~bv[]
+  to <tt>:naive</tt> leads to top-level testing without any
+  theorem prover support.</p>
+  <code>
    Usage:
    (acl2s-defaults :set testing-enabled :naive)
    (acl2s-defaults :get testing-enabled)
    :doc testing-enabled
-  ~ev[]
+  </code>
    "
- :guard (member-eq value '(T NIL :naive))
+ :guard (member-eq value *testing-enabled-values*)
  :setter set-acl2s-random-testing-enabled)
+
+
+
 
 (defun mem-tree (x tree)
   (declare (xargs :guard (symbolp x)))
@@ -389,25 +298,10 @@ For internal flags dont use a doc-string"
                   :stobjs (state)))
   ;; bugfix 30 April '12: I had changed the name of test-each-checkpoint
   ;; to test-checkpoint and forgot the update the fact here. Bad bad bad!
-  (and (mem-tree 'TEST-CHECKPOINT ;check if random testing is enabled
+  (and (mem-tree 'ACL2::TEST-CHECKPOINT ;check if random testing is enabled
                  (override-hints (w state)))
        T))
       
-
-(defdoc get-acl2s-random-testing-hints-enabled
-  ":Doc-Section ACL2::TESTING
-  
-   Get current setting for random-testing-hints-enabled~/~/
-  
-   Get current setting for random-testing-hints-enabled.
-   Returns ~t[nil] if ~t[thm] and ~t[defthm] do not make use of random-testing
-   in their proof attempts, and ~t[t] otherwise.
-   
-   ~bv[]
-    Usage:
-    (get-acl2s-random-testing-hints-enabled)
-   ~ev[]
-   ")
 
 ;top-level exported macro to know wether random testing is enabled or not
 (defmacro get-acl2s-random-testing-hints-enabled ()
@@ -443,7 +337,6 @@ For internal flags dont use a doc-string"
 ;if testing-hint is disabled and user wants to turn it off its no-op
       '(value-triple :REDUNDANT)))))
 
-
 ;top-level exported macro to know enable random testing
 (defmacro set-acl2s-random-testing-enabled (v forms)
   (declare (xargs :guard (member-eq v '(T NIL :naive))))
@@ -456,6 +349,17 @@ For internal flags dont use a doc-string"
           (value `(progn
                     ,(set-acl2s-random-testing-flag-fn ,v mode state)
                     ,@forms))))))
+
+(defun get-acl2s-defaults (param wrld)
+  (declare (xargs :verify-guards nil
+                  :guard (and (symbolp param) (plist-worldp wrld))))
+  (b* ((param-rec-pair (assoc-eq param (table-alist 'acl2s-defaults-table wrld)))
+       ((unless (consp param-rec-pair))
+        (er hard 'acl2s-defaults 
+            "~|Parameter ~x0 not found in acl2s-defaults!~%" param))
+       (r (cdr param-rec-pair))
+       (val (access acl2s-param-info% r :value)))
+    val))
 
 (defmacro acl2s-defaults (&rest rst)
   (b* (((unless (consp (cdr rst)));atleast 2 elems
@@ -471,17 +375,7 @@ For internal flags dont use a doc-string"
             "~|Invalid arguments supplied, given ~x0~%" rst)))
     (if (eq :get op)
 ;get the value at the point of call (runtime)
-        `(b* ((param-rec-pair
-                 (assoc-eq ',param 
-                           (table-alist 'acl2s-defaults-table 
-                                        (w state))))
-              ((unless (consp param-rec-pair))
-                 (er hard 'acl2s-defaults 
-                     "~|Parameter ~x0 not found in acl2s-defaults!~%"
-                     ',param))
-              (r (cdr param-rec-pair))
-              (val (access acl2s-param-info% r :value)))
-          val)
+        `(get-acl2s-defaults ',param (w state))
 
 ;get the guard and value at the runtime
 ;since we need access to state
@@ -525,98 +419,45 @@ For internal flags dont use a doc-string"
 
 
 
-;;; copied from main.lisp, since these functions are only called by
-;;; set-acl2s-random-testing-enabled, which is defined here
 
-
-;;; add no-op override hints that test each checkpoint.  The reason
-;;; why we need backtrack hint is not that we need clause-list
-;;; (children goals of clause), but because we need to do testing only
-;;; on checkpoints, and only backtrack hints have access to processor,
-;;; if this were not the case, we could have used ":no-op
-;;; '(test-each-goal ...)" as an override hint which has no effect but
-;;; to test each goal.  Another reason is that because computed-hints
-;;; with :COMPUTED-HINT-REPLACEMENT t is not additive like
-;;; override-hints it can cause a hint to be not selected otherwise.
-(defmacro enable-acl2s-random-testing ()
-;; this has to be a makevent because enable-acl2s-random-testing is the
-;; expansion result of the make-event in set-acl2s-random-testing-enabled
-`(make-event  
-  '(progn 
-     (acl2::add-override-hints 
-      '((list* :backtrack 
-;take parent pspv and hist, not the ones returned by clause-processor
-
-             `(test-checkpoint acl2::id 
-                                    acl2::clause
-                                    acl2::clause-list
-                                    acl2::processor
-;TODO:ask Matt about sending parent pspv and hist
-                                    ',acl2::pspv 
-                                    ',acl2::hist
-                                    acl2::ctx
-                                    state
-                                    )
-
-             ;; `(mv-let (erp tval state)
-             ;;          (trans-eval
-             ;;           `(test-each-checkpoint ',acl2::id 
-             ;;                                  ',acl2::clause 
-             ;;                                  ',acl2::processor 
-             ;;                                  ',',acl2::pspv 
-             ;;                                  ',',acl2::hist state
-             ;;                                  ts$)
-             ;;           'acl2s-testing ; ctx
-             ;;           state
-             ;;           t ; aok
-             ;;           )
-             ;;          (declare (ignorable erp))
-             ;;          (mv (cadr tval) (caddr tval) state))
-
-;`(test-each-checkpoint acl2::id acl2::clause acl2::processor ',acl2::pspv ',acl2::hist state)
-             acl2::keyword-alist)))
-     )))
-
-(defmacro disable-acl2s-random-testing ()
-`(make-event  
-     '(progn
-        (acl2::remove-override-hints 
-         '((list* :backtrack 
-                `(test-checkpoint acl2::id 
-                                       acl2::clause 
-                                       acl2::clause-list
-                                       acl2::processor 
-                                       ',acl2::pspv 
-                                       ',acl2::hist
-                                       acl2::ctx
-                                       state
-                                      )
-;take parent pspv and hist, not the ones returned by clause-processor
-                 ;; `(mv-let (erp tval state)
-                 ;;      (trans-eval
-                 ;;       `(test-each-checkpoint ',acl2::id 
-                 ;;                              ',acl2::clause 
-                 ;;                              ',acl2::processor 
-                 ;;                              ',',acl2::pspv 
-                 ;;                              ',',acl2::hist state
-                 ;;                              ts$)
-                 ;;       'acl2s-testing ; ctx
-                 ;;       state
-                 ;;       t ; aok
-                 ;;       )
-                 ;;      (declare (ignorable erp))
-                 ;;      (mv (cadr tval) (caddr tval) state))
-;`(test-each-checkpoint acl2::id acl2::clause acl2::processor ',acl2::pspv ',acl2::hist state)
-                acl2::keyword-alist)))
-        )))
-
-
-
-; Internal flags
 (add-acl2s-parameter 
-;show pts at the end of subgoal?
-  acl2s-pts-subgoalp NIL
+ print-cgen-summary T
+ :short "Print summary for Cgen"
+ :long " <p>Print summary of cgen/testing done in course of test? form (and
+  other forms). The default is set to @('T'). Setting this parameter to
+  @('NIL'), means that no summary is printed.</p>
+
+   <code>
+    Usage:
+    (acl2s-defaults :set print-cgen-summary t)
+    (acl2s-defaults :get print-cgen-summary)
+    :doc print-cgen-summary
+   </code>
+   "
  :guard (booleanp value))
+
+
+; some useful utility functions used in main and in this file
+(defun acl2s-defaults-fn. (defaults override-alist ans.)
+  (declare (xargs :verify-guards nil
+                  :guard (and (symbol-alistp defaults)
+                              (symbol-alistp override-alist)
+                              (symbol-alistp ans.))))
+  (if (endp defaults)
+      ans.
+    (b* (((cons param rec-val) (car defaults))
+         (val (acl2::access acl2::acl2s-param-info% rec-val :value))
+         (override (assoc-eq param override-alist))
+         (val (if override (cdr override) val)))
+      (acl2s-defaults-fn. (cdr defaults) 
+                          override-alist 
+                          (cons (cons param val) ans.)))))
+
+(defmacro acl2s-defaults-alist (&optional override-alist)
+  "return alist mapping acl2s-parameters to their default values
+overridden by entries in override-alist"
+  `(acl2s-defaults-fn. (table-alist 'acl2::acl2s-defaults-table (w state))
+                      ,override-alist '()))
 
 
 #|ACL2s-ToDo-Line|#

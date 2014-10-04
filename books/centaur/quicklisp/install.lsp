@@ -43,7 +43,7 @@
 (setenv$ "XDG_CACHE_HOME"  (concatenate 'string *cbd* "asdf-home/cache"))
 
 (make-event
- ; HTTP_PROXY_WITH_PORT can be, for example, proxy.nbc.com:80
+ ; HTTP_PROXY_WITH_PORT can be, for example, http://proxy.nbc.com:80
  (er-let* ((proxy (getenv$ "HTTP_PROXY_WITH_PORT" state)))
           (value `(defconst *proxy* ,proxy))))
 

@@ -38,7 +38,8 @@
 
 ; We use the static honsing scheme on 64-bit GCL when the support is there.
 #+(and gcl x86_64)
-(when (fboundp 'si::static-inverse-cons)
+(when (and (fboundp 'si::static-inverse-cons)
+           (fboundp 'si::without-interrupts))
   (pushnew :static-hons *features*))
 
 ; Essay on Parallelism, Parallelism Warts, Parallelism Blemishes, Parallelism
@@ -741,6 +742,11 @@ implementations.")
     result))
 
 (defmacro our-with-standard-io-syntax (&rest args)
+
+; Note for GCL:
+; As of late May 2013, with-standard-io-syntax seems to work properly in ANSI
+; GCL.
+
   (cons #-cltl2 'progn
         #+cltl2 'with-standard-io-syntax
         args))

@@ -179,8 +179,7 @@
 
 #+HONS
 (unless (memoizedp-raw 'aig-vars-fast)
-  (setf (gethash 'aig-vars-fast *number-of-arguments-and-values-ht*)
-        '(1 . 1))
+  (mf-note-arity 'aig-vars-fast 1 1)
   (profile 'aig-vars-fast))
 
 (defg *aig-vars-fast1-hits* 0)

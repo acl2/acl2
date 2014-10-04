@@ -1362,24 +1362,6 @@
            (delete-assoc-eq 'dir alist))
           (t alist))))
 
-#-acl2-loop-only
-(defmacro with-interrupts (&rest forms)
-
-; This macro allows, in raw Lisp for underlying Common Lisp implementations
-; where we know how to do this, the interrupting of evaluation of any of the
-; given forms.  We expect this behavior to take priority over any enclosing
-; call of without-interrupts.
-
-  #+ccl
-  `(ccl:with-interrupts-enabled ,@forms)
-  #+sbcl
-  `(sb-sys:with-interrupts ,@forms)
-  #+gcl
-  `(let ((system:*interrupt-enable* t))
-     ,@forms)
-  #-(or ccl sbcl gcl)
-  `(progn ,@forms))
-
 (defun ld-fn0 (alist state bind-flg)
 
 ; We set the ld specials to the values specified in alist and then enter the

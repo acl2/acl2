@@ -66,6 +66,14 @@
                   (random-natural-basemax1 10 6 1382728371)) ;random seed in random-state-basis1
        :exec  (random-natural-basemax1 10 6 seed.)))
       
+(defun random-small-natural-seed (seed.)
+  (declare (type (unsigned-byte 31) seed.))
+  (declare (xargs :guard (unsigned-byte-p 31 seed.)))
+  (mbe :logic (if (unsigned-byte-p 31 seed.)
+                  (random-natural-basemax1 10 3 seed.)
+                (random-natural-basemax1 10 3 1382728371)) ;random seed in random-state-basis1
+       :exec  (random-natural-basemax1 10 3 seed.)))
+
 (defmacro random-index-seed (max seed.)
   `(genrandom-seed ,max ,seed.))
 
