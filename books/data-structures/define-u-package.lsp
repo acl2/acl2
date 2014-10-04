@@ -10,4 +10,5 @@
 (in-package "ACL2")
 
 (defpkg "U" (union-eq *acl2-exports*
-		      *common-lisp-symbols-from-main-lisp-package*))
+		      *common-lisp-symbols-from-main-lisp-package*
+                      '(defxdoc defsection)))

@@ -44,14 +44,10 @@ type.</p>")
 ;;;
 ;;;****************************************************************************
 
-;;;  EQLABLE-ALISTP
-
 (local (defthm eqlable-alistp-implies-alistp
          (implies (eqlable-alistp l)
                   (alistp l))
          :rule-classes (:rewrite :forward-chaining)))
-
-;;;  ASSOC
 
 (local (defthm assoc-properties
          (implies (and (eqlable-alistp l)
@@ -64,15 +60,11 @@ type.</p>")
                        (assoc x l))
                   (eqlablep (car (assoc x l))))))
 
-;;;  ASSOC-EQ
-
 (local (defthm assoc-eq-properties
          (implies (and (alistp l)
                        (assoc-eq x l))
                   (and (consp (assoc-eq x l))
                        (equal (car (assoc-eq x l)) x)))))
-
-;;;  BOUNDED-INTEGER-ALISTP
 
 (local (defthm bounded-integer-alistp-eqlable-alistp
          (implies (bounded-integer-alistp l n)
@@ -300,7 +292,7 @@ type.</p>")
                          (assoc-eq :header l)))))
 
 
-(defsection array1-lemmas
+(defsection-progn array1-lemmas
   :parents (array1)
   :short "A @(see theory) of all @(see enable)d rules exported by the @(see
 array1) book."
@@ -536,79 +528,74 @@ need to @(see DISABLE) the theory @(see ARRAY1-FUNCTIONS).</p>"
      (implies (and (symbol-alistp l)
                    (integerp i)
                    (integerp n))
-              (not (compress11 name l i n default)))))
+              (not (compress11 name l i n default))))))
+
 
 ;  HEADER, DEFAULT, and DIMENSIONS are characterized, so we DISABLE them.
 
-  (local (in-theory (disable header default dimensions)))
+(local (in-theory (disable header default dimensions)))
 
-(defun reset-array1 (name l)
-  ":doc-section array1
-  Clear an 1-dimensional array.
-  ~/~/
-  The function (RESET-ARRAY1 name l) returns a 1-dimensional array whose
-  alist is simply the HEADER of l.  This has the effect of resetting the
-  array, i.e., reading the new array at any address will return the default
-  value.  The implementation is simply to redefine the array as the HEADER of
-  the old array.  Thus all of the HEADER information is carried over to the
-  new array.
+(defsection reset-array1
+  :parents (array1)
+  :short "Clear an 1-dimensional array."
+  :long "<p>The function (RESET-ARRAY1 name l) returns a 1-dimensional array
+whose alist is simply the HEADER of l.  This has the effect of resetting the
+array, i.e., reading the new array at any address will return the default
+value.  The implementation is simply to redefine the array as the HEADER of the
+old array.  Thus all of the HEADER information is carried over to the new
+array.</p>
 
-  Note that an alternate definition is available as the lemma RESET-ARRAY1*.
-  ~/"
-  (declare (xargs :guard (array1p name l)))
-  (compress1 name (list (header name l))))
+<p>Note that an alternate definition is available as the lemma
+RESET-ARRAY1*.</p>"
 
-(defthm reset-array1*
-  (implies (array1p name l)
-           (equal (reset-array1 name l)
-                  (list (header name l))))
-  :hints (("Goal" :in-theory (enable compress1 compress11)))
-  :doc ":doc-section reset-array1
-  Rewrite: (RESET-ARRAY1 name l) = (LIST (HEADER name l)).
-  ~/~/
-  This definition of RESET-ARRAY1 is logically equivalent to the actual
-  definition. The actual definition, which includes a COMPRESS1 call, has the
-  run-time side-effect of re-installing the new array.  The COMPRESS1 is
-  logically redundant, however.
+  (defun reset-array1 (name l)
+    (declare (xargs :guard (array1p name l)))
+    (compress1 name (list (header name l)))))
 
-  This lemma is exported DISABLED, however this is the preferred definition
-  to use to reason about RESET-ARRAY1. ~/ ")
+(defsection reset-array1*
+  :parents (reset-array1)
+  :short "Rewrite: (RESET-ARRAY1 name l) = (LIST (HEADER name l))."
+  :long "<p>This definition of RESET-ARRAY1 is logically equivalent to the
+actual definition. The actual definition, which includes a COMPRESS1 call, has
+the run-time side-effect of re-installing the new array.  The COMPRESS1 is
+logically redundant, however.</p>
+
+<p>This lemma is exported DISABLED, however this is the preferred definition to
+use to reason about RESET-ARRAY1.</p>"
+
+  (defthm reset-array1*
+    (implies (array1p name l)
+             (equal (reset-array1 name l)
+                    (list (header name l))))
+    :hints (("Goal" :in-theory (enable compress1 compress11)))))
 
 ;  We can now reason with the simple definition RESET-ARRAY1*.
 
 (local (in-theory (disable reset-array1)))
 
-(defthm array1p-reset-array1
-  (implies (array1p name l)
-           (array1p name (reset-array1 name l)))
-  :doc ":doc-section array1-lemmas
-  Rewrite: (ARRAY1P name (RESET-ARRAY1 name l)).
-  ~/~/~/")
+(defsection-progn reset-array1-lemmas
+  :extension reset-array1
 
-(defthm array1p-reset-array1-properties
-  (implies (array1p name l)
-           (and (equal (header name (reset-array1 name l))
-                       (header name l))
-                (equal (dimensions name (reset-array1 name l))
-                       (dimensions name l))
-                (equal (maximum-length name (reset-array1 name l))
-                       (maximum-length name l))
-                (equal (default name (reset-array1 name l))
-                       (default name l))))
-  :doc ":doc-section array1-lemmas
-  Rewrite:
-  (HEADER name         (RESET-ARRAY1 name l)) = (HEADER name l).
-  (DIMENSIONS name     (RESET-ARRAY1 name l)) = (DIMENSIONS name l).
-  (MAXIMUM-LENGTH name (RESET-ARRAY1 name l)) = (MAXIMUM-LENGTH name l).
-  (DEFAULT name        (RESET-ARRAY1 name l)) = (DEFAULT name l).
-  ~/~/~/")
+  (defthm array1p-reset-array1
+    (implies (array1p name l)
+             (array1p name (reset-array1 name l))))
 
-(defthm aref1-reset-array1
-  (implies
-   (and (array1p name l)
-	(integerp index))
-   (equal (aref1 name (reset-array1 name l) index)
-	  (default name l))))
+  (defthm array1p-reset-array1-properties
+    (implies (array1p name l)
+             (and (equal (header name (reset-array1 name l))
+                         (header name l))
+                  (equal (dimensions name (reset-array1 name l))
+                         (dimensions name l))
+                  (equal (maximum-length name (reset-array1 name l))
+                         (maximum-length name l))
+                  (equal (default name (reset-array1 name l))
+                         (default name l)))))
+
+  (defthm aref1-reset-array1
+    (implies (and (array1p name l)
+                  (integerp index))
+             (equal (aref1 name (reset-array1 name l) index)
+                    (default name l)))))
 
 (in-theory (disable reset-array1*))
 
@@ -619,14 +606,15 @@ need to @(see DISABLE) the theory @(see ARRAY1-FUNCTIONS).</p>"
 ;;;
 ;;;****************************************************************************
 
-(deftheory array1-functions
-  '(array1p aset1 aref1 compress1 header dimensions maximum-length
-	    default reset-array1)
-  :doc ":doc-section array1
-  A theory of all functions specific to 1-dimensional arrays.
-  ~/
-  This theory must be DISABLEd in order for the lemmas exported by the
-  \"array1\" book to be applicable.~/~/")
+(defsection array1-functions
+  :parents (array1)
+  :short "A theory of all functions specific to 1-dimensional arrays."
+  :long "<p>This theory must be DISABLEd in order for the lemmas exported by
+the \"array1\" book to be applicable.</p>"
+
+  (deftheory array1-functions
+    '(array1p aset1 aref1 compress1 header dimensions maximum-length
+              default reset-array1)))
 
 (deftheory array1-lemmas
   '(array1p-compress1
@@ -638,21 +626,14 @@ need to @(see DISABLE) the theory @(see ARRAY1-FUNCTIONS).</p>"
     array1p-reset-array1 array1p-reset-array1-properties
     aref1-reset-array1))
 
-(deftheory array1-disabled-lemmas
-  '(aref1-aset1-equal aref1-aset1-not-equal reset-array1*)
-  :doc ":doc-section array1
+(defsection array1-disabled-lemmas
+  :short "A theory of all rules exported DISABLEd by the \"array1\" book."
+  :long "<p>Note that in order for these rules to be applicable you will first
+need to disable @(see array1-functions).  Look at the :DOC for each lemma for
+an explanation of why the lemma is exported DISABLEd.</p>"
 
-  A theory of all rules exported DISABLEd by the \"array1\" book.
-  ~/
-
-  Note that in order for these rules to be applicable you will first need to
-  (DISABLE ARRAY1-FUNCTIONS).  Look at the :DOC for each lemma for an
-  explanation of why the lemma is exported DISABLEd. The following rules are
-  found in this theory:~/~/
-
-  :cite aref1-aset1-equal
-  :cite aref1-aset1-not-equal
-  :cite reset-array1*")
+  (deftheory array1-disabled-lemmas
+    '(aref1-aset1-equal aref1-aset1-not-equal reset-array1*)))
 
 
 ;;;****************************************************************************
@@ -661,52 +642,49 @@ need to @(see DISABLE) the theory @(see ARRAY1-FUNCTIONS).</p>"
 ;;;
 ;;;****************************************************************************
 
-(defmacro defarray1type
-  (recognizer predicate &key
-	      size doc
-              (aref1-lemma-rule-classes ':REWRITE)
-              (aset1-lemma-rule-classes ':REWRITE))
+(defsection defarray1type
+  :parents (array1)
+  :short "Characterize 1-dimensional arrays with a fixed element type."
+  :long "<p>Example form:</p>
 
-  ":doc-section array1
-
-  Characterize 1-dimensional arrays with a fixed element type.
-  ~/
-
-  Example form:
-
+@({
   (DEFARRAY1TYPE INTEGERP-ARRAY1P INTEGERP)
+})
 
-  The above example defines a recognizer, INTEGERP-ARRAYP, for 1-dimensional
-  arrays whose elements are all INTEGERP.~/
+<p>The above example defines a recognizer, INTEGERP-ARRAYP, for 1-dimensional
+arrays whose elements are all INTEGERP.</p>
 
-  General form:
+<p>General form:</p>
 
+@({
   (DEF1ARRAYTYPE recognizer predicate
                  &key size doc
                       (aref1-lemma-rule-classes ':REWRITE)
                       (aset1-lemma-rule-classes ':REWRITE))
+})
 
-  DEFARRAY1TYPE defines a recognizer for 1-dimensional arrays whose elements
-  are all of a single type.  The recognizer argument is a symbol that is used
-  as the name of the recognizer.  The predicate argument should be a
-  1-argument, unguarded Boolean function that recognizes objects of the
-  desired type.  The predicate may either be a symbol (the name of the
-  predicate), or a LAMBDA expression.
+<p>DEFARRAY1TYPE defines a recognizer for 1-dimensional arrays whose elements
+are all of a single type.  The recognizer argument is a symbol that is used as
+the name of the recognizer.  The predicate argument should be a 1-argument,
+unguarded Boolean function that recognizes objects of the desired type.  The
+predicate may either be a symbol (the name of the predicate), or a LAMBDA
+expression.</p>
 
-  If :SIZE is specified it should be a variable-free term that will evaluate
-  to a positive integer.  If specified, then the recognizer will only
-  recognize 1-dimensional arrays of the given type and of a fixed size.
+<p>If :SIZE is specified it should be a variable-free term that will evaluate
+to a positive integer.  If specified, then the recognizer will only recognize
+1-dimensional arrays of the given type and of a fixed size.</p>
 
-  If :DOC is specified it should be a string, and it will be inserted as the
-  documentation string in the recognizer.
+<p>If :DOC is specified it should be a string, and it will be inserted as the
+documentation string in the recognizer.</p>
 
-  DEFARRAY1TYPE defines a recognizer:
+<p>DEFARRAY1TYPE defines a recognizer:</p>
 
-  (recognizer NAME L),
+@({ (recognizer NAME L) })
 
-  and proves 4 useful theorems about it.  If the :SIZE is not specified then
-  the three theorems will be:
+<p>and proves 4 useful theorems about it.  If the :SIZE is not specified then
+the three theorems will be:</p>
 
+@({
   1. (IMPLIES (recognizer NAME L)
               (ARRAY1P NAME L))
 
@@ -723,9 +701,11 @@ need to @(see DISABLE) the theory @(see ARRAY1-FUNCTIONS).</p>"
 
   4. (IMPLIES (recognizer NAME l)
               (recognizer NAME (RESET-ARRAY1 name l)))
+})
 
-  If :SIZE is specified then the first and third theorems become:
+<p>If :SIZE is specified then the first and third theorems become:</p>
 
+@({
   1. (IMPLIES (recognizer NAME L)
               (AND (ARRAY1P NAME L)
                    (EQUAL (CAR (DIMENSIONS name l))
@@ -737,31 +717,38 @@ need to @(see DISABLE) the theory @(see ARRAY1-FUNCTIONS).</p>"
                    (>= N 0)
                    (predicate VAL))
               (recognizer NAME (ASET1 NAME L N VAL)))
+})
 
-  The first theorem is stored as both :REWRITE and :FORWARD-CHAINING rules.
-  The :RULE-CLASSES of the second and third lemmas default to :REWRITE, but
-  are selectable by the user by means of the :AREF1-LEMMA-RULE-CLASSES and
-  :ASET1-LEMMA-RULE-CLASSSES arguments to DEFARRAY1TYPE (respectively).  If
-  using :RULE-CLASSES other than :REWRITE the user should bear in mind the
-  documented restrictions on the applicability of :TYPE-PRESCRIPTION and
-  :FORWARD-CHAINING rules.  The fourth rule is always a :REWRITE rule.
+<p>The first theorem is stored as both :REWRITE and :FORWARD-CHAINING rules.
+The :RULE-CLASSES of the second and third lemmas default to :REWRITE, but are
+selectable by the user by means of the :AREF1-LEMMA-RULE-CLASSES and
+:ASET1-LEMMA-RULE-CLASSSES arguments to DEFARRAY1TYPE (respectively).  If
+using :RULE-CLASSES other than :REWRITE the user should bear in mind the
+documented restrictions on the applicability of :TYPE-PRESCRIPTION and
+:FORWARD-CHAINING rules.  The fourth rule is always a :REWRITE rule.</p>
 
-  Note the the recognizer is a very strong recognizer that specifies that the
-  array alist is a BOUNDED-INTEGER-ALISTP whose elements all satisfy the type
-  predicate.  The recognizer also specifies that the default element of the
-  array satisfies the predicate as well.
+<p>Note the the recognizer is a very strong recognizer that specifies that the
+array alist is a BOUNDED-INTEGER-ALISTP whose elements all satisfy the type
+predicate.  The recognizer also specifies that the default element of the array
+satisfies the predicate as well.</p>
 
-  WARNING: The recognizer is defined in terms of a recursive recoignizer,
-  named <recognizer>-FN.  THE RECURSIVE RECOGNIZER SHOULD BE COMPILED BEFORE
-  YOU TRY TO EXECUTE IT, OR IT MAY CAUSE A STACK OVERFLOW.  Also note that
-  the recognizer will be DISABLEd after execution of this macro.  The user
-  must insure that the recognizer remains DISABLEd, otherwise the above
-  lemmas will never be applied.
+<p>WARNING: The recognizer is defined in terms of a recursive recognizer, named
+@('<recognizer>-FN').  THE RECURSIVE RECOGNIZER SHOULD BE COMPILED BEFORE YOU
+TRY TO EXECUTE IT, OR IT MAY CAUSE A STACK OVERFLOW.  Also note that the
+recognizer will be DISABLEd after execution of this macro.  The user must
+insure that the recognizer remains DISABLEd, otherwise the above lemmas will
+never be applied.</p>
 
-  DEFARRAY1TYPE proves the generated lemmas in a minimal, ENCAPSULATEd theory
-  that should guarantee that the proofs always succeed.  If one should
-  encounter a case where a proof fails (as opposed to a translation or other
-  syntax failure), please notify the author.~/"
+<p>DEFARRAY1TYPE proves the generated lemmas in a minimal, ENCAPSULATEd theory
+that should guarantee that the proofs always succeed.  If one should encounter
+a case where a proof fails (as opposed to a translation or other syntax
+failure), please notify the author.</p>")
+
+(defmacro defarray1type
+  (recognizer predicate &key
+	      size doc
+              (aref1-lemma-rule-classes ':REWRITE)
+              (aset1-lemma-rule-classes ':REWRITE))
 
   (declare (xargs :guard (and (symbolp recognizer)
                               (pseudo-termp predicate)

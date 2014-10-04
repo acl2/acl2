@@ -19,18 +19,12 @@
 ;;;    1717 West 6th Street, Suite 290
 ;;;    Austin, Texas 78703
 ;;;    bevier@cli.com
-;;;    
+;;;
 ;;;    Modified by Bishop Brock, brock@cli.com
-;;;    
+;;;
 ;;;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-; To certify this book:
-#|
- (in-package "ACL2")
- (defpkg "U" (union-eq *acl2-exports*
-                       *common-lisp-symbols-from-main-lisp-package*))
- (certify-book "deflist" 1)
-|#
+; Modified by Jared Davis, October 2014, to port documentation to xdoc.
 
 (in-package "ACL2")
 
@@ -48,11 +42,11 @@
 ; ELEM-type00 is a unary predicate, and LIST-type00 is a unary predicate
 ; that recognizes lists in which every element satisfies ELEM-type00.
 ; ELEM-TYPE11 and LIST-TYPE11 are similar, but allow an extra
-; parameter. The parameter that represents the value to be tested is 
+; parameter. The parameter that represents the value to be tested is
 ; the left one. For example, ELEM-TYPE10 can be instantiated with
 ; the function  (lambda (x lub) (and (numberp x) (< x lub)))
 ; and LIST-TYPE10 can be similarly instantiated.
-; 
+;
 ; The only difference between ELEM-TYPE11 and ELEM-TYPE10 is the
 ; order of the parameters. In 11, the tested arg is second;
 ; in 10, the tested arg is first.
@@ -64,7 +58,7 @@
 (encapsulate ((elem-type00 (x) boolean)
 	      (list-type00 (l) boolean))
   (local (in-theory '(ground-zero)))
-  (local (defun elem-type00 (x) 
+  (local (defun elem-type00 (x)
 	   (declare (ignore))
 	   (integerp x)))
   (local (defun list-type00 (l)
@@ -88,7 +82,7 @@
 (encapsulate ((elem-type10 (x a) boolean)
 	      (list-type10 (l a) boolean))
   (local (in-theory '(ground-zero)))
-  (local (defun elem-type10 (x a) 
+  (local (defun elem-type10 (x a)
 	   (declare (ignore a))
 	   (integerp x)))
   (local (defun list-type10 (l a)
@@ -112,7 +106,7 @@
 (encapsulate ((elem-type11 (a x) boolean)
 	      (list-type11 (a l) boolean))
   (local (in-theory '(ground-zero)))
-  (local (defun elem-type11 (a x) 
+  (local (defun elem-type11 (a x)
 	   (declare (ignore a))
 	   (integerp x)))
   (local (defun list-type11 (a l)
@@ -165,7 +159,7 @@
  )
 
 ; For each lemma in the theory, the lemma term is defined by a macro
-; to make it easy to instantiate. The lemma is then proved. 
+; to make it easy to instantiate. The lemma is then proved.
 
 ; The macros in the following script generate forms that are believed to be
 ; lemmas about list predicates. The arguments to these macros have the following meanings.
@@ -177,12 +171,12 @@
 ;               assumes that the parameter in this position represents an element in the list.
 ; guard         either 't, or an expression in the formal parameters
 ;
-; Example: 
+; Example:
 ;
-;  (defun bound-numberp (x lub) 
+;  (defun bound-numberp (x lub)
 ;    (and (acl2-numberp x) (acl2-numberp lub) (< x lub)))
 ;
-;  (defun bound-number-listp (l lub) 
+;  (defun bound-number-listp (l lub)
 ;    (cond ((atom l) t)
 ;          (t (and (bound-numberp (car l) lub)
 ;                  (bound-number-listp (cdr l) lub)))))
@@ -241,19 +235,19 @@
   `(implies ,(my-conjoin (my-conjuncts guard)
  			 `((,list-type-fn ,@formals)))
  	    (,list-type-fn ,@(replace-equal 'l '(cdr l) formals))))
- 
+
 (defthm list-type-cdr00
   (list-type-cdr-lemma elem-type00 list-type00 (l)))
- 
+
 (defthm list-type-cdr10
   (list-type-cdr-lemma elem-type10 list-type10 (l a)))
- 
+
 (defthm list-type-cdr11
   (list-type-cdr-lemma elem-type11 list-type11 (a l)))
- 
+
 (in-theory (disable list-type-cdr00 list-type-cdr10
  		    list-type-cdr11))
- 
+
 
 ; ---------- APPEND ----------
 
@@ -444,7 +438,7 @@
   (declare (ignore elem-type-fn))
   (let* ((vars (u::unique-symbols 2 (intern-in-package-of-symbol "N" list-type-fn) formals))
 	 (var1 (car vars))
-	 (var2 (cadr vars)))  
+	 (var2 (cadr vars)))
     `(implies ,(my-conjoin (my-conjuncts guard)
 			   `((,list-type-fn ,@formals)
 			     (,list-type-fn ,@(replace-equal 'l var2 formals))))
@@ -494,7 +488,7 @@
 
 (defmacro list-type-revappend-lemma (elem-type-fn list-type-fn formals &optional (guard 't))
   (declare (ignore elem-type-fn))
-  (let* ((vars (u::unique-symbols 2 
+  (let* ((vars (u::unique-symbols 2
 				  (intern-in-package-of-symbol "L" list-type-fn)
 				  formals))
 	 (var1 (car vars))
@@ -516,8 +510,8 @@
   (list-type-revappend-lemma elem-type11 list-type11 (a l))
   :hints (("Goal" :induct t :in-theory (enable list-type-cdr11))))
 
-(in-theory (disable list-type-revappend00 
-		    list-type-revappend10 
+(in-theory (disable list-type-revappend00
+		    list-type-revappend10
 		    list-type-revappend11))
 
 ; ---------- REVERSE ----------
@@ -556,7 +550,7 @@
 			   `((,list-type-fn ,@formals)
 			     (,list-type-fn ,@(replace-equal 'l acvar formals))
 			     (<= ,nvar (len l))))
-	      (,list-type-fn 
+	      (,list-type-fn
 	       ,@(replace-equal 'l `(first-n-ac ,nvar l ,acvar) formals)))))
 
 (defthm list-type-first-n-ac00
@@ -577,7 +571,7 @@
   (declare (ignore elem-type-fn))
   (let* ((vars (u::unique-symbols 1 (intern-in-package-of-symbol "N" list-type-fn) formals))
 	 (var (car vars)))
-    `(IMPLIES ,(my-conjoin (my-conjuncts guard) 
+    `(IMPLIES ,(my-conjoin (my-conjuncts guard)
 			   `((,LIST-TYPE-fn ,@formals)
 			     (<= 0 ,var)))
 	      (,LIST-TYPE-fn ,@(replace-equal 'l `(BUTLAST L ,var) formals)))))
@@ -608,7 +602,7 @@
 	 (startvar (car startvars))
 	 (endvars (u::unique-symbols 1 (intern-in-package-of-symbol "END" list-type-fn) formals))
 	 (endvar (car endvars)))
-    `(IMPLIES ,(my-conjoin (my-conjuncts guard) 
+    `(IMPLIES ,(my-conjoin (my-conjuncts guard)
 			   `((,LIST-TYPE-fn ,@formals)
 			     (integerp ,startvar)
 			     (<= 0 ,startvar)
@@ -643,7 +637,7 @@
 	 (nvar (car nvars))
 	 (valvars (u::unique-symbols 1 (intern-in-package-of-symbol "VAL" list-type-fn) formals))
 	 (valvar (car valvars)))
-    `(IMPLIES ,(my-conjoin (my-conjuncts guard) 
+    `(IMPLIES ,(my-conjoin (my-conjuncts guard)
 			   `((,LIST-TYPE-fn ,@formals)
 			     (,elem-type-fn ,@(if (symbolp elem-type-fn) (replace-equal 'l valvar formals) (list valvar)))
 			     (<= ,nvar (len l))))
@@ -667,7 +661,7 @@
   (declare (ignore elem-type-fn))
   (let* ((xvars (u::unique-symbols 1 (intern-in-package-of-symbol "X" list-type-fn) formals))
 	 (xvar (car xvars)))
-    `(IMPLIES ,(my-conjoin (my-conjuncts guard) 
+    `(IMPLIES ,(my-conjoin (my-conjuncts guard)
 			   `((,LIST-TYPE-fn ,@formals)
 			     (true-listp ,xvar)
 			     (initial-sublistp-equal ,xvar l)))
@@ -771,7 +765,7 @@
 
 (defmacro list-type-car-lemma (elem-type-fn list-type-fn formals &optional (guard 't))
   `(implies ,(my-conjoin (my-conjuncts guard)
-			 `((,list-type-fn ,@formals) 
+			 `((,list-type-fn ,@formals)
 			   l))
 	    (,elem-type-fn ,@(if (symbolp elem-type-fn) (replace-equal 'l '(car l) formals) (list '(car l))))))
 
@@ -825,7 +819,7 @@
 
 ; DEFLIST-DEFTHMS.
 ; Generate a list of DEFTHM forms. These defthms explain
-; the properties of standard list operations with 
+; the properties of standard list operations with
 ; respect to a typed list predicate.
 ; For arguments, see documentation for DEF-TYPED-LIST
 ; macro below.
@@ -834,8 +828,8 @@
 	    (declare (xargs :guard (and (symbolp list-type-fn)
 					(arglistp formals)
 					(consp formals)
-					(or (symbolp elem-type-fn) 
-					    (and (consp elem-type-fn) 
+					(or (symbolp elem-type-fn)
+					    (and (consp elem-type-fn)
 						 (eq (car elem-type-fn) 'acl2::lambda)
 						 (<= (len (cadr elem-type-fn)) 2)))
 					(symbol-listp theory))
@@ -850,7 +844,7 @@
 						(t '(:rewrite))))
 				;; If guards are present, or the number of formals is greater then 2, then
 				;; the proofs must be done by induction. Otherwise, we can get the proofs
-				;; much more quickly by functional instantiation. 
+				;; much more quickly by functional instantiation.
 				(hints (if (or (consp (my-conjuncts guard))
 					       (> (len formals) 2))
 					   `(("Goal" :induct t))
@@ -915,7 +909,7 @@
    that must be present due to functional dependencies.")
 
 (defconst *forward-chaining-elem-types*
-  '(integerp rationalp complex-rationalp symbolp true-listp stringp characterp 
+  '(integerp rationalp complex-rationalp symbolp true-listp stringp characterp
 	     alistp acl2-numberp
              #+:non-standard-analysis realp
              #+:non-standard-analysis complexp)
@@ -927,7 +921,7 @@ NTH-RULE-CLASSES defaults to :forward-chaining, otherwise :rewrite.")
 	((member-equal (car l1) l2)
 	 (my-set-difference (cdr l1) l2))
 	(t (cons (car l1) (my-set-difference (cdr l1) l2)))))
-	
+
 
 (defun insert-dependencies (l alist already-seen)
   (cond ((atom l) nil)
@@ -936,7 +930,7 @@ NTH-RULE-CLASSES defaults to :forward-chaining, otherwise :rewrite.")
 	(t (let ((pair (assoc-equal (car l) alist)))
 	     (let ((new (my-set-difference (cdr pair) already-seen)))
 	       (append new (list (car l)) (insert-dependencies (cdr l) alist (cons (car l) (append new already-seen)))))))))
-			 
+
 (deftheory minimal-theory-for-deflist
   (union-theories
    (current-theory 'ground-zero)
@@ -983,38 +977,40 @@ NTH-RULE-CLASSES defaults to :forward-chaining, otherwise :rewrite.")
                              be a symbol, or a 1 or 2-argument LAMBDA function, ~
                              but ~p0 is not." predicate)))))))
 
-(defmacro deflist (name formals &rest body)
-  ":doc-section data-structures
-  Define a new list type, and a theory of the list type.
-  ~/
- Examples:
+(defsection deflist
+  :parents (data-structures)
+  :short "Define a new list type, and a theory of the list type."
+  :long "<p>Examples</p>
 
+@({
   (deflist integer-listp (l)
     \"Recognizes true-lists of integers.\"
     integerp)
- 
+
   (deflist bnatural-listp (l lub)
     \"Recognizes lists of naturals bounded by lub.\"
     (lambda (x) (bnaturalp x lub)))
- 
+
   (deflist symbol-listp (l)
     \"Define a list theory for this function which is already defined by
-      Acl2.\" 
+      Acl2.\"
     symbolp
     (:options :omit-defun))
- 
+
   (deflist stringp-listp (l)
     \"Recognizes lists of strings; produce a minimal theory, and store the NTH
      lemma as a :TYPE-PRESCRIPTION.\"
     stringp
     (:options (:theory nth put-nth) (:nth-rule-classes :type-prescription)))
- ~/
- Syntax:
+})
 
+<p>Syntax:</p>
+
+@({
    DEFLIST name arglist [documentation] {declaration}* predicate [option-list]
- 
+
    option-list ::= (:OPTIONS <<!options>>)
- 
+
    options ::= !car-rule-classes-option |
                !nth-rule-classes-option |
                !omit-defun-option |
@@ -1022,33 +1018,35 @@ NTH-RULE-CLASSES defaults to :forward-chaining, otherwise :rewrite.")
                !theory-name-option
 
    theory-name-option ::= (:THEORY-NAME theory-name)
- 
+
    theory-option ::= (:THEORY <<!list-functions>>)
- 
+
    list-functions ::= APPEND | BUTLAST | CONS | CAR | CDR |
                       FIRSTN | INITIAL-SUBLISTP-EQUAL | LAST |
-                      MAKE-LIST | MEMBER-EQUAL | MEMBERP-EQUAL | 
+                      MAKE-LIST | MEMBER-EQUAL | MEMBERP-EQUAL |
                       NTH | NTH-SEG | NTHCDR | PUT-NTH | PUT-SEG |
                       REMOVE-DUPLICATES-EQUAL | REMOVE-EQUAL |
                       REVERSE | SUBSEQ | UPDATE-NTH
- 
-   car-rule-classes-option ::= (:CAR-RULE-CLASSES rule-classes)
- 
-   nth-rule-classes-option ::= (:NTH-RULE-CLASSES rule-classes)
- 
-   omit-defun-option ::= :OMIT-DEFUN
 
- Arguments and Values:
- 
+   car-rule-classes-option ::= (:CAR-RULE-CLASSES rule-classes)
+
+   nth-rule-classes-option ::= (:NTH-RULE-CLASSES rule-classes)
+
+   omit-defun-option ::= :OMIT-DEFUN
+})
+
+<p>Arguments and Values:</p>
+
+@({
    arglist -- an argument list satisfying ACL2::ARGLISTP, and containing
      exactly one symbol whose `print-name' is \"L\".
- 
+
    declaration -- any valid declaration.
- 
+
    documentation -- a string; not evaluated.
-  
+
    name -- a symbol.
-  
+
    predicate -- Either a symbol or a one argument LAMBDA function;
      designates a predicate to be applied to each element of the list.
 
@@ -1056,90 +1054,86 @@ NTH-RULE-CLASSES defaults to :forward-chaining, otherwise :rewrite.")
     of DEFTHM.
 
    theory-name -- any symbol that is a legal name for a deftheory event.
+})
 
- Description:
+<p>DEFLIST defines a recognizer for true lists whose elements all satisfy a
+given predicate, and by default creates an extensive theory for lists of the
+newly defined type.</p>
 
-  DEFLIST defines a recognizer for true lists whose elements all satisfy a
-  given predicate, and by default creates an extensive theory for lists of the
-  newly defined type.
+<p>To define a list type with DEFLIST you must supply a name for the
+recognizer, an argument list, and predicate designator.  The name may be any
+symbol.  The argument list must be valid as a functional argument list, and
+must contain exactly 1 symbol whose `print-name'is \"L\".  By convention this
+is the list argument recognized by the function defined by DEFLIST.</p>
 
-  To define a list type with DEFLIST you must supply a name for the
-  recognizer, an argument list, and predicate designator.  The name may be
-  any symbol.  The argument list must be valid as a functional argument list,
-  and must contain exactly 1 symbol whose `print-name'is \"L\".  By convention
-  this is the list argument recognized by the function defined by DEFLIST.
+<p>The DEFLIST recognizer will return T only if each element of L
+satisfies (returns a non-NIL value) the given predicate, otherwise NIL.  If the
+predicate is specified as a symbol, then this is assumed to be the function
+symbol of a one argument function (or macro) with which to test the elements of
+L.  If the predicate is specified as a single-argument LAMBDA function, then
+the given LAMBDA function will be applied to test successive elements of L.</p>
 
-  The DEFLIST recognizer will return T only if each element of L satisfies
-  (returns a non-NIL value) the given predicate, otherwise NIL.  If the
-  predicate is specified as a symbol, then this is assumed to be the function
-  symbol of a one argument function (or macro) with which to test the
-  elements of L.  If the predicate is specified as a single-argument LAMBDA
-  function, then the given LAMBDA function will be applied to test successive
-  elements of L.
+<p>Any number of other arguments to the function may be supplied, but only the
+L argument will change in the recursive structure of the recognizer.</p>
 
-  Any number of other arguments to the function may be supplied, but only the
-  L argument will change in the recursive structure of the recognizer.
+<p>Note that DEFLIST does not create any guards for L or any other argument.
+Guards may be specified in the usual way since any number of DECLARE forms may
+precede the predicate specification in the DEFLIST form.  DO NOT DECLARE GUARDS
+FOR THE LIST ARGUMENT L, as this may cause DEFLIST to blindly generate
+unprovable conjectures and unusable theorems.  Bear in mind that if you are
+defining a function to be used as a guard, then you are advised to consider
+what impact guarding the arguments of the function may have on its utility.  In
+general the most useful guard functions are those that are guard-free.</p>
 
-  Note that DEFLIST does not create any guards for L or any other argument.
-  Guards may be specified in the usual way since any number of DECLARE forms
-  may precede the predicate specification in the DEFLIST form.  DO NOT
-  DECLARE GUARDS FOR THE LIST ARGUMENT L, as this may cause DEFLIST to
-  blindly generate unprovable conjectures and unusable theorems.  Bear in
-  mind that if you are defining a function to be used as a guard, then you
-  are advised to consider what impact guarding the arguments of the function
-  may have on its utility.  In general the most useful guard functions are
-  those that are guard-free.
+<p>Theory:</p>
 
- Theory:
+<p>By default, DEFLIST creates an extensive theory for the recognized lists.
+This theory contains appropriate lemmas for all of the list functions appearing
+in the `list-functions' syntax description above.  This list of function
+symbols is also available as the Acl2 constant *DEFLIST-THEORY-OPTIONS*.</p>
 
-  By default, DEFLIST creates an extensive theory for the recognized lists.
-  This theory contains appropriate lemmas for all of the list functions 
-  appearing in the `list-functions' syntax description above.  This list of
-  function symbols is also available as the Acl2 constant
-  *DEFLIST-THEORY-OPTIONS*.
+<p>One can select a subset of this theory to be generated by using the :THEORY
+option (see below).  DEFLIST always creates a :FORWARD-CHAINING rule from the
+recognizer to TRUE-LISTP.  DEFLIST also creates a DEFTHEORY event that lists
+all of the lemmas created by the DEFLIST.  The name of the theory is formed by
+concatenating the function name and the string \"-THEORY\", and interning the
+resulting string in the package of the function name.</p>
 
-  One can select a subset of this theory to be generated by using the :THEORY
-  option (see below).  DEFLIST always creates a :FORWARD-CHAINING rule from
-  the recognizer to TRUE-LISTP.  DEFLIST also creates a DEFTHEORY event that
-  lists all of the lemmas created by the DEFLIST.  The name of the theory is
-  formed by concatenating the function name and the string \"-THEORY\", and
-  interning the resulting string in the package of the function name.
+<p>Options:</p>
 
- Options:
+<p>DEFLIST options are specified with a special :OPTIONS list systax.  If
+present, the :OPTIONS list must appear as the last form in the body of the
+DEFLIST.</p>
 
-  DEFLIST options are specified with a special :OPTIONS list systax.  If
-  present, the :OPTIONS list must appear as the last form in the body of the
-  DEFLIST.
-
-  :OMIT-DEFUN
-
-    If the :OMIT-DEFUN keyword is present then the definition will not be
+<dl>
+<dt>:OMIT-DEFUN</dt>
+<dd>If the :OMIT-DEFUN keyword is present then the definition will not be
     created.  Instead, only the list theory for the function is
     generated. Use this option to create a list theory for recognizers
-    defined elsewhere.
+    defined elsewhere.</dd>
 
-  :THEORY  
-
-   This option is used to specify that only a subset of the list theory be
+<dt>:THEORY</dt>
+<dd>This option is used to specify that only a subset of the list theory be
    created.  In the STRINGP-LISTP example above we specify that only lemmas
    about STRINGP-LISTP viz-a-viz NTH and PUT-NTH are to be generated.  By
    default the complete list theory for the recognizer is created.  If the
    option is given as (:THEORY) then the entire theory will be suppressed,
-   except for the :FORWARD-CHAINING rule from the recognizer to TRUE-LISTP.
+   except for the :FORWARD-CHAINING rule from the recognizer to TRUE-LISTP.</dd>
 
-  :THEORY-NAME
-
-   This option allows the user to define the name of the deftheory event
+<dt>:THEORY-NAME</dt>
+<dd>This option allows the user to define the name of the deftheory event
    that is automatically generated, and which includes the defthms that
-   are generated. 
+   are generated.</dd>
 
-  :CAR-RULE-CLASSES
-  :NTH-RULE-CLASSES
+<dt>:CAR-RULE-CLASSES</dt>
+<dt>:NTH-RULE-CLASSES</dt>
 
-   These options specify a value for the :RULE-CLASSES keyword for the 
+<dd>These options specify a value for the :RULE-CLASSES keyword for the
    DEFTHM generated for the CAR and NTH element of a list recognized by the
-   DEFLIST recognizer respectively.  The default is :REWRITE.
-   ~/"
+   DEFLIST recognizer respectively.  The default is :REWRITE.</dd>
+</dl>")
+
+(defmacro deflist (name formals &rest body)
   (let*
     ((syntax-err (deflist-check-syntax name formals body))
      (last-form (car (last body)))
@@ -1199,7 +1193,7 @@ NTH-RULE-CLASSES defaults to :forward-chaining, otherwise :rewrite.")
 				      (,name ,@(replace-equal 'l '(CDR l) formals))))))))
 
                      (LOCAL (IN-THEORY (ENABLE ,name)))
-         
+
 		     ,@(deflist-defthms
 			 name formals predicate guard theory1
 			 car-rule-classes nth-rule-classes)
@@ -1209,11 +1203,10 @@ NTH-RULE-CLASSES defaults to :forward-chaining, otherwise :rewrite.")
 
      )))
 
-
 #|
 Test Cases.
 
-(trans1 
+(trans1
  '(deflist integer-listp (l)
     "Recognizes true-lists of integers."
     integerp
@@ -1250,7 +1243,7 @@ Test Cases.
 
 (deflist natural-listp (l) (lambda (x) (naturalp x))
   (:options (:theory nth)))
-  
+
 (trans1 '(deflist my-subset (l the-set)
   (declare (xargs :guard (eqlable-listp the-set)))
   (lambda (x) (member x the-set))))
@@ -1271,7 +1264,7 @@ Test Cases.
 (trans1
  '(deflist bnatural-listp (l lub) bnaturalp
     (:options (:theory nth))))
- 
+
 (deflist bnatural-listp (l lub) bnaturalp
   (:options (:theory nth)))
 
@@ -1287,7 +1280,7 @@ Test Cases.
   Acl2."
   symbolp
   (:options :omit-defun (:theory put-nth) (:nth-rule-classes :type-prescription)))
- 
+
 (deflist stringp-listp (l)
   "Recognizes lists of strings ; produce a minimal theory, and store the NTH
   lemma as a :TYPE-PRESCRIPTION."
@@ -1317,4 +1310,3 @@ Test Cases.
   (:options (:theory foo)))
 
 |#
-

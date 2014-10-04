@@ -22,16 +22,10 @@
 ;;;    bevier@cli.com
 ;;;
 ;;;    Modified by Bishop Brock, brock@cli.com
-;;;    
+;;;
 ;;;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-; To certify this book:
-#|
- (in-package "ACL2")
- (defpkg "U" (union-eq *acl2-exports*
-                       *common-lisp-symbols-from-main-lisp-package*))
- (certify-book "defalist" 1)
-|#
+; Modified by Jared Davis, October 2014, to port documentation to xdoc.
 
 (in-package "ACL2")
 
@@ -121,7 +115,7 @@
 
 
 ; For each lemma in the theory, the lemma term is defined by a macro
-; to make it easy to instantiate. The lemma is then proved. 
+; to make it easy to instantiate. The lemma is then proved.
 
 
 ; The macros in the following script generate forms that are believed to be
@@ -132,19 +126,19 @@
 ; ran-type-fn
 ; dom-elem-type-fn
 ; ran-elem-type-fn
-; 
+;
 ; formals:      the formal parameter list to alist-type-fn
 ;               We assume that the other type fns are unary predicates, either
 ;               symbols or lambda expressions.
 ;
 ; guard         either 't, or an expression in the formal parameters
 ;
-; Example: 
+; Example:
 ;
-;  (defun bound-numberp (x lub) 
+;  (defun bound-numberp (x lub)
 ;    (and (acl2-numberp x) (acl2-numberp lub) (< x lub)))
 ;
-;  (defun bound-number-listp (l lub) 
+;  (defun bound-number-listp (l lub)
 ;    (cond ((atom l) t)
 ;          (t (and (bound-numberp (car l) lub)
 ;                  (bound-number-listp (cdr l) lub)))))
@@ -161,9 +155,9 @@
   `(implies ,(my-conjoin (my-conjuncts guard)
 			 `((,alist-type-fn ,@formals)))
 	    (alistp l)))
-					      
+
 (defthm alist-type-alistp
-  (alist-type-alistp-lemma alist-type domain-type range-type 
+  (alist-type-alistp-lemma alist-type domain-type range-type
 			   domain-elem-type range-elem-type
 			   (l))
   :rule-classes :forward-chaining
@@ -185,12 +179,12 @@
 			   `((,alist-type-fn ,@formals)
 			     (,dom-elem-type-fn ,var1)
 			     (,ran-elem-type-fn ,var2)))
-	      (,alist-type-fn ,@(replace-equal 'l 
+	      (,alist-type-fn ,@(replace-equal 'l
 					       `(acons ,var1 ,var2 l)
 					       formals)))))
-  
+
 (defthm alist-type-acons
-  (alist-type-acons-lemma alist-type domain-type range-type 
+  (alist-type-acons-lemma alist-type domain-type range-type
 			  domain-elem-type range-elem-type (l))
   :hints (("Goal" :do-not-induct t
 	   :in-theory (enable alist-type-alistp acons))))
@@ -205,13 +199,13 @@
   (let* ((vars (u::unique-symbols 2 (intern-in-package-of-symbol "L" alist-type-fn) formals))
 	 (var1 (car vars))
 	 (var2 (cadr vars)))
-    `(implies ,(my-conjoin (my-conjuncts guard) 
+    `(implies ,(my-conjoin (my-conjuncts guard)
 			   `((,alist-type-fn ,@(replace-equal 'l var1 formals))
 			     (,alist-type-fn ,@(replace-equal 'l var2 formals))))
 	      (,alist-type-fn ,@(replace-equal 'l `(append ,var1 ,var2) formals)))))
 
-(defthm alist-type-append 
-  (alist-type-append-lemma alist-type domain-type range-type 
+(defthm alist-type-append
+  (alist-type-append-lemma alist-type domain-type range-type
 			   domain-elem-type range-elem-type (l))
   :hints (("Goal" :induct t)))
 
@@ -229,12 +223,12 @@
 			   `((,alist-type-fn ,@formals)
 			     (,dom-elem-type-fn ,var1)
 			     (,ran-elem-type-fn ,var2)))
-	      (,alist-type-fn ,@(replace-equal 'l 
+	      (,alist-type-fn ,@(replace-equal 'l
 					       `(bind-equal ,var1 ,var2 l)
 					       formals)))))
-  
+
 (defthm alist-type-bind-equal
-  (alist-type-bind-equal-lemma alist-type domain-type range-type 
+  (alist-type-bind-equal-lemma alist-type domain-type range-type
 			 domain-elem-type range-elem-type (l))
   :hints (("Goal" :induct t)))
 
@@ -252,7 +246,7 @@
 	      (,alist-type-fn ,@(replace-equal 'l `(rembind-equal ,var l) formals)))))
 
 (defthm alist-type-rembind-equal
-  (alist-type-rembind-equal-lemma alist-type domain-type range-type 
+  (alist-type-rembind-equal-lemma alist-type domain-type range-type
 			    domain-elem-type range-elem-type (l))
   :hints (("Goal" :induct t)))
 
@@ -276,7 +270,7 @@
 					       formals)))))
 
 (defthm alist-type-pairlis$
-  (alist-type-pairlis$-lemma alist-type domain-type range-type 
+  (alist-type-pairlis$-lemma alist-type domain-type range-type
 			     domain-elem-type range-elem-type (l))
   :hints (("Goal" :induct t)))
 
@@ -290,15 +284,15 @@
   (let* ((vars (u::unique-symbols 3 (intern-in-package-of-symbol "L" alist-type-fn) formals))
 	 (var1 (car vars))
 	 (var2 (cadr vars))
-	 (var3 (caddr vars)))	       
-    `(implies ,(my-conjoin (my-conjuncts guard) 
+	 (var3 (caddr vars)))
+    `(implies ,(my-conjoin (my-conjuncts guard)
 			   `((,dom-type-fn ,@(replace-equal 'l var1 formals))
 			     (,ran-type-fn ,@(replace-equal 'l var2 formals))
 			     (,alist-type-fn ,@(replace-equal 'l var3 formals))))
 	      (,alist-type-fn ,@(replace-equal 'l `(bind-all-equal ,var1 ,var2 ,var3) formals)))))
 
-(defthm alist-type-bind-all-equal 
-  (alist-type-bind-all-equal-lemma alist-type domain-type range-type 
+(defthm alist-type-bind-all-equal
+  (alist-type-bind-all-equal-lemma alist-type domain-type range-type
 			   domain-elem-type range-elem-type (l))
   :hints (("Goal" :induct t)))
 
@@ -318,8 +312,8 @@
 					       `(domain-restrict-equal ,var l)
 					       formals)))))
 
-(defthm alist-type-domain-restrict-equal 
-  (alist-type-domain-restrict-equal-lemma alist-type domain-type range-type 
+(defthm alist-type-domain-restrict-equal
+  (alist-type-domain-restrict-equal-lemma alist-type domain-type range-type
 				    domain-elem-type range-elem-type (l))
   :hints (("Goal" :induct t)))
 
@@ -337,7 +331,7 @@
 	      (,alist-type-fn ,@(replace-equal 'l `(rembind-all-equal ,var l) formals)))))
 
 (defthm alist-type-rembind-all-equal
-  (alist-type-rembind-all-equal-lemma alist-type domain-type range-type 
+  (alist-type-rembind-all-equal-lemma alist-type domain-type range-type
 			    domain-elem-type range-elem-type (l))
   :hints (("Goal" :induct t)))
 
@@ -356,7 +350,7 @@
 	      (,alist-type-fn ,@(replace-equal 'l `(bind-pairs-equal ,var l) formals)))))
 
 (defthm alist-type-bind-pairs-equal
-  (alist-type-bind-pairs-equal-lemma alist-type domain-type range-type 
+  (alist-type-bind-pairs-equal-lemma alist-type domain-type range-type
 			    domain-elem-type range-elem-type (l))
   :hints (("Goal" :induct t)))
 
@@ -376,7 +370,7 @@
 	      (not (assoc-equal ,var l)))))
 
 (defthm alist-type-assoc-equal
-  (alist-type-assoc-equal-lemma  alist-type domain-type range-type 
+  (alist-type-assoc-equal-lemma  alist-type domain-type range-type
 		      domain-elem-type range-elem-type (l))
   :hints (("Goal" :in-theory (enable alist-type-alistp assoc-equal))))
 
@@ -395,7 +389,7 @@
 	      (not (bound?-equal ,var l)))))
 
 (defthm alist-type-bound?-equal
-  (alist-type-bound?-equal-lemma  alist-type domain-type range-type 
+  (alist-type-bound?-equal-lemma  alist-type domain-type range-type
 		      domain-elem-type range-elem-type (l))
   :hints (("Goal" :in-theory (enable alist-type-alistp bound?-equal))))
 
@@ -417,7 +411,7 @@
 
 
 (defthm alist-type-all-bound?-equal
-  (alist-type-all-bound?-equal-lemma  alist-type domain-type range-type 
+  (alist-type-all-bound?-equal-lemma  alist-type domain-type range-type
 		      domain-elem-type range-elem-type (l))
   :hints (("Goal" :in-theory (set-difference-theories (enable alist-type-alistp all-bound?-equal)
 						      '(bound?-equal)))))
@@ -437,7 +431,7 @@
 	      (,ran-elem-type-fn (binding-equal ,var l)))))
 
 (defthm alist-type-binding-equal
-  (alist-type-binding-equal-lemma alist-type domain-type range-type 
+  (alist-type-binding-equal-lemma alist-type domain-type range-type
 			    domain-elem-type range-elem-type (l))
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable alist-type-alistp binding-equal bound?-equal))))
@@ -457,7 +451,7 @@
 	      (,ran-elem-type-fn (cdr (assoc-equal ,var l))))))
 
 (defthm alist-type-cdr-assoc-equal
-  (alist-type-cdr-assoc-equal-lemma alist-type domain-type range-type 
+  (alist-type-cdr-assoc-equal-lemma alist-type domain-type range-type
 			    domain-elem-type range-elem-type (l))
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable alist-type-alistp assoc-equal bound?-equal))))
@@ -474,7 +468,7 @@
 	    (,dom-type-fn (domain l))))
 
 (defthm alist-type-domain
-  (alist-type-domain-lemma  alist-type domain-type range-type 
+  (alist-type-domain-lemma  alist-type domain-type range-type
 			    domain-elem-type range-elem-type (l))
   :hints (("Goal" :in-theory (enable alist-type-alistp domain))))
 
@@ -490,7 +484,7 @@
 	    (,ran-type-fn (range l))))
 
 (defthm alist-type-range
-  (alist-type-range-lemma   alist-type domain-type range-type 
+  (alist-type-range-lemma   alist-type domain-type range-type
 			    domain-elem-type range-elem-type (l))
   :hints (("Goal" :in-theory (enable alist-type-alistp range))))
 
@@ -508,7 +502,7 @@
 	      (,dom-type-fn ,@(replace-equal 'l `(collect-bound-equal ,var l) formals)))))
 
 (defthm alist-type-collect-bound-equal
-  (alist-type-collect-bound-equal-lemma  alist-type domain-type range-type 
+  (alist-type-collect-bound-equal-lemma  alist-type domain-type range-type
 		      domain-elem-type range-elem-type (l))
   :hints (("Goal" :in-theory (set-difference-theories (enable alist-type-alistp collect-bound-equal)
 						      '(bound?-equal)))))
@@ -527,7 +521,7 @@
 	      (,ran-type-fn ,@(replace-equal 'l `(all-bindings-equal ,var l) formals)))))
 
 (defthm alist-type-all-bindings-equal
-  (alist-type-all-bindings-equal-lemma  alist-type domain-type range-type 
+  (alist-type-all-bindings-equal-lemma  alist-type domain-type range-type
 		      domain-elem-type range-elem-type (l))
   :hints (("Goal" :in-theory (set-difference-theories (enable alist-type-alistp all-bindings-equal)
 						      '(bound?-equal binding-equal)))))
@@ -556,12 +550,12 @@
 
 ; DEFALIST-DEFTHMS.
 ; Generate a list of DEFTHM forms. These defthms explain
-; the properties of standard list operations with 
+; the properties of standard list operations with
 ; respect to a typed list predicate.
 ; For arguments, see documentation for DEF-TYPED-LIST
 ; macro below.
 
-(u::defloop defalist-defthms (alist-type-fn formals dom-elem-type-fn ran-elem-type-fn 
+(u::defloop defalist-defthms (alist-type-fn formals dom-elem-type-fn ran-elem-type-fn
 					    dom-type-fn ran-type-fn guard theory binding-equal-rule-classes)
 	    (declare (xargs :guard (and (symbolp alist-type-fn)
 					(arglistp formals)
@@ -584,22 +578,22 @@
 					  `(("Goal" :in-theory (enable ,fn ,@(if (eq fn 'binding-equal) '(bound?-equal) ()))))
 					;; The functional instance of the domain and range element types are
 					;; presented as lambda forms, since these may be defined as macros.
-					(let ((domain-elem-type-instance (if (equal dom-elem-type-fn *defalist-true-fn*) 
+					(let ((domain-elem-type-instance (if (equal dom-elem-type-fn *defalist-true-fn*)
 									     (remove-equal '(declare (ignore x)) dom-elem-type-fn)
 									   (cond ((and (consp dom-elem-type-fn)
 										       (eq (car dom-elem-type-fn) 'acl2::lambda))
 										  dom-elem-type-fn)
 										 (t `(lambda (x) (,dom-elem-type-fn x))))))
-					      (domain-type-instance (if (equal dom-type-fn *defalist-true-fn*) 
+					      (domain-type-instance (if (equal dom-type-fn *defalist-true-fn*)
 									(remove-equal '(declare (ignore x)) dom-type-fn)
 								      dom-type-fn))
-					      (range-elem-type-instance (if (equal ran-elem-type-fn *defalist-true-fn*) 
+					      (range-elem-type-instance (if (equal ran-elem-type-fn *defalist-true-fn*)
 									    (remove-equal '(declare (ignore x)) ran-elem-type-fn)
 									  (cond ((and (consp ran-elem-type-fn)
 										      (eq (car ran-elem-type-fn) 'acl2::lambda))
 										 ran-elem-type-fn)
 										(t `(lambda (x) (,ran-elem-type-fn x))))))
-					      (range-type-instance (if (equal ran-type-fn *defalist-true-fn*) 
+					      (range-type-instance (if (equal ran-type-fn *defalist-true-fn*)
 								       (remove-equal '(declare (ignore x)) ran-type-fn)
 								     ran-type-fn)))
 					  `(("Goal" :do-not-induct t
@@ -628,13 +622,13 @@
 						     (u::pack-intern alist-type-fn 'alist-type- fn)
 						     hints)))
 				 nil))))))
-				       
+
 
 (defconst *defalist-options* '(:BINDING-EQUAL-RULE-CLASSES :THEORY :OMIT-DEFUN :DOMAIN-TYPE :RANGE-TYPE :THEORY-NAME)
   "This list contains all of the  valid keyword options for DEFALIST.")
 
 (defconst *forward-chaining-elem-types*
-  '(integerp rationalp complex-rationalp symbolp true-listp stringp characterp 
+  '(integerp rationalp complex-rationalp symbolp true-listp stringp characterp
 	     alistp acl2-numberp
              #+:non-standard-analysis realp
              #+:non-standard-analysis complexp)
@@ -692,7 +686,7 @@ defaults to :forward-chaining, otherwise :rewrite.")
                              or a 1-argument LAMBDA function, and r ~
                              is either a function symbol or a 1-argument
                              LAMBDA function. ~p0 does not satisfy this
-                             requirement." predicate))))))) 
+                             requirement." predicate)))))))
 
 (deftheory minimal-theory-for-defalist
   (union-theories
@@ -719,77 +713,81 @@ defaults to :forward-chaining, otherwise :rewrite.")
 			 (all-bindings-equal (not (equal ran-type-fn *defalist-true-fn*)))
 			 (t t))
 		   (collect fn))))
-			    
-(defmacro defalist (name formals &rest body)
-  ":doc-section data-structures
-  Define a new alist type, and a theory of the alist type.
-  ~/
- Examples:
 
+(defsection defalist
+  :parents (data-structures)
+  :short "Define a new alist type, and a theory of the alist type."
+  :long "Examples:
+
+@({
   (defalist symbol-to-integer-alistp (l)
     \"Recognizes an alist mapping symbols to integers.\"
-    (symbolp . integerp))   
- 
+    (symbolp . integerp))
+
   (defalist symbol-to-bnatural-alistp (l lub)
     \"Recognizes an alists mapping symbols to  naturals bounded by lub.\"
     (symbolp . (lambda (x) (bnaturalp x lub))))
- 
+
   (defalist symbol-alistp (l)
     \"Define an alist theory alists from an unspecified domain type to
      symbols.\"
     ((lambda (x) t) . symbolp)
     (:options :omit-defun (:range-type symbol-listp)))
- 
+
   (defalist string-to-integer-alistp (l)
-    \"Recognizes an alist mapping strings to integers. Produce a minimal 
+    \"Recognizes an alist mapping strings to integers. Produce a minimal
      theory, and store the BINDING-EQUAL lemma as a :TYPE-PRESCRIPTION.\"
     (stringp . integerp)
     (:options (:theory nth put) (:binding-equal-rule-classes :type-prescription)
               (:domain-type string-listp) (:range-type integer-listp)))
- ~/
- Syntax:
+})
 
+<p>Syntax:</p>
+
+@({
    DEFALIST name arglist [documentation] {declaration}* type-pair [option-list]
- 
+
    option-list ::= (:OPTIONS <<!options>>)
- 
+
    options ::= !binding-equal-rule-classes-option |
                !omit-defun-option |
                !theory-option |
                !domain-type-option |
                !range-type-option |
-               !theory-name-option 
- 
+               !theory-name-option
+
    theory-option ::= (:THEORY <<!alist-functions>>)
 
    theory-name-option ::= (:THEORY-NAME theory-name)
- 
+
    alist-functions ::= acons | alistp | all-bindings-equal| all-bound?-equal | append |
-                       assoc-equal | bind-all-equal | bind-equal | bind-pairs-equal | 
+                       assoc-equal | bind-all-equal | bind-equal | bind-pairs-equal |
                        binding-equal | bound?-equal | collect-bound-equal | domain |
                        domain-restrict-equal | pairlis$ | range | rembind-all-equal |
                        rembind-equal
- 
-   binding-equal-rule-classes-option ::= (:BINDING-EQUAL-RULE-CLASSES rule-classes)
- 
-   omit-defun-option ::= :OMIT-DEFUN
 
- Arguments and Values:
- 
+   binding-equal-rule-classes-option ::= (:BINDING-EQUAL-RULE-CLASSES rule-classes)
+
+   omit-defun-option ::= :OMIT-DEFUN
+})
+
+<p>Arguments and Values:</p>
+
+@({
    arglist -- an argument list satisfying ACL2::ARGLISTP, and containing
      exactly one symbol whose `print-name' is \"L\".
- 
+
    declaration -- any valid declaration.
- 
+
    documentation -- a string; not evaluated.
-  
+
    name -- a symbol.
 
    theory-name -- any symbol that is a legal name for a deftheory event.
-  
+
    type-pair -- A pair (d . r) where d and r are either a function symbol
-     or a one argument LAMBDA function or the constant T. 
-     d designates a predicate to be applied to each element of the domain 
+     or a one argument LAMBDA function or the constant T.
+     d designates a predicate to be applied to each element of the domain
      of the alist, and r designates a predicate to be applied to each element
      of the range of the alist. T means no type restriction.
 
@@ -797,103 +795,100 @@ defaults to :forward-chaining, otherwise :rewrite.")
     of DEFTHM.
 
    Acl2-theory-expression -- Any legal Acl2 theory expression
+})
 
- Description:
+<h3>Description:</h3>
 
-  DEFALIST defines a recognizer for association lists whose pairs map
-  keys of a given type to values of a given type, and by default creates 
-  an extensive theory for alists of the newly defined type.
+<p>DEFALIST defines a recognizer for association lists whose pairs map
+  keys of a given type to values of a given type, and by default creates
+  an extensive theory for alists of the newly defined type.</p>
 
-  To define an alist type with DEFALIST you must supply a name for the alist
+<p>To define an alist type with DEFALIST you must supply a name for the alist
   recognizer, an argument list for the recognizer, and predicate designator for
   elements of the alist's range. The name may be any symbol.  The argument list
   must be valid as a functional argument list, and must contain exactly one
   symbol whose `print-name'is \"L\".  By convention this is the alist argument
-  recognized by the function defined by DEFALIST.
+  recognized by the function defined by DEFALIST.</p>
 
-  The type of the domain and range of the alist is given by a pair (d . r)
+<p>The type of the domain and range of the alist is given by a pair (d . r)
   where d identifies the type of an element of the alist's domain, and r
   specifies the type of an element of the alist's range. Either of these
   may be specified by a symbol which names a one-argument function (or macro)
   which tests the elements of the domain and range of L. Either of d and r may
   also be specified as a single-argument LAMBDA function. Finally, either of d
-  and r may be specified as the constant t, indicating no type constraint.
+  and r may be specified as the constant t, indicating no type constraint.</p>
 
-  Any number of other arguments to the alist functions may be supplied, 
-  but only the L argument will change in the recursive structure of the recognizer.
+<p>Any number of other arguments to the alist functions may be supplied,
+  but only the L argument will change in the recursive structure of the recognizer.</p>
 
-  Note that DEFALIST does not create any guards for L or any other argument.
+<p>Note that DEFALIST does not create any guards for L or any other argument.
   Guards may be specified in the usual way since any number of DECLARE forms
   may preceed the predicate specification in the DEFALIST form.  Bear in mind
   that if you are defining a function to be used as a guard, then you are
   advised to consider what impact guarding the arguments of the function may
   have on its utility.  In general the most useful guard functions are those
-  that are guard-free.
+  that are guard-free.</p>
 
- Theory:
+<h3>Theory</h3>
 
-  By default, DEFALIST creates an extensive theory for the recognized alists.
-  This theory contains appropriate lemmas for all of the alist functions 
+<p>By default, DEFALIST creates an extensive theory for the recognized alists.
+  This theory contains appropriate lemmas for all of the alist functions
   appearing in the `alist-functions' syntax description above.  One can select
   a subset of this theory to be generated by using the :THEORY option
-  (see below).  DEFALIST always creates a :FORWARD-CHAINING rule from the 
-  recognizer to ALISTP.
+  (see below).  DEFALIST always creates a :FORWARD-CHAINING rule from the
+  recognizer to ALISTP.</p>
 
-  DEFALIST also creates a DEFTHEORY event that lists all of the lemmas created
+<p>DEFALIST also creates a DEFTHEORY event that lists all of the lemmas created
   by the DEFALIST.  The name of the theory is formed by concatenating the
   function name and the string \"-THEORY\", and INTERNing the resulting string
-  in the package of the function name.
+  in the package of the function name.</p>
 
- Options:
+<h3>Options</h3>
 
-  DEFALIST options are specified with a special :OPTIONS list systax.  If
+<p>DEFALIST options are specified with a special :OPTIONS list systax.  If
   present, the :OPTIONS list must appear as the last form in the body of the
-  DEFALIST.
+  DEFALIST.</p>
 
-  :OMIT-DEFUN
-
-    If the :OMIT-DEFUN keyword is present then the definition will not be
+<dl>
+<dt>:OMIT-DEFUN</dt>
+<dd>If the :OMIT-DEFUN keyword is present then the definition will not be
     created.  Instead, only the list theory for the function is
     generated. Use this option to create a list theory for recognizers
-    defined elsewhere.
+    defined elsewhere.</dd>
 
-  :THEORY  
-
-   This option is used to specify that only a subset of the list theory be
+<dt>:THEORY</dt>
+<dd>This option is used to specify that only a subset of the list theory be
    created.  In the STRINGP-LISTP example above we specify that only lemmas
    about STRINGP-LISTP viz-a-viz NTH and PUT are to be generated.  By default
    the complete list theory for the recognizer is created.  If the option is
    given as (:THEORY) then the entire theory will be suppressed,
-   except for the :FORWARD-CHAINING rule from the recognizer to TRUE-LISTP.
+   except for the :FORWARD-CHAINING rule from the recognizer to TRUE-LISTP.</dd>
 
-  :BINDING-EQUAL-RULE-CLASSES
-
-   This option specifies a value for the :RULE-CLASSES keyword for the 
+<dt>:BINDING-EQUAL-RULE-CLASSES</dt>
+<dd>This option specifies a value for the :RULE-CLASSES keyword for the
    DEFTHM generated for the BINDING-EQUAL function (and for CDRASSOC) applied to
-   an alist recognized by the DEFALIST recognizer.  The default is :REWRITE.
+   an alist recognized by the DEFALIST recognizer.  The default is :REWRITE.</dd>
 
-  :DOMAIN-TYPE
-
-   This option specifies a predicate that recognizes a list of domain elements.
+<dt>:DOMAIN-TYPE</dt>
+<dd>This option specifies a predicate that recognizes a list of domain elements.
    It may be either a symbol or LAMBDA form. If present, and when not prevented
    by a :THEORY specification, a rewrite rule for the type of the domain
    will be generated. A lemma will be generated to check the compatibility
-   of the specified domain type and domain element type.
+   of the specified domain type and domain element type.</dd>
 
-  :RANGE-TYPE
-
-   This option specifies a predicate that recognizes a list of range elements.
+<dt>:RANGE-TYPE</dt>
+<dd>This option specifies a predicate that recognizes a list of range elements.
    It may be either a symbol or LAMBDA form. If present, and when not prevented
    by a :THEORY specification, a rewrite rule for the type of the range
    will be generated.  A lemma will be generated to check the compatibility
-   of the specified range type and domain element type.
+   of the specified range type and domain element type.</dd>
 
-  :THEORY-NAME
-
-   This option allows the user to define the name of the deftheory event
+<dt>:THEORY-NAME</dt>
+<dd>This option allows the user to define the name of the deftheory event
    that is automatically generated, and which includes the defthms that
-   are generated. 
-   ~/"
+   are generated.</dd>")
+
+(defmacro defalist (name formals &rest body)
   (let*
     ((syntax-err (defalist-check-syntax name formals body))
      (last-form (car (last body)))
@@ -923,7 +918,7 @@ defaults to :forward-chaining, otherwise :rewrite.")
 			    ctx :BINDING-EQUAL-RULE-CLASSES option-list :FORM
 			    :REWRITE :REWRITE))
      (domain-type (u::get-option-argument
-		   ctx :DOMAIN-TYPE option-list :FORM 
+		   ctx :DOMAIN-TYPE option-list :FORM
 		   *defalist-true-fn*
 		   *defalist-true-fn*))
      (range-type (u::get-option-argument
@@ -944,10 +939,10 @@ defaults to :forward-chaining, otherwise :rewrite.")
 
      ;; We always generate the alistp event.
 
-     (let ((theory1 
+     (let ((theory1
 	    (union-equal '(alistp)
 			 (filter-alist-theory theory dom-elemtype ran-elemtype domain-type range-type))))
-	    
+
        `(ENCAPSULATE ()
 
 		     ;; We do the definition and proofs in a minimal theory for speed.
@@ -966,7 +961,7 @@ defaults to :forward-chaining, otherwise :rewrite.")
 					   (,ran-elemtype (cdar ,l))
 					   (,name ,@(replace-equal l `(CDR ,l) formals))))))
 			  ))
-         
+
 		     ,@(defalist-defthms
 			 name formals dom-elemtype ran-elemtype domain-type range-type
 			 guard theory1 binding-equal-rule-classes)
@@ -985,13 +980,13 @@ Examples:
   (:options (:domain-type symbol-listp)
 	    (:range-type integer-listp)))
 
-(defmacro naturalp (n) 
+(defmacro naturalp (n)
   `(and (integerp ,n) (<= 0 ,n)))
 
 (defun natural-listp (l)
   (if (atom l) t
     (and (naturalp (car l)) (natural-listp (cdr l)))))
- 
+
 (defalist symbol-to-natural-alistp (l)
   "Recognizes an alists mapping symbols to  naturals bounded by lub."
   (symbolp . naturalp)
@@ -999,14 +994,14 @@ Examples:
 	    (:range-type natural-listp)
 	    (:theory binding-equal)
 	    (:theory-name sym->nat-theory)))
- 
+
 (defalist string-to-integer-alistp (l)
-  "Recognizes an alist mapping strings to integers. Produce a minimal 
+  "Recognizes an alist mapping strings to integers. Produce a minimal
   theory, and store the BINDING-EQUAL lemma as a :TYPE-PRESCRIPTION."
   (stringp . integerp)
   (:options (:theory bind binding-equal bound?-equal)
 	    (:binding-equal-rule-classes :type-prescription)
-	    (:domain-type string-listp) 
+	    (:domain-type string-listp)
 	    (:range-type integer-listp)))
 
 (defalist symbol-alistp (l)
