@@ -38,7 +38,9 @@
 ;   ACL2 loop.  If we allow for changing *core-count*, then we need to think
 ;   about allowing for changing variables that depend on it, e.g.,
 ;   *unassigned-and-active-work-count-limit* (perhaps by changing them to
-;   zero-ary functions).
+;   zero-ary functions).  If you consider making such a change, then think
+;   about how functions cpu-core-count and cpu-core-count-raw might be
+;   relevant.
 
 ;   Modify the coefficient (currently 2) in the definition of
 ;   *unassigned-and-active-work-count-limit*.  Evaluate such modifications with

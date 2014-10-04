@@ -174,6 +174,34 @@
 
 
 
+
+
+
+; Test case from bug reported in Issue 270:
+
+(defsection foo
+  :short "foo bar")
+
+(define check0 (x)
+  :non-executable t
+  :returns (mv (a natp) (b natp))
+  (mv (nfix x) (1+ (nfix x))))
+
+(define check1 (x)
+  :non-executable t
+  :returns (mv (a natp) (b natp))
+  :short "testing"
+  (mv (nfix x) (1+ (nfix x))))
+
+(define check2 (x)
+  :non-executable t
+  :returns (mv (a natp) (b natp))
+  :short "testing"
+  (mv (nfix x) (1+ (nfix x))))
+
+
+
+
 ;; Basic testing of hook installation/removal
 
 (defun my-hook (guts opts state)
@@ -332,7 +360,6 @@
           :hyp (integer-listp keys)
           :name integer-listp-strip-cars-my-make-alist-and-len)
    (alist true-listp :rule-classes :type-prescription)))
-
 
 
 

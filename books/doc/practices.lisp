@@ -211,7 +211,7 @@ first, if one exists, is nice for users who have their own macros.</p>
 
 <p>It can also be good to pre-load packages like @('std') when your session
 starts.  See @('books/std/std-customization.lsp') for an @(see
-acl2-customization) file that does this.")
+acl2-customization) file that does this.</p>")
 
 
 (defxdoc theory-management
