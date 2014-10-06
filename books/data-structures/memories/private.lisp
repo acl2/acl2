@@ -42,59 +42,60 @@
 ; of other libraries.
 
 (in-package "MEM")
-(include-book "../doc-section")
+(include-book "xdoc/top" :dir :system)
 
-(defdoc private
-  ":Doc-Section acl2::data-structures
-  redundantly define, then serverely restrict the usage of some function~/
-  ~bv[]
-  Example:
-     (private foo (x y) 
-        (if (atom x) 
+(defxdoc private
+  :parents (memory)
+  :short "Redundantly define, then serverely restrict the usage of some function."
+  :long "<p>Example:</p>
+
+@({
+     (private foo (x y)
+        (if (atom x)
             ...))
-  ~ev[]
-  ~c[private] is a macro which may be useful for authors of libraries, or
-  to users who want to enforce severe discipline upon themselves.~/
+})
 
-  The macro is similar to defund (~l[defund]) in that it first introduces
-  a defun and then immediately disables its definition.  However, ~c[private]
-  goes further -- it also disables the resulting type-prescription rule and 
-  sets up theory invariants that prohibit the user from ever enabling the 
-  definition or the type prescription.
+<p>@('private') is a macro which may be useful for authors of libraries, or to
+users who want to enforce severe discipline upon themselves.</p>
 
-  Why would we want such a thing?  A nice way to develop libraries is to use
-  redundant definitions (~l[set-enforce-redundancy]) in an interface file, 
-  so that users never even see the local lemmas and so forth that you used
-  to get the proofs to go through.  This gives you the freedom to change 
-  and remove those definitions at will.
+<p>The macro is similar to @(see defund) in that it first introduces a defun
+and then immediately disables its definition.  However, @('private') goes
+further: it also disables the resulting type-prescription rule and sets up
+@(see theory-invariant)s that prohibit the user from ever enabling the
+definition or the type prescription.</p>
 
-  Unfortunately, you cannot do the same for functions, because ACL2 needs
-  the functions available in the interface book if they are ever used.  With
-  ~c[private], you can identify functions that you want to keep control over
-  and that the user should either (1) not be using at all, or (2) only be
-  reasoning about using the theorems your have provided.
+<p>Why would we want such a thing?  A nice way to develop libraries is to use
+@(see redundant-events) in an interface file, so that users never even see the
+local lemmas and so forth that you used to get the proofs to go through.  This
+gives you the freedom to change and remove those definitions at will.</p>
 
-  To use private, simply copy your ~c[(defun foo ...)] form into your interface
-  file, then replace ~c[defun] with ~c[private].")
+<p>Unfortunately, you cannot do the same for functions, because ACL2 needs the
+functions available in the interface book if they are ever used.  With
+@('private'), you can identify functions that you want to keep control over and
+that the user should either (1) not be using at all, or (2) only be reasoning
+about using the theorems your have provided.</p>
+
+<p>To use private, simply copy your @('(defun foo ...)') form into your
+interface file, then replace @('defun') with @('private').</p>")
 
 (defmacro private (&rest def)
   (declare (xargs :guard (and (true-listp def)
                               (symbolp (car def))
                               (symbol-listp (cadr def)))))
-  `(progn 
+  `(progn
 
      ;; First introduce the function itself
      (defun ,@def)
 
      ;; Now disable the :definition and :type-prescription rules
-     (with-output :off summary 
+     (with-output :off summary
                   (in-theory (disable (:definition ,(car def))
                                       (:type-prescription ,(car def)))))
 
      ;; Now create a theory invariant named foo-is-private, which will cause an
      ;; error if the user ever tries to enable these rules
      (with-output :off summary
-                  (theory-invariant 
+                  (theory-invariant
                    (and (not (active-runep '(:definition ,(car def))))
                         (not (active-runep '(:type-prescription ,(car def)))))
                    :key ,(intern-in-package-of-symbol
