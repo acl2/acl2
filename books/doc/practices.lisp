@@ -43,7 +43,7 @@ Davis.</p>
 
 <p>We recommend the use of the Standard Libraries (@(see std)) to ease your
 burden of modeling and reasoning in a formal sytem.  See other subtopics below
-for other best practices.")
+for other best practices.</p>")
 
 (local (xdoc::set-default-parents best-practices))
 
@@ -211,7 +211,7 @@ first, if one exists, is nice for users who have their own macros.</p>
 
 <p>It can also be good to pre-load packages like @('std') when your session
 starts.  See @('books/std/std-customization.lsp') for an @(see
-acl2-customization) file that does this.")
+acl2-customization) file that does this.</p>")
 
 
 (defxdoc theory-management
