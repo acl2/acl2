@@ -31,21 +31,38 @@
 
 (in-package "ACL2")
 
+(include-book "xdoc/top" :dir :system)
+
 (defun without-waterfall-parallelism-fn (events state)
 ; (declare (xargs :guard (state-p state) :stobjs state))
   (declare (xargs :mode :program :stobjs state))
   (let ((curr-waterfall-parallelism-val
          (f-get-global 'waterfall-parallelism state)))
-    `(progn (local (make-event
-                    (er-progn (set-waterfall-parallelism nil)
-                              (value '(value-triple nil)))
-                    :check-expansion t))
+
+; Matt K. mode, 10/1/2014: I removed LOCAL from each MAKE-EVENT below so that
+; this utility works when including uncertified books, for example when
+; certifying a book after (set-write-acl2x '(t) state).  Then I also removed
+; :CHECK-EXPANSION from each, because now that the make-event forms are
+; non-local, the second one could cause waterfall-parallelism to be
+; inadvertently turned on when including a book.
+
+    `(progn (make-event
+             (er-progn (set-waterfall-parallelism nil)
+                       (value '(value-triple nil))))
             ,@events
-            (local (make-event
-                    (er-progn (set-waterfall-parallelism
-                               ',curr-waterfall-parallelism-val)
-                              (value '(value-triple t)))
-                    :check-expansion t)))))
+            (make-event
+             (er-progn (set-waterfall-parallelism
+                        ',curr-waterfall-parallelism-val)
+                       (value '(value-triple t)))))))
 
 (defmacro without-waterfall-parallelism (&rest events)
   `(make-event (without-waterfall-parallelism-fn ',events state)))
+
+(defxdoc without-waterfall-parallelism
+  :parents (parallelism)
+  :short "Disable waterfall parallelism for an enclosed event"
+  :long "<p>Example usage:</p>
+  @({
+  (without-waterfall-parallelism
+    (defun foo (x) (* x 3)))
+  })")

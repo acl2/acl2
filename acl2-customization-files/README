@@ -33,6 +33,17 @@ And models/jvm/m5/apprentice.acl2 has this:
   #+acl2-par
   (set-waterfall-parallelism t)
 
+A utility, without-waterfall-parallelism, may be useful.  For example,
+in defsort/generic.lisp we find:
+
+  (local (include-book "misc/without-waterfall-parallelism" :dir :system))
+  ...
+  (without-waterfall-parallelism
+  (def-saved-obligs fast-comparable-mergesort-fixnums-guards
+    :proofs ((fast-comparable-mergesort-fixnums-guards))
+    (verify-guards fast-comparable-mergesort-fixnums))
+  )
+
 Many books use a stylized make-event inside the actual file to disable
 parallelism.  To find these, issue:
 

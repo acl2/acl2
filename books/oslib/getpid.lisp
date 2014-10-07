@@ -34,6 +34,9 @@
 (include-book "tools/include-raw" :dir :system)
 ; (depends-on "getpid-raw.lsp")
 
+; Avoid problems because gcl-cltl1 doesn't know about handler-case
+; cert_param: (ansi-only)
+
 (defttag oslib)
 (include-raw "getpid-raw.lsp")
 

@@ -468,6 +468,15 @@
             thread))
     work))
 
+; The following is re-declared with a defparameter in hons-raw.lisp, but we
+; declare it here as well since even with a special declaration under the LET
+; in consume-work-on-work-queue-when-there, we are seeing "Not owner of hash
+; table" errors in some community books.  Sadly, this defvar does not solve
+; that problem; but we leave it here nonetheless, just in order to do all we
+; can think of doing about that issue.
+#+hons
+(defvar *default-hs* nil)
+
 (defun consume-work-on-work-queue-when-there ()
 
 ; This function is an infinite loop.  However, the thread running it can be
