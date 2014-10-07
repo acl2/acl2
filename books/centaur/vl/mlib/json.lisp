@@ -784,6 +784,14 @@ which could not hold such large values.</p>")
 (add-json-encoder vl-nettypename-p      vl-jp-nettypename)
 (add-json-encoder vl-coretypename-p     vl-jp-coretypename)
 
+(define vl-jp-maybe-nettypename ((x vl-maybe-nettypename-p) &key (ps 'ps))
+  :parents (json-encoders)
+  (if x
+      (vl-jp-nettypename x)
+    (vl-print "null"))
+  ///
+  (add-json-encoder vl-maybe-nettypename-p vl-jp-maybe-nettypename))
+
 (define vl-jp-packeddimension ((x vl-packeddimension-p) &key (ps 'ps))
   :parents (json-encoders)
   (if (eq x :vl-unsized-dimension)
@@ -820,38 +828,38 @@ which could not hold such large values.</p>")
  (define vl-jp-datatype ((x vl-datatype-p) &key (ps 'ps))
    :measure (two-nats-measure (vl-datatype-count x) 0)
    (vl-datatype-case x
-     :vl-nettype
-     (jp-object :tag     (jp-sym :vl-nettype)
-                :name    (vl-jp-nettypename x.name)
-                :signedp (jp-bool x.signedp)
-                :range   (vl-jp-maybe-range x.range))
      :vl-coretype
      (jp-object :tag     (jp-sym :vl-coretype)
                 :name    (vl-jp-coretypename x.name)
                 :signedp (jp-bool x.signedp)
-                :dism    (vl-jp-packeddimensionlist x.dims))
+                :pdims    (vl-jp-packeddimensionlist x.pdims)
+                :udims    (vl-jp-packeddimensionlist x.udims))
      :vl-struct
      (jp-object :tag     (jp-sym :vl-struct)
                 :packedp (jp-bool x.packedp)
                 :signedp (jp-bool x.signedp)
-                :dims    (vl-jp-packeddimensionlist x.dims)
+                :pdims    (vl-jp-packeddimensionlist x.pdims)
+                :udims    (vl-jp-packeddimensionlist x.udims)
                 :members (vl-jp-structmemberlist x.members))
      :vl-union
      (jp-object :tag     (jp-sym :vl-union)
                 :packedp (jp-bool x.packedp)
                 :signedp (jp-bool x.signedp)
                 :taggedp (jp-bool x.taggedp)
-                :dims    (vl-jp-packeddimensionlist x.dims)
+                :pdims    (vl-jp-packeddimensionlist x.pdims)
+                :udims    (vl-jp-packeddimensionlist x.udims)
                 :members (vl-jp-structmemberlist x.members))
      :vl-enum
      (jp-object :tag      (jp-sym :vl-enum)
                 :basetype (vl-jp-enumbasetype x.basetype)
                 :items    (vl-jp-enumitemlist x.items)
-                :dims     (vl-jp-packeddimensionlist x.dims))
+                :pdims    (vl-jp-packeddimensionlist x.pdims)
+                :udims    (vl-jp-packeddimensionlist x.udims))
      :vl-usertype
      (jp-object :tag      (jp-sym :vl-usertype)
                 :kind     (vl-jp-expr x.kind)
-                :dims     (vl-jp-packeddimensionlist x.dims))))
+                :pdims    (vl-jp-packeddimensionlist x.pdims)
+                :udims    (vl-jp-packeddimensionlist x.udims))))
 
  (define vl-jp-structmemberlist ((x vl-structmemberlist-p) &key (ps 'ps))
    ;; Print the stmtessions as a JSON array with brackets.
@@ -876,7 +884,6 @@ which could not hold such large values.</p>")
      (jp-object :tag      (jp-sym :vl-structmember)
                 :atts     (vl-jp-atts x.atts)
                 :rand     (vl-jp-randomqualifier x.rand)
-                :dims     (vl-jp-packeddimensionlist x.dims)
                 :rhs      (vl-jp-maybe-expr x.rhs)
                 :type     (vl-jp-datatype x.type)))))
 

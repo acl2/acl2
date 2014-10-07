@@ -121,12 +121,11 @@ out some duplication and indirection:</p>
         nil)
        ((vl-vardeclassign temp1) (car temps))
        (decl1 (make-vl-vardecl :name     temp1.id
-                               :dims     temp1.dims
                                :initval  temp1.expr
                                :constp   constp
                                :varp     varp
                                :lifetime lifetime
-                               :type     type
+                               :type     (vl-datatype-update-udims temp1.dims type)
                                :atts     atts
                                :loc      loc)))
     (cons decl1
@@ -297,9 +296,9 @@ out some duplication and indirection:</p>
                                    :type (hons-copy
                                           (make-vl-coretype :name :vl-reg
                                                             :signedp signedp
-                                                            :dims (if range
-                                                                      (list range)
-                                                                    nil)))
+                                                            :pdims (if range
+                                                                       (list range)
+                                                                     nil)))
                                    :atts atts
                                    :loc (vl-token->loc kwd)))))
 
@@ -320,9 +319,9 @@ out some duplication and indirection:</p>
         (when (vl-is-token? :vl-comma)
           (:= (vl-match))
           (rest := (vl-parse-list-of-event-identifiers atts)))
-        (return (cons (make-vl-vardecl :type (make-vl-coretype :name :vl-event)
+        (return (cons (make-vl-vardecl :type (make-vl-coretype :name :vl-event
+                                                               :udims arrdims)
                                        :name (vl-idtoken->name id)
-                                       :dims arrdims
                                        :loc (vl-token->loc id)
                                        :atts atts)
                       rest))))
@@ -460,7 +459,7 @@ out some duplication and indirection:</p>
                                                 :name :vl-logic
                                                 :signedp (and signing
                                                               (eq (vl-token->type signing) :vl-kwd-signed))
-                                                :dims dims)
+                                                :pdims dims)
                                          :atts atts
                                          :loc loc))))
               ((unless implicit-err)

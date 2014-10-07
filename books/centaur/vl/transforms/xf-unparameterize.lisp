@@ -268,17 +268,17 @@ types.</p>"
        ;; and type.  We want to convert it from whatever size/type it currently
        ;; happens to have into the type that is specified by this parameter.
        ;; That means getting the type and size from a datatype.
-       ((mv okp1 errmsg1 desired-width) (vl-datatype-width type))
+       ((mv warning desired-width) (vl-packed-datatype-size type))
        ((mv okp2 errmsg2 desired-type)  (vl-datatype-exprtype type))
-       ((unless (and okp1 okp2 desired-width desired-type))
+       ((unless (and (not warning) okp2 desired-width desired-type))
         (vl-unparam-debug "~a0: can't override ~a1: width or type unknown: width ~a2, type ~a3; ~s4/~s5."
                           ctx paramname desired-width desired-type
-                          errmsg1 errmsg2)
+                          warning errmsg2)
         (mv nil
             (fatal :type :vl-bad-instance
                    :msg "~a0: can't override parameter ~s1: don't know the ~
                          correct width/signedness for type ~a2; ~s3/~s4."
-                   :args (list ctx paramname type errmsg1 errmsg2))
+                   :args (list ctx paramname type warning errmsg2))
             expr))
 
        ;; Theory: correct way to do conversion is:
@@ -441,7 +441,7 @@ types.</p>"
             ;; Now we know enough to figure out our explicit final type.
             (explicit-type (make-vl-coretype :name :vl-logic
                                              :signedp new-signedp
-                                             :dims new-dims))
+                                             :pdims new-dims))
             ((mv okp warnings coerced-expr)
              ;; Do the conversion explicitly, which gives us all the nice warnings.
              (vl-convert-parameter-value-to-explicit-type explicit-type reduced-expr warnings ctx decl.name))

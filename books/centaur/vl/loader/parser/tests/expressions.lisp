@@ -138,17 +138,16 @@
 A very useful tracing mechanism for debugging:
 
 (defmacro trace-parser (fn)
-  `(trace$ (,fn
+  `(trace! (,fn
             :entry (list ',fn
-                         :tokens (vl-tokenlist->string-with-spaces tokens)
+                         :tokens (vl-tokenlist->string-with-spaces
+                                  (vl-tokstream->tokens))
                          :warnings (len warnings))
             :exit (list :errmsg (first values)
                         :val (second values)
                         :remainder (vl-tokenlist->string-with-spaces
-                                    (third values))
-                        :next-token (and (consp (third values))
-                                         (vl-token->type (car (third values))))
-                        :warnings (len (fourth values))))))
+                                    (vl-tokstream->tokens))
+                        :warnings (vl-parsestate->warning (vl-tokstream->pstate))))))
 
 (trace-parser vl-parse-stream-concatenation-fn)
 (trace-parser vl-parse-stream-expression-fn)

@@ -779,37 +779,38 @@ is just a constant integer.  So this is just:</p>
                  (new-x    vl-datatype-p))
     :measure (vl-datatype-count x)
     (vl-datatype-case x
-      (:vl-nettype
-       (b* (((mv warnings new-range) (vl-maybe-range-wildelim x.range elem warnings))
-            (new-x (change-vl-nettype x :range new-range)))
-         (mv warnings new-x)))
       (:vl-coretype
-       (b* (((mv warnings new-dims) (vl-packeddimensionlist-wildelim x.dims elem warnings))
-            (new-x (change-vl-coretype x :dims new-dims)))
+       (b* (((mv warnings new-pdims) (vl-packeddimensionlist-wildelim x.pdims elem warnings))
+            ((mv warnings new-udims) (vl-packeddimensionlist-wildelim x.udims elem warnings))
+            (new-x (change-vl-coretype x :pdims new-pdims :udims new-udims)))
          (mv warnings new-x)))
       (:vl-struct
        (b* (((mv warnings new-members) (vl-structmemberlist-wildelim x.members elem warnings))
-            ((mv warnings new-dims) (vl-packeddimensionlist-wildelim x.dims elem warnings))
-            (new-x    (change-vl-struct x :members new-members :dims new-dims)))
+            ((mv warnings new-pdims) (vl-packeddimensionlist-wildelim x.pdims elem warnings))
+            ((mv warnings new-udims) (vl-packeddimensionlist-wildelim x.udims elem warnings))
+            (new-x    (change-vl-struct x :members new-members :pdims new-pdims :udims new-udims)))
          (mv warnings new-x)))
       (:vl-union
        (b* (((mv warnings new-members) (vl-structmemberlist-wildelim x.members elem warnings))
-            ((mv warnings new-dims) (vl-packeddimensionlist-wildelim x.dims elem warnings))
-            (new-x    (change-vl-union x :members new-members :dims new-dims)))
+            ((mv warnings new-pdims) (vl-packeddimensionlist-wildelim x.pdims elem warnings))
+            ((mv warnings new-udims) (vl-packeddimensionlist-wildelim x.udims elem warnings))
+            (new-x    (change-vl-union x :members new-members :pdims new-pdims :udims new-udims)))
          (mv warnings new-x)))
       (:vl-enum
        (b* (((mv warnings new-basetype) (vl-enumbasetype-wildelim x.basetype elem warnings))
             ((mv warnings new-items) (vl-enumitemlist-wildelim x.items elem warnings))
-            ((mv warnings new-dims) (vl-packeddimensionlist-wildelim x.dims elem warnings))
+            ((mv warnings new-pdims) (vl-packeddimensionlist-wildelim x.pdims elem warnings))
+            ((mv warnings new-udims) (vl-packeddimensionlist-wildelim x.udims elem warnings))
             (new-x    (change-vl-enum x
                                       :basetype new-basetype
                                       :items new-items
-                                      :dims new-dims)))
+                                      :pdims new-pdims :udims new-udims)))
          (mv warnings new-x)))
       (:vl-usertype
        (b* (((mv warnings new-kind) (vl-expr-wildelim x.kind elem warnings))
-            ((mv warnings new-dims) (vl-packeddimensionlist-wildelim x.dims elem warnings))
-            (new-x    (change-vl-usertype x :kind new-kind :dims new-dims)))
+            ((mv warnings new-pdims) (vl-packeddimensionlist-wildelim x.pdims elem warnings))
+            ((mv warnings new-udims) (vl-packeddimensionlist-wildelim x.udims elem warnings))
+            (new-x    (change-vl-usertype x :kind new-kind :pdims new-pdims :udims new-udims)))
          (mv warnings new-x)))))
 
   (define vl-structmemberlist-wildelim ((x        vl-structmemberlist-p)
@@ -833,11 +834,9 @@ is just a constant integer.  So this is just:</p>
     :measure (vl-structmember-count x)
     (b* (((vl-structmember x) x)
          ((mv warnings new-type) (vl-datatype-wildelim x.type elem warnings))
-         ((mv warnings new-dims) (vl-packeddimensionlist-wildelim x.dims elem warnings))
          ((mv warnings new-rhs) (vl-maybe-expr-wildelim x.rhs elem warnings))
          (new-x    (change-vl-structmember x
                                            :type new-type
-                                           :dims new-dims
                                            :rhs new-rhs)))
       (mv warnings new-x)))
   ///
@@ -1028,12 +1027,10 @@ is just a constant integer.  So this is just:</p>
   (b* (((vl-vardecl x) x)
        (elem x)
        ((mv warnings type-prime)    (vl-datatype-wildelim x.type elem warnings))
-       ((mv warnings dims-prime)    (vl-packeddimensionlist-wildelim x.dims elem warnings))
        ((mv warnings initval-prime) (vl-maybe-expr-wildelim x.initval elem warnings))
        ((mv warnings delay-prime)   (vl-maybe-gatedelay-wildelim x.delay elem warnings))
        (x-prime (change-vl-vardecl x
                                    :type    type-prime
-                                   :dims    dims-prime
                                    :initval initval-prime
                                    :delay   delay-prime)))
     (mv warnings x-prime)))

@@ -186,23 +186,20 @@
     :measure (vl-datatype-count x)
     (vl-datatype-case x
 
-      (:vl-nettype
-       (append (list x.name)
-               (if x.signedp '(signed) nil)
-               (if x.range (list (vl-pretty-range x.range)) nil)))
-
+      ;; this is messy but we're trying to be compatible without rewriting all the tests
       (:vl-coretype
-       (list* x.name
-              (if x.signedp 'signed 'unsigned)
-              (vl-pretty-packeddimensionlist x.dims)))
+       (append (list x.name
+                     (if x.signedp 'signed 'unsigned))
+               (and x.pdims (vl-pretty-packeddimensionlist x.pdims))
+               (and x.udims (cons :udims (vl-pretty-packeddimensionlist x.udims)))))
 
       (:vl-struct
        (append '(:vl-struct)
                (if x.packedp '(packed) nil)
                (if x.signedp '(signed) nil)
                (vl-pretty-structmemberlist x.members)
-               (and x.dims
-                    (cons :dims (vl-pretty-packeddimensionlist x.dims)))))
+               (and x.pdims (cons :dims (vl-pretty-packeddimensionlist x.pdims)))
+               (and x.udims (cons :udims (vl-pretty-packeddimensionlist x.udims)))))
 
       (:vl-union
        (append '(:vl-union)
@@ -210,21 +207,21 @@
                (if x.packedp '(packed) nil)
                (if x.signedp '(signed) nil)
                (vl-pretty-structmemberlist x.members)
-               (and x.dims
-                    (cons :dims (vl-pretty-packeddimensionlist x.dims)))))
+               (and x.pdims (cons :dims (vl-pretty-packeddimensionlist x.pdims)))
+               (and x.udims (cons :udims (vl-pretty-packeddimensionlist x.udims)))))
 
       (:vl-enum
        (append '(:vl-enum)
                (vl-pretty-enumbasetype x.basetype)
                (vl-pretty-enumitemlist x.items)
-               (and x.dims
-                    (cons :dims (vl-pretty-packeddimensionlist x.dims)))))
+               (and x.pdims (cons :dims (vl-pretty-packeddimensionlist x.pdims)))
+               (and x.udims (cons :udims (vl-pretty-packeddimensionlist x.udims)))))
 
       (:vl-usertype
        (append '(:vl-usertype)
                (list (vl-pretty-expr x.kind))
-               (and x.dims
-                    (cons :dims (vl-pretty-packeddimensionlist x.dims)))))))
+               (and x.pdims (cons :dims (vl-pretty-packeddimensionlist x.pdims)))
+               (and x.udims (cons :udims (vl-pretty-packeddimensionlist x.udims)))))))
 
   (define vl-pretty-structmemberlist ((x vl-structmemberlist-p))
     :measure (vl-structmemberlist-count x)
@@ -239,8 +236,6 @@
       (append (list x.name)
               (and x.rand (list x.rand))
               (vl-pretty-datatype x.type)
-              (and x.dims
-                   (cons :dims (vl-pretty-packeddimensionlist x.dims)))
               (and x.rhs
                    (list '= (vl-pretty-expr x.rhs)))))))
 

@@ -130,32 +130,28 @@ handle both cases.</p>"
     :vl-coretype
     (and (or (eq x.name :vl-reg)
              (eq x.name :vl-logic))
-         (or (atom x.dims)
-             (and (atom (cdr x.dims))
-                  (mbe :logic (vl-range-p (car x.dims))
-                       :exec (not (eq (car x.dims) :vl-unsized-dimension))))))
-    :vl-nettype t
+         (atom x.udims)
+         (or (atom x.pdims)
+             (and (atom (cdr x.pdims))
+                  (mbe :logic (vl-range-p (car x.pdims))
+                       :exec (not (eq (car x.pdims) :vl-unsized-dimension))))))
     :otherwise nil))
 
 (define vl-simpletype->range ((x vl-datatype-p))
   :guard (vl-simpletype-p x)
   :returns (range vl-maybe-range-p)
   :guard-hints (("Goal" :in-theory (enable vl-simpletype-p)))
-  (vl-datatype-case x
-    :vl-coretype (and (consp x.dims)
-                      (mbt (vl-range-p (car x.dims)))
-                      (car x.dims))
-    :otherwise ;; nettype
-    (vl-nettype->range x)))
+  (b* (((vl-coretype x)))
+    (and (consp x.pdims)
+         (mbt (vl-range-p (car x.pdims)))
+         (car x.pdims))))
 
 (define vl-simpletype->signedp ((x vl-datatype-p))
   :guard (vl-simpletype-p x)
   :returns (signedp booleanp :rule-classes :type-prescription)
   :guard-hints (("Goal" :in-theory (enable vl-simpletype-p)))
-  (vl-datatype-case x
-    :vl-coretype x.signedp
-    :otherwise ;; nettype
-    (vl-nettype->signedp x)))
+  (b* (((vl-coretype x)))
+    x.signedp))
 
 (acl2::def-b*-binder vl-simpletype
   :body
@@ -175,15 +171,15 @@ handle both cases.</p>"
     (and (not x.constp)
          (not x.varp)
          (not x.lifetime)
-         (not x.dims)
          (eq (vl-datatype-kind x.type) :vl-coretype)
          (b* (((vl-coretype x.type) x.type))
            (and (or (eq x.type.name :vl-reg)
                     (eq x.type.name :vl-logic))
-                (or (atom x.type.dims)
-                    (and (atom (cdr x.type.dims))
-                         (mbe :logic (vl-range-p (car x.type.dims))
-                              :exec (not (eq (car x.type.dims) :vl-unsized-dimension))))))))))
+                (atom x.type.udims)
+                (or (atom x.type.pdims)
+                    (and (atom (cdr x.type.pdims))
+                         (mbe :logic (vl-range-p (car x.type.pdims))
+                              :exec (not (eq (car x.type.pdims) :vl-unsized-dimension))))))))))
 
 (deflist vl-simplereglist-p (x)
   :guard (vl-vardecllist-p x)
@@ -203,8 +199,8 @@ handle both cases.</p>"
   :prepwork ((local (in-theory (enable vl-simplereg-p vl-maybe-range-p))))
   (b* (((vl-vardecl x) x)
        ((vl-coretype x.type) x.type))
-    (and (consp x.type.dims)
-         (vl-range-fix (car x.type.dims))))
+    (and (consp x.type.pdims)
+         (vl-range-fix (car x.type.pdims))))
   ///
   (more-returns
    (range (equal (vl-range-p range) (if range t nil))
@@ -225,17 +221,24 @@ handle both cases.</p>"
   ;; This will recognize only variables that are nets: signed or unsigned, of
   ;; any type, perhaps with a single range, but not with any more complex
   ;; dimensions.
-  (b* (((vl-vardecl x) x))
-    (and (atom x.dims)
-         (eq (vl-datatype-kind x.type) :vl-nettype))))
+  (b* (((vl-vardecl x) x)
+       ((unless x.nettype) nil)
+       ((unless (eq (vl-datatype-kind x.type) :vl-coretype)) nil)
+       ((vl-coretype x.type)))
+    (and (eq x.type.name :vl-logic)
+         (atom x.type.udims)
+         (or (atom x.type.pdims)
+             (and (not (eq (car x.type.pdims) :vl-unsized-dimension))
+                  (atom (cdr x.type.pdims)))))))
 
 (define vl-simplenet->range ((x vl-vardecl-p))
   :returns (range vl-maybe-range-p)
   :guard (vl-simplenet-p x)
   :prepwork ((local (in-theory (enable vl-simplenet-p vl-maybe-range-p))))
   (b* (((vl-vardecl x) x)
-       ((vl-nettype x.type) x.type))
-    x.type.range)
+       ((vl-coretype x.type) x.type))
+    (and (consp x.type.pdims)
+         (vl-range-fix (car x.type.pdims))))
   ///
   (more-returns
    (range (equal (vl-range-p range) (if range t nil))
@@ -246,16 +249,15 @@ handle both cases.</p>"
   :guard (vl-simplenet-p x)
   :prepwork ((local (in-theory (enable vl-simplenet-p vl-maybe-range-p))))
   (b* (((vl-vardecl x) x)
-       ((vl-nettype x.type) x.type))
+       ((vl-coretype x.type) x.type))
     x.type.signedp))
 
 (define vl-simplenet->nettype ((x vl-vardecl-p))
   :returns (nettype vl-nettypename-p)
   :guard (vl-simplenet-p x)
   :prepwork ((local (in-theory (enable vl-simplenet-p vl-maybe-range-p))))
-  (b* (((vl-vardecl x) x)
-       ((vl-nettype x.type) x.type))
-    x.type.name))
+  (b* (((vl-vardecl x) x))
+    (vl-nettypename-fix x.nettype)))
 
 (acl2::def-b*-binder vl-simplenet
   :body

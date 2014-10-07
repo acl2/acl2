@@ -106,6 +106,7 @@ gates come from.</p>")
                                :finaltype :vl-unsigned))
        (decl1    (make-vl-vardecl :name new-name
                                   :type *vl-plain-old-wire-type*
+                                  :nettype :vl-wire
                                   :loc loc))
        ((mv exprs decls nf)
         (vl-make-temporary-wires prefix (- i 1) nf loc)))

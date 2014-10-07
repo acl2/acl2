@@ -276,6 +276,7 @@
 
 (define vl-build-portdecls (&key (ids vl-idtoken-list-p)
                                  (dir vl-direction-p)
+                                 (nettype vl-maybe-nettypename-p)
                                  (type vl-datatype-p)
                                  (atts vl-atts-p))
   :returns (portdecls vl-portdecllist-p)
@@ -284,14 +285,17 @@
     (cons (make-vl-portdecl :name (vl-idtoken->name (car ids))
                             :loc  (vl-token->loc (car ids))
                             :dir  dir
+                            :nettype nettype
                             :type type
                             :atts atts)
           (vl-build-portdecls :ids  (cdr ids)
                               :dir  dir
+                              :nettype nettype
                               :type type
                               :atts atts))))
 
 (define vl-build-netdecls-for-ports (&key (ids vl-idtoken-list-p)
+                                          (nettype vl-maybe-nettypename-p)
                                           (type vl-datatype-p)
                                           (atts vl-atts-p))
   :returns (netdecls vl-vardecllist-p)
@@ -299,6 +303,7 @@
       nil
     (cons (make-vl-vardecl :name (vl-idtoken->name (car ids))
                            :loc  (vl-token->loc (car ids))
+                           :nettype nettype
                            :type type
                            :atts atts
                            ;; BOZO are these right?  I think so?  I think
@@ -306,11 +311,11 @@
                            ;; at least in Verilog-2005?
                            :vectoredp nil
                            :scalaredp nil
-                           :dims nil
                            :delay nil
                            :cstrength nil)
           (vl-build-netdecls-for-ports :ids (cdr ids)
                                        :type type
+                                       :nettype nettype
                                        :atts atts))))
 
 
@@ -348,6 +353,7 @@
 ; last, by portdecl-sign.
 
 (define vl-make-ports-and-maybe-nets (&key (dir        vl-direction-p)
+                                           (nettype    vl-maybe-nettypename-p)
                                            (type       vl-datatype-p)
                                            (complete-p booleanp)
                                            (ids        vl-idtoken-list-p)
@@ -361,11 +367,13 @@
        (portdecls
         (vl-build-portdecls :dir dir
                             :ids ids
+                            :nettype nettype
                             :type type
                             :atts atts))
        (netdecls (if complete-p
                      (vl-build-netdecls-for-ports :ids ids
                                                   :type type
+                                                  :nettype nettype
                                                   :atts
                                                   ;; Make sure the variables are marked as implicit
                                                   ;; to avoid pretty-printing them.
@@ -379,12 +387,14 @@
                                                    :type type
                                                    :complete-p complete-p
                                                    :ids ids
+                                                   :nettype nettype
                                                    :atts atts)))
     :rule-classes :type-prescription)
   (defthm true-listp-of-vl-make-ports-and-maybe-nets-2
     (true-listp (cdr (vl-make-ports-and-maybe-nets :dir dir
                                                    :type type
                                                    :complete-p complete-p
+                                                   :nettype nettype
                                                    :ids ids
                                                    :atts atts)))
     :rule-classes :type-prescription))
@@ -411,15 +421,16 @@
                  :atts atts
                  :ids ids
                  :complete-p (if nettype t nil)
+                 :nettype nettype
                  :type
                  ;; See portdecl-sign.  The datatype here is not necessarily
                  ;; correct, e.g., because the corresponding variable
                  ;; declaration might have some other type (e.g., WOR or REG).
                  ;; However, due to the VL_INCOMPLETE_DECLARATION attribute,
                  ;; we'll correct for this before creating the module.
-                 (make-vl-nettype :name (or nettype :vl-wire)
-                                  :signedp (if signed t nil)
-                                  :range range))))
+                 (make-vl-coretype :name :vl-logic
+                                   :signedp (if signed t nil)
+                                   :pdims (and range (list range))))))
   ///
   (defthm true-listp-of-vl-parse-basic-port-declaration-tail-1
     (true-listp (car (mv-nth 1 (vl-parse-basic-port-declaration-tail dir atts))))
@@ -444,22 +455,22 @@
   :fails gracefully
   :count strong
   (seq tokstream
-        (when (vl-is-token? :vl-kwd-signed)
-          (signed := (vl-match)))
-        (when (vl-is-token? :vl-lbrack)
-          (range := (vl-parse-range)))
-        (ids := (vl-parse-1+-identifiers-separated-by-commas))
-        (return
-         (vl-make-ports-and-maybe-nets :dir :vl-output
-                                       :atts atts
-                                       ;; We have a reg type, so this is
-                                       ;; completely declared.
-                                       :complete-p t
-                                       :ids ids
-                                       :type
-                                       (make-vl-coretype :name :vl-reg
-                                                         :signedp (if signed t nil)
-                                                         :dims (and range
+       (when (vl-is-token? :vl-kwd-signed)
+         (signed := (vl-match)))
+       (when (vl-is-token? :vl-lbrack)
+         (range := (vl-parse-range)))
+       (ids := (vl-parse-1+-identifiers-separated-by-commas))
+       (return
+        (vl-make-ports-and-maybe-nets :dir :vl-output
+                                      :atts atts
+                                      ;; We have a reg type, so this is
+                                      ;; completely declared.
+                                      :complete-p t
+                                      :ids ids
+                                      :type
+                                      (make-vl-coretype :name :vl-reg
+                                                        :signedp (if signed t nil)
+                                                        :pdims (and range
                                                                     (list range))))))
   ///
   (defthm true-listp-of-vl-parse-output-reg-port-tail-1
@@ -659,124 +670,134 @@
   :count strong
   (seq tokstream
 
-        (when (vl-is-token? :vl-kwd-interconnect)
-          (return-raw
-           (vl-parse-error "BOZO implement interconnect ports!")))
+       (when (vl-is-token? :vl-kwd-interconnect)
+         (return-raw
+          (vl-parse-error "BOZO implement interconnect ports!")))
 
-        (when (vl-is-token? :vl-kwd-var)
-          ;; 'var' data_type_or_implicit
-          (when (eq dir :vl-inout)
-            (return-raw
-             (vl-parse-error "Inout ports cannot have variable types, they must be nets.")))
-          (:= (vl-match))
-          ;; We'll check for implicit first.
-          ;; implicit_data_type ::= [ signing ] { packed_dimension }
-          ;; signing ::= 'signed' | 'unsigned'
-          (when (vl-is-some-token? '(:vl-kwd-signed :vl-kwd-unsigned))
-            (signing := (vl-match)))
-          (when (vl-is-token? :vl-lbrack)
-            (range := (vl-parse-range)))
-          (when (or signing range)
-            ;; Definitely in the implicit case.
-            (ids := (vl-parse-1+-identifiers-separated-by-commas))
-            (return (vl-make-ports-and-maybe-nets :dir dir
-                                                  :atts atts
-                                                  :ids ids
-                                                  :complete-p t ;; It's complete because of the var keyword.
-                                                  :type (make-vl-coretype :name :vl-logic
-                                                                          :signedp (and signing
-                                                                                        (eq (vl-token->type signing)
-                                                                                            :vl-kwd-signed))
-                                                                          :dims (and range
+       (when (vl-is-token? :vl-kwd-var)
+         ;; 'var' data_type_or_implicit
+         (when (eq dir :vl-inout)
+           (return-raw
+            (vl-parse-error "Inout ports cannot have variable types, they must be nets.")))
+         (:= (vl-match))
+         ;; We'll check for implicit first.
+         ;; implicit_data_type ::= [ signing ] { packed_dimension }
+         ;; signing ::= 'signed' | 'unsigned'
+         (when (vl-is-some-token? '(:vl-kwd-signed :vl-kwd-unsigned))
+           (signing := (vl-match)))
+         (when (vl-is-token? :vl-lbrack)
+           (range := (vl-parse-range)))
+         (when (or signing range)
+           ;; Definitely in the implicit case.
+           (ids := (vl-parse-1+-identifiers-separated-by-commas))
+           (return (vl-make-ports-and-maybe-nets :dir dir
+                                                 :atts atts
+                                                 :ids ids
+                                                 :complete-p t ;; It's complete because of the var keyword.
+                                                 :type (make-vl-coretype :name :vl-logic
+                                                                         :signedp (and signing
+                                                                                       (eq (vl-token->type signing)
+                                                                                           :vl-kwd-signed))
+                                                                         :pdims (and range
                                                                                      (list range))))))
-          ;; No signing or dimensions.
-          ;; It could still be either:
-          ;;   - var data_type id1 ...
-          ;;   - var id1 ...
-          ;; Since a datatype can be an id, it's tricky to distinguish these.  We
-          ;; can do it, though, because the parser now keeps track of the data types
-          ;; that the user has defined.
-          (when (and (vl-is-token? :vl-idtoken)
-                     (not (vl-parsestate-is-user-defined-type-p
-                           (vl-idtoken->name (car (vl-tokstream->tokens)))
-                           (vl-tokstream->pstate))))
-            ;; var id1 ...
-            (ids := (vl-parse-1+-identifiers-separated-by-commas))
-            (return (vl-make-ports-and-maybe-nets :dir dir
-                                                  :atts atts
-                                                  :ids ids
-                                                  :complete-p t ;; It's complete because of the var keyword.
-                                                  :type (make-vl-coretype :name :vl-logic
-                                                                          :signedp nil
-                                                                          :dims (and range
+         ;; No signing or dimensions.
+         ;; It could still be either:
+         ;;   - var data_type id1 ...
+         ;;   - var id1 ...
+         ;; Since a datatype can be an id, it's tricky to distinguish these.  We
+         ;; can do it, though, because the parser now keeps track of the data types
+         ;; that the user has defined.
+         (when (and (vl-is-token? :vl-idtoken)
+                    (not (vl-parsestate-is-user-defined-type-p
+                          (vl-idtoken->name (car (vl-tokstream->tokens)))
+                          (vl-tokstream->pstate))))
+           ;; var id1 ...
+           (ids := (vl-parse-1+-identifiers-separated-by-commas))
+           (return (vl-make-ports-and-maybe-nets :dir dir
+                                                 :atts atts
+                                                 :ids ids
+                                                 :complete-p t ;; It's complete because of the var keyword.
+                                                 :type (make-vl-coretype :name :vl-logic
+                                                                         :signedp nil
+                                                                         :pdims (and range
                                                                                      (list range))))))
 
-          ;; Else, we'd better have a data type.
-          (type := (vl-parse-datatype))
-          (ids := (vl-parse-1+-identifiers-separated-by-commas))
-          (return (vl-make-ports-and-maybe-nets :dir dir
-                                                :atts atts
-                                                :ids ids
-                                                :complete-p t ;; It's complete because of the var keyword.
-                                                :type type)))
+         ;; Else, we'd better have a data type.
+         (type := (vl-parse-datatype))
+         (ids := (vl-parse-1+-identifiers-separated-by-commas))
+         (return (vl-make-ports-and-maybe-nets :dir dir
+                                               :atts atts
+                                               :ids ids
+                                               :complete-p t ;; It's complete because of the var keyword.
+                                               :type type)))
 
-        ;; We've now ruled out any leading 'interconnect' and 'var' keywords.
-        ;; This leaves:
-        ;;  - [net_type] implicit_data_type
-        ;;  - data_type
-        ;; We'll handle ``[net_type] implicit_data_type`` first
+       ;; We've now ruled out any leading 'interconnect' and 'var' keywords.
+       ;; This leaves:
+       ;;  - [net_type] implicit_data_type
+       ;;  - data_type
+       ;; We'll handle ``[net_type] implicit_data_type`` first
 
-        ;; implicit_data_type ::= [ signing ] { packed_dimension }
-        ;; signing ::= 'signed' | 'unsigned'
-        (nettype := (vl-parse-optional-nettype))
-        (when (vl-is-some-token? '(:vl-kwd-signed :vl-kwd-unsigned))
-          (signing := (vl-match)))
-        (when (vl-is-token? :vl-lbrack)
-          (range := (vl-parse-range)))
+       ;; implicit_data_type ::= [ signing ] { packed_dimension }
+       ;; signing ::= 'signed' | 'unsigned'
+       (nettype := (vl-parse-optional-nettype))
+       (when (vl-is-some-token? '(:vl-kwd-signed :vl-kwd-unsigned))
+         (signing := (vl-match)))
+       (when (vl-is-token? :vl-lbrack)
+         (range := (vl-parse-range)))
 
-        (when (or nettype signing range)
-          ;; Definitely in the [net_type] implicit-data-type case.
-          (ids := (vl-parse-1+-identifiers-separated-by-commas))
-          (return (vl-make-ports-and-maybe-nets :dir dir
-                                                :atts atts
-                                                :ids ids
-                                                :complete-p (if nettype t nil)
-                                                :type (make-vl-nettype
-                                                       :name (or nettype :vl-wire)
-                                                       :signedp (and signing
-                                                                     (eq (vl-token->type signing)
-                                                                         :vl-kwd-signed))
-                                                       :range range))))
+       (when (or nettype signing range)
+         ;; Definitely in the [net_type] implicit-data-type case.
+         (ids := (vl-parse-1+-identifiers-separated-by-commas))
+         (return (vl-make-ports-and-maybe-nets :dir dir
+                                               :atts atts
+                                               :ids ids
+                                               :complete-p (if nettype t nil)
+                                               :nettype (or nettype :vl-wire)
+                                               :type (make-vl-coretype
+                                                      :name :vl-logic
+                                                      :signedp (and signing
+                                                                    (eq (vl-token->type signing)
+                                                                        :vl-kwd-signed))
+                                                      :pdims (and range (list range))))))
 
-        ;; No net type, signing, or dimensions.  This is similar to the var case
-        ;; where there is no signing or dimensions.  We could still be in the
-        ;; implicit_data_type case where everything is empty.  That is, we could
-        ;; be looking at either:
-        ;;  - data_type id1 ...
-        ;;  - [nothing] id1 ...
-        ;; Use the same identifier lookup trick to figure out which we're in.
-        (when (and (vl-is-token? :vl-idtoken)
-                   (not (vl-parsestate-is-user-defined-type-p
-                         (vl-idtoken->name (car (vl-tokstream->tokens)))
-                         (vl-tokstream->pstate))))
-          ;; Purely implicit case, no data type, not complete.
-          (ids := (vl-parse-1+-identifiers-separated-by-commas))
-          (return (vl-make-ports-and-maybe-nets :dir dir
-                                                :atts atts
-                                                :ids ids
-                                                :complete-p nil ;; no nettype, no datatype, so not complete.
-                                                :type (make-vl-nettype :name :vl-wire
-                                                                       :signedp nil
-                                                                       :range nil))))
+       ;; No net type, signing, or dimensions.  This is similar to the var case
+       ;; where there is no signing or dimensions.  We could still be in the
+       ;; implicit_data_type case where everything is empty.  That is, we could
+       ;; be looking at either:
+       ;;  - data_type id1 ...
+       ;;  - [nothing] id1 ...
+       ;; Use the same identifier lookup trick to figure out which we're in.
+       (when (and (vl-is-token? :vl-idtoken)
+                  (not (vl-parsestate-is-user-defined-type-p
+                        (vl-idtoken->name (car (vl-tokstream->tokens)))
+                        (vl-tokstream->pstate))))
+         ;; Purely implicit case, no data type, not complete.
+         (ids := (vl-parse-1+-identifiers-separated-by-commas))
+         (return (vl-make-ports-and-maybe-nets :dir dir
+                                               :atts atts
+                                               :ids ids
+                                               :complete-p nil ;; no nettype, no datatype, so not complete.
+                                               :nettype :vl-wire
+                                               ;; spec (23.2.2.3) with no
+                                               ;; nettype and implicit data
+                                               ;; type, default to `default_nettype
+                                               :type (make-vl-coretype :name :vl-logic
+                                                                       :signedp nil))))
 
-        ;; Otherwise, we can only be in the explicit data type case.
-        (type := (vl-parse-datatype))
-        (ids :=  (vl-parse-1+-identifiers-separated-by-commas))
-        (return (vl-make-ports-and-maybe-nets :dir dir
-                                              :atts atts
-                                              :ids ids
-                                              :complete-p t ;; It's complete because we have an explicit data type.
-                                              :type type)))
+       ;; Otherwise, we can only be in the explicit data type case.
+       (type := (vl-parse-datatype))
+       (ids :=  (vl-parse-1+-identifiers-separated-by-commas))
+       (return (vl-make-ports-and-maybe-nets :dir dir
+                                             :atts atts
+                                             :ids ids
+                                             :complete-p t ;; It's complete because we have an explicit data type.
+                                             :nettype (if (eq dir :vl-output)
+                                                          ;; explicit datatype with output port --> variable by default
+                                                          nil
+                                                        ;; otherwise `default_nettype by default
+                                                        :vl-wire)
+                                                        
+                                             :type type)))
   ///
   (defthm true-listp-of-vl-parse-port-declaration-tail-2012-1
     (true-listp (car (mv-nth 1 (vl-parse-port-declaration-tail-2012 dir atts))))

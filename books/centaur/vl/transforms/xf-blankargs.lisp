@@ -75,6 +75,8 @@ has been run to ensure that no instances have ranges.</p>")
    (warnings vl-warninglist-p  "Ordinary @(see warnings) accumulator.")
    (inst     vl-modinst-p      "Semantically meaningless, context for warnings."))
   :guard (same-lengthp args ports)
+  :verify-guards nil
+  :prepwork ((local (in-theory (disable cons-equal))))
   :returns
   (mv (warnings   vl-warninglist-p)
       (new-args   vl-plainarglist-p
@@ -118,11 +120,12 @@ has been run to ensure that no instances have ranges.</p>")
        (port-width      (vl-expr->finalwidth port1.expr))
        ((mv newname nf) (vl-namefactory-indexed-name "blank" nf))
        (range           (vl-make-n-bit-range port-width))
-       (new-nettype     (make-vl-nettype :name :vl-wire
-                                         :range range
-                                         :signedp nil))
+       (new-nettype     (make-vl-coretype :name :vl-logic
+                                          :pdims (list range)
+                                          :signedp nil))
        (new-vardecl     (make-vl-vardecl :name newname
                                          :type new-nettype
+                                         :nettype :vl-wire
                                          :loc (vl-modinst->loc inst)))
        ;; Replace this blank argument with the new blank_37 wire
        (new-expr        (vl-idexpr newname port-width :vl-unsigned))
@@ -132,7 +135,8 @@ has been run to ensure that no instances have ranges.</p>")
         (cons new-vardecl cdr-vardecls)
         nf))
   ///
-  (defmvtypes vl-modinst-plainarglist-blankargs (nil nil true-listp)))
+  (defmvtypes vl-modinst-plainarglist-blankargs (nil nil true-listp))
+  (verify-guards vl-modinst-plainarglist-blankargs))
 
 (define vl-modinst-blankargs
   :short "Apply the @(see blankargs) transform to a module instance."
@@ -254,6 +258,7 @@ size 1.</p>"
        ((mv newname nf) (vl-namefactory-indexed-name "blank" nf))
        (new-vardecl     (make-vl-vardecl :name newname
                                          :type *vl-plain-old-wire-type*
+                                         :nettype :vl-wire
                                          :loc (vl-gateinst->loc inst)))
        (new-expr        (vl-idexpr newname 1 :vl-unsigned))
        (arg1-prime      (change-vl-plainarg arg1 :expr new-expr)))

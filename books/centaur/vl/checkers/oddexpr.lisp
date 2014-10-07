@@ -53,7 +53,7 @@ it might not have the expected precedence.</p>
 
 (defval *fake-modelement*
   (make-vl-vardecl :name "Fake_Module_Element"
-                   :type (make-vl-nettype :name :vl-wire)
+                   :type (make-vl-coretype :name :vl-logic)
                    :loc *vl-fakeloc*))
 
 (define vl-expr-probable-selfsize

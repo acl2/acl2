@@ -95,14 +95,8 @@ isn't an array.</p>"
          :fatalp nil
          :fn __function__))
 
-       ((when (consp decl.dims))
-        (make-vl-warning
-         :type :vl-always-too-hard
-         :msg "~a0: statement is too complex to synthesize.  The register ~
-               being targeted, ~w1, is an array, which we do not support."
-         :args (list elem name)
-         :fatalp nil
-         :fn __function__))
+       ;; note we used to check and warn about arrays here but that's covered
+       ;; by simplereg-p
 
        (range (vl-simplereg->range decl))
        ((unless (vl-maybe-range-resolved-p range))
@@ -154,11 +148,13 @@ register has array dimensions.</p>"
        ((unless (vl-simplereg-p x))
         (raise "Expected all variables to convert to be simple regs and not arrays.")
         (vl-vardecl-fix x))
-       (new-type (make-vl-nettype :name :vl-wire
-                                  :signedp (vl-simplereg->signedp x)
-                                  :range   (vl-simplereg->range x))))
+       (range  (vl-simplereg->range x))
+       (new-type (make-vl-coretype :name :vl-logic
+                                   :signedp (vl-simplereg->signedp x)
+                                   :pdims   (and range (list range)))))
     (change-vl-vardecl x
                        :type new-type
+                       :nettype :vl-wire
                        :atts (acons (hons-copy "VL_CONVERTED_REG") nil x.atts))))
 
 (defprojection vl-always-convert-regs ((x vl-vardecllist-p))
@@ -178,22 +174,17 @@ register has array dimensions.</p>"
         (raise "Not actually a portdecl reg?  ~x0" x)
         x)
 
-       (signedp (vl-coretype->signedp x.type))
-       (dims    (vl-coretype->dims x.type))
-       ((unless (or (atom dims)
-                    (and (atom (cdr dims))
-                         (vl-range-p (car dims)))))
+       (dims    (vl-coretype->pdims x.type))
+       ((unless (and (atom (vl-coretype->udims x.type))
+                     (or (atom dims)
+                         (and (atom (cdr dims))
+                              (vl-range-p (car dims))))))
         (raise "Multi-dimensional array on portdecl reg? ~x0" x)
-        x)
-
-       (range (and (consp dims)
-                   (car dims)))
-       (new-type (make-vl-nettype :name :vl-wire
-                                  :signedp signedp
-                                  :range   range)))
+        x))
     (change-vl-portdecl x
-                       :type new-type
-                       :atts (acons (hons-copy "VL_CONVERTED_REG") nil x.atts))))
+                        :type (change-vl-coretype x.type :name :vl-logic)
+                        :nettype :vl-wire
+                        :atts (acons (hons-copy "VL_CONVERTED_REG") nil x.atts))))
 
 (defprojection vl-always-convert-regports ((x vl-portdecllist-p))
   :parents (always-top)

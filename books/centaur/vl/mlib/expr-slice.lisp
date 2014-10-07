@@ -129,11 +129,11 @@ sliceable."
          (args (vl-nonatom->args x))
 
          ((when (eq op :vl-bitselect))
-          (and (vl-hid/id-p (first args))
+          (and (vl-hidexpr-p (first args))
                (vl-expr-resolved-p (second args))))
 
          ((when (eq op :vl-partselect-colon))
-          (and (vl-hid/id-p (first args))
+          (and (vl-hidexpr-p (first args))
                (vl-expr-resolved-p (second args))
                (vl-expr-resolved-p (third args))))
 
@@ -429,23 +429,24 @@ need to convert them into individual bits in the same order.</p>"
                          |*sized-1'bx*|)))))
 
 
-(define vl-msb-bitslice-name
+(define vl-msb-bitslice-hidexpr-base
   :parents (vl-msb-bitslice-expr)
-  ((x        stringp)
+  ((x        vl-expr-p)
    (ss vl-scopestack-p)
    (warnings vl-warninglist-p))
+  :guard (vl-hidexpr-p x)
   :returns
   (mv (successp booleanp :rule-classes :type-prescription)
       (warnings vl-warninglist-p)
       (bit-exprs vl-exprlist-p))
   :verbosep t
-  (b* ((x (string-fix x))
-       ((mv successp range)
-        (vl-ss-find-range x ss))
-       ((unless successp)
+  (b* (((mv warning range)
+        (vl-ss-find-hidexpr-range x ss))
+       (x (vl-expr-fix x))
+       ((when warning)
         (mv nil
             (fatal :type :vl-slicing-fail
-                   :msg "Expected a net/reg declaration for ~a0."
+                   :msg "Expected to find a declaration for ~a0."
                    :args (list x))
             nil))
 
@@ -467,18 +468,21 @@ need to convert them into individual bits in the same order.</p>"
        ;; a list of 1-bit, unsigned expressions that are semantically
        ;; equivalent to the input expression, and we're going to make any
        ;; sign/zero extension explicit immediately below.
+       (size (vl-maybe-range-size range))
+       (baseexpr (if (vl-fast-atom-p x)
+                     (change-vl-atom x :finalwidth size :finaltype :vl-unsigned)
+                   (change-vl-nonatom x :finalwidth size :finaltype :vl-unsigned)))
        (main-bits (if range
                       (vl-make-msb-to-lsb-bitselects
-                       (vl-idexpr x (vl-range-size range) :vl-unsigned)
-                       msb-index lsb-index)
-                    (list (vl-idexpr x 1 :vl-unsigned)))))
+                       baseexpr msb-index lsb-index)
+                    (list baseexpr))))
     (mv t (ok) main-bits))
 
   :prepwork ((local (in-theory (enable vl-maybe-range-p
                                        vl-maybe-range-resolved-p
                                        vl-maybe-range-size))))
   ///
-  (defmvtypes vl-msb-bitslice-name (booleanp nil true-listp))
+  (defmvtypes vl-msb-bitslice-hidexpr-base (booleanp nil true-listp))
 
   (encapsulate nil
     (local (defthm nonempty-by-len-of-vl-make-msb-to-lsb-bitselects-asdfaf
@@ -486,8 +490,8 @@ need to convert them into individual bits in the same order.</p>"
                (iff x
                     (< 0 (len x))))))
 
-    (defthm nonempty-of-vl-msb-bitslice-name
-      (let ((ret (vl-msb-bitslice-name x ss warnings)))
+    (defthm nonempty-of-vl-msb-bitslice-hidexpr-base
+      (let ((ret (vl-msb-bitslice-hidexpr-base x ss warnings)))
         (implies (mv-nth 0 ret)
                  (mv-nth 2 ret)))))
 
@@ -573,16 +577,16 @@ need to convert them into individual bits in the same order.</p>"
                                         (vl-make-list-of-bitselects expr low high)))))))))
 
   (local (defthm main
-           (let ((ret (vl-msb-bitslice-name x ss warnings)))
+           (let ((ret (vl-msb-bitslice-hidexpr-base x ss warnings)))
              (all-equalp 1 (vl-exprlist->finalwidths (mv-nth 2 ret))))
            :hints(("Goal" :in-theory (e/d (vl-make-msb-to-lsb-bitselects)
                                           (all-equalp))))))
 
-  (defthm vl-exprlist->finalwidths-of-vl-msb-bitslice-name
-    (let ((ret (vl-msb-bitslice-name x ss warnings)))
+  (defthm vl-exprlist->finalwidths-of-vl-msb-bitslice-hidexpr-base
+    (let ((ret (vl-msb-bitslice-hidexpr-base x ss warnings)))
       (equal (vl-exprlist->finalwidths (mv-nth 2 ret))
              (replicate (len (mv-nth 2 ret)) 1)))
-    :hints (("goal" :in-theory (disable vl-msb-bitslice-name main)
+    :hints (("goal" :in-theory (disable vl-msb-bitslice-hidexpr-base main)
              :use main)))
 
 
@@ -622,288 +626,89 @@ need to convert them into individual bits in the same order.</p>"
                                         (vl-make-list-of-bitselects expr low high)))))))))
 
   (local (defthm main2
-           (let ((ret (vl-msb-bitslice-name x ss warnings)))
+           (let ((ret (vl-msb-bitslice-hidexpr-base x ss warnings)))
              (all-equalp :vl-unsigned (vl-exprlist->finaltypes (mv-nth 2 ret))))
            :hints(("Goal" :in-theory (e/d (vl-make-msb-to-lsb-bitselects)
                                           (all-equalp))))))
 
-  (defthm vl-exprlist->finaltypes-of-vl-msb-bitslice-name
-    (let ((ret (vl-msb-bitslice-name x ss warnings)))
+  (defthm vl-exprlist->finaltypes-of-vl-msb-bitslice-hidexpr-base
+    (let ((ret (vl-msb-bitslice-hidexpr-base x ss warnings)))
       (equal (vl-exprlist->finaltypes (mv-nth 2 ret))
              (replicate (len (mv-nth 2 ret)) :vl-unsigned)))
-    :hints (("goal" :in-theory (disable vl-msb-bitslice-name main2)
+    :hints (("goal" :in-theory (disable vl-msb-bitslice-hidexpr-base main2)
              :use main2)))
 
-  (defthm vl-exprlist-welltyped-p-of-vl-msb-bitslice-name
-    (let ((ret (vl-msb-bitslice-name x ss warnings)))
-      (implies (mv-nth 0 ret)
-               (vl-exprlist-welltyped-p (mv-nth 2 ret))))
-    :hints(("Goal" :in-theory (enable vl-expr-welltyped-p
-                                      vl-make-msb-to-lsb-bitselects)))))
+  (local (defthm vl-weirdint-p-when-wrong-tag-strong
+           (implies (not (equal (tag x) :vl-weirdint))
+                    (not (vl-weirdint-p x)))))
+  (local (defthm vl-constint-p-when-wrong-tag-strong
+           (implies (not (equal (tag x) :vl-constint))
+                    (not (vl-constint-p x)))))
 
+  (local (defthm vl-hidexpr-p-of-replace-nonatom-size/type
+           (implies (not (equal (vl-expr-kind x) :atom))
+                    (iff (vl-hidexpr-p (change-vl-nonatom x :finalwidth w :finaltype y))
+                         (vl-hidexpr-p x)))
+           :hints(("Goal" :in-theory (enable vl-hidexpr-p vl-hidindex-p)))))
 
-(define vl-msb-bitslice-hid
-  :parents (vl-msb-bitslice-expr)
-  ((x vl-expr-p)
-   (warnings vl-warninglist-p))
-  :guard (and (not (vl-atom-p x))
-              (vl-hidexpr-p x)
-              (vl-expr-welltyped-p x))
-  :returns (mv (okp booleanp :rule-classes :type-prescription)
-               (warnings vl-warninglist-p)
-               (bit-exprs vl-exprlist-p))
-  (b* ((x (vl-expr-fix x))
-       ((mv ok range) (vl-hid-range x))
-       ((unless (and ok (vl-maybe-range-resolved-p range)))
-        (mv nil
-            (fatal :type :vl-slicing-fail
-                   :msg "Expected the range of ~a0 to be resolved"
-                   :args (list x))
-            nil))
+  (local (defthm vl-hidexpr-welltyped-p-of-replace-nonatom-size/type
+           (implies (and (vl-hidexpr-p x)
+                         (not (equal (vl-expr-kind x) :atom))
+                         finaltype
+                         (posp finalwidth))
+                    (vl-expr-welltyped-p (change-vl-nonatom x :finalwidth finalwidth
+                                                               :finaltype finaltype)))
+           :hints(("Goal" :in-theory (enable vl-expr-welltyped-p
+                                             vl-hidexpr-welltyped-p)))))
+                         
 
-       ((unless range)
-        (mv t (ok) (list x)))
-
-       (msb-index (vl-resolved->val (vl-range->msb range)))
-       (lsb-index (vl-resolved->val (vl-range->lsb range)))
-       ;; Main-bits are, e.g., (foo[5] ... foo[3]) for wire [5:3] foo;
-       ;; We now try to avoid introducing bitselects for wires that do
-       ;; not have a range, since some Verilog implementations complain
-       ;; about that sort of thing.  It's okay to force the width/type
-       ;; here to 1-bit unsigned because the spec is that we're producing
-       ;; a list of 1-bit, unsigned expressions that are semantically
-       ;; equivalent to the input expression, and we're going to make any
-       ;; sign/zero extension explicit immediately below.
-       (main-bits (vl-make-msb-to-lsb-bitselects x msb-index lsb-index)))
-    (mv t (ok) main-bits))
-
-  :prepwork ((local (in-theory (enable vl-maybe-range-p
-                                       vl-maybe-range-resolved-p
-                                       vl-maybe-range-size
-                                       vl-hidexpr-welltyped-p))))
-  ///
-  (defmvtypes vl-msb-bitslice-hid (booleanp nil true-listp))
-
-  (encapsulate nil
-    (local (defthm nonempty-by-len-of-vl-make-msb-to-lsb-bitselects-asdfaf
-             (let ((x (vl-make-msb-to-lsb-bitselects expr msb lsb)))
-               (iff x
-                    (< 0 (len x))))))
-
-    (defthm nonempty-of-vl-msb-bitslice-hid
-      (let ((ret (vl-msb-bitslice-hid x warnings)))
-        (implies (mv-nth 0 ret)
-                 (mv-nth 2 ret)))))
-
-
-  ;; Ugh, the proof that all the widths are 1 is pretty awkward, but it's
-  ;; essentially just a matter of chaining together stupid properties.
-
-
-  (local (defthm vl-make-list-of-bitselects-degenerate
-           (equal (vl-make-list-of-bitselects x n n)
-                  (list (vl-make-bitselect x n)))
-           :hints(("Goal" :in-theory (enable vl-make-list-of-bitselects)))))
-
-  (local (defthm promote-vl-expr->finalwidth
-           (implies (vl-atom-p x)
-                    (equal (vl-expr->finalwidth x)
-                           (vl-atom->finalwidth x)))
-           :hints(("Goal" :in-theory (enable vl-expr->finalwidth)))))
-
-  (local (defthm j1
-           (equal (equal (append x (list a)) (list b))
-                  (and (equal a b)
-                       (atom x)))
-           :hints(("Goal" :in-theory (enable append)))))
-
-  (local (defun cdr-dec-induct (x n)
-           (if (zp n)
-               (list x n)
-             (cdr-dec-induct (cdr x) (- n 1)))))
-
-  (local (defthm j2
-           (equal (equal (append x (list y))
-                         (replicate n a))
-                  (and (posp n)
-                       (equal y a)
-                       (equal (list-fix x) (replicate (- n 1) a))))
-           :hints(("Goal"
-                   :induct (cdr-dec-induct x n)
-                   :in-theory (enable replicate)))))
-
-  (local (defthm c0
-           (all-equalp 1 (vl-exprlist->finalwidths
-                          (vl-make-list-of-bitselects expr low high)))))
-
-  (local (defthm c1
-           (iff (member-equal (first (rev x)) x)
-                (consp x))
-           :hints(("Goal" :in-theory (enable rev)))))
-
-  (local (defthm c2
-           (implies (and (all-equalp a x)
-                         (member-equal b x))
-                    (equal a b))
-           :hints(("Goal"
-                   :induct (len x)
-                   :in-theory (disable all-equalp)))
-           :rule-classes nil))
-
-  (local (defthm c4
-           (equal (vl-expr->finalwidth
-                   (first (rev (vl-make-list-of-bitselects expr low high))))
-                  1)
-           :hints(("Goal"
-                   :in-theory (disable vl-exprlist->finalwidths-of-vl-make-list-of-bitselects)
-                   :use ((:instance c2
-                                    (b (vl-expr->finalwidth
-                                        (first (rev (vl-make-list-of-bitselects expr low high)))))
-                                    (a 1)
-                                    (x (vl-exprlist->finalwidths
-                                        (vl-make-list-of-bitselects expr low high)))))))))
-
-  (local (defthm c5
-           (equal (vl-expr->finalwidth
-                   (first (vl-make-list-of-bitselects expr low high)))
-                  1)
-           :hints(("Goal"
-                   :in-theory (disable vl-exprlist->finalwidths-of-vl-make-list-of-bitselects)
-                   :use ((:instance c2
-                                    (b (vl-expr->finalwidth
-                                        (first (vl-make-list-of-bitselects expr low high))))
-                                    (a 1)
-                                    (x (vl-exprlist->finalwidths
-                                        (vl-make-list-of-bitselects expr low high)))))))))
-
-
-  (local (defthm main
-           (implies (and (not (vl-atom-p x))
-                         (vl-hidexpr-p x)
-                         (vl-expr-welltyped-p x))
-                    (let ((ret (vl-msb-bitslice-hid x warnings)))
-                      (all-equalp 1 (vl-exprlist->finalwidths (mv-nth 2 ret)))))
-           :hints(("Goal" :in-theory (e/d (vl-make-msb-to-lsb-bitselects
-                                           vl-expr->finalwidth)
-                                          (all-equalp))
-                   :expand ((vl-hidexpr-p x)
-                            (vl-expr-welltyped-p x))))))
-
-  (defthm vl-exprlist->finalwidths-of-vl-msb-bitslice-hid
-    (implies (and (not (vl-atom-p x))
-                  (vl-hidexpr-p x)
-                  (vl-expr-welltyped-p x))
-             (let ((ret (vl-msb-bitslice-hid x warnings)))
-               (equal (vl-exprlist->finalwidths (mv-nth 2 ret))
-                      (replicate (len (mv-nth 2 ret)) 1))))
-    :hints (("goal" :in-theory (disable vl-msb-bitslice-hid main)
-             :use main)))
-
-
-  (local (defthm vl-exprlist->finaltypes-of-replicate
-           (equal (vl-exprlist->finaltypes (replicate n a))
-                  (replicate n (vl-expr->finaltype a)))
-           :hints(("Goal" :in-theory (enable replicate)))))
-
-  (local (defthm d0
-           (all-equalp :vl-unsigned (vl-exprlist->finaltypes
-                                     (vl-make-list-of-bitselects expr low high)))))
-
-  (local (defthm d4
-           (equal (vl-expr->finaltype
-                   (first (rev (vl-make-list-of-bitselects expr low high))))
-                  :vl-unsigned)
-           :hints(("Goal"
-                   :in-theory (disable vl-exprlist->finaltypes-of-vl-make-list-of-bitselects)
-                   :use ((:instance c2
-                                    (b (vl-expr->finaltype
-                                        (first (rev (vl-make-list-of-bitselects expr low high)))))
-                                    (a :vl-unsigned)
-                                    (x (vl-exprlist->finaltypes
-                                        (vl-make-list-of-bitselects expr low high)))))))))
-
-  (local (defthm d5
-           (equal (vl-expr->finaltype
-                   (first (vl-make-list-of-bitselects expr low high)))
-                  :vl-unsigned)
-           :hints(("Goal"
-                   :in-theory (disable vl-exprlist->finaltypes-of-vl-make-list-of-bitselects)
-                   :use ((:instance c2
-                                    (b (vl-expr->finaltype
-                                        (first (vl-make-list-of-bitselects expr low high))))
-                                    (a :vl-unsigned)
-                                    (x (vl-exprlist->finaltypes
-                                        (vl-make-list-of-bitselects expr low high)))))))))
-
-  (local (defthm main2
-           (implies (and (not (vl-atom-p x))
-                         (vl-hidexpr-p x)
-                         (vl-expr-welltyped-p x))
-                    (let ((ret (vl-msb-bitslice-hid x warnings)))
-                      (all-equalp :vl-unsigned (vl-exprlist->finaltypes (mv-nth 2 ret)))))
-           :hints(("Goal" :in-theory (e/d (vl-make-msb-to-lsb-bitselects
-                                           vl-expr->finaltype)
-                                          (all-equalp))
-                   :expand ((vl-hidexpr-p x)
-                            (vl-expr-welltyped-p x))))))
-
-  (defthm vl-exprlist->finaltypes-of-vl-msb-bitslice-hid
-    (implies (and (not (vl-atom-p x))
-                  (vl-hidexpr-p x)
-                  (vl-expr-welltyped-p x))
-             (let ((ret (vl-msb-bitslice-hid x warnings)))
-               (equal (vl-exprlist->finaltypes (mv-nth 2 ret))
-                      (replicate (len (mv-nth 2 ret)) :vl-unsigned))))
-    :hints (("goal" :in-theory (disable vl-msb-bitslice-hid main2)
-             :use main2)))
-
-  (defthm vl-exprlist-welltyped-p-of-vl-msb-bitslice-hid
-    (let ((ret (vl-msb-bitslice-hid x warnings)))
+  (defthm vl-exprlist-welltyped-p-of-vl-msb-bitslice-hidexpr-base
+    (let ((ret (vl-msb-bitslice-hidexpr-base x ss warnings)))
       (implies (and (mv-nth 0 ret)
-                    (force (not (vl-atom-p x)))
-                    (force (vl-hidexpr-p x))
-                    (force (vl-expr-welltyped-p x)))
+                    (vl-hidexpr-p x))
                (vl-exprlist-welltyped-p (mv-nth 2 ret))))
-    :hints(("Goal" :in-theory (enable vl-expr-welltyped-p
-                                      vl-make-msb-to-lsb-bitselects))))
-
-  (defthm len-of-vl-msb-bitslice-hid
-    (let ((ret (vl-msb-bitslice-hid x warnings)))
-      (implies (and (mv-nth 0 ret)
-                    (force (not (vl-atom-p x)))
-                    (force (vl-hidexpr-p x))
-                    (force (vl-expr-welltyped-p x)))
-               (equal (len (mv-nth 2 ret))
-                      (vl-expr->finalwidth x))))
-    :hints (("goal" :in-theory (enable vl-expr->finalwidth
-                                       vl-width-from-difference
-                                       vl-range-size)
-             :expand ((vl-hidexpr-p x)
-                      (vl-expr-welltyped-p x))))))
+    :hints(("Goal" :in-theory (e/d (vl-expr-welltyped-p
+                                      vl-hidexpr-welltyped-p
+                                      vl-atom-welltyped-p
+                                      vl-hidexpr-p
+                                      vl-hidindex-p
+                                      vl-hidname-p
+                                      vl-make-msb-to-lsb-bitselects)
+                                   ((force) (tau-system)))))))
 
 
-(define vl-msb-bitslice-id
+
+(define vl-msb-bitslice-hidexpr
   :parents (vl-msb-bitslice-expr)
   :short "Explode a <see topic='@(url vl-expr-welltyped-p)'>well-typed</see>,
-@(see vl-id-p) atom into MSB-ordered, single-bit expressions."
+@(see vl-id-p) atom or hierarchical identifier into MSB-ordered, single-bit
+expressions."
 
   ((x        vl-expr-p)
    (ss vl-scopestack-p)
    (warnings vl-warninglist-p))
-  :guard (and (vl-atom-p x)
-              (vl-atom-welltyped-p x)
-              (vl-fast-id-p (vl-atom->guts x)))
+  :guard (and (vl-hidexpr-p x)
+              (vl-expr-welltyped-p x))
+  :guard-hints (("goal" :in-theory (enable vl-expr-welltyped-p
+                                           vl-atom-welltyped-p
+                                           vl-hidexpr-welltyped-p
+                                           vl-hidexpr-p
+                                           vl-hidname-p
+                                           vl-idexpr-p
+                                           vl-expr->finaltype
+                                           vl-expr->finalwidth)))
   :returns
   (mv (successp booleanp :rule-classes :type-prescription)
       (warnings vl-warninglist-p)
       (bit-exprs vl-exprlist-p))
 
-  :long "<p>We require that @('X') is a well-typed identifier expression, i.e.,
-our @(see expression-sizing) transform should have already been run.  See also
-the discussion in @(see vl-atom-welltyped-p) and note that the finalwidth and
-finaltype of the identifier may differ from its declaration.  We expect these
-widths to be at least as large as the identifier's width, and differences here
-are used to indicate zero/sign extensions.</p>
+  :long "<p>We require that @('X') is a well-typed identifier or hierarchical
+identifier expression, i.e., our @(see expression-sizing) transform should have
+already been run.  See also the discussion in @(see vl-atom-welltyped-p) and
+note that the finalwidth and finaltype of the identifier may differ from its
+declaration.  We expect these widths to be at least as large as the
+identifier's width, and differences here are used to indicate zero/sign
+extensions.</p>
 
 <p>The list of bits we want to return here depends on the order of the msb
 and lsb indices for the wire.  For instance, if the wire is declared as:</p>
@@ -922,18 +727,18 @@ wire [0:3] w;
 <p>Then we will want to return @('{w[0], w[1], w[2], w[3]}') instead.</p>"
 
   (b* ((x (vl-expr-fix x))
-       ((vl-atom x) x)
-       (name (vl-id->name x.guts))
        ((mv successp warnings main-bits)
-        (vl-msb-bitslice-name name ss warnings))
+        (vl-msb-bitslice-hidexpr-base x ss warnings))
        ((unless successp)
         (mv nil warnings nil))
 
+       (x.finalwidth (vl-expr->finalwidth x))
+       (x.finaltype  (vl-expr->finaltype x))
        (nwires (len main-bits))
        ((when (< x.finalwidth nwires))
         (mv nil
             (fatal :type :vl-programming-error
-                   :msg "Found a plain, atomic identifier expression for ~a0 ~
+                   :msg "Found an identifier/HID expression for ~a0 ~
                          with width ~x1, which is smaller than ~x2, the size ~
                          of its range.  Expected all occurrences of plain ~
                          identifiers to have widths that are at least as ~
@@ -960,16 +765,15 @@ wire [0:3] w;
                              vl-maybe-range-size))))
 
   ///
-  (defmvtypes vl-msb-bitslice-id (booleanp nil true-listp))
+  (defmvtypes vl-msb-bitslice-hidexpr (booleanp nil true-listp))
 
-  (defthm len-of-vl-msb-bitslice-id
-    (let ((ret (vl-msb-bitslice-id x ss warnings)))
+  (defthm len-of-vl-msb-bitslice-hidexpr
+    (let ((ret (vl-msb-bitslice-hidexpr x ss warnings)))
       (implies (and (mv-nth 0 ret)
-                    (force (vl-atom-p x))
-                    (force (vl-atom-welltyped-p x))
-                    (force (vl-id-p (vl-atom->guts x))))
+                    (force (vl-hidexpr-p x))
+                    (force (vl-expr-welltyped-p x)))
                (equal (len (mv-nth 2 ret))
-                      (vl-atom->finalwidth x)))))
+                      (vl-expr->finalwidth x)))))
 
   (local (defthm vl-exprlist->finalwidths-of-replicate
            (equal (vl-exprlist->finalwidths (replicate n a))
@@ -986,14 +790,13 @@ wire [0:3] w;
                     (equal (first (replicate len v)) v))
            :hints(("Goal" :in-theory (enable replicate)))))
 
-  (defthm vl-exprlist->finalwidths-of-vl-msb-bitslice-id
-    (let ((ret (vl-msb-bitslice-id x ss warnings)))
+  (defthm vl-exprlist->finalwidths-of-vl-msb-bitslice-hidexpr
+    (let ((ret (vl-msb-bitslice-hidexpr x ss warnings)))
       (implies (and (mv-nth 0 ret)
-                    (force (vl-atom-p x))
-                    (force (vl-atom-welltyped-p x))
-                    (force (vl-id-p (vl-atom->guts x))))
+                    (force (vl-hidexpr-p x))
+                    (force (vl-expr-welltyped-p x)))
                (equal (vl-exprlist->finalwidths (mv-nth 2 ret))
-                      (replicate (vl-atom->finalwidth x) 1)))))
+                      (replicate (vl-expr->finalwidth x) 1)))))
 
   (local (defthm vl-exprlist->finaltypes-of-replicate
            (equal (vl-exprlist->finaltypes (replicate n a))
@@ -1005,24 +808,23 @@ wire [0:3] w;
            (equal (vl-expr->finaltype (first x))
                   (first (vl-exprlist->finaltypes x)))))
 
-  (defthm vl-exprlist->finaltypes-of-vl-msb-bitslice-id
-    (let ((ret (vl-msb-bitslice-id x ss warnings)))
+  (defthm vl-exprlist->finaltypes-of-vl-msb-bitslice-hidexpr
+    (let ((ret (vl-msb-bitslice-hidexpr x ss warnings)))
       (implies (and (mv-nth 0 ret)
-                    (force (vl-atom-p x))
-                    (force (vl-atom-welltyped-p x))
-                    (force (vl-id-p (vl-atom->guts x))))
+                    (force (vl-hidexpr-p x))
+                    (force (vl-expr-welltyped-p x)))
                (equal (vl-exprlist->finaltypes (mv-nth 2 ret))
-                      (replicate (vl-atom->finalwidth x) :vl-unsigned)))))
+                      (replicate (vl-expr->finalwidth x) :vl-unsigned)))))
 
-  (defthm vl-exprlist-welltyped-p-of-vl-msb-bitslice-id
-    (let ((ret (vl-msb-bitslice-id x ss warnings)))
+  (defthm vl-exprlist-welltyped-p-of-vl-msb-bitslice-hidexpr
+    (let ((ret (vl-msb-bitslice-hidexpr x ss warnings)))
       (implies (and (mv-nth 0 ret)
-                    (force (vl-atom-p x))
-                    (force (vl-atom-welltyped-p x))
-                    (force (vl-id-p (vl-atom->guts x))))
+                    (force (vl-hidexpr-p x))
+                    (force (vl-expr-welltyped-p x)))
                (vl-exprlist-welltyped-p (mv-nth 2 ret))))
     :hints(("Goal" :in-theory (enable vl-expr-welltyped-p
                                       vl-make-msb-to-lsb-bitselects)))))
+
 
 
 (define vl-msb-bitslice-partselect
@@ -1073,9 +875,9 @@ wire [0:3] b;
        (left-val  (vl-resolved->val left))
        (right-val (vl-resolved->val right))
 
-       ((mv successp range)
-        (vl-ss-find-hid/id-range from ss))
-       ((unless successp)
+       ((mv warning range)
+        (vl-ss-find-hidexpr-range from ss))
+       ((when warning)
         (mv nil
             (fatal :type :vl-slicing-fail
                    :msg "Expected a net/reg declaration for ~a0."
@@ -1199,6 +1001,15 @@ is not declared in the module or has a @('finalwidth') that is smaller than its
 declared width.  These situations should not arise in practice if the
 expressions have been sized correctly.</p>"
 
+  :prepwork
+  ((local (in-theory (disable MEMBER-EQUAL-WHEN-MEMBER-EQUAL-OF-CDR-UNDER-IFF
+                              ARG1-EXISTS-BY-ARITY
+                              acl2::natp-when-maybe-natp
+                              vl-hidindex-resolved-p-when-vl-hidexpr-resolved-p
+                              vl-warninglist-fix-when-vl-warninglist-p
+                              double-containment
+                              abs not))))
+
   (define vl-msb-bitslice-expr
     ((x        vl-expr-p)
      (ss vl-scopestack-p)
@@ -1221,10 +1032,10 @@ expressions have been sized correctly.</p>"
                ((when (vl-fast-weirdint-p guts))
                 (mv t (ok) (vl-msb-bitslice-weirdint x))))
             ;; Else, must be an id.
-            (vl-msb-bitslice-id x ss warnings)))
+            (vl-msb-bitslice-hidexpr x ss warnings)))
 
          ((when (vl-hidexpr-p x))
-          (vl-msb-bitslice-hid x warnings))
+          (vl-msb-bitslice-hidexpr x ss warnings))
 
          (op   (vl-nonatom->op x))
          (args (vl-nonatom->args x))
@@ -1279,19 +1090,33 @@ expressions have been sized correctly.</p>"
       (mv t warnings (append bits1 bits2))))
 
   ///
-  (local (in-theory (enable vl-expr-sliceable-p
-                            vl-expr-welltyped-p)))
+  ;; (local (in-theory (enable vl-expr-sliceable-p
+  ;;                           vl-expr-welltyped-p)))
 
-  (verify-guards vl-msb-bitslice-expr)
+  (local (in-theory (disable vl-msb-bitslice-expr
+                             vl-msb-bitslice-exprlist)))
+
+  (verify-guards vl-msb-bitslice-expr
+    :hints(("Goal" :in-theory (e/d (vl-hidexpr-p
+                                    vl-idexpr-p)
+                                   (vl-msb-bitslice-expr
+                                    member-equal-when-member-equal-of-cdr-under-iff
+                                    abs not))
+            :expand ((vl-expr-sliceable-p x)
+                     (vl-expr-welltyped-p x)))))
 
   (defthm-vl-msb-bitslice-expr-flag
     (defthm vl-exprlist-p-of-vl-msb-bitslice-expr
       (let ((ret (vl-msb-bitslice-expr x ss warnings)))
         (vl-exprlist-p (mv-nth 2 ret)))
+      :hints ('(:expand ((vl-msb-bitslice-expr x ss warnings)
+                         (vl-expr-sliceable-p x)
+                         (vl-expr-welltyped-p x))))
       :flag :expr)
     (defthm vl-exprlist-p-of-vl-msb-bitslice-exprlist
       (let ((ret (vl-msb-bitslice-exprlist x ss warnings)))
         (vl-exprlist-p (mv-nth 2 ret)))
+      :hints ('(:expand ((vl-msb-bitslice-exprlist x ss warnings))))
       :flag :list))
 
   (local (defthm len-of-flatten-of-replicate
@@ -1314,6 +1139,15 @@ expressions have been sized correctly.</p>"
                       (force (vl-expr-welltyped-p x)))
                  (equal (len (mv-nth 2 ret))
                         (vl-expr->finalwidth x))))
+      :hints ('(:in-theory (e/d (vl-idexpr-p
+                                   vl-hidexpr-p
+                                   vl-expr-welltyped-p
+                                   vl-expr->finalwidth
+                                   vl-expr->finaltype)
+                                ((force)))
+                :expand ((vl-msb-bitslice-expr x ss warnings)
+                         (vl-expr-sliceable-p x)
+                         (vl-expr-welltyped-p x))))
       :flag :expr)
     (defthm len-of-vl-msb-bitslice-exprlist
       (let ((ret (vl-msb-bitslice-exprlist x ss warnings)))
@@ -1322,12 +1156,11 @@ expressions have been sized correctly.</p>"
                       (force (vl-exprlist-welltyped-p x)))
                  (equal (len (mv-nth 2 ret))
                         (sum-nats (vl-exprlist->finalwidths x)))))
+      :hints ('(:expand ((vl-msb-bitslice-exprlist x ss warnings))))
       :flag :list)
     :hints(("Goal"
             :in-theory (e/d (vl-expr->finalwidth)
-                            ((force)))
-            :expand ((vl-msb-bitslice-expr x ss warnings)
-                     (vl-msb-bitslice-exprlist x ss warnings)))))
+                            ((force))))))
 
   (local (defthm all-equalp-of-vl-exprlist->finalwidths-of-flatten-replicate
            (equal (all-equalp a (vl-exprlist->finalwidths (flatten (replicate n x))))
@@ -1351,9 +1184,13 @@ expressions have been sized correctly.</p>"
                         (all-equalp 1 (vl-exprlist->finalwidths (mv-nth 2 ret)))))
              :flag :list)
            :hints(("Goal"
-                   :in-theory (e/d (vl-expr->finalwidth)
+                   :in-theory (e/d (vl-expr->finalwidth
+                                    vl-hidexpr-p
+                                    vl-idexpr-p)
                                    (all-equalp))
                    :expand ((vl-msb-bitslice-expr x ss warnings)
+                            (vl-expr-sliceable-p x)
+                            (vl-expr-welltyped-p x)
                             (vl-msb-bitslice-exprlist x ss warnings))))))
 
   (defthm vl-exprlist->finalwidths-of-vl-msb-bitslice-expr
@@ -1400,9 +1237,13 @@ expressions have been sized correctly.</p>"
                         (all-equalp :vl-unsigned (vl-exprlist->finaltypes (mv-nth 2 ret)))))
              :flag :list)
            :hints(("Goal"
-                   :in-theory (e/d (vl-expr->finaltype)
+                   :in-theory (e/d (vl-expr->finaltype
+                                    vl-hidexpr-p
+                                    vl-idexpr-p)
                                    (all-equalp))
                    :expand ((vl-msb-bitslice-expr x ss warnings)
+                            (vl-expr-sliceable-p x)
+                            (vl-expr-welltyped-p x)
                             (vl-msb-bitslice-exprlist x ss warnings))))))
 
   (defthm vl-exprlist->finaltypes-of-vl-msb-bitslice-expr
@@ -1450,8 +1291,10 @@ expressions have been sized correctly.</p>"
                  (vl-exprlist-welltyped-p (mv-nth 2 ret))))
       :flag :list)
     :hints(("Goal"
-            :in-theory (e/d )
+            :in-theory (e/d (vl-hidexpr-p vl-idexpr-p))
             :expand ((vl-msb-bitslice-expr x ss warnings)
+                     (vl-expr-sliceable-p x)
+                     (vl-expr-welltyped-p x)
                      (vl-msb-bitslice-exprlist x ss warnings))))))
 
 

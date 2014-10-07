@@ -1322,22 +1322,11 @@ expression into a string."
                (vl-pp-enumitemlist (cdr x)))))
 
 (defines vl-pp-datatype
-
   (define vl-pp-datatype ((x vl-datatype-p) &key (ps 'ps))
+    ;; NOTE: This function doesn't print the udims field, because that
+    ;; typically comes after the name.
     :measure (vl-datatype-count x)
     (vl-datatype-case x
-      (:vl-nettype
-       (vl-ps-seq (vl-indent 2)
-                  (vl-ps-span "vl_key"
-                              (vl-print-str (vl-nettypename-string x.name))
-                              (if (not x.signedp)
-                                  ps
-                                (vl-println? " signed")))
-                  (if (not x.range)
-                      ps
-                    (vl-ps-seq (vl-print " ")
-                               (vl-pp-range x.range)))))
-
       (:vl-coretype
        (vl-ps-seq (vl-indent 2)
                   (vl-ps-span "vl_key" (vl-print-str (vl-coretypename-string x.name)))
@@ -1363,7 +1352,7 @@ expression into a string."
                          (progn$ (or (not x.signedp)
                                      (raise "core type ~x0 marked as signed? ~x1" x.name x))
                                  ps)))
-                  (vl-pp-packeddimensionlist x.dims)))
+                  (vl-pp-packeddimensionlist x.pdims)))
 
       (:vl-struct
        (vl-ps-seq (vl-indent 2)
@@ -1378,7 +1367,7 @@ expression into a string."
                   (vl-println "{")
                   (vl-pp-structmemberlist x.members)
                   (vl-print "} ")
-                  (vl-pp-packeddimensionlist x.dims)))
+                  (vl-pp-packeddimensionlist x.pdims)))
 
       (:vl-union
        (vl-ps-seq (vl-indent 2)
@@ -1397,7 +1386,7 @@ expression into a string."
                   (vl-pp-structmemberlist x.members)
                   (vl-indent 2)
                   (vl-print "} ")
-                  (vl-pp-packeddimensionlist x.dims)))
+                  (vl-pp-packeddimensionlist x.pdims)))
 
       (:vl-enum
        (vl-ps-seq (vl-indent 2)
@@ -1407,12 +1396,12 @@ expression into a string."
                   (vl-pp-enumitemlist x.items)
                   (vl-indent 2)
                   (vl-println "} ")
-                  (vl-pp-packeddimensionlist x.dims)))
+                  (vl-pp-packeddimensionlist x.pdims)))
 
       (:vl-usertype
        (vl-ps-seq (vl-pp-expr x.kind)
                   (vl-print " ")
-                  (vl-pp-packeddimensionlist x.dims)))))
+                  (vl-pp-packeddimensionlist x.pdims)))))
 
   (define vl-pp-structmemberlist ((x vl-structmemberlist-p) &key (ps 'ps))
     :measure (vl-structmemberlist-count x)
@@ -1435,7 +1424,7 @@ expression into a string."
                  (vl-print " ")
                  (vl-print-wirename x.name)
                  (vl-print " ")
-                 (vl-pp-packeddimensionlist x.dims)
+                 (vl-pp-packeddimensionlist (vl-datatype->udims x.type))
                  (if x.rhs
                      (vl-ps-seq (vl-print " = ")
                                 (vl-pp-expr x.rhs))
@@ -1449,9 +1438,22 @@ expression into a string."
                (vl-ps-span "vl_key"
                            (vl-println? (vl-direction-string x.dir)))
                (vl-print " ")
-               (vl-pp-datatype x.type)
-               (vl-println? " ")
+               (if (and (eq (vl-datatype-kind x.type) :vl-coretype)
+                        (eq (vl-coretype->name x.type) :vl-logic))
+                   ;; logic type, which is the default -- just print the
+                   ;; signedness/packed dims
+                   (vl-ps-seq (if (vl-coretype->signedp x.type)
+                                  (vl-ps-span "vl_key" (vl-print-str " signed "))
+                                ps)
+                              (vl-pp-packeddimensionlist (vl-coretype->pdims x.type)))
+                 (vl-pp-datatype x.type))
                (vl-print-wirename x.name)
+               (let ((udims (vl-datatype->udims x.type)))
+                 (if (consp udims)
+                     (vl-ps-seq (vl-print " ")
+                                (vl-pp-packeddimensionlist udims))
+                   ps))
+               (vl-println? " ")
                (vl-println " ;"))))
 
 (define vl-pp-portdecllist ((x vl-portdecllist-p) &key (ps 'ps))
@@ -1495,6 +1497,11 @@ expression into a string."
                   (vl-ps-seq (vl-pp-datatype x.type.type)
                              (vl-print " ")
                              (vl-print-wirename x.name)
+                             (let ((udims (vl-datatype->udims x.type.type)))
+                               (if (consp udims)
+                                   (vl-ps-seq (vl-print " ")
+                                              (vl-pp-packeddimensionlist udims))
+                                 ps))
                              (if x.type.default
                                  (vl-ps-seq (vl-print " = ")
                                             (vl-pp-expr x.type.default))
@@ -1669,52 +1676,25 @@ expression into a string."
                 (vl-pp-strings-separated-by-commas notes)
                 (vl-println ""))))
 
-(define vl-pp-vardecl-as-var ((x vl-vardecl-p) &key (ps 'ps))
-  ;; This used to just print variables, before we merged nets in.
-  :guard (not (eq (vl-datatype-kind (vl-vardecl->type x)) :vl-nettype))
-  (b* (((vl-vardecl x) x))
-    (vl-ps-seq
-     (vl-print "  ")
-     (if x.atts
-         (vl-ps-seq (vl-pp-atts x.atts)
-                    (vl-print " "))
-       ps)
-     (if x.constp
-         (vl-ps-span "vl_key" (vl-print "const "))
-       ps)
-     (if x.varp
-         (vl-ps-span "vl_key" (vl-print "var "))
-       ps)
-     (if x.lifetime
-         (vl-ps-span "vl_key"
-                     (vl-ps-seq (vl-print-str (vl-lifetime-string x.lifetime))
-                                (vl-println? " ")))
-       ps)
-     (vl-pp-datatype x.type)
-     (vl-print " ")
-     (vl-print-wirename x.name)
-     (if x.dims
-         (vl-pp-packeddimensionlist x.dims)
-       ps)
-     (if x.initval
-         (vl-ps-seq (vl-print " = ")
-                    (vl-pp-expr x.initval))
-       ps)
-     (vl-println " ;"))))
-
-(define vl-pp-vardecl-as-net ((x vl-vardecl-p) &key (ps 'ps))
-  :guard (eq (vl-datatype-kind (vl-vardecl->type x)) :vl-nettype)
+(define vl-pp-vardecl ((x vl-vardecl-p) &key (ps 'ps))
   ;; This used to just print nets.  We use custom code here because we need
   ;; to put the vectored/scalared stuff in the middle of the type...
   (b* (((vl-vardecl x) x)
-       ((vl-nettype x.type) x.type))
+       ((when (assoc-equal "VL_PORT_IMPLICIT" x.atts))
+        ;; As a special hack, we now do not print any net declarations that are
+        ;; implicitly derived from the port.  These were just noisy and may not
+        ;; be allowed if we're printing the nets for an ANSI style module.  See
+        ;; also make-implicit-wires.
+        ps))
     (vl-ps-seq
      (if (not x.atts)
          ps
        (vl-pp-vardecl-atts-begin x.atts))
      (vl-print "  ")
      (vl-ps-span "vl_key"
-                 (vl-print-str (vl-nettypename-string x.type.name))
+                 (if x.nettype
+                     (vl-print-str (vl-nettypename-string x.nettype))
+                   ps)
                  (if (not x.cstrength)
                      ps
                    (vl-ps-seq (vl-print " ")
@@ -1724,38 +1704,30 @@ expression into a string."
                    (vl-println? " vectored"))
                  (if (not x.scalaredp)
                      ps
-                   (vl-println? " scalared"))
-                 (if (not x.type.signedp)
-                     ps
-                   (vl-println? " signed")))
-     (if (not x.type.range)
-         ps
-       (vl-ps-seq (vl-print " ")
-                  (vl-pp-range x.type.range)))
+                   (vl-println? " scalared")))
+     (if (and (eq (vl-datatype-kind x.type) :vl-coretype)
+              (eq (vl-coretype->name x.type) :vl-logic)
+              x.nettype)
+         ;; netdecl with logic type, which is the default -- just print the
+         ;; signedness/packed dims
+         (vl-ps-seq (if (vl-coretype->signedp x.type)
+                        (vl-ps-span "vl_key" (vl-print-str " signed "))
+                      ps)
+                    (vl-pp-packeddimensionlist (vl-coretype->pdims x.type)))
+       (vl-pp-datatype x.type))
      (if (not x.delay)
          ps
        (vl-ps-seq (vl-print " ")
                   (vl-pp-gatedelay x.delay)))
      (vl-print " ")
      (vl-print-wirename x.name)
-     (if (not x.dims)
-         ps
-       (vl-ps-seq (vl-print " ")
-                  (vl-pp-packeddimensionlist x.dims)))
+     (let ((udims (vl-datatype->udims x.type)))
+       (if (not udims)
+           ps
+         (vl-ps-seq (vl-print " ")
+                    (vl-pp-packeddimensionlist udims))))
      (vl-print " ;")
      (vl-pp-vardecl-atts-end x.atts))))
-
-(define vl-pp-vardecl ((x vl-vardecl-p) &key (ps 'ps))
-  (b* (((vl-vardecl x) x)
-       ((when (assoc-equal "VL_PORT_IMPLICIT" x.atts))
-        ;; As a special hack, we now do not print any net declarations that are
-        ;; implicitly derived from the port.  These were just noisy and may not
-        ;; be allowed if we're printing the nets for an ANSI style module.  See
-        ;; also make-implicit-wires.
-        ps))
-    (if (eq (vl-datatype-kind (vl-vardecl->type x)) :vl-nettype)
-        (vl-pp-vardecl-as-net x)
-      (vl-pp-vardecl-as-var x))))
 
 (define vl-pp-vardecllist ((x vl-vardecllist-p) &key (ps 'ps))
   (if (atom x)
@@ -2927,6 +2899,11 @@ module elements and its comments.</p>"
                (vl-pp-datatype x.type)
                (vl-print " ")
                (vl-print-wirename x.name)
+               (let ((udims (vl-datatype->udims x.type)))
+                 (if (consp udims)
+                     (vl-ps-seq (vl-print " ")
+                                (vl-pp-packeddimensionlist udims))
+                   ps))
                ;; BOZO add dimensions
                (vl-println " ;"))))
 
