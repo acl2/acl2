@@ -195,6 +195,45 @@ we ignore file names.</p>"
                      "</span>"))
           (vl-html-encode-commentmap (cdr x) tabsize))))
 
+(define vl-remove-empty-commentmap-entries-exec ((x vl-commentmap-p)
+                                                 (nrev))
+  :measure (len (vl-commentmap-fix x))
+  (b* ((x (vl-commentmap-fix x))
+       ((when (atom x))
+        (nrev-fix nrev))
+       ((cons ?loc guts) (car x))
+       ((when (equal guts ""))
+        (vl-remove-empty-commentmap-entries-exec (cdr x) nrev))
+       (nrev (nrev-push (car x) nrev)))
+    (vl-remove-empty-commentmap-entries-exec (cdr x) nrev)))
+
+(define vl-remove-empty-commentmap-entries ((x vl-commentmap-p))
+  ;; Removing empty entries helps with the newline insertion stuff below,
+  ;; especially in the case of port declarations where we sometimes don't print
+  ;; a net declaration because it's got a corresponding port.
+  :returns (new-x vl-commentmap-p)
+  :measure (len (vl-commentmap-fix x))
+  :verify-guards nil
+  (mbe :logic
+       (b* ((x (vl-commentmap-fix x))
+            ((when (atom x))
+             nil)
+            ((cons ?loc guts) (car x))
+            ((when (equal guts ""))
+             (vl-remove-empty-commentmap-entries (cdr x))))
+         (cons (car x)
+               (vl-remove-empty-commentmap-entries (cdr x))))
+       :exec
+       (with-local-nrev
+         (vl-remove-empty-commentmap-entries-exec x nrev)))
+  ///
+  (defthm vl-remove-empty-commentmap-entries-exec-removal
+    (equal (vl-remove-empty-commentmap-entries-exec x nrev)
+           (append nrev
+                   (vl-remove-empty-commentmap-entries x)))
+    :hints(("Goal" :in-theory (enable vl-remove-empty-commentmap-entries-exec))))
+  (verify-guards vl-remove-empty-commentmap-entries))
+
 (define vl-pp-encoded-commentmap ((x vl-commentmap-p) &key (ps 'ps))
 
 ; The use of vl-print-markup throughout this function is somewhat subtle.  When
@@ -205,30 +244,26 @@ we ignore file names.</p>"
 ; re-encoding of the encoding.
   :hooks nil
 
-  (cond ((atom x)
-         ps)
-        ((atom (cdr x))
-         (vl-print-markup (cdr (first x))))
-        ((atom (cddr x))
-         (vl-ps-seq (vl-print-markup (cdr (first x)))
-                    (vl-print-markup (cdr (second x)))))
-        (t
-         (let ((first  (first x))
-               (second (second x))
-               (third  (third x)))
-           (if (and (equal (car first) (car second))
-                    (not (equal (car first) (car third))))
-               ;; To make our output nicer, we insert a newline if there are
-               ;; multiple elements at the same location after printing those
-               ;; elements.
-               (vl-ps-seq (vl-print-markup (cdr (first x)))
-                          (vl-print-markup (cdr (second x)))
-                          (vl-println "")
-                          (vl-pp-encoded-commentmap (cddr x)))
-             ;; Otherwise, first and second are unrelated or part of the same
-             ;; group as third, so don't insert a newline.
-             (vl-ps-seq (vl-print-markup (cdr (first x)))
-                        (vl-pp-encoded-commentmap (cdr x))))))))
+  (b* (((when (atom x))
+        ps)
+       ((when (atom (cdr x)))
+        (vl-print-markup (cdr (first x))))
+       ((when (atom (cddr x)))
+        (vl-ps-seq (vl-print-markup (cdr (first x)))
+                   (vl-print-markup (cdr (second x)))))
+       ((list first second third) x)
+       ((when (and (equal (car first) (car second))
+                   (not (equal (car first) (car third)))))
+        ;; To make our output nicer, we insert a newline if there are multiple
+        ;; elements at the same location after printing those elements.
+        (vl-ps-seq (vl-print-markup (cdr (first x)))
+                   (vl-print-markup (cdr (second x)))
+                   (vl-println "")
+                   (vl-pp-encoded-commentmap (cddr x)))))
+    ;; Otherwise, first and second are unrelated or part of the same
+    ;; group as third, so don't insert a newline.
+    (vl-ps-seq (vl-print-markup (cdr (first x)))
+               (vl-pp-encoded-commentmap (cdr x)))))
 
 (define vl-make-item-map-for-ppc-module
   ((x        vl-module-p)
@@ -310,7 +345,8 @@ submodules in HTML mode.</p>"
                    comments))
        (guts     (cwtime (vl-commentmap-entry-sort (append comments imap))
                          :mintime 1/2
-                         :name vl-commentmap-entry-sort)))
+                         :name vl-commentmap-entry-sort))
+       (guts     (vl-remove-empty-commentmap-entries guts)))
 
     (vl-ps-seq (vl-when-html (vl-println-markup "<div class=\"vl_src\">"))
                (vl-pp-atts x.atts)

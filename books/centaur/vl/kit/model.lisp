@@ -220,8 +220,12 @@ Options:" *nls* *nls* *vl-model-opts-usage* *nls*))
        (state
         (if (equal opts.model-file "")
             state
-          (serialize-write (oslib::catpath opts.outdir opts.model-file)
-                           translation)))
+          (b* ((state (serialize-write (oslib::catpath opts.outdir opts.model-file)
+                                       translation))
+               (state (with-ps-file
+                        (oslib::catpath opts.outdir (cat opts.model-file ".ver"))
+                        (vl-println *vl-current-syntax-version*))))
+            state)))
 
        (state
         (if (equal opts.esims-file "")
