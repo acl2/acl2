@@ -137,7 +137,7 @@ won't be sized, may refer to invalid wires, etc.</p>"
                ((unless (and expr
                              (vl-expr-p expr)
                              (not (vl-atom-p expr))
-                             (equal (vl-nonatom->op expr) :vl-partselect-colon)))
+                             (equal (vl-nonatom->op expr) :vl-select-colon)))
                 (er hard? '|foo[3:0]| "Expected partselect"))
                ((list from msb lsb) (vl-nonatom->args expr)))
             (and (vl-idexpr-p from)

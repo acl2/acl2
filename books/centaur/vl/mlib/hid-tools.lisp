@@ -1365,7 +1365,14 @@ packed or we'll fail.</p>"
                       :exec (if x.signedp (change-vl-union    x :signedp nil) x))
     :otherwise   (vl-datatype-fix x)))
   
-
+(define vl-index-expr-p ((x vl-expr-p))
+  :measure (vl-expr-count x)
+  (if (vl-fast-atom-p x)
+      (vl-hidexpr-p x)
+    (b* (((vl-nonatom x)))
+      (if (member x.op '(:vl-index :vl-bitselect))
+          (vl-index-expr-p (first x.args))
+        (vl-hidexpr-p x)))))
 
 
 (define vl-index-find-type ((x vl-expr-p)
@@ -1381,7 +1388,7 @@ packed or we'll fail.</p>"
   (b* ((x (vl-expr-fix x))
        ((when (or (vl-fast-atom-p x)
                   (not (member (vl-nonatom->op x)
-                               '(:vl-index :vl-array-index :vl-bitselect)))))
+                               '(:vl-index :vl-bitselect)))))
         (b* (((unless (vl-hidexpr-p x))
               (mv (make-vl-warning :type :vl-bad-index-expr
                                    :msg "An index operator was applied to a bad subexpression, ~a0."

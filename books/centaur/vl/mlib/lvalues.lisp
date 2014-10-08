@@ -47,7 +47,7 @@ expressions in lvalue positions.")
   (if (vl-fast-atom-p x)
       (vl-hidexpr-p x)
     (b* (((vl-nonatom x))
-         ((when (member x.op '(:vl-bitselect :vl-index :vl-array-index)))
+         ((when (member x.op '(:vl-bitselect :vl-index)))
           (and (vl-index-exprp (first x.args))
                (vl-expr-resolved-p (second x.args)))))
       (vl-hidexpr-p x))))
@@ -83,9 +83,8 @@ statements.</p>"
          (op   (vl-nonatom->op x))
          (args (vl-nonatom->args x)))
       (case op
-        ((:vl-bitselect :vl-partselect-colon :vl-partselect-pluscolon
-          :vl-partselect-minuscolon
-          :vl-index :vl-array-index)
+        ((:vl-bitselect :vl-partselect-colon :vl-partselect-pluscolon :vl-partselect-minuscolon
+          :vl-index :vl-select-colon :vl-select-pluscolon :vl-select-minuscolon)
          ;; foo[index] or foo[a:b] or foo[a+:b] or foo[a-:b] is an okay
          ;; lvalue as long as foo is an identifier or hierarchical id.
          (vl-index-exprp (first args)))
