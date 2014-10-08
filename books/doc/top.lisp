@@ -44,7 +44,7 @@
    (value '(value-triple nil))))
 
 (include-book "centaur/misc/memory-mgmt" :dir :system)
-(value-triple (set-max-mem (* 10 (expt 2 30))))
+(value-triple (set-max-mem (* 4 (expt 2 30))))
 
 (include-book "relnotes")
 (include-book "practices")
