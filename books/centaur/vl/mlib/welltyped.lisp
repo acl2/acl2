@@ -104,6 +104,13 @@ hierarchical identifiers.</p>"
        (and x.finaltype
             (posp x.finalwidth)))
 
+      ((when (vl-fast-hidpiece-p x.guts))
+       ;; NOTE: This shouldn't actually occur.  But we want to prove
+       ;; vl-expr-welltyped of operations involving arbitrary HIDs, including
+       ;; atoms, and this seems like an expedient way to do it.
+       (and x.finaltype
+            (posp x.finalwidth)))
+
       ((when (vl-fast-string-p x.guts))
        (b* (((vl-string x.guts) x.guts))
          (and (eq x.finaltype :vl-unsigned)
@@ -116,11 +123,9 @@ hierarchical identifiers.</p>"
 
 (define vl-hidexpr-welltyped-p ((x vl-expr-p))
   :guard (not (vl-atom-p x))
-  (b* (((vl-nonatom x) x)
-       (width (vl-hid-width x)))
-    (and (eq x.finaltype :vl-unsigned)
-         width
-         (eql x.finalwidth width))))
+  (b* (((vl-nonatom x) x))
+    (and x.finaltype
+         (posp x.finalwidth))))
 
 (defines vl-expr-welltyped-p
 
@@ -133,8 +138,7 @@ hierarchical identifiers.</p>"
          ((vl-nonatom x) x)
          ((when (vl-hidexpr-p x))
           ;; These are special because we don't require the args to be sized.
-          ;; Signedness of hierarchical identifiers is very tricky; we require
-          ;; that they be unsigned to avoid a lot of potential problems.
+          ;; Like an ID, they just have to have a type and a positive width.
           (vl-hidexpr-welltyped-p x)))
       (and
        (vl-exprlist-welltyped-p x.args)

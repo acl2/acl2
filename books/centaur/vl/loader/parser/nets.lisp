@@ -266,14 +266,16 @@
    (delay       vl-maybe-gatedelay-p)
    (cstrength   vl-maybe-cstrength-p))
   :returns (nets vl-vardecllist-p :hyp :fguard)
+  :guard-hints (("goal" :in-theory (disable (force))))
   (if (atom pairs)
       nil
     (cons (make-vl-vardecl :loc loc
                            :name (vl-idtoken->name (caar pairs))
-                           :type (make-vl-nettype :name typename
-                                                  :range range
-                                                  :signedp signedp)
-                           :dims (cdar pairs)
+                           :type (make-vl-coretype :name :vl-logic
+                                                   :pdims (and range (list range))
+                                                   :signedp signedp
+                                                   :udims (cdar pairs))
+                           :nettype typename
                            :atts atts
                            :vectoredp vectoredp
                            :scalaredp scalaredp

@@ -923,8 +923,7 @@ warnings."
     (b* (((vl-vardecl x) (vl-vardecl-fix x))
          (walist (vl-wirealist-fix walist))
          (db (us-db-fix db))
-         ((unless (and (eq (vl-datatype-kind x.type) :vl-nettype)
-                       (member (vl-nettype->name x.type) '(:vl-supply0 :vl-supply1))))
+         ((unless (member x.nettype '(:vl-supply0 :vl-supply1)))
           (mv (ok) db))
 
          (entry (hons-get x.name walist))

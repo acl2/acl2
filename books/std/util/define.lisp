@@ -363,9 +363,18 @@ some kind of separator!</p>
                               (plist-worldp world))))
   (b* ((stobjs-out (look-up-return-vals fnname world))
        ((when (atom returnspecs))
-        ;; Fine, the user just didn't name/document the return values...
+        ;; Fine, the user just didn't name/document the return values.  Semi
+        ;; bozo: if this is a non-executable function, stobjs-out doesn't
+        ;; necessarily say the right thing.  Well, we can't really do any
+        ;; better, so whatever.
         (nils-to-stars stobjs-out))
-       ((unless (equal (len stobjs-out) (len returnspecs)))
+       ((when (and (not (equal (len stobjs-out) (len returnspecs)))
+                   ;; See Issue 270.  The stobjs-out is not a reliable
+                   ;; indicator of how many values are returned by
+                   ;; non-executable functions, so if this function isn't
+                   ;; executable we'll just trust that the user knows how
+                   ;; many values it returns.
+                   (not (getprop fnname 'acl2::non-executablep nil 'acl2::current-acl2-world world))))
         (er hard? 'return-value-names
             "Error in ~x0: ACL2 thinks this function has ~x0 return ~
              values, but :returns has ~x1 entries!"

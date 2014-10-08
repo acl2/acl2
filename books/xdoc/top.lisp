@@ -77,52 +77,65 @@
 
 (add-ld-keyword-alias! :doc '(1 xdoc))
 
+(defun xdoc-extend-fn (name long world)
+  (declare (xargs :mode :program))
+  (let* ((all-topics   (xdoc::get-xdoc-table world))
+         (old-topic    (xdoc::find-topic name all-topics))
+         (long         (or long "")))
+    (cond ((not old-topic)
+           (prog2$
+            (er hard? 'xdoc-extend "Topic ~x0 wasn't found." name)
+            all-topics))
+          (t
+           (let* ((other-topics (remove-equal old-topic all-topics))
+                  (old-long     (or (cdr (assoc :long old-topic)) ""))
+                  (new-long     (concatenate 'string old-long long))
+                  (new-topic    (acons :long new-long
+                                       (delete-assoc :long old-topic))))
+             (cons new-topic other-topics))))))
+
 (defmacro xdoc-extend (name long)
   `(table xdoc 'doc
-          (let* ((all-topics   (xdoc::get-xdoc-table world))
-                 (old-topic    (xdoc::find-topic ',name all-topics))
-                 (long         (or ,long "")))
-            (cond ((not old-topic)
-                   (prog2$
-                    (er hard? 'xdoc-extend "Topic ~x0 wasn't found." ',name)
-                    all-topics))
-                   (t
-                    (let* ((other-topics (remove-equal old-topic all-topics))
-                           (old-long     (or (cdr (assoc :long old-topic)) ""))
-                           (new-long     (concatenate 'string old-long long))
-                           (new-topic    (acons :long new-long
-                                                (delete-assoc :long old-topic))))
-                      (cons new-topic other-topics)))))))
+          (xdoc-extend-fn ',name ,long world)))
+
+(defun xdoc-prepend-fn (name long world)
+  (declare (xargs :mode :program))
+  (let* ((all-topics   (xdoc::get-xdoc-table world))
+         (old-topic    (xdoc::find-topic name all-topics))
+         (long         (or long "")))
+    (cond ((not old-topic)
+           (er hard? 'xdoc-prepend "Topic ~x0 wasn't found." name))
+          (t
+           (let* ((other-topics (remove-equal old-topic all-topics))
+                  (old-long     (cdr (assoc :long old-topic)))
+                  (new-long     (concatenate 'string long old-long))
+                  (new-topic    (acons :long new-long
+                                       (delete-assoc :long old-topic))))
+             (cons new-topic other-topics))))))
 
 (defmacro xdoc-prepend (name long)
   `(table xdoc 'doc
-          (let* ((all-topics   (xdoc::get-xdoc-table world))
-                 (old-topic    (xdoc::find-topic ',name all-topics))
-                 (long         (or ,long "")))
-            (cond ((not old-topic)
-                   (er hard? 'xdoc-prepend "Topic ~x0 wasn't found." ',name))
-                  (t
-                   (let* ((other-topics (remove-equal old-topic all-topics))
-                          (old-long     (cdr (assoc :long old-topic)))
-                          (new-long     (concatenate 'string long old-long))
-                          (new-topic    (acons :long new-long
-                                               (delete-assoc :long old-topic))))
-                     (cons new-topic other-topics)))))))
+          (xdoc-prepend-fn ',name ,long world)))
+
+(defun order-subtopics-fn (name order world)
+  (declare (xargs :mode :program))
+  (let* ((all-topics (xdoc::get-xdoc-table world))
+         (old-topic  (xdoc::find-topic name all-topics)))
+    (cond ((not old-topic)
+           (er hard? 'order-subtopics "Topic ~x0 wasn't found." name))
+          ((not (symbol-listp order))
+           (er hard? 'order-subtopics "Subtopics are not a symbol list: ~x0" order))
+          (t
+           (let* ((other-topics (remove-equal old-topic all-topics))
+                  (new-topic    (acons :suborder order
+                                       (delete-assoc :suborder old-topic))))
+             (cons new-topic other-topics))))))
 
 (defmacro order-subtopics (name order)
   `(table xdoc 'doc
-          (let* ((all-topics (xdoc::get-xdoc-table world))
-                 (old-topic  (xdoc::find-topic ',name all-topics))
-                 (order      ',order))
-            (cond ((not old-topic)
-                   (er hard? 'order-subtopics "Topic ~x0 wasn't found." ',name))
-                  ((not (symbol-listp order))
-                   (er hard? 'order-subtopics "Subtopics are not a symbol list: ~x0" order))
-                  (t
-                    (let* ((other-topics (remove-equal old-topic all-topics))
-                           (new-topic    (acons :suborder order
-                                                (delete-assoc :suborder old-topic))))
-                      (cons new-topic other-topics)))))))
+          (order-subtopics-fn ',name ',order world)))
+
+
 
 (defund extract-keyword-from-args (kwd args)
   (declare (xargs :guard (keywordp kwd)))
@@ -202,6 +215,24 @@
                      (join-strings strs (coerce (list #\Newline) 'string)))
       "")))
 
+
+(defun defsection-autodoc-fn (name parents short long extension marker state)
+  (declare (xargs :mode :program :stobjs state))
+  (let* ((wrld      (w state))
+         (trips     (acl2::reversed-world-since-event wrld marker nil))
+         (info      (reverse (acl2::new-formula-info trips wrld nil)))
+         (autodoc   (formula-info-to-defs (not extension) info))
+         (long      (concatenate 'string
+                                 (or long "")
+                                 (coerce (list #\Newline #\Newline) 'string)
+                                 autodoc)))
+    (if extension
+        `(xdoc-extend ,extension ,long)
+      `(defxdoc ,name
+         :parents ,parents
+         :short ,short
+         :long ,long))))
+
 (defun defsection-fn (wrapper ; (encapsulate nil) or (progn)
                       name args)
   (declare (xargs :mode :program))
@@ -261,24 +292,7 @@
                      (value-triple :invisible)
                      . ,new-args))
                   (make-event
-                   (let* ((name      ',name)
-                          (parents   ',parents)
-                          (short     ',short)
-                          (extension ',extension)
-                          (wrld      (w state))
-                          (trips     (acl2::reversed-world-since-event wrld ',marker nil))
-                          (info      (reverse (acl2::new-formula-info trips wrld nil)))
-                          (autodoc   (formula-info-to-defs (not extension) info))
-                          (long      (concatenate 'string
-                                                  ',(or long "")
-                                                  (coerce (list #\Newline #\Newline) 'string)
-                                                  autodoc)))
-                     (if extension
-                         `(xdoc-extend ,extension ,long)
-                       `(defxdoc ,name
-                          :parents ,parents
-                          :short ,short
-                          :long ,long))))
+                   (defsection-autodoc-fn ',name ',parents ',short ',long ',extension ',marker state))
                   (value-triple ',name))))))))
 
 (defmacro defsection (name &rest args)

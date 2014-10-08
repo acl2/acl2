@@ -253,10 +253,11 @@ its width reduced and that drops the chopped off bits.</p>"
        (tmp-expr         (vl-idexpr tmp-name rhsw :vl-unsigned))
 
        ;; wire [rhsw-1:0] trunc_12345;
-       (type       (change-vl-nettype *vl-plain-old-wire-type*
-                                      :range (vl-make-n-bit-range rhsw)))
+       (type       (change-vl-coretype *vl-plain-old-wire-type*
+                                       :pdims (list (vl-make-n-bit-range rhsw))))
        (tmp-decl   (make-vl-vardecl :loc   x.loc
                                     :name  tmp-name
+                                    :nettype :vl-wire
                                     :type  type))
 
        ;; assign trunc_12345 = rhs;

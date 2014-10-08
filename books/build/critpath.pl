@@ -109,6 +109,19 @@ my $HELP_MESSAGE = "
                     written by write_costs).  Only really works
                     correctly if all targets/dependencies are the
                     same.
+
+   --pcert-all
+          Compute dependencies assuming provisional certification is used
+          for all books, not just the ones with the \'pcert\' cert_param.
+
+   --target-ext <extension>
+   -e <extension>
+          Normally, when targets are specified by their source filename (.lisp)
+          or without an extension, rather than by their target filename (.cert,
+          .acl2x, .pcert0, .pcert1), the target extension used is \'cert\'.
+          This option allows you to specify this default extension as (say)
+          \'pcert0\' instead.
+
 ";
 
 my %OPTIONS = (
@@ -122,6 +135,8 @@ my %OPTIONS = (
   'pcert'   => $ENV{'ACL2_PCERT'},
   'write_costs' => 0,
   'costs_file' => 0,
+  'pcert_all' => 0,
+  'target_ext' => "cert",
 );
 
 my @user_targets = ();
@@ -152,6 +167,8 @@ my $options_okp = GetOptions('h|html' => \$OPTIONS{'html'},
 			     "params=s"             => \$params_file,
 			     "write-costs|w=s" => \$OPTIONS{'write_costs'},
 			     "costs-file=s" => \$OPTIONS{'costs_file'},
+                             "pcert-all"    => \$OPTIONS{'pcert_all'},
+                             "target-ext|e=s"    => \$OPTIONS{'target_ext'},
 			     );
 
 my $cache = {};
@@ -173,7 +190,9 @@ my $warnings = [];
 my %certlib_opts = ( "debugging" => 0,
 		     "clean_certs" => 0,
 		     "print_deps" => 0,
-		     "all_deps" => 1 );
+		     "all_deps" => 1,
+                     "pcert_all" => $OPTIONS{'pcert_all'},
+    );
 
 certlib_set_opts(\%certlib_opts);
 
@@ -182,7 +201,7 @@ certlib_add_dir("SYSTEM", "$RealBin/..");
 
 
 foreach my $target (@user_targets) {
-    my $path = canonical_path(to_cert_name($target));
+    my $path = canonical_path(to_cert_name($target, $OPTIONS{'target_ext'}));
     if ($path) {
 	push (@targets, $path);
     } else {
@@ -208,8 +227,10 @@ unless (@targets) {
 }
 
 foreach my $target (@targets) {
-    if ($target =~ /\.cert/) {
-	add_deps($target, $depdb, 0);
+    (my $tcert = $target) =~ s/\.(acl2x|pcert(0|1))/\.cert/;
+    add_deps($tcert, $depdb, 0);
+    if ($tcert =~ /\.cert/) {
+	add_deps($tcert, $depdb, 0);
     }
 }
 

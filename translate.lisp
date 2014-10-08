@@ -495,16 +495,14 @@
 (defun translated-acl2-unwind-protectp4 (term)
 
 ; This hideous looking function recognizes those terms that are the
-; translations of (acl2-unwind-protect "expl" body cleanup1 cleanup2).
-; The acl2-unwind-protect macro expands into an MV-LET and that MV-LET
-; is translated in one of two ways depending on whether it occurs in a
-; definition body (i.e., stobjs-out of translate11 is non-t) or in a
-; definition (i.e., stobjs-out is t).  We look for both translations.
-; We return 4 results.  The first is t or nil according to whether
-; term is of one of the two forms.  If nil, the other results are nil.
-; If term is of either form, we return in the other three results:
-; body, cleanup1 and cleanup2 such that term is equivalent to
-; (acl2-unwind-protect "expl" body cleanup1 cleanup2).
+; translations of (acl2-unwind-protect "expl" body cleanup1 cleanup2).  The
+; acl2-unwind-protect macro expands into an MV-LET and that MV-LET is
+; translated in one of two ways, depending on whether or not the two cleanup
+; forms are equal.  We look for both translations.  We return 4 results.  The
+; first is t or nil according to whether term is of one of the two forms.  If
+; nil, the other results are nil.  If term is of either form, we return in the
+; other three results: body, cleanup1 and cleanup2 such that term is equivalent
+; to (acl2-unwind-protect "expl" body cleanup1 cleanup2).
 
 ; WARNING: This function must be kept in sync with the defmacro of
 ; acl2-unwind-protect, the translate1 clauses dealing with mv-let and let, and
@@ -546,25 +544,25 @@
 ; same observation that term is a termp.
 
     (mv t body cleanup1 cleanup2))
-   ((('LAMBDA ('ACL2-UNWIND-PROTECT-ERP
-               'ACL2-UNWIND-PROTECT-VAL 'STATE . vars)
-      ('IF 'ACL2-UNWIND-PROTECT-ERP
-           ('(LAMBDA (STATE ACL2-UNWIND-PROTECT-VAL ACL2-UNWIND-PROTECT-ERP)
-                     (CONS ACL2-UNWIND-PROTECT-ERP
-                           (CONS ACL2-UNWIND-PROTECT-VAL
-                                 (CONS STATE 'NIL))))
-            cleanup1 'ACL2-UNWIND-PROTECT-VAL 'ACL2-UNWIND-PROTECT-ERP)
-           ('(LAMBDA (STATE ACL2-UNWIND-PROTECT-VAL ACL2-UNWIND-PROTECT-ERP)
-                     (CONS ACL2-UNWIND-PROTECT-ERP
-                           (CONS ACL2-UNWIND-PROTECT-VAL
-                                 (CONS STATE 'NIL))))
-            cleanup2 'ACL2-UNWIND-PROTECT-VAL 'ACL2-UNWIND-PROTECT-ERP)))
-     ('MV-NTH ''0 body)
-     ('MV-NTH ''1 body)
-     ('MV-NTH ''2 body)
-     . vars)
-    (declare (ignore vars))
-    (mv t body cleanup1 cleanup2))
+   ((('LAMBDA (mv . vars)
+      (('LAMBDA ('ACL2-UNWIND-PROTECT-ERP
+                 'ACL2-UNWIND-PROTECT-VAL 'STATE . vars)
+                ('(LAMBDA (STATE ACL2-UNWIND-PROTECT-VAL
+                                 ACL2-UNWIND-PROTECT-ERP)
+                          (CONS ACL2-UNWIND-PROTECT-ERP
+                                (CONS ACL2-UNWIND-PROTECT-VAL
+                                      (CONS STATE 'NIL))))
+                 cleanup1 'ACL2-UNWIND-PROTECT-VAL 'ACL2-UNWIND-PROTECT-ERP))
+       '(MV-NTH '0 mv)
+       '(MV-NTH '1 mv)
+       '(MV-NTH '2 mv)
+       . vars))
+     body . vars)
+    (declare (ignore mv vars))
+
+; See comment above.
+
+    (mv t body cleanup1 cleanup1))
    (& (mv nil nil nil nil))))
 
 (defun translated-acl2-unwind-protectp (term)
@@ -6817,6 +6815,8 @@
 (defun translate11 (x stobjs-out bindings known-stobjs flet-alist
                       cform ctx wrld state-vars)
 
+; Warning: Keep this in sync with macroexpand1*-cmp.
+
 ; Bindings is an alist binding symbols either to their corresponding
 ; STOBJS-OUT or to symbols.  The only symbols used are (about-to-be
 ; introduced) function symbols or the keyword :STOBJS-OUT.  When fn is
@@ -7210,6 +7210,33 @@
                        (list "  Note that ~x0 is a macro, not a function symbol."
                              (cons #\0 (car form)))
                      ""))))))
+   ((eq (car x) 'check-vars-not-free) ; optimization; see check-vars-not-free
+
+; Warning: Keep this in sync with the code for check-vars-not-free.
+
+    (cond ((not (equal (length x) 3))
+           (trans-er+ x ctx
+                      "CHECK-VARS-NOT-FREE requires exactly two arguments."))
+          ((null (cadr x)) ; optimization for perhaps a common case
+           (translate11 (caddr x) stobjs-out bindings
+                        known-stobjs flet-alist x ctx wrld
+                        state-vars))
+          ((not (symbol-listp (cadr x)))
+           (trans-er+ x ctx
+                      "CHECK-VARS-NOT-FREE requires its first argument to be ~
+                       a true-list of symbols."))
+          (t
+           (trans-er-let*
+            ((ans (translate11 (caddr x) stobjs-out bindings
+                               known-stobjs flet-alist x ctx wrld
+                               state-vars)))
+            (let ((msg (check-vars-not-free-test (cadr x) ans)))
+              (cond
+               ((not (eq msg t))
+                (trans-er+ x ctx
+                           "CHECK-VARS-NOT-FREE failed:~|~@0"
+                           msg))
+               (t (trans-value ans))))))))
    ((eq (car x) 'translate-and-test)
     (cond ((not (equal (length x) 3))
            (trans-er+ x ctx
@@ -8623,6 +8650,68 @@
              (cons stobjs-out
                    (replace-stobjs stobjs-out val))))))))
 
+(defun macroexpand1*-cmp (x ctx wrld state-vars)
+
+; We expand x repeatedly as long as it is a macro call, though we may stop
+; whenever we like.  We rely on a version of translate with to finish the job;
+; indeed, it should be the case that when translate11 is called on x with the
+; following arguments, it returns the same result regardless of whether
+; macroexpand1*-cmp is first called to do some expansion.
+
+; stobjs-out   - :stobjs-out
+; bindings     - ((:stobjs-out . :stobjs-out))
+; known-stobjs - t
+; flet-alist   - nil
+
+; Warning: Keep this in sync with translate11 -- especially the first cond
+; branch's test below.
+
+  (cond ((or (or (atom x) (eq (car x) 'quote))
+             (not (true-listp (cdr x)))
+             (not (symbolp (car x)))
+             (member-eq (car x) '(mv
+                                  mv-let
+                                  pargs
+                                  translate-and-test
+                                  with-local-stobj
+                                  stobj-let))
+             (assoc-eq (car x) *ttag-fns-and-macros*))
+         (value-cmp x))
+        ((and (getprop (car x) 'macro-body nil 'current-acl2-world wrld)
+              (not (and (member-eq (car x) '(pand por pargs plet))
+                        (eq (access state-vars state-vars :parallel-execution-enabled)
+                            t)))
+              (not (and (member-eq (car x) (global-val 'untouchable-fns wrld))
+                        (not (eq (access state-vars state-vars :temp-touchable-fns)
+                                 t))
+                        (not (member-eq (car x) (access state-vars state-vars
+                                                        :temp-touchable-fns))))))
+         (mv-let
+          (erp expansion)
+          (macroexpand1-cmp x ctx wrld state-vars)
+          (cond
+           (erp (mv erp expansion))
+           (t (macroexpand1*-cmp expansion ctx wrld state-vars)))))
+        (t (value-cmp x))))
+
+(defun macroexpand1* (x ctx wrld state)
+
+; See macroexpand1*-cmp, including the Warning there to keep in sync with
+; translate11.
+
+  (cmp-to-error-triple
+   (macroexpand1*-cmp x ctx wrld (default-state-vars t))))
+
+(defun trans-eval1 (term stobjs-out ctx wrld state aok)
+  (let ((vars (all-vars term)))
+    (cond
+     ((non-stobjps vars t wrld) ;;; known-stobjs = t
+      (er soft ctx
+          "Global variables, such as ~&0, are not allowed. See :DOC ASSIGN ~
+           and :DOC @."
+          (non-stobjps vars t wrld))) ;;; known-stobjs = t
+     (t (ev-for-trans-eval term vars stobjs-out ctx state aok)))))
+
 (defun trans-eval (form ctx state aok)
 
 ; Advice:  See if simple-translate-and-eval will do the job.
@@ -8644,30 +8733,42 @@
 ; state -- the storage of the final stobjs -- is done at the
 ; conclusion of the computation and is not directed by form.
 
-  (mv-let
-   (erp trans bindings state)
-   (translate1 form
-               :stobjs-out '((:stobjs-out . :stobjs-out))
-               t
-               ctx (w state) state)
+  (let ((wrld (w state))
+        (simple-stobjs-out '(nil)))
+    (er-let* ((form (macroexpand1* form ctx wrld state)))
+      (cond
+       ((and (consp form)
+             (eq (car form) 'if)
+             (true-listp form)
+             (equal (length form) 4))
 
-; known-stobjs = t.  We expect trans-eval to be used only when the
+; Do some lazy evaluation, in order to avoid translating the unnecessary
+; branch.
+
+        (er-let* ((arg0 (translate (cadr form) simple-stobjs-out nil t ctx wrld
+                                   state))
+                  (val0 (trans-eval1 arg0 simple-stobjs-out ctx wrld state
+                                     aok)))
+          (if (cdr val0) ; the actual value
+              (trans-eval (caddr form) ctx state aok)
+            (trans-eval (cadddr form) ctx state aok))))
+       (t
+        (mv-let
+         (erp trans bindings state)
+         (translate1 form
+                     :stobjs-out '((:stobjs-out . :stobjs-out))
+                     t
+                     ctx wrld state)
+
+; Known-stobjs = t.  We expect trans-eval to be used only when the
 ; user is granted full access to the stobjs in state.  Of course, some
 ; applications of trans-eval, e.g., in eval-event-lst, first check
 ; that the form doesn't access stobjs or state.
 
-   (cond
-    (erp (mv t nil state))
-    (t
-     (let ((stobjs-out (translate-deref :stobjs-out bindings))
-           (vars (all-vars trans)))
-       (cond
-        ((non-stobjps vars t (w state)) ;;; known-stobjs = t
-         (er soft ctx
-             "Global variables, such as ~&0, are not allowed. See ~
-              :DOC ASSIGN and :DOC @."
-             (non-stobjps vars t (w state)))) ;;; known-stobjs = t
-        (t (ev-for-trans-eval trans vars stobjs-out ctx state aok))))))))
+         (cond
+          (erp (mv t nil state))
+          (t (trans-eval1 trans (translate-deref :stobjs-out bindings) ctx wrld
+                          state aok)))))))))
 
 (defun simple-translate-and-eval (x alist ok-stobj-names msg ctx wrld state
                                     aok)

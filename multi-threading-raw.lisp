@@ -1056,23 +1056,50 @@
 
 (defun core-count-raw (&optional (ctx nil) default)
 
-; If ctx is supplied, then we cause an error using the given ctx.  Otherwise we
-; return a suitable default value (see below).
+; This function attempts to return a core count, as follows.
+
+; - If a non-empty string value is found for environment variable
+;   ACL2_CORE_COUNT after trimming leading and trailing spaces and tabs, then
+;   return the corresponding positive integer if such exists and otherwise
+;   cause an error.
+
+; - Otherwise perhaps obtain the result using a suitable Lisp function.
+
+; - Otherwise, if a non-nil ctx is supplied, then cause an error.  (The error
+;   message doesn't currently use that ctx, but this may change.)
+
+; - Otherwise return a suitable default value.
 
   #+ccl (declare (ignore ctx default))
-  #+ccl (ccl:cpu-count)
-  #-ccl
-  (if ctx
-      (error "It is illegal to call cpu-core-count in this Common Lisp ~
-              implementation.")
+
+  (let* ((count0 (getenv$-raw "ACL2_CORE_COUNT"))
+         (count (and (stringp count0)
+                     (string-trim '(#\Space #\Tab) count0))))
+    (cond ((and count
+                (not (equal count "")))
+           (multiple-value-bind
+            (value posn)
+            (parse-integer count :junk-allowed t)
+            (cond ((and (posp value)
+                        (equal posn (length count)))
+                   value)
+                  (t (error "Invalid value for environment variable ~
+                             ACL2_CORE_COUNT: ~a"
+                            count0)))))
+          (t
+           #+ccl (ccl:cpu-count)
+           #-ccl
+           (if ctx
+               (error "It is illegal to call cpu-core-count in this Common ~
+                       Lisp implementation.")
 
 ; If the host Lisp does not provide a means for obtaining the number of cores,
 ; then we simply estimate on the high side.  A high estimate is desired in
 ; order to make it unlikely that we have needlessly idle cores.  We thus
-; believe that 16 cores is a reasonable estimate for early 2011; but we may
-; well want to increase this number later.
+; believe that 16 cores is a reasonable estimate for early 2011 and even
+; October 2014; but we may well want to increase this number later.
 
-    (or default 16)))
+             (or default 16))))))
 
 (defvar *core-count*
 

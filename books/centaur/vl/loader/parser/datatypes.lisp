@@ -188,7 +188,7 @@
                                                 t
                                               nil)
                                           entry.default-signedp)
-                               :dims dims))))))
+                               :pdims dims))))))
 
 
 
@@ -428,14 +428,13 @@ dimensions.</p>
                                (type vl-datatype-p)
                                (decls vl-vardeclassignlist-p))
   :returns (decls vl-structmemberlist-p :hyp :fguard)
-  (if (atom decls)
-      nil
+  (b* (((when (atom decls)) nil)
+       ((vl-vardeclassign decl) (car decls)))
     (cons (make-vl-structmember :atts atts
                                 :rand rand
-                                :type type
-                                :name (vl-vardeclassign->id (car decls))
-                                :dims (vl-vardeclassign->dims (car decls))
-                                :rhs  (vl-vardeclassign->expr (car decls)))
+                                :type (vl-datatype-update-udims decl.dims type)
+                                :name decl.id
+                                :rhs  decl.expr)
           (vl-make-structmembers atts rand type (cdr decls)))))
 
 
@@ -521,13 +520,13 @@ dimensions.</p>
                    (make-vl-struct :packedp packedp
                                    :signedp signedp
                                    :members members
-                                   :dims dims)))
+                                   :pdims dims)))
                ;; Else it's a union.
                (make-vl-union :packedp packedp
                               :signedp signedp
                               :taggedp (acl2::bool-fix tagged)
                               :members members
-                              :dims dims))))
+                              :pdims dims))))
 
           (when (vl-is-token? :vl-kwd-enum)
             ;; data_type ::= ... | 'enum' [ enum_base_type ] '{'
@@ -550,7 +549,7 @@ dimensions.</p>
                                     :signedp t
                                     :dim nil))
                      :items items
-                     :dims dims)))
+                     :pdims dims)))
 
           ;; At this point we've ruled out: basic types, structs, unions, enums, type references,
           ;; virtual interfaces.  What remains are:
@@ -582,7 +581,7 @@ dimensions.</p>
           (expr := (vl-parse-simple-type))
           (dims := (vl-parse-0+-packed-dimensions))
           (return (make-vl-usertype :kind expr
-                                    :dims dims))))
+                                    :pdims dims))))
 
 
   (defparser vl-parse-structmembers ()

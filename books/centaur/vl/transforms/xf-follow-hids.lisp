@@ -150,6 +150,24 @@
                        (force (vl-modulelist-p mods))
                        (force (equal modalist (vl-modalist mods))))))
 
+  :prepwork ((local (in-theory (disable acl2::subsetp-member (tau-system))))
+             (local
+              (set-default-hints
+               ;; want to apply these hints to the return specs.  We check that
+               ;; the function has a def-body property so it won't apply to the
+               ;; measure theorem.  If we weren't deferring guard verification
+               ;; we'd want to check that the guards were already verified as
+               ;; well.
+               '((and (fgetprop 'vl-find-hid-module-aux 'acl2::def-bodies
+                                nil (w state))
+                      (not (acl2::access acl2::clause-id id :pool-lst))
+                      '(:in-theory (disable (:d vl-find-hid-module-aux))
+                        :induct (vl-find-hid-module-aux
+                                 x curr mods modalist warnings ctx-hid ctx-modname)
+                        :expand ((:free (modalist)
+                                  (vl-find-hid-module-aux
+                                   x curr mods modalist warnings ctx-hid ctx-modname)))))))))
+
   :long "<p>This is our main function for following hierarchical identifiers
 and annotating them with @('VL_HID_RESOLVED_MODULE_NAME'),
 @('VL_HID_RESOLVED_RANGE_P'), etc., as described in @(see hid-elim).</p>
@@ -163,7 +181,7 @@ to report this information as well.</p>"
   :measure (vl-expr-count x)
 
   (b* (((when (vl-fast-atom-p x))
-        (b* ((name (vl-hidpiece->name (vl-atom->guts x)))
+        (b* ((name (vl-hidname->name x))
              (item (vl-find-moduleitem name curr))
 
              ((unless item)
@@ -226,7 +244,7 @@ to report this information as well.</p>"
 
        ;; As above, find out what module item the first part of the ID is
        ;; talking about.
-       (name1 (vl-hidpiece->name (vl-atom->guts (first x.args))))
+       (name1 (vl-hidname->name (first x.args)))
        (item  (vl-find-moduleitem name1 curr))
        ((unless item)
         (mv (fatal :type :vl-unresolved-hid
@@ -287,8 +305,22 @@ to report this information as well.</p>"
         (string-fix (vl-module->name curr))
         range-resolvedp range))
   ///
+  (encapsulate nil
+    (local (set-default-hints nil))
+    (verify-guards vl-find-hid-module-aux)
 
-  (verify-guards vl-find-hid-module-aux)
+    
+    (defthm len-of-vl-nonatom->args-of-vl-find-hid-module-aux
+      (implies (and (force (vl-expr-p x))
+                    (force (vl-hidexpr-p x))
+                    (force (vl-module-p curr))
+                    (force (vl-modulelist-p mods))
+                    (force (equal modalist (vl-modalist mods)))
+                    (force (not (vl-atom-p x))))
+               (equal (len (vl-nonatom->args
+                            (mv-nth 1 (vl-find-hid-module-aux x curr mods modalist warnings
+                                                              ctx-hid ctx-modname))))
+                      (len (vl-nonatom->args x))))))
 
   (defthm vl-expr-kind-of-vl-find-hid-module-aux
     (implies (and (force (vl-expr-p x))
@@ -313,17 +345,6 @@ to report this information as well.</p>"
                                                        ctx-hid ctx-modname)))
                     (vl-nonatom->op x))))
 
-  (defthm len-of-vl-nonatom->args-of-vl-find-hid-module-aux
-    (implies (and (force (vl-expr-p x))
-                  (force (vl-hidexpr-p x))
-                  (force (vl-module-p curr))
-                  (force (vl-modulelist-p mods))
-                  (force (equal modalist (vl-modalist mods)))
-                  (force (not (vl-atom-p x))))
-             (equal (len (vl-nonatom->args
-                          (mv-nth 1 (vl-find-hid-module-aux x curr mods modalist warnings
-                                                            ctx-hid ctx-modname))))
-                    (len (vl-nonatom->args x)))))
 
   (defthm vl-range-p-of-vl-find-hid-module-aux
     (implies (and (force (vl-expr-p x))
@@ -409,7 +430,7 @@ identifier.</p>"
        ;; hid.  If it's local, it should correspond to the name of some
        ;; submodule.
 
-       (name1 (vl-hidpiece->name (vl-atom->guts (first x.args))))
+       (name1 (vl-hidname->name (first x.args)))
        (item  (vl-find-moduleitem name1 mod))
 
        ((when item)

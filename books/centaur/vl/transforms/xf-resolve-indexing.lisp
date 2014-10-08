@@ -32,6 +32,7 @@
 (include-book "../mlib/expr-tools")
 (include-book "../mlib/stmt-tools")
 (include-book "../mlib/modnamespace")
+(include-book "../mlib/hid-tools")
 (local (include-book "../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
 
@@ -66,41 +67,29 @@ able to handle more cases.</p>")
   :long "<p>BOZO this is pretty weak right now.  Eventually we'll want to
          extend it to things like packed structures, etc.</p>"
   (b* (((vl-vardecl x) x)
-       ((when (consp x.dims))
+       (udims (vl-datatype->udims x.type))
+       (pdims (vl-datatype->pdims x.type))
+       ((when (or (consp udims)
+                  (and (consp pdims)
+                       (consp (cdr pdims)))))
         ;; Has array dimensions, doesn't seem like a bit-select.
         nil))
     (vl-datatype-case x.type
-      (:vl-nettype
-       ;; Something like a wire or supply.  Whether or not it has a range, this
-       ;; is definitely just a bit select, not an array index or something
-       ;; crazy.
-       t)
 
       (:vl-coretype
        (or
         ;; Vector integer types.  These may have an associated packed dimension
         ;; list directly within the type, e.g., we might have `reg foo` or `reg
         ;; [3:0] foo;`
-        (and (member x.type.name '(:vl-reg :vl-logic :vl-bit))
-             (or (atom x.type.dims)        ;; Selecting from reg foo; -- weird but we'll call it good
-                 (atom (cdr x.type.dims))  ;; Selecting from reg [3:0] foo; -- fine
-                 ;; Otherwise something like reg [3:0][4:0] foo -- doesn't seem like a bitselect
-                 ))
+        (member x.type.name '(:vl-reg :vl-logic :vl-bit))
         ;; Atomic integer types.  It seems okay to bit-select from these.  They
         ;; should never have associated dimensions.
-        (and (member x.type.name '(:vl-byte :vl-shortint :vl-int :vl-longint :vl-integer))
-             ;; dims should never happen here
-             (or (atom x.type.dims)
-                 (raise "integer atom type with dimensions? ~x0." x)))
+        (member x.type.name '(:vl-byte :vl-shortint :vl-int :vl-longint :vl-integer)))
         ;; Anything else is just too hard and we're not going to think about
         ;; it.  This includes, e.g.,: real, string, chandle, void, event
-        ))
-
+        )
       ;; BOZO maybe we want to support packed structures and/or enums?
-      (:vl-enum nil)
-      (:vl-struct nil)
-      (:vl-union nil)
-      (:vl-usertype nil))))
+      (:otherwise nil))))
 
 (define vl-vardecllist-filter-arrays
   :short "Filter variable declarations into those for which @('foo[i]') is a
@@ -120,7 +109,7 @@ able to handle more cases.</p>")
             (vl-vardecllist-fix others)))
        (x1 (vl-vardecl-fix (car x)))
        ((vl-vardecl x1) x1)
-       ((when (consp x1.dims))
+       ((when (consp (vl-datatype->udims x1.type)))
         ;; I think this might be right.  It has array dimensions, so no matter
         ;; what kind of base type it is, it seems reasonable to call an index
         ;; into it an array index.

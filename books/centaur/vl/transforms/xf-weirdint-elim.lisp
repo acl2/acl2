@@ -529,6 +529,7 @@ will become the arguments to a concatenation."
 
        (new-vardecl (make-vl-vardecl :name wirename
                                      :type *vl-plain-old-wire-type*
+                                     :nettype :vl-wire
                                      :loc *vl-fakeloc*))
 
        (new-expr    (if (eq which :x)

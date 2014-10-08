@@ -51,6 +51,7 @@ simply create a shell module that includes fatal @(see warnings).</p>")
   (b* (((vl-portdecl x)))
     (make-vl-vardecl :name x.name
                      :type x.type
+                     :nettype :vl-wire
                      :atts (cons (cons "VL_PORT_IMPLICIT" nil) x.atts)
                      :loc x.loc)))
 

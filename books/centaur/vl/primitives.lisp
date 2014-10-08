@@ -82,7 +82,8 @@ one-bit things so we leave out the ranges to make them prettier.</p>"
        (expr     (vl-idexpr name 1 :vl-unsigned))
        (port     (make-vl-port     :name name :expr expr :loc *vl-fakeloc*))
        (portdecl (make-vl-portdecl :name name :type *vl-plain-old-wire-type* :dir dir :loc *vl-fakeloc*))
-       (vardecl  (make-vl-vardecl  :name name :type *vl-plain-old-wire-type* :loc *vl-fakeloc* :atts '(("VL_PORT_IMPLICIT")))))
+       (vardecl  (make-vl-vardecl  :name name :type *vl-plain-old-wire-type*
+                                   :nettype :vl-wire :loc *vl-fakeloc* :atts '(("VL_PORT_IMPLICIT")))))
     (mv expr port portdecl vardecl)))
 
 (define vl-primitive-mkwire
@@ -94,7 +95,8 @@ one-bit things so we leave out the ranges to make them prettier.</p>"
 all one-bit things so we leave out the ranges to make them prettier.</p>"
   (b* ((name     (hons-copy (string-fix name)))
        (expr     (vl-idexpr name 1 :vl-unsigned))
-       (vardecl  (make-vl-vardecl :name name :type *vl-plain-old-wire-type* :loc *vl-fakeloc*)))
+       (vardecl  (make-vl-vardecl :name name :type *vl-plain-old-wire-type*
+                                  :nettype :vl-wire :loc *vl-fakeloc*)))
     (mv expr vardecl)))
 
 (defval *vl-1-bit-t*
@@ -248,9 +250,9 @@ support can implement them in other ways.</p>"
   (b* ((name "VL_1_BIT_POWER")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
        ((mv ?out-expr out-port out-portdecl out-vardecl) (vl-primitive-mkport "out" :vl-output))
-       (nettype      (make-vl-nettype :name :vl-supply1))
-       (out-portdecl (change-vl-portdecl out-portdecl :type nettype))
-       (out-vardecl  (change-vl-vardecl  out-vardecl  :type nettype)))
+       (nettype      :vl-supply1)
+       (out-portdecl (change-vl-portdecl out-portdecl :nettype nettype))
+       (out-vardecl  (change-vl-vardecl  out-vardecl  :nettype nettype)))
     (hons-copy
      (make-vl-module :name      name
                      :origname  name
@@ -285,9 +287,9 @@ implement them in other ways.</p>"
   (b* ((name "VL_1_BIT_GROUND")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
        ((mv ?out-expr out-port out-portdecl out-vardecl) (vl-primitive-mkport "out" :vl-output))
-       (nettype      (make-vl-nettype :name :vl-supply0))
-       (out-portdecl (change-vl-portdecl out-portdecl :type nettype))
-       (out-vardecl  (change-vl-vardecl  out-vardecl  :type nettype)))
+       (nettype      :vl-supply0)
+       (out-portdecl (change-vl-portdecl out-portdecl :nettype nettype))
+       (out-vardecl  (change-vl-vardecl  out-vardecl  :nettype nettype)))
     (hons-copy
      (make-vl-module :name      name
                      :origname  name
