@@ -666,7 +666,6 @@ its arguments, if necessary.</p>"
                               acl2::cancel_plus-equal-correct
                               acl2::CAR-WHEN-ALL-EQUALP
                               CONSP-WHEN-MEMBER-EQUAL-OF-VL-MODALIST-P
-                              CONSP-WHEN-MEMBER-EQUAL-OF-VL-DEFINES-P
                               CONSP-WHEN-MEMBER-EQUAL-OF-VL-COMMENTMAP-P
                               CONSP-WHEN-MEMBER-EQUAL-OF-CONS-LISTP
                               CONSP-WHEN-MEMBER-EQUAL-OF-VL-ATTS-P

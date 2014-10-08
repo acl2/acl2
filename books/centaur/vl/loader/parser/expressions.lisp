@@ -52,7 +52,6 @@
                            default-cdr
                            ACL2::LEN-WHEN-PREFIXP
                            double-containment
-                           CONSP-WHEN-MEMBER-EQUAL-OF-VL-DEFINES-P
                            CONSP-WHEN-MEMBER-EQUAL-OF-CONS-LISTP
                            acl2::consp-by-len
                            VL-WARNINGLIST-P-WHEN-NOT-CONSP

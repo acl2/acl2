@@ -267,6 +267,10 @@ their corresponding @(':vl-kwd-xxx') symbols."
   (assert! (vl-keyword-table-p *vl-2012-keyword-table-strict*))
   (assert! (vl-keyword-table-p *vl-2012-keyword-table*))
 
+  (defthm vl-keyword-table-p-of-vl-full-keyword-table
+    (vl-keyword-table-p (vl-full-keyword-table))
+    :hints(("Goal" :in-theory (executable-counterpart-theory :here))))
+
   (defthm symbol-listp-of-alist-vals-when-vl-keyword-table-p
     (implies (vl-keyword-table-p x)
              (symbol-listp (alist-vals x))))
