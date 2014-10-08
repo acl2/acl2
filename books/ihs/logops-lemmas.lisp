@@ -43,6 +43,7 @@
 (local (include-book "math-lemmas"))
 (local (include-book "quotient-remainder-lemmas"))
 (include-book "logops-definitions")
+(include-book "std/util/defrule" :dir :system)
 
 (local (in-theory nil))
 
@@ -58,21 +59,20 @@
 ; From logops-definitions
 (local (in-theory (enable logops-definitions-theory)))
 
-
+
 ;;;****************************************************************************
 ;;;
 ;;;    Introduction
 ;;;
 ;;;****************************************************************************
 
-(deflabel logops-lemmas
-  :doc ":doc-section logops
-  A book of lemmas about logical operations on numbers.
-  ~/~/~/")
+(defxdoc logops-lemmas
+  :parents (logops)
+  :short "A book of lemmas about logical operations on numbers.")
 
 (deflabel begin-logops-lemmas)
 
-
+
 ;;;****************************************************************************
 ;;;
 ;;;    Local Lemmas
@@ -294,7 +294,7 @@
 	   (:instance expt-is-weakly-increasing-for-base>1
 		      (r 2) (i i) (j j)))))))
 
- 
+ 
 ;;;****************************************************************************
 ;;;
 ;;;   Lemmas, Round 1 -- A simple theory of ASH, LOGNOT, LOGAND, and LOGIOR.
@@ -308,128 +308,108 @@
 ;;;  ASH
 
 (defthm ash-0
-  (implies
-   (zip i)
-   (equal (ash i count)
-	  0)))
+  (implies (zip i)
+           (equal (ash i count)
+                  0)))
 
-;;;  LOGNOT
 
-(defthm lognot-lognot
-  (implies (case-split (integerp i))
-           (equal (lognot (lognot i))
-                  i))
-  :doc ":doc-section logops-lemmas
-  Rewrite: (LOGNOT (LOGNOT i)) = i,
-  when (case-split (integerp i).
-  ~/~/~/")
 
-(defthm cancel-equal-lognot
-  (equal (equal (lognot i) (lognot j))
-         (equal (ifix i) (ifix j)))
-  :rule-classes
-  ((:rewrite)
-   (:rewrite :corollary (implies (and (syntaxp (constant-syntaxp j))
-				      (integerp j))
-				 (equal (equal (lognot i) j)
-					(equal (ifix i) (lognot j))))))
-  :doc ":doc-section logops-lemmas
-  Rewrite: (EQUAL (LOGNOT i) (LOGNOT j)) = (i = j).
-  ~/
-  There is also a :REWRITE rule for the case that j is a constant.
-  ~/~/")
+(defsection ihs/lognot-lemmas
+  :parents (lognot logops-lemmas)
+  :short "Lemmas about @(see lognot) from the @(see logops-lemmas) book."
 
-(theory-invariant
- (implies
-  (active-runep '(:rewrite cancel-equal-lognot . 2))
-  (active-runep '(:executable-counterpart lognot))))
+  (defthm lognot-lognot
+    (implies (case-split (integerp i))
+             (equal (lognot (lognot i))
+                    i)))
 
-;;;  LOGNOTU
+  (defthm cancel-equal-lognot
+    (equal (equal (lognot i) (lognot j))
+           (equal (ifix i) (ifix j)))
+    :rule-classes
+    ((:rewrite)
+     (:rewrite :corollary (implies (and (syntaxp (constant-syntaxp j))
+                                        (integerp j))
+                                   (equal (equal (lognot i) j)
+                                          (equal (ifix i) (lognot j)))))))
 
-(defthm lognotu-lognotu
-  (implies
-   (and (<= size1 size)
-	(>= size1 0)
-	(integerp size1)
-	(lognotu-guard size i))
-   (equal (lognotu size1 (lognotu size i))
-	  (loghead size1 i)))
-  :hints (("Goal" :in-theory (enable loghead)))
-  :doc ":doc-section logops-lemmas
-  Rewrite: (LOGNOTU size1 (LOGNOTU size i)) = (LOGHEAD size1 i),
-  when size1 <= size.
-  ~/~/~/")
+  (theory-invariant
+   (implies
+    (active-runep '(:rewrite cancel-equal-lognot . 2))
+    (active-runep '(:executable-counterpart lognot)))))
 
-(defthm cancel-equal-lognotu
-  (implies
-   (and (unsigned-byte-p size i)
-	(unsigned-byte-p size j))
-   (equal (equal (lognotu size i) (lognotu size j))
-	  (equal i j)))
-  :hints
-  (("Goal"
-    :in-theory (enable unsigned-byte-p integer-range-p lognot loghead)))
-  :doc ":doc-section logops-lemmas
-  Rewrite: (LOGNOTU size i) = (LOGNOTU size j) EQUAL i = j,
-  when (UNSIGNED-BYTE-P size i) and (UNSIGNED-BYTE-P size j).
-  ~/~/~/")
 
-;;;  LOGAND
 
-(defthm commutativity-of-logand
-  (equal (logand i j)
-	 (logand j i))
-  :doc ":doc-section logops-lemmas
-  Rewrite: (LOGAND i j) = (LOGAND j i).
-  ~/~/~/")
+(defsection ihs/lognotu-lemmas
+  :parents (lognotu logops-lemmas)
+  :short "Lemmas about @(see lognotu) from the @(see logops-lemmas) book."
 
-(defthm simplify-logand
-  (and (equal (logand 0 i) 0)
-       (equal (logand -1 i) (ifix i)))
-  :hints (("Goal" :in-theory (enable ifix)))
-  :doc ":doc-section logops-lemmas
-  Rewrite: (LOGAND 0 i) = 0; (LOGAND -1 i) = i.
-  ~/~/~/")
+  (defthm lognotu-lognotu
+    (implies (and (<= size1 size)
+                  (>= size1 0)
+                  (integerp size1)
+                  (lognotu-guard size i))
+             (equal (lognotu size1 (lognotu size i))
+                    (loghead size1 i)))
+    :hints (("Goal" :in-theory (enable loghead))))
 
-;;;  LOGIOR
+  (defthm cancel-equal-lognotu
+    (implies (and (unsigned-byte-p size i)
+                  (unsigned-byte-p size j))
+             (equal (equal (lognotu size i) (lognotu size j))
+                    (equal i j)))
+    :hints
+   (("Goal" :in-theory (enable unsigned-byte-p integer-range-p lognot loghead)))))
 
-(defthm commutativity-of-logior
-  (equal (logior i j)
-	 (logior j i))
-  :doc ":doc-section logops-lemmas
-  Rewrite: (LOGIOR i j) = (LOGIOR j i).
-  ~/~/~/")
 
-(defthm simplify-logior
-  (and (equal (logior 0 i) (ifix i))
-       (equal (logior -1 i) -1))
-  :hints (("Goal" :in-theory (enable ifix)))
-  :doc ":doc-section logops-lemmas
-  Rewrite: (LOGIOR 0 i) = i; (LOGIOR -1 i) = -1.
-  ~/~/~/")
 
-;;;  LOGXOR
+(defsection ihs/logand-lemmas
+  :parents (logand logops-lemmas)
+  :short "Lemmas about @(see logand) from the @(see logops-lemmas) book."
 
-(defthm commutativity-of-logxor
-  (equal (logxor i j) (logxor j i))
-  :doc ":doc-section logops-lemmas
-  Rewrite: (LOGXOR i j) = (LOGXOR j i).
-  ~/~/~/")
+  (defthm commutativity-of-logand
+    (equal (logand i j)
+           (logand j i)))
 
-(defthm simplify-logxor
-  (and (equal (logxor 0 i) (ifix i))
-       (equal (logxor -1 i) (lognot i)))
-  :hints (("Goal" :in-theory (enable ifix)))
-  :doc ":doc-section logops-lemmas
-  Rewrite: (LOGXOR 0 i) = i; (LOGXOR -1 i) = (LOGNOT i).
-  ~/~/~/")
+  (defthm simplify-logand
+    (and (equal (logand 0 i) 0)
+         (equal (logand -1 i) (ifix i)))))
 
-(local (in-theory
-	(disable ash lognot lognotu logand logior logxor logeqv logorc1)))
 
-;;;  B- functions
 
-(defthm simplify-bit-functions
+(defsection ihs/logior-lemmas
+  :parents (logior logops-lemmas)
+  :short "Lemmas about @(see logior) from the @(see logops-lemmas) book."
+
+  (defthm commutativity-of-logior
+    (equal (logior i j)
+           (logior j i)))
+
+  (defthm simplify-logior
+    (and (equal (logior 0 i) (ifix i))
+         (equal (logior -1 i) -1))))
+
+
+(defsection ihs/logxor-lemmas
+  :parents (logior logops-lemmas)
+  :short "Lemmas about @(see logxor) from the @(see logops-lemmas) book."
+
+  (defthm commutativity-of-logxor
+    (equal (logxor i j) (logxor j i)))
+
+  (defthm simplify-logxor
+    (and (equal (logxor 0 i) (ifix i))
+         (equal (logxor -1 i) (lognot i)))))
+
+(local (in-theory (disable ash lognot lognotu logand logior logxor logeqv logorc1)))
+
+
+(defrule simplify-bit-functions
+  :parents (logops-bit-functions)
+  :short "Rewrite: Simplification rules for all binary @('b-') functions
+  including commutative rules, reductions with 1 explicit value, and reductions
+  for identical agruments and complemented arguments."
+
   (and (equal (b-and x y) (b-and y x))
        (equal (b-and 0 x) 0)
        (equal (b-and 1 x) (bfix x))
@@ -497,18 +477,11 @@
        (equal (b-orc2 x x) 1)
        (equal (b-orc2 x (b-not x)) (bfix x))
        (equal (b-orc2 (b-not x) x) (b-not x)))
-  :hints
-  (("Goal"
-    :in-theory (enable bitp
-		       b-and b-ior b-xor b-not b-eqv b-nand b-nor
-		       b-andc1 b-andc2 b-orc1 b-orc2)))
-  :doc ":doc-section logops-bit-functions
-  Rewrite: Simplification rules for all binary B- functions including
-  commutative rules, reductions with 1 explicit value, and reductions for
-  identical agruments and complemented arguments.
-  ~/~/~/")
 
-
+  :enable (bitp b-and b-ior b-xor b-not b-eqv b-nand b-nor
+                b-andc1 b-andc2 b-orc1 b-orc2))
+
+
 ;;;****************************************************************************
 ;;;
 ;;;    Lemmas, Round 2 -- UNSIGNED-BYTE-P, SIGNED-BYTE-P, LOGHEAD, LOGTAIL,
@@ -521,352 +494,239 @@
                           signed-byte-p loghead logtail
 			  logapp logrpl logextu)))
 
-;;;  UNSIGNED-BYTE-P
 
-(defthm unsigned-byte-p-base-case
-  (equal (unsigned-byte-p size 0)
-	 (and (integerp size)
-	      (<= 0 size)))
-  :doc ":doc-section unsigned-byte-p-lemmas
-  Rewrite: (UNSIGNED-BYTE-P size 0).
-  ~/~/~/")
+(defsection ihs/unsigned-byte-p-lemmas
+  :parents (unsigned-byte-p logops-lemmas)
+  :short "Lemmas about @(see unsigned-byte-p) from the @(see logops-lemmas) book."
 
-(defthm unsigned-byte-p-0
-  (equal (unsigned-byte-p 0 x)
-	 (equal x 0))
-  :doc ":doc-section unsigned-byte-p-lemmas
-  Rewrite: (UNSIGNED-BYTE-P 0 x) = (EQUAL x 0).
-  ~/~/~/")
+  (defthm unsigned-byte-p-base-case
+    (equal (unsigned-byte-p size 0)
+           (and (integerp size)
+                (<= 0 size))))
 
-(defthm unsigned-byte-p-plus
-  (implies
-   (and (unsigned-byte-p size i)
-	(>= j 0)
-	(integerp j))
-   (and (unsigned-byte-p (+ size j) i)
-	(unsigned-byte-p (+ j size) i)))
-  :hints (("Goal" :in-theory (disable expt-is-weakly-increasing-for-base>1)
-	   :use ((:instance expt-is-weakly-increasing-for-base>1
-			    (r 2) (i size) (j (+ size j))))))
-  :doc ":doc-section unsigned-byte-p-lemmas
-  Rewrite: (UNSIGNED-BYTE-P (+ size j) i), when (UNSIGNED-BYTE-P size i)
-  and j >= 0.  Also commutative form.
-  ~/~/~/")
+  (defthm unsigned-byte-p-0
+    (equal (unsigned-byte-p 0 x)
+           (equal x 0)))
 
-(defthm difference-unsigned-byte-p
-  (implies
-   (and (unsigned-byte-p size i)
-	(<= j i)
-	(>= j 0)
-	(integerp j))
-   (and (unsigned-byte-p size (- i j))
-	(unsigned-byte-p size (+ (- j) i))))
-  :doc ":doc-section unsigned-byte-p-lemmas
-  Rewrite: (UNSIGNED-BYTE-P size (- i j)), when (UNSIGNED-BYTE-P size i)
-  and 0 <= j <= i.  Also commutative form.
-  ~/~/~/")
+  (defthm unsigned-byte-p-plus
+    (implies (and (unsigned-byte-p size i)
+                  (>= j 0)
+                  (integerp j))
+             (and (unsigned-byte-p (+ size j) i)
+                  (unsigned-byte-p (+ j size) i)))
+    :hints (("Goal" :in-theory (disable expt-is-weakly-increasing-for-base>1)
+             :use ((:instance expt-is-weakly-increasing-for-base>1
+                    (r 2) (i size) (j (+ size j)))))))
+
+  (defthm difference-unsigned-byte-p
+    (implies (and (unsigned-byte-p size i)
+                  (<= j i)
+                  (>= j 0)
+                  (integerp j))
+             (and (unsigned-byte-p size (- i j))
+                  (unsigned-byte-p size (+ (- j) i)))))
 
 ; Make JFR a linear rule?
 
-(defthm floor-unsigned-byte-p
-  (implies
-   (and (> x 1)
-	(force (real/rationalp x))
-	(unsigned-byte-p size i))
-   (unsigned-byte-p size (floor i x)))
-  :hints
-  (("Goal"
-    :in-theory (disable floor-recursion)
-    :use ((:instance floor-recursion (x i) (y x)))))
-  :doc ":doc-section unsigned-byte-p-lemmas
-  Rewrite: (UNSIGNED-BYTE-P size (FLOOR i x)), when (UNSIGNED-BYTE-P size i)
-  and x > 1.
-  ~/~/~/")
+  (defthm floor-unsigned-byte-p
+    ;; [Jared] BOZO I suspect it'd be better to have the (unsigned-byte-p size i)
+    ;; hyp first
+    (implies (and (> x 1)
+                  (force (real/rationalp x))
+                  (unsigned-byte-p size i))
+             (unsigned-byte-p size (floor i x)))
+    :hints (("Goal" :in-theory (disable floor-recursion)
+             :use ((:instance floor-recursion (x i) (y x)))))))
 
-;;;  SIGNED-BYTE-P
+(defsection ihs/signed-byte-p-lemmas
+  :parents (signed-byte-p logops-lemmas)
+  :short "Lemmas about @(see signed-byte-p) from the @(see logops-lemmas) book."
 
-(defthm signed-byte-p-base-cases
-   (and
-    (equal (signed-byte-p size 0)
-	   (and (integerp size)
-		(< 0 size)))
-    (equal (signed-byte-p size -1)
-	   (and (integerp size)
-		(< 0 size))))
-  :hints
-  (("Goal"
-    :in-theory (enable signed-byte-p))))
+  (defthm signed-byte-p-base-cases
+    (and (equal (signed-byte-p size 0)
+                (and (integerp size)
+                     (< 0 size)))
+         (equal (signed-byte-p size -1)
+                (and (integerp size)
+                     (< 0 size))))
+    :hints (("Goal" :in-theory (enable signed-byte-p))))
 
-(defthm backchain-signed-byte-p-to-unsigned-byte-p
-  (implies
-   (and (syntaxp (constant-syntaxp size))
-	(< 0 size)
-	(unsigned-byte-p (1- size) i))
-   (signed-byte-p size i))
-  :hints
-  (("Goal"
-    :in-theory (enable signed-byte-p unsigned-byte-p)))
-  :doc ":doc-section signed-byte-p-lemmas
-   Rewrite: (SIGNED-BYTE-P size i), when (UNSIGNED-BYTE-P (1- size) i).
-   ~/~/~/")
+  (defthm backchain-signed-byte-p-to-unsigned-byte-p
+    (implies (and (syntaxp (constant-syntaxp size))
+                  (< 0 size)
+                  (unsigned-byte-p (1- size) i))
+             (signed-byte-p size i))
+    :hints (("Goal" :in-theory (enable signed-byte-p unsigned-byte-p)))))
 
-;;;  LOGHEAD
 
-(defthm loghead-identity
-  (implies
-   (unsigned-byte-p size i)
-   (equal (loghead size i)
-	  i))
-  :doc ":doc-section loghead
-  Rewrite: (LOGHEAD size i) = i, when (UNSIGNED-BYTE-P size i).
-  ~/~/~/")
 
-(defthm loghead-loghead
-  (implies
-   (and (>= size1 0)
-	(integerp size1)
-	(loghead-guard size i))
-   (equal (loghead size1 (loghead size i))
-	  (if (< size1 size)
-	      (loghead size1 i)
-	    (loghead size i))))
-  :hints
-  (("Goal"
-    :in-theory (disable mod-bounds mod-bounds-x)))
-  :doc ":doc-section loghead
-  Rewrite: (LOGHEAD size1 (LOGHEAD size i)) =
-           if size1 < size then (LOGHEAD size1 i) else (LOGHEAD size i).
-   ~/~/~/")
 
-(defthm loghead-0-i
-  (implies
-   (integerp i)
-   (equal (loghead 0 i)
-	  0))
-  :doc ":doc-section loghead
-  Rewrite: (LOGHEAD 0 i) = 0.
-  ~/~/~/")
+(defsection ihs/loghead-lemmas
+  :parents (loghead logops-lemmas)
+  :short "Lemmas about @(see loghead) from the @(see logops-lemmas) book."
 
-(defthm loghead-size-0
-  (implies
-   (and (integerp size)
-	(>= size 0))
-   (equal (loghead size 0)
-	  0))
-  :doc ":doc-section loghead
-  Rewrite: (LOGHEAD size 0) = 0.
-  ~/~/~/")
+  (defthm loghead-identity
+    (implies (unsigned-byte-p size i)
+             (equal (loghead size i)
+                    i)))
 
-(defthm loghead-leq
-  (implies
-   (and (>= i 0)
-	(loghead-guard size i))
-   (<= (loghead size i) i))
-  :rule-classes ((:linear :trigger-terms ((loghead size i))))
-  :doc ":doc-section loghead
-  Linear: (LOGHEAD size i) <= i, when i >= 0.
-  ~/~/~/")
+  (defthm loghead-loghead
+    (implies (and (>= size1 0)
+                  (integerp size1)
+                  (loghead-guard size i))
+             (equal (loghead size1 (loghead size i))
+                    (if (< size1 size)
+                        (loghead size1 i)
+                      (loghead size i))))
+    :hints (("Goal" :in-theory (disable mod-bounds mod-bounds-x))))
 
-(defthm loghead-logapp
-  (implies
-   (and (<= size1 size)
-	(force (>= size1 0))
-	(force (integerp size1))
-	(logapp-guard size i j))
-   (equal (loghead size1 (logapp size i j))
-	  (loghead size1 i)))
-  :doc ":doc-section loghead
-  Rewrite: (LOGHEAD size1 (LOGAPP size i j)) = (LOGHEAD size1 i),
-  when size1 <= size.
-  ~/~/~/
-  :cited-by logapp")
+  (defthm loghead-0-i
+    (implies (integerp i)
+             (equal (loghead 0 i)
+                    0)))
 
-(defthm loghead-logrpl
-  (implies
-   (and (logrpl-guard size1 i j)
-	(force (integerp size))
-	(force (>= size 0)))
-   (equal (loghead size (logrpl size1 i j))
-	  (if (< size1 size)
-	      (logrpl size1 i (loghead size j))
-	    (loghead size i))))
-  :hints (("Goal" :in-theory (disable exponents-add mod-bounds)))
-  :doc ":doc-section loghead
-  Rewrite: (LOGHEAD size (LOGRPL size1 i j)) =
-           (LOGRPL size1 i (LOGHEAD size j)), when size1 < size;
-           (LOGHEAD size i), when size1 >= size.
-  ~/~/~/")
+  (defthm loghead-size-0
+    (implies (and (integerp size)
+                  (>= size 0))
+             (equal (loghead size 0)
+                    0)))
 
-(defthm bitp-loghead-1
-  (bitp (loghead 1 i))
-  :hints
-  (("Goal"
-    :in-theory (enable bitp loghead)))
-  :doc ":doc-section loghead
-  Rewrite: (BITP (LOGHEAD 1 i))
-  ~/~/~/")
+  (defthm loghead-leq
+    (implies (and (>= i 0)
+                  (loghead-guard size i))
+             (<= (loghead size i) i))
+  :rule-classes ((:linear :trigger-terms ((loghead size i)))))
 
-;;;  LOGTAIL
+  (defthm loghead-logapp
+    (implies (and (<= size1 size)
+                  (force (>= size1 0))
+                  (force (integerp size1))
+                  (logapp-guard size i j))
+             (equal (loghead size1 (logapp size i j))
+                    (loghead size1 i))))
 
-(defthm logtail-identity
-  (implies
-   (unsigned-byte-p size i)
-   (equal (logtail size i) 0))
-  :doc ":doc-section logtail
-  Rewrite: (LOGTAIL size i) = 0, when (UNSIGNED-BYTE-P size i).
-  ~/~/~/")
+  (defthm loghead-logrpl
+    (implies (and (logrpl-guard size1 i j)
+                  (force (integerp size))
+                  (force (>= size 0)))
+             (equal (loghead size (logrpl size1 i j))
+                    (if (< size1 size)
+                        (logrpl size1 i (loghead size j))
+                      (loghead size i))))
+    :hints (("Goal" :in-theory (disable exponents-add mod-bounds))))
 
-(defthm logtail-logtail
-  (implies
-   (and (force (>= pos1 0))
-	(force (integerp pos1))
-	(logtail-guard pos i))
-   (equal (logtail pos1 (logtail pos i))
-	  (logtail (+ pos pos1) i)))
-  :doc ":doc-section logtail
-  Rewrite: (LOGTAIL pos1 (LOGTAIL pos i)) = (LOGTAIL (+ pos pos1) i)
-  ~/~/~/")
+  (defthm bitp-loghead-1
+    (bitp (loghead 1 i))
+    :hints (("Goal" :in-theory (enable bitp loghead)))))
 
-(defthm logtail-0-i
-  (implies
-   (integerp i)
-   (equal (logtail 0 i)
-	  i))
-  :doc ":doc-section logtail
-  Rewrite: (LOGTAIL 0 i) = i.
-  ~/~/~/")
 
-(defthm logtail-size-0
-  (implies
-   (and (integerp size)
-	(>= size 0))
-   (equal (logtail size 0)
-	  0))
-  :doc ":doc-section logtail
-  Rewrite: (LOGTAIL size 0) = 0.
-  ~/~/~/")
 
-(defthm logtail-leq
-  (implies
-   (and (>= i 0)
-	(logtail-guard pos i))
-   (<= (logtail pos i) i))
-  :rule-classes ((:linear :trigger-terms ((logtail pos i))))
-  :doc ":doc-section logtail
-  Linear: (LOGTAIL pos i) <= i, when i >= 0.
-  ~/~/~/")
+(defsection ihs/logtail-lemmas
+  :parents (logtail logops-lemmas)
+  :short "Lemmas about @(see logtail) from the @(see logops-lemmas) book."
 
-(defthm logtail-equal-0
-  (implies
-   (logtail-guard pos i)
-   (equal (equal (logtail pos i) 0)
-	  (unsigned-byte-p pos i)))
-  :doc ":doc-section logtail
-  Rewrite: (EQUAL (LOGTAIL pos i) 0) = (UNSIGNED-BYTE-P pos i).
-  ~/~/~/")
+  (defthm logtail-identity
+    (implies (unsigned-byte-p size i)
+             (equal (logtail size i) 0)))
 
-(defthm logtail-lessp
-  (implies
-   (and (logtail-guard pos i)
-	(force (integerp j)))
-   (equal (< (logtail pos i) j)
-	  (< i (* j (expt 2 pos)))))
-  :hints (("Goal" :in-theory (set-difference-theories (enable logtail)
-						      '(<-*-left-cancel
-							floor-bounds
-							<-*-/-left))
-    :use ((:instance <-*-left-cancel
-		     (z (/ (expt 2 pos))) (x i) (y (* j (expt 2 pos))))
-	  (:instance floor-bounds (x i) (y (expt 2 pos))))))
-  :doc ":doc-section logtail
-  Rewrite: ((LOGTAIL pos i) < j) = (i < j*2**pos).
-  ~/~/~/")
+  (defthm logtail-logtail
+    (implies (and (force (>= pos1 0))
+                  (force (integerp pos1))
+                  (logtail-guard pos i))
+             (equal (logtail pos1 (logtail pos i))
+                    (logtail (+ pos pos1) i))))
 
-(defthm logtail-unsigned-byte-p
-  (implies
-   (and (>= size1 0)
-	(integerp size1)
-	(logtail-guard size i))
-   (equal (unsigned-byte-p size1 (logtail size i))
-	  (unsigned-byte-p (+ size size1) i)))
-  :hints
-  (("Goal"
-    :in-theory (disable logtail)))
-  :doc ":doc-section unsigned-byte-p-lemmas
-  Rewrite: (UNSIGNED-BYTE-P size1 (LOGTAIL size i)) =
-           (UNSIGNED-BYTE-P (+ size size1) i).
-  ~/~/~/:cited-by logtail")
+  (defthm logtail-0-i
+    (implies (integerp i)
+             (equal (logtail 0 i)
+                    i)))
 
-(defthm logtail-loghead
-  (implies
-   (and (>= size1 0)
-	(force (integerp size1))
-	(loghead-guard size i))
-   (equal (logtail size1 (loghead size i))
-	  (loghead (max 0 (- size size1)) (logtail size1 i))))
-  :hints (("Goal" :in-theory (disable exponents-add mod-bounds
-				      mod-bounds-x)))
-  :doc ":doc-section logtail
-  Rewrite: (LOGTAIL size1 (LOGHEAD size i)) =
-           (LOGHEAD (max 0 (- size size1)) (LOGTAIL size1 i)).
-  ~/~/~/
-  :cited-by loghead")
+  (defthm logtail-size-0
+    (implies (and (integerp size)
+                  (>= size 0))
+             (equal (logtail size 0)
+                    0)))
 
-(defthm logtail-logapp
-  (implies
-   (and (logapp-guard size1 i j)
-	(force (integerp size))
-	(force (>= size 0)))
-   (equal (logtail size (logapp size1 i j))
-	  (if (< size size1)
-	      (logapp (- size1 size) (logtail size i) j)
-	    (logtail (- size size1) j))))
-  :hints (("Goal" :in-theory (disable mod-x-i*j)))
-  :doc ":doc-section logtail
-  Rewrite: (LOGTAIL size (LOGAPP size1 i j)) =
-           (LOGAPP (- size1 size) (LOGTAIL size i) j), when size < size1;
-           (LOGTAIL (- size1 size) j), when size >= size1.
-  ~/~/~/")
+  (defthm logtail-leq
+    (implies (and (>= i 0)
+                  (logtail-guard pos i))
+             (<= (logtail pos i) i))
+    :rule-classes ((:linear :trigger-terms ((logtail pos i)))))
 
-(defthm logtail-logrpl
-  (implies
-   (and (logrpl-guard size1 i j)
-	(force (integerp size))
-	(force (>= size 0)))
-   (equal (logtail size (logrpl size1 i j))
-	  (if (< size size1)
-	      (logrpl (- size1 size) (logtail size i) (logtail size j))
-	    (logtail size j))))
-  :hints (("Goal" :in-theory (disable logapp logtail)))
-  :doc ":doc-section logtail
-  Rewrite: (LOGTAIL size (LOGRPL size1 i j)) =
-  (LOGRPL (- size1 size) (LOGTAIL size i) (LOGTAIL size j)), when size < size1;
-  (LOGTAIL size j), when size >= size1.
-  ~/~/~/")
+  (defthm logtail-equal-0
+    (implies (logtail-guard pos i)
+             (equal (equal (logtail pos i) 0)
+                    (unsigned-byte-p pos i))))
 
-;;;  LOGAPP
+  (defthm logtail-lessp
+    (implies (and (logtail-guard pos i)
+                  (force (integerp j)))
+             (equal (< (logtail pos i) j)
+                    (< i (* j (expt 2 pos)))))
+    :hints (("Goal"
+             :in-theory (set-difference-theories (enable logtail)
+                                                 '(<-*-left-cancel
+                                                   floor-bounds
+                                                   <-*-/-left))
+             :use ((:instance <-*-left-cancel
+                    (z (/ (expt 2 pos))) (x i) (y (* j (expt 2 pos))))
+                   (:instance floor-bounds (x i) (y (expt 2 pos)))))))
 
-(defthm logapp-0
-  (and
-   (implies
-    (logapp-guard size i 0)
-    (equal (logapp size i 0)
-	   (loghead size i)))
-   (implies
-    (logapp-guard size 0 i)
-    (equal (logapp size 0 i)
-	   (* i (expt 2 size))))
-   (implies
-    (logapp-guard 0 i j)
-    (equal (logapp 0 i j)
-	   j)))
-  :doc ":doc-section logapp
-  Rewrite: (LOGAPP size i 0) = (LOGHEAD size i);
-           (LOGAPP size 0 i) = (* i (EXPT 2 size));
-           (LOGAPP 0 i j) = j.
-  ~/~/~/")
+  (defthm logtail-unsigned-byte-p
+    (implies (and (>= size1 0)
+                  (integerp size1)
+                  (logtail-guard size i))
+             (equal (unsigned-byte-p size1 (logtail size i))
+                    (unsigned-byte-p (+ size size1) i)))
+    :hints(("Goal" :in-theory (disable logtail))))
 
-(encapsulate ()
+  (defthm logtail-loghead
+    (implies (and (>= size1 0)
+                  (force (integerp size1))
+                  (loghead-guard size i))
+             (equal (logtail size1 (loghead size i))
+                    (loghead (max 0 (- size size1)) (logtail size1 i))))
+    :hints (("Goal" :in-theory (disable exponents-add mod-bounds
+                                        mod-bounds-x))))
+
+  (defthm logtail-logapp
+    (implies (and (logapp-guard size1 i j)
+                  (force (integerp size))
+                  (force (>= size 0)))
+             (equal (logtail size (logapp size1 i j))
+                    (if (< size size1)
+                        (logapp (- size1 size) (logtail size i) j)
+                      (logtail (- size size1) j))))
+    :hints (("Goal" :in-theory (disable mod-x-i*j))))
+
+  (defthm logtail-logrpl
+    (implies (and (logrpl-guard size1 i j)
+                  (force (integerp size))
+                  (force (>= size 0)))
+             (equal (logtail size (logrpl size1 i j))
+                    (if (< size size1)
+                        (logrpl (- size1 size) (logtail size i) (logtail size j))
+                      (logtail size j))))
+    :hints (("Goal" :in-theory (disable logapp logtail)))))
+
+
+
+(defsection ihs/logapp-lemmas
+  :parents (logapp logops-lemmas)
+  :short "Lemmas about @(see logapp) from the @(see logops-lemmas) book."
+
+  (defthm logapp-0
+    (and (implies (logapp-guard size i 0)
+                  (equal (logapp size i 0)
+                         (loghead size i)))
+         (implies (logapp-guard size 0 i)
+                  (equal (logapp size 0 i)
+                         (* i (expt 2 size))))
+         (implies (logapp-guard 0 i j)
+                  (equal (logapp 0 i j)
+                         j))))
+
+  (defsection unsigned-byte-p-logapp
 
   ;; The following comment and lemma were replaced for Version  2.6 by the
   ;; lemmas below that lead up to (and include) the new crock0 below.
@@ -962,151 +822,112 @@
      :hints (("Goal" :use crock0-1))))
 
   (defthm unsigned-byte-p-logapp
-    (implies
-     (and (<= size1 size)
-	  (>= j 0)
-	  (logapp-guard size1 i j)
-	  (force (integerp size))
-	  (force (>= size 0)))
-     (equal (unsigned-byte-p size (logapp size1 i j))
-	    (unsigned-byte-p (- size size1) j)))
+    (implies (and (<= size1 size)
+                  (>= j 0)
+                  (logapp-guard size1 i j)
+                  (force (integerp size))
+                  (force (>= size 0)))
+             (equal (unsigned-byte-p size (logapp size1 i j))
+                    (unsigned-byte-p (- size size1) j)))
     :hints (("Goal"
 	     :do-not '(eliminate-destructors)
 	     :in-theory
 	     (union-theories (disable <-*-left-cancel <-*-/-left)
 			     '(logapp unsigned-byte-p
-				      rewrite-linear-equalities-to-iff))))
-    :doc ":doc-section logapp
-  Rewrite: (UNSIGNED-BYTE-P size (LOGAPP size1 i j)) =
-           (UNSIGNED-BYTE-P (- size size1) j), when size1 <= size and j >= 0.
-  ~/~/~/"))
+				      rewrite-linear-equalities-to-iff))))))
 
-(defthm associativity-of-logapp
-  (implies (and (logapp-guard size1 j k)
-		(logapp-guard size i (logapp size1 j k)))
-	   (equal (logapp size i (logapp size1 j k))
-		  (logapp (+ size size1) (logapp size i j) k)))
-  :doc ":doc-section logapp
-  Rewrite: (LOGAPP size i (LOGAPP size1 j k)) =
-           (LOGAPP (+ size size1) (LOGAPP size i j) k).
-  ~/~/~/")
+  (defthm associativity-of-logapp
+    (implies (and (logapp-guard size1 j k)
+                  (logapp-guard size i (logapp size1 j k)))
+             (equal (logapp size i (logapp size1 j k))
+                    (logapp (+ size size1) (logapp size i j) k))))
 
-(defthm logapp-loghead-logtail
-  (implies
-   (logapp-guard size i i)
-   (equal (logapp size (loghead size i) (logtail size i))
-	  i))
-  :hints
-  (("Goal"
-    :in-theory (enable logapp loghead logtail)))
-  :doc ":doc-section logapp
-  Rewrite: (LOGAPP size (LOGHEAD size i) (LOGTAIL size i)) = i.
-  ~/~/~/")
+  (defthm logapp-loghead-logtail
+    (implies (logapp-guard size i i)
+             (equal (logapp size (loghead size i) (logtail size i))
+                    i))
+    :hints (("Goal" :in-theory (enable logapp loghead logtail))))
 
-;; Candidate for crock  -- Used only to prove READ-WRITE-MEM2.
+  ;; Candidate for crock  -- Used only to prove READ-WRITE-MEM2.
 
-(defthm loghead-logapp-loghead-logtail
-  (implies
-   (and (loghead-guard size i)
-	(loghead-guard size1 i))
-   (equal (logapp size (loghead size i) (loghead size1 (logtail size i)))
-	  (loghead (+ size size1) i)))
-   :hints
-   (("Goal"
-     :in-theory (disable loghead logtail logapp logapp-loghead-logtail)
-     :use ((:instance logapp-loghead-logtail (size size)
-		      (i (loghead (+ size size1) i)))))))
-
-;;;  LOGRPL
-
-(defthm logrpl-0
-  (and
-   (implies
-    (logrpl-guard 0 i j)
-    (equal (logrpl 0 i j)
-	   j))
-   (implies
-    (logrpl-guard size i 0)
-    (equal (logrpl size i 0)
-	   (loghead size i)))
-   (implies
-    (and (unsigned-byte-p size j)
-	 (integerp i))
-    (equal (logrpl size i j)
-	   (loghead size i))))
-  :doc ":doc-section logrpl
-  Rewrite: (LOGRPL 0 i j) = j;
-           (LOGRPL size i 0) = (LOGHEAD size i);
-           (LOGRPL size i j) = (LOGHEAD i), when (UNSIGNED-BYTE-P size j).
-  ~/~/~/")
-
-(defthm unsigned-byte-p-logrpl
-  (implies (and (<= size1 size)
-		(>= j 0)
-		(logrpl-guard size1 i j)
-		(force (integerp size))
-		(force (>= size 0)))
-	   (equal (unsigned-byte-p size (logrpl size1 i j))
-		  (unsigned-byte-p size j)))
-  :hints (("Goal"
-	   :in-theory (union-theories (disable <-*-left-cancel
-					       <-*-right-cancel
-					       <-*-/-left
-					       <-*-/-right
-					       floor-bounds
-					       logapp)
-				      '(rewrite-linear-equalities-to-iff))
-	   :use ((:instance <-*-right-cancel
-			    (z (/ (expt 2 size1))) (y j) (x (expt 2 size)))
-		 (:instance floor-bounds (x j) (y (expt 2 size1)))))))
-
-(defthm logrpl-i-i
-  (implies
-   (logrpl-guard size i i)
-   (equal (logrpl size i i)
-	  i))
-  :doc ":doc-section logrpl
-  Rewrite: (LOGRPL size i i) = i.
-  ~/~/~/")
-
-(defthm logrpl-loghead-i-i
-  (implies
-   (and (<= size size1)
-	(loghead-guard size1 i)
-	(force (integerp size))
-	(force (>= size 0)))
-   (equal (logrpl size (loghead size1 i) i)
-	  i))
-  :doc ":doc-section logrpl
-  Rewrite: (LOGRPL size (LOGHEAD size1 i) i) = i, when size <= size1.
-  ~/~/~/")
-
-(defthm logrpl-logrpl-right
-    (implies
-     (and (logrpl-guard size1 j k)
-	  (logrpl-guard size i (logrpl size1 j k))
-	  (<= size1 size))
-     (equal (logrpl size i (logrpl size1 j k))
-	    (logrpl size i k)))
+  (defthm loghead-logapp-loghead-logtail
+    (implies (and (loghead-guard size i)
+                  (loghead-guard size1 i))
+             (equal (logapp size (loghead size i) (loghead size1 (logtail size i)))
+                    (loghead (+ size size1) i)))
     :hints
     (("Goal"
-      :in-theory (disable logapp)))
-    :doc ":doc-section logrpl
-  Rewrite: (LOGRPL size i (LOGRPL size1 j k)) = (LOGRPL size i k),
-           when size1 <= size.
-  ~/~/~/")
+      :in-theory (disable loghead logtail logapp logapp-loghead-logtail)
+      :use ((:instance logapp-loghead-logtail (size size)
+             (i (loghead (+ size size1) i))))))))
 
-(defthm logrpl-logrpl-left
-    (implies
-     (and (logrpl-guard size1 i j)
-	  (logrpl-guard size (logrpl size1 i j) k)
-	  (<= size size1))
-     (equal (logrpl size (logrpl size1 i j) k)
-	    (logrpl size i k)))
-    :doc ":doc-section logrpl
-  Rewrite: (LOGRPL size (LOGRPL size1 i j) k) = (LOGRPL size i k),
-           when size <= size1.
-  ~/~/~/")
+
+(defsection ihs/logrpl-lemmas
+  :parents (logrpl logops-lemmas)
+  :short "Lemmas about @(see logrpl) from the @(see logops-lemmas) book."
+
+  (defthm logrpl-0
+    (and (implies (logrpl-guard 0 i j)
+                  (equal (logrpl 0 i j)
+                         j))
+         (implies (logrpl-guard size i 0)
+                  (equal (logrpl size i 0)
+                         (loghead size i)))
+         (implies (and (unsigned-byte-p size j)
+                       (integerp i))
+                  (equal (logrpl size i j)
+                         (loghead size i)))))
+
+  (defthm unsigned-byte-p-logrpl
+    (implies (and (<= size1 size)
+                  (>= j 0)
+                  (logrpl-guard size1 i j)
+                  (force (integerp size))
+                  (force (>= size 0)))
+             (equal (unsigned-byte-p size (logrpl size1 i j))
+                    (unsigned-byte-p size j)))
+    :hints (("Goal"
+             :in-theory (union-theories (disable <-*-left-cancel
+                                                 <-*-right-cancel
+                                                 <-*-/-left
+                                                 <-*-/-right
+                                                 floor-bounds
+                                                 logapp)
+                                        '(rewrite-linear-equalities-to-iff))
+             :use ((:instance <-*-right-cancel
+                    (z (/ (expt 2 size1))) (y j) (x (expt 2 size)))
+                   (:instance floor-bounds (x j) (y (expt 2 size1)))))))
+
+  (defthm logrpl-i-i
+    (implies (logrpl-guard size i i)
+             (equal (logrpl size i i)
+                    i)))
+
+  (defthm logrpl-loghead-i-i
+    (implies (and (<= size size1)
+                  (loghead-guard size1 i)
+                  (force (integerp size))
+                  (force (>= size 0)))
+             (equal (logrpl size (loghead size1 i) i)
+                    i)))
+
+  (defthm logrpl-logrpl-right
+    (implies (and (logrpl-guard size1 j k)
+                  (logrpl-guard size i (logrpl size1 j k))
+                  (<= size1 size))
+             (equal (logrpl size i (logrpl size1 j k))
+                    (logrpl size i k)))
+    :hints (("Goal" :in-theory (disable logapp))))
+
+  (defthm logrpl-logrpl-left
+    (implies (and (logrpl-guard size1 i j)
+                  (logrpl-guard size (logrpl size1 i j) k)
+                  (<= size size1))
+             (equal (logrpl size (logrpl size1 i j) k)
+                    (logrpl size i k)))))
+
+zz i am here ---------------
+
 
 ;;;   LOGEXTU
 
@@ -1121,7 +942,7 @@
 (local (in-theory (disable unsigned-byte-p signed-byte-p loghead logtail
 			   logapp logrpl logextu)))
 
-
+
 ;;;****************************************************************************
 ;;;
 ;;;    Lemmas, Round 3 -- The theory of LOGCAR, LOGCDR, and LOGCONS.  A few
@@ -1269,7 +1090,7 @@
 
 (local (in-theory (disable logcar logcdr logcons bitp)))
 
-
+
 ;;;****************************************************************************
 ;;;
 ;;;   LOGBITP and LOGBIT
@@ -1446,7 +1267,7 @@
 
 (local (in-theory (disable logbitp alt-logbitp logbit)))
 
-
+
 ;;;****************************************************************************
 ;;;
 ;;;    Lemmas, Round 4 --  Inductive proofs about LOGNOT, LOGAND, LOGIOR,
@@ -2479,7 +2300,7 @@ and appear above.~/")
   REWRITE: All logops are SIGNED-BYTE-P when their arguments are.
   ~/~/~/")
 
-
+
 ;;;****************************************************************************
 ;;;
 ;;;  Lemmas, round 5.  Byte functions.
@@ -2498,7 +2319,7 @@ and appear above.~/")
   (("Goal"
     :in-theory (enable wrb bspp bsp-size bsp-position))))
 
-
+
 ;;;****************************************************************************
 ;;;
 ;;;    Theory of truncation and extension of addition.
@@ -2823,7 +2644,7 @@ and appear above.~/")
   Rewrite: (LOGEXT size (+ i (LOGEXT size j))) = (LOGEXT size (+ i j)).
   ~/~/~/"))
 
-
+
 ;;;****************************************************************************
 ;;;
 ;;;  Theories
@@ -2841,5 +2662,3 @@ and appear above.~/")
 
   This theory contains the theory LOGOPS-DEFINITIONS-THEORY, plus all of the
   lemmas meant to be exported by this book.~/")
-
-
