@@ -119,7 +119,7 @@
              :successp nil)
 
 (test-assign :input "assign (strong0, pull1) #36 a[7:0] = 1 ; "
-             :lvalues ((:vl-partselect-colon nil (id "a") 7 0))
+             :lvalues ((:vl-select-colon nil (id "a") 7 0))
              :exprs   (1)
              :atts (("some") ("atts"))
              :str (make-vl-gatestrength :zero :vl-strong

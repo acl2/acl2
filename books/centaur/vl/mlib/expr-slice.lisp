@@ -123,10 +123,11 @@ sliceable."
                 (vl-fast-weirdint-p guts)
                 (vl-fast-id-p guts))))
 
-         ((when (vl-hidexpr-p x)) t)
-
          (op   (vl-nonatom->op x))
          (args (vl-nonatom->args x))
+
+         ((when (eq op :vl-hid-dot))
+          (vl-hidexpr-p x))
 
          ((when (eq op :vl-bitselect))
           (and (vl-hidexpr-p (first args))
@@ -429,6 +430,14 @@ need to convert them into individual bits in the same order.</p>"
                          |*sized-1'bx*|)))))
 
 
+
+
+(local (defthm vl-hidexpr-p-possible-ops
+         (implies (and (vl-hidexpr-p x)
+                       (not (vl-atom-p x)))
+                  (member (vl-nonatom->op x) '(:vl-index :vl-hid-dot)))
+         :hints(("Goal" :in-theory (enable vl-hidexpr-p vl-hidindex-p)))))
+
 (define vl-msb-bitslice-hidexpr-base
   :parents (vl-msb-bitslice-expr)
   ((x        vl-expr-p)
@@ -557,11 +566,11 @@ need to convert them into individual bits in the same order.</p>"
            :hints(("Goal"
                    :in-theory (disable vl-exprlist->finalwidths-of-vl-make-list-of-bitselects)
                    :use ((:instance c2
-                                    (b (vl-expr->finalwidth
-                                        (first (rev (vl-make-list-of-bitselects expr low high)))))
-                                    (a 1)
-                                    (x (vl-exprlist->finalwidths
-                                        (vl-make-list-of-bitselects expr low high)))))))))
+                          (b (vl-expr->finalwidth
+                              (first (rev (vl-make-list-of-bitselects expr low high)))))
+                          (a 1)
+                          (x (vl-exprlist->finalwidths
+                              (vl-make-list-of-bitselects expr low high)))))))))
 
   (local (defthm c5
            (equal (vl-expr->finalwidth
@@ -570,11 +579,11 @@ need to convert them into individual bits in the same order.</p>"
            :hints(("Goal"
                    :in-theory (disable vl-exprlist->finalwidths-of-vl-make-list-of-bitselects)
                    :use ((:instance c2
-                                    (b (vl-expr->finalwidth
-                                        (first (vl-make-list-of-bitselects expr low high))))
-                                    (a 1)
-                                    (x (vl-exprlist->finalwidths
-                                        (vl-make-list-of-bitselects expr low high)))))))))
+                          (b (vl-expr->finalwidth
+                              (first (vl-make-list-of-bitselects expr low high))))
+                          (a 1)
+                          (x (vl-exprlist->finalwidths
+                              (vl-make-list-of-bitselects expr low high)))))))))
 
   (local (defthm main
            (let ((ret (vl-msb-bitslice-hidexpr-base x ss warnings)))
@@ -606,11 +615,11 @@ need to convert them into individual bits in the same order.</p>"
            :hints(("Goal"
                    :in-theory (disable vl-exprlist->finaltypes-of-vl-make-list-of-bitselects)
                    :use ((:instance c2
-                                    (b (vl-expr->finaltype
-                                        (first (rev (vl-make-list-of-bitselects expr low high)))))
-                                    (a :vl-unsigned)
-                                    (x (vl-exprlist->finaltypes
-                                        (vl-make-list-of-bitselects expr low high)))))))))
+                          (b (vl-expr->finaltype
+                              (first (rev (vl-make-list-of-bitselects expr low high)))))
+                          (a :vl-unsigned)
+                          (x (vl-exprlist->finaltypes
+                              (vl-make-list-of-bitselects expr low high)))))))))
 
   (local (defthm d5
            (equal (vl-expr->finaltype
@@ -619,11 +628,11 @@ need to convert them into individual bits in the same order.</p>"
            :hints(("Goal"
                    :in-theory (disable vl-exprlist->finaltypes-of-vl-make-list-of-bitselects)
                    :use ((:instance c2
-                                    (b (vl-expr->finaltype
-                                        (first (vl-make-list-of-bitselects expr low high))))
-                                    (a :vl-unsigned)
-                                    (x (vl-exprlist->finaltypes
-                                        (vl-make-list-of-bitselects expr low high)))))))))
+                          (b (vl-expr->finaltype
+                              (first (vl-make-list-of-bitselects expr low high))))
+                          (a :vl-unsigned)
+                          (x (vl-exprlist->finaltypes
+                              (vl-make-list-of-bitselects expr low high)))))))))
 
   (local (defthm main2
            (let ((ret (vl-msb-bitslice-hidexpr-base x ss warnings)))
@@ -645,36 +654,59 @@ need to convert them into individual bits in the same order.</p>"
            (implies (not (equal (tag x) :vl-constint))
                     (not (vl-constint-p x)))))
 
+  (local (defthm vl-hidindex-p-of-replace-nonatom-size/type
+           (implies (not (equal (vl-expr-kind x) :atom))
+                    (iff (vl-hidindex-p (change-vl-nonatom x :finalwidth w :finaltype y))
+                         (vl-hidindex-p x)))
+           :hints(("Goal" :in-theory (enable vl-hidindex-p)))))
+
   (local (defthm vl-hidexpr-p-of-replace-nonatom-size/type
            (implies (not (equal (vl-expr-kind x) :atom))
                     (iff (vl-hidexpr-p (change-vl-nonatom x :finalwidth w :finaltype y))
                          (vl-hidexpr-p x)))
-           :hints(("Goal" :in-theory (enable vl-hidexpr-p vl-hidindex-p)))))
+           :hints(("Goal" :in-theory (enable vl-hidexpr-p)))))
+
+  (local (defthm vl-index-expr-p-of-replace-nonatom-size/type
+           (implies (not (equal (vl-expr-kind x) :atom))
+                    (iff (vl-index-expr-p (change-vl-nonatom x :finalwidth w :finaltype y))
+                         (vl-index-expr-p x)))
+           :hints(("Goal" :in-theory (enable vl-index-expr-p)))))
+
+  (local (defthm index-expr-p-when-hidexpr-p
+           (implies (vl-hidexpr-p x)
+                    (vl-index-expr-p x))
+           :hints(("Goal" :in-theory (enable vl-index-expr-p)))))
 
   (local (defthm vl-hidexpr-welltyped-p-of-replace-nonatom-size/type
            (implies (and (vl-hidexpr-p x)
                          (not (equal (vl-expr-kind x) :atom))
+                         (eq (vl-nonatom->op x) :vl-hid-dot)
                          finaltype
                          (posp finalwidth))
                     (vl-expr-welltyped-p (change-vl-nonatom x :finalwidth finalwidth
-                                                               :finaltype finaltype)))
-           :hints(("Goal" :in-theory (enable vl-expr-welltyped-p
-                                             vl-hidexpr-welltyped-p)))))
-                         
+                                                            :finaltype finaltype)))
+           :hints(("Goal" :in-theory (e/d (vl-expr-welltyped-p
+                                           vl-selexpr-welltyped-p)
+                                          (abs
+                                           acl2::member-of-cons
+                                           (force)))))))
+  
 
   (defthm vl-exprlist-welltyped-p-of-vl-msb-bitslice-hidexpr-base
     (let ((ret (vl-msb-bitslice-hidexpr-base x ss warnings)))
       (implies (and (mv-nth 0 ret)
-                    (vl-hidexpr-p x))
+                    (vl-hidexpr-p x)
+                    (or (vl-atom-p x)
+                        (eq (vl-nonatom->op x) :vl-hid-dot)))
                (vl-exprlist-welltyped-p (mv-nth 2 ret))))
     :hints(("Goal" :in-theory (e/d (vl-expr-welltyped-p
-                                      vl-hidexpr-welltyped-p
-                                      vl-atom-welltyped-p
-                                      vl-hidexpr-p
-                                      vl-hidindex-p
-                                      vl-hidname-p
-                                      vl-make-msb-to-lsb-bitselects)
-                                   ((force) (tau-system)))))))
+                                    vl-selexpr-welltyped-p
+                                    vl-atom-welltyped-p
+                                    vl-make-msb-to-lsb-bitselects)
+                                   ((force) (tau-system)))
+            :expand ((vl-hidexpr-p x)
+                     (vl-hidindex-p x)
+                     (vl-hidname-p x))))))
 
 
 
@@ -688,10 +720,12 @@ expressions."
    (ss vl-scopestack-p)
    (warnings vl-warninglist-p))
   :guard (and (vl-hidexpr-p x)
+              (or (vl-atom-p x)
+                  (eq (vl-nonatom->op x) :vl-hid-dot))
               (vl-expr-welltyped-p x))
   :guard-hints (("goal" :in-theory (enable vl-expr-welltyped-p
                                            vl-atom-welltyped-p
-                                           vl-hidexpr-welltyped-p
+                                           vl-selexpr-welltyped-p
                                            vl-hidexpr-p
                                            vl-hidname-p
                                            vl-idexpr-p
@@ -820,6 +854,8 @@ wire [0:3] w;
     (let ((ret (vl-msb-bitslice-hidexpr x ss warnings)))
       (implies (and (mv-nth 0 ret)
                     (force (vl-hidexpr-p x))
+                    (or (vl-atom-p x)
+                        (eq (vl-nonatom->op x) :vl-hid-dot))
                     (force (vl-expr-welltyped-p x)))
                (vl-exprlist-welltyped-p (mv-nth 2 ret))))
     :hints(("Goal" :in-theory (enable vl-expr-welltyped-p

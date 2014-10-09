@@ -1111,7 +1111,9 @@ expressions."
                     (eq x.op :vl-partselect-pluscolon)
                     (eq x.op :vl-partselect-minuscolon)
                     (eq x.op :vl-index)
-                    (eq x.op :vl-array-index)))
+                    (eq x.op :vl-select-colon)
+                    (eq x.op :vl-select-pluscolon)
+                    (eq x.op :vl-select-minuscolon)))
           (list (vl-expr-fix x))))
       (vl-exprlist-selects x.args)))
 

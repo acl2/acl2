@@ -108,15 +108,24 @@ arities (e.g., concatenation, function calls, ...), we map the operator to
 <h5>Selection Operators</h5>
 
 <ul>
-<li>@('foo[1]') initially becomes @(':vl-index').  Later these should be
-changed to @(':vl-bitselect') or @(':vl-array-index'), as appropriate.</li>
-<li>@('foo[3 : 1]')  becomes @(':vl-partselect-colon') (arity 3)</li>
-<li>@('foo[3 +: 1]') becomes @(':vl-partselect-pluscolon') (arity 3)</li>
-<li>@('foo[3 -: 1]') becomes @(':vl-partselect-minuscolon') (arity 3)</li>
+
+<li>@('foo[1]') initially becomes @(':vl-index').  Later these are changed to
+@(':vl-bitselect') if they are determined to be bitselects (i.e., applied to a
+simple vector type).</li>
+
+<li>@('foo[3 : 1]') becomes @(':vl-select-colon') (arity 3), similarly changed to
+@('vl-partselect-colon') if applied to a simple vector.</li>
+
+<li>@('foo[3 +: 1]') becomes @(':vl-select-pluscolon') (arity 3), similarly
+changed to @('vl-partselect-pluscolon') if applied to a simple vector.</li>
+
+<li>@('foo[3 -: 1]') becomes @(':vl-select-minuscolon') (arity 3), similarly
+changed to @('vl-partselect-minuscolon') if applied to a simple vector.</li>
+
 </ul>
 
 <p>Note that upon parsing, there are no @(':vl-bitselect') or
-@(':vl-array-index') operators; these must be introduced by the @(see
+@(':vl-partselect-*') operators; these must be introduced by the @(see
 resolve-indexing) transform.</p>
 
 <h5>Concatenation and Replication Operators</h5>
@@ -226,9 +235,11 @@ SystemVerilog-2012 Standard.</p>"
    (cons :vl-mintypmax             3)   ;;; e.g., (1 : 2 : 3)
 
    ;; Selection Operators
-   (cons :vl-index                 2) ;;; e.g., foo[1] before determining array/wire
+   (cons :vl-index                 2) ;;; e.g., foo[1] before determining bitselect
    (cons :vl-bitselect             2) ;;; e.g., foo[1] for wire bit selections
-   (cons :vl-array-index           2) ;;; e.g., foo[1] for array indexing
+   (cons :vl-select-colon          3) ;;; e.g., foo[3 : 1]  before determining simple vector
+   (cons :vl-select-pluscolon      3) ;;; e.g., foo[3 +: 1]
+   (cons :vl-select-minuscolon     3) ;;; e.g., foo[3 -: 1]
    (cons :vl-partselect-colon      3) ;;; e.g., foo[3 : 1]
    (cons :vl-partselect-pluscolon  3) ;;; e.g., foo[3 +: 1]
    (cons :vl-partselect-minuscolon 3) ;;; e.g., foo[3 -: 1]

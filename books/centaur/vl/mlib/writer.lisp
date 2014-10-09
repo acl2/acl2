@@ -507,6 +507,10 @@ displays.  The module browser's web pages are responsible for defining the
     (:vl-partselect-pluscolon "+:")
     (:vl-partselect-minuscolon "-:")
 
+    (:vl-select-colon ":")
+    (:vl-select-pluscolon "+:")
+    (:vl-select-minuscolon "-:")
+
     (:vl-scope "::")
 
     (t
@@ -516,11 +520,13 @@ displays.  The module browser's web pages are responsible for defining the
   ''(;; These aren't real operators as far as the precedence rules are
      ;; concerned, but they need to bind even more tightly than +, -, etc.
      (:VL-BITSELECT             . 20)
-     (:VL-ARRAY-INDEX           . 20)
-     (:VL-INDEX                 . 20)
      (:VL-PARTSELECT-COLON      . 20)
      (:VL-PARTSELECT-PLUSCOLON  . 20)
      (:VL-PARTSELECT-MINUSCOLON . 20)
+     (:VL-INDEX                 . 20)
+     (:VL-SELECT-COLON          . 20)
+     (:VL-SELECT-PLUSCOLON      . 20)
+     (:VL-SELECT-MINUSCOLON     . 20)
      (:VL-FUNCALL               . 20)
      (:VL-SYSCALL               . 20)
      (:VL-HID-DOT               . 20)
@@ -866,7 +872,7 @@ its arguments, if necessary.</p>"
                         (vl-pp-expr (third args))
                         (vl-println? ")"))))
 
-          ((:vl-bitselect :vl-array-index :vl-index)
+          ((:vl-bitselect :vl-index)
            ;; These don't need parens because they have maximal precedence
            (cond ((not (consp args))
                   (prog2$ (impossible) ps))
@@ -876,7 +882,8 @@ its arguments, if necessary.</p>"
                              (vl-pp-expr (second args))
                              (vl-print "]")))))
 
-          ((:vl-partselect-colon :vl-partselect-pluscolon :vl-partselect-minuscolon)
+          ((:vl-partselect-colon :vl-partselect-pluscolon :vl-partselect-minuscolon
+            :vl-select-colon :vl-select-pluscolon :vl-select-minuscolon)
            ;; These don't need parens because they have maximal precedence
            (cond ((not (consp args))
                   (prog2$ (impossible) ps))

@@ -52,7 +52,7 @@
        (op   (vl::vl-nonatom->op x))
        (args (vl::vl-nonatom->args x))
 
-       ((when (eq op :vl-partselect-colon))
+       ((when (eq op :vl-select-colon))
         (b* ((from (first args))
              (msb  (second args))
              (lsb  (third args))

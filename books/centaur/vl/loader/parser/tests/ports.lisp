@@ -68,7 +68,7 @@
 
 (test-parse-port :input "a[3:0]"
                  :name nil
-                 :expr (:vl-partselect-colon nil (id "a") 3 0))
+                 :expr (:vl-select-colon nil (id "a") 3 0))
 
 (test-parse-port :input "a[3]"
                  :name nil
@@ -87,7 +87,7 @@
 
 (test-parse-port :input ".foo(a[3:0])"
                  :name "foo"
-                 :expr (:vl-partselect-colon nil (id "a") 3 0))
+                 :expr (:vl-select-colon nil (id "a") 3 0))
 
 (test-parse-port :input ".foo(a[3])"
                  :name "foo"
@@ -193,5 +193,5 @@
 
 (test-parse-portlist :input "(.a(), b[3:0])"
                      :names ("a" nil)
-                     :exprs (nil (:vl-partselect-colon nil (id "b") 3 0)))
+                     :exprs (nil (:vl-select-colon nil (id "b") 3 0)))
 
