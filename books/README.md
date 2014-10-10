@@ -76,7 +76,7 @@ git clone https://github.com/acl2/acl2
 
 ### Contributing
 
-See the wiki page for [our discussion on how to contribute][git tips].
+See the documentation for [our discussion on how to contribute][git tips].
 
 Even though we have merged the Community Books (formerly acl2-books) and
 ACL2 System (formerly acl2-devel) repositories into one, changes should
