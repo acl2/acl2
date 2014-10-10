@@ -224,34 +224,8 @@
 
   (null x))
 
-(defun make-lock (&optional lock-name)
-
-; See also deflock.
-
-; If lock-name is supplied, it must be nil or a string.
-
-; Even though CCL nearly always uses a FIFO for threads blocking on a lock,
-; it does not guarantee so: no such promise is made by the CCL
-; documentation or implementor (in fact, we are aware of a race condition that
-; would violate FIFO properties for locks).  Thus, we make absolutely no
-; guarantees about ordering; for example, we do not guarantee that the
-; longest-blocked thread for a given lock is the one that would enter a
-; lock-guarded section first.  However, we suspect that this is usually the
-; case for most implementations, so assuming such an ordering property is
-; probably a reasonable heuristic.  We would be somewhat surprised to find
-; significant performance problems in our own application to ACL2's parallelism
-; primitives due to the ordering provided by the underlying system.
-
-  #-(or ccl sb-thread lispworks)
-  (declare (ignore lock-name))
-  #+ccl (ccl:make-lock lock-name)
-  #+sb-thread (sb-thread:make-mutex :name lock-name)
-  #+lispworks (mp:make-lock :name lock-name)
-  #-(or ccl sb-thread lispworks)
-
-; We return nil in the uni-threaded case in order to stay in sync with lockp.
-
-  nil)
+; Make-lock and with-lock were originally defined in this file, but has been
+; moved to acl2-fns.lisp to help support multi-threading in memoize-raw.lisp.
 
 (defmacro reset-lock (bound-symbol)
 
@@ -262,29 +236,6 @@
 ; been applied to bound-symbol.
 
   `(setq ,bound-symbol (make-lock ,(symbol-name bound-symbol))))
-
-(defmacro with-lock (bound-symbol &rest forms)
-
-; Grab the lock, blocking until it is acquired; evaluate forms; and then
-; release the lock.  This macro guarantees mutual exclusion.
-
-  #-(or ccl sb-thread lispworks)
-  (declare (ignore bound-symbol))
-  (let ((forms
-
-; We ensure that forms is not empty because otherwise, in CCL alone,
-; (with-lock some-lock) evaluates to t.  We keep the code simple and consistent
-; by modifying forms here for all cases, not just CCL.
-
-         (or forms '(nil))))
-    #+ccl
-    `(ccl:with-lock-grabbed (,bound-symbol) nil ,@forms)
-    #+sb-thread
-    `(sb-thread:with-recursive-lock (,bound-symbol) nil ,@forms)
-    #+lispworks
-    `(mp:with-lock (,bound-symbol) nil ,@forms)
-    #-(or ccl sb-thread lispworks)
-    `(progn ,@forms)))
 
 (defun run-thread (name fn-symbol &rest args)
 

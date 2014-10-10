@@ -88,10 +88,6 @@
 ;   using a defconstant form in file acl2.lisp.  Consider making this all more
 ;   consistent in style.
 
-; - Try (again?) to do initial memoizations before saving the image, rather
-;   than at start-up.  Camm Maguire has reported that for GCL, he saw about a
-;   5% penalty for those memoizations at start-up.
-
 ; SECTION: To do, longer-term
 
 ; - Consider eliminating the function memoized-values (and memstat) or, perhaps
@@ -116,12 +112,10 @@
 ;   to cases where the time is at least 1% of the time taken by the main
 ;   function.  We might want to make this customizable.
 
-; - Get memoization to be thread-safe.  Jared Davis removed early code in that
-;   direction, explaining that it "was just muddying the waters and making
-;   things harder to understand."
+; - Consider finer-grained way to make memoization thread-safe.
 
 ; - Consider eliminating defun-one-output in most cases, simply for the sake of
-; - elegance.
+;   elegance.
 
 ; - Consider eliminating some uses of our-syntax, instead relying on normal
 ;   ACL2 printing.
@@ -151,10 +145,10 @@
 ;   defv -- then although some performance advantage of defg/defv might be
 ;   lost, it can be easier to support multi-threading by taking advantage of
 ;   the fact that bindings of specials are thread-local.  He also reminds us of
-;   the ability to use local variables [see for example the use of
-;   physical-memory-cached-answer in the defun of physical-memory], and tells
-;   us that these can give similar efficiency to defv/defg with the similar
-;   drawback of not being thread-local, but with the advantage that the
+;   the ability to use local variables [see for example mf-shorten and the use
+;   of physical-memory-cached-answer in the defun of physical-memory], and
+;   tells us that these can give similar efficiency to defv/defg with the
+;   similar drawback of not being thread-local, but with the advantage that the
 ;   locality can ease not only ACL2 source code maintenance, but also avoid
 ;   problems for other people's code (because it can't access such globals
 ;   directly).
@@ -222,6 +216,202 @@
   (error "Please use GCL Version 2.6.10 or later, as we use the function~%~s, ~
           which might not always be supported in an earlier version."
          'with-standard-io-syntax))
+
+; SECTION: Multithreaded Memoization
+
+; This section was initially contributed by Jared Davis, who contributed the
+; following comment (indented and re-filled here).
+
+;   The implementation is in many ways suboptimal because, for the most part, I
+;   just want to get something working.  To keep things simple, I have added a
+;   single, global memoize lock.  This lock needs to be acquired whenever a
+;   thread needs to do something that could mutate soundness-related memoize
+;   state.  This is straightforward, but could (obviously) lead to a lot of
+;   lock contention if you write multithreaded code that is using memoization
+;   heavily.  It could also slow down single threaded code because of the
+;   overhead of acquiring and releasing locks all the time.
+;
+;   In the future it would probably be worth reworking things so that, e.g.,
+;   each memo table has its own separate lock.  On the other hand, that makes
+;   things like deadlock a lot trickier.  That sounds pretty horrifying, so I'm
+;   going to stick with the simple but possibly slow implementation for now.
+
+(defg *enable-multithreaded-memoization*
+  ;; By default set up multithreaded memoization only if we are running on
+  ;; ACL2(p).  However, nothing here is really ACL2(p) specific, and users of
+  ;; plain ACL2(h) can change this in raw Lisp if they know what they're doing.
+  ;;
+  ;; Note for raw Lisp hackers.  We ordinarily consult this variable
+  ;; dynamically.  However, to make memoized functions execute more
+  ;; efficiently, we only consult its value AT MEMOIZE TIME when creating the
+  ;; memoized definitions.  Consequences of this:
+  ;;
+  ;;   - If you ever want to change this, e.g., because you are using ordinary
+  ;;     ACL2(h) instead of ACL2(hp), but you want to do something with raw
+  ;;     Lisp threads, then you really need to do something like this:
+  ;;
+  ;;        (setq *enable-multithreaded-memoization* t)
+  ;;        (rememoize-all)
+  ;;
+  ;;   - You need to be careful to do the rememoize-all AFTER you have already
+  ;;     loaded any books that might contain memoized functions.  For instance,
+  ;;     if you do the above and then include a book with a memoized F, then
+  ;;     the definition of F will not do appropriate locking until you again do
+  ;;     a rememoize-all.
+  #+acl2-par t
+  #-acl2-par nil)
+
+(defun mf-multiprocessing (flg &optional quiet)
+  (cond ((iff *enable-multithreaded-memoization* flg)
+         (when (not quiet)
+           (format *standard-output*
+                   "~%; Note: Multiprocessing is already ~a.~%"
+                   (if *enable-multithreaded-memoization* "on" "off"))))
+        (t
+         (unwind-protect ; make sure we finish!
+             (setq *enable-multithreaded-memoization* flg)
+           (rememoize-all))))
+  flg)
+
+(defg *global-memoize-lock*
+  (make-lock '*global-memoize-lock*))
+
+#+(or ccl sb-thread lispworks)
+(defmacro with-global-memoize-lock (&rest forms)
+
+; We consult *enable-multithreaded-memoization* at runtime; compare with macro
+; with-global-memoize-lock-static.
+
+  #-(or ccl sb-thread lispworks) ; with-lock-raw is just progn
+  `(progn ,@forms)
+  #+(or ccl sb-thread lispworks)
+
+; We tried the following alternative to the code below, in order to avoid
+; duplicating code during macroexpansion.  But for ACL2(h) (in its normal mode
+; -- that is without *enable-multithreaded-memoization*, hence not ACL2(hp))
+; this seemed to slow down the regression slightly.  This macro is only used in
+; this file so we're not too concerned about the compiled code duplication.
+
+; (let ((body (gensym)))
+;   ;; Avoid duplication of ,forms to avoid code blowup
+;   `(flet ((,body () ,@forms))
+;      (if *enable-multithreaded-memoization*
+;          (with-lock-raw *global-memoize-lock* (,body))
+;        (,body))))
+
+  `(if *enable-multithreaded-memoization*
+       (with-lock-raw *global-memoize-lock* ,@forms)
+     (progn ,@forms)))
+
+(defmacro with-global-memoize-lock-static (&rest forms)
+  ;; Faster but less safe way to grab the lock, i.e., this version consults
+  ;; *enable-multithreaded-memoization* at macroexpansion time instead of at
+  ;; run time.  This is nothing more than a progn in the single-threaded case.
+  ;;
+  ;; NOTE: ONLY USE THIS WHEN CREATING MEMOIZED DEFINITIONS.  For everything
+  ;; else, the safer version should be plenty fast.
+  #-(or ccl sb-thread lispworks) ; with-lock-raw is just progn
+  `(progn ,@forms)
+  #+(or ccl sb-thread lispworks)
+  (if *enable-multithreaded-memoization*
+      ;; BOZO portability.  Switch to some wrapper for with-lock-grabbed
+      `(with-lock-raw *global-memoize-lock* . ,forms)
+    `(progn . ,forms)))
+
+(defmacro mf-mht (&rest args)
+
+; Call this macro with :shared :default unless we know that the call
+; (mf-multiprocessing t) will blow away the hash table (and reconstitute it as
+; a :shared table).
+
+; We believe that at least one of :lock-free or :shared must be t in order to
+; avoid "not owner of hash table" errors, and the following experiments support
+; that belief.
+
+; (defparameter *ht* (make-hash-table :lock-free nil :shared t))
+; ; ok:
+; (ccl:process-run-function "t1" (lambda () (setf (gethash 'my-key *ht*) 17)))
+; (defparameter *ht* (make-hash-table :lock-free t :shared nil))
+; ; ok:
+; (ccl:process-run-function "t2" (lambda () (setf (gethash 'my-key *ht*) 17)))
+; (defparameter *ht* (make-hash-table :lock-free nil :shared nil))
+; ; error:
+; (ccl:process-run-function "t3" (lambda () (setf (gethash 'my-key *ht*) 17)))
+
+; The following experiment suggests that we get better performance with :shared
+; t than with :lock-free t.  In fact :shared t may rival performance with
+; :shared nil.
+
+;   cd books/centaur/tutorial/
+;   (include-book "alu16-book")
+;   (time$ (def-gl-thm foo
+;            :hyp (and (alu16-test-vector-autohyps)
+;                      (equal op *op-mult*)
+;                      (< a (expt 2 12))
+;                      (< b (expt 2 12)))
+;            :concl (equal (alu16-basic-result)
+;                          (mod (* a b) (expt 2 24)))
+;            :g-bindings (alu16-default-bindings)))
+
+; :lock-free nil :shared nil
+; 48.42 seconds realtime, 48.29 seconds runtime
+; (4,169,078,496 bytes allocated).
+
+; :lock-free t :shared nil
+; 54.33 seconds realtime, 54.19 seconds runtime
+; (4,528,524,384 bytes allocated).
+
+; :lock-free nil :shared t
+; 48.35 seconds realtime, 48.23 seconds runtime
+; (4,169,087,440 bytes allocated).
+
+; To access or update tables created by mf-mht, we use mf-gethash and
+; mf-sethash.  Of course, :shared t is not sufficient to avoid the use of locks
+; when performing atomic operations.  Moreover, as of this writing only CCL,
+; among the supported host Lisps, pays attention to :shared (or :lock-free).
+
+; Pons tables contain flex-alists, which can contain hash-tables.  Since
+; hons-raw.lisp is loaded before memoize-raw.lisp, we define our own interface
+; with hl-flex-acons; see mf-flex-acons.
+
+  (if (assoc-keyword :shared args) ; then use :shared as supplied
+      `(hl-mht ,@args)
+    `(if *enable-multithreaded-memoization*
+         (hl-mht :shared :default ,@args)
+       (hl-mht ,@args))))
+
+(defmacro mf-gethash (key ht)
+
+; Ht was created by mf-mht.  See mf-mht.
+
+  `(gethash ,key (the hash-table ,ht)))
+
+(defmacro mf-sethash (key val ht)
+
+; Ht was created by mf-mht.  See mf-mht.
+
+  `(setf (gethash ,key (the hash-table ,ht)) ,val))
+
+(defmacro mf-flex-acons (elem al)
+  `(hl-flex-acons ,elem ,al *enable-multithreaded-memoization*))
+
+(defmacro mf-hash-table-count (ht)
+
+; Ht was created by mf-mht.  See mf-mht.
+
+  `(hash-table-count (the hash-table ,ht)))
+
+(defmacro mf-hash-table-size (ht)
+
+; Ht was created by mf-mht.  See mf-mht.
+
+  `(hash-table-size (the hash-table ,ht)))
+
+(defmacro mf-maphash (lam ht)
+
+; Ht was created by mf-mht.  See mf-mht.
+
+  `(maphash ,lam (the hash-table ,ht)))
 
 ; SECTION: Constants and globals
 
@@ -467,10 +657,12 @@
 
 ; Users can set this with never-memoize.
 
-  (let ((ht (make-hash-table :test 'eq)))
+; Note: Consider locking uses of this global variable.
+
+  (let ((ht (mf-mht :test 'eq :shared :default)))
     (loop for x in *stobjs-out-invalid*
-          do (setf (gethash x ht) t))
-    #+ccl (setf (gethash 'ccl::rdtsc ht) t) ; used in memoize implementation
+          do (mf-sethash x t ht))
+    #+ccl (mf-sethash 'ccl::rdtsc t ht) ; used in memoize implementation
     ht))
 
 ; Subsection: Variables not user-settable (managed by the implementation)
@@ -485,7 +677,12 @@
 (declaim (type mfixnum *pons-call-counter*))
 (declaim (type mfixnum *pons-misses-counter*))
 
-(defg *mf-shorten-ht* (hl-mht :test 'eql)) ; see mf-shorten
+(defg *mf-shorten-ht*
+
+; This global is used in mf-shorten.  As explained there, no lock is needed.
+; Since hons-copy is applied to form the keys, we can use eql as the test.
+
+  (mf-mht :test 'eql :shared :default))
 
 (defg *memoize-info-ht*
 
@@ -498,7 +695,12 @@
 ;
 ;   2. It maps each such :NUM value back to the corresponding symbol, fn.
 
-  (hl-mht))
+; This table is essentially blown away and reconstituted by rememoize-all,
+; hence by (mf-multiprocessing t).  So we avoid using :shared :default below,
+; in order to make the table a bit more efficient in the uniprocessing case --
+; though probably efficiency isn't particularly important for this hash table.
+
+  (mf-mht))
 
 (declaim (hash-table *memoize-info-ht*))
 
@@ -515,14 +717,14 @@
 ; After seeing the information, it seemed a good idea to use it to infer what a
 ; good table size might be when the memo table is re-created.
 
-  (make-hash-table))
+  (mf-mht :shared :default))
 
 (defun initial-memoize-call-array (n)
 
 ; Warning: It is assumed in sync-memoize-call-array that this array has a
 ; length of 1 when n is 1.
 
-  (make-array n :element-type 'mfixnum :initial-element 0))  
+  (make-array n :element-type 'mfixnum :initial-element 0))
 
 (defg *memoize-call-array*
 
@@ -631,13 +833,6 @@
 
 (defg *hons-gentemp-counter* 0)
 
-(defg *memoize-fn-signature-error*
-  "Memoize-fn: could not determine a signature for ~a.~%~
-  To assert the signature of ~:*~a, use (mf-note-arity '~:*~a nargs nvals),~%~
-  for example, (mf-note-arity '~:*~a 3 1).)  If there are stobjs arguments~%~
-  then do not use that mechanism; instead, pass suitable arguments to~%~
-  memoize-fn.")
-
 (defvar *sol-gc-installed* nil)
 
 (defg *memoize-use-attachment-warning-p* t)
@@ -650,7 +845,7 @@
 ; number of inputs and d is the number of outputs of fn.  NIL for a or d
 ; indicates 'don't know'.
 
-  (make-hash-table))
+  (mf-mht :shared :default))
 
 (declaim (hash-table *number-of-arguments-and-values-ht*))
 
@@ -705,8 +900,10 @@
 ; This raw Lisp function declares that fn has the indicated number of inputs
 ; and outputs.
 
-  (setf (gethash fn *number-of-arguments-and-values-ht*)
-        (cons nargs nvals)))
+; Note: Consider locking uses of this function, since it updates a global
+; hash-table.
+
+  (mf-sethash fn (cons nargs nvals) *number-of-arguments-and-values-ht*))
 
 (defun memoize-look-up-def-raw (sym quiet-p)
 
@@ -779,7 +976,7 @@
   (assert (not (macro-function fn)))
   (assert (not (special-operator-p fn)))
 
-  (or (let ((pair (gethash fn *number-of-arguments-and-values-ht*)))
+  (or (let ((pair (mf-gethash fn *number-of-arguments-and-values-ht*)))
         (and (consp pair)
              (integerp (car pair))
              (car pair)))
@@ -800,7 +997,7 @@
   (assert (not (macro-function fn)))
   (assert (not (special-operator-p fn)))
 
-  (or (let ((pair (gethash fn *number-of-arguments-and-values-ht*)))
+  (or (let ((pair (mf-gethash fn *number-of-arguments-and-values-ht*)))
         (and (consp pair)
              (integerp (cdr pair))
              (cdr pair)))
@@ -934,6 +1131,10 @@
                         most-positive-mfixnum)))
 
 (defun-one-output float-ticks/second-init ()
+
+; [Jared] multithreading note: I think it's fine not to protect this with a
+; lock, if two threads happen to recompute it, that's seems harmless enough.
+
   (unless *float-ticks/second-initialized*
     #+RDTSC (let ((i1 (ccl::rdtsc64))
                   (i2 (progn (sleep .1) (ccl::rdtsc64))))
@@ -1219,6 +1420,25 @@
 ; hons-clear is done, which is long enough since those operations clear all
 ; pons tables (in the #+static-hons case, which is the case we are in here).
 
+; [Jared] Is this OK for multithreaded memoize?  I think so.  The scenario here
+; is:
+;
+;  - The memo tables are shared across all threads
+;  - Each thread has its own hons space and their own notion of which
+;    conses are hl-hspace-truly-static-honsp
+;  - It is NOT OK (as in, it would be a soundness bug) for us to keep memo
+;    table entries after hons spaces get washed or cleared, because the index
+;    we're computing could then be reassigned to some other cons, as described
+;    in the comment below about "mistake" and "contradiction".
+;
+; The current strategy is to have the hons wash/clear functions clear all the
+; memo tables to ensure this doesn't happen.  I think that's sufficient even in
+; a multithreaded context: even though some honses in space A may not be honses
+; in space B, they still have uniquely assigned indices (their hl-staticp
+; indices), and that's all we're relying on here.  In other words, I think we
+; may get memoize misses because of differences in whether things are honsed,
+; but we aren't going to get any false hits.
+
          (+ hl-dynamic-base-addr (hl-staticp x)))
         (t
 
@@ -1256,6 +1476,10 @@
 
          nil)))
 
+; [Jared] multithreading notes.  Pons tables are hash tables that will be
+; shared.  There are no locks in the pons code, because we assume that the lock
+; will be grabbed before we start ponsing.
+
 #+static-hons
 (defabbrev pons-addr-hash (x y)
 
@@ -1277,6 +1501,11 @@
   '(safe-incf *pons-misses-counter* 1))
 
 (defun pons (x y ht)
+
+; We avoid any lock in this function, since it is called under the lock
+; installed by with-global-memoize-lock-static in the memoized definition; see
+; memoize-fn-def.
+
   (declare (hash-table ht))
 
   #+static-hons
@@ -1285,7 +1514,7 @@
 
   (incf-pons-calls)
 
-  (let* ((flex-alist (gethash y ht))
+  (let* ((flex-alist (mf-gethash y ht))
          (entry      (hl-flex-assoc x flex-alist)))
     (cond
      (entry)
@@ -1302,14 +1531,14 @@
 ; obvious benefit to creating a static cons here, after all.
 
               (cons x y))
-             (new-flex-alist (hl-flex-acons new-cons flex-alist)))
+             (new-flex-alist (mf-flex-acons new-cons flex-alist)))
 
 ; Ctrl+C safety is subtle.  If was-alistp, then the above was applicative.  We
 ; now install the flex alist, which occurs as a single update to the hash
 ; table.
 
         (when was-alistp
-          (setf (gethash y ht) new-flex-alist))
+          (mf-sethash y new-flex-alist ht))
 
 ; Otherwise, the flex-acons was non-applicative and the table was already
 ; extended, so there's nothing more we need to do.
@@ -1334,7 +1563,7 @@
 ; might not be a complete list, and it might even be too comprehensive; but it
 ; seems like a reasonable start.
 
-  (let ((ht (make-hash-table :test 'eq)))
+  (let ((ht (mf-mht :test 'eq :shared :default)))
     (note-fns-in-file "hons-raw.lisp" ht) ; its fns may be used in this file
     (note-fns-in-file "memoize-raw.lisp" ht)
     (flet ((update-nmht (fn)
@@ -1343,12 +1572,11 @@
 
 ; We only memoize functions, so we can restrict according to the test above.
 
-                          (setf (gethash fn *never-memoize-ht*)
-                                t))))
-      (maphash (lambda (key val)
-                 (declare (ignore val))
-                 (update-nmht key))
-               ht)
+                          (never-memoize-fn fn))))
+      (mf-maphash (lambda (key val)
+                    (declare (ignore val))
+                    (update-nmht key))
+                  ht)
       (loop for fn in *common-lisp-symbols-from-main-lisp-package*
             do
             (update-nmht fn))))
@@ -1358,11 +1586,14 @@
 
 ; Warning: Keep the return values in sync for the logic and raw Lisp.
 
-  (setf (gethash fn *never-memoize-ht*) t)
+; Note: Consider locking uses of this function, since it updates a global
+; hash-table.
+
+  (mf-sethash fn t *never-memoize-ht*)
   nil)
 
 (defun never-memoize-p (fn)
-  (gethash fn *never-memoize-ht*))
+  (mf-gethash fn *never-memoize-ht*))
 
 ; SECTION: Preliminary memoization support
 
@@ -1409,6 +1640,11 @@
    forget               ; Boolean, clears memo when outermost call exits
    memo-table-init-size ; integer, reasonable default of *mht-default-size*
    aokp                 ; use of attachments is allowed
+
+; [Jared] multithreading notes: we could probably add a lock here that was only
+; on a per-function basis.  That could help avoid needing the global lock, much
+; of the time.
+
    )
   t)
 
@@ -1481,7 +1717,7 @@
 ; This variable represents the index into *memoize-call-array* that starts the
 ; layout of the "column" for the innermost memoized function call being
 ; evaluated (or, in the case of its initial value, the column for
-; "outside-caller" = (gethash *initial-max-symbol-to-fixnum*
+; "outside-caller" = (mf-gethash *initial-max-symbol-to-fixnum*
 ; *memoize-info-ht*).  The idea is to accumulate calls and ticks into that
 ; "column".
 
@@ -1513,7 +1749,7 @@
 ; function's memoization table.  One possible implementation of this function
 ; would just be:
 ;
-;    (hl-mht :size init-size)
+;    (mf-mht :size init-size)
 ;
 ; But we hope to do better.  Our idea is to look at how large the table has
 ; been in the past, and use that size to make a good prediction of how large
@@ -1550,33 +1786,41 @@
 ; course, to actually reach such a large guess, you'd have to be repeatedly
 ; filling up the table to contain millions of entries and then clearing it.
 
-  (let* ((max-sizes ; previously recorded sizes of this table, if any exist
-          (gethash fn *memo-max-sizes*))
-         (size-to-use
-          (if (not max-sizes)
+  (with-global-memoize-lock
+   (let* ((max-sizes ; previously recorded sizes of this table, if any exist
+           (mf-gethash fn *memo-max-sizes*))
+          (size-to-use
+           (if (not max-sizes)
 
 ; We never cleared this memoize table before, so we don't have anything to go
 ; on besides what the user says.  Do what they say.
 
-              init-size
-            (let* ((nclears       (access memo-max-sizes-entry max-sizes
-                                          :num-clears))
-                   (avg-mt-size   (access memo-max-sizes-entry max-sizes
-                                          :avg-mt-size))
-                   (our-guess     (ceiling (* 1.20 avg-mt-size)))
-                   (capped-guess  (min our-guess (* nclears 44000)))
-                   (final-guess   (max 60 init-size capped-guess)))
-              final-guess))))
-    (hl-mht :size size-to-use)))
+               init-size
+             (let* ((nclears       (access memo-max-sizes-entry max-sizes
+                                           :num-clears))
+                    (avg-mt-size   (access memo-max-sizes-entry max-sizes
+                                           :avg-mt-size))
+                    (our-guess     (ceiling (* 1.20 avg-mt-size)))
+                    (capped-guess  (min our-guess (* nclears 44000)))
+                    (final-guess   (max 60 init-size capped-guess)))
+               final-guess))))
+     (mf-mht
+
+; This table is essentially blown away and reconstituted by rememoize-all,
+; hence by (mf-multiprocessing t).  So we avoid using :shared :default below,
+; in order to make the table a bit more efficient in the uniprocessing case.
+
+      :size size-to-use))))
 
 (defun make-initial-memoize-pons-table (fn init-size)
   (declare (ignorable init-size))
 
 ; This is similar to make-initial-memoize-table, but for the pons table.
 
-  (let* ((max-sizes (gethash fn *memo-max-sizes*))
-         (size-to-use
-          (if (not max-sizes)
+  (with-global-memoize-lock
+   (let* ((max-sizes (mf-gethash fn *memo-max-sizes*))
+          (size-to-use
+           (if (not max-sizes)
 
 ; We've never cleared this pons table before, so we don't have anything to go
 ; on besides what the user says.  Now, this is subtle.  Originally I just
@@ -1592,18 +1836,24 @@
 ; as reasonable a choice as any, say that the memo-table-init-size only affects
 ; the memoize table and not the initial pons table.
 
-              *mht-default-size*
-            (let* ((nclears       (access memo-max-sizes-entry max-sizes
-                                          :num-clears))
-                   (avg-pt-size   (access memo-max-sizes-entry max-sizes
-                                          :avg-pt-size))
-                   (our-guess     (ceiling (* 1.20 avg-pt-size)))
-                   (capped-guess  (min our-guess (* nclears 44000)))
-                   (final-guess   (max *mht-default-size*
-                                       init-size
-                                       capped-guess)))
-              final-guess))))
-    (hl-mht :size size-to-use)))
+               *mht-default-size*
+             (let* ((nclears       (access memo-max-sizes-entry max-sizes
+                                           :num-clears))
+                    (avg-pt-size   (access memo-max-sizes-entry max-sizes
+                                           :avg-pt-size))
+                    (our-guess     (ceiling (* 1.20 avg-pt-size)))
+                    (capped-guess  (min our-guess (* nclears 44000)))
+                    (final-guess   (max *mht-default-size*
+                                        init-size
+                                        capped-guess)))
+               final-guess))))
+     (mf-mht
+
+; This table is essentially blown away and reconstituted by rememoize-all,
+; hence by (mf-multiprocessing t).  So we avoid using :shared :default below,
+; in order to make the table a bit more efficient in the uniprocessing case.
+
+      :size size-to-use))))
 
 (defun update-memo-max-sizes (fn pt-size mt-size)
 
@@ -1612,32 +1862,35 @@
 ; respectively (perhaps nil initially, in which case the size is 1).  We update
 ; the *memo-max-sizes* entry associated with f.
 
-  (let ((old (gethash fn *memo-max-sizes*)))
-    (if (not old)
-        (setf (gethash fn *memo-max-sizes*)
-              (make memo-max-sizes-entry
-                    :num-clears 1
-                    :max-pt-size pt-size
-                    :max-mt-size mt-size
-                    :avg-pt-size (coerce pt-size 'float)
-                    :avg-mt-size (coerce mt-size 'float)))
-      (let* ((old.num-clears  (access memo-max-sizes-entry old :num-clears))
-             (old.max-pt-size (access memo-max-sizes-entry old :max-pt-size))
-             (old.max-mt-size (access memo-max-sizes-entry old :max-mt-size))
-             (old.avg-pt-size (access memo-max-sizes-entry old :avg-pt-size))
-             (old.avg-mt-size (access memo-max-sizes-entry old :avg-mt-size))
-             (new.num-clears  (+ 1 old.num-clears)))
-        (setf (gethash fn *memo-max-sizes*)
-              (make memo-max-sizes-entry
-                    :num-clears  new.num-clears
-                    :max-pt-size (max pt-size old.max-pt-size)
-                    :max-mt-size (max mt-size old.max-mt-size)
-                    :avg-pt-size (/ (+ pt-size (* old.avg-pt-size
-                                                  old.num-clears)) 
-                                    new.num-clears)
-                    :avg-mt-size (/ (+ mt-size (* old.avg-mt-size
-                                                  old.num-clears))
-                                    new.num-clears))))))
+  (with-global-memoize-lock
+   (let ((old (mf-gethash fn *memo-max-sizes*)))
+     (if (not old)
+         (mf-sethash fn
+                     (make memo-max-sizes-entry
+                           :num-clears 1
+                           :max-pt-size pt-size
+                           :max-mt-size mt-size
+                           :avg-pt-size (coerce pt-size 'float)
+                           :avg-mt-size (coerce mt-size 'float))
+                     *memo-max-sizes*)
+       (let* ((old.num-clears  (access memo-max-sizes-entry old :num-clears))
+              (old.max-pt-size (access memo-max-sizes-entry old :max-pt-size))
+              (old.max-mt-size (access memo-max-sizes-entry old :max-mt-size))
+              (old.avg-pt-size (access memo-max-sizes-entry old :avg-pt-size))
+              (old.avg-mt-size (access memo-max-sizes-entry old :avg-mt-size))
+              (new.num-clears  (+ 1 old.num-clears)))
+         (mf-sethash fn
+                     (make memo-max-sizes-entry
+                           :num-clears  new.num-clears
+                           :max-pt-size (max pt-size old.max-pt-size)
+                           :max-mt-size (max mt-size old.max-mt-size)
+                           :avg-pt-size (/ (+ pt-size (* old.avg-pt-size
+                                                         old.num-clears)) 
+                                           new.num-clears)
+                           :avg-mt-size (/ (+ mt-size (* old.avg-mt-size
+                                                         old.num-clears))
+                                           new.num-clears))
+                     *memo-max-sizes*)))))
   nil)
 
 (defun print-memo-max-sizes ()
@@ -1646,35 +1899,36 @@
 ; used, so I haven't really reviewed this code, though I did test it
 ; successfully.
 
-  (when (equal (hash-table-count *memo-max-sizes*) 0)
-    (return-from print-memo-max-sizes nil))
-  (format t "Memo table statistics gathered at each from when they were ~
+  (with-global-memoize-lock
+   (when (equal (mf-hash-table-count *memo-max-sizes*) 0)
+     (return-from print-memo-max-sizes nil))
+   (format t "Memo table statistics gathered at each from when they were ~
              cleared:~%~%")
-  (let ((indent 8) ; initial value of 8 is the length of "Function"
-        indent-str)
-    (maphash (lambda (fn entry)
-               (declare (ignore entry))
-               (setq indent (max indent (length (symbol-name fn)))))
-             *memo-max-sizes*)
-    (setq indent-str (format nil "~a" (+ 2 indent)))
-    (format t (concatenate 'string "~" indent-str ":@a") "Function")
-    (format t " ~10:@a | ~15:@a ~15:@a | ~15:@a ~15:@a~%"
-            "Clears" "PT Max" "PT Avg" "MT Max" "MT Avg")
-    (maphash
-     (lambda (fn entry)
-       (let* ((num-clears  (access memo-max-sizes-entry entry :num-clears))
-              (max-pt-size (access memo-max-sizes-entry entry :max-pt-size))
-              (max-mt-size (access memo-max-sizes-entry entry :max-mt-size))
-              (avg-pt-size (access memo-max-sizes-entry entry :avg-pt-size))
-              (avg-mt-size (access memo-max-sizes-entry entry :avg-mt-size)))
-         (format t
-                 (concatenate 'string "~" indent-str
-                              ":@a ~10:D | ~15:D ~15:D | ~15:D ~15:D~%")
-                 fn num-clears
-                 max-pt-size (floor avg-pt-size)
-                 max-mt-size (floor avg-mt-size))))
-     *memo-max-sizes*)
-    (format t "~%"))
+   (let ((indent 8) ; initial value of 8 is the length of "Function"
+         indent-str)
+     (mf-maphash (lambda (fn entry)
+                   (declare (ignore entry))
+                   (setq indent (max indent (length (symbol-name fn)))))
+                 *memo-max-sizes*)
+     (setq indent-str (format nil "~a" (+ 2 indent)))
+     (format t (concatenate 'string "~" indent-str ":@a") "Function")
+     (format t " ~10:@a | ~15:@a ~15:@a | ~15:@a ~15:@a~%"
+             "Clears" "PT Max" "PT Avg" "MT Max" "MT Avg")
+     (mf-maphash
+      (lambda (fn entry)
+        (let* ((num-clears  (access memo-max-sizes-entry entry :num-clears))
+               (max-pt-size (access memo-max-sizes-entry entry :max-pt-size))
+               (max-mt-size (access memo-max-sizes-entry entry :max-mt-size))
+               (avg-pt-size (access memo-max-sizes-entry entry :avg-pt-size))
+               (avg-mt-size (access memo-max-sizes-entry entry :avg-mt-size)))
+          (format t
+                  (concatenate 'string "~" indent-str
+                               ":@a ~10:D | ~15:D ~15:D | ~15:D ~15:D~%")
+                  fn num-clears
+                  max-pt-size (floor avg-pt-size)
+                  max-mt-size (floor avg-mt-size))))
+      *memo-max-sizes*)
+     (format t "~%")))
   nil)
 
 ; Essay on Memoization Involving Stobjs
@@ -1706,10 +1960,6 @@
 ; (foo st) ; no longer updates (fld st)
 ; (fld st) ; still ((nil . nil). (nil . nil))
 
-(defun-one-output empty-ht-p (x)
-  (and (hash-table-p x)
-       (eql 0 (hash-table-count (the hash-table x)))))
-
 (defun memoize-flush1 (lst)
 
 ; Experiments showed that when lst is nil, it is faster to call this function
@@ -1722,12 +1972,13 @@
 ; no soundness issue, and in fact those pons table entries might remain useful;
 ; the cost is the space taken up by the pons tables.
 
-  (loop for sym in lst do
-        (when (boundp (the symbol sym)) ; not sure if this test is needed
-          (let ((old (symbol-value (the symbol sym))))
-            (unless (or (null old)
-                        (eql 0 (hash-table-count (the hash-table old))))
-              (setf (symbol-value (the symbol sym)) nil))))))
+  (with-global-memoize-lock
+   (loop for sym in lst do
+         (when (boundp (the symbol sym)) ; not sure if this test is needed
+           (let ((old (symbol-value (the symbol sym))))
+             (unless (or (null old)
+                         (eql 0 (mf-hash-table-count old)))
+               (setf (symbol-value (the symbol sym)) nil)))))))
 
 (defmacro memoize-flush (st)
 
@@ -1760,15 +2011,16 @@
 ; memoize-call-array-grow.  For simplicity, we make that be the case always,
 ; and cleary.
 
-  (let ((n1 (ma-index *2max-memoize-fns*))
-        (n2 (1+ *max-symbol-to-fixnum*)))
-    (declare (type (and fixnum mfixnum) n1 n2))
-    (setq *memoize-call-array* (initial-memoize-call-array 1))
-    (setq *callers-array* (make-array 0))
-    (gc$)
-    (setq *memoize-call-array* (initial-memoize-call-array n1))
-    (setq *callers-array* (make-array n2 :initial-element nil))
-    (setq *caller* (outside-caller-col-base))))
+  (with-global-memoize-lock
+   (let ((n1 (ma-index *2max-memoize-fns*))
+         (n2 (1+ *max-symbol-to-fixnum*)))
+     (declare (type (and fixnum mfixnum) n1 n2))
+     (setq *memoize-call-array* (initial-memoize-call-array 1))
+     (setq *callers-array* (make-array 0))
+     (gc$)
+     (setq *memoize-call-array* (initial-memoize-call-array n1))
+     (setq *callers-array* (make-array n2 :initial-element nil))
+     (setq *caller* (outside-caller-col-base)))))
 
 (defun memoize-call-array-grow
   (&optional (2nmax (* 2 (ceiling (* 3/2 (/ *2max-memoize-fns* 2))))))
@@ -1778,92 +2030,79 @@
 ; with an argument.  The argument will become the new dimension of the
 ; (virtual) 2D square array, *memoize-call-array*.
 
-  (unless (integerp 2nmax)
-    (error "(memoize-call-array-grow ~s).  Arg must be an integer."
-           2nmax))
-  (unless (evenp 2nmax)
-    (error "(memoize-call-array-grow ~s).  Arg must be even." 2nmax))
-  (unless (> 2nmax 100)
-    (error "(memoize-call-array-grow ~s).  Arg must be > 100." 2nmax))
-  (when (<= 2nmax *2max-memoize-fns*)
-    (cw "; memoize-call-array-grow: *memoize-call-array* already big enough.~%")
-    (return-from memoize-call-array-grow))
-  (unless (<= (* 2nmax 2nmax) most-positive-mfixnum)
-    (error "memoize-call-array-grow:  most-positive-mfixnum exceeded.  Too ~
-            many memoized functions."))
-  (unless (<= (* 2nmax 2nmax) most-positive-fixnum)
-    (error "memoize-call-array-grow:  most-positive-fixnum exceeded.  Too ~
-            many memoized functions."))
-  (unless (< (* 2nmax 2nmax) array-total-size-limit)
-    (error "memoize-call-array-grow: ARRAY-TOTAL-SIZE-LIMIT exceeded.  Too ~
-            many memoized functions."))
-  (unless (< (* 2nmax 2nmax) array-dimension-limit)
-    (error "memoize-call-array-grow: ARRAY-DIMENSION-LIMIT exceeded.  Too ~
-            many memoized functions."))
-  (unless (eql *caller* (outside-caller-col-base))
-    (cw "; MEMOIZE-CALL-ARRAY-GROW was called while a memoized function~%~
-         ; was executing, so call reports may be quite inaccurate.~%"))
-  (setq *2max-memoize-fns* 2nmax)
-  (let ((state *the-live-state*))
-    (observation 'sync-memoize-call-array
-                 "Now reinitializing memoization structures.  This will erase ~
-                  saved values and statistics."))
-  (sync-memoize-call-array)
-  (rememoize-all)
+  (with-global-memoize-lock
+   (unless (integerp 2nmax)
+     (error "(memoize-call-array-grow ~s).  Arg must be an integer."
+            2nmax))
+   (unless (evenp 2nmax)
+     (error "(memoize-call-array-grow ~s).  Arg must be even." 2nmax))
+   (unless (> 2nmax 100)
+     (error "(memoize-call-array-grow ~s).  Arg must be > 100." 2nmax))
+   (when (<= 2nmax *2max-memoize-fns*)
+     (cw "; memoize-call-array-grow: *memoize-call-array* already big enough.~%")
+     (return-from memoize-call-array-grow))
+   (unless (<= (* 2nmax 2nmax) most-positive-mfixnum)
+     (error "memoize-call-array-grow:  most-positive-mfixnum exceeded.  Too ~
+             many memoized functions."))
+   (unless (<= (* 2nmax 2nmax) most-positive-fixnum)
+     (error "memoize-call-array-grow:  most-positive-fixnum exceeded.  Too ~
+             many memoized functions."))
+   (unless (< (* 2nmax 2nmax) array-total-size-limit)
+     (error "memoize-call-array-grow: ARRAY-TOTAL-SIZE-LIMIT exceeded.  Too ~
+             many memoized functions."))
+   (unless (< (* 2nmax 2nmax) array-dimension-limit)
+     (error "memoize-call-array-grow: ARRAY-DIMENSION-LIMIT exceeded.  Too ~
+             many memoized functions."))
+   (unless (eql *caller* (outside-caller-col-base))
+     (cw "; MEMOIZE-CALL-ARRAY-GROW was called while a memoized function~%~
+          ; was executing, so call reports may be quite inaccurate.~%"))
+   (setq *2max-memoize-fns* 2nmax)
+   (let ((state *the-live-state*))
+     (observation 'sync-memoize-call-array
+                  "Now reinitializing memoization structures.  This will ~
+                   erase saved values and statistics."))
+   (sync-memoize-call-array)
+   (rememoize-all))
   nil)
 
 (defun-one-output symbol-to-fixnum-create (s)
 
 ; We return the number n associated with function symbol s, in the sense that
-; (gethash n *memoize-info-ht*) = s.  If no such number n yet exists, it is
+; (mf-gethash n *memoize-info-ht*) = s.  If no such number n yet exists, it is
 ; returned -- but this function does not actually add the association; that is
 ; done by its caller, memoize-fn.
 
   (check-type s symbol)
-  (let ((g (gethash s *memoize-info-ht*)))
-    (if g
-        (access memoize-info-ht-entry g :num)
-      (let (new)
-        (assert (eql *caller* (outside-caller-col-base))) ; sanity check
-        (loop for i fixnum
-              from (1+ *initial-max-symbol-to-fixnum*)
-              below (the fixnum (floor *2max-memoize-fns* 2))
-              do (unless (gethash i *memoize-info-ht*)
-                   (setq new i)
-                   (return)))
-        (cond (new (setq *max-symbol-to-fixnum*
-                         (max *max-symbol-to-fixnum* new))
-                   new)
-              (t (memoize-call-array-grow)
-                 (safe-incf *max-symbol-to-fixnum* 1 symbol-to-fixnum-create)
-                 *max-symbol-to-fixnum*))))))
+  (with-global-memoize-lock
+   (let ((g (mf-gethash s *memoize-info-ht*)))
+     (if g
+         (access memoize-info-ht-entry g :num)
+       (let (new)
+         (assert (eql *caller* (outside-caller-col-base))) ; sanity check
+         (loop for i fixnum
+               from (1+ *initial-max-symbol-to-fixnum*)
+               below (the fixnum (floor *2max-memoize-fns* 2))
+               do (unless (mf-gethash i *memoize-info-ht*)
+                    (setq new i)
+                    (return)))
+         (cond (new (setq *max-symbol-to-fixnum*
+                          (max *max-symbol-to-fixnum* new))
+                    new)
+               (t (memoize-call-array-grow)
+                  (safe-incf *max-symbol-to-fixnum* 1 symbol-to-fixnum-create)
+                  *max-symbol-to-fixnum*)))))))
 
 (defun-one-output symbol-to-fixnum (s)
   (check-type s symbol)
-  (let ((g (gethash s *memoize-info-ht*)))
+  (let ((g (mf-gethash s *memoize-info-ht*)))
     (if g
         (access memoize-info-ht-entry g :num)
       (error "(symbol-to-fixnum ~s).  Illegal symbol." s))))
 
 (defun-one-output fixnum-to-symbol (n)
   (check-type n fixnum)
-  (or (gethash n *memoize-info-ht*)
+  (or (mf-gethash n *memoize-info-ht*)
       (error "(fixnum-to-symbol ~s). Illegal number." n)))
-
-(defun-one-output coerce-index (x)
-
-; X is either a memoized function symbol or the associated number
-; (symbol-to-fixnum, also column number in *memoize-call-array* and index in
-; *callers-array*) of such.
-
-  (cond ((typep x 'fixnum) ; equivalently, x is a number
-         (assert (and (>= (the fixnum x) 0)
-                      (< (the fixnum x)
-                         (the fixnum (ash (length *memoize-call-array*)
-                                          -1)))))
-         x)
-        (t ; could (assert (symbolp x)) but probably not worth the cycles
-         (symbol-to-fixnum x))))
 
 (defun-one-output hons-gentemp (root)
   (check-type root string)
@@ -2023,6 +2262,8 @@
         (t
          cl-defun)))
 
+(defg *memoize-timing-bugs* 0)
+
 (defmacro fix-ticks (ticks ctx)
 
 ; Warning: If you make this a function and add a declaim form first such as
@@ -2037,20 +2278,28 @@
          (ctx ,ctx))
      (declare (type mfixnum ticks))
      (the-mfixnum
-      (cond ((and (<= 0 (the-mfixnum ticks))
-                  (< (the-mfixnum ticks)
-                     (the-mfixnum *10-days*)))
-             (the-mfixnum ticks))
-            (t (format t "Ignoring time increment of ~a sec for ~a~%"
-                       (/ ticks *float-ticks/second*) ctx)
-               0)))))
+      (cond
+       ((and (<= 0 (the-mfixnum ticks))
+             (< (the-mfixnum ticks)
+                (the-mfixnum *10-days*)))
+        (the-mfixnum ticks))
+       (t
+        (incf *memoize-timing-bugs*)
+        (when (<= *memoize-timing-bugs* 10)
+          (format t "Ignoring time increment of ~a sec for ~a~%"
+                  (/ ticks *float-ticks/second*) ctx)
+          (when (eql *memoize-timing-bugs* 10)
+            (format
+             t
+             "Timing is very dubious.  Suppressing further messages.~%")))
+        0)))))
 
 ; SECTION: The main code for creating memoized function definitions:
 ; memoize-fn, unmemoize-fn, etc.
 
 (defun-one-output memoizedp-raw (fn)
   (and (symbolp fn)
-       (values (gethash fn *memoize-info-ht*))))
+       (values (mf-gethash fn *memoize-info-ht*))))
 
 (defmacro mf-make-symbol (&rest r) ; for forming symbols in package ACL2
   `(our-syntax (intern (format nil ,@r) *acl2-package*)))
@@ -2061,83 +2310,86 @@
 ; only a few of the check below (if any) are necessary if memoize-fn is called
 ; by way of an invocation of memoize in the ACL2 loop.
 
-  (unless (symbolp fn)
-    (error "Memoize-fn: ~s is not a symbol." fn))
+  (with-global-memoize-lock
 
-  (maybe-untrace! fn) ; See the comment about Memoization in trace$-def.
+   (unless (symbolp fn)
+     (error "Memoize-fn: ~s is not a symbol." fn))
 
-  (unless *memoize-init-done*
-    (error "Memoize-fn:  *MEMOIZE-INIT-DONE* is still nil."))
+   (maybe-untrace! fn) ; See the comment about Memoization in trace$-def.
 
-  (unless (fboundp fn)
-    (error "Memoize-fn: ~s is not fboundp." fn))
+   (unless *memoize-init-done*
+     (error "Memoize-fn:  *MEMOIZE-INIT-DONE* is still nil."))
 
-  (when (or (macro-function fn)
-            (special-operator-p fn)
-            (and (fboundp 'compiler-macro-function) ; for GCL as of 5/2013
-                 (compiler-macro-function fn)))
-    (error "Memoize-fn: ~s is a macro or a special operator or has a compiler ~
-            macro." fn))
+   (unless (fboundp fn)
+     (error "Memoize-fn: ~s is not fboundp." fn))
 
-  (when (never-memoize-p fn)
-    (error "Memoize-fn: ~s must never be memoized" fn))
+   (when (or (macro-function fn)
+             (special-operator-p fn)
+             (and (fboundp 'compiler-macro-function) ; for GCL as of 5/2013
+                  (compiler-macro-function fn)))
+     (error "Memoize-fn: ~s is a macro or a special operator or has a ~
+             compiler macro."
+            fn))
 
-  (when (and inline
-             (or (member-eq fn
-                            (f-get-global 'logic-fns-with-raw-code state))
-                 (member-eq fn
-                            (f-get-global 'program-fns-with-raw-code state))))
-    (error "Memoize-fn: ~s must never be memoized with :inline t,~%~
-            because it belongs to the list stored in state global~%~
-            variable ~s and thus runs code different~%~
-            than that stored in the ACL2 logical world, as is typically~%~
-            used when inserting inlined code for memoization."
-           fn
-           (if (member-eq fn
-                          (f-get-global 'logic-fns-with-raw-code state))
-               'logic-fns-with-raw-code
-             'program-fns-with-raw-code)))
+   (when (never-memoize-p fn)
+     (error "Memoize-fn: ~s must never be memoized" fn))
 
-  (when (memoizedp-raw fn)
-    (observation 'memoize
-                 "~s0 is currently memoized. We will first unmemoize it, then ~
-                  memoize it again."
-                 fn)
-    (unmemoize-fn fn))
+   (when (and inline
+              (or (member-eq fn
+                             (f-get-global 'logic-fns-with-raw-code state))
+                  (member-eq fn
+                             (f-get-global 'program-fns-with-raw-code state))))
+     (error "Memoize-fn: ~s must never be memoized with :inline t,~%~
+             because it belongs to the list stored in state global~%~
+             variable ~s and thus runs code different~%~
+             than that stored in the ACL2 logical world, as is typically~%~
+             used when inserting inlined code for memoization."
+            fn
+            (if (member-eq fn
+                           (f-get-global 'logic-fns-with-raw-code state))
+                'logic-fns-with-raw-code
+              'program-fns-with-raw-code)))
 
-  (when (member fn (eval '(trace)))
-    (observation 'memoize
-                 "Untracing ~s before memoizing it."
-                 fn)
-    (eval `(untrace ,fn)))
+   (when (memoizedp-raw fn)
+     (observation 'memoize
+                  "~s0 is currently memoized. We will first unmemoize it, ~
+                   then memoize it again."
+                  fn)
+     (unmemoize-fn fn))
+
+   (when (member fn (eval '(trace)))
+     (observation 'memoize
+                  "Untracing ~s before memoizing it."
+                  fn)
+     (eval `(untrace ,fn)))
 
 ; TRACE, UNTRACE, OLD-TRACE, and OLD-UNTRACE are macros that get
 ; redefined sometimes.  So we use EVAL in calling them.
 
-  #+ccl
-  (when (ccl::%advised-p fn)
-    (error "~%; Memoize-fn: Please unadvise ~s before calling memoize-fn on ~
+   #+ccl
+   (when (ccl::%advised-p fn)
+     (error "~%; Memoize-fn: Please unadvise ~s before calling memoize-fn on ~
              it." fn))
 
-  (when (and (fboundp 'old-trace)
-             (member fn (eval '(old-trace))))
-    (observation 'memoize
-                 "Old-untracing ~s before memoizing it."
-                 fn)
-    (eval `(old-untrace ,fn)))
+   (when (and (fboundp 'old-trace)
+              (member fn (eval '(old-trace))))
+     (observation 'memoize
+                  "Old-untracing ~s before memoizing it."
+                  fn)
+     (eval `(old-untrace ,fn)))
 
-  (when (getprop fn 'constrainedp nil 'current-acl2-world wrld)
-    (error "Memoize-fn: ~s is constrained; you may instead wish to memoize a ~
-            caller or to memoize its attachment (see :DOC defattach)."
-           fn))
+   (when (getprop fn 'constrainedp nil 'current-acl2-world wrld)
+     (error "Memoize-fn: ~s is constrained; you may instead wish to memoize a ~
+             caller or to memoize its attachment (see :DOC defattach)."
+            fn))
 
-  #+ccl
-  (when (multiple-value-bind (req opt restp keys)
-                             (ccl::function-args (symbol-function fn))
-                             (or restp
-                                 keys
-                                 (not (integerp req))
-                                 (not (eql opt 0))))
+   #+ccl
+   (when (multiple-value-bind (req opt restp keys)
+                              (ccl::function-args (symbol-function fn))
+                              (or restp
+                                  keys
+                                  (not (integerp req))
+                                  (not (eql opt 0))))
 
 ; This sanity check will never cause an error when memoization is invoked using
 ; memoize inside the ACL2 loop.
@@ -2148,33 +2400,35 @@
 ; by ccl::function-args are discarded, as per the CL HyperSpec documentation of
 ; multiple-value-bind.
 
-    (error "Memoize-fn: ~a has non-simple arguments." fn)))
+     (error "Memoize-fn: ~a has non-simple arguments." fn))))
 
 (defun memoize-fn-init-2 (fn formals condition stobjs-in stobjs-out)
 
 ; Do more initial stuff for memoize-fn after formals is computed.
 
-  (unless (and (symbol-listp formals)
-               (no-duplicatesp formals)
-               (loop for x in formals never (constantp x)))
+  (with-global-memoize-lock
+
+   (unless (and (symbol-listp formals)
+                (no-duplicatesp formals)
+                (loop for x in formals never (constantp x)))
 
 ; This sanity check is unnecessary when memoization is invoked using memoize
 ; inside the ACL2 loop.
 
-    (error "Memoize-fn: FORMALS, ~a, must be a true list of distinct, ~
-            nonconstant symbols."
-           formals))
+     (error "Memoize-fn: FORMALS, ~a, must be a true list of distinct, ~
+             nonconstant symbols."
+            formals))
 
-  (when (intersection lambda-list-keywords formals)
+   (when (intersection lambda-list-keywords formals)
 
 ; This sanity check is unnecessary when memoization is invoked using memoize
 ; inside the ACL2 loop.
 
-    (error "Memoize-fn: FORMALS, ~a, may not intersect LAMBDA-LIST-KEYWORDS."
-           formals))
+     (error "Memoize-fn: FORMALS, ~a, may not intersect LAMBDA-LIST-KEYWORDS."
+            formals))
 
-  (when (and condition (or (member 'state stobjs-in)
-                           (member 'state stobjs-out)))
+   (when (and condition (or (member 'state stobjs-in)
+                            (member 'state stobjs-out)))
 
 ; This sanity check is unnecessary when memoization is invoked using memoize
 ; inside the ACL2 loop, because in memoize-table-chk, we disallow state as a
@@ -2185,7 +2439,7 @@
 ; and defstobj-field-fns-raw-defs to flush memo tables as necessary.  But there
 ; is no such accommodation for the ACL2 state.
 
-    (error "Memoize-fn:  ~s uses STATE." fn)))
+     (error "Memoize-fn:  ~s uses STATE." fn))))
 
 (defun memoize-fn-inner-body (fn condition body-call fn-col-base
                                  tablename localtablename
@@ -2199,6 +2453,10 @@
 ; Comments saying "performance counting*" are intended to mark code that might
 ; best be ignored on a first reading.  A long comment in *memoize-call-array*
 ; outlines how performance counting is implemented.
+
+;; [Jared] multithreading note: all of this is going to be protected with the
+;; global lock, so we shouldn't need any locking inside here.  See
+;; memoize-fn-def.
 
   (let ((mf-record-mht ; performance counting
          (and *record-mht-calls*
@@ -2262,9 +2520,7 @@
 
               (multiple-value-setq
                (,*mf-ans* ,*mf-ans-p*)
-               ,(let ((gethash-form
-                       `(gethash ,*mf-args*
-                                 (the hash-table ,localtablename))))
+               ,(let ((gethash-form `(mf-gethash ,*mf-args* ,localtablename)))
                   (cond (aokp `(cond
                                 (*aokp* ,gethash-form)
                                 (t (values nil nil))))
@@ -2333,9 +2589,9 @@
                                      ',fn
                                      ,*attached-fn-temp*))))
                           (t ; Save the results in the memo table.
-                           (setf (gethash ,*mf-args*
-                                          (the hash-table ,localtablename))
-                                 (list* ,@vars))))
+                           (mf-sethash ,*mf-args*
+                                       (list* ,@vars)
+                                       ,localtablename)))
                          (when ,*attached-fn-temp* ; optimization
                            (update-attached-fn-called ,*attached-fn-temp*))
                          (mv? ,@vars))))))))))))))
@@ -2359,6 +2615,10 @@
 ; the column for fn).  So, any immediately subsidiary calls of memoized
 ; functions will be "charged" to fn, and *caller* will only be re-assigned by
 ; subsidiary top-level calls of other memoized functions.
+
+;; [Jared] multithreading note: all of this is going to be protected with the
+;; global lock, so we shouldn't need any locking inside here.  See
+;; memoize-fn-def.
 
   `(let ((,*mf-old-caller* *caller*)
          #+ccl
@@ -2423,8 +2683,8 @@
 ; evaluations, presumably because we weren't starting from scratch.
 ; Interestingly, the byte allocation on subsequent runs was also 0 after
 ; memoizing with :forget t when we experimented by replacing the setq forms
-; below by clrhash calls.  So perhaps we should consider oding that, to avoid
-; generating garbage hash tables.
+; below by clrhash calls.  So perhaps we should consider using clrhash instead
+; of setq below, to avoid generating garbage hash tables.
 
              `((setq ,tablename nil)
                ,@(and (> number-of-args 1)
@@ -2441,29 +2701,35 @@
 
   `(defun ,fn ,formals ,@dcls
      (declare (ignorable ,@formals ,@specials))
-     (let* ((,*mf-count-loc* ; performance counting
-             ,(if (or *record-calls* *record-time*)
+     (with-global-memoize-lock-static
+
+      ;; Special case.  This is the lock that will be grabbed when executing
+      ;; the memoized function.  For maximum performance in the single
+      ;; threaded case, use the less-safe, static version of lock grabbing.
+
+      (let* ((,*mf-count-loc* ; performance counting
+              ,(if (or *record-calls* *record-time*)
 
 ; The following expression is similar to `(ma-index-calls ,fnn *caller*),
 ; except that *caller* is already a column (that is, already multiplied by the
 ; square dimension of *memoize-call-array*).
 
-                  `(the-mfixnum (+ *caller* ,(* 2 fnn)))
-                0))
-            (,*mf-ma* *memoize-call-array*)
-            ,localtablename ,localponstablename)
-       (declare (type mfixnum ,*mf-count-loc*)
-                (ignorable ,*mf-count-loc* ,*mf-ma*
-                           ,localponstablename
-                           ,localtablename)
-                (type (simple-array mfixnum (*))
-                      ,*mf-ma*))
-       ,@(and *record-calls* ; performance counting
-              `((safe-incf (aref ,*mf-ma* ,*mf-count-loc*) 1)))
-       (flet ((,body-name () ,body))
-         (if (eql -1 ,start-ticks)
-             ,outer-body
-           ,inner-body)))))
+                   `(the-mfixnum (+ *caller* ,(* 2 fnn)))
+                 0))
+             (,*mf-ma* *memoize-call-array*)
+             ,localtablename ,localponstablename)
+        (declare (type mfixnum ,*mf-count-loc*)
+                 (ignorable ,*mf-count-loc* ,*mf-ma*
+                            ,localponstablename
+                            ,localtablename)
+                 (type (simple-array mfixnum (*))
+                       ,*mf-ma*))
+        ,@(and *record-calls* ; performance counting
+               `((safe-incf (aref ,*mf-ma* ,*mf-count-loc*) 1)))
+        (flet ((,body-name () ,body))
+          (if (eql -1 ,start-ticks)
+              ,outer-body
+            ,inner-body))))))
 
 (defun-one-output memoize-eval-compile (def old-fn)
   #+(or ccl sbcl) ; all functions are compiled
@@ -2493,7 +2759,14 @@
                       (forget nil)
                       (memo-table-init-size *mht-default-size*)
                       (aokp nil)
-                      &aux (wrld (w *the-live-state*)))
+                      &aux
+                      (wrld (w *the-live-state*))
+                      (memoize-fn-signature-error
+                       "Memoize-fn: could not determine a signature for ~a.~%~
+  To assert the signature of ~:*~a, use (mf-note-arity '~:*~a nargs nvals),~%~
+  for example, (mf-note-arity '~:*~a 3 1).)  If there are stobjs arguments~%~
+  then do not use that mechanism; instead, pass suitable arguments to~%~
+  memoize-fn."))
 
 ; Warning: Keep the argument list for this function in sync with memoize-info,
 ; as explained  there.
@@ -2569,78 +2842,91 @@
                       fn))
   (when (equal condition *nil*)
     (setq condition nil))
-  (with-warnings-suppressed ; e.g., might avoid redefinition warnings
-   (memoize-fn-init fn inline wrld)
-   (let* ((cl-defun (memoize-look-up-def fn cl-defun inline wrld))
-          (formals
-           (cond
-            ((eq formals :default)
-             (let ((formals (getprop fn 'formals t 'current-acl2-world wrld)))
-               (if (eq formals t)
-                   (if (consp cl-defun)
-                       (cadr cl-defun)
-                     (let ((n (mf-len-inputs fn)))
-                       (if n
-                           (loop for i fixnum below n
-                                 collect (mf-make-symbol "X~a" i))
-                         (error *memoize-fn-signature-error* fn))))
-                 formals)))
-            (t formals)))
-          (stobjs-in
-           (if (eq stobjs-in :default)
-               (let ((s (getprop fn 'stobjs-in t 'current-acl2-world wrld)))
-                 (if (eq s t)
-                     (make-list (len formals)) ; assume no stobjs
-                   s))
-             stobjs-in))
-          (stobjs-out
-           (if (eq stobjs-out :default)
-               (let ((s
+  (with-global-memoize-lock
+
+    ;; [Jared] note that this lock protects the operation of the memoize
+    ;; command, itself.  The definition of the newly memoized function has
+    ;; its own, separate lock.  See memoize-fn-def.
+
+; Perhaps this lock is not necessary; after all, it seems unlikely that
+; different threads would be memoizing at the same time.  On the other hand, we
+; really don't want to worry about the possibility that some structures are
+; installed and others are not if another thread tries to call a function that
+; is in the process of being memoized; so we use a lock here.
+
+   (with-warnings-suppressed ; e.g., might avoid redefinition warnings
+    (memoize-fn-init fn inline wrld)
+    (let* ((cl-defun (memoize-look-up-def fn cl-defun inline wrld))
+           (formals
+            (cond
+             ((eq formals :default)
+              (let ((formals (getprop fn 'formals t 'current-acl2-world wrld)))
+                (if (eq formals t)
+                    (if (consp cl-defun)
+                        (cadr cl-defun)
+                      (let ((n (mf-len-inputs fn)))
+                        (if n
+                            (loop for i fixnum below n
+                                  collect (mf-make-symbol "X~a" i))
+                          (error memoize-fn-signature-error fn))))
+                  formals)))
+             (t formals)))
+           (stobjs-in
+            (if (eq stobjs-in :default)
+                (let ((s (getprop fn 'stobjs-in t 'current-acl2-world wrld)))
+                  (if (eq s t)
+                      (make-list (len formals)) ; assume no stobjs
+                    s))
+              stobjs-in))
+           (stobjs-out
+            (if (eq stobjs-out :default)
+                (let ((s
 
 ; Note that the never-memoize-p check made in memoize-fn-init guarantees that
 ; here, we are not taking the stobjs-out of functions in *stobjs-out-invalid*.
 
-                      (getprop fn 'stobjs-out t 'current-acl2-world wrld)))
-                 (if (eq s t)
-                     (let ((n (mf-len-outputs fn)))
-                       (cond (n (make-list n))
-                             ((null condition)
+                       (getprop fn 'stobjs-out t 'current-acl2-world wrld)))
+                  (if (eq s t)
+                      (let ((n (mf-len-outputs fn)))
+                        (cond (n (make-list n))
+                              ((null condition)
 
 ; This case is impossible when memoization is invoked using memoize inside the
 ; ACL2 loop, so we do not need to expect perfection here.  Fortunately,
 ; stobjs-out is probably irrelevant when condition is nil; so we assume that a
 ; single non-stobj value is returned.
 
-                              (list nil))
-                             (t (error *memoize-fn-signature-error* fn))))
-                   s))
-             stobjs-out)))
-     (memoize-fn-init-2 fn formals condition stobjs-in stobjs-out)
-     (setf (gethash fn *number-of-arguments-and-values-ht*)
-           (cons (length stobjs-in) (length stobjs-out)))
-     (let* ((fnn ; performance counting
-             (symbol-to-fixnum-create fn))
-            (fn-col-base ; performance counting
-             (ma-index fnn))
-            (old-fn (symbol-function fn))
-            (body
-             (progn
-               (assert old-fn)
-               (cond
-                (inline
+                               (list nil))
+                              (t (error memoize-fn-signature-error fn))))
+                    s))
+              stobjs-out)))
+      (memoize-fn-init-2 fn formals condition stobjs-in stobjs-out)
+      (mf-sethash fn
+                  (cons (length stobjs-in) (length stobjs-out))
+                  *number-of-arguments-and-values-ht*)
+      (let* ((fnn ; performance counting
+              (symbol-to-fixnum-create fn))
+             (fn-col-base ; performance counting
+              (ma-index fnn))
+             (old-fn (symbol-function fn))
+             (body
+              (progn
+                (assert old-fn)
+                (cond
+                 (inline
 
 ; When memoize-look-up-def is called with a non-nil value of inline and it
 ; returns without error, then it returns a non-nil definition (which is a true
 ; list).
 
-                 (assert (consp cl-defun)) 
-                 (car (last cl-defun)))
-                (t `(funcall
-                     #-gcl ,old-fn
-                     #+gcl ',old-fn ; old-fn could be (lisp:lambda-block ...)
-                     ,@formals)))))
-            (body-name (make-symbol "BODY-NAME"))
-            (body-call
+                   (assert (consp cl-defun))
+                   (car (last cl-defun)))
+                 (t `(funcall
+                      #-gcl ,old-fn
+                      #+gcl ',old-fn ; old-fn could be (lisp:lambda-block ...)
+                      ,@formals)))))
+             (body-name (make-symbol "BODY-NAME"))
+             (body-call
 
 ; This call has no arguments, which is OK because a suitable closure is formed.
 ; For example, before memoizing a function (foo x) we can evaluate
@@ -2653,33 +2939,33 @@
 
 ;   (DEFUN FOO (X) ... (FLET ((#:BODY-NAME NIL (LIST X X))) ...))
 
-             (list body-name))
-            (dcls (mf-dcls (cddr (butlast cl-defun))))
-            (start-ticks
+              (list body-name))
+             (dcls (mf-dcls (cddr (butlast cl-defun))))
+             (start-ticks
 
 ; Submit a defg form and return the generated name:
 
-             (let ((v (hons-gentemp
-                       (memoize-fn-suffix "START-TICKS-" fn))))
-               (eval `(prog1 (defg ,v -1)
-                        (declaim (type mfixnum ,v))))))
-            (tablename
+              (let ((v (hons-gentemp
+                        (memoize-fn-suffix "START-TICKS-" fn))))
+                (eval `(prog1 (defg ,v -1)
+                         (declaim (type mfixnum ,v))))))
+             (tablename
 
 ; Submit a defg form and return the generated name:
 
-             (eval `(defg
-                      ,(hons-gentemp (memoize-fn-suffix "MEMOIZE-HT-FOR-" fn))
-                      nil)))
-            (ponstablename
+              (eval `(defg
+                       ,(hons-gentemp (memoize-fn-suffix "MEMOIZE-HT-FOR-" fn))
+                       nil)))
+             (ponstablename
 
 ; Submit a defg form and returns the generated name:
 
-             (eval `(defg
-                      ,(hons-gentemp (memoize-fn-suffix "PONS-HT-FOR-" fn))
-                      nil)))
-            (localtablename (make-symbol "TABLENAME"))
-            (localponstablename (make-symbol "PONSTABLENAME"))
-            (sts
+              (eval `(defg
+                       ,(hons-gentemp (memoize-fn-suffix "PONS-HT-FOR-" fn))
+                       nil)))
+             (localtablename (make-symbol "TABLENAME"))
+             (localponstablename (make-symbol "PONSTABLENAME"))
+             (sts
 
 ; Here we support memoize-flush, which keeps memoize tables coherent in the
 ; presence of user-defined stobjs.  For each (user-level) stobj input name, st,
@@ -2699,104 +2985,105 @@
 ; memo-table for f when flushing, leaving it to be garbage collected; see
 ; memoize-flush1.
 
-             (and condition ; else no memo table usage, so skip flushing
-                  (remove-duplicates-eq
-                   (loop for st in (union stobjs-in stobjs-out)
-                         when st
-                         collect
-                         (assert$
-                          (not (eq st 'state)) ; see memoize-table-chk
-                          (st-lst (congruent-stobj-rep
+              (and condition ; else no memo table usage, so skip flushing
+                   (remove-duplicates-eq
+                    (loop for st in (union stobjs-in stobjs-out)
+                          when st
+                          collect
+                          (assert$
+                           (not (eq st 'state)) ; see memoize-table-chk
+                           (st-lst (congruent-stobj-rep
 
 ; In the case that st is an abstract stobj, we replace it with the
 ; corresponding concrete stobj before getting a canonical (congruent)
 ; representative; see the rather long comment just above that mentions
 ; "abstract" stobjs.
 
-                                   (or (concrete-stobj st wrld)
-                                       st)
-                                   wrld)))))))
-            (number-of-args
+                                    (or (concrete-stobj st wrld)
+                                        st)
+                                    wrld)))))))
+             (number-of-args
 
 ; This is the number of arguments.  Specials only matter for raw Lisp
 ; functions; see the notes above in memoize-fn.  Basically if the function
 ; reads from specials we want to count them as arguments.
 
-             (+ (len formals) (len specials)))
-            (inner-body
-             (memoize-fn-inner-body
-              fn condition body-call fn-col-base
-              tablename localtablename ponstablename localponstablename
-              memo-table-init-size
-              formals specials stobjs-out number-of-args
-              commutative aokp))
-            (outer-body
-             (memoize-fn-outer-body
-              inner-body fn fn-col-base start-ticks forget number-of-args
-              tablename ponstablename))
-            (def
-             (memoize-fn-def
-              inner-body outer-body body body-name
-              fn formals specials dcls fnn start-ticks
-              localtablename localponstablename))
-            (success nil))
-       (unwind-protect
-           (progn
-             (let ((ma *memoize-call-array*))
-               (declare (type (simple-array mfixnum (*)) ma))
-               (loop for i of-type mfixnum ; performance counting
-                     from fn-col-base ; loop through this column
-                     below
-                     (ma-index-from-col-base fn-col-base *2max-memoize-fns*)
-                     unless (eql (aref ma i) 0)
-                     do (setf (aref ma i) 0)))
-             (memoize-eval-compile def old-fn)
-             (setf (gethash fn *memoize-info-ht*)
-                   (make memoize-info-ht-entry
-                         :ext-anc-attachments
-                         (and aokp (ext-ancestors-attachments fn wrld))
-                         :start-ticks start-ticks
-                         :num fnn
-                         :tablename tablename
-                         :ponstablename ponstablename
-                         :condition condition
-                         :inline inline
-                         :memoized-fn (symbol-function fn)
-                         :old-fn old-fn
-                         :fn fn
-                         :sts sts
-                         :cl-defun cl-defun
-                         :formals formals
-                         :commutative commutative
-                         :specials specials
-                         :stobjs-in stobjs-in
-                         :stobjs-out stobjs-out
-                         :record-bytes      *record-bytes*
-                         :record-calls      *record-calls*
-                         :record-hits       *record-hits*
-                         :record-mht-calls  *record-mht-calls*
-                         :record-pons-calls *record-pons-calls*
-                         :record-time       *record-time*
-                         :forget            forget
-                         :memo-table-init-size memo-table-init-size
-                         :aokp aokp))
-             (setf (gethash fnn *memoize-info-ht*) fn)
-             (and condition (loop for s in sts do
-                                  (push tablename
-                                        (symbol-value (the symbol s)))))
-             (setq success t))
-         (unless success
-           (without-interrupts ; perhaps already the case in some Lisps
-            (setf (symbol-function fn) old-fn)
-            (remhash fn *memoize-info-ht*)
-            (remhash fnn *memoize-info-ht*)
-            (and condition
-                 (loop for s in sts
-                       when (eq tablename
-                                (car (symbol-value (the symbol s))))
-                       do (pop (symbol-value (the symbol s)))))
-            (setq fn nil) ; in case we decide not to cause an error
-            (error "Memoize-fn:  Failed to memoize ~s." fn)))))))
+              (+ (len formals) (len specials)))
+             (inner-body
+              (memoize-fn-inner-body
+               fn condition body-call fn-col-base
+               tablename localtablename ponstablename localponstablename
+               memo-table-init-size
+               formals specials stobjs-out number-of-args
+               commutative aokp))
+             (outer-body
+              (memoize-fn-outer-body
+               inner-body fn fn-col-base start-ticks forget number-of-args
+               tablename ponstablename))
+             (def
+              (memoize-fn-def
+               inner-body outer-body body body-name
+               fn formals specials dcls fnn start-ticks
+               localtablename localponstablename))
+             (success nil))
+        (unwind-protect
+            (progn
+              (let ((ma *memoize-call-array*))
+                (declare (type (simple-array mfixnum (*)) ma))
+                (loop for i of-type mfixnum ; performance counting
+                      from fn-col-base      ; loop through this column
+                      below
+                      (ma-index-from-col-base fn-col-base *2max-memoize-fns*)
+                      unless (eql (aref ma i) 0)
+                      do (setf (aref ma i) 0)))
+              (memoize-eval-compile def old-fn)
+              (mf-sethash fn
+                          (make memoize-info-ht-entry
+                                :ext-anc-attachments
+                                (and aokp (ext-ancestors-attachments fn wrld))
+                                :start-ticks start-ticks
+                                :num fnn
+                                :tablename tablename
+                                :ponstablename ponstablename
+                                :condition condition
+                                :inline inline
+                                :memoized-fn (symbol-function fn)
+                                :old-fn old-fn
+                                :fn fn
+                                :sts sts
+                                :cl-defun cl-defun
+                                :formals formals
+                                :commutative commutative
+                                :specials specials
+                                :stobjs-in stobjs-in
+                                :stobjs-out stobjs-out
+                                :record-bytes      *record-bytes*
+                                :record-calls      *record-calls*
+                                :record-hits       *record-hits*
+                                :record-mht-calls  *record-mht-calls*
+                                :record-pons-calls *record-pons-calls*
+                                :record-time       *record-time*
+                                :forget            forget
+                                :memo-table-init-size memo-table-init-size
+                                :aokp aokp)
+                    *memoize-info-ht*)
+              (mf-sethash fnn fn *memoize-info-ht*)
+              (and condition (loop for s in sts do
+                                   (push tablename
+                                         (symbol-value (the symbol s)))))
+              (setq success t))
+          (unless success
+            (without-interrupts ; perhaps already the case in some Lisps
+             (setf (symbol-function fn) old-fn)
+             (remhash fn *memoize-info-ht*)
+             (remhash fnn *memoize-info-ht*)
+             (and condition
+                  (loop for s in sts
+                        when (eq tablename
+                                 (car (symbol-value (the symbol s))))
+                        do (pop (symbol-value (the symbol s)))))
+             (setq fn nil) ; in case we decide not to cause an error
+             (error "Memoize-fn:  Failed to memoize ~s." fn))))))))
   fn)
 
 (defun-one-output unmemoize-fn (fn)
@@ -2814,61 +3101,62 @@
                                    executable because it is not hons-enabled."
                                   fn))
                       fn))
-  (maybe-untrace! fn) ; See the comment about Memoization in trace$-def.
-  (let ((rec (memoizedp-raw fn)))
-    (unless rec ; expect rec=nil in the loop, else unmemoize is redundant
-      (error "Unmemoize-fn: ~s is not memoized." fn))
-    (let* ((num (the-mfixnum (access memoize-info-ht-entry rec
-                                     :num)))
-           (tablename (access memoize-info-ht-entry rec
-                              :tablename))
-           (ponstablename (access memoize-info-ht-entry rec
-                                  :ponstablename))
-           (sts (access memoize-info-ht-entry rec
-                        :sts))
-           (col-base (ma-index num))
-           (saved-table (symbol-value (the symbol tablename)))
-           (saved-ponstable (symbol-value (the symbol ponstablename)))
-           (saved-fn-entry (gethash fn *memoize-info-ht*))
-           (saved-num-entry (gethash num *memoize-info-ht*))
-           (ma *memoize-call-array*)
-           (success nil))
-      (declare (type mfixnum num col-base)
-               (type (simple-array mfixnum (*)) ma))
-      (unwind-protect
-          (progn
-            (format nil "unmemoizing ~s" fn)
-            (let (#+ccl (ccl:*warn-if-redefine-kernel* nil))
-              (let ((old-fn (access memoize-info-ht-entry rec :old-fn)))
-                (assert old-fn)
-                (setf (symbol-function (the symbol fn))
-                      old-fn)))
-            (loop for i of-type mfixnum
-                  from col-base ; loop through col-base column
-                  below (ma-index-from-col-base col-base *2max-memoize-fns*)
-                  unless (eql (aref ma i) 0)
-                  do (setf (aref ma i) 0))
-            (remhash fn *memoize-info-ht*)
-            (remhash num *memoize-info-ht*)
-            (setf (symbol-value (the symbol tablename)) nil)
-            (setf (symbol-value (the symbol ponstablename)) nil)
-            (loop for s in sts do
-                  (when (boundp s)
-                    (setf (symbol-value (the symbol s))
-                          (remove tablename (symbol-value (the symbol s))))))
-            (setq success t))
-        (unless success
-          (without-interrupts ; perhaps already the case in some Lisps
+  (with-global-memoize-lock
+   (maybe-untrace! fn) ; See the comment about Memoization in trace$-def.
+   (let ((rec (memoizedp-raw fn)))
+     (unless rec ; expect rec=nil in the loop, else unmemoize is redundant
+       (error "Unmemoize-fn: ~s is not memoized." fn))
+     (let* ((num (the-mfixnum (access memoize-info-ht-entry rec
+                                      :num)))
+            (tablename (access memoize-info-ht-entry rec
+                               :tablename))
+            (ponstablename (access memoize-info-ht-entry rec
+                                   :ponstablename))
+            (sts (access memoize-info-ht-entry rec
+                         :sts))
+            (col-base (ma-index num))
+            (saved-table (symbol-value (the symbol tablename)))
+            (saved-ponstable (symbol-value (the symbol ponstablename)))
+            (saved-fn-entry (mf-gethash fn *memoize-info-ht*))
+            (saved-num-entry (mf-gethash num *memoize-info-ht*))
+            (ma *memoize-call-array*)
+            (success nil))
+       (declare (type mfixnum num col-base)
+                (type (simple-array mfixnum (*)) ma))
+       (unwind-protect
+           (progn
+             (format nil "unmemoizing ~s" fn)
+             (let (#+ccl (ccl:*warn-if-redefine-kernel* nil))
+               (let ((old-fn (access memoize-info-ht-entry rec :old-fn)))
+                 (assert old-fn)
+                 (setf (symbol-function (the symbol fn))
+                       old-fn)))
+             (loop for i of-type mfixnum
+                   from col-base ; loop through col-base column
+                   below (ma-index-from-col-base col-base *2max-memoize-fns*)
+                   unless (eql (aref ma i) 0)
+                   do (setf (aref ma i) 0))
+             (remhash fn *memoize-info-ht*)
+             (remhash num *memoize-info-ht*)
+             (setf (symbol-value (the symbol tablename)) nil)
+             (setf (symbol-value (the symbol ponstablename)) nil)
+             (loop for s in sts do
+                   (when (boundp s)
+                     (setf (symbol-value (the symbol s))
+                           (remove tablename (symbol-value (the symbol s))))))
+             (setq success t))
+         (unless success
+           (without-interrupts ; perhaps already the case in some Lisps
 
 ; We don't restore *memoize-call-array*; those statistics are simply lost.
 
-           (setf (symbol-value (the symbol tablename)) saved-table)
-           (setf (symbol-value (the symbol ponstablename)) saved-ponstable)
-           (setf (gethash fn *memoize-info-ht*) saved-fn-entry)
-           (setf (gethash num *memoize-info-ht*) saved-num-entry)
-           (loop for s in sts do
-                 (when (boundp s)
-                   (push tablename (symbol-value (the symbol s))))))))))
+            (setf (symbol-value (the symbol tablename)) saved-table)
+            (setf (symbol-value (the symbol ponstablename)) saved-ponstable)
+            (mf-sethash fn saved-fn-entry *memoize-info-ht*)
+            (mf-sethash num saved-num-entry *memoize-info-ht*)
+            (loop for s in sts do
+                  (when (boundp s)
+                    (push tablename (symbol-value (the symbol s)))))))))))
   fn)
 
 (defun-one-output maybe-unmemoize (fn)
@@ -2878,22 +3166,29 @@
 ; we provide this interface for unmemoizing functions that might not be known
 ; to ACL2 (via the memoize-table) as being memoized.
 
-  (when (and (memoizedp-raw fn)
-             (not (cdr (assoc-eq fn (table-alist 'memoize-table
-                                                 (w *the-live-state*))))))
-    (unmemoize-fn fn)))
+  (with-global-memoize-lock
+
+; We use a lock here to prevent the possibility that another thread unmemoizes
+; after our memoizedp-raw test but before our unmemoize-fn call.  We don't
+; expect many calls of maybe-unmemoize, so this lock should be cheap.
+
+   (when (and (memoizedp-raw fn)
+              (not (cdr (assoc-eq fn (table-alist 'memoize-table
+                                                  (w *the-live-state*))))))
+     (unmemoize-fn fn))))
 
 (defun-one-output memoized-functions ()
 
 ; We return the names of all memoized functions as a list.
 
-  (let (ans)
-    (maphash (lambda (fn info)
-               (declare (ignore info))
-               (when (symbolp fn)
-                 (push fn ans)))
-             *memoize-info-ht*)
-    ans))
+  (with-global-memoize-lock
+   (let (ans)
+     (mf-maphash (lambda (fn info)
+                   (declare (ignore info))
+                   (when (symbolp fn)
+                     (push fn ans)))
+                 *memoize-info-ht*)
+     ans)))
 
 (defun-one-output length-memoized-functions ()
 
@@ -2902,8 +3197,9 @@
 ; entries for each memoized function: one for the function symbol and one that
 ; associates :num of that symbol's entry back to the symbol.
 
-  (values (floor (1- (hash-table-count (the hash-table *memoize-info-ht*)))
-                 2)))
+  (with-global-memoize-lock
+   (values (floor (1- (mf-hash-table-count *memoize-info-ht*))
+                  2))))
 
 (defun-one-output unmemoize-all ()
 
@@ -2927,75 +3223,77 @@
 ; memoization of the given function symbol.  The rather arcane structure
 ; returned is used in rememoize-all.
 
-  (let ((v (gethash k *memoize-info-ht*)))
-    (and v
-         (list
+  (with-global-memoize-lock
+   (let ((v (mf-gethash k *memoize-info-ht*)))
+     (and v
+          (list
 
 ; Warning: Keep the following list in sync with the argument list for
 ; memoize-fn.  Also note that the :fn must be first; see rememoize-all.
 
-          (list (access memoize-info-ht-entry v :fn)
-                :condition
-                (access memoize-info-ht-entry v :condition)
-                :inline
-                (access memoize-info-ht-entry v :inline)
-                :cl-defun
-                (access memoize-info-ht-entry v :cl-defun)
-                :formals
-                (access memoize-info-ht-entry v :formals)
-                :stobjs-in
-                (access memoize-info-ht-entry v :stobjs-in)
-                :specials
-                (access memoize-info-ht-entry v :specials)
-                :commutative
-                (access memoize-info-ht-entry v :commutative)
-                :stobjs-out
-                (access memoize-info-ht-entry v :stobjs-out)
-                :forget
-                (access memoize-info-ht-entry v :forget)
-                :memo-table-init-size
-                (access memoize-info-ht-entry v :memo-table-init-size)
-                :aokp
-                (access memoize-info-ht-entry v :aokp))
+           (list (access memoize-info-ht-entry v :fn)
+                 :condition
+                 (access memoize-info-ht-entry v :condition)
+                 :inline
+                 (access memoize-info-ht-entry v :inline)
+                 :cl-defun
+                 (access memoize-info-ht-entry v :cl-defun)
+                 :formals
+                 (access memoize-info-ht-entry v :formals)
+                 :stobjs-in
+                 (access memoize-info-ht-entry v :stobjs-in)
+                 :specials
+                 (access memoize-info-ht-entry v :specials)
+                 :commutative
+                 (access memoize-info-ht-entry v :commutative)
+                 :stobjs-out
+                 (access memoize-info-ht-entry v :stobjs-out)
+                 :forget
+                 (access memoize-info-ht-entry v :forget)
+                 :memo-table-init-size
+                 (access memoize-info-ht-entry v :memo-table-init-size)
+                 :aokp
+                 (access memoize-info-ht-entry v :aokp))
 
 ; Warning: Keep the following list in sync with the set of *record-xxx*
 ; globals, and with rememoize-all.
 
-          (list (access memoize-info-ht-entry v :record-bytes)
-                (access memoize-info-ht-entry v :record-calls)
-                (access memoize-info-ht-entry v :record-hits)
-                (access memoize-info-ht-entry v :record-mht-calls)
-                (access memoize-info-ht-entry v :record-pons-calls)
-                (access memoize-info-ht-entry v :record-time))))))
+           (list (access memoize-info-ht-entry v :record-bytes)
+                 (access memoize-info-ht-entry v :record-calls)
+                 (access memoize-info-ht-entry v :record-hits)
+                 (access memoize-info-ht-entry v :record-mht-calls)
+                 (access memoize-info-ht-entry v :record-pons-calls)
+                 (access memoize-info-ht-entry v :record-time)))))))
 
 (defun-one-output rememoize-all ()
 
 ; Warning: Keep this function in sync with memoize-info.
 
-  (let (lst)
-    (maphash (lambda (k v)
-               (declare (ignore v))
-               (when (symbolp k)
-                 (push (memoize-info k) lst)))
-             *memoize-info-ht*)
+  (with-global-memoize-lock
+   (let (lst)
+     (mf-maphash (lambda (k v)
+                   (declare (ignore v))
+                   (when (symbolp k)
+                     (push (memoize-info k) lst)))
+                 *memoize-info-ht*)
 
 ; Note: memoize-info arranges that (caar x) is the memoized function symbol.
 
-    (loop for x in lst do (unmemoize-fn (caar x)))
-    (gc$)
-    (setq *max-symbol-to-fixnum* *initial-max-symbol-to-fixnum*)
-    (loop for x in lst do
+     (loop for x in lst do (unmemoize-fn (caar x)))
+     (gc$)
+     (setq *max-symbol-to-fixnum* *initial-max-symbol-to-fixnum*)
+     (loop for x in lst do
 
 ; Warning: Keep the first argument below in sync with memoize-info.
 
-          (progv '(*record-bytes*
-                   *record-calls*
-                   *record-hits*
-                   *record-mht-calls*
-                   *record-pons-calls*
-                   *record-time*)
-                 (cadr x)
-                 (apply 'memoize-fn (car x))))))
+           (progv '(*record-bytes*
+                    *record-calls*
+                    *record-hits*
+                    *record-mht-calls*
+                    *record-pons-calls*
+                    *record-time*)
+                  (cadr x)
+                  (apply 'memoize-fn (car x)))))))
 
 (defun profile-fn (fn &rest r &key (condition nil) (inline nil)
                       &allow-other-keys)
@@ -3022,14 +3320,16 @@
 ; profiled using profile-fn in raw Lisp or profile in the loop, so we enforce a
 ; nil value for :inline, not just :condition.
 
-  (let (lst)
-    (maphash (lambda (k v)
-               (when (and (symbolp k)
-                          (null (access memoize-info-ht-entry v :condition))
-                          (null (access memoize-info-ht-entry v :inline)))
-                 (push k lst)))
-             *memoize-info-ht*)
-    lst))
+  (with-global-memoize-lock
+   (let (lst)
+     (mf-maphash
+      (lambda (k v)
+        (when (and (symbolp k)
+                   (null (access memoize-info-ht-entry v :condition))
+                   (null (access memoize-info-ht-entry v :inline)))
+          (push k lst)))
+      *memoize-info-ht*)
+     lst)))
 
 (defun-one-output unmemoize-profiled ()
 
@@ -3040,6 +3340,27 @@
         (unmemoize-fn (car x))))
 
 ; SECTION: Statistics gathering and printing routines
+
+(defun-one-output coerce-index (x)
+
+; X is either a memoized function symbol or the associated number
+; (symbol-to-fixnum, also column number in *memoize-call-array* and index in
+; *callers-array*) of such.
+
+; Note: We might be tempted to lock uses of this function, since it calls
+; symbol-to-fixnum, which uses a global hash-table.  But currently that is not
+; necessary: all callers of coerce-index are functions defined in this Section,
+; and their intended use is in sorting of memsum results; see
+; *memoize-summary-order-list*.
+
+  (cond ((typep x 'fixnum) ; equivalently, x is a number
+         (assert (and (>= (the fixnum x) 0)
+                      (< (the fixnum x)
+                         (the fixnum (ash (length *memoize-call-array*)
+                                          -1)))))
+         x)
+        (t ; could (assert (symbolp x)) but probably not worth the cycles
+         (symbol-to-fixnum x))))
 
 (defun-one-output mf-num-to-string (n) ; for forming numbers
 
@@ -3068,7 +3389,9 @@
          (let ((x (if (stringp x)
                       (hons-copy x)
                     x)))
-           (cond ((gethash x *mf-shorten-ht*))
+           ;; [Jared] I think there's no need to protect this hash table
+           ;; because of the way it's used.
+           (cond ((mf-gethash x *mf-shorten-ht*))
                  (t (let ((*print-pretty* nil)
                           (*print-length* 10)
                           (*print-level* 5)
@@ -3078,12 +3401,13 @@
                                (s)
                                (cond ((stringp x) (princ x s))
                                      (t (prin1 x s))))))
-                        (setf (gethash x *mf-shorten-ht*)
-                              (cond ((<= (length str) n) str)
-                                    (t (concatenate
-                                        'string
-                                        (subseq str 0 (max 0 n))
-                                        "..."))))))))))))
+                        (mf-sethash x
+                                    (cond ((<= (length str) n) str)
+                                          (t (concatenate
+                                              'string
+                                              (subseq str 0 (max 0 n))
+                                              "...")))
+                                    *mf-shorten-ht*)))))))))
 
 (defun-one-output mf-print-alist (alist separation)
 
@@ -3149,25 +3473,25 @@
          (nponstab 0)) ; number of pons tables
      (declare (type mfixnum sssub nponses nsubs))
      (format t "Pons-summary:~%")
-     (maphash
-      (lambda (k v)
-        (when (symbolp k)
-          (let ((tab (symbol-value (access memoize-info-ht-entry v
-                                           :ponstablename))))
-            (when tab
-              (safe-incf-pons nponstab 1)
-              (maphash
-               (lambda (k v)
-                 (declare (ignore k))
-                 (cond
-                  ((not (listp v)) ; the flex-alist v is a hash table
-                   (safe-incf-pons sssub (hash-table-size (the hash-table v)))
-                   (safe-incf-pons nponses
-                                   (hash-table-count (the hash-table v)))
-                   (safe-incf-pons nsubs 1))
-                  (t (safe-incf-pons nponses (length v)))))
-               tab)))))
-      *memoize-info-ht*)
+     (with-global-memoize-lock
+      (mf-maphash
+       (lambda (k v)
+         (when (symbolp k)
+           (let ((tab (symbol-value (access memoize-info-ht-entry v
+                                            :ponstablename))))
+             (when tab
+               (safe-incf-pons nponstab 1)
+               (mf-maphash
+                (lambda (k v)
+                  (declare (ignore k))
+                  (cond
+                   ((not (listp v)) ; the flex-alist v is a hash table
+                    (safe-incf-pons sssub (mf-hash-table-size v))
+                    (safe-incf-pons nponses (mf-hash-table-count v))
+                    (safe-incf-pons nsubs 1))
+                   (t (safe-incf-pons nponses (length v)))))
+                tab)))))
+       *memoize-info-ht*))
      (mf-print-alist
       `((" Pons hits/calls"
          ,(let* ((c *pons-call-counter*)
@@ -3192,19 +3516,19 @@
 ; list of function symbols, which by default is the list of all memoized
 ; function symbols.
 
-  (cond ((listp fn) (mapc #'memoized-values fn))
-        ((not (memoizedp-raw fn))
-         (format t "~%; Memoized-values:  ~s is not memoized." fn))
-        (t (let ((tb (symbol-value
-                      (access memoize-info-ht-entry
-                              (gethash fn *memoize-info-ht*)
-                              :tablename))))
-             (cond ((and tb (not (eql 0 (hash-table-count
-                                         (the hash-table tb)))))
-                    (format t "~%; Memoized values for ~s." fn)
-                    (maphash (lambda (key v)
-                               (format t "~%~s~%=>~%~s" key v))
-                             (the hash-table tb)))))))
+  (with-global-memoize-lock
+   (cond ((listp fn) (mapc #'memoized-values fn))
+         ((not (memoizedp-raw fn))
+          (format t "~%; Memoized-values:  ~s is not memoized." fn))
+         (t (let ((tb (symbol-value
+                       (access memoize-info-ht-entry
+                               (mf-gethash fn *memoize-info-ht*)
+                               :tablename))))
+              (cond ((and tb (not (eql 0 (mf-hash-table-count tb))))
+                     (format t "~%; Memoized values for ~s." fn)
+                     (mf-maphash (lambda (key v)
+                                   (format t "~%~s~%=>~%~s" key v))
+                                 tb)))))))
   (force-output *standard-output*)
   nil)
 
@@ -3221,15 +3545,17 @@
    (let (lst
          (ticks (internal-real-ticks))
          (*print-case* :downcase))
-     (maphash (lambda (k v)
-                (when (symbolp k)
-                  (let ((x (symbol-value (the symbol
-                                              (access memoize-info-ht-entry
-                                                      v :start-ticks)))))
-                    (declare (type mfixnum x))
-                    (when (> x 0) ; in particular, on the stack (x not -1)
-                      (push (cons k x) lst)))))
-              *memoize-info-ht*)
+     (with-global-memoize-lock
+      (mf-maphash
+       (lambda (k v)
+         (when (symbolp k)
+           (let ((x (symbol-value (the symbol
+                                       (access memoize-info-ht-entry
+                                               v :start-ticks)))))
+             (declare (type mfixnum x))
+             (when (> x 0) ; in particular, on the stack (x not -1)
+               (push (cons k x) lst)))))
+       *memoize-info-ht*))
      (setq lst (sort lst #'< :key #'cdr))
      (setq lst (loop for pair in lst collect
                      (list (car pair)
@@ -3288,15 +3614,16 @@
 ; entries currently stored for x."
 
   (setq x (coerce-index x))
-  (let ((h (gethash x *memoize-info-ht*)))
-    (unless h (error "~a is not memoized." x))
-    (let* ((sym (access memoize-info-ht-entry
-                        h
-                        :tablename))
-           (val (symbol-value sym)))
-      (if (hash-table-p val) ; note: val is nil after clear-memoize-table
-          (hash-table-count (the hash-table val))
-        0))))
+  (with-global-memoize-lock
+   (let ((h (mf-gethash x *memoize-info-ht*)))
+     (unless h (error "~a is not memoized." x))
+     (let* ((sym (access memoize-info-ht-entry
+                         h
+                         :tablename))
+            (val (symbol-value sym)))
+       (if (hash-table-p val) ; note: val is nil after clear-memoize-table
+           (mf-hash-table-count val)
+         0)))))
 
 (defun-one-output number-of-mht-calls (x)
 
@@ -3408,64 +3735,65 @@
   (the-mfixnum (symbol-value
                (the symbol
                  (access memoize-info-ht-entry
-                         (gethash s *memoize-info-ht*)
+                         (mf-gethash s *memoize-info-ht*)
                          :start-ticks)))))
 
 (defun compute-calls-and-times ()
-  (let ((ma *memoize-call-array*)
-        (2m *2max-memoize-fns*)
-        (ca *callers-array*)
-        (n ; fixnum, because *max-symbol-to-fixnum* <= 1/2 *2max-memoize-fns*
-         (the fixnum (1+ *max-symbol-to-fixnum*))))
-    (declare (type (simple-array mfixnum (*)) ma)
-             (type (simple-array t (*)) ca)
-             (type fixnum 2m n))
-    (cond ((eql (length ca) n)
-           (loop for i fixnum below n
-                 do (setf (aref ca i) nil)))
-          (t (setq *callers-array* (make-array n :initial-element nil))
-             (setq ca *callers-array*)))
-    (loop for i fixnum below (ma-index-calls n 0 2m)
+  (with-global-memoize-lock ; perhaps not necessary for this, but harmless
+   (let ((ma *memoize-call-array*)
+         (2m *2max-memoize-fns*)
+         (ca *callers-array*)
+         (n ; fixnum, because *max-symbol-to-fixnum* <= 1/2 *2max-memoize-fns*
+          (the fixnum (1+ *max-symbol-to-fixnum*))))
+     (declare (type (simple-array mfixnum (*)) ma)
+              (type (simple-array t (*)) ca)
+              (type fixnum 2m n))
+     (cond ((eql (length ca) n)
+            (loop for i fixnum below n
+                  do (setf (aref ca i) nil)))
+           (t (setq *callers-array* (make-array n :initial-element nil))
+              (setq ca *callers-array*)))
+     (loop for i fixnum below (ma-index-calls n 0 2m)
 
 ; fixnum, because (ma-index-calls n 0 2m) = 2n <= *2max-memoize-fns*
 
 ; Initialize column 0 of *memoize-call-array* to set to 0, for each i < n, both
 ; (ma-index-calls i 0 2m) and (ma-index-ticks i 0 2m).
 
-          do (setf (aref ma i) 0))
-    (loop for i fixnum ; column, for caller
-          from *initial-max-symbol-to-fixnum*
-          to *max-symbol-to-fixnum* ; indeed a fixnum; see comments above
-          do
-          (let ((col-base (ma-index i 0 2m)))
-            (declare (type mfixnum col-base))
-            (loop for j fixnum ; row
-                  from *initial-max-symbol-to-fixnum*
-                  to *max-symbol-to-fixnum* ; indeed a fixnum; see above
-                  do
-                  (let* ((calls-row (ma-index-calls j))
-                         (index (ma-index-from-col-base col-base calls-row))
-                         (calls (the-mfixnum (aref ma index))))
-                    (declare (type mfixnum calls-row index calls))
-                    (when (> calls 0)
-                      (let* ((ticks-index
+           do (setf (aref ma i) 0))
+     (loop for i fixnum ; column, for caller
+           from *initial-max-symbol-to-fixnum*
+           to *max-symbol-to-fixnum* ; indeed a fixnum; see comments above
+           do
+           (let ((col-base (ma-index i 0 2m)))
+             (declare (type mfixnum col-base))
+             (loop for j fixnum ; row
+                   from *initial-max-symbol-to-fixnum*
+                   to *max-symbol-to-fixnum* ; indeed a fixnum; see above
+                   do
+                   (let* ((calls-row (ma-index-calls j))
+                          (index (ma-index-from-col-base col-base calls-row))
+                          (calls (the-mfixnum (aref ma index))))
+                     (declare (type mfixnum calls-row index calls))
+                     (when (> calls 0)
+                       (let* ((ticks-index
 
 ; The index for ticks is (ma-index-from-col-base col-base (ma-index-ticks j)).
 ; But that is just (1+ index), so we use the latter, more efficient form.
 
-                              (the-mfixnum (1+ index)))
-                             (ticks (aref ma ticks-index))
-                             (ticks-row ; (ma-index-ticks j)
-                              (the-mfixnum (1+ calls-row))))
-                        (declare (type mfixnum ticks-index ticks ticks-row))
-                        (safe-incf (aref ma calls-row)
-                                   calls
-                                   compute-calls-and-times)
-                        (safe-incf (aref ma ticks-row)
-                                   ticks
-                                   compute-calls-and-times)
-                        (push i ; Add i to the callers of j.
-                              (aref ca j))))))))))
+                               (the-mfixnum (1+ index)))
+                              (ticks (aref ma ticks-index))
+                              (ticks-row ; (ma-index-ticks j)
+                               (the-mfixnum (1+ calls-row))))
+                         (declare (type mfixnum ticks-index ticks ticks-row))
+                         (safe-incf (aref ma calls-row)
+                                    calls
+                                    compute-calls-and-times)
+                         (safe-incf (aref ma ticks-row)
+                                    ticks
+                                    compute-calls-and-times)
+                         (push i ; Add i to the callers of j.
+                               (aref ca j)))))))))))
 
 (defun-one-output print-not-called ()
 
@@ -3476,16 +3804,17 @@
 ; memoized functions that have never been called.  This utility may be useful
 ; when looking for test coverage.
 
-  (compute-calls-and-times)
-  (let ((ans nil))
-    (maphash (lambda (k v)
-               (declare (ignore v))
-               (when (and (symbolp k)
-                          (eql 0 (number-of-calls k)))
-                 (push k ans)))
-             *memoize-info-ht*)
-    (loop for x in (sort ans 'alphorder)
-          do (print x))))
+  (with-global-memoize-lock
+   (compute-calls-and-times)
+   (let ((ans nil))
+     (mf-maphash (lambda (k v)
+                   (declare (ignore v))
+                   (when (and (symbolp k)
+                              (eql 0 (number-of-calls k)))
+                     (push k ans)))
+                 *memoize-info-ht*)
+     (loop for x in (sort ans 'alphorder)
+           do (print x)))))
 
 (defun-one-output memoize-summary-sort ()
   (labels
@@ -3497,148 +3826,152 @@
                  ((< (car l1) (car l2)) nil)
                  (t (lex-> (cdr l1) (cdr l2))))))
    (let (pairs)
-     (maphash
-      (lambda (fn v)
-        (when (symbolp fn)
-          (let ((num (access memoize-info-ht-entry v :num)))
-            (declare (type mfixnum num))
-            (when (< 0 (number-of-calls num))
-              (push (cons fn (loop for order
-                                   in *memoize-summary-order-list*
-                                   collect (funcall order fn)))
-                    pairs)))))
-      *memoize-info-ht*)
-     (sort pairs
-           (if *memoize-summary-order-reversed*
-               (lambda (x y) (lex-> y x))
-             #'lex->)
-           :key #'cdr))))
+     (with-global-memoize-lock
+      (mf-maphash
+       (lambda (fn v)
+         (when (symbolp fn)
+           (let ((num (access memoize-info-ht-entry v :num)))
+             (declare (type mfixnum num))
+             (when (< 0 (number-of-calls num))
+               (push (cons fn (loop for order
+                                    in *memoize-summary-order-list*
+                                    collect (funcall order fn)))
+                     pairs)))))
+       *memoize-info-ht*)
+      (sort pairs
+            (if *memoize-summary-order-reversed*
+                (lambda (x y) (lex-> y x))
+              #'lex->)
+            :key #'cdr)))))
 
 (defun-one-output outside-caller-p (x)
-  (or (<= x *initial-max-symbol-to-fixnum*)
-      (null (gethash x *memoize-info-ht*))))
+  (with-global-memoize-lock
+   (or (<= x *initial-max-symbol-to-fixnum*)
+       (null (mf-gethash x *memoize-info-ht*)))))
 
 (defun-one-output memoize-condition (fn)
-  (let ((x (gethash fn *memoize-info-ht*)))
-    (and x
-         (access memoize-info-ht-entry x :condition))))
+  (with-global-memoize-lock
+   (let ((x (mf-gethash fn *memoize-info-ht*)))
+     (and x
+          (access memoize-info-ht-entry x :condition)))))
 
 (defun-one-output memoize-summary-after-compute-calls-and-times ()
 
 ; One must first call compute-calls-and-times to get sensible results.
 
-  (float-ticks/second-init)
-  (our-syntax
-   (let* ((fn-pairs (memoize-summary-sort))
-          (ma *memoize-call-array*)
-          (len-orig-fn-pairs (len fn-pairs))
-          (len-fn-pairs 0)      ; set below
-          (global-total-time 0) ; set below
-          #+ccl
-          (global-bytes-allocated 0) ; set below
-          (global-pons-calls 0)      ; set below
-          )
-     (declare (type (simple-array mfixnum (*)) ma)
-              (type fixnum len-orig-fn-pairs len-fn-pairs))
-     (when (and *memoize-summary-limit*
-                (> len-orig-fn-pairs *memoize-summary-limit*))
-       (setq fn-pairs (take *memoize-summary-limit* fn-pairs)))
-     (setq len-fn-pairs (len fn-pairs))
-     (when (> len-fn-pairs 0)
-       (format t
-               "~%Sorted by *memoize-summary-order-list* = ~s."
-               *memoize-summary-order-list*)
-       (when (< len-fn-pairs len-orig-fn-pairs)
-         (format t
-                 "~%Reporting on ~:d of ~:d functions because ~
+  (with-global-memoize-lock ; perhaps not necessary for this, but harmless
+   (float-ticks/second-init)
+   (our-syntax
+    (let* ((fn-pairs (memoize-summary-sort))
+           (ma *memoize-call-array*)
+           (len-orig-fn-pairs (len fn-pairs))
+           (len-fn-pairs 0)      ; set below
+           (global-total-time 0) ; set below
+           #+ccl
+           (global-bytes-allocated 0) ; set below
+           (global-pons-calls 0)      ; set below
+           )
+      (declare (type (simple-array mfixnum (*)) ma)
+               (type fixnum len-orig-fn-pairs len-fn-pairs))
+      (when (and *memoize-summary-limit*
+                 (> len-orig-fn-pairs *memoize-summary-limit*))
+        (setq fn-pairs (take *memoize-summary-limit* fn-pairs)))
+      (setq len-fn-pairs (len fn-pairs))
+      (when (> len-fn-pairs 0)
+        (format t
+                "~%Sorted by *memoize-summary-order-list* = ~s."
+                *memoize-summary-order-list*)
+        (when (< len-fn-pairs len-orig-fn-pairs)
+          (format t
+                  "~%Reporting on ~:d of ~:d functions because ~
                  *memoize-summary-limit* = ~a."
-                 len-fn-pairs
-                 len-orig-fn-pairs
-                 *memoize-summary-limit*)))
-     (setq global-total-time
-           (loop for pair in fn-pairs sum (total-time (car pair))))
-     #+ccl
-     (setq global-bytes-allocated
-           (loop for pair in fn-pairs sum
-                 (bytes-allocated (car pair))))
-     (setq global-pons-calls
-           (loop for pair in fn-pairs sum (pons-calls (car pair))))
-     (when (null fn-pairs)
-       (format t "~%(memoize-summary) has nothing to report.~%"))
-     (loop for pair in fn-pairs do
-           (let* ((fn (car pair))
-                  (entry (gethash fn *memoize-info-ht*))
-                  (tablename
-                   (symbol-value
-                    (access memoize-info-ht-entry entry :tablename)))
-                  (ponstablename
-                   (symbol-value
-                    (access memoize-info-ht-entry entry :ponstablename)))
-                  (start-ticks
-                   (the-mfixnum
-                        (symbol-value
-                         (the symbol
-                              (access memoize-info-ht-entry entry
-                                      :start-ticks)))))
-                  (num (the-mfixnum (access memoize-info-ht-entry entry
-                                            :num)))
-                  (nhits (the-mfixnum (number-of-hits num)))
-                  (nmht (the-mfixnum (number-of-mht-calls num)))
-                  (ncalls (the-mfixnum (number-of-calls num)))
-                  (pons-calls (the-mfixnum (pons-calls num)))
-                  (no-hits (or (not *report-hits*)
-                               (null (memoize-condition fn))))
-                  #+ccl
-                  (bytes-allocated (bytes-allocated num))
-                  (tt (max .000001
+                  len-fn-pairs
+                  len-orig-fn-pairs
+                  *memoize-summary-limit*)))
+      (setq global-total-time
+            (loop for pair in fn-pairs sum (total-time (car pair))))
+      #+ccl
+      (setq global-bytes-allocated
+            (loop for pair in fn-pairs sum
+                  (bytes-allocated (car pair))))
+      (setq global-pons-calls
+            (loop for pair in fn-pairs sum (pons-calls (car pair))))
+      (when (null fn-pairs)
+        (format t "~%(memoize-summary) has nothing to report.~%"))
+      (loop for pair in fn-pairs do
+            (let* ((fn (car pair))
+                   (entry (mf-gethash fn *memoize-info-ht*))
+                   (tablename
+                    (symbol-value
+                     (access memoize-info-ht-entry entry :tablename)))
+                   (ponstablename
+                    (symbol-value
+                     (access memoize-info-ht-entry entry :ponstablename)))
+                   (start-ticks
+                    (the-mfixnum
+                     (symbol-value
+                      (the symbol
+                           (access memoize-info-ht-entry entry
+                                   :start-ticks)))))
+                   (num (the-mfixnum (access memoize-info-ht-entry entry
+                                             :num)))
+                   (nhits (the-mfixnum (number-of-hits num)))
+                   (nmht (the-mfixnum (number-of-mht-calls num)))
+                   (ncalls (the-mfixnum (number-of-calls num)))
+                   (pons-calls (the-mfixnum (pons-calls num)))
+                   (no-hits (or (not *report-hits*)
+                                (null (memoize-condition fn))))
+                   #+ccl
+                   (bytes-allocated (bytes-allocated num))
+                   (tt (max .000001
 
 ; Why insist that tt be at least .000001?  That has been the case historically,
 ; and it might be reasonable since a smaller time might be unlikely and anyhow,
 ; .000001 is not unreasonable if only as "noise".  So we leave this code alone.
 
-                           (total-time num)))
-                  (t/c (time/call num))
-                  (in-progress-str
-                   (if (eql start-ticks -1) "" " (running)"))
-                  (selftime tt))
-             (declare (type integer start-ticks)
-                      (type mfixnum num nhits nmht ncalls
-                            pons-calls
-                            #+ccl bytes-allocated))
-             (format t "~%(~s~%" fn)
-             (mf-print-alist
-              `(,@(when (or *report-calls* *report-hits*)
-                    `((,(format nil " ~a~a"
-                                (if no-hits "Calls" "Hits/calls")
-                                in-progress-str)
-                       ,(cond
-                         (no-hits (format nil "~a" (mf-num-to-string ncalls)))
-                         ((zerop ncalls)
-                          (format nil "~8,2e/~8,2e = ????%"
-                                  nhits
-                                  0))
-                         (t (format nil "~8,2e/~8,2e = ~4,1f%"
-                                    nhits
-                                    ncalls
-                                    (* 100 (/ nhits (float ncalls)))))))))
-                ,@(when (and *report-mht-calls*
+                            (total-time num)))
+                   (t/c (time/call num))
+                   (in-progress-str
+                    (if (eql start-ticks -1) "" " (running)"))
+                   (selftime tt))
+              (declare (type integer start-ticks)
+                       (type mfixnum num nhits nmht ncalls
+                             pons-calls
+                             #+ccl bytes-allocated))
+              (format t "~%(~s~%" fn)
+              (mf-print-alist
+               `(,@(when (or *report-calls* *report-hits*)
+                     `((,(format nil " ~a~a"
+                                 (if no-hits "Calls" "Hits/calls")
+                                 in-progress-str)
+                        ,(cond
+                          (no-hits (format nil "~a" (mf-num-to-string ncalls)))
+                          ((zerop ncalls)
+                           (format nil "~8,2e/~8,2e = ????%"
+                                   nhits
+                                   0))
+                          (t (format nil "~8,2e/~8,2e = ~4,1f%"
+                                     nhits
+                                     ncalls
+                                     (* 100 (/ nhits (float ncalls)))))))))
+                 ,@(when (and *report-mht-calls*
 
 ; The following inequality was here historically, perhaps because nmht is
 ; always at least 1 (not sure about that); anyhow, it seems OK to leave it.
 
-                             (>= nmht 2))
-                    `((" Number of calls to mht" ,(mf-num-to-string nmht))))
-                ,@(when *report-time*
-                    `((" Time of all outermost calls"
-                       ,(cond
-                         ((zerop global-total-time)
-                          (format nil "~a; ????%"
-                                  (mf-num-to-string tt)))
-                         (t
-                          (format nil "~a; ~4,1f%"
-                                  (mf-num-to-string tt)
-                                  (* 100 (/ tt global-total-time))))))
-                      (" Time per call" ,(mf-num-to-string t/c))))
+                              (>= nmht 2))
+                     `((" Number of calls to mht" ,(mf-num-to-string nmht))))
+                 ,@(when *report-time*
+                     `((" Time of all outermost calls"
+                        ,(cond
+                          ((zerop global-total-time)
+                           (format nil "~a; ????%"
+                                   (mf-num-to-string tt)))
+                          (t
+                           (format nil "~a; ~4,1f%"
+                                   (mf-num-to-string tt)
+                                   (* 100 (/ tt global-total-time))))))
+                       (" Time per call" ,(mf-num-to-string t/c))))
 
 ; The commented-out code (when ...), below, has been here historically (through
 ; August 2014), but it's not clear why.  Note that the "Heisenberg" note is
@@ -3659,240 +3992,234 @@
 ;                           (< t/c 1e-6))
 ;                  `((,(format nil " Doubtful timing info for ~a." fn)
 ;                     "Heisenberg effect.")))
-                #+ccl
-                ,@(when (and (> bytes-allocated 0) *report-bytes*)
-                    (assert (> global-bytes-allocated 0))
-                    `((" Heap bytes allocated"
-                       ,(format nil "~a; ~4,1f%"
-                                (mf-num-to-string bytes-allocated)
-                                (* 100 (/ bytes-allocated
-                                          global-bytes-allocated))))
-                      (" Heap bytes allocated per call"
-                       ,(mf-num-to-string (/ bytes-allocated ncalls)))))
-                ,@(when (and (> pons-calls 0)
-                             *report-pons-calls*)
-                    (assert (> global-pons-calls 0))
-                    `((" Pons calls"
-                       ,(format nil "~a; ~4,1f%"
-                                (mf-num-to-string pons-calls)
-                                (* 100 (/ pons-calls global-pons-calls))))))
-                ,@(when (and *report-hits* *report-time* (not (eql 0 nhits)))
-                    `((" Time per missed call"
-                       ,(mf-num-to-string (time-for-non-hits/call num)))))
-                ,@(when *report-calls-to*
-                    (let ((lst nil)
-                          (outside-fn-time 0)
-                          (outside-fn-count 0))
-                      (declare (type mfixnum outside-fn-count))
-                      (loop
-                       for callern in ; collect fns called by fn
-                       (loop for i below (length *callers-array*)
-                             when (member num (aref *callers-array* i))
-                             collect i)
-                       do
-                       (let* ((call-loc (ma-index-calls callern num))
-                              (calls (aref ma call-loc))
-                              (ticks-loc ; (ma-index-ticks callern num)
-                               (the-mfixnum (1+ call-loc)))
-                              (ticks (aref ma ticks-loc))
-                              (local-tt (/ ticks *float-ticks/second*)))
-                         (declare
-                          (type mfixnum call-loc calls ticks-loc ticks))
-                         (decf selftime local-tt)
-                         (cond
-                          ((or (outside-caller-p callern)
-                               (< (* 100 local-tt) tt))
-                           (incf outside-fn-time local-tt)
-                           (safe-incf
-                            outside-fn-count
-                            calls
-                            memoize-summary-after-compute-calls-and-times))
-                          (t (push
-                              `((,(format nil
-                                          " To ~s"
-                                          (fixnum-to-symbol callern))
-                                 ,(format nil
-                                          "~8,2e calls took~8,2e; ~a%"
-                                          calls
-                                          local-tt
-                                          (cond
-                                           ((> (* 10000 local-tt) tt)
-                                            (assert (< 0 tt))
-                                            (format
-                                             nil
-                                             "~4,1f"
-                                             (* 100 (/ local-tt tt))))
-                                           (t "<0.01"))))
-                                . ,(if *sort-to-from-by-calls*
-                                       calls
-                                     local-tt))
-                              lst)))))
-                      (when (> outside-fn-time 0)
-                        (assert (< 0 tt))
-                        (push
-                         `((,(format nil " To other functions")
-                            ,(format
-                              nil
-                              "~8,2e calls took~8,2e; ~a%"
-                              outside-fn-count
-                              outside-fn-time
-                              (if (> (* 10000 outside-fn-time) tt)
-                                  (format nil
-                                          "~4,1f"
-                                          (* 100 (/ outside-fn-time tt)))
-                                "<0.01")))
-                           . ,(if *sort-to-from-by-calls*
-                                  outside-fn-count
-                                outside-fn-time))
-                         lst))
-                      (when (and (> selftime 0)
-                                 (not (= selftime tt)))
-                        (assert (< 0 tt))
-                        (push `((" To self/unprofiled functions"
-                                 ,(format
-                                   nil
-                                   "~8,2e; ~a%"
-                                   selftime
-                                   (if (> (* 10000 selftime) tt)
-                                       (format nil
-                                               "~4,1f"
-                                               (* 100 (/ selftime tt)))
-                                     "<0.01")))
-                                . ,(if *sort-to-from-by-calls*
-                                       0 ; unknown number of calls; just use 0
-                                     selftime))
-                              lst))
-                      (setq lst (sort lst #'> :key #'cdr))
-                      (strip-cars lst)))
-                ,@(when *report-calls-from*
-                    (let ((lst nil)
-                          (outside-caller-time 0)
-                          (outside-caller-count 0))
-                      (loop
-                       for callern in (aref *callers-array* num)
-                       do
-                       (let* ((call-loc (ma-index-calls num callern))
-                              (calls (aref ma call-loc))
-                              (ticks-loc ; (ma-index-ticks num callern)
-                               (the-mfixnum (1+ call-loc)))
-                              (ticks (aref ma ticks-loc))
-                              (local-tt (/ ticks *float-ticks/second*)))
-                         (declare
-                          (type mfixnum call-loc calls ticks-loc ticks))
-                         (cond
-                          ((or (outside-caller-p callern)
-                               (< (* 100 local-tt) tt))
-                           (incf outside-caller-time local-tt)
-                           (incf outside-caller-count calls))
-                          (t (push
-                              `((,(format
-                                   nil
-                                   " From ~s"
-                                   (fixnum-to-symbol callern))
-                                 ,(format
-                                   nil
-                                   "~8,2e calls took~8,2e; ~a%"
-                                   calls
-                                   local-tt
-                                   (if (and (<= .001 local-tt)
-                                            (< local-tt tt))
-                                       (format nil
-                                               "~4,1f"
-                                               (* 100 (/ local-tt tt)))
-                                     "?")))
-                                . ,(if *sort-to-from-by-calls*
-                                       calls
-                                     local-tt))
-                              lst)))))
-                      (when (> outside-caller-time 0)
-                        (push
-                         `((,(format nil " From other functions")
-                            ,(format
-                              nil
-                              "~8,2e calls took~8,2e; ~a%"
-                              outside-caller-count
-                              outside-caller-time
-                              (if (and (<= .001 outside-caller-time)
-                                       (< outside-caller-time tt))
-                                  (format
-                                   nil
-                                   "~4,1f"
-                                   (* 100 (/ outside-caller-time tt)))
-                                "?")))
-                           . ,(if *sort-to-from-by-calls*
-                                  outside-caller-count
-                                outside-caller-time))
-                         lst))
-                      (setq lst (sort lst #'> :key #'cdr))
-                      (strip-cars lst)))
-                ,@(when (or *report-on-memo-tables* *report-on-pons-tables*)
-                    (let ((sum-pons-sub-sizes 0)
-                          (nponses 0)
-                          (nponssubs 0))
-                      (declare (type mfixnum
-                                     sum-pons-sub-sizes nponses nponssubs))
-                      (and
-                       ponstablename
-                       *report-on-pons-tables*
-                       (maphash
-                        (lambda (key value)
-                          (declare (ignore key))
+                 #+ccl
+                 ,@(when (and (> bytes-allocated 0) *report-bytes*)
+                     (assert (> global-bytes-allocated 0))
+                     `((" Heap bytes allocated"
+                        ,(format nil "~a; ~4,1f%"
+                                 (mf-num-to-string bytes-allocated)
+                                 (* 100 (/ bytes-allocated
+                                           global-bytes-allocated))))
+                       (" Heap bytes allocated per call"
+                        ,(mf-num-to-string (/ bytes-allocated ncalls)))))
+                 ,@(when (and (> pons-calls 0)
+                              *report-pons-calls*)
+                     (assert (> global-pons-calls 0))
+                     `((" Pons calls"
+                        ,(format nil "~a; ~4,1f%"
+                                 (mf-num-to-string pons-calls)
+                                 (* 100 (/ pons-calls global-pons-calls))))))
+                 ,@(when (and *report-hits* *report-time* (not (eql 0 nhits)))
+                     `((" Time per missed call"
+                        ,(mf-num-to-string (time-for-non-hits/call num)))))
+                 ,@(when *report-calls-to*
+                     (let ((lst nil)
+                           (outside-fn-time 0)
+                           (outside-fn-count 0))
+                       (declare (type mfixnum outside-fn-count))
+                       (loop
+                        for callern in ; collect fns called by fn
+                        (loop for i below (length *callers-array*)
+                              when (member num (aref *callers-array* i))
+                              collect i)
+                        do
+                        (let* ((call-loc (ma-index-calls callern num))
+                               (calls (aref ma call-loc))
+                               (ticks-loc ; (ma-index-ticks callern num)
+                                (the-mfixnum (1+ call-loc)))
+                               (ticks (aref ma ticks-loc))
+                               (local-tt (/ ticks *float-ticks/second*)))
+                          (declare
+                           (type mfixnum call-loc calls ticks-loc ticks))
+                          (decf selftime local-tt)
                           (cond
-                           ((not (listp value))
-                            (safe-incf-pons sum-pons-sub-sizes
-                                            (hash-table-size
-                                             (the hash-table value)))
-                            (safe-incf-pons nponses
-                                            (hash-table-count
-                                             (the hash-table value)))
-                            (safe-incf-pons nponssubs 1))
-                           (t (safe-incf-pons nponses (length value)))))
-                        ponstablename))
-                      `(,@(and
-                           tablename
-                           *report-on-memo-tables*
-                           (let ((count (hash-table-count
-                                         (the hash-table tablename)))
-                                 (size (hash-table-size
-                                        (the hash-table tablename))))
-                             `((,(format nil " Memoize table count/size")
-                                ,(format
-                                  nil
-                                  "~8,2e/~8,2e = ~4,1f%"
-                                  count size (* 100 (/ count size)))))))
-                        ,@(and
-                           ponstablename
-                           *report-on-pons-tables*
-                           (let ((count (hash-table-count
-                                         (the hash-table ponstablename)))
-                                 (size (hash-table-size
-                                        (the hash-table ponstablename))))
-                             `((" (Pons table count/size"
-                                ,(format
-                                  nil
-                                  "~:d/~:d = ~4,1f%)"
-                                  count
-                                  size
-                                  (* 100 (/ count size))))
-                               (" (Number of pons sub tables"
-                                ,(format
-                                  nil
-                                  "~a)"
-                                  (mf-num-to-string nponssubs)))
-                               (" (Sum of pons sub table sizes"
-                                ,(format
-                                  nil
-                                  "~a)"
-                                  (mf-num-to-string sum-pons-sub-sizes)))
-                               (" (Number of ponses"
-                                ,(format
-                                  nil
-                                  "~a)"
-                                  (mf-num-to-string nponses))))))))))
-              5))
-           (format t ")"))))
-  (terpri *standard-output*)
-  (force-output *standard-output*)
+                           ((or (outside-caller-p callern)
+                                (< (* 100 local-tt) tt))
+                            (incf outside-fn-time local-tt)
+                            (safe-incf
+                             outside-fn-count
+                             calls
+                             memoize-summary-after-compute-calls-and-times))
+                           (t (push
+                               `((,(format nil
+                                           " To ~s"
+                                           (fixnum-to-symbol callern))
+                                  ,(format nil
+                                           "~8,2e calls took~8,2e; ~a%"
+                                           calls
+                                           local-tt
+                                           (cond
+                                            ((> (* 10000 local-tt) tt)
+                                             (assert (< 0 tt))
+                                             (format
+                                              nil
+                                              "~4,1f"
+                                              (* 100 (/ local-tt tt))))
+                                            (t "<0.01"))))
+                                 . ,(if *sort-to-from-by-calls*
+                                        calls
+                                      local-tt))
+                               lst)))))
+                       (when (> outside-fn-time 0)
+                         (assert (< 0 tt))
+                         (push
+                          `((,(format nil " To other functions")
+                             ,(format
+                               nil
+                               "~8,2e calls took~8,2e; ~a%"
+                               outside-fn-count
+                               outside-fn-time
+                               (if (> (* 10000 outside-fn-time) tt)
+                                   (format nil
+                                           "~4,1f"
+                                           (* 100 (/ outside-fn-time tt)))
+                                 "<0.01")))
+                            . ,(if *sort-to-from-by-calls*
+                                   outside-fn-count
+                                 outside-fn-time))
+                          lst))
+                       (when (and (> selftime 0)
+                                  (not (= selftime tt)))
+                         (assert (< 0 tt))
+                         (push `((" To self/unprofiled functions"
+                                  ,(format
+                                    nil
+                                    "~8,2e; ~a%"
+                                    selftime
+                                    (if (> (* 10000 selftime) tt)
+                                        (format nil
+                                                "~4,1f"
+                                                (* 100 (/ selftime tt)))
+                                      "<0.01")))
+                                 . ,(if *sort-to-from-by-calls*
+                                        0 ; unknown number of calls; just use 0
+                                      selftime))
+                               lst))
+                       (setq lst (sort lst #'> :key #'cdr))
+                       (strip-cars lst)))
+                 ,@(when *report-calls-from*
+                     (let ((lst nil)
+                           (outside-caller-time 0)
+                           (outside-caller-count 0))
+                       (loop
+                        for callern in (aref *callers-array* num)
+                        do
+                        (let* ((call-loc (ma-index-calls num callern))
+                               (calls (aref ma call-loc))
+                               (ticks-loc ; (ma-index-ticks num callern)
+                                (the-mfixnum (1+ call-loc)))
+                               (ticks (aref ma ticks-loc))
+                               (local-tt (/ ticks *float-ticks/second*)))
+                          (declare
+                           (type mfixnum call-loc calls ticks-loc ticks))
+                          (cond
+                           ((or (outside-caller-p callern)
+                                (< (* 100 local-tt) tt))
+                            (incf outside-caller-time local-tt)
+                            (incf outside-caller-count calls))
+                           (t (push
+                               `((,(format
+                                    nil
+                                    " From ~s"
+                                    (fixnum-to-symbol callern))
+                                  ,(format
+                                    nil
+                                    "~8,2e calls took~8,2e; ~a%"
+                                    calls
+                                    local-tt
+                                    (if (and (<= .001 local-tt)
+                                             (< local-tt tt))
+                                        (format nil
+                                                "~4,1f"
+                                                (* 100 (/ local-tt tt)))
+                                      "?")))
+                                 . ,(if *sort-to-from-by-calls*
+                                        calls
+                                      local-tt))
+                               lst)))))
+                       (when (> outside-caller-time 0)
+                         (push
+                          `((,(format nil " From other functions")
+                             ,(format
+                               nil
+                               "~8,2e calls took~8,2e; ~a%"
+                               outside-caller-count
+                               outside-caller-time
+                               (if (and (<= .001 outside-caller-time)
+                                        (< outside-caller-time tt))
+                                   (format
+                                    nil
+                                    "~4,1f"
+                                    (* 100 (/ outside-caller-time tt)))
+                                 "?")))
+                            . ,(if *sort-to-from-by-calls*
+                                   outside-caller-count
+                                 outside-caller-time))
+                          lst))
+                       (setq lst (sort lst #'> :key #'cdr))
+                       (strip-cars lst)))
+                 ,@(when (or *report-on-memo-tables* *report-on-pons-tables*)
+                     (let ((sum-pons-sub-sizes 0)
+                           (nponses 0)
+                           (nponssubs 0))
+                       (declare (type mfixnum
+                                      sum-pons-sub-sizes nponses nponssubs))
+                       (and
+                        ponstablename
+                        *report-on-pons-tables*
+                        (mf-maphash
+                         (lambda (key value)
+                           (declare (ignore key))
+                           (cond
+                            ((not (listp value))
+                             (safe-incf-pons sum-pons-sub-sizes
+                                             (mf-hash-table-size value))
+                             (safe-incf-pons nponses
+                                             (mf-hash-table-count value))
+                             (safe-incf-pons nponssubs 1))
+                            (t (safe-incf-pons nponses (length value)))))
+                         ponstablename))
+                       `(,@(and
+                            tablename
+                            *report-on-memo-tables*
+                            (let ((count (mf-hash-table-count tablename))
+                                  (size (mf-hash-table-size tablename)))
+                              `((,(format nil " Memoize table count/size")
+                                 ,(format
+                                   nil
+                                   "~8,2e/~8,2e = ~4,1f%"
+                                   count size (* 100 (/ count size)))))))
+                         ,@(and
+                            ponstablename
+                            *report-on-pons-tables*
+                            (let ((count (mf-hash-table-count ponstablename))
+                                  (size (mf-hash-table-size ponstablename)))
+                              `((" (Pons table count/size"
+                                 ,(format
+                                   nil
+                                   "~:d/~:d = ~4,1f%)"
+                                   count
+                                   size
+                                   (* 100 (/ count size))))
+                                (" (Number of pons sub tables"
+                                 ,(format
+                                   nil
+                                   "~a)"
+                                   (mf-num-to-string nponssubs)))
+                                (" (Sum of pons sub table sizes"
+                                 ,(format
+                                   nil
+                                   "~a)"
+                                   (mf-num-to-string sum-pons-sub-sizes)))
+                                (" (Number of ponses"
+                                 ,(format
+                                   nil
+                                   "~a)"
+                                   (mf-num-to-string nponses))))))))))
+               5))
+            (format t ")"))))
+   (terpri *standard-output*)
+   (force-output *standard-output*))
   nil)
 
 (defun-one-output memoize-summary ()
@@ -3998,43 +4325,48 @@
 ;  instructions and very little paging.  See also the comment "Perhaps we
 ;  should use clrhash below" in memoize-fn-outer-body.
 
-  (let* ((fn (access memoize-info-ht-entry l :fn))
-         (mt (symbol-value (access memoize-info-ht-entry l :tablename)))
-         (pt (symbol-value (access memoize-info-ht-entry l :ponstablename)))
-         (mt-count (and mt (hash-table-count mt)))
-         (pt-count (and pt (hash-table-count pt))))
-    (when mt
-      (setf (symbol-value (access memoize-info-ht-entry l :tablename)) nil))
-    (when pt
-      (setf (symbol-value (access memoize-info-ht-entry l :ponstablename)) nil))
-    (when (or mt-count pt-count)
-      (update-memo-max-sizes fn (or pt-count 1) (or mt-count 1)))
-    nil))
+  (with-global-memoize-lock
+   (let* ((fn (access memoize-info-ht-entry l :fn))
+          (mt (symbol-value (access memoize-info-ht-entry l :tablename)))
+          (pt (symbol-value (access memoize-info-ht-entry l :ponstablename)))
+          (mt-count (and mt (mf-hash-table-count mt)))
+          (pt-count (and pt (mf-hash-table-count pt))))
+     (when mt
+       (setf (symbol-value (access memoize-info-ht-entry l :tablename))
+             nil))
+     (when pt
+       (setf (symbol-value (access memoize-info-ht-entry l :ponstablename))
+             nil))
+     (when (or mt-count pt-count)
+       (update-memo-max-sizes fn (or pt-count 1) (or mt-count 1)))))
+  nil)
 
 (defun-one-output clear-memoize-table (k)
 
 ; Warning: Keep the return values in sync for the logic and raw Lisp.
 
-  (when (symbolp k)
-    (let ((l (gethash k *memoize-info-ht*)))
-      (when l (clear-one-memo-and-pons-hash l))))
+  (with-global-memoize-lock
+   (when (symbolp k)
+     (let ((l (mf-gethash k *memoize-info-ht*)))
+       (when l (clear-one-memo-and-pons-hash l)))))
   k)
 
 (defun-one-output clear-memoize-tables ()
 
 ; Warning: Keep the return values in sync for the logic and raw Lisp.
 
-  (let (success)
-    (unwind-protect
-        (progn
-          (maphash (lambda (k l)
-                     (when (symbolp k)
-                       (clear-one-memo-and-pons-hash l)))
-                   *memoize-info-ht*)
-          (setq success t))
-      (or success (error "clear-memoize-tables failed."))))
-  (setq *pons-call-counter* 0)
-  (setq *pons-misses-counter* 0)
+  (with-global-memoize-lock
+   (let (success)
+     (unwind-protect
+         (progn
+           (mf-maphash (lambda (k l)
+                         (when (symbolp k)
+                           (clear-one-memo-and-pons-hash l)))
+                       *memoize-info-ht*)
+           (setq success t))
+       (or success (error "clear-memoize-tables failed."))))
+   (setq *pons-call-counter* 0)
+   (setq *pons-misses-counter* 0))
   nil)
 
 (defun clear-memoize-call-array ()
@@ -4042,23 +4374,25 @@
 ; (Clear-memoize-call-array) zeros out all records of function calls for
 ; purposes of reporting, for example by memoize-summary.
 
-  (let ((ma *memoize-call-array*))
-    (declare (type (simple-array mfixnum (*)) ma))
-    (let ((len (length ma)))
-      (cond ((typep len 'fixnum)
-             (loop for i fixnum below len
-                   do (setf (aref ma i) 0)))
-            (t ; maybe impossible?
-             (loop for i of-type integer below len
-                   do (setf (aref ma i) 0)))))))
+  (with-global-memoize-lock
+   (let ((ma *memoize-call-array*))
+     (declare (type (simple-array mfixnum (*)) ma))
+     (let ((len (length ma)))
+       (cond ((typep len 'fixnum)
+              (loop for i fixnum below len
+                    do (setf (aref ma i) 0)))
+             (t ; maybe impossible?
+              (loop for i of-type integer below len
+                    do (setf (aref ma i) 0))))))))
 
 (defun clear-memoize-statistics ()
 
 ; Warning: Keep the return values in sync for the logic and raw Lisp.
 
-  (setq *pons-call-counter* 0)
-  (setq *pons-misses-counter* 0)
-  (clear-memoize-call-array)
+  (with-global-memoize-lock
+   (setq *pons-call-counter* 0)
+   (setq *pons-misses-counter* 0)
+   (clear-memoize-call-array))
   nil)
 
 (defun-one-output memoize-init ()
@@ -4068,26 +4402,28 @@
 ; here is *sol-gc-installed*, which we consider to pertain to ACL2(h) but to be
 ; outside memoization proper.
 
-  (when *memoize-init-done*
-    (return-from memoize-init nil))
-  (unless (eql *caller* (the-mfixnum (outside-caller-col-base)))
-    (error "memoize-init:  A memoized function is running."))
-  (let (success)
-    (unwind-protect
-        (progn
-          (setq *pons-call-counter* 0)
-          (setq *pons-misses-counter* 0)
-          (setq *memoize-info-ht* (hl-mht))
-          (setf (gethash *initial-max-symbol-to-fixnum* *memoize-info-ht*)
-                "outside-caller")
-          (setq *max-symbol-to-fixnum* *initial-max-symbol-to-fixnum*)
-          (setq *2max-memoize-fns* *initial-2max-memoize-fns*)
-          (sync-memoize-call-array)
-          (setq *memo-max-sizes* (make-hash-table))
-          (setq success t))
-      (if success
-          (setq *memoize-init-done* t)
-        (error "memoize-init failed."))))
+  (with-global-memoize-lock
+   (when *memoize-init-done*
+     (return-from memoize-init nil))
+   (unless (eql *caller* (the-mfixnum (outside-caller-col-base)))
+     (error "memoize-init:  A memoized function is running."))
+   (let (success)
+     (unwind-protect
+         (progn
+           (setq *pons-call-counter* 0)
+           (setq *pons-misses-counter* 0)
+           (setq *memoize-info-ht* (mf-mht)) ; see comment in *memoize-info-ht*
+           (mf-sethash *initial-max-symbol-to-fixnum*
+                       "outside-caller"
+                       *memoize-info-ht*)
+           (setq *max-symbol-to-fixnum* *initial-max-symbol-to-fixnum*)
+           (setq *2max-memoize-fns* *initial-2max-memoize-fns*)
+           (sync-memoize-call-array)
+           (setq *memo-max-sizes* (mf-mht :shared :default))
+           (setq success t))
+       (if success
+           (setq *memoize-init-done* t)
+         (error "memoize-init failed.")))))
   nil)
 
 (defmacro with-lower-overhead (&rest r)
@@ -4259,10 +4595,11 @@
    0))
 
 (let ((physical-memory-cached-answer nil))
-   (defun physical-memory () ; in KB
-     (or physical-memory-cached-answer
-         (setq physical-memory-cached-answer
-               (meminfo)))))
+(defun physical-memory () ; in KB
+  (or physical-memory-cached-answer
+      (setq physical-memory-cached-answer
+            (meminfo))))
+)
 
 #+ccl
 (defun set-and-reset-gc-thresholds ()
@@ -4512,20 +4849,20 @@
                    "Memoization tables for functions memoized with :AOKP T ~
                     are being cleared."))
     (when fns ; optimization
-      (maphash (lambda (k entry)
-                 (when (symbolp k)
-                   (mv-let (changedp new-entry)
-                           (update-memo-entry-for-attachments fns entry wrld)
-                           (when changedp
-                             (when (not (or (eq changedp t)
-                                            (eq fns :clear)))
-                               (observation ctx
-                                            "Memoization table for function ~
-                                             ~x0 is being cleared because ~
-                                             attachment to function ~x1 has ~
-                                             changed."
-                                            k changedp)
-                               (clear-one-memo-and-pons-hash entry))
-                             (setf (gethash k *memoize-info-ht*)
-                                   new-entry)))))
-               *memoize-info-ht*))))
+      (with-global-memoize-lock
+       (mf-maphash
+        (lambda (k entry)
+          (when (symbolp k)
+            (mv-let (changedp new-entry)
+                    (update-memo-entry-for-attachments fns entry wrld)
+                    (when changedp
+                      (when (not (or (eq changedp t)
+                                     (eq fns :clear)))
+                        (observation ctx
+                                     "Memoization table for function ~x0 is ~
+                                      being cleared because attachment to ~
+                                      function ~x1 has changed."
+                                     k changedp)
+                        (clear-one-memo-and-pons-hash entry))
+                      (mf-sethash k new-entry *memoize-info-ht*)))))
+        *memoize-info-ht*)))))
