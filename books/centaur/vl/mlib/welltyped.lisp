@@ -360,6 +360,11 @@ hierarchical identifiers.</p>"
            :vl-with-colon
            :vl-with-pluscolon
            :vl-with-minuscolon
+           :vl-pattern-positional
+           :vl-pattern-keyvalue
+           :vl-pattern-type
+           :vl-pattern-multi
+           :vl-keyvalue
            )
           t)
 

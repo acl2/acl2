@@ -858,6 +858,19 @@ values.</p>"
             (rest := (vl-parse-1+-expressions-separated-by-commas)))
           (return (cons first rest))))
 
+  (defparser vl-parse-1+-keyval-expression-pairs ()
+    :measure (two-nats-measure (vl-tokstream-measure) 40)
+    (seq tokstream
+          (first :s= (vl-parse-expression))
+          (:= (vl-match-token :vl-colon))
+          (second :s= (vl-parse-expression))
+          (when (vl-is-token? :vl-comma)
+            (:= (vl-match))
+            (rest := (vl-parse-1+-keyval-expression-pairs)))
+          (return (cons (make-vl-nonatom :op :vl-keyvalue :args (list first second))
+                        rest))))
+
+
   (defparser vl-parse-system-function-call ()
     :measure (two-nats-measure (vl-tokstream-measure) 0)
     (seq tokstream
@@ -1212,7 +1225,9 @@ expression.  The recursivep argument is used to determine, in the base case,
 whether the atom we build should be a hidpiece or an ordinary id.  Basically,
 if we have not yet seen a dot then recursivep is nil and we want to just build
 a regular id token.  But otherwise, this id is just part of a hierarchical
-identifier, so we convert it into a hidpiece.</p>"
+identifier, so we convert it into a hidpiece.</p>
+
+<p>Additionally, as a special case, "
 
     (b* ((sys-p (not (eq (vl-loadconfig->edition config) :verilog-2005))))
       (seq tokstream
@@ -1230,6 +1245,11 @@ identifier, so we convert it into a hidpiece.</p>"
                                   :args (list head tail)))))
 
             (id := (vl-match-token :vl-idtoken))
+
+            (when (vl-parsestate-is-user-defined-type-p (vl-idtoken->name id)
+                                                        (vl-tokstream->pstate))
+              (return (make-vl-atom :guts (make-vl-typename
+                                           :name (vl-idtoken->name id)))))
 
             (when (vl-is-token? :vl-dot)
               (:= (vl-match))
@@ -1397,6 +1417,57 @@ identifier, so we convert it into a hidpiece.</p>"
                         (vl-build-range-select main range)
                       main)))))
 
+  (defparser vl-parse-assignment-pattern ()
+    :measure (two-nats-measure (vl-tokstream-measure) 50)
+    (declare (xargs :measure-debug t))
+    ;; We've parsed the initial '{ and need to figure out which form it is.  To
+    ;; do that, we parse one expression, then check whether we have:
+    ;;  rcurly -> positional pattern (with only 1 elt)
+    ;;  comma -> positional pattern
+    ;;  colon -> key/value pattern
+    ;;  lcurly -> multiconcat pattern.
+    (seq tokstream
+         (first :s= (vl-parse-expression))
+         (when (vl-is-token? :vl-rcurly)
+           (:= (vl-match))
+           (return (make-vl-nonatom :op :vl-pattern-positional :args (list first))))
+         (when (vl-is-token? :vl-comma)
+           ;; positional
+           (:= (vl-match))
+           (rest := (vl-parse-1+-expressions-separated-by-commas))
+           (:= (vl-match-token :vl-rcurly))
+           (return (make-vl-nonatom :op :vl-pattern-positional
+                                    :args (cons first rest))))
+
+         (when (vl-is-token? :vl-colon)
+           ;; key/val
+           (:= (vl-match))
+           (firstval :s= (vl-parse-expression))
+           (when (vl-is-token? :vl-rcurly)
+             ;; just one key/val pair
+             (return (make-vl-nonatom :op :vl-pattern-keyvalue
+                                      :args (list (make-vl-nonatom
+                                                   :op :vl-keyvalue
+                                                   :args (list first firstval))))))
+           ;; otherwise, better be a comma and then more key/values
+           (:= (vl-match-token :vl-comma))
+           (rest := (vl-parse-1+-keyval-expression-pairs))
+           (return (make-vl-nonatom :op :vl-pattern-keyvalue
+                                    :args (cons (make-vl-nonatom :op :vl-keyvalue
+                                                                 :args (list first firstval))
+                                                rest))))
+
+         ;; Otherwise, better be an lcurly, and we have a multiconcat.
+         (concat := (vl-parse-concatenation))
+         (:= (vl-match-token :vl-rcurly))
+
+         (return (make-vl-nonatom
+                  :op :vl-pattern-multi
+                  :args (list first concat)))))
+         
+           
+
+
   (defparser vl-parse-primary-main ()
     :measure (two-nats-measure (vl-tokstream-measure) 2)
     ;; This handles most primaries, but does not deal with casting.
@@ -1449,9 +1520,17 @@ identifier, so we convert it into a hidpiece.</p>"
                 (:= (vl-match))
                 (expr := (vl-parse-mintypmax-expression))
                 (:= (vl-match-token :vl-rparen))
-                (return (vl-mark-as-explicit-parens expr)))))
+                (return (vl-mark-as-explicit-parens expr))))
+
+         ((when (eq type :vl-quote))
+          (seq tokstream
+               (:= (vl-match))
+               (:= (vl-match-token :vl-lcurly))
+               ;; Assignment pattern with no type cast.
+               (return-raw (vl-parse-assignment-pattern)))))
 
       (vl-parse-error "Failed to match a primary expression.")))
+
 
   (defparser vl-parse-primary-cast ()
     :measure (two-nats-measure (vl-tokstream-measure) 3)
@@ -1470,12 +1549,17 @@ identifier, so we convert it into a hidpiece.</p>"
     (seq tokstream
           (primary :s= (vl-parse-primary-main))
           (when (vl-is-token? :vl-quote)
-            ;; Primary followed by a cast.
             (:= (vl-match))
-            (:= (vl-match-token :vl-lparen))
-            (arg := (vl-parse-expression))
-            (:= (vl-match-token :vl-rparen))
-            (return (make-vl-nonatom :op :vl-binary-cast :args (list primary arg))))
+            (when (vl-is-token? :vl-lparen)
+              ;; Cast expression.
+              (:= (vl-match))
+              (arg := (vl-parse-expression))
+              (:= (vl-match-token :vl-rparen))
+              (return (make-vl-nonatom :op :vl-binary-cast :args (list primary arg))))
+            ;; otherwise, better by a typed assignment pattern:
+            (:= (vl-match-token :vl-lcurly))
+            (pattern := (vl-parse-assignment-pattern))
+            (return (make-vl-nonatom :op :vl-pattern-type :args (list primary pattern))))
           ;; Primary but not a cast.  Good enough.
           (return primary)))
 
@@ -2066,6 +2150,8 @@ identifier, so we convert it into a hidpiece.</p>"
       ,(vl-val-when-error-claim vl-parse-function-call)
       ,(vl-val-when-error-claim vl-parse-0+-bracketed-expressions)
       ,(vl-val-when-error-claim vl-parse-indexed-id)
+      ,(vl-val-when-error-claim vl-parse-assignment-pattern)
+      ,(vl-val-when-error-claim vl-parse-1+-keyval-expression-pairs)
       ,(vl-val-when-error-claim vl-parse-primary-main)
       ,(vl-val-when-error-claim vl-parse-primary-cast)
       ,(vl-val-when-error-claim vl-parse-nonprimary-cast)
@@ -2166,6 +2252,8 @@ identifier, so we convert it into a hidpiece.</p>"
       ,(vl-warning-claim vl-parse-qmark-expression)
       ,(vl-warning-claim vl-parse-impl-expression)
       ,(vl-warning-claim vl-parse-expression)
+      ,(vl-warning-claim vl-parse-assignment-pattern)
+      ,(vl-warning-claim vl-parse-1+-keyval-expression-pairs)
       :hints((and acl2::stable-under-simplificationp
                   (flag::expand-calls-computed-hint
                    acl2::clause
@@ -2378,6 +2466,8 @@ identifier, so we convert it into a hidpiece.</p>"
       ,(vl-progress-claim vl-parse-qmark-expression)
       ,(vl-progress-claim vl-parse-impl-expression)
       ,(vl-progress-claim vl-parse-expression)
+      ,(vl-progress-claim vl-parse-assignment-pattern)
+      ,(vl-progress-claim vl-parse-1+-keyval-expression-pairs)
       :hints((and acl2::stable-under-simplificationp
                   (flag::expand-calls-computed-hint
                    acl2::clause
@@ -2456,6 +2546,8 @@ identifier, so we convert it into a hidpiece.</p>"
         ,(vl-eof-claim vl-parse-qmark-expression :error)
         ,(vl-eof-claim vl-parse-impl-expression :error)
         ,(vl-eof-claim vl-parse-expression :error)
+        ,(vl-eof-claim vl-parse-assignment-pattern :error)
+        ,(vl-eof-claim vl-parse-1+-keyval-expression-pairs :error)
         :hints((and acl2::stable-under-simplificationp
                     (flag::expand-calls-computed-hint
                      acl2::clause
@@ -2546,6 +2638,8 @@ identifier, so we convert it into a hidpiece.</p>"
       ,(vl-expression-claim vl-parse-qmark-expression :expr)
       ,(vl-expression-claim vl-parse-impl-expression :expr)
       ,(vl-expression-claim vl-parse-expression :expr)
+      ,(vl-expression-claim vl-parse-assignment-pattern :expr)
+      ,(vl-expression-claim vl-parse-1+-keyval-expression-pairs :exprlist)
       :hints(("Goal"
               :do-not '(generalize fertilize))
              (and stable-under-simplificationp
@@ -2561,8 +2655,9 @@ identifier, so we convert it into a hidpiece.</p>"
 (local (in-theory (enable vl-arity-ok-p)))
 
 (with-output
- :off prove :gag-mode :goals
- (verify-guards vl-parse-expression-fn))
+  :off (prove event) :gag-mode :goals
+ (verify-guards vl-parse-expression-fn
+   :guard-debug t))
 
 (defparser-top vl-parse-expression :resulttype vl-expr-p)
 

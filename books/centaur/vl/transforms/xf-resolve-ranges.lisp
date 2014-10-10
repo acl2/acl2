@@ -62,9 +62,11 @@ these expressions.</p>")
        (type (mksym name '-p))
        (fix  (mksym name '-fix)))
     `(define ,fn ((x ,type)
-                    (warnings vl-warninglist-p))
+                  (ss vl-scopestack-p)
+                  (warnings vl-warninglist-p))
        :returns (mv (warnings vl-warninglist-p)
                     (new-x ,type))
+       (declare (ignorable ss))
        (b* ((x        (,fix x))
             (warnings (vl-warninglist-fix warnings)))
          ,body))))
@@ -75,13 +77,15 @@ these expressions.</p>")
        (type    (mksym name '-p))
        (elem-fn (or element-fn (mksym element '-rangeresolve))))
     `(define ,fn ((x ,type)
+                  (ss vl-scopestack-p)
                   (warnings vl-warninglist-p))
        :returns (mv (warnings vl-warninglist-p)
                     (new-x ,type))
+       (declare (ignorable ss))
        (b* (((when (atom x))
              (mv (ok) nil))
-            ((mv warnings car-prime) (,elem-fn (car x) warnings))
-            ((mv warnings cdr-prime) (,fn (cdr x) warnings)))
+            ((mv warnings car-prime) (,elem-fn (car x) ss warnings))
+            ((mv warnings cdr-prime) (,fn (cdr x) ss warnings)))
          (mv warnings (cons car-prime cdr-prime)))
        ///
        (defmvtypes ,fn (nil true-listp)))))
@@ -90,8 +94,8 @@ these expressions.</p>")
   :fn vl-rangeresolve
   :body
   (b* (((vl-range x) x)
-       ((mv msb-ok msb) (vl-consteval x.msb))
-       ((mv lsb-ok lsb) (vl-consteval x.lsb))
+       ((mv msb-ok msb) (vl-consteval x.msb ss))
+       ((mv lsb-ok lsb) (vl-consteval x.lsb ss))
        ((unless (and msb-ok lsb-ok))
         ;; Failure, just return the unreduced range.
         (mv (warn :type :vl-bad-range
@@ -126,7 +130,7 @@ these expressions.</p>")
     ;; Then these tools are happy with things like foo[0], but not
     ;; with bar[0].  On the down-side, Verilog-XL doesn't like to
     ;; have a wire like foo hooked up to a gate.
-    (vl-rangeresolve x warnings)))
+    (vl-rangeresolve x ss warnings)))
 
 (def-vl-rangeresolve-list vl-rangelist
   :element vl-range
@@ -135,7 +139,7 @@ these expressions.</p>")
 (def-vl-rangeresolve vl-packeddimension
   :body (if (eq x :vl-unsized-dimension)
             (mv (ok) x)
-          (vl-rangeresolve x warnings)))
+          (vl-rangeresolve x ss warnings)))
 
 (def-vl-rangeresolve-list vl-packeddimensionlist
   :element vl-packeddimension)
@@ -143,16 +147,16 @@ these expressions.</p>")
 (def-vl-rangeresolve vl-maybe-packeddimension
   :body (if (not x)
             (mv (ok) nil)
-          (vl-packeddimension-rangeresolve x warnings)))
+          (vl-packeddimension-rangeresolve x ss warnings)))
 
 (def-vl-rangeresolve vl-enumbasetype
   :body (b* (((vl-enumbasetype x) x)
-             ((mv warnings dim) (vl-maybe-packeddimension-rangeresolve x.dim warnings)))
+             ((mv warnings dim) (vl-maybe-packeddimension-rangeresolve x.dim ss warnings)))
           (mv warnings (change-vl-enumbasetype x :dim dim))))
 
 (def-vl-rangeresolve vl-enumitem
   :body (b* (((vl-enumitem x) x)
-             ((mv warnings range) (vl-maybe-rangeresolve x.range warnings)))
+             ((mv warnings range) (vl-maybe-rangeresolve x.range ss warnings)))
           (mv warnings (change-vl-enumitem x :range range))))
 
 (def-vl-rangeresolve-list vl-enumitemlist
@@ -162,63 +166,66 @@ these expressions.</p>")
   :verify-guards nil
 
   (define vl-datatype-rangeresolve ((x        vl-datatype-p)
+                                    (ss       vl-scopestack-p)
                                     (warnings vl-warninglist-p))
     :measure (vl-datatype-count x)
     :returns (mv (warnings vl-warninglist-p)
                  (new-x vl-datatype-p))
     (vl-datatype-case x
       (:vl-coretype
-       (b* (((mv warnings pdims) (vl-packeddimensionlist-rangeresolve x.pdims warnings))
-            ((mv warnings udims) (vl-packeddimensionlist-rangeresolve x.udims warnings)))
+       (b* (((mv warnings pdims) (vl-packeddimensionlist-rangeresolve x.pdims ss warnings))
+            ((mv warnings udims) (vl-packeddimensionlist-rangeresolve x.udims ss warnings)))
          (mv warnings (change-vl-coretype x :pdims pdims :udims udims))))
       (:vl-struct
-       (b* (((mv warnings pdims) (vl-packeddimensionlist-rangeresolve x.pdims warnings))
-            ((mv warnings udims) (vl-packeddimensionlist-rangeresolve x.udims warnings))
-            ((mv warnings members) (vl-structmemberlist-rangeresolve x.members warnings)))
+       (b* (((mv warnings pdims) (vl-packeddimensionlist-rangeresolve x.pdims ss warnings))
+            ((mv warnings udims) (vl-packeddimensionlist-rangeresolve x.udims ss warnings))
+            ((mv warnings members) (vl-structmemberlist-rangeresolve x.members ss warnings)))
          (mv warnings (change-vl-struct x
                                         :pdims pdims :udims udims
                                         :members members))))
       (:vl-union
-       (b* (((mv warnings pdims) (vl-packeddimensionlist-rangeresolve x.pdims warnings))
-            ((mv warnings udims) (vl-packeddimensionlist-rangeresolve x.udims warnings))
-            ((mv warnings members) (vl-structmemberlist-rangeresolve x.members warnings)))
+       (b* (((mv warnings pdims) (vl-packeddimensionlist-rangeresolve x.pdims ss warnings))
+            ((mv warnings udims) (vl-packeddimensionlist-rangeresolve x.udims ss warnings))
+            ((mv warnings members) (vl-structmemberlist-rangeresolve x.members ss warnings)))
          (mv warnings (change-vl-union x
                                         :pdims pdims :udims udims
                                         :members members))))
       (:vl-enum
-       (b* (((mv warnings basetype) (vl-enumbasetype-rangeresolve x.basetype warnings))
-            ((mv warnings items)    (vl-enumitemlist-rangeresolve x.items warnings))
-            ((mv warnings pdims) (vl-packeddimensionlist-rangeresolve x.pdims warnings))
-            ((mv warnings udims) (vl-packeddimensionlist-rangeresolve x.udims warnings)))
+       (b* (((mv warnings basetype) (vl-enumbasetype-rangeresolve x.basetype ss warnings))
+            ((mv warnings items)    (vl-enumitemlist-rangeresolve x.items ss warnings))
+            ((mv warnings pdims) (vl-packeddimensionlist-rangeresolve x.pdims ss warnings))
+            ((mv warnings udims) (vl-packeddimensionlist-rangeresolve x.udims ss warnings)))
          (mv warnings (change-vl-enum x
                                       :basetype basetype
                                       :items    items
                                       :pdims    pdims
                                       :udims    udims))))
       (:vl-usertype
-       (b* (((mv warnings pdims) (vl-packeddimensionlist-rangeresolve x.pdims warnings))
-            ((mv warnings udims) (vl-packeddimensionlist-rangeresolve x.udims warnings)))
+       (b* (((mv warnings pdims) (vl-packeddimensionlist-rangeresolve x.pdims ss warnings))
+            ((mv warnings udims) (vl-packeddimensionlist-rangeresolve x.udims ss warnings)))
          (mv warnings (change-vl-usertype x
                                           :pdims pdims :udims udims))))))
 
   (define vl-structmemberlist-rangeresolve ((x vl-structmemberlist-p)
+                                            (ss vl-scopestack-p)
                                             (warnings vl-warninglist-p))
     :measure (vl-structmemberlist-count x)
     :returns (mv (warnings vl-warninglist-p)
                  (new-x vl-structmemberlist-p))
     (b* (((when (atom x))
           (mv (ok) nil))
-         ((mv warnings x1) (vl-structmember-rangeresolve (car x) warnings))
-         ((mv warnings x2) (vl-structmemberlist-rangeresolve (cdr x) warnings)))
+         ((mv warnings x1) (vl-structmember-rangeresolve (car x) ss warnings))
+         ((mv warnings x2) (vl-structmemberlist-rangeresolve (cdr x) ss warnings)))
       (mv warnings (cons x1 x2))))
 
   (define vl-structmember-rangeresolve ((x vl-structmember-p)
+                                        (ss vl-scopestack-p)
                                         (warnings vl-warninglist-p))
     :measure (vl-structmember-count x)
     :returns (mv (warnings vl-warninglist-p)
                  (new-x vl-structmember-p))
     (b* (((vl-structmember x) x)
-         ((mv warnings type) (vl-datatype-rangeresolve x.type warnings)))
+         ((mv warnings type) (vl-datatype-rangeresolve x.type ss warnings)))
       (mv warnings (change-vl-structmember x
                                            :type type))))
   ///
@@ -228,18 +235,18 @@ these expressions.</p>")
 (def-vl-rangeresolve vl-maybe-datatype
   :body (if (not x)
             (mv (ok) nil)
-          (vl-datatype-rangeresolve x warnings)))
+          (vl-datatype-rangeresolve x ss warnings)))
 
 (def-vl-rangeresolve vl-portdecl
   :body (b* (((vl-portdecl x) x)
-             ((mv warnings type) (vl-datatype-rangeresolve x.type warnings)))
+             ((mv warnings type) (vl-datatype-rangeresolve x.type ss warnings)))
             (mv warnings (change-vl-portdecl x :type type))))
 
 (def-vl-rangeresolve-list vl-portdecllist :element vl-portdecl)
 
 (def-vl-rangeresolve vl-vardecl
   :body (b* (((vl-vardecl x) x)
-             ((mv warnings type) (vl-datatype-rangeresolve x.type warnings)))
+             ((mv warnings type) (vl-datatype-rangeresolve x.type ss warnings)))
           (mv warnings (change-vl-vardecl x
                                           :type type))))
 
@@ -247,14 +254,14 @@ these expressions.</p>")
 
 (def-vl-rangeresolve vl-modinst
   :body (b* (((vl-modinst x) x)
-             ((mv warnings range) (vl-maybe-rangeresolve x.range warnings)))
+             ((mv warnings range) (vl-maybe-rangeresolve x.range ss warnings)))
           (mv warnings (change-vl-modinst x :range range))))
 
 (def-vl-rangeresolve-list vl-modinstlist :element vl-modinst)
 
 (def-vl-rangeresolve vl-gateinst
   :body (b* (((vl-gateinst x) x)
-             ((mv warnings range) (vl-maybe-rangeresolve x.range warnings)))
+             ((mv warnings range) (vl-maybe-rangeresolve x.range ss warnings)))
           (mv warnings (change-vl-gateinst x :range range))))
 
 (def-vl-rangeresolve-list vl-gateinstlist :element vl-gateinst)
@@ -263,44 +270,44 @@ these expressions.</p>")
   :body
   (vl-paramtype-case x
     (:vl-implicitvalueparam
-     (b* (((mv warnings range-prime)   (vl-maybe-rangeresolve x.range warnings))
+     (b* (((mv warnings range-prime)   (vl-maybe-rangeresolve x.range ss warnings))
           (x-prime                     (change-vl-implicitvalueparam x :range range-prime)))
        (mv warnings x-prime)))
     (:vl-explicitvalueparam
-     (b* (((mv warnings type-prime)    (vl-datatype-rangeresolve x.type warnings))
+     (b* (((mv warnings type-prime)    (vl-datatype-rangeresolve x.type ss warnings))
           (x-prime                     (change-vl-explicitvalueparam x :type type-prime)))
        (mv warnings x-prime)))
     (:vl-typeparam
-     (b* (((mv warnings default-prime) (vl-maybe-datatype-rangeresolve x.default warnings))
+     (b* (((mv warnings default-prime) (vl-maybe-datatype-rangeresolve x.default ss warnings))
           (x-prime                     (change-vl-typeparam x :default default-prime)))
        (mv warnings x-prime)))))
 
 (def-vl-rangeresolve vl-paramdecl
   :body (b* (((vl-paramdecl x) x)
-             ((mv warnings type) (vl-paramtype-rangeresolve x.type warnings)))
+             ((mv warnings type) (vl-paramtype-rangeresolve x.type ss warnings)))
           (mv warnings (change-vl-paramdecl x :type type))))
 
 (def-vl-rangeresolve-list vl-paramdecllist :element vl-paramdecl)
 
 (def-vl-rangeresolve vl-taskport
   :body (b* (((vl-taskport x) x)
-             ((mv warnings range) (vl-maybe-rangeresolve x.range warnings)))
+             ((mv warnings range) (vl-maybe-rangeresolve x.range ss warnings)))
           (mv warnings (change-vl-taskport x :range range))))
 
 (def-vl-rangeresolve-list vl-taskportlist :element vl-taskport)
 
 (def-vl-rangeresolve vl-blockitem
   :body (case (tag x)
-          (:vl-vardecl   (vl-vardecl-rangeresolve   x warnings))
-          (otherwise     (vl-paramdecl-rangeresolve x warnings))))
+          (:vl-vardecl   (vl-vardecl-rangeresolve   x ss warnings))
+          (otherwise     (vl-paramdecl-rangeresolve x ss warnings))))
 
 (def-vl-rangeresolve-list vl-blockitemlist :element vl-blockitem)
 
 (def-vl-rangeresolve vl-fundecl
   :body (b* (((vl-fundecl x) x)
-             ((mv warnings rrange) (vl-maybe-rangeresolve x.rrange warnings))
-             ((mv warnings decls)  (vl-blockitemlist-rangeresolve x.decls warnings))
-             ((mv warnings inputs) (vl-taskportlist-rangeresolve x.inputs warnings)))
+             ((mv warnings rrange) (vl-maybe-rangeresolve x.rrange ss warnings))
+             ((mv warnings decls)  (vl-blockitemlist-rangeresolve x.decls ss warnings))
+             ((mv warnings inputs) (vl-taskportlist-rangeresolve x.inputs ss warnings)))
           (mv warnings (change-vl-fundecl x
                                           :rrange rrange
                                           :decls  decls
@@ -308,17 +315,18 @@ these expressions.</p>")
 
 (def-vl-rangeresolve-list vl-fundecllist :element vl-fundecl)
 
-(define vl-module-rangeresolve ((x vl-module-p))
+(define vl-module-rangeresolve ((x vl-module-p) (ss vl-scopestack-p))
   :returns (new-x vl-module-p)
   (b* (((vl-module x) x)
        ((when (vl-module->hands-offp x))
         (vl-module-fix x))
+       (ss (vl-scopestack-push (vl-module-fix x) ss))
        (warnings                 x.warnings)
-       ((mv warnings portdecls)  (vl-portdecllist-rangeresolve  x.portdecls  warnings))
-       ((mv warnings vardecls)   (vl-vardecllist-rangeresolve   x.vardecls   warnings))
-       ((mv warnings modinsts)   (vl-modinstlist-rangeresolve   x.modinsts   warnings))
-       ((mv warnings gateinsts)  (vl-gateinstlist-rangeresolve  x.gateinsts  warnings))
-       ((mv warnings fundecls)   (vl-fundecllist-rangeresolve   x.fundecls   warnings))
+       ((mv warnings portdecls)  (vl-portdecllist-rangeresolve  x.portdecls ss  warnings))
+       ((mv warnings vardecls)   (vl-vardecllist-rangeresolve   x.vardecls ss   warnings))
+       ((mv warnings modinsts)   (vl-modinstlist-rangeresolve   x.modinsts ss   warnings))
+       ((mv warnings gateinsts)  (vl-gateinstlist-rangeresolve  x.gateinsts ss  warnings))
+       ((mv warnings fundecls)   (vl-fundecllist-rangeresolve   x.fundecls ss   warnings))
        ;; BOZO may eventually want to resolve ranges in block items within statements.
        )
       (change-vl-module x
@@ -329,13 +337,15 @@ these expressions.</p>")
                         :gateinsts  gateinsts
                         :fundecls   fundecls)))
 
-(defprojection vl-modulelist-rangeresolve ((x vl-modulelist-p))
+(defprojection vl-modulelist-rangeresolve ((x vl-modulelist-p) (ss vl-scopestack-p))
   :returns (new-x vl-modulelist-p)
-  (vl-module-rangeresolve x))
+  (vl-module-rangeresolve x ss))
 
 (define vl-design-rangeresolve ((x vl-design-p))
   :returns (new-x vl-design-p)
   (b* (((vl-design x) x)
-       (new-mods (vl-modulelist-rangeresolve x.mods)))
+       (ss (vl-scopestack-init x))
+       (new-mods (vl-modulelist-rangeresolve x.mods ss)))
+    (vl-scopestacks-free)
     (change-vl-design x :mods new-mods)))
 

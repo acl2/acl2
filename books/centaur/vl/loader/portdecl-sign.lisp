@@ -96,23 +96,43 @@ nets agree and are correct by the time actual modules are produced.</p>")
 
 (local (xdoc::set-default-parents portdecl-sign))
 
-(define vl-portdecl-sign-adjust-type ((vardecl vl-vardecl-p)
-                                      (final-signedp booleanp))
-  :guard (vl-simplevar-p vardecl)
-  :returns (new-type vl-datatype-p)
-  :prepwork ((local (in-theory (enable vl-simplevar-p
-                                       vl-simplenet-p
-                                       vl-simplereg-p))))
+(define vl-portdecl-type-set-signed ((type vl-datatype-p))
+  :returns (mv successp
+               (warnings vl-warninglist-p)
+               (new-type vl-datatype-p))
   :hooks nil
-  (b* ((type (vl-vardecl->type vardecl)))
-    (change-vl-coretype type
-                        :signedp final-signedp)))
+  (b* (((fun (badtype type))
+        (mv nil
+            (list (make-vl-warning :type :vl-portdecl-sign-fail
+                                   :msg  "Don't know how to change ~
+                                                   the sign of datatype ~a0 ~
+                                                   to be signed"
+                                   :args (list (vl-datatype-fix type))
+                                   :fatalp t))
+            (vl-datatype-fix type))))
+  (if (consp (vl-datatype->udims type))
+      ;; How can a datatype with udims be signed?
+      (badtype type)
+      
+  (vl-datatype-case type
+    :vl-coretype (mv t nil (change-vl-coretype type :signedp t))
+    :vl-struct   (mv t nil (change-vl-struct   type :signedp t))
+    :vl-union    (mv t nil (change-vl-union    type :signedp t))
+    :otherwise   (badtype type)))))
 
 
 (local (defthm vl-atts-p-of-delete-assoc-equal
          (implies (vl-atts-p atts)
                   (vl-atts-p (delete-assoc-equal name atts)))
          :hints(("Goal" :in-theory (enable delete-assoc-equal)))))
+
+(define vl-datatype->signedp ((x vl-datatype-p))
+  (vl-datatype-case x
+    :vl-coretype x.signedp
+    :vl-struct x.signedp
+    :vl-union x.signedp
+    :otherwise nil))
+
 
 (define vl-portdecl-sign-1
   ((port     vl-portdecl-p)
@@ -141,9 +161,6 @@ nets agree and are correct by the time actual modules are produced.</p>")
                      :args (list port port.type var.type))
               port var)))
 
-       ;; See vl-parse-basic-port-declaration-tail.  The port declaration is
-       ;; not complete.  It may be marked as signed, and it may have a range.
-       ;; But we don't know the proper type beyond that.
        ((unless (eq (vl-datatype-kind port.type) :vl-coretype))
         ;; Just basic sanity checking.  Should never fail unless there are ways
         ;; to create port declarations that I don't understand.
@@ -154,40 +171,13 @@ nets agree and are correct by the time actual modules are produced.</p>")
                    :args (list port port.type))
             port var))
 
-       (port-signedp (vl-coretype->signedp port.type))
-       (port-pdims   (vl-coretype->pdims port.type))
-
-       ((unless (vl-simplevar-p var))
-        ;; The corresponding net/variable is something complicated.  I don't
-        ;; think we need to allow this?  (Maybe we'll want to relax this and
-        ;; allow things like bit or shortint or whatever, but we should
-        ;; experiment with what Verilog simulators allow.)
-        (mv nil
-            (fatal :type :vl-port/var-disagree
-                   :msg "~a0: the variable's type is too complex to merge ~
-                         with the corresponding, incomplete port.  Type: ~a1."
-                   :args (list var var.type))
-            port var))
-
-       (var-signedp (vl-simplevar->signedp var))
-       (var-range   (vl-simplevar->range var))
-       (port-range  (and (consp port-pdims) (car port-pdims)))
-
-       ((unless (or (not port-range)
-                    ;; BOZO I don't think it's allowed for the port to have a
-                    ;; range and the vardecl not to.  Come back here if this
-                    ;; breaks stuff.
-                    ;; (not var-range)
-                    (equal port-range var-range)))
-        (mv nil
-            (fatal :type :vl-port/var-disagree
-                   :msg "~a0: the given range, ~a1, disagrees with the range ~
-                         for the corresponding net, ~a2."
-                   :args (list port port-range var-range))
-            port var))
-
-       (final-signedp (or var-signedp port-signedp))
-       (final-type    (vl-portdecl-sign-adjust-type var final-signedp))
+       ((vl-coretype port.type))
+       ((mv ok warnings1 final-type)
+        (if port.type.signedp
+            (vl-portdecl-type-set-signed var.type)
+          (mv t nil var.type)))
+       (warnings (append-without-guard warnings1 (vl-warninglist-fix warnings)))
+       ((unless ok) (mv nil warnings port var))
        
        (new-port (change-vl-portdecl port
                                      :atts (delete-assoc-equal "VL_INCOMPLETE_DECLARATION" port.atts)

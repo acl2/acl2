@@ -49,9 +49,10 @@
           ((vl-id-p guts)          (list 'id   (vl-id->name guts)))
           ((vl-hidpiece-p guts)    (list 'hid  (vl-hidpiece->name guts)))
           ((vl-funname-p guts)     (list 'fun  (vl-funname->name guts)))
+          ((vl-typename-p guts)    (list 'type (vl-typename->name guts)))
           ((vl-sysfunname-p guts)  (list 'sys  (vl-sysfunname->name guts)))
           ((vl-keyguts-p guts)     (list 'key  (vl-keyguts->type guts)))
-          ((vl-basictype-p guts)   (list 'basic  (vl-basictype->kind guts)))
+          ((vl-basictype-p guts)   (list 'basic (vl-basictype->kind guts)))
           ((vl-tagname-p guts)     (list 'tag  (vl-tagname->name guts)))
 
           ((vl-time-p guts)

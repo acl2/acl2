@@ -637,6 +637,11 @@ only meant as a heuristic for generating more useful warnings.</p>"
                         ;; This can definitely affect sizes, but I'm not sure what to do
                         ;; about it yet.
                         :vl-binary-cast
+          :vl-pattern-multi
+          :vl-pattern-type
+          :vl-pattern-positional
+          :vl-pattern-keyvalue
+          :vl-keyvalue
                         )
          ;; Don't gather anything from here.
          nil)
@@ -1097,6 +1102,12 @@ SystemVerilog-2012 Table 11-21. See @(see expression-sizing).</p>"
         :vl-stream-left-sized :vl-stream-right-sized
         :vl-tagged :vl-binary-cast
         :vl-select-colon :vl-select-pluscolon :vl-select-minuscolon
+          :vl-pattern-multi
+          :vl-pattern-type
+          :vl-pattern-positional
+          :vl-pattern-keyvalue
+          :vl-keyvalue
+        
         )
        ;; We don't handle these here.  They should be handled in
        ;; vl-expr-selfsize specially, because unlike all of the other
@@ -1860,6 +1871,13 @@ produce unsigned values.</li>
           :vl-stream-left :vl-stream-right
           :vl-stream-left-sized :vl-stream-right-sized
           :vl-tagged :vl-binary-cast
+
+          :vl-pattern-multi
+          :vl-pattern-type
+          :vl-pattern-positional
+          :vl-pattern-keyvalue
+          :vl-keyvalue
+
           )
          ;; Should have handled these above.
          (mv warnings nil))
@@ -4012,6 +4030,12 @@ minor warning for assignments where the rhs is a constant.</p>"
             :vl-stream-left :vl-stream-right
             :vl-stream-left-sized :vl-stream-right-sized
             :vl-tagged :vl-binary-cast
+          :vl-pattern-multi
+          :vl-pattern-type
+          :vl-pattern-positional
+          :vl-pattern-keyvalue
+          :vl-keyvalue
+
             )
            (mv nil
                (fatal :type :vl-unsupported

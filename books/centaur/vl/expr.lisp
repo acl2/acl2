@@ -272,6 +272,13 @@ SystemVerilog-2012 Standard.</p>"
    ;; Casting Expressions
    (cons :vl-binary-cast           2)    ;;; e.g., int'(2.0)
 
+   ;; Assignment Pattern stuff
+   (cons :vl-pattern-positional nil) ;; '\{ expression { , expression } \}
+   (cons :vl-pattern-multi      2)
+   (cons :vl-pattern-keyvalue   nil) ;; '\{ structure_pattern_key : expression { , key : expression } \}
+   (cons :vl-keyvalue           2)   ;; key : value  (within vl-pattern-keyvalue)
+   (cons :vl-pattern-type       2)   ;; type'{...}, first argument 
+
    ))
 
 
@@ -674,6 +681,17 @@ so that we do not confuse them with ordinary @(see vl-id-p) objects.</p>")
 we do not confuse them with ordinary @(see vl-id-p) objects.</p>")
 
 
+(defprod vl-typename
+  :short "Represents a user-defined type name."
+  :tag :vl-typename
+  :layout :tree
+
+  ((name stringp :rule-classes :type-prescription))
+
+  :long "<p>We use a custom representation for the names of types, so that
+we do not confuse them with ordinary @(see vl-id-p) objects.</p>")
+
+
 (defprod vl-tagname
   :short "Represents a tagged union member name."
   :tag :vl-tagname
@@ -729,8 +747,7 @@ distinguished by keywords such as @('null'), @('this'), @('super'), @('$'),
    :vl-signed
    :vl-unsigned
    :vl-string
-   :vl-const
-   )
+   :vl-const)
   :parents (vl-basictype-p)
   :short "The various kinds of basic, atomic, built-in SystemVerilog types.")
 
@@ -757,6 +774,7 @@ for a discussion of the valid types.</p>"
    vl-hidpiece
    vl-funname
    vl-sysfunname
+   vl-typename
    vl-keyguts
    vl-time
    vl-basictype

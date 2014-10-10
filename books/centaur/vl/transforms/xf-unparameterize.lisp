@@ -253,7 +253,7 @@ types.</p>"
        (ctx      (vl-context-fix ctx))
        (paramname (string-fix paramname))
 
-       ((mv ok reduced-expr) (vl-consteval expr))
+       ((mv ok reduced-expr) (vl-consteval expr nil))
        ((unless ok)
         (vl-unparam-debug "~a0: only reduced ~a1 to ~a2 (not a constant).~%"
                           ctx expr reduced-expr)
@@ -343,7 +343,7 @@ types.</p>"
   :guard-hints(("Goal"
                 :in-theory (disable l0)
                 :use ((:instance l0
-                       (x (mv-nth 1 (vl-consteval expr))))))))
+                       (x (mv-nth 1 (vl-consteval expr nil))))))))
 
 (define vl-override-parameter-with-expr
   :short "Try to override a parameter with a new expression."
@@ -396,7 +396,7 @@ types.</p>"
 
       (:vl-implicitvalueparam
        ;; See the rules in SystemVerilog-2012 Section 23.10.
-       (b* (((mv ok reduced-expr) (vl-consteval expr))
+       (b* (((mv ok reduced-expr) (vl-consteval expr nil))
             ((unless ok)
              (vl-unparam-debug "~a0: can't override ~a1, only reduced expr ~a2 to ~a3 (not a constant)."
                                ctx decl expr reduced-expr)

@@ -177,7 +177,7 @@ less than the @('unroll-limit').  In particular, we use @(see vl-consteval) to
 try to evaluate the condition.  This lets us handle things like
 @('repeat(width-1) body') after @(see unparameterization) has occurred.</p>"
 
-  (b* (((mv ok count-expr) (vl-consteval condition))
+  (b* (((mv ok count-expr) (vl-consteval condition nil))
        (count (and ok (vl-resolved->val count-expr)))
        ((when (and count (<= count unroll-limit)))
         (mv warnings
