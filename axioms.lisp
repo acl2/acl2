@@ -16403,6 +16403,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                 ',bound-symbol))))
     (progn$ ,@forms)))
 
+#-(or acl2-loop-only (not acl2-par))
+(defmacro with-lock (bound-symbol &rest forms)
+  `(with-lock-raw ,bound-symbol ,@forms))
+
 (defmacro deflock (lock-symbol)
 
 ; Deflock puts lock-symbol into the lock-table, and also defines a macro

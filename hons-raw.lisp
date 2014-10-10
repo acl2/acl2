@@ -109,17 +109,27 @@
                        (shared           'nil)
                        (lock-free        'nil))
 
-; See hl-mht.
+; See hl-mht.  Here we have a special hack: if :shared is :default then we
+; leave it to the underlying Lisp (in particular CCL) to decide about :shared
+; and :lock-free.
 
   (declare (ignorable shared weak lock-free))
-  (make-hash-table :test             test
-                   :size             size
-                   :rehash-size      rehash-size
-                   :rehash-threshold rehash-threshold
-                   #+Clozure :weak   #+Clozure weak
-                   #+Clozure :shared #+Clozure shared
-                   #+Clozure :lock-free #+Clozure lock-free
-                   ))
+  (cond ((eq shared :default)
+         (make-hash-table :test             test
+                          :size             size
+                          :rehash-size      rehash-size
+                          :rehash-threshold rehash-threshold
+                          #+Clozure :weak   #+Clozure weak
+                          ))
+        (t
+         (make-hash-table :test             test
+                          :size             size
+                          :rehash-size      rehash-size
+                          :rehash-threshold rehash-threshold
+                          #+Clozure :weak   #+Clozure weak
+                          #+Clozure :shared #+Clozure shared
+                          #+Clozure :lock-free #+Clozure lock-free
+                          ))))
 
 #+allegro
 (declaim (type hash-table *allegro-hl-hash-table-size-ht*))
@@ -131,7 +141,9 @@
 (defmacro hl-mht (&rest args)
 
 ; This macro is a wrapper for hl-mht-fn, which in turn is a wrapper for
-; make-hash-table.
+; make-hash-table.  But here we have a special hack: if :shared is :default
+; then we leave it to the underlying Lisp (in particular CCL) to decide about
+; :shared and :lock-free.
 
 ; Because of our approach to threading, we generally don't need our hash tables
 ; to be protected by locks.  HL-MHT is essentially like make-hash-table, but on
@@ -899,7 +911,8 @@
 ; is fixed in CCL, in which case this code could be simplified.
 
   (let ((table (hl-mht :test #'eq :size (max 100 fal-ht-size)
-                       :lock-free t :weak :key)))
+; We could specify :lock-free t, but perhaps it's faster with default nil.
+                       :weak :key)))
     #+Clozure
     ;; This isn't necessary with lock-free, but doesn't hurt.  Note that T is
     ;; always honsed, so sentinel is a valid fast-alist.  I give this a
@@ -1161,7 +1174,7 @@
       (assoc key al)
     (gethash key (the hash-table al))))
 
-(defabbrev hl-flex-acons (elem al)
+(defmacro hl-flex-acons (elem al &optional shared)
 
 ; (hl-flex-acons entry al) assumes that entry is a (key . val) pair, and
 ; extends the flex alist al by binding key to entry.
@@ -1176,22 +1189,32 @@
 ; unless it's been fully constructed, so we're ok.  In the hash table case,
 ; we're a single setf, which we assume is okay.
 
-  (if (listp al)
-      (cond ((hl-flex-alist-maxed-out al)
-             ;; Because of uniqueness, we don't need to worry about shadowed
-             ;; pairs; we can just copy all pairs into the new hash table.
-             (let ((ht (hl-mht)))
-               (declare (type hash-table ht))
-               (loop for pair in al do
-                     (setf (gethash (car pair) ht) pair))
-               (setf (gethash (car elem) ht) elem)
-               ht))
-            (t
-             (cons elem al)))
-    (progn
-      (setf (gethash (car elem) (the hash-table al))
-            elem)
-      al)))
+  `(let ((elem ,elem)
+         (al ,al)
+         (shared ,shared))
+     (cond
+      ((listp al)
+       (cond ((hl-flex-alist-maxed-out al)
+              ;; Because of uniqueness, we don't need to worry about shadowed
+              ;; pairs; we can just copy all pairs into the new hash table.
+              (let ((ht (cond (shared
+
+; In CCL, the default is for hash tables to be shared.  So we let CCL handle
+; :shared and :lock-free.
+
+                               (hl-mht :shared :default))
+                              (t (hl-mht)))))
+                (declare (type hash-table ht))
+                (loop for pair in al do
+                      (setf (gethash (car pair) ht) pair))
+                (setf (gethash (car elem) ht) elem)
+                ht))
+             (t
+              (cons elem al))))
+      (t
+       (setf (gethash (car elem) (the hash-table al))
+             elem)
+       al))))
 
 
 ; ----------------------------------------------------------------------
