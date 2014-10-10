@@ -321,7 +321,7 @@
                   i))
   :doc ":doc-section logops-lemmas
   Rewrite: (LOGNOT (LOGNOT i)) = i,
-  when (case-split (integerp i).
+  when (case-split (integerp i)).
   ~/~/~/")
 
 (defthm cancel-equal-lognot

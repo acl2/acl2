@@ -225,27 +225,31 @@ attributes is left up to the implementation.</p>"
     :measure (vl-datatype-count x)
     :returns (new-x vl-datatype-p)
     (vl-datatype-case x
-      (:vl-nettype
-       (change-vl-nettype x :range (vl-maybe-range-subst x.range sigma)))
       (:vl-coretype
-       (change-vl-coretype x :dims (vl-packeddimensionlist-subst x.dims sigma)))
+       (change-vl-coretype x
+                           :pdims (vl-packeddimensionlist-subst x.pdims sigma)
+                           :udims (vl-packeddimensionlist-subst x.udims sigma)))
       (:vl-struct
        (change-vl-struct x
-                         :dims (vl-packeddimensionlist-subst x.dims sigma)
+                         :pdims (vl-packeddimensionlist-subst x.pdims sigma)
+                         :udims (vl-packeddimensionlist-subst x.udims sigma)
                          :members (vl-structmemberlist-subst x.members sigma)))
       (:vl-union
        (change-vl-union x
-                        :dims (vl-packeddimensionlist-subst x.dims sigma)
+                        :pdims (vl-packeddimensionlist-subst x.pdims sigma)
+                        :udims (vl-packeddimensionlist-subst x.udims sigma)
                         :members (vl-structmemberlist-subst x.members sigma)))
       (:vl-enum
        (change-vl-enum x
                        :basetype (vl-enumbasetype-subst x.basetype sigma)
                        :items (vl-enumitemlist-subst x.items sigma)
-                       :dims (vl-packeddimensionlist-subst x.dims sigma)))
+                       :pdims (vl-packeddimensionlist-subst x.pdims sigma)
+                       :udims (vl-packeddimensionlist-subst x.udims sigma)))
       (:vl-usertype
        (change-vl-usertype x
                            :kind (vl-expr-subst x.kind sigma)
-                           :dims (vl-packeddimensionlist-subst x.dims sigma)))))
+                           :pdims (vl-packeddimensionlist-subst x.pdims sigma)
+                           :udims (vl-packeddimensionlist-subst x.udims sigma)))))
 
   (define vl-structmemberlist-subst ((x vl-structmemberlist-p)
                                      (sigma vl-sigma-p))
@@ -263,7 +267,6 @@ attributes is left up to the implementation.</p>"
     (b* (((vl-structmember x) x))
       (change-vl-structmember x
                               :rhs (vl-maybe-expr-subst x.rhs sigma)
-                              :dims (vl-packeddimensionlist-subst x.dims sigma)
                               :type (vl-datatype-subst x.type sigma))))
   ///
   (verify-guards vl-datatype-subst)
@@ -312,7 +315,6 @@ attributes is left up to the implementation.</p>"
   :body (b* (((vl-vardecl x) x))
           (change-vl-vardecl x
                              :type    (vl-datatype-subst x.type sigma)
-                             :dims    (vl-packeddimensionlist-subst x.dims sigma)
                              :initval (vl-maybe-expr-subst x.initval sigma)
                              :delay   (vl-maybe-gatedelay-subst x.delay sigma))))
 

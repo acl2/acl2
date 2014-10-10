@@ -1308,12 +1308,12 @@ funtemplate."
 vl-taskportlist-types-okp).</p>"
   (b* (((vl-taskport x) x)
        (name-atom (make-vl-atom :guts (make-vl-string :value x.name)))
-       (type (make-vl-nettype :name :vl-wire
-                              :range x.range
-                              :signedp (eq x.type :vl-signed))))
+       (type (make-vl-coretype :name :vl-logic
+                               :pdims (and x.range (list x.range))
+                               :signedp (eq x.type :vl-signed))))
     (make-vl-vardecl :name  x.name
                      :type  type
-                     :dims  nil
+                     :nettype :vl-wire
                      :atts  (acons "VL_FUNCTION_INPUT" name-atom x.atts)
                      :loc   x.loc)))
 
@@ -1370,12 +1370,13 @@ funtemplate."
 vl-fun-vardecllist-types-okp).</p>"
   (b* (((vl-vardecl x) x)
        (name-atom (make-vl-atom :guts (make-vl-string :value x.name)))
-       (type      (make-vl-nettype :name :vl-wire
-                                   :range   (vl-simplereg->range x)
-                                   :signedp (vl-simplereg->signedp x))))
+       (range     (vl-simplereg->range x))
+       (type      (make-vl-coretype :name :vl-logic
+                                    :pdims (and range (list range))
+                                    :signedp (vl-simplereg->signedp x))))
     (make-vl-vardecl :name  x.name
                      :type  type
-                     :dims  nil
+                     :nettype :vl-wire
                      :atts  (acons "VL_FUNCTION_VAR" name-atom x.atts)
                      :loc   x.loc)))
 
@@ -1435,11 +1436,12 @@ unsupported constructs or doesn't meet our other sanity criteria.</p>"
        ((unless okp) (mv nil warnings)) ;; already warned
 
        (funname-atom (make-vl-atom :guts (make-vl-funname :name x.name)))
-       (result-type  (make-vl-nettype :name :vl-wire
-                                      :range x.rrange
-                                      :signedp (eq x.rtype :vl-signed)))
+       (result-type  (make-vl-coretype :name :vl-logic
+                                       :pdims (and x.rrange (list x.rrange))
+                                       :signedp (eq x.rtype :vl-signed)))
        (result-net   (make-vl-vardecl :name    x.name
                                       :type    result-type
+                                      :nettype :vl-wire
                                       :atts    (list (cons "VL_FUNCTION_RETURN" funname-atom))
                                       :loc     x.loc))
        (template     (make-vl-funtemplate

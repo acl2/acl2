@@ -312,12 +312,17 @@
           (vl-parse-parameter-override atts))
          ((when (eq type1 :vl-kwd-assign))
           (vl-parse-continuous-assign atts))
-         ((when (eq type1 :vl-idtoken))
-          (vl-parse-udp-or-module-instantiation atts))
          ((when (eq type1 :vl-kwd-initial))
           (vl-parse-initial-construct atts))
          ((when (eq type1 :vl-kwd-always))
           (vl-parse-always-construct atts))
+
+         ((when (and (vl-is-token? :vl-idtoken)
+                     (not (vl-parsestate-is-user-defined-type-p
+                           (vl-idtoken->name (car (vl-tokstream->tokens)))
+                           (vl-tokstream->pstate)))))
+          (vl-parse-udp-or-module-instantiation atts))
+
 
          ((when (eq (vl-loadconfig->edition config) :verilog-2005))
           (case type1
@@ -349,7 +354,6 @@
                     (eq type1 :vl-kwd-always_latch)
                     (eq type1 :vl-kwd-always_comb)))
           (vl-parse-always-construct atts)))
-
       ;; SystemVerilog -- BOZO haven't thought this through very thoroughly, but it's
       ;; probably a fine starting place.
       (vl-parse-block-item-declaration-noatts atts))))

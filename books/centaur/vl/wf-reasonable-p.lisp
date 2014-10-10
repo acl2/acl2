@@ -100,14 +100,19 @@ ranges, e.g., @('wire [7:0] w').  What we do not support are, e.g., @('wire w
   :body
   (b* (((vl-vardecl x) x))
     (@wf-progn
-     (@wf-assert (or (not (equal (vl-datatype-kind x.type) :vl-nettype))
-                     (member (vl-nettype->name x.type)
-                             (list :vl-supply0 :vl-supply1 :vl-wire)))
+     (@wf-assert (and (equal (vl-datatype-kind x.type) :vl-coretype)
+                      (member (vl-coretype->name x.type) '(:vl-logic :vl-reg))
+                      (member x.nettype
+                              '(nil :vl-supply0 :vl-supply1 :vl-wire)))
                  :vl-bad-variable
-                 "~a0: wire has unsupported type ~a1."
-                 (list x x.type))
+                 "~a0: wire has unsupported type ~a1/nettype ~a2."
+                 (list x x.type x.nettype))
 
-     (@wf-assert (not x.dims)
+     (@wf-assert (let ((x.udims (vl-datatype->udims x.type))
+                       (x.pdims (vl-datatype->pdims x.type)))
+                   (and (not x.udims)
+                        (or (atom x.pdims)
+                            (atom (cdr x.pdims)))))
                  :vl-bad-variable
                  "~a0: arrays are not yet supported."
                  (list x))

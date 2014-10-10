@@ -135,8 +135,7 @@ might indicate that the submodule is a transistor-level construct.</li>
   (b* (((when (atom x))
         nil)
        ((vl-vardecl x1) (vl-vardecl-fix (car x)))
-       ((when (and (eq (vl-datatype-kind x1.type) :vl-nettype)
-                   (member (vl-nettype->name x1.type)
+       ((when (and (member x1.nettype
                            '(:vl-tri :vl-triand :vl-trior :vl-tri0 :vl-tri1
                              :vl-trireg :vl-wand :vl-wor))))
         (cons x1

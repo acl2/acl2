@@ -42,6 +42,16 @@
 expressions in lvalue positions.")
 
 
+(define vl-index-exprp ((x vl-expr-p))
+  :measure (vl-expr-count x)
+  (if (vl-fast-atom-p x)
+      (vl-hidexpr-p x)
+    (b* (((vl-nonatom x))
+         ((when (member x.op '(:vl-bitselect :vl-index)))
+          (and (vl-index-exprp (first x.args))
+               (vl-expr-resolved-p (second x.args)))))
+      (vl-hidexpr-p x))))
+
 (defines vl-expr-lvaluep
   :parents (lvalues vl-expr-p)
   :short "Determine if an expression looks like a good lvalue."
@@ -73,12 +83,11 @@ statements.</p>"
          (op   (vl-nonatom->op x))
          (args (vl-nonatom->args x)))
       (case op
-        ((:vl-bitselect :vl-partselect-colon :vl-partselect-pluscolon
-          :vl-partselect-minuscolon)
+        ((:vl-bitselect :vl-partselect-colon :vl-partselect-pluscolon :vl-partselect-minuscolon
+          :vl-index :vl-select-colon :vl-select-pluscolon :vl-select-minuscolon)
          ;; foo[index] or foo[a:b] or foo[a+:b] or foo[a-:b] is an okay
          ;; lvalue as long as foo is an identifier or hierarchical id.
-         (or (vl-idexpr-p (first args))
-             (vl-hidexpr-p (first args))))
+         (vl-index-exprp (first args)))
         ((:vl-concat)
          ;; { foo, bar, baz, ... } is valid if all the components are
          ;; lvalues.

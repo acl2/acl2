@@ -215,6 +215,14 @@
                    :hints((and stable-under-simplificationp
                                '(:in-theory (enable ,base-type))))))
 
+          (local (defthm defoption-lemma-fix-non-nil
+                   (,base-type-fix x)
+                   :hints(("goal" :use ((:theorem (,base-type (,base-type-fix x)))
+                                        defoption-lemma-non-nil)
+                           :in-theory '((,base-type)))
+                          (and stable-under-simplificationp
+                               '(:in-theory (enable))))))
+
           (value-triple (cw "~|Defoption: introducing option recognizer ~x0.~%"
                             ',name))
           ,name-def

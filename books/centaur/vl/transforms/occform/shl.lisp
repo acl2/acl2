@@ -165,10 +165,12 @@ operates on O(log_2 n) muxes.</p>"
 
   (b* (((when (zp n))
         nil)
-       (type  (hons-copy (make-vl-nettype :name :vl-wire
-                                          :range range)))
+       (range (vl-maybe-range-fix range))
+       (type  (hons-copy (make-vl-coretype :name :vl-logic
+                                           :pdims (and range (list range)))))
        (decl1 (make-vl-vardecl :name  (cat basename "_" (natstr n))
                                :type  type
+                               :nettype :vl-wire
                                :loc   *vl-fakeloc*)))
     (cons decl1
           (vl-make-list-of-netdecls (- n 1) basename range)))

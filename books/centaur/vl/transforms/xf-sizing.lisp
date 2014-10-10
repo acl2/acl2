@@ -175,53 +175,60 @@
                  (new-x    vl-datatype-p))
     :measure (vl-datatype-count x)
     (vl-datatype-case x
-      (:vl-nettype
-       (b* (((mv range-successp warnings new-range)
-             (vl-maybe-range-exprsize x.range ss elem warnings))
-            (new-x (change-vl-nettype x :range new-range)))
-         (mv range-successp warnings new-x)))
       (:vl-coretype
-       (b* (((mv dims-successp warnings new-dims)
-             (vl-packeddimensionlist-exprsize x.dims ss elem warnings))
-            (new-x (change-vl-coretype x :dims new-dims)))
-         (mv dims-successp warnings new-x)))
+       (b* (((mv pdims-successp warnings new-pdims)
+             (vl-packeddimensionlist-exprsize x.pdims ss elem warnings))
+            ((mv udims-successp warnings new-udims)
+             (vl-packeddimensionlist-exprsize x.udims ss elem warnings))
+            (new-x (change-vl-coretype x :pdims new-pdims :udims new-udims)))
+         (mv (and pdims-successp udims-successp) warnings new-x)))
       (:vl-struct
        (b* (((mv members-successp warnings new-members)
              (vl-structmemberlist-exprsize x.members ss elem warnings))
-            ((mv dims-successp warnings new-dims)
-             (vl-packeddimensionlist-exprsize x.dims ss elem warnings))
-            (successp (and members-successp dims-successp))
-            (new-x    (change-vl-struct x :members new-members :dims new-dims)))
+            ((mv pdims-successp warnings new-pdims)
+             (vl-packeddimensionlist-exprsize x.pdims ss elem warnings))
+            ((mv udims-successp warnings new-udims)
+             (vl-packeddimensionlist-exprsize x.udims ss elem warnings))
+            (successp (and members-successp (and pdims-successp udims-successp)))
+            (new-x    (change-vl-struct x :members new-members :pdims new-pdims :udims new-udims)))
          (mv successp warnings new-x)))
       (:vl-union
        (b* (((mv members-successp warnings new-members)
              (vl-structmemberlist-exprsize x.members ss elem warnings))
-            ((mv dims-successp warnings new-dims)
-             (vl-packeddimensionlist-exprsize x.dims ss elem warnings))
-            (successp (and members-successp dims-successp))
-            (new-x    (change-vl-union x :members new-members :dims new-dims)))
+            ((mv pdims-successp warnings new-pdims)
+             (vl-packeddimensionlist-exprsize x.pdims ss elem warnings))
+            ((mv udims-successp warnings new-udims)
+             (vl-packeddimensionlist-exprsize x.udims ss elem warnings))
+            (successp (and members-successp (and pdims-successp udims-successp)))
+            (new-x    (change-vl-union x :members new-members :pdims new-pdims :udims new-udims)))
          (mv successp warnings new-x)))
       (:vl-enum
        (b* (((mv basetype-successp warnings new-basetype)
              (vl-enumbasetype-exprsize x.basetype ss elem warnings))
             ((mv items-successp warnings new-items)
              (vl-enumitemlist-exprsize x.items ss elem warnings))
-            ((mv dims-successp warnings new-dims)
-             (vl-packeddimensionlist-exprsize x.dims ss elem warnings))
-            (successp (and basetype-successp items-successp dims-successp))
+            ((mv pdims-successp warnings new-pdims)
+             (vl-packeddimensionlist-exprsize x.pdims ss elem warnings))
+            ((mv udims-successp warnings new-udims)
+             (vl-packeddimensionlist-exprsize x.udims ss elem warnings))
+            (successp (and basetype-successp items-successp (and pdims-successp udims-successp)))
             (new-x    (change-vl-enum x
                                       :basetype new-basetype
                                       :items new-items
-                                      :dims new-dims)))
+                                      :pdims new-pdims :udims new-udims)))
          (mv successp warnings new-x)))
       (:vl-usertype
-       (b* (((mv kind-successp warnings new-kind)
-             (vl-expr-size nil x.kind ss elem warnings))
-            ((mv dims-successp warnings new-dims)
-             (vl-packeddimensionlist-exprsize x.dims ss elem warnings))
-            (successp (and kind-successp dims-successp))
-            (new-x    (change-vl-usertype x :kind new-kind :dims new-dims)))
-         (mv successp warnings new-x)))))
+       (b* (;; NOTE: We used to try to size x.kind, but typically it is an
+            ;; identifier that refers to some typedef, which doesn't need to be
+            ;; (and won't successfully be) sized.  We think sizes should never
+            ;; matter in "type identifier expressions", so it seems safe to
+            ;; just skip it.
+            ((mv pdims-successp warnings new-pdims)
+             (vl-packeddimensionlist-exprsize x.pdims ss elem warnings))
+            ((mv udims-successp warnings new-udims)
+             (vl-packeddimensionlist-exprsize x.udims ss elem warnings))
+            (new-x    (change-vl-usertype x :pdims new-pdims :udims new-udims)))
+         (mv (and pdims-successp udims-successp) warnings new-x)))))
 
   (define vl-structmemberlist-exprsize ((x        vl-structmemberlist-p)
                                         (ss vl-scopestack-p)
@@ -250,14 +257,11 @@
     (b* (((vl-structmember x) x)
          ((mv type-successp warnings new-type)
           (vl-datatype-exprsize x.type ss elem warnings))
-         ((mv dims-successp warnings new-dims)
-          (vl-packeddimensionlist-exprsize x.dims ss elem warnings))
          ((mv rhs-successp warnings new-rhs)
           (vl-maybe-expr-size x.rhs ss elem warnings))
-         (successp (and type-successp dims-successp rhs-successp))
+         (successp (and type-successp rhs-successp))
          (new-x    (change-vl-structmember x
                                            :type new-type
-                                           :dims new-dims
                                            :rhs new-rhs)))
       (mv successp warnings new-x)))
   ///
@@ -890,13 +894,11 @@ the expression.</p>"
   (b* (((vl-vardecl x) x)
        (elem x)
        ((mv successp1 warnings type-prime)    (vl-datatype-exprsize x.type ss elem warnings))
-       ((mv successp2 warnings dims-prime)    (vl-packeddimensionlist-exprsize x.dims ss elem warnings))
        ((mv successp3 warnings initval-prime) (vl-maybe-expr-size x.initval ss elem warnings))
        ((mv successp4 warnings delay-prime)   (vl-maybe-gatedelay-exprsize x.delay ss elem warnings))
-       (successp (and successp1 successp2 successp3 successp4))
+       (successp (and successp1 successp3 successp4))
        (x-prime (change-vl-vardecl x
                                    :type    type-prime
-                                   :dims    dims-prime
                                    :initval initval-prime
                                    :delay   delay-prime)))
     (mv successp warnings x-prime)))

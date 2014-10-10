@@ -87,11 +87,13 @@ modules for sizing for the linter.</p>")
   (list :VL-MINTYPMAX
         :VL-PARTSELECT-PLUSCOLON
         :VL-PARTSELECT-MINUSCOLON
-        :VL-ARRAY-INDEX
         :VL-FUNCALL
         :VL-SYSCALL
         :VL-HID-DOT
         :vl-index         ;; BOZO we probably need to allow this??
+        :vl-select-colon
+        :vl-select-pluscolon
+        :vl-select-minuscolon
         :vl-scope
         :vl-with-colon
         :vl-with-index

@@ -138,17 +138,15 @@
 A very useful tracing mechanism for debugging:
 
 (defmacro trace-parser (fn)
-  `(trace$ (,fn
+  `(trace! (,fn
             :entry (list ',fn
-                         :tokens (vl-tokenlist->string-with-spaces tokens)
-                         :warnings (len warnings))
-            :exit (list :errmsg (first values)
+                         :tokens (take 5 (vl-tokenlist->string-with-spaces
+                                          (vl-tokstream->tokens))))
+            :exit (list ',fn
+                        :errmsg (first values)
                         :val (second values)
-                        :remainder (vl-tokenlist->string-with-spaces
-                                    (third values))
-                        :next-token (and (consp (third values))
-                                         (vl-token->type (car (third values))))
-                        :warnings (len (fourth values))))))
+                        :remainder (take 5 (vl-tokenlist->string-with-spaces
+                                            (vl-tokstream->tokens)))))))
 
 (trace-parser vl-parse-stream-concatenation-fn)
 (trace-parser vl-parse-stream-expression-fn)
@@ -242,11 +240,11 @@ A very useful tracing mechanism for debugging:
                   :expect '(:vl-index nil (id "foo") 3))
 
    (make-exprtest :input "foo[1:7]"
-                  :expect '(:vl-partselect-colon nil (id "foo") 1 7))
+                  :expect '(:vl-select-colon nil (id "foo") 1 7))
 
    (make-exprtest
     :input "foo[3][4][5][1 +: 2]"
-    :expect '(:vl-partselect-pluscolon
+    :expect '(:vl-select-pluscolon
               nil
               (:vl-index nil
                          (:vl-index nil
@@ -257,7 +255,7 @@ A very useful tracing mechanism for debugging:
 
    (make-exprtest
     :input "foo[3][1 -: 2]"
-    :expect '(:vl-partselect-minuscolon nil
+    :expect '(:vl-select-minuscolon nil
                                         (:vl-index nil (id "foo") 3)
                                         1 2))
 
@@ -682,7 +680,7 @@ A very useful tracing mechanism for debugging:
     (make-exprtest
      :input "$root.foo[1][2].bar[3:4]"
      :expect
-     '(:vl-partselect-colon
+     '(:vl-select-colon
        nil
        (:vl-hid-dot nil
                     (key :vl-$root)
@@ -696,7 +694,7 @@ A very useful tracing mechanism for debugging:
     (make-exprtest
      :input "foo[1][2].bar[3:4]"
      :expect
-     '(:vl-partselect-colon
+     '(:vl-select-colon
        nil
        (:vl-hid-dot nil
                     (:vl-index nil
@@ -708,7 +706,7 @@ A very useful tracing mechanism for debugging:
     (make-exprtest
      :input "baz.foo[1][2].bar[3:4]"
      :expect
-     '(:vl-partselect-colon
+     '(:vl-select-colon
        nil
        (:vl-hid-dot nil
                     (hid "baz")

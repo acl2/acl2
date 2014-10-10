@@ -327,6 +327,7 @@ We produce a list of one-bit @(see vl-vardecl-p)s, one for each name in
   (if (consp names)
       (cons (make-vl-vardecl :name (car names)
                              :type *vl-plain-old-wire-type*
+                             :nettype :vl-wire
                              :loc loc
                              :atts (list (cons "VL_IMPLICIT" nil)))
             (vl-make-ordinary-implicit-wires loc (cdr names)))
@@ -487,6 +488,16 @@ We produce a list of one-bit @(see vl-vardecl-p)s, one for each name in
     :hints(("Goal" :in-theory (enable set-equiv vl-gateinst-allexprs)))))
 
 
+(define vl-vardecl-exprs-for-implicit-wires
+  :parents (make-implicit-wires)
+  :short "Gets the expressions from a variable declaration, for making implicit
+wires.  We omit the expressions inside the datatype."
+  ((x vl-vardecl-p))
+  :returns (exprs vl-exprlist-p)
+  (b* (((vl-vardecl x) x))
+    (append (vl-maybe-expr-allexprs x.initval)
+            (vl-maybe-gatedelay-allexprs x.delay))))
+
 
 (define vl-remove-declared-wires
   :parents (vl-make-implicit-wires)
@@ -528,6 +539,9 @@ for, whether they're port declarations or ordinary declarations."
            :args (list ctx (car undeclared) undeclared))))
 
 
+
+
+
 (define vl-blockitem-check-undeclared
   :parents (vl-make-implicit-wires)
   :short "Check for undeclared wires in an arbitrary @(see vl-blockitem-p), and
@@ -543,7 +557,7 @@ extends @('decls') with the newly declared name."
   (b* ((x (vl-blockitem-fix x))
        ((mv name exprs)
         (case (tag x)
-          (:vl-vardecl   (mv (vl-vardecl->name x)   (vl-vardecl-allexprs x)))
+          (:vl-vardecl   (mv (vl-vardecl->name x)   (vl-vardecl-exprs-for-implicit-wires x)))
           (otherwise     (mv (vl-paramdecl->name x) (vl-paramdecl-allexprs x)))))
 
        ;; First, make sure all the names used in expressions like ranges and
@@ -857,8 +871,12 @@ later on.  We handle that in @(see vl-make-implicit-wires).</p>"
         ;; identifiers being used in the range, then record that a
         ;; declaration was made.  Doing it in this order lets us catch
         ;; garbage like input [in:0] in;
-        (b* ((names     (vl-exprlist-names (vl-portdecl-allexprs item)))
-             (warnings  (vl-warn-about-undeclared-wires item names portdecls decls warnings))
+        (b* (;; Note: We run into trouble here when ports are declared as user-defined types,
+             ;; i.e. "input foo_t foo" -- we don't want to count foo_t as an undeclared id.
+             ;; Thinking about it more, it doesn't seem like this is the right place to
+             ;; be checking for this anyway, so just don't.
+             ;; (names     (vl-exprlist-names (vl-portdecl-allexprs item)))
+             ;; (warnings  (vl-warn-about-undeclared-wires item names portdecls decls warnings))
              (portdecls (hons-acons (vl-portdecl->name item) item portdecls))
              (acc       (cons elem acc)))
           (vl-make-implicit-wires-aux (cdr x) portdecls decls acc warnings)))
@@ -1055,7 +1073,7 @@ don't care, but it might be good to look into this again.</p>"
           (vl-make-port-implicit-wires (cdr portdecls) decls))))
 
 
-(define vl-make-implicit-wires
+(define vl-make-implicit-Wires
   :parents (make-implicit-wires)
   :short "Augment a list of module elements with declarations for any implicit
 nets, and make sure that every identifier being used has a declaration."
