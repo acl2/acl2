@@ -1060,7 +1060,18 @@
 ; :worker-thread-no-longer-needed, we check that *throwable-worker-thread* is t
 ; as an indicator that the corresponding catcher is set up.
 
-           t))
+           t)
+
+; If #+hons is set, we must bind *default-hs* to NIL so that each thread will
+; get its own hons space whenever it uses honsing code.  We could alternately
+; call (hl-hspace-init) here, but using NIL allows us to avoid the overhead of
+; initializing a hons space unless honsing is used in this thread.  See also
+; the notes in hons-raw.lisp.
+
+          #+hons
+          (*default-hs* nil))
+      #+hons
+      (declare (special *default-hs*)) ; special declared in hons-raw.lisp
 
 ; The following loop is exited by a throw to :worker-thread-no-longer-needed,
 ; which is performed by wait-for-a-closure when there has been no closure to
