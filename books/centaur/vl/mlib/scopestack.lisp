@@ -39,6 +39,21 @@
 (local (in-theory (disable acl2-count)))
 (local (std::add-default-post-define-hook :fix))
 
+(define vl-blockitem->name ((x vl-blockitem-p))
+  :returns (name stringp :rule-classes :type-prescription)
+  :prepwork ((local (defthm tag-when-vl-blockitem-p
+                      (implies (vl-blockitem-p x)
+                               (or (equal (tag x) :vl-vardecl)
+                                   (equal (tag x) :vl-paramdecl)))
+                      :rule-classes :forward-chaining))
+             (local (defthm vl-blockitem-p-of-vl-blockitem-fix-forward
+                      (vl-blockitem-p (vl-blockitem-fix x))
+                      :rule-classes ((:forward-chaining :trigger-terms ((vl-blockitem-fix x)))))))
+  (b* ((x (vl-blockitem-fix x)))
+    (case (tag x)
+      (:vl-vardecl (vl-vardecl->name x))
+      (:vl-paramdecl (vl-paramdecl->name x)))))
+
 
 ;; NOTE: This constant controls most of the rest of the file by defining what
 ;; scope types exist and what types of named items are contained in each of
@@ -61,6 +76,7 @@
                                       :names-defined t))
            ;; fwdtypedefs could be included here but we hope to have resolved them all
            ;; to proper typedefs by the end of loading.
+           (fundecl          (blockitem :acc decls :sum-type t))
            (design           paramdecl vardecl fundecl taskdecl typedef)
            (package          ))))
 
@@ -300,9 +316,11 @@ instances.</p>"
                   (name (let ((look (cadr (assoc-keyword :name kwds))))
                           (if look (symbol-name look) "NAME")))
                   (maybe-stringp (cadr (assoc-keyword :maybe-stringp kwds)))
-                  (names-defined (cadr (assoc-keyword :names-defined kwds))))
+                  (names-defined (cadr (assoc-keyword :names-defined kwds)))
+                  (sum-type      (cadr (assoc-keyword :sum-type      kwds))))
                (make-tmplsubst :features (append (and maybe-stringp '(:maybe-stringp))
-                                                 (and names-defined '(:names-defined)))
+                                                 (and names-defined '(:names-defined))
+                                                 (and sum-type      '(:sum-type)))
                                :strsubst
                                `(("__TYPE__" ,(symbol-name type) . vl-package)
                                  ("__ACC__" ,acc . vl-package)
@@ -347,11 +365,20 @@ instances.</p>"
 
 
 (make-event ;; Definition of vl-scopeitem type
- (let ((substs (typeinfos->tmplsubsts (scopes->typeinfos *vl-scopes->items*))))
+ (let ((substs (typeinfos->tmplsubsts (remove-equal '(blockitem :acc decls)
+                                                    (scopes->typeinfos *vl-scopes->items*)))))
    `(progn
       (deftranssum vl-scopeitem
         :short "Recognizer for an syntactic element that can occur within a scope."
-        ,(template-proj 'vl-__type__ substs))
+        ,(template-append '((:@ (not :sum-type) vl-__type__)) substs))
+
+      ,@(template-append
+         '((:@ :sum-type
+            (defthm vl-scopeitem-p-when-vl-__type__-p
+              (implies (vl-__type__-p x)
+                       (vl-scopeitem-p x))
+              :hints(("Goal" :in-theory (enable vl-__type__-p))))))
+         substs)
 
       (fty::deflist vl-scopeitemlist
         :elt-type vl-scopeitem-p
@@ -410,7 +437,8 @@ instances.</p>"
                                &key
                                element->name
                                list->names
-                               names-may-be-nil)
+                               names-may-be-nil
+                               sum-type)
 
   (let* ((mksym-package-symbol 'vl::foo)
          (fn            (mksym 'vl-find- type))
@@ -459,11 +487,12 @@ instances.</p>"
                   (equal (,element->name (,fn name x))
                          name)))
 
-       (defthm ,(mksym 'tag-of- fn)
-         (equal (tag (,fn name x))
-                (if (,fn name x)
-                    ,tag
-                  nil)))
+       ,@(and (not sum-type)
+              `((defthm ,(mksym 'tag-of- fn)
+                  (equal (tag (,fn name x))
+                         (if (,fn name x)
+                             ,tag
+                           nil)))))
 
        (defthm ,(mksym 'member-equal-of- fn)
          (implies (force (,list-p x))
@@ -495,7 +524,8 @@ instances.</p>"
       (def-vl-find-moditem __type__
         :element->name vl-__type__->__name__
         :list->names vl-__type__list->__name__s
-        (:@ :maybe-stringp :names-may-be-nil t))
+        (:@ :maybe-stringp :names-may-be-nil t)
+        (:@ :sum-type :sum-type t))
 
       (define vl-fast-__type__list-alist ((x vl-__type__list-p)
                                           acc)

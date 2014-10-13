@@ -495,7 +495,7 @@ re-integrate it.</p>"
   ((arg        vl-plainarg-p    "An argument we need to replicate.")
    (port-width posp             "Width of the port this argument is connected to.")
    (insts      posp             "Number of instances in this instance array.")
-   (ss vl-scopestack-p)
+   (ss         vl-scopestack-p)
    (elem       vl-modelement-p  "Context for warnings.")
    (warnings   vl-warninglist-p "Ordinary @(see warnings) accumulator."))
 

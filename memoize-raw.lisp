@@ -274,9 +274,8 @@
   flg)
 
 (defg *global-memoize-lock*
-  (make-lock '*global-memoize-lock*))
+  (make-lock "*GLOBAL-MEMOIZE-LOCK*"))
 
-#+(or ccl sb-thread lispworks)
 (defmacro with-global-memoize-lock (&rest forms)
 
 ; We consult *enable-multithreaded-memoization* at runtime; compare with macro

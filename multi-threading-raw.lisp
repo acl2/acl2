@@ -1031,7 +1031,8 @@
            (multiple-value-bind
             (value posn)
             (parse-integer count :junk-allowed t)
-            (cond ((and (posp value)
+            (cond ((and (integerp value)
+                        (< 0 value)
                         (equal posn (length count)))
                    value)
                   (t (error "Invalid value for environment variable ~

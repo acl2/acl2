@@ -121,14 +121,23 @@ hierarchical identifiers.</p>"
    (and (not x.finalwidth)
         (not x.finaltype))))
 
-(define vl-hidexpr-welltyped-p ((x vl-expr-p))
+(define vl-selexpr-welltyped-p ((x vl-expr-p))
   :guard (not (vl-atom-p x))
   (b* (((vl-nonatom x) x))
     (and x.finaltype
          (posp x.finalwidth))))
 
-(defines vl-expr-welltyped-p
 
+
+(defines vl-expr-welltyped-p
+  :prepwork ((local (defthm acl2-numberp-of-abs
+                      (implies (acl2-numberp x)
+                               (acl2-numberp (abs x)))
+                      :hints(("Goal" :in-theory (enable abs)))))
+             (local (in-theory (disable member-equal-when-member-equal-of-cdr-under-iff
+                                        abs (tau-system)
+                                        acl2::member-of-cons
+                                        default-car default-cdr))))
   (define vl-expr-welltyped-p ((x vl-expr-p))
     :measure (vl-expr-count x)
     :returns (welltyped-p booleanp :rule-classes :type-prescription)
@@ -136,10 +145,30 @@ hierarchical identifiers.</p>"
     (b* (((when (vl-fast-atom-p x))
           (vl-atom-welltyped-p x))
          ((vl-nonatom x) x)
-         ((when (vl-hidexpr-p x))
+         ((when (eq x.op :vl-hid-dot))
+          ;; BOZO it might be nice to know that x is an index expr, but we'd
+          ;; have to check it in sizing
+          (and (vl-hidexpr-p x)
+               (vl-selexpr-welltyped-p x)))
+         ((when (member x.op '(:vl-index
+                               :vl-select-colon
+                               :vl-select-pluscolon
+                               :vl-select-minuscolon)))
           ;; These are special because we don't require the args to be sized.
           ;; Like an ID, they just have to have a type and a positive width.
-          (vl-hidexpr-welltyped-p x)))
+          ;; But for partselects, we still require the widths to be resolved
+          ;; in order to size them, so we record that here.
+          ;; BOZO it might be nice to know that the operand is an index expr,
+          ;; but we'd have to check it in sizing
+          (and ;; (vl-index-expr-p (first x.args))
+           (vl-index-expr-p (first x.args))
+           (vl-exprlist-welltyped-p (cdr x.args))
+           (vl-selexpr-welltyped-p x) 
+           (case x.op
+             (:vl-index t)
+             (:vl-select-colon (and (vl-expr-resolved-p (second x.args))
+                                    (vl-expr-resolved-p (third x.args))))
+             (otherwise        (vl-expr-resolved-p (third x.args)))))))
       (and
        (vl-exprlist-welltyped-p x.args)
        (case x.op
@@ -304,10 +333,6 @@ hierarchical identifiers.</p>"
                  (eql x.finalwidth (vl-resolved->val c))
                  (eq x.finaltype :vl-unsigned))))
 
-         ((:vl-array-index :vl-index)
-          ;; BOZO eventually require there to be a type and positive width.
-          t)
-
          ((:vl-funcall)
           ;; BOZO do we want to constrain these in any way?
           t)
@@ -354,16 +379,22 @@ hierarchical identifiers.</p>"
              (vl-exprlist-welltyped-p (cdr x)))))
 
   ///
+  (local (in-theory (disable vl-expr-welltyped-p vl-exprlist-welltyped-p)))
   (xdoc::without-xdoc
     (deflist vl-exprlist-welltyped-p (x)
       (vl-expr-welltyped-p x)
       :guard (vl-exprlist-p x)
       :already-definedp t))
 
-  (deffixequiv-mutual vl-expr-welltyped-p)
+  (deffixequiv-mutual vl-expr-welltyped-p
+    :hints ('(:expand ((vl-expr-welltyped-p x)
+                       (vl-expr-welltyped-p (vl-expr-fix x))
+                       (vl-exprlist-welltyped-p x)
+                       (vl-exprlist-welltyped-p (vl-exprlist-fix x))))))
 
   (verify-guards vl-expr-welltyped-p
-    :hints((and stable-under-simplificationp
+    :hints(("goal" :in-theory (enable acl2::member-of-cons))
+           (and stable-under-simplificationp
                 '(:use ((:instance vl-op-p-of-vl-nonatom->op))
                   :in-theory (e/d (vl-op-p)
                                   (vl-op-p-of-vl-nonatom->op)))))))

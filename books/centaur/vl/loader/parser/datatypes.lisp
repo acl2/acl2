@@ -785,3 +785,30 @@ dimensions.</p>
  :gag-mode :goals
  (verify-guards vl-parse-datatype-fn))
 
+
+(defparser vl-parse-datatype-or-implicit ()
+  :result (vl-datatype-p val)
+  :fails gracefully
+  :count weak
+  (b* (((when (or (vl-is-token? :vl-kwd-signed)
+                  (vl-is-token? :vl-lbrack)))
+        ;; shortcut to implicit data type
+        (seq tokstream
+             (signing := (vl-maybe-match-token :vl-kwd-signed))
+             (dims := (vl-parse-0+-packed-dimensions))
+             (return (make-vl-coretype :name :vl-logic
+                                       :pdims dims
+                                       :signedp (and signing t)))))
+       (backup (vl-tokstream-save))
+       ((mv erp type tokstream) (vl-parse-datatype))
+       ((unless erp)
+        (mv nil type tokstream))
+
+       ;; Couldn't parse a datatype: back to the implicit case.  But since the
+       ;; stream doesn't start with signed or [, there's nothing we can parse,
+       ;; so the datatype must be unsigned, undimensioned logic.
+       (tokstream (vl-tokstream-restore backup)))
+    (mv nil (make-vl-coretype :name :vl-logic) tokstream)))
+       
+       
+

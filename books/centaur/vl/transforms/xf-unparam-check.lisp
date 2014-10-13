@@ -48,13 +48,6 @@ name clashes, and adds fatal warnings to them.</p>")
 
 (local (xdoc::set-default-parents unparam-check))
 
-(define vl-blockitem->name ((x vl-blockitem-p))
-  :returns (name stringp)
-  (let ((x (vl-blockitem-fix x)))
-    (case (tag x)
-      (:vl-vardecl   (vl-vardecl->name x))
-      (otherwise     (vl-paramdecl->name x)))))
-
 (defprojection vl-blockitemlist->names ((x vl-blockitemlist-p))
   :returns (names string-listp)
   (vl-blockitem->name x))

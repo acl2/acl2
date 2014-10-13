@@ -177,11 +177,11 @@ a @(see vl-gatestrength-p) or a @(see vl-cstrength-p)."
     (vl-parse-charge-strength))
   ///
   (defthm vl-parse-drive-strength-or-charge-strength-forward
-    (equal (or (vl-gatestrength-p
-                (mv-nth 1 (vl-parse-drive-strength-or-charge-strength)))
-               (vl-cstrength-p
-                (mv-nth 1 (vl-parse-drive-strength-or-charge-strength))))
-           (not (mv-nth 0 (vl-parse-drive-strength-or-charge-strength))))
+    (or (vl-gatestrength-p
+         (mv-nth 1 (vl-parse-drive-strength-or-charge-strength)))
+        (vl-cstrength-p
+         (mv-nth 1 (vl-parse-drive-strength-or-charge-strength)))
+        (mv-nth 0 (vl-parse-drive-strength-or-charge-strength)))
     :rule-classes ((:forward-chaining
                     :trigger-terms
                     ((vl-parse-drive-strength-or-charge-strength))))
