@@ -313,7 +313,6 @@
                   0)))
 
 
-
 (defsection ihs/lognot-lemmas
   :parents (lognot logops-lemmas)
   :short "Lemmas about @(see lognot) from the @(see logops-lemmas) book."

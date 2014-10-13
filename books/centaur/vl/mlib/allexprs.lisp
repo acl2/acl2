@@ -232,23 +232,27 @@ expressions within @('(* foo = bar *)')-style attributes.</p>")
     :measure (vl-datatype-count x)
     :flag :datatype
     (vl-datatype-case x
-      (:vl-nettype
-       (vl-maybe-range-allexprs-nrev x.range nrev))
       (:vl-coretype
-       (vl-packeddimensionlist-allexprs-nrev x.dims nrev))
+       (b* ((nrev (vl-packeddimensionlist-allexprs-nrev x.pdims nrev))
+            (nrev (vl-packeddimensionlist-allexprs-nrev x.udims nrev)))
+         nrev))
       (:vl-struct
-       (b* ((nrev (vl-packeddimensionlist-allexprs-nrev x.dims nrev)))
+       (b* ((nrev (vl-packeddimensionlist-allexprs-nrev x.pdims nrev))
+            (nrev (vl-packeddimensionlist-allexprs-nrev x.udims nrev)))
          (vl-structmemberlist-allexprs-nrev x.members nrev)))
       (:vl-union
-       (b* ((nrev (vl-packeddimensionlist-allexprs-nrev x.dims nrev)))
+       (b* ((nrev (vl-packeddimensionlist-allexprs-nrev x.pdims nrev))
+            (nrev (vl-packeddimensionlist-allexprs-nrev x.udims nrev)))
          (vl-structmemberlist-allexprs-nrev x.members nrev)))
       (:vl-enum
        (b* ((nrev (vl-enumbasetype-allexprs-nrev x.basetype nrev))
-            (nrev (vl-enumitemlist-allexprs-nrev x.items nrev)))
-         (vl-packeddimensionlist-allexprs-nrev x.dims nrev)))
+            (nrev (vl-enumitemlist-allexprs-nrev x.items nrev))
+            (nrev (vl-packeddimensionlist-allexprs-nrev x.pdims nrev)))
+         (vl-packeddimensionlist-allexprs-nrev x.udims nrev)))
       (:vl-usertype
        (b* ((nrev (nrev-push x.kind nrev))
-            (nrev (vl-packeddimensionlist-allexprs-nrev x.dims nrev)))
+            (nrev (vl-packeddimensionlist-allexprs-nrev x.pdims nrev))
+            (nrev (vl-packeddimensionlist-allexprs-nrev x.udims nrev)))
          nrev))))
 
   (define vl-structmemberlist-allexprs-nrev ((x vl-structmemberlist-p) nrev)
@@ -263,8 +267,7 @@ expressions within @('(* foo = bar *)')-style attributes.</p>")
     :flag :structmember
     :measure (vl-structmember-count x)
     (b* (((vl-structmember x) x)
-         (nrev (vl-maybe-expr-allexprs-nrev x.rhs nrev))
-         (nrev (vl-packeddimensionlist-allexprs-nrev x.dims nrev)))
+         (nrev (vl-maybe-expr-allexprs-nrev x.rhs nrev)))
       (vl-datatype-allexprs-nrev x.type nrev))))
 
 (defines vl-datatype-allexprs
@@ -277,22 +280,26 @@ expressions within @('(* foo = bar *)')-style attributes.</p>")
     :verify-guards nil
     (mbe :logic
          (vl-datatype-case x
-           (:vl-nettype
-            (vl-maybe-range-allexprs x.range))
            (:vl-coretype
-            (vl-packeddimensionlist-allexprs x.dims))
+            (append (vl-packeddimensionlist-allexprs x.pdims)
+                    (vl-packeddimensionlist-allexprs x.udims)))
            (:vl-struct
-            (append (vl-packeddimensionlist-allexprs x.dims)
+            (append (vl-packeddimensionlist-allexprs x.pdims)
+                    (vl-packeddimensionlist-allexprs x.udims)
                     (vl-structmemberlist-allexprs x.members)))
            (:vl-union
-            (append (vl-packeddimensionlist-allexprs x.dims)
+            (append (vl-packeddimensionlist-allexprs x.pdims)
+                    (vl-packeddimensionlist-allexprs x.udims)
                     (vl-structmemberlist-allexprs x.members)))
            (:vl-enum
             (append (vl-enumbasetype-allexprs x.basetype)
                     (vl-enumitemlist-allexprs x.items)
-                    (vl-packeddimensionlist-allexprs x.dims)))
+                    (vl-packeddimensionlist-allexprs x.pdims)
+                    (vl-packeddimensionlist-allexprs x.udims)))
            (:vl-usertype
-            (cons x.kind (vl-packeddimensionlist-allexprs x.dims))))
+            (cons x.kind
+                  (append (vl-packeddimensionlist-allexprs x.pdims)
+                          (vl-packeddimensionlist-allexprs x.udims)))))
          :exec
          (with-local-nrev (vl-datatype-allexprs-nrev x nrev))))
 
@@ -313,7 +320,6 @@ expressions within @('(* foo = bar *)')-style attributes.</p>")
     (mbe :logic
          (b* (((vl-structmember x) x))
            (append (vl-maybe-expr-allexprs x.rhs)
-                   (vl-packeddimensionlist-allexprs x.dims)
                    (vl-datatype-allexprs x.type)))
          :exec
          (with-local-nrev (vl-structmember-allexprs-nrev x nrev))))
@@ -509,14 +515,12 @@ expressions within @('(* foo = bar *)')-style attributes.</p>")
   :nrev-body
   (b* (((vl-vardecl x) x)
        (nrev (vl-datatype-allexprs-nrev x.type nrev))
-       (nrev (vl-packeddimensionlist-allexprs-nrev x.dims nrev))
        (nrev (vl-maybe-expr-allexprs-nrev x.initval nrev))
        (nrev (vl-maybe-gatedelay-allexprs-nrev x.delay nrev)))
     nrev)
   :body
   (b* (((vl-vardecl x) x))
     (append (vl-datatype-allexprs x.type)
-            (vl-packeddimensionlist-allexprs x.dims)
             (vl-maybe-expr-allexprs x.initval)
             (vl-maybe-gatedelay-allexprs x.delay))))
 

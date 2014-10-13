@@ -35,6 +35,18 @@
 (include-book "tools/flag" :dir :system)
 (local (include-book "util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
+(local (in-theory (disable double-containment)))
+(local (in-theory (disable vl-atts-p-of-cdr-when-vl-atts-p
+                           vl-atts-p-when-subsetp-equal
+                           alistp-when-vl-atts-p-rewrite
+                           default-car default-cdr
+                           acl2::lower-bound-of-car-when-nat-listp
+                           stringp-when-true-listp
+                           consp-when-member-equal-of-cons-listp
+                           acl2::consp-when-member-equal-of-atom-listp
+                           consp-when-member-equal-of-vl-commentmap-p
+                           consp-when-member-equal-of-vl-atts-p
+                           (tau-system))))
 
 
 ; ----------------------------------------------------------------------------
@@ -57,7 +69,7 @@ annotated with a @('version') field that must match exactly this string.</p>"
 
   ;; Current syntax version: generally a string like
   ;; "VL Syntax [date of modification]"
-  "VL Syntax 2014-09-11")
+  "VL Syntax 2014-10-08")
 
 (define vl-syntaxversion-p (x)
   :parents (syntax)
@@ -191,6 +203,8 @@ try to support the use of both ascending and descending ranges.</p>")
   :long "<p>Wires in Verilog can be given certain types.  We
 represent these types using certain keyword symbols, whose names
 correspond to the possible types.</p>")
+
+(defoption vl-maybe-nettypename-p vl-nettypename-p)
 
 (defenum vl-coretypename-p
   (;; integer vector types, i put these first since they're common
@@ -420,23 +434,14 @@ unsized dimensions.</p>")
                "Only valid for integer types, indicates whether the integer
                 type is signed or not.")
 
-      (dims    vl-packeddimensionlist-p
-               "Only valid for integer vector types (bit, logic, reg).")))
+      (pdims    vl-packeddimensionlist-p
+               "Only valid for integer vector types (bit, logic, reg).  If present
+                these are for an 'packed' array dimensions, i.e., the [7:0] part
+                of a declaration like @('bit [7:0] memory [255:0]').  There can be
+                arbitrarily many of these.")
 
-    (:vl-nettype
-     :layout :tree
-     :base-name vl-nettype
-     :short "Representation of net types like @('wire'), @('tri'), @('wor'), etc.,
-             and their associated ranges."
-     ((name    vl-nettypename-p
-               "Kind of net this is, e.g., @('wire'), @('wor'), etc.")
-
-      (signedp booleanp :rule-classes :type-prescription
-               "Signedness of this wire.")
-
-      (range   vl-maybe-range-p
-               "A single, optional range that preceeds the wire name; this
-                ordinarily governs the \"size\" of a wire.")))
+      (udims   vl-packeddimensionlist-p
+               "Unpacked array dimensions.")))
 
     (:vl-struct
      :layout :tree
@@ -448,7 +453,8 @@ unsized dimensions.</p>")
      ((packedp booleanp :rule-classes :type-prescription)
       (signedp booleanp :rule-classes :type-prescription)
       (members vl-structmemberlist-p)
-      (dims    vl-packeddimensionlist-p)))
+      (pdims    vl-packeddimensionlist-p)
+      (udims    vl-packeddimensionlist-p)))
 
     (:vl-union
      :layout :tree
@@ -461,7 +467,8 @@ unsized dimensions.</p>")
       (signedp booleanp :rule-classes :type-prescription)
       (taggedp booleanp :rule-classes :type-prescription)
       (members vl-structmemberlist-p)
-      (dims    vl-packeddimensionlist-p)))
+      (pdims    vl-packeddimensionlist-p)
+      (udims    vl-packeddimensionlist-p)))
 
     (:vl-enum
      :layout :tree
@@ -472,7 +479,8 @@ unsized dimensions.</p>")
      ;;                     '}' { packed_dimension }
      ((basetype vl-enumbasetype)
       (items    vl-enumitemlist-p)
-      (dims     vl-packeddimensionlist-p)))
+      (pdims    vl-packeddimensionlist-p)
+      (udims    vl-packeddimensionlist-p)))
 
     (:vl-usertype
      :layout :tree
@@ -480,7 +488,8 @@ unsized dimensions.</p>")
      ;; data_type ::= ... | [ class_scope | package_scope ] type_identifier { packed_dimension }
      ((kind vl-expr-p "Kind of this type, should be an identifier or some
                        kind of scoped/hierarchical identifier.")
-      (dims vl-packeddimensionlist-p)))
+      (pdims    vl-packeddimensionlist-p)
+      (udims    vl-packeddimensionlist-p)))
 
 
     ;;  BOZO not yet implemented:
@@ -510,7 +519,6 @@ unsized dimensions.</p>")
      (type vl-datatype-p)
      ;; now we want a single variable_decl_assignment
      (name stringp :rule-classes :type-prescription)
-     (dims vl-packeddimensionlist-p)
      (rhs  vl-maybe-expr-p)
      )
     :long "<p>Currently our structure members are very limited.  In the long
@@ -589,6 +597,81 @@ kinds of assignments like @('+=') and @('*='), so maybe this could become a
 <p>So maybe we don't so much need these to be expressions.  Maybe we can get
 away with them as alternate kinds of assignments.</p>"))
 
+(define vl-datatype->pdims ((x vl-datatype-p))
+  :returns (pdims vl-packeddimensionlist-p)
+  (vl-datatype-case x
+    :vl-coretype x.pdims
+    :vl-struct x.pdims
+    :vl-union x.pdims
+    :vl-enum x.pdims
+    :vl-usertype x.pdims))
+
+(define vl-datatype->udims ((x vl-datatype-p))
+  :returns (udims vl-packeddimensionlist-p)
+  (vl-datatype-case x
+    :vl-coretype x.udims
+    :vl-struct x.udims
+    :vl-union x.udims
+    :vl-enum x.udims
+    :vl-usertype x.udims))
+
+(define vl-datatype-update-dims ((pdims vl-packeddimensionlist-p)
+                                 (udims vl-packeddimensionlist-p)
+                                 (x vl-datatype-p))
+  :returns (newx (and (vl-datatype-p newx)
+                      (eq (vl-datatype-kind newx) (vl-datatype-kind x))))
+  (vl-datatype-case x
+    :vl-coretype (change-vl-coretype x :pdims pdims :udims udims)
+    :vl-struct   (change-vl-struct   x :pdims pdims :udims udims)
+    :vl-union    (change-vl-union    x :pdims pdims :udims udims)
+    :vl-enum     (change-vl-enum     x :pdims pdims :udims udims)
+    :vl-usertype (change-vl-usertype x :pdims pdims :udims udims))
+  ///
+  (defthm vl-datatype-update-dims-of-own
+    (equal (vl-datatype-update-dims (vl-datatype->pdims x)
+                                    (vl-datatype->udims x)
+                                    x)
+           (vl-datatype-fix x))
+    :hints(("Goal" :in-theory (enable vl-datatype->udims
+                                      vl-datatype->pdims))))
+
+  (defthm vl-datatype->pdims-of-vl-datatype-update-dims
+    (equal (vl-datatype->pdims (vl-datatype-update-dims pdims udims x))
+           (vl-packeddimensionlist-fix pdims))
+    :hints(("Goal" :in-theory (enable vl-datatype->pdims))))
+
+  (defthm vl-datatype->udims-of-vl-datatype-update-dims
+    (equal (vl-datatype->udims (vl-datatype-update-dims pdims udims x))
+           (vl-packeddimensionlist-fix udims))
+    :hints(("Goal" :in-theory (enable vl-datatype->udims)))))
+
+(define vl-datatype-update-pdims ((pdims vl-packeddimensionlist-p) (x vl-datatype-p))
+  :enabled t
+  :prepwork ((local (in-theory (enable vl-datatype-update-dims vl-datatype->udims))))
+  :returns (newx (and (vl-datatype-p newx)
+                      (eq (vl-datatype-kind newx) (vl-datatype-kind x))))
+  (mbe :logic (vl-datatype-update-dims pdims (vl-datatype->udims x) x)
+       :exec  (vl-datatype-case x
+                  :vl-coretype (change-vl-coretype x :pdims pdims)
+                  :vl-struct (change-vl-struct x :pdims pdims)
+                  :vl-union (change-vl-union x :pdims pdims)
+                  :vl-enum (change-vl-enum x :pdims pdims)
+                  :vl-usertype (change-vl-usertype x :pdims pdims))))
+
+(define vl-datatype-update-udims ((udims vl-packeddimensionlist-p) (x vl-datatype-p))
+  :enabled t
+  :prepwork ((local (in-theory (enable vl-datatype-update-dims vl-datatype->pdims))))
+  :returns (newx (and (vl-datatype-p newx)
+                      (eq (vl-datatype-kind newx) (vl-datatype-kind x))))
+  (mbe :logic (vl-datatype-update-dims (vl-datatype->pdims x) udims x)
+       :exec  (vl-datatype-case x
+                  :vl-coretype (change-vl-coretype x :udims udims)
+                  :vl-struct (change-vl-struct x :udims udims)
+                  :vl-union (change-vl-union x :udims udims)
+                  :vl-enum (change-vl-enum x :udims udims)
+                  :vl-usertype (change-vl-usertype x :udims udims))))
+
+
 (defoption vl-maybe-datatype-p vl-datatype-p)
 
 
@@ -596,41 +679,41 @@ away with them as alternate kinds of assignments.</p>"))
   :parents (vl-datatype)
   (hons-copy (make-vl-coretype :name    :vl-integer
                                :signedp t   ;; integer type is signed
-                               :dims    nil ;; Not applicable to integers
+                               :pdims    nil ;; Not applicable to integers
                                )))
 
 (defval *vl-plain-old-real-type*
   :parents (vl-datatype)
   (hons-copy (make-vl-coretype :name    :vl-real
                                :signedp nil ;; Not applicable to reals
-                               :dims    nil ;; Not applicable to reals
+                               :pdims    nil ;; Not applicable to reals
                                )))
 
 (defval *vl-plain-old-time-type*
   :parents (vl-datatype)
   (hons-copy (make-vl-coretype :name    :vl-time
                                :signedp nil ;; Not applicable to times
-                               :dims    nil ;; Not applicable to times
+                               :pdims    nil ;; Not applicable to times
                                )))
 
 (defval *vl-plain-old-realtime-type*
   :parents (vl-datatype)
   (hons-copy (make-vl-coretype :name    :vl-realtime
                                :signedp nil ;; Not applicable to realtimes
-                               :dims    nil ;; Not applicable to realtimes
+                               :pdims    nil ;; Not applicable to realtimes
                                )))
 
 (defval *vl-plain-old-wire-type*
   :parents (vl-datatype)
-  (hons-copy (make-vl-nettype :name    :vl-wire
-                              :signedp nil
-                              :range   nil)))
+  (hons-copy (make-vl-coretype :name    :vl-logic
+                               :signedp nil
+                               :pdims   nil)))
 
 (defval *vl-plain-old-reg-type*
   :parents (vl-datatype)
   (hons-copy (make-vl-coretype :name    :vl-reg
                                :signedp nil
-                               :dims    nil)))
+                               :pdims    nil)))
 
 
 (defprod vl-port
@@ -792,14 +875,16 @@ arguments of gate instances and most arguments of module instances.  See our
              "Says whether this port is an input, output, or bidirectional
               (inout) port.")
 
+   (nettype  vl-maybe-nettypename-p)
+
    (type     vl-datatype-p
-             "The type and size information for this port.  Could be a net or
-              variable type.  <b>Warning</b>: per Verilog-2005 page 175, port
-              declarations and net/reg declarations must be checked against one
-              another: if either declaration includes the @('signed') keyword,
-              then both are to be considered signed.  The @(see loader) DOES
-              NOT do this cross-referencing automatically; instead the @(see
-              portdecl-sign) transformation needs to be run.  See also @(see
+             "The type and size information for this port.  <b>Warning</b>: per
+              Verilog-2005 page 175, port declarations and net/reg declarations
+              must be checked against one another: if either declaration
+              includes the @('signed') keyword, then both are to be considered
+              signed.  The @(see loader) DOES NOT do this cross-referencing
+              automatically; instead the @(see portdecl-sign) transformation
+              needs to be run.  See also @(see
               vl-portdecl-and-moduleitem-compatible-p) which is part of our
               notion of @(see reasonable) modules.")
 
@@ -1121,9 +1206,8 @@ properly preserve them.</p>")
             "Kind of net or variable, e.g., wire, logic, reg, integer, real,
              etc.  Also contains sizing information.")
 
-   (dims    vl-packeddimensionlist-p
-            "A list of array dimensions; empty unless this is an array or
-             multi-dimensional array of nets/variables.")
+   (nettype vl-maybe-nettypename-p
+            "If NIL, then this is really a variable, not a net.")
 
    (constp   booleanp
              :rule-classes :type-prescription
@@ -1641,6 +1725,11 @@ collapses into only two cases: expression or data type.</p>")
                          (vl-paramvaluelist-p x))
                 :hints(("Goal" :induct (len x)))))
 
+(local (defthm vl-paramvalue-fix-nonnil
+         (vl-paramvalue-fix x)
+         :hints(("Goal" :in-theory (enable (tau-system))))
+         :rule-classes :type-prescription))
+
 (defoption vl-maybe-paramvalue-p vl-paramvalue-p
   :parents (vl-paramargs)
   ///
@@ -2143,6 +2232,11 @@ rid of repeateventcontrol.</p>")
                (equal (tag x) :vl-repeat-eventcontrol)))
   :rule-classes :forward-chaining)
 
+(local (defthm vl-delayoreventcontrol-fix-nonnil
+         (vl-delayoreventcontrol-fix x)
+         :hints(("Goal" :in-theory (enable (tau-system))))
+         :rule-classes :type-prescription))
+
 (defoption vl-maybe-delayoreventcontrol-p vl-delayoreventcontrol-p)
 
 
@@ -2559,6 +2653,9 @@ block name to each variable name.</p>"
     ))
 
 
+(local (in-theory (disable vl-stmtlist-p-of-cdr-when-vl-stmtlist-p
+                           consp-when-member-equal-of-vl-caselist-p
+                           vl-stmt-p-when-member-equal-of-vl-stmtlist-p)))
 
 
 ;                       INITIAL AND ALWAYS BLOCKS
@@ -2976,7 +3073,8 @@ be non-sliceable, at least if it's an input.</p>"
    (dir  vl-direction-p  "Port direction")
    (expr vl-maybe-expr-p "Expression in terms of the declared variables of the interface.")
    (atts vl-atts-p       "attributes")
-   (loc  vl-location-p :default *vl-fakeloc*)))
+   (loc  vl-location-p :default *vl-fakeloc*))
+  :prepwork ())
 
 (fty::deflist vl-modport-portlist
   :elt-type vl-modport-port
@@ -3024,7 +3122,6 @@ be non-sliceable, at least if it's an input.</p>"
   :short "Representation of a basic type declaration like @('typedef struct ... foo_t;')."
   ((name stringp)
    (type vl-datatype-p)
-   (dims t "BOZO add dimensions")
    (atts vl-atts-p)
    (minloc vl-location-p)
    (maxloc vl-location-p)
@@ -3042,6 +3139,7 @@ be non-sliceable, at least if it's an input.</p>"
   :parents (vl-typedeflist-p)
   :returns (names string-listp)
   (vl-typedef->name x))
+
 
 
 (encapsulate nil
@@ -3133,7 +3231,27 @@ initially kept in a big, mixed list.</p>"
                (implies (vl-__type__list-p x)
                         (vl-modelementlist-p x)))))))
 
+
+  (local (in-theory (disable acl2::o<-of-two-nats-measure o< o<-when-natps nfix)))
   (deftypes vl-genelement
+    ;; :prepwork 
+    ;; ((local (defthm nfix-when-natp
+    ;;           (implies (natp x)
+    ;;                    (equal (nfix x) x))
+    ;;           :hints(("Goal" :in-theory (enable nfix)))))
+    ;;  (local (in-theory (disable default-car default-cdr
+    ;;                             acl2::consp-of-car-when-alistp)))
+    ;;  (local (defthm my-o<-of-two-nats-measure-1
+    ;;           (implies (< (nfix a) (nfix b))
+    ;;                    (o< (two-nats-measure a c) (two-nats-measure b d)))
+    ;;           :hints(("Goal" :in-theory (enable acl2::o<-of-two-nats-measure)))))
+    ;;  (local (defthm my-o<-of-two-nats-measure-2
+    ;;           (implies (and (<= (nfix a) (nfix b))
+    ;;                         (< (nfix c) (nfix d)))
+    ;;                    (o< (two-nats-measure a c) (two-nats-measure b d)))
+    ;;           :hints(("Goal" :in-theory (enable acl2::o<-of-two-nats-measure)))))
+    ;;  )
+
     (deftagsum vl-genelement
 
       ;; NOTE: According to the SystemVerilog spec, generate/endgenerate just
@@ -3203,8 +3321,9 @@ initially kept in a big, mixed list.</p>"
                    acl2-count-of-cdr
                    acl2-count-of-cdr-same-fc
                    cons-equal
-                   default-car default-cdr
-                   nfix))
+                   ;; default-car  default-cdr
+                   nfix
+                   ))
 
 
   (make-event
@@ -3225,7 +3344,8 @@ the list of elements of the given type.</p>"
       (define vl-modelement-loc ((x vl-modelement-p))
         :short "Get the location of any @(see vl-modelement-p)."
         :returns (loc vl-location-p
-                      :hints(("Goal" :in-theory (enable vl-modelement-fix))))
+                      :hints(("Goal" :in-theory (enable vl-modelement-fix
+                                                        (tau-system)))))
         (b* ((x (vl-modelement-fix x)))
 
           (case (tag x)
@@ -3474,6 +3594,10 @@ is trying to instantiate itself!</p>
 in a primitive flop/latch with instances of flop/latch primitives, etc.  So as
 a general rule, we mark the primitives with @('VL_HANDS_OFF') and code our
 transforms to not modules with this attribute.</p>"
+  :prepwork ((local (defthm alistp-when-atts-p
+                      (implies (vl-atts-p x)
+                               (alistp x))
+                      :hints(("Goal" :in-theory (enable alistp))))))
   :inline t
   (consp (assoc-equal "VL_HANDS_OFF" (vl-module->atts x))))
 

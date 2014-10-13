@@ -55,8 +55,10 @@ generates the corresponding expression and net declaration.</p>"
        (width    (lposfix width))
        (expr     (vl-idexpr name width :vl-unsigned))
        (range    (vl-make-n-bit-range width))
-       (type     (hons-copy (make-vl-nettype :name :vl-wire :signedp nil :range range)))
-       (vardecl  (make-vl-vardecl :name name :type type :loc loc)))
+       (type     (hons-copy
+                  (make-vl-coretype :name :vl-logic :signedp nil
+                                    :pdims (list range))))
+       (vardecl  (make-vl-vardecl :name name :type type :nettype :vl-wire :loc loc)))
     (mv expr vardecl)))
 
 (define vl-occform-mkport ((name  stringp)
@@ -76,10 +78,11 @@ and net declaration.</p>"
        (width    (lposfix width))
        (expr     (vl-idexpr name width :vl-unsigned))
        (range    (vl-make-n-bit-range width))
-       (type     (hons-copy (make-vl-nettype :name :vl-wire :signedp nil :range range)))
+       (type     (hons-copy (make-vl-coretype :name :vl-logic :signedp nil
+                                              :pdims (list range))))
        (port     (make-vl-port :name name :expr expr :loc *vl-fakeloc*))
        (portdecl (make-vl-portdecl :name  name :type type :dir dir :loc *vl-fakeloc*))
-       (vardecl  (make-vl-vardecl  :name  name :type type :loc *vl-fakeloc* :atts '(("VL_PORT_IMPLICIT")))))
+       (vardecl  (make-vl-vardecl  :name  name :type type :nettype :vl-wire :loc *vl-fakeloc* :atts '(("VL_PORT_IMPLICIT")))))
     (mv expr port portdecl vardecl)))
 
 (defun def-vl-modgen-fn (name raw-formals
@@ -266,9 +269,11 @@ sizes pre-computed.</p>"
        (width (lposfix width))
        (name  (hons-copy (cat prefix (natstr i))))
        (expr  (vl-idexpr name width :vl-unsigned))
-       (type  (make-vl-nettype :name :vl-wire :range (vl-make-n-bit-range width)))
+       (type  (make-vl-coretype :name :vl-logic
+                                :pdims (list (vl-make-n-bit-range width))))
        (decl  (make-vl-vardecl :name  name
                                :type  type
+                               :nettype :vl-wire
                                :loc   loc))
        ((mv rest-exprs rest-decls)
         (vl-occform-mkwires prefix (+ 1 (lnfix i)) n

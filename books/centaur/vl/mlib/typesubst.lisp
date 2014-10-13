@@ -171,8 +171,10 @@ is not okay to replace @('foo_t') with, say, a tagged @('union').</p>")
                    :args (list elem x.kind new-type))
             x))
 
-       ((unless (or (atom new-type.dims)
-                    (atom (cdr new-type.dims))))
+       ((unless (and (or (atom new-type.pdims)
+                         (atom (cdr new-type.pdims)))
+                     (atom new-type.udims)))
+        ;; BOZO Maybe it's ok for it to be an unpacked dimension? Not sure about this.
         (mv nil
             (fatal :type :vl-typesubst-fail
                    :msg "~a0: can't replace enum base type, ~s1, with ~a1; too
@@ -182,9 +184,9 @@ is not okay to replace @('foo_t') with, say, a tagged @('union').</p>")
 
        (x-prime (make-vl-enumbasetype :kind new-type.name
                                       :signedp new-type.signedp
-                                      :dim (if (atom new-type.dims)
+                                      :dim (if (atom new-type.pdims)
                                                nil
-                                             (car new-type.dims)))))
+                                             (car new-type.pdims)))))
 
     (mv t warnings x-prime)))
 
@@ -206,10 +208,6 @@ is not okay to replace @('foo_t') with, say, a tagged @('union').</p>")
          (elem     (vl-modelement-fix elem))
          (x        (vl-datatype-fix x)))
       (vl-datatype-case x
-
-        (:vl-nettype
-         ;; There aren't any user-defined types that can be substituted here.
-         (mv t warnings x))
 
         (:vl-coretype
          ;; These are just basic types like int, byte, etc., nothing here can
@@ -249,14 +247,20 @@ is not okay to replace @('foo_t') with, say, a tagged @('union').</p>")
                ;; trying to substitute for right now, so nothing to do.
                (mv t warnings x))
               (new-type (cdr look))
-              ((when (consp x.dims))
-               (mv nil
-                   (fatal :type :vl-typesubst-fail
-                          :msg  "~a0: can't substitute type ~a1 into array of ~s2."
-                          :args (list elem new-type name))
-                   x)))
-           ;; Otherwise, found something like foo_t and we have a replacement
-           ;; for it.  This seems fine.
+              (new-pdims (vl-datatype->pdims new-type))
+              (new-udims (vl-datatype->udims new-type))
+              ((unless (or (atom new-udims)
+                           (atom x.pdims)))
+               (mv nil (fatal :type :vl-typesubst-fail
+                              :msg "~a0: trying to substitute a type with ~
+                                    unpacked dimensions into one with packed ~
+                                    dimensions: ~a1, ~a2"
+                              :args (list elem x new-type))
+                   x))
+              (pdims (append-without-guard x.pdims new-pdims))
+              (udims (append-without-guard x.udims new-udims))
+              (new-type (vl-datatype-update-pdims pdims new-type))
+              (new-type (vl-datatype-update-udims udims new-type)))
            (mv t warnings new-type))))))
 
   (define vl-structmemberlist-typesubst

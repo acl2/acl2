@@ -90,12 +90,16 @@
        ((vl-vardecl v1) v1))
     (debuggable-and (not (cw "Inspecting ~x0.~%" (car vars)))
                     (equal (car names)    v1.name)
-                    (equal (car dims)     (vl-pretty-packeddimensionlist v1.dims))
                     (equal (car initvals) (and v1.initval (vl-pretty-expr v1.initval)))
                     (equal constp         v1.constp)
                     (equal varp           v1.varp)
                     (equal lifetime       v1.lifetime)
-                    (equal type           (vl-pretty-datatype v1.type))
+                    (let ((type (append-without-guard
+                                 type (and (car dims) (cons ':udims (car dims))))))
+                      (or (equal type
+                                 (vl-pretty-datatype v1.type))
+                          (cw "type -- spec: ~x0 actual: ~x1~%"
+                              type (vl-pretty-datatype v1.type))))
                     (equal atts           v1.atts)
                     (run-vardecltest-aux (cdr vars)
                                          constp varp lifetime type atts

@@ -70,23 +70,39 @@ value.</p>")
    (portdecls vl-portdecllist-p)
    (palist    (equal palist (vl-portdecl-alist portdecls)))
    (warnings  vl-warninglist-p))
+  :verify-guards nil
   :returns
   (mv (warnings vl-warninglist-p)
       (vardecls vl-vardecllist-p "The non-supply netdecls, which should be kept.")
       (supply0s string-listp "Names of supply0 wires.")
       (supply1s string-listp "Names of supply1 wires."))
+  :hooks ((:fix :hints (("goal" :induct (vl-collect-supplies x portdecls palist warnings)
+                         :expand ((:free (portdecls palist warnings)
+                                   (vl-collect-supplies x portdecls palist warnings))
+                                  (vl-collect-supplies (vl-vardecllist-fix x)
+                                                       portdecls palist warnings))
+                         :in-theory (disable (:d vl-collect-supplies))))))
+  :prepwork ((local (in-theory (disable double-containment))))
   (b* (((when (atom x))
         (mv (ok) nil nil nil))
        ((mv warnings rest-decls rest-supply0 rest-supply1)
         (vl-collect-supplies (cdr x) portdecls palist warnings))
        ((vl-vardecl x1) (vl-vardecl-fix (car x)))
-       ((unless (and (eq (vl-datatype-kind x1.type) :vl-nettype)
-                     (member (vl-nettype->name x1.type) '(:vl-supply0 :vl-supply1))))
+       ((unless (member x1.nettype '(:vl-supply0 :vl-supply1)))
         ;; Not a supply.  Don't mess with it.
         (mv (ok) (cons x1 rest-decls) rest-supply0 rest-supply1))
-       ((vl-nettype x1.type) x1.type)
 
-       ((when x1.type.range)
+       ((unless (eq (vl-datatype-kind x1.type) :vl-coretype))
+        (mv (fatal :type :vl-bad-supply
+                   :msg "~a0: bad wire declared as a supply"
+                   :args (list x1))
+            (cons x1 rest-decls)
+            rest-supply0
+            rest-supply1))
+       ((vl-coretype x1.type))
+
+       ((when (or (consp x1.type.pdims)
+                  (consp x1.type.udims)))
         ;; Our simple-minded substitution won't work if the supply is an array
         ;; of supplies.  Fortunately, this is probably something that no sane
         ;; person would ever try to write.  We don't eliminate the supply, we
@@ -107,8 +123,8 @@ value.</p>")
         ;; Not a port, so we can go ahead and eliminate it.
         (mv warnings
             rest-decls
-            (if (eq x1.type.name :vl-supply0) (cons x1.name rest-supply0) rest-supply0)
-            (if (eq x1.type.name :vl-supply1) (cons x1.name rest-supply1) rest-supply1)))
+            (if (eq x1.nettype :vl-supply0) (cons x1.name rest-supply0) rest-supply0)
+            (if (eq x1.nettype :vl-supply1) (cons x1.name rest-supply1) rest-supply1)))
 
        ;; What sense does it make for an input to be a supply?  None, really --
        ;; you can hook up anything to it.  We could try to make some kind of
@@ -124,16 +140,16 @@ value.</p>")
             rest-supply1))
 
        ;; Well, convert it into a wire, I guess.
-       (new-type (change-vl-nettype x1.type :name :vl-wire))
-       (new-atts (cons (if (eq x1.type.name :vl-supply0)
+       (new-atts (cons (if (eq x1.nettype :vl-supply0)
                            (cons "VL_SUPPLY_0" nil)
                          (cons "VL_SUPPLY_1" nil))
                        x1.atts))
-       (new-x1   (change-vl-vardecl x1 :type new-type :atts new-atts)))
+       (new-x1   (change-vl-vardecl x1 :nettype :vl-wire :atts new-atts)))
     (mv (ok) (cons new-x1 rest-decls) rest-supply0 rest-supply1))
   ///
   (defmvtypes vl-collect-supplies
-    (nil true-listp true-listp true-listp)))
+    (nil true-listp true-listp true-listp))
+  (verify-guards vl-collect-supplies))
 
 (define vl-module-elim-supplies ((x vl-module-p))
   :returns (new-x vl-module-p)
@@ -183,4 +199,3 @@ value.</p>")
   (b* ((x (vl-design-fix x))
        ((vl-design x) x))
     (change-vl-design x :mods (vl-modulelist-elim-supplies x.mods))))
-

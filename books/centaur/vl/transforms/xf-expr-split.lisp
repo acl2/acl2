@@ -164,13 +164,14 @@ Otherwise @('x'') will be the name of a newly generated, equivalent wire.</p>"
          ((mv tmp-name nf) (vl-namefactory-indexed-name "temp" delta.nf))
          (rhs-expr   (change-vl-nonatom x :args new-args))
          (tmp-expr   (vl-idexpr tmp-name width type))
-         (tmp-type   (make-vl-nettype :name    :vl-wire
-                                      :signedp (eq type :vl-signed)
-                                      :range   (vl-make-n-bit-range width)))
+         (tmp-type   (make-vl-coretype :name    :vl-logic
+                                       :signedp (eq type :vl-signed)
+                                       :pdims   (list (vl-make-n-bit-range width))))
 
          (tmp-decl   (make-vl-vardecl :loc     (vl-modelement-loc elem)
                                       :name    tmp-name
                                       :type    tmp-type
+                                      :nettype :vl-wire
                                       :atts    *vl-tmp-wire-atts*))
          (tmp-assign (make-vl-assign :loc (vl-modelement-loc elem)
                                      :lvalue tmp-expr

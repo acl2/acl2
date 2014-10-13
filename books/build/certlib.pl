@@ -63,6 +63,45 @@ my $cache_version_code = 5;
 # and you get a backtrace as well.
 use Carp;
 
+
+
+
+my $debugging = 0;
+my $clean_certs = 0;
+my $print_deps = 0;
+my $believe_cache = 0;
+my $pcert_all = 0;
+#  However, now it makes sense to do it in two
+# passes:
+# - update the dependency-info cache, including the cert and source
+# tables mentioned above
+# - create the make-style dependency graph using that cache,
+# afterward.
+
+# A complication is that add-include-book-dir directives can affect
+# what dependencies are stored, but this should only affect ones that
+# come after.  To deal with this, for each file we'll create a log of
+# what relevant lines are in it, in order.
+
+my %dirs = ( );
+
+sub certlib_add_dir {
+    my ($name,$dir) = @_;
+    $dirs{$name} = $dir;
+}
+
+sub certlib_set_opts {
+    my $opts = shift;
+    $debugging = $opts->{"debugging"};
+    $clean_certs = $opts->{"clean_certs"};
+    $print_deps = $opts->{"print_deps"};
+    $believe_cache = $opts->{"believe_cache"};
+    $pcert_all = $opts->{"pcert_all"};
+}
+
+
+
+
 sub human_time {
 
 # human_time(secs,shortp) returns a string describing the time taken in a
@@ -163,6 +202,16 @@ sub canonical_path {
 	return $res;
     }
 }
+
+
+sub certlib_set_base_path {
+    my $dir = shift;
+    $dir = $dir || ".";
+    $BASE_PATH = abs_canonical_path($dir);
+    %canonical_path_memo = ();
+}
+
+
 
 
 
@@ -343,8 +392,11 @@ sub cert_sequential_dep {
     my ($certfile, $deps) = @_;
     my $res;
     if (cert_get_param($certfile, $deps, "acl2x")) {
-	($res = $certfile) =~ s/\.cert$/\.acl2x/;
-    } elsif (cert_get_param($certfile, $deps, "pcert")) {
+	# NOTE: ACL2 doesn't allow an include-book of a book with an .acl2x but no
+	# .pcert* or .cert file during a (provisional or final) certification.
+	# ($res = $certfile) =~ s/\.cert$/\.acl2x/;
+	$res = $certfile;
+    } elsif (cert_get_param($certfile, $deps, "pcert") || $pcert_all) {
 	($res = $certfile) =~ s/\.cert$/\.pcert0/;
     } else {
 	$res = $certfile;
@@ -366,7 +418,7 @@ sub read_costs {
 	if (cert_get_param($certfile, $deps, "acl2x")) {
 	    my $acl2xfile = cert_to_acl2x($certfile);
 	    $basecosts->{$acl2xfile} = get_cert_time($acl2xfile, $warnings, $use_realtime);
-	} elsif (cert_get_param($certfile, $deps, "pcert")) {
+	} elsif (cert_get_param($certfile, $deps, "pcert") || $pcert_all) {
 	    my $pcert1file = cert_to_pcert1($certfile);
 	    $basecosts->{$pcert1file} = get_cert_time($pcert1file, $warnings, $use_realtime);
 	    my $pcert0file = cert_to_pcert0($certfile);
@@ -447,7 +499,7 @@ sub compute_cost_paths_aux {
 	} else {
 	    # otherwise, depend on its subbooks' certificates and the pcert1, if applicable.
 	    push (@$targetdeps, @{cert_deps($target, $deps)});
-	    if (cert_get_param($target, $deps, "pcert")) {
+	    if (cert_get_param($target, $deps, "pcert") || $pcert_all) {
 		(my $pcert1 = $target) =~ s/\.cert$/\.pcert1/;
 		push (@$targetdeps, $pcert1);
 	    }
@@ -734,44 +786,6 @@ sub to_basename {
 
 
 
-my $debugging = 0;
-my $clean_certs = 0;
-my $print_deps = 0;
-my $believe_cache = 0;
-
-#  However, now it makes sense to do it in two
-# passes:
-# - update the dependency-info cache, including the cert and source
-# tables mentioned above
-# - create the make-style dependency graph using that cache,
-# afterward.
-
-# A complication is that add-include-book-dir directives can affect
-# what dependencies are stored, but this should only affect ones that
-# come after.  To deal with this, for each file we'll create a log of
-# what relevant lines are in it, in order.
-
-my %dirs = ( );
-
-sub certlib_add_dir {
-    my ($name,$dir) = @_;
-    $dirs{$name} = $dir;
-}
-
-sub certlib_set_opts {
-    my $opts = shift;
-    $debugging = $opts->{"debugging"};
-    $clean_certs = $opts->{"clean_certs"};
-    $print_deps = $opts->{"print_deps"};
-    $believe_cache = $opts->{"believe_cache"};
-}
-
-sub certlib_set_base_path {
-    my $dir = shift;
-    $dir = $dir || ".";
-    $BASE_PATH = abs_canonical_path($dir);
-    %canonical_path_memo = ();
-}
 
 
 # Event types:
@@ -1677,7 +1691,8 @@ sub to_source_name {
 # it to .cert, if it has a .acl2x/.pcert/.cert extension leave it
 # alone, and otherwise tack on a .cert.  NOTE: This heuristic doesn't
 # at all match the one in to_source_name; they're used for different
-# purposes.
+# purposes.  (This assumes that $target_ext is cert, which is the
+# default.)
 # foo.lisp  -> foo.cert
 # foo       -> foo.cert
 # foo.cert  -> foo.cert
@@ -1686,12 +1701,12 @@ sub to_source_name {
 # foo.lsp   -> foo.lsp.cert
 # foo.acl2  -> foo.acl2.cert
 sub to_cert_name {
-    my $fname = shift;
-    $fname =~ s/\.lisp$/\.cert/;
+    my ($fname, $target_ext) = @_;
+    $fname =~ s/\.lisp$//;
     if ($fname =~ /\.(cert|acl2x|pcert0|pcert1)$/) {
 	return $fname;
     } else {
-	return "$fname.cert";
+	return "$fname.${target_ext}";
     }
 }
 
@@ -1702,9 +1717,10 @@ sub to_cert_name {
 # .cert extensions if necessary) and returns the list of targets and a
 # hash associating each label with its list of targets.
 sub process_labels_and_targets {
-    my ($input, $depdb) = @_;
+    my ($input, $depdb, $target_ext) = @_;
     my %labels = ();
     my @targets = ();
+    my @maketargets = ();
     my $label_started = 0;
     my $label_targets;
     foreach my $str (@$input) {
@@ -1712,7 +1728,7 @@ sub process_labels_and_targets {
 	    # Deps-of.
 	    my $name = canonical_path(to_source_name(substr($str,3)));
 	    if ($name) {
-		my $certinfo = find_deps($name, $depdb, 0);
+		my $certinfo = find_deps(to_source_name($name), $depdb, 0);
 		push (@targets, @{$certinfo->bookdeps});
 		push (@targets, @{$certinfo->portdeps});
 		push (@$label_targets, @{$certinfo->bookdeps}) if $label_started;
@@ -1731,7 +1747,7 @@ sub process_labels_and_targets {
 	    }
 	} else {
 	    # filename.
-	    my $target = canonical_path(to_cert_name($str));
+	    my $target = canonical_path(to_cert_name($str, $target_ext));
 	    if ($target) {
 		push(@targets, $target);
 		push(@$label_targets, $target) if $label_started;

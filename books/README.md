@@ -76,7 +76,7 @@ git clone https://github.com/acl2/acl2
 
 ### Contributing
 
-See the wiki page for [our discussion on how to contribute][git tips].
+See the documentation for [our discussion on how to contribute][git tips].
 
 Even though we have merged the Community Books (formerly acl2-books) and
 ACL2 System (formerly acl2-devel) repositories into one, changes should
@@ -86,7 +86,7 @@ system.  (If you have suggestions for system changes, they should be
 emailed to [Matt or J](mailto:kaufmann@cs.utexas.edu), as has been done
 in the past.)
 
-[git tips]: https://code.google.com/p/acl2-books/wiki/ACL2RepoGitTips
+[git tips]: http://www.cs.utexas.edu/users/moore/acl2/manuals/current/manual/index.html?topic=ACL2____GIT-QUICK-START
 
 ### Staying Informed
 

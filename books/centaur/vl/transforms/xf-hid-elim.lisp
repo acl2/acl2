@@ -370,11 +370,12 @@ hierarchical references to wires inside of @('processor'), etc.</p>")
              (range   (if res-left
                           (make-vl-range :msb res-left :lsb res-right)
                         nil))
-             (type    (make-vl-nettype :name :vl-wire
-                                       :range range
-                                       :signedp signedp))
+             (type    (make-vl-coretype :name :vl-logic
+                                        :pdims (and range (list range))
+                                        :signedp signedp))
              (vardecl (make-vl-vardecl :name flat-name
                                        :type type
+                                       :nettype :vl-wire
                                        :loc *vl-fakeloc*
                                        :atts decl-atts)))
           (mv warnings x-prime (cons vardecl vardecls))))
@@ -427,12 +428,13 @@ hierarchical references to wires inside of @('processor'), etc.</p>")
                    :args (list x itemname target-modname range))
             x vardecls))
 
-       (type (make-vl-nettype :name :vl-wire
-                              :range range
-                              :signedp signedp))
+       (type (make-vl-coretype :name :vl-logic
+                               :pdims (and range (list range))
+                               :signedp signedp))
 
        (vardecl (make-vl-vardecl :name flat-name
                                  :type type
+                                 :nettype :vl-wire
                                  :loc *vl-fakeloc*
                                  :atts decl-atts)))
     (mv (ok) x-prime (cons vardecl vardecls))))

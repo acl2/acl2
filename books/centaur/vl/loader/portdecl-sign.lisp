@@ -97,23 +97,16 @@ nets agree and are correct by the time actual modules are produced.</p>")
 (local (xdoc::set-default-parents portdecl-sign))
 
 (define vl-portdecl-sign-adjust-type ((vardecl vl-vardecl-p)
-                                      (final-signedp booleanp)
-                                      (final-range   vl-maybe-range-p))
+                                      (final-signedp booleanp))
   :guard (vl-simplevar-p vardecl)
   :returns (new-type vl-datatype-p)
   :prepwork ((local (in-theory (enable vl-simplevar-p
                                        vl-simplenet-p
                                        vl-simplereg-p))))
   :hooks nil
-  (b* ((type (vl-vardecl->type vardecl))
-       ((when (eq (vl-datatype-kind type) :vl-nettype))
-        (change-vl-nettype type
-                           :signedp final-signedp
-                           :range   final-range)))
+  (b* ((type (vl-vardecl->type vardecl)))
     (change-vl-coretype type
-                        :signedp final-signedp
-                        :dims    (and final-range
-                                      (list final-range)))))
+                        :signedp final-signedp)))
 
 
 (local (defthm vl-atts-p-of-delete-assoc-equal
@@ -137,7 +130,8 @@ nets agree and are correct by the time actual modules are produced.</p>")
        ((unless (assoc-equal "VL_INCOMPLETE_DECLARATION" port.atts))
         ;; The port was completely declared, so the types for the port and
         ;; variable should just be in total agreement.
-        (if (equal port.type var.type)
+        (if (and (equal port.type var.type)
+                 (eq port.nettype var.nettype))
             (mv t (ok) port var)
           (mv nil
               (fatal :type :vl-programming-error
@@ -150,8 +144,7 @@ nets agree and are correct by the time actual modules are produced.</p>")
        ;; See vl-parse-basic-port-declaration-tail.  The port declaration is
        ;; not complete.  It may be marked as signed, and it may have a range.
        ;; But we don't know the proper type beyond that.
-       ((unless (and (eq (vl-datatype-kind port.type) :vl-nettype)
-                     (eq (vl-nettype->name port.type) :vl-wire)))
+       ((unless (eq (vl-datatype-kind port.type) :vl-coretype))
         ;; Just basic sanity checking.  Should never fail unless there are ways
         ;; to create port declarations that I don't understand.
         (mv nil
@@ -161,8 +154,8 @@ nets agree and are correct by the time actual modules are produced.</p>")
                    :args (list port port.type))
             port var))
 
-       (port-signedp (vl-nettype->signedp port.type))
-       (port-range   (vl-nettype->range port.type))
+       (port-signedp (vl-coretype->signedp port.type))
+       (port-pdims   (vl-coretype->pdims port.type))
 
        ((unless (vl-simplevar-p var))
         ;; The corresponding net/variable is something complicated.  I don't
@@ -178,9 +171,13 @@ nets agree and are correct by the time actual modules are produced.</p>")
 
        (var-signedp (vl-simplevar->signedp var))
        (var-range   (vl-simplevar->range var))
+       (port-range  (and (consp port-pdims) (car port-pdims)))
 
        ((unless (or (not port-range)
-                    (not var-range)
+                    ;; BOZO I don't think it's allowed for the port to have a
+                    ;; range and the vardecl not to.  Come back here if this
+                    ;; breaks stuff.
+                    ;; (not var-range)
                     (equal port-range var-range)))
         (mv nil
             (fatal :type :vl-port/var-disagree
@@ -190,9 +187,8 @@ nets agree and are correct by the time actual modules are produced.</p>")
             port var))
 
        (final-signedp (or var-signedp port-signedp))
-       (final-range   (or port-range var-range))
-       (final-type    (vl-portdecl-sign-adjust-type var final-signedp final-range))
-
+       (final-type    (vl-portdecl-sign-adjust-type var final-signedp))
+       
        (new-port (change-vl-portdecl port
                                      :atts (delete-assoc-equal "VL_INCOMPLETE_DECLARATION" port.atts)
                                      :type final-type))

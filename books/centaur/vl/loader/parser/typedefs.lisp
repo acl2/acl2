@@ -116,14 +116,11 @@
           ;; BOZO the following probably isn't right for the 2nd production.
           (datatype := (vl-parse-datatype))
           (id := (vl-match-token :vl-idtoken))
-          (when (vl-is-token? :vl-lbrack)
-            (return-raw
-             (vl-parse-error "BOZO need to add support for dimensions on typedefs.")))
+          (udims := (vl-parse-0+-packed-dimensions))
           (semi := (vl-match-token :vl-semi))
           (return-raw
            (b* ((val (make-vl-typedef :name (vl-idtoken->name id)
-                                      :type datatype
-                                      :dims nil ;; BOZO add dimensions
+                                      :type (vl-datatype-update-udims udims datatype)
                                       :minloc (vl-token->loc typedef)
                                       :maxloc (vl-token->loc semi)
                                       :atts atts))

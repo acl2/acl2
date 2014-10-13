@@ -119,7 +119,7 @@
              :successp nil)
 
 (test-assign :input "assign (strong0, pull1) #36 a[7:0] = 1 ; "
-             :lvalues ((:vl-partselect-colon nil (id "a") 7 0))
+             :lvalues ((:vl-select-colon nil (id "a") 7 0))
              :exprs   (1)
              :atts (("some") ("atts"))
              :str (make-vl-gatestrength :zero :vl-strong
@@ -154,15 +154,14 @@
      (not (cw "Inspecting Decl: ~x0.~%" (car decls)))
      (vl-vardecl-p (car decls))
      (b* (((vl-vardecl x1) (car decls))
-          ((unless (equal (vl-datatype-kind x1.type) :vl-nettype))
-           (cw "good vardecl, but not a net type."))
-          ((vl-nettype x1.type) x1.type))
+          ((vl-coretype x1.type)))
        (debuggable-and
         (equal (car ids) x1.name)
-        (equal type x1.type.name)
-        (equal range (vl-pretty-maybe-range x1.type.range))
+        (or (equal type x1.nettype)
+            (cw "type: ~x0 x1.nettype: ~x1~%" type x1.nettype))
+        (equal range (vl-pretty-maybe-range (car x1.type.pdims)))
         (equal signedp x1.type.signedp)
-        (equal (car arrdims) (vl-pretty-range-list x1.dims))
+        (equal (car arrdims) (vl-pretty-range-list x1.type.udims))
         (equal vectoredp x1.vectoredp)
         (equal scalaredp x1.scalaredp)
         (equal rise (and x1.delay (vl-pretty-expr (vl-gatedelay->rise x1.delay))))

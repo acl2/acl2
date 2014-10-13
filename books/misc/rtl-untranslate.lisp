@@ -67,8 +67,18 @@
 ;;; START addition for rtl-untrans1
 ; .....
 ;;; END addition for rtl-untrans1
+; (not including obvious changes, like *untranslate-boolean-primitives* to
+; *rtl-untrans-boolean-primitives*, untranslate1 to rtl-untrans1, and
+; untranslate-if to rtl-untrans-if).
 
 (defun rtl-untrans1 (term iff-flg untrans-tbl sigs-btree lops-alist preprocess-fn wrld)
+
+; Warning: It would be best to keep this in sync with
+; obviously-iff-equiv-terms, specifically, giving similar attention in both to
+; functions like implies, iff, and not, which depend only on the propositional
+; equivalence class of each argument.
+
+; Warning: Keep in sync with ACL2 source function untranslate1.
 
 ; We return a Lisp form that translates to term if iff-flg is nil and
 ; that translates to a term iff-equivalent to term if iff-flg is t.
@@ -91,17 +101,17 @@
 
   (let ((term (if preprocess-fn
                   (mv-let (erp term1)
-                    (ev-fncall-w preprocess-fn
-                                 (list term wrld)
-                                 wrld
-                                 nil ; user-stobj-alist
-                                 nil ; safe-mode
-                                 nil ; gc-off
-                                 nil ; hard-error-returns-nilp
-                                 t   ; okp
-                                 )
-                    (or (and (null erp) term1)
-                        term))
+                          (ev-fncall-w preprocess-fn
+                                       (list term wrld)
+                                       wrld
+                                       nil ; user-stobj-alist
+                                       nil ; safe-mode
+                                       nil ; gc-off
+                                       nil ; hard-error-returns-nilp
+                                       t   ; okp
+                                       )
+                          (or (and (null erp) term1)
+                              term))
                 term)))
     (cond ((variablep term) term)
           ((fquotep term)
@@ -114,7 +124,7 @@
                   (cadr term))
                  (t term)))
           ((flambda-applicationp term)
-           (make-let
+           (make-let-or-let*
             (collect-non-trivial-bindings (lambda-formals (ffn-symb term))
                                           (rtl-untrans1-lst (fargs term)
                                                             nil
@@ -264,7 +274,7 @@
 ; hypothesis in the second arg of its expansion.  We do this so that we
 ; can use it here and output something that the user will recognise.
 
-           (rtl-untrans1 (cadr (fargn term 2)) t untrans-tbl sigs-btree lops-alist preprocess-fn wrld))
+           (cadr (fargn term 2)))
 ;;; START addition for rtl-untrans1
         ((eq (ffn-symb term) 'binary-cat) ; (cat x xsize y ysize)
          (rtl-untrans-cat
@@ -283,22 +293,37 @@
                            (rtl-untrans1 (fargn term 1) nil untrans-tbl
                                          sigs-btree lops-alist preprocess-fn wrld))))))
 ;;; END addition for rtl-untrans1
+          ((and (eq (ffn-symb term) 'return-last)
+                (quotep (fargn term 1))
+                (let* ((key (unquote (fargn term 1)))
+                       (fn (and (symbolp key)
+                                key
+                                (let ((tmp (return-last-lookup key
+                                                               wrld)))
+                                  (if (consp tmp) (car tmp) tmp)))))
+                  (and fn
+                       (cons fn
+                             (rtl-untrans1-lst (cdr (fargs term)) nil
+                                               untrans-tbl
+                                               sigs-btree lops-alist
+                                               preprocess-fn wrld))))))
           (t
            (let* ((pair (cdr (assoc-eq (ffn-symb term)
                                        untrans-tbl)))
                   (op (car pair))
                   (flg (cdr pair)))
              (cond
-              ((and op flg)
-               (cons op
-                     (rtl-untrans1-lst (right-associated-args (ffn-symb term)
-                                                              term)
-                                       nil untrans-tbl sigs-btree lops-alist
-                                       preprocess-fn wrld)))
-              (op
-               (cons op
-                     (rtl-untrans1-lst (fargs term)
-                                       nil untrans-tbl sigs-btree lops-alist preprocess-fn wrld)))
+              (op (cons op
+                          (rtl-untrans1-lst
+                           (cond
+                            ((and flg
+                                  (cdr (fargs term))
+                                  (null (cddr (fargs term))))
+                             (right-associated-args (ffn-symb term)
+                                                    term))
+                            (t (fargs term)))
+                           nil untrans-tbl sigs-btree lops-alist
+                           preprocess-fn wrld)))
               (t
 ;;; START addition for rtl-untrans1
              (let ((op (cdr (assoc-eq (ffn-symb term) lops-alist))))
@@ -315,14 +340,21 @@
                                                    preprocess-fn wrld)))
                 (t
 ;;; END addition for rtl-untrans1
-                 (mv-let (fn guts)
-                   (car-cdr-nest term)
-                   (cond (fn (list fn (rtl-untrans1 guts nil untrans-tbl sigs-btree lops-alist
-                                                    preprocess-fn wrld))) 
-                         (t (cons (ffn-symb term)
-                                  (rtl-untrans1-lst (fargs term) nil
-                                                    untrans-tbl sigs-btree lops-alist preprocess-fn
-                                                    wrld)))))))))))))))
+                 (mv-let
+                  (ad-list base)
+                  (make-reversed-ad-list term nil)
+                  (cond (ad-list
+                         (pretty-parse-ad-list
+                          ad-list '(#\R) 1
+                          (rtl-untrans1 base nil untrans-tbl
+                                        sigs-btree lops-alist
+                                        preprocess-fn wrld)))
+                        (t (cons (ffn-symb term)
+                                 (rtl-untrans1-lst (fargs term) nil
+                                                   untrans-tbl
+                                                   sigs-btree lops-alist
+                                                   preprocess-fn
+                                                   wrld)))))))))))))))
 
 (defun rtl-untrans-cons1 (term untrans-tbl sigs-btree lops-alist preprocess-fn wrld)
 

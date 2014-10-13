@@ -344,13 +344,13 @@ expression.</p>")
          (make-vl-nonatom :op :vl-index
                           :args (list expr range.left)))
         (:vl-colon
-         (make-vl-nonatom :op :vl-partselect-colon
+         (make-vl-nonatom :op :vl-select-colon
                           :args (list expr range.left range.right)))
         (:vl-pluscolon
-         (make-vl-nonatom :op :vl-partselect-pluscolon
+         (make-vl-nonatom :op :vl-select-pluscolon
                           :args (list expr range.left range.right)))
         (:vl-minuscolon
-         (make-vl-nonatom :op :vl-partselect-minuscolon
+         (make-vl-nonatom :op :vl-select-minuscolon
                           :args (list expr range.left range.right))))))
 
   (define vl-build-range-select-with ((expr vl-expr-p)

@@ -32,6 +32,7 @@
 (include-book "centaur/fty/deftypes" :dir :system)
 (include-book "centaur/fty/basetypes" :dir :system)
 (include-book "std/strings/cat" :dir :system)
+(include-book "tools/rulesets" :dir :system)
 (set-state-ok t)
 (program)
 
@@ -412,6 +413,7 @@
 
        (events
         `((logic)
+          (local (in-theory (enable tag-reasoning)))
           ,def
           (local (in-theory (enable ,foo-p)))
 
