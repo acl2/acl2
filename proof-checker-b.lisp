@@ -1534,6 +1534,44 @@
          (car alist))
         (t (rassoc-eq-as-car key (cdr alist)))))
 
+(defconst *ca<d^n>r-alist*
+
+; This alist can be constructed as follows in raw Lisp.  Thus, it associates
+; each legal cd..dr macro with the number of ds in its name.
+
+; ? (loop for x in
+; '(cadr           cdar          caar          cddr
+;   caadr   cdadr  cadar  cddar  caaar  cdaar  caddr  cdddr
+;   caaadr  cadadr caadar caddar
+;   cdaadr  cddadr cdadar cdddar
+;                                caaaar cadaar caaddr cadddr
+;                                cdaaar cddaar cdaddr cddddr)
+; collect (cons x (- (length (symbol-name x)) 2)))
+
+  '((CADR . 2) (CDAR . 2) (CAAR . 2) (CDDR . 2)
+    (CAADR . 3) (CDADR . 3) (CADAR . 3) (CDDAR . 3)
+    (CAAAR . 3) (CDAAR . 3) (CADDR . 3) (CDDDR . 3)
+    (CAAADR . 4) (CADADR . 4) (CAADAR . 4) (CADDAR . 4)
+    (CDAADR . 4) (CDDADR . 4) (CDADAR . 4) (CDDDAR . 4)
+    (CAAAAR . 4) (CADAAR . 4) (CAADDR . 4) (CADDDR . 4)
+    (CDAAAR . 4) (CDDAAR . 4) (CDADDR . 4) (CDDDDR . 4)))
+
+(defun car/cdr^n (n term)
+
+; This function assumes that term is a nest of n or more nested calls of car
+; and/or cdr, and returns the term obtained by stripping n such calls.
+
+  (cond
+   ((zp n) term)
+   ((or (variablep term)
+;       (fquotep term)
+        (not (member-eq (car term) '(car cdr))))
+    (er hard 'car/cdr^n
+        "Illegal call: ~x0.~|If you encountered this call in the ~
+         proof-checker, please contact the ACL2 implemntors."
+        `(car/cdr^n ,n ,term)))
+   (t (car/cdr^n (1- n) (fargn term 1)))))
+
 (defun expand-address (addr raw-term term abbreviations iff-flg
                             accumulated-addr-r wrld)
 
@@ -1884,17 +1922,16 @@
                ((implies iff)
                 (expand-address-recurse :new-iff-flg t))
                (t
-                (mv-let
-                 (fn guts)
-                 (car-cdr-nest term)
-                 (cond
-                  (fn
-                   (expand-address-recurse
-                    :ans (append (make-list (- (length (symbol-name fn)) 2)
-                                            :initial-element 1)
-                                 rest-addr)
-                    :new-term guts))
-                  (t (expand-address-recurse))))))))))))
+                (let ((pair (and (consp raw-term)
+                                 (assoc-eq (car raw-term) *ca<d^n>r-alist*))))
+                  (cond
+                   (pair
+                    (expand-address-recurse
+                     :ans (append (make-list (cdr pair)
+                                             :initial-element 1)
+                                  rest-addr)
+                     :new-term (car/cdr^n (cdr pair) term)))
+                   (t (expand-address-recurse))))))))))))
 
 (defmacro dv-error (str alist)
   `(pprogn (print-no-change

@@ -7886,42 +7886,64 @@
 ; We now develop the code to take a translated term and "untranslate"
 ; it into something more pleasant to read.
 
-(defun car-cdr-nest1 (term ad-lst n)
-  (cond ((or (int= n 4)
-             (variablep term)
-             (fquotep term)
-             (and (not (eq (ffn-symb term) 'car))
-                  (not (eq (ffn-symb term) 'cdr))))
-         (mv ad-lst term))
-        (t (car-cdr-nest1 (fargn term 1)
-                          (cons (if (eq (ffn-symb term) 'car)
-                                    #\A
-                                  #\D)
-                                ad-lst)
-                          (1+ n)))))
+(defun make-reversed-ad-list (term ans)
 
-(defun car-cdr-nest (term)
-  (cond ((variablep term) (mv nil term))
-        ((fquotep term) (mv nil term))
-        ((or (eq (ffn-symb term) 'car)
-             (eq (ffn-symb term) 'cdr))
-         (mv-let (ad-lst guts)
-           (car-cdr-nest1 (fargn term 1) nil 1)
-           (cond
-            (ad-lst
-             (mv
-              (intern
-               (coerce
-                (cons #\C
-                      (cons (if (eq (ffn-symb term) 'car)
-                                #\A
-                              #\D)
-                            (revappend ad-lst '(#\R))))
-                'string)
-               "ACL2")
-              guts))
-            (t (mv nil term)))))
-        (t (mv nil nil))))
+; We treat term as a CAR/CDR nest around some ``base'' and return (mv ad-lst
+; base), where ad-lst is the reversed list of #\A and #\D characters and base
+; is the base of the CAR/CDR nest.  Thus, (CADDR B) into (mv '(#\D #\D #\A) B).
+; If term is not a CAR/CDR nest, adr-lst is nil.
+
+  (cond ((variablep term)
+         (mv ans term))
+        ((fquotep term)
+         (mv ans term))
+        ((eq (ffn-symb term) 'CAR)
+         (make-reversed-ad-list (fargn term 1) (cons '#\A ans)))
+        ((eq (ffn-symb term) 'CDR)
+         (make-reversed-ad-list (fargn term 1) (cons '#\D ans)))
+        (t (mv ans term))))
+
+(defun car-cdr-abbrev-name (adr-lst)
+
+; Given an adr-lst we turn it into one of the CAR/CDR abbreviation names.  We
+; assume the adr-lst corresponds to a legal name, e.g., its length is no
+; greater than five (counting the #\R).
+
+  (intern (coerce (cons #\C adr-lst) 'string) "ACL2"))
+
+(defun pretty-parse-ad-list (ad-list dr-list n base)
+  (cond
+   ((eql n 5)
+    (pretty-parse-ad-list ad-list '(#\R) 1
+                          (list (car-cdr-abbrev-name dr-list) base)))
+   ((endp ad-list)
+    (cond ((eql n 1) base)
+          (t (list (car-cdr-abbrev-name dr-list) base))))
+   ((eql (car ad-list) #\A)
+    (pretty-parse-ad-list (cdr ad-list) '(#\R) 1
+                          (list (car-cdr-abbrev-name (cons #\A dr-list)) base)))
+   (t ; (eql (car ad-list) '#\D)
+    (pretty-parse-ad-list (cdr ad-list) (cons #\D dr-list) (+ 1 n) base))))
+
+(defun untranslate-car-cdr-nest (term)
+
+; This function is not actually used, but it illustrates how car-cdr nests are
+; untranslated.  See community book books/system/untranslate-car-cdr.lisp for
+; documentation and a correctness proof.
+
+; Examples:
+; (untranslate-car-cdr-nest '(car (cdr (car b))))
+; ==> (CADR (CAR B))
+; (untranslate-car-cdr-nest '(car (cdr (cdr b))))
+; ==> (CADDR B)
+; (untranslate-car-cdr-nest '(car (car (cdr (cdr b)))))
+; ==> (CAR (CADDR B))
+
+  (mv-let (ad-list base)
+          (make-reversed-ad-list term nil)
+          (cond
+           ((null ad-list) base)
+           (t (pretty-parse-ad-list ad-list '(#\R) 1 base)))))
 
 (defun collect-non-trivial-bindings (vars vals)
   (cond ((null vars) nil)

@@ -2314,6 +2314,9 @@
 ; functions like implies, iff, and not, which depend only on the propositional
 ; equivalence class of each argument.
 
+; Warning: Consider keeping in sync with community book
+; books/misc/rtl-untranslate.lisp.
+
 ; We return a Lisp form that translates to term if iff-flg is nil and
 ; that translates to a term iff-equivalent to term if iff-flg is t.
 ; Wrld is an ACL2 logical world, which may be used to improve the
@@ -2342,7 +2345,8 @@
                                        nil ; safe-mode
                                        nil ; gc-off
                                        nil ; hard-error-returns-nilp
-                                       t)
+                                       t   ; okp
+                                       )
                           (or (and (null erp) term1)
                               term))
                 term)))
@@ -2495,46 +2499,48 @@
 ; can use it here and output something that the user will recognise.
 
            (cadr (fargn term 2)))
-          (t (cond ((and (eq (ffn-symb term) 'return-last)
-                         (quotep (fargn term 1))
-                         (let* ((key (unquote (fargn term 1)))
-                                (fn (and (symbolp key)
-                                         key
-                                         (let ((tmp (return-last-lookup key
-                                                                        wrld)))
-                                           (if (consp tmp) (car tmp) tmp)))))
-                           (and fn
-                                (cons fn
-                                      (untranslate1-lst (cdr (fargs term)) nil
-                                                        untrans-tbl preprocess-fn
-                                                        wrld))))))
-                   (t (let* ((pair (cdr (assoc-eq (ffn-symb term)
-                                                  untrans-tbl)))
-                             (op (car pair))
-                             (flg (cdr pair)))
-                        (cond
-                         (op (cons op
-                                   (untranslate1-lst
-                                    (cond
-                                     ((and flg
-                                           (cdr (fargs term))
-                                           (null (cddr (fargs term))))
-                                      (right-associated-args (ffn-symb term)
-                                                             term))
-                                     (t (fargs term)))
-                                    nil untrans-tbl preprocess-fn wrld)))
-                         (t
-                          (mv-let
-                           (fn guts)
-                           (car-cdr-nest term)
-                           (cond (fn (list fn
-                                           (untranslate1 guts nil untrans-tbl
-                                                         preprocess-fn wrld)))
-                                 (t (cons (ffn-symb term)
-                                          (untranslate1-lst (fargs term) nil
-                                                            untrans-tbl
-                                                            preprocess-fn
-                                                            wrld))))))))))))))
+          ((and (eq (ffn-symb term) 'return-last)
+                (quotep (fargn term 1))
+                (let* ((key (unquote (fargn term 1)))
+                       (fn (and (symbolp key)
+                                key
+                                (let ((tmp (return-last-lookup key
+                                                               wrld)))
+                                  (if (consp tmp) (car tmp) tmp)))))
+                  (and fn
+                       (cons fn
+                             (untranslate1-lst (cdr (fargs term)) nil
+                                               untrans-tbl preprocess-fn
+                                               wrld))))))
+          (t (let* ((pair (cdr (assoc-eq (ffn-symb term)
+                                         untrans-tbl)))
+                    (op (car pair))
+                    (flg (cdr pair)))
+               (cond
+                (op (cons op
+                          (untranslate1-lst
+                           (cond
+                            ((and flg
+                                  (cdr (fargs term))
+                                  (null (cddr (fargs term))))
+                             (right-associated-args (ffn-symb term)
+                                                    term))
+                            (t (fargs term)))
+                           nil untrans-tbl preprocess-fn wrld)))
+                (t
+                 (mv-let
+                  (ad-list base)
+                  (make-reversed-ad-list term nil)
+                  (cond (ad-list
+                         (pretty-parse-ad-list
+                          ad-list '(#\R) 1
+                          (untranslate1 base nil untrans-tbl preprocess-fn
+                                        wrld)))
+                        (t (cons (ffn-symb term)
+                                 (untranslate1-lst (fargs term) nil
+                                                   untrans-tbl
+                                                   preprocess-fn
+                                                   wrld))))))))))))
 
 (defun untranslate-cons1 (term untrans-tbl preprocess-fn wrld)
 
