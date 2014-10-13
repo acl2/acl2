@@ -1486,7 +1486,9 @@ implementations.")
 #+sbcl
 (defvar *sbcl-dynamic-space-size*
 
-; The user is welcome to set this value, either by setting this variable before
+; The user is welcome to set this value, which according to
+; http://www.sbcl.org/manual/, is the "Size of the dynamic space reserved on
+; startup in megabytes."  It can be done either by setting this variable before
 ; saving an ACL2 image, or by editing the resulting script (e.g., saved_acl2 or
 ; saved_acl2h).  Here we explain the defaults that we provide for this
 ; variable.
@@ -1527,8 +1529,11 @@ implementations.")
 ; fail in this case, but we expect ACL2(h) users will generally be on 64-bit
 ; systems.)
 
-  #+(and x86-64 hons) 16000
-  #-(and x86-64 hons) 2000)
+; BUT: In October 2014 Jared Davis reported a failure for ACL2 (not ACL2(h)),
+; so we make this value 16000 regardless of feature :hons.
+
+  #+x86-64 16000
+  #-x86-64 2000)
 
 #+sbcl
 (defvar *sbcl-contrib-dir* nil)
