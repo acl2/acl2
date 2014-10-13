@@ -329,7 +329,7 @@
 
 (assert! (time$ (check-both 100)))
 
-(clear-memoize-tables)
+(value-triple (clear-memoize-tables))
 
 (memoize 'f1)
 (memoize 'f2 :condition '(not (equal x -1/3)))
