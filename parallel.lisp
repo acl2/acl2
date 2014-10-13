@@ -247,6 +247,7 @@
              (t
               (pprogn #+(and hons (not acl2-loop-only))
                       (progn
+                        (mf-multiprocessing val)
                         (cond ((null val)
                                (acl2h-init-memoizations))
                               (t
