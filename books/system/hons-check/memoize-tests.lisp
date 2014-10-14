@@ -337,6 +337,8 @@
           (f3-list x)
           (f5-list x))))
 
+(comp t) ;; so gcl will compile add-some-honses instead of stack overflowing
+
 (defconst *thread1-spec* (thread1 *data*))
 (defconst *thread2-spec* (thread2 *data*))
 
