@@ -314,9 +314,7 @@ with are not normed.</p>")
 
 
 
-;(acl2::mf-multiprocessing t)
-(setq acl2::*enable-multithreaded-memoization* t)
-(acl2::rememoize-all)
+(acl2::mf-multiprocessing t)
 
 (let ((support-started nil))
   (defun maybe-start-support-threads ()

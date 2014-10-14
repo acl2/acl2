@@ -755,7 +755,10 @@ instances.</p>"
                       (scope vl-scope-p))
                      :enabled t
                      (mbe :logic (vl-scope-find-__result__ name scope)
-                          :exec (cdr (hons-get name (vl-scope-__result__-alist scope)))))
+                          :exec (cdr (hons-get name
+                                               ;; for multithreading, this might not be fast if it was
+                                               ;; created in some other thread, so make it fast.
+                                               (make-fast-alist (vl-scope-__result__-alist scope))))))
 
                    ,@(and stackp
                           `((define vl-scopestack-find-__result__
