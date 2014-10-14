@@ -74,20 +74,17 @@
              to particular locations.")
 
    (defs vl-defines-p
-     "Summary of all <tt>`defines</tt> encountered while parsing.")
+     "Summary of all @('`define')s encountered while parsing.")
 
    (use-set-report vl-useset-report-p
                    "The pre-computed use-set-report for these modules; BOZO consider
                     eliminating this and generating it dynamically instead."))
 
-  :long "<p>A <tt>vls-data-p</tt> structure just aggregates a bunch of data
-that is produced when we run the translator.</p>
+  :long "<p>A @('vls-data-p') structure just aggregates a bunch of data that is
+produced when we run the translator.</p>
 
 <p>These structures are typically produced by the @(see server) as part of
-its translation-loading scheme.  When the application chooses its base and
-model, the appropriate <tt>vls-data-p</tt> object is loaded into the
-<tt>vlsc-data</tt> field of the @(see vlsc) stobj, and hence becomes accessible
-to @(see command-handler) functions.</p>")
+its translation-loading scheme.</p>")
 
 (defthm vls-data->orig-depalist-elim
   (implies (force (vls-data-p x))

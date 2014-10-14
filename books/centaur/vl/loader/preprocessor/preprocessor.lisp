@@ -1577,7 +1577,7 @@ sensible.</p>"
 
 (define vl-expand-define
   :short "Expand uses of defines like @('`foo') and @('`max(a,b)')."
-  ((name    stringp         "Name of the directive we've just read, like @('foo') for @('`foo`).")
+  ((name    stringp         "Name of the directive we've just read, like @('\"foo\"') for @('`foo').")
    (defines vl-defines-p    "All definitions we currently have.")
    (echars  vl-echarlist-p  "Remaining text after the name.  For simple macros like @('`foo') we
                              will just need to append the definition's body onto these characters.
