@@ -12897,7 +12897,14 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   `((abbrev-evisc-tuple . :default)
     (accumulated-ttree . nil) ; just what succeeded; tracking the rest is hard
     (acl2-raw-mode-p . nil)
-    (acl2-sources-dir . nil) ; set by initialize-state-globals
+    (acl2-sources-dir .
+
+; This variable is not (as of this writing) used in our own sources.  But it
+; could be convenient for users.  In particular, it is used (starting
+; mid-October, 2014) by the XDOC system to find the location of the ACL2
+; sources graphics/ subdirectory.
+
+                      nil) ; set by initialize-state-globals
     (acl2-version .
 
 ; Keep this value in sync with the value assigned to

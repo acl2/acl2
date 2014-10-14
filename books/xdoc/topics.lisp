@@ -96,7 +96,7 @@ Emacs-based manual.</p>
 <box><p><b><color rgb='#ff0000'>NEW</color></b> (experimental): XDOC now
 supports @(see katex-integration) for writing LaTeX-like formulas like
 @($
-\\left( \\sum_{i=0}^{n} \\sqrt{f(i)} \\right) &lt; \\frac{n^2}{k}
+\\left( \\sum_{i=0}^{n} \\sqrt{f(i)} \\right) < \\frac{n^2}{k}
 $)
 within your documentation.</p></box>
 
@@ -312,6 +312,22 @@ For instance, you can write formulas such as</p>
 ])
 
 <p>See @(see katex-integration) for details.</p>
+
+
+<h3>Images and other Resources</h3>
+
+<p>Documentation topics can include inline images and (via hyperlinks) can
+refer to other kinds of files, like PDF files.  You have to tell XDOC where to
+find these files; see @(see add-resource-directory).  After setting up a
+suitable resource directory, you can use @('img') tags such as:</p>
+
+@({
+    <img src='res/centaur/centaur-logo.png'/>
+})
+
+<p>to produce output such as:</p>
+
+<img src='res/centaur/centaur-logo.png'/>
 
 
 <h3>Structuring Documents</h3>
@@ -1421,9 +1437,9 @@ manual.</p>")
 (defxdoc order-test-k :short "K")
 
 
+(local (set-default-parents xdoc))
 
 (defxdoc katex-integration
-  :parents (xdoc)
   :short "Support for LaTeX-like typesetting of mathematics in XDOC
 topics. (experimental)"
 
@@ -1506,3 +1522,90 @@ tags then you have to remember to escape XML characters like @('<') with
 unlikely that @('<math>') formulas will ever look nice when shown at the
 terminal with @(':doc') or in the ACL2-Doc Emacs viewer.</p>")
 
+
+(defxdoc defpointer
+  :short "Define an alias for a documentation topic."
+
+  :long "<p>Examples:</p>
+
+@({
+    (defpointer acl2 acl2-sedan)
+    (defpointer guard-hints xargs t)
+})
+
+<p>General Form:</p>
+
+@({
+    (defpointer new-topic target-topic [keyword-p])
+})
+
+<p>This is a simple macro that expands to a @(see defxdoc) form.  It introduces
+a new @(see xdoc) topic, @('new-topic'), that merely links to
+@('target-topic').  The new topic will only be listed under @(see
+pointers).</p>")
+
+
+(defxdoc add-resource-directory
+  :short "Tell @(see xdoc) about directories of resources (e.g., images, PDF
+files, etc.) that should be copied into manuals."
+
+  :long "<p>Occasionally you may wish to include images or other files within
+an XDOC documentation topic.  For this to work, XDOC's @(see save) command
+needs to know about these files so that it can copy them into the manual it
+produces.  The @('add-resource-directory') command lets you tell XDOC which
+directories to copy and what to name them.</p>
+
+<h3>Example</h3>
+
+<p>Suppose that in the @('vl') library there are some images that we want to
+include in the manual.  We can put these images into a directory, say
+@('images'), and then do:</p>
+
+@({
+    (xdoc::add-resource-directory \"vl\" \"images\")
+})
+
+<p>This will cause the @(see xdoc::save) command to copy everything from the
+@('images') directory into the @('res/vl') directory of our manual.  To refer
+to these images, we can then write @(see markup) such as:</p>
+
+@({
+    <img src=\"res/vl/logo.jpg\"/>
+})
+
+<p>These resource directories might also contain files other than images, for
+instance, PDF files.  You can at provide hyperlinks to these files by just
+linking into the @('res') directory, for instance:</p>
+
+@({
+    <a href=\"res/vl/slides.pdf\">See the Slides!</a>
+})
+
+
+<h3>General form</h3>
+
+@({
+    (xdoc::add-resource-directory dirname path)
+})
+
+
+<ul>
+
+<li><b>dirname</b> controls where the directory will be placed in within the
+manual's @('res') directory.  In the example above, the @('dirname') is
+@('\"vl\"') so the files will be copied into @('\"res/vl\"').</li>
+
+<li><b>path</b> controls where the files will be copied from.  We recommend
+always using a simple path such as the name of an immediate subdirectory.</li>
+
+</ul>
+
+<h3>Working example</h3>
+
+<p>The directory @('books/xdoc/centaur') contains a @('centaur-logo.png') file.
+The file @('xdoc/topics.lisp') adds this directory as a resource directory.  If
+all is well, you should see the logo below:</p>
+
+<img src='res/centaur/centaur-logo.png'/>")
+
+(add-resource-directory "centaur" "centaur")

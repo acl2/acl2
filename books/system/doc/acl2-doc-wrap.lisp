@@ -130,3 +130,11 @@
 (table xdoc::xdoc 'xdoc::doc
        (append (xdoc::get-xdoc-table world)
                *acl2-sources-xdoc-topics*))
+
+
+;; Tell xdoc where the tours graphics live
+(make-event
+ (let* ((acl2/          (f-get-global 'acl2-sources-dir state))
+        (acl2/graphics/ (extend-pathname acl2/ "graphics" state)))
+   (value
+    `(xdoc::add-resource-directory "tours" ,acl2/graphics/))))

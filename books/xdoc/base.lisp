@@ -38,6 +38,7 @@
 (table xdoc 'doc nil)
 (table xdoc 'default-parents nil)
 (table xdoc 'post-defxdoc-event nil)
+(table xdoc 'resource-dirs nil)
 
 (defun get-xdoc-table (world)
   (declare (xargs :mode :program))
