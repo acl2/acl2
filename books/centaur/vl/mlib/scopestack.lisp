@@ -39,6 +39,13 @@
 (local (in-theory (disable acl2-count)))
 (local (std::add-default-post-define-hook :fix))
 
+(defsection scopestack
+  :parents (mlib)
+  :short "A scopestack is a stack of scopes, for looking up identifiers
+correctly.")
+
+(local (xdoc::set-default-parents scopestack))
+
 (define vl-blockitem->name ((x vl-blockitem-p))
   :returns (name stringp :rule-classes :type-prescription)
   :prepwork ((local (defthm tag-when-vl-blockitem-p

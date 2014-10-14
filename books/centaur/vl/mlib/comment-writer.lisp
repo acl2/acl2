@@ -152,10 +152,9 @@ we ignore file names.</p>"
 (def-vl-ppmap :list taskdecllist :elem taskdecl)
 (def-vl-ppmap :list modportlist :elem modport)
 
-;; This one's a bit different because it takes mods/modalist
-(define vl-modinstlist-ppmap ((x        vl-modinstlist-p)
-                              (mods     vl-modulelist-p)
-                              (modalist (equal modalist (vl-modalist mods)))
+;; This one's a bit different because it takes a scopestack
+(define vl-modinstlist-ppmap ((x  vl-modinstlist-p)
+                              (ss vl-scopestack-p)
                               (item-map vl-commentmap-p)
                               &key (ps 'ps))
   :returns (mv (item-map vl-commentmap-p) ps)
@@ -163,9 +162,9 @@ we ignore file names.</p>"
   (b* (((when (atom x))
         (mv (vl-commentmap-fix item-map) ps))
        ((mv str ps)
-        (with-semilocal-ps (vl-pp-modinst (car x) mods modalist)))
+        (with-semilocal-ps (vl-pp-modinst (car x) ss)))
        (item-map (cons (cons (vl-modinst->loc (car x)) str) item-map)))
-    (vl-modinstlist-ppmap (cdr x) mods modalist item-map)))
+    (vl-modinstlist-ppmap (cdr x) ss item-map)))
 
 (define vl-add-newlines-after-block-comments ((x vl-commentmap-p))
   :returns (new-x vl-commentmap-p :hyp :fguard)
@@ -268,8 +267,7 @@ we ignore file names.</p>"
 
 (define vl-make-item-map-for-ppc-module
   ((x        vl-module-p)
-   (mods     vl-modulelist-p)
-   (modalist (equal modalist (vl-modalist mods)))
+   (ss       vl-scopestack-p "Should already be extended with @('x').")
    &key (ps 'ps))
   :returns (mv (map vl-commentmap-p) ps)
   :parents (vl-ppc-module)
@@ -299,7 +297,7 @@ we ignore file names.</p>"
        ((mv imap ps) (vl-fundecllist-ppmap x.fundecls imap))
        ((mv imap ps) (vl-taskdecllist-ppmap x.taskdecls imap))
        ((mv imap ps) (vl-assignlist-ppmap x.assigns imap))
-       ((mv imap ps) (vl-modinstlist-ppmap x.modinsts mods modalist imap))
+       ((mv imap ps) (vl-modinstlist-ppmap x.modinsts ss imap))
        ((mv imap ps) (vl-gateinstlist-ppmap x.gateinsts imap))
        ((mv imap ps) (vl-alwayslist-ppmap x.alwayses imap))
        ((mv imap ps) (vl-initiallist-ppmap x.initials imap))
@@ -317,9 +315,8 @@ we ignore file names.</p>"
        (ps   (vl-ps-update-misc misc)))
     (mv imap ps)))
 
-(define vl-ppc-module ((x        vl-module-p)
-                       (mods     vl-modulelist-p)
-                       (modalist (equal modalist (vl-modalist mods)))
+(define vl-ppc-module ((x  vl-module-p)
+                       (ss vl-scopestack-p)
                        &key (ps 'ps))
   :parents (verilog-printing vl-module-p)
   :short "Pretty print a module with comments to @(see ps)."
@@ -334,11 +331,12 @@ to a string instead of @(see ps).</p>
 its @(see vl-modalist); these arguments are only needed for hyperlinking to
 submodules in HTML mode.</p>"
 
-  (b* (((vl-module x) x)
+  (b* (((vl-module x) (vl-module-fix x))
+       (ss (vl-scopestack-push x ss))
 
        ;; The item map binds module item locations to their printed
        ;; representations.
-       ((mv imap ps) (vl-make-item-map-for-ppc-module x mods modalist))
+       ((mv imap ps) (vl-make-item-map-for-ppc-module x ss))
 
        (comments (vl-add-newlines-after-block-comments x.comments))
        (comments (if (vl-ps->htmlp)
@@ -361,17 +359,16 @@ submodules in HTML mode.</p>"
                (vl-println "")
                (vl-when-html (vl-println-markup "</div>")))))
 
-(define vl-ppc-modulelist ((x        vl-modulelist-p)
-                           (mods     vl-modulelist-p)
-                           (modalist (equal modalist (vl-modalist mods)))
+(define vl-ppc-modulelist ((x  vl-modulelist-p)
+                           (ss vl-scopestack-p)
                            &key (ps 'ps))
   :parents (verilog-printing)
   :short "Pretty print a list of modules with comments to @(see ps)."
   :long "<p>This just calls @(see vl-ppc-module) on each module.</p>"
   (if (atom x)
       ps
-    (vl-ps-seq (vl-ppc-module (car x) mods modalist)
-               (vl-ppc-modulelist (cdr x) mods modalist))))
+    (vl-ps-seq (vl-ppc-module (car x) ss)
+               (vl-ppc-modulelist (cdr x) ss))))
 
 (define vl-ppcs-module ((x vl-module-p))
   :returns (str stringp :rule-classes :type-prescription)
@@ -379,14 +376,14 @@ submodules in HTML mode.</p>"
   :short "Pretty-print a module with comments to a plain-text string."
   :long "<p>@(call vl-ppcs-module) pretty-prints the @(see vl-module-p) @('x')
 into a plain-text string.  See also @(see vl-ppc-module).</p>"
-  (with-local-ps (vl-ppc-module x nil nil)))
+  (with-local-ps (vl-ppc-module x nil)))
 
 (define vl-ppcs-modulelist ((x vl-modulelist-p))
   :returns (str stringp :rule-classes :type-prescription)
   :parents (verilog-printing)
   :short "Pretty-print a list of modules with comments to a plain-text string."
   :long "<p>See also @(see vl-ppc-modulelist).</p>"
-  (with-local-ps (vl-ppc-modulelist x nil nil)))
+  (with-local-ps (vl-ppc-modulelist x nil)))
 
 
 
