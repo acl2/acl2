@@ -29,16 +29,8 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
+(include-book "bordeaux")
 
-; Preload all Quicklisp libraries that we're making available.  The goal here
-; is to defeat build parallelism and ensure that the packages are loaded in a
-; serial manner.  Otherwise, e.g., we can have two Quicklisp packages that are
-; both being built at separate times in separate threads, crashing into each
-; other's working space.
-
-;; (ql:quickload "iolib.syscalls")
-(ql:quickload :osicat)
-(ql:quickload :bordeaux-threads)
-(ql:quickload :bt-semaphore)
-(ql:quickload :hunchentoot)
-(ql:quickload :uiop)
+(defttag :quicklisp.bt-semaphore)
+; (depends-on "bt-semaphore-raw.lsp")
+(include-raw "bt-semaphore-raw.lsp" :host-readtable t)

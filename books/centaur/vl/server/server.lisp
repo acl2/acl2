@@ -38,6 +38,8 @@
 (include-book "../mlib/comment-writer")
 (include-book "std/io/unsound-read" :dir :system)
 (include-book "centaur/quicklisp/hunchentoot" :dir :system)
+(include-book "centaur/quicklisp/bordeaux" :dir :system)
+(include-book "centaur/quicklisp/bt-semaphore" :dir :system)
 (include-book "centaur/bridge/to-json" :dir :system)
 (include-book "xdoc/defxdoc-raw" :dir :system)
 (local (include-book "../util/arithmetic"))
@@ -101,13 +103,11 @@
     (vl-find-description-insensitive name (cdr descalist))))
 
 (define vl-ppc-description ((x vl-description-p)
-                            ;; BOZO these should become descalists or something
-                            (mods vl-modulelist-p)
-                            (modalist (equal modalist (vl-modalist mods)))
+                            (ss vl-scopestack-p)
                             &key (ps 'ps))
   (b* ((x (vl-description-fix x)))
     (case (tag x)
-      (:vl-module    (vl-ppc-module    x mods modalist))
+      (:vl-module    (vl-ppc-module    x ss))
       (:vl-udp       (vl-ppc-udp       x))
       (:vl-interface (vl-ppc-interface x))
       (:vl-package   (vl-ppc-package   x))
@@ -152,12 +152,10 @@
        ((unless desc)
         (cat "Error: " origname " not found."))
 
-       (mods     (vl-design->mods data.orig))
-       (modalist (vl-modalist mods))
+       (ss       (vl-scopestack-init data.orig))
        (ans      (with-local-ps
                    (vl-ps-update-htmlp t)
-                   (vl-ppc-description desc mods modalist))))
-    (fast-alist-free modalist)
+                   (vl-ppc-description desc ss))))
     ans))
 
 (define vls-get-plainsrc ((origname stringp)

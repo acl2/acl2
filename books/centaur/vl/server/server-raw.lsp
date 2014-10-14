@@ -61,11 +61,11 @@ models.</p>")
 (defstruct ts-queue
   ;; SEM is signaled whenever new data is added to the queue by a producer.
   ;; Consumers wait for SEM to take the next available object.
-  (sem  (ccl::make-semaphore))
+  (sem  (bt-semaphore:make-semaphore))
 
   ;; LOCK must be acquired whenever a producer or consumer needs to modify DATA
   ;; to insert or extract a value.
-  (lock (ccl::make-lock 'queue-lock))
+  (lock (bordeaux-threads:make-lock 'queue-lock))
 
   ;; DATA contains the actual queue data.  We enqueue elements into the back of
   ;; DATA and dequeue from the front.
@@ -79,10 +79,10 @@ consumer, and finally returns @('obj').")
 
 (defun ts-enqueue (obj queue)
   (declare (type ts-queue queue))
-  (ccl::with-lock-grabbed ((ts-queue-lock queue))
-                          (setf (ts-queue-data queue)
-                                (append (ts-queue-data queue) (list obj))))
-  (ccl::signal-semaphore (ts-queue-sem queue))
+  (bordeaux-threads:with-lock-held ((ts-queue-lock queue))
+                                   (setf (ts-queue-data queue)
+                                         (append (ts-queue-data queue) (list obj))))
+  (bt-semaphore:signal-semaphore (ts-queue-sem queue))
   obj)
 
 (defxdoc-raw ts-dequeue
@@ -93,13 +93,12 @@ added.")
 
 (defun ts-dequeue (queue)
   (declare (type ts-queue queue))
-  (ccl::wait-on-semaphore (ts-queue-sem queue))
-  (ccl::with-lock-grabbed
-   ((ts-queue-lock queue))
-   (let ((obj (car (ts-queue-data queue))))
-     (setf (ts-queue-data queue)
-           (cdr (ts-queue-data queue)))
-     obj)))
+  (bt-semaphore:wait-on-semaphore (ts-queue-sem queue))
+  (bordeaux-threads:with-lock-held ((ts-queue-lock queue))
+                                   (let ((obj (car (ts-queue-data queue))))
+                                     (setf (ts-queue-data queue)
+                                           (cdr (ts-queue-data queue)))
+                                     obj)))
 
 (defxdoc-raw ts-queue-len
   :parents (ts-queue)
@@ -108,9 +107,8 @@ for @('queue').  It can be used at any time by any thread and never blocks.")
 
 (defun ts-queue-len (queue)
   (declare (type ts-queue queue))
-  (ccl::with-lock-grabbed
-   ((ts-queue-lock queue))
-   (length (ts-queue-data queue))))
+  (bordeaux-threads:with-lock-held ((ts-queue-lock queue))
+                                   (length (ts-queue-data queue))))
 
 
 
@@ -183,7 +181,7 @@ with are not normed.</p>")
   ;; /n/fv2/translations.  It is updated occasionally by vls-scanner-thread.
   ;; You must acquire SCANNED-LOCK when accessing or updating SCANNED.
   (scanned      nil)
-  (scanned-lock (ccl::make-lock 'vls-transdb-scanned-lock))
+  (scanned-lock (bordeaux-threads:make-lock 'vls-transdb-scanned-lock))
 
   ;; LOADED is an alist mapping tnames to their contents (vls-data-p objects).
   ;; It is updated by the vls-loader-thread, and perhaps in the future by some
@@ -191,7 +189,7 @@ with are not normed.</p>")
   ;; or updating this field.  Note also that the proper way to get a new
   ;; translation loaded is to add it to the LOAD-QUEUE via VLS-REQUEST-LOAD.
   (loaded      nil)
-  (loaded-lock (ccl::make-lock 'vls-transdb-loaded-lock))
+  (loaded-lock (bordeaux-threads:make-lock 'vls-transdb-loaded-lock))
 
   ;; LOAD-QUEUE is a TS-QUEUE that governs which translations are next to be
   ;; loaded by the loader thread.
@@ -200,21 +198,21 @@ with are not normed.</p>")
 (defparameter *vls-transdb* (make-vls-transdb))
 
 
-(defun vls-scanner-thread (db &optional noloop)
+(defun vls-scanner-thread (&optional noloop)
 
 ; Runs forever.  Lightweight.  Occasionally updates the list of SCANNED
 ; translation names to keep it in sync with the file system.  We do this in a
 ; separate thread because NFS can occasionally be slow and we don't want
 ; clients to have to wait for it when they connect.
 
-  (declare (type vls-transdb db))
-  (let ((state acl2::*the-live-state*))
+  (let ((state acl2::*the-live-state*)
+        (db    *vls-transdb*))
     (loop do
           (cl-user::format t "; vls-scanner-thread: scanning for new translations.~%")
           (handler-case
            (let ((new-scan (time$ (vl-scan-for-tnames state)
                                   :msg "; rescan: ~st sec, ~sa bytes~%")))
-             (ccl::with-lock-grabbed ((vls-transdb-scanned-lock db))
+             (bordeaux-threads:with-lock-held ((vls-transdb-scanned-lock db))
                                      (setf (vls-transdb-scanned db)
                                            new-scan))
              (sleep 600))
@@ -226,7 +224,7 @@ with are not normed.</p>")
             (return-from vls-scanner-thread)))))
 
 (defun rescan ()
-  (vls-scanner-thread *vls-transdb* nil))
+  (vls-scanner-thread t))
 
 
 
@@ -236,7 +234,7 @@ with are not normed.</p>")
 ; by the scanner thread.
 
   (declare (type vls-transdb db))
-  (ccl::with-lock-grabbed ((vls-transdb-scanned-lock db))
+  (bordeaux-threads:with-lock-held ((vls-transdb-scanned-lock db))
                           (vls-transdb-scanned db)))
 
 
@@ -255,7 +253,7 @@ with are not normed.</p>")
 
   (declare (type vls-transdb db))
 
-  (ccl::with-lock-grabbed
+  (bordeaux-threads:with-lock-held
    ;; If it's already loaded, don't try to load it again.
    ((vls-transdb-loaded-lock db))
    (when (assoc-equal tname (vls-transdb-loaded db))
@@ -276,7 +274,7 @@ with are not normed.</p>")
       (cl-user::format t "; vls-load-translation: invalid translation data!~%")
       (return-from vls-load-translation nil))
     (let* ((data (vls-data-from-translation trans)))
-      (ccl::with-lock-grabbed
+      (bordeaux-threads:with-lock-held
        ((vls-transdb-loaded-lock db))
        (when (assoc-equal tname (vls-transdb-loaded db))
          (error "translation should not yet be loaded"))
@@ -291,18 +289,15 @@ with are not normed.</p>")
   ;; (acl2::hons-analyze-memory nil)
   )
 
-(defun vls-loader-thread (db)
+(defun vls-loader-thread ()
 
 ; Runs forever.  Tries to load any translations that are added to the load
 ; queue.
 
-  (declare (type vls-transdb db))
-  (let ((acl2::*default-hs* (acl2::hl-hspace-init
-                             ;; 1 million strings seems sufficient
-                             :str-ht-size (* 1000 1000)
-                             ;; 500 million addr-ht seems sufficient.
-                             :addr-ht-size (* 500 1000 1000)
-                             )))
+  (let ((acl2::*default-hs* (acl2::hl-hspace-init))
+        ;; Bigger sizes might be better for large models, but it might be
+        ;; nice not to grow these beyond reason...
+        (db *vls-transdb*))
     (cl-user::format t "; vls-loader-thread hons space allocated~%")
     (loop do
           (handler-case
@@ -326,25 +321,22 @@ with are not normed.</p>")
 (let ((support-started nil))
   (defun maybe-start-support-threads ()
     (unless support-started
-      (ccl::process-run-function (list :name "vls-scanner-thread"
-                                       :stack-size  (* 8  (expt 2 20))  ;; 8 MB
-                                       :vstack-size (* 16 (expt 2 20))  ;; 16 MB
-                                       :tstack-size (* 8  (expt 2 20))  ;; 8 MB
-                                       )
-                                 'vls-scanner-thread
-                                 *vls-transdb*)
-      (ccl::process-run-function (list :name "vls-loader-thread"
-                                       :stack-size  (* 8 (expt 2 20))   ;; 8 MB
-                                       :vstack-size (* 128 (expt 2 20)) ;; 128 MB
-                                       :tstack-size (* 8 (expt 2 20))   ;; 8 MB
-                                       )
-                                 'vls-loader-thread
-                                 *vls-transdb*)
+      (bordeaux-threads:make-thread 'vls-scanner-thread
+                                    ;(list :name "vls-scanner-thread"
+                                    ;      :stack-size  (* 8  (expt 2 20))  ;; 8 MB
+                                    ;      :vstack-size (* 16 (expt 2 20))  ;; 16 MB
+                                    ;      :tstack-size (* 8  (expt 2 20))  ;; 8 MB
+                                    )
+      (bordeaux-threads:make-thread 'vls-loader-thread
+                                    ;; :stack-size  (* 8 (expt 2 20))   ;; 8 MB
+                                    ;; :vstack-size (* 128 (expt 2 20)) ;; 128 MB
+                                    ;; :tstack-size (* 8 (expt 2 20))   ;; 8 MB
+                                    )
       (setq support-started t))))
 
 (defun vls-loaded-translations (db)
   (alist-keys
-   (ccl::with-lock-grabbed ((vls-transdb-loaded-lock db))
+   (bordeaux-threads:with-lock-held ((vls-transdb-loaded-lock db))
      (vls-transdb-loaded db))))
 
 
@@ -406,7 +398,7 @@ with are not normed.</p>")
 
 
 (defun vls-quick-get-model (tname db)
-  (ccl::with-lock-grabbed
+  (bordeaux-threads:with-lock-held
     ;; If it's already loaded, don't try to load it again.
     ((vls-transdb-loaded-lock db))
     (let ((pair (assoc-equal tname (vls-transdb-loaded db))))
@@ -414,7 +406,7 @@ with are not normed.</p>")
            (cdr pair)))))
 
 (defun vls-start-model-load (tname db)
-  (ccl::with-lock-grabbed
+  (bordeaux-threads:with-lock-held
     ((vls-transdb-loaded-lock db))
     (ts-enqueue tname (vls-transdb-load-queue db))))
 

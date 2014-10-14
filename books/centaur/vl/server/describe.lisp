@@ -193,8 +193,10 @@ to describe all of the places that @('name') is used.</p>")
          :vl-arguments-plain (vl-describe-pp-plainarglist name x.portargs.args 1))
 
        (vl-when-html
-        (let* ((detail (with-local-ps (vl-ps-update-htmlp htmlp)
-                                      (vl-pp-modinst x nil nil)))
+        (let* ((detail (with-local-ps
+                         (vl-ps-update-htmlp htmlp)
+                         ;; BOZO a proper scopestack here would be nice
+                         (vl-pp-modinst x nil)))
                (hidep  (> (length detail) 2500))
                (style  (if hidep " style=\"display:none\"" "")))
           (vl-ps-seq
@@ -322,7 +324,8 @@ to describe all of the places that @('name') is used.</p>")
      (vl-ps-seq (vl-when-html (vl-print-markup "<small>")
                               (vl-print-loc (vl-modinst->loc x))
                               (vl-println-markup "</small>"))
-                (vl-pp-modinst x nil nil)))
+                ;; BOZO proper scopestack would be nice
+                (vl-pp-modinst x nil)))
     (:vl-gateinst
      (vl-ps-seq (vl-when-html (vl-print-markup "<small>")
                               (vl-print-loc (vl-gateinst->loc x))
