@@ -150,6 +150,7 @@ we ignore file names.</p>"
 (def-vl-ppmap :list paramdecllist :elem paramdecl)
 (def-vl-ppmap :list fundecllist :elem fundecl)
 (def-vl-ppmap :list taskdecllist :elem taskdecl)
+(def-vl-ppmap :list modportlist :elem modport)
 
 ;; This one's a bit different because it takes mods/modalist
 (define vl-modinstlist-ppmap ((x        vl-modinstlist-p)
@@ -388,3 +389,128 @@ into a plain-text string.  See also @(see vl-ppc-module).</p>"
   (with-local-ps (vl-ppc-modulelist x nil nil)))
 
 
+
+
+
+
+
+
+(define vl-make-item-map-for-ppc-interface ((x vl-interface-p) &key (ps 'ps))
+  ;; This is based on vl-make-item-map-for-ppc-module.
+  ;; See the comments there for an explanation.
+  :returns (mv (map vl-commentmap-p) ps)
+  (b* (((vl-interface x))
+       (rchars (vl-ps->rchars))
+       (col    (vl-ps->col))
+       (misc   (vl-ps->misc))
+       (imap nil)
+       ((mv imap ps) (vl-paramdecllist-ppmap x.paramdecls imap))
+       ((mv imap ps) (vl-portdecllist-ppmap x.portdecls imap))
+       ((mv imap ps) (vl-vardecllist-ppmap x.vardecls imap))
+       ((mv imap ps) (vl-modportlist-ppmap x.modports imap))
+       ;; BOZO add generates
+       ;; ((mv imap ps) (vl-generatelist-ppmap x.generates imap))
+       (imap (rev imap))
+       (ps   (vl-ps-update-rchars rchars))
+       (ps   (vl-ps-update-col col))
+       (ps   (vl-ps-update-misc misc)))
+    (mv imap ps)))
+
+(define vl-ppc-interface ((x vl-interface-p) &key (ps 'ps))
+  (b* (((vl-interface x))
+       ((mv imap ps) (vl-make-item-map-for-ppc-interface x))
+       (comments     (vl-add-newlines-after-block-comments x.comments))
+       (comments     (if (vl-ps->htmlp)
+                         (vl-html-encode-commentmap comments (vl-ps->tabsize))
+                       comments))
+       (guts         (cwtime (vl-commentmap-entry-sort (append comments imap))
+                             :mintime 1/2
+                             :name vl-commentmap-entry-sort)))
+    (vl-ps-seq (vl-ps-span "vl_cmt"
+                           (vl-print "// ")
+                           (vl-print-loc x.minloc)
+                           (vl-println ""))
+               (if x.atts
+                   (vl-ps-seq (vl-pp-atts x.atts)
+                              (vl-print " "))
+                 ps)
+               (vl-ps-span "vl_key"
+                           (vl-print "interface "))
+               (vl-print-modname x.name)
+               (vl-println "; ")
+               (if x.ports
+                   (vl-println "// BOZO add pretty-printing of ports!")
+                 ps)
+               (vl-pp-encoded-commentmap guts)
+               (if x.generates
+                   (vl-println "// BOZO add pretty-printing of generate statements!")
+                 ps)
+               (vl-ps-span "vl_key" (vl-println "endinterface"))
+               (vl-println ""))))
+
+(define vl-ppc-interfacelist ((x vl-interfacelist-p) &key (ps 'ps))
+  (if (atom x)
+      ps
+    (vl-ps-seq (vl-ppc-interface (car x))
+               (vl-ppc-interfacelist (cdr x)))))
+
+(define vl-ppc-package ((x vl-package-p) &key (ps 'ps))
+  (b* (((vl-package x)))
+    (vl-ps-seq
+     (if x.atts
+         (vl-ps-seq (vl-pp-atts x.atts)
+                    (vl-print " "))
+       ps)
+     (vl-ps-span "vl_key"
+                 (vl-print "package "))
+     (vl-print-modname x.name)
+     (vl-println "")
+     (vl-print "BOZO implement printing of packages!\n")
+     (vl-println "")
+     (vl-ps-span "vl_key" (vl-println "endpackage")))))
+
+(define vl-ppc-program ((x vl-program-p) &key (ps 'ps))
+  (b* (((vl-program x)))
+    (vl-ps-seq
+     (if x.atts
+         (vl-ps-seq (vl-pp-atts x.atts)
+                    (vl-print " "))
+       ps)
+     (vl-ps-span "vl_key"
+                 (vl-print "program "))
+     (vl-print-modname x.name)
+     (vl-println "")
+     (vl-print "BOZO implement printing of programs!\n")
+     (vl-println "")
+     (vl-ps-span "vl_key" (vl-println "endprogram")))))
+
+(define vl-ppc-config ((x vl-config-p) &key (ps 'ps))
+  (b* (((vl-config x)))
+    (vl-ps-seq
+     (if x.atts
+         (vl-ps-seq (vl-pp-atts x.atts)
+                    (vl-print " "))
+       ps)
+     (vl-ps-span "vl_key"
+                 (vl-print "config "))
+     (vl-print-modname x.name)
+     (vl-println "")
+     (vl-print "BOZO implement printing of configs!\n")
+     (vl-println "")
+     (vl-ps-span "vl_key" (vl-println "endconfig")))))
+
+
+(define vl-ppc-udp ((x vl-udp-p) &key (ps 'ps))
+  (b* (((vl-udp x)))
+    (vl-ps-seq
+     (if x.atts
+         (vl-ps-seq (vl-pp-atts x.atts)
+                    (vl-print " "))
+       ps)
+     (vl-ps-span "vl_key"
+                 (vl-print "primitive "))
+     (vl-print-modname x.name)
+     (vl-println "")
+     (vl-print "BOZO implement printing of user-defined primitives!\n")
+     (vl-println "")
+     (vl-ps-span "vl_key" (vl-println "endprimitive")))))

@@ -35,6 +35,7 @@
 (include-book "shell")
 (include-book "pp")
 (include-book "gather")
+(include-book "server")
 (include-book "oslib/argv" :dir :system)
 (include-book "centaur/esim/stv/stv2c/top" :dir :system)
 (include-book "centaur/misc/intern-debugging" :dir :system)
@@ -59,6 +60,7 @@ Commands:
   stv2c   Translate symbolic runs of Verilog designs into C++
   pp      Preprocess Verilog designs
   gather  Collect Verilog files into a single file
+  server  Start a VL web server (for web-based module browsing)
   shell   Interactive VL shell (for experts)
 
 Use 'vl help <command>' for help on a specific command.
@@ -101,6 +103,7 @@ commands.</p>
           (cons "stv2c"  acl2::*stv2c-help*)
           (cons "pp"     *vl-pp-help*)
           (cons "gather" *vl-gather-help*)
+          (cons "server" *vl-server-help*)
           (cons "shell"  *vl-shell-help*)))
 
   (encapsulate
@@ -233,6 +236,11 @@ toolkit with their own commands.</p>
        ((when (equal cmd "stv2c"))
         (b* ((state (acl2::stv2c args)))
           (exit-ok)
+          state))
+
+       ((when (equal cmd "server"))
+        (b* ((state (vl-server args)))
+          ;; Do not call exit here, same reason as 'shell'
           state))
 
        ((when (equal cmd "shell"))
