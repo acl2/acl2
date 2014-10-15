@@ -610,7 +610,8 @@ identifier.</p>"
                      :verify-guards nil
                      :measure (vl-expr-count x)))
 
-     (cond ((vl-hidexpr-p x)
+     (cond ((and (vl-hidexpr-p x)
+                 (not (vl-idexpr-p x)))
             (b* (((when (vl-fast-atom-p x))
                   (prog2$ (er hard? 'vl-expr-follow-hids "Jared thinks this is impossible.")
                           (mv warnings x)))
