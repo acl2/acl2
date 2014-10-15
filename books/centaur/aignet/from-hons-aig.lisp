@@ -50,11 +50,6 @@
                            set::sets-are-true-lists
                            make-list-ac)))
 
-(set-waterfall-parallelism nil) ; currently unknown why we need to disable
-                                ; waterfall-parallelism; something to examine
-
-
-
 (local (in-theory (disable true-listp-update-nth
                            acl2::nth-with-large-index)))
 ;; An xmemo is a fast alist mapping hons AIGs to literals.  It's well-formed if

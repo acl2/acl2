@@ -38,18 +38,6 @@
 (local (in-theory (enable eval-bdd eval-bdd-list ubddp ubdd-listp
                           q-compose q-compose-list)))
 
-(make-event
-
-; Disabling waterfall parallelism because this book allegedly uses memoization
-; while performing its proofs.
-
- (if (and (hons-enabledp state) 
-          (f-get-global 'parallel-execution-enabled state)) 
-     (er-progn (set-waterfall-parallelism nil)
-               (value '(value-triple nil)))
-   (value '(value-triple nil))))
-
-
 ;; -------------------------------------------------------------------
 ;; Function Definitions
 ;; -------------------------------------------------------------------
