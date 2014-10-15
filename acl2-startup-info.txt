@@ -1,3 +1,0 @@
-"$Revision$"
-Thu Jun  5 18:29:36 CDT 2014
-Books Revision: 2785

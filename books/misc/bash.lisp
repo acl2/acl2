@@ -2,11 +2,10 @@
 ; Written by Matt Kaufmann (original date October, 2006)
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
-; NOTE: This book includes GPL community book xdoc/top.  Therefore, as per
-; Section 2(b) of the Gnu Public License Version 2, software distributions of
-; books that include this book must have a GPL license.  If you want to use the
-; software documented in this book under a 3-clause BSD license, consider
-; the book bash-bsd.lisp instead.
+; NOTE: This book includes community book xdoc/top, and was created on top of
+; separate book bash-bsd.lisp because xdoc/top had a GPL license.  That is no
+; longer the case, but for simplicity we keep both books as is.  (Perhaps
+; someone will want to eliminate bash-bsd.lisp.)
 
 (in-package "ACL2")
 
@@ -38,7 +37,7 @@ the input term.  If ACL2 cannot simplify the input term (e.g., if there is a
 translation error), then it prints a warning and returns <tt>(mv nil input-term
 state)</tt>.</p>
 
-<p>For a related utility, see @(see bash-term-to-dnf).</p>
+<p>For related utilities, see @(see bash-term-to-dnf) and @(see simp).</p>
 
 <h3>Examples</h3>
 
@@ -219,7 +218,7 @@ goals produced by ACL2's simplification process, much as for the result of
 is a list of terms that represents the disjunction of those terms, and the list
 of clauses is implicitly conjoined.</p>
 
-<p>Again: For a related utility, see @('bash').</p>
+<p>Again: For related utilities, see @(see simp) and @(see bash).</p>
 
 <h3>Example</h3>
 

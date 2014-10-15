@@ -6,25 +6,33 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original authors: Jared Davis <jared@centtech.com>
 ;                   Sol Swords <sswords@centtech.com>
 
 (in-package "ACL2")
+(include-book "xdoc/top" :dir :system)
 (include-book "../lists/list-defuns")
-(local (include-book "../lists/append"))
-(local (include-book "../lists/rev"))
 (local (include-book "../lists/take"))
-(local (include-book "../lists/repeat"))
 (local (in-theory (enable alistp)))
 
 (defsection std/alists/alistp
@@ -54,23 +62,33 @@ Accordingly, you may not really need to reason about @('alistp') at all.</p>"
   (defthm alistp-of-append
     (equal (alistp (append x y))
            (and (alistp (list-fix x))
-                (alistp y))))
+                (alistp y)))
+    :hints(("Goal" :in-theory (enable list-fix))))
 
   (defthm alistp-of-revappend
     (equal (alistp (revappend x y))
            (and (alistp (list-fix x))
-                (alistp y))))
+                (alistp y)))
+    :hints(("Goal" :in-theory (enable list-fix))))
+
+  (local (defthm list-fix-when-true-listp
+           (implies (true-listp x) (equal (list-fix x) x))
+           :hints(("Goal" :in-theory (enable list-fix)))))
 
   (defthm alistp-of-rev
     (equal (alistp (rev x))
            (alistp (list-fix x)))
-    :hints(("Goal" :induct (len x))))
+    :hints(("Goal"
+            :in-theory (enable rev list-fix)
+            :induct (len x))))
 
   (defthm alistp-of-reverse
     (equal (alistp (reverse x))
            (and (not (stringp x))
                 (alistp (list-fix x))))
-    :hints(("Goal" :induct (len x))))
+    :hints(("Goal"
+            :in-theory (enable list-fix)
+            :induct (len x))))
 
   (defthm alistp-of-cdr
     (implies (alistp x)
@@ -85,11 +103,11 @@ Accordingly, you may not really need to reason about @('alistp') at all.</p>"
     (implies (alistp x)
              (alistp (member a x))))
 
-  (defthm alistp-of-replicate
-    (equal (alistp (replicate n x))
+  (defthm alistp-of-repeat
+    (equal (alistp (repeat n x))
            (or (zp n)
                (consp x)))
-    :hints(("Goal" :in-theory (enable replicate))))
+    :hints(("Goal" :in-theory (enable repeat))))
 
   (defthm alistp-of-take
     (implies (alistp x)

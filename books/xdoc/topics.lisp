@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
@@ -62,10 +72,10 @@ See @(see acl2::acl2-doc) for details.</li>
 
 </ul>
 
-<p>You can also build your own copy of the manual as follows.
-(This has been tested using CCL on Linux and Mac OS X, but may work for other
-OS/Lisp combinations.)  To do this, you first need to build ACL2(h), then
-certify the @('doc/top') book, e.g., as follows:</p>
+<p>You can also build your own copy of the manual as follows. (This has been
+tested using CCL on Linux and Mac OS X, but may work for other OS/Lisp
+combinations.)  To do this, you first need to build ACL2(h), then certify the
+@('doc/top') book, e.g., as follows:</p>
 
 @({
   cd acl2-sources/books
@@ -83,6 +93,15 @@ Emacs-based manual.</p>
 
 <h3>Documenting your Books</h3>
 
+<box><p><b><color rgb='#ff0000'>NEW</color></b> (experimental): XDOC now
+supports @(see katex-integration) for writing LaTeX-like formulas like
+@($
+\\left( \\sum_{i=0}^{n} \\sqrt{f(i)} \\right) &lt; \\frac{n^2}{k}
+$)
+within your documentation.</p></box>
+
+<br/>
+
 <box><p><b><color rgb='#ff0000'>NEW</color></b> (experimental): When writing
 documentation, you can now optionally have XDOC topics automatically displayed
 as you submit new @(see defxdoc) forms&mdash;just add:</p>
@@ -95,6 +114,7 @@ as you submit new @(see defxdoc) forms&mdash;just add:</p>
 developing your book.  Afterward, each @(see defxdoc) form you submit will be
 immediately shown at the terminal, giving you a quick, text-mode preview that
 may help you to diagnose any markup problems.</p></box>
+
 
 <p>To use XDOC to document your own books, the first step is:</p>
 
@@ -179,8 +199,8 @@ markup) language, and may also use @(see preprocessor) commands to insert
 function definitions, theorems, topic links, and so on.</p>
 
 <p>Many examples of using XDOC can be found throughout the ACL2 books.  See for
-instance the @(see acl2::std), @(see acl2::str) or @(see acl2::std/osets)
-libraries.</p>
+instance the @(see acl2::std), @(see acl2::std/strings) or @(see
+acl2::std/osets) libraries.</p>
 
 <h3>Note for Advanced Users</h3>
 
@@ -280,6 +300,18 @@ links, e.g.,</p>
 
 <p>Produces a link to <a href=\"http://www.centtech.com/\">Centaur
 Technology</a>.</p>
+
+
+<h3>Typesetting Mathematics (Experimental)</h3>
+
+<p>XDOC's fancy web viewer now has some support for LaTeX-like mathematics.
+For instance, you can write formulas such as</p>
+
+@([
+     c = \\pm\\sqrt{b^2 + a^2}
+])
+
+<p>See @(see katex-integration) for details.</p>
 
 
 <h3>Structuring Documents</h3>
@@ -603,9 +635,10 @@ manual with others, you should read about @(see deploying-manuals).</li>
 
 @({
     (save <target-dir>
-          [:type      type]      ;; default is :fancy
           [:import    import]    ;; default is t
-          <classic-options>)
+          [:redef-okp bool]      ;; default is nil
+          [:zip-p     bool]      ;; default is t
+          )
 })
 
 <p>The only (required) argument to the @('save') command is the name of a
@@ -615,17 +648,10 @@ directory where the want the manual to go.  As might be expected:</p>
 
 <li>If the target directory does not exist, it will be created.</li>
 
-<li>Any existing files in the target directory <color rgb=\"#ff0000\">may be
+<li>If the target directory already exists, it <color rgb=\"#ff0000\">will be
 overwritten</color>.</li>
 
 </ul>
-
-<p>XDOC can generate two kinds of manuals.  By default, it generates a
-so-called <i>fancy</i> manual, with a rich JavaScript interface that has, e.g.,
-jump-to and search capabilities.  Alternately you can generate a much more
-plain @(see classic-manual) by using @(':type :classic'), but we may move to
-deprecate classic manuals in the future.</p>
-
 
 <h3>Avoiding Unwanted Documentation</h3>
 
@@ -833,65 +859,6 @@ just need to change:</p>
 
 <p>At this point, your manual should load topic data dynamically as needed.
 The result should be much faster for users on slow connections.</p>")
-
-
-(defxdoc classic-manual
-  :parents (save)
-  :short "Description of @(':type :classic') manuals."
-
-  :long "<box><p><b>Note</b>: we generally discourage the use of classic
-manuals.  We may deprecate them in the future.</p></box>
-
-<p>If you run @(see save) with @(':type :classic'), it will write out
-a manual in the \"classic\" format.  In this case, the resulting manual
-directory will include:</p>
-
-<ul>
-
-<li>@('xml/'), a subdirectory with a @('.xml') file for each topic and some
-supporting files, and</li>
-
-<li>@('Makefile'), a Makefile for converting these files into other formats,
-and</li>
-
-<li>@('preview.html'), a web page that lets you directly view the XML files
-using your web browser.</li>
-
-</ul>
-
-<p>Many web browsers can directly display XML files, so you may be able to view
-@('preview.html') without any additional steps.</p>
-
-
-<h3>HTML and Other Formats</h3>
-
-<p>You can generate a plain HTML or TEXT version of your manual by using
-@('make html') or @('make text') from within the directory target of the above
-mentioned @('xdoc::save') command (in this example, the @('mylib-manual')
-directory).  We might add support for TEXINFO or other formats in the
-future.</p>
-
-<p>After running @('make html'), you may wish to open @('frames2.html') and
-@('frames3.html'), which allow you to navigate the HTML manual much like
-@('preview.html') allows you to navigate the XML version.  These pages accept
-an optional argument named <tt>topic</tt> that tells the browser to
-automatically go to a particular topic.  For example, one can go to the
-<tt>XDOC::save</tt> topic by using the url
-<tt>frames3.html?topic=XDOC____SAVE.html</tt>.</p>
-
-<p>Converting to HTML is a good idea because it ensures that all of your tags
-are balanced on every page.  Without this sanity check, your manual might
-contain errors that will prevent some topics from being loaded in a web
-browser.</p>
-
-<p>Creating the HTML code requires Xalan-C++.  Xalan is distributed with many
-Linux distributions.  For example, on Ubuntu, one can run <tt>sudo apt-get
-install xalan</tt> to install it.  Alternatively, see <a
-href=\"http://xml.apache.org/xalan-c/\">Apache Xalan</a> to download.  We have
-accomodated the various versions of Xalan that we know about and use, but we
-welcome modifications to file <tt>support/Makefile-trans</tt> if you wish to
-use a version we do not currently support.</p>")
-
 
 (defxdoc emacs-links
   :short "Instructions for integrating XDOC web pages with <a
@@ -1452,4 +1419,90 @@ manual.</p>")
 (defxdoc order-test-r :short "R")
 (defxdoc order-test-o :short "O")
 (defxdoc order-test-k :short "K")
+
+
+
+(defxdoc katex-integration
+  :parents (xdoc)
+  :short "Support for LaTeX-like typesetting of mathematics in XDOC
+topics. (experimental)"
+
+  :long "<box><p><b>Experimental.</b> This whole thing is experimental.  Jared
+reserves the right to decide it is a bad idea and remove support for
+it.</p></box>
+
+<p>The <a href='https://www.khanacademy.org/'>Khan Academy</a> has developed a
+very nice Javascript library, <a
+href='https://github.com/Khan/KaTeX'>KaTeX</a>, for rendering mathematical
+formulas in the web browser.  We have now integrated KaTeX into XDOC's fancy
+web-based viewer, allowing you to typeset basic formulas.</p>
+
+
+<h3>Basic Usage</h3>
+
+<p>To typeset block-style formulas, you can use the @('@([...])') @(see
+preprocessor) directive, e.g.,:</p>
+
+@({
+    @([
+       c = \\pm\\sqrt{a^2 + b^2}
+    ])
+})
+
+<p>Produces an indented block of mathematics:</p>
+
+@([
+    c = \\pm\\sqrt{a^2 + b^2}
+])
+
+<p>You can also write inline math using @('@($...$)') directive, for
+instance:</p>
+
+@({
+     The product @($a \\times b$) is even.
+})
+
+<p>Produces text such as: the product @($a \\times b$).</p>
+
+
+<h3>Tips and Tricks</h3>
+
+<h5>Fast Preview.</h5>
+
+<p>The <a href='formula.html'>KaTeX Preview</a> page lets you interactively
+type in your formula and see how it will be typeset.  It may be especially
+helpful since KaTeX only supports a particular subset of LaTeX.</p>
+
+<h5>Escaping Help.</h5>
+
+<p>LaTeX-style formulas may be especially hard to type in ordinary ACL2 string
+literals because you have to escape all the backslashes.  For instance, you
+have to remember to write @('\\\\sqrt{x}') instead of @('\\sqrt{x}').  You can
+avoid this headache by using the @(see acl2::fancy-string-reader).</p>
+
+<h5>Invalid Formulas.</h5>
+
+<p>Invalid formulas will display as an ugly error message.  For instance, here
+is an invalid @('@([ ... ])') style formula:</p>
+
+@([
+      { there is no closing brace
+])
+
+<p>And here is an invalid @('@($...$)') style formula,
+@($
+      { there is no closing brace
+$), embedded in a paragraph.</p>
+
+<h3>Miscellaneous Notes</h3>
+
+<p>The preprocessor directives expand into @('<math>') and @('<mathfrag>')
+tags.  But you will probably want to stick to the preprocessor syntax, rather
+than directly using @('<math>') tags, because if you try to use raw @('<math>')
+tags then you have to remember to escape XML characters like @('<') with
+@('&lt;'), which just isn't very readable.</p>
+
+<p>All of this is fundamentally limited to the web-based viewer.  It seems very
+unlikely that @('<math>') formulas will ever look nice when shown at the
+terminal with @(':doc') or in the ACL2-Doc Emacs viewer.</p>")
 

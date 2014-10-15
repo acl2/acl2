@@ -6,26 +6,39 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "RSTOBJ")
 (include-book "def-typed-record")
 (include-book "generic")
-(include-book "misc/definline" :dir :system)
 (include-book "misc/records" :dir :system)
 (include-book "tools/bstar" :dir :system)
 (include-book "centaur/misc/arith-equivs" :dir :system)
 (include-book "centaur/misc/absstobjs" :dir :system)
+(include-book "std/lists/nth" :dir :system)
+(include-book "std/lists/resize-list" :dir :system)
+(include-book "std/lists/len" :dir :system)
+
 
 (defsection defrstobj
   :parents (stobj macro-libraries)
@@ -588,11 +601,11 @@ records book.  See @(see def-typed-record).</p>")
        (recog (cdr (assoc :recog-name$c fta)))
        (hyp (translate-declaration-to-guard (second type) 'v w)))
     (append
-     `((defthm ,(mksym recog '-of-replicate)
+     `((defthm ,(mksym recog '-of-repeat)
          (implies ,hyp
-                  (,recog (acl2::replicate n v)))
-         :hints(("Goal" :in-theory (enable acl2::replicate)
-                 :induct (acl2::replicate n v))))
+                  (,recog (acl2::repeat n v)))
+         :hints(("Goal" :in-theory (enable acl2::repeat)
+                 :induct (acl2::repeat n v))))
 
        (defthm ,(mksym recog '-of-update-nth)
          (implies (and ,hyp
@@ -734,10 +747,10 @@ records book.  See @(see def-typed-record).</p>")
                             ((:t nfix)
                              natp-compound-recognizer
                              zp-compound-recognizer
-                             nth-of-replicate
-                             len-of-replicate
+                             nth-of-repeat
+                             len-of-repeat
                              append-to-nil
-                             (:t replicate)
+                             (:t repeat)
                              make-list-ac-removal
                              nth-when-atom
                              nth-0-cons
@@ -755,7 +768,7 @@ records book.  See @(see def-typed-record).</p>")
                              resize-list-when-zp
                              (:rules-of-class :executable-counterpart :here))
                             ((make-list-ac)
-                             (replicate)))))
+                             (repeat)))))
 
          (local (in-theory (e/d
                             (plus-collect-consts

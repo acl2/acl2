@@ -6,20 +6,29 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "context")
 (include-book "writer")
 (local (include-book "../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
@@ -60,20 +69,9 @@
                        (vl-print "... at ")
                        (vl-print-loc (vl-assign->loc x)))))))
 
-      (:vl-netdecl
-       (vl-ps-seq (vl-basic-cw "Net declaration of ")
-                  (vl-print-wirename (vl-netdecl->name x))))
-
       (:vl-vardecl
-       (vl-ps-seq (vl-basic-cw "Var declaration of ")
+       (vl-ps-seq (vl-basic-cw "Declaration of ")
                   (vl-print-wirename (vl-vardecl->name x))))
-
-      (:vl-regdecl
-       (vl-ps-seq (vl-basic-cw "Reg declaration of ")
-                  (vl-print-wirename (vl-regdecl->name x))))
-      (:vl-eventdecl
-       (vl-ps-seq (vl-basic-cw "Event declaration of ")
-                  (vl-print-wirename (vl-eventdecl->name x))))
 
       (:vl-paramdecl
        (vl-ps-seq (vl-basic-cw "Param declaration of ")
@@ -118,6 +116,22 @@
        (vl-ps-seq (vl-basic-cw "Initial statement at ")
                   (vl-print-loc (vl-initial->loc x))))
 
+      (:vl-typedef
+       (vl-ps-seq (vl-basic-cw "Typedef at ")
+                  (vl-print-loc (vl-typedef->loc x))))
+
+      (:vl-fwdtypedef
+       (vl-ps-seq (vl-basic-cw "Fwdtypedef at ")
+                  (vl-print-loc (vl-fwdtypedef->loc x))))
+
+      (:vl-modport
+       (vl-ps-seq (vl-basic-cw "Modport at ")
+                  (vl-print-loc (vl-modport->loc x))))
+
+      (:vl-alias
+       (vl-ps-seq (vl-basic-cw "Alias at ")
+                  (vl-print-loc (vl-alias->loc x))))
+
       (otherwise
        (prog2$ (impossible) ps)))))
 
@@ -151,9 +165,7 @@ quick summary instead, see @(see vl-pp-modelement-summary).</p>"
       (:vl-port      (vl-pp-port x))
       (:vl-portdecl  (vl-pp-portdecl x))
       (:vl-assign    (vl-pp-assign x))
-      (:vl-netdecl   (vl-pp-netdecl x))
       (:vl-vardecl   (vl-pp-vardecl x))
-      (:vl-regdecl   (vl-pp-regdecl x))
       (:vl-eventdecl (vl-print "// BOZO implement vl-pp-eventdecl in vl-pp-modelement-full"))
       (:vl-paramdecl (vl-pp-paramdecl x))
       (:vl-fundecl   (vl-pp-fundecl x))
@@ -162,6 +174,10 @@ quick summary instead, see @(see vl-pp-modelement-summary).</p>"
       (:vl-gateinst  (vl-pp-gateinst x))
       (:vl-always    (vl-pp-always x))
       (:vl-initial   (vl-pp-initial x))
+      (:vl-alias     (vl-pp-alias x))
+      (:vl-typedef   (vl-pp-typedef x))
+      (:vl-fwdtypedef (vl-pp-fwdtypedef x))
+      (:vl-modport    (vl-pp-modport x))
       (otherwise (prog2$ (impossible) ps)))))
 
 (define vl-pp-context-full ((x vl-context-p) &key (ps 'ps))

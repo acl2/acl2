@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 
 ; signed-byte-p.lisp
 ; Original author: Jared Davis <jared@centtech.com>
@@ -972,6 +982,23 @@ often useful when optimizing definitions with @(see type-spec) declarations."
            :hints(("Goal" :use ((:instance m3a)
                                 (:instance m3b))))))
 
+  (defun m4-induction-hint (n width)
+; Added by Matt K. to accommodate tau soundness bug fix 7/23/2014.
+    (declare (xargs :measure (nfix n)))
+    (cond ((zp n) width)
+          (t (m4-induction-hint (1- n) (1- width)))))
+
+  (local (defthm equal-0-ash-reduction
+; Added by Matt K. to accommodate tau soundness bug fix 7/23/2014.
+           (implies (and (<= 0 n)
+                         (integerp x))
+                    (equal (equal 0 (ash x n))
+                           (equal 0 x)))
+           :hints (("Goal"
+                    :induct (ash x n)
+                    :in-theory (enable* ihsext-recursive-redefs
+                                        ihsext-inductions)))))
+
   (local (defthm m4
            (implies (and (integerp x)
                          (natp n)
@@ -980,7 +1007,9 @@ often useful when optimizing definitions with @(see type-spec) declarations."
                            (and (posp width)
                                 (equal x 0))))
            :hints(("Goal"
-                   :induct (ash x n)
+                   :induct
+; Modified by Matt K. to accommodate tau soundness bug fix 7/23/2014.
+                   (m4-induction-hint n width)
                    :in-theory (enable* ihsext-recursive-redefs
                                        ihsext-inductions)))))
 

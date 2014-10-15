@@ -6,22 +6,31 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
 (include-book "../mlib/expr-slice")
 (include-book "../mlib/range-tools")
-(include-book "../mlib/context")
 (include-book "../mlib/delta")
 (local (include-book "../util/arithmetic"))
 
@@ -155,18 +164,21 @@ Otherwise @('x'') will be the name of a newly generated, equivalent wire.</p>"
          ((mv tmp-name nf) (vl-namefactory-indexed-name "temp" delta.nf))
          (rhs-expr   (change-vl-nonatom x :args new-args))
          (tmp-expr   (vl-idexpr tmp-name width type))
-         (tmp-decl   (make-vl-netdecl :loc     (vl-modelement-loc elem)
+         (tmp-type   (make-vl-coretype :name    :vl-logic
+                                       :signedp (eq type :vl-signed)
+                                       :pdims   (list (vl-make-n-bit-range width))))
+
+         (tmp-decl   (make-vl-vardecl :loc     (vl-modelement-loc elem)
                                       :name    tmp-name
-                                      :type    :vl-wire
-                                      :signedp (eq type :vl-signed)
-                                      :range   (vl-make-n-bit-range width)
+                                      :type    tmp-type
+                                      :nettype :vl-wire
                                       :atts    *vl-tmp-wire-atts*))
          (tmp-assign (make-vl-assign :loc (vl-modelement-loc elem)
                                      :lvalue tmp-expr
                                      :expr rhs-expr))
          (delta      (change-vl-delta delta
                                       :nf nf
-                                      :netdecls (cons tmp-decl delta.netdecls)
+                                      :vardecls (cons tmp-decl delta.vardecls)
                                       :assigns  (cons tmp-assign delta.assigns))))
       (mv tmp-expr delta)))
 
@@ -299,7 +311,7 @@ up.</p>"
                             (delta vl-delta-p))
   :returns (mv (new-x vl-arguments-p :hyp :fguard)
                (delta vl-delta-p     :hyp :fguard))
-  (b* (((when (eq (vl-arguments-kind x) :named))
+  (b* (((when (eq (vl-arguments-kind x) :vl-arguments-named))
         (mv x (dwarn :type :vl-bad-arguments
                      :msg "~a0: expected to only encounter plain arguments, ~
                            but found a named argument list.  Not actually ~
@@ -359,7 +371,7 @@ module instances, and gate instances."
        ((when (vl-module->hands-offp x))
         x)
        (delta                (vl-starting-delta x))
-       (delta                (change-vl-delta delta :netdecls x.netdecls))
+       (delta                (change-vl-delta delta :vardecls x.vardecls))
        ((mv assigns delta)   (vl-assignlist-split x.assigns delta))
        ((mv modinsts delta)  (vl-modinstlist-split x.modinsts delta))
        ((mv gateinsts delta) (vl-gateinstlist-split x.gateinsts delta))
@@ -367,9 +379,9 @@ module instances, and gate instances."
 
     (change-vl-module
      x
-     ;; We started out with the netdecls and extended them, so the delta has
-     ;; the new netdecls we want.
-     :netdecls delta.netdecls
+     ;; We started out with the vardecls and extended them, so the delta has
+     ;; the new vardecls we want.
+     :vardecls delta.vardecls
      ;; We rewrote all of our own assigns, but there are also assigns in the
      ;; delta, so merge them.
      :assigns (revappend-without-guard delta.assigns assigns)

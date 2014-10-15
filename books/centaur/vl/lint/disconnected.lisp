@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
@@ -249,11 +259,11 @@ are returned in a nonsensical order.</p>"
 
   (verify-guards vl-expr-allwires))
 
-(define vl-collect-flattened-hids ((x vl-netdecllist-p))
-  :returns (netdecls vl-netdecllist-p :hyp :fguard)
+(define vl-collect-flattened-hids ((x vl-vardecllist-p))
+  :returns (vardecls vl-vardecllist-p :hyp :fguard)
   (if (atom x)
       nil
-    (let ((atts (vl-netdecl->atts (car x))))
+    (let ((atts (vl-vardecl->atts (car x))))
       (if (or (assoc-equal "VL_HID_LOCAL_P" atts)
               (assoc-equal "VL_HID_GLOBAL_P" atts))
           (cons (car x)
@@ -356,8 +366,8 @@ are returned in a nonsensical order.</p>"
        ;; Originally we reported the disconnected-wires, but that was stupid
        ;; because we don't care if this particular module uses all of the bits
        ;; of a HID it refers to.  So, suppress any disconnected hids.
-       (hid-netdecls       (vl-collect-flattened-hids x.netdecls))
-       (hid-names          (vl-netdecllist->names hid-netdecls))
+       (hid-vardecls       (vl-collect-flattened-hids x.vardecls))
+       (hid-names          (vl-vardecllist->names hid-vardecls))
        (hid-names-fal      (make-lookup-alist hid-names))
        (disconnected-wires (redundant-mergesort
                             (vl-delete-emodwires-with-basenames hid-names hid-names-fal

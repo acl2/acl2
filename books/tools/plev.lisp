@@ -1,39 +1,44 @@
 (in-package "ACL2")
+(include-book "xdoc/top" :dir :system)
 (set-state-ok t)
 
-(defdoc plev
-  ":Doc-Section Print-control
-Easy-to-use functions for controlling the printer.~/
+(defxdoc plev
+  :parents (print-control)
+  :short "Easy-to-use functions for controlling the printer."
+  :long "<p>Example:</p>
 
-Example:
-~bv[]
-  (include-book \"tools/plev\" :dir :system)
+@({
+    (include-book \"tools/plev\" :dir :system)
 
-  (plev)     ;; moderate abbreviations, a good default
-  (plev-max) ;; don't abbreviate anything, show everything
-  (plev-min) ;; heavily abbreviate things, usually too terse
-  (plev-mid) ;; somewhat similar to plev
-~ev[]
+    (plev)     ;; moderate abbreviations, a good default
+    (plev-max) ;; don't abbreviate anything, show everything
+    (plev-min) ;; heavily abbreviate things, usually too terse
+    (plev-mid) ;; somewhat similar to plev
+})
 
-Each of these is actually a macro with keyword arguments
-like :length, :level, :lines, :circle, :pretty, and :readably.  You can choose
-your own values for these arguments, or just use the above macros.
+<p>Each of these is actually a macro with keyword arguments like @(':length'),
+@(':level'), @(':lines'), @(':circle'), @(':pretty'), and @(':readably').  You
+can choose your own values for these arguments, or just use the above macros.</p>
 
-~st[Clozure Common Lisp Users]:  you may wish to instead include
-~bv[]
- (include-book \"tools/plev-ccl\" :dir :system :ttags :all)
-~ev[]
-for a version of plev that also updates the print levels used during
-backtraces and error messages.  CCL users can also use:
-~bv[]
-  (plev-info)
-~ev[]
-to see the current values of certain print-related variables.~/~/")
+<p>Note for Clozure Common Lisp users:  you may wish to instead include</p>
 
-(link-doc-to plev-max print-control plev)
-(link-doc-to plev-min print-control plev)
-(link-doc-to plev-mid print-control plev)
-(link-doc-to plev-info print-control plev)
+@({
+    (include-book \"tools/plev-ccl\" :dir :system :ttags :all)
+})
+
+<p>for a version of plev that also updates the print levels used during
+backtraces and error messages.  CCL users can also use:</p>
+
+@({
+    (plev-info)
+})
+
+<p>to see the current values of certain print-related variables.</p>")
+
+(defpointer plev-max plev)
+(defpointer plev-min plev)
+(defpointer plev-mid plev)
+(defpointer plev-info plev)
 
 
 (defn plev-fn (length level lines circle pretty readably state)

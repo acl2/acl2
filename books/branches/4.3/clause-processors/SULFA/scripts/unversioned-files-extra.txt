@@ -1,3 +1,0 @@
-interpret_sulfa_file
-sulfa-smt
-sexpr-sat-solver

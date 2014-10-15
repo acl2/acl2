@@ -6,15 +6,25 @@
 //   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 //   http://www.centtech.com/
 //
-// This program is free software; you can redistribute it and/or modify it under
-// the terms of the GNU General Public License as published by the Free Software
-// Foundation; either version 2 of the License, or (at your option) any later
-// version.  This program is distributed in the hope that it will be useful but
-// WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-// more details.  You should have received a copy of the GNU General Public
-// License along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+// License: (An MIT/X11-style license)
+//
+//   Permission is hereby granted, free of charge, to any person obtaining a
+//   copy of this software and associated documentation files (the "Software"),
+//   to deal in the Software without restriction, including without limitation
+//   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+//   and/or sell copies of the Software, and to permit persons to whom the
+//   Software is furnished to do so, subject to the following conditions:
+//
+//   The above copyright notice and this permission notice shall be included in
+//   all copies or substantial portions of the Software.
+//
+//   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+//   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+//   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+//   THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+//   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+//   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+//   DEALINGS IN THE SOFTWARE.
 //
 // Original author: Jared Davis <jared@centtech.com>
 
@@ -40,7 +50,23 @@ out_xnor2,   // ^~in
 out_true,    // constant t
 out_false,   // constant f
 out_x,       // constant x
-out_z        // constant z
+out_z       // constant z
+
+`ifdef SYSTEM_VERILOG_MODE
+,
+
+// some tests of ==? and !=? operators against certain patterns
+out_wildeq1,
+out_wildeq2,
+out_wildeq3,
+out_wildeq4,
+
+out_wildneq1,
+out_wildneq2,
+out_wildneq3,
+out_wildneq4
+
+`endif
 
 );
 
@@ -66,6 +92,20 @@ out_z        // constant z
    output out_x ;
    output out_z ;
 
+`ifdef SYSTEM_VERILOG_MODE
+
+   output out_wildeq1;
+   output out_wildeq2;
+   output out_wildeq3;
+   output out_wildeq4;
+
+   output out_wildneq1;
+   output out_wildneq2;
+   output out_wildneq3;
+   output out_wildneq4;
+
+`endif
+
    assign out_bitnot = ~in ;
    assign out_plus = +in;
    assign out_minus = -in;
@@ -84,6 +124,20 @@ out_z        // constant z
    assign out_x = 1'bx;
    assign out_z = 1'bz;
 
+`ifdef SYSTEM_VERILOG_MODE
+
+   assign out_wildeq1 = in ==? 4'b1010;
+   assign out_wildeq2 = in ==? 4'bxx10;
+   assign out_wildeq3 = in ==? 4'b0?z1;
+   assign out_wildeq4 = in ==? 4'bz1x0;
+
+   assign out_wildneq1 = in !=? 4'b1010;
+   assign out_wildneq2 = in !=? 4'bxx10;
+   assign out_wildneq3 = in !=? 4'b0?z1;
+   assign out_wildneq4 = in !=? 4'bz1x0;
+
+`endif
+
 endmodule
 
 
@@ -95,14 +149,20 @@ module make_tests () ;
    wire [100:0] w;
    wire a;
 
-   unary_ops_test #(1) unary_test_1 (1'b0, w[0:0], w[0:0], w[0:0], a, a, a, a, a, a, a, a, a, a, a, a);
-   unary_ops_test #(2) unary_test_2 (2'b0, w[1:0], w[1:0], w[1:0], a, a, a, a, a, a, a, a, a, a, a, a);
-   unary_ops_test #(3) unary_test_3 (3'b0, w[2:0], w[2:0], w[2:0], a, a, a, a, a, a, a, a, a, a, a, a);
-   unary_ops_test #(4) unary_test_4 (4'b0, w[3:0], w[3:0], w[3:0], a, a, a, a, a, a, a, a, a, a, a, a);
-   unary_ops_test #(5) unary_test_5 (5'b0, w[4:0], w[4:0], w[4:0], a, a, a, a, a, a, a, a, a, a, a, a);
-   unary_ops_test #(6) unary_test_6 (6'b0, w[5:0], w[5:0], w[5:0], a, a, a, a, a, a, a, a, a, a, a, a);
-   unary_ops_test #(7) unary_test_7 (7'b0, w[6:0], w[6:0], w[6:0], a, a, a, a, a, a, a, a, a, a, a, a);
-   unary_ops_test #(8) unary_test_8 (8'b0, w[7:0], w[7:0], w[7:0], a, a, a, a, a, a, a, a, a, a, a, a);
+ `ifdef SYSTEM_VERILOG_MODE
+    `define OUTS a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a
+ `else
+    `define OUTS a, a, a, a, a, a, a, a, a, a, a, a
+ `endif
+
+   unary_ops_test #(1) unary_test_1 (1'b0, w[0:0], w[0:0], w[0:0], `OUTS);
+   unary_ops_test #(2) unary_test_2 (2'b0, w[1:0], w[1:0], w[1:0], `OUTS);
+   unary_ops_test #(3) unary_test_3 (3'b0, w[2:0], w[2:0], w[2:0], `OUTS);
+   unary_ops_test #(4) unary_test_4 (4'b0, w[3:0], w[3:0], w[3:0], `OUTS);
+   unary_ops_test #(5) unary_test_5 (5'b0, w[4:0], w[4:0], w[4:0], `OUTS);
+   unary_ops_test #(6) unary_test_6 (6'b0, w[5:0], w[5:0], w[5:0], `OUTS);
+   unary_ops_test #(7) unary_test_7 (7'b0, w[6:0], w[6:0], w[6:0], `OUTS);
+   unary_ops_test #(8) unary_test_8 (8'b0, w[7:0], w[7:0], w[7:0], `OUTS);
 
 endmodule
 

@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Sol Swords <sswords@centtech.com>
 
@@ -36,6 +46,35 @@
 (include-book "misc/hons-help2" :dir :system)
 (include-book "centaur/ubdds/extra-operations" :dir :system)
 (include-book "centaur/misc/memory-mgmt-logic" :dir :system)
+
+(defxdoc bddify
+  :parents (aig)
+  :short "An verified algorithm for converting @(see aig)s into @(see ubdds)."
+
+  :long "<p>The @('bddify') algorithm can convert AIGs into BDDs.  This can be
+used, for instance, to solve satisfiability problems without reaching out to an
+external SAT solver.</p>
+
+<p>The algorithm uses two methods to simplify an input AIG using BDDs of
+limited size; it repeatedly applies these methods while varying the BDD size
+limit. One method is similar to dynamic weakening in that it replaces oversized
+BDDs by a conservative approximation; the other method introduces fresh
+variables to represent oversized BDDs.</p>
+
+<p>While we have not documented the algorithm with @(see xdoc), a description
+of its operation and verification can be found in:</p>
+
+<box>
+<p>Sol Swords and Warren A. Hunt, Jr.  <a
+href='http://dx.doi.org/10.1007/978-3-642-14052-5_30'>A Mechanically Verified
+AIG to BDD Conversion Algorithm</a>.  In ITP 2010.  Springer LNCS 6172, pages
+435-449.</p>
+</box>
+
+<p><a
+href='https://www.cs.utexas.edu/users/kaufmann/itp-2010/session6/swords-itp.pdf'>Slides</a>
+from the ITP presentation are also available.</p>")
+
 
 ;; AIG-Q-COMPOSE builds a BDD from an AIG; each AIG variable must be
 ;; mapped to a BDD in the alist argument or it will be assigned the
@@ -236,13 +275,8 @@
 
  ;; BOZO really profile this?
 
- #+Clozure
- ;; [Jared]: I had to add this #+Clozure here because otherwise SBCL can't
- ;; include-book this book.  It can still certify it, but I guess that somehow
- ;; at load-time it doesn't have the function compiled yet and hence can't
- ;; figure out how many arguments it has or something?  This might also be
- ;; somehow related to function-lambda-expression not working on SBCL.  BOZO
- ;; is this something we even need to do?
+ (mf-note-arity 'count-branches-to 2 1)
+
  (profile-fn 'count-branches-to)
 
  #+Clozure

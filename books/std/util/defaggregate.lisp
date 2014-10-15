@@ -6,28 +6,39 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 ;
-; Additional copyright notice:
+; Additional Copyright Notice.
 ;
-; This file is adapted from Milawa, which is also released under the GPL.
+; This file is adapted from the Milawa Theorem Prover, Copyright (C) 2005-2009
+; Kookamara LLC, which is also available under an MIT/X11 style license.
 
 (in-package "STD")
 (include-book "da-base")
 (include-book "formals")
-(include-book "xdoc/fmt-to-str" :dir :system)
 (include-book "tools/rulesets" :dir :system)
 (include-book "xdoc/names" :dir :system)
+(include-book "xdoc/fmt-to-str-orig" :dir :system)
 (set-state-ok t)
 
 (program)
@@ -344,7 +355,7 @@ In this case, we would have:</p>
        ((len-of-mytype->args (equal (len args) arity))))
 })
 
-<p>This would result in an ordinary @(see type-prescription) return-type
+<p>This would result in an ordinary @(see acl2::type-prescription) return-type
 theorems for both @('arity') and @('args'), and a separate rewrite rule to deal
 with the length dependency:</p>
 
@@ -720,7 +731,7 @@ optimization altogether.</p>")
   (b* (((formal x) x)
 
        (acc (str::revappend-chars "<li>" acc))
-       ((mv name-str state) (xdoc::fmt-to-str x.name base-pkg state))
+       ((mv name-str state) (xdoc::fmt-to-str-orig x.name base-pkg state))
        (acc (str::revappend-chars "<tt>" acc))
        (acc (xdoc::simple-html-encode-str name-str 0 (length name-str) acc))
        (acc (str::revappend-chars "</tt>" acc))
@@ -751,7 +762,7 @@ optimization altogether.</p>")
                 acc
               (str::revappend-chars "<br/>&nbsp;&nbsp;&nbsp;&nbsp;" acc)))
        (acc (str::revappend-chars "<color rgb='#606060'>" acc))
-       ((mv guard-str state) (xdoc::fmt-to-str x.guard base-pkg state))
+       ((mv guard-str state) (xdoc::fmt-to-str-orig x.guard base-pkg state))
        ;; Using @('...') here isn't necessarily correct.  If the sexpr has
        ;; something in it that can lead to '), we are hosed.  BOZO eventually
        ;; check for this and make sure we use <code> tags instead, if it
@@ -807,8 +818,7 @@ optimization altogether.</p>")
        (accessor (da-accessor-name name field.name))
        ;; bozo escaping issues...
        (short    (str::cat "Access the <tt>" (acl2::string-downcase (symbol-name field.name))
-                           "</tt> field of a @(see "
-                           (symbol-package-name foop) "::" (symbol-name foop)
+                           "</tt> field of a @(see " (xdoc::full-escape-symbol foop)
                            ") structure.")))
     `(defxdoc ,accessor
        :parents (,foop)
@@ -897,14 +907,14 @@ optimization altogether.</p>")
        (call-make-honsed-foo (da-ctor-optional-call make-honsed-foo opt-fields))
        (call-change-foo      (da-ctor-optional-call change-foo (cons "x" opt-fields)))
 
-       (def-foo           (str::cat "@(def " pkg "::" (symbol-name foo) ")"))
-       (def-honsed-foo    (str::cat "@(def " pkg "::" (symbol-name honsed-foo) ")"))
-       (def-make-foo-fn   (str::cat "@(def " pkg "::" (symbol-name make-foo-fn) ")"))
-       (def-make-foo      (str::cat "@(def " pkg "::" (symbol-name make-foo) ")"))
-       (def-make-honsed-foo-fn (str::cat "@(def " pkg "::" (symbol-name make-honsed-foo-fn) ")"))
-       (def-make-honsed-foo    (str::cat "@(def " pkg "::" (symbol-name make-honsed-foo) ")"))
-       (def-change-foo-fn (str::cat "@(def " pkg "::" (symbol-name change-foo-fn) ")"))
-       (def-change-foo    (str::cat "@(def " pkg "::" (symbol-name change-foo) ")")))
+       (def-foo                (str::cat "@(def " (xdoc::full-escape-symbol foo) ")"))
+       (def-honsed-foo         (str::cat "@(def " (xdoc::full-escape-symbol honsed-foo) ")"))
+       (def-make-foo-fn        (str::cat "@(def " (xdoc::full-escape-symbol make-foo-fn) ")"))
+       (def-make-foo           (str::cat "@(def " (xdoc::full-escape-symbol make-foo) ")"))
+       (def-make-honsed-foo-fn (str::cat "@(def " (xdoc::full-escape-symbol make-honsed-foo-fn) ")"))
+       (def-make-honsed-foo    (str::cat "@(def " (xdoc::full-escape-symbol make-honsed-foo) ")"))
+       (def-change-foo-fn      (str::cat "@(def " (xdoc::full-escape-symbol change-foo-fn) ")"))
+       (def-change-foo         (str::cat "@(def " (xdoc::full-escape-symbol change-foo) ")")))
 
     (list
      `(defxdoc ,foo

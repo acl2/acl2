@@ -1,8 +1,0 @@
-cert_pl_exclude
-
-The presence of this file tells cert.pl not to try to build any of the books in
-this directory.
-
-This directory contains books not to be certified.  Rather, they are
-here for comparison with files that are generated; see the `diff'
-calls in ../Makefile.

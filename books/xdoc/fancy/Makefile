@@ -9,3 +9,6 @@ render.js : render.xsl
 	tr -d '\n' < render.tmp > render.js
 	rm render.tmp
 	ls -la render.js
+
+# We don't need to convert render-html.xsl, because we don't need it
+# in javascript format.

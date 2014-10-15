@@ -127,10 +127,10 @@
 	      (fix x))))
 
 (defthm floor-mod-elim
-  (implies (force (acl2-numberp x))
-	   (equal (+ (mod x y)
-		     (* y (floor x y)))
-		  x))
+  ;; [Jared] modified on 2014-07-29 to not forcibly assume acl2-numberp, to
+  ;; avoid name clash with arithmetic-5.
+  (implies (acl2-numberp x)
+	   (equal (+ (mod x y) (* y (floor x y))) x))
   :hints (("Goal" :in-theory (disable floor)))
   :rule-classes ((:rewrite)
 		 (:elim)))

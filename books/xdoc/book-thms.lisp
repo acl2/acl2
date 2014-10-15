@@ -1,6 +1,8 @@
 ; Utility for finding theorems defined non-redundantly in a book or encapsulate
-; Matt Kaufmann
-; October, 2007 (augmented January, 2011)
+
+; Copyright (C) 2014, Regents of the University of Texas
+; Written by Matt Kaufmann (original date October, 2007; augmented January, 2011)
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
 ; This file first introduces two utilities, which require that the indicated
 ; book already be included when running them.

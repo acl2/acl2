@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
@@ -95,7 +105,7 @@ particular standard we're implementing.</p>"
 
    (dollarops vl-plaintoken-alistp "Special tokens starting with @('$').")
 
-   (assignpatp booleanp "Enable SystemVerilog 2012 '{ tokens?")
+   (quotesp    booleanp "Enable SystemVerilog 2012 ' tokens?")
    (strextsp   booleanp "Enable SystemVerilog 2012 string literal extensions?")
    (timelitsp  booleanp "Enable SystemVerilog 2012 time literals?")
    (extintsp   booleanp "Enable SystemVerilog 2012 '0/'1/'x/'z integers?")
@@ -157,7 +167,7 @@ particular standard we're implementing.</p>"
    :barops   '(("||"   . :vl-logor)
                ("|"    . :vl-bitor))
    :dollarops  nil
-   :assignpatp nil
+   :quotesp    nil
    :strextsp   nil
    :timelitsp  nil
    :extintsp   nil
@@ -170,7 +180,7 @@ particular standard we're implementing.</p>"
           (uniquep (alist-keys al))
           (uniquep (alist-vals al)))))
   (assert!
-   (not (vl-lexstate->assignpatp *vl-2005-strict-lexstate*))))
+   (not (vl-lexstate->quotesp *vl-2005-strict-lexstate*))))
 
 (defval *vl-2005-lexstate*
   :parents (lexstate)
@@ -205,10 +215,12 @@ particular standard we're implementing.</p>"
                ("*"    . :vl-times))
    :plusops  '(("+:"   . :vl-pluscolon)
                ("+="   . :vl-pluseq)
+               ("++"   . :vl-plusplus)
                ("+"    . :vl-plus))
    :dashops  '(("->>"  . :vl-arrowgt)
                ("->"   . :vl-arrow)
                ("-="   . :vl-minuseq)
+               ("--"   . :vl-minusminus)
                ("-:"   . :vl-minuscolon)
                ("-"    . :vl-minus))
    :dotops   '((".*"   . :vl-dotstar)
@@ -248,7 +260,7 @@ particular standard we're implementing.</p>"
    :dollarops '(("$root" . :vl-$root)
                 ("$unit" . :vl-$unit)
                 ("$"     . :vl-$))
-   :assignpatp t
+   :quotesp    t
    :strextsp   t
    :timelitsp  t
    :extintsp   t)
@@ -280,7 +292,7 @@ particular standard we're implementing.</p>"
             (difference (mergesort new-spec)
                         ;; These are special because they're not just
                         ;; handled as simple plaintoken-alists.
-                        '(:vl-assignpat))))))
+                        '(:vl-quote))))))
 
 (defval *vl-2012-lexstate*
   :parents (lexstate)

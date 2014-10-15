@@ -188,6 +188,8 @@
 
 (in-package "ACL2")
 
+; cert_param: (pcert=1)
+
 (local (include-book "arithmetic-5/top" :dir :system))
 
 (local (deftheory jared-disables
@@ -2483,8 +2485,8 @@
                 (make-tau-interval 'rationalp nil (expt 2 loy) nil (expt 2 hiy))
                 (make-tau-interval 'rationalp nil (expt 2 loy) nil nil)))
         (if hiy
-            (make-tau-interval 'rationalp nil nil nil (expt 2 hiy))
-            (make-tau-interval 'rationalp nil nil nil nil)))))
+            (make-tau-interval 'rationalp t 0 nil (expt 2 hiy))
+            (make-tau-interval 'rationalp t 0 nil nil)))))
 
 ; Warning:  We only deal with (EXPT 2 y), for integerp y!
 
@@ -2501,6 +2503,41 @@
   :rule-classes
   ((:rewrite)
    (:forward-chaining :trigger-terms ((tau-bounder-expt2 int2)))
+   ))
+
+; -----------------------------------------------------------------
+; (EXPT r i)
+
+; Both parameters of this tau-bounder are intervals. So tau-system can accept
+; it.  It recognizes specific case r=2 and delegates it to the previous bounder
+; and returns the entire rational set in the general case.
+
+(defun tau-bounder-expt (intr inti)
+  (if
+    (and
+      (equal (tau-interval-lo intr) 2)
+      (equal (tau-interval-hi intr) 2))
+    (tau-bounder-expt2 inti)
+    (make-tau-interval 'rationalp nil nil nil nil)))
+
+; Warning:  We only deal with (EXPT 2 i), for integerp i!
+
+(defthm tau-bounder-expt-correct
+  (implies (and (tau-intervalp intr)
+                (equal (tau-interval-dom intr) 'integerp)
+                (in-tau-intervalp r intr)
+                (tau-intervalp inti)
+                (equal (tau-interval-dom inti) 'integerp)
+                (in-tau-intervalp i inti))
+           (and (tau-intervalp (tau-bounder-expt intr inti))
+                (in-tau-intervalp (expt r i) (tau-bounder-expt intr inti))
+
+                (implies (not (equal (tau-interval-dom (tau-bounder-expt intr inti)) 'integerp))
+                         (equal (tau-interval-dom (tau-bounder-expt intr inti)) 'rationalp))
+                ))
+  :rule-classes
+  ((:rewrite)
+   (:forward-chaining :trigger-terms ((tau-bounder-expt intr inti)))
    ))
 
 ; -----------------------------------------------------------------

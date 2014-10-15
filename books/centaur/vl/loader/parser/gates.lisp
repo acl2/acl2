@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
@@ -217,20 +227,20 @@
 
 (defparser vl-parse-optional-name-of-gate-instance ()
   :result (and (consp val)
-               (maybe-stringp (car val)) ;; the name
+               (maybe-stringp (car val))     ;; the name
                (vl-maybe-range-p (cdr val))) ;; the range
   :fails gracefully
   :count weak
   ;; Note that even though this is "optional", it can fail, because we assume
   ;; that if there is a bracket after the identifier, then there is supposed to
   ;; be a range.
-  (seqw tokens warnings
-        (when (vl-is-token? :vl-idtoken)
-          (id := (vl-match))
-          (when (vl-is-token? :vl-lbrack)
-            (range := (vl-parse-range)))
-          (return (cons (vl-idtoken->name id) range)))
-        (return (cons nil nil))))
+  (seq tokstream
+       (when (vl-is-token? :vl-idtoken)
+         (id := (vl-match))
+         (when (vl-is-token? :vl-lbrack)
+           (range := (vl-parse-range)))
+         (return (cons (vl-idtoken->name id) range)))
+       (return (cons nil nil))))
 
 
 ; CMOS Gates.
@@ -246,18 +256,18 @@
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens warnings
-        ((name . range) := (vl-parse-optional-name-of-gate-instance))
-        (:= (vl-match-token :vl-lparen))
-        (arg1 := (vl-parse-lvalue))
-        (:= (vl-match-token :vl-comma))
-        (arg2 := (vl-parse-expression))
-        (:= (vl-match-token :vl-comma))
-        (arg3 := (vl-parse-expression))
-        (:= (vl-match-token :vl-comma))
-        (arg4 := (vl-parse-expression))
-        (rparen := (vl-match-token :vl-rparen))
-        (return (list name range (list arg1 arg2 arg3 arg4)))))
+  (seq tokstream
+       ((name . range) := (vl-parse-optional-name-of-gate-instance))
+       (:= (vl-match-token :vl-lparen))
+       (arg1 := (vl-parse-lvalue))
+       (:= (vl-match-token :vl-comma))
+       (arg2 := (vl-parse-expression))
+       (:= (vl-match-token :vl-comma))
+       (arg3 := (vl-parse-expression))
+       (:= (vl-match-token :vl-comma))
+       (arg4 := (vl-parse-expression))
+       (:= (vl-match-token :vl-rparen))
+       (return (list name range (list arg1 arg2 arg3 arg4)))))
 
 (defparser vl-parse-cmos-switch-instances-list ()
   ;; Matches cmos_switch_instance { ',' cmos_switch_instance }
@@ -266,12 +276,12 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
-        (first := (vl-parse-cmos-switch-instance))
-        (when (vl-is-token? :vl-comma)
-          (:= (vl-match))
-          (rest := (vl-parse-cmos-switch-instances-list)))
-        (return (cons first rest))))
+  (seq tokstream
+       (first := (vl-parse-cmos-switch-instance))
+       (when (vl-is-token? :vl-comma)
+         (:= (vl-match))
+         (rest := (vl-parse-cmos-switch-instances-list)))
+       (return (cons first rest))))
 
 (defconst *vl-cmos-switchtype-type-kwds*
   (strip-cars *vl-cmos-switchtype-alist*))
@@ -284,17 +294,17 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
-        (typekwd := (vl-match))
-        ;; No strength on cmos gates.
-        (when (vl-is-token? :vl-pound)
-          (delay := (vl-parse-delay3)))
-        (tuples := (vl-parse-cmos-switch-instances-list))
-        (semi := (vl-match-token :vl-semi))
-        (return (let ((type (cdr (assoc-eq (vl-token->type typekwd)
-                                           *vl-cmos-switchtype-alist*))))
-                  (vl-build-gate-instances (vl-token->loc typekwd)
-                                           tuples type nil delay atts)))))
+  (seq tokstream
+       (typekwd := (vl-match))
+       ;; No strength on cmos gates.
+       (when (vl-is-token? :vl-pound)
+         (delay := (vl-parse-delay3)))
+       (tuples := (vl-parse-cmos-switch-instances-list))
+       (:= (vl-match-token :vl-semi))
+       (return (let ((type (cdr (assoc-eq (vl-token->type typekwd)
+                                          *vl-cmos-switchtype-alist*))))
+                 (vl-build-gate-instances (vl-token->loc typekwd)
+                                          tuples type nil delay atts)))))
 
 
 
@@ -319,16 +329,16 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
-        ((name . range) := (vl-parse-optional-name-of-gate-instance))
-        (:= (vl-match-token :vl-lparen))
-        (arg1 := (vl-parse-lvalue))
-        (:= (vl-match-token :vl-comma))
-        (arg2 := (vl-parse-expression))
-        (:= (vl-match-token :vl-comma))
-        (arg3 := (vl-parse-expression))
-        (rparen := (vl-match-token :vl-rparen))
-        (return (list name range (list arg1 arg2 arg3)))))
+  (seq tokstream
+       ((name . range) := (vl-parse-optional-name-of-gate-instance))
+       (:= (vl-match-token :vl-lparen))
+       (arg1 := (vl-parse-lvalue))
+       (:= (vl-match-token :vl-comma))
+       (arg2 := (vl-parse-expression))
+       (:= (vl-match-token :vl-comma))
+       (arg3 := (vl-parse-expression))
+       (:= (vl-match-token :vl-rparen))
+       (return (list name range (list arg1 arg2 arg3)))))
 
 (defparser vl-parse-enable-or-mos-instances-list ()
   ;; Matches enable_gate_instance { ',' enable_gate_instance }
@@ -337,12 +347,12 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
-        (first := (vl-parse-enable-or-mos-instance))
-        (when (vl-is-token? :vl-comma)
-          (:= (vl-match-token :vl-comma))
-          (rest := (vl-parse-enable-or-mos-instances-list)))
-        (return (cons first rest))))
+  (seq tokstream
+       (first := (vl-parse-enable-or-mos-instance))
+       (when (vl-is-token? :vl-comma)
+         (:= (vl-match-token :vl-comma))
+         (rest := (vl-parse-enable-or-mos-instances-list)))
+       (return (cons first rest))))
 
 (defconst *vl-enable-gatetype-type-kwds* (strip-cars *vl-enable-gatetype-alist*))
 
@@ -354,17 +364,17 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
-        (typekwd := (vl-match))
-        (strength := (vl-parse-optional-drive-strength))
-        (when (vl-is-token? :vl-pound)
-          (delay := (vl-parse-delay3)))
-        (tuples := (vl-parse-enable-or-mos-instances-list))
-        (semi := (vl-match-token :vl-semi))
-        (return (let ((type (cdr (assoc-eq (vl-token->type typekwd)
-                                           *vl-enable-gatetype-alist*))))
-                  (vl-build-gate-instances (vl-token->loc typekwd)
-                                           tuples type strength delay atts)))))
+  (seq tokstream
+       (typekwd := (vl-match))
+       (strength := (vl-parse-optional-drive-strength))
+       (when (vl-is-token? :vl-pound)
+         (delay := (vl-parse-delay3)))
+       (tuples := (vl-parse-enable-or-mos-instances-list))
+       (:= (vl-match-token :vl-semi))
+       (return (let ((type (cdr (assoc-eq (vl-token->type typekwd)
+                                          *vl-enable-gatetype-alist*))))
+                 (vl-build-gate-instances (vl-token->loc typekwd)
+                                          tuples type strength delay atts)))))
 
 (defconst *vl-mos-switchtype-type-kwds* (strip-cars *vl-mos-switchtype-alist*))
 
@@ -376,13 +386,13 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seq tokstream
        (typekwd := (vl-match))
        ;; No strength on mos gates.
        (when (vl-is-token? :vl-pound)
          (delay := (vl-parse-delay3)))
        (tuples := (vl-parse-enable-or-mos-instances-list))
-       (semi := (vl-match-token :vl-semi))
+       (:= (vl-match-token :vl-semi))
        (return (let ((type (cdr (assoc-eq (vl-token->type typekwd)
                                           *vl-mos-switchtype-alist*))))
                  (vl-build-gate-instances (vl-token->loc typekwd)
@@ -404,14 +414,14 @@
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens warnings
-        ((name . range) := (vl-parse-optional-name-of-gate-instance))
-        (:= (vl-match-token :vl-lparen))
-        (arg1 := (vl-parse-lvalue))
-        (:= (vl-match-token :vl-comma))
-        (others := (vl-parse-1+-expressions-separated-by-commas))
-        (rparen := (vl-match-token :vl-rparen))
-        (return (list name range (cons arg1 others)))))
+  (seq tokstream
+       ((name . range) := (vl-parse-optional-name-of-gate-instance))
+       (:= (vl-match-token :vl-lparen))
+       (arg1 := (vl-parse-lvalue))
+       (:= (vl-match-token :vl-comma))
+       (others := (vl-parse-1+-expressions-separated-by-commas))
+       (:= (vl-match-token :vl-rparen))
+       (return (list name range (cons arg1 others)))))
 
 (defparser vl-parse-n-input-gate-instances-list ()
   ;; Matches n_input_gate_instance { ',' n_input_gate_instance }
@@ -420,12 +430,12 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
-        (first := (vl-parse-n-input-gate-instance))
-        (when (vl-is-token? :vl-comma)
-          (:= (vl-match-token :vl-comma))
-          (rest := (vl-parse-n-input-gate-instances-list)))
-        (return (cons first rest))))
+  (seq tokstream
+       (first := (vl-parse-n-input-gate-instance))
+       (when (vl-is-token? :vl-comma)
+         (:= (vl-match-token :vl-comma))
+         (rest := (vl-parse-n-input-gate-instances-list)))
+       (return (cons first rest))))
 
 (defconst *vl-n-input-gatetype-type-kwds* (strip-cars *vl-n-input-gatetype-alist*))
 
@@ -437,17 +447,17 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
-        (typekwd := (vl-match))
-        (strength := (vl-parse-optional-drive-strength))
-        (when (vl-is-token? :vl-pound)
-          (delay := (vl-parse-delay2)))
-        (tuples := (vl-parse-n-input-gate-instances-list))
-        (semi := (vl-match-token :vl-semi))
-        (return (let ((type (cdr (assoc-eq (vl-token->type typekwd)
-                                           *vl-n-input-gatetype-alist*))))
-                  (vl-build-gate-instances (vl-token->loc typekwd)
-                                           tuples type strength delay atts)))))
+  (seq tokstream
+       (typekwd := (vl-match))
+       (strength := (vl-parse-optional-drive-strength))
+       (when (vl-is-token? :vl-pound)
+         (delay := (vl-parse-delay2)))
+       (tuples := (vl-parse-n-input-gate-instances-list))
+       (:= (vl-match-token :vl-semi))
+       (return (let ((type (cdr (assoc-eq (vl-token->type typekwd)
+                                          *vl-n-input-gatetype-alist*))))
+                 (vl-build-gate-instances (vl-token->loc typekwd)
+                                          tuples type strength delay atts)))))
 
 
 
@@ -495,63 +505,65 @@
   :true-listp t
   :fails never
   :count strong-on-value
-  (b* (((mv erp first explore new-warnings) (vl-parse-lvalue))
+  (b* ((backup (vl-tokstream-save))
+       ((mv erp first tokstream) (vl-parse-lvalue))
 
        ((when erp)
         ;; Failed to eat even a single lvalue, go back to where you were before
         ;; you tried.
-        (mv nil nil tokens warnings))
+        (b* ((tokstream (vl-tokstream-restore backup)))
+          (mv nil nil tokstream)))
 
-       ((unless (mbt (< (len explore) (len tokens))))
+       ((unless (mbt (< (vl-tokstream-measure)
+                        (len (vl-tokstream-backup->tokens backup)))))
         (impossible)
         (vl-parse-error "termination failure"))
 
-       ((unless (or (vl-is-token? :vl-comma :tokens explore)
-                    (vl-is-token? :vl-rparen :tokens explore)))
+       ((unless (or (vl-is-token? :vl-comma)
+                    (vl-is-token? :vl-rparen)))
         ;; Very subtle.  We just ate an lvalue, but something is wrong because
         ;; we should have gotten to a comma or a right-paren.  Probably what has
         ;; happened is we have just eaten part of an expression that looks like
         ;; an lvalue, e.g., "foo" from "foo & bar".  So, we need to backtrack
         ;; and NOT eat this lvalue.
-        (mv nil nil tokens warnings))
+        (b* ((tokstream (vl-tokstream-restore backup)))
+          (mv nil nil tokstream))))
 
-       ;; Otherwise, we successfully ate an lvalue and arrived at a comma or
-       ;; rparen as expected.  Commit to eating this lvalue.
-       (tokens explore)
-       (warnings new-warnings))
-    (seqw tokens warnings
-          (when (vl-is-token? :vl-rparen)
-            ;; Nothing more to eat.
-            (return (list first)))
-          ;; Else, it's a comma
-          (:= (vl-match-token :vl-comma))
-          (rest := (vl-parse-0+-lvalues-separated-by-commas))
-          (return (cons first rest)))))
+    ;; Otherwise, we successfully ate an lvalue and arrived at a comma or
+    ;; rparen as expected.  Commit to eating this lvalue.
+    (seq tokstream
+         (when (vl-is-token? :vl-rparen)
+           ;; Nothing more to eat.
+           (return (list first)))
+         ;; Else, it's a comma
+         (:= (vl-match-token :vl-comma))
+         (rest := (vl-parse-0+-lvalues-separated-by-commas))
+         (return (cons first rest)))))
 
 (defparser vl-parse-n-output-gate-instance ()
   :result (vl-gatebldr-tuple-p val)
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens warnings
-        ((name . range) := (vl-parse-optional-name-of-gate-instance))
-        (:= (vl-match-token :vl-lparen))
-        ;; First try to eat all the lvalues you see.  This might eat the final
-        ;; expression, too!
-        (lvalues := (vl-parse-0+-lvalues-separated-by-commas))
-        ;; If we are at an RPAREN, the last expression happened to look like an
-        ;; lvalue and we already ate it.  Otherwise, we need to match the last
-        ;; expression (which can be arbitrary)
-        (unless (vl-is-token? :vl-rparen)
-          (expr := (vl-parse-expression)))
-        (:= (vl-match-token :vl-rparen))
-        (return-raw
-         (let ((args (if expr
-                         (append lvalues (list expr))
-                       lvalues)))
-           (if (< (len args) 2)
-               (vl-parse-error "Expected at least two arguments.")
-             (mv nil (list name range args) tokens warnings))))))
+  (seq tokstream
+       ((name . range) := (vl-parse-optional-name-of-gate-instance))
+       (:= (vl-match-token :vl-lparen))
+       ;; First try to eat all the lvalues you see.  This might eat the final
+       ;; expression, too!
+       (lvalues := (vl-parse-0+-lvalues-separated-by-commas))
+       ;; If we are at an RPAREN, the last expression happened to look like an
+       ;; lvalue and we already ate it.  Otherwise, we need to match the last
+       ;; expression (which can be arbitrary)
+       (unless (vl-is-token? :vl-rparen)
+         (expr := (vl-parse-expression)))
+       (:= (vl-match-token :vl-rparen))
+       (return-raw
+        (let ((args (if expr
+                        (append lvalues (list expr))
+                      lvalues)))
+          (if (< (len args) 2)
+              (vl-parse-error "Expected at least two arguments.")
+            (mv nil (list name range args) tokstream))))))
 
 ;(vl-parse-n-output-gate-instance (make-test-tokens "my_buf (foo, bar)") nil)
 ;(vl-parse-n-output-gate-instance (make-test-tokens "my_buf (foo, bar, baz)") nil)
@@ -566,12 +578,12 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
-        (first := (vl-parse-n-output-gate-instance))
-        (when (vl-is-token? :vl-comma)
-          (:= (vl-match))
-          (rest := (vl-parse-n-output-gate-instances-list)))
-        (return (cons first rest))))
+  (seq tokstream
+       (first := (vl-parse-n-output-gate-instance))
+       (when (vl-is-token? :vl-comma)
+         (:= (vl-match))
+         (rest := (vl-parse-n-output-gate-instances-list)))
+       (return (cons first rest))))
 
 (defconst *vl-n-output-gatetype-type-kwds* (strip-cars *vl-n-output-gatetype-alist*))
 
@@ -583,17 +595,17 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
-        (typekwd := (vl-match))
-        (strength := (vl-parse-optional-drive-strength))
-        (when (vl-is-token? :vl-pound)
-          (delay := (vl-parse-delay2)))
-        (tuples := (vl-parse-n-output-gate-instances-list))
-        (semi := (vl-match-token :vl-semi))
-        (return (let ((type (cdr (assoc-eq (vl-token->type typekwd)
-                                           *vl-n-output-gatetype-alist*))))
-                  (vl-build-gate-instances (vl-token->loc typekwd)
-                                           tuples type strength delay atts)))))
+  (seq tokstream
+       (typekwd := (vl-match))
+       (strength := (vl-parse-optional-drive-strength))
+       (when (vl-is-token? :vl-pound)
+         (delay := (vl-parse-delay2)))
+       (tuples := (vl-parse-n-output-gate-instances-list))
+       (:= (vl-match-token :vl-semi))
+       (return (let ((type (cdr (assoc-eq (vl-token->type typekwd)
+                                          *vl-n-output-gatetype-alist*))))
+                 (vl-build-gate-instances (vl-token->loc typekwd)
+                                          tuples type strength delay atts)))))
 
 
 
@@ -613,16 +625,16 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
-        ((name . range) := (vl-parse-optional-name-of-gate-instance))
-        (:= (vl-match-token :vl-lparen))
-        (arg1 := (vl-parse-lvalue))
-        (:= (vl-match-token :vl-comma))
-        (arg2 := (vl-parse-lvalue))
-        (:= (vl-match-token :vl-comma))
-        (arg3 := (vl-parse-expression))
-        (rparen := (vl-match-token :vl-rparen))
-        (return (list name range (list arg1 arg2 arg3)))))
+  (seq tokstream
+       ((name . range) := (vl-parse-optional-name-of-gate-instance))
+       (:= (vl-match-token :vl-lparen))
+       (arg1 := (vl-parse-lvalue))
+       (:= (vl-match-token :vl-comma))
+       (arg2 := (vl-parse-lvalue))
+       (:= (vl-match-token :vl-comma))
+       (arg3 := (vl-parse-expression))
+       (:= (vl-match-token :vl-rparen))
+       (return (list name range (list arg1 arg2 arg3)))))
 
 (defparser vl-parse-pass-enable-switch-instances-list ()
   ;; Matches pass_switch_instnace { ',' pass_switch_instance }
@@ -631,12 +643,12 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
-        (first := (vl-parse-pass-enable-switch-instance))
-        (when (vl-is-token? :vl-comma)
-          (:= (vl-match))
-          (rest := (vl-parse-pass-enable-switch-instances-list)))
-        (return (cons first rest))))
+  (seq tokstream
+       (first := (vl-parse-pass-enable-switch-instance))
+       (when (vl-is-token? :vl-comma)
+         (:= (vl-match))
+         (rest := (vl-parse-pass-enable-switch-instances-list)))
+       (return (cons first rest))))
 
 (defconst *vl-pass-en-switchtype-type-kwds* (strip-cars *vl-pass-en-switchtype-alist*))
 
@@ -648,17 +660,17 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
-        (typekwd := (vl-match))
-        ;; No strength.
-        (when (vl-is-token? :vl-pound)
-          (delay := (vl-parse-delay2)))
-        (tuples := (vl-parse-pass-enable-switch-instances-list))
-        (semi := (vl-match-token :vl-semi))
-        (return (let ((type (cdr (assoc-eq (vl-token->type typekwd)
-                                           *vl-pass-en-switchtype-alist*))))
-                  (vl-build-gate-instances (vl-token->loc typekwd)
-                                           tuples type nil delay atts)))))
+  (seq tokstream
+       (typekwd := (vl-match))
+       ;; No strength.
+       (when (vl-is-token? :vl-pound)
+         (delay := (vl-parse-delay2)))
+       (tuples := (vl-parse-pass-enable-switch-instances-list))
+       (:= (vl-match-token :vl-semi))
+       (return (let ((type (cdr (assoc-eq (vl-token->type typekwd)
+                                          *vl-pass-en-switchtype-alist*))))
+                 (vl-build-gate-instances (vl-token->loc typekwd)
+                                          tuples type nil delay atts)))))
 
 
 
@@ -678,14 +690,14 @@
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens warnings
-        ((name . range) := (vl-parse-optional-name-of-gate-instance))
-        (:= (vl-match-token :vl-lparen))
-        (arg1 := (vl-parse-lvalue))
-        (:= (vl-match-token :vl-comma))
-        (arg2 := (vl-parse-lvalue))
-        (rparen := (vl-match-token :vl-rparen))
-        (return (list name range (list arg1 arg2)))))
+  (seq tokstream
+       ((name . range) := (vl-parse-optional-name-of-gate-instance))
+       (:= (vl-match-token :vl-lparen))
+       (arg1 := (vl-parse-lvalue))
+       (:= (vl-match-token :vl-comma))
+       (arg2 := (vl-parse-lvalue))
+       (:= (vl-match-token :vl-rparen))
+       (return (list name range (list arg1 arg2)))))
 
 (defparser vl-parse-pass-switch-instances-list ()
   ;; Matches pass_switch_instance { ',' pass_switch_instance }
@@ -694,12 +706,12 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
-        (first := (vl-parse-pass-switch-instance))
-        (when (vl-is-token? :vl-comma)
-          (:= (vl-match))
-          (rest := (vl-parse-pass-switch-instances-list)))
-        (return (cons first rest))))
+  (seq tokstream
+       (first := (vl-parse-pass-switch-instance))
+       (when (vl-is-token? :vl-comma)
+         (:= (vl-match))
+         (rest := (vl-parse-pass-switch-instances-list)))
+       (return (cons first rest))))
 
 (defconst *vl-pass-switchtype-type-kwds* (strip-cars *vl-pass-switchtype-alist*))
 
@@ -711,16 +723,16 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
-        (typekwd := (vl-match))
-        ;; No strength.
-        ;; No delay.
-        (tuples := (vl-parse-pass-switch-instances-list))
-        (semi := (vl-match-token :vl-semi))
-        (return (let ((type (cdr (assoc-eq (vl-token->type typekwd)
-                                           *vl-pass-switchtype-alist*))))
-                  (vl-build-gate-instances (vl-token->loc typekwd)
-                                           tuples type nil nil atts)))))
+  (seq tokstream
+       (typekwd := (vl-match))
+       ;; No strength.
+       ;; No delay.
+       (tuples := (vl-parse-pass-switch-instances-list))
+       (:= (vl-match-token :vl-semi))
+       (return (let ((type (cdr (assoc-eq (vl-token->type typekwd)
+                                          *vl-pass-switchtype-alist*))))
+                 (vl-build-gate-instances (vl-token->loc typekwd)
+                                          tuples type nil nil atts)))))
 
 
 
@@ -763,68 +775,62 @@
   (implies (force (member-eq type *strength1s-for-vl-parse-pull-strength*))
            (vl-dstrength-p (vl-strength1-lookup type))))
 
-(defthm member-eq-of-vl-type-of-matched-token
-  ;; Used in certain older-style proofs, such as vl-parse-pull-strength
-  (implies (not (member-eq nil types))
-           (iff (member-eq (vl-type-of-matched-token types tokens) types)
-                (vl-is-some-token? types :tokens tokens)))
-  :hints(("Goal" :in-theory (enable vl-type-of-matched-token
-                                    vl-is-some-token?))))
+;; (defthm member-eq-of-vl-type-of-matched-token
+;;   ;; Used in certain older-style proofs, such as vl-parse-pull-strength
+;;   (implies (not (member-eq nil types))
+;;            (iff (member-eq (vl-type-of-matched-token types tokens) types)
+;;                 (vl-is-some-token? types :tokens tokens)))
+;;   :hints(("Goal" :in-theory (enable vl-type-of-matched-token
+;;                                     vl-is-some-token?))))
 
-(with-output
-  :gag-mode :goals
-  (defparser vl-parse-pull-strength (downp)
-    :guard (booleanp downp)
-    :result (vl-gatestrength-p val)
-    :resultp-of-nil nil
-    :fails gracefully
-    :count strong
-    (let ((strength0s *strength0s-for-vl-parse-pull-strength*)
-          (strength1s *strength1s-for-vl-parse-pull-strength*))
-      (seqw tokens warnings
-            (:= (vl-match-token :vl-lparen))
+(defparser vl-parse-pull-strength (downp)
+  :guard (booleanp downp)
+  :result (vl-gatestrength-p val)
+  :resultp-of-nil nil
+  :fails gracefully
+  :count strong
+  (let ((strength0s *strength0s-for-vl-parse-pull-strength*)
+        (strength1s *strength1s-for-vl-parse-pull-strength*))
+    (seq tokstream
+         (:= (vl-match-token :vl-lparen))
 
-            ;; (strength0, strength1)
-            (when (and (vl-is-some-token? strength0s)
-                       (vl-is-token? :vl-comma
-                                     :tokens (cdr tokens))
-                       (vl-is-some-token? strength1s
-                                          :tokens (cddr tokens)))
-              (strength0 := (vl-match-some-token strength0s))
-              (:= (vl-match-token :vl-comma))
-              (strength1 := (vl-match-some-token strength1s))
-              (:= (vl-match-token :vl-rparen))
-              (return (make-vl-gatestrength
-                       :zero (vl-strength0-lookup (vl-token->type strength0))
-                       :one (vl-strength1-lookup (vl-token->type strength1)))))
+         ;; (strength0, strength1)
+         (when (and (vl-is-some-token? strength0s)
+                    (vl-lookahead-is-token? :vl-comma (cdr (vl-tokstream->tokens)))
+                    (vl-lookahead-is-some-token? strength1s (cddr (vl-tokstream->tokens))))
+           (strength0 := (vl-match-some-token strength0s))
+           (:= (vl-match-token :vl-comma))
+           (strength1 := (vl-match-some-token strength1s))
+           (:= (vl-match-token :vl-rparen))
+           (return (make-vl-gatestrength
+                    :zero (vl-strength0-lookup (vl-token->type strength0))
+                    :one (vl-strength1-lookup (vl-token->type strength1)))))
 
-            ;; (strength1, strength0)
-            (when (and (vl-is-some-token? strength1s)
-                       (vl-is-token? :vl-comma
-                                     :tokens (cdr tokens))
-                       (vl-is-some-token? strength0s
-                                          :tokens (cddr tokens)))
-              (strength1 := (vl-match-some-token strength1s))
-              (:= (vl-match-token :vl-comma))
-              (strength0 := (vl-match-some-token strength0s))
-              (:= (vl-match-token :vl-rparen))
-              (return (make-vl-gatestrength
-                       :zero (vl-strength0-lookup (vl-token->type strength0))
-                       :one (vl-strength1-lookup (vl-token->type strength1)))))
+         ;; (strength1, strength0)
+         (when (and (vl-is-some-token? strength1s)
+                    (vl-lookahead-is-token? :vl-comma (cdr (vl-tokstream->tokens)))
+                    (vl-lookahead-is-some-token? strength0s (cddr (vl-tokstream->tokens))))
+           (strength1 := (vl-match-some-token strength1s))
+           (:= (vl-match-token :vl-comma))
+           (strength0 := (vl-match-some-token strength0s))
+           (:= (vl-match-token :vl-rparen))
+           (return (make-vl-gatestrength
+                    :zero (vl-strength0-lookup (vl-token->type strength0))
+                    :one (vl-strength1-lookup (vl-token->type strength1)))))
 
-            ;; If downp is set, we're parsing a pulldown_strength and this should
-            ;; be (strength0).  Else, a pullup_strength and this should be
-            ;; (strength1).  From 7.8, the other component is ignored anyway, and
-            ;; we set it to :vl-strong since that's the default for nets.
-            (str := (vl-match-some-token (if downp strength0s strength1s)))
-            (:= (vl-match-token :vl-rparen))
-            (return (if downp
-                        (make-vl-gatestrength
-                         :zero (vl-strength0-lookup (vl-token->type str))
-                         :one :vl-strong)
-                      (make-vl-gatestrength
-                       :zero :vl-strong
-                       :one (vl-strength1-lookup (vl-token->type str)))))))))
+         ;; If downp is set, we're parsing a pulldown_strength and this should
+         ;; be (strength0).  Else, a pullup_strength and this should be
+         ;; (strength1).  From 7.8, the other component is ignored anyway, and
+         ;; we set it to :vl-strong since that's the default for nets.
+         (str := (vl-match-some-token (if downp strength0s strength1s)))
+         (:= (vl-match-token :vl-rparen))
+         (return (if downp
+                     (make-vl-gatestrength
+                      :zero (vl-strength0-lookup (vl-token->type str))
+                      :one :vl-strong)
+                   (make-vl-gatestrength
+                    :zero :vl-strong
+                    :one (vl-strength1-lookup (vl-token->type str))))))))
 
 (defparser vl-parse-optional-pull-strength (downp)
   :guard (booleanp downp)
@@ -832,22 +838,23 @@
   :resultp-of-nil t
   :fails never
   :count strong-on-value
-  (mv-let (erp val explore new-warnings)
-          (vl-parse-pull-strength downp)
-          (if erp
-              (mv nil nil tokens warnings)
-            (mv nil val explore new-warnings))))
+  (b* ((backup (vl-tokstream-save))
+       ((mv erp val tokstream) (vl-parse-pull-strength downp))
+       ((unless erp)
+        (mv erp val tokstream))
+       (tokstream (vl-tokstream-restore backup)))
+    (mv nil nil tokstream)))
 
 (defparser vl-parse-pull-gate-instance ()
   :result (vl-gatebldr-tuple-p val)
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seq tokstream
        ((name . range) := (vl-parse-optional-name-of-gate-instance))
        (:= (vl-match-token :vl-lparen))
        (arg1 := (vl-parse-lvalue))
-       (rparen := (vl-match-token :vl-rparen))
+       (:= (vl-match-token :vl-rparen))
        (return (list name range (list arg1)))))
 
 (defparser vl-parse-pull-gate-instances-list ()
@@ -857,12 +864,12 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
-        (first := (vl-parse-pull-gate-instance))
-        (when (vl-is-token? :vl-comma)
-          (:= (vl-match))
-          (rest := (vl-parse-pull-gate-instances-list)))
-        (return (cons first rest))))
+  (seq tokstream
+       (first := (vl-parse-pull-gate-instance))
+       (when (vl-is-token? :vl-comma)
+         (:= (vl-match))
+         (rest := (vl-parse-pull-gate-instances-list)))
+       (return (cons first rest))))
 
 (defconst *vl-pull-gate-type-kwds* (strip-cars *vl-pull-gate-alist*))
 
@@ -874,16 +881,16 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
-        (typekwd := (vl-match))
-        (strength := (vl-parse-optional-pull-strength
-                      (eq (vl-token->type typekwd) :vl-kwd-pulldown)))
-        ;; No delay
-        (tuples := (vl-parse-pull-gate-instances-list))
-        (semi := (vl-match-token :vl-semi))
-        (return (let ((type (cdr (assoc-eq (vl-token->type typekwd) *vl-pull-gate-alist*))))
-                  (vl-build-gate-instances (vl-token->loc typekwd)
-                                           tuples type strength nil atts)))))
+  (seq tokstream
+       (typekwd := (vl-match))
+       (strength := (vl-parse-optional-pull-strength
+                     (eq (vl-token->type typekwd) :vl-kwd-pulldown)))
+       ;; No delay
+       (tuples := (vl-parse-pull-gate-instances-list))
+       (:= (vl-match-token :vl-semi))
+       (return (let ((type (cdr (assoc-eq (vl-token->type typekwd) *vl-pull-gate-alist*))))
+                 (vl-build-gate-instances (vl-token->loc typekwd)
+                                          tuples type strength nil atts)))))
 
 (defparser vl-parse-gate-instantiation (atts)
   :guard (vl-atts-p atts)

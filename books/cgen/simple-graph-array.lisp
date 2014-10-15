@@ -5,7 +5,7 @@
 
 ;Author: Harsh Raju Chamarthi (harshrc)
 
-(in-package "DEFDATA")
+(in-package "CGEN")
 (include-book "utilities")
 (include-book "ordinals/lexicographic-ordering-without-arithmetic" :dir :system)
 
@@ -367,6 +367,14 @@ number (ccnum). This is used in simple-var-hyp? for finding cycles."
               (vertex-names fin g$)
               (g$->symbol-alist g$)
               g$)))
+
+(defun union-lsts (lsts)
+  (declare (xargs :mode :logic
+                  :guard (true-list-listp lsts)))
+  (if (endp lsts)
+    nil
+    (union-equal (car lsts)
+                 (union-lsts (cdr lsts)))))
 
 (defun fix-adjacency-list (alst)
   (declare (xargs :guard (adjacency-listp alst)))

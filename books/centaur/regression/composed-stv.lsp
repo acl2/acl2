@@ -1,14 +1,24 @@
 ; Copyright David Rager, 2014
 
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 
 (in-package "ACL2")
 
@@ -433,6 +443,230 @@
               :use ((:instance double-reg-decomp-cutpoint-type-with-autohyps))
               :in-theory (stv-decomp-theory))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; [DOUBLE REG] Scenario 5
+;
+; Next, we explore the elimination of :use hints, which seem potentially
+; responsible for slowdown in larger examples.  The idea is to replace the
+; "decomp-cutpoint-type" lemma that is supplied in the :use hint by a
+; corresponding :rewrite rule, obtained by putting the conclusion (and perhaps
+; hypotheses) of the lemma in normal form as per (stv-decomp-theory).  See also
+; the next Scenario (6), where we automate this approach.
+;
+; Further comments are below.
+;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; First, we find a normal form for the conclusion of lemma
+; double-reg-decomp-cutpoint-type-with-specific-hyps.
+
+#||
+(thm
+ (implies (and (natp d)
+               (< d (expt 2 1)))
+          (equal
+           (b* ((comp1-outs (stv-run (double-reg-decomp-stv)
+                                     `((d . ,d))))
+                (q (cdr (assoc 'q comp1-outs))))
+               (natp q))
+           xxx))
+ :hints (("Goal" :in-theory (stv-decomp-theory))))
+
+*** Key checkpoint at the top level: ***
+
+Goal''
+(IMPLIES
+   (AND (NATP D) (< D 2))
+   (EQUAL (4V-BOOL-LISTP
+               (4V-SEXPR-EVAL-LIST '((NOT D[0]))
+                                   (LIST (CONS 'D[0]
+                                               (BOOL-TO-4V (LOGBITP 0 D))))))
+          XXX))
+
+||#
+
+; Our goal is to produce a version of
+; double-reg-decomp-cutpoint-type-with-specific-hyps whose conclusion is
+; replaced with the value shown above (the first argument of EQUAL).  To
+; accomplish this reliably, we first prove a theorem equating the original
+; conclusion with the normalized version, which we fully expect to succeed
+; because of the checkpoint shown above.  Then we :use that lemma together with
+; the unnormalized one, in a trivial (minimal) theory, to obtain the desired
+; normalized version.
+
+(defthm double-reg-decomp-cutpoint-type-with-specific-hyps-normalized-lemma
+  (implies (and (natp d)
+                (< d (expt 2 1)))
+           (equal
+            (b* ((comp1-outs (stv-run (double-reg-decomp-stv)
+                                      `((d . ,d))))
+                 (q (cdr (assoc 'q comp1-outs))))
+                (natp q))
+            (4V-BOOL-LISTP
+             (4V-SEXPR-EVAL-LIST '((NOT D[0]))
+                                 (LIST (CONS 'D[0]
+                                             (BOOL-TO-4V (LOGBITP 0 D))))))))
+  :hints (("Goal" :in-theory (stv-decomp-theory)))
+  :rule-classes nil)
+
+(defthmd double-reg-decomp-cutpoint-type-with-specific-hyps-normalized
+; Note that this lemma also passes in D directly, instead of using autoins.
+; This may be another source of discrepancy.
+  (implies (and (natp d)
+                (< d (expt 2 1)))
+           (4V-BOOL-LISTP
+            (4V-SEXPR-EVAL-LIST '((NOT D[0]))
+                                (LIST (CONS 'D[0]
+                                            (BOOL-TO-4V
+                                             (LOGBITP 0 D)))))))
+  :hints (("Goal"
+           :use
+           (double-reg-decomp-cutpoint-type-with-specific-hyps
+            double-reg-decomp-cutpoint-type-with-specific-hyps-normalized-lemma)
+           :in-theory (theory 'minimal-theory))))
+
+(defthmd double-reg-decomp-is-full-via-rewriting-challenge-5
+  (implies (and (natp d)
+                (< d 2))
+           (b* ((comp1-outs (stv-run (double-reg-decomp-stv)
+                                     `((d . ,d))))
+                (q (cdr (assoc 'q comp1-outs)))
+                (comp2-outs (stv-run (double-reg-decomp-stv)
+                                     `((q . ,q))))
+                (comp-qq (cdr (assoc 'qq comp2-outs)))
+
+                (full-outs (stv-run (double-reg-full-stv)
+                                    `((d . ,d))))
+                (full-qq (cdr (assoc 'qq full-outs))))
+             (equal comp-qq full-qq)))
+     :hints (("goal"
+              :in-theory
+
+; At one point we thought that (:e expt) needs to be enabled here.
+; And that might still be a good idea; or one could even
+; use (union-theories (executable-counterpart-theory 'ground-zero) (theory
+; 'minimal-theory), which also works.  But since the simpler (theory
+; 'minimal-theory) works, we'll use that for now.
+
+              (theory 'minimal-theory)) ; just beta-reduce all LETs
+
+; Now a computed hint, to take place after all the LETs have been expanded
+; away.
+
+             (and stable-under-simplificationp
+                  '(:in-theory
+                    (union-theories
+                     '(double-reg-decomp-cutpoint-type-with-specific-hyps-normalized)
+                     (stv-decomp-theory))))))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; [DOUBLE REG] Scenario 6
+;
+; Here we provide automation for the approach illustrated in Scenario 5.
+;
+; The tool, normalize-lhs, has a keyword argument for disabling
+; stv-simvar-inputs-to-bits-open.  That option doesn't currently seem to be
+; working, but perhaps it will find use as a way to avoid undesirable case
+; splits caused by that rule.
+;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(include-book "oracle/stv-decomp-theory-expander" :dir :system)
+
+(normalize-lhs
+ double-reg-decomp-cutpoint-type-with-specific-hyps
+ double-reg-decomp-cutpoint-type-with-specific-hyps-normalized-lemma-again
+ double-reg-decomp-cutpoint-type-with-specific-hyps-normalized-again
+ :hyp (and (natp d)
+           (< d (expt 2 1)))
+ :lhs (b* ((comp1-outs (stv-run (double-reg-decomp-stv)
+                                `((d . ,d))))
+           (q (cdr (assoc 'q comp1-outs))))
+          (natp q)))
+
+#||
+ACL2 !>:pcb! :x
+   D      46:x(NORMALIZE-LHS
+               DOUBLE-REG-DECOMP-CUTPOINT-TYPE-WITH-SPECIFIC-HYPS
+               DOUBLE-REG-DECOMP-CUTPOINT-TYPE-WITH-SPECIFIC-HYPS-NORMALIZED-LEMMA-AGAIN
+               DOUBLE-REG-DECOMP-CUTPOINT-TYPE-WITH-SPECIFIC-HYPS-NORMALIZED-AGAIN
+               :HYP (AND (NATP D) (< D (EXPT 2 1)))
+               :LHS (B* ((COMP1-OUTS (STV-RUN (DOUBLE-REG-DECOMP-STV)
+                                              (CONS (CONS 'D D) 'NIL)))
+                         (Q (CDR (ASSOC 'Q COMP1-OUTS))))
+                        (NATP Q)))
+   D           (DEFTHM
+                DOUBLE-REG-DECOMP-CUTPOINT-TYPE-WITH-SPECIFIC-HYPS-NORMALIZED-LEMMA-AGAIN
+                (IMPLIES
+                 (AND (NATP D) (< D (EXPT 2 1)))
+                 (EQUAL
+                     (B* ((COMP1-OUTS (STV-RUN (DOUBLE-REG-DECOMP-STV)
+                                               (CONS (CONS 'D D) 'NIL)))
+                          (Q (CDR (ASSOC 'Q COMP1-OUTS))))
+                         (NATP Q))
+                     (4V-BOOL-LISTP
+                          (4V-SEXPR-EVAL-LIST
+                               '((NOT D[0]))
+                               (CONS (CONS 'D[0] (BOOL-TO-4V (LOGBITP '0 D)))
+                                     'NIL)))))
+                :HINTS
+                (("Goal" :IN-THEORY (UNION-THEORIES '(RETURN-LAST)
+                                                    (STV-DECOMP-THEORY)))))
+               (IN-THEORY
+                (DISABLE
+                 DOUBLE-REG-DECOMP-CUTPOINT-TYPE-WITH-SPECIFIC-HYPS-NORMALIZED-LEMMA-AGAIN))
+   D           (DEFTHM
+                DOUBLE-REG-DECOMP-CUTPOINT-TYPE-WITH-SPECIFIC-HYPS-NORMALIZED-AGAIN
+                (IMPLIES
+                     (AND (NATP D) (< D (EXPT 2 1)))
+                     (4V-BOOL-LISTP
+                          (4V-SEXPR-EVAL-LIST
+                               '((NOT D[0]))
+                               (CONS (CONS 'D[0] (BOOL-TO-4V (LOGBITP '0 D)))
+                                     'NIL))))
+                :HINTS
+                (("Goal"
+                  :USE
+                  (DOUBLE-REG-DECOMP-CUTPOINT-TYPE-WITH-SPECIFIC-HYPS
+                   DOUBLE-REG-DECOMP-CUTPOINT-TYPE-WITH-SPECIFIC-HYPS-NORMALIZED-LEMMA-AGAIN)
+                  :IN-THEORY (THEORY 'MINIMAL-THEORY))))
+               (IN-THEORY
+                (DISABLE
+                 DOUBLE-REG-DECOMP-CUTPOINT-TYPE-WITH-SPECIFIC-HYPS-NORMALIZED-AGAIN))
+ACL2 !>
+||#
+
+(defthmd double-reg-decomp-is-full-via-rewriting-challenge-6
+  (implies (and (natp d)
+                (< d 2))
+           (b* ((comp1-outs (stv-run (double-reg-decomp-stv)
+                                     `((d . ,d))))
+                (q (cdr (assoc 'q comp1-outs)))
+                (comp2-outs (stv-run (double-reg-decomp-stv)
+                                     `((q . ,q))))
+                (comp-qq (cdr (assoc 'qq comp2-outs)))
+
+                (full-outs (stv-run (double-reg-full-stv)
+                                    `((d . ,d))))
+                (full-qq (cdr (assoc 'qq full-outs))))
+             (equal comp-qq full-qq)))
+     :hints (("goal"
+              :in-theory
+
+; See comment in corresponding place in
+; double-reg-decomp-is-full-via-rewriting-challenge-5.
+
+              (theory 'minimal-theory)) ; just beta-reduce all LETs
+
+; Now a computed hint, to take place after all the LETs have been expanded
+; away.
+
+             (and stable-under-simplificationp
+                  '(:in-theory
+                    (union-theories
+                     '(double-reg-decomp-cutpoint-type-with-specific-hyps-normalized-again)
+                     (stv-decomp-theory))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; [TRIPLE REG] Scenario 0
@@ -809,6 +1043,56 @@
               (:use (:instance
                      triple-reg-decomp-cutpoint-type-with-specific-hyps))
               (:then :split :prove))))))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; [TRIPLE REG] Scenario 6
+;
+; Here we perform Scenario 5, but using open-all-revappend-pairlis$-meta-rule
+; instead of revappend-pairlis$-open.  This makes larger versions of this proof
+; go from 60 seconds to 17.85 seconds.
+;
+; We omit the proof checked hint, because we don't use it in practice.
+;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd triple-reg-decomp-is-full-via-rewriting-fails-scenario-6
+  (implies (and (natp d)
+                (< d (expt 2 1)))
+           (b* ((comp1-ins `((d . ,d)))
+                (comp1-outs (stv-run (triple-reg-decomp-stv)
+                                     comp1-ins))
+                (q (cdr (assoc 'q comp1-outs)))
+
+                (comp2-ins `((q . ,q)))
+                (comp2-outs (stv-run (triple-reg-decomp-stv)
+                                     comp2-ins))
+                (qq (cdr (assoc 'qq comp2-outs)))
+
+                (comp3-ins `((qq . ,qq)))
+                (comp3-outs (stv-run (triple-reg-decomp-stv)
+                                     comp3-ins))
+                (comp-qqq (cdr (assoc 'qqq comp3-outs)))
+
+
+                (full-ins (triple-reg-full-stv-autoins))
+                (full-outs (stv-run (triple-reg-full-stv)
+                                    full-ins))
+                (full-qqq (cdr (assoc 'qqq full-outs))))
+               (equal comp-qqq full-qqq)))
+  :hints
+  (("goal"
+    :in-theory (theory 'minimal-theory) ; just beta-reduce all LETs
+    :use ((:instance
+           triple-reg-decomp-cutpoint-type-with-specific-hyps)))
+
+; Now a computed hint, to take place after all the LETs have been expanded
+; away.
+
+   (and stable-under-simplificationp
+        '(:in-theory (set-difference-theories
+                      (stv-decomp-theory)
+                      '((:rewrite revappend-pairlis$-open)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Utility functions (some redefinitions)

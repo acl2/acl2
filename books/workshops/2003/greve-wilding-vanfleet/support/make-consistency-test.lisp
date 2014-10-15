@@ -36,7 +36,7 @@
 		       `(defthm ,@(cdr x))
 		     nil))
 	       (read-all-forms "firewallworks.lisp")))
-    (ubt 1)
+    (ubt! 1)
     (certify-book "consistency-test-passed")))
 
 (defun make-test (file)

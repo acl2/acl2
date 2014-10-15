@@ -1,4 +1,4 @@
-; ACL2 Version 6.4 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 6.5 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2014, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -55,55 +55,9 @@
 ;---------------------------------------------------------------------
 ; Section:  Enabling and Disabling Interrupts
 
-; "Without-interrupts" means that there will be no interrupt from the Lisp
-; system, including ctrl+c from the user or an interrupt from another
-; thread/process.  For example, if *thread1* is running (progn
-; (without-interrupts (process0)) (process1)), then execution of
-; (interrupt-thread *thread1* (lambda () (break))) will not interrupt
-; (process0).
-
-; But note that "without-interrupts" does not guarantee atomicity; for example,
-; it does not mean "without-setq".
-
-(defmacro without-interrupts (&rest forms)
-
-; This macro prevents interrupting evaluation (including throws, e.g., as done
-; in support of por) of any of the indicated forms in a parallel lisp.  In a
-; non-parallel environment, we simply evaluate the forms.  This behavior takes
-; priority over any enclosing call of with-interrupts.  Since we do not have a
-; good use case for providing with-interrupts, we omit it from this interface.
-
-  #+ccl
-  `(ccl:without-interrupts ,@forms)
-  #+sb-thread
-  `(sb-sys:without-interrupts ,@forms)
-  #+lispworks
-
-; Lispworks decided to remove "without-interrupts" from their system, because
-; its use has changed from meaning "atomic" to meaning "can't be interrupted by
-; other threads or processes".  Thus, we use the new primitive,
-; "with-interrupts-blocked".
-
-  `(mp:with-interrupts-blocked ,@forms)
-  #-(or ccl sb-thread lispworks)
-  `(progn ,@forms))
-
-(defmacro unwind-protect-disable-interrupts-during-cleanup
-  (body-form &rest cleanup-forms)
-
-; As the name suggests, this is unwind-protect but with a guarantee that
-; cleanup-form cannot be interrupted.  Note that CCL's implementation already
-; disables interrupts during cleanup.
-
-  #+ccl
-  `(unwind-protect ,body-form ,@cleanup-forms)
-  #+sb-thread
-  `(unwind-protect ,body-form (without-interrupts ,@cleanup-forms))
-  #+lispworks
-  `(hcl:unwind-protect-blocking-interrupts-in-cleanups ,body-form
-                                                       ,@cleanup-forms)
-  #-(or ccl sb-thread lispworks)
-  `(unwind-protect ,body-form ,@cleanup-forms))
+; Without-interrupts and unwind-protect-disable-interrupts-during-cleanup were
+; originally defined here, but have been moved to acl2-fns.lisp in order to
+; support not only ACL2(p) but also ACL2(h).
 
 ;---------------------------------------------------------------------
 ; Section:  Threading Interface
@@ -270,34 +224,8 @@
 
   (null x))
 
-(defun make-lock (&optional lock-name)
-
-; See also deflock.
-
-; If lock-name is supplied, it must be nil or a string.
-
-; Even though CCL nearly always uses a FIFO for threads blocking on a lock,
-; it does not guarantee so: no such promise is made by the CCL
-; documentation or implementor (in fact, we are aware of a race condition that
-; would violate FIFO properties for locks).  Thus, we make absolutely no
-; guarantees about ordering; for example, we do not guarantee that the
-; longest-blocked thread for a given lock is the one that would enter a
-; lock-guarded section first.  However, we suspect that this is usually the
-; case for most implementations, so assuming such an ordering property is
-; probably a reasonable heuristic.  We would be somewhat surprised to find
-; significant performance problems in our own application to ACL2's parallelism
-; primitives due to the ordering provided by the underlying system.
-
-  #-(or ccl sb-thread lispworks)
-  (declare (ignore lock-name))
-  #+ccl (ccl:make-lock lock-name)
-  #+sb-thread (sb-thread:make-mutex :name lock-name)
-  #+lispworks (mp:make-lock :name lock-name)
-  #-(or ccl sb-thread lispworks)
-
-; We return nil in the uni-threaded case in order to stay in sync with lockp.
-
-  nil)
+; Make-lock and with-lock were originally defined in this file, but has been
+; moved to acl2-fns.lisp to help support multi-threading in memoize-raw.lisp.
 
 (defmacro reset-lock (bound-symbol)
 
@@ -308,29 +236,6 @@
 ; been applied to bound-symbol.
 
   `(setq ,bound-symbol (make-lock ,(symbol-name bound-symbol))))
-
-(defmacro with-lock (bound-symbol &rest forms)
-
-; Grab the lock, blocking until it is acquired; evaluate forms; and then
-; release the lock.  This macro guarantees mutual exclusion.
-
-  #-(or ccl sb-thread lispworks)
-  (declare (ignore bound-symbol))
-  (let ((forms
-
-; We ensure that forms is not empty because otherwise, in CCL alone,
-; (with-lock some-lock) evaluates to t.  We keep the code simple and consistent
-; by modifying forms here for all cases, not just CCL.
-
-         (or forms '(nil))))
-    #+ccl
-    `(ccl:with-lock-grabbed (,bound-symbol) nil ,@forms)
-    #+sb-thread
-    `(sb-thread:with-recursive-lock (,bound-symbol) nil ,@forms)
-    #+lispworks
-    `(mp:with-lock (,bound-symbol) nil ,@forms)
-    #-(or ccl sb-thread lispworks)
-    `(progn ,@forms)))
 
 (defun run-thread (name fn-symbol &rest args)
 
@@ -1102,23 +1007,51 @@
 
 (defun core-count-raw (&optional (ctx nil) default)
 
-; If ctx is supplied, then we cause an error using the given ctx.  Otherwise we
-; return a suitable default value (see below).
+; This function attempts to return a core count, as follows.
+
+; - If a non-empty string value is found for environment variable
+;   ACL2_CORE_COUNT after trimming leading and trailing spaces and tabs, then
+;   return the corresponding positive integer if such exists and otherwise
+;   cause an error.
+
+; - Otherwise perhaps obtain the result using a suitable Lisp function.
+
+; - Otherwise, if a non-nil ctx is supplied, then cause an error.  (The error
+;   message doesn't currently use that ctx, but this may change.)
+
+; - Otherwise return a suitable default value.
 
   #+ccl (declare (ignore ctx default))
-  #+ccl (ccl:cpu-count)
-  #-ccl
-  (if ctx
-      (error "It is illegal to call cpu-core-count in this Common Lisp ~
-              implementation.")
+
+  (let* ((count0 (getenv$-raw "ACL2_CORE_COUNT"))
+         (count (and (stringp count0)
+                     (string-trim '(#\Space #\Tab) count0))))
+    (cond ((and count
+                (not (equal count "")))
+           (multiple-value-bind
+            (value posn)
+            (parse-integer count :junk-allowed t)
+            (cond ((and (integerp value)
+                        (< 0 value)
+                        (equal posn (length count)))
+                   value)
+                  (t (error "Invalid value for environment variable ~
+                             ACL2_CORE_COUNT: ~a"
+                            count0)))))
+          (t
+           #+ccl (ccl:cpu-count)
+           #-ccl
+           (if ctx
+               (error "It is illegal to call cpu-core-count in this Common ~
+                       Lisp implementation.")
 
 ; If the host Lisp does not provide a means for obtaining the number of cores,
 ; then we simply estimate on the high side.  A high estimate is desired in
 ; order to make it unlikely that we have needlessly idle cores.  We thus
-; believe that 16 cores is a reasonable estimate for early 2011; but we may
-; well want to increase this number later.
+; believe that 16 cores is a reasonable estimate for early 2011 and even
+; October 2014; but we may well want to increase this number later.
 
-    (or default 16)))
+             (or default 16))))))
 
 (defvar *core-count*
 

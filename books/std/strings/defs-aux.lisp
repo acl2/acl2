@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
@@ -24,7 +34,8 @@
 
 (defconst *str-library-basic-defs*
   '(acl2::rest-n
-    acl2::replicate-fn
+    acl2::repeat
+    repeat
     replicate
     prefixp
     listpos
@@ -32,13 +43,11 @@
     sublistp
     rev
     ;; coerce.lisp
-    acl2::explode$inline
     explode
-    acl2::implode$inline
     implode
     ;; Including this type-prescription rule improves the type-prescriptions of
     ;; some subsequent functions such as upcase-string.
-    acl2::return-type-of-implode$inline
+    acl2::stringp-of-implode
 
     ;; eqv.lisp
     charlisteqv
@@ -50,16 +59,13 @@
     fast-concatenate
     cat
     append-chars-aux
-    append-chars$inline
     append-chars
     revappend-chars-aux
-    revappend-chars$inline
     revappend-chars
     prefix-strings
     rchars-to-string
     join-aux
     join
-    join$inline
 
     ;; char-case.lisp
     little-a
@@ -67,21 +73,15 @@
     big-a
     big-z
     case-delta
-    up-alpha-p$inline
     up-alpha-p
-    down-alpha-p$inline
     down-alpha-p
-    upcase-char$inline
     upcase-char
-    downcase-char$inline
     downcase-char
     make-upcase-first-strtbl
     *upcase-first-strtbl*
-    upcase-char-str$inline
     upcase-char-str
     make-downcase-first-strtbl
     *downcase-first-strtbl*
-    downcase-char-str$inline
     downcase-char-str
 
     ;; case-conversion.lisp
@@ -107,109 +107,109 @@
     downcase-first
 
     ;; ieqv.lisp
-    ichareqv$inline
     ichareqv
     ichareqv-is-an-equivalence
     icharlisteqv
     icharlisteqv-is-an-equivalence
     istreqv-aux
-    istreqv$inline
     istreqv
     istreqv-is-an-equivalence
 
     ;; decimal.lisp
     digitp
-    digitp$inline
-    nonzero-digitp$inline
     nonzero-digitp
     digit-val
-    digit-val$inline
     digit-listp
     digit-list-value1
     digit-list-value
-    digit-list-value$inline
     skip-leading-digits
     take-leading-digits
     digit-string-p-aux
     digit-string-p
-    digit-string-p$inline
     basic-natchars
     natchars-aux
-    natchars$inline
     natchars
     revappend-natchars-aux
     revappend-natchars
     natstr
-    natstr$inline
     natstr-list
     natsize-slow
     natsize-fast
     natsize
-    natsize$inline
     parse-nat-from-charlist
     parse-nat-from-string
     strval
 
     ;; binary.lisp
     bit-digitp
-    bit-digitp$inline
     bit-digit-listp
     bit-digit-val
-    bit-digit-val$inline
     bit-digit-list-value1
     bit-digit-list-value
-    bit-digit-list-value$inline
     skip-leading-bit-digits
     take-leading-bit-digits
     bit-digit-string-p-aux
     bit-digit-string-p
-    bit-digit-string-p$inline
     basic-natchars2
     natchars2-aux
     natchars2
-    natchars2$inline
     revappend-natchars2-aux
     revappend-natchars2
     natstr2
-    natstr2$inline
     natstr2-list
     natsize2
-    natsize2$inline
     parse-bits-from-charlist
     parse-bits-from-string
     strval2
 
     ;; hex.lisp
     hex-digitp
-    hex-digitp$inline
     hex-digit-listp
     hex-digit-val
-    hex-digit-val$inline
     hex-digit-list-value1
     hex-digit-list-value
-    hex-digit-list-value$inline
     skip-leading-hex-digits
     take-leading-hex-digits
     hex-digit-string-p-aux
     hex-digit-string-p
-    hex-digit-string-p$inline
     hex-digit-to-char
-    hex-digit-to-char$inline
     basic-natchars16
     natchars16-aux
     natchars16
-    natchars16$inline
     revappend-natchars16-aux
     revappend-natchars16
     natstr16
-    natstr16$inline
     natstr16-list
     natsize16-aux
     natsize16
-    natsize16$inline
     parse-hex-from-charlist
     parse-hex-from-string
     strval16
+
+    ;; octal
+    octal-digitp
+    nonzero-octal-digitp
+    octal-digit-val
+    octal-digit-listp
+    octal-digit-list-value1
+    octal-digit-list-value
+    skip-leading-octal-digits
+    take-leading-octal-digits
+    octal-digit-string-p-aux
+    octal-digit-string-p
+    octal-digit-to-char
+    basic-natchars8
+    natchars8-aux
+    natchars8
+    revappend-natchars8-aux
+    revappend-natchars8
+    natstr8
+    natstr8-list
+    natsize8-aux
+    natsize8
+    parse-octal-from-charlist
+    parse-octal-from-string
+    strval8
 
     ;; firstn-chars.lisp
     firstn-chars-aux
@@ -224,18 +224,15 @@
     html-amp
     html-quote
     repeated-revappend
-    distance-to-tab$inline
     distance-to-tab
     html-encode-chars-aux
     html-encode-string-aux
     html-encode-string
 
     ;; iless.lisp
-    ichar<$inline
     ichar<
     icharlist<
     istr<-aux
-    istr<$inline
     istr<
 
     ;; iprefixp.lisp
@@ -243,22 +240,20 @@
 
     ;; istrprefixp.lisp
     istrprefixp-impl
-    istrprefixp$inline
     istrprefixp
 
     ;; istrpos.lisp
     istrpos-impl
-    istrpos$inline
     istrpos
 
     ;; isubstrp.lisp
-    isubstrp$inline
     isubstrp
     collect-strs-with-isubstr
     collect-syms-with-isubstr
     ;; isort.lisp
     acl2::mergesort-fixnum-threshold
     istr-list-p
+    istr-merge
     istr-merge-tr
     istr-mergesort-fixnum
     istr-mergesort-integers
@@ -289,22 +284,18 @@
     parse-nat-from-string
     charlistnat<
     strnat<-aux
-    strnat<$inline
     strnat<
 
     ;; strprefixp.lisp
     strprefixp-impl
-    strprefixp$inline
     strprefixp
 
     ;; strpos.lisp
     strpos-fast
-    strpos$inline
     strpos
 
     ;; strrpos.lisp
     strrpos-fast
-    strrpos$inline
     strrpos
 
     ;; strsplit.lisp
@@ -321,19 +312,17 @@
 
     ;; strtok.lisp
     strtok-aux
-    strtok$inline
     strtok
 
     ;; substrp
-    substrp$inline
     substrp
 
     ;; strsuffixp
-    strsuffixp$inline
     strsuffixp
 
-    ;; symbols.lisp
+    ;; symbols
     symbol-list-names
     intern-list-fn
-    intern-list))
+    intern-list
+    ))
 

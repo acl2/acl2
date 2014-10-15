@@ -6,20 +6,30 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "../parsetree")
+(include-book "scopestack")
 (local (include-book "../util/arithmetic"))
 (local (xdoc::set-default-parents hierarchy))
 
@@ -52,65 +62,12 @@ modules.  See @(see vl-fast-has-module) for a faster alternative.</p>"
   (deffixequiv vl-has-module :args ((mods vl-modulelist-p))))
 
 
-(define vl-find-module
-  :short "@(call vl-find-module) retrieves the first module named @('x') from
-@('mods')."
-  ((name stringp)
-   (mods vl-modulelist-p))
-  :long "<p>This is the logically simplest expression of looking up a module,
-and is our preferred normal form for rewriting.</p>
-
-<p>This function is not efficient.  It carries out an @('O(n)') search of the
-modules.  See @(see vl-fast-find-module) for a faster alternative.</p>"
-  (cond ((atom mods)
-         nil)
-        ((equal name (vl-module->name (car mods)))
-         (vl-module-fix (car mods)))
-        (t
-         (vl-find-module name (cdr mods))))
-  ///
-  (defthm vl-find-module-when-not-consp
-    (implies (not (consp mods))
-             (equal (vl-find-module name mods)
-                    nil)))
-
-  (defthm vl-find-module-of-cons
-    (equal (vl-find-module name (cons a x))
-           (if (equal name (vl-module->name a))
-               (vl-module-fix a)
-             (vl-find-module name x))))
-
-  (defthm vl-module-p-of-vl-find-module
-    (equal (vl-module-p (vl-find-module name mods))
-           (vl-has-module name mods)))
-
-  (defthm vl-find-module-under-iff
-    (iff (vl-find-module name mods)
-         (vl-has-module name mods)))
-
-  (defthm vl-module->name-of-vl-find-module
-    (implies (vl-has-module name mods)
-             (equal (vl-module->name (vl-find-module name mods))
-                    (string-fix name))))
-
-  (defthm member-equal-of-vl-find-module-of-self
-    (implies (force (vl-modulelist-p mods))
-             (iff (member-equal (vl-find-module name mods) mods)
-                  (vl-has-module name mods))))
-
-  (deffixequiv vl-find-module :args ((mods vl-modulelist-p))))
-
 
 (fty::defalist vl-modalist
   :key-type stringp
-  :val-type vl-module-p)
-
-(defalist vl-modalist-p (x)
-  :key (stringp x)
-  :val (vl-module-p x)
+  :val-type vl-module-p
   :keyp-of-nil nil
   :valp-of-nil nil
-  :already-definedp t
   :short "An alist mapping module names to modules."
   :long "<p>A modalist is generally constructed by @(see vl-modalist).</p>")
 
@@ -156,7 +113,11 @@ module lookups.</p>"
     (equal (hons-assoc-equal name (vl-modalist x))
            (if (vl-has-module name x)
                (cons name (vl-find-module name x))
-             nil)))
+             nil))
+    :hints (("goal" :induct (vl-modalist x)
+             :expand ((vl-modalist x)
+                      (vl-modulelist->names x)
+                      (vl-find-module name x)))))
 
   (deffixequiv vl-modalist))
 

@@ -6,21 +6,30 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "../mlib/expr-tools")
-(include-book "../parsetree")
+(include-book "../mlib/consteval")
 (local (include-book "../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
 
@@ -43,28 +52,7 @@ unparameterization).  For instance, </p>
 })
 
 <p>And so in order to determine what the size of @('r') is, we need to evaluate
-these expressions.  This leads us to a precarious place, because normally in
-order to evaluate a Verilog expression, we need to have computed its size and
-the sizes of all its subexpressions.  And so, we want to restrict ourselves to
-a subset of the Verilog expressions which we can confidently resolve to a
-constant without having their widths available.</p>
-
-<p>In short, we carve out a very small set of Verilog expressions which includes
-only:</p>
-
-<ul>
- <li>Plain decimal integers (which are both unsized and signed)</li>
- <li>Addition, subtraction, and multiplication</li>
-</ul>
-
-<p>In practice, at Centaur we don't even need this much -- subtraction would do
-just fine.  But it was so easy to add the others that I went ahead and did it
-anyway, on the off chance that some day we will want @('2 * width') or @('width
-+ 1') or something along those lines.</p>
-
-<p>These constant expressions occur in net and register declarations, and also
-may occur in expressions such as bit-selects, part-selects, and multiple
-concatenations.</p>")
+these expressions.</p>")
 
 (local (xdoc::set-default-parents rangeresolve))
 
@@ -102,32 +90,27 @@ concatenations.</p>")
   :fn vl-rangeresolve
   :body
   (b* (((vl-range x) x)
-       (msb-val (vl-constexpr-reduce x.msb))
-       (lsb-val (vl-constexpr-reduce x.lsb)))
-    (if (and msb-val lsb-val)
-        ;; Ordinary case, build a new range.  We could probably use
-        ;; vl-make-index here instead of constructing these manually, but
-        ;; it produces sized results and maybe it's slightly better not
-        ;; to size these yet.  Hrmn.  It probably doesn't matter.
-        ;; Whatever.
-        (mv (ok)
-            (hons-copy (make-vl-range
-                        :msb (make-vl-atom
-                              :guts (make-vl-constint :origwidth 32
-                                                      :origtype :vl-signed
-                                                      :value msb-val
-                                                      :wasunsized t))
-                        :lsb (make-vl-atom
-                              :guts (make-vl-constint :origwidth 32
-                                                      :origtype :vl-signed
-                                                      :value lsb-val
-                                                      :wasunsized t)))))
-      ;; Failure, just return the unreduced range.
-      (mv (warn :type :vl-bad-range
-                ;; BOZO need some context
-                :msg "Unable to safely resolve range ~a0."
-                :args (list x))
-          x))))
+       ((mv msb-ok msb) (vl-consteval x.msb))
+       ((mv lsb-ok lsb) (vl-consteval x.lsb))
+       ((unless (and msb-ok lsb-ok))
+        ;; Failure, just return the unreduced range.
+        (mv (warn :type :vl-bad-range
+                  ;; BOZO need some context
+                  :msg "Unable to safely resolve range ~a0."
+                  :args (list x))
+            x))
+       ;; We could create a new range that just had the reduced MSB and LSB
+       ;; here.  However, we don't really care at all about the width/type
+       ;; of the resulting expressions.  That is, nobody wants to see:
+       ;;
+       ;;    wire [4'd3 : 4'd0] foo;
+       ;;
+       ;; So since the widths/types don't matter, we'll just use VL-MAKE-INDEX
+       ;; to recreate the indices; it does something clever for 32-bit integers
+       ;; to make them look like they're unsized.
+       (msb (vl-make-index (vl-resolved->val msb)))
+       (lsb (vl-make-index (vl-resolved->val lsb))))
+    (mv (ok) (hons-copy (make-vl-range :msb msb :lsb lsb)))))
 
 (def-vl-rangeresolve vl-maybe-range
   :fn vl-maybe-rangeresolve
@@ -149,37 +132,116 @@ concatenations.</p>")
   :element vl-range
   :element-fn vl-rangeresolve)
 
+(def-vl-rangeresolve vl-packeddimension
+  :body (if (eq x :vl-unsized-dimension)
+            (mv (ok) x)
+          (vl-rangeresolve x warnings)))
+
+(def-vl-rangeresolve-list vl-packeddimensionlist
+  :element vl-packeddimension)
+
+(def-vl-rangeresolve vl-maybe-packeddimension
+  :body (if (not x)
+            (mv (ok) nil)
+          (vl-packeddimension-rangeresolve x warnings)))
+
+(def-vl-rangeresolve vl-enumbasetype
+  :body (b* (((vl-enumbasetype x) x)
+             ((mv warnings dim) (vl-maybe-packeddimension-rangeresolve x.dim warnings)))
+          (mv warnings (change-vl-enumbasetype x :dim dim))))
+
+(def-vl-rangeresolve vl-enumitem
+  :body (b* (((vl-enumitem x) x)
+             ((mv warnings range) (vl-maybe-rangeresolve x.range warnings)))
+          (mv warnings (change-vl-enumitem x :range range))))
+
+(def-vl-rangeresolve-list vl-enumitemlist
+  :element vl-enumitem)
+
+(defines vl-datatype-rangeresolve
+  :verify-guards nil
+
+  (define vl-datatype-rangeresolve ((x        vl-datatype-p)
+                                    (warnings vl-warninglist-p))
+    :measure (vl-datatype-count x)
+    :returns (mv (warnings vl-warninglist-p)
+                 (new-x vl-datatype-p))
+    (vl-datatype-case x
+      (:vl-coretype
+       (b* (((mv warnings pdims) (vl-packeddimensionlist-rangeresolve x.pdims warnings))
+            ((mv warnings udims) (vl-packeddimensionlist-rangeresolve x.udims warnings)))
+         (mv warnings (change-vl-coretype x :pdims pdims :udims udims))))
+      (:vl-struct
+       (b* (((mv warnings pdims) (vl-packeddimensionlist-rangeresolve x.pdims warnings))
+            ((mv warnings udims) (vl-packeddimensionlist-rangeresolve x.udims warnings))
+            ((mv warnings members) (vl-structmemberlist-rangeresolve x.members warnings)))
+         (mv warnings (change-vl-struct x
+                                        :pdims pdims :udims udims
+                                        :members members))))
+      (:vl-union
+       (b* (((mv warnings pdims) (vl-packeddimensionlist-rangeresolve x.pdims warnings))
+            ((mv warnings udims) (vl-packeddimensionlist-rangeresolve x.udims warnings))
+            ((mv warnings members) (vl-structmemberlist-rangeresolve x.members warnings)))
+         (mv warnings (change-vl-union x
+                                        :pdims pdims :udims udims
+                                        :members members))))
+      (:vl-enum
+       (b* (((mv warnings basetype) (vl-enumbasetype-rangeresolve x.basetype warnings))
+            ((mv warnings items)    (vl-enumitemlist-rangeresolve x.items warnings))
+            ((mv warnings pdims) (vl-packeddimensionlist-rangeresolve x.pdims warnings))
+            ((mv warnings udims) (vl-packeddimensionlist-rangeresolve x.udims warnings)))
+         (mv warnings (change-vl-enum x
+                                      :basetype basetype
+                                      :items    items
+                                      :pdims    pdims
+                                      :udims    udims))))
+      (:vl-usertype
+       (b* (((mv warnings pdims) (vl-packeddimensionlist-rangeresolve x.pdims warnings))
+            ((mv warnings udims) (vl-packeddimensionlist-rangeresolve x.udims warnings)))
+         (mv warnings (change-vl-usertype x
+                                          :pdims pdims :udims udims))))))
+
+  (define vl-structmemberlist-rangeresolve ((x vl-structmemberlist-p)
+                                            (warnings vl-warninglist-p))
+    :measure (vl-structmemberlist-count x)
+    :returns (mv (warnings vl-warninglist-p)
+                 (new-x vl-structmemberlist-p))
+    (b* (((when (atom x))
+          (mv (ok) nil))
+         ((mv warnings x1) (vl-structmember-rangeresolve (car x) warnings))
+         ((mv warnings x2) (vl-structmemberlist-rangeresolve (cdr x) warnings)))
+      (mv warnings (cons x1 x2))))
+
+  (define vl-structmember-rangeresolve ((x vl-structmember-p)
+                                        (warnings vl-warninglist-p))
+    :measure (vl-structmember-count x)
+    :returns (mv (warnings vl-warninglist-p)
+                 (new-x vl-structmember-p))
+    (b* (((vl-structmember x) x)
+         ((mv warnings type) (vl-datatype-rangeresolve x.type warnings)))
+      (mv warnings (change-vl-structmember x
+                                           :type type))))
+  ///
+  (verify-guards vl-datatype-rangeresolve)
+  (deffixequiv-mutual vl-datatype-rangeresolve))
+
+(def-vl-rangeresolve vl-maybe-datatype
+  :body (if (not x)
+            (mv (ok) nil)
+          (vl-datatype-rangeresolve x warnings)))
+
 (def-vl-rangeresolve vl-portdecl
   :body (b* (((vl-portdecl x) x)
-             ((mv warnings range) (vl-maybe-rangeresolve x.range warnings)))
-            (mv warnings (change-vl-portdecl x :range range))))
+             ((mv warnings type) (vl-datatype-rangeresolve x.type warnings)))
+            (mv warnings (change-vl-portdecl x :type type))))
 
 (def-vl-rangeresolve-list vl-portdecllist :element vl-portdecl)
 
-(def-vl-rangeresolve vl-netdecl
-  :body (b* (((vl-netdecl x) x)
-             ((mv warnings range)   (vl-maybe-rangeresolve x.range warnings))
-             ((mv warnings arrdims) (vl-rangelist-rangeresolve x.arrdims warnings)))
-          (mv warnings (change-vl-netdecl x
-                                          :range   range
-                                          :arrdims arrdims))))
-
-(def-vl-rangeresolve-list vl-netdecllist :element vl-netdecl)
-
-(def-vl-rangeresolve vl-regdecl
-  :body (b* (((vl-regdecl x) x)
-             ((mv warnings range)   (vl-maybe-rangeresolve x.range warnings))
-             ((mv warnings arrdims) (vl-rangelist-rangeresolve x.arrdims warnings)))
-          (mv warnings (change-vl-regdecl x
-                                          :range   range
-                                          :arrdims arrdims))))
-
-(def-vl-rangeresolve-list vl-regdecllist :element vl-regdecl)
-
 (def-vl-rangeresolve vl-vardecl
   :body (b* (((vl-vardecl x) x)
-             ((mv warnings arrdims) (vl-rangelist-rangeresolve x.arrdims warnings)))
-          (mv warnings (change-vl-vardecl x :arrdims arrdims))))
+             ((mv warnings type) (vl-datatype-rangeresolve x.type warnings)))
+          (mv warnings (change-vl-vardecl x
+                                          :type type))))
 
 (def-vl-rangeresolve-list vl-vardecllist :element vl-vardecl)
 
@@ -197,19 +259,28 @@ concatenations.</p>")
 
 (def-vl-rangeresolve-list vl-gateinstlist :element vl-gateinst)
 
+(def-vl-rangeresolve vl-paramtype
+  :body
+  (vl-paramtype-case x
+    (:vl-implicitvalueparam
+     (b* (((mv warnings range-prime)   (vl-maybe-rangeresolve x.range warnings))
+          (x-prime                     (change-vl-implicitvalueparam x :range range-prime)))
+       (mv warnings x-prime)))
+    (:vl-explicitvalueparam
+     (b* (((mv warnings type-prime)    (vl-datatype-rangeresolve x.type warnings))
+          (x-prime                     (change-vl-explicitvalueparam x :type type-prime)))
+       (mv warnings x-prime)))
+    (:vl-typeparam
+     (b* (((mv warnings default-prime) (vl-maybe-datatype-rangeresolve x.default warnings))
+          (x-prime                     (change-vl-typeparam x :default default-prime)))
+       (mv warnings x-prime)))))
+
 (def-vl-rangeresolve vl-paramdecl
   :body (b* (((vl-paramdecl x) x)
-             ((mv warnings range) (vl-maybe-rangeresolve x.range warnings)))
-          (mv warnings (change-vl-paramdecl x :range range))))
+             ((mv warnings type) (vl-paramtype-rangeresolve x.type warnings)))
+          (mv warnings (change-vl-paramdecl x :type type))))
 
 (def-vl-rangeresolve-list vl-paramdecllist :element vl-paramdecl)
-
-(def-vl-rangeresolve vl-eventdecl
-  :body (b* (((vl-eventdecl x) x)
-             ((mv warnings arrdims) (vl-rangelist-rangeresolve x.arrdims warnings)))
-          (mv warnings (change-vl-eventdecl x :arrdims arrdims))))
-
-(def-vl-rangeresolve-list vl-eventdecllist :element vl-eventdecl)
 
 (def-vl-rangeresolve vl-taskport
   :body (b* (((vl-taskport x) x)
@@ -220,9 +291,7 @@ concatenations.</p>")
 
 (def-vl-rangeresolve vl-blockitem
   :body (case (tag x)
-          (:vl-regdecl   (vl-regdecl-rangeresolve   x warnings))
           (:vl-vardecl   (vl-vardecl-rangeresolve   x warnings))
-          (:vl-eventdecl (vl-eventdecl-rangeresolve x warnings))
           (otherwise     (vl-paramdecl-rangeresolve x warnings))))
 
 (def-vl-rangeresolve-list vl-blockitemlist :element vl-blockitem)
@@ -246,10 +315,7 @@ concatenations.</p>")
         (vl-module-fix x))
        (warnings                 x.warnings)
        ((mv warnings portdecls)  (vl-portdecllist-rangeresolve  x.portdecls  warnings))
-       ((mv warnings netdecls)   (vl-netdecllist-rangeresolve   x.netdecls   warnings))
        ((mv warnings vardecls)   (vl-vardecllist-rangeresolve   x.vardecls   warnings))
-       ((mv warnings regdecls)   (vl-regdecllist-rangeresolve   x.regdecls   warnings))
-       ((mv warnings eventdecls) (vl-eventdecllist-rangeresolve x.eventdecls warnings))
        ((mv warnings modinsts)   (vl-modinstlist-rangeresolve   x.modinsts   warnings))
        ((mv warnings gateinsts)  (vl-gateinstlist-rangeresolve  x.gateinsts  warnings))
        ((mv warnings fundecls)   (vl-fundecllist-rangeresolve   x.fundecls   warnings))
@@ -258,10 +324,7 @@ concatenations.</p>")
       (change-vl-module x
                         :warnings   warnings
                         :portdecls  portdecls
-                        :netdecls   netdecls
                         :vardecls   vardecls
-                        :regdecls   regdecls
-                        :eventdecls eventdecls
                         :modinsts   modinsts
                         :gateinsts  gateinsts
                         :fundecls   fundecls)))

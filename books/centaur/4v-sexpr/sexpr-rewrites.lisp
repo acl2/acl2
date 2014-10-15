@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Sol Swords <sswords@centtech.com>
 
@@ -24,6 +34,8 @@
 (include-book "centaur/misc/hons-extra" :dir :system)
 (include-book "sexpr-vars-1pass")
 (include-book "std/misc/two-nats-measure" :dir :system)
+(include-book "std/lists/remove-duplicates" :dir :system)
+(local (include-book "std/lists/top" :dir :system))
 (local (in-theory (disable set::double-containment)))
 
 (make-event
@@ -763,9 +775,37 @@ input."
            (4v-sexpr-equiv (caar al) (cdar al))
            (4v-sexpr-rewritesp (cdr al))))))
 
+
 (defsection *sexpr-rewrites*
   :parents (sexpr-rewriting)
   :short "A useful set of 4v-s-expression rewrite rules, proven correct."
+
+;; If you want to add new rules, this loop (or some suitable modification of
+;; it) may be useful for making sure you've got it right, and showing you the
+;; cases where you've got it wrong:
+
+#||
+ (loop for a in '(t f x z) append
+      (loop for b in '(t f x z) append
+            (loop for c in '(t f x z) collect
+                  (let* ((lhs '(pullup (xdet a)))
+                         (rhs '(xdet a))
+                         (alist (make-fast-alist (list (cons 'a a)
+                                                       (cons 'b b)
+                                                       (cons 'c c))))
+                         (v1 (4v-sexpr-eval lhs alist))
+                         (v2 (4v-sexpr-eval rhs alist)))
+                    (list :a a :b b :c c '--> :lhs v1 :rhs v2
+                          (if (equal v1 v2) :OK :FAIL))))))
+||#
+
+;; But WARNING: you should probably not add rules to this list unless you
+;; understand issues related to structure sharing.  Things that look like good
+;; rewrite rules may not necessary be good if they create new terms that don't
+;; occur on the LHS, because these new terms may defeat structure sharing that
+;; was already originally present.  Best to verify that you're making progress
+;; empirically, e.g., by looking at measures like the (number-subtrees ...) of
+;; the resulting expressions.
 
   (defconst *sexpr-rewrites*
     (let ((rules 
@@ -817,7 +857,26 @@ input."
              ((res (tristate (not a) (t)) (tristate a (f))) . (not a))
              ((res (tristate a (t)) (tristate (not a) (f))) . (buf a))
 
+             ;; [Jared and Sol]: new tristate rules which we haven't thought
+             ;; very hard about yet, but which seem nice
+             ((res (tristate a b) (tristate (not a) b)) . (xor (xdet a) b))
+             ((res (tristate (not a) b) (tristate a b)) . (xor (xdet a) b))
+             ((res (tristate a b) (tristate (not a) (not b))) . (not (xor a b)))
+             ((res (tristate (not a) b) (tristate a (not b))) . (xor a b))
+             ((res (tristate a (not b)) (tristate (not a) b)) . (xor a b))
+             ((res (tristate (not a) (not b)) (tristate a b)) . (not (xor a b)))
 
+             ;; [Jared] actually we originally wrote worse right-hand sides for
+             ;; the tristate rules above, but then realized that since xor and
+             ;; iff depend on both their inputs, xdets of xor/iffs can be
+             ;; really nicely reduced:
+             ((xor (xdet a) (xor a b))    . (xor a b))
+             ((xor (xdet b) (xor a b))    . (xor a b))
+             ((xor (xdet a) (iff a b))    . (not (xor a b)))
+             ((xor (xdet b) (iff a b))    . (not (xor a b)))
+             ((xor (xdet a) (ite a b c))  . (ite* a b c))
+             ((xor (xdet a) (ite* a b c)) . (ite* a b c))
+             ((xor (xdet a) (pullup a))   . (buf a))
 
              ;; NOT: inputs are buffered
              ((not (buf a))         . (not a))
@@ -852,8 +911,8 @@ input."
              ;; AND with self
              ((and a a)             . (buf a))
              ;; ??? "Normalize" false-when-boolean things to (xor a a)
-             ((and a (not a))       . (xor a a))
-             ((and (not a) a)       . (xor a a))
+             ((and a (not a))       . (xdet a))
+             ((and (not a) a)       . (xdet a))
              ;; AND inputs are buffered
              ((and (buf a) b)       . (and a b))
              ((and a (buf b))       . (and a b))
@@ -900,8 +959,6 @@ input."
              ((and (and b (and c a)) a) . (and a (and b c)))
              ((and (and (and c a) b) a) . (and a (and b c)))
 
-
-             
              ;; Buf is the identity on anything except z, and the following
              ;; operations never produce z.
              ((buf (buf a))         . (buf a))
@@ -916,6 +973,13 @@ input."
              ;; ((buf (iff a b))       . (iff a b))
              ((buf (pullup a))      . (pullup a))
 
+             ;; This seems nice:
+             ((buf (xdet a))        . (xdet a))
+
+             ;; BOZO consider a rule like this, but I don't know which way it
+             ;; should go or what the normal form sohuld be here.  Anyway it
+             ;; seems too scary to add without testing.
+             ;; ((not (xdet a)) . (xor a (not a)))
 
              ;; XOR constant propagation
              ((xor (t) b)           . (not b))
@@ -929,6 +993,9 @@ input."
              ((xor (buf a) b)       . (xor a b))
              ((xor a (buf b))       . (xor a b))
 
+             ((xor (not a) b)       . (not (xor a b)))
+             ((xor a (not b))       . (not (xor a b)))
+
              ;; OR constant propagation
              ((or (t) a)            . (t))
              ((or a (t))            . (t))
@@ -937,8 +1004,8 @@ input."
              ;; OR with self
              ((or a a)              . (buf a))
              ;; ??? "Normalize" true-when-boolean to (not (xor a a))
-             ((or a (not a))        . (not (xor a a)))
-             ((or (not a) a)        . (not (xor a a)))
+             ((or a (not a))        . (not (xdet a)))
+             ((or (not a) a)        . (not (xdet a)))
              ;; OR inputs are buffered
              ((or (buf a) b)        . (or a b))
              ((or a (buf b))        . (or a b))
@@ -1007,7 +1074,6 @@ input."
              ((ite* (f) a b)         . (buf b))
              ((ite* a (T) (F))       . (buf a))
              ((ite* a (F) (T))       . (not a))
-
              ;; ITE* remove NOT on condition
              ((ite* (not c) a b)     . (ite* c b a))
              ;; ITE* inputs are buffered
@@ -1025,6 +1091,9 @@ input."
              ((zif (not c) a b)     . (zif c b a))
              ;; ZIF select is buffered
              ((zif (buf c) a b)     . (zif c a b))
+
+             ;; BOZO maybe add something like this
+             ;;((zif (xdet a) b c)    . (zif (xdet a) (t) c))
 
              ;; ??? Normalize IFF to NOT of XOR.
              ;; If we decide not to do this normalization, maybe move IFF up in the
@@ -1056,9 +1125,18 @@ input."
              ;; put this back in if we decide not to normalize iff to xor
              ;; ((pullup (iff a b))       . (iff a b))
              ((pullup (pullup a))      . (pullup a))
+             ((pullup (xdet a))        . (xdet a))
 
              ;; ID can always just go away.
-             ((id a)                . a))))
+             ((id a)                . a)
+
+             ;; Fancy new rule to replace (xor a a) with smaller AIGs.  This
+             ;; reduces AIG sizes by about 8% on an example from MMX.
+             ((xor a a) . (xdet a))
+             ((xdet (not a)) . (xdet a))
+             ((xdet (buf a)) . (xdet a))
+
+             )))
 
       (reverse
        (fast-alist-free

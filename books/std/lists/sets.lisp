@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original authors: Sol Swords <sswords@centtech.com>
 ;                   Jared Davis <jared@centtech.com>
@@ -105,7 +115,37 @@ library.")
     (not (member x x))
     :hints(("Goal"
             :in-theory (disable acl2-count-when-member)
-            :use ((:instance acl2-count-when-member (a x)))))))
+            :use ((:instance acl2-count-when-member (a x))))))
+
+
+  (def-listp-rule element-p-when-member-equal-of-element-list-not-negated
+    (and (implies (and (member-equal a x)
+                       (element-list-p x))
+                  (element-p a))
+         (implies (and (element-list-p x)
+                       (member-equal a x))
+                  (element-p a)))
+    :requirement (and (not negatedp) simple)
+    :name element-p-when-member-equal-of-element-list)
+
+  (def-listp-rule element-p-when-member-equal-of-element-list-negated
+    (and (implies (and (member-equal a x)
+                       (element-list-p x))
+                  (not (non-element-p a)))
+         (implies (and (element-list-p x)
+                       (member-equal a x))
+                  (not (non-element-p a))))
+    :requirement (and negatedp simple)
+    :name element-p-when-member-equal-of-element-list)
+
+  (def-projection-rule member-of-element-xformer-in-elementlist-projection
+    (implies (member k x)
+             (member (element-xformer k) (elementlist-projection x))))
+
+  (def-mapappend-rule member-in-elementlist-mapappend
+    (implies (and (member k (element-listxformer j))
+                  (member j x))
+             (member k (elementlist-mapappend x)))))
 
 
 
@@ -147,7 +187,43 @@ library.")
                    (:rewrite :corollary (implies (and (subsetp x y)
                                                       (not (member a y)))
                                                  (not (member a x)))))
-    :hints(("Goal" :induct (len x)))))
+    :hints(("Goal" :induct (len x))))
+
+
+  (def-listp-rule element-list-p-when-subsetp-equal-true-list
+    (implies (and (subsetp-equal x y)
+                  (element-list-p y)
+                  (not (element-list-final-cdr-p t)))
+             (equal (element-list-p x)
+                    (true-listp x)))
+    :requirement true-listp
+    :name element-list-p-when-subsetp-equal
+    :body (and (implies (and (subsetp-equal x y)
+                             (element-list-p y))
+                        (equal (element-list-p x)
+                               (true-listp x)))
+               (implies (and (element-list-p y)
+                             (subsetp-equal x y))
+                        (equal (element-list-p x)
+                               (true-listp x)))))
+
+  (def-listp-rule element-list-p-when-subsetp-equal-non-true-list
+    (implies (and (subsetp-equal x y)
+                  (element-list-p y)
+                  (element-list-final-cdr-p t))
+             (element-list-p x))
+    :requirement (not true-listp)
+    :name element-list-p-when-subsetp-equal
+    :body (and (implies (and (subsetp-equal x y)
+                             (element-list-p y))
+                        (element-list-p x))
+               (implies (and (element-list-p y)
+                             (subsetp-equal x y))
+                        (element-list-p x))))
+
+  (def-projection-rule subsetp-of-elementlist-projection-when-subsetp
+    (implies (subsetp x y)
+             (subsetp (elementlist-projection x) (elementlist-projection y)))))
 
 
 
@@ -301,7 +377,13 @@ heavier-weight (but not necessarily recommended) alternative is to use the
 
     (defequiv set-equiv))
 
-  (defrefinement list-equiv set-equiv))
+  (defrefinement list-equiv set-equiv)
+
+  (def-projection-rule set-equiv-congruence-over-elementlist-projection
+    (implies (set-equiv x y)
+             (set-equiv (elementlist-projection x)
+                        (elementlist-projection y)))
+    :rule-classes :congruence))
 
 
 (defsection set-equiv-congruences
@@ -311,7 +393,17 @@ heavier-weight (but not necessarily recommended) alternative is to use the
   (defcong set-equiv iff (member x y) 2)
 
   (defcong set-equiv equal (subsetp x y) 2)
-  (defcong set-equiv equal (subsetp x y) 1))
+  (defcong set-equiv equal (subsetp x y) 1)
+
+  (def-listp-rule element-list-p-set-equiv-congruence
+    (implies (and (element-list-final-cdr-p t)
+                  (set-equiv x y))
+             (equal (equal (element-list-p x) (element-list-p y))
+                    t))
+    :requirement (not true-listp)
+    :body (implies (set-equiv x y)
+                   (equal (element-list-p x) (element-list-p y)))
+    :inst-rule-classes :congruence))
 
 (local (in-theory (disable member)))
 (in-theory (disable subsetp intersectp set-equiv))
@@ -430,7 +522,29 @@ about set equivalence.</p>"
     (iff (subsetp a (intersection-equal b c))
          (and (subsetp a b)
               (subsetp a c)))
-    :hints(("Goal" :in-theory (enable subsetp)))))
+    :hints(("Goal" :in-theory (enable subsetp))))
+
+  (local (defthm subsetp-of-elementlist-mapappend-when-subset-of-element-listxformer
+           (implies (and (subsetp x (element-listxformer z))
+                         (member z y))
+                    (subsetp x (elementlist-mapappend y)))))
+  
+  (local (defthm subsetp-element-listxformer-of-elementlist-mapappend
+           (implies (member x y)
+                    (subsetp (element-listxformer x) (elementlist-mapappend y)))))
+  
+  (def-mapappend-rule subsetp-of-elementlist-mapappend-when-subsetp
+    (implies (subsetp x y)
+             (subsetp (elementlist-mapappend x)
+                      (elementlist-mapappend y)))
+    :hints(("Goal" :in-theory (enable subsetp))))
+
+  (def-mapappend-rule set-equiv-congruence-over-elementlist-mapappend
+    (implies (set-equiv x y)
+             (set-equiv (elementlist-mapappend x)
+                        (elementlist-mapappend y)))
+    :rule-classes :congruence
+    :hints(("Goal" :in-theory (enable set-equiv)))))
 
 
 (defthm union-equal-under-set-equiv
@@ -613,4 +727,29 @@ about set equivalence.</p>"
   (set-equiv (rcons a x)
              (cons a x))
   :hints(("Goal" :in-theory (enable rcons))))
+
+
+
+(defsection element-list-p-of-set-operations
+  
+
+  (def-listp-rule element-list-p-of-set-difference-equal
+    (implies (element-list-p x)
+             (element-list-p (set-difference-equal x y)))
+    :hints(("Goal" :in-theory (enable set-difference-equal))))
+
+  (def-listp-rule element-list-p-of-intersection-equal-1
+    (implies (element-list-p (double-rewrite x))
+             (element-list-p (intersection-equal x y)))
+    :hints(("Goal" :in-theory (enable intersection-equal))))
+
+  (def-listp-rule element-list-p-of-intersection-equal-2
+    (implies (element-list-p (double-rewrite y))
+             (element-list-p (intersection-equal x y)))
+    :hints(("Goal" :in-theory (enable intersection-equal))))
+
+  (def-listp-rule element-list-p-of-union-equal
+    (equal (element-list-p (union-equal x y))
+           (and (element-list-p (list-fix x))
+                (element-list-p (double-rewrite y))))))
 

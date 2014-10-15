@@ -1,4 +1,0 @@
-(INCLUDE-BOOK "gauss-fns")
-
-(CERTIFY-BOOK "gauss-work" ? T)
-

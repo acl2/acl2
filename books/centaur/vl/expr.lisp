@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
@@ -28,124 +38,13 @@
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (std::add-default-post-define-hook :fix))
 
-
-(defsection vl-expr-p
-  :parents (syntax)
-  :short "Representation of Verilog expressions."
-
-  :long "<p>One goal of our expression representation was for the recursive
-structure of expressions to be as simple as possible.  More specifically, I did
-not want to have a different representation for a unary expression than for a
-binary expression, etc.  Instead, I just wanted each operator to take a list of
-arguments, each of which were themselves valid subexpressions.</p>
-
-<h3>Basic Terminology</h3>
-
-<h5>Atomic Expressions</h5>
-
-<p>The atomic expressions are recognized by @(see vl-atom-p).  Each
-atomic expression includes some <b>guts</b>, which refer to either an:</p>
-
-<ul>
-
-<li>@(see vl-id-p): a simple, non-hierarchical identifier,</li>
-
-<li>@(see vl-constint-p): an integer literal with no X or Z bits,</li>
-<li>@(see vl-weirdint-p): an integer literal with some X or Z bits,</li>
-<li>@(see vl-extint-p): an unbased, unsized integer literal like @(''0') or
-@(''x'),</li>
-
-<li>@(see vl-real-p): a \"real literal\", i.e., a floating point number,</li>
-
-<li>@(see vl-string-p): a string literal,</li>
-
-<li>@(see vl-time-p): time literals like @('3ns'),</li>
-
-<li>@(see vl-keyguts-p): special atomic expressions like @('null'), @('this'),
-@('super'), @('$'), @('local'), etc.</li>
-
-<li>@(see vl-hidpiece-p): one piece of a hierarchical identifier,</li>
-
-<li>@(see vl-funname-p): the name of an ordinary function, or</li>
-
-<li>@(see vl-sysfunname-p): the name of a system function (e.g.,
-@('$display')).</li>
-
-<li>@(see vl-basictype-p): simple type names like @('byte'), @('shortint'),
-@('time'), @('logic'), etc.</li>
-
-<li>@(see vl-tagname-p): the name of a tagged union type member.</li>
-
-</ul>
-
-<p>Some of these are probably not things you would ordinarily think of as
-atomic expressions.  However, accepting them as atomic expressions lets us
-achieve the straightforward recursive structure we desire for expressions.</p>
-
-<p>In addition to their guts, each @(see vl-atom-p) includes a</p>
-
-<ul>
-
-<li>@('finalwidth'), which is a @(see maybe-natp), and</li>
-
-<li>@('finaltype'), which is a @(see vl-maybe-exprtype-p).</li>
-
-</ul>
-
-<p>Typically, when we have just parsed the modules, these fields are left
-@('nil'): their values are only filled in during our expression typing and
-sizing computations.</p>
-
-<h5>Non-Atomic Expressions</h5>
-
-<p>All non-atomic expressions share a common cons structure, and @(see
-vl-nonatom-p) is a simple, non-recursive, structural validity check to see if
-this structure is obeyed at the top level.  Note that @(see vl-nonatom-p) is
-<b>not</b> sufficient to ensure that the object is a valid expression, because
-additional constraints (e.g., arity checks, recursive well-formedness) are
-imposed by @('vl-expr-p').</p>
-
-<p>Like atomic expressions, each @('vl-nonatom-p') includes @('finalwidth') and
-@('finaltype') fields, which are @('nil') upon parsing and may later be filled
-in by our expression typing and sizing computations.  To be accepted by
-@('vl-nonatom-p'), the @('finalwidth') and @('finaltype') must be valid @(see
-maybe-natp) and @(see vl-maybe-exprtype-p) objects, respectively.</p>
-
-<p>Additionally, each non-atomic expression includes:</p>
-
-<ul>
-
-<li>@('op'), the operation being applied.  For structural validity, @('op')
-must be one of the known operators found in @(see *vl-ops-table*).</li>
-
-<li>@('args'), the arguments the operation is being applied to.  No structural
-constraints are imposed upon @('args').</li>
-
-<li>@('atts'), which represent any attributes written in the @('(* foo = bar,
-baz *)') style that Verilog-2005 permits.  No structural constraints are placed
-upon @('atts').</li>
-
-</ul>
-
-<h5>Valid Expressions</h5>
-
-<p>The valid expressions are recognized by @(see vl-expr-p), which extends our
-basic structural checks recursively over the expression, and also ensures that
-each operator has the proper arity.</p>
-
-<h3>Definition</h3>
-
-@(def vl-expr-p)
-
-<h3>Basic Theorems</h3>")
-
-(local (xdoc::set-default-parents vl-expr-p))
+(local (xdoc::set-default-parents expressions))
 
 (defval *vl-ops-table*
   :short "Table of operators and their arities."
 
   :long "<p>The constant @(srclink *vl-ops-table*) defines the valid operators
-for @(see vl-nonatom-p) expressions.  It is preferred not to access this table
+in our expression representation.  It is preferred not to access this table
 directly, but rather to use @(see vl-op-p) and @(see vl-op-arity).</p>
 
 <p>The @('*vl-ops-table*') is an alist that maps our operators (keyword
@@ -209,15 +108,24 @@ arities (e.g., concatenation, function calls, ...), we map the operator to
 <h5>Selection Operators</h5>
 
 <ul>
-<li>@('foo[1]') initially becomes @(':vl-index').  Later these should be
-changed to @(':vl-bitselect') or @(':vl-array-index'), as appropriate.</li>
-<li>@('foo[3 : 1]')  becomes @(':vl-partselect-colon') (arity 3)</li>
-<li>@('foo[3 +: 1]') becomes @(':vl-partselect-pluscolon') (arity 3)</li>
-<li>@('foo[3 -: 1]') becomes @(':vl-partselect-minuscolon') (arity 3)</li>
+
+<li>@('foo[1]') initially becomes @(':vl-index').  Later these are changed to
+@(':vl-bitselect') if they are determined to be bitselects (i.e., applied to a
+simple vector type).</li>
+
+<li>@('foo[3 : 1]') becomes @(':vl-select-colon') (arity 3), similarly changed to
+@('vl-partselect-colon') if applied to a simple vector.</li>
+
+<li>@('foo[3 +: 1]') becomes @(':vl-select-pluscolon') (arity 3), similarly
+changed to @('vl-partselect-pluscolon') if applied to a simple vector.</li>
+
+<li>@('foo[3 -: 1]') becomes @(':vl-select-minuscolon') (arity 3), similarly
+changed to @('vl-partselect-minuscolon') if applied to a simple vector.</li>
+
 </ul>
 
 <p>Note that upon parsing, there are no @(':vl-bitselect') or
-@(':vl-array-index') operators; these must be introduced by the @(see
+@(':vl-partselect-*') operators; these must be introduced by the @(see
 resolve-indexing) transform.</p>
 
 <h5>Concatenation and Replication Operators</h5>
@@ -267,7 +175,15 @@ hierarchical identifiers.</p>
 <li>@('foo.bar') becomes @(':vl-hid-dot') (arity 2)</li>
 <li>@('foo[3][4].bar') becomes a @(':vl-hid-dot') whose @('from') argument
 is a tree of @(':vl-index') operators.</li>
-</ul>"
+</ul>
+
+<h5>Casting</h5>
+
+<p>The SystemVerilog-2012 casting operator, e.g., @('int'(2.0)'), is
+represented with a binary operator, @(':vl-binary-cast').  The first argument
+is the desired type (e.g., @('int')), and the second argument is the expression
+to cast to this type (e.g., @('2.0')).  See Section 6.24 from the
+SystemVerilog-2012 Standard.</p>"
 
   (list
    ;; Basic Unary Operators
@@ -319,9 +235,11 @@ is a tree of @(':vl-index') operators.</li>
    (cons :vl-mintypmax             3)   ;;; e.g., (1 : 2 : 3)
 
    ;; Selection Operators
-   (cons :vl-index                 2) ;;; e.g., foo[1] before determining array/wire
+   (cons :vl-index                 2) ;;; e.g., foo[1] before determining bitselect
    (cons :vl-bitselect             2) ;;; e.g., foo[1] for wire bit selections
-   (cons :vl-array-index           2) ;;; e.g., foo[1] for array indexing
+   (cons :vl-select-colon          3) ;;; e.g., foo[3 : 1]  before determining simple vector
+   (cons :vl-select-pluscolon      3) ;;; e.g., foo[3 +: 1]
+   (cons :vl-select-minuscolon     3) ;;; e.g., foo[3 -: 1]
    (cons :vl-partselect-colon      3) ;;; e.g., foo[3 : 1]
    (cons :vl-partselect-pluscolon  3) ;;; e.g., foo[3 +: 1]
    (cons :vl-partselect-minuscolon 3) ;;; e.g., foo[3 -: 1]
@@ -350,6 +268,9 @@ is a tree of @(':vl-index') operators.</li>
 
    ;; Tagged Union Expressions, should have arity 1 or 2
    (cons :vl-tagged nil) ;; e.g., "tagged Valid 13" or "tagged Invalid"
+
+   ;; Casting Expressions
+   (cons :vl-binary-cast           2)    ;;; e.g., int'(2.0)
 
    ))
 
@@ -399,11 +320,8 @@ and avoid large case splits.</p>"
 
 (fty::deflist vl-oplist
               :elt-type vl-op-p
-              :true-listp nil)
-
-(deflist vl-oplist-p (x)
-  (vl-op-p x)
-  :elementp-of-nil nil)
+              :true-listp nil
+              :elementp-of-nil nil)
 
 
 (define vl-op-arity ((x vl-op-p))
@@ -806,7 +724,13 @@ distinguished by keywords such as @('null'), @('this'), @('super'), @('$'),
    :vl-reg
    :vl-shortreal
    :vl-real
-   :vl-realtime)
+   :vl-realtime
+   ;; Extra things that are valid in casts.
+   :vl-signed
+   :vl-unsigned
+   :vl-string
+   :vl-const
+   )
   :parents (vl-basictype-p)
   :short "The various kinds of basic, atomic, built-in SystemVerilog types.")
 
@@ -923,7 +847,9 @@ vl-atomguts-p) is already known."
   (mbe :logic (vl-sysfunname-p x)
        :exec (eq (tag x) :vl-sysfunname)))
 
-(defoption maybe-natp natp) ;; BOZO misplaced
+(defoption maybe-natp natp
+  ;; BOZO misplaced, :parents nil to settle documentation issues
+  :parents nil)
 
 
 (define vl-arity-ok-p ((op vl-op-p) (args))
@@ -980,7 +906,103 @@ vl-atomguts-p) is already known."
              (equal (vl-arity-fix op args) args))))
 
 
-(deftypes vl-expr
+(deftypes expressions
+  :parents (syntax)
+  :short "Representation of Verilog expressions."
+
+  :long "<p>One goal of our expression representation was for the recursive
+structure of expressions to be as simple as possible.  More specifically, I did
+not want to have a different representation for a unary expression than for a
+binary expression, etc.  Instead, I just wanted each operator to take a list of
+arguments, each of which were themselves valid subexpressions.</p>
+
+<h3>Basic Terminology</h3>
+
+<h5>Atomic Expressions</h5>
+
+<p>The atomic expressions are recognized by @(see vl-atom-p).  Each
+atomic expression includes some <b>guts</b>, which refer to either an:</p>
+
+<ul>
+
+<li>@(see vl-id-p): a simple, non-hierarchical identifier,</li>
+
+<li>@(see vl-constint-p): an integer literal with no X or Z bits,</li>
+<li>@(see vl-weirdint-p): an integer literal with some X or Z bits,</li>
+<li>@(see vl-extint-p): an unbased, unsized integer literal like @(''0') or
+@(''x'),</li>
+
+<li>@(see vl-real-p): a \"real literal\", i.e., a floating point number,</li>
+
+<li>@(see vl-string-p): a string literal,</li>
+
+<li>@(see vl-time-p): time literals like @('3ns'),</li>
+
+<li>@(see vl-keyguts-p): special atomic expressions like @('null'), @('this'),
+@('super'), @('$'), @('local'), etc.</li>
+
+<li>@(see vl-hidpiece-p): one piece of a hierarchical identifier,</li>
+
+<li>@(see vl-funname-p): the name of an ordinary function, or</li>
+
+<li>@(see vl-sysfunname-p): the name of a system function (e.g.,
+@('$display')).</li>
+
+<li>@(see vl-basictype-p): simple type names like @('byte'), @('shortint'),
+@('time'), @('logic'), etc.</li>
+
+<li>@(see vl-tagname-p): the name of a tagged union type member.</li>
+
+</ul>
+
+<p>Some of these are probably not things you would ordinarily think of as
+atomic expressions.  However, accepting them as atomic expressions lets us
+achieve the straightforward recursive structure we desire for expressions.</p>
+
+<p>In addition to their guts, each @(see vl-atom-p) includes a</p>
+
+<ul>
+
+<li>@('finalwidth'), which is a @(see maybe-natp), and</li>
+
+<li>@('finaltype'), which is a @(see vl-maybe-exprtype-p).</li>
+
+</ul>
+
+<p>Typically, when we have just parsed the modules, these fields are left
+@('nil'): their values are only filled in during our expression typing and
+sizing computations.</p>
+
+<h5>Non-Atomic Expressions</h5>
+
+<p>A non-atomic expression represents an operator being applied to some
+arguments.</p>
+
+<p>Like atomic expressions, each @('vl-nonatom-p') includes @('finalwidth') and
+@('finaltype') fields, which are @('nil') upon parsing and may later be filled
+in by our expression typing and sizing computations.</p>
+
+<p>Additionally, each non-atomic expression includes:</p>
+
+<ul>
+
+<li>@('op'), the operation being applied.  For structural validity, @('op')
+must be one of the known operators found in @(see *vl-ops-table*).</li>
+
+<li>@('args'), the arguments the operation is being applied to.  No structural
+constraints are imposed upon @('args').</li>
+
+<li>@('atts'), which represent any attributes written in the @('(* foo = bar,
+baz *)') style that Verilog-2005 permits.  No structural constraints are placed
+upon @('atts').</li>
+
+</ul>
+
+<h5>Valid Expressions</h5>
+
+<p>The valid expressions are recognized by @(see vl-expr-p), which extends our
+basic structural checks recursively over the expression, and also ensures that
+each operator has the proper arity.</p>"
 
   (deftagsum vl-expr
     (:atom
@@ -1045,6 +1067,7 @@ vl-atomguts-p) is already known."
   (fty::deflist vl-exprlist
     :elt-type vl-expr-p
     :true-listp nil
+    :elementp-of-nil nil
     :measure (two-nats-measure (acl2-count x) 0)
     :count   vl-exprlist-count-raw)
 
@@ -1054,7 +1077,114 @@ vl-atomguts-p) is already known."
     :val-type vl-maybe-expr
     :measure (two-nats-measure (acl2-count x) 0)
     :count   vl-atts-count-raw
-    :true-listp t)
+    :true-listp t
+    :keyp-of-nil nil
+    :valp-of-nil t
+    :short "Representation of @('(* foo = 3, bar *)') style attributes."
+
+    :long "<p>Verilog-2005 and SystemVerilog-2012 allow many constructs, (e.g.,
+module instances, wire declarations, assignments, subexpressions, and so on) to
+be annotated with <b>attributes</b>.</p>
+
+<p>Each individual attribute can either be a single key with no value (e.g.,
+@('baz') above), or can have the form @('key = value').  The keys are always
+identifiers, and the values (if provided) are expressions.  Both Verilog-2005
+and SystemVerilog-2012 agree that an attribute with no explicit value is to be
+treated as having value @('1').</p>
+
+
+<h3>Representation</h3>
+
+<p>We represent attributes as alists mapping names to their values.  We use
+ordinary ACL2 strings to represent the keys.  These strings are typically
+honsed to improve memory sharing.  Each explicit value is represented by an
+ordinary @(see vl-expr-p), and keys with no values are bound to @('nil')
+instead.</p>
+
+@(def vl-atts-p)
+
+<h3>Size/Types of Attribute Values</h3>
+
+<p>Verilog-2005 doesn't say anything about the types of attribute
+expressions.</p>
+
+<p>SystemVerilog-2012 says (Section 5.12) that the type of an attribute with no
+value is @('bit'), and that otherwise its type is the (presumably
+self-determined) type of the expression.</p>
+
+<p>This is not really an adequate spec.  Consider for instance an attribute
+like:</p>
+
+@({
+    (* foo = a + b *)
+})
+
+<p>Attributes live in their own namespace and are generally not very
+well-specified.  It isn't clear what @('a') and @('b') refer to here.  For
+instance, are they wires in this module, or perhaps global values that are
+known by the Verilog tool.  It doesn't seem at all clear what the type or size
+of such an expression is supposed to be.</p>
+
+<p>Well, no matter.  Attributes are not used for much and if their sizes and
+types aren't well specified, that's not necessarily any kind of problem.  For
+VL's part, our sizing code simply ignores attributes and does not try to
+determine their sizes and types at all.</p>
+
+
+<h3>Nesting Attributes</h3>
+
+<p>Note that both Verilog-2005 and SystemVerilog-2012 prohibit the nesting of
+attributes.  That is, expressions like the following are not allowed:</p>
+
+@({
+     (* foo = a + (* bar *) b *)
+})
+
+<p>VL's parser enforces this restriction and will not allow expressions to have
+nested attributes; see @(see vl-parse-0+-attribute-instances).</p>
+
+<p>Internally we make <b>no such restriction</b>.  Our @(see vl-expr-p)
+structures can have attributes nested to any arbitrary depth.</p>
+
+
+<h3>Redundant and Conflicting Attributes</h3>
+
+<p>When the same attribute name is given repeatedly, both Verilog-2005 and
+SystemVerilog-2012 agree that the last occurrences of the attribute should be
+used.  That is, the value of @('foo') below should be 5:</p>
+
+@({
+     (* foo = 1, foo = 5 *)
+     assign w = a + b;
+})
+
+<p>VL's parser properly handles this case.  It issues warnings when duplicate
+attributes are used, and always produces @('vl-atts-p') structures that are
+free from duplicate keys, and where the entry for each attribute corresponds to
+the last occurrence of it; see @(see vl-parse-0+-attribute-instances).</p>
+
+<p>Internally we make <b>no such restriction</b>.  We treat @('vl-atts-p')
+structures as ordinary alists.</p>
+
+
+<h3>Internal Use of Attributes by VL</h3>
+
+<p>VL transformations occasionally add attributes throughout modules.  As a
+couple of examples:</p>
+
+<ul>
+
+<li>The @('VL_HANDS_OFF') attribute is used to say that a module is somehow
+special and should not be modified by transformations.</li>
+
+<li>VL may add @('VL_ORIG_EXPR') annotations to remember the \"original\"
+versions of expressions, before any rewriting or other simplification has taken
+place; these annotations can be useful in error messages.</li>
+
+</ul>
+
+<p>As a general rule, attributes added by VL <i>should</i> be prefixed with
+@('VL_').  In practice, we may sometimes forget to follow this rule.</p>")
 
   (fty::defflexsum vl-maybe-expr
     (:null :cond (not x)
@@ -1069,9 +1199,21 @@ vl-atomguts-p) is already known."
     :post-pred-events
     ((defthm vl-expr-p-of-vl-default-expression
        (vl-expr-p *vl-default-expr*))
-     (deflist vl-exprlist-p (x)
-       (vl-expr-p x)
-       :elementp-of-nil nil)
+     (local (defthm vl-exprlist-p-of-replicate-tmp
+              (implies (vl-expr-p x)
+                       (vl-exprlist-p (replicate n x)))
+              :hints(("Goal" :in-theory (enable replicate)))))
+     (local (defthm vl-exprlist-p-of-take-tmp
+              (implies (and (vl-exprlist-p x)
+                            (< (nfix n) (len x)))
+                       (vl-exprlist-p (take n x)))
+              :hints(("Goal" :in-theory (enable acl2::take-redefinition
+                                                acl2::take-induction)))))
+     (local (defthm vl-exprlist-p-of-append-tmp
+              (implies (and (vl-exprlist-p x)
+                            (vl-exprlist-p y))
+                       (vl-exprlist-p (append x y)))
+              :hints(("Goal" :in-theory (enable append)))))
      (defthm vl-exprlist-p-of-vl-arity-fix
        (implies (vl-exprlist-p x)
                 (vl-exprlist-p (vl-arity-fix op x)))
@@ -1083,7 +1225,6 @@ vl-atomguts-p) is already known."
        (equal (vl-arity-ok-p op (vl-exprlist-fix x))
               (vl-arity-ok-p op x))
        :hints(("Goal" :in-theory (enable vl-arity-ok-p)))))))
-
 
 
 (define vl-atom-p ((x vl-expr-p))
@@ -1275,135 +1416,24 @@ is a @(see vl-maybe-exprtype-p).</p>"
 
   )
 
-(defsection vl-atts-p
-  :short "Representation of @('(* foo = 3, bar *)') style attributes."
-
-  :long "<p>Verilog-2005 and SystemVerilog-2012 allow many constructs, (e.g.,
-module instances, wire declarations, assignments, subexpressions, and so on) to
-be annotated with <b>attributes</b>.</p>
-
-<p>Each individual attribute can either be a single key with no value (e.g.,
-@('baz') above), or can have the form @('key = value').  The keys are always
-identifiers, and the values (if provided) are expressions.  Both Verilog-2005
-and SystemVerilog-2012 agree that an attribute with no explicit value is to be
-treated as having value @('1').</p>
 
 
-<h3>Representation</h3>
-
-<p>We represent attributes as alists mapping names to their values.  We use
-ordinary ACL2 strings to represent the keys.  These strings are typically
-honsed to improve memory sharing.  Each explicit value is represented by an
-ordinary @(see vl-expr-p), and keys with no values are bound to @('nil')
-instead.</p>
-
-@(def vl-atts-p)
-
-
-<h3>Size/Types of Attribute Values</h3>
-
-<p>Verilog-2005 doesn't say anything about the types of attribute
-expressions.</p>
-
-<p>SystemVerilog-2012 says (Section 5.12) that the type of an attribute with no
-value is @('bit'), and that otherwise its type is the (presumably
-self-determined) type of the expression.</p>
-
-<p>This is not really an adequate spec.  Consider for instance an attribute
-like:</p>
-
-@({
-    (* foo = a + b *)
-})
-
-<p>Attributes live in their own namespace and are generally not very
-well-specified.  It isn't clear what @('a') and @('b') refer to here.  For
-instance, are they wires in this module, or perhaps global values that are
-known by the Verilog tool.  It doesn't seem at all clear what the type or size
-of such an expression is supposed to be.</p>
-
-<p>Well, no matter.  Attributes are not used for much and if their sizes and
-types aren't well specified, that's not necessarily any kind of problem.  For
-VL's part, our sizing code simply ignores attributes and does not try to
-determine their sizes and types at all.</p>
-
-
-<h3>Nesting Attributes</h3>
-
-<p>Note that both Verilog-2005 and SystemVerilog-2012 prohibit the nesting of
-attributes.  That is, expressions like the following are not allowed:</p>
-
-@({
-     (* foo = a + (* bar *) b *)
-})
-
-<p>VL's parser enforces this restriction and will not allow expressions to have
-nested attributes; see @(see vl-parse-0+-attribute-instances).</p>
-
-<p>Internally we make <b>no such restriction</b>.  Our @(see vl-expr-p)
-structures can have attributes nested to any arbitrary depth.</p>
-
-
-<h3>Redundant and Conflicting Attributes</h3>
-
-<p>When the same attribute name is given repeatedly, both Verilog-2005 and
-SystemVerilog-2012 agree that the last occurrences of the attribute should be
-used.  That is, the value of @('foo') below should be 5:</p>
-
-@({
-     (* foo = 1, foo = 5 *)
-     assign w = a + b;
-})
-
-<p>VL's parser properly handles this case.  It issues warnings when duplicate
-attributes are used, and always produces @('vl-atts-p') structures that are
-free from duplicate keys, and where the entry for each attribute corresponds to
-the last occurrence of it; see @(see vl-parse-0+-attribute-instances).</p>
-
-<p>Internally we make <b>no such restriction</b>.  We treat @('vl-atts-p')
-structures as ordinary alists.</p>
-
-
-<h3>Internal Use of Attributes by VL</h3>
-
-<p>VL transformations occasionally add attributes throughout modules.  As a
-couple of examples:</p>
-
-<ul>
-
-<li>The @('VL_HANDS_OFF') attribute is used to say that a module is somehow
-special and should not be modified by transformations.</li>
-
-<li>VL may add @('VL_ORIG_EXPR') annotations to remember the \"original\"
-versions of expressions, before any rewriting or other simplification has taken
-place; these annotations can be useful in error messages.</li>
-
-</ul>
-
-<p>As a general rule, attributes added by VL <i>should</i> be prefixed with
-@('VL_').  In practice, we may sometimes forget to follow this rule.</p>"
+(defsection vl-atts-p-thms
+  :extension vl-atts-p
 
   (local (in-theory (enable vl-atts-p)))
 
-  (defthm vl-atts-p-when-not-consp
-    (implies (not (consp x))
-             (equal (vl-atts-p x)
-                    (not x))))
+  ;; (defthm vl-atts-p-when-not-consp
+  ;;   (implies (not (consp x))
+  ;;            (equal (vl-atts-p x)
+  ;;                   (not x))))
 
-  (defthm vl-atts-p-of-cons
-    (equal (vl-atts-p (cons a x))
-           (and (consp a)
-                (stringp (car a))
-                (vl-maybe-expr-p (cdr a))
-                (vl-atts-p x))))
-
-  (defalist vl-atts-p (x)
-    :key (stringp x)
-    :val (vl-maybe-expr-p x)
-    :keyp-of-nil nil
-    :valp-of-nil t
-    :already-definedp t
-    :true-listp t)
+  ;; (defthm vl-atts-p-of-cons
+  ;;   (equal (vl-atts-p (cons a x))
+  ;;          (and (consp a)
+  ;;               (stringp (car a))
+  ;;               (vl-maybe-expr-p (cdr a))
+  ;;               (vl-atts-p x))))
 
   (defthm alistp-when-vl-atts-p-rewrite
     ;; This is potentially expensive, but without it we sometimes fail to
@@ -1467,22 +1497,20 @@ place; these annotations can be useful in error messages.</li>
   :parents (vl-exprlist-p))
 
 (fty::deflist vl-exprlistlist
-              :elt-type vl-exprlist-p
-              :true-listp nil)
-
-(deflist vl-exprlistlist-p (x)
-  (vl-exprlist-p x)
+  :elt-type vl-exprlist-p
   :elementp-of-nil t
-  :rest
-  ((defthm vl-exprlist-p-of-flatten
-     (implies (vl-exprlistlist-p x)
-              (vl-exprlist-p (flatten x))))
+  :true-listp nil
+  ///
+  (defthm vl-exprlist-p-of-flatten
+    (implies (vl-exprlistlist-p x)
+             (vl-exprlist-p (flatten x)))
+    :hints(("Goal" :in-theory (enable flatten))))
 
-   (defthm vl-exprlistlist-p-of-pairlis$
-     (implies (and (vl-exprlist-p a)
-                   (vl-exprlistlist-p x))
-              (vl-exprlistlist-p (pairlis$ a x)))
-     :hints(("Goal" :in-theory (enable pairlis$))))))
+  (defthm vl-exprlistlist-p-of-pairlis$
+    (implies (and (vl-exprlist-p a)
+                  (vl-exprlistlist-p x))
+             (vl-exprlistlist-p (pairlis$ a x)))
+    :hints(("Goal" :in-theory (enable pairlis$)))))
 
 
 
@@ -1512,7 +1540,7 @@ place; these annotations can be useful in error messages.</li>
 
 
 (defsection arity-reasoning
-  :parents (vl-op-arity vl-expr-p vl-nonatom-p)
+  :parents (vl-op-arity vl-expr vl-nonatom)
   :short "Rules for reasoning about how many arguments an expression has."
 
   :long "<p>These rules have evolved a lot over time.  The current iteration
@@ -1613,4 +1641,50 @@ fairly easily solve the HIDEXPR problem.</p>"
             :in-theory (e/d (vl-arity-ok-p)
                             (vl-nonatom-requirements len-of-vl-nonatom->args))
             :use ((:instance vl-nonatom-requirements))))))
+
+
+
+
+(defsection vl-exprlist-fix-basics
+
+  ;; BOZO should FTY automatically prove this kind of stuff?
+
+  (defthm vl-exprlist-fix-of-list-fix
+    (equal (vl-exprlist-fix (list-fix x))
+           (list-fix (vl-exprlist-fix x)))
+    :hints(("Goal" :induct (len x))))
+
+  (defthm vl-exprlist-fix-of-append
+    (equal (vl-exprlist-fix (append x y))
+           (append (vl-exprlist-fix x) (vl-exprlist-fix y)))
+    :hints(("Goal" :induct (len x))))
+
+  (defthm vl-exprlist-fix-of-rev
+    (equal (vl-exprlist-fix (rev x))
+           (rev (vl-exprlist-fix x)))
+    :hints(("Goal" :induct (len x))))
+
+  (defthm vl-exprlist-fix-of-nthcdr
+    (equal (vl-exprlist-fix (nthcdr n x))
+           (nthcdr n (vl-exprlist-fix x)))
+    :hints(("Goal"
+            :in-theory (e/d (nthcdr)
+                            (acl2::nthcdr-of-cdr))
+            :do-not '(generalize fertilize))))
+
+  (defthm vl-exprlist-fix-of-take
+    (equal (take n (vl-exprlist-fix x))
+           (if (<= (nfix n) (len x))
+               (vl-exprlist-fix (take n x))
+             (append (vl-exprlist-fix x)
+                     (replicate (- (nfix n) (len x)) nil))))
+    :hints(("Goal" :in-theory (enable acl2::take-redefinition))))
+
+  (defcong vl-exprlist-equiv vl-exprlist-equiv (list-fix x) 1)
+  (defcong vl-exprlist-equiv vl-exprlist-equiv (append x y) 1)
+  (defcong vl-exprlist-equiv vl-exprlist-equiv (append x y) 2)
+  (defcong vl-exprlist-equiv vl-exprlist-equiv (rev x) 1)
+  (defcong vl-exprlist-equiv vl-exprlist-equiv (take n x) 2
+    :hints(("Goal" :in-theory (enable acl2::take-redefinition))))
+  (defcong vl-exprlist-equiv vl-exprlist-equiv (nthcdr n x) 2))
 

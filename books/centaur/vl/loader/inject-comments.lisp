@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
@@ -267,7 +277,7 @@ and max, gathering their comments.</p>"
 (define vl-description-has-comments-p ((x vl-description-p))
   (b* ((x (vl-description-fix x)))
     (case (tag x)
-      ((:vl-module :vl-udp :vl-interface :vl-package :vl-program :vl-config)
+      ((:vl-module :vl-udp :vl-interface :vl-package :vl-program :vl-config :vl-typedef)
        t)
       (otherwise
        nil))))
@@ -284,14 +294,15 @@ and max, gathering their comments.</p>"
       (:vl-package   (vl-package->minloc x))
       (:vl-program   (vl-program->minloc x))
       (:vl-config    (vl-config->minloc x))
+      (:vl-typedef   (vl-typedef->minloc x))
       ;; Other things don't necessarily have minlocs, but we'll just use their
       ;; ordinary locations.
-      (:vl-netdecl   (vl-netdecl->loc x))
-      (:vl-taskdecl  (vl-taskdecl->loc x))
-      (:vl-fundecl   (vl-fundecl->loc x))
-      (:vl-paramdecl (vl-paramdecl->loc x))
-      (:vl-import    (vl-import->loc x))
-      (otherwise     (progn$ (impossible) *vl-fakeloc*)))))
+      (:vl-taskdecl   (vl-taskdecl->loc x))
+      (:vl-fundecl    (vl-fundecl->loc x))
+      (:vl-paramdecl  (vl-paramdecl->loc x))
+      (:vl-import     (vl-import->loc x))
+      (:vl-fwdtypedef (vl-fwdtypedef->loc x))
+      (otherwise      (progn$ (impossible) *vl-fakeloc*)))))
 
 (define vl-description->maxloc ((x vl-description-p))
   :returns (maxloc vl-location-p)
@@ -303,14 +314,15 @@ and max, gathering their comments.</p>"
       (:vl-package   (vl-package->maxloc x))
       (:vl-program   (vl-program->maxloc x))
       (:vl-config    (vl-config->maxloc x))
+      (:vl-typedef   (vl-typedef->maxloc x))
       ;; Other things don't have separate min/max locs, but we'll just use
       ;; their ordinary locations.
-      (:vl-netdecl   (vl-netdecl->loc x))
-      (:vl-taskdecl  (vl-taskdecl->loc x))
-      (:vl-fundecl   (vl-fundecl->loc x))
-      (:vl-paramdecl (vl-paramdecl->loc x))
-      (:vl-import    (vl-import->loc x))
-      (otherwise     (progn$ (impossible) *vl-fakeloc*)))))
+      (:vl-taskdecl   (vl-taskdecl->loc x))
+      (:vl-fundecl    (vl-fundecl->loc x))
+      (:vl-paramdecl  (vl-paramdecl->loc x))
+      (:vl-import     (vl-import->loc x))
+      (:vl-fwdtypedef (vl-fwdtypedef->loc x))
+      (otherwise      (progn$ (impossible) *vl-fakeloc*)))))
 
 (define vl-description->comments ((x vl-description-p))
   :guard (vl-description-has-comments-p x)
@@ -323,6 +335,7 @@ and max, gathering their comments.</p>"
       (:vl-package   (vl-package->comments x))
       (:vl-program   (vl-program->comments x))
       (:vl-config    (vl-config->comments x))
+      (:vl-typedef   (vl-typedef->comments x))
       (otherwise     (impossible)))))
 
 (define vl-description-add-warning ((x vl-description-p)
@@ -337,6 +350,7 @@ and max, gathering their comments.</p>"
       (:vl-package   (change-vl-package   x :warnings (cons warning (vl-package->warnings x))))
       (:vl-program   (change-vl-program   x :warnings (cons warning (vl-program->warnings x))))
       (:vl-config    (change-vl-config    x :warnings (cons warning (vl-config->warnings x))))
+      (:vl-typedef   (change-vl-typedef   x :warnings (cons warning (vl-typedef->warnings x))))
       (otherwise     (progn$ (impossible) x))))
   ///
   (defthm vl-description->name-of-vl-description-add-warning
@@ -357,6 +371,7 @@ and max, gathering their comments.</p>"
       (:vl-package   (change-vl-package   x :comments comments))
       (:vl-program   (change-vl-program   x :comments comments))
       (:vl-config    (change-vl-config    x :comments comments))
+      (:vl-typedef   (change-vl-typedef   x :comments comments))
       (otherwise     (progn$ (impossible) x))))
   ///
   (defthm vl-description->name-of-vl-description-set-comments
@@ -508,7 +523,6 @@ module.</p>"
     (equal (vl-descriptionlist->names (vl-descriptionlist-inject-comments-aux x fal all-descs))
            (vl-descriptionlist->names x))))
 
-
 (define vl-descriptionlist-inject-comments
   :parents (vl-commentmap-p)
   :short "Associate all comments with their modules/interfaces/etc."
@@ -516,7 +530,54 @@ module.</p>"
    (comment-map vl-commentmap-p      "Comments gathered before parsing."))
   :returns
   (new-x vl-descriptionlist-p "Parsed descriptions with their comments attached.")
-  (b* ((fal (vl-commentmap-fal comment-map))
+  (b* ((comment-map
+        ;; Subtle.  We sort all the comments.  This sorting isn't useful for
+        ;; the comment-injection algorithm, but is only meant to remove
+        ;; duplicates.
+        ;;
+        ;; You might wonder: why in the world would there be duplicate entries
+        ;; in the comment map?  After all, it's an alist that binds locations
+        ;; to strings.  So wouldn't there only be duplicates if we've read the
+        ;; same lines of code multiple times?  Yes.  So why would we be doing
+        ;; that???
+        ;;
+        ;; The problem is that files can be `included in multiple places.
+        ;;
+        ;; Recall how `include works: when we encounter `include "foo_if.sv",
+        ;; we are to grab the entire contents of foo_if.sv and essentially
+        ;; paste them down into the superior file.  This is an extremely dumb
+        ;; process that doesn't, e.g., remember what files it has already
+        ;; loaded.  Because of this, a widely `included "header" file ends up
+        ;; getting replicated every time it is used.
+        ;;
+        ;; Normally, such header files will have "include guards" to ensure
+        ;; that the real contents of such a header are only really included
+        ;; into the design once.  For instance, a typical header might look
+        ;; like this:
+        ;;
+        ;;    // foo_if.sv
+        ;;    // Copyright (C) 2014 Centaur Technology
+        ;;    // ... more copyright information, authorship, etc ...
+        ;;
+        ;;    `ifndef INCLUDED_FOO_INTERFACE
+        ;;    `define INCLUDED_FOO_INTERFACE
+        ;;
+        ;;    interface foo ...
+        ;;      ...
+        ;;    endinterface
+        ;;
+        ;;    `endif
+        ;;
+        ;; The `ifndef stuff ensures that the actual definition of "foo" will
+        ;; not be replicated.  However, since the copyright comments here are
+        ;; not put underneath the include guard, they are essentially going to
+        ;; be replicated every time that this header is included!
+        ;;
+        ;; So, to deal with this kind of replication, we sort the comments to
+        ;; remove the duplicates before attaching them to their associated
+        ;; modules, etc.
+        (mergesort comment-map))
+       (fal (vl-commentmap-fal comment-map))
        (ret (vl-descriptionlist-inject-comments-aux x fal x)))
     (fast-alist-free fal)
     ret)

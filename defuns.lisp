@@ -1,4 +1,4 @@
-; ACL2 Version 6.4 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 6.5 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2014, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -798,7 +798,7 @@
           (merge-sort-length cl-set) nil nil))
         ens (match-free-override wrld) wrld state ttree)))))
 
-(defun measure-clause-for-branch (name tc measure-alist rel wrld)
+(defun measure-clause-for-branch (name tc measure-alist rel debug-info wrld)
 
 ; Name is the name of some function, say f0, in a mutually recursive
 ; clique.  Tc is a tests-and-call in the termination machine of f0 and hence
@@ -824,26 +824,31 @@
                     (formals f1 wrld)
                     (fargs call)
                     (cdr (assoc-eq f1 measure-alist))))
-         (concl (mcons-term* rel m1-prime m0)))
-    (add-literal concl
-                 (dumb-negate-lit-lst tests)
-                 t)))
+         (concl (mcons-term* rel m1-prime m0))
+         (clause (add-literal concl
+                              (dumb-negate-lit-lst tests)
+                              t)))
+    (maybe-add-extra-info-lit debug-info call clause wrld)))
 
-(defun measure-clauses-for-fn1 (name t-machine measure-alist rel wrld)
+(defun measure-clauses-for-fn1 (name t-machine measure-alist rel debug-info
+                                     wrld)
   (cond ((null t-machine) nil)
-        (t (conjoin-clause-to-clause-set
+        (t (conjoin-clause-to-clause-set-extra-info
             (measure-clause-for-branch name
                                        (car t-machine)
                                        measure-alist
                                        rel
+                                       debug-info
                                        wrld)
             (measure-clauses-for-fn1 name
                                      (cdr t-machine)
                                      measure-alist
                                      rel
+                                     debug-info
                                      wrld)))))
 
-(defun measure-clauses-for-fn (name t-machine measure-alist mp rel wrld)
+(defun measure-clauses-for-fn (name t-machine measure-alist mp rel
+                                    measure-debug wrld)
 
 ; We form all of the clauses that are required to be theorems for the admission
 ; of name with the given termination machine and measures.  Mp is the "domain
@@ -868,27 +873,36 @@
 
   (cond
    ((eq mp t)
-    (measure-clauses-for-fn1 name t-machine measure-alist rel wrld))
-   (t (conjoin-clause-to-clause-set
-       (add-literal (mcons-term* mp (cdr (assoc-eq name measure-alist)))
-                    nil t)
-       (measure-clauses-for-fn1 name t-machine measure-alist rel wrld)))))
+    (measure-clauses-for-fn1 name t-machine measure-alist rel
+                             (and measure-debug
+                                  `(:measure (:relation ,name)))
+                             wrld))
+   (t (conjoin-clause-to-clause-set-extra-info
+       (let ((mp-call (mcons-term* mp (cdr (assoc-eq name measure-alist)))))
+         (maybe-add-extra-info-lit (and measure-debug
+                                        `(:measure (:domain ,name)))
+                                   mp-call
+                                   (add-literal mp-call nil t)
+                                   wrld))
+       (measure-clauses-for-fn1 name t-machine measure-alist rel
+                                (and measure-debug
+                                     `(:measure (:relation ,name)))
+                                wrld)))))
 
-(defun measure-clauses-for-clique (names t-machines measure-alist mp rel wrld)
+(defun measure-clauses-for-clique (names t-machines measure-alist mp rel
+                                         measure-debug wrld)
 
 ; We assume we can obtain from wrld the 'formals for each fn in names.
 
   (cond ((null names) nil)
-        (t (conjoin-clause-sets
+        (t (conjoin-clause-sets+
+            measure-debug
             (measure-clauses-for-fn (car names)
                                     (car t-machines)
-                                    measure-alist
-                                    mp rel
-                                    wrld)
+                                    measure-alist mp rel measure-debug wrld)
             (measure-clauses-for-clique (cdr names)
                                         (cdr t-machines)
-                                        measure-alist
-                                        mp rel
+                                        measure-alist mp rel measure-debug
                                         wrld)))))
 
 (defun tilde-*-measure-phrase1 (alist wrld)
@@ -937,7 +951,7 @@
         (t (find-?-measure (cdr measure-alist)))))
 
 (defun prove-termination (names t-machines measure-alist mp rel hints otf-flg
-                                bodies ctx ens wrld state ttree)
+                                bodies measure-debug ctx ens wrld state ttree)
 
 ; Given a list of the functions introduced in a mutually recursive clique,
 ; their t-machines, the measure-alist for the clique, a domain predicate mp on
@@ -978,7 +992,7 @@
            (measure-clauses-for-clique names
                                        t-machines
                                        measure-alist
-                                       mp rel
+                                       mp rel measure-debug
                                        wrld)
            ens
            wrld ttree state))
@@ -2058,7 +2072,7 @@
     (t (value nil)))
    (er-let*
     ((wrld1 (update-w big-mutrec wrld))
-     (pair (prove-termination names nil nil mp rel nil otf-flg bodies
+     (pair (prove-termination names nil nil mp rel nil otf-flg bodies nil
                               ctx ens wrld1 state nil)))
 
 ; We know that pair is of the form (col . ttree), where col is the column
@@ -2069,8 +2083,9 @@
                  (cdr pair))))))
 
 (defun prove-termination-recursive (names arglists measures t-machines
-                                          mp rel hints otf-flg bodies ctx ens
-                                          wrld state)
+                                          mp rel hints otf-flg bodies
+                                          measure-debug
+                                          ctx ens wrld state)
 
 ; This function separates out code from put-induction-info.
 
@@ -2099,6 +2114,7 @@
                              hints
                              otf-flg
                              bodies
+                             measure-debug
                              ctx
                              ens
                              wrld
@@ -2164,8 +2180,8 @@
             subversive-p))))
 
 (defun put-induction-info (names arglists measures ruler-extenders-lst bodies
-                                 mp rel hints otf-flg big-mutrec ctx ens wrld
-                                 state)
+                                 mp rel hints otf-flg big-mutrec measure-debug
+                                 ctx ens wrld state)
 
 ; WARNING: This function installs a world.  That is safe at the time of this
 ; writing because this function is only called by defuns-fn0, which is only
@@ -2236,7 +2252,7 @@
                        wrld1))
                (triple (prove-termination-recursive
                         names arglists measures t-machines mp rel hints
-                        otf-flg bodies ctx ens wrld1 state)))
+                        otf-flg bodies measure-debug ctx ens wrld1 state)))
               (let* ((col (car triple))
                      (measure-alist (cadr triple))
                      (ttree (cddr triple)))
@@ -2706,7 +2722,7 @@
                     #+:non-standard-analysis
                     (wrld (if std-p
                               (putprop fn 'constrainedp t
-                                       wrld)
+                                       (putprop fn 'constraint-lst (list term) wrld))
                             wrld)))
                 (mv-let
                  (wrld ttree)
@@ -4331,7 +4347,8 @@
 
 (defun all-fnnames1-exec (flg x acc)
 
-; Keep this in sync with all-fnnames1.
+; Keep this in sync with all-fnnames1.  Also see the comment about
+; all-fnnames1-exec in put-invariant-risk before modifying this function.
 
   (cond (flg ; x is a list of terms
          (cond ((null x) acc)
@@ -5223,6 +5240,21 @@
 ; present function, put-invariant-risk, propagates these 'invariant-risk
 ; properties up through callers.
 
+; When we call all-fnnames1-exec below, we are ignoring :logic code from mbe
+; calls.  To see that this is sound, first note that we are determining when
+; there is a risk of bypassing guard checks that would avoid invariant
+; violations.  If we are executing :logic code from an mbe call, then we must
+; be in the *1* code for a :logic mode function, since :program mode functions
+; always execute the :exec code of an mbe call (see oneify), as does raw Lisp
+; code.  But invariants are checked (in particular, by checking guards for live
+; stobj manipulation) when making *1* calls of :logic mode functions.  There is
+; actually one other case that all-fnnames1-exec ignores function symbols in
+; the call tree: it does not collect function symbol F from (ec-call (F ...)).
+; But in this case, *1*F is called, and if there is a non-nil 'invariant-risk
+; property for F, then we trust that oneify has laid down suitable *1* code for
+; F to preserve invariants, so there is no risk to bypassing guards in the
+; evaluation of bodies.
+
   (cond (non-executablep wrld)
         (t (put-invariant-risk1 names
                                 (all-fnnames1-exec t bodies nil)
@@ -5644,7 +5676,8 @@
 ; Keep this in sync with deflabel XARGS.
 
   '(:guard :guard-hints :guard-debug
-           :hints :measure :ruler-extenders :mode :non-executable :normalize
+           :hints :measure :measure-debug
+           :ruler-extenders :mode :non-executable :normalize
            :otf-flg #+:non-standard-analysis :std-hints
            :stobjs :verify-guards :well-founded-relation
            :split-types))
@@ -7575,6 +7608,10 @@
 
                                               nil ; guard-debug default
                                               ctx state))
+      (measure-debug (get-unambiguous-xargs-flg :MEASURE-DEBUG
+                                                fives
+                                                nil ; guard-debug default
+                                                ctx state))
       (split-types-lst (get-boolean-unambiguous-xargs-flg-lst
                         :SPLIT-TYPES fives nil ctx state))
       (normalizeps (get-boolean-unambiguous-xargs-flg-lst
@@ -7775,6 +7812,7 @@
                                    wrld3
                                    non-executablep
                                    guard-debug
+                                   measure-debug
                                    split-types-terms
                                    ))))))))))))))))
 
@@ -7846,6 +7884,8 @@
 ;                  violate the translate conventions on stobjs.
 ;    guard-debug
 ;              - t or nil, used to add calls of EXTRA-INFO to guard conjectures
+;    measure-debug
+;              - t or nil, used to add calls of EXTRA-INFO to measure conjectures
 ;    split-types-terms
 ;              - list of translated terms, each corresponding to type
 ;                declarations made for a definition with XARGS keyword
@@ -8275,8 +8315,8 @@
 
 (defun defuns-fn0 (names arglists docs pairs guards measures
                          ruler-extenders-lst mp rel hints guard-hints std-hints
-                         otf-flg guard-debug bodies symbol-class normalizeps
-                         split-types-terms non-executablep
+                         otf-flg guard-debug measure-debug bodies symbol-class
+                         normalizeps split-types-terms non-executablep
                          #+:non-standard-analysis std-p
                          ctx wrld state)
 
@@ -8301,6 +8341,7 @@
                                    hints
                                    otf-flg
                                    big-mutrec
+                                   measure-debug
                                    ctx ens wrld state)))
        (defuns-fn1
          tuple
@@ -8755,7 +8796,8 @@
                 (wrld (nth 18 tuple))
                 (non-executablep (nth 19 tuple))
                 (guard-debug (nth 20 tuple))
-                (split-types-terms (nth 21 tuple)))
+                (measure-debug (nth 21 tuple))
+                (split-types-terms (nth 22 tuple)))
             (er-let*
              ((pair (defuns-fn0
                       names
@@ -8772,6 +8814,7 @@
                       std-hints
                       otf-flg
                       guard-debug
+                      measure-debug
                       bodies
                       symbol-class
                       normalizeps

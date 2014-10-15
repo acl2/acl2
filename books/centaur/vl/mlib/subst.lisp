@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
@@ -28,6 +38,7 @@
 (defxdoc substitution
   :parents (mlib)
   :short "Substitution into Verilog constructs"
+
   :long "<p>We implement routines to substitute values for identifiers
 throughout Verilog constructs such as expressions, assignments, and
 modules.</p>
@@ -43,15 +54,19 @@ substitution to be more generally useful, and prefer to use fast alists.</p>")
 
 (fty::defalist vl-sigma
   :key-type stringp
-  :val-type vl-expr-p)
-
-(defalist vl-sigma-p (x)
+  :val-type vl-expr-p
+  :count vl-sigma-count
   :short "An alist mapping strings to expressions, used in @(see substitution)."
-  :key (stringp x)
-  :val (vl-expr-p x)
   :keyp-of-nil nil
-  :valp-of-nil nil
-  :already-definedp t)
+  :valp-of-nil nil)
+
+(defthm vl-sigma-count-of-cdr-strong
+  (implies (and (vl-sigma-p x)
+                (consp x))
+           (< (vl-sigma-count (cdr x))
+              (vl-sigma-count x)))
+  :rule-classes ((:rewrite) (:linear))
+  :hints(("Goal" :in-theory (enable vl-sigma-count))))
 
 (defthm vl-exprlist-p-of-alist-vals-when-vl-sigma-p
   (implies (vl-sigma-p x)
@@ -165,6 +180,103 @@ attributes is left up to the implementation.</p>"
   :type vl-maybe-gatedelay-p
   :body (and x (vl-gatedelay-subst x sigma)))
 
+(def-vl-subst vl-packeddimension-subst
+  :type vl-packeddimension-p
+  :body
+  (b* ((x (vl-packeddimension-fix x)))
+    (if (eq x :vl-unsized-dimension)
+        x
+      (vl-range-subst x sigma))))
+
+(def-vl-subst vl-maybe-packeddimension-subst
+  :type vl-maybe-packeddimension-p
+  :body
+  (and x
+       (vl-packeddimension-subst x sigma)))
+
+(def-vl-subst-list vl-packeddimensionlist-subst
+  :type vl-packeddimensionlist-p
+  :element vl-packeddimension-subst)
+
+(def-vl-subst vl-enumbasetype-subst
+  :type vl-enumbasetype-p
+  :body (b* (((vl-enumbasetype x) x))
+          (change-vl-enumbasetype x
+                                  :dim (vl-maybe-packeddimension-subst x.dim sigma))))
+
+(def-vl-subst vl-enumitem-subst
+  :type vl-enumitem-p
+  :body
+  (b* (((vl-enumitem x) x))
+    (change-vl-enumitem x
+                        :range (vl-maybe-range-subst x.range sigma)
+                        :value (vl-maybe-expr-subst x.value sigma))))
+
+(def-vl-subst-list vl-enumitemlist-subst
+  :type vl-enumitemlist-p
+  :element vl-enumitem-subst)
+
+
+(defines vl-datatype-subst
+  :verify-guards nil
+
+  (define vl-datatype-subst ((x vl-datatype-p)
+                             (sigma vl-sigma-p))
+    :measure (vl-datatype-count x)
+    :returns (new-x vl-datatype-p)
+    (vl-datatype-case x
+      (:vl-coretype
+       (change-vl-coretype x
+                           :pdims (vl-packeddimensionlist-subst x.pdims sigma)
+                           :udims (vl-packeddimensionlist-subst x.udims sigma)))
+      (:vl-struct
+       (change-vl-struct x
+                         :pdims (vl-packeddimensionlist-subst x.pdims sigma)
+                         :udims (vl-packeddimensionlist-subst x.udims sigma)
+                         :members (vl-structmemberlist-subst x.members sigma)))
+      (:vl-union
+       (change-vl-union x
+                        :pdims (vl-packeddimensionlist-subst x.pdims sigma)
+                        :udims (vl-packeddimensionlist-subst x.udims sigma)
+                        :members (vl-structmemberlist-subst x.members sigma)))
+      (:vl-enum
+       (change-vl-enum x
+                       :basetype (vl-enumbasetype-subst x.basetype sigma)
+                       :items (vl-enumitemlist-subst x.items sigma)
+                       :pdims (vl-packeddimensionlist-subst x.pdims sigma)
+                       :udims (vl-packeddimensionlist-subst x.udims sigma)))
+      (:vl-usertype
+       (change-vl-usertype x
+                           :kind (vl-expr-subst x.kind sigma)
+                           :pdims (vl-packeddimensionlist-subst x.pdims sigma)
+                           :udims (vl-packeddimensionlist-subst x.udims sigma)))))
+
+  (define vl-structmemberlist-subst ((x vl-structmemberlist-p)
+                                     (sigma vl-sigma-p))
+    :measure (vl-structmemberlist-count x)
+    :returns (new-x vl-structmemberlist-p)
+    (if (atom x)
+        nil
+      (cons (vl-structmember-subst (car x) sigma)
+            (vl-structmemberlist-subst (cdr x) sigma))))
+
+  (define vl-structmember-subst ((x vl-structmember-p)
+                                 (sigma vl-sigma-p))
+    :measure (vl-structmember-count x)
+    :returns (new-x vl-structmember-p)
+    (b* (((vl-structmember x) x))
+      (change-vl-structmember x
+                              :rhs (vl-maybe-expr-subst x.rhs sigma)
+                              :type (vl-datatype-subst x.type sigma))))
+  ///
+  (verify-guards vl-datatype-subst)
+  (deffixequiv-mutual vl-datatype-subst))
+
+(def-vl-subst vl-maybe-datatype-subst
+  :type vl-maybe-datatype-p
+  :body (if x
+            (vl-datatype-subst x sigma)
+          nil))
 
 (def-vl-subst vl-port-subst
   :type vl-port-p
@@ -178,8 +290,9 @@ attributes is left up to the implementation.</p>"
 
 (def-vl-subst vl-portdecl-subst
   :type vl-portdecl-p
-  :body (change-vl-portdecl x
-                            :range (vl-maybe-range-subst (vl-portdecl->range x) sigma)))
+  :body (b* (((vl-portdecl x) x))
+          (change-vl-portdecl x
+                              :type (vl-datatype-subst x.type sigma))))
 
 (def-vl-subst-list vl-portdecllist-subst
   :type vl-portdecllist-p
@@ -197,66 +310,43 @@ attributes is left up to the implementation.</p>"
   :type vl-assignlist-p
   :element vl-assign-subst)
 
-
-
-(def-vl-subst vl-netdecl-subst
-  :type vl-netdecl-p
-  :body (change-vl-netdecl x
-                           :range (vl-maybe-range-subst (vl-netdecl->range x) sigma)
-                           :arrdims (vl-rangelist-subst (vl-netdecl->arrdims x) sigma)
-                           :delay (vl-maybe-gatedelay-subst (vl-netdecl->delay x) sigma)))
-
-(def-vl-subst-list vl-netdecllist-subst
-  :type vl-netdecllist-p
-  :element vl-netdecl-subst)
-
-
-
 (def-vl-subst vl-vardecl-subst
   :type vl-vardecl-p
-  :body (change-vl-vardecl x
-                           :arrdims (vl-rangelist-subst (vl-vardecl->arrdims x) sigma)
-                           :initval (vl-maybe-expr-subst (vl-vardecl->initval x) sigma)))
+  :body (b* (((vl-vardecl x) x))
+          (change-vl-vardecl x
+                             :type    (vl-datatype-subst x.type sigma)
+                             :initval (vl-maybe-expr-subst x.initval sigma)
+                             :delay   (vl-maybe-gatedelay-subst x.delay sigma))))
 
 (def-vl-subst-list vl-vardecllist-subst
   :type vl-vardecllist-p
   :element vl-vardecl-subst)
 
-
-(def-vl-subst vl-regdecl-subst
-  :type vl-regdecl-p
-  :body (change-vl-regdecl x
-                           :range (vl-maybe-range-subst (vl-regdecl->range x) sigma)
-                           :arrdims (vl-rangelist-subst (vl-regdecl->arrdims x) sigma)
-                           :initval (vl-maybe-expr-subst (vl-regdecl->initval x) sigma)))
-
-(def-vl-subst-list vl-regdecllist-subst
-  :type vl-regdecllist-p
-  :element vl-regdecl-subst)
-
-
-
-(def-vl-subst vl-eventdecl-subst
-  :type vl-eventdecl-p
-  :body (change-vl-eventdecl x
-                             :arrdims (vl-rangelist-subst (vl-eventdecl->arrdims x) sigma)))
-
-(def-vl-subst-list vl-eventdecllist-subst
-  :type vl-eventdecllist-p
-  :element vl-eventdecl-subst)
-
-
+(def-vl-subst vl-paramtype-subst
+  :type vl-paramtype-p
+  :body
+  (vl-paramtype-case x
+    (:vl-implicitvalueparam
+     (change-vl-implicitvalueparam x
+                                   :range (vl-maybe-range-subst x.range sigma)
+                                   :default (vl-maybe-expr-subst x.default sigma)))
+    (:vl-explicitvalueparam
+     (change-vl-explicitvalueparam x
+                                   :type (vl-datatype-subst x.type sigma)
+                                   :default (vl-maybe-expr-subst x.default sigma)))
+    (:vl-typeparam
+     (change-vl-typeparam x
+                          :default (vl-maybe-datatype-subst x.default sigma)))))
 
 (def-vl-subst vl-paramdecl-subst
   :type vl-paramdecl-p
-  :body (change-vl-paramdecl x
-                             :expr (vl-expr-subst (vl-paramdecl->expr x) sigma)
-                             :range (vl-maybe-range-subst (vl-paramdecl->range x) sigma)))
+  :body (b* (((vl-paramdecl x) x))
+          (change-vl-paramdecl x
+                               :type (vl-paramtype-subst x.type sigma))))
 
 (def-vl-subst-list vl-paramdecllist-subst
   :type vl-paramdecllist-p
   :element vl-paramdecl-subst)
-
 
 
 (def-vl-subst vl-plainarg-subst
@@ -281,14 +371,50 @@ attributes is left up to the implementation.</p>"
   :type vl-arguments-p
   :body
   (vl-arguments-case x
-    :named (make-vl-arguments-named :args (vl-namedarglist-subst x.args sigma))
-    :plain (make-vl-arguments-plain :args (vl-plainarglist-subst x.args sigma))))
+    :vl-arguments-named (change-vl-arguments-named x :args (vl-namedarglist-subst x.args sigma))
+    :vl-arguments-plain (change-vl-arguments-plain x :args (vl-plainarglist-subst x.args sigma))))
+
+(def-vl-subst vl-paramvalue-subst
+  :type vl-paramvalue-p
+  :body
+  (b* ((x (vl-paramvalue-fix x)))
+    (vl-paramvalue-case x
+      :expr     (vl-expr-subst x sigma)
+      :datatype (vl-datatype-subst x sigma))))
+
+(def-vl-subst-list vl-paramvaluelist-subst
+  :type vl-paramvaluelist-p
+  :element vl-paramvalue-subst)
+
+(def-vl-subst vl-maybe-paramvalue-subst
+  :type vl-maybe-paramvalue-p
+  :body (and x (vl-paramvalue-subst x sigma)))
+
+(def-vl-subst vl-namedparamvalue-subst
+  :type vl-namedparamvalue-p
+  :body
+  (b* (((vl-namedparamvalue x) x))
+    (change-vl-namedparamvalue x :value (vl-maybe-paramvalue-subst x.value sigma))))
+
+(def-vl-subst-list vl-namedparamvaluelist-subst
+  :type vl-namedparamvaluelist-p
+  :element vl-namedparamvalue-subst)
+
+(def-vl-subst vl-paramargs-subst
+  :type vl-paramargs-p
+  :body
+  (vl-paramargs-case x
+    :vl-paramargs-named
+    (change-vl-paramargs-named x :args (vl-namedparamvaluelist-subst x.args sigma))
+    :vl-paramargs-plain
+    (change-vl-paramargs-plain x :args (vl-paramvaluelist-subst x.args sigma))))
+
 
 (def-vl-subst vl-modinst-subst
   :type vl-modinst-p
   :body (change-vl-modinst x
                            :range (vl-maybe-range-subst (vl-modinst->range x) sigma)
-                           :paramargs (vl-arguments-subst (vl-modinst->paramargs x) sigma)
+                           :paramargs (vl-paramargs-subst (vl-modinst->paramargs x) sigma)
                            :portargs (vl-arguments-subst (vl-modinst->portargs x) sigma)))
 
 (def-vl-subst-list vl-modinstlist-subst
@@ -354,9 +480,7 @@ attributes is left up to the implementation.</p>"
   :type vl-blockitem-p
   :body (b* ((x (vl-blockitem-fix x)))
           (case (tag x)
-            (:vl-regdecl   (vl-regdecl-subst x sigma))
             (:vl-vardecl   (vl-vardecl-subst x sigma))
-            (:vl-eventdecl (vl-eventdecl-subst x sigma))
             (otherwise     (vl-paramdecl-subst x sigma)))))
 
 (def-vl-subst-list vl-blockitemlist-subst
@@ -481,11 +605,8 @@ attributes is left up to the implementation.</p>"
                             :ports      (vl-portlist-subst      x.ports      sigma)
                             :portdecls  (vl-portdecllist-subst  x.portdecls  sigma)
                             :assigns    (vl-assignlist-subst    x.assigns    sigma)
-                            :netdecls   (vl-netdecllist-subst   x.netdecls   sigma)
                             :vardecls   (vl-vardecllist-subst   x.vardecls   sigma)
-                            :regdecls   (vl-regdecllist-subst   x.regdecls   sigma)
                             :fundecls   (vl-fundecllist-subst   x.fundecls   sigma)
-                            :eventdecls (vl-eventdecllist-subst x.eventdecls sigma)
                             :paramdecls (vl-paramdecllist-subst x.paramdecls sigma)
                             :modinsts   (vl-modinstlist-subst   x.modinsts   sigma)
                             :gateinsts  (vl-gateinstlist-subst  x.gateinsts  sigma)

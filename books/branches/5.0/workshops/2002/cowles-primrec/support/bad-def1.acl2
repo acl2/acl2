@@ -1,1 +1,0 @@
-(certify-book "bad-def1" 0 t :defaxioms-okp t)

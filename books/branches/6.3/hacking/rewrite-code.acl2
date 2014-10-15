@@ -1,3 +1,0 @@
-(in-package "ACL2")
-(ld "rewrite-code-pkg.lsp")
-(certify-book "rewrite-code" ? t)

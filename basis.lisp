@@ -1,4 +1,4 @@
-; ACL2 Version 6.4 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 6.5 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2014, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -456,7 +456,7 @@
 ; because we want to allow their use as constants.
 
 ; We now allow some variables (but still no constants) from the main Lisp
-; package.  See *common-lisp-specials-and-constants*.  The following two note
+; package.  See *common-lisp-specials-and-constants*.  The following note
 ; explains why we have been cautious here.
 
 ; Historical Note
@@ -492,6 +492,22 @@
                      ((and (not (= (length s) 0))
                            (eql (char s 0) #\*)
                            (eql (char s (1- (length s))) #\*))
+
+; It was an oversight that a symbol with a symbol-name of "*" has always been
+; considered a constant rather than a variable.  The intention was to view "*"
+; as a delimeter -- thus, even "**" is probably OK for a constant since the
+; empty string is delimited.  But it doesn't seem important to change this
+; now.  If we do make such a change, consider the following (at least).
+
+; - It will be necessary to update :doc defconst.
+
+; - Fix the error message for, e.g., (defconst foo::* 17), so that it doesn't
+;   say "does not begin and end with the character *".
+
+; - Make sure the error message is correct for (defun foo (*) *).  It should
+;   probably complain about the main Lisp package, not about "the syntax of a
+;   constant".
+
                       (if (equal p *main-lisp-package-name*)
                           nil
                         'constant))
@@ -1405,6 +1421,8 @@
         (t (fargn1 v n))))
 
 (defun all-but-last (l)
+  (declare (xargs :guard (true-listp l) ; and let's verify termination/guards:
+                  :mode :logic))
   (cond ((endp l) nil)
         ((endp (cdr l)) nil)
         (t (cons (car l) (all-but-last (cdr l))))))
@@ -1508,14 +1526,13 @@
 ; Let's also comment on why we have a soft and a hard bound (as described in
 ; :doc set-iprint).  In general we allow indices to increase between successive
 ; top-level invocations, so that the user can read back in any forms that were
-; printed. But the soft bound keeps forces a rollover at the top level of LD
-; when the last-index exceeds that bound, so that we don't hold on to a
-; potentially unbounded amount of space for the objects in the iprint-ar. The
-; hard bound (which generally exceeds the soft bound) steps in if the
-; last-index exceeds it after pretty-printing a single form.  Thus, if there
-; are large objects and very long runs between successive top-level forms,
-; space can be reclaimed. The hard bound is therefore probably less likely to
-; be of use.
+; printed. But the soft bound forces a rollover at the top level of LD when the
+; last-index exceeds that bound, so that we don't hold on to a potentially
+; unbounded amount of space for the objects in the iprint-ar. The hard bound
+; (which generally exceeds the soft bound) steps in if the last-index exceeds
+; it after pretty-printing a single form.  Thus, if there are large objects and
+; very long runs between successive top-level forms, space can be
+; reclaimed. The hard bound is therefore probably less likely to be of use.
 
 ; We maintain the invariant that the dimension of state global 'iprint-ar
 ; exceeds the hard bound.  Thus, when we update the 'iprint-ar in the normal
@@ -2748,14 +2765,7 @@
 
           (+f (cond
                ((keywordp x) (1+f acc))
-               ((or (equal (symbol-package-name x)
-                           (f-get-global 'current-package state))
-                    (member-eq
-                     x
-                     (package-entry-imports
-                      (find-package-entry
-                       (f-get-global 'current-package state)
-                       (known-package-alist state)))))
+               ((symbol-in-current-package-p x state)
                 acc)
                (t
                 (let ((p (symbol-package-name x)))
@@ -3718,14 +3728,6 @@
 (defmacro gag-mode ()
   '(f-get-global 'gag-mode state))
 
-(defun default-evisc-tuple (state)
-  (prog2$ (cw "NOTE: default-evisc-tuple has been deprecated.  Please use ~
-               abbrev-evisc-tuple instead.  If you are seeing this message ~
-               then you are probably using the acl2-books google repository; ~
-               please email Matt Kaufmann to find out how to eliminate this ~
-               message.~|~%")
-          (abbrev-evisc-tuple state)))
-
 (defun term-evisc-tuple (flg state)
 
 ; This evisceration tuple is used when we are printing terms or lists of terms.
@@ -4006,14 +4008,7 @@
           ((needs-slashes str state)
            (splat-atom s (print-base) (print-radix) 0 col channel state))
           (t (fmt0 ":~s0" (list (cons #\0 str)) 0 4 col channel state nil))))
-        ((or (equal (symbol-package-name s)
-                    (f-get-global 'current-package state))
-             (member-eq
-              s
-              (package-entry-imports
-               (find-package-entry
-                (f-get-global 'current-package state)
-                (known-package-alist state)))))
+        ((symbol-in-current-package-p s state)
          (cond
           ((needs-slashes str state)
            (splat-atom s (print-base) (print-radix) 0 col channel state))
@@ -7356,6 +7351,9 @@
              (cond ((eq temp t) nil)
                    (t (length temp)))))))
 
+(defconst *stobjs-out-invalid*
+  '(if return-last))
+
 (defun stobjs-out (fn w)
 
 ; Warning: keep this in sync with get-stobjs-out-for-declare-form.
@@ -7365,7 +7363,7 @@
   (cond ((eq fn 'cons)
 ; We call this function on cons so often we optimize it.
          '(nil))
-        ((member-eq fn '(if return-last))
+        ((member-eq fn *stobjs-out-invalid*)
          (er hard! 'stobjs-out
              "Implementation error: Attempted to find stobjs-out for ~x0."
              fn))
@@ -7743,14 +7741,14 @@
 
 (defun strip-cadrs (x)
   (declare (xargs :guard (all->=-len x 2)))
-  (cond ((null x) nil)
+  (cond ((endp x) nil)
         (t (cons (cadar x) (strip-cadrs (cdr x))))))
 
 ; Rockwell Addition: Just moved from other-events.lisp
 
 (defun strip-cddrs (x)
   (declare (xargs :guard (all->=-len x 2)))
-  (cond ((null x) nil)
+  (cond ((endp x) nil)
         (t (cons (cddar x) (strip-cddrs (cdr x))))))
 
 (defun global-set-lst (alist wrld)
@@ -7888,42 +7886,64 @@
 ; We now develop the code to take a translated term and "untranslate"
 ; it into something more pleasant to read.
 
-(defun car-cdr-nest1 (term ad-lst n)
-  (cond ((or (int= n 4)
-             (variablep term)
-             (fquotep term)
-             (and (not (eq (ffn-symb term) 'car))
-                  (not (eq (ffn-symb term) 'cdr))))
-         (mv ad-lst term))
-        (t (car-cdr-nest1 (fargn term 1)
-                          (cons (if (eq (ffn-symb term) 'car)
-                                    #\A
-                                  #\D)
-                                ad-lst)
-                          (1+ n)))))
+(defun make-reversed-ad-list (term ans)
 
-(defun car-cdr-nest (term)
-  (cond ((variablep term) (mv nil term))
-        ((fquotep term) (mv nil term))
-        ((or (eq (ffn-symb term) 'car)
-             (eq (ffn-symb term) 'cdr))
-         (mv-let (ad-lst guts)
-           (car-cdr-nest1 (fargn term 1) nil 1)
-           (cond
-            (ad-lst
-             (mv
-              (intern
-               (coerce
-                (cons #\C
-                      (cons (if (eq (ffn-symb term) 'car)
-                                #\A
-                              #\D)
-                            (revappend ad-lst '(#\R))))
-                'string)
-               "ACL2")
-              guts))
-            (t (mv nil term)))))
-        (t (mv nil nil))))
+; We treat term as a CAR/CDR nest around some ``base'' and return (mv ad-lst
+; base), where ad-lst is the reversed list of #\A and #\D characters and base
+; is the base of the CAR/CDR nest.  Thus, (CADDR B) into (mv '(#\D #\D #\A) B).
+; If term is not a CAR/CDR nest, adr-lst is nil.
+
+  (cond ((variablep term)
+         (mv ans term))
+        ((fquotep term)
+         (mv ans term))
+        ((eq (ffn-symb term) 'CAR)
+         (make-reversed-ad-list (fargn term 1) (cons '#\A ans)))
+        ((eq (ffn-symb term) 'CDR)
+         (make-reversed-ad-list (fargn term 1) (cons '#\D ans)))
+        (t (mv ans term))))
+
+(defun car-cdr-abbrev-name (adr-lst)
+
+; Given an adr-lst we turn it into one of the CAR/CDR abbreviation names.  We
+; assume the adr-lst corresponds to a legal name, e.g., its length is no
+; greater than five (counting the #\R).
+
+  (intern (coerce (cons #\C adr-lst) 'string) "ACL2"))
+
+(defun pretty-parse-ad-list (ad-list dr-list n base)
+  (cond
+   ((eql n 5)
+    (pretty-parse-ad-list ad-list '(#\R) 1
+                          (list (car-cdr-abbrev-name dr-list) base)))
+   ((endp ad-list)
+    (cond ((eql n 1) base)
+          (t (list (car-cdr-abbrev-name dr-list) base))))
+   ((eql (car ad-list) #\A)
+    (pretty-parse-ad-list (cdr ad-list) '(#\R) 1
+                          (list (car-cdr-abbrev-name (cons #\A dr-list)) base)))
+   (t ; (eql (car ad-list) '#\D)
+    (pretty-parse-ad-list (cdr ad-list) (cons #\D dr-list) (+ 1 n) base))))
+
+(defun untranslate-car-cdr-nest (term)
+
+; This function is not actually used, but it illustrates how car-cdr nests are
+; untranslated.  See community book books/system/untranslate-car-cdr.lisp for
+; documentation and a correctness proof.
+
+; Examples:
+; (untranslate-car-cdr-nest '(car (cdr (car b))))
+; ==> (CADR (CAR B))
+; (untranslate-car-cdr-nest '(car (cdr (cdr b))))
+; ==> (CADDR B)
+; (untranslate-car-cdr-nest '(car (car (cdr (cdr b)))))
+; ==> (CAR (CADDR B))
+
+  (mv-let (ad-list base)
+          (make-reversed-ad-list term nil)
+          (cond
+           ((null ad-list) base)
+           (t (pretty-parse-ad-list ad-list '(#\R) 1 base)))))
 
 (defun collect-non-trivial-bindings (vars vals)
   (cond ((null vars) nil)
@@ -8128,9 +8148,6 @@
 ; We define progn! here so that it is available before its call in redef+.  But
 ; first we define observe-raw-mode-setting, a call of which is laid down by the
 ; use of f-put-global on 'acl2-raw-mode-p in the definition of progn!.
-
-#-acl2-loop-only
-(defvar *load-compiled-stack* nil)
 
 #-acl2-loop-only
 (defun observe-raw-mode-setting (v state)

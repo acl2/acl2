@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
@@ -22,6 +32,7 @@
 (include-book "centaur/fty/deftypes" :dir :system)
 (include-book "centaur/fty/basetypes" :dir :system)
 (include-book "std/strings/cat" :dir :system)
+(include-book "tools/rulesets" :dir :system)
 (set-state-ok t)
 (program)
 
@@ -194,8 +205,8 @@
 
 (defun dts-recognizer-def (name prodinfos)
   (let ((xvar (dts-x name)))
-    `(defund ,(dts-recognizer-name name) (,xvar)
-       (declare (xargs :guard t))
+    `(define ,(dts-recognizer-name name) (,xvar)
+       :parents (,name)
        (mbe :logic ,(dts-recognizer-logic-def name prodinfos)
             :exec ,(dts-recognizer-exec-def name prodinfos)))))
 
@@ -317,8 +328,9 @@
        (sum-fix (dts-fix-name name))
        (sum-p   (dts-recognizer-name name))
        (xvar    (dts-x name)))
-    `(defund-inline ,sum-fix (,xvar)
-       (declare (xargs :guard (,sum-p ,xvar)))
+    `(define ,sum-fix ((,xvar ,sum-p))
+       :parents (,name)
+       :inline t
        (mbe :logic (if (,sum-p ,xvar)
                        ,xvar
                      (,mem-fix ,xvar))
@@ -373,7 +385,7 @@
 
        (long (or long
                  (and parents
-                      "<p>This is an ordinary @(see std::deftranssum) of aggregates.</p>")))
+                      "<p>This is an ordinary @(see vl::deftranssum) of aggregates.</p>")))
 
        ((unless (std::tuplep 1 other-args))
         (raise "deftranssum should be given exactly one non-keyword argument, but got ~x0"
@@ -390,7 +402,7 @@
        (fix-def   (dts-fix-def name prodinfos))
 
        ((when (eq mode :program))
-        `(defsection ,foo-p
+        `(defsection ,name
            ,@(and parents `(:parents ,parents))
            ,@(and short   `(:short ,short))
            ,@(and long    `(:long ,long))
@@ -401,6 +413,7 @@
 
        (events
         `((logic)
+          (local (in-theory (enable tag-reasoning)))
           ,def
           (local (in-theory (enable ,foo-p)))
 
@@ -417,7 +430,7 @@
           ,(dts-when-invalid-tag-thm name prodinfos)
           ,@(dts-fix-thms name)
 
-          (fty::deffixtype name
+          (fty::deffixtype ,name
             :pred  ,foo-p
             :equiv ,foo-equiv
             :fix   ,foo-fix

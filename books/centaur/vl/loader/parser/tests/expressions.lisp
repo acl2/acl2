@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
@@ -48,6 +58,8 @@
   (make-exprtest-fail x)
   :guard (exprtestlist-p x))
 
+(defparser-top vl-parse-expression :resulttype vl-expr-p)
+
 (define run-exprtest ((test exprtest-p)
                       &key
                       ((config vl-loadconfig-p) '*vl-default-loadconfig*))
@@ -66,12 +78,13 @@
             (raise "FAILURE: didn't even lex the input successfully.")))
 
        ((mv tokens ?cmap) (vl-kill-whitespace-and-comments tokens))
-       ((mv errmsg? val tokens warnings)
-        (vl-parse-expression :tokens tokens
-                             :warnings warnings
-                             :config config))
+       (pstate            (make-vl-parsestate :warnings warnings))
+       ((mv errmsg? val tokens pstate)
+        (vl-parse-expression-top :tokens tokens
+                                 :pstate pstate
+                                 :config config))
        (remainder (vl-tokenlist->string-with-spaces tokens))
-       (pretty (and val (vl-pretty-expr val)))
+       (pretty (and (not errmsg?) (vl-pretty-expr val)))
 
        (test-okp
 
@@ -84,9 +97,10 @@
              (cw "FAILURE: Expected parsing to fail, but no error was produced.~%"))
 
          (or (equal (mergesort test.warnings)
-                    (mergesort (vl-warninglist->types warnings)))
+                    (mergesort (vl-warninglist->types (vl-parsestate->warnings pstate))))
              (cw "FAILURE: Expected warnings ~x0, found warnings ~x1.~%"
-                 test.warnings warnings))
+                 test.warnings
+                 (vl-parsestate->warnings pstate)))
 
          (or (not test.successp)
              (equal test.remainder remainder)
@@ -101,11 +115,11 @@
        ((unless test-okp)
         (cw "*** Test failed: ~x0. ~%" test)
         (cw "*** Results from vl-parse-expression: ~x0.~%"
-            (list :errmsg errmsg?
-                  :val val
-                  :pretty pretty
+            (list :errmsg    errmsg?
+                  :val       val
+                  :pretty    pretty
                   :remainder remainder
-                  :warnings warnings))
+                  :pstate    pstate))
         (raise "Test failed")))
     t))
 
@@ -124,17 +138,15 @@
 A very useful tracing mechanism for debugging:
 
 (defmacro trace-parser (fn)
-  `(trace$ (,fn
+  `(trace! (,fn
             :entry (list ',fn
-                         :tokens (vl-tokenlist->string-with-spaces tokens)
-                         :warnings (len warnings))
-            :exit (list :errmsg (first values)
+                         :tokens (take 5 (vl-tokenlist->string-with-spaces
+                                          (vl-tokstream->tokens))))
+            :exit (list ',fn
+                        :errmsg (first values)
                         :val (second values)
-                        :remainder (vl-tokenlist->string-with-spaces
-                                    (third values))
-                        :next-token (and (consp (third values))
-                                         (vl-token->type (car (third values))))
-                        :warnings (len (fourth values))))))
+                        :remainder (take 5 (vl-tokenlist->string-with-spaces
+                                            (vl-tokstream->tokens)))))))
 
 (trace-parser vl-parse-stream-concatenation-fn)
 (trace-parser vl-parse-stream-expression-fn)
@@ -228,11 +240,11 @@ A very useful tracing mechanism for debugging:
                   :expect '(:vl-index nil (id "foo") 3))
 
    (make-exprtest :input "foo[1:7]"
-                  :expect '(:vl-partselect-colon nil (id "foo") 1 7))
+                  :expect '(:vl-select-colon nil (id "foo") 1 7))
 
    (make-exprtest
     :input "foo[3][4][5][1 +: 2]"
-    :expect '(:vl-partselect-pluscolon
+    :expect '(:vl-select-pluscolon
               nil
               (:vl-index nil
                          (:vl-index nil
@@ -243,7 +255,7 @@ A very useful tracing mechanism for debugging:
 
    (make-exprtest
     :input "foo[3][1 -: 2]"
-    :expect '(:vl-partselect-minuscolon nil
+    :expect '(:vl-select-minuscolon nil
                                         (:vl-index nil (id "foo") 3)
                                         1 2))
 
@@ -456,12 +468,6 @@ A very useful tracing mechanism for debugging:
    (make-exprtest :input "-1 ** +2"
                   :expect '(:vl-binary-power nil (:vl-unary-minus nil 1) (:vl-unary-plus nil 2)))
 
-   ;; BOZO wtf ?? can this be right?
-   (make-exprtest :input "1--2"
-                  :expect '(:vl-binary-minus nil 1 (:vl-unary-minus nil 2)))
-
-   (make-exprtest :input "1++2"
-                  :expect '(:vl-binary-plus nil 1 (:vl-unary-plus nil 2)))
 
 
    (make-exprtest :input "3 < (1 << 2)"
@@ -472,6 +478,24 @@ A very useful tracing mechanism for debugging:
                   :expect '(:vl-binary-plus nil (:vl-binary-shl ("VL_EXPLICIT_PARENS") 3 1) 2))
 
    ))
+
+(defconst *basic-precedence-tests-2005*
+  (list 
+   ;; BOZO wtf ?? can this be right?
+   (make-exprtest :input "1--2"
+                  :expect '(:vl-binary-minus nil 1 (:vl-unary-minus nil 2)))
+
+   (make-exprtest :input "1++2"
+                  :expect '(:vl-binary-plus nil 1 (:vl-unary-plus nil 2)))))
+
+(defconst *basic-precedence-tests-2012*
+  (list 
+   (make-exprtest :input "1--2" :expect 1
+                  :remainder "-- 2")
+
+   (make-exprtest :input "1++2" :expect 1
+                  :remainder "++ 2")))
+
 
 (defconst *basic-atts-tests*
   (list
@@ -556,6 +580,14 @@ A very useful tracing mechanism for debugging:
   (run-exprtests *all-basic-tests*
                  :config (make-vl-loadconfig :edition :system-verilog-2012
                                              :strictp t))
+  (run-exprtests *basic-precedence-tests-2005*
+                 :config (make-vl-loadconfig :edition :verilog-2005 :strictp t))
+  (run-exprtests *basic-precedence-tests-2005*
+                 :config (make-vl-loadconfig :edition :verilog-2005 :strictp nil))
+  (run-exprtests *basic-precedence-tests-2012*
+                 :config (make-vl-loadconfig :edition :system-verilog-2012 :strictp t))
+  (run-exprtests *basic-precedence-tests-2012*
+                 :config (make-vl-loadconfig :edition :system-verilog-2012 :strictp nil))
   '(value-triple :success)))
 
 
@@ -648,7 +680,7 @@ A very useful tracing mechanism for debugging:
     (make-exprtest
      :input "$root.foo[1][2].bar[3:4]"
      :expect
-     '(:vl-partselect-colon
+     '(:vl-select-colon
        nil
        (:vl-hid-dot nil
                     (key :vl-$root)
@@ -662,7 +694,7 @@ A very useful tracing mechanism for debugging:
     (make-exprtest
      :input "foo[1][2].bar[3:4]"
      :expect
-     '(:vl-partselect-colon
+     '(:vl-select-colon
        nil
        (:vl-hid-dot nil
                     (:vl-index nil
@@ -674,7 +706,7 @@ A very useful tracing mechanism for debugging:
     (make-exprtest
      :input "baz.foo[1][2].bar[3:4]"
      :expect
-     '(:vl-partselect-colon
+     '(:vl-select-colon
        nil
        (:vl-hid-dot nil
                     (hid "baz")
@@ -1248,9 +1280,23 @@ A very useful tracing mechanism for debugging:
    (make-exprtest :input "1 !=? 2 | 3" :expect '(:vl-binary-bitor nil (:vl-binary-wildneq nil 1 2) 3))
 
 
+   ;; casting tests
 
+   (make-exprtest :input "unsigned'(3)" :expect '(:vl-binary-cast nil (basic :vl-unsigned) 3))
+   (make-exprtest :input "signed'(3+4)" :expect '(:vl-binary-cast nil (basic :vl-signed) (:vl-binary-plus nil 3 4)))
+   (make-exprtest :input "const'(3+4)" :expect '(:vl-binary-cast nil (basic :vl-const) (:vl-binary-plus nil 3 4)))
+   (make-exprtest :input "string'(3+4)" :expect '(:vl-binary-cast nil (basic :vl-string) (:vl-binary-plus nil 3 4)))
 
+   (make-exprtest :input "logic'(3+4)" :expect '(:vl-binary-cast nil (basic :vl-logic) (:vl-binary-plus nil 3 4)))
+   (make-exprtest :input "myfoo'(3+4)" :expect '(:vl-binary-cast nil (id "myfoo") (:vl-binary-plus nil 3 4)))
 
+   (make-exprtest :input "12'(3+4)" :expect '(:vl-binary-cast nil 12 (:vl-binary-plus nil 3 4)))
+
+   ;; weird but legal, 1 + 2 is a valid expr, is a mintypmax expr, so (1 + 2) is a primary.
+   (make-exprtest :input "(1+2)'(3+4)" :expect '(:vl-binary-cast nil (:vl-binary-plus ("VL_EXPLICIT_PARENS") 1 2)
+                                                                     (:vl-binary-plus nil 3 4)))
+
+   (make-exprtest :input "1+2'(3)" :expect '(:vl-binary-plus nil 1 (:vl-binary-cast nil 2 3)))
 
    ))
 

@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Sol Swords <sswords@centtech.com>
 
@@ -98,13 +108,19 @@ common ACL2 base types (numbers, symbols, strings).</li>
   :short "Define a named type, associating a unary predicate, fixing function,
 and equivalence relation."
   :long "<p>Part of an attempt to automate the proof discipline described at
-@(see fixtype).</p>
+@(see fty).</p>
 
 <p>@('DEFFIXTYPE') simply associates a type name with an existing predicate,
 fixing function, and equivalence relation.  It stores this association in a
 table for later use by @(see deffixequiv) and @(see deffixequiv-mutual).</p>
 
-<p>Usage:</p>
+<p>Example usage:</p>
+
+@({
+  (fty::deffixtype nat :fix nfix :pred natp :equiv equal)
+})
+
+<p>General form:</p>
 @({
   (deffixtype widget
               :pred widget-p
@@ -146,7 +162,7 @@ defequiv)).</p>")
    ;; pred-of-fix         ;; (foo-p (foo-fix x))
    ;; fix-idempotent       ;; (implies (foo-p x) (equal (foo-fix x) x))
    equiv-means-fixes-equal ;; (implies (foo-equiv x y) (equal (foo-fix x) (foo-fix y)))  (or iff/equal)
-   
+
    ))
 
 (table fixtypes)
@@ -234,11 +250,14 @@ defequiv)).</p>")
 
 
 (defmacro deffixtype (name &key pred fix equiv (execp 't)
-                           ;; optional 
+                           ;; optional
                            define
                            verbosep
                            hints
                            forward)
+; We contemplated making "equal" the default equivalence relation but decided
+; against it.  See Github Issue 240 for relevant discussion.
+  (declare (xargs :guard (and pred fix equiv)))
   (deffixtype-fn name pred fix equiv execp define verbosep hints forward))
 
 (defun find-fixtype-for-pred (pred alist)
@@ -390,7 +409,7 @@ defequiv)).</p>")
 
        (with-output :stack :pop
          ,x.fix-thm)
-       
+
        ,@(and x.const-thm
               `((with-output :on (error)
                   ,x.const-thm)))
@@ -451,4 +470,4 @@ defequiv)).</p>")
 
 
 ||#
-    
+

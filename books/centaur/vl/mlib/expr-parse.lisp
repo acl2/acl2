@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
@@ -67,19 +77,24 @@ won't be sized, may refer to invalid wires, etc.</p>"
           (cw "; vl-parse-expr-from-str: Lexer warnings for ~s0.~%" str))
 
          ((mv tokens ?cmap) (vl-kill-whitespace-and-comments tokens))
-         ((mv err val tokens warnings)
-          (vl-parse-expression :tokens tokens
-                               :warnings nil
-                               :config *vl-default-loadconfig*))
+         (pstate (make-vl-parsestate :warnings nil))
+         ((acl2::local-stobjs tokstream) (mv val tokstream))
+         (tokstream (vl-tokstream-update-tokens tokens))
+         (tokstream (vl-tokstream-update-pstate pstate))
+         ((mv err val tokstream)
+          (vl-parse-expression :config *vl-default-loadconfig*))
          ((when err)
           (vl-report-parse-error err tokens)
-          (cw "; vl-parse-expr-from-str: Parsing failed for ~s0.~%" str))
-         ((when warnings)
+          (cw "; vl-parse-expr-from-str: Parsing failed for ~s0.~%" str)
+          (mv nil tokstream))
+         ((vl-parsestate pstate) (vl-tokstream->pstate))
+         ((when pstate.warnings)
           (vl-cw-ps-seq
            (vl-println "Warnings from VL-PARSE-EXPR-FROM-STR:")
-           (vl-print-warnings warnings))
-          (cw "; vl-parse-expr-from-str: Parser warnings for ~s0." str))
-         ((when tokens)
+           (vl-print-warnings pstate.warnings))
+          (cw "; vl-parse-expr-from-str: Parser warnings for ~s0." str)
+          (mv nil tokstream))
+         ((when (vl-tokstream->tokens))
           (cw "; vl-parse-expr-from-str: Content remains after parsing an ~
                  expression from the string.~% ~
                  - Original string: ~s0~% ~
@@ -87,8 +102,9 @@ won't be sized, may refer to invalid wires, etc.</p>"
                  - Remaining after parse: ~s2~%"
               str
               (vl-pps-expr val)
-              (vl-tokenlist->string-with-spaces tokens))))
-      val))
+              (vl-tokenlist->string-with-spaces (vl-tokstream->tokens)))
+          (mv nil tokstream)))
+      (mv val tokstream)))
 
   (local (in-theory (enable vl-parse-expr-from-str)))
 
@@ -121,7 +137,7 @@ won't be sized, may refer to invalid wires, etc.</p>"
                ((unless (and expr
                              (vl-expr-p expr)
                              (not (vl-atom-p expr))
-                             (equal (vl-nonatom->op expr) :vl-partselect-colon)))
+                             (equal (vl-nonatom->op expr) :vl-select-colon)))
                 (er hard? '|foo[3:0]| "Expected partselect"))
                ((list from msb lsb) (vl-nonatom->args expr)))
             (and (vl-idexpr-p from)

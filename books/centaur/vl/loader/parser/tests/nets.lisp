@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
@@ -51,22 +61,22 @@
      (test-assign-aux (cdr assigns) (cdr lvalues) (cdr exprs)
                       str rise fall high atts))))
 
+(defparser-top vl-parse-continuous-assign)
+
 (defmacro test-assign
   (&key input lvalues exprs str rise fall high atts (successp 't))
   `(assert!
-    (let ((tokens (make-test-tokens ,input))
-          (warnings 'blah-warnings)
-          (config   *vl-default-loadconfig*))
-      (mv-let (erp val tokens warnings)
-        (vl-parse-continuous-assign ',atts)
-        (declare (ignorable tokens warnings))
-        (if erp
-            (prog2$ (cw "ERP: ~x0.~%" erp)
-                    (not ,successp))
-          (debuggable-and
-           ,successp
-           (test-assign-aux val ',lvalues ',exprs ,str
-                            ',rise ',fall ',high ',atts)))))))
+    (b* ((config   *vl-default-loadconfig*)
+         (tokens   (make-test-tokens ,input))
+         (pstate   (make-vl-parsestate :warnings 'blah-warnings))
+         ((mv erp val ?tokens ?pstate) (vl-parse-continuous-assign-top ',atts))
+         ((when erp)
+          (cw "ERP: ~x0.~%" erp)
+          (not ,successp)))
+      (debuggable-and
+       ,successp
+       (test-assign-aux val ',lvalues ',exprs ,str
+                        ',rise ',fall ',high ',atts)))))
 
 (test-assign :input "assign w = 1 ; "
              :lvalues ((id "w"))
@@ -109,7 +119,7 @@
              :successp nil)
 
 (test-assign :input "assign (strong0, pull1) #36 a[7:0] = 1 ; "
-             :lvalues ((:vl-partselect-colon nil (id "a") 7 0))
+             :lvalues ((:vl-select-colon nil (id "a") 7 0))
              :exprs   (1)
              :atts (("some") ("atts"))
              :str (make-vl-gatestrength :zero :vl-strong
@@ -142,24 +152,28 @@
      (consp arrdims)
      (consp ids)
      (not (cw "Inspecting Decl: ~x0.~%" (car decls)))
-     (vl-netdecl-p (car decls))
-     (equal (car ids) (vl-netdecl->name (car decls)))
-     (equal type (vl-netdecl->type (car decls)))
-     (equal range (vl-pretty-maybe-range (vl-netdecl->range (car decls))))
-     (equal (car arrdims) (vl-pretty-range-list (vl-netdecl->arrdims (car decls))))
-     (equal vectoredp (vl-netdecl->vectoredp (car decls)))
-     (equal scalaredp (vl-netdecl->scalaredp (car decls)))
-     (equal signedp (vl-netdecl->signedp (car decls)))
-     (equal rise (and (vl-netdecl->delay (car decls))
-                      (vl-pretty-expr (vl-gatedelay->rise (vl-netdecl->delay (car decls))))))
-     (equal fall (and (vl-netdecl->delay (car decls))
-                      (vl-pretty-expr (vl-gatedelay->fall (vl-netdecl->delay (car decls))))))
-     (equal high (and (vl-netdecl->delay (car decls))
-                      (vl-gatedelay->high (vl-netdecl->delay (car decls)))
-                      (vl-pretty-expr (vl-gatedelay->high (vl-netdecl->delay (car decls))))))
-     (equal cstrength (vl-netdecl->cstrength (car decls)))
-     (test-decls-aux (cdr decls) (cdr ids)  type range (cdr arrdims) vectoredp scalaredp
-                     signedp rise fall high cstrength))))
+     (vl-vardecl-p (car decls))
+     (b* (((vl-vardecl x1) (car decls))
+          ((vl-coretype x1.type)))
+       (debuggable-and
+        (equal (car ids) x1.name)
+        (or (equal type x1.nettype)
+            (cw "type: ~x0 x1.nettype: ~x1~%" type x1.nettype))
+        (equal range (vl-pretty-maybe-range (car x1.type.pdims)))
+        (equal signedp x1.type.signedp)
+        (equal (car arrdims) (vl-pretty-range-list x1.type.udims))
+        (equal vectoredp x1.vectoredp)
+        (equal scalaredp x1.scalaredp)
+        (equal rise (and x1.delay (vl-pretty-expr (vl-gatedelay->rise x1.delay))))
+        (equal fall (and x1.delay (vl-pretty-expr (vl-gatedelay->fall x1.delay))))
+        (equal high (and x1.delay
+                         (vl-gatedelay->high x1.delay)
+                         (vl-pretty-expr (vl-gatedelay->high x1.delay))))
+        (equal cstrength x1.cstrength)
+        (test-decls-aux (cdr decls) (cdr ids)  type range (cdr arrdims) vectoredp scalaredp
+                        signedp rise fall high cstrength))))))
+
+(defparser-top vl-parse-net-declaration)
 
 (defmacro test-netdecl (&key input atts
                              ;; stuff for assignments
@@ -168,25 +182,22 @@
                              ids type range arrdims vectoredp scalaredp signedp decl-rise decl-fall decl-high cstrength
                              (successp 't))
   `(assert!
-    (let ((tokens (make-test-tokens ,input)))
-      (mv-let (erp val tokens warnings)
-        (vl-parse-net-declaration ',atts
-                                  :tokens tokens
-                                  :warnings nil
-                                  :config *vl-default-loadconfig*)
-        (declare (ignorable tokens warnings))
-        (if erp
-            (prog2$ (cw "ERP: ~x0.~%" erp)
-                    (not ,successp))
-          (debuggable-and
-           ,successp
-           (implies (not (car val))
-                    (debuggable-and (not ',lvalues)
-                                    (not ',exprs)))
-           (test-assign-aux (car val) ',lvalues ',exprs ,str ',assign-rise ',assign-fall ',assign-high ',atts)
-           (test-decls-aux (cdr val) ',ids ',type ',range ',arrdims ',vectoredp
-                           ',scalaredp ',signedp ',decl-rise ',decl-fall ',decl-high
-                           ',cstrength)))))))
+    (b* ((config *vl-default-loadconfig*)
+         (tokens (make-test-tokens ,input))
+         (pstate (make-vl-parsestate :warnings nil))
+         ((mv erp val ?tokens ?pstate) (vl-parse-net-declaration-top ',atts))
+         ((when erp)
+          (cw "ERP: ~x0.~%" erp)
+          (not ,successp)))
+      (debuggable-and
+       ,successp
+       (implies (not (car val))
+                (debuggable-and (not ',lvalues)
+                                (not ',exprs)))
+       (test-assign-aux (car val) ',lvalues ',exprs ,str ',assign-rise ',assign-fall ',assign-high ',atts)
+       (test-decls-aux (cdr val) ',ids ',type ',range ',arrdims ',vectoredp
+                       ',scalaredp ',signedp ',decl-rise ',decl-fall ',decl-high
+                       ',cstrength)))))
 
 (test-netdecl :input "wire w ; "
               :ids ("w")

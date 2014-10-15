@@ -1,1 +1,0 @@
-(certify-book "include-raw" ? t :ttags :all)

@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
@@ -49,7 +59,10 @@
   ;; We leave "img" and "icon" in this list even thouggh we process them in
   ;; merge-text below, because we don't want to process </img> or </icon>.
   (list "b" "i" "u" "tt" "v" "color" "sf" "box" "img" "icon"
-        "page"))
+        "page"
+        ;; We'll just render mathfrag formulas without any special marks
+        "mathfrag"
+        ))
 
 (defun merge-text (x acc codes href)
   ;; CODES is number of open <code> tags -- we don't normalize whitespace
@@ -147,6 +160,8 @@
        ((when (equal name "dd"))
         (+ 6 (get-indent-level (cdr open-tags))))
        ((when (equal name "code"))
+        (+ 4 (get-indent-level (cdr open-tags))))
+       ((when (equal name "math"))
         (+ 4 (get-indent-level (cdr open-tags))))
        ((when (equal name "blockquote"))
         (+ 4 (get-indent-level (cdr open-tags))))
@@ -278,7 +293,7 @@
                     ;; This kind of tag has some level of indenting associated
                     ;; with it, so make sure we indent over to the right level.
                     (auto-indent (maybe-newline acc) open-tags))
-                   ((member-equal name '("code" "short" "long"))
+                   ((member-equal name '("code" "math" "short" "long"))
                     (auto-indent (maybe-doublespace acc) open-tags))
                    ((member-equal name '("h1" "h2" "h3"))
                     (auto-indent (maybe-triplespace acc) open-tags))
@@ -304,7 +319,7 @@
                           list-nums))
              (acc (cond
                    ((member-equal name '("h1" "h2" "h3" "h4" "h5" "p" "dl" "ul" "ol"
-                                         "short" "code" "index" "index_body"
+                                         "short" "code" "math" "index" "index_body"
                                          "blockquote" "table"))
                     (auto-indent (maybe-doublespace acc) open-tags))
                    ((member-equal name '("li" "dd" "dt" "index_head" "tr"))
@@ -345,7 +360,7 @@
        ((mv text state)
         (preprocess-topic
          (acons :parents nil x) ;; horrible hack so we can control this better
-         all-topics nil topics-fal
+         all-topics topics-fal
          t ;; disable-autolinking to avoid auto links in text-mode code
          state))
        (- (fast-alist-free topics-fal))
@@ -422,8 +437,7 @@
        (short    (cdr (assoc :short x)))
 ;       (- (cw "Preprocessing...~%"))
        ;; Use NIL as the topics-fal as a simple way to suppress autolinks...
-       ((mv short-acc state) (preprocess-main short
-                                              nil ;; no directory is needed here
+       ((mv short-acc state) (preprocess-main short name
                                               nil ;; no topics-fal, just keep it simple
                                               base-pkg
                                               state

@@ -6,20 +6,31 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
 (include-book "defines")
+(include-book "../filemap")
 (include-book "../../util/cwtime")
 (include-book "../read-file")
 (include-book "../find-file")
@@ -1230,6 +1241,7 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
   the lexer into acc, in reverse order.</p>"
   ((echars  vl-echarlist-p)
    (defines vl-defines-p)
+   (filemap vl-filemap-p)
    (istack  vl-istack-p)
    (activep booleanp)
    (acc)
@@ -1238,6 +1250,7 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
    (state))
   :returns (mv (successp)
                (defines)
+               (filemap)
                (acc)
                (remainder)
                (state))
@@ -1245,14 +1258,14 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
   :hints(("Goal" :in-theory (disable (force))))
 
   (b* (((when (atom echars))
-        (mv t defines acc echars state))
+        (mv t defines filemap acc echars state))
 
        (echar1 (car echars))
        (char1  (vl-echar->char echar1))
        ((when (zp n))
         (mv (cw "Preprocessor error (~s0): ran out of steps. Macro expansion ~
                  or file inclusion loop?")
-            defines acc echars state))
+            defines filemap acc echars state))
 
 ; Preliminaries.  We need to be sure to treat strings, escaped identifiers, and
 ; comments atomically.  For instance, we don't want to look at a string like
@@ -1264,8 +1277,8 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
               (vl-read-string echars (vl-lexstate-init config)))
              ((unless string)
               ;; it already printed a warning, so we don't use cw.
-              (mv nil defines acc echars state)))
-          (vl-preprocess-loop remainder defines istack activep
+              (mv nil defines filemap acc echars state)))
+          (vl-preprocess-loop remainder defines filemap istack activep
                               (if activep (revappend prefix acc) acc)
                               n config state)))
 
@@ -1275,8 +1288,8 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
              ((unless name)
               (mv (cw "Preprocessor error (~s0): stray backslash?~%"
                       (vl-location-string (vl-echar->loc echar1)))
-                  defines acc echars state)))
-          (vl-preprocess-loop remainder defines istack activep
+                  defines filemap acc echars state)))
+          (vl-preprocess-loop remainder defines filemap istack activep
                               (if activep (revappend prefix acc) acc)
                               n config state)))
 
@@ -1335,7 +1348,7 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
               ;; We leave the atts in the preprocessor's input stream so
               ;; that, e.g., defines can still get expanded in them.
               (vl-preprocess-loop (append atts remainder)
-                                  defines istack activep
+                                  defines filemap istack activep
                                   acc (- n 1) config state))
 
           ;; Else, not a //@VL comment
@@ -1344,12 +1357,12 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
                 ;; The // part is already gone, strip off the +VL part and
                 ;; leave it in the preprocessor's input stream, as above.
                 (vl-preprocess-loop (append (rest-n 3 prefix) remainder)
-                                    defines istack activep
+                                    defines filemap istack activep
                                     acc (- n 1) config state))
                ;; Else, regular comment instead of //+VL or //@VL comment, so
                ;; put the slashes back and don't try to preprocess it any more.
                (prefix (list* (first echars) (second echars) prefix)))
-            (vl-preprocess-loop remainder defines istack activep
+            (vl-preprocess-loop remainder defines filemap istack activep
                                 (if activep (revappend prefix acc) acc)
                                 n config state))))
 
@@ -1368,14 +1381,14 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
              ((unless successp)
               (mv (cw "Preprocessor error (~s0): block comment is never closed.~%"
                       (vl-location-string (vl-echar->loc echar1)))
-                  defines acc echars state))
+                  defines filemap acc echars state))
 
              ((when (vl-matches-string-p "+VL" prefix))
               ;; The /* part is already gone.  Strip off "+VL" and "*/", and put the
               ;; comment's body into the input stream, as for //+VL above.
               (b* ((body (butlast (rest-n 3 prefix) 2)))
                 (vl-preprocess-loop (append body remainder)
-                                    defines istack activep
+                                    defines filemap istack activep
                                     acc (- n 1) config state)))
 
              ((when (vl-matches-string-p "@VL" prefix))
@@ -1385,21 +1398,21 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
                                  (butlast (rest-n 3 prefix) 2)
                                  (vl-echarlist-from-str "*)"))))
                 (vl-preprocess-loop (append body remainder)
-                                    defines istack activep
+                                    defines filemap istack activep
                                     acc (- n 1) config state)))
 
              ;; Else, not a +VL or @VL comment, so put the /* back, and put
              ;; the prefix into the acc becuase we're done preprocessing this
              ;; comment.
              (prefix (list* (first echars) (second echars) prefix)))
-          (vl-preprocess-loop remainder defines istack activep
+          (vl-preprocess-loop remainder defines filemap istack activep
                               (if activep (revappend prefix acc) acc)
                               n config state)))
 
 
        ((when (not (eql char1 #\`)))
         ;; Any regular character.  Accumulate or discard, per activep.
-        (vl-preprocess-loop (cdr echars) defines istack activep
+        (vl-preprocess-loop (cdr echars) defines filemap istack activep
                             (if activep (cons (car echars) acc) acc)
                             n config state))
 
@@ -1416,7 +1429,7 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
        ((when (not directive))
         (mv (cw "Preprocessor error (~s0): stray ` character.~%"
                 (vl-location-string (vl-echar->loc echar1)))
-            defines acc echars state))
+            defines filemap acc echars state))
 
        ((when (not (vl-is-compiler-directive-p directive)))
 
@@ -1426,7 +1439,7 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
         (if (not activep)
             ;; Subtle.  Never try to expand macros in inactive sections,
             ;; because it is legitimate for them to be undefined.
-            (vl-preprocess-loop remainder defines istack activep
+            (vl-preprocess-loop remainder defines filemap istack activep
                                 acc n config state)
 
           (let ((lookup (vl-lookup-in-defines directive defines)))
@@ -1434,7 +1447,7 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
                 (mv (cw "Preprocessor error (~s0): `~s1 is not defined.~%"
                         (vl-location-string (vl-echar->loc echar1))
                         directive)
-                    defines acc echars state)
+                    defines filemap acc echars state)
               (let* ((text (cdr lookup))
                      ;; Subtle.  If we just inserted the echars stored in the
                      ;; defines table, then locations on these characters would
@@ -1458,7 +1471,7 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
                 ;; instead to the list of echars we are processing, namely
                 ;; remainder.  This does not always terminate!
                 (vl-preprocess-loop (append insert remainder)
-                                    defines istack activep
+                                    defines filemap istack activep
                                     acc
                                     (- (lnfix n) 1)
                                     config state))))))
@@ -1467,7 +1480,7 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
         ;; We explicitly disallow `\define, `\ifdef, etc.
         (mv (cw "Preprocessor error (~s0): we do not allow the use of \~s1.~%"
                 (vl-location-string (vl-echar->loc echar1)) directive)
-            defines acc echars state))
+            defines filemap acc echars state))
 
        ((when (or (equal directive "define")
                   (equal directive "centaur_define")))
@@ -1475,16 +1488,16 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
         (b* (((mv successp new-defines remainder)
               (vl-process-define (vl-echar->loc echar1) remainder defines activep config))
              ((unless successp)
-              (mv nil defines acc echars state)))
-          (vl-preprocess-loop remainder new-defines istack activep
+              (mv nil defines filemap acc echars state)))
+          (vl-preprocess-loop remainder new-defines filemap istack activep
                               acc n config state)))
 
        ((when (equal directive "undef"))
         (b* (((mv successp new-defines remainder)
               (vl-process-undef (vl-echar->loc echar1) remainder defines activep))
              ((unless successp)
-              (mv nil defines acc echars state)))
-          (vl-preprocess-loop remainder new-defines istack activep
+              (mv nil defines filemap acc echars state)))
+          (vl-preprocess-loop remainder new-defines filemap istack activep
                               acc n config state)))
 
        ((when (or (equal directive "ifdef")
@@ -1493,24 +1506,24 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
         (b* (((mv successp new-istack new-activep remainder)
               (vl-process-ifdef (vl-echar->loc echar1) directive remainder defines istack activep))
              ((unless successp)
-              (mv nil defines acc echars state)))
-          (vl-preprocess-loop remainder defines new-istack new-activep
+              (mv nil defines filemap acc echars state)))
+          (vl-preprocess-loop remainder defines filemap new-istack new-activep
                               acc n config state)))
 
        ((when (equal directive "else"))
         (b* (((mv successp new-istack new-activep)
               (vl-process-else (vl-echar->loc echar1) istack activep))
              ((unless successp)
-              (mv nil defines acc echars state)))
-          (vl-preprocess-loop remainder defines new-istack new-activep
+              (mv nil defines filemap acc echars state)))
+          (vl-preprocess-loop remainder defines filemap new-istack new-activep
                               acc n config state)))
 
        ((when (equal directive "endif"))
         (b* (((mv successp new-istack new-activep)
               (vl-process-endif (vl-echar->loc echar1) istack activep))
              ((unless successp)
-              (mv nil defines acc echars state)))
-          (vl-preprocess-loop remainder defines new-istack new-activep
+              (mv nil defines filemap acc echars state)))
+          (vl-preprocess-loop remainder defines filemap new-istack new-activep
                               acc n config state)))
 
        ((when (equal directive "include"))
@@ -1533,7 +1546,7 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
               ;; where the string literal isn't closed.  So, the behavior
               ;; seems to just be, ignore the include token and continue
               ;; ignoring whatever comes after it.
-              (vl-preprocess-loop remainder defines istack activep
+              (vl-preprocess-loop remainder defines filemap istack activep
                                   acc n config state))
 
              ;; Else, we're in an active section, so read the filename try to
@@ -1542,7 +1555,7 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
 
              ((unless filename)
               ;; Already warned.
-              (mv nil defines acc echars state))
+              (mv nil defines filemap acc echars state))
 
              ((mv realfile state)
               (vl-find-file filename (vl-loadconfig->include-dirs config) state))
@@ -1552,7 +1565,7 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
                       (vl-location-string (vl-echar->loc echar1))
                       filename
                       (vl-loadconfig->include-dirs config))
-                  defines acc echars state))
+                  defines filemap acc echars state))
 
              ((mv okp contents state)
               (cwtime (vl-read-file (string-fix realfile))
@@ -1560,33 +1573,38 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
              ((unless okp)
               (mv (cw "Preprocessor error (~s0): unable to read ~s1."
                       (vl-location-string (vl-echar->loc echar1)) realfile)
-                  defines acc echars state)))
+                  defines filemap acc echars state))
+
+             (filemap (if (vl-loadconfig->filemapp config)
+                          (cons (cons realfile (vl-echarlist->string contents))
+                                filemap)
+                        filemap)))
 
           (vl-preprocess-loop
            ;; We could perhaps avoid this append with two recursive calls,
            ;; but we'll have to modify vl-preprocess-loop to additionally
            ;; return the updated istack and activep.
-           (append contents remainder) defines istack activep
+           (append contents remainder) defines filemap istack activep
            acc (- n 1) config state)))
 
        ((when (equal directive "timescale"))
         (b* (((mv prefix remainder) (vl-read-timescale remainder))
              ((unless prefix)
-              (mv nil defines acc echars state)))
+              (mv nil defines filemap acc echars state)))
           ;; BOZO maybe add a note that we are ignoring timescale?
-          (vl-preprocess-loop remainder defines istack activep
+          (vl-preprocess-loop remainder defines filemap istack activep
                               acc n config state)))
 
        ((when (or (equal directive "celldefine")
                   (equal directive "endcelldefine")
                   (equal directive "resetall")))
         ;; BOZO maybe add a note that we are ignoring these directives?
-        (vl-preprocess-loop remainder defines istack activep
+        (vl-preprocess-loop remainder defines filemap istack activep
                             acc n config state)))
 
     (mv (cw "Preprocessor error (~s0): we do not support ~s1.~%"
             (vl-location-string (vl-echar->loc echar1)) directive)
-        defines acc echars state))
+        defines filemap acc echars state))
 
   ///
   (never-memoize vl-preprocess-loop)
@@ -1612,50 +1630,53 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
           ;; I think we might be hitting ACL2's heuristics on not opening up
           ;; functions when it would introduce too many ifs, so we need this to
           ;; tell it to really go ahead and open up the function.
-          '('(:expand ((:free (activep) (vl-preprocess-loop echars defines istack activep acc n config state)))))))
+          '('(:expand ((:free (activep) (vl-preprocess-loop echars defines filemap istack activep acc n config state)))))))
 
   (defthm booleanp-of-vl-preprocess-loop-success
-    (booleanp (mv-nth 0 (vl-preprocess-loop echars defines istack activep
-                                            acc n config state)))
+    (b* (((mv ?successp ?defines ?filemap ?acc ?remainder ?state)
+          (vl-preprocess-loop echars defines filemap istack activep acc n config state)))
+      (booleanp successp))
     :rule-classes :type-prescription)
 
   (defthm state-p1-of-vl-preprocess-loop
-    (let ((ret (vl-preprocess-loop echars defines istack activep
-                                   acc n config state)))
-      (implies (force (state-p1 state))
-               (state-p1 (mv-nth 4 ret)))))
+    (implies (force (state-p1 state))
+             (b* (((mv ?successp ?defines ?filemap ?acc ?remainder ?state)
+                   (vl-preprocess-loop echars defines filemap istack activep acc n config state)))
+               (state-p1 state))))
 
   (defthm true-listp-of-vl-preprocess-loop-result
-    (let ((ret (vl-preprocess-loop echars defines istack activep
-                                   acc n config state)))
-      (equal (true-listp (mv-nth 2 ret))
+    (b* (((mv ?successp ?defines ?filemap new-acc ?remainder ?state)
+          (vl-preprocess-loop echars defines filemap istack activep acc n config state)))
+      (equal (true-listp new-acc)
              (true-listp acc))))
 
   (defthm true-listp-of-vl-preprocess-loop-remainder
-    (let ((ret (vl-preprocess-loop echars defines istack activep
-                                   acc n config state)))
-      (equal (true-listp (mv-nth 3 ret))
+    (b* (((mv ?successp ?defines ?filemap ?acc ?remainder ?state)
+          (vl-preprocess-loop echars defines filemap istack activep acc n config state)))
+      (equal (true-listp remainder)
              (true-listp echars))))
 
   (defthmd no-remainder-of-vl-preprocess-loop-on-success
-    (let ((ret (vl-preprocess-loop echars defines istack activep
-                                   acc n config state)))
-      (implies (and (mv-nth 0 ret)
-                    (force (true-listp echars)))
-               (not (mv-nth 3 ret)))))
+    (b* (((mv ?successp ?defines ?filemap ?acc ?remainder ?state)
+          (vl-preprocess-loop echars defines filemap istack activep acc n config state)))
+      (implies (and successp
+                    (true-listp echars))
+               (not remainder))))
 
   (defthm vl-preprocess-loop-basics
-    (let ((ret (vl-preprocess-loop echars defines istack activep
-                                   acc n config state)))
-      (implies (and (force (vl-echarlist-p echars))
-                    (force (vl-defines-p defines))
-                    (force (vl-istack-p istack))
-                    (force (booleanp activep))
-                    (force (vl-echarlist-p acc))
-                    (force (state-p1 state)))
-               (and (vl-defines-p (mv-nth 1 ret))
-                    (vl-echarlist-p (mv-nth 2 ret))
-                    (vl-echarlist-p (mv-nth 3 ret)))))))
+    (implies (and (force (vl-echarlist-p echars))
+                  (force (vl-defines-p defines))
+                  (force (vl-filemap-p filemap))
+                  (force (vl-istack-p istack))
+                  (force (booleanp activep))
+                  (force (vl-echarlist-p acc))
+                  (force (state-p1 state)))
+             (b* (((mv ?successp ?defines ?filemap ?acc ?remainder ?state)
+                   (vl-preprocess-loop echars defines filemap istack activep acc n config state)))
+               (and (vl-defines-p defines)
+                    (vl-filemap-p filemap)
+                    (vl-echarlist-p acc)
+                    (vl-echarlist-p remainder))))))
 
 
 (defval *vl-preprocess-clock*
@@ -1682,6 +1703,7 @@ out of memory before running out of clock.</p>"
            vl-echarlist-p)
    &key
    (defines "Initial definitions to use." vl-defines-p)
+   (filemap "Initial file map to extend (for `includes)." vl-filemap-p)
    (config  "Controls the Verilog edition, include paths, etc." vl-loadconfig-p)
    ((state   "ACL2's @(see state), for file i/o.") 'state))
   :returns
@@ -1689,13 +1711,15 @@ out of memory before running out of clock.</p>"
                   booleanp :rule-classes :type-prescription)
       (defines    "Updated defines after preprocessing the files."
                   vl-defines-p :hyp :fguard)
+      (filemap    "Possibly extended filemap."
+                  vl-filemap-p :hyp :fguard)
       (new-echars "Updated extended characters, after preprocessing."
                   vl-echarlist-p :hyp :fguard)
       (state state-p1 :hyp (force (state-p1 state))))
 
   ;; Note: keep in sync with optimized version, below.
-  (b* (((mv successp defines acc remainder state)
-        (vl-preprocess-loop echars defines
+  (b* (((mv successp defines filemap acc remainder state)
+        (vl-preprocess-loop echars defines filemap
                             nil                   ;; istack
                             t                     ;; activep
                             nil                   ;; acc
@@ -1704,12 +1728,13 @@ out of memory before running out of clock.</p>"
                             state))
        ((when successp)
         ;; BOZO it would be really nice to use nreverse here.
-        (mv successp defines (reverse acc) state)))
+        (mv successp defines filemap (reverse acc) state)))
     (mv (cw "[[ Previous  ]]: ~s0~%~
              [[ Remaining ]]: ~s1~%"
             (vl-echarlist->string (vl-safe-previous-n 50 acc))
             (vl-echarlist->string (vl-safe-next-n 50 remainder)))
         defines
+        filemap
         nil
         state)))
 

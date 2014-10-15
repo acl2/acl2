@@ -1,5 +1,10 @@
 (in-package "ACL2")
 
+; Contributed by Ruben Gamboa
+; Copyright (C) 2014, University of Wyoming
+; All rights reserved.
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+
 ;;; Surprisingly, ACL2 knows very little about the rational numbers.
 ;;; Even though its type system knows that x*y is rational when x and
 ;;; y are rational, it gets confused when a theorem has that as a

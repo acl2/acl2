@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
@@ -31,7 +41,7 @@
    ((n "current index, for name generation, counts up" natp) '0))
   :guard (same-lengthp q-wires d-wires)
   :returns (insts vl-modinstlist-p)
-  :parents (vl-make-n-bit-flop)
+  :parents (vl-make-n-bit-latch)
   :short "Build a list of @('VL_1_BIT_LATCH') instances."
   :long "<p>We produce a list of latch instances like:</p>
 
@@ -92,9 +102,9 @@ endmodule
 
        (name        (hons-copy (cat "VL_" (natstr n) "_BIT_LATCH")))
 
-       ((mv q-expr q-port q-portdecl q-netdecl)         (vl-occform-mkport "q" :vl-output n))
-       ((mv clk-expr clk-port clk-portdecl clk-netdecl) (vl-occform-mkport "clk" :vl-input 1))
-       ((mv d-expr d-port d-portdecl d-netdecl)         (vl-occform-mkport "d" :vl-input n))
+       ((mv q-expr q-port q-portdecl q-vardecl)         (vl-occform-mkport "q" :vl-output n))
+       ((mv clk-expr clk-port clk-portdecl clk-vardecl) (vl-occform-mkport "clk" :vl-input 1))
+       ((mv d-expr d-port d-portdecl d-vardecl)         (vl-occform-mkport "d" :vl-input n))
 
        (q-wires     (vl-make-list-of-bitselects q-expr 0 (- n 1)))
        (d-wires     (vl-make-list-of-bitselects d-expr 0 (- n 1)))
@@ -103,7 +113,7 @@ endmodule
                           :origname  name
                           :ports     (list q-port clk-port d-port)
                           :portdecls (list q-portdecl clk-portdecl d-portdecl)
-                          :netdecls  (list q-netdecl clk-netdecl d-netdecl)
+                          :vardecls  (list q-vardecl clk-vardecl d-vardecl)
                           :modinsts  modinsts
                           :atts      (acons "VL_HANDS_OFF" nil nil) ; <-- may not be needed with the new sizing code
                           :minloc    *vl-fakeloc*
@@ -156,20 +166,24 @@ endmodule
                             (cat "VL_" (natstr n) "_BIT_LATCH")
                           (cat "VL_" (natstr n) "_BIT_" (natstr del) "_TICK_LATCH"))))
 
-       ((mv q-expr q-port q-portdecl q-netdecl)         (vl-occform-mkport "q" :vl-output n))
-       ((mv clk-expr clk-port clk-portdecl clk-netdecl) (vl-occform-mkport "clk" :vl-input 1))
-       ((mv d-expr d-port d-portdecl d-netdecl)         (vl-occform-mkport "d" :vl-input n))
+       ((mv q-expr q-port q-portdecl q-vardecl)         (vl-occform-mkport "q" :vl-output n))
+       ((mv clk-expr clk-port clk-portdecl clk-vardecl) (vl-occform-mkport "clk" :vl-input 1))
+       ((mv d-expr d-port d-portdecl d-vardecl)         (vl-occform-mkport "d" :vl-input n))
 
-       ((mv qreg-expr qreg-decls qreg-insts qreg-addmods)
+       ;; note qregdecls are netdecls not regdecls
+       ((mv qreg-expr qreg-decls qreg-assigns)
+        ;; this represents the final delay of q, which we don't need if
+        ;; delay=0.  in that case rather than creating a new redundant wire we
+        ;; just use q itself in the place of qreg above.
         (b* (((when (zp del))
-              ;; no need to use an extra wire for qreg
-              (mv q-expr nil nil nil))
-             ((mv qreg-expr qreg-decl) (vl-occform-mkwire "qreg" n))
-             (addmods (vl-make-n-bit-delay-m n del :vecp t))
-             (delnd (car addmods))
-             (qreg-inst (vl-simple-inst delnd "qoutinst" q-expr qreg-expr)))
-          (mv qreg-expr (list qreg-decl) (list qreg-inst) addmods)))
-
+              (mv q-expr nil nil))
+             ((mv qregexpr qregdecl)
+              (vl-occform-mkwire "qreg" n))
+             (ddelassign (make-vl-assign :lvalue q-expr
+                                         :expr qregexpr
+                                         :delay (vl-make-constdelay del)
+                                         :loc *vl-fakeloc*)))
+          (mv qregexpr (list qregdecl) (list ddelassign))))
 
        ;; non-propagating atts
        (triggers (make-vl-nonatom :op :vl-concat
@@ -180,11 +194,11 @@ endmodule
                    (cons "VL_NON_PROP_BOUND" qreg-expr)
                    (list "VL_STATE_DELAY")))
        ((mv qdel-expr qdel-decl)      (vl-occform-mkwire "qdel" n))
-       (addmods (vl-make-n-bit-delay-1 n :vecp t))
-       (deln1 (car addmods))
-       (qdel-inst (change-vl-modinst
-                   (vl-simple-inst deln1 "qdelinst" qdel-expr qreg-expr)
-                   :atts atts))
+       (qdel-assign (make-vl-assign :lvalue qdel-expr
+                                    :expr qreg-expr
+                                    :delay (vl-make-constdelay 1)
+                                    :loc *vl-fakeloc*
+                                    :atts atts))
 
        (qreg-assign (make-vl-assign
                      :lvalue qreg-expr
@@ -200,14 +214,13 @@ endmodule
                             ;; properly non-propagating
                             :atts (list (list "VL_LATCH_MUX")))
                      :loc *vl-fakeloc*)))
-    (cons (make-vl-module :name      name
+    (list (make-vl-module :name      name
                           :origname  name
                           :ports     (list q-port clk-port d-port)
                           :portdecls (list q-portdecl clk-portdecl d-portdecl)
-                          :netdecls  (list* q-netdecl clk-netdecl d-netdecl
+                          :vardecls  (list* q-vardecl clk-vardecl d-vardecl
                                             qdel-decl qreg-decls)
-                          :assigns (list qreg-assign)
-                          :modinsts  (cons qdel-inst qreg-insts)
+                          :assigns (list* qreg-assign qdel-assign qreg-assigns)
+                          ;; :modinsts  (cons qdel-inst qreg-insts)
                           :minloc    *vl-fakeloc*
-                          :maxloc    *vl-fakeloc*)
-          (append addmods qreg-addmods))))
+                          :maxloc    *vl-fakeloc*))))

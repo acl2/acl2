@@ -1,22 +1,54 @@
 ; Take lemmas
-; Copyright (C) 2005-2013 by Jared Davis <jared@cs.utexas.edu>
+; Copyright (C) 2005-2013 Kookamara LLC
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+;
+; Original author: Jared Davis <jared@kookamara.com>
 ;
 ; take.lisp
 ; This file was originally part of the Unicode library.
 
 (in-package "ACL2")
 (include-book "list-fix")
-(local (include-book "arithmetic/top" :dir :system))
+(include-book "equiv")
+(local (include-book "std/basic/inductions" :dir :system))
+
+(local (defthm commutativity-2-of-+
+         (equal (+ x (+ y z))
+                (+ y (+ x z)))))
+
+(local (defthm fold-consts-in-+
+         (implies (and (syntaxp (quotep x))
+                       (syntaxp (quotep y)))
+                  (equal (+ x (+ y z)) (+ (+ x y) z)))))
+
+(local (defthm distributivity-of-minus-over-+
+         (equal (- (+ x y)) (+ (- x) (- y)))))
 
 (defun simpler-take-induction (n xs)
   ;; Not generally meant to be used; only meant for take-induction
@@ -136,6 +168,10 @@ recommend using @('take-redefinition') instead of @('(:definition take)').</p>"
              (equal (take len x)
                     (list-fix x))))
 
+  (defthm equal-of-take-and-list-fix
+    (equal (equal (take n x) (list-fix x))
+           (equal (len x) (nfix n))))
+
   (defthm take-of-len
     (equal (take (len x) x)
            (list-fix x)))
@@ -145,17 +181,58 @@ recommend using @('take-redefinition') instead of @('(:definition take)').</p>"
              (subsetp (take n x) x)))
 
   (defthm take-fewer-of-take-more
-    ;; Note: see also replicate.lisp for related cases and a stronger rule that
+    ;; Note: see also repeat.lisp for related cases and a stronger rule that
     ;; case-splits.
     (implies (<= (nfix a) (nfix b))
              (equal (take a (take b x))
                     (take a x))))
 
   (defthm take-of-take-same
-    ;; Note: see also replicate.lisp for related cases and a stronger rule that
+    ;; Note: see also repeat.lisp for related cases and a stronger rule that
     ;; case-splits.
     (equal (take a (take a x))
-           (take a x))))
+           (take a x)))
+
+
+  (defcong list-equiv equal (take n x) 2
+    :hints(("Goal"
+            :induct (and (take n x)
+                         (cdr-cdr-induct x x-equiv)))))
+
+  (defcong list-equiv equal (take n x) 2)
+
+
+  (defcong list-equiv equal (butlast lst n) 1
+    :hints(("Goal" :induct (cdr-cdr-induct lst lst-equiv))))
+
+
+  (local (defthm element-list-p-of-take-nil
+           (implies (element-p nil)
+                    (element-list-p (take n nil)))))
+
+  (def-listp-rule element-list-p-of-take
+    (implies (element-list-p (double-rewrite x))
+             (iff (element-list-p (take n x))
+                  (or (element-p nil)
+                      (<= (nfix n) (len x))))))
+
+  (def-projection-rule elementlist-projection-of-take-nil-preserving
+    (implies (equal nil (element-xformer nil))
+             (equal (elementlist-projection (take n x))
+                    (take n (elementlist-projection x))))
+    :hints (("goal" :induct (take n x)))
+    :name elementlist-projection-of-take
+    :requirement nil-preservingp
+    :body (equal (elementlist-projection (take n x))
+                 (take n (elementlist-projection x))))
+
+  (def-projection-rule elementlist-projection-of-take
+    (implies (<= (nfix n) (len x))
+             (equal (elementlist-projection (take n x))
+                    (take n (elementlist-projection x))))
+    :hints (("goal" :induct (take n x)))
+    :name elementlist-projection-of-take
+    :requirement (not nil-preservingp)))
 
 
 (defsection first-n
@@ -167,18 +244,18 @@ guard does not require @('(true-listp x)')."
 just get rewritten into @('take').  You should typically never write a theorem
 about @('first-n'): write theorems about @('take') instead.</p>"
 
-  (local (defun replicate (n x)
+  (local (defun repeat (n x)
            (if (zp n)
                nil
-             (cons x (replicate (- n 1) x)))))
+             (cons x (repeat (- n 1) x)))))
 
   (local (defthm l0
-           (equal (append (replicate n x) (cons x y))
-                  (cons x (append (replicate n x) y)))))
+           (equal (append (repeat n x) (cons x y))
+                  (cons x (append (repeat n x) y)))))
 
   (local (defthm l1
            (equal (make-list-ac n val acc)
-                  (append (replicate n val) acc))
+                  (append (repeat n val) acc))
            :hints(("Goal"
                    :induct (make-list-ac n val acc)))))
 

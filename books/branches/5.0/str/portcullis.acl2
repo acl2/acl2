@@ -1,3 +1,0 @@
-
-(ld "package.lsp")
-(certify-book "portcullis" ?)

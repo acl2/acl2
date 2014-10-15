@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
@@ -23,6 +33,7 @@
 (include-book "lvalues")
 (include-book "delays")
 (include-book "strengths")
+(include-book "datatypes")
 (include-book "../../mlib/expr-tools")
 (include-book "../../mlib/port-tools")
 (local (include-book "../../util/arithmetic"))
@@ -88,6 +99,27 @@
 ; named_port_connection ::=
 ;   {attribute_instance} '.' identifier '(' [expression] ')'
 
+
+
+
+
+; SystemVerilog-2012 --------
+;
+; The only changed rule here is:
+;
+;    named_port_connection ::=
+;       { attribute_instance } '.' identifier [ '(' [ expression ] ')' ]
+;     | { attribute_instance } '.*'
+;
+; The differences are:
+;
+;  1. The named port list can now contain .*.  We are told in a footnote that
+;     the .* must occur at most once in the list_of_port_connections.
+;
+;  2. The named port connection can now be just a mere .name, without even any
+;     parens.  This is mostly equivalent to .name(name), but there are a few
+;     differences: see SystemVerilog-2012 section 23.3.2.3 for details.
+
 (defparser vl-parse-list-of-ordered-port-connections ()
   :result (vl-plainarglist-p val)
   :resultp-of-nil t
@@ -100,14 +132,14 @@
   ;; means returning a blank port!  Note that this leads to an unusually weak
   ;; count theorem.
 
-  (seqw tokens warnings
+  (seq tokstream
 
         (atts := (vl-parse-0+-attribute-instances))
 
         ;; If we see a comma to begin with, then we have a blank port at the
         ;; front of the list.
         (when (vl-is-token? :vl-comma)
-          (:= (vl-match-token :vl-comma))
+          (:= (vl-match))
           (rest := (vl-parse-list-of-ordered-port-connections))
           (return (cons (make-vl-plainarg :expr nil :atts atts) rest)))
 
@@ -118,39 +150,99 @@
         ;; Otherwise, there should be an expression here.
         (expr := (vl-parse-expression))
         (when (vl-is-token? :vl-comma)
-          (:= (vl-match-token :vl-comma))
+          (:= (vl-match))
           (rest := (vl-parse-list-of-ordered-port-connections)))
         (return (cons (make-vl-plainarg :expr expr :atts atts) rest))))
 
 (defparser vl-parse-named-port-connection ()
+  ;; Verilog-2005 or SystemVerilog-2012.  But note: SystemVerilog-2012: does not
+  ;; handle .* style ports.
   :result (vl-namedarg-p val)
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seq tokstream
         (atts := (vl-parse-0+-attribute-instances))
         (:= (vl-match-token :vl-dot))
         (id := (vl-match-token :vl-idtoken))
-        (:= (vl-match-token :vl-lparen))
-        (unless (vl-is-token? :vl-rparen)
-          (expr := (vl-parse-expression)))
-        (:= (vl-match-token :vl-rparen))
+        (when (vl-is-token? :vl-lparen)
+          (:= (vl-match))
+          (unless (vl-is-token? :vl-rparen)
+            (expr := (vl-parse-expression)))
+          (:= (vl-match-token :vl-rparen))
+          (return (make-vl-namedarg :name (vl-idtoken->name id)
+                                    :expr expr
+                                    :nameonly-p nil
+                                    :atts atts)))
+        (when (eq (vl-loadconfig->edition config) :verilog-2005)
+          (return-raw (vl-parse-error "Expected argument to named port connect.")))
+        ;; SystemVerilog-2012: no port argument is okay, this is a .name style port.
         (return (make-vl-namedarg :name (vl-idtoken->name id)
-                                  :expr expr
+                                  :expr (vl-idexpr (vl-idtoken->name id) nil nil)
+                                  :nameonly-p t
                                   :atts atts))))
 
-(defparser vl-parse-list-of-named-port-connections ()
+(defparser vl-parse-list-of-named-port-connections-2005 ()
   :result (vl-namedarglist-p val)
   :resultp-of-nil t
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seq tokstream
         (first := (vl-parse-named-port-connection))
         (when (vl-is-token? :vl-comma)
           (:= (vl-match-token :vl-comma))
-          (rest := (vl-parse-list-of-named-port-connections)))
+          (rest := (vl-parse-list-of-named-port-connections-2005)))
         (return (cons first rest))))
+
+(defparser vl-parse-list-of-named-port-connections-2012 ()
+  ;; Returns (args . saw-dot-star)
+  :result (consp val)
+  :resultp-of-nil nil
+  :true-listp nil
+  :fails gracefully
+  :count strong
+  :verify-guards nil
+  (seq tokstream
+        (when (vl-is-token? :vl-dotstar)
+          (dotstar := (vl-match)))
+
+        (unless dotstar
+          (first := (vl-parse-named-port-connection)))
+
+        (when (vl-is-token? :vl-comma)
+          (:= (vl-match))
+          ((rest . saw-dot-star-in-tail) := (vl-parse-list-of-named-port-connections-2012)))
+
+        (when (and dotstar saw-dot-star-in-tail)
+          (return-raw (vl-parse-error "Multiple occurrences of .* in port list.")))
+
+        (when dotstar
+          (return (cons rest t)))
+
+        (return (cons (cons first rest)
+                      saw-dot-star-in-tail)))
+  ///
+  (defthm vl-namedarglist-p-of-vl-parse-list-of-named-port-connections-2012
+    (vl-namedarglist-p (car (mv-nth 1 (vl-parse-list-of-named-port-connections-2012)))))
+  (local (defthm booleanp-of-vl-parse-list-of-named-port-connections-2012
+           (booleanp (cdr (mv-nth 1 (vl-parse-list-of-named-port-connections-2012))))))
+  (verify-guards vl-parse-list-of-named-port-connections-2012-fn))
+
+(defparser vl-parse-list-of-named-port-connections ()
+  :result (vl-arguments-p val)
+  :resultp-of-nil nil
+  :true-listp nil
+  :fails gracefully
+  :count strong
+  (seq tokstream
+        (when (eq (vl-loadconfig->edition config) :verilog-2005)
+          (args := (vl-parse-list-of-named-port-connections-2005))
+          (return (make-vl-arguments-named :args args
+                                           :starp nil)))
+        ((args . saw-dot-star) := (vl-parse-list-of-named-port-connections-2012))
+        (return (make-vl-arguments-named :args args
+                                         :starp (if saw-dot-star t nil)))))
 
 (defparser vl-parse-list-of-port-connections ()
   :result (vl-arguments-p val)
@@ -162,79 +254,167 @@
   ;; on success.  The modinst production must explicitly handle the empty
   ;; case and NOT call this function if it sees "()".
 
-  (mv-let (erp val explore new-warnings)
-          (seqw tokens warnings
-                (args := (vl-parse-list-of-ordered-port-connections))
-                (return (make-vl-arguments-plain :args args)))
-          (if erp
-              (seqw tokens warnings
-                    (args := (vl-parse-list-of-named-port-connections))
-                    (return (make-vl-arguments-named :args args)))
-            (mv erp val explore new-warnings))))
+  (b* ((backup (vl-tokstream-save))
+       ((mv erp val tokstream)
+        (seq tokstream
+              (args := (vl-parse-list-of-ordered-port-connections))
+              (return (make-vl-arguments-plain :args args))))
+       ((unless erp)
+        (mv erp val tokstream))
+       (tokstream (vl-tokstream-restore backup)))
+    (vl-parse-list-of-named-port-connections)))
 
 
-; parameter_value_assignment ::= '#' '(' list_of_parameter_assignments ')'
+; Verilog-2005:
 ;
-; list_of_parameter_assignments ::=
-;    expression { ',' expression }
-;  | named_parameter_assignment { ',' named_parameter_assignment }
+;   parameter_value_assignment ::= '#' '(' list_of_parameter_assignments ')'
 ;
-; named_parameter_assignment ::=
-;  '.' identifier '(' [ mintypmax_expression ] ')'
+;   list_of_parameter_assignments ::=
+;      expression { ',' expression }
+;    | named_parameter_assignment { ',' named_parameter_assignment }
+;
+;   named_parameter_assignment ::=
+;     '.' identifier '(' [ mintypmax_expression ] ')'
+;
+;
+; SystemVerilog-2012:
+;
+;   parameter_value_assignment ::= '#' '(' [ list_of_parameter_assignments ] ')'
+;
+;   list_of_parameter_assignments ::=
+;       ordered_parameter_assignment { ',' ordered_parameter_assignment }
+;     | named_parameter_assignment { ',' named_parameter_assignment }
+;
+;   ordered_parameter_assignment ::= param_expression
+;
+;   named_parameter_assignment   ::=
+;      '.' identifier ( [ param_expression ] )
+;
+;   param_expression ::= mintypmax_expression | data_type | $
+;
+; In short, SystemVerilog-2012 is extending the Verilog-2005 grammar by:
+;
+;   - Permitting completely blank lists, i.e., ``#()``
+;   - Permitting datatypes instead of just expressions as values
+;   - Allowing mintypmax expressions in plain lists
 
-(defparser vl-parse-named-parameter-assignment ()
-  :result (vl-namedarg-p val)
+(local
+ (defthm crock-idtoken-of-car
+   (implies (vl-is-token? :vl-idtoken)
+            (vl-idtoken-p (car (vl-tokstream->tokens))))
+   :hints(("Goal" :in-theory (enable vl-is-token?)))))
+
+(defparser vl-parse-param-expression ()
+  ;; Verilog-2005:       Matches mintypmax_expression
+  ;; SystemVerilog-2012: Matches mintypmax_expression | data_type | $
+  ;;
+  ;; Except that our SystemVerilog expression parser already accepts $ as an
+  ;; expression, so we really just match:
+  ;;
+  ;; param_expression ::= mintypmax_expression | data_type
+  :result (vl-paramvalue-p val)
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seq tokstream
+        ;; Datatype and expression are ambiguous when we just have an identifier, so
+        ;; check for this case first.
+        (when (and (vl-is-token? :vl-idtoken)
+                   (not (vl-parsestate-is-user-defined-type-p
+                         (vl-idtoken->name (car (vl-tokstream->tokens)))
+                         (vl-tokstream->pstate))))
+          ;; Non-type identifier.
+          (ans := (vl-parse-mintypmax-expression))
+          (return ans))
+        (return-raw
+         ;; Otherwise, use backtracking: arbitrarily try to get a datatype
+         ;; first, then try to get an expr.
+         (b* ((backup (vl-tokstream-save))
+              ((mv dt-err dt-val tokstream)
+               (vl-parse-datatype))
+              ((unless dt-err)
+               (mv dt-err dt-val tokstream))
+              (tokstream (vl-tokstream-restore backup)))
+           (seq tokstream
+                 (ans := (vl-parse-mintypmax-expression))
+                 (return ans))))))
+
+(defparser vl-parse-named-parameter-assignment ()
+  :result (vl-namedparamvalue-p val)
+  :resultp-of-nil nil
+  :fails gracefully
+  :count strong
+  (seq tokstream
         (:= (vl-match-token :vl-dot))
         (id := (vl-match-token :vl-idtoken))
         (:= (vl-match-token :vl-lparen))
-        (expr := (vl-parse-mintypmax-expression))
+        (unless (vl-is-token? :vl-rparen)
+          (value := (vl-parse-param-expression)))
         (:= (vl-match-token :vl-rparen))
-        (return (make-vl-namedarg :name (vl-idtoken->name id)
-                                  :expr expr))))
+        (return (make-vl-namedparamvalue :name (vl-idtoken->name id)
+                                         :value value))))
 
 (defparser vl-parse-list-of-named-parameter-assignments ()
-  :result (vl-namedarglist-p val)
+  :result (vl-namedparamvaluelist-p val)
   :resultp-of-nil t
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seq tokstream
         (first := (vl-parse-named-parameter-assignment))
         (when (vl-is-token? :vl-comma)
           (:= (vl-match-token :vl-comma))
           (rest := (vl-parse-list-of-named-parameter-assignments)))
         (return (cons first rest))))
 
+(defparser vl-parse-list-of-ordered-parameter-assignments ()
+  :result (vl-paramvaluelist-p val)
+  :resultp-of-nil t
+  :true-listp t
+  :fails gracefully
+  :count strong
+  (seq tokstream
+        (first := (vl-parse-param-expression))
+        (when (vl-is-token? :vl-comma)
+          (:= (vl-match-token :vl-comma))
+          (rest := (vl-parse-list-of-ordered-parameter-assignments)))
+        (return (cons first rest))))
+
 (defparser vl-parse-list-of-parameter-assignments ()
-  :result (vl-arguments-p val)
+  :result (vl-paramargs-p val)
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seq tokstream
         (when (vl-is-token? :vl-dot)
           (args := (vl-parse-list-of-named-parameter-assignments))
-          (return (make-vl-arguments-named :args args)))
-        (exprs := (vl-parse-1+-expressions-separated-by-commas))
-        (return (make-vl-arguments-plain :args (vl-exprlist-to-plainarglist exprs)))))
+          (return (make-vl-paramargs-named :args args)))
+        (exprs := (if (eq (vl-loadconfig->edition config) :verilog-2005)
+                      ;; Verilog-2005 doesn't allow mintypmax exprs here.
+                      (vl-parse-1+-expressions-separated-by-commas)
+                    ;; SystemVerilog-2012 does.
+                    (vl-parse-list-of-ordered-parameter-assignments)))
+        (return (make-vl-paramargs-plain :args exprs))))
 
 (defparser vl-parse-parameter-value-assignment ()
-  :result (vl-arguments-p val)
+  :result (vl-paramargs-p val)
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seq tokstream
         (:= (vl-match-token :vl-pound))
         (:= (vl-match-token :vl-lparen))
+
+        (when (and (vl-is-token? :vl-rparen)
+                   (not (eq (vl-loadconfig->edition config) :verilog-2005)))
+          ;; In SystemVerilog, #() is allowed.  However, in Verilog-2005 it's a
+          ;; parse error.
+          (:= (vl-match))
+          (return (make-vl-paramargs-plain :args nil)))
+
         (args := (vl-parse-list-of-parameter-assignments))
         (:= (vl-match-token :vl-rparen))
         (return args)))
-
-
-
 
 
 
@@ -245,16 +425,15 @@
 ; module_instance ::=
 ;    identifier [range] '(' [list_of_port_connections] ')'
 
-
 (defparser vl-parse-module-instance (modname paramargs atts)
   :guard (and (stringp modname)
-              (vl-arguments-p paramargs)
+              (vl-paramargs-p paramargs)
               (vl-atts-p atts))
   :result (vl-modinst-p val)
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seq tokstream
        (instname := (vl-match-token :vl-idtoken))
        (when (vl-is-token? :vl-lbrack)
          (range := (vl-parse-range)))
@@ -262,7 +441,7 @@
        ;; Note special avoidance of actually parsing () lists.
        (unless (vl-is-token? :vl-rparen)
          (portargs := (vl-parse-list-of-port-connections)))
-       (rparen := (vl-match-token :vl-rparen))
+       (:= (vl-match-token :vl-rparen))
        (return (make-vl-modinst :loc (vl-token->loc instname)
                                 :instname (vl-idtoken->name instname)
                                 :modname modname
@@ -273,14 +452,14 @@
 
 (defparser vl-parse-1+-module-instances (modname paramargs atts)
   :guard (and (stringp modname)
-              (vl-arguments-p paramargs)
+              (vl-paramargs-p paramargs)
               (vl-atts-p atts))
   :result (vl-modinstlist-p val)
   :resultp-of-nil t
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seq tokstream
         (first := (vl-parse-module-instance modname paramargs atts))
         (when (vl-is-token? :vl-comma)
           (:= (vl-match-token :vl-comma))
@@ -294,18 +473,16 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seq tokstream
         (modid := (vl-match-token :vl-idtoken))
         (when (vl-is-token? :vl-pound)
           (paramargs := (vl-parse-parameter-value-assignment)))
         (insts := (vl-parse-1+-module-instances (vl-idtoken->name modid)
-                                                (or paramargs (make-vl-arguments-plain :args nil))
+                                                (or paramargs
+                                                    (make-vl-paramargs-plain :args nil))
                                                 atts))
-        (semi := (vl-match-token :vl-semi))
+        (:= (vl-match-token :vl-semi))
         (return insts)))
-
-
-
 
 
 
@@ -329,7 +506,7 @@
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seq tokstream
         (when (vl-is-token? :vl-idtoken)
           (inst-id := (vl-match-token :vl-idtoken))
           (when (vl-is-token? :vl-lbrack)
@@ -344,7 +521,7 @@
                                                 (vl-idtoken->name inst-id))
                                  :modname modname
                                  :range range
-                                 :paramargs (make-vl-arguments-plain :args nil)
+                                 :paramargs (make-vl-paramargs-plain :args nil)
                                  :portargs  (make-vl-arguments-plain
                                              :args (vl-exprlist-to-plainarglist (cons lvalue exprs)))
                                  :str str
@@ -362,7 +539,7 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seq tokstream
         (first := (vl-parse-udp-instance loc modname str delay atts))
         (when (vl-is-token? :vl-comma)
           (:= (vl-match-token :vl-comma))
@@ -382,11 +559,11 @@
    :true-listp t
    :fails gracefully
    :count strong
-   (seqw tokens warnings
+   (seq tokstream
         (modname := (vl-match-token :vl-idtoken))
         (when (and (vl-is-token? :vl-lparen)
-                   (vl-is-some-token? *vl-all-drivestr-kwds*
-                                      :tokens (cdr tokens)))
+                   (vl-lookahead-is-some-token?
+                    *vl-all-drivestr-kwds* (cdr (vl-tokstream->tokens))))
           (str := (vl-parse-drive-strength)))
         (when (vl-is-token? :vl-pound)
           (delay := (vl-parse-delay2)))
@@ -441,13 +618,16 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (b* (((mv m-err val explore new-warnings) (vl-parse-module-instantiation atts))
+  (b* ((backup (vl-tokstream-save))
+       ((mv m-err val tokstream) (vl-parse-module-instantiation atts))
        ((unless m-err)
-        (mv m-err val explore new-warnings))
-       ((mv u-err val explore new-warnings) (vl-parse-udp-instantiation atts))
+        (mv m-err val tokstream))
+       (tokstream (vl-tokstream-restore backup))
+       ((mv u-err val tokstream) (vl-parse-udp-instantiation atts))
        ((unless u-err)
-        (mv u-err val explore new-warnings)))
+        (mv u-err val tokstream))
+       (tokstream (vl-tokstream-restore backup)))
     (mv (vl-udp/modinst-pick-error-to-report m-err u-err)
-        nil tokens warnings)))
+        nil tokstream)))
 
 

@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
@@ -23,6 +33,7 @@
 (include-book "../mlib/range-tools")
 (include-book "../mlib/namefactory")
 (include-book "../mlib/port-tools")
+(include-book "../mlib/expr-building")
 (local (include-book "../util/arithmetic"))
 (local (include-book "tools/do-not" :dir :system))
 (local (acl2::do-not fertilize))
@@ -39,9 +50,9 @@ multiple one-input gates for @('buf') and @('not'), or two-input gates for
 @('and') gates, which are not ruled out by the Verilog specification.</p>
 
 <p><b>Ordering Notes.</b> This transformation must be done after widths have
-been computed, and after @(see replicate) has been run to eliminate any arrays.
-Replication is necessary for certain well-formedness checks on the widths to
-succeed.</p>
+been computed, and after @(see replicate-insts) has been run to eliminate any
+arrays.  Replication is necessary for certain well-formedness checks on the
+widths to succeed.</p>
 
 <p>Unlike occforming, we lay down gates directly instead of introducing new
 modules.  It might be nicer to do it the other way and introduce modules
@@ -80,7 +91,7 @@ gates come from.</p>")
   (mv (exprs    (and (vl-exprlist-p exprs)
                      (equal (len exprs) (nfix i)))
                 "Expressions for the new one-bit wires.")
-      (netdecls vl-netdecllist-p
+      (vardecls vl-vardecllist-p
                 :hyp (force (vl-location-p loc))
                 "Declarations for the new wires.")
       (nf       vl-namefactory-p
@@ -93,9 +104,9 @@ gates come from.</p>")
        (expr1    (make-vl-atom :guts (make-vl-id :name new-name)
                                :finalwidth 1
                                :finaltype :vl-unsigned))
-       (decl1    (make-vl-netdecl :name new-name
-                                  :type :vl-wire
-                                  :range nil
+       (decl1    (make-vl-vardecl :name new-name
+                                  :type *vl-plain-old-wire-type*
+                                  :nettype :vl-wire
                                   :loc loc))
        ((mv exprs decls nf)
         (vl-make-temporary-wires prefix (- i 1) nf loc)))
@@ -185,7 +196,7 @@ a strange construct and some Verilog tools may not support it.</p>"
         ;; have already gotten rid of any instance arrays.
         (mv (fatal :type :vl-bad-gate
                    :msg "~a0: expected no instance arrays; did you forget to ~
-                         run the replicate transform?"
+                         run the replicate-insts transform?"
                    :args (list x))
             x))
 
@@ -259,7 +270,7 @@ drive each output in @('outs') with @('in').</p>"
           (fatal :type :vl-bad-gate
                  :msg "~a0: expected all instance arrays to have been ~
                        eliminated, but found a range.  Did you forget to run ~
-                       the replicate transform?"
+                       the replicate-insts transform?"
                  :args (list x))))
        (warnings
         ;; Cadence does not allow a multi-bit wire to be used as the output of
@@ -481,7 +492,7 @@ gate, if necessary."
   :guard (member (vl-gateinst->type x) '(:vl-and :vl-or :vl-xor))
   :returns
   (mv (warnings       vl-warninglist-p)
-      (new-decls      vl-netdecllist-p :hyp :fguard
+      (new-decls      vl-vardecllist-p :hyp :fguard
                       "New declarations for temporary wires.")
       (new-gateinsts  vl-gateinstlist-p :hyp :fguard
                       "Replacement gate instances.")
@@ -515,7 +526,7 @@ gate(out,   tempN-2, iN);
         ;; have already gotten rid of any instance arrays.
         (mv (fatal :type :vl-bad-gate
                    :msg "~a0: expected no instance arrays; did you forget to ~
-                         run the replicate transform?"
+                         run the replicate-insts transform?"
                    :args (list x))
             nil (list x) nf))
 
@@ -575,7 +586,7 @@ gate(out,   tempN-2, iN);
   :guard (member (vl-gateinst->type x) '(:vl-nand :vl-nor :vl-xnor))
   :returns
   (mv (warnings       vl-warninglist-p)
-      (new-decls      vl-netdecllist-p :hyp :fguard
+      (new-decls      vl-vardecllist-p :hyp :fguard
                       "New declarations for temporary wires.")
       (new-gateinsts  vl-gateinstlist-p :hyp :fguard
                       "Replacement gate instances.")
@@ -706,7 +717,7 @@ we need to add a \"not\" gate at the end.</p>"
    (warnings vl-warninglist-p "Ordinary @(see warnings) accumulator."))
   :returns
   (mv (warnings       vl-warninglist-p)
-      (new-decls      vl-netdecllist-p :hyp :fguard "New declarations for temporary wires.")
+      (new-decls      vl-vardecllist-p :hyp :fguard "New declarations for temporary wires.")
       (new-gateinsts  vl-gateinstlist-p :hyp :fguard "Replacement gate instances.")
       (nf             vl-namefactory-p :hyp :fguard))
   (case (vl-gateinst->type x)
@@ -731,7 +742,7 @@ we need to add a \"not\" gate at the end.</p>"
    (warnings vl-warninglist-p))
   :returns
   (mv (warnings       vl-warninglist-p)
-      (new-decls      vl-netdecllist-p :hyp :fguard "New declarations for temporary wires.")
+      (new-decls      vl-vardecllist-p :hyp :fguard "New declarations for temporary wires.")
       (new-gateinsts  vl-gateinstlist-p :hyp :fguard "Replacement gate instances.")
       (nf             vl-namefactory-p :hyp :fguard))
   (b* (((when (atom x))
@@ -753,13 +764,13 @@ we need to add a \"not\" gate at the end.</p>"
         x)
        (gateinsts (vl-module->gateinsts x))
        (warnings  (vl-module->warnings x))
-       (netdecls  (vl-module->netdecls x))
+       (vardecls  (vl-module->vardecls x))
        (nf        (vl-starting-namefactory x))
        ((mv warnings new-decls gates nf)
         (vl-gateinstlist-gatesplit gateinsts nf warnings))
        (-         (vl-free-namefactory nf)))
     (change-vl-module x
-                      :netdecls (append new-decls netdecls)
+                      :vardecls (append new-decls vardecls)
                       :gateinsts gates
                       :warnings warnings)))
 

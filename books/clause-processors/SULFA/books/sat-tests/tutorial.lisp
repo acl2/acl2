@@ -9,12 +9,46 @@
 
 (in-package "ACL2")
 
+#+allegro
+#!acl2
+(progn
+(defttag sat-tutorial)
+(make-event
+
+; Added by Matt K.:
+; After the June 8, 2014 check-in of acl2-devel svn revision 1308, we found
+; that ../sat-tests/tutorial.lisp produced a stack overflow on theorem bar-prop
+; during an ACL2 regression run.  This issue might well have appeared when
+; invariant-risk was previously dealt with.  At any rate, we simply work around
+; it, at least for now, by defeating invariant-risk handling.  My theory is
+; that the special variable *mbe-as-exec* introduced for *1* functions in
+; acl2-devel svn revision 1308 is preventing the compiler from removing
+; tail recursions, but I haven't checked this.  I did notice that Allegro CL
+; was using 30GB of memory!
+
+ (progn! (set-raw-mode t)
+         (setq *ignore-invariant-risk* t)
+         (set-raw-mode nil)
+         (set-compiler-enabled nil state)
+         (value '(value-triple nil))))
+(defttag nil)
+)
+
 ;; To use our system, first we need to include the clause 
 ;; processor book.  It requires two ttags "sat" and "sat-cl", 
 ;; representing the system call to the SAT solver and the 
 ;; SULFA-SAT clause processor respectively.
 
 (include-book "../clause-processors/sat-clause-processor" :ttags (sat sat-cl))
+
+#+allegro ; see Matt K. comment for preceding #+allegro form
+(progn
+  (defttag nil)
+  (make-event
+   (pprogn (set-compiler-enabled t state)
+           (value '(value-triple nil))))
+  (set-compile-fns t)
+  (comp t))
 
 ;; The point of the SULFA-SAT clause processor is to
 ;; use SAT solvers to verify ACL2 formulas automatically.

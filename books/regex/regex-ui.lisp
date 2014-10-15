@@ -5,15 +5,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original authors:  Sol Swords & Jared Davis  ({sswords,jared}@centtech.com)
 
@@ -27,6 +37,7 @@
 (local (include-book "misc/assert" :dir :system))
 
 (defxdoc regex
+  :parents (top)
   :short "Regular expression library for ACL2"
   :long "<p>This library is modeled after the regular expression parsing
          functionality of GNU grep.  While the code is mostly considered to be
@@ -133,7 +144,7 @@
          :rule-classes :type-prescription
          :hints(("Goal" :in-theory (enable match-regex-fun)))))
 
-(define do-regex-match-precomp 
+(define do-regex-match-precomp
   ((str stringp "String to test")
    (regex regex-p "Regular expression specifying the pattern to find")
    (opts parse-opts-p "Options for test.  <br />
@@ -203,7 +214,7 @@
  (do-regex-match \"cdeAbfdEfDeghIj\"
                  \"ab([def]*)\\1([gh])\"
                  (parse-options 'fixed nil nil nil t))
-}) 
+})
 
 <p>returns <tt>(mv nil nil nil)</tt>, and </p>
 
@@ -340,8 +351,12 @@
                        (not substrs)))))
 
 (def-b*-binder match
-  (declare (xargs :guard (and (consp forms) (not (cdr forms))
-                              (true-listp args))))
+  :parents (b*-binders regex)
+  :short "@(see b*) binder for regular expression matching."
+  :decls ((declare (xargs :guard (and (consp forms)
+                                      (not (cdr forms))
+                                      (true-listp args)))))
+  :body
   (b* ((string (car forms)) ;; string to match against the pattern
        (pat (car args))
        (options (cdr args))
@@ -391,7 +406,7 @@
  (make-event
   (b* ((res1-ok
         (equal
-        
+
          (b* (((match "ab([def]*)\\1([gh])" :i
                       :full f
                       :substrs (a b))
@@ -430,7 +445,7 @@
 
          '("fdE" "AbfdEfDeg"))))
 
-      
+
     (if (and res1-ok res2-ok res3-ok)
         '(value-triple :ok)
       (er hard? 'regex-ui
@@ -482,14 +497,14 @@
   :guard t
   (cond ((atom x)
          (null x))
-        (t 
+        (t
          (and (consp (car x))
               (stringp (caar x))
               (string-keyed-alist-p (cdr x))))))
 
 (local (in-theory (enable string-keyed-alist-p)))
 
-(define regex-get 
+(define regex-get
   ((str stringp "String to lookup")
    (alist string-keyed-alist-p "Alistp where keys are regular expressions in
                                 string form and the values are of an
@@ -560,8 +575,8 @@
                  \"The list of integers associated with the given key\"
                  :hyp :fguard)
    (let ((val (regex-get key dictionary)))
-     (if (consp val) 
-         (cdr val) 
+     (if (consp val)
+         (cdr val)
        nil))) ; return value in the atom case is chosen by user
 })
 "
@@ -572,7 +587,7 @@
       (do-regex-match str
                       (caar alist)
                       (parse-options 'ere
-                                     nil nil nil 
+                                     nil nil nil
                                      nil)) ; case sensitive
       (declare (ignore substrs))
       (cond (err (er hard? 'regex-get err))

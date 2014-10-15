@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
@@ -91,7 +101,7 @@ expressions within @('(* foo = bar *)')-style attributes.</p>")
          (element-collect      (mksym element '-allexprs))
          (element-collect-nrev (mksym element '-allexprs-nrev))
          (short                (cat "Gather all top-level expressions from a @(see "
-                                    (symbol-name list-rec))))
+                                    (symbol-name list-rec) ").")))
     `(progn
        (define ,list-collect-nrev ((x ,list-rec) nrev)
          :parents (,list-collect)
@@ -140,35 +150,6 @@ expressions within @('(* foo = bar *)')-style attributes.</p>")
           nil))
 
 (def-vl-allexprs
-  :type vl-plainarg
-  :nrev-body (vl-maybe-expr-allexprs-nrev (vl-plainarg->expr x) nrev)
-  :body (vl-maybe-expr-allexprs (vl-plainarg->expr x)))
-
-(def-vl-allexprs-list
-  :list vl-plainarglist
-  :element vl-plainarg)
-
-(def-vl-allexprs
-  :type vl-namedarg
-  :nrev-body (vl-maybe-expr-allexprs-nrev (vl-namedarg->expr x) nrev)
-  :body (vl-maybe-expr-allexprs (vl-namedarg->expr x)))
-
-(def-vl-allexprs-list
-  :list vl-namedarglist
-  :element vl-namedarg)
-
-(def-vl-allexprs
-  :type vl-arguments
-  :nrev-body
-  (vl-arguments-case x
-    :named (vl-namedarglist-allexprs-nrev x.args nrev)
-    :plain (vl-plainarglist-allexprs-nrev x.args nrev))
-  :body
-  (vl-arguments-case x
-    :named (vl-namedarglist-allexprs x.args)
-    :plain (vl-plainarglist-allexprs x.args)))
-
-(def-vl-allexprs
   :type vl-range
   :nrev-body
   (b* (((vl-range x) x)
@@ -191,6 +172,190 @@ expressions within @('(* foo = bar *)')-style attributes.</p>")
 (def-vl-allexprs-list
   :list vl-rangelist
   :element vl-range)
+
+(def-vl-allexprs
+  :type vl-packeddimension
+  :nrev-body
+  (if (eq x :vl-unsized-dimension)
+      (nrev-fix nrev)
+    (vl-range-allexprs-nrev x nrev))
+  :body
+  (if (eq x :vl-unsized-dimension)
+      nil
+    (vl-range-allexprs x)))
+
+(def-vl-allexprs
+  :type vl-maybe-packeddimension
+  :nrev-body
+  (if x
+      (vl-packeddimension-allexprs-nrev x nrev)
+    (nrev-fix nrev))
+  :body
+  (if x
+      (vl-packeddimension-allexprs x)
+    nil))
+
+(def-vl-allexprs-list
+  :list vl-packeddimensionlist
+  :element vl-packeddimension)
+
+(def-vl-allexprs
+  :type vl-enumbasetype
+  :nrev-body
+  (b* (((vl-enumbasetype x) x))
+    (vl-maybe-packeddimension-allexprs-nrev x.dim nrev))
+  :body
+  (b* (((vl-enumbasetype x) x))
+    (vl-maybe-packeddimension-allexprs x.dim)))
+
+(def-vl-allexprs
+  :type vl-enumitem
+  :nrev-body
+  (b* (((vl-enumitem x) x)
+       (nrev (vl-maybe-range-allexprs-nrev x.range nrev))
+       (nrev (vl-maybe-expr-allexprs-nrev x.value nrev)))
+    nrev)
+  :body
+  (b* (((vl-enumitem x) x))
+    (append (vl-maybe-range-allexprs x.range)
+            (vl-maybe-expr-allexprs x.value))))
+
+(def-vl-allexprs-list
+  :list vl-enumitemlist
+  :element vl-enumitem)
+
+(defines vl-datatype-allexprs-nrev
+  :parents (vl-datatype-allexprs)
+  :flag-local nil
+
+  (define vl-datatype-allexprs-nrev ((x vl-datatype-p) nrev)
+    :measure (vl-datatype-count x)
+    :flag :datatype
+    (vl-datatype-case x
+      (:vl-coretype
+       (b* ((nrev (vl-packeddimensionlist-allexprs-nrev x.pdims nrev))
+            (nrev (vl-packeddimensionlist-allexprs-nrev x.udims nrev)))
+         nrev))
+      (:vl-struct
+       (b* ((nrev (vl-packeddimensionlist-allexprs-nrev x.pdims nrev))
+            (nrev (vl-packeddimensionlist-allexprs-nrev x.udims nrev)))
+         (vl-structmemberlist-allexprs-nrev x.members nrev)))
+      (:vl-union
+       (b* ((nrev (vl-packeddimensionlist-allexprs-nrev x.pdims nrev))
+            (nrev (vl-packeddimensionlist-allexprs-nrev x.udims nrev)))
+         (vl-structmemberlist-allexprs-nrev x.members nrev)))
+      (:vl-enum
+       (b* ((nrev (vl-enumbasetype-allexprs-nrev x.basetype nrev))
+            (nrev (vl-enumitemlist-allexprs-nrev x.items nrev))
+            (nrev (vl-packeddimensionlist-allexprs-nrev x.pdims nrev)))
+         (vl-packeddimensionlist-allexprs-nrev x.udims nrev)))
+      (:vl-usertype
+       (b* ((nrev (nrev-push x.kind nrev))
+            (nrev (vl-packeddimensionlist-allexprs-nrev x.pdims nrev))
+            (nrev (vl-packeddimensionlist-allexprs-nrev x.udims nrev)))
+         nrev))))
+
+  (define vl-structmemberlist-allexprs-nrev ((x vl-structmemberlist-p) nrev)
+    :flag :structmemberlist
+    :measure (vl-structmemberlist-count x)
+    (b* (((when (atom x))
+          (nrev-fix nrev))
+         (nrev (vl-structmember-allexprs-nrev (car x) nrev)))
+      (vl-structmemberlist-allexprs-nrev (cdr x) nrev)))
+
+  (define vl-structmember-allexprs-nrev ((x vl-structmember-p) nrev)
+    :flag :structmember
+    :measure (vl-structmember-count x)
+    (b* (((vl-structmember x) x)
+         (nrev (vl-maybe-expr-allexprs-nrev x.rhs nrev)))
+      (vl-datatype-allexprs-nrev x.type nrev))))
+
+(defines vl-datatype-allexprs
+  :parents (allexprs)
+  :flag-local nil
+
+  (define vl-datatype-allexprs ((x vl-datatype-p))
+    :measure (vl-datatype-count x)
+    :returns (exprs vl-exprlist-p)
+    :verify-guards nil
+    (mbe :logic
+         (vl-datatype-case x
+           (:vl-coretype
+            (append (vl-packeddimensionlist-allexprs x.pdims)
+                    (vl-packeddimensionlist-allexprs x.udims)))
+           (:vl-struct
+            (append (vl-packeddimensionlist-allexprs x.pdims)
+                    (vl-packeddimensionlist-allexprs x.udims)
+                    (vl-structmemberlist-allexprs x.members)))
+           (:vl-union
+            (append (vl-packeddimensionlist-allexprs x.pdims)
+                    (vl-packeddimensionlist-allexprs x.udims)
+                    (vl-structmemberlist-allexprs x.members)))
+           (:vl-enum
+            (append (vl-enumbasetype-allexprs x.basetype)
+                    (vl-enumitemlist-allexprs x.items)
+                    (vl-packeddimensionlist-allexprs x.pdims)
+                    (vl-packeddimensionlist-allexprs x.udims)))
+           (:vl-usertype
+            (cons x.kind
+                  (append (vl-packeddimensionlist-allexprs x.pdims)
+                          (vl-packeddimensionlist-allexprs x.udims)))))
+         :exec
+         (with-local-nrev (vl-datatype-allexprs-nrev x nrev))))
+
+  (define vl-structmemberlist-allexprs ((x vl-structmemberlist-p))
+    :measure (vl-structmemberlist-count x)
+    :returns (exprs vl-exprlist-p)
+    (mbe :logic
+         (if (atom x)
+             nil
+           (append (vl-structmember-allexprs (car x))
+                   (vl-structmemberlist-allexprs (cdr x))))
+         :exec
+         (with-local-nrev (vl-structmemberlist-allexprs-nrev x nrev))))
+
+  (define vl-structmember-allexprs ((x vl-structmember-p) )
+    :measure (vl-structmember-count x)
+    :returns (exprs vl-exprlist-p)
+    (mbe :logic
+         (b* (((vl-structmember x) x))
+           (append (vl-maybe-expr-allexprs x.rhs)
+                   (vl-datatype-allexprs x.type)))
+         :exec
+         (with-local-nrev (vl-structmember-allexprs-nrev x nrev))))
+  ///
+  (defthm-vl-datatype-allexprs-nrev-flag
+    (defthm vl-datatype-allexprs-nrev-removal
+      (equal (vl-datatype-allexprs-nrev x nrev)
+             (append nrev (vl-datatype-allexprs x)))
+      :flag :datatype)
+    (defthm vl-structmemberlist-allexprs-nrev-removal
+      (equal (vl-structmemberlist-allexprs-nrev x nrev)
+             (append nrev (vl-structmemberlist-allexprs x)))
+      :flag :structmemberlist)
+    (defthm vl-structmember-allexprs-nrev-removal
+      (equal (vl-structmember-allexprs-nrev x nrev)
+             (append nrev (vl-structmember-allexprs x)))
+      :flag :structmember)
+    :hints(("Goal"
+            :expand ((vl-datatype-allexprs x)
+                     (vl-datatype-allexprs-nrev x nrev)
+                     (vl-structmember-allexprs x)
+                     (vl-structmember-allexprs-nrev x nrev)
+                     (vl-structmemberlist-allexprs x)
+                     (vl-structmemberlist-allexprs-nrev x nrev)))))
+  (verify-guards vl-datatype-allexprs))
+
+(def-vl-allexprs
+  :type vl-maybe-datatype
+  :nrev-body
+  (if x
+      (vl-datatype-allexprs-nrev x nrev)
+    (nrev-fix nrev))
+  :body
+  (if x
+      (vl-datatype-allexprs x)
+    nil))
 
 (def-vl-allexprs
   :type vl-gatedelay
@@ -227,6 +392,39 @@ expressions within @('(* foo = bar *)')-style attributes.</p>")
   :list vl-assignlist
   :element vl-assign)
 
+
+
+
+(def-vl-allexprs
+  :type vl-plainarg
+  :nrev-body (vl-maybe-expr-allexprs-nrev (vl-plainarg->expr x) nrev)
+  :body (vl-maybe-expr-allexprs (vl-plainarg->expr x)))
+
+(def-vl-allexprs-list
+  :list vl-plainarglist
+  :element vl-plainarg)
+
+(def-vl-allexprs
+  :type vl-namedarg
+  :nrev-body (vl-maybe-expr-allexprs-nrev (vl-namedarg->expr x) nrev)
+  :body (vl-maybe-expr-allexprs (vl-namedarg->expr x)))
+
+(def-vl-allexprs-list
+  :list vl-namedarglist
+  :element vl-namedarg)
+
+(def-vl-allexprs
+  :type vl-arguments
+  :nrev-body
+  (vl-arguments-case x
+    :vl-arguments-named (vl-namedarglist-allexprs-nrev x.args nrev)
+    :vl-arguments-plain (vl-plainarglist-allexprs-nrev x.args nrev))
+  :body
+  (vl-arguments-case x
+    :vl-arguments-named (vl-namedarglist-allexprs x.args)
+    :vl-arguments-plain (vl-plainarglist-allexprs x.args)))
+
+
 (def-vl-allexprs
   :type vl-gateinst
   :nrev-body
@@ -244,18 +442,67 @@ expressions within @('(* foo = bar *)')-style attributes.</p>")
   :list vl-gateinstlist
   :element vl-gateinst)
 
+
+(def-vl-allexprs
+  :type vl-paramvalue
+  :nrev-body
+  (vl-paramvalue-case x
+    :expr (nrev-push x nrev)
+    :datatype (vl-datatype-allexprs-nrev x nrev))
+  :body
+  (vl-paramvalue-case x
+    :expr (list x)
+    :datatype (vl-datatype-allexprs x)))
+
+(def-vl-allexprs-list
+  :list vl-paramvaluelist
+  :element vl-paramvalue)
+
+(def-vl-allexprs
+  :type vl-maybe-paramvalue
+  :nrev-body (if x
+                 (vl-paramvalue-allexprs-nrev x nrev)
+               (nrev-fix nrev))
+  :body (if x
+            (vl-paramvalue-allexprs x)
+          nil))
+
+(def-vl-allexprs
+  :type vl-namedparamvalue
+  :nrev-body
+  (b* (((vl-namedparamvalue x) x))
+    (vl-maybe-paramvalue-allexprs-nrev x.value nrev))
+  :body
+  (b* (((vl-namedparamvalue x) x))
+    (vl-maybe-paramvalue-allexprs x.value)))
+
+(def-vl-allexprs-list
+  :list vl-namedparamvaluelist
+  :element vl-namedparamvalue)
+
+(def-vl-allexprs
+  :type vl-paramargs
+  :nrev-body
+  (vl-paramargs-case x
+    :vl-paramargs-named (vl-namedparamvaluelist-allexprs-nrev x.args nrev)
+    :vl-paramargs-plain (vl-paramvaluelist-allexprs-nrev x.args nrev))
+  :body
+  (vl-paramargs-case x
+    :vl-paramargs-named (vl-namedparamvaluelist-allexprs x.args)
+    :vl-paramargs-plain (vl-paramvaluelist-allexprs x.args)))
+
 (def-vl-allexprs
   :type vl-modinst
   :nrev-body
   (b* (((vl-modinst x) x)
        (nrev (vl-maybe-range-allexprs-nrev x.range nrev))
-       (nrev (vl-arguments-allexprs-nrev x.paramargs nrev))
+       (nrev (vl-paramargs-allexprs-nrev x.paramargs nrev))
        (nrev (vl-arguments-allexprs-nrev x.portargs nrev)))
       (vl-maybe-gatedelay-allexprs-nrev x.delay nrev))
   :body
   (b* (((vl-modinst x) x))
       (append (vl-maybe-range-allexprs x.range)
-              (vl-arguments-allexprs x.paramargs)
+              (vl-paramargs-allexprs x.paramargs)
               (vl-arguments-allexprs x.portargs)
               (vl-maybe-gatedelay-allexprs x.delay))))
 
@@ -264,81 +511,63 @@ expressions within @('(* foo = bar *)')-style attributes.</p>")
   :element vl-modinst)
 
 (def-vl-allexprs
-  :type vl-netdecl
-  :nrev-body
-  (b* (((vl-netdecl x) x)
-       (nrev (vl-maybe-range-allexprs-nrev x.range nrev))
-       (nrev (vl-rangelist-allexprs-nrev x.arrdims nrev)))
-      (vl-maybe-gatedelay-allexprs-nrev x.delay nrev))
-  :body
-  (b* (((vl-netdecl x) x))
-      (append (vl-maybe-range-allexprs x.range)
-              (vl-rangelist-allexprs x.arrdims)
-              (vl-maybe-gatedelay-allexprs x.delay))))
-
-(def-vl-allexprs-list
-  :list vl-netdecllist
-  :element vl-netdecl)
-
-(def-vl-allexprs
   :type vl-vardecl
   :nrev-body
   (b* (((vl-vardecl x) x)
-       (nrev (vl-rangelist-allexprs-nrev x.arrdims nrev)))
-    (vl-maybe-expr-allexprs-nrev x.initval nrev))
+       (nrev (vl-datatype-allexprs-nrev x.type nrev))
+       (nrev (vl-maybe-expr-allexprs-nrev x.initval nrev))
+       (nrev (vl-maybe-gatedelay-allexprs-nrev x.delay nrev)))
+    nrev)
   :body
   (b* (((vl-vardecl x) x))
-      (append (vl-rangelist-allexprs x.arrdims)
-              (vl-maybe-expr-allexprs x.initval))))
+    (append (vl-datatype-allexprs x.type)
+            (vl-maybe-expr-allexprs x.initval)
+            (vl-maybe-gatedelay-allexprs x.delay))))
 
 (def-vl-allexprs-list
   :list vl-vardecllist
   :element vl-vardecl)
 
 (def-vl-allexprs
-  :type vl-regdecl
-  :nrev-body
-  (b* (((vl-regdecl x) x)
-       (nrev (vl-maybe-range-allexprs-nrev x.range nrev))
-       (nrev (vl-rangelist-allexprs-nrev x.arrdims nrev)))
-    (vl-maybe-expr-allexprs-nrev x.initval nrev))
-  :body
-  (b* (((vl-regdecl x) x))
-      (append (vl-maybe-range-allexprs x.range)
-              (vl-rangelist-allexprs x.arrdims)
-              (vl-maybe-expr-allexprs x.initval))))
-
-(def-vl-allexprs-list
-  :list vl-regdecllist
-  :element vl-regdecl)
-
-(def-vl-allexprs
-  :type vl-eventdecl
-  :nrev-body (vl-rangelist-allexprs-nrev (vl-eventdecl->arrdims x) nrev)
-  :body (vl-rangelist-allexprs (vl-eventdecl->arrdims x)))
-
-(def-vl-allexprs-list
-  :list vl-eventdecllist
-  :element vl-eventdecl)
-
-(def-vl-allexprs
   :type vl-portdecl
-  :nrev-body (vl-maybe-range-allexprs-nrev (vl-portdecl->range x) nrev)
-  :body (vl-maybe-range-allexprs (vl-portdecl->range x)))
+  :nrev-body (vl-datatype-allexprs-nrev (vl-portdecl->type x) nrev)
+  :body (vl-datatype-allexprs (vl-portdecl->type x)))
 
 (def-vl-allexprs-list
   :list vl-portdecllist
   :element vl-portdecl)
 
 (def-vl-allexprs
+  :type vl-paramtype
+  :nrev-body
+  (vl-paramtype-case x
+    (:vl-implicitvalueparam
+     (b* ((nrev (vl-maybe-range-allexprs-nrev x.range nrev)))
+       (vl-maybe-expr-allexprs-nrev x.default nrev)))
+    (:vl-explicitvalueparam
+     (b* ((nrev (vl-datatype-allexprs-nrev x.type nrev)))
+       (vl-maybe-expr-allexprs-nrev x.default nrev)))
+    (:vl-typeparam
+     (vl-maybe-datatype-allexprs-nrev x.default nrev)))
+  :body
+  (vl-paramtype-case x
+    (:vl-implicitvalueparam
+     (append (vl-maybe-range-allexprs x.range)
+             (vl-maybe-expr-allexprs x.default)))
+    (:vl-explicitvalueparam
+     (append (vl-datatype-allexprs x.type)
+             (vl-maybe-expr-allexprs x.default)))
+    (:vl-typeparam
+     (vl-maybe-datatype-allexprs x.default))))
+
+(def-vl-allexprs
   :type vl-paramdecl
   :nrev-body
-  (b* (((vl-paramdecl x) x)
-       (nrev (nrev-push x.expr nrev)))
-    (vl-maybe-range-allexprs-nrev x.range nrev))
+  (b* (((vl-paramdecl x) x))
+    (vl-paramtype-allexprs-nrev x.type nrev))
   :body
   (b* (((vl-paramdecl x) x))
-      (cons x.expr (vl-maybe-range-allexprs x.range))))
+    (vl-paramtype-allexprs x.type)))
 
 (def-vl-allexprs-list
   :list vl-paramdecllist
@@ -399,15 +628,11 @@ expressions within @('(* foo = bar *)')-style attributes.</p>")
   :type vl-blockitem
   :nrev-body
   (case (tag x)
-    (:vl-regdecl   (vl-regdecl-allexprs-nrev x nrev))
     (:vl-vardecl   (vl-vardecl-allexprs-nrev x nrev))
-    (:vl-eventdecl (vl-eventdecl-allexprs-nrev x nrev))
     (otherwise     (vl-paramdecl-allexprs-nrev x nrev)))
   :body
   (case (tag x)
-    (:vl-regdecl   (vl-regdecl-allexprs x))
     (:vl-vardecl   (vl-vardecl-allexprs x))
-    (:vl-eventdecl (vl-eventdecl-allexprs x))
     (otherwise     (vl-paramdecl-allexprs x))))
 
 (def-vl-allexprs-list
@@ -444,7 +669,7 @@ expressions within @('(* foo = bar *)')-style attributes.</p>")
       :vl-casestmt
       (b* ((nrev (nrev-push x.test nrev))
            (nrev (vl-stmt-allexprs-nrev x.default nrev))
-           (nrev (vl-caselist-allexprs-nrev x.cases nrev)))
+           (nrev (vl-caselist-allexprs-nrev x.caselist nrev)))
         nrev)
       :vl-ifstmt
       (b* ((nrev (nrev-push x.condition nrev))
@@ -497,8 +722,8 @@ expressions within @('(* foo = bar *)')-style attributes.</p>")
     (b* ((x (vl-caselist-fix x))
          ((when (atom x))
           (nrev-fix nrev))
-         ((cons expr stmt) (car x))
-         (nrev (nrev-push expr nrev))
+         ((cons exprs stmt) (car x))
+         (nrev (nrev-append exprs nrev))
          (nrev (vl-stmt-allexprs-nrev stmt nrev)))
       (vl-caselist-allexprs-nrev (cdr x) nrev))))
 
@@ -520,7 +745,7 @@ expressions within @('(* foo = bar *)')-style attributes.</p>")
            :vl-eventtriggerstmt (list x.id)
            :vl-casestmt         (cons x.test
                                       (append (vl-stmt-allexprs x.default)
-                                              (vl-caselist-allexprs x.cases)))
+                                              (vl-caselist-allexprs x.caselist)))
            :vl-ifstmt           (cons x.condition
                                       (append (vl-stmt-allexprs x.truebranch)
                                               (vl-stmt-allexprs x.falsebranch)))
@@ -557,10 +782,10 @@ expressions within @('(* foo = bar *)')-style attributes.</p>")
     (mbe :logic (b* ((x (vl-caselist-fix x))
                      ((when (atom x))
                       nil)
-                     ((cons expr stmt) (car x)))
-                  (cons expr
-                        (append (vl-stmt-allexprs stmt)
-                                (vl-caselist-allexprs (cdr x)))))
+                     ((cons exprs stmt) (car x)))
+                  (append exprs
+                          (append (vl-stmt-allexprs stmt)
+                                  (vl-caselist-allexprs (cdr x)))))
          :exec
          (with-local-nrev (vl-caselist-allexprs-nrev x nrev))))
   ///
@@ -661,10 +886,7 @@ expressions within @('(* foo = bar *)')-style attributes.</p>")
        (nrev (vl-portlist-allexprs-nrev x.ports nrev))
        (nrev (vl-portdecllist-allexprs-nrev x.portdecls nrev))
        (nrev (vl-assignlist-allexprs-nrev x.assigns nrev))
-       (nrev (vl-netdecllist-allexprs-nrev x.netdecls nrev))
        (nrev (vl-vardecllist-allexprs-nrev x.vardecls nrev))
-       (nrev (vl-regdecllist-allexprs-nrev x.regdecls nrev))
-       (nrev (vl-eventdecllist-allexprs-nrev x.eventdecls nrev))
        (nrev (vl-paramdecllist-allexprs-nrev x.paramdecls nrev))
        (nrev (vl-fundecllist-allexprs-nrev x.fundecls nrev))
        (nrev (vl-taskdecllist-allexprs-nrev x.taskdecls nrev))
@@ -678,10 +900,7 @@ expressions within @('(* foo = bar *)')-style attributes.</p>")
       (append (vl-portlist-allexprs x.ports)
               (vl-portdecllist-allexprs x.portdecls)
               (vl-assignlist-allexprs x.assigns)
-              (vl-netdecllist-allexprs x.netdecls)
               (vl-vardecllist-allexprs x.vardecls)
-              (vl-regdecllist-allexprs x.regdecls)
-              (vl-eventdecllist-allexprs x.eventdecls)
               (vl-paramdecllist-allexprs x.paramdecls)
               (vl-fundecllist-allexprs x.fundecls)
               (vl-taskdecllist-allexprs x.taskdecls)

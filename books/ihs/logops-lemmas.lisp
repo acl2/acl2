@@ -1,19 +1,6 @@
 ; logops-lemmas.lisp  --  lemma support for logical operations on integers
 ; Copyright (C) 1997  Computational Logic, Inc.
-
-; This book is free software; you can redistribute it and/or modify
-; it under the terms of the GNU General Public License as published by
-; the Free Software Foundation; either version 2 of the License, or
-; (at your option) any later version.
-
-; This book is distributed in the hope that it will be useful,
-; but WITHOUT ANY WARRANTY; without even the implied warranty of
-; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-; GNU General Public License for more details.
-
-; You should have received a copy of the GNU General Public License
-; along with this book; if not, write to the Free Software
-; Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
 ;;;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ;;;
@@ -216,8 +203,8 @@
     (<= (floor x y) x))
    :hints
    (("Goal"
-     :in-theory (disable justify-floor-recursion)
-     :use ((:instance justify-floor-recursion))))))
+     :in-theory (disable floor-recursion)
+     :use ((:instance floor-recursion))))))
 
 ;  DISABLE theories implicated in :LINEAR thrashing.
 
@@ -334,7 +321,7 @@
                   i))
   :doc ":doc-section logops-lemmas
   Rewrite: (LOGNOT (LOGNOT i)) = i,
-  when (case-split (integerp i).
+  when (case-split (integerp i)).
   ~/~/~/")
 
 (defthm cancel-equal-lognot
@@ -589,8 +576,8 @@
    (unsigned-byte-p size (floor i x)))
   :hints
   (("Goal"
-    :in-theory (disable justify-floor-recursion)
-    :use ((:instance justify-floor-recursion (x i) (y x)))))
+    :in-theory (disable floor-recursion)
+    :use ((:instance floor-recursion (x i) (y x)))))
   :doc ":doc-section unsigned-byte-p-lemmas
   Rewrite: (UNSIGNED-BYTE-P size (FLOOR i x)), when (UNSIGNED-BYTE-P size i)
   and x > 1.

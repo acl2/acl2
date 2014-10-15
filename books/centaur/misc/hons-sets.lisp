@@ -6,21 +6,31 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Sol Swords <sswords@centtech.com>
 
 
 (in-package "ACL2")
-
+(include-book "std/lists/remove-duplicates" :dir :system)
 (include-book "misc/hons-help2" :dir :system)
 (include-book "equal-sets")
 
@@ -253,29 +263,29 @@
 
 
 
+;; absorbed into std/lists/remove-duplicates
 
-(defthm member-hons-remove-duplicates1
-  (iff (member-equal x (hons-remove-duplicates1 lst al))
-       (and (member-equal x lst)
-            (not (hons-assoc-equal x al))))
-  :hints(("Goal" :in-theory (enable hons-assoc-equal))))
+;; (defthm member-hons-remove-duplicates1
+;;   (iff (member-equal x (hons-remove-duplicates1 lst al))
+;;        (and (member-equal x lst)
+;;             (not (hons-assoc-equal x al))))
+;;   :hints(("Goal" :in-theory (enable hons-assoc-equal))))
 
-(defthm no-duplicatesp-equal-hons-remove-duplicates1
-  (no-duplicatesp-equal (hons-remove-duplicates1 lst al))
-  :hints(("Goal" :in-theory (enable hons-assoc-equal))))
+;; (defthm no-duplicatesp-equal-hons-remove-duplicates1
+;;   (no-duplicatesp-equal (hons-remove-duplicates1 lst al))
+;;   :hints(("Goal" :in-theory (enable hons-assoc-equal))))
 
-(defthm no-duplicatesp-equal-hons-remove-duplicates
-  (no-duplicatesp-equal (hons-remove-duplicates lst)))
+;; (defthm no-duplicatesp-equal-hons-remove-duplicates
+;;   (no-duplicatesp-equal (hons-remove-duplicates lst)))
 
-(defthm member-hons-remove-duplicates
-  (iff (member-equal x (hons-remove-duplicates lst))
-       (member-equal x lst))
-  :hints(("Goal" :in-theory (enable hons-assoc-equal))))
+;; (defthm member-hons-remove-duplicates
+;;   (iff (member-equal x (hons-remove-duplicates lst))
+;;        (member-equal x lst))
+;;   :hints(("Goal" :in-theory (enable hons-assoc-equal))))
 
-
-(defthm set-equiv-hons-remove-duplicates
-  (set-equiv (hons-remove-duplicates lst) lst)
-  :hints (("goal" :in-theory (Disable set-equiv))))
+;; (defthm set-equiv-hons-remove-duplicates
+;;   (set-equiv (hons-remove-duplicates lst) lst)
+;;   :hints (("goal" :in-theory (Disable set-equiv))))
 
 
 

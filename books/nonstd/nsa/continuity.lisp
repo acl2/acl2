@@ -976,6 +976,53 @@
 
 ;; And here is the second version of the intermediate value theorem.
 
+(local
+ (defthm standardp-minus-z
+   (implies (and (realp z)
+                 (standardp z))
+            (standardp (- z)))
+   :rule-classes (:type-prescription :forward-chaining)))
+
+(local
+ (defthmd definition-of-find-zero-2-lemma
+   (implies (and (standardp a)
+                 (standardp b)
+                 (standardp z))
+            (equal (find-zero-2 a b z)
+                   (if (and (realp a)
+                            (realp b)
+                            (realp z)
+                            (< a b))
+                       (standard-part
+                        (find-zero-n-2 a
+                                       z 
+                                       0 
+                                       (i-large-integer)
+                                       (/ (- b a) (i-large-integer))))
+                     0)))))
+
+(local
+ (defthmd definition-of-find-zero-2-uminus-z
+   (implies (and (standardp a)
+                 (standardp b)
+                 (standardp z))
+            (equal (find-zero-2 a b (- z))
+                   (if (and (realp a)
+                            (realp b)
+                            (realp (- z))
+                            (< a b))
+                       (standard-part
+                        (find-zero-n-2 a
+                                       (- z)
+                                       0 
+                                       (i-large-integer)
+                                       (/ (- b a) (i-large-integer))))
+                     0)))
+   :hints (("Goal"
+            :use ((:instance definition-of-find-zero-2-lemma
+                             (z (- z))))))
+   ))
+
 (defthm intermediate-value-theorem-2
   (implies (and (inside-interval-p a (rcfn-domain))
 		(inside-interval-p b (rcfn-domain))
@@ -995,15 +1042,16 @@
 		   (rcfn (lambda (x) (- (rcfn x))))
 		   (find-zero (lambda (a b z)
 				(find-zero-2 a b
-					     (- z))))
+					     (if (realp z) (- z) z))))
 		   (find-zero-n (lambda (a z i n
 					   eps)
 				  (find-zero-n-2
 				   a (- z) i n eps))))
-		  (z (- z))
+		  (z (if (realp z) (- z) z))
 		  ))
-	   :in-theory 
-	   (disable intermediate-value-theorem))))
+	   :in-theory (disable intermediate-value-theorem))
+          ("Subgoal 1"
+           :use ((:instance definition-of-find-zero-2-uminus-z)))))
 
 ;; Now we state the intermediate value theorem using quantifiers
 
@@ -1619,10 +1667,13 @@
 
 (defun-sk achieves-maximum-point (a b)
   (exists (max)
-	  (implies (and (realp max)
+	  (implies (and (realp a)
+			(realp b)
+			(<= a b))
+		   (and (realp max)
 			(<= a max)
-			(<= max b))
-		   (is-maximum-point a b max))))
+			(<= max b)
+			(is-maximum-point a b max)))))
 
 (defthm maximum-point-theorem-sk
   (implies (and (inside-interval-p a (rcfn-domain)) 
@@ -1766,10 +1817,13 @@
 
 (defun-sk achieves-minimum-point (a b)
   (exists (min)
-	  (implies (and (realp min)
+	  (implies (and (realp a)
+			(realp b)
+			(<= a b))
+		   (and (realp min)
 			(<= a min)
-			(<= min b))
-		   (is-minimum-point a b min))))
+			(<= min b)
+			(is-minimum-point a b min)))))
 
 (defthm minimum-point-theorem-sk
   (implies (and (inside-interval-p a (rcfn-domain)) 

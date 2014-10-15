@@ -1,4 +1,0 @@
-ACL2_BOOKS_MAKEFILE := $(MAKEDIR)/Makefile.aux
-ACL2_BOOKS_DEBUG := $(DEBUG)
-
-include $(ACL2_SYSTEM_BOOKS)/Makefile-generic

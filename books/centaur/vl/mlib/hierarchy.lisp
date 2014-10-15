@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
@@ -114,6 +124,10 @@ not be complete.</p>"
   (defthm subsetp-equal-of-vl-modulelist->names
     (subsetp-equal (vl-modulelist->names x)
                    (vl-modulelist-meganames x))))
+
+
+
+
 
 
 
@@ -419,17 +433,12 @@ report.\" It may not be in use any more.</p>"
   (verify-guards vl-modulelist-highlevel))
 
 
-
 (fty::defalist vl-depalist
   :key-type stringp
-  :val-type string-listp)
-
-(defalist vl-depalist-p (x)
-  :key (stringp x)
-  :val (string-listp x)
+  :val-type string-listp
   :keyp-of-nil nil
   :valp-of-nil t
-  :already-definedp t
+  :parents (hierarchy)
   :short "Associates modules names to the lists of modules that instantiate them."
   :long "<p>Typically these are produced by @(see vl-depalist).</p>")
 
@@ -496,7 +505,9 @@ report.\" It may not be in use any more.</p>"
                                        (vl-modinstlist->modnames
                                         (vl-module->modinsts
                                          (vl-find-module par x)))))
-                    (member-equal par (cdr (hons-assoc-equal child (vl-depalist-core x alist)))))))
+                    (member-equal par (cdr (hons-assoc-equal child (vl-depalist-core x alist)))))
+           :hints (("goal" :induct (vl-depalist-core x alist)
+                    :expand ((vl-find-module par x))))))
 
   (local (defthm lemma3
            (implies (not (member-equal name (vl-modulelist->names x)))
@@ -511,7 +522,9 @@ report.\" It may not be in use any more.</p>"
                       (member-equal child
                                     (vl-modinstlist->modnames
                                      (vl-module->modinsts
-                                      (vl-find-module par x)))))))))
+                                      (vl-find-module par x)))))))
+    :hints (("goal" :induct (vl-depalist-core x alist)
+             :expand ((:free (name) (vl-find-module name x)))))))
 
 (define vl-depalist
   :parents (hierarchy)
@@ -1467,7 +1480,7 @@ submodules.</p>"
   :hints(("Goal"
           :in-theory (disable NATP-OF-CDR-OF-HONS-ASSOC-EQUAL-WHEN-VL-DEPORDER-ALISTP)
           :use ((:instance NATP-OF-CDR-OF-HONS-ASSOC-EQUAL-WHEN-VL-DEPORDER-ALISTP
-                 (a name) (x x))))))
+                 (acl2::k name) (acl2::x x))))))
 
 
 

@@ -6,21 +6,32 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
 (include-book "../parsetree")
 (local (include-book "../util/arithmetic"))
+(local (std::add-default-post-define-hook :fix))
 
 (defxdoc designwires
   :parents (transforms)
@@ -44,54 +55,33 @@ tell whether a wire was in the original design.</p>")
 
 (local (xdoc::set-default-parents designwires))
 
-(define vl-netdecl-designwires ((x vl-netdecl-p))
-  :returns (new-x vl-netdecl-p :hyp :fguard)
-  :short "Add a @('VL_DESIGN_WIRE') attribute to a @(see vl-netdecl-p)."
-  (b* (((vl-netdecl x) x)
+(define vl-vardecl-designwires ((x vl-vardecl-p))
+  :returns (new-x vl-vardecl-p)
+  :short "Add a @('VL_DESIGN_WIRE') attribute to a @(see vl-vardecl-p)."
+  (b* (((vl-vardecl x) (vl-vardecl-fix x))
        ((when (assoc-equal "VL_DESIGN_WIRE" x.atts))
         ;; For idempotency, don't add it again.
         x)
        (atts (acons "VL_DESIGN_WIRE" nil x.atts)))
-    (change-vl-netdecl x :atts atts)))
+    (change-vl-vardecl x :atts atts)))
 
-(defprojection vl-netdecllist-designwires (x)
-  (vl-netdecl-designwires x)
-  :guard (vl-netdecllist-p x)
-  :result-type vl-netdecllist-p
-  :nil-preservingp nil)
-
-(define vl-regdecl-designwires ((x vl-regdecl-p))
-  :returns (new-x vl-regdecl-p :hyp :fguard)
-  :short "Add a @('VL_DESIGN_WIRE') attribute to a @(see vl-regdecl-p)."
-  (b* (((vl-regdecl x) x)
-       ((when (assoc-equal "VL_DESIGN_WIRE" x.atts))
-        ;; For idempotency, don't add it again.
-        x)
-       (atts (acons "VL_DESIGN_WIRE" nil x.atts)))
-    (change-vl-regdecl x :atts atts)))
-
-(defprojection vl-regdecllist-designwires (x)
-  (vl-regdecl-designwires x)
-  :guard (vl-regdecllist-p x)
-  :result-type vl-regdecllist-p
-  :nil-preservingp nil)
+(defprojection vl-vardecllist-designwires ((x vl-vardecllist-p))
+  :returns (new-x vl-vardecllist-p)
+  (vl-vardecl-designwires x))
 
 (define vl-module-designwires ((x vl-module-p))
-  :returns (new-x vl-module-p :hyp :fguard)
+  :returns (new-x vl-module-p)
   :short "Add a @('VL_DESIGN_WIRE') attribute to every net and reg declaration
 in a module."
-  (b* (((vl-module x) x)
+  (b* (((vl-module x) (vl-module-fix x))
        ((when (vl-module->hands-offp x))
-        x))
-    (change-vl-module x
-                      :netdecls (vl-netdecllist-designwires x.netdecls)
-                      :regdecls (vl-regdecllist-designwires x.regdecls))))
+        x)
+       (new-vardecls (vl-vardecllist-designwires x.vardecls)))
+    (change-vl-module x :vardecls new-vardecls)))
 
-(defprojection vl-modulelist-designwires (x)
-  (vl-module-designwires x)
-  :guard (vl-modulelist-p x)
-  :result-type vl-modulelist-p
-  :nil-preservingp nil)
+(defprojection vl-modulelist-designwires ((x vl-modulelist-p))
+  :returns (new-x vl-modulelist-p)
+  (vl-module-designwires x))
 
 (define vl-design-designwires ((x vl-design-p))
   :returns (new-x vl-design-p)

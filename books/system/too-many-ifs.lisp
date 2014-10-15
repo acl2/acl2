@@ -1,6 +1,8 @@
+; Copyright (C) 2014, Regents of the University of Texas
+; Written by Matt Kaufmann and J Moore (original date April, 2010)
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+
 ; Logic Admission and Guard Verification of too-many-ifs pre- and post-rewrite.
-; Matt Kaufmann and J Moore
-; April 2010
 
 ; (certify-book "too-many-ifs")
 

@@ -1,3 +1,0 @@
-The test*.lisp files in this directory should match exactly those in the
-parent directory.  Also, these .lisp files should not be directly certified.
-They are here to test a kind of indirect certification.

@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
@@ -56,14 +66,13 @@
 (include-book "../transforms/xf-hid-elim")
 (include-book "../transforms/xf-orig")
 (include-book "../transforms/xf-oprewrite")
-(include-book "../transforms/xf-portdecl-sign")
 (include-book "../transforms/xf-resolve-indexing")
 (include-book "../transforms/xf-resolve-ranges")
 (include-book "../transforms/xf-replicate-insts")
 (include-book "../transforms/xf-selresolve")
 (include-book "../transforms/xf-sizing")
 (include-book "../transforms/xf-unparameterize")
-(include-book "../transforms/xf-unused-reg")
+(include-book "../transforms/xf-unused-vars")
 
 (include-book "../../misc/sneaky-load")
 
@@ -128,6 +137,17 @@ Verilog, reusing much of @(see vl).</p>")
                 :parser getopt::parse-string
                 :merge acl2::rcons
                 :default '("v"))
+
+   (include-dirs string-listp
+                 :longname "incdir"
+                 :alias #\I
+                 :argname "DIR"
+                 "Control the list of directories for `include files.  You can
+                  give this switch multiple times.  By default, we look only in
+                  the current directory."
+                 :parser getopt::parse-string
+                 :merge acl2::rcons
+                 :default '("."))
 
    (topmods    string-listp
                :longname "topmod"
@@ -227,38 +247,38 @@ Usage:    vl lint [OPTIONS] file.v [file2.v ...]
 Options:" *nls* *nls* *vl-lintconfig-usage* *nls*))
 
 
-(define vl-filter-mods-with-good-paramdecls
-  ((x    vl-modulelist-p "List of modules to filter.")
-   (good vl-modulelist-p "Accumulator for good modules.")
-   (bad  vl-modulelist-p "Accumulator for bad modules."))
-  :returns (mv (good vl-modulelist-p :hyp :fguard)
-               (bad  vl-modulelist-p :hyp :fguard))
-  :parents (lint)
-  :short "(unsound transform) Throw away modules with too-complex parameter
-declarations. "
+;; (define vl-filter-mods-with-good-paramdecls
+;;   ((x    vl-modulelist-p "List of modules to filter.")
+;;    (good vl-modulelist-p "Accumulator for good modules.")
+;;    (bad  vl-modulelist-p "Accumulator for bad modules."))
+;;   :returns (mv (good vl-modulelist-p :hyp :fguard)
+;;                (bad  vl-modulelist-p :hyp :fguard))
+;;   :parents (lint)
+;;   :short "(unsound transform) Throw away modules with too-complex parameter
+;; declarations. "
 
-  :long "<p>@(csee unparameterization) requires that the module list is
-complete and that all modules have good parameters.  In our ordinary
-translation process (e.g., @(see vl-simplify)), we throw away any modules with
-bad parameters, any then transitively throw away any modules with instances of
-missing modules.  But for linting, we'd like to try to carry out
-unparameterization with as little damage as possible.</p>
+;;   :long "<p>@(csee unparameterization) requires that the module list is
+;; complete and that all modules have good parameters.  In our ordinary
+;; translation process (e.g., @(see vl-simplify)), we throw away any modules with
+;; bad parameters, any then transitively throw away any modules with instances of
+;; missing modules.  But for linting, we'd like to try to carry out
+;; unparameterization with as little damage as possible.</p>
 
-<p>As a pre-unparameterization step, in this transform we throw away any
-modules with bad parameters and then throw away any instances of missing
-modules.  This is obviously unsound, so it should never be used in our ordinary
-translation process.</p>"
+;; <p>As a pre-unparameterization step, in this transform we throw away any
+;; modules with bad parameters and then throw away any instances of missing
+;; modules.  This is obviously unsound, so it should never be used in our ordinary
+;; translation process.</p>"
 
-  (cond ((atom x)
-         (mv good bad))
-        ((vl-good-paramdecllist-p (vl-module->paramdecls (car x)))
-         (vl-filter-mods-with-good-paramdecls (cdr x)
-                                              (cons (car x) good)
-                                              bad))
-        (t
-         (vl-filter-mods-with-good-paramdecls (cdr x)
-                                              good
-                                              (cons (car x) bad)))))
+;;   (cond ((atom x)
+;;          (mv good bad))
+;;         ((vl-good-paramdecllist-p (vl-module->paramdecls (car x)))
+;;          (vl-filter-mods-with-good-paramdecls (cdr x)
+;;                                               (cons (car x) good)
+;;                                               bad))
+;;         (t
+;;          (vl-filter-mods-with-good-paramdecls (cdr x)
+;;                                               good
+;;                                               (cons (car x) bad)))))
 
 
 (define vl-print-certain-warnings
@@ -360,7 +380,7 @@ shown.</p>"
 
 (local (in-theory (disable
                    NO-DUPLICATESP-EQUAL-WHEN-SAME-LENGTH-MERGESORT
-                   SUBSETP-EQUAL-OF-VL-MODINSTLIST->MODNAMESS-WHEN-SUBSETP-EQUAL
+                   SUBSETP-OF-VL-MODINSTLIST->MODNAMES-WHEN-SUBSETP
                    CDR-OF-VL-MODULELIST-DUPERHS-CHECK
                    CDR-OF-VL-MODULELIST-ORIGEXPRS
                    vl-modulelist-p-of-append
@@ -387,40 +407,40 @@ shown.</p>"
     (change-vl-design design :mods new-mods)))
 
 
-(define vl-lint-unparam ((good vl-design-p))
-  :returns (good vl-design-p)
-  (b* ((good (vl-design-fix good))
+;; (define vl-lint-unparam ((good vl-design-p))
+;;   :returns (good vl-design-p)
+;;   (b* ((good (vl-design-fix good))
 
-       ;; Subtle thing.  Move any bad modules out of the way before doing
-       ;; unparameterization.
-       ((mv ok-mods bad-mods)
-        (vl-filter-mods-with-good-paramdecls (vl-design->mods good) nil nil))
+;;        ;; Subtle thing.  Move any bad modules out of the way before doing
+;;        ;; unparameterization.
+;;        ((mv ok-mods bad-mods)
+;;         (vl-filter-mods-with-good-paramdecls (vl-design->mods good) nil nil))
 
-       (- (or (not bad-mods)
-              (progn$
-               (cw "~%~%Note: deleting ~x0 module~s1 because they include ~
-                    unsupported parameter declarations.~%~%~
-                    Module~s1 being deleted: ~&2~%~%~
-                    Details:~%~%"
-                   (len bad-mods)
-                   (if (vl-plural-p bad-mods) "s" "")
-                   (mergesort (vl-modulelist->names bad-mods)))
-               (vl-print-certain-warnings bad-mods
-                                          (list :vl-bad-paramdecl
-                                                :vl-bad-paramdecls)
-                                          nil))))
+;;        (- (or (not bad-mods)
+;;               (progn$
+;;                (cw "~%~%Note: deleting ~x0 module~s1 because they include ~
+;;                     unsupported parameter declarations.~%~%~
+;;                     Module~s1 being deleted: ~&2~%~%~
+;;                     Details:~%~%"
+;;                    (len bad-mods)
+;;                    (if (vl-plural-p bad-mods) "s" "")
+;;                    (mergesort (vl-modulelist->names bad-mods)))
+;;                (vl-print-certain-warnings bad-mods
+;;                                           (list :vl-bad-paramdecl
+;;                                                 :vl-bad-paramdecls)
+;;                                           nil))))
 
-       (good (change-vl-design good :mods ok-mods))
-       (good (cwtime (vl-design-drop-missing-submodules good)))
-       (good (vl-design-unparameterize good))
-       (good (change-vl-design good :mods (append-without-guard
-                                           bad-mods (vl-design->mods good)))))
-    (or (uniquep (vl-modulelist->names (vl-design->mods good)))
-        (raise "Programming error.  Expected modules to have unique names ~
-                after vl-unparameterize, but found duplicate modules named ~
-                ~x0.  Please tell Jared."
-               (duplicated-members (vl-modulelist->names (vl-design->mods good)))))
-    good))
+;;        (good (change-vl-design good :mods ok-mods))
+;;        (good (cwtime (vl-design-drop-missing-submodules good)))
+;;        (good (vl-design-unparameterize good))
+;;        (good (change-vl-design good :mods (append-without-guard
+;;                                            bad-mods (vl-design->mods good)))))
+;;     (or (uniquep (vl-modulelist->names (vl-design->mods good)))
+;;         (raise "Programming error.  Expected modules to have unique names ~
+;;                 after vl-unparameterize, but found duplicate modules named ~
+;;                 ~x0.  Please tell Jared."
+;;                (duplicated-members (vl-modulelist->names (vl-design->mods good)))))
+;;     good))
 
 (define vl-lint-apply-quiet ((quiet string-listp)
                              (design vl-design-p))
@@ -458,12 +478,12 @@ shown.</p>"
        ;; BOZO reinstate this??
        ;; (mods (cwtime (vl-modulelist-add-undefined-names mods)))
        (design (cwtime (vl-design-resolve-indexing design)))
-       (design (cwtime (vl-design-portdecl-sign design)))
+       ;; (design (cwtime (vl-design-portdecl-sign design)))
        (design (cwtime (vl-design-origexprs design)))
        (design (cwtime (vl-design-check-namespace design)))
 
        (- (cw "~%vl-lint: processing arguments, parameters...~%"))
-       (design (cwtime (vl-design-elim-unused-regs design)))
+       (design (cwtime (vl-design-elim-unused-vars design)))
        (design (cwtime (vl-design-argresolve design)))
        (design (cwtime (vl-design-dupeinst-check design)))
 
@@ -477,8 +497,8 @@ shown.</p>"
        (design (cwtime (mp-verror-transform-hook design))) ;; BOZO really keep this???
        (design (cwtime (vl-design-follow-hids design)))
        (design (cwtime (vl-design-clean-params design)))
-       (design (cwtime (vl-design-check-good-paramdecls design)))
-       (design (cwtime (vl-lint-unparam design)))
+       ;; (design (cwtime (vl-design-check-good-paramdecls design)))
+       (design (cwtime (vl-design-unparameterize design)))
        (- (vl-gc))
 
        (- (cw "~%vl-lint: processing ranges, statements...~%"))
@@ -550,7 +570,8 @@ shown.</p>"
                     :strictp       config.strict
                     :start-files   config.start-files
                     :search-path   config.search-path
-                    :search-exts   config.search-exts))
+                    :search-exts   config.search-exts
+                    :include-dirs  config.include-dirs))
        (- (or (not config.debug)
               (cw "Load configuration: ~x0~%" loadconfig)))
 
@@ -657,7 +678,7 @@ shown.</p>"
         :vl-warn-duplicates
         :vl-bad-instance
         :vl-unresolved-hid
-        :vl-warn-unused-reg
+        :vl-warn-unused-var
         :vl-warn-blank
         :vl-undefined-names
         :vl-port-mismatch))
@@ -1061,6 +1082,7 @@ wide addition instead of a 10-bit wide addition.")))
 
        (state (must-be-regular-files! config.start-files))
        (state (must-be-directories! config.search-path))
+       (state (must-be-directories! config.include-dirs))
 
        ((mv result state)
         (cwtime (run-vl-lint config)

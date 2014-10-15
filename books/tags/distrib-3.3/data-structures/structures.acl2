@@ -1,6 +1,0 @@
-(acl2::value :q)
-(acl2::lp)
-(ld '((ubt! 1)
-      (ld "define-u-package.lisp")
-      (ld "define-structures-package.lisp")
-      (certify-book "structures" 2)))

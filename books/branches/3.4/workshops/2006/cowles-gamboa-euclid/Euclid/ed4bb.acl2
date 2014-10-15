@@ -1,6 +1,0 @@
-(defpkg "INT-REM"
-        (union-eq *acl2-exports*
-		  *common-lisp-symbols-from-main-lisp-package*))
-
-(certify-book "ed4bb" 
-	      1)

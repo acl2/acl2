@@ -1,2 +1,2 @@
 (assign :suppress-preload-xdoc t)
-(ld "xdoc/package.lsp" :dir :system)
+(include-book "std/portcullis" :dir :system)

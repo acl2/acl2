@@ -1,15 +1,34 @@
 ; List-fix function and lemmas
-; Copyright (C) 2005-2013 by Jared Davis <jared@cs.utexas.edu>
+; Copyright (C) 2005-2013 Kookamara LLC
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+;
+; Original author: Jared Davis <jared@kookamara.com>
 ;
 ; list-fix.lisp
 ; This file was originally part of the Unicode library.
@@ -107,6 +126,48 @@ common @(see equivalence) relation.</p>"
     (equal (equal x (list-fix x))
            (true-listp x)))
 
-  (def-listp-rule element-list-fix-of-list-fix
-    (equal (element-list-fix (list-fix x))
-           (element-list-fix x))))
+  (def-listp-rule element-list-p-of-list-fix-non-true-listp
+    (implies (element-list-final-cdr-p t)
+             (equal (element-list-p (list-fix x))
+                    (element-list-p x)))
+    :hints(("Goal" :in-theory (enable list-fix)))
+    :requirement (not true-listp)
+    :name element-list-p-of-list-fix
+    :body (equal (element-list-p (list-fix x))
+                    (element-list-p x)))
+
+  (def-listp-rule element-list-p-of-list-fix-true-listp
+    (implies (element-list-p x)
+             (element-list-p (list-fix x)))
+    :hints(("Goal" :in-theory (enable list-fix)))
+    :requirement true-listp
+    :name element-list-p-of-list-fix)
+
+
+  (def-listfix-rule element-list-fix-of-list-fix-true-list
+    (implies (not (element-list-final-cdr-p t))
+             (equal (element-list-fix (list-fix x))
+                    (element-list-fix x)))
+    :hints(("Goal" :in-theory (enable list-fix)))
+    :requirement true-listp
+    :name element-list-fix-of-list-fix
+    :body (equal (element-list-fix (list-fix x))
+                    (element-list-fix x)))
+
+  (def-listfix-rule element-list-fix-of-list-fix-non-true-list
+    (implies (element-list-final-cdr-p t)
+             (equal (element-list-fix (list-fix x))
+                    (list-fix (element-list-fix x))))
+    :hints(("Goal" :in-theory (enable list-fix)))
+    :requirement (not true-listp)
+    :name element-list-fix-of-list-fix
+    :body (equal (element-list-fix (list-fix x))
+                 (list-fix (element-list-fix x))))
+
+  (def-projection-rule elementlist-projection-of-list-fix
+    (equal (elementlist-projection (list-fix x))
+           (elementlist-projection x)))
+
+  (def-mapappend-rule elementlist-mapappend-of-list-fix
+    (equal (elementlist-mapappend (list-fix x))
+           (elementlist-mapappend x))))

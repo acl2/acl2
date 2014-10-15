@@ -181,7 +181,7 @@
   (if (and (realp a)
 	   (realp b)
 	   (< a b))
-      (standard-part (find-max-rcfn-x-n a
+      (standard-part (find-max-rdfn-x-n a
 					a
 					0 
 					(i-large-integer)

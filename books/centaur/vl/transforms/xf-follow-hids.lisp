@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
@@ -25,7 +35,7 @@
 (include-book "../mlib/expr-tools")
 (include-book "../mlib/hid-tools")
 (include-book "../mlib/stmt-tools")
-(include-book "../wf-ranges-resolved-p")
+;(include-book "../wf-ranges-resolved-p")
 (local (include-book "../util/arithmetic"))
 (local (include-book "../util/osets"))
 (local (in-theory (enable tag-reasoning)))
@@ -131,14 +141,32 @@
              "On success, the actual range of the target wire.  We only produce
               a range and say it is resolved if (1) the wire is unsigned,
               and (2) there are no arrdims.  These are important for soundness;
-              see @(see vl-hidexpr-hid-elim).  It would probably not be too
-              hard to relax the unsigned restriction, but arrdims might be more
+              see @('vl-hidexpr-hid-elim').  It would probably not be too hard
+              to relax the unsigned restriction, but arrdims might be more
               difficult."
              :hyp (and (force (vl-expr-p x))
                        (force (vl-hidexpr-p x))
                        (force (vl-module-p curr))
                        (force (vl-modulelist-p mods))
                        (force (equal modalist (vl-modalist mods))))))
+
+  :prepwork ((local (in-theory (disable acl2::subsetp-member (tau-system))))
+             (local
+              (set-default-hints
+               ;; want to apply these hints to the return specs.  We check that
+               ;; the function has a def-body property so it won't apply to the
+               ;; measure theorem.  If we weren't deferring guard verification
+               ;; we'd want to check that the guards were already verified as
+               ;; well.
+               '((and (fgetprop 'vl-find-hid-module-aux 'acl2::def-bodies
+                                nil (w state))
+                      (not (acl2::access acl2::clause-id id :pool-lst))
+                      '(:in-theory (disable (:d vl-find-hid-module-aux))
+                        :induct (vl-find-hid-module-aux
+                                 x curr mods modalist warnings ctx-hid ctx-modname)
+                        :expand ((:free (modalist)
+                                  (vl-find-hid-module-aux
+                                   x curr mods modalist warnings ctx-hid ctx-modname)))))))))
 
   :long "<p>This is our main function for following hierarchical identifiers
 and annotating them with @('VL_HID_RESOLVED_MODULE_NAME'),
@@ -153,7 +181,7 @@ to report this information as well.</p>"
   :measure (vl-expr-count x)
 
   (b* (((when (vl-fast-atom-p x))
-        (b* ((name (vl-hidpiece->name (vl-atom->guts x)))
+        (b* ((name (vl-hidname->name x))
              (item (vl-find-moduleitem name curr))
 
              ((unless item)
@@ -166,52 +194,40 @@ to report this information as well.</p>"
                                      (cat name " not found")))
                   x nil nil nil))
 
-             ((unless (or (eq (tag item) :vl-netdecl)
-                          (eq (tag item) :vl-regdecl)))
+             (tag     (tag item))
+             (modname (string-fix (vl-module->name curr)))
+
+             ((unless (eq tag :vl-vardecl))
               (mv (fatal :type :vl-unresolved-hid
                          :msg *vl-unresolved-hid-msg*
                          :args (list ctx-hid
                                      ctx-modname
                                      (vl-module->name curr)
                                      name
-                                     (cat "Expected " name " to be a net or reg, but found "
+                                     (cat "Expected " name " to be a net or variable, but found "
                                           (symbol-name (tag item)))))
                   x nil nil nil))
 
-             ((mv range signedp arrdims)
-              (if (eq (tag item) :vl-netdecl)
-                  (mv (vl-netdecl->range item)
-                      (vl-netdecl->signedp item)
-                      (vl-netdecl->arrdims item))
-                (mv (vl-regdecl->range item)
-                    (vl-regdecl->signedp item)
-                    (vl-regdecl->arrdims item))))
+             ((unless (vl-simplevar-p item))
+              ;; Some other kind of variable: we will just not claim to know
+              ;; the size of it.
+              (mv (ok) x modname nil nil))
 
-             (range
-              ;; Try to simplify the range.  We didn't originally do this, but
-              ;; I later found that we weren't fully resolving some HIDs
-              ;; because their declared ranges were things like [`foo-1:0].  So
-              ;; we can do a bit better by trying to resolve the ranges.
-              (b* (((when (vl-maybe-range-resolved-p range))
-                          range)
-                         ((mv ?warnings new-range)
-                          (vl-rangeresolve range nil)))
-                      new-range))
+             (signedp (vl-simplevar->signedp item))
+             (range   (vl-simplevar->range item))
 
+             ;; Try to simplify the range.  We didn't originally do this, but I
+             ;; later found that we weren't fully resolving some HIDs because
+             ;; their declared ranges were things like [`foo-1:0].  So we can
+             ;; do a bit better by trying to resolve the ranges.
+             ((mv & range) (vl-maybe-rangeresolve range nil))
              (range-resolvedp
-              ;; See vl-hid-expr-elim, don't say it's resolved unless it's also
-              ;; unsigned and has no arrdims.
+              ;; See vl-hid-expr-elim, don't say it's resolved unless
+              ;; it's also unsigned and has no arrdims.
               (and (not signedp)
-                   (not arrdims)
-                   (vl-maybe-range-resolved-p range)))
-
-             (modname (string-fix (vl-module->name curr))))
+                   (vl-maybe-range-resolved-p range))))
 
           (mv (ok) x modname range-resolvedp range)))
-
-       ((unless (mbt (consp x)))
-        (impossible)
-        (mv (ok) x nil nil nil))
 
        ((vl-nonatom x) x)
 
@@ -228,7 +244,7 @@ to report this information as well.</p>"
 
        ;; As above, find out what module item the first part of the ID is
        ;; talking about.
-       (name1 (vl-hidpiece->name (vl-atom->guts (first x.args))))
+       (name1 (vl-hidname->name (first x.args)))
        (item  (vl-find-moduleitem name1 curr))
        ((unless item)
         (mv (fatal :type :vl-unresolved-hid
@@ -289,8 +305,22 @@ to report this information as well.</p>"
         (string-fix (vl-module->name curr))
         range-resolvedp range))
   ///
+  (encapsulate nil
+    (local (set-default-hints nil))
+    (verify-guards vl-find-hid-module-aux)
 
-  (verify-guards vl-find-hid-module-aux)
+    
+    (defthm len-of-vl-nonatom->args-of-vl-find-hid-module-aux
+      (implies (and (force (vl-expr-p x))
+                    (force (vl-hidexpr-p x))
+                    (force (vl-module-p curr))
+                    (force (vl-modulelist-p mods))
+                    (force (equal modalist (vl-modalist mods)))
+                    (force (not (vl-atom-p x))))
+               (equal (len (vl-nonatom->args
+                            (mv-nth 1 (vl-find-hid-module-aux x curr mods modalist warnings
+                                                              ctx-hid ctx-modname))))
+                      (len (vl-nonatom->args x))))))
 
   (defthm vl-expr-kind-of-vl-find-hid-module-aux
     (implies (and (force (vl-expr-p x))
@@ -315,17 +345,6 @@ to report this information as well.</p>"
                                                        ctx-hid ctx-modname)))
                     (vl-nonatom->op x))))
 
-  (defthm len-of-vl-nonatom->args-of-vl-find-hid-module-aux
-    (implies (and (force (vl-expr-p x))
-                  (force (vl-hidexpr-p x))
-                  (force (vl-module-p curr))
-                  (force (vl-modulelist-p mods))
-                  (force (equal modalist (vl-modalist mods)))
-                  (force (not (vl-atom-p x))))
-             (equal (len (vl-nonatom->args
-                          (mv-nth 1 (vl-find-hid-module-aux x curr mods modalist warnings
-                                                            ctx-hid ctx-modname))))
-                    (len (vl-nonatom->args x)))))
 
   (defthm vl-range-p-of-vl-find-hid-module-aux
     (implies (and (force (vl-expr-p x))
@@ -411,7 +430,7 @@ identifier.</p>"
        ;; hid.  If it's local, it should correspond to the name of some
        ;; submodule.
 
-       (name1 (vl-hidpiece->name (vl-atom->guts (first x.args))))
+       (name1 (vl-hidname->name (first x.args)))
        (item  (vl-find-moduleitem name1 mod))
 
        ((when item)
@@ -890,12 +909,14 @@ identifier.</p>"
   :type vl-arguments-p
   :body
   (vl-arguments-case x
-    :named (b* (((mv warnings args-prime)
-                 (vl-namedarglist-follow-hids x.args mod mods modalist toplev warnings)))
-             (mv warnings (change-vl-arguments-named x :args args-prime)))
-    :plain (b* (((mv warnings args-prime)
-                 (vl-plainarglist-follow-hids x.args mod mods modalist toplev warnings)))
-             (mv warnings (change-vl-arguments-plain x :args args-prime)))))
+    :vl-arguments-named
+    (b* (((mv warnings args-prime)
+          (vl-namedarglist-follow-hids x.args mod mods modalist toplev warnings)))
+      (mv warnings (change-vl-arguments-named x :args args-prime)))
+    :vl-arguments-plain
+    (b* (((mv warnings args-prime)
+          (vl-plainarglist-follow-hids x.args mod mods modalist toplev warnings)))
+      (mv warnings (change-vl-arguments-plain x :args args-prime)))))
 
 (def-vl-follow-hids vl-modinst-follow-hids
   :type vl-modinst-p
@@ -1134,24 +1155,20 @@ identifier.</p>"
   :returns (new-x vl-module-p :hyp :fguard)
   (b* (((when (vl-module->hands-offp x))
         x)
+       ((vl-module x) x)
        (warnings (vl-module->warnings x))
-       ((mv warnings assigns)
-        (vl-assignlist-follow-hids (vl-module->assigns x) x mods modalist toplev warnings))
-       ((mv warnings modinsts)
-        (vl-modinstlist-follow-hids (vl-module->modinsts x) x mods modalist toplev warnings))
-       ((mv warnings gateinsts)
-        (vl-gateinstlist-follow-hids (vl-module->gateinsts x) x mods modalist toplev warnings))
-       ((mv warnings alwayses)
-        (vl-alwayslist-follow-hids (vl-module->alwayses x) x mods modalist toplev warnings))
-       ((mv warnings initials)
-        (vl-initiallist-follow-hids (vl-module->initials x) x mods modalist toplev warnings)))
+       ((mv warnings assigns)   (vl-assignlist-follow-hids   x.assigns   x mods modalist toplev warnings))
+       ((mv warnings modinsts)  (vl-modinstlist-follow-hids  x.modinsts  x mods modalist toplev warnings))
+       ((mv warnings gateinsts) (vl-gateinstlist-follow-hids x.gateinsts x mods modalist toplev warnings))
+       ((mv warnings alwayses)  (vl-alwayslist-follow-hids   x.alwayses  x mods modalist toplev warnings))
+       ((mv warnings initials)  (vl-initiallist-follow-hids  x.initials  x mods modalist toplev warnings)))
     (change-vl-module x
-                      :assigns assigns
-                      :modinsts modinsts
+                      :assigns   assigns
+                      :modinsts  modinsts
                       :gateinsts gateinsts
-                      :alwayses alwayses
-                      :initials initials
-                      :warnings warnings)))
+                      :alwayses  alwayses
+                      :initials  initials
+                      :warnings  warnings)))
 
 (defprojection vl-modulelist-follow-hids-aux (x mods modalist toplev)
   (vl-module-follow-hids x mods modalist toplev)
@@ -1172,10 +1189,9 @@ identifier.</p>"
 
 (define vl-design-follow-hids
   :parents (hid-elim)
-  :short "Top-level @(see follow-hids) transform."
+  :short "Top-level @('follow-hids') phase of the @(see hid-elim) transform."
   ((x vl-design-p))
   :returns (new-x vl-design-p)
-  (b* ((x (vl-design-fix x))
-       ((vl-design x) x))
+  (b* (((vl-design x) x))
     (change-vl-design x :mods (vl-modulelist-follow-hids x.mods))))
 

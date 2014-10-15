@@ -1,3 +1,0 @@
-(ld "defpkg.lisp")
-
-(certify-book "cla-adder" 3)

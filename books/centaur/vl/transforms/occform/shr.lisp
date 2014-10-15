@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
@@ -78,9 +88,9 @@ operates on O(log_2 n) muxes.</p>"
        (shift-amount (expt 2 (- p 1)))
        (name  (hons-copy (cat "VL_" (natstr n) "_BIT_SHR_PLACE_" (natstr p))))
 
-       ((mv out-expr out-port out-portdecl out-netdecl)             (vl-occform-mkport "out" :vl-output n))
-       ((mv in-expr in-port in-portdecl in-netdecl)                 (vl-occform-mkport "in" :vl-input n))
-       ((mv shiftp-expr shiftp-port shiftp-portdecl shiftp-netdecl) (vl-primitive-mkport "shiftp" :vl-input))
+       ((mv out-expr out-port out-portdecl out-vardecl)             (vl-occform-mkport "out" :vl-output n))
+       ((mv in-expr in-port in-portdecl in-vardecl)                 (vl-occform-mkport "in" :vl-input n))
+       ((mv shiftp-expr shiftp-port shiftp-portdecl shiftp-vardecl) (vl-primitive-mkport "shiftp" :vl-input))
 
        ;; we can only shift as many places as there are bits in n
        (places      (min n shift-amount))
@@ -107,7 +117,7 @@ operates on O(log_2 n) muxes.</p>"
                            :origname  name
                            :ports     (list out-port in-port shiftp-port)
                            :portdecls (list out-portdecl in-portdecl shiftp-portdecl)
-                           :netdecls  (list out-netdecl in-netdecl shiftp-netdecl)
+                           :vardecls  (list out-vardecl in-vardecl shiftp-vardecl)
                            :modinsts  (list mux-inst)
                            :minloc    *vl-fakeloc*
                            :maxloc    *vl-fakeloc*)
@@ -173,9 +183,9 @@ endmodule
        (m    (lposfix m))
        (name (hons-copy (cat "VL_" (natstr n) "_BIT_SHR_BY_" (natstr m) "_BITS")))
 
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output n))
-       ((mv a-expr a-port a-portdecl a-netdecl)         (vl-occform-mkport "a" :vl-input n))
-       ((mv b-expr b-port b-portdecl b-netdecl)         (vl-occform-mkport "b" :vl-input m))
+       ((mv out-expr out-port out-portdecl out-vardecl) (vl-occform-mkport "out" :vl-output n))
+       ((mv a-expr a-port a-portdecl a-vardecl)         (vl-occform-mkport "a" :vl-input n))
+       ((mv b-expr b-port b-portdecl b-vardecl)         (vl-occform-mkport "b" :vl-input m))
 
        ;; We'll have K place-shifters, one that shifts by 2**0, one by 2**1, etc.
        ;; The actual number of shifters is constrained in two ways.
@@ -198,8 +208,8 @@ endmodule
        ((mv pshift-mods pshift-support) (vl-make-n-bit-shr-place-ps n k))
        (pshift-mods (reverse pshift-mods)) ;; for place_1 ... place_k order
 
-       (temp-netdecls (reverse (vl-make-list-of-netdecls k "temp" (vl-make-n-bit-range n))))      ;; temp_1 ... temp_k
-       (temp-exprs    (vl-make-idexpr-list (vl-netdecllist->names temp-netdecls) n :vl-unsigned))
+       (temp-vardecls (reverse (vl-make-list-of-netdecls k "temp" (vl-make-n-bit-range n))))      ;; temp_1 ... temp_k
+       (temp-exprs    (vl-make-idexpr-list (vl-vardecllist->names temp-vardecls) n :vl-unsigned))
        (last-temp     (car (last temp-exprs)))
 
        ;; We'll drive the temp wires in a moment.  But first, we'll put in our X
@@ -209,7 +219,7 @@ endmodule
        ((cons xeach-mod xeach-support) (vl-make-n-bit-xor-each n))
        (supporting-mods (list* xdet-mod xeach-mod (append xdet-support xeach-support pshift-mods pshift-support)))
 
-       ((mv bx-expr bx-netdecl) (vl-occform-mkwire "bx" 1))
+       ((mv bx-expr bx-vardecl) (vl-occform-mkwire "bx" 1))
        (bx-modinst  (vl-simple-inst xdet-mod  "mk_bx"  bx-expr  b-expr))
        (out-modinst (vl-simple-inst xeach-mod "mk_out" out-expr bx-expr last-temp))
 
@@ -227,7 +237,7 @@ endmodule
                                 :origname  name
                                 :ports     (list out-port a-port b-port)
                                 :portdecls (list out-portdecl a-portdecl b-portdecl)
-                                :netdecls  (list* out-netdecl a-netdecl b-netdecl bx-netdecl temp-netdecls)
+                                :vardecls  (list* out-vardecl a-vardecl b-vardecl bx-vardecl temp-vardecls)
                                 :modinsts  (append pshift-insts (list bx-modinst out-modinst))
                                 :minloc    *vl-fakeloc*
                                 :maxloc    *vl-fakeloc*)
@@ -240,7 +250,7 @@ endmodule
        ;; wire merged_high = |(b[m-1:k-1]);
        (diff (+ 1 (- m k)))
        ((cons merged-mod merged-support) (vl-make-n-bit-reduction-op :vl-unary-bitor diff))
-       ((mv merged-expr merged-netdecl)  (vl-primitive-mkwire "merged_high"))
+       ((mv merged-expr merged-vardecl)  (vl-primitive-mkwire "merged_high"))
 
        (high-bits (make-vl-nonatom :op :vl-partselect-colon
                                    :args (list b-expr
@@ -261,7 +271,7 @@ endmodule
                            :origname  name
                            :ports     (list out-port a-port b-port)
                            :portdecls (list out-portdecl a-portdecl b-portdecl)
-                           :netdecls  (list* out-netdecl a-netdecl b-netdecl bx-netdecl merged-netdecl temp-netdecls)
+                           :vardecls  (list* out-vardecl a-vardecl b-vardecl bx-vardecl merged-vardecl temp-vardecls)
                            :modinsts  (cons merged-inst (append pshift-insts (list bx-modinst out-modinst)))
                            :minloc    *vl-fakeloc*
                            :maxloc    *vl-fakeloc*)

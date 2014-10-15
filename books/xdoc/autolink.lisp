@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
@@ -361,7 +371,6 @@
                     "(<see topic=\"XDOC____FOO\">xdoc::foo</see> (<see topic=\"ACL2____F\">f</see> 1 2))")))))
 
 
-
 (defun xml-ppr-obj-aux
   (x          ; object to pretty-print
    topics-fal ; fast alist binding all xdoc topic names to [irrelevant]
@@ -369,28 +378,29 @@
    state
    acc)
   (b* ((kpa (known-package-alist state))
-       ((mv str state) (fmt-to-str x base-pkg state))
+       (str (fmt-to-str x base-pkg))
        (acc (autolink-and-encode str 0 (length str) topics-fal base-pkg kpa acc)))
-    (mv acc state)))
+    acc))
 
 (defun xml-ppr-obj-fn (x topics-fal base-pkg state)
-  (b* (((mv acc state) (xml-ppr-obj-aux x topics-fal base-pkg state nil))
-       (ret (str::rchars-to-string acc)))
-    (mv ret state)))
+  (str::rchars-to-string
+   (xml-ppr-obj-aux x topics-fal base-pkg state nil)))
 
-(defmacro xml-ppr-obj (x state ;; BOZO eventually switch to &key (state 'state)
-                         &key
+(defmacro xml-ppr-obj (x &key
+                         (state 'state)
                          (topics-fal 'nil)
                          (base-pkg   ''acl2::foo))
-  `(b* (((mv acc ,state)
-         (xml-ppr-obj-aux ,x ,topics-fal ,base-pkg ,state nil))
+  `(b* ((acc (xml-ppr-obj-aux ,x ,topics-fal ,base-pkg ,state nil))
         (ret (str::rchars-to-string acc)))
-     (mv ret ,state)))
+     ret))
 
+(local
+ (progn
+   (assert! (equal (xml-ppr-obj '(f 1 2)
+                                :topics-fal (make-fast-alist '((f . nil))))
+                   "(<see topic=\"XDOC____F\">xdoc::f</see> 1 2)"))
 
-#|
-(xml-ppr-obj '(f 1 2) state :topics-fal (make-fast-alist '((f . nil))))
-(xml-ppr-obj '(f 1 2) state
-             :topics-fal (make-fast-alist '((f . nil)))
-             :base-pkg 'xdoc::foo)
-|#
+   (assert! (equal (xml-ppr-obj '(f 1 2)
+                                :topics-fal (make-fast-alist '((f . nil)))
+                                :base-pkg 'xdoc::foo)
+                   "(<see topic=\"XDOC____F\">f</see> 1 2)"))))

@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
@@ -53,7 +63,14 @@ options, see @(see demo) instead.</p>
 </ul>
 
 <p>To see how to turn @('demo2-main') into an executable, see the file
-@('centaur/getopt/demo2-save.lsp').</p>")
+@('centaur/getopt/demo2-save.lsp').</p>
+
+<p>On some Lisps the program may also print out a Lisp banner.  Most Lisps can
+be instructed to suppress such a banner via additional command-line
+options (which vary from Lisp to Lisp).  A notable exception is Lispworks,
+where the banner cannot be suppressed.  So depending on your host Lisp, you may
+be able to edit the resulting shell script to disable the banner, but
+unfortunately ACL2's @(see save-exec) has no portable way to do this.</p>")
 
 (defoptions demo2-opts
   :parents (demo2)
@@ -67,7 +84,12 @@ options, see @(see demo) instead.</p>
    (version "Print out a version message and exit with status 0."
             booleanp
             :rule-classes :type-prescription
-            :alias #\v)))
+            :alias #\v)
+
+   (fail   "Print nothing and exit with status 1."
+           booleanp
+           :rule-classes :type-prescription
+           :alias #\f)))
 
 (defsection demo2-main
   :parents (demo2)
@@ -94,6 +116,10 @@ options, see @(see demo) instead.</p>
          ((when opts.version)
           (cw "demo2: version 1.234~%")
           (exit 0)
+          state)
+
+         ((when opts.fail)
+          (exit 1)
           state))
 
       (cw "colorless green ideas sleep furiously~%")

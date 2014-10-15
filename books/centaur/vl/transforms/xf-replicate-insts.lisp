@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
@@ -22,32 +32,16 @@
 (include-book "../mlib/expr-slice")
 (include-book "../mlib/port-tools")
 (include-book "../mlib/namefactory")
-(include-book "../mlib/find-module")
-(include-book "../mlib/context")
 (local (include-book "../util/arithmetic"))
 (local (in-theory (enable tag-reasoning)))
 (local (std::add-default-post-define-hook :fix))
-
-(local (defthm vl-exprlist-fix-of-take-in-bounds
-         (implies (<= n (len x))
-                  (equal (vl-exprlist-fix (take n x))
-                         (take n (vl-exprlist-fix x))))
-         :hints(("Goal" :in-theory (enable acl2::take-redefinition)))))
-
-(local (defthm vl-exprlist-fix-of-nthcdr
-         (equal (vl-exprlist-fix (nthcdr n x))
-                (nthcdr n (vl-exprlist-fix x)))
-         :hints(("Goal"
-                 :induct (nthcdr n x)
-                 :in-theory (enable nthcdr)))))
-
 
 ; BOZO now that we have VL primitive modules for other gates, it might make the
 ; most sense to try to just eliminate all gates in one fell swoop early in the
 ; transformation sequence, replacing them with their VL module equivalents,
 ; then only deal with module instances instead of gate instances here.
 
-(defxdoc replicate
+(defxdoc replicate-insts
   :parents (transforms)
   :short "Eliminate arrays of gate and module instances."
 
@@ -92,7 +86,7 @@ module; we discuss this further in @(see vl-replicated-instnames).</p>
 with the new arguments for each new instance we are generating.  This is
 addressed in @(see argument-partitioning).</p>")
 
-(local (xdoc::set-default-parents replicate))
+(local (xdoc::set-default-parents replicate-insts))
 
 (define vl-preferred-replicate-names
   :parents (vl-replicated-instnames)
@@ -138,8 +132,7 @@ addressed in @(see argument-partitioning).</p>")
 (local (in-theory (enable vl-range-resolved-p)))
 
 (define vl-replicated-instnames
-  :short "Generate the new names that we'll use for @(see replicate)d
-          instances."
+  :short "Generate the new names that we'll use for replicated instances."
   ((instname  maybe-stringp     "Name of the instance array we are replicating.")
    (instrange vl-range-p        "Its associated range.")
    (nf        vl-namefactory-p  "For generating fresh names.")
@@ -273,8 +266,8 @@ then we return @('foo_0, ..., foo_N').</p>"
   :short "How arguments to instance arrays are split up and given to the
 individual instances."
 
-  :long "<p>Recall that in the @(see replicate) transform we are basically
-rewriting instance arrays like this:</p>
+  :long "<p>Recall that in the @(see replicate-insts) transform we are
+basically rewriting instance arrays like this:</p>
 
 @({
    type instname [N:0] (arg1, arg2, ..., argM) ;
@@ -491,7 +484,8 @@ re-integrate it.</p>"
                   (force (all-equalp 1 (vl-exprlist->finalwidths x))))
              (vl-exprlist-welltyped-p (vl-partition-msb-bitslices n x)))
     :hints(("Goal" :in-theory (e/d (vl-expr-welltyped-p)
-                                   (all-equalp))))))
+                                   (all-equalp
+                                    vl-exprlist->finalwidths-of-take))))))
 
 
 (define vl-partition-plainarg
@@ -501,9 +495,7 @@ re-integrate it.</p>"
   ((arg        vl-plainarg-p    "An argument we need to replicate.")
    (port-width posp             "Width of the port this argument is connected to.")
    (insts      posp             "Number of instances in this instance array.")
-   (mod        vl-module-p      "Superior module the instance occurs in; needed
-                                 for proper bit-splitting.")
-   (ialist     (equal ialist (vl-moditem-alist mod)) "For fast wire lookups.")
+   (ss         vl-scopestack-p)
    (elem       vl-modelement-p  "Context for warnings.")
    (warnings   vl-warninglist-p "Ordinary @(see warnings) accumulator."))
 
@@ -529,7 +521,7 @@ width of the port, as described in @(see argument-partitioning).</p>"
   (b* ((arg        (vl-plainarg-fix arg))
        (port-width (lposfix port-width))
        (insts      (lposfix insts))
-       (mod        (vl-module-fix mod))
+       (ss         (vl-scopestack-fix ss))
        (elem       (vl-modelement-fix elem))
        (warnings   (vl-warninglist-fix warnings))
 
@@ -587,7 +579,7 @@ width of the port, as described in @(see argument-partitioning).</p>"
 
        ;; Everything is looking good, try to slice the expression into bits.
        ((mv successp warnings bits)
-        (vl-msb-bitslice-expr arg.expr mod ialist warnings))
+        (vl-msb-bitslice-expr arg.expr ss warnings))
 
        ((unless successp)
         ;; This shouldn't really occur in practice, but if it does occur we've
@@ -610,7 +602,7 @@ width of the port, as described in @(see argument-partitioning).</p>"
     (mv t warnings plainargs))
   ///
   (defthm len-of-vl-partition-plainarg
-    (let ((ret (vl-partition-plainarg arg port-width insts mod ialist elem warnings)))
+    (let ((ret (vl-partition-plainarg arg port-width insts ss elem warnings)))
       (implies (mv-nth 0 ret)
                (equal (len (mv-nth 2 ret))
                       (pos-fix insts)))))
@@ -627,8 +619,7 @@ width of the port, as described in @(see argument-partitioning).</p>"
   ((args        vl-plainarglist-p  "Arguments to some submodule.")
    (port-widths pos-listp          "Corresponding widths of the submodule's ports.")
    (insts       posp               "How many instances there are.")
-   (mod         vl-module-p        "Superior module (for wire sizes)")
-   (ialist      (equal ialist (vl-moditem-alist mod)) "For fast lookups.")
+   (ss vl-scopestack-p)
    (elem        vl-modelement-p    "Context for warnings.")
    (warnings    vl-warninglist-p   "Ordinary @(see warnings) accumulator."))
   :guard (same-lengthp args port-widths)
@@ -646,12 +637,12 @@ of the @('result') is the partitioning of the corresponding argument.</p>"
         (mv t (ok) nil))
        ((mv successp warnings car-result)
         (vl-partition-plainarg (car args) (car port-widths)
-                               insts mod ialist elem warnings))
+                               insts ss elem warnings))
        ((unless successp)
         (mv nil warnings nil))
        ((mv successp warnings cdr-result)
         (vl-partition-plainarglist (cdr args) (cdr port-widths)
-                                   insts mod ialist elem warnings))
+                                   insts ss elem warnings))
        ((unless successp)
         (mv nil warnings nil)))
     (mv t warnings (cons car-result cdr-result)))
@@ -659,7 +650,7 @@ of the @('result') is the partitioning of the corresponding argument.</p>"
   (defmvtypes vl-partition-plainarglist (booleanp nil true-listp))
 
   (defthm all-have-len-of-vl-partition-plainarglist
-    (let ((ret (vl-partition-plainarglist args port-widths insts mod ialist elem warnings)))
+    (let ((ret (vl-partition-plainarglist args port-widths insts ss elem warnings)))
       (implies (and (mv-nth 0 ret)
                     (equal len (pos-fix insts)))
                (all-have-len (mv-nth 2 ret) len)))))
@@ -774,8 +765,7 @@ by slice, rather than by argument.</p>"
 
   ((x        vl-gateinst-p     "Some gate, which may or may not be an instance array.")
    (nf       vl-namefactory-p  "For fresh name generation.")
-   (mod      vl-module-p       "Module that @('x') occurs in, for wire size lookups.")
-   (ialist   (equal ialist (vl-moditem-alist mod)) "For fast lookups.")
+   (ss vl-scopestack-p)
    (warnings vl-warninglist-p  "Ordinary @(see warnings) accumulator."))
   :returns
   (mv (warnings      vl-warninglist-p)
@@ -818,7 +808,7 @@ we try to split it into a list of @('nil')-ranged, simple gates.  The
        ;; form the new argument lists for the instances we are going to
        ;; generate.
        ((mv successp warnings slices)
-        (vl-partition-plainarglist x.args port-widths size mod ialist x warnings))
+        (vl-partition-plainarglist x.args port-widths size ss x warnings))
 
        ((unless successp)
         ;; Already added warnings
@@ -857,8 +847,7 @@ we try to split it into a list of @('nil')-ranged, simple gates.  The
 vl-gateinstlist-p)."
   ((x        vl-gateinstlist-p)
    (nf       vl-namefactory-p)
-   (mod      vl-module-p)
-   (ialist   (equal ialist (vl-moditem-alist mod)))
+   (ss vl-scopestack-p)
    (warnings vl-warninglist-p))
   :returns
   (mv (warnings      vl-warninglist-p)
@@ -867,9 +856,9 @@ vl-gateinstlist-p)."
   (b* (((when (atom x))
         (mv (ok) nil (vl-namefactory-fix nf)))
        ((mv warnings car-prime nf)
-        (vl-replicate-gateinst (car x) nf mod ialist warnings))
+        (vl-replicate-gateinst (car x) nf ss warnings))
        ((mv warnings cdr-prime nf)
-        (vl-replicate-gateinstlist (cdr x) nf mod ialist warnings))
+        (vl-replicate-gateinstlist (cdr x) nf ss warnings))
        (new-gateinsts (append car-prime cdr-prime)))
     (mv warnings new-gateinsts nf))
   ///
@@ -899,8 +888,7 @@ vl-gateinstlist-p)."
                                  be resolved, i.e. should be plainargs, and sized.")
    (port-widths pos-listp       "Widths of the corresponding ports.")
    (insts       posp            "Number of instances we're splitting these args into.")
-   (mod         vl-module-p     "Superior module (for wire widths, etc.)")
-   (ialist      (equal ialist (vl-moditem-alist mod)) "For fast lookups.")
+   (ss vl-scopestack-p)
    (elem        vl-modelement-p  "Context for warnings.")
    (warnings    vl-warninglist-p "Ordinary @(see warnings) accumulator."))
   :hooks nil
@@ -915,7 +903,7 @@ vl-gateinstlist-p)."
                  "The new arguments to give to each (split up) module instance."))
 
   (b* ((insts (pos-fix insts))
-       ((when (eq (vl-arguments-kind args) :named))
+       ((when (eq (vl-arguments-kind args) :vl-arguments-named))
         (mv nil
             (fatal :type :vl-bad-arguments
                    :msg "~a0: Expected only plain argument lists, but found ~
@@ -933,7 +921,7 @@ vl-gateinstlist-p)."
 
        ;; Slice up the arguments...
        ((mv successp warnings slices)
-        (vl-partition-plainarglist actuals port-widths insts mod ialist elem warnings))
+        (vl-partition-plainarglist actuals port-widths insts ss elem warnings))
        ((unless successp)
         ;; Already added warnings
         (mv nil warnings nil))
@@ -994,7 +982,7 @@ vl-gateinstlist-p)."
    (modname   stringp           "Module being instantiated.")
    (str       vl-maybe-gatestrength-p)
    (delay     vl-maybe-gatedelay-p)
-   (paramargs vl-arguments-p)
+   (paramargs vl-paramargs-p)
    (atts      vl-atts-p)
    (loc       vl-location-p))
   :guard (same-lengthp names args)
@@ -1104,11 +1092,8 @@ vl-gateinstlist-p)."
   :short "Convert a module instance into a list of simpler instances, if
 necessary."
   ((x        vl-modinst-p     "A module instance, perhaps an instance array.")
-   (mods     vl-modulelist-p  "All modules (for looking up submodule port widths).")
-   (modalist (equal modalist (vl-modalist mods)) "For fast lookups.")
    (nf       vl-namefactory-p "For generating fresh names.")
-   (mod      vl-module-p      "Superior module, for wire width lookups.")
-   (ialist   (equal ialist (vl-moditem-alist mod)) "For fast lookups.")
+   (ss vl-scopestack-p)
    (warnings vl-warninglist-p "Ordinary @(see warnings) accumulator."))
   :hooks nil
   :returns
@@ -1133,7 +1118,7 @@ then we try to split it into a list of @('nil')-ranged, simple instances.  If
             (list x)
             nf))
 
-       ((when (vl-arguments->args x.paramargs))
+       ((unless (vl-paramargs-empty-p x.paramargs))
         ;; Probably unnecessary, but I don't really want to think about
         ;; parameters here.
         (mv (fatal :type :vl-bad-instance
@@ -1148,8 +1133,8 @@ then we try to split it into a list of @('nil')-ranged, simple instances.  If
        (x.atts (cons (list "VL_FROM_INST_ARRAY") x.atts))
        (size   (vl-range-size x.range))
 
-       (target (vl-fast-find-module x.modname mods modalist))
-       ((unless target)
+       (target (vl-scopestack-find-definition x.modname ss))
+       ((unless (and target (eq (tag target) :vl-module)))
         (mv (fatal :type :vl-bad-instance
                    :msg "~a0: instance of undefined module ~m1."
                    :args (list x x.modname))
@@ -1163,7 +1148,7 @@ then we try to split it into a list of @('nil')-ranged, simple instances.  If
         (mv warnings (list x) nf))
 
        ((mv successp warnings new-args)
-        (vl-replicate-arguments x.portargs port-widths size mod ialist x warnings))
+        (vl-replicate-arguments x.portargs port-widths size ss x warnings))
        ((unless successp)
         (mv warnings (list x) nf))
 
@@ -1193,11 +1178,8 @@ then we try to split it into a list of @('nil')-ranged, simple instances.  If
 (define vl-replicate-modinstlist
   :short "Extend @(see vl-replicate-modinst) across a @(see vl-modinstlist-p)"
   ((x        vl-modinstlist-p)
-   (mods     vl-modulelist-p)
-   (modalist (equal modalist (vl-modalist mods)))
    (nf       vl-namefactory-p)
-   (mod      vl-module-p)
-   (ialist   (equal ialist (vl-moditem-alist mod)))
+   (ss vl-scopestack-p)
    (warnings vl-warninglist-p))
   :hooks nil
   :returns (mv (warnings vl-warninglist-p)
@@ -1206,9 +1188,9 @@ then we try to split it into a list of @('nil')-ranged, simple instances.  If
   (b* (((when (atom x))
         (mv (ok) nil nf))
        ((mv warnings car-insts nf)
-        (vl-replicate-modinst (car x) mods modalist nf mod ialist warnings))
+        (vl-replicate-modinst (car x) nf ss warnings))
        ((mv warnings cdr-insts nf)
-        (vl-replicate-modinstlist (cdr x) mods modalist nf mod ialist warnings)))
+        (vl-replicate-modinstlist (cdr x) nf ss warnings)))
     (mv warnings (append car-insts cdr-insts) nf))
   ///
   (defmvtypes vl-replicate-modinstlist (nil true-listp nil)))
@@ -1231,17 +1213,16 @@ then we try to split it into a list of @('nil')-ranged, simple instances.  If
 (define vl-module-replicate
   :short "Eliminate gate and module instance arrays from a module."
   ((x        vl-module-p                           "Module to simplify.")
-   (mods     vl-modulelist-p                       "Global list of modules.")
-   (modalist (equal modalist (vl-modalist mods))   "For fast lookups."))
+   (ss vl-scopestack-p))
   :returns (new-x vl-module-p
                   "Rewritten version of X, where any gate or module instance
                    arrays have been replaced by an explicit list of
                    instances.")
   (b* ((x    (vl-module-fix x))
-       (mods (vl-modulelist-fix mods))
-
        ((when (vl-module->hands-offp x))
         x)
+
+       (ss   (vl-scopestack-push x ss))
 
        ((vl-module x) x)
 
@@ -1252,18 +1233,16 @@ then we try to split it into a list of @('nil')-ranged, simple instances.  If
         x)
 
        (nf         (vl-starting-namefactory x))
-       (ialist     (vl-moditem-alist x))
 
        (warnings   x.warnings)
 
        ((mv warnings new-gateinsts nf)
-        (vl-replicate-gateinstlist x.gateinsts nf x ialist warnings))
+        (vl-replicate-gateinstlist x.gateinsts nf ss warnings))
 
        ((mv warnings new-modinsts nf)
-        (vl-replicate-modinstlist x.modinsts mods modalist nf x ialist warnings))
+        (vl-replicate-modinstlist x.modinsts nf ss warnings))
 
        (- (vl-free-namefactory nf))
-       (- (fast-alist-free ialist))
 
        (x-prime (change-vl-module x
                                   :modinsts new-modinsts
@@ -1271,25 +1250,19 @@ then we try to split it into a list of @('nil')-ranged, simple instances.  If
                                   :warnings warnings)))
     x-prime))
 
-(defprojection vl-modulelist-replicate-aux ((x        vl-modulelist-p)
-                                            (mods     vl-modulelist-p)
-                                            (modalist (equal modalist (vl-modalist mods))))
-  :returns (new-x vl-modulelist-p)
-  (vl-module-replicate x mods modalist))
-
-(define vl-modulelist-replicate
+(defprojection vl-modulelist-replicate ((x        vl-modulelist-p)
+                                        (ss vl-scopestack-p))
   :short "Extend @(see vl-module-replicate) across the list of modules."
-  ((x vl-modulelist-p))
   :returns (new-x vl-modulelist-p)
-  (b* ((modalist (vl-modalist x))
-       (result   (vl-modulelist-replicate-aux x x modalist)))
-    (fast-alist-free modalist)
-    result))
+  (vl-module-replicate x ss))
 
 (define vl-design-replicate
-  :short "Top-level @(see replicate) transform."
+  :short "Top-level @(see replicate-insts) transform."
   ((x vl-design-p))
   :returns (new-x vl-design-p)
-  (b* (((vl-design x) x))
-    (change-vl-design x :mods (vl-modulelist-replicate x.mods))))
+  (b* (((vl-design x) x)
+       (ss (vl-scopestack-init x))
+       (mods (vl-modulelist-replicate x.mods ss)))
+    (vl-scopestacks-free)
+    (change-vl-design x :mods mods)))
 

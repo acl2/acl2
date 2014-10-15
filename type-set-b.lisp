@@ -1,4 +1,4 @@
-; ACL2 Version 6.4 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 6.5 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2014, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -322,12 +322,6 @@
 ; common theory there corresponds a runic theory obtained by unioning
 ; together the runes designated by each element of the common theory.
 ; We call this the runic theory "corresponding" to the common one.
-
-(defun deref-macro-name (macro-name macro-aliases)
-  (let ((entry (assoc-eq macro-name macro-aliases)))
-    (if entry
-        (cdr entry)
-      macro-name)))
 
 (defun deref-macro-name-lst (macro-name-lst macro-aliases)
   (cond ((atom macro-name-lst) nil)

@@ -1,36 +1,34 @@
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;           __    __        __    __                                        ;;
-;;          /  \  /  \      (__)  |  |    ____   ___      __    ____         ;;
-;;         /    \/    \      __   |  |   / _  |  \  \ __ /  /  / _  |        ;;
-;;        /  /\    /\  \    |  |  |  |  / / | |   \  '  '  /  / / | |        ;;
-;;       /  /  \__/  \  \   |  |  |  |  \ \_| |    \  /\  /   \ \_| |        ;;
-;;      /__/          \__\  |__|  |__|   \____|     \/  \/     \____|        ;;
-;; ~ ~~ \  ~ ~  ~_~~ ~/~ /~ | ~|~ | ~| ~ /~_ ~|~ ~  ~\  ~\~ ~  ~ ~  |~~    ~ ;;
-;;  ~ ~  \~ \~ / ~\~ / ~/ ~ |~ | ~|  ~ ~/~/ | |~ ~~/ ~\/ ~~ ~ / / | |~   ~   ;;
-;; ~ ~  ~ \ ~\/ ~  \~ ~/ ~~ ~__|  |~ ~  ~ \_~  ~  ~  .__~ ~\ ~\ ~_| ~  ~ ~~  ;;
-;;  ~~ ~  ~\  ~ /~ ~  ~ ~  ~ __~  |  ~ ~ \~__~| ~/__~   ~\__~ ~~___~| ~ ~    ;;
-;; ~  ~~ ~  \~_/  ~_~/ ~ ~ ~(__~ ~|~_| ~  ~  ~~  ~  ~ ~~    ~  ~   ~~  ~  ~  ;;
-;;                                                                           ;;
-;;            A   R e f l e c t i v e   P r o o f   C h e c k e r            ;;
-;;                                                                           ;;
-;;       Copyright (C) 2005-2009 by Jared Davis <jared@cs.utexas.edu>        ;;
-;;                                                                           ;;
-;; This program is free software; you can redistribute it and/or modify it   ;;
-;; under the terms of the GNU General Public License as published by the     ;;
-;; Free Software Foundation; either version 2 of the License, or (at your    ;;
-;; option) any later version.                                                ;;
-;;                                                                           ;;
-;; This program is distributed in the hope that it will be useful, but       ;;
-;; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABIL-  ;;
-;; ITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public      ;;
-;; License for more details.                                                 ;;
-;;                                                                           ;;
-;; You should have received a copy of the GNU General Public License along   ;;
-;; with this program (see the file COPYING); if not, write to the Free       ;;
-;; Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA    ;;
-;; 02110-1301, USA.                                                          ;;
-;;                                                                           ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Milawa - A Reflective Theorem Prover
+; Copyright (C) 2005-2009 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+;
+; Original author: Jared Davis <jared@kookamara.com>
 
 (in-package "ACL2")
 
@@ -44,12 +42,17 @@
 ;;  2. We use ACL2's translator to get rid of ACL2-specific macros
 ;;  3. We finally unrewrite the "wrappers" back into their macro form.
 
+; Matt K.: Commented out 8/15/2014 to avoid conflict with tuplep deined in
+; std/basic/defs.lisp.
+#||
 (defun tuplep (n x)
   (declare (xargs :mode :program))
   (if (zp n)
       (equal x nil)
     (and (consp x)
          (tuplep (- n 1) (cdr x)))))
+||#
+(include-book "std/basic/defs" :dir :system) ; still need tuplep for next def'n
 
 (defun tuple-listp (n x)
   (declare (xargs :mode :program))

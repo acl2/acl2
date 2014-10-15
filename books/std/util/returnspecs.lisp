@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
@@ -121,6 +131,10 @@ for the associated return-type.</dd>
 the return-type theorem is added as a @(':rewrite') rule.  If you want to use
 other @(see acl2::rule-classes), then you will want to override this default.</dd>
 
+<dt>@(':name name')</dt>
+
+<dd>This allows you to control the name of the associated theorem.</dd>
+
 </dl>")
 
 (def-primitive-aggregate returnspec
@@ -130,6 +144,7 @@ other @(see acl2::rule-classes), then you will want to override this default.</d
    hyp           ; t when omitted
    hints         ; nil when omitted
    rule-classes  ; :rewrite when omitted
+   thm-name      ; NIL (to generate a name) or the name for the theorem
    )
   :tag :return-spec)
 
@@ -139,7 +154,8 @@ other @(see acl2::rule-classes), then you will want to override this default.</d
                    :return-type t
                    :hyp t
                    :hints nil
-                   :rule-classes :rewrite))
+                   :rule-classes :rewrite
+                   :thm-name nil))
 
 
 (defun returnspeclist-p (x)
@@ -228,8 +244,7 @@ other @(see acl2::rule-classes), then you will want to override this default.</d
         ;; A user once got very confused why :returns character-listp
         ;; wasn't proving that his function wasn't returning a character
         ;; list.  So, now, make sure this isn't a defined function.
-        (b* ((look (getprop x 'acl2::formals :bad
-                            'acl2::current-acl2-world world))
+        (b* ((look (getprop x 'acl2::formals :bad 'acl2::current-acl2-world world))
              ((unless (eq look :bad))
               (raise "Error in ~x0: you named a return value ~x1, which is ~
                       the name of a defined function, but you don't have any ~
@@ -245,7 +260,8 @@ other @(see acl2::rule-classes), then you will want to override this default.</d
                            :return-type t
                            :rule-classes :rewrite
                            :hyp nil
-                           :hints nil)))
+                           :hints nil
+                           :thm-name nil)))
        ((when (atom x))
         (raise "Error in ~x0: return specifiers must be symbols or lists, but ~
                 found: ~x1" fnname x)
@@ -262,7 +278,7 @@ other @(see acl2::rule-classes), then you will want to override this default.</d
 
        ((mv kwd-alist other-opts)
         ;; bozo better context for error message here would be good
-        (extract-keywords fnname '(:hyp :hints :rule-classes) options nil))
+        (extract-keywords fnname '(:hyp :hints :rule-classes :name) options nil))
        (hyp (if (assoc :hyp kwd-alist)
                 (cdr (assoc :hyp kwd-alist))
               t))
@@ -278,6 +294,9 @@ other @(see acl2::rule-classes), then you will want to override this default.</d
        (rule-classes (if (assoc :rule-classes kwd-alist)
                          (cdr (assoc :rule-classes kwd-alist))
                        :rewrite))
+       (thm-name (if (assoc :name kwd-alist)
+                     (cdr (assoc :name kwd-alist))
+                   nil))
        ((mv terms docs)
         (parse-returnspec-items fnname varname other-opts nil nil))
        (return-type
@@ -305,7 +324,8 @@ other @(see acl2::rule-classes), then you will want to override this default.</d
                      :return-type return-type
                      :rule-classes rule-classes
                      :hyp hyp
-                     :hints hints)))
+                     :hints hints
+                     :thm-name thm-name)))
 
 (defun parse-returnspecs-aux (fnname x world)
   "Returns a returnspeclist-p"
@@ -320,7 +340,7 @@ other @(see acl2::rule-classes), then you will want to override this default.</d
   ;; We support two forms of returns:
   ;;  :returns return-spec
   ;;  :returns (mv return-spec ... return-spec)
-  ;; We require that names are never MV, so we can just check for MV to
+  ;; We require that return-value names are never MV, so we can just check for MV to
   ;; tell thich kind of return spec we are dealing with.
   ;; This function just converts either form into a list of return specs
   ;; with no MV part.
@@ -414,56 +434,96 @@ other @(see acl2::rule-classes), then you will want to override this default.</d
         concl
       `(implies ,hyp ,concl))))
 
-(defun returnspec-single-thm (fnname x world)
+(defun returnspec-generate-name (name x singlep badname-okp)
+  ;; Get the name for a return-spec theorem.
+  ;; Usually we can produce a good name like:
+  ;;   natp-of-fn
+  ;;   natp-of-fn.new-x
+  ;; Or similar.  But, for more complex return-types, say something like
+  ;;   (equal (len new-x) (len x))
+  ;; we are too dumb to generate a good name.
+  ;;
+  ;; Badname-okp indicates whether we're willing to accept a "bad", generic
+  ;; name of the form "return-type-of-fn" or "return-type-of-fn.new-x" or
+  ;; similar.
+  ;;
+  ;; We'll tolerate bad names if the user is just giving a :returns specifier
+  ;; in a function, mainly for backwards compatibility.  (i.e., badname-okp
+  ;; will be true).
+  ;;
+  ;; However, for the new, subsequent return-specs, we'll require explicit
+  ;; names for complex conclusions. (i.e., badname-okp will be nil).
+  (b* (((returnspec x) x)
+       ((when x.thm-name)
+        ;; The user provided an explicit name, so use that.
+        x.thm-name)
+       (multi-suffix (if singlep
+                         ""
+                       (concatenate 'string "." (symbol-name x.name))))
+       ((when (and (tuplep 2 x.return-type)
+                   (symbolp (first x.return-type))
+                   (equal (second x.return-type) x.name)))
+        ;; Simple return type like (natp ans)
+        (intern-in-package-of-symbol
+         (concatenate 'string
+                      (symbol-name (first x.return-type))
+                      "-OF-"
+                      (symbol-name name)
+                      multi-suffix)
+         name))
+       ((unless badname-okp)
+        (er hard? 'returnspec-generate-name
+            "Return spec for ~x0, ~x1, must be given an explicit name."
+            name x.return-type)))
+    ;; Complex return type
+    (intern-in-package-of-symbol
+     (concatenate 'string "RETURN-TYPE-OF-" (symbol-name name) multi-suffix)
+     name)))
+
+(defun returnspec-single-thm (name name-fn x badname-okp world)
   "Returns EVENTS"
   ;; Only valid to call AFTER the function has been submitted, because we look
   ;; up the guard/formals from the world.
-  (declare (xargs :guard (and (symbolp fnname)
+  (declare (xargs :guard (and (symbolp name)
+                              (symbolp name-fn)
                               (returnspec-p x)
                               (plist-worldp world))))
   (b* (((returnspec x) x)
-       (formals (look-up-formals fnname world))
-       (binds `(,x.name (,fnname . ,formals)))
-       (formula (returnspec-thm-body fnname binds x world))
+       (formals (look-up-formals name-fn world))
+       (binds `(,x.name (,name-fn . ,formals)))
+       (formula (returnspec-thm-body name-fn binds x world))
        ((when (eq formula t)) nil)
        (hints x.hints))
-    `((defthm ,(intern-in-package-of-symbol
-                (concatenate 'string "RETURN-TYPE-OF-" (symbol-name fnname))
-                fnname)
+    `((defthm ,(returnspec-generate-name name x t badname-okp)
         ,formula
         :hints ,hints
         :rule-classes ,x.rule-classes))))
 
-
-(defun returnspec-multi-thm (fnname binds x world)
+(defun returnspec-multi-thm (name name-fn binds x badname-okp world)
   "Returns EVENTS"
-  (declare (xargs :guard (and (symbolp fnname)
+  (declare (xargs :guard (and (symbolp name)
+                              (symbolp name-fn)
                               (returnspec-p x)
                               (plist-worldp world))))
   (b* (((returnspec x) x)
-       (formula (returnspec-thm-body fnname binds x world))
+       (formula (returnspec-thm-body name-fn binds x world))
        ((when (equal formula t)) nil)
-
        (hints x.hints))
-    `((defthm ,(intern-in-package-of-symbol
-                (concatenate 'string "RETURN-TYPE-OF-" (symbol-name fnname)
-                             "." (symbol-name x.name))
-                fnname)
+    `((defthm ,(returnspec-generate-name name x nil badname-okp)
         ,formula
         :hints ,hints
         :rule-classes ,x.rule-classes))))
 
-(defun returnspec-multi-thms (fnname binds x world)
+(defun returnspec-multi-thms (name name-fn binds x badname-okp world)
   "Returns EVENTS"
-  (declare (xargs :guard (and (symbolp fnname)
+  (declare (xargs :guard (and (symbolp name)
+                              (symbolp name-fn)
                               (returnspeclist-p x)
                               (plist-worldp world))))
   (if (atom x)
       nil
-    (append (returnspec-multi-thm fnname binds (car x) world)
-            (returnspec-multi-thms fnname binds (cdr x) world))))
-
-
+    (append (returnspec-multi-thm name name-fn binds (car x) badname-okp world)
+            (returnspec-multi-thms name name-fn binds (cdr x) badname-okp world))))
 
 
 
@@ -480,20 +540,22 @@ other @(see acl2::rule-classes), then you will want to override this default.</d
     (cons (make-symbol-ignorable (car x))
           (make-symbols-ignorable (cdr x)))))
 
-(defun returnspec-thms (fnname specs world)
+(defun returnspec-thms (name name-fn specs world)
   "Returns EVENTS"
-  (declare (xargs :guard (and (symbolp fnname)
+  (declare (xargs :guard (and (symbolp name)
+                              (symbolp name-fn)
                               (returnspeclist-p specs)
                               (plist-worldp world))))
   (b* (((unless specs)
         nil)
+       (badname-okp t)
        ((when (equal (len specs) 1))
-        (returnspec-single-thm fnname (car specs) world))
+        (returnspec-single-thm name name-fn (car specs) badname-okp world))
        (names   (returnspeclist->names specs))
        (ignorable-names (make-symbols-ignorable names))
-       (formals (look-up-formals fnname world))
-       (binds   `((mv . ,ignorable-names) (,fnname . ,formals))))
-    (returnspec-multi-thms fnname binds specs world)))
+       (formals (look-up-formals name-fn world))
+       (binds   `((mv . ,ignorable-names) (,name-fn . ,formals))))
+    (returnspec-multi-thms name name-fn binds specs badname-okp world)))
 
 
 

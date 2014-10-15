@@ -1,4 +1,0 @@
-(ld "hacker-pkg.lsp")
-
-
-(ACL2::CERTIFY-BOOK "redefun" ACL2::? T)

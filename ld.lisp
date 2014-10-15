@@ -1,4 +1,4 @@
-; ACL2 Version 6.4 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 6.5 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2014, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -1361,24 +1361,6 @@
           ((assoc-eq 'dir alist)
            (delete-assoc-eq 'dir alist))
           (t alist))))
-
-#-acl2-loop-only
-(defmacro with-interrupts (&rest forms)
-
-; This macro allows, in raw Lisp for underlying Common Lisp implementations
-; where we know how to do this, the interrupting of evaluation of any of the
-; given forms.  We expect this behavior to take priority over any enclosing
-; call of without-interrupts.
-
-  #+ccl
-  `(ccl:with-interrupts-enabled ,@forms)
-  #+sbcl
-  `(sb-sys:with-interrupts ,@forms)
-  #+gcl
-  `(let ((system:*interrupt-enable* t))
-     ,@forms)
-  #-(or ccl sbcl gcl)
-  `(progn ,@forms))
 
 (defun ld-fn0 (alist state bind-flg)
 
@@ -4450,8 +4432,12 @@
 #-acl2-loop-only
 (defvar *return-from-lp* nil)
 
+#-acl2-loop-only
+(defvar *lp-init-forms* nil)
+
 (defun save-exec-fn (exec-filename extra-startup-string host-lisp-args
-                                   toplevel-args inert-args return-from-lp)
+                                   toplevel-args inert-args return-from-lp
+                                   init-forms)
 
   #-acl2-loop-only
   (progn
@@ -4459,7 +4445,18 @@
 ; Parallelism blemish: it may be a good idea to reset the parallelism variables
 ; in all #+acl2-par compilations before saving the image.
 
+    (when (and init-forms return-from-lp)
+
+; For each of return-from-lp and init-forms, a non-nil value takes us through a
+; different branch of LP.  Rather than support the use of both, we cause an
+; error.
+
+      (er hard 'save-exec
+          "The use of non-nil values for both :init-forms and :return-from-lp ~
+           is not supported for save-exec.  Consider using only :init-forms, ~
+           with (value :q) as the final form."))
     (setq *return-from-lp* return-from-lp)
+    (setq *lp-init-forms* init-forms)
     #-sbcl (when toplevel-args
              (er hard 'save-exec
                  "Keyword argument :toplevel-args is only allowed when the ~
@@ -4508,16 +4505,16 @@
                    inert-args))
   #+acl2-loop-only
   (declare (ignore exec-filename extra-startup-string host-lisp-args
-                   toplevel-args inert-args return-from-lp))
+                   toplevel-args inert-args return-from-lp init-forms))
   nil ; Won't get to here in GCL and perhaps other lisps
   )
 
 (defmacro save-exec (exec-filename extra-startup-string
                                    &key
                                    host-lisp-args toplevel-args inert-args
-                                   return-from-lp)
+                                   return-from-lp init-forms)
   `(save-exec-fn ,exec-filename ,extra-startup-string ,host-lisp-args
-                 ,toplevel-args ,inert-args ,return-from-lp))
+                 ,toplevel-args ,inert-args ,return-from-lp ,init-forms))
 
 ; We now develop code for without-evisc.
 

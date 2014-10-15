@@ -1,2 +1,0 @@
-(include-book "portcullis")
-(certify-book "top" ? t :ttags (:cutil-optimize))

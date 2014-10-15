@@ -1,15 +1,34 @@
 ; Fully Ordered Finite Sets
-; Copyright (C) 2003-2012 by Jared Davis <jared@cs.utexas.edu>
+; Copyright (C) 2003-2012 Kookamara LLC
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public Lic-
-; ense along with this program; if not, write to the Free Soft- ware
-; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+;
+; Original author: Jared Davis <jared@kookamara.com>
 
 
 ; top.lisp
@@ -47,6 +66,10 @@
 (include-book "computed-hints")
 
 (local
+ ;; Another part of the xdoc hack -- make sure this documentation doesn't
+ ;; get inadvertently slurped in
+ (include-book "std/lists/sets" :dir :system))
+(local
  ;; xdoc hack part 1: throw away all current xdoc
  (table xdoc::xdoc 'xdoc::doc nil))
 
@@ -61,7 +84,7 @@
  ;; stick them onto the proper doc
  (let ((slurped-docs (xdoc::get-xdoc-table (w state))))
    (acl2::value `(table xdoc::xdoc 'xdoc::doc
-                        (append ',slurped-docs (xdoc::get-xdoc-table acl2::world))))))
+                        (union-equal ',slurped-docs (xdoc::get-xdoc-table acl2::world))))))
 
 (defxdoc std/osets
   :parents (std)
@@ -83,6 +106,18 @@ and @(see double-containment).</p>
 <p>You can load the library with:</p>
 @({
  (include-book \"std/osets/top\" :dir :system)
+})
+
+<p>The definitions of the main set-manipulation functions are disabled, but are
+in a ruleset and may be enabled using:</p>
+@({
+ (in-theory (acl2::enable* set::definitions))
+})
+
+<p>Some potentially useful (but potentially expensive) rules are also left
+disabled and may be enabled using:</p>
+@({
+ (in-theory (acl2::enable* set::expensive-rules))
 })
 
 <p>Besides this @(see xdoc::xdoc) documentation, you may be interested in the
@@ -881,7 +916,7 @@ from the accompanying talk.</p>")
   (equal (intersect X (intersect X Z))
          (intersect X Z)))
 
-
+; i am here
 
 (defthm difference-set
   (setp (difference X Y)))
@@ -1037,6 +1072,10 @@ from the accompanying talk.</p>")
              t
            nil)))
 
+(defthm in-mergesort-under-iff
+  (iff (in a (mergesort x))
+       (member a x)))
+
 (defthm mergesort-set-identity
   (implies (setp X)
 	   (equal (mergesort X) X)))
@@ -1152,3 +1191,56 @@ from the accompanying talk.</p>")
 
 (defcong acl2::set-equiv equal (mergesort x) 1
   :event-name set-equiv-implies-equal-mergesort-1)
+
+
+;; This is the set of top-level recursive function definitions (as opposed to
+;; fast- or auxiliary ones) that are enabled above this point but that we'll
+;; disable shortly to make light set reasoning cheaper.  Note also that if a
+;; non-recursive function is left enabled above (e.g. intersectp) then it's
+;; treated as basically an abbreviation and we leave it enabled (and out of
+;; this ruleset).
+(def-ruleset! definitions
+  '(in
+    subset
+    delete
+    union
+    intersect
+    difference
+    cardinality
+    mergesort))
+
+
+;; This is a set of rules defined (and left enabled) above that seem
+;; potentially expensive.  The determination is somewhat subjective.
+(def-ruleset! expensive-rules
+  '(pick-a-point-subset-strategy
+    double-containment
+    subset-membership-tail
+    subset-membership-tail-2
+    subset-transitive
+    subset-in
+    subset-in-2
+    union-symmetric
+    union-commutative
+    union-delete-x
+    union-delete-y
+    union-with-subset-left
+    union-with-subset-right
+    intersect-symmetric
+    intersect-commutative
+    intersect-insert-x
+    intersect-insert-y
+    intersect-with-subset-left
+    intersect-with-subset-right
+    intersect-over-union
+    difference-over-union
+    difference-over-intersect
+    difference-insert-x
+    difference-delete-y
+    insert-cardinality
+    delete-cardinality
+    in-mergesort))
+
+
+(in-theory (acl2::disable* definitions
+                           expensive-rules))

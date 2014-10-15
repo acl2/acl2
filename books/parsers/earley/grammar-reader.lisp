@@ -673,15 +673,15 @@
 
    (encapsulate
     ()
-    (local (include-book
-
+    (local
 ; Provides us with the following, necessary for read-lexicon-line-strong
 
 ;;; (implies (and (stringp x)
 ;;;        n       (not (equal x "")))
 ;;;          (< 0 (length x)))))
 
-            "str/arithmetic" :dir :system))
+     ;; [Jared]: removed newline to un-fool dependency scanner
+     (include-book "std/strings/arithmetic" :dir :system))
 
     (defthm read-lexicon-line-strong
       (implies (and

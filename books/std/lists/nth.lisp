@@ -6,26 +6,47 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
 (include-book "list-defuns")
+(include-book "abstract")
 (local (include-book "rev"))
-(local (include-book "revappend"))
 (local (include-book "append"))
-(local (include-book "len"))
 (local (include-book "take"))
-(local (include-book "arithmetic/top" :dir :system))
+
+(local (defthm commutativity-2-of-+
+         (equal (+ x (+ y z))
+                (+ y (+ x z)))))
+
+(local (defthm fold-consts-in-+
+         (implies (and (syntaxp (quotep x))
+                       (syntaxp (quotep y)))
+                  (equal (+ x (+ y z)) (+ (+ x y) z)))))
+
+(local (defthm distributivity-of-minus-over-+
+         (equal (- (+ x y)) (+ (- x) (- y)))))
+
 
 (defthm nth-when-atom
   (implies (atom x)
@@ -110,14 +131,14 @@
               (list n m)
             (my-induct (- n 1) (- m 1)))))
 
- (defthm nth-of-replicate
-   (equal (nth n (replicate m a))
+ (defthm nth-of-repeat
+   (equal (nth n (repeat m a))
           (if (< (nfix n) (nfix m))
               a
             nil))
    :hints(("Goal"
            :induct (my-induct n m)
-           :in-theory (enable replicate)))))
+           :in-theory (enable repeat)))))
 
 (defthm nth-of-nthcdr
   (equal (nth n (nthcdr m x))
@@ -134,6 +155,89 @@
          (if (< (nfix n) (- (len x) (nfix m)))
              (nth n x)
            nil)))
+
+
+
+
+;; Generic rules about nth of element-lists, projections
+(def-listp-rule element-p-of-nth-when-element-list-p-when-nil-element
+  (implies (and (element-p nil)
+                (element-list-p x))
+           (element-p (nth n x)))
+  :requirement (and element-p-of-nil simple)
+  :name element-p-of-nth-when-element-list-p
+  :body (implies (element-list-p x)
+                    (element-p (nth n x))))
+
+(def-listp-rule element-p-of-nth-when-element-list-p-when-nil-unknown
+  (implies (and (element-list-p x)
+                (< (nfix n) (len x)))
+           (element-p (nth n x)))
+  :requirement (and (not element-p-of-nil)
+                    simple
+                    (not not-element-p-of-nil))
+  :name element-p-of-nth-when-element-list-p)
+
+(def-listp-rule element-p-of-nth-when-element-list-p-when-nil-not-element-non-negated
+  (implies (and (not (element-p nil))
+                (element-list-p x))
+           (iff (element-p (nth n x))
+                (< (nfix n) (len x))))
+  :requirement (and not-element-p-of-nil
+                    simple
+                    (not negatedp))
+  :name element-p-of-nth-when-element-list-p
+  :body (implies (element-list-p x)
+                 (iff (element-p (nth n x))
+                      (< (nfix n) (len x)))))
+
+(def-listp-rule element-p-of-nth-when-element-list-p-when-nil-not-element-negated
+  (implies (and (not (element-p nil))
+                (element-list-p x))
+           (iff (non-element-p (nth n x))
+                (<= (len x) (nfix n))))
+  :requirement (and not-element-p-of-nil
+                    simple
+                    negatedp)
+  :name element-p-of-nth-when-element-list-p
+  :body (implies (element-list-p x)
+                 (iff (non-element-p (nth n x))
+                      (<= (len x) (nfix n)))))
+
+
+(def-projection-rule nth-of-elementlist-projection-when-nil-preservingp
+  (implies (equal (element-xformer nil) nil)
+           (equal (nth n (elementlist-projection x))
+                  (element-xformer (nth n x))))
+  :requirement nil-preservingp
+  :name nth-of-elementlist-projection
+  :body (equal (nth n (elementlist-projection x))
+               (element-xformer (nth n x))))
+
+(def-projection-rule nth-of-elementlist-projection-when-not-nil-preservingp
+  (equal (nth n (elementlist-projection x))
+         (and (< (nfix n) (len x))
+              (element-xformer (nth n x))))
+  :requirement (not nil-preservingp)
+  :name nth-of-elementlist-projection)
+
+
+(def-listfix-rule nth-of-element-list-fix-when-nil-element
+  (implies (element-p nil)
+           (equal (nth n (element-list-fix x))
+                  (element-fix (nth n x))))
+  :requirement element-p-of-nil
+  :name nth-of-element-list-fix
+  :body (equal (nth n (element-list-fix x))
+               (element-fix (nth n x))))
+
+(def-listfix-rule nth-of-element-list-fix-unless-nil-element
+  (equal (nth n (element-list-fix x))
+         (and (< (nfix n) (len x))
+              (element-fix (nth n x))))
+  :requirement (not element-p-of-nil)
+  :name nth-of-element-list-fix)
+
 
 ;; No rule about update-nth, because nth-update-nth is an ACL2 builtin.
 

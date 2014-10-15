@@ -1,5 +1,5 @@
 <HTML>
-<HEAD><TITLE>ACL2 Version 6.4 Installation Guide: Miscellaneous Information</TITLE></HEAD>
+<HEAD><TITLE>ACL2 Version 6.5 Installation Guide: Miscellaneous Information</TITLE></HEAD>
 
 <BODY TEXT="#000000">
 <BODY BGCOLOR="#FFFFFF">
@@ -36,15 +36,10 @@ installing GNU make version 3.80</a>.
 
 <P>
 
-Building ACL2 may fail with 32-bit SBCL because of insufficient heap
-memory.  Harsh Raju Chamarthi points out that a fix is to run SBCL
-with an increased heap size limit, like this:
-<pre>
-make LISP="<sbcl-path>/sbcl --core <core-path>/sbcl.core --dynamic-space-size 1024"
-</pre>
-He adds that this issue occurred while building ACL2 4.0 with SBCL v1.0.40 on linux,
-and the default heap size for SBCL on a standard 32-bit linux is 512MB,
-while for SBCL (64-bit executable) on a 64-bit linux, the default is usually 8GB.
+Building ACL2 with SBCL may require the use
+of <code>--dynamic-space-size</code>.  This is explained in the
+section on <a href="requirements.html#Obtaining-SBCL">Obtaining
+SBCL</a>.
 
 <BR><HR><BR>
 <H3><A NAME="ACL2r">Reasoning about the Real Numbers</H3>
@@ -59,22 +54,11 @@ extension and how to build it, and a warning about its experimental nature.
 
 <P>
 
-If you care to use ACL2(r), we strongly suggest that you first
-<A HREF="http://acl2-books.googlecode.com/files/nonstd-6.4.tar.gz">
-download the non-standard analysis community books (gzipped tar file)</A> from
-the Google
-Code <a href="https://code.google.com/p/acl2-books/">acl2-books
-project website</a>, and save to the
-<code>books/</code> subdirectory of your copy of the ACL2 distribution, say,
-<I>dir</I>/acl2-sources/books/</code>.  Then extract to create
-subdirectory <CODE>nonstd/</CODE>:
-<pre>
-tar xvfz nonstd-6.4.tar.gz
-</pre>
-<p>
-Next build an executable image and certify books.  First, connect to your
-<I>dir</I><code>/acl2-sources/</code> directory and execute<BR><BR> <CODE>cd
-acl2-sources</CODE><BR> <CODE>make large-acl2r LISP=</CODE><I>xxx</I><BR>
+If you care to use ACL2(r), you will need to build an executable image
+and you will probably want to certify books.  First, connect to your
+<I>dir</I><code>/acl2-sources/</code> directory and
+execute<BR><BR><CODE>cd acl2-sources</CODE><BR><CODE>make large-acl2r
+LISP=</CODE><I>xxx</I><BR>
 <BR>
 where <I>xxx</I> is the command to run your local Common Lisp.
 <P>
@@ -84,23 +68,20 @@ Clozure Common Lisp (CCL), which can be obtained as explained <a
 href="obtaining-and-installing.html#Obtaining-CCL">in the Requirements document</a>.
 <P>
 This will create executable <code>saved_acl2r</code> in the
-<I>dir</I><code>/acl2-sources</code> directory (notice the trailing
-<code>r</code> in the executable filename).
+<I>dir</I><code>/acl2-sources</code> directory (notice the final
+letter <code>r</code> in the executable filename).
 
 <P>
 
-Finally, to certify books under directory
-<I>dir</I>/acl2-sources/books/nonstd/<code> with ACL2(r), stand in the
-</CODE><I>dir</I><CODE>/acl2-sources/</CODE> directory and execute the
-following command.
-<pre>
-make regression-nonstd ACL2=<I>dir</I>/acl2-sources/saved_acl2r
-</pre>
+Finally, you can certify books under directory
+<I>dir</I>/acl2-sources/books/nonstd/<code> with ACL2(r) in the usual
+way; for example, see the documentation topic for
+<a href="../../manual/index.html?topic=ACL2____BOOKS-CERTIFICATION">BOOKS-CERTIFICATION</a>.
 
 <BR><HR><BR>
 <H3><A NAME="Addresses">Links and Mailing Lists</A></H3>
 
-There are three mailing lists for ACL2 users.  You can post messages to these
+There are several mailing lists for ACL2 users.  You can post messages to these
 lists only if you are a member.
 <ul>
 <li><CODE><A
@@ -114,6 +95,7 @@ General ACL2 list for users and others interested in ACL2</li>
 HREF="mailto:acl2-books@googlegroups.com">acl2-books@googlegroups.com</A></CODE><br>
 Mailing list for discussion of cutting-edge developments in ACL2
 and the ACL2 Community Books</li>
+<li>ACL2 Seminar (University of Texas at Austin) mailing list: see below.</li>
 </ul>
 
 You may subscribe to or unsubscribe from these
@@ -123,6 +105,12 @@ lists, or view their archives, at:
 <li>(<b>acl2</b> list) <code><a href="https://utlists.utexas.edu/sympa/info/acl2">https://utlists.utexas.edu/sympa/info/acl2</a></code></li>
 <li>(<b>acl2-books Google Group</b>
   list) <code><a href="https://groups.google.com/forum/#!forum/acl2-books">https://groups.google.com/forum/#!forum/acl2-books</a></code></li>
+<li>(<b>acl2-mtg</b> list) Please send email
+  to <A HREF="mailto:kaufmann@cs.utexas.edu">Matt Kaufmann</A> if you
+  want to join
+  the <a href="http://www.cs.utexas.edu/users/moore/acl2/seminar/"> UT
+  Austin ACL2 Seminar</a> list, which is only for seminar
+  announcements posted by Matt.</li>
 </ul>
 
 <P>
@@ -139,7 +127,7 @@ the U. S. Department of the Treasury.
 <BR><HR><BR>
 <H3><A NAME="License-and-Copyright">License and Copyright</A></H3>
 
-ACL2 Version 6.4 -- A Computational Logic for Applicative Common Lisp<BR>
+ACL2 Version 6.5 -- A Computational Logic for Applicative Common Lisp<BR>
 Copyright (C) 2014, Regents of the University of Texas
 <P>
 This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright

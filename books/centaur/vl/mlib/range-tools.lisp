@@ -6,19 +6,30 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
+(include-book "scopestack")
 (include-book "find-item")
 (include-book "expr-tools")
 (local (include-book "../util/arithmetic"))
@@ -114,57 +125,207 @@ handle both cases.</p>"
     (make-vl-range :msb (vl-make-index (- n 1))
                    :lsb (vl-make-index 0))))
 
+(define vl-simpletype-p ((x vl-datatype-p))
+  (vl-datatype-case x
+    :vl-coretype
+    (and (or (eq x.name :vl-reg)
+             (eq x.name :vl-logic))
+         (atom x.udims)
+         (or (atom x.pdims)
+             (and (atom (cdr x.pdims))
+                  (mbe :logic (vl-range-p (car x.pdims))
+                       :exec (not (eq (car x.pdims) :vl-unsized-dimension))))))
+    :otherwise nil))
+
+(define vl-simpletype->range ((x vl-datatype-p))
+  :guard (vl-simpletype-p x)
+  :returns (range vl-maybe-range-p)
+  :guard-hints (("Goal" :in-theory (enable vl-simpletype-p)))
+  (b* (((vl-coretype x)))
+    (and (consp x.pdims)
+         (mbt (vl-range-p (car x.pdims)))
+         (car x.pdims))))
+
+(define vl-simpletype->signedp ((x vl-datatype-p))
+  :guard (vl-simpletype-p x)
+  :returns (signedp booleanp :rule-classes :type-prescription)
+  :guard-hints (("Goal" :in-theory (enable vl-simpletype-p)))
+  (b* (((vl-coretype x)))
+    x.signedp))
+
+(acl2::def-b*-binder vl-simpletype
+  :body
+  (std::da-patbind-fn 'vl-simpletype
+                      '((range . vl-simpletype->range)
+                        (signedp . vl-simpletype->signedp))
+                      acl2::args acl2::forms acl2::rest-expr))
 
 
-(define vl-slow-find-net/reg-range ((name stringp)
-                                    (mod vl-module-p))
-  :short "Look up the range for a wire or register declaration."
-  :returns (mv (successp    booleanp :rule-classes :type-prescription
-                            "True when @('name') is the name of a wire or register.")
-               (maybe-range vl-maybe-range-p
-                            "The range of the wire, on success."))
-  :hooks ((:fix :args ((mod vl-module-p))))
-  (b* ((find (or (vl-find-netdecl name (vl-module->netdecls mod))
-                 (vl-find-regdecl name (vl-module->regdecls mod))))
-       ((when (not find))
-        (mv nil nil))
-       (tag (tag find))
-       ((when (and (not (eq tag :vl-netdecl))
-                   (not (eq tag :vl-regdecl))))
-        (mv nil nil))
-       (range (if (eq tag :vl-netdecl)
-                  (vl-netdecl->range find)
-                (vl-regdecl->range find))))
-      (mv t range))
+(define vl-simplereg-p ((x vl-vardecl-p))
+  ;; Horrible hack to try to help with porting existing code.
+  ;;
+  ;; This will recognize only variables that are either basic reg (or logic)
+  ;; wires, signed or unsigned, perhaps with a single range, but not with any
+  ;; more complex dimensions.
+  (b* (((vl-vardecl x) x))
+    (and (not x.constp)
+         (not x.varp)
+         (not x.lifetime)
+         (eq (vl-datatype-kind x.type) :vl-coretype)
+         (b* (((vl-coretype x.type) x.type))
+           (and (or (eq x.type.name :vl-reg)
+                    (eq x.type.name :vl-logic))
+                (atom x.type.udims)
+                (or (atom x.type.pdims)
+                    (and (atom (cdr x.type.pdims))
+                         (mbe :logic (vl-range-p (car x.type.pdims))
+                              :exec (not (eq (car x.type.pdims) :vl-unsized-dimension))))))))))
+
+(deflist vl-simplereglist-p (x)
+  :guard (vl-vardecllist-p x)
+  (vl-simplereg-p x))
+
+(define vl-simplereg->signedp ((x vl-vardecl-p))
+  :returns (signedp booleanp :rule-classes :type-prescription)
+  :guard (vl-simplereg-p x)
+  :guard-hints (("Goal" :in-theory (enable vl-simplereg-p)))
+  (b* (((vl-vardecl x) x)
+       ((vl-coretype x.type) x.type))
+    x.type.signedp))
+
+(define vl-simplereg->range ((x vl-vardecl-p))
+  :returns (range vl-maybe-range-p)
+  :guard (vl-simplereg-p x)
+  :prepwork ((local (in-theory (enable vl-simplereg-p vl-maybe-range-p))))
+  (b* (((vl-vardecl x) x)
+       ((vl-coretype x.type) x.type))
+    (and (consp x.type.pdims)
+         (vl-range-fix (car x.type.pdims))))
   ///
-  (defthm vl-range-p-of-vl-slow-find-net/reg-range
-    (equal (vl-range-p (mv-nth 1 (vl-slow-find-net/reg-range name mod)))
-           (if (mv-nth 1 (vl-slow-find-net/reg-range name mod))
-               t
-             nil))))
+  (more-returns
+   (range (equal (vl-range-p range) (if range t nil))
+          :name vl-range-p-of-vl-simplereg->range)))
 
-(define vl-find-net/reg-range ((name   stringp)
-                               (mod    vl-module-p)
-                               (ialist (equal ialist (vl-moditem-alist mod))))
-  :returns (mv successp maybe-range)
+(acl2::def-b*-binder vl-simplereg
+  :body
+  (std::da-patbind-fn 'vl-simplereg
+                      '((range . vl-simplereg->range)
+                        (signedp . vl-simplereg->signedp))
+                      acl2::args acl2::forms acl2::rest-expr))
+
+
+
+(define vl-simplenet-p ((x vl-vardecl-p))
+  ;; Horrible hack to try to help with porting existing code.
+  ;;
+  ;; This will recognize only variables that are nets: signed or unsigned, of
+  ;; any type, perhaps with a single range, but not with any more complex
+  ;; dimensions.
+  (b* (((vl-vardecl x) x)
+       ((unless x.nettype) nil)
+       ((unless (eq (vl-datatype-kind x.type) :vl-coretype)) nil)
+       ((vl-coretype x.type)))
+    (and (eq x.type.name :vl-logic)
+         (atom x.type.udims)
+         (or (atom x.type.pdims)
+             (and (not (eq (car x.type.pdims) :vl-unsized-dimension))
+                  (atom (cdr x.type.pdims)))))))
+
+(define vl-simplenet->range ((x vl-vardecl-p))
+  :returns (range vl-maybe-range-p)
+  :guard (vl-simplenet-p x)
+  :prepwork ((local (in-theory (enable vl-simplenet-p vl-maybe-range-p))))
+  (b* (((vl-vardecl x) x)
+       ((vl-coretype x.type) x.type))
+    (and (consp x.type.pdims)
+         (vl-range-fix (car x.type.pdims))))
+  ///
+  (more-returns
+   (range (equal (vl-range-p range) (if range t nil))
+          :name vl-range-p-of-vl-simplenet->range)))
+
+(define vl-simplenet->signedp ((x vl-vardecl-p))
+  :returns (signedp booleanp :rule-classes :type-prescription)
+  :guard (vl-simplenet-p x)
+  :prepwork ((local (in-theory (enable vl-simplenet-p vl-maybe-range-p))))
+  (b* (((vl-vardecl x) x)
+       ((vl-coretype x.type) x.type))
+    x.type.signedp))
+
+(define vl-simplenet->nettype ((x vl-vardecl-p))
+  :returns (nettype vl-nettypename-p)
+  :guard (vl-simplenet-p x)
+  :prepwork ((local (in-theory (enable vl-simplenet-p vl-maybe-range-p))))
+  (b* (((vl-vardecl x) x))
+    (vl-nettypename-fix x.nettype)))
+
+(acl2::def-b*-binder vl-simplenet
+  :body
+  (std::da-patbind-fn 'vl-simplenet
+                      '((range . vl-simplenet->range)
+                        (signedp . vl-simplenet->signedp)
+                        (nettype . vl-simplenet->nettype))
+                      acl2::args acl2::forms acl2::rest-expr))
+
+
+
+(define vl-simplevar-p ((x vl-vardecl-p))
+  :returns (bool)
+  (or (vl-simplenet-p x)
+      (vl-simplereg-p x))
+  ///
+  (defthm vl-simpletype-p-of-simplevar-type
+    (implies (vl-simplevar-p x)
+             (vl-simpletype-p (vl-vardecl->type x)))
+    :hints(("Goal" :in-theory (enable vl-simpletype-p
+                                      vl-simplevar-p
+                                      vl-simplenet-p
+                                      vl-simplereg-p)))))
+
+(define vl-simplevar->signedp ((x vl-vardecl-p))
+  :returns (signedp booleanp :rule-classes :type-prescription)
+  :guard (vl-simplevar-p x)
+  :prepwork ((local (in-theory (enable vl-simplevar-p))))
+  (vl-simpletype->signedp (vl-vardecl->type x)))
+
+(define vl-simplevar->range ((x vl-vardecl-p))
+  :returns (range vl-maybe-range-p)
+  :guard (vl-simplevar-p x)
+  :prepwork ((local (in-theory (enable vl-simplevar-p))))
+  (vl-simpletype->range (vl-vardecl->type x))
+  ///
+  (more-returns
+   (range (equal (vl-range-p range) (if range t nil))
+          :name vl-range-p-of-vl-simplevar->range)))
+
+(acl2::def-b*-binder vl-simplevar
+  :body
+  (std::da-patbind-fn 'vl-simplevar
+                      '((range . vl-simplevar->range)
+                        (signedp . vl-simplevar->signedp))
+                      acl2::args acl2::forms acl2::rest-expr))
+
+
+
+;; BOZO horrible hack.  For now, we'll make find-net/reg-range only succeed for
+;; simple regs, not for other kinds of variables.  Eventually we will want to
+;; extend this code to deal with other kinds of variables, but for now, e.g.,
+;; we don't want any confusion w.r.t. the range of integers, reals, etc.
+
+(define vl-ss-find-range ((name   stringp) (ss vl-scopestack-p))
+  :returns (mv successp
+               (maybe-range vl-maybe-range-p))
   :enabled t
-  :hooks ((:fix :args ((mod vl-module-p))))
-  :guard-hints(("Goal" :in-theory (enable vl-slow-find-net/reg-range
-                                          vl-find-moduleitem)))
-  (mbe :logic (vl-slow-find-net/reg-range name mod)
-       :exec
-       (b* ((find (vl-fast-find-moduleitem name mod ialist))
-            ((when (not find))
-             (mv nil nil))
-            (tag (tag find))
-            ((when (and (not (eq tag :vl-netdecl))
-                        (not (eq tag :vl-regdecl))))
-             (mv nil nil))
-            (range (if (eq tag :vl-netdecl)
-                       (vl-netdecl->range find)
-                     (vl-regdecl->range find))))
-         (mv t range))))
-
+  (b* ((find (vl-scopestack-find-item name ss))
+       ((unless (and find
+                     (eq (tag find) :vl-vardecl)
+                     (vl-simplevar-p find)))
+        (mv nil nil)))
+    (mv t (vl-simplevar->range find)))
+  ///
+  (more-returns
+   (maybe-range (iff (vl-range-p maybe-range) maybe-range)
+                :name vl-range-p-of-vl-ss-find-range)))
 
 (define vl-range-size ((x vl-range-p))
   :guard (vl-range-resolved-p x)
@@ -190,3 +351,44 @@ otherwise, it is a single-bit wide.</p>"
       1
     (vl-range-size x)))
 
+
+
+;; BOZO horrible hack.  For now, we'll make find-net/reg-range only succeed for
+;; simple regs, not for other kinds of variables.  Eventually we will want to
+;; extend this code to deal with other kinds of variables, but for now, e.g.,
+;; we don't want any confusion w.r.t. the range of integers, reals, etc.
+
+(define vl-slow-find-net/reg-range ((name stringp)
+                                    (mod vl-module-p))
+  :short "Look up the range for a wire or variable declaration."
+  :returns (mv (successp    booleanp :rule-classes :type-prescription
+                            "True when @('name') is the name of a wire or variable.")
+               (maybe-range vl-maybe-range-p
+                            "The range of the wire, on success."))
+  :hooks ((:fix :args ((mod vl-module-p))))
+  (b* ((find (vl-find-vardecl name (vl-module->vardecls mod)))
+       ((unless (and find
+                     (vl-simplevar-p find)))
+        (mv nil nil)))
+    (mv t (vl-simplevar->range find)))
+  ///
+  (more-returns
+   (maybe-range (equal (vl-range-p maybe-range) (if maybe-range t nil))
+                :name vl-range-p-of-vl-slow-find-net/reg-range)))
+
+(define vl-find-net/reg-range ((name   stringp)
+                               (mod    vl-module-p)
+                               (ialist (equal ialist (vl-moditem-alist mod))))
+  :returns (mv successp maybe-range)
+  :enabled t
+  :hooks ((:fix :args ((mod vl-module-p))))
+  :guard-hints(("Goal" :in-theory (enable vl-slow-find-net/reg-range
+                                          vl-find-moduleitem)))
+  (mbe :logic (vl-slow-find-net/reg-range name mod)
+       :exec
+       (b* ((find (vl-fast-find-moduleitem name mod ialist))
+            ((unless (and find
+                          (eq (tag find) :vl-vardecl)
+                          (vl-simplevar-p find)))
+             (mv nil nil)))
+         (mv t (vl-simplevar->range find)))))

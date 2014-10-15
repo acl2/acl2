@@ -1,6 +1,0 @@
-This directory contains:
-
-inst.lisp                 : definition of instructions.
-isa128.lisp               : isa128 definition.
-ma128.lisp                : ma128 definition.
-ma128-isa128.lisp         : WEB proof ma128-isa128

@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
@@ -27,6 +37,7 @@
 (include-book "importance")
 (include-book "linkcheck")
 (include-book "centaur/bridge/to-json" :dir :system)
+(include-book "oslib/copy" :dir :system)
 (set-state-ok t)
 (program)
 
@@ -171,7 +182,7 @@
   (b* ((short    (or (cdr (assoc :short topic)) ""))
        (base-pkg (cdr (assoc :base-pkg topic)))
        (name     (cdr (assoc :name topic)))
-       ((mv short-rchars state) (preprocess-main short nil topics-fal base-pkg state nil))
+       ((mv short-rchars state) (preprocess-main short name topics-fal base-pkg state nil))
        (short-str (str::rchars-to-string short-rchars))
        ((mv err &) (parse-xml short-str))
        (state
@@ -200,7 +211,7 @@
   (b* ((long     (or (cdr (assoc :long topic)) ""))
        (base-pkg (cdr (assoc :base-pkg topic)))
        (name     (cdr (assoc :name topic)))
-       ((mv long-rchars state) (preprocess-main long nil topics-fal base-pkg state nil))
+       ((mv long-rchars state) (preprocess-main long name topics-fal base-pkg state nil))
        (long-str (str::rchars-to-string long-rchars))
        ((mv err &) (parse-xml long-str))
        (state
@@ -444,77 +455,29 @@
         (prog2$ (er hard? 'prepare-fancy-dir
                     "Dir must be a string, but is: ~x0.~%" dir)
                 state))
-       (- (cw "; Preparing directory ~s0.~%" dir))
-
-       (dir/lib        (oslib::catpath dir "lib"))
-       (dir/images     (oslib::catpath dir "images"))
-       (state          (oslib::mkdir! dir))
-       (state          (oslib::mkdir! dir/lib))
-       (state          (oslib::mkdir! dir/images))
 
        (dir-system     (acl2::f-get-global 'acl2::system-books-dir state))
        (xdoc-dir       (oslib::catpath dir-system "xdoc"))
-       (xdoc/classic   (oslib::catpath xdoc-dir "classic"))
        (xdoc/fancy     (oslib::catpath xdoc-dir "fancy"))
-       (xdoc/fancy/lib (oslib::catpath xdoc/fancy "lib"))
 
-       (- (cw "Copying fancy viewer main files...~%"))
-       (state          (stupid-copy-files xdoc/fancy
-                                          (list "collapse_subtopics.png"
-                                                "download.png"
-                                                "expand_subtopics.png"
-                                                "favicon.png"
-                                                "Icon_External_Link.png"
-                                                "index.html"
-                                                "xdoc-home.png"
-                                                "xdoc-logo.png"
-                                                "leaf.png"
-                                                "LICENSE"
-                                                "minus.png"
-                                                "plus.png"
-                                                "print.css"
-                                                "print.html"
-                                                "printer.png"
-                                                "render.js"
-                                                "style.css"
-                                                "view_flat.png"
-                                                "view_tree.png"
-                                                "config.js"
-                                                "xdoc.js"
-                                                "xslt.js"
-                                                "xdoc_index.js"
-                                                "xdataget.pl"
-                                                "xdata2sql.pl"
-                                                "zip.sh"
-                                                ".htaccess"
-                                                )
-                                          dir state))
-
-       (- (cw "Copying fancy viewer library files...~%"))
-       (state          (stupid-copy-files xdoc/fancy/lib
-                                          (list "jquery-2.0.3.js"
-                                                "jquery-2.0.3.min.js"
-                                                "jquery.base64.js"
-                                                "jquery.powertip.css"
-                                                "jquery.powertip.js"
-                                                "jquery.powertip.min.js"
-                                                "lazyload.js"
-                                                "typeahead.js"
-                                                "typeahead.min.js")
-                                          dir/lib state))
-
-       (- (cw "Copying ACL2 tour graphics...~%"))
-       (state          (stupid-copy-files xdoc/classic
-                                          *acl2-graphics*
-                                          dir/images state)))
+       (- (cw "; Preparing directory ~s0.~%" dir))
+       (state          (oslib::rmtree! dir))
+       (state          (oslib::copy! xdoc/fancy dir :recursive t)))
     state))
 
 (defttag :xdoc) ; for sys-call+ call below
 
 (defun run-fancy-zip (dir state)
   (b* ((- (cw "; XDOC: Running zip.sh to create download/ directory.~%"))
+       ;; We formerly used oslib::catpath here.  However, David Rager reported
+       ;; (2014-06-24) that this caused failures when using directories such as
+       ;; "~/public_html", because the ~ doesn't get wildcard expanded in all
+       ;; Lisps, e.g., CCL.  So, we now use ACL2's extend-pathname, since it
+       ;; gets rid of the ~ characters.
+       (dir-fix (acl2::extend-pathname dir "." state))
+       (zip.sh  (acl2::extend-pathname dir-fix "zip.sh" state))
        ((mv erp val state)
-        (time$ (sys-call+ "sh" (list (oslib::catpath dir "zip.sh") dir) state)
+        (time$ (sys-call+ "sh" (list zip.sh dir-fix) state)
                :msg "; XDOC zip.sh: ~st sec, ~sa bytes.~%"))
        ((when erp)
         (er hard? 'run-fancy-zip

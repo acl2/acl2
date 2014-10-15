@@ -1,4 +1,0 @@
-(in-package "ACL2")
-(ld "define-u-package.lsp")
-(certify-book "utils" ? t)
-

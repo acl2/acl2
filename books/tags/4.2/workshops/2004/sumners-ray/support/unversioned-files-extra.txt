@@ -1,6 +1,0 @@
-simp1.rpt
-simp2.rpt
-success.txt
-run.err
-mesi.rpt
-crit.rpt

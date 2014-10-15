@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
@@ -47,9 +57,8 @@
 ; strings gives us a pretty-printed version of the module with the comments
 ; injected in.
 
-
-
 (defsection vl-commentmap-entry-sort
+  :parents (vl-commentmap-p)
   :short "A basic sort for comment maps."
 
   :long "<p>Our pretty-printer uses the following routine in a funny way to get
@@ -134,10 +143,7 @@ we ignore file names.</p>"
 
 (def-vl-ppmap :list portdecllist :elem portdecl)
 (def-vl-ppmap :list assignlist :elem assign)
-(def-vl-ppmap :list netdecllist :elem netdecl)
-(def-vl-ppmap :list regdecllist :elem regdecl)
 (def-vl-ppmap :list vardecllist :elem vardecl)
-(def-vl-ppmap :list eventdecllist :elem eventdecl)
 (def-vl-ppmap :list gateinstlist :elem gateinst)
 (def-vl-ppmap :list alwayslist :elem always)
 (def-vl-ppmap :list initiallist :elem initial)
@@ -189,6 +195,45 @@ we ignore file names.</p>"
                      "</span>"))
           (vl-html-encode-commentmap (cdr x) tabsize))))
 
+(define vl-remove-empty-commentmap-entries-exec ((x vl-commentmap-p)
+                                                 (nrev))
+  :measure (len (vl-commentmap-fix x))
+  (b* ((x (vl-commentmap-fix x))
+       ((when (atom x))
+        (nrev-fix nrev))
+       ((cons ?loc guts) (car x))
+       ((when (equal guts ""))
+        (vl-remove-empty-commentmap-entries-exec (cdr x) nrev))
+       (nrev (nrev-push (car x) nrev)))
+    (vl-remove-empty-commentmap-entries-exec (cdr x) nrev)))
+
+(define vl-remove-empty-commentmap-entries ((x vl-commentmap-p))
+  ;; Removing empty entries helps with the newline insertion stuff below,
+  ;; especially in the case of port declarations where we sometimes don't print
+  ;; a net declaration because it's got a corresponding port.
+  :returns (new-x vl-commentmap-p)
+  :measure (len (vl-commentmap-fix x))
+  :verify-guards nil
+  (mbe :logic
+       (b* ((x (vl-commentmap-fix x))
+            ((when (atom x))
+             nil)
+            ((cons ?loc guts) (car x))
+            ((when (equal guts ""))
+             (vl-remove-empty-commentmap-entries (cdr x))))
+         (cons (car x)
+               (vl-remove-empty-commentmap-entries (cdr x))))
+       :exec
+       (with-local-nrev
+         (vl-remove-empty-commentmap-entries-exec x nrev)))
+  ///
+  (defthm vl-remove-empty-commentmap-entries-exec-removal
+    (equal (vl-remove-empty-commentmap-entries-exec x nrev)
+           (append nrev
+                   (vl-remove-empty-commentmap-entries x)))
+    :hints(("Goal" :in-theory (enable vl-remove-empty-commentmap-entries-exec))))
+  (verify-guards vl-remove-empty-commentmap-entries))
+
 (define vl-pp-encoded-commentmap ((x vl-commentmap-p) &key (ps 'ps))
 
 ; The use of vl-print-markup throughout this function is somewhat subtle.  When
@@ -199,30 +244,26 @@ we ignore file names.</p>"
 ; re-encoding of the encoding.
   :hooks nil
 
-  (cond ((atom x)
-         ps)
-        ((atom (cdr x))
-         (vl-print-markup (cdr (first x))))
-        ((atom (cddr x))
-         (vl-ps-seq (vl-print-markup (cdr (first x)))
-                    (vl-print-markup (cdr (second x)))))
-        (t
-         (let ((first  (first x))
-               (second (second x))
-               (third  (third x)))
-           (if (and (equal (car first) (car second))
-                    (not (equal (car first) (car third))))
-               ;; To make our output nicer, we insert a newline if there are
-               ;; multiple elements at the same location after printing those
-               ;; elements.
-               (vl-ps-seq (vl-print-markup (cdr (first x)))
-                          (vl-print-markup (cdr (second x)))
-                          (vl-println "")
-                          (vl-pp-encoded-commentmap (cddr x)))
-             ;; Otherwise, first and second are unrelated or part of the same
-             ;; group as third, so don't insert a newline.
-             (vl-ps-seq (vl-print-markup (cdr (first x)))
-                        (vl-pp-encoded-commentmap (cdr x))))))))
+  (b* (((when (atom x))
+        ps)
+       ((when (atom (cdr x)))
+        (vl-print-markup (cdr (first x))))
+       ((when (atom (cddr x)))
+        (vl-ps-seq (vl-print-markup (cdr (first x)))
+                   (vl-print-markup (cdr (second x)))))
+       ((list first second third) x)
+       ((when (and (equal (car first) (car second))
+                   (not (equal (car first) (car third)))))
+        ;; To make our output nicer, we insert a newline if there are multiple
+        ;; elements at the same location after printing those elements.
+        (vl-ps-seq (vl-print-markup (cdr (first x)))
+                   (vl-print-markup (cdr (second x)))
+                   (vl-println "")
+                   (vl-pp-encoded-commentmap (cddr x)))))
+    ;; Otherwise, first and second are unrelated or part of the same
+    ;; group as third, so don't insert a newline.
+    (vl-ps-seq (vl-print-markup (cdr (first x)))
+               (vl-pp-encoded-commentmap (cdr x)))))
 
 (define vl-make-item-map-for-ppc-module
   ((x        vl-module-p)
@@ -245,18 +286,15 @@ we ignore file names.</p>"
 
        (imap nil)
 
-       ;; Note: portdecls need to come before netdecls, so that after stable
+       ;; Note: portdecls need to come before vardecls, so that after stable
        ;; sorting any implicit portdecls are still listed before their
-       ;; correspondign netdecl; Verilog-XL won't tolerate it the other way;
-       ;; see make-implicit-wires for more details.  The netdecls should come
+       ;; correspondign vardecl; Verilog-XL won't tolerate it the other way;
+       ;; see make-implicit-wires for more details.  The vardecls should come
        ;; before any instances/assignments, so that things are declared before
        ;; use.
        ((mv imap ps) (vl-paramdecllist-ppmap x.paramdecls imap))
        ((mv imap ps) (vl-portdecllist-ppmap x.portdecls imap))
-       ((mv imap ps) (vl-regdecllist-ppmap x.regdecls imap))
        ((mv imap ps) (vl-vardecllist-ppmap x.vardecls imap))
-       ((mv imap ps) (vl-eventdecllist-ppmap x.eventdecls imap))
-       ((mv imap ps) (vl-netdecllist-ppmap x.netdecls imap))
        ((mv imap ps) (vl-fundecllist-ppmap x.fundecls imap))
        ((mv imap ps) (vl-taskdecllist-ppmap x.taskdecls imap))
        ((mv imap ps) (vl-assignlist-ppmap x.assigns imap))
@@ -307,7 +345,8 @@ submodules in HTML mode.</p>"
                    comments))
        (guts     (cwtime (vl-commentmap-entry-sort (append comments imap))
                          :mintime 1/2
-                         :name vl-commentmap-entry-sort)))
+                         :name vl-commentmap-entry-sort))
+       (guts     (vl-remove-empty-commentmap-entries guts)))
 
     (vl-ps-seq (vl-when-html (vl-println-markup "<div class=\"vl_src\">"))
                (vl-pp-atts x.atts)

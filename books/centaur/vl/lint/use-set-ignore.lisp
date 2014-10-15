@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
@@ -141,23 +151,22 @@ therefore also somewhat unreliable!</p>"
   :resultp-of-nil t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
-        (kwd := (vl-match-token :vl-idtoken))
-        (unless (equal (vl-idtoken->name kwd) "use_set_ignore")
-          (return-raw
-           (vl-parse-error "Expected use_set_ignore keyword.")))
-        (:= (vl-match-token :vl-lparen))
-        (exprs := (vl-parse-1+-lvalues-separated-by-commas))
-        (:= (vl-match-token :vl-rparen))
-        (:= (vl-match-token :vl-semi))
-        (return exprs)))
+  (seq tokstream
+       (kwd := (vl-match-token :vl-idtoken))
+       (unless (equal (vl-idtoken->name kwd) "use_set_ignore")
+         (return-raw
+          (vl-parse-error "Expected use_set_ignore keyword.")))
+       (:= (vl-match-token :vl-lparen))
+       (exprs := (vl-parse-1+-lvalues-separated-by-commas))
+       (:= (vl-match-token :vl-rparen))
+       (:= (vl-match-token :vl-semi))
+       (return exprs)))
 
 (define us-analyze-comment
 ; Ugh, this thing has just grown to require everything...
   ((x        stringp)
    (loc      vl-location-p)
-   (mod      vl-module-p)
-   (ialist   (equal ialist (vl-moditem-alist mod)))
+   (ss       vl-scopestack-p)
    (walist   vl-wirealist-p)
    (warnings vl-warninglist-p))
   :returns
@@ -198,10 +207,11 @@ therefore also somewhat unreliable!</p>"
 
        ;; Parsing...
        ((mv tokens ?cmap) (vl-kill-whitespace-and-comments tokens))
-       ((mv err exprs tokens ?pwarnings)
-        (us-parse-comment :tokens tokens
-                          :warnings nil
-                          :config *vl-default-loadconfig*))
+       ((local-stobjs tokstream) (mv warn res tokstream))
+       (tokstream (vl-tokstream-update-tokens tokens))
+       ((mv err exprs tokstream)
+        (us-parse-comment :config *vl-default-loadconfig*))
+       (tokens (vl-tokstream->tokens))
        ((when err)
         (b* ((details (with-local-ps (if (and (consp err)
                                               (stringp (car err)))
@@ -211,7 +221,7 @@ therefore also somewhat unreliable!</p>"
                     :msg (cat "Parsing error in comment at " locstr
                               ", which mentions use_set_ignore.  " details)
                     :args nil)
-              nil)))
+              nil tokstream)))
        (warnings
         (if (atom tokens)
             (ok)
@@ -224,7 +234,7 @@ therefore also somewhat unreliable!</p>"
        ;; sizes.  There's no context, and these should just be simple identifiers,
        ;; so just use exprlist-size.
        ((mv ?okp size-warnings exprs)
-        (vl-exprlist-size exprs mod ialist *fake-modelement* nil))
+        (vl-exprlist-size exprs ss *fake-modelement* nil))
        (size-warnings (vl-warninglist-change-types :use-set-syntax-error size-warnings))
        (size-warnings (vl-prefix-warnings
                        (cat "Error sizing wires for use_set_ignore directive at " locstr ".  ")
@@ -242,7 +252,7 @@ therefore also somewhat unreliable!</p>"
                       bit-warnings))
        (warnings (append bit-warnings (vl-warninglist-fix warnings))))
 
-    (mv warnings bits))
+    (mv warnings bits tokstream))
   ///
   (defmvtypes us-analyze-comment (nil true-listp))
 
@@ -250,14 +260,13 @@ therefore also somewhat unreliable!</p>"
    (defthm us-analyze-comment-grows-warnings
      ;; Since the warning handling above is subtle, I want to prove this
      ;; to make sure I didn't drop warnings.
-     (let ((ret (us-analyze-comment x loc mod ialist walist warnings)))
+     (let ((ret (us-analyze-comment x loc ss walist warnings)))
        (subsetp-equal (vl-warninglist-fix warnings)
                       (mv-nth 0 ret))))))
 
 (define us-analyze-commentmap
   ((x        vl-commentmap-p)
-   (mod      vl-module-p)
-   (ialist   (equal ialist (vl-moditem-alist mod)))
+   (ss       vl-scopestack-p)
    (walist   vl-wirealist-p)
    (warnings vl-warninglist-p))
   :returns
@@ -267,9 +276,9 @@ therefore also somewhat unreliable!</p>"
         (mv (ok) nil))
        ((cons loc str) (car x))
        ((mv warnings ignore-bits1)
-        (us-analyze-comment str loc mod ialist walist warnings))
+        (us-analyze-comment str loc ss walist warnings))
        ((mv warnings ignore-bits2)
-        (us-analyze-commentmap (cdr x) mod ialist walist warnings)))
+        (us-analyze-commentmap (cdr x) ss walist warnings)))
     (mv warnings (append ignore-bits1 ignore-bits2)))
   ///
   (defmvtypes us-analyze-commentmap (nil true-listp)))

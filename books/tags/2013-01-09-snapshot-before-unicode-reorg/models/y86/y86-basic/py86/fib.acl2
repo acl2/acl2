@@ -1,1 +1,0 @@
-(certify-book "fib" 0 t :skip-proofs-okp t)

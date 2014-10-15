@@ -10,6 +10,7 @@
 (include-book "leftist-trees/top")
 
 (defxdoc projects
+  :parents (top)
   :short "The @('projects') directory of the Community Books contains a variety
 of projects that have been carried out with @(see acl2).")
 

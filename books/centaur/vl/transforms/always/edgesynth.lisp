@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
@@ -47,7 +57,7 @@
          :hints(("Goal" :in-theory (enable vl-atomicstmt-p)))))
 
 (defxdoc edgesynth
-  :parents (synthalways)
+  :parents (always-top)
   :short "Synthesize simple edge-triggered @('always') blocks into primitives."
 
   :long "<p>This is our \"final,\" transformation for synthesizing
@@ -67,9 +77,8 @@ some of the challenges and our general approach below.</p>
 <h3>Preliminaries: Edge-Triggered Blocks, Clocks</h3>
 
 <p><u>Definition.</u> We say that an @('always') block is <b>edge-triggered</b>
-when it contains a <see topic='@(url timing-statements)'>timing-statement</see>
-whose control is a list of @('posedge') or @('negedge') events.  As
-examples:</p>
+when it contains a @(see vl-timingstmt) whose control is a list of @('posedge')
+or @('negedge') events.  As examples:</p>
 
 @({
  always @(posedge clk) ... ;                  // edge-triggered
@@ -420,7 +429,6 @@ instances of these primitives.</p>")
 ; -----------------------------------------------------------------------------
 
 (defsection edge-tables
-  :parents (edgesynth)
   :short "Data structure that conveniently summarizes a sensitivity list."
   :long "<p>In @(see edgesynth) we only support always blocks with simple event
 controls such as</p>
@@ -591,10 +599,11 @@ statements, non-blocking assignments to whole identifiers."
            (vl-edgesynth-stmtlist-p (cdr x)))))
 
   ///
-  (deflist vl-edgesynth-stmtlist-p (x)
-    (vl-edgesynth-stmt-p x)
-    :already-definedp t
-    :true-listp t)
+  (xdoc::without-xdoc
+    (deflist vl-edgesynth-stmtlist-p (x)
+      (vl-edgesynth-stmt-p x)
+      :already-definedp t
+      :true-listp t))
 
   (defthm vl-stmt-p-when-vl-edgesynth-stmt-p
     (implies (vl-edgesynth-stmt-p x)
@@ -794,14 +803,14 @@ statements, non-blocking assignments to whole identifiers."
 
 (define vl-edgesynth-simple-delay-p ((x vl-maybe-delayoreventcontrol-p))
   :short "Recognizer for empty delays and simple integer delays like @('#5')."
-  :parents (vl-edgesynth-compatible-delays-p)
+  :parents (vl-edgesynth-delays-okp)
   (or (not x)
       (and (mbe :logic (vl-delaycontrol-p x)
                 :exec (eq (tag x) :vl-delaycontrol))
            (vl-expr-resolved-p (vl-delaycontrol->value x)))))
 
 (define vl-edgesynth-simple-delay->amount
-  :parents (vl-edgesynth-compatible-delays-p)
+  :parents (vl-edgesynth-delays-okp)
   :short "Extract the delay amount from a simple enough delay, if any."
   ((x (and (vl-maybe-delayoreventcontrol-p x)
            (vl-edgesynth-simple-delay-p x))))
@@ -812,12 +821,14 @@ statements, non-blocking assignments to whole identifiers."
 
 (deflist vl-edgesynth-simple-delays-p (x)
   (vl-edgesynth-simple-delay-p x)
-  :guard (vl-assigncontrols-p x))
+  :guard (vl-assigncontrols-p x)
+  :parents (vl-edgesynth-delays-okp))
 
 (defprojection vl-edgesynth-simple-delays->amounts (x)
   (vl-edgesynth-simple-delay->amount x)
   :guard (and (vl-assigncontrols-p x)
-              (vl-edgesynth-simple-delays-p x)))
+              (vl-edgesynth-simple-delays-p x))
+  :parents (vl-edgesynth-delays-okp))
 
 (define vl-edgesynth-delays-okp
   :short "Check that internal delays on assignments are simple enough to
@@ -1249,7 +1260,7 @@ are evaluated.</p>"
                       (vl-edgesynth-stmt-p false-branch))
                  "Should be @('q <= d2') or a null statement.")
    (nf           vl-namefactory-p)
-   (netdecls     vl-netdecllist-p)
+   (vardecls     vl-vardecllist-p)
    (assigns      vl-assignlist-p))
   :returns
   (mv (new-stmt vl-edgesynth-stmt-p
@@ -1260,13 +1271,13 @@ are evaluated.</p>"
                           (force (vl-atomicstmt-p false-branch))))
       (nf       vl-namefactory-p
                 :hyp (force (vl-namefactory-p nf)))
-      (netdecls vl-netdecllist-p :hyp :fguard)
+      (vardecls vl-vardecllist-p :hyp :fguard)
       (assigns  vl-assignlist-p :hyp :fguard))
   :long "<p>Assumption: any assignments are to the same register.</p>"
   (b* (((when (and (vl-nullstmt-p true-branch)
                    (vl-nullstmt-p false-branch)))
         ;; Probably silly: if (condition) null null --> null
-        (mv true-branch nf netdecls assigns))
+        (mv true-branch nf vardecls assigns))
 
        ;; At least one of true-branch or false-branch is an assignment.  If
        ;; they aren't both assignments, the null statement can become Q <= Q.
@@ -1297,11 +1308,11 @@ are evaluated.</p>"
        (false-assign               (make-vl-assign :lvalue false-expr
                                                    :expr   false-rhs
                                                    :loc    loc))
-       (netdecls (list* true-decl false-decl netdecls))
+       (vardecls (list* true-decl false-decl vardecls))
        (assigns  (list* true-assign false-assign assigns))
        (new-rhs  (vl-safe-qmark-expr condition true-expr false-expr))
        (new-stmt (change-vl-assignstmt base-assign :expr new-rhs)))
-    (mv new-stmt nf netdecls assigns)))
+    (mv new-stmt nf vardecls assigns)))
 
 (define vl-edgesynth-flatten-data-ifs
   :short "Flatten out bottom-level if tests about data signals, such as
@@ -1312,7 +1323,7 @@ are evaluated.</p>"
                    (vl-edgesynth-stmt-p x)))
    (edgetable vl-edgetable-p)
    (nf        vl-namefactory-p)
-   (netdecls  vl-netdecllist-p)
+   (vardecls  vl-vardecllist-p)
    (assigns   vl-assignlist-p))
   :returns
   (mv (new-stmt vl-edgesynth-stmt-p
@@ -1320,7 +1331,7 @@ are evaluated.</p>"
       (nf       vl-namefactory-p
                 :hyp (and (force (vl-edgesynth-stmt-p x))
                           (force (vl-namefactory-p nf))))
-      (netdecls)
+      (vardecls)
       (assigns))
   :measure (vl-stmt-count x)
   :hints(("Goal" :in-theory (disable (force))))
@@ -1345,16 +1356,16 @@ part of this is that we can't really extend the @(see vl-delta-p), since we're
 not sure everything's going to work out yet.</p>"
 
   (b* (((when (vl-atomicstmt-p x))
-        (mv x nf netdecls assigns))
+        (mv x nf vardecls assigns))
        ((when (vl-ifstmt-p x))
         (b* (((vl-ifstmt x) x)
              ((mv type ?guts) (vl-edgesynth-classify-iftest x.condition edgetable))
-             ((mv true nf netdecls assigns)
+             ((mv true nf vardecls assigns)
               (vl-edgesynth-flatten-data-ifs x.truebranch edgetable
-                                             nf netdecls assigns))
-             ((mv false nf netdecls assigns)
+                                             nf vardecls assigns))
+             ((mv false nf vardecls assigns)
               (vl-edgesynth-flatten-data-ifs x.falsebranch edgetable
-                                             nf netdecls assigns))
+                                             nf vardecls assigns))
 
              ((unless (and (equal type :data)
                            (vl-atomicstmt-p true)
@@ -1366,26 +1377,26 @@ not sure everything's going to work out yet.</p>"
               (mv (change-vl-ifstmt x
                                     :truebranch true
                                     :falsebranch false)
-                  nf netdecls assigns)))
+                  nf vardecls assigns)))
           (vl-edgesynth-merge-data-ifs x.condition true false
-                                       nf netdecls assigns)))
+                                       nf vardecls assigns)))
        ((when (vl-blockstmt-p x))
         (raise "Thought we already got rid of block statements!")
-        (mv x nf netdecls assigns)))
+        (mv x nf vardecls assigns)))
     ;; No other expressions are supported.
     (raise "Should be impossible.")
-    (mv x nf netdecls assigns))
+    (mv x nf vardecls assigns))
 
   ///
   ;; Nasty because we have to prove them together
   (defthm vl-edgesynth-flatten-data-ifs-basics
     (implies (and (force (vl-edgesynth-stmt-p x))
                   (force (vl-namefactory-p nf))
-                  (force (vl-netdecllist-p netdecls))
+                  (force (vl-vardecllist-p vardecls))
                   (force (vl-assignlist-p assigns)))
-             (b* (((mv ?new-x ?nf ?netdecls ?assigns)
-                   (vl-edgesynth-flatten-data-ifs x edgetable nf netdecls assigns)))
-               (and (vl-netdecllist-p netdecls)
+             (b* (((mv ?new-x ?nf ?vardecls ?assigns)
+                   (vl-edgesynth-flatten-data-ifs x edgetable nf vardecls assigns)))
+               (and (vl-vardecllist-p vardecls)
                     (vl-assignlist-p assigns)))))
 
   (verify-guards vl-edgesynth-flatten-data-ifs))
@@ -1637,7 +1648,7 @@ corresponding edges.</p>"
                                                   :loc loc))
        (delta (change-vl-delta delta
                                :nf nf
-                               :netdecls (cons temp-decl delta.netdecls)
+                               :vardecls (cons temp-decl delta.vardecls)
                                :assigns  (cons temp-assign delta.assigns))))
     (mv (cons temp-expr rest) delta))
   ///
@@ -1679,7 +1690,7 @@ where we convert any negedge signals into posedge signals.</p>"
                                   :loc loc))
        (delta (change-vl-delta delta
                                :nf nf
-                               :netdecls (cons temp-decl delta.netdecls)
+                               :vardecls (cons temp-decl delta.vardecls)
                                :assigns (cons temp-assign delta.assigns))))
     (mv (cons temp-expr rest) delta))
   ///
@@ -1755,7 +1766,7 @@ where we convert any negedge signals into posedge signals.</p>"
     (change-vl-delta delta
                      :nf nf
                      :assigns  (cons main-ass delta.assigns)
-                     :netdecls (cons delfree-decl delta.netdecls)
+                     :vardecls (cons delfree-decl delta.vardecls)
                      :modinsts (cons inst delta.modinsts)
                      :addmods  (append addmods delta.addmods)))
 
@@ -1774,7 +1785,7 @@ where we convert any negedge signals into posedge signals.</p>"
             "Always block to synthesize.")
    (scary   string-listp
             "The @(see vl-always-scary-regs) for this module.")
-   (regs    vl-regdecllist-p
+   (vars    vl-vardecllist-p
             "All of the registers in the module.")
    (cvtregs string-listp
             "Accumulator for the names of registers to convert into nets.")
@@ -1791,6 +1802,11 @@ where we convert any negedge signals into posedge signals.</p>"
   ;; :irrelevant-formals-ok t
   ;; :guard-debug t
   (b* (((vl-always x) x)
+       ((unless (or (eq x.type :vl-always)
+                    (eq x.type :vl-always-ff)))
+        ;; Don't touch this block because it's combinational or latch logic.
+        (mv x cvtregs delta))
+
        ((mv body ?ctrl edges) (vl-match-always-at-some-edges x.stmt))
        ((unless (and body
                      (vl-edgesynth-stmt-p body)))
@@ -1856,7 +1872,7 @@ where we convert any negedge signals into posedge signals.</p>"
 
        (target-name   (vl-idexpr->name target-lvalue))
        ;; Make sure the target register is simple enough to handle.
-       (w (vl-always-check-reg target-name regs x))
+       (w (vl-always-check-reg target-name vars x))
        ((when w)
         ;; The warning explains why we are failing.
         (mv x cvtregs (vl-warn-delta w)))
@@ -1919,10 +1935,10 @@ where we convert any negedge signals into posedge signals.</p>"
        ;; some last minute rewriting to try to support additional blocks.
 
 
-       ((mv body new-nf new-netdecls new-assigns)
+       ((mv body new-nf new-vardecls new-assigns)
         (vl-edgesynth-flatten-data-ifs body edgetable
                                        (vl-delta->nf delta)
-                                       (vl-delta->netdecls delta)
+                                       (vl-delta->vardecls delta)
                                        (vl-delta->assigns delta)))
 
        ;; Subtle: if we fail we don't want to change the delta.  But we have
@@ -1931,7 +1947,7 @@ where we convert any negedge signals into posedge signals.</p>"
        (delta     (change-vl-delta delta :nf new-nf))
        (new-delta (change-vl-delta delta
                                    :nf       new-nf
-                                   :netdecls new-netdecls
+                                   :vardecls new-vardecls
                                    :assigns  new-assigns))
 
        (- (and *edgesynth-debug*
@@ -2002,7 +2018,7 @@ where we convert any negedge signals into posedge signals.</p>"
   :short "Extends @(see vl-always-edgesynth) to a list of always blocks."
   ((x          vl-alwayslist-p)
    (scary-regs string-listp)
-   (regs       vl-regdecllist-p)
+   (vars       vl-vardecllist-p)
    (cvtregs    string-listp)
    (delta      vl-delta-p)
    &key vecp)
@@ -2012,9 +2028,9 @@ where we convert any negedge signals into posedge signals.</p>"
   (b* (((when (atom x))
         (mv nil cvtregs delta))
        ((mv new-car? cvtregs delta)
-        (vl-always-edgesynth (car x) scary-regs regs cvtregs delta :vecp vecp))
+        (vl-always-edgesynth (car x) scary-regs vars cvtregs delta :vecp vecp))
        ((mv new-cdr cvtregs delta)
-        (vl-alwayslist-edgesynth (cdr x) scary-regs regs cvtregs delta :Vecp vecp))
+        (vl-alwayslist-edgesynth (cdr x) scary-regs vars cvtregs delta :vecp vecp))
        (new-x (if new-car?
                   (cons new-car? new-cdr)
                 new-cdr)))
@@ -2092,32 +2108,27 @@ where we convert any negedge signals into posedge signals.</p>"
 
        (delta      (vl-starting-delta x))
        (delta      (change-vl-delta delta
-                                    ;; We'll strictly add netdecls, modinsts,
-                                    ;; and assigns, so pre-populate them.
-                                    :netdecls x.netdecls
+                                    ;; We'll strictly add modinsts and assigns,
+                                    ;; so pre-populate them.
                                     :modinsts x.modinsts
                                     :assigns  x.assigns))
        (scary-regs (vl-always-scary-regs x.alwayses))
        (cvtregs    nil)
 
        ((mv new-alwayses cvtregs delta)
-        (vl-alwayslist-edgesynth x.alwayses scary-regs x.regdecls
+        (vl-alwayslist-edgesynth x.alwayses scary-regs x.vardecls
                                  cvtregs delta :vecp vecp))
 
        ((vl-delta delta) (vl-free-delta delta))
 
-       ((mv regdecls-to-convert new-regdecls)
-        ;; We already know all of the cvtregs are among the regdecls and have
-        ;; no arrdims.  So, we can just freely convert look them up and convert
-        ;; them here.
-        (vl-filter-regdecls cvtregs x.regdecls))
+       ((mv fixed-vardecls fixed-portdecls)
+        (vl-convert-regs cvtregs x.vardecls x.portdecls))
 
-       (new-netdecls (append (vl-always-convert-regs regdecls-to-convert)
-                             delta.netdecls))
+       (final-vardecls (append-without-guard delta.vardecls fixed-vardecls))
 
        (new-x (change-vl-module x
-                                :netdecls new-netdecls
-                                :regdecls new-regdecls
+                                :vardecls final-vardecls
+                                :portdecls fixed-portdecls
                                 :assigns  delta.assigns
                                 :modinsts delta.modinsts
                                 :alwayses new-alwayses
@@ -2157,8 +2168,7 @@ where we convert any negedge signals into posedge signals.</p>"
   :short "Top-level @(see edgesynth) transform."
   ((x vl-design-p) &key vecp)
   :returns (new-x vl-design-p)
-  (b* ((x             (vl-design-fix x))
-       ((vl-design x) x)
+  (b* (((vl-design x) x)
        (mods          (vl-modulelist-edgesynth x.mods :vecp vecp)))
     (change-vl-design x :mods mods)))
 

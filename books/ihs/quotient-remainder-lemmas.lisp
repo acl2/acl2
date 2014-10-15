@@ -1,19 +1,6 @@
 ; quotient-remainder-lemmas.lisp  --  facts about FLOOR, MOD, TRUNCATE and REM
 ; Copyright (C) 1997  Computational Logic, Inc.
-
-; This book is free software; you can redistribute it and/or modify
-; it under the terms of the GNU General Public License as published by
-; the Free Software Foundation; either version 2 of the License, or
-; (at your option) any later version.
-
-; This book is distributed in the hope that it will be useful,
-; but WITHOUT ANY WARRANTY; without even the implied warranty of
-; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-; GNU General Public License for more details.
-
-; You should have received a copy of the GNU General Public License
-; along with this book; if not, write to the Free Software
-; Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
 ;;;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ;;;
@@ -878,7 +865,9 @@
 (in-theory (disable floor-as-truncate))
 
 (defthm floor-mod-elim
-  (implies (force (acl2-numberp x))
+  ;; [Jared] modified on 2014-07-29 to not forcibly assume acl2-numberp, to
+  ;; avoid name clash with arithmetic-5.
+  (implies (acl2-numberp x)
 	   (equal (+ (mod x y) (* y (floor x y))) x))
   :rule-classes (:rewrite :elim)
   :hints (("Goal" :in-theory (enable mod)))
@@ -889,20 +878,39 @@
   :cited-by mod-lemmas")
 
 (defthm floor-=-x/y
-  (implies
-   (qr-guard x y)
-   (equal (equal (floor x y) (/ x y))
-	  (integerp (/ x y))))
-  :rule-classes
-  ((:rewrite)
-   (:generalize)
-   (:rewrite
-    :corollary
-    (implies
-     (and (equal r (/ x y))
-	  (integerp r)
-	  (qr-guard x y))
-     (equal (floor x y) r)))   )
+  ;; [Jared]: modified on 2014-07-29 to remove unnecessary (qr-guard x y)
+  ;; hypothesis and for compatibility with arithmetic-5.
+  (equal (equal (floor x y) (/ x y))
+         (integerp (/ x y)))
+  ;; The original IHS rule had the following rule classes:
+  ;;
+  ;; ((:rewrite)
+  ;;  (:generalize)
+  ;;  (:rewrite :corollary (implies (and (equal r (/ x y))
+  ;;                                     (integerp r))
+  ;;                                (equal (floor x y) r))))
+  ;;
+  ;; The original arithmetic-5 rule has the following rule-classes:
+  ;;
+  ;; (:rewrite :corollary (implies (integerp (/ x y))
+  ;;                               (equal (floor x y)
+  ;;                                      (/ x y))))
+  ;; (:rewrite :corollary (implies (equal (* x (/ y)) z)
+  ;;                               (equal (equal (floor x y) z)
+  ;;                                      (integerp z))))
+  ;;
+  ;; Solution: DO ALL THE THINGS.
+  :rule-classes ((:rewrite)
+                 (:generalize)
+                 (:rewrite :corollary (implies (and (equal r (/ x y))
+                                                    (integerp r))
+                                               (equal (floor x y) r)))
+                 (:rewrite :corollary (implies (integerp (/ x y))
+                                               (equal (floor x y)
+                                                      (/ x y))))
+		 (:rewrite :corollary (implies (equal (* x (/ y)) z)
+                                               (equal (equal (floor x y) z)
+                                                      (integerp z)))))
   :hints (("Goal" :in-theory
 	   (set-difference-theories (enable floor equal-*-x-y-x)
 				    '(commutativity-of-*))))
@@ -1219,7 +1227,9 @@
        :in-theory (e/d (prefer-*-to-/) (<-*-left-cancel))
        :use (:instance <-*-left-cancel (z y) (x x) (y (- (/ x y) 1)))))))
 
-  (defthm justify-floor-recursion
+  (defthm floor-recursion
+    ;; [Jared]: renamed from justify-floor-recursion to simply floor-recursion on
+    ;; 2014-07-29, to avoid name conflict with arithmetic-5
     (implies
      (qr-guard x y)
      (and
@@ -1543,8 +1553,8 @@
 (local (in-theory (disable floor-bounds floor-type-1 floor-type-2
 			   floor-type-3 floor-type-4 mod-bounds mod-type)))
 
-;  These LOCAL theorems will be superceded by CANCEL-FLOOR-+,
-;  CANCEL-FLOOR-+-3, CANCEL-MOD-+, and CANCEL-MOD-+-3.
+;  These LOCAL theorems will be superceded by CANCEL-FLOOR-+-BASIC,
+;  CANCEL-FLOOR-+-3, CANCEL-MOD-+-BASIC, and CANCEL-MOD-+-3.
 
 (local
  (defthm floor-x+i*y-y
@@ -1755,7 +1765,11 @@
   ~/~/~/
   :cited-by integer-ratio-lemmas"))
 
-(defthm cancel-floor-+
+(defthm cancel-floor-+-basic
+  ;; [Jared] modified on 2014-07-29: this was originally called CANCEL-FLOOR-+
+  ;; but that name clashes with an arithmetic-5 rule that appears to be more
+  ;; sophisticated (it uses bind-free to find cancelling addends, etc.), so I
+  ;; am renaming this to cancel-floor-+-basic.
   (implies
    (and (equal i (/ x z))
 	(integerp i)
@@ -1790,15 +1804,19 @@
 	  (+ i (floor (+ w x) z))))
   :hints
   (("Goal"
-    :in-theory (disable cancel-floor-+)
-    :use ((:instance cancel-floor-+ (x y) (y (+ w x)) (z z)))))
+    :in-theory (disable cancel-floor-+-basic)
+    :use ((:instance cancel-floor-+-basic (x y) (y (+ w x)) (z z)))))
   :doc ":doc-section floor-lemmas
   Rewrite: (FLOOR (+ w x y) z) = y/z + (FLOOR (+ w x) z), when y/z is an
   integer.
   ~/~/~/
   :cited-by integer-ratio-lemmas")
 
-(defthm cancel-mod-+
+(defthm cancel-mod-+-basic
+  ;; [Jared] modified on 2014-07-29: this was originally called CANCEL-MOD-+
+  ;; but that name clashes with an arithmetic-5 rule that appears to be more
+  ;; sophisticated (it uses bind-free to find cancelling addends, etc.), so I
+  ;; am renaming this to cancel-floor-+-basic.
   (implies
    (and (equal i (/ x z))
 	(integerp i)
@@ -1833,8 +1851,8 @@
 	  (mod (+ w x) z)))
   :hints
   (("Goal"
-    :in-theory (disable cancel-mod-+)
-    :use ((:instance cancel-mod-+ (x y) (y (+ w x)) (z z)))))
+    :in-theory (disable cancel-mod-+-basic)
+    :use ((:instance cancel-mod-+-basic (x y) (y (+ w x)) (z z)))))
   :doc ":doc-section mod-lemmas
   Rewrite: (MOD (+ w x y) z) = (MOD (+ w x) z), when y/z is an integer.
   ~/~/~/
@@ -1946,7 +1964,10 @@
 ;;;
 ;;;    for J > 0.
 
+
 (defthm rationalp-mod
+  ;; [Jared] bozo: arithmetic-5 proves a conflicting, better rule with no hyp
+  ;; about Y.  I haven't yet spent the time to improve these rules to match.
   (implies (and (rationalp x)
 		(rationalp y))
 	   (rationalp (mod x y)))
@@ -1955,6 +1976,8 @@
 
 #+non-standard-analysis
 (defthm realp-mod
+  ;; [Jared] bozo: arithmetic-5 proves a conflicting, better rule with no hyp
+  ;; about Y.  I haven't yet spent the time to improve these rules to match.
   (implies (and (realp x)
 		(realp y))
 	   (realp (mod x y)))

@@ -1,3 +1,0 @@
-(include-book "../lists/lists")
-(include-book "bag-exports")
-(certify-book "basic" ? t)

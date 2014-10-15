@@ -19,3 +19,6 @@ startjob.*
 centaur/manual/
 *.fasl
 TAGS
+.#*
+*#
+centaur/quicklisp/asdf-home/cache/common-lisp/

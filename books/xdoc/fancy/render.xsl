@@ -11,15 +11,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
@@ -29,7 +39,27 @@
 -->
 
 <xsl:template match="see">
-  <a href="javascript:action_go_key('{@topic}')">
+  <!-- original: <a href="javascript:action_go_key('{@topic}')">
+        basically worked.
+        middle click didn't work. -->
+  <!-- try 2: <a href="javascript:void(0)" onClick="action_go_key('{@topic}')">
+        basically worked.
+        middle click didn't work -->
+  <!-- try 3: this broke the back button and generally seems stupid/fubar
+        <a href="#" onClick="action_go_key('{@topic}')"> -->
+  <!-- try 4: this seemed to totally screw up the entire page somehow
+        <a href="index.html?topic={@topic}" onClick="function(e){ e.preventDefault(); action_go_key('{@topic}'); }">
+       -->
+  <!-- try 5: <a onClick="action_go_key('{@topic}')">
+       links lose their color and mouse shape, but maybe we can fix that with css
+       back button seems to work
+       middle click still does nothing useful
+       -->
+   <!-- try 6: elaborate thing with makeSeeLinksWork() - victory but ugly
+      a href="index.html?topic={@topic}" class="seelink" data-topic="{@topic}"
+      -->
+  <!-- try 7: reasonably sensible and works!!! woohoo!!! -->
+  <a href="index.html?topic={@topic}" onclick="return dolink(event, '{@topic}');">
     <xsl:apply-templates/>
   </a>
 </xsl:template>
@@ -165,6 +195,14 @@
 
 <xsl:template match="td">
   <td><xsl:apply-templates/></td>
+</xsl:template>
+
+<xsl:template match="math">
+  <div class="mathblock"><xsl:value-of select="."/></div>
+</xsl:template>
+
+<xsl:template match="mathfrag">
+  <span class="mathfrag"><xsl:value-of select="."/></span>
 </xsl:template>
 
 

@@ -1,7 +1,0 @@
-#!/bin/csh
-
-foreach i (solution*.lisp)
-	echo ""
-	echo "certifying $i ... "
-	../util/cert $i:r
-	end

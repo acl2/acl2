@@ -1,4 +1,4 @@
-; ACL2 Version 6.4 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 6.5 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2014, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -2800,8 +2800,6 @@
 
 (defconst *initial-return-last-table*
   '((time$1-raw . time$1)
-    (memoize-on-raw . memoize-on)
-    (memoize-off-raw . memoize-off)
     (with-prover-time-limit1-raw . with-prover-time-limit1)
     (with-fast-alist-raw . with-fast-alist)
     (with-stolen-alist-raw . with-stolen-alist)
@@ -2826,11 +2824,10 @@
     (ec-call1-raw . ec-call1)
     (with-guard-checking1-raw . with-guard-checking1)))
 
-; In order to have doc sections available for books that still use classic :doc
-; strings instead of XDOC, we need to lay down classic documentation for topics
-; as of this writing (January 5, 2014).
-
 (defun doc-stub-lst (doc-alist acc)
+
+; See documentation-alist-stub.
+
   (cond ((endp doc-alist) (reverse acc))
         (t (doc-stub-lst (cdr doc-alist)
                          (cons (let ((tuple (car doc-alist)))
@@ -2839,7 +2836,7 @@
 
 (defun documentation-alist-stub1 (x acc)
 
-; X is a tail of *documentation-alist-stub*.
+; See documentation-alist-stub.  X is a tail of *documentation-alist-stub*.
 
   (cond ((endp x) (reverse acc))
         (t (documentation-alist-stub1
@@ -2856,14 +2853,19 @@
 
 (defun documentation-alist-stub ()
 
-; The constant below was obtained from a version of ACl2 circa 1/5/2014, by
-; executing (doc-stub-lst (global-val 'documentation-alist (w state)) nil).
-; This constant shouldn't need to be extended, provided new documentation is
-; written using xdoc instead of old-style :doc strings.
+; In order to have doc sections available for books that still use classic :doc
+; strings instead of XDOC, we need to lay down classic documentation for
+; topics.  We believe that the original version of this function was created on
+; January 5, 2014.  The "Tour" entries were removed on August 17, 2014, which
+; was safe because (as far as we could tell) no existing documentation topics
+; in books had as a parent any topic from those entries.
 
-; However, this left switches-parameters-and-modes at the top level, even
-; though it has no child nodes.  We now put all top-level topics under a new
-; topic, legacy-orphans.
+; The constant below was originally obtained from a version of ACl2 circa
+; 1/5/2014, by executing (doc-stub-lst (global-val 'documentation-alist (w
+; state)) nil).  This constant shouldn't need to be extended, especially since
+; new documentation is now written using xdoc instead of old-style :doc
+; strings.  Indeed, unnecessary entries have been deleted or modified from time
+; to time; search for "moving" below.
 
   (documentation-alist-stub1
    '((&ALLOW-OTHER-KEYS MISCELLANEOUS)
@@ -2890,13 +2892,6 @@
      (> ACL2-BUILT-INS)
      (>= ACL2-BUILT-INS)
      (@ ACL2-BUILT-INS)
-     (|A Flying Tour of ACL2| |Pages Written Especially for the Tours|)
-     (|A Sketch of How the Rewriter Works|
-      |Pages Written Especially for the Tours|)
-     (|A Tiny Warning Sign| |Pages Written Especially for the Tours|)
-     (|A Trivial Proof| |Pages Written Especially for the Tours|)
-     (|A Typical State| |Pages Written Especially for the Tours|)
-     (|A Walking Tour of ACL2| |Pages Written Especially for the Tours|)
      (A! MISCELLANEOUS)
      (ABORT! MISCELLANEOUS)
      (ABOUT-ACL2 legacy-orphans)
@@ -2904,20 +2899,10 @@
      (ACCUMULATED-PERSISTENCE OTHER)
      (ACCUMULATED-PERSISTENCE-SUBTLETIES ACCUMULATED-PERSISTENCE)
      (ACKNOWLEDGMENTS MISCELLANEOUS)
-     (|ACL2 Characters| |Pages Written Especially for the Tours|)
-     (|ACL2 Conses or Ordered Pairs| |Pages Written Especially for the Tours|)
-     (|ACL2 Strings| |Pages Written Especially for the Tours|)
-     (|ACL2 Symbols| |Pages Written Especially for the Tours|)
-     (|ACL2 System Architecture| |Pages Written Especially for the Tours|)
-     (|ACL2 as an Interactive Theorem Prover|
-      |Pages Written Especially for the Tours|)
-     (|ACL2 as an Interactive Theorem Prover (cont)|
-      |Pages Written Especially for the Tours|)
-     (|ACL2 is an Untyped Language| |Pages Written Especially for the Tours|)
      (ACL2-AS-STANDALONE-PROGRAM ACL2-TUTORIAL)
      (ACL2-BUILT-INS PROGRAMMING)
      (ACL2-COUNT ACL2-BUILT-INS)
-     (ACL2-CUSTOMIZATION SWITCHES-PARAMETERS-AND-MODES)
+     (ACL2-CUSTOMIZATION OTHER) ; was SWITCHES-PARAMETERS-AND-MODES
      (ACL2-DEFAULTS-TABLE OTHER)
      (ACL2-HELP OTHER)
      (ACL2-NUMBER-LISTP ACL2-BUILT-INS)
@@ -2931,21 +2916,22 @@
      (ACONS ACL2-BUILT-INS)
      (ACTIVE-RUNEP THEORIES)
      (ACL2-PC::ADD-ABBREVIATION PROOF-CHECKER-COMMANDS)
-     (ADD-BINOP SWITCHES-PARAMETERS-AND-MODES)
      (ADD-CUSTOM-KEYWORD-HINT EVENTS)
-     (ADD-DEFAULT-HINTS SWITCHES-PARAMETERS-AND-MODES)
-     (ADD-DEFAULT-HINTS! SWITCHES-PARAMETERS-AND-MODES)
-     (ADD-DIVE-INTO-MACRO SWITCHES-PARAMETERS-AND-MODES)
-     (ADD-INCLUDE-BOOK-DIR SWITCHES-PARAMETERS-AND-MODES)
-     (ADD-INVISIBLE-FNS SWITCHES-PARAMETERS-AND-MODES)
-     (ADD-LD-KEYWORD-ALIAS SWITCHES-PARAMETERS-AND-MODES)
-     (ADD-LD-KEYWORD-ALIAS! SWITCHES-PARAMETERS-AND-MODES)
-     (ADD-MACRO-ALIAS SWITCHES-PARAMETERS-AND-MODES)
-     (ADD-MACRO-FN SWITCHES-PARAMETERS-AND-MODES)
-     (ADD-MATCH-FREE-OVERRIDE SWITCHES-PARAMETERS-AND-MODES)
-     (ADD-NTH-ALIAS SWITCHES-PARAMETERS-AND-MODES)
-     (ADD-OVERRIDE-HINTS SWITCHES-PARAMETERS-AND-MODES)
-     (ADD-OVERRIDE-HINTS! SWITCHES-PARAMETERS-AND-MODES)
+     (ADD-DEFAULT-HINTS DEFAULT-HINTS) ; was SWITCHES-PARAMETERS-AND-MODES
+     (ADD-DEFAULT-HINTS! DEFAULT-HINTS) ; was SWITCHES-PARAMETERS-AND-MODES
+     (ADD-DIVE-INTO-MACRO
+      DIVE-INTO-MACROS-TABLE) ; was SWITCHES-PARAMETERS-AND-MODES
+     (ADD-INCLUDE-BOOK-DIR BOOKS-REFERENCE) ; was SWITCHES-PARAMETERS-AND-MODES
+     (ADD-INVISIBLE-FNS LOOP-STOPPER) ; was SWITCHES-PARAMETERS-AND-MODES
+     (ADD-LD-KEYWORD-ALIAS POINTERS) ; was SWITCHES-PARAMETERS-AND-MODES
+     (ADD-LD-KEYWORD-ALIAS! POINTERS) ; was SWITCHES-PARAMETERS-AND-MODES
+     (ADD-MACRO-ALIAS MACROS) ; was SWITCHES-PARAMETERS-AND-MODES
+     (ADD-MACRO-FN MACROS) ; was SWITCHES-PARAMETERS-AND-MODES
+     (ADD-MATCH-FREE-OVERRIDE
+      FREE-VARIABLES) ; was SWITCHES-PARAMETERS-AND-MODES
+     (ADD-NTH-ALIAS NTH-ALIASES-TABLE) ; was SWITCHES-PARAMETERS-AND-MODES
+     (ADD-OVERRIDE-HINTS OVERRIDE-HINTS) ; was SWITCHES-PARAMETERS-AND-MODES
+     (ADD-OVERRIDE-HINTS! OVERRIDE-HINTS) ; was SWITCHES-PARAMETERS-AND-MODES
      (ADD-RAW-ARITY SET-RAW-MODE)
      (ADD-TO-SET ACL2-BUILT-INS)
      (ADD-TO-SET-EQ ACL2-BUILT-INS)
@@ -2984,16 +2970,6 @@
      (ASSOC-STRING-EQUAL ACL2-BUILT-INS)
      (ATOM ACL2-BUILT-INS)
      (ATOM-LISTP ACL2-BUILT-INS)
-     (|About Models| |Pages Written Especially for the Tours|)
-     (|About Types| |Pages Written Especially for the Tours|)
-     (|About the ACL2 Home Page| |Pages Written Especially for the Tours|)
-     (|About the Admission of Recursive Definitions|
-      |Pages Written Especially for the Tours|)
-     (|About the Prompt| |Pages Written Especially for the Tours|)
-     (|An Example Common Lisp Function Definition|
-      |Pages Written Especially for the Tours|)
-     (|An Example of ACL2 in Use| |Pages Written Especially for the Tours|)
-     (|Analyzing Common Lisp Models| |Pages Written Especially for the Tours|)
      (BACKCHAIN-LIMIT MISCELLANEOUS)
      (BACKCHAIN-LIMIT-RW MISCELLANEOUS)
      (BACKTRACK MISCELLANEOUS)
@@ -3149,11 +3125,6 @@
      (CW ACL2-BUILT-INS)
      (CW! ACL2-BUILT-INS)
      (CW-GSTACK OTHER)
-     (|Common Lisp| |Pages Written Especially for the Tours|)
-     (|Common Lisp as a Modeling Language|
-      |Pages Written Especially for the Tours|)
-     (|Conversion| |Pages Written Especially for the Tours|)
-     (|Corroborating Models| |Pages Written Especially for the Tours|)
      (DEAD-EVENTS OTHER)
      (DEALING-WITH-KEY-COMBINATIONS-OF-FUNCTION-SYMBOLS
       INTRODUCTION-TO-THE-THEOREM-PROVER)
@@ -3168,11 +3139,12 @@
      (DEFAULT-BACKCHAIN-LIMIT MISCELLANEOUS)
      (DEFAULT-DEFUN-MODE MISCELLANEOUS)
      (DEFAULT-HINTS MISCELLANEOUS)
-     (DEFAULT-HINTS-TABLE SWITCHES-PARAMETERS-AND-MODES)
+     (DEFAULT-HINTS-TABLE DEFAULT-HINTS) ; was SWITCHES-PARAMETERS-AND-MODES
      (DEFAULT-PRINT-PROMPT MISCELLANEOUS)
      (DEFAULT-RULER-EXTENDERS MISCELLANEOUS)
      (DEFAULT-TOTAL-PARALLELISM-WORK-LIMIT PARALLEL-PROOF)
-     (DEFAULT-VERIFY-GUARDS-EAGERNESS SWITCHES-PARAMETERS-AND-MODES)
+     (DEFAULT-VERIFY-GUARDS-EAGERNESS
+       POINTERS) ; was SWITCHES-PARAMETERS-AND-MODES
      (DEFAXIOM EVENTS)
      (DEFCHOOSE EVENTS)
      (DEFCONG EVENTS)
@@ -3218,7 +3190,8 @@
      (DELETE-ASSOC ACL2-BUILT-INS)
      (DELETE-ASSOC-EQ ACL2-BUILT-INS)
      (DELETE-ASSOC-EQUAL ACL2-BUILT-INS)
-     (DELETE-INCLUDE-BOOK-DIR SWITCHES-PARAMETERS-AND-MODES)
+     (DELETE-INCLUDE-BOOK-DIR
+      BOOKS-REFERENCE) ; was SWITCHES-PARAMETERS-AND-MODES
      (ACL2-PC::DEMOTE PROOF-CHECKER-COMMANDS)
      (DENOMINATOR ACL2-BUILT-INS)
      (DIGIT-CHAR-P ACL2-BUILT-INS)
@@ -3230,7 +3203,7 @@
      (DISABLEDP MISCELLANEOUS)
      (DISASSEMBLE$ OTHER)
      (ACL2-PC::DIVE PROOF-CHECKER-COMMANDS)
-     (DIVE-INTO-MACROS-TABLE SWITCHES-PARAMETERS-AND-MODES)
+     (DIVE-INTO-MACROS-TABLE PROOF-CHECKER) ; was SWITCHES-PARAMETERS-AND-MODES
      (DMR OTHER)
      (ACL2-PC::DO-ALL PROOF-CHECKER-COMMANDS)
      (ACL2-PC::DO-ALL-NO-PROMPT PROOF-CHECKER-COMMANDS)
@@ -3287,7 +3260,8 @@
      (ACL2-PC::EX PROOF-CHECKER-COMMANDS)
      (EXAMPLE-INDUCTION-SCHEME-BINARY-TREES INTRODUCTION-TO-THE-THEOREM-PROVER)
      (EXAMPLE-INDUCTION-SCHEME-DOWN-BY-2 INTRODUCTION-TO-THE-THEOREM-PROVER)
-     (EXAMPLE-INDUCTION-SCHEME-NAT-RECURSION INTRODUCTION-TO-THE-THEOREM-PROVER)
+     (EXAMPLE-INDUCTION-SCHEME-NAT-RECURSION
+      INTRODUCTION-TO-THE-THEOREM-PROVER)
      (EXAMPLE-INDUCTION-SCHEME-ON-LISTS INTRODUCTION-TO-THE-THEOREM-PROVER)
      (EXAMPLE-INDUCTION-SCHEME-ON-SEVERAL-VARIABLES
       INTRODUCTION-TO-THE-THEOREM-PROVER)
@@ -3310,7 +3284,6 @@
      (EXTENDED-METAFUNCTIONS MISCELLANEOUS)
      (EXTERNAL-FORMAT IO)
      (EXTRA-INFO GUARD)
-     (|Evaluating App on Sample Input| |Pages Written Especially for the Tours|)
      (F-GET-GLOBAL ACL2-BUILT-INS)
      (F-PUT-GLOBAL ACL2-BUILT-INS)
      (ACL2-PC::FAIL PROOF-CHECKER-COMMANDS)
@@ -3324,7 +3297,7 @@
      (FC-REPORT FORWARD-CHAINING-REPORTS)
      (FIFTH ACL2-BUILT-INS)
      (FILE-READING-EXAMPLE TUTORIAL5-MISCELLANEOUS-EXAMPLES)
-     (FINALIZE-EVENT-USER SWITCHES-PARAMETERS-AND-MODES)
+     (FINALIZE-EVENT-USER PROVER-OUTPUT) ; was SWITCHES-PARAMETERS-AND-MODES
      (FIND-RULES-OF-RUNE MISCELLANEOUS)
      (FINDING-DOCUMENTATION MISCELLANEOUS)
      (ACL2-PC::FINISH PROOF-CHECKER-COMMANDS)
@@ -3363,19 +3336,14 @@
      (FREE-VARIABLES-EXAMPLES-FORWARD-CHAINING FREE-VARIABLES-EXAMPLES)
      (FREE-VARIABLES-EXAMPLES-REWRITE FREE-VARIABLES-EXAMPLES)
      (FREE-VARIABLES-TYPE-PRESCRIPTION FREE-VARIABLES)
-     (FREQUENTLY-ASKED-QUESTIONS-BY-NEWCOMERS INTRODUCTION-TO-THE-THEOREM-PROVER)
+     (FREQUENTLY-ASKED-QUESTIONS-BY-NEWCOMERS
+      INTRODUCTION-TO-THE-THEOREM-PROVER)
      (FULL-BOOK-NAME BOOKS)
      (FUNCTION-THEORY THEORIES)
      (FUNCTIONAL-INSTANTIATION-EXAMPLE TUTORIAL5-MISCELLANEOUS-EXAMPLES)
      (FUNCTIONAL-INSTANTIATION-IN-ACL2R MISCELLANEOUS)
      (FURTHER-INFORMATION-ON-REWRITING INTRODUCTION-TO-THE-THEOREM-PROVER)
      (FUTURE-WORK-RELATED-TO-THE-TAU-SYSTEM INTRODUCTION-TO-THE-TAU-SYSTEM)
-     (|Flawed Induction Candidates in App Example|
-      |Pages Written Especially for the Tours|)
-     (|Free Variables in Top-Level Input|
-      |Pages Written Especially for the Tours|)
-     (|Functions for Manipulating these Objects|
-      |Pages Written Especially for the Tours|)
      (GAG-MODE MISCELLANEOUS)
      (GC$ MISCELLANEOUS)
      (GC-VERBOSE MISCELLANEOUS)
@@ -3411,10 +3379,6 @@
      (GUARD-QUICK-REFERENCE GUARD)
      (GUARDS-AND-EVALUATION GUARD)
      (GUARDS-FOR-SPECIFICATION GUARD)
-     (|Guards| |Pages Written Especially for the Tours|)
-     (|Guessing the Type of a Newly Admitted Function|
-      |Pages Written Especially for the Tours|)
-     (|Guiding the ACL2 Theorem Prover| |Pages Written Especially for the Tours|)
      (HANDS-OFF MISCELLANEOUS)
      (HARD-ERROR ACL2-BUILT-INS)
      (HEADER ARRAYS)
@@ -3446,14 +3410,6 @@
      (HONS-SUMMARY HONS-AND-MEMOIZATION)
      (HONS-WASH HONS-AND-MEMOIZATION)
      (ACL2-PC::HYPS PROOF-CHECKER-COMMANDS)
-     (|Hey Wait!  Is ACL2 Typed or Untyped(Q)|
-      |Pages Written Especially for the Tours|)
-     (|How Long Does It Take to Become an Effective User(Q)|
-      |Pages Written Especially for the Tours|)
-     (|How To Find Out about ACL2 Functions|
-      |Pages Written Especially for the Tours|)
-     (|How To Find Out about ACL2 Functions (cont)|
-      |Pages Written Especially for the Tours|)
      (I-AM-HERE MISCELLANEOUS)
      (I-CLOSE REAL)
      (I-LARGE REAL)
@@ -3485,7 +3441,7 @@
      (INDUCT MISCELLANEOUS)
      (ACL2-PC::INDUCT PROOF-CHECKER-COMMANDS)
      (INDUCTION RULE-CLASSES)
-     (INITIALIZE-EVENT-USER SWITCHES-PARAMETERS-AND-MODES)
+     (INITIALIZE-EVENT-USER PROVER-OUTPUT) ; was SWITCHES-PARAMETERS-AND-MODES
      (INSTRUCTIONS PROOF-CHECKER)
      (INT= ACL2-BUILT-INS)
      (INTEGER-LENGTH ACL2-BUILT-INS)
@@ -3512,15 +3468,18 @@
      (INTRODUCTION-TO-THE-TAU-SYSTEM legacy-orphans)
      (INTRODUCTION-TO-THE-THEOREM-PROVER ACL2-TUTORIAL)
      (INTRODUCTORY-CHALLENGE-PROBLEM-1 INTRODUCTION-TO-THE-THEOREM-PROVER)
-     (INTRODUCTORY-CHALLENGE-PROBLEM-1-ANSWER INTRODUCTION-TO-THE-THEOREM-PROVER)
+     (INTRODUCTORY-CHALLENGE-PROBLEM-1-ANSWER
+      INTRODUCTION-TO-THE-THEOREM-PROVER)
      (INTRODUCTORY-CHALLENGE-PROBLEM-2 INTRODUCTION-TO-THE-THEOREM-PROVER)
-     (INTRODUCTORY-CHALLENGE-PROBLEM-2-ANSWER INTRODUCTION-TO-THE-THEOREM-PROVER)
+     (INTRODUCTORY-CHALLENGE-PROBLEM-2-ANSWER
+      INTRODUCTION-TO-THE-THEOREM-PROVER)
      (INTRODUCTORY-CHALLENGE-PROBLEM-3 INTRODUCTION-TO-THE-THEOREM-PROVER)
-     (INTRODUCTORY-CHALLENGE-PROBLEM-3-ANSWER INTRODUCTION-TO-THE-THEOREM-PROVER)
+     (INTRODUCTORY-CHALLENGE-PROBLEM-3-ANSWER
+      INTRODUCTION-TO-THE-THEOREM-PROVER)
      (INTRODUCTORY-CHALLENGE-PROBLEM-4 INTRODUCTION-TO-THE-THEOREM-PROVER)
      (INTRODUCTORY-CHALLENGE-PROBLEM-4-ANSWER INTRODUCTION-TO-THE-THEOREM-PROVER)
      (INTRODUCTORY-CHALLENGES INTRODUCTION-TO-THE-THEOREM-PROVER)
-     (INVISIBLE-FNS-TABLE SWITCHES-PARAMETERS-AND-MODES)
+     (INVISIBLE-FNS-TABLE LOOP-STOPPER) ; was SWITCHES-PARAMETERS-AND-MODES
      (IO legacy-orphans)
      (IPRINT IO)
      (IPRINTING IO)
@@ -3539,7 +3498,7 @@
      (LD-ERROR-ACTION MISCELLANEOUS)
      (LD-ERROR-TRIPLES MISCELLANEOUS)
      (LD-EVISC-TUPLE MISCELLANEOUS)
-     (LD-KEYWORD-ALIASES SWITCHES-PARAMETERS-AND-MODES)
+     (LD-KEYWORD-ALIASES LD) ; was SWITCHES-PARAMETERS-AND-MODES
      (LD-MISSING-INPUT-OK MISCELLANEOUS)
      (LD-POST-EVAL-PRINT MISCELLANEOUS)
      (LD-PRE-EVAL-FILTER MISCELLANEOUS)
@@ -3570,7 +3529,7 @@
      (LOGBITP ACL2-BUILT-INS)
      (LOGCOUNT ACL2-BUILT-INS)
      (LOGEQV ACL2-BUILT-INS)
-     (LOGIC SWITCHES-PARAMETERS-AND-MODES)
+     (LOGIC DEFUN-MODE) ; was SWITCHES-PARAMETERS-AND-MODES
      (LOGIC-KNOWLEDGE-TAKEN-FOR-GRANTED INTRODUCTION-TO-THE-THEOREM-PROVER)
      (LOGIC-KNOWLEDGE-TAKEN-FOR-GRANTED-BASE-CASE
       INTRODUCTION-TO-THE-THEOREM-PROVER)
@@ -3606,7 +3565,7 @@
      (LOOP-STOPPER MISCELLANEOUS)
      (LOWER-CASE-P ACL2-BUILT-INS)
      (LP MISCELLANEOUS)
-     (MACRO-ALIASES-TABLE SWITCHES-PARAMETERS-AND-MODES)
+     (MACRO-ALIASES-TABLE MACROS) ; was SWITCHES-PARAMETERS-AND-MODES
      (MACRO-ARGS MISCELLANEOUS)
      (MACRO-COMMAND PROOF-CHECKER)
      (MAKE-CHARACTER-LIST ACL2-BUILT-INS)
@@ -3662,10 +3621,6 @@
      (MV-NTH ACL2-BUILT-INS)
      (MV? ACL2-BUILT-INS)
      (MV?-LET ACL2-BUILT-INS)
-     (|Modeling in ACL2| |Pages Written Especially for the Tours|)
-     (|Models in Engineering| |Pages Written Especially for the Tours|)
-     (|Models of Computer Hardware and Software|
-      |Pages Written Especially for the Tours|)
      (NAME MISCELLANEOUS)
      (NAT-LISTP ACL2-BUILT-INS)
      (NATP ACL2-BUILT-INS)
@@ -3781,16 +3736,13 @@
      (NOTE9 RELEASE-NOTES)
      (NQTHM-TO-ACL2 DOCUMENTATION)
      (NTH ACL2-BUILT-INS)
-     (NTH-ALIASES-TABLE SWITCHES-PARAMETERS-AND-MODES)
+     (NTH-ALIASES-TABLE STOBJ) ; was SWITCHES-PARAMETERS-AND-MODES
      (NTHCDR ACL2-BUILT-INS)
      (NU-REWRITER MISCELLANEOUS)
      (NULL ACL2-BUILT-INS)
      (NUMBER-SUBTREES HONS-AND-MEMOIZATION)
      (NUMERATOR ACL2-BUILT-INS)
      (ACL2-PC::NX PROOF-CHECKER-COMMANDS)
-     (|Name the Formula Above| |Pages Written Especially for the Tours|)
-     (|Nontautological Subgoals| |Pages Written Especially for the Tours|)
-     (|Numbers in ACL2| |Pages Written Especially for the Tours|)
      (O-FINP ACL2-BUILT-INS)
      (O-FIRST-COEFF ACL2-BUILT-INS)
      (O-FIRST-EXPT ACL2-BUILT-INS)
@@ -3824,22 +3776,6 @@
      (OTHER legacy-orphans)
      (OUTPUT-TO-FILE IO)
      (OVERRIDE-HINTS MISCELLANEOUS)
-     (|On the Naming of Subgoals| |Pages Written Especially for the Tours|)
-     (|Other Requirements| |Pages Written Especially for the Tours|)
-     (|Overview of the Expansion of ENDP in the Base Case|
-      |Pages Written Especially for the Tours|)
-     (|Overview of the Expansion of ENDP in the Induction Step|
-      |Pages Written Especially for the Tours|)
-     (|Overview of the Final Simplification in the Base Case|
-      |Pages Written Especially for the Tours|)
-     (|Overview of the Proof of a Trivial Consequence|
-      |Pages Written Especially for the Tours|)
-     (|Overview of the Simplification of the Base Case to T|
-      |Pages Written Especially for the Tours|)
-     (|Overview of the Simplification of the Induction Conclusion|
-      |Pages Written Especially for the Tours|)
-     (|Overview of the Simplification of the Induction Step to T|
-      |Pages Written Especially for the Tours|)
      (ACL2-PC::P PROOF-CHECKER-COMMANDS)
      (P! MISCELLANEOUS)
      (ACL2-PC::P-TOP PROOF-CHECKER-COMMANDS)
@@ -3903,7 +3839,7 @@
      (PRINT-GV OTHER)
      (ACL2-PC::PRINT-MAIN PROOF-CHECKER-COMMANDS)
      (PRINT-OBJECT$ ACL2-BUILT-INS)
-     (PRINT-SUMMARY-USER SWITCHES-PARAMETERS-AND-MODES)
+     (PRINT-SUMMARY-USER POINTERS) ; was SWITCHES-PARAMETERS-AND-MODES
      (PRINTING-TO-STRINGS IO)
      (ACL2-PC::PRO PROOF-CHECKER-COMMANDS)
      (PROFILE EVENTS)
@@ -3911,9 +3847,10 @@
      (PROGN EVENTS)
      (PROGN! EVENTS)
      (PROGN$ ACL2-BUILT-INS)
-     (PROGRAM SWITCHES-PARAMETERS-AND-MODES)
+     (PROGRAM DEFUN-MODE) ; was SWITCHES-PARAMETERS-AND-MODES
      (PROGRAMMING legacy-orphans)
-     (PROGRAMMING-KNOWLEDGE-TAKEN-FOR-GRANTED INTRODUCTION-TO-THE-THEOREM-PROVER)
+     (PROGRAMMING-KNOWLEDGE-TAKEN-FOR-GRANTED
+      INTRODUCTION-TO-THE-THEOREM-PROVER)
      (PROGRAMMING-WITH-STATE STATE)
      (ACL2-PC::PROMOTE PROOF-CHECKER-COMMANDS)
      (PROMPT MISCELLANEOUS)
@@ -3941,18 +3878,13 @@
      (PSTACK OTHER)
      (PUFF HISTORY)
      (PUFF* HISTORY)
-     (PUSH-UNTOUCHABLE SWITCHES-PARAMETERS-AND-MODES)
+     (PUSH-UNTOUCHABLE DEFTTAG) ; was SWITCHES-PARAMETERS-AND-MODES
      (ACL2-PC::PUT PROOF-CHECKER-COMMANDS)
      (PUT-ASSOC ACL2-BUILT-INS)
      (PUT-ASSOC-EQ ACL2-BUILT-INS)
      (PUT-ASSOC-EQL ACL2-BUILT-INS)
      (PUT-ASSOC-EQUAL ACL2-BUILT-INS)
      (PUTPROP ACL2-BUILT-INS)
-     (|Pages Written Especially for the Tours| legacy-orphans)
-     (|Perhaps| |Pages Written Especially for the Tours|)
-     (|Popping out of an Inductive Proof|
-      |Pages Written Especially for the Tours|)
-     (|Proving Theorems about Models| |Pages Written Especially for the Tours|)
      (Q OTHER)
      (QUANTIFIER-TUTORIAL DEFUN-SK)
      (QUANTIFIERS DEFUN-SK)
@@ -4000,24 +3932,26 @@
      (REM ACL2-BUILT-INS)
      (REMOVE ACL2-BUILT-INS)
      (ACL2-PC::REMOVE-ABBREVIATIONS PROOF-CHECKER-COMMANDS)
-     (REMOVE-BINOP SWITCHES-PARAMETERS-AND-MODES)
+     (REMOVE-BINOP MACROS) ; was SWITCHES-PARAMETERS-AND-MODES
      (REMOVE-CUSTOM-KEYWORD-HINT EVENTS)
-     (REMOVE-DEFAULT-HINTS SWITCHES-PARAMETERS-AND-MODES)
-     (REMOVE-DEFAULT-HINTS! SWITCHES-PARAMETERS-AND-MODES)
-     (REMOVE-DIVE-INTO-MACRO SWITCHES-PARAMETERS-AND-MODES)
+     (REMOVE-DEFAULT-HINTS DEFAULT-HINTS) ; was SWITCHES-PARAMETERS-AND-MODES
+     (REMOVE-DEFAULT-HINTS! DEFAULT-HINTS) ; was SWITCHES-PARAMETERS-AND-MODES
+     (REMOVE-DIVE-INTO-MACRO
+      DIVE-INTO-MACROS-TABLE) ; was SWITCHES-PARAMETERS-AND-MODES
      (REMOVE-DUPLICATES ACL2-BUILT-INS)
      (REMOVE-DUPLICATES-EQ ACL2-BUILT-INS)
      (REMOVE-DUPLICATES-EQUAL ACL2-BUILT-INS)
      (REMOVE-EQ ACL2-BUILT-INS)
      (REMOVE-EQUAL ACL2-BUILT-INS)
-     (REMOVE-INVISIBLE-FNS SWITCHES-PARAMETERS-AND-MODES)
-     (REMOVE-MACRO-ALIAS SWITCHES-PARAMETERS-AND-MODES)
-     (REMOVE-MACRO-FN SWITCHES-PARAMETERS-AND-MODES)
-     (REMOVE-NTH-ALIAS SWITCHES-PARAMETERS-AND-MODES)
-     (REMOVE-OVERRIDE-HINTS SWITCHES-PARAMETERS-AND-MODES)
-     (REMOVE-OVERRIDE-HINTS! SWITCHES-PARAMETERS-AND-MODES)
+     (REMOVE-INVISIBLE-FNS LOOP-STOPPER) ; was SWITCHES-PARAMETERS-AND-MODES
+     (REMOVE-MACRO-ALIAS MACROS) ; was SWITCHES-PARAMETERS-AND-MODES
+     (REMOVE-MACRO-FN MACROS) ; was SWITCHES-PARAMETERS-AND-MODES
+     (REMOVE-NTH-ALIAS NTH-ALIASES-TABLE) ; was SWITCHES-PARAMETERS-AND-MODES
+     (REMOVE-OVERRIDE-HINTS OVERRIDE-HINTS) ; was SWITCHES-PARAMETERS-AND-MODES
+     (REMOVE-OVERRIDE-HINTS!
+      OVERRIDE-HINTS) ; was SWITCHES-PARAMETERS-AND-MODES
      (REMOVE-RAW-ARITY SET-RAW-MODE)
-     (REMOVE-UNTOUCHABLE SWITCHES-PARAMETERS-AND-MODES)
+     (REMOVE-UNTOUCHABLE DEFTTAG) ; was SWITCHES-PARAMETERS-AND-MODES
      (REMOVE1 ACL2-BUILT-INS)
      (REMOVE1-EQ ACL2-BUILT-INS)
      (REMOVE1-EQUAL ACL2-BUILT-INS)
@@ -4028,7 +3962,7 @@
      (RESET-FC-REPORTING FORWARD-CHAINING-REPORTS)
      (RESET-KILL-RING HISTORY)
      (RESET-LD-SPECIALS OTHER)
-     (RESET-PREHISTORY SWITCHES-PARAMETERS-AND-MODES)
+     (RESET-PREHISTORY HISTORY) ; was SWITCHES-PARAMETERS-AND-MODES
      (RESET-PRINT-CONTROL IO)
      (RESIZE-LIST STOBJ)
      (REST ACL2-BUILT-INS)
@@ -4039,7 +3973,7 @@
      (RETRIEVE PROOF-CHECKER)
      (ACL2-PC::RETRIEVE PROOF-CHECKER-COMMANDS)
      (RETURN-LAST ACL2-BUILT-INS)
-     (RETURN-LAST-TABLE SWITCHES-PARAMETERS-AND-MODES)
+     (RETURN-LAST-TABLE RETURN-LAST) ; was SWITCHES-PARAMETERS-AND-MODES
      (REVAPPEND ACL2-BUILT-INS)
      (REVERSE ACL2-BUILT-INS)
      (REWRITE RULE-CLASSES)
@@ -4049,15 +3983,11 @@
      (ROUND ACL2-BUILT-INS)
      (RULE-CLASSES legacy-orphans)
      (RULE-NAMES THEORIES)
-     (RULER-EXTENDERS SWITCHES-PARAMETERS-AND-MODES)
+     (RULER-EXTENDERS DEFUN) ; was SWITCHES-PARAMETERS-AND-MODES
      (ACL2-PC::RUN-INSTR-ON-GOAL PROOF-CHECKER-COMMANDS)
      (ACL2-PC::RUN-INSTR-ON-NEW-GOALS PROOF-CHECKER-COMMANDS)
      (RUNE THEORIES)
      (ACL2-PC::RUNES PROOF-CHECKER-COMMANDS)
-     (|Revisiting the Admission of App| |Pages Written Especially for the Tours|)
-     (|Rewrite Rules are Generated from DEFTHM Events|
-      |Pages Written Especially for the Tours|)
-     (|Running Models| |Pages Written Especially for the Tours|)
      (ACL2-PC::S PROOF-CHECKER-COMMANDS)
      (ACL2-PC::S-PROP PROOF-CHECKER-COMMANDS)
      (ACL2-PC::SAVE PROOF-CHECKER-COMMANDS)
@@ -4072,63 +4002,71 @@
      (SERIALIZE-IN-BOOKS SERIALIZE)
      (SERIALIZE-READ SERIALIZE)
      (SERIALIZE-WRITE SERIALIZE)
-     (SET-ABSSTOBJ-DEBUG SWITCHES-PARAMETERS-AND-MODES)
+     (SET-ABSSTOBJ-DEBUG DEFABSSTOBJ) ; was SWITCHES-PARAMETERS-AND-MODES
      (SET-ACCUMULATED-PERSISTENCE OTHER)
-     (SET-BACKCHAIN-LIMIT SWITCHES-PARAMETERS-AND-MODES)
+     (SET-BACKCHAIN-LIMIT BACKCHAIN-LIMIT) ; was SWITCHES-PARAMETERS-AND-MODES
      (SET-BODY EVENTS)
-     (SET-BOGUS-DEFUN-HINTS-OK SWITCHES-PARAMETERS-AND-MODES)
-     (SET-BOGUS-MUTUAL-RECURSION-OK SWITCHES-PARAMETERS-AND-MODES)
-     (SET-CASE-SPLIT-LIMITATIONS SWITCHES-PARAMETERS-AND-MODES)
+     (SET-BOGUS-DEFUN-HINTS-OK DEFUN) ; was SWITCHES-PARAMETERS-AND-MODES
+     (SET-BOGUS-MUTUAL-RECURSION-OK
+      MUTUAL-RECURSION) ; was SWITCHES-PARAMETERS-AND-MODES
+     (SET-CASE-SPLIT-LIMITATIONS OTHER) ; was SWITCHES-PARAMETERS-AND-MODES
      (SET-CBD BOOKS)
-     (SET-CHECKPOINT-SUMMARY-LIMIT SWITCHES-PARAMETERS-AND-MODES)
-     (SET-COMPILE-FNS SWITCHES-PARAMETERS-AND-MODES)
-     (SET-COMPILER-ENABLED SWITCHES-PARAMETERS-AND-MODES)
-     (SET-DEBUGGER-ENABLE SWITCHES-PARAMETERS-AND-MODES)
-     (SET-DEFAULT-BACKCHAIN-LIMIT SWITCHES-PARAMETERS-AND-MODES)
-     (SET-DEFAULT-HINTS SWITCHES-PARAMETERS-AND-MODES)
-     (SET-DEFAULT-HINTS! SWITCHES-PARAMETERS-AND-MODES)
-     (SET-DEFERRED-TTAG-NOTES SWITCHES-PARAMETERS-AND-MODES)
+     (SET-CHECKPOINT-SUMMARY-LIMIT
+      SET-GAG-MODE) ; was SWITCHES-PARAMETERS-AND-MODES
+     (SET-COMPILE-FNS COMPILATION) ; was SWITCHES-PARAMETERS-AND-MODES
+     (SET-COMPILER-ENABLED POINTERS) ; was SWITCHES-PARAMETERS-AND-MODES
+     (SET-DEBUGGER-ENABLE DEBUGGING) ; was SWITCHES-PARAMETERS-AND-MODES
+     (SET-DEFAULT-BACKCHAIN-LIMIT
+      BACKCHAIN-LIMIT) ; was SWITCHES-PARAMETERS-AND-MODES
+     (SET-DEFAULT-HINTS DEFAULT-HINTS) ; was SWITCHES-PARAMETERS-AND-MODES
+     (SET-DEFAULT-HINTS! DEFAULT-HINTS) ; was SWITCHES-PARAMETERS-AND-MODES
+     (SET-DEFERRED-TTAG-NOTES DEFTTAG) ; was SWITCHES-PARAMETERS-AND-MODES
      (SET-DIFFERENCE$ ACL2-BUILT-INS)
      (SET-DIFFERENCE-EQ ACL2-BUILT-INS)
      (SET-DIFFERENCE-EQUAL ACL2-BUILT-INS)
      (SET-DIFFERENCE-THEORIES THEORIES)
-     (SET-ENFORCE-REDUNDANCY SWITCHES-PARAMETERS-AND-MODES)
+     (SET-ENFORCE-REDUNDANCY
+      REDUNDANT-EVENTS) ; was SWITCHES-PARAMETERS-AND-MODES
      (SET-EVISC-TUPLE IO)
      (SET-FC-CRITERIA FORWARD-CHAINING-REPORTS)
      (SET-FC-REPORT-ON-THE-FLY FORWARD-CHAINING-REPORTS)
      (SET-FMT-HARD-RIGHT-MARGIN IO)
      (SET-FMT-SOFT-RIGHT-MARGIN IO)
-     (SET-GAG-MODE SWITCHES-PARAMETERS-AND-MODES)
-     (SET-GUARD-CHECKING SWITCHES-PARAMETERS-AND-MODES)
-     (SET-IGNORE-DOC-STRING-ERROR SWITCHES-PARAMETERS-AND-MODES)
-     (SET-IGNORE-OK SWITCHES-PARAMETERS-AND-MODES)
-     (SET-INHIBIT-OUTPUT-LST SWITCHES-PARAMETERS-AND-MODES)
-     (SET-INHIBIT-WARNINGS SWITCHES-PARAMETERS-AND-MODES)
-     (SET-INHIBIT-WARNINGS! SWITCHES-PARAMETERS-AND-MODES)
-     (SET-INHIBITED-SUMMARY-TYPES SWITCHES-PARAMETERS-AND-MODES)
-     (SET-INVISIBLE-FNS-TABLE SWITCHES-PARAMETERS-AND-MODES)
+     (SET-GAG-MODE PROVER-OUTPUT) ; was SWITCHES-PARAMETERS-AND-MODES
+     (SET-GUARD-CHECKING GUARD) ; was SWITCHES-PARAMETERS-AND-MODES
+     (SET-IGNORE-DOC-STRING-ERROR
+      LEGACY-DOCUMENTATION) ; was SWITCHES-PARAMETERS-AND-MODES
+     (SET-IGNORE-OK DECLARE) ; was SWITCHES-PARAMETERS-AND-MODES
+     (SET-INHIBIT-OUTPUT-LST PROVER-OUTPUT) ; was SWITCHES-PARAMETERS-AND-MODES
+     (SET-INHIBIT-WARNINGS PROVER-OUTPUT) ; was SWITCHES-PARAMETERS-AND-MODES
+     (SET-INHIBIT-WARNINGS! PROVER-OUTPUT) ; was SWITCHES-PARAMETERS-AND-MODES
+     (SET-INHIBITED-SUMMARY-TYPES
+      PROVER-OUTPUT) ; was SWITCHES-PARAMETERS-AND-MODES
+     (SET-INVISIBLE-FNS-TABLE LOOP-STOPPER) ; was SWITCHES-PARAMETERS-AND-MODES
      (SET-IPRINT IO)
-     (SET-IRRELEVANT-FORMALS-OK SWITCHES-PARAMETERS-AND-MODES)
-     (SET-LD-KEYWORD-ALIASES SWITCHES-PARAMETERS-AND-MODES)
-     (SET-LD-KEYWORD-ALIASES! SWITCHES-PARAMETERS-AND-MODES)
-     (SET-LD-REDEFINITION-ACTION SWITCHES-PARAMETERS-AND-MODES)
-     (SET-LD-SKIP-PROOFS SWITCHES-PARAMETERS-AND-MODES)
-     (SET-LD-SKIP-PROOFSP SWITCHES-PARAMETERS-AND-MODES)
-     (SET-LET*-ABSTRACTION SWITCHES-PARAMETERS-AND-MODES)
-     (SET-LET*-ABSTRACTIONP SWITCHES-PARAMETERS-AND-MODES)
-     (SET-MATCH-FREE-DEFAULT SWITCHES-PARAMETERS-AND-MODES)
-     (SET-MATCH-FREE-ERROR SWITCHES-PARAMETERS-AND-MODES)
-     (SET-MEASURE-FUNCTION SWITCHES-PARAMETERS-AND-MODES)
-     (SET-NON-LINEAR SWITCHES-PARAMETERS-AND-MODES)
-     (SET-NON-LINEARP SWITCHES-PARAMETERS-AND-MODES)
-     (SET-NU-REWRITER-MODE SWITCHES-PARAMETERS-AND-MODES)
-     (SET-OVERRIDE-HINTS SWITCHES-PARAMETERS-AND-MODES)
-     (SET-OVERRIDE-HINTS! SWITCHES-PARAMETERS-AND-MODES)
-     (SET-PARALLEL-EXECUTION SWITCHES-PARAMETERS-AND-MODES)
+     (SET-IRRELEVANT-FORMALS-OK DEFUN) ; was SWITCHES-PARAMETERS-AND-MODES
+     (SET-LD-KEYWORD-ALIASES POINTERS) ; was SWITCHES-PARAMETERS-AND-MODES
+     (SET-LD-KEYWORD-ALIASES! POINTERS) ; was SWITCHES-PARAMETERS-AND-MODES
+     (SET-LD-REDEFINITION-ACTION POINTERS) ; was SWITCHES-PARAMETERS-AND-MODES
+     (SET-LD-SKIP-PROOFS POINTERS) ; was SWITCHES-PARAMETERS-AND-MODES
+     (SET-LD-SKIP-PROOFSP POINTERS) ; was SWITCHES-PARAMETERS-AND-MODES
+     (SET-LET*-ABSTRACTION POINTERS) ; was SWITCHES-PARAMETERS-AND-MODES
+     (SET-LET*-ABSTRACTIONP PROVER-OUTPUT) ; was SWITCHES-PARAMETERS-AND-MODES
+     (SET-MATCH-FREE-DEFAULT
+      FREE-VARIABLES) ; was SWITCHES-PARAMETERS-AND-MODES
+     (SET-MATCH-FREE-ERROR FREE-VARIABLES) ; was SWITCHES-PARAMETERS-AND-MODES
+     (SET-MEASURE-FUNCTION DEFUN) ; was SWITCHES-PARAMETERS-AND-MODES
+     (SET-NON-LINEAR POINTERS) ; was SWITCHES-PARAMETERS-AND-MODES
+     (SET-NON-LINEARP
+      NON-LINEAR-ARITHMETIC) ; was SWITCHES-PARAMETERS-AND-MODES
+     (SET-NU-REWRITER-MODE NU-REWRITER) ; was SWITCHES-PARAMETERS-AND-MODES
+     (SET-OVERRIDE-HINTS OVERRIDE-HINTS) ; was SWITCHES-PARAMETERS-AND-MODES
+     (SET-OVERRIDE-HINTS! OVERRIDE-HINTS) ; was SWITCHES-PARAMETERS-AND-MODES
+     (SET-PARALLEL-EXECUTION PARALLELISM) ; was SWITCHES-PARAMETERS-AND-MODES
      (SET-PRINT-BASE IO)
      (SET-PRINT-CASE IO)
      (SET-PRINT-CIRCLE IO)
-     (SET-PRINT-CLAUSE-IDS SWITCHES-PARAMETERS-AND-MODES)
+     (SET-PRINT-CLAUSE-IDS PROVER-OUTPUT) ; was SWITCHES-PARAMETERS-AND-MODES
      (SET-PRINT-ESCAPE IO)
      (SET-PRINT-LENGTH IO)
      (SET-PRINT-LEVEL IO)
@@ -4136,31 +4074,36 @@
      (SET-PRINT-RADIX IO)
      (SET-PRINT-READABLY IO)
      (SET-PRINT-RIGHT-MARGIN IO)
-     (SET-PROVER-STEP-LIMIT SWITCHES-PARAMETERS-AND-MODES)
-     (SET-RAW-MODE SWITCHES-PARAMETERS-AND-MODES)
-     (SET-RAW-MODE-ON! SWITCHES-PARAMETERS-AND-MODES)
-     (SET-RAW-PROOF-FORMAT SWITCHES-PARAMETERS-AND-MODES)
-     (SET-REWRITE-STACK-LIMIT SWITCHES-PARAMETERS-AND-MODES)
-     (SET-RULER-EXTENDERS SWITCHES-PARAMETERS-AND-MODES)
-     (SET-RW-CACHE-STATE SWITCHES-PARAMETERS-AND-MODES)
-     (SET-RW-CACHE-STATE! SWITCHES-PARAMETERS-AND-MODES)
-     (SET-SAVED-OUTPUT SWITCHES-PARAMETERS-AND-MODES)
+     (SET-PROVER-STEP-LIMIT OTHER) ; was SWITCHES-PARAMETERS-AND-MODES
+     (SET-RAW-MODE DEFTTAG)
+     (SET-RAW-MODE-ON! DEFTTAG) ; was SWITCHES-PARAMETERS-AND-MODES
+     (SET-RAW-PROOF-FORMAT PROVER-OUTPUT) ; was SWITCHES-PARAMETERS-AND-MODES
+     (SET-REWRITE-STACK-LIMIT
+      REWRITE-STACK-LIMIT) ; was SWITCHES-PARAMETERS-AND-MODES
+     (SET-RULER-EXTENDERS POINTERS) ; was SWITCHES-PARAMETERS-AND-MODES
+     (SET-RW-CACHE-STATE REWRITE) ; was SWITCHES-PARAMETERS-AND-MODES
+     (SET-RW-CACHE-STATE! REWRITE) ; was SWITCHES-PARAMETERS-AND-MODES
+     (SET-SAVED-OUTPUT SET-GAG-MODE) ; was SWITCHES-PARAMETERS-AND-MODES
      (SET-SERIALIZE-CHARACTER SERIALIZE)
-     (SET-SPLITTER-OUTPUT SWITCHES-PARAMETERS-AND-MODES)
-     (SET-STATE-OK SWITCHES-PARAMETERS-AND-MODES)
-     (SET-TAU-AUTO-MODE SWITCHES-PARAMETERS-AND-MODES)
-     (SET-TOTAL-PARALLELISM-WORK-LIMIT SWITCHES-PARAMETERS-AND-MODES)
-     (SET-TOTAL-PARALLELISM-WORK-LIMIT-ERROR SWITCHES-PARAMETERS-AND-MODES)
+     (SET-SPLITTER-OUTPUT SPLITTER) ; was SWITCHES-PARAMETERS-AND-MODES
+     (SET-STATE-OK STATE) ; was SWITCHES-PARAMETERS-AND-MODES
+     (SET-TAU-AUTO-MODE TAU-SYSTEM) ; was SWITCHES-PARAMETERS-AND-MODES
+     (SET-TOTAL-PARALLELISM-WORK-LIMIT
+      PARALLELISM) ; was SWITCHES-PARAMETERS-AND-MODES
+     (SET-TOTAL-PARALLELISM-WORK-LIMIT-ERROR
+      PARALLELISM) ; was SWITCHES-PARAMETERS-AND-MODES
      (SET-TRACE-EVISC-TUPLE TRACE)
-     (SET-VERIFY-GUARDS-EAGERNESS SWITCHES-PARAMETERS-AND-MODES)
-     (SET-WATERFALL-PARALLELISM SWITCHES-PARAMETERS-AND-MODES)
-     (SET-WATERFALL-PARALLELISM-HACKS-ENABLED SWITCHES-PARAMETERS-AND-MODES)
-     (SET-WATERFALL-PARALLELISM-HACKS-ENABLED! SWITCHES-PARAMETERS-AND-MODES)
-     (SET-WATERFALL-PRINTING SWITCHES-PARAMETERS-AND-MODES)
-     (SET-WELL-FOUNDED-RELATION SWITCHES-PARAMETERS-AND-MODES)
+     (SET-VERIFY-GUARDS-EAGERNESS GUARD) ; was SWITCHES-PARAMETERS-AND-MODES
+     (SET-WATERFALL-PARALLELISM PARALLELISM) ; was SWITCHES-PARAMETERS-AND-MODES
+     (SET-WATERFALL-PARALLELISM-HACKS-ENABLED
+      PARALLELISM) ; was SWITCHES-PARAMETERS-AND-MODES
+     (SET-WATERFALL-PARALLELISM-HACKS-ENABLED!
+      PARALLELISM) ; was SWITCHES-PARAMETERS-AND-MODES
+     (SET-WATERFALL-PRINTING PARALLELISM) ; was SWITCHES-PARAMETERS-AND-MODES
+     (SET-WELL-FOUNDED-RELATION DEFUN) ; was SWITCHES-PARAMETERS-AND-MODES
      (SET-WORMHOLE-DATA MISCELLANEOUS)
      (SET-WORMHOLE-ENTRY-CODE MISCELLANEOUS)
-     (SET-WRITE-ACL2X SWITCHES-PARAMETERS-AND-MODES)
+     (SET-WRITE-ACL2X BOOKS-REFERENCE) ; was SWITCHES-PARAMETERS-AND-MODES
      (SETENV$ ACL2-BUILT-INS)
      (SEVENTH ACL2-BUILT-INS)
      (SHARP-BANG-READER OTHER)
@@ -4244,7 +4187,6 @@
      (SUBVERSIVE-INDUCTIONS MISCELLANEOUS)
      (SUBVERSIVE-RECURSIONS MISCELLANEOUS)
      (ACL2-PC::SUCCEED PROOF-CHECKER-COMMANDS)
-     (SWITCHES-PARAMETERS-AND-MODES legacy-orphans)
      (SYMBOL-< ACL2-BUILT-INS)
      (SYMBOL-ALISTP ACL2-BUILT-INS)
      (SYMBOL-LISTP ACL2-BUILT-INS)
@@ -4257,11 +4199,6 @@
      (SYS-CALL ACL2-BUILT-INS)
      (SYS-CALL+ ACL2-BUILT-INS)
      (SYS-CALL-STATUS ACL2-BUILT-INS)
-     (|Subsumption of Induction Candidates in App Example|
-      |Pages Written Especially for the Tours|)
-     (|Suggested Inductions in the Associativity of App Example|
-      |Pages Written Especially for the Tours|)
-     (|Symbolic Execution of Models| |Pages Written Especially for the Tours|)
      (TABLE EVENTS)
      (TAKE ACL2-BUILT-INS)
      (TAU-DATA HISTORY)
@@ -4272,12 +4209,12 @@
      (TAU-INTERVAL-LO TAU-SYSTEM)
      (TAU-INTERVAL-LO-REL TAU-SYSTEM)
      (TAU-INTERVALP TAU-SYSTEM)
-     (TAU-STATUS SWITCHES-PARAMETERS-AND-MODES)
+     (TAU-STATUS TAU-SYSTEM) ; was SWITCHES-PARAMETERS-AND-MODES
      (TAU-SYSTEM RULE-CLASSES)
      (TENTH ACL2-BUILT-INS)
      (TERM MISCELLANEOUS)
      (TERM-ORDER ACL2-BUILT-INS)
-     (TERM-TABLE SWITCHES-PARAMETERS-AND-MODES)
+     (TERM-TABLE META) ; was SWITCHES-PARAMETERS-AND-MODES
      (ACL2-PC::TH PROOF-CHECKER-COMMANDS)
      (THE ACL2-BUILT-INS)
      (THE-METHOD MISCELLANEOUS)
@@ -4321,80 +4258,6 @@
      (TYPE-SET-INVERTER RULE-CLASSES)
      (TYPE-SPEC DECLARE)
      (TYPESPEC-CHECK MISCELLANEOUS)
-     (|The Admission of App| |Pages Written Especially for the Tours|)
-     (|The Associativity of App| |Pages Written Especially for the Tours|)
-     (|The Base Case in the App Example|
-      |Pages Written Especially for the Tours|)
-     (|The End of the Flying Tour| |Pages Written Especially for the Tours|)
-     (|The End of the Proof of the Associativity of App|
-      |Pages Written Especially for the Tours|)
-     (|The End of the Walking Tour| |Pages Written Especially for the Tours|)
-     (|The Event Summary| |Pages Written Especially for the Tours|)
-     (|The Expansion of ENDP in the Induction Step (Step 0)|
-      |Pages Written Especially for the Tours|)
-     (|The Expansion of ENDP in the Induction Step (Step 1)|
-      |Pages Written Especially for the Tours|)
-     (|The Expansion of ENDP in the Induction Step (Step 2)|
-      |Pages Written Especially for the Tours|)
-     (|The Falling Body Model| |Pages Written Especially for the Tours|)
-     (|The Final Simplification in the Base Case (Step 0)|
-      |Pages Written Especially for the Tours|)
-     (|The Final Simplification in the Base Case (Step 1)|
-      |Pages Written Especially for the Tours|)
-     (|The Final Simplification in the Base Case (Step 2)|
-      |Pages Written Especially for the Tours|)
-     (|The Final Simplification in the Base Case (Step 3)|
-      |Pages Written Especially for the Tours|)
-     (|The First Application of the Associativity Rule|
-      |Pages Written Especially for the Tours|)
-     (|The Induction Scheme Selected for the App Example|
-      |Pages Written Especially for the Tours|)
-     (|The Induction Step in the App Example|
-      |Pages Written Especially for the Tours|)
-     (|The Instantiation of the Induction Scheme|
-      |Pages Written Especially for the Tours|)
-     (|The Justification of the Induction Scheme|
-      |Pages Written Especially for the Tours|)
-     (|The Proof of the Associativity of App|
-      |Pages Written Especially for the Tours|)
-     (|The Q.E.D. Message| |Pages Written Especially for the Tours|)
-     (|The Rules used in the Associativity of App Proof|
-      |Pages Written Especially for the Tours|)
-     (|The Simplification of the Induction Conclusion (Step 0)|
-      |Pages Written Especially for the Tours|)
-     (|The Simplification of the Induction Conclusion (Step 1)|
-      |Pages Written Especially for the Tours|)
-     (|The Simplification of the Induction Conclusion (Step 10)|
-      |Pages Written Especially for the Tours|)
-     (|The Simplification of the Induction Conclusion (Step 11)|
-      |Pages Written Especially for the Tours|)
-     (|The Simplification of the Induction Conclusion (Step 12)|
-      |Pages Written Especially for the Tours|)
-     (|The Simplification of the Induction Conclusion (Step 2)|
-      |Pages Written Especially for the Tours|)
-     (|The Simplification of the Induction Conclusion (Step 3)|
-      |Pages Written Especially for the Tours|)
-     (|The Simplification of the Induction Conclusion (Step 4)|
-      |Pages Written Especially for the Tours|)
-     (|The Simplification of the Induction Conclusion (Step 5)|
-      |Pages Written Especially for the Tours|)
-     (|The Simplification of the Induction Conclusion (Step 6)|
-      |Pages Written Especially for the Tours|)
-     (|The Simplification of the Induction Conclusion (Step 7)|
-      |Pages Written Especially for the Tours|)
-     (|The Simplification of the Induction Conclusion (Step 8)|
-      |Pages Written Especially for the Tours|)
-     (|The Simplification of the Induction Conclusion (Step 9)|
-      |Pages Written Especially for the Tours|)
-     (|The Summary of the Proof of the Trivial Consequence|
-      |Pages Written Especially for the Tours|)
-     (|The Theorem that App is Associative|
-      |Pages Written Especially for the Tours|)
-     (|The Time Taken to do the Associativity of App Proof|
-      |Pages Written Especially for the Tours|)
-     (|The Tours| |Pages Written Especially for the Tours|)
-     (|The WARNING about the Trivial Consequence|
-      |Pages Written Especially for the Tours|)
      (U HISTORY)
      (UBT HISTORY)
      (UBT! HISTORY)
@@ -4418,14 +4281,14 @@
      (UNSUPPORTED-PARALLELISM-FEATURES PARALLELISM)
      (UNSUPPORTED-WATERFALL-PARALLELISM-FEATURES PARALLEL-PROOF)
      (UNTRACE$ TRACE)
-     (UNTRANS-TABLE SWITCHES-PARAMETERS-AND-MODES)
+     (UNTRANS-TABLE MACROS) ; was SWITCHES-PARAMETERS-AND-MODES
      (UNTRANSLATE ACL2-BUILT-INS)
      (ACL2-PC::UP PROOF-CHECKER-COMMANDS)
      (UPDATE-NTH ACL2-BUILT-INS)
      (UPPER-CASE-P ACL2-BUILT-INS)
      (USE MISCELLANEOUS)
      (ACL2-PC::USE PROOF-CHECKER-COMMANDS)
-     (USER-DEFINED-FUNCTIONS-TABLE SWITCHES-PARAMETERS-AND-MODES)
+     (USER-DEFINED-FUNCTIONS-TABLE MACROS) ; was SWITCHES-PARAMETERS-AND-MODES
      (USING-COMPUTED-HINTS MISCELLANEOUS)
      (USING-COMPUTED-HINTS-1 MISCELLANEOUS)
      (USING-COMPUTED-HINTS-2 MISCELLANEOUS)
@@ -4437,15 +4300,12 @@
      (USING-COMPUTED-HINTS-8 MISCELLANEOUS)
      (USING-ENABLED-RULES MISCELLANEOUS)
      (USING-TABLES-EFFICIENTLY TABLE)
-     (|Undocumented Topic| |Pages Written Especially for the Tours|)
-     (|Using the Associativity of App to Prove a Trivial Consequence|
-      |Pages Written Especially for the Tours|)
      (VALUE-TRIPLE EVENTS)
      (VERBOSE-PSTACK PSTACK)
      (VERIFY PROOF-CHECKER)
      (VERIFY-GUARDS EVENTS)
      (VERIFY-GUARDS+ EVENTS)
-     (VERIFY-GUARDS-EAGERNESS SWITCHES-PARAMETERS-AND-MODES)
+     (VERIFY-GUARDS-EAGERNESS POINTERS) ; was SWITCHES-PARAMETERS-AND-MODES
      (VERIFY-GUARDS-FORMULA OTHER)
      (VERIFY-TERMINATION EVENTS)
      (VERSION MISCELLANEOUS)
@@ -4458,11 +4318,11 @@
      (WET TRACE)
      (WHY-BRR MISCELLANEOUS)
      (WITH-FAST-ALIST HONS-AND-MEMOIZATION)
-     (WITH-GUARD-CHECKING SWITCHES-PARAMETERS-AND-MODES)
+     (WITH-GUARD-CHECKING GUARD) ; was SWITCHES-PARAMETERS-AND-MODES
      (WITH-LIVE-STATE ACL2-BUILT-INS)
      (WITH-LOCAL-STATE STOBJ)
      (WITH-LOCAL-STOBJ STOBJ)
-     (WITH-OUTPUT SWITCHES-PARAMETERS-AND-MODES)
+     (WITH-OUTPUT PROVER-OUTPUT) ; was SWITCHES-PARAMETERS-AND-MODES
      (WITH-OUTPUT-LOCK PARALLEL-PROGRAMMING)
      (WITH-PROVER-STEP-LIMIT OTHER)
      (WITH-PROVER-TIME-LIMIT OTHER)
@@ -4482,19 +4342,10 @@
      (ACL2-PC::WRAP-INDUCT PROOF-CHECKER-COMMANDS)
      (ACL2-PC::WRAP1 PROOF-CHECKER-COMMANDS)
      (WRITE-BYTE$ ACL2-BUILT-INS)
-     (|What Is ACL2(Q)| |Pages Written Especially for the Tours|)
-     (|What is Required of the User(Q)| |Pages Written Especially for the Tours|)
-     (|What is a Mathematical Logic(Q)| |Pages Written Especially for the Tours|)
-     (|What is a Mechanical Theorem Prover(Q)|
-      |Pages Written Especially for the Tours|)
-     (|What is a Mechanical Theorem Prover(Q) (cont)|
-      |Pages Written Especially for the Tours|)
      (ACL2-PC::X PROOF-CHECKER-COMMANDS)
      (ACL2-PC::X-DUMB PROOF-CHECKER-COMMANDS)
      (XARGS MISCELLANEOUS)
      (XOR ACL2-BUILT-INS)
-     (|You Must Think about the Use of a Formula as a Rule|
-      |Pages Written Especially for the Tours|)
      (ZERO-TEST-IDIOMS PROGRAMMING)
      (ZEROP ACL2-BUILT-INS)
      (ZIP ACL2-BUILT-INS)
@@ -8867,7 +8718,9 @@
 ; Keep the following in sync with chk-embedded-event-form; see comment above.
 
            ((sym . lst)
-            (cond ((member-eq sym '(skip-proofs
+            (cond ((not (symbolp sym))
+                   nil)
+                  ((member-eq sym '(skip-proofs
                                     with-output
                                     with-prover-step-limit
                                     with-prover-time-limit))
@@ -10018,6 +9871,7 @@
       ((and (eq (cert-op state) :convert-pcert)
             (not (f-get-global 'in-local-flg state))
             (not (consp check-expansion))
+            (not expansion?)
 
 ; This case should not happen, because all make-event forms should already be
 ; expanded away when we do the Convert procedure of provisional certification,
@@ -10037,11 +9891,11 @@
            "Implementation error: You should not be seeing this message!  ~
             Please contact the ACL2 implementors.~|~%Make-event expansion is ~
             illegal during the Convert procedure of provisional certification ~
-            (unless :check-expansion is supplied a consp argument).  ~
-            Expansion for make-event of the form ~x0 is thus not allowed.  ~
-            The use of a .acl2x file can sometimes solve this problem.  See ~
-            :DOC provisional-certification."
-           form))
+            (unless :check-expansion is supplied a consp argument or ~
+            :expansion? is supplied a non-nil argument).  The form ~x0 is ~
+            thus illegal.  The use of a .acl2x file can sometimes solve this ~
+            problem.  See :DOC provisional-certification."
+           whole-form))
       ((not (or (eq check-expansion nil)
                 (eq check-expansion t)
                 (consp check-expansion)))
@@ -12973,9 +12827,10 @@
   (and (symbolp x)
        (equal (symbol-name x) str)))
 
-(defun chk-acceptable-certify-book1 (file dir k cmds cert-obj cbds names
-                                          cert-op suspect-book-action-alist
-                                          wrld ctx state)
+(defun chk-acceptable-certify-book1 (user-book-name file dir k cmds cert-obj
+                                                    cbds names cert-op
+                                                    suspect-book-action-alist
+                                                    wrld ctx state)
 
 ; This function is checking the appropriateness of the environment in which
 ; certify-book is called.
@@ -13025,10 +12880,11 @@
      ((and (not (symbol-name-equal k "?"))
            (not (eql k (length cmds))))
       (er soft ctx
-          "You indicated that the portcullis for ~x0 would be of length ~x1 ~
-           but it is actually of length ~x2.  Perhaps you had better inspect ~
-           the world and call certify-book again."
-          file k (length cmds)))
+          "Your certify-book command specifies a certification world of ~
+           length ~x0 but it is actually of length ~x1.  Perhaps you intended ~
+           to issue a command of the form: (certify-book ~x2 ~x1 ...).  See ~
+           :DOC certify-book."
+          k (length cmds) user-book-name))
      ((assoc-equal file pre-alist)
 
 ; Why do we do this?  By insuring that file is not in the include-book-alist
@@ -13333,7 +13189,8 @@
                                       t)) ; evalp = t, so world can change
                (cert-obj-cmds (value (and cert-obj
                                           (access cert-obj cert-obj :cmds)))))
-            (chk-acceptable-certify-book1 full-book-name
+            (chk-acceptable-certify-book1 book-name
+                                          full-book-name
                                           dir
                                           '? ; no check needed for k = t
                                           nil
@@ -13344,9 +13201,10 @@
                                           suspect-book-action-alist
                                           (w state) ; see evalp comment above
                                           ctx state)))))
-       (t (chk-acceptable-certify-book1 full-book-name dir k cmds nil cbds
-                                        names cert-op suspect-book-action-alist
-                                        wrld ctx state)))))))
+       (t (chk-acceptable-certify-book1 book-name full-book-name dir k cmds nil
+                                        cbds names cert-op
+                                        suspect-book-action-alist wrld ctx
+                                        state)))))))
 
 (defun print-objects (lst ch state)
   (cond ((null lst) state)
@@ -13548,22 +13406,32 @@
 ; This function supports the creation of relocated .cert files for Debian GCL
 ; distributions.  See make-certificate-file.
 
-; Warning: It is tempting to replace strings in (car portcullis), which is the
-; list of portcullis commands, and the expansion-alist.  However, that will
-; result in an uncertified book after moving the .cert.final file to the .cert
-; file, because post-alist3 contains a checksum for the book as computed by
-; function check-sum-cert, using the portcullis commands and the
-; expansion-alist.
+; WARNING: Relocating .cert files is not truly supported!  This is just a
+; best-effort attempt to do so.  In particular, consider the question of
+; whether to apply the function replace-string-prefix-in-tree in (car
+; portcullis), which is the list of portcullis commands, and in
+; expansion-alist, which stores results from make-event expansion.  On the one
+; hand, doing so will likely result in an uncertified book after moving the
+; .cert.final file to the .cert file, because post-alist3 contains a checksum
+; for the book as computed by function check-sum-cert, using the portcullis
+; commands and the expansion-alist.  But an explicit uncertified book error
+; seems preferable to leaving the strings unchanged, since they are probably
+; invalid pathnames (based on pathnames at certify-book time, not on the user's
+; current file system).  So we go ahead and include those applications of
+; replace-string-prefix-in-tree.
 
   (make-certificate-file1
    file
-   (cons (car portcullis)
+   (cons (replace-string-prefix-in-tree ; see comment above
+          (car portcullis) old-dir (length old-dir) new-dir)
          (replace-string-prefix-in-tree
           (cdr portcullis) old-dir (length old-dir) new-dir))
    certification-file
    (replace-string-prefix-in-tree
     post-alist3 old-dir (length old-dir) new-dir)
-   expansion-alist pcert-info cert-op ctx state))
+   (replace-string-prefix-in-tree ; see comment above
+    expansion-alist old-dir (length old-dir) new-dir)
+   pcert-info cert-op ctx state))
 
 (defun make-certificate-file (file portcullis post-alist1 post-alist2
                                    expansion-alist pcert-info
@@ -15714,6 +15582,9 @@
 #+(and hons (not acl2-loop-only))
 (save-def
 (defun expansion-alist-pkg-names-memoize (x)
+
+; See expansion-alist-pkg-names.
+
   (cond ((consp x)
          (hons-union-ordered-string-lists
           (expansion-alist-pkg-names-memoize (car x))
@@ -15724,6 +15595,13 @@
 )
 
 (defun expansion-alist-pkg-names (x base-kpa)
+
+; Warning: With #+hons, there could be performance problems if this is put into
+; :logic mode without verifying guards.  That is because
+; expansion-alist-pkg-names-memoize is memoized by running acl2h-init, and for
+; memoization, we expect the raw Lisp function to be executed and call
+; expansion-alist-pkg-names; but :ideal mode functions are run without ever
+; slipping into raw Lisp.
 
 ; For an explanation of the point of this function, see the comment at the call
 ; of expansion-alist-pkg-names in certify-book-fn.
@@ -22588,10 +22466,12 @@
      protect-default congruent-to missing-only doc ctx state event-form)))
 
 #-acl2-loop-only
-(defun-one-output mv-let-for-with-local-stobj (mv-let-form st creator flet-fns w)
+(defun-one-output mv-let-for-with-local-stobj (mv-let-form st creator flet-fns
+                                                           w program-p)
 
 ; If w is not nil, then it is the current ACL2 world and we are to oneify the
-; appropriate subforms.
+; appropriate subforms with the indicated program-p argument.  If w is nil,
+; then program-p is irrelevant.
 
 ; It was tempting to have an acl2-loop-only version of the body below as well,
 ; which would omit the binding of the live var.  But if someone were to
@@ -22622,7 +22502,9 @@
                                (*32-bit-integer-stack-length*
                                 *32-bit-integer-stack-length*)))
                             (t `((,(the-live-var st) ,st)))))
-               ,(let ((p (if w (oneify producer flet-fns w t) producer)))
+               ,(let ((p (if w
+                             (oneify producer flet-fns w program-p)
+                           producer)))
                   (if (eq st 'state)
 
 ; We should lock this computation when #+acl2-par, even though special
@@ -22649,8 +22531,9 @@
              (declare (ignore ,st))
              ,@(if w
                    (if (cdr rest) ; rest is ((declare (ignore ...)) body)
-                       (list (car rest) (oneify (cadr rest) flet-fns w t))
-                     (list (oneify (car rest) flet-fns w t)))
+                       (list (car rest)
+                             (oneify (cadr rest) flet-fns w program-p))
+                     (list (oneify (car rest) flet-fns w program-p)))
                  rest))))
 
 #-acl2-loop-only ; see the comment in mv-let-for-with-local-stobj
@@ -22888,7 +22771,7 @@
               (er hard 'with-local-stobj
                   "Macroexpansion of a with-local-stobj call caused an error. ~
                    See :DOC with-local-stobj.")
-            (mv-let-for-with-local-stobj mv-let-form st creator nil nil))))
+            (mv-let-for-with-local-stobj mv-let-form st creator nil nil nil))))
 
 (defun create-state ()
   (declare (xargs :guard t))
@@ -23621,7 +23504,7 @@
        symbol-function differs from the :MEMOIZED-FN field of its memoization ~
        hash-table entry.  Perhaps the trace or untrace request occurred in ~
        the context of ~x1; at any rate, it is illegal."
-      fn 'memoize-off))
+      fn ctx))
 
 (defun untrace$-fn1 (fn state)
   #-acl2-loop-only
@@ -23835,10 +23718,6 @@
 ; This is a strange state of affairs that we prefer not to try to support.  For
 ; example, it is not clear how things would work out after we installed the
 ; traced symbol-function as the :memoized-fn.
-
-; Note by the way that under memoize-off, tracing will be defeated.  If this
-; presents a big problem then we can reconsider the design of how tracing and
-; memoization interact.
 
       (memoize-off-trace-error fn ctx))
     `(defun ,fn
@@ -25127,32 +25006,29 @@
                ~#c~[~ ~ Equiv: ~ye~|~/~]~
                ~#s~[~/~ ~ Substitution: ~Yat~|~]~
                ~#5~[~/~
-                    ~ ~ Remaining free variable: ~&6~/~
-                    ~ ~ Remaining free variables: ~&6~sn~]~
+                    ~ ~ ~@f variable: ~&6~/~
+                    ~ ~ ~@f variables: ~&6~sn~]~
                ~#7~[~/  WARNING:  One of the hypotheses is (equivalent to) NIL, ~
                and hence will apparently be impossible to relieve.~]~|"))
          (pprogn
-          (cond
-           ((and show-more pl-p) ; then just show more
-            state)
-           (t
-            (fms fmt-string
-                 (list (cons #\c (if (eq caller 'show-rewrites) 0 1))
-                       (cons #\3 (untrans0 subst-rhs term-id-iff
-                                           abbreviations))
-                       (cons #\s (if pl-p 1 0))
-                       (cons #\a (untranslate-subst-abb unify-subst
-                                                        abbreviations
-                                                        state))
-                       (cons #\b (if subst-hyps 1 0))
-                       (cons #\e equiv)
-                       (cons #\4 (untrans0-lst subst-hyps t abbreviations))
-                       (cons #\5 (zero-one-or-more (length free)))
-                       (cons #\6 free)
-                       (cons #\n "")
-                       (cons #\7 (if (member-eq nil subst-hyps) 1 0))
-                       (cons #\t (term-evisc-tuple nil state)))
-                 (standard-co state) state nil)))
+          (fms fmt-string
+               (list (cons #\c (if (eq caller 'show-rewrites) 0 1))
+                     (cons #\3 (untrans0 subst-rhs term-id-iff
+                                         abbreviations))
+                     (cons #\s (if pl-p 1 0))
+                     (cons #\a (untranslate-subst-abb unify-subst
+                                                      abbreviations
+                                                      state))
+                     (cons #\b (if subst-hyps 1 0))
+                     (cons #\e equiv)
+                     (cons #\4 (untrans0-lst subst-hyps t abbreviations))
+                     (cons #\f (if pl-p "Free" "Remaining free"))
+                     (cons #\5 (zero-one-or-more (length free)))
+                     (cons #\6 free)
+                     (cons #\n "")
+                     (cons #\7 (if (member-eq nil subst-hyps) 1 0))
+                     (cons #\t (term-evisc-tuple nil state)))
+               (standard-co state) state nil)
           (cond (show-more
                  (pprogn
                   (cond (pl-p state)
@@ -25173,6 +25049,7 @@
                              (cons #\e equiv)
                              (cons #\4 (untrans0-lst subst-hyps-2 t
                                                      abbreviations))
+                             (cons #\f (if pl-p "Free" "Remaining free"))
                              (cons #\5 (if (eql (length free-2) 1)
                                            1
                                          2))
@@ -25199,31 +25076,51 @@
     state)
    (t
     (pprogn
-     (let ((sar (car app-rules)))
-       (let ((lemma (access sar sar :lemma))
-             (alist (access sar sar :alist))
-             (index (access sar sar :index)))
-         (mv-let
-          (hyps result rune)
-          (cond
-           ((eq caller 'show-rewrites)
-            (mv (access rewrite-rule lemma :hyps)
-                (access rewrite-rule lemma :rhs)
-                (access rewrite-rule lemma :rune)))
-           (t
-            (mv (access linear-lemma lemma :hyps)
-                (access linear-lemma lemma :concl)
-                (access linear-lemma lemma :rune))))
-          (mv-let
-           (subst-hyps unify-subst ttree)
-           (unrelieved-hyps rune hyps alist type-alist nil w state ens nil)
-           (declare (ignore ttree))
-           (let* ((result-and-hyps-vars
-                   (union-eq (all-vars result)
-                             (all-vars1-lst hyps nil)))
-                  (free (set-difference-assoc-eq
-                         result-and-hyps-vars
-                         unify-subst)))
+     (let* ((sar (car app-rules))
+            (lemma (access sar sar :lemma))
+            (alist (access sar sar :alist))
+            (index (access sar sar :index)))
+       (mv-let
+        (hyps result rune)
+        (cond
+         ((eq caller 'show-rewrites)
+          (mv (access rewrite-rule lemma :hyps)
+              (access rewrite-rule lemma :rhs)
+              (access rewrite-rule lemma :rune)))
+         (t
+          (mv (access linear-lemma lemma :hyps)
+              (access linear-lemma lemma :concl)
+              (access linear-lemma lemma :rune))))
+        (mv-let
+         (subst-hyps unify-subst ttree)
+         (unrelieved-hyps rune hyps alist type-alist nil w state ens nil)
+         (declare (ignore ttree))
+         (let* ((result-and-hyps-vars
+                 (union-eq (all-vars result)
+                           (all-vars1-lst hyps nil)))
+                (free (set-difference-assoc-eq
+                       result-and-hyps-vars
+                       unify-subst)))
+           (cond
+            (pl-p
+             (show-rewrite-linear
+              caller index col rune
+              (if (eq caller 'show-rewrites)
+                  (access rewrite-rule lemma :nume)
+                (access linear-lemma lemma :nume))
+              nil ; show-more
+              subst-hyps
+              nil ; subst-hyps-2, irrelevant
+              unify-subst
+              nil ; unify-subst-2,  irrelevant
+              free
+              nil ; free-2, irrelevant
+              result abbreviations term-id-iff ens enabled-only-flg
+              (and (eq caller 'show-rewrites)
+                   (access sar sar :equiv))
+              t ; pl-p
+              state))
+            (t
              (mv-let
               (show-more subst-hyps-2 unify-subst-2)
               (cond ((and free subst-hyps)
@@ -25247,7 +25144,7 @@
                (if (eq caller 'show-rewrites)
                    (access rewrite-rule lemma :nume)
                  (access linear-lemma lemma :nume))
-               show-more subst-hyps  subst-hyps-2 unify-subst unify-subst-2
+               show-more subst-hyps subst-hyps-2 unify-subst unify-subst-2
                free
                (set-difference-assoc-eq
                 result-and-hyps-vars
@@ -25255,7 +25152,8 @@
                result abbreviations term-id-iff ens enabled-only-flg
                (and (eq caller 'show-rewrites)
                     (access sar sar :equiv))
-               pl-p state)))))))
+               nil ; pl-p
+               state))))))))
      (show-rewrites-linears
       caller (cdr app-rules) col abbreviations term-id-iff ens type-alist
       enabled-only-flg pl-p w state)))))
@@ -25874,7 +25772,7 @@
                                caller))
                           (alt-pair
                            (er soft ctx
-                               "The keyword ~x0 was previoiusly bound to ~
+                               "The keyword ~x0 was previously bound to ~
                                 directory ~x1 by a call of ~x2.  To bind ~x0 ~
                                 with ~x3 first evaluate ~x4."
                                keyword
@@ -26264,7 +26162,8 @@
                          (getprop key 'formals t 'current-acl2-world wrld)
                        t))
         (key-class (symbol-class key wrld))
-        (condition (and val (cdr (assoc-eq :condition-fn val)))))
+        (condition (and val (cdr (assoc-eq :condition-fn val))))
+        (inline (and val (cdr (assoc-eq :inline val)))))
     (let ((result
            (cond
             ((eq key-formals t)
@@ -26321,12 +26220,13 @@
                  "~@0~x1 is constrained.  You may instead wish to memoize a ~
                   caller or to memoize its attachment (see :DOC defattach)."
                  str key))
-            ((if (eq key-class :program)
-                 (member-eq key *primitive-program-fns-with-raw-code*)
-               (member-eq key *primitive-logic-fns-with-raw-code*))
+            ((and inline
+                  (if (eq key-class :program)
+                      (member-eq key *primitive-program-fns-with-raw-code*)
+                    (member-eq key *primitive-logic-fns-with-raw-code*)))
              (er hard ctx
                  "~@0The built-in function symbol ~x1 has associated raw-Lisp ~
-                  code, hence is illegal to memoize."
+                  code, hence is illegal to memoize unless :RECURSIVE is nil."
                  str key))
             ((not (symbol-alistp val))
              (er hard ctx
@@ -29653,7 +29553,7 @@
 ; computation should now cause a guard violation error and thus we don't want
 ; to return such a value.
 
-; Let m a memoized function symbol.  If m was memoized with :aok nil (the
+; Let m be a memoized function symbol.  If m was memoized with :aok nil (the
 ; default), then the invariant maintained is simply that the
 ; :ext-anc-attachments field of the memoize-info-ht-entry record for m is nil.
 ; This implies the property we desire, that all stored entries for m are valid,
@@ -29677,22 +29577,20 @@
 
 ; For efficiency, we implement extend-world1, retract-world1, and recover-world
 ; so that they do not update such fields or clear memo-tables until all trips
-; have been processed.  At that point we see whether any defattach event has
-; been installed or undone, and then we see whether any memo-table's
-; :ext-anc-attachments field needs to be recalculated, and whether furthermore
-; the table needs to be invalidated, as discussed above.  For efficiency, we
-; set a variable to a list L of canonical siblings of all functions whose
-; attachment may have been installed, eliminated, or changed.  We then restrict
-; our check on :ext-anc-attachments fields to check attachments for siblings of
-; functions in L.  In particular, if L is empty then nothing needs to be done.
+; have been processed.  (This update is performed by
+; update-memo-entries-for-attachments, which is called at the end of the above
+; world updates, by update-wrld-structures.)  At that point we see whether any
+; defattach event has been installed or undone, and then we see whether any
+; memo-table's :ext-anc-attachments field needs to be recalculated, and whether
+; furthermore the table needs to be invalidated, as discussed above.  For
+; efficiency, we set a global variable, *defattach-fns*, to a list L of
+; canonical siblings of all functions whose attachment may have been installed,
+; eliminated, or changed.  We then restrict our check on :ext-anc-attachments
+; fields (in update-memo-entries-for-attachments) to check attachments for
+; siblings of functions in L.  In particular, if L is empty then nothing needs
+; to be done.
 
-;;; Going backward, when we see that an extended ancestor attachment has
-;;; changed or been added for the memo table of fn, then add fn to a list of
-;;; functions that will eventually have their memo tables strongly cleared when
-;;; we finish retract-world1.  (How about recover-world?  Perhaps just strongly
-;;; clear all memo tables unless I find a better idea.)
-
-; Start code supporting extended-ancestors.
+; Start code supporting ext-ancestors-attachments.
 
 (defun attachment-pairs (fns wrld acc)
 
@@ -29712,9 +29610,9 @@
 
   (attachment-pairs (siblings f wrld) wrld nil))
 
-(defun extended-ancestors4 (fns wrld fal)
+(defun ext-ancestors-attachments4 (fns wrld fal)
   (cond ((endp fns) fal)
-        (t (extended-ancestors4
+        (t (ext-ancestors-attachments4
             (cdr fns)
             wrld
             (cond ((hons-get (car fns) fal)
@@ -29723,14 +29621,14 @@
                                  (sibling-attachments (car fns) wrld)
                                  fal)))))))
 
-(defun extended-ancestors3 (components wrld fal)
+(defun ext-ancestors-attachments3 (components wrld fal)
   (cond ((endp components) fal)
-        (t (extended-ancestors3
+        (t (ext-ancestors-attachments3
             (cdr components)
             wrld
             (let ((anc (access attachment-component (car components) :ord-anc))
                   (path (access attachment-component (car components) :path)))
-              (extended-ancestors4
+              (ext-ancestors-attachments4
                (if path
                    (cons (car path) ; attachment-component-owner
                          anc)
@@ -29738,14 +29636,14 @@
                wrld
                fal))))))
 
-(defun extended-ancestors2 (canon-gs arfal wrld canon-gs-fal fal)
+(defun ext-ancestors-attachments2 (canon-gs arfal wrld canon-gs-fal fal)
   (cond ((endp canon-gs) fal)
         (t (let ((g (car canon-gs)))
              (cond ((hons-get g canon-gs-fal)
-                    (extended-ancestors2
+                    (ext-ancestors-attachments2
                      (cdr canon-gs) arfal wrld canon-gs-fal fal))
                    (t (let ((rec (cdr (hons-get g arfal))))
-                        (extended-ancestors2
+                        (ext-ancestors-attachments2
                          (cdr canon-gs) arfal wrld
                          (hons-acons g fal canon-gs-fal)
                          (let ((fal (hons-acons
@@ -29753,7 +29651,7 @@
                                      (sibling-attachments (car canon-gs)
                                                           wrld)
                                      fal)))
-                           (cond (rec (extended-ancestors3
+                           (cond (rec (ext-ancestors-attachments3
                                        (access attachment rec :components)
                                        wrld
                                        fal))
@@ -29767,7 +29665,7 @@
                            (cons (canonical-sibling (cdar alist) wrld)
                                  acc)))))
 
-(defun extended-ancestors1 (fns canon-gs arfal wrld fal)
+(defun ext-ancestors-attachments1 (fns canon-gs arfal wrld fal)
 
 ; Arfal is a fast alist mapping g-canonical function symbols to attachment
 ; records.  We accumulate ordinary ancestors of members of fns, including those
@@ -29776,15 +29674,16 @@
 ; ancestors of members of canon-gs (including those functions) into fal.
 
   (cond ((endp fns)
-         (extended-ancestors2 canon-gs arfal wrld 'extended-ancestors2 fal))
+         (ext-ancestors-attachments2
+          canon-gs arfal wrld 'ext-ancestors-attachments2 fal))
         ((hons-get (car fns) fal)
-         (extended-ancestors1 (cdr fns) canon-gs arfal wrld fal))
+         (ext-ancestors-attachments1 (cdr fns) canon-gs arfal wrld fal))
         (t (let* ((alist (sibling-attachments (car fns) wrld))
                   (canon-gs (cond ((null alist) ; optimization
                                    canon-gs)
                                   (t (append (canonical-cdrs alist wrld nil)
                                              canon-gs)))))
-             (extended-ancestors1
+             (ext-ancestors-attachments1
               (append (canonical-ancestors (car fns) wrld nil)
                       (cdr fns))
               canon-gs arfal wrld
@@ -29798,20 +29697,20 @@
                         (car attachment-records)
                         fal)))))
 
-(defun extended-ancestors (f wrld)
+(defun ext-ancestors-attachments (f wrld)
 
 ; The implementation of this function uses hons-acons, so might only be
 ; efficient when #+hons (which was its intended use when written).
 
   (let ((g (canonical-sibling f wrld)))
-    (extended-ancestors1 (cons g
-                               (canonical-ancestors g wrld nil))
-                         nil
-                         (attachment-records-fal
-                          (global-val 'attachment-records wrld)
-                          :attachment-records-fal)
-                         wrld
-                         f)))
+    (ext-ancestors-attachments1 (cons g
+                                      (canonical-ancestors g wrld nil))
+                                nil
+                                (attachment-records-fal
+                                 (global-val 'attachment-records wrld)
+                                 :attachment-records-fal)
+                                wrld
+                                f)))
 
 (defun ext-anc-attachment-missing (alist wrld)
 
@@ -29846,18 +29745,20 @@
 
 ; Acc is initially t, but is nil when we find that an alist needs to grow.
 
-  (cond ((endp fns) acc)
-        (t (let* ((f (car fns))
-                  (siblings (siblings f wrld))
-                  (alist (cdr (hons-get f ext-anc-attachments)))
-                  (missing (ext-anc-attachment-missing alist wrld)))
-             (or missing
-                 (ext-anc-attachments-valid-p
-                  (cdr fns)
-                  ext-anc-attachments
-                  wrld
-                  (and acc
-                       (ext-anc-attachments-valid-p-1 siblings alist wrld))))))))
+  (cond
+   ((endp fns) acc)
+   (t (let* ((f (car fns))
+             (alist (cdr (hons-get f ext-anc-attachments)))
+             (missing (ext-anc-attachment-missing alist wrld)))
+        (or missing
+            (ext-anc-attachments-valid-p
+             (cdr fns)
+             ext-anc-attachments
+             wrld
+             (and acc
+                  (ext-anc-attachments-valid-p-1 (siblings f wrld)
+                                                 alist
+                                                 wrld))))))))
 
 ; Start definitions related to defun-inline.
 

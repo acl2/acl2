@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
@@ -24,32 +34,33 @@
 
 ;; BOZO more unit tests!
 
+(defparser-top vl-parse-nonnull-port)
+
 (defmacro test-parse-port (&key input (successp 't) name expr)
   `(with-output
      :off summary
-     (assert! (mv-let (erp val tokens warnings)
-                (vl-parse-nonnull-port
-                 :tokens (make-test-tokens ,input)
-                 :warnings 'blah-warnings
-                 :config *vl-default-loadconfig*)
-                (if ,successp
-                    (and (prog2$ (cw "Erp: ~x0.~%" erp)
-                                 (not erp))
-                         (prog2$ (cw "Val: ~x0.~%" val)
-                                 (vl-port-p val))
-                         (prog2$ (cw "Name: ~x0.~%" (vl-port->name val))
-                                 (equal (vl-port->name val) ',name))
-                         (prog2$ (cw "Expr: ~x0.~%"
-                                     (vl-pretty-expr (vl-port->expr val)))
-                                 (equal (vl-pretty-expr (vl-port->expr val))
-                                        ',expr))
-                         (prog2$ (cw "Tokens: ~x0.~%" tokens)
-                                 (not tokens))
-                         (prog2$ (cw "Warnings: ~x0.~%" warnings)
-                                 (equal warnings 'blah-warnings)))
-                  ;; Otherwise, we expect it to fail.
-                  (prog2$ (cw "Erp: ~x0.~%" erp)
-                          erp))))))
+     (assert! (b* ((tokens (make-test-tokens ,input))
+                   (config *vl-default-loadconfig*)
+                   (pstate (make-vl-parsestate :warnings 'blah-warnings))
+                   ((mv erp val tokens (vl-parsestate pstate))
+                    (vl-parse-nonnull-port-top))
+                   ((unless ,successp)
+                    (cw "Expect error.  Actual error: ~x0.~%" erp)
+                    erp))
+                (and (prog2$ (cw "Erp: ~x0.~%" erp)
+                             (not erp))
+                     (prog2$ (cw "Val: ~x0.~%" val)
+                             (vl-port-p val))
+                     (prog2$ (cw "Name: ~x0.~%" (vl-port->name val))
+                             (equal (vl-port->name val) ',name))
+                     (prog2$ (cw "Expr: ~x0.~%"
+                                 (vl-pretty-expr (vl-port->expr val)))
+                             (equal (vl-pretty-expr (vl-port->expr val))
+                                    ',expr))
+                     (prog2$ (cw "Tokens: ~x0.~%" tokens)
+                             (not tokens))
+                     (prog2$ (cw "Warnings: ~x0.~%" pstate.warnings)
+                             (equal pstate.warnings 'blah-warnings)))))))
 
 (test-parse-port :input "a"
                  :name "a"
@@ -57,7 +68,7 @@
 
 (test-parse-port :input "a[3:0]"
                  :name nil
-                 :expr (:vl-partselect-colon nil (id "a") 3 0))
+                 :expr (:vl-select-colon nil (id "a") 3 0))
 
 (test-parse-port :input "a[3]"
                  :name nil
@@ -76,7 +87,7 @@
 
 (test-parse-port :input ".foo(a[3:0])"
                  :name "foo"
-                 :expr (:vl-partselect-colon nil (id "a") 3 0))
+                 :expr (:vl-select-colon nil (id "a") 3 0))
 
 (test-parse-port :input ".foo(a[3])"
                  :name "foo"
@@ -114,34 +125,33 @@
 
 
 
-
+(defparser-top vl-parse-list-of-ports)
 
 (defmacro test-parse-portlist (&key input (successp 't) names exprs)
   `(with-output
      :off summary
-     (assert! (mv-let (erp val tokens warnings)
-                (vl-parse-list-of-ports
-                 :tokens (make-test-tokens ,input)
-                 :warnings 'blah-warnings
-                 :config *vl-default-loadconfig*)
-                (if ,successp
-                    (and (prog2$ (cw "Erp: ~x0.~%" erp)
-                                 (not erp))
-                         (prog2$ (cw "Val: ~x0.~%" val)
-                                 (vl-portlist-p val))
-                         (prog2$ (cw "Names: ~x0.~%" (vl-portlist->names val))
-                                 (equal (vl-portlist->names val) ',names))
-                         (prog2$ (cw "Exprs: ~x0.~%"
-                                     (vl-pretty-maybe-exprlist (vl-portlist->exprs val)))
-                                 (equal (vl-pretty-maybe-exprlist (vl-portlist->exprs val))
-                                        ',exprs))
-                         (prog2$ (cw "Tokens: ~x0.~%" tokens)
-                                 (not tokens))
-                         (prog2$ (cw "Warnings: ~x0.~%" warnings)
-                                 (equal warnings 'blah-warnings)))
-                  ;; Otherwise, we expect it to fail.
-                  (prog2$ (cw "Erp: ~x0.~%" erp)
-                          erp))))))
+     (assert! (b* ((tokens (make-test-tokens ,input))
+                   (config *vl-default-loadconfig*)
+                   (pstate (make-vl-parsestate :warnings 'blah-warnings))
+                   ((mv erp val tokens (vl-parsestate pstate))
+                    (vl-parse-list-of-ports-top))
+                   ((unless ,successp)
+                    (cw "Expect failure.  Actual Erp: ~x0.~%" erp)
+                    erp))
+                (and (prog2$ (cw "Erp: ~x0.~%" erp)
+                             (not erp))
+                     (prog2$ (cw "Val: ~x0.~%" val)
+                             (vl-portlist-p val))
+                     (prog2$ (cw "Names: ~x0.~%" (vl-portlist->names val))
+                             (equal (vl-portlist->names val) ',names))
+                     (prog2$ (cw "Exprs: ~x0.~%"
+                                 (vl-pretty-maybe-exprlist (vl-portlist->exprs val)))
+                             (equal (vl-pretty-maybe-exprlist (vl-portlist->exprs val))
+                                    ',exprs))
+                     (prog2$ (cw "Tokens: ~x0.~%" tokens)
+                             (not tokens))
+                     (prog2$ (cw "Warnings: ~x0.~%" pstate.warnings)
+                             (equal pstate.warnings 'blah-warnings)))))))
 
 (test-parse-portlist :input "()"
                      :names nil
@@ -183,5 +193,5 @@
 
 (test-parse-portlist :input "(.a(), b[3:0])"
                      :names ("a" nil)
-                     :exprs (nil (:vl-partselect-colon nil (id "b") 3 0)))
+                     :exprs (nil (:vl-select-colon nil (id "b") 3 0)))
 

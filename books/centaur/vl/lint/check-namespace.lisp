@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
@@ -37,44 +47,54 @@ linting.</p>")
 (local (xdoc::set-default-parents check-namespace))
 
 (define vl-module-check-namespace ((x vl-module-p))
-  :returns (new-x vl-module-p :hyp :fguard "Perhaps extended with warnings.")
+  :returns (new-x vl-module-p "Perhaps extended with warnings.")
   (b* (((vl-module x) x)
        (warnings x.warnings)
+
+       ;; Clashing external port names?
+       (portdupes (duplicated-members (remove nil (vl-portlist->names x.ports))))
+       (warnings
+        (if portdupes
+            (fatal :type :vl-bad-ports
+                   :msg "Duplicate port names: ~&0."
+                   :args (list portdupes))
+          warnings))
+
+       ;; Clashing port decls?
        (pdnames     (vl-portdecllist->names x.portdecls))
        (pdnames-s   (mergesort pdnames))
+       (warnings
+        (if (mbe :logic (no-duplicatesp-equal pdnames)
+                 :exec (same-lengthp pdnames pdnames-s))
+            warnings
+          (fatal :type :vl-bad-portdecls
+                 :msg "Duplicate port declaration names: ~&0."
+                 :args (list (duplicated-members pdnames)))))
+
+       ;; Clashing internal names?
        (namespace   (vl-module->modnamespace x))
        (namespace-s (mergesort namespace))
-       (overlap     (intersect pdnames-s namespace-s))
-
-       ((mv & warnings)
-        (vl-portlist-reasonable-p-warn x.ports warnings))
-
        (warnings
         (if (mbe :logic (no-duplicatesp-equal namespace)
                  :exec (same-lengthp namespace namespace-s))
             warnings
-          (cons (make-vl-warning :type :vl-namespace-error
-                                 :msg "Illegal redefinition of ~&0."
-                                 :args (list (duplicated-members namespace))
-                                 :fatalp t
-                                 :fn 'vl-module-check-namespace)
-                warnings)))
+          (fatal :type :vl-namespace-error
+                 :msg "Illegal redefinition of ~&0."
+                 :args (list (duplicated-members namespace)))))
 
-       (palist (vl-portdecl-alist x.portdecls))
-       (ialist (vl-moditem-alist x))
+       (overlap (intersect pdnames-s namespace-s))
+       (palist  (vl-portdecl-alist x.portdecls))
+       (ialist  (vl-moditem-alist x))
        ((mv & warnings)
         (vl-overlap-compatible-p-warn overlap x palist ialist warnings)))
     (change-vl-module x :warnings warnings)))
 
-(defprojection vl-modulelist-check-namespace (x)
-  (vl-module-check-namespace x)
-  :guard (vl-modulelist-p x)
-  :result-type vl-modulelist-p)
+(defprojection vl-modulelist-check-namespace ((x vl-modulelist-p))
+  :returns (new-x vl-modulelist-p)
+  (vl-module-check-namespace x))
 
 (define vl-design-check-namespace ((x vl-design-p))
   :returns (new-x vl-design-p)
-  (b* ((x (vl-design-fix x))
-       ((vl-design x) x))
-    (change-vl-design x
-                      :mods (vl-modulelist-check-namespace x.mods))))
+  (b* (((vl-design x) x))
+    (change-vl-design x :mods (vl-modulelist-check-namespace x.mods))))
 

@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
@@ -22,6 +32,7 @@
 (include-book "../defredundant")
 (include-book "misc/definline" :dir :system)
 (include-book "misc/assert" :dir :system)
+(include-book "../defines")
 
 (encapsulate
  ()
@@ -61,7 +72,7 @@
      (if (quotep x)
          2
        (cons (car x) (f4-list (cdr x))))))
- (defun f4-list (x)
+ (defund f4-list (x)
    (declare (xargs :guard (pseudo-term-listp x)))
    (if (atom x)
        nil
@@ -94,6 +105,24 @@
       0
     (+ (f9 (cdr x) (cdr y)))))
 
+(defines g0
+ (define g0-term (x)
+   :inline t
+   :guard (pseudo-termp x)
+   (if (atom x)
+       1
+     (if (quotep x)
+         2
+       (cons (car x) (g0-list (cdr x))))))
+ (define g0-list (x)
+   :guard (pseudo-term-listp x)
+   :enabled t
+   (if (atom x)
+       nil
+     (cons (g0-term (car x))
+           (g0-list (cdr x))))))
+
+
 ))
 
 
@@ -103,7 +132,10 @@
           f2
           natp-of-f2
           f3
-          f9))
+          f4-term
+          f5
+          f9
+          g0-list))
 
 ) ;; end of encapsulate
 
@@ -120,10 +152,29 @@
       (er soft 'assert-enabled "Expected (active-runep ~x0) to be ~x1, found ~x2.~%"
           rune ',enabled-p actual))))
 
+(defmacro assert-macro (name)
+  `(make-event
+    (b* ((macro-args (getprop ',name 'acl2::macro-args :bad 'acl2::current-acl2-world (w state)))
+         ((unless (eq macro-args :bad))
+          (value '(value-triple :success))))
+      (er soft 'assert-macro "Expected ~x0 to be a macro, but found no macro args." ',name))))
+
 (assert-enabled (:definition f1) t)
 (assert-enabled (:definition f2) nil)
 (assert-enabled (:definition f3) t)
+
+(assert-enabled (:definition f4-term) t)
+(assert-enabled (:definition f4-list) nil)
+
+(assert-enabled (:definition f5$inline) t)
+(assert-enabled (:type-prescription f5$inline) t)
+(assert-macro f5)
+
 (assert-enabled (:definition f9) nil)
+
+(assert-enabled (:definition g0-term) nil)
+(assert-enabled (:definition g0-list) t)
+(assert-macro g0-term)
 
 (assert-enabled (:rewrite natp-of-f1) t)
 (assert-enabled (:type-prescription natp-of-f2) nil)

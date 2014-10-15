@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
@@ -26,22 +36,9 @@
 (fty::defalist vl-reportcard
   :key-type stringp
   :val-type vl-warninglist-p
-  :count vl-reportcard-count)
-
-(defthm vl-reportcard-count-of-cdr-strong
-  (implies (and (vl-reportcard-p x)
-                (consp x))
-           (< (vl-reportcard-count (cdr x))
-              (vl-reportcard-count x)))
-  :rule-classes ((:rewrite) (:linear))
-  :hints(("Goal" :in-theory (enable vl-reportcard-count))))
-
-
-(defalist vl-reportcard-p (x)
+  :count vl-reportcard-count
   :parents (warnings)
   :short "A (typically fast) alist associating names to warnings."
-  :key (stringp x)
-  :val (vl-warninglist-p x)
   :keyp-of-nil nil
   :valp-of-nil t
   :long "<p>A <i>report card</i> associates names (strings) to lists of
@@ -59,27 +56,24 @@ so instead we might create a report card that associates target module names
 with the new warnings we want to add to them.  The function @(see
 vl-apply-reportcard) can then be used to add these warnings to a design.</li>
 
-<p>Second, report cards can be useful when we want to print the warnings for a
-bunch of modules.  Depending on the context, we might want to associate either
-the elaborated (unparameterized) names of modules, or their original names, to
-their related warnings.</p>"
-  :already-definedp t)
+<li>Report cards can be useful when we want to print the warnings for a bunch
+of modules.  Depending on the context, we might want to associate either the
+elaborated (unparameterized) names of modules, or their original names, to
+their related warnings.</li>
+
+</ol>")
+
+(defthm vl-reportcard-count-of-cdr-strong
+  (implies (and (vl-reportcard-p x)
+                (consp x))
+           (< (vl-reportcard-count (cdr x))
+              (vl-reportcard-count x)))
+  :rule-classes ((:rewrite) (:linear))
+  :hints(("Goal" :in-theory (enable vl-reportcard-count))))
 
 (local (xdoc::set-default-parents vl-reportcard-p))
 
 (defsection vl-reportcard-basics
-
-  (defthm vl-reportcard-p-of-insert
-    (implies (and (consp a)
-                  (stringp (car a))
-                  (vl-warninglist-p (cdr a))
-                  (vl-reportcard-p x))
-             (vl-reportcard-p (insert a x)))
-    :hints(("Goal" :in-theory (enable (:ruleset set::primitive-rules)))))
-
-  (defthm vl-reportcard-p-of-mergesort
-    (implies (force (vl-reportcard-p x))
-             (vl-reportcard-p (mergesort x))))
 
   (defthm string-listp-of-alist-keys-when-vl-reportcard-p
     (implies (vl-reportcard-p x)
@@ -150,7 +144,7 @@ their related warnings.</p>"
 (def-vl-apply-reportcard program)
 (def-vl-apply-reportcard package)
 (def-vl-apply-reportcard config)
-
+(def-vl-apply-reportcard typedef)
 
 (define vl-clean-reportcard-aux
   :parents (vl-clean-reportcard)
@@ -198,14 +192,16 @@ redundant/unnecessary information and is suitable for, e.g., printing.</p>"
                          (vl-interfacelist->names design.interfaces)
                          (vl-programlist->names design.programs)
                          (vl-packagelist->names design.packages)
-                         (vl-configlist->names design.configs))
+                         (vl-configlist->names design.configs)
+                         (vl-typedeflist->names design.typedefs))
           :exec (with-local-nrev
                   (b* ((nrev (vl-modulelist->names-nrev design.mods nrev))
                        (nrev (vl-udplist->names-nrev design.udps nrev))
                        (nrev (vl-interfacelist->names-nrev design.interfaces nrev))
                        (nrev (vl-programlist->names-nrev design.programs nrev))
                        (nrev (vl-packagelist->names-nrev design.packages nrev))
-                       (nrev (vl-configlist->names-nrev design.configs nrev)))
+                       (nrev (vl-configlist->names-nrev design.configs nrev))
+                       (nrev (vl-typedeflist->names-nrev design.typedefs nrev)))
                     nrev))))))
 
 (define vl-reportcard-floating
@@ -253,6 +249,7 @@ merged so that @('foo') will now have 5 warnings.</p>"
                       :programs   (vl-programlist-apply-reportcard   x.programs   reportcard)
                       :packages   (vl-packagelist-apply-reportcard   x.packages   reportcard)
                       :configs    (vl-configlist-apply-reportcard    x.configs    reportcard)
+                      :typedefs   (vl-typedeflist-apply-reportcard   x.typedefs   reportcard)
                       :warnings   floating)))
 
 
@@ -280,6 +277,7 @@ merged so that @('foo') will now have 5 warnings.</p>"
 (def-vl-gather-reportcard programlist program)
 (def-vl-gather-reportcard packagelist package)
 (def-vl-gather-reportcard configlist config)
+(def-vl-gather-reportcard typedeflist typedef)
 
 (define vl-design-reportcard
   :short "Constructs a @(see vl-reportcard-p) for a design."
@@ -296,6 +294,7 @@ original names.</p>"
        (acc (vl-programlist-gather-reportcard   x.programs acc))
        (acc (vl-packagelist-gather-reportcard   x.packages acc))
        (acc (vl-configlist-gather-reportcard    x.configs acc))
+       (acc (vl-typedeflist-gather-reportcard   x.typedefs acc))
        (ret (vl-clean-reportcard acc)))
     (fast-alist-free acc)
     ret))
@@ -335,6 +334,7 @@ cleaned up and merged.</p>"
        (acc (vl-programlist-gather-reportcard   x.programs acc))
        (acc (vl-packagelist-gather-reportcard   x.packages acc))
        (acc (vl-configlist-gather-reportcard    x.configs acc))
+       (acc (vl-typedeflist-gather-reportcard   x.typedefs acc))
        (ret (vl-clean-reportcard acc)))
     (fast-alist-free acc)
     ret))

@@ -30,6 +30,17 @@
   (let ((ht (hl-mht :test 'eq)))
     (loop for sym in
           '(ld-fn0
+; start with some event-level stuff
+            encapsulate-fn encapsulate-pass-2 progn-fn progn-fn1
+            eval-event-lst process-embedded-events
+            include-book-fn include-book-fn1
+            ev-rec-return-last ev-rec ev-w ev-fncall ev-fncall-rec
+            ev-rec-lst ev-rec-acl2-unwind-protect ev-fncall-w ev ev-lst
+            ev-w ev-w-lst ev-for-trans-eval ev-w-for-trans-eval ev-fncall!
+            trans-eval trans-eval1 ev-for-trans-eval ev-w-for-trans-eval
+            trans-eval-lst ld-fn ld-fn1 ld-fn-body ld-loop ld-read-eval-print
+            acl2-raw-eval
+
             protected-eval
             hons-read-list-top
             hons-read-list
@@ -42,11 +53,10 @@
             lex->
             gc-count
             outside-p
-            shorten
+            mf-shorten
             date-string
             reverse-strip-cars
             reverse-strip-cdrs
-            short-symbol-name
             hons-calls
             memoize-condition
             1-way-unify-top
@@ -104,7 +114,6 @@
             assoc-equiv
             assoc-equiv+
             assoc-keyword
-            assoc-no-error-at-end
             assoc-type-alist
             assume-true-false
             assume-true-false1
@@ -653,12 +662,13 @@
             nu-rewriter-mode
             num-0-to-9-to-char
             num-to-bits
-            number-of-arguments
+            mz-len-inputs
             number-of-calls
             number-of-hits
             number-of-memoized-entries
             number-of-mht-calls
-            number-of-return-values
+            mz-len-outputs
+            mz-note-arity
             number-of-strings
             obfb
             obj-table
@@ -952,7 +962,6 @@
             to
             to-be-ignoredp
             to-if-error-p
-            too-long
             total-time
             trans-alist
             trans-alist1
@@ -1089,6 +1098,10 @@
 
 (declaim (hash-table *profile-reject-ht*))
 
+; From ACL2 6.5 memoize-raw.lisp:
+(defmacro ofn (&rest r) ; For forming strings.
+  `(our-syntax (format nil ,@r)))
+
 (defun-one-output dubious-to-profile (fn)
   (cond ((not (symbolp fn)) "not a symbol.")
         ((not (fboundp fn)) "not fboundp.")
@@ -1140,8 +1153,8 @@
                (ofn "~%;~10thas some non-simple argument, e.g., &key ~
                      or &rest.")
              nil)))
-        ((null (number-of-arguments fn))
-         (input-output-number-warning fn))))
+;       ((null (mf-len-inputs fn)) (input-output-number-warning fn))
+        ))
 
 (declaim (ftype (function (t) (values t)) event-number))
 
@@ -1150,8 +1163,24 @@
          (fgetprop fn 'absolute-event-number t (w *the-live-state*)))
         (t (error "EVENT-NUMBER: ** ~a is not a symbol." fn))))
 
+(defn memoize-here-come (n)
+  (let ((m (ceiling
+            (+ 100 (* 1.1 (- n (- (/ *2max-memoize-fns* 2)
+                                  (floor
+                                   (/ (hash-table-count
+                                       *memoize-info-ht*)
+                                      2)))))))))
+    (when (posp m) (memoize-call-array-grow (* 2 m)))))
+
+
+
+; Much simplified from memoize-raw.lisp in Version 6.1; really, this should
+; print something when a suitable "verbose" flag is set.
+(defun ofv (&rest r)
+  (declare (ignore r))
+  nil)
+
 (defun profile-acl2 (&key (start 0)
-                          trace
                           forget
                           (lots-of-info t))
 
@@ -1164,16 +1193,16 @@
   (let ((*record-bytes* #+Clozure lots-of-info #-Clozure nil)
         (*record-calls* lots-of-info)
         (*record-hits* lots-of-info)
-        (*record-hons-calls* lots-of-info)
+;       (*record-hons-calls* lots-of-info)
         (*record-mht-calls* lots-of-info)
         (*record-pons-calls* lots-of-info)
         (*record-time* lots-of-info))
     (unless (integerp start)
       (unless (symbolp start)
-        (ofe "~%; PROFILE-ACL2: ** ~a is not an event." start))
+        (error "~%; PROFILE-ACL2: ** ~a is not an event." start))
       (setq start (event-number start))
       (unless (integerp start)
-        (ofe "~%; PROFILE-ACL2: ** ~a is not an event." start)))
+        (error "~%; PROFILE-ACL2: ** ~a is not an event." start)))
     (let ((fns-ht (make-hash-table :test 'eq)))
       (declare (hash-table fns-ht))
       (loop for p in (set-difference-equal
@@ -1193,28 +1222,28 @@
                     ((dubious-to-profile fn)
                      (setf (gethash fn fns-ht) 'no)
                      (ofv "Not profiling '~a' because it's ~a"
-                          (shorten fn 20)
+                          (mf-shorten fn 20)
                           (dubious-to-profile fn)))
                     (t (setf (gethash fn fns-ht) 'yes)))))
       (maphash (lambda (k v)
                  (if (eq v 'no) (remhash k fns-ht)))
                fns-ht)
-      (ofv "Profiling ~:d functions." (hash-table-count fns-ht))
+      (format t
+              "Profiling ~:d functions.~%"
+              (hash-table-count fns-ht))
       (memoize-here-come (hash-table-count fns-ht))
       (maphash
        (lambda (k v)
          (declare (ignore v))
          (profile-fn k
-                     :trace trace
                      :forget forget))
        fns-ht)
       (clear-memoize-call-array)
-      (oft "~%(clear-memoize-call-array) invoked.")
-      (ofn "~a function~:p newly profiled."
-           (hash-table-count fns-ht)))))
+      (format t "~%(clear-memoize-call-array) invoked.")
+      (format t "~a function~:p newly profiled."
+              (hash-table-count fns-ht)))))
 
-(defun profile-all (&key trace (lots-of-info t) forget
-                         pkg)
+(defun profile-all (&key (lots-of-info t) forget pkg)
 
   "PROFILE-ALL is a raw Lisp function.  (PROFILE-ALL) profiles each
   symbol that has a function-symbol and occurs in a package known
@@ -1253,7 +1282,7 @@
                     ((dubious-to-profile fn)
                      (setf (gethash fn fns-ht) 'no)
                      (ofv "Not profiling '~a' because it's ~a"
-                          (shorten fn 20)
+                          (mf-shorten fn 20)
                           (dubious-to-profile fn)))
                     (t (setf (gethash fn fns-ht) 'yes)))))
       (maphash (lambda (k v)
@@ -1264,11 +1293,10 @@
       (maphash
        (lambda (k v) (declare (ignore v))
          (profile-fn k
-                     :trace trace
                      :forget forget))
        fns-ht)
       (clear-memoize-call-array)
-      (oft "~%(clear-memoize-call-array) invoked.")
+      (format t "~%(clear-memoize-call-array) invoked.")
       (ofn "~a function~:p newly profiled."
            (hash-table-count fns-ht)))))
 

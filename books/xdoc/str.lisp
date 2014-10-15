@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
@@ -36,97 +46,161 @@
 ; cert_param (acl2x)
 ; cert_param (acl2xskip)
 
-(acl2::acl2x-replace (include-book
-                      "std/strings/cat" :dir :system)
-                     (value-triple :invisible)
-                     :outside-certification
-                     (include-book
-                      "std/strings/cat" :dir :system))
+(make-event
+ '(:or
+   (progn
+; (depends-rec "std/strings/cat" :dir :system)
+     (acl2::acl2x-replace (include-book
+                           "std/strings/cat" :dir :system)
+                          (value-triple :invisible)
+                          :outside-certification
+                          (include-book
+                           "std/strings/cat" :dir :system))
 
-(acl2::acl2x-replace (include-book
-                      "std/strings/case-conversion" :dir :system)
-                     (value-triple :invisible)
-                     :outside-certification
-                     (include-book
-                      "std/strings/case-conversion" :dir :system))
+; (depends-rec "std/strings/case-conversion" :dir :system)
+     (acl2::acl2x-replace (include-book
+                           "std/strings/case-conversion" :dir :system)
+                          (value-triple :invisible)
+                          :outside-certification
+                          (include-book
+                           "std/strings/case-conversion" :dir :system))
 
-(acl2::acl2x-replace (include-book
-                      "std/strings/strsubst" :dir :system)
-                     (value-triple :invisible)
-                     :outside-certification
-                     (include-book
-                      "std/strings/strsubst" :dir :system))
+; (depends-rec "std/strings/strsubst" :dir :system)
+     (acl2::acl2x-replace (include-book
+                           "std/strings/strsubst" :dir :system)
+                          (value-triple :invisible)
+                          :outside-certification
+                          (include-book
+                           "std/strings/strsubst" :dir :system))
 
-(acl2::acl2x-replace (include-book
-                      "std/strings/decimal" :dir :system)
-                     (value-triple :invisible)
-                     :outside-certification
-                     (include-book
-                      "std/strings/decimal" :dir :system))
+; (depends-rec "std/strings/decimal" :dir :system)
+     (acl2::acl2x-replace (include-book
+                           "std/strings/decimal" :dir :system)
+                          (value-triple :invisible)
+                          :outside-certification
+                          (include-book
+                           "std/strings/decimal" :dir :system)))
+   
+   (make-event
+    (er hard? 'xdoc/str
+        "~%************************** XDOC/STR FAILURE **************************~%~
+         Failed to include the required books.  It may be that something has ~
+         changed in one of the books included here that makes it ~
+         impossible to include uncertified.  Please check this by running ~
+         \"make clean\" followed by \"make xdoc/str.cert\".~%~
+           ************************************************************************"))))
 
 (program)
 
 (make-event
- (b* ((events (std::defredundant-fn '(str::cat
-                                      str::implode
-                                      acl2::implode$inline
-                                      str::explode
-                                      acl2::explode$inline
-                                      str::rchars-to-string
-                                      str::fast-concatenate
-                                      str::fast-string-append
-                                      str::fast-string-append-lst
-                                      str::revappend-chars-aux
-                                      str::revappend-chars
-                                      str::revappend-chars$inline
-                                      str::little-a
-                                      str::little-z
-                                      str::big-a
-                                      str::big-z
-                                      str::down-alpha-p
-                                      str::down-alpha-p$inline
-                                      str::up-alpha-p
-                                      str::up-alpha-p$inline
-                                      str::charlist-has-some-up-alpha-p
-                                      str::charlist-has-some-down-alpha-p
-                                      str::string-has-some-down-alpha-p
-                                      str::string-has-some-up-alpha-p
-                                      str::case-delta
-                                      str::downcase-char
-                                      str::downcase-char$inline
-                                      str::downcase-charlist-aux
-                                      str::downcase-charlist
-                                      str::downcase-string-aux
-                                      str::downcase-string
-                                      str::upcase-char
-                                      str::upcase-char$inline
-                                      str::upcase-charlist-aux
-                                      str::upcase-charlist
-                                      str::upcase-string-aux
-                                      str::upcase-string
-                                      str::strprefixp-impl
-                                      str::strsubst-aux
-                                      str::strsubst
-                                      str::make-upcase-first-strtbl
-                                      str::*upcase-first-strtbl*
-                                      str::upcase-first-charlist
-                                      str::upcase-char-str$inline
-                                      str::upcase-char-str
-                                      str::upcase-first
-                                      str::join-aux
-                                      str::join
-                                      str::join$inline
-                                      str::basic-natchars
-                                      str::natchars-aux
-                                      str::natchars
-                                      str::natchars$inline
-                                      str::natstr
-                                      str::natstr$inline
-                                      )
-                t
-                state)))
-   (acl2::value events)))
+ '(:or
+   (make-event
+    (b* ((events (std::defredundant-fn '(str::cat
+                                         str::implode
+                                         acl2::implode$inline
+                                         str::explode
+                                         acl2::explode$inline
+                                         str::rchars-to-string
+                                         str::fast-concatenate
+                                         str::fast-string-append
+                                         str::fast-string-append-lst
+                                         str::revappend-chars-aux
+                                         str::revappend-chars
+                                         str::revappend-chars$inline
+                                         str::little-a
+                                         str::little-z
+                                         str::big-a
+                                         str::big-z
+                                         str::down-alpha-p
+                                         str::down-alpha-p$inline
+                                         str::up-alpha-p
+                                         str::up-alpha-p$inline
+                                         str::charlist-has-some-up-alpha-p
+                                         str::charlist-has-some-down-alpha-p
+                                         str::string-has-some-down-alpha-p
+                                         str::string-has-some-up-alpha-p
+                                         str::case-delta
+                                         str::downcase-char
+                                         str::downcase-char$inline
+                                         str::downcase-charlist-aux
+                                         str::downcase-charlist
+                                         str::downcase-string-aux
+                                         str::downcase-string
+                                         str::upcase-char
+                                         str::upcase-char$inline
+                                         str::upcase-charlist-aux
+                                         str::upcase-charlist
+                                         str::upcase-string-aux
+                                         str::upcase-string
+                                         str::strprefixp-impl
+                                         str::strsubst-aux
+                                         str::strsubst
+                                         str::make-upcase-first-strtbl
+                                         str::*upcase-first-strtbl*
+                                         str::upcase-first-charlist
+                                         str::upcase-char-str$inline
+                                         str::upcase-char-str
+                                         str::upcase-first
+                                         str::join-aux
+                                         str::join
+                                         str::join$inline
+                                         str::basic-natchars
+                                         str::natchars-aux
+                                         str::natchars
+                                         str::natchars$inline
+                                         str::natstr
+                                         str::natstr$inline
+                                         )
+                   t
+                   state)))
+      (acl2::value events)))
+   (make-event
+    (er hard? 'xdoc/str
+        "~%************************** XDOC/STR FAILURE **************************~%~
+         Failed to redundantly define the required events.  If you haven't ~
+         done anything to break files that this book depends on, this may be ~
+         a symptom that make-event expansions from stale certificates are ~
+         being loaded.  The simplest way to fix this is to run \"make ~
+         clean\".  Otherwise, you can try to locate and delete the ~
+         certificate containing the bad expansion, but you're on your own for ~
+         that.~%~
+           ************************************************************************"))))
 
 
 
+(defun simple-html-encode-chars (x acc)
 
+; X is a character list that we copy into acc (in reverse order), except that
+; we escape any HTML entities like < into the &lt; format.
+
+  (b* (((when (atom x))
+        acc)
+       (acc (case (car x)
+              (#\< (list* #\; #\t #\l #\& acc))         ;; "&lt;" (in reverse)
+              (#\> (list* #\; #\t #\g #\& acc))         ;; "&gt;"
+              (#\& (list* #\; #\p #\m #\a #\& acc))     ;; "&amp;"
+              (#\" (list* #\; #\t #\o #\u #\q #\& acc)) ;; "&quot;"
+              (t   (cons (car x) acc)))))
+    (simple-html-encode-chars (cdr x) acc)))
+
+#||
+(reverse (implode (simple-html-encode-chars '(#\a #\< #\b) nil)))
+(reverse (implode (simple-html-encode-chars '(#\a #\> #\b) nil)))
+(reverse (implode (simple-html-encode-chars '(#\a #\& #\b) nil)))
+(reverse (implode (simple-html-encode-chars '(#\a #\" #\b) nil)))
+||#
+
+(defun simple-html-encode-str (x n xl acc)
+
+; Revappend the HTML encoding of X (e.g., & --> &amp;) onto ACC.
+
+  (b* (((when (int= n xl))
+        acc)
+       (char1 (char x n))
+       (acc   (case char1
+                (#\< (list* #\; #\t #\l #\& acc))         ;; "&lt;" (in reverse)
+                (#\> (list* #\; #\t #\g #\& acc))         ;; "&gt;"
+                (#\& (list* #\; #\p #\m #\a #\& acc))     ;; "&amp;"
+                (#\" (list* #\; #\t #\o #\u #\q #\& acc)) ;; "&quot;"
+                (t   (cons char1 acc)))))
+    (simple-html-encode-str x (+ 1 n) xl acc)))

@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
@@ -150,6 +160,18 @@
                   :valp-of-nil nil))))
 
 
+
+(local (encapsulate ()
+         (local (defalist no-key (x)
+                  :val (integerp x)
+                  :valp-of-nil nil))))
+
+
+(local (encapsulate ()
+         (local (defalist no-val (x)
+                  :key (integer-listp x)
+                  :keyp-of-nil t))))
+
 ;; check for special trivial sorts of things that ACL2 can rewrite in deep
 ;; ways.  this has screwed us up before due to restrictions on :rewrite rules,
 ;; etc.
@@ -201,6 +223,8 @@
                   :val (not x)
                   :keyp-of-nil t
                   :valp-of-nil t))))
+
+
 
 
 
@@ -274,16 +298,16 @@
          (my-alistp (cdr x)))))
 
 (defthm my-alistp-when-not-consp
-  (implies (not (consp x))
-           (equal (my-alistp x)
-                  (not x))))
+  (implies (not (consp acl2::x))
+           (equal (my-alistp acl2::x)
+                  (not acl2::x))))
 
 (defthm my-alistp-of-cons
-  (equal (my-alistp (cons a x))
-         (and (consp a)
-              (stringp (car a))
-              (maybe-natp (cdr a))
-              (my-alistp x))))
+  (equal (my-alistp (cons acl2::a acl2::x))
+         (and (and (consp acl2::a)
+                   (stringp (car acl2::a))
+                   (maybe-natp (cdr acl2::a)))
+              (my-alistp acl2::x))))
 
 (defalist my-alistp (x)
   :key (stringp x)
@@ -291,6 +315,7 @@
   :keyp-of-nil nil
   :valp-of-nil t
   :already-definedp t
-  :true-listp t)
+  :true-listp t
+  :theory-hack ((local (in-theory (enable maybe-natp)))))
 
 ))

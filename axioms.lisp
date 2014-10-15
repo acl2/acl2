@@ -1,4 +1,4 @@
-; ACL2 Version 6.4 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 6.5 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2014, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -2960,6 +2960,28 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
            (true-listp (append a b)))
   :rule-classes :type-prescription)
 
+(defaxiom car-cdr-elim
+  (implies (consp x)
+           (equal (cons (car x) (cdr x)) x))
+  :rule-classes :elim)
+
+(defaxiom car-cons (equal (car (cons x y)) x))
+
+(defaxiom cdr-cons (equal (cdr (cons x y)) y))
+
+(defaxiom cons-equal
+  (equal (equal (cons x1 y1) (cons x2 y2))
+         (and (equal x1 x2)
+              (equal y1 y2))))
+
+; Induction Schema:   (and (implies (not (consp x)) (p x))
+;                          (implies (and (consp x) (p (car x)) (p (cdr x)))
+;                                   (p x)))
+;                     ----------------------------------------------
+;                     (p x)
+;
+;
+
 (defthm append-to-nil
   (implies (true-listp x)
            (equal (append x nil)
@@ -4088,38 +4110,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
        )
 
   :rule-classes :tau-system)
-
-; ; For each of the primitives we have the axiom that when their guards
-; ; are unhappy, the result is given by apply.  This is what permits us
-; ; to replace unguarded terms by apply's.  E.g.,
-;
-; (defaxiom +-guard
-;   (implies (or (not (rationalp x))
-;                (not (rationalp y)))
-;            (equal (+ x y)
-;                   (apply '+ (list x y)))))
-
-(defaxiom car-cdr-elim
-  (implies (consp x)
-           (equal (cons (car x) (cdr x)) x))
-  :rule-classes :elim)
-
-(defaxiom car-cons (equal (car (cons x y)) x))
-
-(defaxiom cdr-cons (equal (cdr (cons x y)) y))
-
-(defaxiom cons-equal
-  (equal (equal (cons x1 y1) (cons x2 y2))
-         (and (equal x1 x2)
-              (equal y1 y2))))
-
-; Induction Schema:   (and (implies (not (consp x)) (p x))
-;                          (implies (and (consp x) (p (car x)) (p (cdr x)))
-;                                   (p x)))
-;                     ----------------------------------------------
-;                     (p x)
-;
-;
 
 (defaxiom booleanp-characterp
   (booleanp (characterp x))
@@ -5340,34 +5330,50 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; non-symbol are "".
 
 #-acl2-loop-only
+(defvar *load-compiled-stack* nil)
+
+#-acl2-loop-only
 (defun-one-output pkg-imports (pkg)
+
+; Warning: Keep this function in sync with pkg-witness.
+
   (declare (type string pkg))
-  (let ((entry (find-non-hidden-package-entry pkg
-                                              (known-package-alist
-                                               *the-live-state*))))
+  (let ((entry (if *load-compiled-stack*
+                   (find-package-entry pkg *ever-known-package-alist*)
+                 (find-non-hidden-package-entry pkg
+                                                (known-package-alist
+                                                 *the-live-state*)))))
     (cond (entry (package-entry-imports entry))
-          (t (throw-raw-ev-fncall (list 'pkg-imports-er pkg))))))
+          (t (throw-raw-ev-fncall (list 'pkg-imports pkg))))))
 
 #-acl2-loop-only
 (defun-one-output pkg-witness (pkg)
 
-; Warning: Function ser-decode-and-load-package sometimes relies on an error
-; being signalled by pkg-witness when the package is not known to ACL2.
+; Warning: This function is responsible for halting execution when pkg is not
+; the name of a package known to ACL2.  (However, when including compiled files
+; or expansion files on behalf of include-book, we instead assume that event
+; processing can take responsibility for doing such a check, so we make a
+; weaker check that avoids assuming that defpkg events have been evaluated in
+; the loop.)  Keep this function in sync with pkg-imports.
 
   (declare (type string pkg))
-  (cond ((find-non-hidden-package-entry pkg
-                                        (known-package-alist *the-live-state*))
-         (let ((ans (intern *pkg-witness-name* pkg)))
-; See comment in intern-in-package-of-symbol for an explanation of this trick.
-           ans))
-        (t
+  (let ((entry (if *load-compiled-stack* ; including a book; see comment above
+                   (find-package-entry pkg *ever-known-package-alist*)
+                 (find-non-hidden-package-entry pkg
+                                                (known-package-alist
+                                                 *the-live-state*)))))
+    (cond (entry
+           (let ((ans (intern *pkg-witness-name* pkg)))
 
-; We use error rather than illegal, because we want to throw an error even when
+; See comment in intern-in-package-of-symbol for an explanation of this trick.
+
+             ans))
+          (t
+
+; We avoid using illegal, because we want to halt execution even when
 ; *hard-error-returns-nilp* is true.
 
-         (error "The argument supplied to PKG-WITNESS, ~s, is not the name of ~
-                 a package currently known to ACL2."
-                pkg))))
+           (throw-raw-ev-fncall (list 'pkg-imports pkg))))))
 
 ;  UTILITIES - definitions of the rest of applicative Common Lisp.
 
@@ -5789,8 +5795,32 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defconst *summary-types*
   '(header form rules hint-events warnings time steps value splitter-rules))
 
+(defmacro with-evisc-tuple (form &key ; from *evisc-tuple-sites*
+                                 (term 'nil termp)
+                                 (ld 'nil ldp)
+                                 (abbrev 'nil abbrevp)
+                                 (gag-mode 'nil gag-modep))
+
+; Unlike without-evisc, form must return an error triple.
+
+  `(state-global-let*
+    (,@(and termp `((term-evisc-tuple (term-evisc-tuple nil state)
+                                      set-term-evisc-tuple-state)))
+     ,@(and ldp `((ld-evisc-tuple (ld-evisc-tuple state)
+                                  set-ld-evisc-tuple-state)))
+     ,@(and abbrevp `((abbrev-evisc-tuple (abbrev-evisc-tuple state)
+                                          set-abbrev-evisc-tuple-state)))
+     ,@(and gag-modep `((gag-mode-evisc-tuple (gag-mode-evisc-tuple state)
+                                              set-gag-mode-evisc-tuple-state))))
+    (er-progn
+     ,@(and termp `((set-term-evisc-tuple ,term state)))
+     ,@(and ldp `((set-ld-evisc-tuple ,ld state)))
+     ,@(and abbrevp `((set-abbrev-evisc-tuple ,abbrev state)))
+     ,@(and gag-modep `((set-gag-mode-evisc-tuple ,gag-mode state)))
+     ,form)))
+
 (defun with-output-fn (ctx args off on gag-mode off-on-p gag-p stack
-                           summary summary-p)
+                           summary summary-p evisc evisc-p)
   (declare (xargs :mode :program
                   :guard (true-listp args)))
   (cond
@@ -5808,11 +5838,14 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
              (cadr args)
              '(t :goals nil)) ; keep this list in sync with set-gag-mode
             (with-output-fn ctx (cddr args) off on (cadr args) off-on-p t
-                           stack summary summary-p))
+                            stack summary summary-p evisc evisc-p))
            (t (illegal ctx
                        illegal-value-string
                        (list (cons #\0 (cadr args))
                              (cons #\1 :gag-mode))))))
+         ((eq (car args) :evisc) ; we leave it to without-evisc to check syntax
+          (with-output-fn ctx (cddr args) off on gag-mode off-on-p gag-p
+                            stack summary summary-p (cadr args) t))
          ((eq (car args) :stack)
           (cond
            (stack
@@ -5822,7 +5855,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                      (list (cons #\0 'with-output))))
            ((member-eq (cadr args) '(:push :pop))
             (with-output-fn ctx (cddr args) off on gag-mode off-on-p gag-p
-                           (cadr args) summary summary-p))
+                            (cadr args) summary summary-p evisc evisc-p))
            (t (illegal ctx
                        illegal-value-string
                        (list (cons #\0 (cadr args))
@@ -5844,7 +5877,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                 (cons #\1 *summary-types*))))
                 (t
                  (with-output-fn ctx (cddr args) off on gag-mode off-on-p gag-p
-                                 stack (cadr args) t))))
+                                 stack
+                                 (cadr args) t
+                                 evisc evisc-p))))
          ((not (member-eq (car args) '(:on :off)))
           (illegal ctx
                    "~x0 is not a legal keyword for a call of with-output.  ~
@@ -5864,7 +5899,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                                      :all
                                                    syms)
                                                  gag-mode t gag-p stack summary
-                                                 summary-p)))
+                                                 summary-p evisc evisc-p)))
                            (t ; (eq (car args) :off)
                             (and (null off)
                                  (with-output-fn ctx (cddr args)
@@ -5872,7 +5907,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                                      :all
                                                    syms)
                                                  on gag-mode t gag-p stack
-                                                 summary summary-p)))))
+                                                 summary summary-p
+                                                 evisc evisc-p)))))
                     (t (illegal ctx
                                 illegal-value-string
                                 (list (cons #\0 (cadr args))
@@ -5904,50 +5940,53 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                    (cons #\2 on)
                    (cons #\3 (set-difference-eq on *valid-output-names*)))))
    (t
-    `(state-global-let*
-      (,@
-       (and gag-p
-            `((gag-mode (f-get-global 'gag-mode state)
-                        set-gag-mode-fn)))
-       ,@
-       (and (or off-on-p
-                (eq stack :pop))
-            '((inhibit-output-lst (f-get-global 'inhibit-output-lst state))))
-       ,@
-       (and stack
-            '((inhibit-output-lst-stack
-               (f-get-global 'inhibit-output-lst-stack state))))
-       ,@
-       (and summary-p
-            `((inhibited-summary-types
-               ,(if (eq summary :all)
-                    nil
-                  (list 'quote
-                        (set-difference-eq *summary-types* summary)))))))
-      (er-progn
-       ,@(and gag-p
-              `((pprogn (set-gag-mode ,gag-mode)
-                        (value nil))))
-       ,@(and stack
-              `((pprogn ,(if (eq stack :pop)
-                             '(pop-inhibit-output-lst-stack state)
-                           '(push-inhibit-output-lst-stack state))
-                        (value nil))))
-       ,@(and off-on-p
-              `((set-inhibit-output-lst
-                 ,(cond ((eq on :all)
-                         (if (eq off :all)
-                             '*valid-output-names*
-                           `(quote ,off)))
-                        ((eq off :all)
-                         `(set-difference-eq *valid-output-names* ',on))
-                        (t
-                         `(union-eq ',off
-                                    (set-difference-eq
-                                     (f-get-global 'inhibit-output-lst
-                                                   state)
-                                     ',on)))))))
-       ,(car args))))))
+    (let ((form
+           `(state-global-let*
+             (,@
+              (and gag-p
+                   `((gag-mode (f-get-global 'gag-mode state)
+                               set-gag-mode-fn)))
+              ,@
+              (and (or off-on-p
+                       (eq stack :pop))
+                   '((inhibit-output-lst (f-get-global 'inhibit-output-lst state))))
+              ,@
+              (and stack
+                   '((inhibit-output-lst-stack
+                      (f-get-global 'inhibit-output-lst-stack state))))
+              ,@
+              (and summary-p
+                   `((inhibited-summary-types
+                      ,(if (eq summary :all)
+                           nil
+                         (list 'quote
+                               (set-difference-eq *summary-types* summary)))))))
+             (er-progn
+              ,@(and gag-p
+                     `((pprogn (set-gag-mode ,gag-mode)
+                               (value nil))))
+              ,@(and stack
+                     `((pprogn ,(if (eq stack :pop)
+                                    '(pop-inhibit-output-lst-stack state)
+                                  '(push-inhibit-output-lst-stack state))
+                               (value nil))))
+              ,@(and off-on-p
+                     `((set-inhibit-output-lst
+                        ,(cond ((eq on :all)
+                                (if (eq off :all)
+                                    '*valid-output-names*
+                                  `(quote ,off)))
+                               ((eq off :all)
+                                `(set-difference-eq *valid-output-names* ',on))
+                               (t
+                                `(union-eq ',off
+                                           (set-difference-eq
+                                            (f-get-global 'inhibit-output-lst
+                                                          state)
+                                            ',on)))))))
+              ,(car args)))))
+      (cond (evisc-p `(with-evisc-tuple ,form ,@evisc))
+            (t form))))))
 
 #+acl2-loop-only
 (defun last (l)
@@ -5998,12 +6037,14 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 #+acl2-loop-only
 (defmacro with-output (&rest args)
-  (let ((val
-         (with-output-fn 'with-output args nil nil nil nil nil nil nil nil)))
-    (or val
-        (illegal 'with-output
-                 "Macroexpansion of ~q0 failed."
-                 (list (cons #\0 (cons 'with-output args)))))))
+  `(if (eq (ld-skip-proofsp state) 'include-book)
+       ,(car (last args))
+     ,(let ((val (with-output-fn 'with-output
+                                 args nil nil nil nil nil nil nil nil nil nil)))
+        (or val
+            (illegal 'with-output
+                     "Macroexpansion of ~q0 failed."
+                     (list (cons #\0 (cons 'with-output args))))))))
 
 ; Mutual Recursion
 
@@ -6604,6 +6645,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defmacro check-vars-not-free (vars form)
 
+; Warning: We actually handle this macro directly in translate11, in case that
+; is an effficiency win.  Keep this macro and that part of translate11 in sync.
+
 ; A typical use of this macro is (check-vars-not-free (my-erp my-val) ...)
 ; which just expands to the translation of ... provided my-erp and my-val do
 ; not occur freely in it.
@@ -6613,10 +6657,11 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; calls, especially since intersectp-eq expands to an mbe call.
 
   (declare (xargs :guard (symbol-listp vars)))
-  `(translate-and-test
-    (lambda (term)
-      (check-vars-not-free-test ',vars term))
-    ,form))
+  (cond ((null vars) form) ; optimization, perhaps needless
+        (t `(translate-and-test
+             (lambda (term)
+               (check-vars-not-free-test ',vars term))
+             ,form))))
 
 (defun er-progn-fn (lst)
 
@@ -7751,27 +7796,36 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; function not only knows the precise form of the expression generated below
 ; but even knows the variable names used!
 
+; We optimize a bit, only for #+acl2-loop-only (though we could do so for
+; both), to speed up translation of acl2-unwind-protect calls in the rather
+; common case that cleanup1 and cleanup2 are the same form.
+
   #+acl2-loop-only
   (declare (ignore expl))
   #+acl2-loop-only
-  `(mv-let (acl2-unwind-protect-erp acl2-unwind-protect-val state)
-           (check-vars-not-free
-            (acl2-unwind-protect-erp acl2-unwind-protect-val)
-            ,body)
-           (cond
-            (acl2-unwind-protect-erp
-             (pprogn (check-vars-not-free
-                      (acl2-unwind-protect-erp acl2-unwind-protect-val)
-                      ,cleanup1)
-                     (mv acl2-unwind-protect-erp
-                         acl2-unwind-protect-val
-                         state)))
-            (t (pprogn (check-vars-not-free
-                        (acl2-unwind-protect-erp acl2-unwind-protect-val)
-                        ,cleanup2)
-                       (mv acl2-unwind-protect-erp
-                           acl2-unwind-protect-val
-                           state)))))
+  (let ((cleanup1-form
+         `(pprogn (check-vars-not-free
+                   (acl2-unwind-protect-erp acl2-unwind-protect-val)
+                   ,cleanup1)
+                  (mv acl2-unwind-protect-erp
+                      acl2-unwind-protect-val
+                      state))))
+    `(mv-let (acl2-unwind-protect-erp acl2-unwind-protect-val state)
+             (check-vars-not-free
+              (acl2-unwind-protect-erp acl2-unwind-protect-val)
+              ,body)
+             ,(cond
+               ((equal cleanup1 cleanup2)
+                cleanup1-form)
+               (t `(cond
+                    (acl2-unwind-protect-erp
+                     ,cleanup1-form)
+                    (t (pprogn (check-vars-not-free
+                                (acl2-unwind-protect-erp acl2-unwind-protect-val)
+                                ,cleanup2)
+                               (mv acl2-unwind-protect-erp
+                                   acl2-unwind-protect-val
+                                   state))))))))
 
 ; The raw code is very similar.  But it starts out by pushing onto the undo
 ; stack the name of the cleanup function and the values of the arguments.  Note
@@ -8153,7 +8207,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; defining verify-guards on top of verify-guards-basic just as we now define
 ; verify-guards+ on top of verify-guards.  But that could be complicated to
 ; carry out during the boot-strap, and it could be challenging to present a
-; nice view to the user, simulataneously promoting the fiction that
+; nice view to the user, simultaneously promoting the fiction that
 ; verify-guards is a primitive while giving accurate feedback.  So we are
 ; leaving verify-guards as the primitive, but improving it to point to
 ; verify-guards+ when there is a macro alias.
@@ -12475,7 +12529,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     ACONS NTH SUBSEQ LENGTH REVERSE ZIP STANDARD-CHAR-P
     ALPHA-CHAR-P UPPER-CASE-P LOWER-CASE-P CHAR< CHAR> CHAR<= CHAR>=
     CHAR-EQUAL CHAR-UPCASE CHAR-DOWNCASE
-    AND-LIST OR-LIST ; relevant for #+acl2-par
 
 ; Might as well add additional ones below:
 
@@ -12490,17 +12543,19 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     set-debugger-enable-fn ; lisp::*break-enable* and *debugger-hook*
     break$ ; break
     prin1$ prin1-with-slashes
-    member-equal assoc-equal subsetp-equal no-duplicatesp-equal
+    member-equal assoc-equal subsetp-equal
     rassoc-equal remove-equal position-equal
     maybe-finish-output$
+    symbol-in-current-package-p
 
 ; Found for hons after fixing note-fns-in-form just before release v4-2.
 
     FAST-ALIST-LEN HONS-COPY-PERSISTENT HONS-SUMMARY HONS-CLEAR HONS-WASH
-    HONS-SHRINK-ALIST HONS-EQUAL-LITE CLEAR-HASH-TABLES NUMBER-SUBTREES
+    FAST-ALIST-CLEAN FAST-ALIST-FORK HONS-EQUAL-LITE
+    CLEAR-HASH-TABLES NUMBER-SUBTREES
     FAST-ALIST-SUMMARY HONS-ACONS! CLEAR-MEMOIZE-TABLES HONS-COPY HONS-ACONS
     CLEAR-MEMOIZE-TABLE FAST-ALIST-FREE HONS-EQUAL HONS-RESIZE-FN HONS-GET HONS
-    HONS-SHRINK-ALIST! MEMOIZE-SUMMARY CLEAR-MEMOIZE-STATISTICS
+    FAST-ALIST-CLEAN! FAST-ALIST-FORK! MEMOIZE-SUMMARY CLEAR-MEMOIZE-STATISTICS
     make-fast-alist
     serialize-read-fn serialize-write-fn
     read-object-suppress
@@ -12621,7 +12676,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     bind-acl2-time-limit
     defattach defproxy
     count
-    member assoc subsetp no-duplicatesp rassoc remove remove-duplicates
+    member assoc subsetp rassoc remove remove-duplicates
     position
     catch-step-limit
     step-limit-error
@@ -12744,10 +12799,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
       (0 . ,(if enabledp 0 (list 0))))))
 
 ; The default bounds for iprinting are deliberately rather high, in order to
-; minimize the chance that novice users attempt to read stale #@i# values.
-; We assume that for those who use ACL2 with large objects, for whom iprinting
-; causes a space problem because of these large bounds, will know to reset the
-; bounds using set-iprint.
+; minimize the chance that novice users attempt to read stale #@i# values.  We
+; assume that those who use ACL2 with large objects, for whom iprinting causes
+; a space problem because of these large bounds, will know to reset the bounds
+; using set-iprint.
 (defconst *iprint-soft-bound-default* 1000)
 (defconst *iprint-hard-bound-default* 10000)
 
@@ -12851,7 +12906,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; The reason MCL needs special treatment is that (char-code #\Newline) = 13 in
 ; MCL, not 10.  See also :DOC version.
 
-; ACL2 Version 6.4
+; ACL2 Version 6.5
 
 ; We put the version number on the line above just to remind ourselves to bump
 ; the value of state global 'acl2-version, which gets printed out with the
@@ -12877,7 +12932,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; reformatting :DOC comments.
 
                   ,(concatenate 'string
-                                "ACL2 Version 6.4"
+                                "ACL2 Version 6.5"
                                 #+non-standard-analysis
                                 "(r)"
                                 #+(and mcl (not ccl))
@@ -12949,8 +13004,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (iprint-hard-bound . ,*iprint-hard-bound-default*)
     (iprint-soft-bound . ,*iprint-soft-bound-default*)
     (keep-tmp-files . nil)
+    (last-event-data . nil)
     (last-make-event-expansion . nil)
-    (last-prover-steps . nil)
     (last-step-limit . -1) ; any number should be OK
     (ld-level . 0)
     (ld-okp . :default) ; see :DOC calling-ld-in-bad-contexts
@@ -14122,28 +14177,27 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (declare (xargs :guard (and (state-global-let*-bindings-p bindings)
                               (no-duplicatesp-equal (strip-cars bindings)))))
 
-  `(warn-about-parallelism-hazard
+  (let ((cleanup `(pprogn
+                   ,@(state-global-let*-cleanup bindings 0)
+                   state)))
+    `(warn-about-parallelism-hazard
 
 ; We call warn-about-parallelism-hazard, because use of this macro in a
 ; parallel environment is potentially dangerous.  It might work, because maybe
 ; no variables are rebound that are changed inside the waterfall, but we, the
 ; developers, want to know about any such rebinding.
 
-    '(state-global-let* ,bindings ,body)
-    (let ((state-global-let*-cleanup-lst
-           (list ,@(state-global-let*-get-globals bindings))))
-      ,@(and (null bindings)
-             '((declare (ignore state-global-let*-cleanup-lst))))
-      (acl2-unwind-protect
-       "state-global-let*"
-       (pprogn ,@(state-global-let*-put-globals bindings)
-               (check-vars-not-free (state-global-let*-cleanup-lst) ,body))
-       (pprogn
-        ,@(state-global-let*-cleanup bindings 0)
-        state)
-       (pprogn
-        ,@(state-global-let*-cleanup bindings 0)
-        state)))))
+      '(state-global-let* ,bindings ,body)
+      (let ((state-global-let*-cleanup-lst
+             (list ,@(state-global-let*-get-globals bindings))))
+        ,@(and (null bindings)
+               '((declare (ignore state-global-let*-cleanup-lst))))
+        (acl2-unwind-protect
+         "state-global-let*"
+         (pprogn ,@(state-global-let*-put-globals bindings)
+                 (check-vars-not-free (state-global-let*-cleanup-lst) ,body))
+         ,cleanup
+         ,cleanup)))))
 
 #-acl2-loop-only
 (defmacro state-free-global-let* (bindings body)
@@ -15194,7 +15248,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; otherwise.
 
   (when (not (member-eq default '(:defaults :current)))
-    (error "The first argument of with-print-controls must be :DEFAULT ~
+    (error "The first argument of with-print-controls must be :DEFAULTS ~
             or :CURRENT."))
   (let ((raw-print-vars-alist
          '((*print-base* print-base . (f-get-global 'print-base state))
@@ -15248,24 +15302,25 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                    (t (cddr triple))))))
               ,@body)))))
 
-#+(and allegro (not acl2-loop-only))
-(defun allegro-print-number-base-16 (x stream)
+#-acl2-loop-only
+(defun print-number-base-16-upcase-digits (x stream)
 
-; In base 16, Allegro CL's function PRINC prints alphabetic digits in lower
-; case, unlike other Lisps we have seen.  While Allegro CL is compliant with
-; the Common Lisp spec in this regard, we have represented printing in the
-; logic in a manner consistent with those other Lisps, and hence Allegro CL's
-; PRINC violates our axioms.  Therefore, ACL2 built on Allegro CL prints
+; In base 16, in Allegro CL and (when *print-case* is :downcase) CMUCL, the
+; function PRINC prints alphabetic digits in lower case, unlike other Lisps we
+; have seen.  While that behavior is compliant with the Common Lisp spec in
+; this regard, we have represented printing in the logic in a manner consistent
+; with those other Lisps, and hence PRINC violates our axioms in those two host
+; Lisp implementations.  Therefore, ACL2 built on these host Lisps prints
 ; radix-16 numbers without using the underlying lisp's PRINC function.  Thanks
 ; to David Margolies of Franz Inc. for passing along a remark from his
 ; colleague, which showed how to use format here.
 
+  (assert (eql *print-base* 16)) ; for base <= 10, there's no need to call this
   (if *print-radix*
-      (assert$ (eql *print-base* 16)
-               (cond ((realp x)
-                      (format stream "#x~:@(~x~)" x))
-                     (t (format stream "#C(#x~:@(~x~) #x~:@(~x~))"
-                                (realpart x) (imagpart x)))))
+      (cond ((realp x)
+             (format stream "#x~:@(~x~)" x))
+            (t (format stream "#C(#x~:@(~x~) #x~:@(~x~))"
+                       (realpart x) (imagpart x))))
     (format stream "~:@(~x~)" x)))
 
 ; ?? (v. 1.8) I'm not going to look at many, or any, of the skip-proofs
@@ -15331,12 +15386,12 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                (*print-base* (f-get-global 'print-base state))
                (*print-radix* (f-get-global 'print-radix state))
                (*print-case* (f-get-global 'print-case state)))
-              #+allegro
+              #+acl2-print-number-base-16-upcase-digits
               (cond ((and (acl2-numberp x)
                           (> *print-base* 10))
-                     (allegro-print-number-base-16 x stream))
+                     (print-number-base-16-upcase-digits x stream))
                     (t (princ x stream)))
-              #-allegro
+              #-acl2-print-number-base-16-upcase-digits
               (princ x stream))))
            (cond ((eql x #\Newline)
                   (force-output stream)))
@@ -16347,6 +16402,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
            (msg "The variable ~x0 has not been defined as a lock."
                 ',bound-symbol))))
     (progn$ ,@forms)))
+
+#-(or acl2-loop-only (not acl2-par))
+(defmacro with-lock (bound-symbol &rest forms)
+  `(with-lock-raw ,bound-symbol ,@forms))
 
 (defmacro deflock (lock-symbol)
 
@@ -18963,6 +19022,29 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ;  Prin1
 
+(defun symbol-in-current-package-p (x state)
+  (declare (xargs :guard (and (symbolp x)
+                              (state-p state)
+                              (f-boundp-global 'current-package state))))
+  #+acl2-loop-only
+  (or (equal (symbol-package-name x)
+             (f-get-global 'current-package state))
+      (and (ec-call ; avoid guard proof; this is just logic anyhow
+            (member-equal
+             x
+             (package-entry-imports
+              (find-package-entry
+               (f-get-global 'current-package state)
+               (known-package-alist state)))))
+           t))
+  #-acl2-loop-only
+  (multiple-value-bind
+   (sym foundp)
+   (find-symbol (symbol-name x)
+                (f-get-global 'current-package state))
+   (and foundp ; return nil when x is nil but is not in the current package
+        (eq sym x))))
+
 (skip-proofs
 (defun prin1$ (x channel state)
 
@@ -18997,12 +19079,12 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
              (*print-radix* (f-get-global 'print-radix state))
              (*print-case* (f-get-global 'print-case state)))
             (cond ((acl2-numberp x)
-                   #+allegro
+                   #+acl2-print-number-base-16-upcase-digits
                    (cond ((and (acl2-numberp x)
                                (> *print-base* 10))
-                          (allegro-print-number-base-16 x stream))
+                          (print-number-base-16-upcase-digits x stream))
                          (t (princ x stream)))
-                   #-allegro
+                   #-acl2-print-number-base-16-upcase-digits
                    (princ x stream))
                   ((characterp x)
                    (princ "#\\" stream)
@@ -19038,14 +19120,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                    (princ #\" stream))
                   ((symbolp x)
                    (cond ((keywordp x) (princ #\: stream))
-                         ((or (equal (symbol-package-name x)
-                                     (f-get-global 'current-package state))
-                              (member-eq
-                               x
-                               (package-entry-imports
-                                (find-package-entry
-                                 (f-get-global 'current-package state)
-                                 (known-package-alist state)))))
+                         ((symbol-in-current-package-p x state)
                           state)
                          (t (let ((p (symbol-package-name x)))
                               (cond ((needs-slashes p state)
@@ -19085,14 +19160,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         (t
          (pprogn
           (cond ((keywordp x) (princ$ #\: channel state))
-                ((or (equal (symbol-package-name x)
-                            (f-get-global 'current-package state))
-                     (member-eq
-                      x
-                      (package-entry-imports
-                       (find-package-entry
-                        (f-get-global 'current-package state)
-                        (known-package-alist state)))))
+                ((symbol-in-current-package-p x state)
                  state)
                 (t (let ((p (symbol-package-name x)))
                      (pprogn
@@ -19435,7 +19503,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     pc-assign
     illegal-to-certify-message
     acl2-sources-dir
-    last-prover-steps ; being conservative here; perhaps could omit
     including-uncertified-p
     ))
 
@@ -24991,9 +25058,12 @@ Lisp definition."
                                       #-(or ccl gcl)
                                       "; ~Xfe took~|; ~st seconds realtime, ~
                                        ~sc seconds runtime.~%")))
-                     (fmt-to-comment-window
-                      ,g-msg alist 0
-                      (abbrev-evisc-tuple *the-live-state*)))))))))))))
+                     (state-free-global-let*
+                      ((fmt-hard-right-margin 100000)
+                       (fmt-soft-right-margin 100000))
+                      (fmt-to-comment-window
+                       ,g-msg alist 0
+                       (abbrev-evisc-tuple *the-live-state*))))))))))))))
 
 (encapsulate
  ()
@@ -25032,10 +25102,12 @@ Lisp definition."
   #+clisp (apply 'ext:gc args)
   #+cmu (apply 'system::gc args)
   #+gcl
-  (if (eql (length args) 1)
-      (apply 'si::gbc args)
-    (er hard 'gc$
-        "In GCL, gc$ requires exactly one argument, typically T."))
+  (case (length args)
+    (1 (si::gbc (car args)))
+    (0 (si::gbc t))
+    (otherwise
+     (er hard 'gc$
+         "In GCL, gc$ requires one argument, typically T, or no arguments.")))
   #+lispworks (apply 'hcl::gc-generation (or args (list #+lispworks-64bit 7
                                                         #-lispworks-64bit 3)))
   #+sbcl (apply 'sb-ext:gc args)
@@ -25053,28 +25125,29 @@ Lisp definition."
   `(gc$-fn ',args))
 
 #-acl2-loop-only
-(defun-one-output gc-verbose-fn (arg)
+(defun-one-output gc-verbose-fn (arg1 arg2)
 
 ; For a related function, see gc$-fn.
 
-  (let ((arg (and arg t))) ; coerce to Boolean
-    (declare (ignorable arg))
-    #+ccl (ccl::gc-verbose arg arg)
-    #+cmu (setq ext:*gc-verbose* arg)
-    #+gcl (si:*notify-gbc* arg)
+  (declare (ignorable arg2))
+  (let ((arg1 (and arg1 t))) ; coerce to Boolean
+    (declare (ignorable arg1))
+    #+ccl (ccl::gc-verbose arg1 arg2)
+    #+cmu (setq ext:*gc-verbose* arg1)
+    #+gcl (setq si:*notify-gbc* arg1)
     #-(or ccl cmu gcl)
     (format t "GC-VERBOSE is not supported in this Common Lisp.~%Contact the ~
                ACL2 developers if you would like to help add such support.")
     nil))
 
 #+acl2-loop-only
-(defun gc-verbose-fn (arg)
-  (declare (ignore arg)
+(defun gc-verbose-fn (arg1 arg2)
+  (declare (ignore arg1 arg2)
            (xargs :guard t))
   nil)
 
-(defmacro gc-verbose (arg)
-  `(gc-verbose-fn ,arg))
+(defmacro gc-verbose (arg1 &optional arg2)
+  `(gc-verbose-fn ,arg1 ,arg2))
 
 (defun get-wormhole-status (name state)
    #+acl2-loop-only
@@ -25207,12 +25280,14 @@ Lisp definition."
     (eval '(dbg::output-backtrace :verbose)))
   nil)
 
+(defmacro debugger-enabledp-val (val)
+  `(and (member-eq ,val '(t :break :break-bt :bt-break))
+        t))
+
 (defun debugger-enabledp (state)
   (declare (xargs :guard (and (state-p state)
                               (boundp-global 'debugger-enable state))))
-  (let ((val (f-get-global 'debugger-enable state)))
-    (and (member-eq val '(t :break :break-bt :bt-break))
-         t)))
+  (debugger-enabledp-val (f-get-global 'debugger-enable state)))
 
 (defun maybe-print-call-history (state)
   (declare (xargs :guard (and (state-p state)
@@ -25254,7 +25329,7 @@ Lisp definition."
   #+(and (not acl2-loop-only)
          (and gcl (not cltl2)))
   (when (live-state-p state)
-    (setq lisp::*break-enable* (debugger-enabledp state)))
+    (setq lisp::*break-enable* (debugger-enabledp-val val)))
   (pprogn
    (f-put-global 'debugger-enable val state)
    (if (consp (f-get-global 'dmrp state))
@@ -25915,7 +25990,7 @@ Lisp definition."
   #-acl2-loop-only
   (when (live-state-p state)
     (return-from oracle-apply-raw
-                 (mv (funcall fn args) state)))
+                 (mv (apply fn args) state)))
   #+acl2-loop-only
   (ec-call (oracle-apply fn args state)))
 

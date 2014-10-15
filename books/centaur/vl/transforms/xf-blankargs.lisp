@@ -6,23 +6,33 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "../mlib/find-module")
 (include-book "../mlib/namefactory")
 (include-book "../mlib/range-tools")
 (include-book "../mlib/port-tools")
+(include-book "../mlib/expr-building")
 (local (include-book "../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
 
@@ -52,8 +62,8 @@ well for inputs and outputs.  We give these wires names such as
 <p>Unlike @(see drop-blankports) which can be applied at any time after @(see
 argresolve), the blankargs transformation requires that expression sizes have
 been computed (see @(see expression-sizing)) since the new wires need to have
-the appropriate size.  We also expect that the @(see replicate) transform has
-been run to ensure that no instances have ranges.</p>")
+the appropriate size.  We also expect that the @(see replicate-insts) transform
+has been run to ensure that no instances have ranges.</p>")
 
 (local (xdoc::set-default-parents blankargs))
 
@@ -65,12 +75,14 @@ been run to ensure that no instances have ranges.</p>")
    (warnings vl-warninglist-p  "Ordinary @(see warnings) accumulator.")
    (inst     vl-modinst-p      "Semantically meaningless, context for warnings."))
   :guard (same-lengthp args ports)
+  :verify-guards nil
+  :prepwork ((local (in-theory (disable cons-equal))))
   :returns
   (mv (warnings   vl-warninglist-p)
       (new-args   vl-plainarglist-p
                   "Copy of @('args') except that blank arguments have been
                    replaced with fresh wires of the appropriate sizes.")
-      (netdecls   vl-netdecllist-p
+      (vardecls   vl-vardecllist-p
                   "Any fresh wire declarations we've added.")
       (nf         vl-namefactory-p))
   :verbosep t
@@ -78,14 +90,14 @@ been run to ensure that no instances have ranges.</p>")
        (inst (vl-modinst-fix inst))
        ((when (atom args))
         (mv (ok) nil nil nf))
-       ((mv warnings cdr-prime cdr-netdecls nf)
+       ((mv warnings cdr-prime cdr-vardecls nf)
         (vl-modinst-plainarglist-blankargs (cdr args) (cdr ports) nf warnings inst))
 
        (arg1 (vl-plainarg-fix (car args)))
        ((vl-plainarg arg1) arg1)
        ((when arg1.expr)
         ;; Not a blank argument, leave it alone.
-        (mv (ok) (cons arg1 cdr-prime) cdr-netdecls nf))
+        (mv (ok) (cons arg1 cdr-prime) cdr-vardecls nf))
 
        ;; Else, a blank.  Figure out the port width.
        (port1 (vl-port-fix (car ports)))
@@ -101,38 +113,41 @@ been run to ensure that no instances have ranges.</p>")
                                (and port1.expr
                                     (vl-expr->finalwidth port1.expr))))
             (cons arg1 cdr-prime)
-            cdr-netdecls
+            cdr-vardecls
             nf))
 
-       ;; Make a new netdecl, say blank_37, with the appropriate range.
+       ;; Make a new vardecl, say blank_37, with the appropriate range.
        (port-width      (vl-expr->finalwidth port1.expr))
        ((mv newname nf) (vl-namefactory-indexed-name "blank" nf))
        (range           (vl-make-n-bit-range port-width))
-       (new-netdecl     (make-vl-netdecl :name newname
-                                         :type :vl-wire
-                                         :range range
+       (new-nettype     (make-vl-coretype :name :vl-logic
+                                          :pdims (list range)
+                                          :signedp nil))
+       (new-vardecl     (make-vl-vardecl :name newname
+                                         :type new-nettype
+                                         :nettype :vl-wire
                                          :loc (vl-modinst->loc inst)))
        ;; Replace this blank argument with the new blank_37 wire
        (new-expr        (vl-idexpr newname port-width :vl-unsigned))
        (arg1-prime      (change-vl-plainarg arg1 :expr new-expr)))
     (mv (ok)
         (cons arg1-prime cdr-prime)
-        (cons new-netdecl cdr-netdecls)
+        (cons new-vardecl cdr-vardecls)
         nf))
   ///
-  (defmvtypes vl-modinst-plainarglist-blankargs (nil nil true-listp)))
+  (defmvtypes vl-modinst-plainarglist-blankargs (nil nil true-listp))
+  (verify-guards vl-modinst-plainarglist-blankargs))
 
 (define vl-modinst-blankargs
   :short "Apply the @(see blankargs) transform to a module instance."
   ((x        vl-modinst-p)
-   (mods     vl-modulelist-p)
-   (modalist (equal modalist (vl-modalist mods)))
+   (ss       vl-scopestack-p)
    (nf       vl-namefactory-p)
    (warnings vl-warninglist-p))
   :returns
   (mv (warnings vl-warninglist-p)
       (new-x    vl-modinst-p)
-      (netdecls vl-netdecllist-p)
+      (vardecls vl-vardecllist-p)
       (nf       vl-namefactory-p))
   :long "<p>This is just a wrapper for @(see vl-modinst-plainarglist-blankargs)
 that takes care of looking up the ports for the module being instanced.</p>"
@@ -146,7 +161,7 @@ that takes care of looking up the ports for the module being instanced.</p>"
 
        ((vl-modinst x) x)
 
-       ((when (eq (vl-arguments-kind x.portargs) :named))
+       ((when (eq (vl-arguments-kind x.portargs) :vl-arguments-named))
         (mv (fatal :type :vl-programming-error
                    :msg "~a0: expected arguments to be plain argument lists, ~
                          but found named arguments.  Did you forget to run ~
@@ -167,8 +182,8 @@ that takes care of looking up the ports for the module being instanced.</p>"
 
        (plainargs (vl-arguments-plain->args x.portargs))
 
-       (target-mod (vl-fast-find-module x.modname mods modalist))
-       ((unless target-mod)
+       (target-mod (vl-scopestack-find-definition x.modname ss))
+       ((unless (and target-mod (eq (tag target-mod) :vl-module)))
         (mv (fatal :type :vl-bad-instance
                    :msg "~a0 refers to undefined module ~m1."
                    :args (list x x.modname))
@@ -181,12 +196,12 @@ that takes care of looking up the ports for the module being instanced.</p>"
                    :args (list x (len ports) (len plainargs)))
             x nil nf))
 
-       ((mv warnings new-plainargs netdecls nf)
+       ((mv warnings new-plainargs vardecls nf)
         (vl-modinst-plainarglist-blankargs plainargs ports nf warnings x))
 
        (new-args (make-vl-arguments-plain :args new-plainargs))
        (x-prime  (change-vl-modinst x :portargs new-args)))
-    (mv warnings x-prime netdecls nf))
+    (mv warnings x-prime vardecls nf))
   ///
   (defmvtypes vl-modinst-blankargs (nil nil true-listp)))
 
@@ -194,24 +209,23 @@ that takes care of looking up the ports for the module being instanced.</p>"
 (define vl-modinstlist-blankargs
   :short "Extends @(see vl-modinst-blankargs) across a @(see vl-modinstlist-p)."
   ((x        vl-modinstlist-p)
-   (mods     vl-modulelist-p)
-   (modalist (equal modalist (vl-modalist mods)))
+   (ss       vl-scopestack-p)
    (nf       vl-namefactory-p)
    (warnings vl-warninglist-p))
   :returns
   (mv (warnings vl-warninglist-p)
       (new-x    vl-modinstlist-p)
-      (netdecls vl-netdecllist-p)
+      (vardecls vl-vardecllist-p)
       (nf       vl-namefactory-p))
   (b* (((when (atom x))
         (mv (ok) nil nil (vl-namefactory-fix nf)))
-       ((mv warnings car-prime car-netdecls nf)
-        (vl-modinst-blankargs (car x) mods modalist nf warnings))
-       ((mv warnings cdr-prime cdr-netdecls nf)
-        (vl-modinstlist-blankargs (cdr x) mods modalist nf warnings))
+       ((mv warnings car-prime car-vardecls nf)
+        (vl-modinst-blankargs (car x) ss nf warnings))
+       ((mv warnings cdr-prime cdr-vardecls nf)
+        (vl-modinstlist-blankargs (cdr x) ss nf warnings))
        (x-prime (cons car-prime cdr-prime))
-       (netdecls (append car-netdecls cdr-netdecls)))
-    (mv warnings x-prime netdecls nf))
+       (vardecls (append car-vardecls cdr-vardecls)))
+    (mv warnings x-prime vardecls nf))
   ///
   (defmvtypes vl-modinstlist-blankargs (nil true-listp true-listp)))
 
@@ -223,7 +237,7 @@ that takes care of looking up the ports for the module being instanced.</p>"
    (inst vl-gateinst-p     "For locations of new wires."))
   :returns
   (mv (new-args vl-plainarglist-p "With any blank arguments replaced by fresh wires.")
-      (netdecls vl-netdecllist-p  "Declaration for the new fresh wires.")
+      (vardecls vl-vardecllist-p  "Declaration for the new fresh wires.")
       (nf       vl-namefactory-p))
   :long "<p>This is simpler than @(see vl-modinst-plainarglist-blankargs)
 because we do not have to consider ports: we know that every \"port\" of a gate
@@ -233,22 +247,23 @@ size 1.</p>"
        (inst (vl-gateinst-fix inst))
        ((when (atom args))
         (mv nil nil nf))
-       ((mv cdr-prime cdr-netdecls nf)
+       ((mv cdr-prime cdr-vardecls nf)
         (vl-gateinst-plainarglist-blankargs (cdr args) nf inst))
        (arg1 (vl-plainarg-fix (car args)))
        ((vl-plainarg arg1) arg1)
        ((when arg1.expr)
         ;; Not a blank arg, nothing needs to be done.
-        (mv (cons arg1 cdr-prime) cdr-netdecls nf))
+        (mv (cons arg1 cdr-prime) cdr-vardecls nf))
        ;; Otherwise, need to replace it with a new one-bit wire.
        ((mv newname nf) (vl-namefactory-indexed-name "blank" nf))
-       (new-netdecl     (make-vl-netdecl :name newname
-                                         :type :vl-wire
+       (new-vardecl     (make-vl-vardecl :name newname
+                                         :type *vl-plain-old-wire-type*
+                                         :nettype :vl-wire
                                          :loc (vl-gateinst->loc inst)))
        (new-expr        (vl-idexpr newname 1 :vl-unsigned))
        (arg1-prime      (change-vl-plainarg arg1 :expr new-expr)))
     (mv (cons arg1-prime cdr-prime)
-        (cons new-netdecl cdr-netdecls)
+        (cons new-vardecl cdr-vardecls)
         nf))
   ///
   (defmvtypes vl-gateinst-plainarglist-blankargs (nil true-listp)))
@@ -262,7 +277,7 @@ size 1.</p>"
   :returns
   (mv (warnings vl-warninglist-p)
       (new-x    vl-gateinst-p)
-      (netdecls vl-netdecllist-p)
+      (vardecls vl-vardecllist-p)
       (nf       vl-namefactory-p))
   (b* ((x  (vl-gateinst-fix x))
        (nf (vl-namefactory-fix nf))
@@ -283,10 +298,10 @@ size 1.</p>"
                    :args (list x x.range))
             x nil nf))
 
-       ((mv new-args netdecls nf)
+       ((mv new-args vardecls nf)
         (vl-gateinst-plainarglist-blankargs x.args nf x))
        (x-prime  (change-vl-gateinst x :args new-args)))
-    (mv (ok) x-prime netdecls nf))
+    (mv (ok) x-prime vardecls nf))
   ///
   (defmvtypes vl-gateinst-blankargs (nil nil true-listp)))
 
@@ -299,17 +314,17 @@ size 1.</p>"
   :returns
   (mv (warnings vl-warninglist-p)
       (new-x    vl-gateinstlist-p)
-      (netdecls vl-netdecllist-p)
+      (vardecls vl-vardecllist-p)
       (nf       vl-namefactory-p))
   (b* (((when (atom x))
         (mv (ok) nil nil (vl-namefactory-fix nf)))
-       ((mv warnings car-prime car-netdecls nf)
+       ((mv warnings car-prime car-vardecls nf)
         (vl-gateinst-blankargs (car x) nf warnings))
-       ((mv warnings cdr-prime cdr-netdecls nf)
+       ((mv warnings cdr-prime cdr-vardecls nf)
         (vl-gateinstlist-blankargs (cdr x) nf warnings))
        (x-prime  (cons car-prime cdr-prime))
-       (netdecls (append car-netdecls cdr-netdecls)))
-    (mv warnings x-prime netdecls nf))
+       (vardecls (append car-vardecls cdr-vardecls)))
+    (mv warnings x-prime vardecls nf))
   ///
   (defmvtypes vl-gateinstlist-blankargs (nil true-listp true-listp)))
 
@@ -317,8 +332,7 @@ size 1.</p>"
 (define vl-module-blankargs
   :short "Fill in blank arguments throughout a @(see vl-module-p)."
   ((x        vl-module-p)
-   (mods     vl-modulelist-p)
-   (modalist (equal modalist (vl-modalist mods))))
+   (ss       vl-scopestack-p))
   :returns (new-x vl-module-p)
   :long "<p>We rewrite all module instances with @(see vl-modinst-blankargs)
 and all gate instances with @(see vl-gateinst-blankargs).</p>"
@@ -327,38 +341,34 @@ and all gate instances with @(see vl-gateinst-blankargs).</p>"
        ((when (vl-module->hands-offp x))
         x)
        ((vl-module x) x)
+       (ss  (vl-scopestack-push x ss))
        (warnings (vl-module->warnings x))
        (nf       (vl-starting-namefactory x))
 
-       ((mv warnings modinsts netdecls1 nf)
-        (vl-modinstlist-blankargs x.modinsts mods modalist nf warnings))
-       ((mv warnings gateinsts netdecls2 nf)
+       ((mv warnings modinsts vardecls1 nf)
+        (vl-modinstlist-blankargs x.modinsts ss nf warnings))
+       ((mv warnings gateinsts vardecls2 nf)
         (vl-gateinstlist-blankargs x.gateinsts nf warnings))
 
        (- (vl-free-namefactory nf))
-       (all-netdecls (append netdecls1 netdecls2 x.netdecls)))
+       (all-vardecls (append vardecls1 vardecls2 x.vardecls)))
 
     (change-vl-module x
                       :modinsts modinsts
                       :gateinsts gateinsts
-                      :netdecls all-netdecls
+                      :vardecls all-vardecls
                       :warnings warnings)))
 
-(defprojection vl-modulelist-blankargs-aux ((x        vl-modulelist-p)
-                                            (mods     vl-modulelist-p)
-                                            (modalist (equal modalist (vl-modalist mods))))
+(defprojection vl-modulelist-blankargs ((x        vl-modulelist-p)
+                                        (ss       vl-scopestack-p))
   :returns (new-x vl-modulelist-p)
-  (vl-module-blankargs x mods modalist))
-
-(define vl-modulelist-blankargs ((x vl-modulelist-p))
-  :returns (new-x vl-modulelist-p)
-  (b* ((modalist (vl-modalist x))
-       (x-prime  (vl-modulelist-blankargs-aux x x modalist)))
-    (fast-alist-free modalist)
-    x-prime))
+  (vl-module-blankargs x ss))
 
 (define vl-design-blankargs ((x vl-design-p))
   :short "Top-level @(see blankargs) transformation."
   :returns (new-x vl-design-p)
-  (b* (((vl-design x) x))
-    (change-vl-design x :mods (vl-modulelist-blankargs x.mods))))
+  (b* (((vl-design x) x)
+       (ss (vl-scopestack-init x))
+       (mods (vl-modulelist-blankargs x.mods ss)))
+    (vl-scopestacks-free)
+    (change-vl-design x :mods mods)))

@@ -1,5 +1,11 @@
 (in-package "ACL2")
 
+; Added by Matt K.: This book has taken only a couple of minutes on a decent
+; Linux system in 2013.  However, ACL2 built on GCL 2.6.8 and Mac OS 10.6
+; cannot complete the certification without running exhausting STRING storage,
+; probably because it contains a large stobj.  So we certify it only in
+; "everything" regressions.
+
 ;;
 ;;  This data structure and algorithm implementation is based on
 ;;  "Accelerating Large Graph Algorithms on the GPU using CUDA" by

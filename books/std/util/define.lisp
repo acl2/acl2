@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 ; Modified by David Rager <ragerdl@cs.utexas.edu> with minor improvements
@@ -23,10 +33,38 @@
 (in-package "STD")
 (include-book "formals")
 (include-book "returnspecs")
-(include-book "xdoc/fmt-to-str" :dir :system)
+(include-book "xdoc/fmt-to-str-orig" :dir :system)
 (include-book "tools/mv-nth" :dir :system)
 (set-state-ok t)
 (program)
+
+(defun bootstrap-revappend-chars-aux (x n xl y)
+  (declare (type string x)
+           (type unsigned-byte n xl))
+  (if (eql n xl)
+      y
+    (bootstrap-revappend-chars-aux x
+                                   (the unsigned-byte (+ 1 n))
+                                   xl
+                                   (cons (char x n) y))))
+
+(defun bootstrap-revappend-chars (x y)
+  (bootstrap-revappend-chars-aux x 0 (length x) y))
+
+(defun bootstrap-html-encode-str (x n xl acc)
+  ;; Revappend the HTML encoding of X (e.g., & --> &amp;) onto ACC.
+  (declare (type string x)
+           (type unsigned-byte n xl))
+  (b* (((when (eql n xl))
+        acc)
+       (char1 (char x n))
+       (acc   (case char1
+                (#\< (list* #\; #\t #\l #\& acc))         ;; "&lt;" (in reverse)
+                (#\> (list* #\; #\t #\g #\& acc))         ;; "&gt;"
+                (#\& (list* #\; #\p #\m #\a #\& acc))     ;; "&amp;"
+                (#\" (list* #\; #\t #\o #\u #\q #\& acc)) ;; "&quot;"
+                (t   (cons char1 acc)))))
+    (bootstrap-html-encode-str x (the unsigned-byte (+ 1 n)) xl acc)))
 
 (defxdoc define
   :parents (std/util)
@@ -203,6 +241,13 @@ are passed to a @('defsection') for this definition.</dd>
 itself, for instance it might include @('-aux') functions or local lemmas
 needed for termination.</dd>
 
+<dt>@(':t-proof val')</dt>
+
+<dd>By default, the termination proof is lost after admitting a function.
+But if @(':t-proof t') is provided, we will create a theorem without
+any rule-classes that holds the proof of termination for this function and
+measure.</dd>
+
 </dl>
 
 <h4>@('Returns') Specifications</h4>
@@ -285,7 +330,8 @@ some kind of separator!</p>
             :prepwork
             :verbosep
             :progn
-            :hooks)
+            :hooks
+            :t-proof)
           acl2::*xargs-keywords*))
 
 
@@ -317,9 +363,18 @@ some kind of separator!</p>
                               (plist-worldp world))))
   (b* ((stobjs-out (look-up-return-vals fnname world))
        ((when (atom returnspecs))
-        ;; Fine, the user just didn't name/document the return values...
+        ;; Fine, the user just didn't name/document the return values.  Semi
+        ;; bozo: if this is a non-executable function, stobjs-out doesn't
+        ;; necessarily say the right thing.  Well, we can't really do any
+        ;; better, so whatever.
         (nils-to-stars stobjs-out))
-       ((unless (equal (len stobjs-out) (len returnspecs)))
+       ((when (and (not (equal (len stobjs-out) (len returnspecs)))
+                   ;; See Issue 270.  The stobjs-out is not a reliable
+                   ;; indicator of how many values are returned by
+                   ;; non-executable functions, so if this function isn't
+                   ;; executable we'll just trust that the user knows how
+                   ;; many values it returns.
+                   (not (getprop fnname 'acl2::non-executablep nil 'acl2::current-acl2-world world))))
         (er hard? 'return-value-names
             "Error in ~x0: ACL2 thinks this function has ~x0 return ~
              values, but :returns has ~x1 entries!"
@@ -330,6 +385,7 @@ some kind of separator!</p>
     (returnspeclist->names returnspecs)))
 
 (defun make-xdoc-signature
+  ;; Makes the short (foo x y z) -> (mv a b c) line
   (wrapper            ; name of wrapper function, a symbol
    return-value-names ; names of return values, a symbol list
    base-pkg           ; base package for printing
@@ -347,32 +403,32 @@ some kind of separator!</p>
                         (t
                          (cons 'mv return-value-names))))
 
-       ((mv call-str state) (xdoc::fmt-to-str call-sexpr base-pkg state))
-       ((mv ret-str state)  (xdoc::fmt-to-str ret-sexpr base-pkg state))
+       ((mv call-str state) (xdoc::fmt-to-str-orig call-sexpr base-pkg state))
+       ((mv ret-str state)  (xdoc::fmt-to-str-orig ret-sexpr base-pkg state))
        (call-len (length call-str)) ;; sensible since not yet encoded
        (ret-len  (length ret-str))  ;; sensible since not yet encoded
-       (acc (revappend (coerce  "<dt>Signature</dt><dt>" 'list) acc))
+       (acc (bootstrap-revappend-chars "  <dt>Signature</dt><dt>" acc))
        (acc (if (< (+ call-len ret-len) 60)
                 ;; Short signature, so put it all on the same line.  I'm still
                 ;; going to use <code> instead of <tt>, for consistency.
-                (b* ((acc (revappend (coerce "<code>" 'list) acc))
-                     (acc (xdoc::simple-html-encode-str call-str 0 call-len acc))
-                     (acc (revappend (coerce " &rarr; " 'list) acc))
-                     (acc (xdoc::simple-html-encode-str ret-str 0 ret-len acc))
-                     (acc (revappend (coerce "</code>" 'list) acc)))
+                (b* ((acc (bootstrap-revappend-chars "<code>" acc))
+                     (acc (bootstrap-html-encode-str call-str 0 call-len acc))
+                     (acc (bootstrap-revappend-chars " &rarr; " acc))
+                     (acc (bootstrap-html-encode-str ret-str 0 ret-len acc))
+                     (acc (bootstrap-revappend-chars "</code>" acc)))
                   acc)
               ;; Long signature, so split it across lines.  Using <code> here
               ;; means it's basically okay if there are line breaks in call-str
               ;; or ret-str.
-              (b* ((acc (revappend (coerce "<code>" 'list) acc))
-                   (acc (xdoc::simple-html-encode-str call-str 0 call-len acc))
+              (b* ((acc (bootstrap-revappend-chars "<code>" acc))
+                   (acc (bootstrap-html-encode-str call-str 0 call-len acc))
                    (acc (cons #\Newline acc))
-                   (acc (revappend (coerce "  &rarr;" 'list) acc))
+                   (acc (bootstrap-revappend-chars "  &rarr;" acc))
                    (acc (cons #\Newline acc))
-                   (acc (xdoc::simple-html-encode-str ret-str 0 ret-len acc))
-                   (acc (revappend (coerce "</code>" 'list) acc)))
+                   (acc (bootstrap-html-encode-str ret-str 0 ret-len acc))
+                   (acc (bootstrap-revappend-chars "</code>" acc)))
                 acc)))
-       (acc (revappend (coerce "</dt>" 'list) acc)))
+       (acc (bootstrap-revappend-chars "</dt>" acc)))
     (mv acc state)))
 
 
@@ -396,38 +452,38 @@ some kind of separator!</p>
        ((unless (formal-can-generate-doc-p x))
         (mv acc state))
 
-       (acc (revappend (coerce "<dd>" 'list) acc))
-       ((mv name-str state) (xdoc::fmt-to-str x.name base-pkg state))
-       (acc (revappend (coerce "<tt>" 'list) acc))
-       (acc (xdoc::simple-html-encode-str name-str 0 (length name-str) acc))
-       (acc (revappend (coerce "</tt>" 'list) acc))
-       (acc (revappend (coerce " &mdash; " 'list) acc))
+       (acc (bootstrap-revappend-chars "  <dd>" acc))
+       ((mv name-str state) (xdoc::fmt-to-str-orig x.name base-pkg state))
+       (acc (bootstrap-revappend-chars "<tt>" acc))
+       (acc (bootstrap-html-encode-str name-str 0 (length name-str) acc))
+       (acc (bootstrap-revappend-chars "</tt>" acc))
+       (acc (bootstrap-revappend-chars " &mdash; " acc))
 
        (acc (if (equal x.doc "")
                 acc
-              (b* ((acc (revappend (coerce x.doc 'list) acc))
+              (b* ((acc (bootstrap-revappend-chars x.doc acc))
                    (acc (if (ends-with-period-p x.doc)
                             acc
                           (cons #\. acc))))
                 acc)))
 
        ((when (eq x.guard t))
-        (b* ((acc (revappend (coerce "</dd>" 'list) acc))
+        (b* ((acc (bootstrap-revappend-chars "</dd>" acc))
              (acc (cons #\Newline acc)))
           (mv acc state)))
 
        (acc (if (equal x.doc "")
                 acc
-              (revappend (coerce "<br/>&nbsp;&nbsp;&nbsp;&nbsp;" 'list) acc)))
-       (acc (revappend (coerce "<color rgb='#606060'>" 'list) acc))
-       ((mv guard-str state) (xdoc::fmt-to-str x.guard base-pkg state))
+              (bootstrap-revappend-chars "<br/>&nbsp;&nbsp;&nbsp;&nbsp;" acc)))
+       (acc (bootstrap-revappend-chars "<color rgb='#606060'>" acc))
+       ((mv guard-str state) (xdoc::fmt-to-str-orig x.guard base-pkg state))
        ;; Using @('...') here isn't necessarily correct.  If the sexpr has
        ;; something in it that can lead to '), we are hosed.  BOZO eventually
        ;; check for this and make sure we use <code> tags instead, if it
        ;; happens.
-       (acc (revappend (coerce "Guard @('" 'list) acc))
-       (acc (revappend (coerce guard-str 'list) acc))
-       (acc (revappend (coerce "').</color></dd>" 'list) acc))
+       (acc (bootstrap-revappend-chars "Guard @('" acc))
+       (acc (bootstrap-revappend-chars guard-str acc))
+       (acc (bootstrap-revappend-chars "').</color></dd>" acc))
        (acc (cons #\Newline acc)))
     (mv acc state)))
 
@@ -443,7 +499,7 @@ some kind of separator!</p>
   (declare (xargs :guard (formallist-p x)))
   (b* (((unless (formals-can-generate-doc-p x))
         (mv acc state))
-       (acc (revappend (coerce "<dt>Arguments</dt>" 'list) acc))
+       (acc (bootstrap-revappend-chars "  <dt>Arguments</dt>" acc))
        ((mv acc state) (doc-from-formals-aux x acc base-pkg state)))
     (mv acc state)))
 
@@ -468,54 +524,54 @@ some kind of separator!</p>
        ((unless (returnspec-can-generate-doc-p x))
         (mv acc state))
 
-       (acc (revappend (coerce "<dd>" 'list) acc))
-       ((mv name-str state) (xdoc::fmt-to-str x.name base-pkg state))
-       (acc (revappend (coerce "<tt>" 'list) acc))
-       (acc (xdoc::simple-html-encode-str name-str 0 (length name-str) acc))
-       (acc (revappend (coerce "</tt>" 'list) acc))
-       (acc (revappend (coerce " &mdash; " 'list) acc))
+       (acc (bootstrap-revappend-chars "<dd>" acc))
+       ((mv name-str state) (xdoc::fmt-to-str-orig x.name base-pkg state))
+       (acc (bootstrap-revappend-chars "<tt>" acc))
+       (acc (bootstrap-html-encode-str name-str 0 (length name-str) acc))
+       (acc (bootstrap-revappend-chars "</tt>" acc))
+       (acc (bootstrap-revappend-chars " &mdash; " acc))
 
        (acc (if (equal x.doc "")
                 acc
-              (b* ((acc (revappend (coerce x.doc 'list) acc))
+              (b* ((acc (bootstrap-revappend-chars x.doc acc))
                    (acc (if (ends-with-period-p x.doc)
                             acc
                           (cons #\. acc))))
                 acc)))
 
        ((when (eq x.return-type t))
-        (b* ((acc (revappend (coerce "</dd>" 'list) acc))
+        (b* ((acc (bootstrap-revappend-chars "</dd>" acc))
              (acc (cons #\Newline acc)))
           (mv acc state)))
 
        (acc (if (equal x.doc "")
                 acc
-              (revappend (coerce "<br/>&nbsp;&nbsp;&nbsp;&nbsp;" 'list) acc)))
-       (acc (revappend (coerce "<color rgb='#606060'>" 'list) acc))
-       ((mv type-str state) (xdoc::fmt-to-str x.return-type base-pkg state))
+              (bootstrap-revappend-chars "<br/>&nbsp;&nbsp;&nbsp;&nbsp;" acc)))
+       (acc      (bootstrap-revappend-chars "<color rgb='#606060'>" acc))
+       ((mv type-str state) (xdoc::fmt-to-str-orig x.return-type base-pkg state))
        ;; Using @('...') here isn't necessarily correct.  If the sexpr has
        ;; something in it that can lead to '), we are hosed.  BOZO eventually
        ;; check for this and make sure we use <code> tags instead, if it
        ;; happens.
-       (acc (revappend (coerce "Type @('" 'list) acc))
-       (acc (revappend (coerce type-str 'list) acc))
-       (acc (revappend (coerce "')" 'list) acc))
+       (acc (bootstrap-revappend-chars "Type @('" acc))
+       (acc (bootstrap-revappend-chars type-str acc))
+       (acc (bootstrap-revappend-chars "')" acc))
        ((mv acc state)
         (cond ((eq x.hyp t)
                (mv (cons #\. acc) state))
               ((or (eq x.hyp :guard)
                    (eq x.hyp :fguard))
-               (mv (revappend (coerce ", given the @(see guard)." 'list) acc)
+               (mv (bootstrap-revappend-chars ", given the @(see guard)." acc)
                    state))
               (t
-               (b* ((acc (revappend (coerce ", given @('" 'list) acc))
+               (b* ((acc (bootstrap-revappend-chars ", given @('" acc))
                     ((mv hyp-str state)
-                     (xdoc::fmt-to-str x.hyp base-pkg state))
-                    (acc (revappend (coerce hyp-str 'list) acc))
-                    (acc (revappend (coerce "')." 'list) acc)))
+                     (xdoc::fmt-to-str-orig x.hyp base-pkg state))
+                    (acc (bootstrap-revappend-chars hyp-str acc))
+                    (acc (bootstrap-revappend-chars "')." acc)))
                  (mv acc state)))))
-       (acc (revappend (coerce "</color>" 'list) acc))
-       (acc (revappend (coerce "</dd>" 'list) acc))
+       (acc (bootstrap-revappend-chars "</color>" acc))
+       (acc (bootstrap-revappend-chars "</dd>" acc))
        (acc (cons #\Newline acc)))
 
     (mv acc state)))
@@ -532,7 +588,7 @@ some kind of separator!</p>
   (declare (xargs :guard (returnspeclist-p x)))
   (b* (((unless (returnspecs-can-generate-doc-p x))
         (mv acc state))
-       (acc (revappend (coerce "<dt>Returns</dt>" 'list) acc))
+       (acc (bootstrap-revappend-chars "<dt>Returns</dt>" acc))
        ((mv acc state) (doc-from-returnspecs-aux x acc base-pkg state)))
     (mv acc state)))
 
@@ -540,18 +596,17 @@ some kind of separator!</p>
   "Returns (mv str state)"
   (b* ((world (w state))
        (acc nil)
-       (acc (revappend (coerce "<box><dl>" 'list) acc))
+       (acc (bootstrap-revappend-chars "<box><dl>" acc))
        (acc (cons #\Newline acc))
        (return-value-names (return-value-names fnname returnspecs world))
        ((mv acc state) (make-xdoc-signature wrapper return-value-names base-pkg acc state))
        ((mv acc state) (doc-from-formals formals acc base-pkg state))
        ((mv acc state) (doc-from-returnspecs returnspecs acc base-pkg state))
-       (acc (revappend (coerce "</dl></box>" 'list) acc))
+       (acc (cons #\Newline acc))
+       (acc (bootstrap-revappend-chars "</dl></box>" acc))
        (acc (cons #\Newline acc))
        (str (reverse (coerce acc 'string))))
     (mv str state)))
-
-
 
 
 
@@ -578,6 +633,7 @@ some kind of separator!</p>
    kwd-alist   ;; keyword options passed to define
    returnspecs ;; returns specifiers, already parsed
 
+   t-proof     ;; the full event to prove the required termination for this function
    main-def    ;; the full defun[d] event for the function
    macro       ;; macro wrapper (if necessary), nil or a defmacro event
    raw-formals ;; not parsed, includes any &optional, &key parts
@@ -599,7 +655,27 @@ some kind of separator!</p>
                 (get-define-guts-alist world))))
 
 
+(defun get-define-current-function (world)
+  (cdr (assoc 'current-function (table-alist 'define world))))
 
+(defmacro set-define-current-function (fn)
+  `(table define 'current-function ',fn))
+
+; -------- Proving termination of some function definition separately -------
+(defun make-termination-proof (thmName thmHints defun)
+  `((make-event 
+        (let* ((state (f-put-global 'last-clause '(t) state))
+               (oldHint (override-hints (w state))))
+          (er-progn
+           (set-override-hints
+            '((pprogn (f-put-global 'last-clause clause state)
+                      (mv 'err nil state))))
+           (mv-let (x y state) ,defun
+                   (declare (ignore x y))
+                   (value `(progn (set-override-hints ,oldHint)
+                                  (defthm ,',thmName ,(cons 'or (@ last-clause))
+                                    :hints ,',thmHints :rule-classes nil)))))))))
+                                    
 ; ----------------- Hooks -----------------------------------------------------
 
 ; WARNING: Undocumented, experimental feature; all details may change.
@@ -735,6 +811,15 @@ some kind of separator!</p>
        ((unless (true-listp prepwork))
         (raise "Error in ~x0: expected :prepwork to be a true-listp, but found ~x1."
                name prepwork))
+               
+       (t-proof    (getarg :t-proof        nil kwd-alist))
+       ; If you can think of a good extension for t-proof, you may relax the
+       ; requirement of booleanp while preserving the old behavior for t and
+       ; nil. It would be nice if you would invent a syntactically generalisable
+       ; extension (s.t. some syntax remains invalid)
+       ((unless (booleanp t-proof))
+        (raise "Error in ~x0: expected :t-proof to be a booleanp, but found ~x1."
+               name prepwork))
 
        (need-macrop (or inline-p (has-macro-args raw-formals)))
        (name-fn     (cond (inline-p
@@ -772,7 +857,11 @@ some kind of separator!</p>
                                    ,extended-body)
                         extended-body))
 
-       (xargs         (get-xargs-from-kwd-alist kwd-alist))
+       (xargs         (get-xargs-from-kwd-alist (remove-from-alist ':hints kwd-alist)))
+       (t-hints       (getarg :hints nil kwd-alist))
+       (t-proof-name  (if t-proof (ACL2::packn (LIST name-fn '|-| t-proof)) nil))
+       (new-hint      (if t-proof `('(:by ,t-proof-name)) t-hints))
+       (xargs         (if new-hint (LIST* ':hints new-hint xargs) xargs))
 
        (returnspecs   (parse-returnspecs name returns world))
        (defun-sym     (if enabled-p 'defun 'defund))
@@ -841,7 +930,9 @@ some kind of separator!</p>
                   :macro       macro
                   :raw-formals raw-formals
                   :formals     formals
-                  :rest-events rest-events)))
+                  :rest-events rest-events
+                  :t-proof     (if t-proof (cons t-proof-name t-hints) nil)
+                  )))
 
 (defun add-signature-from-guts (guts)
   (b* (((defguts guts) guts))
@@ -885,7 +976,8 @@ some kind of separator!</p>
                             guts.kwd-alist))
 
        (set-ignores (get-set-ignores-from-kwd-alist guts.kwd-alist))
-       (prognp (getarg :progn nil guts.kwd-alist)))
+       (prognp      (getarg :progn         nil guts.kwd-alist))
+       )
 
     `(progn
        (,(if prognp 'defsection-progn 'defsection) ,guts.name
@@ -896,6 +988,8 @@ some kind of separator!</p>
          ,@(and prepwork
                 `((with-output :stack :pop
                     (progn . ,prepwork))))
+
+         ,@(and guts.t-proof (make-termination-proof (car guts.t-proof) (cdr guts.t-proof) guts.main-def))
 
          ;; Define the macro first, so that it can be used in recursive calls,
          ;; e.g., to take advantage of nicer optional/keyword args.
@@ -912,16 +1006,17 @@ some kind of separator!</p>
          ;; Extend the define table right away, in case anything during
          ;; the rest-events needs to make use of it.
          ,(extend-define-guts-alist guts)
+         (set-define-current-function ,guts.name)
 
          (local
           (make-event
            (if (logic-mode-p ',guts.name-fn (w state))
                '(in-theory (enable ,guts.name))
              '(value-triple :invisible))))
-
+         
          (make-event
           (let* ((world (w state))
-                 (events (returnspec-thms ',guts.name-fn ',guts.returnspecs world)))
+                 (events (returnspec-thms ',guts.name ',guts.name-fn ',guts.returnspecs world)))
             (value (if events
                        `(with-output :stack :pop (progn . ,events))
                      '(value-triple :invisible)))))
@@ -939,6 +1034,10 @@ some kind of separator!</p>
        ;; Now that the section has been submitted, its xdoc exists, so we can
        ;; do the doc generation and prepend it to the xdoc.
        ,(add-signature-from-guts guts)
+
+       ,@(if prognp
+             `((set-define-current-function nil))
+           nil)
        )))
 
 (defun define-fn (name args world)
@@ -1034,3 +1133,134 @@ some kind of separator!</p>
          'untranslate-preprocess
          'untranslate-preproc-for-define))
 
+
+
+
+
+; ------------------------------------------------------------------------
+;
+;  More Returns!!!
+;
+; ------------------------------------------------------------------------
+
+(defxdoc more-returns
+  :parents (define returns-specifiers)
+  :short "Prove additional return-value theorems about a @(see define)d
+function."
+
+  :long "<p>@('more-returns') is a concise syntax for proving additional
+theorems about the return-values of your functions, using @(see define)'s
+@(':returns')-like syntax.</p>
+
+<p>Example <i>within a define</i>:</p>
+
+@({
+    (define my-make-alist (keys)
+     :returns (alist alistp)
+     (if (atom keys)
+         nil
+       (cons (cons (car keys) nil)
+             (my-make-alist (cdr keys))))
+     ///
+     (more-returns   ;; no name needed since we're in a define
+      (alist true-listp :rule-classes :type-prescription)
+      (alist (equal (len alist) (len keys))
+             :name len-of-my-make-alist)))
+})
+
+<p>Example outside a define:</p>
+
+@({
+    (local (in-theory (enable my-make-alist)))
+    (more-returns my-make-alist
+      (alist (equal (strip-cars alist) (list-fix keys))
+             :name strip-cars-of-my-make-alist))
+})
+
+<p>General form:</p>
+
+@({
+     (more-returns [name] ;; defaults to the current define
+       <return-spec-1>
+       <return-spec-2>
+       ...)
+})
+
+<p>Where each @('return-spec') is as described in @(see returns-specifiers) and
+shares a name with one of the @(':returns') from the @('define').</p>
+
+<p>Note that any @(see xdoc) documentation strings within these return
+specifiers is ignored.  You should usually put such documentation into the
+@(':returns') specifier for the @(see define), instead.</p>")
+
+(defun returnspec-additional-single-thm (guts newspec world)
+  ;; Only dealing with the single-return-value case.
+  ;; Guts is the define we're dealing with.  We assume it has a single return spec.
+  ;; Newspec is the new returnspec-p that we want to prove
+  (b* ((__function__ 'returnspec-additional-single-thm)
+       ((defguts guts) guts)
+       (origspec (car guts.returnspecs))
+       ((unless (equal (returnspec->name origspec)
+                       (returnspec->name newspec)))
+        (raise "Expected return value for ~x0 to be named ~x1, found ~x2."
+               guts.name
+               (returnspec->name origspec)
+               (returnspec->name newspec)))
+       (badname-okp
+        ;; This is meant to avoid name clashes.
+        nil))
+    (returnspec-single-thm guts.name guts.name-fn newspec badname-okp world)))
+
+(defun returnspec-additional-single-thms (guts newspecs world)
+  (if (atom newspecs)
+      nil
+    (append (returnspec-additional-single-thm guts (car newspecs) world)
+            (returnspec-additional-single-thms guts (cdr newspecs) world))))
+
+(defun returnspec-additional-multi-thms (guts newspecs world)
+  (b* ((__function__ 'returnspec-additional-multi-thms)
+       ((defguts guts) guts)
+       (fn-formals      (formallist->names guts.formals))
+       (fn-return-names (returnspeclist->names guts.returnspecs))
+       (ignorable-names (make-symbols-ignorable fn-return-names))
+       (binds           `((mv . ,ignorable-names) (,guts.name-fn . ,fn-formals)))
+       (new-return-names (returnspeclist->names newspecs))
+       ((unless (subsetp new-return-names fn-return-names))
+        (raise "No return value named ~x0 for function ~x1."
+               (car (set-difference-equal new-return-names fn-return-names))
+               guts.name))
+       (badname-okp nil))
+    (returnspec-multi-thms guts.name guts.name-fn binds newspecs badname-okp world)))
+
+(defun returnspec-additional-thms (guts newspecs world)
+  ;; This deals with either the single- or multi-valued return case.
+  (b* ((__function__ 'returnspec-additional-thms)
+       ((defguts guts) guts)
+       ((unless guts.returnspecs)
+        (raise "Can't prove additional return-value theorems for ~x0 because ~
+                it doesn't have a :returns, so we don't know the names of its ~
+                return values.  Consider adding a :returns section."  guts.name))
+       ((when (eql (len guts.returnspecs) 1))
+        (returnspec-additional-single-thms guts newspecs world)))
+    (returnspec-additional-multi-thms guts newspecs world)))
+
+(defun more-returns-fn (args world)
+  (b* ((__function__ 'more-returns)
+       ((unless (consp args))
+        (raise "No arguments?"))
+       ((mv name rets)
+        (if (symbolp (car args))
+            (mv (car args) (cdr args))
+          (mv (or (get-define-current-function world)
+                  (raise "No function given and not in a /// section?"))
+              args)))
+       (guts (cdr (assoc name (get-define-guts-alist world))))
+       ((unless guts)
+        (raise "No define-guts entry for ~x0." name))
+       ((defguts guts) guts)
+       (returnspecs (parse-returnspecs-aux guts.name rets world))
+       (events      (returnspec-additional-thms guts returnspecs world)))
+    `(progn . ,events)))
+
+(defmacro more-returns (&rest args)
+  `(make-event (more-returns-fn ',args (w state))))

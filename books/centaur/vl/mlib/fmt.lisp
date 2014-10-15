@@ -6,21 +6,30 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
 (include-book "writer")
-(include-book "context")
 (include-book "print-context")
 (local (include-book "../util/arithmetic"))
 (local (include-book "centaur/misc/arith-equivs" :dir :system))
@@ -131,8 +140,8 @@ formerly the \"location directive\" and printed a location.</p>")
      (if (vl-context-p x)
          (vl-pp-context-summary x)
        (vl-fmt-tilde-x x)))
-    ((:vl-port :vl-portdecl :vl-assign :vl-netdecl :vl-vardecl
-      :vl-regdecl :vl-eventdecl :vl-paramdecl :vl-fundecl :vl-taskdecl
+    ((:vl-port :vl-portdecl :vl-assign :vl-vardecl
+      :vl-paramdecl :vl-fundecl :vl-taskdecl
       :vl-modinst :vl-gateinst :vl-always :vl-initial)
      (if (vl-modelement-p x)
          (vl-pp-modelement-summary x)
@@ -151,6 +160,38 @@ formerly the \"location directive\" and printed a location.</p>")
       :vl-forstmt :vl-blockstmt :vl-timingstmt)
      (if (vl-stmt-p x)
          (vl-pp-stmt x)
+       (vl-fmt-tilde-x x)))
+    ((:vl-import)
+     (if (vl-import-p x)
+         (vl-pp-import x)
+       (vl-fmt-tilde-x x)))
+    ((:vl-unsized-dimension)
+     (if (vl-packeddimension-p x)
+         (vl-pp-packeddimension x)
+       (vl-fmt-tilde-x x)))
+    ((:vl-enumbasetype)
+     (if (vl-enumbasetype-p x)
+         (vl-pp-enumbasetype x)
+       (vl-fmt-tilde-x x)))
+    ((:vl-enumitem)
+     (if (vl-enumitem-p x)
+         (vl-pp-enumitem x)
+       (vl-fmt-tilde-x x)))
+    ((:vl-coretype :vl-struct :vl-union :vl-enum :vl-usertype)
+     (if (vl-datatype-p x)
+         (vl-pp-datatype x)
+       (vl-fmt-tilde-x x)))
+    ((:vl-structmember)
+     (if (vl-structmember-p x)
+         (vl-pp-structmember x)
+       (vl-fmt-tilde-x x)))
+    ((:vl-fwdtypedef x)
+     (if (vl-fwdtypedef-p x)
+         (vl-pp-fwdtypedef x)
+       (vl-fmt-tilde-x x)))
+    ((:vl-typedef x)
+     (if (vl-typedef-p x)
+         (vl-pp-typedef x)
        (vl-fmt-tilde-x x)))
     ((:vl-module)
      (if (vl-module-p x)

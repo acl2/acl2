@@ -1,4 +1,4 @@
-; ACL2 Version 6.4 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 6.5 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2014, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -331,7 +331,6 @@ then restart the ACL2-Doc browser to view that manual."
 	(manual-name (if (eq (acl2-doc-state-top-name) 'ACL2)
 			 "ACL2 User's Manual"
 		       "ACL2+Books Manual")))
-    (push name *acl2-doc-all-topics-rev*)
     (if (eq (acl2-doc-state-top-name) name)
 	(message "At the top node of the %s"
 		 manual-name)

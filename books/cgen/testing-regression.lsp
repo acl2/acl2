@@ -1,51 +1,15 @@
-; ****************** BEGIN INITIALIZATION FOR ACL2s MODE ****************** ;
-; (Nothing to see here!  Your actual file is after this initialization code);
-
-#+acl2s-startup (er-progn (assign fmt-error-msg "Problem loading the TRACE* book.~%Please choose \"Recertify ACL2s system books\" under the ACL2s menu and retry after successful recertification.") (value :invisible))
-; only load for interactive sessions: 
-#+acl2s-startup (include-book "trace-star" :uncertified-okp nil :dir :acl2s-modes :ttags ((:acl2s-interaction)) :load-compiled-file nil);v4.0 change
-
-#+acl2s-startup (assign evalable-printing-abstractions nil)
-
-;arithmetic book
-#+acl2s-startup (er-progn (assign fmt-error-msg "Problem loading arithmetic-5/top book.~%Please choose \"Recertify ACL2s system books\" under the ACL2s menu and retry after successful recertification.") (value :invisible))
-(include-book "arithmetic-5/top" :dir :system)
-
-;basic thms/lemmas about lists
-#+acl2s-startup (er-progn (assign fmt-error-msg "Problem loading coi/lists book.~%Please choose \"Recertify ACL2s system books\" under the ACL2s menu and retry after successful recertification.") (value :invisible))
-(include-book "coi/lists/basic" :dir :system)
-
-#+acl2s-startup (er-progn (assign fmt-error-msg "Problem loading ACL2's lexicographic-ordering-without-arithmetic book.~%This indicates that either your ACL2 installation is missing the standard books are they are not properly certified.") (value :invisible))
-(include-book "ordinals/lexicographic-ordering-without-arithmetic" :dir :system)
-
-#+acl2s-startup (er-progn (assign fmt-error-msg "Problem loading the CCG book.~%Please choose \"Recertify ACL2s system books\" under the ACL2s menu and retry after successful recertification.") (value :invisible))
-(include-book "ccg" :uncertified-okp nil :dir :acl2s-modes :ttags ((:ccg)) :load-compiled-file nil);v4.0 change
-
-#+acl2s-startup (er-progn (assign fmt-error-msg "Problem loading ACL2s customizations book.~%Please choose \"Recertify ACL2s system books\" under the ACL2s menu and retry after successful recertification.") (value :invisible))
-(include-book "custom" :dir :acl2s-modes :uncertified-okp nil :load-compiled-file :comp :ttags :all)
-
-#+acl2s-startup (er-progn (assign fmt-error-msg "Problem setting up ACL2s mode.") (value :invisible))
-
-;Settings common to all ACL2s modes
-(acl2s-common-settings)
-
-; Non-events:
-(set-guard-checking :none)
-
-
-; ******************* END INITIALIZATION FOR ACL2s MODE ******************* ;
-;$ACL2s-SMode$;ACL2s
 ;$ACL2s-LMode$;Demo
+
 ;; this regression file aims at testing the various features of 
 ;; counterexample generation in ACL2 Sedan
 
 
 ;(add-include-book-dir :acl2s-modes "../")
-;(ld "acl2s-mode.lsp" :dir :acl2s-modes)
+(ld "acl2s-mode.lsp" :dir :acl2s-modes)
 
 ;(include-book "top")
 (acl2s-defaults :set sampling-method :uniform-random)
-(acl2s-defaults :set search-strategy :incremental)
+;(acl2s-defaults :set search-strategy :incremental)
 (acl2s-defaults :set verbosity-level 2)
 
 ;++++++++++++++++testcase 1 [classic reverse example]++++++++++++++++++++++++++
@@ -55,12 +19,10 @@
     nil
     (append (rev1 (cdr x)) (list (car x)))))
 
-(acl2s-defaults :set verbosity-level 2)
 (test? (equal (rev1 (rev1 x)) x))
 
 (acl2s-defaults :set testing-enabled T)
 (thm (equal (rev1 (rev1 x)) x))
-(acl2s-defaults :set testing-enabled :naive)
 
 ;Modify the conjecture, add the type hypothesis
 (test? (implies (true-listp x)
@@ -185,6 +147,7 @@ of which have not yet been verified.  See :DOC verify-guards.
           (cons-up-lists (cdr l1) (cdr l2)))))
 
 (defun nth-ordered-memory (n)
+  (declare (xargs :mode :program))
   (let* ((m (nth-memory n))
          (len (len m))
          (vals (strip-cdrs m))
@@ -192,7 +155,7 @@ of which have not yet been verified.  See :DOC verify-guards.
     (cons-up-lists keys vals)))
 
 ;attach a custom test enumerator to a defdata type
-(defdata-testing memory :test-enumerator nth-ordered-memory)               
+(defdata-attach memory :test-enumerator nth-ordered-memory)               
 
 ;Conjecture - version#1
 (test?
@@ -415,6 +378,7 @@ of which have not yet been verified.  See :DOC verify-guards.
 
 (acl2s-defaults :set testing-enabled T)
 (acl2s-defaults :set num-trials 2500)
+(acl2s-defaults :set sampling-method :random)
 ;No luck without arithmetic-5.
 ;Lets add arith-5 lib and see now. Still no luck
 ; 19th March - I saw some counterexamples with (ld acl2s-mode.lsp)
@@ -452,6 +416,7 @@ of which have not yet been verified.  See :DOC verify-guards.
                 (< 0 x)))
   :rule-classes :compound-recognizer)
 
+(acl2s-defaults :set search-strategy :simple) ;incremental
 (test? 
   (implies (and (integerp c1)
                 (integerp c2)
@@ -465,6 +430,7 @@ of which have not yet been verified.  See :DOC verify-guards.
                 (equal 0 (+ (* c1 x1) (* c2 x2) (* c3 x3))))
            (and (= 0 c1) (= 0 c2) (= 0 c3))))
 
+(acl2s-defaults :set verbosity-level 2)
 
 ;; testcase 10 (Euler Counterexample)
 ;fermat number: f(n) = 1 + 2^2^n
@@ -517,6 +483,7 @@ of which have not yet been verified.  See :DOC verify-guards.
 ;BOZO 20th March 2013 - arithmetic-5 caused the following to hang.
 ;ADDENDUM 9 July 2013 - timeout does not work if prover hangs.
 (acl2s-defaults :set testing-enabled :naive)
+(acl2s-defaults :set search-strategy :simple)
 (test?
  (implies (and (posp k)
                (posp n)
@@ -554,6 +521,8 @@ of which have not yet been verified.  See :DOC verify-guards.
                (natp n) (> n 2))
           (not (equal (+ (expt a n) (expt b n))
                       (expt c n)))))
+
+(acl2s-defaults :set search-strategy :incremental)
 
 ;; testcase 11
 (defund hash (k)
@@ -731,9 +700,9 @@ of which have not yet been verified.  See :DOC verify-guards.
 ;GOOD EXAMPLE 
 (test? ;remove-once-perm
   (implies (and (consp X)
-                (set::in a Y))
-           (equal (defdata::permutation (set::delete a X)
-                        (set::delete a Y))
+                (sets::in a Y))
+           (equal (defdata::permutation (sets::delete a X)
+                        (sets::delete a Y))
                   (defdata::permutation X Y))))
 
 (defun perm (x y)

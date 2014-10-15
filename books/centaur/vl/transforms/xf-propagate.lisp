@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
@@ -151,7 +161,7 @@ correctly.</p>"
   ((x vl-modinst-p))
   :returns (driven-names string-listp :hyp :fguard)
   (b* ((args (vl-modinst->portargs x))
-       ((unless (eq (vl-arguments-kind args) :plain))
+       ((unless (eq (vl-arguments-kind args) :vl-arguments-plain))
         ;; Could make this more general by just returning all exprs in this
         ;; case...
         (raise "args still named???")))
@@ -269,15 +279,11 @@ places to be unsafe.</p>"
       (vl-exprlist-names (vl-fundecllist-allexprs x.fundecls))
       (vl-exprlist-names (vl-alwayslist-allexprs x.alwayses))
       (vl-exprlist-names (vl-initiallist-allexprs x.initials))
-      (vl-exprlist-names (vl-regdecllist-allexprs x.regdecls))
-      (vl-exprlist-names (vl-vardecllist-allexprs x.vardecls))
       (vl-exprlist-names (vl-taskdecllist-allexprs x.taskdecls))
-      (vl-exprlist-names (vl-eventdecllist-allexprs x.eventdecls))
       (vl-exprlist-names (vl-paramdecllist-allexprs x.paramdecls))
-      (vl-regdecllist->names x.regdecls)
-      (vl-vardecllist->names x.vardecls)
+      ;; (vl-exprlist-names (vl-vardecllist-allexprs x.vardecls))
+      ;; (vl-vardecllist->names x.vardecls)
       (vl-taskdecllist->names x.taskdecls)
-      (vl-eventdecllist->names x.eventdecls)
       (vl-paramdecllist->names x.paramdecls)
       ))))
 
@@ -401,7 +407,6 @@ places to be unsafe.</p>"
    (limits propagate-limits-p))
   :returns (new-x vl-module-p)
   (b* ((x (vl-module-fix x))
-       ((vl-module x) x)
        ((when (vl-module->hands-offp x))
         x)
        ;; We no longer prohibit this.  Instead we try to prevent it from
@@ -409,11 +414,9 @@ places to be unsafe.</p>"
        ;; used in these areas.
        ;; ((when (or x.alwayses
        ;;            x.fundecls
-       ;;            x.regdecls
        ;;            x.vardecls
        ;;            x.paramdecls
        ;;            x.taskdecls
-       ;;            x.eventdecls
        ;;            ))
        ;;  (cw "Note: not propagating in ~s0; module looks too complicated.~%" x.name)
        ;;  x))

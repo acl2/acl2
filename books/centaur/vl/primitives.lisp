@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
@@ -64,28 +74,30 @@ vl-make-1-bit-n-edge-flop).</p>")
   :returns (mv (expr     vl-expr-p)
                (port     vl-port-p)
                (portdecl vl-portdecl-p)
-               (netdecl  vl-netdecl-p))
+               (vardecl  vl-vardecl-p))
   :long "<p>This is like @(see vl-occform-mkport), but our primitives are all
 one-bit things so we leave out the ranges to make them prettier.</p>"
 
   (b* ((name     (hons-copy (string-fix name)))
        (expr     (vl-idexpr name 1 :vl-unsigned))
-       (port     (make-vl-port     :name name :expr expr     :loc *vl-fakeloc*))
-       (portdecl (make-vl-portdecl :name name :dir  dir      :loc *vl-fakeloc*))
-       (netdecl  (make-vl-netdecl  :name name :type :vl-wire :loc *vl-fakeloc*)))
-    (mv expr port portdecl netdecl)))
+       (port     (make-vl-port     :name name :expr expr :loc *vl-fakeloc*))
+       (portdecl (make-vl-portdecl :name name :type *vl-plain-old-wire-type* :dir dir :loc *vl-fakeloc*))
+       (vardecl  (make-vl-vardecl  :name name :type *vl-plain-old-wire-type*
+                                   :nettype :vl-wire :loc *vl-fakeloc* :atts '(("VL_PORT_IMPLICIT")))))
+    (mv expr port portdecl vardecl)))
 
 (define vl-primitive-mkwire
   :short "Convenient way to generate an internal wire for a primitive."
   ((name stringp))
   :returns (mv (expr    vl-expr-p)
-               (netdecl vl-netdecl-p))
+               (vardecl vl-vardecl-p))
   :long "<p>This is similar to @(see vl-occform-mkwire), but our primitives are
 all one-bit things so we leave out the ranges to make them prettier.</p>"
   (b* ((name     (hons-copy (string-fix name)))
        (expr     (vl-idexpr name 1 :vl-unsigned))
-       (netdecl  (make-vl-netdecl :name name :type :vl-wire :loc *vl-fakeloc*)))
-    (mv expr netdecl)))
+       (vardecl  (make-vl-vardecl :name name :type *vl-plain-old-wire-type*
+                                  :nettype :vl-wire :loc *vl-fakeloc*)))
+    (mv expr vardecl)))
 
 (defval *vl-1-bit-t*
   :short "Primitive 1 (true) generator."
@@ -105,14 +117,14 @@ we are going to start using it soon.</p>
 
   (b* ((name "VL_1_BIT_T")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
+       ((mv out-expr out-port out-portdecl out-vardecl) (vl-primitive-mkport "out" :vl-output))
        (out-assign (make-vl-assign :lvalue out-expr :expr |*sized-1'b1*| :loc *vl-fakeloc*)))
     (hons-copy
      (make-vl-module :name      name
                      :origname  name
                      :ports     (list out-port)
                      :portdecls (list out-portdecl)
-                     :netdecls  (list out-netdecl)
+                     :vardecls  (list out-vardecl)
                      :assigns   (list out-assign)
                      :minloc    *vl-fakeloc*
                      :maxloc    *vl-fakeloc*
@@ -137,14 +149,14 @@ we are going to start using it soon.</p>
 
   (b* ((name "VL_1_BIT_F")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
+       ((mv out-expr out-port out-portdecl out-vardecl) (vl-primitive-mkport "out" :vl-output))
        (out-assign (make-vl-assign :lvalue out-expr :expr |*sized-1'b0*| :loc *vl-fakeloc*)))
     (hons-copy
      (make-vl-module :name      name
                      :origname  name
                      :ports     (list out-port)
                      :portdecls (list out-portdecl)
-                     :netdecls  (list out-netdecl)
+                     :vardecls  (list out-vardecl)
                      :assigns   (list out-assign)
                      :minloc    *vl-fakeloc*
                      :maxloc    *vl-fakeloc*
@@ -169,14 +181,14 @@ weirdint-elim) to eliminate explicit X values from literals.</p>
 
   (b* ((name "VL_1_BIT_X")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
+       ((mv out-expr out-port out-portdecl out-vardecl) (vl-primitive-mkport "out" :vl-output))
        (out-assign (make-vl-assign :lvalue out-expr :expr |*sized-1'bx*| :loc *vl-fakeloc*)))
     (hons-copy
      (make-vl-module :name      name
                      :origname  name
                      :ports     (list out-port)
                      :portdecls (list out-portdecl)
-                     :netdecls  (list out-netdecl)
+                     :vardecls  (list out-vardecl)
                      :assigns   (list out-assign)
                      :minloc    *vl-fakeloc*
                      :maxloc    *vl-fakeloc*
@@ -201,14 +213,14 @@ weirdint-elim) to eliminate explicit Z values from literals.</p>
 
   (b* ((name "VL_1_BIT_Z")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
+       ((mv out-expr out-port out-portdecl out-vardecl) (vl-primitive-mkport "out" :vl-output))
        (out-assign (make-vl-assign :lvalue out-expr :expr |*sized-1'bz*| :loc *vl-fakeloc*)))
     (hons-copy
      (make-vl-module :name      name
                      :origname  name
                      :ports     (list out-port)
                      :portdecls (list out-portdecl)
-                     :netdecls  (list out-netdecl)
+                     :vardecls  (list out-vardecl)
                      :assigns   (list out-assign)
                      :minloc    *vl-fakeloc*
                      :maxloc    *vl-fakeloc*
@@ -237,14 +249,16 @@ support can implement them in other ways.</p>"
 
   (b* ((name "VL_1_BIT_POWER")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
-       ((mv ?out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
-       (out-netdecl (change-vl-netdecl out-netdecl :type :vl-supply1)))
+       ((mv ?out-expr out-port out-portdecl out-vardecl) (vl-primitive-mkport "out" :vl-output))
+       (nettype      :vl-supply1)
+       (out-portdecl (change-vl-portdecl out-portdecl :nettype nettype))
+       (out-vardecl  (change-vl-vardecl  out-vardecl  :nettype nettype)))
     (hons-copy
      (make-vl-module :name      name
                      :origname  name
                      :ports     (list out-port)
                      :portdecls (list out-portdecl)
-                     :netdecls  (list out-netdecl)
+                     :vardecls  (list out-vardecl)
                      :minloc    *vl-fakeloc*
                      :maxloc    *vl-fakeloc*
                      :atts      atts
@@ -272,14 +286,16 @@ implement them in other ways.</p>"
 
   (b* ((name "VL_1_BIT_GROUND")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
-       ((mv ?out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
-       (out-netdecl (change-vl-netdecl out-netdecl :type :vl-supply0)))
+       ((mv ?out-expr out-port out-portdecl out-vardecl) (vl-primitive-mkport "out" :vl-output))
+       (nettype      :vl-supply0)
+       (out-portdecl (change-vl-portdecl out-portdecl :nettype nettype))
+       (out-vardecl  (change-vl-vardecl  out-vardecl  :nettype nettype)))
     (hons-copy
      (make-vl-module :name      name
                      :origname  name
                      :ports     (list out-port)
                      :portdecls (list out-portdecl)
-                     :netdecls  (list out-netdecl)
+                     :vardecls  (list out-vardecl)
                      :minloc    *vl-fakeloc*
                      :maxloc    *vl-fakeloc*
                      :atts      atts
@@ -315,15 +331,15 @@ modules that involve transistors.</p>"
 
   (b* ((name "VL_1_BIT_ASSIGN")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
-       ((mv in-expr  in-port  in-portdecl  in-netdecl)  (vl-primitive-mkport "in"  :vl-input))
+       ((mv out-expr out-port out-portdecl out-vardecl) (vl-primitive-mkport "out" :vl-output))
+       ((mv in-expr  in-port  in-portdecl  in-vardecl)  (vl-primitive-mkport "in"  :vl-input))
        (assign (make-vl-assign :lvalue out-expr :expr in-expr :loc *vl-fakeloc*)))
     (hons-copy
      (make-vl-module :name      name
                      :origname  name
                      :ports     (list out-port     in-port)
                      :portdecls (list out-portdecl in-portdecl)
-                     :netdecls  (list out-netdecl  in-netdecl)
+                     :vardecls  (list out-vardecl  in-vardecl)
                      :assigns   (list assign)
                      :minloc    *vl-fakeloc*
                      :maxloc    *vl-fakeloc*
@@ -351,8 +367,8 @@ an ordinary @(see *vl-1-bit-assign*).</p>"
 
   (b* ((name "VL_1_BIT_DELAY_1")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
-       ((mv in-expr  in-port  in-portdecl  in-netdecl)  (vl-primitive-mkport "in"  :vl-input))
+       ((mv out-expr out-port out-portdecl out-vardecl) (vl-primitive-mkport "out" :vl-output))
+       ((mv in-expr  in-port  in-portdecl  in-vardecl)  (vl-primitive-mkport "in"  :vl-input))
        (one    (vl-make-index 1))
        (delay  (make-vl-gatedelay :rise one :fall one :high one))
        (assign (make-vl-assign :lvalue out-expr :expr in-expr :delay delay :loc *vl-fakeloc*)))
@@ -361,7 +377,7 @@ an ordinary @(see *vl-1-bit-assign*).</p>"
                      :origname  name
                      :ports     (list out-port     in-port)
                      :portdecls (list out-portdecl in-portdecl)
-                     :netdecls  (list out-netdecl  in-netdecl)
+                     :vardecls  (list out-vardecl  in-vardecl)
                      :assigns   (list assign)
                      :minloc    *vl-fakeloc*
                      :maxloc    *vl-fakeloc*
@@ -376,7 +392,7 @@ an ordinary @(see *vl-1-bit-assign*).</p>"
 module VL_1_BIT_BUF (out, in) ;
   output out;
   input in;
-  buf gate (out, in);
+  assign out = |in;
 endmodule
 })
 
@@ -384,24 +400,31 @@ endmodule
 probably not for much else since ordinary assignments are handled with @(see
 *vl-1-bit-assign*), instead.</p>
 
-<p>The corresponding @(see esim) primitive is @(see acl2::*esim-buf*).</p>"
+<p>The corresponding @(see esim) primitive is @(see acl2::*esim-buf*).</p>
+
+<p>We once tried to implement this primitive using @('out = ~ (~in)'), but
+found that NCVerilog (incorrectly) canceled the double negation and could hence
+produce Z bits on the output.  The or-based definition above does not appear to
+have this problem.</p>"
 
   (b* ((name "VL_1_BIT_BUF")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
-       ((mv in-expr  in-port  in-portdecl  in-netdecl)  (vl-primitive-mkport "in"  :vl-input))
-       (gate (make-vl-gateinst :type :vl-buf
-                               :name "gate"
-                               :args (list (make-vl-plainarg :expr out-expr :dir :vl-output)
-                                           (make-vl-plainarg :expr in-expr  :dir :vl-input))
+       ((mv out-expr out-port out-portdecl out-vardecl) (vl-primitive-mkport "out" :vl-output))
+       ((mv in-expr  in-port  in-portdecl  in-vardecl)  (vl-primitive-mkport "in"  :vl-input))
+       (assign (make-vl-assign :lvalue out-expr
+                               :expr (make-vl-nonatom
+                                      :op :vl-unary-bitor
+                                      :args (list in-expr)
+                                      :finalwidth 1
+                                      :finaltype :vl-unsigned)
                                :loc *vl-fakeloc*)))
     (hons-copy
      (make-vl-module :name      name
                      :origname  name
                      :ports     (list out-port     in-port)
                      :portdecls (list out-portdecl in-portdecl)
-                     :netdecls  (list out-netdecl  in-netdecl)
-                     :gateinsts (list gate)
+                     :vardecls  (list out-vardecl  in-vardecl)
+                     :assigns   (list assign)
                      :minloc    *vl-fakeloc*
                      :maxloc    *vl-fakeloc*
                      :atts      atts
@@ -415,7 +438,7 @@ probably not for much else since ordinary assignments are handled with @(see
 module VL_1_BIT_NOT (out, in) ;
   output out;
   input in;
-  not gate (out, in);
+  assign out = ~in;
 endmodule
 })
 
@@ -427,20 +450,22 @@ endmodule
 
   (b* ((name "VL_1_BIT_NOT")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
-       ((mv in-expr  in-port  in-portdecl  in-netdecl)  (vl-primitive-mkport "in"  :vl-input))
-       (gate (make-vl-gateinst :type :vl-not
-                               :name "gate"
-                               :args (list (make-vl-plainarg :expr out-expr :dir :vl-output)
-                                           (make-vl-plainarg :expr in-expr  :dir :vl-input))
+       ((mv out-expr out-port out-portdecl out-vardecl) (vl-primitive-mkport "out" :vl-output))
+       ((mv in-expr  in-port  in-portdecl  in-vardecl)  (vl-primitive-mkport "in"  :vl-input))
+       (assign (make-vl-assign :lvalue out-expr
+                               :expr (make-vl-nonatom
+                                      :op :vl-unary-bitnot
+                                      :args (list in-expr)
+                                      :finalwidth 1
+                                      :finaltype :vl-unsigned)
                                :loc *vl-fakeloc*)))
     (hons-copy
      (make-vl-module :name      name
                      :origname  name
                      :ports     (list out-port in-port)
                      :portdecls (list out-portdecl in-portdecl)
-                     :netdecls  (list out-netdecl in-netdecl)
-                     :gateinsts (list gate)
+                     :vardecls  (list out-vardecl in-vardecl)
+                     :assigns   (list assign)
                      :minloc    *vl-fakeloc*
                      :maxloc    *vl-fakeloc*
                      :atts      atts
@@ -455,7 +480,7 @@ module VL_1_BIT_AND (out, a, b) ;
   output out;
   input a;
   input b;
-  and gate (out, a, b);
+  assign out = a & b;
 endmodule
 })
 
@@ -467,22 +492,23 @@ endmodule
 
   (b* ((name "VL_1_BIT_AND")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
-       ((mv a-expr   a-port   a-portdecl   a-netdecl)   (vl-primitive-mkport "a"   :vl-input))
-       ((mv b-expr   b-port   b-portdecl   b-netdecl)   (vl-primitive-mkport "b"   :vl-input))
-       (gate (make-vl-gateinst :type :vl-and
-                               :name "gate"
-                               :args (list (make-vl-plainarg :expr out-expr :dir :vl-output)
-                                           (make-vl-plainarg :expr a-expr   :dir :vl-input)
-                                           (make-vl-plainarg :expr b-expr   :dir :vl-input))
+       ((mv out-expr out-port out-portdecl out-vardecl) (vl-primitive-mkport "out" :vl-output))
+       ((mv a-expr   a-port   a-portdecl   a-vardecl)   (vl-primitive-mkport "a"   :vl-input))
+       ((mv b-expr   b-port   b-portdecl   b-vardecl)   (vl-primitive-mkport "b"   :vl-input))
+       (assign (make-vl-assign :lvalue out-expr
+                               :expr (make-vl-nonatom
+                                      :op :vl-binary-bitand
+                                      :args (list a-expr b-expr)
+                                      :finalwidth 1
+                                      :finaltype :vl-unsigned)
                                :loc *vl-fakeloc*)))
     (hons-copy
      (make-vl-module :name      name
                      :origname  name
                      :ports     (list out-port     a-port     b-port)
                      :portdecls (list out-portdecl a-portdecl b-portdecl)
-                     :netdecls  (list out-netdecl  a-netdecl  b-netdecl)
-                     :gateinsts (list gate)
+                     :vardecls  (list out-vardecl  a-vardecl  b-vardecl)
+                     :assigns   (list assign)
                      :minloc    *vl-fakeloc*
                      :maxloc    *vl-fakeloc*
                      :atts      atts
@@ -497,7 +523,7 @@ module VL_1_BIT_OR (out, a, b) ;
   output out;
   input a;
   input b;
-  or gate (out, a, b);
+  assign out = a | b;
 endmodule
 })
 
@@ -509,22 +535,23 @@ endmodule
 
   (b* ((name "VL_1_BIT_OR")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
-       ((mv a-expr   a-port   a-portdecl   a-netdecl)   (vl-primitive-mkport "a"   :vl-input))
-       ((mv b-expr   b-port   b-portdecl   b-netdecl)   (vl-primitive-mkport "b"   :vl-input))
-       (gate (make-vl-gateinst :type :vl-or
-                               :name "gate"
-                               :args (list (make-vl-plainarg :expr out-expr :dir :vl-output)
-                                           (make-vl-plainarg :expr a-expr   :dir :vl-input)
-                                           (make-vl-plainarg :expr b-expr   :dir :vl-input))
+       ((mv out-expr out-port out-portdecl out-vardecl) (vl-primitive-mkport "out" :vl-output))
+       ((mv a-expr   a-port   a-portdecl   a-vardecl)   (vl-primitive-mkport "a"   :vl-input))
+       ((mv b-expr   b-port   b-portdecl   b-vardecl)   (vl-primitive-mkport "b"   :vl-input))
+       (assign (make-vl-assign :lvalue out-expr
+                               :expr (make-vl-nonatom
+                                      :op :vl-binary-bitor
+                                      :args (list a-expr b-expr)
+                                      :finalwidth 1
+                                      :finaltype :vl-unsigned)
                                :loc *vl-fakeloc*)))
     (hons-copy
      (make-vl-module :name      name
                      :origname  name
                      :ports     (list out-port     a-port     b-port)
                      :portdecls (list out-portdecl a-portdecl b-portdecl)
-                     :netdecls  (list out-netdecl  a-netdecl  b-netdecl)
-                     :gateinsts (list gate)
+                     :vardecls  (list out-vardecl  a-vardecl  b-vardecl)
+                     :assigns   (list assign)
                      :minloc    *vl-fakeloc*
                      :maxloc    *vl-fakeloc*
                      :atts      atts
@@ -539,7 +566,7 @@ module VL_1_BIT_XOR (out, a, b) ;
   output out;
   input a;
   input b;
-  xor gate (out, a, b);
+  assign out = a ^ b;
 endmodule
 })
 
@@ -551,22 +578,23 @@ endmodule
 
   (b* ((name "VL_1_BIT_XOR")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
-       ((mv a-expr   a-port   a-portdecl   a-netdecl)   (vl-primitive-mkport "a"   :vl-input))
-       ((mv b-expr   b-port   b-portdecl   b-netdecl)   (vl-primitive-mkport "b"   :vl-input))
-       (gate (make-vl-gateinst :type :vl-xor
-                               :name "gate"
-                               :args (list (make-vl-plainarg :expr out-expr :dir :vl-output)
-                                           (make-vl-plainarg :expr a-expr   :dir :vl-input)
-                                           (make-vl-plainarg :expr b-expr   :dir :vl-input))
+       ((mv out-expr out-port out-portdecl out-vardecl) (vl-primitive-mkport "out" :vl-output))
+       ((mv a-expr   a-port   a-portdecl   a-vardecl)   (vl-primitive-mkport "a"   :vl-input))
+       ((mv b-expr   b-port   b-portdecl   b-vardecl)   (vl-primitive-mkport "b"   :vl-input))
+       (assign (make-vl-assign :lvalue out-expr
+                               :expr (make-vl-nonatom
+                                      :op :vl-binary-xor
+                                      :args (list a-expr b-expr)
+                                      :finalwidth 1
+                                      :finaltype :vl-unsigned)
                                :loc *vl-fakeloc*)))
     (hons-copy
      (make-vl-module :name      name
                      :origname  name
                      :ports     (list out-port     a-port     b-port)
                      :portdecls (list out-portdecl a-portdecl b-portdecl)
-                     :netdecls  (list out-netdecl  a-netdecl  b-netdecl)
-                     :gateinsts (list gate)
+                     :vardecls  (list out-vardecl  a-vardecl  b-vardecl)
+                     :assigns   (list assign)
                      :minloc    *vl-fakeloc*
                      :maxloc    *vl-fakeloc*
                      :atts      atts
@@ -581,7 +609,7 @@ module VL_1_BIT_NAND (out, a, b) ;
   output out;
   input a;
   input b;
-  nand gate (out, a, b);
+  assign out = ~(a & b);
 endmodule
 })
 
@@ -592,22 +620,27 @@ probably not much else.</p>
 
   (b* ((name "VL_1_BIT_NAND")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
-       ((mv a-expr   a-port   a-portdecl   a-netdecl)   (vl-primitive-mkport "a"   :vl-input))
-       ((mv b-expr   b-port   b-portdecl   b-netdecl)   (vl-primitive-mkport "b"   :vl-input))
-       (gate (make-vl-gateinst :type :vl-nand
-                               :name "gate"
-                               :args (list (make-vl-plainarg :expr out-expr :dir :vl-output)
-                                           (make-vl-plainarg :expr a-expr   :dir :vl-input)
-                                           (make-vl-plainarg :expr b-expr   :dir :vl-input))
+       ((mv out-expr out-port out-portdecl out-vardecl) (vl-primitive-mkport "out" :vl-output))
+       ((mv a-expr   a-port   a-portdecl   a-vardecl)   (vl-primitive-mkport "a"   :vl-input))
+       ((mv b-expr   b-port   b-portdecl   b-vardecl)   (vl-primitive-mkport "b"   :vl-input))
+       (assign (make-vl-assign :lvalue out-expr
+                               :expr (make-vl-nonatom
+                                      :op :vl-unary-bitnot
+                                      :args (list (make-vl-nonatom
+                                                   :op :vl-binary-bitand
+                                                   :args (list a-expr b-expr)
+                                                   :finalwidth 1
+                                                   :finaltype :vl-unsigned))
+                                      :finalwidth 1
+                                      :finaltype :vl-unsigned)
                                :loc *vl-fakeloc*)))
     (hons-copy
      (make-vl-module :name      name
                      :origname  name
                      :ports     (list out-port     a-port     b-port)
                      :portdecls (list out-portdecl a-portdecl b-portdecl)
-                     :netdecls  (list out-netdecl  a-netdecl  b-netdecl)
-                     :gateinsts (list gate)
+                     :vardecls  (list out-vardecl  a-vardecl  b-vardecl)
+                     :assigns   (list assign)
                      :minloc    *vl-fakeloc*
                      :maxloc    *vl-fakeloc*
                      :atts      atts
@@ -622,7 +655,7 @@ module VL_1_BIT_NOR (out, a, b) ;
   output out;
   input a;
   input b;
-  nor gate (out, a, b);
+  assign out = ~(a | b);
 endmodule
 })
 
@@ -633,22 +666,27 @@ probably not much else.</p>
 
   (b* ((name "VL_1_BIT_NOR")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
-       ((mv a-expr   a-port   a-portdecl   a-netdecl)   (vl-primitive-mkport "a"   :vl-input))
-       ((mv b-expr   b-port   b-portdecl   b-netdecl)   (vl-primitive-mkport "b"   :vl-input))
-       (gate (make-vl-gateinst :type :vl-nor
-                               :name "gate"
-                               :args (list (make-vl-plainarg :expr out-expr :dir :vl-output)
-                                           (make-vl-plainarg :expr a-expr   :dir :vl-input)
-                                           (make-vl-plainarg :expr b-expr   :dir :vl-input))
+       ((mv out-expr out-port out-portdecl out-vardecl) (vl-primitive-mkport "out" :vl-output))
+       ((mv a-expr   a-port   a-portdecl   a-vardecl)   (vl-primitive-mkport "a"   :vl-input))
+       ((mv b-expr   b-port   b-portdecl   b-vardecl)   (vl-primitive-mkport "b"   :vl-input))
+       (assign (make-vl-assign :lvalue out-expr
+                               :expr (make-vl-nonatom
+                                      :op :vl-unary-bitnot
+                                      :args (list (make-vl-nonatom
+                                                   :op :vl-binary-bitor
+                                                   :args (list a-expr b-expr)
+                                                   :finalwidth 1
+                                                   :finaltype :vl-unsigned))
+                                      :finalwidth 1
+                                      :finaltype :vl-unsigned)
                                :loc *vl-fakeloc*)))
     (hons-copy
      (make-vl-module :name      name
                      :origname  name
                      :ports     (list out-port     a-port     b-port)
                      :portdecls (list out-portdecl a-portdecl b-portdecl)
-                     :netdecls  (list out-netdecl  a-netdecl  b-netdecl)
-                     :gateinsts (list gate)
+                     :vardecls  (list out-vardecl  a-vardecl  b-vardecl)
+                     :assigns   (list assign)
                      :minloc    *vl-fakeloc*
                      :maxloc    *vl-fakeloc*
                      :atts      atts
@@ -663,7 +701,7 @@ module VL_1_BIT_XNOR (out, a, b) ;
   output out;
   input a;
   input b;
-  xnor gate (out, a, b);
+  assign out = ~(a ^ b);
 endmodule
 })
 
@@ -675,22 +713,27 @@ probably not much else.</p>
   ;; BOZO this should probably be a non-primitive.
   (b* ((name "VL_1_BIT_XNOR")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
-       ((mv a-expr   a-port   a-portdecl   a-netdecl)   (vl-primitive-mkport "a"   :vl-input))
-       ((mv b-expr   b-port   b-portdecl   b-netdecl)   (vl-primitive-mkport "b"   :vl-input))
-       (gate (make-vl-gateinst :type :vl-xnor
-                               :name "gate"
-                               :args (list (make-vl-plainarg :expr out-expr :dir :vl-output)
-                                           (make-vl-plainarg :expr a-expr   :dir :vl-input)
-                                           (make-vl-plainarg :expr b-expr   :dir :vl-input))
+       ((mv out-expr out-port out-portdecl out-vardecl) (vl-primitive-mkport "out" :vl-output))
+       ((mv a-expr   a-port   a-portdecl   a-vardecl)   (vl-primitive-mkport "a"   :vl-input))
+       ((mv b-expr   b-port   b-portdecl   b-vardecl)   (vl-primitive-mkport "b"   :vl-input))
+       (assign (make-vl-assign :lvalue out-expr
+                               :expr (make-vl-nonatom
+                                      :op :vl-unary-bitnot
+                                      :args (list (make-vl-nonatom
+                                                   :op :vl-binary-xor
+                                                   :args (list a-expr b-expr)
+                                                   :finalwidth 1
+                                                   :finaltype :vl-unsigned))
+                                      :finalwidth 1
+                                      :finaltype :vl-unsigned)
                                :loc *vl-fakeloc*)))
     (hons-copy
      (make-vl-module :name      name
                      :origname  name
                      :ports     (list out-port     a-port     b-port)
                      :portdecls (list out-portdecl a-portdecl b-portdecl)
-                     :netdecls  (list out-netdecl  a-netdecl  b-netdecl)
-                     :gateinsts (list gate)
+                     :vardecls  (list out-vardecl  a-vardecl  b-vardecl)
+                     :assigns   (list assign)
                      :minloc    *vl-fakeloc*
                      :maxloc    *vl-fakeloc*
                      :atts      atts
@@ -764,10 +807,10 @@ vl-mux-occform) for more information.</p>"
 
   (b* ((name "VL_1_BIT_APPROX_MUX")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
-       ((mv sel-expr sel-port sel-portdecl sel-netdecl) (vl-primitive-mkport "sel" :vl-input))
-       ((mv a-expr   a-port   a-portdecl   a-netdecl)   (vl-primitive-mkport "a"   :vl-input))
-       ((mv b-expr   b-port   b-portdecl   b-netdecl)   (vl-primitive-mkport "b"   :vl-input))
+       ((mv out-expr out-port out-portdecl out-vardecl) (vl-primitive-mkport "out" :vl-output))
+       ((mv sel-expr sel-port sel-portdecl sel-vardecl) (vl-primitive-mkport "sel" :vl-input))
+       ((mv a-expr   a-port   a-portdecl   a-vardecl)   (vl-primitive-mkport "a"   :vl-input))
+       ((mv b-expr   b-port   b-portdecl   b-vardecl)   (vl-primitive-mkport "b"   :vl-input))
        (assign (make-vl-assign :lvalue out-expr
                                :expr   (make-vl-nonatom :op :vl-qmark
                                                         :args (list sel-expr a-expr b-expr)
@@ -779,7 +822,7 @@ vl-mux-occform) for more information.</p>"
                      :origname  name
                      :ports     (list out-port     sel-port     a-port     b-port)
                      :portdecls (list out-portdecl sel-portdecl a-portdecl b-portdecl)
-                     :netdecls  (list out-netdecl  sel-netdecl  a-netdecl  b-netdecl)
+                     :vardecls  (list out-vardecl  sel-vardecl  a-vardecl  b-vardecl)
                      :assigns   (list assign)
                      :minloc    *vl-fakeloc*
                      :maxloc    *vl-fakeloc*
@@ -835,10 +878,10 @@ selected data input is Z.</p>"
 
   (b* ((name "VL_1_BIT_MUX")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
-       ((mv sel-expr sel-port sel-portdecl sel-netdecl) (vl-primitive-mkport "sel" :vl-input))
-       ((mv a-expr   a-port   a-portdecl   a-netdecl)   (vl-primitive-mkport "a"   :vl-input))
-       ((mv b-expr   b-port   b-portdecl   b-netdecl)   (vl-primitive-mkport "b"   :vl-input))
+       ((mv out-expr out-port out-portdecl out-vardecl) (vl-primitive-mkport "out" :vl-output))
+       ((mv sel-expr sel-port sel-portdecl sel-vardecl) (vl-primitive-mkport "sel" :vl-input))
+       ((mv a-expr   a-port   a-portdecl   a-vardecl)   (vl-primitive-mkport "a"   :vl-input))
+       ((mv b-expr   b-port   b-portdecl   b-vardecl)   (vl-primitive-mkport "b"   :vl-input))
        (assign (make-vl-assign :lvalue out-expr
                                :expr   (make-vl-nonatom :op :vl-qmark
                                                         :args (list sel-expr a-expr b-expr)
@@ -850,7 +893,7 @@ selected data input is Z.</p>"
                      :origname  name
                      :ports     (list out-port     sel-port     a-port     b-port)
                      :portdecls (list out-portdecl sel-portdecl a-portdecl b-portdecl)
-                     :netdecls  (list out-netdecl  sel-netdecl  a-netdecl  b-netdecl)
+                     :vardecls  (list out-vardecl  sel-vardecl  a-vardecl  b-vardecl)
                      :assigns   (list assign)
                      :minloc    *vl-fakeloc*
                      :maxloc    *vl-fakeloc*
@@ -895,9 +938,9 @@ matches the Verilog truth table exactly.</p>"
 
   (b* ((name "VL_1_BIT_ZMUX")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
-       ((mv sel-expr sel-port sel-portdecl sel-netdecl) (vl-primitive-mkport "sel" :vl-input))
-       ((mv a-expr a-port a-portdecl a-netdecl)         (vl-primitive-mkport "a" :vl-input))
+       ((mv out-expr out-port out-portdecl out-vardecl) (vl-primitive-mkport "out" :vl-output))
+       ((mv sel-expr sel-port sel-portdecl sel-vardecl) (vl-primitive-mkport "sel" :vl-input))
+       ((mv a-expr a-port a-portdecl a-vardecl)         (vl-primitive-mkport "a" :vl-input))
        (assign (make-vl-assign :lvalue out-expr
                                :expr (make-vl-nonatom :op :vl-qmark
                                                       :args (list sel-expr a-expr |*sized-1'bz*|)
@@ -908,7 +951,7 @@ matches the Verilog truth table exactly.</p>"
      (make-vl-module :name      name
                      :ports     (list out-port     sel-port     a-port)
                      :portdecls (list out-portdecl sel-portdecl a-portdecl)
-                     :netdecls  (list out-netdecl  sel-netdecl  a-netdecl)
+                     :vardecls  (list out-vardecl  sel-vardecl  a-vardecl)
                      :assigns   (list assign)
                      :minloc    *vl-fakeloc*
                      :maxloc    *vl-fakeloc*
@@ -942,9 +985,9 @@ just an @('xnor') gate.</p>"
 
   (b* ((name "VL_1_BIT_CEQ")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
-       ((mv a-expr   a-port   a-portdecl   a-netdecl)   (vl-primitive-mkport "a"   :vl-input))
-       ((mv b-expr   b-port   b-portdecl   b-netdecl)   (vl-primitive-mkport "b"   :vl-input))
+       ((mv out-expr out-port out-portdecl out-vardecl) (vl-primitive-mkport "out" :vl-output))
+       ((mv a-expr   a-port   a-portdecl   a-vardecl)   (vl-primitive-mkport "a"   :vl-input))
+       ((mv b-expr   b-port   b-portdecl   b-vardecl)   (vl-primitive-mkport "b"   :vl-input))
        (assign (make-vl-assign :lvalue out-expr
                                :expr (make-vl-nonatom :op :vl-binary-ceq
                                                       :args (list a-expr b-expr)
@@ -956,7 +999,7 @@ just an @('xnor') gate.</p>"
                      :origname  name
                      :ports     (list out-port     a-port     b-port)
                      :portdecls (list out-portdecl a-portdecl b-portdecl)
-                     :netdecls  (list out-netdecl  a-netdecl  b-netdecl)
+                     :vardecls  (list out-vardecl  a-vardecl  b-vardecl)
                      :assigns   (list assign)
                      :minloc    *vl-fakeloc*
                      :maxloc    *vl-fakeloc*
@@ -969,9 +1012,10 @@ just an @('xnor') gate.</p>"
 
 @({
 module VL_1_BIT_LATCH (q, clk, d);
-   output reg q;
+   output q;
    input clk;
    input d;
+   reg q;
 
    always @@(d or clk)
      q <= clk ? d : q;
@@ -987,11 +1031,12 @@ certain @('always') statements into instances of this module.</p>
   (b* ((name (hons-copy "VL_1_BIT_LATCH"))
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
 
-       ((mv q-expr   q-port   q-portdecl   &)           (vl-primitive-mkport "q"   :vl-output))
-       ((mv clk-expr clk-port clk-portdecl clk-netdecl) (vl-primitive-mkport "clk" :vl-input))
-       ((mv d-expr   d-port   d-portdecl   d-netdecl)   (vl-primitive-mkport "d"   :vl-input))
+       ((mv q-expr   q-port   q-portdecl   q-vardecl)   (vl-primitive-mkport "q"   :vl-output))
+       ((mv clk-expr clk-port clk-portdecl clk-vardecl) (vl-primitive-mkport "clk" :vl-input))
+       ((mv d-expr   d-port   d-portdecl   d-vardecl)   (vl-primitive-mkport "d"   :vl-input))
 
-       (q-regdecl     (make-vl-regdecl :name "q" :loc *vl-fakeloc*))
+       (q-portdecl (change-vl-portdecl q-portdecl :type *vl-plain-old-reg-type*))
+       (q-vardecl  (change-vl-vardecl  q-vardecl  :type *vl-plain-old-reg-type*))
 
        ;; always @(d or clk) q <= clk ? d : q;
        (|clk?d:q|     (make-vl-nonatom :op :vl-qmark
@@ -1006,15 +1051,16 @@ certain @('always') statements into instances of this module.</p>
        (clk-evatom    (make-vl-evatom :type :vl-noedge :expr clk-expr))
        (@d-or-clk     (make-vl-eventcontrol :starp nil :atoms (list d-evatom clk-evatom)))
        (stmt          (make-vl-timingstmt :ctrl @d-or-clk :body |q<=clk?d:q|))
-       (always        (make-vl-always :stmt stmt :loc *vl-fakeloc*)))
+       (always        (make-vl-always :type :vl-always
+                                      :stmt stmt
+                                      :loc *vl-fakeloc*)))
 
     (hons-copy
      (make-vl-module :name      name
                      :origname  name
                      :ports     (list q-port     clk-port     d-port)
                      :portdecls (list q-portdecl clk-portdecl d-portdecl)
-                     :netdecls  (list            clk-netdecl  d-netdecl)
-                     :regdecls  (list q-regdecl)
+                     :vardecls  (list q-vardecl  clk-vardecl  d-vardecl)
                      :alwayses  (list always)
                      :minloc    *vl-fakeloc*
                      :maxloc    *vl-fakeloc*
@@ -1030,33 +1076,45 @@ module VL_1_BIT_BUFIF0 (out, data, ctrl);
    output out;
    input data;
    input ctrl;
-   bufif0 gate (out, data, ctrl);
+   assign out = ctrl ? 1'bz : |data;
 endmodule
 })
 
 <p>VL takes this as a primitive.  The @(see gate-elim) transform converts
 certain @('bufif0') gates into instances of this module.</p>
 
-<p>The corresponding @(see esim) primitive is @(see acl2::*esim-bufif0*).</p>"
+<p>The corresponding @(see esim) primitive is @(see acl2::*esim-bufif0*).</p>
+
+<p>We once tried to implement this primitive using @('~~data') instead of
+@('|data'), but we found that NCVerilog (incorrectly) canceled the double
+negation and could hence produce Z bits on the output.  The or-based definition
+above does not appear to have this problem.</p>"
 
   (b* ((name "VL_1_BIT_BUFIF0")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
-       ((mv data-expr   data-port   data-portdecl   data-netdecl)   (vl-primitive-mkport "data"   :vl-input))
-       ((mv ctrl-expr   ctrl-port   ctrl-portdecl   ctrl-netdecl)   (vl-primitive-mkport "ctrl"   :vl-input))
-       (gate (make-vl-gateinst :type :vl-bufif0
-                               :name "gate"
-                               :args (list (make-vl-plainarg :expr out-expr :dir :vl-output)
-                                           (make-vl-plainarg :expr data-expr   :dir :vl-input)
-                                           (make-vl-plainarg :expr ctrl-expr   :dir :vl-input))
+       ((mv out-expr out-port out-portdecl out-vardecl) (vl-primitive-mkport "out" :vl-output))
+       ((mv data-expr   data-port   data-portdecl   data-vardecl)   (vl-primitive-mkport "data"   :vl-input))
+       ((mv ctrl-expr   ctrl-port   ctrl-portdecl   ctrl-vardecl)   (vl-primitive-mkport "ctrl"   :vl-input))
+
+       (assign (make-vl-assign :lvalue out-expr
+                               :expr (make-vl-nonatom
+                                      :op :vl-qmark
+                                      :args (list ctrl-expr
+                                                  |*sized-1'bz*|
+                                                  (make-vl-nonatom :op :vl-unary-bitor
+                                                                   :args (list data-expr)
+                                                                   :finalwidth 1
+                                                                   :finaltype :vl-unsigned))
+                                      :finalwidth 1
+                                      :finaltype :vl-unsigned)
                                :loc *vl-fakeloc*)))
     (hons-copy
      (make-vl-module :name      name
                      :origname  name
                      :ports     (list out-port     data-port     ctrl-port)
                      :portdecls (list out-portdecl data-portdecl ctrl-portdecl)
-                     :netdecls  (list out-netdecl  data-netdecl  ctrl-netdecl)
-                     :gateinsts (list gate)
+                     :vardecls  (list out-vardecl  data-vardecl  ctrl-vardecl)
+                     :assigns   (list assign)
                      :minloc    *vl-fakeloc*
                      :maxloc    *vl-fakeloc*
                      :atts      atts
@@ -1071,33 +1129,44 @@ module VL_1_BIT_BUFIF1 (out, data, ctrl);
    output out;
    input data;
    input ctrl;
-   bufif1 gate (out, data, ctrl);
+   assign out = ctrl ? ~~data : 1'bz;
 endmodule
 })
 
 <p>VL takes this as a primitive.  The @(see gate-elim) transform converts
 certain @('bufif1') gates into instances of this module.</p>
 
-<p>The corresponding @(see esim) primitive is @(see acl2::*esim-bufif1*).</p>"
+<p>The corresponding @(see esim) primitive is @(see acl2::*esim-bufif1*).</p>
+
+<p>We once tried to implement this primitive using @('~~data') instead of
+@('|data'), but we found that NCVerilog (incorrectly) canceled the double
+negation and could hence produce Z bits on the output.  The or-based definition
+above does not appear to have this problem.</p>"
 
   (b* ((name "VL_1_BIT_BUFIF1")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
-       ((mv data-expr   data-port   data-portdecl   data-netdecl)   (vl-primitive-mkport "data"   :vl-input))
-       ((mv ctrl-expr   ctrl-port   ctrl-portdecl   ctrl-netdecl)   (vl-primitive-mkport "ctrl"   :vl-input))
-       (gate (make-vl-gateinst :type :vl-bufif1
-                               :name "gate"
-                               :args (list (make-vl-plainarg :expr out-expr :dir :vl-output)
-                                           (make-vl-plainarg :expr data-expr   :dir :vl-input)
-                                           (make-vl-plainarg :expr ctrl-expr   :dir :vl-input))
+       ((mv out-expr out-port out-portdecl out-vardecl) (vl-primitive-mkport "out" :vl-output))
+       ((mv data-expr   data-port   data-portdecl   data-vardecl)   (vl-primitive-mkport "data"   :vl-input))
+       ((mv ctrl-expr   ctrl-port   ctrl-portdecl   ctrl-vardecl)   (vl-primitive-mkport "ctrl"   :vl-input))
+       (assign (make-vl-assign :lvalue out-expr
+                               :expr (make-vl-nonatom
+                                      :op :vl-qmark
+                                      :args (list ctrl-expr
+                                                  (make-vl-nonatom :op :vl-unary-bitor
+                                                                   :args (list data-expr)
+                                                                   :finalwidth 1
+                                                                   :finaltype :vl-unsigned)
+                                                  |*sized-1'bz*|)
+                                      :finalwidth 1
+                                      :finaltype :vl-unsigned)
                                :loc *vl-fakeloc*)))
     (hons-copy
      (make-vl-module :name      name
                      :origname  name
                      :ports     (list out-port     data-port     ctrl-port)
                      :portdecls (list out-portdecl data-portdecl ctrl-portdecl)
-                     :netdecls  (list out-netdecl  data-netdecl  ctrl-netdecl)
-                     :gateinsts (list gate)
+                     :vardecls  (list out-vardecl  data-vardecl  ctrl-vardecl)
+                     :assigns   (list assign)
                      :minloc    *vl-fakeloc*
                      :maxloc    *vl-fakeloc*
                      :atts      atts
@@ -1112,7 +1181,7 @@ module VL_1_BIT_NOTIF0 (out, data, ctrl);
    output out;
    input data;
    input ctrl;
-   notif0 gate (out, data, ctrl);
+   assign out = ctrl ? 1'bz : ~data;
 endmodule
 })
 
@@ -1123,22 +1192,29 @@ certain @('notif0') gates into instances of this module.</p>
 
   (b* ((name "VL_1_BIT_NOTIF0")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
-       ((mv data-expr   data-port   data-portdecl   data-netdecl)   (vl-primitive-mkport "data"   :vl-input))
-       ((mv ctrl-expr   ctrl-port   ctrl-portdecl   ctrl-netdecl)   (vl-primitive-mkport "ctrl"   :vl-input))
-       (gate (make-vl-gateinst :type :vl-notif0
-                               :name "gate"
-                               :args (list (make-vl-plainarg :expr out-expr :dir :vl-output)
-                                           (make-vl-plainarg :expr data-expr   :dir :vl-input)
-                                           (make-vl-plainarg :expr ctrl-expr   :dir :vl-input))
+       ((mv out-expr out-port out-portdecl out-vardecl) (vl-primitive-mkport "out" :vl-output))
+       ((mv data-expr   data-port   data-portdecl   data-vardecl)   (vl-primitive-mkport "data"   :vl-input))
+       ((mv ctrl-expr   ctrl-port   ctrl-portdecl   ctrl-vardecl)   (vl-primitive-mkport "ctrl"   :vl-input))
+       (assign (make-vl-assign :lvalue out-expr
+                               :expr (make-vl-nonatom
+                                      :op :vl-qmark
+                                      :args (list ctrl-expr
+                                                  |*sized-1'bz*|
+                                                  (make-vl-nonatom
+                                                                :op :vl-unary-bitnot
+                                                                :args (list data-expr)
+                                                                :finalwidth 1
+                                                                :finaltype :vl-unsigned))
+                                      :finalwidth 1
+                                      :finaltype :vl-unsigned)
                                :loc *vl-fakeloc*)))
     (hons-copy
      (make-vl-module :name      name
                      :origname  name
                      :ports     (list out-port     data-port     ctrl-port)
                      :portdecls (list out-portdecl data-portdecl ctrl-portdecl)
-                     :netdecls  (list out-netdecl  data-netdecl  ctrl-netdecl)
-                     :gateinsts (list gate)
+                     :vardecls  (list out-vardecl  data-vardecl  ctrl-vardecl)
+                     :assigns   (list assign)
                      :minloc    *vl-fakeloc*
                      :maxloc    *vl-fakeloc*
                      :atts      atts
@@ -1153,7 +1229,7 @@ module VL_1_BIT_NOTIF1 (out, data, ctrl);
    output out;
    input data;
    input ctrl;
-   notif1 gate (out, data, ctrl);
+   assign out = ctrl ? ~data : 1'bz;
 endmodule
 })
 
@@ -1164,22 +1240,29 @@ certain @('notif1') gates into instances of this module.</p>
 
   (b* ((name "VL_1_BIT_NOTIF1")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
-       ((mv data-expr   data-port   data-portdecl   data-netdecl)   (vl-primitive-mkport "data"   :vl-input))
-       ((mv ctrl-expr   ctrl-port   ctrl-portdecl   ctrl-netdecl)   (vl-primitive-mkport "ctrl"   :vl-input))
-       (gate (make-vl-gateinst :type :vl-notif1
-                               :name "gate"
-                               :args (list (make-vl-plainarg :expr out-expr :dir :vl-output)
-                                           (make-vl-plainarg :expr data-expr   :dir :vl-input)
-                                           (make-vl-plainarg :expr ctrl-expr   :dir :vl-input))
+       ((mv out-expr out-port out-portdecl out-vardecl) (vl-primitive-mkport "out" :vl-output))
+       ((mv data-expr   data-port   data-portdecl   data-vardecl)   (vl-primitive-mkport "data"   :vl-input))
+       ((mv ctrl-expr   ctrl-port   ctrl-portdecl   ctrl-vardecl)   (vl-primitive-mkport "ctrl"   :vl-input))
+       (assign (make-vl-assign :lvalue out-expr
+                               :expr (make-vl-nonatom
+                                      :op :vl-qmark
+                                      :args (list ctrl-expr
+                                                  (make-vl-nonatom
+                                                                :op :vl-unary-bitnot
+                                                                :args (list data-expr)
+                                                                :finalwidth 1
+                                                                :finaltype :vl-unsigned)
+                                                  |*sized-1'bz*|)
+                                      :finalwidth 1
+                                      :finaltype :vl-unsigned)
                                :loc *vl-fakeloc*)))
     (hons-copy
      (make-vl-module :name      name
                      :origname  name
                      :ports     (list out-port     data-port     ctrl-port)
                      :portdecls (list out-portdecl data-portdecl ctrl-portdecl)
-                     :netdecls  (list out-netdecl  data-netdecl  ctrl-netdecl)
-                     :gateinsts (list gate)
+                     :vardecls  (list out-vardecl  data-vardecl  ctrl-vardecl)
+                     :assigns   (list assign)
                      :minloc    *vl-fakeloc*
                      :maxloc    *vl-fakeloc*
                      :atts      atts
@@ -1207,9 +1290,9 @@ target for other back-end tools.  The corresponding @(see esim) primitive is
 
   (b* ((name "VL_1_BIT_NMOS")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
-       ((mv data-expr   data-port   data-portdecl   data-netdecl)   (vl-primitive-mkport "data"   :vl-input))
-       ((mv ctrl-expr   ctrl-port   ctrl-portdecl   ctrl-netdecl)   (vl-primitive-mkport "ctrl"   :vl-input))
+       ((mv out-expr out-port out-portdecl out-vardecl) (vl-primitive-mkport "out" :vl-output))
+       ((mv data-expr   data-port   data-portdecl   data-vardecl)   (vl-primitive-mkport "data"   :vl-input))
+       ((mv ctrl-expr   ctrl-port   ctrl-portdecl   ctrl-vardecl)   (vl-primitive-mkport "ctrl"   :vl-input))
        (gate (make-vl-gateinst :type :vl-nmos
                                :name "gate"
                                :args (list (make-vl-plainarg :expr out-expr :dir :vl-output)
@@ -1221,7 +1304,7 @@ target for other back-end tools.  The corresponding @(see esim) primitive is
                      :origname  name
                      :ports     (list out-port     data-port     ctrl-port)
                      :portdecls (list out-portdecl data-portdecl ctrl-portdecl)
-                     :netdecls  (list out-netdecl  data-netdecl  ctrl-netdecl)
+                     :vardecls  (list out-vardecl  data-vardecl  ctrl-vardecl)
                      :gateinsts (list gate)
                      :minloc    *vl-fakeloc*
                      :maxloc    *vl-fakeloc*
@@ -1250,9 +1333,9 @@ this may be a convenient target for other back-end tools.  The corresponding
 
   (b* ((name "VL_1_BIT_RNMOS")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
-       ((mv data-expr   data-port   data-portdecl   data-netdecl)   (vl-primitive-mkport "data"   :vl-input))
-       ((mv ctrl-expr   ctrl-port   ctrl-portdecl   ctrl-netdecl)   (vl-primitive-mkport "ctrl"   :vl-input))
+       ((mv out-expr out-port out-portdecl out-vardecl) (vl-primitive-mkport "out" :vl-output))
+       ((mv data-expr   data-port   data-portdecl   data-vardecl)   (vl-primitive-mkport "data"   :vl-input))
+       ((mv ctrl-expr   ctrl-port   ctrl-portdecl   ctrl-vardecl)   (vl-primitive-mkport "ctrl"   :vl-input))
        (gate (make-vl-gateinst :type :vl-rnmos
                                :name "gate"
                                :args (list (make-vl-plainarg :expr out-expr :dir :vl-output)
@@ -1264,7 +1347,7 @@ this may be a convenient target for other back-end tools.  The corresponding
                      :origname  name
                      :ports     (list out-port     data-port     ctrl-port)
                      :portdecls (list out-portdecl data-portdecl ctrl-portdecl)
-                     :netdecls  (list out-netdecl  data-netdecl  ctrl-netdecl)
+                     :vardecls  (list out-vardecl  data-vardecl  ctrl-vardecl)
                      :gateinsts (list gate)
                      :minloc    *vl-fakeloc*
                      :maxloc    *vl-fakeloc*
@@ -1294,9 +1377,9 @@ target for other back-end tools.  The corresponding @(see esim) primitive is
 
   (b* ((name "VL_1_BIT_PMOS")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
-       ((mv data-expr   data-port   data-portdecl   data-netdecl)   (vl-primitive-mkport "data"   :vl-input))
-       ((mv ctrl-expr   ctrl-port   ctrl-portdecl   ctrl-netdecl)   (vl-primitive-mkport "ctrl"   :vl-input))
+       ((mv out-expr out-port out-portdecl out-vardecl) (vl-primitive-mkport "out" :vl-output))
+       ((mv data-expr   data-port   data-portdecl   data-vardecl)   (vl-primitive-mkport "data"   :vl-input))
+       ((mv ctrl-expr   ctrl-port   ctrl-portdecl   ctrl-vardecl)   (vl-primitive-mkport "ctrl"   :vl-input))
        (gate (make-vl-gateinst :type :vl-pmos
                                :name "gate"
                                :args (list (make-vl-plainarg :expr out-expr :dir :vl-output)
@@ -1308,7 +1391,7 @@ target for other back-end tools.  The corresponding @(see esim) primitive is
                      :origname  name
                      :ports     (list out-port     data-port     ctrl-port)
                      :portdecls (list out-portdecl data-portdecl ctrl-portdecl)
-                     :netdecls  (list out-netdecl  data-netdecl  ctrl-netdecl)
+                     :vardecls  (list out-vardecl  data-vardecl  ctrl-vardecl)
                      :gateinsts (list gate)
                      :minloc    *vl-fakeloc*
                      :maxloc    *vl-fakeloc*
@@ -1337,9 +1420,9 @@ this may be a convenient target for other back-end tools.  The corresponding
 
   (b* ((name "VL_1_BIT_RPMOS")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
-       ((mv data-expr   data-port   data-portdecl   data-netdecl)   (vl-primitive-mkport "data"   :vl-input))
-       ((mv ctrl-expr   ctrl-port   ctrl-portdecl   ctrl-netdecl)   (vl-primitive-mkport "ctrl"   :vl-input))
+       ((mv out-expr out-port out-portdecl out-vardecl) (vl-primitive-mkport "out" :vl-output))
+       ((mv data-expr   data-port   data-portdecl   data-vardecl)   (vl-primitive-mkport "data"   :vl-input))
+       ((mv ctrl-expr   ctrl-port   ctrl-portdecl   ctrl-vardecl)   (vl-primitive-mkport "ctrl"   :vl-input))
        (gate (make-vl-gateinst :type :vl-rpmos
                                :name "gate"
                                :args (list (make-vl-plainarg :expr out-expr :dir :vl-output)
@@ -1351,7 +1434,7 @@ this may be a convenient target for other back-end tools.  The corresponding
                      :origname  name
                      :ports     (list out-port     data-port     ctrl-port)
                      :portdecls (list out-portdecl data-portdecl ctrl-portdecl)
-                     :netdecls  (list out-netdecl  data-netdecl  ctrl-netdecl)
+                     :vardecls  (list out-vardecl  data-vardecl  ctrl-vardecl)
                      :gateinsts (list gate)
                      :minloc    *vl-fakeloc*
                      :maxloc    *vl-fakeloc*
@@ -1381,10 +1464,10 @@ target for other back-end tools.  The corresponding @(see esim) primitive is
 
   (b* ((name "VL_1_BIT_CMOS")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
-       ((mv out-expr    out-port    out-portdecl    out-netdecl)    (vl-primitive-mkport "out"   :vl-output))
-       ((mv data-expr   data-port   data-portdecl   data-netdecl)   (vl-primitive-mkport "data"  :vl-input))
-       ((mv nctrl-expr  nctrl-port  nctrl-portdecl  nctrl-netdecl)  (vl-primitive-mkport "nctrl" :vl-input))
-       ((mv pctrl-expr  pctrl-port  pctrl-portdecl  pctrl-netdecl)  (vl-primitive-mkport "pctrl" :vl-input))
+       ((mv out-expr    out-port    out-portdecl    out-vardecl)    (vl-primitive-mkport "out"   :vl-output))
+       ((mv data-expr   data-port   data-portdecl   data-vardecl)   (vl-primitive-mkport "data"  :vl-input))
+       ((mv nctrl-expr  nctrl-port  nctrl-portdecl  nctrl-vardecl)  (vl-primitive-mkport "nctrl" :vl-input))
+       ((mv pctrl-expr  pctrl-port  pctrl-portdecl  pctrl-vardecl)  (vl-primitive-mkport "pctrl" :vl-input))
        (gate (make-vl-gateinst :type :vl-cmos
                                :name "gate"
                                :args (list (make-vl-plainarg :expr out-expr   :dir :vl-output)
@@ -1397,7 +1480,7 @@ target for other back-end tools.  The corresponding @(see esim) primitive is
                      :origname  name
                      :ports     (list out-port     data-port     nctrl-port     pctrl-port)
                      :portdecls (list out-portdecl data-portdecl nctrl-portdecl pctrl-portdecl)
-                     :netdecls  (list out-netdecl  data-netdecl  nctrl-netdecl  pctrl-netdecl)
+                     :vardecls  (list out-vardecl  data-vardecl  nctrl-vardecl  pctrl-vardecl)
                      :gateinsts (list gate)
                      :minloc    *vl-fakeloc*
                      :maxloc    *vl-fakeloc*
@@ -1427,10 +1510,10 @@ this may be a convenient target for other back-end tools.  The corresponding
 
   (b* ((name "VL_1_BIT_RCMOS")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
-       ((mv out-expr    out-port    out-portdecl    out-netdecl)    (vl-primitive-mkport "out"   :vl-output))
-       ((mv data-expr   data-port   data-portdecl   data-netdecl)   (vl-primitive-mkport "data"  :vl-input))
-       ((mv nctrl-expr  nctrl-port  nctrl-portdecl  nctrl-netdecl)  (vl-primitive-mkport "nctrl" :vl-input))
-       ((mv pctrl-expr  pctrl-port  pctrl-portdecl  pctrl-netdecl)  (vl-primitive-mkport "pctrl" :vl-input))
+       ((mv out-expr    out-port    out-portdecl    out-vardecl)    (vl-primitive-mkport "out"   :vl-output))
+       ((mv data-expr   data-port   data-portdecl   data-vardecl)   (vl-primitive-mkport "data"  :vl-input))
+       ((mv nctrl-expr  nctrl-port  nctrl-portdecl  nctrl-vardecl)  (vl-primitive-mkport "nctrl" :vl-input))
+       ((mv pctrl-expr  pctrl-port  pctrl-portdecl  pctrl-vardecl)  (vl-primitive-mkport "pctrl" :vl-input))
        (gate (make-vl-gateinst :type :vl-rcmos
                                :name "gate"
                                :args (list (make-vl-plainarg :expr out-expr   :dir :vl-output)
@@ -1443,7 +1526,7 @@ this may be a convenient target for other back-end tools.  The corresponding
                      :origname  name
                      :ports     (list out-port     data-port     nctrl-port     pctrl-port)
                      :portdecls (list out-portdecl data-portdecl nctrl-portdecl pctrl-portdecl)
-                     :netdecls  (list out-netdecl  data-netdecl  nctrl-netdecl  pctrl-netdecl)
+                     :vardecls  (list out-vardecl  data-vardecl  nctrl-vardecl  pctrl-vardecl)
                      :gateinsts (list gate)
                      :minloc    *vl-fakeloc*
                      :maxloc    *vl-fakeloc*
@@ -1471,8 +1554,8 @@ tools.</p>"
 
   (b* ((name "VL_1_BIT_TRAN")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
-       ((mv a-expr    a-port    a-portdecl    a-netdecl)    (vl-primitive-mkport "a"   :vl-inout))
-       ((mv b-expr    b-port    b-portdecl    b-netdecl)    (vl-primitive-mkport "b"   :vl-inout))
+       ((mv a-expr    a-port    a-portdecl    a-vardecl)    (vl-primitive-mkport "a"   :vl-inout))
+       ((mv b-expr    b-port    b-portdecl    b-vardecl)    (vl-primitive-mkport "b"   :vl-inout))
        (gate (make-vl-gateinst :type :vl-tran
                                :name "gate"
                                :args (list (make-vl-plainarg :expr a-expr  :dir :vl-inout)
@@ -1483,7 +1566,7 @@ tools.</p>"
                      :origname  name
                      :ports     (list a-port     b-port)
                      :portdecls (list a-portdecl b-portdecl)
-                     :netdecls  (list a-netdecl  b-netdecl)
+                     :vardecls  (list a-vardecl  b-vardecl)
                      :gateinsts (list gate)
                      :minloc    *vl-fakeloc*
                      :maxloc    *vl-fakeloc*
@@ -1512,8 +1595,8 @@ tools.</p>"
 
   (b* ((name "VL_1_BIT_RTRAN")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
-       ((mv a-expr    a-port    a-portdecl    a-netdecl)    (vl-primitive-mkport "a"   :vl-inout))
-       ((mv b-expr    b-port    b-portdecl    b-netdecl)    (vl-primitive-mkport "b"   :vl-inout))
+       ((mv a-expr    a-port    a-portdecl    a-vardecl)    (vl-primitive-mkport "a"   :vl-inout))
+       ((mv b-expr    b-port    b-portdecl    b-vardecl)    (vl-primitive-mkport "b"   :vl-inout))
        (gate (make-vl-gateinst :type :vl-rtran
                                :name "gate"
                                :args (list (make-vl-plainarg :expr a-expr  :dir :vl-inout)
@@ -1524,7 +1607,7 @@ tools.</p>"
                      :origname  name
                      :ports     (list a-port     b-port)
                      :portdecls (list a-portdecl b-portdecl)
-                     :netdecls  (list a-netdecl  b-netdecl)
+                     :vardecls  (list a-vardecl  b-vardecl)
                      :gateinsts (list gate)
                      :minloc    *vl-fakeloc*
                      :maxloc    *vl-fakeloc*
@@ -1554,9 +1637,9 @@ tools.</p>"
 
   (b* ((name "VL_1_BIT_TRANIF0")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
-       ((mv a-expr    a-port    a-portdecl    a-netdecl)    (vl-primitive-mkport "a"   :vl-inout))
-       ((mv b-expr    b-port    b-portdecl    b-netdecl)    (vl-primitive-mkport "b"   :vl-inout))
-       ((mv ctrl-expr ctrl-port ctrl-portdecl ctrl-netdecl) (vl-primitive-mkport "ctrl"   :vl-input))
+       ((mv a-expr    a-port    a-portdecl    a-vardecl)    (vl-primitive-mkport "a"   :vl-inout))
+       ((mv b-expr    b-port    b-portdecl    b-vardecl)    (vl-primitive-mkport "b"   :vl-inout))
+       ((mv ctrl-expr ctrl-port ctrl-portdecl ctrl-vardecl) (vl-primitive-mkport "ctrl"   :vl-input))
        (gate (make-vl-gateinst :type :vl-tranif0
                                :name "gate"
                                :args (list (make-vl-plainarg :expr a-expr    :dir :vl-inout)
@@ -1568,7 +1651,7 @@ tools.</p>"
                      :origname  name
                      :ports     (list a-port     b-port     ctrl-port)
                      :portdecls (list a-portdecl b-portdecl ctrl-portdecl)
-                     :netdecls  (list a-netdecl  b-netdecl  ctrl-netdecl)
+                     :vardecls  (list a-vardecl  b-vardecl  ctrl-vardecl)
                      :gateinsts (list gate)
                      :minloc    *vl-fakeloc*
                      :maxloc    *vl-fakeloc*
@@ -1598,9 +1681,9 @@ tools.</p>"
 
   (b* ((name "VL_1_BIT_RTRANIF0")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
-       ((mv a-expr    a-port    a-portdecl    a-netdecl)    (vl-primitive-mkport "a"   :vl-inout))
-       ((mv b-expr    b-port    b-portdecl    b-netdecl)    (vl-primitive-mkport "b"   :vl-inout))
-       ((mv ctrl-expr ctrl-port ctrl-portdecl ctrl-netdecl) (vl-primitive-mkport "ctrl"   :vl-input))
+       ((mv a-expr    a-port    a-portdecl    a-vardecl)    (vl-primitive-mkport "a"   :vl-inout))
+       ((mv b-expr    b-port    b-portdecl    b-vardecl)    (vl-primitive-mkport "b"   :vl-inout))
+       ((mv ctrl-expr ctrl-port ctrl-portdecl ctrl-vardecl) (vl-primitive-mkport "ctrl"   :vl-input))
        (gate (make-vl-gateinst :type :vl-rtranif0
                                :name "gate"
                                :args (list (make-vl-plainarg :expr a-expr    :dir :vl-inout)
@@ -1612,7 +1695,7 @@ tools.</p>"
                      :origname  name
                      :ports     (list a-port     b-port     ctrl-port)
                      :portdecls (list a-portdecl b-portdecl ctrl-portdecl)
-                     :netdecls  (list a-netdecl  b-netdecl  ctrl-netdecl)
+                     :vardecls  (list a-vardecl  b-vardecl  ctrl-vardecl)
                      :gateinsts (list gate)
                      :minloc    *vl-fakeloc*
                      :maxloc    *vl-fakeloc*
@@ -1642,9 +1725,9 @@ tools.</p>"
 
   (b* ((name "VL_1_BIT_TRANIF1")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
-       ((mv a-expr    a-port    a-portdecl    a-netdecl)    (vl-primitive-mkport "a"   :vl-inout))
-       ((mv b-expr    b-port    b-portdecl    b-netdecl)    (vl-primitive-mkport "b"   :vl-inout))
-       ((mv ctrl-expr ctrl-port ctrl-portdecl ctrl-netdecl) (vl-primitive-mkport "ctrl"   :vl-input))
+       ((mv a-expr    a-port    a-portdecl    a-vardecl)    (vl-primitive-mkport "a"   :vl-inout))
+       ((mv b-expr    b-port    b-portdecl    b-vardecl)    (vl-primitive-mkport "b"   :vl-inout))
+       ((mv ctrl-expr ctrl-port ctrl-portdecl ctrl-vardecl) (vl-primitive-mkport "ctrl"   :vl-input))
        (gate (make-vl-gateinst :type :vl-tranif1
                                :name "gate"
                                :args (list (make-vl-plainarg :expr a-expr    :dir :vl-inout)
@@ -1656,7 +1739,7 @@ tools.</p>"
                      :origname  name
                      :ports     (list a-port     b-port     ctrl-port)
                      :portdecls (list a-portdecl b-portdecl ctrl-portdecl)
-                     :netdecls  (list a-netdecl  b-netdecl  ctrl-netdecl)
+                     :vardecls  (list a-vardecl  b-vardecl  ctrl-vardecl)
                      :gateinsts (list gate)
                      :minloc    *vl-fakeloc*
                      :maxloc    *vl-fakeloc*
@@ -1686,9 +1769,9 @@ tools.</p>"
 
   (b* ((name "VL_1_BIT_RTRANIF1")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
-       ((mv a-expr    a-port    a-portdecl    a-netdecl)    (vl-primitive-mkport "a"   :vl-inout))
-       ((mv b-expr    b-port    b-portdecl    b-netdecl)    (vl-primitive-mkport "b"   :vl-inout))
-       ((mv ctrl-expr ctrl-port ctrl-portdecl ctrl-netdecl) (vl-primitive-mkport "ctrl"   :vl-input))
+       ((mv a-expr    a-port    a-portdecl    a-vardecl)    (vl-primitive-mkport "a"   :vl-inout))
+       ((mv b-expr    b-port    b-portdecl    b-vardecl)    (vl-primitive-mkport "b"   :vl-inout))
+       ((mv ctrl-expr ctrl-port ctrl-portdecl ctrl-vardecl) (vl-primitive-mkport "ctrl"   :vl-input))
        (gate (make-vl-gateinst :type :vl-rtranif1
                                :name "gate"
                                :args (list (make-vl-plainarg :expr a-expr    :dir :vl-inout)
@@ -1700,7 +1783,7 @@ tools.</p>"
                      :origname  name
                      :ports     (list a-port     b-port     ctrl-port)
                      :portdecls (list a-portdecl b-portdecl ctrl-portdecl)
-                     :netdecls  (list a-netdecl  b-netdecl  ctrl-netdecl)
+                     :vardecls  (list a-vardecl  b-vardecl  ctrl-vardecl)
                      :gateinsts (list gate)
                      :minloc    *vl-fakeloc*
                      :maxloc    *vl-fakeloc*
@@ -1728,7 +1811,7 @@ tools.</p>"
 
   (b* ((name "VL_1_BIT_PULLUP")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
-       ((mv out-expr    out-port    out-portdecl    out-netdecl)    (vl-primitive-mkport "out"   :vl-output))
+       ((mv out-expr    out-port    out-portdecl    out-vardecl)    (vl-primitive-mkport "out"   :vl-output))
        (gate (make-vl-gateinst :type :vl-pullup
                                :name "gate"
                                :args (list (make-vl-plainarg :expr out-expr    :dir :vl-output))
@@ -1738,7 +1821,7 @@ tools.</p>"
                      :origname  name
                      :ports     (list out-port)
                      :portdecls (list out-portdecl)
-                     :netdecls  (list out-netdecl)
+                     :vardecls  (list out-vardecl)
                      :gateinsts (list gate)
                      :minloc    *vl-fakeloc*
                      :maxloc    *vl-fakeloc*
@@ -1766,7 +1849,7 @@ tools.</p>"
 
   (b* ((name "VL_1_BIT_PULLDOWN")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
-       ((mv out-expr    out-port    out-portdecl    out-netdecl)    (vl-primitive-mkport "out"   :vl-output))
+       ((mv out-expr    out-port    out-portdecl    out-vardecl)    (vl-primitive-mkport "out"   :vl-output))
        (gate (make-vl-gateinst :type :vl-pulldown
                                :name "gate"
                                :args (list (make-vl-plainarg :expr out-expr    :dir :vl-output))
@@ -1776,7 +1859,7 @@ tools.</p>"
                      :origname  name
                      :ports     (list out-port)
                      :portdecls (list out-portdecl)
-                     :netdecls  (list out-netdecl)
+                     :vardecls  (list out-vardecl)
                      :gateinsts (list gate)
                      :minloc    *vl-fakeloc*
                      :maxloc    *vl-fakeloc*
@@ -1857,17 +1940,17 @@ tools.</p>"
 ;; (defconsts *vl-1-bit-resolve-wor*
 ;;   (b* ((name "VL_1_BIT_RESOLVE_WOR")
 ;;        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
-;;        ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
-;;        ((mv a-expr   a-port   a-portdecl   a-netdecl)   (vl-primitive-mkport "a"   :vl-input))
-;;        ((mv b-expr   b-port   b-portdecl   b-netdecl)   (vl-primitive-mkport "b"   :vl-input))
-;;        (out-netdecl  (change-vl-netdecl out-netdecl :type :vl-wor))
+;;        ((mv out-expr out-port out-portdecl out-vardecl) (vl-primitive-mkport "out" :vl-output))
+;;        ((mv a-expr   a-port   a-portdecl   a-vardecl)   (vl-primitive-mkport "a"   :vl-input))
+;;        ((mv b-expr   b-port   b-portdecl   b-vardecl)   (vl-primitive-mkport "b"   :vl-input))
+;;        (out-vardecl  (change-vl-vardecl out-vardecl :type :vl-wor))
 ;;        (a-assign     (make-vl-assign :lvalue out-expr :expr a-expr :loc *vl-fakeloc*))
 ;;        (b-assign     (make-vl-assign :lvalue out-expr :expr b-expr :loc *vl-fakeloc*)))
 ;;     (make-honsed-vl-module :name      name
 ;;                            :origname  name
 ;;                            :ports     (list out-port     a-port      b-port)
 ;;                            :portdecls (list out-portdecl a-portdecl  b-portdecl)
-;;                            :netdecls  (list out-netdecl  a-netdecl   b-netdecl)
+;;                            :vardecls  (list out-vardecl  a-vardecl   b-vardecl)
 ;;                            :assigns   (list              a-assign    b-assign)
 ;;                            :minloc    *vl-fakeloc*
 ;;                            :maxloc    *vl-fakeloc*

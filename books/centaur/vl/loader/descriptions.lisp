@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
@@ -36,11 +46,12 @@
    ;; bozo add bind directives
 
    ;; package items
-   vl-netdecl
    vl-taskdecl
    vl-fundecl
    vl-paramdecl
    vl-import
+   vl-fwdtypedef
+   vl-typedef
 
    ;; bozo lots of package items are missing
    )
@@ -61,19 +72,18 @@ process, we convert all of the descriptions into a @(see vl-design-p).</p>")
                (equal (tag x) :vl-package)
                (equal (tag x) :vl-program)
                (equal (tag x) :vl-config)
-               (equal (tag x) :vl-netdecl)
                (equal (tag x) :vl-taskdecl)
                (equal (tag x) :vl-fundecl)
                (equal (tag x) :vl-paramdecl)
                (equal (tag x) :vl-import)
+               (equal (tag x) :vl-fwdtypedef)
+               (equal (tag x) :vl-typedef)
                ))
   :rule-classes ((:forward-chaining :trigger-terms ((vl-description-p x))))
   :enable vl-description-p)
 
-(fty::deflist vl-descriptionlist :elt-type vl-description-p)
-
-(deflist vl-descriptionlist-p (x)
-  (vl-description-p x)
+(fty::deflist vl-descriptionlist
+  :elt-type vl-description-p
   :elementp-of-nil nil
   :parents (loader))
 
@@ -91,11 +101,13 @@ process, we convert all of the descriptions into a @(see vl-design-p).</p>")
        (implies (vl-packagelist-p x) (vl-descriptionlist-p x))
        (implies (vl-programlist-p x) (vl-descriptionlist-p x))
        (implies (vl-configlist-p x) (vl-descriptionlist-p x))
-       (implies (vl-netdecllist-p x) (vl-descriptionlist-p x))
        (implies (vl-taskdecllist-p x) (vl-descriptionlist-p x))
        (implies (vl-fundecllist-p x) (vl-descriptionlist-p x))
        (implies (vl-paramdecllist-p x) (vl-descriptionlist-p x))
-       (implies (vl-importlist-p x) (vl-descriptionlist-p x)))
+       (implies (vl-importlist-p x) (vl-descriptionlist-p x))
+       (implies (vl-fwdtypedeflist-p x) (vl-descriptionlist-p x))
+       (implies (vl-typedeflist-p x) (vl-descriptionlist-p x))
+       )
   :hints(("Goal" :induct (len x))))
 
 
@@ -105,17 +117,24 @@ doesn't introduce a name (e.g., an @('import') statement."
   :returns (name maybe-stringp :rule-classes :type-prescription)
   (b* ((x (vl-description-fix x)))
     (case (tag x)
-      (:vl-module    (vl-module->name x))
-      (:vl-udp       (vl-udp->name x))
-      (:vl-interface (vl-interface->name x))
-      (:vl-package   (vl-package->name x))
-      (:vl-program   (vl-program->name x))
-      (:vl-config    (vl-config->name x))
-      (:vl-netdecl   (vl-netdecl->name x))
-      (:vl-taskdecl  (vl-taskdecl->name x))
-      (:vl-fundecl   (vl-fundecl->name x))
-      (:vl-paramdecl (vl-paramdecl->name x))
-      (:vl-import    nil)
+      (:vl-module     (vl-module->name x))
+      (:vl-udp        (vl-udp->name x))
+      (:vl-interface  (vl-interface->name x))
+      (:vl-package    (vl-package->name x))
+      (:vl-program    (vl-program->name x))
+      (:vl-config     (vl-config->name x))
+      (:vl-taskdecl   (vl-taskdecl->name x))
+      (:vl-fundecl    (vl-fundecl->name x))
+      (:vl-paramdecl  (vl-paramdecl->name x))
+      (:vl-import     nil)
+      (:vl-fwdtypedef
+       ;; SUBTLE: I don't want forward typedefs to look like they have names,
+       ;; because they aren't really a complete definition, and if we haven't
+       ;; loaded the "real" typedef, then I don't want to count these as loaded
+       ;; yet.  Moreover, a forward typedef shouldn't ever overwrite a real
+       ;; typedef or anything like that.
+       nil)
+      (:vl-typedef   (vl-typedef->name x))
       (otherwise     (impossible)))))
 
 
@@ -189,17 +208,11 @@ the number of descriptions in the list.</p>"
   (defthm no-nil-in-vl-descriptionlist->names
     (not (member nil (vl-descriptionlist->names x)))))
 
-
 (fty::defalist vl-descalist
   :key-type stringp
-  :val-type vl-description-p)
-
-(defalist vl-descalist-p (x)
-  :key (stringp x)
-  :val (vl-description-p x)
+  :val-type vl-description-p
   :keyp-of-nil nil
-  :valp-of-nil nil
-  :already-definedp t)
+  :valp-of-nil nil)
 
 (define vl-descalist ((x vl-descriptionlist-p))
   :returns (alist vl-descalist-p)
@@ -285,30 +298,32 @@ descriptions.  See @(see vl-fast-find-description) for a faster alternative.</p>
 (def-vl-filter-by-name description)
 
 
-(define vl-sort-descriptions ((x          vl-descriptionlist-p)
+(define vl-sort-descriptions ((x           vl-descriptionlist-p)
                               &key
-                              (modules    vl-modulelist-p)
-                              (udps       vl-udplist-p)
-                              (interfaces vl-interfacelist-p)
-                              (programs   vl-programlist-p)
-                              (packages   vl-packagelist-p)
-                              (configs    vl-configlist-p)
-                              (netdecls   vl-netdecllist-p)
-                              (taskdecls  vl-taskdecllist-p)
-                              (fundecls   vl-fundecllist-p)
-                              (paramdecls vl-paramdecllist-p)
-                              (imports    vl-importlist-p))
-  :returns (mv (modules    vl-modulelist-p)
-               (udps       vl-udplist-p)
-               (interfaces vl-interfacelist-p)
-               (programs   vl-programlist-p)
-               (packages   vl-packagelist-p)
-               (configs    vl-configlist-p)
-               (netdecls   vl-netdecllist-p)
-               (taskdecls  vl-taskdecllist-p)
-               (fundecls   vl-fundecllist-p)
-               (paramdecls vl-paramdecllist-p)
-               (imports    vl-importlist-p))
+                              (modules     vl-modulelist-p)
+                              (udps        vl-udplist-p)
+                              (interfaces  vl-interfacelist-p)
+                              (programs    vl-programlist-p)
+                              (packages    vl-packagelist-p)
+                              (configs     vl-configlist-p)
+                              (taskdecls   vl-taskdecllist-p)
+                              (fundecls    vl-fundecllist-p)
+                              (paramdecls  vl-paramdecllist-p)
+                              (imports     vl-importlist-p)
+                              (fwdtypedefs vl-fwdtypedeflist-p)
+                              (typedefs    vl-typedeflist-p))
+  :returns (mv (modules     vl-modulelist-p)
+               (udps        vl-udplist-p)
+               (interfaces  vl-interfacelist-p)
+               (programs    vl-programlist-p)
+               (packages    vl-packagelist-p)
+               (configs     vl-configlist-p)
+               (taskdecls   vl-taskdecllist-p)
+               (fundecls    vl-fundecllist-p)
+               (paramdecls  vl-paramdecllist-p)
+               (imports     vl-importlist-p)
+               (fwdtypedefs vl-fwdtypedeflist-p)
+               (typedefs    vl-typedeflist-p))
   (b* (((when (atom x))
         (mv (vl-modulelist-fix modules)
             (vl-udplist-fix udps)
@@ -316,40 +331,83 @@ descriptions.  See @(see vl-fast-find-description) for a faster alternative.</p>
             (vl-programlist-fix programs)
             (vl-packagelist-fix packages)
             (vl-configlist-fix configs)
-            (vl-netdecllist-fix netdecls)
             (vl-taskdecllist-fix taskdecls)
             (vl-fundecllist-fix fundecls)
             (vl-paramdecllist-fix paramdecls)
-            (vl-importlist-fix imports)))
+            (vl-importlist-fix imports)
+            (vl-fwdtypedeflist-fix fwdtypedefs)
+            (vl-typedeflist-fix typedefs)))
        (x1  (vl-description-fix (car x)))
        (tag (tag x1)))
     (vl-sort-descriptions
      (cdr x)
-     :modules    (if (eq tag :vl-module)    (cons x1 modules)    modules)
-     :udps       (if (eq tag :vl-udp)       (cons x1 udps)       udps)
-     :interfaces (if (eq tag :vl-interface) (cons x1 interfaces) interfaces)
-     :programs   (if (eq tag :vl-program)   (cons x1 programs)   programs)
-     :packages   (if (eq tag :vl-package)   (cons x1 packages)   packages)
-     :configs    (if (eq tag :vl-config)    (cons x1 configs)    configs)
-     :netdecls   (if (eq tag :vl-netdecl)   (cons x1 netdecls)   netdecls)
-     :taskdecls  (if (eq tag :vl-taskdecl)  (cons x1 taskdecls)  taskdecls)
-     :fundecls   (if (eq tag :vl-fundecl)   (cons x1 fundecls)   fundecls)
-     :paramdecls (if (eq tag :vl-paramdecl) (cons x1 paramdecls) paramdecls)
-     :imports    (if (eq tag :vl-import)    (cons x1 imports)    imports))))
-
+     :modules     (if (eq tag :vl-module)     (cons x1 modules)     modules)
+     :udps        (if (eq tag :vl-udp)        (cons x1 udps)        udps)
+     :interfaces  (if (eq tag :vl-interface)  (cons x1 interfaces)  interfaces)
+     :programs    (if (eq tag :vl-program)    (cons x1 programs)    programs)
+     :packages    (if (eq tag :vl-package)    (cons x1 packages)    packages)
+     :configs     (if (eq tag :vl-config)     (cons x1 configs)     configs)
+     :taskdecls   (if (eq tag :vl-taskdecl)   (cons x1 taskdecls)   taskdecls)
+     :fundecls    (if (eq tag :vl-fundecl)    (cons x1 fundecls)    fundecls)
+     :paramdecls  (if (eq tag :vl-paramdecl)  (cons x1 paramdecls)  paramdecls)
+     :imports     (if (eq tag :vl-import)     (cons x1 imports)     imports)
+     :fwdtypedefs (if (eq tag :vl-fwdtypedef) (cons x1 fwdtypedefs) fwdtypedefs)
+     :typedefs    (if (eq tag :vl-typedef)    (cons x1 typedefs)    typedefs))))
 
 (define vl-design-from-descriptions ((x vl-descriptionlist-p))
   :returns (design vl-design-p)
-  (b* (((mv modules udps interfaces programs packages configs netdecls taskdecls fundecls paramdecls imports)
+  (b* (((mv modules
+            udps
+            interfaces
+            programs
+            packages
+            configs
+            taskdecls
+            fundecls
+            paramdecls
+            imports
+            fwdtypedefs
+            typedefs)
         (vl-sort-descriptions x)))
-    (make-vl-design :mods       modules
-                    :udps       udps
-                    :interfaces interfaces
-                    :programs   programs
-                    :packages   packages
-                    :configs    configs
-                    :netdecls   netdecls
-                    :taskdecls  taskdecls
-                    :fundecls   fundecls
-                    :paramdecls paramdecls
-                    :imports    imports)))
+    (make-vl-design :mods        modules
+                    :udps        udps
+                    :interfaces  interfaces
+                    :programs    programs
+                    :packages    packages
+                    :configs     configs
+                    :taskdecls   taskdecls
+                    :fundecls    fundecls
+                    :paramdecls  paramdecls
+                    :imports     imports
+                    :fwdtypes    fwdtypedefs
+                    :typedefs    typedefs)))
+
+(local (in-theory (disable acl2::true-listp-append
+                           acl2::consp-append
+                           acl2::consp-of-append
+                           )))
+
+(define vl-design-descriptions ((x vl-design-p))
+  :returns (descriptions vl-descriptionlist-p)
+  (b* (((vl-design x)))
+    (append-without-guard x.mods
+                          x.udps
+                          x.interfaces
+                          x.programs
+                          x.packages
+                          x.configs
+                          x.taskdecls
+                          x.fundecls
+                          x.paramdecls
+                          x.imports
+                          x.fwdtypes
+                          x.typedefs)))
+
+;; BOZO could probably prove something like this, some day...
+;; (defthm vl-design-descriptions-identity
+;;   (equal (vl-design-from-descriptions (vl-design-descriptions x))
+;;          (vl-design-fix x))
+;;   :hints(("Goal" :in-theory (enable vl-design-from-descriptions
+;;                                     vl-design-descriptions))))
+
+

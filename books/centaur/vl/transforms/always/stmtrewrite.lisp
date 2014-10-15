@@ -6,20 +6,30 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "../xf-resolve-ranges")
+(include-book "../../mlib/consteval")
 (include-book "../../mlib/stmt-tools")
 (local (include-book "../../util/arithmetic"))
 
@@ -163,12 +173,12 @@ implement.</p>"
 })
 
 <p>We only try to unroll when @('n') is easily resolved to a constant that is
-less than the @('unroll-limit').  In particular, we use @(see
-vl-constexpr-reduce) to try to evaluate the condition.  This lets us handle
-things like @('repeat(width-1) body') after @(see unparameterization) has
-occurred.</p>"
+less than the @('unroll-limit').  In particular, we use @(see vl-consteval) to
+try to evaluate the condition.  This lets us handle things like
+@('repeat(width-1) body') after @(see unparameterization) has occurred.</p>"
 
-  (b* ((count (vl-constexpr-reduce condition))
+  (b* (((mv ok count-expr) (vl-consteval condition))
+       (count (and ok (vl-resolved->val count-expr)))
        ((when (and count (<= count unroll-limit)))
         (mv warnings
             ;; This works even when N is 0 or 1.  We expect our later block
@@ -247,22 +257,23 @@ just carry out two simple rewrites:</p>
 
 
 (define vl-caselist-all-null-p ((x vl-caselist-p))
-  (if (atom x)
-      t
-    (and (vl-nullstmt-p (cdar x))
-         (vl-caselist-all-null-p (cdr x)))))
+  (b* (((when (atom x))
+        t)
+       ((cons ?exprs stmt1) (first x)))
+    (and (vl-nullstmt-p stmt1)
+         (vl-caselist-all-null-p (rest x)))))
 
-
-(define vl-casestmt-rewrite ((casetype vl-casetype-p)
-                             (test    vl-expr-p)
-                             (cases   vl-caselist-p)
-                             (default vl-stmt-p)
-                             (atts    vl-atts-p))
+(define vl-casestmt-rewrite ((check    vl-casecheck-p)
+                             (casetype vl-casetype-p)
+                             (test     vl-expr-p)
+                             (caselist vl-caselist-p)
+                             (default  vl-stmt-p)
+                             (atts     vl-atts-p))
   :returns (stmt vl-stmt-p :hyp :fguard)
   :short "Eliminate pure-null case statements."
   :long "<p>This is a pretty silly rewrite:</p>
 @({
-   case/casex/casez(expr):    -->   [null stmt]
+   [priority/unique/unique0/nil] [case/casex/casez](expr):    -->   [null stmt]
      expr1 : [null stmt];
      expr2 : [null stmt];
      ...
@@ -277,14 +288,15 @@ real case-statement &rarr; if-statement transform we shouldn't need this
 anymore.</p>"
 
   (if (and (vl-nullstmt-p default)
-           (vl-caselist-all-null-p cases))
+           (vl-caselist-all-null-p caselist))
       ;; All statements are null, just turn into null.
       (make-vl-nullstmt)
     ;; Otherwise don't change it.  Eventually convert all case statements
     ;; into if statements?
-    (make-vl-casestmt :casetype casetype
+    (make-vl-casestmt :check check
+                      :casetype casetype
                       :test test
-                      :cases cases
+                      :caselist caselist
                       :default default
                       :atts atts)))
 
@@ -490,7 +502,7 @@ blocks with names/decls seems tricky due to hierarchical identifiers.</p>"
                             (warnings vl-warninglist-p))
   :returns (mv (warnings vl-warninglist-p :hyp :fguard)
                (stmt     vl-stmt-p        :hyp :fguard))
-  :short "Eliminate purely null @(see for-statements)."
+  :short "Eliminate purely null @(see vl-forstmt)s."
   :long "<p>The basic rewrite this performs is:</p>
 
 @({
@@ -570,9 +582,9 @@ us to ignore for loops with @('$display') statements and similar.</p>"
 
             ((vl-casestmt-p x)
              (b* (((vl-casestmt x) x)
-                  ((mv warnings cases)   (vl-caselist-rewrite x.cases unroll-limit warnings))
-                  ((mv warnings default) (vl-stmt-rewrite x.default unroll-limit warnings))
-                  (x-prime               (vl-casestmt-rewrite x.casetype x.test cases default x.atts)))
+                  ((mv warnings caselist) (vl-caselist-rewrite x.caselist unroll-limit warnings))
+                  ((mv warnings default)  (vl-stmt-rewrite x.default unroll-limit warnings))
+                  (x-prime                (vl-casestmt-rewrite x.check x.casetype x.test caselist default x.atts)))
                (mv warnings x-prime)))
 
             ((vl-forstmt-p x)

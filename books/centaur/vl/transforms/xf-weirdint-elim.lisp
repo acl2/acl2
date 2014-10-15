@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
@@ -243,18 +253,20 @@ will become the arguments to a concatenation."
 (def-vl-weirdint-elim vl-arguments
   :body
   (vl-arguments-case x
-    :named (b* (((mv warnings changedp args-prime)
-                 (vl-namedarglist-weirdint-elim x.args warnings))
-                (x-prime (if changedp
-                             (change-vl-arguments-named x :args args-prime)
-                           x)))
-             (mv warnings changedp x-prime))
-    :plain (b* (((mv warnings changedp args-prime)
-                 (vl-plainarglist-weirdint-elim x.args warnings))
-                (x-prime (if changedp
-                             (change-vl-arguments-plain x :args args-prime)
-                           x)))
-             (mv warnings changedp x-prime))))
+    :vl-arguments-named
+    (b* (((mv warnings changedp args-prime)
+          (vl-namedarglist-weirdint-elim x.args warnings))
+         (x-prime (if changedp
+                      (change-vl-arguments-named x :args args-prime)
+                    x)))
+      (mv warnings changedp x-prime))
+    :vl-arguments-plain
+    (b* (((mv warnings changedp args-prime)
+          (vl-plainarglist-weirdint-elim x.args warnings))
+         (x-prime (if changedp
+                      (change-vl-arguments-plain x :args args-prime)
+                    x)))
+      (mv warnings changedp x-prime))))
 
 (def-vl-weirdint-elim vl-modinst
   :body (b* (((mv warnings args-changedp args-prime)
@@ -338,8 +350,8 @@ will become the arguments to a concatenation."
   :hints(("Goal"
           :in-theory (e/d (vl-maybe-delayoreventcontrol-weirdint-elim
                            vl-maybe-delayoreventcontrol-p)
-                          (RETURN-TYPE-OF-VL-DELAYOREVENTCONTROL-WEIRDINT-ELIM.X-PRIME))
-          :use ((:instance RETURN-TYPE-OF-VL-DELAYOREVENTCONTROL-WEIRDINT-ELIM.X-PRIME)))))
+                          (vl-delayoreventcontrol-p-OF-VL-DELAYOREVENTCONTROL-WEIRDINT-ELIM.X-PRIME))
+          :use ((:instance vl-delayoreventcontrol-p-OF-VL-DELAYOREVENTCONTROL-WEIRDINT-ELIM.X-PRIME)))))
 
 
 
@@ -498,7 +510,7 @@ will become the arguments to a concatenation."
   (mv (nf      vl-namefactory-p)
       (new-mod vl-module-p))
 
-  (b* ((netdecls   (vl-module->netdecls mod))
+  (b* ((vardecls   (vl-module->vardecls mod))
        (modinsts   (vl-module->modinsts mod))
 
        (wirename (if (eq which :x)
@@ -515,8 +527,9 @@ will become the arguments to a concatenation."
                        *vl-1-bit-x*
                      *vl-1-bit-z*))
 
-       (new-netdecl (make-vl-netdecl :name wirename
-                                     :type :vl-wire
+       (new-vardecl (make-vl-vardecl :name wirename
+                                     :type *vl-plain-old-wire-type*
+                                     :nettype :vl-wire
                                      :loc *vl-fakeloc*))
 
        (new-expr    (if (eq which :x)
@@ -526,7 +539,7 @@ will become the arguments to a concatenation."
        (new-modinst (make-vl-modinst
                      :modname (vl-module->name target-mod)
                      :instname instname
-                     :paramargs (make-vl-arguments-plain :args nil)
+                     :paramargs (make-vl-paramargs-plain :args nil)
                      :portargs (make-vl-arguments-plain
                                 :args (list (make-vl-plainarg :expr new-expr
                                                               :dir :vl-output
@@ -534,7 +547,7 @@ will become the arguments to a concatenation."
                      :loc *vl-fakeloc*))
 
        (mod-prime (change-vl-module mod
-                                    :netdecls (cons new-netdecl netdecls)
+                                    :vardecls (cons new-vardecl vardecls)
                                     :modinsts (cons new-modinst modinsts))))
 
     (mv nf mod-prime)))
@@ -572,13 +585,11 @@ will become the arguments to a concatenation."
        (orig-names (vl-exprlist-names (vl-module-allexprs x)))
        ((when (or (member-equal "vl-x-wire" orig-names)
                   (member-equal "vl-z-wire" orig-names)))
-        (let ((wrn (make-vl-warning
-                    :type :vl-bad-names
-                    :msg "~m0 already has a wire named \"vl-x-wire\" or \"vl-z-wire\"."
-                    :fatalp t
-                    :args (list (vl-module->name x))
-                    :fn __function__)))
-          (mv (change-vl-module x :warnings (cons wrn warnings)) nil)))
+        (let ((warnings
+               (fatal :type :vl-bad-names
+                      :msg "~m0 already has a wire named \"vl-x-wire\" or \"vl-z-wire\"."
+                      :args (list (vl-module->name x)))))
+          (mv (change-vl-module x :warnings warnings) nil)))
 
 ; Okay, we can use vl-x-wire and vl-z-wire.  Lets see which ones we need.
 
@@ -594,12 +605,10 @@ will become the arguments to a concatenation."
        (need-x-wire (member-equal "vl-x-wire" new-names))
        (need-z-wire (member-equal "vl-z-wire" new-names))
        ((unless (or need-x-wire need-z-wire))
-        (let ((wrn (make-vl-warning
-                    :type :vl-weirdint-not-weird
-                    :msg "Expected to at least need X or Z after eliminating weird ints."
-                    :fatalp t
-                    :fn 'vl-module-weirdint-elim)))
-          (mv (change-vl-module x :warnings (cons wrn warnings)) nil)))
+        (let ((warnings
+               (fatal :type :vl-weirdint-not-weird
+                      :msg "Expected to at least need X or Z after eliminating weird ints.")))
+          (mv (change-vl-module x :warnings warnings) nil)))
 
        (addmods nil)
        (addmods (if need-x-wire (cons *vl-1-bit-x* addmods) addmods))

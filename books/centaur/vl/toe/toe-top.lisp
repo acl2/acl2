@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
@@ -76,8 +86,7 @@ ensures that every wire has exactly one driver.</li>
 </ol>
 
 <p>Some final sanity checking is done to ensure that the module's inputs and
-outputs are properly marked and there is no <see topic='@(url
-backflow)'>backflow</see> occurring.</p>
+outputs are properly marked and there is no \"backflow\" occurring.</p>
 
 <p>The resulting E module for each Verilog module is saved in the @('esim')
 field of each @(see vl-module-p).</p>")
@@ -90,11 +99,11 @@ field of each @(see vl-module-p).</p>")
 ;
 ; -----------------------------------------------------------------------------
 
-(define vl-has-any-hid-netdecls ((x vl-netdecllist-p))
+(define vl-has-any-hid-netdecls ((x vl-vardecllist-p))
   :parents (vl-module-check-e-ok)
   (cond ((atom x)
          nil)
-        ((assoc-equal "HID" (vl-netdecl->atts (car x)))
+        ((assoc-equal "HID" (vl-vardecl->atts (car x)))
          t)
         (t
          (vl-has-any-hid-netdecls (cdr x)))))
@@ -109,20 +118,25 @@ field of each @(see vl-module-p).</p>")
   (b* (((vl-module x) x)
        ;; Gather up a message about what unsupported constructs there are.
        (acc nil)
-       (acc (if x.vardecls   (cons "variable declarations" acc)  acc))
-       (acc (if x.eventdecls (cons "event declarations" acc)     acc))
-       (acc (if x.regdecls   (cons "reg declarations" acc)       acc))
-       (acc (if x.paramdecls (cons "parameter declarations" acc) acc))
-       (acc (if x.fundecls   (cons "function declarations" acc)  acc))
-       (acc (if x.taskdecls  (cons "task declarations" acc)      acc))
-       (acc (if x.assigns    (cons "assigns" acc)                acc))
-       (acc (if x.gateinsts  (cons "gate instances" acc)         acc))
-       (acc (if x.alwayses   (cons "always blocks" acc)          acc))
+       (acc (if x.paramdecls
+                (cons (str::join (cons "parameter declarations: " (vl-paramdecllist->names x.paramdecls)) " ")
+                      acc)
+              acc))
+       (acc (if x.fundecls
+                (cons (str::join (cons "function declarations: " (vl-fundecllist->names x.fundecls)) " ")
+                      acc)
+              acc))
+       (acc (if x.taskdecls
+                (cons (str::join (cons "task declarations: " (vl-taskdecllist->names x.taskdecls)) " ")
+                      acc)
+              acc))
+       (acc (if x.assigns    (cons "assigns" acc)        acc))
+       (acc (if x.gateinsts  (cons "gate instances" acc) acc))
+       (acc (if x.alwayses   (cons "always blocks" acc)  acc))
        ;; We'll allow but ignore initial statements
-       (acc (if (vl-has-any-hid-netdecls x.netdecls)
+       (acc (if (vl-has-any-hid-netdecls x.vardecls)
                 (cons "hierarchical identifiers" acc)
               acc))
-
        ;; BOZO BOZO BOZO !!!!!
        ;; need to check netdecls for WOR, etc.
 
@@ -179,9 +193,9 @@ field of each @(see vl-module-p).</p>")
                (wires vl-emodwirelist-p :hyp (vl-wirealist-p walist)))
   (b* (((when (atom x))
         (mv warnings nil))
-       (nets       (vl-module->netdecls x))
-       (dnets      (vl-gather-netdecls-with-attribute nets "VL_DESIGN_WIRE"))
-       (dnet-names (vl-netdecllist->names dnets)))
+       (vars       (vl-module->vardecls x))
+       (dnets      (vl-gather-vardecls-with-attribute vars "VL_DESIGN_WIRE"))
+       (dnet-names (vl-vardecllist->names dnets)))
     (vl-collect-msb-bits-for-wires dnet-names walist warnings)))
 
 

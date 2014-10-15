@@ -6,30 +6,30 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
 (include-book "xdoc/top" :dir :system)
-
-(defxdoc std/basic
-  :parents (std)
-  :short "A collection of very basic functions that are occasionally
-convenient."
-
-  :long "<p>The @('std/basic') library adds a number of very basic definitions
-that are not built into ACL2.  There's very little to this, it's generally just
-a meant to be a home for simple definitions that don't fit into bigger
-libraries.</p>")
 
 (local (xdoc::set-default-parents std/basic))
 
@@ -238,7 +238,7 @@ interpreted as characters.  That is, non-characters are first coerced to be the
 NUL character (via @(see char-fix)), then we see if these coerced arguments are
 equal.</p>
 
-<p>See also @(see ichareqv) for a case-insensitive alternative.</p>"
+<p>See also @(see str::ichareqv) for a case-insensitive alternative.</p>"
 
   (defund-inline chareqv (x y)
     (declare (xargs :guard t))
@@ -298,7 +298,7 @@ interpreted as strings.  That is, non-strings are first coerced to be the empty
 string (via @(see str-fix)), then we see if these coerced arguments are
 equal.</p>
 
-<p>See also @(see istreqv) for a case-insensitive alternative.</p>"
+<p>See also @(see str::istreqv) for a case-insensitive alternative.</p>"
 
   (defund-inline streqv (x y)
     (declare (xargs :guard t))
@@ -315,3 +315,57 @@ equal.</p>
   (defcong streqv equal (char x n) 1)
   (defcong streqv equal (string-append x y) 1)
   (defcong streqv equal (string-append x y) 2))
+
+
+(defsection tuplep
+  :parents (std/basic)
+  :short "Recognizers for true-lists of some particular length."
+  :long "<p>@(call tuplep) recognizes @('n')-tuples.  For instance:</p>
+
+@({
+    (tuplep 3 '(1 2 3))     --> t
+    (tuplep 3 '(1 2))       --> nil (not long enough)
+    (tuplep 3 '(1 2 3 . 4)) --> nil (not a true-listp)
+})
+
+<p>We generally just leave this enabled.</p>"
+
+  (defun tuplep (n x)
+    (declare (xargs :guard (natp n)))
+    (mbe :logic (and (true-listp x)
+                     (equal (len x) n))
+         :exec (and (true-listp x)
+                    (eql (length x) n)))))
+
+
+(defsection impossible
+  :parents (std/basic)
+  :short "Prove that some case is unreachable using @(see guard)s."
+
+  :long "<p>Logically, @('(impossible)') just returns @('nil').</p>
+
+<p>But @('impossible') has a guard of @('nil'), so whenever you use it in a
+function, you will be obliged to prove that it cannot be executed when the
+guard holds.</p>
+
+<p>What good is this?  One use is to make sure that every possible case in a
+sum type has been covered.  For instance, you can write:</p>
+
+@({
+ (define f ((x whatever-p))
+   (case (type-of x)
+     (:foo (handle-foo ...))
+     (:bar (handle-bar ...))
+     (otherwise (impossible))))
+})
+
+<p>This is a nice style in that, if we later extend @('x') so that its type can
+also be @(':baz'), then the guard verification will fail and remind us that we
+need to extend @('f') to handle @(':baz') types as well.</p>
+
+<p>If somehow @('(impossible)') is ever executed (e.g., due to program mode
+code that is violating guards), it just causes a hard error.</p>"
+
+  (defun impossible ()
+    (declare (xargs :guard nil))
+    (er hard 'impossible "Provably impossible")))

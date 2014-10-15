@@ -6,20 +6,34 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "STD")
-(include-book "defprojection")
+(include-book "std/strings/defs-program" :dir :system)
+(include-book "std/lists/append" :dir :system)
+(include-book "maybe-defthm")
+(include-book "support")
+(set-state-ok t)
 
 (defxdoc defmapappend
   :parents (std/util)
@@ -163,14 +177,136 @@ defprojection).</p>
 <p>The optional @(':rest') option is as in @(see deflist), and allows you to
 add theorems into the same section.</p>")
 
-(defun defmapappend-fn (name formals transform
-                             guard verify-guards
-                             transform-exec transform-true-list-p
-                             already-definedp
-                             mode
-                             parents short long
-                             rest
-                             )
+
+
+#!acl2
+(defsection elementlist-mapappend-exec
+  (defun elementlist-mapappend-exec (x acc)
+    (if (atom x)
+        acc
+      (elementlist-mapappend-exec
+       (cdr x) (revappend (element-listxformer (car x)) acc))))
+
+  (def-mapappend-rule elementlist-mapappend-exec-removal
+    (equal (elementlist-mapappend-exec x acc)
+           (revappend (elementlist-mapappend x) acc))
+    :requirement exec-fn))
+
+
+(program)
+
+(defun defmapappend-substitution (name exec formals element kwd-alist x)
+  (b* ((already-definedp (getarg :already-definedp nil kwd-alist)))
+    `((acl2::element-listxformer (lambda (,x) ,element))
+      (acl2::elementlist-mapappend (lambda (,x) (,name . ,formals)))
+      ;; BOZO fix for when we deal with return types
+      (acl2::element-p (lambda (,x) t))
+      (acl2::outelement-p (lambda (,x) t))
+      (acl2::outelement-list-p (lambda (,x) t))
+      (acl2::outelement-list-final-cdr-p (lambda (,x) t))
+      ,@(and (not already-definedp)
+             `((acl2::elementlist-mapappend-exec (lambda (,x acl2::acc) (,exec ,@formals acl2::acc))))))))
+
+(defun defmapappend-requirement-alist (kwd-alist formals)
+  (b* ((already-definedp (getarg :already-definedp nil kwd-alist))
+       (single-var (eql (len formals) 1))
+       (cheap      (getarg :cheap      nil kwd-alist)))
+    `((acl2::exec-fn . ,(not already-definedp))
+      (acl2::single-var . ,single-var)
+      (acl2::cheap      . ,cheap)
+      (acl2::resulttype . nil))))
+
+(mutual-recursion
+ (defun defmapappend-thmbody-subst (body element name exec formals x)
+   (if (atom body)
+       body
+     (case (car body)
+       (acl2::element-listxformer
+        (cons (car element) (subst (cadr body) x (cdr element))))
+       (acl2::elementlist-mapappend
+        (cons name (subst (cadr body) x formals)))
+       (acl2::elementlist-mapappend-exec
+        (cons exec (append (subst (cadr body) x formals) (cddr body))))
+       (t (if (symbolp (car body))
+              (cons (car body)
+                    (defmapappend-thmbody-list-subst (cdr body) element name exec formals x))
+            (defmapappend-thmbody-list-subst body element name exec formals x))))))
+ (defun defmapappend-thmbody-list-subst (body element name exec formals x)
+   (if (atom body)
+       body
+     (cons (defmapappend-thmbody-subst (car body) element name exec formals x)
+           (defmapappend-thmbody-list-subst (cdr body) element name exec formals x)))))
+
+
+(defun defmapappend-thmname-subst (thmname name element)
+  (b* ((thmname (symbol-name thmname))
+       (subst-list `(("ELEMENTLIST-MAPAPPEND" . ,(symbol-name name))
+                     ("ELEMENT-LISTXFORMER" . ,(symbol-name element)))))
+    (intern-in-package-of-symbol
+     (dumb-str-sublis subst-list thmname)
+     name)))
+
+
+(defun defmapappend-instantiate (table-entry element name exec formals kwd-alist x
+                                             req-alist fn-subst world)
+  (b* (((cons inst-thm alist) table-entry)
+       ((when (not alist)) nil)
+       (alist (and (not (eq alist t)) alist))
+       (req-look (assoc :requirement alist))
+       (req-ok (or (not req-look)
+                   (generic-eval-requirement (cadr req-look) req-alist)))
+       ((unless req-ok) nil)
+       (thmname-base (let ((look (assoc :name alist)))
+                       (if look (cadr look) inst-thm)))
+       (thmname (defmapappend-thmname-subst thmname-base name (car element)))
+       (body (let ((look (assoc :body alist)))
+               (if look (cadr look) (fgetprop inst-thm 'acl2::untranslated-theorem nil world))))
+       ((when (not body)) (er hard? 'defmapappend-instantiate
+                              "Bad defmapappend table entry: ~x0~%" inst-thm))
+       (rule-classes
+        (b* ((cheap-look (and (getarg :cheap nil kwd-alist)
+                              (assoc :cheap-rule-classes alist)))
+             ((when cheap-look) (cadr cheap-look))
+             (look (assoc :rule-classes alist)))
+          (if look (cadr look) (fgetprop inst-thm 'acl2::classes nil world)))))
+    `((defthm ,thmname
+        ,(defmapappend-thmbody-subst body element name exec formals x)
+        :hints (("goal" :use ((:functional-instance
+                               ,inst-thm
+                               . ,fn-subst))))
+        :rule-classes ,rule-classes))))
+
+(defun defmapappend-instantiate-table-thms-aux
+  (table element name exec formals kwd-alist x
+         req-alist fn-subst world)
+  (if (atom table)
+      nil
+    (append (defmapappend-instantiate (car table) element name exec formals kwd-alist x
+              req-alist fn-subst world)
+            (defmapappend-instantiate-table-thms-aux (cdr table) element name exec formals kwd-alist x
+              req-alist fn-subst world))))
+
+(defun defmapappend-instantiate-table-thms (name exec formals element kwd-alist x world)
+  (b* ((table (table-alist 'acl2::mapappend-rules world))
+       (fn-subst (defmapappend-substitution name exec formals element kwd-alist x))
+       (req-alist (defmapappend-requirement-alist kwd-alist formals)))
+    (defmapappend-instantiate-table-thms-aux table element name exec formals kwd-alist x req-alist fn-subst world)))
+
+
+(defconst *defmapappend-valid-keywords*
+  '(:guard
+    :verify-guards
+    :transform-exec
+    :transform-true-list-p
+    :already-definedp
+    :mode
+    :parents
+    :short
+    :long
+    :rest ;; deprecated
+    ))
+
+(defun defmapappend-fn (name formals transform kwd-alist other-events state)
   (declare (xargs :mode :program))
   (b* (((unless (symbolp name))
         (er hard? 'defmapappend "Name must be a symbol, but is ~x0." name))
@@ -189,6 +325,26 @@ add theorems into the same section.</p>")
         (er hard 'defmapappend
             "The formals must be a list of unique symbols, but the ~
             formals are ~x0." formals))
+
+       (world (w state))
+
+       (guard                 (getarg :guard                 t      kwd-alist))
+       (verify-guards         (getarg :verify-guards         t      kwd-alist))
+       (transform-exec        (getarg :transform-exec        nil    kwd-alist))
+       (transform-true-list-p (getarg :transform-true-list-p t      kwd-alist))
+       (already-definedp      (getarg :already-definedp      nil    kwd-alist))
+       (mode                  (getarg :mode                  :logic kwd-alist))
+       (short                 (getarg :short                 nil    kwd-alist))
+       (long                  (getarg :long                  nil    kwd-alist))
+
+       (rest                  (append (getarg :rest nil kwd-alist)
+                                      other-events))
+
+       (parents-p (assoc :parents kwd-alist))
+       (parents   (cdr parents-p))
+       (parents   (if parents-p
+                      parents
+                    (xdoc::get-default-parents world)))
 
        ((unless (member x formals))
         (er hard 'defmapappend
@@ -240,15 +396,15 @@ add theorems into the same section.</p>")
 
        (short (or short
                   (and parents
-                       (concatenate 'string  "@(call " (symbol-name name)
-                                    ") applies @(see " (symbol-name transform-fn)
+                       (concatenate 'string  "@(call " (xdoc::full-escape-symbol name)
+                                    ") applies @(see? " (xdoc::full-escape-symbol transform-fn)
                                     ") to every member of the list @('x'), "
                                     "and appends together all the resulting lists."))))
 
        (long (or long
                  (and parents
                       (concatenate 'string  "<p>This is an ordinary @(see std::defmapappend).</p>"
-                                   "@(def " (symbol-name name) ")"))))
+                                   "@(def " (xdoc::full-escape-symbol name) ")"))))
 
        (def
         (if already-definedp
@@ -288,45 +444,15 @@ add theorems into the same section.</p>")
        (events
         `((logic)
           ,@def
-          (defthm ,(mksym name '-when-not-consp)
-            (implies (not (consp ,x))
-                     (equal (,name . ,formals)
-                            nil))
-            :hints(("Goal" :in-theory (enable ,name))))
-
-          (defthm ,(mksym name '-of-cons)
-            (equal (,name . ,(subst `(cons ,a ,x) x formals))
-                   (append (,transform-fn . ,(subst a x transform-args))
-                           (,name . ,formals)))
-            :hints(("Goal" :in-theory (enable ,name))))
-
-          ,@(if already-definedp
-                nil
-              `((local (defthm lemma
-                         (implies (true-listp ,acc)
-                                  (true-listp (,exec-fn ,@formals ,acc)))
-                         :hints(("Goal" :in-theory (enable ,exec-fn)))))
-
-                (defthm ,(mksym exec-fn '-removal)
-                  (equal (,exec-fn ,@formals ,acc)
-                         (append (rev (,name ,@formals)) ,acc))
-                  :hints(("Goal" :in-theory (enable ,exec-fn))))
-
-                . ,(if verify-guards
-                       `((verify-guards ,exec-fn)
-                         (verify-guards ,name))
-                     nil)))
-
-          (defthm ,(mksym name '-of-list-fix)
-            (equal (,name . ,(subst `(list-fix ,x) x formals))
-                   (,name . ,formals))
-            :hints(("Goal" :induct (len ,x))))
-
-          (defthm ,(mksym name '-of-append)
-            (equal (,name . ,(subst `(append ,x ,y) x formals))
-                   (append (,name . ,formals)
-                           (,name . ,(subst y x formals))))
-            :hints(("Goal" :induct (len ,x)))))))
+          (local (in-theory (enable ,@(if already-definedp
+                                          `(,name)
+                                        `(,name ,exec-fn)))))
+          ,@(defmapappend-instantiate-table-thms
+              name exec-fn formals transform kwd-alist x world)
+          . ,(and (not already-definedp)
+                  verify-guards
+                  `((verify-guards ,exec-fn)
+                    (verify-guards ,name))))))
 
     `(defsection ,name
        ,@(and parents `(:parents ,parents))
@@ -341,29 +467,29 @@ add theorems into the same section.</p>")
               (local (in-theory (enable ,name)))
               . ,rest)))))
 
-(defmacro defmapappend (name formals transform
-                             &key
-                             transform-exec
-                             (transform-true-list-p 't)
-                             (guard 't)
-                             (verify-guards 't)
-                             already-definedp
-                             mode
-                             (parents 'nil parents-p)
-                             (short 'nil)
-                             (long 'nil)
-                             (rest 'nil))
-  `(make-event (let ((mode    (or ',mode (default-defun-mode (w state))))
-                     (parents (if ',parents-p
-                                  ',parents
-                                (or (xdoc::get-default-parents (w state))
-                                    '(acl2::undocumented)))))
-                 (defmapappend-fn ',name ',formals ',transform
-                   ',guard ',verify-guards
-                   ',transform-exec ',transform-true-list-p
-                   ',already-definedp
-                   mode
-                   parents ',short ',long
-                   ',rest))))
-
+(defmacro defmapappend (name &rest args)
+  (b* ((__function__ 'defmapappend)
+       ((unless (symbolp name))
+        (raise "Name must be a symbol."))
+       (ctx (list 'defmapappend name))
+       ((mv main-stuff other-events) (split-/// ctx args))
+       ((mv kwd-alist formals-elem)
+        (extract-keywords ctx *defmapappend-valid-keywords* main-stuff nil))
+       ((unless (tuplep 2 formals-elem))
+        (raise "Wrong number of arguments to defmapappend."))
+       ((list formals element) formals-elem)
+       (verbosep (getarg :verbosep nil kwd-alist)))
+    `(with-output
+       :stack :push
+       ,@(if verbosep
+             nil
+           '(:gag-mode t :off (acl2::summary
+                               acl2::observation
+                               acl2::prove
+                               acl2::proof-tree
+                               acl2::event)))
+       (make-event
+        `(progn ,(defmapappend-fn ',name ',formals ',element ',kwd-alist
+                   ',other-events state)
+                (value-triple '(defmapappend ,',name)))))))
 

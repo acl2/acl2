@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Sol Swords <sswords@centtech.com>
 
@@ -29,7 +39,7 @@
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "centaur/misc/fast-alists" :dir :system))
-
+(local (include-book "std/lists/take" :dir :system))
 
 (defund slice-to-bdd-env (slice env)
   (declare (xargs :guard (and (alistp slice)
@@ -417,7 +427,7 @@
                                   (member-equal
                                    acl2::list-fix-when-true-listp
                                    acl2::list-fix-when-len-zero
-                                   acl2::consp-by-len
+                                   ;acl2::consp-by-len
                                    boolean-listp
                                    binary-append))
            :expand ((shape-spec-to-gobj x)
@@ -482,7 +492,7 @@
                                   (member-equal
                                    acl2::list-fix-when-true-listp
                                    acl2::list-fix-when-len-zero
-                                   acl2::consp-by-len
+                                   ;acl2::consp-by-len
                                    boolean-listp
                                    binary-append))
            :expand ((shape-spec-to-gobj x)
@@ -550,7 +560,7 @@
                                   (member-equal
                                    acl2::list-fix-when-true-listp
                                    acl2::list-fix-when-len-zero
-                                   acl2::consp-by-len
+                                   ;acl2::consp-by-len
                                    boolean-listp
                                    binary-append))
            :expand ((shape-spec-to-gobj x)
@@ -615,7 +625,7 @@
                                   (member-equal
                                    acl2::list-fix-when-true-listp
                                    acl2::list-fix-when-len-zero
-                                   acl2::consp-by-len
+                                   ;acl2::consp-by-len
                                    boolean-listp
                                    binary-append))
            :expand ((shape-spec-to-gobj x)
@@ -855,7 +865,7 @@
  (encapsulate nil
    (local (in-theory (disable set::double-containment
                               acl2::no-duplicatesp-equal-non-cons
-                              acl2::no-duplicatesp-equal-when-atom
+                              ;acl2::no-duplicatesp-equal-when-atom
                               acl2::subsetp-car-member
                               acl2::append-when-not-consp
                               tag-when-atom
@@ -1593,7 +1603,8 @@
     (shape-spec-obj-in-range) (g-keyword-symbolp) (ash)
     (expt) (unary--) (binary-+) (consp) (integerp) (len)
     (car) (cdr) (booleanp) (list-of-g-booleansp) (tag)
-    eql len-plus-one len-zero (zp) (boolean-listp) (true-listp)))
+    eql len-plus-one len-zero (zp) (boolean-listp) (true-listp)
+    unsigned-byte-p signed-byte-p acl2::integer-range-p))
 
 (def-ruleset! shape-spec-obj-in-range-open
   '(shape-spec-obj-in-range-open-cons
@@ -1612,7 +1623,8 @@
     (shape-spec-obj-in-range) (g-keyword-symbolp) (ash)
     (expt) (unary--) (binary-+) (consp) (integerp) (len)
     (car) (cdr) (booleanp) (list-of-g-booleansp) (tag) eql
-    len-plus-one len-zero (zp) (boolean-listp) (true-listp)))
+    len-plus-one len-zero (zp) (boolean-listp) (true-listp)
+    unsigned-byte-p signed-byte-p acl2::integer-range-p))
 
 
 
@@ -2361,9 +2373,9 @@ for (e.g.)  adding rules to the coverage strategy are likely to change.</p>")
   (local (in-theory (disable (:t shape-spec-oblig-term)
                              (:t shape-spec-env-term)
                              shape-spec-call-free-by-tag
-                             acl2::consp-by-len
+                             ;acl2::consp-by-len
                              acl2::true-listp-append
-                             acl2::no-duplicatesp-equal-when-atom
+                             ;acl2::no-duplicatesp-equal-when-atom
                              acl2::no-duplicatesp-equal-non-cons
                              acl2::consp-of-append
                              default-car

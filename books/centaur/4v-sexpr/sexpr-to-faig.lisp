@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Sol Swords <sswords@centtech.com>
 
@@ -26,6 +36,7 @@
 (include-book "centaur/aig/faig-equivs" :dir :system)
 (include-book "centaur/aig/aig-equivs" :dir :system)
 (include-book "centaur/misc/tuplep" :dir :system)
+(local (include-book "std/lists/nth" :dir :system))
 (local (include-book "centaur/aig/eval-restrict" :dir :system))
 
 (local (in-theory (disable 4v-sexpr-eval)))
@@ -77,7 +88,7 @@ details.</p>
 <p>You might regard @('4v-sexpr-to-faig') as a somewhat low-level function.
 Its correctness theorem is rather elaborate and to make use of it you generally
 need to construct an @('onoff') alist that sensibly accomplishes your goal.  A
-good starting place and example might be @(see 4v-sexpr-eval-by-faig), which
+good starting place and example might be @('4v-sexpr-eval-by-faig'), which
 generates an appropriate @('onoff') so that it can carry out a @(see
 4v-sexpr-eval) computation using FAIG evaluation as the engine.</p>")
 
@@ -272,6 +283,7 @@ faig-constructors)."
   (fv-4v-commute 4v-fix      faig-const-fix (a))
   (fv-4v-commute 4v-unfloat  f-aig-unfloat      (a))
   (fv-4v-commute 4v-not      f-aig-not      (a))
+  (fv-4v-commute 4v-xdet     f-aig-xdet     (a))
   (fv-4v-commute 4v-and      f-aig-and      (a b))
   (fv-4v-commute 4v-or       f-aig-or       (a b))
   (fv-4v-commute 4v-xor      f-aig-xor      (a b))
@@ -284,8 +296,6 @@ faig-constructors)."
   (fv-4v-commute 4v-res      f-aig-res      (a b)))
 
 
-
-
 (define 4v-sexpr-to-faig-apply (fn (args true-listp))
   (b* ((arg1 (4v-first args))
        (arg2 (4v-second args))
@@ -296,6 +306,7 @@ faig-constructors)."
       ((z) (faig-z))
       ((x) (faig-x))
       (not       (f-aig-not    arg1))
+      (xdet      (f-aig-xdet   arg1))
       (and       (f-aig-and    arg1 arg2))
       (xor       (f-aig-xor    arg1 arg2))
       (iff       (f-aig-iff    arg1 arg2))
@@ -368,6 +379,7 @@ use the @('f-') versions of the @(see faig-constructors) at each level.</p>"
                 (ite*      (f-aig-ite*   arg1 arg2 arg3))
                 (zif       (f-aig-zif    arg1 arg2 arg3))
                 (buf       (f-aig-unfloat    arg1))
+                (xdet      (f-aig-xdet   arg1))
                 (res       (f-aig-res    arg1 arg2))
                 (tristate  (t-aig-tristate    arg1 arg2))
                 (ite       (f-aig-ite    arg1 arg2 arg3))
@@ -451,6 +463,18 @@ use the @('f-') versions of the @(see faig-constructors) at each level.</p>"
      (equal (t-aig-not (f-aig-unfloat x))
             (f-aig-not x)))
 
+   (defthm t-aig-xdet-of-f-aig-unfloat
+     (equal (faig-eval (t-aig-xdet (f-aig-unfloat x)) env)
+            (faig-eval (f-aig-xdet x) env))
+     :hints(("Goal" :in-theory (enable faig-eval))))
+
+   (defthm t-aig-xdet-of-f-aig-unfloat-for-constants
+     (implies (faig-const-p x)
+              (equal (t-aig-xdet (f-aig-unfloat x))
+                     (f-aig-xdet x)))
+     :hints(("Goal" :in-theory (enable faig-const-p
+                                       aig-iff aig-not aig-and))))
+
    (defthm t-aig-and-f-aig-unfloat
      (equal (t-aig-and (f-aig-unfloat x) (f-aig-unfloat y))
             (f-aig-and x y)))
@@ -485,7 +509,6 @@ use the @('f-') versions of the @(see faig-constructors) at each level.</p>"
          (if (zp n)
              (cons x y)
            (nth-both-ind (1- n) (cdr x) (cdr y)))))
-
 
 
 (define maybe-f-aig-unfloat (sexpr faig)
@@ -543,6 +566,7 @@ use the @('f-') versions of the @(see faig-constructors) at each level.</p>"
       (pullup    (f-aig-pullup farg1))
       (zif       (t-aig-ite* targ1 farg2 farg3))
       (not       (t-aig-not  targ1))
+      (xdet      (t-aig-xdet targ1))
       (and       (t-aig-and  targ1 targ2))
       (xor       (t-aig-xor  targ1 targ2))
       (iff       (t-aig-iff  targ1 targ2))
@@ -552,6 +576,8 @@ use the @('f-') versions of the @(see faig-constructors) at each level.</p>"
       (ite       (t-aig-ite  targ1 targ2 targ3))
       (otherwise (faig-x))))
   ///
+
+  (local (in-theory (enable 4v-sexpr-to-faig-opt-apply)))
   
   (local (defthm faig-eval-maybe-f-aig-unfloat-bind
            (implies (and (bind-free '((senv . senv)) (senv))
@@ -640,6 +666,7 @@ use the @('f-') versions of the @(see faig-constructors) at each level.</p>"
                       (ite*      (t-aig-ite* arg1 arg2 arg3))
                       (or        (t-aig-or   arg1 arg2))
                       (buf       (faig-fix   arg1))
+                      (xdet      (t-aig-xdet arg1))
                       (ite       (t-aig-ite  arg1 arg2 arg3))
                       (otherwise (faig-x)))))))
    (defun 4v-sexpr-to-faig-opt-list (x onoff)

@@ -1,3 +1,0 @@
-(include-book "eval")
-
-(certify-book "embedded-defaxioms" 1 t :ttags (:writes-okp))

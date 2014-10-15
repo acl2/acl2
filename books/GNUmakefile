@@ -8,15 +8,25 @@
 #   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 #   http://www.centtech.com/
 #
-# This program is free software; you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the Free Software
-# Foundation; either version 2 of the License, or (at your option) any later
-# version.  This program is distributed in the hope that it will be useful but
-# WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-# more details.  You should have received a copy of the GNU General Public
-# License along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+# License: (An MIT/X11-style license)
+#
+#   Permission is hereby granted, free of charge, to any person obtaining a
+#   copy of this software and associated documentation files (the "Software"),
+#   to deal in the Software without restriction, including without limitation
+#   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+#   and/or sell copies of the Software, and to permit persons to whom the
+#   Software is furnished to do so, subject to the following conditions:
+#
+#   The above copyright notice and this permission notice shall be included in
+#   all copies or substantial portions of the Software.
+#
+#   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+#   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+#   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+#   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+#   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+#   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+#   DEALINGS IN THE SOFTWARE.
 #
 # For authorship information, see "Credits and History" below.
 
@@ -155,66 +165,12 @@ endif # ifeq ($(ACL2),)
 basic:
 
 # Set environment variable HTTP_PROXY_WITH_PORT if your curl needs to
-# use a proxy.
+# use a proxy.  HTTP_PROXY_WITH_PORT can be, for example,
+# http://proxy.nbc.com:80
 ifneq ($(HTTP_PROXY_WITH_PORT), )
   HTTP_PROXY_FLAG=-x $(HTTP_PROXY_WITH_PORT)
 endif # HTTP_PROXY_WITH_PORT
 
-QUICKLISP_DIR := centaur/quicklisp
-
-ifneq ($(USE_QUICKLISP), )
-
-$(QUICKLISP_DIR)/quicklisp.lsp:
-	@echo "Downloading Quicklisp"
-	@cd $(QUICKLISP_DIR); \
-	   curl http://beta.quicklisp.org/quicklisp.lisp \
-             -o quicklisp.lsp $(HTTP_PROXY_FLAG)
-	@ls -l $(QUICKLISP_DIR)/quicklisp.lsp
-
-$(QUICKLISP_DIR)/inst/setup.lisp: $(QUICKLISP_DIR)/quicklisp.lsp \
-                                  $(QUICKLISP_DIR)/install.lsp
-	@echo "Setting up Quicklisp..."
-	@cd $(QUICKLISP_DIR); \
-           ($(STARTJOB) -c \
-              "ACL2_CUSTOMIZATION=NONE $(ACL2) < install.lsp &> install.out" ; \
-	    ls -l inst/setup.lisp) \
-	   || (tail -300 install.out | sed 's/^/   | /'; false)
-
-$(QUICKLISP_DIR)/base.cert: $(QUICKLISP_DIR)/inst/setup.lisp
-
-.PHONY: quicklisp
-quicklisp: $(QUICKLISP_DIR)/top.cert
-
-# I don't think we need this now
-# all: $(QUICKLISP_DIR)/top.cert
-
-endif # USE_QUICKLISP
-
-# [Jared]: I moved these out of the USE_QUICKLISP section so that "make clean"
-# will always remove the quicklisp files if you have ever built with
-# USE_QUICKLISP before.  The goal is to ensure that stale quicklisp files
-# aren't left around after a "make clean" by accident.
-
-.PHONY: quicklisp_clean
-
-quicklisp_clean:
-	echo "Removing downloaded quicklisp files (if any)" ; \
-	cd $(QUICKLISP_DIR); rm -rf quicklisp.lsp  inst/asdf.lisp inst/cache \
-	    inst/client-info.sexp inst/dists inst/local-projects \
-	    inst/quicklisp inst/setup.lisp inst/tmp install.out Makefile-tmp
-	cd $(QUICKLISP_DIR); $(BUILD_DIR)/clean.pl
-
-# The following hack was useful briefly in late January, 2014, when
-# there were issues with quicklisp that caused us not to want to clean
-# quicklisp files.  Rager likes this hack (because his company-wide
-# ACL2 installation isn't writable by those that use it and he doesn't
-# always want to clean quicklisp since proxies have to be configured
-# and because it's good to preserve the
-# quicklisp/inst/cache/asdf-installs directory), and so he prefers
-# that the "hack" be preserved.
-ifndef ACL2_SAVE_QUICKLISP
-clean: quicklisp_clean
-endif # ifndef ACL2_SAVE_QUICKLISP
 
 # Ensure that the following variable is simply expanded.
 ACL2_CUSTOM_TARGETS :=
@@ -359,6 +315,20 @@ ${info Excluding books that are CCL-only: [$(CERT_PL_CCL_ONLY)]}
 OK_CERTS := $(filter-out $(CERT_PL_CCL_ONLY), $(OK_CERTS))
 endif
 
+ifeq (ALLEGRO, $(ACL2_HOST_LISP))
+${info Excluding non-Allegro books: [$(CERT_PL_NON_ALLEGRO)]}
+OK_CERTS := $(filter-out $(CERT_PL_NON_ALLEGRO), $(OK_CERTS))
+endif
+
+ifeq (LISPWORKS, $(ACL2_HOST_LISP))
+${info Excluding non-Lispworks books: [$(CERT_PL_NON_LISPWORKS)]}
+OK_CERTS := $(filter-out $(CERT_PL_NON_LISPWORKS), $(OK_CERTS))
+endif
+
+ifeq (SBCL, $(ACL2_HOST_LISP))
+${info Excluding non-SBCL books: [$(CERT_PL_NON_SBCL)]}
+OK_CERTS := $(filter-out $(CERT_PL_NON_SBCL), $(OK_CERTS))
+endif
 
 ifeq ($(ACL2_HAS_ANSI), )
 
@@ -416,7 +386,93 @@ nonstd/workshops/1999/calculus/book/tree/proof-outline: \
 endif # ifneq ($(ACL2_HAS_REALS), )
 
 
-ifeq ($(USE_QUICKLISP), )
+
+# Set up REALLY_USE_QUICKLISP to be 1 if we really want to use Quicklisp or 0
+# otherwise.  REALLY_USE_QUICKLISP is almost the same as USE_QUICKLISP.
+# However, Quicklisp doesn't work on GCL, so if we're running on GCL, then
+# ignore what the user said and don't try to build the Quicklisp books.
+#
+# I would much prefer to just reassign USE_QUICKLISP to 0 when we don't want
+# it, but I can't get that to work in Make for whatever reason.
+
+ifeq ($(USE_QUICKLISP), 1)
+  ifeq ($(ACL2_HOST_LISP), GCL)
+    $(info Note: Ignoring USE_QUICKLISP=1 since Quicklisp does not work on GCL!)
+    REALLY_USE_QUICKLISP := 0
+  else
+    REALLY_USE_QUICKLISP := 1
+  endif
+else
+  REALLY_USE_QUICKLISP := 0
+endif
+
+QUICKLISP_DIR := centaur/quicklisp
+
+.PHONY: quicklisp
+
+ifeq ($(REALLY_USE_QUICKLISP), 0)
+
+quicklisp:
+	$(MAKE) REALLY_USE_QUICKLISP=1 $(QUICKLISP_DIR)/top.cert
+
+else
+
+$(QUICKLISP_DIR)/quicklisp.lsp:
+	@echo "Downloading Quicklisp"
+	@cd $(QUICKLISP_DIR); \
+	   curl http://beta.quicklisp.org/quicklisp.lisp \
+             -o quicklisp.lsp $(HTTP_PROXY_FLAG)
+	@$(BUILD_DIR)/wait.pl $(QUICKLISP_DIR)/quicklisp.lsp
+	@ls -l $(QUICKLISP_DIR)/quicklisp.lsp
+
+$(QUICKLISP_DIR)/inst/setup.lisp: $(QUICKLISP_DIR)/quicklisp.lsp \
+                                  $(QUICKLISP_DIR)/install.lsp
+	@echo "Setting up Quicklisp..."
+	@cd $(QUICKLISP_DIR); \
+           ($(STARTJOB) -c \
+              "ACL2_CUSTOMIZATION=NONE $(ACL2) < install.lsp &> install.out" ; \
+	    $(BUILD_DIR)/wait.pl inst/setup.lisp ;\
+	    ls -l inst/setup.lisp) \
+	   || (tail -300 install.out | sed 's/^/   | /'; false)
+
+$(QUICKLISP_DIR)/base.cert: $(QUICKLISP_DIR)/inst/setup.lisp
+
+quicklisp: $(QUICKLISP_DIR)/top.cert
+
+# I don't think we need this now
+# all: $(QUICKLISP_DIR)/top.cert
+
+endif # REALLY_USE_QUICKLISP
+
+
+# [Jared]: I moved these out of the REALLY_USE_QUICKLISP section so that "make
+# clean" will always remove the quicklisp files if you have ever built with
+# REALLY_USE_QUICKLISP before.  The goal is to ensure that stale quicklisp
+# files aren't left around after a "make clean" by accident.
+
+.PHONY: quicklisp_clean
+
+quicklisp_clean:
+	echo "Removing downloaded quicklisp files (if any)" ; \
+	cd $(QUICKLISP_DIR); rm -rf quicklisp.lsp  inst/asdf.lisp inst/cache \
+	    inst/client-info.sexp inst/dists inst/local-projects \
+	    inst/quicklisp inst/setup.lisp inst/tmp install.out Makefile-tmp
+	cd $(QUICKLISP_DIR); $(BUILD_DIR)/clean.pl
+
+# The following hack was useful briefly in late January, 2014, when
+# there were issues with quicklisp that caused us not to want to clean
+# quicklisp files.  Rager likes this hack (because his company-wide
+# ACL2 installation isn't writable by those that use it and he doesn't
+# always want to clean quicklisp since proxies have to be configured
+# and because it's good to preserve the
+# quicklisp/inst/cache/asdf-installs directory), and so he prefers
+# that the "hack" be preserved.
+ifndef ACL2_SAVE_QUICKLISP
+clean: quicklisp_clean
+endif # ifndef ACL2_SAVE_QUICKLISP
+
+
+ifeq ($(REALLY_USE_QUICKLISP), 0)
 $(info Excluding books that depend on Quicklisp: [$(CERT_PL_USES_QUICKLISP)])
 OK_CERTS := $(filter-out $(CERT_PL_USES_QUICKLISP), $(OK_CERTS))
 endif
@@ -441,18 +497,13 @@ ADDED_BOOKS := \
   system/parallel/proofs/ideal-speedup.cert \
   workshops/2009/sumners/support/examples.cert \
   workshops/2011/krug-et-al/support/MinVisor/va-to-pa-thm.cert \
-  workshops/2011/krug-et-al/support/MinVisor/setup-nested-page-tables.cert
+  workshops/2011/krug-et-al/support/MinVisor/setup-nested-page-tables.cert \
+  workshops/2013/hardin-hardin/support/APSP.cert
 
-# The following has taken only a couple of minutes on a decent Linux
-# system in 2013.  However, ACL2 built on GCL 2.6.8 and Mac OS 10.6
-# cannot complete the certification without running exhausting STRING
-# storage, probably because it contains a large stobj.  So we certify
-# it only in "everything" regressions.
-
-ADDED_BOOKS += workshops/2013/hardin-hardin/support/APSP.cert
+ADDED_BOOK_TARGETS :=
 
 ifneq ($(ACL2_HAS_HONS), )
-ADDED_BOOKS += milawa-test-basic
+ADDED_BOOK_TARGETS += milawa-test-basic
 endif
 
 # Now SLOW_BOOKS is defined as the list above, except that below, we
@@ -461,7 +512,7 @@ endif
 # Then we remove SLOW_BOOKS from regressions, restoring its subset,
 # ADDED_BOOKS, for the "everything" target.
 
-SLOW_BOOKS := $(ADDED_BOOKS)
+SLOW_BOOKS := $(ADDED_BOOKS) $(ADDED_BOOK_TARGETS)
 
 # The models/y86 books are a special case.  We prefer to include them
 # only with the "everything" target, not the "all" target, since they
@@ -491,6 +542,10 @@ ifneq ($(filter CCL ALLEGRO SBCL, $(ACL2_HOST_LISP)), )
   ADDED_BOOKS += $(filter models/y86/%, $(OK_CERTS))
 endif # ifneq ($(filter CCL ALLEGRO SBCL, $(ACL2_HOST_LISP)), )
 endif # ifneq ($(ACL2_HAS_HONS), )
+
+# Remove ADDED_BOOKS as necessary because of dependence on Quicklisp,
+# HONS, CCL, etc.:
+ADDED_BOOKS := $(filter $(ADDED_BOOKS), $(OK_CERTS))
 
 OK_CERTS := $(filter-out $(SLOW_BOOKS) models/y86/%, $(OK_CERTS))
 
@@ -529,7 +584,8 @@ clean_books:
 clean: clean_books
 	@echo "Removing extra, explicitly temporary files."
 	rm -rf $(CLEAN_FILES_EXPLICIT)
-	for dir in $(dir $(ACL2_CUSTOM_TARGETS)) ; \
+	for dir in $(dir $(ACL2_CUSTOM_TARGETS)) \
+	  workshops/2003/kaufmann/support/rtl ; \
 	do \
 	if [ -f $$dir/Makefile ] ; then \
 	(cd $$dir ; $(MAKE) clean) ; \
@@ -569,26 +625,23 @@ bdd/benchmarks.lisp: bdd/cbf.cert bdd/create-benchmarks.lsp
 
 # There are several directories that we can't easily work directly
 # into our general framework because they each have a custom Makefile.
-# We handle those next.  For example, two directories test provisional
-# certification: system/pcert, which was constructed explicitly to
-# test provisional certification; and workshops/2011/verbeek-schmaltz,
-# which is slow without provisional certification but is reasonably
-# fast using provisional certification.
+# We handle those next
 
 # Our perhaps gross hack is to use the old ACL2 Makefile-generic
 # system to invoke the custom makefiles, for example as follows for
-# verbeek-schmaltz.
+# workshops/2003/greve-wilding-vanfleet:
 
-#   - we tell cert.pl not to look at verbeek-schmaltz/sources, via a
+#   - we tell cert.pl not to look at greve-wilding-vanfleet/support, via a
 #     cert_pl_exclude file;
-#   - we add a verbeek-schmaltz/deps.lisp file with the prerequisites that
-#     we need before going into the verbeek-schmaltz directory;
-#   - we use an arbitrary top-level target to certify the actual
-#     verbeek-schmaltz books after certifying the deps, which need not
-#     be in any sense "the top-level book" for the directory -- but if
-#     not, then if a book B in any other directory comes to depend on
-#     a book other than the target that we picked, we will need to
-#     make it depend on that target.
+#   - we add a greve-wilding-vanfleet/deps.lisp file with the
+#     prerequisites that we need before going into the support
+#     directory;
+#   - we use an arbitrary top-level target to certify the actual books
+#     after certifying the deps, which need not be in any sense "the
+#     top-level book" for the directory -- but if not, then if a book
+#     B in any other directory comes to depend on a book other than
+#     the target that we picked, we will need to make it depend on
+#     that target.
 
 # In order to create a deps file, we connect to the directory (e.g.,
 # cd clause-processors/SULFA), and then use shell commands:
@@ -619,8 +672,7 @@ ACL2_CUSTOM_TARGETS := \
   workshops/1999/multiplier/proof.cert \
   workshops/2003/greve-wilding-vanfleet/support/firewallworks.cert \
   workshops/2003/kaufmann/support/input/defs-in.cert \
-  workshops/2004/sumners-ray/support/success.txt \
-  workshops/2011/verbeek-schmaltz/sources/correctness2.cert
+  workshops/2004/sumners-ray/support/success.txt
 
 # Warning!  For each target below, if there is a cert_pl_exclude file
 # in the directory or it is exluded explicitly by
@@ -669,17 +721,7 @@ workshops/2003/kaufmann/support/input/defs-in.cert: \
 workshops/2004/sumners-ray/support/success.txt:
 	cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
 
-workshops/2011/verbeek-schmaltz/sources/correctness2.cert: \
-  workshops/2011/verbeek-schmaltz/deps.cert
-	cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
-
 endif # ifeq ($(ACL2_HAS_REALS), )
-
-ACL2_CUSTOM_TARGETS += system/pcert/sub.cert
-
-system/pcert/sub.cert: \
-  system/deps-pcert.cert
-	cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
 
 endif # ifndef ACL2_COMP
 
@@ -929,18 +971,12 @@ endif # ifeq ($(realpath workshops), )
 
 all: $(OK_CERTS)
 
-# It was tempting to handle the `everything' target as follows:
-#  everything: USE_QUICKLISP = 1
-#  everything: all $(ADDED_BOOKS)
-# But that didn't work, presumably because the value of OK_CERTS was
-# on a first pass through the Makefile without USE_QUICKLISP being
-# set.
+# Starting 8/15/2014, everything does not automatically set USE_QUICKLISP=1,
+# even in the HONS case.  In particular, "make everything" no longer makes
+# doc/manual/; for that, specify USE_QUICKLISP=1.
 .PHONY: everything
-# Note: We add doc/top.cert explicitly, even though that might not
-# be necessary, because at one point doc/top.cert was not
-# otherwise made (something related to glucose).
 everything:
-	$(MAKE) all USE_QUICKLISP=1 $(ADDED_BOOKS) doc/top.cert
+	$(MAKE) all $(ADDED_BOOKS) $(ADDED_BOOK_TARGETS)
 
 # The critical path report will work only if you have set up certificate timing
 # BEFORE you build the books.  See ./critpath.pl --help for details.
@@ -948,14 +984,14 @@ everything:
 # BOZO I probably broke this, we shouldn't use --targets, we should use ok_certs...
 critpath.txt: $(OK_CERTS)
 	echo "Building critpath.txt..."
-	time $(BUILD_DIR)/critpath.pl -m 2 --targets Makefile-books > critpath.txt
+	time $(BUILD_DIR)/critpath.pl -m 2 --targets $(BUILD_DIR)/Makefile-books > critpath.txt
 
 
 # Targets for building whole directories of books.
 
 # basic is the default set of books to build:
 .PHONY: basic
-basic: arithmetic arithmetic-2 arithmetic-3 arithmetic-5 ihs std str xdoc tools misc data-structures
+basic: arithmetic arithmetic-2 arithmetic-3 arithmetic-5 ihs std xdoc tools misc data-structures
 
 
 .PHONY: add-ons
@@ -1140,7 +1176,7 @@ legacy-defrstobj: $(filter projects/legacy-defrstobj/%, $(OK_CERTS))
 MILAWA_DEPS := misc/untranslate-patterns.cert \
                misc/hons-help2.cert \
                misc/definline.cert \
-               str/top.cert \
+               std/strings/top.cert \
                arithmetic-3/floor-mod/floor-mod.cert \
                tools/include-raw.cert \
                centaur/misc/seed-random.cert \
@@ -1283,7 +1319,7 @@ manual:
 # following command in this directory, where acl2h is an ACL2(h)
 # executable.
 
-#   make system/doc/render-doc-combined.cert USE_QUICKLISP=1 ACL2=acl2h
+#   make doc/top.cert USE_QUICKLISP=1 ACL2=acl2h
 
 ##############################
 ### Section: Some notes
@@ -1348,6 +1384,28 @@ clean_vl:
 	@rm -f centaur/vl/bin/*
 
 clean: clean_vl
+
+
+
+# Getopt Demo
+
+centaur/getopt/demo2: centaur/getopt/demo2.cert
+	@echo "Making getopt demo executable"
+	@cd centaur/getopt; \
+	 ACL2_CUSTOMIZATION=NONE $(STARTJOB) -c "$(ACL2) < demo2-save.lsp &> demo2-save.out"
+	@ls -l centaur/getopt/demo2
+
+centaur/getopt/demo2-test.ok: centaur/getopt/demo2 \
+                              centaur/getopt/demo2-test.pl
+	@echo "Testing getopt demo executable"
+	@cd centaur/getopt; \
+         $(STARTJOB) -c "./demo2-test.pl &> demo2-test.out"
+	@cd centaur/getopt; cp demo2-test.out demo2-test.ok
+	@ls -l centaur/getopt/demo2-test.ok
+
+all: centaur/getopt/demo2-test.ok
+
+
 
 ##############################
 ### Section: Tags
@@ -1471,26 +1529,9 @@ TAGS : $(CERT_PL_SOURCES)
 #       default to simply (certify-book "foo" ? t)
 #     These instructions specify arguments to certify-book, for example:
 #       ; cert-flags: ? t :ttags :all
-#   - In the following cases, books may be skipped in which case,
-#     recursively, so are books that include such books, books that
-#     include those parent books, and so on.  In each case, the
-#     indicated line may be placed either in the .lisp file or in the
-#     .acl2 file that is consulted, as discussed above.
-#       - Books that depend on ACL2(h), such as
-#         centaur/tutorial/alu16-book.lisp, contain this line:
-#           ; cert_param: (hons-only)
-#       - Books that depend on ANSI Common Lisp, such as
-#         oslib/*.lisp, contain this line (or in this case,
-#         file cert.acl2 contains this line):
-#           ; cert_param: (ansi-only)
-#       - Books that require glucose (a SAT solver) contain this line:
-#           ; cert_param: (uses-glucose)
-#       - Books that require quicklisp contain this line:
-#           ; cert_param: (uses-quicklisp)
-#   - Two-pass certification is handled as follows, for example in
-#     books/make-event/stobj-test.acl2 (as indicated above, this can
-#     also go into the book instead of the relevant .acl2 file):
-#       ; cert_param: (acl2x)
+#   - See :DOC books-certification for documentation of the cert_param
+#     comment, which can be used to restrict which books are to be
+#     certified.
 #   - It's not clear that provisional certification is fully
 #     supported.  For now, we implement it for two specific
 #     directories; search below for "provisional certification" to see
@@ -1517,3 +1558,4 @@ TAGS : $(CERT_PL_SOURCES)
 # cert-flags instead of certify-book commands.  Alternately, maybe the scheme
 # should be something like: if you give a certify-book command, we use it;
 # otherwise we generate one using the cert-flags.
+

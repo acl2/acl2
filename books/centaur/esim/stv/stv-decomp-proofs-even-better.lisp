@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 
 
 ; stv-decomp-proofs.lisp -- lemmas for proofs about decomposition of STVs
@@ -89,23 +99,42 @@
                     (cons (cons a (car y))
                           z))))
 
-(defthmd stv-simvar-inputs-to-bits-open
-  (equal (stv-simvar-inputs-to-bits (cons (cons name val) alist) in-usersyms)
-         (b* ((rest (stv-simvar-inputs-to-bits alist in-usersyms))
-              (in-usersyms (make-fast-alist in-usersyms))
-              (LOOK (HONS-GET NAME IN-USERSYMS))
-              ((UNLESS LOOK)
-               REST)
-              (VARS (CDR LOOK))
-              (NVARS (LEN VARS))
-              (VALS
-               (COND
-                ((EQ VAL *4VX*) (REPLICATE NVARS *4VX*))
-                ((AND (NATP VAL) (< VAL (ASH 1 NVARS)))
-                 (BOOL-TO-4V-LST (INT-TO-V VAL NVARS)))
-                (T (REPLICATE NVARS *4VX*)))))
-           (SAFE-PAIRLIS-ONTO-ACC VARS VALS REST)))
-  :hints(("Goal" :in-theory (enable stv-simvar-inputs-to-bits))))
+(defthm stv-simvar-inputs-to-bits-open
+  (implies (hons-get name (make-fast-alist in-usersyms))
+           (equal
+            (stv-simvar-inputs-to-bits (cons (cons name val) alist)
+                                       in-usersyms)
+            (b* ((rest (stv-simvar-inputs-to-bits alist in-usersyms))
+                 (in-usersyms (make-fast-alist in-usersyms))
+                 (look (hons-get name in-usersyms))
+; ((unless look) rest)
+                 (vars (cdr look))
+                 (nvars (len vars))
+                 (vals (cond ((eq val *4vx*) (replicate nvars *4vx*))
+                             ((and (natp val) (< val (ash 1 nvars)))
+                              (bool-to-4v-lst (int-to-v val nvars)))
+                             (t (replicate nvars *4vx*)))))
+              (safe-pairlis-onto-acc vars vals rest))))
+  :hints
+  (("goal" :in-theory (enable stv-simvar-inputs-to-bits))))
+
+;; (defthmd stv-simvar-inputs-to-bits-open
+;;   (equal (stv-simvar-inputs-to-bits (cons (cons name val) alist) in-usersyms)
+;;          (b* ((rest (stv-simvar-inputs-to-bits alist in-usersyms))
+;;               (in-usersyms (make-fast-alist in-usersyms))
+;;               (LOOK (HONS-GET NAME IN-USERSYMS))
+;;               ((UNLESS LOOK)
+;;                REST)
+;;               (VARS (CDR LOOK))
+;;               (NVARS (LEN VARS))
+;;               (VALS
+;;                (COND
+;;                 ((EQ VAL *4VX*) (REPLICATE NVARS *4VX*))
+;;                 ((AND (NATP VAL) (< VAL (ASH 1 NVARS)))
+;;                  (BOOL-TO-4V-LST (INT-TO-V VAL NVARS)))
+;;                 (T (REPLICATE NVARS *4VX*)))))
+;;            (SAFE-PAIRLIS-ONTO-ACC VARS VALS REST)))
+;;   :hints(("Goal" :in-theory (enable stv-simvar-inputs-to-bits))))
 
 (defthm stv-simvar-inputs-to-bits-nil
   (equal (stv-simvar-inputs-to-bits nil in-usersyms)
@@ -170,7 +199,8 @@
                                  (4v-sexpr-eval
                                   sexpr-eval-list-norm-env-when-ground-args-p
                                   vl::consp-of-car-when-cons-listp
-                                  consp-under-iff-when-true-listp)))))
+                                  ;consp-under-iff-when-true-listp
+                                  )))))
 
 (local
  (defthm rev-of-4v-sexpr-eval-alist
@@ -267,7 +297,7 @@
                               4v-unfloat
                               set::union
                               set::subset
-                              consp-under-iff-when-true-listp
+                              ;consp-under-iff-when-true-listp
                               subsetp-trans2
                               subsetp-when-atom-right
                               4v-alists-agree
@@ -334,6 +364,7 @@
 
 
 (defun 4v-sexpr-restrict-list-fast (sexprs sexpr-alist)
+  (declare (xargs :guard t))
   (with-fast-alist sexpr-alist
     (4v-sexpr-restrict-list sexprs sexpr-alist)))
 
@@ -505,7 +536,9 @@
    (4v-env-equiv a b)
    (4v-alist-extract vars b)
    (4v-sexpr-eval-alist a env)
-   (4v-sexpr-eval a env)))
+   (4v-sexpr-eval a env)
+   (pairlis$ x y)
+   (revappend x y)))
 
 (local
  (define stv-decomp-process-alist-quote (x)
@@ -729,6 +762,74 @@
     :rule-classes ((:meta :trigger-fns (4v-env-equiv)))))
 
 
+
+(defun open-one-revappend-pairlis$ (term)
+  (declare (xargs :guard t))
+  (case-match term
+    (('revappend ('pairlis$ ('cons a x)
+                            y)
+                 z)
+     `(revappend (pairlis$ ,x (cdr ,y))
+                 (cons (cons ,a (car ,y))
+                       ,z)))
+    (('revappend ('pairlis$ ('quote (a . x))
+                            y)
+                 z)
+     `(revappend (pairlis$ (quote ,x) (cdr ,y))
+                 (cons (cons (quote ,a) (car ,y))
+                       ,z)))
+    (t nil)))
+
+(defun my-measure (term)
+  (case-match term
+    (('revappend ('pairlis$ x &)
+                 &)
+     (acl2-count x))
+    (& ; irrelevant
+     0)))
+
+(local
+(defthm acl2-count-cons
+  (equal (acl2-count (cons x y))
+         (1+ (+ (acl2-count x) (acl2-count y))))
+  :hints (("Goal" :expand ((acl2-count (cons x y)))))))
+
+(defun open-all-revappend-pairlis$ (term)
+  (declare (xargs :measure (my-measure term)))
+  (let ((new (open-one-revappend-pairlis$ term)))
+    (cond (new (open-all-revappend-pairlis$ new))
+          (t term))))
+
+(defthmd open-all-revappend-pairlis$-meta-rule
+  (equal (stv-decomp-ev x env)
+         (stv-decomp-ev (open-all-revappend-pairlis$ x) env))
+  :rule-classes ((:meta :trigger-fns (revappend)))
+  :hints (("Goal" :in-theory
+; There's some rule in ACL2o that sends this out to lunch, so we explicily
+; provide the theory we need.
+           '((:DEFINITION NOT)
+             (:DEFINITION OPEN-ALL-REVAPPEND-PAIRLIS$)
+             (:DEFINITION OPEN-ONE-REVAPPEND-PAIRLIS$)
+             (:ELIM CAR-CDR-ELIM)
+             (:EXECUTABLE-COUNTERPART EQUAL)
+             (:EXECUTABLE-COUNTERPART NOT)
+             (:EXECUTABLE-COUNTERPART SYMBOLP)
+             (:INDUCTION OPEN-ALL-REVAPPEND-PAIRLIS$)
+             (:REWRITE APPEND-OF-CONS)
+             (:REWRITE APPEND-WHEN-NOT-CONSP)
+             (:REWRITE ASSOCIATIVITY-OF-APPEND)
+             (:REWRITE CAR-CONS)
+             (:REWRITE CDR-CONS)
+             (:REWRITE PAIRLIS$-OF-CONS)
+             (:REWRITE REV-OF-CONS)
+             (:REWRITE REVAPPEND-REMOVAL)
+             (:REWRITE STV-DECOMP-EV-CONSTRAINT-15)
+             (:REWRITE STV-DECOMP-EV-CONSTRAINT-16)
+             (:REWRITE STV-DECOMP-EV-CONSTRAINT-2)
+             (:REWRITE STV-DECOMP-EV-CONSTRAINT-7)
+             (:REWRITE STV-DECOMP-EV-CONSTRAINT-8)
+             (:REWRITE STV-DECOMP-EV-CONSTRAINT-9)))))
+
 (def-ruleset stv-decomp-rules
   '(stv-run-fn
     stv-run-make-eval-env
@@ -774,8 +875,16 @@
     boolean-listp-bool-from-4v-list
     eq eql
     (:t 4v-sexpr-eval-alist)
-    append-to-nil))
+    append-to-nil
+    ;open-all-revappend-pairlis$-meta-rule
+    ))
 
 (defmacro stv-decomp-theory ()
-  '(union-theories (get-ruleset 'stv-decomp-rules world)
-                   (executable-counterpart-theory :here)))
+  '(set-difference-theories
+    (union-theories (get-ruleset 'stv-decomp-rules world)
+                    (executable-counterpart-theory :here))
+    '((:EXECUTABLE-COUNTERPART IMMEDIATE-FORCE-MODEP))))
+
+;; (defmacro stv-decomp-theory ()
+;;   '(union-theories (get-ruleset 'stv-decomp-rules world)
+;;                    (executable-counterpart-theory :here)))

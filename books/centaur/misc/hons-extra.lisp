@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original authors: Jared Davis <jared@centtech.com>
 ;                   Sol Swords <sswords@centtech.com>
@@ -24,6 +34,26 @@
 
 (include-book "tools/bstar" :dir :system)
 
+(defxdoc with-fast-alists
+  :parents (hons-and-memoization)
+  :short "Concisely call @(see with-fast-alist) on multiple alists."
+  :long "<p>Example:</p>
+@({
+   (with-fast-alists (a b c) form)
+})
+
+<p>is just shorthand for:</p>
+
+@({
+   (with-fast-alist a
+    (with-fast-alist b
+     (with-fast-alist c
+      form)))
+})
+
+@(def with-fast-alists)
+@(def with-fast-alists-fn)")
+
 (defun with-fast-alists-fn (alists form)
   (if (atom alists)
       form
@@ -31,27 +61,14 @@
                       ,(with-fast-alists-fn (cdr alists) form))))
 
 (defmacro with-fast-alists (alists form)
-  ":Doc-Section Hons-and-Memoization
-
-Concisely call ~ilc[with-fast-alist] on multiple alists.~/~/
-
-Example:
-~bv[]
- (with-fast-alists (a b c) form)
-~ev[]
-is just shorthand for:
-~bv[]
- (with-fast-alist a
-  (with-fast-alist b
-   (with-fast-alist c
-    form)))
-~ev[]"
-
   (with-fast-alists-fn alists form))
 
 (def-b*-binder with-fast
-  (declare (xargs :guard (not forms))
-           (ignorable forms))
+  :short "@(see b*) binder to make some alists fast for the remainder of the
+          @('b*') form."
+  :decls ((declare (xargs :guard (not forms))
+                   (ignorable forms)))
+  :body
   `(with-fast-alists ,args ,rest-expr))
 
 
@@ -128,7 +145,28 @@ is just shorthand for:
   (equal (make-fast-alist-of-alists lst) lst))
 
 (in-theory (disable make-fast-alist-of-alists))
- 
+
+
+(defxdoc with-stolen-alists
+  :parents (hons-and-memoization)
+  :short "Concisely call @(see with-stolen-alist) on multiple alists."
+  :long "<p>Example:</p>
+@({
+    (with-stolen-alists (a b c) form)
+})
+
+<p>is just shorthand for:</p>
+
+@({
+    (with-stolen-alist a
+      (with-stolen-alist b
+        (with-stolen-alist c
+          form)))
+})
+
+@(def with-stolen-alists)
+@(def with-stolen-alists-fn)")
+
 (defun with-stolen-alists-fn (alists form)
   (if (atom alists)
       form
@@ -136,30 +174,15 @@ is just shorthand for:
                       ,(with-stolen-alists-fn (cdr alists) form))))
 
 (defmacro with-stolen-alists (alists form)
-  ":Doc-Section Hons-and-Memoization
-
-Concisely call ~ilc[with-stolen-alist] on multiple alists.~/~/
-
-Example:
-~bv[]
- (with-stolen-alists (a b c) form)
-~ev[]
-is just shorthand for:
-~bv[]
- (with-stolen-alist a
-  (with-stolen-alist b
-   (with-stolen-alist c
-    form)))
-~ev[]"
-
   (with-stolen-alists-fn alists form))
 
 (def-b*-binder with-stolen
-  (declare (xargs :guard (not forms))
-           (ignorable forms))
+  :short "@(see b*) binder for invoking @(see with-stolen-alists) for the
+          remainder of a @(see b*) form."
+  :decls ((declare (xargs :guard (not forms))
+                   (ignorable forms)))
+  :body
   `(with-stolen-alists ,args ,rest-expr))
-
-
 
 #||
 
@@ -202,6 +225,27 @@ is just shorthand for:
 ||#
 
 
+(defxdoc fast-alists-free-on-exit
+  :parents (hons-and-memoization)
+  :short "Concisely call ~ilc[fast-alist-free-on-exit] for several alists."
+  :long "<p>For example:</p>
+
+@({
+    (fast-alists-free-on-exit (a b c) form)
+})
+
+<p>is just shorthand for:</p>
+
+@({
+    (fast-alist-free-on-exit a
+     (fast-alist-free-on-exit b
+      (fast-alist-free-on-exit c
+       form)))
+})
+
+@(def fast-alists-free-on-exit)
+@(def fast-alists-free-on-exit-fn)")
+
 (defun fast-alists-free-on-exit-fn (alists form)
   (if (atom alists)
       form
@@ -209,25 +253,13 @@ is just shorthand for:
                               ,(fast-alists-free-on-exit-fn (cdr alists) form))))
 
 (defmacro fast-alists-free-on-exit (alists form)
-  ":Doc-Section Hons-and-Memoization
-Concisely call ~ilc[fast-alist-free-on-exit] for several alists.~/
-
-For example:
-~bv[]
- (fast-alists-free-on-exit (a b c) form)
-~ev[]
-is just shorthand for:
-~bv[]
- (fast-alist-free-on-exit a
-  (fast-alist-free-on-exit b
-   (fast-alist-free-on-exit c
-    form)))
-~ev[]~/~/"
   (fast-alists-free-on-exit-fn alists form))
 
 (def-b*-binder free-on-exit
-  (declare (xargs :guard (not forms))
-           (ignorable forms))
+  :short "@(see b*) binder for freeing fast alists when the @(see b*) exits."
+  :decls ((declare (xargs :guard (not forms))
+                   (ignorable forms)))
+  :body
   `(fast-alists-free-on-exit ,args ,rest-expr))
 
 

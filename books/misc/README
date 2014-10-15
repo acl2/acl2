@@ -87,6 +87,10 @@ check-acl2-exports.lisp -- check for accidental omissions from *acl2-exports*
 
 ===============================================================================
 
+check-fn-inst.lisp -- check that constraints hold for a functional substitution
+
+===============================================================================
+
 check-state.lisp -- check conditions on state, causing soft error if violated;
                     in particular, check-hons-enabled checks that we are
                     running ACL2(h) (or ACL2(hp)) rather than ACL2

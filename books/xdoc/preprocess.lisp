@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
@@ -33,7 +43,7 @@
 
 ; ----------------- World Lookup Stuff --------------------------
 
-(defun get-formals (fn world)
+(defun get-formals (fn context world)
   (b* ((formals (getprop fn 'formals :bad 'current-acl2-world world))
        ((unless (eq formals :bad))
         formals)
@@ -41,36 +51,35 @@
        ((unless (eq macro-args :bad))
         macro-args))
     (and (xdoc-verbose-p)
-         (cw "; xdoc note: get-formals failed for ~s0::~s1.~%"
-             (symbol-package-name fn) (symbol-name fn)))
+         (cw "; xdoc error in ~x0: get-formals failed for ~x1.~%" context fn))
     (str::cat "Error getting formals for "
               (symbol-package-name fn)
               "::"
               (symbol-name fn))))
 
-(defun get-measure (fn world)
+(defun get-measure (fn context world)
   (b* ((just (getprop fn 'justification nil 'current-acl2-world world))
        ((when just)
         (access justification just :measure)))
     (and (xdoc-verbose-p)
-         (cw "; xdoc note: get-measure failed for ~x0.~%" fn))
+         (cw "; xdoc error in ~x0: get-measure failed for ~x1.~%" context fn))
     (str::cat "Error getting measure for "
               (symbol-package-name fn)
               "::"
               (symbol-name fn))))
 
-(defun get-guard (fn world)
+(defun get-guard (fn context world)
   (b* ((formals (getprop fn 'formals :bad 'current-acl2-world world))
        ((unless (eq formals :bad))
         (getprop fn 'guard nil 'current-acl2-world world)))
     (and (xdoc-verbose-p)
-         (cw "; xdoc note: get-guard failed for ~x0.~%" fn))
+         (cw "; xdoc error in ~x0: get-guard failed for ~x1.~%" context fn))
     (str::cat "Error getting guard for "
               (symbol-package-name fn)
               "::"
               (symbol-name fn))))
 
-(defun get-body (fn world)
+(defun get-body (fn context world)
   ;; This gets the original body normalized or non-normalized body based on
   ;; what the user typed for the :normalize xarg.  The use of "last" skips past
   ;; any other :definition rules that have been added since then.
@@ -78,7 +87,7 @@
        ((when bodies)
         (access def-body (car (last bodies)) :concl)))
     (and (xdoc-verbose-p)
-         (cw "; xdoc note: get-body failed for ~x0.~%" fn))
+         (cw "; xdoc error in ~x0: get-body failed for ~x1.~%" context fn))
     (str::cat "Error getting body for "
               (symbol-package-name fn)
               "::"
@@ -219,21 +228,21 @@
            (xdoc::get-event* name (scan-to-event (cdr wrld1))))
           (t ev))))
 
-(defun get-event-aux (name world)
+(defun get-event-aux (name context world)
   ;; A general purpose event lookup as in :pe
   (b* ((props (acl2::getprops name 'current-acl2-world world))
        (evt   (and props (get-event* name world)))
        ((when evt)
         evt))
     (and (xdoc-verbose-p)
-         (cw "; xdoc note: get-event failed for ~x0.~%" name))
+         (cw "; xdoc error in ~x0: get-event failed for ~x1.~%" context name))
     (str::cat "Error getting event for "
               (symbol-package-name name)
               "::"
               (symbol-name name))))
 
-(defun get-event (name world)
-  (clean-up-event name (get-event-aux name world)))
+(defun get-event (name context world)
+  (clean-up-event name (get-event-aux name context world)))
 
 (defun start-event (event acc)
   (b* ((acc (str::revappend-chars "<b>" acc))
@@ -433,28 +442,17 @@
 
 ; -------------- Executing Directives ---------------------------
 
-(defun process-url-directive (arg state acc) ;; ===> (MV ACC STATE)
+(defun process-url-directive (arg acc) ;; ===> ACC
+  ;; @(url foo) just expands into the file name for foo.
+  (file-name-mangle arg acc))
 
-; @(url foo) just expands into the file name for foo.
+(defun process-sym-directive (arg base-pkg acc) ;; ===> ACC
+  ;; @(sym foo) just expands into the standard name mangling for foo
+  (sym-mangle arg base-pkg acc))
 
-  (b* ((acc            (file-name-mangle arg acc)))
-      (mv acc state)))
-
-
-(defun process-sym-directive (arg base-pkg state acc) ;; ===> (MV ACC STATE)
-
-; @(sym foo) just expands into the standard name mangling for foo
-
-  (b* ((acc            (sym-mangle arg base-pkg acc)))
-      (mv acc state)))
-
-
-(defun process-sym-cap-directive (arg base-pkg state acc) ;; ===> (MV ACC STATE)
-
-; @(csym foo) just expands into the standard capitalized name mangling for foo
-
-  (b* ((acc            (sym-mangle-cap arg base-pkg acc)))
-      (mv acc state)))
+(defun process-sym-cap-directive (arg base-pkg acc) ;; ===> ACC
+  ;; @(csym foo) just expands into the standard capitalized name mangling for foo
+  (sym-mangle-cap arg base-pkg acc))
 
 (defun want-to-preserve-case-p (arg arg-raw base-pkg)
   ;; Decide whether we want to preserve the case on a link like @(see Foo).
@@ -482,279 +480,186 @@
    ;; backslash escape characters.
    (str::istreqv arg-raw (symbol-name arg))))
 
-(defun process-see-directive (arg arg-raw base-pkg state acc) ;; ===> (MV ACC STATE)
-
-; @(see foo) just expands into a link with a (usually) lowercase name, but we go to
-; some trouble to preserve case for things like @(see Guard).
- 
+(defun process-see-directive (arg arg-raw base-pkg acc) ;; ===> ACC
+  ;; @(see foo) just expands into a link with a (usually) lowercase name, but we go to
+  ;; some trouble to preserve case for things like @(see Guard).
   (b* ((acc (str::revappend-chars "<see topic=\"" acc))
        (acc (file-name-mangle arg acc))
        (acc (str::revappend-chars "\">" acc))
        (acc (if (want-to-preserve-case-p arg arg-raw base-pkg)
+                ;; BOZO can this possibly be right?  What if arg-raw has '<' in it?
+                ;; If this is a bug, fix the other see-like directives below, too.
                 (str::revappend-chars (str::trim arg-raw) acc)
               (sym-mangle arg base-pkg acc)))
        (acc (str::revappend-chars "</see>" acc)))
-      (mv acc state)))
+    acc))
 
-(defun process-see-cap-directive (arg base-pkg state acc) ;; ===> (MV ACC STATE)
-
-; @(csee foo) just expands into a link with a capitalized name.
-
+(defun process-see-cap-directive (arg base-pkg acc) ;; ===> ACC
+  ;; @(csee foo) just expands into a link with a capitalized name.
   (b* ((acc (str::revappend-chars "<see topic=\"" acc))
        (acc (file-name-mangle arg acc))
        (acc (str::revappend-chars "\">" acc))
        (acc (sym-mangle-cap arg base-pkg acc))
        (acc (str::revappend-chars "</see>" acc)))
-      (mv acc state)))
+    acc))
 
-(defun process-tsee-directive (arg arg-raw base-pkg state acc) ;; ===> (MV ACC STATE)
+(defun process-tsee-directive (arg arg-raw base-pkg acc) ;; ===> ACC
+  ;; @(tsee foo) is basically <tt>@(see ...)</tt>.
+  (b* ((acc (str::revappend-chars "<tt>" acc))
+       (acc (process-see-directive arg arg-raw base-pkg acc))
+       (acc (str::revappend-chars "</tt>" acc)))
+    acc))
 
-; @(tsee foo) is basically <tt>@(see ...)</tt>.
+(defun process-see?-directive (arg arg-raw topics-fal base-pkg acc) ;; ===> ACC
+  ;; @(see? foo) is useful for macros like DEFLIST or DEFPROJECTION where you
+  ;; are extending some function.  If FOO is the name of a documented topic,
+  ;; then we insert a link to it just as in @(see foo).  But if FOO isn't
+  ;; documented, we just turn it into a <tt>foo</tt> style thing.
+  (b* (((when (hons-get arg topics-fal))
+        (process-see-directive arg arg-raw base-pkg acc))
+       ;; Not documented, don't insert a link.
+       (acc (str::revappend-chars "<tt>" acc))
+       (acc (if (want-to-preserve-case-p arg arg-raw base-pkg)
+                (str::revappend-chars (str::trim arg-raw) acc)
+              (sym-mangle arg base-pkg acc)))
+       (acc (str::revappend-chars "</tt>" acc)))
+    acc))
 
-  (b* ((acc            (str::revappend-chars "<tt>" acc))
-       ((mv acc state) (process-see-directive arg arg-raw base-pkg state acc))
-       (acc            (str::revappend-chars "</tt>" acc)))
-    (mv acc state)))
-
-
-
-;; (defconst *xdoc-link-file-message*
-;;   "; This is an XDOC Link file.
-;; ; Ordinarily, you should not see this file.
-;; ;
-;; ; If you are viewing this file in a web browser, you probably
-;; ; have not configured your web browser to send .xdoc-link files
-;; ; to Emacs.
-;; ;
-;; ;   (Or, if you have already done that, but you accessed this
-;; ;    file through a web server, the server may just not be
-;; ;    assigning .xdoc-link files the appropriate MIME type.)
-;; ;
-;; ; If you are viewing this file in Emacs, you probably have not
-;; ; loaded xdoc.el from the xdoc/ directory.
-;; ;
-;; ; Please see the XDOC manual for more information.")
-
-(defun process-srclink-directive (arg dir state acc) ;; ===> (MV ACC STATE)
-
-; We previously did two things:
-;
-;   1. Extend acc with a srclink tag, and
-;
-;   2. Write a .xdoc-link file to dir for this tag, unless DIR is NIL in
-;      which case we skip this step
-;
-; This was kind of ugly in that we may write the same .xdoc-link file many
-; times, but this didn't seem to practically be a problem.
-;
-; Our emacs linking mechanism is slightly broken, in that all we can tell emacs
-; is the name of a symbol to look for using its tags mechanism.  We are hoping
-; that:
-;
-;   1. The user has the appropriate TAGS tables set up (reasonable),
-;
-;   2. The symbol is actually defined in a source file somewhere, instead of
-;      being introduced by a macro or something, and
-;
-;   3. The symbol is not defined in multiple packages, so that the user will be
-;      taken to the right source file.  (That is, we can't tell emacs something
-;      like "foo::bar", because it doesn't understand (in-package ...); We can
-;      only tell it to search for bar.)
-;
-; Whether or not #2 and #3 hold is a total crap-shoot, and we're basically
-; hoping that most of the time find-tag will take them to the right place.
-;
-; We no longer write .srclink files because the fancy viewer doesn't need them;
-; it uses a fancy URL scheme along the lines of:
-;    data:application/x-acl2-xdoc-link;charset=utf-8,<contents>
-; where <contents> are the entire source link file we previously generated.
-; Web browsers understand this and can "open" the "file" that they've just
-; been given directly in the URL.
-
+(defun process-srclink-directive (arg acc) ;; ===> ACC
   (b* ((shortname (explode (str::downcase-string (symbol-name arg))))
-
-       ; NOTE: for srclink support in the classic viewer, we needed to include
-       ; the file=... part.  We need it or use it in the fancy viewer.  The
-       ; fancy viewer only uses the shortname, i.e., the text of the link.
-       ; Well, since we've broken srclinks in the classic viewer anyway, may
-       ; as well not include it.
-
-       ;; (filename  (b* ((nacc (file-name-mangle arg nil))
-       ;;                 (nacc (str::revappend-chars ".xdoc-link" nacc)))
-       ;;             (str::rchars-to-string nacc)))
-       ;; (acc (str::revappend-chars "<srclink file=\"" acc))
-       ;; (acc (str::revappend-chars filename acc))
-       ;; (acc (str::revappend-chars "\">" acc))
-
        (acc (str::revappend-chars "<srclink>" acc))
        (acc (simple-html-encode-chars shortname acc))
-       (acc (str::revappend-chars "</srclink>" acc))
+       (acc (str::revappend-chars "</srclink>" acc)))
+    acc))
 
-       ((unless dir)
-        ;; This is an important hack for, e.g., :xdoc to work correctly.  If
-        ;; DIR is nil, then don't actually try to write any files!
-        (mv acc state))
+(defun process-body-directive (arg context topics-fal base-pkg state acc) ;; ===> ACC
+  ;; @(body foo) -- look up the body and pretty-print it in a <code> block.
+  (b* ((body (get-body arg context (w state)))
+       (acc  (str::revappend-chars "<code>" acc))
+       (acc  (xml-ppr-obj-aux body topics-fal base-pkg state acc))
+       (acc  (str::revappend-chars "</code>" acc)))
+    acc))
 
-       ;; It seems nice to get rid of this.  It'll break source links in the
-       ;; classic viewer.  That seems okay.  In exchange we don't need catpath.
-       ;; (fullpath           (oslib::catpath dir filename))
-       ;; ((mv channel state) (open-output-channel fullpath :character state))
-       ;; (state (princ$ *xdoc-link-file-message* channel state))
-       ;; (state (newline channel state))
-       ;; (state (newline channel state))
-       ;; (state (princ$ (coerce shortname 'string) channel state))
-       ;; (state (newline channel state))
-       ;; (state (close-output-channel channel state))
-       )
-      (mv acc state)))
+(defun process-def-directive (arg context topics-fal base-pkg state acc) ;; ===> ACC
+  ;; @(def foo) -- look up the definition for foo, pretty-print it in a <code>
+  ;; block, along with a source-code link.
+  (b* ((def (get-event arg context (w state)))
+       (acc (str::revappend-chars "<p>" acc))
+       (acc (start-event def acc))
+       (acc (process-srclink-directive arg acc))
+       (acc (str::revappend-chars "</p>" acc))
+       (acc (str::revappend-chars "<code>" acc))
+       (acc (xml-ppr-obj-aux def topics-fal base-pkg state acc))
+       (acc (str::revappend-chars "</code>" acc)))
+    acc))
 
-(defun process-body-directive (arg topics-fal base-pkg state acc) ;; ===> (MV ACC STATE)
+(defun process-gdef-directive (arg context topics-fal base-pkg state acc) ;; ===> ACC
+  ;; @(gdef foo) -- Look up the definition for foo, pretty-print it as in @def,
+  ;; but don't use a source-code link because this is a "Generated Definition"
+  ;; for which a tags-search will probably fail.
+  (b* ((def (get-event arg context (w state)))
+       (acc (str::revappend-chars "<p>" acc))
+       (acc (start-event def acc))
+       (acc (sym-mangle arg base-pkg acc))
+       (acc (str::revappend-chars "</p>" acc))
+       (acc (str::revappend-chars "<code>" acc))
+       (acc (xml-ppr-obj-aux def topics-fal base-pkg state acc))
+       (acc (str::revappend-chars "</code>" acc)))
+    acc))
 
-; @(body foo) -- look up the body and pretty-print it in a <code> block.
+(defun process-thm-directive (arg context topics-fal base-pkg state acc) ;; ===> ACC
+  ;; @(thm foo) -- Look up the theorem named foo, and pretty-print its event
+  ;; along with a source link.
+  (b* ((def (get-event arg context (w state)))
+       (acc (str::revappend-chars "<p>" acc))
+       (acc (start-event def acc))
+       (acc (process-srclink-directive arg acc))
+       (acc (str::revappend-chars "</p>" acc))
+       (acc (str::revappend-chars "<code>" acc))
+       (acc (xml-ppr-obj-aux def topics-fal base-pkg state acc))
+       (acc (str::revappend-chars "</code>" acc)))
+    acc))
 
-  (b* ((body           (get-body arg (w state)))
-       (acc            (str::revappend-chars "<code>" acc))
-       ((mv acc state) (xml-ppr-obj-aux body topics-fal base-pkg state acc))
-       (acc            (str::revappend-chars "</code>" acc)))
-      (mv acc state)))
+(defun process-gthm-directive (arg context topics-fal base-pkg state acc) ;; ===> ACC
+  ;; @(gthm foo) -- Like @(thm foo), but don't provide a source link since this
+  ;; is a generated theorem.
+  (b* ((def (get-event arg context (w state)))
+       (acc (str::revappend-chars "<p>" acc))
+       (acc (start-event def acc))
+       (acc (sym-mangle arg base-pkg acc))
+       (acc (str::revappend-chars "</p>" acc))
+       (acc (str::revappend-chars "<code>" acc))
+       (acc (xml-ppr-obj-aux def topics-fal base-pkg state acc))
+       (acc (str::revappend-chars "</code>" acc)))
+    acc))
 
-(defun process-def-directive (arg dir topics-fal base-pkg state acc) ;; ===> (MV ACC STATE)
+(defun process-formals-directive (arg context base-pkg state acc) ;; ===> ACC
+  ;; @(formals foo) -- just find the formals for foo and print them with;out
+  ;; any extra formatting.
+  (b* ((formals (get-formals arg context (w state)))
+       (acc     (fmt-and-encode-to-acc formals base-pkg acc)))
+    acc))
 
-; @(def foo) -- look up the definition for foo, pretty-print it in a <code>
-; block, along with a source-code link.
+(defun process-call-directive (arg context base-pkg state acc) ;; ===> ACC
+  ;; @(call foo) -- find the formals to foo and insert <tt>(foo x y z)</tt>.
+  (b* ((formals (get-formals arg context (w state)))
+       (call    (cons arg formals))
+       (acc     (str::revappend-chars "<tt>" acc))
+       (acc     (fmt-and-encode-to-acc call base-pkg acc))
+       (acc     (str::revappend-chars "</tt>" acc)))
+    acc))
 
-  (b* ((def            (get-event arg (w state)))
-       (acc            (str::revappend-chars "<p>" acc))
-       (acc            (start-event def acc))
-       ((mv acc state) (process-srclink-directive arg dir state acc))
-       (acc            (str::revappend-chars "</p>" acc))
-       (acc            (str::revappend-chars "<code>" acc))
-       ((mv acc state) (xml-ppr-obj-aux def topics-fal base-pkg state acc))
-       (acc            (str::revappend-chars "</code>" acc)))
-      (mv acc state)))
+(defun process-ccall-directive (arg context base-pkg state acc) ;; ===> ACC
+  ;; @(ccall foo) -- "code call" is like @(call foo), but uses <code> instead
+  ;; of <tt> tags.
+  (b* ((formals (get-formals arg context (w state)))
+       (call    (cons arg formals))
+       (acc     (str::revappend-chars "<code>" acc))
+       (acc     (fmt-and-encode-to-acc call base-pkg acc))
+       (acc     (str::revappend-chars "</code>" acc)))
+    acc))
 
-(defun process-gdef-directive (arg topics-fal base-pkg state acc) ;; ===> (MV ACC STATE)
-
-; @(gdef foo) -- Look up the definition for foo, pretty-print it as in @def,
-; but don't use a source-code link because this is a "Generated Definition" for
-; which a tags-search will probably fail.
-
-  (b* ((def            (get-event arg (w state)))
-       (acc            (str::revappend-chars "<p>" acc))
-       (acc            (start-event def acc))
-       (acc            (sym-mangle arg base-pkg acc))
-       (acc            (str::revappend-chars "</p>" acc))
-       (acc            (str::revappend-chars "<code>" acc))
-       ((mv acc state) (xml-ppr-obj-aux def topics-fal base-pkg state acc))
-       (acc            (str::revappend-chars "</code>" acc)))
-      (mv acc state)))
-
-(defun process-thm-directive (arg dir topics-fal base-pkg state acc) ;; ===> (MV ACC STATE)
-
-; @(thm foo) -- Look up the theorem named foo, and pretty-print its event along
-; with a source link.
-
-  (b* ((def            (get-event arg (w state)))
-       (acc            (str::revappend-chars "<p>" acc))
-       (acc            (start-event def acc))
-       ((mv acc state) (process-srclink-directive arg dir state acc))
-       (acc            (str::revappend-chars "</p>" acc))
-       (acc            (str::revappend-chars "<code>" acc))
-       ((mv acc state) (xml-ppr-obj-aux def topics-fal base-pkg state acc))
-       (acc            (str::revappend-chars "</code>" acc)))
-      (mv acc state)))
-
-(defun process-gthm-directive (arg topics-fal base-pkg state acc) ;; ===> (MV ACC STATE)
-
-; @(gthm foo) -- Like @(thm foo), but don't provide a source link since this is
-; a generated theorem.
-
-  (b* ((def            (get-event arg (w state)))
-       (acc            (str::revappend-chars "<p>" acc))
-       (acc            (start-event def acc))
-       (acc            (sym-mangle arg base-pkg acc))
-       (acc            (str::revappend-chars "</p>" acc))
-       (acc            (str::revappend-chars "<code>" acc))
-       ((mv acc state) (xml-ppr-obj-aux def topics-fal base-pkg state acc))
-       (acc            (str::revappend-chars "</code>" acc)))
-      (mv acc state)))
-
-(defun process-formals-directive (arg base-pkg state acc) ;; ===> (MV ACC STATE)
-
-; @(formals foo) -- just find the formals for foo and print them without any
-; extra formatting.
-
-  (b* ((formals        (get-formals arg (w state)))
-       ((mv acc state) (fmt-and-encode-to-acc formals base-pkg state acc)))
-      (mv acc state)))
-
-(defun process-call-directive (arg base-pkg state acc) ;; ===> (MV ACC STATE)
-
-; @(call foo) -- find the formals to foo and insert <tt>(foo x y z)</tt>.
-; BOZO consider adding an emacs link.
-
-  (b* ((formals        (get-formals arg (w state)))
-       (call           (cons arg formals))
-       (acc            (str::revappend-chars "<tt>" acc))
-       ((mv acc state) (fmt-and-encode-to-acc call base-pkg state acc))
-       (acc            (str::revappend-chars "</tt>" acc)))
-      (mv acc state)))
-
-(defun process-ccall-directive (arg base-pkg state acc) ;; ===> (MV ACC STATE)
-
-; @(ccall foo) -- "code call" is like @(call foo), but uses <code> instead
-; of <tt> tags.
-
-  (b* ((formals        (get-formals arg (w state)))
-       (call           (cons arg formals))
-       (acc            (str::revappend-chars "<code>" acc))
-       ((mv acc state) (fmt-and-encode-to-acc call base-pkg state acc))
-       (acc            (str::revappend-chars "</code>" acc)))
-      (mv acc state)))
-
-(defun process-measure-directive (arg base-pkg state acc) ;; ===> (MV ACC STATE)
-
-; @(measure foo) -- find the measure for foo and print it without any extra
-; formatting.
-
-  (b* ((measure        (get-measure arg (w state)))
-       ((mv acc state) (fmt-and-encode-to-acc measure base-pkg state acc)))
-      (mv acc state)))
+(defun process-measure-directive (arg context base-pkg state acc) ;; ===> ACC
+  ;; @(measure foo) -- find the measure for foo and print it without any extra
+  ;; formatting.
+  (b* ((measure (get-measure arg context (w state)))
+       (acc     (fmt-and-encode-to-acc measure base-pkg acc)))
+    acc))
 
 
-(defun process-directive (command arg arg-raw dir topics-fal base-pkg state acc) ;; ===> (MV ACC STATE)
-
-; Command and Arg are the already-parsed symbols we have read from the
-; documentation string.  Carry out whatever directive we've been asked to do.
-; DIR is the output dir.  Acc is the accumulator for our output characters.
-
-  (case command
-    (def       (process-def-directive     arg dir topics-fal base-pkg state acc))
-    (thm       (process-thm-directive     arg dir topics-fal base-pkg state acc))
-    (srclink   (process-srclink-directive arg dir state acc))
-    (gdef      (process-gdef-directive    arg topics-fal base-pkg state acc))
-    (gthm      (process-gthm-directive    arg topics-fal base-pkg state acc))
-    (body      (process-body-directive    arg topics-fal base-pkg state acc))
-    (formals   (process-formals-directive arg base-pkg state acc))
-    (measure   (process-measure-directive arg base-pkg state acc))
-    (call      (process-call-directive    arg base-pkg state acc))
-    (ccall     (process-ccall-directive   arg base-pkg state acc))
-    (url       (process-url-directive     arg state acc))
-    (see       (process-see-directive     arg arg-raw base-pkg state acc))
-    (csee      (process-see-cap-directive arg base-pkg state acc))
-    (tsee      (process-tsee-directive    arg arg-raw base-pkg state acc))
-    (sym       (process-sym-directive     arg base-pkg state acc))
-    (csym      (process-sym-cap-directive arg base-pkg state acc))
-    (otherwise
-     (progn$
-      (and (xdoc-verbose-p)
-           (cw "; xdoc error: unknown directive ~x0.~%" command))
-      (let* ((acc (str::revappend-chars "[[ unknown directive " acc))
-             (acc (str::revappend-chars (symbol-package-name command) acc))
-             (acc (str::revappend-chars "::" acc))
-             (acc (str::revappend-chars (symbol-name command) acc))
-             (acc (str::revappend-chars "]]" acc)))
-        (mv acc state))))))
+(defun process-directive (command arg arg-raw context topics-fal base-pkg state acc)
+   "Returns (MV ACC STATE)"
+   ;; Command and Arg are the already-parsed symbols we have read from the
+   ;; documentation string.  Carry out whatever directive we've been asked to
+   ;; do.  Acc is the accumulator for our output characters.
+   (case command
+     (def       (mv (process-def-directive     arg context topics-fal base-pkg state acc)     state))
+     (thm       (mv (process-thm-directive     arg context topics-fal base-pkg state acc)     state))
+     (srclink   (mv (process-srclink-directive arg acc)                               state))
+     (gdef      (mv (process-gdef-directive    arg context topics-fal base-pkg state acc)     state))
+     (gthm      (mv (process-gthm-directive    arg context topics-fal base-pkg state acc)     state))
+     (body      (mv (process-body-directive    arg context topics-fal base-pkg state acc)     state))
+     (formals   (mv (process-formals-directive arg context base-pkg state acc)                state))
+     (measure   (mv (process-measure-directive arg context base-pkg state acc)                state))
+     (call      (mv (process-call-directive    arg context base-pkg state acc)                state))
+     (ccall     (mv (process-ccall-directive   arg context base-pkg state acc)                state))
+     (url       (mv (process-url-directive     arg acc)                               state))
+     (see       (mv (process-see-directive     arg arg-raw base-pkg acc)              state))
+     (csee      (mv (process-see-cap-directive arg base-pkg acc)                      state))
+     (tsee      (mv (process-tsee-directive    arg arg-raw base-pkg acc)              state))
+     (sym       (mv (process-sym-directive     arg base-pkg acc)                      state))
+     (csym      (mv (process-sym-cap-directive arg base-pkg acc)                      state))
+     (see?      (mv (process-see?-directive    arg arg-raw topics-fal base-pkg acc)   state))
+     (otherwise
+      (progn$
+       (and (xdoc-verbose-p)
+            (cw "; xdoc error in ~x0: unknown directive ~x1.~%" context command))
+       (let* ((acc (str::revappend-chars "[[ unknown directive " acc))
+              (acc (str::revappend-chars (symbol-package-name command) acc))
+              (acc (str::revappend-chars "::" acc))
+              (acc (str::revappend-chars (symbol-name command) acc))
+              (acc (str::revappend-chars "]]" acc)))
+         (mv acc state))))))
 
 
 
@@ -1146,19 +1051,19 @@ baz
        ;; in the string relative to the base-pkg that was used at the time...
        ((mv err & state) (acl2::in-package-fn (symbol-package-name base-pkg) state))
        ((when err)
-        (mv (msg "Error: can't switch to package ~s0 to parse @(`...`).  Input: ~s1"
-                 (symbol-package-name base-pkg) str)
+        (mv (str::cat "Error: can't switch to package " (symbol-package-name base-pkg)
+                      " to parse @(`...`).  Input: " str)
             nil
             state))
        ((mv err objects state) (acl2::read-string str))
        ((mv & & state) (acl2::in-package-fn curr-pkg state))
        ((when err)
-        (mv (msg "Error: failed to parse @(`...`): ~@0.  Input: ~s1" err str)
+        (mv (str::cat "Error: failed to parse @(`...`).  Input: " str)
             nil
             state))
        ((unless (equal (len objects) 1))
-        (mv (msg "Error: parsed ~x0 expressions (instead of 1) from @(`...`).  Input: ~s1."
-                 (len objects) str)
+        (mv (str::cat "Error: parsed " (str::natstr (len objects))
+                      " expressions (instead of 1) from @(`...`).  Input: " str)
             nil
             state))
        (sexpr (car objects)))
@@ -1176,8 +1081,9 @@ baz
           (mv nil sexpr)))
        ((mv err vals state) (acl2::unsound-eval sexpr))
        ((when err)
-        (mv (msg "Error: failed to evaluate @(`...`): ~@0.  Input expression: ~x1" err sexpr)
-            acc state))
+        (mv (str::cat "Error: failed to evaluate @(`...`): " err)
+            acc
+            state))
        (ret (cond ((atom vals)
                    ;; The use of ER here is special; this is just a sanity
                    ;; check, this should be an impossible case, not triggerable
@@ -1189,55 +1095,54 @@ baz
                    (cons 'mv vals))))
 
        ((unless kind)
-        (b* ((acc            (str::revappend-chars "<v>" acc))
-             ((mv acc state) (xml-ppr-obj-aux ret topics-fal base-pkg state acc))
-             (acc            (str::revappend-chars "</v>" acc)))
+        (b* ((acc (str::revappend-chars "<v>" acc))
+             (acc (xml-ppr-obj-aux ret topics-fal base-pkg state acc))
+             (acc (str::revappend-chars "</v>" acc)))
           (mv nil acc state)))
 
        ((when (eq kind :code))
-        (b* ((acc            (str::revappend-chars "<code>" acc))
-             ((mv acc state) (xml-ppr-obj-aux ret topics-fal base-pkg state acc))
-             (acc            (str::revappend-chars "</code>" acc)))
+        (b* ((acc (str::revappend-chars "<code>" acc))
+             (acc (xml-ppr-obj-aux ret topics-fal base-pkg state acc))
+             (acc (str::revappend-chars "</code>" acc)))
           (mv nil acc state)))
 
        ((when (eq kind :raw))
         (b* ((str (car vals))
              ((unless (stringp str))
-              (mv (msg "Error: @(`(:raw ...)`) must return a string as its first (or only) ~
-                        return value, but ~x0 returned ~x1."
-                       sexpr ret)
+              (mv (str::cat "Error: @(`(:raw ...)`) must return a string as its "
+                            "first (or only) return value, but "
+                            (str::pretty sexpr :config (str::make-printconfig :home-package base-pkg))
+                            " returned "
+                            (str::pretty ret :config (str::make-printconfig :home-package base-pkg)))
                   acc state))
              (acc (str::revappend-chars str acc)))
           (mv nil acc state))))
     (mv (msg "Error: @(`(~x0 ...)`) is not a known evaluation keyword.  Input sexpr: ~x1."
-             kind sexpr)
+             kind (str::pretty sexpr))
         acc state)))
 
-(defun preprocess-eval (str topics-fal base-pkg kpa state acc)
+(defun preprocess-eval (str topics-fal context base-pkg kpa state acc)
   "Returns (MV ACC STATE)"
   (b* (((mv errmsg sexpr state) (preprocess-eval-parse str base-pkg state))
        ((when errmsg)
         (or (not (xdoc-verbose-p))
-            (cw "; xdoc error: ~@0~%" errmsg))
-        (fmt-and-encode-to-acc-aux "[~@0]" (list (cons #\0 errmsg))
-                                   base-pkg state acc))
-
+            (cw "; xdoc error in ~x0: ~@1~%" context errmsg))
+        (let ((acc (simple-html-encode-str errmsg 0 (length errmsg) acc)))
+          (mv acc state)))
        ((mv errmsg acc state)
         (preprocess-eval-main sexpr topics-fal base-pkg kpa state acc))
        ((when errmsg)
         (or (not (xdoc-verbose-p))
-            (cw "; xdoc error: ~@0~%" errmsg))
-        (fmt-and-encode-to-acc-aux "[~@0]" (list (cons #\0 errmsg))
-                                   base-pkg state acc)))
+            (cw "; xdoc error in ~x0: ~@1~%" context errmsg))
+        (let ((acc (simple-html-encode-str errmsg 0 (length errmsg) acc)))
+          (mv acc state))))
     (mv acc state)))
 
-(defun preprocess-aux (x n xl dir topics-fal base-pkg kpa state acc)
+(defun preprocess-aux (x n xl context topics-fal base-pkg kpa state acc)
   "Returns (MV ACC STATE)"
+  ;; Main preprocessor loop.  Read from the string and accumulate the result
+  ;; into acc, expanding away any preprocessor directives.
   (declare (type string x))
-
-; Main preprocessor loop.  Read from the string and accumulate the result into
-; acc, expanding away any preprocessor directives.
-
   (b* (((when (= n xl))
         (mv acc state))
 
@@ -1246,7 +1151,7 @@ baz
         (cond ((and (< (+ n 1) xl)
                     (eql (char x (+ n 1)) #\@))
                ;; @@ --> @
-               (preprocess-aux x (+ n 2) xl dir topics-fal base-pkg kpa state (cons #\@ acc)))
+               (preprocess-aux x (+ n 2) xl context topics-fal base-pkg kpa state (cons #\@ acc)))
 
               ((and (< (+ n 1) xl)
                     (eql (char x (+ n 1)) #\())
@@ -1263,7 +1168,7 @@ baz
                                              xl))
                           ((unless end)
                            (prog2$ (and (xdoc-verbose-p)
-                                        (cw "; xdoc error: no closing ') found for @(' ...~%"))
+                                        (cw "; xdoc error in ~x0: no closing ') found for @(' ...~%" context))
                                    (mv acc state)))
                           (sub
                            ;; Change January 2014: we were using fancy-extract-block here, but it
@@ -1273,7 +1178,7 @@ baz
                           (acc (str::revappend-chars "<v>" acc))
                           (acc (autolink-and-encode sub 0 (length sub) topics-fal base-pkg kpa acc))
                           (acc (str::revappend-chars "</v>" acc)))
-                       (preprocess-aux x (+ end 2) xl dir topics-fal base-pkg kpa state acc)))
+                       (preprocess-aux x (+ end 2) xl context topics-fal base-pkg kpa state acc)))
 
                     ((when (and (< (+ n 2) xl)
                                 (eql (char x (+ n 2)) #\{)))
@@ -1283,13 +1188,37 @@ baz
                            (str::strpos-fast "})" x (+ n 3) 2 xl))
                           ((unless end)
                            (prog2$ (and (xdoc-verbose-p)
-                                        (cw "; xdoc error: no closing }) found for @({ ...~%"))
+                                        (cw "; xdoc error in ~x0: no closing }) found for @({ ...~%" context))
                                    (mv acc state)))
                           (sub (maybe-fix-spaces-in-sub (fancy-extract-block x (+ n 3) end)))
                           (acc (str::revappend-chars "<code>" acc))
                           (acc (autolink-and-encode sub 0 (length sub) topics-fal base-pkg kpa acc))
                           (acc (str::revappend-chars "</code>" acc)))
-                       (preprocess-aux x (+ end 2) xl dir topics-fal base-pkg kpa state acc)))
+                       (preprocess-aux x (+ end 2) xl context topics-fal base-pkg kpa state acc)))
+
+                    ((when (and (< (+ n 2) xl)
+                                (or (eql (char x (+ n 2)) #\[)
+                                    (eql (char x (+ n 2)) #\$))))
+                     ;; @([...]) directive -- turns into <math> block
+                     ;; @($...$) directive -- turns into a <mathfrag> block
+                     (b* ((fragp (eql (char x (+ n 2)) #\$))
+                          (end (str::strpos-fast (if fragp "$)" "])")
+                                                 x (+ n 3)
+                                                 2 ;; length of string we're looking for
+                                                 xl))
+                          ((unless end)
+                           (prog2$ (and (xdoc-verbose-p)
+                                        (if fragp
+                                            (cw "; xdoc error in ~x0: no closing $) found for @($ ...~%" context)
+                                          (cw "; xdoc error in ~x0: no closing ]) found for @([ ...~%" context)))
+                                   (mv acc state)))
+                          (sub (subseq x (+ n 3) end))
+                          (acc (str::revappend-chars (if fragp "<mathfrag>" "<math>") acc))
+                          ;; Unlike @('...') we don't want to try to automatically insert hyperlinks, as
+                          ;; that would very likely totally screw up katex.
+                          (acc (simple-html-encode-str sub 0 (length sub) acc))
+                          (acc (str::revappend-chars (if fragp "</mathfrag>" "</math>") acc)))
+                       (preprocess-aux x (+ end 2) xl context topics-fal base-pkg kpa state acc)))
 
                     ((when (and (< (+ n 2) xl)
                                 (eql (char x (+ n 2)) #\`)))
@@ -1297,24 +1226,24 @@ baz
                      (b* ((end (str::strpos-fast "`)" x (+ n 2) 2 xl))
                           ((unless end)
                            (prog2$ (and (xdoc-verbose-p)
-                                        (cw "; xdoc error: no closing `) found for @(` ...~%"))
+                                        (cw "; xdoc error in ~x0: no closing `) found for @(` ...~%" context))
                                    (mv acc state)))
                           (str (subseq x (+ n 3) end))
-                          ((mv acc state) (preprocess-eval str topics-fal base-pkg kpa state acc)))
-                       (preprocess-aux x (+ end 2) xl dir topics-fal base-pkg kpa state acc)))
+                          ((mv acc state) (preprocess-eval str context topics-fal base-pkg kpa state acc)))
+                       (preprocess-aux x (+ end 2) xl context topics-fal base-pkg kpa state acc)))
 
                     ((mv error command arg arg-raw n) (parse-directive x (+ n 2) xl base-pkg kpa))
                     ((when error)
                      (prog2$ (and (xdoc-verbose-p)
-                                  (cw "; xdoc error: ~x0.~%" error))
+                                  (cw "; xdoc error in ~x0: ~x1.~%" context error))
                              (mv acc state)))
                     ((mv acc state)
-                     (process-directive command arg arg-raw dir topics-fal base-pkg state acc)))
-                 (preprocess-aux x n xl dir topics-fal base-pkg kpa state acc)))
+                     (process-directive command arg arg-raw context topics-fal base-pkg state acc)))
+                 (preprocess-aux x n xl context topics-fal base-pkg kpa state acc)))
 
               (t
                ;; @ sign in some other context.
-               (preprocess-aux x (+ n 1) xl dir topics-fal base-pkg kpa state (cons #\@ acc)))))
+               (preprocess-aux x (+ n 1) xl context topics-fal base-pkg kpa state (cons #\@ acc)))))
 
        ((when (eql char #\Newline))
         ;; Gross hack #1: eat initial newlines from the start of a <code>
@@ -1323,19 +1252,20 @@ baz
             (if (and (< (+ n 1) xl)
                      (eql (char x (+ n 1)) #\Newline))
                 ;; Avoid eating multiple newlines at the start of a code block.
-                (preprocess-aux x (+ n 2) xl dir topics-fal base-pkg kpa state (cons #\Newline acc))
-              (preprocess-aux x (+ n 1) xl dir topics-fal base-pkg kpa state acc))
+                (preprocess-aux x (+ n 2) xl context topics-fal base-pkg kpa state (cons #\Newline acc))
+              (preprocess-aux x (+ n 1) xl context topics-fal base-pkg kpa state acc))
           ;; Gross hack #2: the XSLT transformer in firefox seems to have some
           ;; problems if there aren't spaces at the end of lines, e.g., it will
           ;; run together the hover-text in the hierarchical description in
           ;; preview.html.  Fix by putting a space before newlines.  Horrible.
-          (preprocess-aux x (+ n 1) xl dir topics-fal base-pkg kpa state
+          (preprocess-aux x (+ n 1) xl context topics-fal base-pkg kpa state
                           (list* #\Newline #\Space acc)))))
 
     ;; Otherwise just keep the char and keep going.
-    (preprocess-aux x (+ n 1) xl dir topics-fal base-pkg kpa state (cons char acc))))
+    (preprocess-aux x (+ n 1) xl context topics-fal base-pkg kpa state (cons char acc))))
 
-(defun preprocess-main (x dir topics-fal base-pkg state acc)
+(defun preprocess-main (x context topics-fal base-pkg state acc)
+  "Returns (mv acc state)"
   (declare (type (or string null) x))
   (b* ((x (or x ""))
        ;; (current-pkg    (acl2::f-get-global 'current-package state))
@@ -1343,9 +1273,9 @@ baz
        ;; ((mv & & state) (acl2::set-current-package (symbol-package-name base-pkg) state))
        (kpa            (known-package-alist state))
        (x              (transform-code x))
-       ((mv acc state) (preprocess-aux x 0 (length x) dir topics-fal base-pkg kpa state acc))
+       ((mv acc state) (preprocess-aux x 0 (length x) context topics-fal base-pkg kpa state acc))
        ;; Restore base-pkg for whoever called us.
        ;; ((mv & & state) (acl2::set-current-package current-pkg state))
        )
-      (mv acc state)))
+    (mv acc state)))
 

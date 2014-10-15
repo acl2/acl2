@@ -63,9 +63,16 @@
 ; include-book and assert-check-include-1.lisp (and
 ; assert-check-include-1.acl2) for a failed include-book.
 
-(assert!! (equal (access-command-tuple-form
-                  (cddr (car (scan-to-command (w state)))))
-                 '(exit-boot-strap-mode)))
+(local (make-event
+        (er-let* ((c (getenv$ "ACL2_CUSTOMIZATION" state)))
+          (value
+           (if (and c (not (equal c "NONE")))
+               `(value-triple
+                 (cw "SKIPPING due to ACL2_CUSTOMIZATION=~x0~%" ,c))
+             '(assert!!
+               (equal (access-command-tuple-form
+                       (cddr (car (scan-to-command (w state)))))
+                      '(exit-boot-strap-mode))))))))
 
 ; Make sure we get to the end when we include this book under
 ; assert-check-include.lisp but not under under assert-check-include-1.lisp.

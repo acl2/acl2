@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
@@ -33,7 +43,7 @@
                (vl-maybe-range-p (cdr val)))
   :fails gracefully
   :count weak
-  (seqw tokens warnings
+  (seq tokstream
         (when (vl-is-some-token? '(:vl-kwd-integer
                                    :vl-kwd-real
                                    :vl-kwd-realtime
@@ -104,7 +114,7 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seq tokstream
         (dir := (vl-match-some-token '(:vl-kwd-input :vl-kwd-output :vl-kwd-inout)))
         (when (vl-is-token? :vl-kwd-reg)
           (reg := (vl-match-token :vl-kwd-reg)))
@@ -140,7 +150,7 @@
                           :vl-signed
                         :vl-unsigned)))
               (ret (vl-build-taskports atts dir type range names)))
-           (mv nil ret tokens warnings)))))
+           (mv nil ret tokstream)))))
 
 
 ; task_port_item ::= { attribute_instance } tf_input_declaration
@@ -164,7 +174,7 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seq tokstream
         (atts := (vl-parse-0+-attribute-instances))
         (ins1 := (vl-parse-taskport-declaration atts))
         (unless (vl-is-token? :vl-comma)
@@ -246,7 +256,7 @@
   :resultp-of-nil t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seq tokstream
         (when (vl-is-some-token? '(:vl-kwd-input :vl-kwd-output :vl-kwd-inout))
           (decls := (vl-parse-taskport-declaration atts))
           (:= (vl-match-token :vl-semi))
@@ -260,7 +270,7 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seq tokstream
         (atts  := (vl-parse-0+-attribute-instances))
         (decls := (vl-parse-task-item-declaration-noatts atts))
         (return decls)))
@@ -275,17 +285,13 @@
   :true-listp t
   :fails never
   :count strong-on-value
-  (mv-let (erp first explore new-warnings)
-    (vl-parse-task-item-declaration)
-    (cond (erp
-           (mv nil nil tokens warnings))
-          (t
-           (mv-let (erp rest tokens warnings)
-             (vl-parse-0+-task-item-declarations :tokens explore
-                                                 :warnings new-warnings)
-             (declare (ignore erp))
-             (mv nil (append first rest) tokens warnings))))))
-
+  (b* ((backup (vl-tokstream-save))
+       ((mv erp first tokstream) (vl-parse-task-item-declaration))
+       ((when erp)
+        (b* ((tokstream (vl-tokstream-restore backup)))
+          (mv nil nil tokstream)))
+       ((mv ?erp rest tokstream) (vl-parse-0+-task-item-declarations)))
+    (mv nil (append first rest) tokstream)))
 
 
 ; function_declaration ::=
@@ -330,7 +336,7 @@
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seq tokstream
 
         (function := (vl-match-token :vl-kwd-function))
         (when (vl-is-token? :vl-kwd-automatic)
@@ -364,7 +370,7 @@
                                       :body       stmt
                                       :atts       atts
                                       :loc        (vl-token->loc function))))
-             (mv nil ret tokens warnings))))
+             (mv nil ret tokstream))))
 
         ;; Variant 2.
         (:= (vl-match-token :vl-lparen))
@@ -391,7 +397,7 @@
                                     :body       stmt
                                     :atts       atts
                                     :loc        (vl-token->loc function))))
-           (mv nil ret tokens warnings)))))
+           (mv nil ret tokstream)))))
 
 
 
@@ -415,7 +421,7 @@
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seqw tokens warnings
+  (seq tokstream
 
         (task := (vl-match-token :vl-kwd-task))
         (when (vl-is-token? :vl-kwd-automatic)

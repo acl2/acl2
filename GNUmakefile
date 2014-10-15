@@ -1,6 +1,6 @@
 #  -*- Fundamental -*- 
 
-# ACL2 Version 6.4 -- A Computational Logic for Applicative Common Lisp
+# ACL2 Version 6.5 -- A Computational Logic for Applicative Common Lisp
 # Copyright (C) 2014, Regents of the University of Texas
 
 # This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -138,7 +138,7 @@ endif
 
 $(info ACL2_WD is $(ACL2_WD))
 
-# The variable NONSTD should be defined for the non-standard version and not
+# The variable ACL2_REAL should be defined for the non-standard version and not
 # for the standard version.  Non-standard ACL2 images will end in saved_acl2r
 # rather than saved_acl2.  ACL2_HONS, ACL2_PAR, ACL2_DEVEL, and ACL2_WAG (for
 # feature write-arithmetic-goals) are similar (with suffixes h,
@@ -161,7 +161,7 @@ endif
 ifdef ACL2_DEVEL
 	ACL2_SUFFIX := $(ACL2_SUFFIX)d
 endif
-ifdef NONSTD
+ifdef ACL2_REAL
 	ACL2_SUFFIX := $(ACL2_SUFFIX)r
 endif
 
@@ -268,7 +268,7 @@ acl2r.lisp:
 # sometimes on Unix.
 	rm -f acl2-fns.o
 	echo "" > acl2r.lisp
-	if [ "$(NONSTD)" != "" ] ; then \
+	if [ "$(ACL2_REAL)" != "" ] ; then \
 	echo '(or (member :non-standard-analysis *features*) (push :non-standard-analysis *features*))' >> acl2r.lisp ;\
 	fi
 	if [ "$(ACL2_HONS)" != "" ] ; then \
@@ -520,10 +520,11 @@ proofs: compile-ok
 .PHONY: DOC acl2-manual
 
 # The next target, DOC, is the target that should generally be used
-# for rebuilding the ACL2 User's Manual.  See the warnings for some
-# targets below.  Also note the following:
+# for rebuilding the ACL2 User's Manual.
+# WARNING: Sub-targets below have their own warnings!
+# WARNING: This is unlikely to work with ACL2; use ACL2(h).
 # WARNING: We suggest that you supply ACL2=, e.g., make DOC
-# ACL2=/u/acl2/saved_acl2.  Otherwise parts of the build might use
+# ACL2=/u/acl2/saved_acl2h.  Otherwise parts of the build might use
 # copies of ACL2 that surprise you.  (It seems awkward to pass
 # ACL2 through recursive calls of make so we leave this to the
 # user.)
@@ -647,7 +648,7 @@ large: acl2r full init
 
 .PHONY: large-acl2r
 large-acl2r:
-	$(MAKE) large NONSTD=r
+	$(MAKE) large ACL2_REAL=r
 
 .PHONY: large-acl2h
 large-acl2h:

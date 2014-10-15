@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original authors: Sol Swords <sswords@centtech.com>
 ;                   Jared Davis <jared@centtech.com>
@@ -290,6 +300,44 @@ truth table:</p>
 
   (prove-4v-equiv-cong 4v-not (a)))
 
+
+(defsection 4v-xdet
+  :parents (4v-operations)
+  :short "X-detection or identity circuit."
+
+  :long "<p>@(call 4v-xdet) returns the value specified by the following
+truth table:</p>
+
+@({
+    a  |  out
+  -----+-------
+    T  |   F
+    F  |   F
+    X  |   X
+    Z  |   X
+  -----+-------
+})
+
+<p>This is a special operation that does not correspond to any sort of hardware
+circuit, but that is useful for efficiently implementing the x-detection
+semantics of Verilog's vector arithmetic operations.</p>"
+
+  (definline 4v-xdet (a)
+    (declare (xargs :guard t))
+    (4vcases a
+      (t (4vf))
+      (f (4vf))
+      (& (4vx))))
+
+  (defthm 4v-xdet-truth-table
+    ;; "Correctness" of 4v-xdet
+    (and (equal (4v-xdet (4vt)) (4vf))
+         (equal (4v-xdet (4vf)) (4vf))
+         (equal (4v-xdet (4vx)) (4vx))
+         (equal (4v-xdet (4vz)) (4vx)))
+    :rule-classes nil)
+
+  (prove-4v-equiv-cong 4v-xdet (a)))
 
 
 (defsection 4v-and
@@ -982,13 +1030,14 @@ specification).</p>
 
 
 
-(def-ruleset 4v-op-defs '(4v-fix 4v-unfloat 4v-not 4v-and 4v-or 4v-xor 4v-iff
+(def-ruleset 4v-op-defs '(4v-fix 4v-unfloat 4v-not 4v-xdet 4v-and 4v-or 4v-xor 4v-iff
                                  4v-res 4v-ite 4v-ite* 4v-zif 4v-tristate 4v-pullup
                                  4v-wand 4v-wor))
 
 (def-ruleset 4v-op-execs '((4v-fix$inline)
                            (4v-unfloat$inline)
                            (4v-not$inline)
+                           (4v-xdet$inline)
                            (4v-and$inline)
                            (4v-or$inline)
                            (4v-xor$inline)
@@ -1132,6 +1181,7 @@ value of the input, then we are unsure of the value of the output.</p>"
   (prove-4v-monotonic 4v-fix (a))
   (prove-4v-monotonic 4v-unfloat (a))
   (prove-4v-monotonic 4v-not (a))
+  (prove-4v-monotonic 4v-xdet (a))
   (prove-4v-monotonic 4v-and (a b))
   (prove-4v-monotonic 4v-or (a b))
   (prove-4v-monotonic 4v-xor (a b))

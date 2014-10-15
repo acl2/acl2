@@ -1,19 +1,6 @@
 ; ihs-init.lisp -- root of the IHS libraries
 ; Copyright (C) 1997  Computational Logic, Inc.
-
-; This book is free software; you can redistribute it and/or modify
-; it under the terms of the GNU General Public License as published by
-; the Free Software Foundation; either version 2 of the License, or
-; (at your option) any later version.
-
-; This book is distributed in the hope that it will be useful,
-; but WITHOUT ANY WARRANTY; without even the implied warranty of
-; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-; GNU General Public License for more details.
-
-; You should have received a copy of the GNU General Public License
-; along with this book; if not, write to the Free Software
-; Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
 ;;;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ;;;
@@ -308,18 +295,37 @@
 ;;;  REWRITE-THEORY name
 ;;;  REWRITE-FREE-THEORY name
 
+(defun rewrite-theory-rec (theory ans)
+  (declare (xargs :guard (and (true-listp theory)
+                              (true-listp ans))))
+  (cond ((endp theory) (reverse ans))
+	((and (consp (car theory))
+	      (equal (caar theory) :rewrite))
+         (rewrite-theory-rec (cdr theory)
+                             (cons (car theory) ans)))
+	(t (rewrite-theory-rec (cdr theory) ans))))
+
 (defun rewrite-theory (theory)
   ":doc-section ihs-utilities
   Collects all of the :REWRITE runes from theory.~/~/~/
   "
+; Changed by Matt K. 9/2014 to use tail recursion.
 
   (declare (xargs :guard (true-listp theory)))
-  (cond ((endp theory) ())
+  (rewrite-theory-rec theory nil))
+
+(defun rewrite-free-theory-rec (theory ans)
+
+  ;;  The guard is provided only to admit the function.
+  (declare (xargs :guard (and (true-listp theory)
+                              (true-listp ans))))
+
+  (cond ((endp theory) (reverse ans))
 	((and (consp (car theory))
 	      (equal (caar theory) :rewrite))
-	 (cons (car theory)
-	       (rewrite-theory (cdr theory))))
-	(t (rewrite-theory (cdr theory)))))
+	 (rewrite-free-theory-rec (cdr theory) ans))
+	(t (rewrite-free-theory-rec (cdr theory)
+                                    (cons (car theory) ans)))))
 
 (defun rewrite-free-theory (theory)
   ";doc-section ihs-utilities
@@ -328,23 +334,63 @@
 
   ;;  The guard is provided only to admit the function.
   (declare (xargs :guard (true-listp theory)))
-  (set-difference-equal theory (rewrite-theory theory)))
+
+; Changed by Matt K. 9/2014 to use tail recursion.
+
+; Old comment:
+
+; Change by Matt K. mod, 6/9/2014: The use of set-difference-equal here and/or
+; in definition-free-theory caused a stack overflow in Allegro CL.  Even in
+; CCL, we found that it took over 10 seconds on a reasonably modern machine to
+; evaluate the form
+; (rewrite-free-theory (definition-free-theory (universal-theory 'ihs-theories)))
+; after
+; (include-book "centaur/vl/top" :dir :system)
+; and
+; (include-book "ihs/ihs-theories" :dir :system).
+; After the change to this function and definition-free-theory, the time was
+; reduced to 0.05 seconds (realtime and runtime) -- reduction by more than two
+; orders of magnitude!  The above evaluation produced the same result, up to
+; ordering, after the changes.
+
+; (set-difference-equal theory (rewrite-theory theory)
+
+  (rewrite-free-theory-rec theory nil))
 
 ;;;  DEFINITION-THEORY name
 ;;;  DEFINITION-FREE-THEORY name
+
+(defun definition-theory-rec (theory ans)
+
+; Changed by Matt K. 9/2014 to use tail recursion.
+
+  (declare (xargs :guard (and (true-listp theory)
+                              (true-listp ans))))
+  (cond ((endp theory) (reverse ans))
+	((and (consp (car theory))
+	      (equal (caar theory) :definition))
+	 (definition-theory-rec (cdr theory) (cons (car theory) ans)))
+	(t (definition-theory-rec (cdr theory) ans))))
 
 (defun definition-theory (theory)
   ":doc-section ihs-utilities
   Collects all of the :DEFINITION runes from theory.~/~/~/
   "
+; Changed by Matt K. 9/2014 to use tail recursion.
 
   (declare (xargs :guard (true-listp theory)))
-  (cond ((endp theory) ())
+  (definition-theory-rec theory nil))
+
+(defun definition-free-theory-rec (theory ans)
+
+  ;;  The guard is provided only to admit the function.
+  (declare (xargs :guard (and (true-listp theory)
+                              (true-listp ans))))
+  (cond ((endp theory) (reverse ans))
 	((and (consp (car theory))
 	      (equal (caar theory) :definition))
-	 (cons (car theory)
-	       (definition-theory (cdr theory))))
-	(t (definition-theory (cdr theory)))))
+	 (definition-free-theory-rec (cdr theory) ans))
+	(t (definition-free-theory-rec (cdr theory) (cons (car theory) ans)))))
 
 (defun definition-free-theory (theory)
   "doc-section ihs-utilities
@@ -352,26 +398,34 @@
   "
   ;;  The guard is provided only to admit the function.
   (declare (xargs :guard (true-listp theory)))
-  (set-difference-equal theory (definition-theory theory)))
+
+; Changed by Matt K. 9/2014 to use tail recursion.
+
+; Earlier change by Matt K. mod, 6/9/2014: Also see rewrite-free-theory for why
+; we didn't use this:
+
+; (set-difference-equal theory (definition-theory theory)
+
+  (definition-free-theory-rec theory nil))
 
 ;;;  DEFUN-THEORY
 
-(defun defun-theory-fn (names theory quiet missing)
+(defun defun-theory-fn-rec (names theory quiet missing ans)
   ;;  The guard is provided only to admit the function.
-  (declare (xargs :guard (symbol-listp names)
+  (declare (xargs :guard (and (symbol-listp names)
+                              (true-listp ans))
 		  :verify-guards nil))
   (cond ((endp names)
-	 (cond ((or quiet (null missing)) nil)
+	 (cond ((or quiet (null missing)) (reverse ans))
 	       (t (er hard 'DEFUN-THEORY
-		      "The following names you supplied to ~
-                          DEFUN-THEORY do not have a :DEFINITION ~
-                          in the theory you ~
-                          supplied.  Check to make sure that the theory is ~
-                          correct (it defaults to (UNIVERSAL-THEORY :HERE)) ~
-                          and that these are not the names of macros. ~
-                          To avoid this message specify :QUIET T in the ~
-                          call to DEFUN-THEORY. ~
-                          Missing names: ~p0" missing))))
+		      "The following names you supplied to DEFUN-THEORY do ~
+                       not have a :DEFINITION in the theory you supplied.  ~
+                       Check to make sure that the theory is correct (it ~
+                       defaults to (UNIVERSAL-THEORY :HERE)) and that these ~
+                       are not the names of macros. To avoid this message ~
+                       specify :QUIET T in the call to DEFUN-THEORY. Missing ~
+                       names: ~p0"
+                      missing))))
 	(t
 	 (let*
 	     ((name (car names))
@@ -381,15 +435,21 @@
 	      (typerune `(:TYPE-PRESCRIPTION ,name))
 	      (tail (member-equal defrune theory)))
 	   (cond
-	    ((not tail) (defun-theory-fn
-			  (cdr names) theory quiet (cons name missing)))
-	    (t (cons
-		defrune
-		(append
-		 (if (member-equal execrune tail) (list execrune) nil)
-		 (if (member-equal inductrune tail) (list inductrune) nil)
-		 (if (member-equal typerune tail) (list typerune) nil)
-		 (defun-theory-fn (cdr names) theory quiet missing)))))))))
+	    ((not tail) (defun-theory-fn-rec
+			  (cdr names) theory quiet (cons name missing) ans))
+            (t (defun-theory-fn-rec (cdr names) theory quiet missing
+                 (append
+                  (if (member-equal typerune tail) (list typerune) nil)
+                  (if (member-equal inductrune tail) (list inductrune) nil)
+                  (if (member-equal execrune tail) (list execrune) nil)
+                  (cons defrune ans)))))))))
+
+(defun defun-theory-fn (names theory quiet missing)
+  ;;  The guard is provided only to admit the function.
+  (declare (xargs :guard (symbol-listp names)
+		  :verify-guards nil))
+; Changed by Matt K. 9/2014 to use tail recursion.
+  (defun-theory-fn-rec names theory quiet missing nil))
 
 (defmacro defun-theory
   (names &key
@@ -413,24 +473,25 @@
 
 ;;;  DEFUN-TYPE/EXEC-THEORY
 
-(defun defun-type/exec-theory-fn (names theory quiet missing)
+(defun defun-type/exec-theory-fn-rec (names theory quiet missing ans)
   ;;  The guard is provided only to admit the function.
-  (declare (xargs :guard (symbol-listp names)
+  (declare (xargs :guard (and (symbol-listp names)
+                              (true-listp ans))
 		  :verify-guards nil))
+; Changed by Matt K. 9/2014 to use tail recursion.
   (cond ((endp names)
-	 (cond ((or quiet (null missing)) nil)
+	 (cond ((or quiet (null missing)) (reverse ans))
 	       (t (er hard 'DEFUN-TYPE/EXEC-THEORY
 		      "The following names you supplied to ~
-                       DEFUN-TYPE/EXEC-THEORY do not have an ~
-                      :INDUCTION, ~
-                      :EXECUTABLE-COUNTERPART, or any ~
-                      :TYPE-PRESECRIPTIONs in the theory you ~
-                      supplied.  Check to make sure that the theory is ~
-                      correct (it defaults to (UNIVERSAL-THEORY :HERE)) ~
-                      and that these are not the names of macros. ~
-                      To avoid this message specify :QUIET T in the ~
-                      call to DEFUN-TYPE/EXEC-THEORY. ~
-                      Missing names: ~p0" missing))))
+                       DEFUN-TYPE/EXEC-THEORY do not have an :INDUCTION, ~
+                       :EXECUTABLE-COUNTERPART, or any :TYPE-PRESECRIPTIONs ~
+                       in the theory you supplied.  Check to make sure that ~
+                       the theory is correct (it defaults to ~
+                       (UNIVERSAL-THEORY :HERE)) and that these are not the ~
+                       names of macros. To avoid this message specify :QUIET ~
+                       T in the call to DEFUN-TYPE/EXEC-THEORY. Missing ~
+                       names: ~p0"
+                      missing))))
 	(t
 	 (let* ((name (car names))
 		(execrune `(:EXECUTABLE-COUNTERPART ,name))
@@ -438,16 +499,22 @@
 		(typerune `(:TYPE-PRESCRIPTION ,name))
 		(thy
 		 (append
-		  (if (member-equal execrune theory) (list execrune) nil)
+		  (if (member-equal typerune theory) (list typerune) nil)
 		  (if (member-equal inductrune theory) (list inductrune) nil)
-		  (if (member-equal typerune theory) (list typerune) nil))))
+                  (if (member-equal execrune theory) (list execrune) nil))))
 	   (cond ((null thy)
-		  (defun-type/exec-theory-fn
-		    (cdr names) theory quiet (cons name missing)))
-	    (t (append
-		thy
-		(defun-type/exec-theory-fn (cdr names)
-		  theory quiet missing))))))))
+		  (defun-type/exec-theory-fn-rec
+		    (cdr names) theory quiet (cons name missing) ans))
+                 (t (defun-type/exec-theory-fn-rec
+                      (cdr names) theory quiet missing
+                      (append thy ans))))))))
+
+(defun defun-type/exec-theory-fn (names theory quiet missing)
+  ;;  The guard is provided only to admit the function.
+  (declare (xargs :guard (symbol-listp names)
+		  :verify-guards nil))
+; Changed by Matt K. 9/2014 to use tail recursion.
+  (defun-type/exec-theory-fn-rec names theory quiet missing nil))
 
 (defmacro defun-type/exec-theory
   (names &key

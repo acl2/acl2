@@ -5,6 +5,9 @@
 (in-package "ACL2")
 (include-book "costs")
 
+(local (in-theory (e/d (mv-nth)
+                       (mv-nth-cons-meta))))
+
 ;; Subproblem: Given a subtree, for each character in the sequences find the
 ;; minimum contribution of that subtree, and for each assignment of a state to
 ;; the root node decide whether that assignment can achieve the minimum

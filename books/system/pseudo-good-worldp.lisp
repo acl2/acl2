@@ -2088,6 +2088,13 @@
       (booleanp val)))
 
 ;-----------------------------------------------------------------
+; NON-MEMOIZABLE
+
+(defun non-memoizablep (sym val)
+  (declare (ignore sym))
+  (booleanp val))
+
+;-----------------------------------------------------------------
 ; NTH-UPDATE-REWRITER-TARGETP
 
 (defun nth-update-rewriter-targetpp (sym val)
@@ -2777,6 +2784,7 @@
           (NEG-IMPLICANTS (pseudo-neg-implicantsp sym val))
           (NON-EXECUTABLEP (or (eq val *acl2-property-unbound*) ; upgrade proxy
                                (non-executablepp sym val)))
+          (NON-MEMOIZABLE (non-memoizablep sym val))
           (NTH-UPDATE-REWRITER-TARGETP (nth-update-rewriter-targetpp sym val))
           (PEQUIVS (pequivsp sym val))
           (POS-IMPLICANTS (pseudo-pos-implicantsp sym val))

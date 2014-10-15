@@ -6,22 +6,32 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
 (include-book "expr-tools")
 (include-book "range-tools")
-(include-book "find-item")
+(include-book "scopestack")
 (local (include-book "../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
 
@@ -87,10 +97,7 @@
 
 
 (fty::deflist vl-directionlist
-  :elt-type vl-direction-p)
-
-(deflist vl-directionlist-p (x)
-  (vl-direction-p x)
+  :elt-type vl-direction-p
   :elementp-of-nil nil)
 
 (define vl-basic-portexpr-p ((x vl-maybe-expr-p))
@@ -276,11 +283,11 @@ return a list of strings.</p>"
     (vl-port->expr x))))
 
 
+
 (define vl-port-direction-aux
   :parents (vl-port-direction)
   ((names     string-listp)
-   (portdecls vl-portdecllist-p)
-   (palist    (equal palist (vl-portdecl-alist portdecls)))
+   (scope     vl-scope-p)
    (warnings  vl-warninglist-p)
    (port      vl-port-p))
   :returns
@@ -291,9 +298,9 @@ return a list of strings.</p>"
   (b* (((when (atom names))
         (mv t (ok) nil))
        (name1 (string-fix (car names)))
-       (decl (vl-fast-find-portdecl name1 portdecls palist))
+       (decl (vl-scope-find-portdecl-fast name1 scope))
        ((mv successp warnings directions)
-        (vl-port-direction-aux (cdr names) portdecls palist warnings port))
+        (vl-port-direction-aux (cdr names) scope warnings port))
        ((when decl)
         (mv successp warnings (cons (vl-portdecl->dir decl) directions))))
     (mv nil
@@ -309,10 +316,8 @@ return a list of strings.</p>"
   :short "Attempt to determine the direction for a port."
   ((port      "The port whose direction is being decided."
               vl-port-p)
-   (portdecls "The list of all portdecls for this module."
-              vl-portdecllist-p)
-   (palist    "Precomputed fast alist for these portdecls."
-              (equal palist (vl-portdecl-alist portdecls)))
+   (scope     "The module or interface containing the port."
+              vl-scope-p)
    (warnings  "Ordinary warnings accumulator, may be extended with non-fatal
                warnings."
               vl-warninglist-p))
@@ -343,7 +348,7 @@ and add a warning that this case is very unusual.</p>"
 
        (names (vl-port-internal-wirenames port))
        ((mv successp warnings dirs)
-        (vl-port-direction-aux names portdecls palist warnings port))
+        (vl-port-direction-aux names scope warnings port))
        ((unless successp)
         (mv (ok) nil))
 
@@ -360,8 +365,8 @@ and add a warning that this case is very unusual.</p>"
   ///
   (defthm vl-direction-p-of-vl-port-direction
     (equal (vl-direction-p
-            (mv-nth 1 (vl-port-direction port portdecls palist warnings)))
-           (if (mv-nth 1 (vl-port-direction port portdecls palist warnings))
+            (mv-nth 1 (vl-port-direction port scope warnings)))
+           (if (mv-nth 1 (vl-port-direction port scope warnings))
                t
              nil))))
 
@@ -392,8 +397,8 @@ and add a warning that this case is very unusual.</p>"
 
 (define vl-arguments-blankfree-p ((x vl-arguments-p))
   (vl-arguments-case x
-    :named (vl-namedarglist-blankfree-p x.args)
-    :plain (vl-plainarglist-blankfree-p x.args)))
+    :vl-arguments-named (vl-namedarglist-blankfree-p x.args)
+    :vl-arguments-plain (vl-plainarglist-blankfree-p x.args)))
 
 (define vl-modinst-blankfree-p ((x vl-modinst-p))
   :inline t

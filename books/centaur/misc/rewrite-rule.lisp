@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original authors: Jared Davis <jared@centtech.com>
 ;                   Sol Swords <sswords@centtech.com>
@@ -22,43 +32,24 @@
 (in-package "ACL2")
 (include-book "std/util/define" :dir :system)
 
-;; Accessors for rewrite rules, since otherwise the proof obligations become
-;; giant cadaddrpillars.
-
-(define rewrite-rule->rune ((rule weak-rewrite-rule-p))
-  :inline t
-  (access rewrite-rule rule :rune))
-
-(define rewrite-rule->hyps ((rule weak-rewrite-rule-p))
-  :inline t
-  (access rewrite-rule rule :hyps))
-
-(define rewrite-rule->lhs ((rule weak-rewrite-rule-p))
-  :inline t
-  (access rewrite-rule rule :lhs))
-
-(define rewrite-rule->rhs ((rule weak-rewrite-rule-p))
-  :inline t
-  (access rewrite-rule rule :rhs))
-
-(define rewrite-rule->equiv ((rule weak-rewrite-rule-p))
-  :inline t
-  (access rewrite-rule rule :equiv))
-
-(define rewrite-rule->subclass ((rule weak-rewrite-rule-p))
-  :inline t
-  (access rewrite-rule rule :subclass))
-
-(define rewrite-rule->heuristic-info ((rule weak-rewrite-rule-p))
-  :inline t
-  (access rewrite-rule rule :heuristic-info))
-
+(include-book "std/util/defaggrify-defrec" :dir :system)
+(std::defaggrify-defrec rewrite-rule)
 
 (define drw-get-rules ((fn symbolp)
                        (world plist-worldp))
   :returns rules
   (fgetprop fn 'lemmas nil world))
 
+(in-theory (disable rewrite-rule->rune
+                    rewrite-rule->hyps
+                    rewrite-rule->lhs
+                    rewrite-rule->rhs
+                    rewrite-rule->equiv
+                    rewrite-rule->subclass
+                    rewrite-rule->heuristic-info))
+
+
+;; BOZO should extend defaggrify-defrec to do this sort of thing.
 
 (defmacro make-rewrite-rule (&key rune nume hyps equiv lhs rhs subclass
                                   heuristic-info backchain-limit-lst

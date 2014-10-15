@@ -1,18 +1,6 @@
 ; Conversion from ACL2 :DOC into XDOC Format
-; Copyright (C) 2011  University of Texas at Austin
-
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of Version 2 of the GNU General Public License as published by the
-; Free Software Foundation.
-
-; This program is distributed in the hope that it will be useful,
-; but WITHOUT ANY WARRANTY; without even the implied warranty of
-; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-; GNU General Public License for more details.
-
-; You should have received a copy of the GNU General Public License
-; along with this program; if not, write to the Free Software
-; Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+; Copyright (C) 2014, Regents of the University of Texas
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
 ; Written by:  Matt Kaufmann               and J Strother Moore
 ; email:       Kaufmann@cs.utexas.edu      and Moore@cs.utexas.edu

@@ -1,34 +1,34 @@
 #!/usr/bin/env perl
 
-######################################################################
-## NOTE.  This file is not part of the standard ACL2 books build
-## process; it is part of an experimental build system that is not yet
-## intended, for example, to be capable of running the whole
-## regression.  The ACL2 developers do not maintain this file.
-##
-## Please contact Sol Swords <sswords@cs.utexas.edu> with any
-## questions/comments.
-######################################################################
-
-# Copyright 2008 by Sol Swords.
-
-
-
-#; This program is free software; you can redistribute it and/or modify
-#; it under the terms of the GNU General Public License as published by
-#; the Free Software Foundation; either version 2 of the License, or
-#; (at your option) any later version.
-
-#; This program is distributed in the hope that it will be useful,
-#; but WITHOUT ANY WARRANTY; without even the implied warranty of
-#; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#; GNU General Public License for more details.
-
-#; You should have received a copy of the GNU General Public License
-#; along with this program; if not, write to the Free Software
-#; Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-
-
+# cert.pl build system
+# Copyright (C) 2008-2014 Centaur Technology
+#
+# Contact:
+#   Centaur Technology Formal Verification Group
+#   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+#   http://www.centtech.com/
+#
+# License: (An MIT/X11-style license)
+#
+#   Permission is hereby granted, free of charge, to any person obtaining a
+#   copy of this software and associated documentation files (the "Software"),
+#   to deal in the Software without restriction, including without limitation
+#   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+#   and/or sell copies of the Software, and to permit persons to whom the
+#   Software is furnished to do so, subject to the following conditions:
+#
+#   The above copyright notice and this permission notice shall be included in
+#   all copies or substantial portions of the Software.
+#
+#   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+#   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+#   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+#   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+#   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+#   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+#   DEALINGS IN THE SOFTWARE.
+#
+# Original author: Sol Swords <sswords@centtech.com>
 
 # This script scans for dependencies of some ACL2 .cert files.
 # Run "perl cert.pl -h" for usage.
@@ -54,13 +54,16 @@ use Getopt::Long qw(:config bundling_override);
 (do "$RealBin/certlib.pl") or die ("Error loading $RealBin/certlib.pl:\n!: $!\n\@: $@\n");
 (do "$RealBin/paths.pl") or die ("Error loading $RealBin/paths.pl:\n!: $!\n\@: $@\n");
 
-my %reqparams = ("hons-only" => "HONS_ONLY",
-		 "uses-glucose" => "USES_GLUCOSE",
+my %reqparams = ("hons-only"      => "HONS_ONLY",
+		 "uses-glucose"   => "USES_GLUCOSE",
 		 "uses-quicklisp" => "USES_QUICKLISP",
-		 "ansi-only" =>  "ANSI_ONLY",
-		 "uses-acl2r" => "USES_ACL2R",
-		 "non-acl2r" => "NON_ACL2R",
-		 "ccl-only" => "CCL_ONLY",
+		 "ansi-only"      => "ANSI_ONLY",
+		 "uses-acl2r"     => "USES_ACL2R",
+		 "non-acl2r"      => "NON_ACL2R",
+		 "ccl-only"       => "CCL_ONLY",
+		 'non-lispworks'  => "NON_LISPWORKS",
+		 'non-allegro'    => "NON_ALLEGRO",
+		 'non-sbcl'       => "NON_SBCL"
     );
 
 # use lib "/usr/lib64/perl5/5.8.8/x86_64-linux-thread-multi/Devel";
@@ -92,7 +95,9 @@ my %certlib_opts = ( "debugging" => 0,
 		     "clean_certs" => 0,
 		     "print_deps" => 0,
 		     "all_deps" => 1,
-                     "believe_cache" => 0 );
+                     "believe_cache" => 0,
+                     "pcert_all" => 0 );
+my $target_ext = "cert";
 my $cache_file = 0;
 my $bin_dir = $ENV{'CERT_PL_BIN_DIR'};
 my $params_file = 0;
@@ -172,7 +177,7 @@ gets certified, such as whether it uses provisional certification
 (pcert), acl2x expansion (acl2x), and skip-proofs during acl2x
 expansion (acl2xskip).
 
-See files make-targets and regression-targets for example uses of
+See the documentation topic BOOKS-CERTIFICATION for supported uses of
 cert.pl.
 
 SPECIAL MAKEFILE VARIABLES
@@ -413,6 +418,19 @@ COMMAND LINE OPTIONS
 
    --write-certs <filename>
           Dump the list of all cert files, one per line, into filename.
+
+   --pcert-all
+          Allow provisional certification for all books, not just the ones with
+          the \'pcert\' cert_param.
+
+   --target-ext <extension>
+   -e <extension>
+          Normally, when targets are specified by their source filename (.lisp)
+          or without an extension, rather than by their target filename (.cert,
+          .acl2x, .pcert0, .pcert1) or when targets are specified as dependencies
+          of some book with \'-p\', the target extension used is \'cert\'.
+          This option allows you to specify this default extension as (say)
+          \'pcert0\' instead.
 ';
 
 GetOptions ("help|h"               => sub { print $summary_str;
@@ -428,7 +446,7 @@ GetOptions ("help|h"               => sub { print $summary_str;
 	    "no-boilerplate"       => \$no_boilerplate,
 	    "var-prefix=s"         => \$var_prefix,
 	    "o=s"                  => \$mf_name,
-	    "all-deps|d"           => sub { $certlib_opts{"all_deps"} = !$certlib_opts{"all_deps"}; },
+	    "all-deps|d"           => sub { print("The --all-deps/-d option no longer does anything."); },
 	    "static-makefile|s=s"  => sub {shift;
 					   $mf_name = shift;
 					   $certlib_opts{"all_deps"} = 1;
@@ -485,6 +503,8 @@ GetOptions ("help|h"               => sub { print $summary_str;
 	    "params=s"             => \$params_file,
             "write-certs=s"        => \$write_certs,
             "write-sources=s"        => \$write_sources,
+            "pcert-all"            =>\$certlib_opts{"pcert_all"},
+            "target-ext|e=s"       => \$target_ext,
 	    "<>"                   => sub { push(@user_targets, shift); },
 	    );
 
@@ -559,9 +579,31 @@ $ENV{"ACL2_SYSTEM_BOOKS"} = $acl2_books_env;
 
 my $depdb = new Depdb(evcache => $cache);
 
-my ($targets_ref, $labels_ref) = process_labels_and_targets(\@user_targets, $depdb);
+$target_ext =~ s/^\.//; 
+
+my @valid_exts = ("cert", "acl2x", "pcert0", "pcert1");
+my $ext_valid = 0;
+foreach my $ext (@valid_exts) {
+    if ($target_ext eq $ext) {
+	$ext_valid = 1;
+	last;
+    }
+}
+if (! $ext_valid) {
+    die("Bad --target-ext/-e option: ${target_ext}.  Possibilities are:\n" +
+	join(", ", @valid_exts));
+}
+
+
+my ($targets_ref, $labels_ref) = process_labels_and_targets(\@user_targets, $depdb, $target_ext);
 my @targets = @$targets_ref;
 my %labels = %$labels_ref;
+
+# print "Targets\n";
+# for my $targ (@targets) {
+#     print "$targ\n";
+# }
+# print "end targets\n";
 
 unless (@targets) {
     print "\nError: No targets provided.\n";
@@ -570,7 +612,8 @@ unless (@targets) {
 }
 
 foreach my $target (@targets) {
-    add_deps($target, $depdb, 0);
+    (my $tcert = $target) =~ s/\.(acl2x|pcert(0|1))/\.cert/;
+    add_deps($tcert, $depdb, 0);
 }
 
 if ($params_file && open (my $params, "<", $params_file)) {
@@ -776,6 +819,7 @@ unless ($no_makefile) {
     }
 
     my $warned_bindir = 0;
+    my $pcert_all = $certlib_opts{"pcert_all"};
 
     # write out the dependencies
     foreach my $cert (@certs) {
@@ -785,7 +829,7 @@ unless ($no_makefile) {
 	my $image = cert_image($cert, $depdb);
 	my $useacl2x = cert_get_param($cert, $depdb, "acl2x") || 0;
 	# BOZO acl2x implies no pcert
-	my $pcert_ok = ( ! $useacl2x && cert_get_param($cert, $depdb, "pcert")) || 0;
+	my $pcert_ok = ( ! $useacl2x && (cert_get_param($cert, $depdb, "pcert") || $pcert_all)) || 0;
 	my $acl2xskip = cert_get_param($cert, $depdb, "acl2xskip") || 0;
 
 	print $mf make_encode($cert) . " : acl2x = $useacl2x\n";
@@ -825,7 +869,14 @@ unless ($no_makefile) {
 	    print $mf "\n\n";
 	    print $mf make_encode($acl2xfile) . " : acl2xskip = $acl2xskip\n";
 	    print $mf make_encode($acl2xfile) . " :";
-	    foreach my $dep (@$certdeps, @$srcdeps, @$otherdeps) {
+	    foreach my $dep (@$certdeps) {
+		# Note: Ideally we would only depend on the sequential dep here.
+		# But currently ACL2 doesn't allow inclusion of provisionally-certified
+		# books by a write-acl2x step.
+		# print $mf " \\\n     " . make_encode(cert_sequential_dep($dep, $depdb));
+		print $mf " \\\n     " . make_encode($dep);
+	    }
+	    foreach my $dep (@$srcdeps, @$otherdeps) {
 		print $mf " \\\n     " . make_encode($dep);
 	    }
 	    if ($image && ($image ne "acl2")) {
@@ -845,13 +896,15 @@ unless ($no_makefile) {
     }
 
     # Write dependencies for pcert mode.
-    print $mf "ifneq (\$(ACL2_PCERT),)\n\n";
+    # print $mf "ifneq (\$(ACL2_PCERT),)\n\n";
 
     foreach my $cert (@certs) {
 	my $useacl2x = cert_get_param($cert, $depdb, "acl2x") || 0;
 	# BOZO acl2x implies no pcert
-	my $pcert_ok = (! $useacl2x && cert_get_param($cert, $depdb, "pcert")) || 0;
-
+	my $pcert_ok = (! $useacl2x && (cert_get_param($cert, $depdb, "pcert") || $pcert_all)) || 0;
+	if (! $pcert_ok) {
+	    next;
+	}
 	my $deps = cert_deps($cert, $depdb);
 	my $srcdeps = cert_srcdeps($cert, $depdb);
 	my $otherdeps = cert_otherdeps($cert, $depdb);
@@ -895,10 +948,14 @@ unless ($no_makefile) {
 	    print $mf "$encbase.pcert1 : $encbase.acl2x\n";
 	}
 	print $mf make_encode($cert) . " : $encbase.pcert1\n";
+	print $mf ".INTERMEDIATE: $encbase.pcert1\n";
+	print $mf ".PRECIOUS: $encbase.pcert1\n";
+	# print $mf ".SECONDARY: $encbase.pcert0\n";
+	print $mf ".PRECIOUS: $encbase.pcert0\n";
 	print $mf "\n";
     }
 
-    print $mf "\nendif\n\n";
+    # print $mf "\nendif\n\n";
 
 
     foreach my $incl (@include_afters) {
@@ -908,9 +965,11 @@ unless ($no_makefile) {
     close($mf);
 
     unless ($no_build) {
-	my $make_cmd = join(' ', (("$make -j $jobs -f $mf_name"
-				   . ($keep_going ? " -k" : "")),
-				  @make_args));
+	my $make_cmd = join(' ', ("$make -j $jobs -f $mf_name",
+				  ($keep_going ? " -k" : ""),
+				  @make_args,
+				  @targets));
+	print "$make_cmd\n";
 	if ($certlib_opts{"debugging"}) {
 	    print "$make_cmd\n";
 	}

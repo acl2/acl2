@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
@@ -38,6 +48,7 @@
 (include-book "std/strings/fast-cat" :dir :system)
 (include-book "misc/assert" :dir :system)
 (include-book "misc/definline" :dir :system) ;; bozo
+(include-book "std/system/non-parallel-book" :dir :system)
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "data-structures/list-defthms" :dir :system))
 
@@ -222,91 +233,6 @@ alist, and hence is a hash table lookup.</p>"
 
   (mbe :logic (if (member-equal a x) t nil)
        :exec (if (hons-get a alist) t nil)))
-
-
-(define all-equalp (a x)
-  :parents (utilities)
-  :short "@(call all-equalp) determines if every members of @('x') is equal to
-@('a')."
-
-  :long "<p>In the logic, we define @('all-equalp') in terms of
-@('replicate').</p>
-
-<p>We usually leave this enabled and prefer to reason about @('replicate')
-instead.  On the other hand, we also sometimes disable it and reason about it
-recursively, so we do prove a few theorems about it.</p>
-
-<p>For better execution speed, we use a recursive definition that does no
-consing.</p>"
-  :enabled t
-
-  (mbe :logic
-       (equal (list-fix x) (replicate (len x) a))
-       :exec
-       (if (consp x)
-           (and (equal a (car x))
-                (all-equalp a (cdr x)))
-         t))
-
-  :guard-hints(("Goal" :in-theory (enable all-equalp replicate)))
-
-  ///
-  (defrule all-equalp-when-atom
-    (implies (atom x)
-             (all-equalp a x)))
-
-  (defrule all-equalp-of-cons
-    (equal (all-equalp a (cons b x))
-           (and (equal a b)
-                (all-equalp a x)))
-    :enable replicate)
-
-  (local (in-theory (disable all-equalp)))
-
-  (defrule car-when-all-equalp
-    (implies (all-equalp a x)
-             (equal (car x)
-                    (if (consp x) a nil))))
-
-  (defrule all-equalp-of-cdr-when-all-equalp
-    (implies (all-equalp a x)
-             (all-equalp a (cdr x))))
-
-  (defrule all-equalp-of-append
-    (equal (all-equalp a (append x y))
-           (and (all-equalp a x)
-                (all-equalp a y)))
-    :induct (len x))
-
-  (defrule all-equalp-of-rev
-    (equal (all-equalp a (rev x))
-           (all-equalp a x))
-    :induct (len x))
-
-  (defrule all-equalp-of-replicate
-    (equal (all-equalp a (replicate n b))
-           (or (equal a b)
-               (zp n)))
-    :enable replicate)
-
-  (defrule all-equalp-of-take
-    (implies (all-equalp a x)
-             (equal (all-equalp a (take n x))
-                    (or (not a)
-                        (<= (nfix n) (len x)))))
-    :enable acl2::take-redefinition)
-
-  (defrule all-equalp-of-nthcdr
-    (implies (all-equalp a x)
-             (all-equalp a (nthcdr n x)))
-    :enable nthcdr)
-
-  (defrule member-equal-when-all-equalp
-    (implies (all-equalp a x)
-             (iff (member-equal b x)
-                  (and (consp x)
-                       (equal a b))))
-    :induct (len x)))
 
 
 
@@ -811,16 +737,11 @@ behavior in cases like:</p>
 
 
 
-(defun tuplep (n x)
-  (declare (xargs :guard (natp n)))
-  (mbe :logic (and (true-listp x)
-                   (equal (len x) n))
-       :exec (and (true-listp x)
-                  (eql (length x) n))))
 
 (deflist cons-listp (x)
   (consp x)
-  :elementp-of-nil nil)
+  :elementp-of-nil nil
+  :cheap t)
 
 (deflist cons-list-listp (x)
   (cons-listp x)
@@ -899,117 +820,6 @@ theorems.</p>"
 
 
 
-
-(defsection keys-boundp
-  :parents (utilities)
-  :short "@(call keys-boundp) determines if every key in @('keys') is bound in
-the alist @('alist')."
-
-  (defund keys-boundp-fal (keys alist)
-    (declare (xargs :guard t))
-    (if (atom keys)
-        t
-      (and (hons-get (car keys) alist)
-           (keys-boundp-fal (cdr keys) alist))))
-
-  (defund keys-boundp-slow-alist (keys alist)
-    (declare (xargs :guard t))
-    (if (atom keys)
-        t
-      (and (hons-assoc-equal (car keys) alist)
-           (keys-boundp-slow-alist (cdr keys) alist))))
-
-  (defund keys-boundp (keys alist)
-    (declare (xargs :guard t :verify-guards nil))
-    (mbe :logic
-         (if (atom keys)
-             t
-           (and (hons-assoc-equal (car keys) alist)
-                (keys-boundp (cdr keys) alist)))
-         :exec
-         (if (atom keys)
-             t
-           (if (and (acl2::worth-hashing keys)
-                    (acl2::worth-hashing alist))
-               (with-fast-alist alist (keys-boundp-fal keys alist))
-             (keys-boundp-slow-alist keys alist)))))
-
-  (local (in-theory (enable keys-boundp
-                            keys-boundp-fal
-                            keys-boundp-slow-alist)))
-
-  (defrule keys-boundp-fal-removal
-    (equal (keys-boundp-fal keys alist)
-           (keys-boundp keys alist)))
-
-  (defrule keys-boundp-slow-alist-removal
-    (equal (keys-boundp-slow-alist keys alist)
-           (keys-boundp keys alist)))
-
-  (verify-guards keys-boundp)
-
-  (defrule keys-boundp-when-atom
-    (implies (atom keys)
-             (equal (keys-boundp keys alist)
-                    t)))
-
-  (defrule keys-boundp-of-cons
-    (equal (keys-boundp (cons a keys) alist)
-           (and (hons-get a alist)
-                (keys-boundp keys alist))))
-
-  (defrule keys-boundp-of-list-fix
-    (equal (keys-boundp (list-fix x) alist)
-           (keys-boundp x alist)))
-
-  (defrule keys-boundp-of-append
-    (equal (keys-boundp (append x y) alist)
-           (and (keys-boundp x alist)
-                (keys-boundp y alist))))
-
-  (defrule keys-boundp-of-rev
-    (equal (keys-boundp (rev x) alist)
-           (keys-boundp x alist)))
-
-  (defrule keys-boundp-of-revappend
-    (equal (keys-boundp (revappend x y) alist)
-           (and (keys-boundp x alist)
-                (keys-boundp y alist)))))
-
-
-(defsection impossible
-  :parents (utilities)
-  :short "Prove that some case is unreachable using @(see guard)s."
-
-  :long "<p>Logically, @('(impossible)') just returns @('nil').</p>
-
-<p>But @('impossible') has a guard of @('nil'), so whenever you use it in a
-function, you will be obliged to prove that it cannot be executed when the
-guard holds.</p>
-
-<p>What good is this?  One use is to make sure that every possible case in a
-sum type has been covered.  For instance, you can write:</p>
-
-@({
- (define f ((x whatever-p))
-   (case (type-of x)
-     (:foo (handle-foo ...))
-     (:bar (handle-bar ...))
-     (otherwise (impossible))))
-})
-
-<p>This is a nice style in that, if we later extend @('x') so that its type can
-also be @(':baz'), then the guard verification will fail and remind us that we
-need to extend @('f') to handle @(':baz') types as well.</p>
-
-<p>If somehow @('(impossible)') is ever executed (e.g., due to program mode
-code that is violating guards), it just causes a hard error.</p>"
-
-  (defun impossible ()
-    (declare (xargs :guard nil))
-    (er hard 'impossible "Provably impossible")))
-
-
 ;; kind of a terrible function name
 (define vl-width-from-difference ((a integerp))
   :returns (width posp :rule-classes :type-prescription)
@@ -1025,23 +835,6 @@ occasionally useful, e.g., when defining structures using macros that expect
 constraints for certain fields.</p>"
   (declare (ignore x))
   t)
-
-
-
-(defsection non-parallel-book
-  :parents (utilities)
-  :short "Mark a book as incompatible with ACL2(p) waterfall parallelism."
-  :long "<p>ACL2(h)'s memoization code isn't thread safe, and this can
-sometimes cause problems for users of ACL2(hp).  This macro disables waterfall
-parallelism if running on ACL2(hp).</p>"
-
-  (defmacro non-parallel-book ()
-    '(make-event
-      (if (and (ACL2::hons-enabledp state)
-               (f-get-global 'ACL2::parallel-execution-enabled state))
-          (er-progn (set-waterfall-parallelism nil)
-                    (value '(value-triple nil)))
-        (value '(value-triple nil))))))
 
 
 (defenum vl-edition-p

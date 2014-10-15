@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
@@ -158,6 +168,8 @@
 ;;           :my-taco my-taco))
 
 (b* (((taco x)
+      ;; Previously failed due to using keywords with the same names as
+      ;; variables, but now we properly avoid keywords.
       (make-taco :shell 5
                  :meat 'beef
                  :cheese 'swiss
@@ -168,8 +180,8 @@
           :x.lettuce x.lettuce
           :five five))
 
-;; Improper binding... fails nicely
 (b* (((taco x y)
+      ;; Improper binding... fails nicely
       (make-taco :shell 5
                  :meat 'beef
                  :cheese 'swiss
@@ -180,16 +192,29 @@
           :x.lettuce x.lettuce
           :five five))
 
-;; Unused binding collapses to nothing.  warning noted.
-(b* (((taco x) (make-taco :shell 5
-                          :meat 'beef
-                          :cheese 'swiss
-                          :lettuce 'iceberg
-                          :sauce 'green))
+(b* (((taco x)
+      ;; Unused binding collapses to nothing.  Nicely creates a warning.
+      (make-taco :shell 5
+                 :meat 'beef
+                 :cheese 'swiss
+                 :lettuce 'iceberg
+                 :sauce 'green))
      (five (+ 2 3)))
     five)
 
-;; Good, inadvertent capture is detected
+(b* (((taco x :quietp t)
+      ;; Unused binding collapses to nothing.  Quiet suppresses warning.
+      (make-taco :shell 5
+                 :meat 'beef
+                 :cheese 'swiss
+                 :lettuce 'iceberg
+                 :sauce 'green))
+     (five (+ 2 3)))
+    five)
+
+;; Previously this failed because we were using ACL2::|(IDENTITY FOO)| as a
+;; variable.  We no longer do that.  Now, instead, it should fails because
+;; ACL2::|(IDENTITY FOO)| is unbound.  See also acl2-books Issue 41.
 (b* ((foo (make-taco :shell 5
                      :meat 'beef
                      :cheese 'swiss
@@ -229,10 +254,19 @@
                 (equal emp.salary 25)
                 emp)))
 
+;; This was prohibited through the release of ACL2 6.5, but now it is allowed
+;; and works as expected; see Issue 41.
+(assert! (b* ((emp (make-employee :name "foo"))
+              ((employee emp2) emp))
+           (and (equal emp2.name "foo")
+                (equal emp2.salary 25)
+                emp2)))
 
-
-
-
+;; Similarly is now supported
+(assert! (b* (((employee emp2) (make-employee :name "foo")))
+           (and (equal emp2.name "foo")
+                (equal emp2.salary 25)
+                emp2)))
 
 
 
@@ -258,8 +292,6 @@
            (and topic
                 (equal (cdr (assoc :parents topic))
                        '(bar)))))
-
-
 
 (defaggregate pancake
   :tag :pancake

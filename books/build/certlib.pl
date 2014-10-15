@@ -1,26 +1,32 @@
-# certlib.pl - Library routines for cert.pl, critpath.pl, etc.
-# Copyright 2008-2009 by Sol Swords 
+# cert.pl build system
+# Copyright (C) 2008-2014 Centaur Technology
 #
-# This program is free software; you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the Free Software
-# Foundation; either version 2 of the License, or (at your option) any later
-# version.
+# Contact:
+#   Centaur Technology Formal Verification Group
+#   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+#   http://www.centtech.com/
 #
-# This program is distributed in the hope that it will be useful, but WITHOUT
-# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
-# details.
+# License: (An MIT/X11-style license)
 #
-# You should have received a copy of the GNU General Public License along with
-# this program; if not, write to the Free Software Foundation, Inc., 675 Mass
-# Ave, Cambridge, MA 02139, USA.
+#   Permission is hereby granted, free of charge, to any person obtaining a
+#   copy of this software and associated documentation files (the "Software"),
+#   to deal in the Software without restriction, including without limitation
+#   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+#   and/or sell copies of the Software, and to permit persons to whom the
+#   Software is furnished to do so, subject to the following conditions:
 #
-# NOTE.  This file is not part of the standard ACL2 books build process; it is
-# part of an experimental build system that is not yet intended, for example,
-# to be capable of running the whole regression.  The ACL2 developers do not
-# maintain this file.  Please contact Sol Swords <sswords@cs.utexas.edu> with
-# any questions/comments.
-
+#   The above copyright notice and this permission notice shall be included in
+#   all copies or substantial portions of the Software.
+#
+#   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+#   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+#   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+#   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+#   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+#   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+#   DEALINGS IN THE SOFTWARE.
+#
+# Original author: Sol Swords <sswords@centtech.com>
 
 use strict;
 use warnings;
@@ -56,6 +62,45 @@ my $cache_version_code = 5;
 #       carp "Description of the error\n";
 # and you get a backtrace as well.
 use Carp;
+
+
+
+
+my $debugging = 0;
+my $clean_certs = 0;
+my $print_deps = 0;
+my $believe_cache = 0;
+my $pcert_all = 0;
+#  However, now it makes sense to do it in two
+# passes:
+# - update the dependency-info cache, including the cert and source
+# tables mentioned above
+# - create the make-style dependency graph using that cache,
+# afterward.
+
+# A complication is that add-include-book-dir directives can affect
+# what dependencies are stored, but this should only affect ones that
+# come after.  To deal with this, for each file we'll create a log of
+# what relevant lines are in it, in order.
+
+my %dirs = ( );
+
+sub certlib_add_dir {
+    my ($name,$dir) = @_;
+    $dirs{$name} = $dir;
+}
+
+sub certlib_set_opts {
+    my $opts = shift;
+    $debugging = $opts->{"debugging"};
+    $clean_certs = $opts->{"clean_certs"};
+    $print_deps = $opts->{"print_deps"};
+    $believe_cache = $opts->{"believe_cache"};
+    $pcert_all = $opts->{"pcert_all"};
+}
+
+
+
 
 sub human_time {
 
@@ -159,6 +204,16 @@ sub canonical_path {
 }
 
 
+sub certlib_set_base_path {
+    my $dir = shift;
+    $dir = $dir || ".";
+    $BASE_PATH = abs_canonical_path($dir);
+    %canonical_path_memo = ();
+}
+
+
+
+
 
 sub short_cert_name {
 
@@ -194,17 +249,12 @@ sub get_cert_time {
 # corresponding .time file.  If not found, prints a warning and returns 0.
 # Given an .acl2x file, gets the time recorded in the corresponding
 # .acl2x.time file.
-    my ($path, $warnings, $use_realtime, $pcert) = @_;
+    my ($path, $warnings, $use_realtime) = @_;
 
-    if ($pcert) {
-	$path =~ s/\.cert$/\.cert\.time/;
-	$path =~ s/\.pcert0$/\.pcert0\.time/;
-	$path =~ s/\.pcert1$/\.pcert1\.time/;
-	$path =~ s/\.acl2x$/\.acl2x\.time/;
-    } else {
-	$path =~ s/\.cert$/\.cert\.time/;
-	$path =~ s/\.acl2x$/\.acl2x\.time/;
-    }
+    $path =~ s/\.cert$/\.cert\.time/;
+    $path =~ s/\.pcert0$/\.pcert0\.time/;
+    $path =~ s/\.pcert1$/\.pcert1\.time/;
+    $path =~ s/\.acl2x$/\.acl2x\.time/;
 
     if (open (my $timefile, "<", $path)) {
 
@@ -335,13 +385,21 @@ sub cert_is_two_pass {
 }
 
 sub cert_sequential_dep {
+    # Assuming we're doing a provisional certification of some parent
+    # book, find the sequential dependency on certfile.  This is
+    # different depending on whether certfile uses provisional
+    # certification, two-pass certification, etc.
     my ($certfile, $deps) = @_;
     my $res;
-    if (cert_get_param($certfile, $deps, "acl2x")
-	|| ! cert_get_param($certfile, $deps, "pcert")) {
-	($res = $certfile) =~ s/\.cert$/\.pcert1/;
-    } else {
+    if (cert_get_param($certfile, $deps, "acl2x")) {
+	# NOTE: ACL2 doesn't allow an include-book of a book with an .acl2x but no
+	# .pcert* or .cert file during a (provisional or final) certification.
+	# ($res = $certfile) =~ s/\.cert$/\.acl2x/;
+	$res = $certfile;
+    } elsif (cert_get_param($certfile, $deps, "pcert") || $pcert_all) {
 	($res = $certfile) =~ s/\.cert$/\.pcert0/;
+    } else {
+	$res = $certfile;
     }
     return $res;
 }
@@ -353,25 +411,18 @@ sub cert_include_dirs {
 }
 
 sub read_costs {
-    my ($deps, $basecosts, $warnings, $use_realtime, $pcert) = @_;
+    my ($deps, $basecosts, $warnings, $use_realtime) = @_;
 
     foreach my $certfile (keys %{$deps->certdeps}) {
-	if ($pcert) {
+	$basecosts->{$certfile} = get_cert_time($certfile, $warnings, $use_realtime);
+	if (cert_get_param($certfile, $deps, "acl2x")) {
+	    my $acl2xfile = cert_to_acl2x($certfile);
+	    $basecosts->{$acl2xfile} = get_cert_time($acl2xfile, $warnings, $use_realtime);
+	} elsif (cert_get_param($certfile, $deps, "pcert") || $pcert_all) {
 	    my $pcert1file = cert_to_pcert1($certfile);
-	    $basecosts->{$certfile} = get_cert_time($certfile, $warnings, $use_realtime, $pcert);
-	    $basecosts->{$pcert1file} = get_cert_time($pcert1file, $warnings, $use_realtime, $pcert);
-	    if (cert_get_param($certfile, $deps, "pcert")
-		&& ! cert_get_param($certfile, $deps, "acl2x")) {
-		# print "file: $certfile no_pcert: " . cert_get_param($certfile, $deps, "no_pcert") . "\n";
-		my $pcert0file = cert_to_pcert0($certfile);
-		$basecosts->{$pcert0file} = get_cert_time($pcert0file, $warnings, $use_realtime, $pcert);
-	    }
-	} else {
-	    $basecosts->{$certfile} = get_cert_time($certfile, $warnings, $use_realtime, $pcert);
-	    if (cert_get_param($certfile, $deps, "acl2x")) {
-		my $acl2xfile = cert_to_acl2x($certfile);
-		$basecosts->{$acl2xfile} = get_cert_time($acl2xfile, $warnings, $use_realtime, $pcert);
-	    }
+	    $basecosts->{$pcert1file} = get_cert_time($pcert1file, $warnings, $use_realtime);
+	    my $pcert0file = cert_to_pcert0($certfile);
+	    $basecosts->{$pcert0file} = get_cert_time($pcert0file, $warnings, $use_realtime);
 	}
     }
 }
@@ -400,7 +451,7 @@ sub find_most_expensive {
 }
 
 sub compute_cost_paths_aux {
-    my ($target,$deps,$basecosts,$costs,$warnings,$pcert) = @_;
+    my ($target,$deps,$basecosts,$costs,$warnings) = @_;
 
     if (exists $costs->{$target} || ! ($target =~ /\.(cert|acl2x|pcert0|pcert1)$/)) {
 	return $costs->{$target};
@@ -419,65 +470,39 @@ sub compute_cost_paths_aux {
     }
     
     my $targetdeps;
-    if ($pcert) {
-
-	$targetdeps = [];
-	if ($target =~ /\.pcert0$/) {
-	    ## The dependencies are the dependencies of the cert file, but
-	    ## with each .cert replaced with the corresponding .pcert0.
-	    (my $certfile = $target) =~ s/\.pcert0$/\.cert/;
-	    my $certdeps = cert_deps($certfile, $deps);
-	    foreach my $dep (@$certdeps) {
-		my $deppcert = cert_sequential_dep($dep, $deps);
-		push(@$targetdeps, $deppcert);
-	    }
-	} elsif ($target =~ /\.pcert1$/) {
-	    (my $certfile = $target) =~ s/\.pcert1$/\.cert/;
-	    if (! cert_get_param($certfile, $deps, "pcert") ||
-		cert_get_param($certfile, $deps, "acl2x")) {
-		## Depends on the sequential deps of the other certs
-		my $certdeps = cert_deps($certfile, $deps);
-		foreach my $dep (@$certdeps) {
-		    my $deppcert = cert_sequential_dep($dep, $deps);
-		    push(@$targetdeps, $deppcert);
-		}
-	    } else {
-		## For true pcert, the only dependency is the corresponding .pcert0.
-		(my $pcert0 = $target) =~ s/\.pcert1$/\.pcert0/;
-		push (@$targetdeps, $pcert0);
-	    }
-	} elsif ($target =~ /\.acl2x$/) {
-	    ## The dependencies are the dependencies of the cert file.
-	    (my $certfile = $target) =~ s/\.acl2x$/\.cert/;
-	    my $certdeps = cert_deps($certfile, $deps);
-	    push(@$targetdeps, @$certdeps);
-	} else { # $target =~ /\.cert$/
-	    # Depends.
-	    if (cert_get_param($target, $deps, "acl2x")) {
-		# If it's using the acl2x/two-pass, then depend only on the acl2x file.
-		(my $acl2xfile = $target) =~ s/\.cert$/\.acl2x/;
-		push (@$targetdeps, $acl2xfile);
-	    } else {
-		# otherwise, depend on its subbooks' certificates and the pcert1.
-		push (@$targetdeps, @{cert_deps($target, $deps)});
+    $targetdeps = [];
+    if ($target =~ /\.pcert0$/) {
+	## The dependencies are the dependencies of the cert file, but
+	## with each .cert replaced with the corresponding sequential_dep.
+	(my $certfile = $target) =~ s/\.pcert0$/\.cert/;
+	my $certdeps = cert_deps($certfile, $deps);
+	foreach my $dep (@$certdeps) {
+	    my $deppcert = cert_sequential_dep($dep, $deps);
+	    push(@$targetdeps, $deppcert);
+	}
+    } elsif ($target =~ /\.pcert1$/) {
+	(my $certfile = $target) =~ s/\.pcert1$/\.cert/;
+	(my $pcert0 = $target) =~ s/\.pcert1$/\.pcert0/;
+	push (@$targetdeps, $pcert0);
+    } elsif ($target =~ /\.acl2x$/) {
+	## The dependencies are the dependencies of the cert file.
+	(my $certfile = $target) =~ s/\.acl2x$/\.cert/;
+	my $certdeps = cert_deps($certfile, $deps);
+	push(@$targetdeps, @$certdeps);
+    } else {
+	# $target =~ /\.cert$/
+	# Depends.
+	if (cert_get_param($target, $deps, "acl2x")) {
+	    # If it's using the acl2x/two-pass, then depend only on the acl2x file.
+	    (my $acl2xfile = $target) =~ s/\.cert$/\.acl2x/;
+	    push (@$targetdeps, $acl2xfile);
+	} else {
+	    # otherwise, depend on its subbooks' certificates and the pcert1, if applicable.
+	    push (@$targetdeps, @{cert_deps($target, $deps)});
+	    if (cert_get_param($target, $deps, "pcert") || $pcert_all) {
 		(my $pcert1 = $target) =~ s/\.cert$/\.pcert1/;
 		push (@$targetdeps, $pcert1);
 	    }
-	}
-    } else {
-	if ($target =~ /\.acl2x$/) {
-	    (my $certfile = $target) =~ s/\.acl2x$/\.cert/;
-	    $targetdeps = cert_deps($certfile, $deps);
-	} elsif ($target =~ /\.cert$/) {
-	    if (cert_is_two_pass($target, $deps)) {
-		my $acl2xfile = cert_to_acl2x($target);
-		$targetdeps = [ $acl2xfile ];
-	    } else {
-		$targetdeps = cert_deps($target, $deps);
-	    }
-	} else {
-	    print "Warning: pcert file out of pcert context: $target\n";
-	    $targetdeps = [];
 	}
     }
 
@@ -489,7 +514,7 @@ sub compute_cost_paths_aux {
     if (@$targetdeps) {
 	foreach my $dep (@$targetdeps) {
 	    if ($dep =~ /\.(cert|acl2x|pcert0|pcert1)$/) {
-		my $this_dep_costs = compute_cost_paths_aux($dep, $deps, $basecosts, $costs, $warnings, $pcert);
+		my $this_dep_costs = compute_cost_paths_aux($dep, $deps, $basecosts, $costs, $warnings);
 		if (! $this_dep_costs) {
 		    if ($dep eq $target) {
 			push(@{$warnings}, "Self-dependency in $dep");
@@ -514,9 +539,9 @@ sub compute_cost_paths_aux {
 }
 
 sub compute_cost_paths {
-    my ($deps,$basecosts,$costs,$warnings,$pcert) = @_;
+    my ($deps,$basecosts,$costs,$warnings) = @_;
     foreach my $certfile (keys %{$deps->certdeps}) {
-	compute_cost_paths_aux($certfile, $deps, $basecosts, $costs, $warnings,$pcert);
+	compute_cost_paths_aux($certfile, $deps, $basecosts, $costs, $warnings);
     }
 }
 
@@ -761,44 +786,6 @@ sub to_basename {
 
 
 
-my $debugging = 0;
-my $clean_certs = 0;
-my $print_deps = 0;
-my $believe_cache = 0;
-
-#  However, now it makes sense to do it in two
-# passes:
-# - update the dependency-info cache, including the cert and source
-# tables mentioned above
-# - create the make-style dependency graph using that cache,
-# afterward.
-
-# A complication is that add-include-book-dir directives can affect
-# what dependencies are stored, but this should only affect ones that
-# come after.  To deal with this, for each file we'll create a log of
-# what relevant lines are in it, in order.
-
-my %dirs = ( );
-
-sub certlib_add_dir {
-    my ($name,$dir) = @_;
-    $dirs{$name} = $dir;
-}
-
-sub certlib_set_opts {
-    my $opts = shift;
-    $debugging = $opts->{"debugging"};
-    $clean_certs = $opts->{"clean_certs"};
-    $print_deps = $opts->{"print_deps"};
-    $believe_cache = $opts->{"believe_cache"};
-}
-
-sub certlib_set_base_path {
-    my $dir = shift;
-    $dir = $dir || ".";
-    $BASE_PATH = abs_canonical_path($dir);
-    %canonical_path_memo = ();
-}
 
 
 # Event types:
@@ -998,12 +985,12 @@ sub get_ld {
 
 sub ftimestamp {
     my $file = shift;
-    return (stat($file))[9];
-}
-
-sub newer_than {
-    my ($file1,$file2) = @_;
-    return ftimestamp($file1) > ftimestamp($file2);
+    my @statinfo = stat($file);
+    if (@statinfo) {
+	return $statinfo[9];
+    } else {
+	return -1;
+    }
 }
 
 sub excludep {
@@ -1036,7 +1023,7 @@ sub print_dirs {
 sub scan_src {
     my $fname = shift;
     my @events = ();
-
+    my $timestamp = -1;
     if (open(my $file, "<", $fname)) {
 	while (my $the_line = <$file>) {
 	    my $done = 0;
@@ -1048,9 +1035,9 @@ sub scan_src {
 	    $done = $done || get_add_dir($fname, $the_line, \@events);
 	    $done = $done || get_cert_param($fname, $the_line, \@events);
 	}
+	$timestamp = ftimestamp($file);
 	close($file);
     }
-    my $timestamp = ftimestamp($fname);
 
     return (\@events, $timestamp);
 }
@@ -1076,10 +1063,16 @@ sub src_events {
 	    print " (required by $parent)";
 	}
 	print "\n";
-	return [];
+	# Add an entry with no events and a negative timestamp.
+	# signalling that the file didn't exist.
+	my $cache_entry =  [[], 0];
+	$checked->{$fname} = 1;
+	$evcache->{$fname} = $cache_entry;
+	return $cache_entry->[0];
     }
 
-    if ($entry && ! $entry_ok && (ftimestamp($fname) <= $entry->[1])) {
+    # check timestamp: to be valid, the entry's timestamp must equal the file's.
+    if ($entry && ! $entry_ok && (ftimestamp($fname) == $entry->[1])) {
 	print "timestamp of $fname ok\n" if $debugging;
 	$checked->{$fname} = 1;
 	$entry_ok = 1;
@@ -1186,10 +1179,13 @@ sub src_deps {
 	print "events: $fname";
 	print_events($events);
     }
-    if (! ($believe_cache || $depdb->tscache->{$fname})) {
-	# The file doesn't exist.  We've already printed an error message.
-	return;
-    }
+    # NOTE: We no longer check if the file exists here -- represented
+    # by the tscache entry being valid
+
+    # if (! ($believe_cache || $depdb->tscache->{$fname})) {
+    # 	# The file doesn't exist.  We've already printed an error message.
+    # 	return;
+    # }
     push(@{$certinfo->srcdeps}, $fname);
     $depdb->sources->{$fname} = 1;
 
@@ -1570,13 +1566,13 @@ sub add_deps {
     }
 
     # First check that the corresponding .lisp file exists.
-    if (! -e $lispfile) {
-	print "Error: Need $lispfile to build $target"
-               . ($parent ? " (parent: $parent)" : "")
-	       . ".\n";
-	delete $depdb->certdeps->{$target};
-	return;
-    }
+    # if (! -e $lispfile) {
+    # 	print "Error: Need $lispfile to build $target"
+    #            . ($parent ? " (parent: $parent)" : "")
+    # 	       . ".\n";
+    # 	delete $depdb->certdeps->{$target};
+    # 	return;
+    # }
 
     # print "add_deps $target, current stack:\n";
     # foreach my $book (@{$depdb->stack}) {
@@ -1695,7 +1691,8 @@ sub to_source_name {
 # it to .cert, if it has a .acl2x/.pcert/.cert extension leave it
 # alone, and otherwise tack on a .cert.  NOTE: This heuristic doesn't
 # at all match the one in to_source_name; they're used for different
-# purposes.
+# purposes.  (This assumes that $target_ext is cert, which is the
+# default.)
 # foo.lisp  -> foo.cert
 # foo       -> foo.cert
 # foo.cert  -> foo.cert
@@ -1704,12 +1701,12 @@ sub to_source_name {
 # foo.lsp   -> foo.lsp.cert
 # foo.acl2  -> foo.acl2.cert
 sub to_cert_name {
-    my $fname = shift;
-    $fname =~ s/\.lisp$/\.cert/;
+    my ($fname, $target_ext) = @_;
+    $fname =~ s/\.lisp$//;
     if ($fname =~ /\.(cert|acl2x|pcert0|pcert1)$/) {
 	return $fname;
     } else {
-	return "$fname.cert";
+	return "$fname.${target_ext}";
     }
 }
 
@@ -1720,9 +1717,10 @@ sub to_cert_name {
 # .cert extensions if necessary) and returns the list of targets and a
 # hash associating each label with its list of targets.
 sub process_labels_and_targets {
-    my ($input, $depdb) = @_;
+    my ($input, $depdb, $target_ext) = @_;
     my %labels = ();
     my @targets = ();
+    my @maketargets = ();
     my $label_started = 0;
     my $label_targets;
     foreach my $str (@$input) {
@@ -1730,7 +1728,7 @@ sub process_labels_and_targets {
 	    # Deps-of.
 	    my $name = canonical_path(to_source_name(substr($str,3)));
 	    if ($name) {
-		my $certinfo = find_deps($name, $depdb, 0);
+		my $certinfo = find_deps(to_source_name($name), $depdb, 0);
 		push (@targets, @{$certinfo->bookdeps});
 		push (@targets, @{$certinfo->portdeps});
 		push (@$label_targets, @{$certinfo->bookdeps}) if $label_started;
@@ -1749,7 +1747,7 @@ sub process_labels_and_targets {
 	    }
 	} else {
 	    # filename.
-	    my $target = canonical_path(to_cert_name($str));
+	    my $target = canonical_path(to_cert_name($str, $target_ext));
 	    if ($target) {
 		push(@targets, $target);
 		push(@$label_targets, $target) if $label_started;
@@ -1773,7 +1771,7 @@ sub process_labels_and_targets {
 
 sub compute_savings
 {
-    my ($costs,$basecosts,$targets,$debug,$deps, $pcert) = @_;
+    my ($costs,$basecosts,$targets,$debug,$deps) = @_;
 
     (my $topbook, my $topbook_cost) = find_most_expensive($targets, $costs);
 
@@ -1796,7 +1794,7 @@ sub compute_savings
 	my %tmpcosts = ();
 	my @tmpwarns = ();
 	$basecosts->{$critfile} = 0.0;
-	compute_cost_paths($deps, $basecosts, \%tmpcosts, \@tmpwarns, $pcert);
+	compute_cost_paths($deps, $basecosts, \%tmpcosts, \@tmpwarns);
 	(my $tmptop, my $tmptopcost) = find_most_expensive($targets, \%tmpcosts);
 	my $speedup_savings = $topbook_cost - $tmptopcost;
 	$speedup_savings = $speedup_savings || 0.000001;
@@ -1805,7 +1803,7 @@ sub compute_savings
 	# set the file total cost to 0 and recompute crit path.
 	%tmpcosts = ();
 	$tmpcosts{$critfile} = 0;
-	compute_cost_paths($deps, $basecosts, \%tmpcosts, \@tmpwarns, $pcert);
+	compute_cost_paths($deps, $basecosts, \%tmpcosts, \@tmpwarns);
 	($tmptop, $tmptopcost) = find_most_expensive($targets, \%tmpcosts);
 	my $remove_savings = $topbook_cost - $tmptopcost;
 	$remove_savings = $remove_savings || 0.000001;

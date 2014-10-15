@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Sol Swords <sswords@centtech.com>
 
@@ -41,7 +51,7 @@
     :returns (xx varp)
     (if (and (symbolp x) x) x 'x)
     ///
-    (defthm varp-of-var-fix
+    (defthm var-fix-when-varp
       (implies (varp x)
                (equal (var-fix x) x)))
 
@@ -96,12 +106,11 @@
     :returns (xx fnsym-p)
     (if (fnsym-p x) x 'some-fnsym)
     ///
-    (defthm fnsym-p-of-fnsym-fix
+    (defthm fnsym-fix-when-fnsym-p
       (implies (fnsym-p x)
                (equal (fnsym-fix x) X)))
 
     (deffixtype fnsym :pred fnsym-p :fix fnsym-fix :equiv fnsym-equiv :define t)))
-
 
 (deftypes pterm
   :prepwork ((local (defthm len-equal-val
@@ -491,7 +500,8 @@
      (fourth 4uplelist))
     :measure (two-nats-measure (acl2-count x) 1))
   (deflist 4uplelist :elt-type 4uple :measure
-    (two-nats-measure (acl2-count x) 0)))
+    (two-nats-measure (acl2-count x) 0)
+    :elementp-of-nil nil))
 
 
 (include-book "std/util/deflist" :dir :system)
@@ -502,7 +512,7 @@
   :already-definedp t)
 
 
-(deflist 4uplelist2 :elt-type 4uple :true-listp t)
+(deflist 4uplelist2 :elt-type 4uple :true-listp t :elementp-of-nil nil)
 
 (std::deflist 4uplelist2-p (x)
   (4uple-p x)
@@ -510,12 +520,12 @@
   :elementp-of-nil nil
   :already-definedp t)
 
-(include-book "std/util/defprojection" :dir :system)
+;; (include-book "std/util/defprojection" :dir :system)
 
-(std::defprojection 4uplelist2-fix (x)
-  (4uple-fix x)
-  :guard (4uplelist-p x)
-  :already-definedp t)
+;; (std::defprojection 4uplelist2-fix (x)
+;;   (4uple-fix x)
+;;   :guard (4uplelist-p x)
+;;   :already-definedp t)
 
 
 ;; make sure b* binders are working
@@ -546,6 +556,10 @@
 (defalist sym-nat-alist :key-type symbol :val-type nat)
 (defalist sym-nat-alist2 :key-type symbol :val-type nat :true-listp t)
 
+(defmap sym-nat-alist3 :key-type symbol :val-type nat)
+(defalist sym-nat-alist4 :key-type symbol :val-type nat :true-listp t
+  :strategy :drop-keys)
+
 
 (deftypes recalist
   (deftagsum alterm
@@ -554,6 +568,8 @@
          (al recalist)))
     :layout :list)
   (defalist recalist :key-type int :val-type alterm))
+
+
 
 
 (include-book "std/util/defalist" :dir :system)
@@ -573,6 +589,14 @@
 
 (std::defalist recalist2-p (x) :key (alterm2-p x) :val (integerp x)
   :true-listp t :already-definedp t)
+
+(deftypes recalist3
+  (deftagsum alterm3
+    (:v ((val natp)))
+    (:t ((fn symbolp)
+         (al recalist3)))
+    :layout :list)
+  (defmap recalist3 :key-type alterm3 :val-type alterm3))
 
 
 
@@ -633,6 +657,21 @@
           (arithtmlist-double (cdr x)))))
 
 
+(define arithtm-op-p ((x arithtm-p))
+  (arithtm-case x
+    :num nil
+    :otherwise t))
+
+(define arithtm-op-p2 ((x arithtm-p))
+  (arithtm-case x
+    (:num nil)
+    (& t)))
+
+(define arithtm-op-p3 ((x arithtm-p))
+  (arithtm-case x
+    (:num nil)
+    (:plus t)
+    (& t)))
 
 
 (include-book "ihs/basic-definitions" :dir :system)
@@ -704,13 +743,14 @@
      :ctor-body (cons (list 'lambda formals body) args))
 
     
-    :post-pred-events ((defthm pterm3list-p-of-take
-                         (implies (pterm3list-p x)
-                                  (pterm3list-p (take n x))))
-                       (defthm pterm3list-p-implies-true-listp
-                         (implies (pterm3list-p x)
-                                  (true-listp x))
-                         :rule-classes :forward-chaining))
+    :post-pred-events (;; (defthm pterm3list-p-of-take
+                       ;;   (implies (pterm3list-p x)
+                       ;;            (pterm3list-p (take n x))))
+                       ;; (defthm pterm3list-p-implies-true-listp
+                       ;;   (implies (pterm3list-p x)
+                       ;;            (true-listp x))
+                       ;;   :rule-classes :forward-chaining)
+                       )
 
     :xvar y)
   ;; (defflexsum pfunc
@@ -729,6 +769,7 @@
   ;;   :xvar z)
 
   (deflist pterm3list :elt-type pterm3-p :xvar acl2-asg::x
+    :elementp-of-nil t
     :true-listp t))
 
 
@@ -827,33 +868,35 @@
 
   (deflist pterm4list :elt-type pterm4-p :xvar acl2-asg::x
     :true-listp t
+    :elementp-of-nil nil
     :measure (two-nats-measure (acl2-count acl2-asg::x) 0) )
 
 
   
-  :post-pred-events ((defthm pterm4list-p-of-append
-                       (implies (and (pterm4list-p x)
-                                     (pterm4list-p y))
-                                (pterm4list-p (append x y)))
-                       :hints(("Goal" :in-theory (enable pterm4list-p))))
-                     (defthm pterm4list-p-of-take
-                       (implies (and (pterm4list-p x)
-                                     (< (nfix n) (len x)))
-                                (pterm4list-p (take n x)))
-                       :hints(("Goal" :in-theory (enable pterm4list-p len))))
-                     (defthm pterm4list-p-of-replicate
-                       (implies (pterm4-p x)
-                                (pterm4list-p (replicate n x)))
-                       :hints(("Goal" :in-theory (enable pterm4list-p
-                                                         replicate))))
+  :post-pred-events (;; (defthm pterm4list-p-of-append
+                     ;;   (implies (and (pterm4list-p x)
+                     ;;                 (pterm4list-p y))
+                     ;;            (pterm4list-p (append x y)))
+                     ;;   :hints(("Goal" :in-theory (enable pterm4list-p))))
+                     ;; (defthm pterm4list-p-of-take
+                     ;;   (implies (and (pterm4list-p x)
+                     ;;                 (< (nfix n) (len x)))
+                     ;;            (pterm4list-p (take n x)))
+                     ;;   :hints(("Goal" :in-theory (enable pterm4list-p len))))
+                     ;; (defthm pterm4list-p-of-replicate
+                     ;;   (implies (pterm4-p x)
+                     ;;            (pterm4list-p (replicate n x)))
+                     ;;   :hints(("Goal" :in-theory (enable pterm4list-p
+                     ;;                                     replicate))))
                      (defthm pterm4list-p-of-pterm4-take
                        (implies (pterm4list-p x)
                                 (pterm4list-p (pterm4-take n x)))
                        :hints(("Goal" :in-theory (enable pterm4-take))))
-                     (defthm pterm4list-p-implies-true-listp
-                       (implies (pterm4list-p x)
-                                (true-listp x))
-                       :rule-classes :forward-chaining)))
+                     ;; (defthm pterm4list-p-implies-true-listp
+                     ;;   (implies (pterm4list-p x)
+                     ;;            (true-listp x))
+                     ;;   :rule-classes :forward-chaining)
+                     ))
 
 
 
@@ -920,7 +963,7 @@
      :ctor-body val)
     :measure (two-nats-measure (acl2-count x) 3))
 
-  (defalist pterm5-atts :key-type stringp :val-type maybe-pterm5
+  (defmap pterm5-atts :key-type stringp :val-type maybe-pterm5
     :measure (two-nats-measure (acl2-count x) 0))
   ;; (defflexsum pfunc
   ;;   ;; :kind nil
@@ -939,33 +982,16 @@
 
   (deflist pterm5list :elt-type pterm5-p :xvar acl2-asg::x
     :true-listp t
+    :elementp-of-nil nil
     :measure (two-nats-measure (acl2-count acl2-asg::x) 0) )
 
 
   
-  :post-pred-events ((defthm pterm5list-p-of-append
-                       (implies (and (pterm5list-p x)
-                                     (pterm5list-p y))
-                                (pterm5list-p (append x y)))
-                       :hints(("Goal" :in-theory (enable pterm5list-p))))
-                     (defthm pterm5list-p-of-take
-                       (implies (and (pterm5list-p x)
-                                     (< (nfix n) (len x)))
-                                (pterm5list-p (take n x)))
-                       :hints(("Goal" :in-theory (enable pterm5list-p len))))
-                     (defthm pterm5list-p-of-replicate
-                       (implies (pterm5-p x)
-                                (pterm5list-p (replicate n x)))
-                       :hints(("Goal" :in-theory (enable pterm5list-p
-                                                         replicate))))
+  :post-pred-events (
                      (defthm pterm5list-p-of-pterm5-take
                        (implies (pterm5list-p x)
                                 (pterm5list-p (pterm5-take n x)))
-                       :hints(("Goal" :in-theory (enable pterm5-take))))
-                     (defthm pterm5list-p-implies-true-listp
-                       (implies (pterm5list-p x)
-                                (true-listp x))
-                       :rule-classes :forward-chaining)))
+                       :hints(("Goal" :in-theory (enable pterm5-take))))))
 
 (define cons-fix ((x consp))
   :returns (xx consp :rule-classes :type-prescription)
@@ -987,3 +1013,62 @@
    (c cons)
    (d))
   :layout :tree)
+
+
+(deftagsum jaredtree
+  (:leaf
+   :short "The leaf of a jared tree."
+   :long "<p>Green in the autumn, orange in the summer.</p>"
+   ((val natp "Kind of a like a @(see posp), but can also be <b>zero</b>!")))
+  (:pair
+   :short "Two jared trees glued together."
+   :long "<p>Protip: use wood glue.</p>"
+   ((left jaredtree-p    "The hand that makes an <i>L</i> shape.")
+    (right jaredtree-p   "The other hand, it makes a backwards L shape.")))
+  (:unary ((fn symbol    "Name of a function being called.")
+           (arg jaredtree)))
+  :layout :tree
+  :parents (top)
+  :short "A very goofy structure."
+  :long "<p>Don't let your cat get stuck in one of these!</p>")
+
+
+;; ;; ;; temporary
+
+;; (include-book "xdoc/save" :dir :system)
+;; ;; (include-book "std/strings/pretty" :dir :system)
+
+;; (xdoc::save "./manual" :redef-okp t)
+
+;; (local (include-book "xdoc/save" :dir :system))
+;; (local (make-event
+;;         (b* (((mv all-xdoc-topics state) (xdoc::all-xdoc-topics state))
+;;              (redef-report (xdoc::redef-errors (set::mergesort all-xdoc-topics)))
+;;              (- (or (not redef-report)
+;;                     (cw "Redefined topics report: ~x0.~%" redef-report)))
+;;              (- (or (not redef-report)
+;;                     (er hard? 'save
+;;                         "Some XDOC topics have multiple definitions.  The above ~
+;;                        report may help you to fix these errors.  Or, you can ~
+;;                        just call XDOC::SAVE with :REDEF-OKP T to bypass this ~
+;;                        error (and use the most recent version of each topic.)"))))
+;;           (value '(value-triple :invisible)))))
+        
+(deflist acl2::string-list :pred acl2::string-listp :elt-type string)
+
+(deflist nat-list :pred acl2::nat-listp :elt-type natp)
+(deflist integer-list :pred acl2::integer-listp :elt-type integerp)
+(deflist symbol-list :pred acl2::symbol-listp :elt-type symbolp)
+(deflist rational-list :pred acl2::rational-listp :elt-type rationalp)
+(defalist symbol-alist :pred acl2::symbol-alistp :key-type symbolp)
+(defmap symbol-alist2 :pred acl2::symbol-alistp :key-type symbolp)
+
+(defun natlistp (x)
+  (declare (xargs :guard t))
+  (if (consp x)
+      (and (natp (car x)) (natlistp (cdr x)))
+    t))
+
+(deflist natlist :pred natlistp :elt-type natp)
+
+(defalist timer-alist :pred timer-alistp :key-type symbolp :val-type rational-listp)

@@ -1,4 +1,4 @@
-; ACL2 Version 6.4 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 6.5 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2014, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -31,6 +31,16 @@
 ; version.
 #+(or (and sbcl sb-thread) ccl lispworks hons)
 (push :acl2-mv-as-values *features*)
+
+; We use the static honsing scheme on 64-bit CCL.
+#+(and ccl x86_64)
+(push :static-hons *features*)
+
+; We use the static honsing scheme on 64-bit GCL when the support is there.
+#+(and gcl x86_64)
+(when (and (fboundp 'si::static-inverse-cons)
+           (fboundp 'si::without-interrupts))
+  (pushnew :static-hons *features*))
 
 ; Essay on Parallelism, Parallelism Warts, Parallelism Blemishes, Parallelism
 ; No-fixes, Parallelism Hazards, and #+ACL2-PAR notes.
@@ -671,44 +681,17 @@ implementations.")
 (defvar *saved-build-date-lst*)
 (defvar *saved-mode*)
 
-(defun svn-revision-from-line (s)
-
-; S is a string such as "$Revision: 1053 $" (as in acl2-startup-info.txt) or
-; "Revision: 1998" (as printed by "svn info").  In general, it is a string for
-; which we want the object that is read immediately after the first #\: .  If
-; there is none, then we return nil.
-
-  (let ((p (position #\: s)))
-    (and p
-         (read-from-string s nil nil :start (1+ p)))))
-
-(defconstant *acl2-svn-revision-string*
-  (let ((file "acl2-startup-info.txt"))
-    (cond ((probe-file file)
-           (let ((val (with-open-file
-                       (str file :direction :input)
-                       (read str))))
-             (cond ((eq val :release)
-                    nil)
-                   ((stringp val)
-                    (let ((n (svn-revision-from-line val)))
-                      (or n (error "Unexpected error in getting svn revision ~
-                                    from string:~%~s~%"
-                                   val))
-                      (format nil
-                              "
- ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- + WARNING: This is NOT an ACL2 release; it is svn revision ~a.     +
- + The authors of ACL2 consider svn distributions to be experimental; +
- + they may be incomplete, fragile, and unable to pass our own        +
- + regression tests.  Bug reports should include the following line:  +
- +   ACL2 svn revision ~a; community books svn revision ~a        +
- ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-"
-                              n n "~a")))
-                   (t (error "Illegal value in file ~s: ~s"
-                             file val)))))
-          (t (error "File ~s appears not to exist." file)))))
+(defconstant *acl2-snapshot-string*
+  (if (getenv$-raw "ACL2_RELEASE_P")
+      ""
+    "
+ +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ + WARNING: This is NOT an ACL2 release; it is a development snapshot. +
+ + The authors of ACL2 consider such distributions to be experimental; +
+ + they may be incomplete, fragile, and unable to pass our own         +
+ + regression tests.                                                   +
+ +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+"))
 
 (defvar *saved-string*
   (concatenate
@@ -719,13 +702,7 @@ implementations.")
     ~% are welcome to redistribute it under certain conditions.  For details,~
     ~% see the LICENSE file distributed with ACL2.~%"
 
-   (or *acl2-svn-revision-string*
-
-; If acl2-startup-info.txt begins with the symbol :release, then
-; *acl2-svn-revision-string* is a string with ~a expecting to be bound to the
-; svn revision of the books.  Otherwise we put "~a" here to be bound to "".
-
-       "~a")
+   *acl2-snapshot-string*
 
    "~a"
    #+hons
@@ -765,6 +742,11 @@ implementations.")
     result))
 
 (defmacro our-with-standard-io-syntax (&rest args)
+
+; Note for GCL:
+; As of late May 2013, with-standard-io-syntax seems to work properly in ANSI
+; GCL.
+
   (cons #-cltl2 'progn
         #+cltl2 'with-standard-io-syntax
         args))
@@ -1238,6 +1220,8 @@ implementations.")
               (lisp-implementation-version)))
     (setq ccl::*inhibit-greeting* t))
 
+  #+hons (qfuncall acl2h-init)
+
   #+gcl
   (progn
 
@@ -1254,17 +1238,18 @@ implementations.")
       (makunbound 'si::*system-banner*)
       (when (boundp 'si::*tmp-dir*)
         (format t "Temporary directory for compiler files set to ~a~%"
-                si::*tmp-dir*))))
+                si::*tmp-dir*)))
+; Growing the sbits array just before si::save-system doesn't seem to avoid
+; triggering a call of hl-hspace-grow-sbits when the first static hons is
+; created.  So we do the grow here, i.e., after starting ACL2(h).
+    #+(and hons static-hons)
+    (hl-hspace-grow-sbits (hl-staticp (cons nil nil)) *default-hs*))
 
-  #+hons (qfuncall acl2h-init)
   (when *print-startup-banner*
     (format t
             *saved-string*
             *copy-of-acl2-version*
             (saved-build-dates :terminal)
-            (if (null *acl2-svn-revision-string*)
-                ""
-              (qfuncall acl2-books-revision))
             (cond (*saved-mode*
                    (format nil "~% Initialized with ~a." *saved-mode*))
                   (t ""))
@@ -1501,7 +1486,9 @@ implementations.")
 #+sbcl
 (defvar *sbcl-dynamic-space-size*
 
-; The user is welcome to set this value, either by setting this variable before
+; The user is welcome to set this value, which according to
+; http://www.sbcl.org/manual/, is the "Size of the dynamic space reserved on
+; startup in megabytes."  It can be done either by setting this variable before
 ; saving an ACL2 image, or by editing the resulting script (e.g., saved_acl2 or
 ; saved_acl2h).  Here we explain the defaults that we provide for this
 ; variable.
@@ -1542,8 +1529,11 @@ implementations.")
 ; fail in this case, but we expect ACL2(h) users will generally be on 64-bit
 ; systems.)
 
-  #+(and x86-64 hons) 16000
-  #-(and x86-64 hons) 2000)
+; BUT: In October 2014 Jared Davis reported a failure for ACL2 (not ACL2(h)),
+; so we make this value 16000 regardless of feature :hons.
+
+  #+x86-64 16000
+  #-x86-64 2000)
 
 #+sbcl
 (defvar *sbcl-contrib-dir* nil)

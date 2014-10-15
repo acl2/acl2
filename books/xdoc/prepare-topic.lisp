@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
@@ -65,7 +75,7 @@
 
 ; ------------------ Making Flat Indexes ------------------------
 
-(defun index-add-topic (x dir topics-fal index-pkg state acc)
+(defun index-add-topic (x topics-fal index-pkg state acc)
 
 ; X is a single topic entry in the xdoc table.  Index-pkg says the base package
 ; for symbols seen from the index.
@@ -84,7 +94,7 @@
        (acc   (cons #\Newline acc))
        (acc   (str::revappend-chars "<index_body>" acc))
        (acc   (cons #\Newline acc))
-       ((mv acc state) (preprocess-main short dir topics-fal base-pkg state acc))
+       ((mv acc state) (preprocess-main short name topics-fal base-pkg state acc))
        (acc   (cons #\Newline acc))
        (acc   (str::revappend-chars "</index_body>" acc))
        (acc   (cons #\Newline acc))
@@ -92,17 +102,17 @@
        (acc   (cons #\Newline acc)))
       (mv acc state)))
 
-(defun index-add-topics (x dir topics-fal index-pkg state acc)
+(defun index-add-topics (x topics-fal index-pkg state acc)
 
 ; X is a list of topics.  Index-pkg says the base package for these symbols.
 
   (b* (((when (atom x))
         (mv acc state))
        ((mv acc state)
-        (index-add-topic (car x) dir topics-fal index-pkg state acc)))
-    (index-add-topics (cdr x) dir topics-fal index-pkg state acc)))
+        (index-add-topic (car x) topics-fal index-pkg state acc)))
+    (index-add-topics (cdr x) topics-fal index-pkg state acc)))
 
-(defun index-topics (x title dir topics-fal index-pkg state acc)
+(defun index-topics (x title topics-fal index-pkg state acc)
 
 ; X is a list of topics.  Generate <index>...</index> for these topics and
 ; add to acc.
@@ -111,7 +121,7 @@
        (acc (str::revappend-chars title acc))
        (acc (str::revappend-chars "\">" acc))
        (acc (cons #\Newline acc))
-       ((mv acc state) (index-add-topics x dir topics-fal index-pkg state acc))
+       ((mv acc state) (index-add-topics x topics-fal index-pkg state acc))
        (acc (str::revappend-chars "</index>" acc))
        (acc (cons #\Newline acc)))
       (mv acc state)))
@@ -172,7 +182,7 @@
         (t
          (apply-suborder (cdr suborder) children-names))))
 
-(defun preprocess-topic (x all-topics dir topics-fal disable-autolinking-p state)
+(defun preprocess-topic (x all-topics topics-fal disable-autolinking-p state)
   (b* ((- (check-topic-syntax x))
        (name     (cdr (assoc :name x)))
        (base-pkg (cdr (assoc :base-pkg x)))
@@ -197,9 +207,10 @@
        (acc    (str::revappend-chars "<short>" acc))
 
        ((mv short-acc state)
-        (preprocess-main short dir (if disable-autolinking-p
-                                       nil
-                                     topics-fal)
+        (preprocess-main short name
+                         (if disable-autolinking-p
+                             nil
+                           topics-fal)
                          base-pkg state nil))
        (short-str  (str::rchars-to-string short-acc))
 
@@ -226,9 +237,10 @@
        (acc    (str::revappend-chars "<long>" acc))
 
        ((mv long-acc state)
-        (preprocess-main long dir (if disable-autolinking-p
-                                      nil
-                                    topics-fal)
+        (preprocess-main long name
+                         (if disable-autolinking-p
+                             nil
+                           topics-fal)
                          base-pkg state nil))
        (long-str (str::rchars-to-string long-acc))
        ((mv err &) (parse-xml long-str))
@@ -273,7 +285,7 @@
        ((mv acc state)
         (if (not children-topics)
             (mv acc state)
-          (index-topics children-topics "Subtopics" dir topics-fal base-pkg state acc)))
+          (index-topics children-topics "Subtopics" topics-fal base-pkg state acc)))
 
        (acc    (str::revappend-chars "</topic>" acc))
        (acc    (cons #\Newline acc))

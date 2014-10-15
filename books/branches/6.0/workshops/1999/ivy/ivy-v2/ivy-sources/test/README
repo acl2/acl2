@@ -1,9 +1,0 @@
-To test Ivy, run (while in this directory)
-
-  ./test-all  ../util/ivy
-
-This should run 10 tests, 5 that succeed, and 5 that fail.
-
-Note that you have to have write permission in the
-directory that contains the input files (this directory),
-because Ivy creates intermediate files there.

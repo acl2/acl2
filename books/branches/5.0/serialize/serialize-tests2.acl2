@@ -1,1 +1,0 @@
-(certify-book "serialize-tests2" ? t :ttags :all)

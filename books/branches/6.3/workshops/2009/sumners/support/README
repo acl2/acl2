@@ -1,9 +1,0 @@
-;; 
-;; Just execute (ld "README") to certify the supporting materials:
-;; (please only do this in a common-lisp with fixnums of 60 bits or more)
-;;
-
-(set-inhibit-output-lst '(prove proof-tree))
-(certify-book "kas" 0 t :ttags :all)
-(u)
-(certify-book "examples" 0 t :ttags :all)

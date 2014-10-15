@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
@@ -63,33 +73,15 @@ systems.</li>
 href='http://www.centtech.com/'>Centaur Technology</a>, and has been actively
 used and improved since then.  It is now distributed in the @('build')
 directory of the Community Books, and is today the main tool behind
-@('books/Makefile').</p>
-
-
-<h3>Copyright Information</h3>
-
-<p>@('cert.pl') and related tools<br/>
-Copyright (c) 2008-2013 by Sol Swords @('<sswords@centtech.com>')</p>
-
-<p>This program is free software; you can redistribute it and/or modify it
-under the terms of the GNU General Public License as published by the Free
-Software Foundation; either version 2 of the License, or (at your option) any
-later version.</p>
-
-<p>This program is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
-details.</p>
-
-<p>You should have received a copy of the GNU General Public License along with
-this program; if not, write to the Free Software Foundation, Inc., 675 Mass
-Ave, Cambridge, MA 02139, USA.</p>
+@('books/GNUmakefile').</p>
 
 
 <h3>Using @('cert.pl')</h3>
 
 <p>This documentation is really a <b>tutorial</b>, not a reference.  We
-recommend that you read the topics in order.</p>
+recommend that you read the topics in order.  Also see @(see
+books-certification) for additional information on how to automate the
+certification of the @(see community-books).</p>
 
 <p>We assume basic familiarity with a Unix environment, e.g., we expect that
 you know how to edit your startup scripts to set up a @('PATH'), create
@@ -1134,3 +1126,68 @@ following scenario:</p>
 exit codes instead of files to determine success.  In cases where the exit code
 says the job completed successfully, we wait until @('A.cert') becomes visible
 to the head node before returning control to the Makefile.</p>")
+
+; added by Matt K., 8/14/2014
+(defxdoc cert_param
+  :parents (cert.pl)
+  :short "restricting and modifying @(see community-books)
+certification using @('make')"
+  :long "<p>You can restrict the @(see books) to be certified using @('make')
+  by adding a stylized ``@('cert_param:')'' comment.  For example, suppose that
+  you include the following comment in your book or in a corresponding
+  @('.acl2') file (see @(see 2._PRE_CERTIFY-BOOK_COMMANDS)).</p>
+
+ @({
+ ; cert_param: (ccl-only)
+ })
+
+ <p>Then your @('make') command will only certify that book if your host Lisp
+ is CCL.  Moreover, if your host Lisp is not CCL, then @('make') will skip not
+ only the certification of that book but will also not attempt to certify any
+ book that includes it (and recursively).</p>
+
+ <p>The syntax for @('cert_param') comments is as follows, where the whitespace
+ is optional, and each entry without an '@('=')' is just set to 1, that is, it
+ is activated as described below.</p>
+
+ @({
+ ; cert_param: ( foo = bar , baz = 1 , bla )
+ })
+
+ <p>The meaning of an activated @('cert_param') is generally clear from its
+ name, as follows.  Additional @('cert_param') values might be supported in the
+ future; you can browse @(see community-books) files @('build/cert.pl') and
+ @('build/certlib.pl') for additional supported values.  The @('acl2x'),
+ @('acl2xskip'), and @('reloc_stub') values affect only the book itself, not
+ books that include it.  However, the other values affect not only the
+ certification of the indicated book but also apply to all books that include
+ it (and recursively).</p>
+
+ <ul>
+
+ <li>@('acl2x'): use two-pass certification (see @(see set-write-acl2x))</li>
+
+ <li>@('acl2xskip'): use @(tsee skip-proofs) during two-pass certification</li>
+
+ <li>@('ansi-only'): only certify when the host Lisp is an ANSI Common
+ Lisp (hence, not an older version of GCL)</li>
+
+ <li>@('ccl-only'): only certify when the host Lisp is CCL</li>
+
+ <li>@('hons-only'): only certify when special @(tsee hons) support is
+ available, i.e., in ACL2(h)</li>
+
+ <li>@('non-acl2r'): only certify when the (@see real) numbers are NOT
+ supported, i.e., when NOT using ACL2(r)</li>
+
+ <li>@('reloc_stub'): print a suitable ``relocation stub'' warning</li>
+
+ <li>@('uses-acl2r'): only certify when the (@see real) numbers are supported,
+ i.e., with ACL2(r)</li>
+
+ <li>@('uses-glucose'): only certify when Glucose (a SAT solver) is
+ available</li>
+
+ <li>@('uses-quicklisp'): only certify when quicklisp is available</li>
+
+ </ul>")

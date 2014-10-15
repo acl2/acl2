@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 
 
 ; case-conversion.lisp
@@ -140,6 +150,7 @@ logical definition.</p>"
     (downcase-charlist-aux (cdr x)
                            (cons (downcase-char (car x)) acc))))
 
+
 (define downcase-charlist ((x character-listp))
   :parents (cases)
   :short "Convert every character in a list to lower case."
@@ -223,22 +234,20 @@ logical definition.</p>"
    (n  natp                :type (integer 0 *))
    (xl (eql xl (length x)) :type (integer 0 *)))
   :guard (<= n xl)
-  :measure (nfix (- (nfix xl) (nfix n)))
+  :enabled t
   :split-types t
-  (if (mbe :logic (zp (- (nfix xl) (nfix n)))
-           :exec (eql n xl))
-      nil
-    (or (down-alpha-p (char x n))
-        (string-has-some-down-alpha-p x (the (integer 0 *) (+ 1 (lnfix n))) xl)))
+  :verify-guards nil
+  (mbe :logic
+       (charlist-has-some-down-alpha-p (nthcdr n (explode x)))
+       :exec
+       (if (eql n xl)
+           nil
+         (or (down-alpha-p (char x n))
+             (string-has-some-down-alpha-p x (the (integer 0 *) (+ 1 n)) xl))))
   ///
-  (defthm string-has-some-down-alpha-p-redef
-    (implies (and (stringp x)
-                  (natp n)
-                  (equal xl (length x))
-                  (<= n xl))
-             (equal (string-has-some-down-alpha-p x n xl)
-                    (charlist-has-some-down-alpha-p (nthcdr n (explode x)))))
-    :hints(("Goal" :in-theory (enable charlist-has-some-down-alpha-p)))))
+  (local (in-theory (enable charlist-has-some-down-alpha-p)))
+  (verify-guards string-has-some-down-alpha-p))
+
 
 (define upcase-string-aux
   :parents (upcase-string)
@@ -247,25 +256,22 @@ logical definition.</p>"
    (xl (eql xl (length x)) :type (integer 0 *))
    (acc))
   :guard (<= n xl)
-  :measure (nfix (- (nfix xl) (nfix n)))
   :split-types t
-  (if (mbe :logic (zp (- (nfix xl) (nfix n)))
-           :exec (eql n xl))
-      acc
-    (let* ((char   (char x n))
-           (upchar (upcase-char char)))
-      (upcase-string-aux x (the (integer 0 *) (+ 1 (lnfix n)))
-                         xl (cons upchar acc))))
+  :verify-guards nil
+  :enabled t
+  (mbe :logic
+       (revappend (upcase-charlist (nthcdr n (explode x))) acc)
+       :exec
+       (b* (((when (eql n xl))
+             acc)
+            (char   (char x n))
+            (upchar (upcase-char char))
+            ((the unsigned-byte n) (+ 1 n)))
+         (upcase-string-aux x n xl (cons upchar acc))))
   ///
-  (defthm upcase-string-aux-redef
-    (implies (and (stringp x)
-                  (natp n)
-                  (equal xl (length x))
-                  (<= n xl))
-             (equal (upcase-string-aux x n xl acc)
-                    (revappend (upcase-charlist (nthcdr n (explode x)))
-                               acc)))
-    :hints(("Goal" :in-theory (enable upcase-charlist)))))
+  (local (in-theory (enable upcase-charlist)))
+  (verify-guards upcase-string-aux))
+
 
 (define upcase-string
   :parents (cases acl2::string-upcase)
@@ -304,6 +310,7 @@ least we're better when no work needs to be done:</p>
             (string-upcase \"HELLO, WORLD!\")))       ;; .23 seconds, 64 MB
 })"
 
+  :verify-guards nil
   (mbe :logic (implode (upcase-charlist (explode x)))
        :exec
        (let ((xl (length x)))
@@ -313,6 +320,10 @@ least we're better when no work needs to be done:</p>
            (rchars-to-string
             (upcase-string-aux x 0 xl nil)))))
   ///
+  (verify-guards upcase-string
+    :hints(("Goal" :in-theory (enable string-has-some-down-alpha-p
+                                      upcase-string-aux))))
+
   (defcong istreqv equal (upcase-string x) 1)
 
   (defthm len-of-upcase-string
@@ -338,53 +349,44 @@ least we're better when no work needs to be done:</p>
    (n  natp                :type (integer 0 *))
    (xl (eql xl (length x)) :type (integer 0 *)))
   :guard (<= n xl)
-  :measure (nfix (- (nfix xl) (nfix n)))
   :split-types t
-  (if (mbe :logic (zp (- (nfix xl) (nfix n)))
-           :exec (int= n xl))
-      nil
-    (or (up-alpha-p (char x n))
-        (string-has-some-up-alpha-p x (+ 1 (lnfix n)) xl)))
+  :verify-guards nil
+  (mbe :logic
+       (charlist-has-some-up-alpha-p (nthcdr n (explode x)))
+       :exec
+       (if (eql n xl)
+           nil
+         (or (up-alpha-p (char x n))
+             (string-has-some-up-alpha-p x (+ 1 n) xl))))
   ///
-  (defthm string-has-some-up-alpha-p-redef
-    (implies (and (stringp x)
-                  (natp n)
-                  (equal xl (length x))
-                  (<= n xl))
-             (equal (string-has-some-up-alpha-p x n xl)
-                    (charlist-has-some-up-alpha-p (nthcdr n (explode x)))))
-    :hints(("Goal" :in-theory (enable charlist-has-some-up-alpha-p)))))
+  (local (in-theory (enable charlist-has-some-up-alpha-p)))
+  (verify-guards string-has-some-up-alpha-p))
 
 (define downcase-string-aux
   :parents (downcase-string)
+  :enabled t
   ((x  stringp             :type string)
    (n  natp                :type (integer 0 *))
    (xl (eql xl (length x)) :type (integer 0 *))
    (acc))
   :guard (<= n xl)
-  :measure (nfix (- (nfix xl) (nfix n)))
   :split-types t
-  (if (mbe :logic (zp (- (nfix xl) (nfix n)))
-           :exec (int= n xl))
-      acc
-    (let* ((char     (char x n))
-           (downchar (downcase-char char)))
-      (downcase-string-aux x (+ 1 (lnfix n)) xl (cons downchar acc))))
+  :verify-guards nil
+  (mbe :logic
+       (revappend (downcase-charlist (nthcdr n (explode x))) acc)
+       :exec
+       (if (eql n xl)
+           acc
+         (let* ((char     (char x n))
+                (downchar (downcase-char char)))
+           (downcase-string-aux x (+ 1 n) xl (cons downchar acc)))))
   ///
-  (defthm downcase-string-aux-redef
-    (implies (and (stringp x)
-                  (natp n)
-                  (equal xl (length x))
-                  (<= n xl))
-             (equal (downcase-string-aux x n xl acc)
-                    (revappend (downcase-charlist (nthcdr n (explode x)))
-                               acc)))
-    :hints(("Goal" :in-theory (enable downcase-charlist)))))
+  (local (in-theory (enable downcase-charlist)))
+  (verify-guards downcase-string-aux))
 
 (define downcase-string ((x :type string))
   :parents (cases acl2::string-downcase)
   :short "Convert a string to lower case."
-
   :long "<p>@(call downcase-string) converts a string to lower case,
 effectively by transforming each of its characters with @(see
 downcase-char).</p>
@@ -397,6 +399,8 @@ with arbitrary characters.</p>
 <p>See also @(see upcase-string), which has more discussion on how we try to
 make this fast.</p>"
 
+  :verify-guards nil
+
   (mbe :logic (implode (downcase-charlist (explode x)))
        :exec
        (let ((xl (length x)))
@@ -405,6 +409,10 @@ make this fast.</p>"
              x
            (rchars-to-string (downcase-string-aux x 0 xl nil)))))
   ///
+  (verify-guards downcase-string
+    :hints(("Goal" :in-theory (enable string-has-some-up-alpha-p
+                                      downcase-string-aux))))
+
   (defcong istreqv equal (downcase-string x) 1)
 
   (defthm len-of-downcase-string

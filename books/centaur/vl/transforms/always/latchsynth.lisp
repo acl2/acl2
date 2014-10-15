@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
@@ -55,7 +65,7 @@ supported.</li>
 
 </ul>")
 
-(local (xdoc::set-default-parents synthalways))
+(local (xdoc::set-default-parents latchsynth))
 
 (define vl-module-latchsynth
   :short "Synthesize simple latch-like @('always') blocks in a module."
@@ -102,32 +112,27 @@ supported.</li>
 
        (delta      (vl-starting-delta x))
        (delta      (change-vl-delta delta
-                                    ;; We'll strictly add netdecls, modinsts,
-                                    ;; and assigns, so pre-populate them.
-                                    :netdecls x.netdecls
+                                    ;; We'll strictly add modinsts, and
+                                    ;; assigns, so pre-populate them.
                                     :modinsts x.modinsts
                                     :assigns  x.assigns))
        (scary-regs (vl-always-scary-regs x.alwayses))
        (cvtregs    nil)
 
        ((mv new-alwayses cvtregs delta)
-        (vl-latchcode-synth-alwayses x.alwayses scary-regs x.regdecls
+        (vl-latchcode-synth-alwayses x.alwayses scary-regs x.vardecls
                                      cvtregs delta careful-p vecp))
 
        ((vl-delta delta) (vl-free-delta delta))
 
-       ((mv regdecls-to-convert new-regdecls)
-        ;; We already know all of the cvtregs are among the regdecls and have
-        ;; no arrdims.  So, we can just freely convert look them up and convert
-        ;; them here.
-        (vl-filter-regdecls cvtregs x.regdecls))
+       ((mv fixed-vardecls fixed-portdecls)
+        (vl-convert-regs cvtregs x.vardecls x.portdecls))
 
-       (new-netdecls (append (vl-always-convert-regs regdecls-to-convert)
-                             delta.netdecls))
+       (final-vardecls (append-without-guard delta.vardecls fixed-vardecls))
 
        (new-x (change-vl-module x
-                                :netdecls new-netdecls
-                                :regdecls new-regdecls
+                                :vardecls final-vardecls
+                                :portdecls fixed-portdecls
                                 :assigns  delta.assigns
                                 :modinsts delta.modinsts
                                 :alwayses new-alwayses

@@ -8,7 +8,7 @@
 (acl2::begin-book t);$ACL2s-Preamble$|#
 
 
-(in-package "DEFDATA")
+(in-package "CGEN")
 
 (set-verify-guards-eagerness 2)
 (include-book "tools/bstar" :dir :system)
@@ -76,45 +76,6 @@
  `(getprop ,name ,prop ,default 'acl2::current-acl2-world ,w))
 
 
-;;-- Returns a symbol representing the predicate of the parameter sym which is normally a type
-;;-- (get-predicate-symbol 'integer) ==> INTEGERP
-(defun get-predicate-symbol (sym)
-  (declare (xargs :guard (symbolp sym)))
-  (modify-symbol "" sym "P"))
-
-;;-- (get-predicate-symbol-lst '(integer boolean rational)) ==> (INTEGERP BOOLEANP RATIONALP)
-(defun get-predicate-symbol-lst (syms)
-  (declare (xargs :guard (symbol-listp syms)))
-  (if (endp syms)
-    nil
-    (cons (get-predicate-symbol (car syms))
-          (get-predicate-symbol-lst (cdr syms)))))
-
-(local
- (defthm valid-subseq-of-string-is-string
-   (implies (and (stringp pname)
-                 (< x (length pname))
-                 (< y (length pname))
-                 (<= x y))
-            (stringp (subseq pname x y)))
-   :rule-classes :type-prescription))
-
-;;inverse operation of the above --added by harshrc
-(defun get-typesymbol-from-pred-P-naming-convention (sym)
-  (declare (xargs :guard (and (symbolp sym))
-                  :guard-hints (("Goal" :in-theory (disable acl2::length acl2::subseq)))))
-
-  (let* ((pred-name (acl2::symbol-name sym))
-        (len-predname (acl2::length pred-name)))
-    (if (and
-         (< 1 len-predname) ;atleast have "p" and one more char
-         (equal #\P (acl2::char pred-name (1- len-predname)))) ;WTF, smallcase p wouldnt work
-      (let ((typename (acl2::subseq pred-name 0 (1- len-predname))));strip last char which is 'p'
-        (intern-in-package-of-symbol typename sym))
-      NIL))) ;TODO.Beware
-      ;(er hard 'get-typesymbol-from-pred "~x0 doesnt follow our convention of predicates ending with 'p'.~%" sym))))
-
-
 
 
 (defun or-list (lst)
@@ -139,16 +100,6 @@
           (to-symbol-in-package-lst (cdr sym-lst) pkg))))
 
 
-(defun cons-up-lists (l1 l2)
-  (declare (xargs :guard (and (true-listp l1)
-                              (true-listp l2)
-                              (= (len l1)
-                                 (len l2)))))
-  "same as pairlis$"
-  (if (endp l1)
-    nil
-    (cons (cons (car l1) (car l2))
-          (cons-up-lists (cdr l1) (cdr l2)))))
 
 
 ;general
@@ -170,84 +121,23 @@
 (verify-guards  acl2::lambda-keywordp)
 (verify-guards legal-constantp)
 
+(defun proper-symbolp (x)
+  (declare (xargs :guard t))
+  (and (symbolp x)
+       (not (or (keywordp x);a keyword
+                (booleanp x);t or nil
+                (legal-constantp x)))))
 
 
-;;--check arity of macro optional arguments 
-(defun optional-macro-args-allow-arity (margs n)
-  (declare (xargs :guard (and (true-listp margs) (integerp n))))
-  (cond ((<= n 0)
-         t)
-        ((endp margs)
-         nil)
-        ((member-eq (car margs) '(&rest &body))
-         t)
-        ((acl2::lambda-keywordp (car margs))
-         nil)
-        (t
-         (optional-macro-args-allow-arity (cdr margs) (1- n)))))
+(defun proper-symbol-listp (xs)
+  (declare (xargs :guard t))
+  (if (atom xs)
+      (null xs)
+    (and (proper-symbolp (car xs))
+         (proper-symbol-listp (cdr xs)))))
 
-;;-- check arity of a macro 
-(defun macro-args-allow-arity (margs n)
-  (declare (xargs :guard (and (true-listp margs) (integerp n))))
-  (cond ((< n 0)
-         nil)
-        ((endp margs)
-         (= n 0))
-        ((acl2::lambda-keywordp (car margs))
-         (cond ((eq (car margs) '&whole)
-                (macro-args-allow-arity (cdr margs) (1+ n)))
-               ((eq (car margs) '&optional)
-                (optional-macro-args-allow-arity (cdr margs) n))
-               ((member-eq (car margs) '(&rest &body))
-                t)
-               ((member-eq (car margs) '(&key &allow-other-keys))
-                (= n 0))
-               (t
-                nil)))
-        (t
-         (macro-args-allow-arity (cdr margs) (1- n)))))
 
-;;-- check arity of any function or macro
-(defun allows-arity (name n world)
-  (declare (xargs :guard (and (symbolp name)
-                              (natp n)
-                              (plist-worldp world))))
-  (if (function-symbolp name world)
-    (= n (len (acl2-getprop name 'formals world)))
-    (let ((margs (acl2-getprop name 'macro-args world
-                               :default :undefined)))
-      (and (true-listp margs)
-           (macro-args-allow-arity margs n)))))
 
-;EXTREMELY SLOW CALL because of getprop
-(defun defined-fun-or-macrop (name world)
-  (declare (xargs :guard (plist-worldp world)))
-  (and (symbolp name)
-       (or (function-symbolp name world)
-           (true-listp (acl2-getprop name 'macro-args world
-                                     :default :undefined)))))
-                                
-
-(defun allow-arity-lst (name-lst n world)
-  (declare (xargs :guard (and (symbol-listp name-lst)
-                              (natp n)
-                              (plist-worldp world))))
-  (or (endp name-lst)
-      (and (allows-arity    (car name-lst) n world)
-           (allow-arity-lst (cdr name-lst) n world))))
-
-;;--check if 'name' is a predicate function
-(defun plausible-predicate-functionp (name world)
-  (declare (xargs :guard (and (symbolp name)
-                              (plist-worldp world))))
-  (allows-arity name 1 world))
-
-(defun plausible-predicate-function-listp (name-lst world)
-  (declare (xargs :guard (and (symbol-listp name-lst)
-                              (plist-worldp world))))
-  (or (endp name-lst)
-      (and (plausible-predicate-functionp      (car name-lst) world)
-           (plausible-predicate-function-listp (cdr name-lst) world))))
 
 ;;--check if x if a keyword list
 (defun keyword-listp (x)
@@ -256,94 +146,68 @@
          (keyword-listp (cdr x)))
     (null x)))
 
-(defun possible-constant-valuep (def)
-  (declare (xargs :guard t))
-  (if (consp def)
-    ;quoted constant
-    (and (eq 'quote (car def))
-         (consp (cdr def))
-         (null (cddr def)))
-    (or (not (symbolp def));either acl2-number character string
-        (keywordp def);a keyword
-        (booleanp def);t or nil
-        (legal-constantp def))))
 
 
 
-(mutual-recursion
-(defun constant-value-expressionp-lst (expr-lst wrld)
-  (declare (xargs :guard (plist-worldp wrld)))
-  (if (atom expr-lst)
-    t
-    (and (constant-value-expressionp (car expr-lst) wrld)
-         (constant-value-expressionp-lst (cdr expr-lst) wrld))))
+;; (mutual-recursion
+;; (defun constant-value-expressionp-lst (expr-lst wrld)
+;;   (declare (xargs :guard (plist-worldp wrld)))
+;;   (if (atom expr-lst)
+;;     t
+;;     (and (constant-value-expressionp (car expr-lst) wrld)
+;;          (constant-value-expressionp-lst (cdr expr-lst) wrld))))
 
-;very slow
-(defun constant-value-expressionp (expr wrld)
-   (declare (xargs :guard (plist-worldp wrld)))
-  (cond ((null expr) t)
-        ((possible-constant-valuep expr) t)
-        ((atom expr) (possible-constant-valuep expr))
-        ((not (defined-fun-or-macrop (car expr) wrld)) nil)
-        (t (constant-value-expressionp-lst (cdr expr) wrld)))
-    )
-)
+;; ;very slow
+;; (defun constant-value-expressionp (expr wrld)
+;;    (declare (xargs :guard (plist-worldp wrld)))
+;;   (cond ((null expr) t)
+;;         ((possible-constant-value-p expr) t)
+;;         ((atom expr) (possible-constant-value-p expr))
+;;         ((not (defined-fun-or-macrop (car expr) wrld)) nil)
+;;         (t (constant-value-expressionp-lst (cdr expr) wrld)))
+;;     )
+;; )
 
 
-(mutual-recursion
-(defun possible-constant-value-expressionp-lst (expr-lst)
-  (if (atom expr-lst)
-    t
-    (and (possible-constant-value-expressionp (car expr-lst))
-         (possible-constant-value-expressionp-lst (cdr expr-lst)))))
 
-(defun possible-constant-value-expressionp (expr)
-   (cond ((null expr) t);if nil
-         ((possible-constant-valuep expr) t); if a constant
-         ((atom expr) (possible-constant-valuep expr));if an atom, it has to go through this
-         ((not (symbolp (car expr))) nil)
-         (t (possible-constant-value-expressionp-lst (cdr expr))))
-   )
-)
+;; ; begin some auxilliary stuff for defdata
 
-; begin some auxilliary stuff for defdata
+;; ;get the predicate function symbol for a type-name if it exists
+;; (defun er-get-predicate (type-name ctx wrld state)
+;;   (declare (xargs :mode :program
+;;                   :stobjs (state)
+;;             :guard (and (symbolp type-name)
+;;                               (symbolp ctx)
+;;                               (plist-worldp wrld))))
+;;   (let ((psym (get-predicate-symbol type-name)))
+;;     (if (plausible-predicate-functionp psym wrld)
+;;       (value psym)
+;;       (er soft ctx
+;;           "Predicate ~x0 for type ~x1 is not defined."
+;;           psym type-name))))
 
-;get the predicate function symbol for a type-name if it exists
-(defun er-get-predicate (type-name ctx wrld state)
-  (declare (xargs :mode :program
-                  :stobjs (state)
-            :guard (and (symbolp type-name)
-                              (symbolp ctx)
-                              (plist-worldp wrld))))
-  (let ((psym (get-predicate-symbol type-name)))
-    (if (plausible-predicate-functionp psym wrld)
-      (value psym)
-      (er soft ctx
-          "Predicate ~x0 for type ~x1 is not defined."
-          psym type-name))))
-
-;get the constant value associated with constant expression 'def'
-(defun er-get-constant-value (def ctx wrld state)
-  (declare (xargs :mode :program
-                  :stobjs (state)
-                  :guard (plist-worldp wrld)))
-  (cond ((and (consp def)
-             (eq 'quote (car def))
-             (consp (cdr def))
-             (null (cddr def)))
-         (value (cadr def)))
-        ((and (atom def)
-              (or (not (symbolp def))
-                  (keywordp def)
-                  (booleanp def)))
-         (value def))
-        (t 
-         (let ((p (acl2-getprop def 'const wrld)))
+;; ;get the constant value associated with constant expression 'def'
+;; (defun er-get-constant-value (def ctx wrld state)
+;;   (declare (xargs :mode :program
+;;                   :stobjs (state)
+;;                   :guard (plist-worldp wrld)))
+;;   (cond ((and (consp def)
+;;              (eq 'quote (car def))
+;;              (consp (cdr def))
+;;              (null (cddr def)))
+;;          (value (cadr def)))
+;;         ((and (atom def)
+;;               (or (not (symbolp def))
+;;                   (keywordp def)
+;;                   (booleanp def)))
+;;          (value def))
+;;         (t 
+;;          (let ((p (acl2-getprop def 'const wrld)))
                                
-           (if (and (symbolp def)
-                    (quotep p))
-               (value (cadr p))
-             (er soft ctx "Illegal/undefined constant value: ~x0" def))))))
+;;            (if (and (symbolp def)
+;;                     (quotep p))
+;;                (value (cadr p))
+;;              (er soft ctx "Illegal/undefined constant value: ~x0" def))))))
 
 ;;-- evaluates expr and returns its value if expr does not return a multi-value answer
 (defun trans-eval-single-value (expr ctx state)
@@ -385,34 +249,32 @@
     (cons b lst&)
     (flatten (car b) (flatten (cdr b) lst&))))
 
-(defun mem1 (atm lst)
-  (declare (xargs :guard (true-listp lst)))
-  (if (endp lst)
-    nil
-    (if (equal atm (car lst))
-      t
-      (mem1 atm (cdr lst)))))
+;from the members of an union expression, get the constituents
+;that are non-recursive.
+(defthm flatten-is-true-list1 
+  (implies (true-listp lst)
+           (true-listp (flatten b lst)))
+  :hints (("Goal" :in-theory (enable flatten))))
 
-(defun mem-eq (v lst)
-  (declare (xargs :guard (or (and (symbolp v)
-                                  (true-listp lst))
-                             (symbol-listp lst))))
-  (if (endp lst)
-    nil
-    (if (eq v (car lst))
-      t
-      (mem-eq v (cdr lst)))))
 
-(mutual-recursion
- (defun defbodyp (x)
-   (or (symbolp x)
-       (possible-constant-valuep x)
-       (defbody-listp (cdr x))))
- (defun defbody-listp (xs)
-   (if (atom xs)
-     (equal xs nil)
-     (and (defbodyp (car xs))
-          (defbody-listp (cdr xs))))))
+
+(defun mem-tree (x tree)
+  (declare (xargs :guard (symbolp x)))
+  (if (atom tree)
+    (eq x tree)
+    (or (mem-tree x (car tree))
+        (mem-tree x (cdr tree)))))
+
+;; (mutual-recursion
+;;  (defun defbodyp (x)
+;;    (or (symbolp x)
+;;        (possible-constant-value-p x)
+;;        (defbody-listp (cdr x))))
+;;  (defun defbody-listp (xs)
+;;    (if (atom xs)
+;;      (equal xs nil)
+;;      (and (defbodyp (car xs))
+;;           (defbody-listp (cdr xs))))))
 
 (include-book "misc/total-order" :dir :system)
 
@@ -504,12 +366,12 @@
 ; 12/4/2012, Matt K.: Omitting the definitions of nat-listp and
 ; acl2-number-listp, which are being built into ACL2.
 
-(defun naturals-listp (x)
-   (declare (xargs :guard t))
-  (if (atom x)
-    (null x)
-    (and (natp (car x))
-         (naturals-listp (cdr x)))))
+;; (defun naturals-listp (x)
+;;    (declare (xargs :guard t))
+;;   (if (atom x)
+;;     (null x)
+;;     (and (natp (car x))
+;;          (naturals-listp (cdr x)))))
 
 ; already in program mode:
 (DEFUN POS-LISTP (acl2::L)
@@ -518,30 +380,12 @@
         (T (AND (POSP (CAR acl2::L))
                 (POS-LISTP (CDR acl2::L))))))
 
-;; del: All tlp -> tlp
-;; signature: (a X)
-;; removes the first occurrence of a from X
-(defun del (a X)
-  (declare (xargs :guard (true-listp X)))
-  (cond ((endp X) nil)
-        ((equal a (car X)) (cdr X))
-        (t (cons (car X) (del a (cdr X))))))
 
-(defun rev-acc (X acc)
-  (declare (xargs :guard (true-listp X)))
-  (if (endp X)
-    acc
-    (rev-acc (cdr X) (cons (car X) acc))))
-
-(defun rev (X)
-  (declare (xargs :guard (true-listp X)))
-  (rev-acc X nil))
-
-;is x permutation of y 
-(defun permutation (xs ys)
-  (declare (xargs :verify-guards nil))
-  (cond ((atom xs) (atom ys)) 
-        (t (and (mem1 (car xs) ys) (permutation (cdr xs) (del (car xs) ys)))))) 
+;; ;is x permutation of y 
+;; (defun permutation (xs ys)
+;;   (declare (xargs :verify-guards nil))
+;;   (cond ((atom xs) (atom ys)) 
+;;         (t (and (mem1 (car xs) ys) (permutation (cdr xs) (del (car xs) ys)))))) 
 
 (defun get-value-from-keyword-value-list (key kv-lst)
   (declare (xargs :guard (keyword-value-listp kv-lst)))
@@ -549,14 +393,6 @@
 
 
 
-;Sig: Any -> Bool
-;check wether arg is a variable 
-(defun is-a-variablep (x)
-  (declare (xargs :guard t))
-  (and (symbolp x)
-       (not (or (keywordp x);a keyword
-                (booleanp x);t or nil
-                (legal-constantp x)))));ACL2::CONSTANT
 
 
 ;NOTE PACKAGES are very IMP while assuming that symbols are all ACL2. Like
@@ -577,7 +413,7 @@
    "A free variable is a symbol that is not a constant, i.e., it excludes T,
     NIL, and *CONST*, and keywords"
    (cond
-    ((atom term) (if (is-a-variablep term)
+    ((atom term) (if (proper-symbolp term)
                    (add-to-set-eq term ans)
                    ans))
     ((eq (car term) 'QUOTE) ans)
@@ -619,7 +455,7 @@
   (if (endp alst)
     nil
     (let* ((key (caar alst))
-           (we-want-to-add  (mem1 key wanted-keys)))
+           (we-want-to-add  (member-equal key wanted-keys)))
       (if we-want-to-add 
         (cons (car alst);cons the wanted entry
               (filter-alist-keys (cdr alst) wanted-keys))
@@ -873,19 +709,21 @@
             (list fst snd))
           (convert-conspairs-to-listpairs (cdr conspairs)))))
 
-(defthm convert-conspairs-to-listpairs-sig1
+(local 
+ (defthm convert-conspairs-to-listpairs-sig1
   (implies (symbol-alistp P)
            (symbol-doublet-listp (convert-conspairs-to-listpairs P)))
-  :rule-classes (:rewrite :type-prescription :forward-chaining))
+  :rule-classes (:rewrite :type-prescription :forward-chaining)))
 
-(defthm symbol-doublet-listp-implication1
+(local 
+ (defthm symbol-doublet-listp-implication1
   (implies (and (symbol-doublet-listp A)
                 (consp A))
            (and (consp (car A))
                 (symbolp (caar A))
                 (consp (cdr (car A)))
                 (null (cddr (car A)))))
-  :rule-classes (:forward-chaining :type-prescription))
+  :rule-classes (:forward-chaining)))
 
 (defun count-occurrences (v lst)
   (declare (xargs :guard (true-listp lst)))
@@ -901,7 +739,7 @@
   "returns first symbol in syms2 which is in syms1 o.w nil"
   (if (endp syms2)
     nil
-    (if (mem1 (car syms2) syms1)
+    (if (member-eq (car syms2) syms1)
       (car syms2)
       (sym-eq-lst syms1 (cdr syms2)))))
 
@@ -934,7 +772,7 @@
                               (true-listp in-lst))))
   (if (endp lst)
       nil
-    (if (defdata::mem1 (car lst) in-lst)
+    (if (member-equal (car lst) in-lst)
         (cons (car lst) (filter-in (cdr lst) in-lst))
       (filter-in (cdr lst) in-lst))))
 ;filter all elements in lst that are NOT IN in-lst 
@@ -943,7 +781,7 @@
                               (true-listp in-lst))))
   (if (endp lst)
       nil
-    (if (not (defdata::mem1 (car lst) in-lst))
+    (if (not (member-equal (car lst) in-lst))
         (cons (car lst) (filter-in (cdr lst) in-lst))
       (filter-in (cdr lst) in-lst))))
 
@@ -957,7 +795,7 @@
     (let* ((a-b (car a-b-alst))
            (a (car a-b))
            (b (cdr a-b))
-           (c (defdata::get-val b b-c-alst))
+           (c (get-val b b-c-alst))
            (a-c (cons a c)))
       (cons a-c
             (compose-two-alists (cdr a-b-alst) b-c-alst)))))
@@ -1138,7 +976,7 @@ Mainly to be used for evaluating enum lists "
       ans.
     (b* ((vs        (car connected-vs-lst))
          (tes       (get-val-lst vs A))
-         (A-partial (cons-up-lists vs tes)))
+         (A-partial (pairlis$ vs tes)))
      (order-var-te-alist.  A (cdr connected-vs-lst)
                             (append ans. A-partial)))))
 
@@ -1156,64 +994,105 @@ Mainly to be used for evaluating enum lists "
   (declare (xargs :mode :program))
   (coerce (cdr (coerce (fms-to-string "~x0" (list (cons #\0 x))) 'list)) 'string))
 
-;check this TODO
-(defun is-singleton-type-p (obj)
-  (possible-constant-valuep obj))
 
-(defun is-singleton-type-lst-p (obj-lst)
-  (declare (xargs :guard (true-listp obj-lst)))
-  (if (endp obj-lst)
-    t
-  (and (possible-constant-valuep (car obj-lst))
-       (is-singleton-type-lst-p (cdr obj-lst)))))
+;; (include-book "clause-processors/magic-ev" :dir :system)
 
-(defun tau-predicate-p (pred world)
-  (declare (xargs :mode :program))
-  (b* ((td (acl2::tau-data-fn pred world))
-       ((unless (consp td)) nil)
-       (entry (assoc-eq 'acl2::recognizer-index (cdr td)))
-       ((unless (and (consp entry) (consp (cdr entry)))) nil))
-    (natp (cadr entry))))
+;; (defthm strip-cdrs-car-len-decreases
+;;   (implies (and (consp x)
+;;                 (consp (car x)))
+;;            (< (len (car (strip-cdrs x)))
+;;               (len (car x))))
+;;   :rule-classes :linear)
+  
+
+;; (defun map-if-filter-aux (map-fn if-fn filter-fn comb ls alist state)
+;; ; map-fn is of arity (len ls)
+;; ; if-fn is of arity (len ls) and returns boolean
+;; ; filter-fn is a predicate
+;; ; comb is one of collect, cons, append, return (similar to defloop)
+;; ; ls is a list of lists
+;; ; alist is a value binding for free variables
+;;   (declare (xargs :stobjs (state)
+;;                   :measure (len (car ls))
+;;                   :verify-guards nil
+;;                   :guard (and (member-eq comb '(acl2::collect cons append acl2::return))
+;;                               (symbol-alistp alist)
+;;                               (true-list-listp ls))))
+;;   (if (or (atom ls)
+;;           (atom (car ls)))
+;;       nil
+;;     (b* ((ctx 'map-filter-aux)
+;;          (kwoted-ls (kwote-lst ls))
+;;          ((mv err ans) (acl2::magic-ev `(,map-fn . ,kwoted-ls) alist state t t))
+;;          ((when err) (er hard? ctx "~| Error in evaluation (magic-ev) fn:~x0, args:~x1~%" map-fn ls))
+;;          ((mv err ok1p) (acl2::magic-ev `(,if-fn . ,kwoted-ls) alist state t t))
+;;          ((when err) (er hard? ctx "~| Error in evaluation (magic-ev) fn:~x0, args:~x1~%" map-fn ls))
+;;          ((mv err ok2p) (if (null filter-fn)
+;;                            (mv nil t)
+;;                          (acl2::magic-ev `(,filter-fn ',ans) alist state t t)))
+;;          ((when err) (er hard? ctx "~| Error in evaluation (magic-ev) fn:~x0, arg:~x1~%" filter-fn ans)))
+
+;;       (if (and ok1p ok2p)
+;;           (case comb
+;;             (acl2::collect (cons ans (map-if-filter-aux map-fn if-fn filter-fn comb (strip-cdrs ls) alist state)))
+;;             (cons (cons ans (map-if-filter-aux map-fn if-fn filter-fn comb (strip-cdrs ls) alist state)))
+;;             (append (append ans (map-if-filter-aux map-fn if-fn filter-fn comb (strip-cdrs ls) alist state)))
+;;             (return ans)
+;;             (otherwise (er hard? ctx "~| Unsupported combinator ~x0 ~%." comb)))
+;;         (map-if-filter-aux map-fn if-fn filter-fn comb (strip-cdrs ls) alist state)))))
+
+;; ; similar syntax to defloop of data-structures/utilities
+;; ; but this is crippled, since macros are not allowed in when, unless and main-clause
+;; (defmacro for (for-clauses main-clause &key (when 't) (unless 'nil))
+  
+;;   (b* ((iter-vars (strip-cars for-clauses))
+;;        (list-vars (acl2::strip-caddrs for-clauses))
+;;        (A (pairlis$ iter-vars (listlis (make-list (len for-clauses) :initial-element 'CAR) list-vars)))
+;;        (kind (car main-clause))
+;;        (main-expr (cadr main-clause))
+;;        (map-lambda-fn `(LAMBDA ,list-vars
+;;                                ;(DECLARE (IGNORABLE ,@list-vars)) 
+;;                                ,(acl2::sublis-var A main-expr)))
+;;        (if-free-vars (ALL-VARS1-LST (list when unless) '()))
+;;        (- (cw "~%if-fv: ~x0" if-free-vars))
+;;        (if-lambda-fn (if (null if-free-vars)
+;;                        nil
+;;                        `(LAMBDA ,list-vars
+;; ;(DECLARE (IGNORABLE ,@list-vars)) 
+;;                                 (IF ,when (NOT ,unless) 'NIL))))
+;;        (free-vars (set-difference-eq (ALL-VARS1 main-expr '()) iter-vars))
+;;        (A (pairlis$ (make-list (len free-vars) :initial-element 'CONS) (listlis (acl2::kwote-lst free-vars) free-vars)))
+;;        (- (cw "~%A: ~x0" A))
+;;        )
+;;     `(map-if-filter-aux ',map-lambda-fn ',if-lambda-fn nil ',kind (list ,@list-vars) (list ,@A) state)))
+
+#|
+(trace$ map-if-filter-aux)
+
+(let ((L1 '((1 a) (2 b) (45 c)))
+      (L2 '(-1 -2 -3))
+      (N 99))
+  (for ((x in l1)
+        (y in l2))
+       (collect (cons (car x) (cons n y)))))
+|#  
 
 
-; CHECK with J. TODO What if there is some information in pos-implicants of P1,
-; that is missed below!?
-(defun subtype-p (P1 P2 wrld)
-  "Is P1 => P2 in tau-database?"
-  (declare (xargs :verify-guards nil
-                  :guard (and (symbolp P1)
-                              (symbolp P2)
-                              (plist-worldp wrld))))
-  (b* (
-       ;((unless (tau-predicate-p P1 wrld)) nil)
-       ;((unless (tau-predicate-p P2 wrld)) nil) ;expensive calls 
-       ((when (eq P2 'acl2::allp)) t)
-       ((when (eq P1 P2)) t)
-       (P2-neg-implicants-tau (getprop P2 'acl2::neg-implicants acl2::*tau-empty* 'acl2::current-acl2-world wrld))
-       (P2-neg-pairs (acl2::access acl2::tau P2-neg-implicants-tau :neg-pairs)))
-    ;guard verif fails since, we dont know if P2-neg-implicants is a alist.
-    (rassoc-eq P1 P2-neg-pairs)))
+;; chose 29 bits, because ACL2 uses signed 29 bits in its code!
+(defun unsigned-29bits-p (x)
+  (declare (xargs :guard T))
+  (acl2::unsigned-byte-p 29 x))
 
-(defun disjoint-p (P1 P2 wrld)
-  "Is P1 x => (not (P2 x)) in tau-database?"
-  (declare (xargs :verify-guards nil
-                  :guard (and (symbolp P1)
-                              (symbolp P2)
-                              (plist-worldp wrld))))
-  (b* (
-       ;((unless (tau-predicate-p P1 wrld)) nil)
-       ;((unless (tau-predicate-p P2 wrld)) nil) ;expensive calls 
-       ((when (or (eq P1 'acl2::allp) (eq P2 'acl2::allp))) nil)
-       ((when (eq P1 P2)) nil)
-       (P1-pos-implicants-tau (getprop P1 'acl2::pos-implicants acl2::*tau-empty* 'acl2::current-acl2-world wrld))
-       (P1-neg-pairs (acl2::access acl2::tau P1-pos-implicants-tau :neg-pairs)))
-    ;guard verif fails since, we dont know if P2-pos-implicants is a alist.
-    (rassoc-eq P2 P1-neg-pairs)))
+(defun fixnump (x)
+  (declare (xargs :guard T))
+  (unsigned-29bits-p x))
 
-;; (defstub is-disjoint (* * *) => *)
-;; (defstub is-subtype (* * *) => *)
-;; (defstub is-alias (* * *) => *)
+;;; Style of accessing/changing defrec objects. The name of the object is
+;;; always same as the name of the defrec, just like in stobjs. THis way we
+;;; can drop in stobjs in their place!
+(defmacro access (r a)
+  `(acl2::access ,r ,r ,(intern-in-package-of-symbol (symbol-name a) :key)))
+(defmacro change (r a val )
+  `(acl2::change ,r ,r ,(intern-in-package-of-symbol (symbol-name a) :key) ,val))
 
-(defstub is-type-predicate (* *) => *)
-(defstub is-a-typeName (* *) => *)
-(defstub is-a-custom-type (* *) => *)
+

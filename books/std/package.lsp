@@ -1,21 +1,30 @@
-; ACL2 Standard Library Packages
-; Portions are Copyright (c) 2008-2014 Centaur Technology
-; Portions are Copyright (c) 2003-2012 by Jared Davis <jared@cs.utexas.edu>
+; ACL2 Standard Library
+; Copyright (c) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
@@ -140,6 +149,7 @@
   (union-eq-exec set::*sets-exports*
    (union-eq-exec
     '(b* value defxdoc defxdoc-raw macro-args
+         defpointer
          xdoc-extend defsection defsection-progn lnfix
          set-default-parents
          getprop formals justification def-bodies current-acl2-world def-body
@@ -266,10 +276,13 @@
       defmvtypes
       defrule
       defruled
+      defruledl
+      defrulel
       define
       defines
       defconsts
       defval
+      more-returns
       xdoc
 ;               defaggregate
 ;               defenum
@@ -357,7 +370,8 @@
     defval
     defconsts
     raise
-    __function__))
+    __function__
+    more-returns))
 
 (assign acl2::verbose-theory-warning nil)
 

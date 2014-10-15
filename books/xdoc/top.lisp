@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
@@ -67,52 +77,65 @@
 
 (add-ld-keyword-alias! :doc '(1 xdoc))
 
+(defun xdoc-extend-fn (name long world)
+  (declare (xargs :mode :program))
+  (let* ((all-topics   (xdoc::get-xdoc-table world))
+         (old-topic    (xdoc::find-topic name all-topics))
+         (long         (or long "")))
+    (cond ((not old-topic)
+           (prog2$
+            (er hard? 'xdoc-extend "Topic ~x0 wasn't found." name)
+            all-topics))
+          (t
+           (let* ((other-topics (remove-equal old-topic all-topics))
+                  (old-long     (or (cdr (assoc :long old-topic)) ""))
+                  (new-long     (concatenate 'string old-long long))
+                  (new-topic    (acons :long new-long
+                                       (delete-assoc :long old-topic))))
+             (cons new-topic other-topics))))))
+
 (defmacro xdoc-extend (name long)
   `(table xdoc 'doc
-          (let* ((all-topics   (xdoc::get-xdoc-table world))
-                 (old-topic    (xdoc::find-topic ',name all-topics))
-                 (long         (or ,long "")))
-            (cond ((not old-topic)
-                   (prog2$
-                    (er hard? 'xdoc-extend "Topic ~x0 wasn't found." ',name)
-                    all-topics))
-                   (t
-                    (let* ((other-topics (remove-equal old-topic all-topics))
-                           (old-long     (cdr (assoc :long old-topic)))
-                           (new-long     (concatenate 'string old-long long))
-                           (new-topic    (acons :long new-long
-                                                (delete-assoc :long old-topic))))
-                      (cons new-topic other-topics)))))))
+          (xdoc-extend-fn ',name ,long world)))
+
+(defun xdoc-prepend-fn (name long world)
+  (declare (xargs :mode :program))
+  (let* ((all-topics   (xdoc::get-xdoc-table world))
+         (old-topic    (xdoc::find-topic name all-topics))
+         (long         (or long "")))
+    (cond ((not old-topic)
+           (er hard? 'xdoc-prepend "Topic ~x0 wasn't found." name))
+          (t
+           (let* ((other-topics (remove-equal old-topic all-topics))
+                  (old-long     (cdr (assoc :long old-topic)))
+                  (new-long     (concatenate 'string long old-long))
+                  (new-topic    (acons :long new-long
+                                       (delete-assoc :long old-topic))))
+             (cons new-topic other-topics))))))
 
 (defmacro xdoc-prepend (name long)
   `(table xdoc 'doc
-          (let* ((all-topics   (xdoc::get-xdoc-table world))
-                 (old-topic    (xdoc::find-topic ',name all-topics))
-                 (long         (or ,long "")))
-            (cond ((not old-topic)
-                   (er hard? 'xdoc-prepend "Topic ~x0 wasn't found." ',name))
-                  (t
-                   (let* ((other-topics (remove-equal old-topic all-topics))
-                          (old-long     (cdr (assoc :long old-topic)))
-                          (new-long     (concatenate 'string long old-long))
-                          (new-topic    (acons :long new-long
-                                               (delete-assoc :long old-topic))))
-                     (cons new-topic other-topics)))))))
+          (xdoc-prepend-fn ',name ,long world)))
+
+(defun order-subtopics-fn (name order world)
+  (declare (xargs :mode :program))
+  (let* ((all-topics (xdoc::get-xdoc-table world))
+         (old-topic  (xdoc::find-topic name all-topics)))
+    (cond ((not old-topic)
+           (er hard? 'order-subtopics "Topic ~x0 wasn't found." name))
+          ((not (symbol-listp order))
+           (er hard? 'order-subtopics "Subtopics are not a symbol list: ~x0" order))
+          (t
+           (let* ((other-topics (remove-equal old-topic all-topics))
+                  (new-topic    (acons :suborder order
+                                       (delete-assoc :suborder old-topic))))
+             (cons new-topic other-topics))))))
 
 (defmacro order-subtopics (name order)
   `(table xdoc 'doc
-          (let* ((all-topics (xdoc::get-xdoc-table world))
-                 (old-topic  (xdoc::find-topic ',name all-topics))
-                 (order      ',order))
-            (cond ((not old-topic)
-                   (er hard? 'order-subtopics "Topic ~x0 wasn't found." ',name))
-                  ((not (symbol-listp order))
-                   (er hard? 'order-subtopics "Subtopics are not a symbol list: ~x0" order))
-                  (t
-                    (let* ((other-topics (remove-equal old-topic all-topics))
-                           (new-topic    (acons :suborder order
-                                                (delete-assoc :suborder old-topic))))
-                      (cons new-topic other-topics)))))))
+          (order-subtopics-fn ',name ',order world)))
+
+
 
 (defund extract-keyword-from-args (kwd args)
   (declare (xargs :guard (keywordp kwd)))
@@ -192,6 +215,24 @@
                      (join-strings strs (coerce (list #\Newline) 'string)))
       "")))
 
+
+(defun defsection-autodoc-fn (name parents short long extension marker state)
+  (declare (xargs :mode :program :stobjs state))
+  (let* ((wrld      (w state))
+         (trips     (acl2::reversed-world-since-event wrld marker nil))
+         (info      (reverse (acl2::new-formula-info trips wrld nil)))
+         (autodoc   (formula-info-to-defs (not extension) info))
+         (long      (concatenate 'string
+                                 (or long "")
+                                 (coerce (list #\Newline #\Newline) 'string)
+                                 autodoc)))
+    (if extension
+        `(xdoc-extend ,extension ,long)
+      `(defxdoc ,name
+         :parents ,parents
+         :short ,short
+         :long ,long))))
+
 (defun defsection-fn (wrapper ; (encapsulate nil) or (progn)
                       name args)
   (declare (xargs :mode :program))
@@ -251,24 +292,7 @@
                      (value-triple :invisible)
                      . ,new-args))
                   (make-event
-                   (let* ((name      ',name)
-                          (parents   ',parents)
-                          (short     ',short)
-                          (extension ',extension)
-                          (wrld      (w state))
-                          (trips     (acl2::reversed-world-since-event wrld ',marker nil))
-                          (info      (reverse (acl2::new-formula-info trips wrld nil)))
-                          (autodoc   (formula-info-to-defs (not extension) info))
-                          (long      (concatenate 'string
-                                                  ',(or long "")
-                                                  (coerce (list #\Newline #\Newline) 'string)
-                                                  autodoc)))
-                     (if extension
-                         `(xdoc-extend ,extension ,long)
-                       `(defxdoc ,name
-                          :parents ,parents
-                          :short ,short
-                          :long ,long))))
+                   (defsection-autodoc-fn ',name ',parents ',short ',long ',extension ',marker state))
                   (value-triple ',name))))))))
 
 (defmacro defsection (name &rest args)
@@ -295,3 +319,45 @@
     `(intern-in-package-of-symbol
       (concatenate-symbol-names (list ,@args))
       mksym-package-symbol)))
+
+; Moved from acl2-doc.lisp to make it more widely available
+(defmacro defpointer (from to &optional keyword-p)
+
+; Examples:
+
+; (defpointer &allow-other-keys macro-args) expands to:
+
+; (defxdoc &allow-other-keys
+;   :parents (pointers)
+;   :short "See @(see macro-args).")
+
+; (defpointer guard-hints xargs t) expands to:
+
+; (defxdoc &allow-other-keys
+;   :parents (pointers)
+;   :short "See @(see xargs) for keyword :guard-hints.")
+
+  `(defxdoc ,from
+     :parents (pointers)
+     :short ,(concatenate 'string
+                          "See @(see "
+                          (acl2::string-downcase (symbol-name to))
+                          ")"
+                          (if keyword-p
+                              (concatenate 'string
+                                           " for keyword @(':"
+                                           (acl2::string-downcase (symbol-name from))
+                                           "').")
+                            "."))))
+
+(defxdoc defpointer
+  :parents (xdoc documentation)
+  :short "Define an alias for a documentation topic"
+  :long "@({
+  Example Form:
+  (defpointer acl2 acl2-sedan)
+  (defpointer guard-hints xargs t)
+
+  General Form:
+  (defpointer alias target keyword-p)
+  })")

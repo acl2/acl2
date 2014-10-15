@@ -1,3 +1,6 @@
+; Copyright (C) 2014, Regents of the University of Texas
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+
 ; This total order book, put together by Matt Kaufmann, is culled from events
 ; contributed by Pete Manolios and also benefits from contributions by Rob
 ; Sumners.

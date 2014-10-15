@@ -2,19 +2,31 @@
 ; Copyright (C) 2014 Kookamara LLC
 ;
 ; Contact:
+;
 ;   Kookamara LLC
-;   11410 Windermere Meadows, Austin TX, 78759, USA.
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
 ;   http://www.kookamara.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@kookamara.com>
 
@@ -102,7 +114,7 @@ is at the heart of ACL2's s-expression printing.  In other words, this is an
 implementation of something like the @('~x') @(see fmt) directive.</p>
 
 <p>Even with respect to @('ppr'), there is some @(see missing-functionality).
-I don't implement @(see iprinting) or include any infix printing support.
+I don't implement @(see acl2::iprinting) or include any infix printing support.
 Various complex and unhelpful printer-control variables are also omitted.</p>
 
 
@@ -113,7 +125,7 @@ pretty-printing-implementation).</p>")
 
 (defxdoc pretty-printing-implementation
   :parents (pretty-printing)
-  :short "Implementation details of our @(see prettyprint) support."
+  :short "Implementation details of our @(see pretty-printing) support."
 
   :long "<p>My implementation is very much based on ACL2's pretty printer.  The
 pretty printer operates in two linear passes: the first pass builds a data
@@ -987,10 +999,10 @@ that tell the second pass how to print.  (In ACL2's pretty-printer, these
 structures are referred to as \"ppr tuples\".)</p>
 
 <p>We now define the valid kinds of printer instructions.  To understand these,
-it is very helpful to start with @(see ppr2), the <i>second</i> pass of
-pretty-printing, which follows these instructions to produce its output.  You
-can basically think of @('ppr2') as an evaluator that gives these instructions
-their semantics.</p>"
+it is very helpful to start with @(see print-instruction), the <i>second</i>
+pass of pretty-printing, which follows these instructions to produce its
+output.  You can basically think of @('print-instruction') as an evaluator that
+gives these instructions their semantics.</p>"
 
   (fty::deftagsum pinst
     (:flat
@@ -1714,11 +1726,6 @@ without using up too many characters, then we should extend the first row.</p>
          (atom x))
   :hints(("Goal" :in-theory (enable pinstlist->max-width))))
 
-(defthm integerp-of-pinstlist->max-width
-  (integerp (pinstlist->max-width x maximum))
-  :rule-classes :type-prescription
-  :hints(("Goal" :in-theory (enable pinstlist->max-width))))
-
 (defthm lower-bound-of-pinstlist->max-width-alt
   (implies (integerp maximum)
            (<= maximum (pinstlist->max-width x maximum)))
@@ -1837,3 +1844,18 @@ character list."
 to extend existing character lists.  See for instance the discussion in @(see
 revappend-chars).</p>"
   (ppr x col config eviscp acc))
+
+
+(define pretty-list
+  :parents (pretty-printing)
+  :short "Pretty-print a list of ACL2 objects, creating a list of strings."
+  ((x "The ACL2 objects to pretty-print.")
+   &key
+   ((config printconfig-p "Optional pretty-printer configuration options.")  '*default-printconfig*)
+   ((col    natp          "Optional starting column number.")                '0)
+   ((eviscp booleanp      "Optional flag for use with eviscerated objects.") 'nil))
+  :returns (pretty-x string-listp)
+  (if (atom x)
+      nil
+    (cons (pretty      (car x) :config config :col col :eviscp eviscp)
+          (pretty-list (cdr x) :config config :col col :eviscp eviscp))))

@@ -1,20 +1,30 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2013 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
@@ -145,9 +155,10 @@ and including the surrounding quotes."
                           (character-listp x))
                      (vl-printedlist-p (bridge::json-encode-chars x acc)))
             :hints(("Goal"
-                    :in-theory (enable bridge::json-encode-chars
-                                       bridge::json-encode-char
-                                       bridge::json-encode-weird-char)))))))
+                    :in-theory (e/d (bridge::json-encode-chars
+                                     bridge::json-encode-char
+                                     bridge::json-encode-weird-char)
+                                    (digit-to-char))))))))
 
 (add-json-encoder stringp jp-str)
 
@@ -501,12 +512,12 @@ encoding.</p>"
   :inline t
   (jp-sym x))
 
-(define vl-jp-casetype ((x vl-casetype-p) &key (ps 'ps))
+(define vl-jp-casecheck ((x vl-casecheck-p) &key (ps 'ps))
   :parents (json-encoders)
   :inline t
   (jp-sym x))
 
-(define vl-jp-netdecltype ((x vl-netdecltype-p) &key (ps 'ps))
+(define vl-jp-casetype ((x vl-casetype-p) &key (ps 'ps))
   :parents (json-encoders)
   :inline t
   (jp-sym x))
@@ -516,12 +527,7 @@ encoding.</p>"
   :inline t
   (jp-sym x))
 
-(define vl-jp-vardecltype ((x vl-vardecltype-p) &key (ps 'ps))
-  :parents (json-encoders)
-  :inline t
-  (jp-sym x))
-
-(define vl-jp-paramdecltype ((x vl-paramdecltype-p) &key (ps 'ps))
+(define vl-jp-alwaystype ((x vl-alwaystype-p) &key (ps 'ps))
   :parents (json-encoders)
   :inline t
   (jp-sym x))
@@ -535,10 +541,9 @@ encoding.</p>"
 (add-json-encoder vl-assign-type-p      vl-jp-assign-type)
 (add-json-encoder vl-deassign-type-p    vl-jp-deassign-type)
 (add-json-encoder vl-casetype-p         vl-jp-casetype)
-(add-json-encoder vl-netdecltype-p      vl-jp-netdecltype)
+(add-json-encoder vl-casecheck-p        vl-jp-casecheck)
 (add-json-encoder vl-taskporttype-p     vl-jp-taskporttype)
-(add-json-encoder vl-vardecltype-p      vl-jp-vardecltype)
-(add-json-encoder vl-paramdecltype-p    vl-jp-paramdecltype)
+(add-json-encoder vl-alwaystype-p       vl-jp-alwaystype)
 
 
 (define vl-jp-maybe-exprtype ((x vl-maybe-exprtype-p) &key (ps 'ps))
@@ -746,23 +751,173 @@ which could not hold such large values.</p>")
 
 (add-json-encoder vl-maybe-gatedelay-p vl-jp-maybe-gatedelay)
 
-(def-vl-jp-aggregate netdecl)
-(def-vl-jp-list netdecl :newlines 4)
-
-(def-vl-jp-aggregate regdecl)
-(def-vl-jp-list regdecl :newlines 4)
-
 (def-vl-jp-aggregate plainarg)
 (def-vl-jp-list plainarg :newlines 4)
 
 (def-vl-jp-aggregate namedarg)
 (def-vl-jp-list namedarg :newlines 4)
 
+
+
+(define vl-jp-lifetime ((x vl-lifetime-p) &key (ps 'ps))
+  :parents (json-encoders)
+  :inline t
+  (jp-sym x))
+
+(define vl-jp-randomqualifier ((x vl-randomqualifier-p) &key (ps 'ps))
+  :parents (json-encoders)
+  :inline t
+  (jp-sym x))
+
+(define vl-jp-nettypename ((x vl-nettypename-p) &key (ps 'ps))
+  :parents (json-encoders)
+  :inline t
+  (jp-sym x))
+
+(define vl-jp-coretypename ((x vl-coretypename-p) &key (ps 'ps))
+  :parents (json-encoders)
+  :inline t
+  (jp-sym x))
+
+(add-json-encoder vl-lifetime-p         vl-jp-lifetime)
+(add-json-encoder vl-randomqualifier-p  vl-jp-randomqualifier)
+(add-json-encoder vl-nettypename-p      vl-jp-nettypename)
+(add-json-encoder vl-coretypename-p     vl-jp-coretypename)
+
+(define vl-jp-maybe-nettypename ((x vl-maybe-nettypename-p) &key (ps 'ps))
+  :parents (json-encoders)
+  (if x
+      (vl-jp-nettypename x)
+    (vl-print "null"))
+  ///
+  (add-json-encoder vl-maybe-nettypename-p vl-jp-maybe-nettypename))
+
+(define vl-jp-packeddimension ((x vl-packeddimension-p) &key (ps 'ps))
+  :parents (json-encoders)
+  (if (eq x :vl-unsized-dimension)
+      (jp-sym x)
+    (vl-jp-range x)))
+
+(add-json-encoder vl-packeddimension-p vl-jp-packeddimension)
+(def-vl-jp-list packeddimension)
+
+(define vl-jp-maybe-packeddimension ((x vl-maybe-packeddimension-p) &key (ps 'ps))
+  :parents (json-encoders)
+  (if x
+      (vl-jp-packeddimension x)
+    (vl-print "null")))
+
+(add-json-encoder vl-maybe-packeddimension-p vl-jp-maybe-packeddimension)
+
+(define vl-jp-enumbasekind ((x vl-enumbasekind-p) &key (ps 'ps))
+  :guard-hints(("Goal" :in-theory (enable vl-enumbasekind-p)))
+  (if (stringp x)
+      (jp-object :tag (jp-sym :user-defined-type)
+                 :name (jp-str x))
+    (jp-sym x)))
+
+(add-json-encoder vl-enumbasekind-p vl-jp-enumbasekind)
+
+(def-vl-jp-aggregate enumbasetype)
+(def-vl-jp-aggregate enumitem)
+(def-vl-jp-list enumitem)
+
+
+(defines vl-jp-datatype
+
+ (define vl-jp-datatype ((x vl-datatype-p) &key (ps 'ps))
+   :measure (two-nats-measure (vl-datatype-count x) 0)
+   (vl-datatype-case x
+     :vl-coretype
+     (jp-object :tag     (jp-sym :vl-coretype)
+                :name    (vl-jp-coretypename x.name)
+                :signedp (jp-bool x.signedp)
+                :pdims    (vl-jp-packeddimensionlist x.pdims)
+                :udims    (vl-jp-packeddimensionlist x.udims))
+     :vl-struct
+     (jp-object :tag     (jp-sym :vl-struct)
+                :packedp (jp-bool x.packedp)
+                :signedp (jp-bool x.signedp)
+                :pdims    (vl-jp-packeddimensionlist x.pdims)
+                :udims    (vl-jp-packeddimensionlist x.udims)
+                :members (vl-jp-structmemberlist x.members))
+     :vl-union
+     (jp-object :tag     (jp-sym :vl-union)
+                :packedp (jp-bool x.packedp)
+                :signedp (jp-bool x.signedp)
+                :taggedp (jp-bool x.taggedp)
+                :pdims    (vl-jp-packeddimensionlist x.pdims)
+                :udims    (vl-jp-packeddimensionlist x.udims)
+                :members (vl-jp-structmemberlist x.members))
+     :vl-enum
+     (jp-object :tag      (jp-sym :vl-enum)
+                :basetype (vl-jp-enumbasetype x.basetype)
+                :items    (vl-jp-enumitemlist x.items)
+                :pdims    (vl-jp-packeddimensionlist x.pdims)
+                :udims    (vl-jp-packeddimensionlist x.udims))
+     :vl-usertype
+     (jp-object :tag      (jp-sym :vl-usertype)
+                :kind     (vl-jp-expr x.kind)
+                :pdims    (vl-jp-packeddimensionlist x.pdims)
+                :udims    (vl-jp-packeddimensionlist x.udims))))
+
+ (define vl-jp-structmemberlist ((x vl-structmemberlist-p) &key (ps 'ps))
+   ;; Print the stmtessions as a JSON array with brackets.
+   :measure (two-nats-measure (vl-structmemberlist-count x) 1)
+   (vl-ps-seq (vl-print "[")
+              (vl-jp-structmemberlist-aux x)
+              (vl-println? "]")))
+
+ (define vl-jp-structmemberlist-aux ((x vl-structmemberlist-p) &key (ps 'ps))
+   :measure (two-nats-measure (vl-structmemberlist-count x) 0)
+   (if (atom x)
+       ps
+     (vl-ps-seq (vl-jp-structmember (car x))
+                (if (atom (cdr x))
+                    ps
+                  (vl-println? ", "))
+                (vl-jp-structmemberlist-aux (cdr x)))))
+
+ (define vl-jp-structmember ((x vl-structmember-p) &key (ps 'ps))
+   :measure (two-nats-measure (vl-structmember-count x) 0)
+   (b* (((vl-structmember x) x))
+     (jp-object :tag      (jp-sym :vl-structmember)
+                :atts     (vl-jp-atts x.atts)
+                :rand     (vl-jp-randomqualifier x.rand)
+                :rhs      (vl-jp-maybe-expr x.rhs)
+                :type     (vl-jp-datatype x.type)))))
+
+(add-json-encoder vl-datatype-p vl-jp-datatype)
+(add-json-encoder vl-structmember-p vl-jp-structmember)
+(add-json-encoder vl-structmemberlist-p vl-jp-structmemberlist)
+
+(define vl-jp-maybe-datatype ((x vl-maybe-datatype-p) &key (ps 'ps))
+  (if x
+      (vl-jp-datatype x)
+    (vl-print "null")))
+
+(add-json-encoder vl-maybe-datatype-p vl-jp-maybe-datatype)
+
 (def-vl-jp-aggregate vardecl)
 (def-vl-jp-list vardecl :newlines 4)
 
-(def-vl-jp-aggregate eventdecl)
-(def-vl-jp-list eventdecl :newlines 4)
+
+(define vl-jp-paramtype ((x vl-paramtype-p) &key (ps 'ps))
+   (vl-paramtype-case x
+     (:vl-implicitvalueparam
+      (jp-object :tag     (jp-sym :vl-implicitvalueparam)
+                 :sign    (jp-sym x.sign)
+                 :range   (vl-jp-maybe-range x.range)
+                 :default (vl-jp-maybe-expr x.default)))
+     (:vl-explicitvalueparam
+      (jp-object :tag     (jp-sym :vl-explicitvalueparam)
+                 :type    (vl-jp-datatype x.type)
+                 :default (vl-jp-maybe-expr x.default)))
+     (:vl-typeparam
+      (jp-object :tag     (jp-sym :vl-typeparam)
+                 :default (vl-jp-maybe-datatype x.default)))))
+
+(add-json-encoder vl-paramtype-p vl-jp-paramtype)
 
 (def-vl-jp-aggregate paramdecl)
 (def-vl-jp-list paramdecl :newlines 4)
@@ -770,15 +925,11 @@ which could not hold such large values.</p>")
 (define vl-jp-blockitem ((x vl-blockitem-p) &key (ps 'ps))
   :guard-hints (("Goal" :in-theory (enable vl-blockitem-p)))
   (mbe :logic
-       (cond ((vl-regdecl-p x)    (vl-jp-regdecl x))
-             ((vl-vardecl-p x)    (vl-jp-vardecl x))
-             ((vl-eventdecl-p x)  (vl-jp-eventdecl x))
+       (cond ((vl-vardecl-p x)    (vl-jp-vardecl x))
              (t                   (vl-jp-paramdecl x)))
        :exec
        (case (tag x)
-         (:vl-regdecl   (vl-jp-regdecl x))
          (:vl-vardecl   (vl-jp-vardecl x))
-         (:vl-eventdecl (vl-jp-eventdecl x))
          (otherwise     (vl-jp-paramdecl x)))))
 
 (add-json-encoder vl-blockitem-p vl-jp-blockitem)
@@ -787,11 +938,12 @@ which could not hold such large values.</p>")
 (define vl-jp-arguments ((x vl-arguments-p) &key (ps 'ps))
   :parents (json-encoders vl-arguments-p)
   (vl-arguments-case x
-    :named
+    :vl-arguments-named
     (jp-object :tag    (jp-sym :vl-arguments)
                :namedp (jp-bool t)
+               :starp  (jp-bool x.starp)
                :args   (vl-jp-namedarglist x.args))
-    :plain
+    :vl-arguments-plain
     (jp-object :tag    (jp-sym :vl-arguments)
                :namedp (jp-bool nil)
                :args   (vl-jp-plainarglist x.args))))
@@ -806,6 +958,43 @@ which could not hold such large values.</p>")
     (vl-print "null")))
 
 (add-json-encoder vl-maybe-gatestrength-p vl-jp-maybe-gatestrength)
+
+
+
+
+(define vl-jp-paramvalue ((x vl-paramvalue-p) &key (ps 'ps))
+  :parents (json-encoders vl-paramvalue-p)
+  (b* ((x (vl-paramvalue-fix x)))
+    (vl-paramvalue-case x
+      :expr     (vl-jp-expr x)
+      :datatype (vl-jp-datatype x))))
+
+(add-json-encoder vl-paramvalue-p vl-jp-paramvalue)
+
+(def-vl-jp-list paramvalue)
+
+(define vl-jp-maybe-paramvalue ((x vl-maybe-paramvalue-p) &key (ps 'ps))
+  (if x
+      (vl-jp-paramvalue x)
+    (vl-print "null")))
+
+(add-json-encoder vl-maybe-paramvalue-p vl-jp-maybe-paramvalue)
+
+(def-vl-jp-aggregate namedparamvalue)
+(def-vl-jp-list namedparamvalue)
+
+(define vl-jp-paramargs ((x vl-paramargs-p) &key (ps 'ps))
+  (vl-paramargs-case x
+    :vl-paramargs-named
+    (jp-object :tag    (jp-sym :vl-paramargs)
+               :namedp (jp-bool t)
+               :args   (vl-jp-namedparamvaluelist x.args))
+    :vl-paramargs-plain
+    (jp-object :tag    (jp-sym :vl-paramargs)
+               :namedp (jp-bool nil)
+               :args   (vl-jp-paramvaluelist x.args))))
+
+(add-json-encoder vl-paramargs-p vl-jp-paramargs)
 
 (def-vl-jp-aggregate modinst)
 (def-vl-jp-list modinst)
@@ -882,9 +1071,10 @@ which could not hold such large values.</p>")
        :vl-casestmt
        (jp-object :tag      (jp-sym kind)
                   :casetype (vl-jp-casetype x.casetype)
+                  :check    (vl-jp-casecheck x.check)
                   :test     (vl-jp-expr x.test)
                   :default  (vl-jp-stmt x.default)
-                  :cases    (vl-jp-cases x.cases)
+                  :caselist (vl-jp-cases x.caselist)
                   :atts     (vl-jp-atts x.atts))
 
        :vl-ifstmt
@@ -973,9 +1163,9 @@ which could not hold such large values.</p>")
    (b* ((x (vl-caselist-fix x))
         ((when (atom x))
          ps)
-        ((cons expr1 stmt1) (car x)))
+        ((cons exprs stmt1) (car x)))
      (vl-ps-seq (vl-print "[")
-                (vl-jp-expr expr1)
+                (vl-jp-exprlist exprs)
                 (vl-println? ",")
                 (vl-jp-stmt stmt1)
                 (vl-println? "]")
@@ -1061,6 +1251,55 @@ TEXT versions of the message.</p>"
              (vl-println? "]")))
 
 (add-json-encoder vl-commentmap-p vl-jp-commentmap)
+
+(def-vl-jp-aggregate modport-port)
+(def-vl-jp-list modport-port)
+(def-vl-jp-aggregate modport)
+(def-vl-jp-aggregate alias)
+
+(define vl-jp-fwdtypedefkind ((x vl-fwdtypedefkind-p) &key (ps 'ps))
+  (jp-str (case x
+            (:vl-enum "enum")
+            (:vl-struct "struct")
+            (:vl-union "union")
+            (:vl-class "class")
+            (:vl-interfaceclass "interfaceclass")))
+  ///
+  (add-json-encoder vl-fwdtypedefkind-p vl-jp-fwdtypedefkind))
+
+(def-vl-jp-aggregate fwdtypedef)
+
+(define vl-jp-modelement ((x vl-modelement-p) &key (ps 'ps))
+  :guard-hints (("goal" :in-theory (enable vl-modelement-p)))
+  (case (tag x)
+    (:VL-PORT (VL-jp-PORT X))
+    (:VL-PORTDECL (VL-jp-PORTDECL X))
+    (:VL-ASSIGN (VL-jp-ASSIGN X))
+    (:VL-ALIAS (VL-jp-ALIAS X))
+    (:VL-VARDECL (VL-jp-VARDECL X))
+    (:VL-PARAMDECL (VL-jp-PARAMDECL X))
+    (:VL-FUNDECL (VL-jp-FUNDECL X))
+    (:VL-TASKDECL (VL-jp-TASKDECL X))
+    (:VL-MODINST (VL-jp-MODINST X))
+    (:VL-GATEINST (VL-jp-GATEINST X))
+    (:VL-ALWAYS (VL-jp-ALWAYS X))
+    (:VL-INITIAL (VL-jp-INITIAL X))
+    ;; BOZO implement typedef
+    (:VL-TYPEDEF ps)
+    (:VL-FWDTYPEDEF (VL-jp-FWDTYPEDEF X))
+    (OTHERWISE (VL-jp-MODPORT X))))
+
+(def-vl-jp-list modelement)
+
+(define vl-jp-genelement ((x vl-genelement-p) &key (ps 'ps))
+  (vl-genelement-case x
+    :vl-genbase (vl-jp-modelement x.item)
+  ;; BOZO implement generates
+    :otherwise ps)
+  ///
+  (add-json-encoder vl-genelement-p vl-jp-genelement))
+
+(def-vl-jp-list genelement)
 
 (def-vl-jp-aggregate module
   :omit (params esim)

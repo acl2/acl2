@@ -1,10 +1,14 @@
 ;;; Contributed by Ruben A. Gamboa
 
+; Copyright (C) 2014, University of Wyoming
+; All rights reserved.
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+
 ;;; This file includes a proof of the binomial theorem.
 
 (in-package "ACL2")
 
-(include-book "top")
+(local (include-book "top"))
 (include-book "factorial")
 (include-book "sumlist")
 

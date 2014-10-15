@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original authors: Jared Davis <jared@centtech.com>
 ;                   Sol Swords <sswords@centtech.com>
@@ -66,6 +76,7 @@
 (local (xdoc::set-default-parents foo))
 
 (defines basic3
+  :verbosep t
 ;  :parents (hi)
   :short "some dumb thing"
   (define basic3 ((x natp))
@@ -79,7 +90,6 @@
     (if (zp x)
         nil
       (basic3 (- x 1)))))
-
 
 (defines spurious3
   (define my-oddp3 (x)
@@ -202,3 +212,79 @@
       (append (my-flatten-term2 (car x))
               (my-flatten-term2-list (cdr x))))))
 
+
+(defines doc-test
+  :short "Test of local stuff."
+  :returns-hints (("goal" :in-theory (disable nat-listp)))
+  (define doc-test ((x my-termp))
+    :flag term
+    :returns (numbers nat-listp :hyp :guard
+                      :hints ((and stable-under-simplificationp
+                                   '(:in-theory (enable nat-listp)))))
+    (if (atom x)
+        (list x)
+      (doc-test-list (cdr x)))
+    ///
+    (local (defthm local1 (integerp (len x))))
+    (defthm global1 (integerp (len x))))
+
+  (define doc-test-list ((x my-term-listp))
+    :flag list
+    :returns (numbers nat-listp :hyp :guard
+                      :hints ((and stable-under-simplificationp
+                                   '(:in-theory (enable nat-listp)))))
+    (if (atom x)
+        nil
+      (append (doc-test (car x))
+              (doc-test-list (cdr x)))))
+
+  ///
+  (local (defthm local2 (integerp (len x))))
+  (defthm global2 (integerp (len x))))
+
+(include-book "std/strings/substrp" :dir :system)
+(include-book "misc/assert" :dir :system)
+
+(assert!
+ (let ((long (cdr (assoc :long (xdoc::find-topic 'doc-test (xdoc::get-xdoc-table (w state)))))))
+   (and (or (str::substrp "GLOBAL1" long)
+            (er hard? 'doc-test "Missing global1"))
+        (or (str::substrp "GLOBAL2" long)
+            (er hard? 'doc-test "Missing global2"))
+        (or (not (str::substrp "LOCAL1" long))
+            (er hard? 'doc-test "Accidentally have local1"))
+        (or (not (str::substrp "LOCAL2" long))
+            (er hard? 'doc-test "Accidentally have local2")))))
+
+
+
+;; BOZO this isn't really working yet
+
+;; (defines doc-test2
+;;   :short "Test of local stuff."
+;;   :returns-hints (("goal" :in-theory (disable nat-listp)))
+;;   (define doc-test2-term ((x my-termp))
+;;     :flag term
+;;     :returns (numbers nat-listp :hyp :guard
+;;                       :hints ((and stable-under-simplificationp
+;;                                    '(:in-theory (enable nat-listp)))))
+;;     (if (atom x)
+;;         (list x)
+;;       (doc-test2-list (cdr x)))
+;;     ///
+;;     (local (defthm local1 (integerp (len x))))
+;;     (defthm global1 (integerp (len x))))
+
+;;   (define doc-test2-list ((x my-term-listp))
+;;     :flag list
+;;     :returns (numbers nat-listp :hyp :guard
+;;                       :hints ((and stable-under-simplificationp
+;;                                    '(:in-theory (enable nat-listp)))))
+;;     (if (atom x)
+;;         nil
+;;       (append (doc-test2-term (car x))
+;;               (doc-test2-list (cdr x)))))
+
+;;   ///
+;;   (local (defthm local2 (integerp (len x))))
+;;   (defthm global2 (integerp (len x))))

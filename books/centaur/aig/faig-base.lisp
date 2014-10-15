@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Sol Swords <sswords@centtech.com>
 ;
@@ -151,18 +161,18 @@ faig-fix)."
                (faig-fix-alist (cdr x))))))
 
 (def-b*-binder faig
-  ":doc-section B*-BINDERS
-Binds two variables to the onset and offset, respectively, of the
-faig-fix of the given expression.~/~/~/"
-  (declare (xargs :guard (and (true-listp args)
-                              (equal (len args) 2)
-                              (true-listp forms)
-                              (equal (len forms) 1))))
+  :parents (b*-binders faig)
+  :short "@(see b*) binder that binds two variables to the onset and offset,
+ respectively, of the @(see faig-fix) of the given expression."
+  :decls ((declare (xargs :guard (and (true-listp args)
+                                      (equal (len args) 2)
+                                      (true-listp forms)
+                                      (equal (len forms) 1)))))
+  :body
   `(b* (((mv ,(first args) ,(second args))
          (let ((x (faig-fix ,(car forms))))
            (mv (car x) (cdr x)))))
      ,rest-expr))
-
 
 (define faig-const-p (x)
   :parents (4v-sexpr-to-faig)
@@ -176,7 +186,7 @@ i.e., the four possible constant FAIGs.</p>
        (booleanp (car x))
        (booleanp (cdr x)))
   ///
-  
+
   (defthm faig-const-p-of-faig-eval
     (faig-const-p (faig-eval x env))
     :hints(("Goal" :in-theory (enable faig-eval)))))

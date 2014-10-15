@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
@@ -94,6 +104,13 @@ hierarchical identifiers.</p>"
        (and x.finaltype
             (posp x.finalwidth)))
 
+      ((when (vl-fast-hidpiece-p x.guts))
+       ;; NOTE: This shouldn't actually occur.  But we want to prove
+       ;; vl-expr-welltyped of operations involving arbitrary HIDs, including
+       ;; atoms, and this seems like an expedient way to do it.
+       (and x.finaltype
+            (posp x.finalwidth)))
+
       ((when (vl-fast-string-p x.guts))
        (b* (((vl-string x.guts) x.guts))
          (and (eq x.finaltype :vl-unsigned)
@@ -104,27 +121,54 @@ hierarchical identifiers.</p>"
    (and (not x.finalwidth)
         (not x.finaltype))))
 
-(define vl-hidexpr-welltyped-p ((x vl-expr-p))
+(define vl-selexpr-welltyped-p ((x vl-expr-p))
   :guard (not (vl-atom-p x))
-  (b* (((vl-nonatom x) x)
-       (width (vl-hid-width x)))
-    (and (eq x.finaltype :vl-unsigned)
-         width
-         (eql x.finalwidth width))))
+  (b* (((vl-nonatom x) x))
+    (and x.finaltype
+         (posp x.finalwidth))))
+
+
 
 (defines vl-expr-welltyped-p
-
+  :prepwork ((local (defthm acl2-numberp-of-abs
+                      (implies (acl2-numberp x)
+                               (acl2-numberp (abs x)))
+                      :hints(("Goal" :in-theory (enable abs)))))
+             (local (in-theory (disable member-equal-when-member-equal-of-cdr-under-iff
+                                        abs (tau-system)
+                                        acl2::member-of-cons
+                                        default-car default-cdr))))
   (define vl-expr-welltyped-p ((x vl-expr-p))
     :measure (vl-expr-count x)
     :returns (welltyped-p booleanp :rule-classes :type-prescription)
+    :verify-guards nil
     (b* (((when (vl-fast-atom-p x))
           (vl-atom-welltyped-p x))
          ((vl-nonatom x) x)
-         ((when (vl-hidexpr-p x))
+         ((when (eq x.op :vl-hid-dot))
+          ;; BOZO it might be nice to know that x is an index expr, but we'd
+          ;; have to check it in sizing
+          (and (vl-hidexpr-p x)
+               (vl-selexpr-welltyped-p x)))
+         ((when (member x.op '(:vl-index
+                               :vl-select-colon
+                               :vl-select-pluscolon
+                               :vl-select-minuscolon)))
           ;; These are special because we don't require the args to be sized.
-          ;; Signedness of hierarchical identifiers is very tricky; we require
-          ;; that they be unsigned to avoid a lot of potential problems.
-          (vl-hidexpr-welltyped-p x)))
+          ;; Like an ID, they just have to have a type and a positive width.
+          ;; But for partselects, we still require the widths to be resolved
+          ;; in order to size them, so we record that here.
+          ;; BOZO it might be nice to know that the operand is an index expr,
+          ;; but we'd have to check it in sizing
+          (and ;; (vl-index-expr-p (first x.args))
+           (vl-index-expr-p (first x.args))
+           (vl-exprlist-welltyped-p (cdr x.args))
+           (vl-selexpr-welltyped-p x) 
+           (case x.op
+             (:vl-index t)
+             (:vl-select-colon (and (vl-expr-resolved-p (second x.args))
+                                    (vl-expr-resolved-p (third x.args))))
+             (otherwise        (vl-expr-resolved-p (third x.args)))))))
       (and
        (vl-exprlist-welltyped-p x.args)
        (case x.op
@@ -289,10 +333,6 @@ hierarchical identifiers.</p>"
                  (eql x.finalwidth (vl-resolved->val c))
                  (eq x.finaltype :vl-unsigned))))
 
-         ((:vl-array-index :vl-index)
-          ;; BOZO eventually require there to be a type and positive width.
-          t)
-
          ((:vl-funcall)
           ;; BOZO do we want to constrain these in any way?
           t)
@@ -306,7 +346,30 @@ hierarchical identifiers.</p>"
           ;; type.  This means things like (3:4:5) + 1 are not well-typed.
           ;; I think of this more as a feature than as a limitation.
           (and (not x.finalwidth)
-               (not x.finaltype)))))))
+               (not x.finaltype)))
+
+         ;; New things that we aren't really supporting yet
+         ((:vl-stream-left
+           :vl-stream-right
+           :vl-stream-left-sized
+           :vl-stream-right-sized
+           :vl-binary-cast
+           :vl-scope
+           :vl-tagged
+           :vl-with-index
+           :vl-with-colon
+           :vl-with-pluscolon
+           :vl-with-minuscolon
+           )
+          t)
+
+         ((:vl-hid-dot :vl-hid-array-dot)
+          ;; Shouldn't hit this case, checked hidexpr-p above.  Makes guard
+          ;; happy because we've covered all cases.
+          nil)
+
+         (otherwise
+          (impossible))))))
 
   (define vl-exprlist-welltyped-p ((x vl-exprlist-p))
     :measure (vl-exprlist-count x)
@@ -316,12 +379,25 @@ hierarchical identifiers.</p>"
              (vl-exprlist-welltyped-p (cdr x)))))
 
   ///
-  (deflist vl-exprlist-welltyped-p (x)
-    (vl-expr-welltyped-p x)
-    :guard (vl-exprlist-p x)
-    :already-definedp t)
+  (local (in-theory (disable vl-expr-welltyped-p vl-exprlist-welltyped-p)))
+  (xdoc::without-xdoc
+    (deflist vl-exprlist-welltyped-p (x)
+      (vl-expr-welltyped-p x)
+      :guard (vl-exprlist-p x)
+      :already-definedp t))
 
-  (deffixequiv-mutual vl-expr-welltyped-p))
+  (deffixequiv-mutual vl-expr-welltyped-p
+    :hints ('(:expand ((vl-expr-welltyped-p x)
+                       (vl-expr-welltyped-p (vl-expr-fix x))
+                       (vl-exprlist-welltyped-p x)
+                       (vl-exprlist-welltyped-p (vl-exprlist-fix x))))))
+
+  (verify-guards vl-expr-welltyped-p
+    :hints(("goal" :in-theory (enable acl2::member-of-cons))
+           (and stable-under-simplificationp
+                '(:use ((:instance vl-op-p-of-vl-nonatom->op))
+                  :in-theory (e/d (vl-op-p)
+                                  (vl-op-p-of-vl-nonatom->op)))))))
 
 (defthm vl-expr-welltyped-p-of-vl-make-bitselect
   (implies (force (vl-expr-welltyped-p expr))

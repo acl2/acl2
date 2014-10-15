@@ -6,20 +6,31 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "../parsetree")
+(include-book "scopestack")
+(include-book "stmt-tools")
 (local (include-book "../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
 
@@ -89,29 +100,11 @@ events.</p>")
   :returns (names string-listp)
   (vl-portdecl->name x))
 
-(defprojection vl-netdecllist->names ((x vl-netdecllist-p))
-  :parents (vl-netdecllist-p modnamespace)
-  :short "Collect all names declared in a @(see vl-netdecllist-p)."
-  :returns (names string-listp)
-  (vl-netdecl->name x))
-
 (defprojection vl-vardecllist->names ((x vl-vardecllist-p))
   :parents (vl-vardecllist-p modnamespace)
   :short "Collect all names declared in a @(see vl-vardecllist-p)."
   :returns (names string-listp)
   (vl-vardecl->name x))
-
-(defprojection vl-regdecllist->names ((x vl-regdecllist-p))
-  :parents (vl-regdecllist-p modnamespace)
-  :short "Collect all names declared in a @(see vl-regdecllist-p)."
-  :returns (names string-listp)
-  (vl-regdecl->name x))
-
-(defprojection vl-eventdecllist->names ((x vl-eventdecllist-p))
-  :parents (vl-eventdecllist-p modnamespace)
-  :short "Collect all names declared in a @(see vl-eventdecllist-p)."
-  :returns (names string-listp)
-  (vl-eventdecl->name x))
 
 (define vl-gateinstlist->names-nrev ((x vl-gateinstlist-p) nrev)
   :parents (vl-gateinstlist->names)
@@ -181,77 +174,8 @@ the number of gate instances in the list.</p>"
     (string-listp (vl-gateinstlist->names x))))
 
 
-(define vl-modinstlist->instnames-nrev ((x vl-modinstlist-p) nrev)
-  :parents (vl-modinstlist->names)
-  (b* (((when (atom x))
-        (nrev-fix nrev))
-       (name (vl-modinst->instname (car x)))
-       (nrev (if name
-                 (nrev-push name nrev)
-               nrev)))
-    (vl-modinstlist->instnames-nrev (cdr x) nrev)))
 
-(define vl-modinstlist->instnames ((x vl-modinstlist-p))
-  :parents (vl-modinstlist-p modnamespace)
-  :short "Collect all instance names (not module names!) from a @(see
-vl-modinstlist-p)."
-  :long "<p>The Verilog-2005 Standard requires that module instances be named,
-but we relaxed that restriction in our definition of @(see vl-modinst-p)
-because of user-defined primitives, which may be unnamed.  So, as with @(see
-vl-gateinstlist->names), here we simply skip past any unnamed module
-instances.</p>"
-  :verify-guards nil
-  (mbe :logic (if (consp x)
-                  (if (vl-modinst->instname (car x))
-                      (cons (vl-modinst->instname (car x))
-                            (vl-modinstlist->instnames (cdr x)))
-                    (vl-modinstlist->instnames (cdr x)))
-                nil)
-       :exec (with-local-nrev (vl-modinstlist->instnames-nrev x nrev)))
-  ///
-  (defthm vl-modinstlist->instnames-exec-removal
-    (equal (vl-modinstlist->instnames-nrev x nrev)
-           (append nrev (vl-modinstlist->instnames x)))
-    :hints(("Goal" :in-theory (enable vl-modinstlist->instnames-nrev))))
 
-  (verify-guards vl-modinstlist->instnames)
-
-  (defthm vl-modinstlist->instnames-when-not-consp
-    (implies (not (consp x))
-             (equal (vl-modinstlist->instnames x)
-                    nil)))
-
-  (defthm vl-modinstlist->instnames-of-cons
-    (equal (vl-modinstlist->instnames (cons a x))
-           (if (vl-modinst->instname a)
-               (cons (vl-modinst->instname a)
-                     (vl-modinstlist->instnames x))
-             (vl-modinstlist->instnames x))))
-
-  (defthm vl-modinstlist->instnames-of-list-fix
-    (equal (vl-modinstlist->instnames (list-fix x))
-           (vl-modinstlist->instnames x)))
-
-  (defcong list-equiv equal (vl-modinstlist->instnames x) 1
-    :hints(("Goal"
-            :in-theory (e/d (list-equiv)
-                            (vl-modinstlist->instnames-of-list-fix))
-            :use ((:instance vl-modinstlist->instnames-of-list-fix
-                             (x x))
-                  (:instance vl-modinstlist->instnames-of-list-fix
-                             (x acl2::x-equiv))))))
-
-  (defthm vl-modinstlist->instnames-of-append
-    (equal (vl-modinstlist->instnames (append x y))
-           (append (vl-modinstlist->instnames x)
-                   (vl-modinstlist->instnames y))))
-
-  (defthm vl-modinstlist->instnames-of-rev
-    (equal (vl-modinstlist->instnames (rev x))
-           (rev (vl-modinstlist->instnames x))))
-
-  (defthm string-listp-of-vl-modinstlist->instnames
-    (string-listp (vl-modinstlist->instnames x))))
 
 
 (define vl-module->modnamespace-nrev ((x vl-module-p) nrev)
@@ -261,10 +185,7 @@ instances.</p>"
 to perform a cons for every object in the module.  But we can at least do
 everything tail recursively, etc.</p>"
   (b* (((vl-module x) x)
-       (nrev (vl-netdecllist->names-nrev     x.netdecls   nrev))
-       (nrev (vl-regdecllist->names-nrev     x.regdecls   nrev))
        (nrev (vl-vardecllist->names-nrev     x.vardecls   nrev))
-       (nrev (vl-eventdecllist->names-nrev   x.eventdecls nrev))
        (nrev (vl-paramdecllist->names-nrev   x.paramdecls nrev))
        (nrev (vl-fundecllist->names-nrev     x.fundecls   nrev))
        (nrev (vl-taskdecllist->names-nrev    x.taskdecls  nrev))
@@ -290,10 +211,7 @@ module illegally declares those duplicated names more than once.</p>
   :verify-guards nil
   (mbe :logic
        (b* (((vl-module x) x))
-         (append (vl-netdecllist->names     x.netdecls)
-                 (vl-regdecllist->names     x.regdecls)
-                 (vl-vardecllist->names     x.vardecls)
-                 (vl-eventdecllist->names   x.eventdecls)
+         (append (vl-vardecllist->names     x.vardecls)
                  (vl-paramdecllist->names   x.paramdecls)
                  (vl-fundecllist->names     x.fundecls)
                  (vl-taskdecllist->names    x.taskdecls)
@@ -314,65 +232,4 @@ module illegally declares those duplicated names more than once.</p>
   (defthm true-listp-of-vl-module->modnamespace
     (true-listp (vl-module->modnamespace x))
     :rule-classes :type-prescription))
-
-
-;; These aren't part of the module's namespace, but are just utilities for
-;; collecting up various names.
-
-(define vl-blockitem->name ((x vl-blockitem-p))
-  :parents (vl-blockitem-p)
-  :returns (name stringp)
-  :short "Get the name declared by any @(see vl-blockitem-p)."
-  :guard-hints(("Goal" :in-theory (enable vl-blockitem-p)))
-  (mbe :logic
-       (let ((x (vl-blockitem-fix x)))
-         (cond ((vl-regdecl-p x)   (vl-regdecl->name x))
-               ((vl-vardecl-p x)   (vl-vardecl->name x))
-               ((vl-eventdecl-p x) (vl-eventdecl->name x))
-               (t                  (vl-paramdecl->name x))))
-       :exec (case (tag x)
-               (:vl-regdecl   (vl-regdecl->name x))
-               (:vl-vardecl   (vl-vardecl->name x))
-               (:vl-eventdecl (vl-eventdecl->name x))
-               (otherwise     (vl-paramdecl->name x)))))
-
-(defprojection vl-blockitemlist->names ((x vl-blockitemlist-p))
-  :parents (vl-blockitemlist-p)
-  :short "Collect the names declared in a @(see vl-blockitemlist-p)."
-  :returns (naems string-listp)
-  (vl-blockitem->name x))
-
-
-(define vl-fundecl->namespace-nrev ((x vl-fundecl-p) nrev)
-  :parents (vl-fundecl->namespace)
-  (b* (((vl-fundecl x) x)
-       (nrev (vl-taskportlist->names-nrev x.inputs nrev)))
-    (vl-blockitemlist->names-nrev x.decls nrev)))
-
-(define vl-fundecl->namespace ((x vl-fundecl-p))
-  :parents (vl-fundecl-p modnamespace)
-  :short "Compute the namespace of a function declaration."
-  :returns (names string-listp)
-  :verify-guards nil
-  (mbe :logic
-       (b* (((vl-fundecl x) x))
-         (append (vl-taskportlist->names x.inputs)
-                 (vl-blockitemlist->names x.decls)))
-       :exec
-       (with-local-nrev
-         (vl-fundecl->namespace-nrev x nrev)))
-  ///
-  (defthm vl-fundecl->namespace-nrev-removal
-    (equal (vl-fundecl->namespace-nrev x nrev)
-           (append nrev (vl-fundecl->namespace x)))
-    :hints(("Goal" :in-theory (enable vl-fundecl->namespace-nrev))))
-
-  (verify-guards vl-fundecl->namespace))
-
-(defmapappend vl-fundecllist->namespaces (x)
-  (vl-fundecl->namespace x)
-  :guard (vl-fundecllist-p x)
-  :rest
-  ((defthm string-listp-of-vl-fundecllist->namespaces
-     (string-listp (vl-fundecllist->namespaces x)))))
 

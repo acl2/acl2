@@ -1,44 +1,72 @@
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;           __    __        __    __                                        ;;
-;;          /  \  /  \      (__)  |  |    ____   ___      __    ____         ;;
-;;         /    \/    \      __   |  |   / _  |  \  \ __ /  /  / _  |        ;;
-;;        /  /\    /\  \    |  |  |  |  / / | |   \  '  '  /  / / | |        ;;
-;;       /  /  \__/  \  \   |  |  |  |  \ \_| |    \  /\  /   \ \_| |        ;;
-;;      /__/          \__\  |__|  |__|   \____|     \/  \/     \____|        ;;
-;; ~ ~~ \  ~ ~  ~_~~ ~/~ /~ | ~|~ | ~| ~ /~_ ~|~ ~  ~\  ~\~ ~  ~ ~  |~~    ~ ;;
-;;  ~ ~  \~ \~ / ~\~ / ~/ ~ |~ | ~|  ~ ~/~/ | |~ ~~/ ~\/ ~~ ~ / / | |~   ~   ;;
-;; ~ ~  ~ \ ~\/ ~  \~ ~/ ~~ ~__|  |~ ~  ~ \_~  ~  ~  .__~ ~\ ~\ ~_| ~  ~ ~~  ;;
-;;  ~~ ~  ~\  ~ /~ ~  ~ ~  ~ __~  |  ~ ~ \~__~| ~/__~   ~\__~ ~~___~| ~ ~    ;;
-;; ~  ~~ ~  \~_/  ~_~/ ~ ~ ~(__~ ~|~_| ~  ~  ~~  ~  ~ ~~    ~  ~   ~~  ~  ~  ;;
-;;                                                                           ;;
-;;            A   R e f l e c t i v e   P r o o f   C h e c k e r            ;;
-;;                                                                           ;;
-;;       Copyright (C) 2005-2009 by Jared Davis <jared@cs.utexas.edu>        ;;
-;;                                                                           ;;
-;; This program is free software; you can redistribute it and/or modify it   ;;
-;; under the terms of the GNU General Public License as published by the     ;;
-;; Free Software Foundation; either version 2 of the License, or (at your    ;;
-;; option) any later version.                                                ;;
-;;                                                                           ;;
-;; This program is distributed in the hope that it will be useful, but       ;;
-;; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABIL-  ;;
-;; ITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public      ;;
-;; License for more details.                                                 ;;
-;;                                                                           ;;
-;; You should have received a copy of the GNU General Public License along   ;;
-;; with this program (see the file COPYING); if not, write to the Free       ;;
-;; Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA    ;;
-;; 02110-1301, USA.                                                          ;;
-;;                                                                           ;;
-;;                                                                           ;;
-;; EXTRA COPYRIGHT NOTICE.                                                   ;;
-;;                                                                           ;;
-;; This file is derived from type-set-b.lisp in the ACL2 3.1 sources.  I     ;;
-;; have copied or adapted many of the comments verbatim, and the functions   ;;
-;; have also been adapted to my system.  Of course, ACL2 is also GPL'd       ;;
-;; software, so there is no impact on Milawa's license.                      ;;
-;;                                                                           ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Milawa - A Reflective Theorem Prover
+; Copyright (C) 2005-2009 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+;
+; Original author: Jared Davis <jared@kookamara.com>
+;
+; Additional Copyright Notice.
+;
+; This file is derived from type-set-b.lisp in the ACL2 sources.  I have copied
+; or adapted many of the comments verbatim, and the functions have also been
+; adapted to my system.
+;
+; Copyright information for ACL2 (as of Version 6.4):
+;
+; Copyright (c) 2014, Regents of the University of Texas
+; All rights reserved.
+;
+; Redistribution and use in source and binary forms, with or without
+; modification, are permitted provided that the following conditions are met:
+;
+; o Redistributions of source code must retain the above copyright notice, this
+;   list of conditions and the following disclaimer.
+;
+; o Redistributions in binary form must reproduce the above copyright notice,
+;   this list of conditions and the following disclaimer in the documentation
+;   and/or other materials provided with the distribution.
+;
+; o Neither the name of the University of Texas, Austin nor the names of its
+;   contributors may be used to endorse or promote products derived from this
+;   software without specific prior written permission.
+;
+; THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+; AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+; IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+; ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+; LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+; CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+; SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+; INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+; CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+; ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+; POSSIBILITY OF SUCH DAMAGE.
+
 
 
 ;; worse-termp-patch.lsp

@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
@@ -42,7 +52,7 @@ Assuming that hashing operations are constant time, constructing this table is
 @('O(|NAMES|)'), and the subsequent processing of @('X') is @('O(|X|)').</p>")
 
 (defund def-vl-filter-by-name-fn
-  (type          ;; should be 'netdecl, 'regdecl, 'vardecl, 'module, etc.
+  (type          ;; should be 'paramdecl, 'vardecl, 'module, etc.
    keep-long     ;; extra documentation for the keep function
    del-long      ;; extra documentation for the delete function
    filter-long   ;; extra documentation for the filter function
@@ -101,7 +111,7 @@ Assuming that hashing operations are constant time, constructing this table is
        (define ,keep-fn
          :parents (filtering-by-name)
          :short ,(cat "Keep @(see VL-" (symbol-name type) "-P)s by " short-name ".")
-         ((names string-listp ,(cat "Names of @(see VL-" (symbol-name type) "-P)s to keep."))
+         ((names string-listp ,(cat "Names of @(see VL-" (symbol-name type) ")s to keep."))
           (x     ,list-p      "List to filter."))
          :long ,keep-long
          :returns (filtered-x ,list-p)
@@ -189,8 +199,8 @@ Assuming that hashing operations are constant time, constructing this table is
 
        (define ,del-fn
          :parents (filtering-by-name)
-         :short ,(cat "Delete @(see VL-" (symbol-name type) "-P)s by " short-name ".")
-         ((names string-listp ,(cat "Names of @(see VL-" (symbol-name type) "-P)s to remove."))
+         :short ,(cat "Delete @(see VL-" (symbol-name type) ")s by " short-name ".")
+         ((names string-listp ,(cat "Names of @(see VL-" (symbol-name type) ")s to remove."))
           (x     ,list-p      "List to filter."))
          :returns (filtered-x ,list-p)
          :long ,del-long
@@ -273,7 +283,7 @@ Assuming that hashing operations are constant time, constructing this table is
 
        (define ,fn
          :parents (filtering-by-name)
-         :short ,(cat "Partition a list of @(see VL-" (symbol-name type) "-P)s by " short-name ".")
+         :short ,(cat "Partition a list of @(see VL-" (symbol-name type) ")s by " short-name ".")
          ((names string-listp "Names to filter with.")
           (x     ,list-p      "List to filter."))
          :returns (mv named unnamed)
@@ -337,24 +347,9 @@ function enabled and would think it odd to ever prove a theorem about it.</p>" f
 
 ;; BOZO maybe build these into fty deflist
 
-(defthm vl-netdecllist-fix-of-list-fix
-  (equal (vl-netdecllist-fix (list-fix x))
-         (list-fix (vl-netdecllist-fix x)))
-  :hints(("Goal" :induct (len x))))
-
-(defthm vl-regdecllist-fix-of-list-fix
-  (equal (vl-regdecllist-fix (list-fix x))
-         (list-fix (vl-regdecllist-fix x)))
-  :hints(("Goal" :induct (len x))))
-
 (defthm vl-vardecllist-fix-of-list-fix
   (equal (vl-vardecllist-fix (list-fix x))
          (list-fix (vl-vardecllist-fix x)))
-  :hints(("Goal" :induct (len x))))
-
-(defthm vl-eventdecllist-fix-of-list-fix
-  (equal (vl-eventdecllist-fix (list-fix x))
-         (list-fix (vl-eventdecllist-fix x)))
   :hints(("Goal" :induct (len x))))
 
 (defthm vl-portdecllist-fix-of-list-fix
@@ -412,11 +407,13 @@ function enabled and would think it odd to ever prove a theorem about it.</p>" f
          (list-fix (vl-packagelist-fix x)))
   :hints(("Goal" :induct (len x))))
 
+(defthm vl-typedeflist-fix-of-list-fix
+  (equal (vl-typedeflist-fix (list-fix x))
+         (list-fix (vl-typedeflist-fix x)))
+  :hints(("Goal" :induct (len x))))
 
-(def-vl-filter-by-name netdecl)
-(def-vl-filter-by-name regdecl)
+
 (def-vl-filter-by-name vardecl)
-(def-vl-filter-by-name eventdecl)
 (def-vl-filter-by-name portdecl)
 (def-vl-filter-by-name paramdecl)
 (def-vl-filter-by-name fundecl)
@@ -436,7 +433,8 @@ function enabled and would think it odd to ever prove a theorem about it.</p>" f
 (define vl-filter-modinsts-by-modname+ ((names string-listp)
                                         (x     vl-modinstlist-p)
                                         (fal   (equal fal (make-lookup-alist names))))
-  :short "Same as @(see vl-filter-modinsts-by-modname+), but requires that the
+  :parents (filtering-by-name vl-filter-modinsts-by-modname)
+  :short "Same as @(see vl-filter-modinsts-by-modname), but requires that the
           fast alist of @('names') be provided instead of recomputing it."
   :enabled t
   (mbe :logic (vl-filter-modinsts-by-modname names x)
@@ -447,7 +445,6 @@ function enabled and would think it odd to ever prove a theorem about it.</p>" f
                    (mv yes no nrev nrev2))
                   ((mv nrev nrev2)
                    (vl-fast-filter-modinsts-by-modname names fal x nrev nrev2))
-                  (- (fast-alist-free fal))
                   ((mv yes nrev) (nrev-finish nrev))
                   ((mv no nrev2) (nrev-finish nrev2)))
                (mv yes no nrev nrev2))))
@@ -486,6 +483,6 @@ modules.</p>")
 (def-vl-filter-by-name package)
 (def-vl-filter-by-name interface)
 (def-vl-filter-by-name program)
-
+(def-vl-filter-by-name typedef)
 
 

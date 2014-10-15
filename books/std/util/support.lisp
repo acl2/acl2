@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
@@ -177,4 +187,79 @@ extract-keywords), with default-value support."
 
 
 
+
+
+(defsection dumb-string-sublis
+  :parents (support)
+  :short "Non-recursively applies a list of substring substitutions to a string."
+  :long "<p>Earlier key/value pairs take precedence over later ones, and no
+substitutions are reapplied to the result of other substitutions.</p>"
+
+  (defun dumb-str-sublis-iter (remainder alist x start end len)
+    ;; remainder is a tail of alist, which contains the full list of substutions.
+    ;; len is the length of x
+    (b* (((when (atom remainder))
+          (if (or (not (int= start 0))
+                  (not (int= end len)))
+              (subseq x start end)
+            ;; we got through all the substitutions without any hits
+            x))
+         ((cons old-str new-str) (car remainder))
+         (loc (search old-str x :start2 start :end2 end))
+         ((unless loc)
+          ;; not found, look for other substitutions
+          (dumb-str-sublis-iter (cdr remainder) alist x start end len))
+         ;; since we're searching from the beginning of the string, we've already
+         ;; ruled out existence of any previous keys in the prefix
+         (prefix-rw
+          (dumb-str-sublis-iter
+           (cdr remainder) alist x start loc len))
+         ;; but for the suffix, we need to try each of them, starting over with the full alist
+         (suffix-rw
+          (dumb-str-sublis-iter
+           alist alist x (+ loc (length old-str)) end len)))
+      (if (and (string-equal prefix-rw "")
+               (string-equal suffix-rw ""))
+          new-str
+        (concatenate 'string prefix-rw new-str suffix-rw))))
+
+
+  (defun dumb-str-sublis (alist str)
+    (declare (xargs :mode :program))
+    (let ((len (length str)))
+      (dumb-str-sublis-iter alist alist str 0 len len))))
+
+
+(defsection generic-eval-requirement
+  :parents (std/lists/abstract)
+  :short "Evaluate a requirement of a generic theorem for deflist/defprojection/defmapappend"
+  :long "<p>See @(see acl2::std/lists/abstract).</p>"
+
+  (mutual-recursion
+   (defun generic-eval-requirement (req req-alist)
+     (if (atom req)
+         (let ((look (assoc req req-alist)))
+           (if look
+               (cdr look)
+             (er hard? 'generic-eval-requirement
+                 "Unrecognized requirement variable: ~x0~%" req)))
+       (case (car req)
+         ('not (not (generic-eval-requirement (cadr req) req-alist)))
+         ('and (generic-and-requirements (cdr req) req-alist))
+         ('or  (generic-or-requirements (cdr req) req-alist))
+         ('if  (if (generic-eval-requirement (cadr req) req-alist)
+                   (generic-eval-requirement (caddr req) req-alist)
+                 (generic-eval-requirement (cadddr req) req-alist)))
+         (otherwise (er hard? 'generic-eval-requirement
+                        "malformed requirement term: ~x0~%")))))
+   (defun generic-and-requirements (reqs req-alist)
+     (if (atom reqs)
+         t
+       (and (generic-eval-requirement (car reqs) req-alist)
+            (generic-and-requirements (cdr reqs) req-alist))))
+   (defun generic-or-requirements (reqs req-alist)
+     (if (atom reqs)
+         nil
+       (or (generic-eval-requirement (car reqs) req-alist)
+           (generic-or-requirements (cdr reqs) req-alist))))))
 

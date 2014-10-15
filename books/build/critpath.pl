@@ -1,27 +1,36 @@
 #!/usr/bin/env perl
 
+# cert.pl build system
+# Copyright (C) 2008-2014 Centaur Technology
+#
+# Contact:
+#   Centaur Technology Formal Verification Group
+#   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+#   http://www.centtech.com/
+#
+# License: (An MIT/X11-style license)
+#
+#   Permission is hereby granted, free of charge, to any person obtaining a
+#   copy of this software and associated documentation files (the "Software"),
+#   to deal in the Software without restriction, including without limitation
+#   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+#   and/or sell copies of the Software, and to permit persons to whom the
+#   Software is furnished to do so, subject to the following conditions:
+#
+#   The above copyright notice and this permission notice shall be included in
+#   all copies or substantial portions of the Software.
+#
+#   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+#   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+#   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+#   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+#   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+#   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+#   DEALINGS IN THE SOFTWARE.
+#
+# Original author: Sol Swords <sswords@centtech.com>
+
 # critpath.pl - Critical path analysis for ACL2 books
-# Copyright 2008-2009 by Sol Swords 
-#
-# This program is free software; you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the Free Software
-# Foundation; either version 2 of the License, or (at your option) any later
-# version.
-#
-# This program is distributed in the hope that it will be useful, but WITHOUT
-# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
-# details.
-#
-# You should have received a copy of the GNU General Public License along with
-# this program; if not, write to the Free Software Foundation, Inc., 675 Mass
-# Ave, Cambridge, MA 02139, USA.
-#
-# NOTE.  This file is not part of the standard ACL2 books build process; it is
-# part of an experimental build system that is not yet intended, for example,
-# to be capable of running the whole regression.  The ACL2 developers do not
-# maintain this file.  Please contact Sol Swords <sswords@cs.utexas.edu> with
-# any questions/comments.
 
 use warnings;
 use strict;
@@ -100,6 +109,19 @@ my $HELP_MESSAGE = "
                     written by write_costs).  Only really works
                     correctly if all targets/dependencies are the
                     same.
+
+   --pcert-all
+          Compute dependencies assuming provisional certification is used
+          for all books, not just the ones with the \'pcert\' cert_param.
+
+   --target-ext <extension>
+   -e <extension>
+          Normally, when targets are specified by their source filename (.lisp)
+          or without an extension, rather than by their target filename (.cert,
+          .acl2x, .pcert0, .pcert1), the target extension used is \'cert\'.
+          This option allows you to specify this default extension as (say)
+          \'pcert0\' instead.
+
 ";
 
 my %OPTIONS = (
@@ -113,6 +135,8 @@ my %OPTIONS = (
   'pcert'   => $ENV{'ACL2_PCERT'},
   'write_costs' => 0,
   'costs_file' => 0,
+  'pcert_all' => 0,
+  'target_ext' => "cert",
 );
 
 my @user_targets = ();
@@ -143,6 +167,8 @@ my $options_okp = GetOptions('h|html' => \$OPTIONS{'html'},
 			     "params=s"             => \$params_file,
 			     "write-costs|w=s" => \$OPTIONS{'write_costs'},
 			     "costs-file=s" => \$OPTIONS{'costs_file'},
+                             "pcert-all"    => \$OPTIONS{'pcert_all'},
+                             "target-ext|e=s"    => \$OPTIONS{'target_ext'},
 			     );
 
 my $cache = {};
@@ -164,7 +190,9 @@ my $warnings = [];
 my %certlib_opts = ( "debugging" => 0,
 		     "clean_certs" => 0,
 		     "print_deps" => 0,
-		     "all_deps" => 1 );
+		     "all_deps" => 1,
+                     "pcert_all" => $OPTIONS{'pcert_all'},
+    );
 
 certlib_set_opts(\%certlib_opts);
 
@@ -173,7 +201,7 @@ certlib_add_dir("SYSTEM", "$RealBin/..");
 
 
 foreach my $target (@user_targets) {
-    my $path = canonical_path(to_cert_name($target));
+    my $path = canonical_path(to_cert_name($target, $OPTIONS{'target_ext'}));
     if ($path) {
 	push (@targets, $path);
     } else {
@@ -199,8 +227,10 @@ unless (@targets) {
 }
 
 foreach my $target (@targets) {
-    if ($target =~ /\.cert/) {
-	add_deps($target, $depdb, 0);
+    (my $tcert = $target) =~ s/\.(acl2x|pcert(0|1))/\.cert/;
+    add_deps($tcert, $depdb, 0);
+    if ($tcert =~ /\.cert/) {
+	add_deps($tcert, $depdb, 0);
     }
 }
 
@@ -228,7 +258,7 @@ if ($OPTIONS{'costs_file'}) {
     $basecosts = retrieve($OPTIONS{'costs_file'});
 } else {
     $basecosts = {};
-    read_costs($depdb, $basecosts, $warnings, $OPTIONS{'real'}, $OPTIONS{'pcert'});
+    read_costs($depdb, $basecosts, $warnings, $OPTIONS{'real'});
     print "done read_costs\n" if $debug;
 }
 
@@ -243,14 +273,14 @@ if ($OPTIONS{'write_costs'}) {
 }
 
 
-compute_cost_paths($depdb, $basecosts, $costs, $warnings, $OPTIONS{'pcert'});
+compute_cost_paths($depdb, $basecosts, $costs, $warnings);
 print "done compute_cost_paths\n" if $debug;
 
 print "costs: " .  $costs . "\n" if $debug;
 
 (my $topbook, my $topbook_cost) = find_most_expensive(\@targets, $costs);
 
-my $savings = compute_savings($costs, $basecosts, \@targets, $debug, $depdb, $OPTIONS{'pcert'}); 
+my $savings = compute_savings($costs, $basecosts, \@targets, $debug, $depdb); 
 
 
 	# ($costs, $warnings) = make_costs_table($target, $depdb, $costs, $warnings, $OPTIONS{"short"});
@@ -280,7 +310,7 @@ if (! $OPTIONS{"html"}) {
     print "Total time for all files: " . human_time($sum_parallel,0) . ".\n";
 }
 
-if ((! $OPTIONS{"html"}) && $OPTIONS{"pcert"}) {
+if (! $OPTIONS{"html"}) {
     my $acl2xtime = 0.0;
     my $pcert1time = 0.0;
     my $pcert0time = 0.0;
@@ -300,10 +330,18 @@ if ((! $OPTIONS{"html"}) && $OPTIONS{"pcert"}) {
     }
 
     print "\n";
-    print "Total acl2x build time: " . human_time($acl2xtime) . "\n";
-    print "Total pcert0 build time: " . human_time($pcert0time) . "\n";
-    print "Total pcert1 build time: " . human_time($pcert1time) . "\n";
-    print "Total cert build time: " . human_time($certtime) . "\n";
+    if ($acl2xtime != 0.0) {
+	print "Total acl2x build time: " . human_time($acl2xtime) . "\n";
+    }
+    if ($pcert0time != 0.0) {
+	print "Total pcert0 build time: " . human_time($pcert0time) . "\n";
+    }
+    if ($pcert1time != 0.0) {
+	print "Total pcert1 build time: " . human_time($pcert1time) . "\n";
+    }
+    if ($certtime != 0.0) {
+	print "Total cert build time: " . human_time($certtime) . "\n";
+    }
 }
 
 # print "\n\nBasecosts:\n";

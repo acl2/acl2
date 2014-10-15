@@ -6,21 +6,30 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
 (include-book "../../mlib/stmt-tools")
-(include-book "../../mlib/context")
 (include-book "../../mlib/welltyped")
 (include-book "../../mlib/constint-bits")
 (include-book "../../mlib/expr-slice")
@@ -39,24 +48,22 @@
 
 (defxdoc caseelim
   :parents (transforms)
-  :short "Replace simple @(see case-statements) with equivalent @(see
-if-statements)."
+  :short "Replace @(see vl-casestmt)s with equivalent @(see vl-ifstmt)s."
 
-  :long "<p>This rewrite eliminates @(see case-statements) into @(see
-if-statements).  It requires that sizes have been computed that the test
-expressions and match expressions agree on their sizes.  If these conditions
-are not met, it may issue non-fatal warnings and fail to rewrite the case
-statements.</p>
+  :long "<p>This rewrite rewrites case statements into if statements.  It
+requires that sizes have been computed that the test expressions and match
+expressions agree on their sizes.  If these conditions are not met, it may
+issue non-fatal warnings and fail to rewrite the case statements.</p>
 
 <p>This transform is practically useful for supporting designs that involve
-case statements, and we believe it is basically reasonable.  But Verilog's case
+case statements and we believe it is basically reasonable.  But Verilog's case
 statements have <b>significant problems</b> with regards to the handling of X
 and Z values.  There are, therefore, many cases where this translation will
 change a module's simulation semantics.  More information about these problems
 can be found in @(see case-statement-problems).</p>
 
-<p>At any rate, the basic idea of the transform is to just rewrite, e.g., for
-plain @('case') statements:</p>
+<p>The basic idea of the transform is just to rewrite, e.g., for plain
+@('case') statements:</p>
 
 @({
     case (<test>)
@@ -114,14 +121,15 @@ to carry out an especially naive transformation, e.g.,:</p>
 })
 
 <p>That is, our @('if') statement conditions simply omit the x/z/? bits as
-appropriate, and check that the other bits are matched.  This transformation is
-<b>completely wrong</b> in the case where @('data') has X or Z bits, because in
-the Verilog semantics these bits are not to be tested.  On the other hand,
-these are terrible, non-conservative semantics, and we think our behavior is
-about as reasonable as possible.</p>")
+appropriate, and check that the other bits are matched.</p>
+
+<p>Unfortunately, this transformation is <b>completely wrong</b> in the case
+where @('data') has X or Z bits, because in the Verilog semantics these bits
+are not to be tested.  On the other hand, these are terrible, non-conservative
+semantics, and we think our behavior is about as reasonable as possible.</p>")
 
 (defxdoc case-statement-problems
-  :parents (case-statements caseelim)
+  :parents (vl-casestmt caseelim)
   :short "The official behavior of @('case'), @('casez') and @('casex') is
 problematic with respect to X and Z values."
 
@@ -201,16 +209,40 @@ will match anything you've written in your pattern.  So, for instance,</p>
 ;
 ; -----------------------------------------------------------------------------
 
-(define vl-casestmt-sizes-agreep ((test vl-expr-p)
-                                  (cases vl-caselist-p))
+(define vl-casestmt-matchexpr-sizes-agreep ((test        vl-expr-p)
+                                            (match-exprs vl-exprlist-p))
+  :parents (vl-casestmt-sizes-agreep)
+  (b* (((when (atom match-exprs))
+        t)
+       (expr1 (car match-exprs)))
+    (and (vl-expr->finaltype expr1)
+         (eql (vl-expr->finalwidth test)
+              (vl-expr->finalwidth expr1))
+         (vl-casestmt-matchexpr-sizes-agreep test (cdr match-exprs))))
+  ///
+  (defthm vl-casestmt-matchexpr-sizes-agreep-when-atom
+    (implies (atom match-exprs)
+             (vl-casestmt-matchexpr-sizes-agreep test match-exprs)))
+
+  (defthm vl-casestmt-matchexpr-sizes-agreep-of-cons
+    (equal (vl-casestmt-matchexpr-sizes-agreep test (cons expr1 match-exprs))
+           (and (vl-expr->finaltype expr1)
+                (equal (vl-expr->finalwidth test)
+                       (vl-expr->finalwidth expr1))
+                (vl-casestmt-matchexpr-sizes-agreep test match-exprs)))))
+
+
+(define vl-casestmt-sizes-agreep
+  :short "Make sure all match expressions have been sized and that their sizes
+          are compatible with the test expression."
+  ((test vl-expr-p)
+   (cases vl-caselist-p))
   :measure (vl-caselist-count cases)
   (b* ((cases (vl-caselist-fix cases))
        ((when (atom cases))
         t)
-       ((cons expr1 ?body1) (car cases)))
-    (and (vl-expr->finaltype expr1)
-         (eql (vl-expr->finalwidth test)
-              (vl-expr->finalwidth expr1))
+       ((cons match-exprs ?body1) (car cases)))
+    (and (vl-casestmt-matchexpr-sizes-agreep test match-exprs)
          (vl-casestmt-sizes-agreep test (cdr cases))))
   ///
   (defthm vl-casestmt-sizes-agreep-when-atom
@@ -222,28 +254,22 @@ will match anything you've written in your pattern.  So, for instance,</p>
     (equal (vl-casestmt-sizes-agreep test (cons a cases))
            (if (atom a)
                (vl-casestmt-sizes-agreep test cases)
-             (and (vl-expr->finaltype (car a))
-                  (eql (vl-expr->finalwidth test)
-                       (vl-expr->finalwidth (car a)))
+             (and (vl-casestmt-matchexpr-sizes-agreep test (car a))
                   (vl-casestmt-sizes-agreep test cases))))
     :hints(("Goal" :expand (vl-casestmt-sizes-agreep test (cons a cases))))))
 
-(define vl-casestmt-size-warnings-aux
-  ((test     vl-expr-p       "The test expression, which should typically have
-                              its width already computed.")
-   (cases    vl-caselist-p   "The match expressions.")
-   (ctx      vl-modelement-p "Context for @(see warnings)."))
+
+(define vl-casestmt-matchexpr-size-warnings ((test        vl-expr-p)
+                                             (match-exprs vl-exprlist-p)
+                                             (ctx         vl-modelement-p))
+  :parents (vl-casestmt-size-warnings)
   :returns (warnings vl-warninglist-p)
-  :measure (vl-caselist-count cases)
-  :hooks ((:fix :hints(("Goal"
-                        :expand (vl-casestmt-size-warnings-aux test (vl-caselist-fix cases) ctx)))))
-  (b* ((test  (vl-expr-fix test))
-       (cases (vl-caselist-fix cases))
+  (b* (((when (atom match-exprs))
+       nil)
+       (test  (vl-expr-fix test))
+       (expr1 (vl-expr-fix (car match-exprs)))
        (ctx   (vl-modelement-fix ctx))
-       ((when (atom cases))
-        nil)
-       (rest (vl-casestmt-size-warnings-aux test (cdr cases) ctx))
-       ((cons expr1 ?body1) (car cases))
+       (rest  (vl-casestmt-matchexpr-size-warnings test (cdr match-exprs) ctx))
        ((unless (vl-expr->finaltype expr1))
         (warn :type :vl-case-stmt-type
               :msg "In ~a0: failed to determine signedness of case-statement ~
@@ -264,13 +290,38 @@ will match anything you've written in your pattern.  So, for instance,</p>
               :acc rest)))
     rest)
   ///
+  (more-returns
+   (warnings true-listp :rule-classes :type-prescription))
+  (defthm vl-casestmt-matchexpr-size-warnings-correct
+    (implies (not (vl-casestmt-matchexpr-size-warnings test match-exprs ctx))
+             (vl-casestmt-matchexpr-sizes-agreep test match-exprs))
+    :hints(("Goal" :expand (vl-casestmt-matchexpr-sizes-agreep test match-exprs)))))
+
+
+(define vl-casestmt-size-warnings-aux
+  :parents (vl-casestmt-size-warnings)
+  ((test     vl-expr-p       "The test expression, which should typically have
+                              its width already computed.")
+   (cases    vl-caselist-p   "The match expressions.")
+   (ctx      vl-modelement-p "Context for @(see warnings)."))
+  :returns (warnings vl-warninglist-p)
+  :measure (vl-caselist-count cases)
+  (b* ((test  (vl-expr-fix test))
+       (cases (vl-caselist-fix cases))
+       (ctx   (vl-modelement-fix ctx))
+       ((when (atom cases))
+        nil)
+       ((cons match-exprs1 ?body1) (car cases))
+       (first (vl-casestmt-matchexpr-size-warnings test match-exprs1 ctx))
+       (rest  (vl-casestmt-size-warnings-aux test (cdr cases) ctx)))
+    (append first rest))
+  ///
+  (more-returns
+   (warnings true-listp :rule-classes :type-prescription))
   (defthm vl-casestmt-size-warnings-aux-correct
     (implies (not (vl-casestmt-size-warnings-aux test cases ctx))
              (vl-casestmt-sizes-agreep test cases))
-    :hints(("Goal" :expand (vl-casestmt-sizes-agreep test cases))))
-  (defthm true-listp-of-vl-casestmt-size-warnings-aux
-    (true-listp (vl-casestmt-size-warnings-aux test cases ctx))
-    :rule-classes :type-prescription))
+    :hints(("Goal" :expand (vl-casestmt-sizes-agreep test cases)))))
 
 
 (define vl-casestmt-size-warnings
@@ -308,7 +359,7 @@ expression-sizing) code.</p>"
        (ctx  (vl-modelement-fix ctx))
        ((unless (and (posp (vl-expr->finalwidth test))
                      (vl-expr->finaltype test)))
-        ;; Avoid giving 100 warnings if we failed to size the test expr.
+        ;; Avoid giving tons of warnings if we failed to size the test expr.
         (list
          (make-vl-warning
           :type :vl-case-stmt-size
@@ -318,14 +369,14 @@ expression-sizing) code.</p>"
           :fn __function__))))
     (vl-casestmt-size-warnings-aux test cases ctx))
   ///
+  (more-returns
+   (warnings true-listp :rule-classes :type-prescription))
   (defthm widths-after-vl-casestmt-size-warnings
     (implies (not (vl-casestmt-size-warnings test cases ctx))
              (and (posp (vl-expr->finalwidth test))
                   (vl-expr->finaltype test)
-                  (vl-casestmt-sizes-agreep test cases))))
-  (defthm true-listp-of-vl-casestmt-size-warnings
-    (true-listp (vl-casestmt-size-warnings test cases ctx))
-    :rule-classes :type-prescription))
+                  (vl-casestmt-sizes-agreep test cases)))))
+
 
 
 ; -----------------------------------------------------------------------------
@@ -334,7 +385,8 @@ expression-sizing) code.</p>"
 ;
 ; -----------------------------------------------------------------------------
 
-(define vl-casestmt-compare-expr
+(define vl-casestmt-compare-expr1
+  :parents (vl-casestmt-compare-expr)
   :short "Creates, e.g., the expression @('foo === 3'b110'), for handling
 @('case(foo) ... 3'b110: ... endcase')."
   ((test vl-expr-p "The test expression, e.g., @('foo').")
@@ -347,10 +399,10 @@ ensure that we'll always have equal-width expressions and that we know their
 types.  We haven't assumed anything about their types agreeing.  To make sure
 that we produce well-typed expressions, we'll coerce anything signed into an
 unsigned equivalent, by just wrapping it in a one-bit concatenation.</p>"
-  :guard (and (posp (vl-expr->finalwidth test))
-              (vl-expr->finaltype test)
-              (equal (vl-expr->finalwidth test) (vl-expr->finalwidth expr))
-              (vl-expr->finaltype expr))
+  :guard (and (vl-expr->finaltype test)
+              (vl-expr->finaltype expr)
+              (posp (vl-expr->finalwidth test))
+              (equal (vl-expr->finalwidth test) (vl-expr->finalwidth expr)))
   (b* ((width     (vl-expr->finalwidth test))
        (test-fix  (case (vl-expr->finaltype test)
                     (:vl-unsigned test)
@@ -382,15 +434,64 @@ unsigned equivalent, by just wrapping it in a one-bit concatenation.</p>"
                         :use ((:instance vl-exprtype-p
                                          (x (vl-expr->finaltype x)))))))))
   ///
+  (more-returns
+   (compare-expr (equal (vl-expr->finalwidth compare-expr) 1)
+                 :name vl-expr->finalwidth-of-vl-casestmt-compare-expr1)
+   (compare-expr (equal (vl-expr->finaltype compare-expr) :vl-unsigned)
+                 :name vl-expr->finaltype-of-vl-casestmt-compare-expr1))
+
+  (defthm vl-expr-welltyped-p-of-vl-casestmt-compare-expr1
+    (implies (and (force (posp (vl-expr->finalwidth test)))
+                  (force (vl-expr->finaltype test))
+                  (force (vl-expr->finaltype expr))
+                  (force (equal (vl-expr->finalwidth test) (vl-expr->finalwidth expr)))
+                  (force (vl-expr-welltyped-p test))
+                  (force (vl-expr-welltyped-p expr)))
+             (vl-expr-welltyped-p (vl-casestmt-compare-expr1 test expr)))
+    :hints(("Goal"
+            :in-theory (enable vl-expr-welltyped-p)
+            :expand ((:free (op args atts finalwidth finaltype)
+                      (vl-expr-welltyped-p (make-vl-nonatom :op op
+                                                            :args args
+                                                            :atts atts
+                                                            :finalwidth finalwidth
+                                                            :finaltype finaltype))))))))
+
+(define vl-casestmt-compare-expr
+  :short "Creates, e.g., the expression @('foo === 3'b110 | foo === 3'b111'),
+for handling @('case(foo) ... 3'b110, 3'b111: ... endcase')."
+  ((test        vl-expr-p "The test expression, e.g., @('foo').")
+   (match-exprs vl-exprlist-p "The match expressions, e.g., @('3'b110, 3'b111')."))
+  :returns
+  (compare-expr vl-expr-p)
+  :guard (and (vl-expr->finaltype test)
+              (posp (vl-expr->finalwidth test))
+              (vl-casestmt-matchexpr-sizes-agreep test match-exprs))
+  (b* (((when (atom match-exprs))
+        (raise "Case statement with zero match expressions?")
+        |*sized-1'bx*|)
+       (compare1 (vl-casestmt-compare-expr1 test (car match-exprs)))
+       ((when (atom (cdr match-exprs)))
+        compare1)
+       (compare-rest (vl-casestmt-compare-expr test (cdr match-exprs))))
+    (make-vl-nonatom :op :vl-binary-bitor
+                     :args (list compare1 compare-rest)
+                     :finaltype :vl-unsigned
+                     :finalwidth 1))
+  ///
+  (more-returns
+   (compare-expr (equal (vl-expr->finalwidth compare-expr) 1)
+                 :name vl-expr->finalwidth-of-vl-casestmt-compare-expr)
+   (compare-expr (equal (vl-expr->finaltype compare-expr) :vl-unsigned)
+                 :name vl-expr->finaltype-of-vl-casestmt-compare-expr))
+
   (defthm vl-expr-welltyped-p-of-vl-casestmt-compare-expr
-    (implies (and (posp (vl-expr->finalwidth test))
-                  (vl-expr->finaltype test)
-                  (equal (vl-expr->finalwidth test)
-                         (vl-expr->finalwidth expr))
-                  (vl-expr->finaltype expr)
-                  (vl-expr-welltyped-p test)
-                  (vl-expr-welltyped-p expr))
-             (vl-expr-welltyped-p (vl-casestmt-compare-expr test expr)))
+    (implies (and (force (posp (vl-expr->finalwidth test)))
+                  (force (vl-expr->finaltype test))
+                  (force (vl-casestmt-matchexpr-sizes-agreep test match-exprs))
+                  (force (vl-expr-welltyped-p test))
+                  (force (vl-exprlist-welltyped-p match-exprs)))
+             (vl-expr-welltyped-p (vl-casestmt-compare-expr test match-exprs)))
     :hints(("Goal"
             :in-theory (enable vl-expr-welltyped-p)
             :expand ((:free (op args atts finalwidth finaltype)
@@ -404,45 +505,84 @@ unsigned equivalent, by just wrapping it in a one-bit concatenation.</p>"
   ((test     vl-expr-p        "The test expression, already sized.")
    (cases    vl-caselist-p    "The match expressions and bodies.")
    (default  vl-stmt-p        "The body for the @('default') case."))
-  :guard (and (posp (vl-expr->finalwidth test))
-              (vl-expr->finaltype test)
+  :guard (and (vl-expr->finaltype test)
+              (posp (vl-expr->finalwidth test))
               (vl-casestmt-sizes-agreep test cases))
   :returns (new-stmt vl-stmt-p)
   :measure (vl-caselist-count cases)
   (b* ((cases (vl-caselist-fix cases))
        ((when (atom cases))
         (vl-stmt-fix default))
-       ((cons expr1 body1) (car cases)))
+       ((cons match-exprs1 body1) (car cases)))
     (make-vl-ifstmt
-     :condition (vl-casestmt-compare-expr test expr1)
+     :condition (vl-casestmt-compare-expr test match-exprs1)
      :truebranch body1
      :falsebranch (vl-casestmt-elim-aux test (cdr cases) default))))
 
 (define vl-casestmt-elim
   :short "Rewrite an ordinary @('case') statement into @('if') statements."
 
-  ((test     vl-expr-p        "The test expression, should be sized.")
-   (cases    vl-caselist-p    "The cases, should be sized.")
+  ((check    vl-casecheck-p   "The kind of checking to do, if any.")
+   (test     vl-expr-p        "The test expression, should be sized.")
+   (caselist vl-caselist-p    "The cases, should be sized.")
    (default  vl-stmt-p        "The body for the @('default') case.")
    (atts     vl-atts-p        "Any attributes on the whole case statement.")
    (ctx      vl-modelement-p  "Context for @(see warnings).")
    (warnings vl-warninglist-p "Ordinary warnings accumulator."))
   :returns (mv (warnings vl-warninglist-p)
                (new-stmt vl-stmt-p))
+  :verbosep t
+
   (b* ((warnings     (vl-warninglist-fix warnings))
-       (new-warnings (vl-casestmt-size-warnings test cases ctx))
+       (new-warnings (vl-casestmt-size-warnings test caselist ctx))
+       (check        (vl-casecheck-fix check))
        ((when new-warnings)
         ;; Some sizing problem, so just fail to rewrite the case statement.
         (mv (append new-warnings warnings)
             (make-vl-casestmt :casetype nil
+                              :check    check
                               :test     test
-                              :cases    cases
+                              :caselist caselist
                               :default  default
-                              :atts     atts))))
+                              :atts     atts)))
+       (warnings
+        ;; See SystemVerilog-2012 Section 12.5.3 for information about priority,
+        ;; unique, and unique0 case statements.
+        ;;
+        ;; It appears that 'priority' basically just means: it is an error for
+        ;; no case item to match and the case statement does not need a default
+        ;; value.  We won't handle a missing default branch correctly yet, but
+        ;; if there is a default, we'll still do the right thing.
+        ;;
+        ;; For 'unique' or 'unique0', it's supposed to be safe to evaluate the
+        ;; items in any order, and it's a runtime error for multiple cases to
+        ;; simultaneously match.
+        ;;
+        ;;   - As with 'priority', a 'unique' case doesn't need a default, and
+        ;;     we currently won't be able to handle it correctly.
+        ;;
+        ;;   - In case of a violation, the spec says: "the implementation shall
+        ;;     issue a violation report and ___execute the statement associated
+        ;;     with the matching case_item that appears ***FIRST*** in the case
+        ;;     statement, but ***NOT*** the statements associated with other
+        ;;     matching case_items.___" So, creating an ordinary, if-then-else
+        ;;     style structure still gives the correct semantics, even in case
+        ;;     of a violation.
+        ;;
+        ;; It would probably be nicer to do something smarter to handle these,
+        ;; forcing the output to X in case of a violation, etc.  We'll at least
+        ;; issue a warning.
+        (if check
+            (warn :type :vl-case-check
+                  :msg "~a0: we don't yet implement priority, unique, or ~
+                         unique0 checking for case statements.  We will ~
+                         treat this as an ordinary case statement."
+                  :args (list (vl-modelement-fix ctx)))
+          (ok))))
     ;; Else, all sizes are good enough, we can turn it into ifs.  BOZO we're
     ;; going to lose any attributes associated with the case statement.
     ;; Maybe that's okay?
-    (mv warnings (vl-casestmt-elim-aux test cases default))))
+    (mv warnings (vl-casestmt-elim-aux test caselist default))))
 
 
 
@@ -453,6 +593,7 @@ unsigned equivalent, by just wrapping it in a one-bit concatenation.</p>"
 ; -----------------------------------------------------------------------------
 
 (define vl-casezx-match-bits
+  :parents (vl-casezx-matchexpr)
   :short "Try to explode a match-expression into a @(see vl-bitlist-p)."
 
   ((x vl-expr-p
@@ -492,6 +633,7 @@ constints, but that's probably overkill.</p>"
 
 
 (define vl-casezx-matchexpr-aux
+  :parents (vl-casezx-matchexpr)
   ((type       vl-casetype-p)
    (test-bits  vl-exprlist-p "One-bit expressions for @('data') in MSB-first order.")
    (match-bits vl-bitlist-p  "Bits of the match expression like @('4'b10??') in
@@ -627,6 +769,12 @@ constints, but that's probably overkill.</p>"
 
     (mv (ok) (vl-casezx-matchexpr-aux type test-bits match-bits)))
   ///
+  (more-returns
+   (expr? (implies expr? (equal (vl-expr->finalwidth expr?) 1))
+          :name vl-expr->finalwidth-of-vl-casezx-matchexpr)
+   (expr? (implies expr? (equal (vl-expr->finaltype expr?) :vl-unsigned))
+          :name vl-expr->finaltype-of-vl-casezx-matchexpr))
+
   (defthm vl-expr-welltyped-p-of-vl-casezx-matchexpr
     (implies
      (and (vl-exprlist-p test-bits)
@@ -637,10 +785,78 @@ constints, but that's probably overkill.</p>"
      (b* (((mv & result)
            (vl-casezx-matchexpr type test-bits match-expr ctx warnings)))
        (implies result
-                (and (vl-expr-welltyped-p result)
-                     (equal (vl-expr->finalwidth result) 1)
-                     (equal (vl-expr->finaltype result) :vl-unsigned)))))
+                (vl-expr-welltyped-p result))))
     :hints(("Goal" :in-theory (enable vl-expr-welltyped-p)))))
+
+(define vl-casezx-match-any-expr
+  :short "Handles situations like @('casez(foo) ... 3'bxx1, 3'bx10:
+... endcase'), i.e., where we have multiple match expressions associated with
+the same body."
+
+  ((type        vl-casetype-p    "Kind of case statement.")
+   (test-bits   vl-exprlist-p    "E.g., for @('casex(data) ...'), the msb-first bits of @('data').")
+   (match-exprs vl-exprlist-p    "The match expressions, usually weird integers with wildcard bits.")
+   (ctx         vl-modelement-p  "Context for @(see warnings).")
+   (warnings    vl-warninglist-p "Ordinary @(see warnings) accumulator."))
+
+  :returns
+  (mv (warnings vl-warninglist-p)
+      (expr?    "On failure @('nil'), otherwise an expression that checks whether
+                 we have any match."
+                (equal (vl-expr-p expr?) (if expr? t nil))))
+
+  :guard (and (member type '(:vl-casez :vl-casex))
+              (vl-exprlist-welltyped-p test-bits)
+              (all-equalp 1 (vl-exprlist->finalwidths test-bits))
+              (all-equalp :vl-unsigned (vl-exprlist->finaltypes test-bits))
+              (vl-exprlist-p match-exprs))
+  (b* (((when (atom match-exprs))
+        (mv (fatal :type :vl-casezx-fail
+                   :msg "~a0: case list has no match expressions?"
+                   :args (list (vl-modelement-fix ctx)))
+            nil))
+       ((mv warnings compare1) (vl-casezx-matchexpr type test-bits (car match-exprs) ctx warnings))
+       ((unless compare1)
+        ;; Already warned, just fail.
+        (mv warnings nil))
+       ((when (atom (cdr match-exprs)))
+        ;; Fine -- nothing else to worry about
+        (mv warnings compare1))
+       ((mv warnings compare-rest) (vl-casezx-match-any-expr type test-bits (cdr match-exprs) ctx warnings))
+       ((unless compare-rest)
+        ;; Already warned, just fail.
+        (mv warnings nil)))
+    (mv warnings (make-vl-nonatom :op :vl-binary-bitor
+                                  :args (list compare1 compare-rest)
+                                  :finaltype :vl-unsigned
+                                  :finalwidth 1)))
+  ///
+  (more-returns
+   (expr? (implies expr?
+                   (equal (vl-expr->finalwidth expr?) 1))
+          :name vl-expr->finalwidth-of-vl-casezx-match-any-expr)
+   (expr? (implies expr?
+                   (equal (vl-expr->finaltype expr?) :vl-unsigned))
+          :name vl-expr->finaltype-of-vl-casezx-match-any-expr))
+
+  (defthm vl-expr-welltyped-p-of-vl-casezx-match-any-expr
+    (implies (and (vl-exprlist-p test-bits)
+                  (vl-exprlist-welltyped-p test-bits)
+                  (all-equalp 1 (vl-exprlist->finalwidths test-bits))
+                  (all-equalp :vl-unsigned (vl-exprlist->finaltypes test-bits))
+                  (vl-exprlist-p match-exprs))
+             (b* (((mv & result)
+                   (vl-casezx-match-any-expr type test-bits match-exprs ctx warnings)))
+               (implies result
+                        (vl-expr-welltyped-p result))))
+    :hints(("Goal"
+            :in-theory (enable vl-expr-welltyped-p)
+            :expand ((:free (op args atts finalwidth finaltype)
+                      (vl-expr-welltyped-p (make-vl-nonatom :op op
+                                                            :args args
+                                                            :atts atts
+                                                            :finalwidth finalwidth
+                                                            :finaltype finaltype))))))))
 
 (define vl-casezx-elim-aux
   ((type       vl-casetype-p    "Kind of case statement.")
@@ -664,10 +880,10 @@ constints, but that's probably overkill.</p>"
        (default (vl-stmt-fix default))
        ((when (atom cases))
         (mv (ok) default))
-       ((cons expr1 body1) (car cases))
+       ((cons match-exprs1 body1) (car cases))
 
        ((mv warnings match-expr)
-        (vl-casezx-matchexpr type test-bits expr1 ctx warnings))
+        (vl-casezx-match-any-expr type test-bits match-exprs1 ctx warnings))
        ((unless match-expr)
         (mv warnings nil))
 
@@ -687,14 +903,14 @@ constints, but that's probably overkill.</p>"
   :short "Rewrite an @('casez') or @('casex') statement into @('if') statements."
 
   ((type     vl-casetype-p    "Kind of case statement.")
+   (check    vl-casecheck-p   "The kind of checking to do, if any.")
    (test     vl-expr-p        "The test expression, should be sized.")
    (cases    vl-caselist-p    "The cases for the case statement, should be sized.")
    (default  vl-stmt-p        "The body for the @('default') case.")
    (atts     vl-atts-p        "Any attributes on the whole case statement.")
    (ctx      vl-modelement-p  "Context for @(see warnings).")
    (warnings vl-warninglist-p "Ordinary warnings accumulator.")
-   (mod      vl-module-p      "Module for wire lookups, etc.")
-   (ialist   (equal ialist (vl-moditem-alist mod))))
+   (ss       vl-scopestack-p))
   :guard
   (member type '(:vl-casez :vl-casex))
   :returns
@@ -702,35 +918,45 @@ constints, but that's probably overkill.</p>"
       (new-stmt vl-stmt-p))
   :verbosep t
   (b* ((type         (vl-casetype-fix type))
+       (check        (vl-casecheck-fix check))
        (test         (vl-expr-fix test))
        (ctx          (vl-modelement-fix ctx))
-       (mod          (vl-module-fix mod))
+       (ss           (vl-scopestack-fix ss))
        (warnings     (vl-warninglist-fix warnings))
-       (new-warnings (vl-casestmt-size-warnings test cases ctx))
 
+       (new-warnings (vl-casestmt-size-warnings test cases ctx))
        ((mv okp new-warnings test-bits)
         (if (and (vl-expr-sliceable-p test)
                  (vl-expr-welltyped-p test))
-            (vl-msb-bitslice-expr test mod ialist new-warnings)
+            (vl-msb-bitslice-expr test ss new-warnings)
           (mv nil new-warnings nil)))
-
        (new-warnings
         (if okp
             new-warnings
-          (warn :type :vl-casexz-fail
+          (warn :type :vl-casezx-fail
                 :msg "~a0: can't handle ~s1 statement because we failed to ~
                        determine the bits of the test expression ~a2."
                 :args (list ctx
                             (if (eq type :vl-casex) "casex" "casez")
                             test)
                 :acc new-warnings)))
+       (new-warnings
+        (if check
+            (warn :type :vl-casezx-check
+                  :msg "~a0: we don't yet implement priority, unique, or ~
+                         unique0 checking for casez/x statements.  We will ~
+                         treat this as an ordinary casez/x statement."
+                  :args (list (vl-modelement-fix ctx))
+                  :acc new-warnings)
+          new-warnings))
 
        ((when new-warnings)
         ;; Some sizing problem, so just fail to rewrite the casez statement.
         (mv (append-without-guard new-warnings warnings)
             (make-vl-casestmt :casetype type
+                              :check    check
                               :test     test
-                              :cases    cases
+                              :caselist cases
                               :default  default
                               :atts     atts)))
 
@@ -740,8 +966,9 @@ constints, but that's probably overkill.</p>"
        ((unless new-stmt)
         ;; Already warned, so just leave this case statement alone.
         (mv warnings (make-vl-casestmt :casetype type
+                                       :check    check
                                        :test     test
-                                       :cases    cases
+                                       :caselist cases
                                        :default  default
                                        :atts     atts))))
 
@@ -755,8 +982,7 @@ statements within a statement."
   (define vl-stmt-caseelim ((x        vl-stmt-p)
                             (ctx      vl-modelement-p)
                             (warnings vl-warninglist-p)
-                            (mod      vl-module-p)
-                            (ialist   (equal ialist (vl-moditem-alist mod))))
+                            (ss       vl-scopestack-p))
     :returns (mv (warnings vl-warninglist-p)
                  (new-x    vl-stmt-p))
     :verify-guards nil
@@ -766,7 +992,7 @@ statements within a statement."
           (mv (ok) x))
 
          (substmts               (vl-compoundstmt->stmts x))
-         ((mv warnings substmts) (vl-stmtlist-caseelim substmts ctx warnings mod ialist))
+         ((mv warnings substmts) (vl-stmtlist-caseelim substmts ctx warnings ss))
          (x                      (change-vl-compoundstmt x :stmts substmts))
          ((unless (eq (vl-stmt-kind x) :vl-casestmt))
           (mv warnings x))
@@ -774,14 +1000,13 @@ statements within a statement."
          ((vl-casestmt x) x)
          ((unless x.casetype)
           ;; Regular case statement, not casex/casez.
-          (vl-casestmt-elim x.test x.cases x.default x.atts ctx warnings)))
-      (vl-casezx-stmt-elim x.casetype x.test x.cases x.default x.atts ctx warnings mod ialist)))
+          (vl-casestmt-elim           x.check x.test x.caselist x.default x.atts ctx warnings)))
+      (vl-casezx-stmt-elim x.casetype x.check x.test x.caselist x.default x.atts ctx warnings ss)))
 
   (define vl-stmtlist-caseelim ((x        vl-stmtlist-p)
                                 (ctx      vl-modelement-p)
                                 (warnings vl-warninglist-p)
-                                (mod      vl-module-p)
-                                (ialist   (equal ialist (vl-moditem-alist mod))))
+                                (ss       vl-scopestack-p))
     :returns
     (mv (warnings vl-warninglist-p)
         (new-x (and (vl-stmtlist-p new-x)
@@ -790,9 +1015,9 @@ statements within a statement."
     (b* (((when (atom x))
           (mv (ok) nil))
          ((mv warnings car)
-          (vl-stmt-caseelim (car x) ctx warnings mod ialist))
+          (vl-stmt-caseelim (car x) ctx warnings ss))
          ((mv warnings cdr)
-          (vl-stmtlist-caseelim (cdr x) ctx warnings mod ialist)))
+          (vl-stmtlist-caseelim (cdr x) ctx warnings ss)))
       (mv warnings (cons car cdr))))
   ///
   (verify-guards vl-stmt-caseelim)
@@ -801,58 +1026,55 @@ statements within a statement."
 (define vl-always-caseelim
   ((x        vl-always-p)
    (warnings vl-warninglist-p)
-   (mod      vl-module-p)
-   (ialist   (equal ialist (vl-moditem-alist mod))))
+   (ss       vl-scopestack-p))
   :returns (mv (warnings vl-warninglist-p)
                (new-x    vl-always-p))
   (b* ((x (vl-always-fix x))
        ((mv warnings stmt)
-        (vl-stmt-caseelim (vl-always->stmt x) x warnings mod ialist))
+        (vl-stmt-caseelim (vl-always->stmt x) x warnings ss))
        (x-prime (change-vl-always x :stmt stmt)))
     (mv warnings x-prime)))
 
 (define vl-alwayslist-caseelim
   ((x        vl-alwayslist-p)
    (warnings vl-warninglist-p)
-   (mod      vl-module-p)
-   (ialist   (equal ialist (vl-moditem-alist mod))))
+   (ss       vl-scopestack-p))
   :returns (mv (warnings vl-warninglist-p)
                (new-x    vl-alwayslist-p))
   (b* (((when (atom x))
         (mv (ok) nil))
-       ((mv warnings car) (vl-always-caseelim (car x) warnings mod ialist))
-       ((mv warnings cdr) (vl-alwayslist-caseelim (cdr x) warnings mod ialist)))
+       ((mv warnings car) (vl-always-caseelim (car x) warnings ss))
+       ((mv warnings cdr) (vl-alwayslist-caseelim (cdr x) warnings ss)))
     (mv warnings (cons car cdr))))
 
 (define vl-initial-caseelim
   ((x        vl-initial-p)
    (warnings vl-warninglist-p)
-   (mod      vl-module-p)
-   (ialist   (equal ialist (vl-moditem-alist mod))))
+   (ss       vl-scopestack-p))
   :returns (mv (warnings vl-warninglist-p)
                (new-x    vl-initial-p))
   (b* ((x (vl-initial-fix x))
        ((mv warnings stmt)
-        (vl-stmt-caseelim (vl-initial->stmt x) x warnings mod ialist))
+        (vl-stmt-caseelim (vl-initial->stmt x) x warnings ss))
        (x-prime (change-vl-initial x :stmt stmt)))
     (mv warnings x-prime)))
 
 (define vl-initiallist-caseelim
   ((x        vl-initiallist-p)
    (warnings vl-warninglist-p)
-   (mod      vl-module-p)
-   (ialist   (equal ialist (vl-moditem-alist mod))))
+   (ss       vl-scopestack-p))
   :returns (mv (warnings vl-warninglist-p)
                (new-x    vl-initiallist-p))
   (b* (((when (atom x))
         (mv (ok) nil))
-       ((mv warnings car) (vl-initial-caseelim (car x) warnings mod ialist))
-       ((mv warnings cdr) (vl-initiallist-caseelim (cdr x) warnings mod ialist)))
+       ((mv warnings car) (vl-initial-caseelim (car x) warnings ss))
+       ((mv warnings cdr) (vl-initiallist-caseelim (cdr x) warnings ss)))
     (mv warnings (cons car cdr))))
 
-(define vl-module-caseelim ((x vl-module-p))
+(define vl-module-caseelim ((x vl-module-p) (ss vl-scopestack-p))
   :returns (new-x vl-module-p)
   (b* ((x (vl-module-fix x))
+       (ss (vl-scopestack-push x ss))
        ((vl-module x) x)
        ((when (vl-module->hands-offp x))
         x)
@@ -864,20 +1086,23 @@ statements within a statement."
        (warnings x.warnings)
        (ialist (vl-moditem-alist x))
        ((mv warnings alwayses)
-        (vl-alwayslist-caseelim x.alwayses warnings x ialist))
+        (vl-alwayslist-caseelim x.alwayses warnings ss))
        ((mv warnings initials)
-        (vl-initiallist-caseelim x.initials warnings x ialist)))
+        (vl-initiallist-caseelim x.initials warnings ss)))
     (fast-alist-free ialist)
     (change-vl-module x
                       :warnings warnings
                       :alwayses alwayses
                       :initials initials)))
 
-(defprojection vl-modulelist-caseelim ((x vl-modulelist-p))
+(defprojection vl-modulelist-caseelim ((x vl-modulelist-p) (ss vl-scopestack-p))
   :returns (new-x vl-modulelist-p)
-  (vl-module-caseelim x))
+  (vl-module-caseelim x ss))
 
 (define vl-design-caseelim ((x vl-design-p))
   :returns (new-x vl-design-p)
-  (b* (((vl-design x) x))
-    (change-vl-design x :mods (vl-modulelist-caseelim x.mods))))
+  (b* (((vl-design x) x)
+       (ss (vl-scopestack-init x))
+       (mods (vl-modulelist-caseelim x.mods ss)))
+    (vl-scopestacks-free)
+    (change-vl-design x :mods mods)))

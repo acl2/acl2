@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
@@ -97,12 +107,6 @@ clever.</p>")
              (cw "no: inout ports~%"))
          (or (not x.alwayses)
              (cw "no: always blocks~%"))
-         (or (not x.regdecls)
-             (cw "no: reg declarations~%"))
-         (or (not x.vardecls)
-             (cw "no: var declarations~%"))
-         (or (not x.eventdecls)
-             (cw "no: event declarations~%"))
          (or (not x.paramdecls)
              (cw "no: parameter declarations~%"))
          (or (not x.fundecls)
@@ -122,8 +126,7 @@ clever.</p>")
   ((ports     vl-portlist-p)
    (plainargs (and (vl-plainarglist-p plainargs)
                    (same-lengthp ports plainargs)))
-   (portdecls vl-portdecllist-p)
-   (palist    (equal palist (vl-portdecl-alist portdecls)))
+   (scope     vl-scope-p)
    (loc       vl-location-p)
    (warnings  vl-warninglist-p))
   :returns
@@ -138,7 +141,7 @@ clever.</p>")
        (outside (vl-plainarg->expr (car plainargs)))
 
        ((mv warnings dir)
-        (vl-port-direction (car ports) portdecls palist nil))
+        (vl-port-direction (car ports) scope nil))
        ((unless dir)
         ;; Already warned
         (mv nil warnings nil))
@@ -182,7 +185,7 @@ clever.</p>")
 
        ((mv okp warnings assigns2)
         (vl-make-inlining-assigns (cdr ports) (cdr plainargs)
-                                  portdecls palist loc warnings)))
+                                  scope loc warnings)))
     (mv okp warnings (append assigns1 assigns2)))
 
   ///
@@ -222,7 +225,7 @@ clever.</p>")
       (modinsts  vl-modinstlist-p  :hyp :fguard)
       (gateinsts vl-gateinstlist-p :hyp :fguard)
       (assigns   vl-assignlist-p   :hyp :fguard)
-      (netdecls  vl-netdecllist-p  :hyp :fguard)
+      (vardecls  vl-vardecllist-p  :hyp :fguard)
       (warnings  vl-warninglist-p))
 
   (b* (((vl-modinst x) x)
@@ -232,14 +235,14 @@ clever.</p>")
         ;; Not an instance of the desired module, do nothing to this instance.
         (mv nf (list x) nil nil nil (ok)))
 
-       ((unless (eq (vl-arguments-kind x.portargs) :plain))
+       ((unless (eq (vl-arguments-kind x.portargs) :vl-arguments-plain))
         (mv nf (list x) nil nil nil
             (fatal :type :vl-inline-fail
                    :msg "~a0: can't inline because args aren't resolved."
                    :args (list x))))
 
        (plainargs (vl-arguments-plain->args x.portargs))
-       ((when (vl-arguments->args x.paramargs))
+       ((unless (vl-paramargs-empty-p x.paramargs))
         (mv nf (list x) nil nil nil
             (fatal :type :vl-inline-fail
                    :msg "~a0: can't inline because of parameters."
@@ -255,17 +258,17 @@ clever.</p>")
        ;; location of the instance, all the names are fresh, and all the
        ;; expressions have been updated to the new names.
        (prefix           (or x.instname "inst"))
-       ((mv netdecls nf) (vl-namemangle-netdecls prefix sub.netdecls nf))
-       (netdecls         (vl-relocate-netdecls
+       ((mv vardecls nf) (vl-namemangle-vardecls prefix sub.vardecls nf))
+       (vardecls         (vl-relocate-vardecls
                           ;; Dumb hack: try to make sure that newly introduced net
                           ;; declarations come BEFORE any uses of them.
                           (change-vl-location
                            x.loc
                            :line (max 1 (- (vl-location->line x.loc) 1))
                            :col 0)
-                          netdecls))
-       (old-names        (vl-netdecllist->names sub.netdecls))
-       (new-names        (vl-netdecllist->names netdecls))
+                          vardecls))
+       (old-names        (vl-vardecllist->names sub.vardecls))
+       (new-names        (vl-vardecllist->names vardecls))
        (new-exprs        (vl-make-idexpr-list new-names nil nil))
        (sigma            (pairlis$ old-names new-exprs))
 
@@ -291,10 +294,9 @@ clever.</p>")
        (renaming-alist (pairlis$ old-names new-names))
        (portdecls      (with-fast-alist renaming-alist
                          (vl-inline-rename-portdecls sub.portdecls renaming-alist)))
-       (palist         (vl-portdecl-alist portdecls))
+       (scope          (change-vl-module sub :portdecls portdecls))
        ((mv okp warnings port-assigns)
-        (vl-make-inlining-assigns ports plainargs portdecls palist x.loc warnings))
-       (- (fast-alist-free palist))
+        (vl-make-inlining-assigns ports plainargs scope x.loc warnings))
        ((unless okp)
         (mv nf (list x) nil nil nil
             (fatal :type :vl-inline-fail
@@ -304,7 +306,7 @@ clever.</p>")
        ;; If we get this far, then the port-assigns are already set and everything
        ;; else is looking good, too.
        )
-    (mv nf modinsts gateinsts (append port-assigns assigns) netdecls warnings))
+    (mv nf modinsts gateinsts (append port-assigns assigns) vardecls warnings))
   ///
   (defmvtypes vl-inline-mod-in-modinst
     (nil true-listp true-listp true-listp true-listp nil)))
@@ -322,19 +324,19 @@ clever.</p>")
       (modinsts  vl-modinstlist-p  :hyp :fguard)
       (gateinsts vl-gateinstlist-p :hyp :fguard)
       (assigns   vl-assignlist-p   :hyp :fguard)
-      (netdecls  vl-netdecllist-p  :hyp :fguard)
+      (vardecls  vl-vardecllist-p  :hyp :fguard)
       (warnings  vl-warninglist-p))
   (b* (((when (atom x))
         (mv nf nil nil nil nil (ok)))
-       ((mv nf modinsts1 gateinsts1 assigns1 netdecls1 warnings)
+       ((mv nf modinsts1 gateinsts1 assigns1 vardecls1 warnings)
         (vl-inline-mod-in-modinst sub (car x) nf warnings))
-       ((mv nf modinsts2 gateinsts2 assigns2 netdecls2 warnings)
+       ((mv nf modinsts2 gateinsts2 assigns2 vardecls2 warnings)
         (vl-inline-mod-in-modinsts sub (cdr x) nf warnings)))
     (mv nf
         (append modinsts1 modinsts2)
         (append gateinsts1 gateinsts2)
         (append assigns1 assigns2)
-        (append netdecls1 netdecls2)
+        (append vardecls1 vardecls2)
         warnings))
   ///
   (defmvtypes vl-inline-mod-in-modinsts
@@ -353,14 +355,14 @@ clever.</p>")
        ((when (vl-module->hands-offp x))
         x)
        (nf (vl-starting-namefactory x))
-       ((mv nf modinsts gateinsts assigns netdecls warnings)
+       ((mv nf modinsts gateinsts assigns vardecls warnings)
         (vl-inline-mod-in-modinsts sub x.modinsts nf x.warnings)))
     (vl-free-namefactory nf)
     (change-vl-module x
                       :modinsts  modinsts
                       :gateinsts (append gateinsts x.gateinsts)
                       :assigns   (append assigns x.assigns)
-                      :netdecls  (append netdecls x.netdecls)
+                      :vardecls  (append vardecls x.vardecls)
                       :warnings  warnings)))
 
 (defprojection vl-inline-mod-in-mods-aux (sub x)

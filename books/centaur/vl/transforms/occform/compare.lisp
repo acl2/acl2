@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
@@ -62,13 +72,13 @@ much freedom as possible when implementing the operation.)</p>"
   (b* ((n    (lposfix n))
        (name (hons-copy (cat "VL_" (natstr n) "_BIT_UNSIGNED_GTE")))
 
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
-       ((mv a-expr a-port a-portdecl a-netdecl)         (vl-occform-mkport "a" :vl-input n))
-       ((mv b-expr b-port b-portdecl b-netdecl)         (vl-occform-mkport "b" :vl-input n))
+       ((mv out-expr out-port out-portdecl out-vardecl) (vl-primitive-mkport "out" :vl-output))
+       ((mv a-expr a-port a-portdecl a-vardecl)         (vl-occform-mkport "a" :vl-input n))
+       ((mv b-expr b-port b-portdecl b-vardecl)         (vl-occform-mkport "b" :vl-input n))
 
-       ((mv bnot-expr bnot-netdecl)  (vl-occform-mkwire "bnot" n))
-       ((mv sum-expr sum-netdecl)    (vl-occform-mkwire "sum" n))
-       ((mv cout-expr cout-netdecl)  (vl-primitive-mkwire "cout"))
+       ((mv bnot-expr bnot-vardecl)  (vl-occform-mkwire "bnot" n))
+       ((mv sum-expr sum-vardecl)    (vl-occform-mkwire "sum" n))
+       ((mv cout-expr cout-vardecl)  (vl-primitive-mkwire "cout"))
 
        ;; assign bnot = ~b;
        ((cons bnot-mod bnot-support) (vl-make-n-bit-not n))
@@ -86,7 +96,7 @@ much freedom as possible when implementing the operation.)</p>"
                            :origname  name
                            :ports     (list out-port a-port b-port)
                            :portdecls (list out-portdecl a-portdecl b-portdecl)
-                           :netdecls  (list out-netdecl a-netdecl b-netdecl sum-netdecl cout-netdecl bnot-netdecl)
+                           :vardecls  (list out-vardecl a-vardecl b-vardecl sum-vardecl cout-vardecl bnot-vardecl)
                            :modinsts  (list bnot-inst core-inst xprop-inst)
                            :minloc    *vl-fakeloc*
                            :maxloc    *vl-fakeloc*)
@@ -145,16 +155,16 @@ endmodule
 
   (b* ((name (hons-copy "VL_1_BIT_SIGNED_GTE"))
 
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
-       ((mv a-expr a-port a-portdecl a-netdecl)         (vl-primitive-mkport "a" :vl-input))
-       ((mv b-expr b-port b-portdecl b-netdecl)         (vl-primitive-mkport "b" :vl-input))
+       ((mv out-expr out-port out-portdecl out-vardecl) (vl-primitive-mkport "out" :vl-output))
+       ((mv a-expr a-port a-portdecl a-vardecl)         (vl-primitive-mkport "a" :vl-input))
+       ((mv b-expr b-port b-portdecl b-vardecl)         (vl-primitive-mkport "b" :vl-input))
 
-       ((mv bbar-expr bbar-netdecl)       (vl-primitive-mkwire "bbar"))
-       ((mv mainbar-expr mainbar-netdecl) (vl-primitive-mkwire "mainbar"))
-       ((mv main-expr main-netdecl)       (vl-primitive-mkwire "main"))
-       ((mv xa-expr xa-netdecl)           (vl-primitive-mkwire "xa"))
-       ((mv xb-expr xb-netdecl)           (vl-primitive-mkwire "xb"))
-       ((mv xab-expr xab-netdecl)         (vl-primitive-mkwire "xab"))
+       ((mv bbar-expr bbar-vardecl)       (vl-primitive-mkwire "bbar"))
+       ((mv mainbar-expr mainbar-vardecl) (vl-primitive-mkwire "mainbar"))
+       ((mv main-expr main-vardecl)       (vl-primitive-mkwire "main"))
+       ((mv xa-expr xa-vardecl)           (vl-primitive-mkwire "xa"))
+       ((mv xb-expr xb-vardecl)           (vl-primitive-mkwire "xb"))
+       ((mv xab-expr xab-vardecl)         (vl-primitive-mkwire "xab"))
 
        (bbar-inst    (vl-simple-inst *vl-1-bit-not* "mk_bbar"    bbar-expr    b-expr))
        (mainbar-inst (vl-simple-inst *vl-1-bit-and* "mk_mainbar" mainbar-expr a-expr       bbar-expr))
@@ -169,9 +179,9 @@ endmodule
                      :origname  name
                      :ports     (list out-port a-port b-port)
                      :portdecls (list out-portdecl a-portdecl b-portdecl)
-                     :netdecls  (list out-netdecl a-netdecl b-netdecl
-                                      bbar-netdecl mainbar-netdecl main-netdecl
-                                      xa-netdecl xb-netdecl xab-netdecl)
+                     :vardecls  (list out-vardecl a-vardecl b-vardecl
+                                      bbar-vardecl mainbar-vardecl main-vardecl
+                                      xa-vardecl xb-vardecl xab-vardecl)
                      :modinsts (list bbar-inst mainbar-inst main-inst
                                      xa-inst xb-inst xab-inst out-inst)
                      :minloc    *vl-fakeloc*
@@ -222,14 +232,14 @@ ordinary unsigned comparisons work in the other cases.</p>"
 
        (name (hons-copy (cat "VL_" (natstr n) "_BIT_SIGNED_GTE")))
 
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
-       ((mv a-expr a-port a-portdecl a-netdecl)         (vl-occform-mkport "a" :vl-input n))
-       ((mv b-expr b-port b-portdecl b-netdecl)         (vl-occform-mkport "b" :vl-input n))
+       ((mv out-expr out-port out-portdecl out-vardecl) (vl-primitive-mkport "out" :vl-output))
+       ((mv a-expr a-port a-portdecl a-vardecl)         (vl-occform-mkport "a" :vl-input n))
+       ((mv b-expr b-port b-portdecl b-vardecl)         (vl-occform-mkport "b" :vl-input n))
 
-       ((mv sdiff-expr sdiff-netdecl) (vl-primitive-mkwire "signs_differ"))  ;; do signs differ?
-       ((mv adiff-expr adiff-netdecl) (vl-primitive-mkwire "ans_differ"))    ;; answer when signs differ
-       ((mv asame-expr asame-netdecl) (vl-primitive-mkwire "ans_same"))      ;; answer when signs are the same
-       ((mv main-expr main-netdecl)   (vl-primitive-mkwire "main"))          ;; final answer except for x detection
+       ((mv sdiff-expr sdiff-vardecl) (vl-primitive-mkwire "signs_differ"))  ;; do signs differ?
+       ((mv adiff-expr adiff-vardecl) (vl-primitive-mkwire "ans_differ"))    ;; answer when signs differ
+       ((mv asame-expr asame-vardecl) (vl-primitive-mkwire "ans_same"))      ;; answer when signs are the same
+       ((mv main-expr main-vardecl)   (vl-primitive-mkwire "main"))          ;; final answer except for x detection
 
        (a-msb  (vl-make-bitselect a-expr (- n 1)))
        (b-msb  (vl-make-bitselect b-expr (- n 1)))
@@ -265,8 +275,8 @@ ordinary unsigned comparisons work in the other cases.</p>"
                            :origname  name
                            :ports     (list out-port a-port b-port)
                            :portdecls (list out-portdecl a-portdecl b-portdecl)
-                           :netdecls  (list out-netdecl a-netdecl b-netdecl
-                                            sdiff-netdecl adiff-netdecl asame-netdecl main-netdecl)
+                           :vardecls  (list out-vardecl a-vardecl b-vardecl
+                                            sdiff-vardecl adiff-vardecl asame-vardecl main-vardecl)
                            :modinsts  (list sdiff-inst adiff-inst ucmp-inst mux-inst xprop-inst)
                            :minloc    *vl-fakeloc*
                            :maxloc    *vl-fakeloc*)

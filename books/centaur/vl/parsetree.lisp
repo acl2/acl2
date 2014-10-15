@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
@@ -25,6 +35,65 @@
 (include-book "tools/flag" :dir :system)
 (local (include-book "util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
+(local (in-theory (disable double-containment)))
+(local (in-theory (disable vl-atts-p-of-cdr-when-vl-atts-p
+                           vl-atts-p-when-subsetp-equal
+                           alistp-when-vl-atts-p-rewrite
+                           default-car default-cdr
+                           acl2::lower-bound-of-car-when-nat-listp
+                           stringp-when-true-listp
+                           consp-when-member-equal-of-cons-listp
+                           acl2::consp-when-member-equal-of-atom-listp
+                           consp-when-member-equal-of-vl-commentmap-p
+                           consp-when-member-equal-of-vl-atts-p
+                           (tau-system))))
+
+
+; ----------------------------------------------------------------------------
+;
+;                            BIG WARNING MESSAGE
+;
+;     If you modify the any actual parse-tree syntax,
+;
+;                               then you should update the syntax version!
+;
+; ----------------------------------------------------------------------------
+
+(defval *vl-current-syntax-version*
+  :parents (vl-syntaxversion-p)
+  :short "Version of VL syntax being used."
+
+  :long "<p>This is a barbaric mechanism to make sure that we don't try to mix
+together translations produced by different versions of VL.  Each design is
+annotated with a @('version') field that must match exactly this string.</p>"
+
+  ;; Current syntax version: generally a string like
+  ;; "VL Syntax [date of modification]"
+  "VL Syntax 2014-10-08")
+
+(define vl-syntaxversion-p (x)
+  :parents (syntax)
+  (equal x *vl-current-syntax-version*))
+
+(define vl-syntaxversion-fix (x)
+  :parents (vl-syntaxversion-p)
+  :returns (version vl-syntaxversion-p)
+  (if (vl-syntaxversion-p x)
+      x
+    *vl-current-syntax-version*)
+  ///
+  (defthm vl-syntaxversion-fix-when-vl-syntaxversion-p
+    (implies (vl-syntaxversion-p x)
+             (equal (vl-syntaxversion-fix x) x))))
+
+(deffixtype vl-syntaxversion
+  :pred vl-syntaxversion-p
+  :fix vl-syntaxversion-fix
+  :equiv vl-syntaxversion-equiv
+  :define t
+  :forward t)
+
+
 
 (defxdoc syntax
   :parents (vl)
@@ -40,6 +109,12 @@ grammar, although we make many simplifcations and generally present a much more
 regular view of the source code.</p>")
 
 (local (xdoc::set-default-parents syntax))
+
+(defoption maybe-stringp stringp
+  ;; BOZO misplaced, also has documentation issues
+  :parents nil
+  :fix maybe-string-fix
+  :equiv maybe-string-equiv)
 
 (defprod vl-range
   :short "Representation of ranges on wire declarations, instance array
@@ -80,32 +155,566 @@ try to support the use of both ascending and descending ranges.</p>")
 
 (fty::deflist vl-maybe-range-list
               :elt-type vl-maybe-range-p
+              :elementp-of-nil t
               :true-listp nil)
-
-(deflist vl-maybe-range-list-p (x)
-  (vl-maybe-range-p x)
-  :elementp-of-nil t)
 
 (fty::deflist vl-rangelist
               :elt-type vl-range-p
+              :elementp-of-nil nil
               :true-listp nil)
-
-(deflist vl-rangelist-p (x)
-  (vl-range-p x)
-  :elementp-of-nil nil)
 
 (fty::deflist vl-rangelist-list
               :elt-type vl-rangelist-p
-              :true-listp nil)
+              :true-listp nil
+              :elementp-of-nil t)
 
-(deflist vl-rangelist-list-p (x)
-  (vl-rangelist-p x)
-  :elementp-of-nil t)
 
-(defoption maybe-stringp stringp
-  ;; BOZO find me a home.  This is mainly to get the fixtypes stuff
-  :fix maybe-string-fix
-  :equiv maybe-string-equiv)
+
+
+
+; -----------------------------------------------------------------------------
+;
+;                        Data Types (SystemVerilog)
+;
+; -----------------------------------------------------------------------------
+
+(defenum vl-randomqualifier-p
+  (nil
+   :vl-rand
+   :vl-randc)
+  :short "Random qualifiers that can be put on struct or union members.")
+
+(defenum vl-nettypename-p
+  (:vl-wire ;; Most common so it goes first.
+   :vl-tri
+   :vl-supply0
+   :vl-supply1
+   :vl-triand
+   :vl-trior
+   :vl-tri0
+   :vl-tri1
+   :vl-trireg
+   :vl-uwire
+   :vl-wand
+   :vl-wor)
+  :parents (vl-nettype)
+  :short "Representation of wire types."
+
+  :long "<p>Wires in Verilog can be given certain types.  We
+represent these types using certain keyword symbols, whose names
+correspond to the possible types.</p>")
+
+(defoption vl-maybe-nettypename-p vl-nettypename-p)
+
+(defenum vl-coretypename-p
+  (;; integer vector types, i put these first since they're common
+   :vl-logic
+   :vl-reg
+   :vl-bit
+   ;; integer atom types:
+   :vl-byte
+   :vl-shortint
+   :vl-int
+   :vl-longint
+   :vl-integer
+   :vl-time
+   ;; non integer types:
+   :vl-shortreal
+   :vl-real
+   :vl-realtime
+   ;; misc core data types
+   :vl-string
+   :vl-chandle
+   :vl-event
+   ;; it's convenient to include void here even though it's not part
+   ;; of the grammar for data_type
+   :vl-void
+   )
+  :short "Basic kinds of data types."
+  :long "<p>Our <i>core types</i> basically correspond to the following small
+subset of the valid @('data_type')s:</p>
+
+@({
+     data_type_or_void ::= data_type | 'void'
+     data_type ::=
+         integer_vector_type [signing] { packed_dimension }
+       | integer_atom_type [signing]
+       | non_integer_type
+       | 'string'
+       | 'chandle'
+       | 'event'
+       | <non core types >
+})
+
+<p>We include @('void') here only because it's convenient to do so.</p>")
+
+(define vl-packeddimension-p (x)
+  :short "Recognizes ranges and unsized dimensions."
+  :long "<p>From the SystemVerilog-2012 grammar:</p>
+@({
+    unsized_dimension ::= '[' ']'
+    packed_dimension ::= '[' constant_range ']' | unsized_dimension
+})"
+
+  (or (eq x :vl-unsized-dimension)
+      (vl-range-p x))
+  ///
+  (defthm vl-packeddimension-p-when-vl-range-p
+    (implies (vl-range-p x)
+             (vl-packeddimension-p x)))
+  (defthm vl-range-p-when-vl-packeddimension-p
+    (implies (and (not (equal x :vl-unsized-dimension))
+                  (vl-packeddimension-p x))
+             (vl-range-p x))))
+
+(define vl-packeddimension-fix ((x vl-packeddimension-p))
+  :returns (x-fix vl-packeddimension-p)
+  :inline t
+  (mbe :logic (if (vl-packeddimension-p x)
+                  x
+                (vl-range-fix x))
+       :exec x)
+  :prepwork ((local (in-theory (enable vl-packeddimension-p))))
+  ///
+  (defthm vl-packeddimension-fix-when-vl-packeddimension-p
+    (implies (vl-packeddimension-p x)
+             (equal (vl-packeddimension-fix x)
+                    x))))
+
+(deffixtype vl-packeddimension
+  :pred vl-packeddimension-p
+  :fix vl-packeddimension-fix
+  :equiv vl-packeddimension-equiv
+  :define t
+  :forward t)
+
+(fty::deflist vl-packeddimensionlist
+  :elt-type vl-packeddimension
+  :elementp-of-nil nil)
+
+(defoption vl-maybe-packeddimension-p vl-packeddimension-p)
+
+
+(define vl-enumbasekind-p (x)
+  :parents (vl-enumbasetype-p)
+  :short "Kinds of base types for enums."
+  :long "<p>The SystemVerilog-2012 rules for @('enum_base_type') are:</p>
+
+@({
+      enum_base_type ::=
+          integer_atom_type   [signing]
+        | integer_vector_type [signing] [packed_dimension]
+        | type_identifier               [packed_dimension]
+})
+
+<p>A @('vl-enumbasetag-p') corresponds to the main part of this, i.e., it is
+either:</p>
+
+<ul>
+ <li>A string, corresponding to the name of the @('type_identifier')</li>
+ <li>A symbol like @(':vl-byte'), corresponding to an @('integer_atom_type'), or</li>
+ <li>A symbol like @(':vl-logic'), corresponding to an @('integer_vector_type').</li>
+</ul>
+
+<p>Per Section 6.19, the default type is @('int').</p>"
+
+  (or (stringp x)
+      ;; integer atom types
+      (eq x :vl-byte)
+      (eq x :vl-shortint)
+      (eq x :vl-int)
+      (eq x :vl-longint)
+      (eq x :vl-integer)
+      (eq x :vl-time)
+      ;; integer vector types
+      (eq x :vl-bit)
+      (eq x :vl-logic)
+      (eq x :vl-reg)))
+
+(define vl-enumbasekind-fix ((x vl-enumbasekind-p))
+  :returns (x-fix vl-enumbasekind-p)
+  :inline t
+  (mbe :logic (if (vl-enumbasekind-p x)
+                  x
+                :vl-logic)
+       :exec x)
+  ///
+  (defthm vl-enumbasekind-fix-when-vl-enumbasekind-p
+    (implies (vl-enumbasekind-p x)
+             (equal (vl-enumbasekind-fix x)
+                    x))))
+
+(deffixtype vl-enumbasekind
+  :pred vl-enumbasekind-p
+  :fix vl-enumbasekind-fix
+  :equiv vl-enumbasekind-equiv
+  :define t
+  :forward t)
+
+(defprod vl-enumbasetype
+  :tag :vl-enumbasetype
+  :layout :tree
+  :short "The base types for SystemVerilog enumerations."
+  ((kind    vl-enumbasekind-p)
+   (signedp booleanp :rule-classes :type-prescription)
+   (dim     vl-maybe-packeddimension-p))
+
+  :long "<p>The base type for an enumeration is given by the following
+SystemVerilog grammar rule:</p>
+
+@({
+      enum_base_type ::=
+          integer_atom_type [signing]
+        | integer_vector_type [signing] [packed_dimension]
+        | type_identifier [packed_dimension]
+})
+
+<p>The main part of this (integer_atom_type, integer_vector_type, or
+type_identifier) is captured by the <b>kind</b> field.</p>
+
+<p>The <b>signedp</b> field isn't sensible for @('type_identifiers') but we
+include it for uniformity.  For the other kinds of enums, it captures whether
+the @('signed') keyword was mentioned.  or @('unsigned') keywords were
+mentioned.</p>
+
+<p>The optional dimension, if applicable.  BOZO we don't currently support
+unsized dimensions.</p>")
+
+(defprod vl-enumitem
+  :tag :vl-enumitem
+  :layout :tree
+  :short "A single member of an @('enum')."
+  ;; enum_name_declaration ::=
+  ;;   enum_identifier [ [ integral_number [ : integral_number ] ] ] [ = constant_expression ]
+  ((name  stringp           :rule-classes :type-prescription)
+   (range vl-maybe-range-p)
+   (value vl-maybe-expr-p)))
+
+(fty::deflist vl-enumitemlist
+  :elt-type vl-enumitem-p
+  :elementp-of-nil nil)
+
+
+;    variable_dimension ::= unsized_dimension
+;                         | unpacked_dimension
+;                         | associative_dimension
+;                         | queue_dimension
+;
+;    unsized_dimension ::= '[' ']'
+;
+;    unpacked_dimension ::= '[' constant_range ']'
+;                         | '[' constant_expression ']'
+;
+;    associative_dimension ::= '[' data_type ']'
+;                            | '[' '*' ']'
+;
+;    queue_dimension ::= '[' '$' [ ':' constant_expression ] ']'
+
+(deftypes data-types
+
+; BOZO it's a little unfortunate to have to put these measures in here.
+; Without these measures, in the case where a STRUCTMEMBER is an atom, the
+; fixing function just recurs on (cadr x) and so on without ever checking
+; consp, so we just need to rig things up so that structmember can always recur
+; to datatype.  It'd be nice if that were more automatic.
+
+  (deftagsum vl-datatype
+    :measure (two-nats-measure (acl2-count x) 0)
+    (:vl-coretype
+     :layout :tree
+     :base-name vl-coretype
+     :short "Representation of basic SystemVerilog data types like @('integer')
+             and @('string'), and also @('void')."
+
+     ((name    vl-coretypename-p
+               "Kind of primitive data type, e.g., @('byte'), @('string'),
+                etc.")
+
+      (signedp booleanp :rule-classes :type-prescription
+               "Only valid for integer types, indicates whether the integer
+                type is signed or not.")
+
+      (pdims    vl-packeddimensionlist-p
+               "Only valid for integer vector types (bit, logic, reg).  If present
+                these are for an 'packed' array dimensions, i.e., the [7:0] part
+                of a declaration like @('bit [7:0] memory [255:0]').  There can be
+                arbitrarily many of these.")
+
+      (udims   vl-packeddimensionlist-p
+               "Unpacked array dimensions.")))
+
+    (:vl-struct
+     :layout :tree
+     :base-name vl-struct
+     :short "Representation of SystemVerilog structs."
+     ;; data_type ::= ... | struct_union [ 'packed' [signing] ] '{'
+     ;;                       struct_union_member { struct_union_member }
+     ;;                     '}' { packed_dimension }
+     ((packedp booleanp :rule-classes :type-prescription)
+      (signedp booleanp :rule-classes :type-prescription)
+      (members vl-structmemberlist-p)
+      (pdims    vl-packeddimensionlist-p)
+      (udims    vl-packeddimensionlist-p)))
+
+    (:vl-union
+     :layout :tree
+     :base-name vl-union
+     :short "Representation of SystemVerilog unions."
+     ;; data_type ::= ... | struct_union [ 'packed' [signing] ] '{'
+     ;;                       struct_union_member { struct_union_member }
+     ;;                     '}' { packed_dimension }
+     ((packedp booleanp :rule-classes :type-prescription)
+      (signedp booleanp :rule-classes :type-prescription)
+      (taggedp booleanp :rule-classes :type-prescription)
+      (members vl-structmemberlist-p)
+      (pdims    vl-packeddimensionlist-p)
+      (udims    vl-packeddimensionlist-p)))
+
+    (:vl-enum
+     :layout :tree
+     :base-name vl-enum
+     :short "Representation of SystemVerilog enumerations."
+     ;; data_type ::= ... | 'enum' [ enum_base_type ] '{'
+     ;;                        enum_name_declaration { ',' enum_name_declaration }
+     ;;                     '}' { packed_dimension }
+     ((basetype vl-enumbasetype)
+      (items    vl-enumitemlist-p)
+      (pdims    vl-packeddimensionlist-p)
+      (udims    vl-packeddimensionlist-p)))
+
+    (:vl-usertype
+     :layout :tree
+     :base-name vl-usertype
+     ;; data_type ::= ... | [ class_scope | package_scope ] type_identifier { packed_dimension }
+     ((kind vl-expr-p "Kind of this type, should be an identifier or some
+                       kind of scoped/hierarchical identifier.")
+      (pdims    vl-packeddimensionlist-p)
+      (udims    vl-packeddimensionlist-p)))
+
+
+    ;;  BOZO not yet implemented:
+    ;;
+    ;; data_type ::= ...
+    ;;  | 'virtual' [ 'interface' ] interface_identifier [ parameter_value_assignment ] [ '.' modport_identifier ]
+    ;;  | class_type
+    ;;  | type_reference
+    )
+
+  (fty::deflist vl-structmemberlist
+    :measure (two-nats-measure (acl2-count x) 0)
+    :elt-type vl-structmember
+    :elementp-of-nil nil)
+
+  (defprod vl-structmember
+    :measure (two-nats-measure (acl2-count x) 1)
+    :count vl-structmember-count
+    :tag :vl-structmember
+    :layout :tree
+    :short "A single member of a struct or union."
+    ;;   struct_union_member ::=  { attribute_instance } [random_qualifier]
+    ;;                            data_type_or_void
+    ;;                            list_of_variable_decl_assignments ';'
+    ((atts vl-atts-p)
+     (rand vl-randomqualifier-p)
+     (type vl-datatype-p)
+     ;; now we want a single variable_decl_assignment
+     (name stringp :rule-classes :type-prescription)
+     (rhs  vl-maybe-expr-p)
+     )
+    :long "<p>Currently our structure members are very limited.  In the long
+run we may want to support more of the SystemVerilog grammar.  It allows a list
+of variable declaration assignments, which can have fancy dimensions and
+different kinds of @('new') operators.</p>
+
+<p>Notes for the future:</p>
+
+@({
+   variable_decl_assignment ::=
+         variable_identifier { variable_dimension } [ '=' expression ]
+       | dynamic_array_variable_identifier unsized_dimension { variable_dimension } [ '=' dynamic_array_new ]
+       | class_variable_identifier [ '=' class_new ]
+})
+
+<p>These fancy _identifiers are all just identifiers.  So really this is:</p>
+
+@({
+     variable_decl_assignment ::=
+         identifier { variable_dimension }                   [ '=' expression ]
+       | identifier unsized_dimension { variable_dimension } [ '=' dynamic_array_new ]
+       | identifier                                          [ '=' class_new ]
+})
+
+<p>The @('new') keyword can occur in a variety of places.  One of these is
+related to defining constructors for classes, e.g., in class constructor
+prototypes/declarations we can have things like</p>
+
+@({
+     function ... new (...) ...
+})
+
+<p>And @('super.new(...)') and so on.  But for now let's think of these as
+separate cases; that is, our approach to @('new') in other contexts doesn't
+necessarily need to have anything to do with these constructors, which we might
+instead handle more explicitly.</p>
+
+<p>The other places where @('new') can occur are in:</p>
+
+@({
+    dynamic_array_new ::= new '[' expression ']' [ '(' expression ')' ]
+
+    class_new ::= [ class_scope ] 'new' [ '(' list_of_arguments ')' ]
+                | 'new' expression
+})
+
+<p>Which in turn can occur in blocking assignments:</p>
+
+@({
+         [some fancy lhs] = dynamic_array_new
+      or [some other fancy lhs] = class_new
+      or other things not involving new
+})
+
+<p>(Which is interesting because we also have to support a lot of other new
+kinds of assignments like @('+=') and @('*='), so maybe this could become a
+@('new=') kind of assignment or something.)</p>
+
+<p>And they can also occur in variable decl assignments:</p>
+
+@({
+          simple id [ = expression ]
+      or  some fancy lhs with some various dimensions [= dynamic_array_new]
+      or  some simple lhs [= class_new]
+})
+
+<p>Which can occur in:</p>
+
+<ul>
+<li>SVA assertion variable declarations</li>
+<li>Data declarations (e.g., top-level @('const suchandso = new ...')</li>
+<li>Structure members in structs and unions.</li>
+</ul>
+
+<p>So maybe we don't so much need these to be expressions.  Maybe we can get
+away with them as alternate kinds of assignments.</p>"))
+
+(define vl-datatype->pdims ((x vl-datatype-p))
+  :returns (pdims vl-packeddimensionlist-p)
+  (vl-datatype-case x
+    :vl-coretype x.pdims
+    :vl-struct x.pdims
+    :vl-union x.pdims
+    :vl-enum x.pdims
+    :vl-usertype x.pdims))
+
+(define vl-datatype->udims ((x vl-datatype-p))
+  :returns (udims vl-packeddimensionlist-p)
+  (vl-datatype-case x
+    :vl-coretype x.udims
+    :vl-struct x.udims
+    :vl-union x.udims
+    :vl-enum x.udims
+    :vl-usertype x.udims))
+
+(define vl-datatype-update-dims ((pdims vl-packeddimensionlist-p)
+                                 (udims vl-packeddimensionlist-p)
+                                 (x vl-datatype-p))
+  :returns (newx (and (vl-datatype-p newx)
+                      (eq (vl-datatype-kind newx) (vl-datatype-kind x))))
+  (vl-datatype-case x
+    :vl-coretype (change-vl-coretype x :pdims pdims :udims udims)
+    :vl-struct   (change-vl-struct   x :pdims pdims :udims udims)
+    :vl-union    (change-vl-union    x :pdims pdims :udims udims)
+    :vl-enum     (change-vl-enum     x :pdims pdims :udims udims)
+    :vl-usertype (change-vl-usertype x :pdims pdims :udims udims))
+  ///
+  (defthm vl-datatype-update-dims-of-own
+    (equal (vl-datatype-update-dims (vl-datatype->pdims x)
+                                    (vl-datatype->udims x)
+                                    x)
+           (vl-datatype-fix x))
+    :hints(("Goal" :in-theory (enable vl-datatype->udims
+                                      vl-datatype->pdims))))
+
+  (defthm vl-datatype->pdims-of-vl-datatype-update-dims
+    (equal (vl-datatype->pdims (vl-datatype-update-dims pdims udims x))
+           (vl-packeddimensionlist-fix pdims))
+    :hints(("Goal" :in-theory (enable vl-datatype->pdims))))
+
+  (defthm vl-datatype->udims-of-vl-datatype-update-dims
+    (equal (vl-datatype->udims (vl-datatype-update-dims pdims udims x))
+           (vl-packeddimensionlist-fix udims))
+    :hints(("Goal" :in-theory (enable vl-datatype->udims)))))
+
+(define vl-datatype-update-pdims ((pdims vl-packeddimensionlist-p) (x vl-datatype-p))
+  :enabled t
+  :prepwork ((local (in-theory (enable vl-datatype-update-dims vl-datatype->udims))))
+  :returns (newx (and (vl-datatype-p newx)
+                      (eq (vl-datatype-kind newx) (vl-datatype-kind x))))
+  (mbe :logic (vl-datatype-update-dims pdims (vl-datatype->udims x) x)
+       :exec  (vl-datatype-case x
+                  :vl-coretype (change-vl-coretype x :pdims pdims)
+                  :vl-struct (change-vl-struct x :pdims pdims)
+                  :vl-union (change-vl-union x :pdims pdims)
+                  :vl-enum (change-vl-enum x :pdims pdims)
+                  :vl-usertype (change-vl-usertype x :pdims pdims))))
+
+(define vl-datatype-update-udims ((udims vl-packeddimensionlist-p) (x vl-datatype-p))
+  :enabled t
+  :prepwork ((local (in-theory (enable vl-datatype-update-dims vl-datatype->pdims))))
+  :returns (newx (and (vl-datatype-p newx)
+                      (eq (vl-datatype-kind newx) (vl-datatype-kind x))))
+  (mbe :logic (vl-datatype-update-dims (vl-datatype->pdims x) udims x)
+       :exec  (vl-datatype-case x
+                  :vl-coretype (change-vl-coretype x :udims udims)
+                  :vl-struct (change-vl-struct x :udims udims)
+                  :vl-union (change-vl-union x :udims udims)
+                  :vl-enum (change-vl-enum x :udims udims)
+                  :vl-usertype (change-vl-usertype x :udims udims))))
+
+
+(defoption vl-maybe-datatype-p vl-datatype-p)
+
+
+(defval *vl-plain-old-integer-type*
+  :parents (vl-datatype)
+  (hons-copy (make-vl-coretype :name    :vl-integer
+                               :signedp t   ;; integer type is signed
+                               :pdims    nil ;; Not applicable to integers
+                               )))
+
+(defval *vl-plain-old-real-type*
+  :parents (vl-datatype)
+  (hons-copy (make-vl-coretype :name    :vl-real
+                               :signedp nil ;; Not applicable to reals
+                               :pdims    nil ;; Not applicable to reals
+                               )))
+
+(defval *vl-plain-old-time-type*
+  :parents (vl-datatype)
+  (hons-copy (make-vl-coretype :name    :vl-time
+                               :signedp nil ;; Not applicable to times
+                               :pdims    nil ;; Not applicable to times
+                               )))
+
+(defval *vl-plain-old-realtime-type*
+  :parents (vl-datatype)
+  (hons-copy (make-vl-coretype :name    :vl-realtime
+                               :signedp nil ;; Not applicable to realtimes
+                               :pdims    nil ;; Not applicable to realtimes
+                               )))
+
+(defval *vl-plain-old-wire-type*
+  :parents (vl-datatype)
+  (hons-copy (make-vl-coretype :name    :vl-logic
+                               :signedp nil
+                               :pdims   nil)))
+
+(defval *vl-plain-old-reg-type*
+  :parents (vl-datatype)
+  (hons-copy (make-vl-coretype :name    :vl-reg
+                               :signedp nil
+                               :pdims    nil)))
+
 
 (defprod vl-port
   :short "Representation of a single Verilog port."
@@ -202,11 +811,8 @@ expression-sizing) for details.</p>")
 
 (fty::deflist vl-portlist
               :elt-type vl-port-p
-              :true-listp nil)
-
-(deflist vl-portlist-p (x)
-  (vl-port-p x)
-  :elementp-of-nil nil)
+              :true-listp nil
+              :elementp-of-nil nil)
 
 (defprojection vl-portlist->exprs ((x vl-portlist-p))
   :parents (vl-portlist-p)
@@ -269,22 +875,18 @@ arguments of gate instances and most arguments of module instances.  See our
              "Says whether this port is an input, output, or bidirectional
               (inout) port.")
 
-   (signedp  booleanp
-             :rule-classes :type-prescription
-             "Whether the @('signed') keyword was present in the declaration;
-              but <b>warning</b>: per page 175, port declarations and net/reg
-              declarations must be checked against one another: if either
-              declaration includes the @('signed') keyword, then both are to be
-              considered signed.  The @(see loader) DOES NOT do this
-              cross-referencing automatically; instead the @(see portdecl-sign)
-              transformation needs to be run.")
+   (nettype  vl-maybe-nettypename-p)
 
-   (range    vl-maybe-range-p
-             "Indicates whether the input is a vector and, if so, how large the
-              input is.  Per page 174, if there is also a net declaration, then
-              the range must agree.  This is checked in @(see
-              vl-portdecl-and-moduleitem-compatible-p) as part of our notion of
-              @(see reasonable) modules.")
+   (type     vl-datatype-p
+             "The type and size information for this port.  <b>Warning</b>: per
+              Verilog-2005 page 175, port declarations and net/reg declarations
+              must be checked against one another: if either declaration
+              includes the @('signed') keyword, then both are to be considered
+              signed.  The @(see loader) DOES NOT do this cross-referencing
+              automatically; instead the @(see portdecl-sign) transformation
+              needs to be run.  See also @(see
+              vl-portdecl-and-moduleitem-compatible-p) which is part of our
+              notion of @(see reasonable) modules.")
 
    (atts     vl-atts-p
              "Any attributes associated with this declaration.")
@@ -321,17 +923,14 @@ input supply0 b;
 <p>And so on.  For some time, our @('vl-port-p') structures included a
 @('type') field.  However, upon a closer reading of the Verilog-2005 standard,
 we have learned that the proper way to handle these is to simultaneously
-introduce a @(see vl-netdecl-p) alongside the @('vl-portdecl-p') that we would
+introduce a @(see vl-vardecl) alongside the @('vl-portdecl-p') that we would
 ordinarily create for a port declaration.  See, e.g., the second paragraph from
 the bottom on Page 174.</p>")
 
 (fty::deflist vl-portdecllist
               :elt-type vl-portdecl-p
-              :true-listp nil)
-
-(deflist vl-portdecllist-p (x)
-  (vl-portdecl-p x)
-  :elementp-of-nil nil)
+              :true-listp nil
+              :elementp-of-nil nil)
 
 
 (defprod vl-gatedelay
@@ -375,7 +974,6 @@ review the rules for correctly computing these delays.</p>")
              (or (not x)
                  (consp x)))
     :rule-classes :compound-recognizer))
-
 
 (defenum vl-dstrength-p
   (:vl-supply
@@ -532,7 +1130,7 @@ assignment statement, e.g., </p>
 
 <p>that the delay is to be associated with each assignment, and NOT with the
 net declaration for @('a').  Net delays are different than assignment delays;
-see @(see vl-netdecl-p) for additional discussion.</p>
+see @(see vl-vardecl) for additional discussion.</p>
 
 <p><b>Warning:</b> Although the parser is careful to handle the delay
 correctly, we are generally uninterested in delays and our transforms may not
@@ -553,16 +1151,15 @@ properly preserve them.</p>")
 
 (fty::deflist vl-assignlist
               :elt-type vl-assign-p
-              :true-listp nil)
-
-(deflist vl-assignlist-p (x)
-  (vl-assign-p x)
-  :elementp-of-nil nil)
+              :true-listp nil
+              :elementp-of-nil nil)
 
 (defprojection vl-assignlist->lvalues ((x vl-assignlist-p))
   :returns (lvalues vl-exprlist-p)
   :parents (vl-assignlist-p)
   (vl-assign->lvalue x))
+
+
 
 ; BOZO I'm not going to introduce this yet.  I think we should rename the expr
 ; field to rhs first, to prevent confusion between this and allexprs.
@@ -573,78 +1170,102 @@ properly preserve them.</p>")
 ;;   :nil-preservingp t)
 
 
-(defenum vl-netdecltype-p
-  (:vl-wire ;; Most common so it goes first.
-   :vl-supply0
-   :vl-supply1
-   :vl-tri
-   :vl-triand
-   :vl-trior
-   :vl-tri0
-   :vl-tri1
-   :vl-trireg
-   :vl-uwire
-   :vl-wand
-   :vl-wor)
-  :parents (vl-netdecl-p)
-  :short "Representation of wire types."
-
-  :long "<p>Wires in Verilog can be given certain types.  We
-represent these types using certain keyword symbols, whose names
-correspond to the possible types.</p>")
-
-(defoption vl-maybe-netdecltype-p vl-netdecltype-p
-  ///
-  (defthm type-when-vl-maybe-netdecltype-p
-    (implies (vl-netdecltype-p x)
-             (and (symbolp x)
-                  (not (equal x t))))
-    :rule-classes :compound-recognizer))
-
-(defprod vl-netdecl
-  :short "Representation of net (wire) declarations."
-  :tag :vl-netdecl
+(defprod vl-alias
+  :short "Representation of an alias declaration."
+  :tag :vl-alias
   :layout :tree
-  ((name       stringp
-               :rule-classes :type-prescription
-               "Name of the wire being declared.")
 
-   (type       vl-netdecltype-p
-               "Wire type, e.g., @('wire'), @('supply1'), etc.")
+  ((lhs     vl-expr-p "The left-hand side.")
+   (rhs     vl-expr-p "The right-hand side.")
+   (atts     vl-atts-p
+             "Any attributes associated with this alias.")
+   (loc      vl-location-p
+             "Where the assignment was found in the source code.")))
 
-   (range      vl-maybe-range-p
-               "A single, optional range that preceeds the wire name; this
-                ordinarily governs the \"size\" of a wire.")
+(fty::deflist vl-aliaslist
+  :elt-type vl-alias-p
+  :true-listp nil
+  :elementp-of-nil nil)
 
-   (arrdims    vl-rangelist-p
-               "Used for arrays like memories; see below.")
+(defenum vl-lifetime-p
+  (nil
+   :vl-static
+   :vl-automatic)
+  :short "Representation of the lifetime of a variable.")
+
+(defprod vl-vardecl
+  :short "Representation of a single variable or net (e.g., wire) declaration."
+  :tag :vl-vardecl
+  :layout :tree
+
+  ((name    stringp
+            :rule-classes :type-prescription
+            "Name of the variable being declared.")
+
+   (type    vl-datatype-p
+            "Kind of net or variable, e.g., wire, logic, reg, integer, real,
+             etc.  Also contains sizing information.")
+
+   (nettype vl-maybe-nettypename-p
+            "If NIL, then this is really a variable, not a net.")
+
+   (constp   booleanp
+             :rule-classes :type-prescription
+             "(Variables only).  Indicates whether the @('const') keyword was
+             provided.")
+
+   (varp     booleanp
+             :rule-classes :type-prescription
+             "(Variables only).  Indicates whether the @('var') keyword was
+             provided.")
+
+   (lifetime vl-lifetime-p
+             "(Variables only).  See SystemVerilog-2012 Section 6.21.  There
+              are pretty complex rules for variable lifetimes.  BOZO we don't
+              really support this yet in any meaningful way, and the
+              @('lifetime') field is currently just used to record whether a
+              @('static') or @('automatic') keyword was found during parsing.")
+
+   (initval vl-maybe-expr-p
+            "(Variables only).  BOZO.  When present, indicates the initial
+             value for the variable, e.g., if one writes @('integer i = 3;'),
+             then the @('initval') will be the @(see vl-expr-p) for @('3').
+             When wire declarations have initial values, the parser turns them
+             into separate continuous assignment statements, instead.  It
+             should turn these into separate initial blocks, I think.")
 
    (vectoredp  booleanp
                :rule-classes :type-prescription
-               "True if the @('vectored') keyword was explicitly provided.")
+               "(Nets only) True if the @('vectored') keyword was explicitly
+                provided.")
 
    (scalaredp  booleanp
                :rule-classes :type-prescription
-               "True if the @('scalared') keyword was explicitly provided.")
+               "(Nets only) True if the @('scalared') keyword was explicitly
+                provided.")
 
-   (signedp    booleanp
-               :rule-classes :type-prescription
-               "Indicates whether the @('signed') keyword was supplied on this
-                declaration.  But <b>warning</b>: per page 175, port
-                declarations and net/reg declarations must be checked against
-                one another: if either declaration includes the @('signed')
-                keyword, then both are to be considered signed.  The parser
-                DOES NOT do this cross-referencing automatically; instead the
-                @(see portdecl-sign) transformation needs to be run.")
+   (delay      vl-maybe-gatedelay-p
+               "(Nets only) The delay associated with this wire, if any.
+                For instance, @('wire #1 foo').")
 
-   (delay      vl-maybe-gatedelay-p)
-   (cstrength  vl-maybe-cstrength-p)
-   (atts       vl-atts-p
-               "Any attributes associated with this declaration.")
-   (loc        vl-location-p
-               "Where the declaration was found in the source code."))
+   (cstrength  vl-maybe-cstrength-p
+               "(Trireg nets only).  The charge strength associated with the
+                net, if any.  For instance, @('trireg medium foo').")
 
-  :long "<p>Net declarations introduce new wires with certain properties (type,
+   (atts    vl-atts-p
+            "Any attributes associated with this declaration.")
+
+   (loc     vl-location-p
+            "Where the declaration was found in the source code."))
+
+  :long "<p>Verilog-2005 and SystemVerilog-2012 distinguish between variables
+and nets.  Historically, VL also separated these concepts in its basic
+syntactic representation.  However, we eventually decided that merging together
+the two concepts into a single syntactic representation would be simpler.  So,
+today, @('vl-vardecl-p') objects are used for both @('net') declarations and
+for @('reg')/variable declarations.</p>
+
+<p>Net declarations introduce new wires with certain properties (type,
 signedness, size, and so on).  Here are some examples of basic net
 declarations.</p>
 
@@ -667,47 +1288,40 @@ endmodule
 })
 
 <p>You can also string together net declarations, e.g., by writing @('wire w1,
-w2;').</p>
-
-<p>In all of these cases, our parser generates a @('vl-netdecl-p') object for
-each declared wire.  That is, each @('vl-netdecl-p') is a declaration of a
-single wire.</p>
-
-<p>Note that when an assignment is also present, the parser creates a
-corresponding, separate @(see vl-assign-p) object to contain the assignment.
-Similarly, when using the combined net/port declaration format, a separate
-@(see vl-portdecl-p) object is generated.  Hence, each @('vl-netdecl-p') really
-and truly only represents a declaration.</p>
-
+w2;').  In all of these cases, our parser generates a separate
+@('vl-vardecl-p') object for each declared wire.  When an assignment is also
+present, the parser creates a corresponding, separate @(see vl-assign-p) object
+to contain the assignment.  Hence, each @('vl-vardecl-p') really and truly only
+represents a declaration.  Similarly, combined variable declarations such as
+\"integer a, b\" are split apart into multiple, individual declarations.</p>
 
 <h4>Arrays</h4>
 
-<p>The @('arrdims') fields is for arrays.  Normally, you do not encounter
-these.  For instance, a wide wire declaration like this is <b>not</b> an
-array:</p>
+<p>The @('dims') fields is for arrays.  Normally, you do not encounter these.
+For instance, a wide wire declaration like this is <b>not</b> an array:</p>
 
 @({
   wire [4:0] w;
 })
 
 <p>Instead, the @('[4:0]') part here is the @('range') of the wire and its
-@('arrdims') are just @('nil').</p>
+@('dims') are just @('nil').</p>
 
-<p>In contrast, the @('arrdims') are a list of ranges, also optional, which
-follow the wire name.  For instance, the arrdims of @('v') below is a singleton
-list with the range @('[4:0]').</p>
+<p>In contrast, the @('dims') are a list of ranges, also optional, which follow
+the wire name.  For instance, the arrdims of @('v') below is a singleton list
+with the range @('[4:0]').</p>
 
 @({
   wire v [4:0];
 })
 
-<p>Be aware that range and arrdims really are <b>different</b> things; @('w')
+<p>Be aware that range and dims really are <b>different</b> things; @('w')
 and @('v') are <i>not</i> equivalent except for their names.  In particular,
 @('w') is a single, 5-bit wire, while @('v') is an array of five one-bit
 wires.</p>
 
 <p>Things are more complicated when a declaration includes both a range and
-arrdims.  For instance</p>
+dims.  For instance</p>
 
 @({
 wire [4:0] a [10:0];
@@ -772,23 +1386,21 @@ for net declarations.</p>
 <p>The @('cstrength') field is only applicable to @('trireg')-type nets.  It
 will be @('nil') for all other nets, and will also be @('nil') on @('trireg')
 nets that do not explicitly give a charge strength.  Note that
-@('vl-netdecl-p') does not enforce the requirement that only triregs have
+@('vl-vardecl-p') does not enforce the requirement that only triregs have
 charge strengths, but the parser does.</p>
 
 <p><b>Warning:</b> we have not really paid attention to charge strengths, and
 our transformations may not preserve it correctly.</p>")
 
-(fty::deflist vl-netdecllist
-              :elt-type vl-netdecl-p
-              :true-listp nil)
+(fty::deflist vl-vardecllist
+              :elt-type vl-vardecl-p
+              :true-listp nil
+              :elementp-of-nil nil)
 
-(deflist vl-netdecllist-p (x)
-  (vl-netdecl-p x)
-  :elementp-of-nil nil)
 
 
 (defprod vl-plainarg
-  :parents (syntax vl-arguments-p)
+  :parents (vl-arguments-p)
   :short "Representation of a single argument in a plain argument list."
   :tag :vl-plainarg
   :layout :tree
@@ -803,11 +1415,10 @@ our transformations may not preserve it correctly.</p>")
              :rule-classes
              ((:type-prescription)
               (:rewrite
-               :corollary (implies (force (vl-plainarg-p x))
-                                   (equal (stringp (vl-plainarg->portname x))
-                                          (if (vl-plainarg->portname x)
-                                              t
-                                            nil)))))
+               :corollary (equal (stringp (vl-plainarg->portname x))
+                                 (if (vl-plainarg->portname x)
+                                     t
+                                   nil))))
              "Not part of the Verilog syntax.  This <b>may</b> indicate the
               name of the port (i.e., the <i>formal</i>) that this expression
               is connected to; see below.")
@@ -850,30 +1461,28 @@ a name, some arguments to module instances may also not be given
 portnames.</p>")
 
 (fty::deflist vl-plainarglist
-              :elt-type vl-plainarg-p
-              :true-listp nil)
-
-(deflist vl-plainarglist-p (x)
-  (vl-plainarg-p x)
+  :parents (vl-arguments-p)
+  :elt-type vl-plainarg-p
+  :true-listp nil
   :elementp-of-nil nil)
 
 (fty::deflist vl-plainarglistlist
-              :elt-type vl-plainarglist-p
-              :true-listp nil)
-
-(deflist vl-plainarglistlist-p (x)
-  (vl-plainarglist-p x)
+  :parents (vl-arguments-p)
+  :elt-type vl-plainarglist-p
+  :true-listp nil
   :elementp-of-nil t
   ///
   (defthm vl-plainarglist-p-of-strip-cars
     (implies (and (vl-plainarglistlist-p x)
                   (all-have-len x n)
                   (not (zp n)))
-             (vl-plainarglist-p (strip-cars x))))
+             (vl-plainarglist-p (strip-cars x)))
+    :hints(("Goal" :in-theory (enable strip-cars))))
 
   (defthm vl-plainarglistlist-p-of-strip-cdrs
     (implies (vl-plainarglistlist-p x)
-             (vl-plainarglistlist-p (strip-cdrs x)))))
+             (vl-plainarglistlist-p (strip-cdrs x)))
+    :hints(("Goal" :in-theory (enable strip-cdrs)))))
 
 (defprojection vl-plainarglist->exprs ((x vl-plainarglist-p))
   (vl-plainarg->expr x)
@@ -900,6 +1509,16 @@ portnames.</p>")
          "The <i>actual</i> being connected to this port; may be
           @('nil') for blank ports.")
 
+   (nameonly-p booleanp
+               "Indicates that this argument is an implicit named port
+                connection, i.e., of the form @('.name').  SystemVerilog allows
+                ports connections such as @('.foo, .bar, .baz').  This syntax
+                is equivalent to @('.foo(foo), .bar(bar), .baz(baz)'), except
+                that the names of these wires are required to exist in the
+                instantiating module, i.e., no implicit nets are to be created.
+                Note: the @('expr') for such a port should just be a simple
+                idexpr.")
+
    (atts vl-atts-p
          "Any attributes associated with this argument."))
 
@@ -915,53 +1534,259 @@ directions.</p>")
 
 (fty::deflist vl-namedarglist
               :elt-type vl-namedarg-p
-              :true-listp nil)
-
-(deflist vl-namedarglist-p (x)
-  (vl-namedarg-p x)
-  :elementp-of-nil nil)
-
+              :true-listp nil
+              :elementp-of-nil nil)
 
 (deftagsum vl-arguments
-  :short "Representation of arguments to a module instance (for ports and also
-for parameters)."
+  :short "Representation of arguments to a module instance (for ports, not
+parameters)."
 
-  :long "<p>There are two kinds of argument lists for module instantiations,
-which we call <i>plain</i> and <i>named</i> arguments.</p>
+  :long "<p>There are two kinds of argument lists for the ports of module
+instantiations, which we call <i>plain</i> and <i>named</i> arguments.</p>
 
 @({
   modname instname ( 1, 2, 3 );             <-- \"plain\" arguments
   modname instname ( .a(1), .b(2), .c(3) ); <-- \"named\" arguments
 })
 
-<p>Similarly, named or plain argument lists can be used in order to give
-parameters to a module, e.g.,</p>
-
-@({
-  modname #(.width(6)) instname(o, a, b);
-  modname #(6) instname(o, a, b);
-})
-
 <p>A @('vl-arguments-p') structure represents an argument list of either
 variety.</p>"
 
-  (:named ((args vl-namedarglist-p)))
-  (:plain ((args vl-plainarglist-p))))
+  (:vl-arguments-plain
+   :base-name vl-arguments-plain
+   ((args vl-plainarglist-p
+          "The actuals to the instance in order, e.g., @('1, 2, 3').")))
+
+  (:vl-arguments-named
+   :base-name vl-arguments-named
+   ((args vl-namedarglist-p
+          "The actuals to the instance and their names, e.g., @('.a(1), .b(2), .c(3)').")
+    (starp booleanp
+           "Indicates whether the @('.*') token was present."))))
 
 (define vl-arguments->args ((x vl-arguments-p))
   :inline t
   :enabled t
   (vl-arguments-case x
-    :named x.args
-    :plain x.args))
+    :vl-arguments-named x.args
+    :vl-arguments-plain x.args))
 
 (fty::deflist vl-argumentlist
               :elt-type vl-arguments-p
-              :true-listp nil)
+              :true-listp nil
+              :elementp-of-nil nil)
 
-(deflist vl-argumentlist-p (x)
-  (vl-arguments-p x)
-  :elementp-of-nil nil)
+
+
+(defsection vl-paramvalue
+  :parents (vl-paramargs)
+  :short "Representation for the actual values given to parameters."
+  :long "<p>In Verilog-2005, the values for a parameterized module were always
+ordinary expressions, e.g., 3 and 5 below.</p>
+
+@({
+      myalu #(.delay(3), .width(5)) alu1 (...);
+})
+
+<p>However, in SystemVerilog-2012 there can also be type parameters.  For
+instance, a valid instance might look like:</p>
+
+@({
+      myalu #(.delay(3), .Bustype(logic [63:0])) myinst (...);
+})
+
+<p>The @('vl-paramvalue-p') is a sum-of-products style type that basically
+corresponds to the SystemVerilog @('param_exprewssion') grammar rule:</p>
+
+@({
+     param_expression ::= mintypmax_expression | data_type | '$'
+})
+
+<p>But note that @('$') is a valid @(see vl-expr-p) so this essentially
+collapses into only two cases: expression or data type.</p>")
+
+(encapsulate
+  ()
+  (local (xdoc::set-default-parents vl-paramvalue))
+
+  (local (defthmd l0
+           (implies (vl-expr-p x)
+                    (equal (vl-expr-kind x)
+                           (tag x)))
+           :hints(("Goal" :in-theory (enable vl-expr-kind vl-expr-p tag)))))
+
+  (local (defthmd l1
+           (implies (vl-datatype-p x)
+                    (equal (vl-datatype-kind x)
+                           (tag x)))
+           :hints(("Goal" :in-theory (enable vl-datatype-kind tag vl-datatype-p)))))
+
+  (local (defthm l2
+           (implies (vl-expr-p x)
+                    (or (eq (tag x) :atom)
+                        (eq (tag x) :nonatom)))
+           :rule-classes :forward-chaining
+           :hints(("Goal" :use ((:instance l0))))))
+
+  (local (defthm l3
+           (implies (vl-datatype-p x)
+                    (not (or (eq (tag x) :atom)
+                             (eq (tag x) :nonatom))))
+           :rule-classes :forward-chaining
+           :hints(("Goal" :use ((:instance l1))))))
+
+
+  (define vl-paramvalue-p (x)
+    :short "Recognizer for valid @(see vl-paramvalue) structures."
+    (mbe :logic
+         (or (vl-expr-p x)
+             (vl-datatype-p x))
+         :exec
+         (b* ((tag (tag x)))
+           (if (or (eq tag :atom)
+                   (eq tag :nonatom))
+               (vl-expr-p x)
+             (vl-datatype-p x))))
+    ///
+    (defthm type-when-vl-paramvalue-p
+      (implies (vl-paramvalue-p x)
+               (consp x))
+      :rule-classes :compound-recognizer)
+
+    (defthm vl-paramvalue-p-forward
+      (implies (vl-paramvalue-p x)
+               (or (vl-expr-p x)
+                   (vl-datatype-p x)))
+      :rule-classes :forward-chaining)
+
+    (defthm vl-paramvalue-p-when-vl-expr-p
+      (implies (vl-expr-p x)
+               (vl-paramvalue-p x)))
+
+    (defthm vl-paramvalue-p-when-vl-datatype-p
+      (implies (vl-datatype-p x)
+               (vl-paramvalue-p x))))
+
+  (define vl-paramvalue-fix ((x vl-paramvalue-p))
+    :short "Fixing function for @(see vl-paramvalue) structures."
+    :inline t
+    :returns (x-fix vl-paramvalue-p)
+    (mbe :logic
+         (if (vl-expr-p x)
+             (vl-expr-fix x)
+           (vl-datatype-fix x))
+         :exec
+         x)
+    ///
+    (defthm vl-paramvalue-fix-when-vl-paramvalue-p
+      (implies (vl-paramvalue-p x)
+               (equal (vl-paramvalue-fix x)
+                      x))))
+
+  (deffixtype vl-paramvalue
+    :pred vl-paramvalue-p
+    :fix vl-paramvalue-fix
+    :equiv vl-paramvalue-equiv
+    :define t
+    :forward t)
+
+  (define vl-paramvalue-expr-p ((x vl-paramvalue-p))
+    :short "Fast recognizer for @(see vl-paramvalue)s that are expressions."
+    :enabled t
+    :inline t
+    (mbe :logic (vl-expr-p (vl-paramvalue-fix x))
+         :exec (b* ((tag (tag x)))
+                 (or (eq tag :atom)
+                     (eq tag :nonatom)))))
+
+  (define vl-paramvalue-datatype-p ((x vl-paramvalue-p))
+    :short "Fast recognizer for @(see vl-paramvalue)s that are expressions."
+    :enabled t
+    :inline t
+    (mbe :logic (vl-datatype-p (vl-paramvalue-fix x))
+         :exec (not (vl-paramvalue-expr-p x))))
+
+  (defxdoc vl-paramvalue-case
+    :short "Case macro for @(see vl-paramvalue)s."
+    :long "@(def vl-paramvalue-case)")
+
+  (defmacro vl-paramvalue-case (x &key expr datatype)
+    `(if (vl-paramvalue-expr-p ,x)
+         ,expr
+       ,datatype)))
+
+(fty::deflist vl-paramvaluelist
+              :elt-type vl-paramvalue-p
+              :true-listp nil
+              :elementp-of-nil nil
+              ///
+              (defthm vl-paramvaluelist-p-when-vl-exprlist-p
+                (implies (vl-exprlist-p x)
+                         (vl-paramvaluelist-p x))
+                :hints(("Goal" :induct (len x)))))
+
+(local (defthm vl-paramvalue-fix-nonnil
+         (vl-paramvalue-fix x)
+         :hints(("Goal" :in-theory (enable (tau-system))))
+         :rule-classes :type-prescription))
+
+(defoption vl-maybe-paramvalue-p vl-paramvalue-p
+  :parents (vl-paramargs)
+  ///
+  (defthm type-when-vl-maybe-paramvalue-p
+    (implies (vl-maybe-paramvalue-p x)
+             (or (consp x)
+                 (not x)))
+    :rule-classes :compound-recognizer))
+
+(defprod vl-namedparamvalue
+  :parents (vl-paramargs)
+  :short "Representation of a single, named parameter argument."
+  :tag :vl-namedparamvalue
+  :layout :tree
+
+  ((name     stringp :rule-classes :type-prescription
+             "The name of the parameter, e.g., @('size') in @('.size(3)')")
+
+   (value    vl-maybe-paramvalue-p
+             "The value being given to this parameter, e.g., @('3') in @('.size(3)').
+              In Verilog-2005 this is usually an expression but might also be
+              @('nil') because the value can be omitted.  SystemVerilog-2012
+              extends this to also allow data types.")))
+
+(fty::deflist vl-namedparamvaluelist
+              :elt-type vl-namedparamvalue-p
+              :true-listp nil
+              :elementp-of-nil nil)
+
+(deftagsum vl-paramargs
+  :short "Representation of the values to use for a module instance's
+  parameters (not ports)."
+
+  :long "<p>There are two kinds of argument lists for the parameters of module
+instantiations, which we call <i>plain</i> and <i>named</i> arguments.</p>
+
+@({
+  myalu #(3, 6) alu1 (...);                  <-- \"plain\" arguments
+  myalu #(.size(3), .delay(6)) alu2 (...);   <-- \"named\" arguments
+})
+
+<p>A @('vl-paramargs-p') structure represents an argument list of either
+variety.</p>"
+
+  (:vl-paramargs-named
+   :base-name vl-paramargs-named
+   ((args vl-namedparamvaluelist-p)))
+
+  (:vl-paramargs-plain
+   :base-name vl-paramargs-plain
+   ((args vl-paramvaluelist-p))))
+
+(define vl-paramargs-empty-p ((x vl-paramargs-p))
+  :parents (vl-paramargs)
+  (vl-paramargs-case x
+    :vl-paramargs-named (atom x.args)
+    :vl-paramargs-plain (atom x.args)))
 
 
 (defprod vl-modinst
@@ -984,7 +1809,7 @@ instance."
               "When present, indicates that this is an array of instances,
                instead of a single instance.")
 
-   (paramargs vl-arguments-p
+   (paramargs vl-paramargs-p
               "Values to use for module parameters, e.g., this might specify
                the width to use for an adder module, etc.")
 
@@ -1021,11 +1846,8 @@ represents exactly one instance (or instance array).</p>")
 
 (fty::deflist vl-modinstlist
               :elt-type vl-modinst-p
-              :true-listp nil)
-
-(deflist vl-modinstlist-p (x)
-  (vl-modinst-p x)
-  :elementp-of-nil nil)
+              :true-listp nil
+              :elementp-of-nil nil)
 
 
 (defenum vl-gatetype-p
@@ -1135,162 +1957,73 @@ enforces these restrictions, we do not encode them into the definition of
 
 (fty::deflist vl-gateinstlist
               :elt-type vl-gateinst-p
-              :true-listp nil)
-
-(deflist vl-gateinstlist-p (x)
-  (vl-gateinst-p x)
-  :elementp-of-nil nil)
+              :true-listp nil
+              :elementp-of-nil nil)
 
 
 
-(defenum vl-vardecltype-p
-  (:vl-integer
-   :vl-real
-   :vl-time
-   :vl-realtime)
-  :short "Representation of variable types."
-  :long "<p>We represent Verilog's variable types with the keyword symbols
-recognized by @(call vl-vardecltype-p).</p>
 
-<p><b>BOZO</b> consider consolidating variable and register declarations into a
-single parse tree element by adding an extra reg type to vl-vardecl-p.</p>")
+(deftagsum vl-paramtype
+  :parents (vl-paramdecl)
+  :short "Representation of the kind and default for a parameter declaration."
 
-(defprod vl-vardecl
-  :short "Representation of a single variable declaration."
-  :tag :vl-vardecl
-  :layout :tree
-
-  ((name    stringp
-            :rule-classes :type-prescription
-            "Name of the variable being declared.")
-
-   (type    vl-vardecltype-p
-            "Kind of variable, e.g., integer, real, etc.")
-
-   (arrdims vl-rangelist-p
-            "A list of array dimensions; empty unless this is an array or
-             multi-dimensional array of variables.")
-
-   (initval vl-maybe-expr-p
-            ;; BOZO eliminate initval and replace with an initial statement.
-            ;; Update the docs for vl-initial-p and also below when this is
-            ;; done.
-            "When present, indicates the initial value for the variable, e.g.,
-             if one writes @('integer i = 3;'), then the @('initval') will be
-             the @(see vl-expr-p) for @('3').")
-
-   (atts    vl-atts-p
-            "Any attributes associated with this declaration.")
-
-   (loc     vl-location-p
-            "Where the declaration was found in the source code."))
-
-  :long "<p>We use @('vl-vardecl-p')s to represent @('integer'), @('real'),
-@('time'), and @('realtime') variable declarations.  As with nets and ports,
-our parser splits up combined declarations such as \"integer a, b\" into
-multiple, individual declarations, so each @('vl-vardecl-p') represents only
-one declaration.</p>")
-
-
-(defprod vl-regdecl
-  :short "Representation of a single @('reg') declaration."
-  :tag :vl-regdecl
-  :layout :tree
-  ((name    stringp
-            :rule-classes :type-prescription
-            "Name of the register being declared.")
-
-   (signedp booleanp
-            :rule-classes :type-prescription
-            "Indicates whether they keyword @('signed') was used in the
-             declaration of the register.  By default, registers are
-             unsigned.")
-
-   (range   vl-maybe-range-p
-            "Size for wide registers; see also @(see vl-netdecl-p) for
-             more discussion of @('range') versus @('arrdims').")
-
-   (arrdims vl-rangelist-p
-            "Array dimensions for arrays of registers; see @(see
-             vl-netdecl-p) for more discussion.")
-
-   (initval vl-maybe-expr-p
-            ;; BOZO eliminate initval and replace with an initial statement.
-            ;; Update the docs for vl-initial-p and also below when this is
-            ;; done.
-            "When present, indicates the initial value for this register.")
-
-   (atts    vl-atts-p
-            "Any attributes associated with this declaration.")
-
-   (loc     vl-location-p
-            "Where the declaration was found in the source code."))
-
-  :long "<p>@('vl-regdecl-p') is our representation for a single @('reg')
-declaration.  Our parser splits up combined declarations such as \"reg a, b\"
-into multiple, individual declarations, so each @('vl-regdecl-p') represents
-only one declaration.</p>")
-
-
-(defprod vl-eventdecl
-  :short "Representation of a single event declaration."
-  :tag :vl-eventdecl
-  :layout :tree
-
-  ((name    stringp
-            :rule-classes :type-prescription
-            "Name of the event being declared.")
-   (arrdims vl-rangelist-p
-            "Indicates that this is an array of events?  Because that makes
-             sense?")
-   (atts    vl-atts-p
-            "Any attributes associated with this declaration.")
-   (loc     vl-location-p
-            "Where the declaration was found in the source code."))
-
-  :long "<p>BOZO document event declarations.</p>")
-
-
-(defenum vl-paramdecltype-p
-  (:vl-plain
-   :vl-integer
-   :vl-real
-   :vl-realtime
-   :vl-time
-   :vl-signed)
-  :short "Representation of parameter types."
-  :long "<p>We represent Verilog's parameter types with the keyword symbols
-recognized by @(call vl-paramdecltype-p).  The valid keywords are visible in
-its definition:</p>
-
-@(def vl-paramdecltype-p)
-
-<p>What do these types mean?  Here is the syntax for parameters:</p>
+  :long "<p>Both Verilog-2005 and SystemVerilog-2012 allow parameters to be
+declared without any explicit type information, e.g., one can write:</p>
 
 @({
-parameter_declaration ::=
-    'parameter' ['signed'] [range] list_of_param_assignments
-  | 'parameter' parameter_type list_of_param_assignments
-
-parameter_type ::=
-   'integer' | 'real' | 'realtime' | 'time'
+    parameter size = 5;          <-- no explicit type, signedness, or range
+    parameter signed foo = -1;   <-- explicitly signed, no explicit range
+    parameter [3:0] bar = 2;     <-- explicitly 4 bits, no explicit signedness
 })
 
-<p>In other words, every declaration either has:</p>
+<p>The ultimate, post-elaboration type and range of these parameters are
+described in Verilog-2005 Section 12.2 and in SystemVerilog-2012 sections
+6.20.2 and 23.10.  These rules are exotic.  When no explicit type/range is
+given, the final type/range is taken from whatever value is ultimately assigned
+to the parameter.  In other cases, i.e., there is only a signedness but no
+explicit range, or vice versa, then some aspects of the final type/range are
+determined by the value assigned to the parameter, and other aspects are
+governed by the parameter declaration itself.</p>
 
-<ul>
+<p>A consequence of these weird rules is that we cannot simply assign some
+default type to plain parameter declarations.  Instead, we need to know that
+the parameter doesn't have parts of its type specified.  To accommodate this,
+we use @(see vl-implicitvalueparam) structures when the type of a parameter is
+implicitly specified, or @(see vl-explicitvalueparam) structures for parameters
+with explicitly specified types.</p>
 
-<li>A \"parameter_type\" (@('integer'), @('real'), @('realtime'), or
-@('time')), in which case we use the symbols @(':vl-integer'), @(':vl-real'),
-@(':vl-time'), or @(':vl-realtime'); <b>OR</b></li>
+<p>All of the above parameters are <b>value parameters</b>.  In Verilog-2005,
+all parameters are value parameters.  However, in SystemVerilog-2012, it is
+also possible to have type parameters (See Section 6.20.3), e.g.,</p>
 
-<li>A @('signed') declaration without any other type, in which case we use
-@(':vl-signed'), <b>OR</b></li>
+@({
+    parameter type bus_t = logic [31:0];
+})
 
-<li>(most commonly) No type or sign declaration whatsoever, in which case we
-use @(':vl-plain').</li>
+<p>Type parameters are quite different from value parameters.  We represent
+their types as @(see vl-typeparam)s.</p>"
 
-</ul>")
+  (:vl-implicitvalueparam
+   :layout :tree
+   :base-name vl-implicitvalueparam
+   :short "Representation for implicitly specified value parameter types."
+   ((range   vl-maybe-range-p    "The range for this parameter, if provided.")
+    (sign    vl-maybe-exprtype-p "The signedness for this parameter, if provided.")
+    (default vl-maybe-expr-p     "The default value for this parameter, if provided.")))
+
+  (:vl-explicitvalueparam
+   :layout :tree
+   :base-name vl-explicitvalueparam
+   :short "Representation for explicitly specified value parameter types."
+   ((type    vl-datatype     "Type of this parameter.")
+    (default vl-maybe-expr-p "The default value for this parameter, if provided.")))
+
+  (:vl-typeparam
+   :layout :tree
+   :short "Representation for type parameter types."
+   :base-name vl-typeparam
+   ((default vl-maybe-datatype-p "The default type for this parameter, if provided."))))
+
 
 (defprod vl-paramdecl
   :short "Representation of a single @('parameter') or @('localparam')
@@ -1302,13 +2035,6 @@ declaration."
            :rule-classes :type-prescription
            "Name of the parameter being declared.")
 
-   (expr   vl-expr-p
-           "Default value for this parameter.")
-
-   (type   vl-paramdecltype-p
-           "Indicates the type of the parameter, e.g., @('signed'), @('integer'),
-            @('realtime'), etc.")
-
    (localp booleanp
            :rule-classes :type-prescription
            "True for @('localparam') declarations, @('nil') for @('parameter')
@@ -1319,9 +2045,10 @@ declaration."
             introduce named constants without polluting the @('`define')
             namespace.)")
 
-   (range  vl-maybe-range-p
-           "Some ridiculous thing allowed by the grammar and who knows what it
-            means.  Some description of it in 12.2.")
+   (type   vl-paramtype-p
+           "Indicates the type and default value of the parameter, and also
+            distinguishes between implicit/explicit value parameters and type
+            parameters.")
 
    (atts   vl-atts-p
            "Any attributes associated with this declaration.")
@@ -1329,8 +2056,7 @@ declaration."
    (loc    vl-location-p
            "Where the declaration was found in the source code."))
 
-  :long "<p>Parameters are discussed in 12.2.  Some examples of parameter
-declarations include:</p>
+  :long "<p>Some examples of parameter declarations include:</p>
 
 @({
 module mymod (a, b, ...) ;
@@ -1342,43 +2068,18 @@ endmodule
 
 (fty::deflist vl-vardecllist
               :elt-type vl-vardecl-p
-              :true-listp nil)
-
-(deflist vl-vardecllist-p (x)
-  (vl-vardecl-p x)
-  :elementp-of-nil nil)
-
-(fty::deflist vl-regdecllist
-              :elt-type vl-regdecl-p
-              :true-listp nil)
-
-(deflist vl-regdecllist-p (x)
-  (vl-regdecl-p x)
-  :elementp-of-nil nil)
-
-(fty::deflist vl-eventdecllist
-              :elt-type vl-eventdecl-p
-              :true-listp nil)
-
-(deflist vl-eventdecllist-p (x)
-  (vl-eventdecl-p x)
-  :elementp-of-nil nil)
+              :true-listp nil
+              :elementp-of-nil nil)
 
 (fty::deflist vl-paramdecllist
               :elt-type vl-paramdecl-p
-              :true-listp nil)
+              :true-listp nil
+              :elementp-of-nil nil)
 
-(deflist vl-paramdecllist-p (x)
-  (vl-paramdecl-p x)
-  :elementp-of-nil nil)
-
-(fty::deflist vl-paramdecllistlist
+(fty::deflist vl-paramdecllist-list
               :elt-type vl-paramdecllist-p
-              :true-listp nil)
-
-(deflist vl-paramdecllist-list-p (x)
-  (vl-paramdecllist-p x)
-  :elementp-of-nil t)
+              :true-listp nil
+              :elementp-of-nil t)
 
 
 
@@ -1386,45 +2087,35 @@ endmodule
 (deftranssum vl-blockitem
   :short "Recognizer for a valid block item."
   :long "<p>@('vl-blockitem-p') is a sum-of-products style type for recognizing
-valid block items.  The valid block item declarations are register
-declarations, variable declarations (integer, real, time, and realtime), event
-declarations, and parameter declarations (parameter and localparam), which we
-represent as @(see vl-regdecl-p), @(see vl-vardecl-p), @(see vl-eventdecl-p),
-and @(see vl-paramdecl-p) objects, respectively.</p>"
-  (vl-regdecl
-   vl-vardecl
-   vl-eventdecl
+valid block items.  The valid block item declarations include variable
+declarations and parameter declarations (parameter and localparam), which we
+represent as @(see vl-vardecl-p) and @(see vl-paramdecl-p) objects,
+respectively.</p>"
+  (vl-vardecl
    vl-paramdecl))
 
 (defthm vl-blockitem-p-tag-forward
   ;; BOZO is this better than the rewrite rule we currently add?
   (implies (vl-blockitem-p x)
-           (or (equal (tag x) :vl-regdecl)
-               (equal (tag x) :vl-vardecl)
-               (equal (tag x) :vl-eventdecl)
+           (or (equal (tag x) :vl-vardecl)
                (equal (tag x) :vl-paramdecl)))
   :rule-classes :forward-chaining)
 
 (fty::deflist vl-blockitemlist
-              :elt-type vl-blockitem-p
-              :true-listp nil)
-
-(deflist vl-blockitemlist-p (x)
-  (vl-blockitem-p x)
+  :elt-type vl-blockitem-p
+  :true-listp nil
   :elementp-of-nil nil
-  :rest
-  ((defthm vl-blockitemlist-p-when-vl-regdecllist-p
-     (implies (vl-regdecllist-p x)
-              (vl-blockitemlist-p x)))
-   (defthm vl-blockitemlist-p-when-vl-vardecllist-p
-     (implies (vl-vardecllist-p x)
-              (vl-blockitemlist-p x)))
-   (defthm vl-blockitemlist-p-when-vl-eventdecllist-p
-     (implies (vl-eventdecllist-p x)
-              (vl-blockitemlist-p x)))
-   (defthm vl-blockitemlist-p-when-vl-paramdecllist-p
-     (implies (vl-paramdecllist-p x)
-              (vl-blockitemlist-p x)))))
+  ///
+  (defthm vl-blockitemlist-p-when-vl-vardecllist-p
+    (implies (vl-vardecllist-p x)
+             (vl-blockitemlist-p x))
+    :hints(("Goal" :in-theory (enable vl-vardecllist-p
+                                      vl-blockitemlist-p))))
+  (defthm vl-blockitemlist-p-when-vl-paramdecllist-p
+    (implies (vl-paramdecllist-p x)
+             (vl-blockitemlist-p x))
+    :hints(("Goal" :in-theory (enable vl-paramdecllist-p
+                                      vl-blockitemlist-p)))))
 
 
 
@@ -1465,11 +2156,8 @@ applied to a Verilog expression.</p>")
 
 (fty::deflist vl-evatomlist
               :elt-type vl-evatom-p
-              :true-listp nil)
-
-(deflist vl-evatomlist-p (x)
-  (vl-evatom-p x)
-  :elementp-of-nil nil)
+              :true-listp nil
+              :elementp-of-nil nil)
 
 
 (defprod vl-eventcontrol
@@ -1544,6 +2232,11 @@ rid of repeateventcontrol.</p>")
                (equal (tag x) :vl-repeat-eventcontrol)))
   :rule-classes :forward-chaining)
 
+(local (defthm vl-delayoreventcontrol-fix-nonnil
+         (vl-delayoreventcontrol-fix x)
+         :hints(("Goal" :in-theory (enable (tau-system))))
+         :rule-classes :type-prescription))
+
 (defoption vl-maybe-delayoreventcontrol-p vl-delayoreventcontrol-p)
 
 
@@ -1581,6 +2274,17 @@ respectively.</p>")
 
 </ul>")
 
+(defenum vl-casecheck-p
+  (nil
+   :vl-unique
+   :vl-unique0
+   :vl-priority)
+  :parents (vl-stmt-p)
+  :short "Case statement violation checking mode."
+  :long "<p>For ordinary @('case') statements this will be @('nil').  The other
+values are for SystemVerilog's @('unique'), @('unique0'), and @('priority')
+case statements.</p>")
+
 (deftypes statements
   :short "Representation of a statement."
 
@@ -1596,22 +2300,21 @@ contain sub-statements and are mutually-recursive with @('vl-stmt-p').</p>"
                               VL-MAYBE-EXPR-P-OF-CDAR-WHEN-VL-ATTS-P
                               VL-ATTS-P-OF-CDR-WHEN-VL-ATTS-P
                               ACL2::CONSP-OF-CAR-WHEN-ALISTP
-                              car-when-all-equalp
+                              acl2::car-when-all-equalp
                               VL-EXPRLIST-P-OF-CAR-WHEN-VL-EXPRLISTLIST-P
-                              VL-EXPR-P-CAR-OF-VL-EXPRLIST-P
                               VL-EXPRLIST-P-OF-CDR-WHEN-VL-EXPRLIST-P
                               VL-EXPR-P-WHEN-VL-MAYBE-EXPR-P
                               VL-EXPRLISTLIST-P-OF-CDR-WHEN-VL-EXPRLISTLIST-P
-                              VL-EXPRLIST-P-CAR-OF-VL-EXPRLISTLIST-P
                               ))))
 
   (fty::deflist vl-stmtlist
     :elt-type vl-stmt-p
-    :true-listp t)
+    :true-listp t
+    :elementp-of-nil nil)
 
   (fty::defalist vl-caselist
-    :key-type vl-expr
-    :val-type vl-stmt
+    :key-type vl-exprlist   ;; The match expressions in a case item
+    :val-type vl-stmt       ;; The associated statement
     :true-listp t)
 
   (deftagsum vl-stmt
@@ -1744,32 +2447,32 @@ expressions that can follow the trigger?  Maybe they just become part of the
     (:vl-casestmt
      :base-name vl-casestmt
      :layout :tree
-     :short "Representation of case statements."
-     :long "<h4>General Form:</h4>
+     :short "Representation of case, casez, and casex statements."
+     :long "<p>Case statements are discussed in the Verilog-2005 standard,
+Section 9.5 (page 127), and in the SystemVerilog-2012 standard in Section
+12.5 (page 270).</p>
 
-@({
-case ( <test> )
-   <match-1> : <body-1>
-   <match-2> : <body-2>
-   ...
-   <match-N> : <body-N>
-   default : <default-body>
-endcase
-})
+<p>We do not yet support some SystemVerilog extensions, in particular:</p>
 
-<p>Note that in Verilog, case statements can include multiple <i>match</i>
-expressions on the same line, but our parser splits these up into separate
-lines with the same body.  Note also that the default case is optional, but we
-insert a null statement in such cases, so we can always give you a default
-statement.</p>
+<ul>
+ <li>@('case ... matches ...')</li>
+ <li>@('case ... inside ...')</li>
+</ul>"
 
-<p>Case statements are discussed in Section 9.5 (page 127).  There are three
-kinds of case statements, which we identify with @(see vl-casetype-p).</p>"
-
-     ((casetype vl-casetype-p "Case statement type: @('case'), @('casez'), @('casex').")
-      (test     vl-expr-p     "Expression being tested.")
-      (cases    vl-caselist-p "Match/body pairs.")
-      (default  vl-stmt-p     "Default statement.")
+     ((casetype vl-casetype-p
+                "Basic case statement type: @('case'), @('casez'), or
+                 @('casex').")
+      (check    vl-casecheck-p
+                "SystemVerilog violation checking specification: @('unique'),
+                 @('unique0'), @('priority'), or none.")
+      (test     vl-expr-p
+                "The expression being tested.")
+      (caselist vl-caselist-p
+                "The match expressions and associated statements.")
+      (default  vl-stmt-p
+                "The default statement, if provided.  This is optional in the
+                 Verilog and SystemVerilog syntax.  If it is omitted, our
+                 parser will put a null statement here.")
       (atts     vl-atts-p)))
 
     (:vl-ifstmt
@@ -1949,11 +2652,10 @@ block name to each variable name.</p>"
       (atts vl-atts-p)))
     ))
 
-(deflist vl-stmtlist-p (x)
-  (vl-stmt-p x)
-  :already-definedp t
-  :true-listp t)
 
+(local (in-theory (disable vl-stmtlist-p-of-cdr-when-vl-stmtlist-p
+                           consp-when-member-equal-of-vl-caselist-p
+                           vl-stmt-p-when-member-equal-of-vl-stmtlist-p)))
 
 
 ;                       INITIAL AND ALWAYS BLOCKS
@@ -1990,12 +2692,26 @@ register and variable declarations with initial values, i.e., @('reg r =
 0;').</p>")
 
 
+(defenum vl-alwaystype-p
+  (:vl-always
+   :vl-always-comb
+   :vl-always-latch
+   :vl-always-ff)
+  :short "Indicates the kind of an always statement."
+  :long "<p>In Verilog-2005 there are only @('always') statements.
+SystemVerilog-2012 adds @('always_comb'), @('always_latch'), and
+@('always_ff').</p>")
+
 (defprod vl-always
   :short "Representation of an always statement."
   :tag :vl-always
   :layout :tree
 
-  ((stmt vl-stmt-p
+  ((type vl-alwaystype-p
+         "What kind of @('always') block this is, e.g., @('always'), @('always_comb'),
+          @('always_latch'), or @('always_ff').")
+
+   (stmt vl-stmt-p
          "The actual statement, e.g., @('@(posedge clk) myreg <= in')
           below. The statement does not have to include a timing control like
           @('@(posedge clk)') or @('@(a or b or c)'), but often does.")
@@ -2016,17 +2732,11 @@ endmodule
 })")
 
 (fty::deflist vl-initiallist
-  :elt-type vl-initial-p)
-
-(deflist vl-initiallist-p (x)
-  (vl-initial-p x)
+  :elt-type vl-initial-p
   :elementp-of-nil nil)
 
 (fty::deflist vl-alwayslist
-  :elt-type vl-always-p)
-
-(deflist vl-alwayslist-p (x)
-  (vl-always-p x)
+  :elt-type vl-always-p
   :elementp-of-nil nil)
 
 
@@ -2124,10 +2834,7 @@ task ports can have types like @('integer') or @('real').</p>
 have input ports that are very similar to task ports.  So, we reuse
 @('vl-taskport-p') structures for function inputs.</p>")
 
-(fty::deflist vl-taskportlist :elt-type vl-taskport-p)
-
-(deflist vl-taskportlist-p (x)
-  (vl-taskport-p x)
+(fty::deflist vl-taskportlist :elt-type vl-taskport-p
   :elementp-of-nil nil)
 
 (defprojection vl-taskportlist->names ((x vl-taskportlist-p))
@@ -2214,10 +2921,7 @@ endfunction
 assign to a function's name to indicate its return value.</p>")
 
 (fty::deflist vl-fundecllist
-  :elt-type vl-fundecl-p)
-
-(deflist vl-fundecllist-p (x)
-  (vl-fundecl-p x)
+  :elt-type vl-fundecl-p
   :elementp-of-nil nil)
 
 (defprojection vl-fundecllist->names ((x vl-fundecllist-p))
@@ -2286,329 +2990,12 @@ but they can have fewer restrictions, e.g., they can have multiple outputs, can
 include delays, etc.</p>")
 
 (fty::deflist vl-taskdecllist
-  :elt-type vl-taskdecl-p)
-
-(deflist vl-taskdecllist-p (x)
-  (vl-taskdecl-p x)
+  :elt-type vl-taskdecl-p
   :elementp-of-nil nil)
 
 (defprojection vl-taskdecllist->names ((x vl-taskdecllist-p))
   :returns (names string-listp)
   (vl-taskdecl->name x))
-
-
-(defprod vl-module
-  :short "Representation of a single module."
-  :tag :vl-module
-  :layout :tree
-
-  ((name       stringp
-               :rule-classes :type-prescription
-               "The name of this module as a string.  The name is used to
-                instantiate this module, so generally we require that modules
-                in our list have unique names.  A module's name is initially
-                set when it is parsed, but it may not remain fixed throughout
-                simplification.  For instance, during @(see unparameterization)
-                a module named @('adder') might become @('adder$size=12').")
-
-   (params     "Any @('defparam') statements for this module.  BOZO these are
-                bad form anyway, but eventually we should provide better
-                support for them and proper structures.")
-
-   (ports      vl-portlist-p
-               "The module's ports list, i.e., @('a'), @('b'), and @('c') in
-                @('module mod(a,b,c);').")
-
-   (portdecls  vl-portdecllist-p
-               "The input, output, and inout declarations for this module,
-                e.g., @('input [3:0] a;').")
-
-   (netdecls   vl-netdecllist-p
-               "Wire declarations like @('wire [3:0] w;') and @('tri v;').
-                Does not include registers and variables (integer, real,
-                ...).")
-
-   (vardecls   vl-vardecllist-p
-               "Variable declarations like @('integer i;') and @('real
-               foo;').")
-
-   (regdecls   vl-regdecllist-p
-               "Register declarations like @('reg [3:0] r;').")
-
-   (eventdecls vl-eventdecllist-p
-               "Event declarations like @('event foo ...')")
-
-   (paramdecls vl-paramdecllist-p
-               "The parameter declarations for this module, e.g., @('parameter
-                width = 1;').")
-
-   (fundecls   vl-fundecllist-p
-               "Function declarations like @('function f ...').")
-
-   (taskdecls  vl-taskdecllist-p
-               "Task declarations, e.g., @('task foo ...').")
-
-   (assigns    vl-assignlist-p
-               "Top-level continuous assignments like @('assign lhs = rhs;').")
-
-   (modinsts   vl-modinstlist-p
-               "Instances of modules and user-defined primitives, e.g.,
-                @('adder my_adder1 (...);').")
-
-   (gateinsts  vl-gateinstlist-p
-               "Instances of primitive gates, e.g., @('and (o, a, b);').")
-
-   (alwayses   vl-alwayslist-p
-               "Always blocks like @('always @(posedge clk) ...').")
-
-   (initials   vl-initiallist-p
-               "Initial blocks like @('initial begin ...').")
-
-   (atts       vl-atts-p
-               "Any attributes associated with this top-level module.")
-
-   (minloc     vl-location-p
-               "Where we found the @('module') keyword for this module, i.e.,
-                the start of this module's source code.")
-
-   (maxloc     vl-location-p
-               "Where we found the @('endmodule') keyword for this module, i.e.,
-                the end of this module's source code.")
-
-   (origname   stringp
-               :rule-classes :type-prescription
-               "Original name of the module from parse time.  Unlike the
-                module's @('name'), this is meant to remain fixed throughout
-                all simplifications.  That is, while a module named @('adder')
-                might be renamed to @('adder$size=12') during @(see
-                unparameterization), its origname will always be @('adder').
-                The @('origname') is only intended to be used for display
-                purposes such as hyperlinking.")
-
-   (warnings   vl-warninglist-p
-               "A @(see warnings) accumulator that stores any problems we have
-                with this module.  Warnings are semantically meaningful only in
-                that any <i>fatal</i> warning indicates the module is invalid
-                and should not be discarded.  The list of warnings may be
-                extended by any transformation or well-formedness check.")
-
-   (comments   vl-commentmap-p
-               "A map from locations to source-code comments that occurred in
-                this module.  We expect that comments are never consulted for
-                any semantic meaning.  This field is mainly intended for
-                displaying the transformed module with comments preserved,
-                e.g., see @(see vl-ppc-module).")
-
-   (esim       "This is meant to be @('nil') until @(see esim) conversion, at
-                which point it becomes the E module corresponding to this
-                VL module.")))
-
-(fty::deflist vl-modulelist
-  :elt-type vl-module-p)
-
-(deflist vl-modulelist-p (x)
-  (vl-module-p x)
-  :elementp-of-nil nil)
-
-(define vl-module->hands-offp ((x vl-module-p))
-  :returns hands-offp
-  :parents (vl-module-p)
-  :short "Attribute that says a module should not be transformed."
-
-  :long "<p>We use the ordinary <see topic='@(url vl-atts-p)'>attribute</see>
-@('VL_HANDS_OFF') to say that a module should not be changed by @(see
-transforms).</p>
-
-<p>This is generally meant for use in VL @(see primitives).  The Verilog
-definitions of these modules sometimes make use of fancy Verilog constructs.
-Normally our transforms would try to remove these constructs, replacing them
-with instances of primitives.  This can lead to funny sorts of problems if we
-try to transform the primitives themselves.</p>
-
-<p>For instance, consider the @(see *vl-1-bit-delay-1*) module.  This module
-has a delayed assignment, @('assign #1 out = in').  If we hit this module with
-the @(see delayredux) transform, we'll try to replace the delay with an
-explicit instance of @('VL_1_BIT_DELAY_1').  But that's crazy: now the module
-is trying to instantiate itself!</p>
-
-<p>Similar issues can arise from trying to replace the @('always') statements
-in a primitive flop/latch with instances of flop/latch primitives, etc.  So as
-a general rule, we mark the primitives with @('VL_HANDS_OFF') and code our
-transforms to not modules with this attribute.</p>"
-  :inline t
-  (consp (assoc-equal "VL_HANDS_OFF" (vl-module->atts x))))
-
-(defprojection vl-modulelist->names ((x vl-modulelist-p))
-  :returns (names string-listp)
-  :parents (vl-modulelist-p)
-  (vl-module->name x))
-
-(defprojection vl-modulelist->paramdecls ((x vl-modulelist-p))
-  :returns (paramdecl-lists vl-paramdecllist-list-p)
-  :parents (vl-modulelist-p)
-  (vl-module->paramdecls x))
-
-(defmapappend vl-modulelist->modinsts (x)
-  (vl-module->modinsts x)
-  :parents (vl-modulelist-p)
-  :guard (vl-modulelist-p x)
-  :transform-true-list-p nil
-  :rest ((defthm vl-modinstlist-p-of-vl-modulelist->modinsts
-           (vl-modinstlist-p (vl-modulelist->modinsts x)))
-         (deffixequiv vl-modulelist->modinsts :args ((x vl-modulelist-p)))))
-
-(defprojection vl-modulelist->esims ((x vl-modulelist-p))
-  :parents (vl-modulelist-p)
-  (vl-module->esim x))
-
-
-(defoption vl-maybe-module-p vl-module-p
-  :short "Recognizer for an @(see vl-module-p) or @('nil')."
-  ///
-  (defthm type-when-vl-maybe-module-p
-    (implies (vl-maybe-module-p x)
-             (or (not x)
-                 (consp x)))
-    :rule-classes :compound-recognizer))
-
-
-(defprod vl-udp
-  :short "Representation of a user defined @('primitive')."
-  :tag :vl-udp
-  :layout :tree
-  ((name stringp
-         :rule-classes :type-prescription
-         "The name of this udp as a string.")
-   ;; ...
-   (warnings vl-warninglist-p)
-   (minloc   vl-location-p)
-   (maxloc   vl-location-p)
-   (atts     vl-atts-p)
-   (comments vl-commentmap-p))
-  :long "BOZO incomplete stub -- we don't really support user-defined
-  primitives yet.")
-
-(fty::deflist vl-udplist
-  :elt-type vl-udp-p)
-
-(deflist vl-udplist-p (x)
-  (vl-udp-p x)
-  :elementp-of-nil nil)
-
-(defprojection vl-udplist->names ((x vl-udplist-p))
-  :parents (vl-udplist-p)
-  :returns (names string-listp)
-  (vl-udp->name x))
-
-
-(defprod vl-config
-  :short "Representation of a single @('config')."
-  :tag :vl-config
-  :layout :tree
-  ((name stringp
-         :rule-classes :type-prescription
-         "The name of this config as a string.")
-   ;; ...
-   (warnings vl-warninglist-p)
-   (minloc   vl-location-p)
-   (maxloc   vl-location-p)
-   (atts     vl-atts-p)
-   (comments vl-commentmap-p))
-  :long "BOZO incomplete stub -- we don't really support configs yet.")
-
-(fty::deflist vl-configlist :elt-type vl-config-p)
-
-(deflist vl-configlist-p (x)
-  (vl-config-p x)
-  :elementp-of-nil nil)
-
-(defprojection vl-configlist->names ((x vl-configlist-p))
-  :parents (vl-configlist-p)
-  :returns (names string-listp)
-  (vl-config->name x))
-
-
-(defprod vl-package
-  :short "Representation of a single @('package')."
-  :tag :vl-package
-  :layout :tree
-  ((name stringp
-         :rule-classes :type-prescription
-         "The name of this package as a string.")
-   ;; ...
-   (warnings vl-warninglist-p)
-   (minloc   vl-location-p)
-   (maxloc   vl-location-p)
-   (atts     vl-atts-p)
-   (comments vl-commentmap-p))
-  :long "BOZO incomplete stub -- we don't really support packages yet.")
-
-(fty::deflist vl-packagelist :elt-type vl-package-p)
-
-(deflist vl-packagelist-p (x)
-  (vl-package-p x)
-  :elementp-of-nil nil)
-
-(defprojection vl-packagelist->names ((x vl-packagelist-p))
-  :parents (vl-packagelist-p)
-  :returns (names string-listp)
-  (vl-package->name x))
-
-
-(defprod vl-interface
-  :short "Representation of a single @('interface')."
-  :tag :vl-interface
-  :layout :tree
-  ((name stringp
-         :rule-classes :type-prescription
-         "The name of this interface as a string.")
-   ;; ...
-   (warnings vl-warninglist-p)
-   (minloc   vl-location-p)
-   (maxloc   vl-location-p)
-   (atts     vl-atts-p)
-   (comments vl-commentmap-p))
-  :long "BOZO incomplete stub -- we don't really support packages yet.")
-
-(fty::deflist vl-interfacelist :elt-type vl-interface-p)
-
-(deflist vl-interfacelist-p (x)
-  (vl-interface-p x)
-  :elementp-of-nil nil)
-
-(defprojection vl-interfacelist->names ((x vl-interfacelist-p))
-  :parents (vl-interfacelist-p)
-  :returns (names string-listp)
-  (vl-interface->name x))
-
-
-
-(defprod vl-program
-  :short "Representation of a single @('program')."
-  :tag :vl-program
-  :layout :tree
-  ((name stringp
-         :rule-classes :type-prescription
-         "The name of this program as a string.")
-   ;; ...
-   (warnings vl-warninglist-p)
-   (minloc   vl-location-p)
-   (maxloc   vl-location-p)
-   (atts     vl-atts-p)
-   (comments vl-commentmap-p))
-  :long "BOZO incomplete stub -- we don't really support programs yet.")
-
-(fty::deflist vl-programlist :elt-type vl-program-p)
-
-(deflist vl-programlist-p (x)
-  (vl-program-p x)
-  :elementp-of-nil nil)
-
-(defprojection vl-programlist->names ((x vl-programlist-p))
-  :parents (vl-programlist-p)
-  :returns (names string-listp)
-  (vl-program->name x))
-
 
 
 (define vl-importpart-p (x)
@@ -2661,31 +3048,882 @@ transforms to not modules with this attribute.</p>"
    (loc  vl-location-p)
    (atts vl-atts-p)))
 
-(fty::deflist vl-importlist :elt-type vl-import-p)
-
-(deflist vl-importlist-p (x)
-  (vl-import-p x)
+(fty::deflist vl-importlist :elt-type vl-import-p
   :elementp-of-nil nil)
+
+(defprod vl-modport-port
+  :parents (vl-interface)
+  :short "A single port from a modport declaration."
+  :long  "<p>The syntax for this is:</p>
+@({
+ modport_simple_ports_declaration ::=
+ port_direction modport_simple_port { , modport_simple_port }
+
+ modport_simple_port ::=
+ port_identifier
+ | . port_identifier ( [ expression ] )
+ })
+
+<p>As with regular ports, if the expression is not provided then the port
+identifier is turned into an expression.  The variables used in the expression
+must be declared in the interface, but it is permissible for the expression to
+be non-sliceable, at least if it's an input.</p>"
+
+  ((name stringp         "Name of the port; often the same as the expr")
+   (dir  vl-direction-p  "Port direction")
+   (expr vl-maybe-expr-p "Expression in terms of the declared variables of the interface.")
+   (atts vl-atts-p       "attributes")
+   (loc  vl-location-p :default *vl-fakeloc*))
+  :prepwork ())
+
+(fty::deflist vl-modport-portlist
+  :elt-type vl-modport-port
+  :elementp-of-nil nil
+  :true-listp nil)
+
+(defprod vl-modport
+  :parents (vl-interface)
+  :short "A modport declaration within an interface"
+  :long "<p>Missing task/function import/exports and clocking blocks.</p>"
+  ((name      stringp                "the name of the modport declaration; often master or slave")
+   (ports     vl-modport-portlist-p  "the ports; names must be declared in the interface")
+   (atts      vl-atts-p              "attributes")
+   (loc       vl-location-p :default *vl-fakeloc*))
+  :tag :vl-modport)
+
+(fty::deflist vl-modportlist :elt-type vl-modport
+  :elementp-of-nil nil
+  :true-listp t)
+
+
+(defenum vl-fwdtypedefkind-p
+  (:vl-enum
+   :vl-struct
+   :vl-union
+   :vl-class
+   :vl-interfaceclass)
+  :parents (vl-fwdtypedef-p)
+  :short "Kinds of forward type declarations.")
+
+(defprod vl-fwdtypedef
+  :tag :vl-fwdtypedef
+  :short "Representation of a forward typedef like @('typedef struct foo_t;')."
+  ((atts vl-atts-p)
+   (kind vl-fwdtypedefkind-p)
+   (name stringp)
+   (loc  vl-location-p)))
+
+(fty::deflist vl-fwdtypedeflist
+  :elt-type vl-fwdtypedef-p
+  :elementp-of-nil nil)
+
+(defprod vl-typedef
+  :tag :vl-typedef
+  :short "Representation of a basic type declaration like @('typedef struct ... foo_t;')."
+  ((name stringp)
+   (type vl-datatype-p)
+   (atts vl-atts-p)
+   (minloc vl-location-p)
+   (maxloc vl-location-p)
+   (warnings vl-warninglist-p)
+   (comments vl-commentmap-p)))
+
+(defmacro vl-typedef->loc (x)
+  `(vl-typedef->minloc ,x))
+
+(fty::deflist vl-typedeflist
+  :elt-type vl-typedef-p
+  :elementp-of-nil nil)
+
+(defprojection vl-typedeflist->names ((x vl-typedeflist-p))
+  :parents (vl-typedeflist-p)
+  :returns (names string-listp)
+  (vl-typedef->name x))
+
+
+
+(encapsulate nil
+  (local (include-book "tools/templates" :dir :system))
+
+  (local (defconst *vl-modelement-typenames*
+           '(port
+             portdecl
+             assign
+             alias
+             vardecl
+             paramdecl
+             fundecl
+             taskdecl
+             modinst
+             gateinst
+             always
+             initial
+             typedef
+             fwdtypedef
+             modport)))
+
+  (local (defun types-mk-strsubst-alists (types)
+           (if (atom types)
+               nil
+             (cons `(("__TYPE__" ,(symbol-name (car types)) . vl-package))
+                   (types-mk-strsubst-alists (cdr types))))))
+
+  (local (defconst *strsubst-alists*
+           (types-mk-strsubst-alists *vl-modelement-typenames*)))
+
+  ;; (local (defun types-mk-atom-alists (types)
+  ;;          (if (atom types)
+  ;;              nil
+  ;;            (cons `((vl-type . ,(intern-in-package-of-symbol(car types)))
+  ;;                  (types-mk-atom-alists (cdr types)))))))
+
+  ;; (local (defconst *atom-alists*
+  ;;          (types-mk-atom-alists *vl-modelement-typenames*)))
+
+  (local (defun project-over-types-rec (template strsubst-alists)
+           (declare (xargs :mode :program))
+           (if (atom strsubst-alists)
+               nil
+             (cons (b* (((mv & val)
+                         (acl2::template-subst-rec nil nil nil (car strsubst-alists)
+                                                   template 'vl-package)))
+                     val)
+                   (project-over-types-rec template (cdr strsubst-alists))))))
+
+  (local (defun project-over-types (template)
+           (declare (xargs :mode :program))
+           (project-over-types-rec template *strsubst-alists*)))
+
+  (local (defun append-over-types-rec (template strsubst-alists)
+           (declare (xargs :mode :program))
+           (if (atom strsubst-alists)
+               nil
+             (append (b* (((mv & val)
+                           (acl2::template-subst-rec nil nil nil (car strsubst-alists)
+                                                     template 'vl-package)))
+                       val)
+                     (append-over-types-rec template (cdr strsubst-alists))))))
+
+  (local (defun append-over-types (template)
+           (declare (xargs :mode :program))
+           (append-over-types-rec template *strsubst-alists*)))
+
+
+  (make-event
+   `(progn
+      (deftranssum vl-modelement
+        :short "Recognizer for an arbitrary module element."
+
+        :long "<p>It is sometimes useful to be able to deal with module elements of
+arbitrary types.  For instance, we often use this in error messages, along with
+@(see vl-context-p), to describe where expressions occur.  We also use it in
+our @(see parser), where before module formation, the module elements are
+initially kept in a big, mixed list.</p>"
+        ,(project-over-types 'vl-__type__))
+
+      (fty::deflist vl-modelementlist
+        :elt-type vl-modelement-p
+        :elementp-of-nil nil
+        ///
+        (local (in-theory (enable vl-modelementlist-p)))
+        . ,(project-over-types
+            '(defthm vl-modelementlist-p-when-vl-__type__list-p
+               (implies (vl-__type__list-p x)
+                        (vl-modelementlist-p x)))))))
+
+
+  (local (in-theory (disable acl2::o<-of-two-nats-measure o< o<-when-natps nfix)))
+  (deftypes vl-genelement
+    ;; :prepwork 
+    ;; ((local (defthm nfix-when-natp
+    ;;           (implies (natp x)
+    ;;                    (equal (nfix x) x))
+    ;;           :hints(("Goal" :in-theory (enable nfix)))))
+    ;;  (local (in-theory (disable default-car default-cdr
+    ;;                             acl2::consp-of-car-when-alistp)))
+    ;;  (local (defthm my-o<-of-two-nats-measure-1
+    ;;           (implies (< (nfix a) (nfix b))
+    ;;                    (o< (two-nats-measure a c) (two-nats-measure b d)))
+    ;;           :hints(("Goal" :in-theory (enable acl2::o<-of-two-nats-measure)))))
+    ;;  (local (defthm my-o<-of-two-nats-measure-2
+    ;;           (implies (and (<= (nfix a) (nfix b))
+    ;;                         (< (nfix c) (nfix d)))
+    ;;                    (o< (two-nats-measure a c) (two-nats-measure b d)))
+    ;;           :hints(("Goal" :in-theory (enable acl2::o<-of-two-nats-measure)))))
+    ;;  )
+
+    (deftagsum vl-genelement
+
+      ;; NOTE: According to the SystemVerilog spec, generate/endgenerate just
+      ;; defines a textual region, which makes "no semantic difference" in the module.
+      ;; So (for now at least) we'll ignore them.
+
+      ;; (:vl-genregion
+      ;;  :base-name vl-genregion
+      ;;  :layout :tree
+      ;;  :short "A generate/endgenerate region"
+      ;;  ((items vl-genelementlist     "the items contained in the region")
+      ;;   (loc   vl-location)))
+
+      (:vl-genloop
+       :base-name vl-genloop
+       :layout :tree
+       :short "A loop generate construct"
+       ((var        vl-id            "the iterator variable")
+        (initval    vl-expr-p        "initial value of the iterator")
+        (continue   vl-expr-p        "continue the loop until this is false")
+        (nextval    vl-expr-p        "next value of the iterator")
+        (genblock   vl-generateblock "body of the loop")
+        (loc   vl-location)))
+
+      (:vl-genif
+       :base-name vl-genif
+       :layout :tree
+       :short "An if generate construct"
+       ((test       vl-expr-p        "the test of the IF")
+        (then       vl-generateblock "the block for the THEN case")
+        (else       vl-generateblock "the block for the ELSE case; empty if not provided")
+        (loc   vl-location)))
+
+      (:vl-gencase
+       :base-name vl-gencase
+       :layout :tree
+       :short "A case generate construct"
+       ((test      vl-expr-p         "the expression to test against the cases")
+        (cases     vl-gencaselist    "the case generate items, except the default")
+        (default   vl-generateblock  "the default, which may be an empty generateblock if not provided")
+        (loc   vl-location)))
+
+      (:vl-genbase
+       :base-name vl-genbase
+       :layout :tree
+       :short "A basic module/generate item"
+       ((item      vl-modelement        "a generate item")))
+
+      :measure (two-nats-measure (acl2-count x) 1))
+
+    (fty::deflist vl-genelementlist :elt-type vl-genelement
+      :true-listp t
+      :elementp-of-nil nil
+      :measure (two-nats-measure (acl2-count x) 1))
+
+    (fty::defalist vl-gencaselist :key-type vl-exprlist :val-type vl-generateblock
+      :true-listp t
+      :measure (two-nats-measure (acl2-count x) 5))
+
+    (defprod vl-generateblock
+      ((name     maybe-stringp      "name of the generate block if provided")
+       (elems   vl-genelementlist   "elements of the block"))
+      :measure (two-nats-measure (acl2-count x) 3))
+    :enable-rules (acl2::o-p-of-two-nats-measure
+                   acl2::o<-of-two-nats-measure
+                   acl2-count-of-car
+                   acl2-count-of-cdr
+                   acl2-count-of-cdr-same-fc
+                   cons-equal
+                   ;; default-car  default-cdr
+                   nfix
+                   ))
+
+
+  (make-event
+   `(progn
+      (defprod vl-genelement-collection
+        :short "A sorted collection of module elements (see @(see vl-modelement))."
+        :long "<p>A vl-modelement-collection can be made from a @(see
+vl-modelementlist) by sorting the elements by type.  Its fields each contain
+the list of elements of the given type.</p>"
+        (,@(project-over-types
+            '(__type__s vl-__type__list-p))
+           (generates vl-genelementlist-p))
+
+
+        :layout :tree)
+
+
+      (define vl-modelement-loc ((x vl-modelement-p))
+        :short "Get the location of any @(see vl-modelement-p)."
+        :returns (loc vl-location-p
+                      :hints(("Goal" :in-theory (enable vl-modelement-fix
+                                                        (tau-system)))))
+        (b* ((x (vl-modelement-fix x)))
+
+          (case (tag x)
+            . ,(project-over-types
+                '(:vl-__type__       (vl-__type__->loc x))))))
+
+      (define vl-genelement-loc ((x vl-genelement-p))
+        :short "Get the location of any @(see vl-genelement-p)."
+        :returns (loc vl-location-p
+                      :hints(("Goal" :in-theory (enable vl-genelement-fix))))
+        (vl-genelement-case x
+          :vl-genbase (vl-modelement-loc x.item)
+          :vl-genloop   x.loc
+          :vl-genif     x.loc
+          :vl-gencase   x.loc))
+
+      (define vl-sort-genelements-aux
+        ((x           vl-genelementlist-p)
+         ,@(project-over-types
+            '(__type__s       vl-__type__list-p))
+         (generates   vl-genelementlist-p))
+        :returns (mv ,@(project-over-types
+                        `(__type__s
+                          vl-__type__list-p
+                          :hints (("goal" :in-theory (disable (:d vl-sort-genelements-aux))
+                                   :induct (vl-sort-genelements-aux
+                                            x ,@(project-over-types '__type__s) generates)
+                                   :expand ((vl-sort-genelements-aux
+                                             x ,@(project-over-types '__type__s) generates))))))
+                     (generates vl-genelementlist-p
+                                :hints (("goal" :in-theory (disable (:d vl-sort-genelements-aux))
+                                         :induct (vl-sort-genelements-aux
+                                                  x ,@(project-over-types '__type__s) generates)
+                                         :expand ((vl-sort-genelements-aux
+                                                   x ,@(project-over-types '__type__s) generates))))))
+        :hooks ((:fix :hints (("goal" :in-theory (disable (:d vl-sort-genelements-aux))
+                               :induct (vl-sort-genelements-aux
+                                        x ,@(project-over-types '__type__s) generates)
+                               :expand ((:free (,@(project-over-types '__type__s) generates)
+                                         (vl-sort-genelements-aux
+                                          x ,@(project-over-types '__type__s) generates))
+                                        (vl-sort-genelements-aux
+                                         (vl-genelementlist-fix x)
+                                         ,@(project-over-types '__type__s) generates))))))
+        (b* (((when (atom x))
+              (mv ,@(project-over-types
+                     '(rev (vl-__type__list-fix        __type__s)))
+                  (vl-genelementlist-fix generates))))
+          (vl-genelement-case (xf (car x))
+            :vl-genbase
+            (b* ((x1  xf.item)
+                 (tag (tag x1)))
+              (vl-sort-genelements-aux
+               (cdr x)
+               ,@(project-over-types
+                  '(if (eq tag :vl-__type__)       (cons x1 __type__s)       __type__s))
+               generates))
+            :otherwise
+            (vl-sort-genelements-aux
+             (cdr x) ,@(project-over-types '__type__s)
+             (cons (vl-genelement-fix (car x)) generates))))
+        :prepwork
+        ((local (in-theory (disable
+                            ;; just a speed hint
+                            double-containment
+                            set::nonempty-means-set
+                            acl2::consp-under-iff-when-true-listp
+                            acl2::consp-by-len
+                            acl2::true-listp-when-character-listp
+                            acl2::true-listp-when-atom
+                            set::sets-are-true-lists
+                            consp-when-member-equal-of-cons-listp
+                            consp-when-member-equal-of-cons-listp
+                            acl2::rev-when-not-consp
+                            default-car
+                            default-cdr
+                            pick-a-point-subset-strategy
+                            vl-genelement-p-when-member-equal-of-vl-genelementlist-p
+                            ,@(project-over-types
+                               'vl-__type__list-p-when-subsetp-equal)
+                            ,@(project-over-types
+                               'vl-modelementlist-p-when-vl-__type__list-p)
+                            (:rules-of-class :type-prescription :here)
+                            (:ruleset tag-reasoning))))))
+
+      (define vl-sort-genelements ((x vl-genelementlist-p))
+        :returns (collection vl-genelement-collection-p)
+        (b* (((mv ,@(project-over-types '__type__s) generates)
+              (vl-sort-genelements-aux x ,@(project-over-types nil) nil)))
+          (make-vl-genelement-collection
+           ,@(append-over-types '(:__type__s __type__s))
+           :generates generates))))))
+
+
+(define vl-modelementlist->genelements ((x vl-modelementlist-p))
+  :returns (xx vl-genelementlist-p)
+  (if (atom x)
+      nil
+    (cons (make-vl-genbase :item (car x))
+          (vl-modelementlist->genelements (cdr x)))))
+
+(defprod vl-context
+  :short "Description of where an expression occurs."
+  :tag :vl-context
+  :layout :tree
+  ((mod  stringp :rule-classes :type-prescription
+         "The module where this module element was taken from.")
+   (elem vl-modelement-p
+         "Some element from the module.")))
+
+
+(defprod vl-module
+  :short "Representation of a single module."
+  :tag :vl-module
+  :layout :tree
+
+  ((name       stringp
+               :rule-classes :type-prescription
+               "The name of this module as a string.  The name is used to
+                instantiate this module, so generally we require that modules
+                in our list have unique names.  A module's name is initially
+                set when it is parsed, but it may not remain fixed throughout
+                simplification.  For instance, during @(see unparameterization)
+                a module named @('adder') might become @('adder$size=12').")
+
+   (params     "Any @('defparam') statements for this module.  BOZO these are
+                bad form anyway, but eventually we should provide better
+                support for them and proper structures.")
+
+   ;; BOZO possibly add lifetime declarations, but the spec seems pretty vague
+   ;; about what they mean.  The only thing I see about them is that they are
+   ;; the "default lifetime (static or automatic) of subroutines defined within
+   ;; the module."  Which doesn't seem like a very good idea anyway...
+
+   ;; BOZO possibly add timeunits declarations.
+
+   ;; (imports    vl-importlist-p
+   ;;             "Import statements for this module, like @('import foo::*').")
+
+   (ports      vl-portlist-p
+               "The module's ports list, i.e., @('a'), @('b'), and @('c') in
+                @('module mod(a,b,c);').")
+
+   (portdecls  vl-portdecllist-p
+               "The input, output, and inout declarations for this module,
+                e.g., @('input [3:0] a;').")
+
+   (vardecls   vl-vardecllist-p
+               "Wire and variable declarations like @('wire [3:0] w'), @('tri v'),
+                @('reg [3:0] r;'), @('integer i;'), @('real foo;'), and so forth.")
+
+   (paramdecls vl-paramdecllist-p
+               "The parameter declarations for this module, e.g., @('parameter
+                width = 1;').")
+
+   (fundecls   vl-fundecllist-p
+               "Function declarations like @('function f ...').")
+
+   (taskdecls  vl-taskdecllist-p
+               "Task declarations, e.g., @('task foo ...').")
+
+   (assigns    vl-assignlist-p
+               "Top-level continuous assignments like @('assign lhs = rhs;').")
+
+   (modinsts   vl-modinstlist-p
+               "Instances of modules and user-defined primitives, e.g.,
+                @('adder my_adder1 (...);').")
+
+   (gateinsts  vl-gateinstlist-p
+               "Instances of primitive gates, e.g., @('and (o, a, b);').")
+
+   (alwayses   vl-alwayslist-p
+               "Always blocks like @('always @(posedge clk) ...').")
+
+   (initials   vl-initiallist-p
+               "Initial blocks like @('initial begin ...').")
+
+   (generates vl-genelementlist-p
+              "Generate blocks including generate regions and for/if/case blocks.")
+
+   (atts       vl-atts-p
+               "Any attributes associated with this top-level module.")
+
+   (minloc     vl-location-p
+               "Where we found the @('module') keyword for this module, i.e.,
+                the start of this module's source code.")
+
+   (maxloc     vl-location-p
+               "Where we found the @('endmodule') keyword for this module, i.e.,
+                the end of this module's source code.")
+
+   (origname   stringp
+               :rule-classes :type-prescription
+               "Original name of the module from parse time.  Unlike the
+                module's @('name'), this is meant to remain fixed throughout
+                all simplifications.  That is, while a module named @('adder')
+                might be renamed to @('adder$size=12') during @(see
+                unparameterization), its origname will always be @('adder').
+                The @('origname') is only intended to be used for display
+                purposes such as hyperlinking.")
+
+   (warnings   vl-warninglist-p
+               "A @(see warnings) accumulator that stores any problems we have
+                with this module.  Warnings are semantically meaningful only in
+                that any <i>fatal</i> warning indicates the module is invalid
+                and should not be discarded.  The list of warnings may be
+                extended by any transformation or well-formedness check.")
+
+   (comments   vl-commentmap-p
+               "A map from locations to source-code comments that occurred in
+                this module.  We expect that comments are never consulted for
+                any semantic meaning.  This field is mainly intended for
+                displaying the transformed module with comments preserved,
+                e.g., see @(see vl-ppc-module).")
+
+   (esim       "This is meant to be @('nil') until @(see esim) conversion, at
+                which point it becomes the E module corresponding to this
+                VL module.")))
+
+(fty::deflist vl-modulelist
+  :elt-type vl-module-p
+  :elementp-of-nil nil)
+
+(define vl-module->hands-offp ((x vl-module-p))
+  :returns hands-offp
+  :parents (vl-module-p)
+  :short "Attribute that says a module should not be transformed."
+
+  :long "<p>We use the ordinary <see topic='@(url vl-atts-p)'>attribute</see>
+@('VL_HANDS_OFF') to say that a module should not be changed by @(see
+transforms).</p>
+
+<p>This is generally meant for use in VL @(see primitives).  The Verilog
+definitions of these modules sometimes make use of fancy Verilog constructs.
+Normally our transforms would try to remove these constructs, replacing them
+with instances of primitives.  This can lead to funny sorts of problems if we
+try to transform the primitives themselves.</p>
+
+<p>For instance, consider the @(see *vl-1-bit-delay-1*) module.  This module
+has a delayed assignment, @('assign #1 out = in').  If we hit this module with
+the @(see delayredux) transform, we'll try to replace the delay with an
+explicit instance of @('VL_1_BIT_DELAY_1').  But that's crazy: now the module
+is trying to instantiate itself!</p>
+
+<p>Similar issues can arise from trying to replace the @('always') statements
+in a primitive flop/latch with instances of flop/latch primitives, etc.  So as
+a general rule, we mark the primitives with @('VL_HANDS_OFF') and code our
+transforms to not modules with this attribute.</p>"
+  :prepwork ((local (defthm alistp-when-atts-p
+                      (implies (vl-atts-p x)
+                               (alistp x))
+                      :hints(("Goal" :in-theory (enable alistp))))))
+  :inline t
+  (consp (assoc-equal "VL_HANDS_OFF" (vl-module->atts x))))
+
+(defprojection vl-modulelist->names ((x vl-modulelist-p))
+  :returns (names string-listp)
+  :parents (vl-modulelist-p)
+  (vl-module->name x))
+
+(defprojection vl-modulelist->paramdecls ((x vl-modulelist-p))
+  :returns (paramdecl-lists vl-paramdecllist-list-p)
+  :parents (vl-modulelist-p)
+  (vl-module->paramdecls x))
+
+(defmapappend vl-modulelist->modinsts (x)
+  (vl-module->modinsts x)
+  :parents (vl-modulelist-p)
+  :guard (vl-modulelist-p x)
+  :transform-true-list-p nil
+  :rest ((defthm vl-modinstlist-p-of-vl-modulelist->modinsts
+           (vl-modinstlist-p (vl-modulelist->modinsts x)))
+         (deffixequiv vl-modulelist->modinsts :args ((x vl-modulelist-p)))))
+
+(defprojection vl-modulelist->esims ((x vl-modulelist-p))
+  :parents (vl-modulelist-p)
+  (vl-module->esim x))
+
+
+(defoption vl-maybe-module-p vl-module-p
+  :short "Recognizer for an @(see vl-module-p) or @('nil')."
+  ///
+  (defthm type-when-vl-maybe-module-p
+    (implies (vl-maybe-module-p x)
+             (or (not x)
+                 (consp x)))
+    :rule-classes :compound-recognizer))
+
+
+(defenum vl-udpsymbol-p
+  (:vl-udp-0
+   :vl-udp-1
+   :vl-udp-x
+   :vl-udp-?
+   :vl-udp-b
+   :vl-udp--
+   :vl-udp-*
+   :vl-udp-r
+   :vl-udp-f
+   :vl-udp-p
+   :vl-udp-n)
+  :short "Symbols that can occur in a UDP table"
+  :long "<p>These are basically taken from Verilog-2005 Table 8-1.</p>
+
+<ul>
+
+<li>@(':vl-udp-0') &mdash; logic 0.</li>
+
+<li>@(':vl-udp-1') &mdash; logic 1.</li>
+
+<li>@(':vl-udp-x') &mdash; unknown.  Permitted in input/outputs of all UDPs and
+current state of sequential UDPs.</li>
+
+<li>@(':vl-udp-?') &mdash; iteration of 0, 1, and X.  Not permitted in outputs.</li>
+
+<li>@(':vl-udp-b') &mdash; iteration of 0 and 1.  Permitted in inputs of all
+udps and current state of sequential udps, not in outputs.</li>
+
+<li>@(':vl-udp--') &mdash; no change.  Permitted only in the output field of a
+sequential UDP.</li>
+
+<li>@(':vl-udp-*') &mdash; any value change on input, same as @('(??)').</li>
+
+<li>@(':vl-udp-r') &mdash; rising edge on input, same as @('(01)').</li>
+
+<li>@(':vl-udp-f') &mdash; falling edge on input, same as @('(10)').</li>
+
+<li>@(':vl-udp-p') &mdash; any potential positive edge on the input, iteration of
+                           @('(01)'), @('(0x)'), @('(x1)').</li>
+
+<li>@(':vl-udp-n') &mdash; any potential negative edge on the input, iteration of
+                           @('(10)'), @('(1x)'), @('(x0)').</li>
+
+</ul>")
+
+(defoption vl-maybe-udpsymbol-p
+  vl-udpsymbol-p)
+
+(defprod vl-udpedge
+  :tag :vl-udplevel
+  :layout :tree
+  :short "Representation of an explicit edge that can occur in a UDP table,
+e.g., @('(01)') or @('(1?)')."
+  ((prev vl-udpsymbol-p)
+   (next vl-udpsymbol-p)))
+
+(define vl-udpentry-p (x)
+  :short "Representation of any entry in a UDP table."
+  :returns bool
+  (mbe :logic
+       (or (vl-udpsymbol-p x)
+           (vl-udpedge-p x))
+       :exec
+       (if (consp x)
+           (vl-udpedge-p x)
+         (vl-udpsymbol-p x)))
+  ///
+  (defthm vl-udpentry-p-when-vl-udpsymbol-p
+    (implies (vl-udpsymbol-p x)
+             (vl-udpentry-p x)))
+  (defthm vl-udpentry-p-when-vl-udpedge-p
+    (implies (vl-udpedge-p x)
+             (vl-udpentry-p x))))
+
+(define vl-udpentry-fix (x)
+  :parents (vl-udpentry-p)
+  :returns (entry vl-udpentry-p)
+  :inline t
+  (if (vl-udpentry-p x)
+      x
+    :vl-udp-0)
+  ///
+  (defthm vl-udpentry-fix-when-vl-udpentry-p
+    (implies (vl-udpentry-p x)
+             (equal (vl-udpentry-fix x)
+                    x))))
+
+(deffixtype vl-udpentry
+  :pred vl-udpentry-p
+  :fix vl-udpentry-fix
+  :equiv vl-udpentry-equiv
+  :define t
+  :forward t)
+
+(fty::deflist vl-udpentrylist
+  :elt-type vl-udpentry-p
+  :elementp-of-nil nil)
+
+(defprod vl-udpline
+  :short "Representation of one line of a UDP table."
+  :tag    :vl-udpline
+  :layout :tree
+  ((inputs  vl-udpentrylist-p
+            "The input entries, i.e., whatever occurs before the first colon.")
+   (output  vl-udpsymbol-p
+            "The output value.")
+   (current vl-maybe-udpsymbol-p
+            "For sequential UDPs only: the current state.")))
+
+(fty::deflist vl-udptable
+  :elt-type vl-udpline-p
+  :elementp-of-nil nil)
+
+(defprod vl-udp
+  :short "Representation of a user defined @('primitive')."
+  :tag :vl-udp
+  :layout :tree
+
+  ((name        stringp :rule-classes :type-prescription
+                "The name of this udp as a string.")
+
+   (output      vl-portdecl-p
+                "Declaration of the output port, which always comes first.")
+
+   (inputs      vl-portdecllist-p
+                "Port declarations for the input ports, in order.")
+
+   (sequentialp booleanp
+                "True when this is a sequential (instead of combinational) UDP.")
+
+   (table       vl-udptable-p
+                "The UDP state table.")
+
+   (initval     vl-maybe-expr-p
+                "For sequential UDPs, the initial value for the register, if specified.")
+
+   (warnings    vl-warninglist-p)
+   (minloc      vl-location-p)
+   (maxloc      vl-location-p)
+   (atts        vl-atts-p)
+   (comments    vl-commentmap-p)))
+
+(fty::deflist vl-udplist
+  :elt-type vl-udp-p
+  :elementp-of-nil nil)
+
+(defprojection vl-udplist->names ((x vl-udplist-p))
+  :parents (vl-udplist-p)
+  :returns (names string-listp)
+  (vl-udp->name x))
+
+
+(defprod vl-config
+  :short "Representation of a single @('config')."
+  :tag :vl-config
+  :layout :tree
+  ((name stringp
+         :rule-classes :type-prescription
+         "The name of this config as a string.")
+   ;; ...
+   (warnings vl-warninglist-p)
+   (minloc   vl-location-p)
+   (maxloc   vl-location-p)
+   (atts     vl-atts-p)
+   (comments vl-commentmap-p))
+  :long "BOZO incomplete stub -- we don't really support configs yet.")
+
+(fty::deflist vl-configlist :elt-type vl-config-p
+  :elementp-of-nil nil)
+
+(defprojection vl-configlist->names ((x vl-configlist-p))
+  :parents (vl-configlist-p)
+  :returns (names string-listp)
+  (vl-config->name x))
+
+
+(defprod vl-package
+  :short "Representation of a single @('package')."
+  :tag :vl-package
+  :layout :tree
+  ((name stringp
+         :rule-classes :type-prescription
+         "The name of this package as a string.")
+   ;; ...
+   (warnings vl-warninglist-p)
+   (minloc   vl-location-p)
+   (maxloc   vl-location-p)
+   (atts     vl-atts-p)
+   (comments vl-commentmap-p))
+  :long "BOZO incomplete stub -- we don't really support packages yet.")
+
+(fty::deflist vl-packagelist :elt-type vl-package-p
+  :elementp-of-nil nil)
+
+(defprojection vl-packagelist->names ((x vl-packagelist-p))
+  :parents (vl-packagelist-p)
+  :returns (names string-listp)
+  (vl-package->name x))
+
+
+
+
+(defprod vl-interface
+  :short "Representation of a single @('interface')."
+  :tag :vl-interface
+  :layout :tree
+  ((name stringp
+         :rule-classes :type-prescription
+         "The name of this interface as a string.")
+   (ports      vl-portlist-p)
+   (portdecls  vl-portdecllist-p)
+   (paramdecls vl-paramdecllist-p)
+   (vardecls   vl-vardecllist-p)
+   (modports   vl-modportlist-p)
+   (generates  vl-genelementlist-p)
+   ;; ...
+   (warnings vl-warninglist-p)
+   (minloc   vl-location-p)
+   (maxloc   vl-location-p)
+   (atts     vl-atts-p)
+   (origname stringp :rule-classes :type-prescription)
+   (comments vl-commentmap-p))
+  :long "BOZO incomplete stub -- we don't really support interfaces yet.")
+
+(fty::deflist vl-interfacelist :elt-type vl-interface-p
+  :elementp-of-nil nil)
+
+(defprojection vl-interfacelist->names ((x vl-interfacelist-p))
+  :parents (vl-interfacelist-p)
+  :returns (names string-listp)
+  (vl-interface->name x))
+
+
+
+(defprod vl-program
+  :short "Representation of a single @('program')."
+  :tag :vl-program
+  :layout :tree
+  ((name stringp
+         :rule-classes :type-prescription
+         "The name of this program as a string.")
+   ;; ...
+   (warnings vl-warninglist-p)
+   (minloc   vl-location-p)
+   (maxloc   vl-location-p)
+   (atts     vl-atts-p)
+   (comments vl-commentmap-p))
+  :long "BOZO incomplete stub -- we don't really support programs yet.")
+
+(fty::deflist vl-programlist :elt-type vl-program-p
+  :elementp-of-nil nil)
+
+(defprojection vl-programlist->names ((x vl-programlist-p))
+  :parents (vl-programlist-p)
+  :returns (names string-listp)
+  (vl-program->name x))
+
+
+
+
 
 (defprod vl-design
   :short "Top level representation of all modules, interfaces, programs, etc.,
 resulting from parsing some Verilog source code."
   :tag :vl-design
   :layout :tree
-  ((mods       vl-modulelist-p    "List of all modules.")
+  ((version    vl-syntaxversion-p "Version of VL syntax being used."
+               :default *vl-current-syntax-version*)
+   (mods       vl-modulelist-p    "List of all modules.")
    (udps       vl-udplist-p       "List of user defined primtives.")
    (interfaces vl-interfacelist-p "List of interfaces.")
    (programs   vl-programlist-p   "List of all programs.")
    (packages   vl-packagelist-p   "List of all packages.")
    (configs    vl-configlist-p    "List of configurations.")
-   (netdecls   vl-netdecllist-p   "Top-level net declarations.")
+   (vardecls   vl-vardecllist-p   "Top-level variable declarations.")
    (taskdecls  vl-taskdecllist-p  "Top-level task declarations.")
    (fundecls   vl-fundecllist-p   "Top-level function declarations.")
    (paramdecls vl-paramdecllist-p "Top-level (local and non-local) parameter declarations.")
    (imports    vl-importlist-p    "Top-level package import statements.")
+   (fwdtypes   vl-fwdtypedeflist-p "Forward (incomplete) typedefs.")
+   (typedefs   vl-typedeflist-p    "Regular (non-forward, complete) typedefs.")
    ;; BOZO lots of things still missing
    (warnings   vl-warninglist-p   "So-called \"floating\" warnings.")
    (comments   vl-commentmap-p    "So-called \"floating\" comments.")
+
    ))
+
+
+
 
 

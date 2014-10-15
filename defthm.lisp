@@ -1,4 +1,4 @@
-; ACL2 Version 6.4 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 6.5 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2014, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -1936,17 +1936,27 @@
                                   (hide-lambdas non-rec-fns)))
                        (t state))
                       (cond
-                       ((and (car (cddddr free-max-terms-msg))
+                       ((and (nth 4 free-max-terms-msg)
                              (null match-free))
                         (pprogn
                          (warning$ ctx "Free"
                                    "A :LINEAR rule generated from ~x0 will be ~
                                     triggered by the term~#1~[~/s~] ~&1.  ~*2This is ~
                                     generally a severe restriction on the ~
-                                    applicability of the :LINEAR rule."
+                                    applicability of the :LINEAR rule~@3."
                                    name
                                    max-terms
-                                   free-max-terms-msg)
+                                   free-max-terms-msg
+                                   (let ((len-max-terms (length max-terms))
+                                         (len-bad-max-terms
+                                          (length (nth 4 free-max-terms-msg))))
+                                     (cond ((eql len-bad-max-terms
+                                                 len-max-terms)
+                                            "")
+                                           ((eql len-bad-max-terms 1)
+                                            " for this trigger")
+                                           (t (msg " for these ~n0 triggers"
+                                                   len-bad-max-terms)))))
                          (free-variable-error? :linear name ctx wrld state)))
                        (t (value nil))))))))))))))
 
@@ -4592,9 +4602,23 @@
                     (fquotep (fargn term 2)))
                 (fargn term 1))
                (t nil)))
-        ((most-recent-enabled-recog-tuple (ffn-symb term)
-                                          (global-val 'recognizer-alist wrld)
-                                          ens)
+        ((let ((recog-tuple
+                (most-recent-enabled-recog-tuple (ffn-symb term)
+                                                 (global-val 'recognizer-alist
+                                                             wrld)
+                                                 ens)))
+           (and recog-tuple
+
+; An ACL2(h) "everything" regression in August 2014 failed to certify community
+; book centaur/aig/aiger-help.lisp when we added the following condition.  So
+; we modified two defthm forms in that book by making the :typed-term explicit.
+
+; Note that the most-recent-enabled-recog-tuple is the one used in
+; assume-true-false-rec.  So here, we only consider that tuple; if it is not
+; :strongp, then we do not look for a less recent enabled recog-tuple that is
+; :strongp.
+
+                (access recognizer-tuple recog-tuple :strongp)))
          (fargn term 1))
         (t term)))
 
@@ -5014,6 +5038,12 @@
         ((eq (ffn-symb term) 'not)
          (warned-non-rec-fns-for-tp (fargn term 1) recognizer-alist ens wrld))
         ((strong-compound-recognizer-p (ffn-symb term) recognizer-alist ens)
+
+; We noticed in August 2014 that only the most-recent-enabled-recog-tuple is
+; relevant here; see assume-true-false-rec.  But this code has been in place
+; for a long time, and it's not terribly unreasonable, since enabled status can
+; change.
+
          (non-recursive-fnnames-lst (fargs term) ens wrld))
         (t (non-recursive-fnnames term ens wrld))))
 
@@ -5749,7 +5779,7 @@
 
 (defun split-at-position (posn lst acc)
 
-; We pop posn-many elements off lst, accumulating them into acc and returning
+; We pop posn - 1 elements off lst, accumulating them into acc and returning
 ; the resulting extension of acc together with what remains of lst.
 
   (cond ((eql posn 1)
@@ -9303,9 +9333,7 @@
 (defun disabledp-fn (name ens wrld)
   (declare (xargs :guard t))
   (cond ((symbolp name)
-         (let ((name2 (if (symbolp name)
-                          (deref-macro-name name (macro-aliases wrld))
-                        name)))
+         (let ((name2 (deref-macro-name name (macro-aliases wrld))))
            (cond ((and (not (eq name2 :here))
                        name2
                        (logical-namep name2 wrld))
@@ -9316,12 +9344,14 @@
                         "Illegal call of disabledp on symbolp argument ~x0.  ~
                          See :DOC disabledp."
                         name)))))
-        ((runep name wrld)
-         (not (enabled-runep name ens wrld)))
-        (t (er hard 'disabledp
-               "Illegal call of disabledp on non-symbol, non-rune argument ~
-                ~x0.  See :DOC disabledp."
-               name))))
+        (t (let* ((rune (translate-abbrev-rune name (macro-aliases wrld))))
+             (cond
+              ((runep rune wrld)
+               (not (enabled-runep rune ens wrld)))
+              (t (er hard 'disabledp
+                     "Illegal call of disabledp: ~x0 does not designate a ~
+                      rune or a list of runes.  See :DOC disabledp."
+                     name)))))))
 
 (defmacro disabledp (name)
   `(disabledp-fn ,name (ens state) (w state)))

@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
@@ -35,7 +45,8 @@
 
 (defsort :comparablep rationalp
          :compare< <
-         :prefix <)
+         :prefix <
+         :weak nil)
 
 (assert! (equal (<-sort '(5 5 3 4 4)) '(3 4 4 5 5)))
 
@@ -51,11 +62,23 @@
 
 (defsort :comparablep rationalp
          :compare< greater-p
-         :prefix >)
+         :prefix >
+         :weak nil)
 
 (assert! (equal (>-sort '(5 5 3 4 4)) '(5 5 4 4 3)))
 
+;; new syntax with sort function name first
+(defsort bigger-sort
+  :comparablep rationalp
+  :compare< (lambda (x y) (< y x))
+  :prefix bigger
+  :weak nil)
 
+;; new syntax with sort function name and no prefix
+(defsort littler-sort
+  :comparablep rationalp
+  :compare< (lambda (x y) (< x y))
+  :weak nil)
 
 ;; We can define an arbitrary sort using <<.  This is almost the same as
 ;; SET::mergesort in the ordered sets library, except that defsorts are
@@ -63,13 +86,85 @@
 ;; elements.
 
 (defsort :compare< <<
-         :prefix <<)
+         :prefix <<w)
+
+
+;; If we prove that the negation of << is transitive, we can do this without
+;; the :weak:
+
+(defthm <<-negation-transitive
+  (implies (and (not (<< x y))
+                (not (<< y z)))
+           (not (<< x z)))
+  :hints (("goal" :use ((:instance <<-trichotomy
+                         (x y) (y x)))
+           :in-theory (disable <<-trichotomy))))
+
+(defsort :compare< <<
+         :prefix <<
+         :weak nil)
 
 (assert! (equal (<<-sort '(a c b 1 3 2 1/3 1/2 (1 . 2)))
                 '(1/3 1/2 1 2 3 a b c (1 . 2))))
 
 
+;; Sort with respect to an alist that maps each key to an integer.
+(defun intval-alistp (x)
+  (declare (xargs :guard t))
+  (if (atom x)
+      (eq x nil)
+    (and (consp (car x))
+         (integerp (cdar x))
+         (intval-alistp (cdr x)))))
 
+(encapsulate nil
+  (local (defthm alistp-when-intval-alistp
+           (implies (intval-alistp x)
+                    (alistp x))))
+  (local
+   (defthm assoc-in-intval-alistp
+     (implies (and (assoc k alist)
+                   (intval-alistp alist))
+              (and (consp (assoc k alist))
+                   (integerp (cdr (assoc k alist)))
+                   (real/rationalp (cdr (assoc k alist)))))))
+
+  (defun intval-alist-< (x y alist)
+    (Declare (xargs :guard (and (intval-alistp alist)
+                                (assoc-equal x alist)
+                                (assoc-equal y alist))))
+    (< (cdr (assoc-equal x alist))
+       (cdr (assoc-equal y alist))))
+
+  (defsort intval-alist-sort
+    :extra-args (alist)
+    :extra-args-guard (intval-alistp alist)
+    :comparablep (lambda (x alist) (consp (assoc-equal x alist)))
+    :compare< intval-alist-<))
+
+(encapsulate nil
+  (local (defthm alistp-when-intval-alistp
+           (implies (intval-alistp x)
+                    (alistp x))))
+  (local
+   (defthm assoc-in-intval-alistp
+     (implies (and (assoc k alist)
+                   (intval-alistp alist))
+              (consp (assoc k alist)))))
+
+  (defun intval-alist-<2 (x y alist)
+    (Declare (xargs :guard (and (intval-alistp alist)
+                                ;; for demo purposes
+                                (stringp x) (stringp y))))
+    (< (ifix (cdr (assoc-equal x alist)))
+       (ifix (cdr (assoc-equal y alist)))))
+
+  ;; Testing both the new syntax, and a comparablep that ignores the extra-args
+  (defsort intval-alist-sort2 (x alist)
+    :extra-args-guard (intval-alistp alist)
+    :comparablep (lambda (x alist) (stringp x))
+    :compare< intval-alist-<2))
+  
 
 
 
@@ -110,6 +205,12 @@
          :compare< string-less-p
          :prefix string)
 
+(defsort :comparablep stringp
+         :compare< string-less-p
+         :prefix string2
+         :comparable-listp string-listp
+         :true-listp t)
+
 (assert! (equal (string-sort '("z" "b" "foo" "bar" "aaa" "aaa"))
                 '("aaa" "aaa" "b" "bar" "foo" "z")))
 
@@ -147,6 +248,76 @@
 
 (assert! (equal (entry-val-sort '((1 . "z") (2 . "b") (1 . "y") (2 . "a")))
                 '((2 . "a") (2 . "b") (1 . "y") (1 . "z"))))
+
+
+(local
+ (encapsulate
+   (((sortelt-p *) => *
+     :formals (x)
+     :guard t))
+
+   (local (defun sortelt-p (x) (and x t)))
+
+   (defthm type-of-sortelt-p
+     (booleanp (sortelt-p x))
+     :rule-classes :type-prescription)))
+
+(local
+ (encapsulate
+   (((sortcmp * *) => *
+     :formals (x y)
+     :guard (and (sortelt-p x)
+                 (sortelt-p y))))
+
+   (local (defun sortcmp (x y) (< (nfix x) (nfix y))))
+
+   (defthm type-of-sortcmp
+     (booleanp (sortcmp x y))
+     :rule-classes :type-prescription)
+
+   (defthm sortcmp-transitive
+     (implies (and (sortcmp x y)
+                   (sortcmp y z))
+              (sortcmp x z)))))
+
+
+(local
+ (encapsulate ()
+   (local (defsort :prefix gensort
+            :comparablep sortelt-p
+            :compare< sortcmp
+            :true-listp nil))
+   (value-triple :test-true-listp-t-without-listp)))
+
+(local
+ (encapsulate ()
+   (local (defun sorteltlist-p (x)
+            (declare (xargs :guard t)) 
+            (if (atom x)
+                (not x)
+              (and (sortelt-p (car x))
+                   (sorteltlist-p (cdr x))))))
+   (local (defsort :prefix gensort
+            :comparablep sortelt-p
+            :compare< sortcmp
+            :true-listp t))
+
+   (value-triple :test-true-listp-t-with-listp)))
+
+(local
+ (encapsulate ()
+   (local (defun sorteltlist-p (x)
+            (declare (xargs :guard t)) 
+            (if (atom x)
+                t
+              (and (sortelt-p (car x))
+                   (sorteltlist-p (cdr x))))))
+
+   (local (defsort :prefix gensort
+            :comparablep sortelt-p
+            :compare< sortcmp))
+
+   (value-triple :test-true-listp-nil-with-listp)))
 
 
 

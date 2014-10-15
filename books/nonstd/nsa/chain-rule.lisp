@@ -199,11 +199,23 @@
 
 ;; We define the differential and derivative functions for cr-fn1 and cr-fn2
 
-(defun differential-cr-fn1 (x eps)
-  (/ (- (cr-fn1 (+ x eps)) (cr-fn1 x)) eps))
+(encapsulate
+
+ ( ((differential-cr-fn1 * *) => *) )
+
+ (local
+  (defun differential-cr-fn1 (x eps)
+    (/ (- (cr-fn1 (+ x eps)) (cr-fn1 x)) eps)))
+
+ (defthm differential-cr-fn1-definition
+   (implies (and (inside-interval-p x (cr-fn2-range))
+                 (inside-interval-p (+ x eps) (cr-fn2-range)))
+            (equal (differential-cr-fn1 x eps)
+                   (/ (- (cr-fn1 (+ x eps)) (cr-fn1 x)) eps)))))
 
 (defthm realp-differential-cr-fn1
-  (implies (and (realp x)
+  (implies (and (inside-interval-p x (cr-fn2-range))
+		(inside-interval-p (+ x eps) (cr-fn2-range))
 		(realp eps))
 	   (realp (differential-cr-fn1 x eps)))
   :hints (("Goal"
@@ -225,16 +237,32 @@
 				     (rdfn-domain cr-fn2-range)))))
 
 
-(in-theory (disable differential-cr-fn1))
+(in-theory (disable differential-cr-fn1-definition))
 
-(defun-std derivative-cr-fn1 (x)
-  (if (inside-interval-p x (cr-fn2-range))
-      (if (inside-interval-p (+ x (/ (i-large-integer))) (cr-fn2-range))
-	  (standard-part (differential-cr-fn1 x (/ (i-large-integer))))
+(encapsulate
+
+ ( ((derivative-cr-fn1 *) => *) )
+
+ (local
+  (defun-std derivative-cr-fn1 (x)
+    (if (inside-interval-p x (cr-fn2-range))
+        (if (inside-interval-p (+ x (/ (i-large-integer))) (cr-fn2-range))
+            (standard-part (differential-cr-fn1 x (/ (i-large-integer))))
 	  (if (inside-interval-p (- x (/ (i-large-integer))) (cr-fn2-range))
 	      (standard-part (differential-cr-fn1 x (- (/ (i-large-integer)))))
-	      'error))
-      'error))
+            'error))
+      'error)))
+
+ (defthm derivative-cr-fn1-definition
+   (implies (and (inside-interval-p x (cr-fn2-range))
+                 (standardp x))
+            (equal (derivative-cr-fn1 x)
+                   (if (inside-interval-p (+ x (/ (i-large-integer))) (cr-fn2-range))
+                       (standard-part (differential-cr-fn1 x (/ (i-large-integer))))
+                     (if (inside-interval-p (- x (/ (i-large-integer))) (cr-fn2-range))
+                         (standard-part (differential-cr-fn1 x (- (/ (i-large-integer)))))
+                       'error)))))
+ )
 
 (defthm real-derivative-cr-fn1
     (implies (inside-interval-p x (cr-fn2-range))
@@ -261,13 +289,25 @@
 				     (rdfn cr-fn1)
 				     (rdfn-domain cr-fn2-range)))))
 
-(in-theory (disable derivative-cr-fn1))
+(in-theory (disable derivative-cr-fn1-definition))
 
-(defun differential-cr-fn2 (x eps)
-  (/ (- (cr-fn2 (+ x eps)) (cr-fn2 x)) eps))
+(encapsulate
+
+ ( ((differential-cr-fn2 * *) => *) )
+
+ (local
+  (defun differential-cr-fn2 (x eps)
+    (/ (- (cr-fn2 (+ x eps)) (cr-fn2 x)) eps)))
+
+ (defthm differential-cr-fn2-definition
+   (implies (and (inside-interval-p x (cr-fn2-domain))
+                 (inside-interval-p (+ x eps) (cr-fn2-domain)))
+            (equal (differential-cr-fn2 x eps)
+                   (/ (- (cr-fn2 (+ x eps)) (cr-fn2 x)) eps)))))
 
 (defthm realp-differential-cr-fn2
-  (implies (and (realp x)
+  (implies (and (inside-interval-p x (cr-fn2-domain))
+		(inside-interval-p (+ x eps) (cr-fn2-domain))
 		(realp eps))
 	   (realp (differential-cr-fn2 x eps)))
   :hints (("Goal"
@@ -289,16 +329,31 @@
 				     (rdfn-domain cr-fn2-domain)))))
 
 
-(in-theory (disable differential-cr-fn2))
+(in-theory (disable differential-cr-fn2-definition))
 
-(defun-std derivative-cr-fn2 (x)
-  (if (inside-interval-p x (cr-fn2-domain))
-      (if (inside-interval-p (+ x (/ (i-large-integer))) (cr-fn2-domain))
-	  (standard-part (differential-cr-fn2 x (/ (i-large-integer))))
+(encapsulate
+ ( ((derivative-cr-fn2 *) => *) )
+
+ (local
+  (defun-std derivative-cr-fn2 (x)
+    (if (inside-interval-p x (cr-fn2-domain))
+        (if (inside-interval-p (+ x (/ (i-large-integer))) (cr-fn2-domain))
+            (standard-part (differential-cr-fn2 x (/ (i-large-integer))))
 	  (if (inside-interval-p (- x (/ (i-large-integer))) (cr-fn2-domain))
 	      (standard-part (differential-cr-fn2 x (- (/ (i-large-integer)))))
-	      'error))
-      'error))
+            'error))
+      'error)))
+
+ (defthm derivative-cr-fn2-definition
+   (implies (and (inside-interval-p x (cr-fn2-domain))
+                 (standardp x))
+            (equal (derivative-cr-fn2 x)
+                   (if (inside-interval-p (+ x (/ (i-large-integer))) (cr-fn2-domain))
+                       (standard-part (differential-cr-fn2 x (/ (i-large-integer))))
+                     (if (inside-interval-p (- x (/ (i-large-integer))) (cr-fn2-domain))
+                         (standard-part (differential-cr-fn2 x (- (/ (i-large-integer)))))
+                       'error)))))
+ )
 
 (defthm real-derivative-cr-fn2
     (implies (inside-interval-p x (cr-fn2-domain))
@@ -325,7 +380,7 @@
 				     (rdfn cr-fn2)
 				     (rdfn-domain cr-fn2-domain)))))
 
-(in-theory (disable derivative-cr-fn2))
+(in-theory (disable derivative-cr-fn2-definition))
 
 ;; All functions are standard
 
@@ -525,18 +580,54 @@
 
 ;; Now we define the composition and its derivative
 
-(defun cr-fn1-o-fn2 (x)
-  (cr-fn1 (cr-fn2 x)))
+(encapsulate
+ ( ((cr-fn1-o-fn2 *) => *) )
 
-(defun differential-cr-fn1-o-fn2 (x eps)
-  (if (equal (cr-fn2 (+ x eps)) (cr-fn2 x))
-      0
+ (local
+  (defun cr-fn1-o-fn2 (x)
+    (cr-fn1 (cr-fn2 x))))
+
+ (defthm cr-fn1-o-fn2-definition
+   (implies (inside-interval-p x (cr-fn2-domain))
+            (equal (cr-fn1-o-fn2 x)
+                   (cr-fn1 (cr-fn2 x)))))
+ )
+
+(encapsulate
+ ( ((differential-cr-fn1-o-fn2 * *) => *) )
+
+ (local
+  (defun differential-cr-fn1-o-fn2 (x eps)
+    (if (equal (cr-fn2 (+ x eps)) (cr-fn2 x))
+        0
       (* (differential-cr-fn1 (cr-fn2 x) (- (cr-fn2 (+ x eps)) (cr-fn2 x)))
-	 (differential-cr-fn2 x eps))))
+	 (differential-cr-fn2 x eps)))))
 
-(defun derivative-cr-fn1-o-fn2 (x)
-  (* (derivative-cr-fn1 (cr-fn2 x))
-     (derivative-cr-fn2 x)))
+ (defthm differential-cr-fn1-o-fn2-definition
+   (implies (and (inside-interval-p x (cr-fn2-domain))
+                 (inside-interval-p (+ x eps) (cr-fn2-domain)))
+            (equal (differential-cr-fn1-o-fn2 x eps)
+                   (if (equal (cr-fn2 (+ x eps)) (cr-fn2 x))
+                       0
+                     (* (differential-cr-fn1 (cr-fn2 x) (- (cr-fn2 (+ x eps)) (cr-fn2 x)))
+                        (differential-cr-fn2 x eps))))))
+ )
+   
+
+(encapsulate
+ ( ((derivative-cr-fn1-o-fn2 *) => *) )
+
+ (local
+  (defun derivative-cr-fn1-o-fn2 (x)
+    (* (derivative-cr-fn1 (cr-fn2 x))
+       (derivative-cr-fn2 x))))
+
+ (defthm derivative-cr-fn1-o-fn2-definition
+   (implies (inside-interval-p x (cr-fn2-domain))
+            (equal (derivative-cr-fn1-o-fn2 x)
+                   (* (derivative-cr-fn1 (cr-fn2 x))
+                      (derivative-cr-fn2 x)))))
+ )
 
 ;; First we show that the differential really is the differential of the
 ;; composition.
@@ -546,51 +637,61 @@
 
  (local
   (defthm lemma-1
-      (implies (not (equal (cr-fn2 (+ x eps)) (cr-fn2 x)))
+      (implies (and (not (equal (cr-fn2 (+ x eps)) (cr-fn2 x)))
+                    (inside-interval-p x (cr-fn2-domain))
+                    (inside-interval-p (+ x eps) (cr-fn2-domain)))
 	       (equal (- (cr-fn1-o-fn2 (+ x eps)) (cr-fn1-o-fn2 x))
 		      (* (differential-cr-fn1 (cr-fn2 x) (- (cr-fn2 (+ x eps)) (cr-fn2 x)))
 			 (- (cr-fn2 (+ x eps)) (cr-fn2 x)))))
     :hints (("Goal"
 	     :use ((:instance INVERSE-OF-*
 			      (x (- (cr-fn2 (+ x eps)) (cr-fn2 x))))
+                   (:instance cr-fn2-range-in-domain-of-fn2
+                              (x (+ x eps)))
+                   (:instance cr-fn2-range-in-domain-of-fn2
+                              (x x))
 		   (:theorem (equal (+ (CR-FN2 X)
 				       (CR-FN2 (+ X EPS))
 				       (- (CR-FN2 X)))
 				    (CR-FN2 (+ X EPS))))
 		   )
-	     :in-theory '(differential-cr-fn1
-			  commutativity-of-*
+	     :in-theory '(differential-cr-fn1-definition
+                          commutativity-of-*
 			  associativity-of-*
 			  inverse-of-+-as=0
 			  /-CANCELLATION-ON-LEFT
 			  fix
 			  cr-fn2-real
-			  cr-fn1-o-fn2
+			  cr-fn1-o-fn2-definition
 					;commutativity-of-+
 					;MINUS-CANCELLATION-ON-LEFT
 			  )))))
 
  (local
   (defthm lemma-2
-      (equal (- (cr-fn1-o-fn2 (+ x eps)) (cr-fn1-o-fn2 x))
-	     (* (differential-cr-fn1 (cr-fn2 x) (- (cr-fn2 (+ x eps)) (cr-fn2 x)))
-		(- (cr-fn2 (+ x eps)) (cr-fn2 x))))
+      (implies (and (inside-interval-p x (cr-fn2-domain))
+                    (inside-interval-p (+ x eps) (cr-fn2-domain)))
+               (equal (- (cr-fn1-o-fn2 (+ x eps)) (cr-fn1-o-fn2 x))
+                      (* (differential-cr-fn1 (cr-fn2 x) (- (cr-fn2 (+ x eps)) (cr-fn2 x)))
+                         (- (cr-fn2 (+ x eps)) (cr-fn2 x)))))
     :hints (("Goal"
 	     :cases ((equal (cr-fn2 (+ x eps)) (cr-fn2 x)))
 	     :use ((:instance lemma-1))
-	     :in-theory (disable lemma-1 cr-fn1-o-fn2))
+	     :in-theory (disable lemma-1 cr-fn1-o-fn2-definition))
 	    ("Subgoal 1"
-	     :in-theory '(differential-cr-fn1
+	     :in-theory '(differential-cr-fn1-definition
 			  inverse-of-+
-			  cr-fn1-o-fn2)))))
+			  cr-fn1-o-fn2-definition)))))
 
  (defthm expand-differential-cr-fn1-o-fn2
-     (equal (differential-cr-fn1-o-fn2 x eps)
-	    (/ (- (cr-fn1-o-fn2 (+ x eps)) (cr-fn1-o-fn2 x)) eps))
+   (implies (and (inside-interval-p x (cr-fn2-domain))
+                 (inside-interval-p (+ x eps) (cr-fn2-domain)))
+            (equal (differential-cr-fn1-o-fn2 x eps)
+                   (/ (- (cr-fn1-o-fn2 (+ x eps)) (cr-fn1-o-fn2 x)) eps)))
    :hints (("Goal"
 	    :in-theory '(lemma-2
-			 differential-cr-fn1-o-fn2
-			 differential-cr-fn2
+			 differential-cr-fn1-o-fn2-definition
+			 differential-cr-fn2-definition
 			 inverse-of-+
 			 associativity-of-*)
 	    ))
@@ -613,7 +714,7 @@
 	     (equal (derivative-cr-fn2 x) 0))
   :hints (("Goal"
 	   :use ((:instance differential-cr-fn2-close))
-	   :in-theory '(differential-cr-fn2
+	   :in-theory '(differential-cr-fn2-definition
 			inverse-of-+)
 	   )))
 
@@ -629,7 +730,7 @@
 		   (equal (cr-fn2 (+ x eps)) (cr-fn2 x)))
 	     (equal (differential-cr-fn1-o-fn2 x eps) 0))
   :hints (("Goal"
-	   :in-theory '(differential-cr-fn1-o-fn2
+	   :in-theory '(differential-cr-fn1-o-fn2-definition
 			inverse-of-+)
 	   )))
 
@@ -646,7 +747,7 @@
 	     (equal (derivative-cr-fn1-o-fn2 x) 0))
   :hints (("Goal"
 	   :in-theory '(derivative-cr-fn2-must-be-zero
-			derivative-cr-fn1-o-fn2)
+			derivative-cr-fn1-o-fn2-definition)
 	   )))
 
 ;; So, let's get the easy case out of the way.  When
@@ -694,15 +795,18 @@
 
  (local
   (defthm lemma-6
-      (implies (acl2-numberp x)
-	       (equal (DIFFERENTIAL-CR-FN1-O-FN2 X 0)
+      (implies (inside-interval-p x (cr-fn2-domain))
+	       (equal (differential-cr-fn1-o-fn2 x 0)
 		      0))
-    :hints (("Goal"
-	     :in-theory '(DIFFERENTIAL-CR-FN1-O-FN2
-			  commutativity-of-+
+    :hints (("goal"
+             :use ((:instance differential-cr-fn1-o-fn2-definition
+                              (x x)
+                              (eps 0)))
+	     :in-theory '(commutativity-of-+
 			  unicity-of-0
 			  fix
 			  cr-fn2-real
+                          (:forward-chaining inside-interval-is-real)
 			  )))
     ))
 
@@ -717,11 +821,11 @@
 
  (local
   (defthm lemma-8
-      (implies (and (realp x)
-		    (realp y2))
+      (implies (and (inside-interval-p x (cr-fn2-domain))
+                    (inside-interval-p y2 (cr-fn2-domain)))
 	       (realp (differential-cr-fn2 x (+ (- x) y2))))
     :hints (("Goal"
-	     :in-theory (enable differential-cr-fn2)))
+	     :in-theory (enable differential-cr-fn2-definition)))
     :rule-classes (:type-prescription :rewrite)))
 
  (local
@@ -766,8 +870,8 @@
 
  (local
   (defthm lemma-10
-      (implies (and (realp x)
-		    (realp y2)
+      (implies (and (inside-interval-p x (cr-fn2-domain))
+                    (inside-interval-p y2 (cr-fn2-domain))
 		    (i-limited (DIFFERENTIAL-CR-FN1 (CR-FN2 X)
 						    (+ (- (CR-FN2 X)) (CR-FN2 Y2))))
 		    (EQUAL (STANDARD-PART (DIFFERENTIAL-CR-FN2 X (+ (- X) Y2)))
@@ -777,9 +881,12 @@
 	     :use ((:instance STANDARD-PART-OF-TIMES
 			      (x (DIFFERENTIAL-CR-FN1 (CR-FN2 X)
 						      (+ (- (CR-FN2 X)) (CR-FN2 Y2))))
-			      (y (DIFFERENTIAL-CR-FN2 X (+ (- X) Y2)))))
-	     :in-theory '(DIFFERENTIAL-CR-FN1-O-FN2
-			  i-close-reflexive
+			      (y (DIFFERENTIAL-CR-FN2 X (+ (- X) Y2))))
+                   (:instance DIFFERENTIAL-CR-FN1-O-FN2-definition
+                              (x x)
+                              (eps (- y2 x)))
+                   )
+	     :in-theory '(i-close-reflexive
 			  realp-differential-cr-fn2
 			  commutativity-of-+
 			  commutativity-2-of-+
@@ -791,7 +898,8 @@
 			  lemma-7
 			  lemma-8
 			  lemma-9
-			  lemma-10a)))))
+			  lemma-10a
+                          (:forward-chaining inside-interval-is-real))))))
 
  (defthm cr-fn1-o-fn2-differentiable-for-trivial-case
      (implies (and (standardp x)
@@ -868,9 +976,11 @@
 
  (local
   (defthm lemma-0
-      (acl2-numberp (differential-cr-fn1 x eps))
+    (implies (and (inside-interval-p x (cr-fn2-range))
+                  (inside-interval-p (+ x eps) (cr-fn2-range)))
+             (acl2-numberp (differential-cr-fn1 x eps)))
     :hints (("Goal"
-	     :in-theory (enable differential-cr-fn1)))
+	     :use ((:instance differential-cr-fn1-definition))))
     :rule-classes (:rewrite :type-prescription)))
 		  
 
@@ -945,7 +1055,7 @@
 			     (x x)
 			     (eps (- y1 x)))
 		  )
-	    :in-theory '(differential-cr-fn1-o-fn2
+	    :in-theory '(differential-cr-fn1-o-fn2-definition
 			 i-limited-times
 			 (i-large)
 			 commutativity-of-+
@@ -1050,9 +1160,11 @@
 
  (local
   (defthm lemma-0
-      (acl2-numberp (differential-cr-fn1 x eps))
+    (implies (and (inside-interval-p x (cr-fn2-range))
+                  (inside-interval-p (+ x eps) (cr-fn2-range)))
+             (acl2-numberp (differential-cr-fn1 x eps)))
     :hints (("Goal"
-	     :in-theory (enable differential-cr-fn1)))
+	     :use ((:instance differential-cr-fn1-definition))))
     :rule-classes (:rewrite :type-prescription)))
 		  
 
@@ -1210,7 +1322,7 @@
 			     (x (DIFFERENTIAL-CR-FN2 X (+ (- X) Y1)))
 			     (y (DIFFERENTIAL-CR-FN2 X (+ (- X) Y2))))
 		  )
-	    :in-theory '(differential-cr-fn1-o-fn2
+	    :in-theory '(differential-cr-fn1-o-fn2-definition
 			 i-limited-times
 			 (i-large)
 			 commutativity-of-+
@@ -1301,11 +1413,10 @@
 		 (i-close x y)
 		 (inside-interval-p y (cr-fn2-domain)))
 	    (i-close (cr-fn1-o-fn2 x) (cr-fn1-o-fn2 y)))
-
   :hints (("Goal"
-	   :by (:functional-instance rdfn-continuous
-				     (rdfn cr-fn1-o-fn2)
-				     (rdfn-domain cr-fn2-domain)))
+	   :use ((:functional-instance rdfn-continuous
+                                       (rdfn (lambda (x) (realfix (cr-fn1-o-fn2 x))))
+                                       (rdfn-domain cr-fn2-domain))))
 	  ("Subgoal 3"
 	   :use ((:instance cr-fn1-o-fn2-differentiable))
 	   :in-theory (disable cr-fn1-o-fn2-differentiable))
@@ -1313,15 +1424,17 @@
 	   :use ((:instance cr-fn2-domain-non-trivial)))))
 
 (defthm realp-differential-cr-fn1-o-fn2
-  (implies (and (realp x)
+  (implies (and (inside-interval-p x (cr-fn2-domain))
+		(inside-interval-p (+ x eps) (cr-fn2-domain))
 		(realp eps))
 	   (realp (differential-cr-fn1-o-fn2 x eps)))
   :hints (("Goal"
 	   :by (:functional-instance realp-differential-rdfn
 				     (differential-rdfn differential-cr-fn1-o-fn2)
-				     (rdfn cr-fn1-o-fn2)
+                                     (rdfn (lambda (x) (realfix (cr-fn1-o-fn2 x))))
 				     (rdfn-domain cr-fn2-domain))
-	   :in-theory (enable differential-cr-fn1 differential-cr-fn2)
+	   :in-theory (enable differential-cr-fn1-definition
+                              differential-cr-fn2-definition)
 	   )
 	  ("Goal'"
 	   :use ((:instance expand-differential-cr-fn1-o-fn2)))
@@ -1336,10 +1449,98 @@
   :hints (("Goal"
 	   :by (:functional-instance differential-rdfn-limited
 				     (differential-rdfn differential-cr-fn1-o-fn2)
-				     (rdfn cr-fn1-o-fn2)
+                                     (rdfn (lambda (x) (realfix (cr-fn1-o-fn2 x))))
 				     (rdfn-domain cr-fn2-domain)))))
 
-(in-theory (disable differential-cr-fn1-o-fn2))
+(in-theory (disable differential-cr-fn1-o-fn2-definition))
+
+(defthm-std standard-cr-fn2-domain
+  (standardp (cr-fn2-domain)))
+
+(defthm non-trivial-interval-not-both-endpoints-cr-fn2-domain
+    (implies (inside-interval-p x (cr-fn2-domain))
+	     (or (not (equal (interval-left-endpoint (cr-fn2-domain)) x))
+		 (not (equal (interval-right-endpoint (cr-fn2-domain)) x))))
+  :hints (("Goal" 
+	   :use ((:instance cr-fn2-domain-non-trivial))))
+  :rule-classes nil)
+
+(defthm non-trivial-interval-eps-or--eps-cr-fn2-domain
+    (implies (and (inside-interval-p x (cr-fn2-domain))
+		  (standardp x)
+		  (realp eps)
+		  (i-small eps))
+	     (or (inside-interval-p (+ x eps) (cr-fn2-domain))
+		 (inside-interval-p (- x eps) (cr-fn2-domain))))
+  :hints (("Goal"
+	   :use ((:instance non-trivial-interval-not-both-endpoints-cr-fn2-domain)
+		 (:instance inside-interval-x+eps
+			    (x x)
+			    (eps eps)
+			    (interval (cr-fn2-domain)))
+		 (:instance inside-interval-x+eps
+			    (x x)
+			    (eps (- eps))
+			    (interval (cr-fn2-domain)))
+		 (:instance inside-interval-x-eps
+			    (x x)
+			    (eps eps)
+			    (interval (cr-fn2-domain))
+			    )
+		 (:instance inside-interval-x-eps
+			    (x x)
+			    (eps (- eps))
+			    (interval (cr-fn2-domain))
+			    ))
+	   ))
+  :rule-classes nil)
+
+(local
+ (defthm derivative-fn1-o-fn2-is-close-to-differential
+   (implies (and (inside-interval-p x (cr-fn2-domain))
+		 (standardp x)
+		 (realp eps)
+		 (not (equal 0 eps))
+		 (i-small eps)
+		 (inside-interval-p (+ eps x) (cr-fn2-domain)))
+    (equal (* (derivative-cr-fn2 x)
+	      (derivative-cr-fn1 (cr-fn2 x)))
+	   (standard-part (differential-cr-fn1-o-fn2 x eps))))
+   :hints (("Goal"
+	    :use ((:instance differential-cr-fn1-o-fn2-definition)))
+	   ("Subgoal 2"
+	    :use ((:instance derivative-cr-fn2-must-be-zero))
+	    :in-theory (disable derivative-cr-fn2-must-be-zero))
+	  ("Subgoal 1"
+	   :use ((:instance standard-part-of-times
+			    (x (differential-cr-fn2 x eps))
+			    (y (differential-cr-fn1 (cr-fn2 x)
+                                                  (+ (- (cr-fn2 x))
+                                                     (cr-fn2 (+ eps x))))))
+		 (:instance differential-cr-fn1-limited
+			    (x (cr-fn2 x))
+			    (eps (+ (- (cr-fn2 x)) (cr-fn2 (+ eps x)))))
+		 (:instance cr-fn2-continuous
+			    (x x)
+			    (y (+ eps x)))
+		 (:instance i-close-to-small-sum)
+		 (:instance differential-cr-fn2-close
+			    (x x)
+			    (eps eps))
+		 (:instance differential-cr-fn1-close
+			    (x (cr-fn2 x))
+			    (eps (- (cr-fn2 (+ eps x))
+				    (cr-fn2 x))))
+		 )
+	   :in-theory (e/d (i-close)
+			   (standard-part-of-times
+			    differential-cr-fn1-limited
+			    cr-fn2-continuous
+			    i-close-to-small-sum
+			    differential-cr-fn1-close
+			    differential-cr-fn2-close)))
+	  )
+   ))
 
 (defthm real-derivative-cr-fn1-o-fn2
     (implies (inside-interval-p x (cr-fn2-domain))
@@ -1348,8 +1549,18 @@
 	   :by (:functional-instance derivative-well-defined
 				     (derivative-rdfn derivative-cr-fn1-o-fn2)
 				     (differential-rdfn differential-cr-fn1-o-fn2)
-				     (rdfn cr-fn1-o-fn2)
-				     (rdfn-domain cr-fn2-domain)))))
+                                     (rdfn (lambda (x) (realfix (cr-fn1-o-fn2 x))))
+				     (rdfn-domain cr-fn2-domain)))
+	  ("Subgoal 3"
+	   :use ((:instance derivative-fn1-o-fn2-is-close-to-differential
+			    (eps (/ (i-large-integer))))))
+	  ("Subgoal 2"
+	   :use ((:instance non-trivial-interval-eps-or--eps-cr-fn2-domain
+			    (eps (/ (i-large-integer))))))
+	  ("Subgoal 1"
+	   :use ((:instance derivative-fn1-o-fn2-is-close-to-differential
+			    (eps (- (/ (i-large-integer)))))))
+	  ))
 
 (defthm differential-cr-fn1-o-fn2-close
    (implies (and (inside-interval-p x (cr-fn2-domain)) 
@@ -1363,8 +1574,8 @@
 	   :by (:functional-instance differential-rdfn-close
 				     (derivative-rdfn derivative-cr-fn1-o-fn2)
 				     (differential-rdfn differential-cr-fn1-o-fn2)
-				     (rdfn cr-fn1-o-fn2)
+                                     (rdfn (lambda (x) (realfix (cr-fn1-o-fn2 x))))
 				     (rdfn-domain cr-fn2-domain)))))
 
-(in-theory (disable derivative-cr-fn1-o-fn2))
+(in-theory (disable derivative-cr-fn1-o-fn2-definition))
 

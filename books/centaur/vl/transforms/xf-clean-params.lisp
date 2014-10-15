@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
@@ -67,11 +77,11 @@ useless parameters.</p>")
   :valp-of-nil nil
   :short "Alist mapping module names to their @(see vl-useless-params-p) entries.")
 
-(define vl-plainarglist-elim-useless-params
+(define vl-paramvaluelist-elim-useless-params
   ((current-place natp)
    (positions     integer-listp)
-   (plainargs     vl-plainarglist-p))
-  :returns (cleaned vl-plainarglist-p :hyp (force (vl-plainarglist-p plainargs))
+   (plainargs     vl-paramvaluelist-p))
+  :returns (cleaned vl-paramvaluelist-p :hyp (force (vl-paramvaluelist-p plainargs))
                     "What's left of @('plainargs') after removing the
                      irrelevant arguments.")
   :measure (len plainargs)
@@ -79,63 +89,62 @@ useless parameters.</p>")
          nil)
         ((member current-place positions)
          ;; Skip it.
-         (vl-plainarglist-elim-useless-params (+ 1 current-place)
-                                              positions
-                                              (cdr plainargs)))
+         (vl-paramvaluelist-elim-useless-params (+ 1 current-place)
+                                                positions
+                                                (cdr plainargs)))
         (t
          ;; Keep it.
          (cons (car plainargs)
-               (vl-plainarglist-elim-useless-params (+ 1 current-place)
-                                                    positions
-                                                    (cdr plainargs))))))
+               (vl-paramvaluelist-elim-useless-params (+ 1 current-place)
+                                                      positions
+                                                      (cdr plainargs))))))
 
-(define vl-namedarglist-elim-useless-params
+(define vl-namedparamvaluelist-elim-useless-params
   ((names     string-listp)
-   (namedargs vl-namedarglist-p))
-  :returns (cleaned vl-namedarglist-p :hyp (force (vl-namedarglist-p namedargs))
+   (namedargs vl-namedparamvaluelist-p))
+  :returns (cleaned vl-namedparamvaluelist-p :hyp (force (vl-namedparamvaluelist-p namedargs))
                     "What's left of @('namedargs') after removing the
                      irrelevant arguments.")
   (cond ((atom namedargs)
          nil)
-        ((member-equal (vl-namedarg->name (car namedargs)) names)
+        ((member-equal (vl-namedparamvalue->name (car namedargs)) names)
          ;; Skip it.
-         (vl-namedarglist-elim-useless-params names (cdr namedargs)))
+         (vl-namedparamvaluelist-elim-useless-params names (cdr namedargs)))
         (t
          ;; Keep it.
          (cons (car namedargs)
-               (vl-namedarglist-elim-useless-params names (cdr namedargs))))))
+               (vl-namedparamvaluelist-elim-useless-params names (cdr namedargs))))))
 
-(define vl-arguments-elim-useless-params
-  :short "Apply a @(see vl-useless-params-p) to clean up an @(see vl-arguments-p)
+(define vl-paramargs-elim-useless-params
+  :short "Apply a @(see vl-useless-params-p) to clean up an @(see vl-paramargs-p)
 structure."
   ((useless   vl-useless-params-p)
-   (arguments vl-arguments-p))
-  :returns (new-arguments vl-arguments-p :hyp (force (vl-arguments-p arguments)))
+   (arguments vl-paramargs-p))
+  :returns (new-arguments vl-paramargs-p :hyp (force (vl-paramargs-p arguments)))
   (b* (((vl-useless-params useless) useless))
-    (vl-arguments-case arguments
-      :named
-      (change-vl-arguments-named arguments
-                                 :args (vl-namedarglist-elim-useless-params useless.names
-                                                                            arguments.args))
-      :plain
-      (change-vl-arguments-plain arguments.args
-                                 :args (vl-plainarglist-elim-useless-params 0
-                                                                            useless.positions
-                                                                            arguments.args)))))
+    (vl-paramargs-case arguments
+      :vl-paramargs-named
+      (change-vl-paramargs-named arguments
+                                 :args (vl-namedparamvaluelist-elim-useless-params useless.names
+                                                                                   arguments.args))
+      :vl-paramargs-plain
+      (change-vl-paramargs-plain arguments.args
+                                 :args (vl-paramvaluelist-elim-useless-params 0
+                                                                              useless.positions
+                                                                              arguments.args)))))
 
 (define vl-modinst-elim-useless-params ((x   vl-modinst-p)
                                         (map vl-useless-params-map-p))
   :short "Clean up a module instance, removing any useless parameters."
   :returns (new-x vl-modinst-p :hyp (force (vl-modinst-p x)))
-  (b* ((paramargs (vl-modinst->paramargs x))
-       ((unless (vl-arguments->args paramargs))
+  (b* (((vl-modinst x) x)
+       ((when (vl-paramargs-empty-p x.paramargs))
         ;; Optimization.  No changes if no params.
         x)
-       (modname   (vl-modinst->modname x))
-       (entry     (hons-get modname map))
+       (entry (hons-get x.modname map))
        ((unless entry)
         x)
-       (args-prime (vl-arguments-elim-useless-params (cdr entry) paramargs))
+       (args-prime (vl-paramargs-elim-useless-params (cdr entry) x.paramargs))
 
 ;         (- (or (equal paramargs args-prime)
 ;                (cw "; instance of ~s0: ~s1 --> ~s2~%"

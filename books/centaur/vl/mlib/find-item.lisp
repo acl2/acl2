@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
@@ -44,78 +54,72 @@ equivalent to the naive method of doing lookups.</p>")
 
 (local (xdoc::set-default-parents find-item))
 
-(defmacro def-vl-find-moditem (type
-                               &key
-                               element->name
-                               list->names
-                               names-may-be-nil)
+;; (defmacro def-vl-find-moditem (type
+;;                                &key
+;;                                element->name
+;;                                list->names
+;;                                names-may-be-nil)
 
-  (let* ((mksym-package-symbol 'vl::foo)
-         (fn            (mksym 'vl-find- type))
-         (element-p     (mksym 'vl- type '-p))
-         (fix           (mksym 'vl- type '-fix))
-         (type?         (mksym type '?))
-         (tag           (intern (cat "VL-" (symbol-name type)) "KEYWORD"))
-         (list-p        (mksym 'vl- type 'list-p))
-         (element->name (or element->name
-                            (mksym 'vl- type '->name)))
-         (list->names   (or list->names
-                            (mksym 'vl- type 'list->names))))
+;;   (let* ((mksym-package-symbol 'vl::foo)
+;;          (fn            (mksym 'vl-find- type))
+;;          (element-p     (mksym 'vl- type '-p))
+;;          (fix           (mksym 'vl- type '-fix))
+;;          (type?         (mksym type '?))
+;;          (tag           (intern (cat "VL-" (symbol-name type)) "KEYWORD"))
+;;          (list-p        (mksym 'vl- type 'list-p))
+;;          (element->name (or element->name
+;;                             (mksym 'vl- type '->name)))
+;;          (list->names   (or list->names
+;;                             (mksym 'vl- type 'list->names))))
 
-    `(define ,fn
-       :short ,(cat "Look up a " (symbol-name type) " in a list, by its name.")
-       ((name stringp)
-        (x    ,list-p))
-       :hooks ((:fix :args ((x ,list-p))))
-       :returns (,type? (equal (,element-p ,type?)
-                               (if ,type?
-                                   t
-                                 nil)))
-       (cond ((atom x)
-              nil)
-             ((equal name (,element->name (car x)))
-              (,fix (car x)))
-             (t
-              (,fn name (cdr x))))
-       ///
-       (local (in-theory (disable (force))))
+;;     `(define ,fn
+;;        :short ,(cat "Look up a " (symbol-name type) " in a list, by its name.")
+;;        ((name stringp)
+;;         (x    ,list-p))
+;;        :hooks ((:fix :args ((x ,list-p))))
+;;        :returns (,type? (equal (,element-p ,type?)
+;;                                (if ,type?
+;;                                    t
+;;                                  nil)))
+;;        (cond ((atom x)
+;;               nil)
+;;              ((equal name (,element->name (car x)))
+;;               (,fix (car x)))
+;;              (t
+;;               (,fn name (cdr x))))
+;;        ///
+;;        (local (in-theory (disable (force))))
 
-       (defthm ,(mksym fn '-under-iff)
-         (implies ,(if names-may-be-nil
-                       '(force (stringp name))
-                     t)
-                  (iff (,fn name x)
-                       (member-equal name (,list->names x)))))
+;;        (defthm ,(mksym fn '-under-iff)
+;;          (implies ,(if names-may-be-nil
+;;                        '(force (stringp name))
+;;                      t)
+;;                   (iff (,fn name x)
+;;                        (member-equal name (,list->names x)))))
 
-       (defthm ,(mksym element->name '-of- fn)
-         (implies (,fn name x)
-                  (equal (,element->name (,fn name x))
-                         name)))
+;;        (defthm ,(mksym element->name '-of- fn)
+;;          (implies (,fn name x)
+;;                   (equal (,element->name (,fn name x))
+;;                          name)))
 
-       (defthm ,(mksym 'tag-of- fn)
-         (equal (tag (,fn name x))
-                (if (,fn name x)
-                    ,tag
-                  nil)))
+;;        (defthm ,(mksym 'tag-of- fn)
+;;          (equal (tag (,fn name x))
+;;                 (if (,fn name x)
+;;                     ,tag
+;;                   nil)))
 
-       (defthm ,(mksym 'member-equal-of- fn)
-         (implies (force (,list-p x))
-                  (iff (member-equal (,fn name x) x)
-                       (,fn name x))))
+;;        (defthm ,(mksym 'member-equal-of- fn)
+;;          (implies (force (,list-p x))
+;;                   (iff (member-equal (,fn name x) x)
+;;                        (,fn name x))))
 
-       (defthm ,(mksym 'consp-of- fn '-when-member-equal)
-         (implies (and (member-equal name (,list->names x))
-                       (force (stringp name)))
-                  (consp (,fn name x)))))))
+;;        (defthm ,(mksym 'consp-of- fn '-when-member-equal)
+;;          (implies (and (member-equal name (,list->names x))
+;;                        (force (stringp name)))
+;;                   (consp (,fn name x)))))))
 
 (def-vl-find-moditem portdecl)
 
-
-(defalist vl-portdecl-alist-p (x)
-  :key (stringp x)
-  :val (vl-portdecl-p x)
-  :keyp-of-nil nil
-  :valp-of-nil nil)
 
 (define vl-portdecl-alist ((x vl-portdecllist-p))
   :returns (palist vl-portdecl-alist-p :hyp :guard)
@@ -173,10 +177,7 @@ the whole @(see vl-portdecl-p) object."
                           (mv nil nil nil))))))
 
 
-(def-vl-find-moditem regdecl)
 (def-vl-find-moditem vardecl)
-(def-vl-find-moditem netdecl)
-(def-vl-find-moditem eventdecl)
 (def-vl-find-moditem paramdecl)
 (def-vl-find-moditem fundecl)
 (def-vl-find-moditem taskdecl)
@@ -209,10 +210,7 @@ up multiple items.</p>"
   :hooks ((:fix :args ((x vl-module-p))))
 
   (b* (((vl-module x) x))
-    (or (vl-find-netdecl   name x.netdecls)
-        (vl-find-regdecl   name x.regdecls)
-        (vl-find-vardecl   name x.vardecls)
-        (vl-find-eventdecl name x.eventdecls)
+    (or (vl-find-vardecl   name x.vardecls)
         (vl-find-paramdecl name x.paramdecls)
         (vl-find-fundecl   name x.fundecls)
         (vl-find-taskdecl  name x.taskdecls)
@@ -223,10 +221,7 @@ up multiple items.</p>"
 
   (defthm vl-find-moduleitem-type-when-nothing-else
     (implies (and (vl-find-moduleitem name x)
-                  (not (vl-netdecl-p   (vl-find-moduleitem name x)))
-                  (not (vl-regdecl-p   (vl-find-moduleitem name x)))
                   (not (vl-vardecl-p   (vl-find-moduleitem name x)))
-                  (not (vl-eventdecl-p (vl-find-moduleitem name x)))
                   (not (vl-paramdecl-p (vl-find-moduleitem name x)))
                   (not (vl-fundecl-p   (vl-find-moduleitem name x)))
                   (not (vl-taskdecl-p  (vl-find-moduleitem name x)))
@@ -237,17 +232,8 @@ up multiple items.</p>"
 
   (defthm type-of-vl-find-moduleitem
     ;; This is gross, but I'm not sure of a better approach.
-    (and (equal (equal (tag (vl-find-moduleitem name x)) :vl-netdecl)
-                (vl-netdecl-p (vl-find-moduleitem name x)))
-
-         (equal (equal (tag (vl-find-moduleitem name x)) :vl-regdecl)
-                (vl-regdecl-p (vl-find-moduleitem name x)))
-
-         (equal (equal (tag (vl-find-moduleitem name x)) :vl-vardecl)
+    (and (equal (equal (tag (vl-find-moduleitem name x)) :vl-vardecl)
                 (vl-vardecl-p (vl-find-moduleitem name x)))
-
-         (equal (equal (tag (vl-find-moduleitem name x)) :vl-eventdecl)
-                (vl-eventdecl-p (vl-find-moduleitem name x)))
 
          (equal (equal (tag (vl-find-moduleitem name x)) :vl-paramdecl)
                 (vl-paramdecl-p (vl-find-moduleitem name x)))
@@ -291,10 +277,7 @@ up multiple items.</p>"
 (deftranssum vl-moditem
   :short "Module items are basically any named object that can occur within a
 module (except that we don't support, e.g., named blocks.)"
-  (vl-netdecl
-   vl-regdecl
-   vl-vardecl
-   vl-eventdecl
+  (vl-vardecl
    vl-paramdecl
    vl-fundecl
    vl-taskdecl
@@ -302,23 +285,14 @@ module (except that we don't support, e.g., named blocks.)"
    vl-gateinst))
 
 (fty::deflist vl-moditemlist
-  :elt-type vl-moditem-p)
-
-(deflist vl-moditemlist-p (x)
-  (vl-moditem-p x)
+  :elt-type vl-moditem-p
   :elementp-of-nil nil)
 
 (fty::defalist vl-moditem-alist
   :key-type stringp
-  :val-type vl-moditem-p)
-
-(defalist vl-moditem-alist-p (x)
-  :key (stringp x)
-  :val (vl-moditem-p x)
+  :val-type vl-moditem-p
   :keyp-of-nil nil
-  :valp-of-nil nil
-  :already-definedp t
-  :guard t)
+  :valp-of-nil nil)
 
 
 (defmacro vl-def-moditemlist-alist (type &key
@@ -331,18 +305,15 @@ module (except that we don't support, e.g., named blocks.)"
          (find-fn       (mksym 'vl-find- type))
          (list-p        (mksym 'vl- type 'list-p))
          (alist-p       (mksym 'vl- type 'alist-p))
+         (alist         (mksym 'vl- type 'alist))
          (elt-p         (mksym 'vl- type '-p))
          (elt-fix       (mksym 'vl- type '-fix))
          (element->name (or element->name (mksym 'vl- type '->name))))
     `(encapsulate
        ()
-       (fty::defalist ,alist-p
+       (fty::defalist ,alist
          :key-type stringp
-         :val-type ,elt-p)
-
-       (defalist ,alist-p (x)
-         :key (stringp x)
-         :val (,elt-p x)
+         :val-type ,elt-p
          :keyp-of-nil nil
          :valp-of-nil nil)
 
@@ -390,7 +361,7 @@ module (except that we don't support, e.g., named blocks.)"
                            (if (,find-fn name x)
                                (cons name (,find-fn name x))
                              nil)))
-           :hints(("Goal" :in-theory (enable ,find-fn)))))
+           :hints(("Goal" :in-theory (e/d (,find-fn) ((force)))))))
 
        (defsection ,(mksym fast-fn '-removal)
          :extension ,fast-fn
@@ -403,10 +374,7 @@ module (except that we don't support, e.g., named blocks.)"
 
          (verify-guards ,fn)))))
 
-(vl-def-moditemlist-alist netdecl)
-(vl-def-moditemlist-alist regdecl)
 (vl-def-moditemlist-alist vardecl)
-(vl-def-moditemlist-alist eventdecl)
 (vl-def-moditemlist-alist paramdecl)
 (vl-def-moditemlist-alist fundecl)
 (vl-def-moditemlist-alist taskdecl)
@@ -425,10 +393,7 @@ alist can be constructed in a one pass, using our fast builder functions.</p>"
 
   (b* (((vl-module x) x))
     (mbe :logic
-         (append (vl-netdecllist-alist x.netdecls)
-                 (vl-regdecllist-alist x.regdecls)
-                 (vl-vardecllist-alist x.vardecls)
-                 (vl-eventdecllist-alist x.eventdecls)
+         (append (vl-vardecllist-alist x.vardecls)
                  (vl-paramdecllist-alist x.paramdecls)
                  (vl-fundecllist-alist x.fundecls)
                  (vl-taskdecllist-alist x.taskdecls)
@@ -441,10 +406,8 @@ alist can be constructed in a one pass, using our fast builder functions.</p>"
               (acc (vl-fast-taskdecllist-alist x.taskdecls acc))
               (acc (vl-fast-fundecllist-alist x.fundecls acc))
               (acc (vl-fast-paramdecllist-alist x.paramdecls acc))
-              (acc (vl-fast-eventdecllist-alist x.eventdecls acc))
-              (acc (vl-fast-vardecllist-alist x.vardecls acc))
-              (acc (vl-fast-regdecllist-alist x.regdecls acc)))
-           (vl-fast-netdecllist-alist x.netdecls acc))))
+              (acc (vl-fast-vardecllist-alist x.vardecls acc)))
+           acc)))
   ///
   (defthm vl-moditem-alist-p-of-vl-moditem-alist
     (vl-moditem-alist-p (vl-moditem-alist x)))

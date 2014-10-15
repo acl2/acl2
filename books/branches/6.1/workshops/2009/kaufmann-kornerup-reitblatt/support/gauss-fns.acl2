@@ -1,4 +1,0 @@
-(INCLUDE-BOOK "preliminaries")
-
-(CERTIFY-BOOK "gauss-fns" ? T)
-

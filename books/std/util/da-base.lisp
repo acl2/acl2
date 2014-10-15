@@ -6,21 +6,32 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 ;
-; Additional copyright notice:
+; Additional Copyright Notice.
 ;
-; This file is adapted from Milawa, which is also released under the GPL.
+; This file is adapted from the Milawa Theorem Prover, Copyright (C) 2005-2009
+; Kookamara LLC, which is also available under an MIT/X11 style license.
 
 (in-package "STD")
 (include-book "support")
@@ -635,6 +646,7 @@ reasoning about @('car') in general.</p>"
   ;; symbol-name is in varstrs.
   (if (atom form)
       (if (and (symbolp form)
+               (not (keywordp form))
                (member-equal (symbol-name form) varstrs)
                (not (member-eq form acc)))
           (cons form acc)
@@ -651,57 +663,6 @@ reasoning about @('car') in general.</p>"
       (cons binding
             (da-patbind-alist-to-bindings (cdr vars) valist target)))))
 
-
-(defxdoc defaggregate-b*-syntax-error
-  :parents (defaggregate)
-  :short "The @(see b*) binders introduced by @(see defaggregate) now cause
-syntax errors in certain cases that were previously accepted."
-
-  :long "<p>Say we have a simple aggregate such as:</p>
-@({
-    (defaggregate employee (name title phone))
-})
-
-<p>Previously the following was a valid (but error-prone!) use of @('b*'):</p>
-
-@({
-    (b* ((x            'oops)
-         ((employee x) (make-employee :name \"Jimmy\"
-                                      :title \"Beta Tester\"
-                                      :phone 3145)))
-      (list :name x.name
-            :title x.title
-            :phone x.phone
-            :whole x))
-})
-
-<p>Here, the @('b*') binder for the aggregate would properly bind the values of
-@('x.name'), @('x.title'), and so forth.  However, it previously <b>did not
-rebind @('x') itself</b>.  So, the result produced by the above is:</p>
-
-@({
-    (:name \"Jimmy\" :title \"Beta Tester\" :phone 3145 :whole oops)
-})
-
-<p>This was counter-intuitive, since it sure looks like @('x') is being
-re-bound to the @('make-employee') call.</p>
-
-<p>To reduce the chance for confusion, we now detect cases like this and cause
-an error.</p>
-
-<h3>Future Plan</h3>
-
-<p>This restriction is a temporary measure, meant to help to ensure that any
-existing code based on @('b*') can be updated safely.</p>
-
-<p>After the release of ACL2 6.5, we will remove this restriction and change
-the way that these @('b*') binders work, so that they will also bind the
-variable itself.</p>
-
-<p>See also <a
-href='https://code.google.com/p/acl2-books/issues/detail?id=41'>Issue 41</a> in
-the acl2-books issue tracker.</p>")
-
 ;; notes: fields-accs is now a mapping from field names to accessors.
 ;; Defaggregate itself just needs the field names because it always generates
 ;; the accessor names in the same way, but this now could work in a broader
@@ -709,6 +670,12 @@ the acl2-books issue tracker.</p>")
 (defun da-patbind-fn (name fields-accs args forms rest-expr)
   (b* (((mv kwd-alist args)
         (extract-keywords `(da-patbind-fn ',name) '(:quietp) args nil))
+       ;; allow ((binder name)) abbrev for ((binder name) name)
+       (forms (if (and (not forms)
+                       (tuplep 1 args)
+                       (symbolp (car args)))
+                  args
+                forms))
        (- (or (and (tuplep 1 args)
                    (tuplep 1 forms)
                    (symbolp (car args))
@@ -718,7 +685,8 @@ the acl2-books issue tracker.</p>")
                   "B* bindings for ~x0 aggregates must have the form ((~x0 ~
                    <name>) <expr>), where <name> is a symbol and <expr> is a ~
                    single term.  The attempted binding of~|~% ~p1~%~%is not ~
-                   of this form."
+                   of this form.~%(Exception:  ((~x0 <name>)) is allowed as ~
+                   an abbreviation for ((~x0 <name>) <name>).)"
                   name (cons (cons name args) forms))))
 
        (var             (car args))
@@ -726,50 +694,22 @@ the acl2-books issue tracker.</p>")
        (full-vars-alist (da-patbind-make-field-acc-alist var fields-accs))
        (field-vars      (strip-cars full-vars-alist))
        (used-vars       (da-patbind-find-used-vars rest-expr field-vars nil))
-       ((unless (or used-vars (cdr (assoc :quietp kwd-alist))))
-        (progn$
-         (cw "Note: not introducing any ~x0 field bindings for ~x1, since ~
-              none of its fields appear to be used.~%" name var)
-         rest-expr))
+       (- (or used-vars
+              (cdr (assoc :quietp kwd-alist))
+              (cw "Note: not introducing any ~x0 field bindings for ~x1, ~
+                   since none of its fields appear to be used.~%" name var)))
 
-       ;;(- (cw "Var is ~x0.~%" var))
-       ;;(- (cw "Full vars alist is ~x0.~%" full-vars-alist))
-       ;;(- (cw "Unnecessary field vars are ~x0.~%" unused-vars))
-       ;;(- (cw "Optimized vars alist is ~x0.~%" vars-alist))
-
-       ;; The below is adapted from patbind-nth.  Sol is using (pack binding)
-       ;; to generate a name that is probably unused.  We'll do the same.
-
-       (binding  (if forms (car forms) var))
-       (evaledp  (or (atom binding) (eq (car binding) 'quote)))
-       (target   (if evaledp binding (acl2::pack binding)))
-       (bindings (da-patbind-alist-to-bindings used-vars full-vars-alist target))
-
-       ;;(- (cw "Binding is ~x0.~%" var))
-       ;;(- (cw "Evaledp is ~x0.~%" var))
-       ;;(- (cw "Target is ~x0.~%" target))
-       ;;(- (cw "New bindings are ~x0.~%" bindings))
-
-       (rest-expr
-        (if (equal var binding)
-            ;; E.g., The something like ((vl-module x) x) -- this is a common pattern
-            ;; and a safe thing to do, so don't cause an error.
-            rest-expr
-          ;; Found something like ((vl-module x) (change-module y ...)) -- we want to
-          ;; make sure x never occurs in the rest-expr now, so that we can bind it in
-          ;; future versions of defaggregate.
-          `(acl2::translate-and-test
-            (lambda (term)
-              (or (not (member ',var (all-vars term)))
-                  (msg "B* binding of ~x0 to ~x1 is not currently allowed.  See :doc ~x2."
-                       ',var ',binding 'defaggregate-b*-syntax-error)))
-            ,rest-expr))))
-
-    (if evaledp
+       (bindings (da-patbind-alist-to-bindings used-vars full-vars-alist var)))
+    (if (eq var (car forms))
+        ;; No need to rebind: this actually turns out to matter for some
+        ;; expansion heuristics in the svex library (3vec-fix), which is
+        ;; annoying because you'd think a (let nil ...) should be equivalent to
+        ;; ... but, well, whatever.
         `(b* ,bindings ,rest-expr)
-      `(let ((,target ,binding))
-         (b* ,bindings
-           (check-vars-not-free (,target) ,rest-expr))))))
+      `(let ((,var ,(car forms)))
+         (declare (ignorable ,var))
+         ;; We know var is used in at least the bindings
+         (b* ,bindings ,rest-expr)))))
 
 ;; more general than da-make-binder: takes the mapping from fields to accessors
 ;; instead of generating it

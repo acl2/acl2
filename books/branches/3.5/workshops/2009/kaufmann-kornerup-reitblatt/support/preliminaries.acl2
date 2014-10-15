@@ -1,3 +1,0 @@
-(include-book "defexec/other-apps/records/records" :dir :system)
-
-(ACL2::CERTIFY-BOOK "preliminaries" ACL2::? T)

@@ -83,6 +83,8 @@ pseudo-parallel.lisp
 README
 serial.lisp
 
+# bin -- under svn control but not distributed
+
 doc:
 # The following is distributed but is not in the svn repository:
 acl2-code-size.txt

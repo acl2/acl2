@@ -1,45 +1,128 @@
+; defevaluator-fast -- faster version of defevaluator
+; Copyright (C) 2009-2014 Centaur Technology
+;
+; Contact:
+;   Centaur Technology Formal Verification Group
+;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+;   http://www.centtech.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+;
+; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "ACL2")
-
-;; c. 2009 by Sol Swords
-
-;; This provides a new macro, defevaluator-fast, which behaves much like
-;; defevaluator: from the user perspective, it should be identical; it produces
-;; a constrained function with the same set of constraints as the one produced
-;; by defevaluator.  However, it is much faster when the list of recognized
-;; functions is long.  It can also recognize multi-valued functions and
-;; functions with stobjs, because the evaluator is declared non-executable.
-;; (From the user perspective, it's a constrained function anyway, so it
-;; shouldn't matter.)
-
-;; Some data:
-
-;; The constant *defeval-entries-for-all-reasonable-functions*, defined in a
-;; comment at the bottom of this file, contains a list of 574 function "calls"
-;; (such as (cons a b), (foo arg1 arg2), etc) if the contents of the comment
-;; are loaded after including this book in an empty acl2h.
-
-;; On one modern (ca. 2009) machine, DEFEVALUATOR-FAST proves the constraints
-;; for the evaluator recognizing all the listed functions in 2.2 seconds (when
-;; output is turned off.)  Empirically, runtime seems to scale quadratically
-;; with the number of functions recognized, which is consistent with the notion
-;; that there are linearly many theorems which each prove in linear time.
-
-;; In comparison, if we redefine DEFEVALUATOR so that it can handle MVs and
-;; functions that take stobjs and so that it gives a :DO-NOT '(PREPROCESS) hint
-;; to the measure theorem for better performance, it takes 6.0 sec to define an
-;; evaluator recognizing the first 40 of these functions, 11.1 sec for the
-;; first 50, 28 sec for the first 80, and so on.  (If the :DO-NOT '(PREPROCESS)
-;; hint is omitted, then somewhere in the 40s the measure conjecture begins to
-;; spend an impractically long time in IF-TAUTOLOGYP, part of preprocessing.)
-
-;; Acknowledgements:  Code ripped liberally from the original defevaluator
-;; macro in defthm.lisp (in the ACL2 sources.)  Also, Jared Davis provided the
-;; idea of defining the evaluator to call evfn-lst once on the function or
-;; lambda arguments rather than calling evfn N times for each N-ary function
-;; recognized (this is the main innovation that speeds up the proofs.)
-
+(include-book "xdoc/top" :dir :system)
 (program)
+
+(defxdoc defevaluator-fast
+  :parents (defevaluator)
+  :short "Faster alternative to @(see defevaluator)."
+  :long "<p>See @(see defevaluator) and for background about evaluators, which
+are used in @(see meta) rules and @(see clause-processor)s.</p>
+
+<p>@('Defevaluator-fast') is a reimplementation of @('defevaluator').  From the
+user perspective, it is nearly identical to @('defevaluator').  That is, it
+produces a constrained function with the same set of constraints as the one
+produced by defevaluator.  However:</p>
+
+<ul>
+<li>it is much faster when the list of recognized functions is long,</li>
+<li>it can also recognize multi-valued functions and functions with stobjs,
+    because the evaluator is declared non-executable (which shouldn't
+    matter to the user since it's a constrained function anyway)</li>
+<li>it can optionally give the constraints better names.</li>
+</ul>
+
+<p>Example:</p>
+@({
+    (defevaluator-fast evl evl-list
+      ((length x) (member x y)))
+})
+
+<p>General Form:</p>
+
+@({
+    (defevaluator-fast ev ev-list
+      ((g1 x1 ... xn_1)
+       ...
+       (gk x1 ... xn_k))
+      :namedp flg)
+})
+
+<p>where @('ev') and @('ev')-list are new function symbols and @('g1'), ...,
+@('gk') are old function symbols with the indicated number of formals, i.e.,
+each @('gi') has @('n_i') formals.</p>
+
+<h3>Constraint Naming</h3>
+
+<p>The @('namedp') argument defaults to nil, in which case the theorems
+constraining the evaluator are named the same way as in defevaluator, i.e.,</p>
+
+@({
+    [evname]-constraint-0
+    [evname]-constraint-1
+    [evname]-constraint-2
+    ...
+})
+
+<p>If you instead give @(':namedp t'), then the theorems are given more
+descriptive names,</p>
+
+@({
+    [evname]-of-quote
+    [evname]-of-[fnname]-call
+    ...
+})
+
+<h3>Performance Notes</h3>
+
+<p>See the comments in @('tools/defevaluator-fast.lisp') for some performance
+testing code.  We tested @('defevaluator-fast') against the constant
+@('*defeval-entries-for-all-reasonable-functions*'), which contained a list of
+574 function \"calls\" (such as @('(cons a b)'), @('(foo arg1 arg2)'),
+etc.)</p>
+
+<p>On one modern (ca. 2009) machine, @('defevaluator-fast') proves the
+constraints for the evaluator recognizing all the listed functions in 2.2
+seconds (when output is turned off.)  Empirically, runtime seems to scale
+quadratically with the number of functions recognized, which is consistent with
+the notion that there are linearly many theorems which each prove in linear
+time.</p>
+
+<p>In comparison, if we redefine @('defevaluator') so that it can handle MVs
+and functions that take stobjs and so that it gives a @(':do-not
+'(preprocess)') hint to the measure theorem for better performance, it takes
+6.0 sec to define an evaluator recognizing the first 40 of these functions,
+11.1 sec for the first 50, 28 sec for the first 80, and so on.  (If the
+@(':do-not '(preprocess)') hint is omitted, then somewhere in the 40s the
+measure conjecture begins to spend an impractically long time in
+@('if-tautologyp'), part of preprocessing.)</p>
+
+<h3>Acknowledgements</h3>
+
+<p>Code ripped liberally from the original defevaluator macro in
+defthm.lisp (in the ACL2 sources.)  Also, Jared Davis provided the idea of
+defining the evaluator to call evfn-lst once on the function or lambda
+arguments rather than calling evfn N times for each N-ary function
+recognized (this is the main innovation that speeds up the proofs.)</p>")
 
 (defun evfast-symname-lst (syms)
   (if (atom syms)
@@ -51,7 +134,6 @@
   `(intern-in-package-of-symbol
     (concatenate 'string . ,(evfast-symname-lst (cons evfn rest-syms)))
     ,evfn))
-                 
 
 (defun defevaluator-fast-form/defthm-for-fnsym (evfn fn-args)
   (let* ((thmname (evfast-thmname evfn '-of- (car fn-args) '-call))
@@ -100,7 +182,7 @@
         ,(nth 2 base-clauses)
         :hints (("goal" :expand ((,evfn x a)))))
       (local (in-theory (disable ,(evfast-thmname evfn '-of-quote))))
-      
+
       (defthm ,(evfast-thmname evfn '-of-lambda)
         ,(nth 3 base-clauses)
         :hints (("goal" :expand ((,evfn x a)))))
@@ -325,35 +407,6 @@
 
 ; Note: It might be nice to allow defevaluator to take a :DOC string, but that
 ; would require allowing encapsulate to take such a string!
-
-  ":Doc-Section Events
-
-  introduce an evaluator function (but faster.)~/
-  ~bv[]
-  Example:
-  (defevaluator-fast evl evl-list
-    ((length x) (member x y)))
-  ~ev[]
-  ~l[meta].~/
-  ~bv[]
-  General Form:
-  (defevaluator-fast ev ev-list
-     ((g1 x1 ... xn_1)
-      ...
-      (gk x1 ... xn_k))
-     :namedp flg)
-  ~ev[]
-  where ~c[ev] and ~c[ev]-list are new function symbols and ~c[g1], ..., ~c[gk] are
-  old function symbols with the indicated number of formals, i.e.,
-  each ~c[gi] has ~c[n_i] formals.
-
-  The namedp argument is a flag that defaults to nil.  If nil, the theorems
-  constraining the evaluator are named the same way as in defevaluator, i.e.,
-  [evname]-constraint-[index].  If t, the theorems are given more descriptive
-  names, such as [evname]-of-[fnname]-call, [evname]-of-quote, etc.
-
-  ~l[defevaluator] for more.  Defevaluator-fast is a reimplementation of
-  defevaluator, designed to handle larger numbers of recognized functions."
 
   (cond
    ((not (and (symbolp evfn)
@@ -649,7 +702,7 @@
 
 (set-inhibit-output-lst '(proof-tree prove event expansion))
 
-(time$ 
+(time$
  (make-event
   `(defevaluator test-defevaluator-ev test-defevaluator-ev-lst
      ,(take 80 *defeval-entries-for-all-reasonable-functions*))))

@@ -1,3 +1,7 @@
+; Copyright (C) 2014, Regents of the University of Texas
+; Written by David Rager (original date April, 2012)
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+
 (in-package "ACL2")
 
 ; After verifying the guards of subst-var, it would be good to change the name

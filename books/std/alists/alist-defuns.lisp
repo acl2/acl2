@@ -6,31 +6,36 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original authors: Jared Davis <jared@centtech.com>
 ;                   Sol Swords <sswords@centtech.com>
 
 (in-package "ACL2")
+(include-book "std/util/define" :dir :system)
 (include-book "tools/bstar" :dir :system)
 (include-book "../lists/list-defuns")
 (local (include-book "alist-equiv"))
-(local (include-book "alist-keys"))
-(local (include-book "alist-vals"))
-(local (include-book "hons-rassoc-equal"))
-(local (include-book "fal-extract"))
-(local (include-book "fal-extract-vals"))
 (local (include-book "append-alist-keys"))
 (local (include-book "append-alist-vals"))
-(set-enforce-redundancy t)
 
 (defund alist-keys (x)
   (declare (xargs :guard t))
@@ -110,7 +115,8 @@
 
 (defund fal-extract (keys al)
   "Makes AL fast if necessary"
-  (declare (xargs :guard t))
+  (declare (xargs :guard t
+                  :guard-hints(("Goal" :in-theory (enable fal-extract fal-extract1)))))
   (mbe :logic
        (b* (((when (atom keys))
              nil)
@@ -132,7 +138,8 @@
 
 (defund fal-extract-vals (keys al)
   "Makes AL fast if necessary"
-  (declare (xargs :guard t))
+  (declare (xargs :guard t
+                  :guard-hints(("Goal" :in-theory (enable fal-extract-vals fal-extract-vals1)))))
   (mbe :logic
        (if (atom keys)
            nil
@@ -191,3 +198,68 @@
          (append (caar x) (append-alist-keys (cdr x))))
        :exec
        (reverse (append-alist-keys-exec x nil))))
+
+
+(define worth-hashing1 (x n)
+  (declare (type (unsigned-byte 8) n)
+           (xargs :guard t))
+  (mbe :logic (>= (len x) n)
+       :exec
+       (cond ((eql n 0) t)
+             ((atom x) nil)
+             (t (worth-hashing1 (cdr x) (the (unsigned-byte 8) (1- n)))))))
+
+(local (in-theory (enable worth-hashing1)))
+
+(define worth-hashing (x)
+  :returns bool
+  :inline t
+  (mbe :logic (>= (len x) 18)
+       :exec (and (consp x)
+                  (worth-hashing1 (cdr x) 17))))
+
+(define fal-all-boundp-fast (keys alist)
+  (if (atom keys)
+      t
+    (and (hons-get (car keys) alist)
+         (fal-all-boundp-fast (cdr keys) alist))))
+
+(define fal-all-boundp-slow (keys alist)
+  (if (atom keys)
+      t
+    (and (hons-assoc-equal (car keys) alist)
+         (fal-all-boundp-slow (cdr keys) alist))))
+
+(define fal-all-boundp (keys alist)
+  (declare (xargs :guard t :verify-guards nil))
+  (mbe :logic
+       (if (atom keys)
+           t
+         (and (hons-assoc-equal (car keys) alist)
+              (fal-all-boundp (cdr keys) alist)))
+       :exec
+       (if (atom keys)
+           t
+         (if (and (worth-hashing keys)
+                  (worth-hashing alist))
+             (with-fast-alist alist
+               (fal-all-boundp-fast keys alist))
+           (fal-all-boundp-slow keys alist)))))
+
+(encapsulate
+  ()
+  (local (in-theory (enable fal-all-boundp)))
+
+  (defthm fal-all-boundp-fast-removal
+    (equal (fal-all-boundp-fast keys alist)
+           (fal-all-boundp keys alist))
+    :hints(("Goal" :in-theory (enable fal-all-boundp-fast))))
+
+  (defthm fal-all-boundp-slow-removal
+    (equal (fal-all-boundp-slow keys alist)
+           (fal-all-boundp keys alist))
+    :hints(("Goal" :in-theory (enable fal-all-boundp-slow))))
+
+  (verify-guards fal-all-boundp))
+
+

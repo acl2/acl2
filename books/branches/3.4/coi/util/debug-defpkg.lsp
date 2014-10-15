@@ -1,3 +1,0 @@
-
-(defpkg "DEBUG" nil)
-

@@ -1,15 +1,34 @@
 ; Append lemmas
-; Copyright (C) 2005-2013 by Jared Davis <jared@cs.utexas.edu>
+; Copyright (C) 2005-2013 Kookamara LLC
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+;
+; Original author: Jared Davis <jared@kookamara.com>
 ;
 ; append.lisp
 ; This file was originally part of the Unicode library.
@@ -17,7 +36,6 @@
 (in-package "ACL2")
 (include-book "list-fix")
 (local (include-book "std/basic/inductions" :dir :system))
-(local (include-book "arithmetic/top" :dir :system))
 
 
 (defsection std/lists/append
@@ -60,11 +78,11 @@ library."
     (equal (len (append x y))
            (+ (len x) (len y))))
 
-  (defthm nth-of-append
-    (equal (nth n (append x y))
-           (if (< (nfix n) (len x))
-               (nth n x)
-             (nth (- n (len x)) y))))
+  ;; (defthm nth-of-append
+  ;;   (equal (nth n (append x y))
+  ;;          (if (< (nfix n) (len x))
+  ;;              (nth n x)
+  ;;            (nth (- n (len x)) y))))
 
   (defthm equal-when-append-same
     (equal (equal (append x y1)
@@ -106,18 +124,15 @@ library."
     (equal (append (append a b) c)
            (append a (append b c))))
 
-  (def-projection-rule elementlist-projection-of-append
-    (equal (elementlist-projection (append a b))
-           (append (elementlist-projection a)
-                   (elementlist-projection b))))
-
-  (def-projection-rule elementlist-mapappend-of-append
-    (equal (elementlist-mapappend (append a b))
-           (append (elementlist-mapappend a)
-                   (elementlist-mapappend b))))
-
   (defcong element-list-equiv element-list-equiv (append a b) 1)
-  (add-listp-rule)
+  (table listfix-rules 'element-list-equiv-implies-element-list-equiv-append-1 t)
   (defcong element-list-equiv element-list-equiv (append a b) 2)
-  (add-listp-rule))
+  (table listfix-rules 'element-list-equiv-implies-element-list-equiv-append-2 t)
+
+  (def-listp-rule element-list-p-of-append-true-list
+    (equal (element-list-p (append a b))
+           (and (element-list-p (list-fix a))
+                (element-list-p b)))
+    :requirement true-listp
+    :name element-list-p-of-append))
 

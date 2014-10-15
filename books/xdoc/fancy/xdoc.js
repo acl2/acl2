@@ -7,15 +7,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 */
@@ -103,6 +113,57 @@ function please_wait() {
     waitmsg = waitmsg + 1;
     if (waitmsg == msgs.length)
         waitmsg = msgs.length - 1;
+}
+
+
+var KATEX_LOADED = 0;
+
+function onKatexLoaded()
+{
+    KATEX_LOADED = 1;
+    renderMathFragments();
+}
+
+function renderMathFragments ()
+{
+    // Need to call this whenever we potentially add new .mathfrag divs into
+    // the page.
+
+    if (! KATEX_LOADED) {
+	// just wait, it'll get loaded eventually
+	return;
+    }
+
+    // console.log("Rendering math fragments.");
+    $(".mathblock").each(function () {
+        var obj = $(this);
+    	var formula_text = obj.text();
+        var newdiv = jQuery("<span></span>");
+	try {
+	    katex.render(formula_text, newdiv.get(0));
+    	    obj.html(newdiv);
+	    obj.removeAttr("class");
+	    obj.attr("class", "mathblockrendered");
+	}
+	catch(e) {
+	    obj.html(htmlEncode("{{" + e.message + "}}"));
+	}
+    });
+
+    $(".mathfrag").each(function () {
+        var obj = $(this);
+    	var formula_text = obj.text();
+        var newdiv = jQuery("<span></span>");
+	try {
+	    katex.render(formula_text, newdiv.get(0));
+	    obj.html(newdiv);
+	    obj.removeAttr("class");
+	    obj.attr("class", "mathfragrendered");
+    	}
+	catch (e) {
+	    obj.html(htmlEncode("{{" + e.message + "}}"));
+	}
+    });
 }
 
 
@@ -305,8 +366,10 @@ function nav_make_node(key) {
         node += "<img src=\"plus.png\" id=\"_nav_img" + id + "\"/>";
         node += "</a>";
     }
-    node += "<a id=\"_golink" + id + "\" href=\"javascript:nav_go(" + id
-            + ")\" data-powertip=\"" + tooltip + "\">";
+    node += "<a id=\"_golink" + id + "\""
+	  + " href=\"index.html?topic=" + key + "\""
+          + " onclick=\"return dolink(event, '" + key + "');\""
+          + " data-powertip=\"" + tooltip + "\">";
     node += name;
     node += "</a>";
     node += "</nobr>";
@@ -423,7 +486,8 @@ function nav_flat_really_install() {
         }
 
         dl.append("<li><a class=\"flatnav\""
-                  + " href=\"JavaScript:action_go_key('" + key + "')\""
+                  + " href=\"index.html?topic=" + key + "\""
+                  + " onclick=\"return dolink(event, '" + key + "');\""
                   + " data-powertip=\"" + tooltip + "\">"
                   + name
                   + "</li>");
@@ -483,8 +547,9 @@ function dat_load_parents(key) {
             tooltip = topic_short_plaintext(pkey);
         }
         acc += "<li>";
-        acc += "<a href=\"javascript:action_go_key('" + pkey + "')\""
-            + "data-powertip=\"<p>" + tooltip + "</p>\">";
+        acc += "<a href=\"index.html?topic=" + pkey + "\""
+	    + " onclick=\"return dolink(event, '" + pkey + "');\""
+            + " data-powertip=\"<p>" + tooltip + "</p>\">";
         acc += pname;
         acc += "</a>";
         acc += "</li>\n";
@@ -502,7 +567,9 @@ function dat_short_subtopics(key)
     var dl = jQuery("<div></div>");
     for(var i in children) {
         var child_key = children[i];
-        dl.append("<dt><a href=\"javascript:action_go_key('" + child_key + "')\">"
+        dl.append("<dt><a href=\"index.html?topic=" + child_key + "\""
+                  + " onclick=\"return dolink(event, '" + child_key + "');\""
+		  + ">"
                   + topic_name(child_key)
                   + "</dt>");
         var dd = jQuery("<dd></dd>");
@@ -540,6 +607,7 @@ function dat_expand(dat_id)
     });
 
     $(".basepkg").powerTip({placement:'sw',smartPlacement: true});
+    renderMathFragments();
 }
 
 function dat_collapse(dat_id)
@@ -640,7 +708,6 @@ function dat_load_key(key, scroll_to)
     // BOZO consider doing something to find the key in the navigation
     // hierarchy somewhere, to make the navigation follow along with you?
     var keys = [key];
-    //console.log("dat_load_key " + key + ", scroll to " + scroll_to);
 
     xdata_when_ready(keys,
     function() {
@@ -652,6 +719,7 @@ function dat_load_key(key, scroll_to)
         $("#data").append(dat_long_topic(key));
 	$(".basepkg").powerTip({placement:'sw',smartPlacement: true});
         $("title").html(key_title(key));
+	renderMathFragments();
 	setTimeout("dat_really_scroll_to(" + scroll_to + ")", 10);
     });
 }
@@ -768,7 +836,8 @@ function search_add_hit(matches, hits, key) {
 	return;
     }
     matches[key] = 1;
-    hits.append("<dt><a href=\"javascript:action_go_key('" + key + "')\">"
+    hits.append("<dt><a href=\"index.html?topic=" + key + "\""
+		+ " onclick=\"return dolink(event, '" + key + "');\">"
 		+ topic_name(key)
 		+ "</a>"
 //		+ " (" + topic_uid(key) + ")" // nice for debugging
@@ -857,8 +926,14 @@ $(document).ready(function()
 
 function jump_render(datum) {
     var key = datum["value"];
-    return "<p><b class=\"sf\">" + topic_name(key) + "</b> &mdash; " +
-	topic_short_plaintext(key) + "<br/><tt>" + key + "</tt></p>";
+    var ret = "";
+    ret += "<p><b class=\"sf\">" + topic_name(key) + "</b>";
+    var shortmsg = topic_short_plaintext(key);
+    if (shortmsg != "") {
+	ret += " &mdash; " + shortmsg;
+    }
+    ret += "<br/><tt>" + key + "</tt></p>";
+    return ret;
 }
 
 function jump_init() {
@@ -871,23 +946,72 @@ function jump_init() {
         tokens.push(topic_rawname(key));
         var entry = {"value": key,
 		     "nicename": topic_name(key),
-                     "tokens": tokens};
+                     "tokens": tokens
+		     };
         ta_data.push(entry);
     }
 
-    $("#jump").typeahead([{
-        name: "topics",
+    var engine1 = new Bloodhound({
+	name: 'topics',
 	local: ta_data,
-	limit: 6,
-	autoselect: 'first',
-	template: jump_render
-    }]);
+	limit: 20,
+	datumTokenizer: function(data) {
+	    return data.tokens;
+	},
+	queryTokenizer: Bloodhound.tokenizers.whitespace,
+	sorter: function(a,b) { return alphanum(a.nicename,b.nicename); }
+    });
+
+    engine1.initialize();
+
+    $("#jump").typeahead({
+			     highlight: true,
+			     hint: true,
+			     autoselect: true
+			 },
+			 {
+			     name: "topics",
+			     displayKey: 'nicename',
+			     source: engine1.ttAdapter(),
+			     templates:
+			     {
+				 suggestion: jump_render
+			     }
+			 });
 
     $("#jump").bind('typeahead:selected', jump_go);
     $("#jump").bind('typeahead:autocompleted', jump_go);
     $("#jumpmsg").powerTip({placement:'se'});
     $("#jump").attr("placeholder", "append");
     $("#jump").removeAttr("disabled");
+
+
+    $("#jumpform").submit(function(event)
+    {
+	// Magic code that took me way too much hacking to get working.
+	console.log("In form submitter.");
+
+	// Don't actually try to "submit" the form.
+	event.preventDefault();
+
+	// Act like the tab key was pressed, to trigger autocomplete.
+	// In the case where the user hasn't entered the entire input,
+	// this will trigger the jump_go call all by itself.
+
+	var e = jQuery.Event("keydown");
+	e.keyCode = e.which = 9; // 9 == tab
+	$("#jump").trigger(e);
+
+	// We seem to never get here EXCEPT in the case where the user
+	// has typed in the entire text for one of the entries.  In
+	// that case, for whatever reason, the autocomplete feature
+	// doesn't actually trigger the submit.  So, if we get here,
+	// figure out what we're looking at and submit it manually.
+
+	var value = $("#jump").typeahead('val');
+	// console.log("After tab, value is " + value);
+	jump_go(null, {value:value});
+    });
 }
 
 function jump_go(obj,datum) {
@@ -896,7 +1020,7 @@ function jump_go(obj,datum) {
         action_go_key(key);
     else
         alert("Invalid key " + key);
-    $("#jump").val("");
+    $("#jump").typeahead('val', "");
     $("#jump").typeahead('setQuery', '');
 }
 
@@ -941,6 +1065,9 @@ function onIndexLoaded()
 
     jump_init();
     search_init();
+
+    // Load katex after the other stuff is loaded.
+    LazyLoad.js('lib/katex/katex.min.js', onKatexLoaded);
 }
 
 function onDataLoaded()
@@ -1025,7 +1152,7 @@ function srclink(key)
         "; loaded xdoc.el from the xdoc/ directory.\n" +
         ";\n" +
         "; For more information, please see \"Emacs Links\" in the XDOC\n" +
-        "; manual.\n\n"
+        "; manual.\n\n";
 
     window.open('data:application/x-acl2-xdoc-link;charset=utf-8,' +
     encodeURIComponent(srclink_header + rawname));
@@ -1041,7 +1168,7 @@ function action_go_key(key) {
         return;
     }
 
-    console.log("action_go_key, going to new key " + key + " --> 0");
+    // console.log("action_go_key, going to new key " + key + " --> 0");
     history_save_place();
     window.history.pushState({key:key,rtop:0}, key_title(key),
 			     "?topic=" + key);
@@ -1102,7 +1229,6 @@ function printer_friendly()
 {
     var w = window.open("", "Printer",
 			"height=600,width=640,toolbar=1,location=0,resizable=1,scrollbars=1,status=0");
-    
 
     var html = "<html>\n"
 	+ "<head>\n"
@@ -1116,5 +1242,12 @@ function printer_friendly()
     w.document.write(html);
 
 //    $(w.document.body).html(html);
- 
+}
+
+function dolink(event, topic) {
+    if (event.button == 1) {
+	return true;
+    }
+    action_go_key(topic);
+    return false;
 }

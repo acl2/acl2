@@ -1,6 +1,4 @@
-
 ; Match-tree.lisp: Term pattern matching and substitution for meta reasoning.
-
 ; Copyright (C) 2013 Centaur Technology
 ;
 ; Contact:
@@ -8,22 +6,30 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Sol Swords <sswords@centtech.com>
 
-
 (in-package "ACL2")
 (include-book "bstar")
-
 
 ;; Notes.  This book defines a B* binder UNLESS-MATCH which uses a function
 ;; MATCH-TREE to check that a term matches a particular pattern and return an
@@ -35,7 +41,7 @@
 ;; A pattern P matches a tree X and produces bindings as follows:
 
 ;; Match conditions                                 Bindings produced
-;; P is an atom and P = X     
+;; P is an atom and P = X
 ;; P is (:? <symb>)                                 (<symb> . X)
 ;; P is (:! <symb>)                                 (<symb> . X)
 ;; P is (:?S <symb>) and X is a symbol              (<symb> . X)
@@ -187,10 +193,10 @@
 ;;;   ((tree t "Tree to check"))
 ;;;   :returns (ans booleanp)
 ;;;   (b* (((when-match tree
-;;;                     ("IdentifierRag" 
+;;;                     ("IdentifierRag"
 ;;;                      ("Identifier" ("IDENTIFIER" (:? id)))))
 ;;;         (stringp id))
-;;;        ((when-match tree 
+;;;        ((when-match tree
 ;;;                     ("IdentifierRag"
 ;;;                      ("Identifier" ("IDENTIFIER" (:? id)))
 ;;;                      ("PERIOD" ".")
@@ -367,7 +373,7 @@
 
 (defun match-tree-initial-alist-term (vars)
   `(list . ,(match-tree-initial-alist-lst vars)))
-        
+
 (defun prefix-?-vars (vars)
   (declare (xargs :guard (symbol-listp vars)))
   (if (atom vars)
@@ -394,13 +400,15 @@
         ,match-body))))
 
 (def-b*-binder unless-match
-  (declare (xargs :guard (equal (len args) 2)))
+  :decls ((declare (xargs :guard (equal (len args) 2))))
+  :body
   (treematch-fn (car args) (cadr args)
                 `(progn$ . ,forms)
                 rest-expr))
 
 (def-b*-binder when-match
-  (declare (xargs :guard (equal (len args) 2)))
+  :decls ((declare (xargs :guard (equal (len args) 2))))
+  :body
   (treematch-fn (car args) (cadr args)
                 rest-expr
                 `(progn$ . ,forms)))
@@ -543,10 +551,10 @@
 (defmacro add-replace-equalities-rule (thmname)
   `(table replace-equalities-rules
           (replace-equalities-thm-fnsym ',thmname world)
-          (cons ',thmname 
+          (cons ',thmname
                 (cdr (assoc (replace-equalities-thm-fnsym ',thmname world)
                             (table-alist 'replace-equalities-rules world))))))
-                           
+
 
 
 (defun match-tree-rw-fname (prefix var)
@@ -602,7 +610,7 @@
 (defun match-tree-block-substs-var-fn (var vars! pat prefix)
   (let* ((fnname (match-tree-rw-fname prefix var))
          (thmname (intern-in-package-of-symbol
-                   (concatenate 'string 
+                   (concatenate 'string
                                 (symbol-name fnname) "-BLOCK-EQUALITY-SUBST")
                    fnname)))
   `((defthm ,thmname
@@ -676,7 +684,7 @@
        (restrs (match-tree-restrictions pat))
        (type-events (match-tree-restrs-events restrs vars! pat prefix)))
     `(progn ,@fn-events ,@meas-events ,@bs-events ,@type-events . ,rw-events)))
-  
+
 (defmacro def-match-tree-rewrites (pat &key prefix)
   (def-match-tree-rewrites-fn pat prefix))
 

@@ -6,15 +6,25 @@
 //   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 //   http://www.centtech.com/
 //
-// This program is free software; you can redistribute it and/or modify it under
-// the terms of the GNU General Public License as published by the Free Software
-// Foundation; either version 2 of the License, or (at your option) any later
-// version.  This program is distributed in the hope that it will be useful but
-// WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-// more details.  You should have received a copy of the GNU General Public
-// License along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+// License: (An MIT/X11-style license)
+//
+//   Permission is hereby granted, free of charge, to any person obtaining a
+//   copy of this software and associated documentation files (the "Software"),
+//   to deal in the Software without restriction, including without limitation
+//   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+//   and/or sell copies of the Software, and to permit persons to whom the
+//   Software is furnished to do so, subject to the following conditions:
+//
+//   The above copyright notice and this permission notice shall be included in
+//   all copies or substantial portions of the Software.
+//
+//   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+//   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+//   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+//   THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+//   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+//   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+//   DEALINGS IN THE SOFTWARE.
 //
 // Original author: Jared Davis <jared@centtech.com>
 
@@ -65,14 +75,47 @@ module `COMPARE_NAME (src, chk);
    wire spec_x ;
    wire spec_z ;
 
+   `ifdef SYSTEM_VERILOG_MODE
+   wire spec_wildeq1 ;
+   wire spec_wildeq2 ;
+   wire spec_wildeq3 ;
+   wire spec_wildeq4 ;
+   wire spec_wildneq1 ;
+   wire spec_wildneq2 ;
+   wire spec_wildneq3 ;
+   wire spec_wildneq4 ;
+   `endif
+
    unary_ops_test #(`SIZE) spec (
-     src, spec_bitnot, spec_plus, spec_minus,
-          spec_lognot, spec_and, spec_nand, spec_or, spec_nor,
-          spec_xor, spec_xnor, spec_xnor2, spec_true, spec_false,
-          spec_x, spec_z
+
+     `ifdef SYSTEM_VERILOG_MODE
+     .out_wildeq1(spec_wildeq1),
+     .out_wildeq2(spec_wildeq2),
+     .out_wildeq3(spec_wildeq3),
+     .out_wildeq4(spec_wildeq4),
+     .out_wildneq1(spec_wildneq1),
+     .out_wildneq2(spec_wildneq2),
+     .out_wildneq3(spec_wildneq3),
+     .out_wildneq4(spec_wildneq4),
+     `endif
+
+     .in(src),
+     .out_bitnot(spec_bitnot),
+     .out_plus(spec_plus),
+     .out_minus(spec_minus),
+     .out_lognot(spec_lognot),
+     .out_and(spec_and),
+     .out_nand(spec_nand),
+     .out_or(spec_or),
+     .out_nor(spec_nor),
+     .out_xor(spec_xor),
+     .out_xnor(spec_xnor),
+     .out_xnor2(spec_xnor2),
+     .out_true(spec_true),
+     .out_false(spec_false),
+     .out_x(spec_x),
+     .out_z(spec_z)
    );
-
-
 
    wire [`SIZE-1:0] impl_bitnot ;
    wire [`SIZE-1:0] impl_plus ;
@@ -86,11 +129,46 @@ module `COMPARE_NAME (src, chk);
    wire impl_xnor ;
    wire impl_xnor2 ;
 
+  `ifdef SYSTEM_VERILOG_MODE
+   wire impl_wildeq1 ;
+   wire impl_wildeq2 ;
+   wire impl_wildeq3 ;
+   wire impl_wildeq4 ;
+   wire impl_wildneq1 ;
+   wire impl_wildneq2 ;
+   wire impl_wildneq3 ;
+   wire impl_wildneq4 ;
+  `endif
+
    `MODNAME_SIZE impl (
-     src, impl_bitnot, impl_plus, impl_minus,
-          impl_lognot, impl_and, impl_nand, impl_or, impl_nor,
-          impl_xor, impl_xnor, impl_xnor2, impl_true, impl_false,
-          impl_x, impl_z
+
+     `ifdef SYSTEM_VERILOG_MODE
+     .out_wildeq1(impl_wildeq1),
+     .out_wildeq2(impl_wildeq2),
+     .out_wildeq3(impl_wildeq3),
+     .out_wildeq4(impl_wildeq4),
+     .out_wildneq1(impl_wildneq1),
+     .out_wildneq2(impl_wildneq2),
+     .out_wildneq3(impl_wildneq3),
+     .out_wildneq4(impl_wildneq4),
+     `endif
+
+     .in(src),
+     .out_bitnot(impl_bitnot),
+     .out_plus(impl_plus),
+     .out_minus(impl_minus),
+     .out_lognot(impl_lognot),
+     .out_and(impl_and),
+     .out_nand(impl_nand),
+     .out_or(impl_or),
+     .out_nor(impl_nor),
+     .out_xor(impl_xor),
+     .out_xnor(impl_xnor),
+     .out_xnor2(impl_xnor2),
+     .out_true(impl_true),
+     .out_false(impl_false),
+     .out_x(impl_x),
+     .out_z(impl_z)
    );
 
 
@@ -163,6 +241,43 @@ module `COMPARE_NAME (src, chk);
       if (spec_z !== impl_z || impl_z !== 1'bz)
 	$display("compare_unary_ops fail (     z): size = %0d, src = %b, spec = %b, impl = %b",
 	  `SIZE, src, spec_z, impl_z);
+
+
+      `ifdef SYSTEM_VERILOG_MODE
+
+      if (spec_wildeq1 !== impl_wildeq1)
+	$display("compare_unary_ops fail (wildeq1): size = %0d, src = %b, spec = %b, impl = %b",
+	  `SIZE, src, spec_wildeq1, impl_wildeq1);
+
+      if (spec_wildeq2 !== impl_wildeq2)
+	$display("compare_unary_ops fail (wildeq2): size = %0d, src = %b, spec = %b, impl = %b",
+	  `SIZE, src, spec_wildeq2, impl_wildeq2);
+
+      if (spec_wildeq3 !== impl_wildeq3)
+	$display("compare_unary_ops fail (wildeq3): size = %0d, src = %b, spec = %b, impl = %b",
+	  `SIZE, src, spec_wildeq3, impl_wildeq3);
+
+      if (spec_wildeq4 !== impl_wildeq4)
+	$display("compare_unary_ops fail (wildeq4): size = %0d, src = %b, spec = %b, impl = %b",
+	  `SIZE, src, spec_wildeq4, impl_wildeq4);
+
+      if (spec_wildneq1 !== impl_wildneq1)
+	$display("compare_unary_ops fail (wildneq1): size = %0d, src = %b, spec = %b, impl = %b",
+	  `SIZE, src, spec_wildneq1, impl_wildneq1);
+
+      if (spec_wildneq2 !== impl_wildneq2)
+	$display("compare_unary_ops fail (wildneq2): size = %0d, src = %b, spec = %b, impl = %b",
+	  `SIZE, src, spec_wildneq2, impl_wildneq2);
+
+      if (spec_wildneq3 !== impl_wildneq3)
+	$display("compare_unary_ops fail (wildneq3): size = %0d, src = %b, spec = %b, impl = %b",
+	  `SIZE, src, spec_wildneq3, impl_wildneq3);
+
+      if (spec_wildneq4 !== impl_wildneq4)
+	$display("compare_unary_ops fail (wildneq4): size = %0d, src = %b, spec = %b, impl = %b",
+	  `SIZE, src, spec_wildneq4, impl_wildneq4);
+
+      `endif
 
    end
 

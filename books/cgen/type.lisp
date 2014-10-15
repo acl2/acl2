@@ -1,11 +1,19 @@
 #|$ACL2s-Preamble$;
+;;Author - Harsh Raju Chamarthi (harshrc)
+(ld ;; Newline to fool ACL2/cert.pl dependency scanner
+ "portcullis.lsp")
 (acl2::begin-book t);$ACL2s-Preamble$|#
 
-(in-package "ACL2")
+(in-package "CGEN"
+)
 (include-book "tools/bstar" :dir :system)
+(include-book "basis")
+(include-book "defdata/defdata-util" :dir :system)
 
 ;;; For use by testing hints
 ;;; Get the type information from the ACL2 type alist
+
+#!ACL2
 (mutual-recursion
  (defun get-type-from-type-set-decoded (ts-decoded)
    ;(declare (xargs :guard (symbolp ts-decoded)))
@@ -60,15 +68,15 @@
      ans
      (get-types-from-type-set-decoded-lst 
       (cdr ts-lst) 
-      (append (get-type-from-type-set-decoded (car ts-lst))
+      (append (acl2::get-type-from-type-set-decoded (car ts-lst))
               ans))))
  )
+
 
 (defun get-type-list-from-type-set (ts)
   (declare (xargs :mode :program
                   :guard (integerp ts)))
-  (let ((typ (get-type-from-type-set-decoded 
-              (acl2::decode-type-set ts))))
+  (let ((typ (acl2::get-type-from-type-set-decoded (acl2::decode-type-set ts))))
     (if (proper-consp typ)
       typ
       (list typ))))
@@ -120,3 +128,392 @@
 (verify-termination acl2::cons-term1)
 (verify-termination acl2::cons-term); ASK MATT to make these logic mode
 (set-verify-guards-eagerness 1)
+
+(defun get-acl2-type-alist-fn (cl vars ens state)
+  (declare (xargs :mode :program :stobjs (state)))
+  (b* (((mv erp type-alist &)
+       (acl2::forward-chain cl
+                            (acl2::enumerate-elements cl 0)
+                            nil ; do not force
+                            nil ; do-not-reconsiderp
+                            (w state)
+                            ens
+                            (acl2::match-free-override (w state))
+                            state))
+;Use forward-chain ACL2 system function to build the context
+;This context, gives us the type-alist ACL2 inferred from the
+;the current subgoal i.e. cl
+       (vt-acl2-alst (if erp ;contradiction
+                         (pairlis$ vars (make-list (len vars)
+                                                   :initial-element 
+                                                   (list 'ACL2::ALL)))
+                       (decode-acl2-type-alist type-alist vars))))
+   vt-acl2-alst))
+
+
+(defmacro get-acl2-type-alist (cl &optional vars ens)
+  `(get-acl2-type-alist-fn ,cl 
+                           ,(or vars '(acl2::all-vars1-lst cl '()))
+                           ,(or ens '(acl2::ens state))
+                           state))
+
+; utility fn to print if verbose flag is true 
+(defmacro cw? (verbose-flag &rest rst)
+  `(if ,verbose-flag
+     (cw ,@rst)
+     nil))
+
+(defun collect-tau-alist (triples tau-alist type-alist pot-lst ens wrld)
+(declare (xargs :mode :program))
+
+  (if (endp triples)
+      tau-alist
+    (b* (((mv ?contradictionp ?mbt ?mbf tau-alist ?calist)
+          (acl2::tau-assume nil (caddr (car triples))
+                            tau-alist type-alist pot-lst
+                            ens wrld nil))
+         (- (cw? nil "~% *** tau-assume returned ~x0~%~%" tau-alist)))
+      (collect-tau-alist (cdr triples)
+                         tau-alist type-alist pot-lst ens wrld))))
+
+(defun tau-alist-clause (clause sign ens wrld state)
+  (declare (xargs :mode :program :stobjs (state)))
+;duplicated from tau-clausep in prove.lisp.
+(b* (((mv ?contradictionp type-alist pot-lst)
+      (acl2::cheap-type-alist-and-pot-lst clause ens wrld state))
+     (triples (acl2::merge-sort-car-<
+                (acl2::annotate-clause-with-key-numbers clause
+                                                        (len clause)
+                                                        0 wrld)))
+     (tau-alist (collect-tau-alist triples sign type-alist pot-lst
+                                   ens wrld)))
+  tau-alist))
+
+
+;; (defun tau-alist-clauses (clauses sign ens wrld state ans)
+;;   (declare (xargs :mode :program :stobjs (state)))
+;;   (if (endp clauses)
+;;       ans
+;;     (tau-alist-clauses (cdr clauses) sign ens wrld state
+;;                        (append (tau-alist-clause (car clauses) sign ens wrld state) ans))))
+      
+
+
+(defun all-vals (key alist)
+  (declare (xargs :guard (and (symbolp key)
+                              (alistp alist))))
+  (if (endp alist)
+      '()
+    (if (eq key (caar alist))
+        (cons (cdar alist) (all-vals key (cdr alist)))
+      (all-vals key (cdr alist)))))
+
+(defun make-var-taus-alist (vars tau-alist)
+  (declare (xargs :guard (and (symbol-listp vars)
+                              (alistp tau-alist))))
+  (if (endp vars)
+      '()
+    (b* ((vals (all-vals (car vars) tau-alist)))
+      (cons (cons (car vars) vals)
+            (make-var-taus-alist (cdr vars) tau-alist)))))
+
+(defun conjoin-tau-interval-lst (taus ans)
+; [tau] * interval -> interval
+  (declare (xargs :mode :program))
+  (if (endp taus)
+      ans
+    (b* ((tau (car taus))
+           (interval (acl2::access acl2::tau tau :interval)))
+    (conjoin-tau-interval-lst (cdr taus) 
+                              (acl2::conjoin-intervals interval ans)))))
+  
+
+(defun tau-interval-alist (var-taus-alist)
+;[var . taus] -> [var . interval]
+  (declare (xargs :mode :program))
+  (if (endp var-taus-alist)
+      '()
+    (b* (((cons var taus) (car var-taus-alist))
+         (interval (conjoin-tau-interval-lst taus nil)) ;nil represents the universal interval 
+         )
+      (if (null interval) ;universal
+          (tau-interval-alist (cdr var-taus-alist))
+        (cons (cons var interval)
+              (tau-interval-alist (cdr var-taus-alist)))))))
+
+
+
+(defun tau-interval-alist-clause-fn (cl vars ens state)
+    (declare (xargs :mode :program :stobjs (state)))
+    (b* ((wrld (w state))
+         (tau-alist (tau-alist-clause cl nil ens wrld state))
+         (var-taus-alist (make-var-taus-alist vars tau-alist))
+         (tau-interval-alist (tau-interval-alist var-taus-alist)))
+      tau-interval-alist))
+
+(defmacro tau-interval-alist-clause (cl &optional vars ens)
+  `(tau-interval-alist-clause-fn ,cl 
+                                 ,(or vars '(all-vars-lst cl))
+                                 ,(or ens '(acl2::ens state))
+                                 state))     
+
+
+
+
+
+(defun possible-defdata-type-p (v)
+  (declare (xargs :guard T))
+  (or (defdata::possible-constant-value-p v)
+      (defdata::proper-symbolp v))) ;defdata type
+
+(defun possible-defdata-type-list-p (vs)
+  (declare (xargs :guard T))
+  (if (consp vs)
+      (and (possible-defdata-type-p (car vs))
+           (possible-defdata-type-list-p (cdr vs)))
+    T))
+
+;; ;redundant from defdata.lisp
+;; (defrec types-info%
+;;   (size 
+;;    predicate 
+;;    enumerator enum-uniform
+;;    enumerator-test enum-uniform-test
+;;    recursivep derivedp consistentp
+;;    type-class defs) NIL)
+ 
+
+;; NOTE: In the following the type 'empty' has
+;; special status and treated seperately
+;; (def meet (typ1 typ2 vl wrld)
+;;   (decl :sig ((symbol symbol vl plist-worldp) -> symbol)
+;;         :doc "find smaller type in subtype hierarchy/lattice")
+;;   (declare (xargs :verify-guards nil))
+;;   ;; (decl :sig ((possible-defdata-type-p possible-defdata-type-p
+;; ;;                plist-world) -> possible-defdata-type-p)
+;;   (b* (((when (or (eq 'acl2::empty typ1)
+;;                   (eq 'acl2::empty typ2))) 'acl2::empty)
+;;        ((when (eq typ2 typ1)) typ2)
+;;        ((unless (and (is-a-typeName typ1 wrld)
+;;                      (is-a-typeName typ2 wrld)))
+;;         (prog2$
+;;          (cw? (verbose-stats-flag vl)
+;;               "~|CEgen/Note: ~x0 or ~x1 not a defdata type. ~ Meet returning universal type ALL.~|" typ1 typ2)
+;;          'acl2::all))
+;;        ((when (eq 'acl2::all typ1)) typ2)
+;;        ((when (eq 'acl2::all typ2)) typ1)
+;;        ((when (is-subtype typ1 typ2 wrld))   typ1)
+;;        ((when (is-subtype typ2 typ1 wrld))   typ2)
+;;        ((when (is-disjoint typ2 typ1 wrld))  'acl2::empty) ;Should we instead define the NULL type??? Modified: so Ans is YES instead of Ans: NO, the way its used now, this is right!
+;; ;give preference to custom type
+;;        ((when (is-a-custom-type typ1 wrld)) typ1)
+;;        ((when (is-a-custom-type typ2 wrld)) typ2)
+
+;; ; choose the one that was defined later (earlier in 
+;; ; reverse chronological order)
+;;        (all-types (strip-cars (table-alist 'defdata::types-info-table wrld)))
+;;        )
+;;    (if (< (position-eq typ1 all-types) (position-eq typ2 all-types)) 
+;;        typ1 
+;;      typ2)))
+
+(defmacro   verbose-stats-flag ( vl)
+  `(> ,vl 2)) 
+
+(defmacro   debug-flag ( vl)
+  `(> ,vl 3))
+
+(def meet (typ1 typ2 vl wrld)
+  (decl :sig ((symbol symbol vl plist-worldp) -> symbol)
+        :doc "find smaller type in subtype hierarchy/lattice")
+  (declare (xargs :verify-guards nil))
+  ;; (decl :sig ((possible-defdata-type-p possible-defdata-type-p
+;;                plist-world) -> possible-defdata-type-p)
+  (b* (((when (or (eq 'acl2::empty typ1)
+                  (eq 'acl2::empty typ2))) 'acl2::empty)
+       ((when (eq typ2 typ1)) typ2)
+       (M (table-alist 'defdata::type-metadata-table wrld))
+       ((unless (and (defdata::proper-symbolp typ1)
+                     (defdata::proper-symbolp typ2)))
+        (prog2$
+         (cw? (verbose-stats-flag vl)
+              "~|CEgen/Note: ~x0 or ~x1 not a name. ~ Meet returning universal type ALL.~|" typ1 typ2)
+         'acl2::all))
+                     
+       (typ1-al-entry (assoc-eq typ1 M))
+       (typ2-al-entry (assoc-eq typ2 M))
+       ((unless (and typ1-al-entry typ2-al-entry))
+        (prog2$
+         (cw? (verbose-stats-flag vl)
+              "~|CEgen/Note: ~x0 or ~x1 not a defdata type. ~ Meet returning universal type ALL.~|" typ1 typ2)
+         'acl2::all))
+       ((when (eq 'acl2::all typ1)) typ2)
+       ((when (eq 'acl2::all typ2)) typ1)
+       (P1 (cdr (assoc-eq :predicate (cdr typ1-al-entry))))
+       (P2 (cdr (assoc-eq :predicate (cdr typ2-al-entry))))
+     ;  (- (cw? (debug-flag vl) "~|CEgen/Debug/meet --  P1: ~x0   P2: ~x1 .~|" P1 P2))
+       ((when (defdata::subtype-p P1 P2 wrld))   typ1)
+       ((when (defdata::subtype-p P2 P1 wrld))   typ2)
+       ((when (defdata::disjoint-p P2 P1 wrld))  'acl2::empty) ;Should we instead define the NULL type??? Modified: so Ans is YES instead of Ans: NO, the way its used now, this is right!
+;give preference to custom type
+       ((when (defdata::is-a-custom-type typ1 wrld)) typ1)
+       ((when (defdata::is-a-custom-type typ2 wrld)) typ2)
+
+; choose the one that was defined later (earlier in 
+; reverse chronological order)
+       (all-types (strip-cars (table-alist 'defdata::type-metadata-table wrld)))
+       )
+   (if (< (position-eq typ1 all-types) (position-eq typ2 all-types)) 
+       typ1 
+     typ2)))
+
+(def dumb-type-alist-infer-from-term (term vl wrld  ans.)
+  (decl :sig ((pseudo-term-listp fixnum plist-worldp  symbol-alistp) 
+              -> symbol-alistp)
+        :doc "main aux function to infer type-alist from term")
+  (declare (xargs :verify-guards nil))
+; ans. is a type alist and has type
+; (symbol . (listof possible-defdata-type-p))
+  (f* ((add-eq-typ... (t1) (if (acl2::equivalence-relationp R wrld)
+                               (put-assoc x (list t1) ans.)
+                             ans.)))
+    
+; Copied from v-cs%-alist-from-term. Keep in sync!
+  (case-match term
+    
+;the following is a rare case (I found it when the conclusion is nil
+;and its negation is 'T
+    (('quote c) (declare (ignore c))  ans.) ;ignore quoted constant terms 
+
+;TODO possible field variable (i.e f is a getter/selector) Note that
+; term cannot have a lambda applicaton/let, so the car of the term is
+; always a function symbol if term is a consp.
+    ((P (f . &)) (declare (ignore P f))  ans.)
+
+;x has to be an atom below, otherwise, we would have caught that case above.
+    (('not x)      (put-assoc x (list ''nil) ans.))
+    
+    ((P x)   (b* ((tname (defdata::is-type-predicate P wrld))
+                  ((unless tname) ans.)
+                  (curr-typs-entry (assoc-eq x ans.))
+                  ((unless (and curr-typs-entry 
+                                (consp (cdr curr-typs-entry))))
+; no or invalid entry, though this is not possible, because we call it with
+; default type-alist of ((x . ('ALL)) ...)
+                   ans.)
+                  (curr-typs (cdr curr-typs-entry))
+                  (- (cw? (and (verbose-stats-flag vl) 
+                               (consp (cdr curr-typs)))
+                          "~|CEgen/Warning: Ignoring rest of union types ~x0 ~|" (cdr curr-typs)))
+                     
+                  (curr-typ (car curr-typs))
+                  ((when (defdata::possible-constant-value-p curr-typ)) ans.)
+                   
+                  (final-typ (meet tname curr-typ vl wrld)))
+               (put-assoc x (list final-typ) ans.)))
+
+    ((R (f . &) (g . &)) (declare (ignore R f g)) ans.) ;ignore
+
+;x has to be an atom below, otherwise, we would have caught that case
+;above.
+    ((R x ('quote c))    (add-eq-typ... (kwote c)))
+    ((R ('quote c) x)    (add-eq-typ... (kwote c)))
+    ;((R x (f . args))    (add-eq-constraint... (acl2::cons-term f args)))
+    ;((R (f . args) x)    (add-eq-constraint... (acl2::cons-term f args)))
+    
+    ;; has to be a (R t1 t2 ...) or atomic term
+    (&                   ans.))))
+
+(def dumb-type-alist-infer-from-terms (H vl wrld  ans.)
+  (decl :sig ((pseudo-term-listp fixnum plist-worldp  
+                                 symbol-alistp) -> symbol-alistp)
+        :doc "aux function for dumb extraction of defdata types from terms in H")
+  (declare (xargs :verify-guards nil))
+  (if (endp H)
+      ans.
+    (b* ((term (car H))
+         (ans. (dumb-type-alist-infer-from-term term vl wrld  ans.)))
+      (dumb-type-alist-infer-from-terms (cdr H) vl wrld ans.))))
+
+(def dumb-type-alist-infer (H vars vl wrld)
+  (decl :sig ((pseudo-term-listp symbol-listp fixnum plist-worldp) 
+              -> symbol-alistp)
+        :doc "dumb infer defdata types from terms in H")
+  (declare (xargs :verify-guards nil))
+  (dumb-type-alist-infer-from-terms 
+   H vl wrld
+   (pairlis$ vars (make-list (len vars)
+                             :initial-element 
+                             (list 'ACL2::ALL)))))
+
+(defmacro   debug-flag  (vl)
+  `(> ,vl 3))
+
+
+(def meet-type-alist (A1 A2 vl wrld)
+  (decl :sig ((symbol-alistp symbol-alistp fixnum plist-world)
+              -> (mv erp symbol-alistp))
+        :mode :program ;ev-fncall-w
+        :doc "take intersection of types in the type alist")
+; no duplicate keys. A1's ordering is used, it has to contain all the
+; variables that the user wants in his final type-alist
+; A1 and A2 and the return value have type
+; (listof (cons symbolp (listof possible-defdata-type-p)))
+; TODO: if val has more than 1 type, then we treat it as (list 'ALL)
+
+; Usually its called with A1 as the acl2 type alist and A2 as the
+; top-level type alist. so it might contain
+; variables thats have been dest-elimed away
+  (f* ((get-type... (types) (if (and (consp types)
+                                     (null (cdr types)))
+                                (car types)
+                              (prog2$
+                               (cw? (verbose-stats-flag vl)
+                                    "~|CEGen/Warning: Ignoring rest of union types ~x0 ~|" (cdr types))
+                               (car types))))
+         (eval-and-get-meet (typ1 typ2) ;(quoted-constant sym)|(sym quoted-constant)
+                            (b* (((mv dt st) (if (defdata::proper-symbolp typ1)
+                                                 (mv typ1 typ2)
+                                               (mv typ2 typ1)))
+                                 (P (defdata::get-predicate-symbol dt))
+                                 ;; args to ev-fncall-w is a list of evaluated values.
+                                 ((mv erp res) (acl2::ev-fncall-w P (list (if (quotep st) ;possible bug caught, what if st is not quoted!
+                                                                              (acl2::unquote st)
+                                                                            st)) 
+                                                                  wrld nil nil t nil nil))
+                                 (- (cw? (and erp (debug-flag vl))
+                                         "~|CEgen/Error in ~x0: while calling ev-fncall-w on ~x1~|" ctx (cons P (list st))))
+                                 (- (cw? (and (not erp) (not res) (debug-flag vl))
+                                         "~|CEgen/Debug:: ~x0 evaluated to nil~|" (cons P (list st))))
+                                 ((when erp)
+                                  (mv t 'acl2::empty)))
+                              (if res (mv nil st) (mv nil 'acl2::empty)))))
+  (if (endp A1)
+      (mv nil '())
+    (b* (((cons var types1) (car A1))
+         (typ1 (get-type... types1))
+         (ctx 'meet-type-alist)
+         (types2-entry (assoc-eq var A2))
+         (types2 (if types2-entry (cdr types2-entry) '(ACL2::ALL)))
+         (typ2 (get-type... types2))
+         ((unless (and (possible-defdata-type-p typ1) 
+                       (possible-defdata-type-p typ2)))
+          (mv t '()))
+         ((mv erp rest) (meet-type-alist (cdr A1) A2 vl wrld ))
+         ((when erp) (mv t '())))
+
+      (cond ((and (defdata::proper-symbolp typ1) (defdata::proper-symbolp typ2))
+             (mv nil (acons var (list (meet typ1 typ2 vl wrld)) rest)))
+
+            ((and (defdata::possible-constant-value-p typ1)
+                  (defdata::possible-constant-value-p typ2)
+                  (equal typ1 typ2))
+             (mv nil (acons var (list typ1) rest)))
+
+            ((and (defdata::possible-constant-value-p typ1)
+                  (defdata::possible-constant-value-p typ2))
+             (mv nil (acons var (list 'acl2::empty) rest)))
+
+            (t
+             (b* (((mv erp ans) (eval-and-get-meet typ1 typ2)))
+               (mv erp (acons var (list ans) rest)))))))))

@@ -1,25 +1,34 @@
 ; OSLIB -- Operating System Utilities
-; Copyright (C) 2013 Centaur Technology
+; Copyright (C) 2013-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "OSLIB")
-
 
 (defun argv-fn (state)
 
@@ -126,35 +135,32 @@
 
    #+gcl
    (let ((args si::*command-args*))
-     ;; BOZO.  This isn't going to work perfectly because GCL doesn't seem to
-     ;; have an equivalent of --.  For now I'm going to at least expect that the
-     ;; wrapper script uses -- anyway, e.g., a proper wrapper script is:
+     ;; For this to work, the proper way to invoke GCL is through a wrapper
+     ;; script along the lines of:
      ;;
      ;;   #!/bin/sh
      ;;   exec /blah/blah/blah.gcl -eval '(myprog::main)' -- "$@"
      ;;
-     ;; This way we can at least cut out the stuff that comes before --.  But
-     ;; it's not perfect because GCL will still try to process options like
-     ;; -eval, -f, etc., that happen to come in $@.
-     (cond ((atom args)
-            (error "ARGV expected GCL to have at least the program name.")
-            (mv nil state))
-           ((string-listp args)
-            (mv (cdr (member-equal "--" args)) state))
+     ;; Note: This requires a version of GCL >= 2.6.10.  In previous versions
+     ;; the -- flag wasn't understood.
+     (cond ((string-listp args)
+            (mv args state))
            (t
             (error "ARGV found non string-listp arguments? ~a" args)
             (mv nil state))))
 
    #+lispworks
    (let ((args sys:*line-arguments-list*))
-     ;; BOZO this is very similar to GCL.  There's apparently no proper support
-     ;; for --, so do the smae hack as for GCL, which sort of works.  A proper
-     ;; wrapper script is, e.g.,
+     ;; BOZO.  This isn't going to work perfectly because Lispworks doesn't
+     ;; seem to have an equivalent of --.  As a hack, we'll assume that a
+     ;; proper wrapper script looks like:
      ;;
      ;;   #/bin/sh
      ;;   exec /blah/blah/image.lw -init - -siteinit - -- "$@"
      ;;
-     ;; Again this isn't perfect.
+     ;; We'll just grab whatever comes after --.  Of course, this isn't
+     ;; perfect because Lispworks will still try to process options like
+     ;; -eval, -f, etc., that happen to come in $@.
      (cond ((atom args)
             (error "ARGV expected Lispworks to have at least the program name."))
            ((string-listp args)

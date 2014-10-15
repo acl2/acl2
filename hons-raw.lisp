@@ -1,4 +1,4 @@
-; ACL2 Version 6.4 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 6.5 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2014, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -28,17 +28,19 @@
 ; The original version of this file was contributed by Bob Boyer and Warren
 ; A. Hunt, Jr.  The design of this system of Hash CONS, function memoization,
 ; and fast association lists (applicative hash tables) was initially
-; implemented by Boyer and Hunt.  The code has since been improved by Boyer and
-; Hunt, and also by Sol Swords, Jared Davis, and Matt Kaufmann.
+; implemented by Boyer and Hunt.  The code was subsequently improved by Boyer
+; and Hunt, and also by Sol Swords, Jared Davis, and Matt Kaufmann.  This file
+; is now maintained by the ACL2 authors (see above).
 
-; Please direct correspondence about this file to Jared Davis
-; <jared@centtech.com> and Warren Hunt <hunt@centtech.com>.
+; This code is well commented and the comments have been contributed and
+; improved by all of the authors named above.  However, comments referring to
+; "I" or "my" are from Jared, as is the token "BOZO" which he uses to leave
+; a note about a wart or modification to consider.
+
+; Despite the comments here, we recommend reading the user-level documentation
+; for HONS-AND-MEMOIZATION before diving into this code.
 
 (in-package "ACL2")
-
-;; We use the static honsing scheme on 64-bit CCL.
-#+(and Clozure x86_64)
-(push :static-hons *features*)
 
 ; NOTES ABOUT HL-HONS
 ;
@@ -46,8 +48,10 @@
 ; "HL" originally meant "Hons Library."  The revision included splitting the
 ; Hons code from the function memoization code, and took place in early 2010.
 ; We will now use the term to refer to the new Hons implementation that is
-; found below.  Some changes made in HL-Hons, as opposed to the old Hons
-; system, include:
+; found below.  It might be helpful to read the Essay on Hons Spaces before
+; proceeding.
+
+; Some changes made in HL-Hons, as opposed to the old Hons system, include:
 ;
 ;   - We combine all of the special variables used by the Hons code into an
 ;     explicit Hons-space structure.
@@ -64,16 +68,17 @@
 ;     cdrs are strings into the CDR-HT hash table instead of the CDR-HT-EQL
 ;     hash table in classic honsing.
 ;
-;   - Previously fast alists were essentially implemented as flex alists.  Now
-;     we always create a hash table instead.  This slightly simplifies the code
-;     and results in trivially fewer runtime type checks in HONS-GET and
-;     HONS-ACONS.  I think it makes sense to use flex alists in classic
-;     honsing, where we can imagine often finding cdrs for which we don't have
-;     at least 18 separate cars.  But fast alists are much more targeted; if an
-;     ACL2 user is building a fast alist, it seems very likely that they know
-;     they are doing something big (or probably big) -- otherwise they wouldn't
-;     be bothering with fast alists.
-
+;   - Previously, fast alists were essentially implemented as flex alists.
+;     (See the essay about flex alists for an introduction to these
+;     structures.)  Now we always create a hash table instead.  This slightly
+;     simplifies the code and results in trivially fewer runtime type checks in
+;     HONS-GET and HONS-ACONS.  Our implementation does still use flex alists
+;     under the hood to implement classic honsing (specifically, in the CDR-HT
+;     and CDR-HT-EQL fields of a hons space), where we can imagine often
+;     finding cdrs for which we don't have at least 18 separate cars.  But fast
+;     alists are much more targeted; if ACL2 users are building fast alists, it
+;     seems very likely that they know they are doing something big (or
+;     probably big) -- otherwise they wouldn't be bothering with fast alists.
 
 
 ; ESSAY ON CTRL+C SAFETY
@@ -90,11 +95,6 @@
 ; ensure that, e.g., (SETF (GETHASH ...)) does not leave a hash table in an
 ; internally inconsistent state.
 
-#+static-hons
-(defmacro hl-without-interrupts (&rest forms)
-  `(ccl::without-interrupts . ,forms))
-
-
 ; CROSS-LISP COMPATIBILITY WRAPPERS
 ;
 ; As groundwork toward porting the static honsing scheme to other Lisps that
@@ -109,20 +109,30 @@
                        (shared           'nil)
                        (lock-free        'nil))
 
-; See hl-mht.
+; See hl-mht.  Here we have a special hack: if :shared is :default then we
+; leave it to the underlying Lisp (in particular CCL) to decide about :shared
+; and :lock-free.
 
   (declare (ignorable shared weak lock-free))
-  (make-hash-table :test             test
-                   :size             size
-                   :rehash-size      rehash-size
-                   :rehash-threshold rehash-threshold
-                   #+Clozure :weak   #+Clozure weak
-                   #+Clozure :shared #+Clozure shared
-                   #+Clozure :lock-free #+Clozure lock-free
-                   ))
+  (cond ((eq shared :default)
+         (make-hash-table :test             test
+                          :size             size
+                          :rehash-size      rehash-size
+                          :rehash-threshold rehash-threshold
+                          #+Clozure :weak   #+Clozure weak
+                          ))
+        (t
+         (make-hash-table :test             test
+                          :size             size
+                          :rehash-size      rehash-size
+                          :rehash-threshold rehash-threshold
+                          #+Clozure :weak   #+Clozure weak
+                          #+Clozure :shared #+Clozure shared
+                          #+Clozure :lock-free #+Clozure lock-free
+                          ))))
 
 #+allegro
-(declaim (type hash-table *hl-hash-table-size-ht*))
+(declaim (type hash-table *allegro-hl-hash-table-size-ht*))
 #+allegro
 (defvar *allegro-hl-hash-table-size-ht*
 ; See the comment about this hash table in hl-mht.
@@ -131,7 +141,9 @@
 (defmacro hl-mht (&rest args)
 
 ; This macro is a wrapper for hl-mht-fn, which in turn is a wrapper for
-; make-hash-table.
+; make-hash-table.  But here we have a special hack: if :shared is :default
+; then we leave it to the underlying Lisp (in particular CCL) to decide about
+; :shared and :lock-free.
 
 ; Because of our approach to threading, we generally don't need our hash tables
 ; to be protected by locks.  HL-MHT is essentially like make-hash-table, but on
@@ -140,15 +152,15 @@
 
 ; In Allegro CL 9.0 (and perhaps other versions), make-hash-table causes
 ; creation of a hash table of a somewhat larger size than is specified by the
-; :size argument, which can cause hons-shrink-alist to create hash tables of
+; :size argument, which can cause fast-alist-fork to create hash tables of
 ; ever-increasing size when this is not necessary.  The following example
 ; illustrates this problem, which was first observed in community book
 ; books/parsers/earley/earley-parser.lisp.
 
 ;   (defconst *end* :end)
 ;
-;   (defn my-hons-shrink-alist (a)
-;     (let ((ans (hons-shrink-alist a *end*)))
+;   (defn my-fast-alist-fork (a)
+;     (let ((ans (fast-alist-fork a *end*)))
 ;       (prog2$ (fast-alist-free a)
 ;               ans)))
 ;
@@ -156,7 +168,7 @@
 ;     (declare (type (integer 0 *) n))
 ;     (cond ((zp n) ans)
 ;           (t (my-fast-alist3 (1- n)
-;                              (my-hons-shrink-alist
+;                              (my-fast-alist-fork
 ;                               (hons-acons (mod n 10) (* 10 n) ans))))))
 ;
 ;   (trace! (hl-mht-fn :native t :exit t))
@@ -170,7 +182,7 @@
 ; whether a previous call of hl-mht created a hash table of that size using
 ; some :size, old-size-arg, and if so, then we call make-hash-table with :size
 ; old-size-arg instead of new-size-arg.  (Note that we don't give this special
-; treatment in the case that hl-mth is called without an explicit :size; but
+; treatment in the case that hl-mht is called without an explicit :size; but
 ; that seems harmless.)
 
   #-allegro
@@ -194,6 +206,8 @@
                            ht))))))
           (t `(hl-mht-fn ,@args)))))
 
+; ESSAY ON STATIC CONSES
+
 ; In CCL, one can use (ccl::static-cons a b) in place of (cons a b) to create a
 ; cons that will not be moved by the garbage collector.
 ;
@@ -214,25 +228,50 @@
 ; make it easier to plug in alternative implementations in other Lisps.
 
 #+static-hons
-(defabbrev hl-static-cons (a b)
-  (ccl::static-cons a b))
+(defmacro hl-static-cons (a b)
+  #+gcl `(cons ,a ,b)
+  #-gcl `(ccl::static-cons ,a ,b))
 
 #+static-hons
-(defabbrev hl-staticp (x)
-  (ccl::%staticp x))
+(defmacro hl-staticp (x)
+
+; This function always returns a fixnum.
+
+; CCL::%STATICP always returns a fixnum or nil, as per Gary Byers email June
+; 16, 2014.  That email also confirmed that if the value is not nil after a
+; garbage collection, then the value is unchanged from before the garbage
+; collection; and also, that the value remains unchanged after saving an image.
+
+; Indeed, this function returns a fixnum (see also above) if x is a static
+; cons.  More may be true, as follows, but we don't count on it: in mid-2014,
+; at least, we see that for CCL, the value returned is 128 for the first static
+; cons and is incremented by 1 for each additional static cons -- and after a
+; garbage collection, this repeats except that values for remaining static
+; conses are skipped.
+
+; See also *hl-hspace-sbits-default-size*.
+
+  #+gcl
+
+; Camm Maguire tells us that conses are always 16-byte aligned in 64-bit GCL
+; and 8-bit aligned in 32-bit GCL.
+
+  `(the fixnum
+        (ash (the fixnum (si::address ,x))
+             #+x86_64 -4
+             #-x86_64 -3))
+  #-gcl
+  `(ccl::%staticp ,x))
 
 #+static-hons
-(defabbrev hl-static-inverse-cons (x)
-  (ccl::%static-inverse-cons x))
-
-
-
-#+static-hons
-(defabbrev hl-machine-address-of (x)
-  (ccl::%address-of x))
+(defmacro hl-static-inverse-cons (x)
+  #+gcl `(si::static-inverse-cons (the fixnum (ash (the fixnum ,x)
+                                                   #+x86_64 4
+                                                   #-x86_64 3)))
+  #-gcl `(ccl::%static-inverse-cons ,x))
 
 #+static-hons
-(defabbrev hl-machine-hash (x)
+(defmacro hl-machine-hash (x)
 
 ; NOT A FUNCTION.  Note that (EQUAL (HL-MACHINE-HASH X) (HL-MACHINE-HASH X)) is
 ; not necessarily true, because objects may be moved during garbage collection
@@ -242,19 +281,37 @@
 ; 2^20).  We obtain a good distribution on 64-bit CCL, but we have not tried
 ; this on 32-bit CCL.
 ;
-; We right-shift the address by five places because smaller shifts led to worse
-; distributions.  We think this is because the low 3 bits are just tag bits
-; (which are not interesting), and the next 2 bits never add any information
-; because conses are word-aligned.
+; We use the CCL primitive ccl::strip-tag-to-fixnum because it always returns a
+; fixnum, while ccl::%address-of (which returns the machine address) might
+; conceivably not do so, according to email 6/2014 from Gary Byers.  He
+; explains that CCL uses ccl::strip-tag-to-fixnum "to derive a fixnum from its
+; argument's address (it effectively does something like a right shift by 4
+; bits....".
 ;
-; To change this from 2^20 to other powers of 2, you should only need to adjust
-; the mask.  We think 2^20 is a good number, since a 2^20 element array seems
-; to require about 8 MB of memory, e.g., our whole cache will take 16 MB.
-
-  (let* ((addr    (hl-machine-address-of x))
-         (addr>>5 (the fixnum (ash (the fixnum addr) -5))))
-    ;; (ADDR>>5) % 2^20
-    (the fixnum (logand (the fixnum addr>>5) #xFFFFF))))
+; For CCL, we right-shift the address by five places because smaller shifts led
+; to worse distributions.  (GCL wart: We haven't really thought this efficiency
+; issue through for GCL.)  Gary Byers has informed us (email, 6/16/2014) that
+; in 64-bit CCL, memory-allocated objects (like conses) are 16-byte aligned,
+; and the bottom 4 bits (all 0) are replaced by tag bits (where those tag bits
+; are always 3 for a cons).  So shifting by 4 bits might seem to suffice, but
+; we got a significantly better distribution shifting by 5 bits (see discussion
+; of experiments below, "However, in addition to fast execution speed....").
+;
+; It should be easy to change this from 2^20 to other powers of 2.  We think
+; 2^20 is a good number, since a 2^20 element array seems to require about 8 MB
+; of memory, e.g., our whole cache (which consists of two such arrays; see
+; "Implementation 2" of Cache Tables, below) will take 16 MB.
+;
+  `(the fixnum (ash (the fixnum
+                         (logand #x1FFFFF
+				 #+gcl (ash (si::address ,x) -4)
+                                 #+ccl (ccl::strip-tag-to-fixnum ,x)
+                                 #-(or gcl ccl)
+                                 (error "~s is not implemented in this Lisp."
+                                        'hl-machine-hash)
+                                 #-(or gcl ccl)
+                                 0))
+                    -1)))
 
 
 ; ----------------------------------------------------------------------
@@ -265,7 +322,7 @@
 
 ; A Cache Table is a relatively simple data structure that can be used to
 ; (partially) memoize the results of a computation.  Cache tables are used by
-; the Hons implementation, but are otherwise independent from the rest of HONS.
+; the hons implementation, but are otherwise independent from the rest of hons.
 ; We therefore introduce them here, up front.
 ;
 ; The operations of a Cache Table are as follows:
@@ -282,7 +339,7 @@
 ;
 ; We have two implementations of Cache Tables.
 ;
-; Implementation 1.  For Lisps other than 64-bit CCL.  (#-static-hons)
+; Implementation 1.  For Lisps other than 64-bit CCL (#-static-hons).
 ;
 ;    A Cache Table is essentially an ordinary hash table, along with a separate
 ;    field that tracks its count.
@@ -329,50 +386,110 @@
 ;    explicitly check that this hash code has the proper KEY.
 ;
 ;    Our hashing function, hl-machine-hash, performs quite well.  According to
-;    a rough test, it takes only about the same time as three or four fixnum
-;    additions.  Here's the testing code we used:
+;    a rough test, it takes only about the same time as about 11 fixnum
+;    additions.  Just below is a log of our tests (on a 2010 MacBook Pro).
 ;
-;      (defun f (x) ;; (f '(1 . 2)) takes 8.709 seconds
-;        (let ((acc 0))
-;          (declare (type fixnum acc))
-;          (time (loop for i fixnum from 1 to 1000000000
-;                      do
-;                      (setq acc (the fixnum (+ (the fixnum acc) (the fixnum (car x)))))
-;                      (setq acc (the fixnum (+ (the fixnum acc) (the fixnum (cdr x)))))
-;                      (setq acc (the fixnum (+ (the fixnum acc) (the fixnum (car x)))))
-;                      (setq acc (the fixnum (+ (the fixnum acc) (the fixnum (cdr x)))))
-;                      ))
-;          acc))
-;
-;      (defun g (x) ;; (g '(1 . 2)) takes 8.005 seconds
-;        (let ((acc 0))
-;          (declare (type fixnum acc))
-;          (time (loop for i fixnum from 1 to 1000000000
-;                      do
-;                      (setq acc (the fixnum (+ acc (the fixnum (hl-machine-hash x)))))))
-;          acc))
+;      ? (defun f (x)
+;          (let ((acc 0))
+;            (declare (type fixnum acc))
+;            (loop for i fixnum from 1 to 1000000000
+;                  do
+;                  (setq acc (the fixnum (+ (the fixnum acc) (the fixnum (car x)))))
+;                  (setq acc (the fixnum (+ (the fixnum acc) (the fixnum (cdr x)))))
+;                  (setq acc (the fixnum (+ (the fixnum acc) (the fixnum (car x)))))
+;                  (setq acc (the fixnum (+ (the fixnum acc) (the fixnum (cdr x)))))
+;                  (setq acc (the fixnum (+ (the fixnum acc) (the fixnum (car x)))))
+;                  (setq acc (the fixnum (+ (the fixnum acc) (the fixnum (cdr x)))))
+;                  (setq acc (the fixnum (+ (the fixnum acc) (the fixnum (car x)))))
+;                  (setq acc (the fixnum (+ (the fixnum acc) (the fixnum (cdr x)))))
+;                  (setq acc (the fixnum (+ (the fixnum acc) (the fixnum (car x)))))
+;                  (setq acc (the fixnum (+ (the fixnum acc) (the fixnum (cdr x)))))
+;                  (setq acc (the fixnum (+ (the fixnum acc) (the fixnum (car x)))))
+;                  )
+;            acc))
+;      F
+;      ? (defun g (x)
+;          (let ((acc 0))
+;            (declare (type fixnum acc))
+;            (loop for i fixnum from 1 to 1000000000
+;                  do
+;                  (setq acc (the fixnum (hl-machine-hash (car x)))))
+;            acc))
+;      G
+;      ? (time (f '(1 . 2)))
+;      (F '(1 . 2))
+;      took 3,398,028 microseconds (3.398028 seconds) to run.
+;      During that period, and with 4 available CPU cores,
+;           3,394,546 microseconds (3.394546 seconds) were spent in user mode
+;               1,643 microseconds (0.001643 seconds) were spent in system mode
+;      16000000000
+;      ? (time (g '((1 . 2))))
+;      (G '((1 . 2)))
+;      took 3,387,291 microseconds (3.387291 seconds) to run.
+;      During that period, and with 4 available CPU cores,
+;           3,384,752 microseconds (3.384752 seconds) were spent in user mode
+;               1,501 microseconds (0.001501 seconds) were spent in system mode
+;      90258
+;      ?
 ;
 ;    However, in addition to fast execution speed, we want this function to
 ;    produce a good distribution so that we may hash on its result.  We have
 ;    hard-coded in a size of 2^20 for our data arrays, but it would not be very
-;    to change this.  To determine how well it distributes addresses, we
+;    hard to change this.  To determine how well it distributes addresses, we
 ;    computed the hash codes for a list of 2^24 objects, which is more than the
 ;    2^20 hash codes that we have made available.  We found that every hash
-;    code was used precisely 16 times, a perfect distribution!  (Of course,
-;    when this is used on actual data produced by a program, we do not expect
-;    the results to be so good.)  Here is some basic testing code:
+;    code was used 15, 16, or 17 times, a nearly perfect distribution!  (Of
+;    course, when this is used on actual data produced by a program, we do not
+;    expect the results to be so good.)  Here is some basic testing code:
+;
+;      (include-book "std/osets/sort" :dir :system)
+;      (include-book "defsort/duplicated-members" :dir :system)
 ;
 ;      (defparameter *hashes* nil)
 ;
 ;      (let* ((tries        (expt 2 24))
 ;             (hashes       (time (loop for i fixnum from 1 to tries collect
 ;                                       (hl-machine-hash (cons 1 2)))))
-;             (nhashes      (time (len (sets::mergesort hashes)))))
+;             (nhashes      (time (len (set::mergesort hashes)))))
 ;        (setq *hashes* hashes)
 ;        (format t "Got ~:D entries for ~:D tries.~%" nhashes tries))
 ;
 ;      (defparameter *dupes* (hons-duplicity-alist *hashes*))
-;      (sets::mergesort (strip-cdrs *dupes*))
+;      (set::mergesort (strip-cdrs *dupes*))
+;
+;    Result: "Got 1,048,576 entries for 16,777,216 tries."
+;
+;    Result: (set::mergesort (strip-cdrs *dupes*)) is (15 16 17).
+;
+;    Specifically, execution of
+;
+;    (let ((ans nil))
+;         (loop for pair in *dupes* as n = (cdr pair)
+;          do (setq ans (put-assoc n (1+ (or (cdr (assoc n ans)) 0)) ans))
+;          finally (return ans)))
+;
+;    returned:
+;
+;    ((15 . 93880) (16 . 860816) (17 . 93880))
+;
+;    However, when we only shifted four bits of the machine address using
+;
+;    `(logand #xFFFFF (hl-machine-address-of ,x))
+;
+;    for the body of hl-machine-hash, we got a much worse distribution that
+;    used only half the hash codes, perhaps because of how CCL implements
+;    ccl::%address-of on Darwin (as these experiments were on a Mac).
+;
+;    ((31 . 88652) (33 . 96844) (32 . 334696) (30 . 4096))
+;
+;    We also tried shifting six bits of the address using
+;
+;    `(ash (the fixnum (logand #x3FFFFF (hl-machine-address-of ,x))) -2)
+;
+;    for the body of hl-machine-hash, but that distribution was also not as
+;    good:
+;
+;    ((16 . 198089) (14 . 422171) (18 . 426266) (17 . 2) (12 . 2048))
 
 ; BOZO:  Implicitly, our cache table has NIL bound to NIL; this might not
 ;        be appropriate for "memoizing" other applications.
@@ -384,8 +501,13 @@
 
 #-static-hons
 (defconstant hl-cache-table-cutoff
-  ;; Clear the table for hl-norm when it gets to 3/4 full.
-  (floor (* 0.75 hl-cache-table-size)))
+  ;; How full a cache table (e.g., the norm-cache of a hons space) can get
+  ;; before we clear it.  This also becomes the maximum possible value of
+  ;; the count field (see hl-cache-set).  Must be a fixnum.
+  (let ((ans (floor (* 0.75 hl-cache-table-size))))
+    (cond ((> ans most-positive-fixnum)
+           (error "Hl-cache-table-cutoff is too big to be a fixnum!"))
+          (t ans))))
 
 (defstruct hl-cache
 
@@ -397,7 +519,11 @@
   #-static-hons
   (table     (hl-mht :test #'eq :size hl-cache-table-size) :type hash-table)
   #-static-hons
-  (count     0 :type fixnum))
+  (count     0
+
+; Function hl-cache-set guarantees that count is a fixnum.
+
+             :type fixnum))
 
 (defun hl-cache-set (key val cache)
   (declare (type hl-cache cache))
@@ -406,7 +532,7 @@
   (let ((keydata (hl-cache-keydata cache))
         (valdata (hl-cache-valdata cache))
         (code    (hl-machine-hash key)))
-    (hl-without-interrupts
+    (without-interrupts
      (setf (svref keydata (the fixnum code)) key)
      (setf (svref valdata (the fixnum code)) val)))
 
@@ -415,21 +541,27 @@
         (count (hl-cache-count cache)))
     ;; This is a funny ordering which is meant to ensure the count exceeds or
     ;; agrees with (hash-table-count table), even in the face of interrupts.
-    (setf (hl-cache-count cache)
-          (the fixnum (+ 1 (the fixnum count))))
-    (when (> (the fixnum count)
-             (the fixnum hl-cache-table-cutoff))
-      (clrhash table)
-      ;; We set count to one, not zero, because we're about to add an element.
-      (setf (hl-cache-count cache) 1))
+    (cond ((>= (the fixnum count)
+               (the fixnum hl-cache-table-cutoff))
+           (clrhash table)
+; We set count to one, not zero, because we're about to add an element.
+           (setf (hl-cache-count cache) 1))
+          (t (setf (hl-cache-count cache)
+; Since count < hl-cache-table-cutoff, (+ 1 count) is guaranteed to be a
+; fixnum.
+                   (the fixnum (+ 1 (the fixnum count))))))
     (setf (gethash key table) val)))
 
 (defun hl-cache-get (key cache)
 
 ; (HL-CACHE-GET KEY CACHE) --> (MV PRESENT-P VAL)
 ;
-; Note that this isn't thread-safe.  If we want a truly multithreaded hons,
-; we'll need to think about how to protect access to the cache.
+; WARNING: Key must not be nil, at least in the case #+static-hons (see
+; below).
+;
+; Parallelism wart: Note that this isn't thread-safe.  If we want a truly
+; multithreaded hons, we'll need to think about how to protect access to the
+; cache.
 
   (declare (type hl-cache cache))
 
@@ -438,7 +570,7 @@
          (code     (hl-machine-hash key))
          (elem-key (svref keydata (the fixnum code))))
 
-    (if (eq elem-key key)
+    (if (eq elem-key key) ; assumption: not :initial-element of keydata, nil
         (let* ((valdata  (hl-cache-valdata cache))
                (elem-val (svref valdata (the fixnum code))))
           (mv t elem-val))
@@ -456,7 +588,7 @@
   #+static-hons
   (let ((keydata (hl-cache-keydata cache))
         (valdata (hl-cache-valdata cache)))
-    (loop for i fixnum from 0 to (expt 2 20) do
+    (loop for i fixnum below (expt 2 20) do
           (setf (svref keydata i) nil)
           (setf (svref valdata i) nil)))
 
@@ -468,27 +600,25 @@
     (setf (hl-cache-count cache) 0)))
 
 
-
-
 ; ESSAY ON HONS SPACES
 ;
 ; The 'ACL2 Objects' are described in the ACL2 function bad-lisp-objectp;
 ; essentially they are certain "good" symbols, characters, strings, and
-; numbers, recursively closed under consing.  Note that stobjs are not ACL2
-; Objects under this definition.
+; numbers, recursively closed under consing.  Note that live stobjs are not
+; ACL2 Objects under this definition.
 ;
 ; The 'Hons Spaces' are fairly complex structures, introduced with the
-; defstruct for hl-hspace, which must satisfy certain invariants.  At any point
-; in time there may be many active Hons Spaces, but separate threads may never
-; access the same Hons Space!  This restriction is intended to minimize the
-; need to lock while accessing Hons Spaces.
+; defstruct for hl-hspace, which must satisfy certain invariants.  At any time
+; there may be many active Hons Spaces, but separate threads may never access
+; the same Hons Space!  This restriction is intended to minimize the need to
+; lock while accessing Hons Spaces.
 ;
-;    Aside.  Shareable Hons Spaces might have some advantages.  They might
+;    Aside.  Sharable Hons Spaces might have some advantages.  They might
 ;    result in lower overall memory usage and reduce the need to re-hons data
-;    in multiple threads.  They might also be a better fit for Rager's
+;    in multiple threads.  They might also be a better fit for ACL2(p)'s
 ;    parallelism routines.  But acquiring locks might slow honsing in
-;    single-threaded code and make our code more complex.  We should
-;    investigate this later.
+;    single-threaded code and make our code more complex.  Parallelism wart: We
+;    may investigate this later.
 ;
 ;
 ; Fundamental Operations.
@@ -500,7 +630,7 @@
 ; invariant of normed objects is that if A and B are both normed with respect
 ; to HS, then (EQUAL A B) holds iff (EQL A B).
 ;
-; Second, given any ACL2 Object, X, and any Hons Space HS, we must be able to
+; Second, given any ACL2 Object, X, and any Hons Space, HS, we must be able to
 ; 'norm' X to obtain an ACL2 Object that is EQUAL to X and which is normed with
 ; respect to HS.  Note that norming is 'impure' and destructively modifies HS.
 ; This modification is really an extension: any previously normed object will
@@ -522,12 +652,12 @@
 ; the normed version of all strings that are equal to X.  We record this choice
 ; in the STR-HT field of the Hons Space, which is an EQUAL hash table.  The
 ; details of what we record in the STR-HT actually depend on whether 'classic
-; honsing' or 'static honsing' is being used.
+; honsing' or 'static honsing' is being used.  See below.
 ;
 ; Conses.  Like strings, there are EQUAL conses which are not EQL.  We could
 ; account for this by setting up another equal hash table, as we did for
 ; strings, but EQUAL hashing of conses can be very slow.  More efficient
-; schemes are possible if we insist upon two reasonable invariants:
+; schemes are possible because we insist upon two reasonable invariants:
 ;
 ;   INVARIANT C1.  The car of a normed cons must be normed.
 ;   INVARIANT C2.  The cdr of a normed cons must be normed.
@@ -537,7 +667,6 @@
 ; ordinary Common Lisp functions.  The second approach, static-honsing, is
 ; higher performance but requires features that are specific to Clozure Common
 ; Lisp.
-
 
 
 ; ESSAY ON CLASSIC HONSING
@@ -550,7 +679,7 @@
 ; either:
 ;
 ;    NIL-HT, when B is NIL,
-;    CDR-HT, when B is a non-NIL symbol, cons, or a string, or
+;    CDR-HT, when B is a non-NIL symbol, a cons, or a string, or
 ;    CDR-HT-EQL otherwise.
 ;
 ; The NIL-HT binds A to X whenever X = (A . NIL) is a normed cons.  Thanks to
@@ -558,7 +687,7 @@
 ; EQL hash table for NIL-HT.
 ;
 ; For other conses, we basically implement a two-level hashing scheme.  To
-; determine if an cons is normed, we first look up its CDR in the CDR-HT or
+; determine if a cons is normed, we first look up its CDR in the CDR-HT or
 ; CDR-HT-EQL, depending on its type.  Both of these tables bind B to the set of
 ; all normed X such that X = (A . B) for any A.  These sets are represented as
 ; 'flex alists', defined later in this file.  So, once we have found the proper
@@ -573,29 +702,35 @@
 ; The only other thing to mention is strings.  In the classic honsing scheme,
 ; the STR-HT simply associates each string to its normed version.  That is, a
 ; string X is normed exactly when (eq X (gethash X STR-HT)).  It is
-; straightforward to norm a string X: a STR-HT lookup tells us whether a normed
-; version of X exists, if so, what it is.  Otherwise, when no normed version of
-; X exists, we effectively 'norm' X by extending the STR-HT by binding X to
-; itself.
+; straightforward to norm a string X: a STR-HT lookup (using EQUAL) tells us
+; whether a normed version of X exists and, if so, what it is.  Otherwise, when
+; no normed version of X exists, we effectively 'norm' X by extending the
+; STR-HT by binding X to itself.
 ;
 ; Taken all together, the STR-HT, NIL-HT, CDR-HT, and CDR-HT-EQL completely
 ; determine which ACL2 objects are normed in the classic honsing scheme.
 
 
-
 ; ESSAY ON STATIC HONSING
 ;
-; Prerequisite: see the essay on hons spaces.
+; Prerequisite: see the Essay on Hons Spaces and the Essay on Static Conses.
 ;
 ; Static Honsing is a scheme for tracking normed conses that can be used only
-; in Clozure Common Lisp.
+; in Clozure Common Lisp (CCL).
 ;
 ; Static Honsing is an alternative to classic honsing that exploits static
-; conses for greater efficiency.  Here, only static conses can be considered
-; normed, and SBITS is a bit-array that records which static conses are
-; currently normed.  That is, suppose X is a static cons and let I be the index
-; of X.  Then X is considered normed exactly when the Ith bit of SBITS is 1.
-; This is a very fast way to determine if a cons is normed!
+; conses for greater efficiency.  Static conses are conses with several
+; interesting properties: to each static cons there corresponds a unique
+; natural number ``index''; it is possible to ``invert'' the index to retrieve
+; the static cons; each static cons has a fixnum ``machine address.''  Static
+; conses were implemented by Gary Byers and references to ``Gary'' below are to
+; him.
+;
+; Here, only static conses can be considered normed, and SBITS is a bit-array
+; that records which static conses are currently normed.  That is, suppose X is
+; a static cons and let I be the index of X.  Then X is considered normed
+; exactly when the Ith bit of SBITS is 1.  This is a very fast way to determine
+; if a cons is normed!
 ;
 ;
 ; Addresses for Normed Objects.
@@ -607,11 +742,12 @@
 ; Toward this goal, we first develop a reliable 'address' for every normed
 ; object; this address has nothing to do with machine (X86, PowerPC, or other)
 ; addresses.  To begin, we statically assign addresses to NIL, T, and certain
-; small integers.  In particular:
+; small integers.  In particular (see also historic notes below):
 ;
-;    Characters are given addresses 0-255, corresponding to their codes
-;    NIL and T are given addresses 256 and 257, respectively
+;    Characters are given addresses 0-255, corresponding to their codes.
+;    NIL and T are given addresses 256 and 257, respectively.
 ;    Integers in [-2^14, 2^23] are given the subsequent addresses
+;    successively starting at -2^14 (address 258).
 ;
 ; All other objects are dynamically assigned addresses.  In particular, suppose
 ; that BASE is the start of the dynamically-allocated range.  Then,
@@ -634,15 +770,15 @@
 ;   addresses are implicitly shared across all Hons Spaces, and so we must take
 ;   care to ensure that our address-allocation code is thread safe.
 ;
-;   For strings, the STR-HT binds each string X to the pair (NX . NX_C), where
-;   NX is the normed version of X and NX_C is the static cons whose index is
-;   being used as the address for NX.
+;   For strings, the STR-HT binds each string X to the pair XC = (NX
+;   . TRUE-ADDR), where NX is the normed version of X and XC is a static cons
+;   whose address is TRUE-ADDR (see hl-hspace-norm-atom).
 ;
 ;   For any other atoms, the Hons Space includes OTHER-HT, an EQL hash table
 ;   that associates each atom X with X_C, the static cons for X.
 ;
 ; In the future, we might want to think about the size of BASE.  Gary might be
-; be able to extend static cons indicies so that they start well after 128,
+; be able to extend static cons indices so that they start well after 128,
 ; perhaps eliminating the need to add BASE when computing the addresses for
 ; static conses.  On the other hand, it's probably just a matter of who is
 ; doing the addition, and our current scheme gives us good control over the
@@ -662,24 +798,72 @@
 ; Hence, assuming A and B are normed, we can determine whether a normed cons of
 ; the form (A . B) exists by simply generating the proper KEY and then checking
 ; whether ADDR-HT includes an entry for this key.
+;
+; We maintain the invariant that SBITS and ADDR-HT must correspond as described
+; above.  That is, if (aref SBITS idx) = 1 then idx is the index of a static
+; cons that is a key of ADDR-HT; and if C is a key of ADDR-HT, then C is a
+; static cons such that (aref SBITS idx) = 1, where idx is the index of C.
 
-
-
-; DEFAULT SIZES.  The user can always call hl-hons-resize to get bigger tables,
+; Default Sizes.  The user can always call hl-hons-resize to get bigger tables,
 ; but we still want good defaults.  These sizes are used in the structures that
-; follow.
+; follow.  We try to avoid using any size less than 100.  A hash table of size
+; 100 is pretty small and should be cheap to allocate, and making a hash table
+; under that size is possibly not a very sensible thing to do, as it may
+; quickly require resizing, etc.
 
-(defparameter *hl-hspace-str-ht-default-size*      1000)
-(defparameter *hl-ctables-nil-ht-default-size*     5000)
-(defparameter *hl-ctables-cdr-ht-default-size*     100000)
-(defparameter *hl-ctables-cdr-ht-eql-default-size* 1000)
-(defparameter *hl-hspace-addr-ht-default-size*     150000)
-(defparameter *hl-hspace-sbits-default-size*       16000000)
-(defparameter *hl-hspace-other-ht-default-size*    1000)
-(defparameter *hl-hspace-fal-ht-default-size*      1000)
-(defparameter *hl-hspace-persist-ht-default-size*  100)
+(defparameter *hl-hspace-str-ht-default-size*
+  ;; Usually there aren't too many strings, so let's start out small and just
+  ;; let this grow if the user happens to be using a lot of strings.
+  1000)
 
+(defparameter *hl-ctables-nil-ht-default-size*
+  ;; Classic honsing, table for honses (a . b) where b is NIL.  We might see
+  ;; relatively many of these conses because NIL often terminates list, so
+  ;; start this off with a moderately large size.
+  5000)
 
+(defparameter *hl-ctables-cdr-ht-default-size*
+  ;; Classic honsing, main table for almost all honses, so make it large.
+  100000)
+
+(defparameter *hl-ctables-cdr-ht-eql-default-size*
+  ;; Classic honsing, table for honses (a . b) where b is, e.g., a character or
+  ;; number.  Not very common, so don't make this too large to start with.
+  1000)
+
+(defparameter *hl-hspace-addr-ht-default-size*
+  ;; Static honsing, main table for honses, needs to be large
+  150000)
+
+(defparameter *hl-hspace-sbits-default-size*
+  ;; Static honsing sbits array; pretty cheap.  It seems pretty sensible to
+  ;; just match the size of the address table, given how indices appear to be
+  ;; generated for static conses (see hl-staticp), at least for CCL.  But we
+  ;; believe everything would work correctly even if this were a tiny value
+  ;; like 100.  For example, in hl-hspace-truly-static-honsp we do an explicit
+  ;; bounds check before accessing sbits[i], and in hl-hspace-hons-normed we do
+  ;; an explicit bounds check and call hl-hspace-grow-sbits if there isn't
+  ;; enough room before setting sbits[i] = 1.
+  *hl-hspace-addr-ht-default-size*)
+
+(defparameter *hl-hspace-other-ht-default-size*
+  ;; Static honsing addresses for unusual atoms, probably doesn't need to be
+  ;; very large.
+  1000)
+
+(defparameter *hl-hspace-fal-ht-default-size*
+  ;; Fast alists table, probably there aren't going to be many fast alists
+  ;; floating around so this doesn't need to be too large.
+  1000)
+
+(defparameter *hl-hspace-persist-ht-default-size*
+  ;; For persistent honses.  Hardly anyone ever uses these so let's not
+  ;; allocate very many by default.
+  100)
+
+; Foreshadowing: We provide a means, hl-hspace-hons-clear, to wipe out all
+; honses -- except the mechanism protects fast alists and any hons marked as
+; ``persistent'' in the hl-hspace-persist-ht table.
 
 #-static-hons
 (defstruct hl-ctables
@@ -697,14 +881,14 @@
   (cdr-ht-eql (hl-mht :test #'eql :size *hl-ctables-cdr-ht-eql-default-size*)
               :type hash-table))
 
-
-
 (defun hl-initialize-faltable-table (fal-ht-size)
 
-; Create the initial TABLE for a the FALTABLE.  See the Essay on Fast Alists,
+; Create the initial TABLE for the FALTABLE.  See the Essay on Fast Alists,
 ; below, for more details.
 ;
-; [Sol]: Note (Sol): The non-lock-free hashing algorithm in CCL seems to have
+; [Sol]: Note (Sol): The non-lock-free hashing algorithm in CCL [for keyword
+; argument :lock-free = nil in make-hash-table; also see
+; http://trac.clozure.com/ccl/wiki/Internals/LockFreeHashTables] seems to have
 ; some bad behavior when remhashes are mixed in with puthashes in certain
 ; patterns.  One of these is noted below by Jared in the "Truly disgusting
 ; hack" note.  Another is that when a table grows to the threshold where it
@@ -723,10 +907,12 @@
 ; that nobody else is bitten by it, and that I am not bitten by it again, here
 ; I ensure that the TABLE always has at least one fast alist within it.  This
 ; alist is unreachable from any ordinary ACL2 code so it should be quite hard
-; to free it.
+; to free it.  BOZO: Jared thinks it would be reasonable to see if this problem
+; is fixed in CCL, in which case this code could be simplified.
 
   (let ((table (hl-mht :test #'eq :size (max 100 fal-ht-size)
-                        :lock-free t :weak :key)))
+; We could specify :lock-free t, but perhaps it's faster with default nil.
+                       :weak :key)))
     #+Clozure
     ;; This isn't necessary with lock-free, but doesn't hurt.  Note that T is
     ;; always honsed, so sentinel is a valid fast-alist.  I give this a
@@ -736,9 +922,7 @@
            (sentinel-ht (hl-mht :test #'eql)))
       (setf (gethash t sentinel-ht) entry)
       (setf (gethash sentinel-al table) sentinel-ht))
-
     table))
-
 
 (defstruct hl-falslot
 
@@ -771,9 +955,12 @@
 ; We previously made the associations an EQ hash table for alists to their
 ; backing hash tables.  And logically, that's all the HL-FALTABLE is.
 ;
-; But, as a tweak, we add a small cache in front.  This cache us to avoid
-; hashing in the very common cases where we're growing up a new hash table or
-; repeatedly doing lookups in just a couple of hash tables.
+; But, as a tweak, we add a small cache in front.  This cache allows us to
+; avoid hashing in the very common cases where we're growing up a new hash
+; table or repeatedly doing lookups in just a couple of hash tables.  The cache
+; consists of fields slot1 and slot2, together with a Boolean, eject1, that
+; tells us whether to eject slot1 (as opposed to slot2) when making a new cache
+; entry.
 ;
 ; BOZO consider using CCL weak "populations" to make the slots weak like the
 ; table.
@@ -789,8 +976,6 @@
 (defun hl-faltable-init (&key (size *hl-hspace-fal-ht-default-size*))
   (hl-faltable-init-raw :table (hl-initialize-faltable-table size)))
 
-
-
 (defstruct (hl-hspace (:constructor hl-hspace-init-raw))
 
 ; HONS SPACE STRUCTURE.  See the above essays on hons spaces, classic honsing,
@@ -799,12 +984,11 @@
   (str-ht     (hl-mht :test #'equal :size *hl-hspace-str-ht-default-size*)
               :type hash-table)
 
-
   ;; Classic Honsing
 
   #-static-hons
-  (ctables (make-hl-ctables) :type hl-ctables)
-
+  (ctables     (make-hl-ctables)
+               :type hl-ctables)
 
   ;; Static Honsing
 
@@ -814,6 +998,10 @@
 
   #+static-hons
   (sbits      (make-array *hl-hspace-sbits-default-size*
+
+; Note: GCL with #+static-hons grows this array in acl2-default-restart.  See
+; the comment there.
+
                           :element-type 'bit :initial-element 0)
               :type (simple-array bit (*)))
 
@@ -827,30 +1015,28 @@
 
   ;; Miscellaneous Fields.
 
-  ;; NORM-CACHE is described in the essay on HL-HSPACE-NORM, below.
+  ;; NORM-CACHE is described in the Essay on Hl-hspace-norm, below.
   (norm-cache   (make-hl-cache) :type hl-cache)
 
-  ;; FALTABLE is described in the documentation for fast alists.
+  ;; FALTABLE is described in the Essay on Fast Alists.
   (faltable     (hl-faltable-init) :type hl-faltable)
 
-  ;; PERSIST-HT is described in the documentation for hl-hspace-persistent-norm
+  ;; PERSIST-HT is described in comments in hl-hspace-persistent-norm.
   (persist-ht   (hl-mht :test #'eq :size *hl-hspace-persist-ht-default-size*)
                 :type hash-table)
 
   )
 
-
-
-
-(defun hl-hspace-init (&key (str-ht-size       *hl-hspace-str-ht-default-size*)
-                            (nil-ht-size       *hl-ctables-nil-ht-default-size*)
-                            (cdr-ht-size       *hl-ctables-cdr-ht-default-size*)
-                            (cdr-ht-eql-size   *hl-ctables-cdr-ht-eql-default-size*)
-                            (addr-ht-size      *hl-hspace-addr-ht-default-size*)
-                            (sbits-size        *hl-hspace-sbits-default-size*)
-                            (other-ht-size     *hl-hspace-other-ht-default-size*)
-                            (fal-ht-size       *hl-hspace-fal-ht-default-size*)
-                            (persist-ht-size   *hl-hspace-persist-ht-default-size*))
+(defun hl-hspace-init (&key
+                       (str-ht-size       *hl-hspace-str-ht-default-size*)
+                       (nil-ht-size       *hl-ctables-nil-ht-default-size*)
+                       (cdr-ht-size       *hl-ctables-cdr-ht-default-size*)
+                       (cdr-ht-eql-size   *hl-ctables-cdr-ht-eql-default-size*)
+                       (addr-ht-size      *hl-hspace-addr-ht-default-size*)
+                       (sbits-size        *hl-hspace-sbits-default-size*)
+                       (other-ht-size     *hl-hspace-other-ht-default-size*)
+                       (fal-ht-size       *hl-hspace-fal-ht-default-size*)
+                       (persist-ht-size   *hl-hspace-persist-ht-default-size*))
 
 ; (HL-HSPACE-INIT ...) --> Hons Space
 ;
@@ -867,7 +1053,15 @@
   (hl-hspace-init-raw
    :str-ht           (hl-mht :test #'equal :size (max 100 str-ht-size))
    :addr-ht          (hl-mht :test #'eql   :size (max 100 addr-ht-size))
-   :addr-limit       (max 100 addr-ht-size)
+   :addr-limit       (let ((addr-limit (max 100 addr-ht-size)))
+                       (or (typep addr-limit 'fixnum)
+                          ;; There is no reason to supply a non-fixnum as
+                          ;; addr-ht-size, since Gary Byers tells us (email,
+                          ;; June 2014) that a hash-table size is always a
+                          ;; fixnum in 64-bit CCL.
+                           (error ":Addr-limit is ~s (but must be a fixnum)"
+                                  addr-limit))
+                       addr-limit)
    :other-ht         (hl-mht :test #'eql   :size (max 100 other-ht-size))
    :sbits            (make-array (max 100 sbits-size)
                                  :element-type 'bit
@@ -891,11 +1085,12 @@
                       :cdr-ht-eql (hl-mht :test #'eql
                                           :size (max 100 cdr-ht-eql-size)))
    :norm-cache       (make-hl-cache)
-   :faltable         (hl-faltable-init :size fal-ht-size)
+   :faltable         (hl-faltable-init :size
+                                       ;; Max with 100 is already handled in
+                                       ;; hl-initialize-faltable-table
+                                       fal-ht-size)
    :persist-ht       (hl-mht :test #'eq :size (max 100 persist-ht-size))
    ))
-
-
 
 
 ; ESSAY ON FLEX ALISTS (Classic Honsing Only)
@@ -904,8 +1099,8 @@
 ; that it is converted into a hash table after reaching a certain size.
 ;
 ;   RESTRICTION 1.  A flex alist must be used according to the single threaded
-;   discipline, i.e., you must always extend the most recently extended flex
-;   alist.
+;   discipline, i.e., if you extend a flex alist A to a new flex alist, then
+;   you must no longer use A as a flex alist.
 ;
 ;   RESTRICTION 2.  A flex alist must never be extended twice with the same
 ;   key.  This ensures that the entry returned by flex-assoc is always EQ to
@@ -924,13 +1119,14 @@
 ; having slow honsp checks when alists are in the 20-100 range in exchange for
 ; lower memory usage.
 
-(defabbrev hl-flex-alist-too-long (x)
+(defmacro hl-flex-alist-maxed-out (x)
 
-; (hl-flex-alist-too-long x) == (> (length x) 18) for proper lists.  It is
+; (hl-flex-alist-maxed-out x) == (> (length x) 18) for proper lists.  It is
 ; inspired by the Milawa function len-over-250p.  Although it is ugly, it is
-; faster than looping and counting.
+; faster than looping and counting.  It is also faster on short lists (all of
+; length at most 19) than `(not (eq nil (nthcdr 18 ,x))).
 
-   (let ((4cdrs (cddddr x)))
+  `(let ((4cdrs (cddddr ,x)))
      (and (consp 4cdrs)
           (let ((8cdrs  (cddddr 4cdrs)))
             (and (consp 8cdrs)
@@ -946,17 +1142,46 @@
 ; if key is not bound.  Note that the comparisons performed by flex-assoc are
 ; always done with EQL.
 
+; The check (listp al) seems faster in CCL than checking for a hash-table and
+; is, according to disassemble) a check that is equivalent to (typep al 'list).
+; Compare:
+
+;    ? (defun foo ()
+;        (let ((ht (make-hash-table)))
+;          (loop for i fixnum from 1 to 100000000
+;                when (listp ht)
+;                do (return t))))
+;    FOO
+;    ? (time$ (foo))
+;    ; (FOO) took
+;    ; 0.09 seconds realtime, 0.09 seconds runtime
+;    ; (1,552 bytes allocated).
+;    NIL
+;    ? (defun foo ()
+;        (let ((ht '(3)))
+;          (loop for i fixnum from 1 to 100000000
+;                when (typep ht 'hash-table)
+;                do (return t))))
+;    FOO
+;    ? (time$ (foo))
+;    ; (FOO) took
+;    ; 0.47 seconds realtime, 0.47 seconds runtime
+;    ; (0 bytes allocated).
+;    NIL
+;    ?
+
   (if (listp al)
       (assoc key al)
     (gethash key (the hash-table al))))
 
-(defabbrev hl-flex-acons (elem al)
+(defmacro hl-flex-acons (elem al &optional shared)
 
 ; (hl-flex-acons entry al) assumes that entry is a (key . val) pair, and
 ; extends the flex alist al by binding key to entry.
 ;
-; Note: the caller must ensure to obey the restrictions described in the
-; Essay on Flex Alists.
+; WARNING: the caller must be sure to obey the restrictions described in the
+; Essay on Flex Alists.  These are not enforced but their violation can lead to
+; incorrect code!
 ;
 ; Note about Ctrl+C Safety: this is locally safe assuming that (setf (gethash
 ; ...)) is safe.  In the alist case we're pure, so there aren't any problems.
@@ -964,22 +1189,32 @@
 ; unless it's been fully constructed, so we're ok.  In the hash table case,
 ; we're a single setf, which we assume is okay.
 
-  (if (listp al)
-      (cond ((hl-flex-alist-too-long al)
-             ;; Because of uniqueness, we don't need to worry about shadowed
-             ;; pairs; we can just copy all pairs into the new hash table.
-             (let ((ht (hl-mht)))
-               (declare (type hash-table ht))
-               (loop for pair in al do
-                     (setf (gethash (car pair) ht) pair))
-               (setf (gethash (car elem) ht) elem)
-               ht))
-            (t
-             (cons elem al)))
-    (progn
-      (setf (gethash (car elem) (the hash-table al))
-            elem)
-      al)))
+  `(let ((elem ,elem)
+         (al ,al)
+         (shared ,shared))
+     (cond
+      ((listp al)
+       (cond ((hl-flex-alist-maxed-out al)
+              ;; Because of uniqueness, we don't need to worry about shadowed
+              ;; pairs; we can just copy all pairs into the new hash table.
+              (let ((ht (cond (shared
+
+; In CCL, the default is for hash tables to be shared.  So we let CCL handle
+; :shared and :lock-free.
+
+                               (hl-mht :shared :default))
+                              (t (hl-mht)))))
+                (declare (type hash-table ht))
+                (loop for pair in al do
+                      (setf (gethash (car pair) ht) pair))
+                (setf (gethash (car elem) ht) elem)
+                ht))
+             (t
+              (cons elem al))))
+      (t
+       (setf (gethash (car elem) (the hash-table al))
+             elem)
+       al))))
 
 
 ; ----------------------------------------------------------------------
@@ -998,24 +1233,25 @@
 ;
 ; Static Honsing only.  X must be an ACL2 Cons and HS must be a Hons Space.  We
 ; determine if X is a static cons whose bit is set in the SBITS array.  If so,
-; we X is considered normed with respect to HS.
+; X is considered normed with respect to HS.
 
   (let* ((idx (hl-staticp x)))
     (and idx
          (let ((sbits (hl-hspace-sbits hs)))
+           (declare (type (simple-array bit (*)) sbits)) ; perhaps unnecessary
            (and (< (the fixnum idx) (the fixnum (length sbits)))
                 (= 1 (the fixnum (aref sbits (the fixnum idx)))))))))
 
 #-static-hons
-(defabbrev hl-hspace-find-alist-for-cdr (b ctables)
+(defabbrev hl-hspace-find-flex-alist-for-cdr (b ctables)
 
-; (HL-HSPACE-FIND-ALIST-FOR-CDR B CTABLES) --> FLEX ALIST
+; (HL-HSPACE-FIND-FLEX-ALIST-FOR-CDR B CTABLES) --> FLEX ALIST
 ;
 ; Classic Honsing only.  B is any ACL2 Object and CTABLES is the ctables
-; structure from a Hons Space.  Suppose there is some ACL2 Object, X = (A . B).
-; We return the flex alist that X must belong to for classic honsing.  Note
-; that even though the NIL-HT starts out as a hash table, we can still regard
-; it as a flex alist.
+; structure from a Hons Space.  We return the flex alist that an ACL2 Object X
+; = (A . B), for some A, must belong to for classic honsing.  Note that even
+; though the NIL-HT starts out as a hash table, we can still regard it as a
+; flex alist.
 
   (cond ((null b)
          (hl-ctables-nil-ht ctables))
@@ -1040,10 +1276,9 @@
   (let* ((a        (car x))
          (b        (cdr x))
          (ctables  (hl-hspace-ctables hs))
-         (hons-set (hl-hspace-find-alist-for-cdr b ctables))
+         (hons-set (hl-hspace-find-flex-alist-for-cdr b ctables))
          (entry    (hl-flex-assoc a hons-set)))
     (eq x entry)))
-
 
 (defun hl-hspace-honsp-wrapper (x)
   ;; Bootstrapping hack for serialize
@@ -1056,7 +1291,6 @@
   ;; Assumes *default-hs* is already initialized
   (declare (special *default-hs*))
   (hl-hspace-faltable *default-hs*))
-
 
 (defun hl-hspace-normedp (x hs)
 
@@ -1073,7 +1307,7 @@
                 (entry  (gethash x str-ht)))
            (and entry
                 #+static-hons
-                (eq x (car entry))
+                (eq x (car entry)) ; entry = (<normed x> . <true addr>)
                 #-static-hons
                 (eq x entry))))
         (t
@@ -1112,6 +1346,24 @@
         (t
          (equal x y))))
 
+(defun hl-hspace-hons-equal-1 (x y hs)
+
+; This is just hl-hspace-hons-equal, except that we require x to be normed and
+; we optimize under that assumption.
+
+  (declare (type hl-hspace hs))
+  (cond ((eq x y)
+         t)
+        ((consp x)
+         (and (consp y)
+              (not (hl-hspace-honsp y hs))
+              (hl-hspace-hons-equal-1 (car x) (car y) hs)
+              (hl-hspace-hons-equal-1 (cdr x) (cdr y) hs)))
+        ((consp y)
+         nil)
+        (t
+         (equal x y))))
+
 (defun hl-hspace-hons-equal (x y hs)
 
 ; (HL-HSPACE-HONS-EQUAL X Y HS) --> BOOL
@@ -1125,16 +1377,22 @@
          t)
         ((consp x)
          (and (consp y)
-              (not (and (hl-hspace-honsp x hs)
-                        (hl-hspace-honsp y hs)))
-              (hl-hspace-hons-equal (car x) (car y) hs)
-              (hl-hspace-hons-equal (cdr x) (cdr y) hs)))
+              (cond
+               ((hl-hspace-honsp x hs)
+                (cond
+                 ((hl-hspace-honsp y hs)
+                  nil)
+                 (t (and (hl-hspace-hons-equal-1 (car x) (car y) hs)
+                         (hl-hspace-hons-equal-1 (cdr x) (cdr y) hs)))))
+               ((hl-hspace-honsp y hs)
+                (and (hl-hspace-hons-equal-1 (car y) (car x) hs)
+                     (hl-hspace-hons-equal-1 (cdr y) (cdr x) hs)))
+               (t (and (hl-hspace-hons-equal (car x) (car y) hs)
+                       (hl-hspace-hons-equal (cdr x) (cdr y) hs))))))
         ((consp y)
          nil)
         (t
          (equal x y))))
-
-
 
 
 ; ----------------------------------------------------------------------
@@ -1183,9 +1441,8 @@
 ;       performance is likely minimal.
 ;
 ; Even for applications that just barely exceed the boundary of slow-hashing,
-; we're only talking about whether a small percentage of the conses having
-; fast- or slow-hashing addresses.
-
+; we're only talking about whether a small percentage of the conses have fast-
+; or slow-hashing addresses.
 
 #+static-hons
 (defconstant hl-minimum-static-int
@@ -1219,10 +1476,21 @@
   ;; 256 characters + 2 special symbols.  We then count up from there.
   (+ 256 2 (- hl-minimum-static-int)))
 
-#+static-hons
+#+(and static-hons ccl)
 (ccl::defstatic *hl-symbol-addr-lock*
                 ;; lock for hl-symbol-addr; see below.
                 (ccl::make-lock '*hl-symbol-addr-lock*))
+
+#+static-hons
+(defmacro hl-with-lock-grabbed (lock-form &rest args)
+  #+ccl `(ccl::with-lock-grabbed ,lock-form ,@args)
+  #+gcl (declare (ignore lock-form))
+  #+gcl `(progn ,@args) ; GCL wart: We are assuming GCL is single-threaded.
+  #-(or ccl gcl)
+  #+gcl (declare (ignore lock-form args))
+  #-(or ccl gcl)
+  (error "~s is not implemented in this Lisp."
+         'hl-with-lock-grabbed))
 
 #+static-hons
 (defabbrev hl-symbol-addr (s)
@@ -1233,7 +1501,7 @@
 ; look it up and return it.  Otherwise, we must allocate an address for S and
 ; return it.
 ;
-; We store the addresses of symbols on the symbol's propertly list.  This could
+; We store the addresses of symbols on the symbol's property list.  This could
 ; cause problems in multi-threaded code if two threads were simultaneously
 ; trying to generate a 'hl-static-address entry for the same symbol.  In
 ; particular, each thread would generate its own static cons and try to use its
@@ -1256,7 +1524,7 @@
         ;; return the TRUE-ADDR.
         (cdr addr-cons)
       ;; We need to assign an address.  Must lock!
-      (ccl::with-lock-grabbed
+      (hl-with-lock-grabbed
        (*hl-symbol-addr-lock*)
        ;; Some other thread might have assigned S an address before we
        ;; got the lock.  So, double-check and make sure that there still
@@ -1275,6 +1543,8 @@
 #+static-hons
 (defun hl-addr-of-unusual-atom (x str-ht other-ht)
 
+; Warning: Keep this in sync with pons-addr-of-argument.
+
 ; See hl-addr-of.  This function computes the address of any atom except for T
 ; and NIL.  Wrapping this in a function is mainly intended to avoid code blowup
 ; from inlining.
@@ -1288,7 +1558,12 @@
          (the fixnum
            (+ hl-static-int-shift (the fixnum x))))
 
-        ((typep x 'array) ; <-- (stringp x), but twice as fast in CCL.
+        ((typep x 'array)
+
+; The test above is equivalent to (stringp x), but twice as fast in CCL.  Note
+; that (typep x 'vector) appears to be no faster.  More important, this
+; function assumes that X is normed, so in particular, X is not a live stobj.
+
          ;; Since we assume X is normed, its entry in the STR-HT exists and has
          ;; the form XC = (NX . TRUE-ADDR), so we just need to return the
          ;; TRUE-ADDR.
@@ -1318,6 +1593,8 @@
 #+static-hons
 (defmacro hl-addr-of (x str-ht other-ht)
 
+; Warning: Keep this in sync with pons-addr-of-argument.
+
 ; (HL-ADDR-OF X STR-HT OTHER-HT) --> NAT and destructively updates OTHER-HT
 ;
 ; X is any normed ACL2 Object, and STR-HT and OTHER-HT are the corresponding
@@ -1341,10 +1618,10 @@
 #+static-hons
 (defun hl-nat-combine* (a b)
   ;; See community book books/system/hl-addr-combine.lisp for all documentation
-  ;; and a proof that this function is one-to-one.  At one point, this was
-  ;; going to be an inlined version of hl-nat-combine.  We later decided not to
-  ;; inline it, since it's a rare case and slow anyway, to avoid excessive
-  ;; expansion in hl-addr-combine*.
+  ;; and a proof that function hl-nat-combine, defined in that book, is
+  ;; one-to-one.  At one point, this was going to be an inlined version of
+  ;; hl-nat-combine.  We later decided not to inline it, since it's a rare case
+  ;; and slow anyway, to avoid excessive expansion in hl-addr-combine*.
   (+ (let* ((a+b   (+ a b))
             (a+b+1 (+ 1 a+b)))
        (if (= (logand a+b 1) 0)
@@ -1354,24 +1631,24 @@
 
 #+static-hons
 (defabbrev hl-addr-combine* (a b)
-  ;; Inlined version of hl-addr-combine.  See community book
-  ;; books/system/hl-addr-combine.lisp for all documentation and a proof that
-  ;; this function is one-to-one.  The only change we make here is to use typep
-  ;; to see if the arguments are fixnums in the comparisons, which speeds up
-  ;; our test loop by about 1/3.
+  ;; Inlined version of hl-addr-combine, defined in community book
+  ;; books/system/hl-addr-combine.lisp.  See that book for all documentation
+  ;; and a proof that this function is one-to-one.  The only change we make
+  ;; here is to use typep to see if the arguments are fixnums in the
+  ;; comparisons, which speeds up our test loop by about 1/3.
   (if (and (typep a 'fixnum)
            (typep b 'fixnum)
-           (< (the fixnum a) 1073741824)
+           (< (the fixnum a) 1073741824) ; (expt 2 30)
            (< (the fixnum b) 1073741824))
       ;; Optimized version of the small case
       (the (signed-byte 61)
-        (- (the (signed-byte 61)
-             (logior (the (signed-byte 61)
-                       (ash (the (signed-byte 31) a) 30))
-                     (the (signed-byte 31) b)))))
+           (- (the (signed-byte 61)
+                   (logior (the (signed-byte 61)
+                                (ash (the (signed-byte 31) a) 30))
+                           (the (signed-byte 31) b)))))
     ;; Large case.
     (- (hl-nat-combine* a b)
-       576460752840294399)))
+       576460752840294399))) ; (+ (expt 2 59) (expt 2 29) -1)
 
 
 ; ----------------------------------------------------------------------
@@ -1411,14 +1688,14 @@
 ; etc.  But as a Common Lisp hash table, the ADDR-HT will be resized when the
 ; Lisp decides, and there's not really anything we can do about it.
 ;
-; Ha ha, only serious.
-;
 ; The ADDR-LIMIT is an attempt to avoid this kind of trouble.  The basic idea
 ; is that shortly before resizing the ADDR-HT, we will call the function
 ; HL-ADDR-LIMIT-ACTION, which will inspect the ADDR-HT table and see if it's
 ; big enough to warrant doing anything drastic before the resize.  If it is big
 ; enough, we will do a CLEAR-MEMOIZE-TABLES and a HONS-WASH, which can throw
-; away the hash table before growing it.
+; away the hash table before growing it.  (But we will be able to restore the
+; ADDR-HT from the SBITS array using HL-STATIC-INVERSE-CONS; see
+; HL-REBUILD-ADDR-HT.)
 ;
 ; A practical difficulty of implementing this scheme is that Common Lisp
 ; doesn't give us a pre-resize hook for a hash table.  Instead, we have to keep
@@ -1430,14 +1707,19 @@
 ; The ADDR-LIMIT itself should be regarded merely as a performance counter and
 ; we generally do not make any claims about its accuracy or relevance to
 ; anything.  We insist that it is a fixnum for performance, and this should
-; practically cause no soundness issues.
+; cause no soundness issues in practice.
 
 #+static-hons
 (defparameter *hl-addr-limit-minimum*
   ;; We don't do anything drastic during the HL-ADDR-LIMIT-ACTION unless the
   ;; ADDR-HT has grown at least this big.  At 50 million entries, we're
-  ;; starting to get up into the gigabyte range on our allocations.  This could
-  ;; probably use some tuning.
+  ;; starting to get up into the gigabyte range on our allocations.  [Why
+  ;; "gigabyte range"?  Recall that the ADDR-HT associates a key to a static
+  ;; cons.  The key is presumably 8 bytes.  The cons is presumably stored as
+  ;; two addresses in memory, which is 16 bytes.  So that's 24 bytes time 50
+  ;; million, or 1200 million bytes, not including the hash table structure
+  ;; itself, which however might be laid out flat and hence already be
+  ;; accounted for.  So that's 1.2 GB.]
   50000000)
 
 #+static-hons
@@ -1448,17 +1730,45 @@
 ; becomes 99% full.
 
   (let* ((addr-ht (hl-hspace-addr-ht hs))
-         (count   (hash-table-count addr-ht))
-         (size    (hash-table-size addr-ht))
+         (count (hash-table-count addr-ht))
+         (size
+          ;; This is a fixnum -- important for the setting of
+          ;; hl-hspace-addr-limit below -- as Gary Byers tells us (email, June
+          ;; 2014) that a hash-table size is always a fixnum in 64-bit CCL.
+          (hash-table-size addr-ht))
          (cutoff  (floor (* 0.995 (coerce size 'float)))))
     (setf (hl-hspace-addr-limit hs) (- cutoff count))))
+
+#+static-hons
+(defmacro our-hash-table-rehash-size (ht)
+
+; Hash-table-rehash-size is missing in some versions of ANSI GCL 2.6.11 as of
+; mid-Sept. 2014.
+
+  #+gcl (if (fboundp 'hash-table-rehash-size)
+            `(hash-table-rehash-size ,ht)
+; else use default from hl-mht-fn
+          1.5)
+  #-gcl `(hash-table-rehash-size ,ht))
+
+#+static-hons
+(defmacro our-hash-table-rehash-threshold (ht)
+
+; Hash-table-rehash-threshold is missing in some versions of ANSI GCL 2.6.11 as
+; of mid-Sept. 2014.
+
+  #+gcl (if (fboundp 'hash-table-rehash-threshold)
+            `(hash-table-rehash-threshold ,ht)
+; else use default from hl-mht-fn
+          0.7)
+  #-gcl `(hash-table-rehash-threshold ,ht))
 
 #+static-hons
 (defun hl-make-addr-limit-next (hs)
   (declare (type hl-hspace hs))
 
 ; Reset the ADDR-LIMIT so that it will reach zero shortly after the table is
-; resized and then grows to 95% full.  Given reasonable rehashing sizes, this
+; resized and then grows to 99% full.  Given reasonable rehashing sizes, this
 ; seems reasonably likely to trigger after one resize but before two resizes.
 ; At that point, HL-ADDR-LIMIT-ACTION will be able to do a better job of fixing
 ; it up again.
@@ -1466,9 +1776,12 @@
   (let* ((addr-ht       (hl-hspace-addr-ht hs))
          (count         (hash-table-count addr-ht))
          (size          (hash-table-size addr-ht))
-         (rehash-size   (hash-table-rehash-size addr-ht))
+         (rehash-size   (our-hash-table-rehash-size addr-ht))
          (future-cutoff (floor (* 0.995 rehash-size size))))
     (setf (hl-hspace-addr-limit hs)
+          ;; Presumably the rehash-size is a fixnum, as required for the
+          ;; hl-hspace-addr-limit hs); see the comment about fixnums in
+          ;; hl-make-addr-limit-current.
           (- future-cutoff count))))
 
 #+static-hons
@@ -1486,7 +1799,7 @@
 (defun hl-addr-limit-action (hs)
 
 ; (HL-ADDR-LIMIT-ACTION HS) --> NIL and destructively modifies HS
-;   ** may install a new ADDR-HT, SBITS
+;   ** may install a new ADDR-HT, SBITS (hons-wash via hl-addr-limit-action)
 ;   ** callers should not have ADDR-HT or SBITS let-bound!
 ;
 ; See the Essay on ADDR-LIMIT.  We see if the ADDR-HT is large and almost full,
@@ -1628,7 +1941,7 @@
 (defun hl-hspace-hons-normed (a b hint hs)
 
 ; (HL-HSPACE-HONS-NORMED A B HINT HS) --> (A . B) and destructively updates HS.
-;    ** may install a new ADDR-HT, SBITS
+;    ** may install a new ADDR-HT, SBITS (hons-wash via hl-addr-limit-action)
 ;    ** callers should not have ADDR-HT or SBITS let-bound!
 ;
 ; A and B may be any normed ACL2 objects and HS is a hons space.  HINT is
@@ -1688,7 +2001,7 @@
                            (the fixnum (length sbits)))
                    (hl-hspace-grow-sbits idx hs)
                    (setq sbits (hl-hspace-sbits hs)))
-                 (hl-without-interrupts
+                 (without-interrupts
                   ;; Since we must simultaneously update SBITS and ADDR-HT, the
                   ;; installation of PAIR must be protected by without-interrupts.
                   (setf (aref sbits idx) 1)
@@ -1726,7 +2039,7 @@
                                      (cons a b)))
                    (new-flex-alist (hl-flex-acons new-cons flex-alist)))
               ;; Ctrl+C Safety is subtle here.  If was-alistp, then the above
-              ;; flex-acons was applicative and didn't alter the Hons Space.
+              ;; hl-flex-acons was applicative and didn't alter the Hons Space.
               ;; We'll go ahead and install the new flex alist, but this
               ;; installation occurs as an single update to the Hons Space.
               (when was-alistp
@@ -1739,7 +2052,7 @@
 ; ESSAY ON HL-HSPACE-NORM
 ;
 ; (HL-HSPACE-NORM X HS) --> X' and destructively updates HS.
-;    ** may install a new ADDR-HT, SBITS
+;    ** may install a new ADDR-HT, SBITS (hons-wash via hl-addr-limit-action)
 ;    ** callers should not have ADDR-HT or SBITS let-bound!
 ;
 ; X is any ACL2 Object and might be normed or not; HS is a Hons Space.  We
@@ -1768,7 +2081,7 @@
 ; Historically, we used a hash table instead.  A basic problem with this was,
 ; when should the table be created?  We surely do not want to have to create a
 ; new hash table every time hons-copy is called -- after all, it's called twice
-; in every call of hons!  On the other, we don't want to use a global hash
+; in every call of hons!  On the other hand, we don't want to use a global hash
 ; table that never gets cleaned out, because such a table could grow very large
 ; over time.  Our first solution was to split norming into two functions.  An
 ; auxilliary function did all the work, and freely used a hash table without
@@ -1779,10 +2092,33 @@
 ; Using a global Cache Table nicely solves this problem.  The Cache Table keeps
 ; a fixed size and automatically forgets elements.
 
+(defmacro hl-hspace-norm-aux-consp (x cache hs)
+
+; This is just the case of hl-hspace-norm-aux for which x is known to be a
+; consp that is not normed.  X should be a symbol in order to avoid repeated
+; evaluation of x.
+
+  (assert ; avoid repeated evaluation
+   (and (symbolp x)
+        (symbolp cache)
+        (symbolp hs)))
+  (assert ; avoid capture
+   (not (intersectp-eq '(present-p val a d x-prime)
+                       (list x cache hs))))
+  `(mv-let (present-p val)
+           (hl-cache-get ,x ,cache)
+           (if present-p
+               val
+             (let* ((a       (hl-hspace-norm-aux (car ,x) ,cache ,hs))
+                    (d       (hl-hspace-norm-aux (cdr ,x) ,cache ,hs))
+                    (x-prime (hl-hspace-hons-normed a d ,x ,hs)))
+               (hl-cache-set ,x x-prime ,cache)
+               x-prime))))
+
 (defun hl-hspace-norm-aux (x cache hs)
 
 ; (HL-HSPACE-NORM-AUX X CACHE HS) --> X' and destructively modifies CACHE and HS.
-;    ** may install a new ADDR-HT, SBITS
+;    ** may install a new ADDR-HT, SBITS (hons-wash via hl-addr-limit-action)
 ;    ** callers should not have ADDR-HT or SBITS let-bound!
 ;
 ; X is an ACL2 Object to copy.  CACHE is the cache table from HS, and HS is the
@@ -1795,32 +2131,21 @@
         ((hl-hspace-honsp x hs)
          x)
         (t
-         (mv-let (present-p val)
-                 (hl-cache-get x cache)
-           (if present-p
-               val
-             (let* ((a       (hl-hspace-norm-aux (car x) cache hs))
-                    (d       (hl-hspace-norm-aux (cdr x) cache hs))
-                    (x-prime (hl-hspace-hons-normed a d x hs)))
-               (hl-cache-set x x-prime cache)
-               x-prime))))))
+         (hl-hspace-norm-aux-consp x cache hs))))
 
+(declaim (inline hl-hspace-norm-expensive))
 (defun hl-hspace-norm-expensive (x hs)
 
 ; (HL-HSPACE-NORM-EXPENSIVE X HS) --> X' and destructively modifies HS.
-;    ** may install a new ADDR-HT, SBITS
+;    ** may install a new ADDR-HT, SBITS (hons-wash via hl-addr-limit-action)
 ;    ** callers should not have ADDR-HT or SBITS let-bound!
 ;
-; X is assumed to be not an atom and not a honsp.  We put this in a separate
-; function, mainly so that hl-hspace-norm can be inlined without resulting in
-; too much code expansion.
+; X is assumed to be not an atom and not a honsp.  Since we put this in a
+; separate function, hl-hspace-norm can be inlined without resulting in too
+; much code expansion.
 
   (let ((cache (hl-hspace-norm-cache hs)))
-    (mv-let (present-p val)
-            (hl-cache-get x cache)
-            (if present-p
-                val
-              (hl-hspace-norm-aux x cache hs)))))
+    (hl-hspace-norm-aux-consp x cache hs)))
 
 (declaim (inline hl-hspace-norm))
 (defun hl-hspace-norm (x hs)
@@ -1830,12 +2155,12 @@
         ((hl-hspace-honsp x hs)
          x)
         (t
-        (hl-hspace-norm-expensive x hs))))
+         (hl-hspace-norm-expensive x hs))))
 
 (defun hl-hspace-persistent-norm (x hs)
 
 ; (HL-HSPACE-PERSISTENT-NORM X HS) --> X' and destructively updates HS.
-;    ** may install a new ADDR-HT, SBITS
+;    ** may install a new ADDR-HT, SBITS (hons-wash via hl-addr-limit-action)
 ;    ** callers should not have ADDR-HT or SBITS let-bound!
 ;
 ; X is any ACL2 object and HS is a Hons Space.  We produce a new object that is
@@ -1861,12 +2186,12 @@
 
 ; (HL-HSPACE-HONS X Y HS) --> (X . Y) which is normed, and destructively
 ; updates HS.
-;    ** may install a new ADDR-HT, SBITS
+;    ** may install a new ADDR-HT, SBITS (hons-wash via hl-addr-limit-action)
 ;    ** callers should not have ADDR-HT or SBITS let-bound!
 ;
 ; X and Y may be any ACL2 Objects, whether normed or not, and HS must be a Hons
-; Space.  We produce a new cons, (X . Y), destructively extend HS so that it is
-; considered normed, and return it.
+; Space.  We produce a new cons, (X . Y), destructively extend HS so that this
+; new cons is considered normed, and return it.
 
   (declare (type hl-hspace hs))
   (hl-hspace-hons-normed (hl-hspace-norm x hs)
@@ -1897,10 +2222,10 @@
 ;       use of EQL-based backing hash tables.
 ;
 ;    3. The backing hash table, HT, must "agree with" AL.  In particular, for
-;       all ACL2 Objects, X, the following relation must be satisfied:
+;       all ACL2 Objects, KEY, the following relation must be satisfied:
 ;
-;        (equal (hons-assoc-equal X AL)
-;               (gethash (hons-copy X) HT))
+;        (equal (hons-assoc-equal KEY AL)
+;               (gethash (hons-copy KEY) HT))
 ;
 ;       In other words, for every (KEY . VALUE) pair in AL, HT must associate
 ;       KEY to (KEY . VALUE).  Meanwhile, if KEY is not bound in AL, then it
@@ -1918,22 +2243,22 @@
 ;     - (SETF (GETHASH KEY HT) VAL)              update HT
 ;     - (SETF (GETHASH NEW-ALIST FALTABLE) HT)   associate HT with NEW-ALIST
 ;
-; This takes a lot of FALTABLE updates and all of this hashing gets expensive.
-; To avoid it, we changed the FALTABLE into a structure which had a hash table
-; and also a very small (two slot) cache in the front.  This cache lets us be
-; working with up to two fast alists without having to hash to find the backing
-; hash tables.
+; This takes a lot of FALTABLE updates (three for each hons-acons) and all of
+; this hashing gets expensive.  To avoid it, we changed the FALTABLE into a
+; structure which had a hash table and also a very small (two slot) cache in
+; the front.  This cache lets us be working with up to two fast alists without
+; having to hash to find the backing hash tables.
 
 
 ; ESSAY ON CTRL+C SAFETY FOR FAST ALISTS
 ;
 ; Ctrl+C safety is really difficult for fast alists.  The function
-; hl-hons-acons provides the simplest example of the problem.  You might think
-; that the PROGN in this function should be a without-interrupts instead.
-; After all, an ill-timed interrupt by the user could cause us to remove the
-; old hash table from FALTABLE without installing the new hash table,
-; potentially leading to discipline failures even in otherwise perfectly
-; disciplined user-level code.
+; hl-hspace-hons-acons provides the simplest example of the problem.  You might
+; think that the PROGN in this function (and similarly, in
+; hl-hspace-hons-acons!) should be a without-interrupts instead.  After all, an
+; ill-timed interrupt by the user could cause us to remove the old hash table
+; from FALTABLE without installing the new hash table, potentially leading to
+; discipline failures even in otherwise perfectly disciplined user-level code.
 ;
 ; But the problem runs deeper than this.  Even if we used without-interrupts,
 ; it wouldn't be enough.  After all, an equally bad scenario is that we
@@ -1956,7 +2281,7 @@
 ; Because of this, we abandon the goal of trying to maintain discipline across
 ; interrupts, and set upon a much easier goal of ensuring that whatever hash
 ; tables happen to be in the FALTABLE are indeed accurate reflections of the
-; alists that are bound to them.  This weaker criteria means that the progn
+; alists that are bound to them.  This weaker criterion means that the progn
 ; below is adequate.
 
 
@@ -2137,7 +2462,7 @@ To avoid the following break and get only the above warning:~%  ~a~%"
 (defun hl-hspace-hons-get (key alist hs)
 
 ; (HL-HSPACE-HONS-GET KEY ALIST HS) --> ANS and destructively modifies HS
-;   ** may install a new ADDR-HT, SBITS
+;   ** may install a new ADDR-HT, SBITS (hons-wash via hl-addr-limit-action)
 ;   ** callers should not have ADDR-HT or SBITS let-bound!
 ;
 ; Fundamental fast alist lookup operation.  Norm the key (hence the possible
@@ -2163,7 +2488,7 @@ To avoid the following break and get only the above warning:~%  ~a~%"
 (defun hl-hspace-hons-acons (key value alist hs)
 
 ; (HL-HSPACE-HONS-ACONS KEY VALUE ALIST HS) --> ALIST' and destructively modifies HS.
-;   ** may install a new ADDR-HT, SBITS
+;   ** may install a new ADDR-HT, SBITS (hons-wash via hl-addr-limit-action)
 ;   ** callers should not have ADDR-HT or SBITS let-bound!
 ;
 ;  - KEY and VALUE are any ACL2 Objects, whether normed or not.
@@ -2202,13 +2527,18 @@ To avoid the following break and get only the above warning:~%  ~a~%"
           (setf (hl-falslot-val slot) tab)
           (setf (hl-falslot-key slot) ans))
 
-      ;; Existing fast alist.
+      ;; Possibly existing fast alist.
       (let* ((slot (hl-faltable-general-lookup alist faltable))
              (val  (hl-falslot-val slot)))
+
+; Warning: Do not change the following IF to a COND that eliminates the PROGN
+; below, without updating the comment about that PROGN in the Essay ON Ctrl+C
+; Safety for Fast Alists.
+
         (if (not val)
             ;; Discipline failure, no valid backing alist.
             (hl-slow-alist-warning 'hl-hspace-hons-acons)
-          (progn
+          (progn ; see warning above
             ;; We temporarily set the KEY to nil to break the old association
             ;; from ALIST to VAL.  Then, install the new entry into the VAL,
             ;; and finally set KEY to ANS so that the new association is
@@ -2241,7 +2571,7 @@ To avoid the following break and get only the above warning:~%  ~a~%"
 (defun hl-hspace-hons-acons! (key value alist hs)
 
 ; (HL-HSPACE-HONS-ACONS! KEY VALUE ALIST HS) --> ALIST' and destructively modifies HS.
-;   ** may install a new ADDR-HT, SBITS
+;   ** may install a new ADDR-HT, SBITS (hons-wash via hl-addr-limit-action)
 ;   ** callers should not have ADDR-HT or SBITS let-bound!
 ;
 ; Like HL-HSPACE-HONS-ACONS, except honses the ANS alist as well.  This is
@@ -2275,12 +2605,17 @@ To avoid the following break and get only the above warning:~%  ~a~%"
           (setf (hl-falslot-val slot) tab)
           (setf (hl-falslot-key slot) ans))
 
-      ;; Existing fast alist.
+      ;; Possibly existing fast alist.
       (let* ((slot (hl-faltable-general-lookup alist faltable))
              (val  (hl-falslot-val slot)))
+
+; Warning: Do not change the following IF to a COND that eliminates the PROGN
+; below, without updating the comment about that PROGN in the Essay ON Ctrl+C
+; Safety for Fast Alists.
+
         (if (not val)
             (hl-slow-alist-warning 'hl-hspace-hons-acons)
-          (progn
+          (progn ; see warning above
             (setf (hl-falslot-key slot) nil)
             (setf (gethash key (the hash-table val)) entry)
             (setf (hl-falslot-key slot) ans)))))
@@ -2310,7 +2645,7 @@ To avoid the following break and get only the above warning:~%  ~a~%"
 (defun hl-make-fast-norm-keys (alist tail hs)
 
 ; (HL-MAKE-FAST-NORM-KEYS ALIST TAIL HS) --> ALIST' and destructively modifies HS.
-;   ** may install a new ADDR-HT, SBITS
+;   ** may install a new ADDR-HT, SBITS (hons-wash via hl-addr-limit-action)
 ;   ** callers should not have ADDR-HT or SBITS let-bound!
 ;
 ; ALIST is an arbitrary ACL2 object.  TAIL is its longest-normed-tail.  We
@@ -2319,14 +2654,33 @@ To avoid the following break and get only the above warning:~%  ~a~%"
   (declare (type hl-hspace hs))
   (if (eq tail alist)
       alist
+
+; The following algorithm is a bit subtle.  First-cons is an alist with a fresh
+; spine whose cdr is EQUAL to an initial segment of alist, but not expected to
+; be EQ because the keys of (cdr first-cons) are all normed.  Last-cons is the
+; last cons in the list fresh-cons.  We extend first-cons on its end by
+; destructively modifying last-cons as we walk through alist, replacing its cdr
+; with a new last-cons of the form (cons fixed-pair nil).  We stop that walk as
+; soon as we reach a tail whose keys are known to be normed already,
+; destructively replacing the nil just above with that tail.  The result is
+; then the cdr of fresh-cons, which has always been EQUAL to an initial segment
+; of alist but is now EQUAL to alist itself because of the final replacement of
+; (cdr last-cons) by tail.
+
     (let* ((first-cons (list nil))
            (last-cons first-cons))
       (loop for rest on alist
             while (and (consp rest) (not (eq rest tail)))
             do
             (let* ((pair (car rest))
-                   (cons (list (if (consp pair)
-                                   (cons (hl-hspace-norm (car pair) hs) (cdr pair))
+                   (cons (list (if (and (consp pair)
+
+; We avoid copying pair if its car is already normed.
+
+                                        (not (hl-hspace-normedp (car pair)
+                                                                hs)))
+                                   (cons (hl-hspace-norm (car pair) hs)
+                                         (cdr pair))
                                  pair))))
               (setf (cdr last-cons) cons)
               (setq last-cons cons)))
@@ -2352,7 +2706,7 @@ To avoid the following break and get only the above warning:~%  ~a~%"
 (defun hl-hspace-make-fast-alist (alist hs)
 
 ; (HL-HSPACE-MAKE-FAST-ALIST ALIST HS) --> ALIST' and destructively modifies HS.
-;   ** may install a new ADDR-HT, SBITS
+;   ** may install a new ADDR-HT, SBITS (hons-wash via hl-addr-limit-action)
 ;   ** callers should not have ADDR-HT or SBITS let-bound!
 ;
 ; This function returns a fast ALIST' which is EQUAL to ALIST.  Ideally ALIST'
@@ -2375,7 +2729,7 @@ To avoid the following break and get only the above warning:~%  ~a~%"
                ;; Makes a copy of alist in which all keys are normed.
                (alist (hl-make-fast-norm-keys alist tail hs)))
           ;; We need to make a new hash table to back ALIST.  As in
-          ;; hl-hspace-shrink-alist, we choose a size of (max 60 (* 1/8
+          ;; hl-hspace-fast-alist-fork, we choose a size of (max 60 (* 1/8
           ;; length)).
           (setq alist-table (hl-mht :size (max 60 (ash (len alist) -3))))
           (hl-make-fast-alist-put-pairs alist alist-table)
@@ -2389,19 +2743,18 @@ To avoid the following break and get only the above warning:~%  ~a~%"
           alist)))))
 
 
-
-
-
-
-; (HL-HSPACE-SHRINK-ALIST ALIST ANS HONSP HS) --> ANS' and destructively modifies HS.
-;   ** may install a new ADDR-HT, SBITS
+; See :DOC fast-alist-fork for an introduction to that function, including
+; its logical definition.  Here we provide support for its implementation.
+;
+; (HL-HSPACE-FAST-ALIST-FORK ALIST ANS HONSP HS) --> ANS' and destructively modifies HS.
+;   ** may install a new ADDR-HT, SBITS (hons-wash via hl-addr-limit-action)
 ;   ** callers should not have ADDR-HT or SBITS let-bound!
 ;
 ; ALIST is either a fast or slow alist, and ANS should be a fast alist.  HONSP
 ; says whether our extension of ANS' should be made with honses or conses.  HS
 ; is a Hons Space and will be destructively modified.
 
-(defun hl-shrink-alist-aux-really-slow (alist ans honsp hs)
+(defun hl-fast-alist-fork-aux-really-slow (alist ans honsp hs)
   ;; This is our function of last resort and we only call it if discipline has
   ;; failed.  We don't try to produce a fast alist, because there may not even
   ;; be a valid way to produce one that corresponds to the logical definition
@@ -2409,7 +2762,7 @@ To avoid the following break and get only the above warning:~%  ~a~%"
   (cond ((atom alist)
          ans)
         ((atom (car alist))
-         (hl-shrink-alist-aux-really-slow (cdr alist) ans honsp hs))
+         (hl-fast-alist-fork-aux-really-slow (cdr alist) ans honsp hs))
         (t
          (let* ((key   (hl-hspace-norm (caar alist) hs))
                 (entry (hons-assoc-equal key ans)))
@@ -2421,9 +2774,9 @@ To avoid the following break and get only the above warning:~%  ~a~%"
                (progn
                  (setq entry (cons key (cdar alist)))
                  (setq ans   (cons entry ans)))))
-           (hl-shrink-alist-aux-really-slow (cdr alist) ans honsp hs)))))
+           (hl-fast-alist-fork-aux-really-slow (cdr alist) ans honsp hs)))))
 
-(defun hl-shrink-alist-aux-slow (alist ans table honsp hs)
+(defun hl-fast-alist-fork-aux-slow (alist ans table honsp hs)
   ;; This is somewhat slower than the -fast version, because we don't assume
   ;; ALIST has normed keys.  This is the function we'll use when shrinking an
   ;; ordinary alist with an existing fast alist or with an atom as the ANS.
@@ -2432,7 +2785,7 @@ To avoid the following break and get only the above warning:~%  ~a~%"
   (cond ((atom alist)
          ans)
         ((atom (car alist))
-         (hl-shrink-alist-aux-slow (cdr alist) ans table honsp hs))
+         (hl-fast-alist-fork-aux-slow (cdr alist) ans table honsp hs))
         (t
          (let* ((key   (hl-hspace-norm (caar alist) hs))
                 (entry (gethash key table)))
@@ -2447,17 +2800,17 @@ To avoid the following break and get only the above warning:~%  ~a~%"
                  (setq entry (cons key (cdar alist)))
                  (setq ans   (cons entry ans))
                  (setf (gethash key table) entry))))
-           (hl-shrink-alist-aux-slow (cdr alist) ans table honsp hs)))))
+           (hl-fast-alist-fork-aux-slow (cdr alist) ans table honsp hs)))))
 
-(defun hl-shrink-alist-aux-fast (alist ans table honsp hs)
-  ;; This is faster than the -slow version because we assume ALIST is has
-  ;; normed keys.  This is the function we use to merge two fast alists.
+(defun hl-fast-alist-fork-aux-fast (alist ans table honsp hs)
+  ;; This is faster than the -slow version because we assume ALIST has normed
+  ;; keys.  This is the function we use to merge two fast alists.
   (declare (type hl-hspace hs)
            (type hash-table table))
   (cond ((atom alist)
          ans)
         ((atom (car alist))
-         (hl-shrink-alist-aux-fast (cdr alist) ans table honsp hs))
+         (hl-fast-alist-fork-aux-fast (cdr alist) ans table honsp hs))
         (t
          (let* ((key   (caar alist))
                 (entry (gethash key table)))
@@ -2471,7 +2824,7 @@ To avoid the following break and get only the above warning:~%  ~a~%"
                  (setq entry (car alist))
                  (setq ans   (cons entry ans))
                  (setf (gethash key table) entry))))
-           (hl-shrink-alist-aux-fast (cdr alist) ans table honsp hs)))))
+           (hl-fast-alist-fork-aux-fast (cdr alist) ans table honsp hs)))))
 
 
 ; If ANS is an atom, we are going to create a new hash table for the result.
@@ -2480,7 +2833,7 @@ To avoid the following break and get only the above warning:~%  ~a~%"
 ; it's more difficult to estimate how large the table ought to be; we guess
 ; a hashtable size that is the maximum of 60 and 1/8 the length of ALIST.
 
-(defun hl-hspace-shrink-alist (alist ans honsp hs)
+(defun hl-hspace-fast-alist-fork (alist ans honsp hs)
   (declare (type hl-hspace hs))
   (if (atom alist)
       ans
@@ -2515,14 +2868,14 @@ To avoid the following break and get only the above warning:~%  ~a~%"
               (hl-falslot-val ans-slot))))
 
       ;; Disassociate the ANS alist if it exists so we can modify its table
-      ;; without regards to interrupts
+      ;; without regards to interrupts.
       (setf (hl-falslot-key ans-slot) nil)
 
       (unless ans-table
         ;; Bad discipline.  ANS is not an atom or fast alist.
-        (hl-slow-alist-warning 'hl-hspace-shrink-alist)
-        (return-from hl-hspace-shrink-alist
-          (hl-shrink-alist-aux-really-slow alist ans honsp hs)))
+        (hl-slow-alist-warning 'hl-hspace-fast-alist-fork)
+        (return-from hl-hspace-fast-alist-fork
+          (hl-fast-alist-fork-aux-really-slow alist ans honsp hs)))
 
       ;; Good discipline.  Shove ALIST into ANS-TABLE.
       (let ((new-alist
@@ -2531,19 +2884,18 @@ To avoid the following break and get only the above warning:~%  ~a~%"
              ;; fast version.  Else, we can't make these assumptions, and have
              ;; to use the slow one.
              (if alist-table
-                 (hl-shrink-alist-aux-fast alist ans ans-table honsp hs)
-               (hl-shrink-alist-aux-slow alist ans ans-table honsp hs))))
+                 (hl-fast-alist-fork-aux-fast alist ans ans-table honsp hs)
+               (hl-fast-alist-fork-aux-slow alist ans ans-table honsp hs))))
 
         (when honsp
           (setq ans-slot (hl-faltable-general-lookup new-alist faltable))
           (when (hl-falslot-key ans-slot)
-            ;; "Inadvertent" hash table stealing.  We now print a warning
-            ;; before removing the old binding.
-            (hl-alist-stolen-warning 'hons-shrink-alist!)
+            ;; "Inadvertent" hash table stealing.
+            (hl-alist-stolen-warning 'fast-alist-fork!)
             ;; This slot already has the right key, and must have the right
             ;; value, too.  We've already disassociated the old alist.  So
             ;; we're done.
-            (return-from hl-hspace-shrink-alist new-alist)))
+            (return-from hl-hspace-fast-alist-fork new-alist)))
 
         (unless (atom new-alist)
           ;; Tricky subtle thing.  If ALIST was a list of atoms, and ANS is an
@@ -2553,6 +2905,67 @@ To avoid the following break and get only the above warning:~%  ~a~%"
           (setf (hl-falslot-key ans-slot) new-alist))
 
         new-alist))))
+
+(defun hl-fast-alist-clean-aux (alist ans table honsp hs)
+
+; At the top level, ans is empty and table is a hash table whose keys are
+; exactly the keys of alist, but whose values are all nil (which is not a value
+; in table; see the Essay on Fast Alists).  We collect the pairs from alist
+; into ans, in reverse order, skipping those with a key that is an earlier key
+; in alist.  As we add a new pair to ans, we correspondingly update its key in
+; table, so that the returned value corresponds to the final table.
+
+  (declare (type hl-hspace hs)
+           (type hash-table table))
+  (cond
+   ((atom alist) ans)
+   (t
+    (let ((key (caar alist)))
+      (cond
+       ((or (atom (car alist))
+            (gethash key table))
+        (hl-fast-alist-clean-aux (cdr alist) ans table honsp hs))
+       (t
+        (let* ((entry (if honsp
+                          (hl-hspace-hons key (cdar alist) hs)
+                        (car alist)))
+               (ans (if honsp
+                        (hl-hspace-hons entry ans hs)
+                      (cons entry ans))))
+          (setf (gethash key table) entry)
+          (hl-fast-alist-clean-aux (cdr alist) ans table honsp hs))))))))
+
+(defun hl-hspace-fast-alist-clean (alist honsp hs)
+  (declare (type hl-hspace hs))
+  (cond
+   ((atom alist) alist)
+   (t
+    (let* ((ans (cdr (last alist))) ; preserve final cdr
+           (faltable (hl-hspace-faltable hs))
+           (slot (hl-faltable-general-lookup alist faltable))
+           (table (hl-falslot-val slot)))
+      (cond
+       ((null table)
+        (return-from hl-hspace-fast-alist-clean
+                     (hl-hspace-fast-alist-fork alist ans honsp hs)))
+       (t
+        (setf (hl-falslot-key slot) nil) ; invalidate entry for alist
+
+; We replace each value of table with nil, which is useful in
+; hl-fast-alist-clean-aux for identifying when a pair in alist is shadowed
+; (because its key occurs earlier in alist).
+
+        (maphash (lambda (key val)
+                   (declare (ignore val))
+                   (setf (gethash key table) nil))
+                 table)
+        (let ((new-alist
+
+; A side effect of the following call is to restore the values in table, so
+; that it corresponds to new-alist (equivalently, to alist).
+
+               (hl-fast-alist-clean-aux alist ans table honsp hs)))
+          (setf (hl-falslot-key slot) new-alist))))))))
 
 (defun hl-hspace-fast-alist-len (alist hs)
   (declare (type hl-hspace hs))
@@ -2567,11 +2980,10 @@ To avoid the following break and get only the above warning:~%  ~a~%"
           (hash-table-count val)
         (progn
           (hl-slow-alist-warning 'hl-hspace-fast-alist-len)
-          (let* ((fast-alist (hl-hspace-shrink-alist alist nil nil hs))
+          (let* ((fast-alist (hl-hspace-fast-alist-fork alist nil nil hs))
                  (result     (hl-hspace-fast-alist-len fast-alist hs)))
             (hl-hspace-fast-alist-free fast-alist hs)
             result))))))
-
 
 (defun hl-check-alist-for-serialize-restore (alist hs)
 
@@ -2595,7 +3007,7 @@ To avoid the following break and get only the above warning:~%  ~a~%"
 (defun hl-hspace-restore-fal-for-serialize (alist count hs)
 
 ; (HL-HSPACE-RESTORE-FAL-FOR-SERIALIZE ALIST COUNT HS) destructively modifies HS.
-;   ** may install a new ADDR-HT, SBITS
+;   ** may install a new ADDR-HT, SBITS (hons-wash via hl-addr-limit-action)
 ;   ** callers should not have ADDR-HT or SBITS let-bound!
 ;
 ; ALIST should have just been read from a serialized object, and was marked as
@@ -2625,7 +3037,6 @@ To avoid the following break and get only the above warning:~%  ~a~%"
   (hl-hspace-restore-fal-for-serialize alist count *default-hs*))
 
 
-
 ; CHANGE -- increased size of number-subtrees-ht to start at 10,000.  BOZO
 ; think about making this higher, or using a more aggressive rehashing size?
 
@@ -2642,7 +3053,7 @@ To avoid the following break and get only the above warning:~%  ~a~%"
            (hl-hspace-number-subtrees-aux (cdr x) seen)))))
 
 (defun hl-hspace-number-subtrees (x hs)
-;   ** may install a new ADDR-HT, SBITS
+;   ** may install a new ADDR-HT, SBITS (hons-wash via hl-addr-limit-action)
 ;   ** callers should not have ADDR-HT or SBITS let-bound!
   (declare (type hl-hspace hs))
   (let ((x    (hl-hspace-norm x hs))
@@ -2650,7 +3061,24 @@ To avoid the following break and get only the above warning:~%  ~a~%"
     (hl-hspace-number-subtrees-aux x seen)
     (hash-table-count seen)))
 
+(defun hl-faltable-clear-cache (faltable)
 
+  ;; Destructively modifies HS, if faltable is the faltable of HS.
+  ;; Clears the fast alist cache slots, moving any items into the main hash
+  ;; table.  This operation should always be safe to use: we are just moving
+  ;; things out of the cache and putting them into the table.
+
+  ;; A reason to do this is that we want gc to be able to collect entries whose
+  ;; alists are garbage.  Recall that hl-initialize-faltable-table calls hl-mht
+  ;; with keyword argument :weak :key, so this works fine for the (weak) hash
+  ;; table field of faltable, but the cache slots don't allow for such
+  ;; collection.  This function evicts the cache in order to solve that
+  ;; problem.
+
+  (declare (type hl-faltable faltable))
+  (hl-faltable-eject (hl-faltable-slot1 faltable) faltable)
+  (hl-faltable-eject (hl-faltable-slot2 faltable) faltable)
+  (setf (hl-faltable-eject1 faltable) nil))
 
 ; ----------------------------------------------------------------------
 ;
@@ -2669,10 +3097,13 @@ To avoid the following break and get only the above warning:~%  ~a~%"
 ; Static Honsing.
 
 (defun hl-system-gc ()
-  ;; Note that ccl::gc only schedules a GC to happen.  So, we need to both
-  ;; trigger one and wait for it to occur.
   #+Clozure
   (let ((current-gcs (ccl::full-gccount)))
+    ;; Note that ccl::gc only schedules a GC to happen.  So, we need to both
+    ;; trigger one and wait for it to occur.  We use the fact that
+    ;; ccl::full-gccount always increases after completing a garbage collection
+    ;; initiated by (ccl::gc) (as confirmed via email by Gary Byers, June 16,
+    ;; 2014).
     (ccl::gc)
     (loop do
           (progn
@@ -2685,7 +3116,6 @@ To avoid the following break and get only the above warning:~%  ~a~%"
   #-Clozure
   (gc$))
 
-
 #-static-hons
 (defun hl-hspace-classic-restore (x nil-ht cdr-ht cdr-ht-eql seen-ht)
 
@@ -2695,10 +3125,11 @@ To avoid the following break and get only the above warning:~%  ~a~%"
 ; after clearing them.
 ;
 ; X is an ACL2 Object that we need to recursively reinstall.  We assume that X
-; was previously normed, so it never contains non-EQL versions of any objects.
-; We also assume that all of the strings in X are still normed.
+; was previously normed; thus, all of the strings in X are still normed because
+; we never clear the STR-HT.
 ;
-; SEEN-HT is a hash table that says which conses we have already reinstalled.
+; SEEN-HT is an EQ hash table that says which conses we have already
+; reinstalled.
 ;
 ; The other arguments are the correspondingly named fields in the hons space,
 ; which we assume are detatched from any hons space.  Because of this, we do
@@ -2760,7 +3191,9 @@ To avoid the following break and get only the above warning:~%  ~a~%"
                                            :cdr-ht-eql temp-cdr-ht-eql))
          (temp-faltable   (hl-faltable-init))
          (temp-persist-ht (hl-mht :test #'eq))
-         (seen-ht         (hl-mht :test #'eq :size 10000))
+         (seen-ht         (hl-mht :test #'eq
+                                  :size ; arbitrary; probably not important
+                                  10000))
          (note-stream (get-output-stream-from-channel *standard-co*)))
 
     ;; Very subtle.  We're about to violate invariants, so we need to clear out
@@ -2774,12 +3207,15 @@ To avoid the following break and get only the above warning:~%  ~a~%"
     ;; Similarly we need to clear the fal-ht and persist-ht before the ctables,
     ;; or an interrupt might leave us with stale allegedly normed conses in
     ;; those tables.
+
+    (hl-faltable-clear-cache faltable)
     (hl-cache-clear norm-cache)
     (setf (hl-hspace-faltable hs) temp-faltable)
     (setf (hl-hspace-persist-ht hs) temp-persist-ht)
     (setf (hl-hspace-ctables hs) temp-ctables)
 
-    (format note-stream "; Hons-Note: clearing normed objects.~%")
+    (format note-stream
+            "; Hons-Note: clearing normed objects.~%")
 
     (clrhash nil-ht)
     (clrhash cdr-ht)
@@ -2788,17 +3224,19 @@ To avoid the following break and get only the above warning:~%  ~a~%"
     (when gc
       (hl-system-gc))
 
-    (format note-stream "; Hons-Note: re-norming persistently normed objects.~%")
+    (format note-stream
+            "; Hons-Note: re-norming persistently normed objects.~%")
 
     (maphash (lambda (key val)
                (declare (ignore val))
                (hl-hspace-classic-restore key nil-ht cdr-ht cdr-ht-eql seen-ht))
              persist-ht)
 
-    (format note-stream "; Hons-Note: re-norming fast alist keys.~%")
+    (format note-stream
+            "; Hons-Note: re-norming fast alist keys.~%")
 
     ;; BOZO we probably want to loop over the alist, rather than the associated
-    ;; hash table, to avoid the maphash overhead
+    ;; hash table, to avoid the maphash overhead.
     (hl-faltable-maphash
      (lambda (alist associated-hash-table)
        (declare (ignore alist))
@@ -2809,7 +3247,8 @@ To avoid the following break and get only the above warning:~%  ~a~%"
                 associated-hash-table))
      faltable)
 
-    (format note-stream "; Hons-Note: finished re-norming ~a conses.~%"
+    (format note-stream
+            "; Hons-Note: finished re-norming ~a conses.~%"
             (hash-table-count seen-ht))
 
     ;; Again order is critical.  Ctables must be installed before fal-ht or
@@ -2821,7 +3260,6 @@ To avoid the following break and get only the above warning:~%  ~a~%"
 
   nil)
 
-
 #+static-hons
 (defun hl-hspace-static-restore (x addr-ht sbits str-ht other-ht)
 
@@ -2831,8 +3269,9 @@ To avoid the following break and get only the above warning:~%  ~a~%"
 ; after clearing them.
 ;
 ; X is an ACL2 Object that we need to recursively reinstall.  We assume that X
-; was previously normed (so it never contains non-EQL versions of any objects.)
-; We assume that all of the atoms in X are still normed and have addresses.
+; was previously normed; thus, all of the strings in X are still normed, and
+; moreover hl-addr-of etc. are still in good shape, because we never clear the
+; STR-HT or (for static honsing) the OTHER-HT.
 ;
 ; The other fields are the corresponding fields from a Hons Space, but we
 ; assume they are detatched from any Hons Space and do not need to be updated
@@ -2840,14 +3279,13 @@ To avoid the following break and get only the above warning:~%  ~a~%"
 ;
 ; Note that we don't bother to do anything about the ADDR-LIMIT in this
 ; function; we basically assume the ADDR-HT is big enough that it isn't going
-; to need resizing, and that the caller will fix up the ADDR-LIMIT after doing
-; all of the necessary restoration.
+; to need resizing, and that the caller will fix up the (heuristic) ADDR-LIMIT
+; after doing all of the necessary restoration.
 
   (declare (type hash-table addr-ht)
            (type (simple-array bit (*)) sbits))
   (if (atom x)
-      ;; Nothing to do because we assume all atoms have already been
-      ;; installed.
+      ;; Nothing to do because we assume all atoms have already been installed.
       x
     (let ((index (hl-staticp x)))
       (if (= (aref sbits index) 1)
@@ -2860,6 +3298,7 @@ To avoid the following break and get only the above warning:~%  ~a~%"
                (addr-a (hl-addr-of a str-ht other-ht))
                (addr-b (hl-addr-of b str-ht other-ht))
                (key    (hl-addr-combine* addr-a addr-b)))
+; See comment above about not being concerned with interrupts.
           (setf (aref sbits index) 1)
           (setf (gethash key addr-ht) x)
           x)))))
@@ -2867,6 +3306,10 @@ To avoid the following break and get only the above warning:~%  ~a~%"
 #+static-hons
 (defun hl-hspace-hons-clear (gc hs)
   (declare (type hl-hspace hs))
+
+  #+static-hons
+  (clear-memoize-tables) ; See comment about this in hl-hspace-hons-wash.
+
   (let* ((addr-ht         (hl-hspace-addr-ht hs))
          (sbits           (hl-hspace-sbits hs))
          (sbits-len       (length sbits))
@@ -2886,10 +3329,12 @@ To avoid the following break and get only the above warning:~%  ~a~%"
 
     ;; See also the classic version; order matters, you can't clear out addr-ht
     ;; and sbits before the other tables.
+
+    (hl-faltable-clear-cache faltable)
     (hl-cache-clear norm-cache)
     (setf (hl-hspace-faltable hs) temp-faltable)
     (setf (hl-hspace-persist-ht hs) temp-persist-ht)
-    (hl-without-interrupts
+    (without-interrupts
      (setf (hl-hspace-addr-ht hs) temp-addr-ht)
      (setf (hl-hspace-sbits hs) temp-sbits))
 
@@ -2904,7 +3349,8 @@ To avoid the following break and get only the above warning:~%  ~a~%"
 
     (time$ (maphash (lambda (key val)
                       (declare (ignore val))
-                      (hl-hspace-static-restore key addr-ht sbits str-ht other-ht))
+                      (hl-hspace-static-restore key addr-ht sbits str-ht
+                                                other-ht))
                     persist-ht)
            :msg "; Hons-Note: re-norm persistents: ~st seconds, ~sa bytes.~%")
 
@@ -2925,7 +3371,7 @@ To avoid the following break and get only the above warning:~%  ~a~%"
             (hash-table-count addr-ht))
 
     ;; Order matters, reinstall addr-ht and sbits before fal-ht and persist-ht!
-    (hl-without-interrupts
+    (without-interrupts
      (setf (hl-hspace-addr-ht hs) addr-ht)
      (setf (hl-hspace-sbits hs) sbits))
     (setf (hl-hspace-faltable hs) faltable)
@@ -2936,7 +3382,6 @@ To avoid the following break and get only the above warning:~%  ~a~%"
     (hl-make-addr-limit-current hs))
 
   nil)
-
 
 ; ----------------------------------------------------------------------
 ;
@@ -2961,6 +3406,10 @@ To avoid the following break and get only the above warning:~%  ~a~%"
 ; many normed conses survived the garbage collection.  Each normed cons that
 ; did not survive has its entry zeroed out.  We return the number of 1 bits in
 ; the updated SBITS, i.e., the number of normed conses that survived.
+
+; Note that SBITS is _not_ the sbits of a hons space.  Therefore, this function
+; need not take responsibility for maintaining a correspondence between SBITS
+; and the sbits field of a hons space.
 
   (declare (type (simple-array bit (*)) sbits))
   (let ((num-survivors 0)
@@ -3014,11 +3463,40 @@ To avoid the following break and get only the above warning:~%  ~a~%"
 
 #+static-hons
 (defparameter *hl-addr-ht-resize-cutoff*
+
   ;; After we've GC'd the honses in hons-wash, we will look at how many honses
   ;; survived.  If there are fewer than OLD-SIZE * THRESHOLD honses surviving,
   ;; we'll stay with the old size.  Otherwise, we'll allocate a new hash table
-  ;; with room for more entries.  This parameter could probably use some
+  ;; with room for more entries.  BOZO: This parameter could probably use some
   ;; tuning.
+
+  ;; Explanation:
+
+  ;; We're trying to strike a balance here between a couple of competing
+  ;; desires.  Here's a scenario.  We allocate room for 100 million honses and
+  ;; then we start up a long-running computation that's going to create 500
+  ;; million honses before it's done (but some of these honses are going to be
+  ;; ephemeral).
+
+  ;; We get to 100 million honses in and we are out of room, so we have to
+  ;; wash.  We start by doing a fancy garbage collection to get rid of whatever
+  ;; honses are no longer reachable.  Now we need to decide whether or not we
+  ;; should grow the ADDR-HT.  Some cases are easy:
+
+  ;;   - If only 10 million honses are still reachable, then we're doing great:
+  ;;     we freed up plenty of space and so we probably won't have to wash
+  ;;     again for quite some time.  Don't grow the addr-ht, because it already
+  ;;     has plenty of room for continued computation.
+
+  ;;   - If 99 million honses are still reachable, then very few of the honses
+  ;;     were ephemeral and it's very likely that in order to keep going we're
+  ;;     going to need more space.  We definitely want to grow.  If we don't,
+  ;;     we'll just be back here, washing again, after a very short time, and
+  ;;     we'll get into a kind of thrashing loop.
+
+  ;; The middle ground is where it's tricky.  At what point is it worth resizing?
+  ;; We're picking 0.75 for now.
+
   0.75)
 
 (defun hl-hspace-hons-wash (hs)
@@ -3037,15 +3515,15 @@ To avoid the following break and get only the above warning:~%  ~a~%"
 ;
 ; IMPORTANT OBLIGATIONS OF THE CALLER.
 ;
-; For this to work practically work correctly, it is critical that the ADDR-HT
-; is not LET-bound anywhere in the call stack above this function.  We want
+; For this to work correctly in practice, it is critical that the ADDR-HT is
+; not LET-bound anywhere in the call stack above this function.  We want
 ; setting (hl-hspace-addr-ht hs) to NIL to be sufficient to make the ADDR-HT
 ; unreachable, so that it can be GC'd.
 ;
-; After adding the ADDR-LIMIT code, this function can be called by any ordinary
-; hons-creating operation such as HL-HSPACE-HONS, HL-HSPACE-HONS-NORM, etc.
-; This raises some subtle issues, because you can imagine "ordinary"
-; implementation level code that looks like this:
+; This function can be called by any ordinary hons-creating operation such as
+; HL-HSPACE-HONS, HL-HSPACE-HONS-NORM, etc.  This raises some subtle issues,
+; because you can imagine "ordinary" implementation level code that looks like
+; this:
 ;
 ;    (let ((addr-ht (hl-hspace-addr-ht hs))
 ;          (fal-ht  (hl-hspace-fal-ht hs))
@@ -3071,12 +3549,24 @@ To avoid the following break and get only the above warning:~%  ~a~%"
   #-static-hons
   (format t "; Hons-Note: washing is not available for classic honsing.~%")
 
+; For static honsing, it is also necessary to clear the memoize tables, because
+; indices of static conses might be stale.  See the soundness bug example in
+; :xdoc topic note-7-0, in community book books/system/doc/acl2-doc.lisp, and
+; see the comment about hons-wash in pons-addr-of-argument.  We clear the
+; memoize tables before doing anything else, in case a control-c leaves things
+; only partly done.
+
+  #+static-hons
+  (clear-memoize-tables)
+
   #+static-hons
   (let* (;; Note: do not bind ADDR-HT here, we want it to get GC'd.
          (addr-ht-size             (hash-table-size (hl-hspace-addr-ht hs)))
          (addr-ht-count            (hash-table-count (hl-hspace-addr-ht hs)))
-         (addr-ht-rehash-size      (hash-table-rehash-size (hl-hspace-addr-ht hs)))
-         (addr-ht-rehash-threshold (hash-table-rehash-threshold (hl-hspace-addr-ht hs)))
+         (addr-ht-rehash-size      (our-hash-table-rehash-size
+                                    (hl-hspace-addr-ht hs)))
+         (addr-ht-rehash-threshold (our-hash-table-rehash-threshold
+                                    (hl-hspace-addr-ht hs)))
 
          (str-ht        (hl-hspace-str-ht hs))
          (sbits         (hl-hspace-sbits hs))
@@ -3095,8 +3585,11 @@ To avoid the following break and get only the above warning:~%  ~a~%"
             addr-ht-count addr-ht-size)
     (force-output note-stream)
 
-    ;; Clear the memo table since it might prevent conses from being garbage
-    ;; collected and it's unsound to leave it as the sbits/addr-ht are cleared.
+    (hl-faltable-clear-cache faltable)
+
+    ;; Clear the (norming) memo table since it might prevent conses from being
+    ;; garbage collected and it's unsound to leave it as the sbits/addr-ht are
+    ;; cleared.
     (hl-cache-clear norm-cache)
 
     ;; We need to remove SBITS, FAL-HT, and ADDR-HT from HS before continuing,
@@ -3105,7 +3598,7 @@ To avoid the following break and get only the above warning:~%  ~a~%"
     ;; invalidates the STR-HT or OTHER-HT, so we leave them alone.
     (setf (hl-hspace-faltable hs) temp-faltable)
     (setf (hl-hspace-persist-ht hs) temp-persist-ht)
-    (hl-without-interrupts ;; These two must be done together or not at all.
+    (without-interrupts ;; These two must be done together or not at all.
      (setf (hl-hspace-addr-ht hs) temp-addr-ht)
      (setf (hl-hspace-sbits hs) temp-sbits))
 
@@ -3121,26 +3614,28 @@ To avoid the following break and get only the above warning:~%  ~a~%"
     ;; the perfect place to grow the ADDR-HT ourselves instead of allowing the
     ;; Lisp to do it.  Here, we can exploit the magic of static-inverse-cons to
     ;; avoid having to have both the old and new ADDR-HT existing at the same
-    ;; time.  So, now we don't CLRHASH the ADDR-HT.  We've already overridden
-    ;; the pointer to it inside the hons space.  Unless someone else has it
-    ;; bound (which they shouldn't), it can now be GC'd.
+    ;; time.  So, now we don't CLRHASH the ADDR-HT; we garbage collect it and
+    ;; build a new one!  We've already overridden the pointer to ADDR-HT inside
+    ;; the hons space.  Unless someone else has it bound (which they
+    ;; shouldn't), it can now be GC'd.
 
     (hl-system-gc)
 
     ;; Now we fix up the SBITS array by zeroing out any conses that got GC'd,
     ;; and in the process we count how many survivors there are.  This will let
     ;; us make a good decision about resizing the ADDR-HT.  If it would still
-    ;; be 75% full (or, really, whatever the *hl-addr-ht-resize-cutoff* says),
-    ;; we'll make the new table bigger.
+    ;; be more than 75% full (or, really, whatever the
+    ;; *hl-addr-ht-resize-cutoff* says), we'll make the new table bigger.
     (let* ((num-survivors (hl-fix-sbits-after-gc sbits))
-           (pct-full      (/ (coerce num-survivors 'float)
-                             (coerce addr-ht-size 'float)))
+           (pct-full      (/ num-survivors addr-ht-size))
            (addr-ht       nil))
 
       (when (> pct-full *hl-addr-ht-resize-cutoff*)
         (setq addr-ht-size (floor (* addr-ht-size addr-ht-rehash-size))))
 
-      (format note-stream "; Hons-Note: Making new ADDR-HT with size ~:D~%" addr-ht-size)
+      (format note-stream
+              "; Hons-Note: Making new ADDR-HT with size ~:D~%"
+              addr-ht-size)
       (force-output note-stream)
 
       ;; This can take several seconds...
@@ -3159,15 +3654,13 @@ To avoid the following break and get only the above warning:~%  ~a~%"
 
       ;; All objects restored.  The hons space should now be in a fine state
       ;; once again.  Restore it.
-      (hl-without-interrupts
+      (without-interrupts
        (setf (hl-hspace-addr-ht hs) addr-ht)
        (setf (hl-hspace-sbits hs) sbits))
       (setf (hl-hspace-persist-ht hs) persist-ht)
       (setf (hl-hspace-faltable hs) faltable)
       (hl-make-addr-limit-current hs)))
-
   nil)
-
 
 (defun hl-maybe-resize-ht (size src)
 
@@ -3182,6 +3675,12 @@ To avoid the following break and get only the above warning:~%  ~a~%"
   (declare (type hash-table src))
   (let* ((src-size            (hash-table-size src))
          (src-count           (hash-table-count src))
+
+; We bind min-reasonable-size to at least 100 simply because that seems like a
+; reasonable minimum size for a hash table.  But we also insist that a new hash
+; table should have size at least 1.2 times the existing hash-table-count, so
+; that there's a little room to grow.
+
          (min-reasonable-size (max 100 (* src-count 1.2)))
          (target-size         (max min-reasonable-size size)))
     (if (and (< (* src-size 0.8) target-size)
@@ -3258,7 +3757,8 @@ To avoid the following break and get only the above warning:~%  ~a~%"
             (hl-maybe-resize-ht cdr-ht-size (hl-ctables-cdr-ht ctables))))
     (when (natp cdr-ht-eql-size)
       (setf (hl-ctables-cdr-ht-eql ctables)
-            (hl-maybe-resize-ht cdr-ht-eql-size (hl-ctables-cdr-ht-eql ctables)))))
+            (hl-maybe-resize-ht cdr-ht-eql-size
+                                (hl-ctables-cdr-ht-eql ctables)))))
 
   #+static-hons
   (hl-make-addr-limit-current hs)
@@ -3316,7 +3816,8 @@ To avoid the following break and get only the above warning:~%  ~a~%"
     (format t "  (used slots)     (capacity)~%")
     (format t "--------------------------------------------------~%")
     (loop for entry in report-entries do
-          (format t "~10:D ~16:D        ~:D~%" (first entry) (second entry) (third entry)))
+          (format t "~10:D ~16:D        ~:D~%"
+                  (first entry) (second entry) (third entry)))
     (format t "--------------------------------------------------~%")
     (format t "~%")
     (force-output)))
@@ -3411,35 +3912,22 @@ To avoid the following break and get only the above warning:~%  ~a~%"
 ; We hide the hons space from the ACL2 user by making all ACL2-visible
 ; functions operate with respect to *default-hs*, the "default hons space."
 ;
-; For single-threaded versions of ACL2, we assume that *default-hs* is always
-; bound to a valid Hons Space.
-;
-; But when ACL2-PAR is enabled, we allow *default-hs* to be either NIL or a
-; valid hons space.  The consume-work-on-work-queue-when-there function in
-; acl2-par is responsible for creating all worker threads, and immediately
-; binds *default-hs* to NIL, which is quite cheap.  The idea is to allow
-; threads that don't do any honsing to avoid the overhead of creating a hons
-; space.
-;
-; Maybe we should make this a DEFVAR with no binding, and move it to whatever
-; initialization function is run when ACL2 starts.  This would keep the hons
-; space out of the default ACL2 image.  But that probably doesn't matter unless
-; we want to adopt much larger defaults, which we don't.
+; We allow *default-hs* to be either NIL or a valid hons space.  This is useful
+; for ACL2(p) or other (e.g., ttag-based, raw lisp) uses of parallelism.  The
+; idea is to allow threads that don't do any honsing to avoid the overhead of
+; creating a hons space.  For instance, in ACL2(p), the function
+; consume-work-on-work-queue-when-there is responsible for creating all worker
+; threads.  This function immediately binds *default-hs* to NIL, which is quite
+; cheap.  The first time such a thread needs a hons, a fresh hons space will
+; then be automatically created.
 
-  (hl-hspace-init))
+   (hl-hspace-init))
 
-(declaim
- #-acl2-par
- (type hl-hspace *default-hs*)
- #+acl2-par
- (type (or hl-hspace null) *default-hs*))
+(declaim (type (or hl-hspace null) *default-hs*))
 
 (declaim (inline hl-maybe-initialize-default-hs))
 
 (defun hl-maybe-initialize-default-hs ()
-  #-acl2-par
-  nil
-  #+acl2-par
   (unless *default-hs*
     (setq *default-hs* (hl-hspace-init))))
 
@@ -3453,7 +3941,7 @@ To avoid the following break and get only the above warning:~%  ~a~%"
   (hl-hspace-hons x y *default-hs*))
 
 (defun hons-copy (x)
-  ;; hl-hspace-norm is inlined via defabbrev
+  ;; hl-hspace-norm is inlined
   (hl-maybe-initialize-default-hs)
   (hl-hspace-norm x *default-hs*))
 
@@ -3487,7 +3975,8 @@ To avoid the following break and get only the above warning:~%  ~a~%"
 (defun hons-wash ()
   ;; no need to inline
   (hl-maybe-initialize-default-hs)
-  (hl-hspace-hons-wash *default-hs*))
+  (hl-hspace-hons-wash *default-hs*)
+  nil)
 
 (defun hons-resize-fn (str-ht nil-ht cdr-ht cdr-ht-eql
                                  addr-ht other-ht sbits
@@ -3512,15 +4001,25 @@ To avoid the following break and get only the above warning:~%  ~a~%"
   (hl-maybe-initialize-default-hs)
   (hl-hspace-hons-acons! key val fal *default-hs*))
 
-(defun hons-shrink-alist (alist ans)
+(defun fast-alist-fork (alist ans)
   ;; no need to inline
   (hl-maybe-initialize-default-hs)
-  (hl-hspace-shrink-alist alist ans nil *default-hs*))
+  (hl-hspace-fast-alist-fork alist ans nil *default-hs*))
 
-(defun hons-shrink-alist! (alist ans)
+(defun fast-alist-fork! (alist ans)
   ;; no need to inline
   (hl-maybe-initialize-default-hs)
-  (hl-hspace-shrink-alist alist ans t *default-hs*))
+  (hl-hspace-fast-alist-fork alist ans t *default-hs*))
+
+(defun fast-alist-clean (alist)
+  ;; no need to inline
+  (hl-maybe-initialize-default-hs)
+  (hl-hspace-fast-alist-clean alist nil *default-hs*))
+
+(defun fast-alist-clean! (alist)
+  ;; no need to inline
+  (hl-maybe-initialize-default-hs)
+  (hl-hspace-fast-alist-clean alist t *default-hs*))
 
 (declaim (inline hons-get))
 (defun hons-get (key fal)
@@ -3572,7 +4071,9 @@ To avoid the following break and get only the above warning:~%  ~a~%"
               ;; correctly free it.
               (,alist-var ,alist)
               (,alist-was-fast-p
-               (let ((slot (hl-faltable-general-lookup ,alist-var (hl-hspace-faltable *default-hs*))))
+               (let ((slot (hl-faltable-general-lookup
+                            ,alist-var
+                            (hl-hspace-faltable *default-hs*))))
                  (if (hl-falslot-key slot)
                      t
                    nil)))
@@ -3601,7 +4102,9 @@ To avoid the following break and get only the above warning:~%  ~a~%"
               ;; correctly free it.
               (,alist-var ,alist)
               (,alist-was-fast-p
-               (let ((slot (hl-faltable-general-lookup ,alist-var (hl-hspace-faltable *default-hs*))))
+               (let ((slot (hl-faltable-general-lookup
+                            ,alist-var
+                            (hl-hspace-faltable *default-hs*))))
                  (if (hl-falslot-key slot)
                      t
                    nil)))

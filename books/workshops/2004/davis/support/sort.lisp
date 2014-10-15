@@ -1,54 +1,59 @@
-#| 
-
-   Fully Ordered Finite Sets, Version 0.9
-   Copyright (C) 2003, 2004 by Jared Davis <jared@cs.utexas.edu>
-
-   This program is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public License as
-   published by the Free Software Foundation; either version 2 of
-   the License, or (at your option) any later version.
-
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public Lic-
-   ense along with this program; if not, write to the Free Soft-
-   ware Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
-   02111-1307, USA.
-
-
-
- sort.lisp
-
-   We implement a mergesort which can convert lists into sets more
-   efficiencly than repeated insertion.  Logically, (mergesort x) 
-   is exactly the same as repeated insertion, so it is fairly easy
-   to reason about.  But, under the hood, mergesort is implemented
-   fairly efficiently using MBE.
-
-   The sort we implement is probably not "blisteringly fast".  Most
-   of the literature on the subject suggests using a bubblesort when
-   we get down to some threshold, say 40 elements.  I'm not going to
-   bother with any of that.  If you find that the mergesort's perfor-
-   mance is inadequate, which is unlikely, you can work on making it
-   faster.
-
-   There are a few points of interest.  If you look at the actual 
-   sort code (mergesort-exec), you will see that it is actually using
-   the set library's own union function to perform the union.  This
-   is pretty slick because union is linear complexity, and yet is 
-   easy to reason about since we have already got a lot of theory in
-   place about it.
-
-   In any case, our strategy for proving the equality of this merge-
-   sort with a simple insert-sort is the exact same trick we use 
-   everywhere else in the sets library.  We begin by showing that 
-   both produce sets, and then show that membership in either is 
-   true exactly when an element is member-equal in the original list.
-
-|#
+; Fully Ordered Finite Sets, Version 0.9
+; Copyright (C) 2003, 2004 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+;
+; Original author: Jared Davis <jared@kookamara.com>
+;
+; sort.lisp
+;
+; We implement a mergesort which can convert lists into sets more efficiencly
+; than repeated insertion.  Logically, (mergesort x) is exactly the same as
+; repeated insertion, so it is fairly easy to reason about.  But, under the
+; hood, mergesort is implemented fairly efficiently using MBE.
+;
+; The sort we implement is probably not "blisteringly fast".  Most of the
+; literature on the subject suggests using a bubblesort when we get down to
+; some threshold, say 40 elements.  I'm not going to bother with any of that.
+; If you find that the mergesort's perfor- mance is inadequate, which is
+; unlikely, you can work on making it faster.
+;
+; There are a few points of interest.  If you look at the actual sort code
+; (mergesort-exec), you will see that it is actually using the set library's
+; own union function to perform the union.  This is pretty slick because union
+; is linear complexity, and yet is easy to reason about since we have already
+; got a lot of theory in place about it.
+;
+; In any case, our strategy for proving the equality of this merge- sort with a
+; simple insert-sort is the exact same trick we use everywhere else in the sets
+; library.  We begin by showing that both produce sets, and then show that
+; membership in either is true exactly when an element is member-equal in the
+; original list.
 
 (in-package "SET")
 (include-book "outer")

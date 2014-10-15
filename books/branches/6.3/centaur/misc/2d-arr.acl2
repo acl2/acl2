@@ -1,3 +1,0 @@
-
-(include-book "str/portcullis" :dir :system)
-(certify-book "2d-arr" ? t)

@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
@@ -257,10 +267,26 @@ order, you can search for long prefixes first, e.g., @('>>>') before
            (vl-lex-plain-alist echars (vl-lexstate->andops st) warnings))
 
           (#\' ;; 39
-           (cond ((vl-matches-string-p "'{" echars)
-                  (vl-lex-plain echars "'{" :vl-assignpat warnings))
-                 (t
-                  (vl-lex-number echars st warnings))))
+           ;; Quotes mark is tricky.  Could be a casting operator, a structure literal,
+           ;; or an extended integer like 'x or '1.
+           ;;
+           ;; NCVerilog appears to prohibit spaces between '{, but allows
+           ;; spaces around casting operators like unsigned'(...).
+           ;;
+           ;; VCS appears to allow spaces between '{ and around casting
+           ;; operators.
+           ;;
+           ;; We'll mimic VCS here and support spaces in either place.  That
+           ;; is, instead of producing a single, combined token for '{, we'll
+           ;; produce a two-token sequence, :vl-quote :vl-lcurly.  Similarly,
+           ;; for '( we'll just produce :vl-quote :vl-lparen.
+           (b* (((mv tok remainder warnings)
+                 (vl-lex-number echars st warnings))
+                ((when tok)
+                 (mv tok remainder warnings))
+                ((unless (vl-lexstate->quotesp st))
+                 (mv nil remainder warnings)))
+             (vl-lex-plain echars "'" :vl-quote warnings)))
 
           (#\( ;; 40
            (vl-lex-plain-alist echars
@@ -671,28 +697,29 @@ bother to preprocess the input and just ignore any warning.</p>"
 ;; BOZO I don't think we should be using VL-READ-IDENTIFIER.  The lexer doesn't
 ;; use it.  But some other custom code (e.g., for STVs) is currently based on
 ;; it.
-(local (xdoc::set-default-parents))
-(define vl-read-identifier
-  ((echars vl-echarlist-p))
-  :returns (mv (name "A stringp with the interpreted name of this identifier
+
+(xdoc::without-xdoc ;; suppress xdoc here since this is deprecated
+  (define vl-read-identifier
+    ((echars vl-echarlist-p))
+    :returns (mv (name "A stringp with the interpreted name of this identifier
                       on success, or nil otherwise.")
-               prefix remainder)
-  (b* (((mv prefix remainder) (vl-read-simple-identifier echars))
-       ((when prefix)
-        (mv (hons-copy (vl-echarlist->string prefix)) prefix remainder)))
-    (vl-read-escaped-identifier echars))
-  ///
-  (defthm stringp-of-vl-read-identifier
-    (implies (force (vl-echarlist-p echars))
-             (equal (stringp (mv-nth 0 (vl-read-identifier echars)))
-                    (if (mv-nth 0 (vl-read-identifier echars))
-                        t
-                      nil))))
+                 prefix remainder)
+    (b* (((mv prefix remainder) (vl-read-simple-identifier echars))
+         ((when prefix)
+          (mv (hons-copy (vl-echarlist->string prefix)) prefix remainder)))
+      (vl-read-escaped-identifier echars))
+    ///
+    (defthm stringp-of-vl-read-identifier
+      (implies (force (vl-echarlist-p echars))
+               (equal (stringp (mv-nth 0 (vl-read-identifier echars)))
+                      (if (mv-nth 0 (vl-read-identifier echars))
+                          t
+                        nil))))
 
-  (defthm vl-read-identifier-under-iff
-    (iff (mv-nth 1 (vl-read-identifier echars))
-         (mv-nth 0 (vl-read-identifier echars))))
+    (defthm vl-read-identifier-under-iff
+      (iff (mv-nth 1 (vl-read-identifier echars))
+           (mv-nth 0 (vl-read-identifier echars))))
 
-  (def-prefix/remainder-thms vl-read-identifier
-    :prefix-n 1
-    :remainder-n 2))
+    (def-prefix/remainder-thms vl-read-identifier
+      :prefix-n 1
+      :remainder-n 2)))

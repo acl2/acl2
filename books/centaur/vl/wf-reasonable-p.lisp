@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
@@ -22,11 +32,14 @@
 (include-book "mlib/modnamespace")
 (include-book "mlib/find-item")
 (include-book "mlib/expr-tools")
+(include-book "mlib/range-tools")
 (include-book "util/defwellformed")
 (include-book "util/warnings")
 (include-book "defsort/duplicated-members" :dir :system)
 (local (include-book "util/arithmetic"))
 (local (include-book "util/osets"))
+
+;; BOZO this entire thing is a giant pile and should get removed.
 
 (defxdoc reasonable
   :parents (well-formedness)
@@ -67,74 +80,7 @@ number of additional well-formedness checks are done in @(see argresolve) and
                       "Duplicate port names: ~&0."
                       (list dupes))))
 
-(defwellformed vl-portdecl-reasonable-p (x)
-  :parents (reasonable)
-  :short "@(call vl-portdecl-reasonable-p) determines if a @(see vl-portdecl-p)
-is @(see reasonable)."
-  :long "<p>We greatly restrict the permitted port declarations:</p>
-
-<ul>
-
-<li>We only permit port declarations of type @('supply0'), @('supply1'), and
-@('wire'), excluding other types such as @('tri0'), @('wor'), etc.</li>
-
-<li>We do not permit @('inout') ports.</li>
-
-</ul>"
-
-  :guard (vl-portdecl-p x)
-  :body (let ((x x))
-          (declare (ignore x))
-          (@wf-progn)))
-
-  ;; :body (let ((name    (vl-portdecl->name x))
-  ;;             (dir     (vl-portdecl->dir x))
-  ;;             (loc     (vl-portdecl->loc x)))
-  ;;         (declare (ignorable name dir loc))
-  ;;         (@wf-progn
-  ;;          (@wf-assert (or (eq dir :vl-input)
-  ;;                          (eq dir :vl-output))
-  ;;                      :vl-bad-portdecl
-  ;;                      "~l0: port ~s1 has unsupported direction ~s2."
-  ;;                      (list loc name dir)))))
-
-(defwellformed-list vl-portdecllist-reasonable-p (x)
-  :parents (reasonable)
-  :short "@(call vl-portdecllist-reasonable-p) determines if every member of a
-@(see vl-portdecllist-p) satisfies @(see vl-portdecl-reasonable-p)."
-  :element vl-portdecl-reasonable-p
-  :guard (vl-portdecllist-p x))
-
-
-;; (defwellformed vl-ports-and-portdecls-compatible-p (ports portdecls)
-;;   :parents (reasonable)
-;;   :short "@(call vl-ports-and-portdecls-compatible-p) is given the lists of
-;; ports and port declarations for a module, and ensures that (1) there are no
-;; duplicate port declarations, and (2) every port in the ports list is
-;; declared."
-;;   :long "@(def vl-ports-and-portdecls-compatible-p)"
-;;   :guard (and (vl-portlist-p ports)
-;;               (vl-portdecllist-p portdecls))
-;;   :body
-;;   (let* ((portnames       (vl-portlist->names ports))
-;;          (portdeclnames   (vl-portdecllist->names portdecls))
-;;          (portnames-s     (mergesort portnames))
-;;          (portdeclnames-s (mergesort portdeclnames)))
-;;     (@wf-progn
-;;      (@wf-assert (mbe :logic (no-duplicatesp-equal portdeclnames)
-;;                       :exec (same-lengthp portdeclnames portdeclnames-s))
-;;                  :vl-bad-portdecls
-;;                  "Ports are declared multiple times: ~&0."
-;;                  (list (duplicated-members portdeclnames)))
-;;      (@wf-assert (equal portnames-s portdeclnames-s)
-;;                  :vl-bad-portdecls
-;;                  "Ports and port declarations do not agree.  Undeclared ~
-;;                   ports are ~&0.  Extra port declarations are ~&1."
-;;                  (list (difference portdeclnames-s portnames-s)
-;;                        (difference portnames-s portdeclnames-s))))))
-
-
-(defwellformed vl-netdecl-reasonable-p (x)
+(defwellformed vl-vardecl-reasonable-p (x)
   :parents (reasonable)
   :short "@(call vl-netdecl-reasonable-p) determines if a @(see vl-netdecl-p)
 is @(see reasonable)."
@@ -150,103 +96,36 @@ ranges, e.g., @('wire [7:0] w').  What we do not support are, e.g., @('wire w
 
 </ul>"
 
-  :guard (vl-netdecl-p x)
-  :body
-  (let ((name      (vl-netdecl->name x))
-        (type      (vl-netdecl->type x))
-        (arrdims   (vl-netdecl->arrdims x))
-        (loc       (vl-netdecl->loc x)))
-    (declare (ignorable name loc))
-    (@wf-progn
-     (@wf-assert (member-equal type (list :vl-supply0 :vl-supply1 :vl-wire))
-                 :vl-bad-wire
-                 "~l0: wire ~s1 has unsupported type ~s2."
-                 (list loc name type))
-     (@wf-assert (not arrdims)
-                 :vl-bad-wire
-                 "~l0: wire ~s1 is an array, which is not supported."
-                 (list loc name)))))
-
-(defwellformed-list vl-netdecllist-reasonable-p (x)
-  :element vl-netdecl-reasonable-p
-  :guard (vl-netdecllist-p x)
-  :parents (reasonable))
-
-(defwellformed vl-vardecl-reasonable-p (x)
-  :parents (reasonable)
   :guard (vl-vardecl-p x)
-  :extra-decls ((ignorable x))
-  :body (@wf-assert nil
-                    :vl-vardecl
-                    "~l0: variable declarations like ~s1 are not supported."
-                    (list (vl-vardecl->loc x)
-                          (vl-vardecl->name x))))
+  :body
+  (b* (((vl-vardecl x) x))
+    (@wf-progn
+     (@wf-assert (and (equal (vl-datatype-kind x.type) :vl-coretype)
+                      (member (vl-coretype->name x.type) '(:vl-logic :vl-reg))
+                      (member x.nettype
+                              '(nil :vl-supply0 :vl-supply1 :vl-wire)))
+                 :vl-bad-variable
+                 "~a0: wire has unsupported type ~a1/nettype ~a2."
+                 (list x x.type x.nettype))
+
+     (@wf-assert (let ((x.udims (vl-datatype->udims x.type))
+                       (x.pdims (vl-datatype->pdims x.type)))
+                   (and (not x.udims)
+                        (or (atom x.pdims)
+                            (atom (cdr x.pdims)))))
+                 :vl-bad-variable
+                 "~a0: arrays are not yet supported."
+                 (list x))
+
+     (@wf-assert (vl-simplevar-p x)
+                 :vl-bad-variable
+                 "~a0: variable is too complicated."
+                 (list x)))))
 
 (defwellformed-list vl-vardecllist-reasonable-p (x)
   :element vl-vardecl-reasonable-p
   :guard (vl-vardecllist-p x)
   :parents (reasonable))
-
-(defwellformed vl-regdecl-reasonable-p (x)
-  :parents (reasonable)
-  :guard (vl-regdecl-p x)
-  :body (let ((arrdims (vl-regdecl->arrdims x))
-              (name    (vl-regdecl->name x))
-              (loc     (vl-regdecl->loc x)))
-          (declare (ignorable name loc))
-
-          (@wf-progn
-
-; We don't try to support registers that have "arrdims" (i.e., register arrays)
-; instead of ranges (i.e., a multi-bit register).
-
-           (@wf-assert (not arrdims)
-                       :vl-regdecl-array
-                       "~l0: register ~s1 is an array, which is not supported."
-                       (list loc name)))))
-
-(defwellformed-list vl-regdecllist-reasonable-p (x)
-  :element vl-regdecl-reasonable-p
-  :guard (vl-regdecllist-p x)
-  :parents (reasonable))
-
-(defwellformed vl-modinst-reasonable-p (x)
-  :parents (reasonable)
-  :guard (vl-modinst-p x)
-  :extra-decls ((ignorable x))
-
-; There doesn't seem to be anything to restrict for modinsts.  I leave this
-; function here only to denote that I've
-
-  :body (@wf-assert t))
-
-(defwellformed-list vl-modinstlist-reasonable-p (x)
-  :element vl-modinst-reasonable-p
-  :guard (vl-modinstlist-p x)
-  :parents (reasonable))
-
-(defwellformed vl-gateinst-reasonable-p (x)
-  :parents (reasonable)
-  :guard (vl-gateinst-p x)
-  :body (let ((name (or (vl-gateinst->name x) "<unnamed gate>"))
-              (type (vl-gateinst->type x))
-              (loc  (vl-gateinst->loc x)))
-          (declare (ignorable name loc))
-          (@wf-progn
-           ;; BOZO is this doing anything?
-           (@wf-assert (member-eq type '(:vl-and :vl-or :vl-xor :vl-nand :vl-nor
-                                                 :vl-xnor :vl-not :vl-buf
-                                                 :vl-bufif0 :vl-bufif1 :vl-notif0 :vl-notif1
-                                                 :vl-nmos :vl-rnmos :vl-pmos :vl-rpmos
-                                                 :vl-cmos :vl-rcmos))
-                       :vl-gate-type
-                       "~l0:~% -- gate ~s1 has unsupported type ~s2."
-                       (list loc name type)))))
-
-(defwellformed-list vl-gateinstlist-reasonable-p (x)
-  :parents (reasonable)
-  :element vl-gateinst-reasonable-p
-  :guard (vl-gateinstlist-p x))
 
 
 (defwellformed vl-portdecl-and-moduleitem-compatible-p (portdecl item)
@@ -254,15 +133,7 @@ ranges, e.g., @('wire [7:0] w').  What we do not support are, e.g., @('wire w
   :short "Main function for checking whether a port declaration, which overlaps
 with some module item declaration, is a reasonable overlap."
   :guard (and (vl-portdecl-p portdecl)
-              (or (vl-netdecl-p item)
-                  (vl-regdecl-p item)
-                  (vl-vardecl-p item)
-                  (vl-eventdecl-p item)
-                  (vl-paramdecl-p item)
-                  (vl-fundecl-p item)
-                  (vl-taskdecl-p item)
-                  (vl-modinst-p item)
-                  (vl-gateinst-p item)))
+              (vl-moditem-p item))
   :long "<p>For instance, we might have:</p>
 
 @({
@@ -277,138 +148,32 @@ with some module item declaration, is a reasonable overlap."
     wire [4:0] x;
 })
 
-<p>Which is definitely not okay.</p>
-
-<p>We assume, although it is not in our guard, that the inputs we are comparing
-are reasonable.  That is, we aren't going to worry about the type or signedness
-on the portdecl, or any kind of arrdims or initvals and so forth on the
-item.</p>"
+<p>Which is definitely not okay.  See also @(see portdecl-sign).  We expect
+that after parsing, the types will agree exactly.</p>"
 
   :body
 
-  (case (tag item)
-    (:vl-netdecl
+  (b* (((vl-portdecl portdecl) portdecl)
+       ((unless (eq (tag item) :vl-vardecl))
+        (@wf-assert nil
+                    :vl-weird-port
+                    "~a0: port ~s1 is also declared to be a ~s2."
+                    (list portdecl portdecl.name (tag item))))
+       ((vl-vardecl vardecl) item))
 
-     (@wf-progn
+    (@wf-assert (equal portdecl.type vardecl.type)
+                :vl-incompatible-port
+                "~a0: the variable declaration for port ~s1 has incompatible
+                  type: ~a1 vs. ~a2."
+                (list portdecl portdecl.type vardecl.type))))
 
-; The following is arguably too severe.  It will disallow things like "input
-; [1+2:0] x;" followed by "wire [3:0] x;"  Hopefully we don't hit this.
-;
-; Follow-up.  According to Section 12.3.3, page 174 (near the bottom), "The
-; range specification between the two declarations of a port shall be
-; identical."  So, whether or not our behavior is too severe depends on
-; your notion of "identical".
+(local
+ (defthm l0
+   (implies (vl-find-moduleitem name x)
+            (vl-moditem-p (vl-find-moduleitem name x)))
+   :hints(("Goal" :in-theory (e/d (vl-find-moduleitem)
+                                  ((force)))))))
 
-      (@wf-assert (equal (vl-portdecl->range portdecl)
-                         (vl-netdecl->range item))
-                  :vl-incompatible-range
-                  "~l0: port ~s1 is declared to have range ~a2, but is ~
-                        also declared as a wire with range ~a3."
-                  (list (vl-portdecl->loc portdecl)
-                        (vl-portdecl->name portdecl)
-                        (vl-portdecl->range portdecl)
-                        (vl-netdecl->range item)))
-
-; I don't really want there to be an input or output that is declared to be a
-; supply or something crazy.
-
-      (@wf-assert (or (equal (vl-netdecl->type item) :vl-wire)
-                      (and (or (equal (vl-netdecl->type item) :vl-supply0)
-                               (equal (vl-netdecl->type item) :vl-supply1))))
-                  :vl-scary-port
-                  "~l0: port ~s1 is also declared as a wire with type ~s2."
-                  (list (vl-portdecl->loc portdecl)
-                        (vl-netdecl->name item)
-                        (vl-netdecl->type item)))
-
-; Make sure the signedness agrees; see the documentation in portdecl-sign for
-; more information.
-
-      (@wf-assert (equal (vl-netdecl->signedp item)
-                         (vl-portdecl->signedp portdecl))
-                  :vl-incompatible-sign
-                  "~l0: port declaration for ~s1 has signedp ~x2, while net ~
-                   declaration has signedp ~x3.  This case should have been ~
-                   corrected by the portdecl-sign transformation."
-                  (list (vl-portdecl->loc portdecl)
-                        (vl-portdecl->name portdecl)
-                        (vl-portdecl->signedp portdecl)
-                        (vl-netdecl->signedp item)))
-
-; Probably unnecessary, but maybe sensible.
-
-      (@wf-assert (not (vl-netdecl->delay item))
-                  :vl-delayed-port
-                  "~l0: port ~s1 is also declared as a wire with a delay."
-                  (list (vl-portdecl->loc portdecl)
-                        (vl-portdecl->name portdecl)))
-
-; Probably unnecessary, but maybe sensible.
-
-      (@wf-assert (not (vl-netdecl->cstrength item))
-                  :vl-cstrength-port
-                  "~l0: port ~s1 is also declared as a wire with a charge strength."
-                  (list (vl-portdecl->loc portdecl)
-                        (vl-portdecl->name portdecl)))))
-
-    (:vl-regdecl
-
-     (@wf-progn
-
-; Like for netdecls, this may be too severe, and will not permit us to "input
-; [1+2:0] x;" followed by "reg [3:0] x;".  See also the "follow-up" in the
-; netdecl case, above.
-
-      (@wf-assert (equal (vl-portdecl->range portdecl)
-                         (vl-regdecl->range item))
-                  :vl-incompatible-range
-                  "~l0: port ~s1 is declared to have range ~a2, but is ~
-                        also declared as a reg with range ~a3."
-                  (list (vl-portdecl->loc portdecl)
-                        (vl-portdecl->name portdecl)
-                        (vl-portdecl->range portdecl)
-                        (vl-regdecl->range item)))
-
-; Make sure the signedness agrees; see the documentation in portdecl-sign for
-; more information.
-
-      (@wf-assert (equal (vl-regdecl->signedp item)
-                         (vl-portdecl->signedp portdecl))
-                  :vl-incompatible-sign
-                  "~l0: port declaration for ~s1 has signedp ~x2, while reg ~
-                   declaration has signedp ~x3.  This case should have been ~
-                   corrected by the portdecl-sign transformation."
-                  (list (vl-portdecl->loc portdecl)
-                        (vl-portdecl->name portdecl)
-                        (vl-portdecl->signedp portdecl)
-                        (vl-regdecl->signedp item)))
-
-; It makes sense that a reg could be an output.  But I don't want to think
-; about what it would mean for a reg to be an input or an inout wire.
-
-      (@wf-assert (equal (vl-portdecl->dir portdecl) :vl-output)
-                  :vl-scary-reg
-                  "~l0: port ~s1 has direction ~s2, but is also declared ~
-                        to be a register."
-                  (list (vl-portdecl->loc portdecl)
-                        (vl-portdecl->name portdecl)
-                        (vl-portdecl->dir portdecl)))
-      ))
-
-; It doesn't make sense to me that any of these would be a port.
-    ((:vl-vardecl :vl-eventdecl :vl-paramdecl :vl-fundecl :vl-taskdecl :vl-modinst :vl-gateinst)
-
-     (@wf-assert nil
-                 :vl-weird-port
-                 "~l0: port ~s1 is also declared to be a ~s2."
-                 (list (vl-portdecl->loc portdecl)
-                       (vl-portdecl->name portdecl)
-                       (tag item))))
-
-    (t
-     (prog2$
-      (er hard 'vl-portdecl-and-moduleitem-compatible-p "Impossible case")
-      (@wf-assert nil)))))
 
 (defwellformed vl-overlap-compatible-p (names x palist ialist)
   ;; For some very large modules (post synthesis), we found the overlap checking to be very
@@ -671,16 +436,8 @@ item.</p>"
        (ialist        (vl-moditem-alist x)))
     (@wf-progn
      (@wf-call vl-portlist-reasonable-p x.ports)
-     (@wf-call vl-portdecllist-reasonable-p x.portdecls)
      ;; (@wf-call vl-ports-and-portdecls-compatible-p ports portdecls)
-     (@wf-call vl-netdecllist-reasonable-p x.netdecls)
-     (@wf-call vl-regdecllist-reasonable-p x.regdecls)
-     (@wf-note (not x.eventdecls)
-               :vl-eventdecls
-               "~l0: module ~s1 contains event declarations."
-               (list x.minloc x.name))
-     (@wf-call vl-modinstlist-reasonable-p x.modinsts)
-     (@wf-call vl-gateinstlist-reasonable-p x.gateinsts)
+     (@wf-call vl-vardecllist-reasonable-p x.vardecls)
      (@wf-note (not x.initials)
                :vl-initial-stmts
                "~l0: module ~s1 contains initial statements."
@@ -721,6 +478,11 @@ reasonable).  Furthermore, if @('x') is unreasonable, a fatal warning to it."
                             (fatal :type :vl-mod-unreasonable
                                    :msg "Module ~m0 is unreasonable."
                                    :args (list (vl-module->name x)))))
+       (warnings          (if (vl-module->generates x)
+                              (fatal :type :vl-mod-has-generates
+                                     :msg "Module ~m0 has generate blocks."
+                                     :args (list (vl-module->name x)))
+                            warnings))
        (x-prime (change-vl-module x :warnings warnings)))
     x-prime))
 

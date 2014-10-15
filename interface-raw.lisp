@@ -1,4 +1,4 @@
-; ACL2 Version 6.4 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 6.5 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2014, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -931,16 +931,11 @@
 (defun-*1* pkg-imports (pkg)
   (if (stringp pkg)
       (pkg-imports pkg)
-    (gv pkg-witness (pkg) nil)))
+    (gv pkg-imports (pkg) nil)))
 
 (defun-*1* pkg-witness (pkg)
   (if (stringp pkg)
-      (if (find-non-hidden-package-entry
-           pkg (known-package-alist *the-live-state*))
-          (let ((ans (intern *pkg-witness-name* pkg)))
-; See comment in intern-in-package-of-symbol for an explanation of this trick.
-            ans)
-        (throw-raw-ev-fncall (list 'pkg-witness-er pkg)))
+      (pkg-witness pkg)
     (gv pkg-witness (pkg) (intern *pkg-witness-name* "ACL2"))))
 
 (defun-*1* numerator (x)
@@ -1031,6 +1026,41 @@
                      ans))
          (incf *acl2-gentemp-counter*))))))
 
+(defvar *ignore-invariant-risk*
+
+; In oneify-cltl-code we handle an "invariant-risk" that stobj invariants
+; aren't violated upon ill-guarded calls of stobj updaters.  The idea is to
+; force evaluation to use *1* functions down to those primitives, which always
+; check their guards.  See also the comment in *mbe-as-exec*.  Note that this
+; is a separate issue from the lack of atomicity of some defabsstobj exports
+; (which is implemented using *inside-absstobj-update*).
+
+; There may be cases where this use of *1* functions may be slower than one
+; likes.  By setting *ignore-invariant-risk* to any non-nil value, one defeats
+; that behavior.  This could be unsound, but since one needs to slip into raw
+; Lisp to set this global, we take the position that setting it is much like
+; redefining prove so that one always gets the "Q.E.D."
+
+; Perhaps we will consider avoiding this use of *1* functions when the only
+; danger of invariant violations is from local stobjs.  Since only :program
+; mode functions are at issue (because a :logic mode function call only slips
+; into raw Lisp when the function has been guard-verified and the call is
+; guard-checked, and because raw-ev-fncall binds *mbe-as-exec* to nil for
+; :logic mode functions), it seems plausible that we can provide this
+; optimization for local stobjs.  After all, local stobjs are let-bound rather
+; than global; so it seems that during proofs, any local stobj encountered will
+; either be created and destroyed during a computed hint or else will be
+; modified only by :logic mode functions manipulated by the prover.  (Trusted
+; clause processors might provide an exception, but then trust tags are
+; involved, so it's their responsibility to do the right thing.)
+
+; But we'll leave that for another day, if at all, as it seems risky and
+; error-prone to implement.  In particular, we would likely need to track risk
+; on a per-stobj basis, and built-ins (see initialize-invariant-risk) might not
+; be associated with stobjs at all.
+
+  nil)
+
 (mutual-recursion
 
 (defun-one-output oneify-flet-bindings (alist fns w program-p)
@@ -1111,19 +1141,103 @@
 ; don't want to call return-last on top of that, or we'll be attempting to take
 ; the *1*-symbol of the *1*-symbol!
 
-             (oneify (car (last x)) fns w program-p))
+             (cond
+              ((not (eq program-p 'invariant-risk))
+               (oneify (car (last x)) fns w program-p))
+              (t
+
+; In the case that program-p is 'invariant-risk, we are in the process of
+; oneifying the body of a :program mode function with invariant-risk, for which
+; any call of an invariant-risk functions is to execute with its *1* function
+; but other calls should use raw Lisp functions; see the final case in oneify.
+; Here, though, we want to call the *1* function even if it does not have
+; invariant-risk, because of the ec-call wrapper.
+
+; We need to be careful in this case that ec-call really does invoke a *1*
+; function here, and does so properly.  Consider the following example.  If we
+; use the oneify call above (from the case that (not (eq program-p
+; 'invariant-risk))), then EXEC is returned by the call of f-prog2 below, which
+; is incorrect.  The EXEC return value would be OK if f-prog2 were defined with
+; the ec-call wrapper removed, because f-log has no invariant-risk and hence we
+; want it to execute fast using the :exec form from its mbe.  But the ec-call
+; means that we really want to call *1*f-log -- we are no longer slipping into
+; raw Lisp and hence we no longer want the special *mbe-as-exec* handling,
+; which is inappropriate here since it is intended to give the illusion that we
+; are in raw Lisp.  Thus, we call *1*f-log and what's more, we bind
+; *mbe-as-exec* to nil.
+
+;   (defun f-log () (mbe :logic 'logic :exec 'exec))
+;   (defstobj st (fld :type integer :initially 0))
+;   (defun f-prog (st)
+;     (declare (xargs :stobjs st :mode :program))
+;     (let ((st (update-fld 3 st)))
+;       (mv (f-log) st)))
+;   (f-prog st)
+;   (defun f-prog2 (st)
+;     (declare (xargs :stobjs st :mode :program))
+;     (let ((st (update-fld 3 st)))
+;       (mv (ec-call (f-log)) st)))
+;   (f-prog2 st) ; EXEC (wrong)
+
+             (let ((form (car (last x))))
+               `(let* ((args (list ,@(oneify-lst (cdr form) fns w program-p)))
+                       (*mbe-as-exec* nil))
+                  (apply ',(*1*-symbol (car form)) args))))))
             ((eq fn 'mbe1-raw)
 
-; See the discussion in (defun-*1* return-last ...).
+; Here we process macroexpansions of mbe calls.
+
+; For :program mode functions (i.e., when program-p is non-nil), an mbe call
+; always reduces to its :exec value, and moreover the :logic code is only
+; called in safe-mode.  Before changing this behavior, consider the comment in
+; put-invariant-risk.
+
+; See the discussion in (defun-*1* return-last ...).  Here, we discuss only the
+; special variable *mbe-as-exec*.
+
+; A practice important to some users (in particular, Jared Davis has emphasized
+; this) is to wrap calls of functions with symbol-class :ideal (i.e., :logic
+; mode but not guard-verified) inside calls of :program mode functions, and
+; expect efficient behavior.  The following example illustrates that situation.
+; When evaluating (pgm st), we would like the :exec form to be executed.  Note
+; that this is exactly what happens if the evaluation is in raw Lisp; here in
+; oneify, we arrange for that to happen for *1* evaluation as well.
+
+;   (defstobj st (fld :type integer :initially 0))
+;
+;   (defun lgc (st)
+;     (declare (xargs :mode :logic
+;                     :stobjs st
+;                     :verify-guards nil))
+;     (mbe :logic (prog2$ (cw "@@@Hello@@@~%")
+;                         (update-fld 3 st))
+;          :exec (update-fld 3 st)))
+;
+;   (defun pgm (st)
+;     (declare (xargs :mode :program
+;                     :stobjs st))
+;     (lgc st))
+
+; Note that we do not give similar treatment to our evaluator (in particular,
+; in ev-rec-return-last), since at the top level, we are not inside a function
+; body (so there is no issue of :program or :ideal mode).  If however ev-w or
+; the like is called in a function body, it will behave as though at the top
+; level, thus also not being sensitive to *mbe-as-exec* for lexically
+; apparent calls.  That's OK.
 
              (let ((oneified-logic (oneify (cadddr x) fns w program-p))
                    (oneified-exec (oneify (caddr x) fns w program-p)))
-               `(if (f-get-global 'safe-mode *the-live-state*)
-                    (,(*1*-symbol 'return-last)
-                     ,qfn
-                     ,oneified-exec
-                     ,oneified-logic)
-                  ,(if program-p oneified-exec oneified-logic))))
+               `(cond
+                 ((f-get-global 'safe-mode *the-live-state*)
+                  (,(*1*-symbol 'return-last)
+                   ,qfn
+                   ,oneified-exec
+                   ,oneified-logic))
+                 (t ,(if program-p
+                         oneified-exec
+                       `(if *mbe-as-exec*
+                            ,oneified-exec
+                          ,oneified-logic))))))
             (t
 
 ; Since fn is not 'ec-call1-raw, the guard of return-last is automatically met
@@ -1176,7 +1290,8 @@
     (mv-let (erp st mv-let-form creator)
             (parse-with-local-stobj (cdr x))
             (declare (ignore erp)) ; should be nil
-            (mv-let-for-with-local-stobj mv-let-form st creator fns w)))
+            (mv-let-for-with-local-stobj mv-let-form st creator fns w
+                                         program-p)))
    ((eq (car x) 'stobj-let)
 
 ; Stobj-let is rather complicated, so we prefer to take advantage of the logic
@@ -1268,8 +1383,13 @@
             (list 'quote (list 'lambda formals (oneify body fns w program-p)))
             *nil*)))
    (t
-    (let ((arg-forms (oneify-lst (cdr x) fns w program-p)))
-      (cons (*1*-symbol (car x)) arg-forms)))))
+    (let ((arg-forms (oneify-lst (cdr x) fns w program-p))
+          (fn (cond ((and (eq program-p 'invariant-risk)
+                          (not (getprop (car x) 'invariant-risk nil
+                                        'current-acl2-world w)))
+                     (car x))
+                    (t (*1*-symbol (car x))))))
+      (cons fn arg-forms)))))
 
 (defun-one-output oneify-lst (lst fns w program-p)
   (cond ((atom lst) nil)
@@ -1349,12 +1469,44 @@
             ((eq rst t) tst)
             (t `(and ,tst ,rst))))))
 
-(defvar *guard-checking-on-form-invariant-risk*
-  '(if (member-eq '(f-get-global 'guard-checking-on
-                                 *the-live-state*)
-                  '(nil :none))
-       :none
-     :all))
+(defun labels-form-for-*1* (fn *1*fn formals *1*body
+                               declare-stobj-special
+                               ignore-vars ignorable-vars
+                               super-stobjs-in super-stobjs-chk
+                               guard wrld)
+  (let ((*1*fn-binding `(,*1*fn
+                         ,formals
+                         ,@(and declare-stobj-special
+                                (list declare-stobj-special))
+                         ,@(and ignore-vars
+                                `((declare (ignore ,@ignore-vars))))
+                         ,@(and ignorable-vars
+                                `((declare (ignorable ,@ignorable-vars))))
+                         ,@(and super-stobjs-in
+
+; If the form below is removed, we might expect to get a hard Lisp error from
+; the following:
+
+; (defstobj foo (arr :type (array t (10))))
+; (set-guard-checking nil)
+; (update-arri 20 4 foo)
+
+; The problem would seem to be that an ill-guarded call of update-nth has
+; replaced a copy of the stobj array by a list in (user-stobj-alist
+; *the-live-state*), which produces a mismatch with *the-live-foo*.
+
+; However, no such error occurs.  At some point we may spend the energy to
+; convince ourselves that it is safe to remove this code, but for now, it seems
+; harmless enough to leave it here, since super-stobjs-chk is a fast test.
+
+                                `((when ,super-stobjs-chk
+                                    ,(oneify-fail-form
+                                      'ev-fncall-guard-er fn formals
+                                      guard super-stobjs-in wrld
+                                      :live-stobj))))
+                         ,*1*body)))
+    `(labels (,*1*fn-binding)
+             (,*1*fn ,@formals))))
 
 (defun oneify-cltl-code (defun-mode def stobj-flag wrld
                           &optional trace-rec-for-none)
@@ -1367,6 +1519,10 @@
 ; laid down.  Thus, the symbol-class for the function at hand has already been
 ; stored.  Stobj-flag is the name of the stobj (whether from defstobj or
 ; defabsstobj), if any, that the given definition supports.
+
+; Warning: wrld is not necessarily the ACL2 world at the time def is submitted.
+; See the comment below in the binding of cl-compliant-p-optimization.
+; However, wrld is a legal ACL2 world, typically, the current ACL2 world.
 
 ; See the template above for detailed comments, which however are not
 ; necessarily kept fully up-to-date.
@@ -1412,7 +1568,7 @@
                               `(throw-or-attach ,fn ,formals t)))))
                    ((fn formals
                         ('throw-or-attach fn formals)) ; implicit :guard of t
-                    (prog2$ formals ; avoid compiler warning
+                    (prog2$ formals                    ; avoid compiler warning
                             `(,(*1*-symbol fn) ,@(cdr def))))
                    ((fn formals
                         ('throw-without-attach 'nil fn formals))
@@ -1466,8 +1622,34 @@
          (fn (car def))
          (*1*fn (*1*-symbol fn))
          (cl-compliant-p-optimization
-          (and (eq (symbol-class fn wrld) :common-lisp-compliant)
-               (assert$ (eq defun-mode :logic) t)))
+          (and (eq defun-mode :logic)
+
+; One might think that the conjunct above is implied by the one below.  But
+; consider this book:
+
+;   (in-package "ACL2")
+;   (defun foo (x)
+;     (declare (xargs :mode :program))
+;     x)
+;   (verify-termination foo)
+;   (verify-guards foo)
+
+; At one point we checked the symbol-class first, and then did an assert check
+; that defun-mode is :logic -- and we got the assertion error during Step 3 of
+; certify-book for this example!  The backtrace looked like this:
+
+;   1. THROW-RAW-EV-FNCALL
+;   2. (HARD-ERROR ASSERT$ ...)
+;   3. ONEIFY-CLTL-CODE
+;   4. INSTALL-DEFS-FOR-ADD-TRIP
+;   5. HCOMP-BUILD-FROM-STATE-RAW
+
+; The problem was that the world wasn't rolled back by Step 3, and hence foo
+; was :common-lisp-compliant at the point where we were processing the first
+; defun.  Our solution is to make sure that we are oneifying a function that is
+; truly :common-lisp-compliant.
+
+               (eq (symbol-class fn wrld) :common-lisp-compliant)))
          (formals (cadr def))
          (boot-strap-p (global-val 'boot-strap-flg (w *the-live-state*))))
     (cond
@@ -1526,29 +1708,8 @@
         ,formals
         ,(cons fn formals)))
      (t
-      (let* ((*1*guard (oneify guard nil wrld (eq defun-mode :program)))
-
-; We throw away most declararations and the doc string, keeping only ignore and
-; ignorable declarations.  Note that it is quite reasonable to ignore
-; declarations when constructing ``slow'' functions.
-
-             (body (car (last def)))
-             (*1*body
-
-; WARNING!  We need to be very careful that we only use *1*body in an
-; environment where *1*fn refers to the top-level function currently being
-; defined.  We should not use *1*body in the scope of a top-level flet or
-; labels that rebinds *1*fn, since recursive calls there of *1*fn are
-; presumably intended to refer to the top-level function, not the local
-; function, so that guards can be checked etc.  We can, however, use *1*body in
-; the binding of such a local definition.  We will be free to use *1*body in
-; the body of the top-level definition of *1*fn in the case of :program mode
-; because we promise not to introduce a top-level flet in that case.
-
-              (oneify body nil wrld (eq defun-mode :program)))
-             (invariant-risk
-              (getprop fn 'invariant-risk nil 'current-acl2-world
-                       wrld))
+      (let* ((invariant-risk
+              (getprop fn 'invariant-risk nil 'current-acl2-world wrld))
              (super-stobjs-in ; At a "leaf" of a stobj-based computation?
               (if stobj-flag
 
@@ -1575,6 +1736,27 @@
 
               (and (not super-stobjs-in) (ignore-vars dcls)))
              (ignorable-vars (ignorable-vars dcls))
+             (program-p (eq defun-mode :program))
+             (*1*guard (oneify guard nil wrld program-p))
+
+; We throw away most declararations and the doc string, keeping only ignore and
+; ignorable declarations.  Note that it is quite reasonable to ignore
+; declarations when constructing ``slow'' functions.
+
+             (body (car (last def)))
+             (*1*body
+
+; WARNING!  We need to be very careful that we only use *1*body in an
+; environment where *1*fn refers to the top-level function currently being
+; defined.  We should not use *1*body in the scope of a top-level flet or
+; labels that rebinds *1*fn, since recursive calls there of *1*fn are
+; presumably intended to refer to the top-level function, not the local
+; function, so that guards can be checked etc.  We can, however, use *1*body in
+; the binding of such a local definition.  We will be free to use *1*body in
+; the body of the top-level definition of *1*fn in the case of :program mode
+; because we promise not to introduce a top-level flet in that case.
+
+              (oneify body nil wrld program-p))
              (guard-checking-on-form
 
 ; Functions in the ev-rec nest have a gc-off parameter that we generally assume
@@ -1589,27 +1771,12 @@
 ; Calls of a stobj primitive that takes its stobj as an argument are always
 ; guard-checked.  If that changes, consider also changing
 ; ev-fncall-rec-logical.  Note that we rely on this guard-checking for handling
-; of invariant-risk; we arrange, using *guard-checking-on-form-invariant-risk*,
-; that evaluation stays with *1* functions up to reaching the stobj primitive,
-; which is responsible for causing a guard violation rather than allowing an
-; invariant to be violated.
+; of invariant-risk; we arrange that evaluation stays with *1* functions up to
+; reaching the stobj primitive, which is responsible for causing a guard
+; violation rather than allowing an invariant to be violated.
 
                                t)
                               (t temp))))
-                    ((and (eq defun-mode :program)
-                          invariant-risk)
-
-; If fn could lead to a call of a function that violates an invariant, for
-; example a call of a stobj updater that violates its guards, then we don't
-; want to call the raw Lisp version of fn.  We arrange this by coercing
-; guard-checking values, replacing nil by :none and t by :all.  This measure is
-; only necessary for :program mode functions: guard-verified functions should
-; never lead to calls that violate guards; and since :logic mode definitions
-; cannot contain calls of :program mode functions, :ideal functions should lead
-; only to calls of *1* :logic-mode functions until reaching a guard-compliant
-; call of a guard-verified function.  Also see put-invariant-risk.
-
-                     *guard-checking-on-form-invariant-risk*)
                     (t '(f-get-global 'guard-checking-on *the-live-state*))))
              (skip-early-exit-code-when-none
               (and (eq defun-mode :logic) ; :program handled elsewhere
@@ -1642,12 +1809,6 @@
 ; skip-early-exit-code-when-none is true.
 
                      guard-checking-on-form)
-; The following case is an optimization of the one just after it.
-                    ((eq guard-checking-on-form
-                         *guard-checking-on-form-invariant-risk*)
-                     '(member-eq (f-get-global 'guard-checking-on
-                                               *the-live-state*)
-                                 '(t :all)))
                     (t `(let ((x ,guard-checking-on-form))
                           (and x
                                (not (eq x :none)))))))
@@ -1713,39 +1874,6 @@
                    boot-strap-p
                    (not (member-equal (symbol-package-name fn)
                                       '("ACL2" "ACL2-PC")))))
-             (*1*fn-binding `(,*1*fn
-                              ,formals
-                              ,@(and declare-stobj-special
-                                     (list declare-stobj-special))
-                              ,@(and ignore-vars
-                                     `((declare (ignore ,@ignore-vars))))
-                              ,@(and ignorable-vars
-                                     `((declare (ignorable ,@ignorable-vars))))
-                              ,@(and super-stobjs-in
-
-; If the form below is removed, we might expect to get a hard Lisp error from
-; the following:
-
-; (defstobj foo (arr :type (array t (10))))
-; (set-guard-checking nil)
-; (update-arri 20 4 foo)
-
-; The problem would seem to be that an ill-guarded call of update-nth has
-; replaced a copy of the stobj array by a list in (user-stobj-alist
-; *the-live-state*), which produces a mismatch with *the-live-foo*.
-
-; However, no such error occurs.  At some point we may spend the energy to
-; convince ourselves that it is safe to remove this code, but for now, it seems
-; harmless enough to leave it here, since super-stobjs-chk is a fast test.
-
-                                     `((when ,super-stobjs-chk
-                                         ,(oneify-fail-form
-                                           'ev-fncall-guard-er fn formals
-                                           guard super-stobjs-in wrld
-                                           :live-stobj))))
-                              ,*1*body))
-             (*1*-labels-form `(labels (,*1*fn-binding)
-                                       (,*1*fn ,@formals)))
              (logic-recursive-p
               (and (eq defun-mode :logic)
                    (ffnnamep-mod-mbe fn (body fn nil wrld))))
@@ -1764,12 +1892,14 @@
 ; 'guard-checking-on is set to :none, we will see all the recursive calls.
 ; This is useful for tracing.  Extra code for this case is only necessary for
 ; :logic mode, since the only issue is the call of a labels function, which
-; only occurs in :logic mode.
+; only occurs in :logic mode and in the invariant-risk case (where we need to
+; enter that labels code, which oneifies in a special way to deal with the
+; invariant-risk issue).
 
               (and trace-rec-for-none
                    logic-recursive-p
                    (eq defun-mode :logic)))
-             (program-only (and (eq defun-mode :program) ; optimization
+             (program-only (and program-p ; optimization
                                 (member-eq fn
 
 ; If this test becomes an issue, we might consider reimplementing the
@@ -1826,7 +1956,8 @@
 ; fn, and if not, then it fails if appropriate and otherwise falls through.
 
                      (and
-                      (not guard-is-t) ; optimization for code below
+                      (not guard-is-t)       ; optimization for code below
+                      (eq defun-mode :logic) ; optimization for code below
 
 ; NOTE: we have to test for live stobjs before we evaluate the guard, since the
 ; Common Lisp guard may assume all stobjs are live.  We actually only need
@@ -1931,7 +2062,7 @@
                                                (all-nils stobjs-out))
                                           guard)
                                          (t `(let ((*aokp* nil))
-                                                ,guard))))
+                                               ,guard))))
                                     guard)
                                ,*1*guard)
                              ,(assert$
@@ -1952,11 +2083,11 @@
                                 (t
                                  `((,guard-checking-is-really-on-form
                                     ,fail_guard))))))))
-              (if cl-compliant-p-optimization
-                  (assert$ (not guard-is-t) ; already handled way above
-                           (list cl-compliant-code-guard-not-t))
-                (let ((cond-clauses
-                       `(,@(and (eq defun-mode :logic)
+                (if cl-compliant-p-optimization
+                    (assert$ (not guard-is-t) ; already handled way above
+                             (list cl-compliant-code-guard-not-t))
+                  (let ((cond-clauses
+                         `(,@(and (eq defun-mode :logic)
 
 ; If the guard is t, then we want to execute the raw Lisp code in the
 ; :common-lisp-compliant case even if guard-checking is :none.  This
@@ -1964,10 +2095,10 @@
 ; we need to handle that special case (:none, guard t) elsewhere, and
 ; we do so in *1*-body-forms below.
 
-                                (not guard-is-t)
-                                `(((eq (symbol-class ',fn (w *the-live-state*))
-                                       :common-lisp-compliant)
-                                   ,cl-compliant-code-guard-not-t)))
+                                  (not guard-is-t)
+                                  `(((eq (symbol-class ',fn (w *the-live-state*))
+                                         :common-lisp-compliant)
+                                     ,cl-compliant-code-guard-not-t)))
                            ,@(and (not guard-is-t)
                                   (cond
                                    (super-stobjs-in
@@ -1983,7 +2114,7 @@
                                             (not ,*1*guard))
                                        ,fail_guard)))))
                            ,@(and
-                              (eq defun-mode :program)
+                              program-p
 
 ; In the boot-strap world we have :program mode functions whose definitions are
 ; different in raw Lisp from the logic, such as ev and get-global.  If we allow
@@ -2015,39 +2146,19 @@
                                   ,@(and
                                      invariant-risk
                                      `((t (return-from ,*1*fn ,*1*body))))))
-                               (t
-                                (cond
-                                 (program-only
-                                  `((,safe-form
-                                     ,fail_program-only-safe)
-                                    (,(cond
-                                       ((eq
-                                         guard-checking-on-form
-                                         *guard-checking-on-form-invariant-risk*)
-; optimization; should be same as invariant-risk
-                                        t)
-                                       (t
-                                        `(member-eq ,guard-checking-on-form
-                                                    '(:none :all))))
-                                     (return-from ,*1*fn ,*1*body))))
-
-; We will not be laying down a labels call, so we go ahead and stay in the *1*
-; world here in the case of safe-mode.
-
-                                 (t `((,(cond
-                                         ((eq
-                                           guard-checking-on-form
-                                           *guard-checking-on-form-invariant-risk*)
-; optimization; should be same as invariant-risk
-                                          t)
-                                         (t
-                                          `(or (member-eq
-                                                ,guard-checking-on-form
-                                                '(:none :all))
-                                               ,safe-form)))
-                                       (return-from ,*1*fn ,*1*body)))))))))))
-                  (and cond-clauses
-                       (list (cons 'cond cond-clauses)))))))
+                               (program-only
+                                `((,safe-form
+                                   ,fail_program-only-safe)
+                                  ((member-eq ,guard-checking-on-form
+                                              '(:none :all))
+                                   (return-from ,*1*fn ,*1*body))))
+                               (t `(((or (member-eq
+                                          ,guard-checking-on-form
+                                          '(:none :all))
+                                         ,safe-form)
+                                     (return-from ,*1*fn ,*1*body)))))))))
+                    (and cond-clauses
+                         (list (cons 'cond cond-clauses)))))))
              (main-body-before-final-call
 
 ; This is the code that is executed before we fall through: to the final labels
@@ -2068,15 +2179,6 @@
                (cond ((and skip-early-exit-code-when-none
                            early-exit-code) ; else nil; next case provides nil
                       (cond (super-stobjs-in early-exit-code) ; optimization
-; The following case is an optimization of the one just after it; test
-; should be the same as invariant-risk.
-                            ((eq guard-checking-on-form
-                                 *guard-checking-on-form-invariant-risk*)
-                             `((when (member-eq
-                                      (f-get-global 'guard-checking-on
-                                                    *the-live-state*)
-                                      '(t :all))
-                                 ,@early-exit-code)))
                             (t
                              `((when (not (eq ,guard-checking-on-form :none))
                                  ,@early-exit-code)))))
@@ -2091,26 +2193,48 @@
                     `((when (and *raw-guard-warningp*
                                  (eq ,guard-checking-on-form t))
                         (warn-for-guard-body ',fn))))))
-             (*1*-body-forms (cond ((eq defun-mode :program)
-                                    (append
-                                     main-body-before-final-call
-                                     (if invariant-risk
-                                         `((error "Implementation error in ~
-                                                   oneify-cltl-code for ~
-                                                   invariant-risk case, ~
-                                                   function ~s!~%Please ~
-                                                   contact the ACL2 ~
-                                                   implementors."
-                                                  ',fn))
-                                       `((,fn ,@formals)))))
-                                   (trace-rec-for-none
-                                    main-body-before-final-call)
-                                   (t
-                                    (append main-body-before-final-call
-                                            (list *1*-labels-form))))))
-        `(,*1*fn
-          ,formals
-          ,@(and declare-stobj-special (list declare-stobj-special))
+             (*1*-body-forms
+              (cond ((eq defun-mode :program)
+                     (append
+                      main-body-before-final-call
+                      (cond
+                       ((and invariant-risk
+                             (eq defun-mode :program))
+                        `((cond
+                           (*ignore-invariant-risk* (,fn ,@formals))
+                           (t (let ((*mbe-as-exec* t))
+
+; One reason that we bind *mbe-as-exec* above and use labels below is to helps
+; compilers remove tail recursions, since we believe that special variable
+; binding can get in the way of that.  (We do this regardless of the presence
+; of recursion, simply because that is simplest and we expect, or at least,
+; hope, that there is only trivial impact on performance.)
+
+                                ,(labels-form-for-*1*
+                                  fn *1*fn formals
+                                  (oneify body nil wrld 'invariant-risk)
+                                  declare-stobj-special
+                                  ignore-vars ignorable-vars
+                                  super-stobjs-in super-stobjs-chk
+                                  guard wrld))))))
+                       (t `((,fn ,@formals))))))
+                    (trace-rec-for-none
+                     main-body-before-final-call)
+                    (t
+                     (append
+                      main-body-before-final-call
+                      (list
+                       (labels-form-for-*1*
+                        fn *1*fn formals *1*body
+                        declare-stobj-special
+                        ignore-vars ignorable-vars
+                        super-stobjs-in super-stobjs-chk
+                        guard wrld)))))))
+        (let ((*1*dcls (and declare-stobj-special
+                            (list declare-stobj-special))))
+          `(,*1*fn
+            ,formals
+            ,@*1*dcls
 
 ; At one time we attempted to do some code-sharing using a macro call, by using
 ; *1*body-call in place of *1*body in the code above, where *1*body-call was
@@ -2150,7 +2274,7 @@
 ;                     ,@*1*-body-forms))
 ;               *1*-body-forms)
 
-          ,@*1*-body-forms))))))
+            ,@*1*-body-forms)))))))
 
 
 ;          PROMPTS
@@ -2994,7 +3118,6 @@
          (let* ((entry (gethash name *memoize-info-ht*))
                 (condition (access memoize-info-ht-entry entry :condition))
                 (inline (access memoize-info-ht-entry entry :inline))
-                (trace (access memoize-info-ht-entry entry :trace))
                 (commutative
                  (access memoize-info-ht-entry entry :commutative))
                 (forget
@@ -3008,7 +3131,6 @@
            (push `(memoize-fn ',name
                               :condition ',condition
                               :inline ',inline
-                              :trace ',trace
                               ,@(and commutative
                                      `(:commutative t))
                               ,@(and forget
@@ -5299,6 +5421,23 @@
           ))))
   (value nil))
 
+(defmacro eq-symbol-function-possibly-unmemoized (fn sym)
+
+; Suppose that a book defines a function symbol sym, which associates sym with
+; its symbol-function, fn, in the *hcomp-fn-ht*.  Now suppose that the book
+; later memoizes sym.  The expansion file will write out the unmemoized
+; definition of sym, which is the correct one to look up when we later include
+; the book; so we return t in that case, to indicate that it's fine to use this
+; saved definition during a later include-book when defining fn.
+
+  (assert (and (symbolp fn) (symbolp sym))) ; else we should use defabbrev
+  `(or (eq ,fn (symbol-function ,sym))
+       #+hons
+       (let ((entry (gethash ,sym *memoize-info-ht*)))
+         (and entry
+              (eq ,fn
+                  (access memoize-info-ht-entry entry :old-fn))))))
+
 (defun hcomp-alists-from-hts ()
   (let ((fn-alist nil)
         (const-alist nil)
@@ -5310,12 +5449,12 @@
                                  ((not (fboundp k))
                                   nil)
                                  ((reclassifying-value-p val)
-                                  (and (eq (unmake-reclassifying-value val)
-                                           (symbol-function k))
-                                       'semi))
-                                 ((eq val (symbol-function k))
-                                  t)
-                                 (t nil)))
+                                  (let ((fn (unmake-reclassifying-value val)))
+                                    (and (eq-symbol-function-possibly-unmemoized
+                                          fn k)
+                                         'semi)))
+                                 (t (eq-symbol-function-possibly-unmemoized
+                                     val k))))
                      fn-alist))
              *hcomp-fn-ht*)
     (maphash (lambda (k val)
@@ -5889,21 +6028,18 @@
         (memoize
          (maybe-push-undo-stack 'memoize (cadr (cddr trip)))
          (let* ((tuple (cddr trip))
-                (cl-defun (nth 5 tuple)))
-           (assert$
-            cl-defun
-            (memoize-fn (nth 1 tuple)
-                        :condition  (nth 2 tuple)
-                        :inline     (nth 3 tuple)
-                        :trace      (nth 4 tuple)
-                        :cl-defun   cl-defun
-                        :formals    (nth 6 tuple)
-                        :stobjs-in  (nth 7 tuple)
-                        :stobjs-out (nth 8 tuple)
-                        :commutative (nth 10 tuple)
-                        :forget     (nth 11 tuple)
-                        :memo-table-init-size (nth 12 tuple)
-                        :aokp       (nth 13 tuple)))))
+                (cl-defun (nth 4 tuple)))
+           (assert$ cl-defun (memoize-fn (nth 1 tuple)
+                                         :condition  (nth 2 tuple)
+                                         :inline     (nth 3 tuple)
+                                         :cl-defun   cl-defun
+                                         :formals    (nth 5 tuple)
+                                         :stobjs-in  (nth 6 tuple)
+                                         :stobjs-out (nth 7 tuple)
+                                         :commutative (nth 9 tuple)
+                                         :forget     (nth 10 tuple)
+                                         :memo-table-init-size (nth 11 tuple)
+                                         :aokp       (nth 12 tuple)))))
         #+hons
         (unmemoize
          (maybe-push-undo-stack 'unmemoize (cadr (cddr trip)))
@@ -6704,7 +6840,11 @@
   (stop-proof-tree-fn *the-live-state*)
   (f-put-global 'ld-skip-proofsp nil *the-live-state*)
   (move-current-acl2-world-key-to-front (w *the-live-state*))
-  (checkpoint-world1 t (w *the-live-state*) *the-live-state*))
+  (checkpoint-world1 t (w *the-live-state*) *the-live-state*)
+  #+hons
+  (progn (memoize-init)
+         (initialize-never-memoize-ht)
+         (acl2h-init-memoizations)))
 
 (defun-one-output ld-alist-raw (standard-oi ld-skip-proofsp ld-error-action)
   `((standard-oi . ,standard-oi)
@@ -6837,6 +6977,7 @@
            defun-*1*
            defv
            defvar
+           error
            eval ; presumably no ACL2 fn or macro underneath
            eval-when ; presumably no ACL2 fn or macro underneath
            f-put-global ; in axioms.lisp, before def. of set-ld-skip-proofsp
@@ -6888,7 +7029,7 @@
 ; whether loop-only-p is true or false, respectively.
 
   (let ((*features* (if loop-only-p
-                        (push :acl2-loop-only *features*)
+                        (cons :acl2-loop-only *features*)
                       (remove :acl2-loop-only *features*))))
     (loop for filename in filenames
           do (note-fns-in-file filename ht))))
@@ -6933,7 +7074,20 @@
                (progn
                  (assert (symbolp key))
                  (let ((raw-val (gethash key ht-raw)))
-                   (or (equal logic-val raw-val)
+
+; We use equalp rather than equal below because in August, 2014 using SBCL
+; 1.2.2 (and this might happen with other Lisps in the future), backquote was
+; implemented using structures hence equal could fail.  For example, in SBCL
+; 1.2.2 we found that (equalp '`,x '`,x) evaluates to t but (equal '`,x '`,x)
+; evaluates to nil.  Here is why (again, in SBCL 1.2.2), where first we
+; evaluate (setq *print-pretty* nil):
+
+; * '`,x
+;
+; (SB-INT:QUASIQUOTE #S(SB-IMPL::COMMA :EXPR X :KIND 0))
+; *
+
+                   (or (equalp logic-val raw-val)
                        (let ((x
                               (if *check-built-in-constants-debug*
                                   (list key :logic logic-val :raw raw-val)
@@ -8092,9 +8246,19 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
                      nil)))
             (t (setq *lp-ever-entered-p* t)
                (f-put-global 'standard-oi *standard-oi* *the-live-state*)
-               (ld-fn (f-get-ld-specials *the-live-state*)
-                      *the-live-state*
-                      nil)
+               (cond
+                (*lp-init-forms*
+                 (let ((standard-oi (append *lp-init-forms*
+                                            *standard-oi*)))
+                   (setq *lp-init-forms* nil)
+                   (ld-fn (put-assoc-eq 'standard-oi
+                                        standard-oi
+                                        (f-get-ld-specials *the-live-state*))
+                          *the-live-state*
+                          nil)))
+                (t (ld-fn (f-get-ld-specials *the-live-state*)
+                          *the-live-state*
+                          nil)))
                (fms "Exiting the ACL2 read-eval-print loop.  To re-enter, ~
                      execute (LP)."
                     nil *standard-co* *the-live-state* nil))))
@@ -8866,7 +9030,7 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
   (cond ((eq fn 'cons)
 ; We call this function on cons so often we optimize it.
          '(nil))
-        ((member-eq fn '(if return-last))
+        ((member-eq fn *stobjs-out-invalid*)
          (interface-er "Implementation error in ~
                         get-stobjs-out-for-declare-form: Attempted to find ~
                         stobjs-out for ~x0."
@@ -8899,24 +9063,3 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
       (eval `(untrace$ ,@to-untrace)))
     (when to-retrace
       (eval `(trace$ ,@to-retrace)))))
-
-; We define acl2-books-revision here rather than in acl2-init.lisp, so that
-; f-get-global is already defined.
-
-(defun acl2-books-revision ()
-
-; We define acl2-books-revision here in interface-raw.lisp rather than in
-; acl2-init.lisp, so that f-get-global is already defined.
-
-  (multiple-value-bind
-      (exit-code line)
-      (system-call+
-       (concatenate
-        'string
-        (f-get-global 'acl2-sources-dir *the-live-state*)
-        "bin/svn-info-books")
-       (list (f-get-global 'system-books-dir *the-live-state*)))
-    (cond ((or (not (eql exit-code 0))
-               (equal line ""))
-           "????")
-          (t (svn-revision-from-line line)))))

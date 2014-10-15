@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
@@ -39,9 +49,9 @@
 
 (defsection vl-caselist-p-thms
 
-  (defthm vl-exprlist-p-of-alist-keys-when-vl-caselist-p
+  (defthm vl-exprlistlist-p-of-alist-keys-when-vl-caselist-p
     (implies (vl-caselist-p x)
-             (vl-exprlist-p (alist-keys x)))
+             (vl-exprlistlist-p (alist-keys x)))
     :hints(("Goal" :induct (len x))))
 
   (defthm vl-stmtlist-p-of-alist-vals-when-vl-caselist-p
@@ -64,49 +74,49 @@
   (defthm vl-caselist-fix-of-cons
     (equal (vl-caselist-fix (cons x y))
            (if (consp x)
-               (cons (cons (vl-expr-fix (car x))
+               (cons (cons (vl-exprlist-fix (car x))
                            (vl-stmt-fix (cdr x)))
                      (vl-caselist-fix y))
              (vl-caselist-fix y)))
-    :hints(("Goal" :in-theory (enable vl-caselist-fix))))
+    :hints(("Goal" :in-theory (enable vl-caselist-fix)))))
 
-  (defthm pairlis$-of-alist-keys-and-alist-vals-when-vl-caselist-p
-    (implies (vl-caselist-p x)
-             (equal (pairlis$ (alist-keys x)
-                              (alist-vals x))
-                    x))
-    :hints(("Goal" :induct (len x))))
+  ;; (defthm pairlis$-of-alist-keys-and-alist-vals-when-vl-caselist-p
+  ;;   (implies (vl-caselist-p x)
+  ;;            (equal (pairlis$ (alist-keys x)
+  ;;                             (alist-vals x))
+  ;;                   x))
+  ;;   :hints(("Goal" :induct (len x))))
 
-  (defthm vl-caselist-p-of-pairlis$-basic
-    (implies (and (vl-exprlist-p exprs)
-                  (vl-stmtlist-p stmts)
-                  (same-lengthp exprs stmts))
-             (vl-caselist-p (pairlis$ exprs stmts)))
-    :hints(("Goal" :in-theory (enable pairlis$))))
+  ;; (defthm vl-caselist-p-of-pairlis$-basic
+  ;;   (implies (and (vl-exprlist-p exprs)
+  ;;                 (vl-stmtlist-p stmts)
+  ;;                 (same-lengthp exprs stmts))
+  ;;            (vl-caselist-p (pairlis$ exprs stmts)))
+  ;;   :hints(("Goal" :in-theory (enable pairlis$))))
 
-  (defthm alist-keys-of-vl-caselist-fix-of-pairlis$
-    (implies (same-lengthp exprs stmts)
-             (equal (alist-keys (vl-caselist-fix (pairlis$ exprs stmts)))
-                    (list-fix (vl-exprlist-fix exprs))))
-    :hints(("Goal" :in-theory (enable pairlis$))))
+  ;; (defthm alist-keys-of-vl-caselist-fix-of-pairlis$
+  ;;   (implies (same-lengthp exprs stmts)
+  ;;            (equal (alist-keys (vl-caselist-fix (pairlis$ exprs stmts)))
+  ;;                   (list-fix (vl-exprlist-fix exprs))))
+  ;;   :hints(("Goal" :in-theory (enable pairlis$))))
 
-  (defthm alist-vals-of-vl-caselist-fix-of-pairlis$
-    (implies (same-lengthp exprs stmts)
-             (equal (alist-vals (vl-caselist-fix (pairlis$ exprs stmts)))
-                    (vl-stmtlist-fix stmts)))
-    :hints(("Goal"
-            :induct (pairlis$ exprs stmts)
-            :in-theory (enable pairlis$))))
+  ;; (defthm alist-vals-of-vl-caselist-fix-of-pairlis$
+  ;;   (implies (same-lengthp exprs stmts)
+  ;;            (equal (alist-vals (vl-caselist-fix (pairlis$ exprs stmts)))
+  ;;                   (vl-stmtlist-fix stmts)))
+  ;;   :hints(("Goal"
+  ;;           :induct (pairlis$ exprs stmts)
+  ;;           :in-theory (enable pairlis$))))
 
-  (defthm pairlis$-of-vl-exprlist-fix-under-vl-caselist-equiv
-    (vl-caselist-equiv (pairlis$ (vl-exprlist-fix exprs) bodies)
-                       (pairlis$ exprs bodies))
-    :hints(("Goal" :in-theory (enable pairlis$))))
+  ;; (defthm pairlis$-of-vl-exprlist-fix-under-vl-caselist-equiv
+  ;;   (vl-caselist-equiv (pairlis$ (vl-exprlist-fix exprs) bodies)
+  ;;                      (pairlis$ exprs bodies))
+  ;;   :hints(("Goal" :in-theory (enable pairlis$))))
 
-  (defthm pairlis$-of-vl-stmtlist-fix-under-vl-caselist-equiv
-    (vl-caselist-equiv (pairlis$ exprs (vl-stmtlist-fix bodies))
-                       (pairlis$ exprs bodies))
-    :hints(("Goal" :in-theory (enable pairlis$)))))
+  ;; (defthm pairlis$-of-vl-stmtlist-fix-under-vl-caselist-equiv
+  ;;   (vl-caselist-equiv (pairlis$ exprs (vl-stmtlist-fix bodies))
+  ;;                      (pairlis$ exprs bodies))
+  ;;   :hints(("Goal" :in-theory (enable pairlis$)))))
 
 
 
@@ -209,7 +219,7 @@ throughout a statement, you can recur through the @('vl-compoundstmt->stmts')
 without having to have separate cases for all the different kinds of
 expressions.</p>"
   (vl-stmt-case x
-    :vl-casestmt         (cons x.default (alist-vals x.cases))
+    :vl-casestmt         (cons x.default (alist-vals x.caselist))
     :vl-ifstmt           (list x.truebranch x.falsebranch)
     :vl-foreverstmt      (list x.body)
     :vl-waitstmt         (list x.body)
@@ -217,7 +227,8 @@ expressions.</p>"
     :vl-forstmt          (list x.body)
     :vl-blockstmt        x.stmts
     :vl-repeatstmt       (list x.body)
-    :vl-timingstmt       (list x.body))
+    :vl-timingstmt       (list x.body)
+    :otherwise           nil)
   ///
   (local (in-theory (enable vl-stmtlist-count
                             vl-caselist-count
@@ -252,7 +263,7 @@ expressions.</p>"
   :long "<p>Note that this only returns the top-level expressions that are
 directly part of the statement.</p>"
   (vl-stmt-case x
-    :vl-casestmt    (cons x.test (alist-keys x.cases))
+    :vl-casestmt    (cons x.test (flatten (alist-keys x.caselist)))
     :vl-ifstmt      (list x.condition)
     :vl-foreverstmt nil
     :vl-waitstmt    (list x.condition)
@@ -260,7 +271,8 @@ directly part of the statement.</p>"
     :vl-forstmt     (list x.initlhs x.initrhs x.test x.nextlhs x.nextrhs)
     :vl-repeatstmt  (list x.condition)
     :vl-blockstmt   nil
-    :vl-timingstmt  nil))
+    :vl-timingstmt  nil
+    :otherwise      nil))
 
 
 (define vl-compoundstmt->ctrl
@@ -294,6 +306,123 @@ directly part of the statement.</p>"
              (equal (vl-compoundstmt->decls x)
                     nil))))
 
+(define vl-rebuild-caselist ((x         vl-caselist-p)
+                             (new-exprs vl-exprlist-p)
+                             (new-stmts vl-stmtlist-p))
+  :returns (new-x vl-caselist-p)
+  :guard (let ((x (vl-caselist-fix x)))
+           (and (same-lengthp new-exprs (flatten (alist-keys x)))
+                (same-lengthp new-stmts x)))
+  :measure (vl-caselist-count x)
+  (b* ((x (vl-caselist-fix x))
+       ((when (atom x))
+        nil)
+       ((cons match-exprs ?stmt) (car x))
+       (exprs1 (mbe :logic
+                    (append (vl-exprlist-fix (first-n (len match-exprs) new-exprs))
+                            (acl2::final-cdr (caar x)))
+                    :exec
+                    (if (true-listp (caar x))
+                        (first-n (len match-exprs) new-exprs)
+                      (append (first-n (len match-exprs) new-exprs)
+                              (acl2::final-cdr (caar x))))))
+       (stmt1  (vl-stmt-fix (car new-stmts)))
+       (exprs2 (rest-n (len match-exprs) new-exprs)))
+    (cons (cons exprs1 stmt1)
+          (vl-rebuild-caselist (cdr x) exprs2 (cdr new-stmts))))
+  ///
+  (local (defthm l1
+           (equal (nthcdr (len (car x)) (flatten x))
+                  (flatten (cdr x)))))
+
+  (local (defthm l2
+           (equal (nthcdr (len (caar x)) (flatten (alist-keys x)))
+                  (flatten (alist-keys (cdr x))))))
+
+  (local (defthm l3
+           (equal (take (len (car x)) (flatten x))
+                  (list-fix (car x)))))
+
+  (local (defthm l4
+           (equal (take (len (caar x)) (flatten (alist-keys x)))
+                  (list-fix (caar x)))))
+
+  (local (defthm l5
+           (implies (vl-caselist-p x)
+                    (equal (alist-vals (cdr x))
+                           (cdr (alist-vals x))))))
+
+  (local (defthm l6
+           (implies (vl-caselist-p x)
+                    (equal (car (alist-vals x))
+                           (cdar x)))))
+
+  (local (defthm l7
+           (implies (vl-caselist-p x)
+                    (equal (consp x) (if x t nil)))))
+
+  (local (defthm l8
+           (implies (vl-caselist-p x)
+                    (equal (consp (car x)) (if x t nil)))))
+
+  (defthm vl-rebuild-caselist-identity
+    (implies (vl-caselist-p x)
+             (equal (vl-rebuild-caselist x
+                                         (flatten (alist-keys x))
+                                         (alist-vals x))
+                    x))
+    :hints(("Goal"
+            :do-not '(generalize fertilize eliminate-destructors)
+            :in-theory (enable vl-rebuild-caselist))))
+
+  (local (defthm vl-caselist-fix-under-iff
+           (implies (vl-caselist-p x)
+                    (iff (vl-caselist-fix x)
+                         (consp x)))))
+
+  (defthm alist-vals-of-vl-rebuild-caselist
+    (implies (and (vl-caselist-p x)
+                  (equal (len (alist-keys x)) (len stmts)))
+             (equal (alist-vals (vl-rebuild-caselist x exprs stmts))
+                    (vl-stmtlist-fix stmts))))
+
+  (local (defthm c0
+           (equal (list-fix (nthcdr n x))
+                  (nthcdr n (list-fix x)))))
+
+  (local (defthm c1
+           (equal (list-fix (vl-exprlist-fix x))
+                  (vl-exprlist-fix (list-fix x)))))
+
+  (local (defthm c2
+           (implies (<= (nfix n) (len exprs))
+                    (equal (vl-exprlist-fix (take n exprs))
+                           (take n (vl-exprlist-fix exprs))))))
+
+  (local (in-theory (disable acl2::nthcdr-of-list-fix
+                             vl-exprlist-fix-of-list-fix
+                             vl-exprlist-fix-of-take)))
+
+  (local (defthmd c3
+           (implies (<= (nfix n) (len x))
+                    (equal (append (take n x) (nthcdr n (list-fix x)))
+                           (list-fix x)))))
+
+  (local (defthm c4
+           (implies (<= (nfix n) (len x))
+                    (equal (append (take n (vl-exprlist-fix x))
+                                   (nthcdr n (vl-exprlist-fix (list-fix x))))
+                           (vl-exprlist-fix (list-fix x))))
+           :hints(("Goal" :use ((:instance c3 (x (vl-exprlist-fix x))))))))
+
+  (defthm flatten-of-alist-keys-of-vl-rebuild-caselist
+    (implies (and (vl-caselist-p x)
+                  (same-lengthp exprs (flatten (alist-keys x))))
+             (equal (flatten (alist-keys (vl-rebuild-caselist x exprs stmts)))
+                    (vl-exprlist-fix (list-fix exprs))))
+    :hints(("Goal" :do-not '(generalize fertilize)))))
+
+
 
 (define change-vl-compoundstmt-core
   :parents (change-vl-compoundstmt)
@@ -313,20 +442,33 @@ directly part of the statement.</p>"
               (or (not decls)
                   (eq (vl-stmt-kind x) :vl-blockstmt)))
   :returns (new-x vl-stmt-p)
+  :guard-debug t
+  :guard-hints(("Goal" :do-not '(generalize fertilize eliminate-destructors)))
   :verbosep t
+
   :prepwork ((local (in-theory (enable vl-atomicstmt-p
                                        vl-compoundstmt->stmts
                                        vl-compoundstmt->exprs
                                        vl-compoundstmt->ctrl
-                                       vl-compoundstmt->decls))))
+                                       vl-compoundstmt->decls)))
+             (local (defthm l1
+                      (implies (vl-caselist-p x)
+                               (equal (len (alist-vals x))
+                                      (len x)))))
+
+             (local (defthm l2
+                      (implies (equal (len x) (+ 1 (len y)))
+                               (equal (len (cdr x)) (len y)))))
+
+             (local (in-theory (enable len))))
+
   (let ((x (vl-stmt-fix x)))
     (vl-stmt-case x
       :vl-casestmt
       (change-vl-casestmt x
                           :default (first stmts)
                           :test (first exprs)
-                          :cases (pairlis$ (redundant-list-fix (rest exprs))
-                                           (rest stmts)))
+                          :caselist (vl-rebuild-caselist x.caselist (rest exprs) (rest stmts)))
       :vl-ifstmt
       (change-vl-ifstmt x
                         :condition (first exprs)
@@ -404,18 +546,7 @@ directly part of the statement.</p>"
     (implies (or (not decls)
                  (equal (vl-stmt-kind x) :vl-blockstmt))
              (equal (vl-compoundstmt->decls (change-vl-compoundstmt-core x stmts exprs ctrl decls))
-                    (vl-blockitemlist-fix decls))))
-
-  ;; Helpers for deffixequiv hooks
-  (local (defthm crock
-           (equal (vl-caselist-fix (pairlis$ exprs (vl-stmtlist-fix stmts)))
-                  (vl-caselist-fix (pairlis$ exprs stmts)))
-           :hints(("Goal" :in-theory (enable pairlis$)))))
-
-  (local (defthm crock2
-           (equal (vl-caselist-fix (pairlis$ (vl-exprlist-fix exprs) stmts))
-                  (vl-caselist-fix (pairlis$ exprs stmts)))
-           :hints(("Goal" :in-theory (enable pairlis$))))))
+                    (vl-blockitemlist-fix decls)))))
 
 
 (defsection change-vl-compoundstmt
@@ -578,26 +709,22 @@ process them.</p>"
 (define vl-filter-blockitems ((x vl-blockitemlist-p))
   :parents (vl-blockitemlist-p)
   :short "Split up blockitems into lists by their type."
-  :returns (mv (regdecls vl-regdecllist-p)
-               (vardecls vl-vardecllist-p)
-               (eventdecls vl-eventdecllist-p)
+  :returns (mv (vardecls vl-vardecllist-p)
                (paramdecls vl-paramdecllist-p))
   (b* (((when (atom x))
-        (mv nil nil nil nil))
-       ((mv regdecls vardecls eventdecls paramdecls)
+        (mv nil nil))
+       ((mv vardecls paramdecls)
         (vl-filter-blockitems (cdr x)))
        (x1 (vl-blockitem-fix (car x))))
     (case (tag x1)
-      (:vl-regdecl   (mv (cons x1 regdecls) vardecls eventdecls paramdecls))
-      (:vl-vardecl   (mv regdecls (cons x1 vardecls) eventdecls paramdecls))
-      (:vl-eventdecl (mv regdecls vardecls (cons x1 eventdecls) paramdecls))
-      (:vl-paramdecl (mv regdecls vardecls eventdecls (cons x1 paramdecls)))
+      (:vl-vardecl   (mv (cons x1 vardecls) paramdecls))
+      (:vl-paramdecl (mv vardecls (cons x1 paramdecls)))
       (otherwise
        (progn$ (impossible)
-               (mv regdecls vardecls eventdecls paramdecls)))))
+               (mv vardecls paramdecls)))))
   ///
   (defmvtypes vl-filter-blockitems
-    (true-listp true-listp true-listp true-listp)))
+    (true-listp true-listp)))
 
 
 (define vl-simpledelaycontrol-p ((x vl-delaycontrol-p))

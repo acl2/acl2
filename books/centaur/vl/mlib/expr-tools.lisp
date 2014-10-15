@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
@@ -529,9 +539,10 @@ expression are natural numbers."
              (vl-exprlist-widthsfixed-p (cdr x)))
       t))
   ///
-  (deflist vl-exprlist-widthsfixed-p (x)
-    (vl-expr-widthsfixed-p x)
-    :already-definedp t)
+  (xdoc::without-xdoc
+    (deflist vl-exprlist-widthsfixed-p (x)
+      (vl-expr-widthsfixed-p x)
+      :already-definedp t))
 
   ;; BOZO doesn't work? (deffixequiv-mutual vl-expr-widthsfixed-p)
 
@@ -1100,7 +1111,9 @@ expressions."
                     (eq x.op :vl-partselect-pluscolon)
                     (eq x.op :vl-partselect-minuscolon)
                     (eq x.op :vl-index)
-                    (eq x.op :vl-array-index)))
+                    (eq x.op :vl-select-colon)
+                    (eq x.op :vl-select-pluscolon)
+                    (eq x.op :vl-select-minuscolon)))
           (list (vl-expr-fix x))))
       (vl-exprlist-selects x.args)))
 
@@ -1130,110 +1143,6 @@ expressions."
   (defthm len-of-vl-bitlist-from-nat
     (equal (len (vl-bitlist-from-nat x width))
            (nfix width))))
-
-
-(define vl-constexpr-reduce
-  :short "An evaluator for a small set of \"constant expressions\" in Verilog."
-
-  ((x vl-expr-p "Expression to try to evaluate."))
-  :returns
-  (value? "An unsigned 31-bit integer (i.e., a positive signed 32-bit
-           integer) on success, or @('nil') on failure."
-          maybe-natp :rule-classes :type-prescription)
-
-  :long "<p>This is a very careful, limited evaluator.  It checks, after every
-computation, that the result is in [0, 2^31).  This is the minimum size of
-\"integer\" for Verilog implementations, which is the size that plain decimal
-integer literals are supposed to have.  If we ever leave that range, we just
-fail to evaluate the expression.</p>
-
-<p>Note that in general it is <b>not safe</b> to call this function on
-arbitrary Verilog expressions to do constant folding because the size of the
-left-hand side can influence the widths at which the interior computations are
-to be done.  However, it is safe to use this inside of range expressions,
-because there is no left-hand side to provide us a context.</p>
-
-<p>BOZO is it really unsafe?  At worst the left-hand side is bigger than 31
-bits, and we end up with a larger context, right?  But can that actually hurt
-us in some way, if the result of every operation stays in bounds?  I don't
-think it can.</p>"
-
-  :measure (vl-expr-count x)
-
-  (cond ((vl-fast-atom-p x)
-         ;; The following is quite restrictive.  We only permit integer
-         ;; literals which were have the :wasunsized attribute set and are
-         ;; signed.  Such literals would arise in Verilog by being written as
-         ;; plain decimal integers like 5, or as unbased, signed integers in
-         ;; other bases such as 'shFFF and so on.
-         ;;
-         ;; The reason I am doing this is becuase these numbers are
-         ;; "predictable" in that they are to be interpreted as n-bit
-         ;; constants, where n is at least 32 bits, and I do not want any
-         ;; confusion about which width we are operating in.
-         ;;
-         ;; If you want to extend this, you need to be very careful to
-         ;; understand how the signedness rules and width rules are going to
-         ;; apply.  In particular, the calculations below in the non-atom case
-         ;; are currently relying upon the fact that everything is in the
-         ;; signed, 32-bit world.
-         (let ((guts (vl-atom->guts x)))
-           (and (vl-fast-constint-p guts)
-                (eq (vl-constint->origtype guts) :vl-signed)
-                (eql (vl-constint->origwidth guts) 32)
-                (vl-constint->wasunsized guts)
-                (< (vl-constint->value guts) (expt 2 31))
-                ;; This lnfix is a stupid hack that gives us an unconditional
-                ;; type prescription rule.  We "know" that the value is an
-                ;; natural nubmer as long as x is indeed an expression.
-                (lnfix (vl-constint->value guts)))))
-
-        (t
-         ;; Be very careful if you decide to try to extend this to support
-         ;; other operations!  In particular, you should understand the
-         ;; signedness rules and how operations like comparisons will take you
-         ;; out of the world of signed arithmetic.
-         (case (vl-nonatom->op x)
-           (:vl-unary-plus
-            (vl-constexpr-reduce (first (vl-nonatom->args x))))
-           (:vl-binary-plus
-            (b* ((arg1 (vl-constexpr-reduce (first (vl-nonatom->args x))))
-                 (arg2 (vl-constexpr-reduce (second (vl-nonatom->args x)))))
-              (and arg1
-                   arg2
-                   (< (+ arg1 arg2) (expt 2 31))
-                   (+ arg1 arg2))))
-           (:vl-binary-minus
-            (b* ((arg1 (vl-constexpr-reduce (first (vl-nonatom->args x))))
-                 (arg2 (vl-constexpr-reduce (second (vl-nonatom->args x)))))
-              (and arg1
-                   arg2
-                   (<= 0 (- arg1 arg2))
-                   (- arg1 arg2))))
-           (:vl-binary-times
-            (b* ((arg1 (vl-constexpr-reduce (first (vl-nonatom->args x))))
-                 (arg2 (vl-constexpr-reduce (second (vl-nonatom->args x)))))
-              (and arg1
-                   arg2
-                   (< (* arg1 arg2) (expt 2 31))
-                   (* arg1 arg2))))
-           (:vl-binary-shl
-            (b* ((arg1 (vl-constexpr-reduce (first (vl-nonatom->args x))))
-                 (arg2 (vl-constexpr-reduce (second (vl-nonatom->args x)))))
-              (and arg1
-                   arg2
-                   (< (ash arg1 arg2) (expt 2 31))
-                   (ash arg1 arg2))))
-           (t
-            ;; Some unsupported operation -- fail.
-            nil))))
-  :prepwork ((local (in-theory (enable maybe-natp))))
-  ///
-  (defthm upper-bound-of-vl-constexpr-reduce
-    (implies (force (vl-expr-p x))
-             (< (vl-constexpr-reduce x)
-                (expt 2 31)))
-    :rule-classes :linear))
 
 
 (defsection vl-exprtype-max
@@ -1283,3 +1192,5 @@ when all arguments are signed."
            (vl-exprtype-max x (vl-exprtype-max y z))))
 
   (deffixequiv vl-exprtype-max-fn :args ((x vl-exprtype-p) (y vl-exprtype-p))))
+
+

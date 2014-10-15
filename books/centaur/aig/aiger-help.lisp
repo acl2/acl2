@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Sol Swords <sswords@centtech.com>
 
@@ -143,7 +153,22 @@
 
 (defthm maybe-byte-p-of-read-byte-buf-res
   (maybe-byte-p (mv-nth 0 (read-byte-buf stream buf state)))
-  :rule-classes (:rewrite :type-prescription))
+  :rule-classes (:rewrite
+                 (:type-prescription
+
+; Added by Matt K., 8/9/2014: the :typed-term provided below was implicit
+; before an ACL2 change considered for source function
+; find-type-prescription-pat, which avoids using weak compound-recognizer rules
+; (in this case, maybe-byte-p-compound-recognizer) to infer the :typed-term
+; when it is not supplied.  I'm now making the :typed-term explicit so that
+; this book certifies regardless of whether or not such a change is made to
+; ACl2.
+
+; See also maybe-byte-p-of-peek-byte-buf-res, which has been modified in the
+; same way for the same reason.
+
+                  :typed-term
+                  (mv-nth 0 (read-byte-buf stream buf state)))))
 
 (defthm maybe-byte-p-of-read-byte-buf-buf
   (maybe-byte-p (mv-nth 1 (read-byte-buf stream buf state)))
@@ -170,7 +195,13 @@
 
 (defthm maybe-byte-p-of-peek-byte-buf-res
   (maybe-byte-p (mv-nth 0 (peek-byte-buf stream buf state)))
-  :rule-classes (:rewrite :type-prescription))
+  :rule-classes (:rewrite (:type-prescription
+
+; Added by Matt K., 8/9/2014: See the comment in
+; maybe-byte-p-of-read-byte-buf-res, which is equally applicable here.
+
+                           :typed-term
+                           (mv-nth 0 (peek-byte-buf stream buf state)))))
 
 (defthm maybe-byte-p-of-peek-byte-buf-buf
   (maybe-byte-p (mv-nth 1 (peek-byte-buf stream buf state)))

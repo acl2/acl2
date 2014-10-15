@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
@@ -31,8 +41,8 @@
   :short "Simple pattern matching for recognizing latches."
 
   :long "<p>BOZO eventually we will want to develop something akin to @(see
-flopcode) for dealing with @('always') blocks for latches and combinational
-logic.  But for now our latch recognition is extremely primitive.</p>")
+edgesynth) for dealing with @('always') blocks for latches, but for now our
+latch recognition is extremely primitive.</p>")
 
 (local (xdoc::set-default-parents latchcode))
 
@@ -392,8 +402,8 @@ sanity checking."
                 blocks; these are too scary to try to synthesize"
                (and (string-listp scary-regs)
                     (setp scary-regs)))
-   (regs       "all the registers for the module"
-               vl-regdecllist-p)
+   (vars       "all the variables for the module"
+               vl-vardecllist-p)
    (cvtregs    "accumulator for names of registers to convert into nets"
                string-listp)
    (delta      "delta for the new nets, instances, etc."
@@ -409,6 +419,30 @@ sanity checking."
   :short "Try to synthesize a single @('always') block into a latch."
 
   (b* (((vl-always x) x)
+
+       ((unless (or (eq x.type :vl-always)
+                    (eq x.type :vl-always-latch)))
+        ;; Don't touch always_comb or always_ff blocks.
+        (mv x cvtregs delta))
+
+       ((when (eq x.type :vl-always-latch))
+        ;; BOZO.  For now we do not try to really support always_latch.  To
+        ;; support always_latch we will need to adjust our pattern matching
+        ;; stuff because the always_latch drops the timing statement.  That
+        ;; is, you write something like:
+        ;;
+        ;;    always_latch if (clk) q <= d;
+        ;;
+        ;; instead of:
+        ;;
+        ;;    always @(clk or d) if (clk) q <= d;
+        ;;
+        ;; So our pattern-matching stuff isn't right for always_latch yet.
+        (mv x cvtregs
+            (dwarn :type :vl-latchcode-fail
+                   :msg "~a0: always_latch blocks are not yet implemented."
+                   :args (list x))))
+
        (warnings (vl-delta->warnings delta))
 
        ((mv warnings test lhs rhs delay)
@@ -429,7 +463,7 @@ sanity checking."
                    :msg "~a0: not synthesize a latch since the lhs doesn't ~
                          even have any names?  lhs: ~a1."
                    :args (list x lhs-names))))
-       (warning   (vl-always-check-regs lhs-names regs x))
+       (warning   (vl-always-check-regs lhs-names vars x))
        ((when warning)
         (mv x cvtregs (vl-warn-delta warning)))
        (lhs-scary (intersect lhs-names scary-regs))
@@ -502,8 +536,8 @@ sanity checking."
        ((mv next-expr    next-decl)    (vl-occform-mkwire next-name    width :loc x.loc))
        ((mv delfree-expr delfree-decl) (vl-occform-mkwire delfree-name width :loc x.loc))
        (delfree-decl
-        (change-vl-netdecl delfree-decl
-                           :atts (acons "VL_TARGET_REG" lhs (vl-netdecl->atts delfree-decl))))
+        (change-vl-vardecl delfree-decl
+                           :atts (acons "VL_TARGET_REG" lhs (vl-vardecl->atts delfree-decl))))
 
        ;; assign lhs_next = rhs;
        (next-ass  (make-vl-assign :lvalue next-expr :expr rhs :loc x.loc))
@@ -527,7 +561,7 @@ sanity checking."
        (cvtregs   (append lhs-names cvtregs))
        (delta     (change-vl-delta delta
                                    :nf       nf
-                                   :netdecls (list* next-decl delfree-decl delta.netdecls)
+                                   :vardecls (list* next-decl delfree-decl delta.vardecls)
                                    :assigns  (list* next-ass  main-ass     delta.assigns)
                                    :modinsts (cons inst delta.modinsts)
                                    :addmods  (append-without-guard addmods
@@ -548,7 +582,7 @@ sanity checking."
 (define vl-latchcode-synth-alwayses ((x          vl-alwayslist-p)
                                      (scary-regs (and (string-listp scary-regs)
                                                       (setp scary-regs)))
-                                     (regs       vl-regdecllist-p)
+                                     (vars       vl-vardecllist-p)
                                      (cvtregs    string-listp)
                                      (delta      vl-delta-p)
                                      (careful-p  booleanp)
@@ -559,10 +593,10 @@ sanity checking."
   (b* (((when (atom x))
         (mv nil cvtregs delta))
        ((mv new-car? cvtregs delta)
-        (vl-latchcode-synth-always (car x) scary-regs regs
+        (vl-latchcode-synth-always (car x) scary-regs vars
                                    cvtregs delta careful-p vecp))
        ((mv new-cdr cvtregs delta)
-        (vl-latchcode-synth-alwayses (cdr x) scary-regs regs
+        (vl-latchcode-synth-alwayses (cdr x) scary-regs vars
                                      cvtregs delta careful-p vecp))
        (new-x (if new-car?
                   (cons new-car? new-cdr)

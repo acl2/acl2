@@ -6,15 +6,25 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
@@ -31,6 +41,16 @@
   :short "Tools for gathering up lvalues and checking the well-formedness of
 expressions in lvalue positions.")
 
+
+(define vl-index-exprp ((x vl-expr-p))
+  :measure (vl-expr-count x)
+  (if (vl-fast-atom-p x)
+      (vl-hidexpr-p x)
+    (b* (((vl-nonatom x))
+         ((when (member x.op '(:vl-bitselect :vl-index)))
+          (and (vl-index-exprp (first x.args))
+               (vl-expr-resolved-p (second x.args)))))
+      (vl-hidexpr-p x))))
 
 (defines vl-expr-lvaluep
   :parents (lvalues vl-expr-p)
@@ -63,12 +83,11 @@ statements.</p>"
          (op   (vl-nonatom->op x))
          (args (vl-nonatom->args x)))
       (case op
-        ((:vl-bitselect :vl-partselect-colon :vl-partselect-pluscolon
-          :vl-partselect-minuscolon)
+        ((:vl-bitselect :vl-partselect-colon :vl-partselect-pluscolon :vl-partselect-minuscolon
+          :vl-index :vl-select-colon :vl-select-pluscolon :vl-select-minuscolon)
          ;; foo[index] or foo[a:b] or foo[a+:b] or foo[a-:b] is an okay
          ;; lvalue as long as foo is an identifier or hierarchical id.
-         (or (vl-idexpr-p (first args))
-             (vl-hidexpr-p (first args))))
+         (vl-index-exprp (first args)))
         ((:vl-concat)
          ;; { foo, bar, baz, ... } is valid if all the components are
          ;; lvalues.
@@ -88,10 +107,11 @@ statements.</p>"
            (vl-exprlist-lvaluesp (cdr x)))))
 
   ///
-  (deflist vl-exprlist-lvaluesp (x)
-    (vl-expr-lvaluep x)
-    :already-definedp t
-    :elementp-of-nil nil)
+  (xdoc::without-xdoc
+    (deflist vl-exprlist-lvaluesp (x)
+      (vl-expr-lvaluep x)
+      :already-definedp t
+      :elementp-of-nil nil))
 
   (deffixequiv-mutual vl-expr-lvaluep)
 
@@ -128,9 +148,9 @@ and we just need to collect the expression on the left.</p>
 <p>But gathering the lvalues from module instances is more involved.  Here, we
 need to know which ports are inputs and outputs, which we do not know until the
 @(see argresolve) transform is run.  Even then, the situation is complicated
-because (1) due to @(see backflow) it is not necessarily the case that inputs
-to the submodule are undriven, and (2) the submodule might not actually drive
-all of its outputs.</p>
+because (1) due to \"backflow\" it is not necessarily the case that inputs to
+the submodule are undriven, and (2) the submodule might not actually drive all
+of its outputs.</p>
 
 <p>We try to take these into account as best we can.  For the most accurate
 results you should typically only run lvalexprs after first running argresolve
@@ -202,7 +222,7 @@ their \"wires\" since they're in a different namespace.</p>")
          (element-collect      (mksym element '-lvalexprs))
          (element-collect-nrev (mksym element '-lvalexprs-nrev))
          (short                (cat "Gather all top-level expressions from a @(see "
-                                    (symbol-name list-rec))))
+                                    (symbol-name list-rec) ").")))
     `(progn
        (define ,list-collect-nrev ((x ,list-rec) nrev)
          :parents (,list-collect)
@@ -314,7 +334,7 @@ their \"wires\" since they're in a different namespace.</p>")
   :type vl-modinst
   :nrev-body
   (let ((args (vl-modinst->portargs x)))
-    (if (eq (vl-arguments-kind args) :named)
+    (if (eq (vl-arguments-kind args) :vl-arguments-named)
         (prog2$
          (cw "; vl-modinst-lvalexprs: skipping unresolved instance ~s0 of ~s1~%"
              (vl-modinst->instname x)
@@ -323,7 +343,7 @@ their \"wires\" since they're in a different namespace.</p>")
       (vl-plainarglist-lvalexprs-nrev (vl-arguments-plain->args args) nrev)))
   :body
   (let ((args (vl-modinst->portargs x)))
-    (if (eq (vl-arguments-kind args) :named)
+    (if (eq (vl-arguments-kind args) :vl-arguments-named)
         nil
       (vl-plainarglist-lvalexprs (vl-arguments-plain->args args)))))
 
@@ -571,7 +591,7 @@ problematic lvalues encountered.</p>" long)))
   :guard (and (vl-location-p loc)
               (maybe-stringp instname))
   :body
-  (if (eq (vl-arguments-kind x) :named)
+  (if (eq (vl-arguments-kind x) :vl-arguments-named)
       (warn :type :vl-programming-error
             :msg "~l0: expected arguments of instance ~s1 to be resolved, but ~
                   args are still named."

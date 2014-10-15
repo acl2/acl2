@@ -6,26 +6,35 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 ;
-; This program is free software; you can redistribute it and/or modify it under
-; the terms of the GNU General Public License as published by the Free Software
-; Foundation; either version 2 of the License, or (at your option) any later
-; version.  This program is distributed in the hope that it will be useful but
-; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-; more details.  You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free Software
-; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
 (include-book "allexprs")
-(include-book "context")
 (local (include-book "../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
 
 (defxdoc ctxexprs
-  :parents (contexts)
+  :parents (context)
   :short "Functions for gathering expressions and the context in which they
 occur."
 
@@ -37,18 +46,13 @@ expression with a @(see vl-context-p) describing its origin.</p>")
 
 (fty::defalist vl-exprctxalist
   :key-type vl-expr-p
-  :val-type vl-context-p)
-
-(defalist vl-exprctxalist-p (x)
-  :parents (contexts)
+  :val-type vl-context-p
+  :parents (context)
   :short "An alist binding @(see vl-expr-p)s to @(see vl-context-p)s."
   :long "<p>These alists are produced by our @(see ctxexprs) functions, and
 essentially say where some expressions are from.</p>"
-  :key (vl-expr-p x)
-  :val (vl-context-p x)
   :keyp-of-nil nil
-  :valp-of-nil nil
-  :already-definedp t)
+  :valp-of-nil nil)
 
 (defthm vl-exprlist-p-of-strip-cars-when-vl-exprctxalist-p
   (implies (vl-exprctxalist-p x)
@@ -68,6 +72,7 @@ essentially say where some expressions are from.</p>"
       (vl-make-exprctxalist-nrev (cdr exprs) ctx nrev))))
 
 (define vl-make-exprctxalist
+  :parents (ctxexprs)
   :short "Bind some expressions to their context."
   ((exprs vl-exprlist-p "List of expressions to bind.")
    (ctx   vl-context-p  "Context to bind to all of these expressions."))
@@ -122,10 +127,7 @@ essentially say where some expressions are from.</p>"
 (def-vl-ctxexprs :type vl-port)
 (def-vl-ctxexprs :type vl-portdecl)
 (def-vl-ctxexprs :type vl-assign)
-(def-vl-ctxexprs :type vl-netdecl)
 (def-vl-ctxexprs :type vl-vardecl)
-(def-vl-ctxexprs :type vl-regdecl)
-(def-vl-ctxexprs :type vl-eventdecl)
 (def-vl-ctxexprs :type vl-paramdecl)
 (def-vl-ctxexprs :type vl-fundecl)
 (def-vl-ctxexprs :type vl-taskdecl)
@@ -177,10 +179,7 @@ essentially say where some expressions are from.</p>"
 (def-vl-ctxexprs-list :element vl-port      :list vl-portlist)
 (def-vl-ctxexprs-list :element vl-portdecl  :list vl-portdecllist)
 (def-vl-ctxexprs-list :element vl-assign    :list vl-assignlist)
-(def-vl-ctxexprs-list :element vl-netdecl   :list vl-netdecllist)
 (def-vl-ctxexprs-list :element vl-vardecl   :list vl-vardecllist)
-(def-vl-ctxexprs-list :element vl-regdecl   :list vl-regdecllist)
-(def-vl-ctxexprs-list :element vl-eventdecl :list vl-eventdecllist)
 (def-vl-ctxexprs-list :element vl-paramdecl :list vl-paramdecllist)
 (def-vl-ctxexprs-list :element vl-fundecl   :list vl-fundecllist)
 (def-vl-ctxexprs-list :element vl-taskdecl  :list vl-taskdecllist)
@@ -196,10 +195,7 @@ essentially say where some expressions are from.</p>"
          (append (vl-portlist-ctxexprs x.name x.ports)
                  (vl-portdecllist-ctxexprs x.name x.portdecls)
                  (vl-assignlist-ctxexprs x.name x.assigns)
-                 (vl-netdecllist-ctxexprs x.name x.netdecls)
                  (vl-vardecllist-ctxexprs x.name x.vardecls)
-                 (vl-regdecllist-ctxexprs x.name x.regdecls)
-                 (vl-eventdecllist-ctxexprs x.name x.eventdecls)
                  (vl-paramdecllist-ctxexprs x.name x.paramdecls)
                  (vl-fundecllist-ctxexprs x.name x.fundecls)
                  (vl-taskdecllist-ctxexprs x.name x.taskdecls)
@@ -212,10 +208,7 @@ essentially say where some expressions are from.</p>"
            (b* ((nrev (vl-portlist-ctxexprs-nrev x.name x.ports nrev))
                 (nrev (vl-portdecllist-ctxexprs-nrev x.name x.portdecls nrev))
                 (nrev (vl-assignlist-ctxexprs-nrev x.name x.assigns nrev))
-                (nrev (vl-netdecllist-ctxexprs-nrev x.name x.netdecls nrev))
                 (nrev (vl-vardecllist-ctxexprs-nrev x.name x.vardecls nrev))
-                (nrev (vl-regdecllist-ctxexprs-nrev x.name x.regdecls nrev))
-                (nrev (vl-eventdecllist-ctxexprs-nrev x.name x.eventdecls nrev))
                 (nrev (vl-paramdecllist-ctxexprs-nrev x.name x.paramdecls nrev))
                 (nrev (vl-fundecllist-ctxexprs-nrev x.name x.fundecls nrev))
                 (nrev (vl-taskdecllist-ctxexprs-nrev x.name x.taskdecls nrev))
