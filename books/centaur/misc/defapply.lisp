@@ -92,8 +92,7 @@
 (include-book "evaluator-metatheorems")
 (include-book "interp-function-lookup")
 (include-book "tools/def-functional-instance" :dir :system)
-
-(set-waterfall-parallelism nil) ; for apply-for-ev-cp
+(include-book "misc/without-waterfall-parallelism" :dir :system)
 
 (defmacro ecc (call)
   (declare (xargs :guard (consp call)))
@@ -547,6 +546,7 @@ The function ~x0 is missing its ~x1 property; perhaps it is not defined.~%"
    (ifl-ev-meta-extract-global-badguy
     evmeta-ev-meta-extract-global-badguy)))
 
+(without-waterfall-parallelism
 (defun apply-for-ev-cp (clause hints state)
   (declare (ignore hints)
            (xargs :stobjs state
@@ -585,7 +585,7 @@ The function ~x0 is missing its ~x1 property; perhaps it is not defined.~%"
                        cases-clauses)))))
     (& (mv (msg "The clause was not of the correct form: ~x0"
                 clause)
-           nil state))))
+           nil state)))))
 
 (in-theory (disable ev-collect-apply-lemmas))
 
@@ -644,14 +644,15 @@ The function ~x0 is missing its ~x1 property; perhaps it is not defined.~%"
           )
      :theoremsp nil)
 
-   (defthm evmeta-ev-apply-agrees-with-evmeta-ev
-     (implies (mv-nth 0 (evmeta-ev-apply fn args))
-              (equal (mv-nth 1 (evmeta-ev-apply fn args))
-                     (evmeta-ev (cons fn (kwote-lst args)) nil)))
-     :hints (("goal" :clause-processor
-              (apply-for-ev-cp clause nil state))
-             (use-by-computed-hint clause)
-             (use-these-hints-hint clause)))))
+   (without-waterfall-parallelism
+    (defthm evmeta-ev-apply-agrees-with-evmeta-ev
+      (implies (mv-nth 0 (evmeta-ev-apply fn args))
+               (equal (mv-nth 1 (evmeta-ev-apply fn args))
+                      (evmeta-ev (cons fn (kwote-lst args)) nil)))
+      :hints (("goal" :clause-processor
+               (apply-for-ev-cp clause nil state))
+              (use-by-computed-hint clause)
+              (use-these-hints-hint clause))))))
 
 
 
@@ -909,14 +910,15 @@ The function ~x0 is missing its ~x1 property; perhaps it is not defined.~%"
  (progn
    ;; (defapply/ev/concrete-ev mything2 (if len mv-list binary-append))
 
-   (make-event
-    `(defapply/ev/concrete-ev
-       everything
+   (without-waterfall-parallelism
+    (make-event
+     `(defapply/ev/concrete-ev
+        everything
 
-       ;; Note: Earlier this was (nthcdr 400 *all-logic-function-syms*), but
-       ;; Allegro CL died with a large rewrite stack.
+        ;; Note: Earlier this was (nthcdr 400 *all-logic-function-syms*), but
+        ;; Allegro CL died with a large rewrite stack.
 
-       ,(take 100 *all-logic-function-syms*)))))
+        ,(take 100 *all-logic-function-syms*))))))
 
 ;;  100:    2.02      97M
 ;;  200:    4.02     204M
@@ -927,6 +929,3 @@ The function ~x0 is missing its ~x1 property; perhaps it is not defined.~%"
 ;; 1200:   66.82    6708M
 ;; 1246:   71.74    7391M
 
-
-
-           

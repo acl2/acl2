@@ -38,17 +38,6 @@
 (local (include-book "std/lists/top" :dir :system))
 (local (in-theory (disable set::double-containment)))
 
-(make-event
-
-; Disabling waterfall parallelism because this book allegedly uses memoization
-; while performing its proofs.
-
- (if (and (hons-enabledp state) 
-          (f-get-global 'parallel-execution-enabled state)) 
-     (er-progn (set-waterfall-parallelism nil)
-               (value '(value-triple nil)))
-   (value '(value-triple nil))))
-
 (defxdoc sexpr-rewriting :parents (4v-sexprs))
 (defxdoc sexpr-rewriting-internals :parents (sexpr-rewriting))
 (defsection sexpr-rewrite-ground
