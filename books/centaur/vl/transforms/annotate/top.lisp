@@ -29,26 +29,36 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "xf-argresolve")
-(include-book "xf-orig")
-(include-book "xf-designwires")
-(include-book "xf-follow-hids")
-(include-book "xf-resolve-indexing")
-(include-book "xf-clean-warnings")
-(include-book "xf-udp-elim")
-(include-book "cn-hooks")
-(include-book "../checkers/duplicate-detect")
-(include-book "../checkers/portcheck")
-(include-book "../util/cwtime")
+(include-book "argresolve")
+(include-book "designwires")
+(include-book "make-implicit-wires")
+(include-book "origexprs")
+(include-book "portdecl-sign")
+(include-book "resolve-indexing")
+(include-book "udp-elim")
+(include-book "../xf-follow-hids") ;; BOZO how much do we actually need this now?
+(include-book "../xf-clean-warnings")
+(include-book "../cn-hooks")
+(include-book "../../checkers/duplicate-detect")
+(include-book "../../checkers/portcheck")
+(include-book "../../util/cwtime")
+
+(defsection annotate
+  :short "A first step in most transformation sequences.  Applies several
+basic, preliminary transforms to normalize the original design.")
+
+(local (xdoc::set-default-parents annotate))
 
 (define vl-annotate-design
-  :parents (transforms)
-  :short "Meta-transform.  Applies several basic, preliminary transforms to
-          annotate the original modules in various ways."
+  :short "Top level @(see annotate) transform."
   ((design vl-design-p))
   :returns (new-design vl-design-p)
 
-  (b* ((design (xf-cwtime (vl-design-udp-elim design)
+  (b* ((design (xf-cwtime (vl-design-make-implicit-wires design)
+                          :name xf-make-implicit-wires))
+       (design (xf-cwtime (vl-design-portdecl-sign design)
+                          :name xf-portdecl-sign))
+       (design (xf-cwtime (vl-design-udp-elim design)
                           :name xf-udp-elim))
        (design (xf-cwtime (vl-design-duplicate-detect design)
                           :name xf-duplicate-detect))

@@ -69,7 +69,7 @@ annotated with a @('version') field that must match exactly this string.</p>"
 
   ;; Current syntax version: generally a string like
   ;; "VL Syntax [date of modification]"
-  "VL Syntax 2014-10-08")
+  "VL Syntax 2014-10-16")
 
 (define vl-syntaxversion-p (x)
   :parents (syntax)
@@ -3142,26 +3142,37 @@ be non-sliceable, at least if it's an input.</p>"
   (vl-typedef->name x))
 
 
-
 (encapsulate nil
   (local (include-book "tools/templates" :dir :system))
 
-  (local (defconst *vl-modelement-typenames*
-           '(port
-             portdecl
-             assign
-             alias
-             vardecl
-             paramdecl
-             fundecl
-             taskdecl
-             modinst
-             gateinst
-             always
-             initial
-             typedef
-             fwdtypedef
-             modport)))
+  (defconst *vl-modelement-typenames*
+    '(port
+      portdecl
+      assign
+      alias
+      vardecl
+      paramdecl
+      fundecl
+      taskdecl
+      modinst
+      gateinst
+      always
+      initial
+      typedef
+      import
+      fwdtypedef
+      modport))
+
+  (local (defun typenames-to-tags (x)
+           (declare (xargs :mode :program))
+           (if (atom x)
+               nil
+             (cons (intern$ (cat "VL-" (symbol-name (car x))) "KEYWORD")
+                   (typenames-to-tags (cdr x))))))
+
+  (make-event
+   `(defconst *vl-modelement-tagnames*
+      ',(typenames-to-tags *vl-modelement-typenames*)))
 
   (local (defun types-mk-strsubst-alists (types)
            (if (atom types)
@@ -3562,6 +3573,13 @@ the list of elements of the given type.</p>"
                 displaying the transformed module with comments preserved,
                 e.g., see @(see vl-ppc-module).")
 
+   (loaditems  vl-genelementlist-p
+               "See @(see make-implicit-wires).  This is a temporary container
+                to hold the module elements, in program order, until the rest
+                of the design has been loaded.  This field is \"owned\" by the
+                @('make-implicit-wires') transform.  You should never access it
+                or modify it in any other code.")
+
    (esim       "This is meant to be @('nil') until @(see esim) conversion, at
                 which point it becomes the E module corresponding to this
                 VL module.")))
@@ -3820,13 +3838,20 @@ e.g., @('(01)') or @('(1?)')."
   ((name stringp
          :rule-classes :type-prescription
          "The name of this package as a string.")
-   ;; ...
-   (warnings vl-warninglist-p)
-   (minloc   vl-location-p)
-   (maxloc   vl-location-p)
-   (atts     vl-atts-p)
-   (comments vl-commentmap-p))
-  :long "BOZO incomplete stub -- we don't really support packages yet.")
+   (lifetime   vl-lifetime-p)
+   (imports    vl-importlist-p)
+   (fundecls   vl-fundecllist-p)
+   (taskdecls  vl-taskdecllist-p)
+   (typedefs   vl-typedeflist-p)
+   (paramdecls vl-paramdecllist-p)
+   (vardecls   vl-vardecllist-p)
+   (warnings   vl-warninglist-p)
+   (minloc     vl-location-p)
+   (maxloc     vl-location-p)
+   (atts       vl-atts-p)
+   (comments   vl-commentmap-p))
+  :long "<p>BOZO we haven't finished out all the things that can go inside of
+packages.  Eventually there will be new fields here.</p>")
 
 (fty::deflist vl-packagelist :elt-type vl-package-p
   :elementp-of-nil nil)
@@ -3858,7 +3883,13 @@ e.g., @('(01)') or @('(1?)')."
    (maxloc   vl-location-p)
    (atts     vl-atts-p)
    (origname stringp :rule-classes :type-prescription)
-   (comments vl-commentmap-p))
+   (comments vl-commentmap-p)
+
+   (loaditems  vl-genelementlist-p
+               "See @(see make-implicit-wires).  This is a temporary container
+                to hold the module elements, in program order, until the rest
+                of the design has been loaded."))
+
   :long "BOZO incomplete stub -- we don't really support interfaces yet.")
 
 (fty::deflist vl-interfacelist :elt-type vl-interface-p

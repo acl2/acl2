@@ -54,7 +54,13 @@
 (include-book "../checkers/skip-detect")
 
 (include-book "../transforms/cn-hooks")
-(include-book "../transforms/xf-argresolve")
+
+(include-book "../transforms/annotate/argresolve")
+(include-book "../transforms/annotate/resolve-indexing")
+(include-book "../transforms/annotate/origexprs")
+(include-book "../transforms/annotate/make-implicit-wires")
+(include-book "../transforms/annotate/portdecl-sign")
+
 (include-book "../transforms/xf-assign-trunc")
 (include-book "../transforms/xf-blankargs")
 (include-book "../transforms/xf-clean-params")
@@ -64,9 +70,7 @@
 (include-book "../transforms/xf-expand-functions")
 (include-book "../transforms/xf-follow-hids")
 (include-book "../transforms/xf-hid-elim")
-(include-book "../transforms/xf-orig")
 (include-book "../transforms/xf-oprewrite")
-(include-book "../transforms/xf-resolve-indexing")
 (include-book "../transforms/xf-resolve-ranges")
 (include-book "../transforms/xf-replicate-insts")
 (include-book "../transforms/xf-selresolve")
@@ -468,6 +472,8 @@ shown.</p>"
        (design0 (vl-design-remove-unnecessary-modules config.topmods design))
 
        (- (cw "~%vl-lint: initial processing...~%"))
+       (design (cwtime (vl-design-make-implicit-wires design)))
+       (design (cwtime (vl-design-portdecl-sign design)))
        (design (cwtime (vl-design-portcheck design)))
        (design (cwtime (vl-design-check-case design)))
        (design (cwtime (vl-design-duperhs-check design)))

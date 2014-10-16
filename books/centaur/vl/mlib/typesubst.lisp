@@ -81,13 +81,13 @@ is not okay to replace @('foo_t') with, say, a tagged @('union').</p>")
 
 
 
-(defthm vl-typesigma-count-of-cdr-strong
-  (implies (and (vl-typesigma-p x)
-                (consp x))
-           (< (vl-typesigma-count (cdr x))
-              (vl-typesigma-count x)))
-  :rule-classes ((:rewrite) (:linear))
-  :hints(("Goal" :in-theory (enable vl-typesigma-count))))
+;; (defthm vl-typesigma-count-of-cdr-strong
+;;   (implies (and (vl-typesigma-p x)
+;;                 (consp x))
+;;            (< (vl-typesigma-count (cdr x))
+;;               (vl-typesigma-count x)))
+;;   :rule-classes ((:rewrite) (:linear))
+;;   :hints(("Goal" :in-theory (enable vl-typesigma-count))))
 
 (defmacro def-vl-typesubst (name &key type body takes-elem verbosep)
   `(define ,name

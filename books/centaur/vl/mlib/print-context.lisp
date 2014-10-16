@@ -132,6 +132,10 @@
        (vl-ps-seq (vl-basic-cw "Alias at ")
                   (vl-print-loc (vl-alias->loc x))))
 
+      (:vl-import
+       ;; These are simple enough to just print.
+       (vl-pp-import x))
+
       (otherwise
        (prog2$ (impossible) ps)))))
 
@@ -162,22 +166,22 @@
 quick summary instead, see @(see vl-pp-modelement-summary).</p>"
   (b* ((x (vl-modelement-fix x)))
     (case (tag x)
-      (:vl-port      (vl-pp-port x))
-      (:vl-portdecl  (vl-pp-portdecl x))
-      (:vl-assign    (vl-pp-assign x))
-      (:vl-vardecl   (vl-pp-vardecl x))
-      (:vl-eventdecl (vl-print "// BOZO implement vl-pp-eventdecl in vl-pp-modelement-full"))
-      (:vl-paramdecl (vl-pp-paramdecl x))
-      (:vl-fundecl   (vl-pp-fundecl x))
-      (:vl-taskdecl  (vl-pp-taskdecl x))
-      (:vl-modinst   (vl-pp-modinst x nil))
-      (:vl-gateinst  (vl-pp-gateinst x))
-      (:vl-always    (vl-pp-always x))
-      (:vl-initial   (vl-pp-initial x))
-      (:vl-alias     (vl-pp-alias x))
-      (:vl-typedef   (vl-pp-typedef x))
+      (:vl-port       (vl-pp-port x))
+      (:vl-portdecl   (vl-pp-portdecl x))
+      (:vl-assign     (vl-pp-assign x))
+      (:vl-vardecl    (vl-pp-vardecl x))
+      (:vl-paramdecl  (vl-pp-paramdecl x))
+      (:vl-fundecl    (vl-pp-fundecl x))
+      (:vl-taskdecl   (vl-pp-taskdecl x))
+      (:vl-modinst    (vl-pp-modinst x nil))
+      (:vl-gateinst   (vl-pp-gateinst x))
+      (:vl-always     (vl-pp-always x))
+      (:vl-initial    (vl-pp-initial x))
+      (:vl-alias      (vl-pp-alias x))
+      (:vl-typedef    (vl-pp-typedef x))
       (:vl-fwdtypedef (vl-pp-fwdtypedef x))
       (:vl-modport    (vl-pp-modport x))
+      (:vl-import     (vl-pp-import x))
       (otherwise (prog2$ (impossible) ps)))))
 
 (define vl-pp-context-full ((x vl-context-p) &key (ps 'ps))
