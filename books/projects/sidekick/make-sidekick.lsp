@@ -38,6 +38,7 @@
   (er hard? 'sidekick-startup-fn "Under the hood definition not installed?"))
 
 (reset-prehistory nil)
+(set-debugger-enable t)
 
 (sidekick::stop)
 (acl2::tshell-stop)
@@ -56,19 +57,16 @@
   (format t "~&Welcome to ~A ~A!~%"
           (lisp-implementation-type)
           (lisp-implementation-version))
-  (format t
-          (concatenate 'string
-          "~% ~a built ~a.~
-    ~% Copyright (C) 2014, Regents of the University of Texas
-    ~% ACL2 comes with ABSOLUTELY NO WARRANTY.  This is free software and you~
-    ~% are welcome to redistribute it under certain conditions.  For details,~
-    ~% see the LICENSE file distributed with ACL2.~%"
-          (or *acl2-svn-revision-string* "~a"))
-          *copy-of-acl2-version*
-          (saved-build-dates :terminal)
-          (if (null *acl2-svn-revision-string*)
-              ""
-            (qfuncall acl2-books-revision)))
+  (when *print-startup-banner*
+    (format t
+            *saved-string*
+            *copy-of-acl2-version*
+            (saved-build-dates :terminal)
+            (cond (*saved-mode*
+                   (format nil "~% Initialized with ~a." *saved-mode*))
+                  (t ""))
+            (eval '(latest-release-note-string)) ; avoid possible warning
+            ))
   (format t "~%")
   (sidekick::start))
 

@@ -32,6 +32,9 @@
 
 (in-package "SIDEKICK")
 
+#+hons
+(acl2::mf-multiprocessing t)
+
 (defvar *server* nil)
 
 (defun maybe-launch-browser (host port)

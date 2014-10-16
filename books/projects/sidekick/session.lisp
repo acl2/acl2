@@ -145,10 +145,16 @@
        (defun-mode-pair (access ldd-status status :defun-mode-pair))
        (disabled        (access ldd-status status :disabled))
        (memoized        (access ldd-status status :memoized))
-       (form-str        (str::pretty (acl2::print-ldd-full-or-sketch (acl2::access-ldd-fullp ldd)
-                                                                     (acl2::access-ldd-form ldd))
-                                     :config *json-pbt-printconfig*
-                                     :eviscp t))
+       ((mv eviscerated state)
+        ;; Blah, as of d05dea5b0522d51d0e7f9a5889c0fb7740a327d7,
+        ;; print-ldd-full-or-sketch now modifies state... it doesn't
+        ;; really seem like it should have to...
+        (acl2::print-ldd-full-or-sketch (acl2::access-ldd-fullp ldd)
+                                        (acl2::access-ldd-form ldd)
+                                        state))
+       (form-str (str::pretty eviscerated
+                              :config *json-pbt-printconfig*
+                              :eviscp t))
        (alist (list
                ;; command or event
                (cons :class (acl2::access-ldd-class ldd))
@@ -167,13 +173,17 @@
                                 (acl2::max-absolute-command-number (w state))
                                 (w state)))))
                (cons :form form-str))))
-    alist))
+    (mv alist state)))
 
 (define jalists-from-ldds (ldds state)
-  (if (atom ldds)
-      nil
-    (cons (jalist-from-ldd (car ldds) state)
-          (jalists-from-ldds (cdr ldds) state))))
+  :returns (mv jalists state)
+  (b* (((when (atom ldds))
+        (mv nil state))
+       ((mv car state)
+        (jalist-from-ldd (car ldds) state))
+       ((mv cdr state)
+        (jalists-from-ldds (cdr ldds) state)))
+    (mv (cons car cdr) state)))
 
 (defun json-pcs-fn (cd1 cd2 markp state)
   ;; Based on pcs-fn.  I have no idea what I'm doing.
@@ -181,23 +191,23 @@
         (ens (ens state)))
     (er-let* ((cmd-wrld1 (er-decode-cd cd1 wrld :ps state))
               (cmd-wrld2 (er-decode-cd cd2 wrld :ps state)))
-             (let* ((later-wrld
-                     (if (>= (access-command-tuple-number (cddar cmd-wrld1))
-                             (access-command-tuple-number (cddar cmd-wrld2)))
-                         cmd-wrld1
-                       cmd-wrld2))
-                    (earlier-wrld
-                     (if (>= (access-command-tuple-number (cddar cmd-wrld1))
-                             (access-command-tuple-number (cddar cmd-wrld2)))
-                         cmd-wrld2
-                       cmd-wrld1))
-                    (ldds (make-ldds-command-sequence later-wrld
-                                                      (cddar earlier-wrld)
-                                                      ens
-                                                      wrld
-                                                      markp
-                                                      nil))
-                    (alists (jalists-from-ldds ldds state)))
+             (b* ((later-wrld
+                   (if (>= (access-command-tuple-number (cddar cmd-wrld1))
+                           (access-command-tuple-number (cddar cmd-wrld2)))
+                       cmd-wrld1
+                     cmd-wrld2))
+                  (earlier-wrld
+                   (if (>= (access-command-tuple-number (cddar cmd-wrld1))
+                           (access-command-tuple-number (cddar cmd-wrld2)))
+                       cmd-wrld2
+                     cmd-wrld1))
+                  (ldds (make-ldds-command-sequence later-wrld
+                                                    (cddar earlier-wrld)
+                                                    ens
+                                                    wrld
+                                                    markp
+                                                    nil))
+                  ((mv alists state) (jalists-from-ldds ldds state)))
                (mv nil alists state)))))
 
 (defmacro json-pbt (cd1)
@@ -212,8 +222,9 @@
   (let ((wrld (w state))
         (ens (ens state)))
     (er-let* ((cmd-wrld (er-decode-cd cd wrld :pcb state)))
-             (let* ((ldds   (acl2::make-ldds-command-block cmd-wrld ens wrld fullp nil))
-                    (alists (jalists-from-ldds ldds state)))
+             (b* ((ldds   (acl2::make-ldds-command-block cmd-wrld ens wrld fullp nil))
+                  ((mv alists state)
+                   (jalists-from-ldds ldds state)))
                (mv nil alists state)))))
 
 (defun json-pcb!-fn (cd fullp state)
@@ -230,8 +241,9 @@
 (defun json-pc-fn (cd state)
   (let ((wrld (w state)))
     (er-let* ((cmd-wrld  (er-decode-cd cd wrld :pc state)))
-             (let* ((ldd (acl2::make-command-ldd nil t cmd-wrld (ens state) wrld))
-                    (alist (jalist-from-ldd ldd state)))
+             (b* ((ldd (acl2::make-command-ldd nil t cmd-wrld (ens state) wrld))
+                  ((mv alist state)
+                   (jalist-from-ldd ldd state)))
                (mv nil alist state)))))
 
 (defmacro json-pc (cd)
@@ -245,11 +257,12 @@
        ((unless n)
         (mv (sk-json-error "Error in sk-undo-back-through: not a number: ~a" num)
             state))
-       #+hons
-       ((when t)
-        (mv (sk-json-error "Sorry, undo doesn't work on ACL2(h) because memoization isn't ~
-                            thread safe.")
-            state))
+       ;; This should be fixed now
+       ;; #+hons
+       ;; ((when t)
+       ;;  (mv (sk-json-error "Sorry, undo doesn't work on ACL2(h) because memoization isn't ~
+       ;;                      thread safe.")
+       ;;      state))
        ((mv erp ?val state) (acl2::ubt!-ubu!-fn :ubt n state))
        ((when erp)
         (mv (sk-json-error "ubt!-ubu!-fn returned an error.")

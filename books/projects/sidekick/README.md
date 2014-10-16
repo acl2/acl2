@@ -20,12 +20,8 @@ I use Linux/x86 with Firefox or Chromium as the browser, and
 [CCL](http://ccl.clozure.com) as my host Lisp for ACL2.  Other
 platforms may not work.
 
-You'll need to use the [development version of
-ACL2](http://acl2-devel.googlecode.com) and [its
-books](http://acl2-books.googlecode.com).
-
-Build ACL2 as usual, then certify at least the **basic** and
-**quicklisp** books, e.g.,:
+Build the development version of ACL2 as usual, then certify at least
+the **basic** and **quicklisp** books, e.g.,:
 
 ```Shell
     $ cd acl2
@@ -34,11 +30,9 @@ Build ACL2 as usual, then certify at least the **basic** and
     $ make USE_QUICKLISP=1 basic quicklisp
 ```
 
-Finally, get a copy of the Sidekick and certify its top book, e.g.,:
-
+Then certify the sidekick books:
 ```Shell
-    $ git clone https://github.com/jaredcdavis/sidekick.git
-    $ cd sidekick
+    $ cd acl2/books/projects/sidekick
     $ cert.pl top     # should produce top.cert
 ```
 
@@ -52,13 +46,13 @@ For instant startup times, you can build an ACL2 image with the
 Sidekick built in.
 
 ```Shell
-    $ cd sidekick
+    $ cd acl2/books/projects/sidekick
     $ make           # should produce a 'sidekick' executable
     $ ./sidekick
 ```
 
 You can then use this **sidekick** instead of invoking your normal
-**saved_acl2h** image when doing interactive development.
+**saved_acl2** image when doing interactive development.
 
 
 ### Browser Launching
