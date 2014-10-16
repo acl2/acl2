@@ -457,7 +457,8 @@ hierarchical references to wires inside of @('processor'), etc.</p>")
                      :hints(("Goal" :in-theory (disable (force))))
                      :verify-guards nil
                      :measure (vl-expr-count x)))
-     (cond ((vl-hidexpr-p x)
+     (cond ((and (vl-hidexpr-p x)
+                 (not (vl-idexpr-p x)))
             (vl-hidexpr-hid-elim x mods modalist warnings vardecls))
 
            ((vl-fast-atom-p x)

@@ -336,7 +336,6 @@
                    acl2::prefixp-when-equal-lengths
                    acl2::sublistp-when-prefixp
                    acl2::subsetp-member
-                   consp-when-member-equal-of-vl-defines-p
                    default-+-2
                    acl2::member-equal-when-all-equalp
                    member-equal-when-member-equal-of-cdr-under-iff

@@ -4167,10 +4167,9 @@ useful theorems about the introduced predicate.</p>
 
 <p>Defalist (by itself, not when part of mutually-recursive deftypes form) also
 allows previously defined alist predicates.  For example, the following form
-produces a fixing function for ACL2's built-in @(see timer-alistp)
-predicate:</p>
+produces a fixing function for ACL2's built-in @('timer-alistp') predicate:</p>
 
-@({ 
+@({
  (defalist timer-alist :pred timer-alistp
                        :key-type symbolp
                        :val-type rational-listp)

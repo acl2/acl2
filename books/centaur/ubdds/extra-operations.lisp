@@ -23,17 +23,6 @@
 (in-package "ACL2")
 (include-book "core")
 
-(make-event
-
-; Disabling waterfall parallelism because this book allegedly uses memoization
-; while performing its proofs.
-
- (if (and (hons-enabledp state) 
-          (f-get-global 'parallel-execution-enabled state)) 
-     (er-progn (set-waterfall-parallelism nil)
-               (value '(value-triple nil)))
-   (value '(value-triple nil))))
-
 (local (defun q-binop-induct (x y vals)
          (declare (xargs :verify-guards nil))
          (if (atom x)

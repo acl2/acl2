@@ -30,9 +30,8 @@
 
 (in-package "VL")
 (include-book "preprocessor")
+(include-book "print-defines")
 (local (include-book "../../util/arithmetic"))
-
-(program)
 
 ;; This will get run any time the book is included.
 (make-event (prog2$ (cw "preprocessor-tests.lisp is being included.  You ~
@@ -40,11 +39,37 @@
                     (value '(value-triple :invisible)))
             :check-expansion t)
 
+(define vl-pps-defines ((x vl-defines-p))
+  (with-local-ps (vl-pp-defines x)))
 
+(define vl-pps-define-formals ((x vl-define-formallist-p))
+  (with-local-ps (vl-pp-define-formals x)))
+
+
+(define simple-test-defines
+  ;; Turn a simple alist like (("foo" . "1") ("bar" . "2")) into a proper
+  ;; vl-defines-p structure as if we'd just read:
+  ;;
+  ;;   `define foo 1
+  ;;   `define bar 2
+  ((al (and (alistp al)
+            (string-listp (alist-keys al))
+            (string-listp (alist-vals al)))))
+  :returns (defs vl-defines-p)
+  (b* (((when (atom al))
+        nil)
+       ((cons name val) (car al)))
+    (cons (make-vl-define :name name
+                          :body val
+                          :formals nil
+                          :loc *vl-fakeloc*)
+          (simple-test-defines (cdr al)))))
+
+(program)
 
 (defmacro preprocessor-must-ignore (input &key defines)
   `(make-event
-    (b* ((echars                     (vl-echarlist-from-str ,input))
+    (b* ((echars (vl-echarlist-from-str ,input))
          ((mv successp ?defs ?filemap output state)
           (vl-preprocess echars
                          :defines ,defines
@@ -72,7 +97,7 @@
 
 (defmacro preprocessor-basic-test (&key input defines output)
   `(make-event
-    (b* ((echars                           (vl-echarlist-from-str ,input))
+    (b* ((echars (vl-echarlist-from-str ,input))
          ((mv successp ?defs ?filemap output state)
           (vl-preprocess echars
                          :defines ,defines
@@ -95,31 +120,31 @@
            more random text
          `endif"
  :output ""
- :defines nil)
-
-
-
+ :defines (simple-test-defines nil))
 
 (preprocessor-basic-test
  :input "`ifdef foo 1 `elsif bar 2 `else 3 `endif"
  :output " 3 "
- :defines nil)
+ :defines (simple-test-defines nil))
 
 (preprocessor-basic-test
  :input "`ifdef foo 1 `elsif bar 2 `else 3 `endif"
  :output " 1 "
- :defines (list (cons "foo" (vl-echarlist-from-str "value of foo"))))
+ :defines (simple-test-defines
+           '(("foo" . "value of foo"))))
 
 (preprocessor-basic-test
  :input "`ifdef foo 1 `elsif bar 2 `else 3 `endif"
  :output " 1 "
- :defines (list (cons "foo" (vl-echarlist-from-str "value of foo"))
-                (cons "bar" (vl-echarlist-from-str "value of bar"))))
+ :defines (simple-test-defines
+           '(("foo" . "value of foo")
+             ("bar" . "value of bar"))))
 
 (preprocessor-basic-test
  :input "`ifdef foo 1 `elsif bar 2 `else 3 `endif"
  :output " 2 "
- :defines (list (cons "bar" (vl-echarlist-from-str "value of bar"))))
+ :defines (simple-test-defines
+           '(("bar" . "value of bar"))))
 
 (preprocessor-basic-test
  :input (cat "`ifdef outer "
@@ -128,8 +153,9 @@
              "`else 5 "
              "`endif")
  :output "  1  "
- :defines (list (cons "outer" (vl-echarlist-from-str "1"))
-                (cons "foo"   (vl-echarlist-from-str "1"))))
+ :defines (simple-test-defines
+           '(("outer" . "1")
+             ("foo"   . "1"))))
 
 (preprocessor-basic-test
  :input (cat "`ifdef outer "
@@ -138,10 +164,11 @@
              "`else 5 "
              "`endif")
  :output "  1  "
- :defines (list (cons "outer" (vl-echarlist-from-str "1"))
-                (cons "foo"   (vl-echarlist-from-str "1"))
-                (cons "bar"   (vl-echarlist-from-str "1"))
-                (cons "baz"   (vl-echarlist-from-str "1"))))
+ :defines (simple-test-defines
+           '(("outer" . "1")
+             ("foo" . "1")
+             ("bar" . "1")
+             ("baz" . "1"))))
 
 (preprocessor-basic-test
  :input (cat "`ifdef outer "
@@ -150,8 +177,9 @@
              "`else 5 "
              "`endif")
  :output "  2  "
- :defines (list (cons "outer" (vl-echarlist-from-str "1"))
-                (cons "bar"   (vl-echarlist-from-str "1"))))
+ :defines (simple-test-defines
+           '(("outer" . "1")
+             ("bar"   . "1"))))
 
 (preprocessor-basic-test
  :input (cat "`ifdef outer "
@@ -160,7 +188,8 @@
              "`else 5 "
              "`endif")
  :output "  3  "
- :defines (list (cons "outer" (vl-echarlist-from-str "1"))))
+ :defines (simple-test-defines
+           '(("outer" . "1"))))
 
 (preprocessor-basic-test
  :input (cat "`ifdef outer "
@@ -169,7 +198,8 @@
              "`else 5 "
              "`endif")
  :output " 4 "
- :defines (list (cons "baz" (vl-echarlist-from-str "1"))))
+ :defines (simple-test-defines
+           '(("baz" . "1"))))
 
 (preprocessor-basic-test
  :input (cat "`ifdef outer "
@@ -177,12 +207,8 @@
              "`elsif baz 4 "
              "`else 5 "
              "`endif")
- :output " 5 ")
-
-
-
-
-
+ :output " 5 "
+ :defines (simple-test-defines nil))
 
 
 (preprocessor-basic-test
@@ -190,7 +216,7 @@
 `ifdef foo 1 `endif"
  :output "
  1 "
- :defines nil)
+ :defines (simple-test-defines nil))
 
 (preprocessor-basic-test
  :input "`define foo 3
@@ -199,16 +225,14 @@
  :output "
 
 "
- :defines nil)
+ :defines (simple-test-defines nil))
 
 (preprocessor-basic-test
  :input "`define foo
 `ifdef foo 1 `endif"
  :output "
  1 "
- :defines nil)
-
-
+ :defines (simple-test-defines nil))
 
 
 (preprocessor-basic-test
@@ -220,22 +244,25 @@
 
 
   4"
- :defines nil)
+ :defines (simple-test-defines nil))
 
 
 
 
 (preprocessor-basic-test
  :input "`timescale 1 ns / 10 ps"
- :output "")
+ :output ""
+ :defines (simple-test-defines nil))
 
 (preprocessor-basic-test
  :input "`timescale 1ms/10fs"
- :output "")
+ :output ""
+ :defines (simple-test-defines nil))
 
 (preprocessor-basic-test
  :input "`timescale 1 s /100us"
- :output "")
+ :output ""
+ :defines (simple-test-defines nil))
 
 (preprocessor-basic-test
  :input "`timescale 1 s /
@@ -243,18 +270,21 @@
       1
 
               s"
- :output "")
+ :output ""
+ :defines (simple-test-defines nil))
 
 
 
 (preprocessor-basic-test
  :input "this is some `resetall text"
- :output "this is some  text")
+ :output "this is some  text"
+ :defines (simple-test-defines nil))
 
 
 (preprocessor-basic-test
  :input "this is `celldefine some more `endcelldefine and some more"
- :output "this is  some more  and some more")
+ :output "this is  some more  and some more"
+ :defines (simple-test-defines nil))
 
 
 
@@ -274,11 +304,13 @@
  :input "//+VL test of special vl comments
 "
  :output " test of special vl comments
-")
+"
+ :defines (simple-test-defines nil))
 
 (preprocessor-basic-test
  :input "/*+VL test 2 of special vl comments */"
- :output " test 2 of special vl comments ")
+ :output " test 2 of special vl comments "
+ :defines (simple-test-defines nil))
 
 
 
@@ -286,43 +318,51 @@
  :input "//+VL test of special vl comments
 "
  :output " test of special vl comments
-")
+"
+ :defines (simple-test-defines nil))
 
 (preprocessor-basic-test
  :input "/*@VL foo */"
- :output "(* foo *)")
+ :output "(* foo *)"
+ :defines (simple-test-defines nil))
 
 (preprocessor-basic-test
  :input "/*@VL foo, bar */"
- :output "(* foo, bar *)")
+ :output "(* foo, bar *)"
+ :defines (simple-test-defines nil))
 
 (preprocessor-basic-test
  :input "//@VL foo, bar"
- :output "(* foo, bar*)")
+ :output "(* foo, bar*)"
+ :defines (simple-test-defines nil))
 
 
 (preprocessor-basic-test
  :input "//@VL foo, bar  // wow, a comment"
- :output "(* foo, bar  *)// wow, a comment")
+ :output "(* foo, bar  *)// wow, a comment"
+ :defines (simple-test-defines nil))
 
 
 (preprocessor-basic-test
  :input "//@VL foo, bar  /* a multiline one
 too */"
  :output "(* foo, bar  *)/* a multiline one
-too */")
+too */"
+ :defines (simple-test-defines nil))
 
 (preprocessor-basic-test
  :input "//@VL foo, bar  // wow, a comment
 blah blah"
  :output "(* foo, bar  *)// wow, a comment
-blah blah")
+blah blah"
+ :defines (simple-test-defines nil))
 
 (preprocessor-basic-test
  :input "//@VL foo // wow, a comment
 blah blah"
  :output "(* foo *)// wow, a comment
-blah blah")
+blah blah"
+ :defines (simple-test-defines nil))
 
 
 
@@ -330,7 +370,8 @@ blah blah")
  :input "`include \"test.txt\""
  :output "// this is used in preprocessor-tests.lisp
 // do not delete it
-")
+"
+ :defines (simple-test-defines nil))
 
 
 
@@ -343,7 +384,8 @@ blah blah")
 //+VL assign w = `foo" ;
  :output "
 
- assign w =  1")
+ assign w =  1"
+ :defines (simple-test-defines nil))
 
 
 (preprocessor-basic-test
@@ -356,7 +398,8 @@ assign w = `foo ;
 
 
 assign w =  1 ;
-")
+"
+ :defines (simple-test-defines nil))
 
 
 (preprocessor-basic-test
@@ -365,7 +408,8 @@ assign w =  1 ;
 /*@VL FOO = `foo */ assign bar = 2;"
  :output "
 
-(* FOO =  1 *) assign bar = 2;")
+(* FOO =  1 *) assign bar = 2;"
+ :defines (simple-test-defines nil))
 
 
 (preprocessor-basic-test
@@ -376,5 +420,73 @@ assign bar = 2;"
  :output "
 
 (* FOO =  1*)
-assign bar = 2;")
+assign bar = 2;"
+ :defines (simple-test-defines nil))
+
+
+#||
+(trace$ (vl-expand-define
+         :entry
+         (list 'vl-expand-define
+               name
+               :defines (vl-pps-defines defines)
+               :echars (vl-echarlist->string echars))
+         :exit
+         (let ((values acl2::values))
+           (list 'vl-expand-define :okp (first values)
+                 :new-echars (vl-echarlist->string (second values))))))
+
+(trace$ vl-find-define)
+
+(trace$ (vl-substitute-into-macro-text
+        :entry
+        (list 'vl-substitute-into-macro-text
+              name
+              :body body
+              :subst subst
+              :acc (reverse (vl-echarlist->string acc)))
+        :exit
+        (let ((values acl2::values))
+          (list 'vl-substitute-into-macro-text
+                name
+                :okp (first values)
+                :acc (reverse (vl-echarlist->string acc))))))
+
+
+(trace$ (vl-line-up-define-formals-and-actuals
+         :entry
+         (list 'vl-line-up-define-formals-and-actuals
+               name
+               :formals (vl-pps-define-formals formals)
+               :actuals actuals)
+         :exit
+         (let ((values acl2::values))
+           (list 'vl-line-up-define-formals-and-actuals
+                 :okp (first values)
+                 :subst (second values)))))
+||#
+
+(preprocessor-basic-test
+ :input "`define foo(a) a
+assign b = `foo(c);"
+ :output "
+assign b =  c;"
+ :defines (simple-test-defines nil))
+
+(preprocessor-basic-test
+ :input "`define foo(a) a+b
+assign b = `foo(c);"
+ :output "
+assign b =  c+b;"
+ :defines (simple-test-defines nil))
+
+(preprocessor-basic-test
+ :input "`define foo(a) a /* la, la */ +b // la, la
+assign b = `foo(c /* blah, la, la */
+// more comments, la, la
+);"
+ :output "
+assign b =  c /* la, la */ +b ;"
+ :defines (simple-test-defines nil))
+
 

@@ -734,7 +734,6 @@ its arguments, if necessary.</p>"
                                 acl2::cancel_plus-equal-correct
                                 acl2::CAR-WHEN-ALL-EQUALP
                                 CONSP-WHEN-MEMBER-EQUAL-OF-VL-MODALIST-P
-                                CONSP-WHEN-MEMBER-EQUAL-OF-VL-DEFINES-P
                                 CONSP-WHEN-MEMBER-EQUAL-OF-VL-COMMENTMAP-P
                                 CONSP-WHEN-MEMBER-EQUAL-OF-CONS-LISTP
                                 CONSP-WHEN-MEMBER-EQUAL-OF-VL-ATTS-P
@@ -2120,24 +2119,24 @@ expression into a string."
      (vl-print-markup "</a>"))))
 
 (define vl-pp-modulename-link ((name stringp)
-                               (mods vl-modulelist-p)
-                               (modalist (equal modalist (vl-modalist mods)))
+                               (ss   vl-scopestack-p)
                                &key (ps 'ps))
   ;; Assumes HTML mode.
-  (b* ((name       (string-fix name))
-       (target-mod (vl-fast-find-module name mods modalist))
-       ((unless target-mod)
+  (b* ((name (string-fix name))
+       (def  (vl-scopestack-find-definition name ss))
+       ((unless def)
         ;; I sometimes hit this case when pretty-printing the source for modules
         ;; that were thrown away.
-        (prog2$ (cw "Warning: linking to module ~s0, which isn't in the modalist.~%"
-                    name)
+        (prog2$ (cw "Warning: instance of undefined module ~s0?~%" name)
                 (vl-print-modname name)))
-       (origname (vl-module->origname target-mod)))
+       ((unless (eq (tag def) :vl-module))
+        (prog2$ (cw "Warning: module instance of non-module ~s0? (~s1)~%" name (tag def))
+                (vl-print-modname name)))
+       (origname (vl-module->origname def)))
     (vl-pp-modulename-link-aux name origname)))
 
-(define vl-pp-modinst ((x        vl-modinst-p)
-                       (mods     vl-modulelist-p)
-                       (modalist (equal modalist (vl-modalist mods)))
+(define vl-pp-modinst ((x  vl-modinst-p)
+                       (ss vl-scopestack-p)
                        &key (ps 'ps))
   (b* (((vl-modinst x) x)
        (have-params-p (vl-paramargs-case x.paramargs
@@ -2153,7 +2152,7 @@ expression into a string."
                    ps)
                  (vl-print "  ")
                  (if (vl-ps->htmlp)
-                     (vl-pp-modulename-link x.modname mods modalist)
+                     (vl-pp-modulename-link x.modname ss)
                    (vl-print-modname x.modname))
                  (if (not have-params-p)
                      ps
@@ -2175,14 +2174,13 @@ expression into a string."
                  (vl-pp-arguments x.portargs)
                  (vl-println ") ;")))))
 
-(define vl-pp-modinstlist ((x        vl-modinstlist-p)
-                           (mods     vl-modulelist-p)
-                           (modalist (equal modalist (vl-modalist mods)))
+(define vl-pp-modinstlist ((x  vl-modinstlist-p)
+                           (ss vl-scopestack-p)
                            &key (ps 'ps))
   (if (atom x)
       ps
-    (vl-ps-seq (vl-pp-modinst (car x) mods modalist)
-               (vl-pp-modinstlist (cdr x) mods modalist))))
+    (vl-ps-seq (vl-pp-modinst (car x) ss)
+               (vl-pp-modinstlist (cdr x) ss))))
 
 (define vl-gatetype-string ((x vl-gatetype-p))
   :returns (str stringp :rule-classes :type-prescription)
@@ -2780,9 +2778,7 @@ like it would be valid to print @('reg').</p>"
 
 (define vl-pp-module
   ((x    vl-module-p     "Module to pretty-print.")
-   (mods vl-modulelist-p "A list of all modules; only used for hyperlinking in
-                          HTML mode.")
-   (modalist (equal modalist (vl-modalist mods)))
+   (ss   vl-scopestack-p)
    &key (ps 'ps))
   :parents (verilog-printing)
   :short "Pretty-print a module to @(see ps)."
@@ -2790,12 +2786,13 @@ like it would be valid to print @('reg').</p>"
 the order of module elements and its comments.  For interactive use, you may
 want @(see vl-pps-module) or @(see vl-ppcs-module), which write to a string
 instead of @(see ps).</p>"
-  (b* (((vl-module x) x))
+  (b* (((vl-module x) (vl-module-fix x))
+       (ss (vl-scopestack-push x ss)))
     (vl-ps-seq (vl-pp-set-portnames x.portdecls)
                (if x.atts (vl-pp-atts x.atts) ps)
                (vl-ps-span "vl_key" (vl-print "module "))
                (if (vl-ps->htmlp)
-                   (vl-pp-modulename-link x.name mods modalist)
+                   (vl-pp-modulename-link x.name ss)
                  (vl-print-modname x.name))
                (vl-print " (")
                (vl-pp-portlist x.ports)
@@ -2806,7 +2803,7 @@ instead of @(see ps).</p>"
                (vl-pp-fundecllist x.fundecls) ;; put them here, so they can refer to declared wires
                (vl-pp-taskdecllist x.taskdecls)
                (vl-pp-assignlist x.assigns)
-               (vl-pp-modinstlist x.modinsts mods modalist)
+               (vl-pp-modinstlist x.modinsts ss)
                (vl-pp-gateinstlist x.gateinsts)
                (vl-pp-alwayslist x.alwayses)
                (vl-pp-initiallist x.initials)
@@ -2818,17 +2815,28 @@ instead of @(see ps).</p>"
   :parents (verilog-printing)
   :short "Pretty-print a module to a plain-text string."
   :long "<p>@(call vl-pps-module) pretty-prints the @(see vl-module-p) @('x')
-into a plain-text string.  You may prefer @(see vl-ppcs-module) which preserves
-the order of module elements and its comments.</p>"
-  ;; We exploit the fact that the mods/modalist are only needed in HTML mode to
-  ;; avoid generating it or requiring it as an argument.
-  (with-local-ps (vl-pp-module x nil nil)))
+into a plain-text string.</p>
 
-(define vl-pp-modulelist ((x vl-modulelist-p) &key (ps 'ps))
+<p>Alternatives:</p>
+
+<ul>
+
+<li>@(see vl-ppcs-module) preserves the order of module elements and its
+comments.</li>
+
+<li>@(see vl-pp-module) can pretty-print @('x') into a plain-text or HTML
+string.  For proper printing it requires a @(see scopestack).</li>
+
+</ul>"
+  (with-local-ps (vl-pp-module x nil)))
+
+(define vl-pp-modulelist ((x vl-modulelist-p)
+                          (ss vl-scopestack-p)
+                          &key (ps 'ps))
   (if (atom x)
       ps
-    (vl-ps-seq (vl-pp-module (car x) nil nil)
-               (vl-pp-modulelist (cdr x)))))
+    (vl-ps-seq (vl-pp-module (car x) ss)
+               (vl-pp-modulelist (cdr x) ss))))
 
 (define vl-pps-modulelist ((x vl-modulelist-p))
   :returns (str stringp :rule-classes :type-prescription)
@@ -2836,7 +2844,7 @@ the order of module elements and its comments.</p>"
   :short "Pretty-print a list of modules to a plain-text string."
   :long "<p>See also @(see vl-ppcs-modulelist), which preserves the order of
 module elements and its comments.</p>"
-  (with-local-ps (vl-pp-modulelist x)))
+  (with-local-ps (vl-pp-modulelist x nil)))
 
 
 
@@ -3022,12 +3030,11 @@ module elements and its comments.</p>"
      (vl-ps-span "vl_key" (vl-print-str (vl-direction-string x.dir)))
      (vl-print " ")
      (if x.expr
-         (vl-ps-seq
-          (vl-print ".")
-          (vl-print-wirename x.name)
-          (vl-print "(")
-          (vl-pp-expr x.expr)
-          (vl-print ")"))
+         (vl-ps-seq (vl-print ".")
+                    (vl-print-wirename x.name)
+                    (vl-print "(")
+                    (vl-pp-expr x.expr)
+                    (vl-print ")"))
        (vl-print-wirename x.name))
      (vl-println " ;"))))
 
@@ -3039,10 +3046,10 @@ module elements and its comments.</p>"
 
 (define vl-pp-modport ((x vl-modport-p) &key (ps 'ps))
   (b* (((vl-modport x)))
-    (vl-ps-seq
-     (if x.atts (vl-pp-atts x.atts) ps)
-     (vl-ps-span "vl_key" (vl-print "  modport "))
-     (vl-print-wirename x.name)
-     (vl-print " ( ")
-     (vl-pp-modport-portlist x.ports)
-     (vl-println " );"))))
+    (vl-ps-seq (if x.atts (vl-pp-atts x.atts) ps)
+               (vl-ps-span "vl_key" (vl-print "  modport "))
+               (vl-print-wirename x.name)
+               (vl-print " ( ")
+               (vl-pp-modport-portlist x.ports)
+               (vl-println " );")
+               (vl-println ""))))

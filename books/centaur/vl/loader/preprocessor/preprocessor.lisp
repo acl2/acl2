@@ -30,6 +30,7 @@
 
 (in-package "VL")
 (include-book "defines")
+(include-book "print-defines")
 (include-book "../filemap")
 (include-book "../../util/cwtime")
 (include-book "../read-file")
@@ -80,8 +81,9 @@
   :long "<p>First, a warning.  In general, the Verilog specification does not
 cover how preprocessing is to be done in a very complete way.  We are left with
 many subtle questions about how the preprocessor should behave, and to resolve
-these questions we have sometimes just given test cases to Verilog-XL.  This is
-not a very satisfying state of affairs.</p>
+these questions we have sometimes just given test cases to simulators such as
+Verilog-XL, NCVerilog, and VCS.  This is not a very satisfying state of
+affairs.</p>
 
 <h4>Supported Directives</h4>
 
@@ -97,17 +99,16 @@ not a very satisfying state of affairs.</p>
  <li>undef</li>
 </ul>
 
-<p>However, we do not currently accept definitions with arguments, e.g.,
-@('`max(a,b)'), and we place some (reasonable) restrictions on the above
-macros.  For instance, we do not allow definitions to include most compiler
-directives---we allow the body of @('`foo') to include @('`bar'), but not
-@('`endif').  These restrictions are intended to ensure that we do not
-\"mispreprocess\" anything.  See @(see preprocessor-ifdef-minutia) for some
-details and additional discussion.</p>
+<p>We place some (reasonable) restrictions on the above macros.  For instance,
+we do not allow definitions to include most compiler directives&mdash;we allow
+the body of @('`foo') to include @('`bar'), but not @('`endif').  These
+restrictions are intended to ensure that we do not \"mispreprocess\" anything.
+See @(see preprocessor-ifdef-minutia) for some details and additional
+discussion.</p>
 
-<p>We also have pretty good support for @('include') directives.  This is quite
-underspecified, and we have basically tried to mimic the behavior of Verilog-XL
-and NCVerilog.  See also @(see preprocessor-include-minutia).</p>
+<p>We also have pretty good support for @('`include') directives.  This is
+quite underspecified, and we have basically tried to mimic the behavior of
+Verilog-XL and NCVerilog.  See also @(see preprocessor-include-minutia).</p>
 
 
 <h4>Ignored Directives</h4>
@@ -115,10 +116,10 @@ and NCVerilog.  See also @(see preprocessor-include-minutia).</p>
 <p>We also \"support\" certain directives by <b>ignoring</b> them.</p>
 
 <ul>
- <li>celldefine</li>
- <li>endcelldefine</li>
- <li>resetall</li>
- <li>timescale</li>
+ <li>@('`celldefine')</li>
+ <li>@('`endcelldefine')</li>
+ <li>@('`resetall')</li>
+ <li>@('`timescale')</li>
 </ul>
 
 <p>When we say we ignore these directives, we mean that the preprocessor
@@ -155,18 +156,18 @@ a \"drop-in replacement\" for the unsimplified Verilog.</p>
 <p>We currently make no attempt to support:</p>
 
 <ul>
- <li>`begin_keywords</li>
- <li>`default_nettype</li>
- <li>`end_keywords</li>
- <li>`line</li>
- <li>`pragma</li>
- <li>`nounconnected_drive</li>
- <li>`unconnected_drive</li>
+ <li>@('`begin_keywords')</li>
+ <li>@('`default_nettype')</li>
+ <li>@('`end_keywords')</li>
+ <li>@('`line')</li>
+ <li>@('`pragma')</li>
+ <li>@('`nounconnected_drive')</li>
+ <li>@('`unconnected_drive')</li>
 </ul>
 
-<p>It might be good to ignore @('begin_keywords \"1364-2005\"') and just cause
+<p>It might be good to ignore @('`begin_keywords \"1364-2005\"') and just cause
 an error if a different set of keywords is requested.  We could also ignore
-@('end_keywords').  But trying to add anything more sophisticated than this
+@('`end_keywords').  But trying to add anything more sophisticated than this
 seems very tricky and messy.</p>
 
 <p>It would be good to add proper support for @('`line').  Failing that, it
@@ -174,12 +175,12 @@ would be quite easy to just ignore it, like the other ignored directives.  We
 should probably also ignore @('`pragma') directives, and this should be easy to
 do.</p>
 
-<p>It would be somewhat difficult to support @('default_nettype') and
-@('unconnected_drive').  Probably the thing to do would be build a table of
+<p>It would be somewhat difficult to support @('`default_nettype') and
+@('`unconnected_drive').  Probably the thing to do would be build a table of
 when the declarations are made, and then use some trick like comment injection
 to mark modules appropriately.  We would then have to change the @(see
-make-implicit-wires) transform to consider the @('default_nettype') for the
-module, and probably use a separate transform to handle @('unconnected_drive')
+make-implicit-wires) transform to consider the @('`default_nettype') for the
+module, and probably use a separate transform to handle @('`unconnected_drive')
 stuff.</p>")
 
 (local (xdoc::set-default-parents preprocessor))
@@ -217,8 +218,8 @@ stuff.</p>")
 these, but we need to recognize all of them so that we can complain when we
 run into ones we don't support, etc.</p>
 
-<p><b>Centaur Extension</b>.  We also add @('centaur_define'), which we treat
-exactly as @('define').</p>")
+<p><b>Centaur Extension</b>.  We also add @('`centaur_define'), which we treat
+exactly as @('`define').</p>")
 
 
 (defxdoc preprocessor-ifdef-minutia
@@ -612,14 +613,14 @@ the defines table, and make the appropriate changes to the @('istack') and
             istack activep echars))
 
        ((when (equal directive "ifdef"))
-        (let* ((this-satisfiedp (consp (vl-lookup-in-defines name defines)))
+        (let* ((this-satisfiedp (consp (vl-find-define name defines)))
                (new-iframe      (vl-iframe activep this-satisfiedp nil))
                (new-istack      (cons new-iframe istack))
                (new-activep     (and activep this-satisfiedp)))
           (mv t new-istack new-activep remainder)))
 
        ((when (equal directive "ifndef"))
-        (let* ((this-satisfiedp (not (vl-lookup-in-defines name defines)))
+        (let* ((this-satisfiedp (not (vl-find-define name defines)))
                (new-iframe      (vl-iframe activep this-satisfiedp nil))
                (new-istack      (cons new-iframe istack))
                (new-activep     (and activep this-satisfiedp)))
@@ -637,7 +638,7 @@ the defines table, and make the appropriate changes to the @('istack') and
                 (vl-location-string loc))
             istack activep echars))
 
-       (this-satisfiedp   (consp (vl-lookup-in-defines name defines)))
+       (this-satisfiedp   (consp (vl-find-define name defines)))
        (iframe            (car istack))
        (prev-satisfiedp   (vl-iframe->some-thing-satisfiedp iframe))
        (initially-activep (vl-iframe->initially-activep iframe))
@@ -738,7 +739,28 @@ the defines table, and make the appropriate changes to the @('istack') and
   (mv (successp  booleanp       :rule-classes :type-prescription)
       (prefix    vl-echarlist-p :hyp (force (vl-echarlist-p echars)))
       (remainder vl-echarlist-p :hyp (force (vl-echarlist-p echars))))
-  :long "<p>This is really tricky!  See @(see preprocessor-ifdef-minutia).</p>"
+  :long "<p>This is really tricky!  See @(see preprocessor-ifdef-minutia).</p>
+
+<p>The initial @('echars') are everything past the macro name, e.g., for:</p>
+
+@({ `define foo blah... })
+
+<p>the initial @('echars') will be @('[space]blah...'), and for</p>
+
+@({ `define max(a,b) blah... })
+
+<p>the initial @('echars') will be @('(a,b) blah...').  NCVerilog allows
+newlines within the macro arguments, e.g., it allows you to write things
+like</p>
+
+@({
+     `define sum(a,
+                    b) a+b
+})
+
+<p>But VCS rejects this.  I think it's reasonable to reject this, too, so we
+basically just read the whole line, then split it up into any arguments versus
+non-arguments pieces.</p>"
 
   (b* (((when (atom echars))
         ;; We allow macros to be defined on the last line of the file;
@@ -946,6 +968,93 @@ the defines table, and make the appropriate changes to the @('istack') and
 
 
 
+
+(define vl-parse-define-formal-arguments
+  ;; Match list_of_formal_arguments, also eating the close paren and returning
+  ;; the remaining text after the close paren.
+  :parents (vl-split-define-text)
+  ((text         vl-echarlist-p "Text after the opening paren, or after some comma.")
+   (config       vl-loadconfig-p)
+   (starting-loc vl-location-p  "Context for error messages."))
+  :returns
+  (mv (successp booleanp :rule-classes :type-prescription)
+      (formals  vl-define-formallist-p)
+      (body     vl-echarlist-p "Remaining characters after the closing paren."
+                :hyp (force (vl-echarlist-p text))))
+  (b* (((when (atom text))
+        (mv (cw "Preprocessor error (~s0): `define arguments are not closed.~%"
+                (vl-location-string starting-loc))
+            nil nil))
+       ;; This is a mess -- without a lexer we're always having to eat whitespace.
+       ((mv ?ws rest) (vl-read-while-whitespace text))
+       ((mv id rest)  (vl-read-simple-identifier rest))
+       ((unless id)
+        (mv (cw "Preprocessor error (~s0): invalid `define argument name~%"
+                (vl-location-string (vl-echar->loc (car text))))
+            nil nil))
+
+       (name1 (vl-echarlist->string id))
+       ;; Prohibit using keywords as arguments.  Of course, the valid keywords
+       ;; are governed by the Verilog edition... blaaah...
+       ((when (vl-keyword-lookup name1 (vl-lexstate->kwdtable (vl-lexstate-init config))))
+        (mv (cw "Preprocessor error (~s0): keyword ~s1 not permitted as `define argument~%"
+                (vl-location-string (vl-echar->loc (car text)))
+                name1)
+            nil nil))
+
+       ((mv ?ws rest) (vl-read-while-whitespace rest))
+       ;; BOZO implement support for equal signs, default values... but that is
+       ;; going to be nasty, complex rules about what's allowed.  For now just
+       ;; skip it.
+       (formal1 (make-vl-define-formal :name name1 :default ""))
+
+       ((when (and (consp rest)
+                   (eql (vl-echar->char (car rest)) #\))))
+        ;; End of arguments, woohoo.  Eat final closing paren and we're done.
+        (mv t (list formal1) (cdr rest)))
+
+       ((unless (and (consp rest)
+                     (eql (vl-echar->char (car rest)) #\,)))
+        (mv (cw "Preprocessor error (~s0): expected next `define argument or end of arguments.~%"
+                (vl-location-string (if (consp rest)
+                                        (vl-echar->loc (car rest))
+                                      ;; Blah, not quite right, probably close enough to be useful
+                                      (vl-echar->loc (car text)))))
+            nil nil))
+
+       ;; Else, found a comma: eat it, recur, etc.
+       (starting-loc (vl-echar->loc (car rest)))
+       (rest         (cdr rest))
+       ((mv rest-okp rest-formals body)
+        (vl-parse-define-formal-arguments rest config starting-loc))
+       ((unless rest-okp)
+        ;; Already printed an error message.
+        (mv nil nil nil))
+       (formals (cons formal1 rest-formals)))
+    (mv t formals body)))
+
+(define vl-split-define-text
+  :short "Split up the rest of a define line into macro arguments and macro text."
+  ((text vl-echarlist-p "The text that occurs after @('`define foo'), perhaps
+                         including any macro arguments such as @('(a,b)') in
+                         the case of macros such as @('`define max(a,b) ...').")
+   (config vl-loadconfig-p))
+  :returns
+  (mv (successp booleanp :rule-classes :type-prescription)
+      (formals  vl-define-formallist-p)
+      (body     vl-echarlist-p "Remaining characters after any macro arguments."
+                :hyp (force (vl-echarlist-p text))))
+  (b* (((unless (and (consp text)
+                     (eql (vl-echar->char (car text)) #\()))
+        ;; SystemVerilog-2012: Page 640: "If formal arguments are used [...]
+        ;; the left parenthesis shall follow the text macro name immediately,
+        ;; with no space in between."  Since we have no opening paren, this
+        ;; macro does NOT have arguments, and all text belongs to the macro
+        ;; itself.
+        (mv t nil (vl-echarlist-fix text))))
+    ;; Else, eat the opening paren and go do the actual parsing.
+    (vl-parse-define-formal-arguments (cdr text) config (vl-echar->loc (car text)))))
+
 (define vl-process-define
   :short "Handler for @('define') directives."
 
@@ -954,11 +1063,9 @@ the defines table, and make the appropriate changes to the @('istack') and
    (defines vl-defines-p)
    (activep booleanp)
    (config  vl-loadconfig-p))
-
   :returns
   (mv (successp)
-      (new-defines vl-defines-p :hyp (and (force (vl-echarlist-p echars))
-                                          (force (vl-defines-p defines))))
+      (new-defines vl-defines-p)
       (remainder   vl-echarlist-p :hyp (force (vl-echarlist-p echars))))
 
   :long "<p>We assume that @('`define') has just been read and @('echars') is
@@ -966,7 +1073,8 @@ the text which comes right after the @('`define') directive.  We read the name
 and text for this new macro definition, and update the defines table
 appropriately if @('activep') is set.</p>"
 
-  (b* (((mv & remainder)      (vl-read-while-whitespace echars))
+  (b* ((defines (vl-defines-fix defines))
+       ((mv & remainder)      (vl-read-while-whitespace echars))
        ((mv name & remainder) (vl-read-identifier remainder))
 
        ((when (not name))
@@ -995,21 +1103,42 @@ appropriately if @('activep') is set.</p>"
         ;; `endif, etc. in the definition.
         (mv t defines remainder))
 
-       (lookup
-        (vl-lookup-in-defines name defines))
+       ((mv okp formals body) (vl-split-define-text text config))
+       ((unless okp)
+        ;; Error message was already printed, so we just need to return
+        ;; failure.
+        (mv nil defines remainder))
 
-       (- (if (and lookup
-                   (not (equal (str::trim (vl-echarlist->string (cdr lookup)))
-                               (str::trim (vl-echarlist->string text)))))
-              (cw "Preprocessor warning (~s0): redefining ~s1 from ~s2 to ~s3.~%"
-                  (vl-location-string loc)
-                  name
-                  (vl-echarlist->string (cdr lookup))
-                  (vl-echarlist->string text))
-            nil)))
-    (mv t
-        (acons name text defines)
-        remainder))
+       (formal-names (vl-define-formallist->names formals))
+       ((unless (uniquep formal-names))
+        (mv (cw "Preprocessor error (~s0): `define ~s1 has repeats arguments ~&2."
+                (vl-location-string loc) name (duplicated-members formal-names))
+            defines echars))
+
+       (new-def  (make-vl-define :name    name
+                                 :formals formals
+                                 :body    (vl-echarlist->string body)
+                                 :loc     loc))
+
+       (prev-def (vl-find-define name defines))
+       (- (or (not prev-def)
+              (b* ((new-str (vl-pps-define new-def))
+                   (old-str (vl-pps-define prev-def))
+                   ((when (equal (str::trim new-str) (str::trim old-str)))
+                    ;; Don't warn, redefining it in exactly the same way, modulo
+                    ;; whitespace.
+                    t))
+              (cw "Preprocessor warning (~s0): redefining ~s1:~% ~
+                    - Was ~s2~% ~
+                    - Now ~s3~%"
+                  (vl-location-string loc) name old-str new-str))))
+
+       (defines  (if prev-def
+                     (vl-delete-define name defines)
+                   defines))
+       (defines  (vl-add-define new-def defines)))
+
+    (mv t defines remainder))
 
   ///
   (defthm true-listp-of-vl-process-define-remainder
@@ -1030,6 +1159,516 @@ appropriately if @('activep') is set.</p>"
     :hints(("Goal" :in-theory (disable (force))))))
 
 
+(define vl-parse-define-actual
+  :parents (vl-expand-define)
+  :short "Collect a single argument to a text macro, like @('`max(a+b, c)')."
+  :long "<p>SystemVerilog-2012 gives the following grammar (Page 641, Syntax
+22-3):</p>
+
+@({
+     text_macro_usage ::= text_macro_identifier [ '(' list_of_actual_arguments ')' ]
+
+     list_of_actual_arguments ::= actual_argument { ',' actual_argument }
+
+     actual_argument ::= expression
+})
+
+<p>But this last part is clearly total bullshit.  For instance on page 643 we
+are told:</p>
+
+<blockquote>\"However, one can define an empty text macro, say @('`EMPTY'), and
+use that as an actual argument.  This will be substituted in place of the
+formal argument and will be replaced by empty text after expansion of the empty
+text macro.\"</blockquote>
+
+<p>It seems very clear that the empty string is not an expression.  Moreover,
+all of this discussion of the preprocessor seems quite deeply rooted in a
+notion of textual substitution.  Accordingly, the idea that
+@('actual_argument ::= expression') seems to be very much confusing different
+levels of representation (e.g., expressions versus text) and just cannot be
+correct at all.</p>
+
+<p>That's a bummer because we need to allow <i>something</i> to occur in these
+actuals, and that something could be some rather complicated piece of text.
+Interestingly, both NCVerilog and VCS permit uses of macros such as:</p>
+
+@({
+   `define identity(a) a
+   module foo;
+     `identity(reg foo;)
+   endmodule
+})
+
+<p>However they complain about too many macro arguments on examples such as:</p>
+
+@({
+    `identity(reg bar, baz;)
+})
+
+<p>Meanwhile they happily accept syntax such as:</p>
+
+@({
+    `identity(2 + {1'b0, 1'b1})
+})
+
+<p>On Page 641 of the spec, we find some hints about what might be permitted
+here:</p>
+
+<blockquote>\"Actual arguments and defaults shall not contain comma or right
+parenthesis characters outside matched pairs of left and right parentheses
+@('()'), square brackets @('[]'), braces @('{}'), double quotes @('\"'), or an
+escaped identifier.\"</blockquote>
+
+<p>This paragraph seems to suggest a kind of algorithm for deciding where the
+actual text ends, roughly: keep track of matched pairs of these special
+characters, be smart enough to recognize strings and escaped identifiers, and
+stop when you see a comma or right parenthesis.</p>
+
+<p>I implement such an algorithm here, but of course there is a great deal of
+room for ambiguity and confusion here, so this may well not be at all correct.
+The system tests (centaur/vl/systest) do try to test some tricky cases, but
+there may well be mismatches left.</p>"
+  ((name   stringp          "Name of macro being expanded, e.g., @('max'), for error messages.")
+   (echars vl-echarlist-p   "Text we're parsing, initially follows an open paren or comma.")
+   (config vl-loadconfig-p)
+   (loc    vl-location-p    "Location information in case of error messages.")
+   (stk    character-listp  "Stack of open paren/bracket/brace characters.")
+   (acc    vl-echarlist-p   "Text we've matched so far."))
+  :returns
+  (mv (successp  booleanp :rule-classes :type-prescription "Was there any error?")
+      (morep     booleanp :rule-classes :type-prescription "Is this the last actual?")
+      (actual    stringp  :rule-classes :type-prescription "Contents of the actual as a string.")
+      (remainder vl-echarlist-p "Remaining characters past the comma/closing paren."
+                 :hyp (force (vl-echarlist-p echars))))
+  (b* (((when (atom echars))
+        ;; Error because we expect to eventually find a closing paren.
+        (mv (cw "Preprocessor error (~s0): unexpected end of input while processing ~
+                 arguments to `~s1." (vl-location-string loc) name)
+            nil "" echars))
+
+       (char1 (vl-echar->char (car echars)))
+       (loc1  (vl-echar->loc  (car echars)))
+
+       ((when (eql char1 #\"))
+        ;; BOZO this isn't quite right -- it assumes Verilog-2012 string
+        ;; literal syntax even if we're trying to parse Verilog-2005 code.  Fix
+        ;; it if we ever care.
+        (b* (((mv str prefix remainder) (vl-read-string echars (vl-lexstate-init config)))
+             ((unless str)
+              (mv (cw "Preprocessor error (~s0): bad string literal while processing ~
+                       arguments to `~s1." (vl-location-string loc1) name)
+                  nil "" echars))
+             (acc (revappend prefix acc)))
+          (vl-parse-define-actual name remainder config loc stk acc)))
+
+       ((when (eql char1 #\\))
+        (b* (((mv name prefix remainder) (vl-read-escaped-identifier echars))
+             ((unless name)
+              (mv (cw "Preprocessor error (~s0): stray backslash while processing ~
+                       arguments to `~s1." (vl-location-string loc1) name)
+                  nil "" echars))
+             (acc (revappend prefix acc)))
+          (vl-parse-define-actual name remainder config loc stk acc)))
+
+       ((when (eql char1 #\/))
+        ;; NCVerilog and VCS seem to skip over comments here, so we'll do the same...
+        (b* (((when (vl-matches-string-p "//" echars))
+              ;; start of a single-line comment; read until end of line.
+              (b* (((mv successp ?prefix remainder)
+                    (vl-read-until-literal *nls* (cddr echars)))
+                   ((unless successp)
+                    (mv (cw "Preprocessor error (~s0): unexpected EOF while reading ~
+                             macro arguments to ~s1.~%" (vl-location-string loc1) name)
+                        nil "" echars)))
+                ;; It might be nice to preserve the comment.  On the other
+                ;; hand, that would possibly replicate the comment in many
+                ;; places.  I think it seems reasonable to just drop it.
+                (vl-parse-define-actual name remainder config loc stk acc)))
+
+             ((when (vl-matches-string-p "/*" echars))
+              (b* (((mv successp ?prefix remainder)
+                    (vl-read-through-literal "*/" (cddr echars)))
+                   ((unless successp)
+                    (mv (cw "Preprocessor error (~s0): block comment is never closed.~%"
+                            (vl-location-string (vl-echar->loc (car echars))))
+                        nil "" echars)))
+                ;; As with single-line comments, we'll just drop the comment.
+                (vl-parse-define-actual name remainder config loc stk acc))))
+
+          ;; Otherwise, just an ordinary division operation, accumulate it as 
+          ;; usual, no effect on the stk.
+          (vl-parse-define-actual name (cdr echars) config loc stk (cons (car echars) acc))))
+
+       ((when (member char1 '(#\( #\[ #\{)))
+        ;; Open bracket -- Fine, push it on the stack so we can balance it.
+        (b* ((stk (cons char1 stk))
+             (acc (cons (car echars) acc)))
+          (vl-parse-define-actual name (cdr echars) config loc stk acc)))
+
+       ((when (member char1 '(#\) #\] #\})))
+        ;; Close bracket or paren...
+        (b* (((when (and (eql char1 #\))
+                         (atom stk)))
+              ;; Closing right paren with no other brackets open means that we
+              ;; have reached the end of the arguments.
+              (mv t
+                  nil ;; Closing paren means no more arguments!
+                  (reverse (vl-echarlist->string acc))
+                  (cdr echars)))
+             ;; Otherwise, a closing bracket/paren/brace is only okay if a
+             ;; matching opening bracket/paren/brace is already open.
+             (matching-char (case char1 (#\) #\() (#\] #\[) (#\} #\{)))  ;; escape all the things
+             ((unless (and (consp stk)
+                           (eql (car stk) matching-char)))
+              (mv (cw "Preprocessor error (~s0): unbalanced ~s1 vs. ~s2 in arguments to `~s3."
+                      (vl-location-string loc1)
+                      (implode (list matching-char))
+                      (implode (list char1))
+                      name)
+                  nil "" echars))
+             ;; Else, fine, it was balanced
+             (stk (cdr stk))
+             (acc (cons (car echars) acc)))
+          (vl-parse-define-actual name (cdr echars) config loc stk acc)))
+
+       ((when (and (atom stk)
+                   (eql char1 #\,)))
+        ;; Comma encountered with no open braces/parents/brackets means that we
+        ;; have reached the end of this argument
+        (mv t
+            t ;; comma means there are more arguments
+            (reverse (vl-echarlist->string acc))
+            (cdr echars))))
+
+    ;; If we get here, then it wasn't any special character or it was a comma
+    ;; that happened to be in a bracket/paren/brace region, so we want to just
+    ;; accumulate it anyway.  Keep reading this actual.
+    (vl-parse-define-actual name (cdr echars) config loc stk (cons (car echars) acc)))
+  ///
+  (defthm acl2-count-of-vl-parse-define-actual
+    (b* (((mv successp ?morep ?actual remainder)
+          (vl-parse-define-actual name echars config loc stk acc)))
+      (implies successp
+               (< (acl2-count remainder)
+                  (acl2-count echars))))
+    :rule-classes ((:rewrite) (:linear))))
+
+
+(define vl-parse-define-actuals
+  :parents (vl-expand-define)
+  :short "Collect the arguments to a macro, like @('`max(a+b, c)')."
+  ((name   stringp          "Name of macro being expanded, e.g., @('max'), for error messages.")
+   (echars vl-echarlist-p   "Text that follows the initial open paren, or that follows a comma.")
+   (config vl-loadconfig-p)
+   (loc    vl-location-p    "Location information in case of error messages."))
+  :returns
+  (mv (successp  booleanp :rule-classes :type-prescription)
+      (actuals   string-listp)
+      (remainder vl-echarlist-p
+                 "Remainder of the input stream after eating all the actuals and also
+                  the closing paren."
+                 :hyp (force (vl-echarlist-p echars))))
+  (b* (((mv successp morep actual1 echars)
+        (vl-parse-define-actual name echars config loc nil nil))
+       ((unless successp)
+        ;; Already printed an error message.
+        (mv nil nil echars))
+       ((unless morep)
+        ;; That was the last formal.  We already ate the closing paren.
+        (mv t (list actual1) echars))
+       ((mv successp rest-actuals echars)
+        (vl-parse-define-actuals name echars config loc))
+       ((unless successp)
+        (mv nil nil echars)))
+    (mv t (cons actual1 rest-actuals) echars)))
+
+(define vl-check-remaining-formals-all-have-defaults
+  ((x    vl-define-formallist-p)
+   (name stringp       "Name of macro being expanded, context for error messages.")
+   (loc  vl-location-p "Location of macro being expanded, context for error messages."))
+  (b* (((when (atom x))
+        t)
+       ((vl-define-formal x1) (car x))
+       (has-default-p (not (equal "" (str::trim x1.default))))
+       ((unless has-default-p)
+        (cw "Preprocessor error (~s0): too few arguments to ~s1 (no ~
+             default value for ~s2)."
+            (vl-location-string loc) name x1.name)))
+    (vl-check-remaining-formals-all-have-defaults (cdr x) name loc)))
+
+(define vl-line-up-define-formals-and-actuals
+  ((formals vl-define-formallist-p)
+   (actuals string-listp)
+   (name stringp       "Name of macro being expanded, context for error messages.")
+   (loc  vl-location-p "Location of macro being expanded, context for error messages."))
+  :returns
+  (mv (successp booleanp :rule-classes :type-prescription)
+      (subst    (and (alistp subst)
+                     (string-listp (alist-keys subst))
+                     (string-listp (alist-vals subst)))))
+  (b* (((when (atom formals))
+        (if (atom actuals)
+            ;; Ran out of formals and actuals at the same time.  That's fine,
+            ;; no more substitution to create.
+            (mv t nil)
+          ;; Ran out of formals but still have actuals?  No sir, that's not ok.
+          (mv (cw "Preprocessor error (~s0): too many arguments given to ~s1."
+                  (vl-location-string loc) name)
+              nil)))
+
+       ((when (atom actuals))
+        ;; SystemVerilog-2012, page 641.  "If fewer actual arguments are
+        ;; specified than the number of formal arguments, then the defaults are
+        ;; substituted for the additional formal arguments.  It shall be an
+        ;; error if any of the remaining formal arguments does not have a
+        ;; default specified."
+        (if (vl-check-remaining-formals-all-have-defaults formals name loc)
+            ;; Fine, pair them up.
+            (mv t (pairlis$ (vl-define-formallist->names formals)
+                            (vl-define-formallist->defaults formals)))
+          ;; Already printed an error, this is just an error.
+          (mv nil nil)))
+
+       ((mv okp rest-subst)
+        (vl-line-up-define-formals-and-actuals (cdr formals) (cdr actuals) name loc))
+       ((unless okp)
+        (mv nil nil))
+
+       ;; SystemVerilog-2012 Page 641: "An actual argument may be empty or
+       ;; white space only, in which case the formal argument is substituted by
+       ;; the argument default if one is specified, or by nothing if no default
+       ;; is specified.
+       ((vl-define-formal formal1) (car formals))
+       (actual1 (str::trim (car actuals)))
+       (value1  (if (equal actual1 "")
+                    (str::trim formal1.default)
+                  actual1)))
+    (mv t (cons (cons formal1.name value1) rest-subst))))
+
+(define vl-substitute-into-macro-text
+  ((body   vl-echarlist-p
+           "Characters in the macro's body, which we recur through.")
+   (subst  (and (alistp subst)
+                (string-listp (alist-keys subst))
+                (string-listp (alist-vals subst)))
+           "The substitution being made, an alist binding formals to actuals.")
+   (name   stringp
+           "Name of the text macro being expanded, for error messages.")
+   (loc    vl-location-p
+           "Location of the text macro being expanded, for error messages and
+            also becomes the new location for each character being created.")
+   (config vl-loadconfig-p)
+   (acc    vl-echarlist-p
+           "Accumulated extended characters to be inserted into the file."))
+  :returns
+  (mv (successp booleanp :rule-classes :type-prescription)
+      (acc      vl-echarlist-p
+                "Accumulated characters, still in reverse order."
+                :hyp (and (force (vl-echarlist-p body))
+                          (force (vl-echarlist-p acc)))))
+
+  :long "<p>This is very underspecified.  We need to minimally skip over things
+like string literals.  We can at least assume that the @('body') was accepted
+by @(see vl-read-until-end-of-define).  We try to do something reasonably
+sensible.</p>"
+
+  ;; Styled after vl-read-until-end-of-define.
+  (b* (((when (atom body))
+        (mv t acc))
+       (char1 (vl-echar->char (first body)))
+
+       ((when (eql char1 #\`))
+        (b* (((mv name prefix remainder) (vl-read-identifier (cdr body)))
+             ((unless name)
+              ;; Should be ruled out by vl-read-until-end-of-define
+              (mv (cw "Preprocessor error (~s0): bad grave character in macro ~
+                       text for ~s1.~%"
+                      (vl-location-string loc) name)
+                  acc))
+             (acc (revappend prefix (cons (car body) acc))))
+          (vl-substitute-into-macro-text remainder subst name loc config acc)))
+
+       ((when (eql char1 #\"))
+        (b* (((mv string prefix remainder)
+              (vl-read-string body (vl-lexstate-init config)))
+             ((unless string)
+              ;; Should be ruled out by vl-read-until-end-of-define
+              (mv (cw "Preprocessor error (~s0): bad string literal in macro ~
+                       text for ~s1.~%"
+                      (vl-location-string loc) name)
+                  acc))
+             (acc (revappend prefix acc)))
+          (vl-substitute-into-macro-text remainder subst name loc config acc)))
+
+       ((when (eql char1 #\\))
+        ;; See vl-read-until-end-of-define.  Line continuations should already
+        ;; have been eaten and replaced by spaces here.  The only reason we
+        ;; should see a backslash, then, is for escaped identifiers.
+        (b* (((mv name prefix remainder)
+              (vl-read-escaped-identifier body))
+             ((unless name)
+              ;; Should be ruled out by vl-read-until-end-of-define.
+              (mv (cw "Preprocessor error (~s0): stray backslash in macro ~
+                       text for ~s1.~%"
+                      (vl-location-string loc) name)
+                  acc))
+             (acc (revappend prefix acc)))
+          (vl-substitute-into-macro-text remainder subst name loc config acc)))
+
+       ((when (eql char1 #\/))
+        (b* (((when (vl-matches-string-p "//" body))
+              ;; Single-line comments are eaten by vl-read-until-end-of-define,
+              ;; so we shouldn't need to deal with them here.
+              (mv (cw "Preprocessor error (~s0): //-style comment in macro ~
+                       text for ~s1? Jared thinks this shouldn't happen.~%"
+                      (vl-location-string loc) name)
+                  acc))
+
+             ((when (vl-matches-string-p "/*" body))
+              (b* (((mv successp prefix remainder)
+                    (vl-read-through-literal "*/" (cddr body)))
+                   ((unless successp)
+                    ;; Should be ruled out by vl-read-until-end-of-define.
+                    (mv (cw "Preprocessor error (~s0): unterminated /* ... */ ~
+                             style comment in macro text for ~s1?  Jared ~
+                             thinks this shouldn't happen."
+                            (vl-location-string loc) name)
+                        acc))
+                   (acc (revappend (list* (first body) (second body) prefix) acc)))
+                (vl-substitute-into-macro-text remainder subst name loc config acc))))
+
+          ;; Else: regular division character, treat it as a regular character.
+          (vl-substitute-into-macro-text (cdr body) subst name loc config (cons (car body) acc))))
+
+       ;; Else, not a special character.
+       ;; We know that macro arguments are simple identifiers.
+       ((unless (vl-simple-id-head-p char1))
+        (vl-substitute-into-macro-text (cdr body) subst name loc config (cons (car body) acc)))
+
+       ;; We don't bother to check for keywords here, because we shouldn't
+       ;; allow keywords as formals in the first place, so they just shouldn't
+       ;; be in our substitution to begin with
+       ((mv prefix remainder) (vl-read-simple-identifier body))
+       (str  (vl-echarlist->string prefix))
+       (look (assoc-equal str subst))
+       ((unless look)
+        ;; Found an identifier but it's not related to the formals.  Just
+        ;; accumulate its characters.
+        (vl-substitute-into-macro-text remainder subst name loc config (revappend prefix acc)))
+
+       ;; Conversion of replacement text into echars is subtle.  See the
+       ;; comments in vl-expand-define to understand why we do this.
+       (replacement-str    (cdr look))
+       (replacement-echars (vl-echarlist-from-str replacement-str))
+       (replacement-fixed  (vl-change-echarlist-locations replacement-echars loc))
+       (acc                (revappend replacement-fixed acc)))
+    (vl-substitute-into-macro-text remainder subst name loc config acc))
+
+  :prepwork
+  ((local (defthm lemma
+            (implies (and (alistp subst)
+                          (string-listp (alist-vals subst))
+                          (assoc-equal key subst))
+                     (stringp (cdr (assoc-equal key subst))))
+            :hints(("Goal" :in-theory (enable hons-assoc-equal alist-keys)))))
+
+   (local (in-theory (disable assoc-equal-elim)))))
+
+
+(define vl-expand-define
+  :short "Expand uses of defines like @('`foo') and @('`max(a,b)')."
+  ((name    stringp         "Name of the directive we've just read, like @('\"foo\"') for @('`foo').")
+   (defines vl-defines-p    "All definitions we currently have.")
+   (echars  vl-echarlist-p  "Remaining text after the name.  For simple macros like @('`foo') we
+                             will just need to append the definition's body onto these characters.
+                             For macros with arguments we will need to extract the actuals from
+                             these characters.")
+   (config  vl-loadconfig-p)
+   (loc     vl-location-p   "Location for error messages and for the resulting expansion text."))
+  :returns
+  (mv (successp booleanp :rule-classes :type-prescription)
+      (new-echars vl-echarlist-p
+                  "On success, the updated characters with the macro invocation replaced by
+                   its expansion."
+                  :hyp (force (vl-echarlist-p echars))))
+
+  :long "<p>Note that variables in `define are lazy, e.g., if you do:</p>
+
+@({
+      `define foo 3
+      `define bar `foo
+      `define foo 4
+})
+
+<p>Then from here on @('`bar') should also expand to 4.  To accomplish this,
+we're going to modify the @('echars') that are remaining in the input.  That
+is, the <b>output</b> of @('vl-expand-define') is going to get preprocessed.
+This does not always terminate! (Hence the termination counter on @(see
+vl-preprocess-loop).</p>
+
+<p><b>Subtle.</b> If we simply inserted the echars stored in the defines table,
+then locations on these characters would refer to their original position in
+the file.  This might lead to confusing error messages, telling you that
+something is wrong and showing you line numbers for a @('`define') that looks
+just fine.  So instead, we change all of the locations for the inserted text to
+point at the grave character for the macro usage.  That is, if @('`foo') occurs
+on line 37 from characters 5 through 8, then we'll make every character of
+foo's expansion occur at 37:5.</p>"
+
+  (b* ((lookup (vl-find-define name defines))
+       ((unless lookup)
+        (mv (cw "Preprocessor error (~s0): `~s1 is not defined.~%"
+                (vl-location-string loc) name)
+            echars))
+
+       ((vl-define lookup))
+
+
+       ((when (atom lookup.formals))
+        ;; No arguments to process, just insert the body of the macro.
+        (b* ((body-str    lookup.body)
+             (body-echars (vl-echarlist-from-str body-str))
+             (body-fixed  (vl-change-echarlist-locations body-echars loc)))
+          (mv t (append body-fixed echars))))
+
+       ;; The macro has arguments.
+       ;;
+       ;;  - Parentheses are required.  (See for instance SystemVerilog-2012,
+       ;;    page 641: "To use a macro defined with arguments, the name of the
+       ;;    text macro shall be followed by a list of actual arguments in
+       ;;    parentheses...".  See also examples such as, on page 642:
+       ;;       "`MACRO3  // ILLEGAL: parentheses required.")
+       ;;
+       ;;  - Whitespace is allowed before the parens.  (SystemVerilog-2012,
+       ;;    page 641: "White space shall be allowed between the text macro
+       ;;    name and the left parentheses in the macro usage.")
+
+       ((mv ?ws echars) (vl-read-while-whitespace echars))
+       ((unless (and (consp echars)
+                     (eql (vl-echar->char (car echars)) #\()))
+        (mv (cw "Preprocessor error (~s0): `~s1 requires arguments.~%"
+                (vl-location-string loc) name)
+            echars))
+       (echars (cdr echars)) ;; Eat leading '(' character
+       ((mv successp actuals echars) (vl-parse-define-actuals name echars config loc))
+       ((unless successp) (mv nil echars)) ;; Already printed error
+
+       ;; Note: at this point, we've already eaten the final ')' character so
+       ;; the echars now contain all of the input stream except that we need to
+       ;; inject the expansion of this macro.  All that's left to do is to line
+       ;; up the actuals and formals, and substitute into the macro body.
+       ((mv successp subst)
+        (vl-line-up-define-formals-and-actuals lookup.formals actuals name loc))
+       ((unless successp) (mv nil echars)) ;; Already printed error
+
+       ((mv okp rev-replacement-body)
+        (vl-substitute-into-macro-text (vl-echarlist-from-str lookup.body)
+                                       subst name loc config nil))
+       ((unless okp) (mv nil echars)) ;; Already printed error
+
+       (replacement-body (rev rev-replacement-body))
+       (echars (append replacement-body echars)))
+    (mv t echars)))
 
 (define vl-process-undef
   :short "Handler for @('undef') directives."
@@ -1041,14 +1680,15 @@ appropriately if @('activep') is set.</p>"
 
   :returns
   (mv (successp)
-      (new-defines vl-defines-p :hyp :fguard)
+      (new-defines vl-defines-p)
       (remainder   vl-echarlist-p :hyp (force (vl-echarlist-p echars))))
 
   :long "<p>We assume that an @('`undef') has just been read and @('echars') is
 the text which follows it.  We try to read the name we are to undefine, then
 update the defines table appropriately.</p>"
 
-  (b* (((mv & remainder)      (vl-read-while-whitespace echars))
+  (b* ((defines (vl-defines-fix defines))
+       ((mv & remainder)      (vl-read-while-whitespace echars))
        ((mv name & remainder) (vl-read-identifier remainder))
 
        ((when (not name))
@@ -1065,17 +1705,18 @@ update the defines table appropriately.</p>"
         ;; Not an active section, so don't actually do anything.
         (mv t defines remainder))
 
-       (lookup
-        (vl-lookup-in-defines name defines))
+       (lookup (vl-find-define name defines))
 
        (- (if (not lookup)
               (cw "Preprocessor warning (~s0): found `undef ~s1, but ~s1 is ~
-                     not defined.~%"
+                   not defined.~%"
                   (vl-location-string loc)
                   name)
-            (cw "Undefining ~s0.~%" name))))
+            (cw "Undefining ~s0.~%" name)))
 
-    (mv t (remove-from-alist name defines) remainder))
+       (defines (vl-delete-define name defines)))
+
+    (mv t defines remainder))
 
   ///
   (defthm true-listp-of-vl-process-undef-remainder
@@ -1233,7 +1874,6 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
     :formals (echars config)
     :prefix-n 1
     :remainder-n 2))
-
 
 (define vl-preprocess-loop
   :short "Main loop for the preprocessor."
@@ -1436,45 +2076,22 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
 ; A macro usage like `foo.  The defines table stores the macro text in order,
 ; so we can essentially revappend it into the accumulator.
 
-        (if (not activep)
-            ;; Subtle.  Never try to expand macros in inactive sections,
-            ;; because it is legitimate for them to be undefined.
-            (vl-preprocess-loop remainder defines filemap istack activep
-                                acc n config state)
+        (b* (((unless activep)
+              ;; Subtle.  Never try to expand macros in inactive sections,
+              ;; because it is legitimate for them to be undefined.
+              (vl-preprocess-loop remainder defines filemap istack activep
+                                  acc n config state))
+             ((mv successp expansion)
+              (vl-expand-define directive defines remainder config (vl-echar->loc echar1)))
+             ((unless successp)
+              ;; Already printed an error message.
+              (mv nil defines filemap acc expansion state)))
 
-          (let ((lookup (vl-lookup-in-defines directive defines)))
-            (if (not lookup)
-                (mv (cw "Preprocessor error (~s0): `~s1 is not defined.~%"
-                        (vl-location-string (vl-echar->loc echar1))
-                        directive)
-                    defines filemap acc echars state)
-              (let* ((text (cdr lookup))
-                     ;; Subtle.  If we just inserted the echars stored in the
-                     ;; defines table, then locations on these characters would
-                     ;; refer to their original position in the file.  This
-                     ;; might lead to confusing error messages, telling you
-                     ;; that something is wrong and showing you line numbers
-                     ;; for a `define that looks just fine.  So instead, we
-                     ;; change all of the locations for the inserted text to
-                     ;; point at the grave character for the macro usage.  That
-                     ;; is, if `foo occurs on line 37 from characters 5 through
-                     ;; 8, then every character of foo's expansion is said to
-                     ;; be located at 37:5.
-                     (loc    (vl-echar->loc echar1))
-                     (insert (vl-change-echarlist-locations text loc)))
-
-                ;; Subtle.  Variables in `define are lazy, e.g., if I first
-                ;; `define foo to be 3, then `define bar to be `foo, then
-                ;; redefine `foo to be 4, then the value of `bar should also be
-                ;; 4.  To accomplish this, we need to make sure that the
-                ;; expansion, "insert", is added not to the accumulator but
-                ;; instead to the list of echars we are processing, namely
-                ;; remainder.  This does not always terminate!
-                (vl-preprocess-loop (append insert remainder)
-                                    defines filemap istack activep
-                                    acc
-                                    (- (lnfix n) 1)
-                                    config state))))))
+          (vl-preprocess-loop expansion
+                              defines filemap istack activep
+                              acc
+                              (- (lnfix n) 1)
+                              config state)))
 
        ((when (eql (vl-echar->char (car prefix)) #\\))
         ;; We explicitly disallow `\define, `\ifdef, etc.
@@ -1644,24 +2261,24 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
                    (vl-preprocess-loop echars defines filemap istack activep acc n config state)))
                (state-p1 state))))
 
-  (defthm true-listp-of-vl-preprocess-loop-result
-    (b* (((mv ?successp ?defines ?filemap new-acc ?remainder ?state)
-          (vl-preprocess-loop echars defines filemap istack activep acc n config state)))
-      (equal (true-listp new-acc)
-             (true-listp acc))))
+  ;; (defthm true-listp-of-vl-preprocess-loop-result
+  ;;   (b* (((mv ?successp ?defines ?filemap new-acc ?remainder ?state)
+  ;;         (vl-preprocess-loop echars defines filemap istack activep acc n config state)))
+  ;;     (equal (true-listp new-acc)
+  ;;            (true-listp acc))))
 
-  (defthm true-listp-of-vl-preprocess-loop-remainder
-    (b* (((mv ?successp ?defines ?filemap ?acc ?remainder ?state)
-          (vl-preprocess-loop echars defines filemap istack activep acc n config state)))
-      (equal (true-listp remainder)
-             (true-listp echars))))
+  ;; (defthm true-listp-of-vl-preprocess-loop-remainder
+  ;;   (b* (((mv ?successp ?defines ?filemap ?acc ?remainder ?state)
+  ;;         (vl-preprocess-loop echars defines filemap istack activep acc n config state)))
+  ;;     (equal (true-listp remainder)
+  ;;            (true-listp echars))))
 
-  (defthmd no-remainder-of-vl-preprocess-loop-on-success
-    (b* (((mv ?successp ?defines ?filemap ?acc ?remainder ?state)
-          (vl-preprocess-loop echars defines filemap istack activep acc n config state)))
-      (implies (and successp
-                    (true-listp echars))
-               (not remainder))))
+  ;; (defthmd no-remainder-of-vl-preprocess-loop-on-success
+  ;;   (b* (((mv ?successp ?defines ?filemap ?acc ?remainder ?state)
+  ;;         (vl-preprocess-loop echars defines filemap istack activep acc n config state)))
+  ;;     (implies (and successp
+  ;;                   (true-listp echars))
+  ;;              (not (consp remainder)))))
 
   (defthm vl-preprocess-loop-basics
     (implies (and (force (vl-echarlist-p echars))
@@ -1728,7 +2345,7 @@ out of memory before running out of clock.</p>"
                             state))
        ((when successp)
         ;; BOZO it would be really nice to use nreverse here.
-        (mv successp defines filemap (reverse acc) state)))
+        (mv successp defines filemap (rev acc) state)))
     (mv (cw "[[ Previous  ]]: ~s0~%~
              [[ Remaining ]]: ~s1~%"
             (vl-echarlist->string (vl-safe-previous-n 50 acc))

@@ -594,6 +594,7 @@ types.</p>"
                                                    (rest actuals))))))
 
 (define vl-make-paramdecloverrides
+  :parents (unparameterization)
   :short "Line up parameter arguments with parameter declarations."
   ((formals  vl-paramdecllist-p "In proper order, from the submodule.")
    (actuals  vl-paramargs-p     "From the instance.")

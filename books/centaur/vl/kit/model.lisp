@@ -220,8 +220,12 @@ Options:" *nls* *nls* *vl-model-opts-usage* *nls*))
        (state
         (if (equal opts.model-file "")
             state
-          (serialize-write (oslib::catpath opts.outdir opts.model-file)
-                           translation)))
+          (b* ((state (serialize-write (oslib::catpath opts.outdir opts.model-file)
+                                       translation))
+               (state (with-ps-file
+                        (oslib::catpath opts.outdir (cat opts.model-file ".ver"))
+                        (vl-println *vl-current-syntax-version*))))
+            state)))
 
        (state
         (if (equal opts.esims-file "")
@@ -231,15 +235,14 @@ Options:" *nls* *nls* *vl-model-opts-usage* *nls*))
                             (vl-design->mods
                              (vl-translation->good translation))))))
 
+       (good (vl-translation->good translation))
        (state
         (if (equal opts.verilog-file "")
             state
           (with-ps-file opts.verilog-file
                         (vl-ps-update-show-atts nil)
-                        (vl-pp-modulelist
-                         (vl-design->mods
-                          (vl-translation->good translation))))))
-       )
+                        (vl-pp-modulelist (vl-design->mods good)
+                                          (vl-scopestack-init good))))))
     state))
 
 (defconsts (*vl-model-readme* state)

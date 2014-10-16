@@ -7575,10 +7575,6 @@
                         '(hit-rewrite hit-rewrite2)))
         (found-hit-rewrite-hist-entry (cdr hist)))))
 
-(defabbrev append? (x y)
-  (cond ((null y) x)
-        (t (append x y))))
-
 (defun simplify-clause (cl hist pspv wrld state step-limit)
 
 ; Warning: Keep this in sync with function simplify-clause-rcnst defined in

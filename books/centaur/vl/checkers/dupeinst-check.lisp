@@ -233,7 +233,7 @@ a warning about the modules.</p>"
                       (str::prefix-lines (with-local-ps
                                           ;; may help avoid unnecessary line wrapping
                                           (vl-ps-update-autowrap-col 200)
-                                          (vl-pp-modinstlist modinsts nil nil))
+                                          (vl-pp-modinstlist modinsts nil))
                                          "     ")
                       ;; These aren't printed, but we include them in the
                       ;; warning so our suppression mechanism can be

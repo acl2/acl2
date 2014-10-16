@@ -39,6 +39,13 @@
 (local (in-theory (disable acl2-count)))
 (local (std::add-default-post-define-hook :fix))
 
+(defsection scopestack
+  :parents (mlib)
+  :short "A scopestack is a stack of scopes, for looking up identifiers
+correctly.")
+
+(local (xdoc::set-default-parents scopestack))
+
 (define vl-blockitem->name ((x vl-blockitem-p))
   :returns (name stringp :rule-classes :type-prescription)
   :prepwork ((local (defthm tag-when-vl-blockitem-p
@@ -748,7 +755,10 @@ instances.</p>"
                       (scope vl-scope-p))
                      :enabled t
                      (mbe :logic (vl-scope-find-__result__ name scope)
-                          :exec (cdr (hons-get name (vl-scope-__result__-alist scope)))))
+                          :exec (cdr (hons-get name
+                                               ;; for multithreading, this might not be fast if it was
+                                               ;; created in some other thread, so make it fast.
+                                               (make-fast-alist (vl-scope-__result__-alist scope))))))
 
                    ,@(and stackp
                           `((define vl-scopestack-find-__result__

@@ -49,3 +49,4 @@ temp-emacs-file.lsp
 *~
 Makefile-certs
 Makefile-sources
+startjob.*.wrap

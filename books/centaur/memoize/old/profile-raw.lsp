@@ -676,6 +676,7 @@
             ofe
             ofnum
             ofv
+            ofv2
             ofvv
             ofw
             ok-to-force
@@ -1103,10 +1104,10 @@
   `(our-syntax (format nil ,@r)))
 
 (defun-one-output dubious-to-profile (fn)
-  (cond ((not (symbolp fn)) "not a symbol.")
-        ((not (fboundp fn)) "not fboundp.")
+  (cond ((not (symbolp fn)) " is not a symbol.")
+        ((not (fboundp fn)) " is not fboundp.")
         ((eq (symbol-package fn) *main-lisp-package*)
-         (ofn "~%;~10tin *main-lisp-package*."))
+         (ofn " is in *main-lisp-package*."))
         #-Clozure
         ((multiple-value-bind
           (sym foundp)
@@ -1115,34 +1116,34 @@
           foundp)
 ; Avoid "cannot be printed readably" error in SBCL and perhaps other Lisps (but
 ; since we haven't had this problem in CCL, we exclude the test for CCL).
-         (ofn "~%;~10tsymbol-name is found in *main-lisp-package*."))
+         (ofn "s symbol-name is found in *main-lisp-package*."))
         #+Clozure
         ((ccl::%advised-p fn)
-         (ofn "~%;10tadvised, and it will so continue."))
+         (ofn " is advised, and it will so continue."))
         ((member fn (eval '(trace)))
-         (ofn "~%;~10ta member of (trace), and it will so ~
-               continue."))
+         (ofn " is a member of (trace), and it will so continue."))
         ((and (fboundp 'old-trace)
               (member fn (eval '(old-trace))))
-         (ofn "~%;~10ta member of (old-trace), and it will so ~
-               continue."))
+         (ofn " is a member of (old-trace), and it will so continue."))
         ((eq fn 'return-last)
-         "the function RETURN-LAST.")
+         " is the function RETURN-LAST.")
         ((gethash fn *never-memoize-ht*)
-         (ofn "~%;~10tin *NEVER-MEMOIZE-HT*."))
+         (ofn " is in *NEVER-MEMOIZE-HT*."))
         ((gethash fn *profile-reject-ht*)
-         (ofn "in~%;~10t*PROFILE-REJECT-HT*.  Override with~
+         (ofn " is in *PROFILE-REJECT-HT*.  Override with~
                ~%;~10t(REMHASH '~a *PROFILE-REJECT-HT*)."
               fn))
-        ((macro-function fn) "a macro.")
-        ((compiler-macro-function fn) "a compiler-macro-function.")
-        ((special-form-or-op-p fn) "a special operator.")
+        ((macro-function fn) " is a macro.")
+        ((compiler-macro-function fn) " is a compiler-macro-function.")
+        ((special-form-or-op-p fn) " is a special operator.")
         ((getprop fn 'constrainedp nil 'current-acl2-world
                   (w *the-live-state*))
-         "constrained.")
+         " is constrained.")
         ((memoizedp-raw fn)
-         (ofn "~%;~10tmemoized or profiled, ~
-               and it will so continue."))
+         (ofn " is memoized or profiled, and it will so continue."))
+        ((eq (memoize-fn-formals fn (w *the-live-state*) t)
+             t)
+         (ofn " its formals cannot be computed."))
         #+Clozure
         ((multiple-value-bind (req opt restp keys)
              (ccl::function-args (symbol-function fn))
@@ -1150,8 +1151,7 @@
                    keys
                    (not (integerp req))
                    (not (eql opt 0)))
-               (ofn "~%;~10thas some non-simple argument, e.g., &key ~
-                     or &rest.")
+               (ofn " it has some non-simple argument, e.g., &key or &rest.")
              nil)))
 ;       ((null (mf-len-inputs fn)) (input-output-number-warning fn))
         ))
@@ -1172,13 +1172,14 @@
                                       2)))))))))
     (when (posp m) (memoize-call-array-grow (* 2 m)))))
 
-
-
-; Much simplified from memoize-raw.lisp in Version 6.1; really, this should
-; print something when a suitable "verbose" flag is set.
-(defun ofv (&rest r)
-  (declare (ignore r))
-  nil)
+; As of 10/14/2014, ofv was defined here in a way that conflicts with its
+; definition in output-raw.lsp.  We opt to avoid ofv entirely and define a much
+; simplified version here.
+(defvar *ofv2-verbose* nil)
+(defmacro ofv2 (&rest r)
+  `(when *ofv2-verbose*
+     (format t ,@r)
+     (force-output t)))
 
 (defun profile-acl2 (&key (start 0)
                           forget
@@ -1221,9 +1222,9 @@
                      (setf (gethash fn fns-ht) 'no))
                     ((dubious-to-profile fn)
                      (setf (gethash fn fns-ht) 'no)
-                     (ofv "Not profiling '~a' because it's ~a"
-                          (mf-shorten fn 20)
-                          (dubious-to-profile fn)))
+                     (ofv2 "Not profiling '~a' because it~a~%"
+                           (mf-shorten fn 20)
+                           (dubious-to-profile fn)))
                     (t (setf (gethash fn fns-ht) 'yes)))))
       (maphash (lambda (k v)
                  (if (eq v 'no) (remhash k fns-ht)))
@@ -1281,14 +1282,14 @@
                      (setf (gethash fn fns-ht) 'no))
                     ((dubious-to-profile fn)
                      (setf (gethash fn fns-ht) 'no)
-                     (ofv "Not profiling '~a' because it's ~a"
-                          (mf-shorten fn 20)
-                          (dubious-to-profile fn)))
+                     (ofv2 "Not profiling '~a' because it~a~%"
+                           (mf-shorten fn 20)
+                           (dubious-to-profile fn)))
                     (t (setf (gethash fn fns-ht) 'yes)))))
       (maphash (lambda (k v)
                  (if (eq v 'no) (remhash k fns-ht)))
                fns-ht)
-      (ofv "Profiling ~:d functions." (hash-table-count fns-ht))
+      (ofv2 "Profiling ~:d functions." (hash-table-count fns-ht))
       (memoize-here-come (hash-table-count fns-ht))
       (maphash
        (lambda (k v) (declare (ignore v))

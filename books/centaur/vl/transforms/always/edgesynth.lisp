@@ -56,6 +56,8 @@
                 nil)
          :hints(("Goal" :in-theory (enable vl-atomicstmt-p)))))
 
+(xdoc::add-resource-directory "vl/always" "images")
+
 (defxdoc edgesynth
   :parents (always-top)
   :short "Synthesize simple edge-triggered @('always') blocks into primitives."
@@ -217,10 +219,7 @@ works is that there are no competing events are triggered by the transition of
 <p>Here is an attempt to visualize what we might be modeling when we write
 these two fragments of Verilog.</p>
 
-<img src='edgesynth_reset.png'/>
-
-<p>(BOZO we need some way to add some kind of \"asset directories\" to XDOC, so
-we can handle things like images in a coherent way.)</p>
+<img src='res/vl/always/edgesynth_reset.png'/>
 
 <p>Version 1 might be sensible.  If this handling of @('reset') is to be an
 intrinsic part of the always block, a circuit designer might be able to design

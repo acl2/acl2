@@ -54,8 +54,6 @@
 
 (local (include-book "std/lists/nth" :dir :system))
 
-(set-waterfall-parallelism nil) ; currently unknown why we need to disable
-                                ; waterfall-parallelism; something to examine
 
 (local (in-theory (disable true-listp-update-nth
                            acl2::nth-when-zp
