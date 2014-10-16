@@ -26181,7 +26181,8 @@
 
                   (member-eq 'state (stobjs-in key wrld)))
              (er hard ctx
-                 "~@0~x1 takes ACL2's STATE as an argument."
+                 "~@0~x1 takes ACL2's STATE as an argument (illegal except ~
+                  for profiling)."
                  str key))
             ((and (or condition (cdr (assoc-eq :inline val)))
 
@@ -26213,11 +26214,14 @@
                      corresponding concrete stobj was introduced with ~
                      :NON-MEMOIZABLE T.  See :DOC defstobj."
                     str key conc abs)))))
-            ((and condition
+            ((and (or condition (cdr (assoc-eq :inline val)))
+
+; See comment above for the case of 'state.
+
                   (not (all-nils (stobjs-out key wrld))))
              (let ((stobj (find-first-non-nil (stobjs-out key wrld))))
                (er hard ctx
-                   "~@0~x1 returns a stobj, ~x2."
+                   "~@0~x1 returns a stobj, ~x2 (illegal except for profiling)."
                    str key stobj)))
             ((member-eq key *hons-primitive-fns*)
              (er hard ctx
