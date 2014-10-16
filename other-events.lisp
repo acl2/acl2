@@ -26170,11 +26170,23 @@
              (er hard ctx
                  "~@0~x1 is not a function symbol."
                  str key))
-            ((member-eq 'state (stobjs-in key wrld))
+            ((and (or condition (cdr (assoc-eq :inline val)))
+
+; The preceding term says that we are not profiling.  Why not replace it simply
+; with condition, allowing :inline t?  Perhaps we could, but that would require
+; a bit of thought since memoization with :inline t will modify recursive
+; calls, and we would need to be sure that this replacement doesn't violate
+; syntactic restrictions.  We can think about this if someone has reason to
+; memoize with :condition nil but not :inline nil.
+
+                  (member-eq 'state (stobjs-in key wrld)))
              (er hard ctx
                  "~@0~x1 takes ACL2's STATE as an argument."
                  str key))
-            ((and condition
+            ((and (or condition (cdr (assoc-eq :inline val)))
+
+; See comment above for the case of 'state.
+
                   (non-memoizable-stobjs (stobjs-in key wrld) wrld))
              (mv-let
               (abs conc)
