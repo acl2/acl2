@@ -134,7 +134,7 @@ experiments.</p>
 <p>Note that per 12.3.3, a port declaration like @('input wire [3:0] i;') is
 treated as both an input declaration and an explicit wire declaration.  We
 don't have to do anything special to handle this, because the parser
-automatically builds both a @(see vl-portdecl-p) and a @(see vl-netdecl-p) for
+automatically builds both a @(see vl-portdecl-p) and a @(see vl-vardecl-p) for
 such declarations; see @(srclink vl-parse-port-declaration-noatts).</p>
 
 <h4>Case 2</h4>

@@ -247,6 +247,12 @@
              (t
               (pprogn #+(and hons (not acl2-loop-only))
                       (progn
+
+; One might be tempted to insert (mf-multiprocessing val) here.  However, in
+; ACL2(hp) -- which is where this code is run -- we really want to keep
+; multiprocessing on, since one can do mulithreaded computations (e.g., with
+; pand) even with waterfall-parallelism disabled.
+
                         (cond ((null val)
                                (acl2h-init-memoizations))
                               (t

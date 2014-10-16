@@ -248,6 +248,9 @@
 ;;    nil))
 
 (defun test-simultaneously-acons ()
+; We may need to verify guards to execute the raw Lisp (parallelized) version
+; of pand.
+  (declare (xargs :verify-guards t))
   (pand (progn$
          ;; (show-me-default-hons-space 'thread-1-pre)
          ;; (hons-summary)
@@ -265,11 +268,44 @@
 
 (assert! (test-simultaneously-acons))
 
+(defun test-simultaneously-acons-with-spec-mv-let ()
+; We must verify guards to execute the raw Lisp (parallelized) version of
+; spec-mv-let.
+  (declare (xargs :verify-guards t))
+  (spec-mv-let (x)
+    (hons-acons 1 2 nil)
+    (mv-let (y z)
+      (mv (hons-acons 3 4 nil)
+          6)
+      (if t
+          (+ (caar x) (cdar x) (caar y) (cdar y) z)
+        (+ (caar y) (cadr y) z)))))
+
+(assert! (test-simultaneously-acons-with-spec-mv-let))
+
 (defun test-simultaneously-hons ()
+; We may need to verify guards to execute the raw Lisp (parallelized) version
+; of pand.
+  (declare (xargs :verify-guards t))
   (pand (hons 1 2)
         (hons 3 4)))
 
 (assert! (test-simultaneously-hons))
+
+(defun test-simultaneously-hons-with-spec-mv-let ()
+; We must verify guards to execute the raw Lisp (parallelized) version of
+; spec-mv-let.
+  (declare (xargs :verify-guards t))
+  (spec-mv-let (x)
+    (hons 7 8)
+    (mv-let (y z)
+      (mv (hons 9 10) 11)
+      (if t
+          (+ (car x) (cdr x) (car y) (cdr y) z)
+        (+ (car y) (cdr y) z)))))
+
+(assert! (test-simultaneously-hons-with-spec-mv-let))
+
 
 ;; Basic check to try to see if threads will interfere with one another
 
@@ -301,6 +337,8 @@
           (f3-list x)
           (f5-list x))))
 
+(comp t) ;; so gcl will compile add-some-honses instead of stack overflowing
+
 (defconst *thread1-spec* (thread1 *data*))
 (defconst *thread2-spec* (thread2 *data*))
 
@@ -329,7 +367,7 @@
 
 (assert! (time$ (check-both 100)))
 
-(clear-memoize-tables)
+(value-triple (clear-memoize-tables))
 
 (memoize 'f1)
 (memoize 'f2 :condition '(not (equal x -1/3)))

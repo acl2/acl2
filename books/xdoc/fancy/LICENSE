@@ -14,6 +14,9 @@ Scope of this LICENSE file:
    code files.  These topics are typically subject to their own copyright and
    licensing terms, which are beyond the scope of this LICENSE.
 
+   Files in the res/ directory, if one exists, are Content Files that are not
+   covered by this license.
+
 
 Copyright for main source files:
 
@@ -81,7 +84,7 @@ Copyrights for Supporting Libraries: (within the "lib" directory)
      https://github.com/Khan/KaTeX
 
 
-Copyrights for other supporting files:
+Copyrights for other supporting files
 
    Original XDOC Images
      Copyright 2009-2013 Centaur Technology
@@ -113,9 +116,4 @@ Copyrights for other supporting files:
        http://commons.wikimedia.org/wiki/File:Icon_External_Link.png
 
      - Icon_External_Link.png
-
-
-   ACL2 Tour Images (.gif files within the images/ directory)
-     Copyright 2012 Regents of the University of Texas
-     Released under a BSD-style license (distributed with ACL2)
 

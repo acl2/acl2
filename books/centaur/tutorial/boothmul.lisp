@@ -65,17 +65,6 @@
 (value-triple (set-max-mem (* 3 (expt 2 30))))
 (value-triple (tshell-ensure))
 
-(make-event
-
-; Disabling waterfall parallelism for unknown reasons other than that
-; certification stalls out with it enabled.
-
- (if (and (hons-enabledp state)
-          (f-get-global 'parallel-execution-enabled state))
-     (er-progn (set-waterfall-parallelism nil)
-               (value '(value-triple nil)))
-   (value '(value-triple nil))))
-
 
 ; Setup.  This should be familiar if you've looked at, e.g., the alu16
 ; tutorial.

@@ -52,7 +52,6 @@
                            consp-when-member-equal-of-vl-commentmap-p
                            consp-when-member-equal-of-vl-caselist-p
                            consp-when-member-equal-of-vl-usertypes-p
-                           consp-when-member-equal-of-vl-defines-p
                            acl2::consp-when-member-equal-of-keyval-alist-p
                            vl-tokenlist-p-when-not-consp
                            not

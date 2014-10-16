@@ -862,6 +862,7 @@ declaration was found.</p>"
   :short "Given a hidindex expression, e.g. foo[5][3], and the datatype and
 unpacked dimensions corresponding to foo, return the datatype and unpacked
 dimensions corresponding to the whole expression."
+
   :long "<p>Note: we don't check whether indices are in bounds or anything,
 just whether the number of indices is less than or equal the number of
 total (unpacked plus packed) dimensions.</p>
@@ -870,7 +871,10 @@ total (unpacked plus packed) dimensions.</p>
 will be used.</p>
 
 <p>Example: Suppose our datatype is from a typedef</p>
-@({ typedef bit [3:0] [4:2] foo [0:6] [0:8]; }
+
+@({
+    typedef bit [3:0] [4:2] foo [0:6] [0:8];
+})
 
 <p>that is, it has one unpacked dimension @('[0:6]') and two packed dimensions.
 Suppose our expression is @('bar[5][7][2]'), where bar is of type foo.  Then we
@@ -942,7 +946,7 @@ are pre-resolved.</p>
  typedef union { foostruct [5:0] bar; logic [2:0] baz; } bunion [0:6];
  typedef struct { bunion fa [0:8], logic [1:0] ba; } bstruct;
  bstruct myvar [8:0];
- )}
+})
 
 <p>For this example, we'll write a type with both packed an unpacked dimensions
 with an underscore between the packed and unpacked dims.</p>
@@ -1129,10 +1133,11 @@ type with some additional dimensions, the additional dimensions go to the left.
 Examples:</p>
 
 @({
- typedef logic [3:0] nibble;
- typedef nibble [7:0] quadword [1:0];
- typedef quadword cacheline [15:0];
- })
+    typedef logic [3:0] nibble;
+    typedef nibble [7:0] quadword [1:0];
+    typedef quadword cacheline [15:0];
+})
+
 <p>These are equivalent to:</p>
 @({
  typedef logic [3:0] nibble;
@@ -1146,7 +1151,7 @@ of my_kbyte, the type of my_kbyte is dword but it has additional dimensions
 stored in the variable declaration itself.  So we take as an extra argument the
 unpacked dimensions of the datatype.  If there are any unpacked dimensions,
 then the first unpacked dimension is transformed into the range; otherwise,
-it's the first packed dimension (or the declared range of a net type)."
+it's the first packed dimension (or the declared range of a net type).</p>"
   ((x vl-datatype-p))
   :returns
   (mv (warning (iff (vl-warning-p warning) warning))

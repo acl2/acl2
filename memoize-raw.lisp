@@ -683,6 +683,17 @@
 
   (mf-mht :test 'eql :shared :default))
 
+(defun initial-memoize-info-ht ()
+  (if *enable-multithreaded-memoization*
+      (mf-mht :shared :default)
+
+; This table is essentially blown away and reconstituted by rememoize-all,
+; hence by (mf-multiprocessing t).  So we avoid using :shared :default below,
+; in order to make the table a bit more efficient in the uniprocessing case --
+; though probably efficiency isn't particularly important for this hash table.
+
+    (mf-mht)))
+
 (defg *memoize-info-ht*
 
 ; This hash table associates memoized function symbols with various
@@ -694,12 +705,7 @@
 ;
 ;   2. It maps each such :NUM value back to the corresponding symbol, fn.
 
-; This table is essentially blown away and reconstituted by rememoize-all,
-; hence by (mf-multiprocessing t).  So we avoid using :shared :default below,
-; in order to make the table a bit more efficient in the uniprocessing case --
-; though probably efficiency isn't particularly important for this hash table.
-
-  (mf-mht))
+  (initial-memoize-info-ht))
 
 (declaim (hash-table *memoize-info-ht*))
 
@@ -3279,6 +3285,7 @@
 ; Note: memoize-info arranges that (caar x) is the memoized function symbol.
 
      (loop for x in lst do (unmemoize-fn (caar x)))
+     (setq *memoize-info-ht* (initial-memoize-info-ht))
      (gc$)
      (setq *max-symbol-to-fixnum* *initial-max-symbol-to-fixnum*)
      (loop for x in lst do
@@ -4411,7 +4418,7 @@
          (progn
            (setq *pons-call-counter* 0)
            (setq *pons-misses-counter* 0)
-           (setq *memoize-info-ht* (mf-mht)) ; see comment in *memoize-info-ht*
+           (setq *memoize-info-ht* (initial-memoize-info-ht))
            (mf-sethash *initial-max-symbol-to-fixnum*
                        "outside-caller"
                        *memoize-info-ht*)

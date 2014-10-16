@@ -170,7 +170,7 @@ quick summary instead, see @(see vl-pp-modelement-summary).</p>"
       (:vl-paramdecl (vl-pp-paramdecl x))
       (:vl-fundecl   (vl-pp-fundecl x))
       (:vl-taskdecl  (vl-pp-taskdecl x))
-      (:vl-modinst   (vl-pp-modinst x nil nil))
+      (:vl-modinst   (vl-pp-modinst x nil))
       (:vl-gateinst  (vl-pp-gateinst x))
       (:vl-always    (vl-pp-always x))
       (:vl-initial   (vl-pp-initial x))

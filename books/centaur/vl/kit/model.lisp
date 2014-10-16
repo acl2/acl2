@@ -235,15 +235,14 @@ Options:" *nls* *nls* *vl-model-opts-usage* *nls*))
                             (vl-design->mods
                              (vl-translation->good translation))))))
 
+       (good (vl-translation->good translation))
        (state
         (if (equal opts.verilog-file "")
             state
           (with-ps-file opts.verilog-file
                         (vl-ps-update-show-atts nil)
-                        (vl-pp-modulelist
-                         (vl-design->mods
-                          (vl-translation->good translation))))))
-       )
+                        (vl-pp-modulelist (vl-design->mods good)
+                                          (vl-scopestack-init good))))))
     state))
 
 (defconsts (*vl-model-readme* state)

@@ -47,17 +47,6 @@
 (local (include-book "../esim-sexpr-support-thms"))
 (local (include-book "centaur/vl/util/arithmetic" :dir :system))
 
-(make-event
-
-; Disabling waterfall parallelism because this book allegedly uses memoization
-; while performing its proofs.
-
- (if (and (hons-enabledp state)
-          (f-get-global 'parallel-execution-enabled state))
-     (er-progn (set-waterfall-parallelism nil)
-               (value '(value-triple nil)))
-   (value '(value-triple nil))))
-
 (local (defthm atom-listp-of-pat-flatten1
          (atom-listp (pat-flatten1 x))
          :hints(("Goal" :in-theory (e/d (pat-flatten1)

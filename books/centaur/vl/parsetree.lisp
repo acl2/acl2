@@ -3091,9 +3091,10 @@ be non-sliceable, at least if it's an input.</p>"
    (loc       vl-location-p :default *vl-fakeloc*))
   :tag :vl-modport)
 
-(fty::deflist vl-modportlist :elt-type vl-modport
+(fty::deflist vl-modportlist
+  :elt-type vl-modport
   :elementp-of-nil nil
-  :true-listp t)
+  :true-listp nil)
 
 
 (defenum vl-fwdtypedefkind-p

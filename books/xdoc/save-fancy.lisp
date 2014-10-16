@@ -450,6 +450,17 @@
     state))
 
 
+(defun copy-resource-dirs (resdir              ;; path to new-manual/res
+                           resource-dirs-alist ;; alist created by add-resource-directory
+                           state)
+  (b* (((when (atom resource-dirs-alist))
+        state)
+       ((cons dirname source-path) (car resource-dirs-alist))
+       (target-path (oslib::catpath resdir dirname))
+       (- (cw ";; Copying ~s0 --> ~s1.~%" source-path target-path))
+       (state       (oslib::copy! source-path target-path :recursive t)))
+    (copy-resource-dirs resdir (cdr resource-dirs-alist) state)))
+
 (defun prepare-fancy-dir (dir state)
   (b* (((unless (stringp dir))
         (prog2$ (er hard? 'prepare-fancy-dir
@@ -462,7 +473,15 @@
 
        (- (cw "; Preparing directory ~s0.~%" dir))
        (state          (oslib::rmtree! dir))
-       (state          (oslib::copy! xdoc/fancy dir :recursive t)))
+
+       (- (cw "; Copying fancy viewer files.~%"))
+       (state          (oslib::copy! xdoc/fancy dir :recursive t))
+
+       (- (cw "; Copying resource directories.~%"))
+       (resdir              (oslib::catpath dir "res"))
+       (resource-dirs-alist (cdr (assoc 'resource-dirs (table-alist 'xdoc (w state)))))
+       (state               (copy-resource-dirs resdir resource-dirs-alist state)))
+
     state))
 
 (defttag :xdoc) ; for sys-call+ call below

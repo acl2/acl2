@@ -189,11 +189,11 @@ These are stored in the constant @('*acl2s-parameters*').
  :long "
   Specify which of the following strategies to
   use for instantiating free variables of the conjecture
-  under test: @(':simple) or  @(':incremental)
-  or  @(':hybrid) (untested).
-  @(':incremental) uses a dpll-like algorithm to search
+  under test: @(':simple') or  @(':incremental')
+  or  @(':hybrid') (untested').
+  @(':incremental') uses a dpll-like algorithm to search
   for counterexamples.
-  By default this parameter is set to the symbol @(':simple).
+  By default this parameter is set to the symbol @(':simple').
    <code>
     Usage:
     (acl2s-defaults :set search-strategy :simple)
@@ -212,8 +212,8 @@ These are stored in the constant @('*acl2s-parameters*').
  :long "
   Specify which of the following methods to
   use for instantiating free variables of the conjecture
-  under test: @(':be) or @(':random) or @(':uniform-random) or @(':mixed)
-  By default this parameter is set to the symbol @(':random)
+  under test: @(':be') or @(':random') or @(':uniform-random') or @(':mixed')
+  By default this parameter is set to the symbol @(':random')
    <code>
     Usage:
     (acl2s-defaults :set sampling-method :random)

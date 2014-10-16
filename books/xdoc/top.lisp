@@ -1,5 +1,5 @@
 ; XDOC Documentation System for ACL2
-; Copyright (C) 2009-2011 Centaur Technology
+; Copyright (C) 2009-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -51,7 +51,7 @@
            (include-book
             "xdoc/display" :dir :system)
            (encapsulate ()
-            (local (xdoc-quiet)) ;; Suppress warnings when just using :xdoc (or :doc) 
+            (local (xdoc-quiet)) ;; Suppress warnings when just using :xdoc (or :doc)
             (local (set-inhibit-warnings "Documentation"))
             (import-acl2doc))
            (table xdoc 'colon-xdoc-support-loaded t))
@@ -68,7 +68,7 @@
        (progn
          (colon-xdoc-init)
          (make-event
-          (b* (((mv all-xdoc-topics state) 
+          (b* (((mv all-xdoc-topics state)
                 (with-guard-checking t (all-xdoc-topics state)))
                ((mv & & state) (colon-xdoc-fn ',name all-xdoc-topics state)))
             (value '(value-triple :invisible))))))))
@@ -322,21 +322,6 @@
 
 ; Moved from acl2-doc.lisp to make it more widely available
 (defmacro defpointer (from to &optional keyword-p)
-
-; Examples:
-
-; (defpointer &allow-other-keys macro-args) expands to:
-
-; (defxdoc &allow-other-keys
-;   :parents (pointers)
-;   :short "See @(see macro-args).")
-
-; (defpointer guard-hints xargs t) expands to:
-
-; (defxdoc &allow-other-keys
-;   :parents (pointers)
-;   :short "See @(see xargs) for keyword :guard-hints.")
-
   `(defxdoc ,from
      :parents (pointers)
      :short ,(concatenate 'string
@@ -350,14 +335,29 @@
                                            "').")
                             "."))))
 
-(defxdoc defpointer
-  :parents (xdoc documentation)
-  :short "Define an alias for a documentation topic"
-  :long "@({
-  Example Form:
-  (defpointer acl2 acl2-sedan)
-  (defpointer guard-hints xargs t)
 
-  General Form:
-  (defpointer alias target keyword-p)
-  })")
+(defun add-resource-directory-fn (dirname fullpath world)
+  (declare (xargs :guard (and (stringp dirname)
+                              (stringp fullpath))
+                  :mode :program))
+  (let* ((resource-dirs (cdr (assoc-eq 'resource-dirs (table-alist 'xdoc world))))
+         (look          (cdr (assoc-equal dirname resource-dirs))))
+    (if look
+        (if (equal look fullpath)
+            ;; Already have it, no need to extend the alist.
+            resource-dirs
+          (er hard? 'add-resource-directory
+              "Conflicting paths for resource directory ~x0.~%  ~
+                 - Previous path: ~x1.~%  ~
+                 - New path: ~x2."
+              dirname look fullpath))
+      (cons (cons dirname fullpath)
+            resource-dirs))))
+
+(defmacro add-resource-directory (dirname path)
+  `(make-event
+    (let ((dirname  ,dirname)
+          (fullpath (acl2::extend-pathname (cbd) ,path state)))
+      (value `(table xdoc 'resource-dirs
+                     (add-resource-directory-fn ,dirname ,fullpath world))))))
+

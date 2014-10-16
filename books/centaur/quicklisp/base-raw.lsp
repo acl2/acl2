@@ -39,5 +39,6 @@
 ;; (ql:quickload "iolib.syscalls")
 (ql:quickload :osicat)
 (ql:quickload :bordeaux-threads)
+(ql:quickload :bt-semaphore)
 (ql:quickload :hunchentoot)
 (ql:quickload :uiop)
