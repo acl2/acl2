@@ -232,6 +232,7 @@ with, we can safely remove @('plus') from our module list.</p>")
           it has the correct type."
   ((type     vl-datatype-p    "The type of the parameter.")
    (expr     vl-expr-p        "The override expression given to this parameter.")
+   (ss       vl-scopestack-p  "Scopestack")
    (warnings vl-warninglist-p "Warnings accumulator for the submodule.")
    (ctx      vl-context-p     "Context for error messages.")
    (paramname stringp         "More context for error messages."))
@@ -253,7 +254,7 @@ types.</p>"
        (ctx      (vl-context-fix ctx))
        (paramname (string-fix paramname))
 
-       ((mv ok reduced-expr) (vl-consteval expr nil))
+       ((mv ok reduced-expr) (vl-consteval expr ss))
        ((unless ok)
         (vl-unparam-debug "~a0: only reduced ~a1 to ~a2 (not a constant).~%"
                           ctx expr reduced-expr)
@@ -343,12 +344,13 @@ types.</p>"
   :guard-hints(("Goal"
                 :in-theory (disable l0)
                 :use ((:instance l0
-                       (x (mv-nth 1 (vl-consteval expr nil))))))))
+                       (x (mv-nth 1 (vl-consteval expr ss))))))))
 
 (define vl-override-parameter-with-expr
   :short "Try to override a parameter with a new expression."
   ((decl     vl-paramdecl-p        "Some parameter from the submodule.")
    (expr     vl-expr-p             "The value expression to override this parameter with.")
+   (ss       vl-scopestack-p       "Scopestack")
    (warnings vl-warninglist-p      "Warnings accumulator for the submodule.")
    (ctx      vl-context-p          "Context for error messages."))
   :returns (mv (okp       booleanp :rule-classes :type-prescription)
@@ -381,7 +383,7 @@ types.</p>"
        ;; convert the override value (expr) so that it has the type and range
        ;; of this parameter.
        (b* (((mv okp warnings coerced-expr)
-             (vl-convert-parameter-value-to-explicit-type decl.type.type expr warnings ctx decl.name))
+             (vl-convert-parameter-value-to-explicit-type decl.type.type expr ss warnings ctx decl.name))
             ((unless okp)
              ;; Already warned.
              (mv nil warnings decl))
@@ -396,7 +398,7 @@ types.</p>"
 
       (:vl-implicitvalueparam
        ;; See the rules in SystemVerilog-2012 Section 23.10.
-       (b* (((mv ok reduced-expr) (vl-consteval expr nil))
+       (b* (((mv ok reduced-expr) (vl-consteval expr ss))
             ((unless ok)
              (vl-unparam-debug "~a0: can't override ~a1, only reduced expr ~a2 to ~a3 (not a constant)."
                                ctx decl expr reduced-expr)
@@ -444,7 +446,7 @@ types.</p>"
                                              :pdims new-dims))
             ((mv okp warnings coerced-expr)
              ;; Do the conversion explicitly, which gives us all the nice warnings.
-             (vl-convert-parameter-value-to-explicit-type explicit-type reduced-expr warnings ctx decl.name))
+             (vl-convert-parameter-value-to-explicit-type explicit-type reduced-expr ss warnings ctx decl.name))
             ((unless okp)
              ;; Already warned
              (mv nil warnings decl))
@@ -462,6 +464,7 @@ types.</p>"
   :short "Try to override an arbitrary parameter with its final value."
   ((decl     vl-paramdecl-p     "Some parameter from the submodule.")
    (value    vl-paramvalue-p    "Final value to override the parameter with.")
+   (ss       vl-scopestack-p    "Scopestack")
    (warnings vl-warninglist-p   "Warnings accumulator for the submodule.")
    (ctx      vl-context-p       "Context for error messages."))
   :returns (mv (okp       booleanp :rule-classes :type-prescription)
@@ -474,7 +477,7 @@ types.</p>"
        (value (vl-paramvalue-fix value))
        ((when (vl-paramvalue-datatype-p value))
         (vl-override-parameter-with-type decl value warnings ctx)))
-    (vl-override-parameter-with-expr decl value warnings ctx)))
+    (vl-override-parameter-with-expr decl value ss warnings ctx)))
 
 
 ; Lining Up Parameter Declarations with Override Values -----------------------
@@ -772,6 +775,7 @@ types.</p>"
   ((x         vl-paramdecloverride-p "Parameter and its final override to process.")
    (valsigma  vl-sigma-p             "Value substitution we're accumulating.")
    (typesigma vl-typesigma-p         "Type substitution we're accumulating.")
+   (ss        vl-scopestack-p        "Scopestack")
    (warnings  vl-warninglist-p       "Warnings accumulator for the submodule.")
    (ctx       vl-context-p           "Context for error messages."))
   :returns
@@ -814,7 +818,7 @@ types.</p>"
 
        ;; Coerce the override value into the correct type.
        ((mv okp warnings decl)
-        (vl-override-parameter-value decl override warnings ctx))
+        (vl-override-parameter-value decl override ss warnings ctx))
        ((unless okp)
         (vl-unparam-debug "~a0: failed to override ~a1 with ~a2.~%" ctx decl override)
         ;; Already warned.
@@ -843,6 +847,7 @@ types.</p>"
   ((x         vl-paramdecloverridelist-p "Overrides from @(see vl-make-paramdecloverrides).")
    (valsigma  vl-sigma-p                 "Value substitution we're accumulating.")
    (typesigma vl-typesigma-p             "Type substitution we're accumulating.")
+   (ss        vl-scopestack-p            "Scopestack")
    (warnings  vl-warninglist-p           "Warnings accumulator for the submodule.")
    (ctx       vl-context-p               "Context for error messages."))
   :returns
@@ -854,10 +859,10 @@ types.</p>"
         (mv t (ok) (vl-sigma-fix valsigma) (vl-typesigma-fix typesigma)))
 
        ((mv okp warnings valsigma typesigma)
-        (vl-override-parameter-1 (car x) valsigma typesigma warnings ctx))
+        (vl-override-parameter-1 (car x) valsigma typesigma ss warnings ctx))
        ((unless okp)
         (mv nil warnings valsigma typesigma)))
-    (vl-override-parameters (cdr x) valsigma typesigma warnings ctx)))
+    (vl-override-parameters (cdr x) valsigma typesigma ss warnings ctx)))
 
 
 
@@ -1030,7 +1035,7 @@ introduced.</p>"
        (valsigma  nil)
        (typesigma nil)
        ((mv okp warnings valsigma typesigma)
-        (vl-override-parameters overrides valsigma typesigma warnings ctx))
+        (vl-override-parameters overrides valsigma typesigma ss warnings ctx))
        ((acl2::free-on-exit valsigma typesigma))
 
        ((unless okp)
@@ -1088,6 +1093,9 @@ introduced.</p>"
         (if car-neededsigs (cons car-neededsigs cdr-neededsigs) cdr-neededsigs))))
 
 (defines vl-unparameterize-main
+  :prepwork ((local (defthm vl-scope-p-when-vl-module-p-strong
+                      (implies (vl-module-p x)
+                               (vl-scope-p x)))))
   (define vl-unparameterize-main ((sig vl-unparam-signature-p)
                                   (donelist "fast alist of previously-seen signatures")
                                   (depthlimit natp "termination counter")
@@ -1134,8 +1142,10 @@ introduced.</p>"
                             :msg "Unparameterizing ~s0 failed; see ~s1 for details."
                             :args (list sig.name (vl-module->name new-mod)))))
 
+         (internal-ss (vl-scopestack-push mod ss))
+
          ((mv insts-okp warnings new-insts need-sigs)
-          (vl-unparam-instlist new-mod.modinsts ss warnings sig.name))
+          (vl-unparam-instlist new-mod.modinsts internal-ss warnings sig.name))
 
          (new-mod (change-vl-module new-mod :warnings warnings :modinsts new-insts))
 
@@ -1220,7 +1230,7 @@ introduced.</p>"
        (valsigma  nil)
        (typesigma nil)
        ((mv ?okp warnings valsigma typesigma)
-        (vl-override-parameters overrides valsigma typesigma warnings ctx))
+        (vl-override-parameters overrides valsigma typesigma ss warnings ctx))
        ((acl2::free-on-exit valsigma typesigma)))
     (mv (make-vl-unparam-signature :name x.name :valsigma valsigma :typesigma typesigma)
         warnings)))

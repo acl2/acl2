@@ -523,6 +523,11 @@ literals, unbased unsized literals, @('this'), @('$'), and @('null').</p>"
          (return (hons-copy (make-vl-atom
                              :guts (make-vl-keyguts :type :vl-null)))))
 
+       (when (vl-is-token? :vl-kwd-default)
+         (:= (vl-match))
+         (return (hons-copy (make-vl-atom
+                             :guts (make-vl-keyguts :type :vl-default)))))
+
        (when (vl-is-token? :vl-kwd-this)
          (:= (vl-match))
          (return (hons-copy (make-vl-atom

@@ -400,6 +400,7 @@ displays.  The module browser's web pages are responsible for defining the
     (:vl-this  "this")
     (:vl-super "super")
     (:vl-local "local")
+    (:vl-default "default")
     (:vl-$     "$")
     (:vl-$root "$root")
     (:vl-$unit "$unit")

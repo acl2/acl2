@@ -288,7 +288,9 @@
       (otherwise    (mv nil nil)))))
 
 
-(define vl-consteval-$bits ((x vl-expr-p) (orig vl-expr-p) (ss vl-scopestack-p))
+(define vl-consteval-$bits ((x vl-expr-p "the expression inside the $bits call")
+                            (orig vl-expr-p "the $bits call itself")
+                            (ss vl-scopestack-p))
   :prepwork ((local (in-theory (disable not))))
   :guard (not (vl-atom-p orig))
   :returns (mv (successp booleanp :rule-classes :type-prescription)
@@ -301,9 +303,11 @@
         (mv nil orig))
        ((unless (and (vl-atom-p x)
                      (member (tag (vl-atom->guts x)) '(:vl-basictype :vl-typename))))
-        (b* ((width (vl-expr->finalwidth x)))
-          (if width
-              (mv t (vl-consteval-ans :value (acl2::loghead orig.finalwidth width)
+        (b* (((mv & arg-width) (vl-expr-selfsize x ss
+                                                 *vl-fake-elem-for-vl-consteval*
+                                                 nil)))
+          (if arg-width
+              (mv t (vl-consteval-ans :value (acl2::loghead orig.finalwidth arg-width)
                                       :width orig.finalwidth
                                       :type orig.finaltype))
             (mv nil orig))))
@@ -460,24 +464,16 @@
          (mv t ans)))
 
       ((:vl-syscall)
-       ;; Basic well-formedness:
-       (b* (((unless (consp x.args))
+       (b* (((unless (vl-$bits-call-p x))
              (mv nil x))
-            (fn (first x.args))
-            ((unless (and (vl-atom-p fn)
-                          (eq (tag (vl-atom->guts fn)) :vl-sysfunname)))
-             (mv nil x))
-            (name (vl-sysfunname->name (vl-atom->guts fn)))
-            ;; At the moment just we try to support $bits.
-            ((when (and (equal name "$bits")
-                          (eql (len x.args) 2)))
-             (b* ((obj (second x.args))
-                  ;; If obj is a constant we should evaluate it first, but
-                  ;; don't fail if it doesn't work.
-                  ((mv ok ev-obj) (vl-consteval-main obj ss))
-                  (obj (if ok ev-obj obj)))
-             (vl-consteval-$bits obj x ss))))
-         (mv nil x)))
+            (obj (second x.args))
+            ;; Do we need to do something like this?
+            ;; ;; If obj is a constant we should evaluate it first, but
+            ;; ;; don't fail if it doesn't work.
+            ;; ((mv ok ev-obj) (vl-consteval-main obj ss))
+            ;; (obj (if ok ev-obj obj))
+            )
+         (vl-consteval-$bits obj x ss)))
             
 
       ;; BOZO could eventually add support for other operators like
@@ -495,7 +491,8 @@
 
    ;; Deferred enabling of vl-expr-welltyped-p:
    ;; Time:  157.17 seconds (prove: 156.96, print: 0.19, other: 0.03)
-   (local (in-theory (disable vl-expr-welltyped-p)))
+   (local (in-theory (disable vl-expr-welltyped-p
+                              arity-stuff-about-vl-$bits-call)))
 
    ;; Fancy trick to try to resolve these membership things faster:
    (local (defthm fancy-solve-member-consts

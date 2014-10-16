@@ -711,6 +711,7 @@ objects.</p>")
    :vl-this
    :vl-super
    :vl-local
+   :vl-default
    :vl-$
    :vl-$root
    :vl-$unit

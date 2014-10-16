@@ -114,7 +114,11 @@ hierarchical identifiers.</p>"
       ((when (vl-fast-string-p x.guts))
        (b* (((vl-string x.guts) x.guts))
          (and (eq x.finaltype :vl-unsigned)
-              (eql x.finalwidth (* 8 (length x.guts.value)))))))
+              (eql x.finalwidth (* 8 (length x.guts.value))))))
+
+      ((when (eq (tag x.guts) :vl-extint))
+       (and x.finaltype
+            (posp x.finalwidth))))
 
    ;; Otherwise -- reals, function names, hierarchical identifier pieces;
    ;; these atoms do not get a finalwidth or finaltype.
@@ -126,6 +130,28 @@ hierarchical identifiers.</p>"
   (b* (((vl-nonatom x) x))
     (and x.finaltype
          (posp x.finalwidth))))
+
+
+(define vl-$bits-call-p ((x vl-expr-p))
+  :enabled t
+  (and (not (vl-atom-p x))
+       (b* (((vl-nonatom x))
+            ((unless (and (eq x.op :vl-syscall)
+                          (eql (len x.args) 2)))
+             nil)
+            (fn (first x.args))
+            ((unless (vl-atom-p fn)) nil)
+            ((vl-atom fn))
+            ((unless (eq (tag fn.guts) :vl-sysfunname)) nil)
+            ((vl-sysfunname fn.guts)))
+         (equal fn.guts.name "$bits")))
+  ///
+  (defthmd arity-stuff-about-vl-$bits-call
+    (implies (vl-$bits-call-p x)
+             (and (not (equal (vl-expr-kind x) :atom))
+                  (consp (vl-nonatom->args x))
+                  (consp (cdr (vl-nonatom->args x)))
+                  (vl-expr-p (cadr (vl-nonatom->args x)))))))
 
 
 
@@ -168,7 +194,11 @@ hierarchical identifiers.</p>"
              (:vl-index t)
              (:vl-select-colon (and (vl-expr-resolved-p (second x.args))
                                     (vl-expr-resolved-p (third x.args))))
-             (otherwise        (vl-expr-resolved-p (third x.args)))))))
+             (otherwise        (vl-expr-resolved-p (third x.args))))))
+         ((when (vl-$bits-call-p x))
+          (and (eql (vl-expr->finalwidth x) 32)
+               (vl-expr->finaltype x)
+               t)))
       (and
        (vl-exprlist-welltyped-p x.args)
        (case x.op
@@ -360,10 +390,6 @@ hierarchical identifiers.</p>"
            :vl-with-colon
            :vl-with-pluscolon
            :vl-with-minuscolon
-           :vl-pattern-positional
-           :vl-pattern-keyvalue
-           :vl-pattern-type
-           :vl-pattern-multi
            :vl-keyvalue
            )
           t)
@@ -372,6 +398,16 @@ hierarchical identifiers.</p>"
           ;; Shouldn't hit this case, checked hidexpr-p above.  Makes guard
           ;; happy because we've covered all cases.
           nil)
+
+         ((:vl-pattern-positional
+           :vl-pattern-keyvalue
+           :vl-pattern-type
+           :vl-pattern-multi)
+          ;; For the moment, at least, we'll say that nothing containing these
+          ;; constructs can be considered welltyped.  Sizing will do its best
+          ;; to remove them and replace them with appropriate concats.
+          nil)
+
 
          (otherwise
           (impossible))))))

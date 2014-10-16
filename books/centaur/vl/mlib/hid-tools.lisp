@@ -1283,30 +1283,30 @@ packed or we'll fail.</p>"
       (vl-datatype-case x
 
         (:vl-coretype
-         (case x.name
-           ;; See SystemVerilog-2012 Section 6.11, Integer Data Types.
+         (b* ((totalsize (vl-packeddimensionlist-total-size x.pdims)))
+           (if totalsize
+               (case x.name
+                 ;; See SystemVerilog-2012 Section 6.11, Integer Data Types.
 
-           ;; integer atom types -- these don't have any dimensions, they're just fixed sizes
-           (:vl-byte     (success 8))
-           (:vl-shortint (success 16))
-           (:vl-int      (success 32))
-           (:vl-longint  (success 64))
-           (:vl-integer  (success 32))
-           (:vl-time     (success 64))
+                 ;; integer atom types -- these don't have any dimensions, they're just fixed sizes
+                 (:vl-byte     (success (* 8 totalsize)))
+                 (:vl-shortint (success (* 16 totalsize)))
+                 (:vl-int      (success (* 32 totalsize)))
+                 (:vl-longint  (success (* 64 totalsize)))
+                 (:vl-integer  (success (* 32 totalsize)))
+                 (:vl-time     (success (* 64 totalsize)))
 
-           ;; integer vector types -- these have arbitrary packed dimensions.
-           ((:vl-bit :vl-logic :vl-reg)
-            (b* ((totalsize (vl-packeddimensionlist-total-size x.pdims)))
-              (if totalsize
-                  (success totalsize)
-                (fail "Dimensions of vector type ~a0 not resolvd"
-                      (list x)))))
+                 ;; integer vector types -- these have arbitrary packed dimensions.
+                 ((:vl-bit :vl-logic :vl-reg)
+                  (success totalsize))
 
-           (otherwise
-            ;; Something like a real, shortreal, void, realtime, chandle, etc.
-            ;; We don't try to size these, but we still claim success: these just
-            ;; don't have ranges.
-            (fail "bad coretype ~a0" (list x)))))
+                 (otherwise
+                  ;; Something like a real, shortreal, void, realtime, chandle, etc.
+                  ;; We don't try to size these, but we still claim success: these just
+                  ;; don't have ranges.
+                  (fail "bad coretype ~a0" (list x))))
+             (fail "Dimensions of vector type ~a0 not resolvd"
+                   (list x)))))
 
         (:vl-struct
          (b* (((unless x.packedp) (fail "unpacked struct ~a0" (list x)))
@@ -1401,26 +1401,23 @@ packed or we'll fail.</p>"
       (vl-datatype-case x
 
         (:vl-coretype
-         (b* ((udim-size (vl-packeddimensionlist-total-size x.udims)))
-           (if udim-size
+         (b* ((udim-size (vl-packeddimensionlist-total-size x.udims))
+              (pdim-size (vl-packeddimensionlist-total-size x.pdims)))
+           (if (and udim-size pdim-size)
                (case x.name
                  ;; See SystemVerilog-2012 Section 6.11, Integer Data Types.
                  
                  ;; integer atom types -- these don't have any dimensions, they're just fixed sizes
-                 (:vl-byte     (success (* udim-size 8)))
-                 (:vl-shortint (success (* udim-size 16)))
-                 (:vl-int      (success (* udim-size 32)))
-                 (:vl-longint  (success (* udim-size 64)))
-                 (:vl-integer  (success (* udim-size 32)))
-                 (:vl-time     (success (* udim-size 64)))
+                 (:vl-byte     (success (* pdim-size udim-size 8)))
+                 (:vl-shortint (success (* pdim-size udim-size 16)))
+                 (:vl-int      (success (* pdim-size udim-size 32)))
+                 (:vl-longint  (success (* pdim-size udim-size 64)))
+                 (:vl-integer  (success (* pdim-size udim-size 32)))
+                 (:vl-time     (success (* pdim-size udim-size 64)))
                  
                  ;; integer vector types -- these have arbitrary packed dimensions.
                  ((:vl-bit :vl-logic :vl-reg)
-                  (b* ((packedsize (vl-packeddimensionlist-total-size x.pdims)))
-                    (if packedsize
-                        (success (* udim-size packedsize))
-                      (fail "Dimensions of vector type ~a0 not resolvd"
-                            (list x)))))
+                  (success (* udim-size pdim-size)))
 
                  (otherwise
                   ;; Something like a real, shortreal, void, realtime, chandle, etc.
