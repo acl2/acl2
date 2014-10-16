@@ -421,6 +421,9 @@
                  rhs: ~a4~%~%"
           :args (list elem ew lw lvalue expr))))
 
+       
+
+
 (def-vl-exprsize vl-assign
   :body
   (b* (((vl-assign x) x)
@@ -439,22 +442,12 @@
                    :args (list elem x.lvalue))
             x))
 
-       ((mv lhs-successp warnings lhs-prime)
-        (vl-expr-size nil x.lvalue ss elem warnings))
-       ((unless lhs-successp)
-        (mv nil warnings x))
+       ((mv ok lhs-prime rhs-prime warnings)
+        (vl-assigncontext-size x.lvalue x.expr ss elem warnings))
+
+       ((unless ok) (mv nil warnings x))
 
        (lhs-size (vl-expr->finalwidth lhs-prime))
-       ((unless (posp lhs-size))
-        (mv nil
-            (fatal :type :vl-bad-assignment
-                   :msg "~a0: The size of the left-hand side ~a1 was not ~
-                          a positive number?"
-                   :args (list elem x.lvalue))
-            x))
-
-       ((mv rhs-successp warnings rhs-prime)
-        (vl-expr-size lhs-size x.expr ss elem warnings))
 
        (warnings
         ;; By vl-expr->finalwidth-of-vl-expr-size-when-lhs-size, we know
@@ -469,7 +462,7 @@
        ((mv delay-successp warnings delay-prime)
         (vl-maybe-gatedelay-exprsize x.delay ss elem warnings))
 
-       ((unless (and rhs-successp delay-successp))
+       ((unless delay-successp)
         (mv nil warnings x))
 
        (x-prime
@@ -499,6 +492,9 @@ possibility for the context width in this case, namely @('FW') or @('N * FW'),
 where @('FW') is the width of the formal and @('N') is the size of the array,
 so it doesn't seem like the port's width could in any sensible way used to size
 the expression.</p>"
+
+  ;; BOZO Port connections are an assignment-like context, so we should get the
+  ;; type of the port so that we can correctly deal with assignment patterns.
 
   :body (b* (((vl-plainarg x) x)
              ((unless x.expr)
@@ -546,6 +542,8 @@ the expression.</p>"
 
 
 (def-vl-exprsize vl-paramvalue
+  ;; BOZO Parameter value assignments/overrides are assignment-like contexts,
+  ;; so we should deal with assignment patterns.
   :takes-elem t
   :body
   (b* ((x (vl-paramvalue-fix x)))
@@ -737,19 +735,13 @@ the expression.</p>"
                               :args (list elem x.lvalue))
                        x))
 
-                  ((mv lhs-successp warnings lhs-prime) (vl-expr-size nil x.lvalue ss elem warnings))
-                  ((unless lhs-successp)
-                   (mv nil warnings x))
-                  (lhs-size (vl-expr->finalwidth lhs-prime))
-                  ((unless (posp lhs-size))
-                   (mv nil
-                       (fatal :type :vl-bad-assignment
-                              :msg "~a0: The size of the left-hand side ~a1 ~
-                                    was not a positive number?"
-                              :args (list elem x.lvalue))
-                       x))
+                  ((mv ok lhs-prime rhs-prime warnings)
+                   (vl-assigncontext-size x.lvalue x.expr ss elem warnings))
 
-                  ((mv rhs-successp warnings rhs-prime) (vl-expr-size lhs-size x.expr ss elem warnings))
+                  ((unless ok) (mv nil warnings x))
+
+                  (lhs-size (vl-expr->finalwidth lhs-prime))
+
                   (warnings
                    ;; By vl-expr->finalwidth-of-vl-expr-size-when-lhs-size, we know
                    ;; that rhs-prime is at least as wide as lhs-size.  But it can be
@@ -762,12 +754,12 @@ the expression.</p>"
 
                   ((mv delay-successp warnings ctrl-prime)
                    (vl-maybe-delayoreventcontrol-exprsize x.ctrl ss elem warnings))
-                  (successp (and rhs-successp delay-successp))
+
                   (x-prime (change-vl-assignstmt x
                                                  :lvalue lhs-prime
                                                  :expr rhs-prime
                                                  :ctrl ctrl-prime)))
-               (mv successp warnings x-prime)))
+               (mv delay-successp warnings x-prime)))
 
             (:vl-deassignstmt
              (b* (((vl-deassignstmt x) x)

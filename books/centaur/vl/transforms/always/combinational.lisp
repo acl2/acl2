@@ -573,10 +573,25 @@ this.  After all, synthesis tools might not do hard work here, either.</p>")
         (mv nil (ok)))
 
        (lvalues (mergesort (vl-idexprlist->names (vl-stmt-cblock-lvalexprs body))))
-       ((unless (vl-cblock-pathcheck lvalues body))
-        ;; Some reg doesn't get updated in some path, not a combinational
-        ;; block, maybe a latch or something.
+       (paths-okp (vl-cblock-pathcheck lvalues body))
+
+       ((when (and (not paths-okp)
+                   (not (eq type :vl-always-comb))))
+        ;; Some reg doesn't get updated in some path, and we don't know for
+        ;; sure that this is supposed to be a combinational block.  This
+        ;; might be a latch.  It's not our job to synthesize it.  Just fail,
+        ;; no error, no warning.  BOZO for better debugging it might be good
+        ;; to have a warning here anyway...
         (mv nil (ok)))
+
+       (warnings
+        (if (and (not paths-okp)
+                 (eq type :vl-always-comb))
+            (warn :type :vl-tricky-always-comb
+                  :msg "~a0: always block does not obviously write to all of ~
+                        its registers in every if/else branch."
+                  :args (list always))
+          (ok)))
 
        ;; Otherwise this pretty strongly seems to be intended to be a
        ;; combinational always block.  At this point it's probably fine to
@@ -648,15 +663,15 @@ this.  After all, synthesis tools might not do hard work here, either.</p>")
   :short "Convert a combinational always block into assignments."
   :long "<p>Basic examples of what we're trying to do here:</p>
 @({
-    always @(*)            ---->   assign lhs = condition1 ? expr1
-       if (condition1)                        : condition2 ? expr2
-          lhs = expr1;                        : expr3
+    always @(*)            ---->   assign lhs = condition1 ? {expr1}
+       if (condition1)                        : condition2 ? {expr2}
+          lhs = expr1;                        : {expr3}
        else if (condition2)
           lhs = expr2;
        else
           lhs = expr3;
 
-    always @(*)            ---->   assign lhs = condition ? expr2 : expr1
+    always @(*)            ---->   assign lhs = condition ? {expr2} : {expr1}
        lhs = expr1;
        if (condition)
           lhs = expr2;
@@ -671,7 +686,31 @@ wider than @('expr1').</p>
 
 <p>To avoid this, we locally use the @(see stmttemps) transform before trying
 to carry out this expression building.  This should ensure that all lhses/rhses
-are well-typed and have compatible widths.</p>")
+are well-typed and have compatible widths.  The excessive use of concatenations
+above ensures that everything is unsigned, to avoid creating badly typed
+@('?:') expressions.</p>
+
+<p>Slight twist.  If we know that this is supposed to be a combinational always
+block because it's written with @('always_comb'), then we allow the lhs to not
+be written in every branch.  In this case a Verilog simulator may not trigger
+any update of the variable, essentially treating it like a latch.  However, it
+seems quite likely that a synthesis tool will not infer a latch.  To try to
+avoid making mistakes here, we want to make sure to drive the variable to Xes
+in this case.</p>
+
+<p>To drive the variable to Xes, a simple thing to do is, e.g.,</p>
+
+@({
+    always_comb           --->  always_comb
+       if (condition)              lhs = XXXX
+          lhs = expr;              if (condition)
+       if (condition2)                lhs = expr;
+          lhs = expr2;             if (condition2)
+                                      lhs = expr2;
+})
+
+<p>This is safe even if all the branches are covered (in which case we're
+simply setting the variable to X and then to its real value).</p>")
 
 (define vl-atomicstmt-cblock-varexpr
   :short "Update our current expression for @('varname') to account for a new
@@ -679,10 +718,11 @@ are well-typed and have compatible widths.</p>")
   ((varname  stringp          "Variable we're considering.")
    (x        (and (vl-stmt-p x)
                   (vl-atomicstmt-p x))  "Statement that we're now encountering.")
-   (curr     vl-maybe-expr-p  "Expression we've built for varname up until now."))
+   (curr     vl-expr-p
+             "Expression we've built for varname up until now.  (Initially an
+              appropriately sized X.)"))
   :guard (vl-atomicstmt-cblock-p x)
-  :returns (expr? (and (vl-maybe-expr-p expr?)
-                       (implies curr expr?))
+  :returns (expr? vl-expr-p
                   :hyp :fguard
                   "New expression to assign to varname, after taking this
                    statement into account.")
@@ -691,11 +731,20 @@ are well-typed and have compatible widths.</p>")
      ;; Null statement has no effect
      curr)
     (:vl-assignstmt
-     (if (equal varname (vl-idexpr->name (vl-assignstmt->lvalue x)))
-         ;; Assign a new expression to this var
-         (vl-assignstmt->expr x)
-       ;; Assignment to some other var doesn't affect var.
-       curr))
+     (b* (((unless (equal varname (vl-idexpr->name (vl-assignstmt->lvalue x))))
+           ;; Assignment to some other var doesn't affect var.
+           curr)
+          ;; Assign a new expression to this var
+          (expr       (vl-assignstmt->expr x))
+          (finalwidth (vl-expr->finalwidth expr))
+          (- (or (posp finalwidth)
+                 ;; Should not happen because of stmttemps
+                 (raise "No size on expression.")))
+          (wrapper (make-vl-nonatom :op :vl-concat
+                                    :args (list expr)
+                                    :finalwidth finalwidth
+                                    :finaltype :vl-unsigned)))
+       wrapper))
     (otherwise
      curr))
   :prepwork
@@ -713,11 +762,10 @@ are well-typed and have compatible widths.</p>")
     :short "Construct the expression for a single variable."
     ((varname  stringp         "Variable we're considering.")
      (x        vl-stmt-p       "Statement we're descending through.")
-     (curr     vl-maybe-expr-p "Expression we've built up for varname so far, if any."))
+     (curr     vl-expr-p       "Expression we've built up for varname so far."))
     :guard (vl-stmt-cblock-p x)
     :verify-guards nil
-    :returns (expr? (and (implies curr expr?)
-                         (vl-maybe-expr-p expr?))
+    :returns (expr? vl-expr-p
                     :hyp :fguard
                     "New expression for varname, if any")
     :measure (vl-stmt-count x)
@@ -741,20 +789,12 @@ are well-typed and have compatible widths.</p>")
                 ;;   var = curr
                 ;;   if (condition) [nothing] else var = false;
                 (vl-safe-qmark-expr x.condition curr false-expr)))
-            ;; Possibility 1: this is something like:
+            ;; Since we are initializing all variables to X, the only reason we 
+            ;; can be here is that we have something like:
             ;;    var = curr
             ;;    if (condition) othervar = blah;
-            ;; We don't care, just keep our current binding for var.
-            ;;
-            ;; Possibility 2: this is something like:
-            ;;    begin
-            ;;      if (condition) var = blah;
-            ;;      var = blah2;
-            ;;    end
-            ;; and we don't even have a binding for var yet.  This is subtle
-            ;; but fine.  We don't care that this IF statement binds VAR, because
-            ;; we know that VAR is ultimately bound on every path, so something
-            ;; later has to overwrite it.
+            ;; and we're encountering the IF.  We don't care because this if
+            ;; doesn't have anything to do with var.
             curr))
 
          ((when (vl-blockstmt-p x))
@@ -767,7 +807,7 @@ are well-typed and have compatible widths.</p>")
   (define vl-stmtlist-cblock-varexpr
     ((varname  stringp         "Variable we're considering.")
      (x        vl-stmtlist-p   "Statement we're descending through.")
-     (curr     vl-maybe-expr-p "Expression we've built up for varname so far, if any."))
+     (curr     vl-expr-p       "Expression we've built up for varname so far."))
     :guard (vl-stmtlist-cblock-p x)
     :returns (expr? (and (implies curr expr?)
                          (vl-maybe-expr-p expr?))
@@ -782,16 +822,13 @@ are well-typed and have compatible widths.</p>")
   ///
   (verify-guards vl-stmt-cblock-varexpr))
 
-(define vl-cblock-make-assign ((name   stringp)
+(define vl-cblock-make-assign ((name  stringp)
                                (vars  vl-vardecllist-p)
                                (body  vl-stmt-p)
                                (ctx   vl-always-p))
   :returns (assigns vl-assignlist-p :hyp :fguard)
   :guard (vl-stmt-cblock-p body)
-  (b* ((expr (vl-stmt-cblock-varexpr name body nil))
-       ((unless expr)
-        (raise "Failed to construct var expr for ~x0??" name))
-       (decl (vl-find-vardecl name vars))
+  (b* ((decl (vl-find-vardecl name vars))
        ((unless decl)
         (raise "Failed to find reg decl for ~x0??" name))
        ((unless (and (vl-simplereg-p decl)
@@ -799,6 +836,18 @@ are well-typed and have compatible widths.</p>")
         (raise "Variable decl too hard for ~x0??" name))
        (size (vl-maybe-range-size (vl-simplereg->range decl)))
        (type (if (vl-simplereg->signedp decl) :vl-signed :vl-unsigned))
+       (initial-x
+        ;; Create an appropriately-sized X to initialize the variable with.
+        ;; This variable will only matter if some branches of the IF do not
+        ;; assign to this variable.  This is unsigned to agree with the
+        ;; concatenations around the expressions above.
+        (make-vl-atom :guts (make-vl-weirdint :origwidth size
+                                              :origtype :vl-unsigned
+                                              :bits (repeat size :vl-xval)
+                                              :wasunsized nil)
+                      :finalwidth size
+                      :finaltype :vl-unsigned))
+       (expr (vl-stmt-cblock-varexpr name body initial-x))
        (lhs  (vl-idexpr name size type))
        (assign (make-vl-assign :lvalue lhs
                                :expr expr
