@@ -6029,17 +6029,20 @@
          (maybe-push-undo-stack 'memoize (cadr (cddr trip)))
          (let* ((tuple (cddr trip))
                 (cl-defun (nth 4 tuple)))
-           (assert$ cl-defun (memoize-fn (nth 1 tuple)
-                                         :condition  (nth 2 tuple)
-                                         :inline     (nth 3 tuple)
-                                         :cl-defun   cl-defun
-                                         :formals    (nth 5 tuple)
-                                         :stobjs-in  (nth 6 tuple)
-                                         :stobjs-out (nth 7 tuple)
-                                         :commutative (nth 9 tuple)
-                                         :forget     (nth 10 tuple)
-                                         :memo-table-init-size (nth 11 tuple)
-                                         :aokp       (nth 12 tuple)))))
+           (assert$ cl-defun
+                    (with-overhead
+                     (nth 13 tuple) ; stats
+                     (memoize-fn (nth 1 tuple)
+                                 :condition  (nth 2 tuple)
+                                 :inline     (nth 3 tuple)
+                                 :cl-defun   cl-defun
+                                 :formals    (nth 5 tuple)
+                                 :stobjs-in  (nth 6 tuple)
+                                 :stobjs-out (nth 7 tuple)
+                                 :commutative (nth 9 tuple)
+                                 :forget     (nth 10 tuple)
+                                 :memo-table-init-size (nth 11 tuple)
+                                 :aokp       (nth 12 tuple))))))
         #+hons
         (unmemoize
          (maybe-push-undo-stack 'unmemoize (cadr (cddr trip)))
@@ -6842,8 +6845,7 @@
   (move-current-acl2-world-key-to-front (w *the-live-state*))
   (checkpoint-world1 t (w *the-live-state*) *the-live-state*)
   #+hons
-  (progn (memoize-init)
-         (initialize-never-memoize-ht)
+  (progn (initialize-never-memoize-ht)
          (acl2h-init-memoizations)))
 
 (defun-one-output ld-alist-raw (standard-oi ld-skip-proofsp ld-error-action)
@@ -6876,6 +6878,7 @@
          (global-set 'boot-strap-pass-2 t (w *the-live-state*))
          *the-live-state*)
   (acl2-unwind *ld-level* nil)
+  #+hons (memoize-init) ; for memoize calls in boot-strap-pass-2.lisp
 
 ; We use an explicit call of LD-fn to change the defun-mode to :logic just to
 ; lay down an event in the pre-history, in case we someday want to poke around
@@ -6990,6 +6993,7 @@
            logic
            make-waterfall-parallelism-constants
            make-waterfall-printing-constants
+           memoize
            push
            reset-future-parallelism-variables
            set-invisible-fns-table

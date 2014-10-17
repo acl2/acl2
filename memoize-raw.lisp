@@ -101,12 +101,6 @@
 ; - Consider using memo-max-sizes-entry records not only to guess good sizes,
 ;   but also to guess good rehash sizes.
 
-; - Maybe think a bit harder about whether our initial memoizations (calls of
-;   memoize-fn in acl2h-init-memoizations) are really handled properly, given
-;   that our code is so oriented towards calling memoize in the loop.  The
-;   current approach seems to have worked well for a long time, so maybe this
-;   isn't much of a priority.  But it seems a bit dodgy somehow.
-
 ; - Tests such as (< (* 100 local-tt) tt) and (> (* 10000 local-tt) tt) in
 ;   function memoize-summary-after-compute-calls-and-times restrict reporting
 ;   to cases where the time is at least 1% of the time taken by the main
@@ -4475,7 +4469,7 @@
 
 (defmacro with-lower-overhead (&rest r)
 
-; Warning: Keep this in sync with lower-overhead.
+; Warning: Keep this in sync with lower-overhead and with-higher-overhead.
 
   `(let ((*record-bytes* nil)
          (*record-calls*
@@ -4493,11 +4487,26 @@
          (*record-time* nil))
      ,@r))
 
-(defun acl2h-init-memoizations ()
+(defmacro with-higher-overhead (&rest r)
 
-; Warning: Keep in sync with acl2h-init-unmemoizations.  Note however that some
-; of the functions memoized here are not memoized by acl2h-init-unmemoizations,
-; as explained below and in a comment in that function.
+; Warning: Keep this in sync with lower-overhead and with-lower-overhead.
+
+  `(let ((*record-bytes* t)
+         (*record-calls* t)
+         (*record-hits* t)
+         (*record-mht-calls* t)
+         (*record-pons-calls* t)
+         (*record-time* t))
+     ,@r))
+
+(defmacro with-overhead (val form)
+  (let ((v (gensym)))
+    `(let ((,v ,val))
+       (cond ((eq ,v :default) ,form)
+             ((null ,v) (with-lower-overhead ,form))
+             (t (with-higher-overhead ,form))))))
+
+(defun acl2h-init-memoizations ()
 
 ; The memoizations performed here, for certain built-in functions, may be
 ; important for performance in applications that traffic in large objects or
@@ -4507,41 +4516,10 @@
 ; thread-safe.
 
   (loop for entry in
-
-; Warning: If this list is changed, visit the comments in the memoized
-; functions.
-
-        (list* '(fchecksum-obj :forget t)
-               '(expansion-alist-pkg-names-memoize :forget t)
-               *thread-unsafe-builtin-memoizations*)
+        *thread-unsafe-builtin-memoizations*
         when (not (memoizedp-raw (car entry)))
         do (with-lower-overhead
             (apply 'memoize-fn entry))))
-
-(defun acl2h-init-unmemoizations ()
-
-; Warning: Keep in sync with acl2h-init-memoizations.
-
-; We unmemoize only those functions whose memoization may interfere with
-; waterfall parallelism.  In particular, we avoid unmemoizing fchecksum-obj and
-; expansion-alist-pkg-names-memoize, which had caused ACL2(hp) certification
-; failure for community book books/system/doc/render-doc-combined (which went
-; out to lunch with many fchecksum-obj on the stack).
-
-; We unmemoize bad-lisp-objectp because the *1* function for
-; symbol-package-name calls chk-bad-lisp-object, and of course
-; symbol-package-name can be called during the waterfall.  Of course,
-; worse-than-builtin is also called during the waterfall, so we unmemoize it
-; here as well.
-
-  (loop for entry in
-
-; Warning: If this list is changed, visit the comments in the memoized
-; functions.
-
-        *thread-unsafe-builtin-memoizations*
-        when (memoizedp-raw (car entry))
-        do (unmemoize-fn (car entry))))
 
 ;;;;;;;;;;
 ;;; Start memory management code (start-sol-gc)
@@ -4828,7 +4806,8 @@
 
 (defun lower-overhead ()
 
-; Warning: Keep this in sync with with-lower-overhead.
+; Warning: Keep this in sync with with-lower-overhead and
+; with-higher-overhead.
 
 ; An old comment here claims that lower-overhead does not help much (in
 ; speeding things up, presumably).  It might be interesting to test that.

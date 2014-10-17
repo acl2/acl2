@@ -1466,6 +1466,26 @@
 (system-verify-guards)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Memoization
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+#+hons
+(progn
+
+; We skip raw Lisp functions here; see *thread-unsafe-builtin-memoizations*.
+
+  (memoize 'fchecksum-obj :stats nil :forget t)
+  (memoize 'expansion-alist-pkg-names-memoize :stats nil :forget t)
+  (memoize 'worse-than-builtin
+           :stats nil
+           :condition ; Sol Swords suggestion
+           '(and (nvariablep term1)
+                 (not (fquotep term1))
+                 (nvariablep term2)
+                 (not (fquotep term2))))
+)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; End
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

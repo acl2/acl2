@@ -7151,12 +7151,6 @@
 ; make this efficient on structure-shared objects, it ought to be memoized.  We
 ; do this explicitly in memoize-raw.lisp (for ACL2h).
 
-; Warning: With #+hons, there could be performance problems if this is put into
-; :logic mode without verifying guards.  That is because fchecksum-obj is
-; memoized by running acl2h-init, and for memoization, we expect the raw Lisp
-; function to be executed, but :ideal mode functions are run without ever
-; slipping into raw Lisp.
-
 ; Note that we could make this partially tail-recursive by accumulating from
 ; the cdr, but this would ruin memoization.  If we find performance problems
 ; with non-hons versions, we could consider having two versions of
