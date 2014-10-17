@@ -5031,6 +5031,7 @@ mean anything.</p>"
        ((vl-nonatom x))
        ((when (member x.op '(:vl-pattern-positional
                              :vl-pattern-keyvalue
+                             :vl-pattern-multi
                              :vl-pattern-type)))
         t)
        ((when (eq x.op :vl-qmark))
@@ -5056,26 +5057,24 @@ mean anything.</p>"
                   (vl-type-expr-pairs-p (pairlis$ x y)))
          :hints(("Goal" :in-theory (enable pairlis$)))))
 
-(define vl-type-expr-pairs-max-count ((x vl-type-expr-pairs-p))
+(define vl-exprlist-max-count ((x vl-exprlist-p))
   :verify-guards nil
-  :measure (len (vl-type-expr-pairs-fix x))
-  (b* ((x (vl-type-expr-pairs-fix x)))
-    (if (atom x)
-        0
-      (max (vl-expr-count (cdar x))
-           (vl-type-expr-pairs-max-count (cdr x))))))
+  (if (atom x)
+      0
+    (max (vl-expr-count (car x))
+         (vl-exprlist-max-count (cdr x)))))
 
+(local (fty::deffixcong list-equiv equal (vl-exprlist-max-count x) x
+         :hints(("Goal" :in-theory (enable list-fix
+                                           vl-exprlist-max-count)))))
 
 (local
- (defthm vl-type-expr-pairs-max-count-of-pairlis$
-   (implies (equal (len keys) (len vals))
-            (< (vl-type-expr-pairs-max-count (pairlis$ keys vals))
-               (vl-exprlist-count vals)))
-   :hints(("Goal" :in-theory (enable vl-type-expr-pairs-fix
-                                     vl-type-expr-pairs-max-count
+ (defthm vl-exprlist-max-count-less-than-vl-exprlist-count
+   (< (vl-exprlist-max-count x)
+      (vl-exprlist-count x))
+   :hints(("Goal" :in-theory (enable vl-exprlist-max-count
                                      pairlis$ len)
-           :expand ((vl-exprlist-count vals))
-           :induct (pairlis$ keys vals)))
+           :expand ((vl-exprlist-count vals))))
    :rule-classes :linear))
 
 ;; (local (in-theory (enable acl2::true-listp-of-list-fix
@@ -5224,11 +5223,20 @@ replace a positional assignment pattern."
                     (redundant-list-fix (vl-exprlist-fix fields)))
         (ok)))
   ///
-  (defthm vl-type-expr-pairs-max-count-of-vl-assignpattern-positional-replacement
-    (< (vl-type-expr-pairs-max-count
-        (mv-nth 1 (vl-assignpattern-positional-replacement
-                   lhs-type fields orig-x elem warnings)))
+  (defthm vl-exprlist-max-count-of-vl-assignpattern-positional-replacement
+    (< (vl-exprlist-max-count
+        (alist-vals
+         (mv-nth 1 (vl-assignpattern-positional-replacement
+                    lhs-type fields orig-x elem warnings))))
        (vl-exprlist-count fields))
+    :rule-classes :linear)
+
+  (defthm vl-exprlist-max-count-of-vl-assignpattern-positional-replacement-lte-max-count
+    (<= (vl-exprlist-max-count
+         (alist-vals
+          (mv-nth 1 (vl-assignpattern-positional-replacement
+                     lhs-type fields orig-x elem warnings))))
+        (vl-exprlist-max-count fields))
     :rule-classes :linear)
 
 
@@ -5246,6 +5254,72 @@ replace a positional assignment pattern."
   (defthm sum-sizes-of-vl-assignpattern-positional-replacement
     (b* (((mv ok pairs &) (vl-assignpattern-positional-replacement
                            lhs-type fields orig-x elem warnings))
+         ((mv warning size) (vl-datatype-size lhs-type))
+         ((mv warning1 size-sum) (vl-type-expr-pairs-sum-datatype-sizes pairs)))
+      (implies (and ok (not warning))
+               (and (not warning1)
+                    (equal size-sum size))))))
+
+
+(define append-n ((count natp) (list))
+  (if (zp count)
+      nil
+    (append-without-guard list (append-n (1- count) list))))
+
+(define vl-assignpattern-multi-replacement ((lhs-type vl-datatype-p)
+                                            (args vl-exprlist-p)
+                                            (orig-x vl-expr-p)
+                                            (elem vl-modelement-p)
+                                            (warnings vl-warninglist-p))
+  :parents (expression-sizing)
+  :short "Return the list of type/expression pairs to concatenate together to
+replace a positional assignment pattern."
+  :returns (mv (successp booleanp :rule-classes :type-prescription)
+               (pairs vl-type-expr-pairs-p)
+               (new-warnings vl-warninglist-p))
+  :prepwork ((local (defthm vl-exprlist-p-of-append-n-expressions
+                      (implies (vl-exprlist-p list)
+                               (vl-exprlist-p (append-n count list)))
+                      :hints(("Goal" :in-theory (enable append-n))))))
+  (b* ((elem (vl-modelement-fix elem))
+       (orig-x (vl-expr-fix orig-x))
+       ((unless (and (eql (len args) 2)
+                     (vl-expr-resolved-p (first args))
+                     (not (eq (vl-expr-kind (second args)) :atom))
+                     (eq (vl-nonatom->op (second args)) :vl-concat)))
+        (mv nil nil
+            (warn :type :vl-assignpattern-elim-fail
+                  :msg "~a0: Ill-formed replication assignment pattern: ~a1"
+                  :args (list elem orig-x))))
+       (replications (vl-resolved->val (first args)))
+       (fields (append-n replications (vl-nonatom->args (second args)))))
+    ;; bozo the warnings produced by this will probably be weird
+    (vl-assignpattern-positional-replacement lhs-type fields orig-x elem warnings))
+  ///
+
+  (local (defthm vl-exprlist-max-count-of-append
+           (equal (vl-exprlist-max-count (append x y))
+                  (max (vl-exprlist-max-count x)
+                       (vl-exprlist-max-count y)))
+           :hints(("Goal" :in-theory (enable vl-exprlist-max-count)))))
+
+  (local (defthm vl-exprlist-max-count-of-append-n
+           (<= (vl-exprlist-max-count (append-n n x))
+               (vl-exprlist-max-count x))
+           :hints(("Goal" :in-theory (enable append-n
+                                             vl-exprlist-max-count)))
+           :rule-classes :linear))
+
+  (defthm vl-exprlist-max-count-of-vl-assignpattern-multi-replacement
+    (< (vl-exprlist-max-count
+        (alist-vals (mv-nth 1 (vl-assignpattern-multi-replacement
+                               lhs-type args orig-x elem warnings))))
+       (vl-exprlist-count args))
+    :rule-classes :linear)
+
+  (defthm sum-sizes-of-vl-assignpattern-multi-replacement
+    (b* (((mv ok pairs &) (vl-assignpattern-multi-replacement
+                           lhs-type args orig-x elem warnings))
          ((mv warning size) (vl-datatype-size lhs-type))
          ((mv warning1 size-sum) (vl-type-expr-pairs-sum-datatype-sizes pairs)))
       (implies (and ok (not warning))
@@ -5338,12 +5412,12 @@ replace a positional assignment pattern."
               rest)
         warnings))
   ///
-  (defthm vl-expr-val-alist-max-count-of-vl-parse-keyval-pattern-array
-    (< (vl-expr-val-alist-max-count
-        (mv-nth 1 (vl-parse-keyval-pattern-array
-                   fields range orig-x elem warnings)))
+  (defthm vl-exprlist-max-count-of-vl-parse-keyval-pattern-array
+    (< (vl-exprlist-max-count
+        (alist-vals (mv-nth 1 (vl-parse-keyval-pattern-array
+                               fields range orig-x elem warnings))))
        (vl-exprlist-count fields))
-    :hints(("Goal" :in-theory (enable vl-expr-val-alist-max-count)))
+    :hints(("Goal" :in-theory (enable vl-exprlist-max-count)))
     :rule-classes :linear))
 
 
@@ -5402,12 +5476,12 @@ replace a positional assignment pattern."
               rest)
         warnings))
   ///
-  (defthm vl-expr-val-alist-max-count-of-vl-parse-keyval-pattern-struct
-    (< (vl-expr-val-alist-max-count
-        (mv-nth 1 (vl-parse-keyval-pattern-struct
-                    fields members orig-x elem warnings)))
+  (defthm vl-exprlist-max-count-of-vl-parse-keyval-pattern-struct
+    (< (vl-exprlist-max-count
+        (alist-vals (mv-nth 1 (vl-parse-keyval-pattern-struct
+                               fields members orig-x elem warnings))))
        (vl-exprlist-count fields))
-    :hints(("Goal" :in-theory (enable vl-expr-val-alist-max-count)))
+    :hints(("Goal" :in-theory (enable vl-exprlist-max-count)))
     :rule-classes :linear))
 
 
@@ -5424,13 +5498,17 @@ replace a positional assignment pattern."
 (local (defthm vl-expr-count-of-lookup-in-expr-val-alist-fix
          (implies (hons-assoc-equal k (vl-expr-val-alist-fix alist))
                   (<= (vl-expr-count (cdr (hons-assoc-equal k (vl-expr-val-alist-fix alist))))
-                      (vl-expr-val-alist-max-count alist)))
-         :hints(("Goal" :in-theory (enable vl-expr-val-alist-max-count
+                      (vl-exprlist-max-count (alist-vals alist))))
+         :hints(("Goal" :in-theory (enable vl-exprlist-max-count
                                            hons-assoc-equal)
                  :induct (hons-assoc-equal k alist)
                  :expand ((vl-expr-val-alist-fix alist)
-                          (vl-expr-val-alist-max-count alist))))
+                          (alist-vals alist))))
          :rule-classes (:rewrite :linear)))
+
+(local (fty::deffixcong vl-expr-val-alist-equiv vl-exprlist-equiv
+         (alist-vals x) x
+         :hints(("Goal" :in-theory (enable vl-expr-val-alist-fix)))))
 
 (define vl-keyvalue-pattern-collect-array-replacements
   ((count natp)
@@ -5463,12 +5541,14 @@ replace a positional assignment pattern."
          datatype field-alist orig-x elem warnings)))
     (mv ok (cons (cons (vl-datatype-fix datatype) (cdr lookup)) rest) warnings))
   ///
-  (defthm vl-type-expr-pairs-max-count-of-vl-keyvalue-pattern-collect-array-replacements
-    (<= (vl-type-expr-pairs-max-count
-         (mv-nth 1 (vl-keyvalue-pattern-collect-array-replacements
-                    count idx incr datatype field-alist orig-x elem warnings)))
-        (vl-expr-val-alist-max-count field-alist))
-    :hints(("Goal" :in-theory (enable vl-type-expr-pairs-max-count)))
+
+  (defthm vl-exprlist-max-count-of-vl-keyvalue-pattern-collect-array-replacements
+    (<= (vl-exprlist-max-count
+         (alist-vals
+          (mv-nth 1 (vl-keyvalue-pattern-collect-array-replacements
+                     count idx incr datatype field-alist orig-x elem warnings))))
+        (vl-exprlist-max-count (alist-vals field-alist)))
+    :hints(("Goal" :in-theory (enable vl-exprlist-max-count)))
     :rule-classes :linear)
 
   (defthm vl-type-expr-pairs-sum-datatype-sizes-of-array-replacements
@@ -5508,12 +5588,12 @@ replace a positional assignment pattern."
          (cdr members) field-alist orig-x elem warnings)))
     (mv ok (cons (cons first.type (cdr lookup)) rest) warnings))
   ///
-  (defthm vl-type-expr-pairs-max-count-of-vl-keyvalue-pattern-collect-struct-replacements
-    (<= (vl-type-expr-pairs-max-count
-         (mv-nth 1 (vl-keyvalue-pattern-collect-struct-replacements
-                    members field-alist orig-x elem warnings)))
-        (vl-expr-val-alist-max-count field-alist))
-    :hints(("Goal" :in-theory (enable vl-type-expr-pairs-max-count)))
+  (defthm vl-exprlist-max-count-of-vl-keyvalue-pattern-collect-struct-replacements
+    (<= (vl-exprlist-max-count
+         (alist-vals (mv-nth 1 (vl-keyvalue-pattern-collect-struct-replacements
+                                members field-alist orig-x elem warnings))))
+        (vl-exprlist-max-count (alist-vals field-alist)))
+    :hints(("Goal" :in-theory (enable vl-exprlist-max-count)))
     :rule-classes :linear)
 
   (defthm vl-type-expr-pairs-sum-datatype-sizes-of-struct-replacements
@@ -5586,16 +5666,55 @@ replace a key/value assignment pattern."
        new-datatype alist
        orig-x elem warnings))
     ///
-    (defthm vl-type-expr-pairs-max-count-of-vl-assignpattern-keyvalue-replacement
-      (< (vl-type-expr-pairs-max-count
-          (mv-nth 1 (vl-assignpattern-keyvalue-replacement
-                     lhs-type fields orig-x elem warnings)))
+    (defthm vl-exprlist-max-count-of-vl-assignpattern-keyvalue-replacement
+      (< (vl-exprlist-max-count
+          (alist-vals (mv-nth 1 (vl-assignpattern-keyvalue-replacement
+                                 lhs-type fields orig-x elem warnings))))
          (vl-exprlist-count fields))
       :rule-classes :linear)
 
     (defthm sum-sizes-of-vl-assignpattern-keyvalue-replacement
       (b* (((mv ok pairs &) (vl-assignpattern-keyvalue-replacement
                              lhs-type fields orig-x elem warnings))
+           ((mv warning size) (vl-datatype-size lhs-type))
+           ((mv warning1 size-sum) (vl-type-expr-pairs-sum-datatype-sizes pairs)))
+        (implies (and ok (not warning))
+                 (and (not warning1)
+                      (equal size-sum size))))))
+
+(define vl-assignpattern-replacement ((lhs-type vl-datatype-p)
+                                      (x vl-expr-p)
+                                      (elem vl-modelement-p)
+                                      (warnings vl-warninglist-p))
+  :guard (and (not (vl-atom-p x))
+              (member (vl-nonatom->op x)
+                      '(:vl-pattern-positional
+                        :vl-pattern-multi
+                        :vl-pattern-keyvalue)))
+    :returns (mv (successp booleanp :rule-classes :type-prescription)
+                 (pairs vl-type-expr-pairs-p)
+                 (new-warnings vl-warninglist-p))
+    (b* (((vl-nonatom x)))
+      (case x.op
+        (:vl-pattern-positional
+         (vl-assignpattern-positional-replacement lhs-type x.args x elem warnings))
+        (:vl-pattern-multi
+         (vl-assignpattern-multi-replacement lhs-type x.args x elem warnings))
+        (:vl-pattern-keyvalue
+         (vl-assignpattern-keyvalue-replacement lhs-type x.args x elem warnings))
+        (otherwise (mv (mbe :logic nil :exec 'impossible) nil nil))))
+    ///
+    (defthm vl-exprlist-max-count-of-vl-assignpattern-replacement
+      (implies (not (vl-atom-p x))
+               (< (vl-exprlist-max-count
+                   (alist-vals (mv-nth 1 (vl-assignpattern-replacement
+                                          lhs-type x elem warnings))))
+                  (vl-expr-count x)))
+      :rule-classes :linear)
+
+    (defthm sum-sizes-of-vl-assignpattern-replacement
+      (b* (((mv ok pairs &) (vl-assignpattern-replacement
+                             lhs-type x elem warnings))
            ((mv warning size) (vl-datatype-size lhs-type))
            ((mv warning1 size-sum) (vl-type-expr-pairs-sum-datatype-sizes pairs)))
         (implies (and ok (not warning))
@@ -5803,6 +5922,8 @@ replace a key/value assignment pattern."
     ))
 
 
+
+
 (defines vl-expr-replace-assignpatterns
   (define vl-expr-replace-assignpatterns
     ((lhs-type vl-datatype-p                  "The type that we want x to assume.")
@@ -5832,9 +5953,11 @@ replace a key/value assignment pattern."
                 (vl-expr-replace-assignpatterns lhs-type (third x.args) in-pattern ss elem warnings))
                ((unless (and true-ok false-ok)) (mv nil x warnings)))
             (mv t (change-vl-nonatom x :args (list (first x.args) true false)) warnings)))
-         ((when (eq x.op :vl-pattern-positional))
+         ((when (member x.op '(:vl-pattern-positional
+                               :vl-pattern-multi
+                               :vl-pattern-keyvalue)))
           (b* (((mv ok type-expr-pairs warnings)
-                (vl-assignpattern-positional-replacement lhs-type x.args x elem warnings))
+                (vl-assignpattern-replacement lhs-type x elem warnings))
                ((unless ok) (mv nil x warnings))
                ((mv ok args warnings)
                 (vl-exprlist-replace-assignpatterns type-expr-pairs ss elem warnings))
@@ -5843,16 +5966,6 @@ replace a key/value assignment pattern."
                 ;; bozo -- Do we ever need to worry about the sign?
                 (make-vl-nonatom :op :vl-concat
                                  :args args)
-                warnings)))
-         ((when (eq x.op :vl-pattern-keyvalue))
-          (b* (((mv ok type-expr-pairs warnings)
-                (vl-assignpattern-keyvalue-replacement lhs-type x.args x elem warnings))
-               ((unless ok) (mv nil x warnings))
-               ((mv ok args warnings)
-                (vl-exprlist-replace-assignpatterns type-expr-pairs ss elem warnings))
-               ((unless ok) (mv nil x warnings)))
-            (mv t (make-vl-nonatom :op :vl-concat
-                                   :args args)
                 warnings)))
          ((when (eq x.op :vl-pattern-type))
           (b* (((mv warning pattype) (vl-castexpr->datatype (first x.args) ss))
@@ -5874,9 +5987,10 @@ replace a key/value assignment pattern."
      (ss vl-scopestack-p)
      (elem vl-modelement-p)
      (warnings vl-warninglist-p))
-    :measure (two-nats-measure (vl-type-expr-pairs-max-count x)
+    :measure (two-nats-measure (vl-exprlist-max-count (alist-vals (vl-type-expr-pairs-fix x)))
                                (len (vl-type-expr-pairs-fix x)))
-    :hints(("Goal" :in-theory (enable vl-type-expr-pairs-max-count)))
+    :hints(("Goal" :in-theory (enable vl-exprlist-max-count alist-vals
+                                      vl-type-expr-pairs-fix)))
     :returns (mv (successp booleanp :rule-classes :type-prescription)
                  (new-x vl-exprlist-p)
                  (new-warnings vl-warninglist-p))
@@ -6046,14 +6160,20 @@ replace a key/value assignment pattern."
      (warnings vl-warninglist-p                      "Ordinary @(see warnings) accumulator."))
     :returns (mv (successp booleanp :rule-classes :type-prescription)
                  (new-x vl-expr-p)
-                 (new-warnings vl-warninglist-p))
+                 (new-warnings vl-warninglist-p
+                               :hints ('(:in-theory (disable vl-expr-size-assigncontext
+                                                             vl-exprlist-size-assigncontext)
+                                         :expand ((:free (elem warnings in-pattern)
+                                                   (vl-expr-size-assigncontext
+                                                    lhs-type x in-pattern ss elem warnings)))))))
     :parents (expression-sizing)
     :short "Size and resolve assignment patterns in an expression, given the type of its LHS."
     :long "<p>If successful, returns a sized (welltyped) expression.  If the
 LHS type is an unpacked datatype, then the size of the expression is the
 datatype size and the type is unsigned.</p>"
     :measure (two-nats-measure (vl-expr-count x) 0)
-    :hints(("Goal" :in-theory (enable vl-type-expr-pairs-max-count)))
+    :hints(("Goal" :in-theory (enable vl-exprlist-max-count
+                                      alist-vals vl-type-expr-pairs-fix)))
     :verify-guards nil
     (b* ((warnings (vl-warninglist-fix warnings))
          (elem (vl-modelement-fix elem))
@@ -6093,20 +6213,11 @@ datatype size and the type is unsigned.</p>"
             (mv t (make-vl-nonatom :op :vl-qmark
                                    :args (list cond1 true1 false1))
                 warnings)))
-         ((when (eq x.op :vl-pattern-positional))
+         ((when (member x.op '(:vl-pattern-positional
+                               :vl-pattern-multi
+                               :vl-pattern-keyvalue)))
           (b* (((mv ok type-expr-pairs warnings)
-                (vl-assignpattern-positional-replacement lhs-type x.args x elem warnings))
-               ((unless ok) (mv nil x warnings))
-               ((mv ok args warnings)
-                (vl-exprlist-size-assigncontext type-expr-pairs ss elem warnings))
-               ((unless ok) (mv nil x warnings)))
-            (mv t (make-vl-nonatom :op :vl-concat
-                                   :args args)
-                warnings)))
-
-         ((when (eq x.op :vl-pattern-keyvalue))
-          (b* (((mv ok type-expr-pairs warnings)
-                (vl-assignpattern-keyvalue-replacement lhs-type x.args x elem warnings))
+                (vl-assignpattern-replacement lhs-type x elem warnings))
                ((unless ok) (mv nil x warnings))
                ((mv ok args warnings)
                 (vl-exprlist-size-assigncontext type-expr-pairs ss elem warnings))
@@ -6145,8 +6256,13 @@ datatype size and the type is unsigned.</p>"
                                           (warnings vl-warninglist-p))
     :returns (mv (successp booleanp :rule-classes :type-prescription)
                  (new-x vl-exprlist-p)
-                 (new-warnings vl-warninglist-p))
-    :measure (two-nats-measure (vl-type-expr-pairs-max-count x)
+                 (new-warnings vl-warninglist-p
+                               :hints ('(:in-theory (disable vl-expr-size-assigncontext
+                                                             vl-exprlist-size-assigncontext)
+                                         :expand ((:free (elem warnings in-pattern)
+                                                   (vl-exprlist-size-assigncontext
+                                                    x ss elem warnings)))))))
+    :measure (two-nats-measure (vl-exprlist-max-count (alist-vals (vl-type-expr-pairs-fix x)))
                                (len (vl-type-expr-pairs-fix x)))
     (b* ((x (vl-type-expr-pairs-fix x))
          ((when (atom x)) (mv t nil (vl-warninglist-fix warnings)))

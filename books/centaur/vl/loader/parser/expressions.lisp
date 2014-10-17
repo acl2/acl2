@@ -1560,7 +1560,7 @@ identifier, so we convert it into a hidpiece.</p>
               (arg := (vl-parse-expression))
               (:= (vl-match-token :vl-rparen))
               (return (make-vl-nonatom :op :vl-binary-cast :args (list primary arg))))
-            ;; otherwise, better by a typed assignment pattern:
+            ;; otherwise, better be a typed assignment pattern:
             (:= (vl-match-token :vl-lcurly))
             (pattern := (vl-parse-assignment-pattern))
             (return (make-vl-nonatom :op :vl-pattern-type :args (list primary pattern))))
