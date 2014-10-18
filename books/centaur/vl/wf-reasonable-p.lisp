@@ -82,7 +82,7 @@ number of additional well-formedness checks are done in @(see argresolve) and
 
 (defwellformed vl-vardecl-reasonable-p (x)
   :parents (reasonable)
-  :short "@(call vl-netdecl-reasonable-p) determines if a @(see vl-netdecl-p)
+  :short "@(call vl-vardecl-reasonable-p) determines if a @(see vl-vardecl-p)
 is @(see reasonable)."
   :long "<p>We restrict wire declarations in the following ways:</p>
 <ul>

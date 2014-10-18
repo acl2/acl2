@@ -5,7 +5,9 @@
 ------------------------------------------------------------------------------
 
 You can use VL's "model" tool to translate Verilog designs into formal models
-that can be analyzed by the ACL2 theorem prover.
+that can be analyzed by the ACL2 theorem prover.  It can also produce files
+for use in the web-based Verilog Module Browser (see "vl server --help" for
+details).
 
 
                               PREREQUISITES
@@ -13,17 +15,17 @@ that can be analyzed by the ACL2 theorem prover.
   To get any use out of this, you would typically need to know how to use ACL2.
   For basic information about the theorem prover, see its homepage:
 
-    http://www.cs.utexas.edu/users/moore/acl2/
+     http://www.cs.utexas.edu/users/moore/acl2/
 
   VL itself is an ACL2 library for processing Verilog files.  It is distributed
-  as part of the ACL2 Community Books project, see the centaur/vl directory:
+  as part of the ACL2 Community Books project.  See the centaur/vl directory:
 
-    http://acl2-books.googlecode.com/
+     https://github.com/acl2/acl2/
 
   VL has considerable documentation.  The documentation corresponding to the
   latest ACL2 release is found at:
 
-   http://fv.centtech.com/acl2/latest/doc/frames2.html?topic=ACL2____VL
+    http://fv.centtech.com/acl2/latest/doc/?topic=ACL2____VL
 
   More bleeding-edge documentation can be generated from the sources (which you
   can get from the acl2-books project, above).
@@ -46,8 +48,7 @@ that can be analyzed by the ACL2 theorem prover.
 
      (The extension .sao stands for "Serialized ACL2 Object."  These files can
       be quickly read into ACL2 using serialize-read.  For more information,
-      see:
-        http://fv.centtech.com/acl2/latest/doc/frames2.html?topic=ACL2____SERIALIZE)
+      see: http://fv.centtech.com/acl2/latest/doc/?topic=ACL2____SERIALIZE)
 
 
     model.sao -- This is just the serialized VL-TRANSLATION-P object produced

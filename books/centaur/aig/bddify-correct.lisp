@@ -42,7 +42,6 @@
                     aig-q-compose-correct))
 
 (set-inhibit-warnings "theory")
-(set-waterfall-parallelism nil) ; for defthm aig-bddify-x-weakening-ok-point
 
 
 ;; --------- UBDDP-VAL-ALISTP
@@ -2743,75 +2742,76 @@
                                       abs-memo-okp))))
 
 
-  (defthm aig-bddify-var-weakening-ok
-    (implies (and (abs-bdd-al-okp bdd-al n)
-                  (integerp n)
-                  (<= (bdd-al-max-depth al) n)
-                  (abs-fmemo-okp fmemo al)
-                  (abs-memo-okp memo n al bdd-al)
-                  (<= 1 max-count)
-                  (equal nxtbdd (qv (+ n (len bdd-al)))))
-             (b* (((mv bdd aig & new-fmemo new-memo new-bdd-al new-nxtbdd exact)
-                   (aig-bddify-var-weakening
-                    x al max-count fmemo memo bdd-al nxtbdd))
-                  (exact-bdd (aig-q-compose x al)))
-               (and (suffixp bdd-al new-bdd-al)
-                    (<= (len bdd-al) (len new-bdd-al))
-                    (<= (bdd-max-depth bdd) (+ n (len new-bdd-al)))
-                    (abs-bdd-al-okp new-bdd-al n)
-                    (bdds-compatible-for-al
-                     exact-bdd bdd new-bdd-al n)
-                    (bdd-equiv (aig-q-compose aig al) exact-bdd)
-                    (implies exact
-                             (bdd-equiv bdd exact-bdd))
-                    (abs-memo-okp new-memo n al new-bdd-al)
-                    (abs-fmemo-okp new-fmemo al)
-                    (equal new-nxtbdd (qv (+ n (len new-bdd-al)))))))
-    :hints (("goal" :induct (aig-bddify-var-weakening-induct
-                             x al max-count fmemo memo bdd-al nxtbdd)
-             :expand ((:free (nxtbdd)
-                       (aig-bddify-var-weakening
-                        x al max-count fmemo memo bdd-al nxtbdd)))
-             :do-not-induct t)
-            ;; ("Subgoal *1/4" :in-theory (enable aig-q-compose bdd-max-depth booleanp))
-            ;; ("Subgoal *1/3" :in-theory (enable aig-q-compose-not-decomp-x booleanp))
-            ;; ("Subgoal *1/2" :in-theory (disable qv)) ;;aig-q-compose-and-decomp-x))
-            ;; ("Subgoal *1/1" :in-theory (e/d (aig-q-compose-and-decomp-x)
-            ;;                                 (and-bddify-var-weakening 
-            ;;                                  qv len
-            ;;                                  mv-nth-cons-meta
-            ;;                                  hons-assoc-equal
-            ;;                                  equal-of-booleans-rewrite
-            ;;                                  ;; normalize-terms-such-as-a/a+b-+-b/a+b
-            ;;                                  ;;                                             normalize-addends
-            ;;                                  and-bddify-var-weakening-ok)))
-            ;; (and (equal (car id) '(0 1))
-            ;;      '(:restrict 
-            ;;        ((aig-bddify-var-weakening ((x x)) ((x t)) ((x nil))))
-            ;;        :expand
-            ;;        ((:free (nxtbdd)
-            ;;                (aig-bddify-var-weakening
-            ;;                 x al max-count fmemo memo bdd-al nxtbdd)))))
+  (without-waterfall-parallelism
+   (defthm aig-bddify-var-weakening-ok
+     (implies (and (abs-bdd-al-okp bdd-al n)
+                   (integerp n)
+                   (<= (bdd-al-max-depth al) n)
+                   (abs-fmemo-okp fmemo al)
+                   (abs-memo-okp memo n al bdd-al)
+                   (<= 1 max-count)
+                   (equal nxtbdd (qv (+ n (len bdd-al)))))
+              (b* (((mv bdd aig & new-fmemo new-memo new-bdd-al new-nxtbdd exact)
+                    (aig-bddify-var-weakening
+                     x al max-count fmemo memo bdd-al nxtbdd))
+                   (exact-bdd (aig-q-compose x al)))
+                (and (suffixp bdd-al new-bdd-al)
+                     (<= (len bdd-al) (len new-bdd-al))
+                     (<= (bdd-max-depth bdd) (+ n (len new-bdd-al)))
+                     (abs-bdd-al-okp new-bdd-al n)
+                     (bdds-compatible-for-al
+                      exact-bdd bdd new-bdd-al n)
+                     (bdd-equiv (aig-q-compose aig al) exact-bdd)
+                     (implies exact
+                              (bdd-equiv bdd exact-bdd))
+                     (abs-memo-okp new-memo n al new-bdd-al)
+                     (abs-fmemo-okp new-fmemo al)
+                     (equal new-nxtbdd (qv (+ n (len new-bdd-al)))))))
+     :hints (("goal" :induct (aig-bddify-var-weakening-induct
+                              x al max-count fmemo memo bdd-al nxtbdd)
+              :expand ((:free (nxtbdd)
+                              (aig-bddify-var-weakening
+                               x al max-count fmemo memo bdd-al nxtbdd)))
+              :do-not-induct t)
+             ;; ("Subgoal *1/4" :in-theory (enable aig-q-compose bdd-max-depth booleanp))
+             ;; ("Subgoal *1/3" :in-theory (enable aig-q-compose-not-decomp-x booleanp))
+             ;; ("Subgoal *1/2" :in-theory (disable qv)) ;;aig-q-compose-and-decomp-x))
+             ;; ("Subgoal *1/1" :in-theory (e/d (aig-q-compose-and-decomp-x)
+             ;;                                 (and-bddify-var-weakening 
+             ;;                                  qv len
+             ;;                                  mv-nth-cons-meta
+             ;;                                  hons-assoc-equal
+             ;;                                  equal-of-booleans-rewrite
+             ;;                                  ;; normalize-terms-such-as-a/a+b-+-b/a+b
+             ;;                                  ;;                                             normalize-addends
+             ;;                                  and-bddify-var-weakening-ok)))
+             ;; (and (equal (car id) '(0 1))
+             ;;      '(:restrict 
+             ;;        ((aig-bddify-var-weakening ((x x)) ((x t)) ((x nil))))
+             ;;        :expand
+             ;;        ((:free (nxtbdd)
+             ;;                (aig-bddify-var-weakening
+             ;;                 x al max-count fmemo memo bdd-al nxtbdd)))))
 
 
-            (if (case-match id (((0 1) (1 &) . 0) t))
-                (with-quoted-forms
-                 (b* (((mv bdd1 aig1 count1 fmemo memo bdd-al nxtbdd exact1)
-                       (aig-bddify-var-weakening 
-                        (car x) al max-count fmemo memo bdd-al
-                        (qv (+ n (len bdd-al)))))
-                      ((mv bdd2 aig2 count2 & memo bdd-al nxtbdd exact2)
-                       (aig-bddify-var-weakening
-                        (cdr x) al max-count fmemo memo bdd-al nxtbdd)))
-                   `(:use ((:instance 
-                            and-bddify-var-weakening-ok
-                            . ,(var-fq-bindings
-                                (bdd1 aig1 count1 exact1 bdd2 aig2 count2 exact2
-                                      bdd-al nxtbdd memo))))
-                     :in-theory (disable and-bddify-var-weakening-ok
-                                         and-bddify-var-weakening-suffixp-rw))))
-              (value nil))
-            )))
+             (if (case-match id (((0 1) (1 &) . 0) t))
+                 (with-quoted-forms
+                  (b* (((mv bdd1 aig1 count1 fmemo memo bdd-al nxtbdd exact1)
+                        (aig-bddify-var-weakening 
+                         (car x) al max-count fmemo memo bdd-al
+                         (qv (+ n (len bdd-al)))))
+                       ((mv bdd2 aig2 count2 & memo bdd-al nxtbdd exact2)
+                        (aig-bddify-var-weakening
+                         (cdr x) al max-count fmemo memo bdd-al nxtbdd)))
+                    `(:use ((:instance 
+                             and-bddify-var-weakening-ok
+                             . ,(var-fq-bindings
+                                 (bdd1 aig1 count1 exact1 bdd2 aig2 count2 exact2
+                                       bdd-al nxtbdd memo))))
+                           :in-theory (disable and-bddify-var-weakening-ok
+                                               and-bddify-var-weakening-suffixp-rw))))
+               (value nil))
+             ))))
 
 (in-theory (disable aig-bddify-var-weakening))
 
@@ -2979,49 +2979,50 @@
                             mv-nth-cons-meta
                             bdds-compatible-for-al-self)))
 
- (defthm aig-bddify-list-var-weakening-ok
-   (implies (and (abs-args-okp fmemo memo bdd-al nxtbdd al n)
-                 (<= 1 max-count))
-            (b* ((ans
-                  (aig-bddify-list-var-weakening
-                   x al max-count fmemo memo bdd-al nxtbdd n))
-                 ((mv bdds aigs new-fmemo exact)
-                  ans)
-                 (exact-bdds (aig-q-compose-list x al)))
-              (and
-               (abs-args-okp new-fmemo memo bdd-al nxtbdd al n)
+ (without-waterfall-parallelism
+  (defthm aig-bddify-list-var-weakening-ok
+    (implies (and (abs-args-okp fmemo memo bdd-al nxtbdd al n)
+                  (<= 1 max-count))
+             (b* ((ans
+                   (aig-bddify-list-var-weakening
+                    x al max-count fmemo memo bdd-al nxtbdd n))
+                  ((mv bdds aigs new-fmemo exact)
+                   ans)
+                  (exact-bdds (aig-q-compose-list x al)))
+               (and
+                (abs-args-okp new-fmemo memo bdd-al nxtbdd al n)
 
-               (bdd-equiv-list (aig-q-compose-list aigs al) exact-bdds)
-               
-               (implies exact
-                        (and (bdd-equiv-list bdds exact-bdds)
-;;                              (fv-simplifiedp-list aigs al)
-                             )))))
-   :hints (("Goal" :induct (aig-bddify-list-var-weakening
-                            x al max-count fmemo memo bdd-al nxtbdd n)
-            :in-theory (enable aig-bddify-list-var-weakening))
-           (if (equal id (parse-clause-id "Subgoal *1/2"))
-               (with-quoted-forms
-                (b* (((mv & & & fmemo2 memo2 bdd-al2 nxtbdd2 &)
-                      (aig-bddify-var-weakening
-                       (car x) al max-count fmemo memo bdd-al nxtbdd)))
-                  `(:use
-                    ((:instance
-                      aig-bddify-var-weakening-ok-if-args-ok-2
-                      (x (car x)))
-                     (:instance
-                      abs-recheck-exactness-top-abs-args-okp
-                      (x (car x));;  (fmemo1 fmemo)
-                      (fmemo2 ,(fq fmemo2))
-                      (memo2 ,(fq memo2))
-                      (bdd-al2 ,(fq bdd-al2))
-                      (nxtbdd2 ,(fq nxtbdd2))))
-                    :in-theory (e/d (aig-bddify-list-var-weakening;;  mv-nth
-                                                                   eql)
-                                    (aig-bddify-var-weakening-ok-if-args-ok-2
-                                     aig-bddify-var-weakening-ok-if-args-ok
-                                     abs-recheck-exactness-top-abs-args-okp)))))
-             (value nil)))))
+                (bdd-equiv-list (aig-q-compose-list aigs al) exact-bdds)
+
+                (implies exact
+                         (and (bdd-equiv-list bdds exact-bdds)
+                              ;; (fv-simplifiedp-list aigs al)
+                              )))))
+    :hints (("Goal" :induct (aig-bddify-list-var-weakening
+                             x al max-count fmemo memo bdd-al nxtbdd n)
+             :in-theory (enable aig-bddify-list-var-weakening))
+            (if (equal id (parse-clause-id "Subgoal *1/2"))
+                (with-quoted-forms
+                 (b* (((mv & & & fmemo2 memo2 bdd-al2 nxtbdd2 &)
+                       (aig-bddify-var-weakening
+                        (car x) al max-count fmemo memo bdd-al nxtbdd)))
+                   `(:use
+                     ((:instance
+                       aig-bddify-var-weakening-ok-if-args-ok-2
+                       (x (car x)))
+                      (:instance
+                       abs-recheck-exactness-top-abs-args-okp
+                       (x (car x)) ;;  (fmemo1 fmemo)
+                       (fmemo2 ,(fq fmemo2))
+                       (memo2 ,(fq memo2))
+                       (bdd-al2 ,(fq bdd-al2))
+                       (nxtbdd2 ,(fq nxtbdd2))))
+                     :in-theory (e/d (aig-bddify-list-var-weakening ;;  mv-nth
+                                      eql)
+                                     (aig-bddify-var-weakening-ok-if-args-ok-2
+                                      aig-bddify-var-weakening-ok-if-args-ok
+                                      abs-recheck-exactness-top-abs-args-okp)))))
+              (value nil))))))
 
 
 

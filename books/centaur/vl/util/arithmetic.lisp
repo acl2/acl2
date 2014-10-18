@@ -35,6 +35,15 @@
 ; generally be defined in defs.lisp.  Eventually, these lemmas should be moved
 ; into more other libraries.
 
+
+;; Note (Sol) -- Including these before the pre-arithmetic label so that when
+;; we disable basic-arithmetic-rules it doesn't turn off things that should
+;; basically always be enabled, e.g., the definition of lifix.
+(include-book "std/basic/defs" :dir :system)
+(include-book "ihs/basic-definitions" :dir :system)
+(include-book "centaur/fty/basetypes" :dir :system)
+
+
 (deflabel pre-arithmetic)
 
 (include-book "arithmetic/top-with-meta" :dir :system)

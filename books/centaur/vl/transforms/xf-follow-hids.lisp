@@ -220,7 +220,7 @@ to report this information as well.</p>"
              ;; later found that we weren't fully resolving some HIDs because
              ;; their declared ranges were things like [`foo-1:0].  So we can
              ;; do a bit better by trying to resolve the ranges.
-             ((mv & range) (vl-maybe-rangeresolve range nil))
+             ((mv & range) (vl-maybe-rangeresolve range nil nil))
              (range-resolvedp
               ;; See vl-hid-expr-elim, don't say it's resolved unless
               ;; it's also unsigned and has no arrdims.
@@ -610,7 +610,8 @@ identifier.</p>"
                      :verify-guards nil
                      :measure (vl-expr-count x)))
 
-     (cond ((vl-hidexpr-p x)
+     (cond ((and (vl-hidexpr-p x)
+                 (not (vl-idexpr-p x)))
             (b* (((when (vl-fast-atom-p x))
                   (prog2$ (er hard? 'vl-expr-follow-hids "Jared thinks this is impossible.")
                           (mv warnings x)))

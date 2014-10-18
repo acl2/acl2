@@ -132,17 +132,6 @@ Options:" *nls* *nls* *vl-pp-opts-usage* *nls*))
         (mv "" state)))
     (mv (implode contents) state)))
 
-(define vl-pp-defines (x &key (ps 'ps))
-  :guard (vl-defines-p x)
-  (if (atom x)
-      ps
-    (vl-ps-seq
-     (vl-print "`define ")
-     (vl-print (caar x))
-     (vl-print " ")
-     (vl-println (vl-echarlist->string (cdar x)))
-     (vl-pp-defines (cdr x)))))
-
 (define vl-pp-main ((opts vl-pp-opts-p) &key (state 'state))
 
   (b* (((vl-pp-opts opts) opts)

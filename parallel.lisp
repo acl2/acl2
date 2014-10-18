@@ -245,19 +245,19 @@
                   "Parallel execution must be enabled before enabling ~
                    waterfall parallelism.  See :DOC set-parallel-execution"))
              (t
-              (pprogn #+(and hons (not acl2-loop-only))
-                      (progn
-                        (cond ((null val)
-                               (acl2h-init-memoizations))
-                              (t
-                               (acl2h-init-unmemoizations)))
-                        state)
-                      (f-put-global 'waterfall-parallelism val state)
-                      (progn$
-                       #-acl2-loop-only
-                       (funcall ; avoid undefined function warning
-                        'initialize-dmr-interval-used)
-                       (value val)))))
+              (pprogn
+
+; One might be tempted to insert (mf-multiprocessing val) here.  However, in
+; ACL2(hp) -- which is where this code is run -- we really want to keep
+; multiprocessing on, since one can do mulithreaded computations (e.g., with
+; pand) even with waterfall-parallelism disabled.
+
+               (f-put-global 'waterfall-parallelism val state)
+               (progn$
+                #-acl2-loop-only
+                (funcall ; avoid undefined function warning
+                 'initialize-dmr-interval-used)
+                (value val)))))
             #-acl2-par
 
 ; Once upon a time we issued an error here instead of an observation.  In
@@ -375,49 +375,9 @@
   `(with-output
     :off (summary event)
     (make-event
-     (let ((old-val (f-get-global 'waterfall-parallelism state)))
-       (declare (ignorable old-val))
-       (er-let*
-        ((new-val (set-waterfall-parallelism1 ,val)))
-        (cond
-         ((eq new-val :IGNORED)
-          (value '(value-triple :IGNORED)))
-         #+hons
-         ((and (null old-val) (car new-val))
-          (pprogn
-           (observation
-            'set-waterfall-parallelism
-
-; Here and below, we start with a "~%" so that the messages printed when
-; enabling and disabling waterfall parallelism have the same amount of space
-; between the messages and the return value.  This "~%" is paired with the one
-; at the end of the observation in print-set-waterfall-parallelism-notice.
-
-            "~%Unmemoizing built-in function~#0~[ ~x0, which had been~/s ~&0, ~
-             which had been~] memoized by default, as well as all functions ~
-             that had been explicitly memoized.  See :DOC ~
-             unsupported-waterfall-parallelism-features.~%"
-             (strip-cars *thread-unsafe-builtin-memoizations*))
-
-; The functions that are memoized by default as part of hons are
-; memoized/unmemoized inside set-waterfall-parallelism-fn.  We do it there,
-; instead of as part of this macro, because those memoizations only occur in
-; raw Lisp and have nothing to do with table events.  Since this macro is an
-; ACL2-loop macro, it does not have access to acl2h-init-memoizations and
-; acl2h-init-unmemoizations.
-
-           (value '(save-and-clear-memoization-settings))))
-         #+hons
-         ((and old-val (null (car new-val)))
-          (pprogn
-           (observation
-            'set-waterfall-parallelism
-            "~%Rememoizing functions that had been memoized (either by ~
-             default or explicitly) but were later unmemoized when disabling ~
-             waterfall-parallelism.  See :DOC ~
-             unsupported-waterfall-parallelism-features.~%")
-           (value'(restore-memoization-settings))))
-         (t (value '(value-triple nil)))))))))
+     (er-let*
+         ((new-val (set-waterfall-parallelism1 ,val)))
+       (value (list 'value-triple (list 'quote new-val)))))))
 
 (defun set-waterfall-printing-fn (val ctx state)
   (cond ((member-eq val *waterfall-printing-values*)

@@ -74,12 +74,12 @@
 
 <xsl:template match="img">
   <div class="ximg">
-    <img src="../images/{@src}"/>
+    <img src="../{@src}"/>
   </div>
 </xsl:template>
 
 <xsl:template match="icon">
-    <img src="../images/{@src}"/>
+    <img src="../{@src}"/>
 </xsl:template>
 
 <xsl:template match="b">

@@ -694,7 +694,7 @@
   #+ccl
   (ccl:signal-semaphore semaphore)
   #+(or (and sb-thread (not sbcl-sno-patch)) lispworks)
-  (with-lock
+  (with-lock-raw
    (acl2-semaphore-lock semaphore)
    (without-interrupts
     (incf (acl2-semaphore-count semaphore))
@@ -776,7 +776,7 @@
 ; system (which requires we implement semaphores in user space because we need
 ; semaphore-notification-objects).
 
-    (with-lock
+    (with-lock-raw
      (acl2-semaphore-lock semaphore)
      (unwind-protect-disable-interrupts-during-cleanup
       (with-potential-timeout

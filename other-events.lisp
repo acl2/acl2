@@ -11496,7 +11496,7 @@
               (t (er soft ctx
                      "The argument to IN-PACKAGE must be a known ~
                       package name, but ~x0, used in the first form ~
-                      in ~x1, is not.  The known packages are~*2"
+                      in ~x1, is not.  The known packages are ~*2"
                      (cadr val)
                      file
                      (tilde-*-&v-strings
@@ -15563,7 +15563,6 @@
                  (t (cons name acc)))))
         (t acc)))
 
-#+(and hons (not acl2-loop-only))
 (defun hons-union-ordered-string-lists (x y)
   (cond ((null x) y)
         ((null y) x)
@@ -15579,8 +15578,6 @@
          (hons (car y)
                (hons-union-ordered-string-lists x (cdr y))))))
 
-#+(and hons (not acl2-loop-only))
-(save-def
 (defun expansion-alist-pkg-names-memoize (x)
 
 ; See expansion-alist-pkg-names.
@@ -15592,16 +15589,8 @@
         ((and x (symbolp x))
          (hons (symbol-package-name x) nil))
         (t nil)))
-)
 
 (defun expansion-alist-pkg-names (x base-kpa)
-
-; Warning: With #+hons, there could be performance problems if this is put into
-; :logic mode without verifying guards.  That is because
-; expansion-alist-pkg-names-memoize is memoized by running acl2h-init, and for
-; memoization, we expect the raw Lisp function to be executed and call
-; expansion-alist-pkg-names; but :ideal mode functions are run without ever
-; slipping into raw Lisp.
 
 ; For an explanation of the point of this function, see the comment at the call
 ; of expansion-alist-pkg-names in certify-book-fn.
@@ -26170,11 +26159,24 @@
              (er hard ctx
                  "~@0~x1 is not a function symbol."
                  str key))
-            ((member-eq 'state (stobjs-in key wrld))
+            ((and (or condition (cdr (assoc-eq :inline val)))
+
+; The preceding term says that we are not profiling.  Why not replace it simply
+; with condition, allowing :inline t?  Perhaps we could, but that would require
+; a bit of thought since memoization with :inline t will modify recursive
+; calls, and we would need to be sure that this replacement doesn't violate
+; syntactic restrictions.  We can think about this if someone has reason to
+; memoize with :condition nil but not :inline nil.
+
+                  (member-eq 'state (stobjs-in key wrld)))
              (er hard ctx
-                 "~@0~x1 takes ACL2's STATE as an argument."
+                 "~@0~x1 takes ACL2's STATE as an argument (illegal except ~
+                  for profiling)."
                  str key))
-            ((and condition
+            ((and (or condition (cdr (assoc-eq :inline val)))
+
+; See comment above for the case of 'state.
+
                   (non-memoizable-stobjs (stobjs-in key wrld) wrld))
              (mv-let
               (abs conc)
@@ -26201,11 +26203,14 @@
                      corresponding concrete stobj was introduced with ~
                      :NON-MEMOIZABLE T.  See :DOC defstobj."
                     str key conc abs)))))
-            ((and condition
+            ((and (or condition (cdr (assoc-eq :inline val)))
+
+; See comment above for the case of 'state.
+
                   (not (all-nils (stobjs-out key wrld))))
              (let ((stobj (find-first-non-nil (stobjs-out key wrld))))
                (er hard ctx
-                   "~@0~x1 returns a stobj, ~x2."
+                   "~@0~x1 returns a stobj, ~x2 (illegal except for profiling)."
                    str key stobj)))
             ((member-eq key *hons-primitive-fns*)
              (er hard ctx

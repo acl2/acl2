@@ -16976,7 +16976,8 @@
                           ,(and (cdr (assoc-eq :commutative val)) t)
                           ,(cdr (assoc-eq :forget val))
                           ,(cdr (assoc-eq :memo-table-init-size val))
-                          ,(cdr (assoc-eq :aokp val)))))
+                          ,(cdr (assoc-eq :aokp val))
+                          ,(cdr (assoc-eq :stats val)))))
              (t `(unmemoize ,key))))
       (t nil))))
 

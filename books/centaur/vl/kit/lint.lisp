@@ -511,7 +511,17 @@ shown.</p>"
 
        ;; Now that HIDs are gone, we can throw away any modules we don't care
        ;; about, if we have been given any topmods.
-       (design (cwtime (vl-design-drop-user-submodules design config.dropmods)))
+       (design (b* ((names1 (vl-modulelist->names (vl-design->mods design)))
+                    (design (vl-design-drop-missing-submodules design))
+                    (names2 (vl-modulelist->names (vl-design->mods design)))
+                    (lost   (difference (mergesort names1) (mergesort names2))))
+                 (or (not lost)
+                     (cw "BOZO lost ~x0 modules somewhere (probably unparameterizing): ~x1~%"
+                         (len lost) lost))
+                 design))
+
+       (design (cwtime (vl-design-remove-unnecessary-modules config.topmods design)))
+
 
        ;; BOZO it seems sort of legitimate to do this before sizing, which
        ;; might be nice.  Of course, a more rigorous use/set analysis will
