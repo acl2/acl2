@@ -35,12 +35,12 @@
 // Compatbility wrapper for lack of XSLT standards in browsers.
 //
 // Interface:
-//   render_text(String of XDOC XML markup) -> String of Plain Text
-//   render_html(String of XDOC XML markup) -> HTML DOM Object
+//   renderText(String of XDOC XML markup) -> String of Plain Text
+//   renderHtml(String of XDOC XML markup) -> HTML DOM Object
 
 
 
-function wrap_xdoc_fragment(str) {
+function wrapXdocFragment(str) {
     var wrap = "<!DOCTYPE xdoc [";
     wrap += "<!ENTITY mdash \"&#8212;\">";
     wrap += "<!ENTITY rarr \"&#8594;\">";
@@ -52,7 +52,7 @@ function wrap_xdoc_fragment(str) {
 
 var xslt_impl = {};
 
-function xslt_init() {
+function xsltInit() {
 
     if (window.ActiveXObject // detects IE <= version 11
         || "ActiveXObject" in window // detects IE version 11
@@ -63,7 +63,7 @@ function xslt_init() {
 	var xsltdom = new ActiveXObject("Msxml2.DOMDocument.6.0");
 	xsltdom.validateOnParse = true;
 	xsltdom.async = false;
-	xsltdom.loadXML(xslt_plain); 
+	xsltdom.loadXML(xslt_plain);
 	xslt_impl["proc"] = xsltdom;
 
 	var xmldom  = new ActiveXObject("Msxml2.DOMDocument.6.0");
@@ -71,8 +71,8 @@ function xslt_init() {
 	xmldom.async = false;
 	xmldom.setProperty("ProhibitDTD", false);
 
-	xslt_impl["render_text"] = function(str) {
-	    xmldom.loadXML(wrap_xdoc_fragment(str));
+	xslt_impl["renderText"] = function(str) {
+	    xmldom.loadXML(wrapXdocFragment(str));
 	    if (xmldom.parseError.errorCode != 0) {
 		var myErr = xmldom.parseError;
 		try {
@@ -88,8 +88,8 @@ function xslt_init() {
 	    return ret;
 	};
 
-	xslt_impl["render_html"] = function(str) {
-	    xmldom.loadXML(wrap_xdoc_fragment(str));
+	xslt_impl["renderHtml"] = function(str) {
+	    xmldom.loadXML(wrapXdocFragment(str));
 	    if (xmldom.parseError.errorCode != 0) {
 		var myErr = xmldom.parseError;
 		try {
@@ -112,16 +112,16 @@ function xslt_init() {
 	var xslt_dom = $.parseXML(xslt_plain);
 	xslt_impl["proc"].importStylesheet(xslt_dom);
 
-	xslt_impl["render_text"] = function(str) {
-	    var xml = $.parseXML(wrap_xdoc_fragment(str));
+	xslt_impl["renderText"] = function(str) {
+	    var xml = $.parseXML(wrapXdocFragment(str));
 	    var dom = xslt_impl["proc"].transformToFragment(xml,document);
 	    var str = $(dom).text();
-	    
+
 	    // It's not clear to me whether this is good or bad.  The
 	    // basic problem is that strings like "short" strings
 	    // might legitimately have quotes or apostrophes in them.
 	    // This is no problem if we're going to stick the
-	    // render_text into a paragraph or something like that.
+	    // renderText into a paragraph or something like that.
 	    // But it *is* a problem if we're going to stick it into
 	    // an attribute like a tooltip or similar.  So, just to
 	    // avoid problems like that, make sure the resulting
@@ -131,20 +131,20 @@ function xslt_init() {
 		.replace(/'/g, '&apos;');
 	};
 
-	xslt_impl["render_html"] = function(str) {
-	    var xml = $.parseXML(wrap_xdoc_fragment(str));
+	xslt_impl["renderHtml"] = function(str) {
+	    var xml = $.parseXML(wrapXdocFragment(str));
 	    var dom = xslt_impl["proc"].transformToFragment(xml,document);
 	    return dom;
 	};
     }
 }
-	
-function render_text(str) {
-    return xslt_impl["render_text"](str);
+
+function renderText(str) {
+    return xslt_impl["renderText"](str);
 }
 
-function render_html(str) {
-    return xslt_impl["render_html"](str);
+function renderHtml(str) {
+    return xslt_impl["renderHtml"](str);
 }
 
-xslt_init();
+xsltInit();
