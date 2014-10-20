@@ -1711,7 +1711,7 @@
 
   (ma-index *initial-max-symbol-to-fixnum*))
 
-(defg *caller*
+(defvar *caller*
 
 ; This variable represents the index into *memoize-call-array* that starts the
 ; layout of the "column" for the innermost memoized function call being
@@ -1722,6 +1722,10 @@
 
 ; When memoized functions are executing in parallel, the value of *caller* and
 ; of statistics derived therefrom may be meaningless and random.
+
+; At one time we introduced this variable using defg instead of defvar.  To see
+; why we now use defvar, see the comment about unwind-protect in
+; memoize-fn-outer-body.
 
   (let ((val (outside-caller-col-base)))
     (check-type val mfixnum)
@@ -2463,12 +2467,12 @@
 
     (error "Memoize-fn:  ~s uses STATE." fn)))
 
-(defun memoize-fn-inner-body (fn condition body-call fn-col-base
+(defun memoize-fn-inner-body (fn condition body fn-col-base
                                  tablename localtablename
                                  ponstablename localponstablename
                                  memo-table-init-size
                                  formals specials stobjs-out number-of-args
-                                 commutative aokp)
+                                 commutative aokp prog1-fn)
 
 ; This is the main part of the body of the function defined by memoize-fn.
 
@@ -2476,9 +2480,9 @@
 ; best be ignored on a first reading.  A long comment in *memoize-call-array*
 ; outlines how performance counting is implemented.
 
-;; [Jared] multithreading note: all of this is going to be protected with the
-;; global lock, so we shouldn't need any locking inside here.  See
-;; memoize-fn-def.
+  ;; [Jared] multithreading note: all of this is going to be protected with the
+  ;; global lock, so we shouldn't need any locking inside here.  See
+  ;; memoize-fn-def.
 
   (let ((mf-record-mht ; performance counting
          (and *record-mht-calls*
@@ -2494,10 +2498,14 @@
                        ,(ma-index-from-col-base fn-col-base *ma-hits-index*))
                  1)))))
     `(cond
-      ((not ,condition)
-       ,@(and *condition-nil-as-hit* ; see comment in definition of this var
-              mf-record-hit)
-       ,body-call)
+      ,@(and (not (member-eq condition '('t t))) ; minor optimization
+             `(((not ,condition)
+
+; See the comment in the definition of *condition-nil-as-hit*.
+
+                ,@(and *condition-nil-as-hit*
+                       mf-record-hit)
+                ,body)))
       ,@(and
          condition ; else dead code
          `((t
@@ -2554,7 +2562,7 @@
 
                 ,@(and aokp
 
-; We note that a saved value for fn was used, which may have dependent on an
+; We note that a saved value for fn was used, which may have depended on an
 ; attachment since aokp is true.  See memoize-use-attachment-warning for how
 ; this special lookup-marker (:lookup . fn) is used.
 
@@ -2592,35 +2600,49 @@
                                (if (cdr stobjs-out)
                                    (length stobjs-out)
                                  1)
-                               collect (mf-make-symbol "O~a" i)))
-                        (prog1-fn (if (cdr stobjs-out)
-                                      'multiple-value-prog1
-                                    'prog1)))
-                   `(let (,*attached-fn-temp*)
-                      (mv?-let
+                               collect (mf-make-symbol "O~a" i))))
+                   (cond
+                    (aokp
+                     `(mv?-let
                        ,vars
-                       (let (*attached-fn-called*)
-                         (,prog1-fn
-                          ,body-call
-                          (setq ,*attached-fn-temp* *attached-fn-called*)))
-                       (progn
-                         (cond
-                          ,@(and (not aokp)
-                                 `((,*attached-fn-temp*
-                                    (memoize-use-attachment-warning
-                                     ',fn
-                                     ,*attached-fn-temp*))))
-                          (t ; Save the results in the memo table.
-                           (mf-sethash ,*mf-args*
-                                       (list* ,@vars)
-                                       ,localtablename)))
-                         (when ,*attached-fn-temp* ; optimization
-                           (update-attached-fn-called ,*attached-fn-temp*))
-                         (mv? ,@vars))))))))))))))
+                       ,body
+                       (progn (mf-sethash ,*mf-args*
+                                          (list* ,@vars)
+                                          ,localtablename)
+                              (mv? ,@vars))))
+                    (t ; (not aokp); so avoid using attachments
+                     `(let (,*attached-fn-temp*)
+                        (mv?-let
+                         ,vars
+                         (let (*attached-fn-called*)
+                           (,prog1-fn
+                            ,body
+                            (setq ,*attached-fn-temp* *attached-fn-called*)))
+                         (progn
+                           (cond
+                            (,*attached-fn-temp*
+                             (memoize-use-attachment-warning
+                              ',fn
+                              ,*attached-fn-temp*))
+                            (t ; Save the results in the memo table.
+                             (mf-sethash ,*mf-args*
+                                         (list* ,@vars)
+                                         ,localtablename)))
+
+; Special variable *attached-fn-called* was protected by a LET above when
+; executing body, which could have set it to a non-nil value.  That value was
+; however saved in *attached-fn-temp*, which we now use to update
+; *attached-fn-called* since *attached-fn-called* was restored, after the
+; execution of body, to its previous value.
+
+                           (when ,*attached-fn-temp* ; optimization
+                             (update-attached-fn-called ,*attached-fn-temp*))
+                           (mv? ,@vars))))))))))))))))
 
 (defun memoize-fn-outer-body (inner-body fn fn-col-base start-ticks forget
                                          number-of-args
-                                         tablename ponstablename)
+                                         tablename ponstablename
+                                         prog1-fn)
 
 ; The code returned below will be put in the context of outer-body in the code
 ; returned by memoize-fn-def.  It is a wrapper for inner-body, and it is used
@@ -2638,32 +2660,63 @@
 ; functions will be "charged" to fn, and *caller* will only be re-assigned by
 ; subsidiary top-level calls of other memoized functions.
 
-;; [Jared] multithreading note: all of this is going to be protected with the
-;; global lock, so we shouldn't need any locking inside here.  See
-;; memoize-fn-def.
+  ;; [Jared] multithreading note: all of this is going to be protected with the
+  ;; global lock, so we shouldn't need any locking inside here.  See
+  ;; memoize-fn-def.
 
-  `(let ((,*mf-old-caller* *caller*)
-         #+ccl
+  `(let (#+ccl
          ,@(and *record-bytes* ; performance counting
                 `((,*mf-start-bytes* (heap-bytes-allocated))))
          ,@(and *record-pons-calls* ; performance counting
-                `((,*mf-start-pons* *pons-call-counter*))))
+                `((,*mf-start-pons* *pons-call-counter*)))
+         (,start-ticks ,(if *record-time*
+                            '(internal-real-ticks)
+                          '0)))
      (declare
       (ignorable #+ccl
                  ,@(and *record-bytes* `(,*mf-start-bytes*))
                  ,@(and *record-pons-calls* `(,*mf-start-pons*)))
       (type mfixnum
-            ,*mf-old-caller*
+            ,start-ticks
             ,@(and *record-pons-calls* `(,*mf-start-pons*))
             #+ccl
             ,@(and *record-bytes* `(,*mf-start-bytes*))))
-     (unwind-protect-disable-interrupts-during-cleanup
-      (progn (setq ,start-ticks  ,(if *record-time*
-                                      '(internal-real-ticks)
-                                    '0))
-             (setq *caller* ,fn-col-base) ; performance counting
-             ,inner-body)
-      (setq *caller* ,*mf-old-caller*)
+     (,(cond ((or *record-pons-calls*
+                  *record-bytes*
+                  *record-time*
+                  forget)
+
+; The test above is the condition under which there are forms following the
+; inner-body call below.  If there are no such forms, we simply lay down a
+; progn (which presumably will be compiled away).
+
+              prog1-fn)
+             (t 'progn))
+
+; At one time we used unwind-protect here (actually, we used
+; unwind-protect-disable-interrupts-during-cleanup).  But some very simple
+; experiments show that prog1 and multiple-value-prog1 are much cheaper than
+; unwind-protect, even if we introduce *caller* and start-ticks as special
+; variables (so that they can be let-bound) instead of defg.  Maybe that's in
+; the noise, but it seems worth trying, even if when aborting computations,
+; some of the statistics are skewed or, if forget is true, some tables fail to
+; be flushed.
+
+      ,(cond ((or *record-bytes*
+                  *record-calls*
+                  *record-hits*
+                  *record-mht-calls*
+                  *record-pons-calls*
+                  *record-time*)
+
+; Then we are gathering performance counting statistics for this function, so
+; we need to make a note of the caller.  Otherwise, this function is invisible
+; from the standpoint of performance counting, and we should let the caller
+; stay as it was.
+
+              `(let ((*caller* ,fn-col-base)) ; performance counting
+                 ,inner-body))
+             (t inner-body))
       ,@(and *record-pons-calls* ; performance counting
              `((safe-incf
                 (aref ,*mf-ma*
@@ -2710,10 +2763,9 @@
 
              `((setq ,tablename nil)
                ,@(and (> number-of-args 1)
-                      `((setq ,ponstablename nil)))))
-      (setq ,start-ticks -1))))
+                      `((setq ,ponstablename nil))))))))
 
-(defun memoize-fn-def (inner-body outer-body body body-name
+(defun memoize-fn-def (inner-body outer-body
                                   fn formals specials dcls fnn start-ticks
                                   localtablename localponstablename)
 
@@ -2748,10 +2800,16 @@
                        ,*mf-ma*))
         ,@(and *record-calls* ; performance counting
                `((safe-incf (aref ,*mf-ma* ,*mf-count-loc*) 1)))
-        (flet ((,body-name () ,body))
-          (if (eql -1 ,start-ticks)
-              ,outer-body
-            ,inner-body))))))
+
+; At one time we introduced an flet to share code for the original body, which
+; can occur twice or three times below.  But we changed this on 10/18/2014
+; because we think that the code expansion might be worth it, in case flet
+; reduces performance.  Probably this is not a sufficiently important issue to
+; pursue further.
+
+        (if (eql -1 ,start-ticks)
+            ,outer-body
+          ,inner-body)))))
 
 (defun-one-output memoize-eval-compile (def old-fn)
   #+(or ccl sbcl) ; all functions are compiled
@@ -2965,21 +3023,6 @@
                       #-gcl ,old-fn
                       #+gcl ',old-fn ; old-fn could be (lisp:lambda-block ...)
                       ,@formals)))))
-             (body-name (make-symbol "BODY-NAME"))
-             (body-call
-
-; This call has no arguments, which is OK because a suitable closure is formed.
-; For example, before memoizing a function (foo x) we can evaluate
-
-;   (trace! (memoize-fn-def :native t 
-;                           :entry t
-;                           :exit (progn (pprint (car values)) t)))
-
-; to find that the memoized definition of foo has this form:
-
-;   (DEFUN FOO (X) ... (FLET ((#:BODY-NAME NIL (LIST X X))) ...))
-
-              (list body-name))
              (dcls (mf-dcls (cddr (butlast cl-defun))))
              (start-ticks
 
@@ -2987,7 +3030,7 @@
 
               (let ((v (hons-gentemp
                         (memoize-fn-suffix "START-TICKS-" fn))))
-                (eval `(prog1 (defg ,v -1)
+                (eval `(prog1 (defparameter ,v -1)
                          (declaim (type mfixnum ,v))))))
              (tablename
 
@@ -3049,20 +3092,23 @@
 ; reads from specials we want to count them as arguments.
 
               (+ (len formals) (len specials)))
+             (prog1-fn (if (cdr stobjs-out)
+                           'multiple-value-prog1
+                         'prog1))
              (inner-body
               (memoize-fn-inner-body
-               fn condition body-call fn-col-base
+               fn condition body fn-col-base
                tablename localtablename ponstablename localponstablename
                memo-table-init-size
                formals specials stobjs-out number-of-args
-               commutative aokp))
+               commutative aokp prog1-fn))
              (outer-body
               (memoize-fn-outer-body
                inner-body fn fn-col-base start-ticks forget number-of-args
-               tablename ponstablename))
+               tablename ponstablename prog1-fn))
              (def
               (memoize-fn-def
-               inner-body outer-body body body-name
+               inner-body outer-body
                fn formals specials dcls fnn start-ticks
                localtablename localponstablename))
              (success nil))
