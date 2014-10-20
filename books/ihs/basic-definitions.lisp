@@ -112,7 +112,26 @@ Motorola MC68020.</p>")
                   (equal (ash i pos)
                          (* i (expt 2 pos))))))
 
+(local (defthm logand-positive
+         (implies (natp mask)
+                  (<= 0 (logand i mask)))
+         :rule-classes ((:linear))))
 
+(encapsulate
+  ()
+  (local (defun my-induct (i size)
+           (if (zp size)
+               (list size i)
+             (my-induct (ash i -1)
+                        (- size 1)))))
+
+  (defthmd mod-of-expt-2-is-logand
+    (implies (and (integerp size)
+                  (>= size 0)
+                  (integerp i))
+             (equal (mod i (expt 2 size))
+                    (logand i (1- (ash 1 size)))))
+    :hints(("Goal" :induct (my-induct i size)))))
 
 
 ;;;****************************************************************************
@@ -332,7 +351,7 @@ except that we return 1 or 0 (instead of t or nil).</p>
   :enabled t
   :inline t
   (mbe :logic (- (expt2 size) 1)
-       :exec (- (ash 1 size) 1)))
+       :exec (the unsigned-byte (1- (the unsigned-byte (ash 1 size))))))
 
 (define logmaskp
   :parents (logops-definitions)
@@ -344,7 +363,9 @@ except that we return 1 or 0 (instead of t or nil).</p>
                    (>= i 0) ;; silly, this is implied by the equality below
                    (equal i (- (expt2 (integer-length i)) 1)))
        :exec (and (integerp i)
-                  (eql i (- (ash 1 (integer-length i)) 1)))))
+                  (eql i (the unsigned-byte
+                              (- (the unsigned-byte (ash 1 (integer-length i)))
+                                 1))))))
 
 (define bitmaskp
   :parents (logops-definitions)
@@ -353,54 +374,27 @@ logmaskp) but respects @(see int-equiv)."
   ((i integerp))
   :returns bool
   :inline t
-  (logmaskp (lifix i)))
-
-
-
-;; (local (in-theory (disable floor mod expt)))
-
-;; (local
-;;  (defthm <-mod-expt-2-crock
-;;    (implies
-;;     (and (not (< size1 size))
-;; 	 (not (< size 0))
-;; 	 (integerp size1)
-;; 	 (integerp size)
-;; 	 (integerp i))
-;;     (< (mod i (expt 2 size))
-;;        (expt 2 size1)))
-;;    :hints
-;;    (("Goal"
-;;      :in-theory (disable expt-is-weakly-increasing-for-base>1)
-;;      :use ((:instance expt-is-weakly-increasing-for-base>1
-;; 		      (r 2) (i size) (j size1)))))))
+  (logmaskp (mbe :logic (ifix i)
+                 :exec i)))
 
 (define loghead
   :parents (logops-definitions)
   :short "@('(loghead size i)') returns the @('size') low-order bits of @('i')."
-  ((size posp)
+  ((size posp :type unsigned-byte)
    (i    integerp))
   :returns nat
   :long "<p>By convention we define @('(loghead 0 i)') as 0, but this
   definition is a bit arbitrary.</p>"
   :inline t
   :enabled t
+  :split-types t
   (mbe :logic (imod i (expt2 size))
        ;; BOZO it'd be nicer to give this an :exec of (logand i (1- (ash 1
        ;; size))), but that'll require some additional lemmas...
-       :exec (mod i (ash 1 size))))
-  ;; :guard-hints(("Goal"
-  ;;               :nonlinearp t
-  ;;               :do-not '(generalize fertilize)
-  ;;               :do-not-induct t)))
-
-(defdoc logops-definitions
-  ":doc-section logops-definitions
-blah ~/~/~/")
-
-(defdoc logops
-  ":doc-section logops
-blah ~/~/~/")
+       :exec
+       (the unsigned-byte
+            (logand i (the unsigned-byte
+                           (1- (the unsigned-byte (ash 1 size))))))))
 
 (defun-inline logtail (pos i)
   ":doc-section logops-definitions
@@ -441,7 +435,8 @@ blah ~/~/~/")
   (declare (xargs :guard (and (integerp size)
                               (>= size 0)
                               (integerp i)
-                              (integerp j))))
+                              (integerp j)))
+           (inline logapp))
   (logapp size i (logtail size j)))
 
 (defun logext (size i)
@@ -458,9 +453,17 @@ blah ~/~/~/")
   than 0.~/~/"
   (declare (xargs :guard (and (integerp size)
                               (> size 0)
-                              (integerp i))))
+                              (integerp i))
+                  :split-types t)
+           (type unsigned-byte size)
+           (type integer i))
   ;; BOZO could do better than this with MBE with some work, see centaur/bitops/sign-extend
-  (logapp (1- size) i (if (logbitp (1- size) i) -1 0)))
+  (let* ((size-1 (- size 1)))
+    (declare (type unsigned-byte size-1))
+    (logapp size-1 i
+            (if (logbitp size-1 i)
+                -1
+              0))))
 
 (defun logrev1 (size i j)
   ":doc-section logops-definitions
@@ -469,12 +472,18 @@ blah ~/~/~/")
   (declare (xargs :guard (and (integerp size)
                               (>= size 0)
                               (integerp i)
-                              (integerp j))))
+                              (integerp j))
+                  :split-types t)
+           (type unsigned-byte size)
+           (type integer i j))
   (if (zp size)
-      (ifix j)
-    (logrev1 (- size 1) (logcdr i) (logcons (logcar i) j))))
+      (mbe :logic (ifix j)
+           :exec j)
+    (logrev1 (the unsigned-byte (- size 1))
+             (logcdr i)
+             (logcons (logcar i) j))))
 
-(defun logrev (size i)
+(defun-inline logrev (size i)
   ":doc-section logops-definitions
   (LOGREV size i) bit-reverses the size low-order bits of i, discarding the
   high-order bits.
@@ -507,13 +516,17 @@ blah ~/~/~/")
 
   (declare (xargs :guard (and (integerp size)
 			      (< 0 size)
-			      (integerp i))))
+			      (integerp i))
+                  :split-types t)
+           (type unsigned-byte size)
+           (type integer i))
 
-  (let* ((i (ifix i))			;?
-	 (val (expt2 (1- size)))
-	 (maxval (1- val))
+  (let* ((i      (mbe :logic (ifix i) :exec i))
+	 (val    (expt2 (the unsigned-byte (1- size))))
+	 (maxval (the unsigned-byte (1- (the unsigned-byte val))))
 	 (minval (- val)))
-
+    (declare (type unsigned-byte val maxval)
+             (type integer i minval))
     (if (>= i maxval)
 	maxval
       (if (<= i minval)
