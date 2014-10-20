@@ -32,53 +32,50 @@
 ;;;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 (in-package "ACL2")
-(include-book "ihs-doc-topic")
+(include-book "std/util/define" :dir :system)
 (local (include-book "math-lemmas"))
 (local (include-book "quotient-remainder-lemmas"))
 
-(deflabel logops
-  :doc ":doc-section ihs
+(defxdoc logops
+  :short "Definitions and lemmas about logical operations on integers."
 
-   Definitions and lemmas about logical operations on integers.~/~/
+  :long "<p>The books \"logops-definitions\" and \"logops-lemmas\" contain a
+theory of the logical operations on numbers defined by CLTL (Section 12.7), and
+a portable implementation of the CLTL byte manipulation functions (Section
+12.8).  These books also extend the CLTL logical operations and byte
+manipulation theory with a few new definitions, lemmas supporting those
+definitions, and useful macros.</p>
 
-   The books \"logops-definitions\" and \"logops-lemmas\" contain a theory of
-   the logical operations on numbers defined by CLTL (Section 12.7), and a
-   portable implementation of the CLTL byte manipulation functions (Section
-   12.8).  These books also extend the CLTL logical operations and byte
-   manipulation theory with a few new definitions, lemmas supporting
-   those definitions, and useful macros.
+<p>These books were developed as a basis for the formal specification and
+verification of hardware, where integers are used to represent binary signals
+and busses.  These books should be general enough, however, to be used as a
+basis for reasoning about packed data structures, bit-encoded sets, and other
+applications of logical operations on integers.</p>")
 
-   These books were developed as a basis for the formal specification and
-   verification of hardware, where integers are used to represent binary
-   signals and busses.  These books should be general enough, however, to be
-   used as a basis for reasoning about packed data structures, bit-encoded
-   sets, and other applications of logical operations on integers.~/")
+(defxdoc logops-definitions
+  :short "A book a definitions of logical operations on numbers."
 
-(deflabel logops-definitions
-  :doc ":doc-section logops
-  A book a definitions of logical operations on numbers.
-  ~/
+  :long "<p>This book, along with @(see logops-lemmas), includes a theory of
+the Common Lisp logical operations on numbers, a portable implementation of the
+Common Lisp byte operations, extensions to those theories, and some useful
+macros.</p>
 
-  This book, along with \"logops-lemmas\", includes a theory of the Common Lisp
-  logical operations on numbers, a portable implementation of the Common Lisp
-  byte operations, extensions to those theories, and some useful macros.
-  This book contains only definitions, lemmas necessary to admit those
-  definitions, and selected type lemmas.  By `type lemmas' we mean any lemmas
-  about the logical operations that we have found necessary to admit
-  functions that use these operations as GOLD.  We have separated these `type
-  lemmas' from the large body of other lemmas in \"logops-lemmas\" to allow a
-  user to use this book to define GOLD functions without having to also
-  include the extensive theory in \"logops-lemmas\".
-  ~/
+<p>This book contains only definitions, lemmas necessary to admit those
+definitions, and selected type lemmas.  By \"type lemmas\" we mean any lemmas
+about the logical operations that we have found necessary to verify the guards
+of functions that use these operations.  We have separated these \"type
+lemmas\" from the large body of other lemmas in @(see logops-lemmas) to allow a
+user to use this book to define guard-verified functions without having to also
+include the extensive theory in @('logops-lemmas').</p>
 
-  The standard Common Lisp logical operations on numbers are defined on the
-  signed integers, and return signed integers as appropriate.  This allows a
-  high level, signed interpretation of hardware operations if that is
-  appropriate for the specification at hand.  We also provide unsigned
-  versions of several of the standard logical operations for use in
-  specifications where fixed-length unsigned integers are used to model
-  hardware registers and busses.  This view of hardware is used, for example,
-  in Yuan Yu's Nqthm specification of the Motorola MC68020.~/")
+<p>The standard Common Lisp logical operations on numbers are defined on the
+signed integers, and return signed integers as appropriate.  This allows a high
+level, signed interpretation of hardware operations if that is appropriate for
+the specification at hand.  We also provide unsigned versions of several of the
+standard logical operations for use in specifications where fixed-length
+unsigned integers are used to model hardware registers and busses.  This view
+of hardware is used, for example, in Yuan Yu's Nqthm specification of the
+Motorola MC68020.</p>")
 
 
 ; [Jared] some trivial rules that are useful for the MBE substitutions
@@ -131,51 +128,59 @@
 ;;;
 ;;;****************************************************************************
 
-(defun-inline bitp (b)
-  ":doc-section logops-definitions
-  A predicate form of the type declaration (TYPE BIT b).
-  ~/~/~/"
-  (declare (xargs :guard t))
+(define bitp (b)
+  :parents (logops-definitions)
+  :short "Bit recognizer.  @('(bitp b)') recognizes 0 and 1."
+  :long "<p>This is a predicate form of the @(see type-spec) declaration
+@('(TYPE BIT b)').</p>"
+  :returns bool
+  :inline t
+  :enabled t
   (or (eql b 0)
       (eql b 1)))
 
-(defun-inline bfix (b)
-  ":doc-section logops-definitions
-  (BFIX b) coerces any object to a bit (0 or 1) by coercing non-1 objects to 0.
-  ~/~/~/"
-  (declare (xargs :guard t))
-  (if (eql b 1) 1 0))
+(define bfix (b)
+  :parents (logops-definitions)
+  :short "Bit fix.  @('(bfix b)') is a fixing function for @(see bitp)s.  It
+ coerces any object to a bit (0 or 1) by coercing non-1 objects to 0."
+  :long "<p>See also @(see lbfix).</p>"
+  :inline t
+  :returns bit
+  :enabled t
+  (if (eql b 1)
+      1
+    0))
 
-(defmacro lbfix (x)
-  ":doc-section logops-definitions
-   (LBFIX b) is logically (BFIX b), but requires (BITP b) as a guard and expands
-   to just b.
-   ~/~/~/"
-  `(mbe :logic (bfix ,x) :exec ,x))
+(defsection lbfix
+  :parents (logops-definitions)
+  :short "Logical bit fix.  @('(lbfix b)') is logically identical to @('(bfix
+b)') but executes as the identity.  It requires @('(bitp b)') as a guard, and
+expands to just @('b')."
+  :long "@(def lbfix)"
 
-(defun-inline zbp (x)
-  ":doc-section logops-definitions
-  (ZBP x) tests for `zero bits'.  Any object other than 1 is considered a
-  zero bit.
-  ~/~/~/"
-  (declare (xargs :guard (bitp x)))
+  (defmacro lbfix (x)
+    `(mbe :logic (bfix ,x) :exec ,x)))
+
+(define zbp
+  :parents (logops-definitions)
+  :short "Zero bit recognizer.  @('(zbp x)') tests for zero bits.  Any object
+other than @('1') is considered to be a zero bit."
+  ((x bitp))
+  :returns bool
+  :enabled t
+  :inline t
   (mbe :logic (equal (bfix x) 0)
        :exec (/= (the (unsigned-byte 1) x) 1)))
 
-(defthm bitp-bfix
-  (bitp (bfix b))
-  :doc ":doc-section bitp
-  Rewrite: (BITP (BFIX b)).
-  ~/~/~/")
+(defsection bitp-basics
+  :extension bitp
 
-(defthm bfix-bitp
-  (implies (bitp b)
-           (equal (bfix b) b))
-  :hints (("Goal" :in-theory (enable bitp)))
-  :doc ":doc-section bfix
-  Rewrite: (BFIX b) = b, when b is a bit.
-  ~/~/~/")
+  (defthm bitp-bfix
+    (bitp (bfix b)))
 
+  (defthm bfix-bitp
+    (implies (bitp b)
+             (equal (bfix b) b))))
 
 
 
@@ -216,118 +221,186 @@
 ;;;
 ;;;****************************************************************************
 
-(defun-inline ifloor (i j)
-  ":doc-section logops-definitions
-  (IFLOOR i j) is the same as floor, except that it coerces its
-  arguments to integers.
-  ~/~/~/"
-  (declare (xargs :guard (and (integerp i)
-                              (integerp j)
-                              (not (= 0 j)))))
+(define ifloor
+  :parents (logops-definitions)
+  :short "@('(ifloor i j)') is the same as @(see floor), except that it coerces
+  its arguments to integers."
+  ((i integerp)
+   (j (and (integerp j)
+           (not (= 0 j)))))
+  :returns int
+  :inline t
+  :enabled t
   (mbe :logic (floor (ifix i) (ifix j))
        :exec (floor i j)))
 
-(defun-inline imod (i j)
-  ":doc-section logops-definitions
-  (IMOD i j) is the same as mod, except that it coerces its
-  arguments to integers.
-  ~/~/~/"
-  (declare (xargs :guard (and (integerp i)
-                              (integerp j)
-                              (not (= 0 j)))))
+(define imod
+  :parents (logops-definitions)
+  :short "@('(imod i j)') is the same as @(see mod), except that it coerces its
+  arguments to integers."
+  ((i integerp)
+   (j (and (integerp j)
+           (not (= 0 j)))))
+  :returns int
+  :inline t
+  :enabled t
   (mbe :logic (mod (ifix i) (ifix j))
        :exec (mod i j)))
 
-(defun-inline expt2 (n)
-  ":doc-section logops-definitions
-  (EXPT2 n) is the same as 2^n, except that it coerces its
-  argument to a natural.
-  ~/~/~/"
-  (declare (xargs :guard (and (integerp n)
-                              (<= 0 n))))
+(define expt2
+  :parents (logops-definitions)
+  :short "@('(expt2 n)') is the same as @('(expt 2 n)'), except that it coerces
+  its argument to a natural."
+  ((n natp))
+  :returns nat
+  :enabled t
+  :inline t
   (mbe :logic (expt 2 (nfix n))
-       :exec (ash 1 n)))
+       :exec (the unsigned-byte
+                  (ash 1 (the unsigned-byte n)))))
 
-(defun-inline logcar (i)
-  ":doc-section logops-definitions
-  (LOGCAR i) is the CAR of an integer conceptualized as a bit-vector (where the
-  least significant bit is at the head of the list).
-  ~/~/~/"
-  (declare (xargs :guard (integerp i)))
+(define logcar
+  :parents (logops-definitions)
+  :short "Least significant bit of a number."
+  ((i integerp))
+  :returns bit
+  :long "<p>@('(LOGCAR i)') is the CAR of an integer conceptualized as a
+bit-vector (where the least significant bit is at the head of the list).</p>
+
+<p>In C notation, this computes @('i & 1').</p>"
+  :enabled t
+  :inline t
   (mbe :logic (imod i 2)
-       :exec (the (unsigned-byte 1) (logand i 1))))
+       :exec (the (unsigned-byte 1) (logand (the integer i) 1))))
 
-(defun-inline logcdr (i)
-  ":doc-section logops-definitions
-  (LOGCDR i) is the CDR of an integer conceptualized as a bit-vector (where the
-  least significant bit is at the head of the list).
-  ~/~/~/"
-  (declare (xargs :guard (integerp i)))
+(define logcdr
+  :parents (logops-definitions)
+  :short "All but the least significant bit of a number."
+  ((i integerp))
+  :returns int
+  :long "<p>@('(logcdr i)') is the CDR of an integer conceptualized as a
+bit-vector (where the least significant bit is at the head of the list).</p>
+
+<p>In C notation, this computes @('i >> 1').</p>"
+  :enabled t
+  :inline t
   (mbe :logic (ifloor i 2)
-       :exec (ash i -1)))
+       :exec (the integer (ash (the integer i) -1))))
 
-(defun-inline logcons (b i)
-  ":doc-section logops-definitions
-  (LOGCONS b i) is the CONS operation for integers conceptualized as
-  bit-vectors (where i is multiplied by 2 and b becomes the new least
-  significant bit).
-  ~/
-  For clarity and efficiency, b is required to be BITP.~/~/"
-  (declare (xargs :guard (and (bitp b)
-                              (integerp i))))
+(define logcons
+  :parents (logops-definitions)
+  :short "@('(logcons b i)') is the CONS operation for integers, conceptualized
+as bit-vectors."
+  ((b bitp     "LSB of the result.")
+   (i integerp "All but the LSB of the result."))
+  :returns int
+  :long "<p>In C notation, this computes @('(i << 1) | b').</p>
+
+<p>See also @(see logcar) and @(see logcdr).</p>"
+  :inline t
+  :enabled t
   (mbe :logic (let ((b (bfix b))
                     (i (ifix i)))
                 (+ b (* 2 i)))
-       :exec (+ b (ash i 1))))
+       :exec (the integer
+                  (+ (the (unsigned-byte 1) b)
+                     (the integer (ash i 1))))))
 
-(defun-inline logbit (pos i)
-  ":doc-section logops-definitions
-  (LOGBIT pos i) returns the bit of i at bit-position pos.
-  ~/
-  This is a binary equivalent to the Common Lisp function (LOGBITP pos i).~/~/"
-  (declare (xargs :guard (and (integerp pos)
-                              (>= pos 0)
-                              (integerp i))))
-  (if (logbitp pos i) 1 0))
+(define logbit
+  :parents (logops-definitions logbitp)
+  :short "@('(logbit pos i)') returns the bit of @('i') at bit-position @('pos')
+as a @(see bitp), 0 or 1."
+  ((pos natp)
+   (i   integerp))
+  :returns bit
+  :long "<p>This is just like the Common Lisp function @('(logbitp pos i)'),
+except that we return 1 or 0 (instead of t or nil).</p>
 
-(defun-inline logmask (size)
-  ":doc-section logops-definitions
-  (LOGMASK size) creates a low-order, size-bit mask.
-  ~/~/~/"
-  (declare (xargs :guard (and (integerp size)
-                              (>= size 0))))
+<p>In C notation, this is @('(i >> pos) & 1').</p>"
+  :enabled t
+  :inline t
+  (if (logbitp pos i)
+      1
+    0))
+
+(define logmask
+  :parents (logops-definitions)
+  :short "@('(logmask size)') creates a low-order, @('size')-bit mask."
+  ((size natp))
+  :returns nat
+  :long "<p>In C notation, this is @('(1 << size) - 1').</p>"
+  :enabled t
+  :inline t
   (mbe :logic (- (expt2 size) 1)
        :exec (- (ash 1 size) 1)))
 
-(defun logmaskp (i)
-  ":doc-section logops-definitions
-  (LOGMASKP i) recognizes positive masks.
-  ~/~/~/"
-  (declare (xargs :guard t))
+(define logmaskp
+  :parents (logops-definitions)
+  :short "@('(logmaskp i)') recognizes positive masks."
+  (i)
+  :returns bool
+  :enabled t
   (mbe :logic (and (integerp i)
                    (>= i 0) ;; silly, this is implied by the equality below
                    (equal i (- (expt2 (integer-length i)) 1)))
        :exec (and (integerp i)
-                  (= i (- (ash 1 (integer-length i)) 1)))))
+                  (eql i (- (ash 1 (integer-length i)) 1)))))
 
-(defund bitmaskp (i)
-  ;; replacement for logmaskp that respects int-equiv
-  (declare (xargs :guard (integerp i)))
-  (logmaskp (ifix i)))
+(define bitmaskp
+  :parents (logops-definitions)
+  :short "@('(bitmaskp i)' recognizes positive masks.  It is similar to @(see
+logmaskp) but respects @(see int-equiv)."
+  ((i integerp))
+  :returns bool
+  :inline t
+  (logmaskp (lifix i)))
 
-(defun-inline loghead (size i)
-  ":doc-section logops-definitions
-  (LOGHEAD size i) returns the size low-order bits of i.
-  ~/~/
-  By convention we define (LOGHEAD 0 i) as 0, but this definition is a bit
-  arbitrary.~/"
-  (declare (xargs :guard (and (integerp size)
-                              (>= size 0)
-                              (integerp i))))
+
+
+;; (local (in-theory (disable floor mod expt)))
+
+;; (local
+;;  (defthm <-mod-expt-2-crock
+;;    (implies
+;;     (and (not (< size1 size))
+;; 	 (not (< size 0))
+;; 	 (integerp size1)
+;; 	 (integerp size)
+;; 	 (integerp i))
+;;     (< (mod i (expt 2 size))
+;;        (expt 2 size1)))
+;;    :hints
+;;    (("Goal"
+;;      :in-theory (disable expt-is-weakly-increasing-for-base>1)
+;;      :use ((:instance expt-is-weakly-increasing-for-base>1
+;; 		      (r 2) (i size) (j size1)))))))
+
+(define loghead
+  :parents (logops-definitions)
+  :short "@('(loghead size i)') returns the @('size') low-order bits of @('i')."
+  ((size posp)
+   (i    integerp))
+  :returns nat
+  :long "<p>By convention we define @('(loghead 0 i)') as 0, but this
+  definition is a bit arbitrary.</p>"
+  :inline t
+  :enabled t
   (mbe :logic (imod i (expt2 size))
        ;; BOZO it'd be nicer to give this an :exec of (logand i (1- (ash 1
        ;; size))), but that'll require some additional lemmas...
        :exec (mod i (ash 1 size))))
+  ;; :guard-hints(("Goal"
+  ;;               :nonlinearp t
+  ;;               :do-not '(generalize fertilize)
+  ;;               :do-not-induct t)))
+
+(defdoc logops-definitions
+  ":doc-section logops-definitions
+blah ~/~/~/")
+
+(defdoc logops
+  ":doc-section logops
+blah ~/~/~/")
 
 (defun-inline logtail (pos i)
   ":doc-section logops-definitions

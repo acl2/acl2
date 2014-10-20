@@ -32,6 +32,9 @@
 ;;;    Modified July 2012 by Jared Davis <jared@centtech.com>
 ;;;    Moved many definitions into new basic-definitions.lisp file.
 ;;;
+;;;    Modified October 2014 by Jared Davis <jared@centtech.com>
+;;;    Ported documentation to XDOC
+;;;
 ;;;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 (in-package "ACL2")
