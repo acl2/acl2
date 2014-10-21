@@ -13,23 +13,8 @@
 ;;;    (512) 322-9951
 ;;;    brock@cli.com
 ;;;
-;;;  We can model `4-valued' integers using a pair of integers.  First think
-;;;  about a pair of bits.  We assign the values as 00 = `0', 01 = `1', 10 =
-;;;  `x', 11 = `z', where `x' is the `unknown' and `z' the `floating' value.
-;;;  We call the low-order bit the `determinate' bit and the high-order bit
-;;;  the `indeterminate' bit.  We extend this notion to integers by using a
-;;;  pair of integers, where the first integer is the determinate integer,
-;;;  the second integer is the indeterminate integer, and each 4-valued bit f
-;;;  the integer is a slice through the two integers.  For example,
-;;;
-;;;  (0 . 0)       =  ..00000000000
-;;;  (1 . 0)       =  ..00000000001
-;;;  (10 . 12)     =  ..0000000ZX10
-;;;  (0 . -1)      =  ..XXXXXXXXXXX
-;;;  (1023 . 1023) =  ..0ZZZZZZZZZZ
-;;;
-;;;  All of the 4-valued counterparts of integer functions are uniformly
-;;;  defined with the prefix character `@', e.g., @+, @LOGAND, etc..
+;;;    Modified October 2014 by Jared Davis <jared@centtech.com>
+;;;    Ported documentation to XDOC
 ;;;
 ;;;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ;;;****************************************************************************
@@ -47,19 +32,40 @@
 
 (include-book "ihs-definitions")
 (include-book "ihs-lemmas")
+
+;; [Jared] yikes, this does in-theory nil, right?  seriously do this non-locally?
 (progn (minimal-ihs-theory))
 
-(deflabel @logops :doc
-  ":doc-section ihs
-  A book of 4-valued counterparts for logical operations on integers.
-  ~/~/~/")
+(defxdoc @logops
+  :parents (ihs)
+  :short "A book of 4-valued counterparts for logical operations on integers."
+
+  :long "<p>We can model `4-valued' integers using a pair of integers.  First
+ think about a pair of bits.  We assign the values as 00 = `0', 01 = `1', 10 =
+ `x', 11 = `z', where `x' is the `unknown' and `z' the `floating' value.  We
+ call the low-order bit the `determinate' bit and the high-order bit the
+ `indeterminate' bit.  We extend this notion to integers by using a pair of
+ integers, where the first integer is the determinate integer, the second
+ integer is the indeterminate integer, and each 4-valued bit f the integer is a
+ slice through the two integers.  For example,</p>
+
+@({
+ (0 . 0)       =  ..00000000000
+ (1 . 0)       =  ..00000000001
+ (10 . 12)     =  ..0000000ZX10
+ (0 . -1)      =  ..XXXXXXXXXXX
+ (1023 . 1023) =  ..0ZZZZZZZZZZ
+})
+
+<p>All of the 4-valued counterparts of integer functions are uniformly
+defined with the prefix character `@', e.g., @+, @LOGAND, etc..</p>")
+
+(local (xdoc::set-default-parents @logops))
 
 ;  These will never appear in user code, so they're macros for efficiency.
 
 (defmacro @cons (d i)
-  ":doc-section @logops
-  4-Valued CONS.
-  ~/~/~/"
+  "4-Valued CONS."
   (mlambda (d i)
     (cond
      ((zip i) d)
@@ -83,11 +89,9 @@
 
 (defmacro @@i (@) (mlambda (@) (cdr @)))
 
-(defun @integerp (@)
-  ":doc-section @logops
-  4-Valued INTEGERP.
-  ~/~/~/"
-  (declare (xargs :guard t))
+(define @integerp (@)
+  :short "4-Valued INTEGERP."
+  :enabled t
   (or (integerp @)
       (and (consp @)
 	   (integerp (@@d @))
@@ -104,9 +108,7 @@
 	 (and (integerp d)
 	      (integerp i)
 	      (not (= i 0))))
-  :hints
-  (("Goal"
-    :in-theory (enable @integerp))))
+  :hints (("Goal" :in-theory (enable @integerp))))
 
 ;;;  Constants
 
@@ -120,11 +122,9 @@
 
 ;;;  @BITP
 
-(defun @bitp (x)
-  ":doc-section @logops
-  4-valued BITP.
-  ~/~/~/"
-  (declare (xargs :guard t))
+(define @bitp (x)
+  :short "4-valued BITP."
+  :enabled t
   (cond
    ((integerp x) (bitp x))
    ((@integerp x) (and (bitp (@@d x)) (bitp (@@i x))))))
@@ -146,11 +146,9 @@
 
 ;;;  @BFIX
 
-(defun @bfix (x)
-  ":doc-section @logops
-  4-valued BFIX.
-  ~/~/~/"
-  (declare (xargs :guard t))
+(define @bfix (x)
+  :short "4-valued BFIX."
+  :enabled t
   (case x
     (0 0)
     (1 1)
@@ -162,12 +160,10 @@
 
 ;;;  @+
 
-(defun @+ (i j)
-  ":doc-section @logops
-  4-Valued +.
-  ~/~/~/"
-  (declare (xargs :guard (and (@integerp i)
-			      (@integerp j))))
+(define @+ ((i @integerp)
+            (j @integerp))
+  :short "4-Valued +."
+  :enabled t
   (cond
    ((and (integerp i) (integerp j)) (+ i j))
    (t *@x*)))
@@ -188,11 +184,9 @@
 
 ;;;  @unary--
 
-(defun @unary-- (i)
-  ":doc-section @logops
-  4-Valued UNARY--.
-  ~/~/~/"
-  (declare (xargs :guard (@integerp i)))
+(define @unary-- ((i @integerp))
+  :short "4-Valued UNARY--."
+  :enabled t
   (cond
    ((integerp i) (- i))
    (t *@x*)))
@@ -231,14 +225,10 @@
 	  (@unary-- x)
 	(cons '@unary-- (cons x nil))))))
 
-;;;  @*
-
-(defun @* (i j)
-  ":doc-section @logops
-  4-Valued *.
-  ~/~/~/"
-  (declare (xargs :guard (and (@integerp i)
-			      (@integerp j))))
+(define @* ((i @integerp)
+            (j @integerp))
+  :short "4-Valued *."
+  :enabled t
   (cond
    ((and (integerp i) (integerp j)) (* i j))
    (t *@x*)))
@@ -255,11 +245,9 @@
 
 ;;  @UNSIGNED-BYTE-P
 
-(defun @unsigned-byte-p (size i)
-  ":doc-section @logops
-  4-Valued UNSIGNED-BYTE-P.
-  ~/~/~/"
-  (declare (xargs :guard t))
+(define @unsigned-byte-p (size i)
+  :short "4-Valued UNSIGNED-BYTE-P."
+  :enabled t
   (and (@integerp i)
        (unsigned-byte-p size (@d i))
        (unsigned-byte-p size (@i i))))
@@ -284,17 +272,13 @@
 	 (and (unsigned-byte-p size d)
 	      (unsigned-byte-p size i)
 	      (not (= i 0))))
-  :hints
-  (("Goal"
-    :in-theory (enable @unsigned-byte-p unsigned-byte-p))))
+  :hints (("Goal" :in-theory (enable @unsigned-byte-p unsigned-byte-p))))
 
 ;;;  @SIGNED-BYTE-P
 
-(defun @signed-byte-p (size i)
-  ":doc-section @logops
-  4-Valued SIGNED-BYTE-P.
-  ~/~/~/"
-  (declare (xargs :guard t))
+(define @signed-byte-p (size i)
+  :short "4-Valued SIGNED-BYTE-P."
+  :enabled t
   (and (integerp size)
        (< 0 size)
        (@integerp i)
@@ -302,18 +286,14 @@
        (signed-byte-p size (@i i))))
 
 (defthm @signed-byte-p-integer
-  (implies
-   (integerp i)
-   (equal (@signed-byte-p size i)
-	  (signed-byte-p size i)))
-  :hints
-  (("Goal"
-    :in-theory (enable signed-byte-p))))
+  (implies (integerp i)
+           (equal (@signed-byte-p size i)
+                  (signed-byte-p size i)))
+  :hints (("Goal" :in-theory (enable signed-byte-p))))
 
 (defthm @signed-byte-p-forward
-  (implies
-   (@signed-byte-p size i)
-   (@integerp i))
+  (implies (@signed-byte-p size i)
+           (@integerp i))
   :rule-classes :forward-chaining)
 
 (defthm @signed-byte-p-cons
@@ -321,13 +301,11 @@
 	 (and (signed-byte-p size d)
 	      (signed-byte-p size i)
 	      (not (= i 0))))
-  :hints
-  (("Goal"
-    :in-theory (enable @signed-byte-p signed-byte-p))))
+  :hints (("Goal" :in-theory (enable @signed-byte-p signed-byte-p))))
 
 ;;; @ASH
 
-#|
+#||
 ;  Bug in GCL.
 
 (defun ash! (i c)
@@ -347,12 +325,6 @@
 (in-theory (disable ash!))
 
 (defun @ash (i count)
-  ":doc-section @ash
-  4-Valued ASH.
-  ~/~/
-  Note the conservative definition.  We do not define @ASH when count is
-  indeterminate.
-  ~/"
   (declare (xargs :guard (and (@integerp i)
 			      (@integerp count))))
   (cond
@@ -360,17 +332,14 @@
 		      ((integerp i) (ash! i count))
 		      (t (@cons (ash! (@@d i) count) (ash! (@@i i) count)))))
    (t *@x*)))
-|#
+||#
 
-(defun @ash (i count)
-  ":doc-section @logops
-  4-Valued ASH.
-  ~/~/
-  Note the conservative definition.  We do not define @ASH when count is
-  indeterminate.
-  ~/"
-  (declare (xargs :guard (and (@integerp i)
-			      (@integerp count))))
+(define @ash ((i     @integerp)
+              (count @integerp))
+  :short "4-Valued ASH."
+  :long "<p>Note the conservative definition.  We do not define @ASH when count
+  is indeterminate.</p>"
+  :enabled t
   (cond
    ((integerp count) (cond
 		      ((integerp i) (ash i count))
@@ -388,13 +357,11 @@
 
 ;;;  @INTEGER-LENGTH
 
-(defun @integer-length (i)
-  ":doc-section @logops
-  4-valued INTEGER-LENGTH.
-  ~/~/
-  Note that when indeterminate, @INTEGER-LENGTH returns a `signed' X.  Thus
-  it may be necessary to coerce the result to an unsigned type.~/"
-  (declare (xargs :guard (@integerp i)))
+(define @integer-length ((i @integerp))
+  :short "4-valued INTEGER-LENGTH."
+  :long "<p>Note that when indeterminate, @INTEGER-LENGTH returns a `signed' X.
+  Thus it may be necessary to coerce the result to an unsigned type.</p>"
+  :enabled t
   (cond
    ((integerp i) (integer-length i))
    (t *@x*)))
@@ -409,13 +376,11 @@
 
 ;;;  @LOGCOUNT
 
-(defun @logcount (i)
-  ":doc-section @logops
-  4-value LOGCOUNT.
-  ~/~/
-  When indeterminate @LOGCOUNT returns a signed X, thus it may need to be
-  coerced to an unsigned value. ~/"
-  (declare (xargs :guard (@integerp i)))
+(define @logcount ((i @integerp))
+  :short "4-value LOGCOUNT."
+  :long "When indeterminate @LOGCOUNT returns a signed X, thus it may need to be
+  coerced to an unsigned value."
+  :enabled t
   (cond
    ((integerp i) (logcount i))
    (t *@x*)))
@@ -430,11 +395,9 @@
 
 ;;;  @LOGCAR
 
-(defun @logcar (i)
-  ":doc-section @logops
-  4-Valued LOGCAR.
-  ~/~/~/"
-  (declare (xargs :guard (@integerp i)))
+(define @logcar ((i @integerp))
+  :short "4-Valued LOGCAR."
+  :enabled t
   (cond
    ((integerp i) (logcar i))
    (t (@cons (logcar (@@d i)) (logcar (@@i i))))))
@@ -449,10 +412,9 @@
 
 ;;;  @LOGNOT
 
-(defun @lognot (i)
-  ":doc-section @logops
-  4-Valued LOGNOT.
-  ~/~/
+(define @lognot ((i @integerp))
+  :short "4-Valued LOGNOT."
+  :long "@({
 
  ~~i = ?  ii di  ians/dans
 
@@ -460,9 +422,8 @@
   1   0   0  1    0 0
   x   x   1  0    1 0
   z   x   1  1    1 0
-
- ~/"
-  (declare (xargs :guard (@integerp i)))
+})"
+  :enabled t
   (cond
    ((integerp i) (lognot i))
    (t
@@ -480,11 +441,10 @@
 
 ;;; @LOGAND
 
-(defun @logand (i j)
-  ":doc-section @logops
-  4-Valued LOGAND.
-  ~/~/
-
+(define @logand ((i @integerp)
+                 (j @integerp))
+  :short "4-Valued LOGAND."
+  :long "@({
  i&j = ?  ii di ij dj  ians/dans
 
  0 0   0   0  0  0  0  	 0 0
@@ -503,10 +463,8 @@
  z 1   x   1  1  0  1  	 1 0
  z x   x   1  1  1  0  	 1 0
  z z   x   1  1  1  1  	 1 0
-
- ~/"
-  (declare (xargs :guard (and (@integerp i)
-			      (@integerp j))))
+})"
+  :enabled t
   (cond
    ((and (integerp i) (integerp j)) (logand i j))
    (t
@@ -529,11 +487,10 @@
 
 ;;;  @LOGIOR
 
-(defun @logior (i j)
-  ":doc-section @logops
-  4-Valued LOGIOR
-  ~/~/
-
+(define @logior ((i @integerp)
+                 (j @integerp))
+  :short "4-Valued LOGIOR"
+  :long "@({
  i|j = ?  ii di ij dj  ians/dans
 
  0 0   0   0  0  0  0  	 0 0
@@ -552,10 +509,8 @@
  z 1   1   1  1  0  1  	 0 1
  z x   x   1  1  1  0  	 1 0
  z z   x   1  1  1  1  	 1 0
-
- ~/"
-  (declare (xargs :guard (and (@integerp i)
-			      (@integerp j))))
+})"
+  :enabled t
   (cond
    ((and (integerp i) (integerp j)) (logior i j))
    (t
@@ -578,11 +533,10 @@
 
 ;;; @T-WIRE
 
-(defun @t-wire (i j)
-  ":doc-section @logops
-  Tristate resolution function.
-  ~/~/
-
+(define @t-wire ((i @integerp)
+                 (j @integerp))
+  :short "Tristate resolution function."
+  :long "@({
  i.j = ?  ii di ij dj  ians/dans
 
  0 0   0   0  0  0  0  	 0 0
@@ -601,10 +555,8 @@
  z 1   1   1  1  0  1  	 0 1
  z x   x   1  1  1  0  	 1 0
  z z   z   1  1  1  1  	 1 1
-
- ~/"
-  (declare (xargs :guard (and (@integerp i)
-			      (@integerp j))))
+})"
+  :enabled t
   (let* ((di (@d i))
 	 (ii (@i i))
 	 (dj (@d j))
@@ -620,91 +572,57 @@
 ;  Other @LOGOPS.  More efficient definitions are possible for those who
 ;  are inclined to do the work.
 
-(defun @logandc1 (i j)
-  ":doc-section @logops
-  4-Valued LOGANDC1.
-  ~/~/~/"
-  (declare (xargs :guard (and (@integerp i)
-			      (@integerp j))
-		  :verify-guards nil))
+(define @logandc1 ((i @integerp)
+                   (j @integerp))
+  :short "4-Valued LOGANDC1."
+  :enabled t
   (@logand (@lognot i) j))
 
-(defun @logandc2 (i j)
-  ":doc-section @logops
-  4-Valued LOGANDC2.
-  ~/~/~/"
-  (declare (xargs :guard (and (@integerp i)
-			      (@integerp j))
-		  :verify-guards nil))
+(define @logandc2 ((i @integerp)
+                   (j @integerp))
+  :short "4-Valued LOGANDC2."
+  :enabled t
   (@logand i (@lognot j)))
 
-(defun @lognand (i j)
-  ":doc-section @logops
-  4-Valued LOGNAND.
-  ~/~/~/"
-  (declare (xargs :guard (and (@integerp i)
-			      (@integerp j))
-		  :verify-guards nil))
+(define @lognand ((i @integerp)
+                  (j @integerp))
+  :short "4-Valued LOGNAND."
+  :enabled t
   (@lognot (@logand i j)))
 
-(defun @lognor (i j)
-  ":doc-section @logops
-  4-Valued LOGNOR.
-  ~/~/~/"
-  (declare (xargs :guard (and (@integerp i)
-			      (@integerp j))
-		  :verify-guards nil))
+(define @lognor ((i @integerp)
+                 (j @integerp))
+  :short "4-Valued LOGNOR."
+  :enabled t
   (@lognot (@logior i j)))
 
-(defun @logorc1 (i j)
-  ":doc-section @logops
-  4-Valued LOGORC1.
-  ~/~/~/"
-  (declare (xargs :guard (and (@integerp i)
-			      (@integerp j))
-		  :verify-guards nil))
+(define @logorc1 ((i @integerp)
+                  (j @integerp))
+  :short "4-Valued LOGORC1."
+  :enabled t
   (@logior (@lognot i) j))
 
-(defun @logorc2 (i j)
-  ":doc-section @logops
-  4-Valued LOGORC2.
-  ~/~/~/"
-  (declare (xargs :guard (and (@integerp i)
-			      (@integerp j))
-		  :verify-guards nil))
+(define @logorc2 ((i @integerp)
+                  (j @integerp))
+  :short "4-Valued LOGORC2."
+  :enabled t
   (@logior i (@lognot j)))
 
-(defun @logeqv (i j)
-  ":doc-section @logops
-  4-Valued LOGEQV.
-  ~/~/~/"
-  (declare (xargs :guard (and (@integerp i)
-			      (@integerp j))
-		  :verify-guards nil))
+(define @logeqv ((i @integerp)
+                 (j @integerp))
+  :short "4-Valued LOGEQV."
+  :enabled t
   (@logand (@logorc1 i j) (@logorc1 j i)))
 
-(defun @logxor (i j)
-  ":doc-section @logops
-  4-Valued LOGXOR.
-  ~/~/~/"
-  (declare (xargs :guard (and (@integerp i)
-			      (@integerp j))
-		  :verify-guards nil))
+(define @logxor ((i @integerp)
+                 (j @integerp))
+  :short "4-Valued LOGXOR."
+  :enabled t
   (@lognot (@logeqv i j)))
 
 (encapsulate ()
 
   (local (in-theory (e/d (@lognot @logand) (@integerp))))
-
-  (verify-guards @logandc1)
-  (verify-guards @logandc2)
-  (verify-guards @logior)
-  (verify-guards @lognand)
-  (verify-guards @lognor)
-  (verify-guards @logorc1)
-  (verify-guards @logorc2)
-  (verify-guards @logeqv)
-  (verify-guards @logxor)
 
   (defthm type-of-binary-@logops
     (and
@@ -746,7 +664,7 @@
       :in-theory (enable logandc1 logandc2 logior lognand lognor
 			 logorc1 logorc2 logeqv logxor)))))
 
-
+
 ;;;****************************************************************************
 ;;;
 ;;;  Logical operations on single @bits.
@@ -765,94 +683,85 @@
 ;;;
 ;;;****************************************************************************
 
-(deflabel @logops-bit-functions
- :doc ":doc-section @logops
- Versions of the standard logical operations that operate on single @bits.
- ~/~/~/")
+(defxdoc @logops-bit-functions
+  :parents (@logops)
+  :short "Versions of the standard logical operations that operate on single @bits.")
 
-(defun @b-not (i)
-  ":doc-section @logops-bit-functions
-  @B-NOT ~/~/~/"
-  (declare (xargs :guard (@bitp i)))
+(local (xdoc::set-default-parents @logops-bit-functions))
+
+(define @b-not ((i @bitp))
+  :enabled t
   (case i (0 1) (1 0) (t *@x-bit*)))
 
-(defun @b-and (i j)
-  ":doc-section @logops-bit-functions
-  @B-AND ~/~/~/"
-  (declare (xargs :guard (and (@bitp i) (@bitp j))))
+(define @b-and ((i @bitp)
+                (j @bitp))
+  :enabled t
   (or (and (equal i 0) 0)
       (and (equal j 0) 0)
       (and (equal i 1) (equal j 1) 1)
       *@x-bit*))
 
-(defun @b-ior (i j)
-  ":doc-section @logops-bit-functions
-  @B-IOR ~/~/~/"
-  (declare (xargs :guard (and (@bitp i) (@bitp j))))
+(define @b-ior ((i @bitp)
+                (j @bitp))
+  :enabled t
   (or (and (equal i 1) 1)
       (and (equal j 1) 1)
       (and (equal i 0) (equal j 0) 0)
       *@x-bit*))
 
-(defun @b-xor (i j)
-  ":doc-section @logops-bit-functions
-  @B-XOR ~/~/~/"
+ZZ ;; ---- i am here -----
+
+(define @b-xor (i j)
+  :enabled t
   (declare (xargs :guard (and (@bitp i) (@bitp j))))
   (or (and (bitp i) (bitp j) (b-xor i j))
       *@x-bit*))
 
-(defun @b-eqv (i j)
-  ":doc-section @logops-bit-functions
-  @B-EQV ~/~/~/"
+(define @b-eqv (i j)
+  :enabled t
   (declare (xargs :guard (and (@bitp i) (@bitp j))))
   (or (and (bitp i) (bitp j) (b-eqv i j))
       *@x-bit*))
 
-(defun @b-nand (i j)
-  ":doc-section @logops-bit-functions
-  @B-NAND ~/~/~/"
+(define @b-nand (i j)
+  :enabled t
   (declare (xargs :guard (and (@bitp i) (@bitp j))))
   (or (and (equal i 0) 1)
       (and (equal j 0) 1)
       (and (equal i 1) (equal j 1) 0)
       *@x-bit*))
 
-(defun @b-nor (i j)
-  ":doc-section @logops-bit-functions
-  @B-NOR ~/~/~/"
+(define @b-nor (i j)
+  :enabled t
   (declare (xargs :guard (and (@bitp i) (@bitp j))))
   (or (and (equal i 1) 0)
       (and (equal j 1) 0)
       (and (equal i 0) (equal j 0) 1)
       *@x-bit*))
 
-(defun @b-andc1 (i j)
-  ":doc-section @logops-bit-functions
-  @B-ANDC1 ~/~/~/"
+(define @b-andc1 (i j)
+  :enabled t
   (declare (xargs :guard (and (@bitp i) (@bitp j))))
   (or (and (equal i 1) 0)
       (and (equal j 0) 0)
       (and (equal i 0) (equal j 1) 1)
       *@x-bit*))
 
-(defun @b-andc2 (i j)
-  ":doc-section @logops-bit-functions
-  @B-ANDC2 ~/~/~/"
+(define @b-andc2 (i j)
+  :enabled t
   (declare (xargs :guard (and (@bitp i) (@bitp j))))
   (@b-andc1 j i))
 
-(defun @b-orc1 (i j)
-  ":doc-section @logops-bit-functions
-  @B-ORC1 ~/~/~/"
+(define @b-orc1 (i j)
+  :enabled t
   (declare (xargs :guard (and (@bitp i) (@bitp j))))
   (or (and (equal i 0) 1)
       (and (equal j 1) 1)
       (and (equal i 1) (equal j 0) 0)
       *@x-bit*))
 
-(defun @b-orc2 (i j)
-  ":doc-section @logops-bit-functions
-  @B-ORC2 ~/~/~/"
+(define @b-orc2 (i j)
+  :enabled t
   (declare (xargs :guard (and (@bitp i) (@bitp j))))
   (@b-orc1 j i))
 
@@ -921,7 +830,7 @@
   Rewrite: Reduce all of the @BIT functions with integer args.
   ~/~/~/")
 
-
+
 ;;;  @LOGHEAD
 
 (defun @loghead (size i)
@@ -1079,7 +988,7 @@
    (equal (@logrev size i)
 	  (logrev size i))))
 
-
+
 ;;;  Byte functions.
 
 ;;;  RDB
@@ -1130,7 +1039,7 @@
   (("Goal"
     :in-theory (enable wrb))))
 
-
+
 ;;;****************************************************************************
 ;;;
 ;;;  Lemmas
@@ -1394,7 +1303,7 @@
 	(bspp bsp))
    (@unsigned-byte-p n (@wrb i bsp j))))
 
-
+
 ;;;****************************************************************************
 ;;;
 ;;;  Theories
@@ -1428,7 +1337,7 @@
 
   This theory contains only those lemmas meant to be exported by this book.~/")
 
-
+
 ;;;****************************************************************************
 ;;;
 ;;;  @DEFWORD
@@ -1472,7 +1381,7 @@
          ,(defword-keyword-updater
 	    name keyword-updater set-conc-name field-names))))))
 
-
+
 ;;;****************************************************************************
 ;;;
 ;;;  @DEFBYTETYPE

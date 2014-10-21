@@ -25,6 +25,10 @@
 ;;;
 ;;;    Modified for ACL2 Version_2.7 by:
 ;;;    Matt Kaufmann, kaufmann@cs.utexas.edu
+;;;
+;;;    Modified October 2014 by Jared Davis <jared@centtech.com>
+;;;    Ported documentation to XDOC
+;;;
 ;;;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 (in-package "ACL2")
@@ -914,13 +918,26 @@
              (equal (logrpl size (loghead size1 i) i)
                     i)))
 
+  ;; [Jared] BOZO somehow ACL2's definition rule gets stored differently
+  ;; because of define's binding of __function__.  The old rule is stored as
+  ;; class DEFINITION but the new rule is stored as class ABBREVIATION.  This
+  ;; difference somehow screws up the proof of logrpl-logrpl-right.  Blaaaaah.
+  ;; This was painful to track down.
+  (local (defthm old-definition-of-logrpl
+           (equal (logrpl size i j)
+                  (LOGAPP SIZE I (LOGTAIL SIZE J)))
+           :rule-classes :definition))
+  (local (in-theory (disable (:definition logrpl))))
+
   (defthm logrpl-logrpl-right
     (implies (and (logrpl-guard size1 j k)
                   (logrpl-guard size i (logrpl size1 j k))
                   (<= size1 size))
              (equal (logrpl size i (logrpl size1 j k))
                     (logrpl size i k)))
-    :hints (("Goal" :in-theory (disable logapp))))
+    :hints (("Goal" :in-theory (disable logapp)
+             :do-not '(eliminate-destructors generalize fertilize)
+             :do-not-induct t)))
 
   (defthm logrpl-logrpl-left
     (implies (and (logrpl-guard size1 i j)
@@ -928,6 +945,7 @@
                   (<= size size1))
              (equal (logrpl size (logrpl size1 i j) k)
                     (logrpl size i k)))))
+
 
 
 (defsection ihs/logextu-lemmas
@@ -1076,7 +1094,8 @@ logbitp).</p>"
                   (>= pos 0)
                   (integerp i))
              (and (equal (logbit pos 0) 0)
-                  (equal (logbit pos -1) 1))))
+                  (equal (logbit pos -1) 1)))
+    :hints(("Goal" :in-theory (disable logbitp))))
 
   ;;  For the following, we provide an alternate definition of LOGBITP.
 
