@@ -223,7 +223,7 @@ nets agree and are correct by the time actual modules are produced.</p>")
 
 (define vl-find-vardecls-exec ((names    string-listp)
                                (vardecls vl-vardecllist-p)
-                               (alist    (equal alist (vl-vardecllist-alist vardecls))))
+                               (alist    (equal alist (vl-vardecllist-alist vardecls nil))))
   :parents (vl-find-vardecls)
   :hooks nil
   (if (atom names)
@@ -261,13 +261,13 @@ that correspond to port declarations.</p>"
          (cons (vl-find-vardecl (car names) vardecls)
                (vl-find-vardecls (cdr names) vardecls)))
        :exec
-       (b* ((alist (vl-vardecllist-alist vardecls))
+       (b* ((alist (make-fast-alist (vl-vardecllist-alist vardecls nil)))
             (ans   (vl-find-vardecls-exec names vardecls alist)))
          (fast-alist-free alist)
          ans))
   ///
   (defthm vl-find-vardecls-exec-removal
-    (implies (equal alist (vl-vardecllist-alist vardecls))
+    (implies (equal alist (vl-vardecllist-alist vardecls nil))
              (equal (vl-find-vardecls-exec names vardecls alist)
                     (vl-find-vardecls names vardecls)))
     :hints(("Goal" :in-theory (enable vl-find-vardecls-exec))))

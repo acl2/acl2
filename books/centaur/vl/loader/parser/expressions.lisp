@@ -1456,6 +1456,7 @@ identifier, so we convert it into a hidpiece.</p>
            ;; otherwise, better be a comma and then more key/values
            (:= (vl-match-token :vl-comma))
            (rest := (vl-parse-1+-keyval-expression-pairs))
+           (:= (vl-match-token :vl-rcurly))
            (return (make-vl-nonatom :op :vl-pattern-keyvalue
                                     :args (cons (make-vl-nonatom :op :vl-keyvalue
                                                                  :args (list first firstval))

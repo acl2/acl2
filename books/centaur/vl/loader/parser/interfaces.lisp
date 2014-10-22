@@ -91,7 +91,7 @@ interface_ansi_header ::=
                                               ;; :vl-always   -- not allowed
                                               ;; :vl-initial  -- not allowed
                                               ;; :vl-typedef    -- bozo? not yet
-                                              ;; :vl-import     -- bozo? not yet
+                                              :vl-import
                                               ;; :vl-fwdtypedef -- bozo? not yet
                                               :vl-modport
                                               )))
@@ -111,6 +111,7 @@ interface_ansi_header ::=
                         :paramdecls c.paramdecls
                         :modports   c.modports
                         :generates  c.generates
+                        :imports    c.imports
                         :atts       atts
                         :minloc     minloc
                         :maxloc     maxloc

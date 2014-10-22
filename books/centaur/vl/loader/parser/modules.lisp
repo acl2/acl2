@@ -66,7 +66,7 @@
                                               :vl-always
                                               :vl-initial
                                               ;; :vl-typedef    -- let's not permit these yet
-                                              ;; :vl-import     -- let's not permit these yet
+                                              :vl-import
                                               ;; :vl-fwdtypedef -- doesn't seem like these should be ok
                                               ;; :vl-modport    -- definitely not ok
                                               )))
@@ -95,6 +95,7 @@
                     :alwayses   c.alwayss
                     :initials   c.initials
                     :generates  c.generates
+                    :imports    c.imports
                     :atts       atts
                     :minloc     minloc
                     :maxloc     maxloc
