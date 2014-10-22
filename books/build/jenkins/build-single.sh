@@ -30,7 +30,7 @@ startjob -c "nice make acl2h -f books/build/jenkins/Makefile LISP=$LISP &> make.
 
 echo "Building the books."
 cd books
-startjob -c "make $TARGET ACL2=$WORKSPACE/saved_acl2h -j3 $MAKEOPTS USE_QUICKLISP=1"
+startjob -c "make $TARGET ACL2=$WORKSPACE/saved_acl2h -j2 $MAKEOPTS USE_QUICKLISP=1"
 
 echo "Build was successful."
 
