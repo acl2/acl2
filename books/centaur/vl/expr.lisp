@@ -264,7 +264,7 @@ SystemVerilog-2012 Standard.</p>"
 
    ;; Hierarchical Identifiers and Scoping
    (cons :vl-hid-dot               2)   ;;; e.g., foo.bar
-   (cons :vl-scope                 2)   ;;; e.g., foo::bar
+   (cons :vl-scope                 2)   ;;; e.g., foo::xbar
 
    ;; Tagged Union Expressions, should have arity 1 or 2
    (cons :vl-tagged nil) ;; e.g., "tagged Valid 13" or "tagged Invalid"
@@ -274,7 +274,7 @@ SystemVerilog-2012 Standard.</p>"
 
    ;; Assignment Pattern stuff
    (cons :vl-pattern-positional nil) ;; '\{ expression { , expression } \}
-   (cons :vl-pattern-multi      2)
+   (cons :vl-pattern-multi      2)   ;; '\{ expression \{ expression {, expression} \} \}, e.g. '{3{a,b}}
    (cons :vl-pattern-keyvalue   nil) ;; '\{ structure_pattern_key : expression { , key : expression } \}
    (cons :vl-keyvalue           2)   ;; key : value  (within vl-pattern-keyvalue)
    (cons :vl-pattern-type       2)   ;; type'{...}, first argument 

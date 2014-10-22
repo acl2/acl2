@@ -1084,12 +1084,10 @@ statements within a statement."
         x)
 
        (warnings x.warnings)
-       (ialist (vl-moditem-alist x))
        ((mv warnings alwayses)
         (vl-alwayslist-caseelim x.alwayses warnings ss))
        ((mv warnings initials)
         (vl-initiallist-caseelim x.initials warnings ss)))
-    (fast-alist-free ialist)
     (change-vl-module x
                       :warnings warnings
                       :alwayses alwayses

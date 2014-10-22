@@ -498,39 +498,39 @@ better come after the parameter is introduced.</p>"
                      bad-params)))
     (vl-check-fun-parameters-deforder (cdr x) bad-params warnings function)))
 
-(define vl-check-fun-params-no-overlap
-  :parents (vl-fundecl-expand-params)
-  :short "Ensure that a function's parameters do not shadow other things in the
-module."
-  ((x        vl-paramdecllist-p "Parameter declarations for the function.")
-   (scope    vl-scope-p         "Scope in which the function occurs.")
-   (warnings vl-warninglist-p   "Ordinary @(see warnings) accumulator.")
-   (function vl-fundecl-p       "Context for error messages."))
-  :returns
-  (mv (ok booleanp :rule-classes :type-prescription)
-      (warnings vl-warninglist-p))
-  :long "<p>We don't allow parameters to shadow other things in the module
-since that seems weird and has various corner cases with respect to
-declarations being defined before use, e.g., see @(see
-vl-check-fun-parameters-deforder).</p>
+;; (define vl-check-fun-params-no-overlap
+;;   :parents (vl-fundecl-expand-params)
+;;   :short "Ensure that a function's parameters do not shadow other things in the
+;; module."
+;;   ((x        vl-paramdecllist-p "Parameter declarations for the function.")
+;;    (scope    vl-scope-p         "Scope in which the function occurs.")
+;;    (warnings vl-warninglist-p   "Ordinary @(see warnings) accumulator.")
+;;    (function vl-fundecl-p       "Context for error messages."))
+;;   :returns
+;;   (mv (ok booleanp :rule-classes :type-prescription)
+;;       (warnings vl-warninglist-p))
+;;   :long "<p>We don't allow parameters to shadow other things in the module
+;; since that seems weird and has various corner cases with respect to
+;; declarations being defined before use, e.g., see @(see
+;; vl-check-fun-parameters-deforder).</p>
 
-<p>We don't expect many parameters in a function, so we use slow moditem
-lookups here, figuring that it'll be cheaper than building a @(see
-vl-moditem-alist).</p>"
+;; <p>We don't expect many parameters in a function, so we use slow moditem
+;; lookups here, figuring that it'll be cheaper than building a @(see
+;; vl-moditem-alist).</p>"
 
-  (b* (((when (atom x))
-        (mv t (ok)))
-       (name1 (vl-paramdecl->name (car x)))
-       (item1 (vl-scope-find-item-fast name1 scope))
-       ((unless item1)
-        (vl-check-fun-params-no-overlap (cdr x) scope warnings function)))
-    (mv nil
-        (fatal :type :vl-bad-function-parameter
-               :msg "In ~a0, parameter ~s1 has the same name as ~a2; we don't ~
-                     allow function parameters to shadow other module items ~
-                     because it seems underspecified by the Verilog-2005 ~
-                     standard and generally somewhat error-prone."
-               :args (list function name1 item1)))))
+;;   (b* (((when (atom x))
+;;         (mv t (ok)))
+;;        (name1 (vl-paramdecl->name (car x)))
+;;        ((mv & item1) (vl-scope-find-item-fast name1 scope))
+;;        ((unless item1)
+;;         (vl-check-fun-params-no-overlap (cdr x) scope warnings function)))
+;;     (mv nil
+;;         (fatal :type :vl-bad-function-parameter
+;;                :msg "In ~a0, parameter ~s1 has the same name as ~a2; we don't ~
+;;                      allow function parameters to shadow other module items ~
+;;                      because it seems underspecified by the Verilog-2005 ~
+;;                      standard and generally somewhat error-prone."
+;;                :args (list function name1 item1)))))
 
 (define vl-fun-paramdecllist-types-okp
   :parents (vl-fundecl-expand-params)
@@ -595,7 +595,8 @@ some special handling.</p>"
   :short "Eliminate parameters from a function."
   ((x        vl-fundecl-p     "A function that may have parameters.")
    (warnings vl-warninglist-p "Ordinary @(see warnings) accumulator.")
-   (scope    vl-scope-p       "Scope where @('x') resides."))
+   ;; (scope    vl-scope-p       "Scope where @('x') resides.")
+   )
   :returns (mv (successp booleanp :rule-classes :type-prescription)
                (warnings vl-warninglist-p)
                (new-x vl-fundecl-p))
@@ -638,8 +639,8 @@ okay (since eliminating parameters changes the function's namespace).</p>"
 
        ;; Make sure these params don't overlap with other module items in a
        ;; tricky way.
-       ((mv okp warnings) (vl-check-fun-params-no-overlap paramdecls scope warnings x))
-       ((unless okp) (mv nil warnings x))
+       ;; ((mv okp warnings) (vl-check-fun-params-no-overlap paramdecls scope warnings x))
+       ;; ((unless okp) (mv nil warnings x))
 
        ;; Make sure these params are only used after they are defined.  This
        ;; relies on the function declarations being the same order they're
@@ -670,7 +671,8 @@ okay (since eliminating parameters changes the function's namespace).</p>"
   :short "Eliminate parameters from a list of functions."
   ((x        vl-fundecllist-p)
    (warnings vl-warninglist-p)
-   (scope    vl-scope-p))
+   ;; (scope    vl-scope-p)
+   )
   :returns (mv (okp      booleanp :rule-classes :type-prescription)
                (warnings vl-warninglist-p)
                (new-x    vl-fundecllist-p))
@@ -678,9 +680,9 @@ okay (since eliminating parameters changes the function's namespace).</p>"
   (b* (((when (atom x))
         (mv t (ok) nil))
        ((mv car-successp warnings car-prime)
-        (vl-fundecl-expand-params (car x) warnings scope))
+        (vl-fundecl-expand-params (car x) warnings))
        ((mv cdr-successp warnings cdr-prime)
-        (vl-fundecllist-expand-params (cdr x) warnings scope)))
+        (vl-fundecllist-expand-params (cdr x) warnings)))
     (mv (and car-successp cdr-successp)
         warnings
         (cons car-prime cdr-prime))))
@@ -2505,7 +2507,7 @@ doublebuf_template.</p>"
         (mv nil warnings nil nil))
 
        ;; Deal with function parameters.
-       ((mv okp warnings fundecls) (vl-fundecllist-expand-params fundecls warnings x))
+       ((mv okp warnings fundecls) (vl-fundecllist-expand-params fundecls warnings))
        ((unless okp)
         (mv nil warnings nil nil))
 
