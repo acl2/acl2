@@ -50,6 +50,8 @@ sub check_file_for_errors
     {
         chomp($line);
 
+	$line =~ s/librterrorinf//; # get rid of false error bc of this filename
+
         my $error = ($line =~ m/.*fail.*/i) || ($line =~ m/.*error.*/i);
 	$error = $error && ! ($line =~ m/.*errors: 0,.*/);
 

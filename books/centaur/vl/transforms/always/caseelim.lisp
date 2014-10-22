@@ -30,9 +30,7 @@
 
 (in-package "VL")
 (include-book "../../mlib/stmt-tools")
-(include-book "../../mlib/welltyped")
-(include-book "../../mlib/constint-bits")
-(include-book "../../mlib/expr-slice")
+(include-book "../../mlib/caremask")
 (local (include-book "../../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
 (local (in-theory (disable all-equalp)))
@@ -91,7 +89,6 @@ Verilog standard says that @('test') should be evaluated only once, before the
 @('match') expressions.  In our transformed code, @('test') may be evaluated
 multiple times.  This is not a problem for back-end tools like @(see esim)
 where there is no such notion of evaluation.</p>
-
 <p>We considered doing something more sophisticated to avoid replicating the
 @('test') expression, which would avoid this problem.  It would be easy enough
 to simply assign the test expression to some temporary wire, then check
@@ -101,10 +98,10 @@ become tricky/messy.  So for now, our transform really is just as naive as the
 above suggests.</p>
 
 <p>Our support for @('casex') and @('casez') statements is somewhat more
-limited.  Here, we require that the @('test') expression is a sliceable
-expression, and that each @('match') expression be some simple, atomic @(see
-vl-constint-p) or @(see vl-weirdint-p) expression.  These constraints allow us
-to carry out an especially naive transformation, e.g.,:</p>
+limited.  Here, we require that each @('match') expression be some simple,
+atomic @(see vl-constint-p) or @(see vl-weirdint-p) expression.  These
+constraints allow us to carry out the following transform
+e.g.,:</p>
 
 @({
     casez (in)
@@ -114,13 +111,15 @@ to carry out an especially naive transformation, e.g.,:</p>
       default: <default-body>
     endcase
        -->
-    if (in[3] === 1'b0 & in[2] === 1'b0 & in[1] === 1'b1)  <body-1>
+    if      ( (in & 4'b1110) === (4'b001z & 4'b1110) )    <body-1>
+    else if ( (in & 4'b1100) === (4'b01zz & 4'b1100) )    <body-2>
+    else if ( (in & 4'b1000) === (4'b1zzz & 4'b1000) )    <body-2>
     else if (in[3] === 1'b0 & in[2] === 1'b1)              <body-2>
     else if (in[3] === 1'b1)                               <body-3>
     else                                                   <default-body>
 })
 
-<p>That is, our @('if') statement conditions simply omit the x/z/? bits as
+<p>That is, our @('if') statement conditions simply mask out the x/z/? bits as
 appropriate, and check that the other bits are matched.</p>
 
 <p>Unfortunately, this transformation is <b>completely wrong</b> in the case
@@ -592,162 +591,46 @@ for handling @('case(foo) ... 3'b110, 3'b111: ... endcase')."
 ;
 ; -----------------------------------------------------------------------------
 
-(define vl-casezx-match-bits
-  :parents (vl-casezx-matchexpr)
-  :short "Try to explode a match-expression into a @(see vl-bitlist-p)."
-
-  ((x vl-expr-p
-      "A match expression in a @('casex') or @('casez') statement, e.g.,
-       typically this is a weirdint with some wildcard bits, such as
-       @('4'b10??')."))
-  :guard (vl-expr-welltyped-p x)
-  :returns
-  (mv (okp      booleanp     :rule-classes :type-prescription)
-      (msb-bits vl-bitlist-p))
-
-  :long "<p>For now we just support simple weirdints and constints.  We could
-probably easily extend this to arbitrary concatenations of weirdints and
-constints, but that's probably overkill.</p>"
-
-  (b* (((unless (vl-fast-atom-p x))
-        ;; We only support weirdints and constints for now.
-        (mv nil nil))
-       (guts (vl-atom->guts x))
-       ((when (vl-fast-weirdint-p guts))
-        (mv t (vl-weirdint->bits guts)))
-       ((unless (vl-constint-p guts))
-        (mv nil nil)))
-    (mv t (vl-constint->msb-bits x)))
-
-  :prepwork
-  ((local (in-theory (enable vl-expr-welltyped-p
-                             vl-expr->finalwidth
-                             vl-atom-welltyped-p))))
-  ///
-  (defthm len-of-vl-casezx-match-bits
-    (b* (((mv okp msb-bits) (vl-casezx-match-bits x)))
-      (implies (and okp
-                    (vl-expr-welltyped-p x))
-               (equal (len msb-bits)
-                      (vl-expr->finalwidth x))))))
 
 
-(define vl-casezx-matchexpr-aux
-  :parents (vl-casezx-matchexpr)
-  ((type       vl-casetype-p)
-   (test-bits  vl-exprlist-p "One-bit expressions for @('data') in MSB-first order.")
-   (match-bits vl-bitlist-p  "Bits of the match expression like @('4'b10??') in
-                              MSB-first order."))
-  :guard (and (member type '(:vl-casez :vl-casex))
-              (same-lengthp test-bits match-bits)
-              (vl-exprlist-welltyped-p test-bits)
-              (all-equalp 1 (vl-exprlist->finalwidths test-bits))
-              (all-equalp :vl-unsigned (vl-exprlist->finaltypes test-bits)))
-
-  :returns (expr vl-expr-p)
-  :measure (vl-exprlist-count test-bits)
-
-  (b* ((type       (vl-casetype-fix type))
-       (test-bits  (vl-exprlist-fix test-bits))
-       (match-bits (vl-bitlist-fix match-bits))
-       ((when (atom test-bits))
-        ;; Since our match expression is basically the AND of all the
-        ;; relevant bits matching, the base case is that we've matched
-        ;; everything else and so it's just true.
-        |*sized-1'b1*|)
-
-       (bit1-wild?
-        (or
-         ;; Z bits are always wild for both casex and casez statements
-         (eq (first match-bits) :vl-zval)
-         ;; X bits are also wild for casex statements.
-         (and (eq type :vl-casex)
-              (eq (first match-bits) :vl-xval))))
-
-       ((when bit1-wild?)
-        ;; Nothing to check for this bit.
-        (vl-casezx-matchexpr-aux type (cdr test-bits) (cdr match-bits)))
-
-       ;; First bit is not wild, so this has to match.
-       (match-expr (case (first match-bits)
-                     (:vl-0val |*sized-1'b0*|)
-                     (:vl-1val |*sized-1'b1*|)
-                     (:vl-xval |*sized-1'bx*|)
-                     (otherwise (impossible))))
-       (match1 (make-vl-nonatom
-                ;; data[3] === 1'b0.  Always unsized,
-                :op :vl-binary-ceq
-                :args (list (car test-bits) match-expr)
-                :finalwidth 1
-                :finaltype :vl-unsigned))
-
-       (match-rest
-        (vl-casezx-matchexpr-aux type (cdr test-bits) (cdr match-bits)))
-
-       ((when (equal match-rest |*sized-1'b1*|))
-        ;; Purely aesthetic: eliminate the final "& 1'b1" if possible.
-        match1))
-    (make-vl-nonatom :op :vl-binary-bitand
-                     :args (list match1 match-rest)
-                     :finalwidth 1
-                     :finaltype :vl-unsigned))
-  ///
-  (defthm vl-expr->finalwidth-of-vl-casezx-matchexpr-aux
-    (equal (vl-expr->finalwidth (vl-casezx-matchexpr-aux type test-bits match-bits))
-           1))
-
-  (defthm vl-expr->finaltype-of-vl-casezx-matchexpr-aux
-    (equal (vl-expr->finaltype (vl-casezx-matchexpr-aux type test-bits match-bits))
-           :vl-unsigned))
-
-  (defthm vl-expr-welltyped-p-of-vl-casezx-matchexpr-aux
-    (implies
-     (and (force (vl-exprlist-p test-bits))
-          (force (vl-bitlist-p match-bits))
-          (force (same-lengthp test-bits match-bits))
-          (force (vl-exprlist-welltyped-p test-bits))
-          (force (all-equalp 1 (vl-exprlist->finalwidths test-bits)))
-          (force (all-equalp :vl-unsigned (vl-exprlist->finaltypes test-bits))))
-     (vl-expr-welltyped-p
-      (vl-casezx-matchexpr-aux type test-bits match-bits)))
-    :hints(("Goal"
-            :expand ((:free (op args atts finalwidth finaltype)
-                            (vl-expr-welltyped-p
-                             (make-vl-nonatom :op op
-                                              :args args
-                                              :atts atts
-                                              :finalwidth finalwidth
-                                              :finaltype finaltype))))))))
 
 
 (define vl-casezx-matchexpr
-  :short "Creates, e.g., the expression @('data[3] === 1'b1 & data[2] ===
-1'b0') for handling @('casez(data) ... 4'b10??: ... endcase')."
+  :short "Creates, e.g., the expression @('(data & 4'b1100) === 4'b1000')
+ for handling @('casez(data) ... 4'b10??: ... endcase')."
 
   ((type       vl-casetype-p "Kind of case statement.")
-   (test-bits  vl-exprlist-p "E.g., for @('casex(data) ...'), the msb-first
-                              bits of @('data').")
+   (test       vl-expr-p     "E.g., for @('casex(data) ...'), data.")
    (match-expr vl-expr-p     "E.g., @('4'b10??'), the expression to match;
                               usually a weird integer with some wildcard bits.")
    (ctx        vl-modelement-p  "Context for @(see warnings).")
    (warnings   vl-warninglist-p "Ordinary @(see warnings) accumulator."))
   :guard
   (and (member type '(:vl-casez :vl-casex))
-       (vl-exprlist-welltyped-p test-bits)
-       (all-equalp 1 (vl-exprlist->finalwidths test-bits))
-       (all-equalp :vl-unsigned (vl-exprlist->finaltypes test-bits)))
+       (vl-expr-welltyped-p test)
+       (posp (vl-expr->finalwidth test))
+       (eq (vl-expr->finaltype test) :vl-unsigned))
   :returns
   (mv (warnings vl-warninglist-p)
       (expr? "On failure @('nil'), otherwise an expression that checks whether
-              we have a match, i.e., @('data[3] === 1'b1 & data[2] === 1'b0')."
-             (equal (vl-expr-p expr?) (if expr? t nil))))
+              we have a match, i.e., @('(data & 4'b1100) === 4'b1000')"
+             (iff (vl-expr-p expr?) expr?)))
+  :prepwork ((local (defthm max->=-a
+                      (>= (max a b) a)
+                      :rule-classes :linear))
+             (local (defthm max->=-b
+                      (>= (max a b) b)
+                      :rule-classes :linear))
+             (local (in-theory (disable (tau-system)
+                                        member-equal-when-member-equal-of-cdr-under-iff
+                                        not double-containment max))))
 
   (b* ((type       (vl-casetype-fix type))
        (ctx        (vl-modelement-fix ctx))
        (match-expr (vl-expr-fix match-expr))
 
        ((unless (and (vl-expr-welltyped-p match-expr)
-                     (equal (vl-expr->finalwidth match-expr) (len test-bits))))
+                     (posp (vl-expr->finalwidth match-expr))))
         (mv (warn :type :vl-casezx-fail
                   :msg "~a0: can't handle ~s1 statement; match expression ~a2 ~
                         is too complex or incorrectly sized."
@@ -755,8 +638,16 @@ constints, but that's probably overkill.</p>"
                               (if (eq type :vl-casex) "casex" "casez")
                               match-expr))
             nil))
+       ;; ((when (eq (vl-expr->finaltype test) :vl-signed))
+       ;;  (mv (warn :type :vl-casezx-fail
+       ;;            :msg "~a0: Can't currently handle ~s1 statement because the ~
+       ;;                  test expression ~a2 is signed.  Come back when ~
+       ;;                  Verilog has a sign-extend operator."
+       ;;            :args (list ctx (if (eq type :vl-casex) "casex" "casez")
+       ;;                        test match-expr))
+       ;;      nil))
 
-       ((mv ok match-bits) (vl-casezx-match-bits match-expr))
+       ((mv ok match-bits) (vl-intliteral-msb-bits match-expr))
        ((unless ok)
         (mv (warn :type :vl-casezx-fail
                   :msg "~a0: can't handle ~s1 statement; match expression ~a2 ~
@@ -765,9 +656,64 @@ constints, but that's probably overkill.</p>"
                   :args (list ctx
                               (if (eq type :vl-casex) "casex" "casez")
                               match-expr))
-            nil)))
+            nil))
 
-    (mv (ok) (vl-casezx-matchexpr-aux type test-bits match-bits)))
+       (finalwidth (max (vl-expr->finalwidth match-expr)
+                        (vl-expr->finalwidth test)))
+       (finaltype (if (and (eq (vl-expr->finaltype match-expr) :vl-signed)
+                           (eq (vl-expr->finaltype test) :vl-signed))
+                      ;; this doesn't happen atm bc of the test above
+                      :vl-signed
+                    :vl-unsigned))
+       (ext-match-bits (append
+                        (repeat (- finalwidth (vl-expr->finalwidth match-expr))
+                                (if (eq finaltype :vl-signed)
+                                    (car match-bits)
+                                  :vl-0val))
+                        match-bits))
+
+       ;; Care mask computation.
+       (cm-value (if (eq type :vl-casez)
+                     (vl-msb-bits-to-z-care-mask ext-match-bits 0)
+                   (vl-msb-bits-to-zx-care-mask ext-match-bits 0)))
+       (cm-guts  (make-vl-constint :value cm-value
+                                   :origwidth finalwidth
+                                   :origtype finaltype))
+       (cm-expr  (make-vl-atom :guts cm-guts
+                               :finalwidth finalwidth
+                               :finaltype finaltype))
+       (zap-bits (if (eq type :vl-casez)
+                     (vl-msb-bits-zap-dontcares-z ext-match-bits)
+                   (vl-msb-bits-zap-dontcares-zx ext-match-bits)))
+
+       (zap-expr (vl-msb-bits-to-intliteral zap-bits finaltype))
+
+       (test-width (vl-expr->finalwidth test))
+       (test-ext (if (< test-width finalwidth)
+                     ;; zero extend
+                     (make-vl-nonatom :op :vl-concat
+                                      :args (list (make-vl-atom :guts (make-vl-constint
+                                                                       :origwidth (- finalwidth test-width)
+                                                                       :origtype :vl-unsigned
+                                                                       :value 0)
+                                                                :finalwidth (- finalwidth test-width)
+                                                                :finaltype :vl-unsigned)
+                                               test)
+                                   :finalwidth finalwidth
+                                   :finaltype finaltype)
+                   test))
+       
+       (if-test (make-vl-nonatom
+                 :op :vl-binary-ceq
+                 :args (list (make-vl-nonatom
+                              :op :vl-binary-bitand
+                              :args (list test-ext cm-expr)
+                              :finalwidth finalwidth
+                              :finaltype finaltype)
+                             zap-expr)
+                 :finalwidth 1
+                 :finaltype :vl-unsigned)))
+    (mv (ok) if-test))
   ///
   (more-returns
    (expr? (implies expr? (equal (vl-expr->finalwidth expr?) 1))
@@ -777,16 +723,15 @@ constints, but that's probably overkill.</p>"
 
   (defthm vl-expr-welltyped-p-of-vl-casezx-matchexpr
     (implies
-     (and (vl-exprlist-p test-bits)
-          (vl-exprlist-welltyped-p test-bits)
-          (all-equalp 1 (vl-exprlist->finalwidths test-bits))
-          (all-equalp :vl-unsigned (vl-exprlist->finaltypes test-bits))
-          (vl-expr-p match-expr))
+     (and (vl-expr-welltyped-p test)
+          (posp (vl-expr->finalwidth test))
+          (equal (vl-expr->finaltype test) :vl-unsigned))
      (b* (((mv & result)
-           (vl-casezx-matchexpr type test-bits match-expr ctx warnings)))
+           (vl-casezx-matchexpr type test match-expr ctx warnings)))
        (implies result
                 (vl-expr-welltyped-p result))))
-    :hints(("Goal" :in-theory (enable vl-expr-welltyped-p)))))
+    :hints(("Goal" :in-theory (enable vl-expr-welltyped-p
+                                      vl-atom-welltyped-p)))))
 
 (define vl-casezx-match-any-expr
   :short "Handles situations like @('casez(foo) ... 3'bxx1, 3'bx10:
@@ -794,7 +739,7 @@ constints, but that's probably overkill.</p>"
 the same body."
 
   ((type        vl-casetype-p    "Kind of case statement.")
-   (test-bits   vl-exprlist-p    "E.g., for @('casex(data) ...'), the msb-first bits of @('data').")
+   (test        vl-expr-p        "E.g., for @('casex(data) ...'), data.")
    (match-exprs vl-exprlist-p    "The match expressions, usually weird integers with wildcard bits.")
    (ctx         vl-modelement-p  "Context for @(see warnings).")
    (warnings    vl-warninglist-p "Ordinary @(see warnings) accumulator."))
@@ -806,23 +751,22 @@ the same body."
                 (equal (vl-expr-p expr?) (if expr? t nil))))
 
   :guard (and (member type '(:vl-casez :vl-casex))
-              (vl-exprlist-welltyped-p test-bits)
-              (all-equalp 1 (vl-exprlist->finalwidths test-bits))
-              (all-equalp :vl-unsigned (vl-exprlist->finaltypes test-bits))
-              (vl-exprlist-p match-exprs))
+              (vl-expr-welltyped-p test)
+              (posp (vl-expr->finalwidth test))
+              (equal (vl-expr->finaltype test) :vl-unsigned))
   (b* (((when (atom match-exprs))
         (mv (fatal :type :vl-casezx-fail
                    :msg "~a0: case list has no match expressions?"
                    :args (list (vl-modelement-fix ctx)))
             nil))
-       ((mv warnings compare1) (vl-casezx-matchexpr type test-bits (car match-exprs) ctx warnings))
+       ((mv warnings compare1) (vl-casezx-matchexpr type test (car match-exprs) ctx warnings))
        ((unless compare1)
         ;; Already warned, just fail.
         (mv warnings nil))
        ((when (atom (cdr match-exprs)))
         ;; Fine -- nothing else to worry about
         (mv warnings compare1))
-       ((mv warnings compare-rest) (vl-casezx-match-any-expr type test-bits (cdr match-exprs) ctx warnings))
+       ((mv warnings compare-rest) (vl-casezx-match-any-expr type test (cdr match-exprs) ctx warnings))
        ((unless compare-rest)
         ;; Already warned, just fail.
         (mv warnings nil)))
@@ -840,13 +784,11 @@ the same body."
           :name vl-expr->finaltype-of-vl-casezx-match-any-expr))
 
   (defthm vl-expr-welltyped-p-of-vl-casezx-match-any-expr
-    (implies (and (vl-exprlist-p test-bits)
-                  (vl-exprlist-welltyped-p test-bits)
-                  (all-equalp 1 (vl-exprlist->finalwidths test-bits))
-                  (all-equalp :vl-unsigned (vl-exprlist->finaltypes test-bits))
-                  (vl-exprlist-p match-exprs))
+    (implies (and (vl-expr-welltyped-p test)
+                  (posp (vl-expr->finalwidth test))
+                  (equal (vl-expr->finaltype test) :vl-unsigned))
              (b* (((mv & result)
-                   (vl-casezx-match-any-expr type test-bits match-exprs ctx warnings)))
+                   (vl-casezx-match-any-expr type test match-exprs ctx warnings)))
                (implies result
                         (vl-expr-welltyped-p result))))
     :hints(("Goal"
@@ -860,7 +802,7 @@ the same body."
 
 (define vl-casezx-elim-aux
   ((type       vl-casetype-p    "Kind of case statement.")
-   (test-bits  vl-exprlist-p    "E.g., for @('casex(data) ...'), the msb-first
+   (test       vl-expr-p        "E.g., for @('casex(data) ...'), the msb-first
                                  bits of @('data').")
    (cases      vl-caselist-p    "Compatibly sized cases.")
    (default    vl-stmt-p        "The body for the @('default') case.")
@@ -868,9 +810,9 @@ the same body."
    (warnings   vl-warninglist-p "Ordinary @(see warnings) accumulator."))
   :guard
   (and (member type '(:vl-casez :vl-casex))
-       (vl-exprlist-welltyped-p test-bits)
-       (all-equalp 1 (vl-exprlist->finalwidths test-bits))
-       (all-equalp :vl-unsigned (vl-exprlist->finaltypes test-bits)))
+       (vl-expr-welltyped-p test)
+       (posp (vl-expr->finalwidth test))
+       (equal (vl-expr->finaltype test) :vl-unsigned))
   :verify-guards nil
   :returns
   (mv (warnings vl-warninglist-p)
@@ -883,12 +825,12 @@ the same body."
        ((cons match-exprs1 body1) (car cases))
 
        ((mv warnings match-expr)
-        (vl-casezx-match-any-expr type test-bits match-exprs1 ctx warnings))
+        (vl-casezx-match-any-expr type test match-exprs1 ctx warnings))
        ((unless match-expr)
         (mv warnings nil))
 
        ((mv warnings rest-stmt)
-        (vl-casezx-elim-aux type test-bits (cdr cases) default ctx warnings))
+        (vl-casezx-elim-aux type test (cdr cases) default ctx warnings))
        ((unless rest-stmt)
         (mv warnings nil))
 
@@ -910,7 +852,7 @@ the same body."
    (atts     vl-atts-p        "Any attributes on the whole case statement.")
    (ctx      vl-modelement-p  "Context for @(see warnings).")
    (warnings vl-warninglist-p "Ordinary warnings accumulator.")
-   (ss       vl-scopestack-p))
+   (ss       vl-scopestack-p  "NOTE: Not currently used."))
   :guard
   (member type '(:vl-casez :vl-casex))
   :returns
@@ -921,35 +863,22 @@ the same body."
        (check        (vl-casecheck-fix check))
        (test         (vl-expr-fix test))
        (ctx          (vl-modelement-fix ctx))
-       (ss           (vl-scopestack-fix ss))
+       (?ss           (vl-scopestack-fix ss))
        (warnings     (vl-warninglist-fix warnings))
 
        (new-warnings (vl-casestmt-size-warnings test cases ctx))
-       ((mv okp new-warnings test-bits)
-        (if (and (vl-expr-sliceable-p test)
-                 (vl-expr-welltyped-p test))
-            (vl-msb-bitslice-expr test ss new-warnings)
-          (mv nil new-warnings nil)))
-       (new-warnings
-        (if okp
-            new-warnings
-          (warn :type :vl-casezx-fail
-                :msg "~a0: can't handle ~s1 statement because we failed to ~
-                       determine the bits of the test expression ~a2."
-                :args (list ctx
-                            (if (eq type :vl-casex) "casex" "casez")
-                            test)
-                :acc new-warnings)))
-       (new-warnings
-        (if check
-            (warn :type :vl-casezx-check
-                  :msg "~a0: we don't yet implement priority, unique, or ~
-                         unique0 checking for casez/x statements.  We will ~
-                         treat this as an ordinary casez/x statement."
-                  :args (list (vl-modelement-fix ctx))
-                  :acc new-warnings)
-          new-warnings))
-
+       (new-warnings (if (and (vl-expr-welltyped-p test)
+                              (posp (vl-expr->finalwidth test))
+                              (eq (vl-expr->finaltype test) :vl-unsigned))
+                         new-warnings
+                       (warn :type :vl-casezx-fail
+                             :msg "~a0: can't handle ~s1 statement because ~
+                                   the test expression ~a2 is either signed, ~
+                                   unsized, or of size 0."
+                             :args (list ctx
+                                         (if (eq type :vl-casex) "casex" "casez")
+                                         test)
+                             :acc new-warnings)))
        ((when new-warnings)
         ;; Some sizing problem, so just fail to rewrite the casez statement.
         (mv (append-without-guard new-warnings warnings)
@@ -960,8 +889,17 @@ the same body."
                               :default  default
                               :atts     atts)))
 
+       (warnings
+        (if check
+            (warn :type :vl-casezx-check
+                  :msg "~a0: we don't yet implement priority, unique, or ~
+                         unique0 checking for casez/x statements.  We will ~
+                         treat this as an ordinary casez/x statement."
+                  :args (list (vl-modelement-fix ctx)))
+          warnings))
+
        ((mv warnings new-stmt)
-        (vl-casezx-elim-aux type test-bits cases default ctx warnings))
+        (vl-casezx-elim-aux type test cases default ctx warnings))
 
        ((unless new-stmt)
         ;; Already warned, so just leave this case statement alone.
