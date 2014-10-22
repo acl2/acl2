@@ -3494,8 +3494,8 @@ the list of elements of the given type.</p>"
 
    ;; BOZO possibly add timeunits declarations.
 
-   ;; (imports    vl-importlist-p
-   ;;             "Import statements for this module, like @('import foo::*').")
+   (imports    vl-importlist-p
+               "Import statements for this module, like @('import foo::*').")
 
    (ports      vl-portlist-p
                "The module's ports list, i.e., @('a'), @('b'), and @('c') in
@@ -3877,6 +3877,7 @@ packages.  Eventually there will be new fields here.</p>")
    (vardecls   vl-vardecllist-p)
    (modports   vl-modportlist-p)
    (generates  vl-genelementlist-p)
+   (imports    vl-importlist-p)
    ;; ...
    (warnings vl-warninglist-p)
    (minloc   vl-location-p)

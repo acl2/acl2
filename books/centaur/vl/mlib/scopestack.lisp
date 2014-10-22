@@ -68,8 +68,8 @@
 
 (local (defconst *vl-scopes->items*
           ;; scope type      has item types or (type acc-name)
-         '((interface    (#|:import|#)      paramdecl vardecl modport)
-           (module       (#|:import|#)      paramdecl vardecl fundecl taskdecl 
+         '((interface    (:import)          paramdecl vardecl modport)
+           (module       (:import)          paramdecl vardecl fundecl taskdecl 
                                             (modinst :name instname :maybe-stringp t
                                                      :names-defined t)
                                             (gateinst :maybe-stringp t :names-defined t))
