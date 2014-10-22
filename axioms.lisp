@@ -25977,7 +25977,6 @@ Lisp definition."
                  (mv (state-free-global-let* ((safe-mode t))
                                              (apply (*1*-symbol fn) args))
                      state)))
-  #+acl2-loop-only
   (mv-let (erp val state)
           (read-acl2-oracle state)
           (declare (ignore erp))
@@ -25998,7 +25997,6 @@ Lisp definition."
   (when (live-state-p state)
     (return-from oracle-apply-raw
                  (mv (apply fn args) state)))
-  #+acl2-loop-only
   (ec-call (oracle-apply fn args state)))
 
 (defun time-tracker-fn (tag kwd kwdp times interval min-time msg)

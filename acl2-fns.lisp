@@ -198,17 +198,10 @@
 ; specific function types during load-acl2 than had been used by compile-acl2
 ; We may have this change in types lead to buggy behavior.
 
-; So in order to proclaim during the boot-strap, we use the following steps.  A
-; key aspect of this process is that the file acl2-status.txt, which formerly
-; contained a single keyword, now also optionally contains a second keyword:
-; :generate-proclaims if the next step is to generate file acl2-proclaims.lisp,
-; or :use-proclaims if the next step is to start by loading file
-; acl2-proclaims.lisp.
+; So in order to proclaim during the boot-strap, we use the following steps.
 
 ; --- COMPILE: ---
 ; (1) In a fresh Lisp, call compile-acl2 without any proclaiming.
-;     If we are to proclaim (currently GCL only), write the line
-;     "; Next: generate proclaims" to the end of file acl2-status.txt.
 ; --- OPTIONALLY PROCLAIM: ---
 ; (2) In a fresh Lisp, call generate-acl2-proclaims, which does these steps if
 ;     *do-proclaims* is true (currently, GCL only), and otherwise is a no-op.
@@ -225,7 +218,7 @@
 ;     (c) initialize-acl2;
 ;     (d) save an executable.
 
-; We note that GNUmakefile orchestrates the above steps for "make"
+; We note that GNUmakefile orchestrates the above steps for "make".
 
 ; At one time we proclaimed for CCL, but one profiling run of a
 ; compute-intensive include-book form showed that this was costing us some 10%
@@ -840,6 +833,12 @@
                 (proclaim-form x stream))
               nil)
              ((defun defund)
+; debugging code:
+;             (let ((decl-form (make-defun-declare-form (cadr form) form)))
+;               (when (null decl-form)
+;                 (format t "@@ Failed: ~s~%" (cadr form)))
+;               (eval-or-print decl-form stream))
+; non-debugging code:
               (eval-or-print (make-defun-declare-form (cadr form) form)
                              stream)
               nil)
