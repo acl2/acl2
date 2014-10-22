@@ -159,10 +159,7 @@ explicit declarations.</p>")
                                    (decl     acl2::any-p)
                                    (scopes   vl-lexscopes-p)
                                    (warnings vl-warninglist-p))
-  :guard (consp scopes)
-  :returns (mv (new-scopes (and (vl-lexscopes-p new-scopes)
-                                (equal (len new-scopes) (len scopes))
-                                (iff (consp new-scopes) (consp scopes))))
+  :returns (mv (scopes   vl-lexscopes-p)
                (warnings vl-warninglist-p))
   :parents (vl-lexscopes)
   :short "Extend the lexscopes with a local declaration."
@@ -170,12 +167,12 @@ explicit declarations.</p>")
        (scopes   (vl-lexscopes-fix scopes))
        (warnings (vl-warninglist-fix warnings))
 
+       ((when (atom scopes))
+        (raise "Expected at least one scope.")
+        (mv scopes warnings))
+
        (scope1 (car scopes))
        (entry  (vl-lexscope-find name scope1))
-
-       ((unless (mbt (consp scopes)))
-        (impossible)
-        (mv scopes warnings))
 
        ((unless entry)
         ;; Completely new declaration, can't possibly conflict with anything.
@@ -223,11 +220,8 @@ explicit declarations.</p>")
                                          (scopes   vl-lexscopes-p)
                                          (ctx      vl-import-p)
                                          (warnings vl-warninglist-p))
-  :guard (consp scopes)
-  :returns (mv (new-scopes (and (vl-lexscopes-p new-scopes)
-                                (equal (len new-scopes) (len scopes))
-                                (iff (consp new-scopes) (consp scopes))))
-               (warnings   vl-warninglist-p))
+  :returns (mv (scopes   vl-lexscopes-p)
+               (warnings vl-warninglist-p))
   :parents (vl-lexscopes)
   :short "Extend the lexscopes with a direct import of a single name."
   (b* ((pkgname  (string-fix pkgname))
@@ -236,8 +230,8 @@ explicit declarations.</p>")
        (ctx      (vl-import-fix ctx))
        (warnings (vl-warninglist-fix warnings))
 
-       ((unless (mbt (consp scopes)))
-        (impossible)
+       ((when (atom scopes))
+        (raise "Expected at least one scope.")
         (mv scopes warnings))
 
        (scope1   (car scopes))
@@ -292,11 +286,8 @@ explicit declarations.</p>")
                                        (scopes   vl-lexscopes-p)
                                        (ctx      vl-import-p)
                                        (warnings vl-warninglist-p))
-  :guard (consp scopes)
-  :returns (mv (new-scopes (and (vl-lexscopes-p new-scopes)
-                                (equal (len new-scopes) (len scopes))
-                                (iff (consp new-scopes) (consp scopes))))
-               (warnings   vl-warninglist-p))
+  :returns (mv (scopes   vl-lexscopes-p)
+               (warnings vl-warninglist-p))
   :parents (vl-lexscopes)
   :short "Extend the lexscopes with a wildcard import of a single name."
   (declare (ignorable ctx))
@@ -305,8 +296,8 @@ explicit declarations.</p>")
        (scopes   (vl-lexscopes-fix scopes))
        (warnings (vl-warninglist-fix warnings))
 
-       ((unless (mbt (consp scopes)))
-        (impossible)
+       ((when (atom scopes))
+        (raise "Expected at least one scope.")
         (mv scopes warnings))
 
        (scope1   (car scopes))
@@ -332,113 +323,293 @@ explicit declarations.</p>")
     (mv new-scopes warnings)))
 
 
+(local
+ (defsection string-listp-of-alist-keys-of-vl-package-scope-item-alist
+
+   (local (defthm l0
+            (equal (string-listp (alist-keys (vl-typedeflist-alist x acc)))
+                   (string-listp (alist-keys acc)))
+            :hints(("Goal" :in-theory (enable vl-typedeflist-alist)))))
+
+   (local (defthm l1
+            (equal (string-listp (alist-keys (vl-taskdecllist-alist x acc)))
+                   (string-listp (alist-keys acc)))
+            :hints(("Goal" :in-theory (enable vl-taskdecllist-alist)))))
+
+   (local (defthm l2
+            (equal (string-listp (alist-keys (vl-fundecllist-alist x acc)))
+                   (string-listp (alist-keys acc)))
+            :hints(("Goal" :in-theory (enable vl-fundecllist-alist)))))
+
+   (local (defthm l3
+            (equal (string-listp (alist-keys (vl-vardecllist-alist x acc)))
+                   (string-listp (alist-keys acc)))
+            :hints(("Goal" :in-theory (enable vl-vardecllist-alist)))))
+
+   (local (defthm l4
+            (equal (string-listp (alist-keys (vl-paramdecllist-alist x acc)))
+                   (string-listp (alist-keys acc)))
+            :hints(("Goal" :in-theory (enable vl-paramdecllist-alist)))))
+
+   (defthm string-listp-of-alist-keys-of-vl-package-scope-item-alist
+     (equal (string-listp (alist-keys (vl-package-scope-item-alist x acc)))
+            (string-listp (alist-keys acc)))
+     :hints(("Goal" :in-theory (enable vl-package-scope-item-alist))))))
+
+
 (define vl-lexscopes-wild-import-names ((pkgname  stringp      "Name of the package being imported from.")
-                                        (names    string-listp "Names declared in the package.")
+                                        (pkg-item-alist "Goofy, we only care about the names, but we take
+                                                         the whole alist to reuse @(see vl-package-scope-item-alist).")
                                         (scopes   vl-lexscopes-p)
                                         (ctx      vl-import-p)
                                         (warnings vl-warninglist-p))
-  :guard (consp scopes)
-  :returns (mv (new-scopes (and (vl-lexscopes-p new-scopes)
-                                (equal (len new-scopes) (len scopes))
-                                (iff (consp new-scopes) (consp scopes))))
-               (warnings   vl-warninglist-p))
+  :guard   (string-listp (alist-keys pkg-item-alist))
+  :returns (mv (scopes   vl-lexscopes-p)
+               (warnings vl-warninglist-p))
   :parents (vl-lexscopes)
   :short "Extend the lexscopes with a wildcard import of a list of names."
   (declare (ignorable ctx))
-  (b* (((when (atom names))
+  (b* (((when (atom pkg-item-alist))
         (mv (vl-lexscopes-fix scopes) (vl-warninglist-fix warnings)))
+       ((when (atom (car pkg-item-alist)))
+        (vl-lexscopes-wild-import-names pkgname (cdr pkg-item-alist) scopes ctx warnings))
        ((mv scopes warnings)
-        (vl-lexscopes-wild-import-name pkgname (car names) scopes ctx warnings)))
-    (vl-lexscopes-wild-import-names pkgname (cdr names) scopes ctx warnings)))
+        (vl-lexscopes-wild-import-name pkgname (caar pkg-item-alist) scopes ctx warnings)))
+    (vl-lexscopes-wild-import-names pkgname (cdr pkg-item-alist) scopes ctx warnings)))
 
+(local (defthm stringp-when-vl-importpart-p
+         (implies (vl-importpart-p x)
+                  (equal (stringp x)
+                         (not (equal x :vl-import*))))
+         :hints(("Goal" :in-theory (enable vl-importpart-p)))))
 
 (define vl-lexscopes-do-import ((x        vl-import-p)
                                 (scopes   vl-lexscopes-p)
                                 (warnings vl-warninglist-p)
                                 (design   vl-design-p))
-  :guard (consp scopes)
-  :returns (mv (new-scopes (and (vl-lexscopes-p new-scopes)
-                                (equal (len new-scopes) (len scopes))
-                                (iff (consp new-scopes) (consp scopes))))
+  :returns (mv (scopes   vl-lexscopes-p)
                (warnings vl-warninglist-p))
   :parents (vl-lexscopes)
   :short "Extend the lexscopes with a package import."
   (b* (((vl-import x) (vl-import-fix x))
-       (scopes        (vl-lexscopes-fix x))
+       (scopes        (vl-lexscopes-fix scopes))
        (warnings      (vl-warninglist-fix warnings))
 
-       ((unless (mbt (consp scopes)))
-        (impossible)
+       ((when (atom scopes))
+        (raise "Expected at least one scope.")
         (mv scopes warnings))
 
-       (pkg      (vl-find-package import.pkg (vl-design->packages design)))
+       (pkg      (vl-find-package x.pkg (vl-design->packages design)))
        (warnings (if pkg
                      warnings
                    (fatal :type :vl-bad-import
                           :msg "~a0: trying to import from undefined package ~s1."
-                          :args (list x import.pkg))))
+                          :args (list x x.pkg))))
 
-       ((unless (eq import.part :vl-import*))
-        (b* ((item     (BOZO-FIND-NONIMPORTED-ITEM-IN-PACKAGE import.part pkg))
+       (pkg-item-alist (and pkg (vl-package-scope-item-alist-top pkg)))
+
+       ((unless (eq x.part :vl-import*))
+        (b* ((item     (hons-get x.part pkg-item-alist))
              (warnings (if item
                            warnings
                          (fatal :type :vl-bad-import
-                                "~a0: no declaration of ~s1 in package ~s2."
-                                :args (list x import.part import.pkg)))))
+                                :msg "~a0: no declaration of ~s1 in package ~s2."
+                                :args (list x x.part x.pkg)))))
           ;; If the item wasn't found, it doesn't really matter what we do
           ;; because we caused a fatal error already.  It seems basically
           ;; reasonable to pretend that we imported it successfully, so we can
           ;; check subsequent uses of it.
-          (vl-lexscopes-direct-import-name import.pkg import.part scopes x warnings)))
+          (vl-lexscopes-direct-import-name x.pkg x.part scopes x warnings))))
 
-       (names (BOZO-GET-ALL-NAMES-IN-PACKAGE pkg)))
-    (vl-lexscopes-wild-import-names import.pkg names scopes x warnings)))
-
-
+    (vl-lexscopes-wild-import-names x.pkg pkg-item-alist scopes x warnings)))
 
 
 (defprod vl-shadowcheck-state
   :tag :vl-shadowcheck-state
   :layout :tree
-  ((ss  vl-scopestack-p
-        "Proper scopestack with all implicit variables already added to it, and
-         updated with whatever scopes we've descended through pushed onto it.")
-   (lex vl-lexscopes-p
-        "Partial lexical scopestack-like thing, current up to this point.")))
+  ((lexscopes vl-lexscopes-p
+              "Lexical scopes, current up to this point.")
+   (ss        vl-scopestack-p
+              "Proper scopestack with all implicit variables already added to it, and
+               updated with whatever scopes we've descended through pushed onto it.")
+   (design    vl-design-p
+              "Original design.")))
 
+(define vl-shadowcheck-push-scope ((x  vl-scope-p)
+                                   (st vl-shadowcheck-state-p))
+  :returns (st vl-shadowcheck-state-p)
+  ;; Like vl-scopestack-push but for shadowcheck states.
+  ;;  - Extends the scopestack by doing a push
+  ;;  - Extends the lexscopes with a new, empty scope
+  (b* (((vl-shadowcheck-state st)))
+    (change-vl-shadowcheck-state st
+                                 :lexscopes (vl-lexscopes-enter-new-scope st.lexscopes)
+                                 :ss        (vl-scopestack-push x st.ss))))
 
-(define vl-shadowcheck-lex-declare-name
+(define vl-shadowcheck-pop-scope ((st vl-shadowcheck-state-p))
+  :returns (st vl-shadowcheck-state-p)
+  (b* (((vl-shadowcheck-state st)))
+    (change-vl-shadowcheck-state st
+                                 :lexscopes (vl-lexscopes-exit-scope st.lexscopes)
+                                 :ss        (vl-scopestack-pop st.ss))))
+
+(define vl-shadowcheck-declare-name ((name     stringp)
+                                     (decl     acl2::any-p)
+                                     (st       vl-shadowcheck-state-p)
+                                     (warnings vl-warninglist-p))
+  :returns (mv (st       vl-shadowcheck-state-p)
+               (warnings vl-warninglist-p))
+  (b* (((vl-shadowcheck-state st))
+       ((mv lexscopes warnings)
+        (vl-lexscopes-declare-name name decl st.lexscopes warnings))
+       ;; I don't think we need to particularly do any cross-checking here.  By
+       ;; extending the lexscope we will have checked for import/decl
+       ;; conflicts, and we should be checking for redeclaration conflicts
+       ;; elsewhere, so what else is there to do?
+       (st (change-vl-shadowcheck-state st :lexscopes lexscopes)))
+    (mv st warnings)))
+
+(define vl-shadowcheck-declare-names ((names    string-listp)
+                                      (decl     acl2::any-p)
+                                      (st       vl-shadowcheck-state-p)
+                                      (warnings vl-warninglist-p))
+  :returns (mv (st       vl-shadowcheck-state-p)
+               (warnings vl-warninglist-p))
+  (b* (((when (atom names))
+        (mv (vl-shadowcheck-state-fix st) (vl-warninglist-fix warnings)))
+       ((mv st warnings) (vl-shadowcheck-declare-name (car names) decl st warnings)))
+    (vl-shadowcheck-declare-names (cdr names) decl st warnings)))
+
+(define vl-shadowcheck-import ((x        vl-import-p)
+                                  (st       vl-shadowcheck-state-p)
+                                  (warnings vl-warninglist-p))
+  :returns (mv (st       vl-shadowcheck-state-p)
+               (warnings vl-warninglist-p))
+  (b* (((vl-shadowcheck-state st))
+       ((mv lexscopes warnings)
+        (vl-lexscopes-do-import x st.lexscopes warnings st.design))
+       ;; I don't think there's anything else to check here?
+       (st (change-vl-shadowcheck-state st :lexscopes lexscopes)))
+    (mv st warnings)))
 
 (define vl-scopestack-nesting-level ((x vl-scopestack-p))
   :returns (level natp)
+  :measure (vl-scopestack-count x)
   (vl-scopestack-case x
     :null 0
     :global 1
     :local (+ 1 (vl-scopestack-nesting-level x.super))))
 
 (define vl-shadowcheck-reference-name ((name     stringp)
+                                       (ctx      acl2::any-p)
                                        (st       vl-shadowcheck-state-p)
                                        (warnings vl-warninglist-p))
   :returns (mv (st       vl-shadowcheck-state-p)
                (warnings vl-warninglist-p))
-  (declare (ignore name))
-  (b* (((vl-shadowcheck-state st)        (vl-shadowcheck-state-fix st))
-       ((mv decl import-lex lex-pkgname) (vl-shadowcheck-lex-find name st.lex))
-       ((mv item import-ss  ss-pkgname)  (vl-special-scopestack-find name st.ss))
-       (okp (and decl
-                 item
-                 (equal (vl-lexscope-nesting-level import-lex)
-                        (vl-scopestack-nesting-level import-ss))
-                 (equal lex-pkgname ss-pkgname)
-       
-       
+  (b* ((name                      (string-fix name))
+       ((vl-shadowcheck-state st) (vl-shadowcheck-state-fix st))
 
+       ((mv entry tail) (vl-lexscopes-find name st.lexscopes))
+       ((unless entry)
+        ;; Reference to something that isn't lexically defined.  I think it
+        ;; seems reasonable to complain about this now?  This might not be
+        ;; quite right if we need to be allowed to refer to things that we
+        ;; aren't consider items, like $bits(foo_t) or similar.
+        (mv st
+            (fatal :type :vl-undeclared-identifier
+                   :msg "~a0: reference to undeclared identifier ~s1.~%"
+                   :args (list ctx name))))
+       ((vl-lexscope-entry entry))
 
+       ((when (and (not entry.decl)
+                   (not entry.direct-pkg)
+                   (>= (len entry.wildpkgs) 2)))
+        (mv st
+            (fatal :type :vl-illegal-import
+                   :msg "~a0: the name ~s1 is imported by multiple wildcard ~
+                         imports: ~&2."
+                   :args (list ctx name entry.wildpkgs))))
 
-    (raise "BOZO implement me")
+       ((mv item scopestack-at-import pkg-name)
+        (vl-scopestack-find-item/context name st.ss))
+       ((unless (or item pkg-name))
+        (mv st
+            (fatal :type :vl-programming-error
+                   :msg "~a0: scopestack can't resolve ~s1 but it is found ~
+                         in the lexical scope, so how could that happen? ~x2."
+                   :args (list ctx name entry))))
+
+       (ss-level  (vl-scopestack-nesting-level scopestack-at-import))
+       (lex-level (len tail))
+       ((unless (equal ss-level lex-level))
+        (mv st
+            (fatal :type :vl-tricky-scope
+                   :msg "~a0: the name ~s1 has complex scoping that we do not ~
+                         support.  Lexical level ~x2, scopestack level ~x3."
+                   :args (list ctx name lex-level ss-level))))
+
+       ((unless pkg-name)
+        ;; Scopestack doesn't think this is imported from a package.
+        (b* (((unless entry.decl)
+              ;; Lexscope thinks it's imported from a package.  Wtf.
+              (mv st (fatal :type :vl-tricky-scope
+                            :msg "~a0: the name ~s1 has complex scoping that ~
+                                  we do not support.  Lexically it appears to ~
+                                  be imported from a package, but there is a ~
+                                  subsequent declaration (~a2) which makes ~
+                                  scoping confusing."
+                            :args (list ctx name item)))))
+          ;; We have a local declaration for it, so we don't think it's
+          ;; imported either.  Looks like a match.
+          (mv st (ok))))
+
+       ;; Scopestack thinks the item comes from a package.
+       ;; If scopestack gave us ITEM, it's the actual item from that package
+       ;; If ITEM is nil, then either:
+       ;;  - we found an import of foo::bar, but either bar isn't defined in
+       ;;    that package, or foo doesn't exist.
+       ;;  - we found an import of foo::*, but foo doesn't exist.
+       ((when entry.decl)
+        (mv st (fatal :type :vl-programming-error
+                      :msg "~a0: scopestack thinks ~s1 is imported from ~s2 ~
+                            but lexically it seems to be locally declared, ~
+                            ~a3."
+                      :args (list ctx name pkg-name entry.decl))))
+
+       ((when entry.direct-pkg)
+        ;; Lexically we think it's imported from foo::bar.  Scopestack also
+        ;; thinks it comes from a package.
+        (b* (((unless (equal entry.direct-pkg pkg-name))
+              (mv st (fatal :type :vl-import-conflict
+                            :msg "~a0: scopestack thinks ~s1 is imported from ~
+                                  ~s2, but lexically it is directly imported from ~s3."
+                            :args (list ctx name pkg-name entry.direct-pkg)))))
+          ;; Otherwise, we're totally ok.  We know there's no local declaration
+          ;; lexically, scopestack says it comes from the same package, etc.
+          (mv st (ok))))
+
+       ;; The only other case is that there's some import foo::*.  We've
+       ;; already checked above that there aren't multiple such imports.
+       ((unless (consp entry.wildpkgs))
+        (mv st (fatal :type :vl-programming-error
+                      :msg "~a0: name ~s1 has a lexscope entry with no local ~
+                            declaration, direct package, or wild packages.  ~
+                            How did this happen?"
+                      :args (list ctx name))))
+
+       (lex-pkg (and (mbt (equal (len entry.wildpkgs) 1)) ;; because we checked above
+                     (first entry.wildpkgs)))
+       ((unless (equal lex-pkg pkg-name))
+        (mv st (fatal :type :vl-import-conflict
+                      :msg "~a0: scopestack thinks ~s1 is imported from ~s2, ~
+                            but lexically it is wildly imported from ~s3."
+                      :args (list ctx name pkg-name lex-pkg)))))
+
+    ;; If we get here, all package sanity checks pass.  We're good to go.
     (mv st (ok))))
 
 (define vl-shadowcheck-reference-names ((names    string-listp)
+                                        (ctx      acl2::any-p)
                                         (st       vl-shadowcheck-state-p)
                                         (warnings vl-warninglist-p))
   :returns (mv (st       vl-shadowcheck-state-p)
@@ -446,28 +617,18 @@ explicit declarations.</p>")
   (b* (((when (atom names))
         (mv (vl-shadowcheck-state-fix st) (ok)))
        ((mv st warnings)
-        (vl-shadowcheck-reference-name (car names) st warnings)))
-    (vl-shadowcheck-reference-names (cdr names) st warnings)))
-
-(define vl-shadowcheck-declare-name ((name     stringp)
-                                     (st       vl-shadowcheck-state-p)
-                                     (warnings vl-warninglist-p))
-  :returns (mv (st       vl-shadowcheck-state-p)
-               (warnings vl-warninglist-p))
-  (declare (ignore name))
-  (b* ((st (vl-shadowcheck-state-fix st)))
-    (raise "BOZO implement me")
-    (mv st (ok))))
+        (vl-shadowcheck-reference-name (car names) ctx st warnings)))
+    (vl-shadowcheck-reference-names (cdr names) ctx st warnings)))
 
 (define vl-shadowcheck-portdecl ((x        vl-portdecl-p)
                                  (st       vl-shadowcheck-state-p)
                                  (warnings vl-warninglist-p))
   :returns (mv (st       vl-shadowcheck-state-p)
                (warnings vl-warninglist-p))
-  (b* ((declname (vl-portdecl->name x))
-       (varnames (vl-exprlist-varnames (vl-portdecl-allexprs x)))
-       ((mv st warnings) (vl-shadowcheck-reference-names varnames st warnings))
-       ((mv st warnings) (vl-shadowcheck-declare-name declname st warnings)))
+  (b* (((vl-portdecl x)  (vl-portdecl-fix x))
+       (varnames         (mergesort (vl-exprlist-varnames (vl-portdecl-allexprs x))))
+       ((mv st warnings) (vl-shadowcheck-reference-names varnames x st warnings))
+       ((mv st warnings) (vl-shadowcheck-declare-name x.name x st warnings)))
     (mv st warnings)))
 
 (define vl-shadowcheck-vardecl ((x        vl-vardecl-p)
@@ -475,10 +636,251 @@ explicit declarations.</p>")
                                 (warnings vl-warninglist-p))
   :returns (mv (st       vl-shadowcheck-state-p)
                (warnings vl-warninglist-p))
-  (b* ((declname (vl-vardecl->name x))
-       (varnames (vl-exprlist-varnames (vl-vardecl-allexprs x)))
-       ((mv st warnings) (vl-shadowcheck-reference-names varnames st warnings))
-       ((mv st warnings) (vl-shadowcheck-declare-name declname st warnings)))
+  (b* (((vl-vardecl x)   (vl-vardecl-fix x))
+       (varnames         (mergesort (vl-exprlist-varnames (vl-vardecl-allexprs x))))
+       ((mv st warnings) (vl-shadowcheck-reference-names varnames x st warnings))
+       ((mv st warnings) (vl-shadowcheck-declare-name x.name x st warnings)))
+    (mv st warnings)))
+
+(define vl-shadowcheck-paramdecl ((x        vl-paramdecl-p)
+                                  (st       vl-shadowcheck-state-p)
+                                  (warnings vl-warninglist-p))
+  :returns (mv (st       vl-shadowcheck-state-p)
+               (warnings vl-warninglist-p))
+  (b* (((vl-paramdecl x) (vl-paramdecl-fix x))
+       (varnames         (mergesort (vl-exprlist-varnames (vl-paramdecl-allexprs x))))
+       ((mv st warnings) (vl-shadowcheck-reference-names varnames x st warnings))
+       ((mv st warnings) (vl-shadowcheck-declare-name x.name x st warnings)))
+    (mv st warnings)))
+
+(define vl-shadowcheck-blockitem ((x        vl-blockitem-p)
+                                  (st       vl-shadowcheck-state-p)
+                                  (warnings vl-warninglist-p))
+  :returns (mv (st       vl-shadowcheck-state-p)
+               (warnings vl-warninglist-p))
+  (b* ((x (vl-blockitem-fix x)))
+    (case (tag x)
+      (:vl-vardecl (vl-shadowcheck-vardecl x st warnings))
+      (otherwise   (vl-shadowcheck-paramdecl x st warnings)))))
+
+(define vl-shadowcheck-blockitemlist ((x        vl-blockitemlist-p)
+                                      (st       vl-shadowcheck-state-p)
+                                      (warnings vl-warninglist-p))
+  :returns (mv (st       vl-shadowcheck-state-p)
+               (warnings vl-warninglist-p))
+  (b* (((when (atom x))
+        (mv (vl-shadowcheck-state-fix st) (vl-warninglist-fix warnings)))
+       ((mv st warnings)
+        (vl-shadowcheck-blockitem (car x) st warnings)))
+    (vl-shadowcheck-blockitemlist (cdr x) st warnings)))
+
+(define vl-shadowcheck-assign ((x        vl-assign-p)
+                               (st       vl-shadowcheck-state-p)
+                               (warnings vl-warninglist-p))
+  :returns (mv (st       vl-shadowcheck-state-p)
+               (warnings vl-warninglist-p))
+  (b* (((vl-assign x)    (vl-assign-fix x))
+       (varnames         (mergesort (vl-exprlist-varnames (vl-assign-allexprs x))))
+       ((mv st warnings) (vl-shadowcheck-reference-names varnames x st warnings)))
+    (mv st warnings)))
+
+(define vl-shadowcheck-gateinst ((x        vl-gateinst-p)
+                                 (st       vl-shadowcheck-state-p)
+                                 (warnings vl-warninglist-p))
+  :returns (mv (st       vl-shadowcheck-state-p)
+               (warnings vl-warninglist-p))
+  (b* (((vl-gateinst x)  (vl-gateinst-fix x))
+       (varnames         (mergesort (vl-exprlist-varnames (vl-gateinst-allexprs x))))
+       ((mv st warnings) (vl-shadowcheck-reference-names varnames x st warnings))
+       ((mv st warnings) (if x.name
+                             (vl-shadowcheck-declare-name x.name x st warnings)
+                           (mv st warnings))))
+    (mv st warnings)))
+
+(define vl-shadowcheck-modinst ((x        vl-modinst-p)
+                                (st       vl-shadowcheck-state-p)
+                                (warnings vl-warninglist-p))
+  :returns (mv (st       vl-shadowcheck-state-p)
+               (warnings vl-warninglist-p))
+  (b* (((vl-modinst x)   (vl-modinst-fix x))
+       (varnames         (mergesort (vl-exprlist-varnames (vl-modinst-allexprs x))))
+       ((mv st warnings) (vl-shadowcheck-reference-names varnames x st warnings))
+       ((mv st warnings) (if x.instname
+                             (vl-shadowcheck-declare-name x.instname x st warnings)
+                           (mv st warnings))))
+    (mv st warnings)))
+
+(def-vl-allexprs
+  ;; BOZO move me to allexprs
+  :type vl-alias
+  :nrev-body
+  (b* (((vl-alias x) x)
+       (nrev (nrev-push x.lhs nrev))
+       (nrev (nrev-push x.rhs nrev)))
+    nrev)
+  :body
+  (b* (((vl-alias x)))
+    (list x.lhs x.rhs)))
+
+(define vl-shadowcheck-alias ((x        vl-alias-p)
+                              (st       vl-shadowcheck-state-p)
+                              (warnings vl-warninglist-p))
+  :returns (mv (st       vl-shadowcheck-state-p)
+               (warnings vl-warninglist-p))
+  (b* ((x                (vl-alias-fix x))
+       (varnames         (mergesort (vl-exprlist-varnames (vl-alias-allexprs x))))
+       ((mv st warnings) (vl-shadowcheck-reference-names varnames x st warnings)))
+    (mv st warnings)))
+
+
+(defines vl-shadowcheck-stmt
+
+  (define vl-shadowcheck-stmt ((x        vl-stmt-p)
+                               (ctx      acl2::any-p)
+                               (st       vl-shadowcheck-state-p)
+                               (warnings vl-warninglist-p))
+    :returns (mv (st       vl-shadowcheck-state-p)
+                 (warnings vl-warninglist-p))
+    :measure (vl-stmt-count x)
+    (b* ((x        (vl-stmt-fix x))
+         (warnings (vl-warninglist-fix warnings))
+
+         ((when (vl-atomicstmt-p x))
+          ;; No atomic statements have their own scopes or can introduce any
+          ;; declarations, so this is straightforward:
+          (b* ((varnames (mergesort (vl-exprlist-varnames (vl-stmt-allexprs x)))))
+            (vl-shadowcheck-reference-names varnames x st warnings)))
+
+         ((unless (eq (vl-stmt-kind x) :vl-blockstmt))
+          ;; No other statement has a scope, but compound statements might have block
+          ;; statements inside of them.  See vl-stmt-check-undeclared.  We don't use
+          ;; vl-stmt-allexprs here because it grabs exprs from sub-statements, which
+          ;; need to be checked only in the sub-scope.
+          (b* ((local-exprs (append (vl-maybe-delayoreventcontrol-allexprs (vl-compoundstmt->ctrl x))
+                                    (vl-compoundstmt->exprs x)))
+               (local-names (vl-exprlist-varnames local-exprs))
+               ((mv st warnings) (vl-shadowcheck-reference-names local-names x st warnings)))
+            ;; Recursively check sub-statements.
+            (vl-shadowcheck-stmtlist (vl-compoundstmt->stmts x) ctx st warnings)))
+
+         ((vl-blockstmt x))
+
+         ;; BOZO scopestack doesn't yet support block statements as scopes... fudge it for now.
+
+         ;; BOZO BOZO BOZO --- (st (vl-shadowcheck-push-scope x st))
+         ;; Process declarations for the block, if any
+         ((mv st warnings) (vl-shadowcheck-blockitemlist x.decls st warnings))
+         ;; Process sub-statements, if any
+         ((mv st warnings) (vl-shadowcheck-stmtlist x.stmts ctx st warnings))
+         ;; BOZO BOZO BOZO --- (st (vl-shadowcheck-pop-scope st))
+         )
+      (mv st warnings)))
+
+  (define vl-shadowcheck-stmtlist ((x        vl-stmtlist-p)
+                                   (ctx      acl2::any-p)
+                                   (st       vl-shadowcheck-state-p)
+                                   (warnings vl-warninglist-p))
+    :measure (vl-stmtlist-count x)
+    :returns (mv (st       vl-shadowcheck-state-p)
+                 (warnings vl-warninglist-p))
+    :verify-guards nil
+    (b* (((when (atom x))
+          (mv (vl-shadowcheck-state-fix st) (ok)))
+         ((mv st warnings)
+          (vl-shadowcheck-stmt (car x) ctx st warnings)))
+      (vl-shadowcheck-stmtlist (cdr x) ctx st warnings)))
+
+  ///
+  (verify-guards vl-shadowcheck-stmt
+    :guard-debug t)
+  (deffixequiv-mutual vl-shadowcheck-stmt))
+
+(define vl-shadowcheck-always ((x        vl-always-p)
+                               (st       vl-shadowcheck-state-p)
+                               (warnings vl-warninglist-p))
+  :returns (mv (st       vl-shadowcheck-state-p)
+               (warnings vl-warninglist-p))
+  (b* (((vl-always x)    (vl-always-fix x))
+       ((mv st warnings) (vl-shadowcheck-stmt x.stmt x st warnings)))
+    (mv st warnings)))
+
+(define vl-shadowcheck-initial ((x        vl-initial-p)
+                                (st       vl-shadowcheck-state-p)
+                                (warnings vl-warninglist-p))
+  :returns (mv (st       vl-shadowcheck-state-p)
+               (warnings vl-warninglist-p))
+  (b* (((vl-initial x)   (vl-initial-fix x))
+       ((mv st warnings) (vl-shadowcheck-stmt x.stmt x st warnings)))
+    (mv st warnings)))
+
+(define vl-shadowcheck-taskport ((x        vl-taskport-p)
+                                 (st       vl-shadowcheck-state-p)
+                                 (warnings vl-warninglist-p))
+  :returns (mv (st       vl-shadowcheck-state-p)
+               (warnings vl-warninglist-p))
+  (b* (((vl-taskport x)  (vl-taskport-fix x))
+       (varnames         (mergesort (vl-exprlist-varnames (vl-taskport-allexprs x))))
+       ((mv st warnings) (vl-shadowcheck-reference-names varnames x st warnings))
+       ((mv st warnings) (vl-shadowcheck-declare-name x.name x st warnings)))
+    (mv st warnings)))
+
+(define vl-shadowcheck-taskportlist ((x        vl-taskportlist-p)
+                                     (st       vl-shadowcheck-state-p)
+                                     (warnings vl-warninglist-p))
+  :returns (mv (st       vl-shadowcheck-state-p)
+               (warnings vl-warninglist-p))
+  (b* (((when (atom x))
+        (mv (vl-shadowcheck-state-fix st) (ok)))
+       ((mv st warnings) (vl-shadowcheck-taskport (car x) st warnings)))
+    (vl-shadowcheck-taskportlist (cdr x) st warnings)))
+
+(define vl-shadowcheck-fundecl ((x        vl-fundecl-p)
+                                (st       vl-shadowcheck-state-p)
+                                (warnings vl-warninglist-p))
+  :returns (mv (st       vl-shadowcheck-state-p)
+               (warnings vl-warninglist-p))
+  (b* (((vl-fundecl x)   (vl-fundecl-fix x))
+
+       ;; BOZO this isn't quite right for the same reasons as in vl-fundecl-check-undeclared.
+       (other-names (vl-exprlist-varnames (append (vl-taskportlist-allexprs x.inputs)
+                                                  (vl-maybe-range-allexprs x.rrange))))
+
+       ((mv st warnings) (vl-shadowcheck-reference-names other-names x st warnings))
+       ((mv st warnings) (vl-shadowcheck-declare-name x.name x st warnings))
+
+       (st (vl-shadowcheck-push-scope x st))
+       ((mv st warnings) (vl-shadowcheck-taskportlist x.inputs st warnings))
+
+       ;; BOZO eventually do something sensible with name in the inner scope,
+       ;; and in scopestack.  Perhaps some kind of transform that adds a
+       ;; VL_FUNCTION_IMPLICIT declaration for the return value or something.
+       ;;
+       ;; ((mv st warnings) (vl-shadowcheck-declare-name x.name x st warnings))
+
+       ((mv st warnings) (vl-shadowcheck-blockitemlist x.decls st warnings))
+       ((mv st warnings) (vl-shadowcheck-stmt x.body x st warnings))
+       (st (vl-shadowcheck-pop-scope st)))
+    (mv st warnings)))
+
+(define vl-shadowcheck-taskdecl ((x        vl-taskdecl-p)
+                                 (st       vl-shadowcheck-state-p)
+                                 (warnings vl-warninglist-p))
+  :returns (mv (st       vl-shadowcheck-state-p)
+               (warnings vl-warninglist-p))
+  (b* (((vl-taskdecl x)   (vl-taskdecl-fix x))
+
+       (other-names      (vl-exprlist-varnames (vl-taskportlist-allexprs x.ports)))
+       ((mv st warnings) (vl-shadowcheck-reference-names other-names x st warnings))
+
+       ;; BOZO -- taskdecls aren't scopes yet
+
+       ;; (st (vl-shadowcheck-push-scope x st))
+       ((mv st warnings) (vl-shadowcheck-taskportlist x.ports st warnings))
+       ((mv st warnings) (vl-shadowcheck-blockitemlist x.decls st warnings))
+       ((mv st warnings) (vl-shadowcheck-stmt x.body x st warnings))
+       ;; (st (vl-shadowcheck-pop-scope st))
+
+       ((mv st warnings) (vl-shadowcheck-declare-name x.name x st warnings)))
     (mv st warnings)))
 
 (define vl-shadowcheck-aux
@@ -488,15 +890,15 @@ explicit declarations.</p>")
               were parsed.")
    (st       vl-shadowcheck-state-p)
    (warnings vl-warninglist-p))
-  :returns (mv (new-warnings vl-warninglist-p)
-               (st           vl-shadowcheck-state-p))
+  :returns (mv (st       vl-shadowcheck-state-p)
+               (warnings vl-warninglist-p))
   :measure (len x)
   (b* ((x        (vl-genelementlist-fix x))
        (st       (vl-shadowcheck-state-fix st))
        (warnings (vl-warninglist-fix warnings))
 
        ((when (atom x))
-        (mv warnings st))
+        (mv st warnings))
 
        ((unless (eq (vl-genelement-kind (car x)) :vl-genbase))
         ;; Ignore generate constructs until unparameterization
@@ -519,486 +921,190 @@ explicit declarations.</p>")
         (b* (((mv st warnings) (vl-shadowcheck-vardecl item st warnings)))
           (vl-shadowcheck-aux (cdr x) st warnings)))
 
+       ((when (eq tag :vl-assign))
+        (b* (((mv st warnings) (vl-shadowcheck-assign item st warnings)))
+          (vl-shadowcheck-aux (cdr x) st warnings)))
+
+       ((when (eq tag :vl-gateinst))
+        (b* (((mv st warnings) (vl-shadowcheck-gateinst item st warnings)))
+          (vl-shadowcheck-aux (cdr x) st warnings)))
+
+       ((when (eq tag :vl-modinst))
+        (b* (((mv st warnings) (vl-shadowcheck-modinst item st warnings)))
+          (vl-shadowcheck-aux (cdr x) st warnings)))
+
+       ((when (eq tag :vl-always))
+        (b* (((mv st warnings) (vl-shadowcheck-always item st warnings)))
+          (vl-shadowcheck-aux (cdr x) st warnings)))
+
+       ((when (eq tag :vl-initial))
+        (b* (((mv st warnings) (vl-shadowcheck-initial item st warnings)))
+          (vl-shadowcheck-aux (cdr x) st warnings)))
+
+       ((when (eq tag :vl-fundecl))
+        (b* (((mv st warnings) (vl-shadowcheck-fundecl item st warnings)))
+          (vl-shadowcheck-aux (cdr x) st warnings)))
+
+       ((when (eq tag :vl-taskdecl))
+        (b* (((mv st warnings) (vl-shadowcheck-taskdecl item st warnings)))
+          (vl-shadowcheck-aux (cdr x) st warnings)))
+
+       ((when (eq tag :vl-import))
+        (b* (((mv st warnings) (vl-shadowcheck-import item st warnings)))
+          (vl-shadowcheck-aux (cdr x) st warnings)))
+
        ;; BOZO implement everything else
        (warnings (fatal :type :vl-unexpected-modelement
                         :msg "~a0: unexpected kind of module item."
                         :args (list item))))
     (vl-shadowcheck-aux (cdr x) st warnings)))
 
+(define vl-shadowcheck-port ((x        vl-port-p)
+                             (st       vl-shadowcheck-state-p)
+                             (warnings vl-warninglist-p))
+  :returns (mv (st       vl-shadowcheck-state-p)
+               (warnings vl-warninglist-p))
+  (b* (((vl-port x)      (vl-port-fix x))
+       (varnames         (and x.expr (vl-expr-varnames x.expr)))
+       ((mv st warnings) (vl-shadowcheck-declare-names varnames x st warnings)))
+    (mv st warnings)))
+
+(define vl-shadowcheck-ports ((x        vl-portlist-p)
+                              (st       vl-shadowcheck-state-p)
+                              (warnings vl-warninglist-p))
+  :returns (mv (st       vl-shadowcheck-state-p)
+               (warnings vl-warninglist-p))
+  (b* (((when (atom x))
+        (mv (vl-shadowcheck-state-fix st) (ok)))
+       ((mv st warnings) (vl-shadowcheck-port (car x) st warnings)))
+    (vl-shadowcheck-ports (cdr x) st warnings)))
+
 (define vl-shadowcheck-module ((x  vl-module-p)
                                (st vl-shadowcheck-state-p))
-  :returns (new-x vl-module-p)
-  (b* (((vl-module x) (vl-module-fix x))
-       (warnings x.warnings)
-       (ss (vl-scopestack-push x (vl-shadowcheck-state->ss st)))
-       (st (change-vl-shadowcheck-state st :ss ss))
-       ((mv warnings ?st) (vl-shadowcheck-aux x.loaditems st warnings)))
-    ;; maybe free stuff in st
-    (change-vl-module x :warnings warnings)))
+  :returns (mv (st    vl-shadowcheck-state-p)
+               (new-x vl-module-p))
+  (b* (((vl-module x)    (vl-module-fix x))
+       (warnings         x.warnings)
+       (st               (vl-shadowcheck-push-scope x st))
+       ((mv st warnings) (vl-shadowcheck-ports x.ports st warnings))
+       ((mv st warnings) (vl-shadowcheck-aux x.loaditems st warnings))
+       (st               (vl-shadowcheck-pop-scope st))
+       (new-x            (change-vl-module x :warnings warnings)))
+    (mv st new-x)))
 
-(defprojection vl-shadowcheck-modules ((x  vl-modulelist-p)
-                                       (st vl-shadowcheck-state-p))
-  :returns (new-x vl-modulelist-p)
-  (vl-shadowcheck-module x st))
+(define vl-shadowcheck-modules ((x  vl-modulelist-p)
+                                (st vl-shadowcheck-state-p))
+  :returns (mv (st    vl-shadowcheck-state-p)
+               (new-x vl-modulelist-p))
+  (b* (((when (atom x))
+        (mv (vl-shadowcheck-state-fix st) nil))
+       ((mv st car)  (vl-shadowcheck-module (car x) st))
+       ((mv st rest) (vl-shadowcheck-modules (cdr x) st)))
+    (mv st (cons car rest))))
+
+
+
+
+
+(define vl-shadowcheck-vardecls ((x        vl-vardecllist-p)
+                                 (st       vl-shadowcheck-state-p)
+                                 (warnings vl-warninglist-p))
+  :returns (mv (st       vl-shadowcheck-state-p)
+               (warnings vl-warninglist-p))
+  (b* (((when (atom x))
+        (mv (vl-shadowcheck-state-fix st) (ok)))
+       ((mv st warnings) (vl-shadowcheck-vardecl (car x) st warnings)))
+    (vl-shadowcheck-vardecls (cdr x) st warnings)))
+
+(define vl-shadowcheck-paramdecls ((x        vl-paramdecllist-p)
+                                   (st       vl-shadowcheck-state-p)
+                                   (warnings vl-warninglist-p))
+  :returns (mv (st       vl-shadowcheck-state-p)
+               (warnings vl-warninglist-p))
+  (b* (((when (atom x))
+        (mv (vl-shadowcheck-state-fix st) (ok)))
+       ((mv st warnings) (vl-shadowcheck-paramdecl (car x) st warnings)))
+    (vl-shadowcheck-paramdecls (cdr x) st warnings)))
+
+(define vl-shadowcheck-fundecls ((x        vl-fundecllist-p)
+                                 (st       vl-shadowcheck-state-p)
+                                 (warnings vl-warninglist-p))
+  :returns (mv (st       vl-shadowcheck-state-p)
+               (warnings vl-warninglist-p))
+  (b* (((when (atom x))
+        (mv (vl-shadowcheck-state-fix st) (ok)))
+       ((mv st warnings) (vl-shadowcheck-fundecl (car x) st warnings)))
+    (vl-shadowcheck-fundecls (cdr x) st warnings)))
+
+(define vl-shadowcheck-taskdecls ((x        vl-taskdecllist-p)
+                                  (st       vl-shadowcheck-state-p)
+                                  (warnings vl-warninglist-p))
+  :returns (mv (st       vl-shadowcheck-state-p)
+               (warnings vl-warninglist-p))
+  (b* (((when (atom x))
+        (mv (vl-shadowcheck-state-fix st) (ok)))
+       ((mv st warnings) (vl-shadowcheck-taskdecl (car x) st warnings)))
+    (vl-shadowcheck-taskdecls (cdr x) st warnings)))
+
+(define vl-shadowcheck-declare-typedefs ((x        vl-typedeflist-p)
+                                         (st       vl-shadowcheck-state-p)
+                                         (warnings vl-warninglist-p))
+  :returns (mv (st       vl-shadowcheck-state-p)
+               (warnings vl-warninglist-p))
+  (b* (((when (atom x))
+        (mv (vl-shadowcheck-state-fix st) (ok)))
+       ((vl-typedef x1) (vl-typedef-fix (car x)))
+       ((mv st warnings) (vl-shadowcheck-declare-name x1.name x1 st warnings)))
+    (vl-shadowcheck-declare-typedefs (cdr x) st warnings)))
+
+(define vl-shadowcheck-imports ((x        vl-importlist-p)
+                                (st       vl-shadowcheck-state-p)
+                                (warnings vl-warninglist-p))
+  :returns (mv (st       vl-shadowcheck-state-p)
+               (warnings vl-warninglist-p))
+  (b* (((when (atom x))
+        (mv (vl-shadowcheck-state-fix st) (ok)))
+       ((mv st warnings) (vl-shadowcheck-import (car x) st warnings)))
+    (vl-shadowcheck-imports (cdr x) st warnings)))
+
 
 (define vl-shadowcheck-design ((x vl-design-p))
   :returns (new-x vl-design-p)
   (b* (((vl-design x))
-       (ss (vl-scopestack-init x))
-       (st (make-vl-shadowcheck-state :ss ss))
-       (mods (vl-shadowcheck-modules x.mods st)))
-    ;; maybe free stuff in st
-    (vl-scopestacks-free)
-    (change-vl-design x :mods mods)))
+       (warnings x.warnings)
+
+       (st (make-vl-shadowcheck-state :lexscopes (list (vl-empty-lexscope))
+                                      :ss        (vl-scopestack-init x)
+                                      :design    x))
+
+       ;; It would perhaps be better to construct the initial scopes using the
+       ;; program order?  But some simulators allow you to refer to things that
+       ;; are defined later, for instance, NCVerilog allows you to write foo::w
+       ;; before defining package foo.
+       (itemnames (append (vl-vardecllist->names x.vardecls)
+                          (vl-paramdecllist->names x.paramdecls)
+                          (vl-fundecllist->names x.fundecls)
+                          (vl-taskdecllist->names x.taskdecls)
+                          (vl-typedeflist->names x.typedefs)))
+       (dupes (duplicated-members itemnames))
+       (warnings (if (not dupes)
+                     (ok)
+                   (fatal :type :vl-name-clash
+                          :msg "Name clash among globals: ~&0."
+                          :args (list dupes))))
+
+       ((mv st warnings) (vl-shadowcheck-declare-typedefs x.typedefs st warnings))
+       ((mv st warnings) (vl-shadowcheck-vardecls   x.vardecls st warnings))
+       ((mv st warnings) (vl-shadowcheck-paramdecls x.paramdecls st warnings))
+       ((mv st warnings) (vl-shadowcheck-fundecls   x.fundecls st warnings))
+       ((mv st warnings) (vl-shadowcheck-taskdecls  x.taskdecls st warnings))
+       ((mv st warnings) (vl-shadowcheck-imports    x.imports st warnings))
+
+       ((mv st mods) (vl-shadowcheck-modules x.mods st))
+
+       (?st (vl-shadowcheck-pop-scope st))
+       (-   (vl-scopestacks-free)))
+    (change-vl-design x
+                      :mods mods
+                      :warnings warnings)))
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-(defenum vl-shadowcheck-status-p
-  (:vl-unused-superior
-   :vl-used-superior
-   :vl-local)
-  :short "Possible kinds of names for tricky shadowing checking."
-
-  :long "<p>Any names that aren't bound in a @(see vl-shadowcheck-alist-p)
-simply haven't been encountered yet.  Every name we have encountered is bound
-to an entry that has a status.  The possible statuses of any particular name
-are:</p>
-
-<ul>
-
-<li><b>Unused-Superior</b> &mdash; the name exists in some superior (or
-imported) scope, but has not yet been declared locally, and has not yet been
-referenced locally.  It is generally okay to introduce a new local declaration
-that shadows an unused global.</li>
-
-<li><b>Used-Superior</b> means that the name exists in some superior or
-imported scope, has not yet been declared locally, and <b>has</b> been
-referenced at some point in the current scope.  A basic goal of shadowcheck is
-to prevent used globals from becoming shadowed by local declarations.</li>
-
-<li><b>Local</b> means that the name has been declared in the current scope.
-The name may or may not be declared in superior scopes.</li>
-
-</ul>")
-
-(defprod vl-shadowcheck-entry
-  :tag nil
-  :layout :tree
-  ((status vl-shadowcheck-status-p "Current status for this name.")
-   (ctx    acl2::any-p             "Context that set this name to this status.")))
-
-
-(fty::defalist vl-shadowcheck-alist
-  :short "Fast association list for tracking name shadowing."
-  :key-type stringp
-  :val-type vl-shadowcheck-entry-p)
-
-
-
-
-(define vl-shadowcheck-init-global-names
-  :short "Record that a list of names are declared globally."
-  ((names   string-listp)
-   (scalist vl-shadowcheck-alist-p)
-   (ctx))
-  :returns (scalist vl-shadowcheck-alist-p)
-  (b* (((when (atom names))
-        (vl-shadowcheck-alist-fix scalist))
-       (name1   (string-fix (car names)))
-       (entry1  (make-vl-shadowcheck-entry :status :vl-unused-superior :ctx ctx))
-       (scalist (hons-acons name1 entry1 scalist)))
-    (vl-shadowcheck-init-global-names (cdr names) scalist ctx)))
-
-
-(define vl-shadowcheck-enter-subscope
-  :short "Update the shadowcheck alist to enter a new subscope."
-  ((scalist vl-shadowcheck-alist-p))
-  :returns (subscope-scalist vl-shadowcheck-alist-p
-                             "A new fast alist, independent of the original.")
-
-  :long "<p>We modify the shadowcheck alist by changing all local variables to be
-considered as unused global variables.Consider a case like:</p>
-
-@({
-    parameter foo = 1;
-    module m ();
-      wire w = foo;
-      function myfun (...);
-        integer a = w;
-        integer foo = 5;
-        integer w = ...;
-      endfunction
-    endmodule
-})
-
-<p>To check for acceptable shadowing within @('myfun'), we want to convert
-the local variables such as @('w') 
-
-
-
-
-(define vl-shadowcheck-mark-name-used
-  :short "Record that a name has been referenced."
-  ((name     stringp)
-   (scalist  vl-shadowcheck-alist-p)
-   (ctx)
-   (warnings vl-warninglist-p))
-  :returns (mv (scalist  vl-shadowcheck-alist-p)
-               (warnings vl-warninglist-p))
-  (b* ((name    (string-fix name))
-       (scalist (vl-shadowcheck-alist-fix scalist))
-       (entry   (cdr (hons-get name scalist)))
-       ((unless entry)
-        ;; Not a known name.  What's going on here?  I'll issue a warning
-        ;; because this seems strange.  I'm not sure if there would be any
-        ;; cases where this was actually okay.  BOZO maybe this should this be
-        ;; a fatal warning?
-        (mv scalist
-            (warn :type :vl-undefined-name
-                  :msg "~a0: using undefined name ~x1."
-                  :args (list ctx name))))
-       ((vl-shadowcheck-entry entry))
-       ((when (or (eq entry.status :vl-used-superior)
-                  (eq entry.status :vl-local)))
-        ;; Already used or locally shadowed (in which case there's no conflict
-        ;; with the global version so we're fine), so nothing to do.
-        (mv scalist (ok)))
-
-       ((when (eq entry.status :vl-unused-superior))
-        ;; Otherwise, the name was previously unused, so we need to update it
-        ;; to mark it as used.
-        (mv (hons-acons name
-                        (make-vl-shadowcheck-entry :status :vl-used-superior :ctx ctx)
-                        scalist)
-            (ok))))
-
-    (impossible)
-    (mv scalist (ok))))
-
-(define vl-shadowcheck-mark-names-used
-  :short "Record that a list of names have been referenced."
-  ((names    string-listp)
-   (scalist  vl-shadowcheck-alist-p)
-   (ctx)
-   (warnings vl-warninglist-p))
-  :returns (mv (scalist  vl-shadowcheck-alist-p)
-               (warnings vl-warninglist-p))
-  (b* (((when (atom names))
-        (mv (vl-shadowcheck-alist-fix scalist) (ok)))
-       ((mv scalist warnings)
-        (vl-shadowcheck-mark-name-used (car names) scalist ctx warnings)))
-    (vl-shadowcheck-mark-names-used (cdr names) scalist ctx warnings)))
-
-
-(define vl-shadowcheck-mark-name-shadowed
-  :short "Record that a single name has been locally declared."
-  ((name     stringp)
-   (scalist  vl-shadowcheck-alist-p)
-   (ctx)
-   (warnings vl-warninglist-p))
-  :returns (mv (scalist  vl-shadowcheck-alist-p)
-               (warnings vl-warninglist-p))
-  (b* ((name    (string-fix name))
-       (scalist (vl-shadowcheck-alist-fix scalist))
-       (entry   (cdr (hons-get name scalist)))
-       ((unless entry)
-        ;; Not a global name, so we're just declaring a local name that doesn't
-        ;; shadow any global name.  That's totally fine.  We need to mark the
-        ;; name as shadowed anyway (i.e., locally declared) so that when we see
-        ;; uses of it, we know these uses are to something that has been
-        ;; defined.
-        (mv (hons-acons name
-                        (make-vl-shadowcheck-entry :status :vl-local :ctx ctx)
-                        scalist)
-            (ok)))
-       ((vl-shadowcheck-entry entry))
-
-       ((when (eq entry.status :vl-local))
-        ;; Already locally defined.  This seems like a multiple definition, so
-        ;; maybe we should try causing a warning here.  On the other hand,
-        ;; checking for multiply defined identifiers can be done later easily
-        ;; enough, so maybe this isn't the best place for it and we should
-        ;; just do nothing.
-        (mv scalist (ok)))
-
-       ((when (eq entry.status :vl-unused-superior))
-        ;; Unused global being shadowed by a local declaration.  This is
-        ;; totally fine, we just need to mark the name as locally declared.
-        (mv (hons-acons name
-                        (make-vl-shadowcheck-entry :status :vl-local :ctx ctx)
-                        scalist)
-            (ok)))
-
-       ((when (eq entry.status :vl-used-superior))
-        ;; Global version was used previously, but is now being locally
-        ;; shadowed.  This is the main thing we want to complain about.  We
-        ;; rather arbitrarily mark the name as shadowed, which probably doesn't
-        ;; really matter for anything but might prevent future warnings about
-        ;; this same name.
-        (mv (hons-acons name
-                        (make-vl-shadowcheck-entry :status :vl-local :ctx ctx)
-                        scalist)
-            (fatal :type :vl-tricky-shadowing
-                   :msg "~a0: name ~s1 was previously used in this scope ~
-                         (~a2), but the superior declaration is now being ~
-                         shadowed by a local declaration.  This is tricky and ~
-                         seems error prone, so we do not support it."
-                   :args (list ctx name entry.ctx)))))
-
-    (impossible)
-    (mv scalist (ok))))
-
-
-(define vl-shadowcheck-mark-names-shadowed
-  :short "Record that a list of names have been locally declared."
-  ((names    string-listp)
-   (scalist  vl-shadowcheck-alist-p)
-   (ctx)
-   (warnings vl-warninglist-p))
-  :returns (mv (scalist  vl-shadowcheck-alist-p)
-               (warnings vl-warninglist-p))
-  (b* (((when (atom names))
-        (mv (vl-shadowcheck-alist-fix scalist) (ok)))
-       ((mv scalist warnings)
-        (vl-shadowcheck-mark-name-shadowed (car names) scalist ctx warnings)))
-    (vl-shadowcheck-mark-names-shadowed (cdr names) scalist ctx warnings)))
-
-
-(define vl-shadowcheck-mark-name-wild-import
-  :short "Record that a name is being imported by an @('import foo::*')."
-  ((name     stringp "Name being imported, i.e., something declared in package @('foo').")
-   (scalist  vl-shadowcheck-alist-p)
-   (ctx      "The import construct.")
-   (warnings vl-warninglist-p))
-  :returns (mv (scalist vl-shadowcheck-alist-p)
-               (warnings vl-warninglist-p))
-  (b* ((name    (string-fix name))
-       (scalist (vl-shadowcheck-alist-fix scalist))
-       (entry   (cdr (hons-get name scalist)))
-       ;; See particularly SystemVerilog-2012 Table 26-1 (Page 745), "Scoping
-       ;; rules for package importation."
-
-       ((unless entry)
-        ;; OK.  No existing declaration of this name.
-        ;;
-        ;; I think the right thing is to treat the imported symbol as now
-        ;; having a global declaration.  This way, we'll warn if we ever try to
-        ;; (1) use the imported symbol and then (2) subsequently locally shadow
-        ;; it.
-        ;;
-        ;; BOZO I'm not entirely sure this is right.  Perhaps it should not be
-        ;; legal to subsequently redeclare the wire at all.  In that case we
-        ;; might want to handle this differently.  (Maybe we should be checking
-        ;; for multiple declarations here, too.)
-        (mv (hons-acons name
-                        (make-vl-shadowcheck-entry :status :vl-unused-superior :ctx ctx)
-                        scalist)
-            (ok)))
-       ((vl-shadowcheck-entry entry))
-
-       ((when (eq entry.status :vl-unused-superior))
-        ;; OK?  There is a global declaration of NAME but it hasn't been
-        ;; referenced before this import.  I think this is OK and we just want
-        ;; the imported symbol to win.
-        (mv (hons-acons name
-                        (make-vl-shadowcheck-entry :status :vl-unused-superior :ctx ctx)
-                        scalist)
-            (ok)))
-
-       ((when (eq entry.status :vl-used-superior))
-        ;; BAD?  There is a global declaration of NAME and it has been
-        ;; referenced before this import.  But now we're doing this import.  I
-        ;; think this is not okay.
-        (mv (hons-acons name
-                        (make-vl-shadowcheck-entry :status :vl-local :ctx ctx)
-                        scalist)
-            (fatal :type :vl-tricky-shadowing
-                   :msg "~a0: name ~s1 was previously used in this scope ~
-                         (~a2), but the superior declaration is now being ~
-                         shadowed by an import.  This is tricky and seems ~
-                         error prone, so we do not support it."
-                   :args (list ctx name entry.ctx))))
-
-       ((when (eq entry.status :vl-local))
-        ;; OK?  There is a local declaration of NAME before this import.  I
-        ;; think this is fine because the local declaration is supposed to win.
-        (mv scalist (ok))))
-
-    (impossible)
-    (mv scalist (ok))))
-
-
-(define vl-shadowcheck-mark-names-wild-import
-  :short "Record that a list of names are being imported by an @('import foo::*')."
-  ((names    string-listp)
-   (scalist  vl-shadowcheck-alist-p)
-   (ctx      "The import construct.")
-   (warnings vl-warninglist-p))
-  :returns (mv (scalist vl-shadowcheck-alist-p)
-               (warnings vl-warninglist-p))
-  (b* (((when (atom names))
-        (mv (vl-shadowcheck-alist-fix scalist) (ok)))
-       ((mv scalist warnings)
-        (vl-shadowcheck-mark-name-wild-import (car names) scalist ctx warnings)))
-    (vl-shadowcheck-mark-names-wild-import (cdr names) scalist ctx warnings)))
-
-
-(define vl-shadowcheck-mark-name-direct-import
-  :short "Record that a name is being imported by an @('import foo::bar')."
-  ((name     stringp "Name being imported, i.e., @('bar').")
-   (scalist  vl-shadowcheck-alist-p)
-   (ctx      "The import construct.")
-   (warnings vl-warninglist-p))
-  :returns (mv (scalist vl-shadowcheck-alist-p)
-               (warnings vl-warninglist-p))
-  (b* ((name    (string-fix name))
-       (scalist (vl-shadowcheck-alist-fix scalist))
-       (entry   (cdr (hons-get name scalist)))
-       ;; See particularly SystemVerilog-2012 Table 26-1 (Page 745), "Scoping
-       ;; rules for package importation."
-       ((unless entry)
-        ;; OK.  No existing declaration of this name.  This import is as good
-        ;; as a local declaration.
-        (mv (hons-acons name
-                        (make-vl-shadowcheck-entry :status :vl-local :ctx ctx)
-                        scalist)
-            (ok)))
-
-       ((vl-shadowcheck-entry entry))
-
-       ((when (eq entry.status :vl-unused-superior))
-        ;; OK.  There is some global declaration of this name but we've never
-        ;; used it in this scope.  The import is like a local declaration.
-        (mv (hons-acons name
-                        (make-vl-shadowcheck-entry :status :vl-local :ctx ctx)
-                        scalist)
-            (ok)))
-
-       ((when (eq entry.status :vl-used-superior))
-        ;; BAD.  There is some global declaration of this name that we've
-        ;; already used in this scope.  This import is thus very tricky.
-        (mv (hons-acons name
-                        (make-vl-shadowcheck-entry :status :vl-local :ctx ctx)
-                        scalist)
-            (fatal :type :vl-tricky-shadowing
-                   :msg "~a0: name ~s1 was previously used in this scope ~
-                         (~a2), but the superior declaration is now being ~
-                         shadowed by an import.  This is tricky and seems ~
-                         error prone, so we do not support it."
-                   :args (list ctx name entry.ctx))))
-
-       ((when (eq entry.status :vl-local))
-        ;; BAD.  There is already some local declaration of this name and yet
-        ;; we are trying to import it explicitly.  This seems to be prohibited
-        ;; by the rules in Table 26-1.
-        (mv scalist
-            (fatal :type :vl-bad-import
-                   :msg "~a0: name ~s1 was previously declared in this scope ~
-                         (~a2), so importing it is not allowed."
-                   :args (list ctx name entry.ctx)))))
-    (impossible)
-    (mv scalist (ok))))
-
-
-
-
-;; (define vl-shadowcheck-alist-do-import ((import   vl-import-p)
-;;                                       (design   vl-design-p)
-;;                                       (alist    vl-shadowcheck-alist-p)
-;;                                       (warnings vl-warninglist-p))
-;;   :returns (mv (new-alist vl-shadowcheck-alist-p)
-;;                (warnings  vl-warninglist-p))
-;;   (b* (((vl-design design))
-;;        ((vl-import import))
-;;        (package (vl-find-package import.pkg design.packages))
-;;        ((unless package)
-;;         (mv alist
-;;             (fatal :type :vl-import-fail
-;;                    :msg "~a0: can't import from unknown package ~s1."
-;;                    :args (list import import.pkg))))
-;;        ((names (if
-
-
-;; (define vl-shadowcheck-alist-init ((design vl-design-p))
-;;   :returns (alist vl-shadowcheck-alist-p)
-;;   (b* (((vl-design x))
-;;        (alist nil)
-;;        ;; BOZO -- I'm pretty sure we don't care about shadowed names of
-;;        ;;   mods, udps, interfaces, programs, packages, configs
-;;        (alist (vl-shadowcheck-alist-init-aux (vl-vardecllist->names x.vardecls) alist))
-;;        (alist (vl-shadowcheck-alist-init-aux (vl-taskdecllist->names x.taskdecls) alist))
-;;        (alist (vl-shadowcheck-alist-init-aux (vl-fundecllist->names x.fundecls) alist))
-;;        (alist (vl-shadowcheck-alist-init-aux (vl-paramdecllist->names x.paramdecls) alist))
-;;        ;; I imagine we also don't care about shadowcheck the names of typedefs
-;;        ;; or about forward typedefs
-
-;;        ;;
-;;        (alist (vl-shadowcheck-alist-init-aux (vl-
-
-
-
-;; (define vl-extend-shadowcheck-globals-for-imports
-;;   (globals
-
-
-
-;; (define vl-check-for-scary-shadowcheck-aux
-;;   ((x "Module elements to process, should be in the same order in which they
-;;        were parsed."
-;;       vl-genelementlist-p)
-;;    (globals "Fast alist binding globally declared names to NIL if they have not
-;;              yet been used in the current local scope, or to T if they have
-;;              been used in the local scope.")
-;;    (warnings "Warnings accumulator, may be extended with fatal warnings."
-;;              vl-warninglist-p)
-;;    (design   "The whole design, for dealing with imports."))
-;;   (b* (((when (atom x))
-;;         (ok))
-
-;;        ((unless (eq (vl-genelement-kind (car x)) :vl-genbase))
-;;         ;; Ignore generate constructs until unparameterization
-;;         (vl-check-for-scary-shadowcheck-aux (cdr x) globals warnings))
-
-;;        (elem (vl-genelement-fix (car x)))
-;;        (item (vl-genbase->item elem))
-;;        (tag  (tag item))
-
-;;        ((when (eq tag :vl-port))
-;;         ;; We shouldn't see any ports.
-;;         (raise "We shouldn't see ports here.")
-;;         (vl-check-for-scary-shadowcheck-aux (cdr x) globals warnings))
-
-
-
-;;        ((when (or (eq tag :vl-portdecl)
-;;                   (eq tag :vl-vardecl)
-;;                   (eq tag :vl-paramdecl)
-;;                   (eq
-;;         ;; We have to first make sure that there aren't undeclared
-;;         ;; identifiers being used in the range, then record that a
-;;         ;; declaration was made.  Doing it in this order lets us catch
-;;         ;; garbage like input [in:0] in;
-;;         (b* (;; Note: We run into trouble here when ports are declared as user-defined types,
-;;              ;; i.e. "input foo_t foo" -- we don't want to count foo_t as an undeclared id.
-;;              ;; Thinking about it more, it doesn't seem like this is the right place to
-;;              ;; be checking for this anyway, so just don't.
-;;              ;; (names     (vl-exprlist-names (vl-portdecl-allexprs item)))
-;;              ;; (warnings  (vl-warn-about-undeclared-wires item names portdecls decls warnings))
-;;              (portdecls (hons-acons (vl-portdecl->name item) item portdecls)))
-;;           (vl-make-implicit-wires-aux (cdr x) portdecls decls implicit warnings)))
