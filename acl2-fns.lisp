@@ -179,48 +179,65 @@
 ;                            PROCLAIMING
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Essay on Proclaiming
+
 ; The variable acl2::*do-proclaims* determines whether or not we proclaim ACL2
-; functions before compiling them.  The intent of proclaiming is to improve
-; performance, though we once observed proclaiming to have had the opposite
-; effect for some combination of ACL2 and Allegro CL; see a comment in
-; proclaim-file.
+; function types before compiling them.  The intent of proclaiming is to
+; improve performance, though we once observed proclaiming to have had the
+; opposite effect for some combination of ACL2 and Allegro CL; see a comment in
+; proclaim-file.  It might be worthwhile to revisit, from time to time,
+; proclaiming in more Lisps, especially those used heavily in the community.
 
-; In compile-acl2 we load each source file, then proclaim it, and finally
-; compile it, provided acl2::*suppress-compile-build-time* is false.  in
-; compile-acl2 we load each source file, then proclaim it, and finally
-; Otherwise we skip all that: we can't proclaim before loading because macros
-; may not all have been defined, and it seems dicey to do the sequence
-; load,proclaim,load because the second load redefines functions.  So in this
-; case, we could do the build as follow (though this isn't the default; see
-; variable ACL2_PROCLAIMS_ACTION in GNUmakefile): first call
-; generate-acl2-proclaims to do the entire load/initialization sequence, then
-; write out file acl2-proclaims.lisp, then compile again using that file.  At
-; the makefile level (see GNUmakefile), this sequence is accomplished with
-; target "large" as follows: target "full" does a compile (basically a no-op if
-; *suppress-compile-build-time* is true), then target "init" first invokes
-; target "make-acl2-proclaims" to do the load/initialization and writing out of
-; file acl2-proclaims.lisp, and finally "init" does a new load/initialization
-; but this time loading the existing acl2-proclaims.lisp to proclaim functions.
+; During the boot-strap we avoid any activity related to proclaiming types
+; except, perhaps, by generating or loading file acl2-proclaims.lisp.  At one
+; time we did some proclaiming on a file-by-file basis, but this approach
+; requires a lot of care to be done right.  For example with *do-proclaims*
+; true, compile-acl2 had by default used a file-by-file load/proclaim/compile
+; process, while load-acl2 had proclaimed all files after loading the compiled
+; files.  We believe that this process allowed load-acl2 to come up with more
+; specific function types during load-acl2 than had been used by compile-acl2
+; We may have this change in types lead to buggy behavior.
 
-; We considered using the above two-step process for GCL, expecting that better
-; proclaim forms would be generated after doing initialization of the
-; boot-strap world, since our code that generates proclaims tries to take
-; advantage of stobjs-out properties.  However, we found (August 8, 2013) that
-; the generated proclaim forms were the same whether we did that, or we merely
-; generated them during the load/proclaim/compile of each source file.  So, we
-; do the latter, which speeds up the build (see :DOC note-6-3).
+; So in order to proclaim during the boot-strap, we use the following steps.  A
+; key aspect of this process is that the file acl2-status.txt, which formerly
+; contained a single keyword, now also optionally contains a second keyword:
+; :generate-proclaims if the next step is to generate file acl2-proclaims.lisp,
+; or :use-proclaims if the next step is to start by loading file
+; acl2-proclaims.lisp.
+
+; --- COMPILE: ---
+; (1) In a fresh Lisp, call compile-acl2 without any proclaiming.
+;     If we are to proclaim (currently GCL only), write the line
+;     "; Next: generate proclaims" to the end of file acl2-status.txt.
+; --- OPTIONALLY PROCLAIM: ---
+; (2) In a fresh Lisp, call generate-acl2-proclaims, which does these steps if
+;     *do-proclaims* is true (currently, GCL only), and otherwise is a no-op.
+;     (a) load-acl2;
+;     (b) initialize-acl2;
+;     (c) proclaim-files, to write out file "acl2-proclaims.lisp".
+; --- OPTIONALLY RECOMPILE: ---
+; (3) In a fresh Lisp, if *do-proclaims* is true (also see (2) above), load the
+;     generated file "acl2-proclaims.lisp" and then recompile.
+; --- SAVE EXECUTABLE: ---
+; (4) In a fresh Lisp, call save-acl2, which does these steps:
+;     (a) load "acl2-proclaims.lisp" if *do-proclaims* is true;
+;     (b) load-acl2;
+;     (c) initialize-acl2;
+;     (d) save an executable.
+
+; We note that GNUmakefile orchestrates the above steps for "make"
 
 ; At one time we proclaimed for CCL, but one profiling run of a
 ; compute-intensive include-book form showed that this was costing us some 10%
 ; of the time.  After checking with Gary Byers we decided that there was little
 ; if any benefit in CCL for proclaiming functions, so we no longer do it.
-; Perhaps we should reconsider some time; in fact we have done so on 8/9/2013
-; (see comments below in *do-proclaims*).
+; Perhaps we should reconsider some time.  See also comments below in
+; *do-proclaims*.
 
 ; We considered adding &OPTIONAL to the end of every VALUES form (see comments
-; below), based on output (since forgotten) from SBCL.  But GCL issued several
-; dozen warnings during the build when this happened, so for now, since we are
-; only proclaiming functions for GCL, we omit the &optional.
+; below), based on output (since forgotten) from SBCL.  But GCL has issued
+; several dozen warnings during the build when this happened, so for now, since
+; we are only proclaiming functions for GCL, we omit the &optional.
 
 (defvar *do-proclaims*
 
@@ -232,7 +249,7 @@
 ; setting this variable to T.  We got these results from "time" for make -j 8
 ; with target regression-fresh on dunnottar.cs.utexas.edu.  The results are
 ; inconclusive, so we keep things simple (and avoid stepping on the possibility
-; of future CCL improvements) by the lskipping of function proclaiming in CCL.
+; of future CCL improvements) by the skipping of function proclaiming in CCL.
 
 ; Built as follows (not showing here the setting PREFIX=):
 ;   make ACL2_HONS=h LISP=ccl-trunk ACL2_SIZE=3000000
@@ -432,6 +449,13 @@
 ; We return either nil or *, or else a type for form that ideally is as small
 ; as possible.
 
+; Note that this isn't complete.  In particular, ACL2's proclaiming mechanism
+; for GCL produces a return type of * for RETRACT-WORLD, because it can return
+; what RETRACT-WORLD1 returns, and below we don't account for defined raw Lisp
+; functions likeRETRACT-WORLD1.  This could presumably be remedied by doing a
+; sort of iterative computation of return types till we reach a fixed point,
+; but that's for another day.
+
   (cond
    ((integerp form)
     `(integer ,form ,form))
@@ -439,6 +463,42 @@
     'character)
    ((atom form)
     t)
+   ((and (eq (car form) 'quote)
+         (consp (cdr form)))
+    (cond ((integerp (cadr form))
+           `(integerp ,(cadr form) ,(cadr form)))
+          ((rationalp (cadr form))
+           `rational)
+          ((numberp (cadr form))
+           'number)
+          ((characterp (cadr form))
+           'character)
+          ((null (cadr form))
+           'null)
+          ((symbolp (cadr form))
+           'symbol)
+          ((stringp (cadr form))
+           'string)
+          ((consp (cadr form))
+           'cons)
+          (t ; impossible?
+           t)))
+   ((and (eq (car form) 'setq)   ; always returns a single value
+         (equal (length form) 3) ; avoid considering aborts from other values
+         )
+    (let ((x (output-type-for-declare-form-rec (car (last form))
+                                               flet-alist)))
+      (cond (*acl2-output-type-abort* '*)
+            ((and (consp x)
+                  (eq (car x) 'values))
+             (cadr x))
+            ((eq x '*) t)
+            (t x))))
+   ((and (eq (car form) 'setf)
+         (equal (length form) 3) ; avoid considering aborts from other values
+         )
+    (output-type-for-declare-form-rec (car (last form))
+                                      flet-alist))
    ((eq (car form) 'return-last)
     (cond ((equal (cadr form) ''mbe1-raw)
            (output-type-for-declare-form-rec (caddr form) flet-alist))
@@ -447,17 +507,25 @@
                 (eq (car (caddr form)) 'throw-nonexec-error))
            (setq *acl2-output-type-abort* '*))
           (t (output-type-for-declare-form-rec (car (last form)) flet-alist))))
-   ((member (car form) '(return-last return-from when)
+   ((member (car form) '(return-last return-from)
             :test 'eq)
     (output-type-for-declare-form-rec (car (last form)) flet-alist))
+   ((eq (car form) 'when)
+    (let ((tmp (output-type-for-declare-form-rec (car (last form))
+                                                 flet-alist)))
+      (cond (*acl2-output-type-abort* '*)
+            ((or (atom tmp)
+                 (not (eq (car tmp) 'values)))
+             t)
+            (t '*))))
    ((assoc (car form) flet-alist :test 'eq)
     (cdr (assoc (car form) flet-alist :test 'eq)))
-   #+acl2-mv-as-values
-   ((member (car form) '(mv values)
+   ((member (car form) '(values
+                         #+acl2-mv-as-values mv)
             :test 'eq)
     (cond ((null (cdr form))
            (setq *acl2-output-type-abort* '*))
-          ((null (cddr form)) ; form is (values &)
+          ((null (cddr form)) ; (values &), or (mv &) if mv is values
            (let* ((*acl2-output-type-abort* nil)
                   (tmp (output-type-for-declare-form-rec (cadr form)
                                                          flet-alist)))
@@ -545,7 +613,22 @@
               )
             :test 'eq)
     (setq *acl2-output-type-abort* '*))
-   ((eq (car form) 'mv-list)
+   ((member (car form)
+
+; Feel free to add any symbol to the following list that, when called, is
+; guaranteed to yield a single value.
+
+            '(* + - / 1+ 1-
+                = /= < <= > >=
+                append assoc
+                concatenate format import list list* make-hash-table member
+                mv-list nreverse position rassoc remove subsetp
+; (strip-cars *ca<d^n>r-alist*)
+                CADR CDAR CAAR CDDR
+                CAADR CDADR CADAR CDDAR CAAAR CDAAR CADDR CDDDR
+                CAAADR CADADR CAADAR CADDAR CDAADR CDDADR CDADAR CDDDAR
+                CAAAAR CADAAR CAADDR CADDDR CDAAAR CDDAAR CDADDR CDDDDR)
+            :test 'eq)
     t)
    (t (multiple-value-bind
        (new-form flg)

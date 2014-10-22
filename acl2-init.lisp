@@ -795,57 +795,31 @@ implementations.")
             ,string
             ,@args)))
 
-(defun proclaim-files (&optional outfilename infilename infile-optional-p)
+(defun proclaim-files (outfilename)
 
-; IMPORTANT: This function assumes that the defconst and defmacro forms in the
-; given files have already been evaluated.  One way to achieve this state of
-; affairs, of course, is to load the files first.
+; When *do-proclaims* is true, this function proclaims types for forms
+; introduced in files among *acl2-files*.  It assumes that the defconst and
+; defmacro forms in those files have already been evaluated, for example by
+; loading those files first.
 
-  (when (and outfilename infilename)
-    (error "It is illegal to supply non-nil values for both optional ~
-            arguments of proclaim-files."))
-  (when (not *do-proclaims*)
+  (unless *do-proclaims*
     (return-from proclaim-files nil))
-  (cond
-   (outfilename
-    (format t
-            "Writing proclaim forms for ACL2 source files to file ~s.~%"
-            outfilename))
-   (t
-    (when infilename
-        (cond ((probe-file infilename)
-               (format t
-                       "Loading nontrivial generated file of proclaim forms, ~
-                        ~s...~%"
-                       infilename)
-               (load infilename)
-               (format t
-                       "Completed load of ~s.~%"
-                       infilename)
-               (return-from proclaim-files nil))
-              (infile-optional-p) ; fall through as though infilename is nil
-              (t (error "File ~s is to be loaded by proclaim-files, but does ~
-                         not exist."
-                        infilename))))
-       (format t
-            "Generating and evaluating proclaim forms for ACL2 source ~
-             files.~%")))
+  (when (probe-file outfilename)
+    (delete-file outfilename))
+  (format t
+          "Writing proclaim forms for ACL2 source files to file ~s.~%"
+          outfilename)
   (let (str)
-    (when outfilename
-      (if (probe-file outfilename)
-          (delete-file outfilename))
-      (or (setq str (safe-open outfilename :direction :output))
-          (error "Unable to open file ~s for output." outfilename)))
+    (or (setq str (safe-open outfilename :direction :output))
+        (error "Unable to open file ~s for output." outfilename))
 
 ; It is tempting to print an in-package form, but we leave that task to
-; proclaim-file, which presumably finds the first form to be an in-package
-; form.
+; proclaim-file.
 
     (dolist (fl *acl2-files*)
       (when (not (equal fl "doc.lisp")) ; no need to proclaim that one!
         (proclaim-file (format nil "~a.lisp" fl) str)))
-    (when str ; equivalently, when outfilename is non-nil
-      (close str))))
+    (close str)))
 
 (defun insert-string (s)
   (cond ((null s) "")
@@ -1955,7 +1929,7 @@ implementations.")
 ; (ccl::save-application "acl2-image" :size (expt 2 24))
 ; for the Mac.
 
-  (load-acl2)
+  (load-acl2 :load-acl2-proclaims *do-proclaims*)
   (setq *saved-build-date-lst*
 
 ; The call of eval below should avoid a warning in cmucl version 18d.  Note
@@ -1998,25 +1972,26 @@ implementations.")
 
 (defun generate-acl2-proclaims ()
 
-; See the section "PROCLAIMING" in acl2-fns.lisp.
+; See the Essay on Proclaiming.
 
   (let ((filename "acl2-proclaims.lisp"))
-    (cond (*do-proclaims*
-           (format t "Beginning load-acl2 and initialize-acl2 on behalf of ~
-                      generate-acl2-proclaims.~%")
-           (load-acl2 t)
+    (cond
+     (*do-proclaims*
+      (format t "Beginning load-acl2 and initialize-acl2 on behalf of ~
+                 generate-acl2-proclaims.~%")
+      (load-acl2 :fast t)
 ; Use funcall to avoid compiler warning in (at least) CCL.
-           (qfuncall initialize-acl2 'include-book nil nil t)
-           (proclaim-files filename))
-          (t
-           (if (probe-file filename)
-               (delete-file filename))
-           (with-open-file
-            (str filename :direction :output)
-            (format str "(in-package \"ACL2\")~%~%")
-            (format str
-                    "; No proclaims are generated here for this host Lisp.~%"))
-           nil))))
+      (qfuncall initialize-acl2 'include-book nil nil 'generating)
+      (proclaim-files filename))
+     (t
+      (when (probe-file filename)
+        (delete-file filename))
+      (with-open-file
+       (str filename :direction :output)
+       (format str "(in-package \"ACL2\")~%~%")
+       (format str
+               "; No proclaims are generated here for this host Lisp.~%")))))
+  nil)
 
 ; The following avoids core being dumped in certain circumstances
 ; resulting from very hard errors.
