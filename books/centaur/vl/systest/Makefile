@@ -28,104 +28,114 @@
 #
 # Original author: Jared Davis <jared@centtech.com>
 
-.PHONY: all clean debug
+.PHONY: all clean debug ncv vcs
+
+all: ncv vcs
 
 STARTJOB ?= bash
 VL       ?= $(PWD)/../bin/vl
 
-NCV_VERILOG    ?= ncverilog +access+r
-NCV_SYSVERILOG ?= ncverilog +access+r +sv +define+SYSTEM_VERILOG_MODE
+SPEC_FILES        := $(wildcard */spec.v)
+TEST_DIRS         := $(patsubst %/spec.v, %,                   $(SPEC_FILES))
 
-VCS_VERILOG    ?= vcs -o simv.v
-VCS_SYSVERILOG ?= vcs -sverilog +define+SYSTEM_VERILOG_MODE -o simv.sv
+NCV_V_IMPL_FILES  := $(patsubst %/spec.v, %/impl.ncv.v,        $(SPEC_FILES))
+NCV_SV_IMPL_FILES := $(patsubst %/spec.v, %/impl.ncv.sv,       $(SPEC_FILES))
+NCV_V_OKS         := $(patsubst %/spec.v, %/ncv.v.ok,          $(SPEC_FILES))
+NCV_SV_OKS        := $(patsubst %/spec.v, %/ncv.sv.ok,         $(SPEC_FILES))
 
-SPEC_FILES    := $(wildcard */spec.v)
-TEST_DIRS     := $(patsubst %/spec.v, %,                   $(SPEC_FILES))
-V_IMPL_FILES  := $(patsubst %/spec.v, %/impl.v,            $(SPEC_FILES))
-SV_IMPL_FILES := $(patsubst %/spec.v, %/impl.sv,           $(SPEC_FILES))
-NCV_V_OKS     := $(patsubst %/spec.v, %/ncv.verilog.ok,    $(SPEC_FILES))
-NCV_SV_OKS    := $(patsubst %/spec.v, %/ncv.sysverilog.ok, $(SPEC_FILES))
-VCS_V_OKS     := $(patsubst %/spec.v, %/vcs.verilog.ok,    $(SPEC_FILES))
-VCS_SV_OKS    := $(patsubst %/spec.v, %/vcs.sysverilog.ok, $(SPEC_FILES))
+ncv: $(NCV_V_IMPL_FILES)
+ncv: $(NCV_SV_IMPL_FILES)
+ncv: $(NCV_V_OKS)
+ncv: $(NCV_SV_OKS)
 
-all:
+VCS_V_IMPL_FILES  := $(patsubst %/spec.v, %/impl.vcs.v,        $(SPEC_FILES))
+VCS_SV_IMPL_FILES := $(patsubst %/spec.v, %/impl.vcs.sv,       $(SPEC_FILES))
+VCS_V_OKS         := $(patsubst %/spec.v, %/vcs.v.ok,          $(SPEC_FILES))
+VCS_SV_OKS        := $(patsubst %/spec.v, %/vcs.sv.ok,         $(SPEC_FILES))
 
+vcs: $(VCS_V_IMPL_FILES)
+vcs: $(VCS_SV_IMPL_FILES)
+vcs: $(VCS_V_OKS)
+vcs: $(VCS_SV_OKS)
 
-.PHONY: ncv
-ncv: $(NCV_V_OKS) $(NCV_SV_OKS)
+NCV_VERILOG    := ncverilog +access+r      +define+VL_SYSTEST_NCV
+NCV_SYSVERILOG := ncverilog +access+r +sv  +define+VL_SYSTEST_NCV +define+SYSTEM_VERILOG_MODE
+VCS_VERILOG    := vcs -o simv.v            +define+VL_SYSTEST_VCS
+VCS_SYSVERILOG := vcs -o simv.sv -sverilog +define+VL_SYSTEST_VCS +define+SYSTEM_VERILOG_MODE
 
-.PHONY: vcs
-vcs: $(VCS_V_OKS) $(VCS_SV_OKS)
+XLATE_NCV_V    := $(VL) model spec.v --mem=2 --search=. --verilog-file=impl.ncv.v  --define=VL_SYSTEST_NCV --edition=Verilog
+XLATE_NCV_SV   := $(VL) model spec.v --mem=2 --search=. --verilog-file=impl.ncv.sv --define=VL_SYSTEST_NCV --edition=SystemVerilog --define=SYSTEM_VERILOG_MODE
+XLATE_VCS_V    := $(VL) model spec.v --mem=2 --search=. --verilog-file=impl.vcs.v  --define=VL_SYSTEST_VCS --edition=Verilog
+XLATE_VCS_SV   := $(VL) model spec.v --mem=2 --search=. --verilog-file=impl.vcs.sv --define=VL_SYSTEST_VCS --edition=SystemVerilog --define=SYSTEM_VERILOG_MODE
 
-debug:
-	@echo "PWD is $(PWD)"
-	@echo "SPEC_FILES = $(SPEC_FILES)"
-	@echo "TEST_DIRS = $(TEST_DIRS)"
-	@echo "IMPL_FILES = $(IMPL_FILES)"
-
-TRANSLATE_V  := $(VL) model spec.v --mem=2 --search=. --verilog-file=impl.v  --edition=Verilog
-TRANSLATE_SV := $(VL) model spec.v --mem=2 --search=. --verilog-file=impl.sv --edition=SystemVerilog --define=SYSTEM_VERILOG_MODE
-
-%/impl.sv: %/spec.v
-	@echo "Making $*/impl.sv"
-	@rm -f %/impl.sv
+%/impl.ncv.v: %/spec.v
+	@echo "Making $*/impl.ncv.v"
+	@rm -f %/impl.ncv.v %/impl.ncv.v.out
 	@cd $*; $(STARTJOB) -c \
-	  'echo `hostname` &> impl.sv.out; $(TRANSLATE_SV) &>> impl.sv.out'
-	@ls -l $*/impl.sv
+	  'echo `hostname` &> impl.ncv.v.out; $(XLATE_NCV_V) &>> impl.ncv.v.out'
+	@ls -l $*/impl.ncv.v
 
-%/impl.v: %/spec.v
-	@echo "Making $*/impl.v"
-	@rm -f %/impl.v
+%/impl.ncv.sv: %/spec.v
+	@echo "Making $*/impl.ncv.sv"
+	@rm -f %/impl.ncv.sv %/impl.ncv.sv.out
 	@cd $*; $(STARTJOB) -c \
-	  'echo `hostname` &> impl.v.out; $(TRANSLATE_V) &>> impl.v.out'
-	@ls -l $*/impl.v
+	  'echo `hostname` &> impl.ncv.sv.out; $(XLATE_NCV_SV) &>> impl.ncv.sv.out'
+	@ls -l $*/impl.ncv.sv
 
-%/ncv.verilog.ok: %/impl.v $(wildcard %/*.v)
-	@echo "Making $*/ncv.verilog.ok"
-	@cd $*; $(STARTJOB) -c "$(NCV_VERILOG) compare.v &> ncv.verilog.out"
-	@ls -l $*/ncv.verilog.out
-	@./errcheck.pl $*/ncv.verilog.out
-# Dumb, need some kind of certificate here
-	@cp $*/ncv.verilog.out $*/ncv.verilog.ok
+%/impl.vcs.v: %/spec.v
+	@echo "Making $*/impl.vcs.v"
+	@rm -f %/impl.vcs.v %/impl.vcs.v.out
+	@cd $*; $(STARTJOB) -c \
+	  'echo `hostname` &> impl.vcs.v.out; $(XLATE_VCS_V) &>> impl.vcs.v.out'
+	@ls -l $*/impl.vcs.v
 
-%/ncv.sysverilog.ok: %/impl.sv $(wildcard %/*.v)
-	@echo "Making $*/ncv.sysverilog.ok"
-	@cd $*; $(STARTJOB) -c "$(NCV_SYSVERILOG) compare.v &> ncv.sysverilog.out"
-	@ls -l $*/ncv.sysverilog.out
-	@./errcheck.pl $*/ncv.sysverilog.out
-# Dumb, need some kind of certificate here
-	@cp $*/ncv.sysverilog.out $*/ncv.sysverilog.ok
+%/impl.vcs.sv: %/spec.v
+	@echo "Making $*/impl.vcs.sv"
+	@rm -f %/impl.vcs.sv %/impl.vcs.sv.out
+	@cd $*; $(STARTJOB) -c \
+	  'echo `hostname` &> impl.vcs.sv.out; $(XLATE_VCS_SV) &>> impl.vcs.vs.out'
+	@ls -l $*/impl.vcs.sv
 
 
+%/ncv.v.ok: %/impl.ncv.v %/spec.v $(wildcard %/compare*.v)
+	@echo "Making $*/ncv.v.out"
+	@cd $*; $(STARTJOB) -c "$(NCV_VERILOG) compare.v spec.v impl.ncv.v &> ncv.v.out" \
+           || (echo "NCV command failed for $*." ;\
+	       ../errcheck.pl ncv.v.out ;\
+	       false)
+	@ls -l $*/ncv.v.out
+	@./errcheck.pl $*/ncv.v.out
+	@cp $*/ncv.v.out $*/ncv.v.ok
 
-%/vcs.verilog.ok: %/impl.v $(wildcard %/*.v)
-	@echo "Making $*/vcs.verilog.ok"
-	@cd $*; $(STARTJOB) -c "$(VCS_VERILOG) compare.v &> vcs.verilog.out; ./simv.v &>> vcs.verilog.out"
-	@ls -l $*/vcs.verilog.out
-	@./errcheck.pl $*/vcs.verilog.out
-# Dumb, need some kind of certificate here
-	@cp $*/vcs.verilog.out $*/vcs.verilog.ok
+%/ncv.sv.ok: %/impl.ncv.sv %/spec.v $(wildcard %/compare*.v)
+	@echo "Making $*/ncv.sv.out"
+	@cd $*; $(STARTJOB) -c "$(NCV_SYSVERILOG) compare.v spec.v impl.ncv.sv &> ncv.sv.out" \
+           || (echo "NCV command failed for $*." ;\
+	       ../errcheck.pl ncv.sv.out ;\
+	       false)
+	@ls -l $*/ncv.sv.out
+	@./errcheck.pl $*/ncv.sv.out
+	@cp $*/ncv.sv.out $*/ncv.sv.ok
 
-%/vcs.sysverilog.ok: %/impl.sv $(wildcard %/*.v)
-	@echo "Making $*/vcs.sysverilog.ok"
-	@cd $*; $(STARTJOB) -c "$(VCS_SYSVERILOG) compare.v &> vcs.sysverilog.out; ./simv.sv &>> vcs.sysverilog.out"
-	@ls -l $*/vcs.sysverilog.out
-	@./errcheck.pl $*/vcs.sysverilog.out
-# Dumb, need some kind of certificate here
-	@cp $*/vcs.sysverilog.out $*/vcs.sysverilog.ok
+%/vcs.v.ok: %/impl.vcs.v $(wildcard %/compare*.v)
+	@echo "Making $*/vcs.v.out"
+	@cd $*; $(STARTJOB) -c "$(VCS_VERILOG) compare.v spec.v impl.vcs.v &> vcs.v.out; ./simv.v &>> vcs.v.out" \
+            || (echo "VCS command failed for $*." ;\
+	       ../errcheck.pl vcs.v.out ;\
+	       false)
+	@ls -l $*/vcs.v.out
+	@./errcheck.pl $*/vcs.v.out
+	@cp $*/vcs.v.out $*/vcs.v.ok
 
-
-
-clean:
-	rm -f */impl.v */impl.sv */*.sao */*.log */*.out */*.ok
-	rm -rf */INCA_libs */*.vcd */*.key
-
-all: $(V_IMPL_FILES)
-all: $(SV_IMPL_FILES)
-all: $(NCV_V_OKS)
-all: $(NCV_SV_OKS)
-all: $(VCS_V_OKS)
-all: $(VCS_SV_OKS)
+%/vcs.sv.ok: %/impl.vcs.sv $(wildcard %/compare*.v)
+	@echo "Making $*/vcs.sv.out"
+	@cd $*; $(STARTJOB) -c "$(VCS_SYSVERILOG) compare.v spec.v impl.vcs.sv &> vcs.sv.out; ./simv.sv &>> vcs.sv.out" \
+            || (echo "VCS command failed for $*." ;\
+	       ../errcheck.pl vcs.sv.out ;\
+	       false)
+	@ls -l $*/vcs.sv.out
+	@./errcheck.pl $*/vcs.sv.out
+	@cp $*/vcs.sv.out $*/vcs.sv.ok
 
 
 
@@ -135,10 +145,21 @@ all: $(VCS_SV_OKS)
 .PHONY: $(TEST_DIRS)
 
 define mkDirTarget
-$(1): $(1)/ncv.sysverilog.ok
-$(1): $(1)/ncv.verilog.ok
-$(1): $(1)/vcs.sysverilog.ok
-$(1): $(1)/vcs.verilog.ok
+$(1): $(1)/ncv.sv.ok
+$(1): $(1)/ncv.v.ok
+$(1): $(1)/vcs.sv.ok
+$(1): $(1)/vcs.v.ok
 endef
 
 $(foreach dir, $(TEST_DIRS), $(eval $(call mkDirTarget, $(dir))))
+
+
+
+
+clean:
+	rm -f */impl.*.v */impl.*.sv
+	rm -f */*.sao */*.sao.ver
+	rm -f */*.log */*.out */*.ok
+	rm -rf */INCA_libs */*.vcd */*.key
+	rm -rf */simv.*.daidir
+	rm -rf */csrc

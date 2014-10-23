@@ -28,8 +28,13 @@
 //
 // Original author: Jared Davis <jared@centtech.com>
 
+`ifndef INCLUDED_TWO_BIT_AND
+`define INCLUDED_TWO_BIT_AND
+
 module two_bit_and(o, a, b);
  output[1:0] o;
  input [1:0] a, b;
  assign o = a & b;
 endmodule
+
+`endif

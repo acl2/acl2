@@ -28,7 +28,7 @@
 //
 // Original author: Jared Davis <jared@centtech.com>
 
-// more tests of combinational blocks
+`ifdef SYSTEM_VERILOG_MODE
 
 module comb_test (
 
@@ -132,3 +132,4 @@ endmodule
 */
 
 
+`endif

@@ -28,13 +28,6 @@
 //
 // Original author: Jared Davis <jared@centtech.com>
 
-`include "spec.v"
-
-`ifdef SYSTEM_VERILOG_MODE
- `include "impl.sv"
-`else
- `include "impl.v"
-`endif
 
 // exhaustive testing of bit-selects up to size 6 by 6
 

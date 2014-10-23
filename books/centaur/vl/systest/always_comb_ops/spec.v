@@ -28,7 +28,7 @@
 //
 // Original author: Jared Davis <jared@centtech.com>
 
-// tests of basic operators in combinational always blocks
+`ifdef SYSTEM_VERILOG_MODE
 
 module spec ( unary_plus,
 	      unary_minus,
@@ -257,3 +257,5 @@ module make_tests () ;
 endmodule
 
 */
+
+`endif

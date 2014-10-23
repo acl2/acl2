@@ -39,8 +39,8 @@
 
 (defconst *loadconfig*
   (make-vl-loadconfig
-   :start-files (list "udp1/spec.v")
-   :search-path (list "udp1/")
+   :start-files (list "async1/spec.v")
+   :search-path (list "async1/")
    ))
 
 ;; (defconst *loadconfig*
@@ -50,6 +50,7 @@
 
 (defconsts (*loadresult* state)
   (vl-load *loadconfig*))
+
 
 
 (top-level
@@ -69,6 +70,13 @@
 
 (defconsts (*good* *bad* &)
   (vl-simplify (vl-loadresult->design *loadresult*) *simpconfig*))
+
+(trace$ (vl-warning :entry (list 'make-vl-warning)
+                    :exit (list 'make-vl-warning
+                                (with-local-ps (vl-print-warning acl2::value)))))
+
+(trace$ vl-
+       
 
 (top-level
  (with-local-ps
