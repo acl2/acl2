@@ -79,7 +79,7 @@ combinations.)  To do this, you first need to build ACL2(h), then certify the
 
 @({
   cd acl2-sources/books
-  make USE_QUICKLISP=1 ACL2=my-acl2h doc/top.cert
+  make manual ACL2=my-acl2h
 })
 
 <p>After this is built, the web-based manual should be available at:</p>
@@ -1609,3 +1609,5 @@ all is well, you should see the logo below:</p>
 <img src='res/centaur/centaur-logo.png'/>")
 
 (add-resource-directory "centaur" "centaur")
+
+(defpointer build-the-manual xdoc)
