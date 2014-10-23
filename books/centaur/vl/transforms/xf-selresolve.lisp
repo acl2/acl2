@@ -133,6 +133,16 @@ arisen during the course of unparameterization.</p>"
                              multiconcat ~a0."
                        :args (list context))
                  args))
+            ((when (>= (vl-resolved->val val) (expt 2 20)))
+             ;; BOZO would be better to make this limit configurable.
+             (mv (fatal :type :vl-replication-too-big
+                        :msg "~a0: replicating expression with multiplicity ~
+                              ~x1. That's crazy.   Causing a fatal warning to ~
+                              try to prevent future transforms on this ~
+                              module.  {~a2{~a3}}"
+                        :args (list context (vl-resolved->val val)
+                                    mult kitty))
+                 args))
             ;; As in the partselect case.
             (atom (vl-make-index (vl-resolved->val val))))
          (mv (ok) (list atom kitty))))
