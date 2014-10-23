@@ -1980,7 +1980,8 @@ which is saved just in case it's needed later.")
 ; As of version 18a, cmulisp spews gc messages to the terminal even when
 ; standard and error output are redirected.  So we turn them off.
 
-   (when use-acl2-proclaims
+   (cond
+    (use-acl2-proclaims
      (cond ((non-trivial-acl2-proclaims-file-p)
             (load "acl2-proclaims.lisp"))
            (t
@@ -1988,6 +1989,12 @@ which is saved just in case it's needed later.")
                          \"acl2-proclaims.lisp\" is missing or has no forms ~
                          in it."
                    `(compile-acl2 ,use-acl2-proclaims)))))
+    #+gcl
+    ((eq *do-proclaims* :gcl) ; and (not use-acl2-proclaims)
+     (loop for f in (directory "*.fn")
+           do
+           (delete-file f))
+     (compiler::emit-fn t)))
    (unless (and (probe-file *acl2-status-file*)
                 (with-open-file (str *acl2-status-file*
                                      :direction :input)
@@ -2017,6 +2024,10 @@ which is saved just in case it's needed later.")
                       (load-compiled
                        (make-pathname :name name
                                       :type *compiled-file-extension*))))))))))
+   #+gcl
+   (when (and (not use-acl2-proclaims)
+              (eq *do-proclaims* :gcl))
+     (compiler::make-all-proclaims "*.fn"))
    (note-compile-ok)))
 
 #+gcl

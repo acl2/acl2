@@ -802,13 +802,21 @@ implementations.")
 ; defmacro forms in those files have already been evaluated, for example by
 ; loading those files first.
 
-  (unless *do-proclaims*
+  (unless (and *do-proclaims*
+               (not (eq *do-proclaims* :gcl)))
     (return-from proclaim-files nil))
   (when (probe-file outfilename)
     (delete-file outfilename))
   (format t
           "Writing proclaim forms for ACL2 source files to file ~s.~%"
           outfilename)
+  #+gcl
+  (when (eq *do-proclaims* :gcl)
+    (when (not (equal outfilename "sys-proclaim.lisp"))
+      (if (probe-file "sys-proclaim.lisp")
+          (rename-file "sys-proclaim.lisp" outfilename)
+        (error "File sys-proclaim.lisp does not exist!")))
+    (return-from proclaim-files nil))
   (let (str)
     (or (setq str (safe-open outfilename :direction :output))
         (error "Unable to open file ~s for output." outfilename))
@@ -1975,7 +1983,13 @@ implementations.")
 ; See the Essay on Proclaiming.
 
   (let ((filename "acl2-proclaims.lisp"))
+    (when (probe-file filename)
+      (delete-file filename))
     (cond
+     ((eq *do-proclaims* :gcl)
+      (cond ((probe-file "sys-proclaim.lisp")
+             (rename-file "sys-proclaim.lisp" filename))
+            (t (error "File sys-proclaim.lisp does not exist!"))))
      (*do-proclaims*
       (format t "Beginning load-acl2 and initialize-acl2 on behalf of ~
                  generate-acl2-proclaims.~%")

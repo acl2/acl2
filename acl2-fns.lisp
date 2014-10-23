@@ -198,7 +198,10 @@
 ; specific function types during load-acl2 than had been used by compile-acl2
 ; We may have this change in types lead to buggy behavior.
 
-; So in order to proclaim during the boot-strap, we use the following steps.
+; So in order to proclaim during the boot-strap, we use steps as shown below.
+; First, here is the general process, which is currently unused.  But we could
+; try it for any Lisp other than GCL; see below for what we do in GCL.  We note
+; that GNUmakefile orchestrates both versions of these steps for "make".
 
 ; --- COMPILE: ---
 ; (1) In a fresh Lisp, call compile-acl2 without any proclaiming.
@@ -218,7 +221,29 @@
 ;     (c) initialize-acl2;
 ;     (d) save an executable.
 
-; We note that GNUmakefile orchestrates the above steps for "make".
+; In GCL, we modify this process to utilize GCL's own ability to proclaim
+; function types.  Note that this process doesn't proclaim types for defconst
+; forms; from a Lisp perspective, that wouldn't make sense, since defconst
+; symbols are variables, not constants.
+
+; --- COMPILE: ---
+; (1) In a fresh Lisp, call compile-acl2 without any proclaiming, as follows.
+;     (compiler::emit-fn t)
+;     (acl2::compile-acl2)
+;     (compiler::make-all-proclaims "*.fn")
+; --- OPTIONALLY PROCLAIM: ---
+; (2) In a fresh Lisp, call generate-acl2-proclaims, which does only the following
+;     if *do-proclaims* is true, and otherwise is a no-op.
+;     Rename sys-proclaim.lisp to acl2-proclaims.lisp.
+; --- OPTIONALLY RECOMPILE: ---
+; (3) In a fresh Lisp, if *do-proclaims* is true (also see (2) above), load the
+;     generated file "acl2-proclaims.lisp" and then recompile.
+; --- SAVE EXECUTABLE: ---
+; (4) In a fresh Lisp, call save-acl2, which does these steps:
+;     (a) load "acl2-proclaims.lisp" if *do-proclaims* is true;
+;     (b) load-acl2;
+;     (c) initialize-acl2;
+;     (d) save an executable.
 
 ; At one time we proclaimed for CCL, but one profiling run of a
 ; compute-intensive include-book form showed that this was costing us some 10%
@@ -253,7 +278,13 @@
 ;     ACL2_PROCLAIMS_ACTION=generate_and_reuse
 ; 27272.420u 1401.555s 1:09:11.18 690.7%        0+0k 333088+1750384io 303pf+0w
 
-  #+gcl t
+  #+gcl
+
+; The special value of :gcl says to use GCL's automatic mechanism during the
+; boot-strap (but use ACL2's during normal execution).  But it also should work
+; to use t instead.  Experiments may lead us to prefer one over the other.
+
+  :gcl
   #-gcl nil)
 
 (defun macroexpand-till (form sym)
@@ -637,15 +668,13 @@
                      (output-type-for-declare-form-rec (caddr (car form)) flet-alist))
                     ((not (symbolp (car form))) ; should always be false
                      '*)
-                    #-acl2-mv-as-values
-                    (t t)
-                    #+acl2-mv-as-values
                     (t (let ((x (and ; check that (w *the-live-state*) is bound
                                  (boundp 'ACL2_GLOBAL_ACL2::CURRENT-ACL2-WORLD)
                                  (fboundp 'get-stobjs-out-for-declare-form)
                                  (qfuncall get-stobjs-out-for-declare-form
                                            (car form)))))
-                         (cond ((consp (cdr x))
+                         (cond #+acl2-mv-as-values
+                               ((consp (cdr x))
                                 (cons 'values
                                       (make-list (length x)
                                                  :initial-element
@@ -1415,7 +1444,7 @@ notation causes an error and (b) the use of ,. is not permitted."
          (setq *sharp-reader-max-index* 0)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;                            DUAL PACKAGES
+;                            PACKAGES
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; The following function used to be defined in axioms.lisp (with
@@ -1453,22 +1482,161 @@ notation causes an error and (b) the use of ,. is not permitted."
              in the package being flushed, contrary to warnings printed.~%~%"
             x))))
 
-(defmacro gv (fn args val)
-  (sublis `((funny-fn . ,fn)
-            (funny-args . ,args))
-          `(let ((gc-on (not (gc-off *the-live-state*))))
-             (if (or gc-on
-                     (f-get-global 'safe-mode *the-live-state*))
-                 (throw-raw-ev-fncall
-                  (list 'ev-fncall-guard-er
-                        'funny-fn
-                        ,(cons 'list 'funny-args)
-                        (untranslate* (guard 'funny-fn nil (w *the-live-state*))
-                                      t
-                                      (w *the-live-state*))
-                        (stobjs-in 'funny-fn (w *the-live-state*))
-                        (not gc-on)))
-               ,val))))
+(defvar *defpkg-virgins* nil)
+
+(defmacro maybe-make-package (name)
+
+; When we moved to Version_4.3, with LispWorks once again a supported host
+; Lisp, we modified the macro maybe-introduce-empty-pkg-1 to avoid the use of
+; defpackage; see the comment in that macro.  Unfortunately, the new approach
+; didn't work for CMUCL (at least, for version 19e).  The following example
+; shows why; even with an eval-when form specifying :compile-toplevel, the
+; compiled code seems to skip the underlying package-creation form, as shown
+; below.  Therefore we revert to the use of defpackage for CMUCL, which appears
+; not to cause problems.
+
+;   % cat pkg-bug-cmucl.lisp
+;
+;   (in-package "CL-USER")
+;
+;   (eval-when (:load-toplevel :execute :compile-toplevel)
+;              (cond ((not (find-package "MYPKG"))
+;                     (print "*** About to make package ***")
+;                     (terpri)
+;                     (make-package "MYPKG" :use nil))))
+;
+;   (defparameter *foo* 'mypkg::x)
+;   % /projects/acl2/lisps/cmucl-19e-linux/bin/cmucl
+;   CMU Common Lisp 19e (19E), running on kindness
+;   With core: /v/filer4b/v11q001/acl2/lisps/cmucl-19e-linux/lib/cmucl/lib/lisp.core
+;   Dumped on: Thu, 2008-05-01 11:56:07-05:00 on usrtc3142
+;   See <http://www.cons.org/cmucl/> for support information.
+;   Loaded subsystems:
+;       Python 1.1, target Intel x86
+;       CLOS based on Gerd's PCL 2004/04/14 03:32:47
+;   * (load "pkg-bug-cmucl.lisp")
+;
+;   ; Loading #P"/v/filer4b/v41q001/kaufmann/temp/pkg-bug-cmucl.lisp".
+;
+;   "*** About to make package ***"
+;   T
+;   * (compile-file "pkg-bug-cmucl.lisp")
+;
+;   ; Python version 1.1, VM version Intel x86 on 04 JUL 11 09:57:13 am.
+;   ; Compiling: /v/filer4b/v41q001/kaufmann/temp/pkg-bug-cmucl.lisp 04 JUL 11 09:56:24 am
+;
+;   ; Byte Compiling Top-Level Form:
+;
+;   ; pkg-bug-cmucl.x86f written.
+;   ; Compilation finished in 0:00:00.
+;
+;   #P"/v/filer4b/v41q001/kaufmann/temp/pkg-bug-cmucl.x86f"
+;   NIL
+;   NIL
+;   * (quit)
+;   % /projects/acl2/lisps/cmucl-19e-linux/bin/cmucl
+;   CMU Common Lisp 19e (19E), running on kindness
+;   With core: /v/filer4b/v11q001/acl2/lisps/cmucl-19e-linux/lib/cmucl/lib/lisp.core
+;   Dumped on: Thu, 2008-05-01 11:56:07-05:00 on usrtc3142
+;   See <http://www.cons.org/cmucl/> for support information.
+;   Loaded subsystems:
+;       Python 1.1, target Intel x86
+;       CLOS based on Gerd's PCL 2004/04/14 03:32:47
+;   * (load "pkg-bug-cmucl.x86f")
+;
+;   ; Loading #P"/v/filer4b/v41q001/kaufmann/temp/pkg-bug-cmucl.x86f".
+;
+;
+;   Error in function LISP::FOP-PACKAGE:  The package "MYPKG" does not exist.
+;      [Condition of type SIMPLE-ERROR]
+;
+;   Restarts:
+;     0: [CONTINUE] Return NIL from load of "pkg-bug-cmucl.x86f".
+;     1: [ABORT   ] Return to Top-Level.
+;
+;   Debug  (type H for help)
+;
+;   (LISP::FOP-PACKAGE)
+;   Source: Error finding source:
+;   Error in function DEBUG::GET-FILE-TOP-LEVEL-FORM:  Source file no longer exists:
+;     target:code/load.lisp.
+;   0]
+
+  #-cmu
+  `(when (not (find-package ,name))
+     (make-package ,name :use nil))
+  #+cmu
+  `(defpackage ,name (:use)))
+
+(defmacro maybe-introduce-empty-pkg-1 (name)
+
+; It appears that GCL requires a user::defpackage (non-ANSI case) or
+; defpackage (ANSI case; this may be the same as user::defpackage) form near
+; the top of a file in order to read the corresponding compiled file.  For
+; example, an error occurred upon attempting to load the community books file
+; books/data-structures/defalist.o after certifying the corresponding book
+; using GCL, because the form (MAYBE-INTRODUCE-EMPTY-PKG-1 "U") near the top of
+; the file was insufficient to allow reading a symbol in the "U" package
+; occurring later in the corresponding source file.
+
+; On the other hand, the CL HyperSpec does not pin down the effect of
+; defpackage when a package already exists.  Indeed, the defpackage approach
+; that we use for GCL does not work for LispWorks 6.0.
+
+; So, we have quite different definitions of this macro for GCL and LispWorks.
+; All other Lisps we have encountered seem happy with the approach we have
+; adopted for Lispworks, so we adopt that approach for them, too.
+
+  #-gcl
+  `(eval-when
+    #+cltl2 (:load-toplevel :execute :compile-toplevel)
+    #-cltl2 (load eval compile) ; though probably #-gcl implies #+cltl2
+    (progn
+      (maybe-make-package ,name)
+      (maybe-make-package ,(concatenate 'string
+                                        acl2::*global-package-prefix*
+                                        name))
+      (maybe-make-package ,(concatenate 'string
+                                        acl2::*1*-package-prefix*
+                                        name))))
+  #+gcl
+  (let ((defp #+cltl2 'defpackage #-cltl2 'user::defpackage))
+    `(progn
+       (,defp ,name
+         (:use))
+       (,defp ,(concatenate 'string
+                            acl2::*global-package-prefix*
+                            name)
+         (:use))
+       (,defp ,(concatenate 'string
+                            acl2::*1*-package-prefix*
+                            name)
+         (:use)))))
+
+(defvar *ever-known-package-alist* ; to be redefined in axioms.lisp
+  nil)
+
+(defun package-has-no-imports (name)
+  (let ((pkg (find-package name)))
+    (do-symbols (sym pkg)
+                (when (not (eq (symbol-package sym) pkg))
+                  (return-from package-has-no-imports nil))))
+  t)
+
+(defmacro maybe-introduce-empty-pkg-2 (name)
+  `(when (and (not (member ,name *defpkg-virgins*
+                           :test 'equal))
+              (not (assoc ,name *ever-known-package-alist*
+                          :test 'equal))
+              (package-has-no-imports ,name))
+     (push ,name *defpkg-virgins*)))
+
+; The GCL proclaim mechanism puts symbols in package "ACL2-PC" into file
+; acl2-proclaims.lisp.  So Lisp needs to know about that package when it loads
+; that file.  We introduce that package in a harmless way here.  Although we
+; only need to do so for GCL, we do so for every Lisp, for uniformity.
+(maybe-make-package "ACL2-PC")
+(maybe-introduce-empty-pkg-2 "ACL2-PC")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                            ENVIRONMENT SUPPORT
@@ -1937,3 +2105,20 @@ notation causes an error and (b) the use of ,. is not permitted."
     `(mp:with-lock (,bound-symbol) nil ,@forms)
     #-(or ccl sb-thread lispworks)
     `(progn ,@forms)))
+
+(defmacro gv (fn args val)
+  (sublis `((funny-fn . ,fn)
+            (funny-args . ,args))
+          `(let ((gc-on (not (gc-off *the-live-state*))))
+             (if (or gc-on
+                     (f-get-global 'safe-mode *the-live-state*))
+                 (throw-raw-ev-fncall
+                  (list 'ev-fncall-guard-er
+                        'funny-fn
+                        ,(cons 'list 'funny-args)
+                        (untranslate* (guard 'funny-fn nil (w *the-live-state*))
+                                      t
+                                      (w *the-live-state*))
+                        (stobjs-in 'funny-fn (w *the-live-state*))
+                        (not gc-on)))
+               ,val))))

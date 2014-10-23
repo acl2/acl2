@@ -564,7 +564,7 @@ clean:
 	rm -f *.o *#* *.c *.h *.data gazonk.* workxxx workyyy *.lib \
 	  *.fasl *.fas *.sparcf *.ufsl *.64ufasl *.ufasl *.dfsl *.dxl \
 	  *.d64fsl *.dx64fsl *.lx64fsl \
-	  *.lx32fsl *.x86f *.o \
+	  *.lx32fsl *.x86f *.o *.fn \
 	  TAGS acl2-status.txt acl2r.lisp acl2-proclaims.lisp .acl2rc \
 	  *osaved_acl2 *osaved_acl2.* \
 	  *.log TMP*
