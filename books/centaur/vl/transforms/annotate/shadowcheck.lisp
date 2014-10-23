@@ -857,12 +857,16 @@ explicit declarations.</p>")
   (b* (((vl-fundecl x)   (vl-fundecl-fix x))
 
        ;; BOZO this isn't quite right for the same reasons as in vl-fundecl-check-undeclared.
+       (- (vl-shadowcheck-debug "  >> shadowcheck in function ~s0.~%" x.name))
+       (- (vl-shadowcheck-debug "  >> checking externally used names in ports, return value~%"))
        (other-names (vl-exprlist-varnames (append (vl-taskportlist-allexprs x.inputs)
                                                   (vl-maybe-range-allexprs x.rrange))))
-
        ((mv st warnings) (vl-shadowcheck-reference-names other-names x st warnings))
+
+       (- (vl-shadowcheck-debug "  >> declaring function name, ~x0.~%" x.name))
        ((mv st warnings) (vl-shadowcheck-declare-name x.name x st warnings))
 
+       (- (vl-shadowcheck-debug "  >> pushing into function ~x0.~%" x.name))
        (st (vl-shadowcheck-push-scope x st))
        ((mv st warnings) (vl-shadowcheck-taskportlist x.inputs st warnings))
 
@@ -874,6 +878,7 @@ explicit declarations.</p>")
 
        ((mv st warnings) (vl-shadowcheck-blockitemlist x.decls st warnings))
        ((mv st warnings) (vl-shadowcheck-stmt x.body x st warnings))
+       (- (vl-shadowcheck-debug "  >> popping out of function ~x0.~%" x.name))
        (st (vl-shadowcheck-pop-scope st)))
     (mv st warnings)))
 

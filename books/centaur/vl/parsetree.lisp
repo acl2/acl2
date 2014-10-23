@@ -2884,10 +2884,11 @@ have input ports that are very similar to task ports.  So, we reuse
    (decls      vl-blockitemlist-p
                "Any local variable declarations for the function, e.g., the
                 declarations of @('lowest_pair') and @('next_lowest_pair')
-                below.  We represent the declarations as an ordinary @(see
-                vl-blockitemlist-p), and it appears that it may even contain
-                event declarations, parameter declarations, etc., which seems
-                pretty absurd.")
+                below.  <b>Also</b>, variable declarations for the ports and
+                return value (see below).  We represent the declarations as an
+                ordinary @(see vl-blockitemlist-p), and it appears that it may
+                even contain event declarations, parameter declarations, etc.,
+                which seems pretty absurd.")
 
    (body       vl-stmt-p
                "The body of the function.  We represent this as an ordinary statement,
@@ -2918,7 +2919,13 @@ endfunction
 })
 
 <p>Note that functions don't have any inout or output ports.  Instead, you
-assign to a function's name to indicate its return value.</p>")
+assign to a function's name to indicate its return value.</p>
+
+<p>To simplify scoping issues, we put \"hidden\" variables declarations for the
+ports and return value of the function into its @('decls').  These ports are
+marked with the @('VL_HIDDEN_DECL_FOR_TASKPORT') attribute.  The pretty printer
+and other code rely on this attribute to produce the correct output.  These
+extra declarations are created automatically by the loader.</p>")
 
 (fty::deflist vl-fundecllist
   :elt-type vl-fundecl-p
@@ -2952,7 +2959,10 @@ assign to a function's name to indicate its return value.</p>")
 
    (decls      vl-blockitemlist-p
                "Any local declarations for the task, e.g., for the task below,
-                the declaration of @('temp') would be found here.")
+                the declaration of @('temp') would be found here.  <b>Also</b>,
+                variable declarations for the ports, marked with
+                @('VL_HIDDEN_DECL_FOR_TASKPORT'), just as in our @(see
+                vl-fundecl) representation.")
 
    (body       vl-stmt-p
                "The statement that gives the actions for this task, i.e., the
