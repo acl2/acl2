@@ -6163,7 +6163,8 @@
    (strip-cars *user-stobj-alist*)
    wrld)
   #+hons
-  (update-memo-entries-for-attachments *defattach-fns* wrld state))
+  (update-memo-entries-for-attachments *defattach-fns* wrld state)
+  nil)
 
 (defun-one-output extend-world1 (name wrld)
 
@@ -7553,7 +7554,13 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
 (defun initialize-acl2 (&optional (pass-2-ld-skip-proofsp 'include-book)
                                   (acl2-pass-2-files *acl2-pass-2-files*)
                                   system-books-dir
-                                  skip-comp-exec)
+                                  skip-comp-exec
+                                  &aux
+
+; We avoid proclaiming types dynamically, instead doing so only via the
+; acl2-proclaims.lisp mechanism.  See the Essay on Proclaiming.
+
+                                  (*do-proclaims* nil))
 
 ; Note: if system-books-dir is supplied, it should be a Unix-style
 ; pathname (either absolute or not [doesn't matter which]).
@@ -7766,11 +7773,11 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
 ; possible the subsidiary uses of state-global-let* on behalf of macroexpand1
 ; (see the comment in comp-fn for more information).
 
-     (if (not skip-comp-exec)
+     (unless skip-comp-exec
 
 ; Optimization: Skip this compile for generate-acl2-proclaims.
 
-         (ld '((comp-fn :exec nil "1" state))))
+       (ld '((comp-fn :exec nil "1" state))))
      (exit-boot-strap-mode)
      (initialize-pc-acl2 *the-live-state*)
 

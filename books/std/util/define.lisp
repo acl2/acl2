@@ -959,7 +959,7 @@ some kind of separator!</p>
          `((add-macro-alias ,guts.name ,guts.name-fn)
            (table define-macro-fns ',guts.name-fn ',guts.name)))))
 
-(defun events-from-guts (guts world)
+(defun events-from-guts (name guts world)
   (b* (((defguts guts) guts)
 
        (prepwork   (getarg :prepwork       nil guts.kwd-alist))
@@ -1038,12 +1038,17 @@ some kind of separator!</p>
        ,@(if prognp
              `((set-define-current-function nil))
            nil)
+
+       (make-event (list 'value-triple
+                         (if (equal ',world (acl2::w acl2::state))
+                             :redundant
+                           (quote ',name))))
        )))
 
 (defun define-fn (name args world)
   (declare (xargs :guard (plist-worldp world)))
   (b* ((guts (parse-define name args nil world)))
-    (events-from-guts guts world)))
+    (events-from-guts name guts world)))
 
 (defmacro define (name &rest args)
   (let* ((verbose-tail (member :verbosep args))

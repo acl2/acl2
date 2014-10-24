@@ -43,12 +43,10 @@
 
 (unless (find-package "ACL2")
 
-; File acl2r.lisp is created by the makefile, though the user could create it
-; directly (which may be useful in non-Unix environment when make is not
-; available).  It isn't necessary to create this file, however, when one is
-; building a standard image, since all it does it push :non-standard-analysis
-; onto *features*.  (It IS necessary however, when building a standard image,
-; NOT to have acl2r.lisp around if it pushes that feature!)
+; File acl2r.lisp is created by GNUmakefile, though the user could create it
+; directly.  Its name derives from its initial purpose, which was simply to
+; push :non-standard-analysis onto *features*.  We use it now for all sorts of
+; things, though; see GNUmakefile.
 
   (if (probe-file "acl2r.lisp") (load "acl2r.lisp"))
   #+sbcl ; keep this in sync with with-warnings-suppressed
