@@ -45,7 +45,14 @@ module dut (o1, o2, o3, o4, o5, a, n1, n2);
 
 
   assign o1 = `cat(a, + n1);
+
+`ifndef VL_SYSTEST_NCV
+// NCVerilog apparently doesn't like this, but VCS seems to think it is ok.
+
   assign o2 = `cat(a ? n1, : n2);
+`endif
+
+
 //   assign o3 = `cat({a[1:0], n1[1:0]}, + n2);
 //   assign o4 = `cat(a /* foo,
 // 		      bar */,

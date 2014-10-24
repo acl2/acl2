@@ -29,18 +29,6 @@
 // Original author: Jared Davis <jared@centtech.com>
 
 
-
-// Exhaustively test unary operators up to size 8
-
-`include "spec.v"
-
-`ifdef SYSTEM_VERILOG_MODE
- `include "impl.sv"
-`else
- `include "impl.v"
-`endif
-
-
 // Nasty preprocessor garbage to introduce comparison modules for each of the
 // various sizes.  See compare_unary_ops_aux.v for details.
 

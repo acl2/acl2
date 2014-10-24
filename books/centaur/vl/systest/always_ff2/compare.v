@@ -38,10 +38,6 @@ endmodule
 
 `else
 
-
-`include "spec.v"
-`include "impl.sv"
-
 // see flopcode/compare.v
 
 // Using a global random seed seems like a good idea -- When each instance of
@@ -258,7 +254,13 @@ module test () ;
 
   wire allok = &{okf, okg, okwf, okwg};
 
+`ifndef VL_SYSTEST_VCS
   always @(allok)
+`else
+  // On VCS we seem to get some spurious fails if we just do allok... well, we
+  // can at least check on clock transitions.
+  always @(posedge clk or negedge clk)
+`endif
     begin
       if (allok !== 1'b1)
 	$display("failure at time %d", $time);

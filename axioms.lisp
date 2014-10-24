@@ -1448,6 +1448,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; that of the ACL2 constant *initial-known-package-alist* below.
 
 (defparameter *ever-known-package-alist*
+
+; Warning: This needs to be a defparameter, not a defvar, since it is
+; introduced (temporarily) in acl2-fns.lisp.
+
   (list (make-package-entry :name "ACL2-INPUT-CHANNEL"
                             :imports nil)
         (make-package-entry :name "ACL2-OUTPUT-CHANNEL"
@@ -10407,8 +10411,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   #-(and (not gcl) cltl2)
   (import syms pkg))
 
-(defvar *defpkg-virgins* nil)
-
 (defun check-proposed-imports (name package-entry proposed-imports)
   (cond
    ((equal proposed-imports (package-entry-imports package-entry))
@@ -10561,151 +10563,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
             (do-symbols (sym pkg)
                         (unintern sym))
             (delete-package (find-package name)))))))))
-
-(defun package-has-no-imports (name)
-  (let ((pkg (find-package name)))
-    (do-symbols (sym pkg)
-                (when (not (eq (symbol-package sym) pkg))
-                  (return-from package-has-no-imports nil))))
-  t)
-
-#-acl2-loop-only
-(defmacro maybe-make-package (name)
-
-; When we moved to Version_4.3, with LispWorks once again a supported host
-; Lisp, we modified the macro maybe-introduce-empty-pkg-1 to avoid the use of
-; defpackage; see the comment in that macro.  Unfortunately, the new approach
-; didn't work for CMUCL (at least, for version 19e).  The following example
-; shows why; even with an eval-when form specifying :compile-toplevel, the
-; compiled code seems to skip the underlying package-creation form, as shown
-; below.  Therefore we revert to the use of defpackage for CMUCL, which appears
-; not to cause problems.
-
-;   % cat pkg-bug-cmucl.lisp
-;
-;   (in-package "CL-USER")
-;
-;   (eval-when (:load-toplevel :execute :compile-toplevel)
-;              (cond ((not (find-package "MYPKG"))
-;                     (print "*** About to make package ***")
-;                     (terpri)
-;                     (make-package "MYPKG" :use nil))))
-;
-;   (defparameter *foo* 'mypkg::x)
-;   % /projects/acl2/lisps/cmucl-19e-linux/bin/cmucl
-;   CMU Common Lisp 19e (19E), running on kindness
-;   With core: /v/filer4b/v11q001/acl2/lisps/cmucl-19e-linux/lib/cmucl/lib/lisp.core
-;   Dumped on: Thu, 2008-05-01 11:56:07-05:00 on usrtc3142
-;   See <http://www.cons.org/cmucl/> for support information.
-;   Loaded subsystems:
-;       Python 1.1, target Intel x86
-;       CLOS based on Gerd's PCL 2004/04/14 03:32:47
-;   * (load "pkg-bug-cmucl.lisp")
-;
-;   ; Loading #P"/v/filer4b/v41q001/kaufmann/temp/pkg-bug-cmucl.lisp".
-;
-;   "*** About to make package ***"
-;   T
-;   * (compile-file "pkg-bug-cmucl.lisp")
-;
-;   ; Python version 1.1, VM version Intel x86 on 04 JUL 11 09:57:13 am.
-;   ; Compiling: /v/filer4b/v41q001/kaufmann/temp/pkg-bug-cmucl.lisp 04 JUL 11 09:56:24 am
-;
-;   ; Byte Compiling Top-Level Form:
-;
-;   ; pkg-bug-cmucl.x86f written.
-;   ; Compilation finished in 0:00:00.
-;
-;   #P"/v/filer4b/v41q001/kaufmann/temp/pkg-bug-cmucl.x86f"
-;   NIL
-;   NIL
-;   * (quit)
-;   % /projects/acl2/lisps/cmucl-19e-linux/bin/cmucl
-;   CMU Common Lisp 19e (19E), running on kindness
-;   With core: /v/filer4b/v11q001/acl2/lisps/cmucl-19e-linux/lib/cmucl/lib/lisp.core
-;   Dumped on: Thu, 2008-05-01 11:56:07-05:00 on usrtc3142
-;   See <http://www.cons.org/cmucl/> for support information.
-;   Loaded subsystems:
-;       Python 1.1, target Intel x86
-;       CLOS based on Gerd's PCL 2004/04/14 03:32:47
-;   * (load "pkg-bug-cmucl.x86f")
-;
-;   ; Loading #P"/v/filer4b/v41q001/kaufmann/temp/pkg-bug-cmucl.x86f".
-;
-;
-;   Error in function LISP::FOP-PACKAGE:  The package "MYPKG" does not exist.
-;      [Condition of type SIMPLE-ERROR]
-;
-;   Restarts:
-;     0: [CONTINUE] Return NIL from load of "pkg-bug-cmucl.x86f".
-;     1: [ABORT   ] Return to Top-Level.
-;
-;   Debug  (type H for help)
-;
-;   (LISP::FOP-PACKAGE)
-;   Source: Error finding source:
-;   Error in function DEBUG::GET-FILE-TOP-LEVEL-FORM:  Source file no longer exists:
-;     target:code/load.lisp.
-;   0]
-
-  #-cmu
-  `(when (not (find-package ,name))
-     (make-package ,name :use nil))
-  #+cmu
-  `(defpackage ,name (:use)))
-
-(defmacro maybe-introduce-empty-pkg-1 (name)
-
-; It appears that GCL, requires a user::defpackage (non-ANSI case) or
-; defpackage (ANSI case; this may be the same as user::defpackage) form near
-; the top of a file in order to read the corresponding compiled file.  For
-; example, an error occurred upon attempting to load the community books file
-; books/data-structures/defalist.o after certifying the corresponding book
-; using GCL, because the form (MAYBE-INTRODUCE-EMPTY-PKG-1 "U") near the top of
-; the file was insufficient to allow reading a symbol in the "U" package
-; occurring later in the corresponding source file.
-
-; On the other hand, the CL HyperSpec does not pin down the effect of
-; defpackage when a package already exists.  Indeed, the defpackage approach
-; that we use for GCL does not work for LispWorks 6.0.
-
-; So, we have quite different definitions of this macro for GCL and LispWorks.
-; All other Lisps we have encountered seem happy with the approach we have
-; adopted for Lispworks, so we adopt that approach for them, too.
-
-  #-gcl
-  `(eval-when
-    #+cltl2 (:load-toplevel :execute :compile-toplevel)
-    #-cltl2 (load eval compile) ; though probably #-gcl implies #+cltl2
-    (progn
-      (maybe-make-package ,name)
-      (maybe-make-package ,(concatenate 'string
-                                        acl2::*global-package-prefix*
-                                        name))
-      (maybe-make-package ,(concatenate 'string
-                                        acl2::*1*-package-prefix*
-                                        name))))
-  #+gcl
-  (let ((defp #+cltl2 'defpackage #-cltl2 'user::defpackage))
-    `(progn
-       (,defp ,name
-         (:use))
-       (,defp ,(concatenate 'string
-                            acl2::*global-package-prefix*
-                            name)
-         (:use))
-       (,defp ,(concatenate 'string
-                            acl2::*1*-package-prefix*
-                            name)
-         (:use)))))
-
-(defmacro maybe-introduce-empty-pkg-2 (name)
-  `(when (and (not (member ,name *defpkg-virgins*
-                           :test 'equal))
-              (not (assoc ,name *ever-known-package-alist*
-                          :test 'equal))
-              (package-has-no-imports ,name))
-     (push ,name *defpkg-virgins*)))
 
 (defmacro defpkg-raw (name imports book-path event-form)
 
@@ -25977,7 +25834,6 @@ Lisp definition."
                  (mv (state-free-global-let* ((safe-mode t))
                                              (apply (*1*-symbol fn) args))
                      state)))
-  #+acl2-loop-only
   (mv-let (erp val state)
           (read-acl2-oracle state)
           (declare (ignore erp))
@@ -25998,7 +25854,6 @@ Lisp definition."
   (when (live-state-p state)
     (return-from oracle-apply-raw
                  (mv (apply fn args) state)))
-  #+acl2-loop-only
   (ec-call (oracle-apply fn args state)))
 
 (defun time-tracker-fn (tag kwd kwdp times interval min-time msg)

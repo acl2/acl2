@@ -28,19 +28,6 @@
 //
 // Original author: Jared Davis <jared@centtech.com>
 
-
-
-// do actual comparison for dir test
-
-`include "two_bit_and.v"
-`include "spec.v"
-
-`ifdef SYSTEM_VERILOG_MODE
- `include "impl.sv"
-`else
- `include "impl.v"
-`endif
-
 module compare_dir () ;
 
    reg [3:0] in1, in2;

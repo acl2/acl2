@@ -1914,6 +1914,15 @@ which is saved just in case it's needed later.")
 
 (defun compile-acl2 (&optional use-acl2-proclaims)
 
+; When use-acl2-proclaims is true, we are recompiling to take advantage of
+; acl2-proclaims.lisp.  But if *do-proclaims* is false, then there shouldn't be
+; such a file (or, it consists only of a comment), so there is no point in
+; recompiling, and we return immediatel.
+
+  (when (and use-acl2-proclaims
+             (not *do-proclaims*)) ; see comment above
+    (return-from compile-acl2 nil))
+
   (with-warnings-suppressed
 
    #+sbcl
@@ -1971,27 +1980,29 @@ which is saved just in case it's needed later.")
 ; As of version 18a, cmulisp spews gc messages to the terminal even when
 ; standard and error output are redirected.  So we turn them off.
 
-   (when (and use-acl2-proclaims
-              (not (non-trivial-acl2-proclaims-file-p)))
-
-; Note that GNUmakefile provides special treatment for the value :REUSE of
-; environment/make variable USE_ACL2_PROCLAIMS.  With that treatment, we avoid
-; calling compile-acl2 with use-acl2-proclaims = t, and thus we don't get to
-; this point.
-
-     (error "Note: Skipping compilation that is intended to use generated ~
-             file \"acl2-proclaims.lisp\", because that file is missing or ~
-             has no forms in it."))
-   (when (and (not use-acl2-proclaims)
-              (probe-file "acl2-proclaims.lisp"))
-     (delete-file "acl2-proclaims.lisp"))
    (cond
-    ((or (not (probe-file *acl2-status-file*))
-         (with-open-file (str *acl2-status-file*
-                              :direction :input)
-                         (not (eq (read str nil)
-                                  :checked))))
-     (check-suitability-for-acl2)))
+    (use-acl2-proclaims
+     (cond ((non-trivial-acl2-proclaims-file-p)
+            (load "acl2-proclaims.lisp"))
+           (t
+            (error "Note: For the call ~s, generated file ~
+                         \"acl2-proclaims.lisp\" is missing or has no forms ~
+                         in it."
+                   `(compile-acl2 ,use-acl2-proclaims)))))
+    #+gcl
+    ((eq *do-proclaims* :gcl) ; and (not use-acl2-proclaims)
+     (loop for f in (directory "*.fn")
+           do
+           (delete-file f))
+     (compiler::emit-fn t)))
+   (unless (and (probe-file *acl2-status-file*)
+                (with-open-file (str *acl2-status-file*
+                                     :direction :input)
+                                (eq (read str nil)
+                                    (if use-acl2-proclaims
+                                        :compiled
+                                      :checked))))
+     (check-suitability-for-acl2))
    (when (not *suppress-compile-build-time*)
      (our-with-compilation-unit
       (let ((*readtable* *acl2-readtable*)
@@ -2002,8 +2013,6 @@ which is saved just in case it's needed later.")
 ; to take.
 
             (compiler:*suppress-compiler-notes* t))
-        (when use-acl2-proclaims
-          (proclaim-files nil "acl2-proclaims.lisp" nil))
         (dolist (name *acl2-files*)
           (or (equal name "defpkgs")
               (let ((source (make-pathname :name name
@@ -2011,21 +2020,20 @@ which is saved just in case it's needed later.")
                 (load source)
                 (or (equal name "proof-checker-pkg")
                     (progn
-                      (when (not use-acl2-proclaims)
-
-; So, we have not loaded acl2-proclaims.lisp.
-
-                        (proclaim-file source))
                       (compile-file source)
                       (load-compiled
                        (make-pathname :name name
                                       :type *compiled-file-extension*))))))))))
+   #+gcl
+   (when (and (not use-acl2-proclaims)
+              (eq *do-proclaims* :gcl))
+     (compiler::make-all-proclaims "*.fn"))
    (note-compile-ok)))
 
 #+gcl
 (defvar user::*fast-acl2-gcl-build* nil)
 
-(defun load-acl2 (&optional fast)
+(defun load-acl2 (&key fast load-acl2-proclaims)
 
 ; If fast is true, then we are welcome to avoid optimizations that might make
 ; for a better saved image.  For example, we use fast = t when building simply
@@ -2036,19 +2044,10 @@ which is saved just in case it's needed later.")
   (our-with-compilation-unit ; only needed when *suppress-compile-build-time*
    (with-warnings-suppressed
 
-    (when (and *suppress-compile-build-time*
-               (not fast))
-
-; When we rely on Lisp to compile on-the-fly, we want to proclaim before
-; loading.  This might actually be broken; we got an error when trying to do
-; proclaiming here for GCL, complaining that "The variable
-; *COMMON-LISP-SYMBOLS-FROM-MAIN-LISP-PACKAGE* is unbound."  If we ever decide
-; to proclaim when *suppress-compile-build-time* is true, we can deal with that
-; problem then, perhaps by using
-; *copy-of-common-lisp-symbols-from-main-lisp-package* instead (though we
-; haven't tried that).
-
-      (proclaim-files nil "acl2-proclaims.lisp" t))
+    (when load-acl2-proclaims
+      (cond ((non-trivial-acl2-proclaims-file-p)
+             (load "acl2-proclaims.lisp"))
+            (t (error "Expected non-trivial file acl2-proclaims.lisp!"))))
 
 ; If we are in the first pass of two passes, then don't waste time doing the
 ; slow build for GCL (where we compile all *1* functions as we go through
@@ -2103,9 +2102,6 @@ which is saved just in case it's needed later.")
               (load-compiled (make-pathname :name name
                                             :type extension)))))
       (load "defpkgs.lisp")
-      (when (and (not *suppress-compile-build-time*) ; other case is above
-                 (not fast))
-        (proclaim-files nil "acl2-proclaims.lisp" t))
       (in-package "ACL2")
 
 ; Do not make state special, as that can interfere with tail recursion removal.

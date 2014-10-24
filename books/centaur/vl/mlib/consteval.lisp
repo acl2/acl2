@@ -474,7 +474,7 @@
             ;; (obj (if ok ev-obj obj))
             )
          (vl-consteval-$bits obj x ss)))
-            
+
 
       ;; BOZO could eventually add support for other operators like
       ;; concatenation, bitselect, etc.  But the above is probably pretty
@@ -655,5 +655,3 @@ supported by @(see vl-consteval-main), and the evaluation must proceed without
    (ans (implies successp
                  (vl-exprtype-p (vl-expr->finaltype ans)))
         :name vl-expr->finaltype-of-vl-consteval)))
-
-

@@ -29,13 +29,24 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "make-implicit-wires")
+(include-book "../../mlib/allexprs")
+(include-book "../../mlib/scopestack")
+(include-book "../../mlib/fmt")
 (local (include-book "../../util/arithmetic"))
-(local (include-book "../../util/osets"))
 (local (std::add-default-post-define-hook :fix))
 
+(defconst *vl-shadowcheck-debug*
+  ;; Can be redefined to enable some debugging messages.
+  nil)
+
+(defmacro vl-shadowcheck-debug (msg &rest args)
+  `(if *vl-shadowcheck-debug*
+       (vl-cw-ps-seq (vl-cw ,msg . ,args))
+     nil))
+
+
 (defxdoc shadowcheck
-  :parents (annotate)
+  :parents (make-implicit-wires)
   :short "Sanity check to prevent tricky kinds of global name shadowing."
 
   :long "<p>In some Verilog tools, top-level and imported declarations can
@@ -460,6 +471,7 @@ explicit declarations.</p>")
   :returns (mv (st       vl-shadowcheck-state-p)
                (warnings vl-warninglist-p))
   (b* (((vl-shadowcheck-state st))
+       (- (vl-shadowcheck-debug "    vl-shadowcheck-declare-name: ~s0 for ~a1.~%" name decl))
        ((mv lexscopes warnings)
         (vl-lexscopes-declare-name name decl st.lexscopes warnings))
        ;; I don't think we need to particularly do any cross-checking here.  By
@@ -481,11 +493,12 @@ explicit declarations.</p>")
     (vl-shadowcheck-declare-names (cdr names) decl st warnings)))
 
 (define vl-shadowcheck-import ((x        vl-import-p)
-                                  (st       vl-shadowcheck-state-p)
-                                  (warnings vl-warninglist-p))
+                               (st       vl-shadowcheck-state-p)
+                               (warnings vl-warninglist-p))
   :returns (mv (st       vl-shadowcheck-state-p)
                (warnings vl-warninglist-p))
   (b* (((vl-shadowcheck-state st))
+       (- (vl-shadowcheck-debug "    vl-shadowcheck-import: importing ~a0.~%" x))
        ((mv lexscopes warnings)
         (vl-lexscopes-do-import x st.lexscopes warnings st.design))
        ;; I don't think there's anything else to check here?
@@ -508,6 +521,8 @@ explicit declarations.</p>")
                (warnings vl-warninglist-p))
   (b* ((name                      (string-fix name))
        ((vl-shadowcheck-state st) (vl-shadowcheck-state-fix st))
+
+       (- (vl-shadowcheck-debug "    vl-shadowcheck-reference-name: ~s0 for ~a1.~%" name ctx))
 
        ((mv entry tail) (vl-lexscopes-find name st.lexscopes))
        ((unless entry)
@@ -842,12 +857,16 @@ explicit declarations.</p>")
   (b* (((vl-fundecl x)   (vl-fundecl-fix x))
 
        ;; BOZO this isn't quite right for the same reasons as in vl-fundecl-check-undeclared.
+       (- (vl-shadowcheck-debug "  >> shadowcheck in function ~s0.~%" x.name))
+       (- (vl-shadowcheck-debug "  >> checking externally used names in ports, return value~%"))
        (other-names (vl-exprlist-varnames (append (vl-taskportlist-allexprs x.inputs)
                                                   (vl-maybe-range-allexprs x.rrange))))
-
        ((mv st warnings) (vl-shadowcheck-reference-names other-names x st warnings))
+
+       (- (vl-shadowcheck-debug "  >> declaring function name, ~x0.~%" x.name))
        ((mv st warnings) (vl-shadowcheck-declare-name x.name x st warnings))
 
+       (- (vl-shadowcheck-debug "  >> pushing into function ~x0.~%" x.name))
        (st (vl-shadowcheck-push-scope x st))
        ((mv st warnings) (vl-shadowcheck-taskportlist x.inputs st warnings))
 
@@ -859,6 +878,7 @@ explicit declarations.</p>")
 
        ((mv st warnings) (vl-shadowcheck-blockitemlist x.decls st warnings))
        ((mv st warnings) (vl-shadowcheck-stmt x.body x st warnings))
+       (- (vl-shadowcheck-debug "  >> popping out of function ~x0.~%" x.name))
        (st (vl-shadowcheck-pop-scope st)))
     (mv st warnings)))
 
@@ -908,6 +928,8 @@ explicit declarations.</p>")
        (item (vl-genbase->item elem))
        (tag  (tag item))
 
+       (- (vl-shadowcheck-debug "  ---- ~a0 ---- ~%" item))
+
        ((when (eq tag :vl-port))
         ;; We shouldn't see any ports.
         (raise "We shouldn't see ports here.")
@@ -919,6 +941,10 @@ explicit declarations.</p>")
 
        ((when (eq tag :vl-vardecl))
         (b* (((mv st warnings) (vl-shadowcheck-vardecl item st warnings)))
+          (vl-shadowcheck-aux (cdr x) st warnings)))
+
+       ((when (eq tag :vl-paramdecl))
+        (b* (((mv st warnings) (vl-shadowcheck-paramdecl item st warnings)))
           (vl-shadowcheck-aux (cdr x) st warnings)))
 
        ((when (eq tag :vl-assign))
@@ -984,12 +1010,15 @@ explicit declarations.</p>")
   :returns (mv (st    vl-shadowcheck-state-p)
                (new-x vl-module-p))
   (b* (((vl-module x)    (vl-module-fix x))
+       (- (vl-shadowcheck-debug "*** Shadowcheck module ~s0 ***~%" x.name))
        (warnings         x.warnings)
        (st               (vl-shadowcheck-push-scope x st))
        ((mv st warnings) (vl-shadowcheck-ports x.ports st warnings))
        ((mv st warnings) (vl-shadowcheck-aux x.loaditems st warnings))
        (st               (vl-shadowcheck-pop-scope st))
-       (new-x            (change-vl-module x :warnings warnings)))
+       (new-x            (change-vl-module x
+                                           :warnings warnings
+                                           :loaditems nil)))
     (mv st new-x)))
 
 (define vl-shadowcheck-modules ((x  vl-modulelist-p)

@@ -191,7 +191,17 @@
 
 (define vl-tokstream-restore ((backup vl-tokstream-backup-p) &key (tokstream 'tokstream))
   (b* (((vl-tokstream-backup backup))
-       (tokstream (vl-tokstream-update-pstate backup.pstate))
+       ;; Bah.  We don't really want to rebuild the usertypes hash table if it
+       ;; hasn't changed.  But we do want to free the old one, if it has.  So,
+       ;; do a dumb hack.  This EQUAL check should usually be very fast, we
+       ;; think.
+       (curr-pstate (vl-tokstream->pstate))
+       (- (if (equal (vl-parsestate->usertypes curr-pstate)
+                     (vl-parsestate->usertypes backup.pstate))
+              nil
+            (vl-parsestate-free curr-pstate)))
+       (new-pstate (vl-parsestate-restore backup.pstate))
+       (tokstream (vl-tokstream-update-pstate new-pstate))
        (tokstream (vl-tokstream-update-tokens backup.tokens)))
     (vl-tokstream-fix))
   ///
@@ -200,7 +210,8 @@
                             vl-tokstream-update-tokens
                             vl-tokstream-update-pstate
                             vl-tokstream-fix
-                            vl-tokstream-save)))
+                            vl-tokstream-save
+                            vl-parsestate-restore)))
   (defthm vl-tokstream-restore-of-vl-tokstream-save
     (equal (vl-tokstream-restore (vl-tokstream-save) :tokstream anything)
            (vl-tokstream-fix))))

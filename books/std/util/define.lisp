@@ -977,6 +977,8 @@ some kind of separator!</p>
 
        (set-ignores (get-set-ignores-from-kwd-alist guts.kwd-alist))
        (prognp      (getarg :progn         nil guts.kwd-alist))
+       (start-max-absolute-event-number
+        (acl2::max-absolute-event-number world))
        )
 
     `(progn
@@ -1038,6 +1040,13 @@ some kind of separator!</p>
        ,@(if prognp
              `((set-define-current-function nil))
            nil)
+
+       (make-event (list 'value-triple
+                         (if (eql ,start-max-absolute-event-number
+                                  (acl2::max-absolute-event-number
+                                   (acl2::w acl2::state)))
+                             :redundant
+                           (quote ',guts.name))))
        )))
 
 (defun define-fn (name args world)

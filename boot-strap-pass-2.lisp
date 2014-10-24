@@ -1469,7 +1469,7 @@
 ;;; Memoization
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-#+hons
+#+(and hons acl2-loop-only)
 (progn
 
 ; We skip raw Lisp functions here; see *thread-unsafe-builtin-memoizations*.

@@ -28,7 +28,7 @@
 //
 // Original author: Jared Davis <jared@centtech.com>
 
-// Copy of comb1 but it uses always_comb instead of plain always blocks
+`ifdef SYSTEM_VERILOG_MODE
 
 module comb_test (
 
@@ -130,3 +130,4 @@ endmodule
 */
 
 
+`endif

@@ -38,9 +38,6 @@ endmodule
 
 `else
 
-`include "spec.v"
-`include "impl.sv"
-
 // see flopcode/compare.v
 
 // Using a global random seed seems like a good idea -- When each instance of

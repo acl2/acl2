@@ -28,14 +28,6 @@
 //
 // Original author: Jared Davis <jared@centtech.com>
 
-`include "spec.v"
-
-`ifdef SYSTEM_VERILOG_MODE
- `include "impl.sv"
-`else
- `include "impl.v"
-`endif
-
 module compare () ;
 
   reg [3:0] in1, in2;

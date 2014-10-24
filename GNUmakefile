@@ -112,7 +112,6 @@
 #                         gzip /projects/acl2/v2-9/doc/TEX/acl2-book.dvi
 #   make DOC       ; Build xdoc manual and rebuild source file doc.lisp
 #   make clean-doc ; Remove files created by make DOC
-#   make red       ; Just build full-size saved_acl2, but do so without pass 2
 #   make proofs    ; Assuming sources are compiled, initialize without skipping
 #                  ; proofs during pass 2.  Does not save an image.  Uses same
 #                  ; flags used to build full-size image.
@@ -163,33 +162,6 @@ ifdef ACL2_DEVEL
 endif
 ifdef ACL2_REAL
 	ACL2_SUFFIX := $(ACL2_SUFFIX)r
-endif
-
-# The following variable, ACL2_PROCLAIMS_ACTION, is intended to be
-# user-settable to one of three values, as shown below.  By default,
-# it avoids consideration of file acl2-proclaims.lisp: that file is
-# neither consulted (i.e., reused) nor generated.
-
-ifndef ACL2_PROCLAIMS_ACTION
-
-# Default action: Do not reuse or build acl2-proclaims.lisp.
-ACL2_PROCLAIMS_ACTION := default
-
-# Use the existing acl2-proclaims.lisp for compilation.
-# ACL2_PROCLAIMS_ACTION ?= reuse
-
-# Do compile/initialize twice, in order to build acl2-proclaims.lisp
-# and then consult it before the second compile.
-# ACL2_PROCLAIMS_ACTION ?= generate_and_reuse
-
-endif
-
-# Variable ACL2_PROCLAIMS_ACTION is not to be set by the user.  We use
-# override directives to ensure this.
-ifeq ($(ACL2_PROCLAIMS_ACTION), reuse)
-USE_ACL2_PROCLAIMS := t
-else
-USE_ACL2_PROCLAIMS :=
 endif
 
 # The user may define PREFIX; otherwise it is implicitly the empty string.
@@ -255,7 +227,7 @@ ifdef ACL2_PAR
 endif
 # No change to sources for ACL2_DEVEL or ACL2_WAG
 
-# Top target:
+# Top (default) target:
 all: large
 
 .PHONY: acl2r
@@ -264,9 +236,9 @@ acl2r:
 	$(MAKE) acl2r.lisp
 
 acl2r.lisp:
-# The following is important if we sometimes build for GCL on Linux and
-# sometimes on Unix.
-	rm -f acl2-fns.o
+# It might be good to remove old compiled files acl2-fns.o etc., but at
+# the moment it seems painful to deal with all possible compiled file
+# extensions.
 	echo "" > acl2r.lisp
 	if [ "$(ACL2_REAL)" != "" ] ; then \
 	echo '(or (member :non-standard-analysis *features*) (push :non-standard-analysis *features*))' >> acl2r.lisp ;\
@@ -305,15 +277,15 @@ chmod_image:
 	fi
 
 .PHONY: do_saved
-# Note: Removed line "chmod g+s saved" before the second chmod below, as it was
-# causing errors in at least one environment, and instead did final chmod to
-# 666 instead of 664 in case files in saved/ wind up in an unexpected group.
+# Note: We removed line "chmod g+s saved" before the second chmod below, as it
+# was causing errors in at least one environment, and instead did final chmod
+# to 666 instead of 664 in case files in saved/ wind up in an unexpected group.
 do_saved:
 	rm -fr saved
 	mkdir saved
 	chmod 775 saved
-	cp *.lisp saved
-	chmod 666 saved/*.lisp
+	cp *.lisp acl2-characters GNUmakefile saved/
+	chmod 666 saved/*
 
 # Keep the use of :COMPILED below in sync with ACL2 source function
 # note-compile-ok.
@@ -342,6 +314,8 @@ check_init_ok:
 	fi
 	@echo "Initialization SUCCEEDED."
 
+# The following target should only be used when the compiled files are
+# ready to use and, if needed, so is acl2-proclaims.lisp.
 .PHONY: compile-ok
 compile-ok:  
 	date
@@ -364,26 +338,21 @@ check-sum:
 
 .PHONY: full
 full:   TAGS!
+	$(MAKE) compile
+	rm -f acl2-proclaims.lisp
+# The following two forms should do nothing, and quickly, if
+# *do-proclaims* is nil.
+	$(MAKE) acl2-proclaims.lisp
+	$(MAKE) compile USE_ACL2_PROCLAIMS=t
+
+.PHONY: compile
+compile:
 	rm -f workxxx
 	echo '(load "init.lisp")' > workxxx
 	echo '(acl2::compile-acl2 $(USE_ACL2_PROCLAIMS))' >> workxxx
 	echo '(acl2::exit-lisp)' >> workxxx
 	${LISP} < workxxx
 	@$(MAKE) check_compile_ok
-	rm -f workxxx
-
-.PHONY: full-meter
-full-meter:
-	date
-	rm -f workxxx
-	echo '(load "init.lisp")' > workxxx
-	echo '(acl2::make-tags)' >> workxxx
-	echo '(push :acl2-metering *features*)' >> workxxx
-	echo '(acl2::compile-acl2)' >> workxxx
-	echo '(acl2::exit-lisp)' >> workxxx
-	${LISP} < workxxx
-	@$(MAKE) check_compile_ok
-	rm -f workxxx
 
 .PHONY: copy-distribution
 copy-distribution:
@@ -443,7 +412,7 @@ move-new:
 	if [ -f nsaved_acl2.${LISPEXT} ]; then \
 	mv -f nsaved_acl2.${LISPEXT} ${PREFIXsaved_acl2}.${LISPEXT} ; fi
 
-# See Section "PROCLAIMING" in acl2-fns.lisp.
+# See the Essay on Proclaiming in source file acl2-fns.lisp.
 acl2-proclaims.lisp: ${sources}
 	rm -f acl2-proclaims.lisp
 	rm -f workxxx
@@ -455,21 +424,8 @@ acl2-proclaims.lisp: ${sources}
 	${LISP} < workxxx
 	[ -f acl2-proclaims.lisp ]
 
-# If ACL2_PROCLAIMS_ACTION has value generate_and_reuse, then the
-# following target remakes acl2-proclaims.lisp and recompiles, as
-# follows.  The first subsidiary call of $(MAKE) initializes, i.e.,
-# gets ACL2 to LD its own sources.  Then, a second $(MAKE) uses that
-# file of proclaim forms to recompile.
-# See also the Section "PROCLAIMING" in acl2-fns.lisp.
-.PHONY: make-acl2-proclaims
-make-acl2-proclaims:
-	if [ "$(ACL2_PROCLAIMS_ACTION)" = "generate_and_reuse" ]; then \
-	$(MAKE) acl2-proclaims.lisp; \
-	$(MAKE) full ACL2_PROCLAIMS_ACTION=reuse; \
-	fi
-
 .PHONY: init
-init: make-acl2-proclaims
+init: acl2-proclaims.lisp
 # Note:  If you believe that compilation is up-to-date, do
 # make compile-ok init
 # rather than
@@ -505,12 +461,14 @@ init: make-acl2-proclaims
 	$(MAKE) chmod_image
 
 # The following "proofs" target assumes that files for the specified LISP have
-# been compiled.
+# been compiled.  We use :load-acl2-proclaims nil so that we don't
+# have to worry about perhaps having wiped out acl2-proclaims.lisp
+# since the time we compiled for the given Lisp.
 .PHONY: proofs
 proofs: compile-ok
 	rm -f workxxx
 	echo '(load "init.lisp")' > workxxx
-	echo '(acl2::load-acl2)' >> workxxx
+	echo '(acl2::load-acl2 :load-acl2-proclaims nil)' >> workxxx
 	echo '(acl2::initialize-acl2 nil acl2::*acl2-pass-2-files*)' >> workxxx
 	echo '(acl2::exit-lisp)' >> workxxx
 	${LISP} < workxxx
@@ -606,7 +564,7 @@ clean:
 	rm -f *.o *#* *.c *.h *.data gazonk.* workxxx workyyy *.lib \
 	  *.fasl *.fas *.sparcf *.ufsl *.64ufasl *.ufasl *.dfsl *.dxl \
 	  *.d64fsl *.dx64fsl *.lx64fsl \
-	  *.lx32fsl *.x86f *.o \
+	  *.lx32fsl *.x86f *.o *.fn \
 	  TAGS acl2-status.txt acl2r.lisp acl2-proclaims.lisp .acl2rc \
 	  *osaved_acl2 *osaved_acl2.* \
 	  *.log TMP*
@@ -619,23 +577,6 @@ clean:
 	   doc/*.cert doc/*.out \
 	   doc/*.log doc/TMP*
 	rm -rf doc/TEX doc/HTML doc/EMACS
-
-.PHONY: red
-red:    compile-ok
-	rm -f workxxx
-	echo '(load "init.lisp")' > workxxx
-	echo '(in-package "ACL2")' >> workxxx
-	echo '(save-acl2 (quote (initialize-acl2 nil nil)))' >> workxxx
-	echo '(exit-lisp)' >> workxxx
-	${LISP} < workxxx
-	@$(MAKE) check_init_ok
-	echo -n "" >> red-${PREFIXsaved_acl2}
-# Note:  This needs to be updated for Allegro 5.0 and cmulisp if we decide to
-# use it.  See init.
-	mv -f red-${PREFIXsaved_acl2} red-${PREFIXosaved_acl2}
-	mv -f nsaved_acl2 red-${PREFIXsaved_acl2}
-	rm -f workxxx
-	$(MAKE) do_saved
 
 # The .NOTPARALLEL target avoids our doing any build process in
 # parallel.  Uses of makefiles in other directories, even if invoked

@@ -226,6 +226,24 @@ approach.</p>")
 
 (local (xdoc::set-default-parents expand-functions))
 
+(define vl-remove-fake-function-vardecls ((x vl-blockitemlist-p))
+  :returns (new-x vl-blockitemlist-p)
+  (b* (((when (atom x))
+        nil)
+       (x1 (vl-blockitem-fix (car x)))
+       ((when (and (mbe :logic (vl-vardecl-p x1)
+                        :exec (eq (tag x1) :vl-vardecl))
+                   (assoc-equal "VL_HIDDEN_DECL_FOR_TASKPORT" (vl-vardecl->atts x1))))
+        (vl-remove-fake-function-vardecls (cdr x))))
+    (cons x1 (vl-remove-fake-function-vardecls (cdr x))))
+  :prepwork
+  ((local (defthm crock
+            (implies (vl-blockitem-p x)
+                     (equal (vl-vardecl-p x)
+                            (equal (tag x) :vl-vardecl)))))))
+
+
+
 ; -----------------------------------------------------------------------------
 ;
 ;                        Dependency-Order Sorting
@@ -615,8 +633,9 @@ okay (since eliminating parameters changes the function's namespace).</p>"
 
   (b* ((x (vl-fundecl-fix x))
        ((vl-fundecl x) x)
-       ((mv vardecls paramdecls)
-        (vl-filter-blockitems x.decls))
+       (real-decls (vl-remove-fake-function-vardecls x.decls))
+
+       ((mv vardecls paramdecls) (vl-filter-blockitems real-decls))
 
        ((unless paramdecls)
         ;; Common case of no parameters -- no need to check or change anything.
@@ -646,7 +665,7 @@ okay (since eliminating parameters changes the function's namespace).</p>"
        ;; relies on the function declarations being the same order they're
        ;; found in the file, which should be true of our parser.
        ((mv okp warnings)
-        (vl-check-fun-parameters-deforder x.decls param-names warnings x))
+        (vl-check-fun-parameters-deforder real-decls param-names warnings x))
        ((unless okp) (mv nil warnings x))
 
        ;; Make sure the parameters are simple enough for us to handle.
@@ -994,8 +1013,8 @@ variables and inputs.</p>"
                                         subsetp-equal-when-first-two-same-yada-yada
                                         set::subset-difference))))
 
-  (b* (((mv vardecls ?paramdecls)
-        (vl-filter-blockitems (vl-fundecl->decls function)))
+  (b* ((real-decls (vl-remove-fake-function-vardecls (vl-fundecl->decls function)))
+       ((mv vardecls ?paramdecls) (vl-filter-blockitems real-decls))
        (varnames (vl-vardecllist->names vardecls))
        (innames  (vl-taskportlist->names (vl-fundecl->inputs function)))
        ((mv okp warnings written-vars read-vars read-inputs)
@@ -1408,6 +1427,7 @@ involves a lot of sanity checking, and will fail if the function includes
 unsupported constructs or doesn't meet our other sanity criteria.</p>"
 
   (b* (((vl-fundecl x) x)
+       (real-decls (vl-remove-fake-function-vardecls x.decls))
 
        ((unless (or (eq x.rtype :vl-unsigned)
                     (eq x.rtype :vl-signed)))
@@ -1418,7 +1438,7 @@ unsupported constructs or doesn't meet our other sanity criteria.</p>"
                        :args (list x x.rtype))))
 
        ((mv vardecls paramdecls)
-        (vl-filter-blockitems x.decls))
+        (vl-filter-blockitems real-decls))
 
        ((when paramdecls)
         (mv nil (fatal :type :vl-programming-error

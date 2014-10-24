@@ -28,7 +28,7 @@
 //
 // Original author: Jared Davis <jared@centtech.com>
 
-// same as comb3, but for always_comb
+`ifdef SYSTEM_VERILOG_MODE
 
 module comb_test (
 
@@ -141,3 +141,4 @@ endmodule
 */
 
 
+`endif

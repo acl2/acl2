@@ -91,31 +91,44 @@ these expressions.</p>")
        ///
        (defmvtypes ,fn (nil true-listp)))))
 
-(def-vl-rangeresolve vl-range
-  :fn vl-rangeresolve
-  :body
-  (b* (((vl-range x) x)
-       ((mv msb-ok msb) (vl-consteval x.msb ss))
-       ((mv lsb-ok lsb) (vl-consteval x.lsb ss))
-       ((unless (and msb-ok lsb-ok))
-        ;; Failure, just return the unreduced range.
-        (mv (warn :type :vl-bad-range
-                  ;; BOZO need some context
-                  :msg "Unable to safely resolve range ~a0."
-                  :args (list x))
-            x))
-       ;; We could create a new range that just had the reduced MSB and LSB
-       ;; here.  However, we don't really care at all about the width/type
-       ;; of the resulting expressions.  That is, nobody wants to see:
-       ;;
-       ;;    wire [4'd3 : 4'd0] foo;
-       ;;
-       ;; So since the widths/types don't matter, we'll just use VL-MAKE-INDEX
-       ;; to recreate the indices; it does something clever for 32-bit integers
-       ;; to make them look like they're unsized.
-       (msb (vl-make-index (vl-resolved->val msb)))
-       (lsb (vl-make-index (vl-resolved->val lsb))))
-    (mv (ok) (hons-copy (make-vl-range :msb msb :lsb lsb)))))
+(encapsulate
+  ()
+  (local (in-theory (enable vl-range-resolved-p)))
+  (def-vl-rangeresolve vl-range
+    :fn vl-rangeresolve
+    :body
+    (b* (((vl-range x) x)
+         ((mv msb-ok msb) (vl-consteval x.msb ss))
+         ((mv lsb-ok lsb) (vl-consteval x.lsb ss))
+         ((unless (and msb-ok lsb-ok))
+          ;; Failure, just return the unreduced range.
+          (mv (warn :type :vl-bad-range
+                    ;; BOZO need some context
+                    :msg "Unable to safely resolve range ~a0."
+                    :args (list x))
+              x))
+         ;; We could create a new range that just had the reduced MSB and LSB
+         ;; here.  However, we don't really care at all about the width/type
+         ;; of the resulting expressions.  That is, nobody wants to see:
+         ;;
+         ;;    wire [4'd3 : 4'd0] foo;
+         ;;
+         ;; So since the widths/types don't matter, we'll just use VL-MAKE-INDEX
+         ;; to recreate the indices; it does something clever for 32-bit integers
+         ;; to make them look like they're unsized.
+         (msb (vl-make-index (vl-resolved->val msb)))
+         (lsb (vl-make-index (vl-resolved->val lsb)))
+         (new-range (hons-copy (make-vl-range :msb msb :lsb lsb)))
+         (new-range-size (vl-range-size new-range))
+         ((when (>= new-range-size (expt 2 20)))
+          ;; BOZO would be better for this limit to be configurable.
+          (mv (fatal :type :vl-range-too-big
+                     :msg "Range ~a0 is going to have size ~x1.  This is crazy. ~
+                         Causing a fatal warning to prevent further ~
+                         simplification of this module."
+                     :args (list x new-range-size))
+              x)))
+      (mv (ok) new-range))))
 
 (def-vl-rangeresolve vl-maybe-range
   :fn vl-maybe-rangeresolve
