@@ -35,6 +35,7 @@
 
 ;; [Jared] yikes, this does in-theory nil, right?  seriously do this non-locally?
 (progn (minimal-ihs-theory))
+(deflabel @logops)
 
 (defxdoc @logops
   :parents (ihs)
@@ -344,18 +345,15 @@ defined with the prefix character `@', e.g., @+, @LOGAND, etc..</p>")
    ((integerp count) (cond
 		      ((integerp i) (ash i count))
 		      (t (@cons (ash (@@d i) count) (ash (@@i i) count)))))
-   (t *@x*)))
+   (t *@x*))
+  ///
+  (defthm type-of-@ash (@integerp (@ash i count)))
 
-(defthm type-of-@ash (@integerp (@ash i count)))
-
-(defthm @ash-integer
-  (implies
-   (and (integerp i)
-	(integerp count))
-   (equal (@ash i count)
-	  (ash i count))))
-
-;;;  @INTEGER-LENGTH
+  (defthm @ash-integer
+    (implies (and (integerp i)
+                  (integerp count))
+             (equal (@ash i count)
+                    (ash i count)))))
 
 (define @integer-length ((i @integerp))
   :short "4-valued INTEGER-LENGTH."
@@ -364,53 +362,44 @@ defined with the prefix character `@', e.g., @+, @LOGAND, etc..</p>")
   :enabled t
   (cond
    ((integerp i) (integer-length i))
-   (t *@x*)))
+   (t *@x*))
+  ///
+  (defthm type-of-@integer-length (@integerp (@integer-length i)))
 
-(defthm type-of-@integer-length (@integerp (@integer-length i)))
-
-(defthm @integer-length-integer
-  (implies
-   (integerp i)
-   (equal (@integer-length i)
-	  (integer-length i))))
-
-;;;  @LOGCOUNT
+  (defthm @integer-length-integer
+    (implies (integerp i)
+             (equal (@integer-length i)
+                    (integer-length i)))))
 
 (define @logcount ((i @integerp))
   :short "4-value LOGCOUNT."
   :long "When indeterminate @LOGCOUNT returns a signed X, thus it may need to be
   coerced to an unsigned value."
   :enabled t
-  (cond
-   ((integerp i) (logcount i))
-   (t *@x*)))
+  (cond ((integerp i) (logcount i))
+        (t *@x*))
+  ///
+  (defthm type-of-@logount (@integerp (@logcount i)))
 
-(defthm type-of-@logount (@integerp (@logcount i)))
-
-(defthm @logcount-integer
-  (implies
-   (integerp i)
-   (equal (@logcount i)
-	  (logcount i))))
-
-;;;  @LOGCAR
+  (defthm @logcount-integer
+    (implies (integerp i)
+             (equal (@logcount i)
+                    (logcount i)))))
 
 (define @logcar ((i @integerp))
   :short "4-Valued LOGCAR."
   :enabled t
+  :returns (bit @bitp :name @bitp-@logcar)
   (cond
    ((integerp i) (logcar i))
-   (t (@cons (logcar (@@d i)) (logcar (@@i i))))))
+   (t (@cons (logcar (@@d i)) (logcar (@@i i)))))
+  ///
+  (defthm type-of-@logcar (@integerp (@logcar i)))
 
-(defthm type-of-@logcar (@integerp (@logcar i)))
-
-(defthm @logcar-integer
-  (implies
-   (integerp i)
-   (equal (@logcar i)
-	  (logcar i))))
-
-;;;  @LOGNOT
+  (defthm @logcar-integer
+    (implies (integerp i)
+             (equal (@logcar i)
+                    (logcar i)))))
 
 (define @lognot ((i @integerp))
   :short "4-Valued LOGNOT."
@@ -424,22 +413,18 @@ defined with the prefix character `@', e.g., @+, @LOGAND, etc..</p>")
   z   x   1  1    1 0
 })"
   :enabled t
-  (cond
-   ((integerp i) (lognot i))
-   (t
-    (let* ((di (@d i))
-	   (ii (@i i)))
-      (@cons (lognor di ii) ii)))))
+  (cond ((integerp i) (lognot i))
+        (t
+         (let* ((di (@d i))
+                (ii (@i i)))
+           (@cons (lognor di ii) ii))))
+  ///
+  (defthm type-of-@lognot (@integerp (@lognot i)))
 
-(defthm type-of-@lognot (@integerp (@lognot i)))
-
-(defthm @lognot-integer
-  (implies
-   (integerp i)
-   (equal (@lognot i)
-	  (lognot i))))
-
-;;; @LOGAND
+  (defthm @lognot-integer
+    (implies (integerp i)
+             (equal (@lognot i)
+                    (lognot i)))))
 
 (define @logand ((i @integerp)
                  (j @integerp))
@@ -465,27 +450,23 @@ defined with the prefix character `@', e.g., @+, @LOGAND, etc..</p>")
  z z   x   1  1  1  1  	 1 0
 })"
   :enabled t
-  (cond
-   ((and (integerp i) (integerp j)) (logand i j))
-   (t
-    (let* ((di (@d i))
-	   (ii (@i i))
-	   (dj (@d j))
-	   (ij (@i j))
-	   (ians (logior (logand ii (logior ij dj)) (logand di ij)))
-	   (dans (logandc2 (logand di dj) ians)))
-      (@cons dans ians)))))
+  (cond ((and (integerp i) (integerp j)) (logand i j))
+        (t
+         (let* ((di (@d i))
+                (ii (@i i))
+                (dj (@d j))
+                (ij (@i j))
+                (ians (logior (logand ii (logior ij dj)) (logand di ij)))
+                (dans (logandc2 (logand di dj) ians)))
+           (@cons dans ians))))
+  ///
+  (defthm type-of-@logand (@integerp (@logand i j)))
 
-(defthm type-of-@logand (@integerp (@logand i j)))
-
-(defthm @logand-integer
-  (implies
-   (and (integerp i)
-	(integerp j))
-   (equal (@logand i j)
-	  (logand i j))))
-
-;;;  @LOGIOR
+  (defthm @logand-integer
+    (implies (and (integerp i)
+                  (integerp j))
+             (equal (@logand i j)
+                    (logand i j)))))
 
 (define @logior ((i @integerp)
                  (j @integerp))
@@ -520,18 +501,15 @@ defined with the prefix character `@', e.g., @+, @LOGAND, etc..</p>")
 	   (ij (@i j))
 	   (ians (logior (logand ii (logorc2 ij dj)) (logandc1 di ij)))
 	   (dans (logandc2 (logior di dj) ians)))
-      (@cons dans ians)))))
+      (@cons dans ians))))
+  ///
+  (defthm type-of-@logior (@integerp (@logior i j)))
 
-(defthm type-of-@logior (@integerp (@logior i j)))
-
-(defthm @logior-integer
-  (implies
-   (and (integerp i)
-	(integerp j))
-   (equal (@logior i j)
-	  (logior i j))))
-
-;;; @T-WIRE
+  (defthm @logior-integer
+    (implies (and (integerp i)
+                  (integerp j))
+             (equal (@logior i j)
+                    (logior i j)))))
 
 (define @t-wire ((i @integerp)
                  (j @integerp))
@@ -565,9 +543,9 @@ defined with the prefix character `@', e.g., @+, @LOGAND, etc..</p>")
 		       (logior (logandc2 ij dj)
 			       (logandc1 ii (logandc1 ij (logxor di dj))))))
 	 (dans (logand di dj)))
-    (@cons dans ians)))
-
-(defthm type-of-@t-wire (@integerp (@t-wire i j)))
+    (@cons dans ians))
+  ///
+  (defthm type-of-@t-wire (@integerp (@t-wire i j))))
 
 ;  Other @LOGOPS.  More efficient definitions are possible for those who
 ;  are inclined to do the work.
@@ -625,44 +603,35 @@ defined with the prefix character `@', e.g., @+, @LOGAND, etc..</p>")
   (local (in-theory (e/d (@lognot @logand) (@integerp))))
 
   (defthm type-of-binary-@logops
-    (and
-     (@integerp (@logandc1 i j))
-     (@integerp (@logandc2 i j))
-     (@integerp (@logior i j))
-     (@integerp (@lognand i j))
-     (@integerp (@lognor i j))
-     (@integerp (@logorc1 i j))
-     (@integerp (@logorc1 i j))
-     (@integerp (@logeqv i j))
-     (@integerp (@logxor i j))))
+    (and (@integerp (@logandc1 i j))
+         (@integerp (@logandc2 i j))
+         (@integerp (@logior i j))
+         (@integerp (@lognand i j))
+         (@integerp (@lognor i j))
+         (@integerp (@logorc1 i j))
+         (@integerp (@logorc1 i j))
+         (@integerp (@logeqv i j))
+         (@integerp (@logxor i j)))
+    :hints(("Goal" :in-theory (disable zp zip ifix logior-=-0
+                                       (:t @integerp)
+                                       (:t binary-logior)
+                                       (:t ifix)))))
 
   (defthm binary-@logops-integer
-    (implies
-     (and (integerp i)
-	  (integerp j))
-     (and
-      (equal (@logandc1 i j)
-	     (logandc1 i j))
-      (equal (@logandc2 i j)
-	     (logandc2 i j))
-      (equal (@logior i j)
-	     (logior i j))
-      (equal (@lognand i j)
-	     (lognand i j))
-      (equal (@lognor i j)
-	     (lognor i j))
-      (equal (@logorc1 i j)
-	     (logorc1 i j))
-      (equal (@logorc1 i j)
-	     (logorc1 i j))
-      (equal (@logeqv i j)
-	     (logeqv i j))
-      (equal (@logxor i j)
-	     (logxor i j))))
+    (implies (and (integerp i)
+                  (integerp j))
+             (and (equal (@logandc1 i j) (logandc1 i j))
+                  (equal (@logandc2 i j) (logandc2 i j))
+                  (equal (@logior i j) (logior i j))
+                  (equal (@lognand i j) (lognand i j))
+                  (equal (@lognor i j) (lognor i j))
+                  (equal (@logorc1 i j) (logorc1 i j))
+                  (equal (@logorc1 i j) (logorc1 i j))
+                  (equal (@logeqv i j) (logeqv i j))
+                  (equal (@logxor i j) (logxor i j))))
     :hints
-    (("Goal"
-      :in-theory (enable logandc1 logandc2 logior lognand lognor
-			 logorc1 logorc2 logeqv logxor)))))
+    (("Goal" :in-theory (enable logandc1 logandc2 logior lognand lognor
+                                logorc1 logorc2 logeqv logxor)))))
 
 
 ;;;****************************************************************************
@@ -709,335 +678,260 @@ defined with the prefix character `@', e.g., @+, @LOGAND, etc..</p>")
       (and (equal i 0) (equal j 0) 0)
       *@x-bit*))
 
-ZZ ;; ---- i am here -----
-
-(define @b-xor (i j)
+(define @b-xor ((i @bitp)
+                (j @bitp))
   :enabled t
-  (declare (xargs :guard (and (@bitp i) (@bitp j))))
   (or (and (bitp i) (bitp j) (b-xor i j))
       *@x-bit*))
 
-(define @b-eqv (i j)
+(define @b-eqv ((i @bitp)
+                (j @bitp))
   :enabled t
-  (declare (xargs :guard (and (@bitp i) (@bitp j))))
   (or (and (bitp i) (bitp j) (b-eqv i j))
       *@x-bit*))
 
-(define @b-nand (i j)
+(define @b-nand ((i @bitp)
+                 (j @bitp))
   :enabled t
-  (declare (xargs :guard (and (@bitp i) (@bitp j))))
   (or (and (equal i 0) 1)
       (and (equal j 0) 1)
       (and (equal i 1) (equal j 1) 0)
       *@x-bit*))
 
-(define @b-nor (i j)
+(define @b-nor ((i @bitp)
+                (j @bitp))
   :enabled t
-  (declare (xargs :guard (and (@bitp i) (@bitp j))))
   (or (and (equal i 1) 0)
       (and (equal j 1) 0)
       (and (equal i 0) (equal j 0) 1)
       *@x-bit*))
 
-(define @b-andc1 (i j)
+(define @b-andc1 ((i @bitp)
+                  (j @bitp))
   :enabled t
-  (declare (xargs :guard (and (@bitp i) (@bitp j))))
   (or (and (equal i 1) 0)
       (and (equal j 0) 0)
       (and (equal i 0) (equal j 1) 1)
       *@x-bit*))
 
-(define @b-andc2 (i j)
+(define @b-andc2 ((i @bitp)
+                  (j @bitp))
   :enabled t
-  (declare (xargs :guard (and (@bitp i) (@bitp j))))
   (@b-andc1 j i))
 
-(define @b-orc1 (i j)
+(define @b-orc1 ((i @bitp)
+                 (j @bitp))
   :enabled t
-  (declare (xargs :guard (and (@bitp i) (@bitp j))))
   (or (and (equal i 0) 1)
       (and (equal j 1) 1)
       (and (equal i 1) (equal j 0) 0)
       *@x-bit*))
 
-(define @b-orc2 (i j)
+(define @b-orc2 ((i @bitp)
+                 (j @bitp))
   :enabled t
-  (declare (xargs :guard (and (@bitp i) (@bitp j))))
   (@b-orc1 j i))
 
-(defthm type-of-@bit-functions
-  (and
-   (@bitp (@b-not i))
-   (@integerp (@b-not i))
-   (@bitp (@b-and i j))
-   (@integerp (@b-and i j))
-   (@bitp (@b-ior i j))
-   (@integerp (@b-ior i j))
-   (@bitp (@b-xor i j))
-   (@integerp (@b-xor i j))
-   (@bitp (@b-eqv i j))
-   (@integerp (@b-eqv i j))
-   (@bitp (@b-nand i j))
-   (@integerp (@b-nand i j))
-   (@bitp (@b-nor i j))
-   (@integerp (@b-nor i j))
-   (@bitp (@b-andc1 i j))
-   (@integerp (@b-andc1 i j))
-   (@bitp (@b-andc2 i j))
-   (@integerp (@b-andc2 i j))
-   (@bitp (@b-orc1 i j))
-   (@integerp (@b-orc1 i j))
-   (@bitp (@b-orc2 i j))
-   (@integerp (@b-orc2 i j)))
-  :doc ":doc-section @logops-bit-functions
-  Rewrite: All of the @BIT functions return @BITP @INTEGERS.
-  ~/~/~/")
+(defrule type-of-@bit-functions
+  :short "All of the @BIT functions return @(see @BITP) @(INTEGERP)S."
+  (and (@bitp (@b-not i))
+       (@integerp (@b-not i))
+       (@bitp (@b-and i j))
+       (@integerp (@b-and i j))
+       (@bitp (@b-ior i j))
+       (@integerp (@b-ior i j))
+       (@bitp (@b-xor i j))
+       (@integerp (@b-xor i j))
+       (@bitp (@b-eqv i j))
+       (@integerp (@b-eqv i j))
+       (@bitp (@b-nand i j))
+       (@integerp (@b-nand i j))
+       (@bitp (@b-nor i j))
+       (@integerp (@b-nor i j))
+       (@bitp (@b-andc1 i j))
+       (@integerp (@b-andc1 i j))
+       (@bitp (@b-andc2 i j))
+       (@integerp (@b-andc2 i j))
+       (@bitp (@b-orc1 i j))
+       (@integerp (@b-orc1 i j))
+       (@bitp (@b-orc2 i j))
+       (@integerp (@b-orc2 i j))))
 
-(defthm @bit-functions-integer
-  (and
-   (implies
-    (bitp i)
-    (equal (@b-not i)
-	   (b-not i)))
-   (implies
-    (and (bitp i)
-	 (bitp j))
-    (and
-     (equal (@b-and i j)
-	    (b-and i j))
-     (equal (@b-ior i j)
-	    (b-ior i j))
-     (equal (@b-xor i j)
-	    (b-xor i j))
-     (equal (@b-eqv i j)
-	    (b-eqv i j))
-     (equal (@b-nand i j)
-	    (b-nand i j))
-     (equal (@b-nor i j)
-	    (b-nor i j))
-     (equal (@b-andc1 i j)
-	    (b-andc1 i j))
-     (equal (@b-andc2 i j)
-	    (b-andc2 i j))
-     (equal (@b-orc1 i j)
-	    (b-orc1 i j))
-     (equal (@b-orc2 i j)
-	    (b-orc2 i j)))))
-  :hints
-  (("Goal"
-    :in-theory (enable bitp)))
-  :doc ":doc-section @logops-bit-functions
-  Rewrite: Reduce all of the @BIT functions with integer args.
-  ~/~/~/")
+(defrule @bit-functions-integer
+  :short "Rewrite: Reduce all of the @BIT functions with integer args."
+  (and (implies (bitp i)
+                (equal (@b-not i)
+                       (b-not i)))
+       (implies (and (bitp i)
+                     (bitp j))
+                (and (equal (@b-and i j) (b-and i j))
+                     (equal (@b-ior i j) (b-ior i j))
+                     (equal (@b-xor i j) (b-xor i j))
+                     (equal (@b-eqv i j) (b-eqv i j))
+                     (equal (@b-nand i j) (b-nand i j))
+                     (equal (@b-nor i j) (b-nor i j))
+                     (equal (@b-andc1 i j) (b-andc1 i j))
+                     (equal (@b-andc2 i j) (b-andc2 i j))
+                     (equal (@b-orc1 i j) (b-orc1 i j))
+                     (equal (@b-orc2 i j) (b-orc2 i j))))))
 
 
-;;;  @LOGHEAD
+(local (xdoc::set-default-parents @logops))
 
-(defun @loghead (size i)
-  ":doc-section @logops
-  4-Valued LOGHEAD.
-  ~/~/~/"
-  (declare (xargs :guard (and (integerp size)
-			      (<= 0 size)
-			      (@integerp i))))
+(define @loghead ((size (and (integerp size)
+                             (<= 0 size)))
+                  (i @integerp))
+  :short "4-Valued LOGHEAD."
+  :enabled t
   (cond
    ((integerp i) (loghead size i))
-   (t (@cons (loghead size (@@d i)) (loghead size (@@i i))))))
+   (t (@cons (loghead size (@@d i)) (loghead size (@@i i)))))
+  ///
+  (defthm type-of-@loghead (@integerp (@loghead i j)))
 
-(defthm type-of-@loghead (@integerp (@loghead i j)))
+  (defthm @loghead-integer
+    (implies (integerp i)
+             (equal (@loghead size i)
+                    (loghead size i)))))
 
-(defthm @loghead-integer
-  (implies
-   (integerp i)
-   (equal (@loghead size i)
-	  (loghead size i))))
-
-;;;  @LOGTAIL
-
-(defun @logtail (size i)
-  ":doc-section @logops
-  4-Valued LOGTAIL.
-  ~/~/~/"
-  (declare (xargs :guard (and (integerp size)
-			      (<= 0 size)
-			      (@integerp i))))
+(define @logtail ((size (and (integerp size)
+                             (<= 0 size)))
+                  (i @integerp))
+  :short "4-Valued LOGTAIL."
+  :enabled t
   (cond
    ((integerp i) (logtail size i))
-   (t (@cons (logtail size (@@d i)) (logtail size (@@i i))))))
+   (t (@cons (logtail size (@@d i)) (logtail size (@@i i)))))
+  ///
+  (defthm type-of-@logtail (@integerp (@logtail i j)))
 
-(defthm type-of-@logtail (@integerp (@logtail i j)))
+  (defthm @logtail-integer
+    (implies (integerp i)
+             (equal (@logtail size i)
+                    (logtail size i)))))
 
-(defthm @logtail-integer
-  (implies
-   (integerp i)
-   (equal (@logtail size i)
-	  (logtail size i))))
-
-;;;  @LOGEXT
-
-(defun @logext (size i)
-  ":doc-section @logops
-  4-Valued LOGEXT.
-  ~/~/~/"
-  (declare (xargs :guard (and (integerp size)
-			      (< 0 size)
-			      (@integerp i))))
+(define @logext ((size (and (integerp size)
+                            (< 0 size)))
+                 (i @integerp))
+  :short "4-Valued LOGEXT."
+  :enabled t
   (cond
    ((integerp i) (logext size i))
-   (t (@cons (logext size (@@d i)) (logext size (@@i i))))))
-
-(defthm type-of-@logext (@integerp (@logext i j)))
-
-(defthm @logext-integer
-  (implies
-   (integerp i)
-   (equal (@logext size i)
-	  (logext size i))))
+   (t (@cons (logext size (@@d i)) (logext size (@@i i)))))
+  ///
+  (defthm type-of-@logext (@integerp (@logext i j)))
+  (defthm @logext-integer
+    (implies (integerp i)
+             (equal (@logext size i)
+                    (logext size i)))))
 
 
-;;;  @LOGSAT
+(define @logsat ((size (and (integerp size)
+                            (< 0 size)))
+                 (i @integerp))
+  :short "4-Valued LOGSAT."
+  :long "<p>Note the conservative definition.  We don't know what it means to
+  saturate an indeterminate integer.  Also note that LOGSAT and @LOGSAT always
+  return a `signed' object.</p>"
+  :enabled t
+  (cond ((integerp i) (logsat size i))
+        (t *@x*))
+  ///
+  (defthm type-of-@logsat (@integerp (@logsat i j)))
 
-(defun @logsat (size i)
-  ":doc-section @logops
-  4-Valued LOGSAT.
-  ~/~/
-  Note the conservative definition.  We don't know what it means to saturate
-  an indeterminate integer.  Also note that LOGSAT and @LOGSAT always
-  return a `signed' object.
-   ~/"
-  (declare (xargs :guard (and (integerp size)
-			      (< 0 size)
-			      (@integerp i))))
-  (cond
-   ((integerp i) (logsat size i))
-   (t *@x*)))
+  (defthm @logsat-integer
+    (implies (integerp i)
+             (equal (@logsat size i)
+                    (logsat size i)))))
 
-(defthm type-of-@logsat (@integerp (@logsat i j)))
-
-(defthm @logsat-integer
-  (implies
-   (integerp i)
-   (equal (@logsat size i)
-	  (logsat size i))))
-
-;;;  @LOGAPP
-
-(defun @logapp (size i j)
-  ":doc-section @logops
-  4-Valued LOGAPP.
-  ~/~/~/"
-  (declare (xargs :guard (and (integerp size)
-			      (<= 0 size)
-			      (@integerp i)
-			      (@integerp j))))
+(define @logapp ((size (and (integerp size)
+                            (<= 0 size)))
+                 (i @integerp)
+                 (j @integerp))
+  :short "4-Valued LOGAPP."
+  ;; not enabled (was previously disabled)
   (cond
    ((and (integerp i) (integerp j)) (logapp size i j))
    (t (@cons (logapp size (@d i) (@d j))
-	     (logapp size (@i i) (@i j))))))
+	     (logapp size (@i i) (@i j)))))
+  ///
+  (defthm type-of-@logapp (@integerp (@logapp size i j)))
 
-(defthm type-of-@logapp (@integerp (@logapp size i j)))
+  (defthm @logapp-integer
+    (implies (and (integerp i)
+                  (integerp j))
+             (equal (@logapp size i j)
+                    (logapp size i j)))))
 
-(defthm @logapp-integer
-  (implies
-   (and (integerp i)
-	(integerp j))
-   (equal (@logapp size i j)
-	  (logapp size i j))))
 
-(in-theory (disable @logapp))
-
-;;;  @LOGBIT
-
-(defun @logbit (pos i)
-  ":doc-section @logops
-  4-Valued LOGBIT.
-  ~/~/~/"
-  (declare (xargs :guard (and (integerp pos)
-                              (>= pos 0)
-                              (@integerp i))))
+(define @logbit ((pos (and (integerp pos)
+                           (>= pos 0)))
+                 (i @integerp))
+  :short "4-Valued LOGBIT."
+  :enabled t
   (cond
    ((integerp i) (logbit pos i))
-   (t (@cons (logbit pos (@@d i)) (logbit pos (@@i i))))))
+   (t (@cons (logbit pos (@@d i)) (logbit pos (@@i i)))))
+  ///
+  (defthm type-of-@logbit (@integerp (@logbit pos i)))
 
-(defthm type-of-@logbit (@integerp (@logbit pos i)))
+  (defthm @logbit-integer
+    (implies (integerp i)
+             (equal (@logbit pos i)
+                    (logbit pos i)))))
 
-(defthm @logbit-integer
-  (implies
-   (integerp i)
-   (equal (@logbit pos i)
-	  (logbit pos i))))
 
-;;;  @LOGREV
-
-(defun @logrev (size i)
-  ":doc-section @logops
-  4-Valued LOGREV.
-  ~/~/~/"
-  (declare (xargs :guard (and (integerp size)
-			      (<= 0 size)
-			      (@integerp i))))
+(define @logrev ((size (and (integerp size)
+                            (<= 0 size)))
+                 (i @integerp))
+  :short "4-Valued LOGREV."
   (cond
    ((integerp i) (logrev size i))
-   (t (@cons (logrev size (@@d i)) (logrev size (@@i i))))))
+   (t (@cons (logrev size (@@d i)) (logrev size (@@i i)))))
+  ///
+  (defthm type-of-@logrev (@integerp (@logrev i j)))
 
-(defthm type-of-@logrev (@integerp (@logrev i j)))
-
-(defthm @logrev-integer
-  (implies
-   (integerp i)
-   (equal (@logrev size i)
-	  (logrev size i))))
+  (defthm @logrev-integer
+    (implies (integerp i)
+             (equal (@logrev size i)
+                    (logrev size i)))))
 
 
-;;;  Byte functions.
-
-;;;  RDB
-
-(defun @rdb (bsp i)
-  ":doc-section @logops
-  4-valued RDB.
-  ~/~/
-  NB: We consider this a specification construct, not a hardware device.
-  Thus, the byte specifier must be determinate.~/"
-  (declare (xargs :guard (and (bspp bsp)
-			      (@integerp i))))
+(define @rdb ((bsp bspp)
+              (i   @integerp))
+  :short "4-valued RDB."
+  :long "<p>NB: We consider this a specification construct, not a hardware
+  device.  Thus, the byte specifier must be determinate.</p>"
+  :enabled t
   (cond
    ((integerp i) (rdb bsp i))
-   (t (@cons (rdb bsp (@@d i)) (rdb bsp (@@i i))))))
+   (t (@cons (rdb bsp (@@d i)) (rdb bsp (@@i i)))))
+  ///
+  (defthm type-of-@rdb (@integerp (@rdb bsp i)))
 
-(defthm type-of-@rdb (@integerp (@rdb bsp i)))
+  (defthm @rdb-integer
+    (implies (integerp i)
+             (equal (@rdb bsp i)
+                    (rdb bsp i)))))
 
-(defthm @rdb-integer
-  (implies
-   (integerp i)
-   (equal (@rdb bsp i)
-	  (rdb bsp i))))
+(define @wrb ((i   @integerp)
+              (bsp bspp)
+              (j   @integerp))
+  :short "4-valued WRB."
+  :long "<p>NB: We consider this a specification construct, not a hardware
+  device.  Thus, the byte specifier must be determinate.</p>"
+  :enabled t
+  (@cons (wrb (@d i) bsp (@d j)) (wrb (@i i) bsp (@i j)))
+  ///
+  (defthm type-of-@wrb (@integerp (@wrb i bsp j)))
 
-;;;  WRB
-
-(defun @wrb (i bsp j)
-  ":doc-section @logops
-  4-valued WRB.
-  ~/~/
-  NB: We consider this a specification construct, not a hardware device.
-  Thus, the byte specifier must be determinate.~/"
-  (declare (xargs :guard (and (@integerp i)
-			      (bspp bsp)
-			      (@integerp j))))
-  (@cons (wrb (@d i) bsp (@d j)) (wrb (@i i) bsp (@i j))))
-
-(defthm type-of-@wrb (@integerp (@wrb i bsp j)))
-
-(defthm @wrb-integer
-  (implies
-   (and (integerp i)
-	(integerp j)
-	(bspp bsp))
-   (equal (@wrb i bsp j)
-	  (wrb i bsp j)))
-  :hints
-  (("Goal"
-    :in-theory (enable wrb))))
+  (defthm @wrb-integer
+    (implies (and (integerp i)
+                  (integerp j)
+                  (bspp bsp))
+             (equal (@wrb i bsp j)
+                    (wrb i bsp j)))
+    :hints (("Goal" :in-theory (enable wrb)))))
 
 
 ;;;****************************************************************************
@@ -1052,91 +946,72 @@ ZZ ;; ---- i am here -----
 
   (local
    (defthm @signed-byte-p-base-cases
-     (and
-      (implies
-       (@signed-byte-p size i)
-       (@signed-byte-p size (@lognot i)))
-      (implies
-       (and (@signed-byte-p size i)
-	    (@signed-byte-p size j))
-       (and (@signed-byte-p size (@logand i j))
-	    (@signed-byte-p size (@logior i j)))))))
+     (and (implies (@signed-byte-p size i)
+                   (@signed-byte-p size (@lognot i)))
+          (implies (and (@signed-byte-p size i)
+                        (@signed-byte-p size j))
+                   (and (@signed-byte-p size (@logand i j))
+                        (@signed-byte-p size (@logior i j)))))))
 
-  (local (in-theory (disable @lognot @logand @logior)))
+  (local (in-theory (disable @lognot @logand @logior @signed-byte-p)))
 
-  (defthm @signed-byte-p-@logops
-    (and
-     (implies
-      (@signed-byte-p size i)
-      (@signed-byte-p size (@lognot i)))
-     (implies
-      (and (@signed-byte-p size i)
-	   (@signed-byte-p size j))
-      (and (@signed-byte-p size (@logior i j))
-	   (@signed-byte-p size (@logxor i j))
-	   (@signed-byte-p size (@logand i j))
-	   (@signed-byte-p size (@logeqv i j))
-	   (@signed-byte-p size (@lognand i j))
-	   (@signed-byte-p size (@lognor i j))
-	   (@signed-byte-p size (@logandc1 i j))
-	   (@signed-byte-p size (@logandc2 i j))
-	   (@signed-byte-p size (@logorc1 i j))
-	   (@signed-byte-p size (@logorc2 i j)))))
-    :doc ":doc-section @logops
-  REWRITE: All @-logops are @SIGNED-BYTE-P when their arguments are.
-  ~/~/~/"))
+  (defrule @signed-byte-p-@logops
+    :parents (@logops)
+    :short "Rewrite: All @-logops are @SIGNED-BYTE-P when their arguments are."
+    (and (implies (@signed-byte-p size i)
+                  (@signed-byte-p size (@lognot i)))
+         (implies (and (@signed-byte-p size i)
+                       (@signed-byte-p size j))
+                  (and (@signed-byte-p size (@logior i j))
+                       (@signed-byte-p size (@logxor i j))
+                       (@signed-byte-p size (@logand i j))
+                       (@signed-byte-p size (@logeqv i j))
+                       (@signed-byte-p size (@lognand i j))
+                       (@signed-byte-p size (@lognor i j))
+                       (@signed-byte-p size (@logandc1 i j))
+                       (@signed-byte-p size (@logandc2 i j))
+                       (@signed-byte-p size (@logorc1 i j))
+                       (@signed-byte-p size (@logorc2 i j)))))))
 
-;;;  @LOGCAR
 
-(defthm @bitp-@logcar
-  (@bitp (@logcar i))
-  :doc ":doc-section @logcar
-  Rewrite: (@BITP (@LOGCAR i)).
-  ~/~/~/")
 
-;;;  @LOGAND
+(defsection @logand-thms
+  :extension @logand
 
-(defthm @unsigned-byte-p-@logand
-  (implies
-   (and (or (@unsigned-byte-p size i)
-	    (@unsigned-byte-p size j))
-	(@integerp i)
-	(@integerp j))
-   (@unsigned-byte-p size (@logand i j)))
-  :hints
-  (("Goal"
-    :in-theory (enable @unsigned-byte-p @logand @integerp logandc2)))
-  :doc ":doc-section @logand
-  Rewrite: (@UNSIGNED-BYTE-P size (@LOGAND i j)), when either
-           (@UNSIGNED-BYTE-P size i) or (@UNSIGNED-BYTE-P size j).
-  ~/~/~/")
+  (defthm @unsigned-byte-p-@logand
+    (implies (and (or (@unsigned-byte-p size i)
+                      (@unsigned-byte-p size j))
+                  (@integerp i)
+                  (@integerp j))
+             (@unsigned-byte-p size (@logand i j)))
+    :hints (("Goal" :in-theory (enable @unsigned-byte-p
+                                       @logand
+                                       @integerp logandc2
+                                       unsigned-byte-p logand))))
 
-(defthm simplify-@logand
-  (and
-   (equal (@logand i 0) 0)
-   (equal (@logand 0 i) 0))
-  :doc ":doc-section @logand
-  Rewrite: (@LOGAND i 0) = 0, plus commutative form.
-  ~/~/~/")
+  (defthm simplify-@logand
+    (and (equal (@logand i 0) 0)
+         (equal (@logand 0 i) 0))))
 
-;;;  @LOGIOR
 
-(defthm @unsigned-byte-p-@logior
-  (implies
-   (and (@unsigned-byte-p size i)
-	(@unsigned-byte-p size j))
-   (@unsigned-byte-p size (@logior i j)))
-  :hints
-  (("Goal"
-    :in-theory (enable @unsigned-byte-p @logior logandc1 logandc2)))
-  :doc ":doc-section @logand
-  Rewrite: (@UNSIGNED-BYTE-P size (@LOGIOR i j)), when
-           (@UNSIGNED-BYTE-P size i) and (@UNSIGNED-BYTE-P size j).
-  ~/~/~/")
+(defsection @logior-thms
+  :extension @logior
+
+  (defthm @unsigned-byte-p-@logior
+    (implies (and (@unsigned-byte-p size i)
+                  (@unsigned-byte-p size j))
+             (@unsigned-byte-p size (@logior i j)))
+    :hints (("Goal" :in-theory (enable @unsigned-byte-p @logior
+                                       logandc1 logandc2 unsigned-byte-p)))))
 
 ;;;  @BIT Functions
 
-(defthm simplify-@bit-functions
+(defrule simplify-@bit-functions
+  :parents (@logops-bit-functions)
+  :short "Simplification rules for all binary @B- functions including
+  commutative rules, reductions with 1 explicit value, and reductions for
+  identical agruments and complemented arguments."
+
   (and (equal (@b-and x y) (@b-and y x))
        (equal (@b-and 0 x) 0)
        (equal (@b-and 1 x) (@bfix x))
@@ -1183,125 +1058,90 @@ ZZ ;; ---- i am here -----
        (equal (@b-orc2 0 x) (@b-not x))
        (equal (@b-orc2 x 0) 1)
        (equal (@b-orc2 1 x) 1)
-       (equal (@b-orc2 x 1) (@bfix x)))
-  :hints
-  (("Goal"
-    :in-theory (enable bitp bfix)))
-  :doc ":doc-section @logops
-  Rewrite: Simplification rules for all binary @B- functions including
-  commutative rules, reductions with 1 explicit value, and reductions for
-  identical agruments and complemented arguments.
-  ~/~/~/")
+       (equal (@b-orc2 x 1) (@bfix x))))
 
-;;;  @LOGHEAD
+(defsection @loghead-thms
+  :extension @loghead
 
-(defthm @unsigned-byte-p-@loghead
-  (implies
-   (and (>= size1 size)
-	(>= size 0)
-	(integerp size)
-	(integerp size1))
-  (@unsigned-byte-p size1 (@loghead size i)))
-  :doc ":doc-section @loghead
-  Rewrite: (@UNSIGNED-BYTE-P size1 (@LOGHEAD size i)), when size1 >= size.
-  ~/~/~/")
+  (defthm @unsigned-byte-p-@loghead
+    (implies (and (>= size1 size)
+                  (>= size 0)
+                  (integerp size)
+                  (integerp size1))
+             (@unsigned-byte-p size1 (@loghead size i))))
 
-(defthm @loghead-identity
-  (implies
-   (@unsigned-byte-p size i)
-   (equal (@loghead size i)
-	  i))
-  :doc ":doc-section @loghead
-  Rewrite: (@LOGHEAD size i) = i, when (@UNSIGNED-BYTE-P size i).
-  ~/~/~/")
+  (defthm @loghead-identity
+    (implies (@unsigned-byte-p size i)
+             (equal (@loghead size i)
+                    i)))
 
-(defthm @bitp-@loghead-1
-  (@bitp (@loghead 1 i))
-  :hints
-  (("Goal"
-    :in-theory (enable @bitp @loghead)))
-  :doc ":doc-section @bitp
-  Rewrite: (@BITP (@LOGHEAD 1 i))
-  ~/~/~/")
+  (defthm @bitp-@loghead-1
+    (@bitp (@loghead 1 i))
+    :hints (("Goal" :in-theory (enable @bitp @loghead)))))
 
-;;;  @LOGEXT
 
-(defthm @signed-byte-p-@logext
-  (implies
-   (and (>= size1 size)
-	(> size 0)
-        (integerp size1)
-	(integerp size))
-   (@signed-byte-p size1 (@logext size i)))
-  :doc ":doc-section @logext
-  Rewrite: (@SIGNED-BYTE-P size1 (@LOGEXT size i)), when size1 >= size.
-  ~/~/~/")
+(defsection @logext-thms
+  :extension @logext
 
-(defthm @logext-identity
-  (implies
-   (@signed-byte-p size i)
-   (equal (@logext size i)
-	  i))
-  :doc ":doc-section @logext
-  :Rewrite (@LOGEXT size i) = i, when (@SIGNED-BYTE-P size i).
-  ~/~/~/")
+  (defthm @signed-byte-p-@logext
+    (implies (and (>= size1 size)
+                  (> size 0)
+                  (integerp size1)
+                  (integerp size))
+             (@signed-byte-p size1 (@logext size i))))
 
-;;;  @LOGSAT
+  (defthm @logext-identity
+    (implies (@signed-byte-p size i)
+             (equal (@logext size i)
+                    i))))
 
-(defthm @signed-byte-p-@logsat
-  (implies
-   (and (>= size1 size)
-	(> size 0)
-        (integerp size1)
-	(integerp size))
-   (@signed-byte-p size1 (@logsat size i)))
-  :doc ":doc-section @logsat
-  Rewrite: (@SIGNED-BYTE-P size1 (@LOGSAT size i)), when size1 >= size.
-  ~/~/~/")
 
-;;;  @LOGBIT
+(defsection @logsat-thms
+  :extension @logsat
 
-(defthm @bitp-@logbit
-  (@bitp (@logbit pos i))
-  :doc ":doc-section @logbit
-  Rewrite: (@BITP (@LOGBIT pos i)).
-  ~/~/~/")
+  (defthm @signed-byte-p-@logsat
+    (implies (and (>= size1 size)
+                  (> size 0)
+                  (integerp size1)
+                  (integerp size))
+             (@signed-byte-p size1 (@logsat size i)))))
 
-;;;  @RDB
 
-(defthm @unsigned-byte-p-@rdb
-  (implies
-   (and (>= size (bsp-size bsp))
-        (>= size 0)
-        (integerp size)
-	(bspp bsp))
-   (@unsigned-byte-p size (@rdb bsp i)))
-  :hints
-  (("Goal"
-    :in-theory (enable @unsigned-byte-p @rdb)))
-  :doc ":doc-section @rdb
-  Rewrite: (@UNSIGNED-BYTE-P size (@RDB bsp i)), when size >= (BSP-SIZE bsp).
-  ~/~/~/")
+(defsection @logbit-thms
+  :extension @logbit
 
-(defthm @bitp-@rdb-bsp-1
-  (implies
-   (and (@integerp i)
-	(equal (bsp-size bsp) 1))
-   (@bitp (@rdb bsp i)))
-  :hints
-  (("Goal"
-    :in-theory (enable @bitp @rdb rdb @integerp))))
+  (defthm @bitp-@logbit
+    (@bitp (@logbit pos i))))
 
-;;;  @WRB
 
-(defthm @unsigned-byte-p-@wrb
-  (implies
-   (and (@unsigned-byte-p n j)
-	(<= (+ (bsp-size bsp) (bsp-position bsp)) n)
-	(@integerp i)
-	(integerp n)
-	(bspp bsp))
-   (@unsigned-byte-p n (@wrb i bsp j))))
+(defsection @rdb-thms
+  :extension @rdb
+
+  (defthm @unsigned-byte-p-@rdb
+    (implies (and (>= size (bsp-size bsp))
+                  (>= size 0)
+                  (integerp size)
+                  (bspp bsp))
+             (@unsigned-byte-p size (@rdb bsp i)))
+    :hints (("Goal" :in-theory (enable @unsigned-byte-p @rdb))))
+
+  (defthm @bitp-@rdb-bsp-1
+    (implies (and (@integerp i)
+                  (equal (bsp-size bsp) 1))
+             (@bitp (@rdb bsp i)))
+    :hints (("Goal" :in-theory (enable @bitp @rdb rdb @integerp)))))
+
+
+(defsection @wrb-thms
+  :extension @wrb
+
+  (defthm @unsigned-byte-p-@wrb
+    (implies (and (@unsigned-byte-p n j)
+                  (<= (+ (bsp-size bsp) (bsp-position bsp)) n)
+                  (@integerp i)
+                  (integerp n)
+                  (bspp bsp))
+             (@unsigned-byte-p n (@wrb i bsp j)))))
 
 
 ;;;****************************************************************************
@@ -1310,7 +1150,8 @@ ZZ ;; ---- i am here -----
 ;;;
 ;;;****************************************************************************
 
-(defconst *@functions*
+(defval *@functions*
+  :short "List of all @(see @logops) functions."
   '(@integerp
     @bitp @bfix
     @+ @unary-- @*
@@ -1327,15 +1168,16 @@ ZZ ;; ---- i am here -----
 
 (in-theory (disable @functions))
 
-(deftheory @logops-theory
-  (definition-free-theory
-    (set-difference-theories (current-theory :here)
-			     (current-theory '@logops)))
-  :doc ":doc-section @logops
-  The `minimal' theory for the book \"@logops\".
-  ~/~/
+(defsection @logops-theory
+  :short "The \"minimal\" theory for the @(see @logops) book."
+  :long "<p>This theory contains only those lemmas meant to be exported by the
+  @('@logops') book.</p>"
 
-  This theory contains only those lemmas meant to be exported by this book.~/")
+  (deftheory @logops-theory
+    (definition-free-theory
+      (set-difference-theories (current-theory :here)
+                               (current-theory '@logops)))))
+
 
 
 ;;;****************************************************************************
@@ -1346,40 +1188,38 @@ ZZ ;; ---- i am here -----
 ;;;
 ;;;****************************************************************************
 
-(defmacro @defword (name struct &key conc-name set-conc-name keyword-updater
-			 doc)
-  ":doc-section @logops
-  A macro to define packed @integer data structures.
-  ~/~/
-  @DEFWORD is analogous to DEFWORD, except that @DEFWORD uses @RDB and @WRB
-  instead of RDB and WRB.~/"
+(defsection @defword
+  :short "A macro to define packed @integer data structures."
+  :long "<p>@('@DEFWORD') is analogous to @(see DEFWORD), except that @DEFWORD
+  uses @RDB and @WRB instead of RDB and WRB.</p>"
 
-  (cond
-   ((not
-     (defword-guards name struct conc-name set-conc-name keyword-updater doc)))
-   (t
-    (let*
-      ((conc-name (if conc-name
-                      conc-name
-                    (pack-intern name name "-")))
-       (set-conc-name (if set-conc-name
-                          set-conc-name
-                        (pack-intern name "SET-" name "-")))
-       (keyword-updater (if keyword-updater
-			    keyword-updater
-			  (pack-intern name "UPDATE-" name)))
-       (accessor-definitions
-        (defword-accessor-definitions '@RDB name conc-name struct))
-       (updater-definitions
-        (defword-updater-definitions '@WRB name set-conc-name struct))
-       (field-names (strip-cars struct)))
+  (defmacro @defword (name struct &key conc-name set-conc-name keyword-updater doc)
+    (cond
+     ((not
+       (defword-guards name struct conc-name set-conc-name keyword-updater doc)))
+     (t
+      (let*
+          ((conc-name (if conc-name
+                          conc-name
+                        (pack-intern name name "-")))
+           (set-conc-name (if set-conc-name
+                              set-conc-name
+                            (pack-intern name "SET-" name "-")))
+           (keyword-updater (if keyword-updater
+                                keyword-updater
+                              (pack-intern name "UPDATE-" name)))
+           (accessor-definitions
+            (defword-accessor-definitions '@RDB name conc-name struct))
+           (updater-definitions
+            (defword-updater-definitions '@WRB name set-conc-name struct))
+           (field-names (strip-cars struct)))
 
-      `(ENCAPSULATE ()                  ;Only to make macroexpansion pretty.
-         (DEFLABEL ,name ,@(if doc `(:DOC ,doc) nil))
-         ,@accessor-definitions
-         ,@updater-definitions
-         ,(defword-keyword-updater
-	    name keyword-updater set-conc-name field-names))))))
+        `(ENCAPSULATE () ;Only to make macroexpansion pretty.
+                      (DEFLABEL ,name ,@(if doc `(:DOC ,doc) nil))
+                      ,@accessor-definitions
+                      ,@updater-definitions
+                      ,(defword-keyword-updater
+                         name keyword-updater set-conc-name field-names)))))))
 
 
 ;;;****************************************************************************
