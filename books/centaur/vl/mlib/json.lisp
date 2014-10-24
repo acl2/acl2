@@ -1202,7 +1202,17 @@ which could not hold such large values.</p>")
 (def-vl-jp-aggregate assign)
 (def-vl-jp-list assign :newlines 4)
 
+(define vl-jp-importpart ((x vl-importpart-p) &key (ps 'ps))
+  :guard-hints(("Goal" :in-theory (enable vl-importpart-p)))
+  (b* ((x (vl-importpart-fix x)))
+    (if (eq x :vl-import*)
+        (jp-str "*")
+      (jp-str x))))
 
+(add-json-encoder vl-importpart-p vl-jp-importpart)
+
+(def-vl-jp-aggregate import)
+(def-vl-jp-list import :newlines 4)
 
 
 (define vl-jp-warning ((x vl-warning-p) &key (ps 'ps))
@@ -1288,6 +1298,7 @@ TEXT versions of the message.</p>"
     (:VL-INITIAL (VL-jp-INITIAL X))
     ;; BOZO implement typedef
     (:VL-TYPEDEF ps)
+    (:VL-IMPORT (VL-jp-IMPORT X))
     (:VL-FWDTYPEDEF (VL-jp-FWDTYPEDEF X))
     (OTHERWISE (VL-jp-MODPORT X))))
 

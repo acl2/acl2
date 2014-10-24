@@ -28,14 +28,6 @@
 //
 // Original author: Jared Davis <jared@centtech.com>
 
-`include "spec.v"
-
-`ifdef SYSTEM_VERILOG_MODE
- `include "impl.sv"
-`else
- `include "impl.v"
-`endif
-
 `define SIZE 1
 `define MODNAME_SIZE \spec$width=1
 `define COMPARE_NAME compare_aux_1

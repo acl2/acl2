@@ -375,3 +375,4 @@ particular interest.</p>"
               t)
              (t
               (vl-some-warning-of-type-p types (cdr x))))))
+

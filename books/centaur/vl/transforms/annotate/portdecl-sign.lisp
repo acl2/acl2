@@ -29,23 +29,26 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "../mlib/range-tools")
-(include-book "../mlib/find-item")
-(include-book "../mlib/filter")
-(local (include-book "../util/arithmetic"))
-(local (include-book "../util/osets"))
+(include-book "../../mlib/range-tools")
+(include-book "../../mlib/find-item")
+(include-book "../../mlib/filter")
+(local (include-book "../../util/arithmetic"))
+(local (include-book "../../util/osets"))
 (local (std::add-default-post-define-hook :fix))
 
 (defxdoc portdecl-sign
-  :parents (loader)
-  :short "Fix up type information between port and variable declarations."
+  :parents (annotate)
+  :short "Fix up type (signedness) information between port and variable
+declarations."
 
-  :long "<p>Port and variable declarations have a strange overlap which has
-various subtleties.</p>
+  :long "<p>This is a very early transform that should be run almost
+immediately.  It needs to be run after @(see make-implicit-wires).  It
+is ordinarily run as part of @(see vl-annotate-design).</p>
 
-<p>In some cases, the port declaration is \"complete\" and also gives rise to a
-net declaration.  For instance, the declaration of @('a') below introduces both
-a port declaration and a net declaration:</p>
+<p>Port and variable declarations have a strange overlap with certain
+subtleties.  In some cases, the port declaration is \"complete\" and also gives
+rise to a net declaration.  For instance, the declaration of @('a') below
+introduces both a port declaration and a net declaration:</p>
 
 @({
     module mymod (a, b, c, ...) ;
@@ -96,30 +99,32 @@ nets agree and are correct by the time actual modules are produced.</p>")
 
 (local (xdoc::set-default-parents portdecl-sign))
 
-(define vl-portdecl-type-set-signed ((type vl-datatype-p))
+(define vl-portdecl-type-set-signed
+  ((type vl-datatype-p   "Type of this port declaration.")
+   (elem vl-modelement-p "Context for warnings."))
   :returns (mv successp
                (warnings vl-warninglist-p)
                (new-type vl-datatype-p))
   :hooks nil
-  (b* (((fun (badtype type))
+  (b* ((elem (vl-modelement-fix elem))
+       (type (vl-datatype-fix type))
+       ((fun (badtype type elem))
         (mv nil
-            (list (make-vl-warning :type :vl-portdecl-sign-fail
-                                   :msg  "Don't know how to change ~
-                                                   the sign of datatype ~a0 ~
-                                                   to be signed"
-                                   :args (list (vl-datatype-fix type))
-                                   :fatalp t))
-            (vl-datatype-fix type))))
-  (if (consp (vl-datatype->udims type))
-      ;; How can a datatype with udims be signed?
-      (badtype type)
-      
-  (vl-datatype-case type
-    :vl-coretype (mv t nil (change-vl-coretype type :signedp t))
-    :vl-struct   (mv t nil (change-vl-struct   type :signedp t))
-    :vl-union    (mv t nil (change-vl-union    type :signedp t))
-    :otherwise   (badtype type)))))
-
+            (list (make-vl-warning
+                   :type :vl-portdecl-sign-fail
+                   :msg  "~a0: Don't know how to change the sign of datatype ~
+                          ~a1 to be signed"
+                   :args (list elem type)
+                   :fatalp t))
+            type)))
+    (if (consp (vl-datatype->udims type))
+        ;; How can a datatype with udims be signed?
+        (badtype type elem)
+      (vl-datatype-case type
+        :vl-coretype (mv t nil (change-vl-coretype type :signedp t))
+        :vl-struct   (mv t nil (change-vl-struct   type :signedp t))
+        :vl-union    (mv t nil (change-vl-union    type :signedp t))
+        :otherwise   (badtype type elem)))))
 
 (local (defthm vl-atts-p-of-delete-assoc-equal
          (implies (vl-atts-p atts)
@@ -132,7 +137,6 @@ nets agree and are correct by the time actual modules are produced.</p>")
     :vl-struct x.signedp
     :vl-union x.signedp
     :otherwise nil))
-
 
 (define vl-portdecl-sign-1
   ((port     vl-portdecl-p)
@@ -174,11 +178,11 @@ nets agree and are correct by the time actual modules are produced.</p>")
        ((vl-coretype port.type))
        ((mv ok warnings1 final-type)
         (if port.type.signedp
-            (vl-portdecl-type-set-signed var.type)
+            (vl-portdecl-type-set-signed var.type var)
           (mv t nil var.type)))
        (warnings (append-without-guard warnings1 (vl-warninglist-fix warnings)))
        ((unless ok) (mv nil warnings port var))
-       
+
        (new-port (change-vl-portdecl port
                                      :atts (delete-assoc-equal "VL_INCOMPLETE_DECLARATION" port.atts)
                                      :type final-type))
@@ -219,7 +223,7 @@ nets agree and are correct by the time actual modules are produced.</p>")
 
 (define vl-find-vardecls-exec ((names    string-listp)
                                (vardecls vl-vardecllist-p)
-                               (alist    (equal alist (vl-vardecllist-alist vardecls))))
+                               (alist    (equal alist (vl-vardecllist-alist vardecls nil))))
   :parents (vl-find-vardecls)
   :hooks nil
   (if (atom names)
@@ -257,13 +261,13 @@ that correspond to port declarations.</p>"
          (cons (vl-find-vardecl (car names) vardecls)
                (vl-find-vardecls (cdr names) vardecls)))
        :exec
-       (b* ((alist (vl-vardecllist-alist vardecls))
+       (b* ((alist (make-fast-alist (vl-vardecllist-alist vardecls nil)))
             (ans   (vl-find-vardecls-exec names vardecls alist)))
          (fast-alist-free alist)
          ans))
   ///
   (defthm vl-find-vardecls-exec-removal
-    (implies (equal alist (vl-vardecllist-alist vardecls))
+    (implies (equal alist (vl-vardecllist-alist vardecls nil))
              (equal (vl-find-vardecls-exec names vardecls alist)
                     (vl-find-vardecls names vardecls)))
     :hints(("Goal" :in-theory (enable vl-find-vardecls-exec))))
@@ -304,7 +308,7 @@ that correspond to port declarations.</p>"
                     (string-list-fix names)))))
 
 
-(define vl-portdecl-sign
+(define vl-portdecl-sign-main
   ((portdecls vl-portdecllist-p)
    (vardecls  vl-vardecllist-p)
    (warnings  vl-warninglist-p))
@@ -334,3 +338,29 @@ that correspond to port declarations.</p>"
 
        (new-vardecls  (append new-port-vars non-port-vars)))
     (mv (ok) new-portdecls new-vardecls)))
+
+
+(define vl-module-portdecl-sign ((x vl-module-p))
+  :returns (new-x vl-module-p)
+  (b* (((vl-module x))
+       ((mv warnings portdecls vardecls)
+        (vl-portdecl-sign-main x.portdecls x.vardecls x.warnings)))
+    (change-vl-module x
+                      :warnings  warnings
+                      :portdecls portdecls
+                      :vardecls  vardecls)))
+
+(defprojection vl-modulelist-portdecl-sign ((x vl-modulelist-p))
+  :returns (new-x vl-modulelist-p)
+  (vl-module-portdecl-sign x))
+
+(define vl-design-portdecl-sign ((x vl-design-p))
+  :returns (new-x vl-design-p)
+  (b* (((vl-design x)))
+    (change-vl-design x
+                      :mods (vl-modulelist-portdecl-sign x.mods)
+                      ;; BOZO is there any such thing that needs to be done for
+                      ;; interfaces or other kinds of SystemVerilog constructs
+                      ;; that have ports?
+                      )))
+

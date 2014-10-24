@@ -31,8 +31,6 @@
 (in-package "VL")
 (include-book "elements")
 (include-book "imports")
-(include-book "../make-implicit-wires")
-(include-book "../portdecl-sign")
 (local (include-book "../../util/arithmetic"))
 
 
@@ -59,30 +57,6 @@ interface_ansi_header ::=
 
 ||#
 
-(define vl-interface-warn-unsupported ((c vl-genelement-collection-p)
-                                       (warnings vl-warninglist-p))
-  :returns (warnings vl-warninglist-p)
-  (b* (((vl-genelement-collection c)))
-    (if (or* c.assigns
-             c.fundecls
-             c.taskdecls
-             c.modinsts
-             c.gateinsts
-             c.alwayss
-             c.initials
-             c.ports)
-        (warn :type :vl-unsupported-interface-item
-              :msg "Unsupported interface items: ~&0"
-              :args (list (append (and* c.assigns '("continuous assignments"))
-                                  (and* c.fundecls '("functions"))
-                                  (and* c.taskdecls '("tasks"))
-                                  (and* c.modinsts '("module instances"))
-                                  (and* c.gateinsts '("gate instances"))
-                                  (and* c.alwayss '("always blocks"))
-                                  (and* c.initials '("initial blocks"))
-                                  (and* c.ports    '("ports")))))
-      (vl-warninglist-fix warnings))))
-
 (define vl-make-interface-by-items
 
 ; Our various parsing functions for declarations, assignments, etc., return all
@@ -99,29 +73,53 @@ interface_ansi_header ::=
    (maxloc   vl-location-p)
    (warnings vl-warninglist-p))
   :returns (mod vl-interface-p)
-  (b* (((mv items warnings) (vl-make-implicit-wires
-                             (append-without-guard (vl-modelementlist->genelements params)
-                                                   items)
-                             warnings))
-       ((vl-genelement-collection c) (vl-sort-genelements items))
-       ((mv warnings c.portdecls c.vardecls)
-        (vl-portdecl-sign c.portdecls c.vardecls warnings))
-       (warnings (vl-interface-warn-unsupported c warnings)))
-    ;; BOZO: Warn about other bad elements in c?
-    (make-vl-interface :name       name
-                       :ports      ports
-                       :portdecls  c.portdecls
-                       :vardecls   c.vardecls
-                       :paramdecls c.paramdecls
-                       :modports   c.modports
-                       :generates  c.generates
-                       :atts       atts
-                       :minloc     minloc
-                       :maxloc     maxloc
-                       :warnings   warnings
-                       :origname   name
-                       :comments   nil
-                       )))
+  (b* ((items (append-without-guard (vl-modelementlist->genelements params)
+                                    items))
+
+       (bad-item (vl-genelementlist-findbad items
+                                            '(:vl-generate
+                                              ;; :vl-port    -- not allowed, they were parsed separately
+                                              :vl-portdecl
+                                              ;; :vl-assign  -- not allowed
+                                              ;; :vl-alias   -- not allowed (bozo yet?)
+                                              :vl-vardecl
+                                              :vl-paramdecl
+                                              ;; :vl-fundecl  -- not allowed
+                                              ;; :vl-taskdecl -- not allowed
+                                              ;; :vl-modinst  -- not allowed
+                                              ;; :vl-gateinst -- not allowed
+                                              ;; :vl-always   -- not allowed
+                                              ;; :vl-initial  -- not allowed
+                                              ;; :vl-typedef    -- bozo? not yet
+                                              :vl-import
+                                              ;; :vl-fwdtypedef -- bozo? not yet
+                                              :vl-modport
+                                              )))
+       (warnings
+        (if (not bad-item)
+            warnings
+          (fatal :type :vl-bad-module-item
+                 :msg "~a0: a module may not contain ~x1s."
+                 :args (list bad-item (tag bad-item)))))
+
+       ((vl-genelement-collection c) (vl-sort-genelements items)))
+
+     (make-vl-interface :name       name
+                        :ports      ports
+                        :portdecls  c.portdecls
+                        :vardecls   c.vardecls
+                        :paramdecls c.paramdecls
+                        :modports   c.modports
+                        :generates  c.generates
+                        :imports    c.imports
+                        :atts       atts
+                        :minloc     minloc
+                        :maxloc     maxloc
+                        :warnings   warnings
+                        :origname   name
+                        :comments   nil
+                        :loaditems  items
+                        )))
 
 
 

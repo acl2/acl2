@@ -121,7 +121,7 @@
     (defthm symbolp-of-symbol-fix
       (symbolp (symbol-fix x))
       :rule-classes :type-prescription)
-    
+
     (defthm symbol-fix-when-symbolp
       (implies (symbolp x)
                (equal (symbol-fix x) x)))
@@ -140,7 +140,7 @@
     (defthm posp-of-pos-fix
       (posp (pos-fix x))
       :rule-classes :type-prescription)
-    
+
     (defthm pos-fix-when-posp
       (implies (posp x)
                (equal (pos-fix x) x)))
@@ -149,17 +149,24 @@
 
   (fty::deffixtype character :pred characterp :fix char-fix :equiv chareqv)
 
+  (defun any-p (x)
+    (declare (xargs :guard t)
+             (ignore x))
+    t)
+
+  (fty::deffixtype any :pred any-p :fix  identity :equiv equal)
+
   (defsection bool-equiv-is-just-iff
     (defund bool-fix (x)
       (declare (xargs :guard t))
       (and x t))
-    
+
     (local (in-theory (enable bool-fix)))
 
     (defthm booleanp-of-bool-fix
       (booleanp (bool-fix x))
       :rule-classes :type-prescription)
-    
+
     (defthm bool-fix-when-booleanp
       (implies (booleanp x)
                (equal (bool-fix x) x)))
@@ -210,5 +217,3 @@ the ACL2 package):</p>
 #!ACL2  ,(reverse (coerce (make-basetypes-table-rchars (cdar (table-alist 'fty::fixtypes (w state))) nil) 'string))
 "
  })")))
-           
-  

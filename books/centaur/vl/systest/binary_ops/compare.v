@@ -31,14 +31,6 @@
 
 // Exhaustive testing of binary operators up to some small size
 
-`include "spec.v"
-
-`ifdef SYSTEM_VERILOG_MODE
- `include "impl.sv"
-`else
- `include "impl.v"
-`endif
-
 module convert_z_to_x (out, in);
 
    parameter size = 1;

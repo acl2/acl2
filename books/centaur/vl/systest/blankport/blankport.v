@@ -28,10 +28,13 @@
 //
 // Original author: Jared Davis <jared@centtech.com>
 
+`ifndef INCLUDED_BLANKPORT_V
+`define INCLUDED_BLANKPORT_V
+
 module blankport (o, , a, b);
  output[1:0] o;
  input [1:0] a, b;
  assign o = a & b;
 endmodule
 
-
+`endif

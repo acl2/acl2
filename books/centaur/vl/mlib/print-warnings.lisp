@@ -217,3 +217,26 @@ warnings\".</p>"
   :short "Pretty-print a @(see vl-reportcard-p) into a string."
   :long "<p>See also @(see vl-print-reportcard).</p>"
   (with-local-ps (vl-print-reportcard x)))
+
+
+(defsection vl-trace-warnings
+  :parents (warnings)
+  :short "Pretty-print warnings as they are created."
+  :long "<p>This is a debugging aide.  Usage is:</p>
+
+@({
+    ACL2 !> (vl::vl-trace-warnings)
+})
+
+<p>This just traces @(see make-vl-warning) in a fancy way so that warnings are
+pretty-printed to the terminal, automatically, whenever they are constructed.
+This may be useful, along with other debugging output, for figuring out why
+some warning is being constructed.</p>
+
+<p>This is just a macro based on @(see trace$).  You can turn off warning
+tracing using @(see untrace$).</p>"
+
+  (defmacro vl-trace-warnings ()
+    `(trace$ (vl-warning :entry (list 'make-vl-warning)
+                         :exit (list 'make-vl-warning
+                                     (with-local-ps (vl-print-warning acl2::value)))))))

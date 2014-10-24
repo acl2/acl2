@@ -120,38 +120,39 @@
 
 
 
-(defsection vl-stmt-count-thms
+;; We may not need these anymore ---
+;; (defsection vl-stmt-count-thms
 
-  (defrule vl-stmt-count-of-cdar-when-vl-caselist-p
-    (IMPLIES (and (vl-caselist-p x)
-                  x)
-             (< (vl-stmt-count (cdar x))
-                (vl-caselist-count x)))
-    :rule-classes ((:rewrite) (:linear)))
+;;   (defrule vl-stmt-count-of-cdar-when-vl-caselist-p
+;;     (IMPLIES (and (vl-caselist-p x)
+;;                   x)
+;;              (< (vl-stmt-count (cdar x))
+;;                 (vl-caselist-count x)))
+;;     :rule-classes ((:rewrite) (:linear)))
 
-  (defrule vl-stmtlist-count-of-cdr-weak
-    (<= (vl-stmtlist-count (cdr x))
-        (vl-stmtlist-count x))
-    :rule-classes ((:rewrite) (:linear)))
+;;   (defrule vl-stmtlist-count-of-cdr-weak
+;;     (<= (vl-stmtlist-count (cdr x))
+;;         (vl-stmtlist-count x))
+;;     :rule-classes ((:rewrite) (:linear)))
 
-  (defrule vl-stmtlist-count-of-cdr-strong
-    (implies (consp x)
-             (< (vl-stmtlist-count (cdr x))
-                (vl-stmtlist-count x)))
-    :rule-classes ((:rewrite) (:linear)))
+;;   (defrule vl-stmtlist-count-of-cdr-strong
+;;     (implies (consp x)
+;;              (< (vl-stmtlist-count (cdr x))
+;;                 (vl-stmtlist-count x)))
+;;     :rule-classes ((:rewrite) (:linear)))
 
-  (defrule vl-caselist-count-of-cdr-weak
-    (<= (vl-caselist-count (cdr x))
-        (vl-caselist-count x))
-    :rule-classes ((:rewrite) (:linear)))
+;;   (defrule vl-caselist-count-of-cdr-weak
+;;     (<= (vl-caselist-count (cdr x))
+;;         (vl-caselist-count x))
+;;     :rule-classes ((:rewrite) (:linear)))
 
-  (defrule vl-caselist-count-of-cdr-strong
-    (implies (and (consp x)
-                  (vl-caselist-p x))
-             (< (vl-caselist-count (cdr x))
-                (vl-caselist-count x)))
-    :rule-classes ((:rewrite) (:linear))
-    :hints(("Goal" :in-theory (enable vl-caselist-count)))))
+;;   (defrule vl-caselist-count-of-cdr-strong
+;;     (implies (and (consp x)
+;;                   (vl-caselist-p x))
+;;              (< (vl-caselist-count (cdr x))
+;;                 (vl-caselist-count x)))
+;;     :rule-classes ((:rewrite) (:linear))
+;;     :hints(("Goal" :in-theory (enable vl-caselist-count)))))
 
 
 

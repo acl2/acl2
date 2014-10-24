@@ -28,17 +28,6 @@
 //
 // Original author: Jared Davis <jared@centtech.com>
 
-
-// Some testing of some VL's function translations
-
-`include "spec.v"
-
-`ifdef SYSTEM_VERILOG_MODE
- `include "impl.sv"
-`else
- `include "impl.v"
-`endif
-
 module test ();
 
 reg [3:0] in;

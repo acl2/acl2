@@ -29,12 +29,11 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "../parsetree")
-(include-book "../mlib/port-tools")
-(local (include-book "../util/arithmetic"))
+(include-book "../../mlib/port-tools")
+(local (include-book "../../util/arithmetic"))
 
 (defsection udp-elim
-  :parents (transforms)
+  :parents (annotate)
   :short "Eliminate user-defined primitives (UDPs), replacing them with
 equivalent modules."
 

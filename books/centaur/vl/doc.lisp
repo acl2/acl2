@@ -84,16 +84,17 @@ conversion into E is quite straightforward.</li>
 top of ACL2 and VL, which includes commands for @(see lint)ing Verilog designs,
 converting Verilog modules into a JSON format, and other commands.</li>
 
-<li>We have implemented an equivalence checking tool (which is not yet
-released) that has a tick-based timing model and handles transistor-level
-constructs.  This tool uses the same parser and most of VL's transforms, but
-also has a couple of additional transformation steps.</li>
+<li>We have used it to implement a web-based \"module browser\" that lets users
+see the original and translated source code for our modules, and has several
+nice features (e.g., hyperlinks for navigating between wires and following
+wires, and integrated linting and warning/error reporting).  This is built into
+the VL toolkit, see @(see server).</li>
 
-<li>We have used it to implement a web-based \"module browser\" (which will
-probably not be released since it is very Centaur specific) that lets users see
-the original and translated source code for our modules, and has several nice
-features (e.g., hyperlinks for navigating between wires and following wires,
-and integrated linting and warning/error reporting).</li>
+<li>We have implemented an equivalence checking tool (which has some complex
+dependencies so it has not been released).  This tool has a tick-based timing
+model and handles transistor-level constructs.  It reuses VL's parser and many
+of its transforms.  It also has a couple of additional transformation
+steps.</li>
 
 <li>We have used it to implement <i>VL-Mangle</i>, a web-based refactoring
 tool (which will probably not be released because it is hard to distribute).
@@ -132,8 +133,8 @@ the VL documentation are in reference to this document.</p>
 <p>We are working to extend VL to support some fragment of SystemVerilog.  We
 are basing this work on our interpretation of the <a
 href='http://standards.ieee.org/findstds/standard/1800-2012.html'>IEEE
-1800-2012</a>.  This is early work in progress, and you should not yet expect
-VL to support SystemVerilog in any reasonable way.</p>
+1800-2012</a>.  Note that this is work in progress, and many SystemVerilog
+features are not yet supported.</p>
 
 <p>With respect to the Verilog-2005 standard:</p>
 

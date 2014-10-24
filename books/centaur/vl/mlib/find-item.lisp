@@ -298,17 +298,18 @@ module (except that we don't support, e.g., named blocks.)"
 (defmacro vl-def-moditemlist-alist (type &key
                                          element->name
                                          names-may-be-nil)
-  (let* ((mksym-package-symbol 'vl::foo)
+  (b* ((mksym-package-symbol 'vl::foo)
 
-         (fn            (mksym 'vl- type 'list-alist))
-         (fast-fn       (mksym 'vl-fast- type 'list-alist))
-         (find-fn       (mksym 'vl-find- type))
-         (list-p        (mksym 'vl- type 'list-p))
-         (alist-p       (mksym 'vl- type 'alist-p))
-         (alist         (mksym 'vl- type 'alist))
-         (elt-p         (mksym 'vl- type '-p))
-         (elt-fix       (mksym 'vl- type '-fix))
-         (element->name (or element->name (mksym 'vl- type '->name))))
+       (?fn            (mksym 'vl- type 'list-alist))
+       (?fast-fn       (mksym 'vl-fast- type 'list-alist))
+       (?find-fn       (mksym 'vl-find- type))
+       (?list-p        (mksym 'vl- type 'list-p))
+       (?alist-p       (mksym 'vl- type 'alist-p))
+       (?alist         (mksym 'vl- type 'alist))
+       (?elt-p         (mksym 'vl- type '-p))
+       (?elt-fix       (mksym 'vl- type '-fix))
+       (?element->name (or element->name (mksym 'vl- type '->name)))
+       )
     `(encapsulate
        ()
        (fty::defalist ,alist
@@ -317,62 +318,29 @@ module (except that we don't support, e.g., named blocks.)"
          :keyp-of-nil nil
          :valp-of-nil nil)
 
-       (define ,fast-fn ((x ,list-p) acc)
-         :parents (,fn)
-         (if (consp x)
-             ,(if names-may-be-nil
-                  `(let ((name (,element->name (car x))))
-                     (if name
-                         (hons-acons name
-                                     (,elt-fix (car x))
-                                     (,fast-fn (cdr x) acc))
-                       (,fast-fn (cdr x) acc)))
-                `(hons-acons (,element->name (car x))
-                             (,elt-fix (car x))
-                             (,fast-fn (cdr x) acc)))
-           acc))
 
-       (define ,fn ((x ,list-p))
-         :verify-guards nil
-         :short "Construct a fast alist binding names to items."
-         :returns (fast-alist ,alist-p :hyp :fguard)
-         (mbe :logic (if (consp x)
-                         ,(if names-may-be-nil
-                              `(let ((name (,element->name (car x))))
-                                 (if name
-                                     (cons (cons name (,elt-fix (car x)))
-                                           (,fn (cdr x)))
-                                   (,fn (cdr x))))
-                            `(cons (cons (,element->name (car x))
-                                         (,elt-fix (car x)))
-                                   (,fn (cdr x))))
-                       nil)
-              :exec (,fast-fn x nil))
-         ///
+       (defsection ,fn
+         (local (in-theory (enable ,fn)))
+         (defthm ,(mksym fn '-remove-acc)
+           (implies (syntaxp (not (equal acc ''nil)))
+                    (equal (,fn x acc)
+                           (append (,fn x nil) acc))))
+         (defthm ,(mksym alist-p '-of- fn)
+           (,alist-p (,fn x nil))
+           :hints(("Goal" :in-theory (enable ,alist-p))))
          (defthm ,(mksym 'vl-moditem-alist-p-of- fn)
-           (vl-moditem-alist-p (,fn x))
+           (vl-moditem-alist-p (,fn x nil))
            :hints(("Goal" :in-theory (enable vl-moditem-p))))
 
          (defthm ,(mksym 'hons-assoc-equal-of- fn)
            (implies ,(if names-may-be-nil
                          '(force (stringp name))
                        t)
-                    (equal (hons-assoc-equal name (,fn x))
+                    (equal (hons-assoc-equal name (,fn x nil))
                            (if (,find-fn name x)
                                (cons name (,find-fn name x))
                              nil)))
-           :hints(("Goal" :in-theory (e/d (,find-fn) ((force)))))))
-
-       (defsection ,(mksym fast-fn '-removal)
-         :extension ,fast-fn
-
-         (local (in-theory (enable ,fn ,fast-fn)))
-
-         (defthm ,(mksym fast-fn '-removal)
-           (equal (,fast-fn x acc)
-                  (append (,fn x) acc)))
-
-         (verify-guards ,fn)))))
+           :hints(("Goal" :in-theory (e/d (,find-fn) ((force))))))))))
 
 (vl-def-moditemlist-alist vardecl)
 (vl-def-moditemlist-alist paramdecl)
@@ -393,21 +361,21 @@ alist can be constructed in a one pass, using our fast builder functions.</p>"
 
   (b* (((vl-module x) x))
     (mbe :logic
-         (append (vl-vardecllist-alist x.vardecls)
-                 (vl-paramdecllist-alist x.paramdecls)
-                 (vl-fundecllist-alist x.fundecls)
-                 (vl-taskdecllist-alist x.taskdecls)
-                 (vl-modinstlist-alist x.modinsts)
-                 (vl-gateinstlist-alist x.gateinsts))
+         (append (vl-vardecllist-alist x.vardecls nil)
+                 (vl-paramdecllist-alist x.paramdecls nil)
+                 (vl-fundecllist-alist x.fundecls nil)
+                 (vl-taskdecllist-alist x.taskdecls nil)
+                 (vl-modinstlist-alist x.modinsts nil)
+                 (vl-gateinstlist-alist x.gateinsts nil))
          :exec
          ;; Reverse order from the above
-         (b* ((acc (vl-fast-gateinstlist-alist x.gateinsts nil))
-              (acc (vl-fast-modinstlist-alist x.modinsts acc))
-              (acc (vl-fast-taskdecllist-alist x.taskdecls acc))
-              (acc (vl-fast-fundecllist-alist x.fundecls acc))
-              (acc (vl-fast-paramdecllist-alist x.paramdecls acc))
-              (acc (vl-fast-vardecllist-alist x.vardecls acc)))
-           acc)))
+         (b* ((acc (vl-gateinstlist-alist x.gateinsts nil))
+              (acc (vl-modinstlist-alist x.modinsts acc))
+              (acc (vl-taskdecllist-alist x.taskdecls acc))
+              (acc (vl-fundecllist-alist x.fundecls acc))
+              (acc (vl-paramdecllist-alist x.paramdecls acc))
+              (acc (vl-vardecllist-alist x.vardecls acc)))
+           (make-fast-alist acc))))
   ///
   (defthm vl-moditem-alist-p-of-vl-moditem-alist
     (vl-moditem-alist-p (vl-moditem-alist x)))

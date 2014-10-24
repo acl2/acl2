@@ -203,9 +203,22 @@ module `COMPARE_NAME (a, b, c, check);
     begin
       //$display("Checking size %0d, a %b, b %b, c %b", `SIZE, a, b, c);
 
+`ifndef VL_SYSTEST_VCS
+
+      // NCVerilog implements unary "+A" as if it were "A + 0" -- that is,
+      // if there are any X/Z bits in A, then the whole result is X.
+
+      // VCS implements unary "+A" as if it were just "A" -- that is, no
+      // such X coercion occurs.
+
+      // VL follows NCV's approach, so we suppress this check on VCS because
+      // otherwise it will fail on VCS.
+
       if (unary_plus_spec !== unary_plus_impl)
 	$display("fail: unary_plus: spec %b, impl %b",
 		 unary_plus_spec, unary_plus_impl);
+
+`endif
 
       if (unary_minus_spec !== unary_minus_impl)
 	$display("fail: unary_minus: spec %b, impl %b",

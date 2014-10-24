@@ -29,16 +29,17 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "../mlib/expr-tools")
-(include-book "../mlib/stmt-tools")
-(include-book "../mlib/modnamespace")
-(include-book "../mlib/hid-tools")
-(local (include-book "../util/arithmetic"))
+(include-book "../../mlib/expr-tools")
+(include-book "../../mlib/stmt-tools")
+(include-book "../../mlib/modnamespace")
+(include-book "../../mlib/hid-tools")
+(local (include-book "../../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
 
 (defxdoc resolve-indexing
-  :parents (transforms)
-  :short "Resolve @(':vl-index') operators that are applied to simple bitvectors into @(':vl-bitselect') operators."
+  :parents (annotate)
+  :short "Resolve @(':vl-index') operators that are applied to simple
+bitvectors into @(':vl-bitselect') operators."
 
   :long "<p>When our @(see parser) encounters a subexpression like @('foo[i]'),
 it does not know whether @('foo') is an ordinary vector like @('wire [3:0]

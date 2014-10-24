@@ -777,3 +777,63 @@
 
   (verify-guards vl-parse-genelement-fn
     :guard-debug t))
+
+
+(defines vl-genelement-findbad
+  :parents (vl-genelement)
+  :short "Find the first occurrence of any @(see vl-genelement) that isn't
+among the listed types."
+  :long "<p>This is useful for reusing the generic element parsing code in
+contexts where some of the items aren't allowed.</p>"
+
+  (define vl-genelement-findbad ((x       vl-genelement-p)
+                                 (allowed symbol-listp))
+    :measure (vl-genelement-count x)
+    :guard (subsetp-equal allowed (cons :vl-generate *vl-modelement-tagnames*))
+    :returns (firstbad (iff (vl-genelement-p firstbad) firstbad))
+    (b* ((x (vl-genelement-fix x)))
+      (vl-genelement-case x
+        :vl-genloop (if (member :vl-generate allowed)
+                        (vl-generateblock-findbad x.genblock allowed)
+                      x)
+        :vl-genif   (if (member :vl-generate allowed)
+                        (or (vl-generateblock-findbad x.then allowed)
+                            (vl-generateblock-findbad x.else allowed))
+                      x)
+        :vl-gencase (if (member :vl-generate allowed)
+                        (or (vl-gencaselist-findbad x.cases allowed)
+                            (vl-generateblock-findbad x.default allowed))
+                      x)
+        :vl-genbase (if (member (tag x.item) allowed)
+                        nil
+                      x))))
+
+  (define vl-genelementlist-findbad ((x vl-genelementlist-p)
+                                     (allowed symbol-listp))
+    :measure (vl-genelementlist-count x)
+    :guard (subsetp-equal allowed (cons :vl-generate *vl-modelement-tagnames*))
+    :returns (firstbad (iff (vl-genelement-p firstbad) firstbad))
+    (if (atom x)
+        nil
+      (or (vl-genelement-findbad (car x) allowed)
+          (vl-genelementlist-findbad (cdr x) allowed))))
+
+  (define vl-gencaselist-findbad ((x vl-gencaselist-p)
+                                  (allowed symbol-listp))
+    :measure (vl-gencaselist-count x)
+    :guard (subsetp-equal allowed (cons :vl-generate *vl-modelement-tagnames*))
+    :returns (firstbad (iff (vl-genelement-p firstbad) firstbad))
+    (b* ((x (vl-gencaselist-fix x))
+         ((when (atom x))
+          nil)
+         ((cons (cons ?expr block) rest) x))
+      (or (vl-generateblock-findbad block allowed)
+          (vl-gencaselist-findbad rest allowed))))
+
+  (define vl-generateblock-findbad ((x vl-generateblock-p)
+                                    (allowed symbol-listp))
+    :measure (vl-generateblock-count x)
+    :guard (subsetp-equal allowed (cons :vl-generate *vl-modelement-tagnames*))
+    :returns (firstbad (iff (vl-genelement-p firstbad) firstbad))
+    (b* (((vl-generateblock x)))
+      (vl-genelementlist-findbad x.elems allowed))))

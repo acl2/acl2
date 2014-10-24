@@ -28,17 +28,6 @@
 //
 // Original author: Jared Davis <jared@centtech.com>
 
-
-// exhaustive teseting of basic gates
-
-`include "spec.v"
-
-`ifdef SYSTEM_VERILOG_MODE
- `include "impl.sv"
-`else
- `include "impl.v"
-`endif
-
 module compare_gates () ;
 
   reg src1;

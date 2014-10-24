@@ -69,7 +69,7 @@ annotated with a @('version') field that must match exactly this string.</p>"
 
   ;; Current syntax version: generally a string like
   ;; "VL Syntax [date of modification]"
-  "VL Syntax 2014-10-08")
+  "VL Syntax 2014-10-16")
 
 (define vl-syntaxversion-p (x)
   :parents (syntax)
@@ -2884,10 +2884,11 @@ have input ports that are very similar to task ports.  So, we reuse
    (decls      vl-blockitemlist-p
                "Any local variable declarations for the function, e.g., the
                 declarations of @('lowest_pair') and @('next_lowest_pair')
-                below.  We represent the declarations as an ordinary @(see
-                vl-blockitemlist-p), and it appears that it may even contain
-                event declarations, parameter declarations, etc., which seems
-                pretty absurd.")
+                below.  <b>Also</b>, variable declarations for the ports and
+                return value (see below).  We represent the declarations as an
+                ordinary @(see vl-blockitemlist-p), and it appears that it may
+                even contain event declarations, parameter declarations, etc.,
+                which seems pretty absurd.")
 
    (body       vl-stmt-p
                "The body of the function.  We represent this as an ordinary statement,
@@ -2918,7 +2919,13 @@ endfunction
 })
 
 <p>Note that functions don't have any inout or output ports.  Instead, you
-assign to a function's name to indicate its return value.</p>")
+assign to a function's name to indicate its return value.</p>
+
+<p>To simplify scoping issues, we put \"hidden\" variables declarations for the
+ports and return value of the function into its @('decls').  These ports are
+marked with the @('VL_HIDDEN_DECL_FOR_TASKPORT') attribute.  The pretty printer
+and other code rely on this attribute to produce the correct output.  These
+extra declarations are created automatically by the loader.</p>")
 
 (fty::deflist vl-fundecllist
   :elt-type vl-fundecl-p
@@ -2952,7 +2959,10 @@ assign to a function's name to indicate its return value.</p>")
 
    (decls      vl-blockitemlist-p
                "Any local declarations for the task, e.g., for the task below,
-                the declaration of @('temp') would be found here.")
+                the declaration of @('temp') would be found here.  <b>Also</b>,
+                variable declarations for the ports, marked with
+                @('VL_HIDDEN_DECL_FOR_TASKPORT'), just as in our @(see
+                vl-fundecl) representation.")
 
    (body       vl-stmt-p
                "The statement that gives the actions for this task, i.e., the
@@ -3142,26 +3152,37 @@ be non-sliceable, at least if it's an input.</p>"
   (vl-typedef->name x))
 
 
-
 (encapsulate nil
   (local (include-book "tools/templates" :dir :system))
 
-  (local (defconst *vl-modelement-typenames*
-           '(port
-             portdecl
-             assign
-             alias
-             vardecl
-             paramdecl
-             fundecl
-             taskdecl
-             modinst
-             gateinst
-             always
-             initial
-             typedef
-             fwdtypedef
-             modport)))
+  (defconst *vl-modelement-typenames*
+    '(port
+      portdecl
+      assign
+      alias
+      vardecl
+      paramdecl
+      fundecl
+      taskdecl
+      modinst
+      gateinst
+      always
+      initial
+      typedef
+      import
+      fwdtypedef
+      modport))
+
+  (local (defun typenames-to-tags (x)
+           (declare (xargs :mode :program))
+           (if (atom x)
+               nil
+             (cons (intern$ (cat "VL-" (symbol-name (car x))) "KEYWORD")
+                   (typenames-to-tags (cdr x))))))
+
+  (make-event
+   `(defconst *vl-modelement-tagnames*
+      ',(typenames-to-tags *vl-modelement-typenames*)))
 
   (local (defun types-mk-strsubst-alists (types)
            (if (atom types)
@@ -3483,8 +3504,8 @@ the list of elements of the given type.</p>"
 
    ;; BOZO possibly add timeunits declarations.
 
-   ;; (imports    vl-importlist-p
-   ;;             "Import statements for this module, like @('import foo::*').")
+   (imports    vl-importlist-p
+               "Import statements for this module, like @('import foo::*').")
 
    (ports      vl-portlist-p
                "The module's ports list, i.e., @('a'), @('b'), and @('c') in
@@ -3561,6 +3582,13 @@ the list of elements of the given type.</p>"
                 any semantic meaning.  This field is mainly intended for
                 displaying the transformed module with comments preserved,
                 e.g., see @(see vl-ppc-module).")
+
+   (loaditems  vl-genelementlist-p
+               "See @(see make-implicit-wires).  This is a temporary container
+                to hold the module elements, in program order, until the rest
+                of the design has been loaded.  This field is \"owned\" by the
+                @('make-implicit-wires') transform.  You should never access it
+                or modify it in any other code.")
 
    (esim       "This is meant to be @('nil') until @(see esim) conversion, at
                 which point it becomes the E module corresponding to this
@@ -3820,13 +3848,20 @@ e.g., @('(01)') or @('(1?)')."
   ((name stringp
          :rule-classes :type-prescription
          "The name of this package as a string.")
-   ;; ...
-   (warnings vl-warninglist-p)
-   (minloc   vl-location-p)
-   (maxloc   vl-location-p)
-   (atts     vl-atts-p)
-   (comments vl-commentmap-p))
-  :long "BOZO incomplete stub -- we don't really support packages yet.")
+   (lifetime   vl-lifetime-p)
+   (imports    vl-importlist-p)
+   (fundecls   vl-fundecllist-p)
+   (taskdecls  vl-taskdecllist-p)
+   (typedefs   vl-typedeflist-p)
+   (paramdecls vl-paramdecllist-p)
+   (vardecls   vl-vardecllist-p)
+   (warnings   vl-warninglist-p)
+   (minloc     vl-location-p)
+   (maxloc     vl-location-p)
+   (atts       vl-atts-p)
+   (comments   vl-commentmap-p))
+  :long "<p>BOZO we haven't finished out all the things that can go inside of
+packages.  Eventually there will be new fields here.</p>")
 
 (fty::deflist vl-packagelist :elt-type vl-package-p
   :elementp-of-nil nil)
@@ -3852,13 +3887,20 @@ e.g., @('(01)') or @('(1?)')."
    (vardecls   vl-vardecllist-p)
    (modports   vl-modportlist-p)
    (generates  vl-genelementlist-p)
+   (imports    vl-importlist-p)
    ;; ...
    (warnings vl-warninglist-p)
    (minloc   vl-location-p)
    (maxloc   vl-location-p)
    (atts     vl-atts-p)
    (origname stringp :rule-classes :type-prescription)
-   (comments vl-commentmap-p))
+   (comments vl-commentmap-p)
+
+   (loaditems  vl-genelementlist-p
+               "See @(see make-implicit-wires).  This is a temporary container
+                to hold the module elements, in program order, until the rest
+                of the design has been loaded."))
+
   :long "BOZO incomplete stub -- we don't really support interfaces yet.")
 
 (fty::deflist vl-interfacelist :elt-type vl-interface-p

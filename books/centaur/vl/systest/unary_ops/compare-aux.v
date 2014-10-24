@@ -172,6 +172,28 @@ module `COMPARE_NAME (src, chk);
    );
 
 
+ // Horrible hack.  VCS doesn't seem to implement the wildcard equalities correctly
+ // when the left hand side has X or Z bits.
+
+`ifndef VL_SYSTEST_VCS
+  wire 	allow_wild_mismatch = 0;
+
+`else
+
+  reg 	src_has_some_x;
+  integer i;
+
+  always @(src)
+  begin
+    src_has_some_x = 0;
+    for(i = 0;i < `SIZE;i = i + 1)
+       if (src[i] === 1'bx || src[i] === 1'bz)
+          src_has_some_x = 1;
+  end
+
+  wire allow_wild_mismatch = src_has_some_x;
+`endif
+
 
    always @(posedge chk)
    begin
@@ -185,9 +207,22 @@ module `COMPARE_NAME (src, chk);
 	$display("compare_unary_ops fail (bitnot): size = %0d, src = %b, spec = %b, impl = %b",
 	  `SIZE, src, spec_bitnot, impl_bitnot);
 
+`ifndef VL_SYSTEST_VCS
+
+      // NCVerilog implements unary "+A" as if it were "A + 0" -- that is,
+      // if there are any X/Z bits in A, then the whole result is X.
+
+      // VCS implements unary "+A" as if it were just "A" -- that is, no
+      // such X coercion occurs.
+
+      // VL follows NCV's approach, so we suppress this check on VCS because
+      // otherwise it will fail on VCS.
+
       if (spec_plus !== impl_plus)
 	$display("compare_unary_ops fail (plus): size = %0d, src = %b, spec = %b, impl = %b",
 	  `SIZE, src, spec_plus, impl_plus);
+
+`endif
 
       if (spec_minus !== impl_minus)
 	$display("compare_unary_ops fail (minus): size = %0d, src = %b, spec = %b, impl = %b",
@@ -243,41 +278,41 @@ module `COMPARE_NAME (src, chk);
 	  `SIZE, src, spec_z, impl_z);
 
 
-      `ifdef SYSTEM_VERILOG_MODE
+     `ifdef SYSTEM_VERILOG_MODE
 
-      if (spec_wildeq1 !== impl_wildeq1)
-	$display("compare_unary_ops fail (wildeq1): size = %0d, src = %b, spec = %b, impl = %b",
+       if (!allow_wild_mismatch && (spec_wildeq1 !== impl_wildeq1))
+         $display("compare_unary_ops fail (wildeq1): size = %0d, src = %b, spec = %b, impl = %b",
 	  `SIZE, src, spec_wildeq1, impl_wildeq1);
 
-      if (spec_wildeq2 !== impl_wildeq2)
-	$display("compare_unary_ops fail (wildeq2): size = %0d, src = %b, spec = %b, impl = %b",
+       if (!allow_wild_mismatch && (spec_wildeq2 !== impl_wildeq2))
+ 	$display("compare_unary_ops fail (wildeq2): size = %0d, src = %b, spec = %b, impl = %b",
 	  `SIZE, src, spec_wildeq2, impl_wildeq2);
 
-      if (spec_wildeq3 !== impl_wildeq3)
+       if (!allow_wild_mismatch && (spec_wildeq3 !== impl_wildeq3))
 	$display("compare_unary_ops fail (wildeq3): size = %0d, src = %b, spec = %b, impl = %b",
 	  `SIZE, src, spec_wildeq3, impl_wildeq3);
 
-      if (spec_wildeq4 !== impl_wildeq4)
+       if (!allow_wild_mismatch && (spec_wildeq4 !== impl_wildeq4))
 	$display("compare_unary_ops fail (wildeq4): size = %0d, src = %b, spec = %b, impl = %b",
 	  `SIZE, src, spec_wildeq4, impl_wildeq4);
 
-      if (spec_wildneq1 !== impl_wildneq1)
+       if (!allow_wild_mismatch && (spec_wildneq1 !== impl_wildneq1))
 	$display("compare_unary_ops fail (wildneq1): size = %0d, src = %b, spec = %b, impl = %b",
 	  `SIZE, src, spec_wildneq1, impl_wildneq1);
 
-      if (spec_wildneq2 !== impl_wildneq2)
+       if (!allow_wild_mismatch && (spec_wildneq2 !== impl_wildneq2))
 	$display("compare_unary_ops fail (wildneq2): size = %0d, src = %b, spec = %b, impl = %b",
 	  `SIZE, src, spec_wildneq2, impl_wildneq2);
 
-      if (spec_wildneq3 !== impl_wildneq3)
+       if (!allow_wild_mismatch && (spec_wildneq3 !== impl_wildneq3))
 	$display("compare_unary_ops fail (wildneq3): size = %0d, src = %b, spec = %b, impl = %b",
 	  `SIZE, src, spec_wildneq3, impl_wildneq3);
 
-      if (spec_wildneq4 !== impl_wildneq4)
+       if (!allow_wild_mismatch && (spec_wildneq4 !== impl_wildneq4))
 	$display("compare_unary_ops fail (wildneq4): size = %0d, src = %b, spec = %b, impl = %b",
 	  `SIZE, src, spec_wildneq4, impl_wildneq4);
 
-      `endif
+     `endif
 
    end
 

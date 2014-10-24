@@ -1008,7 +1008,7 @@ their declarations.</p>"
   :fails gracefully
   :count strong
   (seq tokstream
-       (:= (vl-match-token :vl-kwd-primitive))
+       (startkwd := (vl-match-token :vl-kwd-primitive))
        (udpname := (vl-match-token :vl-idtoken))
        (return-raw
         (b* ((backup (vl-tokstream-save))
@@ -1043,7 +1043,7 @@ their declarations.</p>"
                          ((vl-udp-body body))
                          (warnings (vl-parsestate->warnings (vl-tokstream->pstate))))
                       (make-vl-udp :name (vl-idtoken->name udpname)
-                                   :minloc (vl-token->loc udpname)
+                                   :minloc (vl-token->loc startkwd)
                                    :maxloc (vl-token->loc endkwd)
                                    :output head.output
                                    :inputs head.inputs
@@ -1072,7 +1072,7 @@ their declarations.</p>"
                (endkwd := (vl-skip-through-endprimitive (vl-idtoken->name udpname)))
                (return
                 (vl-make-udp-with-parse-error (vl-idtoken->name udpname)
-                                              (vl-token->loc udpname)
+                                              (vl-token->loc startkwd)
                                               (vl-token->loc endkwd)
                                               err
                                               errtokens)))))))

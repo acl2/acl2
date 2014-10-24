@@ -60,13 +60,13 @@ substitution to be more generally useful, and prefer to use fast alists.</p>")
   :keyp-of-nil nil
   :valp-of-nil nil)
 
-(defthm vl-sigma-count-of-cdr-strong
-  (implies (and (vl-sigma-p x)
-                (consp x))
-           (< (vl-sigma-count (cdr x))
-              (vl-sigma-count x)))
-  :rule-classes ((:rewrite) (:linear))
-  :hints(("Goal" :in-theory (enable vl-sigma-count))))
+;; (defthm vl-sigma-count-of-cdr-strong
+;;   (implies (and (vl-sigma-p x)
+;;                 (consp x))
+;;            (< (vl-sigma-count (cdr x))
+;;               (vl-sigma-count x)))
+;;   :rule-classes ((:rewrite) (:linear))
+;;   :hints(("Goal" :in-theory (enable vl-sigma-count))))
 
 (defthm vl-exprlist-p-of-alist-vals-when-vl-sigma-p
   (implies (vl-sigma-p x)

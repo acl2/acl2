@@ -63,14 +63,6 @@ their related warnings.</li>
 
 </ol>")
 
-(defthm vl-reportcard-count-of-cdr-strong
-  (implies (and (vl-reportcard-p x)
-                (consp x))
-           (< (vl-reportcard-count (cdr x))
-              (vl-reportcard-count x)))
-  :rule-classes ((:rewrite) (:linear))
-  :hints(("Goal" :in-theory (enable vl-reportcard-count))))
-
 (local (xdoc::set-default-parents vl-reportcard-p))
 
 (defsection vl-reportcard-basics

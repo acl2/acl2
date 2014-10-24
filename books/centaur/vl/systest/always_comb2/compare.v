@@ -38,9 +38,6 @@ endmodule
 
 `else
 
-`include "spec.v"
-`include "impl.sv"
-
 // Nasty preprocessor garbage to introduce comparison modules for each of the
 // various sizes.  See aux-compare-binary.v for details.
 
