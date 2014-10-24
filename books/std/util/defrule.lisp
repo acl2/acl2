@@ -32,7 +32,6 @@
 (in-package "STD")
 (include-book "xdoc/top" :dir :system)
 (include-book "support")
-(include-book "std/strings/ieqv" :dir :system)
 (include-book "tools/rulesets" :dir :system)
 (program)
 
@@ -198,7 +197,7 @@ generated using @(see defthmd) instead of @(see defthm).</p>")
          nil)
         ((and (consp (car user-hints))
               (stringp (caar user-hints))
-              (str::istreqv "goal" (caar user-hints)))
+              (string-equal "goal" (caar user-hints)))
          (car user-hints))
         (t
          (find-goal-entry-in-user-hints (cdr user-hints)))))
