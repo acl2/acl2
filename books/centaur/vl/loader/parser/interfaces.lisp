@@ -102,7 +102,7 @@ interface_ansi_header ::=
                  :msg "~a0: a module may not contain ~x1s."
                  :args (list bad-item (tag bad-item)))))
 
-       ((vl-genelement-collection c) (vl-sort-genelements items)))
+       ((vl-genblob c) (vl-sort-genelements items)))
 
      (make-vl-interface :name       name
                         :ports      ports

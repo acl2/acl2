@@ -72,10 +72,25 @@
            (module       (:import)          paramdecl vardecl fundecl taskdecl 
                                             (modinst :name instname :maybe-stringp t
                                                      :names-defined t)
-                                            (gateinst :maybe-stringp t :names-defined t))
+                                            (gateinst :maybe-stringp t :names-defined t)
+                                            (genelement :name blockname :maybe-stringp t
+                                                        :names-defined t
+                                                        :sum-type t
+                                                        :acc generates))
+           (genblob
+                         (:import)          portdecl vardecl paramdecl fundecl taskdecl
+                                            typedef
+                                            (modinst :name instname :maybe-stringp t
+                                                     :names-defined t)
+                                            (gateinst :maybe-stringp t :names-defined t)
+                                            (genelement :name blockname :maybe-stringp t
+                                                        :names-defined t
+                                                        :sum-type t
+                                                        :multi-tags (:vl-genbase :vl-genif :vl-gencase :vl-genloop :vl-genblock :vl-genarray)
+                                                        :acc generates))
            ;; fwdtypedefs could be included here but we hope to have resolved them all
            ;; to proper typedefs by the end of loading.
-           (fundecl      ()             (blockitem :acc decls :sum-type t))
+           (fundecl      ()             (blockitem :acc decls :sum-type t :transsum t))
            (design       (:import)      paramdecl vardecl fundecl taskdecl typedef)
            (package      (:import)      paramdecl vardecl fundecl taskdecl typedef))))
 
@@ -371,8 +386,80 @@ the number of gate instances in the list.</p>"
     (string-listp (vl-gateinstlist->names x))))
 
 
+(define vl-genelement->blockname ((x vl-genelement-p))
+  :returns (blockname maybe-stringp)
+  (vl-genelement-case x
+    :vl-genblock x.name
+    :vl-genarray x.name
+    :otherwise nil))
+
+(define vl-genelementlist->blocknames-nrev ((x vl-genelementlist-p) nrev)
+  :parents (vl-genelementlist->blocknames)
+  (b* (((when (atom x))
+        (nrev-fix nrev))
+       (name (vl-genelement->blockname (car x)))
+       (nrev (if name
+                 (nrev-push name nrev)
+               nrev)))
+    (vl-genelementlist->blocknames-nrev (cdr x) nrev)))
 
 
+(define vl-genelementlist->blocknames ((x vl-genelementlist-p))
+  :parents (vl-genelementlist-p modnamespace)
+  :short "Collect all resolved block names in a @(see vl-genelementlist-p)."
+  :long "<p>Note the elements may be unresolved or may not be blocks at all, in
+which case we do not add anything.  In other words, the list of names returned
+may be shorter than the number of elements in the list.</p>"
+  :verify-guards nil
+  (mbe :logic (if (consp x)
+                  (if (vl-genelement->blockname (car x))
+                      (cons (vl-genelement->blockname (car x))
+                            (vl-genelementlist->blocknames (cdr x)))
+                    (vl-genelementlist->blocknames (cdr x)))
+                nil)
+       :exec (with-local-nrev (vl-genelementlist->blocknames-nrev x nrev)))
+  ///
+  (defthm vl-genelementlist->blocknames-nrev-removal
+    (equal (vl-genelementlist->blocknames-nrev x nrev)
+           (append nrev (vl-genelementlist->blocknames x)))
+    :hints(("Goal" :in-theory (enable vl-genelementlist->blocknames-nrev))))
+
+  (verify-guards vl-genelementlist->blocknames)
+
+  (defthm vl-genelementlist->blocknames-when-not-consp
+    (implies (not (consp x))
+             (equal (vl-genelementlist->blocknames x)
+                    nil)))
+
+  (defthm vl-genelementlist->blocknames-of-cons
+    (equal (vl-genelementlist->blocknames (cons a x))
+           (if (vl-genelement->blockname a)
+               (cons (vl-genelement->blockname a)
+                     (vl-genelementlist->blocknames x))
+             (vl-genelementlist->blocknames x))))
+
+  (defthm vl-genelementlist->blocknames-of-list-fix
+    (equal (vl-genelementlist->blocknames (list-fix x))
+           (vl-genelementlist->blocknames x)))
+
+  (defcong list-equiv equal (vl-genelementlist->blocknames x) 1
+    :hints(("Goal"
+            :in-theory (e/d (list-equiv)
+                            (vl-genelementlist->blocknames-of-list-fix))
+            :use ((:instance vl-genelementlist->blocknames-of-list-fix (x x))
+                  (:instance vl-genelementlist->blocknames-of-list-fix (x acl2::x-equiv))))))
+
+  (defthm vl-genelementlist->blocknames-of-append
+    (equal (vl-genelementlist->blocknames (append x y))
+           (append (vl-genelementlist->blocknames x)
+                   (vl-genelementlist->blocknames y))))
+
+  (defthm vl-genelementlist->blocknames-of-rev
+    (equal (vl-genelementlist->blocknames (rev x))
+           (rev (vl-genelementlist->blocknames x))))
+
+  (defthm string-listp-of-vl-genelementlist->blocknames
+    (string-listp (vl-genelementlist->blocknames x))))
 
 
 
@@ -404,10 +491,12 @@ the number of gate instances in the list.</p>"
                           (if look (symbol-name look) "NAME")))
                   (maybe-stringp (cadr (assoc-keyword :maybe-stringp kwds)))
                   (names-defined (cadr (assoc-keyword :names-defined kwds)))
-                  (sum-type      (cadr (assoc-keyword :sum-type      kwds))))
+                  (sum-type      (cadr (assoc-keyword :sum-type      kwds)))
+                  (transsum      (cadr (assoc-keyword :transsum      kwds))))
                (make-tmplsubst :features (append (and maybe-stringp '(:maybe-stringp))
                                                  (and names-defined '(:names-defined))
-                                                 (and sum-type      '(:sum-type)))
+                                                 (and sum-type      '(:sum-type))
+                                                 (and transsum      '(:transsum)))
                                :strsubst
                                `(("__TYPE__" ,(symbol-name type) . vl-package)
                                  ("__ACC__" ,acc . vl-package)
@@ -452,15 +541,30 @@ the number of gate instances in the list.</p>"
                (template-append template (cdr substs)))))))
 
 
+(local (defthmd tag-when-vl-genelement-p
+         (implies (vl-genelement-p x)
+                  (or (equal (tag x) :vl-genbase)
+                      (equal (tag x) :vl-genif)
+                      (equal (tag x) :vl-gencase)
+                      (equal (tag x) :vl-genloop)
+                      (equal (tag x) :vl-genblock)
+                      (equal (tag x) :vl-genarray)))
+         :hints(("Goal" :in-theory (enable vl-genelement-p tag)))
+         :rule-classes :forward-chaining))
+
 (make-event ;; Definition of vl-scopeitem type
  (let ((substs (typeinfos->tmplsubsts (scopes->typeinfos *vl-scopes->items*))))
    `(progn
+      (local (in-theory (enable tag-when-vl-genelement-p)))
       (deftranssum vl-scopeitem
         :short "Recognizer for an syntactic element that can occur within a scope."
-        ,(template-append '((:@ (not :sum-type) vl-__type__)) substs))
+        ,(template-append '((:@ (not :transsum) vl-__type__)) substs))
+      (local (in-theory (disable tag-when-vl-genelement-p
+                                 vl-genelement-p-by-tag-when-vl-scopeitem-p)))
+
 
       ,@(template-append
-         '((:@ :sum-type
+         '((:@ :transsum
             (defthm vl-scopeitem-p-when-vl-__type__-p
               (implies (vl-__type__-p x)
                        (vl-scopeitem-p x))
@@ -611,6 +715,7 @@ the number of gate instances in the list.</p>"
                            consp-when-member-equal-of-vl-atts-p
                            acl2::consp-when-member-equal-of-keyval-alist-p
                            acl2::consp-of-car-when-alistp
+                           (tau-system)
                            not)))
 
 
@@ -671,7 +776,13 @@ the number of gate instances in the list.</p>"
                          name)))
 
        ,@(and (not sum-type)
-              `((defthm ,(mksym 'tag-of- fn)
+              `((local (defthm ,(mksym 'tag-when- element-p '-strong)
+                (implies (,element-p x)
+                         (equal (tag x)
+                                ,tag))
+                  :hints(("Goal" :in-theory (enable ,(mksym 'tag-when- element-p))))))
+
+                (defthm ,(mksym 'tag-of- fn)
                   (equal (tag (,fn name x))
                          (if (,fn name x)
                              ,tag
@@ -680,7 +791,10 @@ the number of gate instances in the list.</p>"
        (defthm ,(mksym 'member-equal-of- fn)
          (implies (force (,list-p x))
                   (iff (member-equal (,fn name x) x)
-                       (,fn name x))))
+                       (,fn name x)))
+         :hints (("goal" :induct (,fn name x)
+                  :expand ((:free (name) (,fn name x))
+                           (:free (name) (,fn name nil))))))
 
        (defthm ,(mksym 'consp-of- fn '-when-member-equal)
          (implies (and (member-equal name (,list->names x))
@@ -688,6 +802,16 @@ the number of gate instances in the list.</p>"
                   (consp (,fn name x))))
 
        (local (set-default-hints nil)))))
+
+(local (defthm vl-genelement-fix-type
+         (consp (vl-genelement-fix x))
+         :hints(("Goal" :expand ((:with vl-genelement-fix (vl-genelement-fix x)))))
+         :rule-classes :type-prescription))
+
+(local (defthm vl-blockitem-fix-type
+         (consp (vl-blockitem-fix x))
+         :hints(("Goal" :expand ((:with vl-blockitem-fix (vl-blockitem-fix x)))))
+         :rule-classes :type-prescription))
 
 
 (make-event ;; Definition of scopeitem alists/finders
@@ -1017,7 +1141,12 @@ the number of gate instances in the list.</p>"
 
 ;; (fty::deflist vl-scopelist :elt-type vl-scope :elementp-of-nil nil)
 
-
+(local (defthm type-of-vl-scope-fix
+         (consp (vl-scope-fix x))
+         :hints (("goal" :use ((:instance consp-when-vl-scope-p
+                                (x (vl-scope-fix x))))
+                  :in-theory (disable consp-when-vl-scope-p)))
+         :rule-classes :type-prescription))
 
 
 (fty::defflexsum vl-scopestack

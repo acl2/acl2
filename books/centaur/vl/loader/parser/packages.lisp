@@ -180,7 +180,7 @@
                                     :msg "~a0: a package may not contain ~x1s."
                                     :args (list bad-item (tag bad-item)))))
 
-                          ((vl-genelement-collection c) (vl-sort-genelements items)))
+                          ((vl-genblob c) (vl-sort-genelements items)))
                        (make-vl-package :name (vl-idtoken->name name)
                                         :minloc (vl-token->loc startkwd)
                                         :maxloc (vl-token->loc endkwd)

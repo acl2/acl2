@@ -3146,7 +3146,7 @@ be non-sliceable, at least if it's an input.</p>"
   (local (include-book "tools/templates" :dir :system))
 
   (defconst *vl-modelement-typenames*
-    '(port
+    '(port      ;; should this be in here?
       portdecl
       assign
       alias
@@ -3177,8 +3177,12 @@ be non-sliceable, at least if it's an input.</p>"
   (local (defun types-mk-strsubst-alists (types)
            (if (atom types)
                nil
-             (cons `(("__TYPE__" ,(symbol-name (car types)) . vl-package))
-                   (types-mk-strsubst-alists (cdr types))))))
+             (let ((name (symbol-name (car types))))
+             (cons `(("__TYPE__" ,name . vl-package)
+                     ("__ELTS__" ,(if (member (char name (1- (length name))) '(#\S #\s))
+                                      (str::cat name "ES")
+                                    (str::cat name "S")) . vl-package))
+                   (types-mk-strsubst-alists (cdr types)))))))
 
   (local (defconst *strsubst-alists*
            (types-mk-strsubst-alists *vl-modelement-typenames*)))
@@ -3306,6 +3310,24 @@ initially kept in a big, mixed list.</p>"
         (default   vl-generateblock  "the default, which may be an empty generateblock if not provided")
         (loc   vl-location)))
 
+      (:vl-genblock
+       :base-name vl-genblock
+       :layout :tree
+       :short "Normalized form of a generate construct that has been instantiated."
+       ((name      maybe-stringp     "the name of the block, if named")
+        (elems     vl-genelementlist-p)
+        (loc       vl-location)))
+
+
+      (:vl-genarray
+       :base-name vl-genarray
+       :layout :tree
+       :short "Normalized form of a generate loop."
+       ((name      maybe-stringp     "the name of the block array, if named")
+        (var       vl-id             "the iterator variable")
+        (blocks    vl-genarrayblocklist-p "the blocks produced by the loop")
+        (loc       vl-location)))
+
       (:vl-genbase
        :base-name vl-genbase
        :layout :tree
@@ -3322,6 +3344,15 @@ initially kept in a big, mixed list.</p>"
     (fty::defalist vl-gencaselist :key-type vl-exprlist :val-type vl-generateblock
       :true-listp t
       :measure (two-nats-measure (acl2-count x) 5))
+
+    (fty::deflist vl-genarrayblocklist :elt-type vl-genarrayblock
+      :true-listp t :elementp-of-nil nil
+      :measure (two-nats-measure (acl2-count x) 1))
+
+    (defprod vl-genarrayblock
+      ((index    integerp           "index of the iterator variable for this block")
+       (elems    vl-genelementlist-p))
+      :measure (two-nats-measure (acl2-count x) 3))
 
     (defprod vl-generateblock
       ((name     maybe-stringp      "name of the generate block if provided")
@@ -3340,16 +3371,16 @@ initially kept in a big, mixed list.</p>"
 
   (make-event
    `(progn
-      (defprod vl-genelement-collection
+      (defprod vl-genblob
         :short "A sorted collection of module elements (see @(see vl-modelement))."
         :long "<p>A vl-modelement-collection can be made from a @(see
 vl-modelementlist) by sorting the elements by type.  Its fields each contain
 the list of elements of the given type.</p>"
         (,@(project-over-types
-            '(__type__s vl-__type__list-p))
+            '(__elts__ vl-__type__list-p))
            (generates vl-genelementlist-p))
 
-
+        :tag :vl-genblob
         :layout :tree)
 
 
@@ -3372,39 +3403,41 @@ the list of elements of the given type.</p>"
           :vl-genbase (vl-modelement-loc x.item)
           :vl-genloop   x.loc
           :vl-genif     x.loc
-          :vl-gencase   x.loc))
+          :vl-gencase   x.loc
+          :vl-genblock  x.loc
+          :vl-genarray  x.loc))
 
       (define vl-sort-genelements-aux
         ((x           vl-genelementlist-p)
          ,@(project-over-types
-            '(__type__s       vl-__type__list-p))
+            '(__elts__       vl-__type__list-p))
          (generates   vl-genelementlist-p))
         :returns (mv ,@(project-over-types
-                        `(__type__s
+                        `(__elts__
                           vl-__type__list-p
                           :hints (("goal" :in-theory (disable (:d vl-sort-genelements-aux))
                                    :induct (vl-sort-genelements-aux
-                                            x ,@(project-over-types '__type__s) generates)
+                                            x ,@(project-over-types '__elts__) generates)
                                    :expand ((vl-sort-genelements-aux
-                                             x ,@(project-over-types '__type__s) generates))))))
+                                             x ,@(project-over-types '__elts__) generates))))))
                      (generates vl-genelementlist-p
                                 :hints (("goal" :in-theory (disable (:d vl-sort-genelements-aux))
                                          :induct (vl-sort-genelements-aux
-                                                  x ,@(project-over-types '__type__s) generates)
+                                                  x ,@(project-over-types '__elts__) generates)
                                          :expand ((vl-sort-genelements-aux
-                                                   x ,@(project-over-types '__type__s) generates))))))
+                                                   x ,@(project-over-types '__elts__) generates))))))
         :hooks ((:fix :hints (("goal" :in-theory (disable (:d vl-sort-genelements-aux))
                                :induct (vl-sort-genelements-aux
-                                        x ,@(project-over-types '__type__s) generates)
-                               :expand ((:free (,@(project-over-types '__type__s) generates)
+                                        x ,@(project-over-types '__elts__) generates)
+                               :expand ((:free (,@(project-over-types '__elts__) generates)
                                          (vl-sort-genelements-aux
-                                          x ,@(project-over-types '__type__s) generates))
+                                          x ,@(project-over-types '__elts__) generates))
                                         (vl-sort-genelements-aux
                                          (vl-genelementlist-fix x)
-                                         ,@(project-over-types '__type__s) generates))))))
+                                         ,@(project-over-types '__elts__) generates))))))
         (b* (((when (atom x))
               (mv ,@(project-over-types
-                     '(rev (vl-__type__list-fix        __type__s)))
+                     '(rev (vl-__type__list-fix        __elts__)))
                   (vl-genelementlist-fix generates))))
           (vl-genelement-case (xf (car x))
             :vl-genbase
@@ -3413,11 +3446,11 @@ the list of elements of the given type.</p>"
               (vl-sort-genelements-aux
                (cdr x)
                ,@(project-over-types
-                  '(if (eq tag :vl-__type__)       (cons x1 __type__s)       __type__s))
+                  '(if (eq tag :vl-__type__)       (cons x1 __elts__)       __elts__))
                generates))
             :otherwise
             (vl-sort-genelements-aux
-             (cdr x) ,@(project-over-types '__type__s)
+             (cdr x) ,@(project-over-types '__elts__)
              (cons (vl-genelement-fix (car x)) generates))))
         :prepwork
         ((local (in-theory (disable
@@ -3444,11 +3477,11 @@ the list of elements of the given type.</p>"
                             (:ruleset tag-reasoning))))))
 
       (define vl-sort-genelements ((x vl-genelementlist-p))
-        :returns (collection vl-genelement-collection-p)
-        (b* (((mv ,@(project-over-types '__type__s) generates)
+        :returns (collection vl-genblob-p)
+        (b* (((mv ,@(project-over-types '__elts__) generates)
               (vl-sort-genelements-aux x ,@(project-over-types nil) nil)))
-          (make-vl-genelement-collection
-           ,@(append-over-types '(:__type__s __type__s))
+          (make-vl-genblob
+           ,@(append-over-types '(:__elts__ __elts__))
            :generates generates))))))
 
 
@@ -3521,6 +3554,9 @@ the list of elements of the given type.</p>"
 
    (assigns    vl-assignlist-p
                "Top-level continuous assignments like @('assign lhs = rhs;').")
+
+   (aliases    vl-aliaslist-p
+               "Wire aliases, @('alias lhs = rhs;')")
 
    (modinsts   vl-modinstlist-p
                "Instances of modules and user-defined primitives, e.g.,

@@ -53,7 +53,8 @@
   (logic)
   (defprod foo :tag :foo ((f1 natp) (f2 natp) (f3 natp)))
   (defprod bar :tag :bar ((f1 natp) (f2 natp) (f3 natp)))
-  (defprod baz :tag :baz ((f2 natp))))
+  (defprod baz :tag :baz ((f2 natp)))
+  (deftagsum fa (:fa1 (pu natp)) (:fa2 (pa natp))))
 ||#
 
 #!FTY
@@ -62,15 +63,26 @@
   (table-alist 'fty::flextypes-table world))
 
 #!FTY
-(def-primitive-aggregate prodinfo
+(def-primitive-aggregate suminfo
   (type   ;; the superior flextypes object
    sum    ;; the single flexsum within type
-   prod   ;; the single flexprod within sum
+   tags   ;; possible tags for products within type
    ))
 
 #!FTY
-(define get-flexprod-info (name world)
-  :returns (prodinfo?)
+(define get-flexsum-from-types (name types)
+  (if (atom types)
+      nil
+    (or (and (eq (tag (car types)) :sum)
+             (eq (flexsum->name (car types)) name)
+             (car types))
+        (get-flexsum-from-types name (cdr types)))))
+        
+
+
+#!FTY
+(define get-flexsum-info (name world)
+  :returns (suminfo?)
   (b* ((table (get-flextypes world))
        (entry (cdr (assoc name table)))
        ((unless entry)
@@ -78,70 +90,66 @@
        ((unless (fty::flextypes-p entry))
         (raise "flextypes table entry for ~x0 is malformed???" name))
        ((fty::flextypes entry) entry)
-       ((unless (equal (len entry.types) 1))
-        (raise "~x0 doesn't look like a defprod; expected one sum type but found ~x1."
-               name (len entry.types)))
-       (sum (car entry.types))
+       ;; ((unless (equal (len entry.types) 1))
+       ;;  (raise "~x0 doesn't look like a defprod; expected one sum type but found ~x1."
+       ;;         name (len entry.types)))
+       (sum (get-flexsum-from-types name entry.types))
        ((unless (flexsum-p sum))
-        (raise "~x0 doesn't look like a defprod: expected a top-level sum but found ~x1."
+        (raise "~x0 doesn't look like a deftagsum: expected a top-level sum but found ~x1."
                name sum))
        ((flexsum sum) sum)
-       ((unless (equal (len sum.prods) 1))
-        (raise "~x0 doesn't look like a defprod: expected a single product but found ~x1."
-               name sum.prods))
-       (prod (car sum.prods))
-       ((unless (flexprod-p prod))
-        (raise "~x0 doesn't look like a defprod: expected a flexprod-p but found ~x1."
-               name prod)))
-    (make-prodinfo :type entry
-                   :sum sum
-                   :prod prod)))
+       ;; ((unless (equal (len sum.prods) 1))
+       ;;  (raise "~x0 doesn't look like a defprod: expected a single product but found ~x1."
+       ;;         name sum.prods))
+       ;; (prod (car sum.prods))
+       ;; ((unless (flexprod-p prod))
+       ;;  (raise "~x0 doesn't look like a defprod: expected a flexprod-p but found ~x1."
+       ;;         name prod))
+       )
+    (make-suminfo :type entry
+                  :sum sum
+                  :tags (flexprods->kinds sum.prods))))
 
 #!FTY
-(define get-flexprod-infos (prodnames world)
-  (if (atom prodnames)
+(define get-flexsum-infos (sumnames world)
+  (if (atom sumnames)
       nil
-    (cons (get-flexprod-info (car prodnames) world)
-          (get-flexprod-infos (cdr prodnames) world))))
+    (cons (get-flexsum-info (car sumnames) world)
+          (get-flexsum-infos (cdr sumnames) world))))
 
 
 #||
 (make-event
- (b* ((infos (fty::get-flexprod-infos '(foo bar baz) (w state))))
-   `(defconst *prodinfos* ',infos)))
+ (b* ((infos (fty::get-flexsum-infos '(foo bar fa baz) (w state))))
+   `(defconst *suminfos* ',infos)))
 ||#
 
 #!FTY
-(define prodinfo->foop (x)
-  (b* ((sum (prodinfo->sum x))
+(define suminfo->foop (x)
+  (b* ((sum (suminfo->sum x))
        (pred (flexsum->pred sum)))
     pred))
 
-#!FTY
-(define prodinfo->tag (x)
-  (b* ((prod (prodinfo->prod x))
-       (kind (flexprod->kind prod)))
-    kind))
 
 #!FTY
-(define prodinfo->foo-fix (x)
-  (b* ((sum (prodinfo->sum x))
+(define suminfo->foo-fix (x)
+  (b* ((sum (suminfo->sum x))
        (fix (flexsum->fix sum)))
     fix))
 
 
 #||
-(list (fty::prodinfo->foop (first *prodinfos*))
-      (fty::prodinfo->foop (second *prodinfos*))
-      (fty::prodinfo->foop (third *prodinfos*)))
+(list (fty::suminfo->foop (first *suminfos*))
+      (fty::suminfo->foop (second *suminfos*))
+      (fty::suminfo->foop (third *suminfos*)))
 
-(list (fty::prodinfo->tag (first *prodinfos*))
-      (fty::prodinfo->tag (second *prodinfos*))
-      (fty::prodinfo->tag (third *prodinfos*)))
+(list (fty::suminfo->tag (first *suminfos*))
+      (fty::suminfo->tag (second *suminfos*))
+      (fty::suminfo->tag (third *suminfos*)))
 
-(list (fty::prodinfo->foo-fix (first *prodinfos*))
-      (fty::prodinfo->foo-fix (second *prodinfos*))
-      (fty::prodinfo->foo-fix (third *prodinfos*)))
+(list (fty::suminfo->foo-fix (first *suminfos*))
+      (fty::suminfo->foo-fix (second *suminfos*))
+      (fty::suminfo->foo-fix (third *suminfos*)))
 
 ||#
 
@@ -169,64 +177,65 @@
 ; ------------------ Sum Recognizer ----------------------------------------------
 
 
-(defun dts-recognizer-logic-def-aux (prodinfos xvar)
-  (b* (((when (atom prodinfos))
+(defun dts-recognizer-logic-def-aux (suminfos xvar)
+  (b* (((when (atom suminfos))
         nil))
-    (cons `(,(fty::prodinfo->foop (car prodinfos)) ,xvar)
-          (dts-recognizer-logic-def-aux (cdr prodinfos) xvar))))
+    (cons `(,(fty::suminfo->foop (car suminfos)) ,xvar)
+          (dts-recognizer-logic-def-aux (cdr suminfos) xvar))))
 
-(defun dts-recognizer-logic-def (name prodinfos)
+(defun dts-recognizer-logic-def (name suminfos)
   (cons 'or
-        (dts-recognizer-logic-def-aux prodinfos (dts-x name))))
+        (dts-recognizer-logic-def-aux suminfos (dts-x name))))
 
 #||
-(dts-recognizer-logic-def 'mysum *prodinfos*)
+(dts-recognizer-logic-def 'mysum *suminfos*)
 ||#
 
-(defun dts-recognizer-exec-def-aux (prodinfos xvar)
-  (b* (((when (atom prodinfos))
+(defun dts-recognizer-exec-def-aux (suminfos xvar)
+  (b* (((when (atom suminfos))
         nil)
-       ((when (atom (cdr prodinfos)))
+       ((when (atom (cdr suminfos)))
         ;; last one, just use "otherwise"
         `((otherwise
-           (,(fty::prodinfo->foop (car prodinfos)) ,xvar)))))
-    (cons `(,(fty::prodinfo->tag (car prodinfos))
-            (,(fty::prodinfo->foop (car prodinfos)) ,xvar))
-          (dts-recognizer-exec-def-aux (cdr prodinfos) xvar))))
+           (,(fty::suminfo->foop (car suminfos)) ,xvar))))
+       (tags (fty::suminfo->tags (car suminfos))))
+    (cons `(,(if (consp (cdr tags)) tags (car tags))
+            (,(fty::suminfo->foop (car suminfos)) ,xvar))
+          (dts-recognizer-exec-def-aux (cdr suminfos) xvar))))
 
-(defun dts-recognizer-exec-def (name prodinfos)
+(defun dts-recognizer-exec-def (name suminfos)
   (let ((xvar (dts-x name)))
     `(case (tag ,xvar)
-       . ,(dts-recognizer-exec-def-aux prodinfos xvar))))
+       . ,(dts-recognizer-exec-def-aux suminfos xvar))))
 
 #||
-(dts-recognizer-exec-def 'mysum *prodinfos*)
+(dts-recognizer-exec-def 'mysum *suminfos*)
 ||#
 
-(defun dts-recognizer-def (name prodinfos)
+(defun dts-recognizer-def (name suminfos)
   (let ((xvar (dts-x name)))
     `(define ,(dts-recognizer-name name) (,xvar)
        :parents (,name)
-       (mbe :logic ,(dts-recognizer-logic-def name prodinfos)
-            :exec ,(dts-recognizer-exec-def name prodinfos)))))
+       (mbe :logic ,(dts-recognizer-logic-def name suminfos)
+            :exec ,(dts-recognizer-exec-def name suminfos)))))
 
 #||
-(dts-recognizer-def 'mysum *prodinfos*)
+(dts-recognizer-def 'mysum *suminfos*)
 ||#
 
 
 ; ------------------ Basic Theorems ----------------------------------------------
 
-(defun dts-member-implies-sum-thm (name prodinfo)
+(defun dts-member-implies-sum-thm (name suminfo)
 
-  ;; This produces theorems like this:
+  ;; This sumuces theorems like this:
   ;; (defthm vl-atomguts-p-when-vl-constint-p
   ;;   (implies (vl-constint-p x)
   ;;            (vl-atomguts-p x)))
 
   (b* ((xvar     (dts-x name))
        (sum-name (dts-recognizer-name name))
-       (mem-name (fty::prodinfo->foop prodinfo))
+       (mem-name (fty::suminfo->foop suminfo))
        (thm-name (intern-in-package-of-symbol
                   (concatenate 'string (symbol-name sum-name) "-WHEN-"
                                (symbol-name mem-name))
@@ -238,19 +247,25 @@
        ;; of sizing, etc.
        :rule-classes ((:rewrite :backchain-limit-lst 1)))))
 
-(defun dts-member-implies-sum-thms (name prodinfos)
-  (if (atom prodinfos)
+(defun dts-member-implies-sum-thms (name suminfos)
+  (if (atom suminfos)
       nil
-    (cons (dts-member-implies-sum-thm name (car prodinfos))
-          (dts-member-implies-sum-thms name (cdr prodinfos)))))
+    (cons (dts-member-implies-sum-thm name (car suminfos))
+          (dts-member-implies-sum-thms name (cdr suminfos)))))
 
 #||
-(dts-member-implies-sum-thms 'mysum *prodinfos*)
+(dts-member-implies-sum-thms 'mysum *suminfos*)
 ||#
 
-(defun dts-by-tag-thm (name prodinfo)
+(defun dts-tag-equalities (xvar tags)
+  (if (atom tags)
+      nil
+    (cons `(equal (tag ,xvar) ,(car tags))
+          (dts-tag-equalities xvar (cdr tags)))))
 
-  ;; This produces theorems like this:
+(defun dts-by-tag-thm (name suminfo)
+
+  ;; This sumuces theorems like this:
   ;; (defthm vl-constint-p-by-tag-when-vl-atomguts-p
   ;;   (implies (and (equal (tag x) :vl-constint)
   ;;                 (vl-atomguts-p x))
@@ -258,38 +273,38 @@
 
   (b* ((xvar     (dts-x name))
        (sum-name (dts-recognizer-name name))
-       (mem-name (fty::prodinfo->foop prodinfo))
-       (mem-tag  (fty::prodinfo->tag prodinfo))
+       (mem-name (fty::suminfo->foop suminfo))
+       (mem-tags  (fty::suminfo->tags suminfo))
        (thm-name (intern-in-package-of-symbol
                   (concatenate 'string (symbol-name mem-name)
                                "-BY-TAG-WHEN-"
                                (symbol-name sum-name))
                   name)))
     `(defthm ,thm-name
-       (implies (and (equal (tag ,xvar) ,mem-tag)
+       (implies (and (or . ,(dts-tag-equalities xvar mem-tags))
                      (,sum-name ,xvar))
                 (,mem-name ,xvar)))))
 
-(defun dts-by-tag-thms (name prodinfos)
-  (if (atom prodinfos)
+(defun dts-by-tag-thms (name suminfos)
+  (if (atom suminfos)
       nil
-    (cons (dts-by-tag-thm name (car prodinfos))
-          (dts-by-tag-thms name (cdr prodinfos)))))
+    (cons (dts-by-tag-thm name (car suminfos))
+          (dts-by-tag-thms name (cdr suminfos)))))
 
 #||
-(dts-by-tag-thms 'mysum *prodinfos*)
+(dts-by-tag-thms 'mysum *suminfos*)
 ||#
 
 
-(defun dts-when-invalid-tag-hyps (name prodinfos)
-  (b* (((when (atom prodinfos))
+(defun dts-when-invalid-tag-hyps (name suminfos)
+  (b* (((when (atom suminfos))
         nil)
        (xvar (dts-x name))
-       (tag  (fty::prodinfo->tag (car prodinfos))))
-    (cons `(not (equal (tag ,xvar) ,tag))
-          (dts-when-invalid-tag-hyps name (cdr prodinfos)))))
+       (tags  (fty::suminfo->tags (car suminfos))))
+    (cons `(not (or . ,(dts-tag-equalities xvar tags)))
+          (dts-when-invalid-tag-hyps name (cdr suminfos)))))
 
-(defun dts-when-invalid-tag-thm (name prodinfos)
+(defun dts-when-invalid-tag-thm (name suminfos)
   ;; Generates a theorem like:
   ;; (defthm vl-atomicstmt-p-when-invalid-tag
   ;;   (implies (and (not (equal (tag x) :vl-nullstmt))
@@ -307,12 +322,12 @@
                                "-WHEN-INVALID-TAG")
                   name)))
     `(defthm ,thm-name
-       (implies (and . ,(dts-when-invalid-tag-hyps name prodinfos))
+       (implies (and . ,(dts-when-invalid-tag-hyps name suminfos))
                 (not (,sum-name ,xvar)))
        :rule-classes ((:rewrite :backchain-limit-lst 0)))))
 
 #||
-(dts-when-invalid-tag-thm 'mysum *prodinfos*)
+(dts-when-invalid-tag-thm 'mysum *suminfos*)
 ||#
 
 
@@ -320,11 +335,11 @@
 
 ; ----------------------- Fixing Function --------------------------------------
 
-(defun dts-fix-def (name prodinfos)
-  (b* (((when (atom prodinfos))
+(defun dts-fix-def (name suminfos)
+  (b* (((when (atom suminfos))
         (er hard? 'deftranssum "Can't define transparent sum ~x0 with no member types." name))
-       (info1   (car prodinfos))
-       (mem-fix (fty::prodinfo->foo-fix info1))
+       (info1   (car suminfos))
+       (mem-fix (fty::suminfo->foo-fix info1))
        (sum-fix (dts-fix-name name))
        (sum-p   (dts-recognizer-name name))
        (xvar    (dts-x name)))
@@ -353,7 +368,7 @@
         (,sum-p (,sum-fix ,xvar))))))
 
 #||
-(dts-fix-def 'mysum *prodinfos*)
+(dts-fix-def 'mysum *suminfos*)
 (dts-fix-thms 'mysum)
 ||#
 
@@ -396,10 +411,10 @@
        (foo-equiv (dts-equiv-name name))
        (x         (dts-x name))
 
-       (prodnames (first other-args))
-       (prodinfos (fty::get-flexprod-infos prodnames (w state)))
-       (def       (dts-recognizer-def name prodinfos))
-       (fix-def   (dts-fix-def name prodinfos))
+       (sumnames (first other-args))
+       (suminfos (fty::get-flexsum-infos sumnames (w state)))
+       (def       (dts-recognizer-def name suminfos))
+       (fix-def   (dts-fix-def name suminfos))
 
        ((when (eq mode :program))
         `(defsection ,name
@@ -425,9 +440,9 @@
                      (consp ,x))
             :rule-classes :compound-recognizer)
 
-          ,@(dts-member-implies-sum-thms name prodinfos)
-          ,@(dts-by-tag-thms name prodinfos)
-          ,(dts-when-invalid-tag-thm name prodinfos)
+          ,@(dts-member-implies-sum-thms name suminfos)
+          ,@(dts-by-tag-thms name suminfos)
+          ,(dts-when-invalid-tag-thm name suminfos)
           ,@(dts-fix-thms name)
 
           (fty::deffixtype ,name
@@ -461,8 +476,15 @@
               (value-triple '(deftranssum ,',name))))))
 
 #||
+(local (defthm fa-p-possible-tags
+         (implies (fa-p x)
+                  (or (equal (tag x) :fa1)
+                      (equal (tag x) :fa2)))
+         :hints(("Goal" :in-theory (enable fa-p tag)))
+         :rule-classes :forward-chaining))
+
 (deftranssum mysum
   :mode :logic
-  (foo bar baz))
+  (foo bar fa baz))
 ||#
 
