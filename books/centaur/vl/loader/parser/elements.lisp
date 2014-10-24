@@ -38,6 +38,7 @@
 (include-book "functions")  ;; vl-fundecllist-p
 (include-book "modports")
 (include-book "typedefs")
+(include-book "imports")
 (include-book "../../mlib/port-tools")  ;; vl-ports-from-portdecls
 (local (include-book "../../util/arithmetic"))
 
@@ -350,6 +351,11 @@
                 (aliases := (vl-parse-alias atts))
                 (return aliases)))
 
+         ((when (eq type1 :vl-kwd-import))
+          (seq tokstream
+               (imports := (vl-parse-package-import-declaration atts))
+               (return imports)))
+
          ((when (or (eq type1 :vl-kwd-always_ff)
                     (eq type1 :vl-kwd-always_latch)
                     (eq type1 :vl-kwd-always_comb)))
@@ -357,7 +363,6 @@
       ;; SystemVerilog -- BOZO haven't thought this through very thoroughly, but it's
       ;; probably a fine starting place.
       (vl-parse-block-item-declaration-noatts atts))))
-
 
 (defparser vl-parse-modelement ()
   :result (vl-modelementlist-p val)
