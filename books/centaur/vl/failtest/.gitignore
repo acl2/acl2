@@ -5,3 +5,9 @@
 *.esims.sao
 *.v.pp
 *.sv.pp
+csrc
+INCA_libs
+simv
+simv.daidir
+ucli.key
+*.log
