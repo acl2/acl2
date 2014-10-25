@@ -34,7 +34,7 @@
 (include-book "porttable")
 (include-book "showloc")
 (include-book "file-layout")
-(include-book "../transforms/xf-annotate-mods")
+(include-book "../transforms/annotate/top")
 (include-book "../mlib/comment-writer")
 (include-book "std/io/unsound-read" :dir :system)
 (include-book "centaur/quicklisp/hunchentoot" :dir :system)

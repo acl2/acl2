@@ -29,14 +29,14 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "../mlib/port-tools")
-(include-book "../mlib/modnamespace")
-(local (include-book "../util/arithmetic"))
-(local (include-book "../util/osets"))
+(include-book "../../mlib/port-tools")
+(include-book "../../mlib/modnamespace")
+(local (include-book "../../util/arithmetic"))
+(local (include-book "../../util/osets"))
 (local (std::add-default-post-define-hook :fix))
 
 (defxdoc argresolve
-  :parents (transforms)
+  :parents (annotate)
   :short "Converts named argument lists into plain argument lists, and
 annotates each plain argument with its direction."
 

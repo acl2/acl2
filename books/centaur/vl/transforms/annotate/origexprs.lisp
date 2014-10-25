@@ -29,14 +29,13 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "../parsetree")
-(include-book "../mlib/expr-tools")
-(include-book "../mlib/stmt-tools")
-(local (include-book "../util/arithmetic"))
+(include-book "../../mlib/expr-tools")
+(include-book "../../mlib/stmt-tools")
+(local (include-book "../../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
 
 (defxdoc origexprs
-  :parents (transforms)
+  :parents (annotate)
   :short "Add @('VL_ORIG_EXPR') annotations to some expressions."
 
   :long "<p>In this transformation, we annotate many expressions with their

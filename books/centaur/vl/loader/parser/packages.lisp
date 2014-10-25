@@ -29,14 +29,14 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "utils")
-(include-book "../../parsetree")
+(include-book "elements")
 (local (include-book "../../util/arithmetic"))
 
-;; package_declaration ::=
-;; { attribute_instance } package [ lifetime ] package_identifier ;
-;; [ timeunits_declaration ] { { attribute_instance } package_item }
-;; endpackage [ : package_identifier ]
+(defxdoc parse-packages
+  :parents (parser)
+  :short "Functions for parsing SystemVerilog packages.")
+
+(local (xdoc::set-default-parents parse-packages))
 
 ;; package_item ::=
 ;; package_or_generate_item_declaration
@@ -79,54 +79,148 @@
 ;; | class_constructor_declaration
 ;; | ;
 
-(defparser vl-parse-package-declaration-aux ()
-  :result (vl-endinfo-p val)
+(defparser vl-skip-through-endpackage (pkgname)
+  :short "Special error recovery for parse errors encountered during packages."
+  :guard (stringp pkgname)
+  :result (vl-token-p val)
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  ;; Similar to UDPs, but we don't have to check for Verilog-2005 because
-  ;; packages only exist in SystemVerilog-2012.
   (seq tokstream
         (unless (vl-is-token? :vl-kwd-endpackage)
           (:s= (vl-match-any))
-          (info := (vl-parse-package-declaration-aux))
-          (return info))
-        (end := (vl-match))
-        (unless (vl-is-token? :vl-colon)
-          (return (make-vl-endinfo :name nil
-                                   :loc (vl-token->loc end))))
-        (:= (vl-match))
-        (id := (vl-match-token :vl-idtoken))
-        (return (make-vl-endinfo :name (vl-idtoken->name id)
-                                 :loc (vl-token->loc id)))))
+          (endkwd := (vl-skip-through-endpackage pkgname))
+          (return endkwd))
+        (endkwd := (vl-match))
+        (:= (vl-parse-endblock-name pkgname "package/endpackage"))
+        (return endkwd)))
+
+(define vl-make-package-with-parse-error ((name   stringp)
+                                          (minloc vl-location-p)
+                                          (maxloc vl-location-p)
+                                          (err    vl-warning-p)
+                                          (tokens vl-tokenlist-p))
+  :returns (package vl-package-p)
+  (b* (;; We also generate a second error message.
+       ;;  - This lets us always show the remaining part of the token stream
+       ;;    in each case.
+       ;;  - It ensures that any module with a parse error always, absolutely,
+       ;;    certainly has a fatal warning, even if somehow the real warning
+       ;;    isn't marked as fatal.
+       (warn2 (make-vl-warning :type :vl-parse-error
+                               :msg "[[ Remaining ]]: ~s0 ~s1.~%"
+                               :args (list (vl-tokenlist->string-with-spaces
+                                            (take (min 4 (len tokens))
+                                                  (redundant-list-fix tokens)))
+                                           (if (> (len tokens) 4) "..." ""))
+                               :fatalp t
+                               :fn __function__)))
+    (make-vl-package :name name
+                     :minloc minloc
+                     :maxloc maxloc
+                     :warnings (list err warn2))))
 
 (defparser vl-parse-package-declaration (atts)
+  ;; package_declaration ::= { attribute_instance } package [ lifetime ] package_identifier ;
+  ;;                           [ timeunits_declaration ]
+  ;;                           { { attribute_instance } package_item }
+  ;;                         endpackage [ : package_identifier ]
   :guard (vl-atts-p atts)
   :result (vl-package-p val)
   :resultp-of-nil nil
   :fails gracefully
   :count strong
   (seq tokstream
-        (:= (vl-match-token :vl-kwd-package))
-        (name := (vl-match-token :vl-idtoken))
-        (endinfo := (vl-parse-package-declaration-aux))
-        (when (and (vl-endinfo->name endinfo)
-                   (not (equal (vl-idtoken->name name)
-                               (vl-endinfo->name endinfo))))
-          (return-raw
-           (vl-parse-error
-            (cat "Mismatched package/endpackage pair: expected "
-                 (vl-idtoken->name name) " but found "
-                 (vl-endinfo->name endinfo)))))
-        (return
-         (make-vl-package
-          :name (vl-idtoken->name name)
-          :atts atts
-          :warnings (fatal :type :vl-warn-package
-                           :msg "Packages are not supported."
-                           :args nil
-                           :acc nil)
-          :minloc (vl-token->loc name)
-          :maxloc (vl-endinfo->loc endinfo)))))
+        (startkwd := (vl-match-token :vl-kwd-package))
+        (lifetime := (vl-maybe-parse-lifetime))
+        (name     := (vl-match-token :vl-idtoken))
+        (return-raw
+         (b* ((backup (vl-tokstream-save))
+
+              ;; Temporarily clear out the warnings so that we can associate any
+              ;; warnings encountered while parsing the package with the package
+              ;; itself.
+              (orig-warnings (vl-parsestate->warnings (vl-tokstream->pstate)))
+              (tokstream     (vl-tokstream-update-pstate
+                              (change-vl-parsestate (vl-tokstream->pstate) :warnings nil)))
+
+              ;; Now try to parse the rest of the package declaration.
+              ((mv err pkg tokstream)
+               (seq tokstream
+                    (:= (vl-match-token :vl-semi))
+                    ;; BOZO parse timeunits declaration stuff.
+                    (items  := (vl-parse-0+-genelements))
+                    (endkwd := (vl-match-token :vl-kwd-endpackage))
+                    (:= (vl-parse-endblock-name (vl-idtoken->name name) "package/endpackage"))
+                    (return
+                     (b* ((warnings (vl-parsestate->warnings (vl-tokstream->pstate)))
+                          (bad-item (vl-genelementlist-findbad items
+                                                               '(;; :vl-generate -- not allowed
+                                                                 ;; :vl-port     -- not allowed
+                                                                 ;; :vl-portdecl -- not allowed
+                                                                 ;; :vl-assign   -- not allowed
+                                                                 ;; :vl-alias   -- bozo, let's not permit these yet
+                                                                 :vl-vardecl
+                                                                 :vl-paramdecl
+                                                                 :vl-fundecl
+                                                                 :vl-taskdecl
+                                                                 ;; :vl-modinst  -- not allowed
+                                                                 ;; :vl-gateinst -- not allowed
+                                                                 ;; :vl-always   -- not allowed
+                                                                 ;; :vl-initial  -- not allowed
+                                                                 :vl-typedef
+                                                                 :vl-import
+                                                                 ;; :vl-fwdtypedef -- not allowed
+                                                                 ;; :vl-modport    -- not allowed
+                                                                 )))
+                          (warnings
+                           (if (not bad-item)
+                               warnings
+                             (fatal :type :vl-bad-package-item
+                                    :msg "~a0: a package may not contain ~x1s."
+                                    :args (list bad-item (tag bad-item)))))
+
+                          ((vl-genelement-collection c) (vl-sort-genelements items)))
+                       (make-vl-package :name (vl-idtoken->name name)
+                                        :minloc (vl-token->loc startkwd)
+                                        :maxloc (vl-token->loc endkwd)
+                                        :lifetime lifetime
+                                        :vardecls c.vardecls
+                                        :paramdecls c.paramdecls
+                                        :fundecls c.fundecls
+                                        :taskdecls c.taskdecls
+                                        :typedefs c.typedefs
+                                        :imports c.imports
+                                        :warnings warnings
+                                        :atts atts
+                                        ;; bozo timeunits stuff
+                                        ;; bozo package items stuff
+                                        )))))
+
+              ((unless err)
+               ;; We read the whole thing and made a valid package, so that's great.
+               ;; We just need to restore the original warnings and return our answer.
+               (let ((tokstream (vl-tokstream-update-pstate
+                                 (change-vl-parsestate (vl-tokstream->pstate) :warnings orig-warnings))))
+                 (mv nil pkg tokstream)))
+
+              ;; There was some error parsing the package.  Stop everything, go
+              ;; back to 'package foo' part.  Scan for a matching 'endpackage'.
+              ;; Throw away everything in between and create a fake package
+              ;; full of errors.
+              (errtokens
+               ;; To get the tokens at the point of the error, we need to do this
+               ;; before restoring the tokstream!
+               (vl-tokstream->tokens))
+              (tokstream (vl-tokstream-restore backup)))
+           (seq tokstream
+                (endkwd := (vl-skip-through-endpackage (vl-idtoken->name name)))
+                (return
+                 (vl-make-package-with-parse-error (vl-idtoken->name name)
+                                                   (vl-token->loc startkwd)
+                                                   (vl-token->loc endkwd)
+                                                   err
+                                                   errtokens)))))))
+
 
 

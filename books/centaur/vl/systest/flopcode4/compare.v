@@ -28,11 +28,6 @@
 //
 // Original author: Jared Davis <jared@centtech.com>
 
-`include "spec.v"
-`include "impl.v"
-
-// see flopcode/compare.v
-
 // Using a global random seed seems like a good idea -- When each instance of
 // randomBit2 had its own seed, they seemed to just always produce the same
 // values on NCVerilog, which was terrible.

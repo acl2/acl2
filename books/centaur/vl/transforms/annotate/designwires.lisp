@@ -29,29 +29,29 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "../parsetree")
-(local (include-book "../util/arithmetic"))
+(include-book "../../parsetree")
+(local (include-book "../../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
 
 (defxdoc designwires
-  :parents (transforms)
+  :parents (annotate)
   :short "Introduce @('VL_DESIGN_WIRE') annotations that say which wires/regs
 were in the original Verilog modules."
 
-  :long "<p>This transform lets you distinguish between:</p>
+  :long "<p>This transform is ordinarily run very early in the transformation
+sequence by @(see annotate).  We simply extend every variable declaration with
+a @('VL_DESIGN_WIRE') <see topic='@(url vl-atts-p)'>attribute</see>.  This
+attribute can later be used to distinguish between:</p>
 
 <ul>
 <li>wires that are really present and visible in the design, and</li>
-<li>wires that VL added in transforms like @(see split) and @(see occform).</li>
+<li>wires that VL added in @(see transforms) like @(see split) and @(see
+occform).</li>
 </ul>
 
-<p>This transform should typically be run very early.  It just annotates every
-net and reg declaration with a @('VL_DESIGN_WIRE') <see topic='@(url
-vl-atts-p)'>attribute</see>.</p>
-
-<p>When temporary wires are added to the module by subsequent VL transforms,
-they will not have this attribute.  Hence, you can check for this attribute to
-tell whether a wire was in the original design.</p>")
+<p>That is, when temporary wires are added to the module by subsequent VL
+transforms, they will not have this attribute.  Hence, you can check for this
+attribute to tell whether a variable was in the original design.</p>")
 
 (local (xdoc::set-default-parents designwires))
 

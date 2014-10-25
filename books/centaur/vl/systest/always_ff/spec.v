@@ -28,7 +28,7 @@
 //
 // Original author: Jared Davis <jared@centtech.com>
 
-// basic tests of always_ff -- copied from flopcode
+`ifdef SYSTEM_VERILOG_MODE  // basic tests of always_ff -- copied from flopcode
 
 // F modules: flops with various unconditional always assignments.
 
@@ -289,3 +289,5 @@ module make_tests();
 endmodule
 
 */
+
+`endif

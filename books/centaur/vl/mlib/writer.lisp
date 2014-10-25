@@ -1783,6 +1783,10 @@ expression into a string."
         ;; implicitly derived from the port.  These were just noisy and may not
         ;; be allowed if we're printing the nets for an ANSI style module.  See
         ;; also make-implicit-wires.
+        ps)
+       ((when (assoc-equal "VL_HIDDEN_DECL_FOR_TASKPORT" x.atts))
+        ;; As another special hack, hide declarations that we add for function
+        ;; and task inputs and function return values.
         ps))
     (vl-ps-seq
      (if (not x.atts)

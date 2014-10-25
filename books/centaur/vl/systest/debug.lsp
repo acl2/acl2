@@ -36,11 +36,12 @@
 
 (defconst *edgesynth-debug* t)
 (defconst *vl-unparam-debug* t)
+(defconst *vl-shadowcheck-debug* t)
 
 (defconst *loadconfig*
   (make-vl-loadconfig
-   :start-files (list "udp1/spec.v")
-   :search-path (list "udp1/")
+   :start-files (list "fns/spec.v")
+   :search-path (list "fns/")
    ))
 
 ;; (defconst *loadconfig*
@@ -49,14 +50,9 @@
 ;;    ))
 
 (defconsts (*loadresult* state)
+  ;; If you turn on warning tracing, don't be scared about warnings during parsing
+  ;; because they are most likely due to backtracking.
   (vl-load *loadconfig*))
-
-
-(top-level
- (with-local-ps
-   (vl-pp-modulelist (vl-design->mods (vl-loadresult->design *loadresult*)))))
-
-
 
 (untrace$)
 (trace$ (vl-parse-port-declaration-noatts-fn

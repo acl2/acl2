@@ -39,33 +39,10 @@
 (local (in-theory (disable acl2-count)))
 (local (std::add-default-post-define-hook :fix))
 
-(defsection scopestack
-  :parents (mlib)
-  :short "A scopestack is a stack of scopes, for looking up identifiers
-correctly.")
 
-(local (xdoc::set-default-parents scopestack))
-
-(define vl-blockitem->name ((x vl-blockitem-p))
-  :returns (name stringp :rule-classes :type-prescription)
-  :prepwork ((local (defthm tag-when-vl-blockitem-p
-                      (implies (vl-blockitem-p x)
-                               (or (equal (tag x) :vl-vardecl)
-                                   (equal (tag x) :vl-paramdecl)))
-                      :rule-classes :forward-chaining))
-             (local (defthm vl-blockitem-p-of-vl-blockitem-fix-forward
-                      (vl-blockitem-p (vl-blockitem-fix x))
-                      :rule-classes ((:forward-chaining :trigger-terms ((vl-blockitem-fix x)))))))
-  (b* ((x (vl-blockitem-fix x)))
-    (case (tag x)
-      (:vl-vardecl (vl-vardecl->name x))
-      (:vl-paramdecl (vl-paramdecl->name x)))))
-
-
-;; NOTE: This constant controls most of the rest of the file by defining what
-;; scope types exist and what types of named items are contained in each of
-;; them.  Keyword arguments on items account for various kinds of departures
-;; from convention:
+;; NOTE: The following constants control what scopes we recognize and what
+;; kinds of items may be looked up in various kinds of scopes.  Keyword
+;; arguments on items account for various kinds of departures from convention:
 ;; -- :name foo denotes that the accessor for the name of the item is
 ;;         vl-itemtype->foo, rather than the default vl-itemtype->name.
 ;; -- :acc foo denotes that the accessor for the items within the scope is
@@ -75,112 +52,47 @@ correctly.")
 ;;         redundant).
 ;; -- :maybe-stringp t denotes that the name accessor might return nil, rather
 ;;         than a string.
+;; -- :sum-type t denotes that the item actually encompasses two or more item types
+;; -- the import item is treated specially, and instead of finding the import itself
+;;    you instead get the item imported from the specified package.
+
+
+(local (defconst *vl-scopes->pkgs*
+         ;; this one is special
+          ;; scope type      has item types or (type acc-name)
+         '((interface        )
+           (module           )
+           (design           ()   package)
+           ;; bozo add function/task ports?
+           (package          ))))
+
 (local (defconst *vl-scopes->items*
           ;; scope type      has item types or (type acc-name)
-         '((interface        paramdecl vardecl modport)
-           (module           paramdecl vardecl fundecl taskdecl 
-                             (modinst :name instname :maybe-stringp t
-                                      :names-defined t))
+         '((interface    (:import)          paramdecl vardecl modport)
+           (module       (:import)          paramdecl vardecl fundecl taskdecl 
+                                            (modinst :name instname :maybe-stringp t
+                                                     :names-defined t)
+                                            (gateinst :maybe-stringp t :names-defined t))
            ;; fwdtypedefs could be included here but we hope to have resolved them all
            ;; to proper typedefs by the end of loading.
-           (fundecl          (blockitem :acc decls :sum-type t))
-           (design           paramdecl vardecl fundecl taskdecl typedef)
-           (package          ))))
+           (fundecl      ()             (blockitem :acc decls :sum-type t))
+           (design       (:import)      paramdecl vardecl fundecl taskdecl typedef)
+           (package      (:import)      paramdecl vardecl fundecl taskdecl typedef))))
 
 (local (defconst *vl-scopes->defs*
           ;; scope type      has item types or (type acc-name)
          '((interface        )
            (module           )
-           (design           (module :acc mods) udp interface program)
-           (package          ))))
-
-(local (defconst *vl-scopes->pkgs*
-          ;; scope type      has item types or (type acc-name)
-         '((interface        )
-           (module           )
-           (design           package)
+           (design       ()             (module :acc mods) udp interface program)
            (package          ))))
 
 (local (defconst *vl-scopes->portdecls*
           ;; scope type      has item types or (type acc-name)
-         '((interface        portdecl)
-           (module           portdecl)
+         '((interface    ()               portdecl)
+           (module       ()               portdecl)
            (design           )
+           ;; bozo add function/task ports?
            (package          ))))
-
-
-(define vl-modinstlist->instnames-nrev ((x vl-modinstlist-p) nrev)
-  :parents (vl-modinstlist->instnames)
-  (b* (((when (atom x))
-        (nrev-fix nrev))
-       (name (vl-modinst->instname (car x)))
-       (nrev (if name
-                 (nrev-push name nrev)
-               nrev)))
-    (vl-modinstlist->instnames-nrev (cdr x) nrev)))
-
-
-(define vl-modinstlist->instnames ((x vl-modinstlist-p))
-  :parents (vl-modinstlist-p modnamespace)
-  :short "Collect all instance names (not module names!) from a @(see
-vl-modinstlist-p)."
-  :long "<p>The Verilog-2005 Standard requires that module instances be named,
-but we relaxed that restriction in our definition of @(see vl-modinst-p)
-because of user-defined primitives, which may be unnamed.  So, as with @(see
-vl-gateinstlist->names), here we simply skip past any unnamed module
-instances.</p>"
-  :verify-guards nil
-  (mbe :logic (if (consp x)
-                  (if (vl-modinst->instname (car x))
-                      (cons (vl-modinst->instname (car x))
-                            (vl-modinstlist->instnames (cdr x)))
-                    (vl-modinstlist->instnames (cdr x)))
-                nil)
-       :exec (with-local-nrev (vl-modinstlist->instnames-nrev x nrev)))
-  ///
-  (defthm vl-modinstlist->instnames-exec-removal
-    (equal (vl-modinstlist->instnames-nrev x nrev)
-           (append nrev (vl-modinstlist->instnames x)))
-    :hints(("Goal" :in-theory (enable vl-modinstlist->instnames-nrev))))
-
-  (verify-guards vl-modinstlist->instnames)
-
-  (defthm vl-modinstlist->instnames-when-not-consp
-    (implies (not (consp x))
-             (equal (vl-modinstlist->instnames x)
-                    nil)))
-
-  (defthm vl-modinstlist->instnames-of-cons
-    (equal (vl-modinstlist->instnames (cons a x))
-           (if (vl-modinst->instname a)
-               (cons (vl-modinst->instname a)
-                     (vl-modinstlist->instnames x))
-             (vl-modinstlist->instnames x))))
-
-  (defthm vl-modinstlist->instnames-of-list-fix
-    (equal (vl-modinstlist->instnames (list-fix x))
-           (vl-modinstlist->instnames x)))
-
-  (defcong list-equiv equal (vl-modinstlist->instnames x) 1
-    :hints(("Goal"
-            :in-theory (e/d (list-equiv)
-                            (vl-modinstlist->instnames-of-list-fix))
-            :use ((:instance vl-modinstlist->instnames-of-list-fix
-                   (x x))
-                  (:instance vl-modinstlist->instnames-of-list-fix
-                   (x acl2::x-equiv))))))
-
-  (defthm vl-modinstlist->instnames-of-append
-    (equal (vl-modinstlist->instnames (append x y))
-           (append (vl-modinstlist->instnames x)
-                   (vl-modinstlist->instnames y))))
-
-  (defthm vl-modinstlist->instnames-of-rev
-    (equal (vl-modinstlist->instnames (rev x))
-           (rev (vl-modinstlist->instnames x))))
-
-  (defthm string-listp-of-vl-modinstlist->instnames
-    (string-listp (vl-modinstlist->instnames x))))
 
 
 
@@ -293,6 +205,174 @@ instances.</p>"
 
 ;; Hierarchical names
 
+(defsection scopestack
+  :parents (mlib)
+  :short "A scopestack is a stack of scopes, for looking up identifiers
+correctly.")
+
+(local (xdoc::set-default-parents scopestack))
+
+(define vl-blockitem->name ((x vl-blockitem-p))
+  :returns (name stringp :rule-classes :type-prescription)
+  :prepwork ((local (defthm tag-when-vl-blockitem-p
+                      (implies (vl-blockitem-p x)
+                               (or (equal (tag x) :vl-vardecl)
+                                   (equal (tag x) :vl-paramdecl)))
+                      :rule-classes :forward-chaining))
+             (local (defthm vl-blockitem-p-of-vl-blockitem-fix-forward
+                      (vl-blockitem-p (vl-blockitem-fix x))
+                      :rule-classes ((:forward-chaining :trigger-terms ((vl-blockitem-fix x)))))))
+  (b* ((x (vl-blockitem-fix x)))
+    (case (tag x)
+      (:vl-vardecl (vl-vardecl->name x))
+      (:vl-paramdecl (vl-paramdecl->name x)))))
+
+
+
+(define vl-modinstlist->instnames-nrev ((x vl-modinstlist-p) nrev)
+  :parents (vl-modinstlist->instnames)
+  (b* (((when (atom x))
+        (nrev-fix nrev))
+       (name (vl-modinst->instname (car x)))
+       (nrev (if name
+                 (nrev-push name nrev)
+               nrev)))
+    (vl-modinstlist->instnames-nrev (cdr x) nrev)))
+
+
+(define vl-modinstlist->instnames ((x vl-modinstlist-p))
+  :parents (vl-modinstlist-p modnamespace)
+  :short "Collect all instance names (not module names!) from a @(see
+vl-modinstlist-p)."
+  :long "<p>The Verilog-2005 Standard requires that module instances be named,
+but we relaxed that restriction in our definition of @(see vl-modinst-p)
+because of user-defined primitives, which may be unnamed.  So, as with @(see
+vl-gateinstlist->names), here we simply skip past any unnamed module
+instances.</p>"
+  :verify-guards nil
+  (mbe :logic (if (consp x)
+                  (if (vl-modinst->instname (car x))
+                      (cons (vl-modinst->instname (car x))
+                            (vl-modinstlist->instnames (cdr x)))
+                    (vl-modinstlist->instnames (cdr x)))
+                nil)
+       :exec (with-local-nrev (vl-modinstlist->instnames-nrev x nrev)))
+  ///
+  (defthm vl-modinstlist->instnames-exec-removal
+    (equal (vl-modinstlist->instnames-nrev x nrev)
+           (append nrev (vl-modinstlist->instnames x)))
+    :hints(("Goal" :in-theory (enable vl-modinstlist->instnames-nrev))))
+
+  (verify-guards vl-modinstlist->instnames)
+
+  (defthm vl-modinstlist->instnames-when-not-consp
+    (implies (not (consp x))
+             (equal (vl-modinstlist->instnames x)
+                    nil)))
+
+  (defthm vl-modinstlist->instnames-of-cons
+    (equal (vl-modinstlist->instnames (cons a x))
+           (if (vl-modinst->instname a)
+               (cons (vl-modinst->instname a)
+                     (vl-modinstlist->instnames x))
+             (vl-modinstlist->instnames x))))
+
+  (defthm vl-modinstlist->instnames-of-list-fix
+    (equal (vl-modinstlist->instnames (list-fix x))
+           (vl-modinstlist->instnames x)))
+
+  (defcong list-equiv equal (vl-modinstlist->instnames x) 1
+    :hints(("Goal"
+            :in-theory (e/d (list-equiv)
+                            (vl-modinstlist->instnames-of-list-fix))
+            :use ((:instance vl-modinstlist->instnames-of-list-fix
+                   (x x))
+                  (:instance vl-modinstlist->instnames-of-list-fix
+                   (x acl2::x-equiv))))))
+
+  (defthm vl-modinstlist->instnames-of-append
+    (equal (vl-modinstlist->instnames (append x y))
+           (append (vl-modinstlist->instnames x)
+                   (vl-modinstlist->instnames y))))
+
+  (defthm vl-modinstlist->instnames-of-rev
+    (equal (vl-modinstlist->instnames (rev x))
+           (rev (vl-modinstlist->instnames x))))
+
+  (defthm string-listp-of-vl-modinstlist->instnames
+    (string-listp (vl-modinstlist->instnames x))))
+
+
+(define vl-gateinstlist->names-nrev ((x vl-gateinstlist-p) nrev)
+  :parents (vl-gateinstlist->names)
+  (b* (((when (atom x))
+        (nrev-fix nrev))
+       (name (vl-gateinst->name (car x)))
+       (nrev (if name
+                 (nrev-push name nrev)
+               nrev)))
+    (vl-gateinstlist->names-nrev (cdr x) nrev)))
+
+(define vl-gateinstlist->names ((x vl-gateinstlist-p))
+  :parents (vl-gateinstlist-p modnamespace)
+  :short "Collect all instance names declared in a @(see vl-gateinstlist-p)."
+  :long "<p>Note that gate instances may be unnamed, in which case we do not
+add anything.  In other words, the list of names returned may be shorter than
+the number of gate instances in the list.</p>"
+  :verify-guards nil
+  (mbe :logic (if (consp x)
+                  (if (vl-gateinst->name (car x))
+                      (cons (vl-gateinst->name (car x))
+                            (vl-gateinstlist->names (cdr x)))
+                    (vl-gateinstlist->names (cdr x)))
+                nil)
+       :exec (with-local-nrev (vl-gateinstlist->names-nrev x nrev)))
+  ///
+  (defthm vl-gateinstlist->names-nrev-removal
+    (equal (vl-gateinstlist->names-nrev x nrev)
+           (append nrev (vl-gateinstlist->names x)))
+    :hints(("Goal" :in-theory (enable vl-gateinstlist->names-nrev))))
+
+  (verify-guards vl-gateinstlist->names)
+
+  (defthm vl-gateinstlist->names-when-not-consp
+    (implies (not (consp x))
+             (equal (vl-gateinstlist->names x)
+                    nil)))
+
+  (defthm vl-gateinstlist->names-of-cons
+    (equal (vl-gateinstlist->names (cons a x))
+           (if (vl-gateinst->name a)
+               (cons (vl-gateinst->name a)
+                     (vl-gateinstlist->names x))
+             (vl-gateinstlist->names x))))
+
+  (defthm vl-gateinstlist->names-of-list-fix
+    (equal (vl-gateinstlist->names (list-fix x))
+           (vl-gateinstlist->names x)))
+
+  (defcong list-equiv equal (vl-gateinstlist->names x) 1
+    :hints(("Goal"
+            :in-theory (e/d (list-equiv)
+                            (vl-gateinstlist->names-of-list-fix))
+            :use ((:instance vl-gateinstlist->names-of-list-fix (x x))
+                  (:instance vl-gateinstlist->names-of-list-fix (x acl2::x-equiv))))))
+
+  (defthm vl-gateinstlist->names-of-append
+    (equal (vl-gateinstlist->names (append x y))
+           (append (vl-gateinstlist->names x)
+                   (vl-gateinstlist->names y))))
+
+  (defthm vl-gateinstlist->names-of-rev
+    (equal (vl-gateinstlist->names (rev x))
+           (rev (vl-gateinstlist->names x))))
+
+  (defthm string-listp-of-vl-gateinstlist->names
+    (string-listp (vl-gateinstlist->names x))))
+
+
+
+
 
 
 
@@ -306,7 +386,7 @@ instances.</p>"
      (declare (xargs :mode :program))
      (if (atom scopes)
          nil
-       (union-equal (cdar scopes)
+       (union-equal (cddar scopes)
                     (scopes->typeinfos (cdr scopes)))))
 
    (defun typeinfos->tmplsubsts (typeinfos)
@@ -338,8 +418,9 @@ instances.</p>"
      (if (atom scopes)
          nil
        (cons (make-tmplsubst :strsubst `(("__TYPE__" ,(symbol-name (caar scopes)) . vl-package))
-                             :atomsubst `((__items__ . ,(cdar scopes)))
-                             :features (and (cdar scopes) '(:has-items)))
+                             :atomsubst `((__items__ . ,(cddar scopes)))
+                             :features (append (cadar scopes)
+                                               (and (cddar scopes) '(:has-items))))
              (scopes->tmplsubsts (cdr scopes)))))
 
    (defun template-proj (template substs)
@@ -372,8 +453,7 @@ instances.</p>"
 
 
 (make-event ;; Definition of vl-scopeitem type
- (let ((substs (typeinfos->tmplsubsts (remove-equal '(blockitem :acc decls)
-                                                    (scopes->typeinfos *vl-scopes->items*)))))
+ (let ((substs (typeinfos->tmplsubsts (scopes->typeinfos *vl-scopes->items*))))
    `(progn
       (deftranssum vl-scopeitem
         :short "Recognizer for an syntactic element that can occur within a scope."
@@ -422,9 +502,6 @@ instances.</p>"
                         :in-theory (enable (:i vl-scopedeflist-p)))))
             substs)))))
 
-
-
-
 (make-event ;; Definition of vl-scope type
  (let ((subst (scopes->tmplsubsts *vl-scopes->items*)))
    `(progn
@@ -437,6 +514,105 @@ instances.</p>"
         (implies (vl-scope-p x)
                  (or . ,(template-proj '(equal (tag x) :vl-__type__) subst)))
         :rule-classes :forward-chaining))))
+
+
+
+
+
+
+(local ;; For each searchable type foo, we get:
+ ;;                  - vl-find-foo: linear search by name in a list of foos
+ ;;                  - vl-fast-foolist-alist: fast alist binding names to foos.
+ (defconst *scopeitem-alist/finder-template*
+   '(progn
+      (:@ (not :names-defined)
+       (defprojection vl-__type__list->__name__s ((x vl-__type__list-p))
+         :returns (names string-listp
+                         :hints (("goal" :in-theory (disable (:d vl-__type__list->__name__s))
+                                  :induct (vl-__type__list->__name__s x)
+                                  :expand ((vl-__type__list->__name__s x)))))
+         :parents (vl-__type__list-p)
+         (vl-__type__->__name__ x)))
+
+      (fty::defalist vl-__type__-alist :key-type stringp :val-type vl-__type__-p
+        :keyp-of-nil nil :valp-of-nil nil)
+
+      (def-vl-find-moditem __type__
+        :element->name vl-__type__->__name__
+        :list->names vl-__type__list->__name__s
+        (:@ :maybe-stringp :names-may-be-nil t)
+        (:@ :sum-type :sum-type t))
+
+      (define vl-__type__list-alist ((x vl-__type__list-p)
+                                          acc)
+        (if (consp x)
+            (:@ :maybe-stringp
+             (let ((name (hons-copy (vl-__type__->__name__ (car x)))))
+               (if name
+                   (cons (cons name (vl-__type__-fix (car x)))
+                         (vl-__type__list-alist (cdr x) acc))
+                 (vl-__type__list-alist (cdr x) acc))))
+          (:@ (not :maybe-stringp)
+           (cons (cons (vl-__type__->__name__ (car x))
+                       (vl-__type__-fix (car x)))
+                 (vl-__type__list-alist (cdr x) acc)))
+          acc)
+        ///
+        (defthm lookup-in-vl-__type__list-alist-acc-elim
+          (implies (syntaxp (not (equal acc ''nil)))
+                   (equal (hons-assoc-equal name (vl-__type__list-alist x acc))
+                          (or (hons-assoc-equal name (vl-__type__list-alist x nil))
+                              (hons-assoc-equal name acc)))))
+        (defthm lookup-in-vl-__type__list-alist-fast
+          (implies (stringp name)
+                   (equal (hons-assoc-equal name (vl-__type__list-alist x nil))
+                          (let ((val (vl-find-__type__ name x)))
+                            (and val
+                                 (cons name val)))))
+          :hints(("Goal" :in-theory (disable (:d vl-__type__list-alist))
+                  :induct (vl-__type__list-alist x nil)
+                  :expand ((vl-__type__list-alist x nil)
+                           (vl-find-__type__ name x)))))))))
+
+;; (local (defthm member-nil
+;;          (not (member x nil))))
+
+;; prevent defalist from making a few expensive rules
+(local (acl2::ruletable-delete-tags! acl2::alistp-rules (:cons-member)))
+(local (table acl2::listp-rules
+              nil 
+              (let ((alist (table-alist 'acl2::listp-rules acl2::world)))
+                (set-difference-equal
+                 alist
+                 (list (assoc 'ACL2::ELEMENT-LIST-P-WHEN-SUBSETP-EQUAL-NON-TRUE-LIST alist)
+                       (assoc 'ACL2::ELEMENT-LIST-P-WHEN-SUBSETP-EQUAL-TRUE-LIST alist))))
+              :clear))
+
+
+(local (in-theory (disable alistp acl2::alistp-when-keyval-alist-p-rewrite
+                           ;;acl2::consp-under-iff-when-true-listp
+                           acl2::subsetp-when-atom-right
+                           ;;stringp-when-true-listp
+                           double-containment
+                           default-cdr
+                           ;;acl2::true-listp-when-atom
+                           ;;acl2::consp-when-member-equal-of-atom-listp
+                           acl2::subsetp-member
+                           acl2::str-fix-default
+                           acl2::stringp-when-maybe-stringp
+                           ;;acl2::car-when-all-equalp
+                           consp-when-member-equal-of-cons-listp
+                           (:t member-equal)
+                           member-equal
+                           default-car
+                           consp-when-member-equal-of-vl-gencaselist-p
+                           consp-when-member-equal-of-vl-caselist-p
+                           consp-when-member-equal-of-vl-commentmap-p
+                           consp-when-member-equal-of-vl-atts-p
+                           acl2::consp-when-member-equal-of-keyval-alist-p
+                           acl2::consp-of-car-when-alistp
+                           not)))
+
 
 
 ;; copied from find-item
@@ -513,93 +689,6 @@ instances.</p>"
 
        (local (set-default-hints nil)))))
 
-(local
- (defconst *scopeitem-alist/finder-template*
-   '(progn
-      (:@ (not :names-defined)
-       (defprojection vl-__type__list->__name__s ((x vl-__type__list-p))
-         :returns (names string-listp
-                         :hints (("goal" :in-theory (disable (:d vl-__type__list->__name__s))
-                                  :induct (vl-__type__list->__name__s x)
-                                  :expand ((vl-__type__list->__name__s x)))))
-         :parents (vl-__type__list-p)
-         (vl-__type__->__name__ x)))
-
-      (fty::defalist vl-__type__-alist :key-type stringp :val-type vl-__type__-p
-        :keyp-of-nil nil :valp-of-nil nil)
-
-      (def-vl-find-moditem __type__
-        :element->name vl-__type__->__name__
-        :list->names vl-__type__list->__name__s
-        (:@ :maybe-stringp :names-may-be-nil t)
-        (:@ :sum-type :sum-type t))
-
-      (define vl-fast-__type__list-alist ((x vl-__type__list-p)
-                                          acc)
-        (if (consp x)
-            (:@ :maybe-stringp
-             (let ((name (vl-__type__->__name__ (car x))))
-               (if name
-                   (hons-acons name
-                               (vl-__type__-fix (car x))
-                               (vl-fast-__type__list-alist (cdr x) acc))
-                 (vl-fast-__type__list-alist (cdr x) acc))))
-             (:@ (not :maybe-stringp)
-              (hons-acons (vl-__type__->__name__ (car x))
-                          (vl-__type__-fix (car x))
-                          (vl-fast-__type__list-alist (cdr x) acc)))
-          acc)
-        ///
-        (defthm lookup-in-vl-__type__list-alist-fast
-          (implies (stringp name)
-                   (equal (hons-assoc-equal name (vl-fast-__type__list-alist x acc))
-                          (let ((val (vl-find-__type__ name x)))
-                            (if val
-                                (cons name val)
-                              (hons-assoc-equal name acc)))))
-          :hints(("Goal" :in-theory (disable (:d vl-fast-__type__list-alist))
-                  :induct (vl-fast-__type__list-alist x acc)
-                  :expand ((vl-fast-__type__list-alist x acc)
-                           (vl-find-__type__ name x)))))))))
-
-;; (local (defthm member-nil
-;;          (not (member x nil))))
-
-;; prevent defalist from making a few expensive rules
-(local (acl2::ruletable-delete-tags! acl2::alistp-rules (:cons-member)))
-(local (table acl2::listp-rules
-              nil 
-              (let ((alist (table-alist 'acl2::listp-rules acl2::world)))
-                (set-difference-equal
-                 alist
-                 (list (assoc 'ACL2::ELEMENT-LIST-P-WHEN-SUBSETP-EQUAL-NON-TRUE-LIST alist)
-                       (assoc 'ACL2::ELEMENT-LIST-P-WHEN-SUBSETP-EQUAL-TRUE-LIST alist))))
-              :clear))
-
-
-(local (in-theory (disable alistp acl2::alistp-when-keyval-alist-p-rewrite
-                           ;;acl2::consp-under-iff-when-true-listp
-                           acl2::subsetp-when-atom-right
-                           ;;stringp-when-true-listp
-                           double-containment
-                           default-cdr
-                           ;;acl2::true-listp-when-atom
-                           ;;acl2::consp-when-member-equal-of-atom-listp
-                           acl2::subsetp-member
-                           acl2::str-fix-default
-                           acl2::stringp-when-maybe-stringp
-                           ;;acl2::car-when-all-equalp
-                           consp-when-member-equal-of-cons-listp
-                           (:t member-equal)
-                           member-equal
-                           default-car
-                           consp-when-member-equal-of-vl-gencaselist-p
-                           consp-when-member-equal-of-vl-caselist-p
-                           consp-when-member-equal-of-vl-commentmap-p
-                           consp-when-member-equal-of-vl-atts-p
-                           acl2::consp-when-member-equal-of-keyval-alist-p
-                           acl2::consp-of-car-when-alistp
-                           not)))
 
 (make-event ;; Definition of scopeitem alists/finders
  (b* ((substs (typeinfos->tmplsubsts (scopes->typeinfos (append *vl-scopes->items*
@@ -609,8 +698,58 @@ instances.</p>"
       (events (template-proj *scopeitem-alist/finder-template* substs)))
    `(progn . ,events)))
 
+
+
+
+
+
+;; ;; Now we define:
+;; ;; - how to look up a package name in the global design
+;; ;; - how to look up a scopeitem in a package, not considering its imports
+;; ;; - how to look up a name in a list of import statements.
+;; ;; These don't involve the scopestack yet: in each case we know in which scope
+;; ;; to find the item.  This works and doesn't need some gross recursive
+;; ;; implementation because the following isn't allowed:
+;; ;; package bar;
+;; ;;   parameter barparam = 13032;
+;; ;; endpackage
+;; ;; package foo;
+;; ;;   import bar::barparam;
+;; ;; endpackage
+;; ;; module baz ();
+;; ;;   import foo::barparam; // fail -- barparam isn't exported by foo.
+;; ;; endmodule
+
+;; ;; We then use the above functions to define other scopestack functions resolve
+;; ;; imports.
+
+
+;; (define vl-design->package-alist ((x vl-design-p))
+;;   :enabled t
+;;   (vl-packagelist-alist (vl-design->packages x) nil)
+;;   ///
+;;   (memoize 'vl-design->package-alist))
+
+;; (define vl-design-find-package ((name stringp) (x vl-design-p))
+;;   :returns (res (iff (vl-package-p res) res))
+;;   (mbe :logic (vl-find-package (string-fix name) (vl-design->packages x))
+;;        :exec (cdr (hons-get (string-fix name) (vl-design->package-alist x)))))
+
+
+
+
+
+
+
+
+(defoption vl-maybe-design-p vl-design-p)
+
+
+
+
+
 (local
- (defun def-scopetype-find (scope itemtypes resultname resulttype)
+ (defun def-scopetype-find (scope importp itemtypes resultname resulttype)
    (declare (xargs :mode :program))
    (b* ((substs (typeinfos->tmplsubsts itemtypes))
         ((unless itemtypes) '(value-triple nil))
@@ -621,178 +760,436 @@ instances.</p>"
                :parents (vl-scope-find)
                ((name  stringp)
                 (scope vl-__scope__-p))
-               :returns (item (iff (__resulttype__ item) item))
+               :returns (item    (iff (__resulttype__ item) item))
                (b* (((vl-__scope__ scope))
                     (?name (string-fix name)))
                  (or . ,(template-proj
-                         '(vl-find-__type__ name scope.__acc__)
-                         substs))))
+                                  '(vl-find-__type__ name scope.__acc__)
+                                  substs))))
 
              (define vl-__scope__-scope-__result__-alist
                :parents (vl-scope-find)
                :ignore-ok t
-               ((scope vl-__scope__-p))
+               ((scope vl-__scope__-p)
+                acc)
                :returns (alist)
                (b* (((vl-__scope__ scope))
-                    (acc nil)
                     . ,(reverse
                         (template-proj
-                         '(acc (vl-fast-__type__list-alist scope.__acc__ acc))
+                         '(acc (vl-__type__list-alist scope.__acc__ acc))
                          substs)))
                  acc)
                ///
                (local (in-theory (enable vl-__scope__-scope-find-__result__)))
+               (defthm vl-__scope__-scope-__result__-alist-lookup-acc-elim
+                 (implies (syntaxp (not (equal acc ''nil)))
+                          (equal (hons-assoc-equal name (vl-__scope__-scope-__result__-alist scope acc))
+                                 (or (hons-assoc-equal name (vl-__scope__-scope-__result__-alist scope nil))
+                                     (hons-assoc-equal name acc)))))
                (defthm vl-__scope__-scope-__result__-alist-correct
                  (implies (stringp name)
-                          (equal (hons-assoc-equal name (vl-__scope__-scope-__result__-alist scope))
-                                 (if (vl-__scope__-scope-find-__result__ name scope)
-                                     (cons name (vl-__scope__-scope-find-__result__ name scope))
-                                   nil))))))))
-     (acl2::template-subst-fn template nil nil nil nil
+                          (equal (hons-assoc-equal name (vl-__scope__-scope-__result__-alist scope nil))
+                                 (b* ((item (vl-__scope__-scope-find-__result__ name scope)))
+                                   (and item
+                                        (cons name item))))))
+               ;; (defthmd vl-__scope__-scope-__result__-alist-correct2
+               ;;   (implies (stringp name)
+               ;;            (equal (vl-__scope__-scope-find-__result__ name scope)
+               ;;                   (let ((look (hons-assoc-equal name (vl-__scope__-scope-__result__-alist scope nil))))
+               ;;                     (mv (consp look) (cdr look))))))
+               ))))
+     (acl2::template-subst-fn template (and importp '(:import)) nil nil nil
                               `(("__SCOPE__" ,(symbol-name scope) . vl-package)
                                 ("__RESULT__" ,(symbol-name resultname) . vl-package)
                                 ("__RESULTTYPE__" ,(symbol-name resulttype) . vl-package))
                               'vl-package))))
 
-(make-event ;; Definition of scopetype-find and -fast-alist functions
- (b* ((substs (scopes->tmplsubsts *vl-scopes->items*)))
-   `(progn . ,(template-proj
-               '(make-event
-                 (def-scopetype-find '__type__ '__items__ 'item 'vl-scopeitem-p))
-               substs))))
 
-(make-event ;; Definition of scopetype-find and -fast-alist functions
- (b* ((substs (scopes->tmplsubsts *vl-scopes->defs*)))
-   `(progn . ,(template-proj
-               '(make-event
-                 (def-scopetype-find '__type__ '__items__ 'definition 'vl-scopedef-p))
-               substs))))
-
-(make-event ;; Definition of scopetype-find and -fast-alist functions
+(make-event ;; Definition of vl-design-scope-find-package vl-design-scope-package-alist
  (b* ((substs (scopes->tmplsubsts *vl-scopes->pkgs*)))
    `(progn . ,(template-proj
                '(make-event
-                 (def-scopetype-find '__type__ '__items__ 'package 'vl-package-p))
+                 (def-scopetype-find
+                   '__type__
+                   (:@ :import t) (:@ (not :import) nil)
+                   '__items__ 'package 'vl-package-p))
                substs))))
+
+
+(make-event ;; Definitions of e.g. vl-module-scope-find-item and vl-module-scope-item-alist
+ (b* ((substs (scopes->tmplsubsts *vl-scopes->items*)))
+   `(progn . ,(template-proj
+               '(make-event
+                 (def-scopetype-find '__type__
+                   (:@ :import t) (:@ (not :import) nil)
+                   '__items__ 'item 'vl-scopeitem-p))
+               substs))))
+
+(make-event ;; Definitions of e.g. vl-design-scope-find-definition and vl-design-scope-definition-alist
+ (b* ((substs (scopes->tmplsubsts *vl-scopes->defs*)))
+   `(progn . ,(template-proj
+               '(make-event
+                 (def-scopetype-find '__type__ 
+                   (:@ :import t) (:@ (not :import) nil)
+                   '__items__ 'definition 'vl-scopedef-p))
+               substs))))
+
 
 (make-event ;; Definition of scopetype-find and -fast-alist functions
  (b* ((substs (scopes->tmplsubsts *vl-scopes->portdecls*)))
    `(progn . ,(template-proj
                '(make-event
-                 (def-scopetype-find '__type__ '__items__ 'portdecl 'vl-portdecl-p))
+                 (def-scopetype-find '__type__
+                   (:@ :import t) (:@ (not :import) nil)
+                   '__items__ 'portdecl 'vl-portdecl-p))
                substs))))
 
 
-(define vl-scopestack-p (x)
-  (if (atom x)
-      t
-    (and (vl-scope-p (car x))
-         (vl-scopestack-p (cdr x)))))
 
-(define vl-scopestack-fix ((x vl-scopestack-p))
-  :returns (new-x vl-scopestack-p)
-  :hooks nil
-  :inline t
-  (mbe :logic (if (vl-scopestack-p x)
-                  x
-                nil)
-       :exec x)
+
+(define vl-package-scope-item-alist-top ((x vl-package-p))
+  :enabled t
+  (make-fast-alist (vl-package-scope-item-alist x nil))
   ///
-  (defthm vl-scopestack-fix-when-vl-scopestack-p
-    (implies (vl-scopestack-p x)
-             (equal (vl-scopestack-fix x) x)))
+  (memoize 'vl-package-scope-item-alist-top))
 
-  (fty::deffixtype vl-scopestack :pred vl-scopestack-p :fix vl-scopestack-fix
-    :equiv vl-scopestack-equiv :define t :forward t))
-
-(define vl-scopestack-push ((scope vl-scope-p)
-                            (ss    vl-scopestack-p))
-  :returns (new-ss vl-scopestack-p)
-  :prepwork ((local (in-theory (enable vl-scopestack-p))))
-  (cons (vl-scope-fix scope)
-        (vl-scopestack-fix ss)))
+(define vl-design-scope-package-alist-top ((x vl-design-p))
+  :enabled t
+  (make-fast-alist (vl-design-scope-package-alist x nil))
+  ///
+  (memoize 'vl-design-scope-package-alist-top))
 
 
-
-(local (defun def-vl-scope-find (table result resulttype stackp)
-         (declare (xargs :mode :program))
-         (b* ((substs (scopes->tmplsubsts table))
-              (template
-                `(progn
-                   (define vl-scope-find-__result__
-                     :short "Look up a plain identifier to find an __result__ in a scope."
-                     ((name  stringp)
-                      (scope vl-scope-p))
-                     :returns (__result__ (iff (__resulttype__ __result__) __result__))
-                     (b* ((scope (vl-scope-fix scope)))
-                       (case (tag scope)
-                         ,@(template-append '((:@ :has-items (:vl-__type__ (vl-__type__-scope-find-__result__ name scope)))) substs)
-                         (otherwise nil))))
+;; (make-event ;; Definition of vl-package-scope-find-nonimported-item
+;;  (b* ((substs (scopes->tmplsubsts (list (assoc 'package *vl-scopes->items*)))))
+;;    `(progn . ,(template-proj
+;;                '(make-event
+;;                  (def-scopetype-find '__type__ nil
+;;                    '__items__ 'nonimported-item 'vl-scopeitem-p))
+;;                substs))))
 
 
-                   (define vl-scope-__result__-alist
-                     :short "Make a fast lookup table for __result__s in a scope.  Memoized."
-                     ((scope vl-scope-p))
-                     :returns (alist)
-                     (b* ((scope (vl-scope-fix scope)))
-                       (case (tag scope)
-                         ,@(template-append '((:@ :has-items (:vl-__type__ (vl-__type__-scope-__result__-alist scope)))) substs)
-                         (otherwise nil)))
-                     ///
-                     (local (in-theory (enable vl-scope-find-__result__)))
-                     (defthm vl-scope-__result__-alist-correct
-                       (implies (stringp name)
-                                (equal (hons-assoc-equal name (vl-scope-__result__-alist scope))
-                                       (if (vl-scope-find-__result__ name scope)
-                                           (cons name (vl-scope-find-__result__ name scope))
-                                         nil))))
 
-                     (memoize 'vl-scope-__result__-alist))
 
-                   (define vl-scope-find-__result__-fast
-                     :short "Like @(see vl-scope-find-__result__), but uses a fast lookup table"
-                     ((name stringp)
-                      (scope vl-scope-p))
-                     :enabled t
-                     (mbe :logic (vl-scope-find-__result__ name scope)
-                          :exec (cdr (hons-get name
-                                               ;; for multithreading, this might not be fast if it was
-                                               ;; created in some other thread, so make it fast.
-                                               (make-fast-alist (vl-scope-__result__-alist scope))))))
+;; Now, we want a function for looking up imported names.  This must first look
+;; for the name explicitly imported, then implicitly.
 
-                   ,@(and stackp
-                          `((define vl-scopestack-find-__result__
-                              :short "Look up a plain identifier in the current scope stack."
-                              ((name stringp)
-                               (ss   vl-scopestack-p))
-                              :hints (("goal" :expand ((vl-scopestack-fix ss))))
-                              :guard-hints (("goal" :expand ((vl-scopestack-p ss))))
-                              :returns (__result__ (iff (__resulttype__ __result__) __result__))
-                              (b* ((ss (vl-scopestack-fix ss)))
-                                (if (atom ss)
-                                    nil
-                                  (or (vl-scope-find-__result__-fast name (car ss))
-                                      (vl-scopestack-find-__result__ name (cdr ss))))))
+;; What do we do when we find an import of a name from a package that doesn't
+;; contain that name?  This should be an error, but practially speaking I think
+;; we want to check for these in one place and not disrupt other code with
+;; error handling.  So in this case we just don't find the item.
+(define vl-importlist-find-explicit-item ((name stringp) (x vl-importlist-p) (design vl-maybe-design-p))
+  :returns (mv (package (iff (stringp package) package))
+               (item (iff (vl-scopeitem-p item) item)))
+  (b* (((when (atom x)) (mv nil nil))
+       ((vl-import x1) (car x))
+       ((when (and (stringp x1.part)
+                   (equal x1.part (string-fix name))))
+        ;; if we don't have a design, I think we still want to say we found the
+        ;; item, just not what it is.
+        (b* ((package (and design (vl-design-scope-find-package x1.pkg design))))
+          ;; regardless of whether the package exists or has the item, return found
+          (mv x1.pkg (and package (vl-package-scope-find-item name package))))))
+    (vl-importlist-find-explicit-item name (cdr x) design))
+  ///
+  (more-returns
+   (package :name maybe-string-type-of-vl-importlist-find-explicit-item-package
+            (or (stringp package) (not package))
+            :rule-classes :type-prescription)))
 
-                            (define vl-scopestack-find-__result__/ss
-                              :short "Look up a plain identifier in the current scope stack."
-                              ((name stringp)
-                               (ss   vl-scopestack-p))
-                              :hints (("goal" :expand ((vl-scopestack-fix ss))))
-                              :guard-hints (("goal" :expand ((vl-scopestack-p ss))))
-                              :returns (mv (__result__ (iff (__resulttype__ __result__) __result__))
-                                           (ss vl-scopestack-p))
-                              (b* ((ss (vl-scopestack-fix ss)))
-                                (if (atom ss)
-                                    (mv nil nil)
-                                  (let ((res (vl-scope-find-__result__-fast name (car ss))))
-                                    (if res
-                                        (mv res ss)
-                                      (vl-scopestack-find-__result__/ss name (cdr ss))))))))))))
-           (acl2::template-subst-fn template nil nil nil nil
-                                    `(("__RESULT__" ,(symbol-name result) . vl-package)
-                                      ("__RESULTTYPE__" ,(symbol-name resulttype) . vl-package))
-                                    'vl-package))))
+;; (local
+;;  (defthm equal-of-vl-importlist-find-explicit-item
+;;    (equal (equal (vl-importlist-find-explicit-item name scope design) x)
+;;           (and (consp x)
+;;                (consp (cdr x))
+;;                (not (cddr x))
+;;                (equal (mv-nth 0 (vl-importlist-find-explicit-item name scope design))
+;;                       (mv-nth 0 x))
+;;                (equal (mv-nth 1 (vl-importlist-find-explicit-item name scope design))
+;;                       (mv-nth 1 x))))
+;;    :hints(("Goal" :in-theory (enable mv-nth-expand-to-conses
+;;                                      equal-of-cons
+;;                                      vl-importlist-find-explicit-item)))))
+
+
+(define vl-importlist->explicit-item-alist ((x vl-importlist-p) (design vl-maybe-design-p)
+                                            acc)
+  (b* (((when (atom x)) acc)
+       ((vl-import x1) (car x))
+       ((unless (stringp x1.part))
+        (vl-importlist->explicit-item-alist (cdr x) design acc))
+        ;; if we don't have a design, it seems like returning the package but
+        ;; not the item is the best way to go here, since we might have
+        ;; imported the name from the package but can't find out.
+       (package (and design (cdr (hons-get x1.pkg (vl-design-scope-package-alist-top design)))))
+       (item (and package (cdr (hons-get x1.part (vl-package-scope-item-alist-top package))))))
+    (hons-acons x1.part (cons x1.pkg item)
+                (vl-importlist->explicit-item-alist (cdr x) design acc)))
+  ///
+  (defthm vl-importlist->explicit-item-alist-lookup-acc-elim
+    (implies (syntaxp (not (equal acc ''nil)))
+             (equal (hons-assoc-equal name (vl-importlist->explicit-item-alist x design acc))
+                    (or (hons-assoc-equal name (vl-importlist->explicit-item-alist x design nil))
+                        (hons-assoc-equal name acc)))))
+  (defthm vl-importlist->explicit-item-alist-correct
+    (implies (stringp name)
+             (equal (hons-assoc-equal name (vl-importlist->explicit-item-alist x design nil))
+                    (b* (((mv pkg item) (vl-importlist-find-explicit-item name x design)))
+                      (and (or pkg item)
+                           (cons name (cons pkg item))))))
+    :hints(("Goal" :in-theory (enable vl-importlist-find-explicit-item)))))
+
+(define vl-importlist-find-implicit-item ((name stringp) (x vl-importlist-p) (design vl-maybe-design-p))
+  :returns (mv (package (iff (stringp package) package))
+               (item (iff (vl-scopeitem-p item) item)))
+  (b* (((when (atom x)) (mv nil nil))
+       ((vl-import x1) (car x))
+       ((unless (eq x1.part :vl-import*))
+        (vl-importlist-find-implicit-item name (cdr x) design))
+       (package (and design (vl-design-scope-find-package x1.pkg design)))
+       ((unless package) (mv x1.pkg nil))
+       (item (vl-package-scope-find-item (string-fix name) package)))
+    (if item
+        (mv x1.pkg item)
+      (vl-importlist-find-implicit-item name (cdr x) design)))
+  ///
+  (more-returns
+   (package :name maybe-string-type-of-vl-importlist-find-implicit-item-package
+          (or (stringp package) (not package))
+          :rule-classes :type-prescription)))
+
+
+(define vl-importlist->star-packages ((x vl-importlist-p))
+  :returns (packages string-listp)
+  (b* (((when (atom x)) nil)
+       ((vl-import x1) (car x)))
+    (if (eq x1.part :vl-import*)
+        (cons x1.pkg (vl-importlist->star-packages (cdr x)))
+      (vl-importlist->star-packages (cdr x)))))
+
+
+(define vl-import-stars-find-item ((name stringp) (packages string-listp) (design vl-maybe-design-p))
+  :returns (mv (package (iff (stringp package) package))
+               (item (iff (vl-scopeitem-p item) item)))
+  (b* (((when (atom packages)) (mv nil nil))
+       (pkg (string-fix (car packages)))
+       (package (and design (cdr (hons-get pkg (vl-design-scope-package-alist-top design)))))
+       ((unless package) (mv pkg nil))
+       (item (cdr (hons-get (string-fix name)
+                            (vl-package-scope-item-alist-top package))))
+       ((when item) (mv pkg item)))
+    (vl-import-stars-find-item name (cdr packages) design))
+  ///
+  (defthm vl-import-stars-find-item-correct
+    (equal (vl-import-stars-find-item name (vl-importlist->star-packages x) design)
+           (vl-importlist-find-implicit-item name x design))
+    :hints(("Goal" :in-theory (enable vl-importlist-find-implicit-item
+                                      vl-importlist->star-packages)))))
+
+(defprod vl-scopeinfo
+  ((locals "Locally defined names bound to their declarations")
+   (imports "Explicitly imported names bound to (package-name . declaration)")
+   (star-packages string-listp "Names of packages imported with *"))
+  :layout :tree)
+
+(define vl-scopeinfo-lookup ((name stringp) (x vl-scopeinfo-p) (design vl-maybe-design-p))
+  :returns (mv package item)
+  (b* (((vl-scopeinfo x))
+       (name (string-fix name))
+       (local-item (cdr (hons-get name x.locals)))
+       ((when local-item) (mv nil local-item))
+       (import-item (cdr (hons-get name x.imports)))
+       ((when (consp import-item)) (mv (car import-item) (cdr import-item))))
+    (vl-import-stars-find-item name x.star-packages design)))
+       
+
+
+
+
+
+
+
+
+
+
+
+
+
+;; (fty::deflist vl-scopelist :elt-type vl-scope :elementp-of-nil nil)
+
+
+
+
+(fty::defflexsum vl-scopestack
+  (:null :cond (atom x)
+   :shape (eq x nil)
+   :ctor-body nil)
+  (:global :cond (eq (car x) :global)
+   :fields ((design :type vl-design-p :acc-body (Cdr x)))
+   :ctor-body (cons :global design))
+  (:local :cond t
+   :fields ((top :type vl-scope-p :acc-body (car x))
+            (super :type vl-scopestack-p :acc-body (cdr x)))
+   :ctor-body (cons top super)))
+
+(define vl-scopestack->design ((x vl-scopestack-p))
+  :returns (design (iff (vl-design-p design) design))
+  :measure (vl-scopestack-count x)
+  (vl-scopestack-case x
+    :null nil
+    :global x.design
+    :local (vl-scopestack->design x.super)))
+
+(define vl-scopestack-push ((scope vl-scope-p) (x vl-scopestack-p))
+  :returns (x1 vl-scopestack-p)
+  (make-vl-scopestack-local :top scope :super x))
+
+(define vl-scopestack-pop ((x vl-scopestack-p))
+  :returns (super vl-scopestack-p)
+  (vl-scopestack-case x
+    :local x.super
+    :otherwise (vl-scopestack-fix x)))
+
+(define vl-scopestack-init
+  :short "Create an initial scope stack for an entire design."
+  ((design vl-design-p))
+  :returns (ss vl-scopestack-p)
+  (make-vl-scopestack-global :design design))
+
+
+(local (defthm vl-maybe-design-p-when-iff
+         (implies (iff (vl-design-p x) x)
+                  (vl-maybe-design-p x))))
+
+
+(local
+ (defun def-vl-scope-find (table result resulttype stackp importsp)
+   (declare (xargs :mode :program))
+   (b* ((substs (scopes->tmplsubsts table))
+        (template
+          `(progn
+             (define vl-scope-find-__result__
+               :short "Look up a plain identifier to find an __result__ in a scope."
+               ((name  stringp)
+                (scope vl-scope-p)
+                (:@ :import (design vl-maybe-design-p)))
+               :returns (mv (pkg-name    (iff (stringp pkg-name) pkg-name))
+                            (__result__ (iff (__resulttype__ __result__) __result__)))
+               (b* ((scope (vl-scope-fix scope)))
+                 (case (tag scope)
+                   ,@(template-append
+                      '((:@ :has-items
+                         (:vl-__type__
+                          (:@ (not :import)
+                           (mv nil (vl-__type__-scope-find-__result__ name scope)))
+                          (:@ :import
+                           (b* (((vl-__type__ scope :quietp t))
+                                (item (vl-__type__-scope-find-__result__ name scope))
+                                ((when item) (mv nil item))
+                                ((mv pkg item) (vl-importlist-find-explicit-item
+                                                name scope.imports design))
+                                ((when (or pkg item)) (mv pkg item)))
+                             (vl-importlist-find-implicit-item name scope.imports design))))))
+                      substs)
+                   (otherwise (mv nil nil))))
+               ///
+               (more-returns
+                (pkg-name :name maybe-string-type-of-vl-scope-find-__result__-pkg-name
+                         (or (stringp pkg-name) (not pkg-name))
+                         :rule-classes :type-prescription)))
+
+
+             (define vl-scope-__result__-scopeinfo
+               :short "Make a fast lookup table for __result__s in a scope.  Memoized."
+               ((scope vl-scope-p)
+                (:@ :import (design vl-maybe-design-p)))
+               :returns (scopeinfo vl-scopeinfo-p)
+               (b* ((scope (vl-scope-fix scope)))
+                 (case (tag scope)
+                   ,@(template-append
+                      '((:@ :has-items
+                         (:vl-__type__
+                          (b* (((vl-__type__ scope :quietp t)))
+                            (make-vl-scopeinfo
+                             :locals (make-fast-alist
+                                      (vl-__type__-scope-__result__-alist scope nil))
+                             (:@ :import
+                              :imports (make-fast-alist
+                                        (vl-importlist->explicit-item-alist scope.imports design nil))
+                              :star-packages (vl-importlist->star-packages scope.imports)))))))
+                      substs)
+                   (otherwise (make-vl-scopeinfo))))
+               ///
+               (local (in-theory (enable vl-scope-find-__result__
+                                         vl-scopeinfo-lookup)))
+               (defthm vl-scope-__result__-scopeinfo-correct
+                 (implies (stringp name)
+                          (equal (vl-scopeinfo-lookup name (vl-scope-__result__-scopeinfo scope (:@ :import design)) design)
+                                 (vl-scope-find-__result__ name scope (:@ :import design))))
+                 :hints (("goal" :expand ((vl-import-stars-find-item name nil design)))))
+               (memoize 'vl-scope-__result__-scopeinfo))
+
+             (define vl-scope-find-__result__-fast
+               :short "Like @(see vl-scope-find-__result__), but uses a fast lookup table"
+               ((name stringp)
+                (scope vl-scope-p)
+                (:@ :import (design vl-maybe-design-p)))
+               :enabled t
+               (mbe :logic (vl-scope-find-__result__ name scope (:@ :import design))
+                    :exec (vl-scopeinfo-lookup name (vl-scope-__result__-scopeinfo scope (:@ :import design)) (:@ :import design) (:@ (not :import) nil))))
+
+             ,@(and stackp
+                    `((define vl-scopestack-find-__result__/context
+                        ((name stringp)
+                         (ss   vl-scopestack-p))
+                        :hints (("goal" :expand ((vl-scopestack-fix ss))))
+                        :guard-hints (("goal" :expand ((vl-scopestack-p ss))))
+                        :returns (mv (__result__ (iff (__resulttype__ __result__) __result__))
+                                     (__result__-ss vl-scopestack-p)
+                                     (pkg-name (iff (stringp pkg-name) pkg-name)))
+                        :measure (vl-scopestack-count ss)
+                        (b* ((ss (vl-scopestack-fix ss)))
+                          (vl-scopestack-case ss
+                            :null (mv nil nil nil)
+                            :global (b* (((mv pkg-name __result__)
+                                          (vl-scope-find-__result__-fast name ss.design
+                                                                         (:@ :import ss.design))))
+                                      (mv __result__ (vl-scopestack-fix ss) pkg-name))
+                            :local (b* ((:@ :import
+                                         (design (vl-scopestack->design ss)))
+                                        ((mv pkg-name __result__)
+                                         (vl-scope-find-__result__-fast name ss.top (:@ :import design)))
+                                        ((when (or pkg-name __result__))
+                                         (mv __result__ ss pkg-name)))
+                                     (vl-scopestack-find-__result__/context name ss.super)))))
+
+                      (define vl-scopestack-find-__result__
+                        :short "Look up a plain identifier in the current scope stack."
+                        ((name stringp)
+                         (ss   vl-scopestack-p))
+                        :returns (__result__ (iff (__resulttype__ __result__) __result__))
+                        (b* (((mv __result__ & &) (vl-scopestack-find-__result__/context name ss)))
+                          __result__))
+
+                      (define vl-scopestack-find-__result__/ss
+                        :short "Look up a plain identifier in the current scope stack."
+                        ((name stringp)
+                         (ss   vl-scopestack-p))
+                        :returns (mv (__result__ (iff (__resulttype__ __result__) __result__))
+                                     (__result__-ss vl-scopestack-p))
+                        (b* (((mv __result__ context-ss pkg-name)
+                              (vl-scopestack-find-__result__/context name ss))
+                             ((unless pkg-name) (mv __result__ context-ss))
+                             (design (vl-scopestack->design context-ss))
+                             (pkg (and design (cdr (hons-get pkg-name (vl-design-scope-package-alist-top design)))))
+                             ((unless pkg) ;; this should mean __result__ is already nil
+                              (mv __result__ nil))
+                             (pkg-ss (vl-scopestack-push pkg (vl-scopestack-init design))))
+                          (mv __result__ pkg-ss))))))))
+     (acl2::template-subst-fn template (and importsp '(:import)) nil nil nil
+                              `(("__RESULT__" ,(symbol-name result) . vl-package)
+                                ("__RESULTTYPE__" ,(symbol-name resulttype) . vl-package))
+                              'vl-package))))
 
 (make-event
 #||
@@ -802,7 +1199,7 @@ instances.</p>"
   (define vl-scopestack-find-item ...)
 ||#
 
- (def-vl-scope-find *vl-scopes->items* 'item 'vl-scopeitem-p t))
+ (def-vl-scope-find *vl-scopes->items* 'item 'vl-scopeitem-p t t))
 
 (make-event
 #||
@@ -811,7 +1208,7 @@ instances.</p>"
   (define vl-scope-find-definition-fast ...)
   (define vl-scopestack-find-definition ...)
 ||#
- (def-vl-scope-find *vl-scopes->defs* 'definition 'vl-scopedef-p t))
+ (def-vl-scope-find *vl-scopes->defs* 'definition 'vl-scopedef-p t nil))
 
 (make-event
 #||
@@ -820,7 +1217,7 @@ instances.</p>"
   (define vl-scope-find-package-fast ...)
   (define vl-scopestack-find-package ...)
 ||#
- (def-vl-scope-find *vl-scopes->pkgs* 'package 'vl-package-p t))
+ (def-vl-scope-find *vl-scopes->pkgs* 'package 'vl-package-p t nil))
 
 (make-event
 #||
@@ -828,19 +1225,17 @@ instances.</p>"
   (define vl-scope-portdecl-alist ...)
   (define vl-scope-find-portdecl-fast ...)
 ||#
- (def-vl-scope-find *vl-scopes->portdecls* 'portdecl 'vl-portdecl-p nil))
+ (def-vl-scope-find *vl-scopes->portdecls* 'portdecl 'vl-portdecl-p nil nil))
 
 
 
-(define vl-scopestack-init
-  :short "Create an initial scope stack for an entire design."
-  ((design vl-design-p))
-  :returns (ss vl-scopestack-p)
-  :prepwork ((local (in-theory (enable vl-scopestack-p))))
-  (list (vl-design-fix design)))
 
 (define vl-scopestacks-free ()
-  (progn$ (clear-memoize-table 'vl-scope-item-alist)
-          (clear-memoize-table 'vl-scope-definition-alist)
-          (clear-memoize-table 'vl-scope-package-alist)
-          (clear-memoize-table 'vl-scope-portdecl-alist)))
+  (progn$ (clear-memoize-table 'vl-scope-item-scopeinfo)
+          (clear-memoize-table 'vl-scope-definition-scopeinfo)
+          (clear-memoize-table 'vl-scope-package-scopeinfo)
+          (clear-memoize-table 'vl-scope-portdecl-scopeinfo)
+          (clear-memoize-table 'vl-design-scope-package-alist-top)
+          (clear-memoize-table 'vl-package-scope-item-alist-top)))
+
+

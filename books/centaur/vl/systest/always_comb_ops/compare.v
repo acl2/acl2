@@ -38,9 +38,6 @@ endmodule
 
 `else
 
-`include "spec.v"
-`include "impl.sv"
-
 `define SIZE 1
 `define MODNAME_SIZE \spec$width=1
 `define COMPARE_NAME compare_aux_1

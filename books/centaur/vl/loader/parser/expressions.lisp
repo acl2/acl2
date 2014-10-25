@@ -1456,6 +1456,7 @@ identifier, so we convert it into a hidpiece.</p>
            ;; otherwise, better be a comma and then more key/values
            (:= (vl-match-token :vl-comma))
            (rest := (vl-parse-1+-keyval-expression-pairs))
+           (:= (vl-match-token :vl-rcurly))
            (return (make-vl-nonatom :op :vl-pattern-keyvalue
                                     :args (cons (make-vl-nonatom :op :vl-keyvalue
                                                                  :args (list first firstval))
@@ -1560,7 +1561,7 @@ identifier, so we convert it into a hidpiece.</p>
               (arg := (vl-parse-expression))
               (:= (vl-match-token :vl-rparen))
               (return (make-vl-nonatom :op :vl-binary-cast :args (list primary arg))))
-            ;; otherwise, better by a typed assignment pattern:
+            ;; otherwise, better be a typed assignment pattern:
             (:= (vl-match-token :vl-lcurly))
             (pattern := (vl-parse-assignment-pattern))
             (return (make-vl-nonatom :op :vl-pattern-type :args (list primary pattern))))

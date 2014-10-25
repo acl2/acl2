@@ -106,72 +106,7 @@ events.</p>")
   :returns (names string-listp)
   (vl-vardecl->name x))
 
-(define vl-gateinstlist->names-nrev ((x vl-gateinstlist-p) nrev)
-  :parents (vl-gateinstlist->names)
-  (b* (((when (atom x))
-        (nrev-fix nrev))
-       (name (vl-gateinst->name (car x)))
-       (nrev (if name
-                 (nrev-push name nrev)
-               nrev)))
-    (vl-gateinstlist->names-nrev (cdr x) nrev)))
 
-(define vl-gateinstlist->names ((x vl-gateinstlist-p))
-  :parents (vl-gateinstlist-p modnamespace)
-  :short "Collect all instance names declared in a @(see vl-gateinstlist-p)."
-  :long "<p>Note that gate instances may be unnamed, in which case we do not
-add anything.  In other words, the list of names returned may be shorter than
-the number of gate instances in the list.</p>"
-  :verify-guards nil
-  (mbe :logic (if (consp x)
-                  (if (vl-gateinst->name (car x))
-                      (cons (vl-gateinst->name (car x))
-                            (vl-gateinstlist->names (cdr x)))
-                    (vl-gateinstlist->names (cdr x)))
-                nil)
-       :exec (with-local-nrev (vl-gateinstlist->names-nrev x nrev)))
-  ///
-  (defthm vl-gateinstlist->names-nrev-removal
-    (equal (vl-gateinstlist->names-nrev x nrev)
-           (append nrev (vl-gateinstlist->names x)))
-    :hints(("Goal" :in-theory (enable vl-gateinstlist->names-nrev))))
-
-  (verify-guards vl-gateinstlist->names)
-
-  (defthm vl-gateinstlist->names-when-not-consp
-    (implies (not (consp x))
-             (equal (vl-gateinstlist->names x)
-                    nil)))
-
-  (defthm vl-gateinstlist->names-of-cons
-    (equal (vl-gateinstlist->names (cons a x))
-           (if (vl-gateinst->name a)
-               (cons (vl-gateinst->name a)
-                     (vl-gateinstlist->names x))
-             (vl-gateinstlist->names x))))
-
-  (defthm vl-gateinstlist->names-of-list-fix
-    (equal (vl-gateinstlist->names (list-fix x))
-           (vl-gateinstlist->names x)))
-
-  (defcong list-equiv equal (vl-gateinstlist->names x) 1
-    :hints(("Goal"
-            :in-theory (e/d (list-equiv)
-                            (vl-gateinstlist->names-of-list-fix))
-            :use ((:instance vl-gateinstlist->names-of-list-fix (x x))
-                  (:instance vl-gateinstlist->names-of-list-fix (x acl2::x-equiv))))))
-
-  (defthm vl-gateinstlist->names-of-append
-    (equal (vl-gateinstlist->names (append x y))
-           (append (vl-gateinstlist->names x)
-                   (vl-gateinstlist->names y))))
-
-  (defthm vl-gateinstlist->names-of-rev
-    (equal (vl-gateinstlist->names (rev x))
-           (rev (vl-gateinstlist->names x))))
-
-  (defthm string-listp-of-vl-gateinstlist->names
-    (string-listp (vl-gateinstlist->names x))))
 
 
 

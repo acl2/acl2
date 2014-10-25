@@ -29,9 +29,6 @@
 // Original author: Jared Davis <jared@centtech.com>
 
 `include "blankport.v"
-`include "spec.v"
-`include "impl.v"
-
 
 module compare_blankport () ;
 

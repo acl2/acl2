@@ -707,6 +707,143 @@ accumulator-style functions to do the collection.  Under the hood, we also use
   (deffixequiv-mutual vl-expr-names))
 
 
+
+(defines vl-expr-varnames-nrev
+  :parents (vl-expr-varnames)
+  :flag-local nil
+  (define vl-expr-varnames-nrev ((x vl-expr-p) nrev)
+    :measure (vl-expr-count x)
+    :flag :expr
+    (if (vl-fast-atom-p x)
+        (let ((guts (vl-atom->guts x)))
+          (if (vl-fast-id-p guts)
+              (nrev-push (vl-id->name guts) nrev)
+            (nrev-fix nrev)))
+      (b* (((vl-nonatom x))
+           ((when (member x.op '(:vl-hid-dot
+                                 :vl-scope)))
+            (nrev-fix nrev))
+           ((when (member x.op '(:vl-binary-cast
+                                 :vl-pattern-type
+                                 :vl-keyvalue)))
+            ;; only look at the second argument
+            (vl-expr-varnames-nrev (second x.args) nrev)))
+
+        (vl-exprlist-varnames-nrev (vl-nonatom->args x) nrev))))
+
+  (define vl-exprlist-varnames-nrev ((x vl-exprlist-p) nrev)
+    :measure (vl-exprlist-count x)
+    :flag :list
+    (if (atom x)
+        (nrev-fix nrev)
+      (let ((nrev (vl-expr-varnames-nrev (car x) nrev)))
+        (vl-exprlist-varnames-nrev (cdr x) nrev)))))
+
+(defines vl-expr-varnames
+  :verify-guards nil
+  (define vl-expr-varnames ((x vl-expr-p))
+    :returns (names string-listp)
+    :measure (vl-expr-count x)
+    :flag :expr
+    (mbe :logic (if (vl-fast-atom-p x)
+                    (let ((guts (vl-atom->guts x)))
+                      (if (vl-id-p guts)
+                          (list (vl-id->name guts))
+                        nil))
+                  (b* (((vl-nonatom x))
+                       ((when (member x.op '(:vl-hid-dot
+                                             :vl-scope)))
+                        nil)
+                       ((when (member x.op '(:vl-binary-cast
+                                             :vl-pattern-type
+                                             :vl-keyvalue)))
+                        ;; only look at the second argument
+                        (vl-expr-varnames (second x.args))))
+
+                    (vl-exprlist-varnames (vl-nonatom->args x))))
+         :exec (with-local-nrev
+                 (vl-expr-varnames-nrev x nrev))))
+
+  (define vl-exprlist-varnames ((x vl-exprlist-p))
+    :returns (names string-listp)
+    :measure (vl-exprlist-count x)
+    :flag :list
+    (mbe :logic (if (consp x)
+                    (append (vl-expr-varnames (car x))
+                            (vl-exprlist-varnames (cdr x)))
+                  nil)
+         :exec (with-local-nrev
+                 (vl-exprlist-varnames-nrev x nrev))))
+  ///
+  (defthm true-listp-of-vl-expr-varnames
+    (true-listp (vl-expr-varnames x))
+    :rule-classes :type-prescription)
+
+  (defthm true-listp-of-vl-exprlist-varnames
+    (true-listp (vl-exprlist-varnames x))
+    :rule-classes :type-prescription)
+
+  (defthm-vl-expr-varnames-nrev-flag
+    (defthm vl-expr-varnames-nrev-removal
+      (equal (vl-expr-varnames-nrev x nrev)
+             (append nrev (vl-expr-varnames x)))
+      :flag :expr)
+    (defthm vl-exprlist-varnames-nrev-removal
+      (equal (vl-exprlist-varnames-nrev x nrev)
+             (append nrev (vl-exprlist-varnames x)))
+      :flag :list)
+    :hints(("Goal"
+            :in-theory (enable acl2::rcons)
+            :expand ((vl-expr-varnames-nrev x nrev)
+                     (vl-exprlist-varnames-nrev x nrev)
+                     (vl-expr-varnames x)
+                     (vl-exprlist-varnames x)))))
+
+  (verify-guards vl-expr-varnames)
+
+  (defthm vl-exprlist-varnames-when-atom
+    (implies (atom x)
+             (equal (vl-exprlist-varnames x)
+                    nil))
+    :hints(("Goal" :expand (vl-exprlist-varnames x))))
+
+  (defthm vl-exprlist-varnames-of-cons
+    (equal (vl-exprlist-varnames (cons a x))
+           (append (vl-expr-varnames a)
+                   (vl-exprlist-varnames x)))
+    :hints(("Goal" :expand ((vl-exprlist-varnames (cons a x))))))
+
+  (defthm vl-exprlist-varnames-of-append
+    (equal (vl-exprlist-varnames (append x y))
+           (append (vl-exprlist-varnames x)
+                   (vl-exprlist-varnames y)))
+    :hints(("Goal" :induct (len x))))
+
+  (local (defthm c0
+           (implies (member-equal a x)
+                    (subsetp-equal (vl-expr-varnames a)
+                                   (vl-exprlist-varnames x)))
+           :hints(("Goal" :induct (len x)))))
+
+  (local (defthm c1
+           (implies (subsetp-equal x y)
+                    (subsetp-equal (vl-exprlist-varnames x)
+                                   (vl-exprlist-varnames y)))
+           :hints(("Goal" :induct (len x)))))
+
+  (local (defthm c2
+           (implies (and (subsetp-equal x y)
+                         (member-equal a x))
+                    (subsetp-equal (vl-expr-varnames a)
+                                   (vl-exprlist-varnames y)))))
+
+  (defcong set-equiv set-equiv (vl-exprlist-varnames x) 1
+    :hints(("Goal" :in-theory (enable set-equiv))))
+
+  (deffixequiv-mutual vl-expr-varnames))
+
+
+
 (defines vl-expr-ops-nrev
   :parents (vl-expr-ops)
   :flag-local nil

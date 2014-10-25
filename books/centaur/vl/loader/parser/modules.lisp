@@ -31,8 +31,6 @@
 (in-package "VL")
 (include-book "ports")      ;; vl-portdecllist-p, vl-portlist-p
 (include-book "elements")
-(include-book "../make-implicit-wires")
-(include-book "../portdecl-sign")
 (include-book "../../mlib/port-tools")  ;; vl-ports-from-portdecls
 (local (include-book "../../util/arithmetic"))
 
@@ -52,16 +50,37 @@
    (maxloc   vl-location-p)
    (warnings vl-warninglist-p))
   :returns (mod vl-module-p)
-  (b* (((mv items warnings) (vl-make-implicit-wires
-                             (append-without-guard (vl-modelementlist->genelements params)
-                                                   items)
-                             warnings))
+  (b* ((items (append-without-guard (vl-modelementlist->genelements params) items))
+       (bad-item (vl-genelementlist-findbad items
+                                            '(:vl-generate
+                                              ;; :vl-port    -- not allowed, they were parsed separately
+                                              :vl-portdecl
+                                              :vl-assign
+                                              ;; :vl-alias   -- bozo, let's not permit these yet
+                                              :vl-vardecl
+                                              :vl-paramdecl
+                                              :vl-fundecl
+                                              :vl-taskdecl
+                                              :vl-modinst
+                                              :vl-gateinst
+                                              :vl-always
+                                              :vl-initial
+                                              ;; :vl-typedef    -- let's not permit these yet
+                                              :vl-import
+                                              ;; :vl-fwdtypedef -- doesn't seem like these should be ok
+                                              ;; :vl-modport    -- definitely not ok
+                                              )))
+       (warnings
+        (if (not bad-item)
+            warnings
+          (fatal :type :vl-bad-module-item
+                 :msg "~a0: a module may not contain ~x1s."
+                 :args (list bad-item (tag bad-item)))))
+
        ((vl-genelement-collection c) (vl-sort-genelements items))
-       ((mv warnings c.portdecls c.vardecls)
-        (vl-portdecl-sign c.portdecls c.vardecls warnings)))
-    (or (not c.ports)
-        (raise "There shouldn't be any ports in the items."))
-    ;; BOZO: Warn about other bad elements in c?
+       ;; ((mv warnings c.portdecls c.vardecls)
+       ;;  (vl-portdecl-sign c.portdecls c.vardecls warnings))
+       )
     (make-vl-module :name       name
                     :params     params
                     :ports      ports
@@ -76,14 +95,15 @@
                     :alwayses   c.alwayss
                     :initials   c.initials
                     :generates  c.generates
+                    :imports    c.imports
                     :atts       atts
                     :minloc     minloc
                     :maxloc     maxloc
                     :warnings   warnings
                     :origname   name
                     :comments   nil
+                    :loaditems  items
                     )))
-
 
 
 ;                                    MODULES
@@ -108,6 +128,17 @@
 ; module_keyword ::= 'module' | 'macromodule'
 
 
+; BOZO.
+; We aren't handling port declarations correctly yet for SystemVerilog.
+;
+; For ANSI style modules, list_of_port_declarations is somewhat misnamed and
+; is actually a list of ansi_port_declaration, which we don't currently parse
+; correctly.
+;
+; Plain old port_declaration is used only in: module_item, interface_item,
+; program_item.
+;
+; So we are reading the wrong kinds of ports right now in the ANSI variant.
 
 (defparser vl-parse-module-declaration-nonansi (atts module_keyword id)
   :guard (and (vl-atts-p atts)

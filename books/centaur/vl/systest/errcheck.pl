@@ -43,6 +43,10 @@ sub check_file_for_errors
 {
     my $filename = shift;
 
+    my $fail_loc = 0;
+    my $license_loc = 0;
+    my $fail_message = "";
+
     open(my $file, "<", $filename) or die("Error opening $filename: $!");
 
     my $loc = 1;
@@ -50,24 +54,48 @@ sub check_file_for_errors
     {
         chomp($line);
 
+	if ($line =~ /Unable to checkout license for the simulation/) {
+	    $license_loc = $loc;
+	    $fail_message = $line;
+	    last;
+	}
+
         my $error = ($line =~ m/.*fail.*/i) || ($line =~ m/.*error.*/i);
+
+	# Suppress error count lines.
 	$error = $error && ! ($line =~ m/.*errors: 0,.*/);
 
+	# Suppress g++ lines with -librterrorinf.so
+	$error = $error && ! ($line =~ m/.*\/librterrorinf.so.*/);
+
 	if ($error) {
-	    print "** In $filename, line $loc looks like an error:\n";
-	    print "** $line\n";
-	    exit(1);
+	    $fail_loc = $loc;
+	    $fail_message = $line;
 	}
 
 	$loc = $loc + 1;
     }
+
+    if ($license_loc) {
+	print "** In $filename, line $license_loc looks like a license problem:\n";
+	print "** $fail_message\n";
+	exit(1);
+    }
+
+    if ($fail_loc)  {
+	print "** In $filename, line $fail_loc looks like an error:\n";
+	print "** $fail_message\n";
+	exit(1);
+    }
+
+    return;
 }
 
 foreach my $i (0 .. $#ARGV)
 {
     my $filename = $ARGV[$i];
     check_file_for_errors($filename);
-    print "Checked $filename\n";
+    print "Test passed: $filename\n";
 }
 
 exit(0);

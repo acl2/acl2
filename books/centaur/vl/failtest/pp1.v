@@ -28,57 +28,8 @@
 //
 // Original author: Jared Davis <jared@centtech.com>
 
-// basic tests of defines with arguments
+module top ;
 
-//`define cat(a, b) \la,la,la + /* hello */ a b
-//`define cat(a, b) \la,la,la + a b
-`define cat(a, b) \la  + a b
-
-module dut (o1, o2, o3, o4, o5, a, n1, n2);
-
-  parameter size = 1;
-
-  output [3:0] o1, o2, o3, o4, o5;
-  input [3:0]  a, n1, n2;
-
-  wire [2:0]   \la = {a[3],n1[2],n2[1]};
-
-
-  assign o1 = `cat(a, + n1);
-
-`ifndef VL_SYSTEST_NCV
-// NCVerilog apparently doesn't like this, but VCS seems to think it is ok.
-
-  assign o2 = `cat(a ? n1, : n2);
-`endif
-
-
-//   assign o3 = `cat({a[1:0], n1[1:0]}, + n2);
-//   assign o4 = `cat(a /* foo,
-// 		      bar */,
-//   + // comment
-// 	      n1);
-
-// `define foo a
-// `define bar + n1 ;
-
-//   assign o5 = `cat(`foo, `bar)
-
-  wire 	       make_size_matter = size;
+  wire w = `foo;  // oops, not defined
 
 endmodule
-
-
-/*+VL
-
-module make_tests () ;
-
-   wire [3:0] a;
-
-   dut #(1) inst (a, a, a, a, a, a, a, a);
-
-endmodule
-
-*/
-
-
