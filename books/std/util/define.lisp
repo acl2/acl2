@@ -248,6 +248,16 @@ But if @(':t-proof t') is provided, we will create a theorem without
 any rule-classes that holds the proof of termination for this function and
 measure.</dd>
 
+<dt>@(':no-function bool')</dt>
+
+<dd>(Advanced/obscure) By default, @('define') will automatically bind
+@('__function__') to the name of your function.  This binding can change how
+ACL2 classifies @(':definition') rules by promoting @(':definition') into
+@(':abbreviation') rules.  When porting legacy libraries to @('define'), this
+difference can sometimes cause problems in later theorems.  Setting
+@(':no-function t') will avoid binding @('__function__') for better backwards
+compatibility.</dd>
+
 </dl>
 
 <h4>@('Returns') Specifications</h4>
@@ -331,7 +341,8 @@ some kind of separator!</p>
             :verbosep
             :progn
             :hooks
-            :t-proof)
+            :t-proof
+            :no-function)
           acl2::*xargs-keywords*))
 
 
@@ -843,12 +854,15 @@ some kind of separator!</p>
        (formal-types  (formallist->types formals))
        (stobj-names   (formallist->names (formallist-collect-stobjs formals world)))
 
-       (extended-body `(let ((__function__ ',name))
-                         ;; CCL's compiler seems to be smart enough to not
-                         ;; generate code for this binding when it's not
-                         ;; needed.
-                         (declare (ignorable __function__))
-                         ,body))
+       (no-function   (getarg :no-function nil kwd-alist))
+       (extended-body (if no-function
+                          body
+                        `(let ((__function__ ',name))
+                           ;; CCL's compiler seems to be smart enough to not
+                           ;; generate code for this binding when it's not
+                           ;; needed.
+                           (declare (ignorable __function__))
+                           ,body)))
        (final-body    (if non-exec
                           ;; support the :non-executable xarg by wrapping the
                           ;; body in the required throw form

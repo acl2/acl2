@@ -382,7 +382,7 @@ of proofs.")
 ;(xdoc::change-parents data-definitions (macro-libraries projects debugging))
 ;(xdoc::change-parents with-timeout (data-definitions))
 ;(xdoc::change-parents testing (cgen))
-(xdoc::change-parents data-structures (macro-libraries))
+;; (xdoc::change-parents data-structures (macro-libraries))
 (xdoc::change-parents hacker (interfacing-tools))
 (xdoc::change-parents witness-cp (proof-automation))
 

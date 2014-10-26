@@ -131,7 +131,7 @@
 	  (len-len-induction x (cdr y))
 	(list x y)))))
 
-(defthmd ordinal-double-containment
+(defthmd ordinal-double-containment-expensive
   (implies
    (and
     (o-p x)
@@ -197,7 +197,7 @@
 	  (equal x y)))
   :hints (("Goal" :induct (len-len-induction x y))
 	  (and stable-under-simplificationp
-	       '(:in-theory (e/d (ordinal-double-containment)
+	       '(:in-theory (e/d (ordinal-double-containment-expensive)
 				 (|0 < a  =  ~(a = 0)|))))))
 
 (defun stringtoo (x)
@@ -250,10 +250,10 @@
    (equal (equal (o+ x 1)
 		 (o+ y 1))
 	  (equal x y)))
-  :hints (("Goal" :in-theory (e/d (ordinal-double-containment)
+  :hints (("Goal" :in-theory (e/d (ordinal-double-containment-expensive)
 				  (|0 < a  =  ~(a = 0)|)))))
 
-(defthmd equal-string-double-containment
+(defthmd equal-string-double-containment-expensive
   (implies
    (and
     (stringp x)
@@ -263,7 +263,7 @@
 	       (not (string< y x)))))
   :hints (("Goal" :in-theory (enable string<))))
 
-(defthmd equal-symbol-double-containment
+(defthmd equal-symbol-double-containment-expensive
   (implies
    (and
     (symbolp x)
@@ -281,10 +281,10 @@
    (equal (equal (symboltoo x) (symboltoo y))
 	  (equal x y)))
   :hints (("goal" :in-theory (enable
-			      equal-string-double-containment
+			      equal-string-double-containment-expensive
 			      ))
 	  ("Subgoal 5" :in-theory (e/d
-				   (symbol-< equal-symbol-double-containment)
+				   (symbol-< equal-symbol-double-containment-expensive)
 				   (SYMBOL-<-TRICHOTOMY)))))
 
 (in-theory (disable symboltoo))
@@ -481,7 +481,7 @@
 	  (and (not (o<< x y))
 	       (not (o<< y x)))))
   :hints (("Goal" :in-theory (enable equal-*too-reduction 
-				     ordinal-double-containment))))
+				     ordinal-double-containment-expensive))))
 
 (defthm o<<-is-well-founded
   (and (o-p (*too x))

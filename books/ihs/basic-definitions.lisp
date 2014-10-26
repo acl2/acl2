@@ -148,6 +148,7 @@ Motorola MC68020.</p>")
   :returns bool
   :inline t
   :enabled t
+  :no-function t ;; Sigh, switching to :abbreviation breaks various proofs
   (or (eql b 0)
       (eql b 1)))
 
@@ -159,6 +160,7 @@ Motorola MC68020.</p>")
   :inline t
   :returns bit
   :enabled t
+  :no-function t ;; Sigh, switching to :abbreviation breaks various proofs
   (if (eql b 1)
       1
     0))
@@ -307,6 +309,7 @@ except that we return 1 or 0 (instead of t or nil).</p>
 <p>In languages like C, this might be written as @('(i >> pos) & 1').</p>"
   :enabled t
   :inline t
+  :no-function t ;; Sigh, switching to :abbreviation breaks various proofs
   (if (logbitp pos i)
       1
     0)

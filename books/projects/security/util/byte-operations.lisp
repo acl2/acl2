@@ -87,11 +87,12 @@
 ;       (or (equal e 0)
 ;           (equal e 1))))
 ; So here is the definition from ihs/basic-definitions.lisp:
-(defun-inline bitp (b)
-; Doc string omitted here.
-  (declare (xargs :guard t))
-  (or (eql b 0)
-      (eql b 1)))
+
+;; [Jared] changing this to just include the basic-definitions book from IHS.
+;; It's very lightweight, and this way we don't duplicate the definition and
+;; have to maintain it in two places.
+
+(include-book "ihs/basic-definitions" :dir :system)
 
 ;
 ; Computes the logical XOR of two single bits

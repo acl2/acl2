@@ -68,7 +68,7 @@
                    (set::subset (deps (rawdtree locals sub))
                                  (deps (rawdtree locals super))))
           :hints(("Goal" 
-                  :in-theory (disable set::double-containment)
+                  :in-theory (disable set::double-containment-expensive)
                   :use ((:instance mrdeps (dtree (rawdtree locals sub)))
                         (:instance mrdeps (dtree (rawdtree locals super))))))))
 
@@ -99,7 +99,7 @@
                    (set::subset (localdeps (rawdtree locals sub))
                                 (localdeps (rawdtree locals super))))
           :hints(("Goal" 
-                  :in-theory (disable set::double-containment)
+                  :in-theory (disable set::double-containment-expensive)
                   :use ((:instance mrdeps (dtree (rawdtree locals sub)))
                         (:instance mrdeps (dtree (rawdtree locals super))))))))
 
@@ -171,7 +171,7 @@
           (equal (localdeps (rawdtree (localdeps dtree)
                                       (children dtree)))
                  (localdeps dtree))
-          :hints(("Goal" :in-theory (disable set::double-containment)
+          :hints(("Goal" :in-theory (disable set::double-containment-expensive)
                   :use ((:instance mrdeps 
                                    (dtree (rawdtree (localdeps dtree)
                                                      (children dtree))))
@@ -184,7 +184,7 @@
                  (localdeps (get path dtree)))
           :hints(("Goal"
                   :in-theory (e/d (get) 
-                                  (set::double-containment))))))
+                                  (set::double-containment-expensive))))))
 
  (defthm rawdtree-of-localdeps-and-children-under-equiv
    (equiv (rawdtree (localdeps dtree) (children dtree))
@@ -216,7 +216,7 @@
 (defthm localdeps-of-leaf
   (equal (localdeps (leaf locals))
          (set::listsetfix locals))
-  :hints(("Goal" :in-theory (e/d (leaf) (set::double-containment)))))
+  :hints(("Goal" :in-theory (e/d (leaf) (set::double-containment-expensive)))))
 
 (defthm children-of-leaf
   (equal (children (leaf locals))
@@ -227,7 +227,7 @@
   (equal (deps (leaf locals))
          (set::listsetfix locals))
   :hints(("Goal"          
-          :in-theory (disable set::double-containment)
+          :in-theory (disable set::double-containment-expensive)
           :use (:instance mrdeps (dtree (leaf locals))))))
 
 (defthm domain-of-leaf
