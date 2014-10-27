@@ -33,6 +33,7 @@
 (include-book "../mlib/delta")
 (include-book "occform/util")
 (include-book "../mlib/caremask")
+(include-book "../mlib/blocks")
 (local (include-book "../util/arithmetic"))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (std::add-default-post-define-hook :fix))
@@ -1105,6 +1106,38 @@ is just a constant integer.  So this is just:</p>
 
 (def-vl-wildelim-list vl-initiallist :element vl-initial)
 
+(def-genblob-transform vl-genblob-wildelim ((warnings vl-warninglist-p))
+  :returns ((warnings vl-warninglist-p))
+  ;; :verify-guards nil
+  (b* (((vl-genblob x) x)
+
+       ((mv warnings assigns)    (vl-assignlist-wildelim    x.assigns    warnings))
+       ((mv warnings modinsts)   (vl-modinstlist-wildelim   x.modinsts   warnings))
+       ((mv warnings gateinsts)  (vl-gateinstlist-wildelim  x.gateinsts  warnings))
+       ((mv warnings alwayses)   (vl-alwayslist-wildelim    x.alwayses   warnings))
+       ((mv warnings initials)   (vl-initiallist-wildelim   x.initials   warnings))
+       ((mv warnings ports)      (vl-portlist-wildelim      x.ports      warnings))
+       ((mv warnings portdecls)  (vl-portdecllist-wildelim  x.portdecls  warnings))
+       ((mv warnings paramdecls) (vl-paramdecllist-wildelim x.paramdecls warnings))
+       ((mv warnings vardecls)   (vl-vardecllist-wildelim   x.vardecls   warnings))
+
+       ((mv warnings generates)  (vl-generates-wildelim  x.generates  warnings)))
+
+    (mv warnings
+        (change-vl-genblob
+         x
+         :assigns assigns
+         :modinsts modinsts
+         :gateinsts gateinsts
+         :alwayses alwayses
+         :initials initials
+         :ports ports
+         :portdecls portdecls
+         :paramdecls paramdecls
+         :vardecls vardecls
+         :generates generates)))
+  :apply-to-generates vl-generates-wildelim)
+
 
 
 (define vl-module-wildelim ((x vl-module-p))
@@ -1114,26 +1147,11 @@ is just a constant integer.  So this is just:</p>
         x)
        ((vl-module x) x)
        (warnings  x.warnings)
-       ((mv warnings assigns)    (vl-assignlist-wildelim    x.assigns    warnings))
-       ((mv warnings modinsts)   (vl-modinstlist-wildelim   x.modinsts   warnings))
-       ((mv warnings gateinsts)  (vl-gateinstlist-wildelim  x.gateinsts  warnings))
-       ((mv warnings alwayses)   (vl-alwayslist-wildelim    x.alwayses   warnings))
-       ((mv warnings initials)   (vl-initiallist-wildelim   x.initials   warnings))
-       ((mv warnings ports)      (vl-portlist-wildelim      x.ports      warnings))
-       ((mv warnings portdecls)  (vl-portdecllist-wildelim  x.portdecls  warnings))
-       ((mv warnings paramdecls) (vl-paramdecllist-wildelim x.paramdecls warnings))
-       ((mv warnings vardecls)   (vl-vardecllist-wildelim   x.vardecls   warnings)))
-    (change-vl-module x
-                      :assigns assigns
-                      :modinsts modinsts
-                      :gateinsts gateinsts
-                      :alwayses alwayses
-                      :initials initials
-                      :ports ports
-                      :portdecls portdecls
-                      :paramdecls paramdecls
-                      :vardecls vardecls
-                      :warnings warnings)))
+       (genblob (vl-module->genblob x))
+       ((mv warnings new-genblob)
+        (vl-genblob-wildelim genblob warnings))
+       (mod (change-vl-module x :warnings warnings)))
+    (vl-genblob->module new-genblob mod)))
 
 (defprojection vl-modulelist-wildelim ((x vl-modulelist-p))
   :returns (new-x vl-modulelist-p)

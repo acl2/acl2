@@ -3502,7 +3502,7 @@ the list of elements of the given type.</p>"
     (cons (make-vl-genbase :item (car x))
           (vl-modelementlist->genelements (cdr x)))))
 
-(defprod vl-context
+(defprod vl-context1
   :short "Description of where an expression occurs."
   :tag :vl-context
   :layout :tree
@@ -3510,6 +3510,38 @@ the list of elements of the given type.</p>"
          "The module where this module element was taken from.")
    (elem vl-modelement-p
          "Some element from the module.")))
+
+(define vl-context-p ((x))
+  :prepwork ((set-tau-auto-mode nil))
+  (declare (ignorable x))
+  t
+  ///
+  (defthm vl-context-p-type
+    (booleanp (vl-context-p x))
+    :rule-classes :type-prescription)
+  (in-theory (disable (:t vl-context-p)))
+  
+  (defthm vl-context-p-of-modelement
+    (implies (vl-modelement-p x)
+             (vl-context-p x)))
+
+  (define vl-context-fix ((x))
+    x
+    ///
+    (defthm vl-context-p-of-vl-context-fix
+      (vl-context-p (vl-context-fix x)))
+    (defthm vl-context-fix-when-vl-context-p
+      (implies (vl-context-p x)
+               (equal (vl-context-fix x) x)))
+
+    (fty::deffixtype vl-context :pred vl-context-p :fix vl-context-fix :equiv vl-context-equiv
+      :define t))
+
+  (defmacro make-vl-context (&rest args)
+    `(vl-context (make-vl-context1 . ,args)))
+
+  (defmacro vl-context (x)
+    `(vl-context-fix ,x)))
 
 
 (defprod vl-module

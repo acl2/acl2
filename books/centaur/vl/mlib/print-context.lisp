@@ -145,9 +145,9 @@
   :returns (str stringp :rule-classes :type-prescription)
   (with-local-ps (vl-pp-modelement-summary x)))
 
-(define vl-pp-context-summary ((x vl-context-p) &key (ps 'ps))
+(define vl-pp-context-summary ((x vl-context1-p) &key (ps 'ps))
   :short "Print a short, human-friendly string describing a @(see vl-context-p)."
-  (b* (((vl-context x) x))
+  (b* (((vl-context1 x) x))
     (vl-ps-seq (vl-print "In ")
                (vl-print-modname x.mod)
                (vl-println? ", ")
@@ -155,7 +155,7 @@
 
 (define vl-context-summary
   :short "Get a short, human-friendly string describing a @(see vl-context-p)."
-  ((x vl-context-p))
+  ((x vl-context1-p))
   :returns (str stringp :rule-classes :type-prescription)
   (with-local-ps (vl-pp-context-summary x)))
 
@@ -184,9 +184,9 @@ quick summary instead, see @(see vl-pp-modelement-summary).</p>"
       (:vl-import     (vl-pp-import x))
       (otherwise (prog2$ (impossible) ps)))))
 
-(define vl-pp-context-full ((x vl-context-p) &key (ps 'ps))
+(define vl-pp-context-full ((x vl-context1-p) &key (ps 'ps))
   :short "Pretty-print a full @(see vl-context-p)."
-  (b* (((vl-context x) x))
+  (b* (((vl-context1 x) x))
       (vl-ps-seq (vl-print "In module ")
                  (vl-print-modname x.mod)
                  (vl-println ",")

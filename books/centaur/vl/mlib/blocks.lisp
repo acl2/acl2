@@ -571,16 +571,15 @@
               ,@return-from-genarrayblock-bindings)
            (maybe-mv ,@return-names (change-vl-genarrayblock x :elems new-elems))))
        ///
-       ,@(and verify-guards `((verify-guards ,name :hints ,guard-hints)))
-       (deffixequiv-mutual ,name
-         :hints (("goal" :in-theory (disable ,apply-to-genarrayblock
+       (local (in-theory (disable ,apply-to-genarrayblock
                                 ,apply-to-genarrayblocklist
                                 ,apply-to-elementlist
                                 ,apply-to-generate
                                 ,apply-to-generates
-                                ,name))
-
-                 (and stable-under-simplificationp
+                                ,name)))
+       ,@(and verify-guards `((verify-guards ,name :hints ,guard-hints)))
+       (deffixequiv-mutual ,name
+         :hints ((and stable-under-simplificationp
                       (flag::expand-calls-computed-hint
                        clause '(,apply-to-genarrayblock
                                 ,apply-to-genarrayblocklist

@@ -31,6 +31,7 @@
 (in-package "VL")
 (include-book "../../mlib/stmt-tools")
 (include-book "../../mlib/caremask")
+(include-book "../../mlib/blocks")
 (local (include-book "../../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
 (local (in-theory (disable all-equalp)))
@@ -1009,27 +1010,38 @@ statements within a statement."
        ((mv warnings cdr) (vl-initiallist-caseelim (cdr x) warnings ss)))
     (mv warnings (cons car cdr))))
 
-(define vl-module-caseelim ((x vl-module-p) (ss vl-scopestack-p))
-  :returns (new-x vl-module-p)
-  (b* ((x (vl-module-fix x))
-       (ss (vl-scopestack-push x ss))
-       ((vl-module x) x)
-       ((when (vl-module->hands-offp x))
-        x)
+(def-genblob-transform vl-genblob-caseelim ((ss vl-scopestack-p)
+                                                (warnings vl-warninglist-p))
+  :returns ((warnings vl-warninglist-p))
+  ;; :verify-guards nil
+  (b* (((vl-genblob x) x)
+       (ss (vl-scopestack-push (vl-genblob-fix x) ss))
 
-       ((unless (or x.alwayses x.initials))
-        ;; Optimization: bail early on modules with no procedural stuff.
-        x)
-
-       (warnings x.warnings)
        ((mv warnings alwayses)
         (vl-alwayslist-caseelim x.alwayses warnings ss))
        ((mv warnings initials)
-        (vl-initiallist-caseelim x.initials warnings ss)))
-    (change-vl-module x
-                      :warnings warnings
-                      :alwayses alwayses
-                      :initials initials)))
+        (vl-initiallist-caseelim x.initials warnings ss))
+
+       ((mv warnings generates)  (vl-generates-caseelim  x.generates ss  warnings)))
+      (mv warnings
+          (change-vl-genblob
+           x
+           :alwayses alwayses
+           :initials initials
+           :generates generates)))
+  :apply-to-generates vl-generates-caseelim)
+
+
+
+(define vl-module-caseelim ((x vl-module-p) (ss vl-scopestack-p))
+  :returns (new-x vl-module-p)
+  (b* ((x (vl-module-fix x))
+       ((when (vl-module->hands-offp x))
+        x)
+       (genblob (vl-module->genblob x))
+       ((mv warnings new-genblob) (vl-genblob-caseelim genblob ss (vl-module->warnings x)))
+       (x-warn (change-vl-module x :warnings warnings)))
+    (vl-genblob->module new-genblob x-warn)))
 
 (defprojection vl-modulelist-caseelim ((x vl-modulelist-p) (ss vl-scopestack-p))
   :returns (new-x vl-modulelist-p)

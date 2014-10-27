@@ -112,11 +112,11 @@ e').</p>"
   :short "Search for strange expressions like @('A [op] A')."
   :long "<p>We search through the expression @('x') for sub-expressions of the
 form @('A [op] A'), and generate a warning whenever we find one.  The @('ctx')
-is a @(see vl-context-p) that says where @('x') occurs, for more helpful
+is a @(see vl-context1-p) that says where @('x') occurs, for more helpful
 warnings.  We also use it to suppress warnings in certain cases.</p>"
 
   (define vl-expr-leftright-check ((x   vl-expr-p)
-                                   (ctx vl-context-p))
+                                   (ctx vl-context1-p))
     :measure (vl-expr-count x)
     ;; :hints(("Goal" :in-theory (disable (force))))))
     :returns (warnings vl-warninglist-p)
@@ -126,7 +126,7 @@ warnings.  We also use it to suppress warnings in certain cases.</p>"
          (args (vl-nonatom->args x))
 
          ((when (and (eq op :vl-binary-minus)
-                     (member (tag (vl-context->elem ctx)) '(:vl-vardecl))
+                     (member (tag (vl-context1->elem ctx)) '(:vl-vardecl))
                      (equal (vl-expr-strip (first args))
                             (vl-expr-strip (second args)))
                      (vl-expr-resolved-p (first args))))
@@ -214,7 +214,7 @@ warnings.  We also use it to suppress warnings in certain cases.</p>"
       (vl-exprlist-leftright-check args ctx)))
 
   (define vl-exprlist-leftright-check ((x vl-exprlist-p)
-                                       (ctx vl-context-p))
+                                       (ctx vl-context1-p))
     :measure (vl-exprlist-count x)
     :returns (warnings vl-warninglist-p)
     (if (atom x)
@@ -230,7 +230,10 @@ vl-expr-leftright-check) across an @(see vl-exprctxalist-p)."
   :returns (warnings vl-warninglist-p)
   (if (atom x)
       nil
-    (append (vl-expr-leftright-check (caar x) (cdar x))
+    (append (mbe :logic (vl-expr-leftright-check (caar x) (cdar x))
+                 :exec (if (vl-context1-p (cdar x))
+                           (vl-expr-leftright-check (caar x) (cdar x))
+                         (ec-call (vl-expr-leftright-check (caar x) (cdar x)))))
             (vl-exprctxalist-leftright-check (cdr x)))))
 
 (define vl-module-leftright-check

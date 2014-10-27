@@ -262,6 +262,17 @@ so that their overrides are compatible with thier types.</p>"
   :type vl-assignlist-p
   :element vl-assign-scopesubst)
 
+(def-vl-scopesubst vl-alias-scopesubst
+  :type vl-alias-p
+  :body (change-vl-alias x
+                         :lhs (vl-expr-scopesubst (vl-alias->lhs x) ss)
+                         :rhs   (vl-expr-scopesubst (vl-alias->rhs x) ss)))
+
+(def-vl-scopesubst-list vl-aliaslist-scopesubst
+  :type vl-aliaslist-p
+  :element vl-alias-scopesubst)
+
+
 (def-vl-scopesubst vl-vardecl-scopesubst
   :type vl-vardecl-p
   :body (b* (((vl-vardecl x) x))
@@ -552,6 +563,32 @@ so that their overrides are compatible with thier types.</p>"
 (def-vl-scopesubst-list vl-fundecllist-scopesubst
   :type vl-fundecllist-p
   :element vl-fundecl-scopesubst)
+
+
+(def-vl-scopesubst vl-modelement-scopesubst
+  :type vl-modelement-p
+  :body
+  (b* ((x (vl-modelement-fix x)))
+    (case (tag x)
+      (:vl-port (vl-port-scopesubst x ss))
+      (:vl-portdecl      (vl-portdecl-scopesubst x ss))
+      (:vl-assign        (vl-assign-scopesubst x ss))
+      (:vl-alias         (vl-alias-scopesubst x ss)) ;; BOZO
+      (:vl-vardecl       (vl-vardecl-scopesubst x ss))
+      (:vl-paramdecl     (vl-paramdecl-scopesubst x ss))
+      (:vl-fundecl       (vl-fundecl-scopesubst x ss)) ;; BOZO scoping
+      ;; (:vl-taskdecl   (vl-taskdecl-scopesubst x ss)) ;; BOZO
+      (:vl-modinst       (vl-modinst-scopesubst x ss))
+      (:vl-gateinst      (vl-gateinst-scopesubst x ss))
+      (:vl-always        (vl-always-scopesubst x ss))
+      (:vl-initial       (vl-initial-scopesubst x ss))
+      ;; (:vl-typedef    (vl-typedef-scopesubst x ss)) ;; BOZO
+      ;; (:vl-fwdtypedef (vl-fwdtypedef-scopesubst x ss)) ;; BOZO?
+      ;; (:vl-import     (vl-import-scopesubst x ss)) ;; BOZO?
+      (otherwise x))))
+    
+    
+
 
 (def-vl-scopesubst vl-module-scopesubst
   :type vl-module-p

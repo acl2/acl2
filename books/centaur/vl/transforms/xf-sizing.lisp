@@ -30,6 +30,7 @@
 
 (in-package "VL")
 (include-book "xf-expr-size")
+(include-book "../mlib/blocks")
 (local (include-book "../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
 
@@ -898,22 +899,12 @@ the expression.</p>"
 (def-vl-exprsize-list vl-vardecllist :element vl-vardecl)
 
 
-(define vl-module-exprsize ((x vl-module-p) (ss vl-scopestack-p))
-  :parents (expression-sizing)
-  :returns (new-x vl-module-p)
-  (b* ((x (vl-module-fix x))
-       ((when (vl-module->hands-offp x))
-        x)
-       (ss (vl-scopestack-push x ss))
-
-       ((vl-module x) x)
-       (warnings  x.warnings)
-
-       ((when x.paramdecls)
-        (change-vl-module x :warnings
-                          (fatal :type :vl-programming-error
-                                 :msg "Trying to size module ~m0, which has parameters."
-                                 :args (list x.name))))
+(def-genblob-transform vl-genblob-exprsize ((ss vl-scopestack-p)
+                                            (warnings vl-warninglist-p))
+  :returns ((warnings vl-warninglist-p))
+  ;; :verify-guards nil
+  (b* (((vl-genblob x) x)
+       (ss (vl-scopestack-push (vl-genblob-fix x) ss))
 
        ((mv & warnings assigns)    (vl-assignlist-exprsize    x.assigns    ss warnings))
        ((mv & warnings modinsts)   (vl-modinstlist-exprsize   x.modinsts   ss warnings))
@@ -923,17 +914,31 @@ the expression.</p>"
        ((mv & warnings ports)      (vl-portlist-exprsize      x.ports      ss warnings))
        ((mv & warnings portdecls)  (vl-portdecllist-exprsize  x.portdecls  ss warnings))
        ((mv & warnings vardecls)   (vl-vardecllist-exprsize   x.vardecls   ss warnings))
-       )
-    (change-vl-module x
-                      :assigns assigns
-                      :modinsts modinsts
-                      :gateinsts gateinsts
-                      :alwayses alwayses
-                      :initials initials
-                      :ports ports
-                      :portdecls portdecls
-                      :vardecls vardecls
-                      :warnings warnings)))
+       ((mv warnings generates)  (vl-generates-exprsize  x.generates ss  warnings)))
+
+    (mv warnings
+        (change-vl-genblob
+         x
+         :assigns assigns
+         :modinsts modinsts
+         :gateinsts gateinsts
+         :alwayses alwayses
+         :initials initials
+         :ports ports
+         :portdecls portdecls
+         :vardecls vardecls
+         :generates generates)))
+  :apply-to-generates vl-generates-exprsize)
+
+(define vl-module-exprsize ((x vl-module-p)
+                            (ss vl-scopestack-p))
+  :returns (new-x vl-module-p)
+  (b* (((vl-module x) x)
+       (genblob (vl-module->genblob x))
+       ((mv warnings new-genblob) (vl-genblob-exprsize genblob ss (vl-module->warnings x)))
+       (x-warn (change-vl-module x :warnings warnings)))
+    (vl-genblob->module new-genblob x-warn)))
+
 
 (defprojection vl-modulelist-exprsize ((x vl-modulelist-p) (ss vl-scopestack-p))
   :parents (expression-sizing)

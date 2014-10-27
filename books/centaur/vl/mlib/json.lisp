@@ -378,14 +378,15 @@ encoding.</p>"
               (cw "Found info for defaggregate ~x0.~%" type)
               (mv (std::agginfo->tag agginfo)
                   (std::agginfo->efields agginfo)))
-             (prodinfo (fty::get-flexprod-info elem world))
-             ((unless prodinfo)
+             (suminfo (fty::get-flexsum-info elem world))
+             ((unless suminfo)
               (mv (raise "Type ~x0 doesn't look like a known defaggregate/defprod?~%" type)
                   nil))
-             ((fty::prodinfo prodinfo) prodinfo)
+             ((fty::suminfo suminfo))
+             (prod (car (fty::flexsum->prods suminfo.sum)))
              (efields (convert-flexprod-fields-into-eformals
-                       (fty::flexprod->fields prodinfo.prod)))
-             (tag (fty::prodinfo->tag prodinfo)))
+                       (fty::flexprod->fields prod)))
+             (tag (car (fty::suminfo->tags suminfo))))
           (mv tag efields)))
 
        (- (cw "Inferred tag ~x0.~%" tag))
@@ -1268,6 +1269,7 @@ TEXT versions of the message.</p>"
 (def-vl-jp-list modport-port)
 (def-vl-jp-aggregate modport)
 (def-vl-jp-aggregate alias)
+(def-vl-jp-list alias)
 
 (define vl-jp-fwdtypedefkind ((x vl-fwdtypedefkind-p) &key (ps 'ps))
   (jp-str (case x

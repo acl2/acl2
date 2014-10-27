@@ -52,7 +52,7 @@ expression with a @(see vl-context-p) describing its origin.</p>")
   :long "<p>These alists are produced by our @(see ctxexprs) functions, and
 essentially say where some expressions are from.</p>"
   :keyp-of-nil nil
-  :valp-of-nil nil)
+  :valp-of-nil t)
 
 (defthm vl-exprlist-p-of-strip-cars-when-vl-exprctxalist-p
   (implies (vl-exprctxalist-p x)
