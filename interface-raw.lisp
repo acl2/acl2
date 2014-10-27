@@ -1091,6 +1091,40 @@
                             (list oneified-body))))
                  (oneify-flet-bindings (cdr alist) fns w program-p)))))
 
+(defun remove-type-dcls (dcls)
+
+; Before we called this function in oneify, the following caused an error in
+; some Lisps (specifically, we have seen it in ACL2 Version_6.5 built on SBCL
+; Version 1.2.1).
+
+;   (defun f (x)
+;     (declare (xargs :guard (natp x)))
+;     (let ((y (1+ x)))
+;       (declare (type (integer 0 *) y))
+;       y))
+;   (set-guard-checking nil)
+;   (f -3)
+
+  (loop for dcl in dcls
+        collect
+        (assert$
+         (and (consp dcl)
+              (eq (car dcl) 'declare))
+         (cond ((assoc-eq 'type (cdr dcl)) ; optimization
+                (cons 'declare
+                      (loop for d in (cdr dcl)
+                            collect
+                            (cond ((eq (car d) 'type)
+
+; Experiments in all supported Lisps suggest that duplicating ignorable
+; declarations doesn't produce a warning, so we keep it simple here by paying
+; no heed to whether we have already declared some of these variables
+; ignorable.
+
+                                   (cons 'ignorable (cddr d)))
+                                  (t d)))))
+               (t dcl)))))
+
 (defun-one-output oneify (x fns w program-p)
 
 ; Keep this function in sync with translate11.  Errors have generally been
@@ -1261,10 +1295,11 @@
       `(mv-let ,(cadr x)
                ,value-form
 
-; We leave the DECLAREs in place so that the compiler can see the
-; IGNOREs at least.
+; We leave some of the DECLAREs in place, in particular so that the compiler
+; can see the IGNOREs.  But type declarations must be removed; see
+; remove-type-dcls.
 
-               ,@(butlast (cdddr x) 1)
+               ,@(remove-type-dcls (butlast (cdddr x) 1))
                ,body-form)))
 
 ;     Feb 8, 1995.  Once upon a time we had the following code here:
@@ -1346,7 +1381,7 @@
                            ,(oneify (cadr (cadr (cadr x))) fns w program-p)))))
         ,(listlis (strip-cars bindings)
                   value-forms)
-        ,@(butlast post-bindings 1)
+        ,@(remove-type-dcls (butlast post-bindings 1))
         ,body-form)))
    #+acl2-par
    ((member-eq (car x) '(pand por pargs))
