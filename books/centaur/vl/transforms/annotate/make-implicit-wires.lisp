@@ -766,7 +766,6 @@ it has the same problems with parameters.</p>"
                          (not (equal x :vl-import*))))
          :hints(("Goal" :in-theory (enable vl-importpart-p)))))
 
-
 (define vl-make-implicit-wires-aux
   :short "Main function for adding implicit wires."
   ((x        vl-genelementlist-p
@@ -1015,8 +1014,14 @@ later on.  We handle that in @(see vl-make-implicit-wires).</p>"
                                 :args (list item item.pkg))))
              (imports  (vl-implicitst->imports st))
              (imports  (if (eq item.part :vl-import*)
-                           (progn$ (raise "Sol's function goes here.")
-                                   imports)
+                           ;; Add all the names from the package onto imports.
+                           (hons-shrink-alist
+                            ;; If the package wasn't found and we tried to
+                            ;; import foo::* from it, we've already caused a
+                            ;; fatal warning, so it's okay to fudge here.
+                            (and package
+                                 (vl-package-scope-item-alist-top package))
+                            imports)
                          (hons-acons (the string item.part) t imports)))
              (st       (change-vl-implicitst st :imports imports))
              (newitems (cons (car x) newitems)))
