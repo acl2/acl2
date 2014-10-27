@@ -973,10 +973,10 @@ routines exist in 2 forms: The first form, e.g.,</p>
   :parents (utilities)
   :short "Return a list of symbols guaranteed unique with respect to a symbolic
   seed and every symbol in a list of symbols."
-  :long "Given a symbolic seed, we generate symbols <seed>0, <seed>1,
+  :long "<p>Given a symbolic seed, we generate symbols @('<seed>0'), @('<seed>1'),
   etc. until we have generated n symbols not appearing in sym-list.  This is a
   'poor-man's' GENSYM, and is the best we can do without STATE.  All generated
-  symbols are INTERNed in the package of seed."
+  symbols are INTERNed in the package of seed.</p>"
 
   (defun unique-symbols (n seed sym-list)
     (declare (xargs :guard (and (naturalp n)
