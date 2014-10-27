@@ -298,7 +298,8 @@ with are not normed.</p>")
 ; Runs forever.  Tries to load any translations that are added to the load
 ; queue.
 
-  (let ((acl2::*default-hs* (acl2::hl-hspace-init))
+  (let (#+hons
+        (acl2::*default-hs* (acl2::hl-hspace-init))
         ;; Bigger sizes might be better for large models, but it might be
         ;; nice not to grow these beyond reason...
         (db *vls-transdb*))
@@ -314,10 +315,7 @@ with are not normed.</p>")
            ;;                         condition))))))
 
 
-
-
-
-
+#+hons
 (acl2::mf-multiprocessing t)
 
 (let ((support-started nil))
@@ -386,6 +384,7 @@ with are not normed.</p>")
   `(b* ((?state
          ;; Bind state since we often need that.
          acl2::*the-live-state*)
+        #+hons
         (acl2::*default-hs*
          ;; Give this thread its own hons space.  Hopefully it won't use it
          ;; for anything.

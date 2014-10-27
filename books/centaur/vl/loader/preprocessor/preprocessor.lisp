@@ -1122,16 +1122,20 @@ appropriately if @('activep') is set.</p>"
 
        (prev-def (vl-find-define name defines))
        (- (or (not prev-def)
-              (b* ((new-str (vl-pps-define new-def))
-                   (old-str (vl-pps-define prev-def))
-                   ((when (equal (str::trim new-str) (str::trim old-str)))
+              (b* ((new-str (str::trim (vl-define->body new-def)))
+                   (old-str (str::trim (vl-define->body prev-def)))
+                   ((when (equal new-str old-str))
                     ;; Don't warn, redefining it in exactly the same way, modulo
                     ;; whitespace.
                     t))
-              (cw "Preprocessor warning (~s0): redefining ~s1:~% ~
-                    - Was ~s2~% ~
-                    - Now ~s3~%"
-                  (vl-location-string loc) name old-str new-str))))
+              (cw "Preprocessor warning: redefining ~s0:~% ~
+                    - Was ~s2     // from ~s1~% ~
+                    - Now ~s4     // from ~s3~%"
+                  name
+                  (vl-location-string (vl-define->loc prev-def))
+                  old-str
+                  (vl-location-string loc)
+                  new-str))))
 
        (defines  (if prev-def
                      (vl-delete-define name defines)

@@ -38,6 +38,7 @@
 (include-book "functions")  ;; vl-fundecllist-p
 (include-book "modports")
 (include-book "typedefs")
+(include-book "imports")
 (include-book "../../mlib/port-tools")  ;; vl-ports-from-portdecls
 (local (include-book "../../util/arithmetic"))
 
@@ -276,12 +277,14 @@
           (if atts
               (vl-parse-error "'specify' is not allowed to have attributes.")
             (vl-parse-specify-block)))
-         ((when (eq type1 :vl-kwd-parameter))
+         ((when (or (eq type1 :vl-kwd-parameter)
+                    (eq type1 :vl-kwd-localparam)))
           (seq tokstream
-                ;; localparams are handled in parse-module-or-generate-item
-                (ret := (vl-parse-param-or-localparam-declaration atts '(:vl-kwd-parameter)))
-                (:= (vl-match-token :vl-semi))
-                (return ret)))
+               ;; BOZO local parameters aren't allowed in some contexts, but we don't currently
+               ;; have a good way to prohibit them.
+               (ret := (vl-parse-param-or-localparam-declaration atts '(:vl-kwd-parameter :vl-kwd-localparam)))
+               (:= (vl-match-token :vl-semi))
+               (return ret)))
          ((when (eq type1 :vl-kwd-specparam))
           (vl-parse-specparam-declaration atts))
          ((when (member type1 *vl-netdecltypes-kwds*))
@@ -302,12 +305,6 @@
           (seq tokstream
                 (fun := (vl-parse-function-declaration atts))
                 (return (list fun))))
-         ((when (eq type1 :vl-kwd-localparam))
-          (seq tokstream
-                ;; Note: non-local parameters not allowed
-                (ret := (vl-parse-param-or-localparam-declaration atts '(:vl-kwd-localparam)))
-                (:= (vl-match-token :vl-semi))
-                (return ret)))
          ((when (eq type1 :vl-kwd-defparam))
           (vl-parse-parameter-override atts))
          ((when (eq type1 :vl-kwd-assign))
@@ -350,6 +347,11 @@
                 (aliases := (vl-parse-alias atts))
                 (return aliases)))
 
+         ((when (eq type1 :vl-kwd-import))
+          (seq tokstream
+               (imports := (vl-parse-package-import-declaration atts))
+               (return imports)))
+
          ((when (or (eq type1 :vl-kwd-always_ff)
                     (eq type1 :vl-kwd-always_latch)
                     (eq type1 :vl-kwd-always_comb)))
@@ -357,7 +359,6 @@
       ;; SystemVerilog -- BOZO haven't thought this through very thoroughly, but it's
       ;; probably a fine starting place.
       (vl-parse-block-item-declaration-noatts atts))))
-
 
 (defparser vl-parse-modelement ()
   :result (vl-modelementlist-p val)
@@ -510,7 +511,6 @@
                                   :genblock (make-vl-generateblock)
                                   :loc loc)))))
 
-
 (encapsulate nil
   (table acl2::acl2-defaults-table :ruler-extenders :all)
   (local (in-theory (disable acl2::len-when-atom
@@ -547,13 +547,13 @@
                (return (list caseblk)))
              (when (vl-is-token? :vl-kwd-generate)
                (:= (vl-match))
-               (elems := (vl-parse-0+-genelements))
+               (elems := (vl-parse-genelements-until :vl-kwd-endgenerate))
                (:= (vl-match-token :vl-kwd-endgenerate))
                (return elems))
              (items := (vl-parse-modelement))
              (return (vl-modelementlist->genelements items)) ))
 
-      (defparser vl-parse-0+-genelements ()
+      (defparser vl-parse-genelements-until (endkwd)
         ;;:result (vl-genelementlist-p val)
         ;; :resultp-of-nil t
         ;; :true-listp t
@@ -561,11 +561,12 @@
         ;; :count weak
         :measure (two-nats-measure (vl-tokstream-measure) 8)
         (declare (xargs :ruler-extenders :all))
-        (seq-backtrack tokstream
-                       ((first :s= (vl-parse-genelement))
-                        (rest := (vl-parse-0+-genelements))
-                        (return (append first rest)))
-                       ((return nil))))
+        (seq tokstream
+             (when (vl-is-token? endkwd)
+               (return nil))
+             (first :s= (vl-parse-genelement))
+             (rest := (vl-parse-genelements-until endkwd))
+             (return (append first rest))))
 
       (defparser vl-parse-generate-block ()
         ;; :result (vl-generateblock-p val)
@@ -579,7 +580,7 @@
                (when (vl-is-token? :vl-colon)
                  (:= (vl-match))
                  (blkname := (vl-match-token :vl-idtoken)))
-               (elts := (vl-parse-0+-genelements))
+               (elts := (vl-parse-genelements-until :vl-kwd-end))
                (return (make-vl-generateblock :name (and blkname
                                                          (vl-idtoken->name blkname))
                                               :elems elts)))
@@ -685,23 +686,7 @@
   (make-event
    `(defthm-vl-genelements-flag vl-parse-genelement-val-when-error
       ,(vl-val-when-error-claim vl-parse-genelement)
-      ,(vl-val-when-error-claim vl-parse-0+-genelements)
-      ,(vl-val-when-error-claim vl-parse-generate-block)
-      ,(vl-val-when-error-claim vl-parse-genloop)
-      ,(vl-val-when-error-claim vl-parse-genif)
-      ,(vl-val-when-error-claim vl-parse-gencase)
-      ,(vl-val-when-error-claim vl-parse-gencaselist)
-      :hints ('(:do-not '(preprocess))
-              (flag::expand-calls-computed-hint
-               acl2::clause
-               ',(flag::get-clique-members 'vl-parse-genelement-fn (w state)))
-              (and stable-under-simplificationp
-                   '(:do-not nil)))))
-
-  (make-event
-   `(defthm-vl-genelements-flag vl-parse-genelement-val-when-error
-      ,(vl-val-when-error-claim vl-parse-genelement)
-      ,(vl-val-when-error-claim vl-parse-0+-genelements)
+      ,(vl-val-when-error-claim vl-parse-genelements-until :args (endkwd))
       ,(vl-val-when-error-claim vl-parse-generate-block)
       ,(vl-val-when-error-claim vl-parse-genloop)
       ,(vl-val-when-error-claim vl-parse-genif)
@@ -717,7 +702,7 @@
   (make-event
    `(defthm-vl-genelements-flag vl-parse-genelement-warning
       ,(vl-warning-claim vl-parse-genelement)
-      ,(vl-warning-claim vl-parse-0+-genelements)
+      ,(vl-warning-claim vl-parse-genelements-until :args (endkwd))
       ,(vl-warning-claim vl-parse-generate-block)
       ,(vl-warning-claim vl-parse-genloop)
       ,(vl-warning-claim vl-parse-genif)
@@ -733,7 +718,7 @@
   (make-event
    `(defthm-vl-genelements-flag vl-parse-genelement-progress
       ,(vl-progress-claim vl-parse-genelement)
-      ,(vl-progress-claim vl-parse-0+-genelements :strongp nil)
+      ,(vl-progress-claim vl-parse-genelements-until :args (endkwd) :strongp nil)
       ,(vl-progress-claim vl-parse-generate-block)
       ,(vl-progress-claim vl-parse-genloop)
       ,(vl-progress-claim vl-parse-genif)
@@ -757,8 +742,8 @@
 
   (make-event
    `(defthm-vl-genelements-flag vl-parse-genelement-type
-      ,(vl-genelement-claim vl-parse-genelement     vl-genelementlist-p :true-listp t)
-      ,(vl-genelement-claim vl-parse-0+-genelements vl-genelementlist-p :true-listp t)
+      ,(vl-genelement-claim vl-parse-genelement        vl-genelementlist-p :true-listp t)
+      ,(vl-genelement-claim vl-parse-genelements-until vl-genelementlist-p :args (endkwd) :true-listp t)
       ,(vl-genelement-claim vl-parse-generate-block vl-generateblock-p)
       ,(vl-genelement-claim vl-parse-genloop        vl-genelement-p)
       ,(vl-genelement-claim vl-parse-genif          vl-genelement-p)

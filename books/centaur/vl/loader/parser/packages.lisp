@@ -149,7 +149,7 @@
                (seq tokstream
                     (:= (vl-match-token :vl-semi))
                     ;; BOZO parse timeunits declaration stuff.
-                    (items  := (vl-parse-0+-genelements))
+                    (items  := (vl-parse-genelements-until :vl-kwd-endpackage))
                     (endkwd := (vl-match-token :vl-kwd-endpackage))
                     (:= (vl-parse-endblock-name (vl-idtoken->name name) "package/endpackage"))
                     (return
