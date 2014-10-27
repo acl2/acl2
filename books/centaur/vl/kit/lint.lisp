@@ -357,7 +357,7 @@ shown.</p>"
   (b* (((when (atom x))
         nil)
        ((sd-problem x1) (car x))
-       ((vl-context x1.ctx) x1.ctx)
+       ((vl-context1 x1.ctx) x1.ctx)
        ((when (hons-get x1.ctx.mod fal))
         (vl-delete-sd-problems-for-modnames-aux fal (cdr x))))
     (cons (car x)
