@@ -7,16 +7,20 @@
 ;;;    ihs-lemmas.lisp
 ;;;
 ;;;    The top-level book of lemmas in the IHS (Integer Hardware
-;;;    Specification) library. 
+;;;    Specification) library.
 ;;;
 ;;;    Bishop Brock
 ;;;    Computational Logic, Inc.
 ;;;    1717 West 6th Street, Suite 290
 ;;;    Austin, Texas 78703
 ;;;    brock@cli.com
-;;;    
-;;;    Modified for ACL2 Version_2.7 by: 
+;;;
+;;;    Modified for ACL2 Version_2.7 by:
 ;;;    Matt Kaufmann, kaufmann@cs.utexas.edu
+;;;
+;;;    Modified October 2014 by Jared Davis <jared@centtech.com>
+;;;    Ported documentation to XDOC
+;;;
 ;;;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 (in-package "ACL2")
@@ -25,48 +29,52 @@
 (include-book "quotient-remainder-lemmas")
 (include-book "logops-lemmas")
 
-(deflabel ihs-lemmas
-  :doc ":doc-section ihs
-  A simple interface to the books of lemmas in the IHS libaray.
-  ~/~/
+(defxdoc ihs-lemmas
+  :parents (ihs)
+  :short "A simple interface to the books of lemmas in the IHS libaray."
+  :long "<p>Including the @('ihs-lemmas') book includes all of the books of
+lemmas in the IHS library.  This book is typically included after the
+@('ihs-definitions') book, e.g.,</p>
 
-  Including the \"ihs-lemmas\" book includes all of the books of lemmas in
-  the IHS library.  This book must always be included after the
-  \"ihs-definitions\" book, e.g.,
+@({
+  (include-book \"ihs-definitions\")
+  (local (include-book \"ihs-lemmas\"))
+})
 
-  (INCLUDE-BOOK
-   \"ihs-definitions\")
-  (LOCAL (INCLUDE-BOOK
-          \"ihs-lemmas\"))
+<p>The above sequence extends the theory that existed before the inclusion of
+the books with those definitions and lemmas provided be the included books.</p>
 
-  The above sequence extends the theory that existed before the inclusion of
-  the books with those definitions and lemmas provided be the included books.
-  To continue in a minimal theory that contains only the IHS libraries,
-  invoke the macro MINIMAL-IHS-THEORY, e.g.,
+<p>To continue in a minimal theory that contains only the IHS libraries, you
+may wish to see @(see minimal-ihs-theory).</p>")
 
-  (LOCAL (MINIMAL-IHS-THEORY))~/")
+(defsection minimal-ihs-theory
+  :parents (ihs-lemmas)
+  :short "Set up a minimal theory based on the @(see ihs) library."
 
-(defmacro minimal-ihs-theory ()
-  ":doc-section ihs-lemmas
-  Set up a minimal theory based on the IHS library.
-  ~/~/
+  :long "<box><p>Note: Jared recommends against using @('minimal-ihs-theory').
+In particular, it invokes @('(in-theory nil)'), which is probably not a good
+idea most of the time.</p></box>
 
-  Executing the macro call
+<p>Executing the macro call</p>
 
-  (MINIMAL-IHS-THEORY)
+@({
+    (local (minimal-ihs-theory))
+})
 
-  will set up a minimal theory based on the theories exported by the books in
-  the IHS libraries.  This is the preferred way to use the IHS library.~/"
+<p>will set up a minimal theory based on the theories exported by the books in
+the IHS libraries.  This is Bishop's preferred way to use the IHS library.</p>
 
-  `(PROGN
-    (IN-THEORY NIL)
-    (IN-THEORY
-     (ENABLE
-      BASIC-BOOT-STRAP                 ; From "ihs-theories"
-      IHS-MATH                         ; From "math-lemmas"
-      QUOTIENT-REMAINDER-RULES         ; From "quotient-remainder-lemmas"
-      LOGOPS-LEMMAS-THEORY             ; From "logops-lemmas"
-      INTEGER-RANGE-P                  ; new for Version_2.7; added by Matt
-                                       ; Kaufmann, as suggested by Matt Wilding
-      ))))
+@(def minimal-ihs-theory)"
 
+  (defmacro minimal-ihs-theory ()
+    '(PROGN
+      (IN-THEORY NIL)
+      (IN-THEORY
+       (ENABLE
+        BASIC-BOOT-STRAP                 ; From "ihs-theories"
+        IHS-MATH                         ; From "math-lemmas"
+        QUOTIENT-REMAINDER-RULES         ; From "quotient-remainder-lemmas"
+        LOGOPS-LEMMAS-THEORY             ; From "logops-lemmas"
+        INTEGER-RANGE-P                  ; new for Version_2.7; added by Matt
+                                         ; Kaufmann, as suggested by Matt Wilding
+        )))))

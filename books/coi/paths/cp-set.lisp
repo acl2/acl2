@@ -392,7 +392,7 @@
 		      (set::multiappend a list)))
   :hints (("goal" :induct (set::multiappend a list)
 	   :in-theory (e/d (append set::multiappend)
-			    (SET::DOUBLE-CONTAINMENT)))))
+			    (SET::DOUBLE-CONTAINMENT-expensive)))))
 
 (defthmd cp-set-equal-mapappend-reduction
   (equal (cp-set-equal (set::multiappend a (keep-exposed-elements a x)) s1 s2)

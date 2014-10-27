@@ -1,5 +1,5 @@
 (in-package "ACL2")
-(ld "define-u-package.lsp")
+(include-book "data-structures/portcullis" :dir :system)
 (certify-book "basic-def" ? t)
 
 

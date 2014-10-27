@@ -643,7 +643,7 @@
              (equal (equal x y)
                     (and (equal (in a x) (in a y))
                          (equal (delete a x) (delete a y)))))
-    :hints(("Goal" :in-theory (disable double-containment))))
+    :hints(("Goal" :in-theory (disable double-containment-expensive))))
 
   )
 

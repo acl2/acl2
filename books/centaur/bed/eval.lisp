@@ -49,6 +49,8 @@
     (equal (bed-env-lookup t env)
            t)))
 
+(local (in-theory (disable bitp)))
+
 (define bed-eval ((x   "BED to evaluate")
                   (env "Fast alist mapping variables to Booleans (t/nil)"))
   :returns (bit bitp)
