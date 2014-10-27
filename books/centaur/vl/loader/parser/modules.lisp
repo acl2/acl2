@@ -167,7 +167,7 @@
        (params := (vl-maybe-parse-parameter-port-list))
        (ports := (vl-maybe-parse-list-of-ports))
        (:= (vl-match-token :vl-semi))
-       (items := (vl-parse-0+-genelements))
+       (items := (vl-parse-genelements-until :vl-kwd-endmodule))
        (endkwd := (vl-match-token :vl-kwd-endmodule))
 
        (:= (vl-parse-endblock-name (vl-idtoken->name id) "module/endmodule"))
@@ -199,7 +199,7 @@
        (params := (vl-maybe-parse-parameter-port-list))
        ((portdecls . netdecls) := (vl-maybe-parse-list-of-port-declarations))
        (:= (vl-match-token :vl-semi))
-       (items := (vl-parse-0+-genelements))
+       (items := (vl-parse-genelements-until :vl-kwd-endmodule))
        (endkwd := (vl-match-token :vl-kwd-endmodule))
 
        (:= (vl-parse-endblock-name (vl-idtoken->name id) "module/endmodule"))
