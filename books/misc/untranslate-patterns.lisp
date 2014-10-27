@@ -32,6 +32,7 @@
 
 (in-package "ACL2")
 (include-book "symbol-btree")
+(include-book "xdoc/top" :dir :system)
 
 
 ;; Simple, Pattern-Based Untranslation
@@ -43,82 +44,87 @@
 ;; Patterns and replacements are stored as rules in a database, which can
 ;; be easily extended using the add-untranslate-pattern macro.  The database
 ;; uses an alist and a symbol-btree to store the patterns, so you may
-;; occasionally wish to rebalance the tree and clean up the alist, using 
+;; occasionally wish to rebalance the tree and clean up the alist, using
 ;; the macro (optimize-untranslate-patterns).
 ;;
 ;; See :doc untranslate-patterns-table or :doc add-untranslate-pattern after
 ;; loading this file for usage examples.
 
-(defdoc untranslate-patterns
-  ":Doc-Section Events
+(defxdoc untranslate-patterns
+  :parents (macros)
+  :short "A database used to extend @('untranslate'), ACL2's function for
+displaying terms during proofs, with pattern-based rules."
 
-  a database used to extend untranslate with pattern-based rules~/
+  :long "<p>The @('untranslate-patterns-table') is an ACL2 @(see table) that
+stores patterns and replacements for use at untranslate time.  That is, during
+proof output, this table is consulted before printing terms, allowing for
+custom printing of particular terms.</p>
 
-  The untranslate-patterns-table stores patterns and replacements for use at
-  untranslate time.  That is, during proof output, this table is consulted
-  before printing terms, allowing for custom printing of particular terms.~/
+<p>Although this table has nothing to do with soundness, the rules it lists are
+intended to obey the untranslate contract&mdash;that is, the replacements
+listed for each pattern should macro-expand to their targets.  If this property
+is violated, proof output might become very confusing!  For example, a rule
+that displays calls to @(see member) as if they were calls to @(see subsetp)
+would make proof output very difficult to understand.</p>
 
-  Although this table has nothing to do with soundness, the rules it lists
-  are intended to obey the untranslate contract -- that is, the replacements
-  listed for each pattern should macro-expand to their targets.  If this 
-  property is violated, proof output might become very confusing!  For 
-  example, a rule that displays calls to ~ilc[member] as if they were calls
-  to ~ilc[subsetp] would make proof output very difficult to understand.
+<p>We do nothing to enforce this contract.  Hence, a sensible user must ensure
+that their use of this table is disciplined.</p>
 
-  We do nothing to enforce this contract.  Hence, a sensible user must ensure
-  that their use of this table is disciplined.
 
-  EXAMPLE 1: MUTUALLY RECURSIVE EVEN/ODD-P
+<h3>Example 1: Mutually Recursive even/odd-p</h3>
 
-  This function is just an inefficient check for if a natural number is even or
-  odd, using a flag-based mutual recursion scheme.
-  ~bv[]
-        (defun even/odd-p (flg x)
-          (declare (xargs :guard (and (or (eq flg 'even)
-                                          (eq flg 'odd))
-                                      (natp x))))
-          (if (eq flg 'even)
-              (if (zp x)
-                  t
-                (even/odd-p 'odd (1- x)))
-            (if (zp x)
-                nil
-              (even/odd-p 'even (1- x)))))
-  ~ev[]
+<p>This function is just an inefficient check for if a natural number is even
+or odd, using a flag-based mutual recursion scheme.</p>
 
-  Something simple you might want to do with this is 'hide' the flag function
-  with macros such as the following:
-  ~bv[]
-        (defmacro even-p (x)
-          `(even/odd-p 'even ,x))
+@({
+    (defun even/odd-p (flg x)
+      (declare (xargs :guard (and (or (eq flg 'even)
+                                      (eq flg 'odd))
+                                  (natp x))))
+      (if (eq flg 'even)
+          (if (zp x)
+              t
+            (even/odd-p 'odd (1- x)))
+        (if (zp x)
+            nil
+          (even/odd-p 'even (1- x)))))
+})
 
-        (defmacro odd-p (x)
-          `(even/odd-p 'odd ,x))
-  ~ev[]
+<p>Something simple you might want to do with this is 'hide' the flag function
+with macros such as the following:</p>
 
-  But of course in proofs you will still see the flag functions.  To hide
-  these flags, you can call the macro ~c[add-untranslate-pattern] as follows:
+@({
+     (defmacro even-p (x)
+       `(even/odd-p 'even ,x))
 
-  ~bv[]
-        (add-untranslate-pattern (even/odd-p 'even ?x) (even-p ?x))
-        (add-untranslate-pattern (even/odd-p 'odd ?x)  (odd-p ?x))
-  ~ev[]
+     (defmacro odd-p (x)
+       `(even/odd-p 'odd ,x))
+})
 
-  The effect of these patterns can be seen by submitting the following
-  commands.  We first disable the type prescription of ~c[even/odd-p] and its
-  definition, so that ACL2 will generate terms involving ~c[even/odd-p].
+<p>But of course in proofs you will still see the flag functions.  To hide
+these flags, you can call the macro @('add-untranslate-pattern') as
+follows:</p>
 
-  ~bv[]
-        (in-theory (disable (:definition even/odd-p)
-                            (:type-prescription even/odd-p)))
+@({
+     (add-untranslate-pattern (even/odd-p 'even ?x) (even-p ?x))
+     (add-untranslate-pattern (even/odd-p 'odd ?x)  (odd-p ?x))
+})
 
-        (thm (equal (+ (even-p x) (even-p y))
-                    (+ (odd-p y) (odd-p x))))
-  ~ev[]
+<p>The effect of these patterns can be seen by submitting the following
+commands.  We first disable the type prescription of @('even/odd-p') and its
+definition, so that ACL2 will generate terms involving @('even/odd-p').</p>
 
-  Some of the proof output generated is now as follows:
+@({
+     (in-theory (disable (:definition even/odd-p)
+                         (:type-prescription even/odd-p)))
 
-  ~bv[]
+     (thm (equal (+ (even-p x) (even-p y))
+                 (+ (odd-p y) (odd-p x))))
+})
+
+<p>Some of the proof output generated is now as follows:</p>
+
+@({
         Subgoal *1/2
         (IMPLIES (AND (NOT (EQ 'ODD 'EVEN))
                       (NOT (ZP X))
@@ -133,109 +139,113 @@
                              (+ (ODD-P (+ -1 X)) (ODD-P Y))))
                  (EQUAL (+ (EVEN-P X) (EVEN-P Y))
                         (+ (ODD-P X) (ODD-P Y)))).
-  ~ev[]
+})
 
-  As you can see, ~c[even/odd-p] is now nicely untranslated into these macro
-  calls, as we intended, and the flag argument is hidden.
+<p>As you can see, @('even/odd-p') is now nicely untranslated into these macro
+calls, as we intended, and the flag argument is hidden.</p>
 
 
-  EXAMPLE 2: MATT'S CHALLENGE
+<h3>Example 2: Matt's Challenge</h3>
 
-  Matt Kaufmann suggested the following challenge problem, inspired by the
-  hand-written untranslation routine for the RTL library.  We begin with
-  the following code:
+<p>Matt Kaufmann suggested the following challenge problem, inspired by the
+hand-written untranslation routine for the RTL library.  We begin with the
+following code:</p>
 
-  ~bv[]
-        (defun foo$ (n $path)
-          (cons n $path))
+@({
+      (defun foo$ (n $path)
+        (cons n $path))
 
-        (defmacro foo (x)
-          `(foo$ ,x $path))
+      (defmacro foo (x)
+        `(foo$ ,x $path))
 
-        (add-macro-alias foo foo$)
-        (in-theory (disable foo))
-  ~ev[]
+      (add-macro-alias foo foo$)
+      (in-theory (disable foo))
+})
 
-  The theorem Matt proposed looking at was the following:
+<p>The theorem Matt proposed looking at was the following:</p>
 
-  ~bv[]
-        (thm (equal (list (foo x) (foo$ x $path) (foo$ x other-path))
-                    (car (cons a b))))
-  ~ev[]
+@({
+      (thm (equal (list (foo x) (foo$ x $path) (foo$ x other-path))
+                  (car (cons a b))))
+})
 
-  With no support for untranslate, this theorem ends up producing the following
-  goal:
+<p>With no support for untranslate, this theorem ends up producing the
+following goal:</p>
 
-  ~bv[]
-        Goal'
-        (EQUAL (LIST (FOO$ X $PATH)
-                     (FOO$ X $PATH)
-                     (FOO$ X OTHER-PATH))
-               A).
-  ~ev[]
+@({
+      Goal'
+      (EQUAL (LIST (FOO$ X $PATH)
+                   (FOO$ X $PATH)
+                   (FOO$ X OTHER-PATH))
+             A).
+})
 
-  The RTL untranslator can handle this given the following command:
+<p>The RTL untranslator can handle this given the following command:</p>
 
-  ~bv[]
+@({
      (table rtl-tbl 'sigs-btree
        (symbol-alist-to-btree
         (dollar-alist '(foo) nil)))
-  ~ev[]
+})
 
-  This yields the following, nice goal:
+<p>This yields the following, nice goal:</p>
 
-  ~bv[]
-        Goal'
-        (EQUAL (LIST (FOO X)
-                     (FOO X)
-                     (FOO$ X OTHER-PATH))
-               A).
-  ~ev[]
+@({
+      Goal'
+      (EQUAL (LIST (FOO X)
+                   (FOO X)
+                   (FOO$ X OTHER-PATH))
+             A).
+})
 
-  Matt challenged me to come up with a system that would rewrite only $path.
-  Using the untranslate pattern table, here is the command:
+<p>Matt challenged me to come up with a system that would rewrite only $path.
+Using the untranslate pattern table, here is the command:</p>
 
-  ~bv[]
-        (add-untranslate-pattern (foo$ ?n $path) (foo ?n))
-  ~ev[]
+@({
+      (add-untranslate-pattern (foo$ ?n $path) (foo ?n))
+})
 
-  As you can see, it produces exactly the same output:
+<p>As you can see, it produces exactly the same output:</p>
 
-  ~bv[]
-        Goal'
-        (EQUAL (LIST (FOO X)
-                     (FOO X)
-                     (FOO$ X OTHER-PATH))
-               A).
-  ~ev[]
+@({
+      Goal'
+      (EQUAL (LIST (FOO X)
+                   (FOO X)
+                   (FOO$ X OTHER-PATH))
+             A).
+})
 
 
-  THE PATTERN MATCHING SYNTAX
+<h3>The Pattern Matching Syntax</h3>
 
-  The syntax for these patterns is as follows:
+<p>The syntax for these patterns is as follows:</p>
 
-  Any quoted constant matches with a quoted constant.  Note that numbers and so
-  forth must be MANUALLY quoted.
+<p>Any quoted constant matches with a quoted constant.  Note that numbers and
+so forth must be MANUALLY quoted.</p>
 
-  Unquoted symbols behave as follows:
-  ~bq[]
-    If the symbol has no leading ~c[?] character, then the symbol matches only
-    with variables of exactly the same name.  For example, if you were using a
-    stobj named $path, you could use the symbol $path in your pattern and it
-    would match only with $path.
+<p>Unquoted symbols behave as follows:</p>
 
-    Symbols beginning with a leading ~c[?] character are treated as match variables.
-    For example, ~c[?x] in the above patterns behaves as a wildcard and will match
-    with any term.
-  ~eq[]
-  So, for example, the pattern ~c[(even/odd-p 'even ?x)] above matches exactly
-  those terms whose function symbol is ~c[even/odd-p], whose first argument is the
-  quoted constant symbol even, and whose second argument is any term.
+<ul>
 
-  Similarly, the pattern ~c[(foo$ ?n $path)] matches exactly those terms whose
-  function symbol is ~c[foo$], whose first argument is any term, and whose second
-  argument is exactly the variable $path."
-)
+<li>If the symbol has no leading @('?') character, then the symbol matches only
+with variables of exactly the same name.  For example, if you were using a
+stobj named $path, you could use the symbol $path in your pattern and it would
+match only with $path.</li>
+
+<li>Symbols beginning with a leading @('?') character are treated as match
+variables.  For example, @('?x') in the above patterns behaves as a wildcard
+and will match with any term.</li>
+
+</ul>
+
+<p>So, for example, the pattern @('(even/odd-p 'even ?x)') above matches
+exactly those terms whose function symbol is @('even/odd-p'), whose first
+argument is the quoted constant symbol even, and whose second argument is any
+term.</p>
+
+<p>Similarly, the pattern @('(foo$ ?n $path)') matches exactly those terms
+whose function symbol is @('foo$'), whose first argument is any term, and
+whose second argument is exactly the variable $path.</p>")
 
 (table untranslate-patterns-table 'functions-database nil)
 (table untranslate-patterns-table 'constants-database nil)
@@ -245,7 +255,7 @@
   (declare (xargs :guard (and (plist-worldp wrld)
                               (alistp (table-alist 'untranslate-patterns-table
                                                    wrld)))))
-  (cdr (assoc-eq 'functions-database 
+  (cdr (assoc-eq 'functions-database
                  (table-alist 'untranslate-patterns-table wrld))))
 
 (defun untranslate-patterns-constants-alist (wrld)
@@ -253,7 +263,7 @@
   (declare (xargs :guard (and (plist-worldp wrld)
                               (alistp (table-alist 'untranslate-patterns-table
                                                    wrld)))))
-  (cdr (assoc-eq 'constants-database 
+  (cdr (assoc-eq 'constants-database
                  (table-alist 'untranslate-patterns-table wrld))))
 
 (defmacro add-untranslate-pattern-function (target replacement)
@@ -271,60 +281,62 @@
           (let* ((pat-database (untranslate-patterns-constants-alist world)))
             (acons ',target ',replacement pat-database))))
 
-(defmacro add-untranslate-pattern (target replacement)
-  ":Doc-Section untranslate-patterns
-  add a new pattern to the untranslate patterns table~/
-  General Form:
-  ~bv[]
-    (add-untranslate-pattern target replacement)
-  ~ev[]
+(defsection add-untranslate-pattern
+  :parents (untranslate-patterns)
+  :short "Add a new pattern to the untranslate patterns table."
 
-  Examples:
-  ~bv[]
+  :long "<p>General Form:</p>
+
+@({
+    (add-untranslate-pattern target replacement)
+})
+
+<p>Examples:</p>
+
+@({
     (add-untranslate-pattern-function '(1 2 3) *myconst*)
     (add-untranslate-pattern-function (f$ ?a ?b mystobj) (f a b))
-  ~ev[]~/
+})
 
-  We add a new pattern to the untranslate patterns table.  The target should
-  be either a quoted constant (which must be fully expanded, it does not get
-  evaluated), or an unquoted function call.
+<p>We add a new pattern to the untranslate patterns table.  The target should
+be either a quoted constant (which must be fully expanded, it does not get
+evaluated), or an unquoted function call.</p>
 
-  The first example above changed proof output so that the constant '(1 2 3)
-  is instead printed as *myconst*.  The second example changes proof output
-  so that for all ~c[x,y], ~c[(f$ x y mystobj)] is printed as ~c[(f x y)].
-  Note that the printing of ~c[(f$ x y yourstobj)] will not be altered.
+<p>The first example above changed proof output so that the constant '(1 2 3)
+is instead printed as *myconst*.  The second example changes proof output so
+that for all @('x,y'), @('(f$ x y mystobj)') is printed as @('(f x y)').  Note
+that the printing of @('(f$ x y yourstobj)') will not be altered.</p>"
 
-  ~l[untranslate-patterns] for more examples and details.~/"  
-  (if (and (consp target)
-           (eq (car target) 'quote))
-      `(add-untranslate-pattern-constant ,(cadr target) ,replacement)
-    `(add-untranslate-pattern-function ,target ,replacement)))
+  (defmacro add-untranslate-pattern (target replacement)
+    (if (and (consp target)
+             (eq (car target) 'quote))
+        `(add-untranslate-pattern-constant ,(cadr target) ,replacement)
+      `(add-untranslate-pattern-function ,target ,replacement))))
 
 
-(defmacro optimize-untranslate-patterns ()
-  ":Doc-Section untranslate-patterns
-  optimize the untranslate patterns table~/
-  Usage:
-  ~bv[]
+(defsection optimize-untranslate-patterns
+  :parents (untranslate-patterns)
+  :short "Optimize the untranslate patterns table."
+  :long "<p>Usage:</p>
+@({
     (optimize-untranslate-patterns)
-  ~ev[]
-  This macro improves the efficiency of the untranslate-patterns-table by
-  rebalancing the btree used to internally store patterns for functions 
-  and by cleaning up the alist used to store patterns for constants.  You
-  only need to call it after adding lots of untranslate patterns, and only
-  if you want to ensure that untranslation is being done as efficiently as
-  possible.~/
-  ~l[add-untranslate-pattern] for more details.~/"
-  `(progn 
-     (table untranslate-patterns-table 'functions-database
-            (rebalance-symbol-btree 
-             (untranslate-patterns-functions-btree world)))
-     (table untranslate-patterns-table 'constants-database
-            (clean-up-alist 
-             (untranslate-patterns-constants-alist world) 
-             nil))))
+})
 
+<p>This macro improves the efficiency of the untranslate-patterns-table by
+rebalancing the btree used to internally store patterns for functions and by
+cleaning up the alist used to store patterns for constants.  You only need to
+call it after adding lots of untranslate patterns, and only if you want to
+ensure that untranslation is being done as efficiently as possible.</p>"
 
+  (defmacro optimize-untranslate-patterns ()
+    `(progn
+       (table untranslate-patterns-table 'functions-database
+              (rebalance-symbol-btree
+               (untranslate-patterns-functions-btree world)))
+       (table untranslate-patterns-table 'constants-database
+              (clean-up-alist
+               (untranslate-patterns-constants-alist world)
+               nil)))))
 
 
 ; UNTRANSLATE EXTENSION -------------------------------------------------------
@@ -344,14 +356,14 @@
 ; We now introduce a simple one-way unification / matching function.  We return
 ; two values: a boolean flag which indicates if we are successful in finding a
 ; match, and a list of substitutions of the form (variable . value).
-; 
+;
 ; For example:
 ;
 ;    (jared-unify-term '(predicate ?x) '(predicate (car a)) nil)
 ;    ==>
 ;    (t ((?x . (car a))))
 
-(mutual-recursion 
+(mutual-recursion
 
  (defun jared-unify-term (pattern term sublist)
    (declare (xargs :mode :program))
@@ -374,7 +386,7 @@
                (mv t sublist)
              (mv nil nil))
          (jared-unify-list (cdr pattern) (cdr term) sublist)))))
-      
+
  (defun jared-unify-list (pattern-list term-list sublist)
    (declare (xargs :mode :program))
    (if (or (atom term-list)
@@ -383,12 +395,12 @@
            (mv t sublist)
          (mv nil nil))
      (mv-let (successp new-sublist)
-             (jared-unify-term (car pattern-list) 
-                               (car term-list) 
+             (jared-unify-term (car pattern-list)
+                               (car term-list)
                                sublist)
              (if successp
-                 (jared-unify-list (cdr pattern-list) 
-                                   (cdr term-list) 
+                 (jared-unify-list (cdr pattern-list)
+                                   (cdr term-list)
                                    new-sublist)
                (mv nil nil)))))
  )
@@ -399,7 +411,7 @@
 ; subst to do our work throughout a term.
 ;
 ; For example:
-; 
+;
 ;   (jared-substitute '((?x . (car a))) '(not (predicate ?x)))
 ;   ==>
 ;   (not (predicate (car a)))
@@ -421,8 +433,8 @@
 ; the pattern against in order to get the substitutions.
 ;
 ; For Example:
-;  
-;   (jared-rewrite1 '(predicate ?x) 
+;
+;   (jared-rewrite1 '(predicate ?x)
 ;                      '(not (predicate ?x))
 ;                      '(if (predicate (car x)) t nil))
 ;   =>
@@ -526,12 +538,12 @@
 ; And all that's left to do is install the new preprocessor!
 
 (table user-defined-functions-table
-       'untranslate-preprocess 
+       'untranslate-preprocess
        'untranslate-pattern-preprocessor)
 
 
 
-#| 
+#|
 
 Here is a little script you can try.
 
@@ -597,7 +609,7 @@ Here is a little script you can try.
 
 ;; Here's a nonsensical conjecture that will demo the untranslation
 
-(thm 
+(thm
  (implies (and (foo *const*)
                (foo$ *const2* other-path))
           (equal (+ (even-p x) (even-p y))

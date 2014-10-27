@@ -19,7 +19,6 @@ b-ops-aux-def.lisp:    Auxiliary definitions to the IHS library.
 b-ops-aux.lisp:        Auxiliary theorems to the IHS library.
 basic-def.lisp:        The definitions of basic machine components.
 basic-lemmas.lisp:     Basic theorems about the pipelined machine.
-define-u-package.lsp:  Book used to define package "u".
 ihs.lisp:              Loads the IHS library and set the proper theory.
 model.lisp:            The definition of the three-stage pipelined machine.
 proof.lisp:            Proof of the commutative diagram. 

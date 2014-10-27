@@ -13,6 +13,7 @@
         CHANGE CONSTANT DEFREC ER *EXPANDABLE-BOOT-STRAP-NON-REC-FNS*
         HARD LEGAL-VARIABLE-OR-CONSTANT-NAMEP MAKE MSG
         REASON-FOR-NON-KEYWORD-VALUE-LISTP STATE-GLOBAL-LET*
+        defxdoc defsection
 
        u::defloop u::force-term-list
        u::get-option-argument u::get-option-as-flag

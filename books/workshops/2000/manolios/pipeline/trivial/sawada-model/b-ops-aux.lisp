@@ -234,7 +234,7 @@
 (defthm fold-logcdr-vector
     (implies (and (integerp x)
 		  (syntaxp (or (not (consp x))
-			       (not (equal (car x) 'logcons)))))
+			       (not (equal (car x) 'logcons$inline)))))
 	     (equal (logcdr x) (logtail 1 x)))
   :hints (("goal" :in-theory (enable logtail*))))
 (in-theory (disable fold-logcdr-vector))
@@ -242,7 +242,7 @@
 (defthm fold-logcar-vector
     (implies (and (integerp x)
 		  (syntaxp (or (not (consp x))
-			       (not (equal (car x) 'logcons)))))
+			       (not (equal (car x) 'logcons$inline)))))
 	     (equal (logcar x) (logbit 0 x)))
   :hints (("goal" :in-theory (enable logbit logbitp*))))
 (in-theory (disable fold-logcar-vector))	   

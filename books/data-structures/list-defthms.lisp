@@ -85,7 +85,7 @@
 ;   (iff (no-duplicatesp-eq l)
 ;        (no-duplicatesp-equal l)))
 
-(local 
+(local
  (defthm occurrences-ac->occurrences-equal-ac
    (equal (occurrences-ac x l ac)
           (occurrences-equal-ac x l ac))))
@@ -94,7 +94,7 @@
   (equal (occurrences x l)
          (occurrences-equal x l)))
 
-(local 
+(local
  (defthm occurrences-eq-ac->occurrences-equal-ac
    (equal (occurrences-eq-ac x l ac)
           (occurrences-equal-ac x l ac))))
@@ -104,7 +104,7 @@
          (occurrences-equal x l)))
 
 ; [Removed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2.]
-; (local 
+; (local
 ;  (defthm position-ac->position-equal-ac
 ;    (equal (position-ac x l ac)
 ;           (position-equal-ac x l ac))))
@@ -115,7 +115,7 @@
 ;          (position-equal x l)))
 
 ; [Removed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2.]
-; (local 
+; (local
 ;  (defthm position-eq-ac->position-equal-ac
 ;    (equal (position-eq-ac x l ac)
 ;           (position-equal-ac x l ac))))
@@ -143,7 +143,7 @@
                        (implies (consp b)
                                 (consp (append a b))))))
 
-(defthm consp-revappend 
+(defthm consp-revappend
   (equal (consp (revappend a b))
          (or (consp a)
              (consp b)))
@@ -165,7 +165,7 @@
                        (implies (consp a)
                                 (consp (reverse a))))))
 
-(local 
+(local
  (defthm consp-first-n-ac
    (equal (consp (first-n-ac i l ac))
           (if (zp i) (consp ac) t))
@@ -176,7 +176,7 @@
                                                (consp (first-n-ac i l ac)))))
    :hints (("Goal" :induct (first-n-ac i l ac)))))
 
-(local 
+(local
  (defthm consp-take
    (equal (consp (take n l))
           (not (zp n)))
@@ -239,7 +239,7 @@
                            (iff (not (consp (member-equal x l)))
                                 (equal (member-equal x l) nil)))))
 
-(local 
+(local
  (defthm nthcdr-nil
    (implies (and (integerp n)
                  (<= 0 n))
@@ -292,13 +292,13 @@
                     (and (integerp end)
                          (<= 0 end))))
            (iff (consp (subseq list start end))
-                (< start (if (null end) 
+                (< start (if (null end)
                              (len list)
                            end))))
   :hints (("Goal" :do-not-induct t :in-theory (disable take))))
 
 ;; UPDATE-NTH is always a CONS
-                         
+
 ; ------------------------------------------------------------
 ; TRUE-LISTP type prescription and rewrite rules
 ; ------------------------------------------------------------
@@ -336,7 +336,7 @@
      :rule-classes (:rewrite :type-prescription)
      :hints (("Goal" :induct (first-n-ac i l ac)))))
 
-(local 
+(local
  (defthm true-listp-take
    (true-listp (take n l))
    :rule-classes (:rewrite :type-prescription)))
@@ -387,7 +387,7 @@
            (true-listp (put-seg i seg l)))
   :rule-classes (:rewrite :type-prescription))
 
-(local 
+(local
  (defthm true-listp-subseq-list
    (true-listp (subseq-list lst start end))
    :hints (("Goal" :do-not-induct t :in-theory (disable take)))
@@ -405,7 +405,7 @@
 ; NATURALP type prescription rules
 ; ------------------------------------------------------------
 
-(local 
+(local
    (defthm naturalp-occurrences-equal-ac
      (implies (and (integerp acc) (<= 0 acc))
               (and (integerp (occurrences-equal-ac item lst acc))
@@ -434,7 +434,7 @@
 ; Some support lemmas
 ; We use these lemmas to define non-recursive forms for some
 ; recursive functions. These non-recursive forms are easier to
-; reason about at times.                                        ; 
+; reason about at times.                                        ;
 ; ------------------------------------------------------------
 
 (local
@@ -468,24 +468,24 @@
   :rule-classes :forward-chaining)
 
 
-(defthm len-append 
+(defthm len-append
   (equal (len (append a b))
          (+ (len a) (len b))))
 
-(defthm len-revappend 
+(defthm len-revappend
   (equal (len (revappend a b))
          (+ (len a) (len b))))
 
-(defthm len-reverse 
+(defthm len-reverse
   (equal (len (reverse a)) (len a)))
 
-(local 
+(local
    (defthm len-first-n-ac
      (equal (len (first-n-ac n l ac))
             (+ (nfix n) (len ac)))
      :hints (("Goal" :induct (first-n-ac n l ac)))))
 
-(local 
+(local
  (defthm len-take
    (equal (len (take n l)) (nfix n))))
 
@@ -495,7 +495,7 @@
                   (if (<= (len lst) n)
                       0
                     (- (len lst) n))))
-  :hints (("Goal" :do-not-induct t 
+  :hints (("Goal" :do-not-induct t
            :in-theory (disable take))))
 
 (defthm len-firstn
@@ -505,7 +505,7 @@
              (len l)))
   :hints (("Goal" :induct (firstn n l))))
 
-(defthm len-last 
+(defthm len-last
   (equal (len (last l))
          (if (consp l)
              1
@@ -548,7 +548,7 @@
                 (not (< i 0)))
            (equal (len (put-seg i seg l))
                   (len l))))
-  
+
 (local
    (defthm occurrences-equal-ac+1
      (implies (acl2-numberp ac)
@@ -572,7 +572,7 @@
            (- (len l) (occurrences-equal x l)))
     :hints (("Goal" :do-not-induct t
              :use ((:instance len-remove-equal-ac (ac 0))))))
-  
+
 (defthm len-subseq
   (implies (and (true-listp l)
                 (integerp start) (<= 0 start)
@@ -591,7 +591,7 @@
              (len l)
            (+ 1 (nfix n))))
   :hints (("Goal" :induct (update-nth n val l))))
-         
+
 ; ------------------------------------------------------------
 ; LEN inequalities
 ; ------------------------------------------------------------
@@ -602,7 +602,7 @@
               (not (< (+ (len l) ac) (occurrences-equal-ac x l ac))))
      :rule-classes nil))
 
-(defthm leq-occurrences-equal-len 
+(defthm leq-occurrences-equal-len
     (not (< (len l) (occurrences-equal x l)))
     :rule-classes (:rewrite :linear)
     :hints (("Goal" :do-not-induct t
@@ -614,7 +614,7 @@
               (not (< (+ (len l) ac) (position-equal-ac x l ac))))
      :rule-classes nil))
 
-(defthm leq-position-equal-len 
+(defthm leq-position-equal-len
     (implies (member-equal x l)
              (not (< (len l) (position-equal x l))))
     :rule-classes (:rewrite :linear)
@@ -637,7 +637,7 @@
 (defthm associativity-of-append
   (equal (append (append a b) c)
          (append a (append b c))))
- 
+
 (defthm append-firstn-nthcdr
   (implies (true-listp l)
            (equal (append (firstn n l) (nthcdr n l)) l)))
@@ -689,20 +689,20 @@
     (implies (true-listp l)
              (equal (take (len l) l) l))))
 
-(local 
+(local
    (defthm first-n-ac-append1
      (implies (<= n (len a))
               (equal (first-n-ac n (append a b) ac)
                      (first-n-ac n a ac)))
      :hints (("Goal" :induct (first-n-ac n a ac))))   )
 
-(local 
+(local
  (defthm take-append1
    (implies (<= n (len a))
             (equal (take n (append a b))
                    (take n a)))
    :hints (("Goal" :do-not-induct t))))
-  
+
 
 (defthm butlast-append1-crock
     (IMPLIES (and (TRUE-LISTP A)
@@ -718,7 +718,7 @@
     :hints (("Goal" :do-not-induct t
              :use ((:instance butlast-append1-crock (i (len b))))
              :in-theory (disable take))))
-  
+
 
 ; ------------------------------------------------------------
 ; FIRSTN
@@ -728,14 +728,14 @@
   (implies (and (<= (len l) (nfix n))
                 (true-listp l))
            (equal (firstn n l) l)))
-                
+
 (defthm firstn-append
   (equal (firstn n (append a b))
          (if (<= (nfix n) (len a))
              (firstn n a)
              (append a (firstn (- n (len a)) b)))))
 
-(defthm firstn-firstn 
+(defthm firstn-firstn
   (equal (firstn i (firstn j l))
          (if (< (nfix i) (nfix j))
              (firstn i l)
@@ -747,14 +747,14 @@
              (make-list-ac i v nil)
              (make-list-ac j v (firstn (- i (nfix j)) ac)))))
 
-(local 
-   (defthm firstn-cons 
+(local
+   (defthm firstn-cons
      (equal (firstn n (cons a l))
             (if (zp n)
                 nil
               (cons a (firstn (1- n) l))))))
 
-(defthm firstn-put-nth 
+(defthm firstn-put-nth
     (equal (firstn i (put-nth j v l))
            (if (<= (nfix i) (nfix j))
                (firstn i l)
@@ -764,12 +764,12 @@
                (implies (<= (nfix i) (nfix j))
                         (equal (firstn i (put-nth j v l))
                                (firstn i l))))))
-  
+
 ; ------------------------------------------------------------
 ; MEMBER
 ; ------------------------------------------------------------
 
-(defthm member-equal-append 
+(defthm member-equal-append
   (iff (member-equal x (append a b))
        (or (member-equal x a)
            (member-equal x b))))
@@ -842,7 +842,7 @@
 ; MEMBERP
 ; ------------------------------------------------------------
 
-(defthm memberp-equal-append 
+(defthm memberp-equal-append
   (iff (memberp-equal x (append a b))
        (or (memberp-equal x a)
            (memberp-equal x b))))
@@ -922,7 +922,7 @@
 (defthm nth-of-nil
   (equal (nth n nil) nil))
 
-(defthm nth-with-large-index 
+(defthm nth-with-large-index
   (implies (<= (len l) (nfix n))
            (equal (nth n l) nil)))
 
@@ -939,7 +939,7 @@
            (nth (- (nfix n) (len a)) b)))
   :hints (("Goal" :induct (revappend a b))))
 
-(defthm nth-reverse 
+(defthm nth-reverse
   (implies (and (integerp n)
                 (<= 0 n))
            (equal (nth n (reverse a))
@@ -950,7 +950,7 @@
 ;; In the following event we show how NTH interacts with TAKE, BUTLAST
 ;; and SUBSEQ. The proof strategy is to rewrite the basic FIRST-N-AC
 ;; term into one involving REVAPPEND and a version of firstn called
-;; XFIRSTN. 
+;; XFIRSTN.
 
 
 (defun xfirstn (n l)
@@ -999,9 +999,9 @@
   :hints (("Goal" :do-not-induct t)))
 
 (defthm nth-butlast
-    (implies (and (integerp i) 
+    (implies (and (integerp i)
                   (<= 0 i)
-                  (integerp n) 
+                  (integerp n)
                   (<= 0 n))
              (equal (nth i (butlast l n))
                     (if (< i (- (len l) n))
@@ -1031,7 +1031,7 @@
   (equal (nth i (nthcdr j l))
          (nth (+ (nfix j) (nfix i)) l)))
 
-(defthm nth-subseq 
+(defthm nth-subseq
     (implies (and (true-listp l)
                   (integerp start) (<= 0 start)
                   (or (and (integerp end) (<= start end))
@@ -1047,8 +1047,8 @@
 ; Apologia:  See nth-butlast.
 
              :in-theory (disable revappend))))
-  
-  
+
+
 (defthm nth-firstn
   (equal (nth i (firstn j l))
          (if (< (nfix i) (nfix j))
@@ -1135,7 +1135,7 @@
                 (true-listp l))
            (equal (nthcdr n l) nil)))
 
-(defthm nthcdr-append 
+(defthm nthcdr-append
   (equal (nthcdr n (append a b))
          (if (<= (nfix n) (len a))
              (append (nthcdr n a) b)
@@ -1196,7 +1196,7 @@
          ((eql x (car l)) (1+ (xoccurrences-equal x (cdr l))))
          (t (xoccurrences-equal x (cdr l))))))
 
-(local 
+(local
  (defthm occurrences-equal-ac-equals-xoccurrences-equal
    (implies (integerp ac)
             (equal (occurrences-equal-ac x l ac)
@@ -1205,7 +1205,7 @@
 ;; Throughout the rest of this script, we'll take the strategy of
 ;; proving facts about POSITION by first proving the fact about XPOSITION.
 
-(local 
+(local
  (defun xposition-equal (x l)
    (declare (xargs :guard (and (true-listp l)
                                (or (symbolp x) (symbol-listp l)))))
@@ -1237,14 +1237,14 @@
 ; OCCURRENCES
 ; ------------------------------------------------------------
 
-(local 
-   (defthm equal-occurrences-equal-ac-zero 
+(local
+   (defthm equal-occurrences-equal-ac-zero
      (implies (and (not (member-equal x l))
                    (integerp acc))
               (equal (occurrences-equal-ac x l acc)
                      acc))))
 
-(defthm equal-occurrences-equal-zero 
+(defthm equal-occurrences-equal-zero
   (implies (not (member-equal x l))
            (equal (occurrences-equal x l)
                   0)))
@@ -1260,7 +1260,7 @@
                 (no-duplicatesp-equal l))
            (equal (occurrences-equal x l) 1)))
 
-(local 
+(local
    (defthm xoccurrences-equal-append
      (implies (integerp ac)
               (equal (xoccurrences-equal x (append a b))
@@ -1282,7 +1282,7 @@
     (equal (occurrences-equal x (reverse a))
            (occurrences-equal x a)))
 
-(local 
+(local
    (defthm leq-xoccurrences-equal-firstn
      (<= (xoccurrences-equal x (firstn n l))
          (xoccurrences-equal x l))))
@@ -1292,7 +1292,7 @@
         (occurrences-equal x l))
     :rule-classes :linear)
 
-(local 
+(local
    (defthm xoccurrences-equal-firstn-xposition-equal
      (implies (member-equal x l)
               (equal (xoccurrences-equal x (firstn (xposition-equal x l) l))
@@ -1330,7 +1330,7 @@
              (equal (occurrences-equal x (member-equal x l))
                     (occurrences-equal x l))))
 
-(local 
+(local
    (defthm leq-xoccurrences-equal-nthcdr
      (<= (xoccurrences-equal x (nthcdr n l))
          (xoccurrences-equal x l))))
@@ -1340,7 +1340,7 @@
         (occurrences-equal x l))
     :rule-classes :linear)
 
-(local 
+(local
    (defthm xoccurrences-equal-nthcdr-xposition-equal
      (implies (member-equal x l)
               (equal (xoccurrences-equal x (nthcdr (xposition-equal x l) l))
@@ -1351,7 +1351,7 @@
              (equal (occurrences-equal x (nthcdr (position-equal x l) l))
                     (occurrences-equal x l))))
 
-(local 
+(local
    (defthm xoccurrences-equal-put-nth
      (equal (xoccurrences-equal x (put-nth n v l))
             (if (< (nfix n) (len l))
@@ -1379,7 +1379,7 @@
              (occurrences-equal x l)))
     :hints (("Goal" :do-not-induct t)))
 
-(local 
+(local
    (defthm xoccurrences-equal-remove-equal
      (equal (xoccurrences-equal x (remove-equal y l))
             (if (equal x y)
@@ -1394,7 +1394,7 @@
              (occurrences-equal x l)))
     :hints (("Goal" :do-not-induct t)))
 
-(local 
+(local
    (defthm xoccurrences-equal-remove-duplicates-equal
      (<= (xoccurrences-equal x (remove-duplicates-equal l))
          1)))
@@ -1434,13 +1434,13 @@
                 (+ (len a) (position-equal x b))
               nil))))
   :hints (("Goal" :do-not-induct t)))
-  
-    
+
+
 ; ------------------------------------------------------------
 ; PUT-NTH
 ; ------------------------------------------------------------
 
-(defthm put-nth-with-large-index 
+(defthm put-nth-with-large-index
   (implies (and (true-listp l)
                 (<= (len l) (nfix n)))
            (equal (put-nth n v l) l)))
@@ -1471,17 +1471,17 @@
   (equal (put-nth i v (nthcdr j l))
          (nthcdr j (put-nth (+ (nfix j) (nfix i)) v l)))
   :hints (("Goal" :induct t)))
- 
-(defthm put-nth-nth 
+
+(defthm put-nth-nth
   (implies (true-listp l)
            (equal (put-nth i (nth i l) l) l)))
- 
+
 (defthm put-nth-put-nth
   (equal (put-nth j b (put-nth i a l))
          (if (= (nfix i) (nfix j))
              (put-nth j b l)
              (put-nth i a (put-nth j b l))))
-  :rule-classes 
+  :rule-classes
   ((:rewrite :corollary
              (implies (= (nfix i) (nfix j))
                       (equal (put-nth j b (put-nth i a l))
@@ -1495,7 +1495,7 @@
 ; REMOVE
 ; ------------------------------------------------------------
 
-(defthm remove-equal-non-member-equal 
+(defthm remove-equal-non-member-equal
   (implies (and (true-listp l)
                 (not (member-equal x l)))
            (equal (remove-equal x l) l)))
@@ -1509,7 +1509,7 @@
          (if (equal x y)
              (remove-equal x l)
              (remove-equal x (remove-equal y l))))
-  :rule-classes 
+  :rule-classes
   ((:rewrite :corollary
              (equal (remove-equal x (remove-equal x l))
                     (remove-equal x l)))))
@@ -1524,7 +1524,7 @@
              (append (update-nth n v a) b)
              (append a (update-nth (- n (len a)) v b)))))
 
-(defthm update-nth-nth 
+(defthm update-nth-nth
   (implies (and (integerp n)
                 (<= 0 n)
                 (< n (len l)))
@@ -1536,7 +1536,7 @@
          (if (= (nfix i) (nfix j))
              (update-nth j b l)
            (update-nth i a (update-nth j b l))))
-  :rule-classes 
+  :rule-classes
   ((:rewrite :corollary
     (implies (= (nfix i) (nfix j))
              (equal (update-nth j b (update-nth i a l))
@@ -1607,7 +1607,7 @@
   (equal (len (resize-list lst m default))
          (nfix m)))
 
-  
+
 ; ------------------------------------------------------------
 ; MAKE-LIST-AC
 ; ------------------------------------------------------------

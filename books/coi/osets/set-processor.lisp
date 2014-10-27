@@ -237,7 +237,7 @@
  (defthm mbe-equivalence
    (equal (process-set x)
           (my-process-set x))
-   :hints (("Goal" :in-theory (enable set::DOUBLE-CONTAINMENT
+   :hints (("Goal" :in-theory (enable set::DOUBLE-CONTAINMENT-expensive
                                       )))))
 
 ;; Well now lets try to prove properties.  Your first goal is a really
@@ -252,7 +252,7 @@
                           (filter-generic-pred x)))
           ;; won't need this hint later
           :hints(("Goal" :in-theory (enable ;subset
-                                     set::DOUBLE-CONTAINMENT)))))
+                                     set::DOUBLE-CONTAINMENT-expensive)))))
 
  (defthm goal-1
    (implies (and (set::setp x)
@@ -272,13 +272,13 @@
                           (set::insert a (filter-generic-pred x))))
           ;; won't need this hint later
           :hints(("Goal" :in-theory (enable ;subset
-                                            set::DOUBLE-CONTAINMENT)))))
+                                            set::DOUBLE-CONTAINMENT-EXPENSIVE)))))
 
  (local (defthm lemma-2
           (equal (set::insert (process a) (process-all x))
                  (process-all (set::insert a x)))
           :hints(("Goal" :in-theory (enable ;subset
-                                            set::DOUBLE-CONTAINMENT)))))
+                                            set::DOUBLE-CONTAINMENT-EXPENSIVE)))))
 
  (defthm goal-2
    (implies (and (set::setp x)

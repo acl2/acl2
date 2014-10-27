@@ -39,9 +39,9 @@
 <link rel="stylesheet" type="text/css" href="style.css"/>
 <link rel="shortcut icon" href="favicon.png"/>
 
-<script language="javascript">
+<script>
 <!--
-function abandon_ship () {
+function abandonShip () {
   document.write("<body><p><b>Error: Unsupported Browser</b></p>");
   document.write("<p>This XDOC manual requires features that are "
    + "not implemented by your web browser.<br/>  Please try again with a "
@@ -68,7 +68,7 @@ if (!window.history || !window.history.replaceState) {
   // I've tested that this check gets triggered on IE8 and IE9.  It's
   // important to not allow IE8, because Windows XP users are stuck
   // with it, so unfortunately it's still widely used.
-  abandon_ship();
+  abandonShip();
 }
 // -->
 </script>
@@ -98,17 +98,17 @@ if (!window.history || !window.history.replaceState) {
   <table border="0" id="toolbar">
     <tr>
       <th>
-	<a href="javascript:action_go_key('ACL2____TOP')">
-	  <img class="toolbutton" src="xdoc-home.png"
+	<a href="javascript:actionGoKey('ACL2____TOP')">
+	  <img class="toolbutton" src="xdoc-home.png" alt="Top"
 	       data-powertip="<p>Go to the Top topic.</p>">
 	</a>
         &#160; &#160;
-	<a href="javascript:nav_tree()">
-	  <img class="toolbutton" src="view_tree.png"
+	<a href="javascript:navTree()">
+	  <img class="toolbutton" src="view_tree.png" alt="Tree Navigation"
 	       data-powertip="<p>Use hierarchical navigation.</p>"/>
 	</a>
-	<a href="javascript:nav_flat()">
-	  <img class="toolbutton" src="view_flat.png"
+	<a href="javascript:navFlat()">
+	  <img class="toolbutton" src="view_flat.png" alt="Flat Navigation"
 	       data-powertip="<p>Use flat navigation.</p>"/>
 	</a>
       </th>
@@ -127,7 +127,7 @@ if (!window.history || !window.history.replaceState) {
 	</form>
       </td>
       <td>
-	<form onsubmit="{search_submit(); return false;}">
+	<form onsubmit="{searchSubmit(); return false;}">
 	<label id="searchmsg">
   	  Search </label>
         <input id="searchbox" type="text" size="23" placeholder="loading..."
@@ -138,12 +138,12 @@ if (!window.history || !window.history.replaceState) {
       </td>
       <th>
         &#160; &#160;&#160;
-	<a href="javascript:printer_friendly()">
-	  <img class="rtoolbutton" src="printer.png"
+	<a href="javascript:printerFriendly()">
+	  <img class="rtoolbutton" src="printer.png" alt="Printer Friendly"
 	       data-powertip="<p>Launch a printer-friendly version of this page, in a new window.</p>"/>
 	</a>
 	<a target="DownloadWindow" href="download/">
-	  <img class="rtoolbutton" src="download.png"
+	  <img class="rtoolbutton" src="download.png" alt="Download"
 	       data-powertip="<p>Download a zipped copy of this manual (for
 	       faster or offline browsing).</p>"/>
 	</a>

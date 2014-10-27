@@ -17,41 +17,42 @@
 ;;;    (512) 322-9951
 ;;;    brock@cli.com
 ;;;
+;;;    Modified October 2014 by Jared Davis <jared@centtech.com>
+;;;    Ported documentation to XDOC
+;;;
 ;;;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 (in-package "ACL2")
-
 (include-book "ihs-doc-topic")
 (include-book "data-structures/utilities" :dir :system)
 
+(defxdoc ihs-init
+  :parents (ihs)
+  :short "The root of the IHS (Integer Hardware Specification) library hierarchy."
 
-(deflabel ihs-init
-  :doc ":doc-section ihs
-  The root of the IHS (Integer Hardware Specification) library hierarchy.~/
+  :long "<p>The @('ihs-init') book is included by every book in the IHS
+hierarchy.  It contains:</p>
 
-  Documented topics include:
-  ~/
+<ul>
 
-  This book is included by every book in the IHS hierarchy.
+<li>Definitions of CLTL functions that should be part of the ACL2 BOOT-STRAP
+theory.  Since ACL2 won't let us redefine any Common Lisp symbol, these
+functions are uniformly named by @('<CLTL name>$').</li>
 
-  The book \"ihs-init\" contains
+<li>Functions that are not defined by CLTL, but that are otherwise candidates
+for the ACL2 boot-strap theory.</li>
 
-  1.  Definitions of CLTL functions that should be part of the Acl2
-  BOOT-STRAP theory.  Since Acl2 won't let us redefine any Common Lisp
-  symbol, these functions are uniformly named by <CLTL name>$.
+<li>Unassigned functions that are general purpose, and will probably find a
+place in another book someday.</li>
 
-  2.  Functions that are not defined by CLTL, but that are otherwise
-  candidates for the Acl2 boot-strap theory.
+<li>Definition of macros, macro helper-functions, and utility functions that
+are used throughout the IHS libraries.  We have no thought of ever verifying
+any of these.  Thus, the guards of certain functions may be just strong enough
+to get the functions admitted.</li>
 
-  3.  Unassigned functions that are general purpose, and will probably
-  find a place in another book someday.
+</ul>")
 
-  4.  Definition of macros, macro helper-functions, and utility functions
-  that are used throughout the IHS libraries.  We have no thought of ever
-  verifying any of these.  Thus, the guards of certain functions may be just
-  strong enough to get the functions admitted.~/")
 
-
 ;;;****************************************************************************
 ;;;
 ;;;  Part 1. -- Common Lisp Functions.  Page references are to CLTL.
@@ -120,14 +121,12 @@
 	  (let*$fn bindings new-body)))))
    (t (let*$fn bindings (car body)))))
 
-
 ;;;****************************************************************************
 ;;;
-;;;  Part 2. -- Extensions to Acl2 for inclusion later (hopefully).
+;;;  Part 2. -- Extensions to ACL2 for inclusion later (hopefully).
 ;;;
 ;;;****************************************************************************
 
-
 ;;;****************************************************************************
 ;;;
 ;;;  Part 3. -- Unassigned.
@@ -135,26 +134,20 @@
 ;;;****************************************************************************
 
 (defun constant-syntaxp (x)
-  ":doc-section ihs-init
-  A recognizer for Acl2 constants for use with SYNTAXP.
-  ~/
-  We define CONSTANT-SYNTAXP as a :LOGIC function, rather than a macro, for the
-  most efficient execution possible.~/~/"
-
+  ;; [Jared] removing documentation because this is identical to QUOTEP and
+  ;; there is no reason to use it instead of QUOTEP.
   (declare (xargs :guard t))
-
   (and (consp x) (eq (car x) 'QUOTE)))
 
-
 ;;;****************************************************************************
 ;;;
 ;;;  Part 4. -- Macros, macro-helpers, and utility functions.
 ;;;
 ;;;****************************************************************************
 
-(deflabel ihs-utilities
-  :doc ":doc-section ihs-init
-  Utility macros and functions used throughout the IHS-BOOKS hierarchy.~/~/~/")
+(defxdoc ihs-utilities
+  :parents (ihs-init)
+  :short "Utility macros and functions used throughout the IHS books.")
 
 ;;;  Import some utilties from the public "utilities" book.
 
@@ -175,16 +168,17 @@
 	(t (list 'CONS (mlambda-fn args (car form))
 		 (mlambda-fn args (cdr form))))))
 
-(defmacro mlambda (args form)
-  ":doc-section ihs-init
-  Macro LAMBDA form.
-  ~/
-  Example:
+(defsection mlambda
+  :parents (ihs-utilities)
+  :short "Macro LAMBDA form."
+  :long "<p>Example:</p>
+
+   @({
 
   (DEFMACRO X/Y-GUARD (X Y)
     (MLAMBDA (X Y) (AND (RATIONALP X) (RATIONALP Y) (NOT (EQUAL Y 0)))))
 
-  =
+    =
 
   (DEFMACRO X/Y-GUARD (X Y)
     (LIST 'AND (LIST 'RATIONALP X) (LIST 'RATIONALP Y)
@@ -194,146 +188,67 @@
 
   (DEFMACRO X/Y-GUARD (X Y)
     `(AND (RATIONALP ,X) (RATIONALP ,Y) (NOT (EQUAL ,Y 0))))
-  ~/
-  MLAMBDA is a macro LAMBDA.  MLAMBDA converts form to a lisp macro body,
-  substituting all symbols except those that appear in the args with the
-  quoted symbol.~/"
+  })
 
-  (declare (xargs :guard (symbol-listp args)))
-  (mlambda-fn args form))
+  <p>MLAMBDA is a macro LAMBDA.  MLAMBDA converts form to a lisp macro body,
+  substituting all symbols except those that appear in the args with the quoted
+  symbol.</p>"
 
-
+  (defmacro mlambda (args form)
+    (declare (xargs :guard (symbol-listp args)))
+    (mlambda-fn args form)))
+
 ;;;++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 ;;;
 ;;;    Theory Manipulation
 ;;;
 ;;;++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-;;;  E/D -- An ENABLE/DISABLE macro.
+; [Jared] removed commented out definition of e/d, which has been incorporated
+; into ACL2 Version 2.7.
 
-;;; The E/D macro has been incorporated into ACL2 Version  2.7.
+(defsection enable-theory
+  :parents (ihs-utilities)
+  :short "Creates an @(see IN-THEORY) event that is equivalent to ENABLEing the
+   theory-expression.  Note that theory-expression is evaluated."
 
-#|
-(defun e/d-fn (theory e/d-list enable-p)
-  "Constructs the theory expression for the E/D macro."
-  (declare (xargs :guard (and (true-listp e/d-list)
-			      (or (equal enable-p t)
-				  (equal enable-p nil)))
-		  :verify-guards nil))
-  (cond ((atom e/d-list) theory)
-	((not (listp (car e/d-list)))
-	 (er hard 'e/d
-	     "The arguments to the E/D macro must all be lists.
-         This ==> ~p0, is not a list." (car e/d-list)))
-	(enable-p (e/d-fn `(UNION-THEORIES ,theory ',(car e/d-list))
-			  (cdr e/d-list) nil))
-	(t (e/d-fn `(SET-DIFFERENCE-THEORIES ,theory ',(car e/d-list))
-		   (cdr e/d-list) t))))
+  (defmacro enable-theory (theory-expression)
+    `(in-theory (union-theories (current-theory :here) ,theory-expression))))
 
-(defmacro e/d (&rest theories)
-  "doc-section ihs-utilities
-  ENABLE/DISABLE theories.~/
-  E/D creates theory expressions for use in IN-THEORY events, :IN-THEORY
-  hints, etc.  It provides a convenient way to ENABLE and DISABLE
-  simultaneously, without having to write arcane theory expressions.
+(defsection disable-theory
+  :parents (ihs-utilities)
+  :short "Creates an IN-THEORY event that is equivalent to DISABLEing the
+  theory-expression.  Note that theory-expression is evaluated."
 
-  Examples:
-  ~bv[]
-  (e/d (lemma1 lemma2))                 ;Equivalent to (ENABLE lemma1 lemma2).
-  (e/d () (lemma))                      ;Equivalent to (DISABLE lemma).
-  (e/d (lemma1) (lemma2 lemma3))        ;ENABLE lemma1 then DISABLE lemma2 and
-                                        ;lemma3.
-  (e/d () (theory1) (theory2))          ;DISABLE theory1 then ENABLE
-                                        ;theory2.~/
-  ~ev[]
+  (defmacro disable-theory (theory-expression)
+    `(IN-THEORY (SET-DIFFERENCE-THEORIES
+                 (CURRENT-THEORY :HERE)
+                 ,theory-expression))))
 
-  General Form:
-  ~bv[]
-  (E/D enables-0 disables-0 ... enables-n disables-n)
-  ~ev[]
 
-  The E/D macro takes any number of lists suitable for the ENABLE and DISABLE
-  macros (see :doc ENABLE and :doc DISABLE), and creates a theory that is
-  equal to (CURRENT-THEORY :HERE) after executing the following commands:
+(defsection rewrite-theory
+  :parents (ihs-utilities)
+  :short "Collects all of the :REWRITE runes from theory."
 
-  ~bv[]
-  (IN-THEORY (ENABLE . enables-0))
-  (IN-THEORY (DISABLE . disables-0))
-  ...
-  (IN-THEORY (ENABLE . enables-n))
-  (IN-THEORY (DISABLE . disables-n))
-  ~ev[]~/"
+  (defun rewrite-theory-rec (theory ans)
+    (declare (xargs :guard (and (true-listp theory)
+                                (true-listp ans))))
+    (cond ((endp theory) (reverse ans))
+          ((and (consp (car theory))
+                (equal (caar theory) :rewrite))
+           (rewrite-theory-rec (cdr theory)
+                               (cons (car theory) ans)))
+          (t (rewrite-theory-rec (cdr theory) ans))))
 
-  (declare (xargs :guard (true-listp theories)))
+  (defun rewrite-theory (theory)
+    ;; Changed by Matt K. 9/2014 to use tail recursion.
+    (declare (xargs :guard (true-listp theory)))
+    (rewrite-theory-rec theory nil)))
 
-  (cond
-   ((atom theories) '(CURRENT-THEORY :HERE))
-   (t (e/d-fn '(CURRENT-THEORY :HERE) theories t))))
-|#
 
-;;;  ENABLE-THEORY
-;;;  DISABLE-THEORY
-
-(defmacro enable-theory (theory-expression)
-  ":doc-section ihs-utilities
-   Creates an IN-THEORY event that is equivalent to ENABLEing the
-   theory-expression.  Note that theory-expression is evaluated.~/~/~/
-   "
-
-  `(IN-THEORY (UNION-THEORIES (CURRENT-THEORY :HERE) ,theory-expression)))
-
-(defmacro disable-theory (theory-expression)
-  ":doc-section ihs-utilities
-   Creates an IN-THEORY event that is equivalent to DISABLEing
-   the theory-expression.  Note that theory-expression is evaluated.~/~/~/
-   "
-
-  `(IN-THEORY (SET-DIFFERENCE-THEORIES
-	       (CURRENT-THEORY :HERE)
-	       ,theory-expression)))
-
-;;;  REWRITE-THEORY name
-;;;  REWRITE-FREE-THEORY name
-
-(defun rewrite-theory-rec (theory ans)
-  (declare (xargs :guard (and (true-listp theory)
-                              (true-listp ans))))
-  (cond ((endp theory) (reverse ans))
-	((and (consp (car theory))
-	      (equal (caar theory) :rewrite))
-         (rewrite-theory-rec (cdr theory)
-                             (cons (car theory) ans)))
-	(t (rewrite-theory-rec (cdr theory) ans))))
-
-(defun rewrite-theory (theory)
-  ":doc-section ihs-utilities
-  Collects all of the :REWRITE runes from theory.~/~/~/
-  "
-; Changed by Matt K. 9/2014 to use tail recursion.
-
-  (declare (xargs :guard (true-listp theory)))
-  (rewrite-theory-rec theory nil))
-
-(defun rewrite-free-theory-rec (theory ans)
-
-  ;;  The guard is provided only to admit the function.
-  (declare (xargs :guard (and (true-listp theory)
-                              (true-listp ans))))
-
-  (cond ((endp theory) (reverse ans))
-	((and (consp (car theory))
-	      (equal (caar theory) :rewrite))
-	 (rewrite-free-theory-rec (cdr theory) ans))
-	(t (rewrite-free-theory-rec (cdr theory)
-                                    (cons (car theory) ans)))))
-
-(defun rewrite-free-theory (theory)
-  ";doc-section ihs-utilities
-  Returns the theory with all :REWRITE rules deleted.~/~/~/
-  "
-
-  ;;  The guard is provided only to admit the function.
-  (declare (xargs :guard (true-listp theory)))
+(defsection rewrite-free-theory
+  :parents (ihs-utilities)
+  :short "Returns the theory with all :REWRITE rules deleted."
 
 ; Changed by Matt K. 9/2014 to use tail recursion.
 
@@ -355,49 +270,47 @@
 
 ; (set-difference-equal theory (rewrite-theory theory)
 
-  (rewrite-free-theory-rec theory nil))
+  (defun rewrite-free-theory-rec (theory ans)
+    ;;  The guard is provided only to admit the function.
+    (declare (xargs :guard (and (true-listp theory)
+                                (true-listp ans))))
+    (cond ((endp theory) (reverse ans))
+          ((and (consp (car theory))
+                (equal (caar theory) :rewrite))
+           (rewrite-free-theory-rec (cdr theory) ans))
+          (t (rewrite-free-theory-rec (cdr theory)
+                                      (cons (car theory) ans)))))
 
-;;;  DEFINITION-THEORY name
-;;;  DEFINITION-FREE-THEORY name
+  (defun rewrite-free-theory (theory)
+    ;;  The guard is provided only to admit the function.
+    (declare (xargs :guard (true-listp theory)))
+    (rewrite-free-theory-rec theory nil)))
 
-(defun definition-theory-rec (theory ans)
 
-; Changed by Matt K. 9/2014 to use tail recursion.
+(defsection definition-theory
+  :parents (ihs-utilities)
+  :short "Collects all of the :DEFINITION runes from theory."
 
-  (declare (xargs :guard (and (true-listp theory)
-                              (true-listp ans))))
-  (cond ((endp theory) (reverse ans))
-	((and (consp (car theory))
-	      (equal (caar theory) :definition))
-	 (definition-theory-rec (cdr theory) (cons (car theory) ans)))
-	(t (definition-theory-rec (cdr theory) ans))))
+  (defun definition-theory-rec (theory ans)
+    ;; Changed by Matt K. 9/2014 to use tail recursion.
+    (declare (xargs :guard (and (true-listp theory)
+                                (true-listp ans))))
+    (cond ((endp theory) (reverse ans))
+          ((and (consp (car theory))
+                (equal (caar theory) :definition))
+           (definition-theory-rec (cdr theory) (cons (car theory) ans)))
+          (t (definition-theory-rec (cdr theory) ans))))
 
-(defun definition-theory (theory)
-  ":doc-section ihs-utilities
-  Collects all of the :DEFINITION runes from theory.~/~/~/
-  "
-; Changed by Matt K. 9/2014 to use tail recursion.
+  (defun definition-theory (theory)
+    ;; Changed by Matt K. 9/2014 to use tail recursion.
+    (declare (xargs :guard (true-listp theory)))
+    (definition-theory-rec theory nil)))
 
-  (declare (xargs :guard (true-listp theory)))
-  (definition-theory-rec theory nil))
 
-(defun definition-free-theory-rec (theory ans)
 
-  ;;  The guard is provided only to admit the function.
-  (declare (xargs :guard (and (true-listp theory)
-                              (true-listp ans))))
-  (cond ((endp theory) (reverse ans))
-	((and (consp (car theory))
-	      (equal (caar theory) :definition))
-	 (definition-free-theory-rec (cdr theory) ans))
-	(t (definition-free-theory-rec (cdr theory) (cons (car theory) ans)))))
-
-(defun definition-free-theory (theory)
-  "doc-section ihs-utilities
-  Returns the theory with all :DEFINITION rules deleted.~/~/~/
-  "
-  ;;  The guard is provided only to admit the function.
-  (declare (xargs :guard (true-listp theory)))
+(defsection definition-free-theory
+  :parents (ihs-utilities)
+  :short "Returns the theory with all :DEFINITION rules deleted."
 
 ; Changed by Matt K. 9/2014 to use tail recursion.
 
@@ -406,83 +319,112 @@
 
 ; (set-difference-equal theory (definition-theory theory)
 
-  (definition-free-theory-rec theory nil))
+  (defun definition-free-theory-rec (theory ans)
+    ;;  The guard is provided only to admit the function.
+    (declare (xargs :guard (and (true-listp theory)
+                                (true-listp ans))))
+    (cond ((endp theory) (reverse ans))
+          ((and (consp (car theory))
+                (equal (caar theory) :definition))
+           (definition-free-theory-rec (cdr theory) ans))
+          (t (definition-free-theory-rec (cdr theory) (cons (car theory) ans)))))
+
+  (defun definition-free-theory (theory)
+    ;;  The guard is provided only to admit the function.
+    (declare (xargs :guard (true-listp theory)))
+    (definition-free-theory-rec theory nil)))
+
+
 
 ;;;  DEFUN-THEORY
 
-(defun defun-theory-fn-rec (names theory quiet missing ans)
-  ;;  The guard is provided only to admit the function.
-  (declare (xargs :guard (and (symbol-listp names)
-                              (true-listp ans))
-		  :verify-guards nil))
-  (cond ((endp names)
-	 (cond ((or quiet (null missing)) (reverse ans))
-	       (t (er hard 'DEFUN-THEORY
-		      "The following names you supplied to DEFUN-THEORY do ~
+(defsection defun-theory
+  :parents (ihs-utilities)
+  :short "Collects and returns a special set of runes."
+  :long "<p>@(call defun-theory) searches the theory and collects
+the :DEFINITION, :INDUCTION, :TYPE-PRESCRIPTION, and :EXECUTABLE-COUNTERPART
+runes that were put into the theory by (DEFUN name ... ), for each name in
+@('names').</p>
+
+<p>The default for the theory argument is (UNIVERSAL-THEORY :HERE).  Normally
+the function will crash if any of the names in names do not have a :DEFINITION
+in the theory.  Call with :QUIET T to avoid this behavior.  Note however that
+limitations in ACL2 make it impossible to produce even a warning message if you
+specify :QUIET T.</p>"
+
+  (defun defun-theory-fn-rec (names theory quiet missing ans)
+    ;;  The guard is provided only to admit the function.
+    (declare (xargs :guard (and (symbol-listp names)
+                                (true-listp ans))
+                    :verify-guards nil))
+    (cond ((endp names)
+           (cond ((or quiet (null missing)) (reverse ans))
+                 (t (er hard 'DEFUN-THEORY
+                        "The following names you supplied to DEFUN-THEORY do ~
                        not have a :DEFINITION in the theory you supplied.  ~
                        Check to make sure that the theory is correct (it ~
                        defaults to (UNIVERSAL-THEORY :HERE)) and that these ~
                        are not the names of macros. To avoid this message ~
                        specify :QUIET T in the call to DEFUN-THEORY. Missing ~
                        names: ~p0"
-                      missing))))
-	(t
-	 (let*
-	     ((name (car names))
-	      (defrune `(:DEFINITION ,name))
-	      (execrune `(:EXECUTABLE-COUNTERPART ,name))
-	      (inductrune `(:INDUCTION ,name))
-	      (typerune `(:TYPE-PRESCRIPTION ,name))
-	      (tail (member-equal defrune theory)))
-	   (cond
-	    ((not tail) (defun-theory-fn-rec
-			  (cdr names) theory quiet (cons name missing) ans))
-            (t (defun-theory-fn-rec (cdr names) theory quiet missing
-                 (append
-                  (if (member-equal typerune tail) (list typerune) nil)
-                  (if (member-equal inductrune tail) (list inductrune) nil)
-                  (if (member-equal execrune tail) (list execrune) nil)
-                  (cons defrune ans)))))))))
+                        missing))))
+          (t
+           (let*
+               ((name (car names))
+                (defrune `(:DEFINITION ,name))
+                (execrune `(:EXECUTABLE-COUNTERPART ,name))
+                (inductrune `(:INDUCTION ,name))
+                (typerune `(:TYPE-PRESCRIPTION ,name))
+                (tail (member-equal defrune theory)))
+             (cond
+              ((not tail) (defun-theory-fn-rec
+                            (cdr names) theory quiet (cons name missing) ans))
+              (t (defun-theory-fn-rec (cdr names) theory quiet missing
+                   (append
+                    (if (member-equal typerune tail) (list typerune) nil)
+                    (if (member-equal inductrune tail) (list inductrune) nil)
+                    (if (member-equal execrune tail) (list execrune) nil)
+                    (cons defrune ans)))))))))
 
-(defun defun-theory-fn (names theory quiet missing)
-  ;;  The guard is provided only to admit the function.
-  (declare (xargs :guard (symbol-listp names)
-		  :verify-guards nil))
-; Changed by Matt K. 9/2014 to use tail recursion.
-  (defun-theory-fn-rec names theory quiet missing nil))
+  (defun defun-theory-fn (names theory quiet missing)
+    ;;  The guard is provided only to admit the function.
+    (declare (xargs :guard (symbol-listp names)
+                    :verify-guards nil))
+    ;; Changed by Matt K. 9/2014 to use tail recursion.
+    (defun-theory-fn-rec names theory quiet missing nil))
 
-(defmacro defun-theory
-  (names &key
-	 (theory '(UNIVERSAL-THEORY :HERE))
-	 quiet)
+  (defmacro defun-theory
+    (names &key
+           (theory '(UNIVERSAL-THEORY :HERE))
+           quiet)
+    `(DEFUN-THEORY-FN ,names ,theory ,quiet ())))
 
-  ":doc-section ihs-utilities
-  Collects and returns a special set of runes.~/~/
-  DEFUN-THEORY searches the theory and collects the :DEFINITION, :INDUCTION,
-  :TYPE-PRESCRIPTION, and :EXECUTABLE-COUNTERPART runes that were put into
-  the theory by (DEFUN name ... ), for each name in names.  The default for
-  the theory argument is (UNIVERSAL-THEORY :HERE).  Normally the function
-  will crash if any of the names in names do not have a :DEFINITION in the
-  theory.  Call with :QUIET T to avoid this behavior.  Note however that
-  limitations in Acl2 make it impossible to produce even a warning message if
-  you specify :QUIET T.~/
 
-  "
 
-  `(DEFUN-THEORY-FN ,names ,theory ,quiet ()))
+(defsection defun-type/exec-theory
+  :parents (ihs-utilities)
+  :short "Collects and returns a special set of runes."
+  :long "<p>@(call DEFUN-TYPE/EXEC-THEORY) searches the theory and collects
+the :TYPE-PRESCRIPTION, :EXECUTABLE-COUNTERPART, and :INDUCTION runes that were
+put into the theory by (DEFUN name ... ), for each name in names.  Thus,
+DEFUN-TYPE/EXEC-THEORY is a \"constructive\" dual of (DIASBLE . names).</p>
 
-;;;  DEFUN-TYPE/EXEC-THEORY
+<p>The default for the theory argument is (UNIVERSAL-THEORY :HERE).  Normally
+the function will crash if any of the names in names do not have a single rune
+in the theory. Call with :QUIET T to avoid this behavior.  Note however that
+limitations in ACL2 make it impossible to produce even a warning message if you
+specify :QUIET T.</p>"
 
-(defun defun-type/exec-theory-fn-rec (names theory quiet missing ans)
-  ;;  The guard is provided only to admit the function.
-  (declare (xargs :guard (and (symbol-listp names)
-                              (true-listp ans))
-		  :verify-guards nil))
-; Changed by Matt K. 9/2014 to use tail recursion.
-  (cond ((endp names)
-	 (cond ((or quiet (null missing)) (reverse ans))
-	       (t (er hard 'DEFUN-TYPE/EXEC-THEORY
-		      "The following names you supplied to ~
+  (defun defun-type/exec-theory-fn-rec (names theory quiet missing ans)
+    ;;  The guard is provided only to admit the function.
+    (declare (xargs :guard (and (symbol-listp names)
+                                (true-listp ans))
+                    :verify-guards nil))
+    ;; Changed by Matt K. 9/2014 to use tail recursion.
+    (cond ((endp names)
+           (cond ((or quiet (null missing)) (reverse ans))
+                 (t (er hard 'DEFUN-TYPE/EXEC-THEORY
+                        "The following names you supplied to ~
                        DEFUN-TYPE/EXEC-THEORY do not have an :INDUCTION, ~
                        :EXECUTABLE-COUNTERPART, or any :TYPE-PRESECRIPTIONs ~
                        in the theory you supplied.  Check to make sure that ~
@@ -491,52 +433,36 @@
                        names of macros. To avoid this message specify :QUIET ~
                        T in the call to DEFUN-TYPE/EXEC-THEORY. Missing ~
                        names: ~p0"
-                      missing))))
-	(t
-	 (let* ((name (car names))
-		(execrune `(:EXECUTABLE-COUNTERPART ,name))
-		(inductrune `(:INDUCTION ,name))
-		(typerune `(:TYPE-PRESCRIPTION ,name))
-		(thy
-		 (append
-		  (if (member-equal typerune theory) (list typerune) nil)
-		  (if (member-equal inductrune theory) (list inductrune) nil)
-                  (if (member-equal execrune theory) (list execrune) nil))))
-	   (cond ((null thy)
-		  (defun-type/exec-theory-fn-rec
-		    (cdr names) theory quiet (cons name missing) ans))
-                 (t (defun-type/exec-theory-fn-rec
-                      (cdr names) theory quiet missing
-                      (append thy ans))))))))
+                        missing))))
+          (t
+           (let* ((name (car names))
+                  (execrune `(:EXECUTABLE-COUNTERPART ,name))
+                  (inductrune `(:INDUCTION ,name))
+                  (typerune `(:TYPE-PRESCRIPTION ,name))
+                  (thy
+                   (append
+                    (if (member-equal typerune theory) (list typerune) nil)
+                    (if (member-equal inductrune theory) (list inductrune) nil)
+                    (if (member-equal execrune theory) (list execrune) nil))))
+             (cond ((null thy)
+                    (defun-type/exec-theory-fn-rec
+                      (cdr names) theory quiet (cons name missing) ans))
+                   (t (defun-type/exec-theory-fn-rec
+                        (cdr names) theory quiet missing
+                        (append thy ans))))))))
 
-(defun defun-type/exec-theory-fn (names theory quiet missing)
-  ;;  The guard is provided only to admit the function.
-  (declare (xargs :guard (symbol-listp names)
-		  :verify-guards nil))
-; Changed by Matt K. 9/2014 to use tail recursion.
-  (defun-type/exec-theory-fn-rec names theory quiet missing nil))
+  (defun defun-type/exec-theory-fn (names theory quiet missing)
+    ;;  The guard is provided only to admit the function.
+    (declare (xargs :guard (symbol-listp names)
+                    :verify-guards nil))
+    ;; Changed by Matt K. 9/2014 to use tail recursion.
+    (defun-type/exec-theory-fn-rec names theory quiet missing nil))
 
-(defmacro defun-type/exec-theory
-  (names &key
-	 (theory '(UNIVERSAL-THEORY :HERE))
-	 quiet)
-
-  ":doc-section ihs-utilities
-  Collects and returns a special set of runes.~/~/
-
-  DEFUN-TYPE/EXEC-THEORY searches the theory and collects the
-  :TYPE-PRESCRIPTION, :EXECUTABLE-COUNTERPART, and :INDUCTION runes that were
-  put into the theory by (DEFUN name ... ), for each name in names.  Thus,
-  DEFUN-TYPE/EXEC-THEORY is a \"constructive\" dual of (DIASBLE . names).
-  The default for the theory argument is (UNIVERSAL-THEORY :HERE).  Normally
-  the function will crash if any of the names in names do not have a single
-  rune in the theory. Call with :QUIET T to avoid this behavior.  Note
-  however that limitations in Acl2 make it impossible to produce even a
-  warning message if you specify :QUIET T.~/
-
-  "
-
-  `(DEFUN-TYPE/EXEC-THEORY-FN ,names ,theory ,quiet ()))
+  (defmacro defun-type/exec-theory
+    (names &key
+           (theory '(UNIVERSAL-THEORY :HERE))
+           quiet)
+    `(DEFUN-TYPE/EXEC-THEORY-FN ,names ,theory ,quiet ())))
 
 #|
 Examples.

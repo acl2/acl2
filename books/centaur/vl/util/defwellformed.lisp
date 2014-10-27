@@ -572,8 +572,6 @@ for the mutually-recursive use of @('defwellformed').</p>")
 (mutual-defwellformed
 
  (defwellformed even-odd-p (x)
-   :doc ":Doc-Section even-odd-p
-         Hooray for documentation.~/~/~/"
    :guard (integer-listp x)
    :body (if (atom x)
              (@wf-assert t)

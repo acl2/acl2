@@ -1229,9 +1229,7 @@ expression.  The recursivep argument is used to determine, in the base case,
 whether the atom we build should be a hidpiece or an ordinary id.  Basically,
 if we have not yet seen a dot then recursivep is nil and we want to just build
 a regular id token.  But otherwise, this id is just part of a hierarchical
-identifier, so we convert it into a hidpiece.</p>
-
-<p>Additionally, as a special case, "
+identifier, so we convert it into a hidpiece.</p>"
 
     (b* ((sys-p (not (eq (vl-loadconfig->edition config) :verilog-2005))))
       (seq tokstream

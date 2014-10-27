@@ -10,7 +10,7 @@
 (in-package "ACL2")
 (deflabel list-defuns-section)
 
-; * Structure of the Theory 
+; * Structure of the Theory
 ;
 ; The functions which occur in the list theory are selected from
 ; the ACL2 base theory (as defined in axioms.lisp) plus other functions
@@ -43,7 +43,7 @@
 ;
 ; ACL2 (and Common Lisp) support three notions of equality: EQL, EQ and EQUAL.
 ; One uses EQL or EQ, rather than EQUAL, for efficiency. Many functions
-; have three versions, each based on a different equality. MEMBER uses EQL, 
+; have three versions, each based on a different equality. MEMBER uses EQL,
 ; however MEMBER-EQ and MEMBER-EQUAL are also defined.
 ;
 ; We have followed this naming convention. When a function relies on equality.
@@ -52,18 +52,18 @@
 ;
 ; In list-defthms, the EQL and EQ versions of all functions are re-written to the
 ; EQUAL version. All interesting rewrite rules about the list functions are
-; expressed in terms of the EQUAL versions of list functions. 
+; expressed in terms of the EQUAL versions of list functions.
 ;
 ; As a result, one can execute using the EQL or EQ versions, but one will reason
 ; using the EQUAL version.
 
 ; ------------------------------------------------------------
-; Functions 
+; Functions
 ; ------------------------------------------------------------
 
-; Function Name               In    Result 
+; Function Name               In    Result
 ;   (supporting function)     ACL2  Type
-; ----------------------      ----  ---- 
+; ----------------------      ----  ----
 
 ; append (binary-append)      Yes   list
 ; butlast (take)              Yes   list
@@ -85,7 +85,7 @@
 ;   remove-duplicates-equal   Yes   list
 ; reverse (revappend)         Yes   list
 ; subseq (subseq-list)        Yes   list
-; update-nth                  Yes   list   
+; update-nth                  Yes   list
 ;
 ; nth                         Yes   ?
 ;
@@ -191,7 +191,7 @@
   (cond ((endp lst) acc)
 	((eql item (car lst)) (occurrences-ac item (cdr lst) (1+ acc)))
 	(t (occurrences-ac item (cdr lst) acc))))
-	 
+
 (defun occurrences (item lst)
   (declare (xargs :guard (and (true-listp lst)
 			      (or (eqlablep item) (eqlable-listp lst)))))
@@ -205,7 +205,7 @@
   (cond ((endp lst) acc)
 	((eq item (car lst)) (occurrences-eq-ac item (cdr lst) (1+ acc)))
 	(t (occurrences-eq-ac item (cdr lst) acc))))
-	 
+
 (defun occurrences-eq (item lst)
   (declare (xargs :guard (symbol-listp lst)))
   (occurrences-eq-ac item lst 0))
@@ -217,7 +217,7 @@
   (cond ((endp lst) acc)
 	((equal item (car lst)) (occurrences-equal-ac item (cdr lst) (1+ acc)))
 	(t (occurrences-equal-ac item (cdr lst) acc))))
-	 
+
 (defun occurrences-equal (item lst)
   (declare (xargs :guard (true-listp lst)))
   (occurrences-equal-ac item lst 0))
@@ -275,5 +275,3 @@
 (deftheory list-defuns
   (set-difference-theories (current-theory :here)
 			   (current-theory 'list-defuns-section)))
-
-

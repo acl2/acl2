@@ -43,42 +43,42 @@
 (set-enforce-redundancy t)
 
 (local (include-book "memory-impl"))
-(include-book "../doc-section")
 (include-book "private")
 (include-book "misc/records" :dir :system)
 
-(defdoc memory
-  ":Doc-Section acl2::data-structures
-  special records designed for array-like usage~/
+(defxdoc memory
+  :parents (acl2::data-structures)
+  :short "Special records designed for array-like usage."
+  :long "<p>Loading the library:</p>
 
-  Loading the library:
-  ~bv[]
+@({
   (include-book \"data-structures/memories\" :dir :system)
-  ~ev[]
+})
 
-  Memories are specialized records that are designed for array-like usage.
-  Memories have a fixed size, and elements are accessed by the natural numbers
-  0, 1, ..., size-1, where size is the maximum size of the memory.
+<p>Memories are specialized records that are designed for array-like usage.
+Memories have a fixed size, and elements are accessed by the natural numbers 0,
+1, ..., size-1, where size is the maximum size of the memory.</p>
 
-  Unlike arrays, memories are based on  trees.  As a result, loading and
-  storing into memories is slower than array access in a typical programming
-  language, and requires an O(log_2 n) search for the right element.  However,
-  there are benefits to this system as well.  We populate the tree structure
-  as needed when writes occur, allowing us to conceptually represent very large
-  arrays so long as we use them sparesely.  Hence, memories are well suited for
-  uses such as simulating the memory systems of processors or virtual machines
-  with many gigabytes of memory, only some of which is used during simulation.
+<p>Unlike arrays, memories are based on trees.  As a result, loading and
+storing into memories is slower than array access in a typical programming
+language, and requires an O(log_2 n) search for the right element.  However,
+there are benefits to this system as well.  We populate the tree structure as
+needed when writes occur, allowing us to conceptually represent very large
+arrays so long as we use them sparesely.  Hence, memories are well suited for
+uses such as simulating the memory systems of processors or virtual machines
+with many gigabytes of memory, only some of which is used during simulation.</p>
 
-  Memories are as easy to reason about as records (see misc/records.lisp) and
-  we provide the same core 'record theorems' about them.  However, the load and
-  store operations on memories are guarded more strongly than the records book,
-  in order to achieve efficiency.
-  ~/
-  ~l[arrays] and also ~pl[stobjs] for more efficient implementations of small
-  arrays.  The records book (misc/records.lisp) provides the same reasoning
-  strategy as memories, and may be an appropriate substitution for memories
-  depending upon your needs.")
+<p>Memories are as easy to reason about as records (see misc/records.lisp) and
+we provide the same core 'record theorems' about them.  However, the load and
+store operations on memories are guarded more strongly than the records book,
+in order to achieve efficiency.</p>
 
+<p>See also @(see acl2::arrays) and @(see acl2::stobj)s for more efficient
+implementations of small arrays.  The records book, @('misc/records.lisp'),
+provides the same reasoning strategy as memories, and may be an appropriate
+substitution for memories depending upon your needs.</p>")
+
+(local (xdoc::set-default-parents memory))
 
 
 ; DEFINITIONS
@@ -399,96 +399,81 @@
     x))
 
 
-(defdoc memory-p
-  ":Doc-Section memory
-  recognizes valid ~il[mem::memory] structures~/
-  ~bv[]
-     (MEM::memory-p mem)
-  ~ev[]
-  ~c[memory-p] has a guard of ~c[t] and can be called on any object.
+(defsection memory-p
+  :short "Recognizes valid @(see memory) structures."
+  :long "@({ (MEM::memory-p mem) })
 
-  ~c[memory-p] returns ~c[t] if ~c[mem] is a memory, ~c[nil] otherwise.
+<p>@('memory-p') has a guard of @('t') and can be called on any object.</p>
 
-  The implementation of memory-p is ~il[mem::private].
-  ~/
-  ~l[mem::memory] and also ~pl[mem::new]")
+<p>@('memory-p') returns @('t') if @('mem') is a memory, @('nil')
+otherwise.</p>
 
-(private memory-p (mem)
-  (and (_memory-p mem)
-       (posp (_memory-size mem))
-       (posp (_memory-depth mem))))
+<p>The implementation of memory-p is @(see mem::private).</p>"
+
+  (private memory-p (mem)
+           (and (_memory-p mem)
+                (posp (_memory-size mem))
+                (posp (_memory-depth mem)))))
 
 
-(defdoc size
-  ":Doc-Section memory
-  returns the capacity of a memory structure~/
-  ~bv[]
-     (MEM::size mem)
-  ~ev[]
-  ~c[size] is guarded with ~c[(memory-p mem)].
+(defsection size
+  :short "Returns the capacity of a memory structure."
+  :long "@({ (MEM::size mem) })
 
-  ~c[size] returns the capacity of a memory, i.e., the number of elements that
-  the memory can hold.  Addresses for ~c[mem] are naturals in the range ~c[0]
-  through ~c[(size mem) - 1].
+<p>@('size') is guarded with @('(memory-p mem)').</p>
 
-  A memory's size is specified when it is created with ~c[new], and is fixed
-  throughout its lifetime.  The implementation of ~c[size] is ~il[mem::private].
-  ~/
-  ~l[mem::memory] and also ~pl[mem::new].")
+<p>@('size') returns the capacity of a memory, i.e., the number of elements that
+the memory can hold.  Addresses for @('mem') are naturals in the range @('0')
+through @('(size mem) - 1').</p>
 
-(private size (mem)
-  (declare (xargs :guard (memory-p mem)))
-  (mbe :logic (if (memory-p mem)
-                  (_memory-size mem)
-                1)
-       :exec (cadr mem)))
+<p>A memory's size is specified when it is created with @('new'), and is fixed
+throughout its lifetime.  The implementation of @('size') is @(see mem::private).</p>"
+
+  (private size (mem)
+           (declare (xargs :guard (memory-p mem)))
+           (mbe :logic (if (memory-p mem)
+                           (_memory-size mem)
+                         1)
+                :exec (cadr mem))))
 
 
-(defdoc address-p
-  ":Doc-Section memory
-  recognizes valid addresses for a particular memory~/
-  ~bv[]
-     (MEM::address-p addr mem)
-  ~ev[]
-  ~c[address-p] is guarded with ~c[(memory-p mem)].
+(defsection address-p
+  :short "Recognizes valid addresses for a particular memory."
+  :long "@({ (MEM::address-p addr mem) })
 
-  ~c[address-p] returns true if ~c[addr] is a valid address for ~c[mem] --
-  that is, if ~c[(and (natp addr) (< addr (size mem)))].  It is not
-  ~il[mem::private], and is left enabled by default.
-  ~/
-  ~l[mem::memory]~/")
+<p>@('address-p') is guarded with @('(memory-p mem)').</p>
 
-(defun address-p (addr mem)
-  (declare (xargs :guard (memory-p mem)))
-  (and (natp addr)
-       (< addr (size mem))))
+<p>@('address-p') returns true if @('addr') is a valid address for @('mem') --
+that is, if @('(and (natp addr) (< addr (size mem)))').  It is not @(see
+mem::private), and is left enabled by default.</p>"
+
+  (defun address-p (addr mem)
+    (declare (xargs :guard (memory-p mem)))
+    (and (natp addr)
+         (< addr (size mem)))))
 
 
-(defdoc new
-  ":Doc-Section memory
-  create a new memory object with a given capacity~/
-  ~bv[]
-     (MEM::new size)
-  ~ev[]
-  ~c[new] is guarded so that ~c[size] must be a positive integer.
+(defsection new
+  :short "Create a new memory object with a given capacity."
+  :long "@({ (MEM::new size) })
 
-  ~c[new] creates a new memory structure with the given capacity.  For
-  example, ~c[(new 30)] creates a memory that can hold 30 elements.  The
-  capacity of a memory is fixed througout its lifetime.  The implementation
-  of ~c[new] is ~il[mem::private].
-  ~/
-  ~l[mem::memory], ~pl[mem::memory-p] and also ~pl[mem::address-p].")
+<p>@('new') is guarded so that @('size') must be a positive integer.</p>
 
-(private new (size)
-  (declare (xargs :guard (posp size)))
-  (if (or (not (posp size))
-          (equal size 1))
-      (cons (cons nil t) (cons 1 (cons 1 nil)))
-    (let ((depth (_log2 (1- size))))
-      (cons
-       (cons nil (signed-byte-p 30 depth))
-       (cons size
-             (cons depth nil))))))
+<p>@('new') creates a new memory structure with the given capacity.  For
+example, @('(new 30)') creates a memory that can hold 30 elements.  The
+capacity of a memory is fixed througout its lifetime.  The implementation
+of @('new') is @(see mem::private).</p>"
+
+  (private new (size)
+           (declare (xargs :guard (posp size)))
+           (if (or (not (posp size))
+                   (equal size 1))
+               (cons (cons nil t) (cons 1 (cons 1 nil)))
+             (let ((depth (_log2 (1- size))))
+               (cons
+                (cons nil (signed-byte-p 30 depth))
+                (cons size
+                      (cons depth nil)))))))
 
 (private _load (addr mem)
   (declare (xargs :guard (and (memory-p mem)
@@ -536,65 +521,58 @@
                            fast)
                      memcdr))))
 
-(defdoc load
-  ":Doc-Section memory
-  access memory, retrieving the value at some address~/
-  ~bv[]
-     (MEM::load addr mem)
-  ~ev[]
-  ~c[load] has a guard that requires ~c[(memory-p mem)] and also requires
-  ~c[(address-p addr mem)].
+(defsection load
+  :short "Access memory, retrieving the value at some address."
+  :long "<p>@({ (MEM::load addr mem) })</p>
 
-  ~c[load] looks up the current value stored at ~c[addr] in ~c[mem] and
-  returns that value to the user.  This is analagous to ~c[nth], ~c[assoc],
-  ~c[aref1], and so forth.  The implementation of load is ~il[mem::private].
-  ~/
-  ~l[mem::memory], ~pl[mem::memory-p], ~pl[mem::address-p] and also ~pl[mem::store].")
+<p>@('load') has a guard that requires @('(memory-p mem)') and also requires
+@('(address-p addr mem)').</p>
 
-(private load (addr mem)
-  (declare (xargs :guard (and (memory-p mem)
-                              (address-p addr mem))))
-  (mbe :logic (_load addr (_to-mem mem))
-       :exec  (let* ((fast (cdar mem))
-                     (mtree (caar mem))
-                     (depth (caddr mem)))
-                (if fast
-                    (_fixnum-memtree-load addr mtree depth)
-                  (_memtree-load addr mtree depth)))))
+<p>@('load') looks up the current value stored at @('addr') in @('mem') and
+returns that value to the user.  This is analagous to @('nth'), @('assoc'),
+@('aref1'), and so forth.  The implementation of load is @(see
+mem::private).</p>"
 
-(defdoc store
-  ":Doc-Section memory
-  update memory, overwriting an address with a new value~/
-  ~bv[]
-     (MEM::store addr elem mem)
-  ~ev[]
-  ~c[store] has a guard that requires ~c[(memory-p mem)] and also requires
-  ~c[(address-p addr mem)].
+  (private load (addr mem)
+           (declare (xargs :guard (and (memory-p mem)
+                                       (address-p addr mem))))
+           (mbe :logic (_load addr (_to-mem mem))
+                :exec  (let* ((fast (cdar mem))
+                              (mtree (caar mem))
+                              (depth (caddr mem)))
+                         (if fast
+                             (_fixnum-memtree-load addr mtree depth)
+                           (_memtree-load addr mtree depth))))))
 
-  ~c[store] returns a copy of ~c[mem], except that the element at address
-  ~c[addr] is overwritten with ~c[elem].  This is analagous to ~c[update-nth],
-  ~c[acons], ~c[aset1], and the like.  The implementation of ~c[store] is
-  ~il[mem::private].
-  ~/
-  ~l[mem::memory], ~pl[mem::memory-p], ~pl[mem::address-p], and also ~pl[mem::load].")
+(defsection store
+  :short "Update memory, overwriting an address with a new value."
+  :long "@({ (MEM::store addr elem mem) })
 
-(private store (addr elem mem)
-  (declare (xargs :guard (and (memory-p mem)
-                              (address-p addr mem))))
-  (mbe :logic (_from-mem (_store addr elem (_to-mem mem)))
-       :exec (let* ((mtree  (caar mem))
-                    (fast   (cdar mem))
-                    (memcdr (cdr mem))
-                    (depth  (cadr memcdr)))
-               (cons (cons (if fast
-                               (if elem
-                                   (_fixnum-memtree-store addr elem mtree depth)
-                                 (_fixnum-memtree-store-nil addr mtree depth))
-                             (if elem
-                                 (_memtree-store addr elem mtree depth)
-                               (_memtree-store-nil addr mtree depth)))
-                           fast)
-                     memcdr))))
+<p>@('store') has a guard that requires @('(memory-p mem)') and also requires
+@('(address-p addr mem)').</p>
+
+<p>@('store') returns a copy of @('mem'), except that the element at address
+@('addr') is overwritten with @('elem').  This is analagous to @('update-nth'),
+@('acons'), @('aset1'), and the like.  The implementation of @('store') is
+@(see mem::private).</p>"
+
+  (private store (addr elem mem)
+           (declare (xargs :guard (and (memory-p mem)
+                                       (address-p addr mem))))
+           (mbe :logic (_from-mem (_store addr elem (_to-mem mem)))
+                :exec (let* ((mtree  (caar mem))
+                             (fast   (cdar mem))
+                             (memcdr (cdr mem))
+                             (depth  (cadr memcdr)))
+                        (cons (cons (if fast
+                                        (if elem
+                                            (_fixnum-memtree-store addr elem mtree depth)
+                                          (_fixnum-memtree-store-nil addr mtree depth))
+                                      (if elem
+                                          (_memtree-store addr elem mtree depth)
+                                        (_memtree-store-nil addr mtree depth)))
+                                    fast)
+                              memcdr)))))
 
 
 

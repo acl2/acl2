@@ -1,4 +1,4 @@
-; utilities.lisp -- utility functions 
+; utilities.lisp -- utility functions
 ; Copyright (C) 1997  Computational Logic, Inc.
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
@@ -13,13 +13,7 @@
 ;;;
 ;;;    A book of utility functions and macros for use by the books in the
 ;;;    public library.  This book is defined in the "U" (for utilities)
-;;;    package.  To certify this book:
-#|
- (in-package "ACL2")
- (defpkg "U" (union-eq *acl2-exports*
-                       *common-lisp-symbols-from-main-lisp-package*))
- (certify-book "utilities" 1)
-|#
+;;;    package.
 ;;;
 ;;;    Bill Bevier  -- bevier@cli.com
 ;;;    Bishop Brock -- brock@cli.com
@@ -29,15 +23,14 @@
 ;;;
 ;;;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-(in-package "U")
-(include-book "doc-section")
+; Modified by Jared Davis, October 2014, to port documentation to xdoc.
 
-(deflabel utilities
-  :doc ":doc-section acl2::data-structures
-  A book of utility functions residing in the package \"U\".
-  ~/
-  The ~c[data-structures/utilities] book includes the following:
-  ~/~/")
+(in-package "U")
+(include-book "xdoc/top" :dir :system)
+
+(defxdoc utilities
+  :parents (acl2::data-structures)
+  :short "A book of utility functions residing in the package \"U\".")
 
 ;;;****************************************************************************
 ;;;
@@ -97,16 +90,195 @@
 ; untranslate
   )
 
-
 ;;;****************************************************************************
 ;;;
 ;;;    DEFLOOP
 ;;;
-;;;    Documentation appears with the DEFLOOP macro below.  This code appears
-;;;    here so that other utilities may be defined with DEFLOOP.  All of
-;;;    DEFLOOP is :RED.
+;;;    This code appears here so that other utilities may be defined with
+;;;    DEFLOOP.  All of DEFLOOP is :RED.
 ;;;
 ;;;****************************************************************************
+
+(defxdoc defloop
+  :parents (utilities)
+  :short "Macro for defining simple iteration schemes as functions."
+  :long "<p>Syntax:</p>
+
+@({
+   DEFLOOP name arglist [documentation] {declaration}* loop-form
+
+   loop-form ::= (FOR ({!for-clause}+) main-clause)
+
+   for-clause ::= for-in-clause | for-on-clause
+
+   for-in-clause ::= (var IN arg [ BY fn ])
+
+   for-on-clause ::= (var ON arg [ BY fn ])
+
+   main-clause ::= !list-accumulation | (!conditional form !value-clause) |
+                   (!termination-test form)
+
+   value-clause ::= !list-accumulation | (RETURN form)
+
+   list-accumulation ::= ({COLLECT | APPEND} form)
+
+   value-clause ::= ({COLLECT | APPEND | RETURN} form)
+
+   conditional ::= IF | WHEN | UNLESS
+
+   termination-test ::= ALWAYS | THEREIS | NEVER
+})
+
+<p>Arguments and Values:</p>
+
+@({
+   arg -- a symbol appearing in the arglist.
+
+   arglist -- an argument list satisfying ACL2::ARGLISTP.
+
+   declaration -- any valid declaration.
+
+   documentation -- a string; not evaluated.
+
+   form -- a form.
+
+   fn -- a symbol; must be the function symbol of a unary function
+         well-defined on true lists.
+
+   var -- a symbol.
+
+   name -- a symbol.
+})
+
+<p>Special Note: The symbols FOR, IN, ON, BY, RETURN, COLLECT, APPEND, IF,
+WHEN, UNLESS, ALWAYS, THEREIS, and NEVER appearing above may be in any package;
+DEFLOOP checks the print name of the symbol, not the symbol itself.</p>
+
+<h3>Description</h3>
+
+<p>DEFLOOP is a macro that creates iterative functions.  The description of the
+iteration is specified with an abstract syntax based on a small but useful
+subset of the Common Lisp LOOP construct (as defined by ANSI X3J13).  Using
+DEFLOOP one can easily define functions analogous to MAPCAR and MAPCAN, list
+type recognizers, and MEMBER- and ASSOC-like functions.</p>
+
+<p>The syntax of DEFLOOP is similar to DEFUN: The function name is followed by
+the arglist, optional documentation and declarations, and the function body.
+Note that any guards on any of the arguments are the responsibility of the
+user.</p>
+
+<p>The function body is in a special format, i.e., the loop-form as defined in
+the Syntax description.</p>
+
+<p>Each for-clause defines an iteration on one of the args in arglist.  The
+ for-in-clause</p>
+
+@({ (var IN arg [ BY fn ]) })
+
+<p>specifies that in each iteration, var will be bound to successive CARs of
+ arg, and arg will be reduced by fn on each iteration.  The default value of fn
+ is CDR.  The for-on-clause</p>
+
+@({ (var ON arg [ BY fn ]) })
+
+<p>specifies that var will first be bound to arg, and then reduced by fn on
+each iteration.  Again, the default value of fn is CDR.</p>
+
+<p>Using a list-accumulation one can specify MAPCAR- and MAPCAN-like functions.
+ Here is an example of how the Acl2 function STRIP-CARS could be defined with
+ DEFLOOP:</p>
+
+@({
+ (DEFLOOP STRIP-CARS (L)
+   (DECLARE (XARGS :GUARD (ALISTP L)))
+   (FOR ((X IN L))
+        (COLLECT (CAR X))))
+})
+
+<p>Iteration on multiple lists may be specified; iteration will terminate as
+soon as any of the lists are ATOMic, e.g.,</p>
+
+@({
+ (DEFLOOP PAIRLIS$ (KEYS VALS)
+   (DECLARE (XARGS :GUARD (AND (TRUE-LISTP KEYS)
+                               (TRUE-LISTP VALS))))
+   (FOR ((KEY IN KEYS) (VAL IN VALS))
+        (COLLECT (CONS KEY VAL))))
+})
+
+<p>This example shows reduction by a function other than CDR:</p>
+
+@({ (DEFLOOP EVENS (L) (FOR ((X IN L BY CDDR)) (COLLECT X))) })
+
+<p>List-accumulations can be coupled with a test, e.g., this function that
+ selects all of the numbers &lt;= n from l, and the ODDS function:</p>
+
+@({
+ (DEFLOOP <=-LIST (N L)
+   (DECLARE (XARGS :GUARD (AND (INTEGERP N)
+                               (INTEGERP-LISTP L))))
+   (FOR ((X IN L))
+        (WHEN (<= X N)
+          (COLLECT X))))
+
+ (DEFLOOP ODDS (L)
+   (DECLARE (XARGS :GUARD (TRUE-LISTP L)))
+   (FOR ((TAIL ON L BY CDDR))
+        (UNLESS (NULL (CDR TAIL))
+          (COLLECT (CADR TAIL)))))
+})
+
+<p>The definition of @('<=-LIST') shows that any functional arguments may
+ appear free in the various DEFLOOP forms.  Non-iterated arguments are simply
+ passed unchanged during recursive calls.  Also note that IF and WHEN are
+ synonymous as DEFLOOP tests.</p>
+
+<p>A RETURN can also be coupled with a test.  If the test is never satisfied
+ then the resulting function will return NIL.  Here are examples of how
+ ASSOC-EQUAL and MEMBER-EQUAL could have been defined with DEFLOOP:</p>
+
+@({
+ (DEFLOOP ASSOC-EQUAL (KEY ALIST)
+   (DECLARE (XARGS :GUARD (ALISTP ALIST)))
+   (FOR ((PAIR IN ALIST))
+        (WHEN (EQUAL KEY (CAR PAIR))
+          (RETURN PAIR))))
+
+ (DEFLOOP MEMBER-EQUAL (X L)
+   (DECLARE (XARGS :GUARD (TRUE-LISTP L)))
+   (FOR ((TAIL ON L))
+        (WHEN (EQUAL X (CAR TAIL))
+          (RETURN TAIL))))
+})
+
+<p>The termination-tests can be used to create various recognizers and
+ `un'-recognizers.  Note that a DEFLOOP with a termination test of ALWAYS or
+ NEVER will only return T if iteration terminates on NIL, i.e, they only
+ recognize true lists.  The termination test (THEREIS form) will return
+ the first non-NIL value returned by form, or NIL if there is none.
+ Here for example are functions that recognize true lists of integers,
+ true lists of un-integers, and lists containing an integer:</p>
+
+@({
+ (DEFLOOP INTEGERP-LISTP (L) (FOR ((X IN L)) (ALWAYS (INTEGERP X))))
+
+ (DEFLOOP NO-INTEGERP-LISTP (L) (FOR ((X IN L)) (NEVER (INTEGERP X))))
+
+ (DEFLOOP HAS-INTEGERP-LISTP (L) (FOR ((X IN L)) (THEREIS (INTEGERP X))))
+})
+
+<p>Note that in accordance with the semantics of the LOOP construct, the
+ THEREIS form above simply returns the first non-NIL result computed.  If you
+ want a function that returns the first integer in a list then you can use a
+ conditional return:</p>
+
+@({
+ (DEFLOOP FIRST-INTEGER (L)
+   (FOR ((X IN L)) (IF (INTEGERP X) (RETURN X))))
+})
+
+<p>Final note: If in doubt, simply TRANS1 the DEFLOOP form and have a look at
+ the generated function.</p>")
 
 (encapsulate ()
 
@@ -333,177 +505,8 @@ the arglist, and fn is a symbol, but ~p0 does not satisfy these constraints."
 	    (defloop-applied-lambda for-clauses (second value-clause) nil))
 	   (t (bomb 'DEFLOOP-CONDITIONAL "Bug."))))
 	(T (,name ,@(defloop-reduce-args arglist for-clauses)))))))
-      
+
 (defmacro defloop (name arglist &rest forms)
-  ":doc-section utilities
-   Macro for defining simple iteration schemes as functions.
-   ~/~/
- 
- Syntax:
- 
-   DEFLOOP name arglist [documentation] {declaration}* loop-form
- 
-   loop-form ::= (FOR ({!for-clause}+) main-clause)
- 
-   for-clause ::= for-in-clause | for-on-clause
- 
-   for-in-clause ::= (var IN arg [ BY fn ])
- 
-   for-on-clause ::= (var ON arg [ BY fn ])
- 
-   main-clause ::= !list-accumulation | (!conditional form !value-clause) |
-                   (!termination-test form)
- 
-   value-clause ::= !list-accumulation | (RETURN form)
- 
-   list-accumulation ::= ({COLLECT | APPEND} form)
- 
-   value-clause ::= ({COLLECT | APPEND | RETURN} form)
- 
-   conditional ::= IF | WHEN | UNLESS
- 
-   termination-test ::= ALWAYS | THEREIS | NEVER
- 
- Arguments and Values:
- 
-   arg -- a symbol appearing in the arglist.
- 
-   arglist -- an argument list satisfying ACL2::ARGLISTP.
- 
-   declaration -- any valid declaration.
- 
-   documentation -- a string; not evaluated.
- 
-   form -- a form.
- 
-   fn -- a symbol; must be the function symbol of a unary function
-         well-defined on true lists.
- 
-   var -- a symbol.
- 
-   name -- a symbol.
- 
- Special Note:
- 
-   The symbols FOR, IN, ON, BY, RETURN, COLLECT, APPEND, IF, WHEN, UNLESS,
-   ALWAYS, THEREIS, and NEVER appearing above may be in any package; DEFLOOP
-   checks the print name of the symbol, not the symbol itself.
-  
- Description
- 
-   DEFLOOP is a macro that creates iterative functions.  The description of
- the iteration is specified with an abstract syntax based on a small but
- useful subset of the Common Lisp LOOP construct (as defined by ANSI X3J13).
- Using DEFLOOP one can easily define functions analogous to MAPCAR and MAPCAN,
- list type recognizers, and MEMBER- and ASSOC-like functions.
- 
-   The syntax of DEFLOOP is similar to DEFUN: The function name is followed by
- the arglist, optional documentation and declarations, and the function body.
- Note that any guards on any of the arguments are the responsibility of the
- user.  
- 
-   The function body is in a special format, i.e., the loop-form as defined 
- in the Syntax description.
- 
-   Each for-clause defines an iteration on one of the args in arglist.  The
- for-in-clause
- 
-   (var IN arg [ BY fn ])
- 
- specifies that in each iteration, var will be bound to successive CARs
- of arg, and arg will be reduced by fn on each iteration.  The default value
- of fn is CDR.  The for-on-clause
- 
-   (var ON arg [ BY fn ])
- 
- specifies that var will first be bound to arg, and then reduced by fn on
- each iteration.  Again, the default value of fn is CDR.
- 
-   Using a list-accumulation one can specify MAPCAR- and MAPCAN-like functions.
- Here is an example of how the Acl2 function STRIP-CARS could be defined with
- DEFLOOP: 
- 
- (DEFLOOP STRIP-CARS (L)
-   (DECLARE (XARGS :GUARD (ALISTP L)))
-   (FOR ((X IN L))
-        (COLLECT (CAR X))))
- 
-   Iteration on multiple lists may be specified; iteration will terminate as
- soon as any of the lists are ATOMic, e.g.,
- 
- (DEFLOOP PAIRLIS$ (KEYS VALS)
-   (DECLARE (XARGS :GUARD (AND (TRUE-LISTP KEYS)
-                               (TRUE-LISTP VALS))))
-   (FOR ((KEY IN KEYS) (VAL IN VALS))
-        (COLLECT (CONS KEY VAL))))
- 
-   This example shows reduction by a function other than CDR:
- 
- (DEFLOOP EVENS (L) (FOR ((X IN L BY CDDR)) (COLLECT X)))
- 
-   List-accumulations can be coupled with a test, e.g., this function that
- selects all of the numbers <= n from l, and the ODDS function:
- 
- (DEFLOOP <=-LIST (N L)
-   (DECLARE (XARGS :GUARD (AND (INTEGERP N)
-                               (INTEGERP-LISTP L))))
-   (FOR ((X IN L))
-        (WHEN (<= X N)
-          (COLLECT X))))
-
- (DEFLOOP ODDS (L)
-   (DECLARE (XARGS :GUARD (TRUE-LISTP L)))
-   (FOR ((TAIL ON L BY CDDR))
-        (UNLESS (NULL (CDR TAIL))
-          (COLLECT (CADR TAIL)))))
-
- The definition of <=-LIST shows that any functional arguments may
- appear free in the various DEFLOOP forms.  Non-iterated arguments are simply
- passed unchanged during recursive calls.  Also note that IF and WHEN are
- synonymous as DEFLOOP tests. 
- 
-   A RETURN can also be coupled with a test.  If the test is never satisfied
- then the resulting function will return NIL.  Here are examples of how
- ASSOC-EQUAL and MEMBER-EQUAL could have been defined with DEFLOOP:
- 
- (DEFLOOP ASSOC-EQUAL (KEY ALIST)
-   (DECLARE (XARGS :GUARD (ALISTP ALIST)))
-   (FOR ((PAIR IN ALIST))
-        (WHEN (EQUAL KEY (CAR PAIR))
-          (RETURN PAIR))))
- 
- (DEFLOOP MEMBER-EQUAL (X L)
-   (DECLARE (XARGS :GUARD (TRUE-LISTP L)))
-   (FOR ((TAIL ON L))
-        (WHEN (EQUAL X (CAR TAIL))
-          (RETURN TAIL))))
-        
-   The termination-tests can be used to create various recognizers and
- `un'-recognizers.  Note that a DEFLOOP with a termination test of ALWAYS or
- NEVER will only return T if iteration terminates on NIL, i.e, they only
- recognize true lists.  The termination test (THEREIS form) will return
- the first non-NIL value returned by form, or NIL if there is none.
- Here for example are functions that recognize true lists of integers,
- true lists of un-integers, and lists containing an integer:
- 
- (DEFLOOP INTEGERP-LISTP (L) (FOR ((X IN L)) (ALWAYS (INTEGERP X))))
- 
- (DEFLOOP NO-INTEGERP-LISTP (L) (FOR ((X IN L)) (NEVER (INTEGERP X))))
- 
- (DEFLOOP HAS-INTEGERP-LISTP (L) (FOR ((X IN L)) (THEREIS (INTEGERP X))))
- 
- Note that in accordance with the semantics of the LOOP construct, the THEREIS
- form above simply returns the first non-NIL result computed.  If you want a
- function that returns the first integer in a list then you can use a
- conditional return: 
- 
- (DEFLOOP FIRST-INTEGER (L)
-   (FOR ((X IN L)) (IF (INTEGERP X) (RETURN X))))
- 
-   Final note: If in doubt, simply TRANS1 the DEFLOOP form and have a look at
- the generated function.
-   ~/"
-
   (let ((ignre (defloop-syntax-error name arglist forms)))
     (declare (ignore ignre))
     (let* ((loop-form (car (last forms)))
@@ -522,7 +525,6 @@ the arglist, and fn is a symbol, but ~p0 does not satisfy these constraints."
 ;  End ENCAPSULATE
 )
 
-
 ;;;****************************************************************************
 ;;;
 ;;;    Keyword Option List Parsing
@@ -547,54 +549,57 @@ the arglist, and fn is a symbol, but ~p0 does not satisfy these constraints."
   (declare (xargs :guard t))
   (or (stringp x) (symbolp x) (and (characterp x) (standard-char-p x))))
 
-(deflabel get-option
-  :doc ":doc-section utilities
-  A set of routines for parsing keyword option lists.
-  ~/
-  The following functions are included:
-  ~/
-  A keyword option list is a true list, each element of which is either a
-  keyword, or a true list whose car is a keyword. Here is an example:
+(defsection get-option
+  :parents (utilities)
+  :short "A set of routines for parsing keyword option lists."
+  :long "<p>A keyword option list is a true list, each element of which is
+either a keyword, or a true list whose car is a keyword. Here is an
+example:</p>
 
-  (:READ-ONLY (:PREFIX \"Foo\") (:DO-NOT :TAG :NORMALIZE))
+@({
+   (:READ-ONLY (:PREFIX \"Foo\") (:DO-NOT :TAG :NORMALIZE))
+})
 
-  The GET-OPTION routines provide an easy to use interface that in can handle a
-  lot of the parsing and syntax checking for keyword option lists.  Some
-  routines exist in 2 forms: The first form, e.g., 
+<p>The GET-OPTION routines provide an easy to use interface that in can handle
+a lot of the parsing and syntax checking for keyword option lists.  Some
+routines exist in 2 forms: The first form, e.g.,</p>
 
-  (GET-OPTION-AS-FLAG ctx option option-list)
+@({ (GET-OPTION-AS-FLAG ctx option option-list) })
 
-  takes a context (a name printed in case of an error), an option keyword,
-  an option list, (possible other args as well) and looks for the option in
-  the list.  The function will abort if any syntax errors occur.  The second
-  form, e.g., 
+<p>takes a context (a name printed in case of an error), an option keyword, an
+  option list, (possible other args as well) and looks for the option in the
+  list.  The function will abort if any syntax errors occur.  The second form,
+  e.g.,</p>
 
-  (GET-OPTION-AS-FLAG-MV option option-list)  
+@({ (GET-OPTION-AS-FLAG-MV option option-list) })
 
-  returns 2 values.  The first value, if non-NIL, is an object produced by 
+<p>returns 2 values.  The first value, if non-NIL, is an object produced by
   ACL2::MSG that describes the syntax error.  The second value is the actual
   return value of the function.  To avoid redundancy the -MV forms of the
-  functions are not documnented.
+  functions are not documnented.</p>
 
-  To begin processing, use the function:
+<p>To begin processing, use the function:</p>
 
+@({
   (GET-OPTION-CHECK-SYNTAX ctx option-list valid-options duplicate-options
-                           mutex-options) 
+                           mutex-options)
+})
 
-  (or GET-OPTION-CHECK-SYNTAX-MV) to check for basic option list syntax, and
+<p>(or GET-OPTION-CHECK-SYNTAX-MV) to check for basic option list syntax, and
   then use the various option list parsing functions listed above to get the
-  values associated with the individual options.~/")
+  values associated with the individual options.</p>")
 
-(defloop keyword-option-listp (l)
-  ":doc-section get-option
-  Checks a list for basic syntax as a keyword option list.
-  ~/~/~/"
-  (declare (xargs :guard t))
-  (for ((x in l))
-       (always (if (atom x)
-		   (keywordp x)
-		 (and (true-listp x)
-		      (keywordp (car x)))))))
+(defsection keyword-option-listp
+  :parents (get-option)
+  :short "Checks a list for basic syntax as a keyword option list."
+
+  (defloop keyword-option-listp (l)
+    (declare (xargs :guard t))
+    (for ((x in l))
+         (always (if (atom x)
+                     (keywordp x)
+                   (and (true-listp x)
+                        (keywordp (car x))))))))
 
 (defun reason-for-not-keyword-option-listp (l)
   "Completes the sentence `L is not a keyword option list because ..."
@@ -609,35 +614,40 @@ the arglist, and fn is a symbol, but ~p0 does not satisfy these constraints."
     (reason-for-not-keyword-option-listp (cdr l)))
    (t (msg "the entry ~p0 is not a proper list whose car is a keyword."
 	   (car l)))))
-  
-(defloop get-option-keywords (l)
-  ":doc-section get-option
-  Strip the option keywords from a keyword option list.
-  ~/~/~/"
-  (declare (xargs :guard (keyword-option-listp l)))
-  (for ((x in l)) (collect (if (atom x) x (car x)))))
 
-(defloop get-option-entry (option l)
-  ":doc-section get-option
-  Returns the first occurrence of an option entry for option in l.
-  ~/~/~/"
-  (declare (xargs :guard (and (keywordp option)
-			      (keyword-option-listp l))))
-  (for ((x in l))
-       (when (or (eq option x)
-		 (and (consp x) (eq option (car x))))
-	 (return x))))
+(defsection get-option-keywords
+  :parents (get-option)
+  :short "Strip the option keywords from a keyword option list."
 
-(defloop get-option-entries (option l)
-  ":doc-section get-option
-  Returns all occurrences of option entries for option in l.
-  ~/~/~/"
-  (declare (xargs :guard (and (keywordp option)
-			      (keyword-option-listp l))))
-  (for ((x in l))
-       (when (or (eq option x)
-		 (and (consp x) (eq option (car x))))
-	 (collect x))))
+  (defloop get-option-keywords (l)
+    (declare (xargs :guard (keyword-option-listp l)))
+    (for ((x in l)) (collect (if (atom x) x (car x))))))
+
+
+(defsection get-option-entry
+  :parents (get-option)
+  :short "Returns the first occurrence of an option entry for option in l."
+
+  (defloop get-option-entry (option l)
+    (declare (xargs :guard (and (keywordp option)
+                                (keyword-option-listp l))))
+    (for ((x in l))
+         (when (or (eq option x)
+                   (and (consp x) (eq option (car x))))
+           (return x)))))
+
+
+(defsection get-option-entries
+  :parents (get-option)
+  :short "Returns all occurrences of option entries for option in l."
+
+  (defloop get-option-entries (option l)
+    (declare (xargs :guard (and (keywordp option)
+                                (keyword-option-listp l))))
+    (for ((x in l))
+         (when (or (eq option x)
+                   (and (consp x) (eq option (car x))))
+           (collect x)))))
 
 (defun get-option-check-mutex-mv (options mutex-options)
   (declare (xargs :guard (and (keyword-listp options)
@@ -684,32 +694,31 @@ the arglist, and fn is a symbol, but ~p0 does not satisfy these constraints."
 	    NIL))
        (t (get-option-check-mutex-mv options mutex-options)))))))
 
-(defun get-option-check-syntax
-  (ctx option-list valid-options duplicate-options mutex-options)
-  ":doc-section get-option
-  Check the option list for gross syntax, returning NIL if it's OK, and
-  crashing otherwise.
-  ~/
-  The argument option-list is the option list entered by the user.
+(defsection get-option-check-syntax
+  :parents (get-option)
+  :short "Check the option list for gross syntax, returning NIL if it's OK, and
+  crashing otherwise."
+  :long "<p>The argument option-list is the option list entered by the user.
   Valid-options is a list of keywords that specifies which options are valid.
   Duplicate-options is a list of keywords which specifies which options may be
   duplicated.  Mutex-options is an alist of pairs (keyword1 . keyword2) which
   has the meaning `if keyword1 appears as an option then keyword2 may not
-  appear as an option'.
-  ~/~/"
-  (declare (xargs :guard (and (keyword-listp valid-options)
-			      (keyword-listp duplicate-options)
-			      (keyword-pair-alistp mutex-options))
-		  :mode :program))
+  appear as an option'.</p>"
 
-  (mv-let (msg flag)
-    (get-option-check-syntax-mv option-list valid-options duplicate-options
-				mutex-options)
-    (declare (ignore flag))
-    (if msg
-	(bomb ctx "The keyword option list ~p0 is invalid because ~@1"
-	      option-list msg)
-      nil)))
+  (defun get-option-check-syntax
+    (ctx option-list valid-options duplicate-options mutex-options)
+    (declare (xargs :guard (and (keyword-listp valid-options)
+                                (keyword-listp duplicate-options)
+                                (keyword-pair-alistp mutex-options))
+                    :mode :program))
+    (mv-let (msg flag)
+      (get-option-check-syntax-mv option-list valid-options duplicate-options
+                                  mutex-options)
+      (declare (ignore flag))
+      (if msg
+          (bomb ctx "The keyword option list ~p0 is invalid because ~@1"
+                option-list msg)
+        nil))))
 
 (defun get-option-as-flag-mv (option option-list)
   (declare (xargs :guard (and (keywordp option)
@@ -725,21 +734,23 @@ the arglist, and fn is a symbol, but ~p0 does not satisfy these constraints."
        (t (mv NIL T))))
      (t (mv NIL NIL)))))
 
-(defun get-option-as-flag (ctx option option-list)
-  ":doc-section get-option
-  Look for an stand-alone option, check the syntax, and return T if the 
-  option is found and NIL otherwise.
-  ~/
-  This function is for options that take no arguments, where the simple 
-  presence or absence of the option is meant to signal the user's intention.
-  ~/~/"
-  (declare (xargs :guard (and (keywordp option)
-			      (keyword-option-listp option-list))
-		  :mode :program))
-  (mv-let (msg flag) (get-option-as-flag-mv option option-list)
-    (if msg
-	(bomb ctx "~@0" msg)
-      flag)))
+(defsection get-option-as-flag
+  :parents (get-option)
+  :short "Look for an stand-alone option, check the syntax, and return T if the
+  option is found and NIL otherwise."
+
+  :long "<p>This function is for options that take no arguments, where the
+  simple presence or absence of the option is meant to signal the user's
+  intention.</p>"
+
+  (defun get-option-as-flag (ctx option option-list)
+    (declare (xargs :guard (and (keywordp option)
+                                (keyword-option-listp option-list))
+                    :mode :program))
+    (mv-let (msg flag) (get-option-as-flag-mv option option-list)
+      (if msg
+          (bomb ctx "~@0" msg)
+        flag))))
 
 (defun get-option-member-mv
   (option option-list choices default-if-missing default-if-unspecified)
@@ -761,30 +772,30 @@ the arglist, and fn is a symbol, but ~p0 does not satisfy these constraints."
        (t (mv NIL (cadr opt)))))
      (t (mv NIL default-if-missing)))))
 
-(defun get-option-member
-  (ctx option option-list choices default-if-missing default-if-unspecified)
-  ":doc-section get-option
-  Process an option whose (optional) argument is a MEMBER of a set of
-  choices.
-  ~/
-  This function checks for an option that may be specified as either
-  :OPTION, (:OPTION), or (:OPTION choice), where in the latter form the 
+(defsection get-option-member
+  :parents (get-option)
+  :short "Process an option whose (optional) argument is a MEMBER of a set of
+  choices."
+  :long "<p>This function checks for an option that may be specified as either
+  :OPTION, (:OPTION), or (:OPTION choice), where in the latter form the
   choice must be a member of the set of choices.  The choice is returned if
   the option is specified by the latter form, otherwise the
   default-if-missing is returned if the option is not present in the
   option-list, and default-if-unspecified is returned if the option if
-  specified as :OPTION or (:OPTION).
-  ~/~/"
-  (declare (xargs :guard (and (keywordp option)
-			      (keyword-option-listp option-list)
-			      (eqlable-listp choices))
-		  :mode :program))
-  (mv-let (msg value)
-    (get-option-member-mv option option-list choices
-			  default-if-missing default-if-unspecified)
-    (if msg
-	(bomb ctx "~@0" msg)
-      value)))
+  specified as :OPTION or (:OPTION).</p>"
+
+  (defun get-option-member
+    (ctx option option-list choices default-if-missing default-if-unspecified)
+    (declare (xargs :guard (and (keywordp option)
+                                (keyword-option-listp option-list)
+                                (eqlable-listp choices))
+                    :mode :program))
+    (mv-let (msg value)
+      (get-option-member-mv option option-list choices
+                            default-if-missing default-if-unspecified)
+      (if msg
+          (bomb ctx "~@0" msg)
+        value))))
 
 (defun get-option-subset-mv (option option-list the-set default)
   (declare (xargs :guard (and (keywordp option)
@@ -811,27 +822,27 @@ the arglist, and fn is a symbol, but ~p0 does not satisfy these constraints."
 
 (verify-guards get-option-subset-mv)
 
-(defun get-option-subset (ctx option option-list the-set default)
-  ":doc-section get-option
-  Process an option of the form (:OPTION . l), where l must be a SUBSETP
-  of a given set.
-  ~/
-  This function checks for an option that is specified as (:OPTION . l),
+(defsection get-option-subset
+  :parents (get-option)
+  :short "Process an option of the form (:OPTION . l), where l must be a SUBSETP
+  of a given set."
+  :long "<p>This function checks for an option that is specified as (:OPTION . l),
   where l must be a proper list and a SUBSETP of the-set. Thus (:OPTION)
   specifies the empty set, and :OPTION by itself is illegal.  If the option
   is missing then the default value is returned, otherwise the subset l
-  is returned.
-  ~/~/"
-  (declare (xargs :guard (and (keywordp option)
-			      (keyword-option-listp option-list)
-			      (eqlable-listp the-set))
-		  :mode :program))
+  is returned.</p>"
 
-  (mv-let (msg value)
-    (get-option-subset-mv option option-list the-set default)
-    (if msg
-	(bomb ctx "~@0" msg)
-      value)))
+  (defun get-option-subset (ctx option option-list the-set default)
+    (declare (xargs :guard (and (keywordp option)
+                                (keyword-option-listp option-list)
+                                (eqlable-listp the-set))
+                    :mode :program))
+
+    (mv-let (msg value)
+      (get-option-subset-mv option option-list the-set default)
+      (if msg
+          (bomb ctx "~@0" msg)
+        value))))
 
 (defun get-option-argument-mv
   (option option-list kind default-if-missing default-if-unspecified)
@@ -862,44 +873,42 @@ the arglist, and fn is a symbol, but ~p0 does not satisfy these constraints."
        (t (mv NIL (cadr opt)))))
      (t (mv NIL default-if-missing)))))
 
-(defun get-option-argument
-  (ctx option option-list kind default-if-missing default-if-unspecified)
-  ":doc-section get-option
-  Process an option of the form :OPTION, (:OPTION), or (:OPTION arg),
-  where arg is required to be of a certain type.
-  ~/
-  This function checks for an option that in the full form is specified as
+(defsection get-option-argument
+  :parents (get-option)
+  :short "Process an option of the form :OPTION, (:OPTION), or (:OPTION arg),
+  where arg is required to be of a certain type."
+  :long "<p>This function checks for an option that in the full form is specified as
   (:OPTION arg), where arg must be of a certain kind.  Recognized values
-  for kind include:
+  for kind include:</p>
 
+  @({
   :FORM              -- arg can be anything.
   :SYMBOL            -- arg must be a symbol.
   :STRING            -- arg must be a string.
   :STRING-DESIGNATOR -- arg must be a symbol, string, or character.
+  })
 
-  If the option is missing from the option-list, then default-if-missing
-  is returned.  If the option is specified as :OPTION or (:OPTION), then
-  default-if-unspecified is returned.  Otherwise the arg is returned.
-  ~/~/"
+  <p>If the option is missing from the option-list, then default-if-missing is
+  returned.  If the option is specified as :OPTION or (:OPTION), then
+  default-if-unspecified is returned.  Otherwise the arg is returned.</p>"
 
-  ;;  It's easy to add new `kind's.  Just update the guards and the CASE
-  ;;  statements here and in GET-OPTION-ARGUMENT-MV. Don't forget to update
-  ;;  the documentation as well.
+  (defun get-option-argument
+    (ctx option option-list kind default-if-missing default-if-unspecified)
+    ;;  It's easy to add new `kind's.  Just update the guards and the CASE
+    ;;  statements here and in GET-OPTION-ARGUMENT-MV. Don't forget to update
+    ;;  the documentation as well.
+    (declare (xargs :guard (and (keywordp option)
+                                (keyword-option-listp option-list)
+                                (member kind '(:FORM :SYMBOL :STRING
+                                               :STRING-DESIGNATOR)))
+                    :mode :program))
+    (mv-let (msg value)
+      (get-option-argument-mv option option-list kind
+                              default-if-missing default-if-unspecified)
+      (if msg
+          (bomb ctx "~@0" msg)
+        value))))
 
-  (declare (xargs :guard (and (keywordp option)
-			      (keyword-option-listp option-list)
-			      (member kind '(:FORM :SYMBOL :STRING
-						   :STRING-DESIGNATOR)))
-		  :mode :program))
-
-  (mv-let (msg value)
-    (get-option-argument-mv option option-list kind
-			    default-if-missing default-if-unspecified)
-    (if msg
-	(bomb ctx "~@0" msg)
-      value)))
-
-
 ;;;****************************************************************************
 ;;;
 ;;;    Strings and Symbols
@@ -925,19 +934,21 @@ the arglist, and fn is a symbol, but ~p0 does not satisfy these constraints."
    (declare (xargs :guard (string-designator-listp l)))
    (for ((sd in l)) (append (coerce (string sd) 'LIST))))
 
-(defmacro pack-string (&rest l)
-  ":doc-section utilities
-   Given a series of string-designators l, append the STRING of each and return
-   the resulting string.
-   ~/~/~/"
-   `(COERCE (COERCE-STRING-DESIGNATOR-LIST (LIST ,@l)) 'STRING))
+(defsection pack-string
+  :parents (utilities)
+  :short "Given a series of string-designators l, append the STRING of each and
+   return the resulting string."
 
-(defmacro pack-intern (sym &rest l)
-  ":doc-section utilities
-   Given a list of string-designators l, append the STRING of each and intern
-   the resulting string in the package of sym.
-   ~/~/~/"
-   `(INTERN-IN-PACKAGE-OF-SYMBOL (PACK-STRING ,@l) ,sym))
+  (defmacro pack-string (&rest l)
+    `(COERCE (COERCE-STRING-DESIGNATOR-LIST (LIST ,@l)) 'STRING)))
+
+(defsection pack-intern
+  :parents (utilities)
+  :short "Given a list of string-designators l, append the STRING of each and
+   intern the resulting string in the package of sym."
+
+  (defmacro pack-intern (sym &rest l)
+    `(INTERN-IN-PACKAGE-OF-SYMBOL (PACK-STRING ,@l) ,sym)))
 
 (defun unique-symbols1 (n seed sym-list counter gen-list)
   (declare (xargs :guard (and (naturalp n)
@@ -957,23 +968,23 @@ the arglist, and fn is a symbol, but ~p0 does not satisfy these constraints."
 	 (t (unique-symbols1 (1- n) seed sym-list (1+ counter)
 			       (cons sym gen-list))))))))
 
-(defun unique-symbols (n seed sym-list)
-  ":doc-section utilities
-  Return a list of symbols guaranteed unique with respect to a symbolic
-  seed and every symbol in a list of symbols.
-  ~/
-  Given a symbolic seed, we generate symbols <seed>0, <seed>1, etc. until
-  we have generated n symbols not appearing in sym-list.  This is a 
-  `poor-man's' GENSYM, and is the best we can do without STATE.  All
-  generated symbols are INTERNed in the package of seed.
-  ~/~/"
-  (declare (xargs :guard (and (naturalp n)
-			      (symbolp seed)
-			      (symbol-listp sym-list))
-		  :mode :program))
-  (reverse (unique-symbols1 n seed sym-list 0 ())))
 
-
+(defsection unique-symbols
+  :parents (utilities)
+  :short "Return a list of symbols guaranteed unique with respect to a symbolic
+  seed and every symbol in a list of symbols."
+  :long "<p>Given a symbolic seed, we generate symbols @('<seed>0'), @('<seed>1'),
+  etc. until we have generated n symbols not appearing in sym-list.  This is a
+  'poor-man's' GENSYM, and is the best we can do without STATE.  All generated
+  symbols are INTERNed in the package of seed.</p>"
+
+  (defun unique-symbols (n seed sym-list)
+    (declare (xargs :guard (and (naturalp n)
+                                (symbolp seed)
+                                (symbol-listp sym-list))
+                    :mode :program))
+    (reverse (unique-symbols1 n seed sym-list 0 ()))))
+
 ;;;****************************************************************************
 ;;;
 ;;;    GET-GUARDS-FROM-BODY
@@ -1009,32 +1020,31 @@ the arglist, and fn is a symbol, but ~p0 does not satisfy these constraints."
        (when (and (true-listp form)
 		  (eq (car form) 'ACL2::DECLARE))
 	 (append (get-guards-from-declare-body (cdr form))))))
-  
-(defun get-guards-from-body (body)
-  ":doc-section utilities
-  A user-level function to extract guards from a definition body.
-  ~/
-  This function takes a definition body, that is, a list of forms valid as
+
+(defsection get-guards-from-body
+  :parents (utilities)
+  :short "A user-level function to extract guards from a definition body."
+  :long "<p>This function takes a definition body, that is, a list of forms valid as
   the body of a DEFUN, and returns a guard for the DEFUN that consists of all
   guards specified either by (DECLARE (XARGS ... :GUARD g ...)) or (DECLARE
   (TYPE ...)) forms in body. This function is designed to be used by macros
   that create function definitions and lemmas that may depend on the guards
   of the newly defined function.  The guard will be returned as a
   conjunction: either T, NIL (?) a single conjunct, or (AND . conjuncts)
-  where conjuncts is a list of the conjuncts.
-  ~/
-  Restrictions on the form of macros in Acl2 make it impossible for a macro
-  to query the Acl2 database to determine any property of a function,
-  including its guards. Therefore we provide this function which parses
-  function bodies and extracts the guards from the source text of a function.
+  where conjuncts is a list of the conjuncts.</p>
 
-  This is a `fail-safe' procedure.  If any syntax errors are encountered
-  during guard parsing, those illegal guard specifications are simply
-  ignored, under the assumption that when the function is finally submitted
-  to Acl2 that Acl2's more powerful error checking facilities will uncover
-  and report the errors to the user.  Thus this routine may return garbage,
-  but it shouldn't crash!~/"
+  <p>Restrictions on the form of macros in Acl2 make it impossible for a macro
+  to query the ACL2 database to determine any property of a function, including
+  its guards. Therefore we provide this function which parses function bodies
+  and extracts the guards from the source text of a function.</p>
 
-  (declare (xargs :mode :program))
+  <p>This is a `fail-safe' procedure.  If any syntax errors are encountered
+  during guard parsing, those illegal guard specifications are simply ignored,
+  under the assumption that when the function is finally submitted to Acl2 that
+  Acl2's more powerful error checking facilities will uncover and report the
+  errors to the user.  Thus this routine may return garbage, but it shouldn't
+  crash!</p>"
 
-  (untranslate (conjoin (get-guards-from-body1 body)) nil nil))
+  (defun get-guards-from-body (body)
+    (declare (xargs :mode :program))
+    (untranslate (conjoin (get-guards-from-body1 body)) nil nil)))
