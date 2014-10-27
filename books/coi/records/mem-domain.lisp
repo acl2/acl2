@@ -463,7 +463,7 @@
                               MEM::|_MEMORY-RECORD|
                               
                               ) 
-                           (SET::DOUBLE-CONTAINMENT
+                           (SET::DOUBLE-CONTAINMENT-expensive
                             )))))
 
 ;show how s affects this...
@@ -940,7 +940,7 @@
                             MEM::|_MEMORY-SIZE|
                             MEM::|_MEMORY-RECORD|
                             ) 
-                           (SET::DOUBLE-CONTAINMENT
+                           (SET::DOUBLE-CONTAINMENT-expensive
                             SET::UNION-DELETE-y
                             SET::UNION-DELETE-x)))))
 

@@ -103,7 +103,11 @@ added.")
 (defxdoc-raw ts-queue-len
   :parents (ts-queue)
   :short "@('(ts-queue-len queue)') returns the current length of the data list
-for @('queue').  It can be used at any time by any thread and never blocks.")
+for @('queue').  It can be used at any time by any thread and never blocks."
+
+  :long "The return value of @('ts-queue-len') should only be treated as an
+estimate.  This is because the length of the queue can change immediately after
+@('ts-queue-len') returns (or even, right before it returns).")
 
 (defun ts-queue-len (queue)
   (declare (type ts-queue queue))

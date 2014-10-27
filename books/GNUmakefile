@@ -456,7 +456,8 @@ quicklisp_clean:
 	echo "Removing downloaded quicklisp files (if any)" ; \
 	cd $(QUICKLISP_DIR); rm -rf quicklisp.lsp  inst/asdf.lisp inst/cache \
 	    inst/client-info.sexp inst/dists inst/local-projects \
-	    inst/quicklisp inst/setup.lisp inst/tmp install.out Makefile-tmp
+	    inst/quicklisp inst/setup.lisp inst/tmp install.out Makefile-tmp \
+            asdf-home/cache/common-lisp
 	cd $(QUICKLISP_DIR); $(BUILD_DIR)/clean.pl
 
 # The following hack was useful briefly in late January, 2014, when
