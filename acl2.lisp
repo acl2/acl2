@@ -1198,7 +1198,14 @@ ACL2 from scratch.")
 
           t)
          #+ccl
-         (ccl::*compiler-warn-on-duplicate-definitions* nil))
+         (ccl::*compiler-warn-on-duplicate-definitions* nil)
+         #+gcl
+         (compiler::*warn-on-multiple-fn-definitions* nil))
+     #+gcl
+     (declare (ignorable ; GCL versions before 2.6.12 release don't have this
+               compiler::*warn-on-multiple-fn-definitions*)
+              (special ; being safe; seems autoloaded via compiler::emit-fn
+               compiler::*warn-on-multiple-fn-definitions*))
      ,@forms))
 
 (defmacro with-warnings-suppressed (&rest forms)
