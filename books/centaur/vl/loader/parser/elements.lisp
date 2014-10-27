@@ -806,7 +806,13 @@ contexts where some of the items aren't allowed.</p>"
                       x)
         :vl-genbase (if (member (tag x.item) allowed)
                         nil
-                      x))))
+                      x)
+        :vl-genblock (if (member :vl-generate allowed)
+                         (vl-genelementlist-findbad x.elems allowed)
+                       x)
+        :vl-genarray (if (member :vl-generate allowed)
+                         (vl-genarrayblocklist-findbad x.blocks allowed)
+                       x))))
 
   (define vl-genelementlist-findbad ((x vl-genelementlist-p)
                                      (allowed symbol-listp))
@@ -836,4 +842,19 @@ contexts where some of the items aren't allowed.</p>"
     :guard (subsetp-equal allowed (cons :vl-generate *vl-modelement-tagnames*))
     :returns (firstbad (iff (vl-genelement-p firstbad) firstbad))
     (b* (((vl-generateblock x)))
+      (vl-genelementlist-findbad x.elems allowed)))
+
+  (define vl-genarrayblocklist-findbad ((x vl-genarrayblocklist-p)
+                                        (allowed symbol-listp))
+    :measure (vl-genarrayblocklist-count x)
+    (if (atom x)
+        nil
+      (or (vl-genarrayblock-findbad (car x) allowed)
+          (vl-genarrayblocklist-findbad (cdr x) allowed))))
+
+  (define vl-genarrayblock-findbad ((x vl-genarrayblock-p)
+                                    (allowed symbol-listp))
+    :measure (vl-genarrayblock-count x)
+    (b* (((vl-genarrayblock x)))
       (vl-genelementlist-findbad x.elems allowed))))
+

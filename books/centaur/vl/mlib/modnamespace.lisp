@@ -88,28 +88,6 @@ events.</p>")
   :returns (modnames string-listp)
   (vl-modinst->modname x))
 
-(defprojection vl-paramdecllist->names ((x vl-paramdecllist-p))
-  :parents (vl-paramdecllist-p modnamespace)
-  :short "Collect all names declared in a @(see vl-paramdecllist-p)."
-  :returns (names string-listp)
-  (vl-paramdecl->name x))
-
-(defprojection vl-portdecllist->names ((x vl-portdecllist-p))
-  :parents (vl-portdecllist-p modnamespace)
-  :short "Collect all names declared in a @(see vl-portdecllist-p)."
-  :returns (names string-listp)
-  (vl-portdecl->name x))
-
-(defprojection vl-vardecllist->names ((x vl-vardecllist-p))
-  :parents (vl-vardecllist-p modnamespace)
-  :short "Collect all names declared in a @(see vl-vardecllist-p)."
-  :returns (names string-listp)
-  (vl-vardecl->name x))
-
-
-
-
-
 
 
 

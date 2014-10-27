@@ -183,12 +183,10 @@ with, we can safely remove @('plus') from our module list.</p>")
    (ctx      vl-context-p          "Context for error messages."))
   :returns (mv (okp       booleanp :rule-classes :type-prescription)
                (warnings  vl-warninglist-p)
-               (new-decl  vl-paramdecl-p
-                          "Rewritten parameter declaration, overwritten as
-                           specified by the submodule."))
+               (new-type  vl-datatype-p "On success, the new replacement type."))
   (b* ((decl     (vl-paramdecl-fix decl))
        (datatype (vl-datatype-fix datatype))
-       (ctx     (vl-context-fix ctx))
+       (ctx      (vl-context-fix ctx))
 
        ((vl-paramdecl decl) decl)
        ((unless (eq (vl-paramtype-kind decl.type) :vl-typeparam))
@@ -199,7 +197,7 @@ with, we can safely remove @('plus') from our module list.</p>")
                    :msg "~a0: can't override parameter ~s1 with datatype ~a2: ~
                          ~s1 is a value parameter, not a type parameter."
                    :args (list ctx decl.name datatype))
-            decl))
+            datatype))
 
        ;; It seems like we might want to do some other kinds of sanity/error
        ;; checking here, but I'm not sure what that would look like.  Well
@@ -222,10 +220,11 @@ with, we can safely remove @('plus') from our module list.</p>")
        ;; parameter's default type.  So, it seems like probably we don't have
        ;; to be especially worried with sanity checking this kind of stuff at
        ;; override time.
-       (new-type (change-vl-typeparam decl.type :default datatype))
-       (new-decl (change-vl-paramdecl decl :type new-type)))
-    (vl-unparam-debug "~a0: parameter ~a1 becomes ~a2.~%" ctx decl new-decl)
-    (mv t (ok) new-decl)))
+       ;(new-type (change-vl-typeparam decl.type :default datatype))
+       ;(new-decl (change-vl-paramdecl decl :type new-type))
+       )
+    (vl-unparam-debug "~a0: parameter ~a1 becomes ~a2.~%" ctx decl datatype)
+    (mv t (ok) datatype)))
 
 (define vl-convert-parameter-value-to-explicit-type
   :short "Alter the expression given to an explicitly typed parameter so that
@@ -355,9 +354,8 @@ types.</p>"
    (ctx      vl-context-p          "Context for error messages."))
   :returns (mv (okp       booleanp :rule-classes :type-prescription)
                (warnings  vl-warninglist-p)
-               (new-decl  vl-paramdecl-p
-                          "Rewritten parameter declaration, overwritten as
-                           specified by the submodule."))
+               (new-value vl-expr-p "On success, final (coerced) value to use
+                                     for this parameter."))
 
   (b* (((vl-paramdecl decl) (vl-paramdecl-fix decl))
        (expr (vl-expr-fix expr))
@@ -372,7 +370,7 @@ types.</p>"
                   :msg "~a0: can't override parameter ~s1 with expression, ~
                         ~a2: ~s1 is a type parameter, not a value parameter."
                   :args (list ctx decl.name expr))
-           decl))
+           expr))
 
       (:vl-explicitvalueparam
        ;; See the rules in SystemVerilog 23.10.  I think we should regard this
@@ -386,15 +384,16 @@ types.</p>"
              (vl-convert-parameter-value-to-explicit-type decl.type.type expr ss warnings ctx decl.name))
             ((unless okp)
              ;; Already warned.
-             (mv nil warnings decl))
+             (mv nil warnings expr))
             ;; Else, we successfully converted the overwriting expr to have the
             ;; right type.  So, rewrite the parameter declaration to install
             ;; the right value.
-            (new-type (change-vl-explicitvalueparam decl.type :default coerced-expr))
-            (new-decl (change-vl-paramdecl decl :type new-type)))
+            ;; (new-type (change-vl-explicitvalueparam decl.type :default coerced-expr))
+            ;; (new-decl (change-vl-paramdecl decl :type new-type))
+            )
          (vl-unparam-debug "~a0: successfully overriding value parameter ~a1 with ~a2.~%"
-                           ctx decl new-decl)
-         (mv t (ok) new-decl)))
+                           ctx decl coerced-expr)
+         (mv t (ok) coerced-expr)))
 
       (:vl-implicitvalueparam
        ;; See the rules in SystemVerilog-2012 Section 23.10.
@@ -407,7 +406,7 @@ types.</p>"
                         :msg "~a0: can't override parameter ~s1: failed to ~
                               reduce expression ~a2 to a constant integer."
                         :args (list ctx decl.name expr))
-                 decl))
+                 expr))
 
             (new-dims
              ;; After looking through the cases, the rule seems to be: if the
@@ -449,15 +448,16 @@ types.</p>"
              (vl-convert-parameter-value-to-explicit-type explicit-type reduced-expr ss warnings ctx decl.name))
             ((unless okp)
              ;; Already warned
-             (mv nil warnings decl))
+             (mv nil warnings expr))
             ;; Else, we successfully converted the overwriting expr to have the
             ;; right type.  So, rewrite the parameter declaration to install
             ;; the right value.
-            (new-type (make-vl-explicitvalueparam :type explicit-type :default coerced-expr))
-            (new-decl (change-vl-paramdecl decl :type new-type)))
+            ;(new-type (make-vl-explicitvalueparam :type explicit-type :default coerced-expr))
+            ;(new-decl (change-vl-paramdecl decl :type new-type))
+            )
          (vl-unparam-debug "~a0: successfully overriding ~a1 with ~a2.~%"
-                           ctx decl new-decl)
-         (mv t (ok) new-decl))))))
+                           ctx decl coerced-expr)
+         (mv t (ok) coerced-expr))))))
 
 (define vl-override-parameter-value
   :parents (unparameterization)
@@ -469,10 +469,8 @@ types.</p>"
    (ctx      vl-context-p       "Context for error messages."))
   :returns (mv (okp       booleanp :rule-classes :type-prescription)
                (warnings  vl-warninglist-p)
-               (new-decl  vl-paramdecl-p
-                          "Rewritten parameter declaration, overwritten as
-                           specified by the submodule."))
-  :guard-hints(("Goal" :in-theory (enable vl-maybe-paramvalue-p)))
+               (new-value vl-paramvalue-p
+                          "On success, the new value to use for this parameter."))
   (b* ((decl  (vl-paramdecl-fix decl))
        (value (vl-paramvalue-fix value))
        ((when (vl-paramvalue-datatype-p value))
@@ -818,7 +816,7 @@ types.</p>"
             typesigma))
 
        ;; Coerce the override value into the correct type.
-       ((mv okp warnings decl)
+       ((mv okp warnings final)
         (vl-override-parameter-value decl override ss warnings ctx))
        ((unless okp)
         (vl-unparam-debug "~a0: failed to override ~a1 with ~a2.~%" ctx decl override)
@@ -826,15 +824,6 @@ types.</p>"
         (mv nil warnings valsigma typesigma))
 
        ;; Extend the appropriate sigma.
-       (final (vl-paramtype->default (vl-paramdecl->type decl)))
-       ((unless final)
-        (vl-unparam-debug "~a0: after overriding, no default value?? new, raw decl: ~x1" ctx decl)
-        (mv nil
-            (fatal :type :vl-programming-error
-                   :msg "~a0: paramdecl ~x1 somehow has no value?"
-                   :args (list ctx name))
-            valsigma typesigma))
-
        ((when (vl-paramvalue-expr-p final))
         (vl-unparam-debug "~a0: OK - extending valsigma: ~a1 --> ~a2.~%" ctx name final)
         (mv t (ok) (hons-acons! name final valsigma) typesigma)))
@@ -962,9 +951,9 @@ introduced.</p>"
 (defprod vl-unparam-signature
   :parents (unparameterization)
   :short "A unique object representing a complete assignment of parameters to a module."
-  ((name      stringp)
-   (valsigma  vl-sigma-p)
-   (typesigma vl-typesigma-p))
+  ((name      stringp        "the module name")
+   (valsigma  vl-sigma-p     "the final value parameters to use")
+   (typesigma vl-typesigma-p "the final type parameters to use"))
   :layout :tree
   :hons t)
 
@@ -1097,15 +1086,19 @@ introduced.</p>"
   :prepwork ((local (defthm vl-scope-p-when-vl-module-p-strong
                       (implies (vl-module-p x)
                                (vl-scope-p x)))))
-  (define vl-unparameterize-main ((sig vl-unparam-signature-p)
-                                  (donelist "fast alist of previously-seen signatures")
-                                  (depthlimit natp "termination counter")
-                                  (ss vl-scopestack-p))
+  (define vl-unparameterize-main
+    ((sig vl-unparam-signature-p "a single signature to expand")
+     (donelist "fast alist of previously-seen signatures")
+     (depthlimit natp "termination counter")
+     (ss vl-scopestack-p))
     :measure (two-nats-measure depthlimit 0)
     :verify-guards nil
     :returns (mv (successp booleanp :rule-classes :type-prescription)
                  (warnings vl-warninglist-p)
                  (new-mods vl-modulelist-p
+                           "All of the modules (not seen before) that you need
+                            to meet this signature, including instantiated
+                            ones"
                   :hints ('(:in-theory (disable vl-unparameterize-main-list
                                                 vl-unparameterize-main)
                             :expand ((vl-unparameterize-main sig donelist depthlimit ss)))))
@@ -1115,7 +1108,8 @@ introduced.</p>"
          ((when (zp depthlimit))
           (mv nil
               (fatal :type :vl-unparameterize-loop
-                     :msg "Recursion depth ran out in unparameterize -- loop in the hierarchy?") 
+                     :msg "Recursion depth ran out in unparameterize -- loop ~
+                           in the hierarchy?") 
               nil donelist))
 
          (donelist (hons-acons sig t donelist))
@@ -1254,9 +1248,15 @@ introduced.</p>"
   ((x vl-design-p))
   :returns (new-x vl-design-p)
   (b* (;; Throw out modules that have problems with shadowed parameters.
-       ((vl-design x) (vl-design-unparam-check x))
-       (ss (vl-scopestack-init x))
+       ;; We won't need this.
+       ;; ((vl-design x) (vl-design-unparam-check x))
+       (ss      (vl-scopestack-init x))
        (topmods (vl-modulelist-toplevel x.mods))
+
+       ;; This is something Sol wanted for Samev.  The idea is to instance
+       ;; every top-level module with its default parameters, so that we don't
+       ;; just throw away the whole design if someone is trying to check a
+       ;; parameterized module.
        ((mv top-sigs warnings) (vl-modulelist-default-signatures topmods ss x.warnings))
 
        ((mv ?ok warnings1 new-mods donelist)
