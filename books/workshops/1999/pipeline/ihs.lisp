@@ -26,14 +26,14 @@
 (in-theory (disable (force)))
 
 (in-theory (disable
-	    (:generalize MOD-X-Y-=-X+Y)
-	    (:generalize MOD-X-Y-=-X)
+	    (:generalize MOD-X-Y-=-X+Y-for-rationals)
+	    (:generalize MOD-X-Y-=-X-for-rationals)
 	    (:generalize MOD-=-0)
 	    (:generalize FLOOR-TYPE-4)
 	    (:generalize FLOOR-TYPE-3)
 	    (:generalize FLOOR-TYPE-2)
 	    (:generalize FLOOR-TYPE-1)
-	    (:generalize FLOOR-BOUNDS)
+	    (:generalize FLOOR-BOUNDED-BY-/)
 	    (:generalize FLOOR-=-X/Y)))
 
 
