@@ -717,7 +717,7 @@
  (implies (and (integerp x) (integerp y) (< 0 y)
 	       (<= y x) (< x (* 2 y)))
 	  (equal (mod x y) (- x y)))
- :Hints (("goal" :in-theory (disable (:generalize floor-bounds)))
+ :Hints (("goal" :in-theory (disable (:generalize floor-bounded-by-/)))
 	 ("subgoal 1" :cases ((<= j 1)))))
 )
 

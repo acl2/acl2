@@ -746,9 +746,9 @@
                                    (<= b a)
                                    (< a (* 2 b)))
                               (equal (floor a b) 1))
-                     :hints(("Goal" :in-theory (disable floor acl2::floor-bounds
+                     :hints(("Goal" :in-theory (disable floor acl2::floor-bounded-by-/
                                                         acl2::<-*-/-left)
-                             :use ((:instance acl2::floor-bounds
+                             :use ((:instance acl2::floor-bounded-by-/
                                     (x a) (y b))
                                    (:theorem (implies (and (integerp a)
                                                            (integerp b)
@@ -765,9 +765,9 @@
                                    (<= 0 a)
                                    (< a b))
                               (equal (floor a b) 0))
-                     :hints(("Goal" :in-theory (disable floor acl2::floor-bounds
+                     :hints(("Goal" :in-theory (disable floor acl2::floor-bounded-by-/
                                                         acl2::<-*-/-left)
-                             :use ((:instance acl2::floor-bounds
+                             :use ((:instance acl2::floor-bounded-by-/
                                     (x a) (y b))
                                    (:theorem (implies (and (integerp a)
                                                            (integerp b)
@@ -785,9 +785,9 @@
                                    (< a (* 2 b)))
                               (equal (mod a b) (- a b)))
                      :hints(("Goal" :in-theory (e/d (mod)
-                                                    (floor acl2::floor-bounds
+                                                    (floor acl2::floor-bounded-by-/
                                                            acl2::<-*-/-left))
-                             :use ((:instance acl2::floor-bounds
+                             :use ((:instance acl2::floor-bounded-by-/
                                     (x a) (y b))
                                    (:theorem (implies (and (integerp a)
                                                            (integerp b)
@@ -804,9 +804,9 @@
                                    (<= 0 a)
                                    (< a b))
                               (equal (mod a b) a))
-                     :hints(("Goal" :in-theory (disable floor acl2::floor-bounds
+                     :hints(("Goal" :in-theory (disable floor acl2::floor-bounded-by-/
                                                         acl2::<-*-/-left)
-                             :use ((:instance acl2::floor-bounds
+                             :use ((:instance acl2::floor-bounded-by-/
                                     (x a) (y b))
                                    (:theorem (implies (and (integerp a)
                                                            (integerp b)
@@ -828,7 +828,7 @@
                                                   (floor
                                                    (:rules-of-class
                                                     :generalize :here))
-                                                  ((:generalize acl2::mod-bounds))))))
+                                                  ((:generalize acl2::mod-bounded-by-modulus))))))
 
 
                 (defthm mod-rewrite-+-bit-*-2-a
@@ -843,7 +843,7 @@
                                                   (floor
                                                    (:rules-of-class
                                                     :generalize :here))
-                                                  ((:generalize acl2::mod-bounds))))))
+                                                  ((:generalize acl2::mod-bounded-by-modulus))))))
 
 
                 (defthm denominator-of-unary-/

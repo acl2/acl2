@@ -439,7 +439,7 @@
            :in-theory (e/d (loghead ifix
                                     mod-cancel) 
                            (INTEGERP-OF-INVERSE-OF-EXPT
-                                          MOD-X-I*J ;yucky force!
+                                          MOD-X-I*J-of-positives ;yucky force!
                                            ))
            :do-not '(generalize eliminate-destructors))))
 
