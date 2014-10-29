@@ -166,9 +166,10 @@
        (scopeinfo-with-empty-params
         (change-vl-scopeinfo
          scopeinfo
-         :locals (vl-paramdecllist-alist
-                  (vl-paramdecllist-remove-defaults formals)
-                  (vl-scopeinfo->locals scopeinfo))))
+         :locals (make-fast-alist
+                  (vl-paramdecllist-alist
+                   (vl-paramdecllist-remove-defaults formals)
+                   (vl-scopeinfo->locals scopeinfo)))))
        ((mv ok warnings scopeinfo-with-real-params final-paramdecls)
         (vl-scopeinfo-resolve-params overrides scopeinfo-with-empty-params ss nil warnings ctx)))
     (mv ok warnings (vl-scopestack-push scopeinfo-with-real-params ss)
@@ -209,6 +210,10 @@
   :parents (vl-unparam-newname)
   (b* (((when (atom x)) ps)
        ((vl-paramdecl x1) (car x))
+       ((when x1.localp)
+        ;; we think localparams are always determined by the nonlocal params,
+        ;; so we don't need to include them in the name.
+        (vl-unparam-newname-aux (cdr x)))
        ((the string name-part)
         (acl2::substitute #\_ #\Space x1.name))
        ((the string type-expr-part)
@@ -570,7 +575,7 @@ introduced.</p>"
                        :args (list (vl-genelement-fix orig-x) (vl-expr-fix continue)))
                 nil))
 
-           ((when (eql continue-val 0))
+           ((when (eql (vl-resolved->val continue-val) 0))
             (mv t warnings nil))
 
            ((mv ok warnings block-elems)

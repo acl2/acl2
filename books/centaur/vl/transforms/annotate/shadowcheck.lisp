@@ -505,14 +505,6 @@ explicit declarations.</p>")
        (st (change-vl-shadowcheck-state st :lexscopes lexscopes)))
     (mv st warnings)))
 
-(define vl-scopestack-nesting-level ((x vl-scopestack-p))
-  :returns (level natp)
-  :measure (vl-scopestack-count x)
-  (vl-scopestack-case x
-    :null 0
-    :global 1
-    :local (+ 1 (vl-scopestack-nesting-level x.super))))
-
 (define vl-shadowcheck-reference-name ((name     stringp)
                                        (ctx      acl2::any-p)
                                        (st       vl-shadowcheck-state-p)

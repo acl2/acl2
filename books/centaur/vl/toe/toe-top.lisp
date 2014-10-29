@@ -118,10 +118,16 @@ field of each @(see vl-module-p).</p>")
   (b* (((vl-module x) x)
        ;; Gather up a message about what unsupported constructs there are.
        (acc nil)
-       (acc (if x.paramdecls
-                (cons (str::join (cons "parameter declarations: " (vl-paramdecllist->names x.paramdecls)) " ")
-                      acc)
-              acc))
+       ;; We used to check whether there were parameter declarations and fail
+       ;; if so, because e doesn't really support them directly.  But it's
+       ;; basically harmless to have parameter declarations in your module as
+       ;; long as they're not used.  If unparameterization failed somewhere, it
+       ;; should have produced a fatal warning, so we don't expect this check
+       ;; to be necessary.
+       ;; (acc (if x.paramdecls
+       ;;          (cons (str::join (cons "parameter declarations: " (vl-paramdecllist->names x.paramdecls)) " ")
+       ;;                acc)
+       ;;        acc))
        (acc (if x.fundecls
                 (cons (str::join (cons "function declarations: " (vl-fundecllist->names x.fundecls)) " ")
                       acc)

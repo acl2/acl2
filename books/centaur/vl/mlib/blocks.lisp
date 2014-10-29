@@ -96,7 +96,8 @@
                             '(import port portdecl vardecl
                                      paramdecl fundecl taskdecl
                                      assign modinst gateinst
-                                     always initial)))))))
+                                     always initial)))
+                        :generates x.generates))))
 
 
 (make-event
@@ -452,9 +453,12 @@
                  return-from-elementlist-bindings
                  bad-generate-bindings
                  (verify-guards t)
-                 guard-hints)
+                 guard-hints
+                 no-new-x)
         kwd-alist)
        
+       (new-x (not no-new-x))
+
        (define-keys (kwd-alist->filtered-key-args
                      kwd-alist *def-genblob-transform-keywords*))
 
@@ -492,7 +496,7 @@
        (define ,name ((x vl-genblob-p)
                       . ,raw-formals)
          :returns ,(maybe-mv-fn `(,@returns
-                                  (new-x vl-genblob-p)))
+                                  ,@(and new-x '((new-x vl-genblob-p)))))
          :measure (vl-genblob-count x)
          :verify-guards nil
          ,@define-keys
@@ -502,74 +506,83 @@
        (define ,apply-to-generates ((x vl-genelementlist-p)
                                     . ,raw-formals)
          :returns ,(maybe-mv-fn `(,@returns
-                                  (new-x vl-genelementlist-p)))
+                                  ,@(and new-x '((new-x vl-genelementlist-p)))))
          :measure (vl-genblob-generates-count x)
          (b* (((when (atom x))
                (b* (,@acc-fix-bindings
                     ,@empty-list-bindings)
-                 (maybe-mv ,@return-names nil)))
-              ((maybe-mv ,@return-names1 first)
+                 (maybe-mv ,@return-names ,@(and new-x '(nil)))))
+              ((maybe-mv ,@return-names1 ,@(and new-x '(first)))
                (,apply-to-generate (car x) . ,formal-names))
-              ((maybe-mv ,@return-names2 rest)
+              ((maybe-mv ,@return-names2 ,@(and new-x '(rest)))
                (,apply-to-generates (cdr x) . ,formal-names))
               . ,combine-bindings)
-           (maybe-mv ,@return-names (cons first rest))))
+           (maybe-mv ,@return-names ,@(and new-x '((cons first rest))))))
 
        (define ,apply-to-generate ((x vl-genelement-p)
                                    . ,raw-formals)
          :returns ,(maybe-mv-fn `(,@returns
-                                  (new-x vl-genelement-p)))
+                                  ,@(and new-x '((new-x vl-genelement-p)))))
          :measure (vl-genblob-generate-count x)
          (vl-genelement-case x
            :vl-genblock (b* (,@genblock-bindings
-                             ((maybe-mv ,@return-names new-elems)
+                             ((maybe-mv ,@return-names ,@(and new-x '(new-elems)))
                               (,apply-to-elementlist x.elems . ,formal-names))
                              ,@return-from-genblock-bindings)
-                          (maybe-mv ,@return-names (change-vl-genblock x :elems new-elems)))
+                          (maybe-mv ,@return-names
+                                    ,@(and new-x '((change-vl-genblock
+                                                    x :elems new-elems)))))
            :vl-genarray (b* (,@genarray-bindings
-                             ((maybe-mv ,@return-names new-blocks)
+                             ((maybe-mv ,@return-names ,@(and new-x '(new-blocks)))
                               (,apply-to-genarrayblocklist x.blocks . ,formal-names))
                              ,@return-from-genarray-bindings)
-                          (maybe-mv ,@return-names (change-vl-genarray x :blocks new-blocks)))
+                          (maybe-mv ,@return-names
+                                    ,@(and new-x '((change-vl-genarray
+                                                    x :blocks new-blocks)))))
            :otherwise (b* (,@acc-fix-bindings
                            ,@bad-generate-bindings)
-                        (maybe-mv ,@return-names (vl-genelement-fix x)))))
+                        (maybe-mv ,@return-names
+                                  ,@(and new-x '((vl-genelement-fix x)))))))
 
        (define ,apply-to-elementlist ((x vl-genelementlist-p)
                                       . ,raw-formals)
          :returns ,(maybe-mv-fn `(,@returns
-                                  (new-x vl-genelementlist-p)))
+                                  ,@(and new-x '((new-x vl-genelementlist-p)))))
          :measure (vl-genblob-elementlist-count x)
          (b* (,@elementlist-bindings
-              ((maybe-mv ,@return-names new-blob)
+              ((maybe-mv ,@return-names ,@(and new-x '(new-blob)))
                (,name (vl-sort-genelements x) . ,formal-names))
               ,@return-from-elementlist-bindings)
-           (maybe-mv ,@return-names (vl-genblob->elems new-blob x))))
+           (maybe-mv ,@return-names ,@(and new-x '((vl-genblob->elems new-blob x))))))
 
        (define ,apply-to-genarrayblocklist ((x vl-genarrayblocklist-p)
                                             . ,raw-formals)
          :returns ,(maybe-mv-fn `(,@returns
-                                  (new-x vl-genarrayblocklist-p)))
+                                  ,@(and new-x '((new-x vl-genarrayblocklist-p)))))
          :measure (vl-genblob-genarrayblocklist-count x)
          (b* (((when (atom x))
                (b* (,@acc-fix-bindings
                     ,@empty-list-bindings)
-                 (maybe-mv ,@return-names nil)))
-              ((maybe-mv ,@return-names1 first) (,apply-to-genarrayblock (car x) . ,formal-names))
-              ((maybe-mv ,@return-names2 rest) (,apply-to-genarrayblocklist (cdr x) . ,formal-names))
+                 (maybe-mv ,@return-names ,@(and new-x '(nil)))))
+              ((maybe-mv ,@return-names1 ,@(and new-x '(first)))
+               (,apply-to-genarrayblock (car x) . ,formal-names))
+              ((maybe-mv ,@return-names2 ,@(and new-x '(rest)))
+               (,apply-to-genarrayblocklist (cdr x) . ,formal-names))
               . ,combine-bindings)
-           (maybe-mv ,@return-names (cons first rest))))
+           (maybe-mv ,@return-names ,@(and new-x '((cons first rest))))))
 
        (define ,apply-to-genarrayblock ((x vl-genarrayblock-p)
                                         . ,raw-formals)
          :returns ,(maybe-mv-fn `(,@returns
-                                  (new-x vl-genarrayblock-p)))
+                                  ,@(and new-x '((new-x vl-genarrayblock-p)))))
          :measure (vl-genblob-genarrayblock-count x)
          (b* (((vl-genarrayblock x))
               ,@genarrayblock-bindings
-              ((maybe-mv ,@return-names new-elems) (,apply-to-elementlist x.elems . ,formal-names))
+              ((maybe-mv ,@return-names ,@(and new-x '(new-elems)))
+               (,apply-to-elementlist x.elems . ,formal-names))
               ,@return-from-genarrayblock-bindings)
-           (maybe-mv ,@return-names (change-vl-genarrayblock x :elems new-elems))))
+           (maybe-mv ,@return-names
+                     ,@(and new-x '((change-vl-genarrayblock x :elems new-elems))))))
        ///
        (local (in-theory (disable ,apply-to-genarrayblock
                                 ,apply-to-genarrayblocklist

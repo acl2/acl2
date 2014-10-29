@@ -107,7 +107,7 @@ arisen during the course of unparameterization.</p>"
             (lsb (vl-make-index (vl-resolved->val index2))))
          (mv (ok) (list from msb lsb))))
 
-      (:vl-bitselect
+      ((:vl-bitselect :vl-index)
        (b* ((from  (vl-expr-fix (first args)))
             (index (vl-expr-fix (second args)))
             ((mv ok index) (vl-consteval index ss))

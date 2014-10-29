@@ -581,6 +581,7 @@
                  (:= (vl-match))
                  (blkname := (vl-match-token :vl-idtoken)))
                (elts := (vl-parse-genelements-until :vl-kwd-end))
+               (:= (vl-match-token :vl-kwd-end))
                (return (make-vl-generateblock :name (and blkname
                                                          (vl-idtoken->name blkname))
                                               :elems elts)))

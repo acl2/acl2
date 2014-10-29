@@ -78,7 +78,7 @@
                                                         :sum-type t
                                                         :acc generates))
            (genblob
-                         (:import)          portdecl vardecl paramdecl fundecl taskdecl
+                         (:import)          vardecl paramdecl fundecl taskdecl
                                             typedef
                                             (modinst :name instname :maybe-stringp t
                                                      :names-defined t)
@@ -105,6 +105,7 @@
           ;; scope type      has item types or (type acc-name)
          '((interface    ()               portdecl)
            (module       ()               portdecl)
+           (genblob      ()               portdecl)
            (design           )
            ;; bozo add function/task ports?
            (package          ))))
@@ -1255,6 +1256,15 @@ may be shorter than the number of elements in the list.</p>"
   ((design vl-design-p))
   :returns (ss vl-scopestack-p)
   (make-vl-scopestack-global :design design))
+
+
+(define vl-scopestack-nesting-level ((x vl-scopestack-p))
+  :returns (level natp)
+  :measure (vl-scopestack-count x)
+  (vl-scopestack-case x
+    :null 0
+    :global 1
+    :local (+ 1 (vl-scopestack-nesting-level x.super))))
 
 
 (local (defthm vl-maybe-design-p-when-iff
