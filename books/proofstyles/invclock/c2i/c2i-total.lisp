@@ -145,7 +145,8 @@ an inductive invariant proof.
                             (i 0))))))
 
 (local
- (include-book "arithmetic-2/meta/top" :dir :system))
+ ;; [Jared] changed this to use arithmetic-3 instead of 2
+ (include-book "arithmetic-3/bind-free/top" :dir :system))
 
 ;; Since I use nfix, I have to know something about removing nfix.
 
@@ -643,6 +644,11 @@ an inductive invariant proof.
 
 ;; Finally everything starts gelling together. I now know that m is the same as
 ;; subtracting the clock of the witness from whatever we have already run to.
+
+(local
+ ;; Jared added this when switching to arithmetic-3 to avoid loops in
+ ;; the next theorem.
+ (in-theory (disable prefer-positive-addends-<)))
 
 (local
  (defthm find-total-external-for-state

@@ -120,7 +120,8 @@ capital DEFTHMS in this book to get the composition of proofs.
  (((clock-fn *) => *))
 
  (local
-  (include-book "arithmetic-2/meta/top" :dir :system))
+  ;; [Jared] changed this to use arithmetic-3 instead of 2
+  (include-book "arithmetic-3/bind-free/top" :dir :system))
  
  (local
   (defun clock-fn (s)

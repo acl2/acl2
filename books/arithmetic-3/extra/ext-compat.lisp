@@ -204,9 +204,10 @@
 
 (encapsulate
   ()
-
-  (local (include-book "arithmetic-2/meta/expt" :dir :system))
-  (local (include-book "arithmetic-2/meta/integerp" :dir :system))
+  ;; [Jared] this previously included some arithmetic-2 books.  Reworked it to
+  ;; use arithmetic-3 instead.  Probably we don't need the whole bind-free/top
+  ;; here.
+  (local (include-book "arithmetic-3/bind-free/top" :dir :system))
 
   (defthm expt-1-linear-b
     (implies (and (<= 0 x)
@@ -215,7 +216,8 @@
                   (real/rationalp x)
                   (integerp i))
              (< (expt x i) 1))
-    :rule-classes :linear)
+    :rule-classes :linear
+    :hints(("Goal" :in-theory (enable expt))))
 
   (defthm expt-1-linear-d
     (implies (and (<= 0 x)
@@ -224,7 +226,8 @@
                   (real/rationalp x)
                   (integerp i))
              (<= (expt x i) 1))
-    :rule-classes :linear)
+    :rule-classes :linear
+    :hints(("Goal" :in-theory (enable expt))))
 
   (defthm expt-1-linear-h
     (implies (and (< 0 x)
@@ -233,7 +236,10 @@
                   (real/rationalp x)
                   (integerp i))
              (<= 1 (expt x i)))
-    :rule-classes :linear)
+    :rule-classes :linear
+    :hints(("Goal"
+            :nonlinearp t
+            :in-theory (enable expt))))
 
   (defthm nintegerp-expt
     (implies (and (real/rationalp x)
@@ -241,10 +247,7 @@
                   (integerp n)
                   (< n 0))
              (not (integerp (expt x n))))
-    :hints (("Goal" :use nintegerp-expt-helper))
-    :rule-classes :type-prescription)
-
-)
+    :rule-classes :type-prescription))
 
 
 #|

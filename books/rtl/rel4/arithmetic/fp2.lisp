@@ -105,18 +105,18 @@
 
 |#
 
-;I want to use some theoremes in arithmetic-2, but the theorems I want to prove have the same names as those,
+;I want to use some theoremes in arithmetic 2, but the theorems I want to prove have the same names as those,
 ;so I export them from the encapsulate with -alt appended to the names.
 
 
 (local 
  (encapsulate 
   ()
-             
-  (local (include-book "arithmetic-2/meta/non-linear" :dir :system))
+  ;; [Jared] changed this to use arithmetic-3 instead of 2.
+  (local (include-book "arithmetic-3/bind-free/top" :dir :system))
 
 ;BOZO generalize the (rationalp x) hyp (is it enough that, say, y be rational?)
-  (defthm *-weakly-monotonic-alt
+ (defthm *-weakly-monotonic-alt
     (implies (and (<= y y+)
                   (<= 0 x) ;reordered to put this first!
                   (rationalp x) ; This does not hold if x, y, and z are complex!

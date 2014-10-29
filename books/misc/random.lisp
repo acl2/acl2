@@ -35,7 +35,7 @@
 (in-package "ACL2")
 (set-verify-guards-eagerness 2)
 
-(local (include-book "arithmetic-2/floor-mod/floor-mod" :dir :system))
+(local (include-book "arithmetic-3/floor-mod/floor-mod" :dir :system))
 
 (defconst *M31* 2147483647)    
 (defconst *P1* 16807)          

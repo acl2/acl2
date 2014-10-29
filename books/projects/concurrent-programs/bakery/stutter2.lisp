@@ -23,8 +23,8 @@ fair selection. The theorems we prove are
 
 (include-book "programs")
 (include-book "properties")
-(include-book "arithmetic-2/meta/top" :dir :system)
 (include-book "lexicographic-pos")
+(local (include-book "arithmetic-2/meta/top" :dir :system))
 
 (defun rank-proc (i p)
   (if (equal (loc p) i) 1 0))

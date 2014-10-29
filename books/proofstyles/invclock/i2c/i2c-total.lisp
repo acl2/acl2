@@ -132,7 +132,8 @@ programs,. but I have not done that as yet.
 ;; We now define the clock function
 
 (local
- (include-book "arithmetic-2/meta/top" :dir :system))
+ ;; [Jared] changed this to use arithmetic-3 instead of 2
+ (include-book "arithmetic-3/bind-free/top" :dir :system))
 
 ;; The clock function is trivial. Simply goes on with stepping the machine
 ;; until it halts. The cute aspect of this is that I can do this simply because
