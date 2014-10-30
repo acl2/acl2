@@ -150,7 +150,10 @@ that normalizes constants by applying the fixing function to them.</li>
 <p>We assume that the fixing function returns an object that satisfies the
 predicate, and if given an object satisfying the predicate, it returns the same
 object.  We also assume that equiv is an equivalence relation (see @(see
-defequiv)).</p>")
+defequiv)).</p>
+
+<p>Consider using book @('centaur/fty/basetypes.lisp') to include definitions
+for some basic ACL2 types.</p>")
 
 (def-primitive-aggregate fixtype
   (name               ;; foo  (not necessarily a function)
