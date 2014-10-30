@@ -248,6 +248,48 @@
 ; manual more approachable and relevant, we now try to impose a better
 ; hierarchy and add some context.
 
+(defxdoc acl2::|Building the ACL2+Books Manual|
+  :parents (documentation)
+  :short "How to build the ACL2+Books Manual."
+
+  :long "<p>If you just want to get a copy of the ACL2+Books manual for local
+viewing, you probably <b>don't need to build it yourself</b> because you can
+just <a href='download/'>download</a> a copy.</p>
+
+
+<h4>Quick Instructions</h4>
+
+<p>This should work on CCL on Linux and Mac OS X.  It <b>may not work</b> for
+other OS/Lisp combinations.  In particular, building the manual requires some
+features from @(see oslib) and @(see quicklisp) that may not be available on
+other systems; see <a href='https://github.com/acl2/acl2/issues/189'>Issue
+189</a>.</p>
+
+<p>You need a copy of <b>ACL2(h)</b>.  Then, just run:</p>
+
+@({
+    cd acl2-sources/books
+    make manual ACL2=my-acl2h
+})
+
+<p>The resulting manual may be found in:</p>
+
+@({
+    acl2-sources/books/doc/manual/index.html
+})
+
+<p>For more detailed instructions, see @(see books-certification).</p>
+
+<h4>Other Manuals</h4>
+
+<p>See @(see acl2::acl2-doc) for details about how to build your own
+Emacs-based manual.</p>
+
+<p>See @(see xdoc::save) for general information about how to build and
+distribute custom XDOC manuals.  For instance, you can build manuals that are
+extended to cover proprietary libraries.</p>")
+
+
 (defsection arithmetic
   :parents (top)
   :short "Libraries for reasoning about basic arithmetic, bit-vector

@@ -212,7 +212,7 @@
 
 ;  DISABLE theories implicated in :LINEAR thrashing.
 
-(local (in-theory (disable floor-type-linear mod-type-linear floor-bounds)))
+(local (in-theory (disable floor-type-linear mod-type-linear floor-bounded-by-/)))
 
 ;  Some very useful results
 
@@ -290,9 +290,9 @@
      :do-not '(eliminate-destructors)
      :in-theory (set-difference-theories
 		 (enable mod)
-		 '(rewrite-floor-mod mod-bounds mod-type
+		 '(rewrite-floor-mod mod-bounded-by-modulus mod-type
 				     expt-is-weakly-increasing-for-base>1))
-     :use ((:instance mod-bounds (x x) (y (expt 2 i)))
+     :use ((:instance mod-bounded-by-modulus (x x) (y (expt 2 i)))
 	   (:instance (:linear mod-type . 4) ;(MOD x y) >= 0.
 		      (x x) (y (expt 2 i)))
 	   (:instance expt-is-weakly-increasing-for-base>1
@@ -585,7 +585,7 @@
                     (if (< size1 size)
                         (loghead size1 i)
                       (loghead size i))))
-    :hints (("Goal" :in-theory (disable mod-bounds mod-bounds-x))))
+    :hints (("Goal" :in-theory (disable mod-bounded-by-modulus mod-bounds-x))))
 
   (defthm loghead-0-i
     (implies (integerp i)
@@ -620,7 +620,7 @@
                     (if (< size1 size)
                         (logrpl size1 i (loghead size j))
                       (loghead size i))))
-    :hints (("Goal" :in-theory (disable exponents-add mod-bounds))))
+    :hints (("Goal" :in-theory (disable exponents-add mod-bounded-by-modulus))))
 
   (defthm bitp-loghead-1
     (bitp (loghead 1 i))
@@ -673,11 +673,11 @@
     :hints (("Goal"
              :in-theory (set-difference-theories (enable logtail)
                                                  '(<-*-left-cancel
-                                                   floor-bounds
+                                                   floor-bounded-by-/
                                                    <-*-/-left))
              :use ((:instance <-*-left-cancel
                     (z (/ (expt 2 pos))) (x i) (y (* j (expt 2 pos))))
-                   (:instance floor-bounds (x i) (y (expt 2 pos)))))))
+                   (:instance floor-bounded-by-/ (x i) (y (expt 2 pos)))))))
 
   (defthm logtail-unsigned-byte-p
     (implies (and (>= size1 0)
@@ -693,7 +693,7 @@
                   (loghead-guard size i))
              (equal (logtail size1 (loghead size i))
                     (loghead (max 0 (- size size1)) (logtail size1 i))))
-    :hints (("Goal" :in-theory (disable exponents-add mod-bounds
+    :hints (("Goal" :in-theory (disable exponents-add mod-bounded-by-modulus
                                         mod-bounds-x))))
 
   (defthm logtail-logapp
@@ -704,7 +704,7 @@
                     (if (< size size1)
                         (logapp (- size1 size) (logtail size i) j)
                       (logtail (- size size1) j))))
-    :hints (("Goal" :in-theory (disable mod-x-i*j))))
+    :hints (("Goal" :in-theory (disable mod-x-i*j-of-positives))))
 
   (defthm logtail-logrpl
     (implies (and (logrpl-guard size1 i j)
@@ -898,12 +898,12 @@
                                                  <-*-right-cancel
                                                  <-*-/-left
                                                  <-*-/-right
-                                                 floor-bounds
+                                                 floor-bounded-by-/
                                                  logapp)
                                         '(rewrite-linear-equalities-to-iff))
              :use ((:instance <-*-right-cancel
                     (z (/ (expt 2 size1))) (y j) (x (expt 2 size)))
-                   (:instance floor-bounds (x j) (y (expt 2 size1)))))))
+                   (:instance floor-bounded-by-/ (x j) (y (expt 2 size1)))))))
 
   (defthm logrpl-i-i
     (implies (logrpl-guard size i i)
@@ -1046,10 +1046,10 @@ logcdr), from the @(see logops-lemmas) book."
              (equal (logcar (loghead size i))
                     (if (equal size 0) 0 (logcar i))))
     :hints (("Goal" :in-theory (e/d (ifix loghead)
-                                    (expt mod-bounds mod-bounds-x
+                                    (expt mod-bounded-by-modulus mod-bounds-x
                                           loghead-upper-bound
                                           exponents-add
-                                          mod-x-y-=-x+y
+                                          mod-x-y-=-x+y-for-rationals
                                           rewrite-mod-mod))
              :expand (expt 2 size))))
 
@@ -1058,7 +1058,7 @@ logcdr), from the @(see logops-lemmas) book."
              (equal (logcar (logapp size i j))
                     (if (equal size 0) (logcar j) (logcar i))))
     :hints (("Goal" :in-theory (e/d (ifix logapp)
-                                    (expt logcar mod-bounds mod-bounds-x
+                                    (expt logcar mod-bounded-by-modulus mod-bounds-x
                                           exponents-add))
              :expand (expt 2 size))))
 
@@ -1067,7 +1067,7 @@ logcdr), from the @(see logops-lemmas) book."
              (equal (logcar (logrpl size i j))
                     (if (equal size 0) (logcar j) (logcar i))))
     :hints (("Goal" :in-theory (e/d (ifix logrpl)
-                                    (expt logcar mod-bounds exponents-add))
+                                    (expt logcar mod-bounded-by-modulus exponents-add))
              :expand (expt 2 size)))))
 
 (local (in-theory (disable logcar logcdr logcons bitp)))
@@ -1105,7 +1105,7 @@ logbitp).</p>"
                          (integerp i))
                     (equal (logbitp pos i)
                            (equal (logcar (logtail pos i)) 1)))
-           :hints (("Goal" :in-theory (e/d (logcar logtail) (mod-bounds mod-bounds-x))))
+           :hints (("Goal" :in-theory (e/d (logcar logtail) (mod-bounded-by-modulus mod-bounds-x))))
            :rule-classes :definition))
 
   (local (in-theory (disable logbitp)))
@@ -1409,7 +1409,7 @@ definitions of logical operations."
                   :clique (unsigned-byte-p)
                   :controller-alist ((unsigned-byte-p t t))))
   :expand (expt 2 size)
-  :enable (ifix logcdr unsigned-byte-p floor-bounds rewrite-linear-equalities-to-iff)
+  :enable (ifix logcdr unsigned-byte-p floor-bounded-by-/ rewrite-linear-equalities-to-iff)
   :disable exponents-add)
 
 (defrule signed-byte-p*
@@ -1464,7 +1464,7 @@ definitions of logical operations."
                   :controller-alist ((loghead$inline t t))))
   :expand (expt 2 size)
   :enable (ifix loghead logcar logcdr logcons)
-  :disable (exponents-add mod-bounds mod-bounds-x))
+  :disable (exponents-add mod-bounded-by-modulus mod-bounds-x))
 
 (defrule logtail*
   :parents (logtail logops-recursive-definitions-theory)
@@ -1507,7 +1507,7 @@ definitions of logical operations."
                   :clique (logbitp)
                   :controller-alist ((logbitp t t))))
   :enable (ifix expt logbitp logcar logcdr)
-  :disable (exponents-add mod-bounds mod-bounds-x
+  :disable (exponents-add mod-bounded-by-modulus mod-bounds-x
                           floor-type-1 floor-type-2 floor-type-3
                           floor-type-4))
 

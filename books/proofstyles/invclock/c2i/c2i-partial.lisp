@@ -143,7 +143,8 @@ corresponding comments in the total correctness proofs.
   (in-theory (disable no-partial-external-partial-run no-partial-external-partial-run-necc)))
  
  (local
-  (include-book "arithmetic-2/meta/top" :dir :system))
+  ;; [Jared] changed this to use arithmetic-3 instead of 2
+  (include-book "arithmetic-3/bind-free/top" :dir :system))
  
  (local
   (defthm partial-run-is-same-for-nfix

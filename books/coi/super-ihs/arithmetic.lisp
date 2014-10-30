@@ -11,7 +11,7 @@
 (include-book "from-rtl")
 
 ;this was causing lots of generalization to occur, introducing mod into goals which had nothing to do with mod.
-(in-theory (disable (:generalize MOD-X-Y-=-X+Y)))
+(in-theory (disable (:generalize MOD-X-Y-=-X+Y-for-rationals)))
 
 (in-theory (disable 
             (:DEFINITION NONNEGATIVE-INTEGER-QUOTIENT)
@@ -433,7 +433,7 @@
 
 
 ;disable other one
-(DEFTHM FLOOR-BOUNDS-better
+(DEFTHM FLOOR-BOUNDED-BY-/-better
   (IMPLIES (AND (RATIONALP X)
                 (RATIONALP Y)
                 ;(FORCE (NOT (EQUAL 0 Y)))
@@ -443,9 +443,9 @@
   :RULE-CLASSES
   ((:LINEAR :TRIGGER-TERMS ((FLOOR X Y)))
    (:GENERALIZE))
-:hints (("Goal" :use (:instance FLOOR-BOUNDS) :in-theory (disable FLOOR-BOUNDS))))
+:hints (("Goal" :use (:instance FLOOR-BOUNDED-BY-/) :in-theory (disable FLOOR-BOUNDED-BY-/))))
 
-(in-theory (disable FLOOR-BOUNDS))
+(in-theory (disable FLOOR-BOUNDED-BY-/))
 
 
 (defthm integer-length-of-floor-by-2
@@ -638,7 +638,7 @@
   :hints (("Goal" :use (:instance expt-less-than-1-hack)
            :in-theory (disable expt-less-than-1-hack))))
 
-(DEFTHM FLOOR-BOUNDS-BETTER-1-alt
+(DEFTHM FLOOR-BOUNDED-BY-/-BETTER-1-alt
   (IMPLIES (AND (< 0 y)
                 (RATIONALP X)
                 (RATIONALP Y)
@@ -647,10 +647,10 @@
   :RULE-CLASSES
   (:rewrite (:LINEAR :TRIGGER-TERMS ((FLOOR X Y))))
   :HINTS
-  (("Goal" :USE (:INSTANCE FLOOR-BOUNDS)
-    :IN-THEORY (DISABLE FLOOR-BOUNDS))))
+  (("Goal" :USE (:INSTANCE FLOOR-BOUNDED-BY-/)
+    :IN-THEORY (DISABLE FLOOR-BOUNDED-BY-/))))
 
-(DEFTHM FLOOR-BOUNDS-BETTER-2-alt
+(DEFTHM FLOOR-BOUNDED-BY-/-BETTER-2-alt
   (IMPLIES (AND (< 0 y)
                 (RATIONALP X)
                 (RATIONALP Y)
@@ -659,8 +659,8 @@
   :RULE-CLASSES
   (:rewrite (:LINEAR :TRIGGER-TERMS ((FLOOR X Y))))
   :HINTS
-  (("Goal" :USE (:INSTANCE FLOOR-BOUNDS)
-    :IN-THEORY (DISABLE FLOOR-BOUNDS))))
+  (("Goal" :USE (:INSTANCE FLOOR-BOUNDED-BY-/)
+    :IN-THEORY (DISABLE FLOOR-BOUNDED-BY-/))))
 
 (defthm integerp-of-quotient-of-expts
   (implies (and (integerp n1)

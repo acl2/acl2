@@ -209,7 +209,7 @@
                        y)))
      :hints(("Goal" :in-theory (enable comparable-merge))))
 
-   (in-theory (disable floor-bounds
+   (in-theory (disable floor-bounded-by-/
                        take-of-len-free
                        true-listp-when-element-list-p-rewrite))))
 
@@ -604,7 +604,7 @@
   (equal (duplicity a (comparable-mergesort x))
          (duplicity a x))
   :hints(("Goal" :in-theory (e/d (comparable-mergesort
-                                  floor-bounds)
+                                  floor-bounded-by-/)
                                  (len)))))
 
 
@@ -624,7 +624,7 @@
   (equal (len (comparable-mergesort x))
          (len x))
   :hints(("Goal" :in-theory (e/d ((:i comparable-mergesort)
-                                  floor-bounds)
+                                  floor-bounded-by-/)
                                  (take-redefinition nthcdr))
           :induct (comparable-mergesort x)
           :expand ((comparable-mergesort x)))))
@@ -641,7 +641,7 @@
   (implies (force (comparable-listp x))
            (comparable-listp (comparable-mergesort x)))
   :hints(("Goal" :in-theory (e/d ((:i comparable-mergesort)
-                                  floor-bounds)
+                                  floor-bounded-by-/)
                                  ((comparable-listp)))
           :induct (comparable-mergesort x)
           :expand ((comparable-mergesort x)))))
@@ -700,7 +700,7 @@
                      (consp (cdr x)))))
 
    (local (in-theory (disable nthcdr-of-nthcdr)))
-   (local (in-theory (enable floor-bounds)))
+   (local (in-theory (enable floor-bounded-by-/)))
 
    (defthm fast-comparable-mergesort-fixnums-redefinition
      (equal (fast-comparable-mergesort-fixnums x len)
@@ -959,7 +959,7 @@
               (equal (compare-equiv-elts elt (comparable-mergesort x))
                      (compare-equiv-elts elt x)))
      :hints(("Goal" :in-theory (e/d ((:i comparable-mergesort)
-                                     floor-bounds)
+                                     floor-bounded-by-/)
                                     ((force) (comparable-mergesort)
                                      compare-equiv-elts-empty-case))
              :expand ((comparable-mergesort x))

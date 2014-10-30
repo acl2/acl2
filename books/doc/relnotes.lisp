@@ -45,25 +45,35 @@
 ;
 ;  - Book release notes are typically very disorganized.  This shouldn't be
 ;    considered a bug until we are very close to a release.
-;
-;  - The following URL is very useful for updating the comments here:
-;       http://code.google.com/p/acl2-books/source/list
 
 (defxdoc note-7-0-books
   :parents (note-7-0)
   :short "Release notes for the ACL2 Community Books for ACL2 7.0 (BOZO month??)"
 
-; Currently covered: through revision r2901
+; Current through 8f1aa5614a464a6a302318057cab14915dfeb61d (2014-10-27)
+; Modulo a couple of bozos
 
   :long "<p>The following is a brief summary of changes made to the @(see
 community-books) between the releases of ACL2 6.5 and 7.0.</p>
 
 <p>The <a
-href='https://code.google.com/p/acl2-books/wiki/ReleaseVersionNumbers'>acl2-books
-Wiki page on ReleaseVersionNumbers</a> gives SVN revision numbers corresponding
-to releases.  See also @(see note-7-0) for the changes made to ACL2 itself.
-For additional details, you may also see the raw <a
-href='http://code.google.com/p/acl2-books/source/list'>commit log</a>.</p>
+href='https://github.com/acl2/acl2/wiki/Release-version-numbers'>acl2-books
+Wiki page on Release Version Numbers</a> gives the Git/SVN revision numbers
+corresponding to releases.  See also @(see note-7-0) for the changes made to
+ACL2 itself.  For additional details, you may also see the raw <a
+href='https://github.com/acl2/acl2/commits/master'>commit log</a>.</p>
+
+<h2>Organizational, Build System, and Name Changes</h2>
+
+<h3>Source Code Repository Change</h3>
+
+<p>The ACL2 Community Books and ACL2 System source code repositories have been
+merged into one repository and are now available at <a
+href=\"https://github.com/acl2/acl2\">https://github.com/acl2/acl2</a>.  See
+the Readme.md file found there for more details.  See also the @(see
+git-quick-start) guide if you are interested in contributing.</p>
+
+
 
 <h3>Deleted Stubs</h3>
 
@@ -92,21 +102,364 @@ in ACL2 6.5, so we've deleted them.</p>
    ---------------------------------------------------------------
 })
 
-<h3>Source Code Repository Change</h3>
-
-<p>The ACL2 Community Books and ACL2 System source code repositories have been
-merged into one repository and are now available at <a
-href=\"https://github.com/acl2/acl2\">https://github.com/acl2/acl2</a>.  See
-the Readme.md file found there for more details.</p>
 
 <h3>Build System Changes</h3>
+
+<p>Many minor build-system tweaks have been made.  The @(see cert_param)
+mechanism, which is used by @(see cert.pl) to indicate that books have special
+requirements, is now documented.  New @('cert_param') directives have been
+added to avoid certifying certain books on incompatible Lisps.</p>
 
 <p>The implementation of ``@('make everything')'' has been cleaned up.  In
 particular, it no longer sets @('USE_QUICKLISP=1'), which must now be provided
 explicitly in order for the command above to build the ACL2+Books Manual.</p>
 
 <p>Installing Quicklisp now works from behind a proxy.  See Section `Using a
-Proxy` in @(see books-certification).</p>")
+Proxy` in @(see books-certification).</p>
+
+<p>The @('etags.sh') script has been improved to permit whitespace before
+definitions.</p>
+
+<p>The @('fix-cert') utility has been improved and now includes scripts for
+moving ACL2 distributions.</p>
+
+<p>Supporting scripts for the <a href='http://jenkins-ci.org/'>Jenkins</a>
+continuous integration server can now be found in the @('build/jenkins')
+directory.  These scripts have received significant attention and can now
+support multi-configuration builds for checking ACL2 books compatibility with
+many host Lisps.</p>
+
+<p>@('cert.pl') now has better support for @(see
+provisional-certification).</p>
+
+<p>Numerous books have been patched up for better integration with ACL2(p).
+In many cases, previous calls of @(see without-waterfall-parallelism) are
+no longer necessary, largely due to thread-safe memoization.</p>
+
+
+<h3>Name Conflict Resolution</h3>
+
+<p>Progress has been made toward resolving name clashes in order to be able to
+include more books together.  This work involves renaming certain lemmas and
+may require updates to your books.</p>
+
+<p>Arithmetic-2</p>
+
+<ul>
+<li>@('floor-mod-elim') no longer forces its hypothesis.</li>
+</ul>
+
+<p>Arithmetic-5</p>
+<ul>
+<li>@('floor-=-x/y') now has additional corollaries.</li>
+</ul>
+
+<p>IHS</p>
+<ul>
+<li>@('floor-mod-elim') no longer forces its hypothesis.</li>
+<li>@('floor-=-x/y') now has additional corollaries.</li>
+<li>@('justify-floor-recursion') has been renamed to @('floor-recursion').</li>
+<li>@('cancel-floor-+') has been renamed to @('cancel-floor-+-basic').</li>
+<li>@('cancel-mod-+') has been renamed to @('cancel-mod-+-basic').</li>
+<li>@('rationalp-mod') no longer requires @('(rationalp x)').</li>
+</ul>
+
+<p>COI/osets</p>
+
+<ul>
+<li>Many @('coi/osets') books are now just small wrappers around @('std/osets') books.</li>
+<li>COI's @('double-containment') rule has been renamed to @('double-containment-expensive').</li>
+</ul>
+
+
+<h3>Licensing Changes</h3>
+
+<p>Several books contributed by David Rager, which were formerly released under
+the GNU General Public License or a BSD-3-Clause style license, are now instead
+released under a (more permissive) MIT/X11-style license.</p>
+
+
+<h2>New Libraries, Demos, and Documentation</h2>
+
+<p>Many topics have been reorganized.</p>
+
+<p>The new @(see simp) tool can be used to ask ACL2 to simplify terms under
+certain hypotheses.</p>
+
+<p>The @(see defsort) macro is now documented.</p>
+
+<p>The new tool @('misc/check-fn-inst') can be used to check the constraints to a
+functional instantiation.</p>
+
+<p>The new tool, @(see def-saved-obligs), can be used to save proof obligations
+for an event as independent defthms.</p>
+
+<p>Many @(see legacy-documentation) topics have been rewritten into the @(see
+xdoc) format, as a step towards eventually eliminating the legacy documentation
+system.  This notably includes the @(see data-structures) and @(see ihs)
+libraries.</p>
+
+<p>The @(see sneaky) documentation has been considerably expanded.</p>
+
+
+<h2>Changes to Major Libraries</h2>
+
+
+
+<h3>XDOC Changes</h3>
+
+<p>XDOC has been updated to use newer versions of the JQuery and Typeahead
+libraries.  Some bugs with the typeahead (jump to) box have been fixed and it
+has been extended to show more results, with a scrollbar if necessary.  The
+jump-to box has also been extended with a @('Alt+/') hotkey (or perhaps some
+other key combination like @('Ctrl+/'), depending on your browser).</p>
+
+<p>XDOC now features @(see katex-integration) for writing LaTeX-like formulas
+like @($ \\left( \\sum_{i=0}^{n} \\sqrt{f(i)} \\right) < \\frac{n^2}{k} $)
+within your documentation.</p>
+
+<p>The new @(see fancy-string-reader) can be used to make escaping simpler for
+authors of xdoc topics.  It may be especially useful when trying to write
+formulas.</p>
+
+<p>XDOC now supports \"resource directories\" for incorporating images, PDF
+files, and other kinds of resources.  See @(see xdoc::add-resource-directory)
+for details.</p>
+
+<p>XDOC's \"static\" HTML files, which are intended to make search engines
+happy, have been tweaked to avoid redirects.</p>
+
+<p>The @(see defpointer) macro has been integrated into XDOC itself.  (It was
+formerly only part of the ACL2 system documentation.)</p>
+
+
+
+<p>Middle clicking on XDOC links should now properly open them in new tabs.</p>
+
+
+
+<h3>@(see STD) Library Changes</h3>
+
+
+<h5>@(see std/basic)</h5>
+
+<p>Added @(see tuplep) and @(see impossible).</p>
+
+
+<h5>@(see std/lists)</h5>
+
+
+<p>Cleaned up rules about take in @(see std/lists/take).</p>
+
+<p>@(see replicate) is now an alias for @(see repeat) and is compatible with
+the definition of @('repeat') in the COI libraries, fixing a longstanding
+incompatibility.</p>
+
+<p>The @(see all-equalp) function has bene added.</p>
+
+
+<h5>@(see std/util)</h5>
+
+<p>The @(see b*) binders for @(see defaggregate)s now also bind the variable,
+fixing a longstanding issue.  Also, the syntax @('((prodname name))') is now
+permitted as an abbreviation for @('((prodname name) name)').  (This is often
+useful when destructuring a function's arguments).</p>
+
+<p>The @(see std::deflist), @(see std::defalist), @(see std::defprojection),
+and @(see std::defmapappend) macros are now \"pluggable\" and can be extended
+with additional theorems; see for instance the new book
+@('std/lists/abstract.lisp').</p>
+
+<p>The new books @('std/util/deflist-base') and @(see std/util/defalist-base)
+offer lighter-weight alternative to @('std/util/deflist') and
+@('std/util/defalist').</p>
+
+<p>Fixed a bug with @(see define)'s return-specifiers that could affect
+non-executable functions that involve stobjs.</p>
+
+<p>The @(see std::defrule) book now has fewer dependencies.</p>
+
+<h5>@(see std/strings)</h5>
+
+<p>Certification time has been improved.</p>
+
+<p>The @(see fast-cat) book now uses @(see include-raw) to avoid possible
+issues on various Lisps.</p>
+
+<h5>@(see std/io)</h5>
+
+<p>Added @(see read-file-as-string) function.</p>
+
+<h5>@(see std/alists)</h5>
+
+<p>There are some new functions: @(see fal-find-any) and @(see
+fal-all-boundp).</p>
+
+<p>Moved @(see worth-hashing) into @('std/alists') from
+@('misc/hons-help').</p>
+
+
+
+<h3>Defdata</h3>
+
+<p>BOZO big changes to defdata in @('706a134b02d6b96ea36cd0060f4a97812f2e9fa6'),
+write a summary or copy Harsh's message here.</p>
+
+<p>Also @('7fecb0d6658e817f8c585b8dc6761dafe606ee11')</p>
+
+
+
+
+
+
+
+<h3>Defsort</h3>
+
+<p>The interface to @(see defsort) has been extended, and it can now reuse
+existing list recognizers.</p>
+
+<p>Defsort can now (optionally) prove that the new sorting function is
+equivalent to an insertion sort.</p>
+
+<p>Defsort now allows extra arguments, e.g., to parameterize the sort.</p>
+
+
+
+<h3>Tools</h3>
+
+<p>The @(see include-raw) utility has been made more robust.  It now checks the
+write-date of compiled files, to avoid including stale files.</p>
+
+
+<h3>OSLIB</h3>
+
+<p>OSLIB has been reorganized to try to make it somewhat more coherent.  Most
+files in oslib are now split up into, e.g., argv-logic.lisp (no raw code or
+ttags) and argv.lisp (actual implementation).</p>
+
+<p>OSLIB has new functions including @(see oslib::dirname), @(see
+oslib::basename), and @(see oslib::copy).</p>
+
+
+<h2>Changes to Centaur Libraries</h2>
+
+<h3>Other</h3>
+
+<p>The @(see getopt) library now has a basic test suite.</p>
+
+<p>The @('centaur/misc/sharedlibs') code for relocating shared libraries has
+been extended with a test/demo script.</p>
+
+
+
+<h3>@(see Quicklisp)</h3>
+
+<p>Quicklisp can now read proxy information from the @('HTTP_PROXY_WITH_PORT')
+environment variable.  See also the \"Using a proxy\" page in @(see
+books-certification).  BOZO move that into Quicklisp?  Blah, all this stuff
+always ends up duplicated everywhere.</p>
+
+<p>Quicklisp now includes books for loading the @('uiop') library and a more
+sensible @('cl-fad') book.  These libraries may be useful for doing file system
+things.</p>
+
+
+<h3>@(see bitops)</h3>
+
+<p>The new @(see part-install) macro can be used to set particular bits of an
+integer to a value.  It is somewhat similar to utilities like @(see wrb) from
+the IHS library, but its interface is perhaps more intuitive.</p>
+
+
+<h3>FTY</h3>
+
+<p>The @(see std::deflist) and @(see fty::deflist) books are now integrated, so
+that @('fty::deflist') can provide the ordinary @('std::deflist') theorems.</p>
+
+<p>The documentation-generating macros have been enhanced.</p>
+
+<p>The @(see fty::deftypes) macro now uses more aggressive theory management to
+speed up certification, and also has more comprehensive error checking.</p>
+
+<p>The @(see fty::deffixtype) macro has better error checking.</p>
+
+
+<p>The cases macros introduced by @(see fty::deftypes) now support an
+@(':otherwise') case.</p>
+
+<p>The @(see fty::deftypes) @('make-') macros now disallow duplicated
+keywords.</p>
+
+<p>The @(see fty::deflist) and @(see fty::defalist) macros can now tolerate
+already-defined predicates.</p>
+
+
+<h3>@(see esim)/@(see 4v)</h3>
+
+<p>There is a new tool for STV decomposition theorems,
+@('oracle/stv-decomp-theory-expander.lisp'), and a demo of using this tool in
+@('centaur/regression/composed-stv.lisp').</p>
+
+<p>There are a few new @(see *sexpr-rewrites*).</p>
+
+
+<h3>AIGNET</h3>
+
+<p>Minor bug-fix to avoid complaint in @('bind-free') routine.</p>
+
+
+
+
+<h3>VL Changes</h3>
+
+<p>VL has undergone significant extensions and changes, mostly toward extending
+VL to support a subset of SystemVerilog.  VL is intended to also still support
+Verilog-2005, and in many cases its Verilog-2005 support has also improved.</p>
+
+<ul>
+
+<li>VL now has a more extensive \"systest\" suite for checking its work against
+NCVerilog and VCS, and a preliminary \"failtest\" suite for ensuring that
+certain modules with bad constructs are properly rejected.</li>
+
+<li>Added parsing support for many constructs such as interfaces, packages,
+generate statements, structs, unpacked arrays, etc.  The parser functions now
+pass around a \"parse state\" object and generates warnings in a more coherent
+way.  This results in certain speedups to its certification and allows for
+distinguishing the names of data types from other identifiers, which is
+necessary for parsing certain constructs.</li>
+
+<li>More comprehensive parameter support.  This involved reworking
+unparameterization to handle SystemVerilog data types, and adding support for
+richer expressions in wire ranges, etc., by reworking how constant expressions
+are evaluated to handle many more operators and operands of mixed
+sizes/types.</li>
+
+<li>Added support for fancier ports, e.g., ports with data types, module
+instances with @('.name') and @('.*') style connections, etc.</li>
+
+<li>Added support for combinational user-defined primitives, and at least basic
+parsing support for sequential UDPs.</li>
+
+<li>Added some support for SystemVerilog packages and imports.  Also, a new
+\"scopestack\" abstraction is now widely used to provide more comprehensive
+handling of nested scopes, packages, etc.</li>
+
+<li>Miscellaneous improvements.  The pretty-printer has been extended to handle
+the new SystemVerilog constructs, ansi-style ports, etc.  Some transforms are
+more configurable, e.g., gate elimination can easily use alternate replacements
+for gate instances.  There is better support for @('case') statements,
+especially in @('always_comb') blocks.  Various operators are now supported to
+various degrees, e.g., @('++'), casting operators, @('$bits').  The
+preprocessor now supports @('`define') macros with arguments.</li>
+
+<li>Numerous organizational changes, bug fixes, and updates to existing tools
+and transforms to keep things working.</li>
+
+</ul>
+
+<p>The VL @(see vl::server) is now included in the VL toolkit.  It allows you to
+view Verilog modules in a web browser.</p>")
 
 
 (defxdoc note-6-5-books
