@@ -979,7 +979,9 @@ explicit declarations.</p>")
   :returns (mv (st       vl-shadowcheck-state-p)
                (warnings vl-warninglist-p))
   (b* (((vl-port x)      (vl-port-fix x))
-       (varnames         (and x.expr (vl-expr-varnames x.expr)))
+       (varnames         (if x.ifname
+                             (list x.ifname)
+                           (and x.expr (vl-expr-varnames x.expr))))
        ((mv st warnings) (vl-shadowcheck-declare-names varnames x st warnings)))
     (mv st warnings)))
 

@@ -307,7 +307,6 @@ that correspond to port declarations.</p>"
              (equal (vl-vardecllist->names (vl-find-vardecls names vardecls))
                     (string-list-fix names)))))
 
-
 (define vl-portdecl-sign-main
   ((portdecls vl-portdecllist-p)
    (vardecls  vl-vardecllist-p)
@@ -322,10 +321,28 @@ that correspond to port declarations.</p>"
        (pnames (vl-portdecllist->names portdecls))
        (vnames (vl-vardecllist->names vardecls))
 
+       ;; We need to be extra careful to check for duplicates here.  We're
+       ;; assuming below (the find/delete stuff) that we can sensibly look up
+       ;; these things by name.  That's only the case if we're careful to
+       ;; defend against multiply declared ports/variables.
+       (dupe-ports (duplicated-members pnames))
+       ((when dupe-ports)
+        (mv (fatal :type :vl-bad-ports
+                   :msg "Ports are declared multiple times: ~&0."
+                   :args (list dupe-ports))
+            portdecls vardecls))
+
+       (dupe-vars (duplicated-members vnames))
+       ((when dupe-vars)
+        (mv (fatal :type :vl-bad-variables
+                   :msg "Variables are declared multiple times: ~&0."
+                   :args (list dupe-vars))
+            portdecls vardecls))
+
        (missing (difference (mergesort pnames) (mergesort vnames)))
        ((when missing)
         (mv (fatal :type :vl-bad-ports
-                   :msg "Found ports without corresponding variable ~
+                   :msg "Ports have no corresponding variable ~
                          declarations: ~&0."
                    :args (list missing))
             portdecls vardecls))

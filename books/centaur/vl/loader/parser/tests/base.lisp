@@ -29,6 +29,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
+(include-book "../utils")
 (include-book "../../lexer/lexer") ;; for make-test-tokens, etc.
 (include-book "../../../parsetree")
 (include-book "../../../mlib/expr-tools")
@@ -250,3 +251,22 @@
   (if (eq (tag x) :vl-fwdtypedef)
       (vl-pretty-fwdtypedef x)
     (vl-pretty-typedef x)))
+
+
+
+;; A very useful tracing mechanism for debugging:
+
+(defun vl-debug-tokstream (tokstream)
+  (declare (xargs :stobjs tokstream
+                  :guard-debug t))
+  (let* ((tokens (redundant-list-fix (vl-tokstream->tokens)))
+         (n      (min 5 (len tokens))))
+    (vl-tokenlist->string-with-spaces (take n tokens))))
+
+(defmacro trace-parser (fn)
+  `(trace! (,fn
+            :entry (list ',fn :tokens (vl-debug-tokstream tokstream))
+            :exit (list ',fn
+                        :errmsg (first values)
+                        :val (second values)
+                        :remainder (vl-debug-tokstream (third values))))))

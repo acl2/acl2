@@ -140,6 +140,13 @@ clever.</p>")
        (inside  (vl-port->expr port1))
        (outside (vl-plainarg->expr (car plainargs)))
 
+       ((when (vl-port->ifname port1))
+        (mv nil
+            (warn :type :vl-inline-fail
+                  :msg "Interface ports aren't supported for inlining. ~a0"
+                  :args (list (car ports)))
+            nil))
+
        ((mv warnings dir)
         (vl-port-direction (car ports) scope nil))
        ((unless dir)
@@ -149,9 +156,11 @@ clever.</p>")
        ((when (eq dir :vl-inout))
         (mv nil
             (warn :type :vl-inline-fail
-                  :msg "Inout ports aren't supported for inlining."
+                  :msg "Inout ports aren't supported for inlining. ~a0"
                   :args (list (car ports)))
             nil))
+
+
 
        (assigns1
         ;; If the port's expression (inside) is blank (nil), we don't need

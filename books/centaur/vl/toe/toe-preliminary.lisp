@@ -288,8 +288,14 @@ might not even have the same direction.</p>"
       (msb-bits vl-emodwirelist-p))
 
   (b* ((warnings nil)
-       (expr (vl-port->expr x))
+       ((when (vl-port->ifname x))
+        (mv nil
+            (fatal :type :vl-bad-port
+                   :msg "~a0: interface ports are not supported."
+                   :args (list x))
+            nil))
 
+       (expr (vl-port->expr x))
        ((unless expr)
         (mv nil
             (fatal :type :vl-bad-port

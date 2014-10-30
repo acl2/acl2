@@ -69,7 +69,7 @@ annotated with a @('version') field that must match exactly this string.</p>"
 
   ;; Current syntax version: generally a string like
   ;; "VL Syntax [date of modification]"
-  "VL Syntax 2014-10-16")
+  "VL Syntax 2014-10-31")
 
 (define vl-syntaxversion-p (x)
   :parents (syntax)
@@ -717,7 +717,7 @@ away with them as alternate kinds of assignments.</p>"))
 
 
 (defprod vl-port
-  :short "Representation of a single Verilog port."
+  :short "Representation of a single port."
   :tag :vl-port
   :layout :tree
 
@@ -729,25 +729,53 @@ away with them as alternate kinds of assignments.</p>"))
    (expr vl-maybe-expr-p
          "How the port is wired internally within the module.  Most of the time,
           this is a simple identifier expression that is just @('name').  But
-          it can also be more complex; see below.")
+          it can also be more complex; see below.  The expression should be
+          @('nil') for interface ports.")
+
+   (ifname maybe-stringp
+           :rule-classes :type-prescription
+           "For interface ports like @('simplebus foo') or @('simplebus.master foo'),
+            this is the name of the interface, e.g., @('simplebus').  For
+            non-interface ports it is just @('nil').")
+
+   (modport maybe-stringp
+            :rule-classes :type-prescription
+            "For interface ports with modport components, e.g., @('simplebus.master foo'),
+             this is the name of the modport being used, e.g., @('master').
+             For plain interfaces like @('simplebus foo') or non-interface
+             ports, this is just @('nil').")
+
+   (udims   vl-packeddimensionlist-p
+            "For interface ports only: the unpacked dimensions for this port.")
 
    (loc  vl-location-p
          "Where this port came from in the Verilog source code."))
 
-  :long "<p>Ports are described in Section 12.3 of Verilog-2005.  In simple
-cases, a module's ports look like this:</p>
+  :long "<p>In Verilog-2005, ports are described in Section 12.3 of the
+standard.</p>
+
+<p>It is important to understand the difference between ports and port
+declarations.  We represent ports as @('vl-port') structures, whereas port
+declarations re represented as @(see vl-portdecl) structures.  It is easy to
+see the difference between ports and port declarations when modules are
+declared using the \"non-ANSI\" syntax.</p>
 
 @({
-module mod(a,b,c) ;  <-- ports are a, b, and c
-  ...
+module mod(a,b,c) ;  <-- ports
+
+  input [3:0] a;     <-- port declarations (not ports)
+  input b;
+  output c;
+
 endmodule
 })
 
-<p>A more modern, less repetitive syntax can be used instead:</p>
+<p>It is less easy to see this difference when the more concise \"ANSI\" syntax
+is used:</p>
 
 @({
 module mod(
-  input [3:0] a;   <-- ports are a, b, and c
+  input [3:0] a;   <-- ports and port declarations, mixed together
   input b;
   output c;
 ) ;
@@ -755,8 +783,13 @@ module mod(
 endmodule
 })
 
-<p>More complex ports are also possible, e.g., here are some ports whose
-external names are distinct from their internal wiring:</p>
+<p>Regardless of which syntax is used, VL internally creates both ports and
+portdecls as separate structures.</p>
+
+<p>In most designs, there is a single port corresponding to each port
+declaration.  However, in general Verilog permits more complex ports.  Here is
+an example of a module where the ports have external names that are distinct
+from their internal wiring.</p>
 
 @({
 module mod (a, .b(w), c[3:0], .d(c[7:4])) ;
@@ -768,19 +801,26 @@ endmodule
 })
 
 <p>In this example, the @('name')s of these ports would be, respectively:
-@('\"a\"'), @('\"b\"'), @('nil') (because this port has no externally visible
-name), and @('\"d\"').  Meanwhile, the first two ports are internally wired to
-@('a') and @('w'), respectively, while the third and fourth ports collectively
-specify the bits of @('c').</p>
+@('\"a\"'), @('\"b\"'), @('nil') (because the third port has no externally
+visible name), and @('\"d\"').  Meanwhile, the first two ports are internally
+wired to @('a') and @('w'), respectively, while the third and fourth ports
+collectively specify the bits of @('c').</p>
+
+<p>SystemVerilog-2012 extends ports in several ways, but most of these
+extensions (e.g., support for fancy data types) are related to the port
+declarations rather than the ports.  One place where the ports themselves
+<i>are</i> extended is for interface ports.  We record which ports are
+interface ports with the @('ifname') and @('modport') fields.</p>
+
 
 <h3>Using Ports</h3>
 
 <p>It is generally best to <b>avoid using port names</b> except perhaps for
 things like error messages.  Why?  As shown above, some ports might not have
 names, and even when a port does have a name, it does not necessarily
-correspond to any wires in the module.  But these cases are exotic, so code
-based on port names is likely to work for simple test cases and then fail later
-when more complex examples are encountered!</p>
+correspond to any wires in the module.  Since these cases are exotic, code that
+is based on port names is likely to work for simple test cases, but then fail
+later when more complex examples are encountered!</p>
 
 <p>Usually you should not need to deal with port names.  The @(see argresolve)
 transform converts module instances that use named arguments into their plain
@@ -838,6 +878,69 @@ expression-sizing) for details.</p>")
   (defthm string-listp-of-remove-equal-of-vl-portlist->names
     (string-listp (remove-equal nil (vl-portlist->names x)))))
 
+(define vl-interfaceport-p ((x vl-port-p))
+  :parents (vl-port)
+  :short "Determine whether a port is an interface port."
+  :returns bool
+  :inline t
+  (b* (((vl-port x)))
+    (if x.ifname
+        t
+      nil)))
+
+(deflist vl-interfaceportlist-p (x)
+  :parents (vl-portlist-p)
+  :guard (vl-portlist-p x)
+  :elementp-of-nil nil
+  (vl-interfaceport-p x))
+
+(define vl-collect-interface-ports-exec ((x vl-portlist-p) nrev)
+  :parents (vl-collect-interface-ports)
+  (b* (((when (atom x))
+        (nrev-fix nrev))
+       ((when (vl-interfaceport-p (car x)))
+        (b* ((nrev (nrev-push (vl-port-fix (car x)) nrev)))
+          (vl-collect-interface-ports-exec (cdr x) nrev))))
+    (vl-collect-interface-ports-exec (cdr x) nrev)))
+
+(define vl-collect-interface-ports
+  :parents (vl-portlist-p)
+  :short "Filter a @(see vl-portlist-p) to collect only the interface ports."
+  ((x vl-portlist-p))
+  :returns (ifports (and (vl-portlist-p ifports)
+                         (vl-interfaceportlist-p ifports)))
+  :verify-guards nil
+  (mbe :logic
+       (cond ((atom x)
+              nil)
+             ((vl-interfaceport-p (car x))
+              (cons (vl-port-fix (car x))
+                    (vl-collect-interface-ports (cdr x))))
+             (t
+              (vl-collect-interface-ports (cdr x))))
+       :exec
+       (with-local-nrev
+         (vl-collect-interface-ports-exec x nrev)))
+  ///
+  (defthm vl-collect-interface-ports-exec-removal
+    (equal (vl-collect-interface-ports-exec x nrev)
+           (append nrev (vl-collect-interface-ports x)))
+    :hints(("Goal" :in-theory (enable vl-collect-interface-ports-exec))))
+
+  (verify-guards vl-collect-interface-ports)
+
+  (defthm vl-collect-interface-ports-when-atom
+    (implies (atom x)
+             (equal (vl-collect-interface-ports x)
+                    nil)))
+
+  (defthm vl-collect-interface-ports-of-cons
+    (equal (vl-collect-interface-ports (cons a x))
+           (if (vl-interfaceport-p a)
+               (cons (vl-port-fix a)
+                     (vl-collect-interface-ports x))
+             (vl-collect-interface-ports x)))))
+
 
 (defenum vl-direction-p (:vl-input :vl-output :vl-inout)
   :short "Direction for a port declaration (input, output, or inout)."
@@ -894,9 +997,10 @@ arguments of gate instances and most arguments of module instances.  See our
    (loc      vl-location-p
              "Where the port was declared in the source code."))
 
-  :long "<p>Port declarations, described in Section 12.3.3 of the Verilog-2005
-standard, ascribe certain properties (direction, signedness, size, and so on)
-to the ports of a module.  Here is an example:</p>
+  :long "<p>See @(see vl-port) for related background.  Port declarations,
+described in Section 12.3.3 of the Verilog-2005 standard, ascribe certain
+properties (direction, signedness, size, and so on) to the ports of a module.
+Here is an example:</p>
 
 @({
 module m(a, b) ;
@@ -906,26 +1010,26 @@ endmodule
 })
 
 <p>Although Verilog allows multiple ports to be declared simultaneously, i.e.,
-@('input a, b ;'), our parser splits these merged declarations to create
+@('input w1, w2;'), our parser splits these merged declarations to create
 separate @('vl-portdecl-p') objects for each port.  Because of this, every
 @('vl-portdecl-p') has only a single name.</p>
 
-<h4>A Note about Port Types</h4>
+<p>Most of the time, e.g., for @('a') in module @('m') above, the resulting
+@(see vl-module) will have:</p>
 
-<p>If you look at the grammar for port declarations, you will see that you
-can also do things like:</p>
+<ul>
+<li>A @(see vl-port) for @('a'),</li>
+<li>A corresponding @(see vl-portdecl) that has the direction/type information, and</li>
+<li>A corresponding @(see vl-vardecl) that looks like an ordinary variable.</li>
+</ul>
 
-@({
-input wire a;
-input supply0 b;
-})
+<p>The exceptions to this are:</p>
 
-<p>And so on.  For some time, our @('vl-port-p') structures included a
-@('type') field.  However, upon a closer reading of the Verilog-2005 standard,
-we have learned that the proper way to handle these is to simultaneously
-introduce a @(see vl-vardecl) alongside the @('vl-portdecl-p') that we would
-ordinarily create for a port declaration.  See, e.g., the second paragraph from
-the bottom on Page 174.</p>")
+<ul>
+<li>Interface ports have no corresponding port/vardecl.</li>
+<li>The ports/portdecls do not necessarily line up when complex ports are used,
+see @(see vl-port) for details.</li>
+</ul>")
 
 (fty::deflist vl-portdecllist
               :elt-type vl-portdecl-p
@@ -1790,8 +1894,8 @@ variety.</p>"
 
 
 (defprod vl-modinst
-  :short "Representation of a single module (or user-defined primitive)
-instance."
+  :short "Representation of a single module instance, user-defined primitive
+instance, or a direct interface instance (not an interface port)."
   :tag :vl-modinst
   :layout :tree
 
@@ -1802,16 +1906,16 @@ instance."
 
    (modname   stringp
               :rule-classes :type-prescription
-              "Name of the module or user-defined primitive that is being
-               instantiated.")
+              "Name of the module, user-defined primitive, or interface that is
+               being instantiated.")
 
    (range     vl-maybe-range-p
               "When present, indicates that this is an array of instances,
                instead of a single instance.")
 
    (paramargs vl-paramargs-p
-              "Values to use for module parameters, e.g., this might specify
-               the width to use for an adder module, etc.")
+              "Values to use for module parameters.  For instance, this might
+               specify the width to use for an adder module, etc.")
 
    (portargs  vl-arguments-p
               "Connections to use for the submodule's input, output, and inout
@@ -3705,6 +3809,13 @@ transforms to not modules with this attribute.</p>"
                       :hints(("Goal" :in-theory (enable alistp))))))
   :inline t
   (consp (assoc-equal "VL_HANDS_OFF" (vl-module->atts x))))
+
+(define vl-module->ifports
+  :short "Collect just the interface ports for a module."
+  ((x vl-module-p))
+  :returns (ports (and (vl-portlist-p ports)
+                       (vl-interfaceportlist-p ports)))
+  (vl-collect-interface-ports (vl-module->ports x)))
 
 (defprojection vl-modulelist->names ((x vl-modulelist-p))
   :returns (names string-listp)

@@ -135,27 +135,6 @@
 
 #||
 
-
-
-
-
-A very useful tracing mechanism for debugging:
-
-(defun vl-debug-tokstream (tokstream)
-  (declare (xargs :stobjs tokstream
-                  :guard-debug t))
-  (let* ((tokens (redundant-list-fix (vl-tokstream->tokens)))
-         (n      (min 5 (len tokens))))
-    (vl-tokenlist->string-with-spaces (take n tokens))))
-
-(defmacro trace-parser (fn)
-  `(trace! (,fn
-            :entry (list ',fn :tokens (vl-debug-tokstream tokens))
-            :exit (list ',fn
-                        :errmsg (first values)
-                        :val (second values)
-                        :remainder (vl-debug-tokstream tokens)))))
-
 (trace-parser vl-parse-indexed-id-2005-fn)
 (trace-parser vl-parse-indexed-id-2012-main-fn)
 (trace-parser vl-parse-indexed-id-2012-fn)

@@ -346,6 +346,10 @@ and add a warning that this case is very unusual.</p>"
                   :args (list port))
             nil))
 
+       ((when (vl-port->ifname port))
+        ;; No simple direction for interface port.
+        (mv (ok) nil))
+
        (names (vl-port-internal-wirenames port))
        ((mv successp warnings dirs)
         (vl-port-direction-aux names scope warnings port))

@@ -829,8 +829,13 @@ expressions within @('(* foo = bar *)')-style attributes.</p>")
 
 (def-vl-allexprs
   :type :vl-port
-  :nrev-body (vl-maybe-expr-allexprs-nrev (vl-port->expr x) nrev)
-  :body (vl-maybe-expr-allexprs (vl-port->expr x)))
+  :nrev-body
+  (b* ((nrev (vl-maybe-expr-allexprs-nrev (vl-port->expr x) nrev))
+       (nrev (vl-packeddimensionlist-allexprs-nrev (vl-port->udims x) nrev)))
+    nrev)
+  :body
+  (append (vl-maybe-expr-allexprs (vl-port->expr x))
+          (vl-packeddimensionlist-allexprs (vl-port->udims x))))
 
 (def-vl-allexprs-list
   :list vl-portlist

@@ -858,9 +858,14 @@ the expression.</p>"
 (def-vl-exprsize vl-port
   :body (b* (((vl-port x) x)
              (elem x)
-             ((mv successp warnings expr-prime)
+             ((mv expr-successp warnings new-expr)
               (vl-maybe-expr-size x.expr ss elem warnings))
-             (x-prime (change-vl-port x :expr expr-prime)))
+             ((mv udims-successp warnings new-udims)
+              (vl-packeddimensionlist-exprsize x.udims ss elem warnings))
+             (successp (and expr-successp udims-successp))
+             (x-prime (change-vl-port x
+                                      :expr new-expr
+                                      :udims new-udims)))
           (mv successp warnings x-prime)))
 
 (def-vl-exprsize-list vl-portlist :element vl-port)

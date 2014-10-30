@@ -146,6 +146,8 @@ field of each @(see vl-module-p).</p>")
        ;; BOZO BOZO BOZO !!!!!
        ;; need to check netdecls for WOR, etc.
 
+       (acc (if (vl-module->ifports x) (cons "interface ports" acc) acc))
+
        ((unless acc)
         (mv t warnings))
 

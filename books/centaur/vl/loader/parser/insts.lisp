@@ -39,6 +39,12 @@
 (local (include-book "../../util/arithmetic"))
 
 
+(defsection parse-insts
+  :parents (parser)
+  :short "Functions for parsing module instances.")
+
+(local (xdoc::set-default-parents parse-insts))
+
 (local (in-theory (disable ;consp-when-vl-expr-p
                            acl2::consp-under-iff-when-true-listp
                            ;consp-when-vl-atom-p
@@ -47,47 +53,50 @@
                            default-cdr)))
 
 
+(defsection special-note-about-blank-ports
+  :short "Clarification regarding how empty module port lists are handled."
+  :long "<p>The Verilog grammar contains a nasty ambiguity in handling
+arguments for module instances due to the possibility of \"blank ports\".
+Blank ports may be used to model an instantiation where a port is not
+connected to anything.  For instance, after writing</p>
 
+@({
+    module m (a, b, c) ; ... ; endmodule
+})
 
-; SPECIAL NOTE ABOUT BLANK PORTS.
-;
-; The Verilog grammar contains a nasty ambiguity in handling arguments for
-; module instances due to the possibility of "blank ports".  Blank ports may
-; be used to model an instantiation where a port is not connected to anything.
-; For instance, after writing
-;
-;    module m (a, b, c) ; ... ; endmodule
-;
-; In another module we may instantiate M, and not connect anything to port b,
-; by writing something like this:
-;
-;    m my_instance (a, , c);
-;
-; In the grammar, this causes the following ambiguity.  Let Epsilon be the
-; empty production, and note that:
-;
-;   - Epsilon may be a valid ordered_port_connection.  I think of this as a
-;     "blank port."  Hence, list_of_port_connections may be Epsilon, and such a
-;     think might be thought of as a singleton list containing a blank port.
-;
-;   - On the other hand, module_instance is said to take an OPTIONAL
-;     list_of_port_connections.  If we omit the list_of_port_connections
-;     entirely, we might think of it it as an empty list containing no ports.
-;
-; So in the context of a module instance, what does Epsilon mean?  Is it an
-; empty list containing no ports, or is it a singleton list containing one
-; blank port.  The grammar is ambiguous.
-;
-; To explore how Cadence handles this case, I now direct your attention to the
-; file blank.v, which explores this question and some related matters.  The
-; short of it (in particular see inst1a) is that Cadence seems to treat this as
-; an empty list, with no ports.  And a funny consequence of this is that one
-; cannot instantiate a one-port module with a blank, unless named argument
-; lists are used.
-;
-; Cadence's handling seems like the most sensible choice, and we are going to
-; mimick it.  Because this is somewhat delicate, we also include a number of
-; unit tests at the bottom of this file.
+<p>In another module we may instantiate M, and not connect anything to port b,
+by writing something like this:</p>
+
+@({
+    m my_instance (a, , c);
+})
+
+<p>In the grammar, this causes the following ambiguity.  Let Epsilon be the
+empty production, and note that:</p>
+
+<ul>
+<li>Epsilon may be a valid ordered_port_connection.  I think of this as a
+    \"blank port.\"  Hence, list_of_port_connections may be Epsilon, and such a
+    think might be thought of as a singleton list containing a blank port.</li>
+
+<li>On the other hand, module_instance is said to take an OPTIONAL
+    list_of_port_connections.  If we omit the list_of_port_connections
+    entirely, we might think of it it as an empty list containing no ports.</li>
+</ul>
+
+<p>So in the context of a module instance, what does Epsilon mean?  Is it an
+empty list containing no ports, or is it a singleton list containing one
+blank port.  The grammar is ambiguous.</p>
+
+<p>To explore how Cadence handles this case, consider the file blank.v, which
+explores this question and some related matters.  The short of it (in
+particular see inst1a) is that Cadence seems to treat this as an empty list,
+with no ports.  And a funny consequence of this is that one cannot instantiate
+a one-port module with a blank, unless named argument lists are used.</p>
+
+<p>Cadence's handling seems like the most sensible choice, and we are going to
+mimick it.  Because this is somewhat delicate, we also include a number of unit
+tests at the bottom of this file.</p>")
 
 ; list_of_port_connections ::=
 ;    ordered_port_connection { ',' ordered_port_connection }
@@ -98,8 +107,6 @@
 ;
 ; named_port_connection ::=
 ;   {attribute_instance} '.' identifier '(' [expression] ')'
-
-
 
 
 

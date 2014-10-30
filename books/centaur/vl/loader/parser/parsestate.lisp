@@ -86,5 +86,12 @@
   (b* (((vl-parsestate pstate) pstate))
     (change-vl-parsestate pstate :warnings (cons warning pstate.warnings))))
 
+(define vl-parsestate-set-warnings
+  ((warnings vl-warninglist-p)
+   (pstate   vl-parsestate-p))
+  :returns (new-pstate vl-parsestate-p)
+  (b* (((vl-parsestate pstate) pstate))
+    (change-vl-parsestate pstate :warnings warnings)))
+
 
 
