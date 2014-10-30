@@ -388,7 +388,8 @@
     :elementlist-bindings
     :bad-generate-bindings
     :verify-guards
-    :guard-hints))
+    :guard-hints
+    :no-new-x))
 
 (defun kwd-alist->filtered-key-args (kwd-alist omit-names)
   (if (atom kwd-alist)

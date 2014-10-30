@@ -85,7 +85,7 @@ arisen during the course of unparameterization.</p>"
        (context (vl-expr-fix context))
        (args    (vl-exprlist-fix args)))
     (case op
-      (:vl-partselect-colon
+      ((:vl-select-colon :vl-partselect-colon)
        (b* ((from   (vl-expr-fix (first args)))
             (index1 (vl-expr-fix (second args)))
             (index2 (vl-expr-fix (third args)))
@@ -106,6 +106,29 @@ arisen during the course of unparameterization.</p>"
             (msb (vl-make-index (vl-resolved->val index1)))
             (lsb (vl-make-index (vl-resolved->val index2))))
          (mv (ok) (list from msb lsb))))
+
+      ((:vl-select-pluscolon :vl-partselect-pluscolon
+        :vl-select-minuscolon :vl-partselect-minuscolon)
+       (b* ((from   (vl-expr-fix (first args)))
+            (index1 (vl-expr-fix (second args)))
+            (index2 (vl-expr-fix (third args)))
+            ((mv ok1 index1) (vl-consteval index1 ss))
+            ((mv ok2 index2) (vl-consteval index2 ss))
+            ((unless ok2)
+             (mv (warn :type :vl-bad-select
+                       ;; BOZO need some context
+                       :msg "Unable to safely resolve width on part-select ~a0."
+                       :args (list context))
+                 args))
+            ;; See also vl-rangeresolve.  We could create a part-select that
+            ;; just uses the reduced index1 and index2 expressions.  But nobody
+            ;; wants to look at things like foo[4'd3 : 4'd0].  So, instead of
+            ;; keeping the size information, use vl-make-index, which can
+            ;; usually build special indexes that the pretty-printer knows not
+            ;; to put sizes on.
+            (new-idx1 (if ok1 (vl-make-index (vl-resolved->val index1)) index1))
+            (new-idx2 (vl-make-index (vl-resolved->val index2))))
+         (mv (ok) (list from new-idx1 new-idx2))))
 
       ((:vl-bitselect :vl-index)
        (b* ((from  (vl-expr-fix (first args)))

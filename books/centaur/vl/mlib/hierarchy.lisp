@@ -32,6 +32,7 @@
 (include-book "find-module")
 (include-book "modnamespace")
 (include-book "filter")
+(include-book "blocks")
 (include-book "../util/defwellformed")
 (include-book "../util/string-alists")
 (local (include-book "modname-sets"))
@@ -55,12 +56,49 @@ instances is defined.")
 but not defined.")
 
 
+(def-genblob-transform vl-genblob->flatten-modinsts ((acc vl-modinstlist-p))
+  :no-new-x t
+  :returns ((acc vl-modinstlist-p))
+  :apply-to-generates vl-generates->flatten-modinsts
+  :prepwork ((local (in-theory (disable vl-genelement-p-by-tag-when-vl-scopeitem-p
+                                        vl-modinstlist-p-when-not-consp
+                                        (tau-system)
+                                        append
+                                        vl-modinstlist-p-when-subsetp-equal))))
+  (vl-generates->flatten-modinsts (vl-genblob->generates x)
+                                  (append-without-guard
+                                   (vl-genblob->modinsts x)
+                                   (vl-modinstlist-fix acc))))
+
+(define vl-module->flatten-modinsts ((x vl-module-p))
+  :parents (vl-modulelist-everinstanced)
+  :short "Gather modinsts from the module, including its generate blocks."
+  :returns (modinsts vl-modinstlist-p)
+  (b* ((genblob (vl-module->genblob x)))
+    (vl-genblob->flatten-modinsts genblob nil)))
+
+(define vl-modulelist->flatten-modinsts ((x vl-modulelist-p))
+  :returns (modinsts vl-modinstlist-p)
+  (if (atom x)
+      nil
+    (append-without-guard (vl-module->flatten-modinsts (car x))
+                          (vl-modulelist->flatten-modinsts (cdr x))))
+  ///
+  (defthm vl-modulelist->flatten-modinsts-when-not-consp
+    (implies (not (consp x))
+             (equal (vl-modulelist->flatten-modinsts x) nil)))
+
+  (defthm vl-modulelist->flatten-modinsts-of-cons
+    (equal (vl-modulelist->flatten-modinsts (cons a b))
+           (append (vl-module->flatten-modinsts a)
+                   (vl-modulelist->flatten-modinsts b)))))
+
 (define vl-modulelist-everinstanced-nrev ((x vl-modulelist-p)
                                           (nrev))
   :parents (vl-modulelist-everinstanced)
   (b* (((when (atom x))
         (nrev-fix nrev))
-       (modinsts1 (vl-module->modinsts (car x)))
+       (modinsts1 (vl-module->flatten-modinsts (car x)))
        (nrev      (vl-modinstlist->modnames-nrev modinsts1 nrev)))
     (vl-modulelist-everinstanced-nrev (cdr x) nrev)))
 
@@ -70,7 +108,7 @@ but not defined.")
   :long "<p>We leave this function enabled.  It is logically equal to:</p>
 
 @({
-  (vl-modinstlist->modnames (vl-modulelist->modinsts x))
+  (vl-modinstlist->modnames (vl-modulelist->flatten-modinsts x))
 })
 
 <p>The returned list typically will contain a lot of duplicates.  This is
@@ -79,14 +117,14 @@ optimize it to avoid the construction of intermediate lists and to use @(see
 nrev).</p>"
 
   :enabled t
-  (mbe :logic (vl-modinstlist->modnames (vl-modulelist->modinsts x))
+  (mbe :logic (vl-modinstlist->modnames (vl-modulelist->flatten-modinsts x))
        :exec (with-local-nrev (vl-modulelist-everinstanced-nrev x nrev)))
   :verify-guards nil
   ///
   (defthm vl-modulelist-everinstanced-nrev-removal
     (equal (vl-modulelist-everinstanced-nrev x nrev)
            (append nrev
-                   (vl-modinstlist->modnames (vl-modulelist->modinsts x))))
+                   (vl-modinstlist->modnames (vl-modulelist->flatten-modinsts x))))
     :hints(("Goal" :in-theory (enable vl-modulelist-everinstanced-nrev))))
 
   (verify-guards vl-modulelist-everinstanced))
@@ -145,7 +183,7 @@ subset check.</p>
 vl-fast-module-complete-p) for a faster alternative.</p>"
   :enabled t
 
-  (let* ((instances (vl-module->modinsts x))
+  (let* ((instances (vl-module->flatten-modinsts x))
          (names     (vl-modinstlist->modnames instances)))
     (vl-has-modules names mods)))
 
@@ -178,7 +216,7 @@ vl-fast-module-complete-p) for a faster alternative.</p>"
        (vl-module-complete-p x mods)
        :exec
        (vl-fast-has-modules-of-vl-modinstlist->modnames
-        (vl-module->modinsts x) mods modalist)))
+        (vl-module->flatten-modinsts x) mods modalist)))
 
 (define vl-fast-has-modules-of-vl-modulelist-everinstanced
   :parents (hierarchy completeness)
@@ -193,7 +231,7 @@ vl-fast-module-complete-p) for a faster alternative.</p>"
        :exec
        (or (atom x)
            (and (vl-fast-has-modules-of-vl-modinstlist->modnames
-                 (vl-module->modinsts (car x)) mods modalist)
+                 (vl-module->flatten-modinsts (car x)) mods modalist)
                 (vl-fast-has-modules-of-vl-modulelist-everinstanced
                  (cdr x) mods modalist)))))
 
@@ -485,7 +523,7 @@ report.\" It may not be in use any more.</p>"
   (b* (((when (atom x))
         (vl-depalist-fix alist))
        (alist (vl-depalist-core-aux (vl-module->name (car x))
-                                    (vl-module->modinsts (car x))
+                                    (vl-module->flatten-modinsts (car x))
                                     alist)))
     (vl-depalist-core (cdr x) alist))
   ///
@@ -497,17 +535,19 @@ report.\" It may not be in use any more.</p>"
   (local (defthm lemma1
            (implies (vl-depalist-p alist)
                     (implies (member-equal par (cdr (hons-assoc-equal child alist)))
-                             (member-equal par (cdr (hons-assoc-equal child (vl-depalist-core x alist))))))))
+                             (member-equal par (cdr (hons-assoc-equal child (vl-depalist-core x alist))))))
+           :hints(("Goal" :in-theory (disable (force))))))
 
   (local (defthm lemma2
            (implies (and (vl-depalist-p alist)
                          (member-equal child
                                        (vl-modinstlist->modnames
-                                        (vl-module->modinsts
+                                        (vl-module->flatten-modinsts
                                          (vl-find-module par x)))))
                     (member-equal par (cdr (hons-assoc-equal child (vl-depalist-core x alist)))))
            :hints (("goal" :induct (vl-depalist-core x alist)
-                    :expand ((vl-find-module par x))))))
+                    :expand ((vl-find-module par x))
+                    :in-theory (disable (force))))))
 
   (local (defthm lemma3
            (implies (not (member-equal name (vl-modulelist->names x)))
@@ -521,7 +561,7 @@ report.\" It may not be in use any more.</p>"
                   (or (member-equal par (cdr (hons-assoc-equal child alist)))
                       (member-equal child
                                     (vl-modinstlist->modnames
-                                     (vl-module->modinsts
+                                     (vl-module->flatten-modinsts
                                       (vl-find-module par x)))))))
     :hints (("goal" :induct (vl-depalist-core x alist)
              :expand ((:free (name) (vl-find-module name x)))))))
@@ -562,10 +602,11 @@ vl-dependent-modules).</p>"
              (equal (in parent (cdr (hons-assoc-equal child (vl-depalist x))))
                     (if (member-equal child
                                       (vl-modinstlist->modnames
-                                       (vl-module->modinsts
+                                       (vl-module->flatten-modinsts
                                         (vl-find-module parent x))))
                         t
-                      nil)))))
+                      nil)))
+    :hints(("Goal" :in-theory (disable (force))))))
 
 
 
@@ -625,7 +666,7 @@ returns them as an ordered set."
                          (vl-modulelist-p mods)
                          (no-duplicatesp-equal (vl-modulelist->names mods))
                          (vl-modulelist-complete-p mods mods)
-                         (member-equal a (vl-modinstlist->modnames (vl-module->modinsts (vl-find-module name mods)))))
+                         (member-equal a (vl-modinstlist->modnames (vl-module->flatten-modinsts (vl-find-module name mods)))))
                     (in name (vl-modulelist->names mods)))
            :hints(("goal"
                    :cases ((vl-find-module name mods))
@@ -643,11 +684,11 @@ returns them as an ordered set."
                      (vl-modulelist->names mods))))
 
   (local (defthm lemma4
-           (implies (member-equal a (vl-modinstlist->modnames (vl-module->modinsts (vl-find-module b mods))))
+           (implies (member-equal a (vl-modinstlist->modnames (vl-module->flatten-modinsts (vl-find-module b mods))))
                     (member-equal b (vl-modulelist->names mods)))))
 
   (local (defthm lemma5
-           (implies (member-equal a (vl-modinstlist->modnames (vl-module->modinsts (vl-find-module b mods))))
+           (implies (member-equal a (vl-modinstlist->modnames (vl-module->flatten-modinsts (vl-find-module b mods))))
                     (in b (vl-modulelist-meganames mods)))
            :hints(("Goal" :in-theory (enable vl-modulelist-meganames)))))
 
@@ -1019,13 +1060,13 @@ them as an ordered set."
   :long "<p>Logically, this function is nothing more than</p>
 
 @({
-  (mergesort (vl-modinstlist->modnames (vl-module->modinsts x)))
+  (mergesort (vl-modinstlist->modnames (vl-module->flatten-modinsts x)))
 })
 
 <p>However, memoizing this function provides an efficiency boost to @(see
 vl-necessary-modules).</p>"
 
-  (mergesort (vl-modinstlist->modnames (vl-module->modinsts x)))
+  (mergesort (vl-modinstlist->modnames (vl-module->flatten-modinsts x)))
   ///
   (memoize 'vl-necessary-direct-for-module))
 
@@ -1087,10 +1128,10 @@ a @(see vl-modalist) for faster lookups.</p>
            ;; expanded forms, since we leave the definitions of completeness
            ;; enabled and the free variables make things delicate.
            (implies (and (subsetp-equal (vl-modinstlist->modnames
-                                         (vl-modulelist->modinsts x))
+                                         (vl-modulelist->flatten-modinsts x))
                                         (vl-modulelist->names y))
                          (member-equal mod X))
-                    (subsetp-equal (vl-modinstlist->modnames (vl-module->modinsts mod))
+                    (subsetp-equal (vl-modinstlist->modnames (vl-module->flatten-modinsts mod))
                                    (vl-modulelist->names y)))
            :hints(("Goal" :induct (len x)))))
 
@@ -1098,9 +1139,9 @@ a @(see vl-modalist) for faster lookups.</p>
            ;; This is the same as the above, but with the hyps flipped for better
            ;; free variable matching.
            (implies (and (member-equal mod X)
-                         (subsetp-equal (vl-modinstlist->modnames (vl-modulelist->modinsts x))
+                         (subsetp-equal (vl-modinstlist->modnames (vl-modulelist->flatten-modinsts x))
                                         (vl-modulelist->names y)))
-                    (subsetp-equal (vl-modinstlist->modnames (vl-module->modinsts mod))
+                    (subsetp-equal (vl-modinstlist->modnames (vl-module->flatten-modinsts mod))
                                    (vl-modulelist->names y)))))
 
   (local (defthm lemma-3
@@ -1125,15 +1166,15 @@ a @(see vl-modalist) for faster lookups.</p>
   (local (defthm lemma-4
            (implies (and (vl-modulelist-p x)
                          (member-equal mod x)
-                         (member-equal b (vl-modinstlist->modnames (vl-module->modinsts mod))))
-                    (member-equal b (vl-modinstlist->modnames (vl-modulelist->modinsts x))))
+                         (member-equal b (vl-modinstlist->modnames (vl-module->flatten-modinsts mod))))
+                    (member-equal b (vl-modinstlist->modnames (vl-modulelist->flatten-modinsts x))))
            :hints(("Goal" :induct (len x)))))
 
   (local (defthm lemma-5
            (implies (and (vl-modulelist-p x)
                          (member-equal a (vl-modulelist->names x))
                          (member-equal b (vl-modinstlist->modnames
-                                          (vl-module->modinsts (vl-find-module a x)))))
+                                          (vl-module->flatten-modinsts (vl-find-module a x)))))
                     (in b (vl-modulelist-meganames x)))
            :hints(("goal"
                    :in-theory (e/d (vl-modulelist-meganames)
