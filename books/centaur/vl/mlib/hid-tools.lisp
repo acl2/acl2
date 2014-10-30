@@ -1040,6 +1040,22 @@ type @('logic[3:0]').</li> </ul>"
     (vl-hidexpr-traverse-datatype next-hid membtype)))
 
 
+(define vl-genarrayblocklist-find-block ((idx integerp)
+                                         (x vl-genarrayblocklist-p))
+  :returns (blk (iff (vl-genarrayblock-p blk) blk))
+  (if (atom x)
+      nil
+    (if (eql (vl-genarrayblock->index (car x)) (lifix idx))
+        (vl-genarrayblock-fix (car x))
+      (vl-genarrayblocklist-find-block idx (cdr x)))))
+
+(defthm vl-genelement-kind-by-tag
+  (implies (and (vl-genelement-p x)
+                (equal (tag x) foo)
+                (syntaxp (quotep foo)))
+           (equal (vl-genelement-kind x) foo))
+  :hints(("Goal" :in-theory (enable tag vl-genelement-kind vl-genelement-p))))
+
 (define vl-hidexpr-find-type ((x vl-expr-p)
                               (ss vl-scopestack-p))
   :parents (hid-tools)
@@ -1092,7 +1108,50 @@ type @('logic[3:0]').</li> </ul>"
              ((mv warning res-type)
               (vl-datatype-usertype-elim item.type new-ss 1000))
              ((when warning) (mv warning nil)))
-          (vl-hidexpr-traverse-datatype x res-type))))
+          (vl-hidexpr-traverse-datatype x res-type)))
+
+       ((when (eq (tag item) :vl-genblock))
+        (b* (((unless (vl-hidexpr-dot-p x))
+              (mv (make-vl-warning :type :vl-hidexpr-type-fail
+                                   :msg "Can't find a type for ~s0 because it ~
+                                         is a generate block name."
+                                   :args (list name1))
+                  nil))
+             (genblob (vl-sort-genelements (vl-genblock->elems item)))
+             (new-ss (vl-scopestack-push genblob new-ss)))
+          (vl-hidexpr-find-type (vl-hidexpr-rest x) new-ss)))
+
+       ((when (eq (tag item) :vl-genarray))
+        (b* (((unless (vl-hidexpr-dot-p x))
+              (mv (make-vl-warning :type :vl-hidexpr-type-fail
+                                   :msg "Can't find a type for ~s0 because it ~
+                                         is a generate array name."
+                                   :args (list name1))
+                  nil))
+             ((unless (eq (vl-expr-kind idx1) :nonatom))
+              (mv (make-vl-warning :type :vl-hidexpr-type-fail
+                                   :msg "Can't index into a generate array ~
+                                         without an index: ~a0."
+                                   :args (list idx1))
+                  nil))
+             ((vl-nonatom idx1))
+             ((unless (vl-expr-resolved-p (second idx1.args)))
+              (mv (make-vl-warning :type :vl-hidexpr-type-fail
+                                   :msg "Can't index into a generate array ~
+                                         because the index is unresoved: ~a0."
+                                   :args (list idx1))
+                  nil))
+             (blk (vl-genarrayblocklist-find-block (vl-resolved->val (second idx1.args))
+                                                   (vl-genarray->blocks item)))
+             ((unless blk)
+              (mv (make-vl-warning :type :vl-hidexpr-type-fail
+                                   :msg "The generate array has no block with ~
+                                         the given index: ~a0."
+                                   :args (list idx1))
+                  nil))
+             (genblob (vl-sort-genelements (vl-genarrayblock->elems blk)))
+             (new-ss (vl-scopestack-push genblob new-ss)))
+          (vl-hidexpr-find-type (vl-hidexpr-rest x) new-ss))))
 
     (mv (make-vl-warning :type :vl-hidexpr-type-fail
                          :msg "Looking up ~s0: item type not supported: ~s1~%"

@@ -305,7 +305,7 @@ patterns, producing a @(see sd-patalist-p)."
 
    (key sd-key-p "The @(see sd-key-p) for the missing wire.")
 
-   (ctx vl-context-p "Says where this problem originates.")))
+   (ctx vl-context1-p "Says where this problem originates.")))
 
 (deflist sd-problemlist-p (x)
   (sd-problem-p x)
@@ -314,7 +314,7 @@ patterns, producing a @(see sd-patalist-p)."
 (define sd-problem-score ((x sd-problem-p))
   :returns (score natp :rule-classes :type-prescription)
   (b* (((sd-problem x) x)
-       (elem (vl-context->elem x.ctx))
+       (elem (vl-context1->elem x.ctx))
        (elem-score (cond ((eq (tag elem) :vl-assign) 1)
                          ((eq (tag elem) :vl-always) -1)
                          ((eq (tag elem) :vl-initial) -1)
@@ -386,7 +386,7 @@ patterns, producing a @(see sd-patalist-p)."
   :short "Perform skip-detection for a single pattern within an expression."
   ((x sd-keylist-p)
    (y sd-keylist-p)
-   (ctx vl-context-p))
+   (ctx vl-context1-p))
   :returns (prob? (equal (sd-problem-p prob?) (if prob? t nil))
                   :hyp :fguard)
 
@@ -482,7 +482,7 @@ of three wires, but it's really suspicious to omit one out of ten.</p>"
    (x sd-patalist-p "The pattern produced for some particular expression.")
    (y sd-patalist-p "The global @(see sd-patalist-p) that we assume was 
                      produced for the entire module.")
-   (ctx vl-context-p "Where this expression came from."))
+   (ctx vl-context1-p "Where this expression came from."))
   :returns (probs sd-problemlist-p :hyp :fguard)
   :long "<p>We recur over @('dom').  For each pattern named in the expression,
 we use @(see sd-keylist-find-skipped) to try to find any skipped wires,
@@ -523,7 +523,7 @@ names in the module, which is needed by @(see sd-patalist-compare).</li>
     (if (atom ctxexprs)
         nil
       (b* ((expr       (caar ctxexprs))
-           (ctx        (cdar ctxexprs))
+           (ctx        (ec-call (vl-context1-fix$inline (cdar ctxexprs))))
            (expr-names (vl-expr-names expr))
            (expr-keys  (sd-keygen-list expr-names nil))
            (expr-pats  (sd-patalist expr-keys))
@@ -629,7 +629,7 @@ names in the module, which is needed by @(see sd-patalist-compare).</li>
 (define sd-pp-problem-header ((x sd-problem-p) &key (ps 'ps))
   (b* (((sd-problem x) x)
        ((sd-key x.key) x.key)
-       (modname (vl-context->mod x.ctx))
+       (modname (vl-context1->mod x.ctx))
        (htmlp (vl-ps->htmlp)))
     (vl-ps-seq
      (if htmlp
@@ -672,8 +672,8 @@ names in the module, which is needed by @(see sd-patalist-compare).</li>
                (sd-pp-problemlist-brief (cdr x)))))
 
 (defun vl-pp-context-modest (x)
-  (declare (xargs :guard (vl-context-p x)))
-  (let ((full (with-local-ps (vl-pp-modelement-full (vl-context->elem x)))))
+  (declare (xargs :guard (vl-context1-p x)))
+  (let ((full (with-local-ps (vl-pp-modelement-full (vl-context1->elem x)))))
     (if (< (length full) 230)
         full
       (cat (subseq full 0 230) "..." *nls*))))
@@ -681,8 +681,8 @@ names in the module, which is needed by @(see sd-patalist-compare).</li>
 
 (define sd-pp-problem-long ((x sd-problem-p) &key (ps 'ps))
   (b* (((sd-problem x) x)
-       (modname (vl-context->mod x.ctx))
-       (loc (vl-modelement-loc (vl-context->elem x.ctx))))
+       (modname (vl-context1->mod x.ctx))
+       (loc (vl-modelement-loc (vl-context1->elem x.ctx))))
     (if (not (vl-ps->htmlp))
         ;; Plain text
         (vl-ps-seq

@@ -72,10 +72,25 @@
            (module       (:import)          paramdecl vardecl fundecl taskdecl 
                                             (modinst :name instname :maybe-stringp t
                                                      :names-defined t)
-                                            (gateinst :maybe-stringp t :names-defined t))
+                                            (gateinst :maybe-stringp t :names-defined t)
+                                            (genelement :name blockname :maybe-stringp t
+                                                        :names-defined t
+                                                        :sum-type t
+                                                        :acc generates))
+           (genblob
+                         (:import)          vardecl paramdecl fundecl taskdecl
+                                            typedef
+                                            (modinst :name instname :maybe-stringp t
+                                                     :names-defined t)
+                                            (gateinst :maybe-stringp t :names-defined t)
+                                            (genelement :name blockname :maybe-stringp t
+                                                        :names-defined t
+                                                        :sum-type t
+                                                        :multi-tags (:vl-genbase :vl-genif :vl-gencase :vl-genloop :vl-genblock :vl-genarray)
+                                                        :acc generates))
            ;; fwdtypedefs could be included here but we hope to have resolved them all
            ;; to proper typedefs by the end of loading.
-           (fundecl      ()             (blockitem :acc decls :sum-type t))
+           (fundecl      ()             (blockitem :acc decls :sum-type t :transsum t))
            (design       (:import)      paramdecl vardecl fundecl taskdecl typedef)
            (package      (:import)      paramdecl vardecl fundecl taskdecl typedef))))
 
@@ -90,6 +105,7 @@
           ;; scope type      has item types or (type acc-name)
          '((interface    ()               portdecl)
            (module       ()               portdecl)
+           (genblob      ()               portdecl)
            (design           )
            ;; bozo add function/task ports?
            (package          ))))
@@ -371,8 +387,80 @@ the number of gate instances in the list.</p>"
     (string-listp (vl-gateinstlist->names x))))
 
 
+(define vl-genelement->blockname ((x vl-genelement-p))
+  :returns (blockname maybe-stringp)
+  (vl-genelement-case x
+    :vl-genblock x.name
+    :vl-genarray x.name
+    :otherwise nil))
+
+(define vl-genelementlist->blocknames-nrev ((x vl-genelementlist-p) nrev)
+  :parents (vl-genelementlist->blocknames)
+  (b* (((when (atom x))
+        (nrev-fix nrev))
+       (name (vl-genelement->blockname (car x)))
+       (nrev (if name
+                 (nrev-push name nrev)
+               nrev)))
+    (vl-genelementlist->blocknames-nrev (cdr x) nrev)))
 
 
+(define vl-genelementlist->blocknames ((x vl-genelementlist-p))
+  :parents (vl-genelementlist-p modnamespace)
+  :short "Collect all resolved block names in a @(see vl-genelementlist-p)."
+  :long "<p>Note the elements may be unresolved or may not be blocks at all, in
+which case we do not add anything.  In other words, the list of names returned
+may be shorter than the number of elements in the list.</p>"
+  :verify-guards nil
+  (mbe :logic (if (consp x)
+                  (if (vl-genelement->blockname (car x))
+                      (cons (vl-genelement->blockname (car x))
+                            (vl-genelementlist->blocknames (cdr x)))
+                    (vl-genelementlist->blocknames (cdr x)))
+                nil)
+       :exec (with-local-nrev (vl-genelementlist->blocknames-nrev x nrev)))
+  ///
+  (defthm vl-genelementlist->blocknames-nrev-removal
+    (equal (vl-genelementlist->blocknames-nrev x nrev)
+           (append nrev (vl-genelementlist->blocknames x)))
+    :hints(("Goal" :in-theory (enable vl-genelementlist->blocknames-nrev))))
+
+  (verify-guards vl-genelementlist->blocknames)
+
+  (defthm vl-genelementlist->blocknames-when-not-consp
+    (implies (not (consp x))
+             (equal (vl-genelementlist->blocknames x)
+                    nil)))
+
+  (defthm vl-genelementlist->blocknames-of-cons
+    (equal (vl-genelementlist->blocknames (cons a x))
+           (if (vl-genelement->blockname a)
+               (cons (vl-genelement->blockname a)
+                     (vl-genelementlist->blocknames x))
+             (vl-genelementlist->blocknames x))))
+
+  (defthm vl-genelementlist->blocknames-of-list-fix
+    (equal (vl-genelementlist->blocknames (list-fix x))
+           (vl-genelementlist->blocknames x)))
+
+  (defcong list-equiv equal (vl-genelementlist->blocknames x) 1
+    :hints(("Goal"
+            :in-theory (e/d (list-equiv)
+                            (vl-genelementlist->blocknames-of-list-fix))
+            :use ((:instance vl-genelementlist->blocknames-of-list-fix (x x))
+                  (:instance vl-genelementlist->blocknames-of-list-fix (x acl2::x-equiv))))))
+
+  (defthm vl-genelementlist->blocknames-of-append
+    (equal (vl-genelementlist->blocknames (append x y))
+           (append (vl-genelementlist->blocknames x)
+                   (vl-genelementlist->blocknames y))))
+
+  (defthm vl-genelementlist->blocknames-of-rev
+    (equal (vl-genelementlist->blocknames (rev x))
+           (rev (vl-genelementlist->blocknames x))))
+
+  (defthm string-listp-of-vl-genelementlist->blocknames
+    (string-listp (vl-genelementlist->blocknames x))))
 
 
 
@@ -404,10 +492,12 @@ the number of gate instances in the list.</p>"
                           (if look (symbol-name look) "NAME")))
                   (maybe-stringp (cadr (assoc-keyword :maybe-stringp kwds)))
                   (names-defined (cadr (assoc-keyword :names-defined kwds)))
-                  (sum-type      (cadr (assoc-keyword :sum-type      kwds))))
+                  (sum-type      (cadr (assoc-keyword :sum-type      kwds)))
+                  (transsum      (cadr (assoc-keyword :transsum      kwds))))
                (make-tmplsubst :features (append (and maybe-stringp '(:maybe-stringp))
                                                  (and names-defined '(:names-defined))
-                                                 (and sum-type      '(:sum-type)))
+                                                 (and sum-type      '(:sum-type))
+                                                 (and transsum      '(:transsum)))
                                :strsubst
                                `(("__TYPE__" ,(symbol-name type) . vl-package)
                                  ("__ACC__" ,acc . vl-package)
@@ -422,6 +512,18 @@ the number of gate instances in the list.</p>"
                              :features (append (cadar scopes)
                                                (and (cddar scopes) '(:has-items))))
              (scopes->tmplsubsts (cdr scopes)))))
+
+   (defun tmplsubsts-add-strsubsts (x strsubsts)
+     (if (atom x)
+         nil
+       (cons (change-tmplsubst (car x) :strsubst (append strsubsts (tmplsubst->strsubst (car x))))
+             (tmplsubsts-add-strsubsts (cdr x) strsubsts))))
+
+   (defun tmplsubsts-add-features (x features)
+     (if (atom x)
+         nil
+       (cons (change-tmplsubst (car x) :features (append features (tmplsubst->features (car x))))
+             (tmplsubsts-add-features (cdr x) features))))
 
    (defun template-proj (template substs)
      (declare (xargs :mode :program))
@@ -452,15 +554,30 @@ the number of gate instances in the list.</p>"
                (template-append template (cdr substs)))))))
 
 
+(local (defthmd tag-when-vl-genelement-p
+         (implies (vl-genelement-p x)
+                  (or (equal (tag x) :vl-genbase)
+                      (equal (tag x) :vl-genif)
+                      (equal (tag x) :vl-gencase)
+                      (equal (tag x) :vl-genloop)
+                      (equal (tag x) :vl-genblock)
+                      (equal (tag x) :vl-genarray)))
+         :hints(("Goal" :in-theory (enable vl-genelement-p tag)))
+         :rule-classes :forward-chaining))
+
 (make-event ;; Definition of vl-scopeitem type
  (let ((substs (typeinfos->tmplsubsts (scopes->typeinfos *vl-scopes->items*))))
    `(progn
+      (local (in-theory (enable tag-when-vl-genelement-p)))
       (deftranssum vl-scopeitem
         :short "Recognizer for an syntactic element that can occur within a scope."
-        ,(template-append '((:@ (not :sum-type) vl-__type__)) substs))
+        ,(template-append '((:@ (not :transsum) vl-__type__)) substs))
+      (local (in-theory (disable tag-when-vl-genelement-p
+                                 vl-genelement-p-by-tag-when-vl-scopeitem-p)))
+
 
       ,@(template-append
-         '((:@ :sum-type
+         '((:@ :transsum
             (defthm vl-scopeitem-p-when-vl-__type__-p
               (implies (vl-__type__-p x)
                        (vl-scopeitem-p x))
@@ -480,6 +597,19 @@ the number of gate instances in the list.</p>"
                                  (vl-scopeitemlist-p x))
                         :in-theory (enable (:i vl-scopeitemlist-p)))))
             substs)))))
+
+
+(fty::defalist vl-scopeitem-alist :key-type stringp :val-type vl-scopeitem-p)
+
+
+(defoption vl-maybe-scopeitem-p vl-scopeitem-p)
+
+(defprod vl-importresult
+  ((item vl-maybe-scopeitem-p)
+   (pkg-name stringp :rule-classes :type-prescription))
+  :layout :tree)
+
+(fty::defalist vl-importresult-alist :key-type stringp :val-type vl-importresult)
 
 (make-event ;; Definition of vl-scopedef type
  (let ((substs (typeinfos->tmplsubsts (scopes->typeinfos *vl-scopes->defs*))))
@@ -502,21 +632,9 @@ the number of gate instances in the list.</p>"
                         :in-theory (enable (:i vl-scopedeflist-p)))))
             substs)))))
 
-(make-event ;; Definition of vl-scope type
- (let ((subst (scopes->tmplsubsts *vl-scopes->items*)))
-   `(progn
-      (deftranssum vl-scope
-        :short "Recognizer for a syntactic element that can have named elements within it."
-        ,(template-proj 'vl-__type__ subst))
-
-      (defthm vl-scope-p-tag-forward
-        ;; BOZO is this better than the rewrite rule we currently add?
-        (implies (vl-scope-p x)
-                 (or . ,(template-proj '(equal (tag x) :vl-__type__) subst)))
-        :rule-classes :forward-chaining))))
 
 
-
+(fty::defalist vl-scopedef-alist :key-type stringp :val-type vl-scopedef-p)
 
 
 
@@ -545,6 +663,8 @@ the number of gate instances in the list.</p>"
 
       (define vl-__type__list-alist ((x vl-__type__list-p)
                                           acc)
+        :returns (alist (equal (vl-__type__-alist-p alist)
+                               (vl-__type__-alist-p acc)))
         (if (consp x)
             (:@ :maybe-stringp
              (let ((name (hons-copy (vl-__type__->__name__ (car x)))))
@@ -558,6 +678,12 @@ the number of gate instances in the list.</p>"
                  (vl-__type__list-alist (cdr x) acc)))
           acc)
         ///
+        (:@ :scopetype
+         (more-returns
+          (alist :name vl-__scopetype__-alist-p-of-vl-__type__list-alist
+                 (equal (vl-__scopetype__-alist-p alist)
+                        (vl-__scopetype__-alist-p acc))
+                 :hints(("Goal" :in-theory (enable vl-__scopetype__-alist-p))))))
         (defthm lookup-in-vl-__type__list-alist-acc-elim
           (implies (syntaxp (not (equal acc ''nil)))
                    (equal (hons-assoc-equal name (vl-__type__list-alist x acc))
@@ -611,6 +737,7 @@ the number of gate instances in the list.</p>"
                            consp-when-member-equal-of-vl-atts-p
                            acl2::consp-when-member-equal-of-keyval-alist-p
                            acl2::consp-of-car-when-alistp
+                           (tau-system)
                            not)))
 
 
@@ -671,7 +798,13 @@ the number of gate instances in the list.</p>"
                          name)))
 
        ,@(and (not sum-type)
-              `((defthm ,(mksym 'tag-of- fn)
+              `((local (defthm ,(mksym 'tag-when- element-p '-strong)
+                (implies (,element-p x)
+                         (equal (tag x)
+                                ,tag))
+                  :hints(("Goal" :in-theory (enable ,(mksym 'tag-when- element-p))))))
+
+                (defthm ,(mksym 'tag-of- fn)
                   (equal (tag (,fn name x))
                          (if (,fn name x)
                              ,tag
@@ -680,7 +813,10 @@ the number of gate instances in the list.</p>"
        (defthm ,(mksym 'member-equal-of- fn)
          (implies (force (,list-p x))
                   (iff (member-equal (,fn name x) x)
-                       (,fn name x))))
+                       (,fn name x)))
+         :hints (("goal" :induct (,fn name x)
+                  :expand ((:free (name) (,fn name x))
+                           (:free (name) (,fn name nil))))))
 
        (defthm ,(mksym 'consp-of- fn '-when-member-equal)
          (implies (and (member-equal name (,list->names x))
@@ -689,13 +825,32 @@ the number of gate instances in the list.</p>"
 
        (local (set-default-hints nil)))))
 
+(local (defthm vl-genelement-fix-type
+         (consp (vl-genelement-fix x))
+         :hints(("Goal" :expand ((:with vl-genelement-fix (vl-genelement-fix x)))))
+         :rule-classes :type-prescription))
+
+(local (defthm vl-blockitem-fix-type
+         (consp (vl-blockitem-fix x))
+         :hints(("Goal" :expand ((:with vl-blockitem-fix (vl-blockitem-fix x)))))
+         :rule-classes :type-prescription))
+
 
 (make-event ;; Definition of scopeitem alists/finders
- (b* ((substs (typeinfos->tmplsubsts (scopes->typeinfos (append *vl-scopes->items*
-                                                                *vl-scopes->defs*
-                                                                *vl-scopes->pkgs*
-                                                                *vl-scopes->portdecls*))))
-      (events (template-proj *scopeitem-alist/finder-template* substs)))
+ (b* ((itemsubsts (tmplsubsts-add-strsubsts
+                   (tmplsubsts-add-features
+                    (typeinfos->tmplsubsts (scopes->typeinfos *vl-scopes->items*))
+                    '(:scopetype))
+                   `(("__SCOPETYPE__" "SCOPEITEM" . vl-package))))
+      (defsubsts (tmplsubsts-add-strsubsts
+                  (tmplsubsts-add-features
+                   (typeinfos->tmplsubsts (scopes->typeinfos *vl-scopes->defs*))
+                   '(:scopetype))
+                  `(("__SCOPETYPE__" "SCOPEDEF" . vl-package))))
+      (pkgsubsts (typeinfos->tmplsubsts (scopes->typeinfos *vl-scopes->pkgs*)))
+      (portsubsts (typeinfos->tmplsubsts (scopes->typeinfos *vl-scopes->portdecls*)))
+      (events (template-proj *scopeitem-alist/finder-template*
+                             (append itemsubsts defsubsts pkgsubsts portsubsts))))
    `(progn . ,events)))
 
 
@@ -749,7 +904,7 @@ the number of gate instances in the list.</p>"
 
 
 (local
- (defun def-scopetype-find (scope importp itemtypes resultname resulttype)
+ (defun def-scopetype-find (scope importp itemtypes resultname resulttype scopeitemtype)
    (declare (xargs :mode :program))
    (b* ((substs (typeinfos->tmplsubsts itemtypes))
         ((unless itemtypes) '(value-triple nil))
@@ -772,7 +927,10 @@ the number of gate instances in the list.</p>"
                :ignore-ok t
                ((scope vl-__scope__-p)
                 acc)
-               :returns (alist)
+               :returns (alist (:@ :scopeitemtype
+                                (implies (vl-__scopeitemtype__-alist-p acc)
+                                         (vl-__scopeitemtype__-alist-p alist))
+                                :hints(("Goal" :in-theory (enable vl-__scopeitemtype__-alist-p)))))
                (b* (((vl-__scope__ scope))
                     . ,(reverse
                         (template-proj
@@ -798,10 +956,14 @@ the number of gate instances in the list.</p>"
                ;;                   (let ((look (hons-assoc-equal name (vl-__scope__-scope-__result__-alist scope nil))))
                ;;                     (mv (consp look) (cdr look))))))
                ))))
-     (acl2::template-subst-fn template (and importp '(:import)) nil nil nil
+     (acl2::template-subst-fn template
+                              (append (and importp '(:import))
+                                      (and scopeitemtype '(:scopeitemtype)))
+                              nil nil nil
                               `(("__SCOPE__" ,(symbol-name scope) . vl-package)
                                 ("__RESULT__" ,(symbol-name resultname) . vl-package)
-                                ("__RESULTTYPE__" ,(symbol-name resulttype) . vl-package))
+                                ("__RESULTTYPE__" ,(symbol-name resulttype) . vl-package)
+                                ("__SCOPEITEMTYPE__" ,(symbol-name scopeitemtype) . vl-package))
                               'vl-package))))
 
 
@@ -812,7 +974,7 @@ the number of gate instances in the list.</p>"
                  (def-scopetype-find
                    '__type__
                    (:@ :import t) (:@ (not :import) nil)
-                   '__items__ 'package 'vl-package-p))
+                   '__items__ 'package 'vl-package-p 'package))
                substs))))
 
 
@@ -822,7 +984,7 @@ the number of gate instances in the list.</p>"
                '(make-event
                  (def-scopetype-find '__type__
                    (:@ :import t) (:@ (not :import) nil)
-                   '__items__ 'item 'vl-scopeitem-p))
+                   '__items__ 'item 'vl-scopeitem-p 'scopeitem))
                substs))))
 
 (make-event ;; Definitions of e.g. vl-design-scope-find-definition and vl-design-scope-definition-alist
@@ -831,7 +993,7 @@ the number of gate instances in the list.</p>"
                '(make-event
                  (def-scopetype-find '__type__ 
                    (:@ :import t) (:@ (not :import) nil)
-                   '__items__ 'definition 'vl-scopedef-p))
+                   '__items__ 'definition 'vl-scopedef-p 'scopedef))
                substs))))
 
 
@@ -841,7 +1003,7 @@ the number of gate instances in the list.</p>"
                '(make-event
                  (def-scopetype-find '__type__
                    (:@ :import t) (:@ (not :import) nil)
-                   '__items__ 'portdecl 'vl-portdecl-p))
+                   '__items__ 'portdecl 'vl-portdecl-p 'portdecl))
                substs))))
 
 
@@ -860,6 +1022,34 @@ the number of gate instances in the list.</p>"
   (memoize 'vl-design-scope-package-alist-top))
 
 
+(defprod vl-scopeinfo
+  ((locals  vl-scopeitem-alist-p "Locally defined names bound to their declarations")
+   (imports vl-importresult-alist-p
+            "Explicitly imported names bound to import result, i.e. package-name and declaration)")
+   (star-packages string-listp "Names of packages imported with *"))
+  :layout :tree
+  :tag :vl-scopeinfo)
+
+(make-event ;; Definition of vl-scope type
+ (let ((subst (scopes->tmplsubsts *vl-scopes->items*)))
+   `(progn
+      (deftranssum vl-scope
+        :short "Recognizer for a syntactic element that can have named elements within it."
+        (,@(template-proj 'vl-__type__ subst)
+           vl-scopeinfo))
+
+      (defthm vl-scope-p-tag-forward
+        ;; BOZO is this better than the rewrite rule we currently add?
+        (implies (vl-scope-p x)
+                 (or ,@(template-proj '(equal (tag x) :vl-__type__) subst)
+                     (equal (tag x) :vl-scopeinfo)))
+        :rule-classes :forward-chaining))))
+
+
+
+
+
+
 ;; (make-event ;; Definition of vl-package-scope-find-nonimported-item
 ;;  (b* ((substs (scopes->tmplsubsts (list (assoc 'package *vl-scopes->items*)))))
 ;;    `(progn . ,(template-proj
@@ -867,7 +1057,6 @@ the number of gate instances in the list.</p>"
 ;;                  (def-scopetype-find '__type__ nil
 ;;                    '__items__ 'nonimported-item 'vl-scopeitem-p))
 ;;                substs))))
-
 
 
 
@@ -895,7 +1084,11 @@ the number of gate instances in the list.</p>"
   (more-returns
    (package :name maybe-string-type-of-vl-importlist-find-explicit-item-package
             (or (stringp package) (not package))
-            :rule-classes :type-prescription)))
+            :rule-classes :type-prescription))
+
+  (more-returns
+   (package :name package-when-item-of-vl-importlist-find-explicit-item-package
+            (implies item package))))
 
 ;; (local
 ;;  (defthm equal-of-vl-importlist-find-explicit-item
@@ -914,6 +1107,8 @@ the number of gate instances in the list.</p>"
 
 (define vl-importlist->explicit-item-alist ((x vl-importlist-p) (design vl-maybe-design-p)
                                             acc)
+  :returns (alist (implies (vl-importresult-alist-p acc)
+                           (vl-importresult-alist-p alist)))
   (b* (((when (atom x)) acc)
        ((vl-import x1) (car x))
        ((unless (stringp x1.part))
@@ -923,7 +1118,7 @@ the number of gate instances in the list.</p>"
         ;; imported the name from the package but can't find out.
        (package (and design (cdr (hons-get x1.pkg (vl-design-scope-package-alist-top design)))))
        (item (and package (cdr (hons-get x1.part (vl-package-scope-item-alist-top package))))))
-    (hons-acons x1.part (cons x1.pkg item)
+    (hons-acons x1.part (make-vl-importresult :item item :pkg-name x1.pkg)
                 (vl-importlist->explicit-item-alist (cdr x) design acc)))
   ///
   (defthm vl-importlist->explicit-item-alist-lookup-acc-elim
@@ -936,7 +1131,7 @@ the number of gate instances in the list.</p>"
              (equal (hons-assoc-equal name (vl-importlist->explicit-item-alist x design nil))
                     (b* (((mv pkg item) (vl-importlist-find-explicit-item name x design)))
                       (and (or pkg item)
-                           (cons name (cons pkg item))))))
+                           (cons name (make-vl-importresult :item item :pkg-name pkg))))))
     :hints(("Goal" :in-theory (enable vl-importlist-find-explicit-item)))))
 
 (define vl-importlist-find-implicit-item ((name stringp) (x vl-importlist-p) (design vl-maybe-design-p))
@@ -986,25 +1181,22 @@ the number of gate instances in the list.</p>"
     :hints(("Goal" :in-theory (enable vl-importlist-find-implicit-item
                                       vl-importlist->star-packages)))))
 
-(defprod vl-scopeinfo
-  ((locals "Locally defined names bound to their declarations")
-   (imports "Explicitly imported names bound to (package-name . declaration)")
-   (star-packages string-listp "Names of packages imported with *"))
-  :layout :tree)
 
-(define vl-scopeinfo-lookup ((name stringp) (x vl-scopeinfo-p) (design vl-maybe-design-p))
-  :returns (mv package item)
+
+
+
+
+(define vl-scopeinfo-find-item ((name stringp) (x vl-scopeinfo-p) (design vl-maybe-design-p))
+  :returns (mv (package (iff (stringp package) package))
+               (item (iff (vl-scopeitem-p item) item)))
   (b* (((vl-scopeinfo x))
        (name (string-fix name))
        (local-item (cdr (hons-get name x.locals)))
        ((when local-item) (mv nil local-item))
        (import-item (cdr (hons-get name x.imports)))
-       ((when (consp import-item)) (mv (car import-item) (cdr import-item))))
+       ((when import-item) (mv (vl-importresult->pkg-name import-item)
+                               (vl-importresult->item import-item))))
     (vl-import-stars-find-item name x.star-packages design)))
-       
-
-
-
 
 
 
@@ -1017,7 +1209,12 @@ the number of gate instances in the list.</p>"
 
 ;; (fty::deflist vl-scopelist :elt-type vl-scope :elementp-of-nil nil)
 
-
+(local (defthm type-of-vl-scope-fix
+         (consp (vl-scope-fix x))
+         :hints (("goal" :use ((:instance consp-when-vl-scope-p
+                                (x (vl-scope-fix x))))
+                  :in-theory (disable consp-when-vl-scope-p)))
+         :rule-classes :type-prescription))
 
 
 (fty::defflexsum vl-scopestack
@@ -1038,7 +1235,11 @@ the number of gate instances in the list.</p>"
   (vl-scopestack-case x
     :null nil
     :global x.design
-    :local (vl-scopestack->design x.super)))
+    :local (vl-scopestack->design x.super))
+  ///
+  (more-returns
+   (design :name vl-maybe-design-p-of-vl-scopestack->design
+           (vl-maybe-design-p design))))
 
 (define vl-scopestack-push ((scope vl-scope-p) (x vl-scopestack-p))
   :returns (x1 vl-scopestack-p)
@@ -1057,24 +1258,33 @@ the number of gate instances in the list.</p>"
   (make-vl-scopestack-global :design design))
 
 
+(define vl-scopestack-nesting-level ((x vl-scopestack-p))
+  :returns (level natp)
+  :measure (vl-scopestack-count x)
+  (vl-scopestack-case x
+    :null 0
+    :global 1
+    :local (+ 1 (vl-scopestack-nesting-level x.super))))
+
+
 (local (defthm vl-maybe-design-p-when-iff
          (implies (iff (vl-design-p x) x)
                   (vl-maybe-design-p x))))
 
 
 (local
- (defun def-vl-scope-find (table result resulttype stackp importsp)
+ (defun def-vl-scope-find-item (table result resulttype stackp importsp)
    (declare (xargs :mode :program))
    (b* ((substs (scopes->tmplsubsts table))
         (template
           `(progn
-             (define vl-scope-find-__result__
-               :short "Look up a plain identifier to find an __result__ in a scope."
+             (define vl-scope-find-item
+               :short "Look up a plain identifier to find an item in a scope."
                ((name  stringp)
                 (scope vl-scope-p)
-                (:@ :import (design vl-maybe-design-p)))
+                (design vl-maybe-design-p))
                :returns (mv (pkg-name    (iff (stringp pkg-name) pkg-name))
-                            (__result__ (iff (__resulttype__ __result__) __result__)))
+                            (item  (iff (vl-scopeitem-p item) item)))
                (b* ((scope (vl-scope-fix scope)))
                  (case (tag scope)
                    ,@(template-append
@@ -1091,18 +1301,20 @@ the number of gate instances in the list.</p>"
                                 ((when (or pkg item)) (mv pkg item)))
                              (vl-importlist-find-implicit-item name scope.imports design))))))
                       substs)
+                   (:vl-scopeinfo
+                    (vl-scopeinfo-find-item name scope design))
                    (otherwise (mv nil nil))))
                ///
                (more-returns
-                (pkg-name :name maybe-string-type-of-vl-scope-find-__result__-pkg-name
-                         (or (stringp pkg-name) (not pkg-name))
-                         :rule-classes :type-prescription)))
+                (pkg-name :name maybe-string-type-of-vl-scope-find-item-pkg-name
+                          (or (stringp pkg-name) (not pkg-name))
+                          :rule-classes :type-prescription)))
 
 
-             (define vl-scope-__result__-scopeinfo
-               :short "Make a fast lookup table for __result__s in a scope.  Memoized."
+             (define vl-scope->scopeinfo
+               :short "Make a fast lookup table for items in a scope.  Memoized."
                ((scope vl-scope-p)
-                (:@ :import (design vl-maybe-design-p)))
+                (design vl-maybe-design-p))
                :returns (scopeinfo vl-scopeinfo-p)
                (b* ((scope (vl-scope-fix scope)))
                  (case (tag scope)
@@ -1118,25 +1330,148 @@ the number of gate instances in the list.</p>"
                                         (vl-importlist->explicit-item-alist scope.imports design nil))
                               :star-packages (vl-importlist->star-packages scope.imports)))))))
                       substs)
+                   (:vl-scopeinfo (vl-scopeinfo-fix scope))
                    (otherwise (make-vl-scopeinfo))))
                ///
-               (local (in-theory (enable vl-scope-find-__result__
-                                         vl-scopeinfo-lookup)))
-               (defthm vl-scope-__result__-scopeinfo-correct
+               (local (in-theory (enable vl-scope-find-item
+                                         vl-scopeinfo-find-item)))
+               (defthm vl-scope->scopeinfo-correct
                  (implies (stringp name)
-                          (equal (vl-scopeinfo-lookup name (vl-scope-__result__-scopeinfo scope (:@ :import design)) design)
+                          (equal (vl-scopeinfo-find-item name (vl-scope->scopeinfo scope design) design)
+                                 (vl-scope-find-item name scope design)))
+                 :hints (("goal" :expand ((vl-import-stars-find-item name nil design)))))
+               (memoize 'vl-scope->scopeinfo))
+
+             (define vl-scope-find-item-fast
+               :short "Like @(see vl-scope-find-item), but uses a fast lookup table"
+               ((name stringp)
+                (scope vl-scope-p)
+                (design vl-maybe-design-p))
+               :enabled t
+               (mbe :logic (vl-scope-find-item name scope design)
+                    :exec (vl-scopeinfo-find-item name (vl-scope->scopeinfo scope design) design )))
+
+             ,@(and stackp
+                    `((define vl-scopestack-find-item/context
+                        ((name stringp)
+                         (ss   vl-scopestack-p))
+                        :hints (("goal" :expand ((vl-scopestack-fix ss))))
+                        :guard-hints (("goal" :expand ((vl-scopestack-p ss))))
+                        :returns (mv (item (iff (vl-scopeitem-p item) item))
+                                     (item-ss vl-scopestack-p)
+                                     (pkg-name (iff (stringp pkg-name) pkg-name)))
+                        :measure (vl-scopestack-count ss)
+                        (b* ((ss (vl-scopestack-fix ss)))
+                          (vl-scopestack-case ss
+                            :null (mv nil nil nil)
+                            :global (b* (((mv pkg-name item)
+                                          (vl-scope-find-item-fast name ss.design
+                                                                   ss.design)))
+                                      (mv item (vl-scopestack-fix ss) pkg-name))
+                            :local (b* ((design (vl-scopestack->design ss))
+                                        ((mv pkg-name item)
+                                         (vl-scope-find-item-fast name ss.top design))
+                                        ((when (or pkg-name item))
+                                         (mv item ss pkg-name)))
+                                     (vl-scopestack-find-item/context name ss.super)))))
+
+                      (define vl-scopestack-find-item
+                        :short "Look up a plain identifier in the current scope stack."
+                        ((name stringp)
+                         (ss   vl-scopestack-p))
+                        :returns (item (iff (vl-scopeitem-p item) item))
+                        (b* (((mv item & &) (vl-scopestack-find-item/context name ss)))
+                          item))
+
+                      (define vl-scopestack-find-item/ss
+                        :short "Look up a plain identifier in the current scope stack."
+                        ((name stringp)
+                         (ss   vl-scopestack-p))
+                        :returns (mv (item (iff (__resulttype__ item) item))
+                                     (item-ss vl-scopestack-p))
+                        (b* (((mv item context-ss pkg-name)
+                              (vl-scopestack-find-item/context name ss))
+                             ((unless pkg-name) (mv item context-ss))
+                             (design (vl-scopestack->design context-ss))
+                             (pkg (and design (cdr (hons-get pkg-name (vl-design-scope-package-alist-top design)))))
+                             ((unless pkg) ;; this should mean item is already nil
+                              (mv item nil))
+                             (pkg-ss (vl-scopestack-push pkg (vl-scopestack-init design))))
+                          (mv item pkg-ss))))))))
+     (acl2::template-subst-fn template (and importsp '(:import)) nil nil nil
+                              `(("__RESULT__" ,(symbol-name result) . vl-package)
+                                ("__RESULTTYPE__" ,(symbol-name resulttype) . vl-package))
+                              'vl-package))))
+
+(local (defthm maybe-scopeitem-when-iff
+         (implies (or (vl-scopeitem-p x)
+                      (not x))
+                  (vl-maybe-scopeitem-p x))
+         ))
+
+(make-event
+#||
+  (define vl-scope-find-item ...)
+  (define vl-scope-item-alist ...)
+  (define vl-scope-find-item-fast ...)
+  (define vl-scopestack-find-item ...)
+||#
+
+ (def-vl-scope-find-item *vl-scopes->items* 'item 'vl-scopeitem-p t t))
+
+
+
+(local
+ (defun def-vl-scope-find (table result resulttype stackp)
+   (declare (xargs :mode :program))
+   (b* ((substs (scopes->tmplsubsts table))
+        (template
+          `(progn
+             (define vl-scope-find-__result__
+               :short "Look up a plain identifier to find an __result__ in a scope."
+               ((name  stringp)
+                (scope vl-scope-p))
+               :returns (__result__ (iff (vl-__resulttype__-p __result__) __result__))
+               (b* ((scope (vl-scope-fix scope)))
+                 (case (tag scope)
+                   ,@(template-append
+                      '((:@ :has-items
+                         (:vl-__type__
+                          (vl-__type__-scope-find-__result__ name scope))))
+                      substs)
+                   (otherwise nil))))
+
+
+             (define vl-scope-__result__-alist
+               :short "Make a fast lookup table for __result__s in a scope.  Memoized."
+               ((scope vl-scope-p))
+               :returns (alist vl-__resulttype__-alist-p)
+               (b* ((scope (vl-scope-fix scope)))
+                 (case (tag scope)
+                   ,@(template-append
+                      '((:@ :has-items
+                         (:vl-__type__
+                          (b* (((vl-__type__ scope :quietp t)))
+                            (make-fast-alist
+                             (vl-__type__-scope-__result__-alist scope nil))))))
+                      substs)
+                   (otherwise nil)))
+               ///
+               (local (in-theory (enable vl-scope-find-__result__)))
+               (defthm vl-scope-__result__-alist-correct
+                 (implies (stringp name)
+                          (equal (cdr (hons-assoc-equal name (vl-scope-__result__-alist scope)))
                                  (vl-scope-find-__result__ name scope (:@ :import design))))
                  :hints (("goal" :expand ((vl-import-stars-find-item name nil design)))))
-               (memoize 'vl-scope-__result__-scopeinfo))
+               (memoize 'vl-scope-__result__-alist))
 
              (define vl-scope-find-__result__-fast
                :short "Like @(see vl-scope-find-__result__), but uses a fast lookup table"
                ((name stringp)
-                (scope vl-scope-p)
-                (:@ :import (design vl-maybe-design-p)))
+                (scope vl-scope-p))
                :enabled t
-               (mbe :logic (vl-scope-find-__result__ name scope (:@ :import design))
-                    :exec (vl-scopeinfo-lookup name (vl-scope-__result__-scopeinfo scope (:@ :import design)) (:@ :import design) (:@ (not :import) nil))))
+               (mbe :logic (vl-scope-find-__result__ name scope)
+                    :exec (cdr (hons-get name (vl-scope-__result__-alist scope)))))
 
              ,@(and stackp
                     `((define vl-scopestack-find-__result__/context
@@ -1144,30 +1479,27 @@ the number of gate instances in the list.</p>"
                          (ss   vl-scopestack-p))
                         :hints (("goal" :expand ((vl-scopestack-fix ss))))
                         :guard-hints (("goal" :expand ((vl-scopestack-p ss))))
-                        :returns (mv (__result__ (iff (__resulttype__ __result__) __result__))
+                        :returns (mv (__result__ (iff (vl-__resulttype__-p __result__) __result__))
                                      (__result__-ss vl-scopestack-p)
                                      (pkg-name (iff (stringp pkg-name) pkg-name)))
                         :measure (vl-scopestack-count ss)
                         (b* ((ss (vl-scopestack-fix ss)))
                           (vl-scopestack-case ss
                             :null (mv nil nil nil)
-                            :global (b* (((mv pkg-name __result__)
-                                          (vl-scope-find-__result__-fast name ss.design
-                                                                         (:@ :import ss.design))))
-                                      (mv __result__ (vl-scopestack-fix ss) pkg-name))
-                            :local (b* ((:@ :import
-                                         (design (vl-scopestack->design ss)))
-                                        ((mv pkg-name __result__)
-                                         (vl-scope-find-__result__-fast name ss.top (:@ :import design)))
-                                        ((when (or pkg-name __result__))
-                                         (mv __result__ ss pkg-name)))
+                            :global (b* ((__result__
+                                          (vl-scope-find-__result__-fast name ss.design)))
+                                      (mv __result__ (vl-scopestack-fix ss) nil))
+                            :local (b* ((__result__
+                                         (vl-scope-find-__result__-fast name ss.top))
+                                        ((when __result__)
+                                         (mv __result__ ss nil)))
                                      (vl-scopestack-find-__result__/context name ss.super)))))
 
                       (define vl-scopestack-find-__result__
                         :short "Look up a plain identifier in the current scope stack."
                         ((name stringp)
                          (ss   vl-scopestack-p))
-                        :returns (__result__ (iff (__resulttype__ __result__) __result__))
+                        :returns (__result__ (iff (vl-__resulttype__-p __result__) __result__))
                         (b* (((mv __result__ & &) (vl-scopestack-find-__result__/context name ss)))
                           __result__))
 
@@ -1175,7 +1507,7 @@ the number of gate instances in the list.</p>"
                         :short "Look up a plain identifier in the current scope stack."
                         ((name stringp)
                          (ss   vl-scopestack-p))
-                        :returns (mv (__result__ (iff (__resulttype__ __result__) __result__))
+                        :returns (mv (__result__ (iff (vl-__resulttype__-p __result__) __result__))
                                      (__result__-ss vl-scopestack-p))
                         (b* (((mv __result__ context-ss pkg-name)
                               (vl-scopestack-find-__result__/context name ss))
@@ -1186,29 +1518,23 @@ the number of gate instances in the list.</p>"
                               (mv __result__ nil))
                              (pkg-ss (vl-scopestack-push pkg (vl-scopestack-init design))))
                           (mv __result__ pkg-ss))))))))
-     (acl2::template-subst-fn template (and importsp '(:import)) nil nil nil
+     (acl2::template-subst-fn template nil nil nil nil
                               `(("__RESULT__" ,(symbol-name result) . vl-package)
                                 ("__RESULTTYPE__" ,(symbol-name resulttype) . vl-package))
                               'vl-package))))
 
-(make-event
-#||
-  (define vl-scope-find-item ...)
-  (define vl-scope-item-alist ...)
-  (define vl-scope-find-item-fast ...)
-  (define vl-scopestack-find-item ...)
-||#
 
- (def-vl-scope-find *vl-scopes->items* 'item 'vl-scopeitem-p t t))
+
+
 
 (make-event
-#||
-  (define vl-scope-find-definition ...)
-  (define vl-scope-definition-alist ...)
-  (define vl-scope-find-definition-fast ...)
-  (define vl-scopestack-find-definition ...)
-||#
- (def-vl-scope-find *vl-scopes->defs* 'definition 'vl-scopedef-p t nil))
+ #||
+ (define vl-scope-find-definition ...)
+ (define vl-scope-definition-alist ...)
+ (define vl-scope-find-definition-fast ...)
+ (define vl-scopestack-find-definition ...)
+ ||#
+ (def-vl-scope-find *vl-scopes->defs* 'definition 'scopedef t))
 
 (make-event
 #||
@@ -1217,7 +1543,7 @@ the number of gate instances in the list.</p>"
   (define vl-scope-find-package-fast ...)
   (define vl-scopestack-find-package ...)
 ||#
- (def-vl-scope-find *vl-scopes->pkgs* 'package 'vl-package-p t nil))
+ (def-vl-scope-find *vl-scopes->pkgs* 'package 'package t))
 
 (make-event
 #||
@@ -1225,16 +1551,16 @@ the number of gate instances in the list.</p>"
   (define vl-scope-portdecl-alist ...)
   (define vl-scope-find-portdecl-fast ...)
 ||#
- (def-vl-scope-find *vl-scopes->portdecls* 'portdecl 'vl-portdecl-p nil nil))
+ (def-vl-scope-find *vl-scopes->portdecls* 'portdecl 'portdecl nil))
 
 
 
 
 (define vl-scopestacks-free ()
-  (progn$ (clear-memoize-table 'vl-scope-item-scopeinfo)
-          (clear-memoize-table 'vl-scope-definition-scopeinfo)
-          (clear-memoize-table 'vl-scope-package-scopeinfo)
-          (clear-memoize-table 'vl-scope-portdecl-scopeinfo)
+  (progn$ (clear-memoize-table 'vl-scope->scopeinfo)
+          (clear-memoize-table 'vl-scope-definition-alist)
+          (clear-memoize-table 'vl-scope-package-alist)
+          (clear-memoize-table 'vl-scope-portdecl-alist)
           (clear-memoize-table 'vl-design-scope-package-alist-top)
           (clear-memoize-table 'vl-package-scope-item-alist-top)))
 

@@ -77,7 +77,7 @@
                  :msg "~a0: a module may not contain ~x1s."
                  :args (list bad-item (tag bad-item)))))
 
-       ((vl-genelement-collection c) (vl-sort-genelements items))
+       ((vl-genblob c) (vl-sort-genelements items))
        ;; ((mv warnings c.portdecls c.vardecls)
        ;;  (vl-portdecl-sign c.portdecls c.vardecls warnings))
        )
@@ -86,13 +86,14 @@
                     :ports      ports
                     :portdecls  c.portdecls
                     :assigns    c.assigns
+                    :aliases    c.aliases
                     :vardecls   c.vardecls
                     :paramdecls c.paramdecls
                     :fundecls   c.fundecls
                     :taskdecls  c.taskdecls
                     :modinsts   c.modinsts
                     :gateinsts  c.gateinsts
-                    :alwayses   c.alwayss
+                    :alwayses   c.alwayses
                     :initials   c.initials
                     :generates  c.generates
                     :imports    c.imports
@@ -167,7 +168,7 @@
        (params := (vl-maybe-parse-parameter-port-list))
        (ports := (vl-maybe-parse-list-of-ports))
        (:= (vl-match-token :vl-semi))
-       (items := (vl-parse-0+-genelements))
+       (items := (vl-parse-genelements-until :vl-kwd-endmodule))
        (endkwd := (vl-match-token :vl-kwd-endmodule))
 
        (:= (vl-parse-endblock-name (vl-idtoken->name id) "module/endmodule"))
@@ -199,7 +200,7 @@
        (params := (vl-maybe-parse-parameter-port-list))
        ((portdecls . netdecls) := (vl-maybe-parse-list-of-port-declarations))
        (:= (vl-match-token :vl-semi))
-       (items := (vl-parse-0+-genelements))
+       (items := (vl-parse-genelements-until :vl-kwd-endmodule))
        (endkwd := (vl-match-token :vl-kwd-endmodule))
 
        (:= (vl-parse-endblock-name (vl-idtoken->name id) "module/endmodule"))

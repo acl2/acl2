@@ -31,6 +31,7 @@
 (in-package "VL")
 (include-book "../mlib/consteval")
 (include-book "../mlib/stmt-tools")
+(include-book "../mlib/blocks")
 (local (include-book "../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
 
@@ -84,7 +85,7 @@ arisen during the course of unparameterization.</p>"
        (context (vl-expr-fix context))
        (args    (vl-exprlist-fix args)))
     (case op
-      (:vl-partselect-colon
+      ((:vl-select-colon :vl-partselect-colon)
        (b* ((from   (vl-expr-fix (first args)))
             (index1 (vl-expr-fix (second args)))
             (index2 (vl-expr-fix (third args)))
@@ -106,7 +107,30 @@ arisen during the course of unparameterization.</p>"
             (lsb (vl-make-index (vl-resolved->val index2))))
          (mv (ok) (list from msb lsb))))
 
-      (:vl-bitselect
+      ((:vl-select-pluscolon :vl-partselect-pluscolon
+        :vl-select-minuscolon :vl-partselect-minuscolon)
+       (b* ((from   (vl-expr-fix (first args)))
+            (index1 (vl-expr-fix (second args)))
+            (index2 (vl-expr-fix (third args)))
+            ((mv ok1 index1) (vl-consteval index1 ss))
+            ((mv ok2 index2) (vl-consteval index2 ss))
+            ((unless ok2)
+             (mv (warn :type :vl-bad-select
+                       ;; BOZO need some context
+                       :msg "Unable to safely resolve width on part-select ~a0."
+                       :args (list context))
+                 args))
+            ;; See also vl-rangeresolve.  We could create a part-select that
+            ;; just uses the reduced index1 and index2 expressions.  But nobody
+            ;; wants to look at things like foo[4'd3 : 4'd0].  So, instead of
+            ;; keeping the size information, use vl-make-index, which can
+            ;; usually build special indexes that the pretty-printer knows not
+            ;; to put sizes on.
+            (new-idx1 (if ok1 (vl-make-index (vl-resolved->val index1)) index1))
+            (new-idx2 (vl-make-index (vl-resolved->val index2))))
+         (mv (ok) (list from new-idx1 new-idx2))))
+
+      ((:vl-bitselect :vl-index)
        (b* ((from  (vl-expr-fix (first args)))
             (index (vl-expr-fix (second args)))
             ((mv ok index) (vl-consteval index ss))
@@ -464,28 +488,43 @@ multiconcats throughout an expression."
 
 (def-vl-selresolve-list vl-fundecllist :element vl-fundecl)
 
-(define vl-module-selresolve ((x vl-module-p) (ss vl-scopestack-p))
-  :returns (new-x vl-module-p)
-  (b* (((vl-module x) x)
-       ((when (vl-module->hands-offp x))
-        (vl-module-fix x))
-       (warnings                x.warnings)
+(def-genblob-transform vl-genblob-selresolve ((ss vl-scopestack-p)
+                                                (warnings vl-warninglist-p))
+  :returns ((warnings vl-warninglist-p))
+  ;; :verify-guards nil
+  (b* (((vl-genblob x) x)
+       (ss (vl-scopestack-push (vl-genblob-fix x) ss))
        ((mv warnings ports)     (vl-portlist-selresolve     x.ports ss     warnings))
        ((mv warnings assigns)   (vl-assignlist-selresolve   x.assigns ss   warnings))
        ((mv warnings modinsts)  (vl-modinstlist-selresolve  x.modinsts ss  warnings))
        ((mv warnings gateinsts) (vl-gateinstlist-selresolve x.gateinsts ss warnings))
        ((mv warnings alwayses)  (vl-alwayslist-selresolve   x.alwayses ss  warnings))
        ((mv warnings initials)  (vl-initiallist-selresolve  x.initials ss  warnings))
-       ((mv warnings fundecls)  (vl-fundecllist-selresolve  x.fundecls ss  warnings)))
-      (change-vl-module x
-                        :ports     ports
-                        :warnings  warnings
-                        :assigns   assigns
-                        :modinsts  modinsts
-                        :gateinsts gateinsts
-                        :alwayses  alwayses
-                        :initials  initials
-                        :fundecls  fundecls)))
+       ((mv warnings fundecls)  (vl-fundecllist-selresolve  x.fundecls ss  warnings))
+
+       ((mv warnings generates)  (vl-generates-selresolve  x.generates ss  warnings)))
+
+    (mv warnings
+        (change-vl-genblob
+         x
+         :ports     ports
+         :assigns   assigns
+         :modinsts  modinsts
+         :gateinsts gateinsts
+         :alwayses  alwayses
+         :initials  initials
+         :fundecls  fundecls
+         :generates generates)))
+  :apply-to-generates vl-generates-selresolve)
+
+
+
+(define vl-module-selresolve ((x vl-module-p) (ss vl-scopestack-p))
+  :returns (new-x vl-module-p)
+  (b* ((genblob (vl-module->genblob x))
+       ((mv warnings new-genblob) (vl-genblob-selresolve genblob ss (vl-module->warnings x)))
+       (x-warn (change-vl-module x :warnings warnings)))
+    (vl-genblob->module new-genblob x-warn)))
 
 (defprojection vl-modulelist-selresolve ((x vl-modulelist-p) (ss vl-scopestack-p))
   :returns (new-x vl-modulelist-p)
@@ -498,3 +537,6 @@ multiconcats throughout an expression."
        (new-mods (vl-modulelist-selresolve x.mods ss)))
     (vl-scopestacks-free)
     (change-vl-design x :mods new-mods)))
+
+
+

@@ -30,6 +30,7 @@
 
 (in-package "VL")
 (include-book "../mlib/consteval")
+(include-book "../mlib/blocks")
 (local (include-book "../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
 
@@ -328,27 +329,40 @@ these expressions.</p>")
 
 (def-vl-rangeresolve-list vl-fundecllist :element vl-fundecl)
 
-(define vl-module-rangeresolve ((x vl-module-p) (ss vl-scopestack-p))
-  :returns (new-x vl-module-p)
-  (b* (((vl-module x) x)
-       ((when (vl-module->hands-offp x))
-        (vl-module-fix x))
-       (ss (vl-scopestack-push (vl-module-fix x) ss))
-       (warnings                 x.warnings)
+
+(def-genblob-transform vl-genblob-rangeresolve ((ss vl-scopestack-p)
+                                                (warnings vl-warninglist-p))
+  :returns ((warnings vl-warninglist-p))
+  ;; :verify-guards nil
+  (b* (((vl-genblob x) x)
+       (ss (vl-scopestack-push (vl-genblob-fix x) ss))
        ((mv warnings portdecls)  (vl-portdecllist-rangeresolve  x.portdecls ss  warnings))
        ((mv warnings vardecls)   (vl-vardecllist-rangeresolve   x.vardecls ss   warnings))
        ((mv warnings modinsts)   (vl-modinstlist-rangeresolve   x.modinsts ss   warnings))
        ((mv warnings gateinsts)  (vl-gateinstlist-rangeresolve  x.gateinsts ss  warnings))
        ((mv warnings fundecls)   (vl-fundecllist-rangeresolve   x.fundecls ss   warnings))
-       ;; BOZO may eventually want to resolve ranges in block items within statements.
-       )
-      (change-vl-module x
-                        :warnings   warnings
-                        :portdecls  portdecls
-                        :vardecls   vardecls
-                        :modinsts   modinsts
-                        :gateinsts  gateinsts
-                        :fundecls   fundecls)))
+
+       ((mv warnings generates)  (vl-generates-rangeresolve  x.generates ss  warnings)))
+
+      (mv warnings
+          (change-vl-genblob
+           x
+           :portdecls portdecls
+           :vardecls vardecls
+           :modinsts modinsts
+           :gateinsts gateinsts
+           :fundecls fundecls
+           :generates generates)))
+  :apply-to-generates vl-generates-rangeresolve)
+
+
+
+(define vl-module-rangeresolve ((x vl-module-p) (ss vl-scopestack-p))
+  :returns (new-x vl-module-p)
+  (b* ((genblob (vl-module->genblob x))
+       ((mv warnings new-genblob) (vl-genblob-rangeresolve genblob ss (vl-module->warnings x)))
+       (x-warn (change-vl-module x :warnings warnings)))
+    (vl-genblob->module new-genblob x-warn)))
 
 (defprojection vl-modulelist-rangeresolve ((x vl-modulelist-p) (ss vl-scopestack-p))
   :returns (new-x vl-modulelist-p)

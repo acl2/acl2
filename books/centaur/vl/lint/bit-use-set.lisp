@@ -36,6 +36,7 @@
 (include-book "../mlib/allexprs")
 (include-book "../mlib/lvalues")
 (include-book "../mlib/reportcard")
+(include-book "../mlib/find-item")
 (include-book "../util/cwtime")
 (include-book "use-set-ignore")
 (include-book "std/bitsets/bitsets" :dir :system)

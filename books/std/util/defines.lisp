@@ -411,6 +411,7 @@ its flag in the flag-function.</p>")
                                                   ',guts.returnspecs
                                                   world)))
                     `(with-output :stack :pop (progn . ,events))))))
+        (local (set-define-current-function ,guts.name))
         (with-output :stack :pop (progn . ,guts.rest-events))
         (with-output :on (error) ,(add-signature-from-guts guts))))))
 

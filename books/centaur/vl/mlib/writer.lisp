@@ -2780,6 +2780,233 @@ like it would be valid to print @('reg').</p>"
                (vl-println "")
                (vl-pp-taskdecllist (cdr x)))))
 
+
+
+(define vl-fwdtypedefkind-string ((x vl-fwdtypedefkind-p))
+  :returns (str stringp :rule-classes :type-prescription)
+  :guard-hints(("Goal" :in-theory (enable vl-fwdtypedefkind-p)))
+  (case (vl-fwdtypedefkind-fix x)
+    (:vl-enum            "enum")
+    (:vl-struct          "struct")
+    (:vl-union           "union")
+    (:vl-class           "class")
+    (:vl-interfaceclass  "interfaceclass")
+    (otherwise           (or (impossible) ""))))
+
+(define vl-pp-fwdtypedef ((x vl-fwdtypedef-p) &key (ps 'ps))
+  (b* (((vl-fwdtypedef x) x))
+    (vl-ps-seq (if x.atts (vl-pp-atts x.atts) ps)
+               (vl-ps-span "vl_key"
+                           (vl-print "typedef ")
+                           (vl-print-str (vl-fwdtypedefkind-string x.kind)))
+               (vl-print " ")
+               (vl-print-wirename x.name)
+               (vl-println " ;"))))
+
+(define vl-pp-fwdtypedeflist ((x vl-fwdtypedeflist-p) &key (ps 'ps))
+  (if (atom x)
+      ps
+    (vl-ps-seq (vl-pp-fwdtypedef (car x))
+               (vl-pp-fwdtypedeflist (cdr x)))))
+
+(define vl-pp-typedef ((x vl-typedef-p) &key (ps 'ps))
+  (b* (((vl-typedef x) x))
+    (vl-ps-seq (if x.atts (vl-pp-atts x.atts) ps)
+               (vl-ps-span "vl_key"
+                           (vl-print "typedef "))
+               (vl-pp-datatype x.type)
+               (vl-print " ")
+               (vl-print-wirename x.name)
+               (let ((udims (vl-datatype->udims x.type)))
+                 (if (consp udims)
+                     (vl-ps-seq (vl-print " ")
+                                (vl-pp-packeddimensionlist udims))
+                   ps))
+               ;; BOZO add dimensions
+               (vl-println " ;"))))
+
+(define vl-pp-typedeflist ((x vl-typedeflist-p) &key (ps 'ps))
+  (if (atom x)
+      ps
+    (vl-ps-seq (vl-pp-typedef (car x))
+               (vl-pp-typedeflist (cdr x)))))
+
+
+;; BOZO move to parsetree
+(encapsulate
+  ()
+  (local (defthm l0
+           (implies (vl-importpart-p x)
+                    (equal (stringp x)
+                           (not (equal x :vl-import*))))
+           :hints(("Goal" :in-theory (enable vl-importpart-p)))))
+
+  (defthm stringp-of-vl-import->part
+    (implies (vl-import-p x)
+             (equal (stringp (vl-import->part x))
+                    (not (equal (vl-import->part x) :vl-import*))))))
+
+(define vl-pp-import ((x vl-import-p) &key (ps 'ps))
+  :guard-hints(("Goal" :in-theory (enable vl-importpart-p)))
+  (b* (((vl-import x) x))
+    (vl-ps-seq (if x.atts (vl-pp-atts x.atts) ps)
+               (vl-ps-span "vl_key" (vl-print "import "))
+               (vl-print-modname x.pkg)
+               (vl-print "::")
+               (if (eq x.part :vl-import*)
+                   (vl-print "*")
+                 (vl-print-str x.part))
+               (vl-println " ;"))))
+
+(define vl-pp-importlist ((x vl-importlist-p) &key (ps 'ps))
+  (if (atom x)
+      ps
+    (vl-ps-seq (vl-pp-import (car x))
+               (vl-pp-importlist (cdr x)))))
+
+
+
+
+(define vl-pp-modelement ((x vl-modelement-p) &key (ps 'ps))
+  (let ((x (vl-modelement-fix x)))
+    (case (tag x)
+      (:VL-PORT       (VL-pp-PORT X))
+      (:VL-PORTDECL   (VL-pp-PORTDECL X))
+      (:VL-ASSIGN     (VL-pp-ASSIGN X))
+      (:VL-ALIAS      (VL-pp-ALIAS X))
+      (:VL-VARDECL    (VL-pp-VARDECL X))
+      (:VL-PARAMDECL  (VL-pp-PARAMDECL X))
+      (:VL-FUNDECL    (VL-pp-FUNDECL X))
+      (:VL-TASKDECL   (VL-pp-TASKDECL X))
+      (:VL-MODINST    (VL-pp-MODINST X nil))
+      (:VL-GATEINST   (VL-pp-GATEINST X))
+      (:VL-ALWAYS     (VL-pp-ALWAYS X))
+      (:VL-INITIAL    (VL-pp-INITIAL X))
+      (:VL-TYPEDEF    (VL-pp-TYPEDEF X))
+      (:VL-IMPORT     (VL-pp-IMPORT X))
+      (:VL-FWDTYPEDEF (VL-pp-FWDTYPEDEF X))
+      (OTHERWISE ps))))
+
+(define vl-pp-modelementlist ((x vl-modelementlist-p) &key (ps 'ps))
+  (if (atom x)
+      ps
+    (vl-ps-seq (vl-pp-modelement (car x))
+               (vl-pp-modelementlist (cdr x)))))
+
+(defines vl-pp-genelement
+  (define vl-pp-genelement ((x vl-genelement-p) &key (ps 'ps))
+    :measure (vl-genelement-count x)
+    (vl-genelement-case x
+      :vl-genloop
+      (vl-ps-seq (vl-println "")
+                 (vl-print "for (")
+                 (vl-pp-id x.var)
+                 (vl-print "=")
+                 (vl-pp-expr x.initval)
+                 (vl-print "; ")
+                 (vl-pp-expr x.continue)
+                 (vl-print "; ")
+                 (vl-pp-id x.var)
+                 (vl-print "=")
+                 (vl-pp-expr x.nextval)
+                 (vl-print ")")
+                 (vl-pp-generateblock x.genblock))
+      :vl-genif
+      (vl-ps-seq (vl-println "")
+                 (vl-print "if (")
+                 (vl-pp-expr x.test)
+                 (vl-print ")")
+                 (vl-pp-generateblock x.then)
+                 (vl-print "else")
+                 (vl-pp-generateblock x.else))
+      :vl-gencase
+      (vl-ps-seq (vl-println "")
+                 (vl-print "case (")
+                 (vl-pp-expr x.test)
+                 (vl-pp-gencaselist x.cases)
+                 (vl-println "")
+                 (vl-print "default: ")
+                 (vl-pp-generateblock x.default))
+      :vl-genblock
+      (vl-ps-seq (vl-println "")
+                 (vl-print "if(1) begin")
+                 (if x.name
+                     (vl-ps-seq (vl-print " : ")
+                                (vl-print-wirename x.name))
+                   ps)
+                 (vl-println "")
+                 (vl-pp-genelementlist x.elems)
+                 (vl-println "end"))
+      :vl-genarray
+      (vl-pp-genarrayblocklist x.blocks x.name)
+
+      :vl-genbase (vl-pp-modelement x.item)))
+
+  (define vl-pp-genelementlist ((x vl-genelementlist-p) &key (ps 'ps))
+    :measure (vl-genelementlist-count x)
+    (if (atom x)
+        ps
+      (vl-ps-seq (vl-pp-genelement (car x))
+                 (vl-pp-genelementlist (cdr x)))))
+
+  (define vl-pp-gencaselist ((x vl-gencaselist-p) &key (ps 'ps))
+    :measure (vl-gencaselist-count x)
+    (b* ((x (vl-gencaselist-fix x)))
+      (if (atom x)
+          ps
+        (vl-ps-seq (vl-println "")
+                   (vl-pp-exprlist (caar x))
+                   (vl-print ": ")
+                   (vl-pp-generateblock (cdar x))
+                   (vl-pp-gencaselist (cdr x))))))
+                 
+  (define vl-pp-genarrayblocklist ((x vl-genarrayblocklist-p) (name maybe-stringp)
+                                   &key (ps 'ps))
+    :measure (vl-genarrayblocklist-count x)
+    (if (atom x)
+        ps
+      (vl-ps-seq (vl-pp-genarrayblock (car x) name)
+                 (vl-pp-genarrayblocklist (cdr x) name))))
+
+  (define vl-pp-genarrayblock ((x vl-genarrayblock-p)
+                               (name maybe-stringp)
+                               &key (ps 'ps))
+    :measure (vl-genarrayblock-count x)
+    (b* (((vl-genarrayblock x)))
+      (vl-ps-seq (vl-println "")
+                 (vl-print "if(1) begin")
+                 (if name
+                     (vl-ps-seq (vl-print " : ")
+                                (vl-print "\\")
+                                (vl-print-wirename name)
+                                (vl-print "[")
+                                (if (< x.index 0)
+                                    (vl-print "-")
+                                  ps)
+                                (vl-print-nat (abs x.index))
+                                (vl-print "] "))
+                   ps)
+                 (vl-println "")
+                 (vl-pp-genelementlist x.elems)
+                 (vl-println "end"))))
+
+  (define vl-pp-generateblock ((x vl-generateblock-p) &key (ps 'ps))
+    :measure (vl-generateblock-count x)
+    (b* (((vl-generateblock x)))
+      (vl-ps-seq (vl-println "")
+                 (vl-print "begin")
+                 (if x.name
+                     (vl-ps-seq (vl-print " : ")
+                                (vl-print-wirename x.name))
+                   ps)
+                 (vl-println "")
+                 (vl-pp-genelementlist x.elems)
+                 (vl-println "end")))))
+
+
+                 
+
+
 (define vl-pp-module
   ((x    vl-module-p     "Module to pretty-print.")
    (ss   vl-scopestack-p)
@@ -2811,7 +3038,33 @@ instead of @(see ps).</p>"
                (vl-pp-gateinstlist x.gateinsts)
                (vl-pp-alwayslist x.alwayses)
                (vl-pp-initiallist x.initials)
+               (vl-pp-genelementlist x.generates)
                (vl-ps-span "vl_key" (vl-println "endmodule"))
+               (vl-println ""))))
+
+
+(define vl-pp-genblob ;; BOZO temporary weird nonrecursive version
+  ((x    vl-genblob-p)
+   (ss   vl-scopestack-p)
+   &key (ps 'ps))
+  (b* (((vl-genblob x) (vl-genblob-fix x))
+       (ss (vl-scopestack-push x ss)))
+    (vl-ps-seq (vl-pp-set-portnames x.portdecls)
+               (vl-ps-span "vl_key" (vl-print "genblob "))
+               (vl-print " (")
+               (vl-pp-portlist x.ports)
+               (vl-println ");")
+               (vl-pp-paramdecllist x.paramdecls)
+               (vl-pp-portdecllist x.portdecls)
+               (vl-pp-vardecllist x.vardecls)
+               (vl-pp-fundecllist x.fundecls) ;; put them here, so they can refer to declared wires
+               (vl-pp-taskdecllist x.taskdecls)
+               (vl-pp-assignlist x.assigns)
+               (vl-pp-modinstlist x.modinsts ss)
+               (vl-pp-gateinstlist x.gateinsts)
+               (vl-pp-alwayslist x.alwayses)
+               (vl-pp-initiallist x.initials)
+               (vl-ps-span "vl_key" (vl-println "endgenblob"))
                (vl-println ""))))
 
 (define vl-pps-module ((x vl-module-p))
@@ -2940,89 +3193,6 @@ module elements and its comments.</p>"
                (vl-pp-programlist (cdr x)))))
 
 
-;; BOZO move to parsetree
-(encapsulate
-  ()
-  (local (defthm l0
-           (implies (vl-importpart-p x)
-                    (equal (stringp x)
-                           (not (equal x :vl-import*))))
-           :hints(("Goal" :in-theory (enable vl-importpart-p)))))
-
-  (defthm stringp-of-vl-import->part
-    (implies (vl-import-p x)
-             (equal (stringp (vl-import->part x))
-                    (not (equal (vl-import->part x) :vl-import*))))))
-
-(define vl-pp-import ((x vl-import-p) &key (ps 'ps))
-  :guard-hints(("Goal" :in-theory (enable vl-importpart-p)))
-  (b* (((vl-import x) x))
-    (vl-ps-seq (if x.atts (vl-pp-atts x.atts) ps)
-               (vl-ps-span "vl_key" (vl-print "import "))
-               (vl-print-modname x.pkg)
-               (vl-print "::")
-               (if (eq x.part :vl-import*)
-                   (vl-print "*")
-                 (vl-print-str x.part))
-               (vl-println " ;"))))
-
-(define vl-pp-importlist ((x vl-importlist-p) &key (ps 'ps))
-  (if (atom x)
-      ps
-    (vl-ps-seq (vl-pp-import (car x))
-               (vl-pp-importlist (cdr x)))))
-
-
-
-
-(define vl-fwdtypedefkind-string ((x vl-fwdtypedefkind-p))
-  :returns (str stringp :rule-classes :type-prescription)
-  :guard-hints(("Goal" :in-theory (enable vl-fwdtypedefkind-p)))
-  (case (vl-fwdtypedefkind-fix x)
-    (:vl-enum            "enum")
-    (:vl-struct          "struct")
-    (:vl-union           "union")
-    (:vl-class           "class")
-    (:vl-interfaceclass  "interfaceclass")
-    (otherwise           (or (impossible) ""))))
-
-(define vl-pp-fwdtypedef ((x vl-fwdtypedef-p) &key (ps 'ps))
-  (b* (((vl-fwdtypedef x) x))
-    (vl-ps-seq (if x.atts (vl-pp-atts x.atts) ps)
-               (vl-ps-span "vl_key"
-                           (vl-print "typedef ")
-                           (vl-print-str (vl-fwdtypedefkind-string x.kind)))
-               (vl-print " ")
-               (vl-print-wirename x.name)
-               (vl-println " ;"))))
-
-(define vl-pp-fwdtypedeflist ((x vl-fwdtypedeflist-p) &key (ps 'ps))
-  (if (atom x)
-      ps
-    (vl-ps-seq (vl-pp-fwdtypedef (car x))
-               (vl-pp-fwdtypedeflist (cdr x)))))
-
-(define vl-pp-typedef ((x vl-typedef-p) &key (ps 'ps))
-  (b* (((vl-typedef x) x))
-    (vl-ps-seq (if x.atts (vl-pp-atts x.atts) ps)
-               (vl-ps-span "vl_key"
-                           (vl-print "typedef "))
-               (vl-pp-datatype x.type)
-               (vl-print " ")
-               (vl-print-wirename x.name)
-               (let ((udims (vl-datatype->udims x.type)))
-                 (if (consp udims)
-                     (vl-ps-seq (vl-print " ")
-                                (vl-pp-packeddimensionlist udims))
-                   ps))
-               ;; BOZO add dimensions
-               (vl-println " ;"))))
-
-(define vl-pp-typedeflist ((x vl-typedeflist-p) &key (ps 'ps))
-  (if (atom x)
-      ps
-    (vl-ps-seq (vl-pp-typedef (car x))
-               (vl-pp-typedeflist (cdr x)))))
 
 
 

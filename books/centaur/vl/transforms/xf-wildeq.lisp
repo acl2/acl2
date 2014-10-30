@@ -29,9 +29,11 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "always/caseelim")
+;; (include-book "always/caseelim")
 (include-book "../mlib/delta")
 (include-book "occform/util")
+(include-book "../mlib/caremask")
+(include-book "../mlib/blocks")
 (local (include-book "../util/arithmetic"))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (std::add-default-post-define-hook :fix))
@@ -89,144 +91,9 @@ splitting expressions.</p>")
 
 (local (xdoc::set-default-parents vl-expr-wildelim))
 
-(define vl-wildeq-msb-bits-to-care-mask
-  :short "Construct a bit-mask that captures the non-wild bits from the
-right-hand side of a @('==?') or @('!=?') expression."
-  ((msb-bits vl-bitlist-p "MSB-ordered bits from the RHS.")
-   (value    natp         "Value we're constructing, zero to begin with."))
-  :returns (care-mask natp :rule-classes :type-prescription)
-  (b* ((value (lnfix value))
-       ((when (atom msb-bits))
-        value)
-       (bit1  (vl-bit-fix (car msb-bits)))
-       (value (if (or (eq bit1 :vl-0val)
-                      (eq bit1 :vl-1val))
-                  (logior 1 (ash value 1))
-                (ash value 1))))
-    (vl-wildeq-msb-bits-to-care-mask (cdr msb-bits) value))
-  ///
-  (assert! (equal (vl-wildeq-msb-bits-to-care-mask '(:vl-zval) 0) #b0))
-  (assert! (equal (vl-wildeq-msb-bits-to-care-mask '(:vl-1val) 0) #b1))
-  (assert! (equal (vl-wildeq-msb-bits-to-care-mask '(:vl-zval :vl-zval) 0) #b00))
-  (assert! (equal (vl-wildeq-msb-bits-to-care-mask '(:vl-zval :vl-1val) 0) #b01))
-  (assert! (equal (vl-wildeq-msb-bits-to-care-mask '(:vl-1val :vl-zval) 0) #b10))
-  (assert! (equal (vl-wildeq-msb-bits-to-care-mask '(:vl-1val :vl-1val) 0) #b11))
-  (assert! (equal (vl-wildeq-msb-bits-to-care-mask '(:vl-1val :vl-zval :vl-0val :vl-1val :vl-xval) 0) #b10110))
-  (assert! (equal (vl-wildeq-msb-bits-to-care-mask '(:vl-zval :vl-zval :vl-1val :vl-zval) 0) #b0010))
 
-  (local (defun my-induct (n msb-bits value)
-           (if (atom msb-bits)
-               (list n msb-bits value)
-             (my-induct (+ 1 n)
-                        (cdr msb-bits)
-                        (let ((bit1 (vl-bit-fix (car msb-bits))))
-                          (if (or (eq bit1 :vl-0val)
-                                  (eq bit1 :vl-1val))
-                              (logior 1 (ash value 1))
-                            (ash value 1)))))))
 
-  (defthm unsigned-byte-p-of-vl-wildeq-msb-bits-to-care-mask-general
-    (implies (unsigned-byte-p n value)
-             (unsigned-byte-p (+ n (len msb-bits))
-                              (vl-wildeq-msb-bits-to-care-mask msb-bits value)))
-    :hints(("Goal"
-            :do-not '(generalize fertilize)
-            :do-not-induct t
-            :induct (my-induct n msb-bits value)
-            :in-theory (e/d (acl2::ihsext-recursive-redefs
-                             acl2::unsigned-byte-p**)
-                            (unsigned-byte-p)))))
 
-  (defthm unsigned-byte-p-of-vl-wildeq-msb-bits-to-care-mask-zero
-    (unsigned-byte-p (len msb-bits) (vl-wildeq-msb-bits-to-care-mask msb-bits 0))
-    :hints(("Goal"
-            :in-theory (disable unsigned-byte-p-of-vl-wildeq-msb-bits-to-care-mask-general
-                                vl-wildeq-msb-bits-to-care-mask
-                                unsigned-byte-p)
-            :use ((:instance unsigned-byte-p-of-vl-wildeq-msb-bits-to-care-mask-general
-                   (value 0) (n 0))))))
-
-  (defthm upper-bound-of-vl-wildeq-msb-bits-to-care-mask-zero
-    (< (vl-wildeq-msb-bits-to-care-mask msb-bits 0)
-       (expt 2 (len msb-bits)))
-    :rule-classes ((:rewrite) (:linear))
-    :hints(("Goal" :in-theory (disable unsigned-byte-p-of-vl-wildeq-msb-bits-to-care-mask-zero
-                                       unsigned-byte-p-of-vl-wildeq-msb-bits-to-care-mask-general
-                                       vl-wildeq-msb-bits-to-care-mask
-                                       unsigned-byte-p)
-            :use ((:instance unsigned-byte-p-of-vl-wildeq-msb-bits-to-care-mask-zero))))))
-
-(define vl-wildeq-msb-bits-zap
-  :short "Zero out the wild bits from the right-hand side of a @('==?') or
-  @('!=?') expression."
-  ((msb-bits vl-bitlist-p "MSB-ordered bits from the RHS.")
-   (value    natp         "Value we're constructing, zero to begin with."))
-  :returns (new-value natp :rule-classes :type-prescription)
-  (b* ((value (lnfix value))
-       ((when (atom msb-bits))
-        value)
-       (bit1  (vl-bit-fix (car msb-bits)))
-       (value (if (eq bit1 :vl-1val)
-                  (logior 1 (ash value 1))
-                ;; Just replace any other bit with 0.
-                (ash value 1))))
-    (vl-wildeq-msb-bits-zap (cdr msb-bits) value))
-  ///
-  (assert! (equal (vl-wildeq-msb-bits-zap '(:vl-zval) 0) #b0))
-  (assert! (equal (vl-wildeq-msb-bits-zap '(:vl-xval) 0) #b0))
-  (assert! (equal (vl-wildeq-msb-bits-zap '(:vl-0val) 0) #b0))
-  (assert! (equal (vl-wildeq-msb-bits-zap '(:vl-1val) 0) #b1))
-  (assert! (equal (vl-wildeq-msb-bits-zap '(:vl-zval :vl-zval) 0) #b00))
-  (assert! (equal (vl-wildeq-msb-bits-zap '(:vl-zval :vl-1val) 0) #b01))
-  (assert! (equal (vl-wildeq-msb-bits-zap '(:vl-1val :vl-zval) 0) #b10))
-  (assert! (equal (vl-wildeq-msb-bits-zap '(:vl-1val :vl-1val) 0) #b11))
-  (assert! (equal (vl-wildeq-msb-bits-zap '(:vl-zval :vl-zval) 0) #b00))
-  (assert! (equal (vl-wildeq-msb-bits-zap '(:vl-zval :vl-0val) 0) #b00))
-  (assert! (equal (vl-wildeq-msb-bits-zap '(:vl-0val :vl-zval) 0) #b00))
-  (assert! (equal (vl-wildeq-msb-bits-zap '(:vl-0val :vl-0val) 0) #b00))
-  (assert! (equal (vl-wildeq-msb-bits-zap '(:vl-1val :vl-zval :vl-0val :vl-1val :vl-xval) 0) #b10010))
-  (assert! (equal (vl-wildeq-msb-bits-zap '(:vl-zval :vl-zval :vl-1val :vl-zval) 0) #b0010))
-
-  (local (defun my-induct (n msb-bits value)
-           (if (atom msb-bits)
-               (list n msb-bits value)
-             (my-induct (+ 1 n)
-                        (cdr msb-bits)
-                        (let ((bit1 (vl-bit-fix (car msb-bits))))
-                          (if (eq bit1 :vl-1val)
-                              (logior 1 (ash value 1))
-                            (ash value 1)))))))
-
-  (defthm unsigned-byte-p-of-vl-wildeq-msb-bits-zap-general
-    (implies (unsigned-byte-p n value)
-             (unsigned-byte-p (+ n (len msb-bits))
-                              (vl-wildeq-msb-bits-zap msb-bits value)))
-    :hints(("Goal"
-            :do-not '(generalize fertilize)
-            :do-not-induct t
-            :induct (my-induct n msb-bits value)
-            :in-theory (e/d (acl2::ihsext-recursive-redefs
-                             acl2::unsigned-byte-p**)
-                            (unsigned-byte-p)))))
-
-  (defthm unsigned-byte-p-of-vl-wildeq-msb-bits-zap-zero
-    (unsigned-byte-p (len msb-bits) (vl-wildeq-msb-bits-zap msb-bits 0))
-    :hints(("Goal"
-            :in-theory (disable unsigned-byte-p-of-vl-wildeq-msb-bits-zap-general
-                                vl-wildeq-msb-bits-zap
-                                unsigned-byte-p)
-            :use ((:instance unsigned-byte-p-of-vl-wildeq-msb-bits-zap-general
-                   (value 0) (n 0))))))
-
-  (defthm upper-bound-of-vl-wildeq-msb-bits-zap-zero
-    (< (vl-wildeq-msb-bits-zap msb-bits 0)
-       (expt 2 (len msb-bits)))
-    :rule-classes ((:rewrite) (:linear))
-    :hints(("Goal" :in-theory (disable unsigned-byte-p-of-vl-wildeq-msb-bits-zap-zero
-                                       unsigned-byte-p-of-vl-wildeq-msb-bits-zap-general
-                                       vl-wildeq-msb-bits-zap
-                                       unsigned-byte-p)
-            :use ((:instance unsigned-byte-p-of-vl-wildeq-msb-bits-zap-zero))))))
 
 
 (define vl-wildeq-decompose-rhs
@@ -238,11 +105,11 @@ right-hand side of a @('==?') or @('!=?') expression."
                (care-mask (equal (vl-expr-p care-mask) (if okp t nil)))
                (zapped    (equal (vl-expr-p zapped)    (if okp t nil))))
   :verify-guards nil
-  (b* (((mv okp msb-bits) (vl-casezx-match-bits rhs))
+  (b* (((mv okp msb-bits) (vl-intliteral-msb-bits rhs))
        ((unless okp)
         (mv nil nil nil))
 
-       ;; Note that by len-of-vl-casezx-match-bits we know that the finalwidth
+       ;; Note that by len-of-vl-intliteral-msb-bits we know that the finalwidth
        ;; is exactly the length of msb-bits.
        (finalwidth (vl-expr->finalwidth rhs))
        (finaltype  (vl-expr->finaltype rhs))
@@ -260,7 +127,7 @@ right-hand side of a @('==?') or @('!=?') expression."
         (mv nil nil nil))
 
        ;; Care mask computation.
-       (cm-value (vl-wildeq-msb-bits-to-care-mask msb-bits 0))
+       (cm-value (vl-msb-bits-to-zx-care-mask msb-bits 0))
        (cm-guts  (make-vl-constint :value cm-value
                                    :origwidth finalwidth
                                    :origtype finaltype))
@@ -269,20 +136,20 @@ right-hand side of a @('==?') or @('!=?') expression."
                                :finaltype finaltype))
 
        ;; Zapped value computation.
-       (zap-value (vl-wildeq-msb-bits-zap msb-bits 0))
-       (zap-guts  (make-vl-constint :value zap-value
-                                    :origwidth finalwidth
-                                    :origtype finaltype))
-       (zap-expr  (make-vl-atom :guts zap-guts
-                                :finalwidth finalwidth
-                                :finaltype finaltype)))
+       (zap-bits (vl-msb-bits-zap-dontcares-zx msb-bits))
+       (zap-expr (vl-msb-bits-to-intliteral zap-bits finaltype)))
     (mv t cm-expr zap-expr))
   ///
+  (local (defthmd consp-by-len
+           (implies (posp (len x))
+                    (consp x))))
   (verify-guards vl-wildeq-decompose-rhs
     :hints(("Goal"
-            :in-theory (disable upper-bound-of-vl-wildeq-msb-bits-to-care-mask-zero)
-            :use ((:instance upper-bound-of-vl-wildeq-msb-bits-to-care-mask-zero
-                   (msb-bits (mv-nth 1 (vl-casezx-match-bits rhs))))))))
+            :in-theory (e/d (consp-by-len)
+                            (upper-bound-of-vl-msb-bits-to-care-mask-zero))
+            :use ((:instance upper-bound-of-vl-msb-bits-to-care-mask-zero
+                   (msb-bits (mv-nth 1 (vl-intliteral-msb-bits rhs)))
+                   (cares '(:vl-0val :vl-1val)))))))
 
   (local (in-theory (enable vl-expr-welltyped-p
                             vl-atom-welltyped-p)))
@@ -1239,6 +1106,38 @@ is just a constant integer.  So this is just:</p>
 
 (def-vl-wildelim-list vl-initiallist :element vl-initial)
 
+(def-genblob-transform vl-genblob-wildelim ((warnings vl-warninglist-p))
+  :returns ((warnings vl-warninglist-p))
+  ;; :verify-guards nil
+  (b* (((vl-genblob x) x)
+
+       ((mv warnings assigns)    (vl-assignlist-wildelim    x.assigns    warnings))
+       ((mv warnings modinsts)   (vl-modinstlist-wildelim   x.modinsts   warnings))
+       ((mv warnings gateinsts)  (vl-gateinstlist-wildelim  x.gateinsts  warnings))
+       ((mv warnings alwayses)   (vl-alwayslist-wildelim    x.alwayses   warnings))
+       ((mv warnings initials)   (vl-initiallist-wildelim   x.initials   warnings))
+       ((mv warnings ports)      (vl-portlist-wildelim      x.ports      warnings))
+       ((mv warnings portdecls)  (vl-portdecllist-wildelim  x.portdecls  warnings))
+       ((mv warnings paramdecls) (vl-paramdecllist-wildelim x.paramdecls warnings))
+       ((mv warnings vardecls)   (vl-vardecllist-wildelim   x.vardecls   warnings))
+
+       ((mv warnings generates)  (vl-generates-wildelim  x.generates  warnings)))
+
+    (mv warnings
+        (change-vl-genblob
+         x
+         :assigns assigns
+         :modinsts modinsts
+         :gateinsts gateinsts
+         :alwayses alwayses
+         :initials initials
+         :ports ports
+         :portdecls portdecls
+         :paramdecls paramdecls
+         :vardecls vardecls
+         :generates generates)))
+  :apply-to-generates vl-generates-wildelim)
+
 
 
 (define vl-module-wildelim ((x vl-module-p))
@@ -1248,26 +1147,11 @@ is just a constant integer.  So this is just:</p>
         x)
        ((vl-module x) x)
        (warnings  x.warnings)
-       ((mv warnings assigns)    (vl-assignlist-wildelim    x.assigns    warnings))
-       ((mv warnings modinsts)   (vl-modinstlist-wildelim   x.modinsts   warnings))
-       ((mv warnings gateinsts)  (vl-gateinstlist-wildelim  x.gateinsts  warnings))
-       ((mv warnings alwayses)   (vl-alwayslist-wildelim    x.alwayses   warnings))
-       ((mv warnings initials)   (vl-initiallist-wildelim   x.initials   warnings))
-       ((mv warnings ports)      (vl-portlist-wildelim      x.ports      warnings))
-       ((mv warnings portdecls)  (vl-portdecllist-wildelim  x.portdecls  warnings))
-       ((mv warnings paramdecls) (vl-paramdecllist-wildelim x.paramdecls warnings))
-       ((mv warnings vardecls)   (vl-vardecllist-wildelim   x.vardecls   warnings)))
-    (change-vl-module x
-                      :assigns assigns
-                      :modinsts modinsts
-                      :gateinsts gateinsts
-                      :alwayses alwayses
-                      :initials initials
-                      :ports ports
-                      :portdecls portdecls
-                      :paramdecls paramdecls
-                      :vardecls vardecls
-                      :warnings warnings)))
+       (genblob (vl-module->genblob x))
+       ((mv warnings new-genblob)
+        (vl-genblob-wildelim genblob warnings))
+       (mod (change-vl-module x :warnings warnings)))
+    (vl-genblob->module new-genblob mod)))
 
 (defprojection vl-modulelist-wildelim ((x vl-modulelist-p))
   :returns (new-x vl-modulelist-p)

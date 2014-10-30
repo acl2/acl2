@@ -298,7 +298,7 @@ return a list of strings.</p>"
   (b* (((when (atom names))
         (mv t (ok) nil))
        (name1 (string-fix (car names)))
-       ((mv & decl) (vl-scope-find-portdecl-fast name1 scope))
+       (decl (vl-scope-find-portdecl-fast name1 scope))
        ((mv successp warnings directions)
         (vl-port-direction-aux (cdr names) scope warnings port))
        ((when decl)

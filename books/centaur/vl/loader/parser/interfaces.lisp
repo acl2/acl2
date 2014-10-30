@@ -102,7 +102,7 @@ interface_ansi_header ::=
                  :msg "~a0: a module may not contain ~x1s."
                  :args (list bad-item (tag bad-item)))))
 
-       ((vl-genelement-collection c) (vl-sort-genelements items)))
+       ((vl-genblob c) (vl-sort-genelements items)))
 
      (make-vl-interface :name       name
                         :ports      ports
@@ -136,7 +136,7 @@ interface_ansi_header ::=
        (params := (vl-maybe-parse-parameter-port-list))
        ((portdecls . netdecls) := (vl-maybe-parse-list-of-port-declarations))
        (:= (vl-match-token :vl-semi))
-       (items := (vl-parse-0+-genelements))
+       (items := (vl-parse-genelements-until :vl-kwd-endinterface))
        (endkwd := (vl-match-token :vl-kwd-endinterface))
        (:= (vl-parse-endblock-name (vl-idtoken->name name)
                                    "interface/endinterface"))
@@ -170,7 +170,7 @@ interface_ansi_header ::=
        (params := (vl-maybe-parse-parameter-port-list))
        (ports := (vl-maybe-parse-list-of-ports))
        (:= (vl-match-token :vl-semi))
-       (items := (vl-parse-0+-genelements))
+       (items := (vl-parse-genelements-until :vl-kwd-endinterface))
        (endkwd := (vl-match-token :vl-kwd-endinterface))
        (:= (vl-parse-endblock-name (vl-idtoken->name name)
                                    "interface/endinterface"))

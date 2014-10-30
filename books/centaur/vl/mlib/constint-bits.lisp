@@ -31,18 +31,13 @@
 (in-package "VL")
 (include-book "welltyped")
 (local (include-book "../util/arithmetic"))
-(local (include-book "arithmetic-3/floor-mod/floor-mod" :dir :system))
+(local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (std::add-default-post-define-hook :fix))
-(local (in-theory (disable acl2::functional-commutativity-of-minus-*-left
-                           acl2::normalize-factors-gather-exponents)))
 
 ;; The code here is styled after vl-msb-bitslice-constint, but whereas that
 ;; code produces new expressions, here we just produce a bit list.
 
-(local (defthm logand-1
-         (implies (natp value)
-                  (equal (logand value 1)
-                         (mod value 2)))))
+
 
 (define vl-constint-lsb-bits-aux
   :parents (vl-constint->msb-bits)
@@ -53,17 +48,11 @@
   :measure (nfix len)
   (b* (((when (zp len))
         nil)
-       (floor2          (mbe :logic (floor (nfix value) 2)
-                             :exec (ash value -1)))
-       ((the bit mod2)  (mbe :logic (mod (nfix value) 2)
-                             :exec (logand value 1)))
-       (bit             (if (eql mod2 0)
-                            :vl-0val
-                          :vl-1val)))
+       (bit             (if (logbitp 0 (lnfix value))
+                            :vl-1val
+                          :vl-0val)))
     (cons bit
-          (vl-constint-lsb-bits-aux (mbe :logic (- (nfix len) 1)
-                                         :exec (- len 1))
-                                    floor2)))
+          (vl-constint-lsb-bits-aux (1- len) (ash (lnfix value) -1))))
   ///
   (defthm true-listp-of-vl-constint-lsb-bits-aux
     (true-listp (vl-constint-lsb-bits-aux len value))
@@ -86,16 +75,11 @@
        :exec
        (b* (((when (zp len))
              acc)
-            (floor2           (mbe :logic (floor value 2)
-                                   :exec (ash value -1)))
-            ((the bit mod2)   (mbe :logic (mod value 2)
-                                   :exec (logand value 1)))
-            (bit              (if (eql mod2 0)
-                                  :vl-0val
-                                :vl-1val)))
-         (vl-constint-msb-bits-aux (mbe :logic (- (nfix len) 1)
-                                        :exec (- len 1))
-                                   floor2
+            (bit              (if (logbitp 0 value)
+                                  :vl-1val
+                                :vl-0val)))
+         (vl-constint-msb-bits-aux (1- len)
+                                   (ash (lnfix value) -1)
                                    (cons bit acc))))
     :prepwork
     ((local (in-theory (enable vl-constint-lsb-bits-aux)))))
@@ -145,6 +129,7 @@ handled any sign/zero extensions, so we assume here that the atom's
                        :vl-1val
                        :vl-1val
                        :vl-1val))))
+  
 
 (local
  (assert! (equal (vl-constint->msb-bits
@@ -158,6 +143,71 @@ handled any sign/zero extensions, so we assume here that the atom's
                        :vl-1val
                        :vl-1val
                        :vl-1val))))
+
+(define vl-msb-bits->maybe-nat-val ((x vl-bitlist-p) (val-acc natp))
+  :returns (val maybe-natp :rule-classes :type-prescription)
+  (b* ((val-acc (lnfix val-acc))
+       ((when (atom x)) val-acc)
+       (bit1 (vl-bit-fix (car x)))
+       (val-acc (case bit1
+                  (:vl-1val (logior 1 (ash val-acc 1)))
+                  (:vl-0val (ash val-acc 1))
+                  (otherwise nil)))
+       ((unless val-acc) nil))
+    (vl-msb-bits->maybe-nat-val (cdr x) val-acc))
+  ///
+
+  (assert! (equal (vl-msb-bits->maybe-nat-val '(:vl-1val :vl-0val) 0) 2))
+
+  (local (defun my-induct (n msb-bits value)
+           (if (atom msb-bits)
+               (list n msb-bits value)
+             (my-induct (+ 1 n)
+                        (cdr msb-bits)
+                        (let ((bit1 (vl-bit-fix (car msb-bits))))
+                          (if (eq bit1 :vl-1val)
+                              (logior 1 (ash value 1))
+                            (ash value 1)))))))
+
+  (local (defthm unsigned-byte-p-implies-natp-n
+           (implies (unsigned-byte-p n value)
+                    (natp n))
+           :rule-classes :forward-chaining))
+
+  (defthm unsigned-byte-p-of-vl-msb-bits->maybe-nat-val-general
+    (implies (unsigned-byte-p n value)
+             (equal (unsigned-byte-p (+ n (len msb-bits))
+                                     (vl-msb-bits->maybe-nat-val msb-bits value))
+                    (natp (vl-msb-bits->maybe-nat-val msb-bits value))))
+    :hints(("Goal"
+            :do-not '(generalize fertilize)
+            :do-not-induct t
+            :induct (my-induct n msb-bits value)
+            :expand ((vl-msb-bits->maybe-nat-val msb-bits value))
+            :in-theory (e/d (acl2::ihsext-recursive-redefs
+                             acl2::unsigned-byte-p**)
+                            (unsigned-byte-p)))))
+
+  (defthm unsigned-byte-p-of-vl-msb-bits->maybe-nat-val-zero
+    (equal (unsigned-byte-p (len msb-bits) (vl-msb-bits->maybe-nat-val msb-bits 0))
+           (natp (vl-msb-bits->maybe-nat-val msb-bits 0)))
+    :hints(("Goal"
+            :in-theory (disable unsigned-byte-p-of-vl-msb-bits->maybe-nat-val-general
+                                vl-msb-bits->maybe-nat-val
+                                unsigned-byte-p)
+            :use ((:instance unsigned-byte-p-of-vl-msb-bits->maybe-nat-val-general
+                   (value 0) (n 0))))))
+
+  (defthm upper-bound-of-vl-msb-bits->maybe-nat-val-zero
+    (implies (vl-msb-bits->maybe-nat-val msb-bits 0)
+             (< (vl-msb-bits->maybe-nat-val msb-bits 0)
+                (expt 2 (len msb-bits))))
+    :rule-classes ((:rewrite) (:linear))
+    :hints(("Goal" :in-theory (disable unsigned-byte-p-of-vl-msb-bits->maybe-nat-val-zero
+                                       unsigned-byte-p-of-vl-msb-bits->maybe-nat-val-general
+                                       vl-msb-bits->maybe-nat-val
+                                       unsigned-byte-p)
+            :use ((:instance unsigned-byte-p-of-vl-msb-bits->maybe-nat-val-zero))))))
 
 
 
