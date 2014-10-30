@@ -18,6 +18,11 @@ if [ -z "$TARGET" ]; then
   TARGET='manual';
 fi
 
+if [ -z "$BOOK_LEVEL_PARALLELISM" ]; then
+  echo "Setting BOOK_LEVEL_PARALLELISM to 1";
+  BOOK_LEVEL_PARALLELISM='1';
+fi
+
 LISP=`which ccl`
 echo "Using LISP = $LISP"
 echo "Making TARGET   = $TARGET"
@@ -30,9 +35,8 @@ startjob -c "nice make acl2h -f books/build/jenkins/Makefile LISP=$LISP &> make.
 
 echo "Building the books."
 cd books
-startjob -c "make $TARGET ACL2=$WORKSPACE/saved_acl2h -j3 $MAKEOPTS USE_QUICKLISP=1"
+startjob -c "make $TARGET ACL2=$WORKSPACE/saved_acl2h -j $BOOK_LEVEL_PARALLELISM $MAKEOPTS USE_QUICKLISP=1"
 
 echo "Build was successful."
 
 exit 0
-
