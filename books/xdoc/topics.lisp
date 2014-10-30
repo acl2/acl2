@@ -42,67 +42,54 @@
   :parents (documentation)
   :short "<i>XDOC</i> is a tool for documenting ACL2 books.  You can use it to
 access documentation about ACL2 and its books, to document your own books, and
-to create custom web-based manuals.  It is intended as a replacement for ACL2
-facilities like @(see defdoc), @(':doc'), and so on."
+to create custom web-based manuals."
 
-  :long "<h3>Getting the Documentation</h3>
+  :long "<p>Below we cover how to use XDOC to build manuals or document your
+own @(see acl2::books).  If you just want to browse the documentation, you
+probably don't need to read any of this!  Instead, see @(see
+documentation).</p>
 
-<p>Most of the documentation below is about using XDOC to document your own
-@(see acl2::books).  If you just want to browse the documentation, you probably
-don't need to read any of this!  Instead, see either:</p>
+<h3>Starting Points</h3>
 
-<ul>
+<p>A good, tutorial-style introduction to XDOC can be found in:</p>
 
-<li><b>The online version.</b> If you expect to have an internet connection
-while using the documentation, you may be happy with the <a
-href='http://fv.centtech.com/acl2/latest/doc/'>online XDOC manual</a> hosted by
-<a href='http://www.centtech.com/'>Centaur Technology</a>.  This version covers
-the latest released version of ACL2 and the corresponding version of the <a
-href='http://code.google.com/p/acl2-books/'>ACL2 Community Books</a>.</li>
+<blockquote>
+Jared Davis and Matt Kaufmann.  <a
+href='http://dx.doi.org/10.4204/EPTCS.152.2'>Industrial Strength Documentation
+for ACL2</a>.  ACL2 Workshop 2014.  EPTCS 152.  Pages 9-25.
+</blockquote>
 
-<li><b>A local version.</b> If you sometimes work without an internet
-connection, or are using development snapshots of ACL2 and need up-to-date
-documentation, you can <a href='download/'>download</a> a local copy of this
-manual.</li>
+<p>See @(see acl2::|Building the ACL2+Books Manual|) for information on
+building the ACL2+Books manual.</p>
 
-<li><b>The ACL2-Doc Emacs version.</b> If you would like to view the
-documentation using Emacs instead of a web browser, you may wish to use a
-feature-rich Emacs-based documentation browser provided by the ACL2 system.
-See @(see acl2::acl2-doc) for details.</li>
 
-</ul>
-
-<p>You can also build your own copy of the manual as follows. (This has been
-tested using CCL on Linux and Mac OS X, but may work for other OS/Lisp
-combinations.)  To do this, you first need to build ACL2(h), then certify the
-@('doc/top') book, e.g., as follows:</p>
+<p>To use XDOC to document your own books, the first step is:</p>
 
 @({
-  cd acl2-sources/books
-  make manual ACL2=my-acl2h
+ (include-book \"xdoc/top\" :dir :system)
 })
 
-<p>After this is built, the web-based manual should be available at:</p>
+<p>This book loads very quickly and requires no ttags.  It gives you @(see
+defxdoc) and @(see defsection), the basic commands for adding documentation.
+It also installs a new @(':doc') command, via @(see ld-keyword-aliases), so
+that you can see new documentation from the terminal.</p>
 
-@({acl2-sources/books/doc/manual/index.html})
+<p>Once you have documented your books, you may wish to create a manual that
+can be viewed from a web browser.  You can do this quite easily with XDOC's
+@(see save) command.  This command can be embedded in an ordinary ACL2 book, so
+that your manual is automatically regenerated when you build your project.</p>
 
-<p>See also @(see acl2::acl2-doc) for details about how to build your own
-Emacs-based manual.</p>
 
+<h3>New Features</h3>
 
-
-<h3>Documenting your Books</h3>
-
-<box><p><b><color rgb='#ff0000'>NEW</color></b> (experimental): XDOC now
+<p><b><color rgb='#ff0000'>NEW</color></b> (experimental): XDOC now
 supports @(see katex-integration) for writing LaTeX-like formulas like
 @($
 \\left( \\sum_{i=0}^{n} \\sqrt{f(i)} \\right) < \\frac{n^2}{k}
 $)
-within your documentation.</p></box>
+within your documentation.</p>
 
-<br/>
-
-<box><p><b><color rgb='#ff0000'>NEW</color></b> (experimental): When writing
+<p><b><color rgb='#ff0000'>NEW</color></b> (experimental): When writing
 documentation, you can now optionally have XDOC topics automatically displayed
 as you submit new @(see defxdoc) forms&mdash;just add:</p>
 
@@ -113,36 +100,7 @@ as you submit new @(see defxdoc) forms&mdash;just add:</p>
 <p>to your @(see acl2::acl2-customization) file, or include it while you are
 developing your book.  Afterward, each @(see defxdoc) form you submit will be
 immediately shown at the terminal, giving you a quick, text-mode preview that
-may help you to diagnose any markup problems.</p></box>
-
-
-<p>To use XDOC to document your own books, the first step is:</p>
-
-@({
- (include-book \"xdoc/top\" :dir :system)
-})
-
-<p>This book loads very quickly and requires no ttags, and gives you:</p>
-
-<ul>
-
-<li>@(see defxdoc) and @(see defsection), the basic commands for adding
-documentation &mdash; these are the XDOC alternatives to ACL2's @(see defdoc)
-command.</li>
-
-<li>A new @(':doc') command.  The book installs a new <see topic='@(url
-ld-keyword-aliases)'>LD keyword alias</see> so that you (and your users) can
-see both ordinary ACL2 documentation and XDOC documentation from the terminal
-by just using @(':doc'), without thinking about which documentation system was
-used to document which topic.</li>
-
-</ul>
-
-<p>Once you have documented your books, you may wish to create a manual that
-can be viewed from a web browser.  You can do this quite easily with XDOC's
-@(see save) command.  This command can be embedded in an ordinary ACL2 book, so
-that your manual is automatically regenerated when you build your
-project.</p>")
+may help you to diagnose any markup problems.</p>")
 
 (local (set-default-parents xdoc))
 

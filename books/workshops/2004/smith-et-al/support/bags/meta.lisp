@@ -831,7 +831,6 @@ old version:
     0))
 
 ;(include-book "arithmetic/top" :dir :system)
-;(include-book "arithmetic-2/meta/top" :dir :system)
 
 
 (defthm syntax-count-of-non-consp
@@ -845,8 +844,6 @@ old version:
       (COUNT ELEM (SYNTAX-EV Y a)))
   :rule-classes (:rewrite :linear)
   :hints (("Goal" :in-theory (enable SYNTAX-REMOVE-1-fn))))
-
-;(include-book "arithmetic-2/meta/top" :dir :system)
 
 (defthm count-in-SYNTAX-REMOVE-bag-1-linear
   (>= (COUNT ELEM (SYNTAX-EV (VAL 1 (SYNTAX-REMOVE-bag-1 x Y)) a))

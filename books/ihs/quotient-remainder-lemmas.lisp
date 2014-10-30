@@ -750,7 +750,7 @@ exported DISABLED.</p>"
 
 ;< Another beautiful proof from NIQ-BOUNDS.
 
-(defrule floor-bounds
+(defrule floor-bounded-by-/
   :parents (floor-lemmas)
   :short "Linear (D) : @('x/y - 1 < (FLOOR x y) <= x/y')."
   :long "<p>This lemma \"defines\" FLOOR as a set of inequalties.  Many of the
@@ -767,11 +767,11 @@ property of @('(/ x y)').</p>"
   :in-theory (set-difference-theories (enable floor rational-implies2)
                                       '(<-*-/-left <-*-/-right)))
 
-;< We need to consider the :CASES to get FLOOR-BOUNDS to do its job.  This
+;< We need to consider the :CASES to get FLOOR-BOUNDED-BY-/ to do its job.  This
 ;proof does 2 eliminations (considering (FLOOR x y) = -1) but it goes
-;through.  If we simply :USE FLOOR-BOUNDS with the same :CASES it also works
+;through.  If we simply :USE FLOOR-BOUNDED-BY-/ with the same :CASES it also works
 ;and takes about the same amount of time.  I'll bet that it could get the
-;(FLOOR x y) = -1 cases with FLOOR-BOUNDS if we let FLOOR-BOUNDS trigger on
+;(FLOOR x y) = -1 cases with FLOOR-BOUNDED-BY-/ if we let FLOOR-BOUNDED-BY-/ trigger on
 ;(/ x y).
 
 ;; The lemma FLOOR-TYPE had too many cases, so I split it in to 4 lemmas:
@@ -890,8 +890,8 @@ property of @('(/ x y)').</p>"
 	   :in-theory (set-difference-theories (enable <-+-negative-0-1
 						       <-+-negative-0-2
 						       normalize-<-/-to-*-3)
-					       '(floor-bounds))
-	   :use (:instance floor-bounds (x x) (y y)))))
+					       '(floor-bounded-by-/))
+	   :use (:instance floor-bounded-by-/ (x x) (y y)))))
 
 (defsection floor-type-linear
   :parents (floor-lemmas)
@@ -1032,7 +1032,7 @@ property of @('(/ x y)').</p>"
                   (implies (and (< x -1)
                                 (<= 2 y))
                            (< x (floor x y)))))
-    :hints (("Goal" :use ((:instance floor-bounds (x x) (y y))))
+    :hints (("Goal" :use ((:instance floor-bounded-by-/ (x x) (y y))))
             ("Goal'" :cases ((< 0 x) (< y (- x)))))))
 
 
@@ -1046,7 +1046,7 @@ property of @('(/ x y)').</p>"
   :parents (mod-lemmas)
   :short "Rewrite (D): Transform @('(MOD x y) < z'), @('(MOD x y) > z'), and
   @('(MOD x y) = z') into an equivalent FLOOR expression suitable for reasoning
-  about with FLOOR-BOUNDS and other theorems about FLOOR."
+  about with FLOOR-BOUNDED-BY-/ and other theorems about FLOOR."
   :long "<p>Since this lemma can be considered a `definition' of MOD, it is
   exported DISABLED.</p>"
   (implies (and (qr-guard x y)
@@ -1079,7 +1079,7 @@ property of @('(/ x y)').</p>"
   :enable linearize-mod
   :disable commutativity-of-*)
 
-(defrule mod-x-y-=-x
+(defrule mod-x-y-=-x-for-rationals
   :parents (mod-lemmas)
   :short "Rewrite: @('(MOD x y) = x'), when @('|x| <= |y|') and x and y have
   the same sign."
@@ -1098,14 +1098,14 @@ property of @('(/ x y)').</p>"
                                  (equal (mod x y) x))))
   :enable linearize-mod)
 
-;<  Again, we need to :USE FLOOR-BOUNDS to make this proof quick.
+;<  Again, we need to :USE FLOOR-BOUNDED-BY-/ to make this proof quick.
 
 (encapsulate nil
 
    (local (defthm another-crock
 	    (equal (equal (- x) 1) (equal x -1))))
 
-   (defrule mod-x-y-=-x+y
+   (defrule mod-x-y-=-x+y-for-rationals
      :parents (mod-lemmas)
      :short "Rewrite: @('(MOD x y) = x + y'), when @('|x| <= |y|') and x and y
   have different signs and x /= 0."
@@ -1122,8 +1122,8 @@ property of @('(/ x y)').</p>"
                                     (equal (mod x y) (+ x y))))
       (:rewrite :corollary (implies (and (< x 0) (> y 0) (<= (- x) y) (qr-guard x y))
                                     (equal (mod x y) (+ x y)))))
-     :in-theory (e/d (linearize-mod) (floor-bounds))
-     :use floor-bounds))
+     :in-theory (e/d (linearize-mod) (floor-bounded-by-/))
+     :use floor-bounded-by-/))
 
 ;; Added the :rule-classes :rewrite as this seems necessary at times.
 ;; A. Flatau  1-Dec-1994
@@ -1139,7 +1139,7 @@ property of @('(/ x y)').</p>"
   :enable mod
   :rule-classes (:rewrite :type-prescription))
 
-(defrule mod-bounds
+(defrule mod-bounded-by-modulus
   :parents (mod-lemmas)
   :short "Linear: Useful forms of the fact that @('|(MOD x y)| < |y|')."
   :long "<p>This lemma is also stored as a :GENERALIZE rule.</p>"
@@ -1152,8 +1152,8 @@ property of @('(/ x y)').</p>"
   :rule-classes ((:linear :trigger-terms ((mod x y)))
                  (:generalize))
   :enable linearize-mod
-  :disable floor-bounds
-  :use floor-bounds)
+  :disable floor-bounded-by-/
+  :use floor-bounded-by-/)
 
 (defrule mod-type
   :parents (mod-lemmas)
@@ -1199,7 +1199,7 @@ property of @('(/ x y)').</p>"
                                            (>= (mod x y) 0))))
   :enable linearize-mod
   :disable (floor-type-3 floor-type-1 (:type-prescription floor))
-  :use floor-bounds)
+  :use floor-bounded-by-/)
 
 (defsection mod-type-linear
   :parents (mod-lemmas)
@@ -1252,8 +1252,8 @@ property of @('(/ x y)').</p>"
 ;< This next section of lemmas has nothing to do with the :LINEAR theory of
 ;FLOOR and MOD, so we DISABLE the key :LINEAR lemmas to avoid thrashing.
 
-(local (in-theory (disable floor-bounds floor-type-1 floor-type-2
-			   floor-type-3 floor-type-4 mod-bounds mod-type)))
+(local (in-theory (disable floor-bounded-by-/ floor-type-1 floor-type-2
+			   floor-type-3 floor-type-4 mod-bounded-by-modulus mod-type)))
 
 ;  These LOCAL theorems will be superceded by CANCEL-FLOOR-+-BASIC,
 ;  CANCEL-FLOOR-+-3, CANCEL-MOD-+-BASIC, and CANCEL-MOD-+-3.
@@ -1274,9 +1274,9 @@ property of @('(/ x y)').</p>"
 	    (- (floor x y) i))))
    :hints
    (("Goal"
-     :use ((:instance floor-bounds (x (+ x (* i y))) (y y))
-	   (:instance floor-bounds (x (- x (* i y))) (y y))
-	   (:instance floor-bounds (x x) (y y)))))))
+     :use ((:instance floor-bounded-by-/ (x (+ x (* i y))) (y y))
+	   (:instance floor-bounded-by-/ (x (- x (* i y))) (y y))
+	   (:instance floor-bounded-by-/ (x x) (y y)))))))
 
 (local
  (defthm floor-x+y+i*z-z
@@ -1348,8 +1348,8 @@ property of @('(/ x y)').</p>"
       (equal (floor (+ x y) z)
 	     (floor (+ (+ (mod x z) (mod y z))
 		       (* (+ (floor x z) (floor y z)) z)) z)))
-     :hints(("Goal" :in-theory (disable mod-x-y-=-x+y
-                                        mod-x-y-=-x)))))
+     :hints(("Goal" :in-theory (disable mod-x-y-=-x+y-for-rationals
+                                        mod-x-y-=-x-for-rationals)))))
 
   (defruled floor-+
     :parents (floor-lemmas)
@@ -1387,8 +1387,8 @@ property of @('(/ x y)').</p>"
       (equal (mod (+ x y) z)
 	     (mod (+ (+ (mod x z) (mod y z))
 		     (* (+ (floor x z) (floor y z)) z)) z)))
-     :hints(("Goal" :in-theory (disable mod-x-y-=-x+y
-                                        mod-x-y-=-x)))))
+     :hints(("Goal" :in-theory (disable mod-x-y-=-x+y-for-rationals
+                                        mod-x-y-=-x-for-rationals)))))
 
   (defruled mod-+
     :parents (mod-lemmas)
@@ -1565,8 +1565,8 @@ property of @('(/ x y)').</p>"
                   (equal (mod (+ (mod x y) w) z) (mod (+ w x) z))
                   (equal (mod (- w (mod x y)) z) (mod (- w x) z))
                   (equal (mod (- (mod x y) w) z) (mod (- x w) z))))
-    :hints(("Goal" :in-theory (disable mod-x-y-=-x+y
-                                       mod-x-y-=-x
+    :hints(("Goal" :in-theory (disable mod-x-y-=-x+y-for-rationals
+                                       mod-x-y-=-x-for-rationals
                                        integerp-mod
                                        integerp-+-minus-*
                                        mod-=-0)))))
@@ -1585,7 +1585,7 @@ property of @('(/ x y)').</p>"
   :expand ((mod (+ x y) z)))
 
 (local (in-theory (enable floor-type-1 floor-type-2 floor-type-3 floor-type-4
-			  floor-bounds mod-type mod-bounds)))
+			  floor-bounded-by-/ mod-type mod-bounded-by-modulus)))
 
 
 ;;;++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -1614,10 +1614,17 @@ property of @('(/ x y)').</p>"
 ;;;
 ;;;    for J > 0.
 
-
+#-non-standard-analysis
 (defthm rationalp-mod
-  ;; [Jared] bozo: arithmetic-5 proves a conflicting, better rule with no hyp
-  ;; about Y.  I haven't yet spent the time to improve these rules to match.
+  (implies (rationalp x)
+           (rationalp (mod x y)))
+  :rule-classes (:rewrite :type-prescription)
+  :hints(("Goal"
+          :cases ((rationalp y))
+          :in-theory (enable mod floor))))
+
+#+non-standard-analysis
+(defthm rationalp-mod
   (implies (and (rationalp x)
 		(rationalp y))
 	   (rationalp (mod x y)))
@@ -1644,7 +1651,7 @@ property of @('(/ x y)').</p>"
   ;;FLOOR and MOD, so we DISABLE the key :LINEAR lemmas to avoid thrashing.
 
   (local (in-theory (disable floor-type-1 floor-type-2 floor-type-3
-			     floor-type-4 floor-bounds mod-type mod-bounds)))
+			     floor-type-4 floor-bounded-by-/ mod-type mod-bounded-by-modulus)))
 
   ;; First, write x as a quotient and remainder of i*j.
 
@@ -1701,11 +1708,11 @@ property of @('(/ x y)').</p>"
 					       floor-type-2
 					       floor-type-3
 					       mod-type)
-				       '(floor-bounds mod-bounds
+				       '(floor-bounded-by-/ mod-bounded-by-modulus
 						      <-*-left-cancel
 						      <-*-/-left-commuted))
-       :use ((:instance floor-bounds (x (mod x (* i j))) (y i))
-	     (:instance mod-bounds (x x) (y (* i j)))
+       :use ((:instance floor-bounded-by-/ (x (mod x (* i j))) (y i))
+	     (:instance mod-bounded-by-modulus (x x) (y (* i j)))
 	     (:instance <-*-left-cancel
 			(z (/ i)) (x (mod x (* i j))) (y (* i j))))))))
 
@@ -1769,7 +1776,7 @@ property of @('(/ x y)').</p>"
 (encapsulate ()
 
   (local (in-theory (disable floor-type-1 floor-type-2 floor-type-3
-			     floor-type-4 floor-bounds)))
+			     floor-type-4 floor-bounded-by-/)))
 
   (local
    (defthm mod-x-i*j-crock
@@ -1784,7 +1791,7 @@ property of @('(/ x y)').</p>"
      :rule-classes nil
      :hints (("Goal" :in-theory (disable floor-mod-elim)))))
 
-  (defthm mod-x-i*j
+  (defthm mod-x-i*j-of-positives
     (implies (and (> i 0)
                   (> j 0)
                   (force (integerp i))

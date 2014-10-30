@@ -2487,7 +2487,7 @@ off looking at the source code.</p>")
     :hints (("goal" :in-theory (e/d* (ihsext-recursive-redefs
                                       ihsext-inductions)
                                      (logcdr-<-const
-                                      mod-x-y-=-x+y))
+                                      mod-x-y-=-x+y-for-rationals))
              :induct (and (logsquash m x)
                           (logsquash n x))
              :expand ((:free (b) (logsquash n b))
@@ -2501,7 +2501,7 @@ off looking at the source code.</p>")
     :hints (("goal" :in-theory (e/d* (ihsext-recursive-redefs
                                       ihsext-inductions)
                                      (logcdr-<-const
-                                      MOD-X-Y-=-X+Y))
+                                      MOD-X-Y-=-X+Y-for-rationals))
              :induct (and (logsquash m x)
                           (logsquash n x))
              :expand ((:free (b) (logsquash n b))

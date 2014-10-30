@@ -117,7 +117,8 @@ state".
 
 
 (local
- (include-book "arithmetic-2/meta/top" :dir :system))
+ ;; [Jared] changed this to use arithmetic-3 instead of 2
+ (include-book "arithmetic-3/bind-free/top" :dir :system))
 
 ;; Now prove some theorems. These theorems are admittedly more complicated than
 ;; the total correctness ones. 

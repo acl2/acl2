@@ -69,8 +69,9 @@ symbolic simulation. This book will be made use of in the defsimulate macro.
    (if (zp k) (list k steps s)
      (cutpoint-induction (1- k) (1+ steps) (nextt s)))))
 
-
-(local (include-book "arithmetic-2/meta/top" :dir :system))
+(local
+ ;; [Jared] changed this to use arithmetic-3 instead of 2
+ (include-book "arithmetic-3/bind-free/top" :dir :system))
 
 ;; The following theorem is proven by induction and is about everything that we
 ;; need to know about steps-to-cutpoint-tail.
