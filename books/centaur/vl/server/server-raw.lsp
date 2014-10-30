@@ -317,7 +317,7 @@ with are not normed.</p>")
 
 
 
-
+#+hons
 (acl2::mf-multiprocessing t)
 
 (let ((support-started nil))
