@@ -1190,13 +1190,23 @@ SystemVerilog-2012 Table 11-21. See @(see expression-sizing).</p>"
          ;; the width is basically "inapplicable."
          (mv (ok) nil))
 
+        ((:vl-stream-left :vl-stream-right
+          :vl-stream-left-sized :vl-stream-right-sized)
+         (mv (warn :type :vl-untested-sizing-assumptions
+                   :msg "~a0: sizing of streaming concatenations is ~
+                         experimental and may not be correct."
+                   :args (list elem))
+             (if (member op '(:vl-stream-left-sized :vl-stream-right-sized))
+                 (sum-nats (mbe :logic (cdr arg-sizes)
+                                :exec (and (consp arg-sizes) (cdr arg-sizes))))
+               (sum-nats arg-sizes))))
+
+
         ((:vl-hid-dot :vl-index :vl-scope
 
           ;; BOZO these might not belong here, but it seems like the
           ;; safest place to put them until they're implemented
           :vl-with-index :vl-with-colon :vl-with-pluscolon :vl-with-minuscolon
-          :vl-stream-left :vl-stream-right
-          :vl-stream-left-sized :vl-stream-right-sized
           :vl-tagged :vl-binary-cast
           :vl-select-colon :vl-select-pluscolon :vl-select-minuscolon
           :vl-pattern-multi
@@ -2014,13 +2024,19 @@ produce unsigned values.</li>
          ;; BOZO eventually add support for function calls.
          (mv warnings nil))
 
+        ((:vl-stream-left :vl-stream-right
+          :vl-stream-left-sized :vl-stream-right-sized)
+         (mv (warn :type :vl-untested-sizing-assumptions
+                   :msg "~a0: sizing of streaming concatenations is ~
+                         experimental and may not be correct."
+                   :args (list elem))
+             :vl-unsigned))
+
         ((:vl-index :vl-hid-dot :vl-scope
 
           ;; BOZO these might not belong here, but it seems like the
           ;; safest place to put them until they're implemented
           :vl-with-index :vl-with-colon :vl-with-pluscolon :vl-with-minuscolon
-          :vl-stream-left :vl-stream-right
-          :vl-stream-left-sized :vl-stream-right-sized
           :vl-tagged :vl-binary-cast
 
           :vl-pattern-multi
@@ -3487,7 +3503,6 @@ minor warning for assignments where the rhs is a constant.</p>"
            )))
 
 
-
 (with-output :off (prove)
   (defines vl-expr-size
     :parents (expression-sizing)
@@ -3957,7 +3972,9 @@ minor warning for assignments where the rhs is a constant.</p>"
              (mv t warnings new-x)))
 
           ((;; Table 5-22, Line 10.
-            :vl-concat)
+            :vl-concat
+            :vl-stream-left :vl-stream-right
+            :vl-stream-left-sized :vl-stream-right-sized)
            ;; All arguments self-determined, result is unsigned.
            (b* (((unless (eq finaltype :vl-unsigned))
                  (mv nil
@@ -3981,7 +3998,10 @@ minor warning for assignments where the rhs is a constant.</p>"
                             :args (list elem x))
                      x))
 
-                (inner-width (sum-nats widths))
+                (inner-width (if (member op '(:vl-stream-left-sized :vl-stream-right-sized))
+                                 (sum-nats (mbe :logic (cdr widths)
+                                                :exec (and (consp widths) (cdr widths))))
+                               (sum-nats widths)))
                 ((unless (posp inner-width))
                  (mv nil
                      (fatal :type :vl-bad-expression
@@ -4244,14 +4264,13 @@ minor warning for assignments where the rhs is a constant.</p>"
                  (mv nil warnings x)))
              (mv t warnings new-x)))
 
+
           ((:vl-funcall :vl-syscall :vl-mintypmax :vl-index
             :vl-scope :vl-hid-dot
 
             ;; BOZO these might not belong here, but it seems like the
             ;; safest place to put them until they're implemented
             :vl-with-index :vl-with-colon :vl-with-pluscolon :vl-with-minuscolon
-            :vl-stream-left :vl-stream-right
-            :vl-stream-left-sized :vl-stream-right-sized
             :vl-tagged :vl-binary-cast
           :vl-pattern-multi
           :vl-pattern-type
@@ -4432,6 +4451,10 @@ minor warning for assignments where the rhs is a constant.</p>"
              (implies (consp x)
                       (equal (+ 1 (len (cdr x)))
                              (len x)))))
+    (local (defthm member-of-cdr-exprlist-finalwidths
+             (implies (not (member k (vl-exprlist->finalwidths x)))
+                      (not (member k (vl-exprlist->finalwidths (cdr x)))))
+             :hints(("Goal" :in-theory (enable vl-exprlist->finalwidths member)))))
     (verify-guards vl-expr-size
       :hints(("Goal"
               :in-theory (e/d (maybe-natp

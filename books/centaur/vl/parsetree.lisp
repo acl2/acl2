@@ -2652,6 +2652,14 @@ block name to each variable name.</p>"
       (atts vl-atts-p)))
     ))
 
+;; NOTE: Other statement subtypes are declared in stmt-tools.  This is here
+;; because scopestack needs it.
+(define vl-blockstmt-p ((x vl-stmt-p))
+  :inline t
+  :enabled t
+  (eq (vl-stmt-kind x) :vl-blockstmt))
+
+
 
 (local (in-theory (disable vl-stmtlist-p-of-cdr-when-vl-stmtlist-p
                            consp-when-member-equal-of-vl-caselist-p

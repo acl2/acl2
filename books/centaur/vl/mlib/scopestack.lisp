@@ -66,6 +66,24 @@
            ;; bozo add function/task ports?
            (package          ))))
 
+(defprod vl-blockscope
+  ((decls vl-blockitemlist-p))
+  :tag :vl-blockscope)
+
+(define vl-fundecl->blockscope ((x vl-fundecl-p))
+  :returns (scope vl-blockscope-p)
+  (make-vl-blockscope :decls (vl-fundecl->decls x)))
+
+(define vl-taskdecl->blockscope ((x vl-taskdecl-p))
+  :returns (scope vl-blockscope-p)
+  (make-vl-blockscope :decls (vl-taskdecl->decls x)))
+
+(define vl-blockstmt->blockscope ((x vl-stmt-p))
+  :guard (eq (vl-stmt-kind x) :vl-blockstmt)
+  :returns (scope vl-blockscope-p)
+  (make-vl-blockscope :decls (vl-blockstmt->decls x)))
+
+
 (local (defconst *vl-scopes->items*
           ;; scope type      has item types or (type acc-name)
          '((interface    (:import)          paramdecl vardecl modport)
@@ -90,7 +108,10 @@
                                                         :acc generates))
            ;; fwdtypedefs could be included here but we hope to have resolved them all
            ;; to proper typedefs by the end of loading.
-           (fundecl      ()             (blockitem :acc decls :sum-type t :transsum t))
+           ;; (fundecl      ()             (blockitem :acc decls :sum-type t :transsum t))
+           ;; (taskdecl     ()             (blockitem :acc decls :sum-type t :transsum t))
+           ;; (blockstmt    ()             (blockitem :acc decls :sum-type t :transsum t))
+           (blockscope   ()             (blockitem :acc decls :sum-type t :transsum t))
            (design       (:import)      paramdecl vardecl fundecl taskdecl typedef)
            (package      (:import)      paramdecl vardecl fundecl taskdecl typedef))))
 

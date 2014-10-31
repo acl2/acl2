@@ -769,10 +769,7 @@ process them.</p>"
   :enabled t
   (eq (vl-stmt-kind x) :vl-enablestmt))
 
-(define vl-blockstmt-p ((x vl-stmt-p))
-  :inline t
-  :enabled t
-  (eq (vl-stmt-kind x) :vl-blockstmt))
+;; NOTE: Moved vl-blockstmt-p to parsetree because scopsetack needs it.
 
 (define vl-casestmt-p ((x vl-stmt-p))
   :inline t

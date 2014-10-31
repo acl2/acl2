@@ -93,7 +93,7 @@ XLATE_VCS_SV   := $(VL) model spec.v --mem=2 --search=. --verilog-file=impl.vcs.
 	@echo "Making $*/impl.vcs.sv"
 	@rm -f %/impl.vcs.sv %/impl.vcs.sv.out
 	@cd $*; $(STARTJOB) -c \
-	  'echo `hostname` &> impl.vcs.sv.out; $(XLATE_VCS_SV) &>> impl.vcs.vs.out'
+	  'echo `hostname` &> impl.vcs.sv.out; $(XLATE_VCS_SV) &>> impl.vcs.sv.out'
 	@ls -l $*/impl.vcs.sv
 
 

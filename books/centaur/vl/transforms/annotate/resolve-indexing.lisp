@@ -509,7 +509,7 @@ applied to a HID/identifier.  Otherwise, we generate a warning and fail.</p>"
   :body
   (b* (((vl-fundecl x) x)
 
-       (ss (vl-scopestack-push x ss))
+       (ss (vl-scopestack-push (vl-fundecl->blockscope x) ss))
 
        ((mv warnings new-body)
         (vl-stmt-resolve-indexing x.body ss warnings))

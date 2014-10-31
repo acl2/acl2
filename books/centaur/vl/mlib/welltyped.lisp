@@ -306,7 +306,7 @@ hierarchical identifiers.</p>"
                  (eq x.finaltype (vl-expr->finaltype c)))))
 
          (( ;; Table 5-22, Line 10
-           :vl-concat)
+           :vl-concat :vl-stream-left :vl-stream-right)
           (b* ((arg-widths (vl-exprlist->finalwidths x.args)))
             (and ;; result is unsigned (5.5.1) and its width is the sum of
              ;; its arg widths (Table 5-22)
@@ -317,6 +317,18 @@ hierarchical identifiers.</p>"
              ;; But it does prohibit reals, function names, etc.
              (not (member nil arg-widths))
              (equal x.finalwidth (sum-nats arg-widths)))))
+
+         ((:vl-stream-left-sized :vl-stream-right-sized)
+          (b* ((arg-widths (vl-exprlist->finalwidths x.args)))
+            (and ;; result is unsigned (5.5.1) and its width is the sum of
+             ;; its arg widths (Table 5-22)
+             (eq x.finaltype :vl-unsigned)
+             (posp x.finalwidth)
+             ;; we choose not to allow any unsized args.  this does NOT
+             ;; prohibit zero-sized multiconcats or zero-sized strings.
+             ;; But it does prohibit reals, function names, etc.
+             (not (member nil arg-widths))
+             (equal x.finalwidth (sum-nats (cdr arg-widths))))))
 
          (( ;; Table 5-22, Line 11.
            :vl-multiconcat)
@@ -379,9 +391,7 @@ hierarchical identifiers.</p>"
                (not x.finaltype)))
 
          ;; New things that we aren't really supporting yet
-         ((:vl-stream-left
-           :vl-stream-right
-           :vl-stream-left-sized
+         ((:vl-stream-left-sized
            :vl-stream-right-sized
            :vl-binary-cast
            :vl-scope

@@ -772,14 +772,12 @@ explicit declarations.</p>")
 
          ((vl-blockstmt x))
 
-         ;; BOZO scopestack doesn't yet support block statements as scopes... fudge it for now.
-
-         ;; BOZO BOZO BOZO --- (st (vl-shadowcheck-push-scope x st))
+         (st (vl-shadowcheck-push-scope (vl-blockstmt->blockscope x) st))
          ;; Process declarations for the block, if any
          ((mv st warnings) (vl-shadowcheck-blockitemlist x.decls st warnings))
          ;; Process sub-statements, if any
          ((mv st warnings) (vl-shadowcheck-stmtlist x.stmts ctx st warnings))
-         ;; BOZO BOZO BOZO --- (st (vl-shadowcheck-pop-scope st))
+         (st (vl-shadowcheck-pop-scope st))
          )
       (mv st warnings)))
 
@@ -859,7 +857,7 @@ explicit declarations.</p>")
        ((mv st warnings) (vl-shadowcheck-declare-name x.name x st warnings))
 
        (- (vl-shadowcheck-debug "  >> pushing into function ~x0.~%" x.name))
-       (st (vl-shadowcheck-push-scope x st))
+       (st (vl-shadowcheck-push-scope (vl-fundecl->blockscope x) st))
        ((mv st warnings) (vl-shadowcheck-taskportlist x.inputs st warnings))
 
        ;; BOZO eventually do something sensible with name in the inner scope,
@@ -884,13 +882,11 @@ explicit declarations.</p>")
        (other-names      (vl-exprlist-varnames (vl-taskportlist-allexprs x.ports)))
        ((mv st warnings) (vl-shadowcheck-reference-names other-names x st warnings))
 
-       ;; BOZO -- taskdecls aren't scopes yet
-
-       ;; (st (vl-shadowcheck-push-scope x st))
+       (st (vl-shadowcheck-push-scope (vl-taskdecl->blockscope x) st))
        ((mv st warnings) (vl-shadowcheck-taskportlist x.ports st warnings))
        ((mv st warnings) (vl-shadowcheck-blockitemlist x.decls st warnings))
        ((mv st warnings) (vl-shadowcheck-stmt x.body x st warnings))
-       ;; (st (vl-shadowcheck-pop-scope st))
+       (st (vl-shadowcheck-pop-scope st))
 
        ((mv st warnings) (vl-shadowcheck-declare-name x.name x st warnings)))
     (mv st warnings)))

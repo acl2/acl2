@@ -553,7 +553,7 @@ so that their overrides are compatible with thier types.</p>"
   (b* (((vl-fundecl x) (vl-fundecl-fix x))
        ;; BOZO is the return type of the function in its scope?  I think
        ;; probably not?
-       (ss (vl-scopestack-push x ss)))
+       (ss (vl-scopestack-push (vl-fundecl->blockscope x) ss)))
     (change-vl-fundecl x
                        :rrange (vl-maybe-range-scopesubst x.rrange ss)
                        :decls  (vl-blockitemlist-scopesubst x.decls ss)

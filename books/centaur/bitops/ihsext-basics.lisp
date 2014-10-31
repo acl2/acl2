@@ -2949,8 +2949,15 @@ off looking at the source code.</p>")
              :in-theory (disable signed-byte-p
                                  minus-to-lognot))))
 
+  (defthm logapp-sign
+    (equal (< (logapp size i j) 0)
+           (< (ifix j) 0))
+    :hints (("goal" :induct (logapp size i j)
+             :in-theory (disable (force)))))
+
   (add-to-ruleset ihsext-basic-thms '(unsigned-byte-p-of-logapp
-                                      signed-byte-p-of-logapp))
+                                      signed-byte-p-of-logapp
+                                      logapp-sign))
 
   ;; (defthm logapp-zeros
   ;;   (equal (logapp i 0 0) 0))
