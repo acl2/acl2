@@ -4397,9 +4397,12 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 #+acl2-loop-only
 (defun alpha-char-p (x)
 
-; The following guard is required by p. 235 of CLtL.
+; The guard characterp is required by p. 235 of CLtL.  However, In Allegro 6.0
+; we see characters other than standard characters that are treated as upper
+; case, such as (code-char (+ 128 65)).  So we strengthen that guard.
 
-  (declare (xargs :guard (characterp x)))
+  (declare (xargs :guard (and (characterp x)
+                              (standard-char-p x))))
   (and (member x
                '(#\a #\b #\c #\d #\e #\f #\g #\h #\i #\j #\k #\l #\m
                  #\n #\o #\p #\q #\r #\s #\t #\u #\v #\w #\x #\y #\z
@@ -4516,30 +4519,33 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
             (t (code-char 0)))))
 
 (defthm lower-case-p-char-downcase
-  (implies (and (upper-case-p x)
-                (characterp x))
+  (implies (upper-case-p x)
            (lower-case-p (char-downcase x))))
 
 (defthm upper-case-p-char-upcase
-  (implies (and (lower-case-p x)
-                (characterp x))
+  (implies (lower-case-p x)
            (upper-case-p (char-upcase x))))
 
 (defthm lower-case-p-forward-to-alpha-char-p
-  (implies (and (lower-case-p x)
-                (characterp x))
+  (implies (lower-case-p x)
            (alpha-char-p x))
   :rule-classes :forward-chaining)
 
 (defthm upper-case-p-forward-to-alpha-char-p
-  (implies (and (upper-case-p x)
-                (characterp x))
+  (implies (upper-case-p x)
            (alpha-char-p x))
   :rule-classes :forward-chaining)
 
-(defthm alpha-char-p-forward-to-characterp
+(defthm alpha-char-p-forward-to-standard-char-p
   (implies (alpha-char-p x)
+           (standard-char-p x))
+  :hints (("Goal" :in-theory (enable standard-char-p)))
+  :rule-classes :forward-chaining)
+
+(defthm standard-char-p-forward-to-characterp
+  (implies (standard-char-p x)
            (characterp x))
+  :hints (("Goal" :in-theory (enable standard-char-p)))
   :rule-classes :forward-chaining)
 
 (defthm characterp-char-downcase
