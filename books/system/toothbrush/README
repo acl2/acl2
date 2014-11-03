@@ -1,0 +1,33 @@
+Copyright (C) 2014, ForrestHunt, Inc.
+Written by Matt Kaufmann, August, 2014
+License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+
+This directory implements a "toothbrush" capability for ACL2.  The
+name "toothbrush" is an old one, bandied around in the early 1990s at
+Computational Logic, Inc.  The idea, somewhat tongue-in-cheek, was to
+be able to fit an ACL2 application on a toothbrush, or perhaps to
+implement a toothbrush on ACL2.  At any rate, what we provide here is
+a way to take an application written in ACL2 and save it with a much
+smaller memory footprint than would be the case if the entire ACL2
+source code were loaded.
+
+This is work in progress.  For example, as of this writing, there is
+no support for applications that use abstract stobjs or nested stobjs.
+Tests under subdirectory tests/ show what can currently be done.
+The recommended host Lisps are CCL and SBCL, since these compile
+on-the-fly and the toothbrush mechanism loads some ACL2 source files
+(without explicit compilation); other Lisps may work, at least on
+small examples, but their performance could suffer from using
+interpreted ACL2 source code.
+
+More documentation will likely come later, especially if requested.
+
+In order to set things up and run the examples, invoke a command such
+as the following, i.e., with ACL2 defined to be your ACL2 (possibly a
+variant) executable.
+
+make -j 4 ACL2=/Users/kaufmann/acl2/acl2/saved_acl2h
+
+To clean:
+
+make ACL2=/Users/kaufmann/acl2/acl2/saved_acl2h clean

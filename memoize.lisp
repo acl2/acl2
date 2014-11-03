@@ -28,12 +28,6 @@
 
 (in-package "ACL2")
 
-(defmacro defn (f a &rest r)
-  `(defun ,f ,a (declare (xargs :guard t)) ,@r))
-
-(defmacro defnd (f a &rest r)
-  `(defund ,f ,a (declare (xargs :guard t)) ,@r))
-
 #+(or acl2-loop-only (not hons))
 (defn clear-memoize-table (fn)
 

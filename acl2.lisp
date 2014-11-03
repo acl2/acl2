@@ -881,10 +881,11 @@
     #+acl2-par "multi-threading-raw"
     #+hons "serialize-raw"
     "axioms"
+    "basis-a"   ; to be included in any "toothbrush"
     "memoize"   ; but only get special under-the-hood treatment with #+hons
     "hons"      ; but only get special under-the-hood treatment with #+hons
     "serialize" ; but only get special under-the-hood treatment with #+hons
-    "basis"
+    "basis-b"   ; not to be included in any "toothbrush"
     "parallel" ; but only get special under-the-hood treatment with #+acl2-par
     #+acl2-par "futures-raw"
     #+acl2-par "parallel-raw"

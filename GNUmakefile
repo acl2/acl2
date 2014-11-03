@@ -208,7 +208,7 @@ ACL2_IGNORE ?= -k
 # NOTE: We deliberately exclude doc.lisp, which does not contribute to
 # proclaiming or TAGS.
 sources := axioms.lisp memoize.lisp hons.lisp boot-strap-pass-2.lisp\
-           basis.lisp parallel.lisp translate.lisp\
+           basis-a.lisp basis-b.lisp parallel.lisp translate.lisp\
            type-set-a.lisp linear-a.lisp\
            type-set-b.lisp linear-b.lisp\
            non-linear.lisp tau.lisp\

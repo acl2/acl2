@@ -7582,9 +7582,6 @@
                                    (t (f-get-global 'standard-oi state))))
                      state)))))
 
-(defun raw-mode-p (state)
-  (f-get-global 'acl2-raw-mode-p state))
-
 (defun defun-mode-prompt-string (state)
   (if (raw-mode-p state)
       "P"

@@ -10485,7 +10485,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         (*1*-name (concatenate 'string
                                acl2::*1*-package-prefix*
                                name))
-        (proposed-imports (sort-symbol-listp imports)))
+        (proposed-imports ; avoid sort-symbol-listp for toothbrush
+         (delete-duplicates (sort (copy-list imports) 'symbol-<))))
     (assert pkg) ; see defpkg-raw
 
 ; We bind proposed-imports to the value of the imports argument.  We do not
@@ -16645,6 +16646,11 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 #-acl2-loop-only
 (defparameter *acl2-read-suppress* nil)
+
+(defun raw-mode-p (state)
+  (declare (xargs :guard (and (state-p state)
+                              (boundp-global 'acl2-raw-mode-p state))))
+  (f-get-global 'acl2-raw-mode-p state))
 
 (defun read-object (channel state-state)
 

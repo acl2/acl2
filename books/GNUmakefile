@@ -667,6 +667,7 @@ ifeq ($(ACL2_HAS_REALS), )
 # that we don't always want built with "all".
 
 ACL2_CUSTOM_TARGETS := \
+  system/toothbrush/success.txt \
   clause-processors/SULFA/target.cert \
   fix-cert/fix-cert.cert \
   projects/translators/l3-to-acl2/target.cert \
@@ -684,6 +685,19 @@ ACL2_CUSTOM_TARGETS := \
 # which dependencies will be generated since there is no
 # cert_pl_exclude file in projects/translators/ (even though there is
 # a cert_pl_exclude in projects/translators/l3-to-acl2/).
+
+# We currently only test the toothbrush mechanism for Lisps that
+# compile on-the-fly, so that it doesn't depend on the existence of
+# compiled files in the main ACL2 directory.  We might revisit that
+# decision if there is reason to do so.
+ifneq ($(filter CCL SBCL, $(ACL2_HOST_LISP)), )
+system/toothbrush/success.txt: system/toothbrush-deps.cert
+	cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
+else
+.PHONY: system/toothbrush/success.txt
+system/toothbrush/success.txt:
+	@echo "Note: Skipping $@ for host Lisp $(ACL2_HOST_LISP)."
+endif # ifneq ($(filter CCL SBCL, $(ACL2_HOST_LISP)), )
 
 # We only make the books under SULFA if a documented test for an
 # installed SAT solver succeeds.
