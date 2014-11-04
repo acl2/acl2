@@ -1238,6 +1238,81 @@ SystemVerilog-2012 Table 11-21. See @(see expression-sizing).</p>"
 
 
 
+(define vl-partselect-type-top-dimension-replacement ((dim vl-packeddimension-p)
+                                                      (x vl-expr-p)
+                                                      (elem vl-modelement-p))
+  :guard-hints ((and stable-under-simplificationp
+                     '(:in-theory (enable acl2::member-of-cons))))
+  :guard (and (not (vl-atom-p x))
+              (member (vl-nonatom->op x)
+                      '(:vl-select-colon
+                        :vl-select-pluscolon
+                        :vl-select-minuscolon
+                        :vl-partselect-colon
+                        :vl-partselect-pluscolon
+                        :vl-partselect-minuscolon)))
+  :returns (mv (warning (iff (vl-warning-p warning) warning))
+               (range (implies (not warning) (vl-range-p range))))
+
+  (b* (((vl-nonatom x))
+       (x  (vl-expr-fix x))
+       (dim (vl-packeddimension-fix dim))
+       (elem (vl-modelement-fix elem))
+       ((when (or (eq dim :vl-unsized-dimension)
+                  (not (vl-range-resolved-p dim))))
+        (mv (make-vl-warning :type :vl-partselect-type-unresolved
+                             :msg "~a0: Couldn't find type of ~a1 because the ~
+                                   most significant dimension of the type of ~
+                                   ~a2 was unsized or non-constant."
+                             :args (list elem x (first x.args)))
+            nil))
+       ((unless (and (vl-expr-resolved-p (third x.args))
+                     (or (not (member x.op '(:vl-partselect-colon
+                                             :vl-select-colon)))
+                         (vl-expr-resolved-p (second x.args)))))
+        (mv (make-vl-warning :type :vl-partselect-indices-unresolved
+                             :msg "~a0: Couldn't find type of ~a1 because the ~
+                                   partselect has non-constant indices."
+                             :args (list elem x))
+            nil))
+       ((when (member x.op '(:vl-select-colon :vl-partselect-colon)))
+        (mv nil (make-vl-range :msb (second x.args) :lsb (third x.args))))
+       (width (vl-resolved->val (third x.args)))
+       ((unless (posp width))
+        (mv (make-vl-warning :type :vl-partselect-indices-unresolved
+                             :msg "~a0: Zero width in partselect operator?"
+                             :args (list elem x))
+            nil))
+       ((unless (vl-expr-resolved-p (second x.args)))
+        (mv nil (make-vl-range :msb (vl-make-index (1- width)) :lsb (vl-make-index 0))))
+       ;; The second argument is resolved, so set the range as specified.
+       (m-or-lsb (vl-resolved->val (second x.args)))
+       (backward-range-p (< (vl-resolved->val (vl-range->msb dim))
+                            (vl-resolved->val (vl-range->lsb dim))))
+       (greater-idx (if (member x.op '(:vl-select-pluscolon :vl-partselect-pluscolon))
+                        (+ m-or-lsb width -1)
+                      m-or-lsb))
+       (lesser-idx (if (member x.op '(:vl-select-pluscolon :vl-partselect-pluscolon))
+                       m-or-lsb
+                     (+ m-or-lsb (- width) 1)))
+       ((when (< lesser-idx 0))
+        (mv (make-vl-warning :type :vl-partselect-index-error
+                             :msg "~a0: Partselect ~s1 operator yields negative index: ~a2"
+                             :args (list elem (if (eq x.op :vl-partselect-pluscolon)
+                                                  "+:" "-:")
+                                         x))
+            nil))
+       (range (make-vl-range :msb (vl-make-index (if backward-range-p lesser-idx greater-idx))
+                             :lsb (vl-make-index (if backward-range-p greater-idx lesser-idx)))))
+    (mv nil range))
+  ///
+  (defthm context-irrelevance-of-vl-partselect-type-top-dimension-replacement
+    (implies (syntaxp (not (equal elem (list 'quote (with-guard-checking :none (vl-modelement-fix nil))))))
+             (and (equal (mv-nth 1 (vl-partselect-type-top-dimension-replacement dim x elem))
+                         (mv-nth 1 (vl-partselect-type-top-dimension-replacement dim x nil)))
+                  (iff (mv-nth 0 (vl-partselect-type-top-dimension-replacement dim x elem))
+                       (mv-nth 0 (vl-partselect-type-top-dimension-replacement dim x nil)))))))
+
 
 
 (define vl-partselect-expr-type ((x vl-expr-p)
@@ -1268,84 +1343,24 @@ SystemVerilog-2012 Table 11-21. See @(see expression-sizing).</p>"
        ((mv warning sub-type) (vl-index-find-type (first x.args) ss))
        ((when warning) (mv warning nil))
        (udims (vl-datatype->udims sub-type))
-       ((when (consp udims))
-        ;; AFAIK it's never legal to partselect on an unpacked array.
-        (mv (make-vl-warning :type :vl-bad-partselect-operator
-                             :msg "~a0: Can't apply a partselect operator to ~
-                                   ~a1 because it has unpacked dimensions."
-                             :args (list elem (first x.args)))
-            nil))
        (pdims (vl-datatype->pdims sub-type))
-       ((unless (consp pdims))
+       ((unless (or (consp udims) (consp pdims)))
         (mv (make-vl-warning :type :vl-bad-indexing-operator
                              :msg "~a0: Can't apply an index operator to ~a1 because it ~
                          has no dimensions; its type is ~a2."
                              :args (list elem (first x.args) sub-type))
             nil))
-       ;; If we have a partselect-colon, it's ok to insist that we have
-       ;; constant indices and set the topmost dimension to that range.
-       ;; However, if we have a partselect-pluscolon or -minuscolon, the
-       ;; msb/lsb expression may legally be nonconstant.  But in this case, we
-       ;; think it's ok to just say the new dimension is [width-1:0].  Why?
-       ;; Another partselect or indexing operator applied to this expression
-       ;; isn't allowed by the syntax of expressions (unless perhaps we wrap
-       ;; this expression in a concatenation, but even then implementations
-       ;; don't yet allow it).
-
-       ;; Should we check that dimensions are in bounds here or is that best done separately?
-       (dim (car pdims))
-       ;; Partselects are always unsigned.
-       (type (vl-datatype-set-unsigned sub-type))
-       ((when (or (eq dim :vl-unsized-dimension)
-                  (not (vl-range-resolved-p dim))))
-        (mv (make-vl-warning :type :vl-partselect-type-unresolved
-                             :msg "~a0: Couldn't find type of ~a1 because the ~
-                                   most significant packed dimension of the ~
-                                   type of ~a2 was unsized or non-constant."
-                             :args (list elem x (first x.args)))
-            nil))
-       ((unless (and (vl-expr-resolved-p (third x.args))
-                     (or (not (member x.op '(:vl-partselect-colon
-                                             :vl-select-colon)))
-                         (vl-expr-resolved-p (second x.args)))))
-        (mv (make-vl-warning :type :vl-partselect-indices-unresolved
-                             :msg "~a0: Couldn't find type of ~a1 because the ~
-                                   partselect has non-constant indices."
-                             :args (list elem x))
-            nil))
-       ((when (member x.op '(:vl-select-colon :vl-partselect-colon)))
-        (b* ((range (make-vl-range :msb (second x.args) :lsb (third x.args))))
-          (mv nil (vl-datatype-update-pdims (cons range (cdr pdims)) type))))
-       (width (vl-resolved->val (third x.args)))
-       ((unless (posp width))
-        (mv (make-vl-warning :type :vl-partselect-indices-unresolved
-                             :msg "~a0: Zero width in partselect operator?"
-                             :args (list elem x))
-            nil))
-       ((unless (vl-expr-resolved-p (second x.args)))
-        (b* ((range (make-vl-range :msb (vl-make-index (1- width)) :lsb (vl-make-index 0))))
-          (mv nil (vl-datatype-update-pdims (cons range (cdr pdims)) type))))
-       ;; The second argument is resolved, so set the range as specified.
-       (m-or-lsb (vl-resolved->val (second x.args)))
-       (backward-range-p (< (vl-resolved->val (vl-range->msb dim))
-                            (vl-resolved->val (vl-range->lsb dim))))
-       (greater-idx (if (member x.op '(:vl-select-pluscolon :vl-partselect-pluscolon))
-                        (+ m-or-lsb width -1)
-                      m-or-lsb))
-       (lesser-idx (if (member x.op '(:vl-select-pluscolon :vl-partselect-pluscolon))
-                       m-or-lsb
-                     (+ m-or-lsb (- width) 1)))
-       ((when (< lesser-idx 0))
-        (mv (make-vl-warning :type :vl-partselect-index-error
-                             :msg "~a0: Partselect ~s1 operator yields negative index: ~a2"
-                             :args (list elem (if (eq x.op :vl-partselect-pluscolon)
-                                                  "+:" "-:")
-                                         x))
-            nil))
-       (range (make-vl-range :msb (vl-make-index (if backward-range-p lesser-idx greater-idx))
-                             :lsb (vl-make-index (if backward-range-p greater-idx lesser-idx)))))
-    
-    (mv nil (vl-datatype-update-pdims (cons range (cdr pdims)) type)))
+       (dim1 (if (consp udims) (car udims) (car pdims)))
+       ((mv warning new-dim1)
+        (vl-partselect-type-top-dimension-replacement dim1 x elem))
+       ((when warning) (mv warning nil))
+       (new-type (vl-datatype-update-dims
+                  (if (consp udims) pdims (cons new-dim1 (cdr pdims)))
+                  (and (consp udims) (cons new-dim1 (cdr udims)))
+                  sub-type))
+       ;; packed types become unsigned
+       (new-type (if (consp udims) new-type (vl-datatype-set-unsigned new-type))))
+    (mv nil new-type))
   ///
   (defthm context-irrelevance-of-vl-partselect-expr-type
     (implies (syntaxp (not (equal elem (list 'quote (with-guard-checking :none (vl-modelement-fix nil))))))
@@ -1353,16 +1368,9 @@ SystemVerilog-2012 Table 11-21. See @(see expression-sizing).</p>"
                          (mv-nth 1 (vl-partselect-expr-type x ss nil)))
                   (iff (mv-nth 0 (vl-partselect-expr-type x ss elem))
                        (mv-nth 0 (vl-partselect-expr-type x ss nil)))))))
-       
-       
-             
-            
-                            
 
 
-
-
-(define vl-partselect-selfsize ((x vl-expr-p "the [artselect expression")
+(define vl-partselect-selfsize ((x vl-expr-p "the partselect expression")
                                 (ss vl-scopestack-p)
                                 (elem vl-modelement-p "context")
                                 (warnings vl-warninglist-p))
@@ -1374,7 +1382,7 @@ SystemVerilog-2012 Table 11-21. See @(see expression-sizing).</p>"
        ((when warning)
         (mv (cons (change-vl-warning warning :fatalp t) warnings) nil))
        ((mv warning size)
-        (vl-packed-datatype-size type))
+        (vl-datatype-size type))
        ((when warning)
         (mv (cons (change-vl-warning warning :fatalp t) warnings) nil)))
     (mv warnings size))
@@ -2926,6 +2934,7 @@ integer atom."
          :hints(("Goal" :in-theory (enable vl-expr-selfsize
                                            vl-partselect-selfsize
                                            vl-partselect-expr-type
+                                           vl-partselect-type-top-dimension-replacement
                                            acl2::member-of-cons)))))
 
 (local (defthm selfsize-of-select-colon-implies-resolved
@@ -2937,6 +2946,7 @@ integer atom."
          :hints(("Goal" :in-theory (enable vl-expr-selfsize
                                            vl-partselect-selfsize
                                            vl-partselect-expr-type
+                                           vl-partselect-type-top-dimension-replacement
                                            acl2::member-of-cons)))))
 
 (define vl-hidexpr-expandsizes
@@ -6204,6 +6214,134 @@ replace a key/value assignment pattern."
                                vl-hidexpr-selfsize
                                vl-index-selfsize)))))
 
+(define vl-arrayslice-expr-size-assigncontext ((lhs-type vl-datatype-p)
+                                               (x vl-expr-p)
+                                               (ss vl-scopestack-p)
+                                               (elem vl-modelement-p)
+                                               (warnings vl-warninglist-p))
+  :parents (vl-expr-size-assigncontext)
+  :short "Check and size a range-select expression in an unpacked type context."
+  :returns (mv (successp booleanp :rule-classes :type-prescription)
+               (new-x vl-expr-p)
+               (new-warnings vl-warninglist-p))
+  :guard (and (not (vl-atom-p x))
+              (member (vl-nonatom->op x)
+                      '(:vl-select-colon
+                        :vl-select-pluscolon
+                        :vl-select-minuscolon
+                        :vl-partselect-colon
+                        :vl-partselect-pluscolon
+                        :vl-partselect-minuscolon)))
+  ;; We only need to deal with atoms that could represent an unpacked value.
+  (b* ((x (vl-expr-fix x))
+       (elem (vl-modelement-fix elem))
+       ((mv warning type) (vl-partselect-expr-type x ss elem))
+       ((when warning) (mv nil x (cons warning (ok))))
+       (x-udims (vl-datatype->udims type))
+       ((unless (consp x-udims))
+        (mv nil x
+            (warn :type :vl-assignpattern-elim-fail
+                  :msg (if (consp (vl-datatype->pdims type))
+                           "~a0: Can't assign packed array select ~a1 in an ~
+                            unpacked type context"
+                         "~a0: Can't apply select operator to non-array: ~a1")
+                  :args (list elem x))))
+       (lhs-udims (vl-datatype->udims lhs-type))
+       ((unless (consp lhs-udims))
+        (mv nil x
+            (warn :type :vl-assignpattern-elim-fail
+                  :msg "~a0: Can't assign array select ~a1 in a ~
+                        non-unpacked-array type context"
+                  :args (list elem x))))
+       ((unless (equal (vl-datatype-update-udims (cdr x-udims) type)
+                       (vl-datatype-update-udims (cdr lhs-udims)
+                                                 lhs-type)))
+        (mv nil x
+            (warn :type :vl-assignpattern-elim-fail
+                  :msg "~a0: Incompatible types for unpacked array slice ~
+                        assignment (~a1): lhs type ~a2, rhs type ~a3"
+                  :args (list elem x (vl-datatype-fix lhs-type) type))))
+       ((unless (and (not (eq (car lhs-udims) :vl-unsized-dimension))
+                     (vl-range-resolved-p (car lhs-udims))
+                     (not (eq (car x-udims) :vl-unsized-dimension))
+                     (vl-range-resolved-p (car x-udims))))
+        (mv nil x
+            (warn :type :vl-assignpattern-elim-fail
+                  :msg "~a0: Can't assign array slice ~a1 because datatype ~
+                        dimensions are unresolved: lhs ~a2, rhs ~a3"
+                  :args (list elem x (vl-datatype-fix lhs-type) type))))
+       ((unless (equal (vl-range-size (car lhs-udims))
+                       (vl-range-size (car x-udims))))
+        (mv nil x
+            (warn :type :vl-assignpattern-elim-fail
+                  :msg "~a0: Can't assign array slice ~a1 because datatype ~
+                        dimensions differ: lhs ~a2, rhs ~a3"
+                  :args (list elem x (vl-datatype-fix lhs-type) type)))))
+    (mv t x (ok)))
+
+  ///
+
+  (local (Defthm vl-partselect-expr-type-implies
+           (implies (not (mv-nth 0 (vl-partselect-expr-type x ss elem)))
+                    ;; (and (not (equal (vl-expr-kind x) :atom))
+                         (or (equal (vl-nonatom->op x) :vl-partselect-colon)
+                             (equal (vl-nonatom->op x) :vl-partselect-pluscolon)
+                             (equal (vl-nonatom->op x) :vl-partselect-minuscolon)
+                             (equal (vl-nonatom->op x) :vl-select-colon)
+                             (equal (vl-nonatom->op x) :vl-select-pluscolon)
+                             (equal (vl-nonatom->op x) :vl-select-minuscolon)))
+           :hints(("Goal" :in-theory (enable vl-partselect-expr-type
+                                             tag-when-vl-id-p
+                                             tag-when-vl-hidpiece-p)))
+           :rule-classes :forward-chaining))
+
+  (local
+   (defthmd vl-datatype-size-when-update-dims-equal
+     (b* ((udims1 (vl-datatype->udims x1))
+          (udims2 (vl-datatype->udims x2))
+          ((mv warn1 size1) (vl-datatype-size x1))
+          ((mv warn2 size2) (vl-datatype-size x2)))
+       (implies (and (equal (vl-datatype-update-dims (vl-datatype->pdims x1)
+                                                     (cdr udims1) x1)
+                            (vl-datatype-update-dims (vl-datatype->pdims x2)
+                                                     (cdr udims2) x2))
+                     (consp udims1)
+                     (consp udims2)
+                     (not (equal (car udims1) :vl-unsized-dimension))
+                     (vl-range-resolved-p (car udims1))
+                     (not (equal (car udims2) :vl-unsized-dimension))
+                     (vl-range-resolved-p (car udims2))
+                     (equal (vl-range-size (car udims1))
+                            (vl-range-size (car udims2))))
+                (and (equal (iff warn1 warn2) t)
+                     (equal (equal size1 size2) t))))
+     :hints(("Goal" :in-theory (enable vl-datatype-update-dims
+                                       vl-datatype-size
+                                       vl-datatype->udims
+                                       vl-datatype->pdims
+                                       vl-packeddimensionlist-total-size)))))
+
+  (defthm vl-expr-selfsize-of-vl-arrayslice-expr-size-assigncontext
+    (b* (((mv ok new-x &) (vl-arrayslice-expr-size-assigncontext
+                           lhs-type x ss elem warnings))
+         ((mv warning typesize) (vl-datatype-size lhs-type))
+         ((mv & selfsize) (vl-expr-selfsize new-x ss elem2 warnings2)))
+      (implies (and ok (not warning)
+                    (not (vl-atom-p x)))
+               (equal selfsize typesize)))
+    :hints(("Goal" :expand ((:free (elem warnings) (vl-expr-selfsize x ss elem warnings)))
+            :use ((:instance vl-datatype-size-when-update-dims-equal
+                   (x1 lhs-type)
+                   (x2 (mv-nth 1 (vl-partselect-expr-type x ss nil)))))
+            :in-theory (e/d (tag-when-vl-id-p
+                               tag-when-vl-hidpiece-p
+                               tag-when-vl-weirdint-p
+                               tag-when-vl-constint-p
+                               tag-when-vl-string-p
+                               vl-hidexpr-selfsize
+                               vl-partselect-selfsize)
+                            (vl-$bits-call-p))))))
+
 
 (define vl-atom-size-assigncontext ((lhs-type vl-datatype-p)
                                     (x vl-expr-p)
@@ -6290,6 +6428,13 @@ datatype size and the type is unsigned.</p>"
           ;; Must have an unpacked datatype.  This function must check that the
           ;; type of x is compatible.
           (vl-index-expr-size-assigncontext lhs-type x ss elem warnings))
+         ((when (member x.op '(:vl-select-colon
+                          :vl-select-pluscolon
+                          :vl-select-minuscolon
+                          :vl-partselect-colon
+                          :vl-partselect-pluscolon
+                          :vl-partselect-minuscolon)))
+          (vl-arrayslice-expr-size-assigncontext lhs-type x ss elem warnings))
          ((when (eq x.op :vl-qmark))
           ;; Since we have an unpacked datatype, each branch of the conditional
           ;; should end up as the same size (= the size of the datatype).

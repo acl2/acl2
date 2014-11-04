@@ -58,6 +58,8 @@ vcs: $(VCS_SV_IMPL_FILES)
 vcs: $(VCS_V_OKS)
 vcs: $(VCS_SV_OKS)
 
+impls: $(NCV_V_IMPL_FILES) $(NCV_SV_IMPL_FILES) $(VCS_V_IMPL_FILES) $(VCS_SV_IMPL_FILES)
+
 NCV_VERILOG    := ncverilog +access+r      +define+VL_SYSTEST_NCV
 NCV_SYSVERILOG := ncverilog +access+r +sv  +define+VL_SYSTEST_NCV +define+SYSTEM_VERILOG_MODE
 VCS_VERILOG    := vcs -o simv.v            +define+VL_SYSTEST_VCS
