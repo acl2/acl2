@@ -803,7 +803,7 @@ vl-load-summary) afterwards.</p>"
 
   :returns (mv (result vl-loadresult-p)
                (state  state-p1        :hyp (force (state-p1 state))))
-  (b* (((vl-loadconfig config) config)
+  (b* (((vl-loadconfig config) (vl-loadconfig-clean config))
        ((mv result state)
         (time$ (vl-load-main config state)
                :msg "; vl-load-main: ~st sec, ~sa bytes~%"
