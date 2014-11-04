@@ -102,11 +102,18 @@ has been run to ensure that no instances have ranges.</p>")
        ;; Else, a blank.  Figure out the port width.
        (port1 (vl-port-fix (car ports)))
        ((vl-port port1) port1)
+       ((when port1.ifname)
+        (mv (fatal :type :vl-blankargs-fail
+                   :msg "~a0: blank argument is connected to interface port ~s1."
+                   :args (list inst port1.name))
+            (cons arg1 cdr-prime)
+            cdr-vardecls
+            nf))
        ((unless (and port1.expr (posp (vl-expr->finalwidth port1.expr))))
         (mv (fatal :type :vl-blankargs-fail
-                   :msg "~a0: expected all ports to have expressions with ~ their
-                         widths, but a blank argument is connected to ~ port ~a1,
-                         which has expression ~a2 and width ~x3."
+                   :msg "~a0: expected all ports to have expressions with ~
+                         their widths, but a blank argument is connected to ~
+                         port ~a1, which has expression ~a2 and width ~x3."
                    :args (list inst
                                port1
                                port1.expr

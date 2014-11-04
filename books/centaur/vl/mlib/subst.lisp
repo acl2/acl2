@@ -281,7 +281,8 @@ attributes is left up to the implementation.</p>"
 (def-vl-subst vl-port-subst
   :type vl-port-p
   :body (change-vl-port x
-                        :expr (vl-maybe-expr-subst (vl-port->expr x) sigma)))
+                        :expr (vl-maybe-expr-subst (vl-port->expr x) sigma)
+                        :udims (vl-packeddimensionlist-subst (vl-port->udims x) sigma)))
 
 (def-vl-subst-list vl-portlist-subst
   :type vl-portlist-p

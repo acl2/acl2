@@ -44,6 +44,7 @@
 (include-book "../../util/cwtime")
 
 (defsection annotate
+  :parents (transforms)
   :short "A first step in most transformation sequences.  Applies several
 basic, preliminary transforms to normalize the original design.")
 

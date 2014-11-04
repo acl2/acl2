@@ -30,6 +30,16 @@
 
 (in-package "VL")
 (include-book "preprocessor/defines")
+(local (include-book "../util/arithmetic"))
+(local (include-book "../util/osets"))
+
+(local (defthm string-listp-of-remove-equal
+         (implies (force (string-listp x))
+                  (string-listp (remove-equal a x)))))
+
+(local (defthm string-listp-of-remove-duplicates-equal
+         (implies (force (string-listp x))
+                  (string-listp (remove-duplicates-equal x)))))
 
 (define mintime-p (x)
   (or (not x)
@@ -141,3 +151,57 @@
 (defconst *vl-default-loadconfig*
   (make-vl-loadconfig))
 
+(local (xdoc::set-default-parents vl-loadconfig-clean))
+
+
+(define vl-clean-search-extension ((searchext stringp))
+  :short "Normalize search extensions so that they don't have leading dots."
+  :long "<p>This is a DWIM feature so that we can just do the right thing
+regardless of whether you say the search extensions are, e.g., @('\".sv\"') or
+just @('\"sv\"').</p>"
+  :returns (new-searchext stringp :rule-classes :type-prescription)
+  (b* ((searchext (string-fix searchext))
+       (len (length searchext))
+       ((when (and (< 0 len)
+                   (eql (char searchext 0) #\.)))
+        (subseq searchext 1 nil)))
+    searchext)
+  ///
+  (assert! (equal (vl-clean-search-extension "sv") "sv"))
+  (assert! (equal (vl-clean-search-extension ".sv") "sv")))
+
+(defprojection vl-clean-search-extensions-aux ((x string-listp))
+  :returns (new-x string-listp)
+  (vl-clean-search-extension x))
+
+(define vl-clean-search-extensions ((search-exts string-listp))
+  :returns (search-exts string-listp)
+  (remove-duplicates-equal (remove-equal "" (vl-clean-search-extensions-aux search-exts)))
+  ///
+  (assert! (equal (vl-clean-search-extensions '("v" "v" ".v" "sv")) '("v" "sv")))
+  (assert! (equal (vl-clean-search-extensions '(".v" "v")) '("v")))
+  (assert! (equal (vl-clean-search-extensions '(".sv" "v" "sv" "v")) '("sv" "v"))))
+
+(define vl-loadconfig-clean
+  :parents (vl-loadconfig)
+  :short "Normalize a load configuration to avoid, e.g., redundant search paths
+  and extensions."
+  ((config vl-loadconfig-p))
+  :returns (new-config vl-loadconfig-p)
+  :long "<p>We clean up the load configuration in a couple of ways.  This is
+partially an optimization that will help us to avoid looking in the same
+directories multiple times.  It also helps to prevent spurious \"ambiguous
+load\" warnings that could arise if someone gives the same search extensions
+multiple times.</p>"
+  (b* (((vl-loadconfig config)))
+    (change-vl-loadconfig config
+                          ;; Don't sort start-files in case the user wants to process
+                          ;; them multiple times.
+                          :start-names (mergesort config.start-names)
+                          ;; We use remove-duplicates-equal instead of
+                          ;; mergesort, even though it is generally slow,
+                          ;; because it preserves the original order, which
+                          ;; matters for priority-ordered search paths/exts.
+                          :search-path (remove-duplicates-equal config.search-path)
+                          :search-exts (vl-clean-search-extensions config.search-exts)
+                          :include-dirs (remove-duplicates-equal config.include-dirs))))

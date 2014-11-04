@@ -740,6 +740,23 @@ which could not hold such large values.</p>")
 
 (add-json-encoder vl-maybe-range-p vl-jp-maybe-range)
 
+(define vl-jp-packeddimension ((x vl-packeddimension-p) &key (ps 'ps))
+  :parents (json-encoders)
+  (if (eq x :vl-unsized-dimension)
+      (jp-sym x)
+    (vl-jp-range x)))
+
+(add-json-encoder vl-packeddimension-p vl-jp-packeddimension)
+(def-vl-jp-list packeddimension)
+
+(define vl-jp-maybe-packeddimension ((x vl-maybe-packeddimension-p) &key (ps 'ps))
+  :parents (json-encoders)
+  (if x
+      (vl-jp-packeddimension x)
+    (vl-print "null")))
+
+(add-json-encoder vl-maybe-packeddimension-p vl-jp-maybe-packeddimension)
+
 (def-vl-jp-aggregate port)
 (def-vl-jp-list port :newlines 4)
 
@@ -794,23 +811,6 @@ which could not hold such large values.</p>")
     (vl-print "null"))
   ///
   (add-json-encoder vl-maybe-nettypename-p vl-jp-maybe-nettypename))
-
-(define vl-jp-packeddimension ((x vl-packeddimension-p) &key (ps 'ps))
-  :parents (json-encoders)
-  (if (eq x :vl-unsized-dimension)
-      (jp-sym x)
-    (vl-jp-range x)))
-
-(add-json-encoder vl-packeddimension-p vl-jp-packeddimension)
-(def-vl-jp-list packeddimension)
-
-(define vl-jp-maybe-packeddimension ((x vl-maybe-packeddimension-p) &key (ps 'ps))
-  :parents (json-encoders)
-  (if x
-      (vl-jp-packeddimension x)
-    (vl-print "null")))
-
-(add-json-encoder vl-maybe-packeddimension-p vl-jp-maybe-packeddimension)
 
 (define vl-jp-enumbasekind ((x vl-enumbasekind-p) &key (ps 'ps))
   :guard-hints(("Goal" :in-theory (enable vl-enumbasekind-p)))

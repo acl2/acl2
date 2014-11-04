@@ -114,7 +114,10 @@
        (inouts  (vl-portdecls-with-dir :vl-inout x.portdecls))
        (ps      (if (not inouts)
                     ps
-                  (vl-println-markup "<p>Note: inout ports not shown!</p>"))))
+                  (vl-println-markup "<p>Note: inout ports not shown!</p>")))
+       (ps      (if (atom (vl-module->ifports x))
+                    ps
+                  (vl-println-markup "<p>Note: interface ports not shown!</p>"))))
     (vl-ps-seq
      (vl-println-markup "<table width=\"100%\" height=\"100%\">")
      (vl-println-markup "<tr>")

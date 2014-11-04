@@ -1129,13 +1129,13 @@ appropriately if @('activep') is set.</p>"
                     ;; whitespace.
                     t))
               (cw "Preprocessor warning: redefining ~s0:~% ~
-                    - Was ~s2     // from ~s1~% ~
-                    - Now ~s4     // from ~s3~%"
+                    - Was ~s1     // from ~s2~% ~
+                    - Now ~s3     // from ~s4~%"
                   name
-                  (vl-location-string (vl-define->loc prev-def))
                   old-str
-                  (vl-location-string loc)
-                  new-str))))
+                  (vl-location-string (vl-define->loc prev-def))
+                  new-str
+                  (vl-location-string loc)))))
 
        (defines  (if prev-def
                      (vl-delete-define name defines)

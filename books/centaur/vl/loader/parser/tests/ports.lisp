@@ -34,6 +34,13 @@
 
 ;; BOZO more unit tests!
 
+#||
+(trace-parser vl-parse-port-reference-fn)
+(trace-parser vl-parse-1+-port-references-separated-by-commas-fn)
+(trace-parser vl-parse-port-expression-fn)
+(trace-parser vl-parse-nonnull-port-fn)
+||#
+
 (defparser-top vl-parse-nonnull-port)
 
 (defmacro test-parse-port (&key input (successp 't) name expr)
@@ -125,7 +132,7 @@
 
 
 
-(defparser-top vl-parse-list-of-ports)
+(defparser-top vl-parse-module-port-list-top)
 
 (defmacro test-parse-portlist (&key input (successp 't) names exprs)
   `(with-output
@@ -134,7 +141,8 @@
                    (config *vl-default-loadconfig*)
                    (pstate (make-vl-parsestate :warnings 'blah-warnings))
                    ((mv erp val tokens (vl-parsestate pstate))
-                    (vl-parse-list-of-ports-top))
+                    (vl-parse-module-port-list-top-top))
+                   (val (vl-parsed-ports->ports val))
                    ((unless ,successp)
                     (cw "Expect failure.  Actual Erp: ~x0.~%" erp)
                     erp))
@@ -152,6 +160,14 @@
                              (not tokens))
                      (prog2$ (cw "Warnings: ~x0.~%" pstate.warnings)
                              (equal pstate.warnings 'blah-warnings)))))))
+#||
+(trace-parser vl-parse-module-port-list-top-fn)
+(trace-parser vl-parse-0+-attribute-instances-fn)
+(trace-parser vl-parse-ansi-port-declaration-fn)
+(trace$ vl-port-starts-ansi-port-list-p)
+(trace-parser vl-parse-1+-ansi-port-declarations-fn)
+(trace-parser vl-parse-1+-ports-separated-by-commas-fn)
+||#
 
 (test-parse-portlist :input "()"
                      :names nil
@@ -181,7 +197,6 @@
                      :names ("a" nil nil "b")
                      :exprs ((id "a") nil nil (id "b")))
 
-
 (test-parse-portlist :input "(,a)"
                      :names (nil "a")
                      :exprs (nil (id "a")))
@@ -189,7 +204,6 @@
 (test-parse-portlist :input "(a,)"
                      :names ("a" nil)
                      :exprs ((id "a") nil))
-
 
 (test-parse-portlist :input "(.a(), b[3:0])"
                      :names ("a" nil)

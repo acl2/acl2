@@ -870,7 +870,10 @@ is just a constant integer.  So this is just:</p>
   :body (b* (((vl-port x) x)
              (elem x)
              ((mv warnings expr-prime) (vl-maybe-expr-wildelim x.expr elem warnings))
-             (x-prime (change-vl-port x :expr expr-prime)))
+             ((mv warnings udims-prime) (vl-packeddimensionlist-wildelim x.udims elem warnings))
+             (x-prime (change-vl-port x
+                                      :expr expr-prime
+                                      :udims udims-prime)))
           (mv warnings x-prime)))
 
 (def-vl-wildelim-list vl-portlist :element vl-port)

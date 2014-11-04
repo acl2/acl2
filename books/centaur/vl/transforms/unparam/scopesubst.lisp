@@ -233,7 +233,8 @@ so that their overrides are compatible with thier types.</p>"
 (def-vl-scopesubst vl-port-scopesubst
   :type vl-port-p
   :body (change-vl-port x
-                        :expr (vl-maybe-expr-scopesubst (vl-port->expr x) ss)))
+                        :expr (vl-maybe-expr-scopesubst (vl-port->expr x) ss)
+                        :udims (vl-packeddimensionlist-scopesubst (vl-port->udims x) ss)))
 
 (def-vl-scopesubst-list vl-portlist-scopesubst
   :type vl-portlist-p

@@ -6,21 +6,8 @@
 (lp)
 (redef!)
 (set-ld-skip-proofsp t state)
+(include-book "centaur/vl/loader/parser/tests/base" :dir :system)
 
-(defmacro trace-parser (fn)
-  `(trace$ (,fn
-            :entry (list ',fn
-                         ;;:tokens (vl-tokenlist->string-with-spaces tokens)
-                         ;;:warnings (len warnings)
-                         )
-            :exit (list :errmsg (first values)
-                        :val (second values)
-                        ;; :remainder (vl-tokenlist->string-with-spaces
-                        ;;             (third values))
-                        ;; :next-token (and (consp (third values))
-                        ;;                  (vl-token->type (car (third values))))
-                        ;; :warnings (len (fourth values))
-                        ))))
 (untrace$)
 
 (trace-parser vl-parse-udp-declaration-fn)

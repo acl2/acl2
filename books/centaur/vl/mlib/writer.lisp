@@ -1231,8 +1231,73 @@ print @('x') as is.</p>"
 expression into a string."
   (with-local-ps (vl-pp-origexpr x)))
 
+
+(define vl-direction-string ((x vl-direction-p))
+  :returns (str stringp :rule-classes :type-prescription)
+  :guard-hints (("Goal" :in-theory (enable vl-direction-p)))
+  (case (vl-direction-fix x)
+    (:vl-input  "input")
+    (:vl-output "output")
+    (:vl-inout  "inout")
+    (otherwise  (or (impossible) ""))))
+
+(define vl-pp-range ((x vl-range-p) &key (ps 'ps))
+  (b* (((vl-range x) x))
+    (vl-ps-seq (vl-print "[")
+               (vl-pp-expr x.msb)
+               (vl-println? ":")
+               (vl-pp-expr x.lsb)
+               (vl-print "]"))))
+
+(define vl-pps-range ((x vl-range-p))
+  :returns (str stringp :rule-classes :type-prescription)
+  (with-local-ps (vl-pp-range x)))
+
+(define vl-pp-rangelist ((x vl-rangelist-p) &key (ps 'ps))
+  (if (atom x)
+      ps
+    (vl-ps-seq (vl-pp-range (car x))
+               (vl-pp-rangelist (cdr x)))))
+
+(define vl-pp-packeddimension ((x vl-packeddimension-p) &key (ps 'ps))
+  (b* ((x (vl-packeddimension-fix x)))
+    (if (eq x :vl-unsized-dimension)
+        (vl-print "[]")
+      (vl-pp-range x))))
+
+(define vl-pp-packeddimensionlist ((x vl-packeddimensionlist-p) &key (ps 'ps))
+  (if (atom x)
+      ps
+    (vl-ps-seq (vl-pp-packeddimension (car x))
+               (vl-pp-packeddimensionlist (cdr x)))))
+
+
+(define vl-pp-interface-port ((x vl-port-p) &key (ps 'ps))
+  :guard (vl-port->ifname x)
+  ;; Printer an interface port like `simplebus.master foo [3:0]`
+  (b* (((vl-port x) x)
+       ((unless x.name)
+        (raise "Unnamed interface port?  ~x0" x)
+        ps))
+    (vl-ps-seq (vl-print-modname x.ifname)
+               (if x.modport
+                   (vl-ps-seq (vl-print ".")
+                              (vl-ps-span "vl_id" (vl-print-str (vl-maybe-escape-identifier x.modport))))
+                 ps)
+               (vl-print " ")
+               (vl-ps-span "vl_id" (vl-print-str (vl-maybe-escape-identifier x.name)))
+               (if (consp x.udims)
+                   (vl-ps-seq (vl-print " ")
+                              (vl-pp-packeddimensionlist x.udims))
+                 ps))))
+
 (define vl-pp-port ((x vl-port-p) &key (ps 'ps))
   (b* (((vl-port x) x)
+
+       ((when x.ifname)
+        ;; SystemVerilog interface port, use our fancy printer above.
+        (vl-pp-interface-port x))
+
        ((when (and (not x.name)
                    (not x.expr)))
         ;; A truly blank port... we'll put in a comment.
@@ -1269,34 +1334,6 @@ expression into a string."
          (vl-ps-seq (vl-pp-port (car x))
                     (vl-println? ", ")
                     (vl-pp-portlist (cdr x))))))
-
-
-(define vl-direction-string ((x vl-direction-p))
-  :returns (str stringp :rule-classes :type-prescription)
-  :guard-hints (("Goal" :in-theory (enable vl-direction-p)))
-  (case (vl-direction-fix x)
-    (:vl-input  "input")
-    (:vl-output "output")
-    (:vl-inout  "inout")
-    (otherwise  (or (impossible) ""))))
-
-(define vl-pp-range ((x vl-range-p) &key (ps 'ps))
-  (b* (((vl-range x) x))
-    (vl-ps-seq (vl-print "[")
-               (vl-pp-expr x.msb)
-               (vl-println? ":")
-               (vl-pp-expr x.lsb)
-               (vl-print "]"))))
-
-(define vl-pps-range ((x vl-range-p))
-  :returns (str stringp :rule-classes :type-prescription)
-  (with-local-ps (vl-pp-range x)))
-
-(define vl-pp-rangelist ((x vl-rangelist-p) &key (ps 'ps))
-  (if (atom x)
-      ps
-    (vl-ps-seq (vl-pp-range (car x))
-               (vl-pp-rangelist (cdr x)))))
 
 
 
@@ -1349,18 +1386,6 @@ expression into a string."
     (:vl-chandle   "chandle")
     (:vl-event     "event")
     (otherwise     (or (impossible) ""))))
-
-(define vl-pp-packeddimension ((x vl-packeddimension-p) &key (ps 'ps))
-  (b* ((x (vl-packeddimension-fix x)))
-    (if (eq x :vl-unsized-dimension)
-        (vl-print "[]")
-      (vl-pp-range x))))
-
-(define vl-pp-packeddimensionlist ((x vl-packeddimensionlist-p) &key (ps 'ps))
-  (if (atom x)
-      ps
-    (vl-ps-seq (vl-pp-packeddimension (car x))
-               (vl-pp-packeddimensionlist (cdr x)))))
 
 (define vl-pp-enumbasekind ((x vl-enumbasekind-p) &key (ps 'ps))
   :guard-hints(("Goal" :in-theory (enable vl-enumbasekind-p)))

@@ -618,7 +618,6 @@ for every port.</li>
   (b* (((when (atom args))
         nil)
        (name (vl-port->name (car ports)))
-
        ((mv & dir)
         ;; Our direction inference is pretty sophisticated, and handles even
         ;; compound ports as long as their directions are all the same.  But it
@@ -732,6 +731,11 @@ checking, and add direction/name annotations.</p>"
                    :args (list x x.modname))
             x))
        ((vl-module submod) submod)
+       ((when (vl-module->ifports submod))
+        (mv (fatal :type :vl-bozo-interfaces
+                   :msg "~a0: need to implement interface ports.~%"
+                   :args (list x))
+            x))
        ((mv warnings new-args)
         (vl-arguments-argresolve x.portargs ss
                                  submod.ports submod warnings x))

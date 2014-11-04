@@ -12,9 +12,15 @@
 
 ; Replace the following string with a path to the directory containing
 ; the relevant ACL2 source files (see just below).
-(unless (boundp 'COMMON-LISP-USER::*acl2-dir*)
-  (error "COMMON-LISP-USER::*acl2-dir* needs to be set to a directory
-containing relevant ACL2 source files."))
+(unless (and (boundp 'COMMON-LISP-USER::*acl2-dir*)
+             (or (stringp COMMON-LISP-USER::*acl2-dir*)
+                 (pathnamep COMMON-LISP-USER::*acl2-dir*)))
+  (error "COMMON-LISP-USER::*acl2-dir* needs to be set to a directory,
+or pathname of such, containing relevant ACL2 source files."))
+
+(when (stringp COMMON-LISP-USER::*acl2-dir*)
+  (setq COMMON-LISP-USER::*acl2-dir*
+        (pathname COMMON-LISP-USER::*acl2-dir*)))
 
 (let ((*default-pathname-defaults* COMMON-LISP-USER::*acl2-dir*))
   (load "init.lisp"))
