@@ -191,17 +191,77 @@ warnings\".</p>"
 
        (vl-println-markup "</div>")))))
 
-(define vl-print-reportcard-aux ((x vl-reportcard-p) &key (ps 'ps))
+
+
+(define vl-elide-warnings-main
+  :parents (vl-elide-warnings)
+  ((x          vl-warninglist-p)
+   (cutoff     natp "Max number of warnings of a single type to keep.")
+   (suppressed symbol-listp
+               "Types of warnings, with duplicates, that we have suppressed
+                so far.")
+   (counts-fal "Fast alist, binds @('type -> count'), where count is how many
+                warnings of this type have been seen so far.")
+   (acc        vl-warninglist-p))
+  :returns (mv (acc        vl-warninglist-p)
+               (counts-fal )
+               (suppressed symbol-listp :hyp (symbol-listp suppressed)))
+  :measure (len x)
+  :guard-debug t
+  (b* ((x          (vl-warninglist-fix x))
+       (acc        (vl-warninglist-fix acc))
+       (cutoff     (lnfix cutoff))
+
+       ((when (atom x))
+        (mv acc cutoff suppressed))
+
+       ((vl-warning x1) (car x))
+       (curr            (nfix (hons-get x1.type counts-fal)))
+       (counts-fal      (hons-acons x1.type (+ 1 curr) counts-fal))
+       (keep-p          (< curr cutoff))
+       (acc             (if keep-p (cons x1 acc) acc))
+       (suppressed      (if keep-p suppressed (cons x1.type suppressed))))
+    (vl-elide-warnings-main (cdr x) cutoff suppressed counts-fal acc)))
+
+(define vl-elide-warnings
+  :parents (vl-print-reportcard)
+  :short "Cut down excessive warnings of certain types."
+  ((warnings vl-warninglist-p "Warnings to filter.")
+   (cutoff   maybe-natp       "Max warnings of each type to permit, or NIL for no eliding."))
+  :returns (new-warnings vl-warninglist-p)
+  (b* (((unless cutoff)
+        (vl-warninglist-fix warnings))
+       ((mv warnings counts-fal suppressed)
+        (vl-elide-warnings-main warnings cutoff nil nil nil))
+       (- (fast-alist-free counts-fal))
+       ((unless (consp suppressed))
+        ;; No changes, nothing to warn about.
+        warnings))
+    (warn :type :vl-elided-warnings
+          :msg "Eliding ~x0 additional warning~s1 (type~s1 ~&2)."
+          :args (list (len suppressed)
+                      (if (vl-plural-p suppressed) "s" "")
+                      suppressed))))
+
+(define vl-print-reportcard-aux ((x vl-reportcard-p)
+                                 (elide maybe-natp)
+                                 &key (ps 'ps))
   :parents (vl-reportcard-p)
   :measure (vl-reportcard-count x)
-  (b* ((x (vl-reportcard-fix x))
+  :verbosep t
+  (b* ((x     (vl-reportcard-fix x))
+       (elide (maybe-natp-fix elide))
        ((when (atom x))
-        ps))
-    (vl-ps-seq (vl-print-warnings-with-named-header (caar x) (cdar x))
+        ps)
+       ((cons name warnings) (car x)))
+    (vl-ps-seq (vl-print-warnings-with-named-header name (vl-elide-warnings warnings elide))
                (vl-println "")
-               (vl-print-reportcard-aux (cdr x)))))
+               (vl-print-reportcard-aux (cdr x) elide))))
 
-(define vl-print-reportcard ((x vl-reportcard-p) &key (ps 'ps))
+(define vl-print-reportcard ((x vl-reportcard-p)
+                             &key
+                             ((elide maybe-natp) '3)
+                             (ps 'ps))
   :parents (vl-reportcard-p)
   :short "Pretty-print a @(see vl-reportcard-p)."
   :long "<p>See also @(see vl-reportcard-to-string).</p>"
@@ -209,14 +269,16 @@ warnings\".</p>"
        (x-shrink (hons-shrink-alist x nil))
        (-        (fast-alist-free x-shrink))
        (x-sorted (mergesort x-shrink)))
-      (vl-print-reportcard-aux x-sorted)))
+      (vl-print-reportcard-aux x-sorted elide)))
 
-(define vl-reportcard-to-string ((x vl-reportcard-p))
+(define vl-reportcard-to-string ((x vl-reportcard-p)
+                                 &key
+                                 ((elide maybe-natp) '3))
   :returns (str stringp :rule-classes :type-prescription)
   :parents (vl-reportcard-p)
   :short "Pretty-print a @(see vl-reportcard-p) into a string."
   :long "<p>See also @(see vl-print-reportcard).</p>"
-  (with-local-ps (vl-print-reportcard x)))
+  (with-local-ps (vl-print-reportcard x :elide elide)))
 
 
 (defsection vl-trace-warnings
