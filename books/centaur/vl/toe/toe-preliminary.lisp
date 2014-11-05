@@ -654,7 +654,7 @@ where each sub-list is in LSB-order.</p>"
              (nformals (length formal1-msb-bits)))
           (mv nil
               (fatal :type :vl-bad-instance
-                     :msg "~a0: we produced ~x1 wires~s2 for an argument whose ~
+                     :msg "~a0: we produced ~x1 wire~s2 for an argument whose ~
                            corresponding port has ~x3 wire~s4.  ~
                             - Argument wires: ~x5;  ~
                             - Port wires: ~x6."
