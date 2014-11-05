@@ -35,6 +35,8 @@
 (local (include-book "../../util/osets"))
 (local (std::add-default-post-define-hook :fix))
 
+(local (in-theory (disable (tau-system))))
+
 (defxdoc argresolve
   :parents (annotate)
   :short "Converts named argument lists into plain argument lists, and
@@ -117,15 +119,17 @@ vl-gateinst-dirassign), just because it is convenient.</li>
          (cons (vl-plainarg-fix (car x))
                (vl-plainarglist-assign-last-dir dir (cdr x))))))
 
-(define vl-gateinst-dirassign
-  :short "Arity-checks a gate instance and annotates its arguments with their
+(with-output
+  :evisc (:gag-mode (evisc-tuple 5 10 nil nil))
+  (define vl-gateinst-dirassign
+    :short "Arity-checks a gate instance and annotates its arguments with their
           directions."
-  ((x        vl-gateinst-p)
-   (warnings vl-warninglist-p))
-  :returns (mv (warnings vl-warninglist-p)
-               (new-x vl-gateinst-p "Semantically equivalent to @('x')."))
+    ((x        vl-gateinst-p)
+     (warnings vl-warninglist-p))
+    :returns (mv (warnings vl-warninglist-p)
+                 (new-x vl-gateinst-p "Semantically equivalent to @('x')."))
 
-  :long "<p>If @('x') is a well-formed gate instance, then no fatal warnings
+    :long "<p>If @('x') is a well-formed gate instance, then no fatal warnings
 will be added and every argument of @('x-prime') will be given the correct
 @(':dir') annotation, following the rules in Chapter 7 of the Verilog-2005
 specification.</p>
@@ -136,144 +140,155 @@ will be returned unchanged and a fatal warning will be added.</p>
 <p>We also check for blank arguments in gates during this function.  BOZO this
 is convenient but isn't necessarily a very sensible place to do this.</p>"
 
-  :verify-guards nil
+    :verify-guards nil
 
-  (b* ((x (vl-gateinst-fix x))
-       ((vl-gateinst x) x)
-       (nargs (len x.args))
+    (b* ((x (vl-gateinst-fix x))
+         ((vl-gateinst x) x)
+         (nargs (len x.args))
 
-       (warnings
-        (if (vl-plainarglist-blankfree-p x.args)
-            (ok)
-          (warn :type :vl-warn-blank-gateargs
-                :msg "~a0 has \"blank\" arguments; we treat these as ~
+         (warnings
+          (if (vl-plainarglist-blankfree-p x.args)
+              (ok)
+            (warn :type :vl-warn-blank-gateargs
+                  :msg "~a0 has \"blank\" arguments; we treat these as ~
                       unconnected wires, but other tools like Cadence's ~
                       Verilog-XL simulator do not seem to support this."
-                :args (list x))))
+                  :args (list x))))
 
-       ((mv warnings args-prime)
-        (case x.type
+         ((mv warnings args-prime)
+          (case x.type
 
-          ((:vl-and :vl-nand :vl-nor :vl-or :vl-xor :vl-xnor)
-           ;; Per Section 7.2 (Page 80), the first terminal is the output and
-           ;; the remaining terminals are inputs.
-           (if (< nargs 2)
-               (mv (fatal :type :vl-bad-gate
-                          :msg "~a0 has ~s1."
-                          :args (list x (if (= nargs 1)
-                                            "only one argument"
-                                          "no arguments")))
-                   x.args)
-             (mv (ok)
-                 (cons (change-vl-plainarg (car x.args) :dir :vl-output)
-                       (vl-plainarglist-assign-dir :vl-input (cdr x.args))))))
+            ((:vl-and :vl-nand :vl-nor :vl-or :vl-xor :vl-xnor)
+             ;; Per Section 7.2 (Page 80), the first terminal is the output and
+             ;; the remaining terminals are inputs.
+             (if (< nargs 2)
+                 (mv (fatal :type :vl-bad-gate
+                            :msg "~a0 has ~s1."
+                            :args (list x (if (= nargs 1)
+                                              "only one argument"
+                                            "no arguments")))
+                     x.args)
+               (mv (ok)
+                   (cons (change-vl-plainarg (car x.args) :dir :vl-output)
+                         (vl-plainarglist-assign-dir :vl-input (cdr x.args))))))
 
-          ((:vl-buf :vl-not)
-           ;; Per Section 7.3 (Page 81), the last terminal is the input and
-           ;; every other terminal is an output.
-           (if (< nargs 2)
-               (mv (fatal :type :vl-bad-gate
-                          :msg "~a0 has ~s1."
-                          :args (list x (if (= nargs 1)
-                                            "only one argument"
-                                          "no arguments")))
-                   x.args)
-             (mv (ok)
-                 (vl-plainarglist-assign-last-dir
-                  :vl-input
-                  (vl-plainarglist-assign-dir :vl-output x.args)))))
+            ((:vl-buf :vl-not)
+             ;; Per Section 7.3 (Page 81), the last terminal is the input and
+             ;; every other terminal is an output.
+             (if (< nargs 2)
+                 (mv (fatal :type :vl-bad-gate
+                            :msg "~a0 has ~s1."
+                            :args (list x (if (= nargs 1)
+                                              "only one argument"
+                                            "no arguments")))
+                     x.args)
+               (mv (ok)
+                   (vl-plainarglist-assign-last-dir
+                    :vl-input
+                    (vl-plainarglist-assign-dir :vl-output x.args)))))
 
 
-          ((:vl-bufif0 :vl-bufif1 :vl-notif0 :vl-notif1
-                       :vl-nmos :vl-pmos :vl-rnmos :vl-rpmos)
+            ((:vl-bufif0 :vl-bufif1 :vl-notif0 :vl-notif1
+              :vl-nmos :vl-pmos :vl-rnmos :vl-rpmos)
 
-           ;; Per Section 7.4 (page 82), bufif0..notif1 have exactly three terminals,
-           ;; which are output, data in, control in.
+             ;; Per Section 7.4 (page 82), bufif0..notif1 have exactly three terminals,
+             ;; which are output, data in, control in.
 
-           ;; Per Section 7.5 (page 84), nmos..rpmos also have exactly three terminals,
-           ;; which are output, data in, and control in.
+             ;; Per Section 7.5 (page 84), nmos..rpmos also have exactly three terminals,
+             ;; which are output, data in, and control in.
 
-           (if (/= nargs 3)
-               (mv (fatal :type :vl-bad-gate
-                          :msg "~a0 has ~x1 argument~s2, but must have ~
+             (if (/= nargs 3)
+                 (mv (fatal :type :vl-bad-gate
+                            :msg "~a0 has ~x1 argument~s2, but must have ~
                                 exactly 3 arguments."
-                          :args (list x nargs (if (= nargs 1) "s" "")))
-                   x.args)
-             (mv (ok)
-                 (cons (change-vl-plainarg (car x.args) :dir :vl-output)
-                       (vl-plainarglist-assign-dir :vl-input (cdr x.args))))))
+                            :args (list x nargs (if (= nargs 1) "s" "")))
+                     x.args)
+               (mv (ok)
+                   (cons (change-vl-plainarg (car x.args) :dir :vl-output)
+                         (vl-plainarglist-assign-dir :vl-input (cdr x.args))))))
 
 
-          ((:vl-tranif1 :vl-tranif0 :vl-rtranif1 :vl-rtranif0)
+            ((:vl-tranif1 :vl-tranif0 :vl-rtranif1 :vl-rtranif0)
 
-           ;; Per Section 7.6 (page 85), tranif1..rtranif0 have three terminals.
-           ;; the first two are inout, and the last is control in.
+             ;; Per Section 7.6 (page 85), tranif1..rtranif0 have three terminals.
+             ;; the first two are inout, and the last is control in.
 
-           (if (/= nargs 3)
-               (mv (fatal :type :vl-bad-gate
-                          :msg "~a0 has ~x1 argument~s2, but must have ~
+             (if (/= nargs 3)
+                 (mv (fatal :type :vl-bad-gate
+                            :msg "~a0 has ~x1 argument~s2, but must have ~
                                 exactly 3 arguments."
-                          :args (list x nargs (if (= nargs 1) "s" "")))
-                   x.args)
-             (mv (ok)
-                 (list (change-vl-plainarg (first x.args) :dir :vl-inout)
-                       (change-vl-plainarg (second x.args) :dir :vl-inout)
-                       (change-vl-plainarg (third x.args) :dir :vl-input)))))
+                            :args (list x nargs (if (= nargs 1) "s" "")))
+                     x.args)
+               (mv (ok)
+                   (list (change-vl-plainarg (first x.args) :dir :vl-inout)
+                         (change-vl-plainarg (second x.args) :dir :vl-inout)
+                         (change-vl-plainarg (third x.args) :dir :vl-input)))))
 
 
-          ((:vl-tran :vl-rtran)
+            ((:vl-tran :vl-rtran)
 
-           ;; Per Section 7.6 (page 85), tran and rtran have two terminals, both of
-           ;; which are inouts.
+             ;; Per Section 7.6 (page 85), tran and rtran have two terminals, both of
+             ;; which are inouts.
 
-           (if (/= nargs 2)
-               (mv (fatal :type :vl-bad-gate
-                          :msg "~a0 has ~x1 argument~s2, but must have ~
+             (if (/= nargs 2)
+                 (mv (fatal :type :vl-bad-gate
+                            :msg "~a0 has ~x1 argument~s2, but must have ~
                                 exactly 2 arguments."
-                          :args (list x nargs (if (= nargs 1) "s" "")))
-                   x.args)
-             (mv (ok)
-                 (list (change-vl-plainarg (first x.args) :dir :vl-inout)
-                       (change-vl-plainarg (second x.args) :dir :vl-inout)))))
+                            :args (list x nargs (if (= nargs 1) "s" "")))
+                     x.args)
+               (mv (ok)
+                   (list (change-vl-plainarg (first x.args) :dir :vl-inout)
+                         (change-vl-plainarg (second x.args) :dir :vl-inout)))))
 
 
-          ((:vl-cmos :vl-rcmos)
+            ((:vl-cmos :vl-rcmos)
 
-           ;; Per Section 7.7 (page 85), cmos and rcmos have four terminals:
-           ;; data out, data in, n-channel control in, p-channel control in.
-           ;; It's kind of weird that data-in and data-out aren't inouts.
+             ;; Per Section 7.7 (page 85), cmos and rcmos have four terminals:
+             ;; data out, data in, n-channel control in, p-channel control in.
+             ;; It's kind of weird that data-in and data-out aren't inouts.
 
-           (if (/= nargs 4)
-               (mv (fatal :type :vl-bad-gate
-                          :msg "~a0 has ~x1 argument~s2, but must have ~
+             (if (/= nargs 4)
+                 (mv (fatal :type :vl-bad-gate
+                            :msg "~a0 has ~x1 argument~s2, but must have ~
                                 exactly 4 arguments."
-                          :args (list x nargs (if (= nargs 1) "s" "")))
-                   x.args)
-             (mv (ok)
-                 (list (change-vl-plainarg (first x.args) :dir :vl-output)
-                       (change-vl-plainarg (second x.args) :dir :vl-input)
-                       (change-vl-plainarg (third x.args) :dir :vl-input)
-                       (change-vl-plainarg (fourth x.args) :dir :vl-input)))))
+                            :args (list x nargs (if (= nargs 1) "s" "")))
+                     x.args)
+               (mv (ok)
+                   (list (change-vl-plainarg (first x.args) :dir :vl-output)
+                         (change-vl-plainarg (second x.args) :dir :vl-input)
+                         (change-vl-plainarg (third x.args) :dir :vl-input)
+                         (change-vl-plainarg (fourth x.args) :dir :vl-input)))))
 
 
-          ((:vl-pullup :vl-pulldown)
+            ((:vl-pullup :vl-pulldown)
 
-           ;; Per Section 7.8 (page 86), pullup and pulldown just emit 0/1
-           ;; on any connected terminals.  I think this means all the terminals
-           ;; are effectively outputs.
+             ;; Per Section 7.8 (page 86), pullup and pulldown just emit 0/1
+             ;; on any connected terminals.  I think this means all the terminals
+             ;; are effectively outputs.
 
-           (mv (ok) (vl-plainarglist-assign-dir :vl-output x.args)))
+             (mv (ok) (vl-plainarglist-assign-dir :vl-output x.args)))
 
 
-          (otherwise
-           (progn$ (impossible)
-                   (mv (ok) x.args)))))
+            (otherwise
+             (progn$ (impossible)
+                     (mv (ok) x.args)))))
 
-       (x-prime (change-vl-gateinst x :args args-prime)))
+         (x-prime (change-vl-gateinst x :args args-prime)))
 
-    (mv (ok) x-prime))
-  ///
-  (verify-guards vl-gateinst-dirassign))
+      (mv (ok) x-prime))
+    :prepwork ((local (in-theory (disable member-equal-when-member-equal-of-cdr-under-iff
+                                          promote-member-equal-to-membership
+                                          acl2::true-listp-member-equal
+                                          double-containment
+                                          vl-warninglist-p-when-not-consp
+                                          subsetp-equal-when-first-two-same-yada-yada
+                                          default-car default-cdr))))
+    ///
+    (verify-guards vl-gateinst-dirassign
+      :hints((and stable-under-simplificationp
+                  '(:in-theory (e/d (vl-gatetype-p)
+                                    (vl-gatetype-p-of-vl-gateinst->type))
+                    :use ((:instance vl-gatetype-p-of-vl-gateinst->type))))))))
 
 (define vl-gateinstlist-dirassign
   :short "Projects @(see vl-gateinst-dirassign) across a list of @(see
@@ -646,11 +661,18 @@ relatively easy to handle; see @(see blankargs).  But they are also bizarre,
 and at least would seem to indicate a situation that could be optimized.  So,
 if we see either of these cases, we add a non-fatal warning explaining the
 problem.</p>"
+  :hooks ((:fix :hints (("goal" :induct (vl-check-blankargs args ports inst warnings)
+                         :in-theory (disable (:d vl-check-blankargs)))
+                        (and stable-under-simplificationp
+                             (flag::expand-calls-computed-hint
+                              clause '(vl-check-blankargs))))))
   (b* (((when (atom args))
         (ok))
        (inst     (vl-modinst-fix inst))
        (port1    (vl-port-fix (car ports)))
-       ((vl-port port1) port1)
+       ((when (eq (tag port1) :vl-interfaceport))
+        (vl-check-blankargs (cdr args) (cdr ports) inst warnings))
+       ((vl-regularport port1) port1)
        (argexpr  (vl-plainarg->expr (car args)))
        (warnings
         (if (and argexpr (not port1.expr))

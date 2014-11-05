@@ -37,6 +37,7 @@
 (local (include-book "../util/osets"))
 (local (include-book "../util/esim-lemmas"))
 
+(local (in-theory (disable (tau-system))))
 
 (defxdoc modinsts-to-eoccs
   :parents (e-conversion)
@@ -288,14 +289,15 @@ might not even have the same direction.</p>"
       (msb-bits vl-emodwirelist-p))
 
   (b* ((warnings nil)
-       ((when (vl-port->ifname x))
+       (x (vl-port-fix x))
+       ((when (eq (tag x) :vl-interfaceport))
         (mv nil
             (fatal :type :vl-bad-port
                    :msg "~a0: interface ports are not supported."
                    :args (list x))
             nil))
 
-       (expr (vl-port->expr x))
+       (expr (vl-regularport->expr x))
        ((unless expr)
         (mv nil
             (fatal :type :vl-bad-port
@@ -921,6 +923,10 @@ modinsts-to-eoccs).</p>"
                          (vl-emodwirelist-p (alist-keys al))
                          (vl-emodwirelist-p (alist-vals al)))
                     (similar-patternsp (al->pat pat al default) pat))))
+
+  (local (defthm vl-plain-wire-name-under-iff
+           (vl-plain-wire-name x)
+           :hints(("Goal" :in-theory (enable (tau-system))))))
 
   (defthm good-esim-occp-of-vl-modinst-to-eocc
     (let ((ret (vl-modinst-to-eocc x walist mods modalist eal warnings)))

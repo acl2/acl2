@@ -37,6 +37,8 @@
 ; they're not necessarily that widely useful and, for instance, the modelement
 ; rules here might be kind of slow in general.
 
+(local (in-theory (disable (tau-system))))
+
 (local (defthm vl-modelement-p-when-vl-blockitem-p
          (implies (vl-blockitem-p x)
                   (vl-modelement-p x))
@@ -499,6 +501,11 @@ imported names."
   (implicit string-listp
             "Subset of @('names') that don't have declarations already,
              e.g., names that we don't want to add local declarations for.")
+  :hooks ((:fix :hints (("goal" :induct (vl-remove-declared-wires names st)
+                         :in-theory (disable (:d vl-remove-declared-wires)))
+                        (and stable-under-simplificationp
+                             (flag::expand-calls-computed-hint
+                              clause '(vl-remove-declared-wires))))))
   (b* (((when (atom names))
         nil)
        ((vl-implicitst st))
@@ -835,7 +842,8 @@ later on.  We handle that in @(see vl-make-implicit-wires).</p>"
        (item (vl-genbase->item elem))
        (tag  (tag item))
 
-       ((when (eq tag :vl-port))
+       ((when (or (eq tag :vl-interfaceport)
+                  (eq tag :vl-regularport)))
         ;; We shouldn't see any ports.
         (raise "We shouldn't see ports here.")
         (vl-make-implicit-wires-aux (cdr x) st implicit newitems warnings))
@@ -1081,6 +1089,8 @@ nets, and make sure that every identifier being used has a declaration."
   ((loaditems vl-genelementlist-p
               "All of the module elements from a single module, in the order they
                were parsed.")
+   (ifports   vl-interfaceportlist-p
+              "Interface ports for the module (we implicitly declare them first).")
    (ss       vl-scopestack-p)
    (warnings vl-warninglist-p
              "An ordinary @(see warnings) accumulator, which may be extended
@@ -1094,7 +1104,10 @@ nets, and make sure that every identifier being used has a declaration."
 a fatal warning, the resulting module element list will have declarations for
 all of its identifiers.</p>"
 
-    (b* ((st (make-vl-implicitst :decls     nil
+    (b* ((ifports (vl-interfaceportlist-fix ifports))
+         (st (make-vl-implicitst :decls     (make-fast-alist
+                                             (pairlis$ (vl-portlist->names ifports)
+                                                       (redundant-list-fix ifports)))
                                  :portdecls nil
                                  :imports   nil
                                  :ss        ss))
@@ -1117,7 +1130,7 @@ all of its identifiers.</p>"
   :returns (new-x vl-module-p)
   (b* (((vl-module x))
        ((mv implicit newitems warnings)
-        (vl-make-implicit-wires-main x.loaditems ss x.warnings))
+        (vl-make-implicit-wires-main x.loaditems x.ifports ss x.warnings))
        (vardecls (append-without-guard implicit x.vardecls)))
     (change-vl-module x
                       :vardecls vardecls

@@ -69,7 +69,7 @@ annotated with a @('version') field that must match exactly this string.</p>"
 
   ;; Current syntax version: generally a string like
   ;; "VL Syntax [date of modification]"
-  "VL Syntax 2014-10-31")
+  "VL Syntax 2014-11-4")
 
 (define vl-syntaxversion-p (x)
   :parents (syntax)
@@ -716,23 +716,17 @@ away with them as alternate kinds of assignments.</p>"))
                                :pdims    nil)))
 
 
-(defprod vl-port
-  :short "Representation of a single port."
-  :tag :vl-port
+(defprod vl-interfaceport
+  :parents (vl-port)
+  :short "Representation of a single interface port."
+  :tag :vl-interfaceport
   :layout :tree
-
-  ((name maybe-stringp
+  ((name stringp
          :rule-classes :type-prescription
-         "The \"externally visible\" name of this port, for use in named module
-          instances.  Usually it is best to avoid this; see below.")
+         "Name (internal and external) of this interface port, e.g., @('foo')
+          for @('simplebus.master foo').")
 
-   (expr vl-maybe-expr-p
-         "How the port is wired internally within the module.  Most of the time,
-          this is a simple identifier expression that is just @('name').  But
-          it can also be more complex; see below.  The expression should be
-          @('nil') for interface ports.")
-
-   (ifname maybe-stringp
+   (ifname stringp
            :rule-classes :type-prescription
            "For interface ports like @('simplebus foo') or @('simplebus.master foo'),
             this is the name of the interface, e.g., @('simplebus').  For
@@ -747,6 +741,26 @@ away with them as alternate kinds of assignments.</p>"))
 
    (udims   vl-packeddimensionlist-p
             "For interface ports only: the unpacked dimensions for this port.")
+
+   (loc  vl-location-p
+         "Where this port came from in the Verilog source code.")))
+
+(defprod vl-regularport
+  :parents (vl-port)
+  :short "Representation of a single non-interface port."
+  :tag :vl-regularport
+  :layout :tree
+
+  ((name maybe-stringp
+         :rule-classes :type-prescription
+         "The \"externally visible\" name of this port, for use in named module
+          instances.  Usually it is best to avoid this; see below.")
+
+   (expr vl-maybe-expr-p
+         "How the port is wired internally within the module.  Most of the time,
+          this is a simple identifier expression that is just @('name').  But
+          it can also be more complex; see below.  The expression should be
+          @('nil') for interface ports.")
 
    (loc  vl-location-p
          "Where this port came from in the Verilog source code."))
@@ -809,11 +823,14 @@ collectively specify the bits of @('c').</p>
 <p>SystemVerilog-2012 extends ports in several ways, but most of these
 extensions (e.g., support for fancy data types) are related to the port
 declarations rather than the ports.  One place where the ports themselves
-<i>are</i> extended is for interface ports.  We record which ports are
-interface ports with the @('ifname') and @('modport') fields.</p>
+<i>are</i> extended is for interface ports.  See @(see vl-port).</p>")
 
-
-<h3>Using Ports</h3>
+(deftranssum vl-port
+  (vl-regularport
+   vl-interfaceport)
+  :short "Representation of a single port."
+  :long "<p>Most ports are regular ports, see @(see vl-regularport).  However,
+SystemVerilog also adds interface ports, see @(see vl-interfaceport).</p>
 
 <p>It is generally best to <b>avoid using port names</b> except perhaps for
 things like error messages.  Why?  As shown above, some ports might not have
@@ -849,22 +866,52 @@ implement a comprehensive approach to detecting and dealing with backflow.</p>
 performed by examining the width of the port expression.  See @(see
 expression-sizing) for details.</p>")
 
+(defthm tag-when-vl-port-p-forward
+  (implies (vl-port-p x)
+           (or (eq (tag x) :vl-regularport)
+               (eq (tag x) :vl-interfaceport)))
+  :rule-classes :forward-chaining)
+
 (fty::deflist vl-portlist
               :elt-type vl-port-p
               :true-listp nil
               :elementp-of-nil nil)
 
-(defprojection vl-portlist->exprs ((x vl-portlist-p))
-  :parents (vl-portlist-p)
-  :nil-preservingp t
-  (vl-port->expr x)
-  ///
-  (defthm vl-exprlist-p-of-vl-portlist->exprs
-    (equal (vl-exprlist-p (vl-portlist->exprs x))
-           (not (member nil (vl-portlist->exprs x)))))
+(fty::deflist vl-interfaceportlist
+              :elt-type vl-interfaceport-p
+              :true-listp nil
+              :elementp-of-nil nil)
 
-  (defthm vl-exprlist-p-of-remove-equal-of-vl-portlist->exprs
-    (vl-exprlist-p (remove-equal nil (vl-portlist->exprs x)))))
+(fty::deflist vl-regularportlist
+  :elt-type vl-regularport
+  :true-listp nil
+  :elementp-of-nil nil)
+
+(defthm vl-portlist-p-when-vl-interfaceportlist-p
+  (implies (vl-interfaceportlist-p x)
+           (vl-portlist-p x))
+  :hints(("Goal" :induct (len x))))
+
+(defthm vl-portlist-p-when-vl-regularportlist-p
+  (implies (vl-regularportlist-p x)
+           (vl-portlist-p x))
+  :hints(("Goal" :induct (len x))))
+
+(define vl-port->name ((x vl-port-p))
+  :returns (name maybe-stringp :rule-classes :type-prescription)
+  (b* ((x (vl-port-fix x)))
+    (case (tag x)
+      (:vl-regularport   (vl-regularport->name x))
+      (:vl-interfaceport (vl-interfaceport->name x))
+      (otherwise         (impossible)))))
+
+(define vl-port->loc ((x vl-port-p))
+  :returns (loc vl-location-p)
+  (b* ((x (vl-port-fix x)))
+    (case (tag x)
+      (:vl-regularport   (vl-regularport->loc x))
+      (:vl-interfaceport (vl-interfaceport->loc x))
+      (otherwise         (progn$ (impossible) *vl-fakeloc*)))))
 
 (defprojection vl-portlist->names ((x vl-portlist-p))
   :parents (vl-portlist-p)
@@ -878,28 +925,13 @@ expression-sizing) for details.</p>")
   (defthm string-listp-of-remove-equal-of-vl-portlist->names
     (string-listp (remove-equal nil (vl-portlist->names x)))))
 
-(define vl-interfaceport-p ((x vl-port-p))
-  :parents (vl-port)
-  :short "Determine whether a port is an interface port."
-  :returns bool
-  :inline t
-  (b* (((vl-port x)))
-    (if x.ifname
-        t
-      nil)))
-
-(deflist vl-interfaceportlist-p (x)
-  :parents (vl-portlist-p)
-  :guard (vl-portlist-p x)
-  :elementp-of-nil nil
-  (vl-interfaceport-p x))
-
 (define vl-collect-interface-ports-exec ((x vl-portlist-p) nrev)
   :parents (vl-collect-interface-ports)
   (b* (((when (atom x))
         (nrev-fix nrev))
-       ((when (vl-interfaceport-p (car x)))
-        (b* ((nrev (nrev-push (vl-port-fix (car x)) nrev)))
+       (x1 (vl-port-fix (car x)))
+       ((when (eq (tag x1) :vl-interfaceport))
+        (b* ((nrev (nrev-push x1 nrev)))
           (vl-collect-interface-ports-exec (cdr x) nrev))))
     (vl-collect-interface-ports-exec (cdr x) nrev)))
 
@@ -911,13 +943,12 @@ expression-sizing) for details.</p>")
                          (vl-interfaceportlist-p ifports)))
   :verify-guards nil
   (mbe :logic
-       (cond ((atom x)
-              nil)
-             ((vl-interfaceport-p (car x))
-              (cons (vl-port-fix (car x))
-                    (vl-collect-interface-ports (cdr x))))
-             (t
-              (vl-collect-interface-ports (cdr x))))
+       (b* (((when (atom x))
+             nil)
+            (x1 (vl-port-fix (car x)))
+            ((when (eq (tag x1) :vl-interfaceport))
+             (cons x1 (vl-collect-interface-ports (cdr x)))))
+         (vl-collect-interface-ports (cdr x)))
        :exec
        (with-local-nrev
          (vl-collect-interface-ports-exec x nrev)))
@@ -936,7 +967,7 @@ expression-sizing) for details.</p>")
 
   (defthm vl-collect-interface-ports-of-cons
     (equal (vl-collect-interface-ports (cons a x))
-           (if (vl-interfaceport-p a)
+           (if (eq (tag (vl-port-fix a)) :vl-interfaceport)
                (cons (vl-port-fix a)
                      (vl-collect-interface-ports x))
              (vl-collect-interface-ports x)))))
@@ -3268,7 +3299,8 @@ be non-sliceable, at least if it's an input.</p>"
   (local (include-book "tools/templates" :dir :system))
 
   (defconst *vl-modelement-typenames*
-    '(port      ;; should this be in here?
+    '(interfaceport      ;; should this be in here?
+      regularport        ;; should this be in here?
       portdecl
       assign
       alias
@@ -3772,7 +3804,10 @@ the list of elements of the given type.</p>"
 
    (esim       "This is meant to be @('nil') until @(see esim) conversion, at
                 which point it becomes the E module corresponding to this
-                VL module.")))
+                VL module."))
+  :extra-binder-names (hands-offp
+                       ifports
+                       modnamespace))
 
 (fty::deflist vl-modulelist
   :elt-type vl-module-p
@@ -3813,9 +3848,19 @@ transforms to not modules with this attribute.</p>"
 (define vl-module->ifports
   :short "Collect just the interface ports for a module."
   ((x vl-module-p))
-  :returns (ports (and (vl-portlist-p ports)
-                       (vl-interfaceportlist-p ports)))
-  (vl-collect-interface-ports (vl-module->ports x)))
+  :returns (ports (vl-interfaceportlist-p ports))
+  (vl-collect-interface-ports (vl-module->ports x))
+  ///
+  (local (defthm vl-regularportlist-p-when-no-interface-ports
+           (implies (and (not (vl-collect-interface-ports x))
+                         (vl-portlist-p x))
+                    (vl-regularportlist-p x))
+           :hints(("Goal" :induct (len x)))))
+  
+  (defthm vl-regularportlist-p-when-no-module->ifports
+    (implies (not (vl-module->ifports x))
+             (vl-regularportlist-p (vl-module->ports x)))
+    :hints(("Goal" :in-theory (enable vl-module->ifports)))))
 
 (defprojection vl-modulelist->names ((x vl-modulelist-p))
   :returns (names string-listp)

@@ -257,9 +257,12 @@ multiconcats throughout an expression."
           (vl-expr-selresolve x ss warnings)))
 
 (def-vl-selresolve vl-port
-  :body (b* (((vl-port x) x)
+  :body (b* ((x (vl-port-fix x))
+             ((when (eq (tag x) :vl-interfaceport))
+              (mv warnings x))
+             ((vl-regularport x) x)
              ((mv warnings expr) (vl-maybe-expr-selresolve x.expr ss warnings)))
-          (mv warnings (change-vl-port x :expr expr))))
+          (mv warnings (change-vl-regularport x :expr expr))))
 
 (def-vl-selresolve-list vl-portlist :element vl-port)
 
@@ -494,7 +497,6 @@ multiconcats throughout an expression."
   ;; :verify-guards nil
   (b* (((vl-genblob x) x)
        (ss (vl-scopestack-push (vl-genblob-fix x) ss))
-       ((mv warnings ports)     (vl-portlist-selresolve     x.ports ss     warnings))
        ((mv warnings assigns)   (vl-assignlist-selresolve   x.assigns ss   warnings))
        ((mv warnings modinsts)  (vl-modinstlist-selresolve  x.modinsts ss  warnings))
        ((mv warnings gateinsts) (vl-gateinstlist-selresolve x.gateinsts ss warnings))
@@ -507,7 +509,6 @@ multiconcats throughout an expression."
     (mv warnings
         (change-vl-genblob
          x
-         :ports     ports
          :assigns   assigns
          :modinsts  modinsts
          :gateinsts gateinsts
@@ -521,9 +522,11 @@ multiconcats throughout an expression."
 
 (define vl-module-selresolve ((x vl-module-p) (ss vl-scopestack-p))
   :returns (new-x vl-module-p)
-  (b* ((genblob (vl-module->genblob x))
+  (b* (((vl-module x))
+       (genblob (vl-module->genblob x))
        ((mv warnings new-genblob) (vl-genblob-selresolve genblob ss (vl-module->warnings x)))
-       (x-warn (change-vl-module x :warnings warnings)))
+       ((mv warnings ports)     (vl-portlist-selresolve     x.ports ss     warnings))
+       (x-warn (change-vl-module x :warnings warnings :ports ports)))
     (vl-genblob->module new-genblob x-warn)))
 
 (defprojection vl-modulelist-selresolve ((x vl-modulelist-p) (ss vl-scopestack-p))

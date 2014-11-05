@@ -918,7 +918,8 @@ explicit declarations.</p>")
 
        (- (vl-shadowcheck-debug "  ---- ~a0 ---- ~%" item))
 
-       ((when (eq tag :vl-port))
+       ((when (or (eq tag :vl-interfaceport)
+                  (eq tag :vl-regularport)))
         ;; We shouldn't see any ports.
         (raise "We shouldn't see ports here.")
         (vl-shadowcheck-aux (cdr x) st warnings))
@@ -978,10 +979,11 @@ explicit declarations.</p>")
                              (warnings vl-warninglist-p))
   :returns (mv (st       vl-shadowcheck-state-p)
                (warnings vl-warninglist-p))
-  (b* (((vl-port x)      (vl-port-fix x))
-       (varnames         (if x.ifname
-                             (list x.ifname)
-                           (and x.expr (vl-expr-varnames x.expr))))
+  (b* ((x                (vl-port-fix x))
+       (varnames         (if (eq (tag x) :vl-interfaceport)
+                             (list (vl-interfaceport->name x))
+                           (b* ((expr (vl-regularport->expr x)))
+                             (and expr (vl-expr-varnames expr)))))
        ((mv st warnings) (vl-shadowcheck-declare-names varnames x st warnings)))
     (mv st warnings)))
 
