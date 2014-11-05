@@ -39,6 +39,84 @@
 (local (in-theory (disable acl2-count)))
 (local (std::add-default-post-define-hook :fix))
 
+(defxdoc scopestack
+  :parents (mlib)
+  :short "A tool to track the bindings of names in scopes."
+  :long "<p>SystemVerilog has a complicated system of namespaces.  But it
+mostly boils down to a few categories of names for things:<p>
+<ul>
+<li><i>items,</i> (our name), including nets/variables, parameters,
+instances (of modules, gates, UDPs, and interfaces), typedefs, functions,
+tasks, and named generate blocks;</li>
+<li><i>definitions,</i> including module, UDP, interface, and program
+declarations;</li>
+<li>ports;</li>
+<li>and packages.</li>
+</ul>
+
+<p>Of these categories, the items are the most complicated in practice.
+Definitions occur only at the global scope (while the SystemVerilog spec allows
+for nested modules and interfaces, most implementations don't), ports occur
+only at the module scope, and packages only at the global scope.</p>
+
+<p>To look for an item, we first look in the most local scope; if it isn't
+found there, we search subsequent nested scopes until we get to the global
+scope.  Whenever we search a scope, we call a memoized function that turns that
+scope representation into a fast alist, in which we look up the name.  That
+way, subsequent lookups in the same scope will be constant-time.</p>
+
+<p>A scopestack is just a structure that holds representations of these nested
+scopes.  Each scope may be one of several types, namely the types on the
+left-hand column of the table @('*vl-scopes->items*').  Here are the basic
+interfaces for using scopestacks:</p>
+
+<ul>
+<li>@('nil') is an empty scopestack (without even the global design scope).</li>
+
+<li>@('(vl-scopestack-init design)') creates a scopestack with only the global
+scope of the design visible.</li>
+
+<li>@('(vl-scopestack-push scope ss)') pushes a new nested scope onto the scopestack.</li>
+
+<li>@('(vl-scopestack-pop ss)') removes the innermost scope from the
+scopestack (though this is rarely used since scopestacks are applicative).</li>
+
+<li>@('(vl-scopestack-find-item name ss)') searches the scopestack for the
+given name (a string).  The declaration object for the item is returned.  This
+is of type @(see vl-scopeitem-p) and may be determined to be of a more specific
+type by examining its tag.</li>
+
+<li>@('(vl-scopestack-find-item/ss name ss)') returns @('(mv item new-ss)'),
+where item is the same as returned by @('vl-scopestack-find-item') and new-ss
+is the scopestack visible from that item's declaration.</li>
+
+<li>@('(vl-scopestack-find-item/context name ss)') returns @('(mv item ctx-ss
+package)'), where item is the same as above, ctx-ss is the subscope of the
+current scopestack where the item was found, and package is a maybe-string
+giving the name of the package it was imported from, if applicable.  Ctx-ss
+differs from new-ss from above when the item was imported from a package; in
+this case, ctx-ss will show the module that the item was imported to whereas
+new-ss will show the package where the item was declared.</li>
+
+<li>@('(vl-scopestack-find-definition name ss)') is similar to -find-item, but
+finds a definition instead of an item.  The @('definition/ss') and
+@('definition/context') versions also exist, but aren't as informative since
+the definition can (currently) only exist at the global scope.</li>
+
+<li>@('(vl-scopestack-find-package name ss)'), similar.</li>
+<li>@('(vl-scope-find-portdecl-fast name scope)') is similar, but acts only on a
+scope, not a stack of them, since searching beyond the local module for a port
+doesn't make much sense.</li>
+
+<li>@('(vl-scopestacks-free)') clears the memoization tables associated with
+scopestacks, which in CCL also will allow their associated fast-alists to be
+garbage collected.  We don't currently have a mechanism free these fast alists
+otherwise.</li>
+
+</ul>")
+
+(local (xdoc::set-default-parents scopestack))
+
 
 ;; NOTE: The following constants control what scopes we recognize and what
 ;; kinds of items may be looked up in various kinds of scopes.  Keyword
@@ -94,7 +172,8 @@
                                             (genelement :name blockname :maybe-stringp t
                                                         :names-defined t
                                                         :sum-type t
-                                                        :acc generates))
+                                                        :acc generates)
+                                            (interfaceport :acc ifports))
            (genblob
                          (:import)          vardecl paramdecl fundecl taskdecl
                                             typedef
@@ -1304,8 +1383,10 @@ may be shorter than the number of elements in the list.</p>"
                ((name  stringp)
                 (scope vl-scope-p)
                 (design vl-maybe-design-p))
-               :returns (mv (pkg-name    (iff (stringp pkg-name) pkg-name))
-                            (item  (iff (vl-scopeitem-p item) item)))
+               :returns (mv (pkg-name    (iff (stringp pkg-name) pkg-name)
+                                         "The name of the package where the item was found, if applicable.")
+                            (item  (iff (vl-scopeitem-p item) item)
+                                   "The declaration object for the given name, if found."))
                (b* ((scope (vl-scope-fix scope)))
                  (case (tag scope)
                    ,@(template-append
@@ -1364,7 +1445,7 @@ may be shorter than the number of elements in the list.</p>"
                (memoize 'vl-scope->scopeinfo))
 
              (define vl-scope-find-item-fast
-               :short "Like @(see vl-scope-find-item), but uses a fast lookup table"
+               :short "Like @(see vl-scope-find-item), but uses a fast lookup table."
                ((name stringp)
                 (scope vl-scope-p)
                 (design vl-maybe-design-p))
@@ -1378,9 +1459,15 @@ may be shorter than the number of elements in the list.</p>"
                          (ss   vl-scopestack-p))
                         :hints (("goal" :expand ((vl-scopestack-fix ss))))
                         :guard-hints (("goal" :expand ((vl-scopestack-p ss))))
-                        :returns (mv (item (iff (vl-scopeitem-p item) item))
-                                     (item-ss vl-scopestack-p)
-                                     (pkg-name (iff (stringp pkg-name) pkg-name)))
+                        :short "Find an item declaration and information about where it was declared."
+                        :returns (mv (item (iff (vl-scopeitem-p item) item)
+                                           "The item declaration, if found")
+                                     (item-ss vl-scopestack-p
+                                              "The scopestack for the context in
+                                               which the item was found")
+                                     (pkg-name (iff (stringp pkg-name) pkg-name)
+                                               "The package from which the item
+                                                was imported, if applicable."))
                         :measure (vl-scopestack-count ss)
                         (b* ((ss (vl-scopestack-fix ss)))
                           (vl-scopestack-case ss
@@ -1400,7 +1487,8 @@ may be shorter than the number of elements in the list.</p>"
                         :short "Look up a plain identifier in the current scope stack."
                         ((name stringp)
                          (ss   vl-scopestack-p))
-                        :returns (item (iff (vl-scopeitem-p item) item))
+                        :returns (item (iff (vl-scopeitem-p item) item)
+                                       "The item declaration, if found.")
                         (b* (((mv item & &) (vl-scopestack-find-item/context name ss)))
                           item))
 
@@ -1408,8 +1496,11 @@ may be shorter than the number of elements in the list.</p>"
                         :short "Look up a plain identifier in the current scope stack."
                         ((name stringp)
                          (ss   vl-scopestack-p))
-                        :returns (mv (item (iff (__resulttype__ item) item))
-                                     (item-ss vl-scopestack-p))
+                        :returns (mv (item (iff (__resulttype__ item) item)
+                                       "The item declaration, if found.")
+                                     (item-ss vl-scopestack-p
+                                              "The scopestack for the context
+                                               in which the item was declared."))
                         (b* (((mv item context-ss pkg-name)
                               (vl-scopestack-find-item/context name ss))
                              ((unless pkg-name) (mv item context-ss))
@@ -1449,7 +1540,7 @@ may be shorter than the number of elements in the list.</p>"
         (template
           `(progn
              (define vl-scope-find-__result__
-               :short "Look up a plain identifier to find an __result__ in a scope."
+               :short "Look up a plain identifier to find a __result__ in a scope."
                ((name  stringp)
                 (scope vl-scope-p))
                :returns (__result__ (iff (vl-__resulttype__-p __result__) __result__))
@@ -1495,50 +1586,37 @@ may be shorter than the number of elements in the list.</p>"
                     :exec (cdr (hons-get name (vl-scope-__result__-alist scope)))))
 
              ,@(and stackp
-                    `((define vl-scopestack-find-__result__/context
+                    `((define vl-scopestack-find-__result__/ss
                         ((name stringp)
                          (ss   vl-scopestack-p))
                         :hints (("goal" :expand ((vl-scopestack-fix ss))))
                         :guard-hints (("goal" :expand ((vl-scopestack-p ss))))
-                        :returns (mv (__result__ (iff (vl-__resulttype__-p __result__) __result__))
-                                     (__result__-ss vl-scopestack-p)
-                                     (pkg-name (iff (stringp pkg-name) pkg-name)))
+                        :returns (mv (__result__ (iff (vl-__resulttype__-p __result__) __result__)
+                                                 "The declaration, if found")
+                                     (__result__-ss vl-scopestack-p
+                                                    "The scopestack showing the
+                                                     context of the declaration"))
+                        :short "Find a __definition__ as well as info about where it was found"
                         :measure (vl-scopestack-count ss)
                         (b* ((ss (vl-scopestack-fix ss)))
                           (vl-scopestack-case ss
-                            :null (mv nil nil nil)
+                            :null (mv nil nil)
                             :global (b* ((__result__
                                           (vl-scope-find-__result__-fast name ss.design)))
-                                      (mv __result__ (vl-scopestack-fix ss) nil))
+                                      (mv __result__ (vl-scopestack-fix ss)))
                             :local (b* ((__result__
                                          (vl-scope-find-__result__-fast name ss.top))
                                         ((when __result__)
-                                         (mv __result__ ss nil)))
-                                     (vl-scopestack-find-__result__/context name ss.super)))))
+                                         (mv __result__ ss)))
+                                     (vl-scopestack-find-__result__/ss name ss.super)))))
 
                       (define vl-scopestack-find-__result__
                         :short "Look up a plain identifier in the current scope stack."
                         ((name stringp)
                          (ss   vl-scopestack-p))
                         :returns (__result__ (iff (vl-__resulttype__-p __result__) __result__))
-                        (b* (((mv __result__ & &) (vl-scopestack-find-__result__/context name ss)))
-                          __result__))
-
-                      (define vl-scopestack-find-__result__/ss
-                        :short "Look up a plain identifier in the current scope stack."
-                        ((name stringp)
-                         (ss   vl-scopestack-p))
-                        :returns (mv (__result__ (iff (vl-__resulttype__-p __result__) __result__))
-                                     (__result__-ss vl-scopestack-p))
-                        (b* (((mv __result__ context-ss pkg-name)
-                              (vl-scopestack-find-__result__/context name ss))
-                             ((unless pkg-name) (mv __result__ context-ss))
-                             (design (vl-scopestack->design context-ss))
-                             (pkg (and design (cdr (hons-get pkg-name (vl-design-scope-package-alist-top design)))))
-                             ((unless pkg) ;; this should mean __result__ is already nil
-                              (mv __result__ nil))
-                             (pkg-ss (vl-scopestack-push pkg (vl-scopestack-init design))))
-                          (mv __result__ pkg-ss))))))))
+                        (b* (((mv __result__ &) (vl-scopestack-find-__result__/ss name ss)))
+                          __result__)))))))
      (acl2::template-subst-fn template nil nil nil nil
                               `(("__RESULT__" ,(symbol-name result) . vl-package)
                                 ("__RESULTTYPE__" ,(symbol-name resulttype) . vl-package))
@@ -1578,6 +1656,8 @@ may be shorter than the number of elements in the list.</p>"
 
 
 (define vl-scopestacks-free ()
+  :parents (scopestack)
+  :short "Frees memoization tables associated with scopestacks."
   (progn$ (clear-memoize-table 'vl-scope->scopeinfo)
           (clear-memoize-table 'vl-scope-definition-alist)
           (clear-memoize-table 'vl-scope-package-alist)

@@ -867,13 +867,17 @@ is just a constant integer.  So this is just:</p>
 
 
 (def-vl-wildelim vl-port
-  :body (b* (((vl-port x) x)
+  :body (b* ((x (vl-port-fix x))
+             ((when (eq (tag x) :vl-interfaceport))
+              (b* (((vl-interfaceport x))
+                   ((mv warnings udims-prime)
+                    (vl-packeddimensionlist-wildelim x.udims x warnings)))
+                (mv warnings (change-vl-interfaceport x :udims udims-prime))))
+             ((vl-regularport x) x)
              (elem x)
              ((mv warnings expr-prime) (vl-maybe-expr-wildelim x.expr elem warnings))
-             ((mv warnings udims-prime) (vl-packeddimensionlist-wildelim x.udims elem warnings))
-             (x-prime (change-vl-port x
-                                      :expr expr-prime
-                                      :udims udims-prime)))
+             (x-prime (change-vl-regularport x
+                                      :expr expr-prime)))
           (mv warnings x-prime)))
 
 (def-vl-wildelim-list vl-portlist :element vl-port)
@@ -1119,7 +1123,6 @@ is just a constant integer.  So this is just:</p>
        ((mv warnings gateinsts)  (vl-gateinstlist-wildelim  x.gateinsts  warnings))
        ((mv warnings alwayses)   (vl-alwayslist-wildelim    x.alwayses   warnings))
        ((mv warnings initials)   (vl-initiallist-wildelim   x.initials   warnings))
-       ((mv warnings ports)      (vl-portlist-wildelim      x.ports      warnings))
        ((mv warnings portdecls)  (vl-portdecllist-wildelim  x.portdecls  warnings))
        ((mv warnings paramdecls) (vl-paramdecllist-wildelim x.paramdecls warnings))
        ((mv warnings vardecls)   (vl-vardecllist-wildelim   x.vardecls   warnings))
@@ -1134,7 +1137,6 @@ is just a constant integer.  So this is just:</p>
          :gateinsts gateinsts
          :alwayses alwayses
          :initials initials
-         :ports ports
          :portdecls portdecls
          :paramdecls paramdecls
          :vardecls vardecls
@@ -1153,7 +1155,8 @@ is just a constant integer.  So this is just:</p>
        (genblob (vl-module->genblob x))
        ((mv warnings new-genblob)
         (vl-genblob-wildelim genblob warnings))
-       (mod (change-vl-module x :warnings warnings)))
+       ((mv warnings ports)      (vl-portlist-wildelim      x.ports      warnings))
+       (mod (change-vl-module x :warnings warnings :ports ports)))
     (vl-genblob->module new-genblob mod)))
 
 (defprojection vl-modulelist-wildelim ((x vl-modulelist-p))

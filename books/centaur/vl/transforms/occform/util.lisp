@@ -80,7 +80,7 @@ and net declaration.</p>"
        (range    (vl-make-n-bit-range width))
        (type     (hons-copy (make-vl-coretype :name :vl-logic :signedp nil
                                               :pdims (list range))))
-       (port     (make-vl-port :name name :expr expr :loc *vl-fakeloc*))
+       (port     (make-vl-regularport :name name :expr expr :loc *vl-fakeloc*))
        (portdecl (make-vl-portdecl :name  name :type type :dir dir :loc *vl-fakeloc*))
        (vardecl  (make-vl-vardecl  :name  name :type type :nettype :vl-wire :loc *vl-fakeloc* :atts '(("VL_PORT_IMPLICIT")))))
     (mv expr port portdecl vardecl)))
@@ -134,14 +134,14 @@ and net declaration.</p>"
   :short "Create plainargs binding some actuals to their ports, filling in the
 portnames and directions."
   ((actuals   vl-exprlist-p)
-   (ports     vl-portlist-p)
+   (ports     vl-regularportlist-p)
    (portdecls vl-portdecllist-p "for figuring out directions"))
   :guard (same-lengthp actuals ports)
   :returns (args vl-plainarglist-p)
   :parents (vl-simple-instantiate)
   (b* (((when (atom actuals))
         nil)
-       ((vl-port port) (car ports))
+       ((vl-regularport port) (car ports))
        ((unless (and port.name
                      port.expr
                      (vl-idexpr-p port.expr)
@@ -161,6 +161,7 @@ portnames and directions."
           (vl-simple-instantiate-args-main (cdr actuals) (cdr ports)
                                            portdecls))))
 
+ 
 (define vl-simple-instantiate
   ((x        vl-module-p   "submodule to create an instance of")
    (instname stringp       "name for the new instance")
@@ -183,7 +184,8 @@ arity checking.</p>"
 
   (b* (((vl-module x) x)
        (plainargs
-        (if (same-lengthp actuals x.ports)
+        (if (and (not x.ifports)
+                 (same-lengthp actuals x.ports))
             (vl-simple-instantiate-args-main actuals x.ports x.portdecls)
           (raise "Wrong number of arguments for ~x0.~%" x.name))))
     (make-vl-modinst :modname   x.name

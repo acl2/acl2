@@ -40,12 +40,76 @@
 
 (local (xdoc::set-default-parents portcheck))
 
+(define vl-collect-regular-ports-exec ((x vl-portlist-p) nrev)
+  :parents (vl-collect-regular-ports)
+  (b* (((when (atom x))
+        (nrev-fix nrev))
+       (x1 (vl-port-fix (car x)))
+       ((when (eq (tag x1) :vl-regularport))
+        (b* ((nrev (nrev-push x1 nrev)))
+          (vl-collect-regular-ports-exec (cdr x) nrev))))
+    (vl-collect-regular-ports-exec (cdr x) nrev)))
+
+(define vl-collect-regular-ports
+  :parents (vl-portlist-p)
+  :short "Filter a @(see vl-portlist-p) to collect only the regular ports."
+  ((x vl-portlist-p))
+  :returns (ifports (and (vl-portlist-p ifports)
+                         (vl-regularportlist-p ifports)))
+  :verify-guards nil
+  (mbe :logic
+       (b* (((when (atom x))
+             nil)
+            (x1 (vl-port-fix (car x)))
+            ((when (eq (tag x1) :vl-regularport))
+             (cons x1 (vl-collect-regular-ports (cdr x)))))
+         (vl-collect-regular-ports (cdr x)))
+       :exec
+       (with-local-nrev
+         (vl-collect-regular-ports-exec x nrev)))
+  ///
+  (defthm vl-collect-regular-ports-exec-removal
+    (equal (vl-collect-regular-ports-exec x nrev)
+           (append nrev (vl-collect-regular-ports x)))
+    :hints(("Goal" :in-theory (enable vl-collect-regular-ports-exec))))
+
+  (verify-guards vl-collect-regular-ports)
+
+  (defthm vl-collect-regular-ports-when-atom
+    (implies (atom x)
+             (equal (vl-collect-regular-ports x)
+                    nil)))
+
+  (defthm vl-collect-regular-ports-of-cons
+    (equal (vl-collect-regular-ports (cons a x))
+           (if (eq (tag (vl-port-fix a)) :vl-regularport)
+               (cons (vl-port-fix a)
+                     (vl-collect-regular-ports x))
+             (vl-collect-regular-ports x)))))
+
+(defprojection vl-regularportlist->exprs ((x vl-regularportlist-p))
+  :parents (vl-portlist-p)
+  :nil-preservingp t
+  (vl-regularport->expr x)
+  ///
+  (defthm vl-exprlist-p-of-vl-regularportlist->exprs
+    (equal (vl-exprlist-p (vl-regularportlist->exprs x))
+           (not (member nil (vl-regularportlist->exprs x)))))
+
+  (defthm vl-exprlist-p-of-remove-equal-of-vl-regularportlist->exprs
+    (vl-exprlist-p (remove-equal nil (vl-regularportlist->exprs x)))))
+
+
 (define vl-module-portcheck ((x vl-module-p))
   :returns (new-x vl-module-p :hyp :fguard
                   "New version of @('x'), with at most some added warnings.")
   (b* (((vl-module x) x)
        (decl-names (mergesort (vl-portdecllist->names x.portdecls)))
-       (port-names (mergesort (vl-exprlist-names (remove nil (vl-portlist->exprs x.ports)))))
+       (port-names (mergesort
+                    (vl-exprlist-names
+                     (remove nil
+                             (vl-regularportlist->exprs
+                              (vl-collect-regular-ports x.ports))))))
        ((unless (subset decl-names port-names))
         (b* ((w (make-vl-warning
                  :type :vl-port-mismatch

@@ -297,4 +297,22 @@
   :tag :pancake
   ((syrup  booleanp)
    (butter booleanp))
+  :extra-binder-names (messy)
   :verbosep t)
+
+(define pancake->messy ((x pancake-p))
+  (and (pancake->syrup x)
+       (pancake->butter x)))
+
+(define pancake-info ((x pancake-p))
+  (b* (((pancake x)))
+    (acl2::msg "syrupy: ~x0 buttery: ~x1 messy: ~x2~%"
+               x.syrup x.butter x.messy))
+  ///
+  (assert!
+   (equal (pancake-info (make-pancake :syrup t :butter nil))
+          (acl2::msg "syrupy: ~x0 buttery: ~x1 messy: ~x2~%" t nil nil))))
+
+
+
+

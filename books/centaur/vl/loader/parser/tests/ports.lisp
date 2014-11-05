@@ -31,6 +31,7 @@
 (in-package "VL")
 (include-book "base")
 (include-book "../ports")
+(include-book "../../../checkers/portcheck") ;; bozo for regularportlist->exprs
 
 ;; BOZO more unit tests!
 
@@ -57,12 +58,12 @@
                 (and (prog2$ (cw "Erp: ~x0.~%" erp)
                              (not erp))
                      (prog2$ (cw "Val: ~x0.~%" val)
-                             (vl-port-p val))
-                     (prog2$ (cw "Name: ~x0.~%" (vl-port->name val))
-                             (equal (vl-port->name val) ',name))
+                             (vl-regularport-p val))
+                     (prog2$ (cw "Name: ~x0.~%" (vl-regularport->name val))
+                             (equal (vl-regularport->name val) ',name))
                      (prog2$ (cw "Expr: ~x0.~%"
-                                 (vl-pretty-expr (vl-port->expr val)))
-                             (equal (vl-pretty-expr (vl-port->expr val))
+                                 (vl-pretty-expr (vl-regularport->expr val)))
+                             (equal (vl-pretty-expr (vl-regularport->expr val))
                                     ',expr))
                      (prog2$ (cw "Tokens: ~x0.~%" tokens)
                              (not tokens))
@@ -130,8 +131,6 @@
             nil)
           (vl-pretty-maybe-exprlist (cdr x)))))
 
-
-
 (defparser-top vl-parse-module-port-list-top)
 
 (defmacro test-parse-portlist (&key input (successp 't) names exprs)
@@ -149,12 +148,12 @@
                 (and (prog2$ (cw "Erp: ~x0.~%" erp)
                              (not erp))
                      (prog2$ (cw "Val: ~x0.~%" val)
-                             (vl-portlist-p val))
+                             (vl-regularportlist-p val))
                      (prog2$ (cw "Names: ~x0.~%" (vl-portlist->names val))
                              (equal (vl-portlist->names val) ',names))
                      (prog2$ (cw "Exprs: ~x0.~%"
-                                 (vl-pretty-maybe-exprlist (vl-portlist->exprs val)))
-                             (equal (vl-pretty-maybe-exprlist (vl-portlist->exprs val))
+                                 (vl-pretty-maybe-exprlist (vl-regularportlist->exprs val)))
+                             (equal (vl-pretty-maybe-exprlist (vl-regularportlist->exprs val))
                                     ',exprs))
                      (prog2$ (cw "Tokens: ~x0.~%" tokens)
                              (not tokens))

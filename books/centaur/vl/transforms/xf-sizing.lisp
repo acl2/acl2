@@ -482,7 +482,7 @@
 (def-vl-exprsize-list vl-assignlist :element vl-assign)
 
 
-(define vl-port-unpacked-datatype ((x vl-port-p)
+(define vl-port-unpacked-datatype ((x vl-regularport-p)
                                    (ss vl-scopestack-p))
   :prepwork ((local (defthm vl-index-find-type-when-not-warning
                       (implies (not (mv-nth 0 (vl-index-find-type x ss)))
@@ -496,7 +496,7 @@
                                :in-theory (disable return-type-of-vl-partselect-expr-type.type))))))
 
   :returns (type (iff (vl-datatype-p type) type))
-  (b* (((vl-port x))
+  (b* (((vl-regularport x))
        ((unless x.expr) nil))
     (vl-expr-case x.expr
       :atom (b* (((mv warn type) (vl-index-find-type x.expr ss)))
@@ -545,6 +545,44 @@ the expression.</p>"
   :body (b* (((vl-plainarg x) x)
              ((unless x.expr)
               (mv t warnings x))
+             (port (and port (vl-port-fix port)))
+             ((when (eq (tag port) :vl-interfaceport))
+              ;; check the interface...
+              (b* (((vl-interfaceport port))
+                   ((when port.udims)
+                    (mv nil
+                        (fatal :type :vl-bad-interface-port
+                               :msg "~a0: Interface port with udims: ~a1"
+                               :args (list (vl-modelement-fix elem) port))
+                        x))
+                   ((unless (vl-idexpr-p x.expr))
+                    (mv nil
+                        (fatal :type :vl-bad-interface-port
+                               :msg "~a0: Non-ID expr ~a1 connected to interface port ~a2"
+                               :args (list (vl-modelement-fix elem) x.expr port))
+                        x))
+                   (name (vl-idexpr->name x.expr))
+                   (item (vl-scopestack-find-item name ss))
+                   ((unless (and item
+                                 (or (eq (tag item) :vl-modinst)
+                                     (eq (tag item) :vl-interfaceport))))
+                    (mv nil
+                        (fatal :type :vl-bad-interface-port
+                               :msg "~a0: Non-interface ~a1 connected to interface port ~a2"
+                               :args (list (vl-modelement-fix elem) x.expr port))
+                        x))
+                   (interfacetype (if (eq (tag item) :vl-modinst)
+                                      (vl-modinst->modname item)
+                                    (vl-interfaceport->ifname item)))
+                   ((unless (equal interfacetype port.ifname))
+                    (mv nil
+                        (fatal :type :vl-bad-interface-port
+                               :msg "~a0: Incompatible interface type for port ~a1; ~
+                                     expected ~a2 but found ~a3."
+                               :args (list (vl-modelement-fix elem) port
+                                           port.ifname interfacetype))
+                        x)))
+              (mv t warnings x)))
              (port-type (and port (vl-port-unpacked-datatype port submod-ss)))
              ((unless port-type)
               (b* (((mv successp warnings expr-prime)
@@ -960,18 +998,26 @@ the expression.</p>"
 (def-vl-exprsize-list vl-initiallist :element vl-initial)
 
 
-(def-vl-exprsize vl-port
-  :body (b* (((vl-port x) x)
-             (elem x)
-             ((mv expr-successp warnings new-expr)
-              (vl-maybe-expr-size x.expr ss elem warnings))
+(def-vl-exprsize vl-interfaceport
+  :body (b* (((vl-interfaceport x))
              ((mv udims-successp warnings new-udims)
-              (vl-packeddimensionlist-exprsize x.udims ss elem warnings))
-             (successp (and expr-successp udims-successp))
-             (x-prime (change-vl-port x
-                                      :expr new-expr
-                                      :udims new-udims)))
-          (mv successp warnings x-prime)))
+              (vl-packeddimensionlist-exprsize x.udims ss x warnings)))
+          (mv udims-successp warnings
+              (change-vl-interfaceport x :udims new-udims))))
+
+(def-vl-exprsize vl-regularport
+  :body (b* (((vl-regularport x))
+             ((mv expr-successp warnings new-expr)
+              (vl-maybe-expr-size x.expr ss x warnings)))
+          (mv expr-successp warnings
+              (change-vl-regularport x :expr new-expr))))
+
+
+(def-vl-exprsize vl-port
+  :body (b* ((x (vl-port-fix x)))
+          (if (eq (tag x) :vl-interfaceport)
+              (vl-interfaceport-exprsize x ss warnings)
+            (vl-regularport-exprsize x ss warnings))))
 
 (def-vl-exprsize-list vl-portlist :element vl-port)
 
@@ -1021,7 +1067,6 @@ the expression.</p>"
        ((mv & warnings gateinsts)  (vl-gateinstlist-exprsize  x.gateinsts  ss warnings))
        ((mv & warnings alwayses)   (vl-alwayslist-exprsize    x.alwayses   ss warnings))
        ((mv & warnings initials)   (vl-initiallist-exprsize   x.initials   ss warnings))
-       ((mv & warnings ports)      (vl-portlist-exprsize      x.ports      ss warnings))
        ((mv & warnings portdecls)  (vl-portdecllist-exprsize  x.portdecls  ss warnings))
        ((mv & warnings vardecls)   (vl-vardecllist-exprsize   x.vardecls   ss warnings))
        ((mv warnings generates)  (vl-generates-exprsize  x.generates ss  warnings)))
@@ -1034,7 +1079,6 @@ the expression.</p>"
          :gateinsts gateinsts
          :alwayses alwayses
          :initials initials
-         :ports ports
          :portdecls portdecls
          :vardecls vardecls
          :generates generates)))
@@ -1046,7 +1090,8 @@ the expression.</p>"
   (b* (((vl-module x) x)
        (genblob (vl-module->genblob x))
        ((mv warnings new-genblob) (vl-genblob-exprsize genblob ss (vl-module->warnings x)))
-       (x-warn (change-vl-module x :warnings warnings)))
+       ((mv & warnings ports)      (vl-portlist-exprsize      x.ports      ss warnings))
+       (x-warn (change-vl-module x :warnings warnings :ports ports)))
     (vl-genblob->module new-genblob x-warn)))
 
 

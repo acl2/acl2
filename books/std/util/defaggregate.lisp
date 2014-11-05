@@ -1064,6 +1064,7 @@ optimization altogether.</p>")
     :already-definedp
     :extra-field-keywords
     :verbosep
+    :extra-binder-names
     ;; deprecated options
     :require
     :rest))
@@ -1197,6 +1198,13 @@ optimization altogether.</p>")
                           (str::cat "BOOLEANP-OF-" (symbol-name foop))
                           name))
 
+       (extra-binder-names (cdr (assoc :extra-binder-names kwd-alist)))
+       ((unless (symbol-listp extra-binder-names))
+        (mv (raise "~x0: :extra-binder-names must be a symbol list." name) state))
+       (all-binder-names (append field-names extra-binder-names))
+       ((unless (no-duplicatesp all-binder-names))
+        (mv (raise "~x0: duplicated binder names." name) state))
+
        (event
         `(progn
 
@@ -1321,7 +1329,7 @@ optimization altogether.</p>")
                 ,@(da-make-accessors-of-constructor name field-names)
                 ,@(da-make-requirements-of-recognizer name require field-names)))
 
-           ,(da-make-binder name field-names)
+           ,(da-make-binder name all-binder-names)
 
            ,(da-make-changer-fn name field-names)
            ,(da-make-changer name field-names)
