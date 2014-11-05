@@ -29,9 +29,10 @@
                  do
                  (setf (gethash sym *cl-defined-p-ht*)
                        t))
-           (defun cl-defined-p (x)
-             (if (equal (symbol-package-name x) "COMMON-LISP")
-                 (fboundp x)
-               (gethash x *cl-defined-p-ht*))))
+           (with-suppression ; avoid redefinition warning
+            (defun cl-defined-p (x)
+              (if (equal (symbol-package-name x) "COMMON-LISP")
+                  (fboundp x)
+                (gethash x *cl-defined-p-ht*)))))
          do (pprint form str))
    (terpri str)))

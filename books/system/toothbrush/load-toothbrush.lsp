@@ -28,14 +28,14 @@ or pathname of such, containing relevant ACL2 source files."))
 (in-package "ACL2")
 
 (defmacro def-errors (&rest fns)
-  (cons 'progn
+  (cons 'with-suppression
         (loop for fn in fns collect
               `(defun ,fn (&rest args)
                  (declare (ignore args))
                  (error "Not implemented in toothbrush: ~s" ',fn)))))
 
 (defmacro def-nils (&rest fns)
-  (cons 'progn
+  (cons 'with-suppression
         (loop for fn in fns collect
               `(defun ,fn (&rest args)
                  (declare (ignore args))
@@ -77,20 +77,12 @@ or pathname of such, containing relevant ACL2 source files."))
 
   CANONICAL-SIBLING         ; UPDATE-MEMO-ENTRIES-FOR-ATTACHMENTS
   STRICT-MERGE-SORT-SYMBOL-< ; UPDATE-MEMO-ENTRIES-FOR-ATTACHMENTS
-  EXT-ANCESTORS-ATTACHMENTS  ; UPDATE-MEMO-ENTRY-FOR-ATTACHMENTS
+  EXT-ANCESTORS-ATTACHMENTS  ; UPDATE-MEMO-ENTRY-FOR-ATTACHMENTS, MEMOIZE-FN
   EXT-ANC-ATTACHMENTS-VALID-P ; UPDATE-MEMO-ENTRY-FOR-ATTACHMENTS
-  MAYBE-UNTRACE!              ; UNMEMOIZE-FN
-  MAYBE-UNTRACE!              ; UNMEMOIZE-FN
-  EXT-ANCESTORS-ATTACHMENTS   ; MEMOIZE-FN
+  MAYBE-UNTRACE!              ; UNMEMOIZE-FN, MEMOIZE-FN-INIT
   CONCRETE-STOBJ              ; MEMOIZE-FN
   CONGRUENT-STOBJ-REP         ; MEMOIZE-FN
-  EXT-ANCESTORS-ATTACHMENTS   ; MEMOIZE-FN
-  CONCRETE-STOBJ              ; MEMOIZE-FN
-  CONGRUENT-STOBJ-REP         ; MEMOIZE-FN
-  MAYBE-UNTRACE!              ; MEMOIZE-FN-INIT
-  MAYBE-UNTRACE!              ; MEMOIZE-FN-INIT
   CLTL-DEF-FROM-NAME          ; MEMOIZE-LOOK-UP-DEF
-  NOTE-FNS-IN-FILE            ; INITIALIZE-NEVER-MEMOIZE-HT
   NOTE-FNS-IN-FILE            ; INITIALIZE-NEVER-MEMOIZE-HT
 
   )
@@ -104,14 +96,16 @@ or pathname of such, containing relevant ACL2 source files."))
   (declare (ignore wrld user-stobj-alist))
   (format nil "ev-fncall-msg: ~s" val))
 
-(let ((*default-pathname-defaults* COMMON-LISP-USER::*acl2-dir*))
-  (load "axioms.lisp")
-  (load "basis-a.lisp")
-  #+hons
-  (progn (load "hons.lisp")
-         (load "hons-raw.lisp")
-         (load "memoize.lisp")
-         (load "memoize-raw.lisp")))
+(with-suppression
+ (our-with-compilation-unit
+  (let ((*default-pathname-defaults* COMMON-LISP-USER::*acl2-dir*))
+    (load "axioms.lisp")
+    (load "basis-a.lisp")
+    #+hons
+    (progn (load "hons.lisp")
+           (load "hons-raw.lisp")
+           (load "memoize.lisp")
+           (load "memoize-raw.lisp")))))
 
 #+hons ; memoize only here
 (def-errors
