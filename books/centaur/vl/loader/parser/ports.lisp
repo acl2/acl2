@@ -1830,17 +1830,19 @@ shouldn't be trying to parse the ports as a list of ansi ports at all!</p>"
       (:vl-parsed-portdecl-head
        (b* (((vl-parsed-portdecl-head x.head))
 
-            ((when (and (not x.head.nettype)
+            ;; 23.2.2.2: "If the direction, port kind, and data type are all
+            ;; omitted, then they shall be inherited from the previous port."
+            ((when (and (not x.dir)
+                        (not x.head.nettype)
                         (not x.head.var-p)
                         (not x.head.explicit-p)
-                        ;; Note: see vl-parsed-portdecl-head.  If there was a
-                        ;; signed keyword or ranges, then implicit-p will be
-                        ;; set.  So here we are looking for the case where
-                        ;; there is literally nothing but a port name.
+                        ;; See vl-parsed-portdecl-head.  If there was a signed
+                        ;; keyword or ranges, then implicit-p will be set.  So
+                        ;; by checking for implicit-p here, we're looking for
+                        ;; the case where there is literally nothing but a port
+                        ;; name.
                         (not x.head.implicit-p)))
-             ;; There is nothing but a port name.  Per 23.2.2.3, we're to
-             ;; inherit the direction, kind, and datatype from the previous
-             ;; port in the list.
+             ;; Nothing but a port name, inherit stuff from previous port.
              (if prev-ifacep
                  ;; The previous port was an interface, not a regular port.
                  ;; The spec doesn't really cover this, but it seems obvious

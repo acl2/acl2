@@ -19,8 +19,13 @@
 # The other files needed are those referenced in input.lsp and
 # (perhaps) tb-test.lsp.
 
-ifneq ($(ACL2),)
-ACL2_SYSTEM_BOOKS ?= $(dir $(ACL2))books
+ifneq ($(ACL2), $(notdir $(ACL2)))
+ACL2_DIR := $(dir $(ACL2))
+ACL2_SYSTEM_BOOKS ?= $(ACL2_DIR)books
+else
+ifneq ($(ACL2_SYSTEM_BOOKS), )
+ACL2_DIR := $(dir $(ACL2_SYSTEM_BOOKS)/../)
+endif
 endif
 
 # The following variables are user-modifiable.
@@ -71,15 +76,15 @@ acl2_check:
 .PHONY: generate
 generate: acl2_check $(BOOKS_CERT)
 	@echo "$(TEST_DIR_STRING)Starting generate step (see generate.out)..."
-	@rm -f workxxx
-	@echo '(ld "$(TB_INPUT).lsp")' > workxxx
-	@echo '(include-book "../../make-toothbrush")' >> workxxx
-	@echo '(value :q)' >> workxxx
-	@echo '(load "../../defined-syms.lsp")' >> workxxx
-	@echo '(lp)' >> workxxx
-	@echo '(make-toothbrush "$(TB_OUTPUT).lsp" $(TB_FNS))' >> workxxx
-	@echo '(quit)' >> workxxx
-	@$(ACL2) < workxxx >& generate.out
+	@rm -f workxxx.$@
+	@echo '(ld "$(TB_INPUT).lsp")' > workxxx.$@
+	@echo '(include-book "../../make-toothbrush")' >> workxxx.$@
+	@echo '(value :q)' >> workxxx.$@
+	@echo '(load "../../defined-syms.lsp")' >> workxxx.$@
+	@echo '(lp)' >> workxxx.$@
+	@echo '(make-toothbrush "$(TB_OUTPUT).lsp" $(TB_FNS))' >> workxxx.$@
+	@echo '(quit)' >> workxxx.$@
+	@$(ACL2) < workxxx.$@ >& generate.out
 	@if [ "`fgrep 'Unimplemented command type' generate.out`" != "" ] ; then\
 	  echo "ERROR: Unimplemented command type (see generate.out)." ;\
 	  exit 1 ;\
@@ -89,25 +94,25 @@ generate: acl2_check $(BOOKS_CERT)
 .PHONY: compile
 compile: generate $(BOOKS_CERT)
 	@echo "$(TEST_DIR_STRING)Starting compile step (see compile.out)..."
-	@rm -f workxxx
-	@echo '(defparameter *acl2-dir* "$(ACL2)")' > workxxx
-	@echo '(load "../../load-toothbrush.lsp")' >> workxxx
-	@echo '(load "$(TB_OUTPUT).lsp")' >> workxxx
-	@echo '(compile-file "$(TB_OUTPUT).lsp")' >> workxxx
-	@echo '(acl2::exit-lisp)' >> workxxx
-	@$(LISP) < workxxx >& compile.out
+	@rm -f workxxx.$@
+	@echo '(defparameter *acl2-dir* "$(ACL2_DIR)")' > workxxx.$@
+	@echo '(load "../../load-toothbrush.lsp")' >> workxxx.$@
+	@echo '(acl2::with-suppression (load "$(TB_OUTPUT).lsp"))' >> workxxx.$@
+	@echo '(compile-file "$(TB_OUTPUT).lsp")' >> workxxx.$@
+	@echo '(acl2::exit-lisp)' >> workxxx.$@
+	@$(LISP) < workxxx.$@ >& compile.out
 	@echo "$(TEST_DIR_STRING)Completed compile step."
 
 success.txt: tb-test.lsp input.lsp $(BOOKS_CERT)
 	@$(MAKE) compile
 	@echo "$(TEST_DIR_STRING)Starting final step (see $@.out)..."
-	@rm -f workxxx
-	@echo '(defparameter *acl2-dir* "$(ACL2)")' > workxxx
-	@echo '(load "../../load-toothbrush.lsp")' >> workxxx
-	@echo '(load "$(TB_OUTPUT)")' >> workxxx
-	@echo '(load "$(TB_TEST)")' >> workxxx
-	@echo '(acl2::exit-lisp)' >> workxxx
-	@$(LISP) < workxxx >& $@.out
+	@rm -f workxxx.$@
+	@echo '(defparameter *acl2-dir* "$(ACL2_DIR)")' > workxxx.$@
+	@echo '(load "../../load-toothbrush.lsp")' >> workxxx.$@
+	@echo '(acl2::with-suppression (load "$(TB_OUTPUT)"))' >> workxxx.$@
+	@echo '(load "$(TB_TEST)")' >> workxxx.$@
+	@echo '(acl2::exit-lisp)' >> workxxx.$@
+	@$(LISP) < workxxx.$@ >& $@.out
 	@if [ "`fgrep SUCCESS $@.out`" = "" ] ; then \
 	echo "Test failed!  See `pwd`/$@.out ." ;\
 	exit 1 ;\

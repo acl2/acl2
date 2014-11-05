@@ -62,9 +62,9 @@ module udivider_v5
  input        iDIVVLD,
  input        iRESET,
  input        CLK,
- output /*reg*/ [8-1:0] oQUOTIENT,
- output /*reg*/ [4-1:0] oREMAINDER,
- output /*reg*/         oDONE
+ output reg [8-1:0] oQUOTIENT,
+ output reg [4-1:0] oREMAINDER,
+ output reg         oDONE
 );
 /*********************************************************************************/
 /* Derived Parameters                    */
@@ -77,10 +77,18 @@ wire wSTART;
 reg rSTART_D1;
 reg rDIVVLD_D1;
 reg rDIVVLD_D2;
-reg [8-1:0] oQUOTIENT;
-reg [4-1:0] oREMAINDER;
-reg 		oDONE;
 
+// [Jared] commenting this out after changes to VL port list parsing.  Previous
+// versions of VL incorrectly permitted (and indeed, likely required!) these to
+// be redeclared.
+//
+// See the documentation of VL::VL-PARSE-PORT-DECLARATION-ATTS-2005 for more
+// discussion about the Verilog-2005 case, and see SystemVerilog-2012 23.2.2.2
+// (page 666) for the SystemVerilog case.
+//
+// reg [8-1:0] oQUOTIENT;
+// reg [4-1:0] oREMAINDER;
+// reg 		oDONE;
 
 always @ (posedge CLK)
 begin
