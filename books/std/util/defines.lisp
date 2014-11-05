@@ -521,13 +521,38 @@ its flag in the flag-function.</p>")
     (append (fn-returnspec-flag-entries (car gutslist) world)
             (collect-returnspec-flag-thms (cdr gutslist) world))))
 
+(defun returnspec-mrec-default-default-hint (fnname id world)
+  (let ((fns (acl2::recursivep fnname world)))
+    (and (eql 0 (acl2::access acl2::clause-id id :forcing-round))
+         (equal '(1) (acl2::access acl2::clause-id id :pool-lst))
+         `(:computed-hint-replacement
+           ((and stable-under-simplificationp
+                 (expand-calls . ,fns)))
+           :in-theory (disable . ,fns)))))
+
+(defun returnspec-mrec-default-hints (fnname world)
+  (let ((entry (cdr (assoc 'mrec-default-hints (table-alist 'returnspec-default-table world)))))
+    (subst fnname 'fnname entry)))
+
+(defmacro set-returnspec-mrec-default-hints (hint)
+  `(table returnspec-default-table
+          'mrec-default-hints ',hint))
+
+(set-returnspec-mrec-default-hints
+ ((returnspec-mrec-default-default-hint 'fnname acl2::id world)))
+
+
 (defun returnspec-flag-thm (defthm-macro gutslist returns-hints world)
-  (let ((thms (collect-returnspec-flag-thms gutslist world)))
+  (let* ((thms (collect-returnspec-flag-thms gutslist world))
+         (hints (if (eq returns-hints :none)
+                    (returnspec-mrec-default-hints
+                     (defguts->name (car gutslist)) world)
+                  returns-hints)))
     (if thms
         `(,defthm-macro
            ,@thms
            :skip-others t
-           :hints ,returns-hints)
+           :hints ,hints)
       `(value-triple :skipped))))
 
 (def-primitive-aggregate defines-guts
@@ -703,9 +728,9 @@ its flag in the flag-function.</p>")
 
        (returns-induct    (and flag-name
                                (not (getarg :returns-no-induct nil kwd-alist))))
-       (returns-hints     (getarg :returns-hints nil kwd-alist))
+       (returns-hints     (getarg :returns-hints :none kwd-alist))
 
-       ((when (and (not returns-induct) returns-hints))
+       ((when (and (not returns-induct) (not (eq returns-hints :none))))
         (raise "Error in ~x0: returns-hints only is useful without ~
                 :returns-no-induct."
                name))

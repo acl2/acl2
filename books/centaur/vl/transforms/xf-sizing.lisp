@@ -1090,7 +1090,8 @@ the expression.</p>"
   (b* (((vl-module x) x)
        (genblob (vl-module->genblob x))
        ((mv warnings new-genblob) (vl-genblob-exprsize genblob ss (vl-module->warnings x)))
-       ((mv & warnings ports)      (vl-portlist-exprsize      x.ports      ss warnings))
+       (mod-ss (vl-scopestack-push (vl-module-fix x) ss))
+       ((mv & warnings ports)      (vl-portlist-exprsize      x.ports      mod-ss warnings))
        (x-warn (change-vl-module x :warnings warnings :ports ports)))
     (vl-genblob->module new-genblob x-warn)))
 

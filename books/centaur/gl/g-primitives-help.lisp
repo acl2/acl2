@@ -33,6 +33,7 @@
 (include-book "gl-util")
 (include-book "bvar-db")
 (include-book "glcp-config")
+(include-book "std/util/support" :dir :system)
 (program)
 
 

@@ -302,10 +302,18 @@ syntax of these parameters is extended, as shown in the following examples:</p>
                 (fixequivs-from-explicit-args fn (cdr args) gutsformals formals hints state))
         (fixequivs-from-explicit-args fn (cdr args) gutsformals formals hints state)))))
 
-(defun deffixequiv-expand-hint-fn (fn stable-under-simplificationp id clause)
-  (b* (((unless (and stable-under-simplificationp
-                     ;; Checks whether we're at a top-level induction
-                     (equal (car id) '(0 1))))
+(defun deffixequiv-expand-hint-fn (fn stable-under-simplificationp id clause world)
+  (b* ((forcing-roundp (not (eql 0 (acl2::access acl2::clause-id id :forcing-round))))
+       ((when forcing-roundp) nil)
+       (pool-lst (acl2::access acl2::clause-id id :pool-lst))
+       (top-levelp (not pool-lst))
+       (single-inductionp (equal pool-lst '(1)))
+       ((unless (or top-levelp single-inductionp))
+        nil)
+       ((when (and top-levelp (acl2::recursivep fn world)))
+        `(:computed-hint-replacement t
+          :induct (,fn . ,(fgetprop fn 'acl2::formals t world))))
+       ((unless stable-under-simplificationp)
         nil)
        (concl (car (last clause)))
        (hint
@@ -332,11 +340,11 @@ syntax of these parameters is extended, as shown in the following examples:</p>
           (list :expand (append lhs-hint rhs-hint))))
        ((unless hint)
         nil))
-    (observation-cw 'deffixequiv "Giving expand hint ~x0.~%" hint)
+    (observation-cw "Giving expand hint ~x0.~%" hint)
     hint))
 
 (defmacro deffixequiv-expand-hint (fn)
-  `(deffixequiv-expand-hint-fn ',fn stable-under-simplificationp id clause))
+  `(deffixequiv-expand-hint-fn ',fn stable-under-simplificationp id clause world))
 
 (defun deffixequiv-fn (fn kw-args state)
   (b* ((__function__ 'deffixequiv)
@@ -463,13 +471,26 @@ syntax of these parameters is extended, as shown in the following examples:</p>
              (caar fixequiv-al) (cdar fixequiv-al) gutslist)
             (mutual-fixequivs->inductive-fix-thms (cdr fixequiv-al) gutslist))))
 
+(defun defgutslist->names (x)
+  (if (atom x)
+      nil
+    (cons (std::defguts->name (car x))
+          (defgutslist->names (cdr x)))))
+
 (defun mutual-fixequivs->fix-thm (fixequiv-al defines-entry kwd-alist)
   (b* ((thm-macro (std::defines-guts->flag-defthm-macro defines-entry))
-       (hints (cdr (assoc :hints kwd-alist))))
+       (gutslist (std::defines-guts->gutslist defines-entry))
+       (fns (defgutslist->names gutslist))
+       (hints-look (assoc :hints kwd-alist))
+       (hints (if hints-look
+                  (cdr hints-look)
+                `(("goal" :in-theory (disable . ,fns))
+                  (and stable-under-simplificationp
+                       (std::expand-calls . ,fns))))))
     `(with-output :stack :pop
        (,thm-macro
         ,@(mutual-fixequivs->inductive-fix-thms
-           fixequiv-al (std::defines-guts->gutslist defines-entry))
+           fixequiv-al gutslist)
         :hints ,hints))))
   
 (defun fixequivs->const/cong-thms (fixequivs)
