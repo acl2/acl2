@@ -126,7 +126,7 @@ copying and pasting code.")
         nil)
        ((cons decl1 rest) x)
        ((when (stringp decl1))
-        ;; Drop any documentation strings since they may refer to doc-sections
+        ;; Drop any documentation strings since they may refer to doc sections
         ;; that aren't going to be present anymore.
         (redundant-clean-up-decls rest))
        ((unless (and (consp decl1)
