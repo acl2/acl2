@@ -4,6 +4,7 @@
 ; Based on code from Matt Kaufmann
 
 (in-package "ACL2")
+(include-book "xdoc/top" :dir :system)
 
 (program)
 (set-state-ok t)
@@ -69,19 +70,21 @@
         (t (cons (trace*-modify1 ctx (car trace-specs))
                  (trace*-modify ctx (cdr trace-specs))))))
 
-(defmacro trace* (&rest trace-specs)
-  ":Doc-Section Trace
+(defxdoc trace*
+  :parents (trace$)
+  :short "@('Trace*') is a beginner-friendly variant of @(see trace$), the ACL2
+tracing utility."
 
-  trace function evaluations~/
+  :long "<p>See @(see trace$) for more documentation and advanced
+functionality.</p>
 
-  ~c[Trace*] is a beginner-friendly variant of ~ilc[trace$], the ACL2 tracing
-  utility. ~l[trace$] for more documentation and advanced functionality.
+<p>@('Trace*') should be used with @(':set-guard-checking :none') and should
+not be used to trace built-in functions.</p>
 
-  ~c[Trace*] should be used with ~c[:set-guard-checking :none] and should not
-  be used to trace built-in functions.
+<p>The log below illustrates the differences between @('trace*') and
+@('trace$'):</p>
 
-  The log below illustrates the differences between ~c[trace*] and ~c[trace$]:
-  ~bv[]
+@({
   ACL2 p>
   (defun app (x y)
     (if (endp x)
@@ -113,7 +116,9 @@
    = (LIST 1 2 3)
   (1 2 3)
   ACL2 p>
-  ~ev[]~/~/"
+})")
+
+(defmacro trace* (&rest trace-specs)
   `(er-progn (trace$ ,@(trace*-modify 'trace* trace-specs))
              (value ',trace-specs)))
 

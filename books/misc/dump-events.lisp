@@ -14,42 +14,45 @@
 ; (certify-book "dump-events").
 
 (in-package "ACL2")
+(include-book "xdoc/top" :dir :system)
 (set-state-ok t)
 
 (program)
 
-(defmacro dump-events (filename &optional (earlier-cd '0) (later-cd ':x))
- ":Doc-Section miscellaneous
+(defxdoc dump-events
+  :parents (events)
+  :short "Dump events to a file."
+  :long "<p>Examples</p>
 
-  dump events to a file~/
-
-  ~bv[]
-  Examples:
+@({
   (include-book \"misc/dump-events\" :dir :system)
   (dump-events \"xxx\")        ; dump all user events to file xxx
   (dump-events \"xxx\" :x-2)   ; dump the last two events to file xxx
   (dump-events \"xxx\" 2 :x-1) ; dump all events from after command 2
                              ; up through the next-to-last command
-  ~ev[]~/
+})
 
-  General Form:
-  ~bv[]
+<p>General Form</p>
+
+@({
   (dump-events dumpfile
                &optional earlier-command-desc later-command-desc)
-  ~ev[]
-  where the form of the optional command descriptors is explained
-  elsewhere; ~pl[command-descriptor].  All events strictly after 
-  the first command descriptor up through the second, which by default
-  are ~c[0] and ~c[:x] (thus indicating that all user events should be
-  dumped to the dumpfile), are written to the indicated dumpfile.  In
-  addition, an extra form is written to the top of the dumpfile:
-  (in-package \"ACL2\").  This makes it convenient to use the dumpfile
-  as a source file for ACL2 in a later session.
+})
 
-  Each event that was originally executed underneath ~ilc[LOCAL] will
-  be placed inside ~ilc[LOCAL] in the dumpfile.
+<p>where the form of the optional command descriptors is explained elsewhere;
+see @(see command-descriptor).  All events strictly after the first command
+descriptor up through the second, which by default are @('0') and @(':x') (thus
+indicating that all user events should be dumped to the dumpfile), are written
+to the indicated dumpfile.  In addition, an extra form is written to the top of
+the dumpfile: @('(in-package \"ACL2\")').  This makes it convenient to use the
+dumpfile as a source file for ACL2 in a later session.</p>
 
-  The dumpfile will be overwritten if it already exists."
+<p>Each event that was originally executed underneath @(see LOCAL) will be
+placed inside @(see LOCAL) in the dumpfile.</p>
+
+<p>The dumpfile will be overwritten if it already exists.</p>")
+
+(defmacro dump-events (filename &optional (earlier-cd '0) (later-cd ':x))
   `(dump-events-fn ,filename ',earlier-cd ',later-cd state))
 
 (defun dump-events-fn1 (earlier-wrld later-wrld acc in-local-flg)
