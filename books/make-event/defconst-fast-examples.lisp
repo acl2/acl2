@@ -24,9 +24,9 @@
 
 (defconst-fast *test2-fast*
   (append '(test2-fast a b c) nil)
- ":Doc-Section Events
-
-  *test2* is just a test of defconst-fast~/~/
+;; [Jared] removed the doc section here in my effort to remove the legacy
+;; documentation system
+ "*test2* is just a test of defconst-fast~/~/
 
   Not much to say about *test2*.....~/")
 
