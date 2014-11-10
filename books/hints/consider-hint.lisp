@@ -3,6 +3,7 @@
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
 (in-package "ACL2")
+(include-book "xdoc/top" :dir :system)
 (include-book "huet-lang-algorithm")
 (include-book "merge-hint")
 (program)
@@ -14,8 +15,8 @@
 ; Implementation of Consider Hint Processing!]
 
 ; :hints (("Goal" ...
-;                 :CONSIDER 
-;                 ((<name> 
+;                 :CONSIDER
+;                 ((<name>
 ;                   [:pattern <term> | :lhs ]
 ;                   [:target  <term> | :conclusion ]
 ;                   [:instance <var-substn>]
@@ -33,7 +34,7 @@
 
 ; The user-level form of a consideration is
 
-;                 (<name> 
+;                 (<name>
 ;                  [:pattern <term> | :lhs ]
 ;                  [:target  <term> | :conclusion | :clause]
 ;                  [:instance <var-substn>]
@@ -75,7 +76,7 @@
 ; :pattern ...) it means :consider ((h-thm :pattern ...)).  But if the
 ; user writes :consider (h-thm g-thm) it means just that: h-thm and
 ; g-thm are two considerations.  See coerce-consideration-list.
-; 
+;
 ; Translation-Time Processing: We check that <name> is a named
 ; formula.  Each <term> is translated.  If :lhs is written, we replace
 ; it by the translated lhs of the named formula, so :lhs will NEVER
@@ -160,7 +161,7 @@
      (t (er soft ctx
             "We cannot determine the :lhs of a formula because it ~
              flattens to more than one clause.")))))
-            
+
 (defun translate-consideration1 (name lst ctx wrld state)
   (cond
    ((not (and (symbolp name)
@@ -171,7 +172,7 @@
                        '(:pattern :target
                                   :instance
                                   :functional-instance))))
-    (er soft ctx 
+    (er soft ctx
         "A :CONSIDER hint element should be a list consisting of an ~
          event name followed by a list of even length containing ~
          alternating keys and values, with the keys :PATTERN, ~
@@ -245,100 +246,100 @@
                        or a true-list and ~x0 is neither." arg))
          (t (translate-consider-hint1 lst ctx wrld state)))))))
 
-(deflabel consideration
-  :doc
-  ":Doc-Section Miscellaneous
+(defxdoc consideration
+  :parents (miscellaneous)
+  :short "An object indicating that some instantiation is relevant."
 
-  an object indicating that some instantiation is relevant~/
+  :long "<p>Considerations are the objects one provides as part of
+@(':consider') @(see hints).  The most convenient form of a consideration is
+simply the name of a lemma.  The system will then search for a relevant
+instantiation of the left-hand side of the conclusion of that lemma inside the
+specified goal clause, starting with the last literal.  The system uses a
+heuristically modified version of the Huet-Lang second-order pattern matching
+algorithm and, in general, produces instantiations of both variable symbols and
+constrained function symbols in the lemma.  If an instance is found, the
+consideration is turned into a @(see lemma-instance) and @(':use')d.</p>
 
-  Considerations are the objects one provides as part of ~c[:consider]
-  ~il[hints].  The most convenient form of a consideration is simply the name
-  of a lemma.  The system will then search for a relevant instantiation of the
-  left-hand side of the conclusion of that lemma inside the specified goal
-  clause, starting with the last literal.  The system uses a heuristically
-  modified version of the Huet-Lang second-order pattern matching algorithm
-  and, in general, produces instantiations of both variable symbols and
-  constrained function symbols in the lemma.  If an instance is found, the
-  consideration is turned into a ~il[lemma-instance] and ~c[:use]d.
+<p>For example, suppose the following theorem has been proved:</p>
 
-  For example, suppose the following theorem has been proved:
-  ~bv[]
-  (defthm map-h-append
-    (implies (and (true-listp x)
-                  (true-listp y))
-             (equal (map-h-append (append x y))
-                    (append (map-h x) (map-h y))))
-    :rule-classes nil)
-  ~ev[]
-  and suppose ~c[map-h] is a defined function involving some constrained
-  function symbol ~c[h].  Then the consideration ~c[map-h-append]
-  attached to a clause identifier will cause the system to find the
-  identified clause and search through it for an instance and/or functional
-  instance of ~c[(map-h-append (append x y))] and to add that (functional) 
-  instance as a hypothesis when it finds it.  If no instance is found, an
-  error is signalled.  The more elaborate form of a consideration allows
-  you to specify what is used as the pattern and where that pattern
-  is searched for in the clause.~/
+@({
+    (defthm map-h-append
+      (implies (and (true-listp x)
+                    (true-listp y))
+               (equal (map-h-append (append x y))
+                      (append (map-h x) (map-h y))))
+      :rule-classes nil)
+})
 
-  The most general form of a consideration is
-  ~bv[]
+<p>and suppose @('map-h') is a defined function involving some constrained
+function symbol @('h').  Then the consideration @('map-h-append') attached to a
+clause identifier will cause the system to find the identified clause and
+search through it for an instance and/or functional instance of
+@('(map-h-append (append x y))') and to add that (functional) instance as a
+hypothesis when it finds it.  If no instance is found, an error is signaled.
+The more elaborate form of a consideration allows you to specify what is used
+as the pattern and where that pattern is searched for in the clause.</p>
+
+<p>The most general form of a consideration is</p>
+
+@({
    (name
     :pattern             pterm   ; term or :lhs
     :target              tterm   ; term or :conclusion or :clause
     :instance            vsubst  ; variable substitution
     :functional-instance fsubst) ; functional substitution
-  ~ev[]
-  where ~c[name] is the name of a previously proved theorem, ~c[pterm] is
-  either a term or the keyword ~c[:lhs], ~c[tterm] is either a term or the
-  keyword ~c[conclusion] or the keyword ~c[:clause], ~c[vsubst] is a variable
-  substitution as might be given in an ~c[:instance], e.g.,
-  ~c[((x (rev a)) (y (sort b)))], and ~c[fsubst] is a functional substitution
-  as might be given in a ~c[:functional-instance], e.g., ~c[((map-h sumer))].
+})
 
-  If ~c[pterm] is a term, that term is used as the pattern we try to
-  instantiate.  If ~c[pterm] is the keyword ~c[:lhs], the left-hand side
-  of the conclusion of ~c[name] is used as the pattern.  If no ~c[:pattern]
-  is specified, ~c[:lhs] is used by default.
+<p>where @('name') is the name of a previously proved theorem, @('pterm') is
+either a term or the keyword @(':lhs'), @('tterm') is either a term or the
+keyword @('conclusion') or the keyword @(':clause'), @('vsubst') is a variable
+substitution as might be given in an @(':instance'), e.g., @('((x (rev
+a)) (y (sort b)))'), and @('fsubst') is a functional substitution as might be
+given in a @(':functional-instance'), e.g., @('((map-h sumer))').</p>
 
-  If ~c[tterm] is a term, that term is matched against the pattern to generate
-  the instantiation.  If ~c[tterm] is ~c[:conclusion], a match of the pattern
-  is searched for in the conclusion of the specified subgoal clause.  If
-  ~c[tterm] is ~c[:clause], a match of the pattern is searched for in the
-  entire subgoal clause, starting with the conclusion and searching backwards
-  toward the first hypothesis.  The search is outer-most first, left-to-right
-  recursive descent.  The first subterm of the target producing a match of the
-  pattern stops the search and generates the instantiation.  Note that if
-  ~c[tterm] is given explicitly, no search occurs.  Note also that because we
-  cannot do the search until we know what the subgoal clause is, the work for
-  this hint -- the Huet-Lang second-order matching algorithm -- cannot
-  commence until the indicated subgoal arises.
+<p>If @('pterm') is a term, that term is used as the pattern we try to
+instantiate.  If @('pterm') is the keyword @(':lhs'), the left-hand side of the
+conclusion of @('name') is used as the pattern.  If no @(':pattern') is
+specified, @(':lhs') is used by default.</p>
 
-  The substitutions produced by second-order matching are what we called
-  ``mixed substitutions'' by which we mean a given substitution will
-  substitute both for variable symbols and hereditarily constrained
-  function symbols.  The effect, however, is the same as
-  ~bv[]
+<p>If @('tterm') is a term, that term is matched against the pattern to
+generate the instantiation.  If @('tterm') is @(':conclusion'), a match of the
+pattern is searched for in the conclusion of the specified subgoal clause.  If
+@('tterm') is @(':clause'), a match of the pattern is searched for in the
+entire subgoal clause, starting with the conclusion and searching backwards
+toward the first hypothesis.  The search is outer-most first, left-to-right
+recursive descent.  The first subterm of the target producing a match of the
+pattern stops the search and generates the instantiation.  Note that if
+@('tterm') is given explicitly, no search occurs.  Note also that because we
+cannot do the search until we know what the subgoal clause is, the work for
+this hint -- the Huet-Lang second-order matching algorithm -- cannot commence
+until the indicated subgoal arises.</p>
+
+<p>The substitutions produced by second-order matching are what we called
+``mixed substitutions'' by which we mean a given substitution will substitute
+both for variable symbols and hereditarily constrained function symbols.  The
+effect, however, is the same as</p>
+
+@({
   (:INSTANCE (:FUNCTIONAL-INSTANCE name (fn1 (lambda ...)) ...)
              (var1 term1)
              ...).
-  ~ev[]
+})
 
-  Second-order matching typically produces a plethora of such substitutions.
-  We rule many out on heuristic grounds.  Thus, our heuristic modification of
-  the Huet-Lang algorithm makes it incomplete.  Still, it is typical for a lot
-  of substitutions to be found and the system selects some to pursue in an
-  DISJUNCTIVE way.  That is, it takes each of the ``winning'' substitutions
-  and generates a ~c[:use] hint for each of them separately to see if any one
-  of them will prove the indicated subgoal.
+<p>Second-order matching typically produces a plethora of such substitutions.
+We rule many out on heuristic grounds.  Thus, our heuristic modification of the
+Huet-Lang algorithm makes it incomplete.  Still, it is typical for a lot of
+substitutions to be found and the system selects some to pursue in an
+DISJUNCTIVE way.  That is, it takes each of the ``winning'' substitutions and
+generates a @(':use') hint for each of them separately to see if any one of
+them will prove the indicated subgoal.</p>
 
-  It is frequently necessary to give the matcher a ``hint'' to limit its
-  consideration of all possible substitutions.  The ~c[vsubst] and ~c[fsubst]
-  are treated as ``seed'' substitutions.  Any computed instance is an
-  extension of the two seeds.  That is, the variable pairs in the mixed
-  substitutions extend ~c[vsubst] and the functional pairs in the mixed
-  substitutions extend ~c[fsubst].  Both ~c[vsubst] and ~c[fsubst]
-  default to ~c[nil].
-  ~/")
+<p>It is frequently necessary to give the matcher a ``hint'' to limit its
+consideration of all possible substitutions.  The @('vsubst') and @('fsubst')
+are treated as ``seed'' substitutions.  Any computed instance is an extension
+of the two seeds.  That is, the variable pairs in the mixed substitutions
+extend @('vsubst') and the functional pairs in the mixed substitutions extend
+@('fsubst').  Both @('vsubst') and @('fsubst') default to @('nil').</p>")
 
 ; --------------
 ; Essay on the Implementation of Consider Hint Processing
@@ -401,7 +402,7 @@
    ((fquotep term) nil)
    (t (or (hld pat term psubst0 nil nil n wrld)
           (hld-sweep-lst pat (fargs term) psubst0 n wrld)))))
-        
+
 (defun hld-sweep-lst (pat term-lst psubst0 n wrld)
   (cond
    ((endp term-lst) nil)
@@ -470,7 +471,7 @@
    (t (cons (convert-mixed-subst-to-lmi name thm (car mixed-substs) wrld)
             (convert-mixed-substs-to-lmi-lst name thm
                                              (cdr mixed-substs) wrld)))))
-            
+
 #|
 (defun prettyify-ranked-mixed-substs (name thm ranked-mixed-substs wrld)
   (cond
@@ -524,7 +525,7 @@
 
 ; We print and signal an error or return (value lmi-lst) where lmi-lst
 ; is the list of the highest ranking automatically-computed lmi's as
-; might have been typed by a user in a :USE hint.  
+; might have been typed by a user in a :USE hint.
 
 ; Warning: The lmis we return are prettyified, so the terms in them
 ; are now untranslated!  We return such things so that if the user
@@ -573,7 +574,7 @@
                   :clause)
               (reverse cl))
              (t nil)))))))
-        
+
 ; Here is how we convert a list of considerations to a list of
 ; lmi-lsts.
 
@@ -589,7 +590,7 @@
   (cond
    ((endp considerations)
     (value nil))
-   (t 
+   (t
     (er-let*
       ((lmi-lst
         (convert-consideration-to-lmi-lst cl (car considerations) wrld nil
@@ -654,7 +655,7 @@
 ; So now we have a disjunction of conjunctions of lmi's, or, put
 ; another way, we have disjunction of :USE hints in the form a user
 ; might have written them, ((:instance (:functional-instance ...) ...)
-; ...).  
+; ...).
 
 
 (defun map-list (x lst)
@@ -718,7 +719,7 @@
         keyword-alist))))))
 
 (defun consider-hint-checker (val world ctx state)
-  
+
 ; Just to make it obvious that the checker does not actually yeild
 ; translated considerations (even though it does indeed translate
 ; them), we define this function.

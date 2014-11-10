@@ -6,6 +6,83 @@
 ; Automated support for faster macroexpansion
 
 (in-package "ACL2")
+(include-book "xdoc/top" :dir :system)
+
+(defxdoc defmac
+  :parents (defmacro)
+  :short "Define a macro that expands efficiently."
+  :long "<p>Example forms</p>
+
+@({
+  (include-book \"misc/defmac\" :dir :system)
+
+  (defmac my-xor (x y)
+    (list 'if x (list 'not y) y))
+
+  (defmac my-mac (x &optional (y '3 y-p))
+    `(list ,x ,y ,y-p))
+
+  (defmac one-of (x &rest rst)
+    :macro-fn one-of-function
+    \"stubbed-out :doc.\"
+    (declare (xargs :guard (symbol-listp rst)))
+    (cond ((null rst) nil)
+          (t (list 'or
+                   (list 'eq x (list 'quote (car rst)))
+                   (list* 'one-of x (cdr rst))))))~/
+})
+
+<p>General Form:</p>
+
+@({
+  (defmac name macro-args
+          :macro-fn name-macro-fn ; optional
+          doc-string              ; optional
+          dcl ... dcl             ; optional
+          body)
+})
+
+<p>where @('name') is a new symbolic name (see @(see name)), @(see macro-args)
+specifies the formals of the macro (see @(see macro-args) for a description),
+and @('body') is a term.  @(see Doc-string) is an optional @(see documentation)
+string; see @(see doc-string).  Each @('dcl') is an optional declaration as for
+@(see defun) (see @(see declare)).</p>
+
+<p>See @(see defmacro) for a discussion of @('defmacro'), which is the
+traditional way of introducing macros.  @('Defmac') is similar to @('defmacro')
+except that the resulting macro may execute significantly more efficiently, as
+explained below.  You can use @('defmac') just as you would normally use
+@('defmacro'), though your @('defmac') form should include the declaration
+@('(declare (xargs :mode :program)) to be truly compatible with @('defmacro'),
+which allows calls of @(':')@(see program) mode functions in its body.</p>
+
+<p>A @('defmac') form generates the following form, which introduces a @(see
+defun) and a @(see defmacro).  Here we refer to the ``General Form'' above;
+hence the @(':macro-fn'), @('doc-string'), and each @('dcl') are optional.  The
+@('doc-string') is as specified for @(see defmacro), and each @('dcl') is as
+specified for @(see defun).  @(':Macro-fn') specifies @('name-macro-fn') (used
+below) as illustrated above, but if @(':macro-fn') is not specified then
+@('name-macro-fn') is obtained by adding the suffix @('\"-MACRO-FN\"') to the
+@(see symbol-name) of @('name') to get a symbol in the same package as
+@('name').  The list @('(v1 ... vk)') enumerates all the names introduced in
+@('macro-args').</p>
+
+@({
+  (progn
+    (defun name-macro-fn (v1 ... vk)
+      dcl ... dcl
+      body)
+    (defmacro name macro-args
+      doc-string
+      (name-macro-fn v1 ... vk))
+    )
+})
+
+<p>The reason for introducing a @('defun') is efficiency.  ACL2 expands a macro
+call by running its own evaluator on the body of the macro, and this can be
+relatively slow if that body is large.  But with @('defmac'), the evaluator
+call reduces quickly to a single raw Lisp call of the (executable counterpart
+of) the auxiliary function on the actuals of the macro.</p>")
 
 ; See :doc defmac for information.
 
@@ -68,81 +145,6 @@
 
 ; The documentation below borrows heavily from :doc defmacro.
 
-  ":Doc-Section defmacro
-
-  define a macro that expands efficiently~/
-  ~bv[]
-  Example forms
-
-  (include-book \"misc/defmac\" :dir :system)
-
-  (defmac my-xor (x y)
-    (list 'if x (list 'not y) y))
-
-  (defmac my-mac (x &optional (y '3 y-p))
-    `(list ,x ,y ,y-p))
-
-  (defmac one-of (x &rest rst)
-    :macro-fn one-of-function
-    \":Doc-Section one-of
-
-     stubbed-out :doc.~~/
-
-     ~~/~~/\"
-    (declare (xargs :guard (symbol-listp rst)))
-    (cond ((null rst) nil)
-          (t (list 'or
-                   (list 'eq x (list 'quote (car rst)))
-                   (list* 'one-of x (cdr rst))))))~/
-
-  General Form:
-  (defmac name macro-args
-          :macro-fn name-macro-fn ; optional
-          doc-string              ; optional
-          dcl ... dcl             ; optional
-          body)
-  ~ev[]
-  where ~c[name] is a new symbolic name (~pl[name]), ~ilc[macro-args] specifies
-  the formals of the macro (~pl[macro-args] for a description), and ~c[body] is
-  a term.  ~ilc[Doc-string] is an optional ~il[documentation] string;
-  ~pl[doc-string].  Each ~c[dcl] is an optional declaration as for ~ilc[defun]
-  (~pl[declare]).
-
-  ~l[defmacro] for a discussion of ~c[defmacro], which is the traditional way
-  of introducing macros.  ~c[Defmac] is similar to ~c[defmacro] except that the
-  resulting macro may execute significantly more efficiently, as explained
-  below.  You can use ~c[defmac] just as you would normally use ~c[defmacro],
-  though your ~c[defmac] form should include the declaration
-  ~c[(declare (xargs :mode :program)) to be truly compatible with ~c[defmacro],
-  which allows calls of ~c[:]~ilc[program] mode functions in its body.
-
-  A ~c[defmac] form generates the following form, which introduces a
-  ~ilc[defun] and a ~ilc[defmacro].  Here we refer to the ``General Form''
-  above; hence the ~c[:macro-fn], ~c[doc-string], and each ~c[dcl] are
-  optional.  The ~c[doc-string] is as specified for ~ilc[defmacro], and each
-  ~c[dcl] is as specified for ~ilc[defun].  ~c[:Macro-fn] specifies
-  ~c[name-macro-fn] (used below) as illustrated above, but if ~c[:macro-fn] is
-  not specified then ~c[name-macro-fn] is obtained by adding the suffix
-  ~c[\"-MACRO-FN\"] to the ~ilc[symbol-name] of ~c[name] to get a symbol in the
-  same package as ~c[name].  The list ~c[(v1 ... vk)] enumerates all the names
-  introduced in ~c[macro-args].
-  ~bv[]
-  (progn
-    (defun name-macro-fn (v1 ... vk)
-      dcl ... dcl
-      body)
-    (defmacro name macro-args
-      doc-string
-      (name-macro-fn v1 ... vk))
-    )
-  ~ev[]
-
-  The reason for introducing a ~c[defun] is efficiency.  ACL2 expands a macro
-  call by running its own evaluator on the body of the macro, and this can be
-  relatively slow if that body is large.  But with ~c[defmac], the evaluator
-  call reduces quickly to a single raw Lisp call of the (executable counterpart
-  of) the auxiliary function on the actuals of the macro.~/"
-
 ; Warning: See the Important Boot-Strapping Invariants before modifying!
 
   (defmac-fn mdef))
@@ -154,8 +156,8 @@
   ()
   (defmac one-of (x &rest rst)
     :macro-fn one-of-function
-    ":Doc-Section one-of
-
+    ;; Jared removed the doc section here toward axing legacy doc stuff
+    "
      stubbed-out :doc~/
 
      ~/~/"

@@ -1156,6 +1156,14 @@
          (car alist))
         (t (assoc-eq-equal-butlast-2 x y (cdr alist)))))
 
+#-acl2-loop-only
+(progn
+(defvar *wormhole-iprint-ar* nil)
+(defvar *wormhole-iprint-hard-bound* nil)
+(defvar *wormhole-iprint-soft-bound* nil)
+)
+
+#-acl2-loop-only
 (defun-one-output push-wormhole-undo-formi (op arg1 arg2)
 
 ; When a primitive state changing function is called while *wormholep*
@@ -1239,11 +1247,34 @@
                                                              qarg2
                                                              :theory-array)))
                                         ,put-global-form))
-                               ((and (eq arg1 'iprint-ar)
-                                     arg2)
-                                `(progn (let ((qarg2 (quote ,arg2)))
-                                          (compress1 'iprint-ar qarg2))
-                                        ,put-global-form))
+                               ((member arg1
+                                        '(iprint-ar
+                                          iprint-hard-bound
+                                          iprint-soft-bound)
+                                        :test 'eq)
+
+; The variables above store the iprinting data structures.  In the interests of
+; somehow keeping them in sync, we set the values of all three if any has
+; changed.
+
+                                `(progn
+                                   (when (null *wormhole-iprint-ar*)
+                                     (setq *wormhole-iprint-ar*
+                                           (f-get-global
+                                            'iprint-ar
+                                            *the-live-state*))
+                                     (setq *wormhole-iprint-hard-bound*
+                                           (f-get-global
+                                            'iprint-hard-bound
+                                            *the-live-state*))
+                                     (setq *wormhole-iprint-soft-bound*
+                                           (f-get-global
+                                            'iprint-soft-bound
+                                            *the-live-state*)))
+                                   ,@(when (eq arg1 'iprint-ar)
+                                       `((let ((qarg2 (quote ,arg2)))
+                                           (compress1 'iprint-ar qarg2))))
+                                   ,put-global-form))
                                ((eq arg1 'trace-specs)
                                 nil) ; handled by fix-trace-specs
                                (t put-global-form)))
@@ -12308,6 +12339,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     certify-book-finish-complete
     chk-absstobj-invariants
     get-stobj-creator
+    restore-iprint-ar-from-wormhole
     ))
 
 (defconst *primitive-logic-fns-with-raw-code*
