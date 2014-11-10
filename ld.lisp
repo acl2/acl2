@@ -756,6 +756,28 @@
                          (declare (ignore erp val))
                          (mv t nil nil state)))))))))
 
+(defun restore-iprint-ar-from-wormhole (state)
+  (declare (xargs :stobjs state))
+  #+acl2-loop-only
+  (mv-let (erp val state)
+          (read-acl2-oracle state)
+          (declare (ignore erp))
+
+; If we intend to reason about this function, then we might want to check that
+; val is a reasonable value for 'iprint-ar.  But that seems not important,
+; since very little reasoning would be possible anyhow for this function.
+
+          (pprogn (f-put-global 'iprint-ar val state)
+                  state))
+  #-acl2-loop-only
+  (let* ((ar *wormhole-iprint-ar*))
+    (when ar
+      (f-put-global 'iprint-ar (compress1 'iprint-ar ar) state)
+      (f-put-global 'iprint-hard-bound *wormhole-iprint-hard-bound* state)
+      (f-put-global 'iprint-soft-bound *wormhole-iprint-soft-bound* state)
+      (setq *wormhole-iprint-ar* nil))
+    state))
+
 (defun ld-read-command (state)
 
 ; This function reads an ld command from the standard-oi channel of state and
@@ -769,28 +791,30 @@
 ; an alias for cons, then :kons x y will parse into (cons 'x 'y) and keyp will
 ; be (:kons x y).
 
-  (mv-let (eofp val state)
-          (read-standard-oi state)
-          (pprogn
-           (cond ((int= (f-get-global 'ld-level state) 1)
-                  (let ((last-index (iprint-last-index state)))
-                    (cond ((> last-index (iprint-soft-bound state))
-                           (rollover-iprint-ar nil last-index state))
-                          (t state))))
-                 (t state))
-           (cond (eofp (mv t nil nil nil state))
-                 ((keywordp val)
-                  (mv-let (erp keyp form state)
-                          (ld-read-keyword-command val state)
-                          (mv nil erp keyp form state)))
-                 ((stringp val)
-                  (let ((upval (string-upcase val)))
-                    (cond ((find-non-hidden-package-entry
-                            upval
-                            (global-val 'known-package-alist (w state)))
-                           (mv nil nil nil `(in-package ,upval) state))
-                          (t (mv nil nil nil val state)))))
-                 (t (mv nil nil nil val state))))))
+  (pprogn
+   (restore-iprint-ar-from-wormhole state) ; even before the read
+   (mv-let (eofp val state)
+           (read-standard-oi state)
+           (pprogn
+            (cond ((int= (f-get-global 'ld-level state) 1)
+                   (let ((last-index (iprint-last-index state)))
+                     (cond ((> last-index (iprint-soft-bound state))
+                            (rollover-iprint-ar nil last-index state))
+                           (t state))))
+                  (t state))
+            (cond (eofp (mv t nil nil nil state))
+                  ((keywordp val)
+                   (mv-let (erp keyp form state)
+                           (ld-read-keyword-command val state)
+                           (mv nil erp keyp form state)))
+                  ((stringp val)
+                   (let ((upval (string-upcase val)))
+                     (cond ((find-non-hidden-package-entry
+                             upval
+                             (global-val 'known-package-alist (w state)))
+                            (mv nil nil nil `(in-package ,upval) state))
+                           (t (mv nil nil nil val state)))))
+                  (t (mv nil nil nil val state)))))))
 
 (defun ld-print-command (keyp form col state)
   (with-base-10

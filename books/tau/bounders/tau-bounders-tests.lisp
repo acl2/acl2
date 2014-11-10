@@ -3,7 +3,7 @@
 
 ; Original "elementary-bounders" does not prove test-expt and test-expt2
 ; Modified  "elementary-bounders" does prove.
-(include-book "tau/bounders/elementary-bounders" :dir :system)
+(include-book "elementary-bounders")
 
 (defthm tau-bounders-test-expt2
   (implies
