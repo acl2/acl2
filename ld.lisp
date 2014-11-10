@@ -764,10 +764,22 @@
           (declare (ignore erp))
 
 ; If we intend to reason about this function, then we might want to check that
-; val is a reasonable value for 'iprint-ar.  But that seems not important,
-; since very little reasoning would be possible anyhow for this function.
+; val is a reasonable value.  But that seems not important, since very little
+; reasoning would be possible anyhow for this function.
 
-          (pprogn (f-put-global 'iprint-ar val state)
+          (pprogn (f-put-global 'iprint-ar
+                                (and (consp val) (car val))
+                                state)
+                  (f-put-global 'iprint-hard-bound
+                                (nfix (and (consp val)
+                                           (consp (cdr val))
+                                           (cadr val)))
+                                state)
+                  (f-put-global 'iprint-soft-bound
+                                (nfix (and (consp val)
+                                           (consp (cdr val))
+                                           (cddr val)))
+                                state)
                   state))
   #-acl2-loop-only
   (let* ((ar *wormhole-iprint-ar*))
