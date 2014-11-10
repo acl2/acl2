@@ -499,12 +499,11 @@ other @(see acl2::rule-classes), then you will want to override this default.</d
                        :in-theory (disable (:d ,fnname)))))))))
 
 (defun returnspec-default-hints (fnname world)
-  (let ((entry (cdr (assoc 'default-hints (table-alist 'returnspec-default-table world)))))
+  (let ((entry (cdr (assoc 'returnspec (table-alist 'std::default-hints-table world)))))
     (subst fnname 'fnname entry)))
 
 (defmacro set-returnspec-default-hints (hint)
-  `(table returnspec-default-table
-          'default-hints ',hint))
+  `(table std::default-hints-table 'returnspec ',hint))
 
 (set-returnspec-default-hints
  ((returnspec-default-default-hint 'fnname acl2::id world)))

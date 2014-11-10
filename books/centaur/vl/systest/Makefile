@@ -98,7 +98,6 @@ XLATE_VCS_SV   := $(VL) model spec.v --mem=2 --search=. --verilog-file=impl.vcs.
 	  'echo `hostname` &> impl.vcs.sv.out; $(XLATE_VCS_SV) &>> impl.vcs.sv.out'
 	@ls -l $*/impl.vcs.sv
 
-
 %/ncv.v.ok: %/impl.ncv.v %/spec.v $(wildcard %/compare*.v)
 	@echo "Making $*/ncv.v.out"
 	@cd $*; $(STARTJOB) -c "$(NCV_VERILOG) compare.v spec.v impl.ncv.v &> ncv.v.out" \

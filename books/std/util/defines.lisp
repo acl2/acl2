@@ -531,12 +531,11 @@ its flag in the flag-function.</p>")
            :in-theory (disable . ,fns)))))
 
 (defun returnspec-mrec-default-hints (fnname world)
-  (let ((entry (cdr (assoc 'mrec-default-hints (table-alist 'returnspec-default-table world)))))
+  (let ((entry (cdr (assoc 'returnspec-mrec (table-alist 'std::default-hints-table world)))))
     (subst fnname 'fnname entry)))
 
 (defmacro set-returnspec-mrec-default-hints (hint)
-  `(table returnspec-default-table
-          'mrec-default-hints ',hint))
+  `(table std::default-hints-table 'returnspec-mrec ',hint))
 
 (set-returnspec-mrec-default-hints
  ((returnspec-mrec-default-default-hint 'fnname acl2::id world)))

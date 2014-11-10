@@ -582,8 +582,6 @@ so that their overrides are compatible with thier types.</p>"
   :body
   (b* ((x (vl-modelement-fix x)))
     (case (tag x)
-      (:vl-interfaceport (vl-interfaceport-scopesubst x ss))
-      (:vl-regularport   (vl-regularport-scopesubst x ss))
       (:vl-portdecl      (vl-portdecl-scopesubst x ss))
       (:vl-assign        (vl-assign-scopesubst x ss))
       (:vl-alias         (vl-alias-scopesubst x ss)) ;; BOZO

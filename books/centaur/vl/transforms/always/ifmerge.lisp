@@ -59,6 +59,8 @@ remove @('else') expressions.</p>")
 
 (local (xdoc::set-default-parents ifmerge))
 
+(local (in-theory (disable (tau-system))))
+
 (defines vl-stmt-ifmerge
   :short "Main if-merging rewrite."
 
@@ -76,7 +78,7 @@ remove @('else') expressions.</p>")
      (elem     vl-modelement-p
                "Context for error messages."))
     :returns (mv (warnings vl-warninglist-p)
-                 (flat-stmts vl-stmtlist-p :hyp :fguard))
+                 (flat-stmts vl-stmtlist-p))
     :verify-guards nil
     :measure (vl-stmt-count x)
     :hints(("Goal" :in-theory (disable (force))))
@@ -89,7 +91,7 @@ remove @('else') expressions.</p>")
                   (list (make-vl-ifstmt :condition outer-cond
                                         :truebranch x
                                         :falsebranch (make-vl-nullstmt)))
-                (list x))))
+                (list (vl-stmt-fix x)))))
 
          ((when (vl-nullstmt-p x))
           ;; Special case: don't call STOP.  A null statement does nothing,
@@ -175,7 +177,7 @@ remove @('else') expressions.</p>")
      (warnings   vl-warninglist-p)
      (elem       vl-modelement-p))
     :returns (mv (warnings vl-warninglist-p)
-                 (flat-stmts vl-stmtlist-p :hyp :fguard))
+                 (flat-stmts vl-stmtlist-p))
     :verify-guards nil
     :measure (vl-stmtlist-count x)
     :flag :list
@@ -194,7 +196,7 @@ remove @('else') expressions.</p>")
 (define vl-always-ifmerge ((x        vl-always-p)
                            (warnings vl-warninglist-p))
   :returns (mv (warnings vl-warninglist-p)
-               (new-x    vl-always-p      :hyp :fguard))
+               (new-x    vl-always-p))
   (b* (((vl-always x) x)
        ((mv warnings stmt-list)
         (vl-stmt-ifmerge x.stmt nil warnings x))
@@ -208,7 +210,7 @@ remove @('else') expressions.</p>")
 (define vl-alwayslist-ifmerge ((x        vl-alwayslist-p)
                                (warnings vl-warninglist-p))
   :returns (mv (warnings vl-warninglist-p)
-               (new-x    vl-alwayslist-p  :hyp :fguard))
+               (new-x    vl-alwayslist-p))
   (b* (((when (atom x))
         (mv (ok) x))
        ((mv warnings car) (vl-always-ifmerge (car x) warnings))
@@ -216,14 +218,14 @@ remove @('else') expressions.</p>")
     (mv warnings (cons car cdr))))
 
 (define vl-module-ifmerge ((x vl-module-p))
-  :returns (new-x vl-module-p :hyp :fguard)
+  :returns (new-x vl-module-p)
   (b* (((vl-module x) x)
        ((when (vl-module->hands-offp x))
-        x)
+        (vl-module-fix x))
        ((unless x.alwayses)
         ;; Optimization: not going to do anything, don't bother re-consing the
         ;; module.
-        x)
+        (vl-module-fix x))
        ((mv warnings alwayses)
         (vl-alwayslist-ifmerge x.alwayses x.warnings)))
     (change-vl-module x

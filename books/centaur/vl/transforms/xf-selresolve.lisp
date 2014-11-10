@@ -504,11 +504,13 @@ multiconcats throughout an expression."
        ((mv warnings initials)  (vl-initiallist-selresolve  x.initials ss  warnings))
        ((mv warnings fundecls)  (vl-fundecllist-selresolve  x.fundecls ss  warnings))
 
-       ((mv warnings generates)  (vl-generates-selresolve  x.generates ss  warnings)))
+       ((mv warnings generates)  (vl-generates-selresolve  x.generates ss  warnings))
+       ((mv warnings ports)      (vl-portlist-selresolve     x.ports ss     warnings)))
 
     (mv warnings
         (change-vl-genblob
          x
+         :ports     ports
          :assigns   assigns
          :modinsts  modinsts
          :gateinsts gateinsts
@@ -525,8 +527,7 @@ multiconcats throughout an expression."
   (b* (((vl-module x))
        (genblob (vl-module->genblob x))
        ((mv warnings new-genblob) (vl-genblob-selresolve genblob ss (vl-module->warnings x)))
-       ((mv warnings ports)     (vl-portlist-selresolve     x.ports ss     warnings))
-       (x-warn (change-vl-module x :warnings warnings :ports ports)))
+       (x-warn (change-vl-module x :warnings warnings)))
     (vl-genblob->module new-genblob x-warn)))
 
 (defprojection vl-modulelist-selresolve ((x vl-modulelist-p) (ss vl-scopestack-p))

@@ -184,7 +184,8 @@ otherwise.</li>
                                                         :names-defined t
                                                         :sum-type t
                                                         :multi-tags (:vl-genbase :vl-genif :vl-gencase :vl-genloop :vl-genblock :vl-genarray)
-                                                        :acc generates))
+                                                        :acc generates)
+                                            (interfaceport :acc ifports))
            ;; fwdtypedefs could be included here but we hope to have resolved them all
            ;; to proper typedefs by the end of loading.
            ;; (fundecl      ()             (blockitem :acc decls :sum-type t :transsum t))
