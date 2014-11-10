@@ -401,7 +401,18 @@
                          (alistp b))
                     (alistp (append a b)))))
   (local (include-book "std/lists/take" :dir :system))
-  (local (include-book "arithmetic/top-with-meta" :dir :system))
+  (local (defthm commutativity-2-of-+
+           (equal (+ x (+ y z))
+                  (+ y (+ x z)))))
+
+  (local (defthm fold-consts-in-+
+           (implies (and (syntaxp (quotep x))
+                         (syntaxp (quotep y)))
+                    (equal (+ x (+ y z)) (+ (+ x y) z)))))
+
+  (local (defthm distributivity-of-minus-over-+
+           (equal (- (+ x y)) (+ (- x) (- y)))))
+  ;; (local (include-book "arithmetic/top-with-meta" :dir :system))
   (local (defthm assoc-when-not-member-strip-cars
            (implies (and (not (member k (strip-cars x)))
                          (alistp x))

@@ -35,18 +35,22 @@
 
 (local (xdoc::set-default-parents context))
 
-(define vl-pp-modelement-summary
-  :short "Print a short, human-friendly description of a @(see vl-modelement-p)."
-  ((x vl-modelement-p) &key (ps 'ps))
-  (b* ((x (vl-modelement-fix x)))
+(define vl-pp-ctxelement-summary
+  :short "Print a short, human-friendly description of a @(see vl-ctxelement-p)."
+  ((x vl-ctxelement-p) &key (ps 'ps))
+  (b* ((x (vl-ctxelement-fix x)))
     (case (tag x)
-      (:vl-port
-       (let* ((name (vl-port->name x)))
+      (:vl-regularport
+       (let* ((name (vl-regularport->name x)))
          (if name
              (vl-ps-seq (vl-basic-cw "Port ")
                         (vl-print-wirename name))
            (vl-ps-seq (vl-basic-cw "Unnamed port at ")
                       (vl-print-loc (vl-port->loc x))))))
+      (:vl-interfaceport
+       (let* ((name (vl-interfaceport->name x)))
+         (vl-ps-seq (vl-basic-cw "Interface port ")
+                    (vl-print-wirename name))))
 
       (:vl-portdecl
        (vl-ps-seq (vl-basic-cw "Port declaration of ")
@@ -136,14 +140,18 @@
        ;; These are simple enough to just print.
        (vl-pp-import x))
 
+      ((:vl-genif :vl-genloop :vl-gencase :vl-genblock :vl-genarray :vl-genbase)
+       (vl-ps-seq (vl-basic-cw "Generate block at ")
+                  (vl-print-loc (vl-genelement->loc x))))
+
       (otherwise
        (prog2$ (impossible) ps)))))
 
-(define vl-modelement-summary
-  :short "Get a short, human-friendly string describing a @(see vl-modelement-p)."
-  ((x vl-modelement-p))
+(define vl-ctxelement-summary
+  :short "Get a short, human-friendly string describing a @(see vl-ctxelement-p)."
+  ((x vl-ctxelement-p))
   :returns (str stringp :rule-classes :type-prescription)
-  (with-local-ps (vl-pp-modelement-summary x)))
+  (with-local-ps (vl-pp-ctxelement-summary x)))
 
 (define vl-pp-context-summary ((x vl-context1-p) &key (ps 'ps))
   :short "Print a short, human-friendly string describing a @(see vl-context-p)."
@@ -151,7 +159,7 @@
     (vl-ps-seq (vl-print "In ")
                (vl-print-modname x.mod)
                (vl-println? ", ")
-               (vl-pp-modelement-summary x.elem))))
+               (vl-pp-ctxelement-summary x.elem))))
 
 (define vl-context-summary
   :short "Get a short, human-friendly string describing a @(see vl-context-p)."
@@ -159,29 +167,32 @@
   :returns (str stringp :rule-classes :type-prescription)
   (with-local-ps (vl-pp-context-summary x)))
 
-(define vl-pp-modelement-full
-  :short "Pretty-print a full @(see vl-modelement-p)."
-  ((x vl-modelement-p) &key (ps 'ps))
+(define vl-pp-ctxelement-full
+  :short "Pretty-print a full @(see vl-ctxelement-p)."
+  ((x vl-ctxelement-p) &key (ps 'ps))
   :long "<p>This sometimes produces output that is too big.  If you just want a
-quick summary instead, see @(see vl-pp-modelement-summary).</p>"
-  (b* ((x (vl-modelement-fix x)))
+quick summary instead, see @(see vl-pp-ctxelement-summary).</p>"
+  (b* ((x (vl-ctxelement-fix x)))
     (case (tag x)
-      (:vl-port       (vl-pp-port x))
-      (:vl-portdecl   (vl-pp-portdecl x))
-      (:vl-assign     (vl-pp-assign x))
-      (:vl-vardecl    (vl-pp-vardecl x))
-      (:vl-paramdecl  (vl-pp-paramdecl x))
-      (:vl-fundecl    (vl-pp-fundecl x))
-      (:vl-taskdecl   (vl-pp-taskdecl x))
-      (:vl-modinst    (vl-pp-modinst x nil))
-      (:vl-gateinst   (vl-pp-gateinst x))
-      (:vl-always     (vl-pp-always x))
-      (:vl-initial    (vl-pp-initial x))
-      (:vl-alias      (vl-pp-alias x))
-      (:vl-typedef    (vl-pp-typedef x))
-      (:vl-fwdtypedef (vl-pp-fwdtypedef x))
-      (:vl-modport    (vl-pp-modport x))
-      (:vl-import     (vl-pp-import x))
+      (:vl-regularport   (vl-pp-regularport x))
+      (:vl-interfaceport (vl-pp-interfaceport x))
+      (:vl-portdecl      (vl-pp-portdecl x))
+      (:vl-assign        (vl-pp-assign x))
+      (:vl-vardecl       (vl-pp-vardecl x))
+      (:vl-paramdecl     (vl-pp-paramdecl x))
+      (:vl-fundecl       (vl-pp-fundecl x))
+      (:vl-taskdecl      (vl-pp-taskdecl x))
+      (:vl-modinst       (vl-pp-modinst x nil))
+      (:vl-gateinst      (vl-pp-gateinst x))
+      (:vl-always        (vl-pp-always x))
+      (:vl-initial       (vl-pp-initial x))
+      (:vl-alias         (vl-pp-alias x))
+      (:vl-typedef       (vl-pp-typedef x))
+      (:vl-fwdtypedef    (vl-pp-fwdtypedef x))
+      (:vl-modport       (vl-pp-modport x))
+      (:vl-import        (vl-pp-import x))
+      ((:vl-genif :vl-genloop :vl-gencase :vl-genblock :vl-genarray :vl-genbase)
+       (vl-pp-genelement x))
       (otherwise (prog2$ (impossible) ps)))))
 
 (define vl-pp-context-full ((x vl-context1-p) &key (ps 'ps))
@@ -190,5 +201,5 @@ quick summary instead, see @(see vl-pp-modelement-summary).</p>"
       (vl-ps-seq (vl-print "In module ")
                  (vl-print-modname x.mod)
                  (vl-println ",")
-                 (vl-pp-modelement-full x.elem)
+                 (vl-pp-ctxelement-full x.elem)
                  (vl-println ""))))

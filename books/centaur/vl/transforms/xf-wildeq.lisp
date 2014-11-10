@@ -38,6 +38,8 @@
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (std::add-default-post-define-hook :fix))
 
+(local (in-theory (disable (tau-system))))
+
 (local (defthm natp-when-unsigned-byte-p-width
          (implies (unsigned-byte-p n x)
                   (natp n))))
@@ -45,6 +47,11 @@
 (local (defthm natp-when-unsigned-byte-p-value
          (implies (unsigned-byte-p n x)
                   (natp x))))
+
+(local (defthm vl-expr-fix-type
+         (consp (vl-expr-fix x))
+         :hints(("Goal" :in-theory (enable (tau-system))))
+         :rule-classes :type-prescription))
 
 
 (defsection wildelim
@@ -305,7 +312,7 @@ is just a constant integer.  So this is just:</p>
 
 
 (define vl-wildeq-rewrite-main ((x        vl-expr-p)
-                                (elem     vl-modelement-p)
+                                (ctx      vl-context-p)
                                 (warnings vl-warninglist-p))
   :guard (and (not (vl-atom-p x))
               (or (eq (vl-nonatom->op x) :vl-binary-wildeq)
@@ -314,13 +321,13 @@ is just a constant integer.  So this is just:</p>
                (new-x        vl-expr-p))
   :verify-guards nil
   (b* ((x    (vl-expr-fix x))
-       (elem (vl-modelement-fix elem))
+       (ctx (vl-context-fix ctx))
 
        ((unless (vl-expr-welltyped-p x))
         (mv (warn :type :vl-wildeq-fail
                   :msg "~a0: failing to simplify wildcard equality operator ~
                         because it is not well-typed: ~a1."
-                  :args (list elem x))
+                  :args (list ctx x))
             x))
 
        ((vl-nonatom x) x)
@@ -332,7 +339,7 @@ is just a constant integer.  So this is just:</p>
                   :msg  "~a0: right-hand side of wildcard equality operator ~
                          is too complex; we only support constants.  ~
                          Expression: ~a1."
-                  :args (list elem x))
+                  :args (list ctx x))
             x))
 
        (new-x (if (eq x.op :vl-binary-wildeq)
@@ -361,7 +368,7 @@ is just a constant integer.  So this is just:</p>
                   (not (vl-atom-p x))
                   (or (eq (vl-nonatom->op x) :vl-binary-wildeq)
                       (eq (vl-nonatom->op x) :vl-binary-wildneq)))
-             (b* (((mv ?warnings new-x) (vl-wildeq-rewrite-main x elem warnings)))
+             (b* (((mv ?warnings new-x) (vl-wildeq-rewrite-main x ctx warnings)))
                (and (vl-expr-welltyped-p new-x)
                     (equal (vl-expr->finalwidth new-x)
                            (vl-expr->finalwidth x))
@@ -376,7 +383,7 @@ is just a constant integer.  So this is just:</p>
   (define vl-wildeq-rewrite-expr
     :short "Eliminate @('==?') and @('!=?') operators from an expression."
     ((x        vl-expr-p       "Expression to process.")
-     (elem     vl-modelement-p "Context for error messages.")
+     (ctx      vl-context-p "Context for error messages.")
      (warnings vl-warninglist-p))
     :verify-guards nil
     :returns (mv (new-warnings vl-warninglist-p)
@@ -394,19 +401,19 @@ is just a constant integer.  So this is just:</p>
           (mv (ok) x))
 
          ((mv warnings new-args)
-          (vl-wildeq-rewrite-exprlist x.args elem warnings))
+          (vl-wildeq-rewrite-exprlist x.args ctx warnings))
          (new-x (change-vl-nonatom x :args new-args))
 
          ((when (or (eq x.op :vl-binary-wildeq)
                     (eq x.op :vl-binary-wildneq)))
-          (vl-wildeq-rewrite-main new-x elem warnings)))
+          (vl-wildeq-rewrite-main new-x ctx warnings)))
 
       (mv warnings (change-vl-nonatom x :args new-args))))
 
   (define vl-wildeq-rewrite-exprlist
     :short "Eliminate @('==?') and @('!=?') operators from an expression list."
     ((x        vl-exprlist-p)
-     (elem     vl-modelement-p)
+     (ctx      vl-context-p)
      (warnings vl-warninglist-p))
     :returns (mv (warnings vl-warninglist-p)
                  (new-x    (and (vl-exprlist-p new-x)
@@ -415,8 +422,8 @@ is just a constant integer.  So this is just:</p>
     :flag :list
     (b* (((when (atom x))
           (mv (ok) x))
-         ((mv warnings car) (vl-wildeq-rewrite-expr (car x) elem warnings))
-         ((mv warnings cdr) (vl-wildeq-rewrite-exprlist (cdr x) elem warnings)))
+         ((mv warnings car) (vl-wildeq-rewrite-expr (car x) ctx warnings))
+         ((mv warnings cdr) (vl-wildeq-rewrite-exprlist (cdr x) ctx warnings)))
       (mv warnings (cons car cdr))))
 
   ///
@@ -432,17 +439,17 @@ is just a constant integer.  So this is just:</p>
 
   (defthm vl-wildeq-rewrite-exprlist-when-atom
     (implies (atom x)
-             (equal (vl-wildeq-rewrite-exprlist x elem warnings)
+             (equal (vl-wildeq-rewrite-exprlist x ctx warnings)
                     (mv (ok) x))))
 
   (defthm vl-wildeq-rewrite-exprlist-of-cons
-    (equal (vl-wildeq-rewrite-exprlist (cons a x) elem warnings)
-           (b* (((mv warnings car) (vl-wildeq-rewrite-expr a elem warnings))
-                ((mv warnings cdr) (vl-wildeq-rewrite-exprlist x elem warnings)))
+    (equal (vl-wildeq-rewrite-exprlist (cons a x) ctx warnings)
+           (b* (((mv warnings car) (vl-wildeq-rewrite-expr a ctx warnings))
+                ((mv warnings cdr) (vl-wildeq-rewrite-exprlist x ctx warnings)))
              (mv warnings (cons car cdr)))))
 
   (defthm len-of-vl-wildeq-rewrite-exprlist
-    (equal (len (mv-nth 1 (vl-wildeq-rewrite-exprlist x elem warnings)))
+    (equal (len (mv-nth 1 (vl-wildeq-rewrite-exprlist x ctx warnings)))
            (len x)))
 
   (local (defthm l0
@@ -460,16 +467,16 @@ is just a constant integer.  So this is just:</p>
   (defthm-vl-wildeq-rewrite-expr-flag
     (defthm vl-wildeq-rewrite-expr-optimization
       (implies (not (vl-expr-has-ops '(:vl-binary-wildeq :vl-binary-wildneq) x))
-               (equal (vl-wildeq-rewrite-expr x elem warnings)
+               (equal (vl-wildeq-rewrite-expr x ctx warnings)
                       (mv (ok) (vl-expr-fix x))))
       :flag :expr)
     (defthm vl-wildeq-rewrite-exprlist-optimization
       (implies (not (vl-exprlist-has-ops '(:vl-binary-wildeq :vl-binary-wildneq) x))
-               (equal (vl-wildeq-rewrite-exprlist x elem warnings)
+               (equal (vl-wildeq-rewrite-exprlist x ctx warnings)
                       (mv (ok) (vl-exprlist-fix x))))
       :flag :list)
     :hints(("Goal"
-            :expand ((vl-wildeq-rewrite-expr x elem warnings)
+            :expand ((vl-wildeq-rewrite-expr x ctx warnings)
                      (vl-exprlist-ops x))
             :do-not '(generalize fertilize)))))
 
@@ -479,17 +486,17 @@ is just a constant integer.  So this is just:</p>
           expression.  Avoids reconsing when there are no @('==?') or @('!=?')
           operators."
   ((x        vl-expr-p)
-   (elem     vl-modelement-p)
+   (ctx      vl-context-p)
    (warnings vl-warninglist-p))
   :returns (mv (new-warnings vl-warninglist-p)
                (new-x vl-expr-p))
   :enabled t
   (mbe :logic
-       (vl-wildeq-rewrite-expr x elem warnings)
+       (vl-wildeq-rewrite-expr x ctx warnings)
        :exec
        (if (not (vl-expr-has-ops '(:vl-binary-wildeq :vl-binary-wildneq) x))
            (mv warnings x)
-         (vl-wildeq-rewrite-expr x elem warnings))))
+         (vl-wildeq-rewrite-expr x ctx warnings))))
 
 
 
@@ -499,13 +506,13 @@ is just a constant integer.  So this is just:</p>
 
 (local (xdoc::set-default-parents vl-design-wildelim))
 
-(defmacro def-vl-wildelim (name &key body takes-elem enabled inline)
+(defmacro def-vl-wildelim (name &key body takes-ctx enabled inline)
   (b* ((mksym-package-symbol (pkg-witness "VL"))
        (fn   (mksym name '-wildelim))
        (fix  (mksym name '-fix))
        (type (mksym name '-p)))
     `(define ,fn ((x      ,type)
-                  ,@(and takes-elem '((elem vl-modelement-p)))
+                  ,@(and takes-ctx '((ctx  vl-context-p)))
                   (warnings vl-warninglist-p))
        :short ,(cat "Eliminate @('==?') and @('!=?') operators throughout a @(see " (symbol-name type) ")")
        :returns (mv (warnings vl-warninglist-p)
@@ -516,23 +523,23 @@ is just a constant integer.  So this is just:</p>
             (warnings (vl-warninglist-fix warnings)))
          ,body))))
 
-(defmacro def-vl-wildelim-list (name &key element takes-elem)
+(defmacro def-vl-wildelim-list (name &key element takes-ctx)
   (b* ((mksym-package-symbol (pkg-witness "VL"))
        (fn      (mksym name    '-wildelim))
-       (elem-fn (mksym element '-wildelim))
+       (ctx-fn (mksym element '-wildelim))
        (type    (mksym name    '-p))
        (formals (append '(x)
-                        (if takes-elem '(elem) nil)
+                        (if takes-ctx '(ctx) nil)
                         '(warnings))))
     `(define ,fn ((x      ,type)
-                  ,@(and takes-elem '((elem vl-modelement-p)))
+                  ,@(and takes-ctx '((ctx  vl-context-p)))
                   (warnings vl-warninglist-p))
        :returns (mv (warnings vl-warninglist-p)
                     (new-x    ,type))
        :short ,(cat "Eliminate @('==?') and @('!=?') operators throughout a @(see " (symbol-name type) ").")
        (b* (((when (atom x))
              (mv (ok) x))
-            ((mv warnings car-prime) (,elem-fn . ,(subst '(car x) 'x formals)))
+            ((mv warnings car-prime) (,ctx-fn . ,(subst '(car x) 'x formals)))
             ((mv warnings cdr-prime) (,fn . ,(subst '(cdr x) 'x formals))))
          (mv warnings (cons car-prime cdr-prime)))
        ///
@@ -543,7 +550,7 @@ is just a constant integer.  So this is just:</p>
 
        (defthm ,(mksym fn '-of-cons)
          (equal (,fn . ,(subst '(cons a x) 'x formals))
-                (b* (((mv warnings car-prime) (,elem-fn . ,(subst 'a 'x formals)))
+                (b* (((mv warnings car-prime) (,ctx-fn . ,(subst 'a 'x formals)))
                      ((mv warnings cdr-prime) (,fn . ,formals)))
                   (mv warnings (cons car-prime cdr-prime)))))
 
@@ -552,87 +559,87 @@ is just a constant integer.  So this is just:</p>
                 (len x))))))
 
 (def-vl-wildelim vl-exprlist
-  :takes-elem t
+  :takes-ctx t
   :enabled t
   :body
   (mbe :logic
-       (vl-wildeq-rewrite-exprlist x elem warnings)
+       (vl-wildeq-rewrite-exprlist x ctx warnings)
        :exec
        ;; Optimization to avoid reconsing.  If there aren't any ==? or !=?
        ;; operators, don't do anything.
        (if (not (vl-exprlist-has-ops '(:vl-binary-wildeq :vl-binary-wildneq) x))
            (mv warnings x)
-         (vl-wildeq-rewrite-exprlist x elem warnings))))
+         (vl-wildeq-rewrite-exprlist x ctx warnings))))
 
 (def-vl-wildelim vl-maybe-expr
-  :takes-elem t
+  :takes-ctx t
   :inline t
   :body (if x
-            (vl-expr-wildelim x elem warnings)
+            (vl-expr-wildelim x ctx warnings)
           (mv warnings nil)))
 
 (def-vl-wildelim vl-range
-  :takes-elem t
+  :takes-ctx t
   :body (b* (((vl-range x) x)
-             ((mv warnings msb-prime) (vl-expr-wildelim x.msb elem warnings))
-             ((mv warnings lsb-prime) (vl-expr-wildelim x.lsb elem warnings))
+             ((mv warnings msb-prime) (vl-expr-wildelim x.msb ctx warnings))
+             ((mv warnings lsb-prime) (vl-expr-wildelim x.lsb ctx warnings))
              (x-prime  (change-vl-range x
                                         :msb msb-prime
                                         :lsb lsb-prime)))
           (mv warnings x-prime)))
 
 (def-vl-wildelim vl-maybe-range
-  :takes-elem t
+  :takes-ctx t
   :inline t
   :body (if x
-            (vl-range-wildelim x elem warnings)
+            (vl-range-wildelim x ctx warnings)
           (mv warnings nil)))
 
 (def-vl-wildelim-list vl-rangelist
-  :takes-elem t
+  :takes-ctx t
   :element vl-range)
 
 (def-vl-wildelim vl-packeddimension
-  :takes-elem t
+  :takes-ctx t
   :inline t
   :body
   (b* ((x (vl-packeddimension-fix x)))
     (if (eq x :vl-unsized-dimension)
         (mv warnings x)
-      (vl-range-wildelim x elem warnings))))
+      (vl-range-wildelim x ctx warnings))))
 
 (def-vl-wildelim vl-maybe-packeddimension
-  :takes-elem t
+  :takes-ctx t
   :inline t
   :body
   (if x
-      (vl-packeddimension-wildelim x elem warnings)
+      (vl-packeddimension-wildelim x ctx warnings)
     (mv warnings x)))
 
 (def-vl-wildelim-list vl-packeddimensionlist
-  :takes-elem t
+  :takes-ctx t
   :element vl-packeddimension)
 
 (def-vl-wildelim vl-enumbasetype
-  :takes-elem t
+  :takes-ctx t
   :body (b* (((vl-enumbasetype x) x)
              ((mv warnings dim)
-              (vl-maybe-packeddimension-wildelim x.dim elem warnings)))
+              (vl-maybe-packeddimension-wildelim x.dim ctx warnings)))
           (mv warnings (change-vl-enumbasetype x :dim dim))))
 
 (def-vl-wildelim vl-enumitem
-  :takes-elem t
+  :takes-ctx t
   :body
   (b* (((vl-enumitem x) x)
-       ((mv warnings new-range) (vl-maybe-range-wildelim x.range elem warnings))
-       ((mv warnings new-value) (vl-maybe-expr-wildelim x.value elem warnings))
+       ((mv warnings new-range) (vl-maybe-range-wildelim x.range ctx warnings))
+       ((mv warnings new-value) (vl-maybe-expr-wildelim x.value ctx warnings))
        (new-x    (change-vl-enumitem x
                                      :range new-range
                                      :value new-value)))
     (mv warnings new-x)))
 
 (def-vl-wildelim-list vl-enumitemlist
-  :takes-elem t
+  :takes-ctx t
   :element vl-enumitem)
 
 
@@ -640,68 +647,68 @@ is just a constant integer.  So this is just:</p>
   :verify-guards nil
 
   (define vl-datatype-wildelim ((x        vl-datatype-p)
-                                (elem     vl-modelement-p)
+                                (ctx      vl-context-p)
                                 (warnings vl-warninglist-p))
     :returns (mv (warnings vl-warninglist-p)
                  (new-x    vl-datatype-p))
     :measure (vl-datatype-count x)
     (vl-datatype-case x
       (:vl-coretype
-       (b* (((mv warnings new-pdims) (vl-packeddimensionlist-wildelim x.pdims elem warnings))
-            ((mv warnings new-udims) (vl-packeddimensionlist-wildelim x.udims elem warnings))
+       (b* (((mv warnings new-pdims) (vl-packeddimensionlist-wildelim x.pdims ctx warnings))
+            ((mv warnings new-udims) (vl-packeddimensionlist-wildelim x.udims ctx warnings))
             (new-x (change-vl-coretype x :pdims new-pdims :udims new-udims)))
          (mv warnings new-x)))
       (:vl-struct
-       (b* (((mv warnings new-members) (vl-structmemberlist-wildelim x.members elem warnings))
-            ((mv warnings new-pdims) (vl-packeddimensionlist-wildelim x.pdims elem warnings))
-            ((mv warnings new-udims) (vl-packeddimensionlist-wildelim x.udims elem warnings))
+       (b* (((mv warnings new-members) (vl-structmemberlist-wildelim x.members ctx warnings))
+            ((mv warnings new-pdims) (vl-packeddimensionlist-wildelim x.pdims ctx warnings))
+            ((mv warnings new-udims) (vl-packeddimensionlist-wildelim x.udims ctx warnings))
             (new-x    (change-vl-struct x :members new-members :pdims new-pdims :udims new-udims)))
          (mv warnings new-x)))
       (:vl-union
-       (b* (((mv warnings new-members) (vl-structmemberlist-wildelim x.members elem warnings))
-            ((mv warnings new-pdims) (vl-packeddimensionlist-wildelim x.pdims elem warnings))
-            ((mv warnings new-udims) (vl-packeddimensionlist-wildelim x.udims elem warnings))
+       (b* (((mv warnings new-members) (vl-structmemberlist-wildelim x.members ctx warnings))
+            ((mv warnings new-pdims) (vl-packeddimensionlist-wildelim x.pdims ctx warnings))
+            ((mv warnings new-udims) (vl-packeddimensionlist-wildelim x.udims ctx warnings))
             (new-x    (change-vl-union x :members new-members :pdims new-pdims :udims new-udims)))
          (mv warnings new-x)))
       (:vl-enum
-       (b* (((mv warnings new-basetype) (vl-enumbasetype-wildelim x.basetype elem warnings))
-            ((mv warnings new-items) (vl-enumitemlist-wildelim x.items elem warnings))
-            ((mv warnings new-pdims) (vl-packeddimensionlist-wildelim x.pdims elem warnings))
-            ((mv warnings new-udims) (vl-packeddimensionlist-wildelim x.udims elem warnings))
+       (b* (((mv warnings new-basetype) (vl-enumbasetype-wildelim x.basetype ctx warnings))
+            ((mv warnings new-items) (vl-enumitemlist-wildelim x.items ctx warnings))
+            ((mv warnings new-pdims) (vl-packeddimensionlist-wildelim x.pdims ctx warnings))
+            ((mv warnings new-udims) (vl-packeddimensionlist-wildelim x.udims ctx warnings))
             (new-x    (change-vl-enum x
                                       :basetype new-basetype
                                       :items new-items
                                       :pdims new-pdims :udims new-udims)))
          (mv warnings new-x)))
       (:vl-usertype
-       (b* (((mv warnings new-kind) (vl-expr-wildelim x.kind elem warnings))
-            ((mv warnings new-pdims) (vl-packeddimensionlist-wildelim x.pdims elem warnings))
-            ((mv warnings new-udims) (vl-packeddimensionlist-wildelim x.udims elem warnings))
+       (b* (((mv warnings new-kind) (vl-expr-wildelim x.kind ctx warnings))
+            ((mv warnings new-pdims) (vl-packeddimensionlist-wildelim x.pdims ctx warnings))
+            ((mv warnings new-udims) (vl-packeddimensionlist-wildelim x.udims ctx warnings))
             (new-x    (change-vl-usertype x :kind new-kind :pdims new-pdims :udims new-udims)))
          (mv warnings new-x)))))
 
   (define vl-structmemberlist-wildelim ((x        vl-structmemberlist-p)
-                                        (elem     vl-modelement-p)
+                                        (ctx      vl-context-p)
                                         (warnings vl-warninglist-p))
     :returns (mv (warnings vl-warninglist-p)
                  (new-x    vl-structmemberlist-p))
     :measure (vl-structmemberlist-count x)
     (b* (((when (atom x))
           (mv (ok) nil))
-         ((mv warnings new-car) (vl-structmember-wildelim (car x) elem warnings))
-         ((mv warnings new-cdr) (vl-structmemberlist-wildelim (cdr x) elem warnings))
+         ((mv warnings new-car) (vl-structmember-wildelim (car x) ctx warnings))
+         ((mv warnings new-cdr) (vl-structmemberlist-wildelim (cdr x) ctx warnings))
          (new-x    (cons new-car new-cdr)))
       (mv warnings new-x)))
 
   (define vl-structmember-wildelim ((x        vl-structmember-p)
-                                    (elem     vl-modelement-p)
+                                    (ctx      vl-context-p)
                                     (warnings vl-warninglist-p))
     :returns (mv (warnings vl-warninglist-p)
                  (new-x    vl-structmember-p))
     :measure (vl-structmember-count x)
     (b* (((vl-structmember x) x)
-         ((mv warnings new-type) (vl-datatype-wildelim x.type elem warnings))
-         ((mv warnings new-rhs) (vl-maybe-expr-wildelim x.rhs elem warnings))
+         ((mv warnings new-type) (vl-datatype-wildelim x.type ctx warnings))
+         ((mv warnings new-rhs) (vl-maybe-expr-wildelim x.rhs ctx warnings))
          (new-x    (change-vl-structmember x
                                            :type new-type
                                            :rhs new-rhs)))
@@ -711,19 +718,19 @@ is just a constant integer.  So this is just:</p>
   (deffixequiv-mutual vl-datatype-wildelim))
 
 (def-vl-wildelim vl-maybe-datatype
-  :takes-elem t
+  :takes-ctx t
   :inline t
   :body
   (if x
-      (vl-datatype-wildelim x elem warnings)
+      (vl-datatype-wildelim x ctx warnings)
     (mv warnings x)))
 
 (def-vl-wildelim vl-gatedelay
-  :takes-elem t
+  :takes-ctx t
   :body (b* (((vl-gatedelay x) x)
-             ((mv warnings rise-prime) (vl-expr-wildelim x.rise elem warnings))
-             ((mv warnings fall-prime) (vl-expr-wildelim x.fall elem warnings))
-             ((mv warnings high-prime) (vl-maybe-expr-wildelim x.high elem warnings))
+             ((mv warnings rise-prime) (vl-expr-wildelim x.rise ctx warnings))
+             ((mv warnings fall-prime) (vl-expr-wildelim x.fall ctx warnings))
+             ((mv warnings high-prime) (vl-maybe-expr-wildelim x.high ctx warnings))
              (x-prime  (change-vl-gatedelay x
                                             :rise rise-prime
                                             :fall fall-prime
@@ -731,19 +738,19 @@ is just a constant integer.  So this is just:</p>
           (mv warnings x-prime)))
 
 (def-vl-wildelim vl-maybe-gatedelay
-  :takes-elem t
+  :takes-ctx t
   :inline t
   :body (if x
-            (vl-gatedelay-wildelim x elem warnings)
+            (vl-gatedelay-wildelim x ctx warnings)
           (mv warnings x)))
 
 (def-vl-wildelim vl-assign
   :body
   (b* (((vl-assign x) x)
-       (elem x)
-       ((mv warnings lhs-prime)   (vl-expr-wildelim x.lvalue elem warnings))
-       ((mv warnings rhs-prime)   (vl-expr-wildelim x.expr elem warnings))
-       ((mv warnings delay-prime) (vl-maybe-gatedelay-wildelim x.delay elem warnings))
+       (ctx x)
+       ((mv warnings lhs-prime)   (vl-expr-wildelim x.lvalue ctx warnings))
+       ((mv warnings rhs-prime)   (vl-expr-wildelim x.expr ctx warnings))
+       ((mv warnings delay-prime) (vl-maybe-gatedelay-wildelim x.delay ctx warnings))
        (x-prime
         (change-vl-assign x
                           :lvalue lhs-prime
@@ -755,92 +762,92 @@ is just a constant integer.  So this is just:</p>
 
 
 (def-vl-wildelim vl-plainarg
-  :takes-elem t
+  :takes-ctx t
   :body (b* (((vl-plainarg x) x)
              ((unless x.expr)
               (mv warnings x))
-             ((mv warnings expr-prime) (vl-expr-wildelim x.expr elem warnings))
+             ((mv warnings expr-prime) (vl-expr-wildelim x.expr ctx warnings))
              (x-prime (change-vl-plainarg x :expr expr-prime)))
           (mv warnings x-prime)))
 
 (def-vl-wildelim-list vl-plainarglist
-  :takes-elem t
+  :takes-ctx t
   :element vl-plainarg)
 
 (def-vl-wildelim vl-namedarg
-  :takes-elem t
+  :takes-ctx t
   :body (b* (((vl-namedarg x) x)
              ((unless x.expr)
               (mv warnings x))
-             ((mv warnings expr-prime) (vl-expr-wildelim x.expr elem warnings))
+             ((mv warnings expr-prime) (vl-expr-wildelim x.expr ctx warnings))
              (x-prime (change-vl-namedarg x :expr expr-prime)))
           (mv warnings x-prime)))
 
 (def-vl-wildelim-list vl-namedarglist
-  :takes-elem t
+  :takes-ctx t
   :element vl-namedarg)
 
 (def-vl-wildelim vl-arguments
-  :takes-elem t
+  :takes-ctx t
   :body
   (vl-arguments-case x
     :vl-arguments-named
-    (b* (((mv warnings args-prime) (vl-namedarglist-wildelim x.args elem warnings))
+    (b* (((mv warnings args-prime) (vl-namedarglist-wildelim x.args ctx warnings))
          (x-prime (change-vl-arguments-named x :args args-prime)))
       (mv warnings x-prime))
     :vl-arguments-plain
-    (b* (((mv warnings args-prime) (vl-plainarglist-wildelim x.args elem warnings))
+    (b* (((mv warnings args-prime) (vl-plainarglist-wildelim x.args ctx warnings))
          (x-prime (change-vl-arguments-plain x :args args-prime)))
       (mv warnings x-prime))))
 
 (def-vl-wildelim vl-paramvalue
-  :takes-elem t
+  :takes-ctx t
   :body
   (vl-paramvalue-case x
-    :expr     (vl-expr-wildelim x elem warnings)
-    :datatype (vl-datatype-wildelim x elem warnings)))
+    :expr     (vl-expr-wildelim x ctx warnings)
+    :datatype (vl-datatype-wildelim x ctx warnings)))
 
 (def-vl-wildelim-list vl-paramvaluelist
-  :takes-elem t
+  :takes-ctx t
   :element vl-paramvalue)
 
 (def-vl-wildelim vl-maybe-paramvalue
-  :takes-elem t
+  :takes-ctx t
   :inline t
   :body (if x
-            (vl-paramvalue-wildelim x elem warnings)
+            (vl-paramvalue-wildelim x ctx warnings)
           (mv warnings x)))
 
 (def-vl-wildelim vl-namedparamvalue
-  :takes-elem t
+  :takes-ctx t
   :body
   (b* (((vl-namedparamvalue x) x)
-       ((mv warnings value) (vl-maybe-paramvalue-wildelim x.value elem warnings)))
+       ((mv warnings value) (vl-maybe-paramvalue-wildelim x.value ctx warnings)))
     (mv warnings (change-vl-namedparamvalue x :value value))))
 
 (def-vl-wildelim-list vl-namedparamvaluelist
-  :takes-elem t
+  :takes-ctx t
   :element vl-namedparamvalue)
 
 (def-vl-wildelim vl-paramargs
-  :takes-elem t
+  :takes-ctx t
   :body
   (vl-paramargs-case x
     :vl-paramargs-named
-    (b* (((mv warnings args) (vl-namedparamvaluelist-wildelim x.args elem warnings)))
+    (b* (((mv warnings args) (vl-namedparamvaluelist-wildelim x.args ctx warnings)))
       (mv warnings (change-vl-paramargs-named x :args args)))
     :vl-paramargs-plain
-    (b* (((mv warnings args) (vl-paramvaluelist-wildelim x.args elem warnings)))
+    (b* (((mv warnings args) (vl-paramvaluelist-wildelim x.args ctx warnings)))
       (mv warnings (change-vl-paramargs-plain x :args args)))))
 
 (def-vl-wildelim vl-modinst
   :body
   (b* (((vl-modinst x) x)
-       (elem x)
-       ((mv warnings portargs-prime)  (vl-arguments-wildelim x.portargs elem warnings))
-       ((mv warnings paramargs-prime) (vl-paramargs-wildelim x.paramargs elem warnings))
-       ((mv warnings range-prime)     (vl-maybe-range-wildelim x.range elem warnings))
-       ((mv warnings delay-prime)     (vl-maybe-gatedelay-wildelim x.delay elem warnings))
+       (ctx x)
+       ((mv warnings portargs-prime)  (vl-arguments-wildelim x.portargs ctx warnings))
+       ((mv warnings paramargs-prime) (vl-paramargs-wildelim x.paramargs ctx warnings))
+       ((mv warnings range-prime)     (vl-maybe-range-wildelim x.range ctx warnings))
+       ((mv warnings delay-prime)     (vl-maybe-gatedelay-wildelim x.delay ctx warnings))
        (x-prime (change-vl-modinst x
                                    :portargs portargs-prime
                                    :paramargs paramargs-prime
@@ -853,10 +860,10 @@ is just a constant integer.  So this is just:</p>
 (def-vl-wildelim vl-gateinst
   :body
   (b* (((vl-gateinst x) x)
-       (elem x)
-       ((mv warnings args-prime) (vl-plainarglist-wildelim x.args elem warnings))
-       ((mv warnings range-prime) (vl-maybe-range-wildelim x.range elem warnings))
-       ((mv warnings delay-prime) (vl-maybe-gatedelay-wildelim x.delay elem warnings))
+       (ctx x)
+       ((mv warnings args-prime) (vl-plainarglist-wildelim x.args ctx warnings))
+       ((mv warnings range-prime) (vl-maybe-range-wildelim x.range ctx warnings))
+       ((mv warnings delay-prime) (vl-maybe-gatedelay-wildelim x.delay ctx warnings))
        (x-prime (change-vl-gateinst x
                                     :args args-prime
                                     :range range-prime
@@ -867,13 +874,17 @@ is just a constant integer.  So this is just:</p>
 
 
 (def-vl-wildelim vl-port
-  :body (b* (((vl-port x) x)
-             (elem x)
-             ((mv warnings expr-prime) (vl-maybe-expr-wildelim x.expr elem warnings))
-             ((mv warnings udims-prime) (vl-packeddimensionlist-wildelim x.udims elem warnings))
-             (x-prime (change-vl-port x
-                                      :expr expr-prime
-                                      :udims udims-prime)))
+  :body (b* ((x (vl-port-fix x))
+             (ctx (vl-context x))
+             ((when (eq (tag x) :vl-interfaceport))
+              (b* (((vl-interfaceport x))
+                   ((mv warnings udims-prime)
+                    (vl-packeddimensionlist-wildelim x.udims ctx warnings)))
+                (mv warnings (change-vl-interfaceport x :udims udims-prime))))
+             ((vl-regularport x) x)
+             ((mv warnings expr-prime) (vl-maybe-expr-wildelim x.expr ctx warnings))
+             (x-prime (change-vl-regularport x
+                                      :expr expr-prime)))
           (mv warnings x-prime)))
 
 (def-vl-wildelim-list vl-portlist :element vl-port)
@@ -885,8 +896,8 @@ is just a constant integer.  So this is just:</p>
 
 (def-vl-wildelim vl-portdecl
   :body (b* (((vl-portdecl x) x)
-             (elem x)
-             ((mv warnings type-prime) (vl-datatype-wildelim x.type elem warnings))
+             (ctx x)
+             ((mv warnings type-prime) (vl-datatype-wildelim x.type ctx warnings))
              (x-prime (change-vl-portdecl x :type type-prime)))
           (mv warnings x-prime)))
 
@@ -895,10 +906,10 @@ is just a constant integer.  So this is just:</p>
 (def-vl-wildelim vl-vardecl
   :body
   (b* (((vl-vardecl x) x)
-       (elem x)
-       ((mv warnings type-prime)    (vl-datatype-wildelim x.type elem warnings))
-       ((mv warnings initval-prime) (vl-maybe-expr-wildelim x.initval elem warnings))
-       ((mv warnings delay-prime)   (vl-maybe-gatedelay-wildelim x.delay elem warnings))
+       (ctx x)
+       ((mv warnings type-prime)    (vl-datatype-wildelim x.type ctx warnings))
+       ((mv warnings initval-prime) (vl-maybe-expr-wildelim x.initval ctx warnings))
+       ((mv warnings delay-prime)   (vl-maybe-gatedelay-wildelim x.delay ctx warnings))
        (x-prime (change-vl-vardecl x
                                    :type    type-prime
                                    :initval initval-prime
@@ -908,35 +919,35 @@ is just a constant integer.  So this is just:</p>
 (def-vl-wildelim-list vl-vardecllist :element vl-vardecl)
 
 (def-vl-wildelim vl-paramtype
-  :takes-elem t
+  :takes-ctx t
   :body
   (vl-paramtype-case x
     (:vl-implicitvalueparam
-     (b* (((mv warnings range-prime)   (vl-maybe-range-wildelim x.range elem warnings))
-          ((mv warnings default-prime) (vl-maybe-expr-wildelim x.default elem warnings))
+     (b* (((mv warnings range-prime)   (vl-maybe-range-wildelim x.range ctx warnings))
+          ((mv warnings default-prime) (vl-maybe-expr-wildelim x.default ctx warnings))
           (x-prime                     (change-vl-implicitvalueparam x
                                                                      :range   range-prime
                                                                      :default default-prime)))
        (mv warnings x-prime)))
 
     (:vl-explicitvalueparam
-     (b* (((mv warnings type-prime)    (vl-datatype-wildelim x.type elem warnings))
-          ((mv warnings default-prime) (vl-maybe-expr-wildelim x.default elem warnings))
+     (b* (((mv warnings type-prime)    (vl-datatype-wildelim x.type ctx warnings))
+          ((mv warnings default-prime) (vl-maybe-expr-wildelim x.default ctx warnings))
           (x-prime                     (change-vl-explicitvalueparam x
                                                                      :type    type-prime
                                                                       :default default-prime)))
        (mv warnings x-prime)))
 
     (:vl-typeparam
-     (b* (((mv warnings default-prime) (vl-maybe-datatype-wildelim x.default elem warnings))
+     (b* (((mv warnings default-prime) (vl-maybe-datatype-wildelim x.default ctx warnings))
           (x-prime                     (change-vl-typeparam x :default default-prime)))
        (mv warnings x-prime)))))
 
 (def-vl-wildelim vl-paramdecl
   :body
   (b* (((vl-paramdecl x) x)
-       (elem x)
-       ((mv warnings type-prime)  (vl-paramtype-wildelim x.type elem warnings))
+       (ctx x)
+       ((mv warnings type-prime)  (vl-paramtype-wildelim x.type ctx warnings))
        (x-prime                   (change-vl-paramdecl x :type type-prime)))
     (mv warnings x-prime)))
 
@@ -952,71 +963,72 @@ is just a constant integer.  So this is just:</p>
 (def-vl-wildelim-list vl-blockitemlist :element vl-blockitem)
 
 (def-vl-wildelim vl-delaycontrol
-  :takes-elem t
+  :takes-ctx t
   :body (b* (((vl-delaycontrol x) x)
-             ((mv warnings value-prime) (vl-expr-wildelim x.value elem warnings))
+             ((mv warnings value-prime) (vl-expr-wildelim x.value ctx warnings))
              (x-prime (change-vl-delaycontrol x :value value-prime)))
             (mv warnings x-prime)))
 
 (def-vl-wildelim vl-evatom
-  :takes-elem t
+  :takes-ctx t
   :body (b* (((vl-evatom x) x)
-             ((mv warnings expr-prime) (vl-expr-wildelim x.expr elem warnings))
+             ((mv warnings expr-prime) (vl-expr-wildelim x.expr ctx warnings))
              (x-prime (change-vl-evatom x :expr expr-prime)))
             (mv warnings x-prime)))
 
 (def-vl-wildelim-list vl-evatomlist
-  :takes-elem t
+  :takes-ctx t
   :element vl-evatom)
 
 (def-vl-wildelim vl-eventcontrol
-  :takes-elem t
+  :takes-ctx t
   :body (b* (((vl-eventcontrol x) x)
-             ((mv warnings atoms-prime) (vl-evatomlist-wildelim x.atoms elem warnings))
+             ((mv warnings atoms-prime) (vl-evatomlist-wildelim x.atoms ctx warnings))
              (x-prime (change-vl-eventcontrol x :atoms atoms-prime)))
           (mv warnings x-prime)))
 
 (def-vl-wildelim vl-repeateventcontrol
-  :takes-elem t
+  :takes-ctx t
   :body (b* (((vl-repeateventcontrol x) x)
-             ((mv warnings expr-prime) (vl-expr-wildelim x.expr elem warnings))
-             ((mv warnings ctrl-prime) (vl-eventcontrol-wildelim x.ctrl elem warnings))
+             ((mv warnings expr-prime) (vl-expr-wildelim x.expr ctx warnings))
+             ((mv warnings ctrl-prime) (vl-eventcontrol-wildelim x.ctrl ctx warnings))
              (x-prime (change-vl-repeateventcontrol x
                                                     :expr expr-prime
                                                     :ctrl ctrl-prime)))
             (mv warnings x-prime)))
 
 (def-vl-wildelim vl-delayoreventcontrol
-  :takes-elem t
+  :takes-ctx t
   :body (case (tag x)
-          (:vl-delaycontrol (vl-delaycontrol-wildelim x elem warnings))
-          (:vl-eventcontrol (vl-eventcontrol-wildelim x elem warnings))
-          (otherwise        (vl-repeateventcontrol-wildelim x elem warnings))))
+          (:vl-delaycontrol (vl-delaycontrol-wildelim x ctx warnings))
+          (:vl-eventcontrol (vl-eventcontrol-wildelim x ctx warnings))
+          (otherwise        (vl-repeateventcontrol-wildelim x ctx warnings))))
 
 (def-vl-wildelim vl-maybe-delayoreventcontrol
-  :takes-elem t
+  :takes-ctx t
   :inline t
   :body (if x
-            (vl-delayoreventcontrol-wildelim x elem warnings)
+            (vl-delayoreventcontrol-wildelim x ctx warnings)
           (mv warnings nil)))
 
 (defthm vl-maybe-delayoreventcontrol-wildelim-under-iff
-  (iff (mv-nth 1 (vl-maybe-delayoreventcontrol-wildelim x elem warnings))
+  (iff (mv-nth 1 (vl-maybe-delayoreventcontrol-wildelim x ctx warnings))
        x)
-  :hints(("Goal" :in-theory (enable vl-maybe-delayoreventcontrol-wildelim))))
+  :hints(("Goal" :in-theory (enable (tau-system)
+                                    vl-maybe-delayoreventcontrol-wildelim))))
 
 (defines vl-stmt-wildelim
 
   (define vl-stmt-wildelim
     ((x        vl-stmt-p)
-     (elem     vl-modelement-p)
+     (ctx      vl-context-p)
      (warnings vl-warninglist-p))
     :verify-guards nil
     :measure (vl-stmt-count x)
     :returns (mv (warnings vl-warninglist-p)
                  (new-x    vl-stmt-p))
     (b* ((x        (vl-stmt-fix x))
-         (elem     (vl-modelement-fix elem))
+         (ctx     (vl-context-fix ctx))
          (warnings (vl-warninglist-fix warnings))
 
          ((when (vl-atomicstmt-p x))
@@ -1025,9 +1037,9 @@ is just a constant integer.  So this is just:</p>
              (mv warnings x))
             (:vl-assignstmt
              (b* (((vl-assignstmt x) x)
-                  ((mv warnings lhs-prime) (vl-expr-wildelim x.lvalue elem warnings))
-                  ((mv warnings rhs-prime) (vl-expr-wildelim x.expr elem warnings))
-                  ((mv warnings ctrl-prime) (vl-maybe-delayoreventcontrol-wildelim x.ctrl elem warnings))
+                  ((mv warnings lhs-prime) (vl-expr-wildelim x.lvalue ctx warnings))
+                  ((mv warnings rhs-prime) (vl-expr-wildelim x.expr ctx warnings))
+                  ((mv warnings ctrl-prime) (vl-maybe-delayoreventcontrol-wildelim x.ctrl ctx warnings))
                   (x-prime (change-vl-assignstmt x
                                                  :lvalue lhs-prime
                                                  :expr rhs-prime
@@ -1035,25 +1047,25 @@ is just a constant integer.  So this is just:</p>
                (mv warnings x-prime)))
             (:vl-deassignstmt
              (b* (((vl-deassignstmt x) x)
-                  ((mv warnings lvalue-prime) (vl-expr-wildelim x.lvalue elem warnings))
+                  ((mv warnings lvalue-prime) (vl-expr-wildelim x.lvalue ctx warnings))
                   (x-prime (change-vl-deassignstmt x :lvalue lvalue-prime)))
                (mv warnings x-prime)))
             (:vl-enablestmt
              (b* (((vl-enablestmt x) x)
-                  ((mv warnings id-prime)   (vl-expr-wildelim x.id elem warnings))
-                  ((mv warnings args-prime) (vl-exprlist-wildelim x.args elem warnings))
+                  ((mv warnings id-prime)   (vl-expr-wildelim x.id ctx warnings))
+                  ((mv warnings args-prime) (vl-exprlist-wildelim x.args ctx warnings))
                   (x-prime (change-vl-enablestmt x
                                                  :id id-prime
                                                  :args args-prime)))
                (mv warnings x-prime)))
             (:vl-disablestmt
              (b* (((vl-disablestmt x) x)
-                  ((mv warnings id-prime) (vl-expr-wildelim x.id elem warnings))
+                  ((mv warnings id-prime) (vl-expr-wildelim x.id ctx warnings))
                   (x-prime (change-vl-disablestmt x :id id-prime)))
                (mv warnings x-prime)))
             (otherwise
              (b* (((vl-eventtriggerstmt x) x)
-                  ((mv warnings id-prime) (vl-expr-wildelim x.id elem warnings))
+                  ((mv warnings id-prime) (vl-expr-wildelim x.id ctx warnings))
                   (x-prime (change-vl-eventtriggerstmt x :id id-prime)))
                (mv warnings x-prime)))))
 
@@ -1061,9 +1073,9 @@ is just a constant integer.  So this is just:</p>
          (x.stmts (vl-compoundstmt->stmts x))
          (x.ctrl  (vl-compoundstmt->ctrl x))
          (x.decls (vl-compoundstmt->decls x))
-         ((mv warnings exprs-prime) (vl-exprlist-wildelim x.exprs elem warnings))
-         ((mv warnings stmts-prime) (vl-stmtlist-wildelim x.stmts elem warnings))
-         ((mv warnings ctrl-prime)  (vl-maybe-delayoreventcontrol-wildelim x.ctrl elem warnings))
+         ((mv warnings exprs-prime) (vl-exprlist-wildelim x.exprs ctx warnings))
+         ((mv warnings stmts-prime) (vl-stmtlist-wildelim x.stmts ctx warnings))
+         ((mv warnings ctrl-prime)  (vl-maybe-delayoreventcontrol-wildelim x.ctrl ctx warnings))
          ((mv warnings decls-prime) (vl-blockitemlist-wildelim x.decls warnings))
          (x-prime (change-vl-compoundstmt x
                                           :exprs exprs-prime
@@ -1074,7 +1086,7 @@ is just a constant integer.  So this is just:</p>
 
   (define vl-stmtlist-wildelim
     ((x        vl-stmtlist-p)
-     (elem     vl-modelement-p)
+     (ctx      vl-context-p)
      (warnings vl-warninglist-p))
     :measure (vl-stmtlist-count x)
     :returns (mv (warnings vl-warninglist-p)
@@ -1082,8 +1094,8 @@ is just a constant integer.  So this is just:</p>
                                 (equal (len new-x) (len x)))))
     (b* (((when (atom x))
           (mv (ok) nil))
-         ((mv warnings car-prime) (vl-stmt-wildelim (car x) elem warnings))
-         ((mv warnings cdr-prime) (vl-stmtlist-wildelim (cdr x) elem warnings)))
+         ((mv warnings car-prime) (vl-stmt-wildelim (car x) ctx warnings))
+         ((mv warnings cdr-prime) (vl-stmtlist-wildelim (cdr x) ctx warnings)))
       (mv warnings (cons car-prime cdr-prime))))
   ///
   (verify-guards vl-stmt-wildelim)
@@ -1091,8 +1103,8 @@ is just a constant integer.  So this is just:</p>
 
 (def-vl-wildelim vl-always
   :body (b* (((vl-always x) x)
-             (elem x)
-             ((mv warnings stmt-prime) (vl-stmt-wildelim x.stmt elem warnings))
+             (ctx x)
+             ((mv warnings stmt-prime) (vl-stmt-wildelim x.stmt ctx warnings))
              (x-prime (change-vl-always x :stmt stmt-prime)))
             (mv warnings x-prime)))
 
@@ -1101,9 +1113,9 @@ is just a constant integer.  So this is just:</p>
 
 (def-vl-wildelim vl-initial
   :body (b* (((vl-initial x) x)
-             (elem x)
+             (ctx x)
              ((mv warnings stmt-prime)
-              (vl-stmt-wildelim x.stmt elem warnings))
+              (vl-stmt-wildelim x.stmt ctx warnings))
              (x-prime (change-vl-initial x :stmt stmt-prime)))
             (mv warnings x-prime)))
 
@@ -1119,22 +1131,22 @@ is just a constant integer.  So this is just:</p>
        ((mv warnings gateinsts)  (vl-gateinstlist-wildelim  x.gateinsts  warnings))
        ((mv warnings alwayses)   (vl-alwayslist-wildelim    x.alwayses   warnings))
        ((mv warnings initials)   (vl-initiallist-wildelim   x.initials   warnings))
-       ((mv warnings ports)      (vl-portlist-wildelim      x.ports      warnings))
        ((mv warnings portdecls)  (vl-portdecllist-wildelim  x.portdecls  warnings))
        ((mv warnings paramdecls) (vl-paramdecllist-wildelim x.paramdecls warnings))
        ((mv warnings vardecls)   (vl-vardecllist-wildelim   x.vardecls   warnings))
 
-       ((mv warnings generates)  (vl-generates-wildelim  x.generates  warnings)))
+       ((mv warnings generates)  (vl-generates-wildelim     x.generates  warnings))
+       ((mv warnings ports)      (vl-portlist-wildelim      x.ports      warnings)))
 
     (mv warnings
         (change-vl-genblob
          x
+         :ports ports
          :assigns assigns
          :modinsts modinsts
          :gateinsts gateinsts
          :alwayses alwayses
          :initials initials
-         :ports ports
          :portdecls portdecls
          :paramdecls paramdecls
          :vardecls vardecls

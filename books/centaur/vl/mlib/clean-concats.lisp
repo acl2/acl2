@@ -34,6 +34,7 @@
 (include-book "scopestack")
 (local (include-book "../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
+(local (in-theory (disable (tau-system))))
 
 (defxdoc expr-cleaning
   :parents (mlib)
@@ -356,10 +357,7 @@ vl-merge-consts-aux on this yields</p>
   :prepwork ((local (include-book "centaur/bitops/ihsext-basics" :dir :system))
              (local (in-theory (disable cons-equal))))
   (define vl-merge-consts ((x vl-exprlist-p))
-    :returns (new-x vl-exprlist-p
-                    :hints ('(:in-theory (disable vl-merge-consts
-                                                  vl-merge-consts-aux)
-                              :expand ((vl-merge-consts x)))))
+    :returns (new-x vl-exprlist-p)
     :measure (two-nats-measure (vl-exprlist-count x) 1)
     :verify-guards nil
     :flag :main
@@ -391,10 +389,7 @@ vl-merge-consts-aux on this yields</p>
     :returns (mv (startwidth natp :rule-classes :type-prescription)
                  (startval   maybe-natp :rule-classes :type-prescription)
                  (weirdval   vl-bitlist-p)
-                 (rest       vl-exprlist-p
-                    :hints ('(:in-theory (disable vl-merge-consts
-                                                  vl-merge-consts-aux)
-                              :expand ((vl-merge-consts-aux x))))))
+                 (rest       vl-exprlist-p))
     :measure (two-nats-measure (vl-exprlist-count x) 0)
     :flag :aux
     (b* (((when (atom x))
@@ -606,10 +601,7 @@ flattening out nested concatenations and merging concatenations like
     :prepwork ((local (in-theory (disable default-car default-cdr not))))
     (define vl-expr-clean-selects1 ((x      vl-expr-p)
                                     (ss     vl-scopestack-p))
-      :returns (new-x vl-expr-p
-                      :hints ('(:in-theory (disable vl-expr-clean-selects1
-                                                    vl-exprlist-clean-selects1)
-                                :expand ((vl-expr-clean-selects1 x ss)))))
+      :returns (new-x vl-expr-p)
       :measure (vl-expr-count x)
       :verify-guards nil
       :flag :expr
@@ -682,10 +674,7 @@ flattening out nested concatenations and merging concatenations like
     (define vl-exprlist-clean-selects1 ((x      vl-exprlist-p)
                                         (ss     vl-scopestack-p))
       :returns (new-x (and (vl-exprlist-p new-x)
-                           (equal (len new-x) (len x)))
-                      :hints ('(:in-theory (disable vl-expr-clean-selects1
-                                                    vl-exprlist-clean-selects1)
-                                :expand ((vl-exprlist-clean-selects1 x ss)))))
+                           (equal (len new-x) (len x))))
       :measure (vl-exprlist-count x)
       :flag :list
       (if (atom x)

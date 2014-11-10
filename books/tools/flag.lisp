@@ -844,37 +844,7 @@ given.  The following theorem does not have a name: ~x0~%" entry)))))
 
 
 
-; LEGACY HINT.  We found cases where EXPAND-CALLS-COMPUTED-HINT was too
-; aggressive and expanded 'inner' terms that shouldn't have been expanded.
-; We now FLAG-EXPAND-COMPUTED-HINT instead, which is more targetted for
-; exactly the expansions we want.
-
-; BOZO we are leaving expand-calls-computed-hint here only because Sol
-; uses it in other places; we may wish to clean this up eventually and
-; move it to some more appropriate file.
-
-;; Collects up any calls of functions listed in FNS that are present in x.
-(mutual-recursion
- (defun find-calls-of-fns-term (x fns acc)
-   (cond ((or (atom x) (eq (car x) 'quote)) acc)
-         ((member-eq (car x) fns)
-          (find-calls-of-fns-list (cdr x) fns (cons x acc)))
-         (t
-          (find-calls-of-fns-list (cdr x) fns acc))))
- (defun find-calls-of-fns-list (x fns acc)
-   (if (atom x)
-       acc
-     (find-calls-of-fns-term
-      (car x) fns
-      (find-calls-of-fns-list (cdr x) fns acc)))))
-
-;; Gives an expand hint for any function in FNS present in the
-;; conclusion of the clause.
-(defun expand-calls-computed-hint (clause fns)
- (let ((expand-list (find-calls-of-fns-term (car (last clause)) fns nil)))
-   `(:expand ,expand-list)))
-
-
+; NOTE: Expand-calls-computed-hint moved to std/util/support.
 
 ; NEW HINT: this more limited hint seems to be better.
 

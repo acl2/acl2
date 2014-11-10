@@ -1272,13 +1272,9 @@ expression into a string."
                (vl-pp-packeddimensionlist (cdr x)))))
 
 
-(define vl-pp-interface-port ((x vl-port-p) &key (ps 'ps))
-  :guard (vl-port->ifname x)
-  ;; Printer an interface port like `simplebus.master foo [3:0]`
-  (b* (((vl-port x) x)
-       ((unless x.name)
-        (raise "Unnamed interface port?  ~x0" x)
-        ps))
+(define vl-pp-interfaceport ((x vl-interfaceport-p) &key (ps 'ps))
+  ;; Print an interface port like `simplebus.master foo [3:0]`
+  (b* (((vl-interfaceport x) x))
     (vl-ps-seq (vl-print-modname x.ifname)
                (if x.modport
                    (vl-ps-seq (vl-print ".")
@@ -1291,12 +1287,8 @@ expression into a string."
                               (vl-pp-packeddimensionlist x.udims))
                  ps))))
 
-(define vl-pp-port ((x vl-port-p) &key (ps 'ps))
-  (b* (((vl-port x) x)
-
-       ((when x.ifname)
-        ;; SystemVerilog interface port, use our fancy printer above.
-        (vl-pp-interface-port x))
+(define vl-pp-regularport ((x vl-regularport-p) &key (ps 'ps))
+  (b* (((vl-regularport x) x)
 
        ((when (and (not x.name)
                    (not x.expr)))
@@ -1325,6 +1317,12 @@ expression into a string."
                  ps)
                (vl-print ")"))))
 
+(define vl-pp-port ((x vl-port-p) &key (ps 'ps))
+  (b* ((x (vl-port-fix x)))
+    (if (eq (tag x) :vl-interfaceport)
+        (vl-pp-interfaceport x)
+      (vl-pp-regularport x))))
+
 (define vl-pp-portlist ((x vl-portlist-p) &key (ps 'ps))
   (cond ((atom x)
          ps)
@@ -1334,6 +1332,26 @@ expression into a string."
          (vl-ps-seq (vl-pp-port (car x))
                     (vl-println? ", ")
                     (vl-pp-portlist (cdr x))))))
+
+(define vl-pp-regularportlist ((x vl-regularportlist-p) &key (ps 'ps))
+  (cond ((atom x)
+         ps)
+        ((atom (cdr x))
+         (vl-pp-regularport (car x)))
+        (t
+         (vl-ps-seq (vl-pp-regularport (car x))
+                    (vl-println? ", ")
+                    (vl-pp-regularportlist (cdr x))))))
+
+(define vl-pp-interfaceportlist ((x vl-interfaceportlist-p) &key (ps 'ps))
+  (cond ((atom x)
+         ps)
+        ((atom (cdr x))
+         (vl-pp-interfaceport (car x)))
+        (t
+         (vl-ps-seq (vl-pp-interfaceport (car x))
+                    (vl-println? ", ")
+                    (vl-pp-interfaceportlist (cdr x))))))
 
 
 

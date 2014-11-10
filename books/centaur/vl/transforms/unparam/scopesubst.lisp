@@ -230,11 +230,22 @@ so that their overrides are compatible with thier types.</p>"
             (vl-datatype-scopesubst x ss)
           nil))
 
+(def-vl-scopesubst vl-interfaceport-scopesubst
+  :type vl-interfaceport-p
+  :body (change-vl-interfaceport
+         x :udims (vl-packeddimensionlist-scopesubst (vl-interfaceport->udims x) ss)))
+
+(def-vl-scopesubst vl-regularport-scopesubst
+  :type vl-regularport-p
+  :body (change-vl-regularport
+         x :expr (vl-maybe-expr-scopesubst (vl-regularport->expr x) ss)))
+
 (def-vl-scopesubst vl-port-scopesubst
   :type vl-port-p
-  :body (change-vl-port x
-                        :expr (vl-maybe-expr-scopesubst (vl-port->expr x) ss)
-                        :udims (vl-packeddimensionlist-scopesubst (vl-port->udims x) ss)))
+  :body (b* ((x (vl-port-fix X)))
+          (if (eq (tag x) :vl-interfaceport)
+              (vl-interfaceport-scopesubst x ss)
+            (vl-regularport-scopesubst x ss))))
 
 (def-vl-scopesubst-list vl-portlist-scopesubst
   :type vl-portlist-p
@@ -571,7 +582,6 @@ so that their overrides are compatible with thier types.</p>"
   :body
   (b* ((x (vl-modelement-fix x)))
     (case (tag x)
-      (:vl-port (vl-port-scopesubst x ss))
       (:vl-portdecl      (vl-portdecl-scopesubst x ss))
       (:vl-assign        (vl-assign-scopesubst x ss))
       (:vl-alias         (vl-alias-scopesubst x ss)) ;; BOZO

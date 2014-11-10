@@ -371,10 +371,22 @@
    short      ;; xdoc
    long       ;; xdoc
    inline     ;; inline keywords
+   extra-binder-names ;; extra x.foo b* binders for not-yet-implemented accessors
    ))
 
 (defconst *flexprod-keywords*
-  '(:shape :fields :ctor-body :ctor-name :ctor-macro :cond :type-name :short :long :inline :require))
+  '(:shape
+    :fields
+    :ctor-body
+    :ctor-name
+    :ctor-macro
+    :cond
+    :type-name
+    :short
+    :long
+    :inline
+    :require
+    :extra-binder-names))
 
 (defun parse-flexprod (x sumname sumkind sum-kwds xvar rev-not-prevconds our-fixtypes fixtypes)
   (b* (((cons kind kws) x)
@@ -412,7 +424,8 @@
                         ((atom (cdr fullcond-terms)) (car fullcond-terms))
                         (t `(and . ,fullcond-terms))))))
        (inline (get-deftypes-inline-opt (getarg :inline *inline-defaults* sum-kwds) kwd-alist))
-       (require (getarg :require t kwd-alist)))
+       (require (getarg :require t kwd-alist))
+       (extra-binder-names (getarg :extra-binder-names nil kwd-alist)))
     (make-flexprod :kind kind
                   :cond cond
                   :guard guard
@@ -423,6 +436,7 @@
                   :ctor-name ctor-name
                   :ctor-macro ctor-macro
                   :ctor-body ctor-body
+                  :extra-binder-names extra-binder-names
                   :short (getarg :short nil kwd-alist)
                   :long (getarg :long nil kwd-alist)
                   :inline inline)))
@@ -784,7 +798,8 @@
 
 (defconst *tagprod-formal-keywords* '(:rule-classes :default :reqfix))
 (defconst *tagprod-keywords*
-  '(:layout :hons :inline :base-name :require :short :long))
+  '(:layout :hons :inline :base-name :require :short :long
+    :extra-binder-names))
 
 (defun tagsum-prod-to-flexprod (x xvar sum-kwds lastp have-basep our-fixtypes)
   (b* (((cons kind args) x)
@@ -810,7 +825,8 @@
                         field-formals 0 (len field-formals) `(cdr ,xvar) layout))
        (base-name (getarg :base-name nil kwd-alist))
        (ctor-body1 (tagsum-fields-to-ctor-body (strip-cars flexsum-fields) layout hons))
-       (shape1 (tagsum-fields-to-shape flexsum-fields `(cdr ,xvar) layout)))
+       (shape1 (tagsum-fields-to-shape flexsum-fields `(cdr ,xvar) layout))
+       (extra-binder-names (getarg :extra-binder-names nil kwd-alist)))
     (mv `(,kind
           :cond ,(if lastp
                      t
@@ -827,7 +843,8 @@
           ,@(and base-name `(:type-name ,base-name))
           ,@(and shortp `(:short ,(cdr shortp)))
           ,@(and longp `(:long ,(cdr longp)))
-          :ctor-body (,(if hons 'hons 'cons) ,kind ,ctor-body1))
+          :ctor-body (,(if hons 'hons 'cons) ,kind ,ctor-body1)
+          ,@(and extra-binder-names `(:extra-binder-names ,extra-binder-names)))
         basep)))
 
 (defun tagsum-prods-to-flexprods (prods xvar sum-kwds have-base-or-override our-fixtypes tagsum-name)
@@ -950,6 +967,7 @@
     :post-fix-events
     :post-events
     :enable-rules
+    :extra-binder-names
     ))
 
 (defun defprod-fields-to-flexsum-prod (fields xvar name kwd-alist)
@@ -966,7 +984,8 @@
        (ctor-body (if tag `(,(if hons 'hons 'cons) ,tag ,ctor-body1) ctor-body1))
        (shape (tagsum-fields-to-shape flexsum-fields xbody layout))
        (requirep (assoc :require kwd-alist))
-       (kind (or tag (intern$ (symbol-name name) "KEYWORD"))))
+       (kind (or tag (intern$ (symbol-name name) "KEYWORD")))
+       (extra-binder-names (getarg :extra-binder-names nil kwd-alist)))
     `(,kind
       :shape ,(if tag
                     (nice-and `(eq (car ,xvar) ,tag) shape)
@@ -974,6 +993,7 @@
       :fields ,flexsum-fields
       :type-name ,name
       :ctor-body ,ctor-body
+      ,@(and extra-binder-names `(:extra-binder-names ,extra-binder-names))
       ,@(and requirep `(:require ,(cdr requirep))))))
 
 (defun flexprod-fields->names (fields)
@@ -2028,7 +2048,23 @@
   (b* (((flexsum x) x))
     (and x.kind
          `((deffixequiv ,x.kind :args ((,x.xvar ,x.pred))
-             :hints (("goal" :expand ((,x.fix ,x.xvar)))))))))
+             :hints (("goal" :expand ((,x.fix ,x.xvar)))))
+           
+           (make-event
+            (b* ((consp-when-pred ',(intern-in-package-of-symbol (cat "CONSP-WHEN-" (symbol-name x.pred))
+                                                                 x.pred))
+                 (sum.xvar ',x.xvar)
+                 (sum.fix ',x.fix)
+                 (consp-of-fix ',(intern-in-package-of-symbol (cat "CONSP-OF-" (symbol-name x.fix))
+                                                              x.fix))
+                 ((unless (fgetprop consp-when-pred 'acl2::theorem nil (w state)))
+                  '(value-triple :skip-type-prescription)))
+              `(defthm ,consp-of-fix
+                 (consp (,sum.fix ,sum.xvar))
+                 :hints (("goal" :use ((:instance ,consp-when-pred
+                                        (,sum.xvar (,sum.fix ,sum.xvar))))
+                          :in-theory (disable ,consp-when-pred)))
+                 :rule-classes :type-prescription)))))))
 
 (defun flexlist-fix-postevents (x)
   (b* (((flexlist x) x)
@@ -2414,6 +2450,17 @@
                 `(,f.acc-name ,xvar))
           (flexprod-fields-bind-accessors (cdr x) xvar))))
 
+(defun flexprod-extra-binder-names->acc-alist (names type-name)
+  (if (atom names)
+      nil
+    (cons (if (consp (car names))
+              (car names)
+            (cons (car names)
+                  (intern-in-package-of-symbol
+                   (cat (symbol-name type-name) "->" (symbol-name (car names)))
+                   type-name)))
+          (flexprod-extra-binder-names->acc-alist (cdr names) type-name))))
+
 (defun flexprod-constructor (prod sum)
   (b* (((flexsum sum) sum)
        ((flexprod prod) prod)
@@ -2421,6 +2468,10 @@
        (fieldnames (flexprod-fields->names prod.fields))
        (field-accs (pairlis$ fieldnames
                              (flexprod-fields->acc-names prod.fields)))
+       (binder-accs (append field-accs
+                            (append 
+                             (flexprod-extra-binder-names->acc-alist
+                              prod.extra-binder-names prod.type-name))))
        (ctor-of-fields-thmname
         (intern-in-package-of-symbol (cat (symbol-name prod.ctor-name) "-OF-FIELDS")
                                      prod.ctor-name))
@@ -2546,7 +2597,7 @@
         (acl2::def-b*-binder ,prod.ctor-name
           :body
           (std::da-patbind-fn ',prod.ctor-name
-                              ',field-accs
+                              ',binder-accs
                               acl2::args acl2::forms acl2::rest-expr))
 
         ,(std::da-make-maker-fn prod.ctor-name fieldnames

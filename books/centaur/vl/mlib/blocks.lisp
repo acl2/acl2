@@ -81,23 +81,22 @@
        ,@(append-over-types-rec
           '(:__elts__ x.__elts__)
           (types-mk-strsubst-alists
-           '(import port portdecl vardecl paramdecl fundecl taskdecl assign modinst gateinst always initial)))
-       :generates x.generates))))
+           '(import portdecl vardecl paramdecl fundecl taskdecl assign modinst gateinst always initial generate port)))))))
 
 (make-event
  `(define vl-genblob->module ((x vl-genblob-p)
-                                            (orig vl-module-p))
+                              (orig vl-module-p))
     :returns (new-mod vl-module-p)
     (b* (((vl-genblob x)))
       (change-vl-module orig
                         ,@(append-over-types-rec
                            '(:__elts__ x.__elts__)
                            (types-mk-strsubst-alists
-                            '(import port portdecl vardecl
+                            '(import portdecl vardecl
                                      paramdecl fundecl taskdecl
                                      assign modinst gateinst
-                                     always initial)))
-                        :generates x.generates))))
+                                     always initial
+                                     generate port)))))))
 
 
 (make-event

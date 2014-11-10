@@ -673,7 +673,7 @@ names in the module, which is needed by @(see sd-patalist-compare).</li>
 
 (defun vl-pp-context-modest (x)
   (declare (xargs :guard (vl-context1-p x)))
-  (let ((full (with-local-ps (vl-pp-modelement-full (vl-context1->elem x)))))
+  (let ((full (with-local-ps (vl-pp-ctxelement-full (vl-context1->elem x)))))
     (if (< (length full) 230)
         full
       (cat (subseq full 0 230) "..." *nls*))))
@@ -682,7 +682,7 @@ names in the module, which is needed by @(see sd-patalist-compare).</li>
 (define sd-pp-problem-long ((x sd-problem-p) &key (ps 'ps))
   (b* (((sd-problem x) x)
        (modname (vl-context1->mod x.ctx))
-       (loc (vl-modelement-loc (vl-context1->elem x.ctx))))
+       (loc (vl-ctxelement->loc (vl-context1->elem x.ctx))))
     (if (not (vl-ps->htmlp))
         ;; Plain text
         (vl-ps-seq

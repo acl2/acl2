@@ -5,9 +5,10 @@
               formals recursivep def-bodies
               make-flag flag-present flag-fn-name flag-alist
               flag-defthm-macro
-              flag-equivs-name expand-calls-computed-hint
-              find-calls-of-fns-term
-              find-calls-of-fns-list
+              flag-equivs-name
+              std::expand-calls-computed-hint
+              std::find-calls-of-fns-term
+              std::find-calls-of-fns-list
               defxdoc defsection
               )
     (union-eq *acl2-exports*

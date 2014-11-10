@@ -136,19 +136,19 @@ clever.</p>")
 
   (b* (((when (atom ports))
         (mv t (ok) nil))
-       (port1   (car ports))
-       (inside  (vl-port->expr port1))
-       (outside (vl-plainarg->expr (car plainargs)))
+       (port1   (vl-port-fix (car ports)))
 
-       ((when (vl-port->ifname port1))
+       ((when (eq (tag port1) :vl-interfaceport))
         (mv nil
             (warn :type :vl-inline-fail
                   :msg "Interface ports aren't supported for inlining. ~a0"
-                  :args (list (car ports)))
+                  :args (list port1))
             nil))
 
+       (inside  (vl-regularport->expr port1))
+       (outside (vl-plainarg->expr (car plainargs)))
        ((mv warnings dir)
-        (vl-port-direction (car ports) scope nil))
+        (vl-port-direction port1 scope nil))
        ((unless dir)
         ;; Already warned
         (mv nil warnings nil))
@@ -157,7 +157,7 @@ clever.</p>")
         (mv nil
             (warn :type :vl-inline-fail
                   :msg "Inout ports aren't supported for inlining. ~a0"
-                  :args (list (car ports)))
+                  :args (list port1))
             nil))
 
 

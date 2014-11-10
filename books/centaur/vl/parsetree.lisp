@@ -48,6 +48,16 @@
                            consp-when-member-equal-of-vl-atts-p
                            (tau-system))))
 
+(include-book "clause-processors/just-expand" :dir :system)
+(std::set-returnspec-default-hints
+ ((acl2::just-induct/expand-default-hint 'std::fnname id nil world)))
+(std::set-returnspec-mrec-default-hints
+ ((acl2::just-expand-mrec-default-hint 'std::fnname id t world)))
+
+(fty::set-deffixequiv-default-hints
+ ((acl2::just-induct/expand-default-hint 'fty::fnname id nil world)))
+(fty::set-deffixequiv-mutual-default-hints
+ ((acl2::just-expand-mrec-default-hint 'fty::fnname id t world)))
 
 ; ----------------------------------------------------------------------------
 ;
@@ -69,7 +79,7 @@ annotated with a @('version') field that must match exactly this string.</p>"
 
   ;; Current syntax version: generally a string like
   ;; "VL Syntax [date of modification]"
-  "VL Syntax 2014-10-31")
+  "VL Syntax 2014-11-4")
 
 (define vl-syntaxversion-p (x)
   :parents (syntax)
@@ -716,23 +726,17 @@ away with them as alternate kinds of assignments.</p>"))
                                :pdims    nil)))
 
 
-(defprod vl-port
-  :short "Representation of a single port."
-  :tag :vl-port
+(defprod vl-interfaceport
+  :parents (vl-port)
+  :short "Representation of a single interface port."
+  :tag :vl-interfaceport
   :layout :tree
-
-  ((name maybe-stringp
+  ((name stringp
          :rule-classes :type-prescription
-         "The \"externally visible\" name of this port, for use in named module
-          instances.  Usually it is best to avoid this; see below.")
+         "Name (internal and external) of this interface port, e.g., @('foo')
+          for @('simplebus.master foo').")
 
-   (expr vl-maybe-expr-p
-         "How the port is wired internally within the module.  Most of the time,
-          this is a simple identifier expression that is just @('name').  But
-          it can also be more complex; see below.  The expression should be
-          @('nil') for interface ports.")
-
-   (ifname maybe-stringp
+   (ifname stringp
            :rule-classes :type-prescription
            "For interface ports like @('simplebus foo') or @('simplebus.master foo'),
             this is the name of the interface, e.g., @('simplebus').  For
@@ -747,6 +751,26 @@ away with them as alternate kinds of assignments.</p>"))
 
    (udims   vl-packeddimensionlist-p
             "For interface ports only: the unpacked dimensions for this port.")
+
+   (loc  vl-location-p
+         "Where this port came from in the Verilog source code.")))
+
+(defprod vl-regularport
+  :parents (vl-port)
+  :short "Representation of a single non-interface port."
+  :tag :vl-regularport
+  :layout :tree
+
+  ((name maybe-stringp
+         :rule-classes :type-prescription
+         "The \"externally visible\" name of this port, for use in named module
+          instances.  Usually it is best to avoid this; see below.")
+
+   (expr vl-maybe-expr-p
+         "How the port is wired internally within the module.  Most of the time,
+          this is a simple identifier expression that is just @('name').  But
+          it can also be more complex; see below.  The expression should be
+          @('nil') for interface ports.")
 
    (loc  vl-location-p
          "Where this port came from in the Verilog source code."))
@@ -809,11 +833,14 @@ collectively specify the bits of @('c').</p>
 <p>SystemVerilog-2012 extends ports in several ways, but most of these
 extensions (e.g., support for fancy data types) are related to the port
 declarations rather than the ports.  One place where the ports themselves
-<i>are</i> extended is for interface ports.  We record which ports are
-interface ports with the @('ifname') and @('modport') fields.</p>
+<i>are</i> extended is for interface ports.  See @(see vl-port).</p>")
 
-
-<h3>Using Ports</h3>
+(deftranssum vl-port
+  (vl-regularport
+   vl-interfaceport)
+  :short "Representation of a single port."
+  :long "<p>Most ports are regular ports, see @(see vl-regularport).  However,
+SystemVerilog also adds interface ports, see @(see vl-interfaceport).</p>
 
 <p>It is generally best to <b>avoid using port names</b> except perhaps for
 things like error messages.  Why?  As shown above, some ports might not have
@@ -849,22 +876,52 @@ implement a comprehensive approach to detecting and dealing with backflow.</p>
 performed by examining the width of the port expression.  See @(see
 expression-sizing) for details.</p>")
 
+(defthm tag-when-vl-port-p-forward
+  (implies (vl-port-p x)
+           (or (eq (tag x) :vl-regularport)
+               (eq (tag x) :vl-interfaceport)))
+  :rule-classes :forward-chaining)
+
 (fty::deflist vl-portlist
               :elt-type vl-port-p
               :true-listp nil
               :elementp-of-nil nil)
 
-(defprojection vl-portlist->exprs ((x vl-portlist-p))
-  :parents (vl-portlist-p)
-  :nil-preservingp t
-  (vl-port->expr x)
-  ///
-  (defthm vl-exprlist-p-of-vl-portlist->exprs
-    (equal (vl-exprlist-p (vl-portlist->exprs x))
-           (not (member nil (vl-portlist->exprs x)))))
+(fty::deflist vl-interfaceportlist
+              :elt-type vl-interfaceport-p
+              :true-listp nil
+              :elementp-of-nil nil)
 
-  (defthm vl-exprlist-p-of-remove-equal-of-vl-portlist->exprs
-    (vl-exprlist-p (remove-equal nil (vl-portlist->exprs x)))))
+(fty::deflist vl-regularportlist
+  :elt-type vl-regularport
+  :true-listp nil
+  :elementp-of-nil nil)
+
+(defthm vl-portlist-p-when-vl-interfaceportlist-p
+  (implies (vl-interfaceportlist-p x)
+           (vl-portlist-p x))
+  :hints(("Goal" :induct (len x))))
+
+(defthm vl-portlist-p-when-vl-regularportlist-p
+  (implies (vl-regularportlist-p x)
+           (vl-portlist-p x))
+  :hints(("Goal" :induct (len x))))
+
+(define vl-port->name ((x vl-port-p))
+  :returns (name maybe-stringp :rule-classes :type-prescription)
+  (b* ((x (vl-port-fix x)))
+    (case (tag x)
+      (:vl-regularport   (vl-regularport->name x))
+      (:vl-interfaceport (vl-interfaceport->name x))
+      (otherwise         (impossible)))))
+
+(define vl-port->loc ((x vl-port-p))
+  :returns (loc vl-location-p)
+  (b* ((x (vl-port-fix x)))
+    (case (tag x)
+      (:vl-regularport   (vl-regularport->loc x))
+      (:vl-interfaceport (vl-interfaceport->loc x))
+      (otherwise         (progn$ (impossible) *vl-fakeloc*)))))
 
 (defprojection vl-portlist->names ((x vl-portlist-p))
   :parents (vl-portlist-p)
@@ -878,28 +935,13 @@ expression-sizing) for details.</p>")
   (defthm string-listp-of-remove-equal-of-vl-portlist->names
     (string-listp (remove-equal nil (vl-portlist->names x)))))
 
-(define vl-interfaceport-p ((x vl-port-p))
-  :parents (vl-port)
-  :short "Determine whether a port is an interface port."
-  :returns bool
-  :inline t
-  (b* (((vl-port x)))
-    (if x.ifname
-        t
-      nil)))
-
-(deflist vl-interfaceportlist-p (x)
-  :parents (vl-portlist-p)
-  :guard (vl-portlist-p x)
-  :elementp-of-nil nil
-  (vl-interfaceport-p x))
-
 (define vl-collect-interface-ports-exec ((x vl-portlist-p) nrev)
   :parents (vl-collect-interface-ports)
   (b* (((when (atom x))
         (nrev-fix nrev))
-       ((when (vl-interfaceport-p (car x)))
-        (b* ((nrev (nrev-push (vl-port-fix (car x)) nrev)))
+       (x1 (vl-port-fix (car x)))
+       ((when (eq (tag x1) :vl-interfaceport))
+        (b* ((nrev (nrev-push x1 nrev)))
           (vl-collect-interface-ports-exec (cdr x) nrev))))
     (vl-collect-interface-ports-exec (cdr x) nrev)))
 
@@ -911,13 +953,12 @@ expression-sizing) for details.</p>")
                          (vl-interfaceportlist-p ifports)))
   :verify-guards nil
   (mbe :logic
-       (cond ((atom x)
-              nil)
-             ((vl-interfaceport-p (car x))
-              (cons (vl-port-fix (car x))
-                    (vl-collect-interface-ports (cdr x))))
-             (t
-              (vl-collect-interface-ports (cdr x))))
+       (b* (((when (atom x))
+             nil)
+            (x1 (vl-port-fix (car x)))
+            ((when (eq (tag x1) :vl-interfaceport))
+             (cons x1 (vl-collect-interface-ports (cdr x)))))
+         (vl-collect-interface-ports (cdr x)))
        :exec
        (with-local-nrev
          (vl-collect-interface-ports-exec x nrev)))
@@ -936,7 +977,7 @@ expression-sizing) for details.</p>")
 
   (defthm vl-collect-interface-ports-of-cons
     (equal (vl-collect-interface-ports (cons a x))
-           (if (vl-interfaceport-p a)
+           (if (eq (tag (vl-port-fix a)) :vl-interfaceport)
                (cons (vl-port-fix a)
                      (vl-collect-interface-ports x))
              (vl-collect-interface-ports x)))))
@@ -3268,8 +3309,7 @@ be non-sliceable, at least if it's an input.</p>"
   (local (include-book "tools/templates" :dir :system))
 
   (defconst *vl-modelement-typenames*
-    '(port      ;; should this be in here?
-      portdecl
+    '(portdecl
       assign
       alias
       vardecl
@@ -3367,7 +3407,17 @@ initially kept in a big, mixed list.</p>"
         . ,(project-over-types
             '(defthm vl-modelementlist-p-when-vl-__type__list-p
                (implies (vl-__type__list-p x)
-                        (vl-modelementlist-p x)))))))
+                        (vl-modelementlist-p x)))))
+
+      (define vl-modelement->loc ((x vl-modelement-p))
+        :returns (loc vl-location-p :hints(("Goal" :in-theory (enable vl-modelement-fix
+                                                                      vl-modelement-p
+                                                                      tag-reasoning
+                                                                      (tau-system)))))
+        (let ((x (vl-modelement-fix x)))
+          (case (tag x)
+            . ,(project-over-types
+                '(:vl-__type__ (vl-__type__->loc x))))))))
 
 
   (local (in-theory (disable acl2::o<-of-two-nats-measure o< o<-when-natps nfix)))
@@ -3490,6 +3540,16 @@ initially kept in a big, mixed list.</p>"
                    nfix
                    ))
 
+  (define vl-genelement->loc ((x vl-genelement-p))
+    :returns (loc vl-location-p)
+    (vl-genelement-case x
+      (:vl-genloop  x.loc)
+      (:vl-genif    x.loc)
+      (:vl-gencase  x.loc)
+      (:vl-genblock x.loc)
+      (:vl-genarray x.loc)
+      (:vl-genbase  (vl-modelement->loc x.item))))
+
 
   (make-event
    `(progn
@@ -3500,8 +3560,9 @@ vl-modelementlist) by sorting the elements by type.  Its fields each contain
 the list of elements of the given type.</p>"
         (,@(project-over-types
             '(__elts__ vl-__type__list-p))
-           (generates vl-genelementlist-p))
-
+           (generates vl-genelementlist-p)
+           (ports     vl-portlist-p))
+        :extra-binder-names (ifports)
         :tag :vl-genblob
         :layout :tree)
 
@@ -3529,6 +3590,21 @@ the list of elements of the given type.</p>"
           :vl-genblock  x.loc
           :vl-genarray  x.loc))
 
+      (local (defun my-default-hint (fnname id clause world)
+               (declare (xargs :mode :program))
+               (and (eql (len (acl2::recursivep fnname world)) 1) ;; singly recursive
+                    (let* ((pool-lst (acl2::access acl2::clause-id id :pool-lst)))
+                      (and (eql 0 (acl2::access acl2::clause-id id :forcing-round))
+                           (cond ((not pool-lst)
+                                  (let ((formals (std::look-up-formals fnname world)))
+                                    `(:induct (,fnname . ,formals)
+                                      :in-theory (disable (:d ,fnname)))))
+                                 ((equal pool-lst '(1))
+                                  (std::expand-calls-computed-hint clause (list fnname)))))))))
+
+      ;; (local (std::set-returnspec-default-hints
+      ;;         ((my-returnspec-default-hint 'fnname acl2::id acl2::clause world))))
+
       (define vl-sort-genelements-aux
         ((x           vl-genelementlist-p)
          ,@(project-over-types
@@ -3536,27 +3612,12 @@ the list of elements of the given type.</p>"
          (generates   vl-genelementlist-p))
         :returns (mv ,@(project-over-types
                         `(__elts__
-                          vl-__type__list-p
-                          :hints (("goal" :in-theory (disable (:d vl-sort-genelements-aux))
-                                   :induct (vl-sort-genelements-aux
-                                            x ,@(project-over-types '__elts__) generates)
-                                   :expand ((vl-sort-genelements-aux
-                                             x ,@(project-over-types '__elts__) generates))))))
-                     (generates vl-genelementlist-p
-                                :hints (("goal" :in-theory (disable (:d vl-sort-genelements-aux))
-                                         :induct (vl-sort-genelements-aux
-                                                  x ,@(project-over-types '__elts__) generates)
-                                         :expand ((vl-sort-genelements-aux
-                                                   x ,@(project-over-types '__elts__) generates))))))
-        :hooks ((:fix :hints (("goal" :in-theory (disable (:d vl-sort-genelements-aux))
-                               :induct (vl-sort-genelements-aux
-                                        x ,@(project-over-types '__elts__) generates)
-                               :expand ((:free (,@(project-over-types '__elts__) generates)
-                                         (vl-sort-genelements-aux
-                                          x ,@(project-over-types '__elts__) generates))
-                                        (vl-sort-genelements-aux
-                                         (vl-genelementlist-fix x)
-                                         ,@(project-over-types '__elts__) generates))))))
+                          vl-__type__list-p))
+                     (generates vl-genelementlist-p))
+        :hooks ((:fix :hints ((my-default-hint
+                               'vl-sort-genelements-aux
+                               acl2::id acl2::clause world))))
+        :verbosep t
         (b* (((when (atom x))
               (mv ,@(project-over-types
                      '(rev (vl-__type__list-fix        __elts__)))
@@ -3614,13 +3675,89 @@ the list of elements of the given type.</p>"
     (cons (make-vl-genbase :item (car x))
           (vl-modelementlist->genelements (cdr x)))))
 
+(encapsulate nil
+  (local (defthm tag-when-vl-genelement-p
+           (implies (vl-genelement-p x)
+                    (or (equal (tag x) :vl-genbase)
+                        (equal (tag x) :vl-genloop)
+                        (equal (tag x) :vl-genif)
+                        (equal (tag x) :vl-gencase)
+                        (equal (tag x) :vl-genblock)
+                        (equal (tag x) :vl-genarray)))
+           :hints(("Goal" :in-theory (enable tag vl-genelement-p)))
+           :rule-classes :forward-chaining))
+  (local (in-theory (disable tag-when-vl-genblob-p)))
+
+  (deftranssum vl-ctxelement
+    ;; Add any tagged product that can be written with ~a and has a loc field.
+    (vl-portdecl
+     vl-assign
+     vl-alias
+     vl-vardecl
+     vl-paramdecl
+     vl-fundecl
+     vl-taskdecl
+     vl-modinst
+     vl-gateinst
+     vl-always
+     vl-initial
+     vl-typedef
+     vl-import
+     vl-fwdtypedef
+     vl-modport
+     vl-interfaceport
+     vl-regularport
+     vl-genelement))
+
+  (local (defthm vl-genelement-kind-by-tag-when-vl-ctxelement-p
+           (implies (and (vl-ctxelement-p x)
+                         (vl-genelement-p x))
+                    (equal (vl-genelement-kind x)
+                           (tag x)))
+           :hints(("Goal" :in-theory (enable vl-ctxelement-p
+                                             vl-genelement-p
+                                             vl-genelement-kind
+                                             tag)))))
+
+  (define vl-ctxelement->loc ((x vl-ctxelement-p))
+    :returns (loc vl-location-p :hints(("Goal" :in-theory (enable vl-ctxelement-fix
+                                                                  vl-ctxelement-p
+                                                                  tag-reasoning
+                                                                  (tau-system)))))
+    :guard-hints (("Goal" :do-not-induct t))
+    (let ((x (vl-ctxelement-fix X)))
+      (case (tag x)
+        (:vl-portdecl (vl-portdecl->loc x))
+        (:vl-assign (vl-assign->loc x))
+        (:vl-alias (vl-alias->loc x))
+        (:vl-vardecl (vl-vardecl->loc x))
+        (:vl-paramdecl (vl-paramdecl->loc x))
+        (:vl-fundecl (vl-fundecl->loc x))
+        (:vl-taskdecl (vl-taskdecl->loc x))
+        (:vl-modinst (vl-modinst->loc x))
+        (:vl-gateinst (vl-gateinst->loc x))
+        (:vl-always (vl-always->loc x))
+        (:vl-initial (vl-initial->loc x))
+        (:vl-typedef (vl-typedef->loc x))
+        (:vl-import (vl-import->loc x))
+        (:vl-fwdtypedef (vl-fwdtypedef->loc x))
+        (:vl-modport (vl-modport->loc x))
+        (:vl-interfaceport (vl-interfaceport->loc x))
+        (:vl-regularport (vl-regularport->loc x))
+        (:vl-genbase (vl-modelement->loc (vl-genbase->item x)))
+        (:vl-genloop (vl-genloop->loc x))
+        (:vl-genif   (vl-genif->loc x))
+        (:vl-gencase (vl-gencase->loc x))
+        (:vl-genblock (vl-genblock->loc x))
+        (:vl-genarray (vl-genarray->loc x))))))
+
 (defprod vl-context1
   :short "Description of where an expression occurs."
   :tag :vl-context
   :layout :tree
   ((mod  stringp :rule-classes :type-prescription
          "The module where this module element was taken from.")
-   (elem vl-modelement-p
+   (elem vl-ctxelement-p
          "Some element from the module.")))
 
 (define vl-context-p ((x))
@@ -3632,9 +3769,9 @@ the list of elements of the given type.</p>"
     (booleanp (vl-context-p x))
     :rule-classes :type-prescription)
   (in-theory (disable (:t vl-context-p)))
-  
-  (defthm vl-context-p-of-modelement
-    (implies (vl-modelement-p x)
+
+  (defthm vl-context-p-of-ctxelement
+    (implies (vl-ctxelement-p x)
              (vl-context-p x)))
 
   (define vl-context-fix ((x))
@@ -3772,7 +3909,10 @@ the list of elements of the given type.</p>"
 
    (esim       "This is meant to be @('nil') until @(see esim) conversion, at
                 which point it becomes the E module corresponding to this
-                VL module.")))
+                VL module."))
+  :extra-binder-names (hands-offp
+                       ifports
+                       modnamespace))
 
 (fty::deflist vl-modulelist
   :elt-type vl-module-p
@@ -3813,9 +3953,37 @@ transforms to not modules with this attribute.</p>"
 (define vl-module->ifports
   :short "Collect just the interface ports for a module."
   ((x vl-module-p))
-  :returns (ports (and (vl-portlist-p ports)
-                       (vl-interfaceportlist-p ports)))
-  (vl-collect-interface-ports (vl-module->ports x)))
+  :returns (ports (vl-interfaceportlist-p ports))
+  (vl-collect-interface-ports (vl-module->ports x))
+  ///
+  (local (defthm vl-regularportlist-p-when-no-interface-ports
+           (implies (and (not (vl-collect-interface-ports x))
+                         (vl-portlist-p x))
+                    (vl-regularportlist-p x))
+           :hints(("Goal" :induct (len x)))))
+  
+  (defthm vl-regularportlist-p-when-no-module->ifports
+    (implies (not (vl-module->ifports x))
+             (vl-regularportlist-p (vl-module->ports x)))
+    :hints(("Goal" :in-theory (enable vl-module->ifports)))))
+
+
+(define vl-genblob->ifports
+  :short "Collect just the interface ports for a genblob."
+  ((x vl-genblob-p))
+  :returns (ports (vl-interfaceportlist-p ports))
+  (vl-collect-interface-ports (vl-genblob->ports x))
+  ///
+  (local (defthm vl-regularportlist-p-when-no-interface-ports
+           (implies (and (not (vl-collect-interface-ports x))
+                         (vl-portlist-p x))
+                    (vl-regularportlist-p x))
+           :hints(("Goal" :induct (len x)))))
+  
+  (defthm vl-regularportlist-p-when-no-genblob->ifports
+    (implies (not (vl-genblob->ifports x))
+             (vl-regularportlist-p (vl-genblob->ports x)))
+    :hints(("Goal" :in-theory (enable vl-genblob->ifports)))))
 
 (defprojection vl-modulelist->names ((x vl-modulelist-p))
   :returns (names string-listp)
@@ -4088,7 +4256,9 @@ packages.  Eventually there will be new fields here.</p>")
                 to hold the module elements, in program order, until the rest
                 of the design has been loaded."))
 
-  :long "BOZO incomplete stub -- we don't really support interfaces yet.")
+  :long "BOZO incomplete stub -- we don't really support interfaces yet."
+
+  :extra-binder-names (ifports))
 
 (fty::deflist vl-interfacelist :elt-type vl-interface-p
   :elementp-of-nil nil)

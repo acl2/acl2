@@ -493,13 +493,16 @@ applied to a HID/identifier.  Otherwise, we generate a warning and fail.</p>"
 (def-vl-resolve-indexing-list vl-initiallist :element vl-initial)
 
 (def-vl-resolve-indexing vl-port
-  :body (b* (((vl-port x) x)
+  :body (b* ((x (vl-port-fix x))
+             ((when (eq (tag x) :vl-interfaceport))
+              (mv warnings x))
+             ((vl-regularport x) x)
              ((unless x.expr)
               (mv warnings x))
              ((mv warnings expr-prime)
               (vl-expr-resolve-indexing x.expr ss warnings))
              (x-prime
-              (change-vl-port x :expr expr-prime)))
+              (change-vl-regularport x :expr expr-prime)))
           (mv warnings x-prime)))
 
 (def-vl-resolve-indexing-list vl-portlist :element vl-port)

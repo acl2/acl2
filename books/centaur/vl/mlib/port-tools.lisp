@@ -201,11 +201,15 @@ basic port expressions.</p>"
 
 (define vl-port-wellformed-p ((x vl-port-p))
   :short "Recognizer for ports whose expressions are well-formed."
-  (vl-portexpr-p (vl-port->expr x))
+  (b* ((x (vl-port-fix x)))
+    (or (eq (tag x) :vl-interfaceport)
+        (vl-portexpr-p (vl-regularport->expr x))))
   ///
   (defthm vl-portexpr-p-of-vl-port->expr
-    (implies (vl-port-wellformed-p x)
-             (vl-portexpr-p (vl-port->expr x)))))
+    (implies (and (vl-port-wellformed-p x)
+                  (not (equal (tag x) :vl-interfaceport))
+                  (vl-port-p x))
+             (vl-portexpr-p (vl-regularport->expr x)))))
 
 (deflist vl-portlist-wellformed-p (x)
   (vl-port-wellformed-p x)
@@ -277,10 +281,11 @@ endmodule
 
 <p>We ignore any bit- or part-selects involved in the port expression and just
 return a list of strings.</p>"
-
-  (vl-basic-portexprlist-internal-wirenames
-   (vl-flatten-portexpr
-    (vl-port->expr x))))
+  (b* ((x (vl-port-fix x)))
+    (and (eq (tag x) :vl-regularport)
+         (vl-basic-portexprlist-internal-wirenames
+          (vl-flatten-portexpr
+           (vl-regularport->expr x))))))
 
 
 
@@ -346,7 +351,7 @@ and add a warning that this case is very unusual.</p>"
                   :args (list port))
             nil))
 
-       ((when (vl-port->ifname port))
+       ((when (eq (tag port) :vl-interfaceport))
         ;; No simple direction for interface port.
         (mv (ok) nil))
 
@@ -425,7 +430,7 @@ and add a warning that this case is very unusual.</p>"
        (loc  (vl-portdecl->loc (car x)))
        (guts (make-vl-id :name name))
        (expr (make-vl-atom :guts guts)))
-    (cons (make-vl-port :name name :expr expr :loc loc)
+    (cons (make-vl-regularport :name name :expr expr :loc loc)
           (vl-ports-from-portdecls (cdr x)))))
 
 (define vl-portdecls-with-dir ((dir vl-direction-p)

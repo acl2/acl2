@@ -757,7 +757,19 @@ which could not hold such large values.</p>")
 
 (add-json-encoder vl-maybe-packeddimension-p vl-jp-maybe-packeddimension)
 
-(def-vl-jp-aggregate port)
+(def-vl-jp-aggregate interfaceport)
+(def-vl-jp-list interfaceport :newlines 4)
+
+(def-vl-jp-aggregate regularport)
+(def-vl-jp-list regularport :newlines 4)
+
+(define vl-jp-port ((x vl-port-p) &key (ps 'ps))
+  :parents (json-encoders vl-port)
+  (b* ((x (vl-port-fix x)))
+    (if (eq (tag x) :vl-interfaceport)
+        (vl-jp-interfaceport x)
+      (vl-jp-regularport x))))
+
 (def-vl-jp-list port :newlines 4)
 
 
@@ -1286,7 +1298,8 @@ TEXT versions of the message.</p>"
 (define vl-jp-modelement ((x vl-modelement-p) &key (ps 'ps))
   :guard-hints (("goal" :in-theory (enable vl-modelement-p)))
   (case (tag x)
-    (:VL-PORT (VL-jp-PORT X))
+    (:VL-interfacePORT (VL-jp-interfacePORT X))
+    (:VL-regularPORT (VL-jp-regularPORT X))
     (:VL-PORTDECL (VL-jp-PORTDECL X))
     (:VL-ASSIGN (VL-jp-ASSIGN X))
     (:VL-ALIAS (VL-jp-ALIAS X))

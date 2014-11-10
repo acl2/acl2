@@ -372,14 +372,14 @@ occurs anywhere else in the grammar, this should be fine everywhere.</p>"
           (return (cond ((and (vl-atom-p pexpr)
                               (vl-id-p (vl-atom->guts pexpr)))
                          ;; Simple port like "x".  It gets its own name.
-                         (make-vl-port :name (vl-id->name (vl-atom->guts pexpr))
-                                       :expr pexpr
-                                       :loc loc))
+                         (make-vl-regularport :name (vl-id->name (vl-atom->guts pexpr))
+                                              :expr pexpr
+                                              :loc loc))
                         (t
                          ;; Expression port with no name.
-                         (make-vl-port :name nil
-                                       :expr pexpr
-                                       :loc loc)))))
+                         (make-vl-regularport :name nil
+                                              :expr pexpr
+                                              :loc loc)))))
         ;; Otherwise, we have a name and possibly an expr.
         (:= (vl-match))
         (id := (vl-match-token :vl-idtoken))
@@ -391,9 +391,9 @@ occurs anywhere else in the grammar, this should be fine everywhere.</p>"
         ;; (vl-is-token? :vl-rparen)) isn't sufficient to know that we aren't
         ;; at the end of the stream.
         (:= (vl-match-token :vl-rparen))
-        (return (make-vl-port :name (vl-idtoken->name id)
-                              :expr pexpr
-                              :loc loc))))
+        (return (make-vl-regularport :name (vl-idtoken->name id)
+                                     :expr pexpr
+                                     :loc loc))))
 
 (defparser vl-parse-1+-ports-separated-by-commas ()
   :short "Matches @('port { ',' port }'), possibly producing blank ports!"
@@ -406,13 +406,13 @@ occurs anywhere else in the grammar, this should be fine everywhere.</p>"
         (when (vl-is-token? :vl-rparen)
           ;; Blank port at the end.
           (loc := (vl-current-loc))
-          (return (list (make-vl-port :name nil :expr nil :loc loc))))
+          (return (list (make-vl-regularport :name nil :expr nil :loc loc))))
 
         (when (vl-is-token? :vl-comma)
           (loc := (vl-current-loc))
           (:= (vl-match))
           (rest := (vl-parse-1+-ports-separated-by-commas))
-          (return (cons (make-vl-port :name nil :expr nil :loc loc)
+          (return (cons (make-vl-regularport :name nil :expr nil :loc loc)
                         rest)))
 
         (first := (vl-parse-nonnull-port))
@@ -1462,7 +1462,7 @@ parse-port-types) for notes about how we distinguish between
 (defprod vl-parsed-interface-head
   :tag :vl-parsed-interface-head
   :layout :tree
-  ((ifname  maybe-stringp :rule-classes :type-prescription)
+  ((ifname stringp :rule-classes :type-prescription)
    (modport maybe-stringp :rule-classes :type-prescription)))
 
 (deftranssum vl-parsed-ansi-head
@@ -1685,13 +1685,20 @@ shouldn't be trying to parse the ports as a list of ansi ports at all!</p>"
   :returns (mv (ifacep        "Was this port an interface port?"
                               booleanp :rule-classes :type-prescription)
                (ports-acc     (and (vl-portlist-p ports-acc)
-                                   (consp ports-acc)))
+                                   (consp ports-acc)
+                                   (equal (vl-interfaceport-p (car ports-acc))
+                                          ifacep)
+                                   (equal (vl-regularport-p (car ports-acc))
+                                          (not ifacep))))
                (portdecls-acc (and (vl-portdecllist-p portdecls-acc)
                                    (implies (not ifacep)
                                             (consp portdecls-acc))))
                (vardecls-acc  (and (vl-vardecllist-p vardecls-acc)
                                    (implies (not ifacep)
                                             (consp vardecls-acc)))))
+  :prepwork
+  ((local (in-theory (enable tag-reasoning))))
+
   (b* (((vl-parsed-ansi-port x))
        ((vl-parsed-port-identifier x.id))
        (name (vl-idtoken->name x.id.name))
@@ -1702,19 +1709,18 @@ shouldn't be trying to parse the ports as a list of ansi ports at all!</p>"
        ;; Interface port.  This is actually the easy case, because we do NOT
        ;; create port or variable declarations for interface ports.  All we
        ;; need to do is create a special kind of port.
-       (b* ((new-port (make-vl-port :name    name
-                                    :expr    nil
-                                    :ifname  (vl-parsed-interface-head->ifname x.head)
-                                    :modport (vl-parsed-interface-head->modport x.head)
-                                    :udims   x.id.udims
-                                    :loc     loc)))
+       (b* ((new-port (make-vl-interfaceport :name    name
+                                             :ifname  (vl-parsed-interface-head->ifname x.head)
+                                             :modport (vl-parsed-interface-head->modport x.head)
+                                             :udims   x.id.udims
+                                             :loc     loc)))
          (mv t (list new-port) nil nil)))
 
       (:vl-parsed-portdecl-head
        (b* (((vl-parsed-portdecl-head x.head))
-            (ports (list (make-vl-port :name name
-                                       :expr (vl-idexpr name nil nil)
-                                       :loc loc)))
+            (ports (list (make-vl-regularport :name name
+                                              :expr (vl-idexpr name nil nil)
+                                              :loc loc)))
             (complete-p
              ;; ANSI-style ports ALWAYS create corresponding variable
              ;; declarations.  SystemVerilog-2012 23.2.2.2 (pg. 666): "Each
@@ -1754,7 +1760,11 @@ shouldn't be trying to parse the ports as a list of ansi ports at all!</p>"
       (otherwise
        (progn$ (impossible)
                ;; bogus crap for hyp-free type theorems
-               (mv t (list (make-vl-port)) nil nil))))))
+               (mv t
+                   (list (make-vl-interfaceport :name "bogus"
+                                                :ifname "bogus"))
+                   nil nil))))))
+
 
 (define vl-process-subsequent-ansi-port
   ((x             vl-parsed-ansi-port-p "Next parsed port to process.")
@@ -1767,6 +1777,8 @@ shouldn't be trying to parse the ports as a list of ansi ports at all!</p>"
    (vardecls-acc  vl-vardecllist-p))
 
   :guard (and (consp ports-acc)
+              (equal (vl-interfaceport-p (car ports-acc)) prev-ifacep)
+              (equal (vl-regularport-p (car ports-acc)) (not prev-ifacep))
               (implies (not prev-ifacep)
                        (and (consp portdecls-acc)
                             (consp vardecls-acc))))
@@ -1775,13 +1787,18 @@ shouldn't be trying to parse the ports as a list of ansi ports at all!</p>"
                               booleanp :rule-classes :type-prescription)
                (warnings      vl-warninglist-p)
                (ports-acc     (and (vl-portlist-p ports-acc)
-                                   (consp ports-acc)))
+                                   (consp ports-acc)
+                                   (equal (vl-interfaceport-p (car ports-acc)) ifacep)
+                                   (equal (vl-regularport-p (car ports-acc)) (not ifacep))
+                                   ))
                (portdecls-acc (and (vl-portdecllist-p portdecls-acc)
                                    (implies (not ifacep)
                                             (consp portdecls-acc))))
                (vardecls-acc  (and (vl-vardecllist-p vardecls-acc)
                                    (implies (not ifacep)
                                             (consp vardecls-acc)))))
+
+  :prepwork ((local (in-theory (enable tag-reasoning))))
 
   (b* ((warnings      (vl-warninglist-fix  warnings))
        (ports-acc     (vl-portlist-fix     ports-acc))
@@ -1801,12 +1818,11 @@ shouldn't be trying to parse the ports as a list of ansi ports at all!</p>"
        ;; interface ports, so just make a port.
        (mv t
            warnings
-           (cons (make-vl-port :name    name
-                               :expr    nil
-                               :ifname  (vl-parsed-interface-head->ifname x.head)
-                               :modport (vl-parsed-interface-head->modport x.head)
-                               :udims   x.id.udims
-                               :loc     loc)
+           (cons (make-vl-interfaceport :name    name
+                                        :ifname  (vl-parsed-interface-head->ifname x.head)
+                                        :modport (vl-parsed-interface-head->modport x.head)
+                                        :udims   x.id.udims
+                                        :loc     loc)
                  ports-acc)
            portdecls-acc
            vardecls-acc))
@@ -1834,7 +1850,10 @@ shouldn't be trying to parse the ports as a list of ansi ports at all!</p>"
                  ;; treat the new port as an interface of the same type.
                  (mv t
                      warnings
-                     (cons (change-vl-port (car ports-acc) :name name :loc loc) ports-acc)
+                     (cons (change-vl-interfaceport (car ports-acc)
+                                                    :name name
+                                                    :loc loc)
+                           ports-acc)
                      portdecls-acc
                      vardecls-acc)
                ;; The previous port was a regular port.  It had its own
@@ -1842,10 +1861,10 @@ shouldn't be trying to parse the ports as a list of ansi ports at all!</p>"
                ;; properties and make this port be just like it.
                (mv nil
                    warnings
-                   (cons (change-vl-port (car ports-acc)
-                                         :name name
-                                         :expr (vl-idexpr name nil nil)
-                                         :loc loc)
+                   (cons (change-vl-regularport (car ports-acc)
+                                                :name name
+                                                :expr (vl-idexpr name nil nil)
+                                                :loc loc)
                          ports-acc)
                    (cons (change-vl-portdecl (car portdecls-acc) :name name :loc loc) portdecls-acc)
                    (cons (change-vl-vardecl  (car vardecls-acc)  :name name :loc loc) vardecls-acc))))
@@ -1853,9 +1872,9 @@ shouldn't be trying to parse the ports as a list of ansi ports at all!</p>"
             ;; Otherwise there is at least SOME direction or type information
             ;; here, so this can't be an interface port.
 
-            (ports-acc (cons (make-vl-port :name name
-                                           :expr (vl-idexpr name nil nil)
-                                           :loc loc)
+            (ports-acc (cons (make-vl-regularport :name name
+                                                  :expr (vl-idexpr name nil nil)
+                                                  :loc loc)
                              ports-acc))
 
             (complete-p
@@ -1914,7 +1933,9 @@ shouldn't be trying to parse the ports as a list of ansi ports at all!</p>"
                          ;; bogus crap for hyp-free type theorems
                          (mv t
                              warnings
-                             (cons (make-vl-port) ports-acc)
+                             (cons (make-vl-interfaceport :name "bogus"
+                                                          :ifname "bogus")
+                                   ports-acc)
                              portdecls-acc
                              vardecls-acc))))))
 
@@ -1926,6 +1947,8 @@ shouldn't be trying to parse the ports as a list of ansi ports at all!</p>"
    (portdecls-acc vl-portdecllist-p)
    (vardecls-acc  vl-vardecllist-p))
   :guard (and (consp ports-acc)
+              (equal (vl-interfaceport-p (car ports-acc)) prev-ifacep)
+              (equal (vl-regularport-p (car ports-acc)) (not prev-ifacep))
               (implies (not prev-ifacep)
                        (and (consp portdecls-acc)
                             (consp vardecls-acc))))
