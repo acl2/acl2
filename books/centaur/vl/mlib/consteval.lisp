@@ -70,7 +70,7 @@
                                (width posp)
                                (type  vl-exprtype-p))
   :returns (ans vl-expr-p)
-  :guard (< value (expt 2 width))
+  :guard (unsigned-byte-p width value)
   (b* ((width (lposfix width))
        (type  (vl-exprtype-fix type))
        (guts  (make-vl-constint :value value
@@ -338,244 +338,352 @@
         :name vl-expr-resolved-p-of-vl-consteval-$bits)))
 
 
-
-(define vl-consteval-main ((x vl-expr-p)
-                           (ss vl-scopestack-p))
-  :returns (mv (successp booleanp :rule-classes :type-prescription
-                         :hints (("goal" :in-theory (disable (:d vl-consteval-main))
-                                  :induct (vl-consteval-main x ss)
-                                  :expand ((vl-consteval-main x ss)))))
-               (ans      vl-expr-p
-                         :hints (("goal" :in-theory (disable (:d vl-consteval-main))
-                                  :induct (vl-consteval-main x ss)
-                                  :expand ((vl-consteval-main x ss))))))
-  :guard (vl-expr-welltyped-p x)
-  :measure (vl-expr-count x)
-  :verify-guards nil
-  (b* ((x (vl-expr-fix x))
-       ((when (vl-expr-resolved-p x))
-        (mv t x))
-       ((unless (eq (vl-expr-kind x) :nonatom))
-        (mv nil x))
-       ((vl-nonatom x) x))
-    (case x.op
-      ((:vl-binary-plus :vl-binary-minus :vl-binary-times :vl-binary-div
-        :vl-binary-rem :vl-binary-bitand :vl-binary-bitor :vl-binary-xor
-        :vl-binary-xnor)
-       ;; See vl-expr-welltyped-p.  We know that the argument widths and types
-       ;; agree with the width/type of x.
-       (b* (((mv aok a) (vl-consteval-main (first x.args) ss))
-            ((mv bok b) (vl-consteval-main (second x.args) ss))
-            ((unless (and aok bok))
-             (mv nil x))
-            (aval   (vl-resolved->val a))
-            (bval   (vl-resolved->val b))
-            ((when (and (member x.op '(:vl-binary-div :vl-binary-rem))
-                        (zp bval)))
-             ;; Whoops, trying to divide by zero.
-             (mv nil x))
-            (ans    (vl-consteval-ans
-                     :value (acl2::loghead x.finalwidth (vl-consteval-binop x.op aval bval))
-                     :width x.finalwidth
-                     :type  x.finaltype)))
-         (mv t ans)))
-
-      ((:vl-unary-plus :vl-unary-minus :vl-unary-bitnot)
-       ;; See vl-expr-welltyped-p.  We know that the argument's size and type
-       ;; agrees with the width/type of X.
-       (b* (((mv aok a) (vl-consteval-main (first x.args) ss))
-            ((unless aok)
-             (mv nil x))
-            (aval (vl-resolved->val a))
-            (ans  (vl-consteval-ans
-                   :value (acl2::loghead x.finalwidth (vl-consteval-wideunary x.op aval))
-                   :width x.finalwidth
-                   :type x.finaltype)))
-         (mv t ans)))
-
-      ((:vl-binary-ceq :vl-binary-cne :vl-binary-eq :vl-binary-neq
-        :vl-binary-gt :vl-binary-gte :vl-binary-lt :vl-binary-lte)
-       ;; See vl-expr-welltyped-p.  We know that the result is a 1-bit unsigned
-       ;; number.  We know that the two operands agree on their sizes and
-       ;; types.
-       (b* (((mv aok a) (vl-consteval-main (first x.args) ss))
-            ((mv bok b) (vl-consteval-main (second x.args) ss))
-            ((unless (and aok bok))
-             (mv nil x))
-            (aval (vl-resolved->val a))
-            (bval (vl-resolved->val b))
-            (ans  (vl-consteval-ans :value (vl-consteval-cmpop x.op aval bval)
-                                    :width 1
-                                    :type :vl-unsigned)))
-         (mv t ans)))
-
-      ((:vl-binary-logand :vl-binary-logor :vl-implies :vl-equiv)
-       ;; See vl-expr-welltyped-p.  We know the result is a 1-bit unsigned.
-       (b* (((mv aok a) (vl-consteval-main (first x.args) ss))
-            ((mv bok b) (vl-consteval-main (second x.args) ss))
-            ((unless (and aok bok))
-             (mv nil x))
-            (aval (vl-resolved->val a))
-            (bval (vl-resolved->val b))
-            (ans  (vl-consteval-ans :value (vl-consteval-binlogic x.op aval bval)
-                                    :width 1
-                                    :type :vl-unsigned)))
-         (mv t ans)))
-
-
-      ((:vl-unary-bitand :vl-unary-nand :vl-unary-bitor :vl-unary-nor
-        :vl-unary-xor :vl-unary-xnor :vl-unary-lognot)
-       ;; See vl-expr-welltyped-p.  We know the result is a 1-bit unsigned.
-       (b* (((mv aok a) (vl-consteval-main (first x.args) ss))
-            ((unless aok)
-             (mv nil x))
-            (aval   (vl-resolved->val a))
-            (awidth (vl-expr->finalwidth a))
-            (ans    (vl-consteval-ans :value (vl-consteval-unary-reduxop x.op aval awidth)
-                                      :width 1
-                                      :type :vl-unsigned)))
-         (mv t ans)))
-
-      ((:vl-binary-shr :vl-binary-shl :vl-binary-ashr :vl-binary-ashl
-        :vl-binary-power)
-       ;; See vl-expr-welltyped-p.  See sizing minutia.  The exponent or shift
-       ;; amount part has a type that doesn't matter, it is always treated as
-       ;; an unsigned/positive number.  The size/type of A always agree with X.
-       (b* (((mv aok a) (vl-consteval-main (first x.args) ss))
-            ((mv bok b) (vl-consteval-main (second x.args) ss))
-            ((unless (and aok bok))
-             (mv nil x))
-            (aval (vl-resolved->val a))
-            (bval (vl-resolved->val b))
-            (ans  (vl-consteval-ans :value (acl2::loghead x.finalwidth
-                                                          (vl-consteval-shiftop x.op aval bval
-                                                                                x.finalwidth x.finaltype))
-                                    :width x.finalwidth
-                                    :type  x.finaltype)))
-         (mv t ans)))
-
-      ((:vl-qmark)
-       (b* (((mv aok a) (vl-consteval-main (first x.args) ss))
-            ((mv bok b) (vl-consteval-main (second x.args) ss))
-            ((mv cok c) (vl-consteval-main (third x.args) ss))
-            ((unless (and aok bok cok))
-             (mv nil x))
-            (ans (if (posp (vl-resolved->val a)) b c)))
-         (mv t ans)))
-
-      ((:vl-syscall)
-       (b* (((unless (vl-$bits-call-p x))
-             (mv nil x))
-            (obj (second x.args))
-            ;; Do we need to do something like this?
-            ;; ;; If obj is a constant we should evaluate it first, but
-            ;; ;; don't fail if it doesn't work.
-            ;; ((mv ok ev-obj) (vl-consteval-main obj ss))
-            ;; (obj (if ok ev-obj obj))
-            )
-         (vl-consteval-$bits obj x ss)))
-
-
-      ;; BOZO could eventually add support for other operators like
-      ;; concatenation, bitselect, etc.  But the above is probably pretty
-      ;; good and should be good enough for most cases.
-      (otherwise
-       (mv nil x))))
-
-
-  :prepwork
-  (
-   ;; Baseline (after accumulated-persistence hacking above, before adding
-   ;; welltyped-p theorem.  Accumulated-persistence enabled.)
-   ;; Time:  176.51 seconds (prove: 176.35, print: 0.14, other: 0.03)
-
-   ;; Deferred enabling of vl-expr-welltyped-p:
-   ;; Time:  157.17 seconds (prove: 156.96, print: 0.19, other: 0.03)
-   (local (in-theory (disable vl-expr-welltyped-p
-                              arity-stuff-about-vl-$bits-call)))
-
-   ;; Fancy trick to try to resolve these membership things faster:
-   (local (defthm fancy-solve-member-consts
-            (implies (and (syntaxp (quotep x))
-                          (member a free)
-                          (syntaxp (quotep free))
-                          (not (intersectp-equal x free)))
-                     (equal (member a x)
-                            nil))
-            :hints((set-reasoning))))
-
-   (local (defthm member-of-singleton
-            (iff (member a (cons x nil))
-                 (equal a x))))
-
-   (local (in-theory (disable acl2::member-of-cons acl2::member-when-atom)))
-
-   ;; This is pretty good:
-   ;; (add-default-hints
-   ;;  '((and stable-under-simplificationp
-   ;;         '(:expand (vl-expr-welltyped-p x)
-   ;;           :in-theory (enable acl2::member-of-cons)))))
-
-   ;; This seems a bit better, still pretty slow, ~60s for all the proofs.
-   ;; (add-default-hints
-   ;;  '((and stable-under-simplificationp
-   ;;         '(:expand (vl-expr-welltyped-p x)))
-   ;;    (and stable-under-simplificationp
-   ;;         '(:in-theory (enable acl2::member-of-cons
-   ;;                              acl2::member-when-atom)))))
-  (local (in-theory (disable acl2::consp-of-car-when-alistp
-                             acl2::alistp-when-keyval-alist-p-rewrite
-                             vl-exprlist-p-when-not-consp
-                             acl2::alistp-of-cdr
-                             alistp-when-vl-atts-p-rewrite
-                             natp-of-car-when-nat-listp
-                             acl2::natp-of-car-when-nat-listp
-                             acl2::natp-rw
-                             acl2::natp-when-maybe-natp
-                             acl2::maybe-natp-when-natp
-                             maybe-natp-of-car-when-vl-maybe-nat-listp
-                             acl2::consp-when-member-equal-of-atom-listp
-                             (tau-system))))
-   )
-
+(define vl-consteval-concat ((x vl-exprlist-p)
+                             (val-acc natp)
+                             (width-acc natp))
+  :guard (and (vl-exprlist-resolved-p x)
+              (consp x)
+              (unsigned-byte-p width-acc val-acc))
+  :guard-hints (("goal" :in-theory (enable acl2::expt-2-is-ash
+                                           vl-exprlist-resolved-p
+                                           vl-expr-resolved-p)))
+  :returns (ans vl-expr-p)
+  (b* (((vl-constint x1) (vl-atom->guts (car x)))
+       (val-acc (acl2::logapp x1.origwidth x1.value (lnfix val-acc)))
+       (width-acc (+ x1.origwidth (lnfix width-acc)))
+       ((when (atom (cdr x)))
+        (vl-consteval-ans :value val-acc :width width-acc :type :vl-unsigned)))
+    (vl-consteval-concat (cdr x) val-acc width-acc))
   ///
-  (local (in-theory (disable (:d vl-consteval-main))))
-  (local (set-default-hints
-          '((and (equal (car id) '(0))
-                 '(:induct (vl-consteval-main x ss)
-                   :expand ((vl-consteval-main x ss))))
-            (and stable-under-simplificationp
-                 '(:expand ((vl-expr-welltyped-p x)
-                            (vl-hidexpr-p x)
-                            (vl-hidindex-p x)))))))
+  (local (in-theory (enable vl-exprlist->finalwidths
+                            vl-exprlist-resolved-p
+                            vl-exprlist-welltyped-p)))
+
+  (local (defthm origwidth-when-welltyped/resolved
+           (implies (and (vl-expr-welltyped-p x)
+                         (vl-expr-resolved-p x))
+                    (equal (vl-constint->origwidth (vl-atom->guts x))
+                           (vl-expr->finalwidth x)))
+           :hints(("Goal" :in-theory (enable vl-expr-resolved-p
+                                             vl-expr-welltyped-p
+                                             vl-atom-welltyped-p
+                                             vl-expr->finalwidth)))))
+
+  (local (defthm finalwidth-type-when-welltyped/resolved
+           (implies (and (vl-expr-welltyped-p x)
+                         (vl-expr-resolved-p x))
+                    (posp (vl-expr->finalwidth x)))
+           :hints(("Goal" :in-theory (enable vl-expr-resolved-p
+                                             vl-expr-welltyped-p
+                                             vl-atom-welltyped-p
+                                             vl-expr->finalwidth)))
+           :rule-classes :type-prescription))
+
   (more-returns
    (ans (vl-expr-welltyped-p ans)
-        :hyp (vl-expr-welltyped-p x)
-        :name vl-expr-welltyped-p-of-vl-consteval-main)
+        :name vl-expr-welltyped-p-of-vl-consteval-concat)
 
-   (ans (equal (vl-expr->finalwidth ans) (vl-expr->finalwidth x))
-        :hyp (vl-expr-welltyped-p x)
-        :name vl-expr->finalwidth-of-vl-consteval-main)
+   (ans (implies (and (vl-exprlist-welltyped-p x)
+                      (vl-exprlist-resolved-p x)
+                      (consp x))
+                 (equal (vl-expr->finalwidth ans)
+                        (+ (nfix width-acc) (sum-nats (vl-exprlist->finalwidths x)))))
+        :name vl-expr->finalwidth-of-vl-consteval-concat)
 
-   (ans (equal (vl-expr->finaltype ans) (vl-expr->finaltype x))
-        :hyp (vl-expr-welltyped-p x)
-        :name vl-expr->finaltype-of-vl-consteval-main)
+   (ans (equal (vl-expr->finaltype ans) :vl-unsigned)
+        :name vl-expr->finaltype-of-vl-consteval-concat)
 
-   (ans (implies successp (vl-expr-resolved-p ans))
-        :hyp (vl-expr-welltyped-p x)
-        :name vl-expr-resolved-p-of-vl-consteval-main))
+   (ans (vl-expr-resolved-p ans)
+        :name vl-expr-resolved-p-of-vl-consteval-concat)))
 
-  (local (set-default-hints nil))
-  (local (defthm <-2-when-bitp
-           (implies (acl2::bitp x)
-                    (< x 2))))
+(defines vl-consteval-main
+  (define vl-consteval-main ((x vl-expr-p)
+                             (ss vl-scopestack-p))
+    :returns (mv (successp booleanp :rule-classes :type-prescription)
+                 (ans      vl-expr-p))
+    :guard (vl-expr-welltyped-p x)
+    :measure (vl-expr-count x)
+    :verify-guards nil
+    (b* ((x (vl-expr-fix x))
+         ((when (vl-expr-resolved-p x))
+          (mv t x))
+         ((unless (eq (vl-expr-kind x) :nonatom))
+          (mv nil x))
+         ((vl-nonatom x) x))
+      (case x.op
+        ((:vl-binary-plus :vl-binary-minus :vl-binary-times :vl-binary-div
+          :vl-binary-rem :vl-binary-bitand :vl-binary-bitor :vl-binary-xor
+          :vl-binary-xnor)
+         ;; See vl-expr-welltyped-p.  We know that the argument widths and types
+         ;; agree with the width/type of x.
+         (b* (((mv aok a) (vl-consteval-main (first x.args) ss))
+              ((mv bok b) (vl-consteval-main (second x.args) ss))
+              ((unless (and aok bok))
+               (mv nil x))
+              (aval   (vl-resolved->val a))
+              (bval   (vl-resolved->val b))
+              ((when (and (member x.op '(:vl-binary-div :vl-binary-rem))
+                          (zp bval)))
+               ;; Whoops, trying to divide by zero.
+               (mv nil x))
+              (ans    (vl-consteval-ans
+                       :value (acl2::loghead x.finalwidth (vl-consteval-binop x.op aval bval))
+                       :width x.finalwidth
+                       :type  x.finaltype)))
+           (mv t ans)))
 
-  (verify-guards vl-consteval-main
-    :hints (("goal" :do-not-induct t
-             :expand ((vl-expr-welltyped-p x)))
-            (and stable-under-simplificationp
-                 '(:in-theory (enable acl2::member-of-cons)))
-            )))
+        ((:vl-unary-plus :vl-unary-minus :vl-unary-bitnot)
+         ;; See vl-expr-welltyped-p.  We know that the argument's size and type
+         ;; agrees with the width/type of X.
+         (b* (((mv aok a) (vl-consteval-main (first x.args) ss))
+              ((unless aok)
+               (mv nil x))
+              (aval (vl-resolved->val a))
+              (ans  (vl-consteval-ans
+                     :value (acl2::loghead x.finalwidth (vl-consteval-wideunary x.op aval))
+                     :width x.finalwidth
+                     :type x.finaltype)))
+           (mv t ans)))
+
+        ((:vl-binary-ceq :vl-binary-cne :vl-binary-eq :vl-binary-neq
+          :vl-binary-gt :vl-binary-gte :vl-binary-lt :vl-binary-lte)
+         ;; See vl-expr-welltyped-p.  We know that the result is a 1-bit unsigned
+         ;; number.  We know that the two operands agree on their sizes and
+         ;; types.
+         (b* (((mv aok a) (vl-consteval-main (first x.args) ss))
+              ((mv bok b) (vl-consteval-main (second x.args) ss))
+              ((unless (and aok bok))
+               (mv nil x))
+              (aval (vl-resolved->val a))
+              (bval (vl-resolved->val b))
+              (ans  (vl-consteval-ans :value (vl-consteval-cmpop x.op aval bval)
+                                      :width 1
+                                      :type :vl-unsigned)))
+           (mv t ans)))
+
+        ((:vl-binary-logand :vl-binary-logor :vl-implies :vl-equiv)
+         ;; See vl-expr-welltyped-p.  We know the result is a 1-bit unsigned.
+         (b* (((mv aok a) (vl-consteval-main (first x.args) ss))
+              ((mv bok b) (vl-consteval-main (second x.args) ss))
+              ((unless (and aok bok))
+               (mv nil x))
+              (aval (vl-resolved->val a))
+              (bval (vl-resolved->val b))
+              (ans  (vl-consteval-ans :value (vl-consteval-binlogic x.op aval bval)
+                                      :width 1
+                                      :type :vl-unsigned)))
+           (mv t ans)))
+
+
+        ((:vl-unary-bitand :vl-unary-nand :vl-unary-bitor :vl-unary-nor
+          :vl-unary-xor :vl-unary-xnor :vl-unary-lognot)
+         ;; See vl-expr-welltyped-p.  We know the result is a 1-bit unsigned.
+         (b* (((mv aok a) (vl-consteval-main (first x.args) ss))
+              ((unless aok)
+               (mv nil x))
+              (aval   (vl-resolved->val a))
+              (awidth (vl-expr->finalwidth a))
+              (ans    (vl-consteval-ans :value (vl-consteval-unary-reduxop x.op aval awidth)
+                                        :width 1
+                                        :type :vl-unsigned)))
+           (mv t ans)))
+
+        ((:vl-binary-shr :vl-binary-shl :vl-binary-ashr :vl-binary-ashl
+          :vl-binary-power)
+         ;; See vl-expr-welltyped-p.  See sizing minutia.  The exponent or shift
+         ;; amount part has a type that doesn't matter, it is always treated as
+         ;; an unsigned/positive number.  The size/type of A always agree with X.
+         (b* (((mv aok a) (vl-consteval-main (first x.args) ss))
+              ((mv bok b) (vl-consteval-main (second x.args) ss))
+              ((unless (and aok bok))
+               (mv nil x))
+              (aval (vl-resolved->val a))
+              (bval (vl-resolved->val b))
+              (ans  (vl-consteval-ans :value (acl2::loghead x.finalwidth
+                                                            (vl-consteval-shiftop x.op aval bval
+                                                                                  x.finalwidth x.finaltype))
+                                      :width x.finalwidth
+                                      :type  x.finaltype)))
+           (mv t ans)))
+
+        ((:vl-qmark)
+         (b* (((mv aok a) (vl-consteval-main (first x.args) ss))
+              ((mv bok b) (vl-consteval-main (second x.args) ss))
+              ((mv cok c) (vl-consteval-main (third x.args) ss))
+              ((unless (and aok bok cok))
+               (mv nil x))
+              (ans (if (posp (vl-resolved->val a)) b c)))
+           (mv t ans)))
+
+        ((:vl-syscall)
+         (b* (((unless (vl-$bits-call-p x))
+               (mv nil x))
+              (obj (second x.args))
+              ;; Do we need to do something like this?
+              ;; ;; If obj is a constant we should evaluate it first, but
+              ;; ;; don't fail if it doesn't work.
+              ;; ((mv ok ev-obj) (vl-consteval-main obj ss))
+              ;; (obj (if ok ev-obj obj))
+              )
+           (vl-consteval-$bits obj x ss)))
+
+        (:vl-concat
+         (b* (((mv argsok args) (vl-consteval-exprlist-main x.args ss))
+              ((unless (and argsok (consp args))) (mv nil x)))
+           (mv t (vl-consteval-concat args 0 0))))
+              
+
+
+        ;; BOZO could eventually add support for other operators like
+        ;; concatenation, bitselect, etc.  But the above is probably pretty
+        ;; good and should be good enough for most cases.
+        (otherwise
+         (mv nil x)))))
+  
+
+  (define vl-consteval-exprlist-main ((x vl-exprlist-p)
+                                      (ss vl-scopestack-p))
+    :returns (mv (successp booleanp :rule-classes :type-prescription)
+                 (ans      vl-exprlist-p))
+    :guard (vl-exprlist-welltyped-p x)
+    :measure (vl-exprlist-count x)
+    (b* (((when (atom x)) (mv t nil))
+         ((mv ok1 ans1) (vl-consteval-main (car x) ss))
+         ((mv ok2 ans2) (vl-consteval-exprlist-main (cdr x) ss)))
+      (mv (and ok1 ok2) (cons ans1 ans2))))
+
+
+    :prepwork
+    (
+     ;; Baseline (after accumulated-persistence hacking above, before adding
+     ;; welltyped-p theorem.  Accumulated-persistence enabled.)
+     ;; Time:  176.51 seconds (prove: 176.35, print: 0.14, other: 0.03)
+
+     ;; Deferred enabling of vl-expr-welltyped-p:
+     ;; Time:  157.17 seconds (prove: 156.96, print: 0.19, other: 0.03)
+     (local (in-theory (disable vl-expr-welltyped-p
+                                arity-stuff-about-vl-$bits-call)))
+
+     ;; Fancy trick to try to resolve these membership things faster:
+     (local (defthm fancy-solve-member-consts
+              (implies (and (syntaxp (quotep x))
+                            (member a free)
+                            (syntaxp (quotep free))
+                            (not (intersectp-equal x free)))
+                       (equal (member a x)
+                              nil))
+              :hints((set-reasoning))))
+
+     (local (defthm member-of-singleton
+              (iff (member a (cons x nil))
+                   (equal a x))))
+
+     (local (in-theory (disable acl2::member-of-cons acl2::member-when-atom)))
+
+     ;; This is pretty good:
+     ;; (add-default-hints
+     ;;  '((and stable-under-simplificationp
+     ;;         '(:expand (vl-expr-welltyped-p x)
+     ;;           :in-theory (enable acl2::member-of-cons)))))
+
+     ;; This seems a bit better, still pretty slow, ~60s for all the proofs.
+     ;; (add-default-hints
+     ;;  '((and stable-under-simplificationp
+     ;;         '(:expand (vl-expr-welltyped-p x)))
+     ;;    (and stable-under-simplificationp
+     ;;         '(:in-theory (enable acl2::member-of-cons
+     ;;                              acl2::member-when-atom)))))
+     (local (in-theory (disable acl2::consp-of-car-when-alistp
+                                acl2::alistp-when-keyval-alist-p-rewrite
+                                vl-exprlist-p-when-not-consp
+                                acl2::alistp-of-cdr
+                                alistp-when-vl-atts-p-rewrite
+                                natp-of-car-when-nat-listp
+                                acl2::natp-of-car-when-nat-listp
+                                acl2::natp-rw
+                                acl2::natp-when-maybe-natp
+                                acl2::maybe-natp-when-natp
+                                maybe-natp-of-car-when-vl-maybe-nat-listp
+                                acl2::consp-when-member-equal-of-atom-listp
+                                (tau-system))))
+     )
+
+    ///
+    (local (set-default-hints
+            '((acl2::just-expand-mrec-default-hint 'vl-consteval-main id nil world)
+              (and stable-under-simplificationp
+                   '(:expand ((vl-expr-welltyped-p x)
+                              (vl-hidexpr-p x)
+                              (vl-hidindex-p x)))))))
+    (defthm-vl-consteval-main-flag
+      (defthm vl-expr-welltyped-p-of-vl-consteval-main
+        (b* (((mv ?ok ?ans) (vl-consteval-main x ss)))
+          (implies (vl-expr-welltyped-p x)
+                   (vl-expr-welltyped-p ans)))
+        :flag vl-consteval-main)
+      (defthm vl-exprlist-welltyped-p-of-vl-consteval-exprlist-main
+        (b* (((mv ?ok ?ans) (vl-consteval-exprlist-main x ss)))
+          (implies (vl-exprlist-welltyped-p x)
+                   (vl-exprlist-welltyped-p ans)))
+        :flag vl-consteval-exprlist-main))
+
+    (defthm-vl-consteval-main-flag
+      (defthm vl-expr-resolved-p-of-vl-consteval-main
+        (b* (((mv ?ok ?ans) (vl-consteval-main x ss)))
+          (implies (and (vl-expr-welltyped-p x)
+                        ok)
+                   (vl-expr-resolved-p ans)))
+        :flag vl-consteval-main)
+      (defthm vl-exprlist-resolved-p-of-vl-consteval-exprlist-main
+        (b* (((mv ?ok ?ans) (vl-consteval-exprlist-main x ss)))
+          (implies (and (vl-exprlist-welltyped-p x)
+                        ok)
+                   (vl-exprlist-resolved-p ans)))
+        :flag vl-consteval-exprlist-main))
+
+    (defthm-vl-consteval-main-flag
+      (defthm vl-expr->finalwidth-of-vl-consteval-main
+        (b* (((mv ?ok ?ans) (vl-consteval-main x ss)))
+          (implies (vl-expr-welltyped-p x)
+                   (equal (vl-expr->finalwidth ans)
+                          (vl-expr->finalwidth x))))
+        :flag vl-consteval-main)
+      (defthm vl-exprlist->finalwidth-of-vl-consteval-exprlist-main
+        (b* (((mv ?ok ?ans) (vl-consteval-exprlist-main x ss)))
+          (implies (vl-exprlist-welltyped-p x)
+                   (equal (vl-exprlist->finalwidths ans)
+                          (vl-exprlist->finalwidths x))))
+        :flag vl-consteval-exprlist-main))
+
+    (defthm-vl-consteval-main-flag
+      (defthm vl-expr->finaltype-of-vl-consteval-main
+        (b* (((mv ?ok ?ans) (vl-consteval-main x ss)))
+          (implies (vl-expr-welltyped-p x)
+                   (equal (vl-expr->finaltype ans)
+                          (vl-expr->finaltype x))))
+        :flag vl-consteval-main)
+      (defthm vl-exprlist->finaltype-of-vl-consteval-exprlist-main
+        (b* (((mv ?ok ?ans) (vl-consteval-exprlist-main x ss)))
+          (implies (vl-exprlist-welltyped-p x)
+                   (equal (vl-exprlist->finaltypes ans)
+                          (vl-exprlist->finaltypes x))))
+        :flag vl-consteval-exprlist-main))
+
+    (local (set-default-hints nil))
+    (local (defthm <-2-when-bitp
+             (implies (acl2::bitp x)
+                      (< x 2))))
+    (local (in-theory (enable unsigned-byte-p)))
+
+    (deffixequiv-mutual vl-consteval-main)
+
+    (verify-guards vl-consteval-main
+      :hints (("goal" :do-not-induct t
+               :expand ((vl-expr-welltyped-p x)))
+              (and stable-under-simplificationp
+                   '(:in-theory (enable acl2::member-of-cons)))
+              )))
+      
 
 
 
