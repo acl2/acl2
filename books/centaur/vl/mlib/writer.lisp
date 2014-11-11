@@ -1473,18 +1473,17 @@ expression into a string."
                   (vl-ps-span "vl_key" (vl-print-str (vl-coretypename-string x.name)))
                   ;; BOZO this isn't quite right -- we shouldn't print the
                   ;; signedness if it's not applicable to this kind of type.
-                  (vl-print " ")
                   ;; signing, if applicable
                   (cond ((member x.name '(:vl-byte :vl-shortint :vl-int :vl-longint :vl-integer))
                          ;; Default is signed.  Only need to print anything if it's unsigned.
                          (if x.signedp
                              ps
-                           (vl-ps-span "vl_key" (vl-print-str "unsigned "))))
+                           (vl-ps-span "vl_key" (vl-print-str " unsigned"))))
 
                         ((member x.name '(:vl-time :vl-bit :vl-logic :vl-reg))
                          ;; Default is unsigned.  Only need to print anything if it's signed.
                          (if x.signedp
-                             (vl-ps-span "vl_key" (vl-print-str "signed "))
+                             (vl-ps-span "vl_key" (vl-print-str " signed"))
                            ps))
 
                         (t
@@ -1493,7 +1492,10 @@ expression into a string."
                          (progn$ (or (not x.signedp)
                                      (raise "core type ~x0 marked as signed? ~x1" x.name x))
                                  ps)))
-                  (vl-pp-packeddimensionlist x.pdims)))
+                  (if (consp x.pdims)
+                      (vl-ps-seq (vl-print " ")
+                                 (vl-pp-packeddimensionlist x.pdims))
+                    ps)))
 
       (:vl-struct
        (vl-ps-seq (vl-indent 2)
@@ -1584,10 +1586,11 @@ expression into a string."
                    ;; logic type, which is the default -- just print the
                    ;; signedness/packed dims
                    (vl-ps-seq (if (vl-coretype->signedp x.type)
-                                  (vl-ps-span "vl_key" (vl-print-str " signed "))
+                                  (vl-ps-span "vl_key" (vl-print-str "signed "))
                                 ps)
                               (vl-pp-packeddimensionlist (vl-coretype->pdims x.type)))
                  (vl-pp-datatype x.type))
+               (vl-print " ")
                (vl-print-wirename x.name)
                (let ((udims (vl-datatype->udims x.type)))
                  (if (consp udims)

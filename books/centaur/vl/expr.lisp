@@ -866,6 +866,18 @@ vl-atomguts-p) is already known."
   (mbe :logic (vl-sysfunname-p x)
        :exec (eq (tag x) :vl-sysfunname)))
 
+(define vl-fast-typename-p ((x vl-atomguts-p))
+  :parents (vl-atomguts-p vl-typename-p)
+  :short "Faster version of @(see vl-typename-p), given that @(see
+vl-atomguts-p) is already known."
+  :long "<p>We leave this function enabled and reason about @('vl-typename-p')
+instead.</p>"
+  :inline t
+  :enabled t
+  :hooks nil
+  (mbe :logic (vl-typename-p x)
+       :exec (eq (tag x) :vl-typename)))
+
 (defoption maybe-natp natp
   ;; BOZO misplaced, :parents nil to settle documentation issues
   :parents nil)
