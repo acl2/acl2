@@ -216,7 +216,7 @@ warnings\".</p>"
         (mv acc cutoff suppressed))
 
        ((vl-warning x1) (car x))
-       (curr            (nfix (hons-get x1.type counts-fal)))
+       (curr            (nfix (cdr (hons-get x1.type counts-fal))))
        (counts-fal      (hons-acons x1.type (+ 1 curr) counts-fal))
        (keep-p          (< curr cutoff))
        (acc             (if keep-p (cons x1 acc) acc))
@@ -241,7 +241,7 @@ warnings\".</p>"
           :msg "Eliding ~x0 additional warning~s1 (type~s1 ~&2)."
           :args (list (len suppressed)
                       (if (vl-plural-p suppressed) "s" "")
-                      suppressed))))
+                      (mergesort suppressed)))))
 
 (define vl-print-reportcard-aux ((x vl-reportcard-p)
                                  (elide maybe-natp)
