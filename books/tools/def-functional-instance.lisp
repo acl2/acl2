@@ -1,7 +1,4 @@
-
-; Def-functional-instance: automates defining theorems that are functional
-; instances of existing ones.
-
+; Def-functional-instance: automates defining functional instances of existing theorems
 ; Copyright (C) 2010 Centaur Technology
 ;
 ; Contact:
@@ -31,10 +28,37 @@
 ;
 ; Original author: Sol Swords <sswords@centtech.com>
 
-
 (in-package "ACL2")
-
 (include-book "bstar")
+
+(defxdoc def-functional-instance
+  :parents (functional-instantiation)
+  :short "Functionally instantiate a pre-existing theorem to prove a new one."
+
+:long "<p>Usage:</p>
+
+@({
+ (def-functional-instance new-thm-name
+   orig-thm-name
+   ((orig-fn substitute-fn) ...)
+   :hints (...)                   ;; optional
+   :rule-classes rule-classes)    ;; optional
+})
+
+<p>Def-functional-instance attempts to define a new theorem based on
+functionally instantiating an existing one with a user-provided function
+substitution.  It looks up the body of the theorem named ORIG-THM-NAME in the
+ACL2 world and applies the functional substitution, replacing each ORIG-FN with
+SUBSTITUTE-FN in the theorem body.  It then submits this as a new theorem named
+NEW-THM-NAME with a hint to prove it using a functional instance of the
+original theorem.  This theorem has either the given rule-classes or, if this
+argument is omitted, the rule-classes of the original theorem.</p>
+
+<p>Sometimes further hints are needed to show that the functional instantiation
+is valid.  These may be given by the :hints keyword.  Note, however, that there
+is already a hint provided at \"goal\", so that if one of the user-provided
+hints uses this as its subgoal specifier, this hint will be ignored.  The extra
+hints given should either be computed hints or reference later subgoals.</p>")
 
 (defun look-for-goal-hint (hints)
   (if (atom hints)
@@ -47,8 +71,7 @@
 
 (defun def-functional-instance-fn
   (newname oldname subst hints rule-classes rule-classesp state)
-  (declare (xargs :stobjs state
-                  :mode :program))
+  (declare (xargs :stobjs state :mode :program))
   (b* ((world (w state))
        (body (fgetprop oldname 'theorem nil world))
        (rule-classes (if rule-classesp
@@ -63,10 +86,7 @@
        (untrans-body (untranslate new-body nil world))
        (form `(defthm ,newname
                 ,untrans-body
-                :hints (("goal" :use
-                         ((:functional-instance
-                           ,oldname
-                           . ,subst)))
+                :hints (("goal" :use ((:functional-instance ,oldname . ,subst)))
                         . ,hints)
                 :rule-classes ,rule-classes)))
     (and (look-for-goal-hint hints)
@@ -74,40 +94,9 @@
 keyed on subgoal \"GOAL\" will be ignored.  If your proof fails, please try ~
 again with a computed hint or a subgoal specifier other than \"GOAL\". "))
     (value form)))
-       
-
-
 
 (defmacro def-functional-instance
   (newname oldname subst &key hints (rule-classes 'nil rule-classesp))
-  ":Doc-section Events
-Functionally instantiate a pre-existing theorem to prove a new one.~/
-
-Usage:
-~bv[]
- (def-functional-instance
-   new-thm-name
-   orig-thm-name
-   ((orig-fn substitute-fn) ...)
-   :hints (...)                   ;; optional
-   :rule-classes rule-classes)    ;; optional
-~ev[]
-
-Def-functional-instance attempts to define a new theorem based on functionally
-instantiating an existing one with a user-provided function substitution.  It
-looks up the body of the theorem named ORIG-THM-NAME in the ACL2 world and
-applies the functional substitution, replacing each ORIG-FN with SUBSTITUTE-FN
-in the theorem body.  It then submits this as a new theorem named NEW-THM-NAME
-with a hint to prove it using a functional instance of the original theorem.
-This theorem has either the given rule-classes or, if this argument is omitted,
-the rule-classes of the original theorem.
-
-Sometimes further hints are needed to show that the functional instantiation is
-valid.  These may be given by the :hints keyword.  Note, however, that there is
-already a hint provided at \"goal\", so that if one of the user-provided hints
-uses this as its subgoal specifier, this hint will be ignored.  The extra hints
-given should either be computed hints or reference later subgoals. ~/~/
-"
   `(make-event
     (def-functional-instance-fn
       ',newname ',oldname ',subst ',hints ',rule-classes ',rule-classesp state)))

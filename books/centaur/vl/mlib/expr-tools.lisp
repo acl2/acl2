@@ -302,6 +302,7 @@ vl-maybe-expr-p).</p>"
              :measure (two-nats-measure (vl-exprlist-count x) 1)
              (f-exprlist-aux x))
            ///
+           (local (in-theory (enable vl-atts-fix)))
            (deffixequiv-mutual vl-expr-recursion-test))))
 
 

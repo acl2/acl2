@@ -184,7 +184,8 @@ otherwise.</li>
                                                         :names-defined t
                                                         :sum-type t
                                                         :multi-tags (:vl-genbase :vl-genif :vl-gencase :vl-genloop :vl-genblock :vl-genarray)
-                                                        :acc generates))
+                                                        :acc generates)
+                                            (interfaceport :acc ifports))
            ;; fwdtypedefs could be included here but we hope to have resolved them all
            ;; to proper typedefs by the end of loading.
            ;; (fundecl      ()             (blockitem :acc decls :sum-type t :transsum t))
@@ -1168,8 +1169,10 @@ may be shorter than the number of elements in the list.</p>"
 ;; we want to check for these in one place and not disrupt other code with
 ;; error handling.  So in this case we just don't find the item.
 (define vl-importlist-find-explicit-item ((name stringp) (x vl-importlist-p) (design vl-maybe-design-p))
-  :returns (mv (package (iff (stringp package) package))
-               (item (iff (vl-scopeitem-p item) item)))
+  :returns (mv (package (iff (stringp package) package)
+                        :hints nil)
+               (item (iff (vl-scopeitem-p item) item)
+                     :hints nil))
   (b* (((when (atom x)) (mv nil nil))
        ((vl-import x1) (car x))
        ((when (and (stringp x1.part)

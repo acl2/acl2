@@ -490,6 +490,7 @@ proofs: compile-ok
 # update the documentation for the :DOC command at the terminal, of
 # course; for that, you'll need to rebuild ACL2.
 DOC: acl2-manual STATS
+	echo "@@@ Got to here"
 	cd books ; rm -f system/doc/render-doc.cert system/doc/rendered-doc.lsp
 	rm -f doc/home-page.html
 	$(MAKE) doc.lisp doc/home-page.html
@@ -517,7 +518,7 @@ acl2-manual:
 # update the documentation for the :DOC command at the terminal, of
 # course; for that, you'll need to rebuild ACL2.
 doc.lisp: books/system/doc/acl2-doc.lisp \
-	  books/system/doc/render-doc.cert
+	  books/system/doc/rendered-doc.lsp
 	if [ -f doc.lisp ] ; then \
 	  cp -p doc.lisp doc.lisp.backup ; \
 	fi
@@ -529,7 +530,7 @@ doc.lisp: books/system/doc/acl2-doc.lisp \
 	    echo "      you might wish to rebuild your ACL2 executable." ; \
 	  fi
 
-books/system/doc/render-doc.cert:
+books/system/doc/rendered-doc.lsp:
 	rm -f books/system/doc/rendered-doc.lsp
 ifndef ACL2
 	cd books ; make USE_QUICKLISP=1 system/doc/render-doc.cert ACL2=$(ACL2_WD)/saved_acl2

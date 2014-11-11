@@ -302,10 +302,18 @@ syntax of these parameters is extended, as shown in the following examples:</p>
                 (fixequivs-from-explicit-args fn (cdr args) gutsformals formals hints state))
         (fixequivs-from-explicit-args fn (cdr args) gutsformals formals hints state)))))
 
-(defun deffixequiv-expand-hint-fn (fn stable-under-simplificationp id clause)
-  (b* (((unless (and stable-under-simplificationp
-                     ;; Checks whether we're at a top-level induction
-                     (equal (car id) '(0 1))))
+(defun deffixequiv-expand-hint-fn (fn stable-under-simplificationp id clause world)
+  (b* ((forcing-roundp (not (eql 0 (acl2::access acl2::clause-id id :forcing-round))))
+       ((when forcing-roundp) nil)
+       (pool-lst (acl2::access acl2::clause-id id :pool-lst))
+       (top-levelp (not pool-lst))
+       (single-inductionp (equal pool-lst '(1)))
+       ((unless (or top-levelp single-inductionp))
+        nil)
+       ((when (and top-levelp (acl2::recursivep fn world)))
+        `(:computed-hint-replacement t
+          :induct (,fn . ,(fgetprop fn 'acl2::formals t world))))
+       ((unless stable-under-simplificationp)
         nil)
        (concl (car (last clause)))
        (hint
@@ -336,7 +344,18 @@ syntax of these parameters is extended, as shown in the following examples:</p>
     hint))
 
 (defmacro deffixequiv-expand-hint (fn)
-  `(deffixequiv-expand-hint-fn ',fn stable-under-simplificationp id clause))
+  `(deffixequiv-expand-hint-fn ',fn stable-under-simplificationp id clause world))
+
+(defun deffixequiv-default-hints (fnname world)
+  (let ((entry (cdr (assoc 'deffixequiv (table-alist 'std::default-hints-table world)))))
+    (subst fnname 'fnname entry)))
+
+(defmacro set-deffixequiv-default-hints (hint)
+  `(table std::default-hints-table 'deffixequiv ',hint))
+
+(set-deffixequiv-default-hints
+ ((deffixequiv-expand-hint fnname)))
+
 
 (defun deffixequiv-fn (fn kw-args state)
   (b* ((__function__ 'deffixequiv)
@@ -353,8 +372,7 @@ syntax of these parameters is extended, as shown in the following examples:</p>
        (args (cdr (assoc :args kwd-alist)))
        (hints (if (assoc :hints kwd-alist)
                   (cdr (assoc :hints kwd-alist))
-                ;; try new default hint
-                `((deffixequiv-expand-hint ,fn))))
+                (deffixequiv-default-hints fn world)))
        ((when (and (not args) (not guts)))
         (raise "Deffixequiv requires either explicit types for the arguments ~
                 to be considered, or for the function to have DEFINE info, ~
@@ -463,13 +481,47 @@ syntax of these parameters is extended, as shown in the following examples:</p>
              (caar fixequiv-al) (cdar fixequiv-al) gutslist)
             (mutual-fixequivs->inductive-fix-thms (cdr fixequiv-al) gutslist))))
 
-(defun mutual-fixequivs->fix-thm (fixequiv-al defines-entry kwd-alist)
+(defun defgutslist->names (x)
+  (if (atom x)
+      nil
+    (cons (std::defguts->name (car x))
+          (defgutslist->names (cdr x)))))
+
+
+(defun deffixequiv-mutual-default-default-hint (fnname id world)
+  (let ((fns (acl2::recursivep fnname world)))
+    (and (eql 0 (acl2::access acl2::clause-id id :forcing-round))
+         (equal '(1) (acl2::access acl2::clause-id id :pool-lst))
+         `(:computed-hint-replacement
+           ((and stable-under-simplificationp
+                 (std::expand-calls . ,fns)))
+           :in-theory (disable . ,fns)))))
+
+(defun deffixequiv-mutual-default-hints (fnname world)
+  (let ((entry (cdr (assoc 'deffixequiv-mutual (table-alist 'std::default-hints-table world)))))
+    (subst fnname 'fnname entry)))
+
+(defmacro set-deffixequiv-mutual-default-hints (hint)
+  `(table std::default-hints-table 'deffixequiv-mutual ',hint))
+
+(set-deffixequiv-mutual-default-hints
+ ((deffixequiv-mutual-default-default-hint 'fnname id world)))
+
+
+
+
+(defun mutual-fixequivs->fix-thm (fixequiv-al defines-entry kwd-alist world)
   (b* ((thm-macro (std::defines-guts->flag-defthm-macro defines-entry))
-       (hints (cdr (assoc :hints kwd-alist))))
+       (gutslist (std::defines-guts->gutslist defines-entry))
+       (fns (defgutslist->names gutslist))
+       (hints-look (assoc :hints kwd-alist))
+       (hints (if hints-look
+                  (cdr hints-look)
+                (deffixequiv-mutual-default-hints (car fns) world))))
     `(with-output :stack :pop
        (,thm-macro
         ,@(mutual-fixequivs->inductive-fix-thms
-           fixequiv-al (std::defines-guts->gutslist defines-entry))
+           fixequiv-al gutslist)
         :hints ,hints))))
   
 (defun fixequivs->const/cong-thms (fixequivs)
@@ -544,7 +596,7 @@ syntax of these parameters is extended, as shown in the following examples:</p>
        (fns/fixequivs (if args
                           (mutual-fixequivs-from-explicit-args fn-args univ-args gutslist state)
                         (mutual-fixequivs-from-defines fn-omit univ-omit gutslist state))))
-    (cons (mutual-fixequivs->fix-thm fns/fixequivs defines-entry kwd-alist)
+    (cons (mutual-fixequivs->fix-thm fns/fixequivs defines-entry kwd-alist world)
           (mutual-fixequivs->const/cong-thms fns/fixequivs))))
 
 (defmacro deffixequiv-mutual (name &rest keys)

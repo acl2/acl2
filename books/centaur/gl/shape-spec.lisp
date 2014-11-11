@@ -40,6 +40,7 @@
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "centaur/misc/fast-alists" :dir :system))
 (local (include-book "std/lists/take" :dir :system))
+(local (include-book "std/util/support" :dir :system))
 
 (defund slice-to-bdd-env (slice env)
   (declare (xargs :guard (and (alistp slice)
@@ -439,9 +440,9 @@
                     (shape-specp x)
                     (shape-spec-listp x)))
           (and stable-under-simplificationp
-               (let ((calls1 (acl2::find-calls-of-fns-term
+               (let ((calls1 (std::find-calls-of-fns-term
                               (car (last clause)) '(sspec-geval) nil))
-                     (calls2 (acl2::find-calls-of-fns-term
+                     (calls2 (std::find-calls-of-fns-term
                               (car (last clause)) '(sspec-geval-list) nil)))
                  (and (or calls1 calls2)
                       `(:computed-hint-replacement t
@@ -504,9 +505,9 @@
                     (shape-specp x)
                     (shape-spec-listp x)))
           (and stable-under-simplificationp
-               (let ((calls1 (acl2::find-calls-of-fns-term
+               (let ((calls1 (std::find-calls-of-fns-term
                               (car (last clause)) '(sspec-geval) nil))
-                     (calls2 (acl2::find-calls-of-fns-term
+                     (calls2 (std::find-calls-of-fns-term
                               (car (last clause)) '(sspec-geval-list) nil)))
                  (and (or calls1 calls2)
                       `(:computed-hint-replacement t
@@ -572,9 +573,9 @@
                     (shape-specp x)
                     (shape-spec-listp x)))
           (and stable-under-simplificationp
-               (let ((calls1 (acl2::find-calls-of-fns-term
+               (let ((calls1 (std::find-calls-of-fns-term
                               (car (last clause)) '(sspec-geval) nil))
-                     (calls2 (acl2::find-calls-of-fns-term
+                     (calls2 (std::find-calls-of-fns-term
                               (car (last clause)) '(sspec-geval-list) nil)))
                  (and (or calls1 calls2)
                       `(:computed-hint-replacement t
@@ -637,9 +638,9 @@
                     (shape-specp x)
                     (shape-spec-listp x)))
           (and stable-under-simplificationp
-               (let ((calls1 (acl2::find-calls-of-fns-term
+               (let ((calls1 (std::find-calls-of-fns-term
                               (car (last clause)) '(sspec-geval) nil))
-                     (calls2 (acl2::find-calls-of-fns-term
+                     (calls2 (std::find-calls-of-fns-term
                               (car (last clause)) '(sspec-geval-list) nil)))
                  (and (or calls1 calls2)
                       `(:computed-hint-replacement t

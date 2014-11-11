@@ -2048,7 +2048,23 @@
   (b* (((flexsum x) x))
     (and x.kind
          `((deffixequiv ,x.kind :args ((,x.xvar ,x.pred))
-             :hints (("goal" :expand ((,x.fix ,x.xvar)))))))))
+             :hints (("goal" :expand ((,x.fix ,x.xvar)))))
+           
+           (make-event
+            (b* ((consp-when-pred ',(intern-in-package-of-symbol (cat "CONSP-WHEN-" (symbol-name x.pred))
+                                                                 x.pred))
+                 (sum.xvar ',x.xvar)
+                 (sum.fix ',x.fix)
+                 (consp-of-fix ',(intern-in-package-of-symbol (cat "CONSP-OF-" (symbol-name x.fix))
+                                                              x.fix))
+                 ((unless (fgetprop consp-when-pred 'acl2::theorem nil (w state)))
+                  '(value-triple :skip-type-prescription)))
+              `(defthm ,consp-of-fix
+                 (consp (,sum.fix ,sum.xvar))
+                 :hints (("goal" :use ((:instance ,consp-when-pred
+                                        (,sum.xvar (,sum.fix ,sum.xvar))))
+                          :in-theory (disable ,consp-when-pred)))
+                 :rule-classes :type-prescription)))))))
 
 (defun flexlist-fix-postevents (x)
   (b* (((flexlist x) x)

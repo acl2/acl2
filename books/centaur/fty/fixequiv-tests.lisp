@@ -36,6 +36,7 @@
 (include-book "std/misc/two-nats-measure" :dir :system)
 (include-book "std/lists/acl2-count" :dir :system)
 (include-book "centaur/misc/universal-equiv" :dir :System)
+(include-book "clause-processors/just-expand" :dir :system)
 
 (deffixtype nat
   :pred natp
@@ -221,11 +222,15 @@
                  (- (acl2::lnfix n) first-count)
                  v (cdr x)))))))
   ///
+  (local (set-deffixequiv-mutual-default-hints
+          ((acl2::just-expand-mrec-default-hint 'fnname id nil world))))
   (deffixequiv-mutual update-nth-leaf :args (n))
   (deffixequiv-mutual update-nth-leaf
     :args ((update-nth-leaf
-            (x int-tree-p :hints ('(:expand ((int-tree-fix x)
-                                             (int-treelist-fix x))))))
+            (x int-tree-p :hints ((prog2$ (cw "expand~%")
+                                          '(:expand ((int-tree-fix x)
+                                             (int-treelist-fix x)))))))
            (update-nth-leaf-list
-            (x int-treelist-p :hints ('(:expand ((int-treelist-fix x))))))))
+            (x int-treelist-p :hints ((prog2$ (cw "expand~%")
+                                              '(:expand ((int-treelist-fix x)))))))))
   (deffixequiv-mutual update-nth-leaf :omit (n x)))

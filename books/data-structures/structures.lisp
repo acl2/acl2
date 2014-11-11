@@ -1602,7 +1602,7 @@ some simplifications in that way as well ( we do on his examples ).
 
 
 (defun lift-if-syntaxp (left right constructor)
-  ":doc-section lift-if-syntaxp
+;; jared removed the doc section here to help with porting to xdoc...   ":doc -section lift-if-syntaxp
   Meta heuristic for `lifting' IF through structure accessors.
   ~/~/
 

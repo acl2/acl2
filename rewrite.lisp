@@ -12507,13 +12507,12 @@
 
 (defun replace-free-rw-cache-entry1 (unify-subst hyps entry recs)
 
-; Recs is a psorted list of rw-cache-entry records.  We know that some record
-; in recs whose :failure-reason satisfies free-failure-p has the given
-; unify-subst and hyps fields, and we replace that one by the given entry.
+; Recs is a psorted list of rw-cache-entry records.  If some record in recs
+; whose :failure-reason satisfies free-failure-p has the given unify-subst and
+; hyps fields, then we replace it by the given entry.
 
   (cond ((endp recs)
-         (er hard 'replace-free-rw-cache-entry1 ; see comment above
-             "Implementation error: see 'replace-free-rw-cache-entry"))
+         (list entry))
         ((and (not (eq (car recs) t))
               (free-failure-p (access rw-cache-entry (car recs)
                                       :failure-reason))
@@ -12529,21 +12528,38 @@
 (defun replace-free-rw-cache-entry (entry tag rune unify-subst hyps ttree)
 
 ; Some existing entry in the "any" or "nil" cache of ttree (depending on tag),
-; stored under the base-symbol of rune as the key, has the given unify-subst
-; and hyps.  We replace it with entry.
+; stored under the base-symbol of rune as the key, may have the given
+; unify-subst and hyps.  If so, we replace it with entry.  Otherwise, we simply
+; extend the list of entries by adding that entry to those for the given
+; base-symbol.
+
+; The "Otherwise" case didn't occur for many years, so it is probably rare.  At
+; one time we thought that such an entry always exists in recs.  However, an
+; example arose in which that was not the case.  What happened was that
+; relieve-hyps called note-relieve-hyps-failure-free, which passed in an "old"
+; rw-cache entry obtained from the input ttree, yet another argument was a
+; ttree (passed along to the present function) returned by a call of
+; relieve-hyps1 that no longer had the unify-subst where one might expect.  As
+; noted above, we handle this (rare) case simply by adding the new entry.
+; We believe that this is sound, since soundness doesn't depend on the
+; rw-cache, whose only function is to defeat the rewriter.
 
   (let* ((cache (tagged-objects tag ttree))
          (base (base-symbol rune))
          (recs (cdr (assoc-rw-cache base cache))))
-    (assert$
-     recs ; otherwise we wouldn't be doing a replacement
-     (extend-tag-tree
-      tag
-      (put-assoc-rw-cache
-       base
-       (replace-free-rw-cache-entry1 unify-subst hyps entry recs)
-       cache)
-      (remove-tag-from-tag-tree tag ttree)))))
+
+; At one time we asserted here that recs is non-nil.  Perhaps that is a valid
+; assertion, but given the comment above about changes in the ttree, we are no
+; longer all that confident about it.  Since it seems harmless to to this
+; extension when recs is nil, we no longer assert recs.
+
+    (extend-tag-tree
+     tag
+     (put-assoc-rw-cache
+      base
+      (replace-free-rw-cache-entry1 unify-subst hyps entry recs)
+      cache)
+     (remove-tag-from-tag-tree tag ttree))))
 
 (defun rw-cache-alist-nil-tag-p (alist)
 

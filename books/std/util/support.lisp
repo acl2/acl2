@@ -263,3 +263,32 @@ substitutions are reapplied to the result of other substitutions.</p>"
        (or (generic-eval-requirement (car reqs) req-alist)
            (generic-or-requirements (cdr reqs) req-alist))))))
 
+
+
+
+
+;; Collects up any calls of functions listed in FNS that are present in x.
+(mutual-recursion
+ (defun find-calls-of-fns-term (x fns acc)
+   (cond ((or (atom x) (eq (car x) 'quote)) acc)
+         ((member-eq (car x) fns)
+          (find-calls-of-fns-list (cdr x) fns (cons x acc)))
+         (t
+          (find-calls-of-fns-list (cdr x) fns acc))))
+ (defun find-calls-of-fns-list (x fns acc)
+   (if (atom x)
+       acc
+     (find-calls-of-fns-term
+      (car x) fns
+      (find-calls-of-fns-list (cdr x) fns acc)))))
+
+;; Gives an expand hint for any function in FNS present in the
+;; conclusion of the clause.
+(defun expand-calls-computed-hint (clause fns)
+ (let ((expand-list (find-calls-of-fns-term (car (last clause)) fns nil)))
+   `(:expand ,expand-list)))
+
+(defmacro expand-calls (&rest fns)
+  `(expand-calls-computed-hint clause ',fns))
+
+

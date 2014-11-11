@@ -35,6 +35,9 @@
 (include-book "std/strings/top" :dir :system)
 (include-book "misc/without-waterfall-parallelism" :dir :system)
 
+;; Gather benchmarks, mainly to give the benchmark gathering hook some testing
+(include-book "centaur/satlink/benchmarks" :dir :system)
+
 ; I'm unsure why the below is critical, but the "GL Clock" runs out without it.
 ; It introduces a GL clause processor that can natively execute at least the
 ; functions from the above books that get marked with add-clause-proc-exec-fns.

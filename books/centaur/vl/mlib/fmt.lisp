@@ -36,6 +36,7 @@
 (local (in-theory (enable acl2::arith-equiv-forwarding)))
 (local (std::add-default-post-define-hook :fix))
 
+(local (in-theory (disable (tau-system))))
 
 (defxdoc vl-fmt
   :parents (verilog-printing)
@@ -149,8 +150,8 @@ formerly the \"location directive\" and printed a location.</p>")
       ((:vl-port :vl-portdecl :vl-assign :vl-vardecl
         :vl-paramdecl :vl-fundecl :vl-taskdecl
         :vl-modinst :vl-gateinst :vl-always :vl-initial)
-       (if (or unsafe-okp (vl-modelement-p x))
-           (vl-pp-modelement-summary x)
+       (if (or unsafe-okp (vl-ctxelement-p x))
+           (vl-pp-ctxelement-summary x)
          (vl-fmt-tilde-x x)))
       ((:vl-plainarg)
        (if (or unsafe-okp (vl-plainarg-p x))
