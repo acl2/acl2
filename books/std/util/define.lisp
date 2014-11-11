@@ -944,7 +944,7 @@ some kind of separator!</p>
                   :macro       macro
                   :raw-formals raw-formals
                   :formals     formals
-                  :rest-events rest-events
+                  :rest-events (xdoc::make-xdoc-fragments rest-events)
                   :t-proof     (if t-proof (cons t-proof-name t-hints) nil)
                   )))
 
