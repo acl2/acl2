@@ -102,4 +102,4 @@ Please note the [guidelines for book development][books guidelines].
 
 [wiki]: https://github.com/acl2/acl2/wiki
 [bugtracker]: https://github.com/acl2/acl2/issues
-[books guidelines]: https://github.com/acl2/acl2/wiki/Committing-code
+[books guidelines]: https://github.com/acl2/acl2/wiki/Committing-code:-guidelines
