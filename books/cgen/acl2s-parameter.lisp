@@ -69,6 +69,7 @@ short and long are keyword arguments to defxdoc.
 
 
 (defxdoc acl2s-defaults
+  :parents (acl2-sedan)
   :short "Getting and setting defaults for various parameters in Cgen (ACL2 Sedan)"                                 
   :long  
   "
