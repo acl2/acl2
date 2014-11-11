@@ -531,7 +531,6 @@ also want to import many symbols from ACL2; see @(see *acl2-exports*).</p>
 
      (xdoc::change-parents wormhole (state ld))
 
-     (xdoc::change-parents sharp-comma-reader (defconst))
      (xdoc::change-parents sharp-dot-reader (defconst))
 
      (xdoc::change-parents computed-hints (hints))

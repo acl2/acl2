@@ -169,11 +169,20 @@ then restart the ACL2-Doc browser to view that manual."
    *acl2-doc-rendered-combined-url*
    *acl2-doc-rendered-combined-pathname-gzipped*)
   (cond ((file-exists-p *acl2-doc-rendered-combined-pathname-gzipped*)
-	 (shell-command-to-string
-	  (format "gunzip %s"
-		  *acl2-doc-rendered-combined-pathname-gzipped*))
-	 (or (file-exists-p *acl2-doc-rendered-combined-pathname*)
-	     (error "Gunzip failed."))
+	 (cond
+	  ((eql 0 (nth 7
+		       (file-attributes ; size
+			*acl2-doc-rendered-combined-pathname-gzipped*)))
+	   (error
+	    "Download/install failed (zero-length file, %s, will be deleted)."
+	    *acl2-doc-rendered-combined-pathname-gzipped*)
+	   (delete-file *acl2-doc-rendered-combined-pathname-gzipped*))
+	  (t
+	   (shell-command-to-string
+	    (format "gunzip %s"
+		    *acl2-doc-rendered-combined-pathname-gzipped*))
+	   (or (file-exists-p *acl2-doc-rendered-combined-pathname*)
+	       (error "Gunzip failed."))
 
 ;;; The following call of acl2-doc-reset may appear to have the
 ;;; potential to cause a loop: acl2-doc-reset calls
@@ -183,9 +192,9 @@ then restart the ACL2-Doc browser to view that manual."
 ;;; essentially a no-op in this case because of the file-exists-p
 ;;; check just above.
 
-	 (acl2-doc-reset 'TOP)
-	 (acl2-doc-top))
-	(t (message "Download/install failed.")
+	   (acl2-doc-reset 'TOP)
+	   (acl2-doc-top))))
+	(t (error "Download/install failed.")
 	   nil)))
 
 (defun acl2-doc-rendered-combined-fetch ()
