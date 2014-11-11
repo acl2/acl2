@@ -48,17 +48,6 @@
                            consp-when-member-equal-of-vl-atts-p
                            (tau-system))))
 
-(include-book "clause-processors/just-expand" :dir :system)
-(std::set-returnspec-default-hints
- ((acl2::just-induct/expand-default-hint 'std::fnname id nil world)))
-(std::set-returnspec-mrec-default-hints
- ((acl2::just-expand-mrec-default-hint 'std::fnname id t world)))
-
-(fty::set-deffixequiv-default-hints
- ((acl2::just-induct/expand-default-hint 'fty::fnname id nil world)))
-(fty::set-deffixequiv-mutual-default-hints
- ((acl2::just-expand-mrec-default-hint 'fty::fnname id t world)))
-
 ; ----------------------------------------------------------------------------
 ;
 ;                            BIG WARNING MESSAGE
