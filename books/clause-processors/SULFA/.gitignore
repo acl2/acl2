@@ -1,0 +1,8 @@
+books/sat/sulfa-dir-const.lisp
+c-files/minisat-output-formater
+c-files/sat-input-formater
+c-files/smt-prep
+c-files/zchaff-output-formater
+scripts/interpret_sulfa_file
+scripts/sexpr-sat-solver
+scripts/sulfa-smt

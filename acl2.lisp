@@ -1535,12 +1535,6 @@ which is saved just in case it's needed later.")
    #\.
    #'sharp-dot-read))
 
-(defun define-sharp-comma ()
-  (set-dispatch-macro-character
-   #\#
-   #\,
-   #'sharp-comma-read))
-
 (defun define-sharp-atsign ()
   (set-new-dispatch-macro-character
    #\#
@@ -1612,7 +1606,6 @@ which is saved just in case it's needed later.")
 
     (when do-all-changes
       (define-sharp-dot)
-      (define-sharp-comma)
       (define-sharp-atsign)
       (define-sharp-bang)
       (define-sharp-u))
@@ -1642,7 +1635,6 @@ which is saved just in case it's needed later.")
           (copy-readtable *acl2-readtable*))
         (let ((*readtable* *acl2-readtable*))
           (define-sharp-dot)
-          (define-sharp-comma)
           (define-sharp-atsign)
           (define-sharp-bang)
           (define-sharp-u)

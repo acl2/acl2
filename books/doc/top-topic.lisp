@@ -76,4 +76,4 @@ hierarchy to try to provide a coherent organization.</p>
 
 <p>This manual is very much a work in progress.  If you would like to
 contribute to its development, please join the <a
-href='https://code.google.com/p/acl2-books/'>acl2-books</a> project!</p>")
+href='https://github.com/acl2/'>acl2</a> project!</p>")

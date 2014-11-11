@@ -67,16 +67,9 @@ To check out an effectively read-only copy of the repository using
 git clone git://github.com/acl2/acl2
 ```
 
-To check out a copy of the repository that can be used to write back to
-github, run:
-
-```
-git clone https://github.com/acl2/acl2
-```
-
 ### Contributing
 
-See the documentation for [our discussion on how to contribute][git tips].
+See the documentation for [how to contribute][git tips].
 
 Even though we have merged the Community Books (formerly acl2-books) and
 ACL2 System (formerly acl2-devel) repositories into one, changes should
@@ -109,4 +102,4 @@ Please note the [guidelines for book development][books guidelines].
 
 [wiki]: https://github.com/acl2/acl2/wiki
 [bugtracker]: https://github.com/acl2/acl2/issues
-[books guidelines]: https://github.com/acl2/acl2/wiki/Committing-code
+[books guidelines]: https://github.com/acl2/acl2/wiki/Committing-code:-guidelines

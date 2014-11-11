@@ -1137,20 +1137,7 @@ notation causes an error and (b) the use of ,. is not permitted."
 
 (defvar *inside-sharp-dot-read* nil)
 
-(defvar *inhibit-sharp-comma-warning* nil)
-
 (defvar *inside-sharp-u-read* nil)
-
-(defun sharp-comma-read (stream char n)
-  (or *inhibit-sharp-comma-warning*
-      (format t
-              "WARNING: The sharp-comma read macro (#,) has been replaced~%~
-               by sharp-dot (#.).  To inhibit this warning, submit the~%~
-               following form to raw Lisp:~%~s~%~
-               Note that sharp-comma may be eliminated in future versions~%~
-               of ACL2 unless perhaps there are strong objections.~%"
-              '(setq *inhibit-sharp-comma-warning* t)))
-  (sharp-dot-read stream char n))
 
 (defun sharp-dot-read (stream char n)
   (declare (ignore char n))
