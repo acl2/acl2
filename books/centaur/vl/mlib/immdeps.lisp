@@ -32,6 +32,7 @@
 (include-book "scopestack")
 (include-book "hid-tools")
 (include-book "reportcard")
+(include-book "centaur/depgraph/mergesort-alist-values" :dir :system)
 (local (include-book "../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
 
@@ -1177,6 +1178,11 @@ depends on.  The format is compatible with @(see toposort)."
   :keyp-of-nil nil
   :valp-of-nil t)
 
+(defthm vl-depgraph-p-of-mergesort-alist-values
+  (implies (vl-depgraph-p x)
+           (vl-depgraph-p (depgraph::mergesort-alist-values x)))
+  :hints(("Goal" :induct (len x))))
+
 (defprod vl-immdepgraph
   :parents (immdeps)
   :tag :vl-immdepgraph
@@ -1402,31 +1408,35 @@ through the entire design and do many name lookups.</p>"
   :returns (graph vl-immdepgraph-p)
   (b* (((vl-design x))
        (ss    (vl-scopestack-init x))
-       (graph (make-vl-immdepgraph))
-       (graph (vl-modulelist-immdeps*    x.mods       graph))
-       (graph (vl-udplist-immdeps*       x.udps       graph))
-       (graph (vl-interfacelist-immdeps* x.interfaces graph))
-       (graph (vl-programlist-immdeps*   x.programs   graph))
-       (graph (vl-packagelist-immdeps*   x.packages   graph))
-       (graph (vl-configlist-immdeps*    x.configs    graph))
-       (graph (vl-vardecllist-immdeps*   x.vardecls   graph))
-       (graph (vl-taskdecllist-immdeps*  x.taskdecls  graph))
-       (graph (vl-fundecllist-immdeps*   x.fundecls   graph))
-       (graph (vl-paramdecllist-immdeps* x.paramdecls graph))
-       ;; We don't do anything with x.imports because scopestack sort of
-       ;; automatically resolves these dependencies for us.
-       ;; We don't do anything with forward typedefs because they don't
-       ;; have any dependency information in them and we expect to see
-       ;; the real typedefs instead.
-       (graph (vl-typedeflist-immdeps* x.typedefs graph))
-       ((vl-immdepgraph graph)))
-
-    ;; Cleanup, sanity checking
-    (vl-scopestacks-free)
-
-    (or (uniquep (alist-keys graph.deps))
-        (raise "Design elements are not unique?  Name clash for ~&0."
-               (duplicated-members (alist-keys graph.deps))))
-
-    graph))
+       (graph
+        (time$ (b* ((graph (make-vl-immdepgraph))
+                    (graph (vl-modulelist-immdeps*    x.mods       graph))
+                    (graph (vl-udplist-immdeps*       x.udps       graph))
+                    (graph (vl-interfacelist-immdeps* x.interfaces graph))
+                    (graph (vl-programlist-immdeps*   x.programs   graph))
+                    (graph (vl-packagelist-immdeps*   x.packages   graph))
+                    (graph (vl-configlist-immdeps*    x.configs    graph))
+                    (graph (vl-vardecllist-immdeps*   x.vardecls   graph))
+                    (graph (vl-taskdecllist-immdeps*  x.taskdecls  graph))
+                    (graph (vl-fundecllist-immdeps*   x.fundecls   graph))
+                    (graph (vl-paramdecllist-immdeps* x.paramdecls graph))
+                    ;; We don't do anything with x.imports because scopestack sort of
+                    ;; automatically resolves these dependencies for us.
+                    ;; We don't do anything with forward typedefs because they don't
+                    ;; have any dependency information in them and we expect to see
+                    ;; the real typedefs instead.
+                    (graph (vl-typedeflist-immdeps* x.typedefs graph)))
+                 graph)
+               :msg "; vl-design-immdeps crawl: ~st sec, ~sa bytes.~%"
+               :mintime 1/2))
+       (- (vl-scopestacks-free))
+       ((vl-immdepgraph graph))
+       (- (or (uniquep (alist-keys graph.deps))
+              (raise "Design elements are not unique?  Name clash for ~&0."
+                     (duplicated-members (alist-keys graph.deps)))))
+       (final-deps
+        (time$ (depgraph::mergesort-alist-values graph.deps)
+               :msg "; vl-design-immdeps sort: ~st sec, ~sa bytes.~%"
+               :mintime 1/2)))
+    (change-vl-immdepgraph graph :deps final-deps)))
 

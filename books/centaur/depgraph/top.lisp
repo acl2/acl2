@@ -31,6 +31,8 @@
 (in-package "DEPGRAPH")
 (include-book "toposort")
 (include-book "transdeps")
+(include-book "invert")
+(include-book "mergesort-alist-values")
 
 (defxdoc depgraph
   :parents (alists)   ;; BOZO where would be a better place for this?
