@@ -1249,9 +1249,9 @@
 ;           include-book             "name"
 ;           exit-boot-strap-mode     0
 
-; *Enter-boot-strap-mode introduces the names in *primitive-formals-
-; and-guards* and *initial-known-package-alist*.  So its namex is a
-; proper list containing both symbols and strings.
+; *Enter-boot-strap-mode introduces the names in *primitive-formals-and-guards*
+; and *initial-known-package-alist*.  So its namex is a proper list containing
+; both symbols and strings.
 
 ; To save space we do not actually represent each event tuple as a 6-tuple but
 ; have several different forms.  The design of our forms makes the following
@@ -8144,16 +8144,17 @@
 
 (defun get-event (name wrld)
 
-; This function has undefined behavior when name was not introduced by an ACL2
-; event.
+; This function returns nil when name was not introduced by an ACL2 event.  For
+; primitives without definitions, the absolute-event-number is 0 and, as laid
+; down in primordial-world, the corresponding event-tuple is (list
+; 'enter-boot-strap-mode operating-system).
 
-  (access-event-tuple-form
-   (cddr
-    (car
-     (lookup-world-index 'event
-                         (getprop name 'absolute-event-number 0
-                                  'current-acl2-world wrld)
-                         wrld)))))
+  (let ((index (getprop name 'absolute-event-number nil 'current-acl2-world wrld)))
+    (and index
+         (access-event-tuple-form
+          (cddr
+           (car
+            (lookup-world-index 'event index wrld)))))))
 
 (defun redundant-labelp (name event-form wrld)
 
