@@ -34,28 +34,26 @@
 (include-book "std/portcullis" :dir :system)
 
 (defpkg "DEPGRAPH"
-  (set-difference-eq
-   (union-eq *standard-acl2-imports*
-             set::*sets-exports*
-             std::*std-exports*
-             '(;; Things to add
-               assert!
-               b*
-               fun
-               why
-               with-redef
-               set-equiv
-
-               alist-keys
-               fal-all-boundp
-               hons-member-equal
-               two-nats-measure
-               set-reasoning
-               cons-listp
-               with-fast
-               
-               ))
-   '(;; Things to remove
-     )))
+  (union-eq *standard-acl2-imports*
+            set::*sets-exports*
+            std::*std-exports*
+            '(assert!
+              b*
+              fun
+              why
+              with-redef
+              set-equiv
+              flatten
+              defxdoc
+              defsection
+              alist-keys
+              alist-vals
+              fal-all-boundp
+              hons-member-equal
+              two-nats-measure
+              set-reasoning
+              cons-listp
+              with-fast
+              )))
 
 (assign acl2::verbose-theory-warning nil)

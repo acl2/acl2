@@ -60,7 +60,7 @@
     (topologically-ordered-p-aux (cdr nodes) graph seen)))
 
 (define topologically-ordered-p
-  :parents (toposort)
+  :parents (depgraph)
   :short "@(call topologically-ordered-p) determines if a list of @('nodes') is
 topologically ordered with respect to a @('graph')."
   ((nodes "List of nodes to check.")
@@ -82,7 +82,7 @@ assuming constant-time hashing.</p>"
     ans))
 
 (define dependency-chain-p
-  :parents (toposort)
+  :parents (depgraph)
   :short "@(call dependency-chain-p) determines if a list of @('nodes') indeed
 follows a set of dependencies in @('graph')."
 
@@ -474,7 +474,7 @@ toposort-aux)."
 
 
 (define toposort
-  :parents (utilities)
+  :parents (depgraph)
   :short "General-purpose, depth-first topological sort for dependency graphs."
 
   ((graph "Alist that binds nodes to the lists of nodes they (directly) depend
@@ -495,7 +495,7 @@ the graph has loops; we will find some loop and return @('(mv nil loop)'),
 where @('loop') is a list of nodes such as @('(a b c a)'), where @('a') depends
 on @('b'), which depends on @('c'), which depends on @('a').</p>
 
-<p>Notes about the graph:</p>
+<p>The graph is as described in @(see depgraph), but note:</p>
 
 <ul>
 
@@ -506,12 +506,6 @@ if this is not the case.</li>
 <li>@('graph') should (typically) not contain nodes that depend on themselves;
 any such nodes form trivial self-loops and will cause topological ordering to
 fail.</li>
-
-<li>@('graph') is treated like an alist.  That is, any shadowed pairs are
-ignored.</li>
-
-<li>It is beneficial for @('graph') to be a fast alist, but this is not
-necessary; ordinary alists will be made fast via @(see with-fast-alist).</li>
 
 </ul>
 
