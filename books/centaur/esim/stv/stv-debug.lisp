@@ -48,25 +48,25 @@
          (true-list-listp (4v-sexpr-restrict-with-rw-alists x al))))
 
 (local (defthm cons-listp-4v-sexpr-restrict-with-rw-alist
-         (vl::cons-listp (4v-sexpr-restrict-with-rw-alist x al))))
+         (cons-listp (4v-sexpr-restrict-with-rw-alist x al))))
 
 (local (defthm cons-list-listp-of-4v-sexpr-restrict-with-rw-alists
-         (vl::cons-list-listp (4v-sexpr-restrict-with-rw-alists x al))))
+         (cons-list-listp (4v-sexpr-restrict-with-rw-alists x al))))
 
 (local (defthm cons-listp-4v-sexpr-eval-default-alist
-         (vl::cons-listp (4v-sexpr-eval-default-alist x al default))
+         (cons-listp (4v-sexpr-eval-default-alist x al default))
          :hints(("Goal" :in-theory (e/d (4v-sexpr-eval-default-alist)
                                         (4v-sexpr-eval-default-when-4v-sexpr-eval-non-x))))))
 
 (local (defthm cons-list-listp-of-4v-sexpr-eval-default-alists
-         (vl::cons-list-listp (4v-sexpr-eval-default-alists x al default))
+         (cons-list-listp (4v-sexpr-eval-default-alists x al default))
          :hints(("Goal" :in-theory (e/d (4v-sexpr-eval-default-alists))))))
 
 (local (defthm cons-listp-of-4v-sexpr-eval-alist
-         (vl::cons-listp (4v-sexpr-eval-alist x al))))
+         (cons-listp (4v-sexpr-eval-alist x al))))
 
 (local (defthm cons-list-listp-of-4v-sexpr-eval-alists
-         (vl::cons-list-listp (4v-sexpr-eval-alists x al))))
+         (cons-list-listp (4v-sexpr-eval-alists x al))))
 
 (define stv-combine-into-snapshots
   :parents (stv-debug)
@@ -75,10 +75,10 @@
    (int-alists true-list-listp))
   :guard (and (same-lengthp in-alists out-alists)
               (same-lengthp in-alists int-alists))
-  :returns (snapshots vl::cons-list-listp
-                      :hyp (and (vl::cons-list-listp in-alists)
-                                (vl::cons-list-listp out-alists)
-                                (vl::cons-list-listp int-alists)))
+  :returns (snapshots cons-list-listp
+                      :hyp (and (cons-list-listp in-alists)
+                                (cons-list-listp out-alists)
+                                (cons-list-listp int-alists)))
   (b* (((when (atom in-alists))
         nil)
        (snapshot1 (append (car in-alists)
@@ -94,7 +94,7 @@
 to be evaluated and written to the VCD file."
   ((pstv processed-stv-p)
    (mod))
-  :returns (snapshots vl::cons-list-listp)
+  :returns (snapshots cons-list-listp)
   :long "<p>This is computationally expensive.  We memoize it so that we only
 need to make the snapshots the first time you want to debug an STV.  The same
 snapshots can then be reused across as many calls of @(see stv-debug) as you

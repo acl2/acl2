@@ -54,7 +54,7 @@
 (include-book "../checkers/skip-detect")
 
 (include-book "../transforms/cn-hooks")
-
+(include-book "../transforms/unparam/top")
 (include-book "../transforms/annotate/argresolve")
 (include-book "../transforms/annotate/resolve-indexing")
 (include-book "../transforms/annotate/origexprs")
@@ -75,7 +75,6 @@
 (include-book "../transforms/xf-replicate-insts")
 (include-book "../transforms/xf-selresolve")
 (include-book "../transforms/xf-sizing")
-(include-book "../transforms/xf-unparameterize")
 (include-book "../transforms/xf-unused-vars")
 
 (include-book "../../misc/sneaky-load")

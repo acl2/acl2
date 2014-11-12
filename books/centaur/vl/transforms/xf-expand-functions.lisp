@@ -34,7 +34,7 @@
 (include-book "../mlib/subst")
 (include-book "../mlib/allexprs")
 (include-book "../mlib/namefactory")
-(include-book "../util/toposort")
+(include-book "centaur/depgraph/toposort" :dir :system)
 (include-book "../mlib/find-item")
 (local (include-book "../util/arithmetic"))
 (local (include-book "../util/osets"))
@@ -412,7 +412,7 @@ added.</p>"
 
        ;; Try to topologically sort the dependency graph; if this fails then
        ;; order is just the names of the functions that are in a loop.
-       ((mv successp order) (toposort graph))
+       ((mv successp order) (depgraph::toposort graph))
        (- (fast-alist-free graph))
        ((unless successp)
         (mv nil
@@ -435,7 +435,7 @@ added.</p>"
 
    (local (defthm crock2
             (implies (string-listp (alist-keys graph))
-                     (string-listp (mv-nth 1 (toposort graph)))))))
+                     (string-listp (mv-nth 1 (depgraph::toposort graph)))))))
 
   ///
   (defthm vl-depsort-functions-under-set-equiv
@@ -1748,7 +1748,7 @@ since it will be so tricky to get right.</p>"
                            DEFAULT-CDR
                            ACL2::CONSP-WHEN-MEMBER-EQUAL-OF-ATOM-LISTP
                            ACL2::CONSP-UNDER-IFF-WHEN-TRUE-LISTP
-                           CONSP-WHEN-MEMBER-EQUAL-OF-CONS-LISTP
+                           acl2::CONSP-WHEN-MEMBER-EQUAL-OF-CONS-LISTP
                            acl2::true-listp-member-equal
                            double-containment)))
 

@@ -35,6 +35,7 @@
 (include-book "stv-util")
 (include-book "centaur/vl/util/defs" :dir :system)
 (include-book "../steps")
+(include-book "std/typed-lists/cons-listp" :dir :system)
 (local (include-book "std/typed-lists/atom-listp" :dir :system))
 
 (local (defthm atom-listp-of-pat-flatten1
@@ -76,13 +77,13 @@ different STVs that target the same module.</p>"
 alist across different STVs that target the same module for the same numbers of
 steps.</p>"
 
-  :returns (nth-alist vl::cons-listp)
+  :returns (nth-alist cons-listp)
   (pairlis$ flat-ins
             (stv-suffix-signals flat-ins (str::cat ".P" (str::natstr n))))
 
   :prepwork
   ((local (defthm c0
-           (vl::cons-listp (pairlis$ x y))
+           (cons-listp (pairlis$ x y))
            :hints(("Goal" :in-theory (enable pairlis$))))))
   ///
   (memoize 'stv-fully-general-in-alist-n))
@@ -92,7 +93,7 @@ steps.</p>"
                                          (flat-ins symbol-listp)
                                          acc)
   :parents (stv-fully-general-in-alists)
-  :returns (in-alists vl::cons-list-listp :hyp (vl::cons-list-listp acc))
+  :returns (in-alists cons-list-listp :hyp (cons-list-listp acc))
   (let ((acc (cons (stv-fully-general-in-alist-n n flat-ins) acc)))
     (if (zp n)
         acc
@@ -110,7 +111,7 @@ general simulations of a module."
 
   ((n   "The number of phases to simulate." posp)
    (mod "The @(see esim) module."))
-  :returns (in-alists vl::cons-list-listp)
+  :returns (in-alists cons-list-listp)
 
   :long "<p>This is basically name mangling.  For instance, at phase 5 the
 input @('|foo[3]|') will be represented by the variable @('|foo[3].P5|').
@@ -307,7 +308,7 @@ of individual steps, instead of memoizing the whole thing.</p>"
            (nfix nphases)))
 
   (defthm cons-list-listp-of-stv-fully-general-simulation-debug-1
-    (vl::cons-list-listp
+    (cons-list-listp
      (mv-nth 1 (stv-fully-general-simulation-debug nphases mod override-stbits)))))
 
 

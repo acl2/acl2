@@ -39,7 +39,7 @@
 (include-book "transforms/annotate/top")
 (include-book "transforms/always/top")
 (include-book "transforms/occform/top")
-
+(include-book "transforms/unparam/top")
 (include-book "transforms/cn-hooks")
 (include-book "transforms/xf-addinstnames")
 (include-book "transforms/xf-assign-trunc")
@@ -61,7 +61,6 @@
 (include-book "transforms/xf-resolve-ranges")
 (include-book "transforms/xf-selresolve")
 (include-book "transforms/xf-sizing")
-(include-book "transforms/xf-unparameterize")
 (include-book "transforms/xf-unused-vars")
 (include-book "transforms/xf-weirdint-elim")
 (include-book "transforms/xf-wildeq")

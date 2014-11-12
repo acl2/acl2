@@ -103,8 +103,7 @@ vl-design-propagate-errors), and this meta rule works well.</p>")
 (local (in-theory (disable default-car
                            default-cdr
                            acl2::consp-of-car-when-alistp
-                           acl2::alistp-of-cdr
-                           CONSP-OF-CAR-WHEN-CONS-LISTP)))
+                           acl2::alistp-of-cdr)))
 
 ;; We definitely don't want to look at these.
 (local (in-theory (disable fgetprop w)))

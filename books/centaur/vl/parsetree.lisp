@@ -42,7 +42,7 @@
                            default-car default-cdr
                            acl2::lower-bound-of-car-when-nat-listp
                            stringp-when-true-listp
-                           consp-when-member-equal-of-cons-listp
+                           acl2::consp-when-member-equal-of-cons-listp
                            acl2::consp-when-member-equal-of-atom-listp
                            consp-when-member-equal-of-vl-commentmap-p
                            consp-when-member-equal-of-vl-atts-p
@@ -2430,7 +2430,6 @@ contain sub-statements and are mutually-recursive with @('vl-stmt-p').</p>"
 
   :prepwork
   ((local (in-theory (disable VL-EXPR-P-OF-CAR-WHEN-VL-EXPRLIST-P
-                              CONSP-OF-CAR-WHEN-CONS-LISTP
                               VL-MAYBE-EXPR-P-OF-CDAR-WHEN-VL-ATTS-P
                               VL-ATTS-P-OF-CDR-WHEN-VL-ATTS-P
                               ACL2::CONSP-OF-CAR-WHEN-ALISTP
@@ -3634,8 +3633,6 @@ the list of elements of the given type.</p>"
                             acl2::true-listp-when-character-listp
                             acl2::true-listp-when-atom
                             set::sets-are-true-lists
-                            consp-when-member-equal-of-cons-listp
-                            consp-when-member-equal-of-cons-listp
                             acl2::rev-when-not-consp
                             default-car
                             default-cdr

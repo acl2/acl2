@@ -1,4 +1,4 @@
-; Standard Typed Lists Library
+; Basic Dependency Graphs
 ; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
@@ -28,45 +28,32 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
+#!ACL2
 (in-package "ACL2")
-(include-book "acl2-number-listp")
-(include-book "atom-listp")
-(include-book "boolean-listp")
-(include-book "character-listp")
-(include-book "cons-listp")
-(include-book "eqlable-listp")
-(include-book "integer-listp")
-(include-book "nat-listp")
-(include-book "pseudo-term-listp")
-(include-book "rational-listp")
-(include-book "string-listp")
-(include-book "symbol-listp")
-(include-book "signed-byte-listp")
-(include-book "unsigned-byte-listp")
 
-(defsection std/typed-lists
-  :parents (std)
-  :short "A library about the built-in typed lists, like @(see
-character-listp), @(see nat-listp), @(see string-listp), etc."
+(include-book "std/portcullis" :dir :system)
 
-  :long "<p>The @('std/typed-lists') library provides basic lemmas about
-built-in ACL2 functions.</p>
+(defpkg "DEPGRAPH"
+  (union-eq *standard-acl2-imports*
+            set::*sets-exports*
+            std::*std-exports*
+            '(assert!
+              b*
+              fun
+              why
+              with-redef
+              set-equiv
+              flatten
+              defxdoc
+              defsection
+              alist-keys
+              alist-vals
+              fal-all-boundp
+              hons-member-equal
+              two-nats-measure
+              set-reasoning
+              cons-listp
+              with-fast
+              )))
 
-<p>If you want to load everything in the library, you can just include the
-@('top') book, e.g.,</p>
-
-@({ (include-book \"std/typed-lists/top\" :dir :system) })
-
-<p>Alternately, it is perfectly reasonable to just include the individual books
-that deal with the typed lists you are interested in.  For instance,</p>
-
-@({
-    (include-book \"std/typed-lists/character-listp\" :dir :system)
-    (include-book \"std/typed-lists/symbol-listp\" :dir :system)
-    ;; and so on.
-})
-
-<p>Most of the typed-lists library is generated automatically by @(see
-std::deflist).  You may find this macro useful for introducing your own, custom
-typed lists.</p>")
-
+(assign acl2::verbose-theory-warning nil)

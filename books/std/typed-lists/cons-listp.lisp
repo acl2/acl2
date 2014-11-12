@@ -29,44 +29,16 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
-(include-book "acl2-number-listp")
-(include-book "atom-listp")
-(include-book "boolean-listp")
-(include-book "character-listp")
-(include-book "cons-listp")
-(include-book "eqlable-listp")
-(include-book "integer-listp")
-(include-book "nat-listp")
-(include-book "pseudo-term-listp")
-(include-book "rational-listp")
-(include-book "string-listp")
-(include-book "symbol-listp")
-(include-book "signed-byte-listp")
-(include-book "unsigned-byte-listp")
+(include-book "std/util/deflist" :dir :system)
 
-(defsection std/typed-lists
-  :parents (std)
-  :short "A library about the built-in typed lists, like @(see
-character-listp), @(see nat-listp), @(see string-listp), etc."
+(std::deflist cons-listp (x)
+  (consp x)
+  :elementp-of-nil nil
+  :cheap t
+  :parents (std/typed-lists alistp)
+  :short "Like @(see alistp) but doesn't require that the final cdr is @('nil').")
 
-  :long "<p>The @('std/typed-lists') library provides basic lemmas about
-built-in ACL2 functions.</p>
-
-<p>If you want to load everything in the library, you can just include the
-@('top') book, e.g.,</p>
-
-@({ (include-book \"std/typed-lists/top\" :dir :system) })
-
-<p>Alternately, it is perfectly reasonable to just include the individual books
-that deal with the typed lists you are interested in.  For instance,</p>
-
-@({
-    (include-book \"std/typed-lists/character-listp\" :dir :system)
-    (include-book \"std/typed-lists/symbol-listp\" :dir :system)
-    ;; and so on.
-})
-
-<p>Most of the typed-lists library is generated automatically by @(see
-std::deflist).  You may find this macro useful for introducing your own, custom
-typed lists.</p>")
-
+(std::deflist cons-list-listp (x)
+  (cons-listp x)
+  :parents (std/typed-lists)
+  :elementp-of-nil t)
