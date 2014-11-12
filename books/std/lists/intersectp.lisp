@@ -1,4 +1,4 @@
-; Standard Typed Lists Library
+; Intersectp Lemmas
 ; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
@@ -29,44 +29,44 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
-(include-book "acl2-number-listp")
-(include-book "atom-listp")
-(include-book "boolean-listp")
-(include-book "character-listp")
-(include-book "cons-listp")
-(include-book "eqlable-listp")
-(include-book "integer-listp")
-(include-book "nat-listp")
-(include-book "pseudo-term-listp")
-(include-book "rational-listp")
-(include-book "string-listp")
-(include-book "symbol-listp")
-(include-book "signed-byte-listp")
-(include-book "unsigned-byte-listp")
+(include-book "list-defuns")
+(include-book "xdoc/top" :dir :system)
+(local (include-book "sets"))
 
-(defsection std/typed-lists
-  :parents (std)
-  :short "A library about the built-in typed lists, like @(see
-character-listp), @(see nat-listp), @(see string-listp), etc."
+(local (in-theory (enable intersection$ intersectp)))
 
-  :long "<p>The @('std/typed-lists') library provides basic lemmas about
-built-in ACL2 functions.</p>
+(defsection intersectp
+  :parents (std/lists intersectp)
+  :short "Lemmas about @(see intersectp) available in the @(see std/lists)
+library."
 
-<p>If you want to load everything in the library, you can just include the
-@('top') book, e.g.,</p>
+  (defthm intersectp-equal-of-atom-left
+    (implies (atom x)
+             (equal (intersectp-equal x y)
+                    nil)))
 
-@({ (include-book \"std/typed-lists/top\" :dir :system) })
+  (defthm intersectp-equal-of-atom-right
+    (implies (atom y)
+             (equal (intersectp-equal x y)
+                    nil)))
 
-<p>Alternately, it is perfectly reasonable to just include the individual books
-that deal with the typed lists you are interested in.  For instance,</p>
+  (defthm intersect-equal-of-cons-left
+    (equal (intersectp-equal (cons a x) y)
+           (if (member-equal a y)
+               t
+             (intersectp-equal x y))))
 
-@({
-    (include-book \"std/typed-lists/character-listp\" :dir :system)
-    (include-book \"std/typed-lists/symbol-listp\" :dir :system)
-    ;; and so on.
-})
+  (defthm intersectp-equal-of-cons-right
+    (equal (intersectp-equal x (cons a y))
+           (if (member-equal a x)
+               t
+             (intersectp-equal x y))))
 
-<p>Most of the typed-lists library is generated automatically by @(see
-std::deflist).  You may find this macro useful for introducing your own, custom
-typed lists.</p>")
+  "<h5>Basic set reasoning</h5>"
 
+  (defcong set-equiv equal (intersectp x y) 1)
+  (defcong set-equiv equal (intersectp x y) 2)
+
+  (defthm intersectp-of-self
+    (equal (intersectp x x)
+           (consp x))))

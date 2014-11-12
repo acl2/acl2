@@ -44,7 +44,7 @@
 ;; accumulated persistence hacking
 (local (in-theory (disable acl2::prefixp-when-equal-lengths
                            acl2::lower-bound-of-len-when-sublistp
-                           consp-when-member-equal-of-cons-listp
+                           acl2::consp-when-member-equal-of-cons-listp
                            acl2::consp-when-member-equal-of-atom-listp
                            acl2::len-when-prefixp
                            acl2::consp-under-iff-when-true-listp

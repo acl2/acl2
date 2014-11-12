@@ -37,7 +37,7 @@
 
 ;; BOZO some of these are expensive; consider backchain limits.
 (local (in-theory (disable acl2::consp-under-iff-when-true-listp
-                           consp-when-member-equal-of-cons-listp
+                           acl2::consp-when-member-equal-of-cons-listp
                            member-equal-when-member-equal-of-cdr-under-iff
                            default-car
                            default-cdr)))

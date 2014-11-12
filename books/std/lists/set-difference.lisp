@@ -1,4 +1,4 @@
-; Standard Typed Lists Library
+; Set Difference Lemmas
 ; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
@@ -29,44 +29,36 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
-(include-book "acl2-number-listp")
-(include-book "atom-listp")
-(include-book "boolean-listp")
-(include-book "character-listp")
-(include-book "cons-listp")
-(include-book "eqlable-listp")
-(include-book "integer-listp")
-(include-book "nat-listp")
-(include-book "pseudo-term-listp")
-(include-book "rational-listp")
-(include-book "string-listp")
-(include-book "symbol-listp")
-(include-book "signed-byte-listp")
-(include-book "unsigned-byte-listp")
+(include-book "xdoc/top" :dir :system)
+(local (include-book "sets"))
+(local (include-book "intersectp"))
 
-(defsection std/typed-lists
-  :parents (std)
-  :short "A library about the built-in typed lists, like @(see
-character-listp), @(see nat-listp), @(see string-listp), etc."
+(local (in-theory (enable set-difference-equal)))
 
-  :long "<p>The @('std/typed-lists') library provides basic lemmas about
-built-in ACL2 functions.</p>
+(defsection std/lists/set-difference
+  :parents (std/lists set-difference$)
+  :short "Lemmas about @(see set-difference$) available in the @(see std/lists)
+library."
 
-<p>If you want to load everything in the library, you can just include the
-@('top') book, e.g.,</p>
+  (defthm set-difference-equal-when-atom
+    (implies (atom x)
+             (equal (set-difference-equal x y)
+                    nil)))
 
-@({ (include-book \"std/typed-lists/top\" :dir :system) })
+  (defthm set-difference-equal-of-cons
+    (equal (set-difference-equal (cons a x) y)
+           (if (member-equal a y)
+               (set-difference-equal x y)
+             (cons a (set-difference-equal x y)))))
 
-<p>Alternately, it is perfectly reasonable to just include the individual books
-that deal with the typed lists you are interested in.  For instance,</p>
+  (defthm set-difference-equal-when-subsetp-equal
+    (implies (subsetp-equal x y)
+             (equal (set-difference-equal x y)
+                    nil)))
 
-@({
-    (include-book \"std/typed-lists/character-listp\" :dir :system)
-    (include-book \"std/typed-lists/symbol-listp\" :dir :system)
-    ;; and so on.
-})
+  (defthm set-difference-equal-of-self
+    (equal (set-difference-equal x x)
+           nil))
 
-<p>Most of the typed-lists library is generated automatically by @(see
-std::deflist).  You may find this macro useful for introducing your own, custom
-typed lists.</p>")
-
+  (defthm empty-intersect-with-difference-of-self
+    (not (intersectp-equal a (set-difference-equal b a)))))

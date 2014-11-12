@@ -80,16 +80,6 @@ events.</p>")
   :returns (names string-listp)
   (vl-namedarg->name x))
 
-(defprojection vl-modinstlist->modnames ((x vl-modinstlist-p))
-  ;; BOZO also somewhat misplaced -- doesn't have to do with the namespace.
-  :parents (vl-modinstlist-p)
-  :short "Collect all module names (not instance names!) from a
-          @(see vl-modinstlist-p)."
-  :returns (modnames string-listp)
-  (vl-modinst->modname x))
-
-
-
 
 (define vl-module->modnamespace-nrev ((x vl-module-p) nrev)
   :parents (vl-module->modnamespace)

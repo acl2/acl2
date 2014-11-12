@@ -1173,7 +1173,9 @@ elements.")
   :short "A basic dependency graph.  Binds each node to the list of nodes it
 depends on.  The format is compatible with @(see toposort)."
   :key-type stringp
-  :val-type string-listp)
+  :val-type string-listp
+  :keyp-of-nil nil
+  :valp-of-nil t)
 
 (defprod vl-immdepgraph
   :parents (immdeps)

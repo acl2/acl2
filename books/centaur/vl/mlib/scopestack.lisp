@@ -420,6 +420,15 @@ instances.</p>"
     (string-listp (vl-modinstlist->instnames x))))
 
 
+(defprojection vl-modinstlist->modnames ((x vl-modinstlist-p))
+  :parents (vl-modinstlist-p)
+  :short "Collect all module names (not instance names!) from a
+          @(see vl-modinstlist-p)."
+  :returns (modnames string-listp)
+  (vl-modinst->modname x))
+
+
+
 (define vl-gateinstlist->names-nrev ((x vl-gateinstlist-p) nrev)
   :parents (vl-gateinstlist->names)
   (b* (((when (atom x))
@@ -828,7 +837,7 @@ may be shorter than the number of elements in the list.</p>"
                            acl2::str-fix-default
                            acl2::stringp-when-maybe-stringp
                            ;;acl2::car-when-all-equalp
-                           consp-when-member-equal-of-cons-listp
+                           ;;acl2::consp-when-member-equal-of-cons-listp
                            (:t member-equal)
                            member-equal
                            default-car

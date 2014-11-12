@@ -1,4 +1,4 @@
-; VL Verilog Toolkit
+; Basic Dependency Graphs
 ; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
@@ -28,8 +28,9 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-(in-package "VL")
+(in-package "DEPGRAPH")
 
-; cert_param: (reloc_stub)
-(include-book "centaur/depgraph/toposort" :dir :system)
+; This is an empty book which is included in cert.acl2 in order to consolidate
+; all of our portcullis commands into a single, usually-redundant include-book
+; command.  This simply improves the efficiency of our build process.
 

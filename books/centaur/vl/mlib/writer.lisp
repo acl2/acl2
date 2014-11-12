@@ -735,7 +735,7 @@ its arguments, if necessary.</p>"
                                 acl2::CAR-WHEN-ALL-EQUALP
                                 CONSP-WHEN-MEMBER-EQUAL-OF-VL-MODALIST-P
                                 CONSP-WHEN-MEMBER-EQUAL-OF-VL-COMMENTMAP-P
-                                CONSP-WHEN-MEMBER-EQUAL-OF-CONS-LISTP
+                                acl2::consp-when-member-equal-of-cons-listp
                                 CONSP-WHEN-MEMBER-EQUAL-OF-VL-ATTS-P
                                 VL-ATOMLIST-P-WHEN-NOT-CONSP
                                 VL-ATOM-P-OF-CAR-WHEN-VL-ATOMLIST-P

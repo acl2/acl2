@@ -38,7 +38,6 @@
 (local (in-theory (disable (tau-system)
                            acl2::consp-under-iff-when-true-listp
                            acl2::consp-when-member-equal-of-atom-listp
-                           consp-when-member-equal-of-cons-listp
                            double-containment)))
 
 (defxdoc substitution

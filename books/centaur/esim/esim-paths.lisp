@@ -36,15 +36,8 @@
 (include-book "esim-sexpr-support")
 (include-book "std/util/deflist" :dir :system)
 (include-book "std/util/defmvtypes" :dir :system)
+(include-book "std/typed-lists/cons-listp" :dir :system)
 (local (include-book "esim-sexpr-support-thms"))
-
-(std::deflist cons-listp (x)
-              (consp x)
-              :guard t
-              :elementp-of-nil nil)
-
-(in-theory (disable consp-of-car-when-cons-listp
-                    consp-when-member-equal-of-cons-listp))
 
 
 (defsection extend-internal-paths

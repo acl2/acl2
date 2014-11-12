@@ -314,7 +314,7 @@
                    acl2::true-listp-when-string-listp-rewrite
                    acl2::true-listp-when-symbol-listp-rewrite
                    acl2::car-when-all-equalp
-                   consp-when-member-equal-of-cons-listp
+                   acl2::consp-when-member-equal-of-cons-listp
                    default-<-1
                    default-<-2
                    double-containment
