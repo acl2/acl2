@@ -33,6 +33,7 @@
 (include-book "util/commentmap")
 (include-book "util/warnings")
 (include-book "tools/flag" :dir :system)
+(include-book "tools/templates" :dir :system)
 (local (include-book "util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
 (local (in-theory (disable double-containment)))
@@ -864,12 +865,6 @@ implement a comprehensive approach to detecting and dealing with backflow.</p>
 <p>The width of a port can be determined after expression sizing has been
 performed by examining the width of the port expression.  See @(see
 expression-sizing) for details.</p>")
-
-(defthm tag-when-vl-port-p-forward
-  (implies (vl-port-p x)
-           (or (eq (tag x) :vl-regularport)
-               (eq (tag x) :vl-interfaceport)))
-  :rule-classes :forward-chaining)
 
 (fty::deflist vl-portlist
               :elt-type vl-port-p
@@ -2228,13 +2223,6 @@ respectively.</p>"
   (vl-vardecl
    vl-paramdecl))
 
-(defthm vl-blockitem-p-tag-forward
-  ;; BOZO is this better than the rewrite rule we currently add?
-  (implies (vl-blockitem-p x)
-           (or (equal (tag x) :vl-vardecl)
-               (equal (tag x) :vl-paramdecl)))
-  :rule-classes :forward-chaining)
-
 (fty::deflist vl-blockitemlist
   :elt-type vl-blockitem-p
   :true-listp nil
@@ -2357,14 +2345,6 @@ rid of repeateventcontrol.</p>")
   (vl-delaycontrol
    vl-eventcontrol
    vl-repeateventcontrol))
-
-(defthm vl-delayoreventcontrol-p-tag-forward
-  ;; BOZO is this better than the rewrite rule we currently add?
-  (implies (vl-delayoreventcontrol-p x)
-           (or (equal (tag x) :vl-delaycontrol)
-               (equal (tag x) :vl-eventcontrol)
-               (equal (tag x) :vl-repeat-eventcontrol)))
-  :rule-classes :forward-chaining)
 
 (local (defthm vl-delayoreventcontrol-fix-nonnil
          (vl-delayoreventcontrol-fix x)
@@ -3295,7 +3275,6 @@ be non-sliceable, at least if it's an input.</p>"
 
 
 (encapsulate nil
-  (local (include-book "tools/templates" :dir :system))
 
   (defconst *vl-modelement-typenames*
     '(portdecl
@@ -3326,10 +3305,11 @@ be non-sliceable, at least if it's an input.</p>"
       ',(typenames-to-tags *vl-modelement-typenames*)))
 
   (defun vl-typenames-to-tmplsubsts (types)
+    (declare (xargs :mode :program))
     (if (atom types)
         nil
       (let ((name (symbol-name (car types))))
-        (cons (make-tmplsubsts
+        (cons (make-tmplsubst
                :strs `(("__TYPE__" ,name . vl-package)
                        ("__ELTS__" ,(if (member (char name (1- (length name))) '(#\S #\s))
                                         (str::cat name "ES")
@@ -3509,124 +3489,7 @@ initially kept in a big, mixed list.</p>"
       (:vl-gencase  x.loc)
       (:vl-genblock x.loc)
       (:vl-genarray x.loc)
-      (:vl-genbase  (vl-modelement->loc x.item))))
-
-
-  (make-event
-   `(progn
-      (defprod vl-genblob
-        :short "A sorted collection of module elements (see @(see vl-modelement))."
-        :long "<p>A vl-modelement-collection can be made from a @(see
-vl-modelementlist) by sorting the elements by type.  Its fields each contain
-the list of elements of the given type.</p>"
-        (,@(project-over-modelement-types
-            '(__elts__ vl-__type__list-p))
-           (generates vl-genelementlist-p)
-           (ports     vl-portlist-p))
-        :extra-binder-names (ifports)
-        :tag :vl-genblob
-        :layout :tree)
-
-
-      (define vl-modelement-loc ((x vl-modelement-p))
-        :short "Get the location of any @(see vl-modelement-p)."
-        :returns (loc vl-location-p
-                      :hints(("Goal" :in-theory (enable vl-modelement-fix
-                                                        (tau-system)))))
-        (b* ((x (vl-modelement-fix x)))
-
-          (case (tag x)
-            . ,(project-over-modelement-types
-                '(:vl-__type__       (vl-__type__->loc x))))))
-
-      (define vl-genelement-loc ((x vl-genelement-p))
-        :short "Get the location of any @(see vl-genelement-p)."
-        :returns (loc vl-location-p
-                      :hints(("Goal" :in-theory (enable vl-genelement-fix))))
-        (vl-genelement-case x
-          :vl-genbase (vl-modelement-loc x.item)
-          :vl-genloop   x.loc
-          :vl-genif     x.loc
-          :vl-gencase   x.loc
-          :vl-genblock  x.loc
-          :vl-genarray  x.loc))
-
-      (local (defun my-default-hint (fnname id clause world)
-               (declare (xargs :mode :program))
-               (and (eql (len (acl2::recursivep fnname world)) 1) ;; singly recursive
-                    (let* ((pool-lst (acl2::access acl2::clause-id id :pool-lst)))
-                      (and (eql 0 (acl2::access acl2::clause-id id :forcing-round))
-                           (cond ((not pool-lst)
-                                  (let ((formals (std::look-up-formals fnname world)))
-                                    `(:induct (,fnname . ,formals)
-                                      :in-theory (disable (:d ,fnname)))))
-                                 ((equal pool-lst '(1))
-                                  (std::expand-calls-computed-hint clause (list fnname)))))))))
-
-      ;; (local (std::set-returnspec-default-hints
-      ;;         ((my-returnspec-default-hint 'fnname acl2::id acl2::clause world))))
-
-      (define vl-sort-genelements-aux
-        ((x           vl-genelementlist-p)
-         ,@(project-over-modelement-types
-            '(__elts__       vl-__type__list-p))
-         (generates   vl-genelementlist-p))
-        :returns (mv ,@(project-over-modelement-types
-                        `(__elts__
-                          vl-__type__list-p))
-                     (generates vl-genelementlist-p))
-        :hooks ((:fix :hints ((my-default-hint
-                               'vl-sort-genelements-aux
-                               acl2::id acl2::clause world))))
-        :verbosep t
-        (b* (((when (atom x))
-              (mv ,@(project-over-modelement-types
-                     '(rev (vl-__type__list-fix        __elts__)))
-                  (vl-genelementlist-fix generates))))
-          (vl-genelement-case (xf (car x))
-            :vl-genbase
-            (b* ((x1  xf.item)
-                 (tag (tag x1)))
-              (vl-sort-genelements-aux
-               (cdr x)
-               ,@(project-over-modelement-types
-                  '(if (eq tag :vl-__type__)       (cons x1 __elts__)       __elts__))
-               generates))
-            :otherwise
-            (vl-sort-genelements-aux
-             (cdr x) ,@(project-over-modelement-types '__elts__)
-             (cons (vl-genelement-fix (car x)) generates))))
-        :prepwork
-        ((local (in-theory (disable
-                            ;; just a speed hint
-                            double-containment
-                            set::nonempty-means-set
-                            acl2::consp-under-iff-when-true-listp
-                            acl2::consp-by-len
-                            acl2::true-listp-when-character-listp
-                            acl2::true-listp-when-atom
-                            set::sets-are-true-lists
-                            consp-when-member-equal-of-cons-listp
-                            consp-when-member-equal-of-cons-listp
-                            acl2::rev-when-not-consp
-                            default-car
-                            default-cdr
-                            pick-a-point-subset-strategy
-                            vl-genelement-p-when-member-equal-of-vl-genelementlist-p
-                            ,@(project-over-modelement-types
-                               'vl-__type__list-p-when-subsetp-equal)
-                            ,@(project-over-modelement-types
-                               'vl-modelementlist-p-when-vl-__type__list-p)
-                            (:rules-of-class :type-prescription :here)
-                            (:ruleset tag-reasoning))))))
-
-      (define vl-sort-genelements ((x vl-genelementlist-p))
-        :returns (collection vl-genblob-p)
-        (b* (((mv ,@(project-over-modelement-types '__elts__) generates)
-              (vl-sort-genelements-aux x ,@(project-over-modelement-types nil) nil)))
-          (make-vl-genblob
-           ,@(append-over-modelement-types '(:__elts__ __elts__))
-           :generates generates))))))
+      (:vl-genbase  (vl-modelement->loc x.item)))))
 
 
 (define vl-modelementlist->genelements ((x vl-modelementlist-p))
@@ -3637,17 +3500,17 @@ the list of elements of the given type.</p>"
           (vl-modelementlist->genelements (cdr x)))))
 
 (encapsulate nil
-  (local (defthm tag-when-vl-genelement-p
-           (implies (vl-genelement-p x)
-                    (or (equal (tag x) :vl-genbase)
-                        (equal (tag x) :vl-genloop)
-                        (equal (tag x) :vl-genif)
-                        (equal (tag x) :vl-gencase)
-                        (equal (tag x) :vl-genblock)
-                        (equal (tag x) :vl-genarray)))
-           :hints(("Goal" :in-theory (enable tag vl-genelement-p)))
-           :rule-classes :forward-chaining))
-  (local (in-theory (disable tag-when-vl-genblob-p)))
+
+  (defthm tag-when-vl-genelement-p-forward
+    (implies (vl-genelement-p x)
+             (or (equal (tag x) :vl-genbase)
+                 (equal (tag x) :vl-genloop)
+                 (equal (tag x) :vl-genif)
+                 (equal (tag x) :vl-gencase)
+                 (equal (tag x) :vl-genblock)
+                 (equal (tag x) :vl-genarray)))
+    :hints(("Goal" :in-theory (enable tag vl-genelement-p)))
+    :rule-classes :forward-chaining)
 
   (deftranssum vl-ctxelement
     ;; Add any tagged product that can be written with ~a and has a loc field.
@@ -3929,22 +3792,6 @@ transforms to not modules with this attribute.</p>"
     :hints(("Goal" :in-theory (enable vl-module->ifports)))))
 
 
-(define vl-genblob->ifports
-  :short "Collect just the interface ports for a genblob."
-  ((x vl-genblob-p))
-  :returns (ports (vl-interfaceportlist-p ports))
-  (vl-collect-interface-ports (vl-genblob->ports x))
-  ///
-  (local (defthm vl-regularportlist-p-when-no-interface-ports
-           (implies (and (not (vl-collect-interface-ports x))
-                         (vl-portlist-p x))
-                    (vl-regularportlist-p x))
-           :hints(("Goal" :induct (len x)))))
-  
-  (defthm vl-regularportlist-p-when-no-genblob->ifports
-    (implies (not (vl-genblob->ifports x))
-             (vl-regularportlist-p (vl-genblob->ports x)))
-    :hints(("Goal" :in-theory (enable vl-genblob->ifports)))))
 
 (defprojection vl-modulelist->names ((x vl-modulelist-p))
   :returns (names string-listp)

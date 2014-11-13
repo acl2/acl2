@@ -31,6 +31,7 @@
 
 (in-package "VL")
 (include-book "../parsetree")
+(include-book "blocks")
 ;; (include-book "modnamespace")
 ;; (include-book "find-item")
 ;; (local (include-book "../util/arithmetic"))
@@ -38,6 +39,242 @@
 (local (include-book "std/lists/acl2-count" :dir :system))
 (local (in-theory (disable acl2-count)))
 (local (std::add-default-post-define-hook :fix))
+
+
+(define vl-blockitem->name ((x vl-blockitem-p))
+  :returns (name stringp :rule-classes :type-prescription)
+  :prepwork ((local (defthm tag-when-vl-blockitem-p
+                      (implies (vl-blockitem-p x)
+                               (or (equal (tag x) :vl-vardecl)
+                                   (equal (tag x) :vl-paramdecl)))
+                      :rule-classes :forward-chaining))
+             (local (defthm vl-blockitem-p-of-vl-blockitem-fix-forward
+                      (vl-blockitem-p (vl-blockitem-fix x))
+                      :rule-classes ((:forward-chaining :trigger-terms ((vl-blockitem-fix x)))))))
+  (b* ((x (vl-blockitem-fix x)))
+    (case (tag x)
+      (:vl-vardecl (vl-vardecl->name x))
+      (:vl-paramdecl (vl-paramdecl->name x)))))
+
+
+(define vl-modinstlist->instnames-nrev ((x vl-modinstlist-p) nrev)
+  :parents (vl-modinstlist->instnames)
+  (b* (((when (atom x))
+        (nrev-fix nrev))
+       (name (vl-modinst->instname (car x)))
+       (nrev (if name
+                 (nrev-push name nrev)
+               nrev)))
+    (vl-modinstlist->instnames-nrev (cdr x) nrev)))
+
+
+(define vl-modinstlist->instnames ((x vl-modinstlist-p))
+  :parents (vl-modinstlist-p modnamespace)
+  :short "Collect all instance names (not module names!) from a @(see
+vl-modinstlist-p)."
+  :long "<p>The Verilog-2005 Standard requires that module instances be named,
+but we relaxed that restriction in our definition of @(see vl-modinst-p)
+because of user-defined primitives, which may be unnamed.  So, as with @(see
+vl-gateinstlist->names), here we simply skip past any unnamed module
+instances.</p>"
+  :verify-guards nil
+  (mbe :logic (if (consp x)
+                  (if (vl-modinst->instname (car x))
+                      (cons (vl-modinst->instname (car x))
+                            (vl-modinstlist->instnames (cdr x)))
+                    (vl-modinstlist->instnames (cdr x)))
+                nil)
+       :exec (with-local-nrev (vl-modinstlist->instnames-nrev x nrev)))
+  ///
+  (defthm vl-modinstlist->instnames-exec-removal
+    (equal (vl-modinstlist->instnames-nrev x nrev)
+           (append nrev (vl-modinstlist->instnames x)))
+    :hints(("Goal" :in-theory (enable vl-modinstlist->instnames-nrev))))
+
+  (verify-guards vl-modinstlist->instnames)
+
+  (defthm vl-modinstlist->instnames-when-not-consp
+    (implies (not (consp x))
+             (equal (vl-modinstlist->instnames x)
+                    nil)))
+
+  (defthm vl-modinstlist->instnames-of-cons
+    (equal (vl-modinstlist->instnames (cons a x))
+           (if (vl-modinst->instname a)
+               (cons (vl-modinst->instname a)
+                     (vl-modinstlist->instnames x))
+             (vl-modinstlist->instnames x))))
+
+  (defthm vl-modinstlist->instnames-of-list-fix
+    (equal (vl-modinstlist->instnames (list-fix x))
+           (vl-modinstlist->instnames x)))
+
+  (defcong list-equiv equal (vl-modinstlist->instnames x) 1
+    :hints(("Goal"
+            :in-theory (e/d (list-equiv)
+                            (vl-modinstlist->instnames-of-list-fix))
+            :use ((:instance vl-modinstlist->instnames-of-list-fix
+                   (x x))
+                  (:instance vl-modinstlist->instnames-of-list-fix
+                   (x acl2::x-equiv))))))
+
+  (defthm vl-modinstlist->instnames-of-append
+    (equal (vl-modinstlist->instnames (append x y))
+           (append (vl-modinstlist->instnames x)
+                   (vl-modinstlist->instnames y))))
+
+  (defthm vl-modinstlist->instnames-of-rev
+    (equal (vl-modinstlist->instnames (rev x))
+           (rev (vl-modinstlist->instnames x))))
+
+  (defthm string-listp-of-vl-modinstlist->instnames
+    (string-listp (vl-modinstlist->instnames x))))
+
+
+(define vl-gateinstlist->names-nrev ((x vl-gateinstlist-p) nrev)
+  :parents (vl-gateinstlist->names)
+  (b* (((when (atom x))
+        (nrev-fix nrev))
+       (name (vl-gateinst->name (car x)))
+       (nrev (if name
+                 (nrev-push name nrev)
+               nrev)))
+    (vl-gateinstlist->names-nrev (cdr x) nrev)))
+
+(define vl-gateinstlist->names ((x vl-gateinstlist-p))
+  :parents (vl-gateinstlist-p modnamespace)
+  :short "Collect all instance names declared in a @(see vl-gateinstlist-p)."
+  :long "<p>Note that gate instances may be unnamed, in which case we do not
+add anything.  In other words, the list of names returned may be shorter than
+the number of gate instances in the list.</p>"
+  :verify-guards nil
+  (mbe :logic (if (consp x)
+                  (if (vl-gateinst->name (car x))
+                      (cons (vl-gateinst->name (car x))
+                            (vl-gateinstlist->names (cdr x)))
+                    (vl-gateinstlist->names (cdr x)))
+                nil)
+       :exec (with-local-nrev (vl-gateinstlist->names-nrev x nrev)))
+  ///
+  (defthm vl-gateinstlist->names-nrev-removal
+    (equal (vl-gateinstlist->names-nrev x nrev)
+           (append nrev (vl-gateinstlist->names x)))
+    :hints(("Goal" :in-theory (enable vl-gateinstlist->names-nrev))))
+
+  (verify-guards vl-gateinstlist->names)
+
+  (defthm vl-gateinstlist->names-when-not-consp
+    (implies (not (consp x))
+             (equal (vl-gateinstlist->names x)
+                    nil)))
+
+  (defthm vl-gateinstlist->names-of-cons
+    (equal (vl-gateinstlist->names (cons a x))
+           (if (vl-gateinst->name a)
+               (cons (vl-gateinst->name a)
+                     (vl-gateinstlist->names x))
+             (vl-gateinstlist->names x))))
+
+  (defthm vl-gateinstlist->names-of-list-fix
+    (equal (vl-gateinstlist->names (list-fix x))
+           (vl-gateinstlist->names x)))
+
+  (defcong list-equiv equal (vl-gateinstlist->names x) 1
+    :hints(("Goal"
+            :in-theory (e/d (list-equiv)
+                            (vl-gateinstlist->names-of-list-fix))
+            :use ((:instance vl-gateinstlist->names-of-list-fix (x x))
+                  (:instance vl-gateinstlist->names-of-list-fix (x acl2::x-equiv))))))
+
+  (defthm vl-gateinstlist->names-of-append
+    (equal (vl-gateinstlist->names (append x y))
+           (append (vl-gateinstlist->names x)
+                   (vl-gateinstlist->names y))))
+
+  (defthm vl-gateinstlist->names-of-rev
+    (equal (vl-gateinstlist->names (rev x))
+           (rev (vl-gateinstlist->names x))))
+
+  (defthm string-listp-of-vl-gateinstlist->names
+    (string-listp (vl-gateinstlist->names x))))
+
+
+(define vl-genelement->blockname ((x vl-genelement-p))
+  :returns (blockname maybe-stringp)
+  (vl-genelement-case x
+    :vl-genblock x.name
+    :vl-genarray x.name
+    :otherwise nil))
+
+(define vl-genelementlist->blocknames-nrev ((x vl-genelementlist-p) nrev)
+  :parents (vl-genelementlist->blocknames)
+  (b* (((when (atom x))
+        (nrev-fix nrev))
+       (name (vl-genelement->blockname (car x)))
+       (nrev (if name
+                 (nrev-push name nrev)
+               nrev)))
+    (vl-genelementlist->blocknames-nrev (cdr x) nrev)))
+
+
+(define vl-genelementlist->blocknames ((x vl-genelementlist-p))
+  :parents (vl-genelementlist-p modnamespace)
+  :short "Collect all resolved block names in a @(see vl-genelementlist-p)."
+  :long "<p>Note the elements may be unresolved or may not be blocks at all, in
+which case we do not add anything.  In other words, the list of names returned
+may be shorter than the number of elements in the list.</p>"
+  :verify-guards nil
+  (mbe :logic (if (consp x)
+                  (if (vl-genelement->blockname (car x))
+                      (cons (vl-genelement->blockname (car x))
+                            (vl-genelementlist->blocknames (cdr x)))
+                    (vl-genelementlist->blocknames (cdr x)))
+                nil)
+       :exec (with-local-nrev (vl-genelementlist->blocknames-nrev x nrev)))
+  ///
+  (defthm vl-genelementlist->blocknames-nrev-removal
+    (equal (vl-genelementlist->blocknames-nrev x nrev)
+           (append nrev (vl-genelementlist->blocknames x)))
+    :hints(("Goal" :in-theory (enable vl-genelementlist->blocknames-nrev))))
+
+  (verify-guards vl-genelementlist->blocknames)
+
+  (defthm vl-genelementlist->blocknames-when-not-consp
+    (implies (not (consp x))
+             (equal (vl-genelementlist->blocknames x)
+                    nil)))
+
+  (defthm vl-genelementlist->blocknames-of-cons
+    (equal (vl-genelementlist->blocknames (cons a x))
+           (if (vl-genelement->blockname a)
+               (cons (vl-genelement->blockname a)
+                     (vl-genelementlist->blocknames x))
+             (vl-genelementlist->blocknames x))))
+
+  (defthm vl-genelementlist->blocknames-of-list-fix
+    (equal (vl-genelementlist->blocknames (list-fix x))
+           (vl-genelementlist->blocknames x)))
+
+  (defcong list-equiv equal (vl-genelementlist->blocknames x) 1
+    :hints(("Goal"
+            :in-theory (e/d (list-equiv)
+                            (vl-genelementlist->blocknames-of-list-fix))
+            :use ((:instance vl-genelementlist->blocknames-of-list-fix (x x))
+                  (:instance vl-genelementlist->blocknames-of-list-fix (x acl2::x-equiv))))))
+
+  (defthm vl-genelementlist->blocknames-of-append
+    (equal (vl-genelementlist->blocknames (append x y))
+           (append (vl-genelementlist->blocknames x)
+                   (vl-genelementlist->blocknames y))))
+
+  (defthm vl-genelementlist->blocknames-of-rev
+    (equal (vl-genelementlist->blocknames (rev x))
+           (rev (vl-genelementlist->blocknames x))))
+
+  (defthm string-listp-of-vl-genelementlist->blocknames
+    (string-listp (vl-genelementlist->blocknames x))))
+
+
 
 (defxdoc scopestack
   :parents (mlib)
@@ -328,241 +565,6 @@ correctly.")
 
 (local (xdoc::set-default-parents scopestack))
 
-(define vl-blockitem->name ((x vl-blockitem-p))
-  :returns (name stringp :rule-classes :type-prescription)
-  :prepwork ((local (defthm tag-when-vl-blockitem-p
-                      (implies (vl-blockitem-p x)
-                               (or (equal (tag x) :vl-vardecl)
-                                   (equal (tag x) :vl-paramdecl)))
-                      :rule-classes :forward-chaining))
-             (local (defthm vl-blockitem-p-of-vl-blockitem-fix-forward
-                      (vl-blockitem-p (vl-blockitem-fix x))
-                      :rule-classes ((:forward-chaining :trigger-terms ((vl-blockitem-fix x)))))))
-  (b* ((x (vl-blockitem-fix x)))
-    (case (tag x)
-      (:vl-vardecl (vl-vardecl->name x))
-      (:vl-paramdecl (vl-paramdecl->name x)))))
-
-
-
-(define vl-modinstlist->instnames-nrev ((x vl-modinstlist-p) nrev)
-  :parents (vl-modinstlist->instnames)
-  (b* (((when (atom x))
-        (nrev-fix nrev))
-       (name (vl-modinst->instname (car x)))
-       (nrev (if name
-                 (nrev-push name nrev)
-               nrev)))
-    (vl-modinstlist->instnames-nrev (cdr x) nrev)))
-
-
-(define vl-modinstlist->instnames ((x vl-modinstlist-p))
-  :parents (vl-modinstlist-p modnamespace)
-  :short "Collect all instance names (not module names!) from a @(see
-vl-modinstlist-p)."
-  :long "<p>The Verilog-2005 Standard requires that module instances be named,
-but we relaxed that restriction in our definition of @(see vl-modinst-p)
-because of user-defined primitives, which may be unnamed.  So, as with @(see
-vl-gateinstlist->names), here we simply skip past any unnamed module
-instances.</p>"
-  :verify-guards nil
-  (mbe :logic (if (consp x)
-                  (if (vl-modinst->instname (car x))
-                      (cons (vl-modinst->instname (car x))
-                            (vl-modinstlist->instnames (cdr x)))
-                    (vl-modinstlist->instnames (cdr x)))
-                nil)
-       :exec (with-local-nrev (vl-modinstlist->instnames-nrev x nrev)))
-  ///
-  (defthm vl-modinstlist->instnames-exec-removal
-    (equal (vl-modinstlist->instnames-nrev x nrev)
-           (append nrev (vl-modinstlist->instnames x)))
-    :hints(("Goal" :in-theory (enable vl-modinstlist->instnames-nrev))))
-
-  (verify-guards vl-modinstlist->instnames)
-
-  (defthm vl-modinstlist->instnames-when-not-consp
-    (implies (not (consp x))
-             (equal (vl-modinstlist->instnames x)
-                    nil)))
-
-  (defthm vl-modinstlist->instnames-of-cons
-    (equal (vl-modinstlist->instnames (cons a x))
-           (if (vl-modinst->instname a)
-               (cons (vl-modinst->instname a)
-                     (vl-modinstlist->instnames x))
-             (vl-modinstlist->instnames x))))
-
-  (defthm vl-modinstlist->instnames-of-list-fix
-    (equal (vl-modinstlist->instnames (list-fix x))
-           (vl-modinstlist->instnames x)))
-
-  (defcong list-equiv equal (vl-modinstlist->instnames x) 1
-    :hints(("Goal"
-            :in-theory (e/d (list-equiv)
-                            (vl-modinstlist->instnames-of-list-fix))
-            :use ((:instance vl-modinstlist->instnames-of-list-fix
-                   (x x))
-                  (:instance vl-modinstlist->instnames-of-list-fix
-                   (x acl2::x-equiv))))))
-
-  (defthm vl-modinstlist->instnames-of-append
-    (equal (vl-modinstlist->instnames (append x y))
-           (append (vl-modinstlist->instnames x)
-                   (vl-modinstlist->instnames y))))
-
-  (defthm vl-modinstlist->instnames-of-rev
-    (equal (vl-modinstlist->instnames (rev x))
-           (rev (vl-modinstlist->instnames x))))
-
-  (defthm string-listp-of-vl-modinstlist->instnames
-    (string-listp (vl-modinstlist->instnames x))))
-
-
-(define vl-gateinstlist->names-nrev ((x vl-gateinstlist-p) nrev)
-  :parents (vl-gateinstlist->names)
-  (b* (((when (atom x))
-        (nrev-fix nrev))
-       (name (vl-gateinst->name (car x)))
-       (nrev (if name
-                 (nrev-push name nrev)
-               nrev)))
-    (vl-gateinstlist->names-nrev (cdr x) nrev)))
-
-(define vl-gateinstlist->names ((x vl-gateinstlist-p))
-  :parents (vl-gateinstlist-p modnamespace)
-  :short "Collect all instance names declared in a @(see vl-gateinstlist-p)."
-  :long "<p>Note that gate instances may be unnamed, in which case we do not
-add anything.  In other words, the list of names returned may be shorter than
-the number of gate instances in the list.</p>"
-  :verify-guards nil
-  (mbe :logic (if (consp x)
-                  (if (vl-gateinst->name (car x))
-                      (cons (vl-gateinst->name (car x))
-                            (vl-gateinstlist->names (cdr x)))
-                    (vl-gateinstlist->names (cdr x)))
-                nil)
-       :exec (with-local-nrev (vl-gateinstlist->names-nrev x nrev)))
-  ///
-  (defthm vl-gateinstlist->names-nrev-removal
-    (equal (vl-gateinstlist->names-nrev x nrev)
-           (append nrev (vl-gateinstlist->names x)))
-    :hints(("Goal" :in-theory (enable vl-gateinstlist->names-nrev))))
-
-  (verify-guards vl-gateinstlist->names)
-
-  (defthm vl-gateinstlist->names-when-not-consp
-    (implies (not (consp x))
-             (equal (vl-gateinstlist->names x)
-                    nil)))
-
-  (defthm vl-gateinstlist->names-of-cons
-    (equal (vl-gateinstlist->names (cons a x))
-           (if (vl-gateinst->name a)
-               (cons (vl-gateinst->name a)
-                     (vl-gateinstlist->names x))
-             (vl-gateinstlist->names x))))
-
-  (defthm vl-gateinstlist->names-of-list-fix
-    (equal (vl-gateinstlist->names (list-fix x))
-           (vl-gateinstlist->names x)))
-
-  (defcong list-equiv equal (vl-gateinstlist->names x) 1
-    :hints(("Goal"
-            :in-theory (e/d (list-equiv)
-                            (vl-gateinstlist->names-of-list-fix))
-            :use ((:instance vl-gateinstlist->names-of-list-fix (x x))
-                  (:instance vl-gateinstlist->names-of-list-fix (x acl2::x-equiv))))))
-
-  (defthm vl-gateinstlist->names-of-append
-    (equal (vl-gateinstlist->names (append x y))
-           (append (vl-gateinstlist->names x)
-                   (vl-gateinstlist->names y))))
-
-  (defthm vl-gateinstlist->names-of-rev
-    (equal (vl-gateinstlist->names (rev x))
-           (rev (vl-gateinstlist->names x))))
-
-  (defthm string-listp-of-vl-gateinstlist->names
-    (string-listp (vl-gateinstlist->names x))))
-
-
-(define vl-genelement->blockname ((x vl-genelement-p))
-  :returns (blockname maybe-stringp)
-  (vl-genelement-case x
-    :vl-genblock x.name
-    :vl-genarray x.name
-    :otherwise nil))
-
-(define vl-genelementlist->blocknames-nrev ((x vl-genelementlist-p) nrev)
-  :parents (vl-genelementlist->blocknames)
-  (b* (((when (atom x))
-        (nrev-fix nrev))
-       (name (vl-genelement->blockname (car x)))
-       (nrev (if name
-                 (nrev-push name nrev)
-               nrev)))
-    (vl-genelementlist->blocknames-nrev (cdr x) nrev)))
-
-
-(define vl-genelementlist->blocknames ((x vl-genelementlist-p))
-  :parents (vl-genelementlist-p modnamespace)
-  :short "Collect all resolved block names in a @(see vl-genelementlist-p)."
-  :long "<p>Note the elements may be unresolved or may not be blocks at all, in
-which case we do not add anything.  In other words, the list of names returned
-may be shorter than the number of elements in the list.</p>"
-  :verify-guards nil
-  (mbe :logic (if (consp x)
-                  (if (vl-genelement->blockname (car x))
-                      (cons (vl-genelement->blockname (car x))
-                            (vl-genelementlist->blocknames (cdr x)))
-                    (vl-genelementlist->blocknames (cdr x)))
-                nil)
-       :exec (with-local-nrev (vl-genelementlist->blocknames-nrev x nrev)))
-  ///
-  (defthm vl-genelementlist->blocknames-nrev-removal
-    (equal (vl-genelementlist->blocknames-nrev x nrev)
-           (append nrev (vl-genelementlist->blocknames x)))
-    :hints(("Goal" :in-theory (enable vl-genelementlist->blocknames-nrev))))
-
-  (verify-guards vl-genelementlist->blocknames)
-
-  (defthm vl-genelementlist->blocknames-when-not-consp
-    (implies (not (consp x))
-             (equal (vl-genelementlist->blocknames x)
-                    nil)))
-
-  (defthm vl-genelementlist->blocknames-of-cons
-    (equal (vl-genelementlist->blocknames (cons a x))
-           (if (vl-genelement->blockname a)
-               (cons (vl-genelement->blockname a)
-                     (vl-genelementlist->blocknames x))
-             (vl-genelementlist->blocknames x))))
-
-  (defthm vl-genelementlist->blocknames-of-list-fix
-    (equal (vl-genelementlist->blocknames (list-fix x))
-           (vl-genelementlist->blocknames x)))
-
-  (defcong list-equiv equal (vl-genelementlist->blocknames x) 1
-    :hints(("Goal"
-            :in-theory (e/d (list-equiv)
-                            (vl-genelementlist->blocknames-of-list-fix))
-            :use ((:instance vl-genelementlist->blocknames-of-list-fix (x x))
-                  (:instance vl-genelementlist->blocknames-of-list-fix (x acl2::x-equiv))))))
-
-  (defthm vl-genelementlist->blocknames-of-append
-    (equal (vl-genelementlist->blocknames (append x y))
-           (append (vl-genelementlist->blocknames x)
-                   (vl-genelementlist->blocknames y))))
-
-  (defthm vl-genelementlist->blocknames-of-rev
-    (equal (vl-genelementlist->blocknames (rev x))
-           (rev (vl-genelementlist->blocknames x))))
-
-  (defthm string-listp-of-vl-genelementlist->blocknames
-    (string-listp (vl-genelementlist->blocknames x))))
-
-
 
 (local
  (defsection-progn template-substitution-helpers
@@ -602,6 +604,7 @@ may be shorter than the number of elements in the list.</p>"
              (typeinfos->tmplsubsts (cdr typeinfos)))))
 
    (defun scopes->tmplsubsts (scopes)
+     (declare (xargs :mode :program))
      (if (atom scopes)
          nil
        (cons (make-tmplsubst :strs `(("__TYPE__" ,(symbol-name (caar scopes)) . vl-package))
@@ -610,27 +613,13 @@ may be shorter than the number of elements in the list.</p>"
                                                (and (cddar scopes) '(:has-items))))
              (scopes->tmplsubsts (cdr scopes)))))))
 
-
-(local (defthmd tag-when-vl-genelement-p
-         (implies (vl-genelement-p x)
-                  (or (equal (tag x) :vl-genbase)
-                      (equal (tag x) :vl-genif)
-                      (equal (tag x) :vl-gencase)
-                      (equal (tag x) :vl-genloop)
-                      (equal (tag x) :vl-genblock)
-                      (equal (tag x) :vl-genarray)))
-         :hints(("Goal" :in-theory (enable vl-genelement-p tag)))
-         :rule-classes :forward-chaining))
-
 (make-event ;; Definition of vl-scopeitem type
  (let ((substs (typeinfos->tmplsubsts (scopes->typeinfos *vl-scopes->items*))))
    `(progn
-      (local (in-theory (enable tag-when-vl-genelement-p)))
       (deftranssum vl-scopeitem
         :short "Recognizer for an syntactic element that can occur within a scope."
         ,(template-append '((:@ (not :transsum) vl-__type__)) substs))
-      (local (in-theory (disable tag-when-vl-genelement-p
-                                 vl-genelement-p-by-tag-when-vl-scopeitem-p)))
+      (local (in-theory (disable vl-genelement-p-by-tag-when-vl-scopeitem-p)))
 
 
       ,@(template-append
@@ -894,13 +883,13 @@ may be shorter than the number of elements in the list.</p>"
 
 
 (make-event ;; Definition of scopeitem alists/finders
- (b* ((itemsubsts (tmplsubsts-add-strsubsts
-                   (tmplsubsts-add-features
+ (b* ((itemsubsts (acl2::tmplsubsts-add-strsubsts
+                   (acl2::tmplsubsts-add-features
                     (typeinfos->tmplsubsts (scopes->typeinfos *vl-scopes->items*))
                     '(:scopetype))
                    `(("__SCOPETYPE__" "SCOPEITEM" . vl-package))))
-      (defsubsts (tmplsubsts-add-strsubsts
-                  (tmplsubsts-add-features
+      (defsubsts (acl2::tmplsubsts-add-strsubsts
+                  (acl2::tmplsubsts-add-features
                    (typeinfos->tmplsubsts (scopes->typeinfos *vl-scopes->defs*))
                    '(:scopetype))
                   `(("__SCOPETYPE__" "SCOPEDEF" . vl-package))))

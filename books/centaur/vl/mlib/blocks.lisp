@@ -35,6 +35,140 @@
 (include-book "../parsetree")
 (local (std::add-default-post-define-hook :fix))
 
+
+
+
+(make-event
+ `(progn
+    (defprod vl-genblob
+      :short "A sorted collection of module elements (see @(see vl-modelement))."
+      :long "<p>A vl-modelement-collection can be made from a @(see
+vl-modelementlist) by sorting the elements by type.  Its fields each contain
+the list of elements of the given type.</p>"
+      (,@(project-over-modelement-types
+          '(__elts__ vl-__type__list-p))
+         (generates vl-genelementlist-p)
+         (ports     vl-portlist-p))
+      :extra-binder-names (ifports)
+      :tag :vl-genblob
+      :layout :tree)
+
+
+    (define vl-modelement-loc ((x vl-modelement-p))
+      :short "Get the location of any @(see vl-modelement-p)."
+      :returns (loc vl-location-p
+                    :hints(("Goal" :in-theory (enable vl-modelement-fix
+                                                      (tau-system)))))
+      (b* ((x (vl-modelement-fix x)))
+
+        (case (tag x)
+          . ,(project-over-modelement-types
+              '(:vl-__type__       (vl-__type__->loc x))))))
+
+    (define vl-genelement-loc ((x vl-genelement-p))
+      :short "Get the location of any @(see vl-genelement-p)."
+      :returns (loc vl-location-p
+                    :hints(("Goal" :in-theory (enable vl-genelement-fix))))
+      (vl-genelement-case x
+        :vl-genbase (vl-modelement-loc x.item)
+        :vl-genloop   x.loc
+        :vl-genif     x.loc
+        :vl-gencase   x.loc
+        :vl-genblock  x.loc
+        :vl-genarray  x.loc))
+
+    (local (defun my-default-hint (fnname id clause world)
+             (declare (xargs :mode :program))
+             (and (eql (len (acl2::recursivep fnname world)) 1) ;; singly recursive
+                  (let* ((pool-lst (acl2::access acl2::clause-id id :pool-lst)))
+                    (and (eql 0 (acl2::access acl2::clause-id id :forcing-round))
+                         (cond ((not pool-lst)
+                                (let ((formals (std::look-up-formals fnname world)))
+                                  `(:induct (,fnname . ,formals)
+                                    :in-theory (disable (:d ,fnname)))))
+                               ((equal pool-lst '(1))
+                                (std::expand-calls-computed-hint clause (list fnname)))))))))
+
+    ;; (local (std::set-returnspec-default-hints
+    ;;         ((my-returnspec-default-hint 'fnname acl2::id acl2::clause world))))
+
+    (define vl-sort-genelements-aux
+      ((x           vl-genelementlist-p)
+       ,@(project-over-modelement-types
+          '(__elts__       vl-__type__list-p))
+       (generates   vl-genelementlist-p))
+      :returns (mv ,@(project-over-modelement-types
+                      `(__elts__
+                        vl-__type__list-p))
+                   (generates vl-genelementlist-p))
+      :hooks ((:fix :hints ((my-default-hint
+                             'vl-sort-genelements-aux
+                             acl2::id acl2::clause world))))
+      :verbosep t
+      (b* (((when (atom x))
+            (mv ,@(project-over-modelement-types
+                   '(rev (vl-__type__list-fix        __elts__)))
+                (vl-genelementlist-fix generates))))
+        (vl-genelement-case (xf (car x))
+          :vl-genbase
+          (b* ((x1  xf.item)
+               (tag (tag x1)))
+            (vl-sort-genelements-aux
+             (cdr x)
+             ,@(project-over-modelement-types
+                '(if (eq tag :vl-__type__)       (cons x1 __elts__)       __elts__))
+             generates))
+          :otherwise
+          (vl-sort-genelements-aux
+           (cdr x) ,@(project-over-modelement-types '__elts__)
+           (cons (vl-genelement-fix (car x)) generates))))
+      :prepwork
+      ((local (in-theory (disable
+                          ;; just a speed hint
+                          double-containment
+                          set::nonempty-means-set
+                          set::sets-are-true-lists
+                          consp-when-member-equal-of-cons-listp
+                          consp-when-member-equal-of-cons-listp
+                          acl2::rev-when-not-consp
+                          default-car
+                          default-cdr
+                          pick-a-point-subset-strategy
+                          vl-genelement-p-when-member-equal-of-vl-genelementlist-p
+                          ,@(project-over-modelement-types
+                             'vl-__type__list-p-when-subsetp-equal)
+                          ,@(project-over-modelement-types
+                             'vl-modelementlist-p-when-vl-__type__list-p)
+                          (:rules-of-class :type-prescription :here)
+                          (:ruleset tag-reasoning))))))
+
+    (define vl-sort-genelements ((x vl-genelementlist-p))
+      :returns (collection vl-genblob-p)
+      (b* (((mv ,@(project-over-modelement-types '__elts__) generates)
+            (vl-sort-genelements-aux x ,@(project-over-modelement-types nil) nil)))
+        (make-vl-genblob
+         ,@(append-over-modelement-types '(:__elts__ __elts__))
+         :generates generates)))))
+
+(define vl-genblob->ifports
+  :short "Collect just the interface ports for a genblob."
+  ((x vl-genblob-p))
+  :returns (ports (vl-interfaceportlist-p ports))
+  (vl-collect-interface-ports (vl-genblob->ports x))
+  ///
+  (local (defthm vl-regularportlist-p-when-no-interface-ports
+           (implies (and (not (vl-collect-interface-ports x))
+                         (vl-portlist-p x))
+                    (vl-regularportlist-p x))
+           :hints(("Goal" :induct (len x)))))
+  
+  (defthm vl-regularportlist-p-when-no-genblob->ifports
+    (implies (not (vl-genblob->ifports x))
+             (vl-regularportlist-p (vl-genblob->ports x)))
+    :hints(("Goal" :in-theory (enable vl-genblob->ifports)))))
+
+
+
 (defconst *vl-module/genblob-fields*
   (append '(generate port) ;; extra things that are not modelements
           (set-difference-eq
@@ -293,16 +427,6 @@
               (formals->fixes (cdr names) formals fty-table))
       (formals->fixes (cdr names) formals fty-table))))
        
-
-(defun assigns-for-getargs (args alist)
-  (if (atom args)
-      nil
-    (cons (b* (((mv sym default) (if (consp (car args))
-                                     (mv (caar args) (cadar args))
-                                   (mv (car args) nil)))
-               ((mv basesym ?ign) (acl2::decode-varname-for-patbind sym)))
-            `(,sym (std::getarg ,(intern$ (symbol-name basesym) "KEYWORD") ,default ,alist)))
-          (assigns-for-getargs (cdr args) alist))))
 
 
 (defconst *def-genblob-transform-keywords*

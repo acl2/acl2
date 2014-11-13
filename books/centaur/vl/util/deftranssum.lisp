@@ -326,8 +326,42 @@
                 (not (,sum-name ,xvar)))
        :rule-classes ((:rewrite :backchain-limit-lst 0)))))
 
+(defun dts-fwd-disjuncts (name suminfos)
+  (b* (((when (atom suminfos))
+        nil)
+       (xvar (dts-x name))
+       (tags (fty::suminfo->tags (car suminfos))))
+    (append (dts-tag-equalities xvar tags)
+            (dts-fwd-disjuncts name (cdr suminfos)))))
+
+(defun dts-fwd-thm (name suminfos)
+  ;; Generates a theorem like:
+  ;; (defthm tag-when-vl-genelement-p-forward
+  ;;   (implies (vl-genelement-p x)
+  ;;            (or (equal (tag x) :vl-genbase)
+  ;;                (equal (tag x) :vl-genif)
+  ;;                (equal (tag x) :vl-gencase)
+  ;;                (equal (tag x) :vl-genloop)
+  ;;                (equal (tag x) :vl-genblock)
+  ;;                (equal (tag x) :vl-genarray)))
+  ;;   :rule-classes :forward-chaining)
+  (b* ((xvar     (dts-x name))
+       (sum-name (dts-recognizer-name name))
+       (thm-name (intern-in-package-of-symbol
+                  (concatenate 'string
+                               "TAG-WHEN-" (symbol-name sum-name) "-FORWARD")
+                  name)))
+    `(defthm ,thm-name
+       (implies (,sum-name ,xvar)
+                (or . ,(dts-fwd-disjuncts name suminfos)))
+       :hints(("Goal" :by ,(intern-in-package-of-symbol
+                            (concatenate 'string (symbol-name sum-name)
+                                         "-WHEN-INVALID-TAG")
+                            name)))
+       :rule-classes ((:forward-chaining)))))
+
 #||
-(dts-when-invalid-tag-thm 'mysum *suminfos*)
+(dts-fwd-thm 'mysum *suminfos*)
 ||#
 
 
@@ -443,6 +477,7 @@
           ,@(dts-member-implies-sum-thms name suminfos)
           ,@(dts-by-tag-thms name suminfos)
           ,(dts-when-invalid-tag-thm name suminfos)
+          ,(dts-fwd-thm name suminfos)
           ,@(dts-fix-thms name)
 
           (fty::deffixtype ,name
