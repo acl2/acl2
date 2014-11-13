@@ -1685,11 +1685,6 @@ fairly easily solve the HIDEXPR problem.</p>"
            (list-fix (vl-exprlist-fix x)))
     :hints(("Goal" :induct (len x))))
 
-  (defthm vl-exprlist-fix-of-append
-    (equal (vl-exprlist-fix (append x y))
-           (append (vl-exprlist-fix x) (vl-exprlist-fix y)))
-    :hints(("Goal" :induct (len x))))
-
   (defthm vl-exprlist-fix-of-rev
     (equal (vl-exprlist-fix (rev x))
            (rev (vl-exprlist-fix x)))

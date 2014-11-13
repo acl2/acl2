@@ -274,13 +274,19 @@ introduced.</p>"
   (b* (((vl-modinst inst) (vl-modinst-fix inst))
        (mod (vl-scopestack-find-definition inst.modname ss))
        (ss (vl-scopestack-fix ss))
-       ((unless (and mod (eq (tag mod) :vl-module)))
+       ((unless (and mod 
+                     (or (eq (tag mod) :vl-module)
+                         (eq (tag mod) :vl-interface))))
         (vl-unparam-debug "~a0: can't find module ~a1.~%" inst inst.modname)
         (mv nil
             (fatal :type :vl-bad-instance
                    :msg "~a0: trying to instantiate undefined module ~s1."
                    :args (list inst inst.modname))
             inst nil ss))
+
+       ((when (eq (tag mod) :vl-interface))
+        ;; Interface instance.  BOZO Add support for unparameterizing interfaces.
+        (mv t (ok) inst nil ss))
 
        ((vl-module mod) mod)
 

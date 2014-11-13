@@ -31,6 +31,7 @@
 (in-package "VL")
 (include-book "ports")      ;; vl-portdecllist-p, vl-portlist-p
 (include-book "elements")
+(include-book "../../mlib/blocks")
 (local (include-book "../../util/arithmetic"))
 
 (define vl-make-module-by-items

@@ -555,10 +555,14 @@ problematic lvalues encountered.</p>" long)))
         ;; Nothing to check.
         (ok))
        ((unless dir)
-        (warn :type :vl-programming-error
-              :msg "~l0: expected arguments of instance ~w1 to be resolved, ~
-                    but no :DIR is present."
-              :args (list loc instname)))
+        ;; (warn :type :vl-programming-error
+        ;;       :msg "~l0: expected arguments of instance ~w1 to be resolved, ~
+        ;;             but no :DIR is present."
+        ;;       :args (list loc instname))
+
+        ;; NOTE: We used to warn about this, but now if there are interface
+        ;; ports it's correct for argresolve to leave the direction blank.
+        (ok))
        ((when (eq dir :vl-input))
         ;; Input to a submodule -- not an lvalue, nothing to check.
         (ok))

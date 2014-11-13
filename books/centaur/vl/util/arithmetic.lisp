@@ -51,6 +51,9 @@
 (include-book "std/util/deflist" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 
+(include-book "default-hints")
+
+
 ;; assumes this book will only be locally included
 (in-theory (enable set::definitions
                    set::expensive-rules))

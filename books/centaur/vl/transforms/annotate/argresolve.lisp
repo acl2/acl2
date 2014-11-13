@@ -743,21 +743,22 @@ checking, and add direction/name annotations.</p>"
       (new-x    vl-modinst-p))
   :prepwork ((local (in-theory (disable std::tag-forward-to-consp)))
              (local (defthm vl-scope-p-when-vl-module-p-strong
-                      (implies (vl-module-p x) (vl-scope-p x)))))
+                      (implies (or (vl-module-p x)
+                                   (vl-interface-p x))
+                               (vl-scope-p x)))))
   (b* ((x (vl-modinst-fix x))
        ((vl-modinst x) x)
        (submod (vl-scopestack-find-definition x.modname ss))
-       ((unless (and submod (eq (tag submod) :vl-module)))
+       ((unless (and submod
+                     (or (eq (tag submod) :vl-module)
+                         (eq (tag submod) :vl-interface))))
         (mv (fatal :type :vl-bad-instance
                    :msg "~a0 refers to undefined module ~m1."
                    :args (list x x.modname))
             x))
-       ((vl-module submod) submod)
-       ((when (vl-module->ifports submod))
-        (mv (fatal :type :vl-bozo-interfaces
-                   :msg "~a0: need to implement interface ports.~%"
-                   :args (list x))
-            x))
+       (submod.ports (if (eq (tag submod) :vl-module)
+                         (vl-module->ports submod)
+                       (vl-interface->ports submod)))
        ((mv warnings new-args)
         (vl-arguments-argresolve x.portargs ss
                                  submod.ports submod warnings x))

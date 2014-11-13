@@ -31,6 +31,7 @@
 
 (in-package "VL")
 (include-book "../parsetree")
+(include-book "blocks")
 ;; (include-book "modnamespace")
 ;; (include-book "find-item")
 ;; (local (include-book "../util/arithmetic"))
@@ -39,295 +40,6 @@
 (local (in-theory (disable acl2-count)))
 (local (std::add-default-post-define-hook :fix))
 
-(defxdoc scopestack
-  :parents (mlib)
-  :short "A tool to track the bindings of names in scopes."
-  :long "<p>SystemVerilog has a complicated system of namespaces.  But it
-mostly boils down to a few categories of names for things:<p>
-<ul>
-<li><i>items,</i> (our name), including nets/variables, parameters,
-instances (of modules, gates, UDPs, and interfaces), typedefs, functions,
-tasks, and named generate blocks;</li>
-<li><i>definitions,</i> including module, UDP, interface, and program
-declarations;</li>
-<li>ports;</li>
-<li>and packages.</li>
-</ul>
-
-<p>Of these categories, the items are the most complicated in practice.
-Definitions occur only at the global scope (while the SystemVerilog spec allows
-for nested modules and interfaces, most implementations don't), ports occur
-only at the module scope, and packages only at the global scope.</p>
-
-<p>To look for an item, we first look in the most local scope; if it isn't
-found there, we search subsequent nested scopes until we get to the global
-scope.  Whenever we search a scope, we call a memoized function that turns that
-scope representation into a fast alist, in which we look up the name.  That
-way, subsequent lookups in the same scope will be constant-time.</p>
-
-<p>A scopestack is just a structure that holds representations of these nested
-scopes.  Each scope may be one of several types, namely the types on the
-left-hand column of the table @('*vl-scopes->items*').  Here are the basic
-interfaces for using scopestacks:</p>
-
-<ul>
-<li>@('nil') is an empty scopestack (without even the global design scope).</li>
-
-<li>@('(vl-scopestack-init design)') creates a scopestack with only the global
-scope of the design visible.</li>
-
-<li>@('(vl-scopestack-push scope ss)') pushes a new nested scope onto the scopestack.</li>
-
-<li>@('(vl-scopestack-pop ss)') removes the innermost scope from the
-scopestack (though this is rarely used since scopestacks are applicative).</li>
-
-<li>@('(vl-scopestack-find-item name ss)') searches the scopestack for the
-given name (a string).  The declaration object for the item is returned.  This
-is of type @(see vl-scopeitem-p) and may be determined to be of a more specific
-type by examining its tag.</li>
-
-<li>@('(vl-scopestack-find-item/ss name ss)') returns @('(mv item new-ss)'),
-where item is the same as returned by @('vl-scopestack-find-item') and new-ss
-is the scopestack visible from that item's declaration.</li>
-
-<li>@('(vl-scopestack-find-item/context name ss)') returns @('(mv item ctx-ss
-package)'), where item is the same as above, ctx-ss is the subscope of the
-current scopestack where the item was found, and package is a maybe-string
-giving the name of the package it was imported from, if applicable.  Ctx-ss
-differs from new-ss from above when the item was imported from a package; in
-this case, ctx-ss will show the module that the item was imported to whereas
-new-ss will show the package where the item was declared.</li>
-
-<li>@('(vl-scopestack-find-definition name ss)') is similar to -find-item, but
-finds a definition instead of an item.  The @('definition/ss') and
-@('definition/context') versions also exist, but aren't as informative since
-the definition can (currently) only exist at the global scope.</li>
-
-<li>@('(vl-scopestack-find-package name ss)'), similar.</li>
-<li>@('(vl-scope-find-portdecl-fast name scope)') is similar, but acts only on a
-scope, not a stack of them, since searching beyond the local module for a port
-doesn't make much sense.</li>
-
-<li>@('(vl-scopestacks-free)') clears the memoization tables associated with
-scopestacks, which in CCL also will allow their associated fast-alists to be
-garbage collected.  We don't currently have a mechanism free these fast alists
-otherwise.</li>
-
-</ul>")
-
-(local (xdoc::set-default-parents scopestack))
-
-
-;; NOTE: The following constants control what scopes we recognize and what
-;; kinds of items may be looked up in various kinds of scopes.  Keyword
-;; arguments on items account for various kinds of departures from convention:
-;; -- :name foo denotes that the accessor for the name of the item is
-;;         vl-itemtype->foo, rather than the default vl-itemtype->name.
-;; -- :acc foo denotes that the accessor for the items within the scope is
-;;         vl-scopetype->foo, rather than the default vl-scopetype->items.
-;; -- :names-defined t denotes that the projection vl-itemlist->names is
-;;         already defined (and the one we produce by default might not be
-;;         redundant).
-;; -- :maybe-stringp t denotes that the name accessor might return nil, rather
-;;         than a string.
-;; -- :sum-type t denotes that the item actually encompasses two or more item types
-;; -- the import item is treated specially, and instead of finding the import itself
-;;    you instead get the item imported from the specified package.
-
-
-(local (defconst *vl-scopes->pkgs*
-         ;; this one is special
-          ;; scope type      has item types or (type acc-name)
-         '((interface        )
-           (module           )
-           (design           ()   package)
-           ;; bozo add function/task ports?
-           (package          ))))
-
-(defprod vl-blockscope
-  ((decls vl-blockitemlist-p))
-  :tag :vl-blockscope)
-
-(define vl-fundecl->blockscope ((x vl-fundecl-p))
-  :returns (scope vl-blockscope-p)
-  (make-vl-blockscope :decls (vl-fundecl->decls x)))
-
-(define vl-taskdecl->blockscope ((x vl-taskdecl-p))
-  :returns (scope vl-blockscope-p)
-  (make-vl-blockscope :decls (vl-taskdecl->decls x)))
-
-(define vl-blockstmt->blockscope ((x vl-stmt-p))
-  :guard (eq (vl-stmt-kind x) :vl-blockstmt)
-  :returns (scope vl-blockscope-p)
-  (make-vl-blockscope :decls (vl-blockstmt->decls x)))
-
-
-(local (defconst *vl-scopes->items*
-          ;; scope type      has item types or (type acc-name)
-         '((interface    (:import)          paramdecl vardecl modport)
-           (module       (:import)          paramdecl vardecl fundecl taskdecl 
-                                            (modinst :name instname :maybe-stringp t
-                                                     :names-defined t)
-                                            (gateinst :maybe-stringp t :names-defined t)
-                                            (genelement :name blockname :maybe-stringp t
-                                                        :names-defined t
-                                                        :sum-type t
-                                                        :acc generates)
-                                            (interfaceport :acc ifports))
-           (genblob
-                         (:import)          vardecl paramdecl fundecl taskdecl
-                                            typedef
-                                            (modinst :name instname :maybe-stringp t
-                                                     :names-defined t)
-                                            (gateinst :maybe-stringp t :names-defined t)
-                                            (genelement :name blockname :maybe-stringp t
-                                                        :names-defined t
-                                                        :sum-type t
-                                                        :multi-tags (:vl-genbase :vl-genif :vl-gencase :vl-genloop :vl-genblock :vl-genarray)
-                                                        :acc generates)
-                                            (interfaceport :acc ifports))
-           ;; fwdtypedefs could be included here but we hope to have resolved them all
-           ;; to proper typedefs by the end of loading.
-           ;; (fundecl      ()             (blockitem :acc decls :sum-type t :transsum t))
-           ;; (taskdecl     ()             (blockitem :acc decls :sum-type t :transsum t))
-           ;; (blockstmt    ()             (blockitem :acc decls :sum-type t :transsum t))
-           (blockscope   ()             (blockitem :acc decls :sum-type t :transsum t))
-           (design       (:import)      paramdecl vardecl fundecl taskdecl typedef)
-           (package      (:import)      paramdecl vardecl fundecl taskdecl typedef))))
-
-(local (defconst *vl-scopes->defs*
-          ;; scope type      has item types or (type acc-name)
-         '((interface        )
-           (module           )
-           (design       ()             (module :acc mods) udp interface program)
-           (package          ))))
-
-(local (defconst *vl-scopes->portdecls*
-          ;; scope type      has item types or (type acc-name)
-         '((interface    ()               portdecl)
-           (module       ()               portdecl)
-           (genblob      ()               portdecl)
-           (design           )
-           ;; bozo add function/task ports?
-           (package          ))))
-
-
-
-;; Notes on name spaces -- from SV spec 3.13
-;; SV spec lists 8 namespaces:
-
-;; a) Definitions name space:
-;;      module
-;;      primitive
-;;      program
-;;      interface
-;; declarations outside all other declarations
-;; (meaning: not in a package? as well as not nested.
-;; Global across compilation units.
-
-;; b) Package name space: all package IDs.  Global across compilation units.
-
-;; c) Compilation-unit scope name space:
-;;     functions
-;;     tasks
-;;     checkers
-;;     parameters
-;;     named events
-;;     netdecls
-;;     vardecls
-;;     typedefs
-;;  defined outside any other containing scope.  Local to compilation-unit
-;;  scope (as the name suggests).
-
-;; d) Text macro namespace: local to compilation unit, global within it.
-;;    This works completely differently from the others; we'll ignore it here
-;;    since we take care of them in the preprocessor.
-
-;; e) Module name space:
-;;     modules
-;;     interfaces
-;;     programs
-;;     checkers
-;;     functions
-;;     tasks
-;;     named blocks
-;;     instance names
-;;     parameters
-;;     named events
-;;     netdecls
-;;     vardecls
-;;     typedefs
-;;  defined within the scope of a particular
-;;     module
-;;     interface
-;;     package
-;;     program
-;;     checker
-;;     primitive.
-
-;; f) Block namespace:
-;;     named blocks
-;;     functions
-;;     tasks
-;;     parameters
-;;     named events
-;;     vardecl (? "variable type of declaration")
-;;     typedefs
-;;  within
-;;     blocks (named or unnamed)
-;;     specifys
-;;     functions
-;;     tasks.
-
-;; g) Port namespace:  ports within
-;;     modules
-;;     interfaces
-;;     primitives
-;;     programs
-
-;; h) Attribute namespace, also separate.
-
-;; Notes on scope rules, from SV spec 23.9.
-
-;; Elements that define new scopes:
-;;     — Modules
-;;     — Interfaces
-;;     — Programs
-;;     — Checkers
-;;     — Packages
-;;     — Classes
-;;     — Tasks
-;;     — Functions
-;;     — begin-end blocks (named or unnamed)
-;;     — fork-join blocks (named or unnamed)
-;;     — Generate blocks
-
-;; An identifier shall be used to declare only one item within a scope.
-;; However, perhaps this doesn't apply to global/compilation-unit scope, since
-;; ncverilog and vcs both allow, e.g., a module and a wire of the same name
-;; declared at the top level of a file.  We can't check this inside a module
-;; since neither allows nested modules, and modules aren't allowed inside
-;; packages.
-
-;; This is supposed to be true of generate blocks even if they're not
-;; instantiated; as an exception, different (mutually-exclusive) blocks of a
-;; conditional generate can use the same name.
-
-;; Search for identifiers referenced (without hierarchical path) within a task,
-;; function, named block, generate block -- work outward to the
-;; module/interface/program/checker boundary.  Search for a variable stops at
-;; this boundary; search for a task, function, named block, or generate block
-;; continues to higher levels of the module(/task/function/etc) hierarchy
-;; (not the lexical hierarchy!).
-
-;; Hierarchical names
-
-(defsection scopestack
-  :parents (mlib)
-  :short "A scopestack is a stack of scopes, for looking up identifiers
-correctly.")
-
-(local (xdoc::set-default-parents scopestack))
 
 (define vl-blockitem->name ((x vl-blockitem-p))
   :returns (name stringp :rule-classes :type-prescription)
@@ -343,7 +55,6 @@ correctly.")
     (case (tag x)
       (:vl-vardecl (vl-vardecl->name x))
       (:vl-paramdecl (vl-paramdecl->name x)))))
-
 
 
 (define vl-modinstlist->instnames-nrev ((x vl-modinstlist-p) nrev)
@@ -418,9 +129,6 @@ instances.</p>"
 
   (defthm string-listp-of-vl-modinstlist->instnames
     (string-listp (vl-modinstlist->instnames x))))
-
-
-
 
 
 (define vl-gateinstlist->names-nrev ((x vl-gateinstlist-p) nrev)
@@ -568,11 +276,297 @@ may be shorter than the number of elements in the list.</p>"
 
 
 
+(defxdoc scopestack
+  :parents (mlib)
+  :short "A tool to track the bindings of names in scopes."
+  :long "<p>SystemVerilog has a complicated system of namespaces.  But it
+mostly boils down to a few categories of names for things:<p>
+<ul>
+<li><i>items,</i> (our name), including nets/variables, parameters,
+instances (of modules, gates, UDPs, and interfaces), typedefs, functions,
+tasks, and named generate blocks;</li>
+<li><i>definitions,</i> including module, UDP, interface, and program
+declarations;</li>
+<li>ports;</li>
+<li>and packages.</li>
+</ul>
+
+<p>Of these categories, the items are the most complicated in practice.
+Definitions occur only at the global scope (while the SystemVerilog spec allows
+for nested modules and interfaces, most implementations don't), ports occur
+only at the module scope, and packages only at the global scope.</p>
+
+<p>To look for an item, we first look in the most local scope; if it isn't
+found there, we search subsequent nested scopes until we get to the global
+scope.  Whenever we search a scope, we call a memoized function that turns that
+scope representation into a fast alist, in which we look up the name.  That
+way, subsequent lookups in the same scope will be constant-time.</p>
+
+<p>A scopestack is just a structure that holds representations of these nested
+scopes.  Each scope may be one of several types, namely the types on the
+left-hand column of the table @('*vl-scopes->items*').  Here are the basic
+interfaces for using scopestacks:</p>
+
+<ul>
+<li>@('nil') is an empty scopestack (without even the global design scope).</li>
+
+<li>@('(vl-scopestack-init design)') creates a scopestack with only the global
+scope of the design visible.</li>
+
+<li>@('(vl-scopestack-push scope ss)') pushes a new nested scope onto the scopestack.</li>
+
+<li>@('(vl-scopestack-pop ss)') removes the innermost scope from the
+scopestack (though this is rarely used since scopestacks are applicative).</li>
+
+<li>@('(vl-scopestack-find-item name ss)') searches the scopestack for the
+given name (a string).  The declaration object for the item is returned.  This
+is of type @(see vl-scopeitem-p) and may be determined to be of a more specific
+type by examining its tag.</li>
+
+<li>@('(vl-scopestack-find-item/ss name ss)') returns @('(mv item new-ss)'),
+where item is the same as returned by @('vl-scopestack-find-item') and new-ss
+is the scopestack visible from that item's declaration.</li>
+
+<li>@('(vl-scopestack-find-item/context name ss)') returns @('(mv item ctx-ss
+package)'), where item is the same as above, ctx-ss is the subscope of the
+current scopestack where the item was found, and package is a maybe-string
+giving the name of the package it was imported from, if applicable.  Ctx-ss
+differs from new-ss from above when the item was imported from a package; in
+this case, ctx-ss will show the module that the item was imported to whereas
+new-ss will show the package where the item was declared.</li>
+
+<li>@('(vl-scopestack-find-definition name ss)') is similar to -find-item, but
+finds a definition instead of an item.  The @('definition/ss') and
+@('definition/context') versions also exist, but aren't as informative since
+the definition can (currently) only exist at the global scope.</li>
+
+<li>@('(vl-scopestack-find-package name ss)'), similar.</li>
+<li>@('(vl-scope-find-portdecl-fast name scope)') is similar, but acts only on a
+scope, not a stack of them, since searching beyond the local module for a port
+doesn't make much sense.</li>
+
+<li>@('(vl-scopestacks-free)') clears the memoization tables associated with
+scopestacks, which in CCL also will allow their associated fast-alists to be
+garbage collected.  We don't currently have a mechanism free these fast alists
+otherwise.</li>
+
+</ul>")
+
+(local (xdoc::set-default-parents scopestack))
+
+
+;; NOTE: The following constants control what scopes we recognize and what
+;; kinds of items may be looked up in various kinds of scopes.  Keyword
+;; arguments on items account for various kinds of departures from convention:
+;; -- :name foo denotes that the accessor for the name of the item is
+;;         vl-itemtype->foo, rather than the default vl-itemtype->name.
+;; -- :acc foo denotes that the accessor for the items within the scope is
+;;         vl-scopetype->foo, rather than the default vl-scopetype->items.
+;; -- :names-defined t denotes that the projection vl-itemlist->names is
+;;         already defined (and the one we produce by default might not be
+;;         redundant).
+;; -- :maybe-stringp t denotes that the name accessor might return nil, rather
+;;         than a string.
+;; -- :sum-type t denotes that the item actually encompasses two or more item types
+;; -- the import item is treated specially, and instead of finding the import itself
+;;    you instead get the item imported from the specified package.
+
+
+(local (defconst *vl-scopes->pkgs*
+         ;; this one is special
+          ;; scope type      has item types or (type acc-name)
+         '((interface        )
+           (module           )
+           (design           ()   package)
+           ;; bozo add function/task ports?
+           (package          ))))
+
+(defprod vl-blockscope
+  ((decls vl-blockitemlist-p))
+  :tag :vl-blockscope)
+
+(define vl-fundecl->blockscope ((x vl-fundecl-p))
+  :returns (scope vl-blockscope-p)
+  (make-vl-blockscope :decls (vl-fundecl->decls x)))
+
+(define vl-taskdecl->blockscope ((x vl-taskdecl-p))
+  :returns (scope vl-blockscope-p)
+  (make-vl-blockscope :decls (vl-taskdecl->decls x)))
+
+(define vl-blockstmt->blockscope ((x vl-stmt-p))
+  :guard (eq (vl-stmt-kind x) :vl-blockstmt)
+  :returns (scope vl-blockscope-p)
+  (make-vl-blockscope :decls (vl-blockstmt->decls x)))
+
+
+(local (defconst *vl-scopes->items*
+          ;; scope type      has item types or (type acc-name)
+         '((interface    (:import)          paramdecl vardecl modport)
+           (module       (:import)          paramdecl vardecl fundecl taskdecl 
+                                            (modinst :name instname :maybe-stringp t
+                                                     :names-defined t)
+                                            (gateinst :maybe-stringp t :names-defined t)
+                                            (genelement :name blockname :maybe-stringp t
+                                                        :names-defined t
+                                                        :sum-type t
+                                                        :acc generates)
+                                            (interfaceport :acc ifports))
+           (genblob
+                         (:import)          vardecl paramdecl fundecl taskdecl
+                                            typedef
+                                            (modinst :name instname :maybe-stringp t
+                                                     :names-defined t)
+                                            (gateinst :maybe-stringp t :names-defined t)
+                                            (genelement :name blockname :maybe-stringp t
+                                                        :names-defined t
+                                                        :sum-type t
+                                                        :acc generates)
+                                            (interfaceport :acc ifports))
+           ;; fwdtypedefs could be included here but we hope to have resolved them all
+           ;; to proper typedefs by the end of loading.
+           ;; (fundecl      ()             (blockitem :acc decls :sum-type t :transsum t))
+           ;; (taskdecl     ()             (blockitem :acc decls :sum-type t :transsum t))
+           ;; (blockstmt    ()             (blockitem :acc decls :sum-type t :transsum t))
+           (blockscope   ()             (blockitem :acc decls :sum-type t :transsum t))
+           (design       (:import)      paramdecl vardecl fundecl taskdecl typedef)
+           (package      (:import)      paramdecl vardecl fundecl taskdecl typedef))))
+
+(local (defconst *vl-scopes->defs*
+          ;; scope type      has item types or (type acc-name)
+         '((interface        )
+           (module           )
+           (design       ()             (module :acc mods) udp interface program)
+           (package          ))))
+
+(local (defconst *vl-scopes->portdecls*
+          ;; scope type      has item types or (type acc-name)
+         '((interface    ()               portdecl)
+           (module       ()               portdecl)
+           (genblob      ()               portdecl)
+           (design           )
+           ;; bozo add function/task ports?
+           (package          ))))
+
+
+
+;; Notes on name spaces -- from SV spec 3.13
+;; SV spec lists 8 namespaces:
+
+;; a) Definitions name space:
+;;      module
+;;      primitive
+;;      program
+;;      interface
+;; declarations outside all other declarations
+;; (meaning: not in a package? as well as not nested.
+;; Global across compilation units.
+
+;; b) Package name space: all package IDs.  Global across compilation units.
+
+;; c) Compilation-unit scope name space:
+;;     functions
+;;     tasks
+;;     checkers
+;;     parameters
+;;     named events
+;;     netdecls
+;;     vardecls
+;;     typedefs
+;;  defined outside any other containing scope.  Local to compilation-unit
+;;  scope (as the name suggests).
+
+;; d) Text macro namespace: local to compilation unit, global within it.
+;;    This works completely differently from the others; we'll ignore it here
+;;    since we take care of them in the preprocessor.
+
+;; e) Module name space:
+;;     modules
+;;     interfaces
+;;     programs
+;;     checkers
+;;     functions
+;;     tasks
+;;     named blocks
+;;     instance names
+;;     parameters
+;;     named events
+;;     netdecls
+;;     vardecls
+;;     typedefs
+;;  defined within the scope of a particular
+;;     module
+;;     interface
+;;     package
+;;     program
+;;     checker
+;;     primitive.
+
+;; f) Block namespace:
+;;     named blocks
+;;     functions
+;;     tasks
+;;     parameters
+;;     named events
+;;     vardecl (? "variable type of declaration")
+;;     typedefs
+;;  within
+;;     blocks (named or unnamed)
+;;     specifys
+;;     functions
+;;     tasks.
+
+;; g) Port namespace:  ports within
+;;     modules
+;;     interfaces
+;;     primitives
+;;     programs
+
+;; h) Attribute namespace, also separate.
+
+;; Notes on scope rules, from SV spec 23.9.
+
+;; Elements that define new scopes:
+;;     — Modules
+;;     — Interfaces
+;;     — Programs
+;;     — Checkers
+;;     — Packages
+;;     — Classes
+;;     — Tasks
+;;     — Functions
+;;     — begin-end blocks (named or unnamed)
+;;     — fork-join blocks (named or unnamed)
+;;     — Generate blocks
+
+;; An identifier shall be used to declare only one item within a scope.
+;; However, perhaps this doesn't apply to global/compilation-unit scope, since
+;; ncverilog and vcs both allow, e.g., a module and a wire of the same name
+;; declared at the top level of a file.  We can't check this inside a module
+;; since neither allows nested modules, and modules aren't allowed inside
+;; packages.
+
+;; This is supposed to be true of generate blocks even if they're not
+;; instantiated; as an exception, different (mutually-exclusive) blocks of a
+;; conditional generate can use the same name.
+
+;; Search for identifiers referenced (without hierarchical path) within a task,
+;; function, named block, generate block -- work outward to the
+;; module/interface/program/checker boundary.  Search for a variable stops at
+;; this boundary; search for a task, function, named block, or generate block
+;; continues to higher levels of the module(/task/function/etc) hierarchy
+;; (not the lexical hierarchy!).
+
+;; Hierarchical names
+
+(defsection scopestack
+  :parents (mlib)
+  :short "A scopestack is a stack of scopes, for looking up identifiers
+correctly.")
+
+(local (xdoc::set-default-parents scopestack))
+
 (local
  (defsection-progn template-substitution-helpers
-
-   (std::def-primitive-aggregate tmplsubst
-     (features atomsubst strsubst))
 
    (defun scopes->typeinfos (scopes)
      (declare (xargs :mode :program))
@@ -602,82 +596,29 @@ may be shorter than the number of elements in the list.</p>"
                                                  (and names-defined '(:names-defined))
                                                  (and sum-type      '(:sum-type))
                                                  (and transsum      '(:transsum)))
-                               :strsubst
+                               :strs
                                `(("__TYPE__" ,(symbol-name type) . vl-package)
                                  ("__ACC__" ,acc . vl-package)
                                  ("__NAME__" ,name . vl-package))))
              (typeinfos->tmplsubsts (cdr typeinfos)))))
 
    (defun scopes->tmplsubsts (scopes)
+     (declare (xargs :mode :program))
      (if (atom scopes)
          nil
-       (cons (make-tmplsubst :strsubst `(("__TYPE__" ,(symbol-name (caar scopes)) . vl-package))
-                             :atomsubst `((__items__ . ,(cddar scopes)))
+       (cons (make-tmplsubst :strs `(("__TYPE__" ,(symbol-name (caar scopes)) . vl-package))
+                             :atoms `((__items__ . ,(cddar scopes)))
                              :features (append (cadar scopes)
                                                (and (cddar scopes) '(:has-items))))
-             (scopes->tmplsubsts (cdr scopes)))))
-
-   (defun tmplsubsts-add-strsubsts (x strsubsts)
-     (if (atom x)
-         nil
-       (cons (change-tmplsubst (car x) :strsubst (append strsubsts (tmplsubst->strsubst (car x))))
-             (tmplsubsts-add-strsubsts (cdr x) strsubsts))))
-
-   (defun tmplsubsts-add-features (x features)
-     (if (atom x)
-         nil
-       (cons (change-tmplsubst (car x) :features (append features (tmplsubst->features (car x))))
-             (tmplsubsts-add-features (cdr x) features))))
-
-   (defun template-proj (template substs)
-     (declare (xargs :mode :program))
-     (if (atom substs)
-         nil
-       (cons (b* (((tmplsubst subst) (car substs))
-                  (val
-                   (acl2::template-subst-fn template subst.features
-                                            nil nil
-                                            subst.atomsubst
-                                            subst.strsubst
-                                            'vl-package)))
-               val)
-             (template-proj template (cdr substs)))))
-
-   (defun template-append (template substs)
-     (declare (xargs :mode :program))
-     (if (atom substs)
-         nil
-       (append (b* (((tmplsubst subst) (car substs))
-                    (val
-                     (acl2::template-subst-fn template subst.features
-                                              nil nil
-                                              subst.atomsubst
-                                              subst.strsubst
-                                              'vl-package)))
-                 val)
-               (template-append template (cdr substs)))))))
-
-
-(local (defthmd tag-when-vl-genelement-p
-         (implies (vl-genelement-p x)
-                  (or (equal (tag x) :vl-genbase)
-                      (equal (tag x) :vl-genif)
-                      (equal (tag x) :vl-gencase)
-                      (equal (tag x) :vl-genloop)
-                      (equal (tag x) :vl-genblock)
-                      (equal (tag x) :vl-genarray)))
-         :hints(("Goal" :in-theory (enable vl-genelement-p tag)))
-         :rule-classes :forward-chaining))
+             (scopes->tmplsubsts (cdr scopes)))))))
 
 (make-event ;; Definition of vl-scopeitem type
  (let ((substs (typeinfos->tmplsubsts (scopes->typeinfos *vl-scopes->items*))))
    `(progn
-      (local (in-theory (enable tag-when-vl-genelement-p)))
       (deftranssum vl-scopeitem
         :short "Recognizer for an syntactic element that can occur within a scope."
         ,(template-append '((:@ (not :transsum) vl-__type__)) substs))
-      (local (in-theory (disable tag-when-vl-genelement-p
-                                 vl-genelement-p-by-tag-when-vl-scopeitem-p)))
+      (local (in-theory (disable vl-genelement-p-by-tag-when-vl-scopeitem-p)))
 
 
       ,@(template-append
@@ -744,7 +685,7 @@ may be shorter than the number of elements in the list.</p>"
 
 (local ;; For each searchable type foo, we get:
  ;;                  - vl-find-foo: linear search by name in a list of foos
- ;;                  - vl-fast-foolist-alist: fast alist binding names to foos.
+ ;;                  - vl-foolist-alist: fast alist binding names to foos.
  (defconst *scopeitem-alist/finder-template*
    '(progn
       (:@ (not :names-defined)
@@ -941,13 +882,13 @@ may be shorter than the number of elements in the list.</p>"
 
 
 (make-event ;; Definition of scopeitem alists/finders
- (b* ((itemsubsts (tmplsubsts-add-strsubsts
-                   (tmplsubsts-add-features
+ (b* ((itemsubsts (acl2::tmplsubsts-add-strsubsts
+                   (acl2::tmplsubsts-add-features
                     (typeinfos->tmplsubsts (scopes->typeinfos *vl-scopes->items*))
                     '(:scopetype))
                    `(("__SCOPETYPE__" "SCOPEITEM" . vl-package))))
-      (defsubsts (tmplsubsts-add-strsubsts
-                  (tmplsubsts-add-features
+      (defsubsts (acl2::tmplsubsts-add-strsubsts
+                  (acl2::tmplsubsts-add-features
                    (typeinfos->tmplsubsts (scopes->typeinfos *vl-scopes->defs*))
                    '(:scopetype))
                   `(("__SCOPETYPE__" "SCOPEDEF" . vl-package))))
@@ -1060,15 +1001,17 @@ may be shorter than the number of elements in the list.</p>"
                ;;                   (let ((look (hons-assoc-equal name (vl-__scope__-scope-__result__-alist scope nil))))
                ;;                     (mv (consp look) (cdr look))))))
                ))))
-     (acl2::template-subst-fn template
-                              (append (and importp '(:import))
-                                      (and scopeitemtype '(:scopeitemtype)))
-                              nil nil nil
-                              `(("__SCOPE__" ,(symbol-name scope) . vl-package)
-                                ("__RESULT__" ,(symbol-name resultname) . vl-package)
-                                ("__RESULTTYPE__" ,(symbol-name resulttype) . vl-package)
-                                ("__SCOPEITEMTYPE__" ,(symbol-name scopeitemtype) . vl-package))
-                              'vl-package))))
+     (template-subst-top template
+                               (make-tmplsubst
+                                :features
+                                (append (and importp '(:import))
+                                        (and scopeitemtype '(:scopeitemtype)))
+                                :strs
+                                `(("__SCOPE__" ,(symbol-name scope) . vl-package)
+                                  ("__RESULT__" ,(symbol-name resultname) . vl-package)
+                                  ("__RESULTTYPE__" ,(symbol-name resulttype) . vl-package)
+                                  ("__SCOPEITEMTYPE__" ,(symbol-name scopeitemtype) . vl-package))
+                                :pkg-sym 'vl-package)))))
 
 
 (make-event ;; Definition of vl-design-scope-find-package vl-design-scope-package-alist
@@ -1516,10 +1459,12 @@ may be shorter than the number of elements in the list.</p>"
                               (mv item nil))
                              (pkg-ss (vl-scopestack-push pkg (vl-scopestack-init design))))
                           (mv item pkg-ss))))))))
-     (acl2::template-subst-fn template (and importsp '(:import)) nil nil nil
-                              `(("__RESULT__" ,(symbol-name result) . vl-package)
-                                ("__RESULTTYPE__" ,(symbol-name resulttype) . vl-package))
-                              'vl-package))))
+     (template-subst-top template
+                         (make-tmplsubst
+                          :features (and importsp '(:import))
+                          :strs `(("__RESULT__" ,(symbol-name result) . vl-package)
+                                  ("__RESULTTYPE__" ,(symbol-name resulttype) . vl-package))
+                          :pkg-sym 'vl-package)))))
 
 (local (defthm maybe-scopeitem-when-iff
          (implies (or (vl-scopeitem-p x)
@@ -1623,10 +1568,11 @@ may be shorter than the number of elements in the list.</p>"
                         :returns (__result__ (iff (vl-__resulttype__-p __result__) __result__))
                         (b* (((mv __result__ &) (vl-scopestack-find-__result__/ss name ss)))
                           __result__)))))))
-     (acl2::template-subst-fn template nil nil nil nil
-                              `(("__RESULT__" ,(symbol-name result) . vl-package)
-                                ("__RESULTTYPE__" ,(symbol-name resulttype) . vl-package))
-                              'vl-package))))
+     (template-subst-top template
+                         (make-tmplsubst
+                          :strs `(("__RESULT__" ,(symbol-name result) . vl-package)
+                                  ("__RESULTTYPE__" ,(symbol-name resulttype) . vl-package))
+                          :pkg-sym 'vl-package)))))
 
 
 

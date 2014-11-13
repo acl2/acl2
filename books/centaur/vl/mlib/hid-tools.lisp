@@ -635,13 +635,6 @@ that may have been installed by @(see vl-expr-follow-hids)."
 
 
 
-(local (defthm vl-packeddimensionlist-fix-of-append
-         (equal (vl-packeddimensionlist-fix (append a b))
-                (append (vl-packeddimensionlist-fix a)
-                        (vl-packeddimensionlist-fix b)))
-         :hints(("Goal" :in-theory (enable append)))))
-
-
 
 
 
@@ -1065,7 +1058,8 @@ type @('logic[3:0]').</li> </ul>"
   :returns (mv (warning (iff (vl-warning-p warning) warning))
                (type (iff (vl-datatype-p type) (not warning))))
   :prepwork ((local (defthm vl-scope-p-when-vl-module-p-strong
-                      (implies (vl-module-p x)
+                      (implies (or (vl-module-p x)
+                                   (vl-interface-p x))
                                (vl-scope-p x)))))
   (b* ((idx1 (vl-hidexpr-first-index x))
        (name1 (vl-hidindex->name idx1))
@@ -1076,13 +1070,15 @@ type @('logic[3:0]').</li> </ul>"
                              :msg "Couldn't find an item named ~s0"
                              :args (list name1))
             nil))
-       ((when (eq (tag item) :vl-modinst))
+       ((when (or (eq (tag item) :vl-modinst)
+                  (eq (tag item) :vl-interfaceport)))
         ;; Find the module, push it onto the new scopestack, recur
         (b* (((unless (vl-hidexpr-dot-p x))
               (mv (make-vl-warning :type :vl-hidexpr-type-fail
                                    :msg "Can't find a type for ~s0 because it ~
-                                         is a modinst name"
-                                   :args (list name1))
+                                         is a ~s1 name"
+                                   :args (list name1 (if (eq (tag item) :vl-modinst)
+                                                         "modinst" "interface port")))
                   nil))
              ((unless (vl-fast-atom-p idx1))
               (mv (make-vl-warning :type :vl-hidexpr-type-fail
@@ -1090,14 +1086,25 @@ type @('logic[3:0]').</li> </ul>"
                                          yet supported: ~a0"
                                    :args (list (vl-expr-fix x)))
                   nil))
-             ((vl-modinst item))
+             ((mv modname instname)
+              (if (eq (tag item) :vl-modinst)
+                  (mv (vl-modinst->modname item)
+                      (vl-modinst->instname item))
+                (mv (vl-interfaceport->ifname item)
+                    (vl-interfaceport->name item))))
              ((mv mod new-ss)
-              (vl-scopestack-find-definition/ss item.modname new-ss))
-             ((unless (and mod (eq (tag mod) :vl-module)))
+              (vl-scopestack-find-definition/ss modname new-ss))
+             ((unless (and mod
+                           (or (eq (tag mod) :vl-module)
+                               (eq (tag mod) :vl-interface))))
               (mv (make-vl-warning :type :vl-hidexpr-type-fail
-                                   :msg "Module ~s0 not found for module ~
-                                         instance ~s1"
-                                   :args (list item.modname item.instname))
+                                   :msg "~s0 ~s1 not found for ~s2 ~s3"
+                                   :args (list (if (eq (tag item) :vl-modinst)
+                                                   "Module" "Interface")
+                                               modname
+                                               (if (eq (tag item) :vl-modinst)
+                                                   "modinst" "interface port")
+                                               instname))
                   nil))
              (new-ss (vl-scopestack-push mod new-ss)))
           (vl-hidexpr-find-type (vl-hidexpr-rest x) new-ss)))

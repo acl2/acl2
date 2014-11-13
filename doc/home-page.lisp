@@ -88,7 +88,7 @@
 
 <HEAD><TITLE>~s0</TITLE></HEAD>
 
-<BODY TEXT=\"#000000\" BGCOLOR=\"#FFFFFF\">
+<BODY TEXT=\"#000000\" BGCOLOR=\"#FFFFFF\" STYLE=\"font-family:'Verdana'\">
 
 <TABLE>
 <TR>
