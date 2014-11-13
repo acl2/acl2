@@ -420,12 +420,6 @@ instances.</p>"
     (string-listp (vl-modinstlist->instnames x))))
 
 
-(defprojection vl-modinstlist->modnames ((x vl-modinstlist-p))
-  :parents (vl-modinstlist-p)
-  :short "Collect all module names (not instance names!) from a
-          @(see vl-modinstlist-p)."
-  :returns (modnames string-listp)
-  (vl-modinst->modname x))
 
 
 

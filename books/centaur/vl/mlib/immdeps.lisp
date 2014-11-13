@@ -1438,5 +1438,10 @@ through the entire design and do many name lookups.</p>"
         (time$ (depgraph::mergesort-alist-values graph.deps)
                :msg "; vl-design-immdeps sort: ~st sec, ~sa bytes.~%"
                :mintime 1/2)))
-    (change-vl-immdepgraph graph :deps final-deps)))
+    (change-vl-immdepgraph graph :deps final-deps))
+  ///
+  (memoize 'vl-design-immdeps)
 
+  (defthm alist-values-are-sets-p-of-vl-design-immdeps
+    (b* (((vl-immdepgraph graph) (vl-design-immdeps x)))
+      (depgraph::alist-values-are-sets-p graph.deps))))

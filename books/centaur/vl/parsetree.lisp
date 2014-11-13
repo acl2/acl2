@@ -1994,6 +1994,14 @@ represents exactly one instance (or instance array).</p>")
               :true-listp nil
               :elementp-of-nil nil)
 
+(defprojection vl-modinstlist->modnames ((x vl-modinstlist-p))
+  :parents (vl-modinstlist-p)
+  :short "Collect all module names (not instance names!) from a
+          @(see vl-modinstlist-p)."
+  :returns (modnames string-listp)
+  (vl-modinst->modname x))
+
+
 
 (defenum vl-gatetype-p
   (:vl-cmos

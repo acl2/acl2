@@ -34,6 +34,7 @@
 (include-book "std/osets/top" :dir :system)
 (local (include-book "std/alists/top" :dir :system))
 
+
 (define mergesort-alist-values (x)
   :parents (depgraph)
   :short "Sort all of the values bound in an alist."
@@ -102,3 +103,58 @@
 
     (defcong acl2::alist-equiv acl2::alist-equiv (mergesort-alist-values x) 1
       :hints(("Goal" :in-theory (enable acl2::alist-equiv))))))
+
+
+
+(define alist-values-are-sets-p (x)
+  :parents (depgraph)
+  :short "Recognizer for alists whose every value is an ordered set."
+  (b* (((when (atom x))
+        t)
+       ((when (atom (car x)))
+        ;; Non-alist convention
+        (alist-values-are-sets-p (cdr x))))
+    (and (setp (cdar x))
+         (alist-values-are-sets-p (cdr x))))
+  ///
+  (defthm alist-values-are-sets-p-when-atom
+    (implies (not (consp x))
+             (equal (alist-values-are-sets-p x)
+                    t)))
+
+  (defthm alist-values-are-sets-p-of-cons
+    (equal (alist-values-are-sets-p (cons a x))
+           ;; Goofy, don't need to check consp because if it's an atom, then
+           ;; its cdr is NIL, which is a fine set.
+           (and (setp (cdr a))
+                (alist-values-are-sets-p x))))
+
+  (defthm setp-of-lookup-when-alist-values-are-sets-p
+    (implies (alist-values-are-sets-p x)
+             (setp (cdr (hons-assoc-equal a x)))))
+
+  (defthm alist-values-are-sets-p-of-hons-shrink-alist
+    (implies (and (alist-values-are-sets-p x)
+                  (alist-values-are-sets-p ans))
+             (alist-values-are-sets-p (hons-shrink-alist x ans))))
+
+  (defthm alist-values-are-sets-p-of-mergesort-alist-values
+    (alist-values-are-sets-p (mergesort-alist-values x))
+    :hints(("Goal" :induct (len x))))
+
+  (encapsulate
+    ()
+    (local (defthm l0
+             (equal (alist-values-are-sets-p (acl2::list-fix x))
+                    (alist-values-are-sets-p x))
+             :hints(("Goal" :induct (len x)))))
+
+    (defcong acl2::list-equiv equal (alist-values-are-sets-p x) 1
+      :hints(("Goal"
+              :in-theory (e/d (acl2::list-equiv) (l0))
+              :use ((:instance l0 (x x))
+                    (:instance l0 (x acl2::x-equiv)))))))
+
+  ;; BOZO prove alist-equiv congruence
+  )
+
