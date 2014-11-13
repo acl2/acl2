@@ -156,6 +156,52 @@ extract-keywords), with default-value support."
           (cdr look)
         default))))
 
+(defun assigns-for-getargs (args alist)
+  (if (atom args)
+      nil
+    (cons (b* (((mv sym default) (if (consp (car args))
+                                     (mv (caar args) (cadar args))
+                                   (mv (car args) nil)))
+               ((mv basesym ?ign) (acl2::decode-varname-for-patbind sym)))
+            `(,sym (getarg ,(intern$ (symbol-name basesym) "KEYWORD") ,default ,alist)))
+          (assigns-for-getargs (cdr args) alist))))
+
+(acl2::def-b*-binder getargs
+  :short "@(see b*) binder for getargs on a keyword alist."
+  :long "<p>Usage:</p>
+@({
+    (b* (((getargs a
+                   (b b-default-term)
+                   c
+                   d)
+          alst))
+      form)
+})
+
+<p>is equivalent to</p>
+
+@({
+    (b* ((a (getarg :a nil alst))
+         (b (getarg :b b-default-term alst))
+         (c (getarg :c nil alst)))
+      form)
+})"
+
+  :body
+  (mv-let (pre-bindings name rest)
+    (if (and (consp (car acl2::forms))
+             (not (eq (caar acl2::forms) 'quote)))
+        (mv `((?tmp-for-getargs ,(car acl2::forms)))
+            'tmp-for-getargs
+            `(check-vars-not-free (tmp-for-getargs)
+                                  ,acl2::rest-expr))
+      (mv nil (car acl2::forms) acl2::rest-expr))
+    `(b* (,@pre-bindings
+          . ,(assigns-for-getargs args name))
+       ,rest)))
+  
+
+
 (defsection split-///
   :parents (support)
   :short "Split an argument list into pre- and post-@('///') contents."

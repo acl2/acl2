@@ -3325,55 +3325,27 @@ be non-sliceable, at least if it's an input.</p>"
    `(defconst *vl-modelement-tagnames*
       ',(typenames-to-tags *vl-modelement-typenames*)))
 
-  (local (defun types-mk-strsubst-alists (types)
-           (if (atom types)
-               nil
-             (let ((name (symbol-name (car types))))
-             (cons `(("__TYPE__" ,name . vl-package)
-                     ("__ELTS__" ,(if (member (char name (1- (length name))) '(#\S #\s))
-                                      (str::cat name "ES")
-                                    (str::cat name "S")) . vl-package))
-                   (types-mk-strsubst-alists (cdr types)))))))
+  (defun vl-typenames-to-tmplsubsts (types)
+    (if (atom types)
+        nil
+      (let ((name (symbol-name (car types))))
+        (cons (make-tmplsubsts
+               :strs `(("__TYPE__" ,name . vl-package)
+                       ("__ELTS__" ,(if (member (char name (1- (length name))) '(#\S #\s))
+                                        (str::cat name "ES")
+                                      (str::cat name "S")) . vl-package)))
+              (vl-typenames-to-tmplsubsts (cdr types))))))
 
-  (local (defconst *strsubst-alists*
-           (types-mk-strsubst-alists *vl-modelement-typenames*)))
+  (defconst *vl-modelement-tmplsubsts*
+    (vl-typenames-to-tmplsubsts *vl-modelement-typenames*))
 
-  ;; (local (defun types-mk-atom-alists (types)
-  ;;          (if (atom types)
-  ;;              nil
-  ;;            (cons `((vl-type . ,(intern-in-package-of-symbol(car types)))
-  ;;                  (types-mk-atom-alists (cdr types)))))))
+  (defun project-over-modelement-types (template)
+    (declare (xargs :mode :program))
+    (template-proj template *vl-modelement-tmplsubsts*))
 
-  ;; (local (defconst *atom-alists*
-  ;;          (types-mk-atom-alists *vl-modelement-typenames*)))
-
-  (local (defun project-over-types-rec (template strsubst-alists)
-           (declare (xargs :mode :program))
-           (if (atom strsubst-alists)
-               nil
-             (cons (b* (((mv & val)
-                         (acl2::template-subst-rec nil nil nil (car strsubst-alists)
-                                                   template 'vl-package)))
-                     val)
-                   (project-over-types-rec template (cdr strsubst-alists))))))
-
-  (local (defun project-over-types (template)
-           (declare (xargs :mode :program))
-           (project-over-types-rec template *strsubst-alists*)))
-
-  (local (defun append-over-types-rec (template strsubst-alists)
-           (declare (xargs :mode :program))
-           (if (atom strsubst-alists)
-               nil
-             (append (b* (((mv & val)
-                           (acl2::template-subst-rec nil nil nil (car strsubst-alists)
-                                                     template 'vl-package)))
-                       val)
-                     (append-over-types-rec template (cdr strsubst-alists))))))
-
-  (local (defun append-over-types (template)
-           (declare (xargs :mode :program))
-           (append-over-types-rec template *strsubst-alists*)))
+  (defun append-over-modelement-types (template)
+    (declare (xargs :mode :program))
+    (template-append template *vl-modelement-tmplsubsts*))
 
 
   (make-event
@@ -3386,14 +3358,14 @@ arbitrary types.  For instance, we often use this in error messages, along with
 @(see vl-context-p), to describe where expressions occur.  We also use it in
 our @(see parser), where before module formation, the module elements are
 initially kept in a big, mixed list.</p>"
-        ,(project-over-types 'vl-__type__))
+        ,(project-over-modelement-types 'vl-__type__))
 
       (fty::deflist vl-modelementlist
         :elt-type vl-modelement-p
         :elementp-of-nil nil
         ///
         (local (in-theory (enable vl-modelementlist-p)))
-        . ,(project-over-types
+        . ,(project-over-modelement-types
             '(defthm vl-modelementlist-p-when-vl-__type__list-p
                (implies (vl-__type__list-p x)
                         (vl-modelementlist-p x)))))
@@ -3405,7 +3377,7 @@ initially kept in a big, mixed list.</p>"
                                                                       (tau-system)))))
         (let ((x (vl-modelement-fix x)))
           (case (tag x)
-            . ,(project-over-types
+            . ,(project-over-modelement-types
                 '(:vl-__type__ (vl-__type__->loc x))))))))
 
 
@@ -3547,7 +3519,7 @@ initially kept in a big, mixed list.</p>"
         :long "<p>A vl-modelement-collection can be made from a @(see
 vl-modelementlist) by sorting the elements by type.  Its fields each contain
 the list of elements of the given type.</p>"
-        (,@(project-over-types
+        (,@(project-over-modelement-types
             '(__elts__ vl-__type__list-p))
            (generates vl-genelementlist-p)
            (ports     vl-portlist-p))
@@ -3564,7 +3536,7 @@ the list of elements of the given type.</p>"
         (b* ((x (vl-modelement-fix x)))
 
           (case (tag x)
-            . ,(project-over-types
+            . ,(project-over-modelement-types
                 '(:vl-__type__       (vl-__type__->loc x))))))
 
       (define vl-genelement-loc ((x vl-genelement-p))
@@ -3596,10 +3568,10 @@ the list of elements of the given type.</p>"
 
       (define vl-sort-genelements-aux
         ((x           vl-genelementlist-p)
-         ,@(project-over-types
+         ,@(project-over-modelement-types
             '(__elts__       vl-__type__list-p))
          (generates   vl-genelementlist-p))
-        :returns (mv ,@(project-over-types
+        :returns (mv ,@(project-over-modelement-types
                         `(__elts__
                           vl-__type__list-p))
                      (generates vl-genelementlist-p))
@@ -3608,7 +3580,7 @@ the list of elements of the given type.</p>"
                                acl2::id acl2::clause world))))
         :verbosep t
         (b* (((when (atom x))
-              (mv ,@(project-over-types
+              (mv ,@(project-over-modelement-types
                      '(rev (vl-__type__list-fix        __elts__)))
                   (vl-genelementlist-fix generates))))
           (vl-genelement-case (xf (car x))
@@ -3617,12 +3589,12 @@ the list of elements of the given type.</p>"
                  (tag (tag x1)))
               (vl-sort-genelements-aux
                (cdr x)
-               ,@(project-over-types
+               ,@(project-over-modelement-types
                   '(if (eq tag :vl-__type__)       (cons x1 __elts__)       __elts__))
                generates))
             :otherwise
             (vl-sort-genelements-aux
-             (cdr x) ,@(project-over-types '__elts__)
+             (cdr x) ,@(project-over-modelement-types '__elts__)
              (cons (vl-genelement-fix (car x)) generates))))
         :prepwork
         ((local (in-theory (disable
@@ -3641,19 +3613,19 @@ the list of elements of the given type.</p>"
                             default-cdr
                             pick-a-point-subset-strategy
                             vl-genelement-p-when-member-equal-of-vl-genelementlist-p
-                            ,@(project-over-types
+                            ,@(project-over-modelement-types
                                'vl-__type__list-p-when-subsetp-equal)
-                            ,@(project-over-types
+                            ,@(project-over-modelement-types
                                'vl-modelementlist-p-when-vl-__type__list-p)
                             (:rules-of-class :type-prescription :here)
                             (:ruleset tag-reasoning))))))
 
       (define vl-sort-genelements ((x vl-genelementlist-p))
         :returns (collection vl-genblob-p)
-        (b* (((mv ,@(project-over-types '__elts__) generates)
-              (vl-sort-genelements-aux x ,@(project-over-types nil) nil)))
+        (b* (((mv ,@(project-over-modelement-types '__elts__) generates)
+              (vl-sort-genelements-aux x ,@(project-over-modelement-types nil) nil)))
           (make-vl-genblob
-           ,@(append-over-types '(:__elts__ __elts__))
+           ,@(append-over-modelement-types '(:__elts__ __elts__))
            :generates generates))))))
 
 

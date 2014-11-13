@@ -228,6 +228,12 @@
       why
       with-redef
 
+      template-proj
+      template-append
+      make-tmplsubst
+      template-subst-top
+      template-subst
+      std::getargs
       ))
 
    ;; Things to remove:

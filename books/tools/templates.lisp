@@ -33,6 +33,7 @@
 (include-book "bstar")
 (include-book "defmacfun")
 (include-book "xdoc/top" :dir :system)
+(include-book "std/util/da-base" :dir :system)
 
 (defxdoc template-subst
   :parents (macro-libraries)
@@ -226,21 +227,32 @@ At each atom in the tree:
            (check-features-list features (cdr forms))))))
 
 
-;; Template-preproc allows 
-
-(defun template-preproc (features forms)
+(defun template-preproc (forms features)
   (b* (((when (atom forms)) forms)
        ((unless (and (consp (car forms))
                      (eq (caar forms) :@)))
-        (cons (template-preproc features (car forms))
-              (template-preproc features (cdr forms))))
+        (cons (template-preproc (car forms) features)
+              (template-preproc (cdr forms) features)))
        (template-form (car forms))
        (feature-form (cadr template-form))
        (subforms (cddr template-form))
        ((unless (check-features features feature-form))
-        (template-preproc features (cdr forms))))
-    (append (template-preproc features subforms)
-            (template-preproc features (cdr forms)))))
+        (template-preproc (cdr forms) features)))
+    (append (template-preproc subforms features)
+            (template-preproc (cdr forms) features))))
+
+
+(std::def-primitive-aggregate tmplsubst
+  (atoms          ;; replacements for atoms (alist of old . new)
+   strs           ;; replacements for substrings of symbol names
+                  ;; either ("old" . "new") or ("old" "new" . pkg-sym)
+   pkg-sym        ;; default package symbol for symbol substring replacements
+   subtrees       ;; replacements for whole (non-atom) subtrees
+
+   splices        ;; atoms -> lists, e.g., to replace (foo x) with (bar 'blah x),
+                  ;; bind foo to (bar 'blah)
+   features       ;; list of keywords for conditional features
+   ))
 
 
 ;; returns (mv changedp tree), avoids unnecessary consing.
@@ -248,33 +260,37 @@ At each atom in the tree:
 ;; subtrees are substituted first, then atoms, and strings into symbols only if
 ;; that symbol was not bound in atom-alist.
 ;; The subtree and atom alists are kept separate just for efficiency.
-(defun template-subst-rec (subtree-alist splice-alist atom-alist str-alist tree pkg-sym)
-  (b* (((when (atom tree))
-        (b* ((look (assoc-equal tree atom-alist))
+(defun template-subst-rec (tree subst)
+  (b* (((tmplsubst subst))
+       ((when (atom tree))
+        (b* ((look (assoc-equal tree subst.atoms))
              ((when look) (mv t (cdr look)))
              ((unless (symbolp tree))
               (mv nil tree))
-             (res (tmpl-sym-sublis str-alist tree pkg-sym)))
+             (res (tmpl-sym-sublis subst.strs tree subst.pkg-sym)))
           (if (eq res tree)
               (mv nil tree)
             (mv t res))))
-       (look (assoc-equal tree subtree-alist))
+       (look (assoc-equal tree subst.subtrees))
        ((when look) (mv t (cdr look)))
        (splice-look (and (atom (car tree))
-                         (assoc-equal (car tree) splice-alist)))
+                         (assoc-equal (car tree) subst.splices)))
        ((when splice-look)
         (b* (((mv & cdr)
-              (template-subst-rec
-               subtree-alist splice-alist atom-alist str-alist (cdr tree)
-               pkg-sym)))
+              (template-subst-rec (cdr tree) subst)))
           (mv t (append (cdr splice-look) cdr))))
        ((mv chcar car)
-        (template-subst-rec subtree-alist splice-alist atom-alist str-alist (car tree) pkg-sym))
+        (template-subst-rec (car tree) subst))
        ((mv chcdr cdr)
-        (template-subst-rec subtree-alist splice-alist atom-alist str-alist (cdr tree) pkg-sym)))
+        (template-subst-rec (cdr tree) subst)))
     (if (or chcar chcdr)
         (mv t (cons car cdr))
       (mv nil tree))))
+
+(defun template-subst-top (tree subst)
+  (b* ((preproc-tree (template-preproc tree (tmplsubst->features subst)))
+       ((mv & new-tree) (template-subst-rec preproc-tree subst)))
+    new-tree))
 
 (defmacfun template-subst (tree &key features
                                 subtree-alist
@@ -282,11 +298,13 @@ At each atom in the tree:
                                 atom-alist
                                 str-alist
                                 (pkg-sym ''acl2::foo))
-  (b* ((preproc-tree (template-preproc features tree))
-       ((mv & new-tree) (template-subst-rec
-                         subtree-alist splice-alist atom-alist str-alist
-                         preproc-tree pkg-sym)))
-    new-tree))
+  (template-subst-top tree
+                      (make-tmplsubst :features features
+                                      :subtrees subtree-alist
+                                      :splices splice-alist
+                                      :atoms atom-alist
+                                      :strs str-alist
+                                      :pkg-sym pkg-sym)))
 
 ;; This can be used to generate a string substitution from a symbol substitution.
 (defun tmpl-symbol-alist-to-str-alist (x)
@@ -299,6 +317,41 @@ At each atom in the tree:
                     (symbol-name (cdar x)))
               (tmpl-symbol-alist-to-str-alist (cdr x)))
       (tmpl-symbol-alist-to-str-alist (cdr x)))))
+
+
+;; Functions for using a list of substitutions -- applying them all to one
+;; template and either consing or appending together the results
+
+;; Add some string substitution to a list of tmplsubsts, possibly overriding
+;; their existing ones
+(defun tmplsubsts-add-strsubsts (x strsubsts)
+  (if (atom x)
+      nil
+    (cons (change-tmplsubst
+           (car x) :strs (append strsubsts (tmplsubst->strs (car x))))
+          (tmplsubsts-add-strsubsts (cdr x) strsubsts))))
+
+;; Add some features to a list of tmplsubsts
+(defun tmplsubsts-add-features (x features)
+  (if (atom x)
+      nil
+    (cons (change-tmplsubst (car x) :features (append features (tmplsubst->features (car x))))
+          (tmplsubsts-add-features (cdr x) features))))
+
+(defun template-proj (template substs)
+  (declare (xargs :mode :program))
+  (if (atom substs)
+      nil
+    (cons (template-subst-top template (car substs))
+          (template-proj template (cdr substs)))))
+
+(defun template-append (template substs)
+  (declare (xargs :mode :program))
+  (if (atom substs)
+      nil
+    (append (template-subst-top template (car substs))
+            (template-append template (cdr substs)))))
+
 
 
 (logic)

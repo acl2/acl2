@@ -183,7 +183,6 @@ otherwise.</li>
                                             (genelement :name blockname :maybe-stringp t
                                                         :names-defined t
                                                         :sum-type t
-                                                        :multi-tags (:vl-genbase :vl-genif :vl-gencase :vl-genloop :vl-genblock :vl-genarray)
                                                         :acc generates)
                                             (interfaceport :acc ifports))
            ;; fwdtypedefs could be included here but we hope to have resolved them all
@@ -568,9 +567,6 @@ may be shorter than the number of elements in the list.</p>"
 (local
  (defsection-progn template-substitution-helpers
 
-   (std::def-primitive-aggregate tmplsubst
-     (features atomsubst strsubst))
-
    (defun scopes->typeinfos (scopes)
      (declare (xargs :mode :program))
      (if (atom scopes)
@@ -599,7 +595,7 @@ may be shorter than the number of elements in the list.</p>"
                                                  (and names-defined '(:names-defined))
                                                  (and sum-type      '(:sum-type))
                                                  (and transsum      '(:transsum)))
-                               :strsubst
+                               :strs
                                `(("__TYPE__" ,(symbol-name type) . vl-package)
                                  ("__ACC__" ,acc . vl-package)
                                  ("__NAME__" ,name . vl-package))))
@@ -608,51 +604,11 @@ may be shorter than the number of elements in the list.</p>"
    (defun scopes->tmplsubsts (scopes)
      (if (atom scopes)
          nil
-       (cons (make-tmplsubst :strsubst `(("__TYPE__" ,(symbol-name (caar scopes)) . vl-package))
-                             :atomsubst `((__items__ . ,(cddar scopes)))
+       (cons (make-tmplsubst :strs `(("__TYPE__" ,(symbol-name (caar scopes)) . vl-package))
+                             :atoms `((__items__ . ,(cddar scopes)))
                              :features (append (cadar scopes)
                                                (and (cddar scopes) '(:has-items))))
-             (scopes->tmplsubsts (cdr scopes)))))
-
-   (defun tmplsubsts-add-strsubsts (x strsubsts)
-     (if (atom x)
-         nil
-       (cons (change-tmplsubst (car x) :strsubst (append strsubsts (tmplsubst->strsubst (car x))))
-             (tmplsubsts-add-strsubsts (cdr x) strsubsts))))
-
-   (defun tmplsubsts-add-features (x features)
-     (if (atom x)
-         nil
-       (cons (change-tmplsubst (car x) :features (append features (tmplsubst->features (car x))))
-             (tmplsubsts-add-features (cdr x) features))))
-
-   (defun template-proj (template substs)
-     (declare (xargs :mode :program))
-     (if (atom substs)
-         nil
-       (cons (b* (((tmplsubst subst) (car substs))
-                  (val
-                   (acl2::template-subst-fn template subst.features
-                                            nil nil
-                                            subst.atomsubst
-                                            subst.strsubst
-                                            'vl-package)))
-               val)
-             (template-proj template (cdr substs)))))
-
-   (defun template-append (template substs)
-     (declare (xargs :mode :program))
-     (if (atom substs)
-         nil
-       (append (b* (((tmplsubst subst) (car substs))
-                    (val
-                     (acl2::template-subst-fn template subst.features
-                                              nil nil
-                                              subst.atomsubst
-                                              subst.strsubst
-                                              'vl-package)))
-                 val)
-               (template-append template (cdr substs)))))))
+             (scopes->tmplsubsts (cdr scopes)))))))
 
 
 (local (defthmd tag-when-vl-genelement-p
@@ -741,7 +697,7 @@ may be shorter than the number of elements in the list.</p>"
 
 (local ;; For each searchable type foo, we get:
  ;;                  - vl-find-foo: linear search by name in a list of foos
- ;;                  - vl-fast-foolist-alist: fast alist binding names to foos.
+ ;;                  - vl-foolist-alist: fast alist binding names to foos.
  (defconst *scopeitem-alist/finder-template*
    '(progn
       (:@ (not :names-defined)
@@ -1057,15 +1013,17 @@ may be shorter than the number of elements in the list.</p>"
                ;;                   (let ((look (hons-assoc-equal name (vl-__scope__-scope-__result__-alist scope nil))))
                ;;                     (mv (consp look) (cdr look))))))
                ))))
-     (acl2::template-subst-fn template
-                              (append (and importp '(:import))
-                                      (and scopeitemtype '(:scopeitemtype)))
-                              nil nil nil
-                              `(("__SCOPE__" ,(symbol-name scope) . vl-package)
-                                ("__RESULT__" ,(symbol-name resultname) . vl-package)
-                                ("__RESULTTYPE__" ,(symbol-name resulttype) . vl-package)
-                                ("__SCOPEITEMTYPE__" ,(symbol-name scopeitemtype) . vl-package))
-                              'vl-package))))
+     (template-subst-top template
+                               (make-tmplsubst
+                                :features
+                                (append (and importp '(:import))
+                                        (and scopeitemtype '(:scopeitemtype)))
+                                :strs
+                                `(("__SCOPE__" ,(symbol-name scope) . vl-package)
+                                  ("__RESULT__" ,(symbol-name resultname) . vl-package)
+                                  ("__RESULTTYPE__" ,(symbol-name resulttype) . vl-package)
+                                  ("__SCOPEITEMTYPE__" ,(symbol-name scopeitemtype) . vl-package))
+                                :pkg-sym 'vl-package)))))
 
 
 (make-event ;; Definition of vl-design-scope-find-package vl-design-scope-package-alist
@@ -1513,10 +1471,12 @@ may be shorter than the number of elements in the list.</p>"
                               (mv item nil))
                              (pkg-ss (vl-scopestack-push pkg (vl-scopestack-init design))))
                           (mv item pkg-ss))))))))
-     (acl2::template-subst-fn template (and importsp '(:import)) nil nil nil
-                              `(("__RESULT__" ,(symbol-name result) . vl-package)
-                                ("__RESULTTYPE__" ,(symbol-name resulttype) . vl-package))
-                              'vl-package))))
+     (template-subst-top template
+                         (make-tmplsubst
+                          :features (and importsp '(:import))
+                          :strs `(("__RESULT__" ,(symbol-name result) . vl-package)
+                                  ("__RESULTTYPE__" ,(symbol-name resulttype) . vl-package))
+                          :pkg-sym 'vl-package)))))
 
 (local (defthm maybe-scopeitem-when-iff
          (implies (or (vl-scopeitem-p x)
@@ -1620,10 +1580,11 @@ may be shorter than the number of elements in the list.</p>"
                         :returns (__result__ (iff (vl-__resulttype__-p __result__) __result__))
                         (b* (((mv __result__ &) (vl-scopestack-find-__result__/ss name ss)))
                           __result__)))))))
-     (acl2::template-subst-fn template nil nil nil nil
-                              `(("__RESULT__" ,(symbol-name result) . vl-package)
-                                ("__RESULTTYPE__" ,(symbol-name resulttype) . vl-package))
-                              'vl-package))))
+     (template-subst-top template
+                         (make-tmplsubst
+                          :strs `(("__RESULT__" ,(symbol-name result) . vl-package)
+                                  ("__RESULTTYPE__" ,(symbol-name resulttype) . vl-package))
+                          :pkg-sym 'vl-package)))))
 
 
 

@@ -34,54 +34,23 @@
 (include-book "expr-tools")
 (include-book "../parsetree")
 (local (std::add-default-post-define-hook :fix))
-(local (defun types-mk-strsubst-alists (types)
-         (if (atom types)
-             nil
-           (let ((name (symbol-name (car types))))
-             (cons `(("__TYPE__" ,name . vl-package)
-                     ("__ELTS__" ,(if (member (char name (1- (length name))) '(#\S #\s))
-                                      (str::cat name "ES")
-                                    (str::cat name "S")) . vl-package))
-                   (types-mk-strsubst-alists (cdr types)))))))
 
-(local (defun project-over-types-rec (template strsubst-alists)
-         (declare (xargs :mode :program))
-         (if (atom strsubst-alists)
-             nil
-           (cons (b* (((mv & val)
-                       (acl2::template-subst-rec nil nil nil (car strsubst-alists)
-                                                 template 'vl-package)))
-                   val)
-                 (project-over-types-rec template (cdr strsubst-alists))))))
-
-(local (defun append-over-types-rec (template strsubst-alists)
-         (declare (xargs :mode :program))
-         (if (atom strsubst-alists)
-             nil
-           (append (b* (((mv & val)
-                         (acl2::template-subst-rec nil nil nil (car strsubst-alists)
-                                                   template 'vl-package)))
-                     val)
-                   (append-over-types-rec template (cdr strsubst-alists))))))
-
-(local (defun project-over-types (template)
-         (declare (xargs :mode :program))
-         (project-over-types-rec template (types-mk-strsubst-alists *vl-modelement-typenames*))))
-
-(local (defun append-over-types (template)
-         (declare (xargs :mode :program))
-         (append-over-types-rec template (types-mk-strsubst-alists *vl-modelement-typenames*))))
-
+(defconst *vl-module/genblob-fields*
+  (append '(generate port) ;; extra things that are not modelements
+          (set-difference-eq
+           *vl-modelement-typenames*
+           ;; things in genblobs that are not in modules
+           '(typedef fwdtypedef modport))))
 
 (make-event
  `(define vl-module->genblob ((x vl-module-p))
     :returns (genblob vl-genblob-p)
     (b* (((vl-module x)))
       (make-vl-genblob
-       ,@(append-over-types-rec
+       ,@(template-append
           '(:__elts__ x.__elts__)
-          (types-mk-strsubst-alists
-           '(import portdecl vardecl paramdecl fundecl taskdecl assign modinst gateinst always initial generate port)))))))
+          (vl-typenames-to-tmplsubsts
+           *vl-module/genblob-fields*))))))
 
 (make-event
  `(define vl-genblob->module ((x vl-genblob-p)
@@ -89,19 +58,15 @@
     :returns (new-mod vl-module-p)
     (b* (((vl-genblob x)))
       (change-vl-module orig
-                        ,@(append-over-types-rec
+                        ,@(template-append
                            '(:__elts__ x.__elts__)
-                           (types-mk-strsubst-alists
-                            '(import portdecl vardecl
-                                     paramdecl fundecl taskdecl
-                                     assign modinst gateinst
-                                     always initial
-                                     generate port)))))))
+                           (vl-typenames-to-tmplsubsts
+                            *vl-module/genblob-fields*))))))
 
 
 (make-event
  `(define vl-genblob->elems-aux  ((orig-elements vl-genelementlist-p)
-                                                ,@(project-over-types
+                                                ,@(project-over-modelement-types
                                                    '(__elts__ vl-__type__list-p))
                                                 (generates vl-genelementlist-p)
                                                 (acc vl-genelementlist-p))
@@ -113,7 +78,7 @@
                                           append
                                           consp-when-member-equal-of-cons-listp
                                           acl2::append-when-not-consp
-                                          ,@(project-over-types
+                                          ,@(project-over-modelement-types
                                              'vl-__type__list-p-of-append)))))
     :hooks nil
     (b* (((when (atom orig-elements))
@@ -122,12 +87,12 @@
            (append-without-guard
             (vl-modelementlist->genelements
              (append-without-guard
-              ,@(project-over-types '__elts__)))
+              ,@(project-over-modelement-types '__elts__)))
             (vl-genelementlist-fix generates)))))
       (vl-genelement-case (x (car orig-elements))
         :vl-genbase
         (case (tag x.item)
-          ,@(project-over-types
+          ,@(project-over-modelement-types
              `(:vl-__type__ (b* (((mv acc __elts__)
                                   (if (consp __elts__)
                                       (mv (cons (make-vl-genbase :item (vl-__type__-fix (car __elts__))) acc)
@@ -135,7 +100,7 @@
                                     (mv acc __elts__))))
                               (vl-genblob->elems-aux
                                (cdr orig-elements)
-                               ,@(project-over-types '__elts__)
+                               ,@(project-over-modelement-types '__elts__)
                                generates
                                acc)))))
         :otherwise (b* (((mv acc generates)
@@ -145,7 +110,7 @@
                            (mv acc generates))))
                      (vl-genblob->elems-aux
                       (cdr orig-elements)
-                      ,@(project-over-types '__elts__)
+                      ,@(project-over-modelement-types '__elts__)
                       generates
                       acc))))))
 
@@ -159,7 +124,7 @@
     (b* (((vl-genblob x))) 
       (vl-genblob->elems-aux
        (vl-genelementlist-fix orig-elements)
-       ,@(project-over-types 'x.__elts__)
+       ,@(project-over-modelement-types 'x.__elts__)
        x.generates nil))))
 
 
@@ -168,19 +133,19 @@
 
 (make-event
  `(defthm vl-genelementlist-count-of-vl-sort-genelements-aux 
-    (b* (((mv ,@(project-over-types '?__elts__1) generates1)
+    (b* (((mv ,@(project-over-modelement-types '?__elts__1) generates1)
           (vl-sort-genelements-aux
-           x ,@(project-over-types '__elts__) generates)))
+           x ,@(project-over-modelement-types '__elts__) generates)))
       (<= (vl-genelementlist-count generates1)
           (+ -1 (vl-genelementlist-count x)
              (vl-genelementlist-count generates))))
     :hints(("Goal" :induct (vl-sort-genelements-aux
-                            x ,@(project-over-types '__elts__) generates)
+                            x ,@(project-over-modelement-types '__elts__) generates)
             :in-theory (e/d ((:i vl-sort-genelements-aux)
                              vl-genelementlist-count) 
                             (not))
             :expand ((vl-sort-genelements-aux
-                      x ,@(project-over-types '__elts__) generates))))
+                      x ,@(project-over-modelement-types '__elts__) generates))))
     :rule-classes :linear))
 
 (defthm vl-genelementlist-count-of-vl-sort-genelements
@@ -339,40 +304,7 @@
             `(,sym (std::getarg ,(intern$ (symbol-name basesym) "KEYWORD") ,default ,alist)))
           (assigns-for-getargs (cdr args) alist))))
 
-(acl2::def-b*-binder getargs
-  :short "@(see b*) binder for getargs on a keyword alist."
-  :long "<p>Usage:</p>
-@({
-    (b* (((getargs a
-                   (b b-default-term)
-                   c
-                   d)
-          alst))
-      form)
-})
 
-<p>is equivalent to</p>
-
-@({
-    (b* ((a (getarg :a nil alst))
-         (b (getarg :b b-default-term alst))
-         (c (getarg :c nil alst)))
-      form)
-})"
-
-  :body
-  (mv-let (pre-bindings name rest)
-    (if (and (consp (car acl2::forms))
-             (not (eq (caar acl2::forms) 'quote)))
-        (mv `((?tmp-for-getargs ,(car acl2::forms)))
-            'tmp-for-getargs
-            `(check-vars-not-free (tmp-for-getargs)
-                            ,acl2::rest-expr))
-      (mv nil (car acl2::forms) acl2::rest-expr))
-    `(b* (,@pre-bindings
-          . ,(assigns-for-getargs args name))
-       ,rest)))
-  
 (defconst *def-genblob-transform-keywords*
   '(:apply-to-generates
     :returns
