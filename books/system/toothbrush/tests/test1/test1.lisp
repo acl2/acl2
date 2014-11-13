@@ -40,6 +40,10 @@
                 (t (* 2 (length (append (make-list (f x))
                                         (cons x nil))))))))
 
+; The following is harmless -- included only to show that it's harmless.
+(defevaluator evl evl-list
+  ((length x) (member-equal x y)))
+
 ; Define default function for dependencies (see Makefile):
 (defun top (x)
   (len-test x))
