@@ -341,8 +341,8 @@ now does nothing.</p>")
                                ,inst-thm
                                . ,fn-subst))))
         :rule-classes ,rule-classes))))
-       
-       
+
+
 (defun defprojection-instantiate-table-thms-aux
   (table element name exec nrev formals kwd-alist x
          req-alist fn-subst world)
@@ -699,5 +699,3 @@ now does nothing.</p>")
         `(progn ,(defprojection-fn ',name ',formals ',element ',kwd-alist
                    ',other-events state)
                 (value-triple '(defprojection ,',name)))))))
-
-
