@@ -4555,7 +4555,7 @@ generation of the count function.</li>
 
 <li>@(':parents'), @(':short'), @(':long'): add xdoc about the type.  (Note:
 xdoc support is half-baked; e.g. documentation strings for fields are allowed
-but not yet used.</li>
+but not yet used.)</li>
 
 <li>@(':measure'): override the measures used to admit the recognizer, fixing
 function, and count function; the default is @('(acl2-count x)').</li>
