@@ -254,35 +254,40 @@ Options:" *nls* *nls* *vl-model-opts-usage* *nls*))
                     :compress-p   want-translation-p))
 
        ((mv translation state)
-        (defmodules-fn loadconfig simpconfig))
+        (cwtime (defmodules-fn loadconfig simpconfig)))
 
        (good (vl-translation->good translation))
        (- (vl-model-check-must-get opts.mustget good))
        (- (vl-model-check-must-fail opts.mustfail good))
 
        (state
-        (if (equal opts.model-file "")
-            state
-          (b* ((state (serialize-write (oslib::catpath opts.outdir opts.model-file)
-                                       translation))
-               (state (with-ps-file
-                        (oslib::catpath opts.outdir (cat opts.model-file ".ver"))
-                        (vl-println *vl-current-syntax-version*))))
-            state)))
+        (b* (((when (equal opts.model-file ""))
+              state)
+             (path (oslib::catpath opts.outdir opts.model-file))
+             (- (cw "; vl-model: writing ~s0~%" path))
+             (state (serialize-write path translation))
+             (state (with-ps-file
+                      (oslib::catpath opts.outdir (cat opts.model-file ".ver"))
+                      (vl-println *vl-current-syntax-version*))))
+          state))
 
        (state
-        (if (equal opts.esims-file "")
-            state
-          (serialize-write (oslib::catpath opts.outdir opts.esims-file)
+        (b* (((when (equal opts.esims-file ""))
+              state)
+             (path (oslib::catpath opts.outdir opts.esims-file))
+             (- (cw "; vl-model: writing ~s0~%" path)))
+          (serialize-write path
                            (vl-modulelist->esims
                             (vl-design->mods
                              (vl-translation->good translation))))))
 
        (good (vl-translation->good translation))
        (state
-        (if (equal opts.verilog-file "")
-            state
-          (with-ps-file opts.verilog-file
+        (b* (((when (equal opts.verilog-file ""))
+              state)
+             (path opts.verilog-file)
+             (- (cw "; vl-model: writing ~s0~%" path)))
+          (with-ps-file path
                         (vl-ps-update-show-atts nil)
                         (vl-pp-modulelist (vl-design->mods good)
                                           (vl-scopestack-init good))))))

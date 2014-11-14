@@ -61,10 +61,7 @@
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 
 
-(local (in-theory (disable vl::consp-of-car-when-cons-listp
-                           set::double-containment
-                           vl::cons-listp-of-cdr-when-cons-listp
-                           4v-sexpr-eval)))
+(local (in-theory (disable set::double-containment 4v-sexpr-eval)))
 
 (defthmd lookup-each-of-4v-sexpr-eval-alist
   (implies (hons-subset keys (alist-keys sexpr-alist))
@@ -198,7 +195,6 @@
                                   pairlis$)
                                  (4v-sexpr-eval
                                   sexpr-eval-list-norm-env-when-ground-args-p
-                                  vl::consp-of-car-when-cons-listp
                                   ;consp-under-iff-when-true-listp
                                   )))))
 

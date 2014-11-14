@@ -128,8 +128,7 @@ the list of elements of the given type.</p>"
                           double-containment
                           set::nonempty-means-set
                           set::sets-are-true-lists
-                          consp-when-member-equal-of-cons-listp
-                          consp-when-member-equal-of-cons-listp
+                          acl2::consp-when-member-equal-of-cons-listp
                           acl2::rev-when-not-consp
                           default-car
                           default-cdr
@@ -210,7 +209,6 @@ the list of elements of the given type.</p>"
                                           acl2::consp-of-append
                                           acl2::subsetp-append1
                                           append
-                                          consp-when-member-equal-of-cons-listp
                                           acl2::append-when-not-consp
                                           ,@(project-over-modelement-types
                                              'vl-__type__list-p-of-append)))))

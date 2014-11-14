@@ -27,7 +27,7 @@
 ;   DEALINGS IN THE SOFTWARE.
 
 (in-package "ACL2")
-(ld "tools/flag-package.lsp" :dir :system)
 (include-book "std/portcullis" :dir :system)
+(ld "tools/flag-package.lsp" :dir :system)
 (include-book "centaur/vl/portcullis" :dir :system)
 (include-book "centaur/gl/portcullis" :dir :system)

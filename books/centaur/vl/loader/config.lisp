@@ -106,9 +106,8 @@
    (search-path    string-listp
                    "A list of directories to search (in order) for descriptions
                     in @('start-modnames') that were in the @('start-files'),
-                    and for <see topic=\"@(url vl-modulelist-missing)\">missing
-                    modules</see>.  This is similar to \"library directories\"
-                    in tools like Verilog-XL and NCVerilog.")
+                    and for missing modules.  This is similar to \"library
+                    directories\" in tools like Verilog-XL and NCVerilog.")
 
    (search-exts    string-listp
                    :default '("v")

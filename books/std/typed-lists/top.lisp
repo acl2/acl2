@@ -33,6 +33,7 @@
 (include-book "atom-listp")
 (include-book "boolean-listp")
 (include-book "character-listp")
+(include-book "cons-listp")
 (include-book "eqlable-listp")
 (include-book "integer-listp")
 (include-book "nat-listp")

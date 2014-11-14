@@ -39,10 +39,7 @@
 (include-book "centaur/misc/outer-local" :dir :system)
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 
-(local (in-theory (disable vl::consp-of-car-when-cons-listp
-                           set::double-containment
-                           vl::cons-listp-of-cdr-when-cons-listp
-                           4v-sexpr-eval)))
+(local (in-theory (disable set::double-containment 4v-sexpr-eval)))
 
 (defthmd lookup-each-of-4v-sexpr-eval-alist
   (implies (hons-subset keys (alist-keys sexpr-alist))
@@ -131,10 +128,10 @@
   :hints(("Goal" :in-theory (enable 4v-sexpr-eval-list))))
 
 
-             
-           
-             
-             
+
+
+
+
 (defthm bool-to-4v-lst-of-bool-from-4v-lst-when-4v-bool-listp
   (implies (4v-bool-listp x)
            (equal (bool-to-4v-lst (bool-from-4v-list x))
@@ -149,7 +146,6 @@
                                   pairlis$)
                                  (4v-sexpr-eval
                                   sexpr-eval-list-norm-env-when-ground-args-p
-                                  vl::consp-of-car-when-cons-listp
                                   ;consp-under-iff-when-true-listp
                                   )))))
 
@@ -290,7 +286,7 @@
        ((when (eq (car alist) 'cons))
         (find-composition-in-alist (caddr alist))))
     nil))
-    
+
 
 (defun 4v-sexpr-restrict-list-fast (sexprs sexpr-alist)
   (declare (xargs :guard t))
@@ -374,11 +370,11 @@
 
 
 
-    
-  
 
 
-;; (implies 
+
+
+;; (implies
 ;;          (b* ( ;; Run the decomposed circuit to get the partial products
 ;;               (in-alist1  (boothmul-decomp-autoins))
 ;;               (out-alist1 (stv-run (boothmul-decomp) in-alist1))
@@ -501,7 +497,7 @@
         (implies (not (hons-assoc-equal key alist))
                  (equal (hons-assoc-equal key res) nil)))))))
 (finish-with-outer-local)
-       
+
 
 (local
  (define stv-decomp-alist-extract (vars al)
@@ -513,7 +509,7 @@
                                 (pseudo-termp (cdr (hons-assoc-equal k x))))
                        :hints(("Goal" :in-theory (e/d (pseudo-term-val-alistp)
                                                       (pseudo-termp)))))))
-   
+
    (b* (((when (atom vars)) nil)
         (look (hons-get (car vars) al))
         (rest (stv-decomp-alist-extract (cdr vars) al)))
@@ -524,7 +520,7 @@
     (defthm stv-decomp-alist-extract-lookup-under-iff
       (iff (hons-assoc-equal key (stv-decomp-alist-extract vars al))
            (member key vars))))
-   
+
    (outer-local
     (defthm stv-decomp-alist-extract-correct
       (equal (4v-fix (stv-decomp-ev
@@ -536,7 +532,7 @@
                           env))
                'x))))))
 (finish-with-outer-local)
-                    
+
 
 (local
  (define stv-decomp-process-alist-term ((x pseudo-termp))
@@ -684,4 +680,3 @@
 (defmacro stv-decomp-theory ()
   '(union-theories (get-ruleset 'stv-decomp-rules world)
                    (executable-counterpart-theory :here)))
-    

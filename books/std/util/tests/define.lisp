@@ -201,6 +201,22 @@
 
 
 
+;; Testing new doc fragment stuff.
+
+(define frags (x)
+  (if (atom x)
+      1
+    (+ 1 (frags (cdr x))))
+  ///
+  "<p>This would be better written as a type-prescription rule:</p>"
+  (defthm posp-of-frags
+    (posp (frags x)))
+  "<p>But this would not make a good type prescription rule:</p>"
+  (defthm frags-of-cons
+    (equal (frags (cons a x)) (+ 1 (frags x)))))
+
+
+
 
 ;; Basic testing of hook installation/removal
 

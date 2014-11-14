@@ -83,6 +83,8 @@
       maybe-stringp
       maybe-posp
       maybe-integerp
+      cons-listp
+      cons-list-listp
       never-memoize
       char-fix
       chareqv

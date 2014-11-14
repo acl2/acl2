@@ -23,11 +23,23 @@ or pathname of such, containing relevant ACL2 source files."))
         (pathname COMMON-LISP-USER::*acl2-dir*)))
 
 (let ((*default-pathname-defaults* COMMON-LISP-USER::*acl2-dir*))
+
+; Note that loading ACL2 source file init.lisp also loads these ACL2 source
+; files:
+
+; acl2-fns.lisp
+; acl2-init.lisp
+; acl2.lisp
+; acl2r.lisp
+
   (load "init.lisp"))
 
 (in-package "ACL2")
 
 (defmacro def-errors (&rest fns)
+
+; For explanation, see the calls of def-errors below.
+
   (cons 'with-suppression
         (loop for fn in fns collect
               `(defun ,fn (&rest args)
@@ -35,6 +47,10 @@ or pathname of such, containing relevant ACL2 source files."))
                  (error "Not implemented in toothbrush: ~s" ',fn)))))
 
 (defmacro def-nils (&rest fns)
+
+; Generate a definition for each fn in fns that simply returns nil.  We should
+; only do so when there is good reason, of course!
+
   (cons 'with-suppression
         (loop for fn in fns collect
               `(defun ,fn (&rest args)
@@ -43,7 +59,7 @@ or pathname of such, containing relevant ACL2 source files."))
 
 (def-nils
   CHECK-PROPOSED-IMPORTS ; Presumably the check was already done!
-  MEMOIZE-LOOK-UP-DEF ; !! should fix when toothbrush can memoize
+  MEMOIZE-LOOK-UP-DEF ; !! We should fix this when toothbrush can memoize.
   )
 
 (def-errors
@@ -66,14 +82,24 @@ or pathname of such, containing relevant ACL2 source files."))
   EXTEND-WORLD1
   THE-LIVE-VAR
   SET-W!
-  ONEIFY ; called in mv-let-for-with-local-stobj
+  ONEIFY ; called in mv-let-for-with-local-stobj, but not with toothbrush
+  )
+
+#+hons ; memoize only here
+(def-errors
 
 ; !! We should revisit the following when we are ready to implement memoization
 ; in the toothbrush (without using tables and world).
 ; Note that memoize will just be a table call for now, hence nil.
 
-; In each case, we show the responsible caller.  The def-errors form near the
-; end of this file makes each of those cause an error when called.
+  INITIALIZE-NEVER-MEMOIZE-HT ; avoid call of NOTE-FNS-IN-FILE
+  MEMOIZE-FN
+  UNMEMOIZE-FN
+  UPDATE-MEMO-ENTRIES-FOR-ATTACHMENTS
+  UPDATE-MEMO-ENTRY-FOR-ATTACHMENTS
+
+; In each case below, we show the responsible caller.  The def-errors form near
+; the end of this file makes each of those cause an error when called.
 
   CANONICAL-SIBLING         ; UPDATE-MEMO-ENTRIES-FOR-ATTACHMENTS
   STRICT-MERGE-SORT-SYMBOL-< ; UPDATE-MEMO-ENTRIES-FOR-ATTACHMENTS
@@ -84,7 +110,6 @@ or pathname of such, containing relevant ACL2 source files."))
   CONGRUENT-STOBJ-REP         ; MEMOIZE-FN
   CLTL-DEF-FROM-NAME          ; MEMOIZE-LOOK-UP-DEF
   NOTE-FNS-IN-FILE            ; INITIALIZE-NEVER-MEMOIZE-HT
-
   )
 
 ; Replacement definition (needed for caller THROW-NONEXEC-ERROR):
@@ -106,17 +131,3 @@ or pathname of such, containing relevant ACL2 source files."))
            (load "hons-raw.lisp")
            (load "memoize.lisp")
            (load "memoize-raw.lisp")))))
-
-#+hons ; memoize only here
-(def-errors
-
-; !! We should revisit the following when we are ready to implement memoization
-; in the toothbrush (without using tables and world).
-; Note that memoize will just be a table call for now, hence nil.
-
-  INITIALIZE-NEVER-MEMOIZE-HT ; avoid call of NOTE-FNS-IN-FILE
-  MEMOIZE-FN
-  UNMEMOIZE-FN
-  UPDATE-MEMO-ENTRIES-FOR-ATTACHMENTS
-  UPDATE-MEMO-ENTRY-FOR-ATTACHMENTS
-  )

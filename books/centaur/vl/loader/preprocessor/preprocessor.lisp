@@ -64,7 +64,7 @@
 
 (local (in-theory (disable ;ACL2-COUNT-OF-VL-READ-UNTIL-END-OF-DEFINE-WEAK
                            hons-assoc-equal
-                           CONSP-WHEN-MEMBER-EQUAL-OF-CONS-LISTP
+                           acl2::CONSP-WHEN-MEMBER-EQUAL-OF-CONS-LISTP
                            acl2::STRINGP-WHEN-MEMBER-EQUAL-OF-STRING-LISTP
                            STRING-LISTP-WHEN-SUBSETP-EQUAL-OF-STRING-LISTP
                            STRING-LISTP-WHEN-MEMBER-EQUAL-OF-STRING-LIST-LISTP
@@ -2240,7 +2240,6 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
                              acl2::len-when-prefixp
                              string-fix
                              stringp-when-true-listp
-                             CONSP-WHEN-MEMBER-EQUAL-OF-CONS-LISTP
                              hons-assoc-equal
                              (:TYPE-PRESCRIPTION REMAINDER-OF-VL-READ-UNTIL-LITERAL)
                              acl2::revappend-removal

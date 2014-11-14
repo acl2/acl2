@@ -35,7 +35,7 @@
 (include-book "../mlib/lvalues")
 (include-book "centaur/misc/arith-equivs" :dir :system)
 (local (in-theory (enable acl2::arith-equiv-forwarding lnfix)))
-(local (include-book "clause-processors/autohide" :dir :system))
+;; (local (include-book "clause-processors/autohide" :dir :system))
 (local (include-book "../util/arithmetic"))
 (local (in-theory (enable tag-reasoning)))
 (local (std::add-default-post-define-hook :fix))
@@ -940,7 +940,7 @@ SystemVerilog-2012 Table 11-21. See @(see expression-sizing).</p>"
                                           double-containment
                                           vl-expr-resolved-p-of-car-when-vl-exprlist-resolved-p
                                           acl2::consp-when-member-equal-of-atom-listp
-                                          consp-when-member-equal-of-cons-listp
+                                          acl2::consp-when-member-equal-of-cons-listp
                                           nat-listp-when-no-nils-in-vl-maybe-nat-listp
                                           acl2::natp-when-maybe-natp
                                           default-car default-cdr)))
