@@ -394,12 +394,14 @@
                 name)
         (implies (,sum-p ,xvar)
                  (equal (,sum-fix ,xvar)
-                        ,xvar)))
+                        ,xvar))
+        :hints(("Goal" :in-theory (disable ,sum-p))))
 
       (defthm ,(intern-in-package-of-symbol
                 (concatenate 'string (symbol-name sum-p) "-OF-" (symbol-name sum-fix))
                 name)
-        (,sum-p (,sum-fix ,xvar))))))
+        (,sum-p (,sum-fix ,xvar))
+        :hints(("Goal" :in-theory (disable ,sum-p)))))))
 
 #||
 (dts-fix-def 'mysum *suminfos*)

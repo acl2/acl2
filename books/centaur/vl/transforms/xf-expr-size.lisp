@@ -588,6 +588,7 @@ are not really supposed to have sizes.</p>"
         (mv (ok) (vl-weirdint->origwidth guts)))
 
        ((when (vl-fast-string-p guts))
+        ;; natp, not posp
         (mv (ok) (* 8 (length (vl-string->value guts)))))
 
        ((when (eq (tag guts) :vl-extint))
@@ -2265,7 +2266,7 @@ produce unsigned values.</li>
 
   (defrule warning-irrelevance-of-vl-exprlist-typedecide-aux
     (let ((ret1 (vl-exprlist-typedecide-aux x ss ctx warnings mode))
-          (ret2 (vl-exprlist-typedecide-aux x ss ctx nil mode)))
+          (ret2 (vl-exprlist-typedecide-aux x ss nil nil mode)))
       (implies (syntaxp (not (and (equal ctx ''nil) (equal warnings ''nil))))
                (equal (mv-nth 1 ret1)
                       (mv-nth 1 ret2))))
@@ -2283,7 +2284,108 @@ produce unsigned values.</li>
     (implies (atom x)
              (equal (vl-exprlist-typedecide-aux x ss ctx warnings mode)
                     (mv (ok) nil)))
-    :hints (("goal" :expand ((:free (mode) (vl-exprlist-typedecide-aux x ss ctx warnings mode))))))))
+    :hints (("goal" :expand ((:free (mode) (vl-exprlist-typedecide-aux x ss ctx warnings mode))))))
+
+
+
+  (defthm vl-atom-unsigned-when-size-zero
+    (b* (((mv & size) (vl-atom-selfsize x ss ctx1 warnings1))
+         ((mv & type) (vl-atom-typedecide x ss ctx2 warnings2)))
+      (implies (equal size 0)
+               (equal type :vl-unsigned)))
+    :hints(("Goal" :in-theory (enable vl-atom-selfsize
+                                      vl-atom-typedecide))))
+
+  (define vl-unsigned-when-size-zero-lst ((sizes vl-maybe-nat-listp)
+                                          (types vl-maybe-exprtype-list-p))
+    :guard (eql (len sizes) (len types))
+    (if (atom sizes)
+        t
+      (and (or (not (equal (car sizes) 0))
+               (not (car types))
+               (equal (car types) :vl-unsigned))
+           (vl-unsigned-when-size-zero-lst (cdr sizes) (cdr types)))))
+
+  (local (defthm consp-by-len
+           (implies (and (syntaxp (not (and (consp x) (eq (car x) 'cdr))))
+                         (<= 1 (len x)))
+                    (consp x))
+           :rule-classes ((:rewrite :backchain-limit-lst 2))))
+
+  (local (defthm consp-cdr-by-len
+           (implies (and (syntaxp (not (and (consp x) (eq (car x) 'cdr))))
+                         (<= 2 (len x)))
+                    (consp (cdr x)))
+           :rule-classes ((:rewrite :backchain-limit-lst 2))))
+
+  (local (defthm consp-cddr-by-len
+           (implies (and (syntaxp (not (and (consp x) (eq (car x) 'cdr))))
+                         (<= 3 (len x)))
+                    (consp (cddr x)))
+           :rule-classes ((:rewrite :backchain-limit-lst 2))))
+
+  (local (in-theory (disable acl2::nat-listp-when-not-consp
+                             len-of-vl-nonatom->args-when-vl-hidexpr-p)))
+
+  ;; (local (defthm len-of-cdr-less
+  ;;          (implies (and (syntaxp (quotep n))
+  ;;                        (natp n)
+  ;;                        (consp x))
+  ;;                   (equal (< (len (cdr x)) n)
+  ;;                          (< (len x) (+ 1 n))))
+  ;;          :hints(("Goal" :in-theory (enable len)))))
+
+  ;; (local (defthm vl-unsigned-when-size-zero-lst-expand-when-consp
+  ;;          (implies (consp sizes)
+  ;;                   (equal (vl-unsigned-when-size-zero-lst sizes types)
+  ;;                          (and (or (not (equal (car sizes) 0))
+  ;;                                   (not (car types))
+  ;;                                   (equal (car types) :vl-unsigned))
+  ;;                               (vl-unsigned-when-size-zero-lst (cdr sizes) (cdr types)))))
+  ;;          :hints(("Goal" :in-theory (enable vl-unsigned-when-size-zero-lst)))))
+
+  (local (in-theory (disable max)))
+  
+  ;; (local (Defthm vl-exprtype-max-when-one-unsigned
+  ;;          (implies (or (equal a :vl-unsigned)
+  ;;                       (equal b :vl-unsigned))
+  ;;                   (equal (equal (vl-exprtype-max a b) :vl-unsigned) t))
+  ;;          :hints(("Goal" :in-theory (enable vl-exprtype-max)))))
+
+  (defthm-vl-expr-typedecide-aux-flag
+    (defthm vl-expr-unsigned-when-size-zero-aux
+      (b* (((mv & size) (vl-expr-selfsize x ss ctx1 warnings1))
+           ((mv & type) (vl-expr-typedecide-aux x ss ctx2 warnings2 mode)))
+        (implies (and (equal size 0)
+                      type)
+                 (equal type :vl-unsigned)))
+      :hints ('(:expand ((:free (ctx warnings)
+                          (vl-expr-selfsize x ss ctx warnings))
+                         (:free (ctx warnings mode)
+                          (vl-expr-typedecide-aux x ss ctx warnings mode))
+                         (:free (a b c)
+                          (vl-unsigned-when-size-zero-lst (cons a b) c)))
+                :in-theory (enable vl-op-selfsize
+                                   vl-syscall-selfsize
+                                   ;; vl-$bits-call-p
+                                   vl-exprtype-max
+                                   acl2::member-of-cons
+                                   ;; vl-unsigned-when-size-zero-lst
+                                   )))
+                         
+      :flag :expr)
+    (defthm vl-exprlist-unsigned-when-size-zero-aux
+      (b* (((mv & sizes) (vl-exprlist-selfsize x ss ctx1 warnings1))
+           ((mv & types) (vl-exprlist-typedecide-aux x ss ctx2 warnings2 mode)))
+        (vl-unsigned-when-size-zero-lst sizes types))
+      :hints ('(:expand ((:free (ctx warnings)
+                          (vl-exprlist-selfsize x ss ctx warnings))
+                         ;; (:free (ctx warnings mode)
+                         ;;  (vl-exprlist-typedecide-aux x ss ctx warnings mode))
+                         (:free (a b c d)
+                          (vl-unsigned-when-size-zero-lst
+                           (cons a b) (cons c d))))))
+      :flag :list))))
 
 
 
@@ -2361,6 +2463,8 @@ the expression is an unsupported system call).  In such cases we just return
       (implies (syntaxp (not (and (equal ctx ''nil) (equal warnings ''nil))))
                (equal (mv-nth 1 ret1)
                       (mv-nth 1 ret2))))))
+
+               
 
 
 
