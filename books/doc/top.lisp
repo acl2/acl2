@@ -203,10 +203,10 @@
 
 (include-book "centaur/fty/deftypes" :dir :system)
 
+(include-book "misc/find-lemmas" :dir :system)
 (include-book "misc/simp" :dir :system)
 (include-book "misc/without-waterfall-parallelism" :dir :system)
 (include-book "misc/with-waterfall-parallelism" :dir :system)
-
 
 #||
 
