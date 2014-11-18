@@ -614,7 +614,16 @@ recognizers require true-listp and which don't.</p>")
                          nil-terminated.</p>"))))
 
        (def (if already-definedp
-                nil
+                (and (or (and parents-p parents) short long)
+                     ;; Stupid hack to allow adding boilerplate documentation
+                     ;; to already-defined functions.  This isn't quite as good
+                     ;; as having the documentation as part of the DEFINE
+                     ;; because we won't get an automatic signature.  But it's
+                     ;; better than nothing.
+                     `((defxdoc ,name
+                         ,@(and (or parents-p parents) `(:parents ,parents))
+                         ,@(and short   `(:short ,short))
+                         ,@(and long    `(:long ,long)))))
               `((define ,name (,@formals)
                   ,@(and (or parents-p parents) `(:parents ,parents))
                   ,@(and short   `(:short ,short))
