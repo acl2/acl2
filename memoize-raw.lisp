@@ -200,17 +200,6 @@
  (when (fboundp 'ccl::rdtsc)
    (pushnew :RDTSC *features*)))
 
-#+gcl
-(when (not (gcl-version->= 2 6 10))
-
-; Note for GCL: As of late May 2013, with-standard-io-syntax seems to work
-; properly in ANSI GCL.  If necessary one could use our-with-standard-io-syntax
-; here, but better would be to use an up-to-date ANSI GCL.
-
-  (error "Please use GCL Version 2.6.10 or later, as we use the function~%~s, ~
-          which might not always be supported in an earlier version."
-         'with-standard-io-syntax))
-
 ; SECTION: Multithreaded Memoization
 
 ; This section was initially contributed by Jared Davis, who contributed the
@@ -3504,15 +3493,10 @@
   (setq alist
         (loop for x in alist collect
               (progn
-
-; Avoid a bug in GCL 2.6.10 (and perhaps some earlier versions?).
-
-                (when #+gcl (gcl-version->= 2 6 11)
-                      #-gcl t
-                      (check-type x
-                                  (cons (or string symbol)
-                                        (cons (or string (integer 0))
-                                              null))))
+                (check-type x
+                            (cons (or string symbol)
+                                  (cons (or string (integer 0))
+                                        null)))
                 (list (mf-shorten (car x) *mf-print-alist-width*)
                       (if (integerp (cadr x))
                           (mf-num-to-string (cadr x))

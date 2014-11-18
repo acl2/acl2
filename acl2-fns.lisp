@@ -159,23 +159,6 @@
   (gcl-version-> major minor extra t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;                         COMPILED LISP FIXES
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; Fix for GCL compiler.
-; Small example:
-; (defmacro my-mac (b)
-;   (list 'list (if (and (consp b) (stringp (car b))) (list 'quote b) b)))
-; (defun foo () (my-mac ("Guards")))
-; (compile 'foo)
-
-#+(and gcl (not cltl2))
-(when (and (fboundp 'compiler::wrap-literals)
-           (not (gcl-version-> 2 6 7)))
-  (setf (symbol-function 'compiler::wrap-literals)
-        (symbol-function 'identity)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                            PROCLAIMING
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

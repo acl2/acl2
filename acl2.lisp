@@ -1202,10 +1202,8 @@ ACL2 from scratch.")
          (ccl::*compiler-warn-on-duplicate-definitions* nil)
          #+gcl
          (compiler::*warn-on-multiple-fn-definitions* nil))
-     #+gcl
-     (declare (ignorable ; GCL versions before 2.6.12 release don't have this
-               compiler::*warn-on-multiple-fn-definitions*)
-              (special ; being safe; seems autoloaded via compiler::emit-fn
+     #+gcl ; We believe that this variable was introduced in GCL 2.6.12.
+     (declare (special ; being safe; seems autoloaded via compiler::emit-fn
                compiler::*warn-on-multiple-fn-definitions*))
      ,@forms))
 
@@ -1919,6 +1917,14 @@ which is saved just in case it's needed later.")
 ; such a file (or, it consists only of a comment), so there is no point in
 ; recompiling, and we return immediatel.
 
+  #+gcl
+  (unless (gcl-version->= 2 6 12)
+    (error "Versions of GCL before 2.6.12 are no longer supported.
+You are using version ~s.~s.~s."
+           si::*gcl-major-version*
+           si::*gcl-minor-version*
+           si::*gcl-extra-version*))
+
   (when (and use-acl2-proclaims
              (not *do-proclaims*)) ; see comment above
     (return-from compile-acl2 nil))
@@ -2076,12 +2082,7 @@ which is saved just in case it's needed later.")
               #+gcl relocatable
               )
        do
-       (cond
-        ((or (boundp 'si::*gcl-major-version*) ;GCL 2.0 or greater
-             (and (boundp 'si::*gcl-version*)  ;GCL 1.1
-                  (= si::*gcl-version* 1)))
-         (si::allocate-growth type 1 10 50 2))
-        (t (si::allocate-growth type 1 10 50)))))
+       (si::allocate-growth type 1 10 50 2)))
     (cond
      ((or (not (probe-file *acl2-status-file*))
           (with-open-file (str *acl2-status-file*
@@ -2401,12 +2402,15 @@ which is saved just in case it's needed later.")
 
 ; New ACL2 users sometimes do not notice that they are outside the ACL2
 ; read-eval-print loop when in a break.  See the discussion of "PROMPTS" in
-; interface-raw.lisp for how we deal with this.  For GCL, we currently (as of
-; GCL version 2.6.6) need a patch for built-in function si::break-level.  This
-; requires a package change, so we put that patch in a file that is not
-; compiled; the present file serves nicely.
+; interface-raw.lisp for how we deal with this.  For GCL CLtL1, we currently
+; (as of GCL version 2.6.6, and still at GCL version 2.6.12) need a patch for
+; built-in function si::break-level in order to avoid going into raw Lisp in
+; the default state, i.e., without having executed (set-debugger-enable t).
+; This requires a package change, so we put that patch in a file that is not
+; compiled; the present file serves nicely.  (Perhaps there's a better way?)
 
-; However, we abandon this prompts mess for ANSI GCL.
+; However, we abandon this prompts mess for ANSI GCL, where it is not necessary
+; in order to stay out of the debugger.
 
 #+(and gcl (not cltl2)) ; Let's avoid this mess for the more recent ANSI GCL
 (in-package "SYSTEM")

@@ -92,5 +92,4 @@
 ; Suggestion from Camm Maguire, 6/28/06 (GCL 2.6.7 and beyond), for improved
 ; efficiency; seconded by Bob Boyer.
 #+gcl
-(when (acl2::gcl-version->= 2 6 7)
-  (declaim (ftype (function (seqind t) t) si::set-mv)))
+(declaim (ftype (function (seqind t) t) si::set-mv))
