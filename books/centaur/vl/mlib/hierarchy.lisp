@@ -34,6 +34,7 @@
 (include-book "centaur/depgraph/transdeps" :dir :system)
 (include-book "centaur/depgraph/invert" :dir :system)
 (include-book "filter")
+(include-book "reorder")
 (local (include-book "../util/arithmetic"))
 (local (include-book "../util/osets"))
 (local (std::add-default-post-define-hook :fix))
@@ -304,269 +305,32 @@ particular design elements."
                       :fwdtypes   nil)))
 
 
-(defmacro def-vl-reorder (list name-accessor)
-  
-  `(define vl-reorder-
 
-
-
-
-
-;                         DEPENDENCY ORDERING
-;
-; We now introduce a routine to sort modules into dependency order.
-;
-
-(defalist vl-deporder-alistp (x)
-  :parents (vl-deporder)
-  :short "Alist that associates module names to their levels in the
-instantiation hierarchy."
-  :long "<p>If a module never instances any submodules, its level is 0.
-Otherwise, its level is 1 more than the maximum level of any of its
-submodules.</p>"
-  :key (stringp x)
-  :val (natp x)
-  :keyp-of-nil nil
-  :valp-of-nil nil)
-
-(defthm string-listp-of-alist-keys-when-vl-deporder-alistp
-  (implies (vl-deporder-alistp x)
-           (string-listp (alist-keys x)))
-  :hints(("Goal" :induct (len x))))
-
-(defthm natp-of-cdr-of-hons-assoc-equal-when-vl-deporder-alistp-one
-  (implies (and (member-equal name (alist-keys x))
-                (vl-deporder-alistp x))
-           (and (integerp (cdr (hons-assoc-equal name x)))
-                (<= 0 (cdr (hons-assoc-equal name x)))))
-  :hints(("Goal"
-          :in-theory (disable NATP-OF-CDR-OF-HONS-ASSOC-EQUAL-WHEN-VL-DEPORDER-ALISTP)
-          :use ((:instance NATP-OF-CDR-OF-HONS-ASSOC-EQUAL-WHEN-VL-DEPORDER-ALISTP
-                 (acl2::k name) (acl2::x x))))))
-
-
-
-(defsection vl-maximal-deporder
-  :parents (vl-deporder)
-  :short "@(call vl-maximal-deporder) returns the maximum level for any module
-in @('names'), according to a @(see vl-deporder-alistp)."
-
-  (defund vl-maximal-deporder (names alist)
-    (declare (xargs :guard (and (true-listp names)
-                                (vl-deporder-alistp alist)
-                                (subsetp-equal names (alist-keys alist)))
-                    :verify-guards nil))
-    (if (atom names)
-        0
-      (max (cdr (hons-get (car names) alist))
-           (vl-maximal-deporder (cdr names) alist))))
-
-  (defthm natp-of-vl-maximal-deporder
-    (implies (and (force (true-listp names))
-                  (force (vl-deporder-alistp alist))
-                  (force (subsetp-equal names (alist-keys alist))))
-             (and (integerp (vl-maximal-deporder names alist))
-                  (<= 0 (vl-maximal-deporder names alist))))
-    :hints(("Goal" :in-theory (enable vl-maximal-deporder))))
-
-  (verify-guards vl-maximal-deporder))
-
-
-
-(defsection vl-deporder-pass
-  :parents (vl-deporder)
-  :short "@(call vl-deporder-pass) extends a partial @(see vl-deporder-alistp)
-with entries for the modules whose level is now apparent."
-
-  :long "<p>@('mods') are a list of modules, @('alist') is a partial
-@(see vl-deporder-alistp), and @('sorted-cars') are the sorted cars of
-alist (which we have precomputed so we don't have to be recomputing it all the
-time.).</p>
-
-<p>We walk down the list of modules, processing each in turn.  Suppose we are
-processing module @('M').  Then, we consider the modules that @('M')
-instantates.  If all of these instantiated modules have their deporder
-computed, then the deporder of @('M') 1 more than their @(see
-vl-maximal-deporder).  Otherwise, we will wait for a subsequent pass.</p>"
-
-  (defund vl-deporder-pass (mods alist sorted-cars)
-    "Returns (MV REMAINING UPDATES)"
-    (declare (xargs :guard (and (vl-modulelist-p mods)
-                                (vl-deporder-alistp alist)
-                                (equal sorted-cars (mergesort (alist-keys alist))))
-                    :verify-guards nil))
-    (b* (((when (atom mods))
-          (mv nil nil))
-         ((mv remaining-mods alist-updates)
-          (vl-deporder-pass (cdr mods) alist sorted-cars))
-         (insts-modnames*
-          (vl-necessary-direct-for-module (car mods)))
-         ((when (subset insts-modnames* sorted-cars))
-          (mv remaining-mods
-              (cons (cons (vl-module->name (car mods))
-                          (+ 1 (vl-maximal-deporder insts-modnames* alist)))
-                    alist-updates))))
-      (mv (cons (car mods) remaining-mods)
-          alist-updates)))
-
-  (defmvtypes vl-deporder-pass (true-listp true-listp))
-
-  (local (in-theory (enable vl-deporder-pass)))
-
-  (defthm len-of-vl-deporder-pass
-    (<= (len (mv-nth 0 (vl-deporder-pass mods alist sorted-cars)))
-        (len mods))
-    :rule-classes ((:rewrite) (:linear)))
-
-  (defthm vl-modulelist-p-of-vl-deporder-pass
-    (implies (force (vl-modulelist-p mods))
-             (vl-modulelist-p (mv-nth 0 (vl-deporder-pass mods alist sorted-cars)))))
-
-  (defthm member-equal-of-vl-deporder-pass
-    (implies (member-equal e (alist-keys (mv-nth 1 (vl-deporder-pass mods alist sorted-cars))))
-             (member-equal e (vl-modulelist->names mods))))
-
-  (defthm subsetp-equal-of-vl-deporder-pass
-    (subsetp-equal (alist-keys (mv-nth 1 (vl-deporder-pass mods alist sorted-cars)))
-                   (vl-modulelist->names mods)))
-
-  (defthm vl-deporder-alistp-of-vl-deporder-pass
-    (implies (and (force (vl-modulelist-p mods))
-                  (force (vl-deporder-alistp alist))
-                  (force (equal sorted-cars (mergesort (alist-keys alist)))))
-             (vl-deporder-alistp (mv-nth 1 (vl-deporder-pass mods alist sorted-cars))))
-    :hints(("Goal" :in-theory (enable vl-necessary-direct-for-module))))
-
-  (verify-guards vl-deporder-pass
-    :hints(("Goal" :in-theory (enable vl-necessary-direct-for-module))))
-
-  ;; BOZO i broke it.  is this important?
-  ;;
-  ;; (defcong set-equiv equal (vl-deporder-pass mods alist sorted-cars) 3
-  ;;   :hints(("Goal" :in-theory (enable vl-deporder-pass))))
-
-  )
-
-
-
-(defsection vl-deporder-pass*
-  :parents (vl-deporder)
-  :short "@(call vl-deporder-pass*) iterates @(see vl-deporder-pass) to a fixed
-point."
-
-  (defund vl-deporder-pass* (mods alist)
-    (declare (xargs :guard (and (vl-modulelist-p mods)
-                                (vl-deporder-alistp alist))
-                    :measure (len mods)))
-    (b* (((mv remaining updates)
-          (vl-deporder-pass mods alist (mergesort (alist-keys alist))))
-         ((unless remaining)
-          (make-fal updates alist))
-         ((when (same-lengthp mods remaining))
-          (b* ((instanced (mergesort (vl-modulelist-everinstanced mods)))
-               (missing (difference instanced
-                                    (union (mergesort (alist-keys alist))
-                                           (mergesort (vl-modulelist->names
-                                                       mods)))))
-               ((when missing)
-                (er hard? 'vl-deporder-pass*
-                    "The following modules are instanced but not defined: ~x0~%"
-                    missing)
-                alist))
-            (er hard? 'vl-deporder-pass*
-                "Failed to determine a dependency order for the following ~
-                 modules.  We probably have circular dependencies.  ~x0~%"
-                (vl-modulelist->names mods))
-            alist))
-         (alist (make-fal updates alist)))
-      (vl-deporder-pass* remaining alist)))
-
-  (local (in-theory (enable vl-deporder-pass*)))
-
-  (defthm vl-deporder-alistp-of-vl-deporder-pass*
-    (implies (and (force (vl-modulelist-p mods))
-                  (force (vl-deporder-alistp alist)))
-             (vl-deporder-alistp (vl-deporder-pass* mods alist)))))
-
-
-
-(local
- (encapsulate
-   ()
-   (local (defthm l0
-            (implies (and (subsetp x y)
-                          (string-listp y))
-                     (equal (string-listp x)
-                            (true-listp x)))))
-
-   (local (defthm l1
-            (implies (and (set-equiv x y)
-                          (true-listp x)
-                          (true-listp y))
-                     (equal (string-listp x)
-                            (string-listp y)))
-            :hints(("Goal"
-                    :in-theory (disable l0)
-                    :use ((:instance l0)
-                          (:instance l0 (x y) (y x)))))))
-
-   (defthm string-listp-of-alist-vals-of-mergesort
-     (equal (string-listp (alist-vals (mergesort x)))
-            (string-listp (alist-vals x)))
-     :hints(("Goal" :in-theory (disable mergesort)
-             :use ((:instance l1
-                    (x (alist-vals x))
-                    (y (alist-vals (mergesort x))))))))))
-
-
-(defsection vl-deporder
-  :parents (hierarchy)
-  :short "@(call vl-deporder) returns a list of module names in dependency
-order."
-
-  (defund vl-deporder (mods)
-    (declare (xargs :guard (vl-modulelist-p mods)))
-    (b* ((mods (vl-modulelist-fix mods))
-         (alist (vl-deporder-pass* mods nil))
-         (-     (clear-memoize-table 'vl-necessary-direct-for-module))
-         (-     (fast-alist-free alist))
-         ((unless (uniquep (alist-keys alist)))
-          (er hard? 'vl-deporder-sort "Expected cars to be unique, but found duplicates for ~x0."
-              (duplicated-members (alist-keys alist))))
-         ;; Now, our alist is a mapping of strings to numbers.  We want to sort
-         ;; it so that the lowest numbers come first.  A really stupid way to do
-         ;; this is as follows:
-         (swap-alist (pairlis$ (alist-vals alist)
-                               (alist-keys alist)))
-         (sorted     (mergesort swap-alist)))
-      (alist-vals sorted)))
-
-  (local (in-theory (enable vl-deporder)))
-
-  (defthm string-listp-of-vl-deporder
-    (implies (force (vl-modulelist-p mods))
-             (string-listp (vl-deporder mods)))
-    :hints(("Goal" :in-theory (disable acl2::strip-cdrs-of-pairlis$))))
-
-  (deffixequiv vl-deporder :args ((mods vl-modulelist-p))))
-
-
-(define vl-deporder-sort ((mods vl-modulelist-p))
-  :parents (hierarchy)
-  :short "Reorder modules into a dependency order (lowest-level modules first,
-top-level modules at the end of the list.)"
-
-  :returns (sorted-mods vl-modulelist-p)
-  :verbosep t
-
-  (b* ((mods     (vl-modulelist-fix mods))
-       (order    (vl-deporder mods))
-       (allnames (vl-modulelist->names mods))
-       ((unless (equal (mergesort order) (mergesort allnames)))
-        (prog2$ (raise "Expected all modules to be accounted for.")
-                mods))
-       (modalist (vl-modalist mods))
-       (result   (vl-fast-find-modules order mods modalist)))
-    (fast-alist-free modalist)
-    result))
+(define vl-design-deporder-modules
+  :short "Dependency-order sort the modules of a design."
+  ((x vl-design-p))
+  :returns
+  (mv (successp booleanp :rule-classes :type-prescription)
+      (new-x vl-design-p))
+  (b* (((vl-design x) (vl-design-fix x))
+       (downgraph (vl-design-downgraph x))
+       ((unless (uniquep (alist-keys downgraph)))
+        (mv (cw "Global dependency graph has name clashes: ~x0.~%"
+                (duplicated-members (alist-keys downgraph)))
+            x))
+       ((mv okp deporder) (depgraph::toposort downgraph))
+       ((unless okp)
+        (mv (cw "Global dependency loop: ~x0.~%" deporder)
+            x))
+       ((unless (string-listp deporder))
+        ;; Shouldn't be possible, so hard error
+        (mv (raise "Type error, dependency order should be strings.")
+            x))
+       (new-mods (vl-reorder-modules deporder x.mods))
+       ((unless (equal (mergesort x.mods)
+                       (mergesort new-mods)))
+        ;; Shouldn't be possible, so hard error
+        (mv (raise "Dependency ordering changed the modules somehow??")
+            x)))
+    (mv t (change-vl-design x :mods new-mods))))
 

@@ -36,7 +36,7 @@
 (include-book "../mlib/allexprs")
 (include-book "../mlib/namefactory")
 (include-book "centaur/depgraph/toposort" :dir :system)
-(include-book "../mlib/find-item")
+(include-book "../mlib/find")
 (local (include-book "../util/arithmetic"))
 (local (include-book "../util/osets"))
 

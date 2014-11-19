@@ -29,9 +29,8 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-
 (include-book "range-tools")
-(include-book "find-item")
+(include-book "modnamespace")
 (local (include-book "../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
 

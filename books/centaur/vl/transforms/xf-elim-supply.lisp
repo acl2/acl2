@@ -30,7 +30,7 @@
 
 (in-package "VL")
 (include-book "../mlib/subst")
-(include-book "../mlib/find-item")
+(include-book "../mlib/find")
 (local (include-book "../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
 

@@ -30,7 +30,7 @@
 
 (in-package "VL")
 (include-book "fmt")
-(include-book "find-module")
+(include-book "find")
 (include-book "centaur/bridge/to-json" :dir :system)
 (local (include-book "../util/arithmetic"))
 

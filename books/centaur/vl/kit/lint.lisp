@@ -395,20 +395,12 @@ shown.</p>"
                                               (design vl-design-p))
   :returns (new-design vl-design-p)
   (b* ((design (vl-design-fix design))
-       (keep   (mbe :logic (if (string-listp keep) keep nil) :exec keep))
-       (keep   (mergesort keep))
+       (keep   (mergesort (string-list-fix keep)))
        ((unless keep)
         ;; Special feature: if the user didn't specify any top modules,
         ;; then we want to keep everything.
-        design)
-       (mods (mergesort (vl-design->mods design)))
-       ((unless (uniquep (vl-modulelist->names mods)))
-        (raise "Name clash: duplicate module names: ~&0."
-               (duplicated-members (vl-modulelist->names mods)))
-        design)
-       (new-mods (vl-remove-unnecessary-modules keep mods)))
-    (change-vl-design design :mods new-mods)))
-
+        design))
+    (vl-remove-unnecessary-elements keep design)))
 
 ;; (define vl-lint-unparam ((good vl-design-p))
 ;;   :returns (good vl-design-p)

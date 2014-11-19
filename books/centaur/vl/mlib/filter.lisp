@@ -61,9 +61,9 @@ Assuming that hashing operations are constant time, constructing this table is
 @('names') is irrelevant, and any spurious @('names') that aren't among the
 names of @('x') are simply ignored.</p>
 
-<p>See @(see reordering-by-name) for related functions that can also be used to
-filter lists of objects, but that rearrange them to agree with the order of
-@('names').</p>")
+<p>See also @(see finding-by-name) for related functions that can also be used
+to look up objects by their names and to rearrange objects by their
+names.</p>")
 
 (defund def-vl-filter-by-name-fn
   (type          ;; should be 'paramdecl, 'vardecl, 'module, etc.
@@ -464,18 +464,7 @@ function enabled and would think it odd to ever prove a theorem about it.</p>" f
                (mv yes no nrev nrev2))))
 
 
-(def-vl-filter-by-name module
-  :del-long "<p>This is a low-level operation that simply removes the listed
-modules.  It can be \"unsafe\" in that it can ruin the @(see completeness) of a
-module list should any remaining modules instantiate the removed modules.  Some
-safer, higher-level alternatives include @(see vl-remove-bad-modules), @(see
-vl-remove-unnecessary-modules), and @(see vl-design-propagate-errors).</p>"
-
-  :keep-long "<p><b>Note</b>: it is often better to use the related function
-@(see vl-fast-find-modules).  When the list of names is short,
-@('vl-fast-find-modules') basically just requires a few hash table lookups,
-whereas @('vl-keep-modules') has to recur over the entire list of
-modules.</p>")
+(def-vl-filter-by-name module)
 
 (encapsulate
   ()

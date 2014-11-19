@@ -49,6 +49,11 @@
 
 ; cert_param: (ccl-only)
 
+(defxdoc server
+  :parents (vl)
+  :short "The VL server powers the Module Browser, a web-based interface for
+viewing Verilog designs.")
+
 (local (defthm vl-descriptionlist-p-of-alist-vals-when-vl-descalist-p
          (implies (vl-descalist-p x)
                   (vl-descriptionlist-p (alist-vals x)))
@@ -76,17 +81,16 @@
 
 (define vls-data-from-translation ((trans vl-translation-p))
   :returns (data vls-data-p :hyp :guard)
-  :prepwork ((local (in-theory (enable vl-depalist-okp
-                                       vl-descalist-okp))))
+  :prepwork ((local (in-theory (enable vl-descalist-okp))))
   (b* (((vl-translation trans) trans)
        (orig           (cwtime (hons-copy (cwtime (vl-annotate-design trans.orig)))))
-       (orig-depalist  (fast-alist-free (vl-depalist (vl-design->mods orig))))
+       ;;(orig-depalist  (fast-alist-free (vl-depalist (vl-design->mods orig))))
        (orig-descalist (fast-alist-free (vl-descalist (vl-design-descriptions orig)))))
     (make-vls-data
      :good           trans.good
      :bad            trans.bad
      :orig           orig
-     :orig-depalist  orig-depalist
+     ;;:orig-depalist  orig-depalist
      :orig-descalist orig-descalist
      :filemap        trans.filemap
      :defs           trans.defines
@@ -255,18 +259,13 @@
 
 (define vls-get-parents ((origname stringp     "Should be the name of a module.")
                          (data     vls-data-p))
-  (b* (((vls-data data))
-       (depalist data.orig-depalist))
-    (cdr (hons-assoc-equal origname depalist))))
+  (b* (((vls-data data)))
+    (vl-dependent-elements-direct (list origname) data.orig)))
 
 (define vls-get-children ((origname stringp     "Should be the name of a module.")
                           (data     vls-data-p))
-  (b* (((vls-data data))
-       (mods (vl-design->mods data.orig))
-       (mod  (vl-find-module origname mods))
-       ((unless mod)
-        nil))
-    (set::mergesort (vl-modinstlist->modnames (vl-module->modinsts mod)))))
+  (b* (((vls-data data)))
+    (vl-necessary-elements-direct (list origname) data.orig)))
 
 
 ; (depends-on "server-raw.lsp")

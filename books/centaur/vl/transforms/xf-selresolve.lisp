@@ -526,7 +526,7 @@ multiconcats throughout an expression."
   :returns (new-x vl-module-p)
   (b* (((vl-module x))
        (genblob (vl-module->genblob x))
-       ((mv warnings new-genblob) (vl-genblob-selresolve genblob ss (vl-module->warnings x)))
+       ((mv warnings new-genblob) (vl-genblob-selresolve genblob ss x.warnings))
        (x-warn (change-vl-module x :warnings warnings)))
     (vl-genblob->module new-genblob x-warn)))
 

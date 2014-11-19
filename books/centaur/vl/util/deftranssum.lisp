@@ -216,6 +216,8 @@
   (let ((xvar (dts-x name)))
     `(define ,(dts-recognizer-name name) (,xvar)
        :parents (,name)
+       :short ,(cat "Recognizer for @(see " (xdoc::full-escape-symbol name) ") structures.")
+       :returns bool
        (mbe :logic ,(dts-recognizer-logic-def name suminfos)
             :exec ,(dts-recognizer-exec-def name suminfos)))))
 
@@ -379,6 +381,8 @@
        (xvar    (dts-x name)))
     `(define ,sum-fix ((,xvar ,sum-p))
        :parents (,name)
+       :short ,(cat "Fixing function for @(see " (xdoc::full-escape-symbol name) ") structures.")
+       :returns name
        :inline t
        (mbe :logic (if (,sum-p ,xvar)
                        ,xvar
@@ -389,7 +393,9 @@
   (b* ((sum-fix (dts-fix-name name))
        (sum-p   (dts-recognizer-name name))
        (xvar    (dts-x name)))
-    `((defthm ,(intern-in-package-of-symbol
+    `(defsection dts-fix-thms
+       :extension ,sum-fix
+       (defthm ,(intern-in-package-of-symbol
                 (concatenate 'string (symbol-name sum-fix) "-WHEN-" (symbol-name sum-p))
                 name)
         (implies (,sum-p ,xvar)
@@ -469,31 +475,42 @@
           ,fix-def
           (local (in-theory (enable ,foo-fix)))
 
-          (defthm ,(mksym 'consp-when- foo-p)
-            (implies (,foo-p ,x)
-                     (consp ,x))
-            :rule-classes :compound-recognizer)
+          (defsection-progn dts-rec-thms
+            :extension ,foo-p
 
-          ,@(dts-member-implies-sum-thms name suminfos)
-          ,@(dts-by-tag-thms name suminfos)
-          ,(dts-when-invalid-tag-thm name suminfos)
-          ,(dts-fwd-thm name suminfos)
-          ,@(dts-fix-thms name)
+            (defthm ,(mksym 'consp-when- foo-p)
+              (implies (,foo-p ,x)
+                       (consp ,x))
+              :rule-classes :compound-recognizer)
 
-          (fty::deffixtype ,name
-            :pred  ,foo-p
-            :equiv ,foo-equiv
-            :fix   ,foo-fix
-            :define t
-            :forward t)
+            ,@(dts-member-implies-sum-thms name suminfos)
+            ,@(dts-by-tag-thms name suminfos)
+            ,(dts-when-invalid-tag-thm name suminfos)
+            ,(dts-fwd-thm name suminfos))
+
+          ,(dts-fix-thms name)
+
+          (defsection-progn ,foo-equiv
+            :parents (,name)
+            :short ,(cat "Basic equivalence relation for @(see " (xdoc::full-escape-symbol foo-p) ") structures.")
+
+            (fty::deffixtype ,name
+              :pred  ,foo-p
+              :equiv ,foo-equiv
+              :fix   ,foo-fix
+              :define t
+              :forward t))
+
           ;; BOZO maybe generate fast functions?
           ;; BOZO some kind of pattern-match macros?
           )))
 
-    `(defsection ,name
-       ,@(and parents `(:parents ,parents))
-       ,@(and short   `(:short ,short))
-       ,@(and long    `(:long ,long))
+    `(encapsulate
+       ()
+       (defxdoc ,name
+         ,@(and parents `(:parents ,parents))
+         ,@(and short   `(:short ,short))
+         ,@(and long    `(:long ,long)))
        (encapsulate () . ,events)
        . ,other-events)))
 

@@ -30,6 +30,7 @@
 
 (in-package "VL")
 (include-book "blocks")
+(include-book "find")
 (local (include-book "../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
 

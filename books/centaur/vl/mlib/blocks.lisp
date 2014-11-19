@@ -35,37 +35,60 @@
 (include-book "../parsetree")
 (local (std::add-default-post-define-hook :fix))
 
+(defsection genblob
+  :parents (mlib)
+  :short "An abstraction that is useful for processing @('generate')
+constructs."
 
+  :long "<p>The VL @(see syntax) representation for @('generate') blocks is a
+relatively complicated mutual recursion; see @(see vl-genelement).</p>
 
+<p>In some cases you may not care about the particulars of generate statements.
+For instance, say you just wanted to collect up the names of all the modules
+that are being instantiated by a module.  In this case, you don't care whether
+the modules are instantiated inside of generate blocks or not.  But because of
+the elaborate mutual recursion, properly supporting @('generate') blocks is a
+hassle.</p>
+
+<p>BOZO document def-genblob-transform and explain this stuff.</p>")
+
+(local (xdoc::set-default-parents genblob))
 
 (make-event
  `(progn
+
     (defprod vl-genblob
-      :short "A sorted collection of module elements (see @(see vl-modelement))."
-      :long "<p>A vl-modelement-collection can be made from a @(see
-vl-modelementlist) by sorting the elements by type.  Its fields each contain
-the list of elements of the given type.</p>"
-      (,@(project-over-modelement-types
-          '(__elts__ vl-__type__list-p))
-         (generates vl-genelementlist-p)
-         (ports     vl-portlist-p))
+      :parents (genblob)
+      :short "A collection of module elements (see @(see vl-modelement)),
+generates, and ports."
+
+      :long "<p>A genblob can be made from a @(see vl-modelementlist) by
+sorting the elements by type; see @(see vl-sort-genelements).</p>
+
+<p>Its fields each contain the list of elements of the given type.</p>"
+
+      (;; We have fields for all of the modelements:
+       ,@(project-over-modelement-types '(__elts__ vl-__type__list-p))
+       ;; And also fields for generates and ports, since these are not modelements
+       (generates vl-genelementlist-p)
+       (ports     vl-portlist-p))
       :extra-binder-names (ifports)
       :tag :vl-genblob
       :layout :tree)
 
-
     (define vl-modelement-loc ((x vl-modelement-p))
+      :parents (vl-modelement)
       :short "Get the location of any @(see vl-modelement-p)."
       :returns (loc vl-location-p
                     :hints(("Goal" :in-theory (enable vl-modelement-fix
                                                       (tau-system)))))
       (b* ((x (vl-modelement-fix x)))
-
         (case (tag x)
           . ,(project-over-modelement-types
               '(:vl-__type__       (vl-__type__->loc x))))))
 
     (define vl-genelement-loc ((x vl-genelement-p))
+      :parents (vl-genelement)
       :short "Get the location of any @(see vl-genelement-p)."
       :returns (loc vl-location-p
                     :hints(("Goal" :in-theory (enable vl-genelement-fix))))
@@ -93,9 +116,11 @@ the list of elements of the given type.</p>"
     ;;         ((my-returnspec-default-hint 'fnname acl2::id acl2::clause world))))
 
     (define vl-sort-genelements-aux
+      :parents (vl-sort-genelements)
       ((x           vl-genelementlist-p)
-       ,@(project-over-modelement-types
-          '(__elts__       vl-__type__list-p))
+       ;; Accumulators for each type of modelement
+       ,@(project-over-modelement-types '(__elts__       vl-__type__list-p))
+       ;; Accumulator for generates since they aren't ordinary moditems
        (generates   vl-genelementlist-p))
       :returns (mv ,@(project-over-modelement-types
                       `(__elts__
@@ -128,8 +153,6 @@ the list of elements of the given type.</p>"
                           double-containment
                           set::nonempty-means-set
                           set::sets-are-true-lists
-                          consp-when-member-equal-of-cons-listp
-                          consp-when-member-equal-of-cons-listp
                           acl2::rev-when-not-consp
                           default-car
                           default-cdr
@@ -142,15 +165,20 @@ the list of elements of the given type.</p>"
                           (:rules-of-class :type-prescription :here)
                           (:ruleset tag-reasoning))))))
 
-    (define vl-sort-genelements ((x vl-genelementlist-p))
-      :returns (collection vl-genblob-p)
+    (define vl-sort-genelements
+      :parents (genblob)
+      :short "Sort a @(see vl-genelementlist-p) to create a @(see vl-genblob)."
+      ((x vl-genelementlist-p))
+      :returns (blob vl-genblob-p)
       (b* (((mv ,@(project-over-modelement-types '__elts__) generates)
             (vl-sort-genelements-aux x ,@(project-over-modelement-types nil) nil)))
         (make-vl-genblob
          ,@(append-over-modelement-types '(:__elts__ __elts__))
          :generates generates)))))
 
+
 (define vl-genblob->ifports
+  :parents (vl-genblob)
   :short "Collect just the interface ports for a genblob."
   ((x vl-genblob-p))
   :returns (ports (vl-interfaceportlist-p ports))
@@ -161,12 +189,11 @@ the list of elements of the given type.</p>"
                          (vl-portlist-p x))
                     (vl-regularportlist-p x))
            :hints(("Goal" :induct (len x)))))
-  
+
   (defthm vl-regularportlist-p-when-no-genblob->ifports
     (implies (not (vl-genblob->ifports x))
              (vl-regularportlist-p (vl-genblob->ports x)))
     :hints(("Goal" :in-theory (enable vl-genblob->ifports)))))
-
 
 
 (defconst *vl-module/genblob-fields*
@@ -177,8 +204,18 @@ the list of elements of the given type.</p>"
            '(typedef fwdtypedef modport))))
 
 (make-event
- `(define vl-module->genblob ((x vl-module-p))
+ `(define vl-module->genblob
+    :short "Convert most of a module into a @(see vl-genblob)."
+    ((x vl-module-p))
     :returns (genblob vl-genblob-p)
+    :long "<p>Certain fields of a @(see vl-module) aren't also fields of a
+@(see vl-genblob), for instance, a genblob doesn't have warnings, a name,
+location information, etc.</p>
+
+<p>But aside from these fields, most of a module can be extracted and turned
+into a genblob for easy processing.  After processing the blob, the updated
+fields can be reinstalled into the module using @(see vl-genblob->module).</p>"
+
     (b* (((vl-module x)))
       (make-vl-genblob
        ,@(template-append
@@ -187,9 +224,18 @@ the list of elements of the given type.</p>"
            *vl-module/genblob-fields*))))))
 
 (make-event
- `(define vl-genblob->module ((x vl-genblob-p)
-                              (orig vl-module-p))
+ `(define vl-genblob->module
+    :short "Install fields from a @(see vl-genblob) into a module."
+    ((x vl-genblob-p)
+     (orig vl-module-p))
     :returns (new-mod vl-module-p)
+    :long "<p>See @(see vl-module->genblob).  This is the companion operation
+which takes the fields from the genblob and sticks them back into a module.</p>
+
+<p>Certain fields of the module, like its warnings, name, and location
+information, aren't affected.  But the real fields like modinsts, assigns,
+etc., are overwritten with whatever is in the genblob.</p>"
+
     (b* (((vl-genblob x)))
       (change-vl-module orig
                         ,@(template-append
@@ -199,11 +245,12 @@ the list of elements of the given type.</p>"
 
 
 (make-event
- `(define vl-genblob->elems-aux  ((orig-elements vl-genelementlist-p)
-                                                ,@(project-over-modelement-types
-                                                   '(__elts__ vl-__type__list-p))
-                                                (generates vl-genelementlist-p)
-                                                (acc vl-genelementlist-p))
+ `(define vl-genblob->elems-aux
+    :parents (vl-genblob->elems)
+    ((orig-elements vl-genelementlist-p)
+     ,@(project-over-modelement-types '(__elts__ vl-__type__list-p))
+     (generates vl-genelementlist-p)
+     (acc vl-genelementlist-p))
     :measure (len orig-elements)
     :returns (final-acc vl-genelementlist-p)
     :prepwork ((local (in-theory (disable acl2::true-listp-append
@@ -254,7 +301,7 @@ the list of elements of the given type.</p>"
                     "the original elements, used to determine the ordering of the
                      current elements will be sorted"))
     :returns (new-elements vl-genelementlist-p "flattened list of elements from genblob")
-    (b* (((vl-genblob x))) 
+    (b* (((vl-genblob x)))
       (vl-genblob->elems-aux
        (vl-genelementlist-fix orig-elements)
        ,@(project-over-modelement-types 'x.__elts__)
@@ -265,7 +312,7 @@ the list of elements of the given type.</p>"
 
 
 (make-event
- `(defthm vl-genelementlist-count-of-vl-sort-genelements-aux 
+ `(defthm vl-genelementlist-count-of-vl-sort-genelements-aux
     (b* (((mv ,@(project-over-modelement-types '?__elts__1) generates1)
           (vl-sort-genelements-aux
            x ,@(project-over-modelement-types '__elts__) generates)))
@@ -275,7 +322,7 @@ the list of elements of the given type.</p>"
     :hints(("Goal" :induct (vl-sort-genelements-aux
                             x ,@(project-over-modelement-types '__elts__) generates)
             :in-theory (e/d ((:i vl-sort-genelements-aux)
-                             vl-genelementlist-count) 
+                             vl-genelementlist-count)
                             (not))
             :expand ((vl-sort-genelements-aux
                       x ,@(project-over-modelement-types '__elts__) generates))))
@@ -289,6 +336,8 @@ the list of elements of the given type.</p>"
 
 
 (defines vl-genblob-count
+  :parents (vl-genblob)
+
   (define vl-genblob-count ((x vl-genblob-p))
     :measure (two-nats-measure (vl-genelementlist-count (vl-genblob->generates x)) 10)
     :returns (count posp :rule-classes :type-prescription)
@@ -389,7 +438,6 @@ the list of elements of the given type.</p>"
             (< (vl-genblob-elementlist-count (vl-genarrayblock->elems x))
                count)
             :rule-classes :linear))))
-      
 
 ;; Example def-genblob-transform:
 
@@ -425,7 +473,7 @@ the list of elements of the given type.</p>"
         (cons `(,(car names) (,(fty::fixtype->fix fixtype) ,(car names)))
               (formals->fixes (cdr names) formals fty-table))
       (formals->fixes (cdr names) formals fty-table))))
-       
+
 
 
 (defconst *def-genblob-transform-keywords*
@@ -493,7 +541,7 @@ the list of elements of the given type.</p>"
        (raw-formals            (car normal-defun-stuff))
        (traditional-decls/docs (butlast (cdr normal-defun-stuff) 1))
        (body                   (car (last normal-defun-stuff)))
-       
+
        ((getargs (apply-to-generates (std::mksym name '-generates))
                  returns
                  combine-bindings
@@ -511,7 +559,7 @@ the list of elements of the given type.</p>"
                  guard-hints
                  no-new-x)
         kwd-alist)
-       
+
        (new-x (not no-new-x))
 
        (define-keys (kwd-alist->filtered-key-args
@@ -547,7 +595,7 @@ the list of elements of the given type.</p>"
        (return-names2 (append (suffix-syms extra-returns '|2| std::mksym-package-symbol) accumulators))
        (acc-fix-bindings (formals->fixes accumulators formal-infos (fty::get-fixtypes-alist wrld))))
     `(defines ,name
-       
+
        (define ,name ((x vl-genblob-p)
                       . ,raw-formals)
          :returns ,(maybe-mv-fn `(,@returns
@@ -660,5 +708,3 @@ the list of elements of the given type.</p>"
 (defmacro def-genblob-transform (name &rest args)
   `(make-event
     (def-genblob-transform-fn ',name ',args state)))
-
-
