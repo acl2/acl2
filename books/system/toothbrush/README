@@ -25,6 +25,14 @@ there may be others not listed.
 
 - Abstract stobjs or nested stobjs (but local stobjs are supported)
 - Memoization (MEMOIZE is currently ignored)
+- FLET
+
+An odd wart is that features such as :hons and :acl2-par are added
+when generated ACL2 source file acl2r.lisp is loaded.  That file is
+created at build time.  The toothbrush can be sensitive to these
+features, so you may want to edit source file acl2r.lisp if the
+features there aren't what you want (say, because you're using an
+older executable from the ACL2 sources directory).
 
 Future work might not only add such support, but might also deal with
 some minor issues encountered during the implementation.  Search for

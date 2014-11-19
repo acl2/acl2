@@ -41,7 +41,7 @@ TB_OUTPUT ?= output
 # into Lisp causes "SUCCESS" to be printed to standard output.
 TB_TEST ?= tb-test.lsp
 # The Lisp we will use (see main toothbrush Makefile for comments):
-LISP ?= ccl
+TB_LISP ?= ccl
 
 .PHONY: tb_top
 tb_top: success.txt
@@ -84,7 +84,7 @@ generate: acl2_check $(BOOKS_CERT)
 	@echo '(lp)' >> workxxx.$@
 	@echo '(make-toothbrush "$(TB_OUTPUT).lsp" $(TB_FNS))' >> workxxx.$@
 	@echo '(quit)' >> workxxx.$@
-	@$(ACL2) < workxxx.$@ >& generate.out
+	@($(ACL2) < workxxx.$@ 2>&1) > generate.out
 	@if [ "`fgrep 'Unimplemented command type' generate.out`" != "" ] ; then\
 	  echo "ERROR: Unimplemented command type (see generate.out)." ;\
 	  exit 1 ;\
@@ -100,7 +100,7 @@ compile: generate $(BOOKS_CERT)
 	@echo '(acl2::with-suppression (load "$(TB_OUTPUT).lsp"))' >> workxxx.$@
 	@echo '(compile-file "$(TB_OUTPUT).lsp")' >> workxxx.$@
 	@echo '(acl2::exit-lisp)' >> workxxx.$@
-	@$(LISP) < workxxx.$@ >& compile.out
+	@($(TB_LISP) < workxxx.$@ 2>&1) > compile.out
 	@echo "$(TEST_DIR_STRING)Completed compile step."
 
 success.txt: tb-test.lsp input.lsp $(BOOKS_CERT)
@@ -112,7 +112,7 @@ success.txt: tb-test.lsp input.lsp $(BOOKS_CERT)
 	@echo '(acl2::with-suppression (load "$(TB_OUTPUT)"))' >> workxxx.$@
 	@echo '(load "$(TB_TEST)")' >> workxxx.$@
 	@echo '(acl2::exit-lisp)' >> workxxx.$@
-	@$(LISP) < workxxx.$@ >& $@.out
+	@($(TB_LISP) < workxxx.$@ 2>&1) > $@.out
 	@if [ "`fgrep SUCCESS $@.out`" = "" ] ; then \
 	echo "Test failed!  See `pwd`/$@.out ." ;\
 	exit 1 ;\
