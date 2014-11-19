@@ -70,7 +70,7 @@ startjob -c "make acl2${ACL2_SUFFIX} -f books/build/jenkins/Makefile LISP=$LISP 
 echo "Building the books."
 cd books
  # inherit USE_QUICKLISP for the following make call
-startjob -c "nice time make $TARGET ACL2=$WORKSPACE/saved_acl2$ACL2_SUFFIX -j3 $MAKEOPTS"
+startjob -c "nice -n 19 time make $TARGET ACL2=$WORKSPACE/saved_acl2$ACL2_SUFFIX $MAKEOPTS"
 
 echo "Build was successful."
 
