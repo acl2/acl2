@@ -691,14 +691,14 @@ ACL2_CUSTOM_TARGETS := \
 # mechanism doeswn't use (or depend on) compiled files in the main
 # ACL2 directory.  We might revisit that decision if there is reason
 # to do so.
-ifeq ($(LISP), )
+ifeq ($(TB_LISP), )
 .PHONY: system/toothbrush/success.txt
 system/toothbrush/success.txt:
 	@echo "Note: Skipping $@ for host Lisp $(ACL2_HOST_LISP)."
 else
 system/toothbrush/success.txt: system/toothbrush-deps.cert
 	cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
-endif # ifeq ($(LISP), )
+endif # ifeq ($(TB_LISP), )
 
 # We only make the books under SULFA if a documented test for an
 # installed SAT solver succeeds.
