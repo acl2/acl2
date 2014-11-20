@@ -36,9 +36,9 @@
 (local (include-book "../util/arithmetic"))
 
 
-(define vl-depalist-okp ((mods vl-modulelist-p)
-                         depalist)
-  (equal depalist (vl-depalist mods)))
+;; (define vl-depalist-okp ((mods vl-modulelist-p)
+;;                          depalist)
+;;   (equal depalist (vl-depalist mods)))
 
 (define vl-descalist-okp ((design vl-design-p)
                           descalist)
@@ -62,8 +62,8 @@
    (orig vl-design-p
          "The original design, as seen very shortly after parsing.")
 
-   (orig-depalist (vl-depalist-okp (vl-design->mods orig) orig-depalist)
-                  "A @(see vl-depalist) for the original modules.")
+   ;; (orig-depalist (vl-depalist-okp (vl-design->mods orig) orig-depalist)
+   ;;                "A @(see vl-depalist) for the original modules.")
 
    (orig-descalist (vl-descalist-okp orig orig-descalist)
                    "A @(see vl-descalist-p) binding every description in the
@@ -86,14 +86,14 @@ produced when we run the translator.</p>
 <p>These structures are typically produced by the @(see server) as part of
 its translation-loading scheme.</p>")
 
-(defthm vls-data->orig-depalist-elim
-  (implies (force (vls-data-p x))
-           (equal (vls-data->orig-depalist x)
-                  (vl-depalist (vl-design->mods (vls-data->orig x)))))
-  :hints(("Goal"
-          :use ((:instance return-type-of-vls-data->orig-depalist))
-          :in-theory (e/d (vl-depalist-okp)
-                          (return-type-of-vls-data->orig-depalist)))))
+;; (defthm vls-data->orig-depalist-elim
+;;   (implies (force (vls-data-p x))
+;;            (equal (vls-data->orig-depalist x)
+;;                   (vl-depalist (vl-design->mods (vls-data->orig x)))))
+;;   :hints(("Goal"
+;;           :use ((:instance return-type-of-vls-data->orig-depalist))
+;;           :in-theory (e/d (vl-depalist-okp)
+;;                           (return-type-of-vls-data->orig-depalist)))))
 
 (defthm vls-data->orig-descalist-elim
   (implies (force (vls-data-p x))

@@ -30,7 +30,7 @@
 
 (in-package "VL")
 (include-book "../../mlib/lvalues")
-(include-book "../../mlib/find-item")
+(include-book "../../mlib/find")
 (include-book "../../mlib/filter")
 (local (include-book "../../util/arithmetic"))
 (local (include-book "../../util/osets"))
@@ -85,7 +85,6 @@ isn't an array.</p>"
          :fatalp nil
          :fn __function__))
 
-       ((vl-vardecl decl) decl)
        ((unless (vl-simplereg-p decl))
         (make-vl-warning
          :type :vl-always-too-hard

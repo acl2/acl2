@@ -30,12 +30,13 @@
 
 (in-package "VL")
 (include-book "always/stmtrewrite") ;; bozo
+(include-book "../mlib/reorder")
 (include-book "../mlib/range-tools")
 (include-book "../mlib/subst")
 (include-book "../mlib/allexprs")
 (include-book "../mlib/namefactory")
 (include-book "centaur/depgraph/toposort" :dir :system)
-(include-book "../mlib/find-item")
+(include-book "../mlib/find")
 (local (include-book "../util/arithmetic"))
 (local (include-book "../util/osets"))
 
@@ -271,113 +272,6 @@ approach.</p>")
        (deps1 (vl-exprlist-funnames (vl-fundecl-allexprs fun1))))
     (hons-acons name1 deps1
                 (vl-function-dep-graph (cdr x)))))
-
-(define vl-reorder-fundecls
-  :parents (vl-fundecllist-p filtering-by-name vl-depsort-functions)
-  :short "@(call vl-reorder-fundecls) extracts the named functions from @('x'),
-a @(see vl-fundecllist-p), in the same order as @('names')."
-  ((names string-listp)
-   (x     vl-fundecllist-p))
-  :returns (named-functions vl-fundecllist-p)
-  :long "<p>This is similar to @(see vl-keep-fundecls), but
-@('vl-keep-fundecls') preserves the order of @('x'), whereas this explicitly
-reorders @('x') to match @('names').</p>"
-
-  (b* (((when (atom names))
-        nil)
-       (decl (vl-find-fundecl (car names) x))
-       ((when decl)
-        (cons decl (vl-reorder-fundecls (cdr names) x))))
-    (vl-reorder-fundecls (cdr names) x))
-  ///
-  (local (in-theory (enable vl-reorder-fundecls)))
-
-  (deffixequiv vl-reorder-fundecls :args ((x vl-fundecllist-p)))
-
-  (local (defthm l1
-           (implies (not (member-equal (vl-fundecl->name a) names))
-                    (not (member-equal a (vl-reorder-fundecls names x))))
-           :hints(("Goal" :in-theory (disable (force))))))
-
-  (local (defthm l2-helper
-           (implies (vl-find-fundecl name x)
-                    (member-equal (vl-find-fundecl name x)
-                                  (vl-fundecllist-fix x)))
-           :hints(("Goal" :in-theory (e/d (vl-find-fundecl) ((force)))))))
-
-  (local (defthm l2
-           (implies (not (member-equal a (vl-fundecllist-fix x)))
-                    (not (member-equal a (vl-reorder-fundecls names x))))
-           :hints(("Goal" :in-theory (disable (force))))))
-
-  (defthm subsetp-equal-of-vl-reorder-fundecls
-    ;; pick-a-point with l2
-    (implies (subsetp-equal (double-rewrite names) (vl-fundecllist->names x))
-             (subsetp-equal (vl-reorder-fundecls names x)
-                            (vl-fundecllist-fix x)))
-    :hints((set-reasoning)))
-
-
-  ;; For the other direction we need no-duplicatesp-equal, since "shadowed"
-  ;; function definitions wouldn't be included since vl-find-fundecl just
-  ;; grabs the first decl by name.
-
-  (local (defthm l3
-           (implies (and (member-equal a x)
-                         (no-duplicatesp-equal (vl-fundecllist->names x)))
-                    (equal (vl-find-fundecl (vl-fundecl->name a) x)
-                           (vl-fundecl-fix a)))
-           :hints(("Goal" :in-theory (enable vl-find-fundecl)))))
-
-  (local (defthm l4
-           (implies (and (member-equal a x)
-                         (member-equal (vl-fundecl->name a) names)
-                         (no-duplicatesp-equal (vl-fundecllist->names x))
-                         (vl-fundecllist-p x))
-                    (member-equal a (vl-reorder-fundecls names x)))))
-
-  (defthm member-equal-of-vl-reorder-fundecls
-    (implies (and (no-duplicatesp-equal (vl-fundecllist->names x))
-                  (force (vl-fundecllist-p x)))
-             (iff (member-equal a (vl-reorder-fundecls names x))
-                  (and (member-equal a x)
-                       (member-equal (vl-fundecl->name a) names)))))
-
-
-  (local (defthm other-direction ;; pick-a-point
-           (implies (and (no-duplicatesp-equal (vl-fundecllist->names x))
-                         (subsetp-equal (vl-fundecllist->names x) names)
-                         (vl-fundecllist-p x)
-                         )
-                    (subsetp-equal (vl-fundecllist-fix x)
-                                   (vl-reorder-fundecls names x)))
-           :hints((acl2::witness :ruleset (acl2::subsetp-witnessing)))))
-
-  (local (defthm x1
-           (implies (and (no-duplicatesp-equal (vl-fundecllist->names x))
-                         (set-equiv (double-rewrite names) (vl-fundecllist->names x))
-                         (force (vl-fundecllist-p x)))
-                    (set-equiv (vl-reorder-fundecls names x)
-                               x))
-           :hints(("Goal"
-                   :in-theory (e/d (set-equiv)
-                                   (other-direction
-                                    subsetp-equal-of-vl-reorder-fundecls))
-                   :use ((:instance other-direction)
-                         (:instance subsetp-equal-of-vl-reorder-fundecls))))))
-
-  (defthm vl-reorder-fundecls-under-set-equiv
-    (implies (and (no-duplicatesp-equal (vl-fundecllist->names x))
-                  (set-equiv (double-rewrite names) (vl-fundecllist->names x)))
-             (set-equiv (vl-reorder-fundecls names x)
-                        (vl-fundecllist-fix x)))
-    :hints(("Goal"
-            :do-not-induct t
-            :in-theory (disable x1
-                                other-direction
-                                subsetp-equal-of-vl-reorder-fundecls)
-            :use ((:instance x1 (x (vl-fundecllist-fix x))))))))
-
 
 (define vl-depsort-functions
   :short "Rearrange function declarations so that they are in dependency order,

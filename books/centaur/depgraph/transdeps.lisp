@@ -189,7 +189,20 @@ clear out the relevant memo tables.</p>"
 
   (let ((orig (mergesort nodes)))
     (with-fast-alist graph
-      (transdeps-aux orig nil orig graph))))
+      (transdeps-aux orig nil orig graph)))
+  ///
+  (more-returns (deps setp))
+
+  (defthm transdeps-subset
+    (subset (transdeps nodes graph)
+            (union (mergesort nodes) (transdeps-allnodes graph)))
+    :hints(("Goal"
+            :in-theory (disable transdeps-aux-subset)
+            :use ((:instance transdeps-aux-subset
+                   (curr (mergesort nodes))
+                   (prev nil)
+                   (orig (mergesort nodes))
+                   (graph graph)))))))
 
 
 (define transdeps-free ()

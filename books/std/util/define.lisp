@@ -1029,7 +1029,7 @@ some kind of separator!</p>
            (if (logic-mode-p ',guts.name-fn (w state))
                '(in-theory (enable ,guts.name))
              '(value-triple :invisible))))
-         
+
          (make-event
           (let* ((world (w state))
                  (events (returnspec-thms ',guts.name ',guts.name-fn ',guts.returnspecs world)))

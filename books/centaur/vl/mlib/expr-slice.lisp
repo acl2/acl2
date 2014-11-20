@@ -31,7 +31,6 @@
 (in-package "VL")
 (include-book "expr-tools")
 (include-book "range-tools")
-(include-book "find-item")
 (include-book "welltyped")
 (include-book "expr-building")
 (include-book "hid-tools")

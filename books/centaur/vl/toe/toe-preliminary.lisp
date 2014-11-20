@@ -31,7 +31,7 @@
 (in-package "VL")
 (include-book "toe-wirealist")
 (include-book "toe-verilogify")
-(include-book "../mlib/find-module")
+(include-book "../mlib/find")
 (include-book "centaur/esim/esim-sexpr-support" :dir :system)
 (local (include-book "../util/arithmetic"))
 (local (include-book "../util/osets"))

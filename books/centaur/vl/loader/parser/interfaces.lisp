@@ -31,6 +31,7 @@
 (in-package "VL")
 (include-book "elements")
 (include-book "imports")
+(include-book "../../mlib/blocks")
 (local (include-book "../../util/arithmetic"))
 
 
