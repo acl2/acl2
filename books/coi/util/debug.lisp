@@ -45,7 +45,7 @@ a list via :parameters.
 
   (if (consp x) (car x)
     (coi-debug::fail :value nil
-                 :message \"~x0 is not a consp\"
+                 :message \"~~x0 is not a consp\"
                  :parameters (x)))
 
   It is sometimes convenient when debugging to induce a common-lisp
@@ -93,7 +93,7 @@ break on a failure.  The following code will do just that.
   The coi-debug::assert macro allows the user to identify runtime errors
 in ACL2 code.  The return value of coi-debug::assert can be set by
 specifying a :value parameter.  The failure message can be configured
-via the :message keyword.  Note that the first argument (~x0) is the
+via the :message keyword.  Note that the first argument (~~x0) is the
 syntactic form of the test, but that additional parameters can be
 passed in as a list via :parameters.
 
@@ -101,7 +101,7 @@ passed in as a list via :parameters.
 
   (let ((y (coi-debug::assert (test y)
                           :value y
-                          :message \"Y failed ~x0 in ~x1\"
+                          :message \"Y failed ~~x0 in ~~x1\"
                           :parameters (z))))
     ..)
 
