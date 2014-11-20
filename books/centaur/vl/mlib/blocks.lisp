@@ -128,7 +128,6 @@ the list of elements of the given type.</p>"
                           double-containment
                           set::nonempty-means-set
                           set::sets-are-true-lists
-                          acl2::consp-when-member-equal-of-cons-listp
                           acl2::rev-when-not-consp
                           default-car
                           default-cdr

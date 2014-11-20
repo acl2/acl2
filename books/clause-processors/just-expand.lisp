@@ -1216,6 +1216,27 @@
            :in-theory (disable . ,fns)
            :clause-processor (mark-expands-cp clause '(t t ,expand-hints))))))
 
+(defun all-fns-in-cliques (fnnames world)
+  (declare (Xargs :mode :program))
+  (if (atom fnnames)
+      nil
+    (append (recursivep (car fnnames) world)
+            (all-fns-in-cliques (cdr fnnames) world))))
+
+(defun just-expand-mrec-multi-hint (fnnames id wait-til-stablep world)
+  (declare (Xargs :mode :program))
+  (and (eql 0 (acl2::access acl2::clause-id id :forcing-round))
+       (equal '(1) (acl2::access acl2::clause-id id :pool-lst))
+       (let* ((fns (all-fns-in-cliques fnnames world))
+              (expand-hints (just-expand-cp-parse-hints
+                             (just-expand-mrec-expanders fns world)
+                             world)))
+         `(:computed-hint-replacement
+           ((and (or (not ',wait-til-stablep) stable-under-simplificationp)
+                 (expand-marked)))
+           :in-theory (disable . ,fns)
+           :clause-processor (mark-expands-cp clause '(t t ,expand-hints))))))
+
 
 (local
  (progn

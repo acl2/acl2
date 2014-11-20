@@ -45,8 +45,9 @@ Makefile-tmp
 .acl2rc
 *.log
 TMP*.*
-temp-emacs-file.lsp
+temp-emacs-file*
 *~
 Makefile-certs
 Makefile-sources
 startjob.*.wrap
+.#*
