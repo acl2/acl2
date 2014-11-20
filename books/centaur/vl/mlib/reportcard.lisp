@@ -93,7 +93,10 @@ their related warnings.</li>
   :returns (new-reportcard vl-reportcard-p)
   :long "<p>We add all the warnings at once, i.e., with a single fast-alist
   update.</p>"
-  (b* ((name         (string-fix name))
+  (b* (((when (atom warnings))
+        ;; Silly optimization, don't add warnings if there are no warnings.
+        (vl-reportcard-fix reportcard))
+       (name         (string-fix name))
        (warnings     (vl-warninglist-fix warnings))
        (reportcard   (vl-reportcard-fix reportcard))
        (old-warnings (cdr (hons-get name reportcard)))

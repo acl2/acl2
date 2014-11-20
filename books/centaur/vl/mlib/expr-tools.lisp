@@ -303,6 +303,7 @@ vl-maybe-expr-p).</p>"
              (f-exprlist-aux x))
            ///
            (local (in-theory (enable vl-atts-fix)))
+           (local (fty::set-deffixequiv-mutual-default-hints nil))
            (deffixequiv-mutual vl-expr-recursion-test))))
 
 

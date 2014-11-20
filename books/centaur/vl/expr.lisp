@@ -866,6 +866,18 @@ vl-atomguts-p) is already known."
   (mbe :logic (vl-sysfunname-p x)
        :exec (eq (tag x) :vl-sysfunname)))
 
+(define vl-fast-typename-p ((x vl-atomguts-p))
+  :parents (vl-atomguts-p vl-typename-p)
+  :short "Faster version of @(see vl-typename-p), given that @(see
+vl-atomguts-p) is already known."
+  :long "<p>We leave this function enabled and reason about @('vl-typename-p')
+instead.</p>"
+  :inline t
+  :enabled t
+  :hooks nil
+  (mbe :logic (vl-typename-p x)
+       :exec (eq (tag x) :vl-typename)))
+
 (defoption maybe-natp natp
   ;; BOZO misplaced, :parents nil to settle documentation issues
   :parents nil)
@@ -1671,11 +1683,6 @@ fairly easily solve the HIDEXPR problem.</p>"
   (defthm vl-exprlist-fix-of-list-fix
     (equal (vl-exprlist-fix (list-fix x))
            (list-fix (vl-exprlist-fix x)))
-    :hints(("Goal" :induct (len x))))
-
-  (defthm vl-exprlist-fix-of-append
-    (equal (vl-exprlist-fix (append x y))
-           (append (vl-exprlist-fix x) (vl-exprlist-fix y)))
     :hints(("Goal" :induct (len x))))
 
   (defthm vl-exprlist-fix-of-rev

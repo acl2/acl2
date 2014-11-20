@@ -111,7 +111,6 @@
                                           acl2::consp-of-append
                                           acl2::subsetp-append1
                                           append
-                                          consp-when-member-equal-of-cons-listp
                                           acl2::append-when-not-consp
                                           ,@(project-over-types
                                              'vl-__type__list-p-of-append)))))

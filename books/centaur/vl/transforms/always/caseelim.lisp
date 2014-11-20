@@ -903,13 +903,13 @@ the same body."
         (vl-casezx-elim-aux type test cases default ctx warnings))
 
        ((unless new-stmt)
-        ;; Already warned, so just leave this case statement alone.
-        (mv warnings (make-vl-casestmt :casetype type
-                                       :check    check
-                                       :test     test
-                                       :caselist cases
-                                       :default  default
-                                       :atts     atts))))
+        ;; Already warned.  Try regular casestmt elim, plus an extra scary warning.
+        (b* ((warnings (warn :type :vl-casezx-unsafe-conversion
+                             :msg "~a0: ~s1 statement is not supported, so we ~
+                                   are processing it as a regular case ~
+                                   statement, which may be unsound."
+                             :args (list ctx (if (eq type :vl-casex) "casex" "casez")))))
+          (vl-casestmt-elim check test cases default atts ctx warnings))))
 
     ;; Else, it all worked.
     (mv warnings new-stmt)))

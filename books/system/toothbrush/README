@@ -1,6 +1,10 @@
 Copyright (C) 2014, ForrestHunt, Inc.
-Written by Matt Kaufmann, August, 2014
+Written by Matt Kaufmann, August-November, 2014
 License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+
+-------
+SUMMARY
+-------
 
 This directory implements a "toothbrush" capability for ACL2.  The
 name "toothbrush" is an old one, bandied around in the early 1990s at
@@ -11,23 +15,80 @@ a way to take an application written in ACL2 and save it with a much
 smaller memory footprint than would be the case if the entire ACL2
 source code were loaded.
 
+------
+STATUS
+------
+
 This is work in progress.  For example, as of this writing, there is
-no support for applications that use abstract stobjs or nested stobjs.
-Tests under subdirectory tests/ show what can currently be done.
-The recommended host Lisps are CCL and SBCL, since these compile
-on-the-fly and the toothbrush mechanism loads some ACL2 source files
-(without explicit compilation); other Lisps may work, at least on
-small examples, but their performance could suffer from using
+no support for applications that use any of the following, though
+there may be others not listed.
+
+- Abstract stobjs or nested stobjs (but local stobjs are supported)
+- Memoization (MEMOIZE is currently ignored)
+
+Future work might not only add such support, but might also deal with
+some minor issues encountered during the implementation.  Search for
+"!!" in make-toothbrush.lisp and load-toothbrush.lsp to see brief
+discussions of such issues.
+
+Future work might also reduce the footprint of the ACL2 source files
+required to run a toothbrush application.  As seen in file
+load-toothbrush.lsp, the relevant file sizes (in bytes) are as follows
+as of Nov. 13, 2014.
+
+   85955 acl2-fns.lisp
+   85403 acl2-init.lisp
+  103143 acl2.lisp
+       1 acl2r.lisp [could vary slightly]
+ 1009715 axioms.lisp
+  278200 basis-a.lisp
+ -------
+ 1562416 TOTAL, not including ACL2(h) support
+
+  174152 hons-raw.lisp
+    9088 hons.lisp
+  202802 memoize-raw.lisp
+   16050 memoize.lisp
+ -------
+  402092 TOTAL for additional ACL2(h) support
+  
+So the total size in bytes is 1,964,508, out of 14,629,819 for all
+*.lisp files.  So for ACL2(h), 13.4% of the source code (in bytes) is
+used for the toothbrush.  With some effort this could be reduced
+substantially, since much of axioms.lisp is not needed.  Note that
+since defthm is just nil in raw Lisp, loading axioms.lisp already
+contributes less to the memory footprint of a toothbrush than its size
+may suggest.
+
+Tests under subdirectory tests/ show examples of what can currently be
+done.  The recommended host Lisps are CCL and SBCL, since these
+compile on-the-fly and the toothbrush mechanism loads some ACL2 source
+files (without explicit compilation); other Lisps may work, at least
+on small examples, but their performance could suffer from using
 interpreted ACL2 source code.
 
 More documentation will likely come later, especially if requested.
 
+-------
+RUNNING
+-------
+
 In order to set things up and run the examples, invoke a command such
 as the following, i.e., with ACL2 defined to be your ACL2 (possibly a
-variant) executable.
+variant, e.g., ACL2(p)) executable.  Not all community books need to
+be certified; see below for details.
 
-make -j 4 ACL2=/Users/kaufmann/acl2/acl2/saved_acl2h
+make -j 4 ACL2=/Users/kaufmann/acl2/acl2/saved_acl2h LISP=ccl
 
 To clean:
 
 make ACL2=/Users/kaufmann/acl2/acl2/saved_acl2h clean
+
+If some basic community books are not certified, the "make" above may
+fail.  However, it will likely succeed (as of this writing) provided
+you have certified arithmetic/top-with-meta.lisp, for example by
+standing in your books directory and running the following command
+(replacing "acl2" by your ACL2 executable, for example the value of
+ACL2 in the "make" commands above).
+
+build/cert.pl -j 4 --acl2 acl2 arithmetic/top-with-meta.lisp

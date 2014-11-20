@@ -29,8 +29,10 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
+(include-book "../mlib/scopestack")
 (include-book "../mlib/filter")
-(include-book "../mlib/hierarchy")
+(include-book "../mlib/modnamespace")
+(include-book "../mlib/blocks")
 (local (include-book "../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
 
@@ -39,60 +41,76 @@
   :short "(Unsound transform) Remove instances of missing submodules."
 
   :long "<p>In our ordinary transformation process, e.g., @(see vl-simplify),
-modules that instance an undefined submodule are thrown out with fatal errors.
-In VL-Lint, we still want to analyze them as much as we can.  So, in this
-transformation, we simply delete any instances of missing submodules, perhaps
-leaving us with \"partial\" superior modules.</p>
+modules that instance an undefined submodule are thrown out with fatal
+errors.</p>
+
+<p>In @(see vl-lint), we still want to analyze them as much as we can.  So, in
+this transformation, we simply delete any instances of missing submodules,
+perhaps leaving us with \"partial\" superior modules.</p>
 
 <p>This is obviously unsound and should never be used in our ordinary
 transformation process.</p>")
 
 (local (xdoc::set-default-parents drop-missing-submodules))
 
+(define vl-gather-names-of-missing-definitions ((names string-listp)
+                                                (ss    vl-scopestack-p))
+  :returns (missing-names string-listp)
+  (b* (((when (atom names))
+        nil)
+       (name1 (string-fix (car names)))
+       (look  (vl-scopestack-find-definition name1 ss))
+       ((when look)
+        (vl-gather-names-of-missing-definitions (cdr names) ss)))
+    (cons name1
+          (vl-gather-names-of-missing-definitions (cdr names) ss))))
+
+(def-genblob-transform vl-genblob-drop-missing-submodules ((ss            vl-scopestack-p)
+                                                           (dropped-insts vl-modinstlist-p "Accumulator"))
+  :returns ((dropped-insts vl-modinstlist-p))
+  (b* (((vl-genblob x) x)
+       (ss                        (vl-scopestack-push (vl-genblob-fix x) ss))
+       (all-modnames              (mergesort (vl-modinstlist->modnames x.modinsts)))
+       (missing-modnames          (vl-gather-names-of-missing-definitions all-modnames ss))
+       ((mv good-insts bad-insts) (vl-filter-modinsts-by-modname missing-modnames x.modinsts))
+       (dropped-insts             (append bad-insts (vl-modinstlist-fix dropped-insts)))
+       ((mv dropped-insts good-generates)
+        (vl-generates-drop-missing-submodules x.generates ss dropped-insts)))
+    (mv dropped-insts
+        (change-vl-genblob x
+                           :modinsts good-insts
+                           :generates good-generates)))
+     :apply-to-generates vl-generates-drop-missing-submodules)
+
 (define vl-module-drop-missing-submodules
   ((x       vl-module-p  "Module to rewrite.")
-   (missing string-listp "List of missing modules.")
-   (fal     "Precomputed fast alist for missing." (equal fal (make-lookup-alist missing))))
+   (ss      vl-scopestack-p))
   :returns (new-x vl-module-p)
-  (b* ((x (vl-module-fix x))
-       ((vl-module x) x)
-       ((mv bad-insts good-insts)
-        (vl-filter-modinsts-by-modname+ missing x.modinsts fal))
-       ((when bad-insts)
-        (b* ((nbad      (len bad-insts))
-             (bad-names (mergesort (vl-modinstlist->modnames bad-insts)))
-             (warnings  (fatal :type :vl-dropped-insts
-                               :msg "In module ~m0, deleting ~x1 submodule ~
-                                     instance~s2 because ~s3 to the undefined ~
-                                     module~s4 ~&5.  These deletions might ~
-                                     cause our analysis to be flawed."
-                               :args (list x.name
-                                           nbad
-                                           (if (eql nbad 1) "" "s")
-                                           (if (eql nbad 1) "it refers" "they refer")
-                                           (if (vl-plural-p bad-names) "s" "")
-                                           bad-names)
-                               :acc x.warnings)))
-          (change-vl-module x
-                            :modinsts good-insts
-                            :warnings warnings))))
-    x))
+  (b* (((vl-module x) (vl-module-fix x))
+       (genblob       (vl-module->genblob x))
+       ((mv dropped-insts new-genblob) (vl-genblob-drop-missing-submodules genblob ss nil))
+       (nbad             (len dropped-insts))
+       (missing-modnames (mergesort (vl-modinstlist->modnames dropped-insts)))
+       (warnings (fatal :type :vl-dropped-insts
+                        :msg "Deleting ~x0 instance~s1 of undefined module~s2 ~
+                              ~&3. This may cause our analysis to be flawed."
+                        :args (list nbad
+                                    (if (eql nbad 1) "" "s")
+                                    (if (vl-plural-p missing-modnames) "s" "")
+                                    missing-modnames)
+                        :acc x.warnings))
+       (x-warn (change-vl-module x :warnings warnings)))
+    (vl-genblob->module new-genblob x-warn)))
 
-(defprojection vl-modulelist-drop-missing-submodules-aux ((x       vl-modulelist-p)
-                                                          (missing string-listp)
-                                                          (fal     (equal fal (make-lookup-alist missing))))
+(defprojection vl-modulelist-drop-missing-submodules ((x  vl-modulelist-p)
+                                                      (ss vl-scopestack-p))
   :returns (new-x vl-modulelist-p)
-  (vl-module-drop-missing-submodules x missing fal))
-
-(define vl-modulelist-drop-missing-submodules ((x vl-modulelist-p))
-  :returns (new-x vl-modulelist-p)
-  (b* ((missing (vl-modulelist-missing x))
-       (fal     (make-lookup-alist missing))
-       (x-prime (vl-modulelist-drop-missing-submodules-aux x missing fal)))
-    (fast-alist-free fal)
-    x-prime))
+  (vl-module-drop-missing-submodules x ss))
 
 (define vl-design-drop-missing-submodules ((x vl-design-p))
   :returns (new-x vl-design-p)
-  (b* (((vl-design x) x))
-    (change-vl-design x :mods (vl-modulelist-drop-missing-submodules x.mods))))
+  (b* (((vl-design x) x)
+       (ss   (vl-scopestack-init x))
+       (mods (vl-modulelist-drop-missing-submodules x.mods ss)))
+    (vl-scopestacks-free)
+    (change-vl-design x :mods mods)))

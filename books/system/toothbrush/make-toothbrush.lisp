@@ -175,23 +175,23 @@
 
 (defun extend-with-supporters (x ctx wrld names seen)
 
-; !! Add state parameter and then replace *primitive-logic-fns-with-raw-code*
-; with logic-fns-with-raw-code and similarly for program fns and macros.
-
-; !! Possible efficiency enhancement (but would need to think this through, in
-; particular for the case of mutual-recursion): collect alist mapping names to
-; definitions instead of names, so that we don't need to look up definitions at
-; the end.
-
 ; We extend names with constant, function, and macro names encountered while
-; scanning x, including macroexpansion.  However, we do not extend with names
-; that are members of seen.
+; scanning the form x, including macroexpansion.  However, we do not extend
+; with names that are members of seen.
 
 ; Warning: Keep in sync with translate11.  Here we scan x as through
 ; translating (mostly, macroexpanding) for execution in raw Lisp, but what we
 ; return is an extension of names that remains disjoint from seen, collecting
 ; all function, constant, and macro names encountered.  We are conservative, in
 ; that we are free to return an error where translate11 would not.
+
+; !! Add state parameter and then replace *primitive-logic-fns-with-raw-code*
+; with logic-fns-with-raw-code and similarly for program fns and macros.
+
+; !! Possible efficiency enhancement (but would need to think this through, in
+; particular for the case of mutual-recursion): collect an alist mapping names
+; to definitions instead of names, so that we don't need to look up definitions
+; at the end.
 
   (cond
    ((atom x)
@@ -339,7 +339,7 @@
                                (extend-with-supporters
                                 expansion1 ctx wrld names seen))
                               (t
-                               (extend-with-supporters
+                               (extend-with-supporters-lst
                                 (list expansion1 expansion2)
                                 ctx wrld names seen)))))))))))))))))
    ((cl-defined-p (car x))
@@ -375,6 +375,10 @@
 )
 
 (defun get-cltl-command-lst-1 (names ctx wrld acc seen)
+
+; Names is a list of function and macro names.  We return a list of definitions
+; sufficient for evaluating calls of any name in names (after loading
+; load-toothbrush.lsp).
 
 ; Invariant: Names has no duplicates and is disjoint from seen, which in turn
 ; is the list of names introduced by the list of definitions, acc.  In the case
@@ -445,6 +449,10 @@
                  'get-cltl-command-lst-1 form (car form))))))))
 
 (defun sort-cltl-commands (cmds wrld acc)
+
+; Sort the given events so that each event depends only on events earlier in
+; the list, not later.
+
   (cond ((endp cmds)
          (strip-cdrs (merge-sort-car-< acc)))
         (t (sort-cltl-commands
@@ -475,6 +483,12 @@
         (t (chk-defined-functions (cdr names) ctx wrld))))
 
 (defun get-cltl-command-lst (names ctx wrld)
+
+; Names is a list of function and macro names.  We return a list of definitions
+; sufficient for evaluating calls of any name in names (after loading
+; load-toothbrush.lsp).  The list is sorted, so that earlier events support
+; later ones.
+
   (prog2$
    (chk-defined-functions names ctx wrld)
    (sort-cltl-commands
@@ -483,6 +497,12 @@
     nil)))
 
 (defmacro make-toothbrush (filename &rest names)
+
+; Print a "toothbrush" application to filename, in support of all functions and
+; macros in the given input list, names.  That file can be loaded after
+; starting Lisp and loading load-toothbrush.lsp, at which point the application
+; can be run.
+
   (declare (xargs :guard (and (stringp filename)
                               (symbol-listp names))))
   `(let ((filename ,filename)

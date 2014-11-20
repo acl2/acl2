@@ -2111,7 +2111,19 @@
                (len x))
         :hints (("goal" :induct (len x)
                  :expand ((,x.fix x))
-                 :in-theory (enable len)))))))
+                 :in-theory (enable len))))
+
+      (defthm ,(intern-in-package-of-symbol (cat (symbol-name x.fix) "-OF-APPEND") x.fix)
+        (equal (,x.fix (append std::a std::b))
+               (append (,x.fix std::a) (,x.fix std::b)))
+        :hints (("goal" :induct (append std::a std::b)
+                 :expand ((,x.fix std::a)
+                          (:free (a b) (,x.fix (cons a b)))
+                          (,x.fix nil)
+                          (:free (b) (append std::a b))
+                          (:free (b) (append nil b))
+                          (:free (a b c) (append (cons a b) c)))
+                 :in-theory (enable (:i append))))))))
 
 (defun flexalist-fix-postevents (x)
   (b* (((flexalist x) x)
@@ -2157,7 +2169,19 @@
                           :in-theory (enable (:i len))
                           :expand ((,x.fix x)
                                    (hons-assoc-equal k x)
-                                   (:free (a b) (hons-assoc-equal k (cons a b))))))))))))
+                                   (:free (a b) (hons-assoc-equal k (cons a b)))))))))
+
+      (defthm ,(intern-in-package-of-symbol (cat (symbol-name x.fix) "-OF-APPEND") x.fix)
+        (equal (,x.fix (append std::a std::b))
+               (append (,x.fix std::a) (,x.fix std::b)))
+        :hints (("goal" :induct (append std::a std::b)
+                 :expand ((,x.fix std::a)
+                          (:free (a b) (,x.fix (cons a b)))
+                          (,x.fix nil)
+                          (:free (b) (append std::a b))
+                          (:free (b) (append nil b))
+                          (:free (a b c) (append (cons a b) c)))
+                 :in-theory (enable (:i append))))))))
 
 (defun flextypelist-fix-postevents (types)
   (if (atom types)
@@ -4529,9 +4553,7 @@ feature in @(see defprod).</li>
 default function names.  @(':count') may also be set to NIL, to turn of
 generation of the count function.</li>
 
-<li>@(':parents'), @(':short'), @(':long'): add xdoc about the type.  (Note:
-xdoc support is half-baked; e.g. documentation strings for fields are allowed
-but not yet used.</li>
+<li>@(':parents'), @(':short'), @(':long'): add xdoc about the type.</li>
 
 <li>@(':measure'): override the measures used to admit the recognizer, fixing
 function, and count function; the default is @('(acl2-count x)').</li>

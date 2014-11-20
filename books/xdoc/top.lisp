@@ -183,7 +183,7 @@
                (bar-escape-string (symbol-name x)) "|"))
 
 (defun formula-info-to-defs1 (entries)
-  ;; See misc/book-thms.lisp.  Entries should be the kind of structure that
+  ;; See book-thms.lisp.  Entries should be the kind of structure that
   ;; new-formula-info produces.  We turn it into a list of "@(def fn)" entries.
   ;; This is a hack.  We probably want something smarter.
   (declare (xargs :mode :program))
@@ -191,7 +191,12 @@
          nil)
         ((and (consp (car entries))
               (symbolp (caar entries)))
+         ;; theorems, definitions, defchooses
          (cons (concatenate 'string "@(def " (full-escape-symbol (caar entries)) ")")
+               (formula-info-to-defs1 (cdr entries))))
+        ((stringp (car entries))
+         ;; xdoc fragments
+         (cons (car entries)
                (formula-info-to-defs1 (cdr entries))))
         (t
          (formula-info-to-defs1 (cdr entries)))))
@@ -233,6 +238,16 @@
          :short ,short
          :long ,long))))
 
+(defun make-xdoc-fragments (args) ;; args to a defsection
+  (cond ((atom args)
+         nil)
+        ((stringp (car args))
+         (cons `(acl2::acl2-xdoc-fragment ,(car args))
+               (make-xdoc-fragments (cdr args))))
+        (t
+         (cons (car args)
+               (make-xdoc-fragments (cdr args))))))
+
 (defun defsection-fn (wrapper ; (encapsulate nil) or (progn)
                       name args)
   (declare (xargs :mode :program))
@@ -246,7 +261,7 @@
          (autodoc-p   (and (or defxdoc-p extension)
                            (or (not autodoc-arg)
                                (cdr autodoc-arg))))
-         (new-args (throw-away-keyword-parts args)))
+         (new-args (make-xdoc-fragments (throw-away-keyword-parts args))))
     (cond ((and extension
                 (or parents short))
            (er hard? 'defsection-fn "When using :extension, you cannot ~

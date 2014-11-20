@@ -51,6 +51,9 @@
 (include-book "std/util/deflist" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 
+(include-book "default-hints")
+
+
 ;; assumes this book will only be locally included
 (in-theory (enable set::definitions
                    set::expensive-rules))
@@ -413,28 +416,6 @@
 
 
 
-(defsection intersectp-equal
-
-  (local (in-theory (enable intersectp-equal)))
-
-;; We used to have lots of stuff here, but it was all redundant with other ACL2
-;; libraries, especially data-structures/no-duplicates and misc/equal-sets.
-
-  ;; Our -of-cons-right rule is stronger
-  (in-theory (disable ACL2::INTERSECTP-EQUAL-CONS-SECOND))
-
-  (defrule intersectp-equal-of-cons-right
-    (equal (intersectp-equal x (cons a y))
-           (if (member-equal a x)
-               t
-             (intersectp-equal x y))))
-
-  (defrule intersect-equal-of-cons-left
-    (equal (intersectp-equal (cons a x) y)
-           (if (member-equal a y)
-               t
-             (intersectp-equal x y)))))
-
 
 (defsection uniqueness-of-append
 
@@ -456,63 +437,6 @@
              (equal (subsetp-equal a (append b c))
                     (subsetp-equal a b)))
     :enable subsetp-equal))
-
-
-(defsection intersection-equal
-
-  (local (in-theory (enable intersection-equal)))
-
-  (defrule intersection-equal-when-atom
-    (implies (atom x)
-             (equal (intersection-equal x y)
-                    nil)))
-
-  (defrule intersection-equal-of-cons
-    (equal (intersection-equal (cons a x) y)
-           (if (member-equal a y)
-               (cons a (intersection-equal x y))
-             (intersection-equal x y))))
-
-  (defrule subsetp-equal-of-intersection-equal-1
-    ;; BOZO consider moving to equal-sets
-    (subsetp-equal (intersection-equal x y) x)
-    :hints((set-reasoning)))
-
-  (defrule subsetp-equal-of-intersection-equal-2
-    ;; BOZO consider moving to equal-sets
-    (subsetp-equal (intersection-equal x y) y)
-    :hints((set-reasoning))))
-
-
-
-(defsection set-difference-equal
-
-  (local (in-theory (enable set-difference-equal)))
-
-  (defrule set-difference-equal-when-atom
-    (implies (atom x)
-             (equal (set-difference-equal x y)
-                    nil)))
-
-  (defrule set-difference-equal-of-cons
-    (equal (set-difference-equal (cons a x) y)
-           (if (member-equal a y)
-               (set-difference-equal x y)
-             (cons a (set-difference-equal x y)))))
-
-  (defrule set-difference-equal-when-subsetp-equal
-    (implies (subsetp-equal x y)
-             (equal (set-difference-equal x y)
-                    nil)))
-
-  (defrule set-difference-equal-of-self
-    (equal (set-difference-equal x x)
-           nil))
-
-  (defrule empty-intersect-with-difference-of-self
-    (not (intersectp-equal a (set-difference-equal b a)))))
-
-
 
 
 

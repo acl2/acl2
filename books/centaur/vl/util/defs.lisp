@@ -736,21 +736,6 @@ behavior in cases like:</p>
                  (not (atom (cdr x))))))
 
 
-
-
-(deflist cons-listp (x)
-  (consp x)
-  :elementp-of-nil nil
-  :cheap t)
-
-(deflist cons-list-listp (x)
-  (cons-listp x)
-  :elementp-of-nil t)
-
-
-
-
-
 (defsection and*
   :parents (utilities)
   :short "@('and*') is like @('and') but is a (typically disabled) function."

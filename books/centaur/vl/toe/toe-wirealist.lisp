@@ -31,6 +31,7 @@
 (in-package "VL")
 (include-book "toe-emodwire")
 (include-book "../mlib/range-tools")
+(include-book "std/typed-lists/cons-listp" :dir :system)
 (local (include-book "../util/arithmetic"))
 (local (include-book "../util/intersectp-equal"))
 

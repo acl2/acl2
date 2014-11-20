@@ -89,6 +89,8 @@ if [ -x update.sh ] ; then \
 fi
 
 # Create HTML files (instructions from David Rager)
-cd $destdir/manual
-chmod u+x ./xdata2html.pl
-./xdata2html.pl
+# Commenting out the following lines, following a suggestion from David,
+# since they don't seem to help with search:
+# cd $destdir/manual
+# chmod u+x ./xdata2html.pl
+# ./xdata2html.pl

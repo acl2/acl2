@@ -44,12 +44,10 @@
                            ACL2::CONSP-OF-CAR-WHEN-ALISTP
                            ALISTP-WHEN-VL-ATTS-P-REWRITE
                            VL-ATTS-P-WHEN-SUBSETP-EQUAL
-                           CONS-LISTP-OF-CDR-WHEN-CONS-LISTP
-                           CONSP-OF-CAR-WHEN-CONS-LISTP
+                           acl2::CONSP-OF-CAR-WHEN-CONS-LISTP
                            CONSP-OF-CAR-WHEN-VL-COMMENTMAP-P
                            CONSP-WHEN-MEMBER-EQUAL-OF-VL-COMMENTMAP-P
                            CONSP-WHEN-MEMBER-EQUAL-OF-VL-ATTS-P
-                           CONSP-WHEN-MEMBER-EQUAL-OF-CONS-LISTP
                            ACL2::CONSP-UNDER-IFF-WHEN-TRUE-LISTP
                            default-car
                            default-cdr
@@ -66,17 +64,28 @@
                     (<< b (cdr x))))))
   :hints(("Goal" :in-theory (enable << acl2::lexorder))))
 
-(defthmd <<-of-modules
-  (implies (and (vl-module-p x)
-                (vl-module-p y)
-                (not (equal (vl-module->name x)
-                            (vl-module->name y))))
-           (equal (<< x y)
-                  (<< (vl-module->name x)
-                      (vl-module->name y))))
-  :hints(("Goal" :in-theory (e/d (vl-module-p
-                                  vl-module->name
-                                  <<-of-cons)))))
+(encapsulate
+  ()
+  (local (defthm <<-when-consp-left
+           (implies (consp x)
+                    (equal (<< x y)
+                           (if (atom y)
+                               nil
+                             (or (<< (car x) (car y))
+                                 (and (equal (car x) (car y))
+                                      (<< (cdr x) (cdr y)))))))
+           :hints(("Goal" :in-theory (enable << acl2::lexorder)))))
+
+  (defthmd <<-of-modules
+    (implies (and (vl-module-p x)
+                  (vl-module-p y)
+                  (not (equal (vl-module->name x)
+                              (vl-module->name y))))
+             (equal (<< x y)
+                    (<< (vl-module->name x)
+                        (vl-module->name y))))
+    :hints(("Goal" :in-theory (e/d (vl-module-p
+                                    vl-module->name))))))
 
 (local (in-theory (enable <<-of-cons <<-of-modules)))
 
