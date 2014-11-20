@@ -512,4 +512,3 @@
                   (run-fancy-zip dir state)
                 state)))
     state))
-
