@@ -217,6 +217,20 @@
 
 
 
+;; tests of evaluation of short/long strings
+
+(define test-shortcat (x)
+  :short (concatenate 'string "Test of evaluation of " "short strings for define.")
+  x)
+
+(assert! (stringp (cdr (assoc :short (xdoc::find-topic 'test-shortcat (xdoc::get-xdoc-table (w state)))))))
+
+(define test-longcat (x)
+  :long (concatenate 'string "Test of evaluation of " "long strings for define.")
+  x)
+
+(assert! (stringp (cdr (assoc :long (xdoc::find-topic 'test-longcat (xdoc::get-xdoc-table (w state)))))))
+
 
 ;; Basic testing of hook installation/removal
 

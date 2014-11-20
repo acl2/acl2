@@ -30,6 +30,7 @@
 
 (in-package "XDOC")
 (include-book "../top")
+(include-book "misc/assert" :dir :system)
 
 (defxdoc test :short "Test of defsection")
 
@@ -97,3 +98,42 @@
              (integerp (foo3 x)))))
 
 
+
+
+(defxdoc short-eval-test
+  :short (concatenate 'string "Test of evaluation of " ":short strings."))
+
+(defxdoc long-eval-test
+  :long (concatenate 'string "Test of evaluation of " ":long strings."))
+
+(assert! (stringp (cdr (assoc :short (find-topic 'short-eval-test (get-xdoc-table (w state)))))))
+(assert! (stringp (cdr (assoc :long (find-topic 'long-eval-test (get-xdoc-table (w state)))))))
+
+(defsection short-eval-test-2
+  :short (concatenate 'string "Test of evaluation of " ":short strings, for defsection."))
+
+(defsection long-eval-test-2
+  :long (concatenate 'string "Test of evaluation of " ":long strings, for defsection."))
+
+(assert! (stringp (cdr (assoc :short (find-topic 'short-eval-test-2 (get-xdoc-table (w state)))))))
+(assert! (stringp (cdr (assoc :long (find-topic 'long-eval-test-2 (get-xdoc-table (w state)))))))
+
+(defsection ext-test
+  :extension long-eval-test
+  :long (concatenate 'string "Test of evaluation of " "extension strings"))
+
+(xdoc-extend short-eval-test
+             (concatenate 'string "test of evaluation of " "xdoc-extend strings"))
+
+(assert! (stringp (cdr (assoc :short (find-topic 'short-eval-test (get-xdoc-table (w state)))))))
+
+(xdoc-prepend short-eval-test
+             (concatenate 'string "test of evaluation of " "xdoc-prepend strings"))
+
+(assert! (stringp (cdr (assoc :short (find-topic 'short-eval-test (get-xdoc-table (w state)))))))
+
+
+
+(defsection ext-test-2
+  :extension (long-eval-test)
+  :long "Test of new :extension (foo) feature.")

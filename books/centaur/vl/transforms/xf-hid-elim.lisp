@@ -30,11 +30,11 @@
 
 (in-package "VL")
 (include-book "../transforms/xf-resolve-ranges")
-(include-book "../mlib/find-module")
-(include-book "../mlib/find-item")
+(include-book "../mlib/find")
 (include-book "../mlib/expr-tools")
 (include-book "../mlib/stmt-tools")
 (include-book "../mlib/hid-tools")
+(include-book "../mlib/modnamespace")
 ;(include-book "../wf-ranges-resolved-p")
 (local (include-book "../util/arithmetic"))
 (local (include-book "../util/osets"))

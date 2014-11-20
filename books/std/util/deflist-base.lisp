@@ -34,10 +34,8 @@
 ; Kookamara LLC, which is also available under an MIT/X11 style license.
 
 (in-package "STD")
-(include-book "xdoc/top" :dir :system)
-(include-book "tools/bstar" :dir :system)
+(include-book "define")
 (include-book "maybe-defthm")
-(include-book "support")
 (include-book "std/lists/abstract" :dir :system)
 (set-state-ok t)
 
@@ -305,13 +303,12 @@ style:</p>
             (foo-listp x))
 })
 
-<p>@(see deflist) originally came out of <a
-href='http://www.cs.utexas.edu/users/jared/milawa/Web/'>Milawa</a>, where I
-universally applied the loose approach, and in that context I think it is very
-nice.  It's not entirely clear that loose recognizers are a good fit for ACL2.
-Really one of the main objections to the loose style is: ACL2's built-in list
-recognizers use the strict approach, and it can become irritating to keep track
-of which recognizers require true-listp and which don't.</p>")
+<p>@(see deflist) originally came out of @(see milawa), where I universally
+applied the loose approach, and in that context I think it is very nice.  It's
+not entirely clear that loose recognizers are a good fit for ACL2.  Really one
+of the main objections to the loose style is: ACL2's built-in list recognizers
+use the strict approach, and it can become irritating to keep track of which
+recognizers require true-listp and which don't.</p>")
 
 
 
@@ -475,8 +472,8 @@ of which recognizers require true-listp and which don't.</p>")
                                ,inst-thm
                                . ,fn-subst))))
         :rule-classes ,rule-classes))))
-       
-       
+
+
 (defun deflist-instantiate-table-thms-aux
   (table element name formals kwd-alist x
          req-alist fn-subst world)
@@ -485,16 +482,22 @@ of which recognizers require true-listp and which don't.</p>")
     (append (deflist-instantiate (car table) element name formals kwd-alist x
               req-alist fn-subst world)
             (deflist-instantiate-table-thms-aux (cdr table) element name
-formals kwd-alist x req-alist fn-subst world))))
+              formals kwd-alist x req-alist fn-subst world))))
 
 (defun deflist-instantiate-table-thms (name formals element kwd-alist x world)
-  (b* ((table (table-alist 'acl2::listp-rules world))
+  (b* ((table
+        ;; [Jared] added this reverse because it's nice for documentation for
+        ;; the simpler rules (atom, consp, etc.) to show up first.  Since new
+        ;; rules just get consed onto the table, if we don't do this reverse
+        ;; then the first things you see are rules about revappend, remove,
+        ;; last, etc., which are kind of obscure.
+        (reverse (table-alist 'acl2::listp-rules world)))
        (fn-subst (deflist-substitution name formals element kwd-alist x))
        (req-alist (deflist-requirement-alist kwd-alist formals element)))
     (deflist-instantiate-table-thms-aux table element name formals kwd-alist x req-alist fn-subst world)))
 
-      
-        
+
+
 (defun deflist-fn (name formals element kwd-alist other-events state)
   (declare (xargs :mode :program))
   (b* ((__function__ 'deflist)
@@ -611,19 +614,31 @@ formals kwd-alist x req-alist fn-subst world))))
                          nil-terminated.</p>"))))
 
        (def (if already-definedp
-                nil
-              `((defund ,name (,@formals)
-                  (declare (xargs :guard ,guard
-                                  ;; We tell ACL2 not to normalize because
-                                  ;; otherwise type reasoning can rewrite the
-                                  ;; definition, and ruin some of our theorems
-                                  ;; below, e.g., when ELEMENTP is known to
-                                  ;; always be true.
-                                  :normalize nil
-                                  ,@(and (eq mode :logic)
-                                         `(:verify-guards ,verify-guards
-                                           :guard-debug   ,guard-debug
-                                           :guard-hints   ,guard-hints))))
+                (and (or (and parents-p parents) short long)
+                     ;; Stupid hack to allow adding boilerplate documentation
+                     ;; to already-defined functions.  This isn't quite as good
+                     ;; as having the documentation as part of the DEFINE
+                     ;; because we won't get an automatic signature.  But it's
+                     ;; better than nothing.
+                     `((defxdoc ,name
+                         ,@(and (or parents-p parents) `(:parents ,parents))
+                         ,@(and short   `(:short ,short))
+                         ,@(and long    `(:long ,long)))))
+              `((define ,name (,@formals)
+                  ,@(and (or parents-p parents) `(:parents ,parents))
+                  ,@(and short   `(:short ,short))
+                  ,@(and long    `(:long ,long))
+                  :returns bool
+                  :guard ,guard
+                  ;; We tell ACL2 not to normalize because otherwise type
+                  ;; reasoning can rewrite the definition, and ruin some of our
+                  ;; theorems below, e.g., when ELEMENTP is known to always be
+                  ;; true.
+                  :normalize nil
+                  ,@(and (eq mode :logic)
+                         `(:verify-guards ,verify-guards
+                           :guard-debug   ,guard-debug
+                           :guard-hints   ,guard-hints))
                   (if (consp ,x)
                       (and ,(if negatedp
                                 `(not (,elementp ,@(subst `(car ,x) x elem-formals)))
@@ -634,13 +649,25 @@ formals kwd-alist x req-alist fn-subst world))))
                        t))))))
 
        ((when (eq mode :program))
-        `(defsection ,name
-           ,@(and parents `(:parents ,parents))
-           ,@(and short   `(:short ,short))
-           ,@(and long    `(:long ,long))
+        `(encapsulate nil
            (program)
            ,@def
            ,@rest))
+
+       (want-doc-p (or short long parents))
+       (thms (deflist-instantiate-table-thms name formals element kwd-alist x (w state)))
+       (thms-section
+        (if (not want-doc-p)
+            `(progn . ,thms)
+          `(defsection-progn ,(intern-in-package-of-symbol
+                               (concatenate 'string (symbol-name name) "-BASICS")
+                               name)
+             :parents (,name)
+             :short ,(concatenate 'string
+                                  "Basic theorems about @(see "
+                                  (xdoc::full-escape-symbol name)
+                                  "), generated by @(see std::deflist).")
+             . ,thms)))
 
        (events
         `((logic)
@@ -686,24 +713,22 @@ formals kwd-alist x req-alist fn-subst world))))
                                     )))
           (local (enable-if-theorem deflist-local-elementp-of-nil-thm))
           ,@theory-hack
+          ,thms-section)))
 
-          ,@(deflist-instantiate-table-thms name formals element kwd-alist x (w state)))))
-
-    `(defsection ,name
-       ,@(and parents `(:parents ,parents))
-       ,@(and short   `(:short ,short))
-       ,@(and long    `(:long ,long))
-       ;; keep all our deflist theory stuff bottled up.  BOZO encapsulate is
-       ;; slow, better to use a progn here
+    `(progn
        (encapsulate ()
+         ;; This encapsulate is necessary to keep all our deflist theory stuff
+         ;; bottled up.  It would be nice not to need this since encapsulate is
+         ;; slow, but it'd be hard to get it working.
          . ,events)
-       ;; now do the rest of the events with name enabled, so they get included
+       ;; Now do the rest of the events with name enabled, so they get included
        ;; in the section
        . ,(and rest
                `((value-triple (cw "Deflist: submitting /// events.~%"))
                  (with-output
                    :stack :pop
-                   (progn
+                   (defsection user-events
+                     ,@(and want-doc-p `(:extension ,name))
                      (local (in-theory (enable ,name)))
                      . ,rest)))))))
 
@@ -733,7 +758,3 @@ formals kwd-alist x req-alist fn-subst world))))
         `(progn ,(deflist-fn ',name ',formals ',element ',kwd-alist
                    ',other-events state)
                 (value-triple '(deflist ,',name)))))))
-
-
-
-

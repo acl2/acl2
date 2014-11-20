@@ -27,8 +27,9 @@
 
 (defconst *loadconfig*
   (make-vl-loadconfig
-   :start-files (list "fns/spec.v")
-   :search-path (list "fns/")
+   :start-files (list "ports5/spec.v")
+   :search-path (list "ports5/")
+   :defines (vl-make-initial-defines '("SYSTEM_VERILOG_MODE"))
    ))
 
 ;; (defconst *loadconfig*
@@ -39,7 +40,11 @@
 (defconsts (*loadresult* state)
   ;; If you turn on warning tracing, don't be scared about warnings during parsing
   ;; because they are most likely due to backtracking.
-  (vl-load *loadconfig*))
+  (b* (((mv (vl-loadresult res) state) (vl-load *loadconfig*)))
+    (cw "Loaded ~x0 modules.~%" (len (vl-design->mods res.design)))
+    (mv res state)))
+
+(vl-loadresult->filemap *loadresult*)
 
 (untrace$)
 (trace$ (vl-parse-port-declaration-noatts-fn
@@ -50,8 +55,31 @@
 (defconsts *simpconfig*
   (make-vl-simpconfig))
 
-(defconsts (*good* *bad* &)
-  (vl-simplify (vl-loadresult->design *loadresult*) *simpconfig*))
+(trace$ (vl-blame-alist :entry (list 'vl-blame-alist bads)))
+(trace$ vl-blame-alist-to-reportcard)
+(trace$ (vl-modulelist-zombies :entry (list 'vl-modulelist-zombies (vl-modulelist->names x))))
+
+(trace$ (vl-filter-modules :entry
+                           (list 'vl-filter-modules names)
+                           :exit
+                           (let ((values acl2::values))
+                             (list 'vl-filter-modules
+                                   :good (vl-modulelist->names (first values))
+                                   :bad (vl-modulelist->names (second values))))))
+
+                           
+
+(defconsts (*good* *bad*)
+  (b* (((mv good bad &) (vl-simplify (vl-loadresult->design *loadresult*) *simpconfig*))
+       (- (cw "Successfully translated ~x0 modules: ~x1.~%"
+              (len (vl-design->mods good))
+              (vl-modulelist->names (vl-design->mods good))))
+       (- (cw "Failed to translate ~x0 modules: ~x1.~%"
+              (len (vl-design->mods bad))
+              (vl-modulelist->names (vl-design->mods bad)))))
+    (mv good bad)))
+
+
 
 (top-level
  (with-local-ps

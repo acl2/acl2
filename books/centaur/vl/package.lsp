@@ -36,6 +36,7 @@
 (include-book "centaur/getopt/portcullis" :dir :system)
 (include-book "centaur/nrev/portcullis" :dir :system)
 (include-book "centaur/fty/portcullis" :dir :system)
+(include-book "centaur/depgraph/portcullis" :dir :system)
 
 (defmacro multi-union-eq (x y &rest rst)
   (xxxjoin 'union-eq (list* x y rst)))
@@ -230,6 +231,12 @@
       why
       with-redef
 
+      template-proj
+      template-append
+      make-tmplsubst
+      template-subst-top
+      template-subst
+      std::getargs
       ))
 
    ;; Things to remove:

@@ -90,8 +90,7 @@
   ((warnings vl-warninglist-p)
    (pstate   vl-parsestate-p))
   :returns (new-pstate vl-parsestate-p)
-  (b* (((vl-parsestate pstate) pstate))
-    (change-vl-parsestate pstate :warnings warnings)))
+  (change-vl-parsestate pstate :warnings warnings))
 
 
 

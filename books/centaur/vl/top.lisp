@@ -243,7 +243,7 @@
        (good          (xf-cwtime (vl-design-pre-toe-hook good)))
        ((mv good bad) (xf-cwtime (vl-design-propagate-errors* good bad)))
 
-       (good          (xf-cwtime (vl-design-to-e good)))
+       ((mv good bad) (xf-cwtime (vl-design-to-e good bad)))
        ((mv good bad) (xf-cwtime (vl-design-propagate-errors* good bad)))
 
        (good          (xf-cwtime (vl-design-clean-warnings good)))

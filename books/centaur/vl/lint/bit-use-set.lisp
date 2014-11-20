@@ -33,10 +33,12 @@
 ;; (include-book "../wf-reasonable-p")
 (include-book "disconnected")
 (include-book "../mlib/hierarchy")
+(include-book "../mlib/hierarchy-basic")
 (include-book "../mlib/allexprs")
 (include-book "../mlib/lvalues")
 (include-book "../mlib/reportcard")
-(include-book "../mlib/find-item")
+(include-book "../mlib/find")
+(include-book "../mlib/modnamespace")
 (include-book "../util/cwtime")
 (include-book "use-set-ignore")
 (include-book "std/bitsets/bitsets" :dir :system)
@@ -257,10 +259,11 @@ from truly spurious wires.</p>
   (mv (reportcard vl-reportcard-p :hyp :fguard)
       (all-wirealists
        "Fast alist binding every module name to its wirealist."
-       (equal (hons-assoc-equal name all-wirealists)
-              (let ((mod (vl-find-module name x)))
-                (and mod
-                     (cons name (mv-nth 2 (vl-module-wirealist mod nil))))))
+       (implies (stringp name)
+                (equal (hons-assoc-equal name all-wirealists)
+                       (let ((mod (vl-find-module name x)))
+                         (and mod
+                              (cons name (mv-nth 2 (vl-module-wirealist mod nil)))))))
        :hints(("Goal" :in-theory (enable vl-find-module)))))
 
   (b* (((when (atom x))
@@ -2317,8 +2320,7 @@ warnings."
   :returns (mv (x-prime vl-modulelist-p)
                (dbalist us-dbalist-p))
   ;; bozo check port bits
-  (b* ((x        (cwtime (vl-deporder-sort x) :mintime 1/2))
-       (toplevel (cwtime (vl-modulelist-toplevel x) :mintime 1/2))
+  (b* ((toplevel (cwtime (vl-modulelist-toplevel x) :mintime 1/2))
        ((mv warnings-alist all-walists)
         (cwtime (vl-modulelist-all-wirealists x)
                 :mintime 1/2))
@@ -2357,7 +2359,10 @@ warnings."
 (define vl-design-bit-use-set ((x vl-design-p))
   :returns (mv (new-x   vl-design-p)
                (dbalist us-dbalist-p))
-  (b* ((x (vl-design-fix x))
+  (b* (((mv okp x) (vl-design-deporder-modules x))
+       ((unless okp)
+        (raise "Somehow failed to deporder sort modules.")
+        (mv x nil))
        (ss (vl-scopestack-init x))
        ((vl-design x) x)
        ((mv new-mods dbalist) (us-analyze-mods x.mods ss))

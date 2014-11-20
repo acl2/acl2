@@ -444,3 +444,27 @@ and add a warning that this case is very unusual.</p>"
                (vl-portdecls-with-dir dir (cdr x))))
         (t
          (vl-portdecls-with-dir dir (cdr x)))))
+
+
+(define vl-portdecllist-names-by-direction
+  ((x vl-portdecllist-p)
+   (in string-listp)
+   (out string-listp)
+   (inout string-listp))
+  :parents (vl-portdecllist-p)
+  :returns (mv (in string-listp)
+               (out string-listp)
+               (inout string-listp))
+  (b* (((when (atom x))
+        (mv (string-list-fix in)
+            (string-list-fix out)
+            (string-list-fix inout)))
+       (decl (car x))
+       (name (vl-portdecl->name decl))
+       (dir  (vl-portdecl->dir decl)))
+    (case dir
+      (:vl-input  (vl-portdecllist-names-by-direction (cdr x) (cons name in) out inout))
+      (:vl-output (vl-portdecllist-names-by-direction (cdr x) in (cons name out) inout))
+      (:vl-inout  (vl-portdecllist-names-by-direction (cdr x) in out (cons name inout)))
+      (otherwise  (progn$ (raise "Impossible")
+                          (mv nil nil nil))))))
