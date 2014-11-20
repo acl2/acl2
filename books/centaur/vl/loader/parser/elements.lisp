@@ -298,13 +298,9 @@
          ((when (eq type1 :vl-kwd-genvar))
           (vl-parse-genvar-declaration atts))
          ((when (eq type1 :vl-kwd-task))
-          (seq tokstream
-                (task := (vl-parse-task-declaration atts))
-                (return (list task))))
+          (vl-parse-task-declaration atts))
          ((when (eq type1 :vl-kwd-function))
-          (seq tokstream
-                (fun := (vl-parse-function-declaration atts))
-                (return (list fun))))
+          (vl-parse-function-declaration atts))
          ((when (eq type1 :vl-kwd-defparam))
           (vl-parse-parameter-override atts))
          ((when (eq type1 :vl-kwd-assign))
