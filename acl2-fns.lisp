@@ -2092,3 +2092,17 @@ notation causes an error and (b) the use of ,. is not permitted."
                         (stobjs-in 'funny-fn (w *the-live-state*))
                         (not gc-on)))
                ,val))))
+
+; Through ACL2 Version_6.5, acl2-gentemp was deined in interface-raw.lisp.  But
+; since it is used in parallel-raw.lisp, we have moved it here in support of
+; the toothbrush.
+(defvar *acl2-gentemp-counter* 0)
+(defun-one-output acl2-gentemp (root)
+  (let ((acl2-pkg (find-package "ACL2")))
+    (loop
+     (let ((name (coerce (packn1 (list root *acl2-gentemp-counter*)) 'string)))
+       (if (not (find-symbol name acl2-pkg))
+           (return (let ((ans (intern name acl2-pkg)))
+; See comment in intern-in-package-of-symbol for an explanation of this trick.
+                     ans))
+         (incf *acl2-gentemp-counter*))))))
