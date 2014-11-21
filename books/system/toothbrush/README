@@ -25,13 +25,21 @@ there may be others not listed.
 
 - Abstract stobjs or nested stobjs (but local stobjs are supported)
 - Memoization (MEMOIZE is currently ignored)
+- FLET
+
+An odd wart is that features such as :hons and :acl2-par are added
+when generated ACL2 source file acl2r.lisp is loaded.  That file is
+created at build time.  The toothbrush can be sensitive to these
+features, so you may want to edit source file acl2r.lisp if the
+features there aren't what you want (say, because you're using an
+older executable from the ACL2 sources directory).
 
 Future work might not only add such support, but might also deal with
 some minor issues encountered during the implementation.  Search for
 "!!" in make-toothbrush.lisp and load-toothbrush.lsp to see brief
 discussions of such issues.
 
-Future work might also reduce the footprint of the ACL2 source files
+Future work might also reduce the footprint of the ACL2 source code
 required to run a toothbrush application.  As seen in file
 load-toothbrush.lsp, the relevant file sizes (in bytes) are as follows
 as of Nov. 13, 2014.
@@ -67,7 +75,7 @@ files (without explicit compilation); other Lisps may work, at least
 on small examples, but their performance could suffer from using
 interpreted ACL2 source code.
 
-More documentation will likely come later, especially if requested.
+More documentation may come later, especially if requested.
 
 -------
 RUNNING
@@ -80,13 +88,13 @@ be certified; see below for details.
 
 make -j 4 ACL2=/Users/kaufmann/acl2/acl2/saved_acl2h LISP=ccl
 
-To clean:
+To clean (again, where ACL2 is set to your ACL2 executable):
 
 make ACL2=/Users/kaufmann/acl2/acl2/saved_acl2h clean
 
 If some basic community books are not certified, the "make" above may
 fail.  However, it will likely succeed (as of this writing) provided
-you have certified arithmetic/top-with-meta.lisp, for example by
+you first certify arithmetic/top-with-meta.lisp, for example by
 standing in your books directory and running the following command
 (replacing "acl2" by your ACL2 executable, for example the value of
 ACL2 in the "make" commands above).

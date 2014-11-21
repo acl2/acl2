@@ -118,7 +118,8 @@
 
 ; Most or all of these are from *primitive-macros-with-raw-code*.
 
-  '(cond case er let*))
+  '(cond case er let*
+         plet por pand pargs spec-mv-let))
 
 (defmacro extend-names (x)
   `(let ((x ,x))

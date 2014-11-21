@@ -8674,7 +8674,8 @@
 ; We know name is a symbol, but it may or may not be new.  We return t if name
 ; is already defined as the name of the theorem term with the given
 ; rule-classes, or if event-form -- which is a defthm or defaxiom event -- is
-; redundant.  We do the first test first since perhaps it is more efficient.
+; an existing event in the world.  We do the first test first since perhaps it
+; is more efficient.
 
 ; Through Version_6.5 we had only the first test of this disjunction.  But
 ; Jared Davis and Sol Swords sent us small examples including the following,

@@ -3292,7 +3292,12 @@
 
            state)
           (cond
-           (output-ignored-p state)
+           (output-ignored-p
+            (cond (erp (mv-let (erp val state)
+                               (er soft ctx "See :DOC failure.")
+                               (declare (ignore erp val))
+                               state))
+                  (t state)))
            (t
             (pprogn
              (cond (erp

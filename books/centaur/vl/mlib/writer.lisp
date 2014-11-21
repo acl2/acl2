@@ -29,9 +29,9 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "find-module")
+(include-book "find")
 (include-book "stmt-tools")
-(include-book "modnamespace") ;; bozo at least for portdecllist->names
+(include-book "scopestack")
 (include-book "../loader/lexer/lexer") ; yucky, for simple-id-tail-p, etc.
 (include-book "../util/print")
 (local (include-book "../util/arithmetic"))
@@ -733,7 +733,6 @@ its arguments, if necessary.</p>"
                                 acl2::cancel_times-equal-correct
                                 acl2::cancel_plus-equal-correct
                                 acl2::CAR-WHEN-ALL-EQUALP
-                                CONSP-WHEN-MEMBER-EQUAL-OF-VL-MODALIST-P
                                 CONSP-WHEN-MEMBER-EQUAL-OF-VL-COMMENTMAP-P
                                 acl2::consp-when-member-equal-of-cons-listp
                                 CONSP-WHEN-MEMBER-EQUAL-OF-VL-ATTS-P

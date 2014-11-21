@@ -35,6 +35,10 @@
 (set-deferred-ttag-notes t state)
 (set-gag-mode :goals)
 
+; Initialize xdoc stuff so all of its books are pre-loaded and we're ready to
+; use xdoc commands in the vl shell.
+(xdoc::colon-xdoc-init)
+
 :q
 
 ;; Set up our program to not print a bunch of ACL2 banners.

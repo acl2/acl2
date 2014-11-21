@@ -30,12 +30,11 @@
 ;                  Sol Swords <sswords@centtech.com>
 
 (in-package "VL")
-
 (include-book "lineup")
 (include-book "override")
 (include-book "scopesubst")
 (include-book "../../mlib/blocks")
-(include-book "../../mlib/hierarchy")
+(include-book "../../mlib/hierarchy-basic")
 (local (std::add-default-post-define-hook :fix))
 
 (local (in-theory (disable (tau-system))))

@@ -1043,7 +1043,7 @@ with keyword arguments.  See also @(see extract-keyword-from-args).</p>
     [:long      long]
     [:autodoc   autodoc]
     [:extension topic]
-    ... events ...)
+    ... events and commentary ...)
 })
 
 <h4>Example</h4>
@@ -1057,7 +1057,12 @@ with keyword arguments.  See also @(see extract-keyword-from-args).</p>
    (defund foo (x) ...)
    (local (in-theory (enable foo)))
    (defthm foo-thm1 ...)
-   (defthm foo-thm2 ...))
+   (defthm foo-thm2 ...)
+
+   \"<p>NOTE: the next theorem is really useful, but we keep it disabled
+   because it gets too expensive when...</p>\"
+
+   (defthmd foo-thm3 ...))
 })
 
 <box><p>Note: this example might be better written as a @(see std::define),
@@ -1084,9 +1089,9 @@ reasons you might prefer using @('defsection') for this, instead of plain
 
 <p>But the main reasons to use @('defsection') are its documentation features.
 The definitions and theorems within a section can be <b>automatically</b>
-included in the documentation page for that section.  This helps to avoid
-copying-and-pasting code into the manual, and keeps it up-to-date as the code
-changes.</p>
+included in the documentation page for that section, along with any running
+commentary.  This helps to avoid copying-and-pasting code into the manual, and
+keeps it up-to-date as the code changes.</p>
 
 
 <h3>Ordinary Sections</h3>
@@ -1096,15 +1101,23 @@ any of these keywords are provided, they will be used to introduce a @(see
 defxdoc) command; otherwise no documentation will be generated.</p>
 
 <p>By default, the @(':long') string you give will be automatically extended
-with a \"Definitions and Theorems\" part that lists all the (non-local,
-non-redundant) definitions and theorems introduced in the section.  In the
-above example, the @(':long') field would be extended with:</p>
+with a \"Definitions and Theorems\" part that lists all of the (non-local,
+non-redundant) definitions and theorems introduced in the section.</p>
+
+<p>For instance, in the above example, the @(':long') field would be extended
+with:</p>
 
 @({
  <h3>Definition and Theorems</h3>
+
  @(def foo)
  @(thm foo-thm1)
  @(thm foo-thm2)
+
+ <p>NOTE: the next theorem is really useful, but we keep it disabled
+   because it gets too expensive when...</p>
+
+ @(thm foo-thm3)
 })
 
 <p>If you do not want this automatic documentation, you can turn it off with
@@ -1114,30 +1127,37 @@ above example, the @(':long') field would be extended with:</p>
 <h3>Extended Sections</h3>
 
 <p>The @(':extension') keyword allows you to say that this section is a
-continuation of a previously introduced concept.  When @(':extension topic') is
-provided, then @('topic') must be the name of a previously documented @(see
-xdoc) section, and you are not allowed to use @(':parents') or @(':short')
-since the topic already exists.</p>
+continuation of a previously introduced concept.</p>
+
+<p>When @(':extension topic') is provided, then @('topic') must be the name of
+a previously documented @(see xdoc) section, and you are not allowed to use
+@(':parents') or @(':short') since the topic already exists.  Note that whereas
+topics can have multiple parents, you can only extend a single topic at a
+time.</p>
 
 <p>The main purpose of an @(':extension') section is to add additional
-documentation, either via the @(':long') string or via the automatic
-documentation generation features of @('defsection').  The documentation
-obtained this way is just appended onto the existing @(':long') for the
-topic.</p>
+documentation, either via the @(':long') string or via the automatic events and
+commentary.  The documentation obtained this way is just appended onto the
+existing @(':long') for the topic.</p>
 
-<p>For example, if we have already given the section @('foo') with basic
-theorems, above we now want to add a bunch of additional \"advanced\" theorems
-about it, we might write something like this:</p>
+<p>For example, say we have already defined the above @('foo') section in some
+\"basic\" book.  We might then want to add some additional \"advanced\"
+theorems about it in some other book.  We could do this via:</p>
 
 @({
  (defsection advanced-theorems-about-foo
    :extension foo
-   (defthm foo-thm3 ...)
-   (defthm foo-thm4 ...))
+
+   \"<p>Additional theorems are also available in the @('advanced') book.  (We
+     don't include these in the basic book since they take a long time to
+     prove.)</p>\"
+
+   (defthm foo-thm4 ...)
+   (defthm foo-thm5 ...))
 })
 
-<p>This will then append the definitions of @('foo-thm3') and @('foo-thm4')
-onto the end of the documentation for @('foo').</p>")
+<p>This will result in the commentary and definitions of @('foo-thm4') and
+@('foo-thm5') being added onto the end of the documentation for @('foo').</p>")
 
 
 (defxdoc defsection-progn

@@ -63,7 +63,7 @@ their related warnings.</li>
 
 </ol>")
 
-(local (xdoc::set-default-parents vl-reportcard-p))
+(local (xdoc::set-default-parents vl-reportcard))
 
 (defsection vl-reportcard-basics
 

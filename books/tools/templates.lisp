@@ -37,63 +37,71 @@
 
 (defxdoc template-subst
   :parents (macro-libraries)
-  :short "Process a template to generate some events"
-  :long "
-<p>Template-subst is a function for manipulating templates that
-may be used to generate events.  For example, we might want to generate a
-function that runs some function on all the atoms of a tree.  Also, if the
-function to be run on the leaves is acl2-count preserving, we'd like to
-prove that the tree function is as well.  So we might define the following
-constant as a template for generating these sorts of functions/proofs:
+  :short "Template-subst is a function for manipulating templates that may be
+used to generate events."
+
+  :long "<p>As an example, suppose that we want to develop a general way to map
+a function over all of the atoms of a tree.  Also, when the function to be run
+on the leaves is @(see acl2-count) preserving, we'd like to prove that the tree
+function is as well.  So we might define the following constant as a template
+for generating these sorts of functions/proofs:</p>
+
 @({
- (defconst *maptree-template*
-   '((progn (defun _treefn_ (x _other-args_)
-              (if (atom x)
-                  (_leaffn_ x _other-args_)
-                (cons (_treefn_ (car x) _other-args_)
-                      (_treefn_ (cdr x) _other-args_))))
-            (:@ :preserves-acl2-count
-             (defthm _treefn_-preserves-acl2-count
-               (equal (acl2-count (_treefn_ x _other-args_))
-                      (acl2-count x)))))))
+    (defconst *maptree-template*
+      '((progn (defun _treefn_ (x _other-args_)
+                 (if (atom x)
+                     (_leaffn_ x _other-args_)
+                   (cons (_treefn_ (car x) _other-args_)
+                         (_treefn_ (cdr x) _other-args_))))
+
+               (:@ :preserves-acl2-count
+                (defthm _treefn_-preserves-acl2-count
+                  (equal (acl2-count (_treefn_ x _other-args_))
+                         (acl2-count x)))))))
 })
-Now to instantiate this template we might do
+
+<p>Now, to instantiate this template, we might do:</p>
+
 @({
- (template-subst *maptree-template*
-                 :features '(:preserves-acl2-count)
-                 :subtree-alist nil
-                 :splice-alist '((_other-args_ . (n)))
-                 :atom-alist '((_treefn_ . add-to-leaves)
-                               (_leaffn_ . +))
-                 :str-alist '((\"_TREEFN_\" . \"ADD-TO-LEAVES\"))
-                 :pkg-sym 'acl2::asdf)
+    (template-subst *maptree-template*
+                    :features      '(:preserves-acl2-count)
+                    :subtree-alist nil
+                    :splice-alist  '((_other-args_ . (n)))
+                    :atom-alist    '((_treefn_ . add-to-leaves)
+                                     (_leaffn_ . +))
+                    :str-alist     '((\"_TREEFN_\" . \"ADD-TO-LEAVES\"))
+                    :pkg-sym       'acl2::asdf)
 })
- </p>
 
 <p>The process has two main steps.</p>
 
 <h3>Preprocessing</h3>
-<p>The first step involves the :features argument and
-parts of the template beginning with :@.  It does something like the #+
-reader macro in Lisp.  When :@ occurs as the first element of a list, the
-second element of that list is treated as a feature expression, much like in
-the #+ reader macro.</p>
-<p>A feature expression is:
-<ul>
-<li>a symbol</li>
-<li>(NOT &lt;subexpression&gt;)</li>
-<li>(AND [&lt;subexpression&gt;])</li>
-<li>(OR [&lt;subexpression&gt;])</li>
-</ul></p>
 
-<p>Each symbol present in the features list becomes true, any not present
-become false, and the resulting Boolean expression is evaluated.  If it
-evaluates to T, the rest of the list (not including the feature expression)
-is spliced into the template and recursively preprocessed.
-Therefore in our example, since the feature :preserves-acl2-count is present
-in our :features argument to template-subst, we paste in the DEFTHM form.
-If it was not present, that defthm would effectively disappear.
-</p>
+<p>The first step involves the @(':features') argument and parts of the
+template beginning with @(':@').  It does something like the @('#+') reader
+macro in Lisp.</p>
+
+<p>When @(':@') occurs as the first element of a list, the second element of
+that list is treated as a feature expression, much like in the @('#+') reader
+macro.  A feature expression is:</p>
+
+<ul>
+<li>A symbol</li>
+<li>@('(NOT <subexpression>)')</li>
+<li>@('(AND [<subexpression>]*)</li>
+<li>@('(OR [<subexpression>]*])</li>
+</ul>
+
+<p>When templates are expanded using @('template-subst'), each symbol present
+in the features list becomes true, any not present become false, and the
+resulting Boolean expression is evaluated.  If the feature expression evaluates
+to true, the rest of the list (not including the feature expression) is spliced
+into the template and recursively preprocessed.</p>
+
+<p>In our @('*maptree-template*') example, then, since the feature
+@(':preserves-acl2-count') is present in our @(':features') argument to
+@('template-subst'), we paste in the DEFTHM form.  If it was not present, that
+defthm would effectively disappear.</p>
 
 <h3>Substitution</h3>
 <p> The second step involves substitution of various kinds into the tree.</p>

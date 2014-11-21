@@ -30,7 +30,7 @@
 
 (in-package "VL")
 (include-book "../../mlib/range-tools")
-(include-book "../../mlib/find-item")
+(include-book "../../mlib/reorder")
 (include-book "../../mlib/filter")
 (local (include-book "../../util/arithmetic"))
 (local (include-book "../../util/osets"))
@@ -220,93 +220,6 @@ nets agree and are correct by the time actual modules are produced.</p>")
    (new-ports true-listp :rule-classes :type-prescription)
    (new-vars  true-listp :rule-classes :type-prescription)))
 
-
-(define vl-find-vardecls-exec ((names    string-listp)
-                               (vardecls vl-vardecllist-p)
-                               (alist    (equal alist (vl-vardecllist-alist vardecls nil))))
-  :parents (vl-find-vardecls)
-  :hooks nil
-  (if (atom names)
-      nil
-    (cons (cdr (hons-get (car names) alist))
-          (vl-find-vardecls-exec (cdr names) vardecls alist))))
-
-(define vl-find-vardecls
-  :short "Collect variable declarations, by name, in order."
-  ((names    string-listp     "Names of variables to collect.")
-   (vardecls vl-vardecllist-p "List of all variable declarations to collect from."))
-  :returns (named-vardecls)
-
-  :long "<p>This is much like @(see vl-keep-vardecls), but it returns the
-results in a different order.  That is:</p>
-
-<ul>
-
-<li>@('(vl-keep-vardecls names decls)') returns the named declarations in the
-same order as they are listed in @('decls'), whereas</li>
-
-<li>@('(vl-find-vardecls names decls)') returns the named declarations in the
-same order as they are listed in @('names').</li>
-
-</ul>
-
-<p>Keeping the exact name order is useful for, e.g., collecting the variables
-that correspond to port declarations.</p>"
-
-  :hooks nil
-  :verify-guards nil
-  (mbe :logic
-       (if (atom names)
-           nil
-         (cons (vl-find-vardecl (car names) vardecls)
-               (vl-find-vardecls (cdr names) vardecls)))
-       :exec
-       (b* ((alist (make-fast-alist (vl-vardecllist-alist vardecls nil)))
-            (ans   (vl-find-vardecls-exec names vardecls alist)))
-         (fast-alist-free alist)
-         ans))
-  ///
-  (defthm vl-find-vardecls-exec-removal
-    (implies (equal alist (vl-vardecllist-alist vardecls nil))
-             (equal (vl-find-vardecls-exec names vardecls alist)
-                    (vl-find-vardecls names vardecls)))
-    :hints(("Goal" :in-theory (enable vl-find-vardecls-exec))))
-
-  (verify-guards vl-find-vardecls)
-
-  (defthm vl-vardecllist-p-of-vl-find-vardecls-unless-nil
-    (let ((found (vl-find-vardecls names vardecls)))
-      (implies (not (member nil found))
-               (vl-vardecllist-p found))))
-
-  (defthm vl-vardecllist-p-of-remove-nil-from-vl-find-vardecls
-    (vl-vardecllist-p
-     (remove-equal nil (vl-find-vardecls names vardecls))))
-
-  (defthm nil-in-vl-find-vardecls
-    (iff (member nil (vl-find-vardecls names vardecls))
-         (not (subsetp-equal names (vl-vardecllist->names vardecls)))))
-
-  (defthm vl-vardecllist-p-of-vl-find-vardecls-when-subset
-    (implies (subsetp-equal names (vl-vardecllist->names vardecls))
-             (vl-vardecllist-p (vl-find-vardecls names vardecls))))
-
-  (local (defthm l0
-           (implies (and (member a (vl-find-vardecls names vardecls))
-                         (vl-vardecllist-p vardecls)
-                         a)
-                    (member a vardecls))))
-
-  (defthm subsetp-of-vl-find-vardecls
-    (implies (and (subsetp-equal names (vl-vardecllist->names vardecls))
-                  (force (vl-vardecllist-p vardecls)))
-             (subsetp-equal (vl-find-vardecls names vardecls) vardecls)))
-
-  (defthm vl-vardecllist->names-of-vl-find-vardecls
-    (implies (subsetp-equal names (vl-vardecllist->names vardecls))
-             (equal (vl-vardecllist->names (vl-find-vardecls names vardecls))
-                    (string-list-fix names)))))
-
 (define vl-portdecl-sign-main
   ((portdecls vl-portdecllist-p)
    (vardecls  vl-vardecllist-p)
@@ -347,7 +260,7 @@ that correspond to port declarations.</p>"
                    :args (list missing))
             portdecls vardecls))
 
-       (port-vars     (vl-find-vardecls pnames vardecls))
+       (port-vars     (vl-reorder-vardecls pnames vardecls))
        (non-port-vars (vl-delete-vardecls pnames vardecls))
 
        ((mv ?okp warnings new-portdecls new-port-vars)

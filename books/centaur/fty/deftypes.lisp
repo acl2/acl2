@@ -4553,9 +4553,7 @@ feature in @(see defprod).</li>
 default function names.  @(':count') may also be set to NIL, to turn of
 generation of the count function.</li>
 
-<li>@(':parents'), @(':short'), @(':long'): add xdoc about the type.  (Note:
-xdoc support is half-baked; e.g. documentation strings for fields are allowed
-but not yet used.</li>
+<li>@(':parents'), @(':short'), @(':long'): add xdoc about the type.</li>
 
 <li>@(':measure'): override the measures used to admit the recognizer, fixing
 function, and count function; the default is @('(acl2-count x)').</li>

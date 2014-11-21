@@ -31,7 +31,8 @@
 (in-package "VL")
 (include-book "../mlib/writer")
 (include-book "../mlib/allexprs")
-(include-book "../mlib/find-item")
+(include-book "../mlib/find")
+(include-book "../mlib/modnamespace")
 (local (include-book "../util/arithmetic"))
 
 (defxdoc vl-describe

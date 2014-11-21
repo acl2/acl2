@@ -48,6 +48,7 @@
 (include-book "fal-find-any")
 (include-book "fal-extract")
 (include-book "fal-extract-vals")
+(include-book "fast-alist-clean")
 (include-book "hons-assoc-equal")
 (include-book "hons-rassoc-equal")
 (include-book "hons-remove-assoc")

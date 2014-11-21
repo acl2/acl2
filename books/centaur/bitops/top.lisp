@@ -31,6 +31,7 @@
 (in-package "ACL2")
 ;; (include-book "defaults")
 (include-book "ash-bounds")
+(include-book "logbitp-bounds")
 ;; (include-book "congruences")
 (include-book "equal-by-logbitp")
 (include-book "extra-defs")
@@ -223,6 +224,10 @@ rewriting terms in an @('n')-bit context.</p>
 <p>This book adds some basic bounding and monotonicity lemmas for @(see ash)
 and @(see logtail).</p>
 
+<h5>@(see bitops/logbitp-bounds)</h5>
+
+<p>This book adds some basic lemmas about @(see logbitp) and @(see
+expt).</p>
 
 <h5>@(see bitops/defaults)</h5>
 

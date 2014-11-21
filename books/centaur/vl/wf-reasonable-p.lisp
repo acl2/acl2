@@ -30,7 +30,7 @@
 
 (in-package "VL")
 (include-book "mlib/modnamespace")
-(include-book "mlib/find-item")
+(include-book "mlib/find")
 (include-book "mlib/expr-tools")
 (include-book "mlib/range-tools")
 (include-book "util/defwellformed")

@@ -31,7 +31,8 @@
 (in-package "VL")
 (include-book "expressions")
 (include-book "ports")
-(include-book "../../mlib/find-item")
+(include-book "../../mlib/find")
+(include-book "../../mlib/reorder")
 (include-book "../../mlib/port-tools")
 (local (include-book "../../util/arithmetic"))
 (local (include-book "../../util/osets"))
@@ -752,16 +753,6 @@ that the next token \"output\".  So all we really want to match is:</p>
   :returns (names string-listp :hyp :fguard)
   (vl-idtoken->name x))
 
-(define vl-reorder-portdecls-by-name ((name-order string-listp)
-                                      (decls      vl-portdecllist-p))
-  :guard (subsetp-equal name-order (vl-portdecllist->names decls))
-  :returns (new-decls vl-portdecllist-p :hyp :fguard)
-  (if (atom name-order)
-      nil
-    (cons (vl-find-portdecl (car name-order) decls)
-          (vl-reorder-portdecls-by-name (cdr name-order) decls))))
-
-
 (define vl-make-traditional-udp-head
   :short "Cross-check ports against port declarations for traditional UDPs."
   ((name    vl-idtoken-p           "Name of UDP, context for warnings.")
@@ -769,7 +760,9 @@ that the next token \"output\".  So all we really want to match is:</p>
    (decls   vl-port/vardecllist-p  "Corresponding port declarations."))
   :returns (mv (warning (and (implies warning (not head))
                              (iff (vl-warning-p warning) warning)))
-               (head    (implies (not warning) (vl-udp-head-p head))))
+               (head    (implies (not warning)
+                                 (vl-udp-head-p head))
+                        :hyp :fguard))
   (b* ((loc       (vl-token->loc name))
        (udpname   (vl-idtoken->name name))
 
@@ -895,7 +888,7 @@ that the next token \"output\".  So all we really want to match is:</p>
         ;; is, after all, the order that other modules instantiate the
         ;; primitive with, and it's also the order that the state table must be
         ;; in (see for instance Verilog-2005 Section 8.1.4).
-        (vl-reorder-portdecls-by-name (cdr idnames) indecls)))
+        (vl-reorder-portdecls (cdr idnames) indecls)))
 
     (mv nil
         (make-vl-udp-head :output outdecl
@@ -952,8 +945,6 @@ their declarations.</p>"
        (return-raw
         (b* (((mv warning head) (vl-make-traditional-udp-head udpname ports decls)))
           (mv warning head tokstream)))))
-
-
 
 (defparser vl-skip-through-endprimitive (udpname)
   :short "Special error recovery for parse errors encountered during primitives."

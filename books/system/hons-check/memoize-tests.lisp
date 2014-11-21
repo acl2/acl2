@@ -34,6 +34,7 @@
 (in-package "ACL2")
 (include-book "misc/assert" :dir :system)
 (include-book "std/lists/flatten" :dir :system)
+(include-book "tools/bstar" :dir :system)
 
 ; cert_param: (hons-only)
 
@@ -307,6 +308,40 @@
 (assert! (test-simultaneously-hons-with-spec-mv-let))
 
 
+
+(defun make-memoized-alist (x)
+  (declare (xargs :guard t))
+  (make-fast-alist (cons (cons 'x x)
+                         '(("a" . 1)
+                           (b . 2)
+                           (c . 3)))))
+
+(memoize 'make-memoized-alist)
+
+(defun do-stuff-to-fast-alist (n alist)
+  (declare (xargs :guard (natp n)))
+  (b* (((when (zp n))
+        alist)
+       (?a (hons-get 'a alist))
+       (?b (hons-get 'b alist))
+       (?c (hons-get 'c alist))
+       (alist (hons-acons n n alist)))
+    (do-stuff-to-fast-alist (- n 1) alist)))
+
+(comp t)
+
+(defconst *spec* (do-stuff-to-fast-alist 1000 (make-memoized-alist 5)))
+
+(defun check-both-with-pand (n)
+  (declare (xargs :guard (natp n)))
+  (pand (equal (do-stuff-to-fast-alist n (make-fast-alist (make-memoized-alist 5))) *spec*)
+        (equal (do-stuff-to-fast-alist n (make-fast-alist (make-memoized-alist 5))) *spec*)))
+
+(assert! (check-both-with-pand 1000))
+
+
+
+
 ;; Basic check to try to see if threads will interfere with one another
 
 (defun add-some-honses (x acc)
@@ -380,4 +415,6 @@
 ;;  - ACL2(hp): memoization, lock contention:     242 seconds (many gc messages)
 ;;  - ACL2(h):  memoization, no lock contention:   61 seconds (many gc messages)
 (assert! (time$ (check-both 100)))
+
+
 

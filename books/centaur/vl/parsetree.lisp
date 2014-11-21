@@ -2223,6 +2223,11 @@ respectively.</p>"
   (vl-vardecl
    vl-paramdecl))
 
+(defthm vl-blockitem-fix-type
+  (consp (vl-blockitem-fix x))
+  :rule-classes :type-prescription
+  :hints(("Goal" :expand ((:with vl-blockitem-fix (vl-blockitem-fix x))))))
+
 (fty::deflist vl-blockitemlist
   :elt-type vl-blockitem-p
   :true-listp nil
@@ -3480,6 +3485,11 @@ initially kept in a big, mixed list.</p>"
                    nfix
                    ))
 
+  (defthm vl-genelement-fix-type
+    (consp (vl-genelement-fix x))
+    :rule-classes :type-prescription
+    :hints(("Goal" :expand ((:with vl-genelement-fix (vl-genelement-fix x))))))
+
   (define vl-genelement->loc ((x vl-genelement-p))
     :returns (loc vl-location-p)
     (vl-genelement-case x
@@ -4130,7 +4140,5 @@ resulting from parsing some Verilog source code."
 
    ))
 
-
-
-
+(defoption vl-maybe-design-p vl-design-p)
 

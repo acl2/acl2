@@ -104,6 +104,8 @@
 (include-book "centaur/satlink/check-config" :dir :system)
 (include-book "centaur/satlink/benchmarks" :dir :system)
 
+(include-book "centaur/depgraph/top" :dir :system)
+
 (include-book "centaur/quicklisp/top" :dir :system)
 
 (include-book "centaur/misc/top" :dir :system)
@@ -203,10 +205,10 @@
 
 (include-book "centaur/fty/deftypes" :dir :system)
 
+(include-book "misc/find-lemmas" :dir :system)
 (include-book "misc/simp" :dir :system)
 (include-book "misc/without-waterfall-parallelism" :dir :system)
 (include-book "misc/with-waterfall-parallelism" :dir :system)
-
 
 #||
 
@@ -243,6 +245,8 @@
 (include-book "centaur/memoize/top" :dir :system)
 
 ||#
+
+(defpointer assocs patbind-assocs)
 
 ; Historically we had a completely ad-hoc organization that grew organically as
 ; topics were added.  This turned out to be a complete mess.  To make the

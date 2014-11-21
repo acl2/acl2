@@ -35,21 +35,35 @@
 
 (defxdoc filtering-by-name
   :parents (mlib)
-  :short "Functions for filtering lists of module elements by their names."
+  :short "Functions for filtering lists of parsed objects by their names."
 
-  :long "<p>We implement functions for keeping and deleting elements by their
-names, and also for partitioning lists into named and unnamed subsets.</p>
+  :long "<p>We implement functions for keeping and deleting objects by their
+names, and also for partitioning lists of objects into named and unnamed
+sub-lists.</p>
 
-<p>Our implementations are logically simple, but we use MBE to make them fairly
+<p>These functions are logically simple, but we use MBE to make them fairly
 efficient.  In particular, suppose we want to keep, delete, or filter the list
-@('X') using some list of @('NAMES').  If there are only a few names, we use
-naive algorithm that calls @('member-equal') repeatedly, and this is
-effectively @('O(|X|)').</p>
+@('x') using some list of @('names').</p>
 
-<p>When there are many names, we use @(see make-lookup-alist) to construct a
+<ul>
+
+<li>If there are only a few names, we use naive algorithm that calls @(see
+member-equal) repeatedly, and this is effectively @('O(|x|)').</li>
+
+<li>When there are many names, we use @(see make-lookup-alist) to construct a
 temporary, fast alist, and use @(see fast-memberp) to perform the lookups.
 Assuming that hashing operations are constant time, constructing this table is
-@('O(|NAMES|)'), and the subsequent processing of @('X') is @('O(|X|)').</p>")
+@('O(|names|)'), and the subsequent processing of @('x') is @('O(|x|)').</li>
+
+</ul>
+
+<p>These functions <b>preserve the order</b> of the initial list.  The order of
+@('names') is irrelevant, and any spurious @('names') that aren't among the
+names of @('x') are simply ignored.</p>
+
+<p>See also @(see finding-by-name) for related functions that can also be used
+to look up objects by their names and to rearrange objects by their
+names.</p>")
 
 (defund def-vl-filter-by-name-fn
   (type          ;; should be 'paramdecl, 'vardecl, 'module, etc.
@@ -450,18 +464,7 @@ function enabled and would think it odd to ever prove a theorem about it.</p>" f
                (mv yes no nrev nrev2))))
 
 
-(def-vl-filter-by-name module
-  :del-long "<p>This is a low-level operation that simply removes the listed
-modules.  It can be \"unsafe\" in that it can ruin the @(see completeness) of a
-module list should any remaining modules instantiate the removed modules.  Some
-safer, higher-level alternatives include @(see vl-remove-bad-modules), @(see
-vl-remove-unnecessary-modules), and @(see vl-design-propagate-errors).</p>"
-
-  :keep-long "<p><b>Note</b>: it is often better to use the related function
-@(see vl-fast-find-modules).  When the list of names is short,
-@('vl-fast-find-modules') basically just requires a few hash table lookups,
-whereas @('vl-keep-modules') has to recur over the entire list of
-modules.</p>")
+(def-vl-filter-by-name module)
 
 (encapsulate
   ()
@@ -486,3 +489,7 @@ modules.</p>")
 (def-vl-filter-by-name typedef)
 
 
+(def-vl-filter-by-name import
+  :accessor vl-import->pkg
+  :short-name "package"
+  :suffix imports-by-package)

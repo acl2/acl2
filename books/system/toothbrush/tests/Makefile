@@ -4,7 +4,7 @@
 
 # When des and aes are added to the community book, they should be
 # added below.
-TEST_DIRS := test1 test2 dag-unification
+TEST_DIRS := test1 test2 test-par dag-unification
 
 .PHONY: all
 all: $(TEST_DIRS)

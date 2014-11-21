@@ -8920,16 +8920,21 @@
 
 (defun mark-missing-as-hidden-p (a1 a2)
 
-; A1 and a2 are known-package-alists.  Return the result of marking each
-; package-entry in a1 that is missing in a2 with hidden-p equal to t.
+; A1 and a2 are known-package-alists.  Return the result of modifying a1 by
+; marking the following non-hidden entries as hidden: those that are either
+; missing from a2 or hidden in a2.
 
   (cond ((endp a1) nil)
-        ((or (find-package-entry (package-entry-name (car a1)) a2)
-             (package-entry-hidden-p (car a1)))
-         (cons (car a1)
+        ((and (not (package-entry-hidden-p (car a1)))
+              (let ((entry
+                     (find-package-entry (package-entry-name (car a1)) a2)))
+                (or (not entry)
+                    (package-entry-hidden-p entry))))
+         (cons (change-package-entry-hidden-p (car a1) t)
                (mark-missing-as-hidden-p (cdr a1) a2)))
-        (t (cons (change-package-entry-hidden-p (car a1) t)
-                 (mark-missing-as-hidden-p (cdr a1) a2)))))
+        (t
+         (cons (car a1)
+               (mark-missing-as-hidden-p (cdr a1) a2)))))
 
 (defun known-package-alist-included-p (a1 a2)
 
