@@ -278,3 +278,22 @@ viewing Verilog designs.")
 (set-vls-root "/n/fv2/translations")
 (start)
 ||#
+
+#||
+(trace$ (vls-get-parents :entry (list 'vls-get-parents origname
+                                      (vl-modulelist->names (vl-design->mods (vls-data->orig data))))))
+
+(trace$ (vl-design-upgraph :entry (list 'vl-design-upgraph)
+                           :exit (list 'vl-design-upgraph acl2::values)))
+
+(trace$ (vl-necessary-elements-direct :entry (list 'vl-necessary-elements-direct :superiors superiors)
+                                      :exit (list 'vl-necessary-elements-direct acl2::values)))
+
+(trace$ (vl-dependent-elements-direct :entry (list 'vl-dependent-elements-direct :subs subs)
+                                      :exit (list 'vl-dependent-elements-direct acl2::values)))
+
+(trace$ (vl-collect-dependencies :entry (list 'vl-collect-dependencies
+                                              :names names
+                                              :graph graph)
+                                 :exit (list 'vl-collect-dependencies acl2::values)))
+||#

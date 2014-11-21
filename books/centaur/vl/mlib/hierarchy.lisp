@@ -201,7 +201,7 @@ with warnings for any undeclared identifiers.</p>"
                          :hyp :fguard)
   (if (atom names)
       nil
-    (union (cdr (hons-get names graph))
+    (union (cdr (hons-get (car names) graph))
            (vl-collect-dependencies (cdr names) graph))))
 
 (define vl-dependent-elements-direct
