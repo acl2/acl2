@@ -246,6 +246,8 @@
 
 ||#
 
+(defpointer assocs patbind-assocs)
+
 ; Historically we had a completely ad-hoc organization that grew organically as
 ; topics were added.  This turned out to be a complete mess.  To make the
 ; manual more approachable and relevant, we now try to impose a better
