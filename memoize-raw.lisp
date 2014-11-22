@@ -1383,6 +1383,11 @@
 #+static-hons
 (defun pons-addr-of-argument (x)
 
+; Warning: *default-hs* needs to have been initialized before calling this
+; function.  As of this writing, pons-addr-of-argument is called only by
+; pons-addr-hash, which is called only by pons, which calls
+; (hl-maybe-initialize-default-hs) before calling pons-addr-hash.
+
 ; Warning: Keep this in sync with hl-addr-of and hl-addr-of-unusual-atom.
 
 ; See hl-addr-of.  This is similar, except without the STR-HT or OTHER-HT we
@@ -1471,6 +1476,12 @@
 #+static-hons
 (defabbrev pons-addr-hash (x y)
 
+; Warning: *default-hs* needs to have been initialized before calling this
+; function, because it calls pons-addr-of-argument.  As of this writing,
+; pons-addr-of-argument is called only by pons-addr-hash, which is called only
+; by pons, which calls (hl-maybe-initialize-default-hs) before calling
+; pons-addr-hash.
+
 ; We try to compute the addresses of X and Y and hash them together.  If either
 ; doesn't have an address, we just return NIL.
 
@@ -1495,6 +1506,20 @@
 ; memoize-fn-def.
 
   (declare (hash-table ht))
+
+; With static honsing pons calls pons-addr-hash, which calls
+; pons-addr-of-argument, which can access *default-hs*.  So here, we make sure
+; that *default-hs* is initialized with static honsing.  This is inexpensive
+; compared to pons, for two reasons:
+
+; - When *default-hs* has already been initialized, the call just below is
+;   essentially just a read of a special variable.
+
+; - Pons is only called on behalf of memoized functions with at least two
+;   arguments.
+
+  #+static-hons
+  (hl-maybe-initialize-default-hs)
 
   #+static-hons
   (let ((addr (pons-addr-hash x y)))

@@ -413,6 +413,7 @@ work.</p>")
 
 (define satlink-parse-variable-line
   :parents (dimacs-interp)
+  :prepwork ((local (in-theory (disable ACL2::FOLD-CONSTS-IN-+))))
   ((x          stringp                "String we're processing.")
    (n          natp                   "Current position in @('x').")
    (xl         (equal xl (length x))  "Pre-computed length of @('x').")

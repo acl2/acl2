@@ -26289,3 +26289,25 @@ Lisp definition."
        (<? (tau-interval-hi-rel int)
            (fix x)
            (tau-interval-hi int))))
+
+; We added the following three defthm forms at the request of Jared Davis, who
+; noted that many book that seem to depend on community book
+; books/arithmetic/top.lisp can get by with just these three theorems.  We
+; might consider adding analogues for multiplication as well, but that could
+; break a lot of books.  Since we already build in linear arithmetic but not
+; (by default) non-linear arithmetic, we think it not unreasonable to include
+; these rules only for addition and not multiplication.
+
+(defthm commutativity-2-of-+
+  (equal (+ x (+ y z))
+         (+ y (+ x z))))
+
+(defthm fold-consts-in-+
+  (implies (and (syntaxp (quotep x))
+                (syntaxp (quotep y)))
+           (equal (+ x (+ y z))
+                  (+ (+ x y) z))))
+
+(defthm distributivity-of-minus-over-+
+  (equal (- (+ x y))
+         (+ (- x) (- y))))

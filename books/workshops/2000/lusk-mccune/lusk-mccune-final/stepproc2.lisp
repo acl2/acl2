@@ -25,6 +25,9 @@
 ;;--------------------------------
 ;; exec-setup-listener
 
+;; [Jared] adding this because the defun below failed when it was added to ACL2.
+(local (in-theory (disable FOLD-CONSTS-IN-+)))
+
 (defun exec-setup-listener (stmt ps ms)
   (declare (xargs :guard (and (statementp stmt)
 			      (equal (car stmt) 'setup-listener)

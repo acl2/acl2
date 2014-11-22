@@ -9437,7 +9437,7 @@
                              t
                              (or new-event-form event-form)
                              'encapsulate
-                             (strip-cars insigs)
+                             (or (strip-cars insigs) 0)
                              nil nil
                              t
                              ctx
@@ -9528,7 +9528,7 @@
                                         new-event-form
                                       event-form)
                                     'encapsulate
-                                    (strip-cars insigs)
+                                    (or (strip-cars insigs) 0)
                                     nil nil
                                     nil ; irrelevant, since we are skipping proofs
                                     ctx

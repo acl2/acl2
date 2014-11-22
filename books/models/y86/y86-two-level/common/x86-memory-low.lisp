@@ -610,7 +610,9 @@
                                                           next-addr
                                                           mem-table)
                            (good-mem-table-entriesp-logic lower lower next-addr
-                                                          mem-table)))))
+                                                          mem-table))
+           :in-theory ; New axiom added after v6-5 breaks the proof:
+           (disable fold-consts-in-+))))
 
 (defthm merge-<-into->-append-1
   (implies (and (all-< x a)

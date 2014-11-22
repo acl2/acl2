@@ -230,6 +230,10 @@ functions).
 ;; So do we believe that this big hodge-podge is same as the mutually recursive
 ;; code? Well, let us prove it.
 
+(local
+ ;; [Jared] added this because the following proof broke when I built it into ACL2.
+ (in-theory (disable FOLD-CONSTS-IN-+)))
+
 (defthm single-and-mutually-recursive-code-same
   (equal  (ltl-semantics-single-recursion f init prefix cycle label dist index)
           (if (equal index 0)

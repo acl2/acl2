@@ -644,6 +644,8 @@
 	   (equal (g^n (base1^n x j)(+ i (- j)))
 		  (g^n x i)))
   :hints (("Goal"
+           ;; [Jared] building this into ACL2 broke this theorem
+           :in-theory (disable distributivity-of-minus-over-+)
 	   :induct (induct-natp-hint j))))
 
 (defthm
