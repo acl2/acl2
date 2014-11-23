@@ -63,16 +63,24 @@ expand into a call of a specialized, inlined function.</p>
 
 (defmacro fast-rotate-left (n x places)
   (cond ((eql n 8)   `(rotate-left-8  ,x    ,places))
+        ((eql n 9)   `(rotate-left-9  ,x    ,places))
         ((eql n 16)  `(rotate-left-16 ,x    ,places))
+        ((eql n 17)  `(rotate-left-17 ,x    ,places))
         ((eql n 32)  `(rotate-left-32 ,x    ,places))
+        ((eql n 33)  `(rotate-left-33 ,x    ,places))
         ((eql n 64)  `(rotate-left-64 ,x    ,places))
+        ((eql n 65)  `(rotate-left-65 ,x    ,places))
         (t           `(rotate-left    ,x ,n ,places))))
 
 (defmacro fast-rotate-right (n x places)
   (cond ((eql n 8)   `(rotate-right-8  ,x    ,places))
+        ((eql n 9)   `(rotate-right-9  ,x    ,places))
         ((eql n 16)  `(rotate-right-16 ,x    ,places))
+        ((eql n 17)  `(rotate-right-17 ,x    ,places))
         ((eql n 32)  `(rotate-right-32 ,x    ,places))
+        ((eql n 33)  `(rotate-right-33 ,x    ,places))
         ((eql n 64)  `(rotate-right-64 ,x    ,places))
+        ((eql n 65)  `(rotate-right-65 ,x    ,places))
         (t           `(rotate-right    ,x ,n ,places))))
 
 
@@ -249,7 +257,7 @@ expand into a call of a specialized, inlined function.</p>
    :hints(("Goal" :in-theory (enable mod rem)))))
 
 (define rotate-left-n-function-gen
-  ((n :type (member 8 16 32 64)))
+  ((n natp))
   :verify-guards nil
 
   (let* ((n-1 (1- n))
@@ -308,17 +316,26 @@ expand into a call of a specialized, inlined function.</p>
          :hints-l (("Goal" :in-theory (e/d (unsigned-byte-p)
                                            (,fn-name))))))))
 
+;; Feel free to create different versions of fast-rotate-left-<n> as
+;; required.
+
 (make-event (rotate-left-n-function-gen  8))
 (make-event (rotate-left-n-function-gen 16))
 (make-event (rotate-left-n-function-gen 32))
 (make-event (rotate-left-n-function-gen 64))
+
+(make-event (rotate-left-n-function-gen  9))
+(make-event (rotate-left-n-function-gen 17))
+(make-event (rotate-left-n-function-gen 33))
+(make-event (rotate-left-n-function-gen 65))
+
 
 ;; ======================================================================
 ;; Rotate right:
 ;; ======================================================================
 
 (define rotate-right-n-function-gen
-  ((n :type (member 8 16 32 64)))
+  ((n natp))
   :verify-guards nil
 
   (let* ((n-1 (1- n))
@@ -377,9 +394,17 @@ expand into a call of a specialized, inlined function.</p>
          :hints-l (("Goal" :in-theory (e/d (unsigned-byte-p)
                                            (,fn-name))))))))
 
+;; Feel free to create different versions of fast-rotate-right-<n> as
+;; required.
+
 (make-event (rotate-right-n-function-gen  8))
 (make-event (rotate-right-n-function-gen 16))
 (make-event (rotate-right-n-function-gen 32))
 (make-event (rotate-right-n-function-gen 64))
+
+(make-event (rotate-right-n-function-gen  9))
+(make-event (rotate-right-n-function-gen 17))
+(make-event (rotate-right-n-function-gen 33))
+(make-event (rotate-right-n-function-gen 65))
 
 ;; ======================================================================
