@@ -83,6 +83,7 @@ or pathname of such, containing relevant ACL2 source files."))
   THE-LIVE-VAR
   SET-W!
   ONEIFY ; called in mv-let-for-with-local-stobj, but not with toothbrush
+  INITIALIZE-DMR-INTERVAL-USED ; called by set-waterfall-parallelism-fn
   )
 
 #+hons ; memoize only here
@@ -121,13 +122,20 @@ or pathname of such, containing relevant ACL2 source files."))
   (declare (ignore wrld user-stobj-alist))
   (format nil "ev-fncall-msg: ~s" val))
 
-(with-suppression
- (our-with-compilation-unit
-  (let ((*default-pathname-defaults* COMMON-LISP-USER::*acl2-dir*))
-    (load "axioms.lisp")
-    (load "basis-a.lisp")
-    #+hons
-    (progn (load "hons.lisp")
-           (load "hons-raw.lisp")
-           (load "memoize.lisp")
-           (load "memoize-raw.lisp")))))
+(our-with-compilation-unit
+
+; Warning: The order of files below should respect the order in
+; acl2::*acl2-files*, in order to avoid the possibility of a file trying to use
+; the value of a constant that isn't yet defined.
+
+ (let ((*default-pathname-defaults* COMMON-LISP-USER::*acl2-dir*))
+   #+acl2-par (load "multi-threading-raw.lisp")
+   (load "axioms.lisp")
+   (load "basis-a.lisp")
+   #+hons (load "memoize.lisp")
+   #+hons (load "hons.lisp")
+   #+acl2-par (load "parallel.lisp")
+   #+acl2-par (load "futures-raw.lisp")
+   #+acl2-par (load "parallel-raw.lisp")
+   #+hons (load "hons-raw.lisp")
+   #+hons (load "memoize-raw.lisp")))
