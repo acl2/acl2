@@ -4452,7 +4452,7 @@ functions.</p>
 <li>Fixing function @('arithtm-fix')</li>
 <li>Equivalence relation @('arithtm-equiv')</li>
 <li>@('arithtm-kind'), which returns either @(':num'), @(':plus'), or
-@(':minus) to distinguish the different kinds of arithtm objects</li>
+@(':minus') to distinguish the different kinds of arithtm objects</li>
 <li>Constructors @('arithtm-num'), @('arithtm-plus'), @('arithtm-minus')</li>
 <li>Accessors @('arithtm-num->val'), @('arithtm-plus->left'),
 @('arithtm-plus->right'), and @('arithtm-minus->arg')</li>
@@ -4532,7 +4532,7 @@ The possible keyword arguments are:</p>
 <ul>
 <li>@(':layout'), one of @(':tree'), @(':list'), or @(':alist'), determining
 the arrangement of fields within the product object (as in @(see defprod)),</li>
-<li>@(':inline), determining whether the constructor and accessors are inlined
+<li>@(':inline'), determining whether the constructor and accessors are inlined
 or not.  This may be @(':all') or a subset of @('(:xtor :acc)').  Defaults to
 @('(:acc)') if not overridden.</li>
 <li>@(':hons'), NIL by default, determining whether objects are constructed
@@ -4778,7 +4778,7 @@ is used as a base for generating the field accessor names.</li>
 <li>@(':ctor-name') overrides the name of the product constructor function,
 which by default is the type-name.</li>
 
-<li>@(':inline), determining whether the constructor and accessors are inlined
+<li>@(':inline'), determining whether the constructor and accessors are inlined
 or not.  This may be @(':all') or a subset of @('(:xtor :acc)').  Defaults to
 @('(:acc)') if not overridden.</li>
 
