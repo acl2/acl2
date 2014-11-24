@@ -637,7 +637,7 @@ shown.</p>"
             (vl-cw "One ~s0 Warning:~%~%" label))
            (t
             (vl-cw "~x0 ~s1 Warnings:~%~%" count label)))
-     (vl-print-reportcard reportcard))))
+     (vl-print-reportcard reportcard :elide nil))))
 
 (define vl-jp-reportcard-aux ((x vl-reportcard-p) &key (ps 'ps))
   (b* (((when (atom x))
