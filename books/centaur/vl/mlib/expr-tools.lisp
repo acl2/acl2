@@ -1333,3 +1333,25 @@ when all arguments are signed."
   (deffixequiv vl-exprtype-max-fn :args ((x vl-exprtype-p) (y vl-exprtype-p))))
 
 
+
+(define vl-$bits-call-p ((x vl-expr-p))
+  :enabled t
+  (and (not (vl-atom-p x))
+       (b* (((vl-nonatom x))
+            ((unless (and (eq x.op :vl-syscall)
+                          (eql (len x.args) 2)))
+             nil)
+            (fn (first x.args))
+            ((unless (vl-atom-p fn)) nil)
+            ((vl-atom fn))
+            ((unless (eq (tag fn.guts) :vl-sysfunname)) nil)
+            ((vl-sysfunname fn.guts)))
+         (equal fn.guts.name "$bits")))
+  ///
+  (defthmd arity-stuff-about-vl-$bits-call
+    (implies (vl-$bits-call-p x)
+             (and (not (equal (vl-expr-kind x) :atom))
+                  (consp (vl-nonatom->args x))
+                  (consp (cdr (vl-nonatom->args x)))
+                  (vl-expr-p (cadr (vl-nonatom->args x)))))))
+
