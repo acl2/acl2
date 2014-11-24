@@ -4532,7 +4532,7 @@ The possible keyword arguments are:</p>
 <ul>
 <li>@(':layout'), one of @(':tree'), @(':list'), or @(':alist'), determining
 the arrangement of fields within the product object (as in @(see defprod)),</li>
-<li>@(':inline), determining whether the constructor and accessors are inlined
+<li>@(':inline'), determining whether the constructor and accessors are inlined
 or not.  This may be @(':all') or a subset of @('(:xtor :acc)').  Defaults to
 @('(:acc)') if not overridden.</li>
 <li>@(':hons'), NIL by default, determining whether objects are constructed
