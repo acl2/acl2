@@ -4099,7 +4099,7 @@
 
 @({
  ;; preparation: associate fixing functions/equivalence relations with component types
- ;; Note: this is done for most basic types in the book centaur/fty/basetyptes.lisp.
+ ;; Note: this is done for most basic types in the book centaur/fty/basetypes.lisp.
  (deffixtype integer :pred integerp :fix ifix :equiv int-equiv :define t)
  (deffixtype symbol :pred symbolp :fix symbol-fix :equiv sym-equiv :define t)
 
