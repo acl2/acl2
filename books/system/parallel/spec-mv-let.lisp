@@ -132,3 +132,28 @@
       (if (equal a 5)
           (+ y a b)
         (+ z a b))))))
+
+(must-fail ; overlapping inner and outer variables
+ (encapsulate
+  ()
+  (set-ignore-ok t)
+  (defun foo3 ()
+    (spec-mv-let
+     (x)
+     17
+     (mv?-let (x)
+              23
+              (if t
+                  (+ x x)
+                "bad"))))))
+
+(assert!
+ (not (let ((a t)
+            (xval nil))
+        (spec-mv-let (yval)
+                     xval
+                     (mv?-let (xval)
+                              a
+                              (if xval
+                                  yval
+                                nil))))))
