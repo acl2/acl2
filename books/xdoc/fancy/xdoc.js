@@ -1233,7 +1233,10 @@ function printerFriendly()
     var html = "<html>\n"
 	+ "<head>\n"
 	+ "<title>Printer Friendly</title>\n"
-	+ "<link rel=\"stylesheet\" type=\"text/css\" href=\"print.css\"/>"
+        + "<link rel=\"stylesheet\" type=\"text/css\" href=\"http://fonts.googleapis.com/css?family=Noto+Serif\">"
+        + "<link rel=\"stylesheet\" type=\"text/css\" href=\"http://fonts.googleapis.com/css?family=Lato\">"
+        + "<link rel=\"stylesheet\" type=\"text/css\" href=\"http://fonts.googleapis.com/css?family=Source+Code+Pro\">"
+        + "<link rel=\"stylesheet\" type=\"text/css\" href=\"print.css\"/>"
         + "<link rel=\"shortcut icon\" href=\"favicon.png\"/>"
         + "</head><body>"
 	+ $("#data").html()
