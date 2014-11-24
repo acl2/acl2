@@ -174,22 +174,29 @@ with warnings for any undeclared identifiers.</p>"
     (vl-apply-reportcard x graph.reportcard)))
 
 (define vl-design-downgraph ((x vl-design-p))
-  :short "Graph of downward dependencies."
+  :short "Graph of downward dependencies.  Fast alist."
   :returns (graph vl-depgraph-p "Maps, e.g., modules to submodules.")
   (b* (((vl-immdepgraph graph) (vl-design-immdeps x)))
     (make-fast-alist graph.deps))
   ///
   (more-returns (graph depgraph::alist-values-are-sets-p)))
 
-(define vl-design-upgraph ((x vl-design-p))
-  :short "Graph of upward dependencies.  Fast alist."
-  :returns (graph vl-depgraph-p "Maps, e.g., modules to superior modules.")
+(define vl-design-upgraph-aux ((x vl-design-p))
+  :parents (vl-design-upgraph)
+  :short "Memoized core."
+  :enabled t
   (b* (((vl-immdepgraph graph) (vl-design-immdeps x))
        (upgraph (fast-alist-free (depgraph::invert graph.deps)))
        (upgraph (depgraph::mergesort-alist-values upgraph)))
     (make-fast-alist upgraph))
   ///
-  (memoize 'vl-design-upgraph)
+  (memoize 'vl-design-upgraph-aux))
+
+(define vl-design-upgraph ((x vl-design-p))
+  :short "Graph of upward dependencies.  Fast alist."
+  :returns (graph vl-depgraph-p "Maps, e.g., modules to superior modules.")
+  (make-fast-alist (vl-design-upgraph-aux x))
+  ///
   (more-returns (graph depgraph::alist-values-are-sets-p)))
 
 (define vl-collect-dependencies ((names string-listp)
@@ -334,3 +341,8 @@ particular design elements."
             x)))
     (mv t (change-vl-design x :mods new-mods))))
 
+(define vl-hierarchy-free ()
+  :short "Free memoize tables associated with @(see hierarchy) functions."
+  (progn$
+   (clear-memoize-table 'vl-design-immdeps)
+   (clear-memoize-table 'vl-design-upgraph-aux)))
