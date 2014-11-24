@@ -4452,7 +4452,7 @@ functions.</p>
 <li>Fixing function @('arithtm-fix')</li>
 <li>Equivalence relation @('arithtm-equiv')</li>
 <li>@('arithtm-kind'), which returns either @(':num'), @(':plus'), or
-@(':minus) to distinguish the different kinds of arithtm objects</li>
+@(':minus') to distinguish the different kinds of arithtm objects</li>
 <li>Constructors @('arithtm-num'), @('arithtm-plus'), @('arithtm-minus')</li>
 <li>Accessors @('arithtm-num->val'), @('arithtm-plus->left'),
 @('arithtm-plus->right'), and @('arithtm-minus->arg')</li>
