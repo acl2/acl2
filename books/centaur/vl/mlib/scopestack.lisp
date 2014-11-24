@@ -550,7 +550,7 @@ in it, such as a function, task, or block statement."
 
 
 
-
+(local (xdoc::set-default-parents scopestack))
 
 
 (local ;; For each searchable type foo, we get:

@@ -33,6 +33,15 @@
 (local (include-book "../../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
 
+(defxdoc scopesubst
+  :parents (unparameterization)
+  :short "Scope aware substitution that replaces occurrences of resolved
+parameters with their values.")
+
+(local (xdoc::set-default-parents scopesubst))
+
+
+
 (defines vl-expr-scopesubst
   :short "Substitute resolved parameters into an expression."
   :long "<p>We assume that the parameters have already been processed
