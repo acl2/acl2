@@ -4778,7 +4778,7 @@ is used as a base for generating the field accessor names.</li>
 <li>@(':ctor-name') overrides the name of the product constructor function,
 which by default is the type-name.</li>
 
-<li>@(':inline), determining whether the constructor and accessors are inlined
+<li>@(':inline'), determining whether the constructor and accessors are inlined
 or not.  This may be @(':all') or a subset of @('(:xtor :acc)').  Defaults to
 @('(:acc)') if not overridden.</li>
 
