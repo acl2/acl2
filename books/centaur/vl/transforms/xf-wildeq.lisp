@@ -506,7 +506,7 @@ is just a constant integer.  So this is just:</p>
 
 (local (xdoc::set-default-parents vl-design-wildelim))
 
-(defmacro def-vl-wildelim (name &key body takes-ctx enabled inline)
+(defmacro def-vl-wildelim (name &key body takes-ctx enabled (inline ':default))
   (b* ((mksym-package-symbol (pkg-witness "VL"))
        (fn   (mksym name '-wildelim))
        (fix  (mksym name '-fix))

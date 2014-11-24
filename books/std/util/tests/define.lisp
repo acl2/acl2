@@ -393,3 +393,16 @@
 
 
 
+(define inline-test (x)
+  :inline t
+  x)
+
+(define notinline-test (x)
+  :inline nil
+  x)
+
+(assert! (equal (inline-test$inline 1) 1))
+(assert! (equal (inline-test 1) 1))
+
+(assert! (equal (notinline-test$notinline 2) 2))
+(assert! (equal (notinline-test 2) 2))

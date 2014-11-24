@@ -224,11 +224,14 @@ to this @('define') only and not to any @('other-events').</dd>
 
 <dt>@(':inline val')</dt>
 
-<dd>By default the function will not be inlined.  But if @(':inline t') is
-provided, we will create an inline function as in @(see defun-inline).  (The
-function will have an ugly name like @('foo$inline'), so we'll also set up a
-@('foo') macro and appropriate macro aliases.  See @(see defun-inline) for
-details.</dd>
+<dd>By default @('val') is @(':default') and we produce an ordinary function
+that is neither inline or notinline.  When @(':inline t') is provided, we
+create an <i>inline</i> function as in @(see defun-inline); the function will
+have an ugly name like @('foo$inline'), so we'll also set up a @('foo') macro
+and appropriate macro aliases.  When @(':inline nil') is provided, we create a
+<i>notinline</i> function as in @(see defun-notinline); the function will have
+an ugly name like @('foo$notinline'), so we will again set up a macro and
+appropriate macro aliases.</dd>
 
 <dt>@(':parents'), @(':short'), @(':long')</dt>
 
@@ -640,7 +643,7 @@ some kind of separator!</p>
 
 (def-primitive-aggregate defguts
   (name        ;; user-level name (could be the function, or its wrapper macro)
-   name-fn     ;; name of the actual function (might be fn, or fn$inline, or fn-fn)
+   name-fn     ;; name of the actual function (might be fn, or fn$inline, fn$notinline, or fn-fn)
    kwd-alist   ;; keyword options passed to define
    returnspecs ;; returns specifiers, already parsed
 
@@ -674,7 +677,7 @@ some kind of separator!</p>
 
 ; -------- Proving termination of some function definition separately -------
 (defun make-termination-proof (thmName thmHints defun)
-  `((make-event 
+  `((make-event
         (let* ((state (f-put-global 'last-clause '(t) state))
                (oldHint (override-hints (w state))))
           (er-progn
@@ -686,7 +689,7 @@ some kind of separator!</p>
                    (value `(progn (set-override-hints ,oldHint)
                                   (defthm ,',thmName ,(cons 'or (@ last-clause))
                                     :hints ,',thmHints :rule-classes nil)))))))))
-                                    
+
 ; ----------------- Hooks -----------------------------------------------------
 
 ; WARNING: Undocumented, experimental feature; all details may change.
@@ -813,16 +816,16 @@ some kind of separator!</p>
        (traditional-decls/docs (butlast (cdr normal-defun-stuff) 1))
        (body                   (car (last normal-defun-stuff)))
 
-       (non-exec   (getarg :non-executable nil kwd-alist))
-       (returns    (getarg :returns        nil kwd-alist))
-       (enabled-p  (getarg :enabled        nil kwd-alist))
-       (inline-p   (getarg :inline         nil kwd-alist))
-       (prepwork   (getarg :prepwork       nil kwd-alist))
+       (non-exec   (getarg :non-executable nil      kwd-alist))
+       (returns    (getarg :returns        nil      kwd-alist))
+       (enabled-p  (getarg :enabled        nil      kwd-alist))
+       (inline     (getarg :inline         :default kwd-alist))
+       (prepwork   (getarg :prepwork       nil      kwd-alist))
 
        ((unless (true-listp prepwork))
         (raise "Error in ~x0: expected :prepwork to be a true-listp, but found ~x1."
                name prepwork))
-               
+
        (t-proof    (getarg :t-proof        nil kwd-alist))
        ; If you can think of a good extension for t-proof, you may relax the
        ; requirement of booleanp while preserving the old behavior for t and
@@ -831,11 +834,19 @@ some kind of separator!</p>
        ((unless (booleanp t-proof))
         (raise "Error in ~x0: expected :t-proof to be a booleanp, but found ~x1."
                name prepwork))
+       ((unless (member inline '(:default t nil)))
+        (raise "Error in ~x0: expected :inline to be T, NIL, or :DEFAULT, but found ~x1."
+               name inline))
 
-       (need-macrop (or inline-p (has-macro-args raw-formals)))
-       (name-fn     (cond (inline-p
+       (need-macrop (or (not (eq inline :default))
+                        (has-macro-args raw-formals)))
+       (name-fn     (cond ((eq inline t)
                            (intern-in-package-of-symbol
                             (concatenate 'string (symbol-name name) "$INLINE")
+                            name))
+                          ((eq inline nil)
+                           (intern-in-package-of-symbol
+                            (concatenate 'string (symbol-name name) "$NOTINLINE")
                             name))
                           (need-macrop
                            (intern-in-package-of-symbol
