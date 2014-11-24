@@ -1714,3 +1714,18 @@ fairly easily solve the HIDEXPR problem.</p>"
     :hints(("Goal" :in-theory (enable acl2::take-redefinition))))
   (defcong vl-exprlist-equiv vl-exprlist-equiv (nthcdr n x) 2))
 
+
+(local (defun make-cases (ops)
+         (if (atom ops)
+             nil
+           (cons `(equal (vl-nonatom->op x) ,(car ops))
+                 (make-cases (cdr ops))))))
+
+(make-event
+ `(defruled vl-nonatom->op-forward
+    (or . ,(make-cases (strip-cars *vl-ops-table*)))
+    :rule-classes ((:forward-chaining
+                    :trigger-terms ((vl-nonatom->op x))))
+    :enable (vl-op-p acl2::hons-assoc-equal-of-cons)
+    :disable vl-op-p-of-vl-nonatom->op
+    :use ((:instance vl-op-p-of-vl-nonatom->op))))
