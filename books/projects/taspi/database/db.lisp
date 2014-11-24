@@ -39,37 +39,53 @@
     nil))
 
 (defun good-study-table (tbl)
-  ":Doc-Section TASPI
-   Recognizes a well-formed study table.~/
-   ~/
-   "
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Recognizes a well-formed study table.~/
+;  ~/
+;  "
   (declare (xargs :guard t))
   (and (good-study-table-struct tbl)
        (no-dups-gen (get-ids tbl))))
 
 (defun good-analysis-table (tbl)
-  ":Doc-Section TASPI
-   Recognizes a well-formed analysis table.~/
-   ~/
-   "
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Recognizes a well-formed analysis table.~/
+;  ~/
+;  "
   (declare (xargs :guard t))
   (and (good-analysis-table-struct tbl)
        (no-dups-gen (get-ids tbl))))
 
 (defun good-tree-table (tbl)
-  ":Doc-Section TASPI
-   Recognizes a well-formed tree table.~/
-   ~/
-   "
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Recognizes a well-formed tree table.~/
+;  ~/
+;  "
   (declare (xargs :guard t))
   (and (good-tree-table-struct tbl)
        (no-dups-gen (get-ids tbl))))
 
 (defun get-study-ids (tbl)
-  ":Doc-Section TASPI
-   Returns study ids present in an analysis table.~/
-   ~/
-   "
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns study ids present in an analysis table.~/
+;  ~/
+;  "
   (declare (xargs :guard (good-analysis-table-struct tbl)))
   (if (consp tbl)
       (cons (get-study-id (car tbl))
@@ -77,10 +93,14 @@
     nil))
 
 (defun get-analysis-ids (tbl)
-  ":Doc-Section TASPI
-   Returns analysis ids present in a tree table.~/
-   ~/
-   "
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns analysis ids present in a tree table.~/
+;  ~/
+;  "
   (declare (xargs :guard (good-tree-table-struct tbl)))
   (if (consp tbl)
       (cons (get-analysis-id (car tbl))
@@ -115,14 +135,18 @@
 
 ;; get an entry matching primary key
 (defun get-entry-by-id (id tbl)
-  ":Doc-Section TASPI
-   Returns entry in table indicated by given id.~/
-   ~/
-   Arguments:
-     (1) id - a primary id
-     (2) tbl - a good study, analysis or tree table
- 
-  "
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns entry in table indicated by given id.~/
+;  ~/
+;  Arguments:
+;    (1) id - a primary id
+;    (2) tbl - a good study, analysis or tree table
+;
+; "
   (declare (xargs :guard (or (good-study-table-struct tbl)
                              (good-analysis-table-struct tbl)
                              (good-tree-table-struct tbl))))
@@ -199,18 +223,22 @@
        (check-for-good-tree-tl analysis-tbl tree-tbl)))
 
 (defun good-tree-db (study-tbl analysis-tbl tree-tbl)
-  ":Doc-Section TASPI
-   Recognizes a well formed and consistent set of tables.~/
-   ~/
-   Arguments:
-     (1) study-tbl - a potential study table
-     (2) analysis-tbl - a potential analysis table
-     (3) tree-tbl - a potential tree table
 
-   Details: Checks that primary ids are unique, ids indexing into other tables
-            reference existing entries, maximum likelihood scores have an
-            associated model, and that any tree in the tree table has taxa
-            names present in the taxa list in the associated analysis table. " 
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Recognizes a well formed and consistent set of tables.~/
+;  ~/
+;  Arguments:
+;    (1) study-tbl - a potential study table
+;    (2) analysis-tbl - a potential analysis table
+;    (3) tree-tbl - a potential tree table
+
+;  Details: Checks that primary ids are unique, ids indexing into other tables
+;           reference existing entries, maximum likelihood scores have an
+;           associated model, and that any tree in the tree table has taxa
+;           names present in the taxa list in the associated analysis table. " 
   (declare (xargs :guard t))
   (and (good-study-table study-tbl)
        (good-analysis-table analysis-tbl)

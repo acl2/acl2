@@ -173,3 +173,4 @@ FILE: top.lisp
 (include-book "leftist-tree-defuns")
 (include-book "leftist-tree-defthms")
 (include-book "leftist-tree-sort")
+(include-book "leftist-trees-xdoc")

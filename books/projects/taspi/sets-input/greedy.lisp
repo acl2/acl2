@@ -53,20 +53,24 @@
 
 
 (defun greedy (list-of-trees taxa-list)
-  ":Doc-Section TASPI
-   Computes the greedy consensus of a set of trees~/
-   ~/
-   Arguments: 
-      (1) list-of-trees - a list of trees
-      (2) taxa-list - list of taxa
 
-   Details: List-of-trees must have the given taxa list.  The greedy consensus 
-            orders the bipartitions found by their frequencies and adds 
-            bipartitions to the consensus starting with the most frequent, 
-            skipping conflicting bipartitions, until no non-conflicting 
-            bipartition remains. Greedy consensus will be a refinement of the
-            majority consensus.
-            Does not allow branch lengths (see greedy-brlens)."
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Computes the greedy consensus of a set of trees~/
+;  ~/
+;  Arguments: 
+;     (1) list-of-trees - a list of trees
+;     (2) taxa-list - list of taxa
+
+;  Details: List-of-trees must have the given taxa list.  The greedy consensus 
+;           orders the bipartitions found by their frequencies and adds 
+;           bipartitions to the consensus starting with the most frequent, 
+;           skipping conflicting bipartitions, until no non-conflicting 
+;           bipartition remains. Greedy consensus will be a refinement of the
+;           majority consensus.
+;           Does not allow branch lengths (see greedy-brlens)."
   (declare (xargs :guard t))
   (if (and (non-tip-tree-listp list-of-trees)
            (int-symlist taxa-list)
@@ -87,20 +91,24 @@
     'bad-input-to-greedy))
 
 (defun greedy-brlens (list-of-trees taxa-list)
-  ":Doc-Section TASPI
-   Computes the greedy consensus of a set of trees with branch lengths~/
-   ~/
-   Arguments: 
-      (1) list-of-trees - a list of trees
-      (2) taxa-list - list of taxa
 
-   Details: List-of-trees must have the given taxa list.  The greedy consensus 
-            orders the bipartitions found by their frequencies and adds 
-            bipartitions to the consensus starting with the most frequent, 
-            skipping conflicting bipartitions, until no non-conflicting 
-            bipartition remains. Greedy consensus will be a refinement of the
-            majority consensus.
-            Allow branch lengths (see greedy)."
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Computes the greedy consensus of a set of trees with branch lengths~/
+;  ~/
+;  Arguments: 
+;     (1) list-of-trees - a list of trees
+;     (2) taxa-list - list of taxa
+
+;  Details: List-of-trees must have the given taxa list.  The greedy consensus 
+;           orders the bipartitions found by their frequencies and adds 
+;           bipartitions to the consensus starting with the most frequent, 
+;           skipping conflicting bipartitions, until no non-conflicting 
+;           bipartition remains. Greedy consensus will be a refinement of the
+;           majority consensus.
+;           Allow branch lengths (see greedy)."
   (declare (xargs :guard t))
   (let ((trees-no-brlens (remove-brlens-list list-of-trees)))
     (greedy trees-no-brlens taxa-list)))

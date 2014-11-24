@@ -150,15 +150,18 @@
 
 (defn q-ite (x y z)
 
-  ":Doc-section Hons-and-Memoization
+;;; This legacy doc string was replaced Nov. 2014 by the corresponding
+;;; auto-generated defxdoc form in the last part of this file.
 
-  if-then-else for ubdds.~/
+; ":Doc-section Hons-and-Memoization
 
-  (Q-ITE x y z) expects three ubdds, which are to be interpreted at
-  the same level.  Informally speaking. Q-ITE returns a single ubdd,
-  also at the same level, that is 'equivalent' to (IF x y z).  The two
-  theorems Q-ITE-CORRECT and NORMP-Q-ITE express formally what Q-ITE
-  returns.~/~/"
+; if-then-else for ubdds.~/
+
+; (Q-ITE x y z) expects three ubdds, which are to be interpreted at
+; the same level.  Informally speaking. Q-ITE returns a single ubdd,
+; also at the same level, that is 'equivalent' to (IF x y z).  The two
+; theorems Q-ITE-CORRECT and NORMP-Q-ITE express formally what Q-ITE
+; returns.~/~/"
 
   (cond
    ((null x) z)
@@ -181,12 +184,15 @@
 
 (defn normp (x)
 
- ":Doc-section Hons-and-Memoization
+;;; This legacy doc string was replaced Nov. 2014 by the corresponding
+;;; auto-generated defxdoc form in the last part of this file.
 
-  Recognizer of ubdds.~/
-  (NORMP x) returns T or NIL according to whether X is a well-formed
-  ubdd, i.e., a rooted, binary tree, in T and NIL, with no node equal
-  to '(T . T) or '(NIL . NIL).~/~/"
+;":Doc-section Hons-and-Memoization
+
+; Recognizer of ubdds.~/
+; (NORMP x) returns T or NIL according to whether X is a well-formed
+; ubdd, i.e., a rooted, binary tree, in T and NIL, with no node equal
+; to '(T . T) or '(NIL . NIL).~/~/"
 
   (mbe :logic
        (if (atom x)
@@ -966,62 +972,65 @@
 (defn to-if (term)
   (declare (xargs :verify-guards nil))
 
-  ":Doc-section Hons-and-Memoization
+;;; This legacy doc string was replaced Nov. 2014 by the corresponding
+;;; auto-generated defxdoc form in the last part of this file.
 
-   Recognizer for the TO-IF langauge ~/
+; ":Doc-section Hons-and-Memoization
 
-   (TO-IF x) is a recognizer for objects in the TO-IF language, which
-   may be used for writing Boolean expressions.  The TO-IF language is
-   a subset of the TO-IF2 language.
+;  Recognizer for the TO-IF langauge ~/
 
-   If X is in the TO-IF language, then (TO-IF x) returns an equivalent
-   member of the TO-IF language expressed in the limited vocabulary of
-   IF, T, NIL, and variables.  The result returned is not in any
-   particular normal form, but it is in the form expected by the
-   function QNORM1.
+;  (TO-IF x) is a recognizer for objects in the TO-IF language, which
+;  may be used for writing Boolean expressions.  The TO-IF language is
+;  a subset of the TO-IF2 language.
 
-   If X is not in the TO-IF language, then (TO-IF x) returns a CONS
-   whose CAR is a string that may help explain in what sense X is not
-   in the TO-IF language.
+;  If X is in the TO-IF language, then (TO-IF x) returns an equivalent
+;  member of the TO-IF language expressed in the limited vocabulary of
+;  IF, T, NIL, and variables.  The result returned is not in any
+;  particular normal form, but it is in the form expected by the
+;  function QNORM1.
 
-   Though similar to the language of ACL2, the TO-IF language is NOT
-   the same as the ACL2 langauge or the TO-IF2 language, so watch out!
+;  If X is not in the TO-IF language, then (TO-IF x) returns a CONS
+;  whose CAR is a string that may help explain in what sense X is not
+;  in the TO-IF language.
 
-   (TERM-EVAL (TO-IF term) vars vals) gives the meaning of (TO-IF
-   TERM) with respect to the binding of the variables in VARS to the
-   Booleans in VALS.
+;  Though similar to the language of ACL2, the TO-IF language is NOT
+;  the same as the ACL2 langauge or the TO-IF2 language, so watch out!
 
-   Informally, in the TO-IF language, T and NIL both are and denote
-   the Boolean constants.  All eqlable ACL2 atoms (i.e., symbols,
-   integers, rational, complex numbers, characters, but not strings)
-   are variables in the TO-IF language.  The variables denote Boolean
-   values, i.e., T and NIL.
+;  (TERM-EVAL (TO-IF term) vars vals) gives the meaning of (TO-IF
+;  TERM) with respect to the binding of the variables in VARS to the
+;  Booleans in VALS.
 
-   Merely for emphasis: The integer 2 is a variable in the TO-IF
-   language, odd as that may seem at first.
+;  Informally, in the TO-IF language, T and NIL both are and denote
+;  the Boolean constants.  All eqlable ACL2 atoms (i.e., symbols,
+;  integers, rational, complex numbers, characters, but not strings)
+;  are variables in the TO-IF language.  The variables denote Boolean
+;  values, i.e., T and NIL.
 
-   Merelly for emphasis:  The string \"2\" is not a TO-IF variable.
+;  Merely for emphasis: The integer 2 is a variable in the TO-IF
+;  language, odd as that may seem at first.
 
-   (IF x y z) means what Y means if X means T and means what Z means
-   if X means NIL.
+;  Merelly for emphasis:  The string \"2\" is not a TO-IF variable.
 
-   (TO-IF `(LET ,x ,y ,z)) is the result of simultaneously replacing
-   in (TO-IF z) all the occurrences of the variable x with
-   (TO-IF y).  Note that although in Lisp, one might write:
-   (let ((x y)) z), the TO-IF 'LET' takes exactly three arguments.
+;  (IF x y z) means what Y means if X means T and means what Z means
+;  if X means NIL.
 
-   In a TO-IF expression one may also use the unary operator NOT and
-   the binary operators AND, OR, IFF, IMPLIES, XOR, NAND, NOR, ANDC1,
-   ORC1, and ORC2.
+;  (TO-IF `(LET ,x ,y ,z)) is the result of simultaneously replacing
+;  in (TO-IF z) all the occurrences of the variable x with
+;  (TO-IF y).  Note that although in Lisp, one might write:
+;  (let ((x y)) z), the TO-IF 'LET' takes exactly three arguments.
 
-   TO-IF does not handle quantifiers such as FORALL nor FORSOME, nor
-   does it permit operators to take a variable number of arguments.
-   For such features, see TO-IF2.
+;  In a TO-IF expression one may also use the unary operator NOT and
+;  the binary operators AND, OR, IFF, IMPLIES, XOR, NAND, NOR, ANDC1,
+;  ORC1, and ORC2.
 
-   There are many synonyms for the many familar logical operators.
-   Invoke (SAT-HELP) to see them all.  There is no facility
-   for a user to extend these synonyms.
-    ~/~/"
+;  TO-IF does not handle quantifiers such as FORALL nor FORSOME, nor
+;  does it permit operators to take a variable number of arguments.
+;  For such features, see TO-IF2.
+
+;  There are many synonyms for the many familar logical operators.
+;  Invoke (SAT-HELP) to see them all.  There is no facility
+;  for a user to extend these synonyms.
+;   ~/~/"
 
   (cond ((atom term)
          (cond ((eqlablep term) term)
@@ -1232,12 +1241,15 @@
 
 (defn qnorm1 (term vars)
 
-  ":Doc-section Hons-and-Memoization
+;;; This legacy doc string was replaced Nov. 2014 by the corresponding
+;;; auto-generated defxdoc form in the last part of this file.
 
-   Creates ubdds.   ~/
+; ":Doc-section Hons-and-Memoization
 
-   (QNORM1 term vars) returns the unique ubdd for TERM, an
-   IF-expression, with respect to the variable ordering VARS. ~/~/"
+;  Creates ubdds.   ~/
+
+;  (QNORM1 term vars) returns the unique ubdd for TERM, an
+;  IF-expression, with respect to the variable ordering VARS. ~/~/"
 
   (declare (xargs :measure (acl2-count term)
                   :guard (and (qnorm1-guard term)
@@ -1279,17 +1291,20 @@
 
 (defn qnorm (term)
 
-  ":Doc-section Hons-and-Memoization
+;;; This legacy doc string was replaced Nov. 2014 by the corresponding
+;;; auto-generated defxdoc form in the last part of this file.
 
-   Creates ubdds.   ~/
+; ":Doc-section Hons-and-Memoization
 
-  (QNORM term) returns the unique ubdd for TERM, an expression in
-  the TO-IF language, with respect to the variable ordering returned
-  by (VARS (TO-IF TERM) NIL).
+;  Creates ubdds.   ~/
 
-  If TERM is a tautology, then QNORM returns T.  If term is
-  a contradiction, then QNORM returns NIL.  If term is satisfiable,
-  then QNORM returns a CONSP ubdd.~/~/"
+; (QNORM term) returns the unique ubdd for TERM, an expression in
+; the TO-IF language, with respect to the variable ordering returned
+; by (VARS (TO-IF TERM) NIL).
+
+; If TERM is a tautology, then QNORM returns T.  If term is
+; a contradiction, then QNORM returns NIL.  If term is satisfiable,
+; then QNORM returns a CONSP ubdd.~/~/"
 
   (let ((term (to-if term)))
     (cond ((to-if-error-p term) term)
@@ -1641,3 +1656,107 @@
 (defthm l-thm2 (equal (lfoo (hons-copy '(a b c))) 3))
 
 (defthm quick-sanity-check (check-q))
+
+; The defxdoc forms below were initially generated automatically from
+; legacy documentation strings in this file.
+
+(include-book "xdoc/top" :dir :system)
+
+(defxdoc normp
+  :parents (hons-and-memoization)
+  :short "Recognizer of ubdds."
+  :long "<p>
+ (NORMP x) returns T or NIL according to whether X is a well-formed ubdd, i.e.,
+ a rooted, binary tree, in T and NIL, with no node equal to '(T . T) or '(NIL
+ . NIL).</p>
+
+ ")
+
+(defxdoc q-ite
+  :parents (hons-and-memoization)
+  :short "If-then-else for ubdds."
+  :long "<p>
+ (Q-ITE x y z) expects three ubdds, which are to be interpreted at the same
+ level.  Informally speaking. Q-ITE returns a single ubdd, also at the same
+ level, that is 'equivalent' to (IF x y z).  The two theorems Q-ITE-CORRECT and
+ NORMP-Q-ITE express formally what Q-ITE returns.</p>
+
+ ")
+
+(defxdoc qnorm
+  :parents (hons-and-memoization)
+  :short "Creates ubdds."
+  :long "<p>
+ (QNORM term) returns the unique ubdd for TERM, an expression in the TO-IF
+   language, with respect to the variable ordering returned by (VARS (TO-IF
+   TERM) NIL).</p>
+
+ <p>If TERM is a tautology, then QNORM returns T.  If term is a contradiction,
+   then QNORM returns NIL.  If term is satisfiable, then QNORM returns a CONSP
+   ubdd.</p>
+
+ ")
+
+(defxdoc qnorm1
+  :parents (hons-and-memoization)
+  :short "Creates ubdds."
+  :long "<p>
+ (QNORM1 term vars) returns the unique ubdd for TERM, an IF-expression, with
+ respect to the variable ordering VARS.</p>
+
+ ")
+
+(defxdoc to-if
+  :parents (hons-and-memoization)
+  :short "Recognizer for the TO-IF langauge"
+  :long "<p>
+ (TO-IF x) is a recognizer for objects in the TO-IF language, which may be used
+ for writing Boolean expressions.  The TO-IF language is a subset of the TO-IF2
+ language.</p>
+
+ <p>If X is in the TO-IF language, then (TO-IF x) returns an equivalent member
+ of the TO-IF language expressed in the limited vocabulary of IF, T, NIL, and
+ variables.  The result returned is not in any particular normal form, but it
+ is in the form expected by the function QNORM1.</p>
+
+ <p>If X is not in the TO-IF language, then (TO-IF x) returns a CONS whose CAR
+ is a string that may help explain in what sense X is not in the TO-IF
+ language.</p>
+
+ <p>Though similar to the language of ACL2, the TO-IF language is NOT the same
+ as the ACL2 langauge or the TO-IF2 language, so watch out!</p>
+
+ <p>(TERM-EVAL (TO-IF term) vars vals) gives the meaning of (TO-IF TERM) with
+ respect to the binding of the variables in VARS to the Booleans in VALS.</p>
+
+ <p>Informally, in the TO-IF language, T and NIL both are and denote the
+ Boolean constants.  All eqlable ACL2 atoms (i.e., symbols, integers, rational,
+ complex numbers, characters, but not strings) are variables in the TO-IF
+ language.  The variables denote Boolean values, i.e., T and NIL.</p>
+
+ <p>Merely for emphasis: The integer 2 is a variable in the TO-IF language, odd
+ as that may seem at first.</p>
+
+ <p>Merelly for emphasis: The string \"2\" is not a TO-IF variable.</p>
+
+ <p>(IF x y z) means what Y means if X means T and means what Z means if X
+ means NIL.</p>
+
+ <p>(TO-IF `(LET ,x ,y ,z)) is the result of simultaneously replacing in (TO-IF
+ z) all the occurrences of the variable x with (TO-IF y).  Note that although
+ in Lisp, one might write: (let ((x y)) z), the TO-IF 'LET' takes exactly three
+ arguments.</p>
+
+ <p>In a TO-IF expression one may also use the unary operator NOT and the
+ binary operators AND, OR, IFF, IMPLIES, XOR, NAND, NOR, ANDC1, ORC1, and
+ ORC2.</p>
+
+ <p>TO-IF does not handle quantifiers such as FORALL nor FORSOME, nor does it
+ permit operators to take a variable number of arguments.  For such features,
+ see TO-IF2.</p>
+
+ <p>There are many synonyms for the many familar logical operators.  Invoke
+ (SAT-HELP) to see them all.  There is no facility for a user to extend these
+ synonyms.</p>
+
+ ")

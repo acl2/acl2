@@ -56,25 +56,29 @@
 
 ; iterate over the function to do perform this replacement
 (defun replacefns (r fn)
-  ":Doc-Section replacefns
-  Replace function occurences in an expression.~/
-  The function replaces only function occurences. Variables are left as-is.
-  
-  Example use:
-    :replacefns ((foo bar) (bar foo) (x z)) ((+ (foo x y) (bar x y)))
-  Replaces bar with foo and foo with bar, and leaves x untouched
-  since it is only used as a variable. Return value:
-    ((+ (BAR X Y) (FOO X Y)))~/
-  Assumes there are no macros.
-  The function is defined guardless.
-  The first argument should be a list of lists of length 2. Less than that gives
-  an error, further arguments will be ignored.
-  The second argument should be a list of terms.
-  Every element will undergo the replacement.
-  
-  Should handle lambda expressions too:
-  :replacefns ((foo bar) (bar foo)) ((+ ((lambda (foo j) (foo foo j)) x y) (bar x y)))
-  "
+
+;;; This legacy doc string was replaced Nov. 2014 by the corresponding
+;;; auto-generated defxdoc form in the last part of this file.
+
+; ":Doc-Section replacefns
+; Replace function occurences in an expression.~/
+; The function replaces only function occurences. Variables are left as-is.
+; 
+; Example use:
+;   :replacefns ((foo bar) (bar foo) (x z)) ((+ (foo x y) (bar x y)))
+; Replaces bar with foo and foo with bar, and leaves x untouched
+; since it is only used as a variable. Return value:
+;   ((+ (BAR X Y) (FOO X Y)))~/
+; Assumes there are no macros.
+; The function is defined guardless.
+; The first argument should be a list of lists of length 2. Less than that gives
+; an error, further arguments will be ignored.
+; The second argument should be a list of terms.
+; Every element will undergo the replacement.
+; 
+; Should handle lambda expressions too:
+; :replacefns ((foo bar) (bar foo)) ((+ ((lambda (foo j) (foo foo j)) x y) (bar x y)))
+; "
   (cond ((atom fn) fn) ; which is probably NIL, but we stick with the original if not
         (t (cons (if (atom (car fn)) (car fn)
                    (if (consp (caar fn)) ; when a cons is used at the place of a function, it must be a lambda expression
@@ -126,51 +130,59 @@
 ; note that this function will accept allmost any definition without errors
 ; it is your responsibility to call it with a function name as first argument
 (defmacro copyfun (old new &optional replacements)
-  ":Doc-Section copyfun
-  Copy and rename a function.~/
-  You may optionally replace function occurences in the old function.
-  This should at least be done for recursive functions.
-  
-  Example use:
-    (copyfun 'true-listp 'vrai-listep '((true-listp vrai-listep)))
-  
-  This will create a recursive function vrai-listep identical to true-listp.
-  Replacements are performed via ~c[replacefns]. See :DOC REPLACEFNS.
-  ~/
-  This macro is inspired on compute-copy-defun+rewrite in hacking/rewrite-code.
-  It uses state information to retrieve the old function, and writes to the state
-  by defining a new one. You can use this macro without distroying certifiability.
-  
-  This function can be used to mimic generic functions, for example, the \"map\":
-  
-  (encapsulate ((dummy (a) t))
-    (local (defun dummy (a) a))
-  )
-  (defun map-dummy (as)
-  (if (consp as) (cons (dummy (car as)) (map-dummy (cdr as))) nil))
-  (copyfun map-dummy map-car ((dummy car)))
-  (copyfun map-dummy map-cadr ((dummy cadr)))
-  (copyfun map-dummy (lambda (as) (map-cons as b)) ((dummy (lambda (a) (cons a b)))))"
+
+;;; This legacy doc string was replaced Nov. 2014 by the corresponding
+;;; auto-generated defxdoc form in the last part of this file.
+
+; ":Doc-Section copyfun
+; Copy and rename a function.~/
+; You may optionally replace function occurences in the old function.
+; This should at least be done for recursive functions.
+; 
+; Example use:
+;   (copyfun 'true-listp 'vrai-listep '((true-listp vrai-listep)))
+; 
+; This will create a recursive function vrai-listep identical to true-listp.
+; Replacements are performed via ~c[replacefns]. See :DOC REPLACEFNS.
+; ~/
+; This macro is inspired on compute-copy-defun+rewrite in hacking/rewrite-code.
+; It uses state information to retrieve the old function, and writes to the state
+; by defining a new one. You can use this macro without distroying certifiability.
+; 
+; This function can be used to mimic generic functions, for example, the \"map\":
+; 
+; (encapsulate ((dummy (a) t))
+;   (local (defun dummy (a) a))
+; )
+; (defun map-dummy (as)
+; (if (consp as) (cons (dummy (car as)) (map-dummy (cdr as))) nil))
+; (copyfun map-dummy map-car ((dummy car)))
+; (copyfun map-dummy map-cadr ((dummy cadr)))
+; (copyfun map-dummy (lambda (as) (map-cons as b)) ((dummy (lambda (a) (cons a b)))))"
   `(make-event (copyfun-fn ',old ',new ',replacements state)))
 
 (defun used-in (fn search)
-  ":Doc-Section used-in
-  Check whether a function is used in one of a list of expressions.~/
-  Assumes there are no macros.
-  TODO Bug: Does not handle lambda-expressions well.
-  ~/
-  Examples:
-  
-  :used-in f ((+ x (f y)))
-    T
-  :used-in x ((+ x (f y)))
-    NIL (x is not a function here)
-  :used-in + ((+ x (f y)))
-    T   (even though + is a macro, it was not expanded here)
-  :used-in + (+ x (f y))
-    NIL (+ is a symbol, it is the first occurence in the list of expressions.)
-  :used-in + ((+) (x) (f y))
-    T"
+
+;;; This legacy doc string was replaced Nov. 2014 by the corresponding
+;;; auto-generated defxdoc form in the last part of this file.
+
+; ":Doc-Section used-in
+; Check whether a function is used in one of a list of expressions.~/
+; Assumes there are no macros.
+; TODO Bug: Does not handle lambda-expressions well.
+; ~/
+; Examples:
+; 
+; :used-in f ((+ x (f y)))
+;   T
+; :used-in x ((+ x (f y)))
+;   NIL (x is not a function here)
+; :used-in + ((+ x (f y)))
+;   T   (even though + is a macro, it was not expanded here)
+; :used-in + (+ x (f y))
+;   NIL (+ is a symbol, it is the first occurence in the list of expressions.)
+; :used-in + ((+) (x) (f y))
+;   T"
   (DECLARE (XARGS :GUARD (AND (SYMBOLP fn))))
   (cond ((atom search) nil)
         ((atom (car search)) (used-in fn (cdr search)))
@@ -182,20 +194,24 @@
 
 (DEFUN get-Derived-funs-From (FUN ignorelist WORLD-ALIST)
   ;(declare (xargs :mode :program)) 
-  ":Doc-Section get-Derived-funs-From
-  Get all functions depending on a function.~/
-  
-  get-Derived-funs-From FUN ignorelist (w state)
-  
-  If you add a function name to the ignorelist, it will not be searched
-  for occurences of FUN.~/
-  This function will iterate until it has found the definition of FUN.
-  After this, the search is terminated. So this function assumes that there
-  are no functions defined using FUN when FUN itself was not defined.
-  I am not sure about mutual recurrence functions here.. they can probably cause
-  this function to return incorrect results.
-  See also: get-Derived-funs
-  "
+
+;;; This legacy doc string was replaced Nov. 2014 by the corresponding
+;;; auto-generated defxdoc form in the last part of this file.
+
+; ":Doc-Section get-Derived-funs-From
+; Get all functions depending on a function.~/
+; 
+; get-Derived-funs-From FUN ignorelist (w state)
+; 
+; If you add a function name to the ignorelist, it will not be searched
+; for occurences of FUN.~/
+; This function will iterate until it has found the definition of FUN.
+; After this, the search is terminated. So this function assumes that there
+; are no functions defined using FUN when FUN itself was not defined.
+; I am not sure about mutual recurrence functions here.. they can probably cause
+; this function to return incorrect results.
+; See also: get-Derived-funs
+; "
   (COND ((ENDP WORLD-ALIST) nil) ;we hit the end of the world. Exit
         ((AND (EQ fun (CAAR WORLD-ALIST))
               (EQ 'ABSOLUTE-EVENT-NUMBER (CADAR WORLD-ALIST)))
@@ -207,22 +223,26 @@
         (T (get-Derived-funs-From fun ignorelist (CDR WORLD-ALIST)))))
 
 (defun get-Derived-funs (funs derived wrld)
-  ":Doc-Section get-Derived-funs
-  Perform get-Derived-funs-From recursively.~/
-  
-  get-Derived-funs-From FUNS DERIVED (w state)
-  
-  Returns DERIVED and all functions depending on a function in FUNS,
-  possibly in multiple steps. For instance:
-  (defun f (x) x)
-  (defun g (x) (f x))
-  (defun h (x) (g x))
-  (get-Derived-funs-From '(h) NIL (w state))
-  will return all three functions.
-  ~/
-  This function will at least return what is listed in DERIVED.
-  It is defined using get-Derived-funs-From.
-  "
+
+;;; This legacy doc string was replaced Nov. 2014 by the corresponding
+;;; auto-generated defxdoc form in the last part of this file.
+
+; ":Doc-Section get-Derived-funs
+; Perform get-Derived-funs-From recursively.~/
+; 
+; get-Derived-funs-From FUNS DERIVED (w state)
+; 
+; Returns DERIVED and all functions depending on a function in FUNS,
+; possibly in multiple steps. For instance:
+; (defun f (x) x)
+; (defun g (x) (f x))
+; (defun h (x) (g x))
+; (get-Derived-funs-From '(h) NIL (w state))
+; will return all three functions.
+; ~/
+; This function will at least return what is listed in DERIVED.
+; It is defined using get-Derived-funs-From.
+; "
   ; the function terminates, but this is difficult to prove.
   ; the argument used is that the set 'funs - derived' is decreasing.
   ; (where - is the set-minus)
@@ -244,18 +264,22 @@
       )))
 
 (defun used-in-oneof (fns search)
-  ":Doc-Section used-in-oneof
-  Check whether any of a list of functions is used in any of a list of expressions.~/
-  Examples:
-  
-  :used-in-oneof (f) ((+ x (f y)))
-    T (f is used)
-  :used-in-oneof (x) ((+ x (f y)))
-    NIL (x is not a function here)
-  :used-in-oneof (f x) ((+ x (f y)))
-    T (x is not used, but f is)~/
-  Assumes there are no macro's; TODO: does not handle lambda-expressions well.
-  See also: used-in"
+
+;;; This legacy doc string was replaced Nov. 2014 by the corresponding
+;;; auto-generated defxdoc form in the last part of this file.
+
+; ":Doc-Section used-in-oneof
+; Check whether any of a list of functions is used in any of a list of expressions.~/
+; Examples:
+; 
+; :used-in-oneof (f) ((+ x (f y)))
+;   T (f is used)
+; :used-in-oneof (x) ((+ x (f y)))
+;   NIL (x is not a function here)
+; :used-in-oneof (f x) ((+ x (f y)))
+;   T (x is not used, but f is)~/
+; Assumes there are no macro's; TODO: does not handle lambda-expressions well.
+; See also: used-in"
   (cond ((atom search) nil)
         ((atom (car search)) (used-in-oneof fns (cdr search)))
         (t (if (member (car (car search)) fns) t
@@ -271,17 +295,22 @@
       (cons (car searches) (used-in-oneof-filter fns (cdr searches)))
       (used-in-oneof-filter fns (cdr searches)))))
 
-(defun get-Derived-theorems (symbs endcondition world-alist res-with-class res-without-class)
-  ":Doc-Section get-Derived-theorems
-  Get all theorems saying something about some functions.~/
-  
-  get-Derived-theorems FUNS ENDAT (w state)
-  
-  Returns a list of lemmas that contain any of FUNS.
-  You may use some event label at ENDAT to shorten the search.
-  ~/
-  Returns the translated theorems as how they are stored in the world.
-  "
+(defun get-Derived-theorems (symbs endcondition world-alist res-with-class
+                                   res-without-class)
+
+;;; This legacy doc string was replaced Nov. 2014 by the corresponding
+;;; auto-generated defxdoc form in the last part of this file.
+
+; ":Doc-Section get-Derived-theorems
+; Get all theorems saying something about some functions.~/
+; 
+; get-Derived-theorems FUNS ENDAT (w state)
+; 
+; Returns a list of lemmas that contain any of FUNS.
+; You may use some event label at ENDAT to shorten the search.
+; ~/
+; Returns the translated theorems as how they are stored in the world.
+; "
   (DECLARE (XARGS :measure (len world-alist)))
   (COND ((ENDP WORLD-ALIST) res-with-class)
         ((AND (ENDP SYMBS) (ENDP res-without-class)) res-with-class)
@@ -310,20 +339,24 @@
       (subAll-pick name newname (cdr changeby)))))
 
 (defun subAll (names pf ALTERNATIVES)
-  ":Doc-Section subAll
-  Create substitution names using a prefix. Does not perform the substitution~/
-  
-  subAll NAMES PREFIX ALTERNATIVES
-  
-  Returns a list of lists of length two.
-  The first element being an item from NAMES.
-  The second is the same, prefixed by PREFIX.
-  If the element occurs in ALTERNATIVES, this alternative is used instead.
-  ~/
-  Example:
-   :subAll (a b c) (x) (b Y)
-   ((A X-A) (B Y) (C X-C))
-  "
+
+;;; This legacy doc string was replaced Nov. 2014 by the corresponding
+;;; auto-generated defxdoc form in the last part of this file.
+
+; ":Doc-Section subAll
+; Create substitution names using a prefix. Does not perform the substitution~/
+; 
+; subAll NAMES PREFIX ALTERNATIVES
+; 
+; Returns a list of lists of length two.
+; The first element being an item from NAMES.
+; The second is the same, prefixed by PREFIX.
+; If the element occurs in ALTERNATIVES, this alternative is used instead.
+; ~/
+; Example:
+;  :subAll (a b c) (x) (b Y)
+;  ((A X-A) (B Y) (C X-C))
+; "
   (cond ((atom names) nil)
         (t (cons (subAll-pick
                   (car names) (packn (list pf '- (car names)))
@@ -453,23 +486,27 @@
                                    )) state)
               ))))
 (defmacro instance-Of-defspec (spec prefix &optional rename &key hints otf-flg)
-  ":Doc-Section instance-Of-defspec
-  Reuse what is outside a defspec.~/
-  Usage
-  (instanceOf-defspec specname prefix)
-  or
-  (instanceOf-defspec specname prefix rename)
-  
-  Will use all functions in the defspec specname, prefixed with prefix.
-  For example: fun will be instantiated with prefix-fun.
-  If you wish to, you can supply the optional rename argument '((fun newfun))
-  to instantiate fun with newfun.
-  
-  All functions and theorems that are currently in scope and depend on the defspec
-  will be duplicated (prefixed with prefix or renamed as rename).
-  ~/
-  For example use, see the file closedMonoid.lisp
-  "
+
+;;; This legacy doc string was replaced Nov. 2014 by the corresponding
+;;; auto-generated defxdoc form in the last part of this file.
+
+; ":Doc-Section instance-Of-defspec
+; Reuse what is outside a defspec.~/
+; Usage
+; (instanceOf-defspec specname prefix)
+; or
+; (instanceOf-defspec specname prefix rename)
+; 
+; Will use all functions in the defspec specname, prefixed with prefix.
+; For example: fun will be instantiated with prefix-fun.
+; If you wish to, you can supply the optional rename argument '((fun newfun))
+; to instantiate fun with newfun.
+; 
+; All functions and theorems that are currently in scope and depend on the defspec
+; will be duplicated (prefixed with prefix or renamed as rename).
+; ~/
+; For example use, see the file closedMonoid.lisp
+; "
   `(make-event (instanceOf-defspec-fn ',spec ',prefix ,rename ',hints ',otf-flg state) :check-expansion nil))
 
 ; get all constraints of a set of functions
@@ -495,17 +532,21 @@
      namedthms
   ))
 (defmacro is-a (specname prefix thmname &optional rename)
-  ":Doc-Section is-a
-  Reuse what is inside a defspec.~/
-  Usage
-  (isa-spec specname prefix thmname)
-  or
-  (isa-spec specname prefix thmname rename)
-  
-  All theorems that are in the defspec will be put in the current scope.
-  ~/
-  Examples can be found in the file closedMonoid
-  "
+
+;;; This legacy doc string was replaced Nov. 2014 by the corresponding
+;;; auto-generated defxdoc form in the last part of this file.
+
+; ":Doc-Section is-a
+; Reuse what is inside a defspec.~/
+; Usage
+; (isa-spec specname prefix thmname)
+; or
+; (isa-spec specname prefix thmname rename)
+; 
+; All theorems that are in the defspec will be put in the current scope.
+; ~/
+; Examples can be found in the file closedMonoid
+; "
   `(make-event (cons 'progn
                   (oldspec ',specname ',thmname ',prefix ,rename (w state)))))
 
@@ -576,3 +617,171 @@
 (instance-Of-defspec n-ary ternary-as '((function-size (lambda () 3))))#|ACL2s-ToDo-Line|#
 
 ; I think "quartary" sounds odd, plus I cannot think of any natural quartary function ("if" is a ternary one) so I will leave it at this.
+
+; The defxdoc forms below were initially generated automatically from
+; legacy documentation strings in this file.
+
+(include-book "xdoc/top" :dir :system)
+
+(defxdoc copyfun
+  :parents (copyfun)
+  :short "Copy and rename a function."
+  :long "<p>You may optionally replace function occurences in the old function.
+ This should at least be done for recursive functions.
+
+ Example use:
+   (copyfun 'true-listp 'vrai-listep '((true-listp vrai-listep)))
+
+ This will create a recursive function vrai-listep identical to true-listp.
+ Replacements are performed via @('replacefns'). See :DOC REPLACEFNS.</p>
+
+ <p>This macro is inspired on compute-copy-defun+rewrite in
+ hacking/rewrite-code.  It uses state information to retrieve the old function,
+ and writes to the state by defining a new one. You can use this macro without
+ distroying certifiability.
+
+ This function can be used to mimic generic functions, for example, the \"map\":
+
+ (encapsulate ((dummy (a) t))
+   (local (defun dummy (a) a))
+ )
+ (defun map-dummy (as)
+ (if (consp as) (cons (dummy (car as)) (map-dummy (cdr as))) nil))
+ (copyfun map-dummy map-car ((dummy car)))
+ (copyfun map-dummy map-cadr ((dummy cadr)))
+ (copyfun map-dummy (lambda (as) (map-cons as b)) ((dummy (lambda (a) (cons a
+ b)))))</p>")
+
+(defxdoc get-derived-funs
+  :parents (get-derived-funs)
+  :short "Perform get-Derived-funs-From recursively."
+  :long "<p>get-Derived-funs-From FUNS DERIVED (w state)
+
+ Returns DERIVED and all functions depending on a function in FUNS,
+ possibly in multiple steps. For instance:
+ (defun f (x) x)
+ (defun g (x) (f x))
+ (defun h (x) (g x))
+ (get-Derived-funs-From '(h) NIL (w state))
+ will return all three functions.</p>
+
+ <p>This function will at least return what is listed in DERIVED.  It is
+ defined using get-Derived-funs-From.</p>")
+
+(defxdoc get-derived-funs-from
+  :parents (get-derived-funs-from)
+  :short "Get all functions depending on a function."
+  :long "<p>get-Derived-funs-From FUN ignorelist (w state)
+
+ If you add a function name to the ignorelist, it will not be searched for
+ occurences of FUN.</p>
+
+ <p>This function will iterate until it has found the definition of FUN.  After
+ this, the search is terminated. So this function assumes that there are no
+ functions defined using FUN when FUN itself was not defined.  I am not sure
+ about mutual recurrence functions here.. they can probably cause this function
+ to return incorrect results.  See also: get-Derived-funs</p>")
+
+(defxdoc get-derived-theorems
+  :parents (get-derived-theorems)
+  :short "Get all theorems saying something about some functions."
+  :long "<p>get-Derived-theorems FUNS ENDAT (w state)
+
+ Returns a list of lemmas that contain any of FUNS.
+ You may use some event label at ENDAT to shorten the search.</p>
+
+ <p>Returns the translated theorems as how they are stored in the world.</p>")
+
+(defxdoc instance-of-defspec
+  :parents (instance-of-defspec)
+  :short "Reuse what is outside a defspec."
+  :long "<p>Usage
+ (instanceOf-defspec specname prefix)
+ or
+ (instanceOf-defspec specname prefix rename)
+
+ Will use all functions in the defspec specname, prefixed with prefix.
+ For example: fun will be instantiated with prefix-fun.
+ If you wish to, you can supply the optional rename argument '((fun newfun))
+ to instantiate fun with newfun.
+
+ All functions and theorems that are currently in scope and depend on the defspec
+ will be duplicated (prefixed with prefix or renamed as rename).</p>
+
+ <p>For example use, see the file closedMonoid.lisp</p>")
+
+(defxdoc is-a
+  :parents (is-a)
+  :short "Reuse what is inside a defspec."
+  :long "<p>Usage
+ (isa-spec specname prefix thmname)
+ or
+ (isa-spec specname prefix thmname rename)
+
+ All theorems that are in the defspec will be put in the current scope.</p>
+
+ <p>Examples can be found in the file closedMonoid</p>")
+
+(defxdoc replacefns
+  :parents (replacefns)
+  :short "Replace function occurences in an expression."
+  :long "<p>The function replaces only function occurences. Variables are left
+ as-is.
+
+ Example use:
+   :replacefns ((foo bar) (bar foo) (x z)) ((+ (foo x y) (bar x y)))
+ Replaces bar with foo and foo with bar, and leaves x untouched
+ since it is only used as a variable. Return value:
+   ((+ (BAR X Y) (FOO X Y)))</p>
+
+ <p>Assumes there are no macros.  The function is defined guardless.  The first
+ argument should be a list of lists of length 2. Less than that gives an error,
+ further arguments will be ignored.  The second argument should be a list of
+ terms.  Every element will undergo the replacement.
+
+ Should handle lambda expressions too:
+ :replacefns ((foo bar) (bar foo)) ((+ ((lambda (foo j) (foo foo j)) x y) (bar x y)))</p>")
+
+(defxdoc suball
+  :parents (suball)
+  :short "Create substitution names using a prefix. Does not perform the substitution"
+  :long "<p>subAll NAMES PREFIX ALTERNATIVES
+
+ Returns a list of lists of length two.
+ The first element being an item from NAMES.
+ The second is the same, prefixed by PREFIX.
+ If the element occurs in ALTERNATIVES, this alternative is used instead.</p>
+
+ <p>Example: :subAll (a b c) (x) (b Y) ((A X-A) (B Y) (C X-C))</p>")
+
+(defxdoc used-in
+  :parents (used-in)
+  :short "Check whether a function is used in one of a list of expressions."
+  :long "<p>Assumes there are no macros.  TODO Bug: Does not handle
+ lambda-expressions well.</p>
+
+ <p>Examples:
+
+ :used-in f ((+ x (f y)))
+   T
+ :used-in x ((+ x (f y)))
+   NIL (x is not a function here)
+ :used-in + ((+ x (f y)))
+   T   (even though + is a macro, it was not expanded here)
+ :used-in + (+ x (f y))
+   NIL (+ is a symbol, it is the first occurence in the list of expressions.)
+ :used-in + ((+) (x) (f y)) T</p>")
+
+(defxdoc used-in-oneof
+  :parents (used-in-oneof)
+  :short "Check whether any of a list of functions is used in any of a list of expressions."
+  :long "<p>Examples:
+
+ :used-in-oneof (f) ((+ x (f y)))
+   T (f is used)
+ :used-in-oneof (x) ((+ x (f y)))
+   NIL (x is not a function here)
+ :used-in-oneof (f x) ((+ x (f y))) T (x is not used, but f is)</p>
+
+ <p>Assumes there are no macro's; TODO: does not handle lambda-expressions
+ well.  See also: used-in</p>")

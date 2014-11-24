@@ -438,20 +438,24 @@
                   (taxa-list-to-taxon-index taxa-list)))))))
 
 (defun build-term-top-guard-t (bdd-fringes taxa-list)
-  ":Doc-Section TASPI
-   Returns the tree implied by the bipartitions given.~/ 
-   ~/ 
-   Arguments: 
-      (1) bdd-fringes - a list of bdd based bipartitions
-      (2) taxa-list - a list of taxa names
 
-   Details: BDD based bipartitions should have been created using the taxa-list
-            given.  Tree returned will be ordered according the order implied
-            by the taxa list given. Same computation as build-term-top, but 
-            well-formedness of input is explicitly checked.
-            NOTE: Representation returned is rooted
-            at the *longest* bipartition but could/should probably use mv-root when
-            building an unrooted tree. "
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns the tree implied by the bipartitions given.~/ 
+;  ~/ 
+;  Arguments: 
+;     (1) bdd-fringes - a list of bdd based bipartitions
+;     (2) taxa-list - a list of taxa names
+
+;  Details: BDD based bipartitions should have been created using the taxa-list
+;           given.  Tree returned will be ordered according the order implied
+;           by the taxa list given. Same computation as build-term-top, but 
+;           well-formedness of input is explicitly checked.
+;           NOTE: Representation returned is rooted
+;           at the *longest* bipartition but could/should probably use mv-root when
+;           building an unrooted tree. "
   (declare (xargs :guard t))
   (if (and (<= 2 (len taxa-list))
            (int-symlist taxa-list)

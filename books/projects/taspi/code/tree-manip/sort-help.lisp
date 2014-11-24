@@ -87,16 +87,20 @@
                    (mytips x))))
 
 (defun orderedp (flg x order)
-  ":Doc-Section TASPI
-    Determines if the tree given is ordered according to the order given.~/
-    ~/
-    Arguments:
-       (1) flg - nil indicates a set of trees, non-nil indicates a single tree
-       (2) x - a tree
-       (3) order - a mapping from taxa names to integers
 
-    Details: Taxa names in order must match those in the tree.  Branch lengths
-             may or may not be present. "
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;   Determines if the tree given is ordered according to the order given.~/
+;   ~/
+;   Arguments:
+;      (1) flg - nil indicates a set of trees, non-nil indicates a single tree
+;      (2) x - a tree
+;      (3) order - a mapping from taxa names to integers
+
+;   Details: Taxa names in order must match those in the tree.  Branch lengths
+;            may or may not be present. "
   (declare (xargs :guard (and (good-taxon-index-halist order)
                               (subset (mytips x)
                                       (get-taxa-from-taxon-index

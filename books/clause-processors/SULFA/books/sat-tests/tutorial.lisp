@@ -326,21 +326,6 @@ ACL2 !>
 
 ;; The power of SULFA though, really comes from user-defined functions.
 
-;; For example, we can define xor as below:
-
-; Changed by Matt Kaufmann to be compatible with ACL2 after Version 3.3:
-(defun xor (p q)
-
-  ":Doc-Section ACL2::Programming
-
-  logical ``exclusive or''~/
-
-  ~c[Xor] is the ACL2 exclusive-or function.  ~c[(xor P Q)] means that either
-  ~c[P] or ~c[Q], but not both, is false (i.e., ~c[nil]).~/~/"
-
-  (declare (xargs :guard t))
-  (if p (if q nil t) (if q t nil)))
-
 ;; And now we can prove theorems about xor, using the clause processor:
 
 (defthm xor-thm-1

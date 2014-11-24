@@ -67,20 +67,24 @@ get-new-poss-list"))
 
 ;tia could/should be generated!!! here and in depth first           
 (defun bandb (seq cssl-map matrix tia)
-  ":Doc-Section TASPI
-   Performs a breadth first branch and bound search for a maximum parsimony
-   tree for sequences~/
-   ~/
-   Arguments:
-     (1) seq - a set of sequences
-     (2) cssl-map -  An alist mapping every character state to a  
-                     list containing one element (either 0 or nil 
-                     for infinity) for each unambiguous state   
-     (3) matrix - A mapping of unambiguous character states to 
-                  transition costs.                           
-     (4) tia - a mapping of taxa names to integers
 
-   Details: The taxa names in the tia should match those given as keys in seq."
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Performs a breadth first branch and bound search for a maximum parsimony
+;  tree for sequences~/
+;  ~/
+;  Arguments:
+;    (1) seq - a set of sequences
+;    (2) cssl-map -  An alist mapping every character state to a  
+;                    list containing one element (either 0 or nil 
+;                    for infinity) for each unambiguous state   
+;    (3) matrix - A mapping of unambiguous character states to 
+;                 transition costs.                           
+;    (4) tia - a mapping of taxa names to integers
+
+;  Details: The taxa names in the tia should match those given as keys in seq."
   (declare (xargs :guard
                   (and (valid-sequences-same-length seq)
                        (charstate-scorelist-map-p cssl-map (len matrix))
@@ -181,20 +185,24 @@ get-new-poss-list"))
                            of depth-work")))))
 
 (defun depth-bandb (seq cssl-map matrix tia)
-  ":Doc-Section TASPI
-   Performs a depth first branch and bound search for a maximum parsimony
-tree for sequences~/
-   ~/
-   Arguments:
-     (1) seq - a set of sequences
-     (2) cssl-map -  An alist mapping every character state to a  
-                     list containing one element (either 0 or nil 
-                     for infinity) for each unambiguous state   
-     (3) matrix - A mapping of unambiguous character states to 
-                  transition costs.                           
-     (4) tia - a mapping of taxa names to integers
 
-   Details: The taxa names in the tia should match those given as keys in seq."
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Performs a depth first branch and bound search for a maximum parsimony
+;  tree for sequences~/
+;  ~/
+;  Arguments:
+;    (1) seq - a set of sequences
+;    (2) cssl-map -  An alist mapping every character state to a  
+;                    list containing one element (either 0 or nil 
+;                    for infinity) for each unambiguous state   
+;    (3) matrix - A mapping of unambiguous character states to 
+;                 transition costs.                           
+;    (4) tia - a mapping of taxa names to integers
+
+;  Details: The taxa names in the tia should match those given as keys in seq."
   (declare (xargs :guard
                   (and (valid-sequences-same-length seq)
                        (charstate-scorelist-map-p cssl-map (len matrix))

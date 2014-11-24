@@ -299,12 +299,25 @@
                          :exec update-misc$c
                          :correspondence update-misc{correspondence}
                          :preserved update-misc{preserved}))
-  :doc ; nil is OK, but we test the use of an actual :doc string
-  ":Doc-Section defabsstobj
 
-  a defabsstobj example~/
+;;; This legacy doc string was replaced Nov. 2014 by a corresponding
+;;; auto-generated defxdoc form below.
+; :doc ; nil is OK, but we test the use of an actual :doc string
+; ":Doc-Section defabsstobj
+;
+; a defabsstobj example~/
+;
+; This :DOC string is just a stub.  ~l[defabsstobj].~/~/"
+  )
 
-  This :DOC string is just a stub.  ~l[defabsstobj].~/~/")
+(include-book "xdoc/top" :dir :system)
+
+(defxdoc st
+  :parents (defabsstobj)
+  :short "A defabsstobj example"
+  :long "<p>This :DOC string is just a stub.  See @(see defabsstobj).</p>
+
+ ")
 
 ; Finally, we show that the use of a logical stobj can result in improvements
 ; to rewrite rules by way of eliminating hypotheses.

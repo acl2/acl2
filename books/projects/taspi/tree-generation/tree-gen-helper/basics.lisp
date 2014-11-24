@@ -17,13 +17,17 @@
 
 ;; builds a ladder tree
 (defun build-unrooted-binary-tree (taxa)
-  ":Doc-Section TASPI
-   Returns a binary unrooted ladder tree with taxa names given.~/
-   ~/
-   Arguments:
-      (1) taxa - a list of taxa names
 
-   "
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns a binary unrooted ladder tree with taxa names given.~/
+;  ~/
+;  Arguments:
+;     (1) taxa - a list of taxa names
+
+;  "
   (declare (xargs :guard t))
   (if (>= 3 (len taxa))
       taxa
@@ -47,26 +51,34 @@
 ;Returns abitrary rooted binary tree
 ; reverses taxa for outgroup possibilities
 (defun build-arbitraryTree (list)
-  ":Doc-Section TASPI
-   Returns a binary unrooted two-ladder tree with taxa names given reversed.~/
-   ~/
-   Arguments:
-      (1) taxa - a list of taxa names
 
-   "
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns a binary unrooted two-ladder tree with taxa names given reversed.~/
+;  ~/
+;  Arguments:
+;     (1) taxa - a list of taxa names
+
+;  "
   (declare (xargs :guard t))
-  (let ((taxa (rev list)))
+  (let ((taxa (taspi-rev list)))
     (build-arbitraryTree-helper (cdr taxa) (car taxa))))
 
 ;;doesn't reverse taxa list in order to get a different bound on the score
 (defun build-arbitraryTree1 (list)
-  ":Doc-Section TASPI
-   Returns a binary unrooted two-ladder tree with taxa names given.~/
-   ~/
-   Arguments:
-      (1) taxa - a list of taxa names
 
-   "
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns a binary unrooted two-ladder tree with taxa names given.~/
+;  ~/
+;  Arguments:
+;     (1) taxa - a list of taxa names
+
+;  "
   (declare (xargs :guard t))
   (if (consp list)
       (build-arbitraryTree-helper (cdr list) (car list))

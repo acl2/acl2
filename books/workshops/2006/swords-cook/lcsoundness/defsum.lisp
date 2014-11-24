@@ -82,6 +82,8 @@
 
 (include-book "pattern-match")
 
+(include-book "xdoc/top" :dir :system)
+
 (set-ignore-ok t)
 (set-bogus-mutual-recursion-ok t)
 
@@ -1108,137 +1110,296 @@
 
 
 (defmacro defsum (name &rest defs)
-  ":Doc-Section Miscellaneous
- Define a recursive data type similar to a Haskell type definition.~/
 
- EXAMPLE:
- ~bv[]
- (include-book ``defsum'')
- (local (include-book ``defsum-thms'')
- (set-ignore-ok :warn)
- (defsum my-list
-   (my-empty)
-   (my-cons car (my-list-p cdr)))
- ~ev[]
+;;; This legacy doc string was replaced Nov. 2014 by auto-generated defxdoc form
+;;; below.
 
- This declaration says that an object is of the type ~c[my-list] if it
-is either of the type ~c[my-empty] or ~c[my-cons], where ~c[my-empty]
-is an empty structure and ~c[my-cons] is a structure with two fields:
-the ~c[car], an arbitrary object; and the ~c[cdr] which is of type
-~c[my-list].  In this case, recognizers ~c[my-list-p], ~c[my-empty-p],
-and ~c[my-cons-p] are defined along with constructors ~c[my-empty] and
-~c[my-cons] and destructors ~c[my-cons-car] and ~c[my-cons-cdr].  The
-necessary macros are also defined to enable pattern-matching using the
-constructors (~pl[pattern-match]).  For mutually-recursive data types
-~pl[defsums].  It may also be informative to look at the translated
-version of a defsum form using :trans1.~/
+; ":Doc-Section Miscellaneous
+;Define a recursive data type similar to a Haskell type definition.~/
 
- Several theorems about the new type are defined so as to enable
-reasoning based on their abstract model rather than their underlying
-list representation. For most reasoning these theorems should be
-sufficient without enabling the function definitions or
-executable-counterparts.  In case these do need to be enabled,
-theories named (for the above example) ~c[my-list-functions] and
-~c[my-list-executable-counterparts] are defined.
+;EXAMPLE:
+;~bv[]
+;(include-book ``defsum'')
+;(local (include-book ``defsum-thms'')
+;(set-ignore-ok :warn)
+;(defsum my-list
+;  (my-empty)
+;  (my-cons car (my-list-p cdr)))
+;~ev[]
 
- In addition to the recognizer, constructor, and destructor functions,
-a measure function is also defined which counts the number of nested
-objects of the sum type.  In the example above, the measure function
-is my-list-measure and the measure of an object is 1 if it is not a
-my-cons, and 1 plus the measure of its my-cons-cdr if it is.
+;This declaration says that an object is of the type ~c[my-list] if it
+;is either of the type ~c[my-empty] or ~c[my-cons], where ~c[my-empty]
+;is an empty structure and ~c[my-cons] is a structure with two fields:
+;the ~c[car], an arbitrary object; and the ~c[cdr] which is of type
+;~c[my-list].  In this case, recognizers ~c[my-list-p], ~c[my-empty-p],
+;and ~c[my-cons-p] are defined along with constructors ~c[my-empty] and
+;~c[my-cons] and destructors ~c[my-cons-car] and ~c[my-cons-cdr].  The
+;necessary macros are also defined to enable pattern-matching using the
+;constructors (~pl[pattern-match]).  For mutually-recursive data types
+;~pl[defsums].  It may also be informative to look at the translated
+;version of a defsum form using :trans1.~/
 
- Defsum accepts some keyword arguments which must be placed after the
-name but before the list of primitives.  So far, the only supported
-options are ~c[:guard] and ~c[:short-accessors].
+;Several theorems about the new type are defined so as to enable
+;reasoning based on their abstract model rather than their underlying
+;list representation. For most reasoning these theorems should be
+;sufficient without enabling the function definitions or
+;executable-counterparts.  In case these do need to be enabled,
+;theories named (for the above example) ~c[my-list-functions] and
+;~c[my-list-executable-counterparts] are defined.
 
- ~c[:guard] - may be set to ~c[t], ~c[nil], or ~c[:fast].  By default
-it is set to ~c[t], in which case minimal guards are set for all
-functions.  If set to ~c[nil], guards will not be verified for any
-functions; this is useful in case some field type recognizers don't
-have their guards verified.  If set to ~c[:fast], an additional
-recognizer for each product is defined named ``foo-p-fast'' if the
-product is named foo.  This has a guard such that its argument must be
-a valid sum object.  It is then logically equivalent to the other
-recognizer, but in execution only checks that the symbol in the car of
-the object matches the name of the product.  The pattern matcher for
-each product then uses the fast recognizers.  Thus fast guards result
-in a small (?) gain in performance in exchange for a (hopefully
-trivial) degradation in logical complexity.
+;In addition to the recognizer, constructor, and destructor functions,
+;a measure function is also defined which counts the number of nested
+;objects of the sum type.  In the example above, the measure function
+;is my-list-measure and the measure of an object is 1 if it is not a
+;my-cons, and 1 plus the measure of its my-cons-cdr if it is.
 
-~c[:short-accessors] - ~c[t] by default; may be set to ~c[nil].  If
-~c[t], each field accessor first checks whether the object is of the
-correct product type and returns nil if not.  This allows for an
-additional theorem saying that if x is not of the correct product
-type, then the accessor returns nil.  If ~c[nil], the nth accessor
-returns ~c[(nth n x)] regardless of x's type.  When guards are turned
-on, this is implemented with an ~c[mbe] so there should be no
-performance difference between the two options.  When guards are off,
-performance will be somewhat better if this feature is turned off.
+;Defsum accepts some keyword arguments which must be placed after the
+;name but before the list of primitives.  So far, the only supported
+;options are ~c[:guard] and ~c[:short-accessors].
 
- It may be necessary to include some function definition in a mutual
-recursion with the sum recognizer function.  In this case simply put
-the defun form inside the defsum form, i.e.
+;~c[:guard] - may be set to ~c[t], ~c[nil], or ~c[:fast].  By default
+;it is set to ~c[t], in which case minimal guards are set for all
+;functions.  If set to ~c[nil], guards will not be verified for any
+;functions; this is useful in case some field type recognizers don't
+;have their guards verified.  If set to ~c[:fast], an additional
+;recognizer for each product is defined named ``foo-p-fast'' if the
+;product is named foo.  This has a guard such that its argument must be
+;a valid sum object.  It is then logically equivalent to the other
+;recognizer, but in execution only checks that the symbol in the car of
+;the object matches the name of the product.  The pattern matcher for
+;each product then uses the fast recognizers.  Thus fast guards result
+;in a small (?) gain in performance in exchange for a (hopefully
+;trivial) degradation in logical complexity.
 
- ~bv[]
- (defsum lisp-term
-   (lisp-atom val)
-   (func-app (symbolp function) (lisp-term-listp args))
-   (defun lisp-term-listp (args)
-     (declare (xargs :guard t))
-     (if (atom args)
-         (null args)
-       (and (lisp-term-p (car args))
-            (lisp-term-listp (cdr args))))))
- ~ev[]
+;~c[:short-accessors] - ~c[t] by default; may be set to ~c[nil].  If
+;~c[t], each field accessor first checks whether the object is of the
+;correct product type and returns nil if not.  This allows for an
+;additional theorem saying that if x is not of the correct product
+;type, then the accessor returns nil.  If ~c[nil], the nth accessor
+;returns ~c[(nth n x)] regardless of x's type.  When guards are turned
+;on, this is implemented with an ~c[mbe] so there should be no
+;performance difference between the two options.  When guards are off,
+;performance will be somewhat better if this feature is turned off.
 
- If such a function is included, however, no measure function will be
-defined for the sum.
+;It may be necessary to include some function definition in a mutual
+;recursion with the sum recognizer function.  In this case simply put
+;the defun form inside the defsum form, i.e.
 
- Usually it is not necessary to specify a measure for such a function;
-because there is currently no way of directly specifying the measure
-for the sum's recognizer, specifying an exotic measure on such a
-function is likely to fail.
+;~bv[]
+;(defsum lisp-term
+;  (lisp-atom val)
+;  (func-app (symbolp function) (lisp-term-listp args))
+;  (defun lisp-term-listp (args)
+;    (declare (xargs :guard t))
+;    (if (atom args)
+;        (null args)
+;      (and (lisp-term-p (car args))
+;           (lisp-term-listp (cdr args))))))
+;~ev[]
 
- The book defsum-thms contains several lemmas that are used in
-admitting the defsum form.  If this book is not included it is almost
-certain that some theorem within the defsum will fail.  However, it
-may be desirable to include the book locally in the book where defsum
-is called.  The defsum book itself may not be included locally unless
-all defsum forms are local."
+;If such a function is included, however, no measure function will be
+;defined for the sum.
+
+;Usually it is not necessary to specify a measure for such a function;
+;because there is currently no way of directly specifying the measure
+;for the sum's recognizer, specifying an exotic measure on such a
+;function is likely to fail.
+
+;The book defsum-thms contains several lemmas that are used in
+;admitting the defsum form.  If this book is not included it is almost
+;certain that some theorem within the defsum will fail.  However, it
+;may be desirable to include the book locally in the book where defsum
+;is called.  The defsum book itself may not be included locally unless
+;all defsum forms are local."
+
   (mv-let 
    (sum extfns kwalist) (defsum-munge-input name defs)
    (defsums-fn sum kwalist extfns)))
 
+(defxdoc defsum
+  :parents (miscellaneous)
+  :short "Define a recursive data type similar to a Haskell type definition."
+  :long "<p>EXAMPLE:</p>
 
+ @({
+  (include-book ``defsum'')
+  (local (include-book ``defsum-thms'')
+  (set-ignore-ok :warn)
+  (defsum my-list
+    (my-empty)
+    (my-cons car (my-list-p cdr)))
+ })
+
+ <p>This declaration says that an object is of the type @('my-list') if it is
+ either of the type @('my-empty') or @('my-cons'), where @('my-empty') is an
+ empty structure and @('my-cons') is a structure with two fields: the @('car'),
+ an arbitrary object; and the @('cdr') which is of type @('my-list').  In this
+ case, recognizers @('my-list-p'), @('my-empty-p'), and @('my-cons-p') are
+ defined along with constructors @('my-empty') and @('my-cons') and destructors
+ @('my-cons-car') and @('my-cons-cdr').  The necessary macros are also defined
+ to enable pattern-matching using the constructors (see @(see pattern-match)).
+ For mutually-recursive data types see @(see defsums).  It may also be
+ informative to look at the translated version of a defsum form using
+ :trans1.</p>
+
+ <p>Several theorems about the new type are defined so as to enable reasoning
+ based on their abstract model rather than their underlying list
+ representation. For most reasoning these theorems should be sufficient without
+ enabling the function definitions or executable-counterparts.  In case these
+ do need to be enabled, theories named (for the above example)
+ @('my-list-functions') and @('my-list-executable-counterparts') are
+ defined.</p>
+
+ <p>In addition to the recognizer, constructor, and destructor functions, a
+ measure function is also defined which counts the number of nested objects of
+ the sum type.  In the example above, the measure function is my-list-measure
+ and the measure of an object is 1 if it is not a my-cons, and 1 plus the
+ measure of its my-cons-cdr if it is.</p>
+
+ <p>Defsum accepts some keyword arguments which must be placed after the name
+ but before the list of primitives.  So far, the only supported options are
+ @(':guard') and @(':short-accessors').</p>
+
+ <p>@(':guard') - may be set to @('t'), @('nil'), or @(':fast').  By default it
+ is set to @('t'), in which case minimal guards are set for all functions.  If
+ set to @('nil'), guards will not be verified for any functions; this is useful
+ in case some field type recognizers don't have their guards verified.  If set
+ to @(':fast'), an additional recognizer for each product is defined named
+ ``foo-p-fast'' if the product is named foo.  This has a guard such that its
+ argument must be a valid sum object.  It is then logically equivalent to the
+ other recognizer, but in execution only checks that the symbol in the car of
+ the object matches the name of the product.  The pattern matcher for each
+ product then uses the fast recognizers.  Thus fast guards result in a small
+ (?) gain in performance in exchange for a (hopefully trivial) degradation in
+ logical complexity.</p>
+
+ <p>@(':short-accessors') - @('t') by default; may be set to @('nil').  If
+ @('t'), each field accessor first checks whether the object is of the correct
+ product type and returns nil if not.  This allows for an additional theorem
+ saying that if x is not of the correct product type, then the accessor returns
+ nil.  If @('nil'), the nth accessor returns @('(nth n x)') regardless of x's
+ type.  When guards are turned on, this is implemented with an @('mbe') so
+ there should be no performance difference between the two options.  When
+ guards are off, performance will be somewhat better if this feature is turned
+ off.</p>
+
+ <p>It may be necessary to include some function definition in a mutual
+ recursion with the sum recognizer function.  In this case simply put the defun
+ form inside the defsum form, i.e.</p>
+
+ @({
+  (defsum lisp-term
+    (lisp-atom val)
+    (func-app (symbolp function) (lisp-term-listp args))
+    (defun lisp-term-listp (args)
+      (declare (xargs :guard t))
+      (if (atom args)
+          (null args)
+        (and (lisp-term-p (car args))
+             (lisp-term-listp (cdr args))))))
+ })
+
+ <p>If such a function is included, however, no measure function will be
+ defined for the sum.</p>
+
+ <p>Usually it is not necessary to specify a measure for such a function;
+ because there is currently no way of directly specifying the measure for the
+ sum's recognizer, specifying an exotic measure on such a function is likely to
+ fail.</p>
+
+ <p>The book defsum-thms contains several lemmas that are used in admitting the
+ defsum form.  If this book is not included it is almost certain that some
+ theorem within the defsum will fail.  However, it may be desirable to include
+ the book locally in the book where defsum is called.  The defsum book itself
+ may not be included locally unless all defsum forms are local.</p>")
 
 (defmacro defsums (&rest sums)
-  ":Doc-Section Miscellaneous
-  Define a set of mutually-recursive data types. ~/
 
- EXAMPLE:
- ~bv[]
- (defsums
+;;; This legacy doc string was replaced Nov. 2014 by auto-generated defxdoc form
+;;; below.
+
+; ":Doc-Section Miscellaneous
+; Define a set of mutually-recursive data types. ~/
+
+;EXAMPLE:
+;~bv[]
+;(defsums
+;  (my-term
+;   (my-atom val)
+;   (my-application (symbolp function) (my-term-list-p args)))
+;  (my-term-list
+;   (my-nil)
+;   (my-cons (my-term-p car) (my-term-list-p cdr))))
+;~ev[]
+
+;~l[defsum].  This form is used when you want to define two or more types which
+;may be constructed from each other.  In the above example, ~c[my-term] and
+;~c[my-term-list] could not be defined using independent defsum forms;
+;their recognizer functions need to be defined in a mutual recursion. ~/
+
+;Defsums accepts the same keyword arguments as defsum.
+
+;If you want some function to be defined inside the same mutual-recursion in
+;which the recognizers for each of the sums and products are defined, you may
+;insert the defun inside the def-mutual-sums form, i.e.
+
+;~bv[]
+;(defsums
+; (foo
+;  (bla (bar-p x))
+;  (ble (foo-p x) (bar-p y)))
+; (bar
+;  (blu (integerp k))
+;  (blo (symbolp f) (foo-list-p a)))
+; (defun foo-list-p (x)
+;   (declare (xargs :guard t))
+;   (if (atom x)
+;       (null x)
+;     (and (foo-p (car x))
+;          (foo-list-p (cdr x))))))
+;~ev[]
+
+;Usually it is not necessary to specify a measure for such a function;
+;because there is currently no way of directly specifying the measures
+;on the sums' recognizers, specifying an exotic measure on such a
+;function is likely to fail.
+;
+;As with defsum, def-mutual-sums requires the (possibly local) inclusion of the
+;defsum-thms book."
+  (mv-let 
+   (sums extfns kwalist) (defsums-munge-input sums)
+   (defsums-fn sums kwalist extfns)))
+
+(defxdoc defsums
+  :parents (miscellaneous)
+  :short "Define a set of mutually-recursive data types."
+  :long "<p>EXAMPLE:</p>
+
+ @({
+   (defsums
    (my-term
     (my-atom val)
     (my-application (symbolp function) (my-term-list-p args)))
    (my-term-list
     (my-nil)
     (my-cons (my-term-p car) (my-term-list-p cdr))))
- ~ev[]
 
- ~l[defsum].  This form is used when you want to define two or more types which
-may be constructed from each other.  In the above example, ~c[my-term] and
-~c[my-term-list] could not be defined using independent defsum forms;
-their recognizer functions need to be defined in a mutual recursion. ~/
+ })
 
- Defsums accepts the same keyword arguments as defsum.
+ <p>See @(see defsum).  This form is used when you want to define two or more
+ types which may be constructed from each other.  In the above example,
+ @('my-term') and @('my-term-list') could not be defined using independent
+ defsum forms; their recognizer functions need to be defined in a mutual
+ recursion.</p>
 
- If you want some function to be defined inside the same mutual-recursion in
-which the recognizers for each of the sums and products are defined, you may
-insert the defun inside the def-mutual-sums form, i.e.
+ <p>Defsums accepts the same keyword arguments as defsum.</p>
 
- ~bv[]
- (defsums
+ <p>If you want some function to be defined inside the same mutual-recursion in
+ which the recognizers for each of the sums and products are defined, you may
+ insert the defun inside the def-mutual-sums form, i.e.</p>
+
+ @({
+   (defsums
   (foo
    (bla (bar-p x))
    (ble (foo-p x) (bar-p y)))
@@ -1251,20 +1412,16 @@ insert the defun inside the def-mutual-sums form, i.e.
         (null x)
       (and (foo-p (car x))
            (foo-list-p (cdr x))))))
- ~ev[]
 
- Usually it is not necessary to specify a measure for such a function;
-because there is currently no way of directly specifying the measures
-on the sums' recognizers, specifying an exotic measure on such a
-function is likely to fail.
- 
- As with defsum, def-mutual-sums requires the (possibly local) inclusion of the
-defsum-thms book."
-  (mv-let 
-   (sums extfns kwalist) (defsums-munge-input sums)
-   (defsums-fn sums kwalist extfns)))
+ })
 
+ <p>Usually it is not necessary to specify a measure for such a function;
+ because there is currently no way of directly specifying the measures on the
+ sums' recognizers, specifying an exotic measure on such a function is likely
+ to fail.
 
+  As with defsum, def-mutual-sums requires the (possibly local) inclusion of
+ the defsum-thms book.</p>")
 
 ;; (logic)
 

@@ -150,13 +150,17 @@
                                     index-to-taxon))))
 
 (defun build-taxa-list-tree (taxa-list)
-  ":Doc-Section TASPI
-   Returns a mapping from each taxon in list to each taxon's bdd representation~/
-   ~/
-   Arguments:
-       (1) taxa-list - a list of taxa
 
-   "
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns a mapping from each taxon in list to each taxon's bdd representation~/
+;  ~/
+;  Arguments:
+;      (1) taxa-list - a list of taxa
+
+;  "
   (declare (xargs :guard t))
   (let ((tree-depth (ilog2 (len taxa-list)))
         (index-to-taxon (taxa-list-to-index-taxon taxa-list)))

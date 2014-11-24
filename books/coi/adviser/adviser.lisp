@@ -9,117 +9,348 @@
 (in-package "ADVISER")
 (include-book "misc/symbol-btree" :dir :system)
 (include-book "../symbol-fns/symbol-fns")
+(include-book "xdoc/top" :dir :system)
+(defmacro defxdoc (&rest args)
+  `(acl2::defxdoc ,@args))
 
-(defdoc Adviser
-  ":Doc-Section Adviser
+; The following legacy doc strings were replaced Nov. 2014 by
+; auto-generated defxdoc forms below.
 
-   a extensible hint suggestion daemon~/
+;(defdoc Adviser
+; ":Doc-Section Adviser
 
-   Adviser is a a hint computation service.  When the adviser book is loaded,
-   this service is installed into the ACL2 world as a default hint.  This
-   service is consulted when goals becomes stable under simplification during
-   your proof attempts.  In other words, before destructor elimination,
-   generalization, and so forth are tried, the theorem prover will now first
-   consult the Adviser service and see if any hints is available.  ~/
+;  a extensible hint suggestion daemon~/
 
-   When the Adviser is consulted, it examines the goal that ACL2 is stuck on
-   and checks to see if it can give any suggestions.  To make these
-   suggestions, Adviser consults its own database of rules.  These rules are
-   kept in a new ACL2 ~il[table] that Adviser manages, and efficiently stored
-   using the btree library that comes with ACL2 (see
-   books/misc/symbol-btree.lisp).
+;  Adviser is a a hint computation service.  When the adviser book is loaded,
+;  this service is installed into the ACL2 world as a default hint.  This
+;  service is consulted when goals becomes stable under simplification during
+;  your proof attempts.  In other words, before destructor elimination,
+;  generalization, and so forth are tried, the theorem prover will now first
+;  consult the Adviser service and see if any hints is available.  ~/
 
-   This database oriented approach has two advantages.  First, users can extend
-   Adviser's knowledge by adding new rules, without having to understand the
-   tricky details of how computed hints work.  (These rules are added through a
-   new event called ~il[defadvice], which intentionally looks a lot like
-   defthm).  Second, by using a database of triggers, a single pass over each
-   goal is sufficient to determine if advice is necessary.  In contrast, if
-   everyone created their own computed hints, we would have multiple passes
-   over the same goal.
+;  When the Adviser is consulted, it examines the goal that ACL2 is stuck on
+;  and checks to see if it can give any suggestions.  To make these
+;  suggestions, Adviser consults its own database of rules.  These rules are
+;  kept in a new ACL2 ~il[table] that Adviser manages, and efficiently stored
+;  using the btree library that comes with ACL2 (see
+;  books/misc/symbol-btree.lisp).
 
-   ~l[defadvice] for information on adding rules to Adviser.")
+;  This database oriented approach has two advantages.  First, users can extend
+;  Adviser's knowledge by adding new rules, without having to understand the
+;  tricky details of how computed hints work.  (These rules are added through a
+;  new event called ~il[adviser::defadvice], which intentionally looks a lot
+;  like defthm).  Second, by using a database of triggers, a single pass over
+;  each goal is sufficient to determine if advice is necessary.  In contrast,
+;  if everyone created their own computed hints, we would have multiple passes
+;  over the same goal.
 
-(defdoc defadvice
-  ":Doc-Section Adviser
+;  ~l[adviser::defadvice] for information on adding rules to Adviser.")
 
-  adds a rule to the Adviser database~/
+;(defdoc defadvice
+; ":Doc-Section Adviser
 
-  ~bv[]
-  General Form:
-  (defadvice rule-name term 
-    :rule-classes rule-classes)
-  ~ev[]             
+; adds a rule to the Adviser database~/
 
-  where ~c[name] is a new symbolic name ~l[name], ~c[term] is a term alleged to
-  be a useful piece of advice, and ~c[rule-classes] describe the type of advice
-  being added and when to suggest hints of this nature.~/
+; ~bv[]
+; General Form:
+; (defadvice rule-name term 
+;   :rule-classes rule-classes)
+; ~ev[]             
 
-  When Adviser is first loaded, no rules are installed in its database, so it
-  will never suggest any hints.  To make Adviser useful, rules must be added to
-  it using defadvice.  In principle, many types of advice could be added to the
-  Adviser service, and in the future other classes of advice might be added. 
-  But, for now, the only understood rule class is :pick-a-point.  
+; where ~c[name] is a new symbolic name ~l[name], ~c[term] is a term alleged to
+; be a useful piece of advice, and ~c[rule-classes] describe the type of advice
+; being added and when to suggest hints of this nature.~/
 
-  ~l[pick-a-point] for documentation and examples about :pick-a-point rules.")
+; When Adviser is first loaded, no rules are installed in its database, so it
+; will never suggest any hints.  To make Adviser useful, rules must be added to
+; it using defadvice.  In principle, many types of advice could be added to the
+; Adviser service, and in the future other classes of advice might be added. 
+; But, for now, the only understood rule class is :pick-a-point.  
 
-(defdoc pick-a-point
-  ":Doc-Section Adviser
+; ~l[adviser::pick-a-point] for documentation and examples about :pick-a-point
+; rules.")
 
-  make some :pick-a-point rules~/
+;(defdoc pick-a-point
+; ":Doc-Section Adviser
+
+; make some :pick-a-point rules~/
 	
-  ~bv[]
+; ~bv[]
+; Example:
+; (defadvice subbag-by-multiplicity
+;   (implies (bag-hyps)
+;            (subbagp (subbag) (superbag))))
+; ~ev[]~/
+; 
+; I described how the pick-a-point method can be useful for proving subsets in
+; the 2004 ACL2 Workshop Paper: Finite Set Theory based on Fully Ordered Lists.
+; Essentially, the idea is to you should be able to prove (subset x y) by just
+; knowing that forall a, (in a x) implies (in a y).  Since writing that paper,
+; I have found the pick a point method to be widely useful in other contexts
+; that involve extending a predicate to some data structure.
+
+; Often we will have some simple predicate, say ~c[integerp], which we will
+; want to extend over some datastructure, say a list.  The result is a new,
+; recursively defined predicate, say ~c[all-integerp].  Of course, it should be
+; obvious that if every member of the list satisfies ~c[integerp], then the
+; entire list satisfies ~c[all-integerp].  But, we can't write a :rewrite rule
+; such as:
+
+; ~bv[]
+;   (equal (all-integerp x)
+;          (forall a (implies (member a x) (integerp a))))
+; ~ev[]
+
+; Because all of the variables in our :rewrite rules must be universally
+; quantified.  The :pick-a-point rules in Adviser are designed to make exactly
+; this kind of reduction.  As an example, I'll now elaborate on how to set up
+; such a reduction for ~c[all-integerp].  You will find that many other ideas,
+; such as subsets, subtree, subbag relations, and so forth, are basically just
+; copies of this idea.
+
+; We begin with our definition of all-integerp.  (We do not use integer-listp
+; because it requires its argument to be a true-listp.)
+
+; ~bv[]
+; (defun all-integerp (x)
+;   (if (consp x)
+;       (and (integerp (car x))
+;            (all-integerp (cdr x)))
+;     t))
+; ~ev[]
+
+; Our first task is to write our ``forall'' statement as a constraint theorem
+; about encapsulated functions.  Becuase we are quantifying over all ``a'', it
+; will be a variable in this constrained theorem.  However, since ``x'' is not
+; being quantified, we will create a constrained function for it.  For reasons
+; we will explain later, we will also have one more constrianed function called
+; ``hyps''.  In all, we come up with the following encapsulate:
+
+; ~bv[]
+; (encapsulate
+;  (((intlist-hyps) => *)
+;   ((intlist-list) => *))
+;  (local (defun intlist-hyps () nil))
+;  (local (defun intlist-list () nil))
+;  (defthm intlist-constraint
+;    (implies (and (intlist-hyps)
+;                  (member intlist-element (intlist-list)))
+;             (integerp intlist-element))
+;    :rule-classes nil))
+; ~ev[]
+
+; Our next goal is to prove that, given this constraint, it must be the case
+; that (integer-listp (intlist-list)) is true.  The proof is not entirely 
+; straightforward, but follows the same script each time.  Basically, we first
+; set up a ``badguy'' function that will go through and find an element that
+; violates our constraint if one exists.  We show that the badguy finds such
+; an element whenever ``all-integerp'' is not satisifed.  Then, we just use
+; the instance of our constraint to show that all-integerp must be true for 
+; (intlist-list).
+
+; ~bv[]
+; (local (defun badguy (x)
+;          (if (endp x)
+;              nil
+;            (if (integerp (car x))
+;                (badguy (cdr x)) 
+;              (car x)))))
+;            
+; (local (defthm badguy-works
+;          (implies (not (all-integerp x))
+;                   (and (member (badguy x) x)
+;                        (not (integerp (badguy x)))))))
+
+; (defthm intlist-by-membership-driver
+;   (implies (intlist-hyps)
+;            (all-integerp (intlist-list)))
+;   :rule-classes nil
+;   :hints((\"Goal\" 
+;           :use (:instance intlist-constraint
+;                           (intlist-element (badguy (intlist-list)))))))
+; ~ev[]
+; 
+; At this point, we have essentially shown ACL2 that ``all-integerp`` can
+; be shown as long as we can show our constraint is true.  The missing step
+; is for ACL2 to actually try this approach for us.  But we can't write a 
+; rewrite rule that says ``try to functionally instantiate this theorem 
+; whenever you are trying to prove (all-integerp x).''
+
+; That's where Adviser comes in.  We just give it the following rule:
+
+; ~bv[]
+; (ADVISER::defadvice intlist-by-membership
+;   (implies (intlist-hyps)
+;            (all-integerp (intlist-list)))
+;   :rule-classes (:pick-a-point :driver intlist-by-membership-driver))
+; ~ev[]
+
+; Because we used defadvice, rather than defthm, this rule is for Adviser
+; to add to its database.  Adviser will set up a new trigger for 
+; all-integerp, and whenever it sees that trigger as the target that we 
+; are trying to prove, it will functionally instantiate the driver theorem.
+; We can now conduct membership based proofs of all-integerp.  
+
+; For example, in the following script we can prove that (all-integerp (rev x))
+; exactly when (all-integerp x) without inducting over either function, 
+; because we can just consider membership.
+
+; ~bv[]
+; (defthm equal-of-booleans-rewrite
+;   (implies (and (booleanp x)
+;                 (booleanp y))
+;            (equal (equal x y)
+;                   (iff x y)))
+;   :rule-classes ((:rewrite :backchain-limit-lst 0)))
+
+; (defthm member-of-all-integerp-1
+;   (implies (and (member a x)
+;                 (all-integerp x))
+;            (integerp a)))
+
+; (defthm member-of-all-integerp-2
+;   (implies (and (all-integerp x)
+;                 (not (integerp a)))
+;            (not (member a x))))
+
+; (in-theory (disable all-integerp))
+
+; (defund rev (x)
+;   (if (endp x)
+;       x
+;     (append (rev (cdr x)) 
+;             (list (car x)))))
+
+; (defthm member-of-rev
+;   (iff (member a (rev x))
+;        (member a x))
+;   :hints((\"Goal\" :in-theory (enable rev))))
+
+; (encapsulate
+;  ()
+
+;  (local (defthm lemma1
+;           (implies (all-integerp x)
+;                    (all-integerp (rev x)))))
+;
+;  (local (defthm lemma2
+;           (implies (all-integerp (rev x))
+;                    (all-integerp x))
+;           :hints((\"Subgoal 1\" :use (:instance member-of-all-integerp-1
+;                                                 (a intlist-element)
+;                                                 (x (rev x)))))))
+
+;  (defthm all-integerp-of-rev
+;    (equal (all-integerp (rev x))
+;           (all-integerp x)))
+;  )
+; ~ev[]")
+
+(defxdoc adviser::adviser
+  :parents (adviser::adviser)
+  :short "A extensible hint suggestion daemon"
+  :long "<p>Adviser is a a hint computation service.  When the adviser book is
+ loaded, this service is installed into the ACL2 world as a default hint.  This
+ service is consulted when goals becomes stable under simplification during
+ your proof attempts.  In other words, before destructor elimination,
+ generalization, and so forth are tried, the theorem prover will now first
+ consult the Adviser service and see if any hints is available.</p>
+
+ <p>When the Adviser is consulted, it examines the goal that ACL2 is stuck on
+ and checks to see if it can give any suggestions.  To make these suggestions,
+ Adviser consults its own database of rules.  These rules are kept in a new
+ ACL2 @(see table) that Adviser manages, and efficiently stored using the btree
+ library that comes with ACL2 (see books/misc/symbol-btree.lisp).</p>
+
+ <p>This database oriented approach has two advantages.  First, users can
+ extend Adviser's knowledge by adding new rules, without having to understand
+ the tricky details of how computed hints work.  (These rules are added through
+ a new event called @(see adviser::defadvice), which intentionally looks a lot
+ like defthm).  Second, by using a database of triggers, a single pass over
+ each goal is sufficient to determine if advice is necessary.  In contrast, if
+ everyone created their own computed hints, we would have multiple passes over
+ the same goal.</p>
+
+ <p>See @(see adviser::defadvice) for information on adding rules to
+ Adviser.</p>")
+
+(defxdoc adviser::defadvice
+  :parents (adviser::adviser)
+  :short "Adds a rule to the Adviser database"
+  :long "@({
+  General Form:
+  (defadvice rule-name term
+    :rule-classes rule-classes)
+ })
+
+ <p>where @('name') is a new symbolic name See @(see name), @('term') is a term
+ alleged to be a useful piece of advice, and @('rule-classes') describe the
+ type of advice being added and when to suggest hints of this nature.</p>
+
+ <p>When Adviser is first loaded, no rules are installed in its database, so it
+ will never suggest any hints.  To make Adviser useful, rules must be added to
+ it using defadvice.  In principle, many types of advice could be added to the
+ Adviser service, and in the future other classes of advice might be added.
+ But, for now, the only understood rule class is :pick-a-point.</p>
+
+ <p>See @(see adviser::pick-a-point) for documentation and examples about
+ :pick-a-point rules.</p>")
+
+(defxdoc adviser::pick-a-point
+  :parents (adviser::adviser)
+  :short "Make some :pick-a-point rules"
+  :long "@({
   Example:
   (defadvice subbag-by-multiplicity
     (implies (bag-hyps)
              (subbagp (subbag) (superbag))))
-  ~ev[]~/
-  
-  I described how the pick-a-point method can be useful for proving subsets in
-  the 2004 ACL2 Workshop Paper: Finite Set Theory based on Fully Ordered Lists.
-  Essentially, the idea is to you should be able to prove (subset x y) by just
-  knowing that forall a, (in a x) implies (in a y).  Since writing that paper,
-  I have found the pick a point method to be widely useful in other contexts
-  that involve extending a predicate to some data structure.
+ })
 
-  Often we will have some simple predicate, say ~c[integerp], which we will
-  want to extend over some datastructure, say a list.  The result is a new,
-  recursively defined predicate, say ~c[all-integerp].  Of course, it should be
-  obvious that if every member of the list satisfies ~c[integerp], then the
-  entire list satisfies ~c[all-integerp].  But, we can't write a :rewrite rule
-  such as:
+ <p>I described how the pick-a-point method can be useful for proving subsets
+ in the 2004 ACL2 Workshop Paper: Finite Set Theory based on Fully Ordered
+ Lists.  Essentially, the idea is to you should be able to prove (subset x y)
+ by just knowing that forall a, (in a x) implies (in a y).  Since writing that
+ paper, I have found the pick a point method to be widely useful in other
+ contexts that involve extending a predicate to some data structure.</p>
 
-  ~bv[]
+ <p>Often we will have some simple predicate, say @('integerp'), which we will
+ want to extend over some datastructure, say a list.  The result is a new,
+ recursively defined predicate, say @('all-integerp').  Of course, it should be
+ obvious that if every member of the list satisfies @('integerp'), then the
+ entire list satisfies @('all-integerp').  But, we can't write a :rewrite rule
+ such as:</p>
+
+ @({
     (equal (all-integerp x)
            (forall a (implies (member a x) (integerp a))))
-  ~ev[]
+ })
 
-  Because all of the variables in our :rewrite rules must be universally
-  quantified.  The :pick-a-point rules in Adviser are designed to make exactly
-  this kind of reduction.  As an example, I'll now elaborate on how to set up
-  such a reduction for ~c[all-integerp].  You will find that many other ideas,
-  such as subsets, subtree, subbag relations, and so forth, are basically just
-  copies of this idea.
+ <p>Because all of the variables in our :rewrite rules must be universally
+ quantified.  The :pick-a-point rules in Adviser are designed to make exactly
+ this kind of reduction.  As an example, I'll now elaborate on how to set up
+ such a reduction for @('all-integerp').  You will find that many other ideas,
+ such as subsets, subtree, subbag relations, and so forth, are basically just
+ copies of this idea.</p>
 
-  We begin with our definition of all-integerp.  (We do not use integer-listp
-  because it requires its argument to be a true-listp.)
+ <p>We begin with our definition of all-integerp.  (We do not use integer-listp
+ because it requires its argument to be a true-listp.)</p>
 
-  ~bv[]
+ @({
   (defun all-integerp (x)
     (if (consp x)
         (and (integerp (car x))
              (all-integerp (cdr x)))
       t))
-  ~ev[]
+ })
 
-  Our first task is to write our ``forall'' statement as a constraint theorem
-  about encapsulated functions.  Becuase we are quantifying over all ``a'', it
-  will be a variable in this constrained theorem.  However, since ``x'' is not
-  being quantified, we will create a constrained function for it.  For reasons
-  we will explain later, we will also have one more constrianed function called
-  ``hyps''.  In all, we come up with the following encapsulate:
+ <p>Our first task is to write our ``forall'' statement as a constraint theorem
+ about encapsulated functions.  Becuase we are quantifying over all ``a'', it
+ will be a variable in this constrained theorem.  However, since ``x'' is not
+ being quantified, we will create a constrained function for it.  For reasons
+ we will explain later, we will also have one more constrianed function called
+ ``hyps''.  In all, we come up with the following encapsulate:</p>
 
-  ~bv[]
+ @({
   (encapsulate
    (((intlist-hyps) => *)
     ((intlist-list) => *))
@@ -127,28 +358,28 @@
    (local (defun intlist-list () nil))
    (defthm intlist-constraint
      (implies (and (intlist-hyps)
-		   (member intlist-element (intlist-list)))
-	      (integerp intlist-element))
+  		   (member intlist-element (intlist-list)))
+  	      (integerp intlist-element))
      :rule-classes nil))
-  ~ev[]
+ })
 
-  Our next goal is to prove that, given this constraint, it must be the case
-  that (integer-listp (intlist-list)) is true.  The proof is not entirely 
-  straightforward, but follows the same script each time.  Basically, we first
-  set up a ``badguy'' function that will go through and find an element that
-  violates our constraint if one exists.  We show that the badguy finds such
-  an element whenever ``all-integerp'' is not satisifed.  Then, we just use
-  the instance of our constraint to show that all-integerp must be true for 
-  (intlist-list).
+ <p>Our next goal is to prove that, given this constraint, it must be the case
+ that (integer-listp (intlist-list)) is true.  The proof is not entirely
+ straightforward, but follows the same script each time.  Basically, we first
+ set up a ``badguy'' function that will go through and find an element that
+ violates our constraint if one exists.  We show that the badguy finds such an
+ element whenever ``all-integerp'' is not satisifed.  Then, we just use the
+ instance of our constraint to show that all-integerp must be true for
+ (intlist-list).</p>
 
-  ~bv[]
+ @({
   (local (defun badguy (x)
            (if (endp x)
                nil
              (if (integerp (car x))
-                 (badguy (cdr x)) 
+                 (badguy (cdr x))
                (car x)))))
-             
+
   (local (defthm badguy-works
            (implies (not (all-integerp x))
                     (and (member (badguy x) x)
@@ -158,37 +389,39 @@
     (implies (intlist-hyps)
              (all-integerp (intlist-list)))
     :rule-classes nil
-    :hints((\"Goal\" 
+    :hints((\"Goal\"
             :use (:instance intlist-constraint
                             (intlist-element (badguy (intlist-list)))))))
-  ~ev[]
-  
-  At this point, we have essentially shown ACL2 that ``all-integerp`` can
-  be shown as long as we can show our constraint is true.  The missing step
-  is for ACL2 to actually try this approach for us.  But we can't write a 
-  rewrite rule that says ``try to functionally instantiate this theorem 
-  whenever you are trying to prove (all-integerp x).''
+ })
 
-  That's where Adviser comes in.  We just give it the following rule:
+ <p>
 
-  ~bv[]
+ At this point, we have essentially shown ACL2 that ``all-integerp`` can be
+ shown as long as we can show our constraint is true.  The missing step is for
+ ACL2 to actually try this approach for us.  But we can't write a rewrite rule
+ that says ``try to functionally instantiate this theorem whenever you are
+ trying to prove (all-integerp x).''</p>
+
+ <p>That's where Adviser comes in.  We just give it the following rule:</p>
+
+ @({
   (ADVISER::defadvice intlist-by-membership
     (implies (intlist-hyps)
              (all-integerp (intlist-list)))
     :rule-classes (:pick-a-point :driver intlist-by-membership-driver))
-  ~ev[]
+ })
 
-  Because we used defadvice, rather than defthm, this rule is for Adviser
-  to add to its database.  Adviser will set up a new trigger for 
-  all-integerp, and whenever it sees that trigger as the target that we 
-  are trying to prove, it will functionally instantiate the driver theorem.
-  We can now conduct membership based proofs of all-integerp.  
+ <p>Because we used defadvice, rather than defthm, this rule is for Adviser to
+ add to its database.  Adviser will set up a new trigger for all-integerp, and
+ whenever it sees that trigger as the target that we are trying to prove, it
+ will functionally instantiate the driver theorem.  We can now conduct
+ membership based proofs of all-integerp.</p>
 
-  For example, in the following script we can prove that (all-integerp (rev x))
-  exactly when (all-integerp x) without inducting over either function, 
-  because we can just consider membership.
+ <p>For example, in the following script we can prove that (all-integerp (rev
+ x)) exactly when (all-integerp x) without inducting over either function,
+ because we can just consider membership.</p>
 
-  ~bv[]
+ @({
   (defthm equal-of-booleans-rewrite
     (implies (and (booleanp x)
                   (booleanp y))
@@ -211,7 +444,7 @@
   (defund rev (x)
     (if (endp x)
         x
-      (append (rev (cdr x)) 
+      (append (rev (cdr x))
               (list (car x)))))
 
   (defthm member-of-rev
@@ -225,7 +458,7 @@
    (local (defthm lemma1
             (implies (all-integerp x)
                      (all-integerp (rev x)))))
- 
+
    (local (defthm lemma2
             (implies (all-integerp (rev x))
                      (all-integerp x))
@@ -237,7 +470,9 @@
      (equal (all-integerp (rev x))
             (all-integerp x)))
    )
-  ~ev[]")
+ })
+
+ ")
 
 (defun rewriting-goal-lit (mfc state)
   "Ensure that we are rewriting a goal, i.e., not backchaining."

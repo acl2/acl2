@@ -32,70 +32,140 @@
 
 (in-package "ACL2")
 
-(defdoc assume
-  ":Doc-Section Events
+;;; The following legacy doc string was replaced Nov. 2014 by the
+;;; auto-generated defxdoc form just below.
+;(defdoc assume
+; ":Doc-Section Events
 
-   a system for sharing assumptions across many theorems~/
+;  a system for sharing assumptions across many theorems~/
 
-   We provide a simple table-based system for reusable assumptions.  To the
-   user, this system takes on the following interface:
-   ~bv[]
-     (assume <term>)
-        adds term to the local assumptions
+;  We provide a simple table-based system for reusable assumptions.  To the
+;  user, this system takes on the following interface:
+;  ~bv[]
+;    (assume <term>)
+;       adds term to the local assumptions
 
-     (unassume <term>)
-        removes <term> from the local assumptions
+;    (unassume <term>)
+;       removes <term> from the local assumptions
 
-     (conclude <name> <thm> :hints ... :rule-classes ...)
-        like defth, but proves <thm> under the current assumptions
-   ~ev[]
+;    (conclude <name> <thm> :hints ... :rule-classes ...)
+;       like defth, but proves <thm> under the current assumptions
+;  ~ev[]
 
-   For example, consider the following ACL2 rules:
-   ~bv[]
-     (defthm natp-of-plus
-       (implies (and (natp x)
-                     (natp y))
-                (natp (+ x y))))
+;  For example, consider the following ACL2 rules:
+;  ~bv[]
+;    (defthm natp-of-plus
+;      (implies (and (natp x)
+;                    (natp y))
+;               (natp (+ x y))))
 
-     (defthm natp-of-minus
-       (implies (and (natp x)
-                     (natp y)
-                     (< y x))
-                (natp (- x y))))
-   ~ev[]
+;    (defthm natp-of-minus
+;      (implies (and (natp x)
+;                    (natp y)
+;                    (< y x))
+;               (natp (- x y))))
+;  ~ev[]
 
-   We can convert these into the assume/conclude style as follows:
-   ~ev[]
-     (assume (natp x))
-     (assume (natp y))
-     (conclude natp-of-plus (natp (+ x y)))
-     (conclude natp-of-minus (implies (< y x) (natp (- x y))))
-   ~ev[]~/
+;  We can convert these into the assume/conclude style as follows:
+;  ~bv[]
+;    (assume (natp x))
+;    (assume (natp y))
+;    (conclude natp-of-plus (natp (+ x y)))
+;    (conclude natp-of-minus (implies (< y x) (natp (- x y))))
+;  ~ev[]~/
 
-   The ~c[assume] and ~c[unassume] commands are implicitly ~il[local], so you
-   can use ~il[encapsulate] in addition to ~c[unassume] to limit the scope of
-   your assumptions.
+;  The ~c[assume] and ~c[unassume] commands are implicitly ~il[local], so you
+;  can use ~il[encapsulate] in addition to ~c[unassume] to limit the scope of
+;  your assumptions.
 
-   The ~c[conclude] command recognizes ~c[thm]s of the following forms:
-   ~bv[]
-      (implies (and hyp1 ... hypN) concl)
-      (implies hyp1 concl)
-      concl
-   ~ev[]
+;  The ~c[conclude] command recognizes ~c[thm]s of the following forms:
+;  ~bv[]
+;     (implies (and hyp1 ... hypN) concl)
+;     (implies hyp1 concl)
+;     concl
+;  ~ev[]
 
-   It augments the <thm> by injecting the current assumptions after the last
-   hyp.  That is, we produce:
-   ~bv[]
-     (implies (and hyp1 ... hypN assm1 ... assmK) concl)
-     (implies (and hyp1 assm1 ... assmK) concl)
-     (implies (and assm1 ... assmK) concl)
-   ~ev[]
+;  It augments the <thm> by injecting the current assumptions after the last
+;  hyp.  That is, we produce:
+;  ~bv[]
+;    (implies (and hyp1 ... hypN assm1 ... assmK) concl)
+;    (implies (and hyp1 assm1 ... assmK) concl)
+;    (implies (and assm1 ... assmK) concl)
+;  ~ev[]
 
-   We expect this to be appropriate most of the time, since shared hyps tend to
-   be ``common'' sorts of things, e.g., type constraints, etc.  Meanwhile, the
-   unshared hyps should tend to be more complicated and unusual, so we place
-   them at the front of the rule in an effort to make ``fast failing'' rules.")
+;  We expect this to be appropriate most of the time, since shared hyps tend to
+;  be ``common'' sorts of things, e.g., type constraints, etc.  Meanwhile, the
+;  unshared hyps should tend to be more complicated and unusual, so we place
+;  them at the front of the rule in an effort to make ``fast failing'' rules.")
 
+(include-book "xdoc/top" :dir :system)
+
+(defxdoc assume
+  :parents (events)
+  :short "A system for sharing assumptions across many theorems"
+  :long "<p>We provide a simple table-based system for reusable assumptions.
+ To the user, this system takes on the following interface:</p>
+
+ @({
+    (assume <term>)
+       adds term to the local assumptions
+
+    (unassume <term>)
+       removes <term> from the local assumptions
+
+    (conclude <name> <thm> :hints ... :rule-classes ...)
+       like defth, but proves <thm> under the current assumptions
+ })
+
+ <p>For example, consider the following ACL2 rules:</p>
+
+ @({
+    (defthm natp-of-plus
+      (implies (and (natp x)
+                    (natp y))
+               (natp (+ x y))))
+
+    (defthm natp-of-minus
+      (implies (and (natp x)
+                    (natp y)
+                    (< y x))
+               (natp (- x y))))
+ })
+
+ <p>We can convert these into the assume/conclude style as follows:</p>
+
+ @({
+    (assume (natp x))
+    (assume (natp y))
+    (conclude natp-of-plus (natp (+ x y)))
+    (conclude natp-of-minus (implies (< y x) (natp (- x y))))
+ })
+
+ <p>The @('assume') and @('unassume') commands are implicitly @(see local), so
+ you can use @(see encapsulate) in addition to @('unassume') to limit the scope
+ of your assumptions.</p>
+
+ <p>The @('conclude') command recognizes @('thm')s of the following forms:</p>
+
+ @({
+     (implies (and hyp1 ... hypN) concl)
+     (implies hyp1 concl)
+     concl
+ })
+
+ <p>It augments the &lt;thm&gt; by injecting the current assumptions after the
+ last hyp.  That is, we produce:</p>
+
+ @({
+    (implies (and hyp1 ... hypN assm1 ... assmK) concl)
+    (implies (and hyp1 assm1 ... assmK) concl)
+    (implies (and assm1 ... assmK) concl)
+ })
+
+ <p>We expect this to be appropriate most of the time, since shared hyps tend
+ to be ``common'' sorts of things, e.g., type constraints, etc.  Meanwhile, the
+ unshared hyps should tend to be more complicated and unusual, so we place them
+ at the front of the rule in an effort to make ``fast failing'' rules.</p>")
 
 (table assume.table 'assumptions nil)
 

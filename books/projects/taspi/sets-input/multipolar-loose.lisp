@@ -7,15 +7,19 @@
 (include-book "consensus")
 
 (defun get-kernal-splits (bfringes-left all-bfringes)
-  ":Doc-Section TASPI
-   Returns those bipartitions in bfringes-left compatible with the entire set~/
-   ~/
-   Arguments: 
-     (1) bfringes-left - a set of bdd based bipartitions
-     (2) all-bfringes - a set of bdd based bipartitions 
 
-   Details: Arguments should have been created using the same taxa-list.  
-            First argument should always be a subset of second."
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns those bipartitions in bfringes-left compatible with the entire set~/
+;  ~/
+;  Arguments: 
+;    (1) bfringes-left - a set of bdd based bipartitions
+;    (2) all-bfringes - a set of bdd based bipartitions 
+
+;  Details: Arguments should have been created using the same taxa-list.  
+;           First argument should always be a subset of second."
   (declare (xargs :guard t))
   (if (consp bfringes-left)
       (if (q-no-conflicts-gen (car bfringes-left)
@@ -163,19 +167,23 @@
       'need-an-alist-coloring-for-build-trees-from-coloring)))
 
 (defun multipolar (list-of-trees alpha taxa-list)
-  ":Doc-Section TASPI
-   Returns the multipolar consensus of list-of-trees, using proportion alpha.~/
-   ~/
-   Arguments: 
-      (1) list-of-trees - a list of trees
-      (2) alpha - rational between 0 and 1 indicating ratio at which 
-                  bipartitions are displayed
-      (3) taxa-list - a list of taxa
 
-   Details: List-of-trees must have the taxa list given. Uses a greedy coloring
-            algorithm where vertex order is determined by the frequency of 
-            representative bipartition.
-            Does not handle branch lengths (see multipolar-brlens)."
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns the multipolar consensus of list-of-trees, using proportion alpha.~/
+;  ~/
+;  Arguments: 
+;     (1) list-of-trees - a list of trees
+;     (2) alpha - rational between 0 and 1 indicating ratio at which 
+;                 bipartitions are displayed
+;     (3) taxa-list - a list of taxa
+
+;  Details: List-of-trees must have the taxa list given. Uses a greedy coloring
+;           algorithm where vertex order is determined by the frequency of 
+;           representative bipartition.
+;           Does not handle branch lengths (see multipolar-brlens)."
   (declare (xargs :guard t))
   (if (and (non-tip-tree-listp list-of-trees)
            (int-symlist taxa-list)
@@ -214,35 +222,43 @@
     'bad-input-to-multipolar))
 
 (defun multipolar-brlens (list-of-trees alpha taxa-list)
-  ":Doc-Section TASPI
-   Returns the multipolar consensus of list-of-trees, using proportion alpha.~/
-   ~/
-   Arguments: 
-      (1) list-of-trees - a list of trees
-      (2) alpha - rational between 0 and 1 indicating ratio at which 
-                  bipartitions are displayed
-      (3) taxa-list - a list of taxa
 
-   Details: List-of-trees must have the taxa list given. Uses a greedy coloring
-            algorithm where vertex order is determined by the frequency of 
-            representative bipartition.
-            Allows branch lengths (see also multipolar)."
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns the multipolar consensus of list-of-trees, using proportion alpha.~/
+;  ~/
+;  Arguments: 
+;     (1) list-of-trees - a list of trees
+;     (2) alpha - rational between 0 and 1 indicating ratio at which 
+;                 bipartitions are displayed
+;     (3) taxa-list - a list of taxa
+
+;  Details: List-of-trees must have the taxa list given. Uses a greedy coloring
+;           algorithm where vertex order is determined by the frequency of 
+;           representative bipartition.
+;           Allows branch lengths (see also multipolar)."
   (declare (xargs :guard t))
   (let ((trees-no-brlens (remove-brlens-list list-of-trees)))
     (multipolar trees-no-brlens alpha taxa-list)))
 
 (defun loose (list-of-trees taxa-list)
-  ":Doc-Section TASPI
-   Computes the loose consensus of a set of trees~/
-   ~/
-   Arguments: 
-      (1) list-of-trees - a list of trees
-      (2) taxa-list - list of taxa
 
-   Details: List-of-trees must have the given taxa list.  The loose consensus 
-            contains those biparititions in the list of trees given that are 
-            compatible with every other bipartition present.
-            Does not allow branch lengths (see loose-brlens)."
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Computes the loose consensus of a set of trees~/
+;  ~/
+;  Arguments: 
+;     (1) list-of-trees - a list of trees
+;     (2) taxa-list - list of taxa
+
+;  Details: List-of-trees must have the given taxa list.  The loose consensus 
+;           contains those biparititions in the list of trees given that are 
+;           compatible with every other bipartition present.
+;           Does not allow branch lengths (see loose-brlens)."
   (declare (xargs :guard t))
   (if (and (non-tip-tree-listp list-of-trees)
            (int-symlist taxa-list)
@@ -259,17 +275,21 @@
     'bad-input-to-loose))
 
 (defun loose-brlens (list-of-trees taxa-list)
-  ":Doc-Section TASPI
-   Computes the loose consensus of a set of trees with branch lengths~/
-   ~/
-   Arguments: 
-     (1) list-of-trees - a list of trees
-     (2) taxa-list - list of taxa
 
-   Details: List-of-trees must have the given taxa list.  The loose consensus 
-            contains those biparititions in the list of trees given that are 
-            compatible with every other bipartition present. Allows branch 
-            lenghts (see loose)."
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Computes the loose consensus of a set of trees with branch lengths~/
+;  ~/
+;  Arguments: 
+;    (1) list-of-trees - a list of trees
+;    (2) taxa-list - list of taxa
+
+;  Details: List-of-trees must have the given taxa list.  The loose consensus 
+;           contains those biparititions in the list of trees given that are 
+;           compatible with every other bipartition present. Allows branch 
+;           lenghts (see loose)."
   (declare (xargs :guard t))
   (let ((trees-no-brlens (remove-brlens-list list-of-trees)))
     (loose trees-no-brlens taxa-list)))

@@ -100,20 +100,24 @@
       (mv-root-helper new tia))))
 
 (defun mv-root (x tia)
-  ":Doc-Section TASPI
-   Returns the structurally unchanged unrooted tree now with a representation
-   rooted at the node connecting the first taxon according to the mapping 
-   given to the rest of the tree.~/
-   ~/
-   Arguments:
-     (1) x - an unrooted tree
-     (2) tia - a mapping from each taxa name to an integer
 
-   Details: Must be called on an unrooted tree in order to not change
-            structure.  If the initial representation is ordered according
-            to the mapping given, the resulting representation will be as
-            well.  Taxa names in the tree must match up with the taxa names 
-            in the mapping."
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns the structurally unchanged unrooted tree now with a representation
+;  rooted at the node connecting the first taxon according to the mapping 
+;  given to the rest of the tree.~/
+;  ~/
+;  Arguments:
+;    (1) x - an unrooted tree
+;    (2) tia - a mapping from each taxa name to an integer
+
+;  Details: Must be called on an unrooted tree in order to not change
+;           structure.  If the initial representation is ordered according
+;           to the mapping given, the resulting representation will be as
+;           well.  Taxa names in the tree must match up with the taxa names 
+;           in the mapping."
   (declare (xargs :guard (good-taxon-index-halist tia)))
   (if (rooted-at-branch x)
       (if (int-symlist x)
@@ -122,21 +126,25 @@
     (mv-root-helper x tia)))
 
 (defun mv-root-list (list tia ans)
-  ":Doc-Section TASPI
-   Returns the list of structurally unchanged unrooted trees now each with a 
-   representation rooted at the node connecting the first taxon according to 
-   the mapping given to the rest of the tree.~/
-   ~/
-   Arguments:
-     (1) list - a list of unrooted trees
-     (2) tia - a mapping from each taxa name to an integer
-     (3) ans - accumulator (initally nil)
 
-   Details: Must be called on a list of unrooted trees in order to not change
-            structure.  If each of the initial representations is ordered 
-            according to the mapping given, the resulting representations will 
-            be as well.  Taxa names in the trees must match up with the taxa 
-            names in the mapping."
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns the list of structurally unchanged unrooted trees now each with a 
+;  representation rooted at the node connecting the first taxon according to 
+;  the mapping given to the rest of the tree.~/
+;  ~/
+;  Arguments:
+;    (1) list - a list of unrooted trees
+;    (2) tia - a mapping from each taxa name to an integer
+;    (3) ans - accumulator (initally nil)
+
+;  Details: Must be called on a list of unrooted trees in order to not change
+;           structure.  If each of the initial representations is ordered 
+;           according to the mapping given, the resulting representations will 
+;           be as well.  Taxa names in the trees must match up with the taxa 
+;           names in the mapping."
   (declare (xargs :guard (good-taxon-index-halist tia)))
   (if (consp list)
       (mv-root-list (cdr list) tia

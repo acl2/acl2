@@ -5,15 +5,19 @@
 ;; analysis-id(s)
 
 (defun get-trees-with-analysis-id (analysis-id tree-tbl)
-  ":Doc-Section TASPI
-   Returns trees from the tree table whose entries have the given
-   analysis-id.~/
-   ~/
-   Arguments:
-     (1) analysis-id - an id
-     (2) tree-tbl - a tree table
 
-   "
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns trees from the tree table whose entries have the given
+;  analysis-id.~/
+;  ~/
+;  Arguments:
+;    (1) analysis-id - an id
+;    (2) tree-tbl - a tree table
+
+;  "
   (declare (xargs :guard (good-tree-table tree-tbl)))
   (if (consp tree-tbl)
       (if (equal (get-analysis-id (car tree-tbl)) analysis-id)
@@ -25,15 +29,19 @@
     nil))
 
 (defun get-tree-ids-with-analysis-id (analysis-id tree-tbl)
-  ":Doc-Section TASPI
-   Returns tree ids from the tree table whose entries have the given 
-   analysis-id.~/
-   ~/
-   Arguments:
-     (1) analysis-id - an id
-     (2) tree-tbl - a tree table
-   
-   "
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns tree ids from the tree table whose entries have the given 
+;  analysis-id.~/
+;  ~/
+;  Arguments:
+;    (1) analysis-id - an id
+;    (2) tree-tbl - a tree table
+;  
+;  "
   (declare (xargs :guard (good-tree-table tree-tbl)))
   (if (consp tree-tbl)
       (if (equal (get-analysis-id (car tree-tbl)) analysis-id)
@@ -45,15 +53,19 @@
     nil))
 
 (defun get-trees-with-analysis-ids (analysis-ids tree-tbl)
-  ":Doc-Section TASPI
-   Returns trees from the tree table whose entries have one of the given
-   analysis-ids.~/
-   ~/
-   Arguments:
-     (1) analysis-ids - a list of ids
-     (2) tree-tbl - a tree table
 
-   "
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns trees from the tree table whose entries have one of the given
+;  analysis-ids.~/
+;  ~/
+;  Arguments:
+;    (1) analysis-ids - a list of ids
+;    (2) tree-tbl - a tree table
+
+;  "
   (declare (xargs :guard (good-tree-table tree-tbl)))
   (if (consp tree-tbl)
       (let ((cur-analysis-id (get-analysis-id (car tree-tbl))))
@@ -66,15 +78,19 @@
     nil))
 
 (defun get-tree-ids-with-analysis-ids (analysis-ids tree-tbl)
-  ":Doc-Section TASPI
-   Returns tree ids from the tree table whose entries have one of the given 
-   analysis-ids.~/
-   ~/
-   Arguments:
-     (1) analysis-ids - a list of ids
-     (2) tree-tbl - a tree table
-   
-   "
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns tree ids from the tree table whose entries have one of the given 
+;  analysis-ids.~/
+;  ~/
+;  Arguments:
+;    (1) analysis-ids - a list of ids
+;    (2) tree-tbl - a tree table
+;  
+;  "
   (declare (xargs :guard (good-tree-table tree-tbl)))
   (if (consp tree-tbl)
       (let ((cur-analysis-id (get-analysis-id (car tree-tbl))))
@@ -139,15 +155,19 @@
 ;; taxon
 
 (defun get-analysis-ids-with-taxon (taxon analysis-tbl)
-  ":Doc-Section TASPI
-   Returns analysis ids from the analysis table whose entries have the given 
-   taxon.~/
-   ~/
-   Arguments:
-     (1) taxon - a taxon name
-     (2) analysis-tbl - an analysis table
-   
-   "  
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns analysis ids from the analysis table whose entries have the given 
+;  taxon.~/
+;  ~/
+;  Arguments:
+;    (1) taxon - a taxon name
+;    (2) analysis-tbl - an analysis table
+;  
+;  "  
   (declare (xargs :guard (good-analysis-table analysis-tbl)))
   (if (consp analysis-tbl)
       (if (member-gen taxon (get-taxa-list (car analysis-tbl)))
@@ -159,30 +179,38 @@
     nil))
 
 (defun get-trees-with-taxon (taxon analysis-tbl tree-tbl)
-  ":Doc-Section TASPI
-   Returns trees from the tree table that have the given taxon.~/
-   ~/
-   Arguments:
-     (1) taxon - a taxon name
-     (2) analysis-tbl - an analysis table
-     (3) tree-tbl - a tree table
-   
-   "
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns trees from the tree table that have the given taxon.~/
+;  ~/
+;  Arguments:
+;    (1) taxon - a taxon name
+;    (2) analysis-tbl - an analysis table
+;    (3) tree-tbl - a tree table
+;  
+;  "
   (declare (xargs :guard (and (good-analysis-table analysis-tbl)
                               (good-tree-table tree-tbl))))
   (let ((analysis-ids (get-analysis-ids-with-taxon taxon analysis-tbl)))
     (get-trees-with-analysis-ids analysis-ids tree-tbl)))
 
 (defun get-tree-ids-with-taxon (taxon analysis-tbl tree-tbl)
-  ":Doc-Section TASPI
-   Returns tree ids from the tree table that have the given taxon.~/
-   ~/
-   Arguments:
-     (1) taxon - a taxon name
-     (2) analysis-tbl - an analysis table
-     (3) tree-tbl - a tree table
-   
-   "  
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns tree ids from the tree table that have the given taxon.~/
+;  ~/
+;  Arguments:
+;    (1) taxon - a taxon name
+;    (2) analysis-tbl - an analysis table
+;    (3) tree-tbl - a tree table
+;  
+;  "  
   (declare (xargs :guard (and (good-analysis-table analysis-tbl)
                               (good-tree-table tree-tbl))))
   (let ((analysis-ids (get-analysis-ids-with-taxon taxon analysis-tbl)))
@@ -205,15 +233,19 @@
 ;; taxa
 
 (defun get-analysis-ids-with-taxa (taxa analysis-tbl)
-  ":Doc-Section TASPI
-   Returns analysis ids from the analysis table that have the given set of 
-   taxa.~/
-   ~/
-   Arguments:
-     (1) taxa - a list of taxa name
-     (2) analysis-tbl - an analysis table
-   
-   "
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns analysis ids from the analysis table that have the given set of 
+;  taxa.~/
+;  ~/
+;  Arguments:
+;    (1) taxa - a list of taxa name
+;    (2) analysis-tbl - an analysis table
+;  
+;  "
   (declare (xargs :guard (good-analysis-table analysis-tbl)))
   (if (consp analysis-tbl)
       (if (subset taxa (get-taxa-list (car analysis-tbl)))
@@ -223,32 +255,40 @@
     nil))
 
 (defun get-trees-with-taxa (taxa analysis-tbl tree-tbl)
-  ":Doc-Section TASPI
-   Returns trees from the tree table that have the given set of 
-   taxa.~/
-   ~/
-   Arguments:
-     (1) taxa - a list of taxa name
-     (2) analysis-tbl - an analysis table
-     (3) tree-tbl - a tree table
-   
-   "
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns trees from the tree table that have the given set of 
+;  taxa.~/
+;  ~/
+;  Arguments:
+;    (1) taxa - a list of taxa name
+;    (2) analysis-tbl - an analysis table
+;    (3) tree-tbl - a tree table
+;  
+;  "
   (declare (xargs :guard (and (good-analysis-table analysis-tbl)
                               (good-tree-table tree-tbl))))
   (let ((analysis-ids (get-analysis-ids-with-taxa taxa analysis-tbl)))
     (get-trees-with-analysis-ids analysis-ids tree-tbl)))
 
 (defun get-tree-ids-with-taxa (taxa analysis-tbl tree-tbl)
-  ":Doc-Section TASPI
-   Returns trees from the tree table that have the given set of 
-   taxa.~/
-   ~/
-   Arguments:
-     (1) taxa - a list of taxa name
-     (2) analysis-tbl - an analysis table
-     (3) tree-tbl - a tree table
-   
-   "
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns trees from the tree table that have the given set of 
+;  taxa.~/
+;  ~/
+;  Arguments:
+;    (1) taxa - a list of taxa name
+;    (2) analysis-tbl - an analysis table
+;    (3) tree-tbl - a tree table
+;  
+;  "
   (declare (xargs :guard (and (good-analysis-table analysis-tbl)
                               (good-tree-table tree-tbl))))
   (let ((analysis-ids (get-analysis-ids-with-taxa taxa analysis-tbl)))
@@ -342,15 +382,19 @@
 ;; n taxa
 
 (defun get-analysis-ids-with-n-taxa (n analysis-tbl)
-  ":Doc-Section TASPI
-   Returns analysis ids from the analysis table that have the given number 
-   taxa.~/
-   ~/
-   Arguments:
-     (1) n - an integer
-     (2) analysis-tbl - an analysis table
-   
-   "
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns analysis ids from the analysis table that have the given number 
+;  taxa.~/
+;  ~/
+;  Arguments:
+;    (1) n - an integer
+;    (2) analysis-tbl - an analysis table
+;  
+;  "
   (declare (xargs :guard (good-analysis-table analysis-tbl)))
   (if (consp analysis-tbl)
       (if (equal (len (get-taxa-list (car analysis-tbl)))
@@ -361,30 +405,38 @@
     nil))
 
 (defun get-trees-with-n-taxa (n analysis-tbl tree-tbl)
-  ":Doc-Section TASPI
-   Returns trees from the tree table that have the given number taxa.~/
-   ~/
-   Arguments:
-     (1) n - an integer
-     (2) analysis-tbl - an analysis table
-     (3) tree-tbl - a tree table
 
-   "
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns trees from the tree table that have the given number taxa.~/
+;  ~/
+;  Arguments:
+;    (1) n - an integer
+;    (2) analysis-tbl - an analysis table
+;    (3) tree-tbl - a tree table
+
+;  "
   (declare (xargs :guard (and (good-analysis-table analysis-tbl)
                               (good-tree-table tree-tbl))))
   (let ((analysis-ids (get-analysis-ids-with-n-taxa n analysis-tbl)))
     (get-trees-with-analysis-ids analysis-ids tree-tbl)))
 
 (defun get-tree-ids-with-n-taxa (n analysis-tbl tree-tbl)
-  ":Doc-Section TASPI
-   Returns tree ids from the tree table that have the given number taxa.~/
-   ~/
-   Arguments:
-     (1) n - an integer
-     (2) analysis-tbl - an analysis table
-     (3) tree-tbl - a tree table
 
-   "
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns tree ids from the tree table that have the given number taxa.~/
+;  ~/
+;  Arguments:
+;    (1) n - an integer
+;    (2) analysis-tbl - an analysis table
+;    (3) tree-tbl - a tree table
+
+;  "
   (declare (xargs :guard (and (good-analysis-table analysis-tbl)
                               (good-tree-table tree-tbl))))
   (let ((analysis-ids (get-analysis-ids-with-n-taxa n analysis-tbl)))
@@ -393,14 +445,18 @@
 ;; method
 
 (defun get-analysis-ids-with-method (method analysis-tbl)
-  ":Doc-Section TASPI
-   Returns analysis ids from the analysis table that have the given method.~/ 
-   ~/
-   Arguments:
-     (1) method - a method name
-     (2) analysis-tbl - an analysis table
-   
-   "
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns analysis ids from the analysis table that have the given method.~/ 
+;  ~/
+;  Arguments:
+;    (1) method - a method name
+;    (2) analysis-tbl - an analysis table
+;  
+;  "
   (declare (xargs :guard (good-analysis-table analysis-tbl)))
   (if (consp analysis-tbl)
       (if (equal (get-method (car analysis-tbl))
@@ -411,30 +467,38 @@
     nil))
 
 (defun get-trees-with-method (method analysis-tbl tree-tbl)
-  ":Doc-Section TASPI
-   Returns trees from the tree table that have the given method.~/ 
-   ~/
-   Arguments:
-     (1) method - a method name
-     (2) analysis-tbl - an analysis table
-     (3) tree-tbl - a tree table
-   
-   "
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns trees from the tree table that have the given method.~/ 
+;  ~/
+;  Arguments:
+;    (1) method - a method name
+;    (2) analysis-tbl - an analysis table
+;    (3) tree-tbl - a tree table
+;  
+;  "
   (declare (xargs :guard (and (good-analysis-table analysis-tbl)
                               (good-tree-table tree-tbl))))
   (let ((analysis-ids (get-analysis-ids-with-method method analysis-tbl)))
     (get-trees-with-analysis-ids analysis-ids tree-tbl)))
 
 (defun get-tree-ids-with-method (method analysis-tbl tree-tbl)
-  ":Doc-Section TASPI
-   Returns tree ids from the tree table that have the given method.~/ 
-   ~/
-   Arguments:
-     (1) method - a method name
-     (2) analysis-tbl - an analysis table
-     (3) tree-tbl - a tree table
-   
-   "
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns tree ids from the tree table that have the given method.~/ 
+;  ~/
+;  Arguments:
+;    (1) method - a method name
+;    (2) analysis-tbl - an analysis table
+;    (3) tree-tbl - a tree table
+;  
+;  "
   (declare (xargs :guard (and (good-analysis-table analysis-tbl)
                               (good-tree-table tree-tbl))))
   (let ((analysis-ids (get-analysis-ids-with-method method analysis-tbl)))
@@ -443,15 +507,19 @@
 ;; date 
 
 (defun get-analysis-ids-with-date (date analysis-tbl)
-  ":Doc-Section TASPI
-   Returns tree ids from the tree table that have the given date.~/ 
-   ~/
-   Arguments:
-     (1) date - a date name
-     (2) analysis-tbl - an analysis table
-     (3) tree-tbl - a tree table
-   
-   "
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns tree ids from the tree table that have the given date.~/ 
+;  ~/
+;  Arguments:
+;    (1) date - a date name
+;    (2) analysis-tbl - an analysis table
+;    (3) tree-tbl - a tree table
+;  
+;  "
   (declare (xargs :guard (good-analysis-table analysis-tbl)))
   (if (consp analysis-tbl)
       (if (equal (get-date (car analysis-tbl))
@@ -462,30 +530,38 @@
     nil))
 
 (defun get-trees-with-date (date analysis-tbl tree-tbl)
-  ":Doc-Section TASPI
-   Returns trees from the tree table that have the given date.~/ 
-   ~/
-   Arguments:
-     (1) date - a date name
-     (2) analysis-tbl - an analysis table
-     (3) tree-tbl - a tree table
-   
-   "
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns trees from the tree table that have the given date.~/ 
+;  ~/
+;  Arguments:
+;    (1) date - a date name
+;    (2) analysis-tbl - an analysis table
+;    (3) tree-tbl - a tree table
+;  
+;  "
   (declare (xargs :guard (and (good-analysis-table analysis-tbl)
                               (good-tree-table tree-tbl))))
   (let ((analysis-ids (get-analysis-ids-with-date date analysis-tbl)))
     (get-trees-with-analysis-ids analysis-ids tree-tbl)))
 
 (defun get-tree-ids-with-date (date analysis-tbl tree-tbl)
-  ":Doc-Section TASPI
-   Returns tree ids from the tree table that have the given date.~/ 
-   ~/
-   Arguments:
-     (1) date - a date name
-     (2) analysis-tbl - an analysis table
-     (3) tree-tbl - a tree table
-   
-   "
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns tree ids from the tree table that have the given date.~/ 
+;  ~/
+;  Arguments:
+;    (1) date - a date name
+;    (2) analysis-tbl - an analysis table
+;    (3) tree-tbl - a tree table
+;  
+;  "
   (declare (xargs :guard (and (good-analysis-table analysis-tbl)
                               (good-tree-table tree-tbl))))
   (let ((analysis-ids (get-analysis-ids-with-date date analysis-tbl)))
@@ -494,15 +570,19 @@
 ;; author
 
 (defun get-analysis-ids-with-author (author analysis-tbl)
-  ":Doc-Section TASPI
-   Returns tree ids from the tree table that have the given author.~/ 
-   ~/
-   Arguments:
-     (1) author - a author name
-     (2) analysis-tbl - an analysis table
-     (3) tree-tbl - a tree table
-   
-   "
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns tree ids from the tree table that have the given author.~/ 
+;  ~/
+;  Arguments:
+;    (1) author - a author name
+;    (2) analysis-tbl - an analysis table
+;    (3) tree-tbl - a tree table
+;  
+;  "
   (declare (xargs :guard (good-analysis-table analysis-tbl)))
   (if (consp analysis-tbl)
       (if (equal (get-author (car analysis-tbl))
@@ -513,30 +593,38 @@
     nil))
 
 (defun get-trees-with-author (author analysis-tbl tree-tbl)
-  ":Doc-Section TASPI
-   Returns trees from the tree table that have the given author.~/ 
-   ~/
-   Arguments:
-     (1) author - a author name
-     (2) analysis-tbl - an analysis table
-     (3) tree-tbl - a tree table
-   
-   "
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns trees from the tree table that have the given author.~/ 
+;  ~/
+;  Arguments:
+;    (1) author - a author name
+;    (2) analysis-tbl - an analysis table
+;    (3) tree-tbl - a tree table
+;  
+;  "
   (declare (xargs :guard (and (good-analysis-table analysis-tbl)
                               (good-tree-table tree-tbl))))
   (let ((analysis-ids (get-analysis-ids-with-author author analysis-tbl)))
     (get-trees-with-analysis-ids analysis-ids tree-tbl)))
 
 (defun get-tree-ids-with-author (author analysis-tbl tree-tbl)
-  ":Doc-Section TASPI
-   Returns tree ids from the tree table that have the given author.~/ 
-   ~/
-   Arguments:
-     (1) author - a author name
-     (2) analysis-tbl - an analysis table
-     (3) tree-tbl - a tree table
-   
-   "
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns tree ids from the tree table that have the given author.~/ 
+;  ~/
+;  Arguments:
+;    (1) author - a author name
+;    (2) analysis-tbl - an analysis table
+;    (3) tree-tbl - a tree table
+;  
+;  "
   (declare (xargs :guard (and (good-analysis-table analysis-tbl)
                               (good-tree-table tree-tbl))))
   (let ((analysis-ids (get-analysis-ids-with-author author analysis-tbl)))
@@ -545,15 +633,19 @@
 ;; tool
 
 (defun get-analysis-ids-with-tool (tool analysis-tbl)
-  ":Doc-Section TASPI
-   Returns tree ids from the tree table that have the given tool.~/ 
-   ~/
-   Arguments:
-     (1) tool - a tool name
-     (2) analysis-tbl - an analysis table
-     (3) tree-tbl - a tree table
-   
-   "
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns tree ids from the tree table that have the given tool.~/ 
+;  ~/
+;  Arguments:
+;    (1) tool - a tool name
+;    (2) analysis-tbl - an analysis table
+;    (3) tree-tbl - a tree table
+;  
+;  "
   (declare (xargs :guard (good-analysis-table analysis-tbl)))
   (if (consp analysis-tbl)
       (if (equal (get-tool (car analysis-tbl))
@@ -564,30 +656,38 @@
     nil))
 
 (defun get-trees-with-tool (tool analysis-tbl tree-tbl)
-  ":Doc-Section TASPI
-   Returns trees from the tree table that have the given tool.~/ 
-   ~/
-   Arguments:
-     (1) tool - a tool name
-     (2) analysis-tbl - an analysis table
-     (3) tree-tbl - a tree table
-   
-   "
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns trees from the tree table that have the given tool.~/ 
+;  ~/
+;  Arguments:
+;    (1) tool - a tool name
+;    (2) analysis-tbl - an analysis table
+;    (3) tree-tbl - a tree table
+;  
+;  "
   (declare (xargs :guard (and (good-analysis-table analysis-tbl)
                               (good-tree-table tree-tbl))))
   (let ((analysis-ids (get-analysis-ids-with-tool tool analysis-tbl)))
     (get-trees-with-analysis-ids analysis-ids tree-tbl)))
 
 (defun get-tree-ids-with-tool (tool analysis-tbl tree-tbl)
-  ":Doc-Section TASPI
-   Returns tree ids from the tree table that have the given tool.~/ 
-   ~/
-   Arguments:
-     (1) tool - a tool name
-     (2) analysis-tbl - an analysis table
-     (3) tree-tbl - a tree table
-   
-   "
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns tree ids from the tree table that have the given tool.~/ 
+;  ~/
+;  Arguments:
+;    (1) tool - a tool name
+;    (2) analysis-tbl - an analysis table
+;    (3) tree-tbl - a tree table
+;  
+;  "
   (declare (xargs :guard (and (good-analysis-table analysis-tbl)
                               (good-tree-table tree-tbl))))
   (let ((analysis-ids (get-analysis-ids-with-tool tool analysis-tbl)))
@@ -596,15 +696,19 @@
 ;; data-type
 
 (defun get-analysis-ids-with-data-type (data-type analysis-tbl)
-  ":Doc-Section TASPI
-   Returns tree ids from the tree table that have the given data type.~/ 
-   ~/
-   Arguments:
-     (1) data-type - a data type name
-     (2) analysis-tbl - an analysis table
-     (3) tree-tbl - a tree table
-   
-   "
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns tree ids from the tree table that have the given data type.~/ 
+;  ~/
+;  Arguments:
+;    (1) data-type - a data type name
+;    (2) analysis-tbl - an analysis table
+;    (3) tree-tbl - a tree table
+;  
+;  "
   (declare (xargs :guard (good-analysis-table analysis-tbl)))
   (if (consp analysis-tbl)
       (if (equal (get-data-type (car analysis-tbl))
@@ -615,30 +719,38 @@
     nil))
 
 (defun get-trees-with-data-type (data-type analysis-tbl tree-tbl)
-  ":Doc-Section TASPI
-   Returns trees from the tree table that have the given data type.~/ 
-   ~/
-   Arguments:
-     (1) data-type - a data type name
-     (2) analysis-tbl - an analysis table
-     (3) tree-tbl - a tree table
-   
-   "
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns trees from the tree table that have the given data type.~/ 
+;  ~/
+;  Arguments:
+;    (1) data-type - a data type name
+;    (2) analysis-tbl - an analysis table
+;    (3) tree-tbl - a tree table
+;  
+;  "
   (declare (xargs :guard (and (good-analysis-table analysis-tbl)
                               (good-tree-table tree-tbl))))
   (let ((analysis-ids (get-analysis-ids-with-data-type data-type analysis-tbl)))
     (get-trees-with-analysis-ids analysis-ids tree-tbl)))
 
 (defun get-tree-ids-with-data-type (data-type analysis-tbl tree-tbl)
-  ":Doc-Section TASPI
-   Returns tree ids from the tree table that have the given data type.~/ 
-   ~/
-   Arguments:
-     (1) data-type - a data-type name
-     (2) analysis-tbl - an analysis table
-     (3) tree-tbl - a tree table
-   
-   "
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns tree ids from the tree table that have the given data type.~/ 
+;  ~/
+;  Arguments:
+;    (1) data-type - a data-type name
+;    (2) analysis-tbl - an analysis table
+;    (3) tree-tbl - a tree table
+;  
+;  "
   (declare (xargs :guard (and (good-analysis-table analysis-tbl)
                               (good-tree-table tree-tbl))))
   (let ((analysis-ids (get-analysis-ids-with-data-type data-type analysis-tbl)))
@@ -647,15 +759,19 @@
 ;; model
 
 (defun get-analysis-ids-with-model (model analysis-tbl)
-  ":Doc-Section TASPI
-   Returns tree ids from the tree table that have the given model.~/ 
-   ~/
-   Arguments:
-     (1) model - a model name
-     (2) analysis-tbl - an analysis table
-     (3) tree-tbl - a tree table
-   
-   "
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns tree ids from the tree table that have the given model.~/ 
+;  ~/
+;  Arguments:
+;    (1) model - a model name
+;    (2) analysis-tbl - an analysis table
+;    (3) tree-tbl - a tree table
+;  
+;  "
   (declare (xargs :guard (good-analysis-table analysis-tbl)))
   (if (consp analysis-tbl)
       (if (equal (get-model (car analysis-tbl))
@@ -666,30 +782,38 @@
     nil))
 
 (defun get-trees-with-model (model analysis-tbl tree-tbl)
-  ":Doc-Section TASPI
-   Returns trees from the tree table that have the given model.~/ 
-   ~/
-   Arguments:
-     (1) model - a model name
-     (2) analysis-tbl - an analysis table
-     (3) tree-tbl - a tree table
-   
-   "
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns trees from the tree table that have the given model.~/ 
+;  ~/
+;  Arguments:
+;    (1) model - a model name
+;    (2) analysis-tbl - an analysis table
+;    (3) tree-tbl - a tree table
+;  
+;  "
   (declare (xargs :guard (and (good-analysis-table analysis-tbl)
                               (good-tree-table tree-tbl))))
   (let ((analysis-ids (get-analysis-ids-with-model model analysis-tbl)))
     (get-trees-with-analysis-ids analysis-ids tree-tbl)))
 
 (defun get-tree-ids-with-model (model analysis-tbl tree-tbl)
-  ":Doc-Section TASPI
-   Returns tree ids from the tree table that have the given model.~/ 
-   ~/
-   Arguments:
-     (1) model - a model name
-     (2) analysis-tbl - an analysis table
-     (3) tree-tbl - a tree table
-   
-   "
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns tree ids from the tree table that have the given model.~/ 
+;  ~/
+;  Arguments:
+;    (1) model - a model name
+;    (2) analysis-tbl - an analysis table
+;    (3) tree-tbl - a tree table
+;  
+;  "
   (declare (xargs :guard (and (good-analysis-table analysis-tbl)
                               (good-tree-table tree-tbl))))
   (let ((analysis-ids (get-analysis-ids-with-model model analysis-tbl)))

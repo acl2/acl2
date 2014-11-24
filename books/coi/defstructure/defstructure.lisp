@@ -80,246 +80,473 @@
 ;;;
 ;;;****************************************************************************
 
-(defdoc defstructure
-  
-  ":doc-section defstructure
-Define and characterize a general purpose record structure with typed slots.
+(include-book "xdoc/top" :dir :system)
+(defmacro defxdoc (&rest args)
+  `(acl2::defxdoc ,@args))
+
+; This legacy doc string was replaced Nov. 2014 by auto-generated defxdoc form
+; below.
+;(defdoc defstructure
+; 
+; ":doc-section defstructure
+;Define and characterize a general purpose record structure with typed slots.
+
+;The on-line documentation only contains examples and a formal syntax
+;description. The complete documentation for DEFSTRUCTURE is a report entitled
+;\"DEFSTRUCTURE for ACL2.\"  This report is distributed with the ACL2 release,
+;and is also available from the ACL2 home page:
+
+;http://www.cs.utexas.edu/users/moore/acl2
+;~/
+;Examples:
+
+;(DEFSTRUCTURE SHIP X-POSITION Y-POSITION X-VELOCITY Y-VELOCITY MASS)
+;
+;(DEFSTRUCTURE MC-STATE
+;  \"The state of the MC68020.\"
+;  (STATUS (:ASSERT (SYMBOLP STATUS) :TYPE-PRESCRIPTION))
+;  (RFILE  (:ASSERT (RFILEP RFILE) :REWRITE))
+;  (PC     (:ASSERT (LONGWORD-P PC) :REWRITE
+;                   (:TYPE-PRESCRIPTION (NATURALP PC))))
+;  (CCR    (:ASSERT (CCR-P CCR) :REWRITE
+;                   (:TYPE-PRESCRIPTION (NATURALP CCR))))
+;  (MEM    (:ASSERT (MEMORYP MEM) :REWRITE))
+;
+;  (:OPTIONS :GUARDS (:CONC-NAME MC-)))
+;
+;(DEFSTRUCTURE S&ADDR 
+;  \"An MC68020 effective address abstraction.\"
+;  (S     (:ASSERT (MC-STATE-P S) :REWRITE))
+;  (LOC   (:ASSERT (SYMBOLP LOC)  :TYPE-PRESCRIPTION))
+;  (ADDR  (:ASSERT ((LAMBDA (LOC ADDR)
+;                     (CASE LOC
+;                       ((D A) (RN-NUMBERP ADDR))
+;                       ((M I) (LONGWORD-P ADDR))
+;                       (OTHERWISE (NULL ADDR))))
+;                   LOC ADDR)
+;                  (:REWRITE
+;                   (IMPLIES
+;                    (OR (EQUAL LOC 'D) (EQUAL LOC 'A))
+;                    (RN-NUMBERP ADDR)))
+;                  (:REWRITE
+;                   (IMPLIES
+;                    (OR (EQUAL LOC 'M) (EQUAL LOC 'I))
+;                    (LONGWORD-P ADDR)))))
+;
+;  (:OPTIONS :GUARDS))
+;
+;(DEFSTRUCTURE V&CVZNX
+;  \"An MC68020 value abstraction.\"
+;  (V     (:ASSERT (LONGWORD-P V) :REWRITE
+;                  (:TYPE-PRESCRIPTION (NATURALP V))))
+;  (CVZNX (:ASSERT (CCR-P CVZNX) :REWRITE
+;                  (:TYPE-PRESCRIPTION (NATURALP CVZNX))))
+;
+;  ;;  These options make this nothing more than a typed CONS.
+;
+;  (:OPTIONS :GUARDS (:REPRESENTATION (V . CVZNX)) (:DO-NOT :TAG)))
+
+;~/
+;Syntax:
+
+;DEFSTRUCTURE name [documentation] {slot-and-options}* [option-list]
+
+; option-list ::= (:OPTIONS [[options]])
+
+; options ::= guards-option |
+;             verify-guards-option |
+;             slot-writers-option |
+;             inline-option |
+;             mix-option |
+;             conc-name-option |
+;             set-conc-name-option |
+;             keyword-constructor-option |
+;             keyword-updater-option |
+;             predicate-option |
+;             weak-predicate-option |
+;             force-option |
+;             representation-option |
+;             do-not-option |
+;             mv-intro-macro-option
+;             update-method-option |
+;             assertion-lemma-hints-option |
+;             predicate-guard-hints-option |
+;             prefix-option |
+;             {assert-option}*
+
+; slot-and-options ::= slot-name | (slot-name [[slot-options]])
+
+; slot-options ::= default-option |
+;                  read-only-option |
+;                  {assert-option}* 
+
+; default-option ::= :DEFAULT | (:DEFAULT) | (:DEFAULT slot-initform)
+
+; read-only-option ::= :READ-ONLY
+
+; assert-option ::= (:ASSERT assertion {assertion-rule-descriptor}*)
+
+; assertion-rule-descriptor ::= rule-token | 
+;                               (rule-token corollary [other-rule-forms])
+
+; rule-token ::= NIL | :REWRITE | :LINEAR | :LINEAR-ALIAS |
+;                :WELL-FOUNDED-RELATION | :BUILT-IN-CLAUSE |
+;                :COMPOUND-RECOGNIZER | :ELIM | :GENERALIZE | :META |
+;                :FORWARD-CHAINING | :EQUIVALENCE | :REFINEMENT | 
+;                :CONGRUENCE | :TYPE-PRESCRIPTION | :DEFINITION | :INDUCTION |
+;                :TYPE-SET-INVERTER 
+
+; guards-option ::= :GUARDS
+
+; verify-guards-option ::= :VERIFY-GUARDS | (:VERIFY-GUARDS) |
+;                          (:VERIFY-GUARDS T) | (:VERIFY-GUARDS NIL)
+
+; slot-writers-option ::= :SLOT-WRITERS
+
+; inline-option ::= :INLINE
+
+; mix-option ::= :MIX
+
+; conc-name-option ::= :CONC-NAME | (:CONC-NAME) | (:CONC-NAME conc-name)
+
+; set-conc-name-option ::= :SET-CONC-NAME | (:SET-CONC-NAME) |
+;                          (:SET-CONC-NAME set-conc-name)
+
+; keyword-constructor-option ::= :KEYWORD-CONSTRUCTOR |
+;                                (:KEYWORD-CONSTRUCTOR) |
+;                                (:KEYWORD-CONSTRUCTOR keyword-constructor)
+
+; keyword-updater-option ::= :KEYWORD-UPDATER | (:KEYWORD-UPDATER) | 
+;                         (:KEYWORD-UPDATER keyword-updater)
+
+; predicate-option ::=  :PREDICATE | (:PREDICATE) | (:PREDICATE predicate)
+
+; weak-predicate-option ::=  :WEAK-PREDICATE | (:WEAK-PREDICATE) |  
+;                            (:WEAK-PREDICATE weak-predicate)
+
+; force-option ::= :FORCE
+
+; do-not-option ::= (:DO-NOT [[do-not-options]])
+
+; do-not-options ::= :TAG | :READ-WRITE | :WRITE-WRITE
+
+; representation-option ::= :REPRESENTATION | (:REPRESENTATION) |
+;                           (:REPRESENTATION representation)
+
+; representation ::= :LIST | :MV | :DOTTED-LIST | :TREE | template
+
+; mv-intro-macro-option ::=  :MV-INTRO-MACRO |
+;                            (:MV-INTRO-MACRO) |  
+;                            (:MV-INTRO-MACRO mv-intro-macro)
+
+; update-method-option ::= :UPDATE-METHOD | (:UPDATE-METHOD) |
+;                          (:UPDATE-METHOD update-method)
+
+; update-method ::= :HEURISTIC | :SET | :COPY
+
+; assertion-lemma-hints-option ::= 
+;   :ASSERTION-LEMMA-HINTS | (:ASSERTION-LEMMA-HINTS) | 
+;   (:ASSERTION-LEMMA-HINTS hints)
+
+; predicate-guard-hints-option ::= 
+;   :PREDICATE-GUARD-HINTS | (:PREDICATE-GUARD-HINTS) | 
+;   (:PREDICATE-GUARD-HINTS hints)
+
+; prefix-option ::= :PREFIX | (:PREFIX) | (:PREFIX prefix)
+
+;Arguments and Values:
+
+;assertion -- a slots-assertion.
+
+;corollary -- a slots-assertion.
+
+;conc-name -- a string-designator.
+
+;documentation -- a string; not evaluated.
+
+;hints -- an acl2-hints.
+
+;keyword-constructor -- a symbol.
+
+;keyword-updater -- a symbol.
+
+;name -- a symbol.
+
+;mv-intro-macro -- a symbol.
+
+;other-rule-forms -- Some acl2-rule-forms.
+
+;predicate -- a symbol.
+
+;prefix -- a string-designator.
+
+;read-write-lemma -- a symbol.
+
+;set-conc-name -- a string-designator.
+
+;slot-initform -- a form; not evaluated.
+
+;slot-name -- a valid-slot-name.
+
+;tag -- a symbol.
+
+;template -- A slots-template.
+
+;weak-predicate -- a symbol.
+
+;write-write-lemma -- a symbol. 
+
+;Definitions:
+
+;acl2-hints -- any form valid as the hints argument of defthm.  See the
+;documentation for HINTS in the ACL2 documentation.
+
+;acl2-rule-forms -- Any forms that would be valid in an ACL2 rule-classes
+;form, except for the rule class itself, or a corollary and formula.  See the
+;documentation for the DEFSTRUCTURE assertion theory in the DEFSTRUCTURE
+;document,and the ACL2 documentations for RULE-CLASSES.
+
+;slots-assertion -- DEFSTRUCTURE assertions are covered in the DEFSTRUCTURE
+;document. 
+
+;slots-template -- A cons tree whose flattened form (by STRUCTURES::FLATTEN) is
+;a permutation of the list of slot names of the structure.
+
+;string-designator -- a character, string or symbol, it designates the string
+;obtained by (STRING STRING-DESIGNATOR) except that by convention the symbol
+;NIL designates the empty string.
+
+;valid-slot-name -- Any symbol valid for use as a formal parameter of a
+;function. This is any symbol not in the \"keyword\" package, neither T nor NIL,
+;neither beginning nor ending with `*', and not beginning with `&'.  In
+;addition, no slot-name may be the same as the structure name, and all
+;slot-names must have unique print names, i.e., it is illegal to duplicate
+;slot names, and it is illegal to use symbols from different packages that
+;have the same print name.
+
+; ~/"
+; )
+
+(defxdoc defstructure
+  :parents (defstructure)
+  :short "Define and characterize a general purpose record structure with typed slots.
 
 The on-line documentation only contains examples and a formal syntax
 description. The complete documentation for DEFSTRUCTURE is a report entitled
 \"DEFSTRUCTURE for ACL2.\"  This report is distributed with the ACL2 release,
 and is also available from the ACL2 home page:
 
-http://www.cs.utexas.edu/users/moore/acl2
-~/
-Examples:
+http://www.cs.utexas.edu/users/moore/acl2"
+  :long "<p>Examples:</p>
 
- (DEFSTRUCTURE SHIP X-POSITION Y-POSITION X-VELOCITY Y-VELOCITY MASS)
- 
- (DEFSTRUCTURE MC-STATE
-   \"The state of the MC68020.\"
-   (STATUS (:ASSERT (SYMBOLP STATUS) :TYPE-PRESCRIPTION))
-   (RFILE  (:ASSERT (RFILEP RFILE) :REWRITE))
-   (PC     (:ASSERT (LONGWORD-P PC) :REWRITE
-                    (:TYPE-PRESCRIPTION (NATURALP PC))))
-   (CCR    (:ASSERT (CCR-P CCR) :REWRITE
-                    (:TYPE-PRESCRIPTION (NATURALP CCR))))
-   (MEM    (:ASSERT (MEMORYP MEM) :REWRITE))
- 
-   (:OPTIONS :GUARDS (:CONC-NAME MC-)))
- 
- (DEFSTRUCTURE S&ADDR 
-   \"An MC68020 effective address abstraction.\"
-   (S     (:ASSERT (MC-STATE-P S) :REWRITE))
-   (LOC   (:ASSERT (SYMBOLP LOC)  :TYPE-PRESCRIPTION))
-   (ADDR  (:ASSERT ((LAMBDA (LOC ADDR)
-                      (CASE LOC
-                        ((D A) (RN-NUMBERP ADDR))
-                        ((M I) (LONGWORD-P ADDR))
-                        (OTHERWISE (NULL ADDR))))
-                    LOC ADDR)
-                   (:REWRITE
-                    (IMPLIES
-                     (OR (EQUAL LOC 'D) (EQUAL LOC 'A))
-                     (RN-NUMBERP ADDR)))
-                   (:REWRITE
-                    (IMPLIES
-                     (OR (EQUAL LOC 'M) (EQUAL LOC 'I))
-                     (LONGWORD-P ADDR)))))
- 
-   (:OPTIONS :GUARDS))
- 
- (DEFSTRUCTURE V&CVZNX
-   \"An MC68020 value abstraction.\"
-   (V     (:ASSERT (LONGWORD-P V) :REWRITE
-                   (:TYPE-PRESCRIPTION (NATURALP V))))
-   (CVZNX (:ASSERT (CCR-P CVZNX) :REWRITE
-                   (:TYPE-PRESCRIPTION (NATURALP CVZNX))))
- 
-   ;;  These options make this nothing more than a typed CONS.
- 
-   (:OPTIONS :GUARDS (:REPRESENTATION (V . CVZNX)) (:DO-NOT :TAG)))
+ <p>(DEFSTRUCTURE SHIP X-POSITION Y-POSITION X-VELOCITY Y-VELOCITY MASS)
 
-~/
-Syntax:
+  (DEFSTRUCTURE MC-STATE
+    \"The state of the MC68020.\"
+    (STATUS (:ASSERT (SYMBOLP STATUS) :TYPE-PRESCRIPTION))
+    (RFILE  (:ASSERT (RFILEP RFILE) :REWRITE))
+    (PC     (:ASSERT (LONGWORD-P PC) :REWRITE
+                     (:TYPE-PRESCRIPTION (NATURALP PC))))
+    (CCR    (:ASSERT (CCR-P CCR) :REWRITE
+                     (:TYPE-PRESCRIPTION (NATURALP CCR))))
+    (MEM    (:ASSERT (MEMORYP MEM) :REWRITE))
 
-DEFSTRUCTURE name [documentation] {slot-and-options}* [option-list]
+    (:OPTIONS :GUARDS (:CONC-NAME MC-)))
 
-  option-list ::= (:OPTIONS [[options]])
+  (DEFSTRUCTURE S&amp;ADDR
+    \"An MC68020 effective address abstraction.\"
+    (S     (:ASSERT (MC-STATE-P S) :REWRITE))
+    (LOC   (:ASSERT (SYMBOLP LOC)  :TYPE-PRESCRIPTION))
+    (ADDR  (:ASSERT ((LAMBDA (LOC ADDR)
+                       (CASE LOC
+                         ((D A) (RN-NUMBERP ADDR))
+                         ((M I) (LONGWORD-P ADDR))
+                         (OTHERWISE (NULL ADDR))))
+                     LOC ADDR)
+                    (:REWRITE
+                     (IMPLIES
+                      (OR (EQUAL LOC 'D) (EQUAL LOC 'A))
+                      (RN-NUMBERP ADDR)))
+                    (:REWRITE
+                     (IMPLIES
+                      (OR (EQUAL LOC 'M) (EQUAL LOC 'I))
+                      (LONGWORD-P ADDR)))))
 
-  options ::= guards-option |
-              verify-guards-option |
-              slot-writers-option |
-              inline-option |
-              mix-option |
-              conc-name-option |
-              set-conc-name-option |
-              keyword-constructor-option |
-              keyword-updater-option |
-              predicate-option |
-              weak-predicate-option |
-              force-option |
-              representation-option |
-              do-not-option |
-              mv-intro-macro-option
-              update-method-option |
-              assertion-lemma-hints-option |
-              predicate-guard-hints-option |
-              prefix-option |
-              {assert-option}*
+    (:OPTIONS :GUARDS))
 
-  slot-and-options ::= slot-name | (slot-name [[slot-options]])
+  (DEFSTRUCTURE V&amp;CVZNX
+    \"An MC68020 value abstraction.\"
+    (V     (:ASSERT (LONGWORD-P V) :REWRITE
+                    (:TYPE-PRESCRIPTION (NATURALP V))))
+    (CVZNX (:ASSERT (CCR-P CVZNX) :REWRITE
+                    (:TYPE-PRESCRIPTION (NATURALP CVZNX))))
 
-  slot-options ::= default-option |
-                   read-only-option |
-                   {assert-option}* 
+    ;;  These options make this nothing more than a typed CONS.
 
-  default-option ::= :DEFAULT | (:DEFAULT) | (:DEFAULT slot-initform)
+    (:OPTIONS :GUARDS (:REPRESENTATION (V . CVZNX)) (:DO-NOT :TAG)))</p>
 
-  read-only-option ::= :READ-ONLY
+ <p>Syntax:</p>
 
-  assert-option ::= (:ASSERT assertion {assertion-rule-descriptor}*)
+ <p>DEFSTRUCTURE name [documentation] {slot-and-options}* [option-list]</p>
 
-  assertion-rule-descriptor ::= rule-token | 
-                                (rule-token corollary [other-rule-forms])
+ <p>option-list ::= (:OPTIONS [[options]])</p>
 
-  rule-token ::= NIL | :REWRITE | :LINEAR | :LINEAR-ALIAS |
-                 :WELL-FOUNDED-RELATION | :BUILT-IN-CLAUSE |
-                 :COMPOUND-RECOGNIZER | :ELIM | :GENERALIZE | :META |
-                 :FORWARD-CHAINING | :EQUIVALENCE | :REFINEMENT | 
-                 :CONGRUENCE | :TYPE-PRESCRIPTION | :DEFINITION | :INDUCTION |
-                 :TYPE-SET-INVERTER 
+ <p>options ::= guards-option | verify-guards-option | slot-writers-option |
+               inline-option | mix-option | conc-name-option |
+               set-conc-name-option | keyword-constructor-option |
+               keyword-updater-option | predicate-option |
+               weak-predicate-option | force-option | representation-option |
+               do-not-option | mv-intro-macro-option update-method-option |
+               assertion-lemma-hints-option | predicate-guard-hints-option |
+               prefix-option | {assert-option}*</p>
 
-  guards-option ::= :GUARDS
+ <p>slot-and-options ::= slot-name | (slot-name [[slot-options]])</p>
 
-  verify-guards-option ::= :VERIFY-GUARDS | (:VERIFY-GUARDS) |
-                           (:VERIFY-GUARDS T) | (:VERIFY-GUARDS NIL)
+ <p>slot-options ::= default-option | read-only-option | {assert-option}*</p>
 
-  slot-writers-option ::= :SLOT-WRITERS
+ <p>default-option ::= :DEFAULT | (:DEFAULT) | (:DEFAULT slot-initform)</p>
 
-  inline-option ::= :INLINE
+ <p>read-only-option ::= :READ-ONLY</p>
 
-  mix-option ::= :MIX
+ <p>assert-option ::= (:ASSERT assertion {assertion-rule-descriptor}*)</p>
 
-  conc-name-option ::= :CONC-NAME | (:CONC-NAME) | (:CONC-NAME conc-name)
+ <p>assertion-rule-descriptor ::= rule-token | (rule-token corollary
+                                 [other-rule-forms])</p>
 
-  set-conc-name-option ::= :SET-CONC-NAME | (:SET-CONC-NAME) |
-                           (:SET-CONC-NAME set-conc-name)
+ <p>rule-token ::= NIL | :REWRITE | :LINEAR | :LINEAR-ALIAS |
+                  :WELL-FOUNDED-RELATION | :BUILT-IN-CLAUSE |
+                  :COMPOUND-RECOGNIZER | :ELIM | :GENERALIZE | :META |
+                  :FORWARD-CHAINING | :EQUIVALENCE | :REFINEMENT | :CONGRUENCE
+                  | :TYPE-PRESCRIPTION | :DEFINITION | :INDUCTION |
+                  :TYPE-SET-INVERTER</p>
 
-  keyword-constructor-option ::= :KEYWORD-CONSTRUCTOR |
-                                 (:KEYWORD-CONSTRUCTOR) |
-                                 (:KEYWORD-CONSTRUCTOR keyword-constructor)
+ <p>guards-option ::= :GUARDS</p>
 
-  keyword-updater-option ::= :KEYWORD-UPDATER | (:KEYWORD-UPDATER) | 
-                          (:KEYWORD-UPDATER keyword-updater)
+ <p>verify-guards-option ::= :VERIFY-GUARDS | (:VERIFY-GUARDS) |
+                            (:VERIFY-GUARDS T) | (:VERIFY-GUARDS NIL)</p>
 
-  predicate-option ::=  :PREDICATE | (:PREDICATE) | (:PREDICATE predicate)
+ <p>slot-writers-option ::= :SLOT-WRITERS</p>
 
-  weak-predicate-option ::=  :WEAK-PREDICATE | (:WEAK-PREDICATE) |  
-                             (:WEAK-PREDICATE weak-predicate)
+ <p>inline-option ::= :INLINE</p>
 
-  force-option ::= :FORCE
+ <p>mix-option ::= :MIX</p>
 
-  do-not-option ::= (:DO-NOT [[do-not-options]])
+ <p>conc-name-option ::= :CONC-NAME | (:CONC-NAME) | (:CONC-NAME conc-name)</p>
 
-  do-not-options ::= :TAG | :READ-WRITE | :WRITE-WRITE
+ <p>set-conc-name-option ::= :SET-CONC-NAME | (:SET-CONC-NAME) |
+                            (:SET-CONC-NAME set-conc-name)</p>
 
-  representation-option ::= :REPRESENTATION | (:REPRESENTATION) |
-                            (:REPRESENTATION representation)
+ <p>keyword-constructor-option ::= :KEYWORD-CONSTRUCTOR |
+                                  (:KEYWORD-CONSTRUCTOR) |
+                                  (:KEYWORD-CONSTRUCTOR
+                                  keyword-constructor)</p>
 
-  representation ::= :LIST | :MV | :DOTTED-LIST | :TREE | template
+ <p>keyword-updater-option ::= :KEYWORD-UPDATER | (:KEYWORD-UPDATER) |
+                           (:KEYWORD-UPDATER keyword-updater)</p>
 
-  mv-intro-macro-option ::=  :MV-INTRO-MACRO |
-                             (:MV-INTRO-MACRO) |  
-                             (:MV-INTRO-MACRO mv-intro-macro)
+ <p>predicate-option ::= :PREDICATE | (:PREDICATE) | (:PREDICATE predicate)</p>
 
-  update-method-option ::= :UPDATE-METHOD | (:UPDATE-METHOD) |
-                           (:UPDATE-METHOD update-method)
+ <p>weak-predicate-option ::= :WEAK-PREDICATE | (:WEAK-PREDICATE) |
+                              (:WEAK-PREDICATE weak-predicate)</p>
 
-  update-method ::= :HEURISTIC | :SET | :COPY
+ <p>force-option ::= :FORCE</p>
 
-  assertion-lemma-hints-option ::= 
-    :ASSERTION-LEMMA-HINTS | (:ASSERTION-LEMMA-HINTS) | 
-    (:ASSERTION-LEMMA-HINTS hints)
+ <p>do-not-option ::= (:DO-NOT [[do-not-options]])</p>
 
-  predicate-guard-hints-option ::= 
-    :PREDICATE-GUARD-HINTS | (:PREDICATE-GUARD-HINTS) | 
-    (:PREDICATE-GUARD-HINTS hints)
+ <p>do-not-options ::= :TAG | :READ-WRITE | :WRITE-WRITE</p>
 
-  prefix-option ::= :PREFIX | (:PREFIX) | (:PREFIX prefix)
+ <p>representation-option ::= :REPRESENTATION | (:REPRESENTATION) |
+                             (:REPRESENTATION representation)</p>
 
-Arguments and Values:
+ <p>representation ::= :LIST | :MV | :DOTTED-LIST | :TREE | template</p>
 
-assertion -- a slots-assertion.
+ <p>mv-intro-macro-option ::= :MV-INTRO-MACRO | (:MV-INTRO-MACRO) |
+                              (:MV-INTRO-MACRO mv-intro-macro)</p>
 
-corollary -- a slots-assertion.
+ <p>update-method-option ::= :UPDATE-METHOD | (:UPDATE-METHOD) |
+                            (:UPDATE-METHOD update-method)</p>
 
-conc-name -- a string-designator.
+ <p>update-method ::= :HEURISTIC | :SET | :COPY</p>
 
-documentation -- a string; not evaluated.
+ <p>assertion-lemma-hints-option ::= :ASSERTION-LEMMA-HINTS |
+     (:ASSERTION-LEMMA-HINTS) | (:ASSERTION-LEMMA-HINTS hints)</p>
 
-hints -- an acl2-hints.
+ <p>predicate-guard-hints-option ::= :PREDICATE-GUARD-HINTS |
+     (:PREDICATE-GUARD-HINTS) | (:PREDICATE-GUARD-HINTS hints)</p>
 
-keyword-constructor -- a symbol.
+ <p>prefix-option ::= :PREFIX | (:PREFIX) | (:PREFIX prefix)</p>
 
-keyword-updater -- a symbol.
+ <p>Arguments and Values:</p>
 
-name -- a symbol.
+ <p>assertion -- a slots-assertion.</p>
 
-mv-intro-macro -- a symbol.
+ <p>corollary -- a slots-assertion.</p>
 
-other-rule-forms -- Some acl2-rule-forms.
+ <p>conc-name -- a string-designator.</p>
 
-predicate -- a symbol.
+ <p>documentation -- a string; not evaluated.</p>
 
-prefix -- a string-designator.
+ <p>hints -- an acl2-hints.</p>
 
-read-write-lemma -- a symbol.
+ <p>keyword-constructor -- a symbol.</p>
 
-set-conc-name -- a string-designator.
+ <p>keyword-updater -- a symbol.</p>
 
-slot-initform -- a form; not evaluated.
+ <p>name -- a symbol.</p>
 
-slot-name -- a valid-slot-name.
+ <p>mv-intro-macro -- a symbol.</p>
 
-tag -- a symbol.
+ <p>other-rule-forms -- Some acl2-rule-forms.</p>
 
-template -- A slots-template.
+ <p>predicate -- a symbol.</p>
 
-weak-predicate -- a symbol.
+ <p>prefix -- a string-designator.</p>
 
-write-write-lemma -- a symbol. 
+ <p>read-write-lemma -- a symbol.</p>
 
-Definitions:
+ <p>set-conc-name -- a string-designator.</p>
 
-acl2-hints -- any form valid as the hints argument of defthm.  See the
-documentation for HINTS in the ACL2 documentation.
+ <p>slot-initform -- a form; not evaluated.</p>
 
-acl2-rule-forms -- Any forms that would be valid in an ACL2 rule-classes
-form, except for the rule class itself, or a corollary and formula.  See the
-documentation for the DEFSTRUCTURE assertion theory in the DEFSTRUCTURE
-document,and the ACL2 documentations for RULE-CLASSES.
+ <p>slot-name -- a valid-slot-name.</p>
 
-slots-assertion -- DEFSTRUCTURE assertions are covered in the DEFSTRUCTURE
-document. 
+ <p>tag -- a symbol.</p>
 
-slots-template -- A cons tree whose flattened form (by STRUCTURES::FLATTEN) is
-a permutation of the list of slot names of the structure.
+ <p>template -- A slots-template.</p>
 
-string-designator -- a character, string or symbol, it designates the string
-obtained by (STRING STRING-DESIGNATOR) except that by convention the symbol
-NIL designates the empty string.
+ <p>weak-predicate -- a symbol.</p>
 
-valid-slot-name -- Any symbol valid for use as a formal parameter of a
-function. This is any symbol not in the \"keyword\" package, neither T nor NIL,
-neither beginning nor ending with `*', and not beginning with `&'.  In
-addition, no slot-name may be the same as the structure name, and all
-slot-names must have unique print names, i.e., it is illegal to duplicate
-slot names, and it is illegal to use symbols from different packages that
-have the same print name.
+ <p>write-write-lemma -- a symbol.</p>
 
-  ~/"
-  )
+ <p>Definitions:</p>
+
+ <p>acl2-hints -- any form valid as the hints argument of defthm.  See the
+ documentation for HINTS in the ACL2 documentation.</p>
+
+ <p>acl2-rule-forms -- Any forms that would be valid in an ACL2 rule-classes
+ form, except for the rule class itself, or a corollary and formula.  See the
+ documentation for the DEFSTRUCTURE assertion theory in the DEFSTRUCTURE
+ document,and the ACL2 documentations for RULE-CLASSES.</p>
+
+ <p>slots-assertion -- DEFSTRUCTURE assertions are covered in the DEFSTRUCTURE
+ document.</p>
+
+ <p>slots-template -- A cons tree whose flattened form (by STRUCTURES::FLATTEN)
+ is a permutation of the list of slot names of the structure.</p>
+
+ <p>string-designator -- a character, string or symbol, it designates the
+ string obtained by (STRING STRING-DESIGNATOR) except that by convention the
+ symbol NIL designates the empty string.</p>
+
+ <p>valid-slot-name -- Any symbol valid for use as a formal parameter of a
+ function. This is any symbol not in the \"keyword\" package, neither T nor
+ NIL, neither beginning nor ending with `*', and not beginning with `&amp;'.
+ In addition, no slot-name may be the same as the structure name, and all
+ slot-names must have unique print names, i.e., it is illegal to duplicate slot
+ names, and it is illegal to use symbols from different packages that have the
+ same print name.</p>
+
+ ")
 
 
 ;;;****************************************************************************
@@ -1783,73 +2010,72 @@ rather than check for the SYNTAXP hyp.  This was important for Alessandro's
 work.  Also added IF lifting for the slot writers, in the hope of winning
 some simplifications in that way as well ( we do on his examples ).
 
-
-(defun lift-if-syntaxp (left right constructor)
-  ":doc-section lift-if-syntaxp
-  Meta heuristic for `lifting' IF through structure accessors.
-  ~/~/
-
-The `LIFT-IF' lemma is introduced as a heuristic to speed certain proofs
-about specifications involving conditional structure access.  Here is the
-idea.  Imagine a generic structure defined by
-
- (DEFSTRUCTURE FOO A B C).
-
-Now imaging that the term
-
- (FOO-A (IF test x y))
-
-appears during a proof about a specification involving the structure.  
-This will happen because ACL2 does not normally move IF around during
-simplification.  Instead, ACL2 simplifies, with IF in place, and then
-clausifies out the IFs to produce cases.
-
-Now, if the term above is actually
-
- (FOO-A (IF test (FOO a b c) (FOO a1 b1 c1))),
-
-i.e., both the left and right branch of the IF are instances of the
-constructor, then we can simplify this term to 
-
- (IF test a a1).
-
-Even though we haven't eliminated the need to clausify away the IF, we have
-at least reduced the size of the term, perhaps substantially.  This is
-important because if we had clausified away to cases involving
-
- (FOO-A (FOO a b c)) and (FOO-A (FOO a1 b1 c1))
-
-the prover is obligated to examine all of (FOO a b c) and (FOO a1 b1 c1)
-before applying the simple `read lemma' for the structure.  The sizes of
-terms can also have a very significant impact on the amount of time spent on
-I/O.
-
-If it so happened that a = a1, e.g., this slot is invariant in a
-specification, then this would be further simplified to simply
-
-a,
-
-which will potentially result in one less test during clausification.
-
-The heuristic embodied in this lemma is to lift IF through calls of the
-accessors if there is some hope that doing so will reduce the size of the
-resulting term.  If the left and right hand sides of the IF are both
-instances of the constructor, then we know that this will work, thanks to the
-`read lemma' for the structure.  We also lift the IFs out if the left or
-right hand sides are themselves IF, hoping to win further down.  This
-heuristic has been found to result in very significant proof speedups for
-certain types of proofs. ~/"
-
-  (declare (xargs :guard t
-                  :mode :logic))
-
-  (and (consp left)
-       (consp right)
-       (symbolp constructor)
-       (or (eq (car left) 'IF)
-           (eq (car left) constructor))
-       (or (eq (car right) 'IF)
-           (eq (car right) constructor))))
+; (defun lift-if-syntaxp (left right constructor)
+;   ":doc-section lift-if-syntaxp
+;   Meta heuristic for `lifting' IF through structure accessors.
+;   ~/~/
+; 
+; The `LIFT-IF' lemma is introduced as a heuristic to speed certain proofs
+; about specifications involving conditional structure access.  Here is the
+; idea.  Imagine a generic structure defined by
+; 
+;  (DEFSTRUCTURE FOO A B C).
+; 
+; Now imaging that the term
+; 
+;  (FOO-A (IF test x y))
+; 
+; appears during a proof about a specification involving the structure.  
+; This will happen because ACL2 does not normally move IF around during
+; simplification.  Instead, ACL2 simplifies, with IF in place, and then
+; clausifies out the IFs to produce cases.
+; 
+; Now, if the term above is actually
+; 
+;  (FOO-A (IF test (FOO a b c) (FOO a1 b1 c1))),
+; 
+; i.e., both the left and right branch of the IF are instances of the
+; constructor, then we can simplify this term to 
+; 
+;  (IF test a a1).
+; 
+; Even though we haven't eliminated the need to clausify away the IF, we have
+; at least reduced the size of the term, perhaps substantially.  This is
+; important because if we had clausified away to cases involving
+; 
+;  (FOO-A (FOO a b c)) and (FOO-A (FOO a1 b1 c1))
+; 
+; the prover is obligated to examine all of (FOO a b c) and (FOO a1 b1 c1)
+; before applying the simple `read lemma' for the structure.  The sizes of
+; terms can also have a very significant impact on the amount of time spent on
+; I/O.
+; 
+; If it so happened that a = a1, e.g., this slot is invariant in a
+; specification, then this would be further simplified to simply
+; 
+; a,
+; 
+; which will potentially result in one less test during clausification.
+; 
+; The heuristic embodied in this lemma is to lift IF through calls of the
+; accessors if there is some hope that doing so will reduce the size of the
+; resulting term.  If the left and right hand sides of the IF are both
+; instances of the constructor, then we know that this will work, thanks to the
+; `read lemma' for the structure.  We also lift the IFs out if the left or
+; right hand sides are themselves IF, hoping to win further down.  This
+; heuristic has been found to result in very significant proof speedups for
+; certain types of proofs. ~/"
+; 
+;   (declare (xargs :guard t
+;                   :mode :logic))
+; 
+;   (and (consp left)
+;        (consp right)
+;        (symbolp constructor)
+;        (or (eq (car left) 'IF)
+;            (eq (car left) constructor))
+;        (or (eq (car right) 'IF)
+;            (eq (car right) constructor))))
 |#
 
 (defloop lift-if-writers (slots test left right db)

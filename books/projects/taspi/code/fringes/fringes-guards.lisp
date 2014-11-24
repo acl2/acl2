@@ -65,7 +65,7 @@
 
 (defthm mc-flatten-cdr-first-rev-flatten
   (equal (mc-flatten-cdr-first x a)
-         (app (rev (flatten x)) a)))
+         (app (taspi-rev (taspi-flatten x)) a)))
    
 (defthm consp-btree-to-fringe-from-x
   (implies (and (consp full-taxa-list-tree)
@@ -200,10 +200,10 @@
                     (depth full-taxa-list-tree))
                 (balanced-tree full-taxa-list-tree)
                 )
-           (subset (rev
-                    (flatten
+           (subset (taspi-rev
+                    (taspi-flatten
                      (btree-to-fringe-help x full-taxa-list-tree)))
-                   (rev (flatten full-taxa-list-tree)))))
+                   (taspi-rev (taspi-flatten full-taxa-list-tree)))))
 
 (defthm first-from-full-flatten
   (implies (and (consp x)
@@ -211,7 +211,7 @@
                     (depth full-taxa-list-tree))
                 (balanced-tree full-taxa-list-tree))
            (subset (btree-to-fringe x full-taxa-list-tree)
-                   (rev (flatten full-taxa-list-tree))))
+                   (taspi-rev (taspi-flatten full-taxa-list-tree))))
   :hints (("Goal" :in-theory (enable btree-to-fringe))))
 
 (defthm subset-nil-t-second-part-full-taxa
@@ -222,11 +222,11 @@
                                            full-taxa-list-tree2)))
                 (balanced-tree (cons full-taxa-list-tree1
                                      full-taxa-list-tree2)))
-           (subset (rev (flatten (btree-to-fringe-help 
+           (subset (taspi-rev (taspi-flatten (btree-to-fringe-help 
                                   x
                                   (cons full-taxa-list-tree1
                                         full-taxa-list-tree2))))
-                   (rev (flatten full-taxa-list-tree2)))))
+                   (taspi-rev (taspi-flatten full-taxa-list-tree2)))))
 
 (defthm subset-t-nil-first-part-full-taxa
   (implies (and (consp x)
@@ -236,11 +236,11 @@
                                            full-taxa-list-tree2)))
                 (balanced-tree (cons full-taxa-list-tree1
                                      full-taxa-list-tree2)))
-           (subset (rev (flatten (btree-to-fringe-help 
+           (subset (taspi-rev (taspi-flatten (btree-to-fringe-help 
                                   x
                                   (cons full-taxa-list-tree1
                                         full-taxa-list-tree2))))
-                   (rev (flatten full-taxa-list-tree1)))))
+                   (taspi-rev (taspi-flatten full-taxa-list-tree1)))))
 
 (defthm subset-btree-to-fringe-help-subset
   (implies (and (qs-subset x y)
@@ -254,10 +254,10 @@
                     (depth full-taxa-list-tree))
                 (balanced-tree full-taxa-list-tree)
                 )
-           (subset (rev (flatten (btree-to-fringe-help 
+           (subset (taspi-rev (taspi-flatten (btree-to-fringe-help 
                                   x 
                                   full-taxa-list-tree)))
-                   (rev (flatten (btree-to-fringe-help 
+                   (taspi-rev (taspi-flatten (btree-to-fringe-help 
                                   y 
                                   full-taxa-list-tree)))))
   :hints (("Goal" :induct (full-ind x y full-taxa-list-tree))
@@ -322,9 +322,9 @@
                 (<= (depth under)
                     (depth full-taxa-list-tree))
                 (balanced-tree full-taxa-list-tree)
-                (subset (rev (flatten full-taxa-list-tree))
+                (subset (taspi-rev (taspi-flatten full-taxa-list-tree))
                         list))
-           (subset (rev (flatten (btree-to-fringe-help 
+           (subset (taspi-rev (taspi-flatten (btree-to-fringe-help 
                                   under
                                   full-taxa-list-tree)))
                    list)))
@@ -334,7 +334,7 @@
                 (<= (depth under)
                     (depth full-taxa-list-tree))
                 (balanced-tree full-taxa-list-tree)
-                (subset (rev (flatten full-taxa-list-tree))
+                (subset (taspi-rev (taspi-flatten full-taxa-list-tree))
                         list))
            (subset (btree-to-fringe under full-taxa-list-tree)
                    list)))
@@ -349,11 +349,11 @@
                     (depth full-taxa-list-tree))
                 (balanced-tree full-taxa-list-tree)
                 (consp (q-and-c2 required-subtrees1 under))
-                (subset (rev (flatten (btree-to-fringe-help
+                (subset (taspi-rev (taspi-flatten (btree-to-fringe-help
                                        required-subtrees1
                                        full-taxa-list-tree)))
                         list))
-           (subset (rev (flatten (btree-to-fringe-help
+           (subset (taspi-rev (taspi-flatten (btree-to-fringe-help
                                   (q-and-c2 required-subtrees1 under)
                                   full-taxa-list-tree)))
                    list))
@@ -391,7 +391,7 @@
             under1
             (qs-subset under1 required-subtrees1)
             (subset
-             (rev (flatten (btree-to-fringe-help required-subtrees1
+             (taspi-rev (taspi-flatten (btree-to-fringe-help required-subtrees1
                                                  full-taxa-list-tree)))
              (get-taxa-from-taxon-index taxon-index-alist))
             (<= (depth required-subtrees1)
@@ -402,8 +402,8 @@
             (valid-bdd under1)
             (balanced-tree full-taxa-list-tree))
            (subset
-            (rev
-             (flatten
+            (taspi-rev
+             (taspi-flatten
               (btree-to-fringe-help under1 full-taxa-list-tree)))
             (get-taxa-from-taxon-index taxon-index-alist)))
   :hints
@@ -449,7 +449,7 @@
                 (not (member-gen nil (double-rewrite x)))
                 (subset-list (btrees-to-fringes x full-taxa-list-tree)
                              taxa-list))
-           (subset (rev (flatten (btree-to-fringe-help
+           (subset (taspi-rev (taspi-flatten (btree-to-fringe-help
                                   (car x)
                                   full-taxa-list-tree)))
                    taxa-list)))
@@ -467,9 +467,9 @@
   (implies (and (subset-list (btrees-to-fringes x y) z)
                 (consp x)
                 (consp (car x)))
-           (subset (rev (flatten
+           (subset (taspi-rev (taspi-flatten
                          (btree-to-fringe-help (car x) y)))
-                   (rev z)))
+                   (taspi-rev z)))
   :hints (("Goal" :in-theory (enable btree-to-fringe))))
 
 (defthm subset-list-btrees-to-fringes-car-1
@@ -477,21 +477,25 @@
                 (consp x)
                 (consp (car x)))
            (subset (btree-to-fringe (car x) y)
-                   (rev z))))
+                   (taspi-rev z))))
 
 ;; Functions that first remove-brlens and then call
 ;; appropriate function
 
 (defun fringe-frequencies-brlens (l)
-  ":Doc-Section TASPI
-   Returns a mapping of the list based bipartitions present in the input list
-   of trees to the number of times it appeared in the input.~/
-   ~/
-   Arguments:
-      (1) l - a list of trees
 
-  Details: Trees in input list may have branch lengths.  Trees should
-           all be ordered according to the same underlying taxa list."
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns a mapping of the list based bipartitions present in the input list
+;  of trees to the number of times it appeared in the input.~/
+;  ~/
+;  Arguments:
+;     (1) l - a list of trees
+
+; Details: Trees in input list may have branch lengths.  Trees should
+;          all be ordered according to the same underlying taxa list."
   (declare (xargs :guard t))
   (let ((removed (remove-brlens-list l)))
     (if (and (non-tip-tree-listp removed)
@@ -500,17 +504,21 @@
       'invalid-input-to-fringe-frequencies)))
 
 (defun bfringe-brlens (x ta)
-   ":Doc-Section TASPI
-    Returns the bdd based bipartition implied by the (sub)tree given.~/
-    ~/
-    Arguments:
-       (1) x - a tree (usually a subtree of some larger tree)
-       (2) ta - a mapping of taxa-names their bdd based representation 
 
-   Details: Arguments can actually be more general.  Another way to think of
-            this is that it returns the taxa names in the tree x, represented
-            as a bdd.  May require that the taxa names in the tree are keys in the
-            ta argument."
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+;  ":Doc-Section TASPI
+;   Returns the bdd based bipartition implied by the (sub)tree given.~/
+;   ~/
+;   Arguments:
+;      (1) x - a tree (usually a subtree of some larger tree)
+;      (2) ta - a mapping of taxa-names their bdd based representation 
+
+;  Details: Arguments can actually be more general.  Another way to think of
+;           this is that it returns the taxa names in the tree x, represented
+;           as a bdd.  May require that the taxa names in the tree are keys in the
+;           ta argument."
   (declare (xargs :guard t))
   (bfringe (remove-brlens x) ta))
 
@@ -519,16 +527,20 @@
   (bfringe-list (remove-brlens-list x) ta))
 
 (defun bfringe-frequencies-brlens (l taxa-list)
-  ":Doc-Section TASPI
-   Returns a mapping of the bdd based bipartitions present in the input list
-   of trees to the number of times it appeared in the input.~/
-   ~/
-   Arguments:
-      (1) l - a list of trees
-      (2) taxa-list - a list of taxa
 
-  Details: Trees in input list may have branch lengths.  Trees should
-           all be ordered according to the taxa list given."
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns a mapping of the bdd based bipartitions present in the input list
+;  of trees to the number of times it appeared in the input.~/
+;  ~/
+;  Arguments:
+;     (1) l - a list of trees
+;     (2) taxa-list - a list of taxa
+
+; Details: Trees in input list may have branch lengths.  Trees should
+;          all be ordered according to the taxa list given."
   (declare (xargs :guard t))
   (let ((removed (remove-brlens-list l)))
     (if (and (non-tip-tree-listp removed)
@@ -537,15 +549,19 @@
       'invalid-input-to-bfringe-frequencies)))
 
 (defun term-to-bfringes-brlens (term taxa-list)
-  ":Doc-Section TASPI
-   Returns the bdd based list of bipartitions for the input tree.~/
-   ~/
-   Arguments:
-      (1) term - a tree
-      (2) taxa-list - a list of taxa
 
-   Details: Taxa names in the given tree must be a subset of those present in
-            the taxa-list given.  Tree input may have branch lengths."
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns the bdd based list of bipartitions for the input tree.~/
+;  ~/
+;  Arguments:
+;     (1) term - a tree
+;     (2) taxa-list - a list of taxa
+
+;  Details: Taxa names in the given tree must be a subset of those present in
+;           the taxa-list given.  Tree input may have branch lengths."
   (declare (xargs :guard t))
   (let ((removed (remove-brlens term)))
     (if (and (treep removed)

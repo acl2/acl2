@@ -139,16 +139,20 @@
 ;; Recognizes a mapping from possible character states
 ;; to a default scorelist (e.g. *dna-scorelists*)
 (defun charstate-scorelist-map-p (x alpha-len)
-  ":Doc-Section TASPI
-   Recognizes a well-formed mapping from possible character states to its 
-   score list of length alpha-len.~/
-   ~/
-   Arguments: 
-      (1) x - a potential character state scorelist
-      (2) alpha-len - the required alphabet length (number of unambiguous
-                      characters)
 
-   "
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Recognizes a well-formed mapping from possible character states to its 
+;  score list of length alpha-len.~/
+;  ~/
+;  Arguments: 
+;     (1) x - a potential character state scorelist
+;     (2) alpha-len - the required alphabet length (number of unambiguous
+;                     characters)
+
+;  "
   (declare (xargs :guard (acl2-numberp alpha-len)))
   (if (atom x)
       t
@@ -202,14 +206,18 @@
          (cost-matrixp (cdr x)))))
 
 (defun cost-matrixp-nstates (x n)
-  ":Doc-Section TASPI
-   Recognizes a well-formed cost matrix with n states.~/
-   ~/
-   Arguments: 
-      (1) x - a potential cost matrix
-      (2) n - the number of unambiguous characters
 
-   "
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Recognizes a well-formed cost matrix with n states.~/
+;  ~/
+;  Arguments: 
+;     (1) x - a potential cost matrix
+;     (2) n - the number of unambiguous characters
+
+;  "
   (declare (xargs :guard (natp n)))
   (if (atom x)
       t

@@ -88,16 +88,20 @@
 ; the number of times x occurs in l.
 
 (defun replete-trees-list-top (l)
-  ":Doc-Section TASPI
-   Returns a replete mapping of trees and subtrees in the input list to either 
-   the number of times the tree occurs or to a list of each subtrees immediate 
-   parents.~/
-   ~/
-   Arguments:
-      (1) l - a list of trees no member of which is a proper subtree of another
 
-   Details: The trees should all be ordered according to the same taxa list. 
-            Branch lengths are not allowed (see replete-trees-list-brlens)."
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns a replete mapping of trees and subtrees in the input list to either 
+;  the number of times the tree occurs or to a list of each subtrees immediate 
+;  parents.~/
+;  ~/
+;  Arguments:
+;     (1) l - a list of trees no member of which is a proper subtree of another
+
+;  Details: The trees should all be ordered according to the same taxa list. 
+;           Branch lengths are not allowed (see replete-trees-list-brlens)."
   (declare (xargs :guard (non-subtree-listp l l)
                   :verify-guards nil))
   (replete-trees-list-top1 l '*replete-trees-list-top*))
@@ -157,18 +161,22 @@
               (sum-frequencies-list (cdr l) db)))))
 
 (defun frequency (x db)
-  ":Doc-Section TASPI
-   Returns the number of times the list based fringe x occurs as implied by the
-   database given.~/
-   ~/
-   Arguments:
-      (1) x - a list based fringe
-      (2) db - a mapping of subtrees to integers or parent lists (such as that
-               produced by replete)
- 
-   Details: The database must have appropriate structure (but is produced as
-            necessary by replete).  The underlying taxa list should be
-            consistent between both the fringe and the database."
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns the number of times the list based fringe x occurs as implied by the
+;  database given.~/
+;  ~/
+;  Arguments:
+;     (1) x - a list based fringe
+;     (2) db - a mapping of subtrees to integers or parent lists (such as that
+;              produced by replete)
+;
+;  Details: The database must have appropriate structure (but is produced as
+;           necessary by replete).  The underlying taxa list should be
+;           consistent between both the fringe and the database."
   (declare (xargs :measure (frequency-measure x db)
                   :guard (and (alistp-gen db)
                               (nat-or-cons-range-halistp db)

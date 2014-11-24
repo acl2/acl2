@@ -15,19 +15,23 @@
 ;;   where (n is number of leaves, so n-3 is number of internal branches)
 
 (defun rf (tree1 taxa-list1 rooted1 tree2 taxa-list2 rooted2)
-  ":Doc-Section TASPI
-   Returns the RF rate, false negative rate and false positive rate between the
-   two trees input.~/
-   ~/
-   Arguments:
-     (1) tree1 - a tree
-     (2) taxa-list1 - a list of taxa names
-     (3) rooted1 - a flag indicating rootedness
-     (4) tree2 - a tree
-     (5) taxa-list2 - a list of taxa names
-     (6) rooted2 - a flag indicating rootedness
 
-   Details: Trees input should not have branch lengths (see rf-brlens)."
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns the RF rate, false negative rate and false positive rate between the
+;  two trees input.~/
+;  ~/
+;  Arguments:
+;    (1) tree1 - a tree
+;    (2) taxa-list1 - a list of taxa names
+;    (3) rooted1 - a flag indicating rootedness
+;    (4) tree2 - a tree
+;    (5) taxa-list2 - a list of taxa names
+;    (6) rooted2 - a flag indicating rootedness
+
+;  Details: Trees input should not have branch lengths (see rf-brlens)."
   (declare (xargs :guard (and (good-taxa-list taxa-list1)
                               (good-taxa-list taxa-list2)
                               (good-tree tree1)
@@ -68,19 +72,23 @@
     (mv 'need-same-taxa-list-and-consp-trees 'error 'error)))
     
 (defun rf-brlens (tree1 taxa-list1 rooted1 tree2 taxa-list2 rooted2)
-  ":Doc-Section TASPI
-   Returns the RF rate, false negative rate and false positive rate between the
-   two trees input.~/
-   ~/
-   Arguments:
-     (1) tree1 - a tree
-     (2) taxa-list1 - a list of taxa names
-     (3) rooted1 - a flag indicating rootedness
-     (4) tree2 - a tree
-     (5) taxa-list2 - a list of taxa names
-     (6) rooted2 - a flag indicating rootedness
 
-   Details: Trees input may have branch lengths (see rf)."
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns the RF rate, false negative rate and false positive rate between the
+;  two trees input.~/
+;  ~/
+;  Arguments:
+;    (1) tree1 - a tree
+;    (2) taxa-list1 - a list of taxa names
+;    (3) rooted1 - a flag indicating rootedness
+;    (4) tree2 - a tree
+;    (5) taxa-list2 - a list of taxa names
+;    (6) rooted2 - a flag indicating rootedness
+
+;  Details: Trees input may have branch lengths (see rf)."
   (declare (xargs :guard t))
   (let ((tree1-no-brlens (remove-brlens tree1))
         (tree2-no-brlens (remove-brlens tree2)))
@@ -112,18 +120,22 @@
     (mv curScore curTree)))
 
 (defun find-closest-by-rf (tree list rooted1? rooted2?)
-  ":Doc-Section TASPI
-   Returns a tree from list closest according to rf rate to the given tree.~/
-   ~/
-   Arguments:
-     (1) tree - a tree
-     (2) list - a list of trees
-     (3) rooted1 - a flag indicating rootedness of tree
-     (4) rooted2 - a flag indicating rootedness of each tree in list
 
-   Details: Trees input may have branch lengths but they will not be preserved
-            in the tree returned.  A single tree is returned even if equally 
-            close trees exist in the input list."
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns a tree from list closest according to rf rate to the given tree.~/
+;  ~/
+;  Arguments:
+;    (1) tree - a tree
+;    (2) list - a list of trees
+;    (3) rooted1 - a flag indicating rootedness of tree
+;    (4) rooted2 - a flag indicating rootedness of each tree in list
+
+;  Details: Trees input may have branch lengths but they will not be preserved
+;           in the tree returned.  A single tree is returned even if equally 
+;           close trees exist in the input list."
   (declare (xargs :guard t))
   (if (consp list)
       (mv-let (rf fn fp)

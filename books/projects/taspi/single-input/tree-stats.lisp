@@ -23,15 +23,19 @@
 (verify-guards max-len-lists)
 
 (defun degree-of-tree (rooted-flg x)
-  ":Doc-Section TASPI
-   Returns the degree of the input tree.~/
-   ~/
-   Arguments:
-     (1) rooted-flg - non-nil for a rooted tree,
-                      nil for an unrooted tree
-     (2) x - a tree
-   
-   "
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns the degree of the input tree.~/
+;  ~/
+;  Arguments:
+;    (1) rooted-flg - non-nil for a rooted tree,
+;                     nil for an unrooted tree
+;    (2) x - a tree
+;  
+;  "
   (declare (xargs :guard t))
   (if rooted-flg
       (max-len-lists t x 0) ;rooted, all levels count
@@ -60,67 +64,87 @@
 
 ;; assumes a tree rep rooted at a node
 (defun number-of-internal-nodes (x)
-  ":Doc-Section TASPI
-   Returns the number of internal nodes in the input tree.~/
-   ~/
-   Arguments:
-     (1) x - a tree
-   
-   Details: Assumes the tree representation is rooted at a node.  Does not 
-            handle branch lengths (see number-of-internal-nodes-brlens)."
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns the number of internal nodes in the input tree.~/
+;  ~/
+;  Arguments:
+;    (1) x - a tree
+;  
+;  Details: Assumes the tree representation is rooted at a node.  Does not 
+;           handle branch lengths (see number-of-internal-nodes-brlens)."
   (declare (xargs :guard t))
   (num-internal-help t x 0))
 
 (defun number-of-internal-nodes-brlens (x)
-  ":Doc-Section TASPI
-   Returns the number of internal nodes in the input tree.~/
-   ~/
-   Arguments:
-     (1) x - a tree
-   
-   Details: Assumes the tree representation is rooted at a node.  Allows branch
-            lengths (see also number-of-internal-nodes)."
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns the number of internal nodes in the input tree.~/
+;  ~/
+;  Arguments:
+;    (1) x - a tree
+;  
+;  Details: Assumes the tree representation is rooted at a node.  Allows branch
+;           lengths (see also number-of-internal-nodes)."
   (declare (xargs :guard t))
   (number-of-internal-nodes (remove-brlens x)))
 
 ;; Diameter
 (defun diameter-no-brlens (tree)  
-  ":Doc-Section TASPI
-   Returns the diameter of the input tree assuming unit branch lengths.~/
-   ~/
-   Arguments:
-     (1) x - a tree
-   
-   Details: Maximum path distance between any two taxa in tree.
-            See diameter-brlens."
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns the diameter of the input tree assuming unit branch lengths.~/
+;  ~/
+;  Arguments:
+;    (1) x - a tree
+;  
+;  Details: Maximum path distance between any two taxa in tree.
+;           See diameter-brlens."
   (declare (xargs :guard t))
   (let* ((tree-no-brlens (remove-brlens tree))
          (taxa (mytips tree-no-brlens)))
     (find-max-pair-dist taxa tree-no-brlens 0)))
 
 (defun diameter-brlens (tree)
-  ":Doc-Section TASPI
-   Returns the diameter of the input tree using branch lengths given.~/
-   ~/
-   Arguments:
-     (1) x - a tree
-   
-   Details: Maximum path distance between any two taxa in tree.
-            See also diameter-no-brlens."
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns the diameter of the input tree using branch lengths given.~/
+;  ~/
+;  Arguments:
+;    (1) x - a tree
+;  
+;  Details: Maximum path distance between any two taxa in tree.
+;           See also diameter-no-brlens."
   (declare (xargs :guard t))
   (find-max-pair-dist-brlens (mytips-brlens tree) tree 0))
 
 ;; Depth of tree
 (mutual-recursion
  (defun tree-depth (x)
-  ":Doc-Section TASPI
-   Returns the depth of the input tree representation.~/
-   ~/
-   Arguments:
-     (1) x - a tree
-   
-   Details: Does not handle branch lengths.
-            See tree-depth-brlens."
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns the depth of the input tree representation.~/
+;  ~/
+;  Arguments:
+;    (1) x - a tree
+;  
+;  Details: Does not handle branch lengths.
+;           See tree-depth-brlens."
    (declare (xargs :guard t
                    :measure (tree-measure x t)))
    (if (consp x)
@@ -137,14 +161,18 @@
 )
 
 (defun tree-depth-brlens (x)
-  ":Doc-Section TASPI
-   Returns the depth of the input tree representation.~/
-   ~/
-   Arguments:
-     (1) x - a tree
-   
-   Details: Allows branch lengths.
-            See also tree-depth."
+
+;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
+;;; see projects/taspi/taspi-xdoc.lisp.
+
+; ":Doc-Section TASPI
+;  Returns the depth of the input tree representation.~/
+;  ~/
+;  Arguments:
+;    (1) x - a tree
+;  
+;  Details: Allows branch lengths.
+;           See also tree-depth."
   (declare (xargs :guard t))
   (tree-depth (remove-brlens x)))
 

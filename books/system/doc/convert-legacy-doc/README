@@ -1,0 +1,12 @@
+This directory was used in November, 2014 for converting to xdoc the
+remaining legacy documentation strings in the ACL2 community books.
+It was modified by Matt Kaufmann, with help from Jared Davis, from the
+earlier books/system/doc/tool.tgz (which may disappear at some point),
+which was used earlier only to convert ACL2 system documentation to
+xdoc (producing books/system/doc/acl2-doc.lisp).
+
+The present directory was added to the git repo in case others find it
+useful, for converting legacy documentation outside the community
+books.  To see how it was applied to convert legacy doc strings to
+defxdoc forms, see conversion-2014-11-24.tgz, starting with its
+README.
