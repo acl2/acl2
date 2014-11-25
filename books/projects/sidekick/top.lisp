@@ -34,37 +34,91 @@
 (include-book "server")
 (program)
 
+(xdoc::add-resource-directory "sidekick" "screenshots")
+
 (defxdoc sidekick
-  :short "A supplemental, web-based, graphical interface to ACL2 (very
-experimental)."
+  :parents (acl2::projects)
+  :short "The ACL2 Sidekick is a graphical add-on for ACL2.  It extends your
+ACL2 session with a web server so that you can interact with ACL2 through your
+browser.  You use the Sidekick along with&mdash;not instead of&mdash;Emacs or
+your favorite ACL2 development environment."
 
-  :long "<box><p><b>Note</b>: This is extremely preliminary.  It has been
-tested on CCL.  It might possibly work on other Lisps, most likely SBCL and
-LispWorks.  Contact Jared Davis with any feedback or enhancements.</p></box>
+  :long "<p><b>Note</b>: the Sidekick is <b>highly experimental</b> software
+and at this point is mostly a proof of concept.</p>
 
-<p>The ACL2 Sidekick is an add-on that allows you to interact with an ordinary
-ACL2 session using a web-based interface.  This interface is <b>not</b> any
-kind of replacement for Emacs or your editor of choice.  It is merely meant to
-supplement the usual ACL2 read-eval-print loop with graphical capabilities.</p>
+<p>Screenshots:</p>
+<ul>
+<li><a href='res/sidekick/emacs.png'>Sidekick with Emacs</a></li>
+<li><a href='res/sidekick/eclipse.png'>Sidekick with Eclipse/ACL2(s)</a></li>
+</ul>
 
-<h3>Usage</h3>
+<h3>Basic Setup</h3>
 
-<ol>
+<p>The Sidekick has been tested on <a href='http://ccl.clozure.com'>CCL</a> on
+Linux with Firefox or Chromium as the browser.  It might possibly work on other
+Lisps, most likely SBCL and LispWorks.</p>
 
-<li>Certify the sidekick books, e.g., with
+<p>To build the Sidekick, build ACL2 as usual and then certify at least the
+@('basic') and @(see acl2::quicklisp) books, e.g.,</p>
+
 @({
-    $ cd books
-    $ make sidekick USE_QUICKLISP=1
-})</li>
+    $ cd acl2
+    $ make LISP=ccl ACL2_HONS=h
+    $ cd acl2/books
+    $ make USE_QUICKLISP=1 basic quicklisp
+})
 
-<li>Run (or add to your @(see acl2-customization) file):
+<p>Then certify the sidekick books:</p>
+
 @({
-    (include-book \"projects/sidekick/top\")
-})</li>
+    $ cd acl2/books/projects/sidekick
+    $ cert.pl top     # should produce top.cert
+})
 
-<li>Launch ACL2 as normal, point your web browser to @('http://localhost:9000')</li>
+<p>The Sidekick should now be ready.  To try it out, go to the
+@('projects/sidekick/demo') directory and follow along with @('demo.lsp').</p>
 
-</ol>")
+
+<h4>Sidekick Images</h4>
+
+<p>For instant startup times, you can build an ACL2 image with the Sidekick
+built in.</p>
+
+@({
+    $ cd acl2/books/projects/sidekick
+    $ make           # should produce a 'sidekick' executable
+    $ ./sidekick
+})
+
+<p>You can then use this @('sidekick') executable instead of invoking your
+normal @('saved_acl2') image when doing interactive development.</p>
+
+
+<h4>Browser Launching</h4>
+
+<p>You can tell the Sidekick to automatically launch a web browser when it
+boots up by setting the @('SIDEKICK_BROWSER') environment variable.  For
+instance:</p>
+
+@({
+    $ export SIDEKICK_BROWSER=\"firefox\"
+})
+
+<p>Whatever command you supply will simply be invoked, in the background, with
+the argument @('http://localhost:9000/') (or similar).</p>
+
+
+<h4>Other Ports</h4>
+
+<p>The Sidekick will try to listen on port 9000 by default, but this can be
+adjusted using SIDEKICK_PORT.  For instance:</p>
+
+@({
+    $ export SIDEKICK_PORT=9001
+})
+
+<p>You can also explicitly start the sidekick on a different port by using,
+e.g., @('(sidekick::start 9001)').</p>")
 
 (make-event
  (b* (((when (f-get-global 'acl2::certify-book-info state))
