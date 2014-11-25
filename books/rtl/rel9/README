@@ -1,17 +1,17 @@
 This directory contains an ACL2 library of register-transfer logic, developed
-at AMD from 1995 to the present in support of the mechanical verification of 
-various components of the AMD microprocessors that were designed during that 
+at AMD from 1995 to the present in support of the mechanical verification of
+various components of the AMD microprocessors that were designed during that
 period, especially their floating-point arithmetic units.
 
 This library is a work in progress.  Its primary author is David Russinoff.
 Matt Kaufmann and Eric Smith have made significant contributions.  Development
-continues by Russinoff and assisted by Hanbing Liu.
+continues by Russinoff and is assisted by Hanbing Liu.
 
 The library's core definitions and lemmas are contained in the subdirectory
 "lib/".  A parallel subdirectory, "support/", contains a superset of these
 events, including all sublemmas that were required for the proofs of the
 library lemmas.  The "support/" directory is organized in such a way to allow
-for the evolution of "lib/".  Read the following section "How to add new
+for the evolution of "lib/".  Read the following sections "How to add new
 theorems to lib/" and "support/README" to learn how to "evolve" the "lib/" and
 "support/" directories.  Users should consider that "lib/" is the RTL library,
 and are discouraged from accessing "support/" directly.
@@ -22,19 +22,19 @@ directory "arithmetic/".  To use this library, we recommend including the book
 
 Previous releases (before rel8) of this library contain another subdirectory,
 "user/".  "user/" contains many good rules which we haven't included in "lib/"
-because we wanted to keep "lib/" uncluttered.  We have not update and maintain
-it. We do not include it in this release. 
+because we wanted to keep "lib/" uncluttered.  We have not maintained
+the user directory, and we do not include it in rel9.
 
 
 See the comments in lib/top.lisp for information on what each book in lib/
-contains. 
+contains.
 
 The library files contain virtually no documentation.  A detailed companion
 document is available online as follows, and can also be accessed through
 the documentation topic, RTL, in the acl2+books combined manual.
 
     D.M. Russinoff, A formal theory of register-transfer logic and computer
-    arithmetic, 2006.  
+    arithmetic, 2006.
 
     http://www.russinoff.com/libman/
 
@@ -43,17 +43,17 @@ that are stated and proved in the earlier sections of the following papers,
 which document various applications of the library:
 
   D.M. Russinoff, A mechanically checked proof of correctness of the AMD-K5
-  floating point square root microcode, Formal Methods in System Design 14, 
+  floating point square root microcode, Formal Methods in System Design 14,
   75-125 (1999).  See
   http://www.onr.com/user/russ/david/fsqrt.html.
 
   D.M. Russinoff, A mechanically checked proof of IEEE compliance of the AMD-K7
   floating point multiplication, division, and square root instructions,
-  London Mathematical Society Journal of Computation and Mathematics (1), 
+  London Mathematical Society Journal of Computation and Mathematics (1),
   pp. 148-200, December, 1998.  See
   http://www.russinoff.com/david/k7-div-sqrt.html.
 
-  D.M. Russinoff, A case study in formal verification of register-transfer 
+  D.M. Russinoff, A case study in formal verification of register-transfer
   logic with ACL2: the floating point adder of the AMD Athlon processor,
   invited paper, FMCAD 2000.  See
   http://www.russinoff.com/david/fadd.html.
@@ -126,14 +126,14 @@ deltas to current support/lib<n>/):
 To see what we mean by "creative use of local include-book", we give the
 following example:
 
-Suppose we need to update lib/round.lisp by strengthening a theorem foo. 
+Suppose we need to update lib/round.lisp by strengthening a theorem foo.
 
 Suppose in "support/" that we have "lib1" through "lib8", and "lib8.delta1"
 through "lib8.delta3".
 
 If none of the lib8.delta<n> contains an updated round.lisp, we can
- 
-   Create a directory lib8.delta4/ 
+
+   Create a directory lib8.delta4/
 
    Create the following books.
 
@@ -141,16 +141,16 @@ If none of the lib8.delta<n> contains an updated round.lisp, we can
     ; book lib8.delta4/foo-new.lisp
 
     ; Here, prove stronger version of foo; but call it foo-new.
-    ; We may find that the original version of foo is useful, 
-    ; We can do something like. 
+    ; We may find that the original version of foo is useful,
+    ; We can do something like.
 
-     (local 
-      (encapsulate () 
+     (local
+      (encapsulate ()
          (local (include-book "../lib8/round"))
          (defthm foo
-                 ....)))   ; extract the original foo theorem. 
- 
-     (defthm foo-new 
+                 ....)))   ; extract the original foo theorem.
+
+     (defthm foo-new
              ...
              )
 
@@ -171,41 +171,41 @@ If none of the lib8.delta<n> contains an updated round.lisp, we can
      give the hint :by foo-new.>
 
     ============================================================
-    ; book top.lisp 
-     change 
+    ; book top.lisp
+     change
         (include-book "lib8/round.lisp")
-     into 
+     into
         (include-book "lib8.delta4/round")
 
 
 If one of the lib8.delta1-3 contains an updated round.lisp already, and we feel
-that changing foo into the new version may affect other existing lemma, we can
-chose to take a "snapshot" of current lib by creating a "lib9" and make
-modification in the "lib9.delta1" instead.
+that changing foo into the new version may affect other existing lemmas, we can
+choose to take a "snapshot" of current lib by creating a "lib9" and make
+modifications in the "lib9.delta1" instead.
 
-   Create a directory lib9/  
+   Create a directory lib9/
 
         1) copy current ../lib/* into lib9/
-        2) copy top.lisp into lib9/base.lisp 
-        3) update lib9/* to adjust the pathname in include-book forms. 
-         
-   
-   Create a directory lib9.delta1/  
-  
+        2) copy top.lisp into lib9/base.lisp
+        3) update lib9/* to adjust the pathname in include-book forms.
+
+
+   Create a directory lib9.delta1/
+
     ============================================================
     ; book lib9.delta1/foo-new.lisp
 
     ; Here, prove stronger version of foo; but call it foo-new.
-    ; We may find that the original version of foo is useful, 
-    ; We can do something like. 
+    ; We may find that the original version of foo is useful,
+    ; We can do something like.
 
-     (local 
-      (encapsulate () 
+     (local
+      (encapsulate ()
          (local (include-book "../lib9/round"))
          (defthm foo
-                 ....)))   ; extract the original foo theorem. 
- 
-     (defthm foo-new 
+                 ....)))   ; extract the original foo theorem.
+
+     (defthm foo-new
              ...
              )
 
@@ -227,18 +227,18 @@ modification in the "lib9.delta1" instead.
      give the hint :by foo-new.>
 
     ============================================================
-    ; book top.lisp 
+    ; book top.lisp
 
-     change 
+     change
         (include-book "lib9/round")
-     into 
+     into
         (include-book "lib9.delta1/round")
 
 
 =========================================================================
 
-Beginning of Eric's notes for users of the library [This is still a work in
-progress]:
+Beginning of Eric Smith's notes for users of the library [This is
+still a work in progress]:
 
 Personally, I wouldn't include lib/top since it includes lib/arith (which
 contains the old arithmetic rules) and also includes other books you probably
@@ -268,7 +268,7 @@ with a replacement for these books.  But note that arithmetic/ contains many
 more lemmas about the functions mentioned in basic, especially mod, fl, and
 expt.
 
-You probably don't need lib/fadd.  
+You probably don't need lib/fadd.
 
 You'll also need an arithmetic book (or books).  The safest course would be to
 include lib/arith.  However, I have lots of arithmetic books that you might
@@ -286,7 +286,7 @@ if you'll be proving a lot of stuff about mod, you should read through
 arithmetic/mod2.lisp?  [I should probably combine mod.lisp and mod2.lisp.
 Mod.lisp contains "Doc's" lemmas, and "mod2.lisp" contains Eric's lemmas.  Once
 I get all of support working with mod2.lisp included, I can combine it with
-mod.lisp.]  For some books, I've pulled out the proofs in to a separate book
+mod.lisp.]  For some books, I've pulled out the proofs into a separate book
 (e.g., expo2-proofs.lisp).
 
 For a quick overview of the books in arithmetic, see the comments in
@@ -299,9 +299,9 @@ arithmetic/mod.lisp.  Sometimes it's hard to tell which function a lemma is
 "about".  I tend to rely on a rough mental picture of the directed acyclic
 graph created by the definitions of the functions we use.  Thus if FOO calls
 BAR, a lemma about FOO and BAR goes in the FOO book.  Also, I tend to classify
-a lemma as being "about" to most complicated function it mentions. So a lemma
+a lemma as being "about" the most complicated function it mentions.  So a lemma
 about mod of a sum, goes in the mod book since mod is more complicated than
-+. (+ is used to define mod!).  Sometimes it's not clear where to put a lemma
++. (+ is used to define mod!).  Sometimes it's not clear where to put a lemma,
 and I create a special book, such as "arithmetic/mod-expt.lisp", which contains
 lemmas mixing mod and expt.
 
