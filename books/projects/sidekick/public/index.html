@@ -1,0 +1,211 @@
+<!HTML>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>ACL2 Sidekick</title>
+
+<!--
+ACL2 Sidekick
+Copyright (C) 2014 Kookamara LLC
+
+Contact:
+
+  Kookamara LLC
+  11410 Windermere Meadows
+  Austin, TX 78759, USA
+  http://www.kookamara.com/
+
+License: (An MIT/X11-style license)
+
+  Permission is hereby granted, free of charge, to any person obtaining a
+  copy of this software and associated documentation files (the "Software"),
+  to deal in the Software without restriction, including without limitation
+  the rights to use, copy, modify, merge, publish, distribute, sublicense,
+  and/or sell copies of the Software, and to permit persons to whom the
+  Software is furnished to do so, subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be included in
+  all copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+  DEALINGS IN THE SOFTWARE.
+-->
+
+<link rel="stylesheet" type="text/css" href="style.css"/>
+<link rel="icon" type="image/png" href="icons/favicon.png"/>
+<script src="lib/jquery-2.1.0.min.js"></script>
+<script src="common.js"></script>
+<script src="toolbar.js"></script>
+</head>
+
+<style>
+<!--
+
+#fancymenu {
+   margin-left: 2em;
+}
+
+#fancymenu td {
+   padding-bottom: 1em;
+   padding-right: 1em;
+   font-size: 90%;
+}
+
+#fancymenu a {
+   text-decoration: none;
+   font-size: 110%;
+}
+
+#fancymenu th {
+   font-family: "Tahoma", "Geneva", "Verdana", sans-serif;
+   font-size: 80%;
+}
+
+// -->
+</style>
+
+<body>
+
+<div id="toolbar"></div>
+
+<div id="main">
+
+<div align="center" style="padding-top: 1em; padding-bottom: 1.5em;">
+<table>
+<tr>
+<td rowspan="2"><img src="icons/superhero-right.png"></td>
+<td valign="middle" class="logo"> ACL2 Sidekick </td>
+<!-- <td rowspan="2"><img src="superhero-right.png"></td> -->
+</tr>
+<tr>
+<td align="center" style="font-family: Geneva, Verdana, sans-serif; font-variant: small-caps; letter-spacing: .4em;">extreme beta</td>
+</tr>
+</table>
+</div>
+
+<div id="left" style="float: left; width: 55%;">
+
+<h3 style="margin-top: 0; padding-top: 0;">Welcome!</h3>
+
+<p>The ACL2 Sidekick extends ACL2 with many graphical capabilities.  It lets
+you browse through your session, profile slow proofs, analyze your theory, and
+inspect things right from your web browser.</p>
+
+
+<h4>Tools</h4>
+
+<form id="lookup_form2" method="get" action="lookup.html">
+<table id="fancymenu">
+<tr>
+<th><a href="session.html"><img src="icons/session.png"/></a><br/>
+:session</th>
+<td><a href="session.html">Session Viewer</a></br/>
+Explore the history of your ACL2 session<br/>
+See the effects of commands</td>
+</tr>
+
+<tr>
+<th><a href="profiler.html"><img src="icons/profiler.png"/></a><br/>
+:bozo</th>
+<td><a href="profiler.html">Proof Profiler</a><br/>
+See what the prover is doing<br/>
+Identify slow rules<br/>
+</td>
+</tr>
+
+<tr>
+<th><a href="linter.html"><img src="icons/linter.png"/></a><br/>
+:lint</th>
+<td><a href="linter.html">Theory Linter</a><br/>
+Identify conflicting and redundant rules<br/>
+</td>
+</tr>
+
+<tr>
+<th><a href="explore.html"><img src="icons/explore.png"/></a><br/>
+:explore</th>
+<td><a href="explore.html">Proof Explorer</a><br/>
+Carry out proofs interactively<br/>
+</td>
+</tr>
+
+<tr>
+<th><a href="lookup.html"><img src="icons/lookup.png"/></a><br/>
+:show</th>
+<td><a href="lookup.html">Show Anything</a><br/>
+See documentation, properties, disassembly, ...<br/>
+<!-- <tt><label for="lookup2">:show</label></tt> -->
+<input id="lookup2" name="lookup" type="text" size="20" placeholder="append"></input>
+<input type="submit" style="position: absolute; left: -9999px; width: 1px; height: 1px;" hidefocus="true" tabindex="-1"></input>
+</td>
+</tr>
+
+</table>
+</form>
+
+
+</div>
+
+<div id="right" style="float: left; width: 44%; margin: 0; padding-top: 0;">
+
+<h4 style="margin-top: 0; padding-top: 0;">Development Notes</h4>
+
+<p>Warning: this is <b>highly experimental</b> software that may have serious
+bugs.  For updates or to submit any bug reports or suggestions, please see the
+<a href='https://github.com/jaredcdavis/sidekick'>github project</a>.</p>
+
+
+<p>General wishlist</p>
+
+<ul>
+
+<li>Some kind of locking mechanism for access to things like ens.</li>
+
+<li>Better s-expression display: clickable function names that lead
+    to the lookup page.</li>
+
+<li>Current :pcb display is terrible; show how the macros expand, add
+    links to lookup page, etc.</li>
+
+<li>Develop help page that gets triggered by failed proofs: try
+  counterexample generation, type-like analysis, syntax highlighting
+  to point out the different arg, etc.</li>
+
+</ul>
+
+<h4>Miscellaneous Ideas</h4>
+
+<p>History-management.lisp has functions
+like <tt>print-time-summary</tt>.  If we plugged into that and
+associated times with events/commands in a sensible way, then we could
+use the information to annotate the session history with how long
+everything took, sort by long-taking events, etc.  Similar
+for <tt>print-steps-summary</tt>.</p>
+
+<p>It also has things like <tt>print-warnings-summary</tt>.  We could
+perhaps similarly associate warnings with events, and then be able t
+graphically show which events had warnings.</p>
+
+<p>It also has <tt>print-rules-summary</tt>.  If we associated events
+with the rules that were used, we could maybe cross-reference that
+against the rules introduced by commands, to be able to say, "show me
+where this theorem gets used later in my file".</p>
+
+<p>Is there something sensible we can do with proof-supporters?</p>
+
+</div>
+
+</div>
+
+<div id="footer"></div>
+
+</body>
+</html>
+
+
+

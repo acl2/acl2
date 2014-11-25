@@ -1,0 +1,219 @@
+/*
+; XDOC Documentation System for ACL2
+; Copyright (C) 2009-2013 Centaur Technology
+;
+; Contact:
+;   Centaur Technology Formal Verification Group
+;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+;   http://www.centtech.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+;
+; Original author: Jared Davis <jared@centtech.com>
+
+; Cascading Style Sheet for the fancy viewer.  You can easily tweak the colors,
+; layout, etc., here.
+
+*/
+
+
+#top    { background-color: #034569; }
+#bottom { background-color: #228A4C; }
+#left   { background-color: #ffcba3; }
+#right  { background-color: white; }
+
+.xtable th {
+  background-color: #ffdcb4;
+}
+
+.xtable tr:nth-child(odd) { background-color:#fff4e8; }
+/*.xtable tr:nth-child(odd) td:nth-child(odd) { background-color:#fffff6; } */
+
+.xtable tr:nth-child(even) { background-color:#ffffff; }
+/* .xtable tr:nth-child(even) td:nth-child(odd) { background-color:#fff6ff; } */
+
+#top, #bottom, #right, #left, #parents { border-color: #3C9DD0; }
+
+body          { background-color: white;}
+#data_wrapper { background-color: #ffffff; }
+
+/*
+h1, h2, h1 .tt, h2 .tt, h1 .v, h2 .v  {  color: #A64300; }
+h3, h4, h5, h3 .tt, h4 .tt, h5 .tt, h3 .v, h4 .v, h5 .v { color: #FF6700; }
+*/
+
+
+.box          { border-color: black; }
+#data_wrapper { border-color: #034569; }
+
+.code,.v,.tt  { color: #306030;}
+.code a, .v a { color: #309030;}
+.code         { border-color: #3C9DD0; }
+
+#nav a:hover, #flat a:hover { background-color: #FFAB73; }
+#data a:hover { background-color: #ffffa0; }
+
+#parents { background-color: #63DB93; }
+#parents li a       {  }
+#parents li a:hover { background-color: #00B74A; text-decoration: none; }
+
+.tt-is-under-cursor { background-color: #ffffa0; }
+
+#jumpmsg,#searchmsg { color: white; }
+
+#letters { padding-left: .4em; }
+#letters a { color: #3C9DD0; }
+#letters a:hover { text-decoration: none; color: white; background-color: #086CA2; }
+
+.dat_long {
+    border-color: #FF6700;
+}
+
+.from {
+    color: #3C9DD0;
+}
+
+
+/* ----------------------- FONTS --------------------------------- */
+
+#xdoc { font-family: "Georgia", "Bookman Old Style", serif; }
+
+#parents, #toolbar, .basepkg, h1, h2, h3, h4, h5, .sf {
+    font-family: "Geneva", "Verdana", sans-serif;
+}
+
+dt, .hindex, #flat, #still_loading, .xtable th {
+    font-family: "Tahoma", "Geneva", "Verdana", sans-serif;
+}
+
+.code, .srclink, .tt, #letters, .from, .v {
+    font-family: "Consolas", "Bitstream Vera Sans Mono", "DejaVu Sans Mono", "Lucida Console", monospace;
+}
+
+
+/* ----------------------- PARENTS DISPLAY ----------------------- */
+
+#parents {
+    padding: 10px;
+    border-bottom-width: 1px;
+    border-bottom-style: solid;
+}
+
+#parents ul {
+    margin: 0;
+    padding: 0;
+    list-style-type: none;
+}
+
+#parents li {
+    display: inline;
+}
+
+#parents li a {
+    padding: .2em 1em;
+}
+
+img {
+  border: 0px;
+}
+
+/*
+h1 { font-size: 2.2em; text-align: center; }
+h2 { font-size: 1.8em; }
+h3 { font-size: 1.5em; }
+h4 { font-size: 1.2em; }
+h5 { font-size: 1.1em; margin-left: 1em;}
+*/
+
+p, dl { margin-left: 1em; margin-right: 1em; }
+
+li    { margin-left: 1.0em; margin-right: 1em; margin-bottom: 0.5em; }
+li li { margin-left: -1.0em; margin-bottom: 0em; }
+
+dt {
+  margin-left: 1em;
+  margin-top: 1em;
+  font-weight: bold;
+}
+
+.box {
+  margin-left: 1.5em;
+  margin-right: 1.5em;
+  border-width: 1px;
+  border-style: solid;
+}
+
+.code {
+  margin-left: 2.5em;
+  margin-right: 1em;
+  padding: .5em;
+  border-left-width: 3px;
+  border-left-style: solid;
+  overflow-x: auto;
+}
+
+li .code {
+  margin-left: 1em;
+}
+
+a { text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+.srclink {
+  text-decoration: none;
+  background-color: #e0e0e0;
+  padding: 2px;
+/*  font-size: 100%; */
+}
+.srclink:hover {
+  text-decoration: none;
+}
+
+hr { margin-top: 2em; }
+
+
+
+.dat_long {
+    border-left-style: solid;
+    border-left-width: 2px;
+    margin-left: .2em;
+    padding-left: 1em;
+}
+
+
+.ximg {
+    text-align: center;
+}
+
+
+.xtable {
+  border-collapse:collapse;
+  border: 1px solid black;
+  margin-left: 1.5em;
+  margin-right: 1.5em;
+}
+
+.xtable td, .xtable th {
+  vertical-align: top;
+  padding: .5em;
+}
+
+

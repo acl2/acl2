@@ -1,0 +1,86 @@
+<!HTML>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Proof Profiler &mdash; ACL2 Sidekick</title>
+
+<!--
+ACL2 Sidekick
+Copyright (C) 2014 Kookamara LLC
+
+Contact:
+
+  Kookamara LLC
+  11410 Windermere Meadows
+  Austin, TX 78759, USA
+  http://www.kookamara.com/
+
+License: (An MIT/X11-style license)
+
+  Permission is hereby granted, free of charge, to any person obtaining a
+  copy of this software and associated documentation files (the "Software"),
+  to deal in the Software without restriction, including without limitation
+  the rights to use, copy, modify, merge, publish, distribute, sublicense,
+  and/or sell copies of the Software, and to permit persons to whom the
+  Software is furnished to do so, subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be included in
+  all copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+  DEALINGS IN THE SOFTWARE.
+-->
+
+<link rel="stylesheet" type="text/css" href="style.css"/>
+<link rel="stylesheet" type="text/css" href="profiler.css"/>
+<script src="lib/jquery-2.1.0.min.js"></script>
+<script src="common.js"></script>
+<script src="toolbar.js"></script>
+</head>
+<body>
+
+<div id="toolbar"></div>
+
+<div id="main">
+
+<div id="profwrap">
+<div id="prof">
+<img src="icons/under-construction.jpg">
+</div>
+</div>
+
+<div id="detailwrap">
+<div id="details">
+
+<h3 class="banner"><img src="icons/profiler.png"/> Proof Profiler</h3>
+
+<p>This is like ACL2's <b>accumulated-persistence</b> and <b>dmr</b> features.
+It updates automatically as you submit new proofs.</p>
+
+<p>Note that proofs will be considerably slower with profiling enabled.</p>
+
+<h4>Todo/Wishlist</h4>
+
+<ul>
+<li>Implement bare-bones version</li>
+<li>Figure out how to turn profiling on/off dynamically.</li>
+<li>Major feature: click/hover on a rule to see what it is.</li>
+<li>How about also automatic disable lists?</li>
+</ul>
+
+</div></div>
+
+
+<div id="footer"></div>
+
+
+</body>
+</html>
+
+
+

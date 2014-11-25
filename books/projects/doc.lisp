@@ -7,6 +7,7 @@
 (in-package "ACL2")
 (include-book "xdoc/top" :dir :system)
 (include-book "milawa/doc")
+(include-book "sidekick/top")
 (include-book "leftist-trees/top")
 
 (defxdoc projects
